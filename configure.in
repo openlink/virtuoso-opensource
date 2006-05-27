@@ -2080,6 +2080,7 @@ AC_CONFIG_FILES([
 	appsrc/Makefile
 	appsrc/ODS-Framework/Makefile
 	appsrc/ODS-Blog/Makefile
+	appsrc/ODS-Briefcase/Makefile
 ])
 
 

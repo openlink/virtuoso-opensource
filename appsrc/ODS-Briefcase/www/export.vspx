@@ -1,0 +1,171 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/">
+  <v:variable name="account" type="varchar" default="''"/>
+  <v:variable name="account_id" type="integer" default="-1"/>
+
+  <v:variable name="v_output" type="varchar" param-name="output" default="''"/>
+
+  <v:variable name="v_mode" type="varchar" default="'a'" param-name="mode"/>
+  <v:variable name="v_max" type="varchar" default="'100'" param-name="max"/>
+  <v:variable name="v_order" type="varchar" default="'c0'" param-name="order"/>
+  <v:variable name="v_direction" type="varchar" default="'desc'" param-name="direction"/>
+
+  <![CDATA[
+    <?vsp
+      declare N integer;
+
+      http_rewrite();
+      http_request_status ('HTTP/1.1 200 OK');
+      http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+
+      self.account := ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params);
+      if (is_empty_or_null(self.account))
+        goto _error;
+      self.account_id := ODRIVE.WA.session_user_id(self.vc_page.vc_event.ve_params);
+
+      if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
+        declare data, sql, params, state, msg, meta, result any;
+
+        if (self.v_mode = 's') {
+          params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 10, get_keyword('b2', self.vc_page.vc_event.ve_params, ''), self.account);
+        }
+
+        if (self.v_mode = 'a') {
+          ODRIVE.WA.dav_dc_set_base(data, 'path',    get_keyword('b1', self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_base(data, 'name',    get_keyword('b2', self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_base(data, 'content', get_keyword('b3', self.vc_page.vc_event.ve_params, ''));
+
+          ODRIVE.WA.dav_dc_set_advanced(data, 'mime',          get_keyword('a1',  self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'owner',         get_keyword('a2',  self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'group',         get_keyword('a3',  self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'createDate11',  get_keyword('a4',  self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'createDate12',  get_keyword('a5',  self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'createDate21',  get_keyword('a6',  self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'createDate22',  get_keyword('a7',  self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate11',  get_keyword('a8',  self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate12',  get_keyword('a9',  self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate21',  get_keyword('a10', self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate22',  get_keyword('a11', self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'publicTags11',  get_keyword('a12', self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'publicTags12',  get_keyword('a13', self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'privateTags11', get_keyword('a14', self.vc_page.vc_event.ve_params, ''));
+          ODRIVE.WA.dav_dc_set_advanced(data, 'privateTags12', get_keyword('a15', self.vc_page.vc_event.ve_params, ''));
+
+          N := 1;
+          while (get_keyword(sprintf('ms%d', N), self.vc_page.vc_event.ve_params, '') <> '') {
+            ODRIVE.WA.dav_dc_set_metadata(data,
+                                          cast(N as varchar),
+                                          get_keyword(sprintf('mt%d', N), self.vc_page.vc_event.ve_params, ''),
+                                          get_keyword(sprintf('ms%d', N), self.vc_page.vc_event.ve_params, ''),
+                                          get_keyword(sprintf('mn%d', N), self.vc_page.vc_event.ve_params, ''),
+                                          get_keyword(sprintf('mc%d', N), self.vc_page.vc_event.ve_params, ''),
+                                          get_keyword(sprintf('mv%d', N), self.vc_page.vc_event.ve_params, '')
+                                         );
+            N := N + 1;
+          }
+          params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 11, data, self.account);
+        }
+
+        sql := 'select <MAX> rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ?';
+        sql := replace(sql, '<MAX>', 'TOP ' || self.v_max);
+        sql := concat(sql, ' order by c1, ', self.v_order, ' ', self.v_direction);
+
+        state := '00000';
+        exec(sql, state, msg, params, 0, meta, result);
+        if (state <> '00000')
+          goto _error;
+
+        http ('<?xml version ="1.0" encoding="UTF-8"?>\n');
+        http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
+        http ('<channel>\n');
+        for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
+          http ('<title>');
+            http_value (ODRIVE.WA.utf2wide(coalesce(U_FULL_NAME, U_NAME)));
+          http ('</title>\n');
+          http ('<description>');
+            http_value (ODRIVE.WA.utf2wide(coalesce(U_FULL_NAME, U_NAME)));
+          http ('</description>\n');
+          http ('<managingEditor>');
+            http_value (U_E_MAIL);
+          http ('</managingEditor>\n');
+          http ('<pubDate>');
+            http_value (ODRIVE.WA.dt_rfc1123(now()));
+          http ('</pubDate>\n');
+          http ('<generator>');
+            http_value ('Virtuoso Universal Server ' || sys_stat('st_dbms_ver'));
+          http ('</generator>\n');
+          http ('<webMaster>');
+            http_value (U_E_MAIL);
+          http ('</webMaster>\n');
+          http ('<link>');
+            http_value (ODRIVE.WA.odrive_url());
+          http ('</link>\n');
+        }
+        foreach (any row in result) do {
+          http ('<item>\n');
+            http ('<title>');
+              http_value (ODRIVE.WA.utf2wide(row[8]));
+            http ('</title>\n');
+            http ('<description>');
+              http_value (ODRIVE.WA.utf2wide(row[0]));
+            http ('</description>\n');
+            http ('<link>');
+              http_value (concat(ODRIVE.WA.odrive_host_url(), ODRIVE.WA.utf2wide(row[0])));
+            http ('</link>\n');
+            http ('<pubDate>');
+              http_value (ODRIVE.WA.dt_rfc1123 (stringdate(row[3])));
+            http ('</pubDate>\n');
+            if (self.v_output <> 'rss') {
+              http ('<vi:modified>');
+                http_value (ODRIVE.WA.dt_iso8601 (stringdate(row[3])));
+              http ('</vi:modified>\n');
+            }
+          http ('</item>\n');
+        }
+        http ('</channel>\n');
+        http ('</rss>');
+
+        if (self.v_output = 'rdf')
+     	    http_xslt (ODRIVE.WA.xslt_full ('rss2rdf.xsl'));
+
+        else if (self.v_output = 'xbel')
+    	    http_xslt (ODRIVE.WA.xslt_full ('rss2xbel.xsl'));
+
+        else if (self.v_output = 'atom03')
+    	    http_xslt (ODRIVE.WA.xslt_full ('rss2atom03.xsl'));
+
+        else if (self.v_output = 'atom10')
+    	    http_xslt (ODRIVE.WA.xslt_full ('rss2atom.xsl'));
+
+        goto _end;
+      }
+    _error:
+      http('<?xml version="1.0" ?><empty />');
+
+    _end:
+      http_flush();
+    ?>
+  ]]>
+</v:page>

@@ -1,0 +1,296 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="groups_update" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:method name="add_member" arglist="in userName varchar">
+    <![CDATA[
+      declare N integer;
+      declare userDescr varchar;
+
+      if (lcase(self.v_name) = lcase(userName))
+        return;
+
+      N := (select U_ID from DB.DBA.SYS_USERS where U_NAME = userName);
+      if (isnull(N))
+        return;
+
+      userDescr := coalesce((select U_FULL_NAME from DB.DBA.SYS_USERS where U_NAME = userName), '');
+      if (isnull(self.d_added))
+        self.d_added := vector();
+      self.delete_member(userName, 0);
+      for (N := 0; N < length(self.d_added); N := N + 1)
+        if (lcase(self.d_added[N][0]) = lcase(userName))
+          return;
+      self.d_added := vector_concat(self.d_added, vector(vector(userName, userDescr)));
+    ]]>
+  </v:method>
+  <v:method name="delete_member" arglist="in userName varchar, in mode integer">
+    <![CDATA[
+      declare N integer;
+
+      if (isnull(self.d_deleted))
+        self.d_deleted := vector();
+      if (mode) {
+        declare tmp any;
+        tmp := vector();
+        for (N := 0; N < length(self.d_added); N := N + 1)
+          if (lcase(self.d_added[N][0]) <> lcase(userName))
+            tmp := vector_concat(tmp, vector(self.d_added[N]));
+        self.d_added := tmp;
+      }
+      for (N := 0; N < length(self.d_deleted); N := N + 1)
+        if (lcase(self.d_deleted[N]) = lcase(userName))
+          return;
+      self.d_deleted := vector_concat(self.d_deleted, vector(lcase(userName)));
+    ]]>
+  </v:method>
+  <v:before-data-bind>
+    <![CDATA[
+	    declare exit handler for not found { goto _end; };
+
+      declare N, I integer;
+      for (N := 0; N < length(self.vc_page.vc_event.ve_params); N := N + 2) {
+        if (self.vc_page.vc_event.ve_params[N] like 'delete_%') {
+          self.delete_member(replace(self.vc_page.vc_event.ve_params[N], 'delete_', ''), 1);
+        } else if (get_keyword('member_name', self.vc_page.vc_event.ve_params, '') <> '') {
+          declare tmp any;
+
+          tmp := split_and_decode (get_keyword('member_name', self.vc_page.vc_event.ve_params, ''), 0, '\0\0,');
+          for (I := 0; I < length(tmp); I := I + 1)
+            self.add_member(trim(tmp[I]));
+        }
+      }
+
+      if (isnull(get_keyword('f_name', self.vc_page.vc_event.ve_params))) {
+        select a.U_FULL_NAME
+   			  into self.v_description
+          from DB.DBA.SYS_USERS a,
+               ODRIVE.WA.GROUPS b,
+               DB.DBA.SYS_USERS c
+         where a.U_NAME    = self.v_name
+           and a.U_IS_ROLE = 1
+           and a.U_ID      = b.GROUP_ID
+           and c.U_ID      = b.USER_ID
+           and c.U_NAME    = ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params);
+
+        for (select b.U_NAME from DB.DBA.SYS_ROLE_GRANTS a, DB.DBA.SYS_USERS b, DB.DBA.SYS_USERS c where a.GI_SUPER=b.U_ID and a.GI_GRANT=c.U_ID and c.U_NAME=self.v_name and a.GI_DIRECT = '1') do
+          self.add_member(U_NAME);
+
+  			self.v_mode := 'update';
+  			return;
+			}
+
+		_end:
+      self.v_name := get_keyword('f_name', self.vc_page.vc_event.ve_params, self.v_name);
+      self.v_description := get_keyword('f_description', self.vc_page.vc_event.ve_params, '');
+			self.v_mode := get_keyword('f_mode', self.vc_page.vc_event.ve_params, 'create');
+    ]]>
+  </v:before-data-bind>
+  <vm:pagetitle>Create/Update Group</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header>
+      <v:label format="%s" value="--concat(initcap(self.v_mode), ' Group')"/>
+    </vm:header>
+    <vm:variables>
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+      <v:variable name="v_name" param-name="name" type="varchar" default="''"/>
+      <v:variable name="v_description" type="varchar" default="''"/>
+      <v:variable name="v_mode" type="varchar" default="''"/>
+      <v:variable name="d_added" type="any" default="null" persist="0" />
+      <v:variable name="d_deleted" type="any" default="null" persist="0" />
+    </vm:variables>
+    <vm:pagebody>
+      <v:form name="F1" type="simple">
+        <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
+        <v:text name="f_mode" type="hidden" value="--self.v_mode"/>
+        <v:template type="simple">
+          <div class="new-form-header">
+            <v:label format="%s" value="--concat(initcap(self.v_mode), ' Group')"/>
+          </div>
+
+         	<div id="c1">
+        		<div class="tabs">
+              <vm:tabCaption tab="1" tabs="2" caption="Main"/>&nbsp;
+              <vm:tabCaption tab="2" tabs="2" caption="Members"/>&nbsp;
+            </div>
+        		<div class="contents">
+              <div id="1" class="tabContent" style="display: none;">
+                <table class="form-body" cellspacing="0">
+                  <tr>
+                    <th>
+                      <v:label for="f_name" value="Group name"/>
+                    </th>
+                    <td>
+                      <v:text name="f_name" value="--self.v_name" type="--either(equ(self.v_mode, 'create'), 'plain', 'hidden')" xhtml_class="field-short"/>
+                      <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+                        <span class="text"><v:label value="--self.v_name"/></span>
+                      </v:template>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_description" value="Group description"/>
+                    </th>
+                    <td>
+                      <v:text name="f_description" value="--self.v_description" xhtml_class="field-text"/>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <div id="2" class="tabContent" style="display: none;">
+                <div style="padding: 0 0 0.5em 0;">
+                  <v:text name="member_name" type="hidden" value="--''" format="%s"/>
+                  <input type="button" value="Add member(s)" onClick="javascript:windowShow('users_select.vspx?dst=m&src=s&params=member_name:s1;', 550)" class="button"/>
+                </div>
+                <table class="form-list" id="members" cellspacing="0">
+                  <tr>
+                    <th>
+                      <v:label value="Name" format="%s"/>
+                    </th>
+                    <th>
+                      <v:label value="Description" format="%s"/>
+                    </th>
+                    <th class="last" align="center" width="1%">
+                      <v:label value="Action" format="%s"/>
+                    </th>
+                  </tr>
+                  <?vsp
+                    declare N integer;
+
+                    self.add_member(ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params));
+                    N := 0;
+                    for (select rs.* from ODRIVE.WA.members2rs(rs0)(U_NAME varchar, U_FULL_NAME varchar) rs where rs0 = self.d_added) do {
+               	      http('<tr>');
+                        http('<td nowrap="nowrap">');
+                          http(U_NAME);
+               	        http('</td>');
+                        http('<td nowrap="nowrap">');
+                          http(U_FULL_NAME);
+               	        http('</td>');
+                        http('<td nowrap="nowrap">');
+                          if (ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params) = U_NAME) {
+                            http('&nbsp;');
+                          } else {
+                            http(sprintf('<input type="submit" name="delete_%s" value="Delete" class="button" />', U_NAME));
+                          }
+               	        http('</td>');
+            	        http('</tr>');
+            	        N := N + 1;
+            	      }
+            	      if (not N)
+               	      http('<tr align="center"><td colspan="3">No members</td></tr>');
+            	    ?>
+            	  </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="new-form-footer">
+            <v:button action="simple" value="--initcap(self.v_mode)" xhtml_class="form-button">
+              <v:on-post>
+                <![CDATA[
+                  declare exit handler for SQLSTATE '*' {
+                    if (__SQL_STATE = 'TEST') {
+                      self.vc_error_message := ODRIVE.WA.test_clear(__SQL_MESSAGE);
+                   		self.vc_is_valid := 0;
+                		  return;
+                		}
+                    resignal;
+                  };
+
+                  self.v_name := trim(self.f_name.ufl_value);
+                  self.v_description := trim(self.f_description.ufl_value);
+
+                  self.v_name := ODRIVE.WA.test(self.v_name, vector('name', 'Group name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 128));
+                  self.v_description := ODRIVE.WA.test(self.v_description, vector('name', 'Group description', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
+
+                  declare uid, gid integer;
+
+                  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params));
+                  gid := (select a.U_ID
+                            from DB.DBA.SYS_USERS a,
+                                 ODRIVE.WA.GROUPS b
+                           where a.U_ID=b.GROUP_ID
+                             and a.U_NAME = self.v_name
+                             and a.U_IS_ROLE = 1
+                             and b.USER_ID <> uid);
+                  if (not isnull(gid))
+                    signal('TEST', 'Group already exists for another user. Please choose another name!<>');
+
+                  gid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.v_name);
+                  if (self.v_mode = 'create') {
+                    if (not isnull(gid))
+                      signal('TEST', 'Group already exists. Please choose another name!<>');
+                    gid := USER_ROLE_CREATE(self.v_name);
+                  }
+                  update DB.DBA.SYS_USERS set U_FULL_NAME = self.v_description, U_DAV_ENABLE = 1 where U_NAME = self.v_name;
+
+                  -- make owner
+                  if (self.v_mode = 'create')
+                    insert soft ODRIVE.WA.GROUPS(USER_ID, GROUP_ID) values(uid, gid);
+
+                  declare N integer;
+
+                  -- delete members
+                  for (N := 0; N < length(self.d_deleted); N := N + 1) {
+                    {
+                      declare continue handler for sqlstate '*' { goto _delete;};
+                      USER_REVOKE_ROLE(self.d_deleted[N], self.v_name);
+                    _delete:;
+                    }
+                  }
+
+                  -- add members
+                  for (N := 0; N < length(self.d_added); N := N + 1) {
+                    {
+                      declare continue handler for sqlstate '*' { goto _add;};
+                      USER_GRANT_ROLE(self.d_added[N][0], self.v_name);
+                    _add:;
+                    }
+                  }
+
+                  self.vc_redirect('groups.vspx');
+           	    ]]>
+           	  </v:on-post>
+            </v:button>
+            <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:on-post>
+                <![CDATA[
+                  self.vc_redirect('groups.vspx');
+         		    ]]>
+         		  </v:on-post>
+            </v:button>
+          </div>
+
+        </v:template>
+        <script>
+          <![CDATA[
+            coloriseTable('members');
+            initTab(2, 1);
+          ]]>
+        </script>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

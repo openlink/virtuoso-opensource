@@ -1,0 +1,186 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="mimes" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:method name="label_name" arglist="">
+    <![CDATA[
+     if (neq(self.v_right, 'W'))
+       return 'View';
+     return 'Edit';
+    ]]>
+  </v:method>
+  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
+    <![CDATA[
+      declare altStr, directionStr, imageStr varchar;
+
+      if (self.mimes_order = columnName and self.mimes_direction = 'desc') {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
+      } else if (self.mimes_order = columnName and self.mimes_direction = 'asc') {
+        directionStr := 'Descending';
+        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
+      } else {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;&nbsp;';
+      }
+      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
+      http(sprintf('<a href="#" onClick="javascript: myPost(''ds'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
+    ]]>
+  </v:method>
+  <v:method name="sortChange" arglist="in columnName varchar">
+    <![CDATA[
+      if (columnName = '')
+        return;
+      self.ds.vc_reset();
+      if (self.mimes_order = columnName) {
+        self.mimes_direction := either(equ(self.mimes_direction, 'asc'), 'desc', 'asc');
+      } else {
+        self.mimes_direction := 'asc';
+      }
+      self.mimes_order := columnName;
+    ]]>
+  </v:method>
+  <vm:pagetitle>Mime Types</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header>
+      Mime Types
+    </vm:header>
+    <vm:variables>
+      <v:variable name="v_right" type="varchar" default="'W'"/>
+      <v:variable name="mimes_order" persist="1" type="varchar" default="'MT_IDENT'" />
+      <v:variable name="mimes_direction" persist="1" type="varchar" default="'asc'" />
+    </vm:variables>
+    <vm:pagebody>
+      <v:template type="simple">
+        <v:before-data-bind>
+          <![CDATA[
+            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.odrive_user()), 1), 'W', 'R');
+          ]]>
+        </v:before-data-bind>
+      	<v:data-source name="dsrc" expression-type="sql" nrows="--ODRIVE.WA.odrive_settings_rows(self.vc_page.vc_event.ve_params)" initial-offset="0">
+          <v:before-data-bind>
+            <![CDATA[
+              self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
+              control.ds_sql := 'select MT_IDENT, MT_DEFAULT_EXT, MT_DESCRIPTION from WS.WS.SYS_MIME_TYPES';
+              control.ds_sql := concat(control.ds_sql, ' order by ', self.mimes_order, ' ', self.mimes_direction);
+            ]]>
+          </v:before-data-bind>
+        </v:data-source>
+        <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
+          <div style="padding: 0 0 0.5em 0;">
+            <v:button action="simple" value="Create" enabled="--equ(self.v_right, 'W')" xhtml_class="button">
+              <v:on-post>
+                <![CDATA[
+                  self.vc_redirect('mimes_update.vspx');
+                ]]>
+              </v:on-post>
+            </v:button>
+          </div>
+
+          <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+            <table id="mimes" class="grid" cellspacing="0">
+              <thead class="sortHeader">
+                <tr>
+                  <th>
+                    <?vsp self.sortColumn('MIME Type', 'MT_IDENT'); ?>
+                  </th>
+                  <th>
+                    <?vsp self.sortColumn('File Extension', 'MT_DEFAULT_EXT'); ?>
+                  </th>
+                  <th>
+                    <?vsp self.sortColumn('Description', 'MT_DESCRIPTION'); ?>
+                  </th>
+                  <th class="last" align="center" width="1%">
+                    <v:label value="Actions" format="%s"/>
+                  </th>
+                </tr>
+              </thead>
+            </table>
+          </v:template>
+
+          <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+            <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+              <table>
+                <tr align="center">
+                  <td colspan="4">No MIME types</td>
+                </tr>
+              </table>
+            </v:template>
+
+            <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+              <table>
+                <tr>
+                  <td nowrap="nowrap">
+                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('MT_IDENT')" format="%s"/>
+                  </td>
+                  <td nowrap="nowrap">
+                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('MT_DEFAULT_EXT')" format="%s"/>
+                  </td>
+                  <td nowrap="nowrap">
+                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('MT_DESCRIPTION')" format="%s"/>
+                  </td>
+                  <td nowrap="nowrap">
+                    <v:button value="--self.label_name()" action="simple" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.vc_redirect(sprintf('mimes_update.vspx?id=%U', (control.vc_parent as vspx_row_template).te_column_value('MT_IDENT')));
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button value="Delete" action="simple" enabled="--equ(self.v_right, 'W')" xhtml_onClick="javascript: return deleteConfirm();" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          delete from WS.WS.SYS_MIME_RDFS where MR_MIME_IDENT = (control.vc_parent as vspx_row_template).te_column_value('MT_IDENT');
+                  		    delete from WS.WS.SYS_MIME_TYPES where MT_IDENT = (control.vc_parent as vspx_row_template).te_column_value('MT_IDENT');
+                  		    self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+
+          </v:template>
+
+          <v:template type="simple" name-to-remove="table" set-to-remove="top">
+            <table>
+              <tr align="center">
+                <td colspan="4">
+                  <vm:ds-navigation data-set="ds"/>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+
+        </v:data-set>
+        <script>
+          <![CDATA[
+            coloriseTable('mimes');
+          ]]>
+        </script>
+      </v:template>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

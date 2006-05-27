@@ -1,0 +1,545 @@
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="vmds_update" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:before-data-bind>
+    <![CDATA[
+      if (isnull(get_keyword('f_uri', self.vc_page.vc_event.ve_params))) {
+        self.v_schema := DB.DBA.DAV_GET_RDF_SCHEMA_N3(self.v_uri);
+        if (trim(cast(self.v_schema as varchar)) <> '') {
+  		    self.v_resource := (select RS_LOCAL_ADDONS from WS.WS.SYS_RDF_SCHEMAS where RS_URI = self.v_uri);
+          self.v_label := ODRIVE.WA.rdf_schema_get_property(self.v_schema, self.v_uri, 'label');
+          self.v_comment := ODRIVE.WA.rdf_schema_get_property(self.v_schema, self.v_uri, 'comment');
+          self.v_catName := ODRIVE.WA.rdf_schema_get_property(self.v_schema, self.v_uri, 'catName');
+          self.v_version := ODRIVE.WA.rdf_schema_get_property(self.v_schema, self.v_uri, 'version');
+    			self.v_mode := 'update';
+          return;
+        }
+        self.v_schema := null;
+      }
+      if ((not isnull(self.v_schema)) and (not isentity(self.v_schema)))
+        self.v_schema := xml_tree_doc(self.v_schema);
+      self.v_uri  := get_keyword('f_uri', self.vc_page.vc_event.ve_params, self.v_uri);
+      self.v_label := get_keyword('f_label', self.vc_page.vc_event.ve_params, '');
+      self.v_comment := get_keyword('f_comment', self.vc_page.vc_event.ve_params, '');
+      self.v_catName := get_keyword('f_catName', self.vc_page.vc_event.ve_params, '');
+      self.v_version := get_keyword('f_version', self.vc_page.vc_event.ve_params, '1.00');
+			self.v_mode := get_keyword('f_mode', self.vc_page.vc_event.ve_params, 'create');
+    ]]>
+  </v:before-data-bind>
+  <vm:pagetitle>Create/Update Schema</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header>
+      <v:label format="%s" value="--concat(initcap(self.v_mode), ' Schema')"/>
+    </vm:header>
+    <vm:variables>
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+      <v:variable name="v_uri" param-name="uri" type="varchar" default="''"/>
+      <v:variable name="v_label" type="varchar" default="''"/>
+      <v:variable name="v_comment" type="varchar" default="''"/>
+      <v:variable name="v_catName" type="varchar" default="''"/>
+      <v:variable name="v_version" type="varchar" default="1.00"/>
+      <v:variable name="v_schema" type="any" default="null" persist="0"/>
+      <v:variable name="v_property" type="varchar" default="''" persist="0"/>
+      <v:variable name="v_resource" type="varchar" default="''" persist="0"/>
+      <v:variable name="v_mode" type="varchar" default="''"/>
+      <v:variable name="v_command" type="integer" default="0"/>
+      <v:variable name="v_right" type="varchar" default="'W'"/>
+    </vm:variables>
+    <vm:pagebody>
+      <v:form name="F1" type="simple">
+        <v:before-data-bind>
+          <![CDATA[
+            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.odrive_user()), 1), 'W', 'R');
+            if ((not ODRIVE.WA.dav_rdf_notDeprecated(self.v_uri)) and (self.v_mode = 'update'))
+              self.v_right := 'R';
+          ]]>
+        </v:before-data-bind>
+        <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
+        <v:text name="formRight" type="hidden" value="--self.v_right"/>
+        <v:text name="f_mode" type="hidden" value="--self.v_mode"/>
+        <v:template type="simple">
+          <div class="new-form-header">
+            <v:label format="%s" value="--concat(initcap(self.v_mode), ' Schema')"/>
+          </div>
+         	<div id="c1">
+        		<div class="tabs">
+        		  &nbsp;
+              <vm:tabCaption tab="1" tabs="3" caption="Main"/>&nbsp;
+              <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+                <vm:tabCaption tab="2" tabs="3" caption="Properties"/>&nbsp;
+              </v:template>
+              <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+                <vm:tabCaption tab="3" tabs="3" caption="Mime Types"/>
+              </v:template>
+            </div>
+        		<div class="contents">
+              <div id="1" class="tabContent" style="display: none;">
+                <table class="form-body" cellspacing="0">
+                  <tr>
+                    <th>
+                      <v:label for="f_uri" value="Schema URI"/>
+                    </th>
+                    <td>
+                      <v:text name="f_uri" value="--self.v_uri" type="--either(equ(self.v_mode, 'create'), 'plain', 'hidden')" xhtml_class="field-short"/>
+                      <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+                        <span class="text"><v:label value="--self.v_uri"/></span>
+                      </v:template>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_label" value="Label"/>
+                    </th>
+                    <td>
+                      <v:text name="f_label" value="--self.v_label" enabled="--equ(self.v_right, 'W')" xhtml_class="field-short"/>
+                      <v:template type="simple" enabled="--equ(self.v_right, 'R')">
+                        <span class="text"><v:label value="--self.v_label"/></span>
+                      </v:template>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_comment" value="Comment"/>
+                    </th>
+                    <td>
+                      <v:text name="f_comment" value="--self.v_comment" enabled="--equ(self.v_right, 'W')" xhtml_class="field-text"/>
+                      <v:template type="simple" enabled="--equ(self.v_right, 'R')">
+                        <span class="text"><v:label value="--self.v_comment"/></span>
+                      </v:template>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_catName" value="Kind"/>
+                    </th>
+                    <td>
+                      <v:text name="f_catName" value="--self.v_catName" enabled="--equ(self.v_right, 'W')" xhtml_class="field-short"/>
+                      <v:template type="simple" enabled="--equ(self.v_right, 'R')">
+                        <span class="text"><v:label value="--self.v_catName"/></span>
+                      </v:template>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_version" value="Version"/>
+                    </th>
+                    <td>
+                      <v:text name="f_version" value="--self.v_version" enabled="--equ(self.v_right, 'W')" xhtml_class="field-short"/>
+                      <v:template type="simple" enabled="--equ(self.v_right, 'R')">
+                        <span class="text"><v:label value="--self.v_version"/></span>
+                      </v:template>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+                <div id="2" class="tabContent" style="display: none;">
+                  <v:template type="simple" enabled="-- equ(self.v_command, 0)">
+                    <div style="padding: 0 0 0.5em 0;">
+                      <v:button action="simple" value="create" enabled="--equ(self.v_right, 'W')" xhtml_class="button">
+                        <v:on-post>
+                          <![CDATA[
+                            self.v_command := 1;
+                            self.v_property := '';
+                  		      self.vc_data_bind(e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </div>
+                    <v:data-set name="ds" nrows="-1" scrollable="1" sql="select p.* from ODRIVE.WA.dav_rdf_schema_properties_rs(property0)(pID varchar, pLabel varchar, pType varchar, pDefault varchar, pOrder varchar) p where property0 = :param_rdf order by pOrder, pLabel">
+                      <v:param name="param_rdf" value="self.v_schema"/>
+                      <v:template type="simple" name-to-remove="table" set-to-remove="bottom">
+                        <table class="form-list" id="properties" cellspacing="0">
+                          <tr>
+                            <th>
+                              <v:label value="Label" format="%s"/>
+                            </th>
+                            <th>
+                              <v:label value="Type" format="%s"/>
+                            </th>
+                            <th class="last" align="center" width="1%">
+                              <v:label value="Actions" format="%s"/>
+                            </th>
+                          </tr>
+                        </table>
+                      </v:template>
+                      <v:template type="repeat" name-to-remove="" set-to-remove="">
+                        <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                          <table>
+                            <tr align="center">
+                              <td colspan="4">No security data</td>
+                            </tr>
+                          </table>
+                        </v:template>
+                        <v:template type="browse" name-to-remove="table" set-to-remove="both">
+                          <table>
+                            <tr>
+                              <td nowrap="nowrap">
+                                <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+                              </td>
+                              <td nowrap="nowrap">
+                                <v:label format="%s">
+                                  <v:before-data-bind>
+                                    <![CDATA[
+                                      control.ufl_value := initcap(ODRIVE.WA.rdf_n3_base_remove((control.vc_parent as vspx_row_template).te_rowset[2]));
+                                    ]]>
+                                  </v:before-data-bind>
+                                </v:label>
+                              </td>
+                              <td nowrap="nowrap">
+                                <v:template type="simple" enabled="--equ(self.v_right, 'W')">
+                                  <v:button action="simple" value="edit" xhtml_class="button">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        self.v_command := 2;
+                                        self.v_property := ((control.vc_parent).vc_parent as vspx_row_template).te_rowset[0];
+                              		      self.vc_data_bind(e);
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <v:button action="simple" value="delete" xhtml_onClick="javascript: return deleteConfirm();" xhtml_class="button">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        self.v_schema := ODRIVE.WA.rdf_cut_property(self.v_schema, ((control.vc_parent).vc_parent as vspx_row_template).te_rowset[0]);
+                              		      self.vc_data_bind(e);
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                </v:template>
+                              </td>
+                            </tr>
+                          </table>
+                        </v:template>
+                      </v:template>
+
+                      <v:template type="simple" name-to-remove="table" set-to-remove="top">
+                        <table>
+                        </table>
+                      </v:template>
+
+                    </v:data-set>
+
+                  </v:template>
+                  <v:template type="simple" enabled="-- case when ((self.v_command = 1) or (self.v_command = 2)) then 1 else 0 end">
+                    <div class="form-header">
+                      Create/Update Property
+                    </div>
+                    <table class="form-body" cellspacing="0">
+                      <tr>
+                        <th>
+                          <v:label for="prop_id" value="Property ID"/>
+                        </th>
+                        <td>
+                          <v:text name="prop_id" xhtml_class="field-short">
+                            <v:before-data-bind>
+                              <![CDATA[
+                                control.ufl_value := ODRIVE.WA.rdf_n3_base_remove(self.v_property);
+                   			        if (self.v_command = 2)
+                                  control.tf_style := 3;
+                              ]]>
+                            </v:before-data-bind>
+                          </v:text>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <v:label for="prop_label" value="Property Label"/>
+                        </th>
+                        <td>
+                          <v:text name="prop_label" xhtml_class="field-text">
+                            <v:before-data-bind>
+                              <![CDATA[
+                                control.ufl_value := ODRIVE.WA.rdf_get_property(self.v_schema, self.v_property, 'label');
+                              ]]>
+                            </v:before-data-bind>
+                          </v:text>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <v:label for="prop_type" value="Property Type"/>
+                        </th>
+                        <td>
+                          <v:select-list name="prop_type" value="Text">
+                            <v:before-data-bind>
+                              <![CDATA[
+                                control.ufl_value := ODRIVE.WA.rdf_n3_base_remove(ODRIVE.WA.rdf_get_property(self.v_schema, self.v_property, 'range'));
+                              ]]>
+                            </v:before-data-bind>
+                            <v:item name="Boolean" value="boolean"/>
+                            <v:item name="Integer" value="integer"/>
+                            <v:item name="Float" value="float"/>
+                            <v:item name="DateTime" value="dateTime"/>
+                            <v:item name="Date" value="date"/>
+                            <v:item name="Time" value="time"/>
+                            <v:item name="String" value="string"/>
+                            <v:item name="URI" value="anyURI"/>
+                          </v:select-list>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <v:label for="prop_defaultValue" value="Default Value"/>
+                        </th>
+                        <td>
+                          <v:text name="prop_defaultValue" xhtml_class="field-short">
+                            <v:before-data-bind>
+                              <![CDATA[
+                                control.ufl_value := ODRIVE.WA.rdf_get_property(self.v_schema, self.v_property, 'defaultValue');
+                              ]]>
+                            </v:before-data-bind>
+                          </v:text>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <v:label for="prop_order" value="Display Order"/>
+                        </th>
+                        <td>
+                          <v:text name="prop_order" xhtml_class="field-short">
+                            <v:before-data-bind>
+                              <![CDATA[
+                                control.ufl_value := ODRIVE.WA.rdf_get_object_property (self.v_schema, self.v_property, 'displayMode-BrowseExpert', 'displayOrder');
+                              ]]>
+                            </v:before-data-bind>
+                          </v:text>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <v:label for="prop_access" value="Access Type"/>
+                        </th>
+                        <td>
+                          <v:select-list name="prop_access" value="Text">
+                            <v:before-data-bind>
+                              <![CDATA[
+                                control.ufl_value := ODRIVE.WA.rdf_get_object_property (self.v_schema, self.v_property, 'displayMode-BrowseExpert', 'access', 'read/write');
+                              ]]>
+                            </v:before-data-bind>
+                            <v:item name="Read Only" value="read-only"/>
+                            <v:item name="Read/Write" value="read/write"/>
+                          </v:select-list>
+                        </td>
+                      </tr>
+                    </table>
+                    <div class="form-footer">
+                      <v:button action="simple" value="OK">
+                        <v:on-post>
+                          <![CDATA[
+                            declare exit handler for SQLSTATE '*' {
+                              if (__SQL_STATE = 'TEST') {
+                                self.vc_error_message := ODRIVE.WA.test_clear(__SQL_MESSAGE);
+                             		self.vc_is_valid := 0;
+                          		  return;
+                          		}
+                              resignal;
+                            };
+
+                            self.prop_id.ufl_value := trim(self.prop_id.ufl_value);
+                            self.prop_label.ufl_value := trim(self.prop_label.ufl_value);
+                            self.prop_order.ufl_value := trim(self.prop_order.ufl_value);
+                            self.prop_defaultValue.ufl_value := trim(self.prop_defaultValue.ufl_value);
+
+                            ODRIVE.WA.test(self.prop_id.ufl_value, vector('name', 'Property ID', 'class', 'varchar', 'type', 'varchar', 'canEmpty', 0));
+                            ODRIVE.WA.test(self.prop_label.ufl_value, vector('name', 'Property Label', 'class', 'varchar', 'type', 'varchar', 'canEmpty', 0));
+                            ODRIVE.WA.test(self.prop_order.ufl_value, vector('name', 'Display Order', 'class', 'integer', 'type', 'integer', 'canEmpty', 1));
+                            ODRIVE.WA.test(self.prop_defaultValue.ufl_value, vector('name', 'Default Value', 'class', lcase(self.prop_type.ufl_value), 'type', lcase(self.prop_type.ufl_value), 'canEmpty', 1));
+
+                            self.v_property := concat(self.v_uri, self.prop_id.ufl_value);
+                            ODRIVE.WA.rdf_set_property (self.v_schema, self.v_property, 'property');
+                            ODRIVE.WA.rdf_set_property (self.v_schema, self.v_property, 'label', self.prop_label.ufl_value);
+                            ODRIVE.WA.rdf_set_property (self.v_schema, self.v_property, 'range', self.prop_type.ufl_value);
+                            ODRIVE.WA.rdf_set_property (self.v_schema, self.v_property, 'defaultValue', self.prop_defaultValue.ufl_value);
+                            ODRIVE.WA.rdf_set_object (self.v_schema, self.v_property, 'displayMode-BrowseExpert', vector('displayOrder', self.prop_order.ufl_value, 'access', self.prop_access.ufl_value));
+
+                            self.v_command := 0;
+                            self.vc_data_bind(e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                      <v:button action="simple" value="Cancel">
+                        <v:on-post>
+                          <![CDATA[
+                            self.v_command := 0;
+                            self.vc_data_bind(e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </div>
+                  </v:template>
+                </div>
+              </v:template>
+
+              <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+                <div id="3" class="tabContent" style="display: none;">
+                  <div style="padding: 0 0 0.5em 0;">
+                    <v:data-list name="dst_mime_add" sql="select '' as MT_IDENT, '' as MT_DESCRIPTION from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select MT_IDENT, MT_DESCRIPTION from WS.WS.SYS_MIME_TYPES" key-column="MT_IDENT" value-column="MT_DESCRIPTION" enabled="--equ(self.v_right, 'W')" />
+                    <v:button action="simple" value="add" enabled="--equ(self.v_right, 'W')" xhtml_class="button" >
+          				    <v:on-post>
+                        <![CDATA[
+                          if (self.dst_mime_add.ufl_value <> '')
+                            DB.DBA.DAV_REGISTER_MIME_RDF(self.dst_mime_add.ufl_value, self.v_uri);
+             				      self.dst_mime_add.ufl_value := '';
+            			        self.vc_data_bind(e);
+                 		    ]]>
+          				    </v:on-post>
+                    </v:button>
+                  </div>
+                  <v:data-set name="dst" sql="select * from WS.WS.SYS_MIME_RDFS where MR_RDF_URI = :pURI" nrows="30" scrollable="1" cursor-type="keyset" edit="1" xhtml_class="select">
+                    <v:param name="pURI" value="--self.v_uri"/>
+
+                    <v:template name="dst_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                      <table class="form-list" id="mimes" cellspacing="0">
+                        <tr>
+                          <th>
+                            <v:label value="Mime Type" format="%s"/>
+                          </th>
+                          <th class="last" align="center" width="1%">
+                            <v:label value="Actions" format="%s"/>
+                          </th>
+                        </tr>
+                      </table>
+                    </v:template>
+
+                    <v:template name="dst_repeat" type="repeat">
+
+                      <v:template name="dst_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                        <table>
+                          <tr align="center">
+                            <td colspan="2">No attached MIME types</td>
+                          </tr>
+                        </table>
+                      </v:template>
+
+                      <v:template name="dst_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                        <table>
+                          <tr>
+                            <td nowrap="nowrap">
+                              <v:label value="--(select concat(MT_DESCRIPTION, ' (.', MT_DEFAULT_EXT, ')') from WS.WS.SYS_MIME_TYPES where MT_IDENT = (control.vc_parent as vspx_row_template).te_column_value('MR_MIME_IDENT'))"/>
+                            </td>
+                            <td nowrap="nowrap">
+                              <v:template type="simple" enabled="--equ(self.v_right, 'W')">
+                                <v:button action="simple" value="deprecate" enabled="--either(equ(cast(((control.vc_parent).vc_parent as vspx_row_template).te_column_value('MR_DEPRECATED') as integer), 1), 0, 1)" xhtml_onClick="javascript: return deprecateConfirm();" xhtml_class="button">
+                        					<v:on-post>
+                                    <![CDATA[
+                                      DB.DBA.DAV_DEPRECATE_MIME_RDF((((control.vc_parent).vc_parent) as vspx_row_template).te_column_value('MR_MIME_IDENT'), self.v_uri);
+                           					  self.vc_data_bind(e);
+                                    ]]>
+                        					</v:on-post>
+                                </v:button>
+                              </v:template>
+                            </td>
+                          </tr>
+                        </table>
+                      </v:template>
+
+                    </v:template>
+
+                    <v:template name="dst_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                      <table>
+                      </table>
+                    </v:template>
+                  </v:data-set>
+                </div>
+              </v:template>
+            </div>
+          </div>
+          <div class="new-form-footer">
+            <v:button action="simple" value="--initcap(self.v_mode)" enabled="--equ(self.v_right, 'W')" xhtml_class="form-button">
+              <v:on-post>
+                <![CDATA[
+                  declare exit handler for SQLSTATE '*' {
+                    if (__SQL_STATE = 'TEST') {
+                      self.vc_error_message := ODRIVE.WA.test_clear(__SQL_MESSAGE);
+                   		self.vc_is_valid := 0;
+                		  return;
+                		}
+              		  return;
+                    resignal;
+                  };
+
+                  self.v_uri := trim(self.f_uri.ufl_value);
+                  self.v_label := trim(self.f_label.ufl_value);
+                  self.v_comment := trim(self.f_comment.ufl_value);
+                  self.v_catName := trim(self.f_catName.ufl_value);
+                  self.v_version := trim(self.f_version.ufl_value);
+
+                  if (self.v_mode = 'create')
+                    ODRIVE.WA.test(self.v_uri, vector('name', 'Schema URI', 'class', 'uri', 'type', 'varchar', 'canEmpty', 0));
+                  ODRIVE.WA.test(self.v_label, vector('name', 'Label', 'class', 'varchar', 'type', 'varchar', 'canEmpty', 0));
+                  ODRIVE.WA.test(self.v_comment, vector('name', 'Comment', 'class', 'varchar', 'type', 'varchar', 'canEmpty', 0));
+                  ODRIVE.WA.test(self.v_catName, vector('name', 'Kind', 'class', 'varchar', 'type', 'varchar', 'canEmpty', 0));
+
+                  ODRIVE.WA.rdf_schema_set_property (self.v_schema, self.v_uri, 'schema');
+                  ODRIVE.WA.rdf_schema_set_property (self.v_schema, self.v_uri, 'label', self.v_label);
+                  ODRIVE.WA.rdf_schema_set_property (self.v_schema, self.v_uri, 'comment', self.v_comment);
+                  ODRIVE.WA.rdf_schema_set_property (self.v_schema, self.v_uri, 'catName', self.v_catName);
+                  ODRIVE.WA.rdf_schema_set_property (self.v_schema, self.v_uri, 'version', self.v_version);
+                  self.v_schema := ODRIVE.WA.xml2string(xslt('http://local.virt/davxml2rdfxml', self.v_schema));
+
+                  if ((self.v_mode = 'create') or (self.v_resource = '')) {
+                    DB.DBA.DAV_MAKE_DIR ('/DAV/VAD/oDrive/schemas/new/', http_dav_uid (), http_dav_uid () + 1, '110110100R');
+                    self.v_resource := concat('http://localdav.virt/DAV/VAD/oDrive/schemas/new/', self.v_label, '.rdf');
+                  }
+                  DB.DBA.DAV_RES_UPLOAD_STRSES_INT (replace(self.v_resource, 'http://localdav.virt', ''), self.v_schema, 'text/xml', '110110100', 'dav', 'administrators', null, null, 0);
+                  {
+           		      declare exit handler for SQLSTATE '23000' {
+                      self.vc_error_message := 'Schema is already registered!';
+                    	self.vc_is_valid := 0;
+                		  return;
+           		      };
+                    DB.DBA.DAV_REGISTER_RDF_SCHEMA(self.f_uri.ufl_value, null, self.v_resource, either(equ(self.v_mode, 'create'), 'into', 'replacing'));
+                  }
+                  if (self.v_mode = 'create') {
+                    self.vc_redirect(sprintf('vmds_update.vspx?uri=%U', self.f_uri.ufl_value));
+                  } else {
+                    self.vc_redirect('vmds.vspx');
+                  }
+           	   ]]>
+           	 </v:on-post>
+            </v:button>
+            <v:button action="simple" name="btn_cancel" value="Cancel" xhtml_class="form-button">
+              <v:on-post>
+                <![CDATA[
+                  self.vc_redirect('vmds.vspx');
+         		    ]]>
+         		  </v:on-post>
+            </v:button>
+          </div>
+
+        </v:template>
+
+        <script>
+          <![CDATA[
+            coloriseTable('properties');
+            coloriseTable('mimes');
+            initDisabled();
+            initTab(3, 1);
+          ]]>
+        </script>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

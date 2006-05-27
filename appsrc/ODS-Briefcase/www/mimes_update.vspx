@@ -1,0 +1,281 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="mimes_update" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:before-data-bind>
+    <![CDATA[
+	    declare exit handler for not found { goto _end; };
+
+      if (isnull(get_keyword('f_name', self.vc_page.vc_event.ve_params))) {
+        select MT_DEFAULT_EXT,
+               MT_DESCRIPTION
+   			  into self.v_extension,
+               self.v_description
+          from WS.WS.SYS_MIME_TYPES
+  			 where MT_IDENT = self.v_id;
+
+  			self.v_mode := 'update';
+  			return;
+  		}
+
+		_end:
+      self.v_id := get_keyword('f_id', self.vc_page.vc_event.ve_params, self.v_id);
+      self.v_extension := get_keyword('f_extension', self.vc_page.vc_event.ve_params, '');
+      self.v_description := get_keyword('f_description', self.vc_page.vc_event.ve_params, '');
+			self.v_mode := get_keyword('f_mode', self.vc_page.vc_event.ve_params, 'create');
+    ]]>
+  </v:before-data-bind>
+  <vm:pagetitle>Create/Update MIME Type</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header>
+      <v:label format="%s" value="--concat(initcap(self.v_mode), ' MIME Type')"/>
+    </vm:header>
+    <vm:variables>
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+      <v:variable name="v_id" param-name="id" type="varchar" default="''"/>
+      <v:variable name="v_extension" type="varchar" default="''"/>
+      <v:variable name="v_description" type="varchar" default="''"/>
+      <v:variable name="v_mode" type="varchar" default="''"/>
+      <v:variable name="v_right" type="varchar" default="'W'"/>
+    </vm:variables>
+    <vm:pagebody>
+      <v:form name="F1" type="simple">
+        <v:before-data-bind>
+          <![CDATA[
+            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.odrive_user()), 1), 'W', 'R');
+          ]]>
+        </v:before-data-bind>
+        <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
+        <v:text name="formRight" type="hidden" value="--self.v_right"/>
+        <v:text name="f_mode" type="hidden" value="--self.v_mode"/>
+        <v:template type="simple">
+          <div class="new-form-header">
+            <v:label format="%s" value="--concat(initcap(self.v_mode), ' MIME Type')"/>
+          </div>
+         	<div id="c1">
+        		<div class="tabs">
+        		  &nbsp;
+              <vm:tabCaption tab="1" tabs="2" caption="Main"/>&nbsp;
+              <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+                <vm:tabCaption tab="2" tabs="2" caption="Schemas"/>
+              </v:template>
+            </div>
+        		<div class="contents">
+              <div id="1" class="tabContent" style="display: none;">
+                <table class="form-body" cellspacing="0">
+                  <tr>
+                    <th>
+                      <v:label for="f_id" value="MIME Type"/>
+                    </th>
+                    <td>
+                      <v:text name="f_id" value="--self.v_id" type="--either(equ(self.v_mode, 'create'), 'plain', 'hidden')" xhtml_class="field-text"/>
+                      <v:template type="simple" enabled="--equ(self.v_mode, 'create')">
+                        <input type="button" value="Select" onClick="javascript:windowShow('mimes_select.vspx?params=f_id:s1;f_extension:s2;')"/>
+                      </v:template>
+                      <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+                        <span class="text"><v:label value="--self.v_id"/></span>
+                      </v:template>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_extension" value="Resource Extension"/>
+                    </th>
+                    <td>
+                      <v:text name="f_extension" value="--self.v_extension" enabled="--equ(self.v_right, 'W')"/>
+                      <v:template type="simple" enabled="--equ(self.v_right, 'R')">
+                        <span class="text"><v:label value="--self.v_extension"/></span>
+                      </v:template>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_description" value="Description"/>
+                    </th>
+                    <td>
+                      <v:text name="f_description" value="--self.v_description" enabled="--equ(self.v_right, 'W')" xhtml_class="field-text"/>
+                      <v:template type="simple" enabled="--equ(self.v_right, 'R')">
+                        <span class="text"><v:label value="--self.v_description"/></span>
+                      </v:template>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <v:template type="simple" enabled="--equ(self.v_mode, 'update')">
+                <div id="2" class="tabContent" style="display: none;">
+                  <div style="padding: 0 0 0.5em 0;">
+                    <v:data-list name="dst_schema_add" sql="select '' as RS_URI, '' as RS_LABEL from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select RS_URI, ODRIVE.WA.rdf_schema_get_property(DAV_GET_RDF_SCHEMA_N3(RS_URI), RS_URI, 'label') as RS_LABEL from WS.WS.SYS_RDF_SCHEMAS where ODRIVE.WA.dav_rdf_notDeprecated(RS_URI)=1" key-column="RS_URI" value-column="RS_LABEL" enabled="--equ(self.v_right, 'W')"/>
+                    <v:button action="simple" value="Add" enabled="--equ(self.v_right, 'W')" xhtml_class="button" >
+                      <v:on-post>
+                        <![CDATA[
+                          if (self.dst_schema_add.ufl_value <> '')
+                            DB.DBA.DAV_REGISTER_MIME_RDF(self.v_id, self.dst_schema_add.ufl_value);
+                          self.dst_schema_add.ufl_value := '';
+                          self.dst.vc_data_bind(e);
+                      	]]>
+                      </v:on-post>
+                    </v:button>
+                  </div>
+                  <v:data-set name="dst" sql="select * from WS.WS.SYS_MIME_RDFS where MR_MIME_IDENT = :pMIME" nrows="-1" scrollable="1" cursor-type="keyset" edit="1" xhtml_class="select">
+                    <v:param name="pMIME" value="--self.v_id"/>
+
+                    <v:template name="dst_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                      <table class="form-list" id="list2" cellspacing="0">
+                        <tr>
+                          <th>
+                            <v:label value="Schema" format="%s"/>
+                          </th>
+                          <th class="last" align="center" width="1%">
+                            <v:label value="Action" format="%s"/>
+                          </th>
+                        </tr>
+                      </table>
+                    </v:template>
+
+                    <v:template name="dst_repeat" type="repeat">
+
+                      <v:template name="dst_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                        <table>
+                          <tr align="center">
+                            <td colspan="2">No attached schemas</td>
+                          </tr>
+                        </table>
+                      </v:template>
+
+                      <v:template name="dst_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                        <table>
+                          <tr>
+                            <td nowrap="nowrap">
+                              <v:label value="--ODRIVE.WA.rdf_schema_get_property(DAV_GET_RDF_SCHEMA_N3((control.vc_parent as vspx_row_template).te_column_value('MR_RDF_URI')), (control.vc_parent as vspx_row_template).te_column_value('MR_RDF_URI'), 'label')"/>
+                            </td>
+                            <td nowrap="nowrap">
+                              <v:template type="simple" enabled="--equ(self.v_right, 'W')">
+                                <v:button action="simple" value="Deprecate" xhtml_onClick="javascript: return deprecateConfirm();" xhtml_class="button" enabled="--either(equ(cast(((control.vc_parent).vc_parent as vspx_row_template).te_column_value('MR_DEPRECATED') as integer), 1), 0, 1)">
+                                  <v:after-data-bind>
+                                    <![CDATA[
+                                      control.vc_enabled := ODRIVE.WA.dav_mime_notDeprecated(self.v_id, ((control.vc_parent).vc_parent as vspx_row_template).te_column_value('MR_RDF_URI'));
+                                    ]]>
+                                  </v:after-data-bind>
+                        					<v:on-post>
+                                    <![CDATA[
+                                      DB.DBA.DAV_DEPRECATE_MIME_RDF(self.v_id, ((control.vc_parent).vc_parent as vspx_row_template).te_column_value('MR_RDF_URI'));
+                           					  self.dst.vc_data_bind(e);
+                                    ]]>
+                        					</v:on-post>
+                                </v:button>
+                              </v:template>
+                            </td>
+                          </tr>
+                        </table>
+                      </v:template>
+
+                    </v:template>
+
+                    <v:template type="simple" name-to-remove="table" set-to-remove="top">
+                      <table>
+                      </table>
+                    </v:template>
+
+                  </v:data-set>
+                </div>
+              </v:template>
+            </div>
+          </div>
+
+          <div class="new-form-footer">
+            <v:button action="simple" value="--initcap(self.v_mode)" xhtml_class="form-button" enabled="--equ(self.v_right, 'W')">
+              <v:on-post>
+                <![CDATA[
+              		if (not self.vc_is_valid)
+              		  return;
+
+                  self.v_id := trim(self.f_id.ufl_value);
+                  self.v_extension := trim(self.f_extension.ufl_value);
+                  self.v_description := trim(self.f_description.ufl_value);
+
+                  if (strchr(self.v_extension, '.') = 0)
+                    self.v_extension := right(self.v_extension, length(self.v_extension) - 1);
+
+                  if (is_empty_or_null(self.v_id) or (self.v_id = '*')) {
+                    self.vc_error_message := 'Please, enter correct ''MIME Type'' value';
+                 		self.vc_is_valid := 0;
+              		  return;
+                  }
+
+                  if (is_empty_or_null(self.v_extension)) {
+                    self.vc_error_message := 'Please, enter the ''Resource extension'' value';
+                 		self.vc_is_valid := 0;
+              		  return;
+                  }
+                  if (strchr(self.v_extension, '*') is not null)
+                  {
+                    self.vc_error_message := 'Please, enter correct file extenstion (example: txt or doc)';
+                    self.vc_is_valid := 0;
+                    return;
+                  }
+
+                  if (is_empty_or_null(self.v_description)) {
+                    self.vc_error_message := 'Please, enter the ''Description'' value';
+                 		self.vc_is_valid := 0;
+              		  return;
+                  }
+
+                  {
+           		      declare exit handler for sqlstate '*' {
+                      self.vc_error_message := 'MIME type is already registered';
+                   		self.vc_is_valid := 0;
+                		  return;
+           		      };
+                    DB.DBA.DAV_REGISTER_MIME_TYPE(self.v_id, self.v_description, self.v_extension, null, either(equ(self.v_mode, 'create'), 'into', 'replacing'));
+                  };
+
+                  if (self.v_mode = 'create') {
+                    self.vc_redirect(sprintf('mimes_update.vspx?id=%s', self.v_id));
+                    return;
+                  }
+                  self.vc_redirect('mimes.vspx');
+           	   ]]>
+           	 </v:on-post>
+            </v:button>
+            <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:on-post>
+                <![CDATA[
+                  self.vc_redirect('mimes.vspx');
+         		    ]]>
+         		  </v:on-post>
+            </v:button>
+          </div>
+
+        </v:template>
+        <script>
+          <![CDATA[
+            coloriseTable('list2');
+            initDisabled();
+            initTab(2, 1);
+          ]]>
+        </script>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

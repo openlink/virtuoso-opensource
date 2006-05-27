@@ -1,0 +1,330 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="home" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:on-init>
+    <![CDATA[
+      declare N, retValue, dav_owner, dav_group integer;
+      declare dav_detType, dav_mime, dav_name, dav_fullPath, dav_perms, msg, _p varchar;
+      declare dav_filename, dav_file any;
+      declare itemList any;
+
+      msg := '';
+      declare exit handler for SQLSTATE '*' {
+        if (__SQL_STATE = 'TEST') {
+          self.vc_error_message := concat(msg, ODRIVE.WA.test_clear(__SQL_MESSAGE));
+       		self.vc_is_valid := 0;
+    		  return;
+    		}
+        resignal;
+      };
+
+      if ((self.dav_type = 'R') and (self.command = 10) and (self.command_mode = 10) and (e.ve_button is null)) {
+	      self.odrive_login.vc_data_bind(e);
+	      self.odrive_login.vc_data_bound := 1;
+        if (ODRIVE.WA.DAV_GET (self.dav_item, 'autoversion') <> get_keyword ('dav_autoversion', self.vc_page.vc_event.ve_params, '')) {
+          retValue := ODRIVE.WA.DAV_SET(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'autoversion', get_keyword ('dav_autoversion', self.vc_page.vc_event.ve_params, ''));
+          if (ODRIVE.WA.DAV_ERROR(retValue))
+            signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
+        }
+      }
+  	  if (e.ve_button is not null) {
+  	    if (e.ve_button.vc_name = 'Create') {
+  	      self.odrive_login.vc_data_bind(e);
+  	      self.odrive_login.vc_data_bound := 1;
+
+          if (self.command_mode = 0) {
+            msg := 'Can not create folder. ';
+          } else if (self.command_mode = 1) {
+            msg := 'Can not create dynamic folder. ';
+          } else if (self.command_mode = 5) {
+            msg := 'Can not upload file. ';
+          } else if (self.command_mode = 10) {
+            msg := 'Can not update resource. ';
+          }
+
+          if (self.command_mode = 10) {
+            self.dav_id := ODRIVE.WA.DAV_GET(self.dav_item, 'id');
+            if (ODRIVE.WA.DAV_ERROR(self.dav_id))
+              signal('TEST', 'Folder/File could not be found!<>');
+          }
+
+          dav_name := trim(get_keyword('dav_name', self.vc_page.vc_event.ve_params));
+          if (is_empty_or_null(dav_name))
+            signal('TEST', 'Folder/File name can not be empty!<>');
+
+          if (strchr(dav_name, '/') is not null or strchr(dav_name, '\\') is not null)
+            signal('TEST', 'The folder/file name should not contain slash or back-slash symbols!<>');
+
+          -- validate metadata
+          if ((self.command_mode = 10) and ODRIVE.WA.dav_rdf_has_metadata(self.dav_path)) {
+            declare param, uri, property, value any;
+            declare delim integer;
+
+            N := 0;
+            while (N < length(self.vc_page.vc_event.ve_params)) {
+              if (self.vc_page.vc_event.ve_params[N] like 'vmd_edit_property%') {
+                param := replace(self.vc_page.vc_event.ve_params[N], 'vmd_edit_property$0', '');
+                delim := strstr (param, '$0');
+                uri := subseq (param, 0, delim);
+                property := subseq (param, delim+2);
+                value := self.vc_page.vc_event.ve_params[N+1];
+                if (not ODRIVE.WA.rdf_validate_property(uri, property, value))
+                  signal('TEST', 'Bad metadata value!<>');
+              }
+              N := N + 4;
+            }
+          }
+
+          dav_fullPath := WS.WS.FIXPATH(concat(ODRIVE.WA.odrive_real_path(self.dir_path), dav_name));
+          if (self.dav_type = 'C') {
+            dav_fullPath := concat(dav_fullPath, '/');
+            dav_detType := get_keyword('dav_det', self.vc_page.vc_event.ve_params);
+            if (isnull(ODRIVE.WA.DAV_GET(self.dav_item, 'fullPath')) or (ODRIVE.WA.DAV_GET(self.dav_item, 'fullPath') <> dav_fullPath)) {
+              retValue := DB.DBA.DAV_SEARCH_ID(dav_fullPath, self.dav_type);
+              if (not ODRIVE.WA.DAV_ERROR(retValue))
+                signal('TEST', 'Folder/File with such name already exists!<>');
+            }
+
+            if ((dav_detType = 'ResFilter') or (dav_detType = 'CatFilter')) {
+              declare search_path varchar;
+
+              search_path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'path', '/DAV/'));
+              if (search_path between dav_fullPath and (dav_fullPath || '\255\255\255\255'))
+                signal('TEST', sprintf('Search path (%s) can not contains in folder full path (%s)!<>', search_path, dav_fullPath));
+            }
+
+            if (dav_detType = 'PropFilter') {
+              declare search_path varchar;
+
+              search_path := ODRIVE.WA.odrive_real_path(get_keyword('dav_PropFilter_SearchPath', self.vc_page.vc_event.ve_params, '/DAV/'));
+              retValue := DB.DBA.DAV_SEARCH_ID(search_path, 'C');
+              if (ODRIVE.WA.DAV_ERROR(retValue))
+                signal('TEST', 'Search path does not exists!<>');
+            }
+          }
+
+          if (self.command_mode = 5) {
+            if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '0') {
+              dav_filename := get_keyword('filename', get_keyword_ucase('attr-dav_file', self.vc_page.vc_event.ve_params));
+              if ((dav_filename like 'http://%') or (dav_filename like 'ftp://%')) {
+                dav_file := http_get(dav_filename);
+              } else {
+                declare pos integer;
+
+                pos := position ('dav_file', params);
+                dav_file := aref_set_0 (params, pos);
+              }
+            } else if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '1') {
+              dav_filename := get_keyword('dav_url', self.vc_page.vc_event.ve_params, '');
+              dav_file := http_get(dav_filename);
+            }
+          }
+          if (self.dav_type = 'R') {
+            dav_mime := trim(get_keyword('dav_mime', self.vc_page.vc_event.ve_params, ''));
+            if (not (dav_mime like '%/%' or dav_mime like 'link:%'))
+              dav_mime := http_mime_type(dav_name);
+          }
+
+          dav_owner := ODRIVE.WA.odrive_user_id(trim(get_keyword('dav_owner', self.vc_page.vc_event.ve_params, '')));
+          if (dav_owner < 0)
+            dav_owner := null;
+
+          dav_group := ODRIVE.WA.odrive_user_id(trim(get_keyword('dav_group', self.vc_page.vc_event.ve_params, '')));
+          if (dav_group < 0)
+            dav_group := null;
+          if (not ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(self.vc_page.vc_event.ve_params)))
+            if ((ODRIVE.WA.DAV_GET(self.dav_item, 'groupID') <> dav_group) or isnull(dav_group))
+              if (not ODRIVE.WA.odrive_group_own(trim(get_keyword('dav_group', self.vc_page.vc_event.ve_params, ''))))
+                signal('TEST', 'Only own groups or ''dba'' group are allowed!<>');
+
+          dav_perms := '';
+          for (N := 0; N < 9; N := N + 1) {
+            _p := get_keyword(sprintf('dav_perm%i', N), self.vc_page.vc_event.ve_params, '');
+            if (_p <> '')
+              dav_perms := concat(dav_perms, '1');
+            else
+              dav_perms := concat(dav_perms, '0');
+          }
+          if (dav_perms = '000000000') {
+            declare own_id integer;
+
+            own_id := coalesce(dav_owner, (select min(U_ID) from WS.WS.SYS_DAV_USER));
+            dav_perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = own_id);
+          }
+          dav_perms := concat (dav_perms,
+                               get_keyword ('dav_index', self.vc_page.vc_event.ve_params, 'N'),
+                               get_keyword ('dav_metagrab', self.vc_page.vc_event.ve_params, 'N')
+                              );
+
+          -- Update
+          if (self.command_mode = 10) {
+            if ((self.dav_type = 'R') and (ODRIVE.WA.DAV_GET(self.dav_item, 'mimeType') <> dav_mime))
+              ODRIVE.WA.DAV_SET(self.dav_path, 'mimeType', dav_mime);
+
+            if (ODRIVE.WA.DAV_GET(self.dav_item, 'permissions') <> dav_perms)
+              ODRIVE.WA.DAV_SET(self.dav_path, 'permissions', dav_perms);
+
+            if ((ODRIVE.WA.DAV_GET(self.dav_item, 'ownerID') <> dav_owner) or isnull(dav_owner))
+              ODRIVE.WA.DAV_SET(self.dav_path, 'ownerID', dav_owner);
+
+            if ((ODRIVE.WA.DAV_GET(self.dav_item, 'groupID') <> dav_group) or isnull(dav_group))
+              ODRIVE.WA.DAV_SET(self.dav_path, 'groupID', dav_group);
+
+            if (ODRIVE.WA.DAV_GET(self.dav_item, 'name') <> dav_name)
+              ODRIVE.WA.DAV_SET(self.dav_path, 'name', dav_name);
+
+            -- ACL
+            if (ODRIVE.WA.DAV_GET(self.dav_item, 'acl') <> self.dav_acl)
+              dbg_obj_print(ODRIVE.WA.DAV_SET(self.dav_path, 'acl', self.dav_acl));
+
+            -- Tags
+            if (self.dav_type = 'R') {
+              ODRIVE.WA.DAV_SET(self.dav_path, 'privatetags', self.dav_tags);
+              ODRIVE.WA.DAV_SET(self.dav_path, 'publictags', self.dav_tags2);
+            }
+          }
+
+          -- Folder
+          if (self.dav_type = 'C') {
+            if (self.command_mode in (0, 1)) {
+              retValue := ODRIVE.WA.DAV_COL_CREATE(dav_fullPath, dav_perms, dav_owner, dav_group);
+              if (ODRIVE.WA.DAV_ERROR(retValue))
+                signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
+              self.dav_path := dav_fullPath;
+            } else {
+              if ('' <> get_keyword ('dav_recursive', self.vc_page.vc_event.ve_params, '')) {
+                itemList := ODRIVE.WA.DAV_DIR_LIST(self.dav_path, 1);
+                for (N := 0; N < length(itemList); N := N + 1)
+                  if (itemList[N][1] = 'R') {
+                    ODRIVE.WA.DAV_SET(itemList[N][0], 'permissions', dav_perms);
+                    ODRIVE.WA.DAV_SET(itemList[N][0], 'ownerID', dav_owner);
+                    ODRIVE.WA.DAV_SET(itemList[N][0], 'groupID', dav_group);
+                  }
+              }
+            }
+
+            if (self.dav_detType = 'oMail') {
+              ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:oMail-DomainId');
+              ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:oMail-UserName');
+              ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:oMail-FolderName');
+              ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:oMail-NameFormat');
+            }
+            if (self.dav_detType = 'PropFilter') {
+              ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:PropFilter-SearchPath');
+              ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:PropFilter-PropName');
+              ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:PropFilter-PropValue');
+            }
+            if (self.dav_detType = 'ResFilter') {
+              ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:Filter-Params');
+            }
+            if (self.dav_detType = 'CatFilter') {
+              ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:Filter-Params');
+            }
+
+            if (dav_detType = 'ResFilter') {
+              self.dc_prepare();
+              ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:Filter-Params', self.search_dc);
+              retValue := ODRIVE.WA.ResFilter_CONFIGURE(self.dav_path, self.search_dc);
+              if (ODRIVE.WA.DAV_ERROR(retValue))
+                signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
+            } else if (dav_detType = 'CatFilter') {
+              self.dc_prepare();
+              ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:Filter-Params', self.search_dc);
+              retValue := ODRIVE.WA.CatFilter_CONFIGURE(self.dav_path, self.search_dc);
+              if (ODRIVE.WA.DAV_ERROR(retValue))
+                signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
+            } else {
+              retValue := ODRIVE.WA.DAV_SET(self.dav_path, 'detType', either(equ(dav_detType, ''), null, dav_detType));
+              if (dav_detType = 'oMail') {
+                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-DomainId', get_keyword('dav_oMail_DomainId', self.vc_page.vc_event.ve_params));
+                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-UserName', ODRIVE.WA.odrive_user());
+                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-FolderName', get_keyword('dav_oMail_FolderName', self.vc_page.vc_event.ve_params));
+                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-NameFormat', get_keyword('dav_oMail_NameFormat', self.vc_page.vc_event.ve_params));
+              }
+              if (dav_detType = 'PropFilter') {
+                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:PropFilter-SearchPath', ODRIVE.WA.odrive_real_path(get_keyword('dav_PropFilter_SearchPath', self.vc_page.vc_event.ve_params, '/DAV/')));
+                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:PropFilter-PropName', get_keyword('dav_PropFilter_PropName', self.vc_page.vc_event.ve_params));
+                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:PropFilter-PropValue' , get_keyword('dav_PropFilter_PropValue', self.vc_page.vc_event.ve_params));
+              }
+            }
+          }
+
+          -- File
+          if (self.dav_type = 'R') {
+            if (self.command_mode = 5) {
+              retValue := DB.DBA.DAV_SEARCH_ID(dav_fullPath, self.dav_type);
+              if (not ODRIVE.WA.DAV_ERROR(retValue)) {
+                self.dav_vector := vector(dav_fullPath, dav_file, dav_mime, dav_perms, dav_owner, dav_group);
+                self.command := 14;
+                self.vc_data_bind(e);
+                return;
+              }
+
+              retValue := ODRIVE.WA.DAV_RES_UPLOAD(dav_fullPath, dav_file, dav_mime, dav_perms, dav_owner, dav_group);
+              if (ODRIVE.WA.DAV_ERROR(retValue))
+                signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
+            } else {
+              if (ODRIVE.WA.dav_rdf_has_metadata(self.dav_path)) {
+                declare param, property any;
+                declare delim integer;
+
+                for (N := 0; N < length(self.vc_page.vc_event.ve_params); N := N + 4)
+                  if (self.vc_page.vc_event.ve_params[N] like 'vmd_edit_property%') {
+                    param := replace(self.vc_page.vc_event.ve_params[N], 'vmd_edit_property$0', '');
+                    delim := strstr (param, '$0');
+                    property := subseq (param, delim+2);
+                    ODRIVE.WA.dav_rdf_set_property(self.dav_metadata, property, self.vc_page.vc_event.ve_params[N+1]);
+                  }
+                ODRIVE.WA.dav_rdf_set_metadata (self.dav_path, self.dav_metadata);
+              }
+            }
+          }
+          -- Auto versioning
+          if ((self.dav_type = 'C') or (self.command_mode <> 10)) {
+            if (ODRIVE.WA.DAV_GET_AUTOVERSION (dav_fullPath) <> get_keyword ('dav_autoversion', self.vc_page.vc_event.ve_params, '')) {
+              retValue := ODRIVE.WA.DAV_SET(dav_fullPath, 'autoversion', get_keyword ('dav_autoversion', self.vc_page.vc_event.ve_params, ''));
+              if (ODRIVE.WA.DAV_ERROR(retValue))
+                signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
+              if ((self.dav_type = 'R') and (ODRIVE.WA.DAV_GET_AUTOVERSION (dav_fullPath) = ''))
+                ODRIVE.WA.DAV_REMOVE_VERSION_CONTROL (dav_fullPath);
+            }
+          }
+
+          self.command_pop(null);
+          self.command_acl := 0;
+          self.vc_data_bind(e);
+  		  }
+  	  }
+    ]]>
+  </v:on-init>
+  <vm:pagetitle>oDrive Home</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header>
+      oDrive Home
+    </vm:header>
+    <vm:pagebody>
+      <vm:dav_browser />
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

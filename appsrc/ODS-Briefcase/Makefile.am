@@ -19,4 +19,41 @@
 #  
 #  
 
-SUBDIRS = ODS-Framework ODS-Blog ODS-Briefcase
+TOP=@TOP@
+
+nodist_vad_DATA = ods_briefcase_dav.vad
+
+CLEANFILES = \
+	make_briefcase_vad.log \
+	make_briefcase_vad.xml \
+	ods_briefcase_dav.vad \
+	virtuoso.db \
+	virtuoso.ini \
+	virtuoso.lck \
+	virtuoso.log \
+	virtuoso.pxa \
+	virtuoso.tdb \
+	virtuoso.trx
+
+ods_briefcase_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
+
+EXTRA_DIST = \
+	make_vad.sh \
+	new/*.sql \
+	schemas/*.rdf \
+	www/*.vsp \
+	www/*.vspx \
+	www/css/*.css \
+	www/image/*.gif \
+	www/image/*.jpg \
+	www/image/*.png \
+	www/image/dav/*.gif \
+	www/image/dav/*.png \
+	www/js/*.js \
+	www/template/*.vspx \
+	www/template/*.xsl \
+	xslt/*.xsl

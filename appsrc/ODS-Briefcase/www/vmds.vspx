@@ -1,0 +1,194 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="vmds" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:method name="label_name" arglist="in uri any">
+    <![CDATA[
+     if ((self.v_right <> 'W') or not ODRIVE.WA.dav_rdf_notDeprecated(uri))
+       return 'View';
+     return 'Edit';
+    ]]>
+  </v:method>
+  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
+    <![CDATA[
+      declare altStr, directionStr, imageStr varchar;
+
+      if (self.vmds_order = columnName and self.vmds_direction = 'desc') {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
+      } else if (self.vmds_order = columnName and self.vmds_direction = 'asc') {
+        directionStr := 'Descending';
+        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
+      } else {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;&nbsp;';
+      }
+      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
+      http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
+    ]]>
+  </v:method>
+  <v:method name="sortChange" arglist="in columnName varchar">
+    <![CDATA[
+      if (columnName = '')
+        return;
+      self.ds.vc_reset();
+      if (self.vmds_order = columnName) {
+        self.vmds_direction := either(equ(self.vmds_direction, 'asc'), 'desc', 'asc');
+      } else {
+        self.vmds_direction := 'asc';
+      }
+      self.vmds_order := columnName;
+    ]]>
+  </v:method>
+  <vm:pagetitle>Schemas</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header>
+      Schemas
+    </vm:header>
+    <vm:variables>
+      <v:variable name="v_right" type="varchar" default="'W'"/>
+      <v:variable name="vmds_order" persist="1" type="varchar" default="'RS_URI'" />
+      <v:variable name="vmds_direction" persist="1" type="varchar" default="'asc'" />
+    </vm:variables>
+    <vm:pagebody>
+      <v:form name="F1" type="simple" method="POST">
+        <v:before-data-bind>
+          <![CDATA[
+            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.odrive_user()), 1), 'W', 'R');
+          ]]>
+        </v:before-data-bind>
+      	<v:data-source name="dsrc" expression-type="sql" nrows="--ODRIVE.WA.odrive_settings_rows(self.vc_page.vc_event.ve_params)" initial-offset="0">
+          <v:before-data-bind>
+            <![CDATA[
+              self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
+              control.ds_sql := 'select RS_URI, ODRIVE.WA.rdf_schema_get_property(RS_PRECOMPILED, RS_URI, \'label\') RS_LABEL, RS_CATNAME, ODRIVE.WA.rdf_schema_get_property(RS_PRECOMPILED, RS_URI, \'version\') RS_VERSION from WS.WS.SYS_RDF_SCHEMAS';
+              control.ds_sql := concat(control.ds_sql, ' order by ', self.vmds_order, ' ', self.vmds_direction);
+            ]]>
+          </v:before-data-bind>
+        </v:data-source>
+        <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
+          <div style="padding: 0 0 0.5em 0;">
+            <v:button action="simple" value="Create" enabled="--equ(self.v_right, 'W')" xhtml_class="button">
+              <v:on-post>
+                <![CDATA[
+                  self.vc_redirect('vmds_update.vspx');
+                ]]>
+              </v:on-post>
+            </v:button>
+          </div>
+
+          <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+            <table id="vmds" class="grid" cellspacing="0">
+              <thead class="sortHeader">
+                <tr>
+                  <th>
+                    <?vsp self.sortColumn('Schema URI', 'RS_URI'); ?>
+                  </th>
+                  <th>
+                    <?vsp self.sortColumn('Label', 'RS_LABEL'); ?>
+                  </th>
+                  <th>
+                    <?vsp self.sortColumn('Kind', 'RS_CATNAME'); ?>
+                  </th>
+                  <th>
+                    <?vsp self.sortColumn('Version', 'RS_VERSION'); ?>
+                  </th>
+                  <th class="last" align="center" width="1%">
+                    <v:label value="Actions" format="%s"/>
+                  </th>
+                </tr>
+              </thead>
+            </table>
+          </v:template>
+
+          <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+            <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+              <table>
+                <tr align="center">
+                  <td colspan="4">No Schemas</td>
+                </tr>
+              </table>
+            </v:template>
+
+            <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+              <table>
+                <tr>
+                  <td nowrap="nowrap">
+                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('RS_URI')" format="%s"/>
+                  </td>
+                  <td nowrap="nowrap">
+                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('RS_LABEL')" format="%s"/>
+                  </td>
+                  <td nowrap="nowrap">
+                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('RS_CATNAME')" format="%s"/>
+                  </td>
+                  <td nowrap="nowrap">
+                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('RS_VERSION')" format="%s"/>
+                  </td>
+                  <td nowrap="nowrap">
+                    <v:button value="--self.label_name((control.vc_parent as vspx_row_template).te_column_value('RS_URI'))" action="simple" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.vc_redirect(sprintf('vmds_update.vspx?uri=%U', (control.vc_parent as vspx_row_template).te_column_value('RS_URI')));
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button value="Deprecate" action="simple" enabled="--equ(self.v_right, 'W')" xhtml_onClick="javascript: return deprecateConfirm();" xhtml_class="button">
+                      <v:after-data-bind>
+                        <![CDATA[
+                          control.vc_enabled := ODRIVE.WA.dav_rdf_notDeprecated((control.vc_parent as vspx_row_template).te_column_value('RS_URI'));
+                        ]]>
+                      </v:after-data-bind>
+                      <v:on-post>
+                        <![CDATA[
+                  		    DB.DBA.DAV_DEPRECATE_RDF_SCHEMA((control.vc_parent as vspx_row_template).te_column_value('RS_URI'));
+                  		    self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+
+          </v:template>
+
+          <v:template type="simple" name-to-remove="table" set-to-remove="top">
+            <tr align="center">
+              <td colspan="5">
+                <vm:ds-navigation data-set="ds"/>
+              </td>
+            </tr>
+          </v:template>
+
+        </v:data-set>
+        <script>
+          <![CDATA[
+            coloriseTable('vmds');
+          ]]>
+        </script>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

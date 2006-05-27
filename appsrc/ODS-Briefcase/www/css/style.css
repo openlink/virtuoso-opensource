@@ -1,0 +1,774 @@
+body
+{
+  padding-right: 0px;
+  padding-bottom: 0px;
+  padding-left: 0px;
+  padding-top: 3px;
+  margin-right: 0px;
+  margin-bottom: 0px;
+  margin-left: 0px;
+  margin-top: 0px;
+  font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
+  font-size: 75%;
+}
+
+a
+{
+  font-family: Verdana, Arial, Sans-Serif;
+  text-decoration: none;
+}
+
+a:active
+{
+  text-decoration: none;
+}
+
+a:visited
+{
+  text-decoration: none;
+}
+
+a:hover
+{
+  text-decoration: underline;
+}
+
+#MTB
+{
+  width: 100%;
+  left: 0px;
+  right: 0px;
+}
+
+#LC
+{
+  font-size: 1em;
+  top: 4px;
+  width: 15%;
+  padding-bottom: 5px;
+  vertical-align: top;
+}
+
+#LCT
+{
+  width: 100%;
+}
+
+#RC
+{
+  margin-left: 5px;
+  vertical-align: top;
+  width: 85%;
+}
+
+#RCT
+{
+  width: 100%;
+}
+
+#RCT_head
+{
+  margin-top: 8px;
+  margin-left: 0px;
+}
+
+
+#RCT_body
+{
+}
+
+/* Left side within MT */
+
+.page_head
+{
+  width: 100%;
+  background-color: #ffd200;
+}
+
+.login_form_container
+{
+  padding: 5pt;
+  border: 1px solid #7F94A5;
+  width: 100%;
+}
+
+.left_container
+{
+  border: 1px solid #7F94A5;
+	margin: 0.5em;
+  width: auto;
+}
+
+ul.left_navigation
+{
+  font-size: 0.9em;
+	padding: 5px;
+	margin: 3px;
+	list-style-type: none;
+}
+
+ul.left_navigation li
+{
+  margin: 0;
+  padding: 2px;
+}
+
+.navigator_info
+{
+  font-size: smaller;
+}
+
+.footer {
+	background-color: #99B3C5;
+	text-align: center;
+	vertical-align: middle;
+	color: #FFFFFF;
+	padding-top: 0.25em;
+	height: 1.5em;
+}
+
+.footer a:link {
+	text-decoration: none;
+	color: #FFFFFF;
+}
+
+.footer a:hover {
+	color: #FFFFFF;
+	text-decoration: underline;
+}
+
+.copyright
+{
+  font-size: 75%;
+  text-align: right;
+  padding-right: 5px;
+  border-top: 1px solid silver;
+}
+
+.system_info
+{
+  font-size: 75%;
+}
+
+.page_title
+{
+  font-size: 12pt;
+  font-weight: bold;
+}
+
+.main_page_area
+{
+  background-color: white;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.page_section_head
+{
+  font-size: 12pt;
+  font-weight: bold;
+}
+
+table.sub_page_area
+{
+  width: 100%;
+}
+
+/* Label */
+
+.error
+{
+  color: red;
+  font-weight: bold;
+  margin: 0px 0px 3px 0px;
+  background-color: white;
+  border: 1pt solid red;
+  text-align: center;
+}
+
+.attention_marker
+{
+  color: #ff0033;
+}
+
+.subpage_header_area
+{
+  margin: 3px 0px 3px 0px;
+  border: 1pt solid silver;
+}
+
+.page_header_area
+{
+  border: 1pt solid silver;
+  position: relative;
+  bottom:15pt;
+}
+
+/* The main navigation bar */
+.nav_bar
+{
+  display: block;
+  padding: 0;
+  margin: 0;
+  line-height: 1.9em;
+  font-size: 0.9em;
+}
+
+.nav_bar td.sel
+{
+}
+
+.nav_bar td
+{
+  background: #ddd;
+}
+
+.nav_bar td.filler
+{
+  background: #b0cde4;
+  width: 100%;
+}
+
+.nav_bar a
+{
+  display: block;
+  color: #444;
+  text-decoration: none;
+  font-weight: bold;
+  background: #99b3c5;
+  background-image: url(../image/stl_blu2_grad.gif);
+  background-repeat: repeat-x;
+  margin: 0;
+  padding: 0.25em 1em;
+  border-left: 1px solid #fff;
+  border-top: 1px solid #fff;
+  border-right: 1px solid #aaa;
+  white-space: nowrap;
+}
+
+.nav_bar a.les
+{
+  background: #b0cde4;
+  background-image: url(../image/sel_nav_grad2.gif);
+}
+
+.nav_bar a.les:hover
+{
+  color: black;
+  background: #99b3c5;
+}
+
+.nav_bar a:hover,
+.nav_bar a:active,
+.nav_bar a.sel:link,
+.nav_bar a.sel:visited
+{
+  background: #b0cde4;
+  background-image: url(../image/sel_nav_grad2.gif);
+  color: #000000;
+}
+
+.nav_seperator {
+  left: 0px;
+  top: 0px;
+  width: 100%;
+  background-color: #b0cde4;
+  line-height: 2.6em;
+  color: #b0cde4;
+}
+
+/*====== Lists ======*/
+table#list
+{
+  width: 100%;
+  border: solid #7F94A5;
+  border-width: 1px 1px 2px 1px;
+}
+
+table#list th
+{
+  font-size: 1em;
+  padding: 2px;
+  border: solid #7F94A5;
+  background-color: #b0cde4;
+  border-width: 0px 1px 1px 0px;
+  font-weight: normal;
+}
+
+/*====== rows ======*/
+.td_border
+{
+  border: solid #7F94A5;
+  border-width: 1px 0px 1px 0px;
+}
+
+.td_row0
+{
+  background-color: #EFEFEF;
+}
+
+.td_row1
+{
+}
+
+/*
+  Fields
+*/
+input:focus, select:focus
+{
+  background: #E3E8EF;
+}
+
+.field-text
+{
+  width: 40em;
+}
+
+.field-short
+{
+  width: 20em;
+}
+
+.field-max
+{
+  width: 98%;
+}
+
+/*
+  Forms
+*/
+.from-button
+{
+  margin: .8em 0 .8em 0;
+  font-size: .8em;
+	font-family: verdana,sans-serif;
+	color: #7F94A5;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+input.button {
+  margin: .2em 0 .1em 0;
+  font-size: .8em;
+	font-family: verdana, sans-serif;
+  color: #ffffff;
+  font-weight: bold;
+  border: solid 1px;
+  border-color: #7F94A5;
+  background: #99b3c5;
+}
+
+.button2 {
+  font-size: .8em;
+	font-family: verdana, sans-serif;
+  color: #ffffff;
+  font-weight: bold;
+  padding: 0.1em 1em 0.1em 1em ;
+  border: solid 1px;
+  border-color: #7F94A5;
+  background: #99b3c5;
+}
+
+.form-header
+{
+  font-size: 1.1em;
+  font-weight: bold;
+  margin: 0 0 6px 0;
+  padding: 0px 0px 3px 4px;
+  border: solid #7F94A5;
+  border-width: 1px 1px 1px 10px;
+  background-color: #b0cde4;
+}
+
+.form-footer
+{
+  margin: 6px 0px;
+  text-align: center;
+  height: 20px;
+  padding-top: 0px;
+  padding-bottom: 2px;
+  border: solid 1px #7F94A5;
+  background-color: #b0cde4;
+}
+
+.form-info
+{
+  color: red;
+  font-weight: bold;
+  background-color: #EFEFEF;
+  border: solid #000000;
+  border-width: 1px 1px 0px 1px;
+  border-color: #556B80 #556B80 #556B80 #556B80;
+  padding: 2px 10px 2px 10px;
+  position: relative;
+  top: -1px;
+  z-index: 100;
+}
+
+.form-body
+{
+  width: 100%;
+  font-size: 1em;
+}
+
+.form-body td
+{
+  padding: 2px;
+}
+
+.form-body th
+{
+  text-align: right;
+  white-space: nowrap;
+  padding: 4px;
+}
+
+.form-body td.text
+{
+  font-style: italic;
+  font-weight: bold;
+  padding: 2px;
+}
+
+.td_label
+{
+  text-align: left;
+  width: 45%;
+}
+
+/*====== Form lists ======*/
+.form-list
+{
+  width: 100%;
+  border: solid #7F94A5;
+  border-width: 1px 1px 1px 1px;
+  background-color: #fff;
+}
+
+.form-list th
+{
+  text-align: center;
+  font-size: 1em;
+  padding: 4px;
+  border: solid #7F94A5;
+  background-color: #b0cde4;
+  border-width: 0px 1px 1px 0px;
+  font-weight: bold;
+}
+
+th.last
+{
+  border-width: 0px 0px 1px 0px;
+}
+.form-list td
+{
+  border: solid #7F94A5;
+  border-width: 0px 0px 0px 0px;
+  padding: 2px 4px 2px 4px;
+}
+
+.tab_page
+{
+  font-size: 10pt;
+  border-top: solid 1px #7F94A5;
+  border-left: solid 1px #7F94A5;
+  border-right: solid 1px #7F94A5;
+  border-bottom: solid 1px #7F94A5;
+  background-color: white;
+  padding-left: 1px;
+  padding-right: 1px;
+  color: black;
+  width: 100%;
+  height: 100%;
+}
+
+.form-confirm
+{
+  width: 100%;
+  color: red;
+  font-size: 1.2em;
+  font-weight: bold;
+  text-align: center;
+  line-height: 50px;
+  border: solid #7F94A5;
+  border-width: 1px 1px 2px 1px;
+  background-color: #EFEFEF;
+}
+
+/* td names label subject data... */
+input.header {
+  margin: .2em 0 .1em 0;
+  font-size: 11px;
+  font-weight: bold;
+  border: none;
+  background: #b0cde4;
+}
+
+/* tabs */
+div.c1 {
+  width: 100%;
+  padding-top: 0.5em;
+}
+
+div.tabs {
+	top: 0px;
+  font-size: 100%;
+  padding: 0px 0px 4px 0px;
+}
+
+div.contents {
+ 	background-color: #EFEFEF;
+ 	padding: 0.5em;
+ 	border: 1px solid #556B80;
+}
+
+.tabLabel {
+  float: left;
+  display: inline;
+}
+
+div.tabContent {
+  font-size: 1em;
+  padding: 6px;
+}
+
+a.tab {
+  color: #000000;
+  font-weight: bold;
+  background-color: #b0cde4;
+  border: 1px solid #000000;
+  border-bottom-width: 0px;
+  border-color: #556B80 #556B80 #556B80 #556B80;
+  padding: 2px 10px 2px 10px;
+  position: relative;
+  text-decoration: none;
+  top: 3px;
+  z-index: 100;
+}
+
+a.tab.activeTab {
+  background-color: #EFEFEF;
+  border-color: #556B80 #556B80 #556B80 #556B80;
+}
+
+table.box {
+  width: 100%;
+  color: black;
+  background-color: white;
+  margin: 0px;
+  margin-bottom: 0.5em;
+  padding: 0px;
+}
+
+div.boxHeader {
+  background-color: #EFEFEF;
+  margin: 0 0 0.5em 0;
+  padding: 2px;
+  border: 1px solid #7F94A5;
+  vertical-align: middle;
+}
+
+input.nolink {
+  text-align: left;
+  margin: 0px;
+  padding: 0px;
+  font-size: 1em;
+  font-weight: bold;
+  color: #000;
+  border: 0px;
+  background-color: inherit;
+}
+
+/*====== Toolbars ======*/
+div.toolbar {
+}
+
+img.toolbar
+{
+	display: block;
+	float: left;
+  margin-top: 10px;
+  background-color: #7F94A5;
+}
+
+a.toolbar
+{
+	display: block;
+	float: left;
+	width: 70px;
+	padding: 10px 0 10px 0;
+	color: #4F56A6;
+	font-weight: bold;
+	text-decoration: none;
+	text-align: center;
+}
+
+span.toolbar
+{
+	display: block;
+	float: left;
+	width: 70px;
+	padding: 10px 0 10px 0;
+	color: #4F56A6;
+	font-weight: bold;
+	text-decoration: none;
+	text-align: center;
+}
+
+span.toolbarLabel
+{
+  font-size: 0.8em;
+}
+
+/*====== Grid ======*/
+.grid
+{
+  width: 100%;
+  border: solid #7F94A5;
+  border-width: 1px 1px 2px 1px;
+}
+
+thead.sortHeader tr
+{
+  background-image: url(../image/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+
+/* make the TH elements pretty */
+thead.sortHeader th
+{
+  font-size: 1em;
+  font-weight: bold;
+  text-align: left;
+  padding: 3px 2px 3px 3px;
+  border: solid #7F94A5;
+  border-width: 0px 1px 1px 0px;
+}
+
+thead.sortHeader th.checkbox
+{
+  text-align: center;
+  padding: 0;
+}
+
+thead.sortHeader th.last
+{
+  border-width: 0px 0px 1px 0px;
+}
+
+/* make the A elements pretty. makes for nice clickable headers                */
+thead.sortHeader a, thead.sortHeader a:link, thead.sortHeader a:visited
+{
+  color: #000;
+  font-weight: bold;
+	display: block;
+	text-decoration: none;
+	width: 100%
+}
+
+/* make the A elements pretty. makes for nice clickable headers                */
+/* WARNING: swapping the background on hover may cause problems in WinIE 6.x   */
+thead.sortHeader a:hover
+{
+  color: #000;
+  font-weight: bold;
+	display: block;
+	text-decoration: underline;
+	width: 100%
+}
+
+table.grid td
+{
+  padding: 2px 4px 2px 4px;
+}
+
+td.td_image
+{
+  width: 20px;
+}
+
+td.td_number
+{
+  text-align: right;
+}
+
+td.td_action
+{
+  white-space: nowrap;
+}
+
+/*====== New forms ======*/
+.new-form-header
+{
+  font-size: 1.1em;
+  font-weight: bold;
+  margin: 0 0 6px 0;
+  padding: 0px 0px 2px 4px;
+  border: solid #7F94A5;
+  border-width: 1px 1px 1px 10px;
+  background-color: #b0cde4;
+}
+
+.new-form-footer
+{
+  font-size: 1.1em;
+  font-weight: bold;
+  margin: 6px 0 0 0;
+  text-align: center;
+  border: solid 1px #7F94A5;
+  background-color: #b0cde4;
+}
+
+.new-form-body
+{
+  font-size: 1em;
+  padding: 6px;
+  border: solid #7F94A5;
+  border-width: 1px 1px 1px 1px;
+  background-color: #EFEFEF;
+}
+
+.no-border
+{
+  border-width: 0;
+}
+
+.new-form-body table
+{
+  width: 100%;
+  background-color: #EFEFEF;
+}
+
+.new-form-body table td
+{
+  padding: 2px;
+}
+
+.new-form-body table td.text
+{
+  font-style: italic;
+  font-weight: bold;
+  padding: 2px;
+}
+
+.new-form-body table th
+{
+  text-align: right;
+  white-space: nowrap;
+  padding: 4px;
+}
+
+.text
+{
+  font-style: italic;
+  font-weight: bold;
+  padding: 2px;
+}
+
+.helpText
+{
+  font-size: 0.9em;
+  font-style: italic;
+  font-weight: bold;
+}

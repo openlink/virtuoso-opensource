@@ -1,0 +1,51 @@
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:owl ="http://www.w3.org/2002/07/owl#"
+         xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
+	 xmlns:rss="http://www.openlinksw.com/schemas/xbrl#">
+  <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/xbrl#">
+    <rdfs:label>Extesible Business Reporting Language (XBRL)</rdfs:label>
+    <rdfs:comment>Extesible Business Reporting Language is a language for the electronic communication of business and financial data which is set to revolutionise business reporting around the world.</rdfs:comment>
+    <virtrdf:catName>Business Reports (XBRL)</virtrdf:catName>
+    <virtrdf:version>1.00</virtrdf:version>
+  </owl:Ontology>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/xbrl#identifier">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Identifier</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/xbrl#startDate">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Start Date</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/xbrl#endDate">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>End Date</virtrdf:label>
+  </rdf:Property>
+</rdf:RDF>
+

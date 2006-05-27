@@ -1,0 +1,1211 @@
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#" xmlns:rss="http://www.python.org/topics/xml/xbel/">
+  <owl:Ontology rdf:about="http://www.apple.com/metadata#">
+    <rdfs:label>Spotlight Objects</rdfs:label>
+    <rdfs:comment>Spotlight creates searcheable &apos;Metadata Objects&apos; for various data files used by Apple (MacOS X) programs.</rdfs:comment>
+    <virtrdf:catName>Spotlight Objects</virtrdf:catName>
+    <virtrdf:version>1.00</virtrdf:version>
+  </owl:Ontology>
+  <!-- Common Metadata Attribute Keys -->
+  <!-- Metadata attribute keys that are common to many file types.-->
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAttributeChangeDate">
+    <rdfs:comment>Date and time of the last change made to a metadata attribute.</rdfs:comment>
+    <virtrdf:label>Metadata Modification Time</virtrdf:label>
+    <virtrdf:catName>Metadata Modification Time</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAudiences">
+    <rdfs:comment>The audience for which the file is intended. The audience may be determined by the creator or the publisher or by a third party.</rdfs:comment>
+    <virtrdf:label>Target Audience</virtrdf:label>
+    <virtrdf:catName>Target Audience</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAuthors">
+    <rdfs:comment>The author, or authors, of the contents of the file. The order of the authors is preserved, but does not represent the main author or relative importance of the authors.</rdfs:comment>
+    <virtrdf:label>Author</virtrdf:label>
+    <virtrdf:catName>Author</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemCity">
+    <rdfs:comment>Identifies city of origin according to guidelines established by the provider. For example, "New York", "Cupertino", or "Toronto".</rdfs:comment>
+    <virtrdf:label>City of Origin</virtrdf:label>
+    <virtrdf:catName>City of Origin</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemComment">
+    <rdfs:comment>A comment related to the file. This comment is not displayed by the Finder.</rdfs:comment>
+    <virtrdf:label>Comment</virtrdf:label>
+    <virtrdf:catName>Comment</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemContactKeywords">
+    <rdfs:comment>A list of contacts that are associated with this document, not including the authors.</rdfs:comment>
+    <virtrdf:label>Associated Contact</virtrdf:label>
+    <virtrdf:catName>Associated Contact</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemContentCreationDate">
+    <rdfs:comment>The date and time that the content was created.</rdfs:comment>
+    <virtrdf:label>Content Creation Time</virtrdf:label>
+    <virtrdf:catName>Content Creation Time</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemContentModificationDate">
+    <rdfs:comment>Date and time when the content of this item was modified.</rdfs:comment>
+    <virtrdf:label>Content Modification Time</virtrdf:label>
+    <virtrdf:catName>Content Modification Time</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemContentType">
+    <rdfs:comment>Uniform Type Identifier of the file. For example, a jpeg image file will have a value of public.jpeg. The value of this attribute is set by the Spotlight importer. Changes to this value are lost when the file attributes are next imported.<p>This attribute is marked as nosearch. You must specify this attribute key explicitly in a query in order for its contents to be searched.</p>
+    </rdfs:comment>
+    <virtrdf:label>Content Type (MacOS)</virtrdf:label>
+    <virtrdf:catName>Content Type (MacOS)</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemContentTypeTree">
+    <rdfs:comment>Uniform Type Identifier hierarchy of the file. For example, a jpeg image file will return an array containing вЂњpublic.jpegвЂќ, вЂњpublic.imageвЂќ, and вЂњpublic.dataвЂќ. The value of this attribute is set by the Spotlight importer. Changes to this value are lost when the file attributes are next imported.<p>This attribute is marked as nosearch. You must specify this attribute key explicitly in a query in order for its contents to be searched.</p>
+    </rdfs:comment>
+    <virtrdf:label>Content Supertype (MacOS)</virtrdf:label>
+    <virtrdf:catName>Content Supertype (MacOS)</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemContributors">
+    <rdfs:comment>Entities responsible for making contributions to the content of the resource. Examples of a contributor include a person, an organization or a service.</rdfs:comment>
+    <virtrdf:label>Contributor</virtrdf:label>
+    <virtrdf:catName>Contributor</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemCopyright">
+    <rdfs:comment>Copyright owner of the file contents.</rdfs:comment>
+    <virtrdf:label>Copyright</virtrdf:label>
+    <virtrdf:catName>Copyright</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemCountry">
+    <rdfs:comment>The full, publishable name of the country or primary location where the intellectual property of the item was created, according to guidelines of the provider.</rdfs:comment>
+    <virtrdf:label>Country of Origin</virtrdf:label>
+    <virtrdf:catName>Country of Origin</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemCoverage">
+    <rdfs:comment>Extent or scope of the content of the resource. Coverage will typically include spatial location (a place name or geographic co-ordinates), temporal period (a period label, date, or date range) or jurisdiction (such as a named administrative entity). Recommended best practice is to select a value from a controlled vocabulary, and that, where appropriate, named places or time periods be used in preference to numeric identifiers such as sets of co-ordinates or date ranges.</rdfs:comment>
+    <virtrdf:label>Coverage</virtrdf:label>
+    <virtrdf:catName>Coverage</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemCreator">
+    <rdfs:comment>Name of the application used to create the document content. For example, "Pages" or "Keynote".</rdfs:comment>
+    <virtrdf:label>Creator Application</virtrdf:label>
+    <virtrdf:catName>Creator Application</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemDescription">
+    <rdfs:comment>Description of the kind of item this file represents.</rdfs:comment>
+    <virtrdf:label>Description</virtrdf:label>
+    <virtrdf:catName>Description</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemDisplayName">
+    <rdfs:comment>Localized version of the file name.    This is the localized version of the LaunchServices call <code>LSCopyDisplayNameForURL()</code>/<code>LSCopyDisplayNameForRef()</code>.</rdfs:comment>
+    <virtrdf:label>Localized Filename</virtrdf:label>
+    <virtrdf:catName>Localized Filename</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemDueDate">
+    <rdfs:comment>Date this item is due.</rdfs:comment>
+    <virtrdf:label>Due Date</virtrdf:label>
+    <virtrdf:catName>Due Date</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemDurationSeconds">
+    <rdfs:comment>The duration, in seconds, of the content of the item. A value of 10.5 represents media that is 10 and 1/2 seconds long.</rdfs:comment>
+    <virtrdf:label>Content Duration</virtrdf:label>
+    <virtrdf:catName>Content Duration</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>seconds</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemEmailAddresses">
+    <rdfs:comment>Email addresses related to this item.</rdfs:comment>
+    <virtrdf:label>Associated e-mail</virtrdf:label>
+    <virtrdf:catName>Associated e-mail</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemEncodingApplications">
+    <rdfs:comment>Applications used to convert the original content into it's current form.  For example, a PDF file might have an encoding application set to "Distiller".</rdfs:comment>
+    <virtrdf:label>Encoding Application</virtrdf:label>
+    <virtrdf:catName>Encoding Application</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemFinderComment">
+    <rdfs:comment>Finder comments for this item.</rdfs:comment>
+    <virtrdf:label>Finder Comment</virtrdf:label>
+    <virtrdf:catName>Finder Comment</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemFonts">
+    <rdfs:comment>Fonts used by this item. You should store the font's full name, the postscript name, or the font family name, based on the available information.</rdfs:comment>
+    <virtrdf:label>Used Font</virtrdf:label>
+    <virtrdf:catName>Used Font</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemHeadline">
+    <rdfs:comment>Publishable entry providing a synopsis of the contents of the item. For example, "Apple Introduces the iPod Photo".</rdfs:comment>
+    <virtrdf:label>Headline</virtrdf:label>
+    <virtrdf:catName>Headline</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemIdentifier">
+    <rdfs:comment>Formal identifier used to reference the resource within a given context. For example, the Message-ID of a mail message.</rdfs:comment>
+    <virtrdf:label>Formal ID</virtrdf:label>
+    <virtrdf:catName>Formal ID</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemInstantMessageAddresses">
+    <rdfs:comment>Instant message addresses related to this item.</rdfs:comment>
+    <virtrdf:label>Associated IM Address</virtrdf:label>
+    <virtrdf:catName>Associated IM Address</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemInstructions">
+    <rdfs:comment>Instructions concerning the use of the item, such as embargoes and warnings. For example, "Second of four stories".</rdfs:comment>
+    <virtrdf:label>Usage Instructions</virtrdf:label>
+    <virtrdf:catName>Usage Instructions</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemKeywords">
+    <rdfs:comment>Keywords associated with this file. For example, "Birthday", "Important", etc.</rdfs:comment>
+    <virtrdf:label>Keyword</virtrdf:label>
+    <virtrdf:catName>Keyword</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemKind">
+    <rdfs:comment>Description of the kind of item this file represents.</rdfs:comment>
+    <virtrdf:label>Kind</virtrdf:label>
+    <virtrdf:catName>Kind</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemLanguages">
+    <rdfs:comment>Indicates the languages used by the item. The recommended best practice for the values of this attribute are defined by RFC 3066.</rdfs:comment>
+    <virtrdf:label>Used Language</virtrdf:label>
+    <virtrdf:catName>Used Language</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemLastUsedDate">
+    <rdfs:comment>Date and time that the file was last used. This value is updated automatically by LaunchServices everytime a file is opened by double clicking, or by asking LaunchServices to open a file.</rdfs:comment>
+    <virtrdf:label>Last Access Time</virtrdf:label>
+    <virtrdf:catName>Last Access Time</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemNumberOfPages">
+    <rdfs:comment>Number of pages in the document.</rdfs:comment>
+    <virtrdf:label>Page Count</virtrdf:label>
+    <virtrdf:catName>Page Count</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemOrganizations">
+    <rdfs:comment>Companies or organizations that created the document.</rdfs:comment>
+    <virtrdf:label>Author Company</virtrdf:label>
+    <virtrdf:catName>Author Company</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemPageHeight">
+    <rdfs:comment>Height of the document page, in points (72 points per inch). For PDF files this indicates the height of the first page only.</rdfs:comment>
+    <virtrdf:label>Page Height</virtrdf:label>
+    <virtrdf:catName>Page Height</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>points</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemPageWidth">
+    <rdfs:comment>Width of the document page, in points (72 points per inch). For PDF files this indicates the width of the first page only.</rdfs:comment>
+    <virtrdf:label>Page Width</virtrdf:label>
+    <virtrdf:catName>Page Width</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>points</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemPhoneNumbers">
+    <rdfs:comment>Phone numbers related to this item.</rdfs:comment>
+    <virtrdf:label>Associated Phone</virtrdf:label>
+    <virtrdf:catName>Associated Phone</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemProjects">
+    <rdfs:comment>List of projects related to this item. For example, if you were working on a movie, all of the files could be marked as belonging to the project вЂњMy MovieвЂќ.</rdfs:comment>
+    <virtrdf:label>Associated Project</virtrdf:label>
+    <virtrdf:catName>Associated Project</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemPublishers">
+    <rdfs:comment>Publishers of the item. For example, a person, an organization, or a service.</rdfs:comment>
+    <virtrdf:label>Publisher</virtrdf:label>
+    <virtrdf:catName>Publisher</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemRecipients">
+    <rdfs:comment>Recipients of this item.</rdfs:comment>
+    <virtrdf:label>Recipient</virtrdf:label>
+    <virtrdf:catName>Recipient</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemRights">
+    <rdfs:comment>Provides a link to information about rights held on the document.  Contains a rights management statement for the document, or reference a service providing such information. Rights information often encompasses Intellectual Property Rights (IPR), copyright, and various property rights. If this attribute is absent, no assumptions can be made about the status of these and other rights with respect to the document.</rdfs:comment>
+    <virtrdf:label>Rights Statement</virtrdf:label>
+    <virtrdf:catName>Rights Statement</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemSecurityMethod">
+    <rdfs:comment>Encryption method used to make the item secure. PDF files return "None" or "Password Encrypted".</rdfs:comment>
+    <virtrdf:label>Encryption Method</virtrdf:label>
+    <virtrdf:catName>Encryption Method</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemStarRating">
+    <rdfs:comment>User rating of this item. For example, the user rating (number of stars) of an iTunes track.</rdfs:comment>
+    <virtrdf:label>Star Rating</virtrdf:label>
+    <virtrdf:catName>Star Rating</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemStateOrProvince">
+    <rdfs:comment>Province or state of origin according to guidelines established by the provider. For example, "CA", "Ontario", or "Sussex".</rdfs:comment>
+    <virtrdf:label>Province of Origin</virtrdf:label>
+    <virtrdf:catName>Province of Origin</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemTextContent">
+    <rdfs:comment>Contains a text representation of the content of the document. Data in multiple fields should be combined using a whitespace character as a separator. An application's Spotlight importer provides the content of this attribute.<p>Applications can create queries using this attribute, but are not able to read the value of this attribute directly.</p>
+    </rdfs:comment>
+    <virtrdf:label>Text Content</virtrdf:label>
+    <virtrdf:catName>Text Content</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemTitle">
+    <rdfs:comment>Title of the item. For example, this could be the title of a document, the name of an song, or the subject of an email message.</rdfs:comment>
+    <virtrdf:label>Title</virtrdf:label>
+    <virtrdf:catName>Title</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemVersion">
+    <rdfs:comment>Version number of the item.</rdfs:comment>
+    <virtrdf:label>Version Number</virtrdf:label>
+    <virtrdf:catName>Version Number</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemWhereFroms">
+    <rdfs:comment>Describes where the item was obtained from. For example, a downloaded file may refer to the URL, files received by email may indicate the senderвЂ™s email address, message subject, etc.</rdfs:comment>
+    <virtrdf:label>Source Location</virtrdf:label>
+    <virtrdf:catName>Source Location</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <!-- Image Metadata Attribute Keys -->
+  <!-- Metadata attribute keys that are common to image files.-->
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAcquisitionMake">
+    <rdfs:comment>Manufacturer of the device used to acquire the document contents.</rdfs:comment>
+    <virtrdf:label>Input Device Manufacturer</virtrdf:label>
+    <virtrdf:catName>Input Device Manufacturer</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAcquisitionModel">
+    <rdfs:comment>Model of the device used to acquire the document contents.</rdfs:comment>
+    <virtrdf:label>Input Device Model</virtrdf:label>
+    <virtrdf:catName>Input Device Model</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAlbum">
+    <rdfs:comment>Title for the collection containing this item. This is analogous to a record label or photo album.</rdfs:comment>
+    <virtrdf:label>Title of Collection</virtrdf:label>
+    <virtrdf:catName>Title of Collection</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAperture">
+    <rdfs:comment>Aperture setting used to aqure the document contents. This unit is the APEX value.</rdfs:comment>
+    <virtrdf:label>Cam APEX</virtrdf:label>
+    <virtrdf:catName>Cam APEX</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemBitsPerSample">
+    <rdfs:comment>Number of bits per sample. For example, the bit depth of an image (8-bit, 16-bit etc...) or the bit depth per audio sample of uncompressed audio data (8, 16, 24, 32, 64, etc..).</rdfs:comment>
+    <virtrdf:label>Bit Depth</virtrdf:label>
+    <virtrdf:catName>Bit Depth</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemColorSpace">
+    <rdfs:comment>Color space model used by the document contents. For example, вЂњRGBвЂќ, вЂњCMYKвЂќ, вЂњYUVвЂќ, or вЂњYCbCrвЂќ.</rdfs:comment>
+    <virtrdf:label>Color Space Model</virtrdf:label>
+    <virtrdf:catName>Color Space Model</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemEXIFVersion">
+    <rdfs:comment>Version of the EXIF header used to generate the metadata.</rdfs:comment>
+    <virtrdf:label>Cam EXIF Version</virtrdf:label>
+    <virtrdf:catName>Cam EXIF Version</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemExposureMode">
+    <rdfs:comment>Exposure mode used to acquire the document contents.</rdfs:comment>
+    <virtrdf:label>Cam Exposure Mode</virtrdf:label>
+    <virtrdf:catName>Cam Exposure Mode</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:expectedValues>0 (auto exposure),  1 (manual exposure),  2 (auto bracket)</virtrdf:expectedValues>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemExposureProgram">
+    <rdfs:comment>Type of exposure program used by the camera to acquire the document contents. Possible values include: Manual, Normal, Aperture priority, etc.</rdfs:comment>
+    <virtrdf:label>Cam Exposure Program</virtrdf:label>
+    <virtrdf:catName>Cam Exposure Program</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemExposureTimeSeconds">
+    <rdfs:comment>Exposure time used to capture the document contents.</rdfs:comment>
+    <virtrdf:label>Cam Exposure Time</virtrdf:label>
+    <virtrdf:catName>Cam Exposure Time</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>seconds</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemExposureTimeString">
+    <rdfs:comment>Time when the document contents were captured. Typically this corresponds to when a photograph is exposed.</rdfs:comment>
+    <virtrdf:label>Capture Time</virtrdf:label>
+    <virtrdf:catName>Capture Time</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemFNumber">
+    <rdfs:comment>Diameter of the aperture relative to the effective focal length of the lens.</rdfs:comment>
+    <virtrdf:label>Cam Relative Aperture</virtrdf:label>
+    <virtrdf:catName>Cam Relative Aperture</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemFlashOnOff">
+    <rdfs:comment>Whether a camera flash was used to capture the document contents.</rdfs:comment>
+    <virtrdf:label>Cam Flash</virtrdf:label>
+    <virtrdf:catName>Cam Flash</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemFocalLength">
+    <rdfs:comment>Actual focal length of the lens, in millimeters.</rdfs:comment>
+    <virtrdf:label>Cam Focal Length</virtrdf:label>
+    <virtrdf:catName>Cam Focal Length</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>millimeters</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemHasAlphaChannel">
+    <rdfs:comment>Whether the image has an alpha channel.</rdfs:comment>
+    <virtrdf:label>Image Has Alpha</virtrdf:label>
+    <virtrdf:catName>Image Has Alpha</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemISOSpeed">
+    <rdfs:comment>ISO speed used to acquire the document contents. For example, 100, 200, 400, etc.</rdfs:comment>
+    <virtrdf:label>Cam ISO Speed</virtrdf:label>
+    <virtrdf:catName>Cam ISO Speed</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>ISO Speed</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemLayerNames">
+    <rdfs:comment>Names of the layers in the file.</rdfs:comment>
+    <virtrdf:label>Image Layer Name</virtrdf:label>
+    <virtrdf:catName>Image Layer Name</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemMaxAperture">
+    <rdfs:comment>Smallest F number of the lens in APEX value units, usually in the range of 00.00 to 99.99.</rdfs:comment>
+    <virtrdf:label>Cam Max APEX</virtrdf:label>
+    <virtrdf:catName>Cam Max APEX</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemMeteringMode">
+    <rdfs:comment>Metering mode used to acquire the image.</rdfs:comment>
+    <virtrdf:label>Cam Metering Mode</virtrdf:label>
+    <virtrdf:catName>Cam Metering Mode</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:expectedValues>Unknown,  Average,  CenterWeightedAverage,  Spot,  MultiSpot,  Pattern,  Partial</virtrdf:expectedValues>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemOrientation">
+    <rdfs:comment>Orientation of the document contents.</rdfs:comment>
+    <virtrdf:label>Orientation</virtrdf:label>
+    <virtrdf:catName>Orientation</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:expectedValues>0 (landscape),  1 (portrait)</virtrdf:expectedValues>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemPixelHeight">
+    <rdfs:comment>Height, in pixels, of the contents. For example, the image height or the video frame height.</rdfs:comment>
+    <virtrdf:label>Pixel Height</virtrdf:label>
+    <virtrdf:catName>Pixel Height</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>pixels</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemPixelWidth">
+    <rdfs:comment>Width, in pixels, of the contents. For example, the image width or the video frame width.</rdfs:comment>
+    <virtrdf:label>Pixel Width</virtrdf:label>
+    <virtrdf:catName>Pixel Width</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>pixels</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemProfileName">
+    <rdfs:comment>Name of the color profile used by the document contents.</rdfs:comment>
+    <virtrdf:label>Color Profile</virtrdf:label>
+    <virtrdf:catName>Color Profile</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemRedEyeOnOff">
+    <rdfs:comment>Whether red-eye reduction was used to take the picture.</rdfs:comment>
+    <virtrdf:label>Cam Red-Eye Reduction</virtrdf:label>
+    <virtrdf:catName>Cam Red-Eye Reduction</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:expectedValues>0 (no red-eye reduction mode or unknown),  1 (red-eye reduction used)</virtrdf:expectedValues>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemResolutionHeightDPI">
+    <rdfs:comment>Resolution height, in DPI, of the item.</rdfs:comment>
+    <virtrdf:label>Resolution Height DPI</virtrdf:label>
+    <virtrdf:catName>Resolution Height DPI</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>dots per inch (DPI)</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemResolutionWidthDPI">
+    <rdfs:comment>Resolution width, in DPI, of the item.</rdfs:comment>
+    <virtrdf:label>Resolution Width DPI</virtrdf:label>
+    <virtrdf:catName>Resolution Width DPI</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>dots per inch (DPI)</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemWhiteBalance">
+    <rdfs:comment>White balance setting of the camera when the picture was taken.</rdfs:comment>
+    <virtrdf:label>Cam White Balance Mode</virtrdf:label>
+    <virtrdf:catName>Cam White Balance Mode</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:expectedValues>0 (auto white balance),  1 (manual)</virtrdf:expectedValues>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <!-- Video Metadata Attribute Keys -->
+  <!-- Metadata attribute keys that are common to video files.-->
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAudioBitRate">
+    <rdfs:comment>Bit rate of the audio in the media.</rdfs:comment>
+    <virtrdf:label>Bit Rate</virtrdf:label>
+    <virtrdf:catName>Bit Rate</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemCodecs">
+    <rdfs:comment>Codecs used to encode/decode the media.</rdfs:comment>
+    <virtrdf:label>Codec</virtrdf:label>
+    <virtrdf:catName>Codec</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemDeliveryType">
+    <rdfs:comment>Method used to deliver streaming media.</rdfs:comment>
+    <virtrdf:label>Stream Delivery Type</virtrdf:label>
+    <virtrdf:catName>Stream Delivery Type</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:expectedValues>"Fast Start",  "RTSP"</virtrdf:expectedValues>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemMediaTypes">
+    <rdfs:comment>Media types present in the content.</rdfs:comment>
+    <virtrdf:label>Media Type</virtrdf:label>
+    <virtrdf:catName>Media Type</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemStreamable">
+    <rdfs:comment>Whether the content is prepared for streaming.</rdfs:comment>
+    <virtrdf:label>Content Is Streamable</virtrdf:label>
+    <virtrdf:catName>Content Is Streamable</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemTotalBitRate">
+    <rdfs:comment>Total bit rate, audio and video combined, of the media.</rdfs:comment>
+    <virtrdf:label>Bit Rate Combined</virtrdf:label>
+    <virtrdf:catName>Bit Rate Combined</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemVideoBitRate">
+    <rdfs:comment>Bit rate of the video in the media.</rdfs:comment>
+    <virtrdf:label>Bit Rate of Video</virtrdf:label>
+    <virtrdf:catName>Bit Rate of Video</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <!-- Audio Metadata Attribute Keys -->
+  <!-- Metadata attribute keys that describe an audio file. -->
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAppleLoopDescriptors">
+    <rdfs:comment>Specifies multiple pieces of descriptive information about a loop. Besides genre and instrument, files can contain descriptive information that help users in refining searches.</rdfs:comment>
+    <virtrdf:label>Loop Descriptor</virtrdf:label>
+    <virtrdf:catName>Loop Descriptor</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAppleLoopsKeyFilterType">
+    <rdfs:comment>Specifies key filtering information about a loop. Loops are matched against projects that often differ in a major or minor key. To assist users in identifying loops that will "fit" with their compositions, loops can be tagged with one of the following key filters: "AnyKey", "Minor", "Major", "NeitherKey", or "BothKeys". "AnyKey" means that it fits with anything (whether in a major key, minor key or neither). "Minor" fits with compositions in a minor key. "NeitherKey" doesn't work well with compositions that are in major or minor key. "BothKeys" means it fits with compositions that are in major or minor key.</rdfs:comment>
+    <virtrdf:label>Loop Key Filter Type</virtrdf:label>
+    <virtrdf:catName>Loop Key Filter Type</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:expectedValues>"AnyKey", "Minor", "Major" , "NeitherKey", "BothKeys"</virtrdf:expectedValues>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAppleLoopsLoopMode">
+    <rdfs:comment>Specifies how a file should be played. Tagged files can either be loops or non-loops (e.g., a cymbal crash). "Looping" indicates if the file should be treated as a loop. "Non-looping" indicates the file should not be treated as a loop.</rdfs:comment>
+    <virtrdf:label>Loop Mode</virtrdf:label>
+    <virtrdf:catName>Loop Mode</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:expectedValues>"Looping", "Non-looping"</virtrdf:expectedValues>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAppleLoopsRootKey">
+    <rdfs:comment>Specifies the loop's original key. The key is the root note or tonic for the loop, and does not include the scale type</rdfs:comment>
+    <virtrdf:label>Loop Root Key</virtrdf:label>
+    <virtrdf:catName>Loop Root Key</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:expectedValues>"C", "C#/Db", "D", "D#/Eb", "E", "F", "F#/Gb", "G", "G#/Ab", "A", "A#/Bb", "B", "NoKey"</virtrdf:expectedValues>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAudioChannelCount">
+    <rdfs:comment>Number of channels in the audio data contained in the file. This integer value only represents the number of discreet channels of audio data found in the file. It does not indicate any configuration of the data in regards to a user's speaker setup.</rdfs:comment>
+    <virtrdf:label>Audio Channel Count</virtrdf:label>
+    <virtrdf:catName>Audio Channel Count</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAudioEncodingApplication">
+    <rdfs:comment>Name of the application that encoded the audio of the document.</rdfs:comment>
+    <virtrdf:label>Audio Encoding Application</virtrdf:label>
+    <virtrdf:catName>Audio Encoding Application</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAudioSampleRate">
+    <rdfs:comment>Sample rate of the item's audio data. The sample rate is a float value representing hz (audio_frames/second). For example: 44100.0, 22254.54.</rdfs:comment>
+    <virtrdf:label>Audio Sample Rate</virtrdf:label>
+    <virtrdf:catName>Audio Sample Rate</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>hz (audio_frames/second)</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemAudioTrackNumber">
+    <rdfs:comment>Track number of a song or composition when it is part of an album.</rdfs:comment>
+    <virtrdf:label>Audio Track Number</virtrdf:label>
+    <virtrdf:catName>Audio Track Number</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemComposer">
+    <rdfs:comment>Composer of the song in the audio file.</rdfs:comment>
+    <virtrdf:label>Composer</virtrdf:label>
+    <virtrdf:catName>Composer</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemIsGeneralMIDISequence">
+    <rdfs:comment>Whether the MIDI sequence contained in the file is set up for use with a General MIDI device.</rdfs:comment>
+    <virtrdf:label>MIDI Is General</virtrdf:label>
+    <virtrdf:catName>MIDI Is General</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemKeySignature">
+    <rdfs:comment>Musical key of the song in the audio file. For example: "C", "Dm", "F#m", "Bb".</rdfs:comment>
+    <virtrdf:label>Musical Key</virtrdf:label>
+    <virtrdf:catName>Musical Key</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemLyricist">
+    <rdfs:comment>Lyricist of the song in the audio file.</rdfs:comment>
+    <virtrdf:label>Lyricist</virtrdf:label>
+    <virtrdf:catName>Lyricist</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemMusicalGenre">
+    <rdfs:comment>Musical genre of the song or composition contained in the audio file. For example: "Jazz", "Pop", "Rock", "Classical".</rdfs:comment>
+    <virtrdf:label>Musical Genre</virtrdf:label>
+    <virtrdf:catName>Musical Genre</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemMusicalInstrumentCategory">
+    <rdfs:comment>Specifies the category of an instrument. Files should have an instrument associated with them ("Other Instrument" is provided as a catch-all). For some categories, such as "Keyboards", there are instrument names which provide a more detailed instrument definition, for example "Piano" or "Organ".</rdfs:comment>
+    <virtrdf:label>Musical Instrument Category</virtrdf:label>
+    <virtrdf:catName>Musical Instrument Category</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemMusicalInstrumentName">
+    <rdfs:comment>Specifies the name of instrument relative to the instrument category. Files can have an instrument name associated with them if they have certain instrument categories. For example, the "Percussion" category has multiple instruments, including "Conga" and "Bongo".</rdfs:comment>
+    <virtrdf:label>Musical Instrument Name</virtrdf:label>
+    <virtrdf:catName>Musical Instrument Name</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemRecordingDate">
+    <rdfs:comment>Recording date of the song or composition. This is in contrast to <code>kMDItemContentCreationDate</code>which, could indicate the creation date of an edited or "mastered" version of the original art.</rdfs:comment>
+    <virtrdf:label>Recording Date</virtrdf:label>
+    <virtrdf:catName>Recording Date</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemRecordingYear">
+    <rdfs:comment>Year the item was recorded. For example: 1964, 1995, 1997, or 2003.</rdfs:comment>
+    <virtrdf:label>Recording Year</virtrdf:label>
+    <virtrdf:catName>Recording Year</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemTempo">
+    <rdfs:comment>Tempo of the music in the audio file. A floating point value.</rdfs:comment>
+    <virtrdf:label>Tempo</virtrdf:label>
+    <virtrdf:catName>Tempo</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>Beats per Minute (BPM)</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.apple.com/metadata#kMDItemTimeSignature">
+    <rdfs:comment>Time signature of the musical composition contained in the audio/MIDI file. For example: "4/4", "7/8".</rdfs:comment>
+    <virtrdf:label>Musical Time Signature</virtrdf:label>
+    <virtrdf:catName>Musical Time Signature</virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </rdf:Property>
+  <!-- File System Metadata Attribute Keys -->
+  <!-- Metadata attribute keys that describe the file system attributes for a file. These attributes are available for files on any mounted volume.-->
+  <!-- These properties can not be extracted by Virtuoso 4.0, therefore they are disabled -->
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSContentChangeDate">
+    <rdfs:comment>Date the file contents last changed.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSCreationDate">
+    <rdfs:comment>Date that the contents of the file were created.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSInvisible">
+    <rdfs:comment>Whether the file is invisible.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSIsExtensionHidden">
+    <rdfs:comment>Whether the file extension of the file is hidden.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSLabel">
+    <rdfs:comment>Index of the Finder label of the file. Possible values are 0 through 7.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:expectedValues>0 through 7</virtrdf:expectedValues>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSName">
+    <rdfs:comment>File name of the item.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSNodeCount">
+    <rdfs:comment>Number of files in a directory.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSOwnerGroupID">
+    <rdfs:comment>Group ID of the owner of the file.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSOwnerUserID">
+    <rdfs:comment>User ID of the owner of the file.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSSize">
+    <rdfs:comment>Size, in bytes, of the file on disk.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:units>bytes</virtrdf:units>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemPath">
+    <rdfs:comment>Complete path to the file. This value of this attribute can be retrieved, but can't be used in a query or used to sort search results.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <!-- Deprecated Metadata Attribute Keys -->
+  <!-- Metadata attribute keys that have been deprecated.-->
+  <!-- These properties are already in 'deprecated' status when Virtuoso 4.0 has been created, therefore they are disabled -->
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSExists">
+    <rdfs:comment>This attribute is deprecated and was never implemented.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Deprecated in Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSIsReadable">
+    <rdfs:comment>This attribute is deprecated and was never implemented.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Deprecated in Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+  <virtrdf:DisabledProperty rdf:about="http://www.apple.com/metadata#kMDItemFSIsWriteable">
+    <rdfs:comment>This attribute is deprecated and was never implemented.</rdfs:comment>
+    <virtrdf:label> </virtrdf:label>
+    <virtrdf:catName> </virtrdf:catName>
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:appleFramework>CoreServices/CoreServices.h</virtrdf:appleFramework>
+    <virtrdf:appleHeader>MDItem.h</virtrdf:appleHeader>
+    <virtrdf:appleAvailability>Deprecated in Mac OS X v10.4 and later</virtrdf:appleAvailability>
+  </virtrdf:DisabledProperty>
+</rdf:RDF>

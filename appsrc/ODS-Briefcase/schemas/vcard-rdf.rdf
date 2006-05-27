@@ -1,0 +1,186 @@
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#" xmlns:rss="http://www.python.org/topics/xml/xbel/">
+  <owl:Ontology rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#">
+    <rdfs:label>vCard</rdfs:label>
+    <rdfs:comment>vCard directory format for publishing personal data.</rdfs:comment>
+    <virtrdf:catName>Business Cards</virtrdf:catName>
+    <virtrdf:version>1.00</virtrdf:version>
+  </owl:Ontology>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#FN">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Full Name</virtrdf:catName>
+    <virtrdf:label>Full Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#NICKNAME">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:catName>Nick</virtrdf:catName>
+    <virtrdf:label>Nick Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#BDAY">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Birthday</virtrdf:catName>
+    <virtrdf:label>Birthday</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#MAILER">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Mailer</virtrdf:catName>
+    <virtrdf:label>Favorite Mail Program</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#GEO">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:catName>Geo Location</virtrdf:catName>
+    <virtrdf:label>Geo Location</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#TITLE">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:catName>Title</virtrdf:catName>
+    <virtrdf:label>Title</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#ROLE">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:catName>Role</virtrdf:catName>
+    <virtrdf:label>Role</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#CATEGORIES">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:catName>Category</virtrdf:catName>
+    <virtrdf:label>Category</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#N">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Name Fields</virtrdf:catName>
+    <virtrdf:label>Name Fields</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#SOURCE">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Data Source</virtrdf:catName>
+    <virtrdf:label>Data Source</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#REV">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Revision Date</virtrdf:catName>
+    <virtrdf:label>Revision Date</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#SORT-STRING">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Sort String</virtrdf:catName>
+    <virtrdf:label>Sort String</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#CLASS">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Class</virtrdf:catName>
+    <virtrdf:label>Class</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#TEL">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:catName>Phone</virtrdf:catName>
+    <virtrdf:label>Phone</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#EMAIL">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:catName>e-Mail</virtrdf:catName>
+    <virtrdf:label>e-Mail</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#ADR">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Address Fields</virtrdf:catName>
+    <virtrdf:label>Address Fields</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#LABEL">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:catName>Envelop Label</virtrdf:catName>
+    <virtrdf:label>Envelop Label</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#Name-Family">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Family Name</virtrdf:catName>
+    <virtrdf:label>Family Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#Name-Given">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Given Name</virtrdf:catName>
+    <virtrdf:label>Given Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#Name-Other">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Other Name</virtrdf:catName>
+    <virtrdf:label>Other Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#Address-Country">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Country</virtrdf:catName>
+    <virtrdf:label>Country</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#Address-Region">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:catName>Region</virtrdf:catName>
+    <virtrdf:label>Region</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#Org-Orgname">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:catName>Organisation</virtrdf:catName>
+    <virtrdf:label>Organisation Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.w3.org/2001/vcard-rdf/3.0#Org-Orgunit">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:catName>Organisation Unit</virtrdf:catName>
+    <virtrdf:label>Organisation Unit</virtrdf:label>
+  </rdf:Property>
+</rdf:RDF>
+<!-- Not included into the list:
+http://www.w3.org/2001/vcard-rdf/3.0#PRODID
+http://www.w3.org/2001/vcard-rdf/3.0#UID
+http://www.w3.org/2001/vcard-rdf/3.0#Name-Prefix
+http://www.w3.org/2001/vcard-rdf/3.0#Name-Suffix
+http://www.w3.org/2001/vcard-rdf/3.0#Address-Pobox
+http://www.w3.org/2001/vcard-rdf/3.0#Address-Extadd
+http://www.w3.org/2001/vcard-rdf/3.0#Address-Street
+http://www.w3.org/2001/vcard-rdf/3.0#Address-Locality
+http://www.w3.org/2001/vcard-rdf/3.0#Address-Pcode
+-->

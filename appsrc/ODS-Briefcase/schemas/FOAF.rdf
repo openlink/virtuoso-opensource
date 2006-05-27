@@ -1,0 +1,190 @@
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:owl ="http://www.w3.org/2002/07/owl#"
+         xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/">
+  <owl:Ontology rdf:about="http://xmlns.com/foaf/0.1/">
+    <rdfs:label>FOAF</rdfs:label>
+    <rdfs:comment>'Friend Of A Friend' descriptions of people, groups, documents and projects.</rdfs:comment>
+    <virtrdf:catName>People</virtrdf:catName>
+    <virtrdf:version>1.00</virtrdf:version>
+  </owl:Ontology>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/accountName">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Account Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/aimChatID">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>AIM chat ID</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/currentProject-uri">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:label>Current Project URI</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/currentProject-name">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:label>Current Project Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/gender">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Gender</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/givenname">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>GivenName</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/firstName">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>First Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/family_name">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Family Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/homepage-uri">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Homepage</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/icqChatID">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>ICQ chat ID</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/interest">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Interest</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/jabberID">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Jabber ID</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/known-name">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Knows</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/maker-name">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Made By</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/mbox-uri">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>e-mail</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/member-name">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Member-Of</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/msnChatID">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>MSN Chat ID</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/name">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Name</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/nick">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>nick</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/page">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Web Page</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/pastProject-uri">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:label>Past Project URI</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/phone">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:label>Phone</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/primaryTopic-uri">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Primary Topic URI</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/surname">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Surname</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/title">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Title</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/topic">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:label>Topic URI</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/topic_interest-uri">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:label>Topic of Interest, URI</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/weblog-uri">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:label>Weblog URI</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/workInfoHomepage-uri">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:label>Work Info URI</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/workplaceHomepage-uri">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:label>Workplace URI</virtrdf:label>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/yahooChatID">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Yahoo chat ID</virtrdf:label>
+  </rdf:Property>
+</rdf:RDF>
