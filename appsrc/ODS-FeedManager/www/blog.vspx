@@ -1,0 +1,204 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+    <title>Blog/Comment page</title>
+  </head>
+  <body style="padding: 5px;">
+    <v:page name="blog" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  	  <v:template type="simple" condition="not self.vc_is_valid">
+  	    <div class="error">
+  		    <p><v:error-summary/></p>
+  	    </div>
+  	  </v:template>
+      <v:on-init>
+        <![CDATA[
+          self.sid := get_keyword('sid', self.vc_event.ve_params);
+          self.realm := get_keyword('realm', self.vc_event.ve_params);
+        ]]>
+      </v:on-init>
+      <vm:popup_page_wrapper>
+        <vm:variables>
+          <v:variable persist="0" name="v_mode" param-name="mode" type="varchar" default="'blog'"/>
+          <v:variable persist="0" name="v_fid" param-name="fid" type="integer"/>
+          <v:variable persist="0" name="v_did" param-name="did" type="integer"/>
+          <v:variable persist="0" name="v_aid" param-name="aid" type="integer"/>
+          <v:variable persist="0" name="step" type="integer" default="0" />
+        </vm:variables>
+        <v:form name="F1" type="simple" method="GET">
+          <input type="hidden" name="sid" value="&lt;?V get_keyword('sid', self.vc_event.ve_params) ?>"/>
+          <input type="hidden" name="realm" value="&lt;?V get_keyword('realm', self.vc_event.ve_params) ?>"/>
+          <div style="padding: 0 0 0.5em 0;">
+            <a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+          </div>
+          <div class="new-form-header">
+            <v:label format="%s" value="--concat(initcap(self.v_mode), ' this')" />
+          </div>
+          <div class="new-form-body">
+            <table cellspacing="0">
+              <v:template type="simple" enabled="--case when (self.step = 0) then 1 else 0 end">
+                <v:template type="simple" enabled="--case when (self.v_mode = 'comment') then 1 else 0 end">
+                  <tr>
+                    <th>
+                      <v:label value="Url" />
+                    </th>
+                    <td>
+                      <v:label value="" >
+                        <v:after-data-bind>
+                          <![CDATA[
+                            control.ufl_value := (select EFI_COMMENT_API from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid);
+                          ]]>
+                        </v:after-data-bind>
+                      </v:label>
+                    </td>
+                  </tr>
+                </v:template>
+                <v:template type="simple" enabled="--case when (self.v_mode = 'blog') then 1 else 0 end">
+                  <tr>
+                    <th>
+                      <v:label value="Blog" />
+                    </th>
+                    <td>
+                      <select name="f_blog">
+                        <?vsp
+                          for (select EB_ID,
+                                      EB_NAME,
+                                      EW_NAME
+                                 from ENEWS.WA.BLOG,
+                                      ENEWS.WA.WEBLOG
+                                where EB_WEBLOG_ID = EW_ID
+                                  and EW_DOMAIN_ID = self.v_did
+                                order by EW_NAME, EB_NAME) do {
+                            http(sprintf('<option value="%d">%s - %s</option>', EB_ID, EW_NAME, EB_NAME));
+                          }
+                        ?>
+                      </select>
+                    </td>
+                  </tr>
+                </v:template>
+                <tr>
+                  <th>
+                    <v:label for="f_title" value="Title" />
+                  </th>
+                  <td>
+                    <v:text name="f_title" value="" xhtml_class="textbox" xhtml_size="70%">
+                      <v:after-data-bind>
+                        <![CDATA[
+                          control.ufl_value := (select coalesce(EFI_TITLE, '~ no title ~') from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid);
+                          if (self.v_mode = 'comment')
+                            control.ufl_value := concat('Re: ', control.ufl_value);
+                        ]]>
+                      </v:after-data-bind>
+                    </v:text>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    Message
+                  </th>
+                  <td style="background-color: white;">
+                    <?vsp
+                      declare tmpString varchar;
+
+                      tmpString := '';
+                      if (self.v_mode = 'blog') {
+                        declare title, link any;
+                        select coalesce(EFI_TITLE, '~ no title ~'), EFI_LINK into title, link from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid;
+                        tmpString := sprintf('Post URL: <a href="%V">%V</a>', link, title);
+                      }
+                    ?>
+                    <![CDATA[
+                      <script language="JavaScript" type="text/javascript" src="rte/js/richtext.js"></script>
+                      <script language="JavaScript" type="text/javascript" src="rte/js/html2xhtml.js"></script>
+                      <script language="JavaScript" type="text/javascript">
+                        initRTE("rte/images/", "rte/js/", "", true);
+                      </script>
+                      <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
+                      <script language="JavaScript" type="text/javascript">
+                        writeRichText('f_message', '<?vsp http(tmpString); ?>', 480, 165, true, false);
+                      </script>
+                    ]]>
+                  </td>
+                </tr>
+              </v:template>
+              <v:template type="simple" enabled="--case when (self.step = 1) then 1 else 0 end">
+                <tr>
+                  <th style="text-align: center; height: 150px;">
+                    <v:label value="--sprintf('%s has been sent successfully!', either(equ(self.v_mode, 'blog'), 'Post', 'Comment'))" />
+                  </th>
+                </tr>
+              </v:template>
+            </table>
+          </div>
+          <div class="new-form-footer">
+            <v:button action="simple" value="--either(equ(self.v_mode, 'blog'), 'Post', 'Comment')" enabled="--case when (self.step = 0) then 1 else 0 end" xhtml_onclick="javascript:updateRTE(\'f_message\')" xhtml_class="form-button">
+              <v:on-post>
+                <![CDATA[
+                  declare url, blog, userName, userMail, title, message, content varchar;
+                  declare retValue any;
+
+                  title := trim(self.f_title.ufl_value);
+                  message := trim(get_keyword('f_message', self.vc_event.ve_params, ''));
+
+                  if (is_empty_or_null(title)) {
+                    self.vc_error_message := 'Please, enter correct title value.';
+                 		self.vc_is_valid := 0;
+              		  return;
+                  }
+                  if (is_empty_or_null(message)) {
+                    self.vc_error_message := 'Please, enter correct message content.';
+                 		self.vc_is_valid := 0;
+              		  return;
+                  }
+
+                  if (self.v_mode = 'comment') {
+                    select ENEWS.WA.user_name(U_NAME, U_FULL_NAME), U_E_MAIL into userName, userMail from DB.DBA.SYS_USERS where U_ID = self.v_aid;
+                    select EFI_COMMENT_API into url from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid;
+
+                    declare hdr any;
+
+              			content := sprintf ('<?xml version="1.0" encoding="%s"?><item><title>%V</title><author>%V (%V)</author><link>%V</link><description>%V</description></item>',
+                                   			current_charset(),
+                                   			title,
+                                   			userName,
+                                   			userMail,
+                                   			'self.url1.ufl_value',
+                                   			message
+                                   		 );
+              			{
+              			  declare exit handler for sqlstate '*' {
+              			    self.vc_error_message := __SQL_MESSAGE;
+                     		self.vc_is_valid := 0;
+              			    return;
+              			  };
+              			  retValue := http_get (url, hdr, 'GET', 'Content-Type: text/xml', content);
+              			}
+              			if (not (length (hdr) > 0 and (hdr[0] like 'HTTP/1._ 200 %' or  hdr[0] like 'HTTP/1._ 3__ %'))) {
+              			  self.vc_error_message := 'Comment is NOT posted successfully, please verify URL.';
+                   		self.vc_is_valid := 0;
+                   		return;
+              			}
+            			} else if (self.v_mode = 'blog') {
+                    declare bid integer;
+                    bid := atoi(get_keyword('f_blog', self.vc_event.ve_params, ''));
+
+            			  declare exit handler for sqlstate '*' {
+            			    self.vc_error_message := __SQL_MESSAGE;
+                   		self.vc_is_valid := 0;
+            			    return;
+            			  };
+
+                	  retValue := ENEWS.WA.blog_post_new(bid, title, message);
+            			}
+
+                  self.step := 1;
+                  self.vc_data_bind(e);
+                ]]>
+              </v:on-post>
+            </v:button>
+          </div>
+        </v:form>
+      </vm:popup_page_wrapper>
+    </v:page>
+  </body>
+</html>

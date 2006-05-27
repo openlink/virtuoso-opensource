@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="css/dav.css" type="text/css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>File Browser</title>
+  </head>
+  <body style="padding: 5px;">
+    <v:page name="file_browser" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+      <table width="100%" class="Warning" border="0" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+            <v:error-summary/>
+          </td>
+        </tr>
+      </table>
+      <vm:popup_page_wrapper>
+        <vm:file_browser />
+      </vm:popup_page_wrapper>
+    </v:page>
+  </body>
+</html>

@@ -1,0 +1,704 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="search" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
+    <![CDATA[
+      declare altStr, directionStr, imageStr varchar;
+
+      if (self.v_order = columnName and self.v_direction = 'desc') {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
+      } else if (self.v_order = columnName and self.v_direction = 'asc') {
+        directionStr := 'Descending';
+        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
+      } else {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;&nbsp;';
+      }
+      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
+      http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
+    ]]>
+  </v:method>
+
+  <v:method name="sortChange" arglist="in columnName varchar">
+    <![CDATA[
+      if (columnName = '')
+        return;
+      self.ds.vc_reset();
+      if (self.v_order = columnName) {
+        self.v_direction := either(equ(self.v_direction, 'asc'), 'desc', 'asc');
+      } else {
+        self.v_direction := 'asc';
+      }
+      self.v_order := columnName;
+    ]]>
+  </v:method>
+
+  <v:method name="linkClass" arglist="inout flag any">
+    <![CDATA[
+      return either(equ(flag, 1), 'read', 'unread');
+    ]]>
+  </v:method>
+
+  <v:method name="update_params" arglist="">
+    <![CDATA[
+      declare tmp any;
+
+      self.v_keywords := trim(self.v_keywords);
+      self.v_expression := trim(self.v_expression);
+      self.v_tags := trim(self.v_tags);
+      self.v_read := trim(self.v_read);
+      self.v_flag := trim(self.v_flag);
+      self.v_after := trim(self.v_after);
+      self.v_before := trim(self.v_before);
+
+      tmp := ENEWS.WA.ft2vector(self.v_keywords);
+      tmp := ENEWS.WA.vector_unique(tmp, 2);
+      self.v_keywords := ENEWS.WA.vector2str(tmp);
+
+      tmp := ENEWS.WA.tags2vector(self.v_tags);
+      tmp := ENEWS.WA.vector_unique(tmp);
+      self.v_tags := ENEWS.WA.vector2tags(tmp);
+    ]]>
+  </v:method>
+
+  <v:method name="enable_it" arglist="in what varchar, in flag int">
+    <![CDATA[
+      if (self.f_type.ufl_value = what)
+        return flag;
+      if (self.v_expression is null and self.f_type.ufl_value is null and self.v_type = what)
+        return flag;
+      return case when flag then 0 else 1 end;
+    ]]>
+  </v:method>
+
+  <v:method name="do_search" arglist="inout e vspx_event">
+    <![CDATA[
+      declare tmp any;
+
+      declare exit handler for SQLSTATE '*' {
+        if (__SQL_STATE = 'TEST') {
+          self.vc_error_message := ENEWS.WA.test_clear(__SQL_MESSAGE);
+       		self.vc_is_valid := 0;
+    		  return;
+    		}
+        resignal;
+      };
+
+      self.update_params();
+
+      ENEWS.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
+      if (self.v_mode <> 'simple') {
+        if (self.v_type = 'text')
+          ENEWS.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
+        ENEWS.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
+        ENEWS.WA.test(self.v_after, vector('name', 'Date after', 'class', 'date2', 'type', 'date'));
+        ENEWS.WA.test(self.v_before, vector('name', 'Date before', 'class', 'date2', 'type', 'date'));
+        ENEWS.WA.test(self.v_max, vector('name', 'Max Records', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
+      }
+
+      declare data varchar;
+
+      ENEWS.WA.xml_set('keywords', data, self.v_keywords);
+      if (self.v_mode <> 'simple') {
+        ENEWS.WA.xml_set('expression', data, self.v_expression);
+        ENEWS.WA.xml_set('tags', data, self.v_tags);
+        ENEWS.WA.xml_set('read', data, self.v_read);
+        ENEWS.WA.xml_set('flag', data, self.v_flag);
+        ENEWS.WA.xml_set('afterDate', data, self.v_after);
+        ENEWS.WA.xml_set('beforeDate', data, self.v_before);
+      }
+
+      self.ds_data := vector ();
+      self.ds_tags := vector ();
+      if (length(xpath_eval('//entry', data, 0)) = 0) {
+        if (e.ve_is_post or (self.v_mode = 'simple')) {
+          self.vc_error_message := 'Empty search criteria.';
+          self.vc_is_valid := 0;
+        }
+        return;
+      }
+
+      declare sql, state, msg, meta, result any;
+
+  	  sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_type, self.v_max);
+  	  if (self.v_group = 0) {
+        sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
+      } else {
+        sql := concat(sql, 'order by EFD_TITLE, ', self.v_order, ' ', self.v_direction);
+      }
+
+      state := '00000';
+      exec(sql, state, msg, vector(), 0, meta, result);
+      --dbg_obj_print(state, msg);
+      if (state = '00000') {
+        self.ds_data := result;
+
+        if (self.f_cloud.ufl_selected = 1) {
+          declare N integer;
+          declare tag_object, tags, tags_dict any;
+
+          tags_dict := dict_new();
+          for (N := 0; N < length(self.ds_data); N := N + 1) {
+            tags := ENEWS.WA.tags_account_item_select(self.domain_id, self.account_id, self.ds_data[N][0]);
+            tags := split_and_decode (tags, 0, '\0\0,');
+            foreach (any tag in tags) do {
+              tag_object := dict_get(tags_dict, lcase(tag), vector(lcase(tag), 0));
+              tag_object[1] := tag_object[1] + 1;
+              dict_put(tags_dict, lcase(tag), tag_object);
+            }
+          }
+          for (select p.* from ENEWS.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do
+            self.ds_tags := vector_concat(self.ds_tags, vector(vector(tag, cnt)));
+        }
+      }
+
+	    self.ds.vc_data_bind (e);
+
+    ]]>
+  </v:method>
+  <v:method name="do_url" arglist="in mode varchar, in prefix varchar">
+    <![CDATA[
+      declare tmp varchar;
+
+      tmp := '';
+      if (not is_empty_or_null(self.v_keywords))
+        tmp := concat(tmp, sprintf('&%skeywords=%U', prefix, self.v_keywords));
+      if (not is_empty_or_null(self.v_expression))
+        tmp := concat(tmp, sprintf('&%sexpression=%U', prefix, self.v_expression));
+      if (not is_empty_or_null(self.v_tags))
+        tmp := concat(tmp, sprintf('&%stags=%U', prefix, self.v_tags));
+      if (not is_empty_or_null(self.v_read))
+        tmp := concat(tmp, sprintf('&%sread=%U', prefix, self.v_read));
+      if (not is_empty_or_null(self.v_flag))
+        tmp := concat(tmp, sprintf('&%sflag=%U', prefix, self.v_flag));
+      if (not is_empty_or_null(self.v_after))
+        tmp := concat(tmp, sprintf('&%safter=%U', prefix, self.v_after));
+      if (not is_empty_or_null(self.v_before))
+        tmp := concat(tmp, sprintf('&%sbefore=%U', prefix, self.v_before));
+      if (mode = 'export') {
+        if (not is_empty_or_null(self.v_type) and self.v_type <> 'text')
+          tmp := concat(tmp, sprintf('&%stype=%U', prefix, self.v_type));
+        if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
+          tmp := concat(tmp, sprintf('&%smax=%U', prefix, self.v_max));
+        if (not is_empty_or_null(self.v_order) and self.v_order <> 'EFI_PUBLISH_DATE')
+          tmp := concat(tmp, sprintf('&%sorder=%U', prefix, self.v_order));
+        if (not is_empty_or_null(self.v_direction) and self.v_direction <> 'desc')
+          tmp := concat(tmp, sprintf('&%sdirection=%U', prefix, self.v_direction));
+      }
+
+      return tmp;
+    ]]>
+  </v:method>
+
+  <v:on-init>
+    <![CDATA[
+      if (self.ds_data is null) {
+        self.ds_data := vector ();
+        self.ds_meta := vector ();
+        self.ds_tags := vector ();
+      }
+    ]]>
+  </v:on-init>
+  <v:after-data-bind>
+    <![CDATA[
+      if (not e.ve_is_post or (get_keyword ('sortColumn', e.ve_params, '') <> '') or (self.v_mode = 'simple') or (get_keyword ('tag', e.ve_params, '') <> ''))
+        self.do_search (e);
+    ]]>
+  </v:after-data-bind>
+  <vm:pagetitle>Search results</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header>
+      Search results
+    </vm:header>
+    <vm:menu/>
+    <vm:variables>
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+      <v:variable name="v_mode" type="varchar" default="'simple'"/>
+      <v:variable name="v_step" param-name="step" type="integer" default="0"/>
+
+      <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
+      <v:variable name="v_expression" type="varchar" default="''"/>
+      <v:variable name="v_tags" type="varchar" default="''"/>
+      <v:variable name="v_read" type="varchar" default="''"/>
+      <v:variable name="v_flag" type="varchar" default="''"/>
+      <v:variable name="v_after" type="varchar" default="''"/>
+      <v:variable name="v_before" type="varchar" default="''"/>
+
+      <v:variable name="v_type" type="varchar" default="'text'"/>
+      <v:variable name="v_output" type="varchar" default="'html'"/>
+      <v:variable name="v_max" type="varchar" default="'100'"/>
+      <v:variable name="v_order" type="varchar" default="'EFI_PUBLISH_DATE'" />
+      <v:variable name="v_direction" type="varchar" default="'desc'" />
+      <v:variable name="v_group" type="integer" default="0" />
+      <v:variable name="v_cloud" type="integer" default="0" />
+
+      <v:variable name="ds_data" type="any" default="null"/>
+      <v:variable name="ds_meta" type="any" default="null"/>
+      <v:variable name="ds_tags" type="any" default="null"/>
+
+      <v:variable name="v_groupName" type="varchar" default="''" />
+    </vm:variables>
+    <vm:pagebody>
+      <v:before-data-bind>
+        <![CDATA[
+          self.v_mode := get_keyword('mode', self.vc_page.vc_event.ve_params, self.v_mode);
+
+          self.v_keywords := trim(get_keyword('a_keywords', self.vc_page.vc_event.ve_params, get_keyword('s_keywords', self.vc_page.vc_event.ve_params, get_keyword('keywords', self.vc_page.vc_event.ve_params, ''))));
+          self.v_expression := trim(get_keyword('f_expression', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_expression)));
+          self.v_tags := trim(get_keyword('f_tags', self.vc_page.vc_event.ve_params, get_keyword('tags', self.vc_page.vc_event.ve_params, self.v_tags)));
+          if (get_keyword('tag', self.vc_page.vc_event.ve_params, '') <> '') {
+            if (is_empty_or_null(self.v_tags))
+              self.v_tags := '';
+            self.v_tags := concat(self.v_tags, ', ', get_keyword('tag', self.vc_page.vc_event.ve_params));
+            self.v_tags := ENEWS.WA.tags2vector(self.v_tags);
+            self.v_tags := ENEWS.WA.tags2unique(self.v_tags);
+            self.v_tags := ENEWS.WA.vector2tags(self.v_tags);
+          }
+          self.v_read := trim(get_keyword('f_read', self.vc_page.vc_event.ve_params, get_keyword('read', self.vc_page.vc_event.ve_params, self.v_read)));
+          self.v_flag := trim(get_keyword('f_flag', self.vc_page.vc_event.ve_params, get_keyword('flag', self.vc_page.vc_event.ve_params, self.v_flag)));
+          self.v_after := trim(get_keyword('f_after', self.vc_page.vc_event.ve_params, get_keyword('after', self.vc_page.vc_event.ve_params, self.v_after)));
+          self.v_before := trim(get_keyword('f_before', self.vc_page.vc_event.ve_params, get_keyword('before', self.vc_page.vc_event.ve_params, self.v_before)));
+
+          self.v_type := trim(get_keyword('f_type', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_type)));
+          self.v_max := trim(get_keyword('f_max', self.vc_page.vc_event.ve_params, get_keyword('max', self.vc_page.vc_event.ve_params, self.v_max)));
+          self.v_order := trim(get_keyword('f_order', self.vc_page.vc_event.ve_params, get_keyword('order', self.vc_page.vc_event.ve_params, self.v_order)));
+          self.v_direction := trim(get_keyword('f_direction', self.vc_page.vc_event.ve_params, get_keyword('direction', self.vc_page.vc_event.ve_params, self.v_direction)));
+
+          self.v_group := self.f_group.ufl_selected;
+          self.v_cloud := self.f_cloud.ufl_selected;
+
+          self.sortChange (get_keyword ('sortColumn', e.ve_params, ''));
+        ]]>
+      </v:before-data-bind>
+      <v:on-post>
+        <![CDATA[
+          declare tmp vspx_control;
+
+          tmp := self.example.vc_find_control(self.f_type.ufl_value||'_help');
+          self.example.tb_active := tmp;
+          if (e.ve_button = control) {
+            self.a_keywords.ufl_value := '';
+            self.f_expression.ufl_value := '';
+            self.ds_data := vector ();
+            self.ds_tags := vector ();
+            self.vc_data_bind (e);
+          }
+        ]]>
+      </v:on-post>
+      <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
+      <v:text name="step" xhtml_id="step" type="hidden" value="1"/>
+      <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
+        <div class="new-form-header">
+          <i><?V initcap(self.v_mode) ?> search found <?V length (self.ds_data) ?> feed(s) in last search</i>
+        </div>
+      </v:template>
+      <v:template type="simple">
+        <v:before-render>
+          <![CDATA[
+            control.vc_enabled := length (self.ds_data);
+          ]]>
+        </v:before-render>
+        <div style="padding-bottom: 5px;">
+          <?vsp
+    			  http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s" class="gems"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+            if (ENEWS.WA.settings_atomVersion(self.domain_id, self.account_id) = '1.0') {
+    			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom10%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+    			  } else {
+    			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom03%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+    			  }
+    			  http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rdf%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0"/> RDF</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+    			  http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=xbel%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL"/> XBEL</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+    			?>
+        </div>
+      </v:template>
+      <table cellspacing="0" cellpadding="0" width="100%" >
+        <tr>
+          <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;" >
+            <td valign="top" style="border: solid #935000; border-width: 1px 1px 1px 1px;">
+        	  	<v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="--ENEWS.WA.settings_rows(self.domain_id, self.account_id)" scrollable="1">
+                <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table id="search" class="grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
+                    <thead class="sortHeader">
+                      <tr>
+                        <th width="1%">
+                          <img src="image/flag.gif" border="0"/>
+                        </th>
+                        <th>
+                          <?vsp self.sortColumn('Headline', 'EFI_TITLE'); ?>
+                        </th>
+                        <th>
+                          <?vsp self.sortColumn('Author', 'EFI_AUTHOR'); ?>
+                        </th>
+                        <v:template type="simple" enabled="-- case when (self.v_group = 0) then 1 else 0 end;">
+                          <th>
+                            <?vsp self.sortColumn('Feed', 'EFD_TITLE'); ?>
+                          </th>
+                        </v:template>
+                        <th class="last">
+                          <?vsp self.sortColumn('Date', 'EFI_PUBLISH_DATE'); ?>
+                        </th>
+                      </tr>
+                    </thead>
+                  </table>
+                </v:template>
+
+                <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+                  <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                    <table>
+                      <tr align="center">
+                        <td colspan="5">No matches found in OFM DataSpace</td>
+                      </tr>
+                    </table>
+                  </v:template>
+
+                  <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                    <table>
+                      <v:template type="simple" enabled="-- case when (self.v_group = 0) then 0 else 1 end;">
+                        <?vsp
+                          if (is_empty_or_null(self.v_groupName) or (self.v_groupName <> (control.vc_parent as vspx_row_template).te_rowset[8])) {
+                        ?>
+                        <tr>
+                          <td align="center">
+                            <img src="image/docs_16.gif" border="0"/>
+                          </td>
+                          <td colspan="3">
+                            <v:url
+                              value="--((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]"
+                              format="%s"
+      		                    url="--concat(sprintf('channels_update.vspx?id=%d', ((control.vc_parent).vc_parent as vspx_row_template).te_rowset[6]))"/>
+                          </td>
+                        </tr>
+                        <?vsp
+                          }
+                          self.v_groupName := (control.vc_parent as vspx_row_template).te_rowset[8];
+                        ?>
+                      </v:template>
+                      <tr>
+                        <td align="center">
+                          <?vsp
+                            if (control.te_rowset[10] = 1)
+                              http('<img src="image/flag.gif" border="0"/>');
+                          ?>
+                        </td>
+                        <td>
+                          <img src="image/html.png" border="0" alt="folder" width="16"/>
+                          <v:url
+                            value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                            format="%s"
+      	                    url="--(control.vc_parent as vspx_row_template).te_rowset[4]"
+      	                    xhtml_target="_blank"
+      	                    xhtml_title="--ENEWS.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[1])"
+      	                    xhtml_class="--self.linkClass((control.vc_parent as vspx_row_template).te_rowset[9])"/>
+                          <v:template type="simple" enabled="-- case when ((self.v_type = 'text') and is_empty_or_null(self.v_keywords) and is_empty_or_null(self.v_expression)) then 0 else 1 end">
+                            <br /><i style="padding-left: 20px;"><v:label value="--ENEWS.WA.feed_excerpt(((control.vc_parent).vc_parent as vspx_row_template).te_rowset[0], self.v_keywords, self.v_expression)" format="%s"/></i>
+                          </v:template>
+                        </td>
+                        <td>
+                          <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s"/>
+                        </td>
+                        <v:template type="simple" enabled="-- case when (self.v_group = 0) then 1 else 0 end;">
+                          <td>
+                            <v:url
+                              value="--((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]"
+                              format="%s"
+      		                    url="--concat(sprintf('channels_update.vspx?id=%d', ((control.vc_parent).vc_parent as vspx_row_template).te_rowset[6]))"
+         	                    xhtml_title="--ENEWS.WA.utf2wide(((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8])"/>
+                          </td>
+                        </v:template>
+                        <td align="right" nowrap="nowrap">
+                          <v:label value="--ENEWS.WA.dt_value((control.vc_parent as vspx_row_template).te_rowset[3])" format="%s"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </v:template>
+
+                </v:template>
+
+                <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                    <tr>
+                      <td align="center" colspan="5">
+                        <vm:ds-navigation data-set="ds"/>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+
+              </v:data-set>
+              <script type="text/javascript">
+                <![CDATA[
+                  coloriseTable('search');
+                ]]>
+              </script>
+            </td>
+          </v:template>
+          <v:template type="simple" enabled="-- case when (self.v_cloud and self.v_step and self.vc_is_valid) then 1 else 0 end;">
+            <td width="20%" valign="top" style="border: solid #935000;  border-width: 1px 1px 1px 0px;">
+              <div style="margin-left:3px; margin-top:3px;">
+                <?vsp
+                  declare N, ts_max, ts_size integer;
+
+                  ts_max := length(self.ds_tags);
+                  for (N := 0; N < ts_max; N := N + 1) {
+                    ts_size := ((250.00 / ts_max) * self.ds_tags[N][1]) + 90;
+                    if (ts_size < 100)
+                      ts_size := 100;
+                    http (sprintf ('<a href="#" onclick="javascript: myPost(\'F1\', \'tag\', \'%s\');" name="btn_%s"><span class="nolink_b" style="font-size: %d%s;">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], ts_size, '%', self.ds_tags[N][0]));
+                  }
+                  if (ts_max = 0)
+                    http ('no tags');
+                ?>
+              </div>
+            </td>
+          </v:template>
+        </tr>
+      </table>
+      <br />
+      <v:template type="simple" enabled="--either(equ(self.v_mode, 'simple'), 0, 1)">
+       	<div id="c1">
+      		<div class="tabs">
+      		  &nbsp;
+            <vm:tabCaption tab="1" tabs="2" caption="Criteria"/>&nbsp;
+            <vm:tabCaption tab="2" tabs="2" caption="Options"/>&nbsp;
+          </div>
+      		<div class="contents">
+            <div id="1" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <v:template type="simple" enabled="--case when (self.v_type = 'text') then 1 else 0 end;">
+                  <tr>
+                    <th>
+                      <v:label for="" value="Space delimited keyword list" />
+                    </th>
+                    <td>
+                      <v:text name="a_keywords" value="--self.v_keywords" xhtml_class="textbox" xhtml_size="70%"/>
+                    </td>
+                  </tr>
+                </v:template>
+                <tr>
+                  <th>
+                    <v:label for="f_expression" value="--case when (self.v_type = 'text') then 'or expression' else case when (self.v_type = 'xpath') then 'XPath Expression' else 'XQuery Expression' end end;" />
+                  </th>
+                  <td>
+                    <v:tab name="example" initial-active="text_help">
+                      <v:template name="xpath_help" type="simple">
+                        <v:select-list name="xp" xhtml_onchange="javascript: document.F1.f_expression.value = this.value">
+                          <v:item value="" name="* select an example *"/>
+                          <v:item value="//p[a]" name="paragraph with link(s)"/>
+                          <v:item value="//p[contains(.,\'Virtuoso\')]" name="about Virtuoso"/>
+                          <v:item value="//a[@href]/@href" name="link targets"/>
+                          <v:item value="//a/text()" name="link titles"/>
+                          <v:item value="//a[@name or @id]" name="link references"/>
+                          <v:item value="//b" name="text in bold"/>
+                          <v:item value="//i" name="text in italic"/>
+                          <v:item value="//p[b or i or u or s or small or big]/*" name="formatting"/>
+                          <v:item value="//p[b or i or u or s or small or big]/ancestor::*" name="section with formatting"/>
+                          <v:item value="//*[@class]" name="css formated sections"/>
+                          <v:item value="//table[.//tr/td]" name="tables"/>
+                          <v:item value="//img[@src]" name="images"/>
+                          <v:item value="//p[img[@src]]" name="sections with images"/>
+                          <v:item value="//p[a/@href[contains(.,\'.xml\')]]" name="about XML"/>
+                        </v:select-list>
+                        <br/>
+                      </v:template>
+                      <v:template name="xquery_help" type="simple">
+                        <v:select-list name="xq" xhtml_onchange="javascript: document.F1.f_expression.value = this.value">
+                          <v:item value="" name="* select an example *"/>
+                          <v:item value="for $i in node()//table return $i" name="all tables"/>
+                          <v:item value="for $t in node()//table return <ul> {for $i in $t//tr return <li>{$i/td/text()}</li> }</ul>" name="table to list"/>
+                          <v:item value="for $i in node()//a return <p>{ string($i/@href) }</p>" name="list of links"/>
+                          <v:item value="for $i in node() return <p>{ .//text() }</p>" name="text nodes"/>
+                          <v:item value="for $i in node()//p[contains(.,\'Virtuoso\')] return <p>{ string($i) }</p>" name="about Virtuoso"/>
+                        </v:select-list>
+                        <br/>
+                      </v:template>
+                    </v:tab>
+            			  <v:textarea name="f_expression" value="--self.v_expression" xhtml_rows="2" xhtml_cols="70"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_tags" value="Comma delimited tags" />
+                  </th>
+                  <td>
+                    <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="70%"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_read" value="Show marked"/>
+                  </th>
+                  <td>
+                    <v:select-list name="f_read" value="--self.v_read">
+                      <v:item name="all" value=""/>
+                      <v:item name="read" value="r+"/>
+                      <v:item name="unread" value="r-"/>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_flag" value="Show flagged"/>
+                  </th>
+                  <td>
+                    <v:select-list name="f_flag" value="--self.v_flag">
+                      <v:item name="all" value=""/>
+                      <v:item name="flagged" value="f+"/>
+                      <v:item name="unflagged" value="f-"/>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_after" value="Date after"/>
+                  </th>
+                  <td>
+                    <v:text name="f_after" value="--self.v_after" xhtml_class="textbox" xhtml_size="20%"/>
+                    <xsl:call-template name="nbsp"/> (dd.mm.yyyy)
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_before" value="Date before"/>
+                  </th>
+                  <td>
+                    <v:text name="f_before" value="--self.v_before" xhtml_class="textbox" xhtml_size="20%"/>
+                    <xsl:call-template name="nbsp"/> (dd.mm.yyyy)
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div id="2" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <th>
+                    <v:label for="f_type" value="Expression Type" />
+                  </th>
+                  <td>
+                    <v:select-list name="f_type" value="" auto-submit="1">
+                      <v:item name="Text" value="text"/>
+                      <v:item name="XPath" value="xpath"/>
+                      <v:item name="XQuery" value="xquery"/>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_max" value="Max Results" />
+                  </th>
+                  <td>
+                    <v:text name="f_max" default_value="100" xhtml_size="5"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_order" value="Order by" />
+                  </th>
+                  <td>
+                    <v:select-list name="f_order" value="--self.v_order">
+                      <v:item name="Headline" value="EFI_TITLE"/>
+                      <v:item name="Author" value="EFI_AUTHOR"/>
+                      <v:item name="Feed" value="EFD_TITLE"/>
+                      <v:item name="Date" value="EFI_PUBLISH_DATE"/>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_direction" value="Direction" />
+                  </th>
+                  <td>
+                    <v:select-list name="f_direction" value="--self.v_direction">
+                      <v:item name="Asc" value="asc"/>
+                      <v:item name="Desc" value="desc"/>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th/>
+                  <td>
+              			<v:check-box name="f_group" xhtml_id="f_group" value="1"/>
+                    <vm:label for="f_group" value="Group by feed source"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th/>
+                  <td>
+                    <v:check-box name="f_cloud" xhtml_id="f_cloud" value="1"/>
+                    <vm:label for="f_cloud" value="Show tag''s cloud"/>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="form-footer">
+          <v:button action="simple" value="Save" enabled="--case when (self.v_type = 'text') then 1 else 0 end;" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                declare tmp varchar;
+
+                self.update_params();
+                tmp := 'sfolders_update.vspx?return=yes' || self.do_url('save', 'f_');;
+                self.vc_redirect(tmp);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Search" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.do_search (e);
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.vc_redirect('news.vspx');
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+        <script type="text/javascript">
+          <![CDATA[
+            initTab(2, 1);
+          ]]>
+        </script>
+      </v:template>
+      <v:template type="simple" enabled="--either(neq(self.v_mode, 'simple'), 0, 1)">
+        <div class="new-form-body">
+          <table cellspacing="0">
+            <tr>
+              <td align="center">
+                <b><v:label for="" value="Search" /></b>
+                <v:text name="s_keywords" value="--self.v_keywords" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="70%"/>
+                |
+                <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.vc_is_valid := 1;
+                      self.v_step := 0;
+                      self.v_mode := 'advanced';
+                      self.ds_data := vector();
+                      self.ds_tags := vector();
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                |
+                <v:button action="simple" style="url" value="Cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.vc_redirect('news.vspx');
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </v:template>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

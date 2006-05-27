@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="directories" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Directories</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header/>
+    <vm:variables>
+      <v:variable name="v_id"  type="integer" default="0"/>
+      <v:variable name="v_parent_id" type="varchar" default="'0'"/>
+      <v:variable name="v_name" type="varchar" default="''"/>
+      <v:variable name="v_mode" type="varchar" default="''" persist="0"/>
+      <v:variable persist="session" name="dt_state" type="any" default="null" />
+      <v:variable persist="session" name="dt_bookmark" type="varchar" default="null" />
+    </vm:variables>
+    <vm:pagebody>
+    	<v:on-post>
+        <![CDATA[
+      	  if (e.ve_button is not null)  {
+      	    declare btn vspx_button;
+      	    btn := null;
+      	    if (e.ve_button.vc_name = 'dt_toggle') {
+      	      btn := e.ve_button;
+      	    } else if (e.ve_button.vc_name = 'dt_leaf_url') {
+      	      btn := e.ve_button;
+      	    } else if (e.ve_button.vc_name = 'dt_leaf_image') {
+      		    btn := e.ve_button.vc_parent.vc_find_control ('dt_leaf_url');
+      		  }
+      	    if (btn is not null)
+      	      self.dt_bookmark := 'btn_' || btn.vc_get_name ();
+      	  }
+        ]]>
+    	</v:on-post>
+      <v:template type="simple" enabled="--either(equ(self.v_mode, ''), 1, 0)">
+        <div style="padding: 0 0 0.5em 0;">
+          <v:button value="create" action="simple" xhtml_class="button" xhtml_alt="Create directory">
+            <v:on-post>
+              <![CDATA[
+                self.v_id := 0;
+                self.v_mode := 'create';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+
+        <div class="tree_main">
+          <v:tree name="dt" multi-branch="1" orientation="vertical" root="ENEWS.WA.directory_root" child-function="ENEWS.WA.directory_child" start-path="">
+      	    <v:before-render>
+              <![CDATA[
+            		self.dt_state := control.vc_get_state ();
+              ]]>
+      	    </v:before-render>
+      	    <v:before-data-bind>
+              <![CDATA[
+        	      if (self.dt_state is not null and not e.ve_is_post)
+       	          control.vc_set_control_state (self.dt_state);
+              ]]>
+      	    </v:before-data-bind>
+            <v:node-template>
+              <div style="white-space: nowrap; margin-left: <?V control.tn_level*16 ?>px;">
+                <table cellspacing="0">
+                  <tr>
+                    <td nowrap="nowrap">
+                      <v:button name="dt_toggle"
+                                action="simple"
+                                style="image"
+                                value="--case when ((control.vc_parent as vspx_tree_node).tn_open) then 'image/folder_open_16.png' else 'image/folder_16.png' end"
+                                xhtml_alt="--case when ((control.vc_parent as vspx_tree_node).tn_open) then 'Close blogs' else 'Open blogs' end"
+                                xhtml_class="nolink"
+                                enabled="--case when ((control.vc_parent as vspx_tree_node).tn_is_leaf) then 0 else 1 end"/>
+                      <?vsp
+                        declare S varchar;
+
+                        S := (control as vspx_tree_node).tn_value;
+                        if ((control as vspx_tree_node).tn_is_leaf) {
+                          http (sprintf('<img src="image/folder_empty_16.png"/>&nbsp;<span style="font-size: 1em; font-weight: bold;">%s</span>', S));
+                        } else {
+                          http (sprintf('<a href="#" onclick="javascript: clickNode2(this); return false;" alt="%s" title="%s" class="nolink3">%s</a>', S, S, S));
+                        }
+                      ?>
+                    </td>
+                    <td width="100%" valign="center">
+                      <div style="height: 1px; margin: 0 1em 0 1em; border-style: dotted; border: solid #935000; border-width: 0px 0px 1px 0px;"/>
+                    </td>
+                    <td nowrap="nowrap">
+                      <v:button action="simple" value="edit" xhtml_class="button" xhtml_alt="edit directory">
+                        <v:on-post>
+                          <![CDATA[
+                            self.v_id := cast(xpath_eval('./@id', (control.vc_parent as vspx_tree_node).tn_element, 1) as integer);
+                            self.v_mode := 'update';
+                            self.vc_data_bind (e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                      <v:button value="delete" action="simple" xhtml_onclick="return confirm(\'Are you sure that you want to delete this directory?\');" xhtml_class="button" xhtml_alt="Delete directory">
+                        <v:on-post>
+                          <![CDATA[
+                            self.v_id := cast(xpath_eval('./@id', (control.vc_parent as vspx_tree_node).tn_element, 1) as integer);
+                     	      ENEWS.WA.directory_delete(self.v_id);
+                      	    self.vc_data_bind(e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </td>
+                  </tr>
+                </table>
+                <v:node/>
+              </div>
+            </v:node-template>
+          </v:tree>
+        </div>
+        <v:template type="simple" enabled="--case when (length(ENEWS.WA.directory_root()) > 0) then 1 else 0 end">
+          <div style="margin-top: 0.5em; height: auto" class="tree_main">
+            <table cellspacing="0">
+              <tr>
+                <td width="100%" align="right">
+                  <b>All&amp;nbsp;</b>
+                </td>
+                <td nowrap="nowrap">
+                  <v:button value="delete" action="simple" xhtml_onclick="return confirm(\'Are you sure that you want to delete all directories?\');" xhtml_class="button" xhtml_alt="Delete all directories">
+                    <v:on-post>
+                      <![CDATA[
+                        declare directories any;
+
+                        directories := ENEWS.WA.directory_root();
+                        foreach (varchar directory in directories) do
+                     	    ENEWS.WA.directory_delete(cast(directory as integer));
+                  	    self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </v:template>
+      </v:template>
+      <v:template type="simple" enabled="--either(equ(self.v_mode, ''), 0, 1)">
+        <v:before-data-bind>
+          <![CDATA[
+      	    declare exit handler for not found goto _end;
+
+            if (get_keyword('channel_id', self.vc_page.vc_event.ve_params, '') <> '')
+              ENEWS.WA.channel_directory(get_keyword('channel_id', self.vc_page.vc_event.ve_params), '', self.v_id);
+
+            if (isnull(get_keyword('f_name', self.vc_page.vc_event.ve_params))) {
+         			select ED_PARENT_ID,
+         			       ED_NAME
+         			  into self.v_parent_id,
+         			       self.v_name
+                from ENEWS.WA.DIRECTORY
+        			 where ED_ID = self.v_id;
+
+        			self.v_mode := 'update';
+         		return;
+          }
+
+    	   _end:
+            self.v_parent_id := cast(get_keyword('f_parent_id', self.vc_page.vc_event.ve_params, '0') as integer);
+            self.v_name := get_keyword('f_name', self.vc_page.vc_event.ve_params, '');
+          ]]>
+        </v:before-data-bind>
+        <div class="new-form-header">
+          <v:label format="%s" value="--concat(initcap(self.v_mode), ' directory')"/>
+        </div>
+        <div class="new-form-body">
+          <table cellspacing="0">
+            <tr>
+              <th>
+                <v:label for="f_parent" value="Parent directory"/>
+              </th>
+              <td>
+          	    <v:data-list name="f_parent_id" value="--self.v_parent_id" sql="select 0 as ED_ID, 'Select parent directory ...' as ED_PATH2, '' as ED_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select ED_ID, ENEWS.WA.directory_path2(ED_ID) as ED_PATH2, ENEWS.WA.directory_path(ED_ID) as ED_PATH from ENEWS.WA.DIRECTORY order by ED_PATH" key-column="ED_ID" value-column="ED_PATH2" xhtml_class="select"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_name" value="Directory name"/>
+              </th>
+              <td>
+                <v:text name="f_name" null-value="--''" value="--ENEWS.WA.utf2wide(self.v_name)" xhtml_size="70%"/>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" value="Save" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                declare exit handler for SQLSTATE '*' {
+                  if (__SQL_STATE = 'TEST') {
+                    self.vc_error_message := ENEWS.WA.test_clear(__SQL_MESSAGE);
+                 		self.vc_is_valid := 0;
+              		  return;
+              		}
+                  resignal;
+                };
+
+                self.v_name := ENEWS.WA.test(self.f_name.ufl_value, vector('name', 'Directory name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
+                self.v_parent_id := cast(self.f_parent_id.ufl_value as integer);
+                if (self.v_parent_id = 0)
+                  self.v_parent_id := null;
+
+                if (ENEWS.WA.directory_check_unique(self.v_parent_id, self.v_name, self.v_id))
+                  signal('TEST', 'Please, enter other directory name. This name already exists!<>');
+
+                if ((self.v_mode <> 'create') and ENEWS.WA.directory_check_parent(self.v_id, self.v_parent_id))
+                  signal('TEST', 'Please, enter other parent directory. This directory is superior of the selected parent directory!<>');
+
+    	        if (self.v_mode = 'create') {
+      	          insert into ENEWS.WA.DIRECTORY(ED_PARENT_ID, ED_NAME) values(self.v_parent_id, self.f_name.ufl_value);
+      	        } else {
+      	          update ENEWS.WA.DIRECTORY
+      	             set ED_PARENT_ID = self.v_parent_id,
+      	                 ED_NAME = self.f_name.ufl_value
+     	           where ED_ID = self.v_id;
+     	        }
+                self.v_mode := '';
+                self.vc_data_bind(e);
+        	    ]]>
+       	   </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.v_mode := '';
+                self.vc_data_bind(e);
+        	    ]]>
+        	  </v:on-post>
+          </v:button>
+        </div>
+        <v:template type="simple" enabled="--either(equ(self.v_mode, 'update'), 1, 0)">
+          <div style="margin: 6px 0 0 0; padding: 0.5em 0 0 0;">
+            <span class="pane-label">Feeds</span>
+          </div>
+          <div class="contents">
+            <v:data-set
+              name="ds"
+              sql="select EF_ID,
+                          EF_URI,
+                          EF_TITLE
+                     from ENEWS.WA.FEED
+                            join ENEWS.WA.FEED_DIRECTORY on EFD_FEED_ID = EF_ID
+                    where EFD_DIRECTORY_ID = :p0
+                    order by EF_TITLE"
+              nrows="0"
+              scrollable="1"
+              cursor-type="keyset"
+              edit="0"
+              initial-enable="1">
+              <v:param name="p0" value="--self.v_id"/>
+
+              <div style="padding: 0.5em 0 0.5em 0;">
+                <v:text name="channel_id" type="hidden" value="--''" format="%s"/>
+                <?vsp http(sprintf('<input type="button" value="Add feed(s)" onClick="javascript:windowShow(\'channels_select.vspx?dst=m&src=s&params=channel_id:s1;&ex=%d\', 800)" class="button"/>', self.v_id)); ?>
+              </div>
+
+              <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                <table id="list" style="background-color: white;" cellspacing="0">
+                  <tr>
+                    <th align="center" width="1%">
+                      <input type="checkbox" name="cb_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')"/>
+                    </th>
+                    <th>
+                      <v:label value="Title" format="%s"/>
+                    </th>
+                    <th>
+                      <v:label value="Feed URL" format="%s"/>
+                    </th>
+                    <th>
+                      <v:label value="Retrieved" format="%s"/>
+                    </th>
+                    <th width="1%">
+                      <v:label value="Action" format="%s"/>
+                    </th>
+                  </tr>
+                </table>
+              </v:template>
+
+              <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+                <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                  <table>
+                    <tr align="center">
+                      <td colspan="5">No feeds</td>
+                    </tr>
+                  </table>
+                </v:template>
+
+                <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                  <table>
+                    <tr>
+                      <td align="center">
+                        <?vsp
+                          http (sprintf ('<input type="checkbox" name="cb_item" value="%d" />', control.te_rowset[0]));
+                        ?>
+                      </td>
+                      <td>
+                        <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EF_TITLE')" format="%s"/>
+                      </td>
+                      <td>
+                        <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EF_URI')" format="%s"/>
+                      </td>
+                      <td align="right">
+                        <v:label value="--0" format="%d">
+                          <v:after-data-bind>
+                            <![CDATA[
+                      		    control.ufl_value := (select count(*) from ENEWS.WA.FEED_ITEM where EFI_FEED_ID = (control.vc_parent as vspx_row_template).te_rowset[0] and coalesce(EFI_DELETE_FLAG, 0) <> 1);
+                            ]]>
+                    		  </v:after-data-bind>
+                        </v:label>
+                      </td>
+                      <td nowrap="nowrap">
+                        <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this feed?\');" xhtml_class="button" xhtml_alt="Delete feed">
+                          <v:on-post>
+                            <![CDATA[
+                              ENEWS.WA.channel_directory((control.vc_parent as vspx_row_template).te_column_value('EF_ID'), null, null);
+                    		      self.ds.vc_data_bind(e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+
+              </v:template>
+
+              <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                <table>
+                  <v:template type="simple" enabled="--case when self.ds.ds_rows_fetched > 0 then 1 else 0 end;">
+                    <tr class="td_border">
+                      <td align="right" colspan="4" class="td_border">
+                        <b>Selected&amp;nbsp;</b>
+                      </td>
+                      <td nowrap="nowrap" class="td_border">
+                        <v:button value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete selected feed(s)?\', this.form, \'cb_item\', \'No feeds were selected to be deleted.\');" xhtml_class="button" xhtml_alt="Delete selected feed(s)">
+                          <v:on-post>
+                            <![CDATA[
+                              declare i integer;
+
+                              for (i := 0; i < length(e.ve_params); i := i + 2) {
+                                if (e.ve_params[i] = 'cb_item') {
+                                  declare exit handler for sqlstate '*' {
+                                    rollback work;
+                                    goto _next;
+                                  };
+                                  commit work;
+
+                                  ENEWS.WA.channel_directory(e.ve_params[i+1], null, null);
+                                }
+                                _next:;
+                              }
+                    		      self.ds.vc_data_bind(e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                      </td>
+                    </tr>
+                  </v:template>
+                </table>
+              </v:template>
+
+            </v:data-set>
+            <script type="text/javascript">
+              <![CDATA[
+                coloriseTable('list');
+              ]]>
+            </script>
+          </div>
+        </v:template>
+      </v:template>
+      <?vsp
+        if (self.dt_bookmark is not null) {
+          http ('\n<script type="text/javascript">\n');
+          http (sprintf ('location.hash = "%s";\n', self.dt_bookmark));
+          http ('</script>\n');
+        }
+      ?>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="bookmark" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:after-data-bind>
+    <![CDATA[
+      self.url := sprintf('<a onClick="alert(''To drag the button to your toolbar, left click the link and while holding the mouse button down, drag it to the browser toolbar and release the button.''); return false;" href="javascript:location.href=''%s/enews2/%d/channels_create.vspx?URL=''+location.href">Bookmark with OFM</a>', ENEWS.WA.host_url(), self.domain_id);
+    ]]>
+  </v:after-data-bind>
+  <vm:pagetitle>OFM Bookmarklet</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header/>
+    <vm:variables>
+      <v:variable name="url" type="varchar" default="''" />
+    </vm:variables>
+    <vm:pagebody>
+      <table width="90%" align="center">
+        <tr>
+          <td>
+             You can subscribe to a feed from anywhere with the OFM Bookmark button.
+             <h3>Internet Explorer Users</h3>
+             <ol>
+               <li>To install the button, right click on this url <?vsp http(self.url); ?> and select the 'Add to Favorites' link. You may see a warning dialog -- click 'OK' to continue.</li>
+               <li>To subscribe to the feed or site you're currently viewing in your browser, just click the 'Bookmark with OFM' button from within your Favorites menu.</li>
+             </ol>
+             <h3>Firefox Users</h3>
+             <ol>
+               <li>To install the button on your browser, first make sure that the 'Bookmarks Toolbar' toolbar is visible in your browser. Click 'View'->'Toolbars' and verify that the 'Bookmarks Toolbar' item is checked.</li>
+               <li>Drag this url <?vsp http(self.url); ?> to the 'Bookmarks Toolbar' toolbar.</li>
+               <li>A 'Bookmark with OFM' button should now appear in your 'Bookmarks Toolbar'.</li>
+               <li>To subscribe to the feed or site you're currently viewing in your browser, just click the button.</li>
+            </ol>
+            <h3>Mozilla/Netscape Users</h3>
+            <ol>
+              <li>To install the button on your browser, first make sure that the 'Personal Toolbar' toolbar is visible in your browser. Click 'View'->'Show/Hide' and verify that the 'Personal Toolbar' item is checked.</li>
+              <li>Drag this url <?vsp http(self.url); ?> to the 'Personal Toolbar' toolbar.</li>
+              <li>A 'Bookmark with OFM' button should now appear in your 'Personal Toolbar'.</li>
+              <li>To subscribe to the feed or site you're currently viewing in your browser, just click the button.</li>
+            </ol>
+            <h3>Safari Users</h3>
+            <ol>
+              <li>To install the button on your browser, first make sure that the 'Bookmark Bar' toolbar is visible in your browser. Click 'View'->'Menu' and verify that the 'Bookmark Bar' item is checked.</li>
+              <li>Drag this url <?vsp http(self.url); ?> to the 'Bookmark Bar' toolbar.</li>
+              <li>A 'Bookmark with OFM' button should now appear in your 'Bookmark Bar'. </li>
+              <li>To subscribe to the feed or site you're currently viewing in your browser, just click the button.</li>
+            </ol>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

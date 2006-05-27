@@ -1,0 +1,20 @@
+<v:login name="enews_login" realm="wa" mode="url" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <v:template name='inl' type='if-no-login'/>
+  <v:after-data-bind>
+    <![CDATA[
+      declare page_name varchar;
+
+      set_qualifier ('DB');
+      page_name := ENEWS.WA.page_name ();
+      if (page_name = 'error.vspx')
+        return;
+      if (ENEWS.WA.check_grants2(self.account_role, page_name))
+        return;
+      if ((page_name = 'channels_create.vspx') and (get_keyword('URL', self.vc_page.vc_event.ve_params, '') <> '')) {
+        self.vc_redirect(sprintf('%slogin.vspx?URL=%U', ENEWS.WA.wa_home_link (), concat(HTTP_REQUESTED_URL(), '?URL=', get_keyword('URL', self.vc_page.vc_event.ve_params, ''))));
+        return;
+      }
+      self.vc_redirect('news.vspx');
+    ]]>
+  </v:after-data-bind>
+</v:login>

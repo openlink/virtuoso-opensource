@@ -2081,6 +2081,7 @@ AC_CONFIG_FILES([
 	appsrc/ODS-Framework/Makefile
 	appsrc/ODS-Blog/Makefile
 	appsrc/ODS-Briefcase/Makefile
+	appsrc/ODS-FeedManager/Makefile
 ])
 
 

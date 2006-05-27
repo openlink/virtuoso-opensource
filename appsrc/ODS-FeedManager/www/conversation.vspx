@@ -1,0 +1,257 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+    <title>Conversation page</title>
+  </head>
+  <body style="padding: 5px;">
+    <v:page name="conversation" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+      <v:method name="getTitle" arglist="">
+        <![CDATA[
+          declare title any;
+
+          if (isnull(self.v_pid)) {
+            select EFI_TITLE into title from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid;
+          } else {
+            select EFIC_TITLE into title from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ID = self.v_pid;
+          }
+          return concat('Re: ', coalesce(title, '~ no title ~'));
+        ]]>
+      </v:method>
+
+      <v:method name="getComment" arglist="">
+        <![CDATA[
+          declare comment any;
+
+          if (isnull(self.v_pid)) {
+            select EFI_TITLE into comment from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid;
+          } else {
+            select EFIC_COMMENT into comment from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ID = self.v_pid;
+          }
+          return coalesce(comment, '');
+        ]]>
+      </v:method>
+
+  	  <v:template type="simple" condition="not self.vc_is_valid">
+  	    <div class="error">
+  		    <p><v:error-summary/></p>
+  	    </div>
+  	  </v:template>
+      <v:on-init>
+        <![CDATA[
+          self.sid := get_keyword('sid', self.vc_event.ve_params);
+          self.realm := get_keyword('realm', self.vc_event.ve_params);
+        ]]>
+      </v:on-init>
+      <vm:popup_page_wrapper>
+        <vm:variables>
+          <v:variable persist="0" name="v_mode" type="varchar" default="'show'"/>
+          <v:variable persist="0" name="v_fid" param-name="fid" type="integer"/>
+          <v:variable persist="0" name="v_did" param-name="did" type="integer"/>
+          <v:variable persist="0" name="v_aid" param-name="aid" type="integer"/>
+          <v:variable persist="0" name="v_pid" type="integer"/>
+        </vm:variables>
+        <v:form name="F1" type="simple" method="GET">
+          <input type="hidden" name="sid" value="&lt;?V get_keyword('sid', self.vc_event.ve_params) ?>"/>
+          <input type="hidden" name="realm" value="&lt;?V get_keyword('realm', self.vc_event.ve_params) ?>"/>
+          <div style="padding: 0 0 0.5em 0;">
+            <a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+          </div>
+          <div class="new-form-header">
+            Conversation
+          </div>
+          <div class="new-form-body">
+            <table cellspacing="0">
+              <tr>
+                <td>
+                  <b>Item Title</b> <hr />
+                  <v:label value="">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        control.ufl_value := (select coalesce(EFI_TITLE, '~ no title ~') from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid);
+                      ]]>
+                    </v:after-data-bind>
+                  </v:label>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <br /><b>Comments</b><hr />
+                  <v:tree name="comments_list" multi-branch="1" orientation="vertical" start-path="--self.v_fid" open-at="--'//*'" root="ENEWS.WA.cm_root_node"	child-function="ENEWS.WA.cm_child_node">
+	                  <v:node-template name="node_tmpl">
+	                    <div class="<?V case when control.tn_level = 0 then 'cm_node_top' else 'cm_node' end ?>">
+                    		<?vsp
+                      		{
+                      		  declare id, comment, title, u_name, last_update any;
+
+                      		  id := cast (control.tn_value as integer);
+                      		  declare exit handler for not found;
+                      		  select EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_LAST_UPDATE
+                      		    into title, comment, u_name, last_update
+                      		    from ENEWS.WA.FEED_ITEM_COMMENT
+                      		   where EFIC_ID = id;
+                      	?>
+	                      <div class="comment" id="msg_<?V id ?>">
+		                      <div class="comment-header">
+			                      <span class="comment-subj"><?V title ?></span> <br />
+		                      </div>
+		                      <div class="comment-msg">
+                            <?vsp
+                              http (comment);
+                            ?>
+	                        </div>
+	                        <div class="comment-footer">
+		                        <span class="comment-user">
+		                          Posted by <?V ENEWS.WA.utf2wide (u_name) ?>
+		                        </span>
+		                        <span class="comment-date"> on <?V cast(last_update as varchar) ?></span>
+	                        </div>
+                          <div class="comment-actions">
+	                          <v:button action="simple" style="url" value="Delete" xhtml_title="Delete" xhtml_class="button2">
+                              <v:on-post>
+                                <![CDATA[
+                        		      declare id int;
+                        		      id := cast ((control.vc_parent as vspx_tree_node).tn_value as integer);
+
+                                  delete from
+                                    ENEWS.WA.FEED_ITEM_COMMENT
+                                  where
+                                    EFIC_ID = id;
+
+                                  self.v_mode := 'show';
+                                  self.vc_data_bind(e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+	                          <v:button action="simple" style="url" value="Reply" xhtml_title="Reply" xhtml_class="button2">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.v_pid := cast ((control.vc_parent as vspx_tree_node).tn_value as integer);;
+                                  self.v_mode := 'reply';
+                                  self.vc_data_bind(e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </div>
+                       </div>
+		                   <?vsp
+		                     }
+		                   ?>
+		                   <v:node />
+	                    </div>
+	                  </v:node-template>
+                  </v:tree>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <hr />
+                  <v:button action="simple" style="url" value="Reply" xhtml_title="Reply" xhtml_class="button2">
+                    <v:on-post>
+                      <![CDATA[
+                        self.v_pid := null;
+                        self.v_mode := 'reply';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <hr />
+                </td>
+              </tr>
+              <v:template type="simple" enabled="--case when (self.v_mode = 'reply') then 1 else 0 end">
+                <tr>
+                  <td>
+                    <table cellspacing="0">
+                      <tr>
+                        <th>
+                          <v:label for="f_name" value="Name" />
+                        </th>
+                        <td>
+                          <v:text name="f_name" value="--ENEWS.WA.account_name(self.v_aid)" xhtml_class="textbox" xhtml_size="70" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <v:label for="f_mail" value="E-Mail" />
+                        </th>
+                        <td>
+                          <v:text name="f_mail" value="--ENEWS.WA.account_mail(self.v_aid)" xhtml_class="textbox" xhtml_size="70" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          Comment
+                        </th>
+                        <td>
+                          <?vsp
+                            declare tmpString any;
+                            tmpString := self.getComment();
+                            tmpString := replace(tmpString, '\'', '&#39;');
+                            tmpString := replace(tmpString, '"', '&#34;');
+                            tmpString := replace(tmpString, chr(10), ' ');
+                            tmpString := replace(tmpString, chr(13), ' ');
+                          ?>
+                          <![CDATA[
+                            <script language="JavaScript" type="text/javascript" src="rte/js/richtext.js"></script>
+                            <script language="JavaScript" type="text/javascript" src="rte/js/html2xhtml.js"></script>
+                            <script language="JavaScript" type="text/javascript">
+                              initRTE("rte/images/", "rte/js/", "", true);
+                            </script>
+                            <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
+                            <script language="JavaScript" type="text/javascript">
+                              writeRichText('f_message', '<?vsp http(tmpString); ?>', 500, 170, true, false);
+                            </script>
+                          ]]>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" align="center">
+                          <hr />
+                          <v:button action="simple" value="Post" xhtml_onclick="javascript:updateRTE(\'f_message\')" xhtml_title="Post" xhtml_class="button2">
+                            <v:on-post>
+                              <![CDATA[
+                                declare name, mail, title, comment any;
+                                declare rName, rMail, rTitle, rComment any;
+
+                                title := self.getTitle();
+                                comment := trim(get_keyword('f_message', self.vc_event.ve_params, ''));
+                                name := trim(self.f_name.ufl_value);
+                                mail := trim(self.f_mail.ufl_value);
+
+                                if (isnull(self.v_pid)) {
+                                  -- get root comment;
+                                  self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.v_did and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
+                                  if (isnull(self.v_pid))
+                                    self.v_pid := ENEWS.WA.nntp_root (self.v_did, self.v_fid);
+                                }
+
+                                ENEWS.WA.nntp_update_item (self.v_did, self.v_fid);
+                                insert into ENEWS.WA.FEED_ITEM_COMMENT (EFIC_PARENT_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_LAST_UPDATE)
+                                  values (self.v_pid, self.v_did, self.v_fid, title, comment, name, mail, now ());
+
+                                self.v_mode := 'show';
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                          <v:button action="simple" value="Cancel" xhtml_title="Cancel" xhtml_class="button2">
+                            <v:on-post>
+                              <![CDATA[
+                                self.v_mode := 'show';
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </v:template>
+            </table>
+          </div>
+        </v:form>
+      </vm:popup_page_wrapper>
+    </v:page>
+  </body>
+</html>

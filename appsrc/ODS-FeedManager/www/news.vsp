@@ -1,0 +1,55 @@
+<?vsp
+  declare N, domain_id, account_id integer;
+  declare sid, realm varchar;
+  declare settings, requests, aRequest, aSession any;
+
+  sid := get_keyword('sid', params, '');
+  realm := get_keyword('realm', params, '');
+
+  aRequest := ENEWS.WA.validate_request(lines,0);
+  aSession := ENEWS.WA.session_restore(aRequest, params, lines);
+  domain_id := cast(get_keyword('domain_id', aSession, '0') as integer);
+  account_id := cast(get_keyword('user_id', aSession, '0') as integer);
+
+	http_rewrite ();
+	http_request_status ('HTTP/1.1 302 Found');
+	http_header (sprintf('Location: news.vspx?sid=%s&realm=%s\r\n', sid, realm));
+	http_flush ();
+
+	commit work;
+
+  settings := ENEWS.WA.settings(domain_id, account_id);
+  if ((cast(get_keyword('updateFeeds', settings, '0') as varchar) = '1') or (cast(get_keyword('updateBlogs', settings, '0') as varchar) = '1')) {
+    if (get_keyword('sid', settings, '') <> sid) {
+
+      ENEWS.WA.set_keyword('sid', settings, sid);
+      insert replacing ENEWS.WA.SETTINGS(ES_DOMAIN_ID, ES_ACCOUNT_ID, ES_DATA) values(domain_id, account_id, serialize(settings));
+    	commit work;
+
+      if (cast(get_keyword('updateFeeds', settings, '0') as varchar) = '1') {
+        ENEWS.WA.feeds_queue_add (domain_id);
+    	  commit work;
+    	}
+
+      if (cast(get_keyword('updateBlogs', settings, '0') as varchar) = '1') {
+        ENEWS.WA.blogs_queue_add (domain_id);
+    	  commit work;
+    	}
+
+      N := 0;
+      requests := http_pending_req ();
+      foreach (any x in requests) do
+        if (x[1] like '%/news.vsp')
+          N := N + 1;
+
+      if (N > 1)
+        return;
+
+      if (cast(get_keyword('updateFeeds', settings, '0') as varchar) = '1')
+        ENEWS.WA.feeds_queue_agregator ();
+
+      if (cast(get_keyword('updateBlogs', settings, '0') as varchar) = '1')
+        ENEWS.WA.blogs_queue_agregator ();
+    }
+  }
+?>

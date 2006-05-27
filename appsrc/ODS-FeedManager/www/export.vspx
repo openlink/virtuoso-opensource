@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/">
+  <v:variable name="domain_id" type="integer" param-name="did" default="-1"/>
+  <v:variable name="account_id" type="integer" param-name="aid" default="-1"/>
+
+  <v:variable name="v_output" type="varchar" param-name="output" default="''"/>
+  <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
+  <v:variable name="v_expression" type="varchar" default="''" param-name="expression"/>
+  <v:variable name="v_tags" type="varchar" default="''" param-name="tags"/>
+  <v:variable name="v_read" type="varchar" default="''" param-name="read"/>
+  <v:variable name="v_flag" type="varchar" default="''" param-name="flag"/>
+  <v:variable name="v_after" type="varchar" default="''" param-name="after"/>
+  <v:variable name="v_before" type="varchar" default="''" param-name="before"/>
+
+  <v:variable name="v_type" type="varchar" default="'text'" param-name="type"/>
+  <v:variable name="v_max" type="varchar" default="'100'" param-name="max"/>
+  <v:variable name="v_order" type="varchar" default="'EFI_PUBLISH_DATE'" param-name="order"/>
+  <v:variable name="v_direction" type="varchar" default="'desc'" param-name="direction"/>
+
+  <![CDATA[
+    <?vsp
+      http_rewrite ();
+      http_request_status ('HTTP/1.1 200 OK');
+      http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+
+      if (self.v_output = 'OPML') {
+        http(ENEWS.WA.xml2string(ENEWS.WA.export_opml_xml(self.domain_id, self.account_id)));
+        goto _end;
+
+      } else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
+        declare data, sql, state, msg, meta, result any;
+
+        ENEWS.WA.xml_set('keywords', data, self.v_keywords);
+        ENEWS.WA.xml_set('expression', data, self.v_expression);
+        ENEWS.WA.xml_set('tags', data, self.v_tags);
+        ENEWS.WA.xml_set('read', data, self.v_read);
+        ENEWS.WA.xml_set('flag', data, self.v_flag);
+        ENEWS.WA.xml_set('afterDate', data, self.v_after);
+        ENEWS.WA.xml_set('beforeDate', data, self.v_before);
+
+        if (length(xpath_eval('//entry', data, 0)) = 0)
+          goto _error;
+
+    	  sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_type, self.v_max);
+        sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
+
+        state := '00000';
+        exec(sql, state, msg, vector(), 0, meta, result);
+        if (state <> '00000')
+          goto _error;
+
+        if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
+          declare retValue any;
+
+          retValue := string_output ();
+
+          http('<?xml version ="1.0" encoding="UTF-8"?>\n', retValue);
+          http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n', retValue);
+          http ('<channel>\n', retValue);
+          for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
+            http ('<title>', retValue);
+              http_value (ENEWS.WA.utf2wide(ENEWS.WA.domain_name(self.domain_id)), null, retValue);
+            http ('</title>\n', retValue);
+            http ('<description>', retValue);
+              http_value (ENEWS.WA.utf2wide(ENEWS.WA.domain_description(self.domain_id)), null, retValue);
+            http ('</description>\n', retValue);
+            http ('<managingEditor>', retValue);
+              http_value (U_E_MAIL, null, retValue);
+            http ('</managingEditor>\n', retValue);
+            http ('<pubDate>', retValue);
+              http_value (ENEWS.WA.dt_rfc1123(now()), null, retValue);
+            http ('</pubDate>\n', retValue);
+            http ('<generator>', retValue);
+              http_value ('Virtuoso Universal Server ' || sys_stat('st_dbms_ver'), null, retValue);
+            http ('</generator>\n', retValue);
+            http ('<webMaster>', retValue);
+              http_value (U_E_MAIL, null, retValue);
+            http ('</webMaster>\n', retValue);
+            http ('<link>', retValue);
+              http_value (ENEWS.WA.enews_url(self.domain_id), null, retValue);
+            http ('</link>\n', retValue);
+          }
+          foreach (any row in result) do {
+            http ('<item>\n', retValue);
+              http ('<title>', retValue);
+                http_value (ENEWS.WA.utf2wide(row[1]), null, retValue);
+              http ('</title>\n', retValue);
+              http ('<description>', retValue);
+                http_value (charset_recode(ENEWS.WA.xml2string(ENEWS.WA.feed_description(row[0])), null, 'UTF-8'), null, retValue);
+              http ('</description>\n', retValue);
+              http ('<link>', retValue);
+                http_value (row[4], null, retValue);
+              http ('</link>\n', retValue);
+              http ('<guid>', retValue);
+                http_value (row[4], null, retValue);
+              http ('</guid>\n', retValue);
+              http ('<pubDate>', retValue);
+                http_value (ENEWS.WA.dt_rfc1123 (row[3]), null, retValue);
+              http ('</pubDate>\n', retValue);
+              if (self.v_output <> 'rss') {
+                http ('<vi:modified>', retValue);
+                  http_value (ENEWS.WA.dt_iso8601 (row[3]), null, retValue);
+                http ('</vi:modified>\n', retValue);
+              }
+            http ('</item>\n', retValue);
+          }
+          http ('</channel>\n', retValue);
+          http ('</rss>', retValue);
+
+          retValue := string_output_string (retValue);
+          if (self.v_output = 'atom03')
+    	      http_value(xslt (ENEWS.WA.xslt_full ('rss2atom03.xsl'), xtree_doc(retValue)));
+
+          else if (self.v_output = 'atom10')
+    	      http_value(xslt (ENEWS.WA.xslt_full ('rss2atom.xsl'), xtree_doc(retValue)));
+
+          else if (self.v_output = 'rdf')
+     	      http_value(xslt (ENEWS.WA.xslt_full ('rss2rdf.xsl'), xtree_doc(retValue)));
+
+          else if (self.v_output = 'xbel')
+    	      http_value(xslt (ENEWS.WA.xslt_full ('rss2xbel.xsl'), xtree_doc(retValue)));
+
+    	    else
+            http(retValue);
+
+    	    goto _end;
+        }
+      }
+    _error:
+      http('<?xml version="1.0" ?><empty />');
+
+    _end:
+      http_flush();
+    ?>
+  ]]>
+</v:page>

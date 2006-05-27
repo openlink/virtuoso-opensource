@@ -1,0 +1,20 @@
+<v:page name="show" fast-render="1"  xmlns:v="http://www.openlinksw.com/vspx/">
+  <v:variable name="did" type="varchar" default="null" />
+  <v:variable name="aid" type="varchar" default="null" />
+  <v:variable name="cid" type="varchar" default="null" />
+  <?vsp
+    declare sql, meta, result, content any;
+
+    self.did := get_keyword('did', params);
+    self.aid := get_keyword('aid', params);
+    self.cid := get_keyword('cid', params);
+
+    declare st, msg varchar;
+
+    content := ENEWS.WA.xml2string(ENEWS.WA.export_opml_xml(self.did, self.aid));
+
+    http_header (sprintf('Content-Type: %s\r\n', 'text/xml'));
+    http(content);
+    http_flush();
+  ?>
+</v:page>

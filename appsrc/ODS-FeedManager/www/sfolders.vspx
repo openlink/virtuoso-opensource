@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="sfolders" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
+    <![CDATA[
+      declare altStr, directionStr, imageStr varchar;
+
+      if (self.sf_order = columnName and self.sf_direction = 'desc') {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
+      } else if (self.sf_order = columnName and self.sf_direction = 'asc') {
+        directionStr := 'Descending';
+        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
+      } else {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;&nbsp;';
+      }
+      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
+      http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
+    ]]>
+  </v:method>
+  <v:method name="sortChange" arglist="in columnName varchar">
+    <![CDATA[
+      if (columnName = '')
+        return;
+      self.ds.vc_reset();
+      if (self.sf_order = columnName) {
+        self.sf_direction := either(equ(self.sf_direction, 'asc'), 'desc', 'asc');
+      } else {
+        self.sf_direction := 'asc';
+      }
+      self.sf_order := columnName;
+    ]]>
+  </v:method>
+  <vm:pagetitle>Smart Folders</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="sf_order" persist="1" type="varchar" default="'ESFO_NAME'" />
+      <v:variable name="sf_direction" persist="1" type="varchar" default="'asc'" />
+    </vm:variables>
+    <vm:pagebody>
+      <v:data-source name="dsrc" expression-type="sql" nrows="--ENEWS.WA.settings_rows(self.domain_id, self.account_id)" initial-offset="0">
+        <v:before-data-bind>
+          <![CDATA[
+            self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
+            control.ds_sql := sprintf('select ESFO_ID, ESFO_NAME from ENEWS.WA.SFOLDER where ESFO_DOMAIN_ID = %d', self.domain_id);
+            control.ds_sql := concat(control.ds_sql, ' order by ', self.sf_order, ' ', self.sf_direction);
+          ]]>
+        </v:before-data-bind>
+      </v:data-source>
+      <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
+        <div style="padding: 0 0 0.5em 0;">
+          <v:button action="simple" value="create" xhtml_class="button" xhtml_alt="Create Smart folder">
+            <v:on-post>
+              <![CDATA[
+                self.vc_redirect('sfolders_update.vspx');
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+
+        <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+          <table id="sfolders" class="grid" cellspacing="0">
+            <thead class="sortHeader">
+              <tr>
+                <th class="checkbox" width="1%">
+                  <input type="checkbox" name="cb_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')"/>
+                </th>
+                <th>
+                  <?vsp self.sortColumn('Title', 'ESFO_NAME'); ?>
+                </th>
+                <th width="5%" colspan="2" class="last">
+                  <v:label value="Action" format="%s"/>
+                </th>
+              </tr>
+            </thead>
+          </table>
+        </v:template>
+
+        <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+          <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table id="list" cellspacing="0">
+              <tr align="center">
+                <td colspan="4">No Smart folders</td>
+              </tr>
+            </table>
+          </v:template>
+
+          <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+            <table id="list" cellspacing="0">
+              <tr>
+                <td align="center">
+                  <?vsp
+                    http (sprintf ('<input type="checkbox" name="cb_item" value="%s" />', control.te_rowset[0]));
+                  ?>
+                </td>
+                <td>
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('ESFO_NAME')" format="%s"/>
+                </td>
+                <td nowrap="nowrap">
+                  <v:button value="edit" action="simple" xhtml_class="button" xhtml_alt="edit Smart folder">
+                    <v:on-post>
+                      <![CDATA[
+                        self.vc_redirect(sprintf('sfolders_update.vspx?id=%d', cast((control.vc_parent as vspx_row_template).te_column_value('ESFO_ID') as integer)));
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </td>
+                <td nowrap="nowrap">
+                  <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this smart folder?\');" xhtml_class="button" xhtml_alt="Delete Smart folder">
+                    <v:on-post>
+                      <![CDATA[
+                        ENEWS.WA.sfolder_delete(self.domain_id, cast((control.vc_parent as vspx_row_template).te_column_value('ESFO_ID') as integer));
+                		    self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+
+        </v:template>
+
+        <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+          <table id="list" cellspacing="0">
+            <v:template type="simple" enabled="--case when self.ds.ds_rows_fetched > 0 then 1 else 0 end;">
+              <tr class="td_border">
+                <td align="right" colspan="2" class="td_border">
+                  <b>Selected&amp;nbsp;</b>
+                </td>
+                <td class="td_border">
+                  &amp;nbsp;
+                </td>
+                <td nowrap="nowrap" class="td_border">
+                  <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete selected smart folder(s)?\', this.form, \'cb_item\', \'No smart folders were selected to be deleted.\');" xhtml_class="button" xhtml_alt="Delete selected Smart folders">
+                    <v:on-post>
+                      <![CDATA[
+                        declare i integer;
+
+                        for (i := 0; i < length(e.ve_params); i := i + 2) {
+                          if (e.ve_params[i] = 'cb_item') {
+                            declare exit handler for sqlstate '*' {
+                              rollback work;
+                              goto _next;
+                            };
+                            commit work;
+
+                            ENEWS.WA.sfolder_delete(self.domain_id, e.ve_params[i+1]);
+                          }
+                          _next:;
+                        }
+              		      self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+              <tr class="td_border">
+                <td align="right" colspan="2" class="td_border">
+                  <b>All&amp;nbsp;</b>
+                </td>
+                <td class="td_border">
+                  &amp;nbsp;
+                </td>
+                <td nowrap="nowrap" class="td_border">
+                  <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete all smart folder(s)?\');" xhtml_class="button" xhtml_alt="Delete all Smart folders">
+                    <v:on-post>
+                      <![CDATA[
+                        for (select ESFO_ID from ENEWS.WA.SFOLDER where ESFO_DOMAIN_ID = self.domain_id) do
+                          ENEWS.WA.sfolder_delete(self.domain_id, ESFO_ID);
+              		      self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+            </v:template>
+            <tr>
+              <td align="center" colspan="4">
+                <vm:ds-navigation data-set="ds"/>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+      </v:data-set>
+      <script type="text/javascript">
+        <![CDATA[
+          coloriseTable('sfolders');
+        ]]>
+      </script>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

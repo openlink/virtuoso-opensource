@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="channels_update" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Feed edit</vm:pagetitle>
+  <v:method name="calc_period" arglist="in period any, in freq any">
+    <![CDATA[
+      declare upd int;
+
+      period := lower (coalesce (period, 'daily'));
+      upd := case period
+               when 'hourly' then 60
+               when 'daily' then 1440
+               when 'weekly' then 10080
+               when 'monthly' then 43200
+               when 'yearly' then 525600
+               else 1440
+             end;
+      return upd / freq;
+    ]]>
+  </v:method>
+  <vm:pagewrapper>
+    <vm:header/>
+    <vm:variables>
+      <v:variable name="v_feed_id" param-name="id" type="varchar" persist="0"/>
+      <v:variable name="v_feed_uri" type="varchar" default="''" persist="0"/>
+      <v:variable name="v_title" type="varchar" default="''"/>
+      <v:variable name="v_home" type="varchar" default="''"/>
+      <v:variable name="v_update_period" type="varchar" default="'daily'"/>
+      <v:variable name="v_update_frequency" type="integer" default="4"/>
+      <v:variable name="v_store_days" type="integer" default="30"/>
+      <v:variable name="v_tag" type="varchar" default="''"/>
+      <v:variable name="v_tags" type="varchar" default="''" persist="0"/>
+      <v:variable name="v_folder_name" type="varchar" default="''"/>
+      <v:variable name="v_folder_id" type="varchar" default="'0'"/>
+      <v:variable name="v_directory_name" type="varchar" default="''"/>
+      <v:variable name="v_directory_id" type="varchar" default="'0'"/>
+    </vm:variables>
+    <vm:pagebody>
+      <v:before-data-bind>
+        <![CDATA[
+   		    declare exit handler for not found goto _end;
+
+          if (isnull(get_keyword('f_title', self.vc_page.vc_event.ve_params))) {
+       			select b.EF_URI,
+       			       b.EF_HOME_URI,
+                   b.EF_UPDATE_PERIOD,
+                   b.EF_UPDATE_FREQ,
+                   b.EF_STORE_DAYS,
+       			       a.EFD_TITLE,
+                   a.EFD_TAGS,
+                   a.EFD_FOLDER_ID,
+                   c.EFD_DIRECTORY_ID
+       			  into self.v_feed_uri,
+       			       self.v_home,
+       			       self.v_update_period,
+       			       self.v_update_frequency,
+       			       self.v_store_days,
+       			       self.v_title,
+       			       self.v_tags,
+       			       self.v_folder_id,
+       			       self.v_directory_id
+              from ENEWS.WA.FEED_DOMAIN a
+                     join ENEWS.WA.FEED b on b.EF_ID = a.EFD_FEED_ID
+                        left join ENEWS.WA.FEED_DIRECTORY c on c.EFD_FEED_ID = a.EFD_FEED_ID
+        	 	 where a.EFD_FEED_ID = self.v_feed_id
+       			   and a.EFD_DOMAIN_ID = self.domain_id;
+
+       			self.v_title := ENEWS.WA.utf2wide(self.v_title);
+  	    		return;
+  		    }
+
+          declare params any;
+
+          params := self.vc_page.vc_event.ve_params;
+          if (get_keyword('dtag', params, '') <> '')
+            self.v_tags := ENEWS.WA.tag_delete(self.v_tags, cast(get_keyword('dtag', params, '0') as integer));
+
+		    _end:
+          self.v_title := ENEWS.WA.utf2wide(get_keyword('f_title', params, ''));
+          self.v_home := get_keyword('f_home', params, '');
+          self.v_update_period := get_keyword('f_update_period', params, 'daily');
+          self.v_update_frequency := get_keyword('f_update_frequency', params, '4');
+          self.v_store_days := get_keyword('f_store_days', params, '');
+          self.v_tag := get_keyword('f_tag', params, '');
+          self.v_folder_id := get_keyword('f_folder_id', params, '');
+          self.v_folder_name := get_keyword('f_folder_name', params, '');
+          self.v_directory_id := get_keyword('f_directory_id', params, '');
+          self.v_directory_name := get_keyword('f_directory_name', params, '');
+        ]]>
+      </v:before-data-bind>
+      <div class="new-form-header">
+         Feed
+      </div>
+      <div class="new-form-body">
+        <table cellspacing="0">
+          <tr>
+            <th>
+              <v:label value="Feed URL"/>
+            </th>
+            <td class="text">
+              <v:label value="--self.v_feed_uri"/>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <v:label for="f_title" value="Title"/>
+            </th>
+            <td>
+              <v:text name="f_title" null-value="--''" value="--self.v_title" xhtml_class="textbox" xhtml_size="70%"/>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <v:label for="f_home" value="Feed Home"/>
+            </th>
+            <td>
+              <v:text name="f_home" null-value="--''" value="--self.v_home" xhtml_class="textbox" xhtml_size="70%"/>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <v:label for="f_update_period" value="Update period"/>
+            </th>
+            <td>
+              <v:data-list name="f_update_period"
+                           value="--self.v_update_period"
+  	                       list-document="--xml_tree_doc('&lt;i t=&quot;daily&quot;/&gt;&lt;i t=&quot;weekly&quot;/&gt;&lt;i t=&quot;monthly&quot;/&gt;&lt;i t=&quot;yearly&quot;/&gt;')"
+  	                       list-match="//i"
+                           list-key-path="@t"
+                           list-value-path="@t"/>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <v:label for="f_update_frequency" value="Update frequency"/>
+            </th>
+            <td>
+              <v:text name="f_update_frequency" null-value="--''" value="--self.v_update_frequency" xhtml_class="textbox" xhtml_size="5"/>
+            </td>
+          </tr>
+          <v:template type="simple" enabled="--case when (ENEWS.WA.check_admin(self.account_id) = 1) then 1 else 0 end">
+            <tr>
+              <th>
+                <v:label for="f_store_days" value="Store days for items"/>
+              </th>
+              <td>
+                <v:text name="f_store_days" null-value="--''" value="--self.v_store_days" xhtml_class="textbox" xhtml_size="5"/>
+              </td>
+            </tr>
+          </v:template>
+          <tr>
+            <th>
+              <v:label for="f_tag" value="Tags"/>
+            </th>
+            <td>
+              <v:text name="f_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="20%"/>
+              <v:button action="simple" style="image" value="image/add_16.png" xhtml_alt="Add Tag">
+                <v:on-post>
+                  <![CDATA[
+                    declare tag_id integer;
+
+                    self.v_tag := ENEWS.WA.tag_prepare(self.f_tag.ufl_value);
+  			        if (not ENEWS.WA.validate_tags(self.v_tag)) {
+  			          self.vc_is_valid := 0;
+  			          self.vc_error_message := 'The expression is not valid tag.';
+  			          return;
+  			        }
+                    self.v_tags := ENEWS.WA.tags_join(self.v_tags, self.v_tag);
+                    self.vc_data_bind(e);
+                    self.f_tag.ufl_value := '';
+         		      ]]>
+         		    </v:on-post>
+              </v:button>
+              <?vsp
+                declare i integer;
+                declare tags any;
+
+                tags := ENEWS.WA.tags2vector(self.v_tags);
+                for (i := 0; i < length(tags); i := i + 1) {
+                  http(sprintf(', %s ', tags[i]));
+                  http(sprintf('<a href="#" onclick="javascript: myPost(\'F1\', \'dtag\', \'%d\'); return false"><img src="image/del_16.png" border="0" alt="Delete Tag" title="Delete Tag" /></a>', i));
+                }
+              ?>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <v:label for="f_folder_name" value="Feed folder"/>
+            </th>
+            <td>
+              <v:text name="f_folder_name" null-value="''" value="--self.v_folder_name" xhtml_class="textbox" xhtml_size="40%"/>
+        	    <v:data-list name="f_folder_id" value="--self.v_folder_id" sql="select 0 as EFO_ID, 'Select folder ...' as EFO_PATH2, '' as EFO_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select EFO_ID, ENEWS.WA.folder_path2(EFO_DOMAIN_ID, EFO_ID) as EFO_PATH2, ENEWS.WA.folder_path(EFO_DOMAIN_ID, EFO_ID) as EFO_PATH from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = self.domain_id order by EFO_PATH" key-column="EFO_ID" value-column="EFO_PATH2" xhtml_class="select"/>
+            </td>
+          </tr>
+          <v:template type="simple" enabled="--case when (ENEWS.WA.check_admin(self.account_id) = 1) then 1 else 0 end">
+            <tr>
+              <th>
+                <v:label for="f_directory_name" value="Feed directory"/>
+              </th>
+              <td>
+                <v:text name="f_directory_name" null-value="''" value="--self.v_directory_name" xhtml_class="textbox" xhtml_size="40%"/>
+          	    <v:data-list name="f_directory_id" value="--self.v_directory_id" sql="select 0 as ED_ID, 'Select directory ...' as ED_PATH2, '' as ED_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select ED_ID, ENEWS.WA.directory_path2(ED_ID) as ED_PATH2, ENEWS.WA.directory_path(ED_ID) as ED_PATH from ENEWS.WA.DIRECTORY order by ED_PATH" key-column="ED_ID" value-column="ED_PATH2" xhtml_class="select"/>
+              </td>
+            </tr>
+          </v:template>
+        </table>
+      </div>
+      <div class="form-footer">
+        <v:button action="simple" value="Save" xhtml_alt="Save feed data" xhtml_class="form-button">
+          <v:on-post>
+            <![CDATA[
+              declare home varchar;
+              home := null;
+              if (trim(self.f_home.ufl_value) <> '')
+                home := trim(self.f_home.ufl_value);
+
+              self.f_title.ufl_value := trim(self.f_title.ufl_value);
+              self.f_update_frequency.ufl_value := trim(self.f_update_frequency.ufl_value);
+              self.f_store_days.ufl_value := trim(self.f_store_days.ufl_value);
+              if (is_empty_or_null(self.f_title.ufl_value)) {
+                self.vc_error_message := 'Please, enter correct title name.';
+             		self.vc_is_valid := 0;
+          		  return;
+              }
+              if ((not ENEWS.WA.validate('integer', self.f_update_frequency.ufl_value, 0)) or (atoi(self.f_update_frequency.ufl_value) < 1) or (atoi(self.f_update_frequency.ufl_value) > 8)) {
+                self.vc_error_message := 'Please, enter correct update frequency value in range [1, 8]!';
+             		self.vc_is_valid := 0;
+          		  return;
+              }
+              if (self.calc_period(self.f_update_period.ufl_value, atoi(self.f_update_frequency.ufl_value)) < 180) {
+                self.vc_error_message := 'Result update interval must be greater than 3 hours. Please, correct update period or/and update frequency values.';
+             		self.vc_is_valid := 0;
+          		  return;
+              }
+              if (ENEWS.WA.check_admin(self.account_id)) {
+                if ((not ENEWS.WA.validate('integer', self.f_store_days.ufl_value, 0)) or (atoi(self.f_store_days.ufl_value) < 1)) {
+                  self.vc_error_message := 'Please, enter correct store days value!';
+               		self.vc_is_valid := 0;
+            		  return;
+                }
+              }
+              self.v_folder_name := trim(self.f_folder_name.ufl_value);
+              if (self.v_folder_name <> '') {
+                if (not ENEWS.WA.folder_check_name(self.v_folder_name, 1)) {
+                  self.vc_error_message := 'Please, enter other folder name. This name conatins bad characters.';
+               		self.vc_is_valid := 0;
+            		  return;
+                }
+              }
+
+
+              -- feed
+              update ENEWS.WA.FEED
+                 set EF_UPDATE_PERIOD = self.f_update_period.ufl_value,
+                     EF_UPDATE_FREQ = atoi(self.f_update_frequency.ufl_value)
+               where EF_ID = self.v_feed_id;
+              if (ENEWS.WA.check_admin(self.account_id)) {
+                update ENEWS.WA.FEED
+                   set EF_TITLE = self.f_title.ufl_value,
+                       EF_HOME_URI = home,
+                       EF_STORE_DAYS = atoi(self.f_store_days.ufl_value)
+                 where EF_ID = self.v_feed_id;
+              }
+
+              -- domain
+              ENEWS.WA.channel_domain(self.domain_id, self.v_feed_id, self.f_title.ufl_value, self.v_tags, self.v_folder_name, trim(self.f_folder_id.ufl_value));
+
+              -- directory
+              if (ENEWS.WA.check_admin(self.account_id)) {
+                self.v_directory_name := trim(self.f_directory_name.ufl_value);
+                if (self.v_directory_name <> '') {
+                  if (not ENEWS.WA.directory_check_name(self.v_directory_name, 1)) {
+                    self.vc_error_message := 'Please, enter other directory name. This name conatins bad characters.';
+                 		self.vc_is_valid := 0;
+              		  return;
+                  }
+                }
+                ENEWS.WA.channel_directory(self.v_feed_id, self.v_directory_name, trim(self.f_directory_id.ufl_value));
+              }
+              self.vc_redirect('channels.vspx');
+      	    ]]>
+         </v:on-post>
+        </v:button>
+        <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:on-post>
+            <![CDATA[
+              self.vc_redirect('channels.vspx');
+           ]]>
+         </v:on-post>
+        </v:button>
+      </div>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

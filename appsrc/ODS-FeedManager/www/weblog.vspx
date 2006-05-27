@@ -1,0 +1,513 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="weblogs" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:method name="update_blog" arglist="in node vspx_tree_node">
+    <![CDATA[
+      declare S varchar;
+
+      S := xpath_eval('./@id', node.tn_element, 1);
+      self.v_id := ENEWS.WA.node_id(S);
+      if (ENEWS.WA.node_type(S) = 'b')
+        self.v_mode := 'update_blog';
+      if (ENEWS.WA.node_type(S) = 'w')
+        self.v_mode := 'update';
+    ]]>
+  </v:method>
+  <v:method name="delete_blog" arglist="in node vspx_tree_node">
+    <![CDATA[
+      declare S varchar;
+
+      S := xpath_eval('./@id', node.tn_element, 1);
+      self.v_id := ENEWS.WA.node_id(S);
+      if (ENEWS.WA.node_type(S) = 'b')
+ 	      ENEWS.WA.blog_delete(self.v_id);
+      if (ENEWS.WA.node_type(S) = 'w')
+        ENEWS.WA.weblog_delete(self.v_id);
+    ]]>
+  </v:method>
+  <v:method name="refresh_blog" arglist="in node vspx_tree_node">
+    <![CDATA[
+      declare S varchar;
+
+      S := xpath_eval('./@id', node.tn_element, 1);
+      self.v_id := ENEWS.WA.node_id(S);
+      if (ENEWS.WA.node_type(S) = 'b')
+ 	      ENEWS.WA.blog_refresh(self.v_id);
+      if (ENEWS.WA.node_type(S) = 'w')
+        ENEWS.WA.weblog_refresh(self.v_id);
+    ]]>
+  </v:method>
+  <vm:pagetitle>Weblogs</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header/>
+    <vm:variables>
+      <v:variable name="v_id" param-name="id" type="integer" default="0" persist="0"/>
+      <v:variable name="v_name" type="varchar" default="''"/>
+      <v:variable name="v_api" type="varchar" default="'Blogger'"/>
+      <v:variable name="v_uri" type="varchar" default="''"/>
+      <v:variable name="v_port" type="integer" default="'80'"/>
+      <v:variable name="v_endpoint" type="varchar" default="'/RPC2'"/>
+      <v:variable name="v_user" type="varchar" default="''"/>
+      <v:variable name="v_password" type="varchar" default="''"/>
+      <v:variable name="v_update_period" type="varchar" default="'daily'"/>
+      <v:variable name="v_update_frequency" type="integer" default="1"/>
+      <v:variable name="v_store_days" type="integer" default="30"/>
+      <v:variable name="v_limit" type="integer" default="5"/>
+      <v:variable name="v_mode" type="varchar" default="''" persist="0"/>
+      <v:variable persist="session" name="wt_state" type="any" default="null" />
+      <v:variable persist="session" name="wt_bookmark" type="varchar" default="null" />
+    </vm:variables>
+    <vm:pagebody>
+    	<v:on-post>
+        <![CDATA[
+      	  if (e.ve_button is not null)  {
+      	    declare btn vspx_button;
+      	    btn := null;
+      	    if (e.ve_button.vc_name = 'wt_toggle') {
+      	      btn := e.ve_button;
+      	    } else if (e.ve_button.vc_name = 'wt_leaf_url') {
+      	      btn := e.ve_button;
+      	    } else if (e.ve_button.vc_name = 'wt_leaf_image') {
+      		    btn := e.ve_button.vc_parent.vc_find_control ('wt_leaf_url');
+      		  }
+      	    if (btn is not null)
+      	      self.wt_bookmark := 'btn_' || btn.vc_get_name ();
+      	  }
+        ]]>
+    	</v:on-post>
+      <v:template type="simple" enabled="--either(equ(self.v_mode, ''), 1, 0)">
+        <div style="padding: 0 0 0.5em 0;">
+          <v:button value="create" action="simple" xhtml_class="button" xhtml_alt="Create weblog">
+            <v:on-post>
+              <![CDATA[
+                self.v_id := 0;
+                self.v_mode := 'create';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+
+        <div class="tree_main">
+          <v:tree name="wt" multi-branch="1" orientation="vertical" root="ENEWS.WA.weblog_root" child-function="ENEWS.WA.weblog_child" start-path="--cast(self.domain_id as varchar)">
+      	    <v:before-data-bind>
+              <![CDATA[
+        	      if (self.wt_state is not null and not e.ve_is_post)
+       	          control.vc_set_control_state (self.wt_state);
+              ]]>
+      	    </v:before-data-bind>
+      	    <v:before-render>
+              <![CDATA[
+            		self.wt_state := control.vc_get_state ();
+              ]]>
+      	    </v:before-render>
+            <v:node-template>
+              <div style="white-space: nowrap; margin-left: <?V control.tn_level*16 ?>px;">
+                <table cellspacing="0">
+                  <tr>
+                    <td nowrap="nowrap">
+                      <v:button name="wt_toggle"
+                                action="simple"
+                                style="image"
+                                value="--case when ((control.vc_parent as vspx_tree_node).tn_open) then 'image/folder_open_16.png' else 'image/folder_16.png' end"
+                                xhtml_alt="--case when ((control.vc_parent as vspx_tree_node).tn_open) then 'Close blogs' else 'Open blogs' end"
+                                xhtml_class="nolink"
+                                enabled="--case when ((control.vc_parent as vspx_tree_node).tn_is_leaf) then 0 else 1 end"/>
+                      <?vsp
+                        declare S varchar;
+
+                        S := (control as vspx_tree_node).tn_value;
+                        if ((control as vspx_tree_node).tn_is_leaf) {
+                          http (sprintf('<img src="image/folder_empty_16.png"/>&nbsp;<span style="font-size: 1em; font-weight: bold;">%s</span>', S));
+                        } else {
+                          http (sprintf('<a href="#" onclick="javascript: clickNode2(this); return false;" alt="%s" title="%s" class="nolink3">%s</a>', S, S, S));
+                        }
+                      ?>
+                    </td>
+                    <td width="100%" valign="center">
+                      <div style="height: 1px; margin: 0 1em 0 1em; border-style: dotted; border: solid #935000; border-width: 0px 0px 1px 0px;"/>
+                    </td>
+                    <td nowrap="nowrap">
+                      <v:button action="simple" value="edit" xhtml_class="button" xhtml_alt="edit weblog">
+                        <v:on-post>
+                          <![CDATA[
+                            self.update_blog(control.vc_parent);
+                            self.vc_data_bind (e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                      <v:button value="delete" action="simple" xhtml_onclick="return confirm(\'Are you sure that you want to delete this weblog?\');" xhtml_class="button" xhtml_alt="Delete weblog">
+                        <v:on-post>
+                          <![CDATA[
+                            self.delete_blog(control.vc_parent);
+                      	    self.vc_data_bind(e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                      <v:button value="refresh" action="simple" xhtml_class="button" xhtml_alt="Refresh weblog">
+                        <v:on-post>
+                          <![CDATA[
+                            self.refresh_blog(control.vc_parent);
+                     		    self.vc_data_bind (e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </td>
+                  </tr>
+                </table>
+                <v:node/>
+              </div>
+            </v:node-template>
+          </v:tree>
+        </div>
+        <v:template type="simple" enabled="--case when (length(ENEWS.WA.weblog_root(cast(self.domain_id as varchar))) > 0) then 1 else 0 end">
+          <div style="margin-top: 0.5em; height: auto" class="tree_main">
+            <table cellspacing="0">
+              <tr>
+                <td width="100%" align="right">
+                  <b>All&amp;nbsp;</b>
+                </td>
+                <td nowrap="nowrap">
+                  <v:button value="delete" action="simple" xhtml_onclick="return confirm(\'Are you sure that you want to delete all weblogs?\');" xhtml_class="button" xhtml_alt="Delete all weblogs">
+                    <v:on-post>
+                      <![CDATA[
+                        for (select EW_ID from ENEWS.WA.WEBLOG where EW_DOMAIN_ID = self.domain_id) do
+                     	    ENEWS.WA.weblog_delete(EW_ID);
+                  	    self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button value="refresh" action="simple" xhtml_onclick="return confirm(\'Are you sure that you want to refresh all weblogs?\');" xhtml_class="button" xhtml_alt="Refresh all weblogs">
+                    <v:on-post>
+                      <![CDATA[
+                        for (select EW_ID from ENEWS.WA.WEBLOG where EW_DOMAIN_ID = self.domain_id) do {
+                          declare exit handler for sqlstate '*' {
+                            rollback work;
+                            goto _weblog;
+                          };
+                 	        ENEWS.WA.weblog_refresh(EW_ID);
+                          for (select EB_ID from ENEWS.WA.BLOG where EB_WEBLOG_ID = EW_ID) do {
+                            declare exit handler for sqlstate '*' {
+                              rollback work;
+                              goto _blog;
+                            };
+                   	        ENEWS.WA.blog_refresh(EB_ID);
+                   	      _blog:;
+                          }
+                        _weblog:;
+                 	      }
+                  	    self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </v:template>
+      </v:template>
+      <v:template type="simple" enabled="--case when ((self.v_mode = 'create') or (self.v_mode = 'update')) then 1 else 0 end">
+        <v:before-data-bind>
+          <![CDATA[
+      	    declare exit handler for not found goto _end;
+
+            if (isnull(get_keyword('f_name', self.vc_page.vc_event.ve_params))) {
+         			select EW_NAME,
+                     EW_API,
+                     EW_URI,
+                     EW_PORT,
+                     EW_ENDPOINT,
+                     EW_USER,
+                     EW_PASSWORD
+         			  into self.v_name,
+                     self.v_api,
+                     self.v_uri,
+                     self.v_port,
+                     self.v_endpoint,
+                     self.v_user,
+                     self.v_password
+                from ENEWS.WA.WEBLOG
+        			 where EW_ID = self.v_id;
+
+              self.v_mode := 'update';
+          		return;
+      	    }
+
+    	    _end:
+            self.v_name := get_keyword('f_name', self.vc_page.vc_event.ve_params, '');
+            self.v_api := get_keyword('f_api', self.vc_page.vc_event.ve_params, 'Blogger');
+            self.v_uri := get_keyword('f_uri', self.vc_page.vc_event.ve_params, '');
+            self.v_port := get_keyword('f_port', self.vc_page.vc_event.ve_params, '80');
+            self.v_endpoint := get_keyword('f_endpoint', self.vc_page.vc_event.ve_params, '/RPC2');
+            self.v_user := get_keyword('f_user', self.vc_page.vc_event.ve_params, '');
+            self.v_password := get_keyword('f_password', self.vc_page.vc_event.ve_params, '');
+          ]]>
+        </v:before-data-bind>
+        <div class="new-form-header">
+          <v:label format="%s" value="--concat(initcap(self.v_mode), ' weblog')"/>
+        </div>
+        <div class="new-form-body">
+          <table cellspacing="0">
+            <tr>
+              <th>
+                <v:label for="f_name" value="Weblog name"/>
+              </th>
+              <td>
+                <v:text name="f_name" null-value="--''" value="--ENEWS.WA.utf2wide(self.v_name)" xhtml_size="70%"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_api" value="XML-RPC API"/>
+              </th>
+              <td>
+                <v:data-list name="f_api"
+                             value="--self.v_api"
+  	                         list-document="--xml_tree_doc('&lt;i t=&quot;Blogger&quot;/&gt;&lt;i t=&quot;MetaWeblog&quot;/&gt;&lt;i t=&quot;MovableType&quot;/&gt;&lt;i t=&quot;Atom&quot;/&gt;')"
+  	                         list-match="//i"
+                             list-key-path="@t"
+                             list-value-path="@t"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_uri" value="Host"/>
+              </th>
+              <td>
+                <v:text name="f_uri" null-value="--''" value="--self.v_uri" xhtml_size="70%"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_port" value="Port"/>
+              </th>
+              <td>
+                <v:text name="f_port" null-value="--''" value="--self.v_port" xhtml_size="10"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_endpoint" value="End point"/>
+              </th>
+              <td>
+                <v:text name="f_endpoint" null-value="--''" value="--self.v_endpoint" xhtml_size="10"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_user" value="User"/>
+              </th>
+              <td>
+                <v:text name="f_user" null-value="--''" value="--self.v_user" xhtml_size="20"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_password" value="Password"/>
+              </th>
+              <td>
+                <v:text name="f_password" type="password" null-value="--''" value="--self.v_password" xhtml_size="20"/>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" value="Save" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                declare tmp any;
+
+                --declare exit handler for SQLSTATE '*' {
+                --  if (__SQL_STATE = 'TEST') {
+                --    self.vc_error_message := ENEWS.WA.test_clear(__SQL_MESSAGE);
+                -- 		self.vc_is_valid := 0;
+              	--	  return;
+              	--	}
+                --  resignal;
+                --};
+
+                self.v_name := trim(self.f_name.ufl_value);
+                self.v_api := trim(self.f_api.ufl_value);
+                self.v_uri := trim(self.f_uri.ufl_value);
+                self.v_port := trim(self.f_port.ufl_value);
+                self.v_endpoint := trim(self.f_endpoint.ufl_value);
+                self.v_user := trim(self.f_user.ufl_value);
+                self.v_password := trim(self.f_password.ufl_value);
+
+                ENEWS.WA.test(self.v_name, vector('name', 'Weblog name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
+    		        tmp := coalesce((select EW_ID from ENEWS.WA.WEBLOG where EW_DOMAIN_ID = self.domain_id and EW_NAME = self.v_name), 0);
+    		        if ((tmp <> 0) and (tmp <> self.v_id))
+                  signal('TEST', 'Weblog name already exists. Please, enter new ''Weblog name''!<>');
+                ENEWS.WA.test(self.v_name, vector('name', 'Host', 'class', 'varchar', 'type', 'varchar', 'canEmpty', 0));
+                ENEWS.WA.test(self.v_port, vector('name', 'Port', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 9999));
+
+                self.v_port := cast(self.v_port as integer);
+    		        if (self.v_mode = 'create') {
+      	          insert into ENEWS.WA.WEBLOG(EW_DOMAIN_ID, EW_NAME, EW_API, EW_URI, EW_PORT, EW_ENDPOINT, EW_USER, EW_PASSWORD)
+      	            values(self.domain_id, self.v_name, self.v_api, self.v_uri, self.v_port, self.v_endpoint, self.v_user, self.v_password);
+      	        } else {
+      	          update ENEWS.WA.WEBLOG
+      	             set EW_NAME = self.v_name,
+                         EW_API = self.v_api,
+                         EW_URI = self.v_uri,
+                         EW_PORT = self.v_port,
+                         EW_ENDPOINT = self.v_endpoint,
+                         EW_USER = self.v_user,
+                         EW_PASSWORD = self.v_password
+     		           where EW_ID = self.v_id;
+     		        }
+                self.v_mode := '';
+                self.vc_data_bind(e);
+        	    ]]>
+       	   </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.v_mode := '';
+                self.vc_data_bind(e);
+        	    ]]>
+        	  </v:on-post>
+          </v:button>
+        </div>
+      </v:template>
+      <v:template type="simple" enabled="--case when (self.v_mode = 'update_blog') then 1 else 0 end">
+        <v:before-data-bind>
+          <![CDATA[
+      	    declare exit handler for not found goto _end;
+
+            if (isnull(get_keyword('f_name', self.vc_page.vc_event.ve_params))) {
+         			select EB_NAME,
+                     EB_LIMIT,
+                     EB_UPDATE_PERIOD,
+                     EB_UPDATE_FREQ,
+                     EB_STORE_DAYS
+         			  into self.v_name,
+                     self.v_limit,
+                     self.v_update_period,
+                     self.v_update_frequency,
+                     self.v_store_days
+                from ENEWS.WA.BLOG
+        			 where EB_ID = self.v_id;
+
+              self.v_mode := 'update_blog';
+          		return;
+      	    }
+
+    	    _end:
+            self.v_name := get_keyword('f_name', self.vc_page.vc_event.ve_params, '');
+            self.v_limit := get_keyword('f_limit', self.vc_page.vc_event.ve_params, '5');
+            self.v_update_period := get_keyword('f_update_period', self.vc_page.vc_event.ve_params, 'daily');
+            self.v_update_frequency := get_keyword('f_update_frequency', self.vc_page.vc_event.ve_params, '1');
+            self.v_store_days := get_keyword('f_store_days', self.vc_page.vc_event.ve_params, '30');
+          ]]>
+        </v:before-data-bind>
+        <div class="new-form-header">
+          <v:label format="%s" value="--'Update blog'"/>
+        </div>
+        <div class="new-form-body">
+          <table cellspacing="0">
+            <tr>
+              <th width="50%">
+                <v:label value="Blog name"/>
+              </th>
+              <td>
+                <v:label value="--self.v_name"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_limit" value="Number of posts"/>
+              </th>
+              <td>
+                <v:text name="f_limit" null-value="--''" value="--self.v_limit" xhtml_size="10"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_update_period" value="Update period"/>
+              </th>
+              <td>
+                <v:data-list name="f_update_period"
+                             value="--self.v_update_period"
+  	                         list-document="--xml_tree_doc('&lt;i t=&quot;hourly&quot;/&gt;&lt;i t=&quot;daily&quot;/&gt;&lt;i t=&quot;weekly&quot;/&gt;&lt;i t=&quot;monthly&quot;/&gt;&lt;i t=&quot;yearly&quot;/&gt;')"
+  	                         list-match="//i"
+                             list-key-path="@t"
+                             list-value-path="@t"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_update_frequency" value="Update frequency"/>
+              </th>
+              <td>
+                <v:text name="f_update_frequency" null-value="--''" value="--self.v_update_frequency" xhtml_class="textbox" xhtml_size="10"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="f_store_days" value="Store days"/>
+              </th>
+              <td>
+                <v:text name="f_store_days" null-value="--''" value="--self.v_store_days" xhtml_class="textbox" xhtml_size="10"/>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" value="Save" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                declare tmp any;
+
+                declare exit handler for SQLSTATE '*' {
+                  if (__SQL_STATE = 'TEST') {
+                    self.vc_error_message := ENEWS.WA.test_clear(__SQL_MESSAGE);
+                 		self.vc_is_valid := 0;
+              		  return;
+              		}
+                  resignal;
+                };
+
+                self.v_limit := trim(self.f_limit.ufl_value);
+                self.v_update_period := trim(self.f_update_period.ufl_value);
+                self.v_update_frequency := trim(self.f_update_frequency.ufl_value);
+                self.v_store_days := trim(self.f_store_days.ufl_value);
+
+                ENEWS.WA.test(self.v_limit, vector('name', 'Number of posts', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 20));
+                ENEWS.WA.test(self.v_update_frequency, vector('name', 'Update frequency', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 6));
+                ENEWS.WA.test(self.v_store_days, vector('name', 'Store days', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 30));
+
+                self.v_limit := cast(self.v_limit as integer);
+                self.v_update_frequency := cast(self.v_update_frequency as integer);
+                self.v_store_days := cast(self.v_store_days as integer);
+     	          update ENEWS.WA.BLOG
+     	             set EB_LIMIT = self.v_limit,
+                       EB_UPDATE_PERIOD = self.v_update_period,
+                       EB_UPDATE_FREQ = self.v_update_frequency,
+                       EB_STORE_DAYS = self.v_store_days
+   		           where EB_ID = self.v_id;
+                self.v_mode := '';
+                self.vc_data_bind(e);
+        	    ]]>
+       	    </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.v_mode := '';
+                self.vc_data_bind(e);
+        	    ]]>
+        	  </v:on-post>
+          </v:button>
+        </div>
+      </v:template>
+      <?vsp
+        if (self.wt_bookmark is not null) {
+          http ('\n<script type="text/javascript">\n');
+          http (sprintf ('location.hash = "%s";\n', self.wt_bookmark));
+          http ('</script>\n');
+        }
+      ?>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

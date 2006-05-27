@@ -19,4 +19,45 @@
 #  
 #  
 
-SUBDIRS = ODS-Framework ODS-Blog ODS-Briefcase ODS-FeedManager
+TOP=@TOP@
+
+nodist_vad_DATA = ods_feedmanager_dav.vad
+
+CLEANFILES = \
+	make_feedmanager_vad.log \
+	make_feedmanager_vad.xml \
+	ods_feedmanager_dav.vad \
+	virtuoso.db \
+	virtuoso.ini \
+	virtuoso.lck \
+	virtuoso.log \
+	virtuoso.pxa \
+	virtuoso.tdb \
+	virtuoso.trx
+
+ods_feedmanager_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
+
+EXTRA_DIST = \
+	make_vad.sh \
+	sql/*.sql \
+	sql/install.bat \
+	sql/uninstall.bat \
+	www/*.vsp \
+	www/*.vspx \
+	www/css/*.css \
+	www/image/*.gif \
+	www/image/*.jpg \
+	www/image/*.png \
+	www/image/dav_browser/*.png \
+	www/js/*.js \
+	www/rte/css/*.css \
+	www/rte/images/*.gif \
+	www/rte/js/*.htm \
+	www/rte/js/*.js \
+	www/template/*.vspx \
+	www/template/*.xsl \
+	xslt/*.xsl

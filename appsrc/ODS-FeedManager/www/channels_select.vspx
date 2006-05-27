@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="channels_select" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
+    <![CDATA[
+      declare altStr, directionStr, imageStr varchar;
+
+      if (self.v_order = columnName and self.v_direction = 'desc') {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
+      } else if (self.v_order = columnName and self.v_direction = 'asc') {
+        directionStr := 'Descending';
+        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
+      } else {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;&nbsp;';
+      }
+      altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
+      http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
+    ]]>
+  </v:method>
+  <v:method name="sortChange" arglist="in columnName varchar">
+    <![CDATA[
+      if (columnName = '')
+        return;
+      if (self.v_order = columnName) {
+        self.v_direction := either(equ(self.v_direction, 'asc'), 'desc', 'asc');
+      } else {
+        self.v_direction := 'asc';
+      }
+      self.v_order := columnName;
+    ]]>
+  </v:method>
+  <vm:pagetitle>Select Feed</vm:pagetitle>
+  <vm:popup_page_wrapper>
+    <vm:variables>
+      <v:variable name="v_exclude" param-name="ex" type="integer" default="0"/>
+      <v:variable name="v_params" param-name="params" type="varchar"/>
+      <v:variable name="v_mask" persist="0" type="varchar" default="'%'"/>
+      <v:variable name="v_value" persist="0" type="varchar" default="''"/>
+      <v:variable name="v_how" persist="0" type="varchar" default="'1'"/>
+      <v:variable name="v_order" persist="0" type="varchar" default="'EF_TITLE'" />
+      <v:variable name="v_direction" persist="0" type="varchar" default="'asc'" />
+    </vm:variables>
+    <v:form name="F1" type="simple" method="POST">
+      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="src"   id="src"   value="%s"/>', get_keyword('src', self.vc_page.vc_event.ve_params, ''))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="dst"   id="dst"   value="%s"/>', get_keyword('dst', self.vc_page.vc_event.ve_params, 'sc'))); ?>
+      <v:text name="params" type="hidden" value="--self.v_params"/>
+      <div style="padding: 0.5em;">
+        <div style="padding: 0 0 0.5em 0;">
+          &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+          <hr />
+        </div>
+        <div class="boxHeader">
+          Show
+          <v:select-list name="how" value="--self.v_how">
+            <v:item name="Starting with" value="1" />
+            <v:item name="Containing" value="2" />
+            <v:item name="Ending with" value="3" />
+            <v:item name="Exact match" value="4" />
+          </v:select-list>
+          <v:text name="value" value="--self.v_value"/>
+          <v:button action="simple" value="Filter" xhtml_class="button">
+            <v:on-post>
+              <![CDATA[
+                self.v_how := self.how.ufl_value;
+                self.v_value := trim(self.value.ufl_value);
+                self.v_mask := case self.v_how
+                                 when '1' then self.v_value || '%'
+                                 when '2' then '%' || self.v_value || '%'
+                                 when '3' then '%' || self.v_value
+                                 else self.v_value end;
+
+                if (self.v_mask = '')
+                  self.v_mask := '%';
+                self.ds.vc_data_bind (e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Clear" xhtml_class="button">
+            <v:on-post>
+              <![CDATA[
+                self.v_how := '1';
+                self.v_value := '';
+                self.v_mask := '%';
+                self.how.vc_data_bind (e);
+                self.value.ufl_value := '';
+                self.ds.vc_data_bind (e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+      	<v:data-source name="dsrc" expression-type="sql" nrows="--ENEWS.WA.settings_rows(self.domain_id, self.account_id)" initial-offset="0">
+          <v:before-data-bind>
+            <![CDATA[
+              self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
+              control.ds_sql := sprintf('select EF_ID, EF_URI, EF_TITLE from ENEWS.WA.FEED where (upper(EF_TITLE) like upper(\'%s\')) and EF_ID not in (select EFD_FEED_ID from ENEWS.WA.FEED_DIRECTORY where EFD_DIRECTORY_ID = %d)', self.v_mask, self.v_exclude);
+              control.ds_sql := concat(control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
+            ]]>
+          </v:before-data-bind>
+        </v:data-source>
+        <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
+          <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+            <table id="channels" class="grid" cellspacing="0">
+              <thead class="sortHeader">
+                <tr>
+                  <th>
+                    <?vsp self.sortColumn('Title', 'EF_TITLE'); ?>
+                  </th>
+                  <th>
+                    <?vsp self.sortColumn('Feed URL', 'EF_URI'); ?>
+                  </th>
+                  <th class="last" width="1%">
+                    <v:label value="Action" format="%s"/>
+                  </th>
+                </tr>
+              </thead>
+            </table>
+          </v:template>
+
+          <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+            <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+              <table>
+                <tr align="center">
+                  <td colspan="3">No feeds</td>
+                </tr>
+              </table>
+            </v:template>
+
+            <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+              <table>
+                <tr>
+                  <td nowrap="nowrap">
+                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EF_TITLE')" format="%s"/>
+                  </td>
+                  <td nowrap="nowrap">
+                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EF_URI')" format="%s"/>
+                  </td>
+                  <td nowrap="nowrap">
+                    <v:text name="s1" type="hidden" value="--(control.vc_parent as vspx_row_template).te_column_value('EF_ID')"/>
+                    <v:text name="s2" type="hidden" value="--(control.vc_parent as vspx_row_template).te_column_value('EF_TITLE')"/>
+                    <v:button name="b1" action="simple" value="Select" xhtml_onClick="javascript: rowSelect(this); return false;" xhtml_class="button"/>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+
+          </v:template>
+
+          <v:template type="simple" name-to-remove="table" set-to-remove="top">
+            <table>
+              <tr align="center">
+                <td colspan="3">
+                  <vm:ds-navigation data-set="ds"/>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+
+        </v:data-set>
+        <script>
+          <![CDATA[
+            coloriseTable('channels');
+          ]]>
+        </script>
+      </div>
+    </v:form>
+  </vm:popup_page_wrapper>
+</v:page>
