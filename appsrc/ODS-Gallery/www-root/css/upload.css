@@ -1,0 +1,51 @@
+body {
+	margin: 0px 0;
+	padding: 10px;
+
+	font-family: Arial;
+	color: #333;
+  font-family: "Trebuchet MS", Arial, sans-serif;
+}
+
+#wrapper {
+	padding: 3px;
+	margin: 0px;
+	width: 98%;
+	text-align: left;
+  border-bottom:1px solid #C0C0C0;
+
+}
+
+h3{
+  margin-top:0;
+
+}
+label{
+  width:150px;
+  padding-bottom:5px;
+}
+
+
+#forma{
+  padding-left:15px;
+  padding-bottom:5px;
+  font-size:13px;
+}
+
+#info{
+  margin:5px 10px;
+  padding:3px;
+  font-size:12px;
+  border:1px solid #919191;
+  font-style:italic;
+}
+
+.close_button{
+  float:right;
+  padding:1px 2px;
+  font:10px Verdana;
+  font-weight:bold;
+  margin-top:1px;
+  margin-right:1px;
+  cursor:pointer;
+}

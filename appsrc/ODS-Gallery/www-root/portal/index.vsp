@@ -1,0 +1,109 @@
+<?vsp
+dbg_obj_print('>>>>',params);
+  declare auth_uid,_mime_type varchar;
+  declare current_user photo_user;
+  declare _sid,home_url varchar;
+  declare user_gallery,_home_path,_xsl,my_file varchar;
+  declare _owner_id integer;
+  declare current_instance photo_instance;
+
+  user_gallery := '';
+
+  declare wa_home_title,wa_home_link varchar;
+
+	wa_home_title := case when registry_get ('wa_home_title') = 0 then 'OPS Home' else registry_get ('wa_home_title') end;
+	wa_home_link := case when registry_get ('wa_home_link') = 0 then '/wa/' else registry_get ('wa_home_link') end;
+
+
+  auth_uid := PHOTO.WA._session_user(params,current_user);
+
+  declare _xml,_xsl_path any;
+  if(auth_uid <> ''){
+    _sid := current_user.sid;
+  }else{
+    _sid := '';
+    --PHOTO.WA.redirect(wa_home_link);
+    --return;
+  }
+
+  current_instance := new photo_instance();
+
+  if(isnull(current_instance.home_path)){
+    PHOTO.WA.http_404();
+    return;
+  }
+
+  path := PHOTO.WA.utl_parse_url(http_path());
+
+  if (PHOTO.WA.frozen_check(current_instance,current_user)) {
+    declare freeze_page varchar;
+    freeze_page := PHOTO.WA.frozen_page(current_instance.name);
+    if (freeze_page is null or freeze_page = '' or freeze_page = 'default') {
+      http_rewrite ();
+      http_request_status ('HTTP/1.1 404 Not found');
+      http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (path[0])));
+      http_flush();
+      return;
+    }
+    http_rewrite ();
+    http_request_status ('HTTP/1.1 302 Found');
+    http_header(sprintf('Location: %s\r\n\r\n', freeze_page));
+    http_flush();
+    return;
+  }
+
+
+  if(length(path) > 0){
+    my_file := path[length(path)-1];
+    if(my_file = 'rss.xml' or my_file = 'atom.xml' or my_file = 'index.rdf' or my_file = 'xbel.xml' or my_file = 'mrss.xml'){
+
+      _xsl := '';
+      if(my_file = 'atom.xml'){
+        _xsl := 'rss2atom03.xsl';
+
+      }else if(my_file = 'index.rdf'){
+        _xsl := 'rss2rdf.xsl';
+
+      }else if(my_file = 'xbel.xml'){
+        _xsl := 'rss2xbel.xsl';
+
+      }else if(my_file = 'mrss.xml'){
+        _xsl := 'rss2mrss.xsl';
+
+      }
+
+      _xsl_path := sprintf('%sxslt/%s',PHOTO.WA.base_path(),_xsl);
+      http_rewrite();
+      http_header (sprintf ('Content-type: %s\r\n', 'text/xml'));
+      http(PHOTO.WA.rss_output(current_instance,params));
+      if(_xsl <> ''){
+        http_xslt (_xsl_path);
+      }
+      return;
+    }
+  }
+
+
+  user_gallery := sprintf('<gallery><![CDATA[%s]]></gallery>',current_instance.home_path);
+
+
+  _xsl_path := sprintf('%sxslt/index.xsl',PHOTO.WA.base_path());
+  _xml := string_output();
+  http(sprintf('<root sid="%s" realm="%s">',_sid,either(current_user.realm,'')),_xml);
+  http('<user>',_xml);
+  http(sprintf('<full_name>%s</full_name>',current_user.full_name),_xml);
+  http(sprintf('<first_name>%s</first_name>',current_user.first_name),_xml);
+  http(sprintf('<last_name>%s</last_name>',current_user.last_name),_xml);
+  http(sprintf('<user_name>%s</user_name>',current_user.auth_uid),_xml);
+  http('</user>',_xml);
+  http(sprintf('<wa_home_title>%s</wa_home_title>',wa_home_title),_xml);
+  http(sprintf('<wa_home_link>%s</wa_home_link>',wa_home_link),_xml);
+
+  http(user_gallery,_xml);
+  http(PHOTO.WA.get_lastest_users(current_user),_xml);
+  http('</root>',_xml);
+
+  _xml := string_output_string(_xml);
+  PHOTO.WA.myhttp(_xml,_xsl_path,get_keyword('vv',params,''));
+
+?>

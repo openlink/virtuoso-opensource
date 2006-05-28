@@ -1,0 +1,40 @@
+<?vsp
+    declare _xml string;
+    declare _xsl_path string;
+    declare _mime_type string;
+    declare stream any;
+    declare host varchar;
+    declare iIsDav integer;
+    declare sHost varchar;
+
+    iIsDav := 1;
+
+    host := http_request_header(lines, 'Host', null, 'localhost');
+
+    _xml := http_get(sprintf('http://%s/photos/SOAP/services.wsdl',host,server_http_port ()));
+
+    sHost := registry_get('_oGallery_path_');
+
+    if (cast(sHost as varchar) = '0'){
+      sHost := '/apps/oGallery/';
+    }
+
+    if (isnull(strstr(sHost, '/DAV'))){
+      _xsl_path := 'file:/apps/oGallery/xslt/wsdl2js.xsl';
+      iIsDav := 0;
+    }else{
+      _xsl_path := sprintf('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:%sxslt/wsdl2js.xsl',sHost);
+    }
+
+ --_xsl_path := 'file:/apps/oGallery/xslt/wsdl2js.xsl';
+  _xsl_path := sprintf('%sxslt/wsdl2js.xsl',PHOTO.WA.base_path());
+
+  _xml := PHOTO.WA.xslt(_xml,_xsl_path);
+
+  _mime_type := 'text/html';
+
+	-- Print to output
+  http_rewrite();
+  http_header (sprintf ('Content-type: %s\r\n', _mime_type));
+  http(_xml);
+?>

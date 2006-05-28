@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<html>
+  <head>
+    <title>Photo Gallery</title>
+    <link href="/photos/res/css/upload.css" rel="stylesheet" type="text/css"/>
+  </head>
+  <v:page fast-render="1" xmlns:vm="http://www.openlinksw.com/vspx/weblog/" xmlns:v="http://www.openlinksw.com/vspx/" name="photo-home-page" style="../xslt/upload.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+    <v:variable name="session_id" type="varchar" param-name="sid" default="null"/>
+    <v:variable name="album" type="varchar" param-name="album" default="null"/>
+    <v:variable name="current_user" type="photo_user" default="null"/>
+    <v:variable name="image_cnt" type="integer" default="0"/>
+    <v:on-init>
+      declare auth_uid varchar;
+      declare current_user photo_user;
+      dbg_obj_print('------------');
+      auth_uid := PHOTO.WA._session_user(self.vc_page.vc_event.ve_params,current_user);
+      self.current_user := current_user;
+
+      if(auth_uid = ''){
+        http_request_status ('HTTP/1.1 302 Found');
+        http_header (sprintf ('Location: %s\r\n', '/wa/'));
+        return;
+      }
+    </v:on-init>
+
+      <body>
+      <script>
+        function image_check_exist(path,index){
+          name = path.substring(path.lastIndexOf('\\')+1);
+          document.f1['description_'+ index].value = name;
+
+          if(window.parent.ds_current_album.checkNameExist(name) &gt; -1){
+
+            for(var i=1;i &lt; 100;i++){
+              new_name = name.substring(0,name.lastIndexOf('.'))+ '_'+ i + '.jpg';
+
+             if(window.parent.ds_current_album.checkNameExist(new_name) == -1){
+                break;
+              }
+            }
+
+            if(!confirm('Image with this name already exist in this folder. Do you want to replace it ?\n\n Click OK for replace or Cancel for renaming to ' + new_name)){
+              document.f1['replace_image_'+index].value = new_name;
+              //document.getElementById('info').style.display = '';
+              //document.getElementById('info').innerHTML = 'Note: New image will be renamed to ' + new_name + ' after uploading';
+              document.f1['description_'+ index].value = new_name;
+              return;
+            }
+          }
+        }
+      </script>
+      <div id="wrapper">
+        <v:form type="simple" name="f1" xhtml_enctype="multipart/form-data">
+          <input type="hidden" name="home_path"   value=""/>
+          <?vsp http(sprintf('<input type="hidden" name="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
+          <?vsp http(sprintf('<input type="hidden" name="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
+          <?vsp http(sprintf('<input type="hidden" name="album" value="%s"/>', get_keyword('album', self.vc_page.vc_event.ve_params))); ?>
+
+          <v:template name="upload_finish" type="simple" enabled="0">
+            <div id="info">
+              <h3>Congratulations</h3>
+              You successful add <?vsp http(cast(self.image_cnt as varchar)); ?> new image(s) to your album.<br/>
+              You can continue to add new or you can
+              <button OnClick="window.parent.gallery.upload_image_finish()" title="Close this wizard">Finish</button>
+            </div>
+          </v:template>
+
+          <table id="forma">
+            <tr>
+              <td>
+                <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
+              </td>
+              <td>
+                <label for="edit_album_name">Image</label>
+              </td>
+              <td>
+                <label for="edit_album_name">Caption</label>
+              </td>
+            </tr>
+            <vm:file_upload/>
+          </table>
+          <table id="forma">
+            <tr>
+              <td>
+                <label for="edit_album_name">Visible</label>
+              </td>
+              <td><input type="radio" name="visibility" value="1" checked="1"/>for all (public)
+                  <input type="radio" name="visibility" value="0"/>only for me (private )
+                </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td>
+                <button OnClick="window.parent.gallery.upload_image_cancel()" title="Close this panel">Cancel</button>
+              </td>
+              <td>
+
+                <v:button name="submit2" action="submit" value="Upload" initial-enable="--1">
+                  <v:on-post>
+                    self.image_cnt := PHOTO.WA.DAV_UPLOAD(self.vc_page.vc_event.ve_params,self.current_user);
+        		        self.upload_finish.vc_enabled := 1;
+        		      </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+
+          <div id="info" style="display:none">.</div>
+          <!--
+          <?vsp if(not isnull(self.new_image_id)){
+              http(sprintf('<script>window.parent.gallery.get_image("%d")',self.new_image_id));
+              http('</script>');
+            }
+          ?>
+          -->
+        </v:form>
+        <script>
+          document.f1.home_path.value = window.parent.home_path;
+        </script>
+      </div>
+    </body>
+  </v:page>
+</html>

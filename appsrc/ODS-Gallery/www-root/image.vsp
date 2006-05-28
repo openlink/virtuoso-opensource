@@ -1,0 +1,20 @@
+<?vsp
+    declare image any;
+    declare image_id varchar;
+    declare sid varchar;
+    declare size integer;
+
+    sid := get_keyword('sid',params,'');
+    image_id := get_keyword('image_id',params,'');
+    size := atoi(get_keyword('size',params,'1'));
+
+    if(image_id <> ''){
+      http_rewrite();
+      http_header (sprintf('Content-Type: image/jpeg\r\n'));
+      image := blob_to_string(PHOTO.WA.get_thumbnail(sid,image_id,size));
+      http(image);
+      http_flush();
+    }else{
+      dbg_obj_print('Error: no image_id');
+    }
+?>

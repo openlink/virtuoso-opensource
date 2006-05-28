@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<html>
+  <head>
+    <title>Photo Gallery</title>
+    <script language="JavaScript" src="js/ajax.js" />
+    <script language="JavaScript" src="js/dataset.js" />
+    <script language="JavaScript" src="js/gallery.js"></script>
+    <script language="JavaScript" src="proxy.vsp"></script>
+    <script language="JavaScript" src="js/slideshow.js"></script>
+    <link href="css/gallery.css" rel="stylesheet" type="text/css"/>
+  </head>
+  <v:page fast-render="1" xmlns:vm="http://www.openlinksw.com/vspx/weblog/" xmlns:v="http://www.openlinksw.com/vspx/" name="photo-home-page" style="../xslt/index.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <v:on-init>
+      declare auth_uid varchar;
+      declare current_user photo_user;
+      dbg_obj_print('------------');
+      auth_uid := PHOTO.WA._session_user(self.vc_page.vc_event.ve_params,current_user);
+      if(auth_uid = ''){
+        http_request_status ('HTTP/1.1 302 Found');
+        http_header (sprintf ('Location: %s\r\n', '/wa/'));
+        return;
+      }
+      dbg_obj_print(auth_uid);
+    </v:on-init>
+      <vm:body>
+
+      </vm:body>
+  </v:page>
+</html>

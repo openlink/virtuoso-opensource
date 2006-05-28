@@ -19,10 +19,40 @@
 #  
 #  
 
-SUBDIRS = ODS-Framework \
-	ODS-Blog \
-	ODS-Bookmark \
-	ODS-Briefcase \
-	ODS-FeedManager \
-	ODS-Gallery \
-	ODS-Wiki
+TOP=@TOP@
+
+nodist_vad_DATA = ods_gallery_dav.vad
+
+CLEANFILES = \
+	make_gallery_vad.log \
+	make_gallery_vad.xml \
+	ods_gallery_dav.vad \
+	virtuoso.db \
+	virtuoso.ini \
+	virtuoso.lck \
+	virtuoso.log \
+	virtuoso.pxa \
+	virtuoso.tdb \
+	virtuoso.trx
+
+ods_gallery_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
+
+EXTRA_DIST = \
+	make_vad.sh \
+	sql/*.sql \
+	sql/install.bat \
+	sql/procedures/*.sql \
+	sql/uninstall.bat \
+	www-root/*.vsp \
+	www-root/*.vspx \
+	www-root/css/*.css \
+	www-root/i/*.gif \
+	www-root/i/*.jpg \
+	www-root/i/*.png \
+	www-root/js/*.js \
+	www-root/portal/*.vsp \
+	xslt/*.xsl
