@@ -1,0 +1,19 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="css/dav.css" type="text/css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>WebDAV Repository</title>
+  </head>
+  <body style="padding: 5px;">
+    <v:page name="dav_browser" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+      <v:template type="simple" condition="not self.vc_is_valid">
+        <div class="warning">
+          <v:error-summary/>
+        </div>
+      </v:template>
+      <vm:popup_page_wrapper>
+        <vm:dav_browser view="popup"/>
+      </vm:popup_page_wrapper>
+    </v:page>
+  </body>
+</html>

@@ -1,0 +1,794 @@
+body {
+  font-family: verdana, arial, sans-serif;
+  font-size: 12px;
+}
+
+/*
+  Fields
+*/
+input:focus, select:focus, textarea:focus
+{
+  background: #FFFAEF;
+}
+
+input[readonly]
+{
+  background: #EFEFEF;
+}
+
+.readonly
+{
+  background: #EFEFEF;
+}
+
+/* mail tabs navigation ----------------------------------------------- */
+#mail_nav
+{
+  font-size: 1.1em;
+  font-weight: bold;
+  margin: 5px 0 0 0;
+  padding: 0px;
+  height: 25px;
+  list-style-type: none;
+}
+
+#mail_nav li
+{
+  float: left;
+  height: 25px;
+  background-color: #b0cde4;
+  vertical-align: middle;
+  margin-right: 5px;
+  padding: 0px;
+}
+
+#mail_nav li.on
+{
+  height: 25px;
+  vertical-align: middle;
+  background-image: url(../sel2_grad_nav.gif);
+  background-repeat: repeat-x;
+  background-color: #EAEAEA;
+}
+
+#mail_nav li a
+{
+  color: #000;
+  height: 25px;
+  display: block;
+  text-decoration: none;
+  padding: 3px 10px 2px 10px ;
+  width: 130px;
+}
+
+#mail_nav li a:hover
+{
+  height: 25px;
+  color: #FFF;
+}
+
+ /*-- Body ramka  ------------------------------------------------------- */
+#ramka
+{
+  border-width: 0px 0px 1px 0px;
+  border-color: #440000;
+  border-style: solid;
+}
+
+#ramka .left
+{
+  background-color: #EAEAEE;
+}
+
+#ramka .right
+{
+  padding: 5px;
+}
+
+#ramka .info
+{
+  font-size: 11px;
+  padding: 2px;
+  margin-top:0px;
+  height: 15px;
+}
+
+#ramka .info span
+{
+  margin-right: 20px;
+}
+
+/*-- Folder ------------------------------------------------------------ */
+#tree
+{
+  padding: 2px;
+  width: 170px;
+  min-height: 222px;
+  overflow: auto;
+}
+
+#tree td
+{
+  color: #000000;
+  font-size: 12px;
+}
+
+#tree a
+{
+  color: #000000;
+  text-decoration: none;
+}
+
+#tree a:hover
+{
+  color: #0000FF;
+  font-size: 12px;
+  text-decoration: underline;
+}
+
+/*-- base colgroup style ------------------------------------------------ */
+colgroup col.r
+{
+  text-align: right;
+}
+
+colgroup col.c
+{
+  text-align: center;
+}
+
+colgroup col.l
+{
+  text-align:left;
+}
+
+colgroup col.w100
+{
+  width:100px;
+}
+
+colgroup col.w150
+{
+  width:150px;
+}
+
+colgroup col.w200
+{
+  width:200px;
+}
+
+colgroup col.w20
+{
+  width:20px;
+  text-align:center;
+}
+
+colgroup col.w50
+{
+  width:50px;
+  text-align: center;
+}
+
+colgroup col.w20p
+{
+  width:20%;
+}
+
+colgroup col.w80p
+{
+  width:80%;
+}
+
+/* -- base class header ------------------------------------------------ */
+.content
+{
+  font-size: 12px;
+  background-color: #fff;
+  margin: 1px 0px 1px 0px;
+}
+
+.content caption
+{
+  text-align: left;
+  font-size: 1em;
+  font-weight: bold;
+  background-color: #b0cde4;
+  padding: 5px;
+}
+
+.content thead tr, .content td thead tr
+{
+  background-color: #fff;
+  background-image: url(../stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+
+.content thead th, .content td thead th
+{
+  font-size: 1em;
+  font-weight: bold;
+  text-align: left;
+  padding: 3px 2px 3px 3px;
+  border: solid #7f94a5;
+  border-width: 0px 1px 1px 0px;
+}
+
+.content tbody th
+{
+  font-weight: bold;
+  padding: 4px;
+  text-align: right;
+  border-style: solid;
+  border-width: 0px 0px 1px 0px;
+  border-color: #fff;
+  background-color: #F3F3EE;
+}
+
+.content tbody th.left
+{
+  text-align: left;
+}
+
+.content tbody td
+{
+  border-style: solid;
+  border-width: 0px 0px 1px 0px;
+  border-color: #F3F3EE;
+  padding: 2px;
+}
+
+.content tbody td.clear
+{
+  border: 0px;
+  padding: 0 2px 0 2px;
+}
+
+.content tfoot tr
+{
+  background-color: #b0cde4;
+}
+
+.content tfoot th
+{
+  border-style: solid;
+  border-width: 0px 0px 1px 0px;
+  border-color: #FFEEC6;
+  padding: 2px 0px 2px 0px;
+  text-align: center;
+}
+
+.content tfoot td.right
+{
+  text-align: right;
+}
+
+.content tfoot td
+{
+  padding: 2px 2px 2px 2px;
+}
+
+/* -- Info Box  ---------------------------------------------------------- */
+#info
+{
+  border-style: solid;
+  border-width: 1px;
+  border-color: #440000;
+  text-align: center;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color:#fff;
+}
+
+#info caption
+{
+  padding: 0px;
+  margin-top: 10px;
+}
+
+#info caption span
+{
+  float: left;
+  padding: 2px 20px 2px 2px;
+  height: 20px;
+  background-color: #fff;
+  margin: 2px 2px 0px 0px;
+  border: 1px solid #440000;
+  border-bottom: 0px;
+  font-size: 14px;
+}
+
+#info .warning
+{
+  background-image: url(/oMail/i/warning.gif);
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 130px;
+  height: 150px;
+  vertical-align:bottom;
+  text-align:center;
+  color:#b1b1b1;
+}
+
+#info thead th
+{
+  font-size: 15px;
+  font-weight: bold;
+  text-align:left;
+}
+
+#info tbody th
+{
+  font-size: 12px;
+  font-weight: bold;
+  text-align: right;
+}
+
+#info td,p
+{
+  font-size: 12px;
+  text-align: left;
+  height: 25px;
+}
+
+#info tfoot td
+{
+  font-size: 12px;
+  text-align: center;
+  height: 25px;
+}
+
+#info h1
+{
+  font-size: 16px;
+}
+
+#info a
+{
+  color: #0000FF;
+}
+
+/* -- Text styles ------------------------------------------------------- */
+.label
+{
+  font-size: 12px;
+  padding: 2px;
+}
+
+/* -- Buttons style ----------------------------------------------------- */
+.button {
+  font-size: 11px;
+  color: #000;
+  font-weight: bold;
+  text-decoration: none;
+  padding: 2px 5px 2px 0;
+}
+
+#buttons
+{
+  font: bold 11px verdana, arial, sans-serif;
+  list-style-type: none;
+  padding: 0px 0px 24px 0px;
+  border-bottom: 0px solid #440000;
+  margin: 2px 0px 2px 0px;
+
+}
+
+#buttons li
+{
+  float: left;
+  height: 21px;
+  background-color: #FFFFFF;
+  margin: 2px 6px 0px 0px;
+  border: 1px solid #440000;
+}
+
+#buttons li.right
+{
+ float: right;
+  height: 21px;
+  background-color: #FFFFFF;
+  margin: 2px 2px 0px 4px;
+  border: 1px solid #440000;
+  padding: 0px;
+}
+
+
+#buttons a
+{
+  font: bold 11px verdana, arial, sans-serif;
+  float: left;
+  display: block;
+  color: #666;
+  text-decoration: none;
+  padding: 4px;
+  width:90px;
+}
+
+#buttons a.w
+{
+  font: bold 11px verdana, arial, sans-serif;
+  float: left;
+  display: block;
+  color: #666;
+  text-decoration: none;
+  padding: 4px;
+  width:110px;
+}
+
+#buttons a:hover
+{
+  background: #EAEAEE;
+  color:#000000;
+}
+
+#buttons a.del:hover
+{
+  background: #FF0000;
+  color: #FFFFFF;
+}
+
+#buttons a.yes
+{
+  background: #FF0000;
+  color: #FFFFFF;
+  text-align: center;
+}
+
+#buttons a.no
+{
+  text-align: center;
+}
+
+/* -- Tools ------------------------------------------------------- */
+tools
+{
+  font-size: 12px;
+  background-color: #fff;
+  margin: 1px 1px 1px 0px;
+}
+
+#tools thead td
+{
+  border-style: solid;
+  border-width: 1px 0px 1px 0px;
+  border-color: #FFEEC6;
+  font-weight: bold;
+  background-color: #B0CDE4;
+  padding: 2px;
+}
+
+#tools tbody th
+{
+  border-style: solid;
+  border-width: 1px 0px 1px 0px;
+  border-color: #FFEEC6;
+  font-weight: bold;
+  background-color: #B0CDE4;
+  padding: 4px;
+  text-align: right;
+}
+
+#tools tbody th.left
+{
+  text-align: left;
+}
+
+#tools tr.mark
+{
+  background-color:#F3F3F3;
+}
+
+#tools tbody td
+{
+  border-style: solid;
+  border-width: 0px 0px 1px 0px;
+  border-color: #FFEEC6;
+  padding: 2px;
+}
+
+.footer {
+  margin-top: 0.25em;
+  background-color: #99B3C5;
+  text-align: center;
+  vertical-align: middle;
+  color: #FFFFFF;
+  padding-top: 0.25em;
+  height: 1.5em;
+}
+
+.footer a:link {
+  text-decoration: none;
+  color: #FFFFFF;
+}
+
+.footer a:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+.copyright
+{
+  font-size: 75%;
+  text-align: right;
+  padding-right: 5px;
+  border-top: 1px solid silver
+}
+
+/* -- Other  ------------------------------------------------------- */
+
+div.boxHeader
+{
+  color: black;
+  background-color: #F3F3EE;
+  margin: 0px;
+  margin-bottom: 0.5em;
+  padding: 2px;
+  border: 0px;
+  vertical-align: middle;
+}
+
+/* tabs */
+div.c1 {
+  width:100%;
+  padding-top:0.5em;
+}
+
+div.tabs {
+  top: 0px;
+  font-size: 100%;
+  padding: 0px 0px 3px 0px;
+}
+
+div.contents {
+   padding: 0.5em;
+   border: 1px solid #7f94a5;
+   background-color: #F3F3EE;
+}
+
+.tabLabel {
+  float: left;
+  display: inline;
+}
+
+div.tabContent {
+  font-size: 1em;
+  padding: 6px;
+}
+
+a.tab {
+  color: #000;
+  font-weight: bold;
+  background-color: #b0cde4;
+  border: 1px solid #000;
+  border-bottom-width: 0px;
+  border-color: #7f94a5;
+  padding: 2px 10px 2px 10px;
+  position: relative;
+  text-decoration: none;
+  top: 3px;
+  z-index: 100;
+}
+
+a.tab.activeTab {
+  background-color: #F3F3EE;
+  border-color: #7f94a5;
+}
+
+/* form */
+.form-header
+{
+  font-size: 13px;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  padding: 0px 0px 3px 4px;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 10px;
+  background-color: #B0CDE4;
+}
+
+.form-footer
+{
+  margin: 6px 0px;
+  text-align: center;
+  border: solid 1px #7f94a5;
+  background-color: #B0CDE4;
+  height: 20px;
+  padding-top: 0px;
+  padding-bottom: 2px;
+}
+
+.form-body
+{
+  width: 100%;
+  font-size: 12px;
+}
+
+.form-body td
+{
+  padding: 2px;
+}
+
+.form-body th
+{
+  text-align: right;
+  padding: 4px;
+}
+
+/* -- message grid (folder view) ------------------------------------------ */
+#mgrid_info
+{
+  width:100%;
+}
+
+#mgrid_info span
+{
+  font-size: 11px;
+  padding-right: 15px;
+}
+
+#mgrid_info span.title
+{
+  font-size: 14px;
+}
+
+#mgrid_info span.info
+{
+  font-size: 11px;
+}
+
+#mgrid {
+  font-size: 12px;
+  background-color: #fff;
+  margin: 1px 1px 1px 0px;
+  border-style: solid;
+  border-width: 0px;
+  border-color: #000;
+}
+
+#mgrid colgroup col.ct1
+{
+  width: 24px;
+}
+
+#mgrid colgroup col.received
+{
+  width: 130px;
+}
+
+#mgrid colgroup col.size
+{
+  width: 70px;
+  text-align: right;
+}
+
+#mgrid caption
+{
+  font-size: 12px;
+  text-align: left;
+  background-color: #B0CDE4;
+  padding: 5px;
+}
+
+#mgrid thead th
+{
+  border-style: solid;
+  border-width: 0px 1px 1px 0px;
+  border-color: #FFEEC6;
+  font-weight: bold;
+  background-color:#B0CDE4;
+  padding: 1px 1px 1px 5px;
+  text-align: left;
+}
+
+#mgrid thead th.center
+{
+  padding: 1px 1px 1px 1px;
+  text-align: center;
+}
+
+#mgrid thead .sortcol
+{
+  background-color: #C7D3E0;
+}
+
+#mgrid thead .sortcolc
+{
+  background-color: #C7D3E0;
+  text-align: center;
+}
+
+#mgrid thead .sortimg
+{
+  float:right;
+  margin:4px 4px 0 0;
+  border-style: solid;
+  border-width: 1px 1px 1px 1px;
+  border-color: #B0CDE4;
+  padding: 3px;
+}
+
+#mgrid tbody td
+{
+  border-style: solid;
+  border-width: 0px 0px 1px 0px;
+  border-color: #e5e5e5;
+  padding: 2px;
+}
+
+#mgrid tr.mark
+{
+  background-color:#F3F3F3;
+}
+
+/* -- paging ------------------------------------------------------- */
+#paging
+{
+  font: bold 11px verdana, arial, sans-serif;
+  border-style: solid;
+  border-width: 0px 0px 1px 0px;
+  border-color: #e5e5e5;
+  margin-top: 5px;
+}
+
+#paging td.cleft
+{
+  text-align:left;
+  width: 120px;
+}
+
+#paging td.ccenter
+{
+  text-align:center;
+}
+
+#paging td.cright
+{
+  text-align:right;
+  width: 120px;
+}
+
+#paging a
+{
+  color:#0000FF;
+}
+
+.bc
+{
+  font-weight: bold;
+}
+
+.lmenu
+{
+  margin: 0px 5px 20px 5px;
+  padding-right: 1px;
+  padding-left: 1px;
+  padding-top: 2px;
+  width: 180px;
+  padding-bottom: 3px;
+  list-style-type: none;
+}
+
+.lmenu_title {
+  height: 25px;
+  padding: 3px;
+  color: #333;
+  background-color: #99B3C5;
+  background-image: url(../stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+  font-size: 90%;
+  font-weight: bold;
+}
+.lmenu_title a {
+  height: 25px;
+  display: block;
+  padding-top: 5px;
+  color: #333;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+.lmenu_title a:hover {
+  height: 25px;
+  color: #FEFEFE;
+  text-decoration: underline;
+}

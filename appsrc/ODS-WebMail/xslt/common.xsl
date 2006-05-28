@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="xhtml" indent="yes" omit-xml-declaration="no" encoding="windows-1251" doctype-public="-//W3C//DTD XHTML 1.0 Strict //EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"/>
+  <xsl:include href="base.xsl"/>
+  <xsl:variable name="sid" select="/page/sid"/>
+  <xsl:variable name="realm" select="/page/realm"/>
+  <xsl:variable name="fid" select="/page/folder_id"/>
+
+  <!-- ========================================================================== -->
+  <xsl:template match="/">
+    <xsl:choose>
+      <xsl:when test="page/@mode='popup' and page/@id='box'">
+        <xsl:call-template name="root_popup_box"/>
+      </xsl:when>
+      <xsl:when test="page/@mode='popup'">
+        <xsl:call-template name="root_popup"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="root_normal"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="root_normal">
+    <html>
+      <head>
+        <title>OpenLink Software - oMail</title>
+        <xsl:call-template name="links"/>
+        <xsl:call-template name="css"/>
+        <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
+        <script language="JavaScript" src="/oMail/i/js/script.js"/>
+      </head>
+      <body>
+        <xsl:call-template name="header"/>
+        <xsl:call-template name="nav_2"/>
+        <table width="100%" cellpadding="0" cellspacing="0" id="ramka">
+          <tr>
+            <td colspan="2" class="left">
+              <xsl:call-template name="nbsp"/>
+            </td>
+          </tr>
+          <tr>
+            <xsl:if test="contains('box,open,write,search',/page/@id)">
+              <td valign="top" class="left">
+                <!-- durvoto na Vesko -->
+                <xsl:call-template name="folder_tree">
+                  <xsl:with-param name="url_cl">open.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;op=<xsl:value-of select="/page/message/msg_id"/>,<xsl:value-of select="/page/list_pos"/>,<xsl:value-of select="/page/message/type_id"/>,2</xsl:with-param>
+                  <xsl:with-param name="url_op">open.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;op=<xsl:value-of select="/page/message/msg_id"/>,<xsl:value-of select="/page/list_pos"/>,<xsl:value-of select="/page/message/type_id"/>,1</xsl:with-param>
+                </xsl:call-template>
+                <!-- /durvoto na Vesko -->
+              </td>
+            </xsl:if>
+            <xsl:if test="contains('folders,ch_pop3',/page/@id)">
+              <td valign="top" class="left">
+                <ul class="lmenu">
+                  <li class="lmenu_title">
+                    <xsl:call-template name="make_href">
+                      <xsl:with-param name="url">folders.vsp</xsl:with-param>
+                      <xsl:with-param name="label">Manage Folders</xsl:with-param>
+                    </xsl:call-template>
+                  </li>
+                  <li class="lmenu_title">
+                    <xsl:call-template name="make_href">
+                      <xsl:with-param name="url">ch_pop3.vsp</xsl:with-param>
+                      <xsl:with-param name="label">External POP3 Accounts</xsl:with-param>
+                    </xsl:call-template>
+                  </li>
+                </ul>
+              </td>
+            </xsl:if>
+            <td width="90%" class="right" valign="top">
+              <xsl:apply-templates/>
+            </td>
+          </tr>
+        </table>
+        <div class="footer">
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>aboutus.html</xsl:with-param>
+            <xsl:with-param name="label">About Us</xsl:with-param>
+          </xsl:call-template>
+          |
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>faq.html</xsl:with-param>
+            <xsl:with-param name="label">FAQ</xsl:with-param>
+          </xsl:call-template>
+          |
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>privacy.html</xsl:with-param>
+            <xsl:with-param name="label">Privacy</xsl:with-param>
+          </xsl:call-template>
+          |
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>rabuse.vspx</xsl:with-param>
+            <xsl:with-param name="label">Report Abuse</xsl:with-param>
+          </xsl:call-template>
+          |
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url">#</xsl:with-param>
+            <xsl:with-param name="label">Advertise</xsl:with-param>
+          </xsl:call-template>
+          |
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url">#</xsl:with-param>
+            <xsl:with-param name="label">Contact Us</xsl:with-param>
+          </xsl:call-template>
+        </div>
+        <div class="copyright">Copyright <xsl:call-template name="copy"/> 1999-2006 OpenLink Software</div>
+        <xsl:call-template name="js_mark"/>
+      </body>
+    </html>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="root_popup">
+    <html>
+      <head>
+        <title>OpenLink oMail1</title>
+        <xsl:call-template name="css"/>
+        <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
+        <script language="JavaScript" src="/oMail/i/js/script.js"/>
+      </head>
+      <body topmargin="10" leftmargin="6" marginwidth="6" marginheight="0">
+        <div style="padding: 0 0 0.5em 0;">
+          <img src="/oMail/i/close_16.png" border="0" onClick="javascript: if (opener != null) opener.focus(); window.close();" alt="Close" title="Close" /><a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"  alt="Close" title="Close">&nbsp;Close</a>
+          <hr/>
+        </div>
+        <xsl:apply-templates/>
+        <div class="copyright">Copyright <xsl:call-template name="copy"/> 1999-2006 OpenLink Software</div>
+      </body>
+    </html>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="root_popup_box">
+    <html>
+      <head>
+        <title>OpenLink oMail</title>
+        <xsl:call-template name="links"/>
+        <xsl:call-template name="css"/>
+        <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
+        <script language="JavaScript" src="/oMail/i/js/script.js"/>
+      </head>
+      <body topmargin="0" leftmargin="6" marginwidth="6" marginheight="0">
+        <table width="100%" cellpadding="0" cellspacing="0" id="ramka">
+          <tr>
+            <td class="left">
+              <span class="label">
+                <xsl:value-of select="/page/user_info/email"/>
+              </span>
+            </td>
+            <td class="left"/>
+          </tr>
+          <tr>
+            <xsl:if test="contains('box,open,write,search',/page/@id)">
+              <td valign="top" class="left">
+                <!-- durvoto na Vesko -->
+                <xsl:call-template name="folder_tree">
+                  <xsl:with-param name="url_cl">open.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;op=<xsl:value-of select="/page/message/msg_id"/>,<xsl:value-of select="/page/list_pos"/>,<xsl:value-of select="/page/message/type_id"/>,2</xsl:with-param>
+                  <xsl:with-param name="url_op">open.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;op=<xsl:value-of select="/page/message/msg_id"/>,<xsl:value-of select="/page/list_pos"/>,<xsl:value-of select="/page/message/type_id"/>,1</xsl:with-param>
+                </xsl:call-template>
+                <!-- /durvoto na Vesko -->
+              </td>
+            </xsl:if>
+            <td width="90%" class="right" valign="top">
+              <xsl:apply-templates/>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="links">
+    <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
+    <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
+    <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
+    <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
+    <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos"	href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
+    <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
+    <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="css">
+    <link type="text/css" media="screen" rel="stylesheet" href="/oMail/i/css/styles.css"/>
+    <link type="text/css" media="print" rel="Stylesheet" href="/oMail/i/css/print.css"/>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="hid_sid">
+    <input type="hidden" name="sid">
+      <xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute>
+    </input>
+    <input type="hidden" name="realm">
+      <xsl:attribute name="value"><xsl:value-of select="$realm"/></xsl:attribute>
+    </input>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="header">
+    <form name="FS" action="search.vsp" method="get">
+      <xsl:call-template name="hid_sid"/>
+      <div style="height: 65px; background-color: #fff;">
+        <div style="float: left;  padding-top: 3px;">
+          <img src="/oMail/i/omailbanner_sml.jpg"/>
+        </div>
+        <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
+          <input type="text" name="q" value=""/>
+          <input type="hidden" name="search.x" value="x"/>
+          <input type="hidden" name="mode" value=""/>
+          <xsl:call-template name="nbsp"/>
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url">javascript: document.forms['FS'].submit();</xsl:with-param>
+            <xsl:with-param name="title">Simple Search</xsl:with-param>
+            <xsl:with-param name="label">Search</xsl:with-param>
+          </xsl:call-template>
+          |
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url">javascript: document.forms['FS'].elements['mode'].value = 'advanced'; document.forms['FS'].submit();</xsl:with-param>
+            <xsl:with-param name="title">Advanced Search</xsl:with-param>
+            <xsl:with-param name="label">Advanced</xsl:with-param>
+          </xsl:call-template>
+        </div>
+        <br style="clear: left;"/>
+      </div>
+      <div style="padding: 0.5em 0 0.25em 0;">
+        <div style="float: left; padding-left: 0.5em;">
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>uiedit.vspx</xsl:with-param>
+            <xsl:with-param name="label"><xsl:value-of select="/page/user_info/user_fullname"/> (<xsl:value-of select="/page/user_info/email"/>)</xsl:with-param>
+          </xsl:call-template>
+        </div>
+        <div style="float: right; text-align: right; padding-right: 0.5em;">
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url">set_mail.vsp</xsl:with-param>
+            <xsl:with-param name="label">Preferences</xsl:with-param>
+          </xsl:call-template>
+          |
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url">box.vsp</xsl:with-param>
+            <xsl:with-param name="label">Help</xsl:with-param>
+          </xsl:call-template>
+          |
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/></xsl:with-param>
+            <xsl:with-param name="label"><xsl:value-of select="/page/ods/name"/></xsl:with-param>
+          </xsl:call-template>
+          |
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/></xsl:with-param>
+            <xsl:with-param name="label">Logout</xsl:with-param>
+            <xsl:with-param name="no_sid">1</xsl:with-param>
+          </xsl:call-template>
+        </div>
+        <br style="clear: left;"/>
+      </div>
+      <div style="border: solid #935000; border-width: 0px 0px 1px 0px;"/>
+    </form>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="nav_2">
+    <xsl:param name="loc" select="/page/@id"/>
+    <ul id="mail_nav">
+      <li>
+        <xsl:if test="contains('box,open,search',$loc)">
+          <xsl:attribute name="class">on</xsl:attribute>
+        </xsl:if>
+        <xsl:call-template name="make_href">
+          <xsl:with-param name="url">box.vsp</xsl:with-param>
+          <xsl:with-param name="label">Inbox</xsl:with-param>
+        </xsl:call-template>
+      </li>
+      <li>
+        <xsl:if test="contains('write,sendeok,attach',$loc)">
+          <xsl:attribute name="class">on</xsl:attribute>
+        </xsl:if>
+        <xsl:call-template name="make_href">
+          <xsl:with-param name="url">write.vsp</xsl:with-param>
+          <xsl:with-param name="label">Write message</xsl:with-param>
+        </xsl:call-template>
+      </li>
+      <li>
+        <xsl:if test="contains('folders,ch_pop3',$loc)">
+          <xsl:attribute name="class">on</xsl:attribute>
+        </xsl:if>
+        <xsl:call-template name="make_href">
+          <xsl:with-param name="url">folders.vsp</xsl:with-param>
+          <xsl:with-param name="label">Manage</xsl:with-param>
+        </xsl:call-template>
+      </li>
+    </ul>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="direction">
+    <xsl:choose>
+      <xsl:when test="messages/direction = 1">
+        <img src="/oMail/i/u.gif" height="5" width="9" border="0" class="sortimg" alt="Sorted by this column"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <img src="/oMail/i/d.gif" height="5" width="9" border="0" class="sortimg" alt="Sorted by this column"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="show_name">
+    <xsl:variable name="max_len">20</xsl:variable>
+    <xsl:choose>
+      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 0)">
+        <xsl:variable name="name" select="string(address/addres_list/from/name)"/>
+        <xsl:variable name="addr" select="string(address/addres_list/from/email)"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="name" select="string(address/addres_list/to/name)"/>
+        <xsl:variable name="addr" select="string(address/addres_list/to/email)"/>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:choose>
+      <xsl:when test="$name != ''">
+        <xsl:value-of select="substring($name,1,$max_len)"/>
+        <xsl:if test="string-length($name) > $max_len">
+          <xsl:text>...</xsl:text>
+        </xsl:if>
+      </xsl:when>
+      <xsl:when test="$addr != ''">
+        <xsl:text>&lt; </xsl:text>
+        <xsl:value-of select="substring($addr,1,$max_len)"/>
+        <xsl:if test="string-length($addr) > $max_len">
+          <xsl:text>...</xsl:text>
+        </xsl:if>
+        <xsl:text> &gt;</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+		    ~no address~
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="show_name_alt">
+    <xsl:choose>
+      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 0)">
+        <xsl:variable name="name" select="string(address/addres_list/from/name)"/>
+        <xsl:variable name="addr" select="string(address/addres_list/from/email)"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="name" select="string(address/addres_list/to/name)"/>
+        <xsl:variable name="addr" select="string(address/addres_list/to/email)"/>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:value-of select="$name"/><xsl:text> &lt;</xsl:text><xsl:value-of select="$addr"/><xsl:text>&gt;</xsl:text>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="show_subject">
+    <xsl:value-of select="substring(subject,1,25)"/>
+    <xsl:if test="string-length(subject) > 25">
+      <xsl:text>...</xsl:text>
+    </xsl:if>
+  </xsl:template>
+  <!-- ========================================================================== -->
+  <xsl:template match="select" mode="openx">
+    <select>
+      <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
+      <xsl:apply-templates select="option" mode="openx"/>
+    </select>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template match="option" mode="openx">
+    <option>
+      <xsl:attribute name="value"><xsl:value-of select="@value"/></xsl:attribute>
+      <xsl:choose>
+        <xsl:when test="@selected = '1'">
+          <xsl:attribute name="selected">selected</xsl:attribute>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:value-of select="."/>
+    </option>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="js_check_all">
+    <script language="JavaScript">
+      <![CDATA[
+  		  function sel_all() {
+          for (var i=0; i < document.f1.elements.length; i++) {
+  		      var e = document.f1.elements[i];
+            if ((e != null) && (e.type == "checkbox") && (e.name == 'ch_msg'))
+        		  e.checked = document.f1.ch_all.checked;
+  		    }
+  		  }
+     ]]>
+		</script>
+  </xsl:template>
+  <xsl:decimal-format name="sizes" decimal-separator="." grouping-separator=","/>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="size2str">
+    <xsl:param name="size">0</xsl:param>
+    <xsl:param name="mode">0</xsl:param>
+    <xsl:choose>
+      <xsl:when test="$size &lt; 1024">
+        <xsl:value-of select="$size"/><span style="font-family: Monospace;">&nbsp;B&nbsp;</span>
+      </xsl:when>
+      <xsl:when test="$size &lt; 1048576">
+        <xsl:value-of select="format-number($size div 1024.0,'#,###.#','sizes')"/><span style="font-family: Monospace;">&nbsp;KB</span>
+      </xsl:when>
+      <xsl:when test="$size &lt; 1073741824">
+        <xsl:value-of select="format-number($size div 1048576.0,'#,###,###.#')"/><span style="font-family: Monospace;">&nbsp;MB</span>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$size"/><span style="font-family: Monospace;">&nbsp;&nbsp;&nbsp;</span>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="js_mark"/>
+
+  <!-- ====================================================================================== -->
+  <xsl:template name="LH">
+    <xsl:attribute name="OnMouseOver">LHi(this)</xsl:attribute>
+    <xsl:attribute name="OnMouseOut">LHo(this)</xsl:attribute>
+  </xsl:template>
+
+  <!-- ====================================================================================== -->
+  <xsl:template match="eparams">
+    <input type="hidden" size="50">
+      <xsl:attribute name="name"><xsl:value-of select="name()"/></xsl:attribute>
+      <xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute>
+    </input>
+    <br/>
+  </xsl:template>
+
+  <!--========================================================================-->
+</xsl:stylesheet>

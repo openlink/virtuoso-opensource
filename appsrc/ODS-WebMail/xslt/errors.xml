@@ -1,0 +1,110 @@
+<errors>
+  <error id="0">
+    <title>Unknow system error</title>
+    <descr>Due to a transient problem, the system could not
+          perform the operation you requested. The system administrators have been
+          notified.</descr>
+    <decision>Please, go <back/> and try again later.</decision>
+  </error>
+  <error id="1100">
+    <title>wrong folder_id</title>
+    <descr></descr>
+  </error>
+  <error id="1101">
+    <title>wrong skiped</title>
+    <descr></descr>
+  </error>
+  <error id="1102">
+    <title>wrong order by</title>
+    <descr></descr>
+  </error>
+  <error id="1103">
+    <title>wrong order way</title>
+    <descr></descr>
+  </error>
+  <error id="1201">
+    <title>Too long folder name</title>
+    <descr>The name that you choose is too long. It must be between <b>2</b> and <b>20</b> symbols.</descr>
+    <decision>Please, go <back/> and try again with a folder name consisting of fewer than 20 characters </decision>
+    <button/>
+  </error>
+  <error id="1202">
+    <title>Too short folder name</title>
+    <descr>The name that you choose is too short. It must be between <b>2</b> and <b>20</b> symbols.</descr>
+    <decision>Please, go <back/> and  try again with a folder name consisting more than 1 character. </decision>
+    <button/>
+  </error>
+  <error id="1203">
+    <title>Folder with this name already exists</title>
+    <descr>Folder with this name already exists in selected parent folder.</descr>
+    <decision>Please, go <back/> and  try again with a new folder name. </decision>
+    <button/>
+  </error>
+  <error id="1301">
+    <title>Can't edit special folders</title>
+    <descr></descr>
+  </error>
+  <error id="1302">
+    <title>Can't delete special folders</title>
+    <descr></descr>
+  </error>
+  <error id="1401">
+    <title>Can't move folder into children folder</title>
+    <descr></descr>
+  </error>
+  <error id="1402">
+    <title>Whenever not found</title>
+    <descr></descr>
+  </error>
+  <error id="1403">
+    <title>Can't move folder into children folder</title>
+    <descr></descr>
+  </error>
+  <error id="1501">
+    <title>Bad sid</title>
+    <descr></descr>
+  </error>
+  <error id="1601">
+    <title>Can't edit sys folder</title>
+    <descr></descr>
+  </error>
+  <error id="1701">
+    <title>The parameter ''Messages per page'' must be in range [5, 1000].</title>
+    <decision>Please, go back and try again with a correct value. </decision>
+    <button/>
+  </error>
+  <error id="1902">
+    <title>Bad recipient(s) e-mail address specified</title>
+    <descr>You typed an invalid email address in one of the address fields (TO, CC or BCC).  The format for email address is </descr>
+    <decision>Please, go <back page="write.vsp" p="wp"/>, check or correct the email address in one of the address fields and re-send..</decision>
+    <button page="write.vsp" p="wp"/>
+  </error>
+  <error id="3001">
+    <title>Unknown error when uploading file</title>
+    <decision>Please, go <back/> and try again with other file. </decision>
+    <button/>
+  </error>
+  <error id="3002">
+    <title>The choosen file is too big</title>
+    <descr>The file that you try to attach is more then 10 MB. It must be at most <b>10</b> MB.</descr>
+    <decision>Please, go <back/> and try again with other file. </decision>
+    <button/>
+  </error>
+  <error id="3003">
+    <title>Unknown error when uploading file from WebDAV</title>
+    <descr>You may have no read rights for this file.</descr>
+    <decision>Please, go <back/> and try again with other file. </decision>
+    <button/>
+  </error>
+  <error id="4001">
+    <title>Bad tag(s)</title>
+    <descr>The tag is too short or contains bad characters.</descr>
+    <decision>Please, go <back/> and try again with a new tag(s) without bad characters and length with more than 1 character.</decision>
+    <button/>
+  </error>
+  <error id="TEST">
+    <title><msg /></title>
+    <descr />
+    <button />
+  </error>
+</errors>

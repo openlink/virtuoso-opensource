@@ -1,0 +1,28 @@
+  #mail_nav,#tree,#buttons,#header,#tools{display:none}
+
+  #content {
+    font: 12px verdana, arial, sans-serif;
+    margin: 1px 1px 1px 0px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #C1C1C1;
+  }
+
+
+  #content tbody th{
+    border-style: solid;
+    border-width: 0px 0px 1px 0px;
+    border-color: #C1C1C1;
+    font-weight:bold;
+    padding: 4px;
+    text-align: right;
+  }
+
+
+  #content tbody td{
+    border-style: solid;
+    border-width: 0px 0px 1px 0px;
+    border-color: #C1C1C1;
+    padding: 2px;
+  }
+

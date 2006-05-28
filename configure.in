@@ -2084,6 +2084,7 @@ AC_CONFIG_FILES([
 	appsrc/ODS-Gallery/Makefile
 	appsrc/ODS-Wiki/Makefile
 	appsrc/ODS-Wiki/plugin/Makefile
+	appsrc/ODS-WebMail/Makefile
 ])
 
 

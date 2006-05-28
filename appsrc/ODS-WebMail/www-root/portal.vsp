@@ -1,0 +1,105 @@
+<?vsp
+  declare errorCount, N integer;
+  declare waID, user_id integer;
+  declare wa_home_title, wa_home_link, user_name, user_fullName, procName, procID varchar;
+  declare vOptions any;
+
+  declare exit handler for sqlstate '90001' { OMAIL.WA.utl_doredirect(__sql_message); return;};
+  declare exit handler for sqlstate '90005' { return; }; --download
+  declare exit handler for sqlstate '42001' { http('404'); return;}; --not found
+  declare exit handler for sqlstate 'TEST'  {
+    OMAIL.WA.utl_doredirect(sprintf('err.vsp?sid=%s&realm=wa&err=%s&msg=%U', get_keyword('sid', params, ''), __SQL_STATE, OMAIL.WA.test_clear(__SQL_MESSAGE)));
+    return;
+  };
+  declare exit handler for SQLSTATE '40001' {
+    ROLLBACK WORK;
+    if (errorCount > 5)
+      resignal;
+    errorCount := errorCount + 1;
+    goto exec_start;
+  };
+
+  SET ISOLATION = 'Commited';
+
+exec_start:;
+
+	wa_home_title := case when registry_get ('wa_home_title') = 0 then 'ODS Home' else registry_get ('wa_home_title') end;
+	wa_home_link := case when registry_get ('wa_home_link') = 0 then '/ods/' else registry_get ('wa_home_link') end;
+
+  waID := null;
+  path := OMAIL.WA.utl_parse_url(lines[0]);
+  vOptions := http_map_get('options');
+  if (not isnull(vOptions))
+    waID := get_keyword('domain', vOptions);
+  if (isnull(waID) and (length(path) = 3))
+    waID := atoi(path[1]);
+  if (not isnull(waID)) {
+    declare waName varchar;
+
+    declare continue handler for NOT FOUND goto system_error;
+
+    N  := length(path)-1;
+    waName := (select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = waID);
+
+    procName := split_and_decode(path[N],0,'\0\0.');
+    procID   := procName[0];
+    procName := concat('OMAIL.WA.omail_',procID);
+
+    if (OMAIL.WA.frozen_check(waID, get_keyword('sid', params, ''))) {
+      declare freeze_page varchar;
+
+      freeze_page := OMAIL.WA.frozen_page(waID);
+      if (freeze_page is null or freeze_page = '' or freeze_page = 'default') {
+        http_rewrite ();
+        http_request_status ('HTTP/1.1 404 Not found');
+        http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (path[N])));
+        http_flush();
+        return;
+      }
+      http_rewrite ();
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header(sprintf('Location: %s\r\n\r\n', freeze_page));
+      http_flush();
+      return;
+    }
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND GOTO bad_session;
+
+    SELECT U_ID,
+           U_NAME,
+           coalesce(U_FULL_NAME, U_NAME)
+      INTO user_id,
+           user_name,
+           user_fullName
+      FROM VSPX_SESSION,
+           SYS_USERS
+     WHERE VS_SID   = get_keyword('sid', params, '')
+       AND VS_UID   = U_NAME
+       AND VS_REALM = 'wa';
+
+    params := vector_concat(params, vector('user_info', vector('user_id', user_id, 'user_name', user_name, 'user_fullname', user_fullName, 'domain_id', waID, 'email', waName)));
+  } else {
+    OMAIL.WA.utl_redirect(wa_home_link || 'index.wspx');
+    return;
+  };
+
+  declare _page_mode, _xml varchar;
+
+  _page_mode := '';
+  if (get_keyword('return',params,'') <> '' and isnull(strstr(get_keyword('return',params,''),'.')))
+    _page_mode := concat(' mode="popup"');
+
+  _xml := call (procName)(path, lines, params);
+  _xml := sprintf('<page id="%s"%s><ods><name>%s</name><link>%s</link></ods>%s</page>', procID, _page_mode, wa_home_title, wa_home_link, _xml);
+
+  -- XSL Transformation--------------------------------------------------------------
+  OMAIL.WA.utl_myhttp(_xml,null,get_keyword('vv',params),lines,path);
+  return;
+
+bad_session:
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header (sprintf ('Location: %s\r\n', wa_home_link));
+
+system_error:
+  http('The user doesn\'t have any mail box defined');
+?>

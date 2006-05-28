@@ -1,0 +1,24 @@
+<?vsp
+
+    declare _source,x varchar;
+    declare _xst,_xml,str, r varchar;
+    _source := 'niama';
+
+    _xst := get_keyword('s', params,concat(http_root(),'/www-root/mail/p/tags.xsl'));
+    _xml := get_keyword('x', params,concat(http_root(),'/www-root/mail/p/tags.xml'));
+
+
+
+    xslt_sheet (_xst, xml_tree_doc (xml_tree (file_to_string(_xst))));
+    r := xslt (_xst, xml_tree_doc (xml_tree (file_to_string(_xml))));
+
+
+    declare str any;
+    str := string_output ();
+    http_value (r, 0, str);
+
+    string_to_file (concat(http_root(),'/xslt/mail/html_parse2.xsl'),str,-2);
+
+    http('OK');
+
+ ?>
