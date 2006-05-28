@@ -356,8 +356,8 @@ then
 fi
 virtuoso_shutdown
 STOP_SERVER
-chmod 644 mail_dav.vad
-chmod 644 mail_filesystem.vad
+chmod 644 ods_webmail_dav.vad
+chmod 644 ods_webmail_filesystem.vad
 directory_clean
 
 echo 'Mail Successful create'
