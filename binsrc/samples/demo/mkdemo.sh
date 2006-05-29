@@ -769,7 +769,7 @@ DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
 #
 (cd $HOME/appsrc ; make)
 $LN $HOME/appsrc/*/*_dav.vad .
-DO_COMMAND "vad_install ('ods_dav.vad')" dba dba
+DO_COMMAND "vad_install ('ods_framework_dav.vad')" dba dba
 DO_COMMAND "vad_install ('ods_blog_dav.vad')" dba dba
 DO_COMMAND "vad_install ('ods_bookmark_dav.vad')" dba dba
 DO_COMMAND "vad_install ('ods_briefcase_dav.vad')" dba dba

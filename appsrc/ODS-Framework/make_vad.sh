@@ -382,7 +382,7 @@ QueueMax     = 50000
 }
 
 vad_create() {
-  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER', '.', 'ods_dav.vad')"
+  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER', '.', 'ods_framework_dav.vad')"
   do_command_safe $DSN "commit work"
   do_command_safe $DSN "checkpoint"
 }
@@ -396,6 +396,6 @@ virtuoso_init
 sticker_init
 vad_create
 virtuoso_shutdown
-chmod 644 ods_dav.vad
+chmod 644 ods_framework_dav.vad
 #chmod 644 virtuoso.trx
 #directory_clean

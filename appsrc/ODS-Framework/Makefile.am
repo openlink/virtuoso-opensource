@@ -21,12 +21,12 @@
 
 TOP=@TOP@
 
-nodist_vad_DATA = ods_dav.vad
+nodist_vad_DATA = ods_framework_dav.vad
 
 CLEANFILES =  \
 	make_ods_vad.log \
 	make_ods_vad.xml \
-	ods_dav.vad \
+	ods_framework_dav.vad \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.lck \
@@ -35,7 +35,7 @@ CLEANFILES =  \
 	virtuoso.tdb \
 	virtuoso.trx
 
-ods_dav.vad: $(EXTRA_DIST)
+ods_framework_dav.vad: $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
 
 clean-local:
