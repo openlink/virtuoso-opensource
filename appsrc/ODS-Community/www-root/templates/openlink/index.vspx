@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="/DAV/VAD/community/www-root/widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/community/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+ <vm:page custom_img_loc='/community/public/images/lightblue/'>
+      <vm:header id="header">
+      <title><vm:xd-title /></title>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:custom-style />
+    </vm:header>
+    <vm:body>
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%" border="0" >
+        <tr>
+         <td>
+          <table border="0" cellpadding="0" cellspacing="0" id="main">
+            <tr>
+              <td colspan="2" id="topnav"><vm:xd-logo image="community_blank_thin550.jpg"/></td>
+              <td style="text-align:right;background:#86B9D9;padding-right:10px">
+                   <span class="lftmenu1"><vm:login-info format_string="%s"/><br/><vm:help-link/></span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3" id="navtabs">
+              <vm:appnav-block/>
+              </td>
+            </tr>
+            <tr>
+              <td rowspan="3" id="left">
+                  <vm:members-block />
+                  <vm:blogs-block />
+                  <vm:communities-block />
+
+                </td>
+              <td id="mainarea">          
+                <img src="http://localhost:8890/community/public/images/lightblue/comm_blank_welcome.png" width="700" height="250" border="0"/></td>
+              <td rowspan="3" class="advert1"><img src="/community/public/images/greygrad1.gif" width="200" height="600" /></td>
+            </tr>
+            <tr>
+              <td id="mainarea"><img src="/community/public/images/lightblue/myoplsubheader.jfif" width="700" height="55" border="0" usemap="#Map"/></td>
+            </tr>
+            <tr>
+              <td id="mainarea">
+               <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="infoarea1">
+                  <tr>
+                    <td valign="top" style="width:50%;height:270px;">
+                      <vm:lastnews-block/>
+                      <p>&nbsp;</p>
+                    </td>
+                    <td><p>&nbsp;</p></td>
+                    <td valign="top">
+                      <br/>
+                      <vm:geo-locator/>
+                      <vm:signup-block image="joinmycomblank.jpg"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" valign="top">&nbsp;</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" valign="top">
+                      <vm:gallery-block/>                                    
+                    </td>
+                  </tr>
+              </table></td>
+            </tr>
+            <tr>
+              <td colspan="3" class="footernav">
+                  <a href="/community/public/aboutcommunity.html">About Community</a>
+                   | 
+                  <a href="/wa/faq.html">FAQ</a>
+                   | 
+                  <a href="#">Terms</a>
+                   | 
+                  <a href="#">Privacy</a>
+                   | 
+                  <a href="/wa/rabuse.vspx">Report Abuse</a>
+                   | 
+                  <a href="#">Advertise</a>
+                   | 
+                  <a href="#">Contact Us</a></td>
+            </tr>
+            <tr>
+              <td colspan="3" class="copyright">
+                  <div id="copy"><vm:copyright/></div>
+                  <div id="powered"><vm:powered-by/></div>
+                  <div id="disclaimer"><vm:disclaimer/></div>
+              </td>
+            </tr>
+          </table>
+          <vm:welcome-map/>
+         </td>
+        </tr>
+      </table>
+
+    </vm:body>
+  </vm:page>
+</v:page>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="../../widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/community/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page custom_img_loc='/community/public/images/lightblue/'>
+      <vm:header id="header">
+      <title><vm:xd-title /> - Settings - Templates</title>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:custom-style /> 
+    </vm:header>
+    <vm:body>
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%" border="0" >
+        <tr>
+         <td>
+          <table border="0" cellpadding="0" cellspacing="0" id="main">
+            <tr>
+              <td colspan="2" id="topnav"><vm:xd-logo image="community_blank_thin550.jpg"/></td>
+              <td style="text-align:right;background:#86B9D9;padding-right:10px">
+                   <span class="lftmenu1"><vm:login-info format_string="%s"/><br/><vm:help-link/></span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3" id="navtabs">
+              <vm:appnav-block/>
+              </td>
+            </tr>
+            <tr>
+              <td id="left">
+              <div class="lftmenu">
+
+                 <table width="175" border="0" cellpadding="0" cellspacing="0" style="margin-left:10px;margin-top:10px">
+                    <tr><td class="lftmenu_title"><img src="/community/public/images/confg_16.png" width="16" height="16" /> Community settings</td></tr>
+                    <tr><td class="lftmenu2"><strong><vm:settings_tpl-link /></strong></td></tr>
+                    <tr><td class="lftmenu2"><vm:settings_app-link /></td></tr>
+                    <tr><td class="lftmenu2"><vm:wa-settings-link /></td></tr>
+                    <tr><td class="lftmenu_footer_img" align="right"><img src="/community/public/images/eaeaeecorner.gif" width="15" height="15" align="absbottom" /></td></tr>
+                 </table>
+              </div>
+              </td>
+              <td id="mainarea">
+                    <vm:templates />
+              </td>
+              <td class="advert1"><img src="/community/public/images/greygrad1.gif" width="200" height="460" /></td>
+            </tr>
+            <tr>
+              <td colspan="3" class="footernav">
+                  <a href="/community/public/aboutcommunity.html">About Community</a>
+                   | 
+                  <a href="/wa/faq.html">FAQ</a>
+                   | 
+                  <a href="#">Terms</a>
+                   | 
+                  <a href="#">Privacy</a>
+                   | 
+                  <a href="/wa/rabuse.vspx">Report Abuse</a>
+                   | 
+                  <a href="#">Advertise</a>
+                   | 
+                  <a href="#">Contact Us</a></td>
+            </tr>
+            <tr>
+              <td colspan="3" class="copyright">
+                  <div id="copy"><vm:copyright/></div>
+                  <div id="powered"><vm:powered-by/></div>
+                  <div id="disclaimer"><vm:disclaimer/></div>
+              </td>
+            </tr>
+          </table>
+          <map name="Map2" id="Map2">
+            <area shape="rect" coords="4,4,295,77" href="#" />
+          </map>
+         </td>
+        </tr>
+      </table>
+    </vm:body>
+  </vm:page>
+</v:page>

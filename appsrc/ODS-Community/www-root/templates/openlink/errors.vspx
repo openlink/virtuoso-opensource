@@ -1,0 +1,63 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page xmlns:vm="http://www.openlinksw.com/vspx/community/"
+        style="../../widgets/error.xsl"
+        name="errors"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:page id="">
+    <vm:header>
+      <vm:page-title title="Community Error Page"/>
+      <vm:style url="/community/public/css/default.css"/>
+    </vm:header>
+    <vm:body>
+      <div id="header">
+        <h1>
+          <vm:xd-title />
+        </h1>
+      </div>      
+      <table id="pagecontainer" cellspacing="10" cellpadding="0" border="0" align="center">
+        <tr align="center">
+          <td>
+            <vm:error-message />
+          </td>
+        </tr>
+        <tr>
+          <td align="center">
+            <vm:reset-templates />
+          </td>
+        </tr>
+      </table>
+      <br/><br/><br/>
+      <div id="powered" align="center">
+        <a href="http://www.openlinksw.com/virtuoso">
+          <img src="/community/public/images/PoweredByVirtuoso.gif" border="0"/>
+        </a>
+      </div>
+      <div class="disclaimer">
+      </div>
+      <div class="copy">
+      </div>
+    </vm:body>
+  </vm:page>
+</v:page>

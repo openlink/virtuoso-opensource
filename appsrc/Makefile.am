@@ -23,6 +23,7 @@ SUBDIRS = ODS-Framework \
 	ODS-Blog \
 	ODS-Bookmark \
 	ODS-Briefcase \
+	ODS-Community \
 	ODS-FeedManager \
 	ODS-Gallery \
 	ODS-Wiki \

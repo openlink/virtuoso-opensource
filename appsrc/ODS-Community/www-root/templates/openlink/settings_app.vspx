@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="../../widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/community/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <v:variable persist="1" name="search_mask" type="varchar" default="'%'"/>
+  <v:variable persist="1" name="pattern_value" type="varchar" default="'%'"/>
+  <v:variable persist="1" name="pattern_where" type="varchar" default="'1'"/>
+
+  <vm:page custom_img_loc='/community/public/images/lightblue/'>
+      <v:on-init>
+            <![CDATA[
+               if(not length(get_keyword('attr-page', params,''))){
+                  declare app_id,action VARCHAR;
+                  for(SELECT  CM_MEMBER_APP,CM_MEMBER_DATA from ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame and CM_MEMBER_DATA is not null) do {
+                      app_id:=CM_MEMBER_APP;
+                      action:=CM_MEMBER_DATA;
+                      if(action='add'){
+                        DELETE FROM ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame and CM_MEMBER_APP=app_id;
+                      }else{
+                        UPDATE ODS..COMMUNITY_MEMBER_APP SET CM_MEMBER_DATA=NULL WHERE CM_COMMUNITY_ID=self.comm_wainame and CM_MEMBER_APP=app_id;
+                       
+                      }
+                  };
+                
+                  delete from ODS..COMMUNITY_MEMBER_APP WHERE CM_MEMBER_DATA is not null;
+               }
+            ]]>
+      </v:on-init>
+
+      <vm:header id="header">
+      <title><vm:xd-title /> - Settings - Community applications</title>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:custom-style /> 
+    </vm:header>
+    <vm:body>
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%" border="0" >
+        <tr>
+         <td>
+          <table border="0" cellpadding="0" cellspacing="0" id="main">
+            <tr>
+              <td colspan="2" id="topnav"><vm:xd-logo image="community_blank_thin550.jpg"/></td>
+              <td style="text-align:right;background:#86B9D9;padding-right:10px">
+                   <span class="lftmenu1"><vm:login-info format_string="%s"/><br/><vm:help-link/></span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3" id="navtabs">
+              <vm:appnav-block/>
+              </td>
+            </tr>
+            <tr>
+              <td id="left">
+              <div class="lftmenu">
+
+                 <table width="175" border="0" cellpadding="0" cellspacing="0" style="margin-left:10px;margin-top:10px">
+                    <tr><td class="lftmenu_title"><img src="/community/public/images/confg_16.png" width="16" height="16" /> Community settings</td></tr>
+                    <tr><td class="lftmenu2"><vm:settings_tpl-link /></td></tr>
+                    <tr><td class="lftmenu2"><strong><vm:settings_app-link /></strong></td></tr>
+                    <tr><td class="lftmenu2"><vm:wa-settings-link /></td></tr>
+                    <tr><td class="lftmenu_footer_img" align="right"><img src="/community/public/images/eaeaeecorner.gif" width="15" height="15" align="absbottom" /></td></tr>
+                 </table>
+              </div>
+              </td>
+              <td id="mainarea"><br/>
+<!-- <h1>Owner applications list</h1><br/><br/> -->
+<table width="100%" border="0" cellsapcing="0" cellpadding="5" style="background:white;border: 1px solid #99B3C5;">                
+<tr>
+  <td>
+    <h2>Owned applications</h2>
+  </td>
+  <td>
+  </td>
+  <td>
+    <h2>Community applications</h2>
+  </td>
+</tr>
+<tr>
+  <td width="50%">
+    <table border="0">
+      <tr>
+        <td style="font-size:12px">Applications
+            <v:select-list name="howto" value="--self.pattern_where">
+              <v:item name="Starting with" value="1" />
+              <v:item name="Containing" value="2" />
+              <v:item name="Ending with" value="3" />
+              <v:item name="Exact match" value="4" />
+            </v:select-list>
+        </td>
+        <td>
+            <v:text name="pattern_text" value="--(case when self.pattern_value='%' then '' else self.pattern_value end)"/>
+        </td>
+        <td valign="center">
+            <v:button name="submit" action="simple" value="Filter">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.pattern_where := self.howto.ufl_value;
+                    self.pattern_value := self.pattern_text.ufl_value;
+                    self.search_mask := case self.pattern_where
+                                        when '1' then self.pattern_value || '%'
+                                        when '2' then '%' || self.pattern_value || '%'
+                                        when '3' then '%' || self.pattern_value
+                                        else self.pattern_value end;
+                  
+                    if (self.search_mask = '') self.search_mask := '%';
+          
+          self.ownedapp_list.vc_data_bind (e);
+                   ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+         </td>
+         <td valign="center">
+             <v:button name="reset" action="simple" value="Clear">
+               <v:on-post>
+                 <v:script>
+                   <![CDATA[
+                     self.pattern_where := '1';
+                     self.pattern_value := '%';
+                     self.search_mask := '%';
+                     self.howto.vc_data_bind (e);
+                     self.pattern_text.ufl_value := '';
+                     self.ownedapp_list.vc_data_bind (e);
+                   ]]>
+                 </v:script>
+               </v:on-post>
+             </v:button>
+        </td>
+       </tr>
+     </table>
+  </td>
+  <td align="center">
+  </td>
+  <td align="center">
+  </td>
+</tr>
+
+<tr>
+<td align="center" valign="top">
+    <v:data-list
+        xhtml_style="width:100%"
+        name="ownedapp_list"
+        sql="select WAI_NAME as KEYVAL,WAI_NAME as NAME FROM DB.DBA.WA_INSTANCE,DB.DBA.WA_MEMBER
+             WHERE
+                 WAM_USER=self.user_id
+             AND WAM_MEMBER_TYPE=1
+             AND WAM_INST=WAI_NAME
+             AND WAI_NAME <> self.comm_wainame
+             AND WAI_TYPE_NAME not in ('oMail','oDrive')
+             AND WAI_NAME NOT IN(select CM_MEMBER_APP FROM ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame and (CM_MEMBER_DATA is null OR CM_MEMBER_DATA='add'))
+             AND WAI_NAME LIKE self.search_mask"
+        key-column="KEYVAL"
+        value-column="NAME"
+        xhtml_size="15"
+        multiple="1"
+         >
+    </v:data-list>
+    <br/><br/>
+</td>
+<td align="center">
+                <v:button xhtml_class="real_button" value=">>" action="simple" name="addtocommunityapp">
+                  <v:on-post><![CDATA[
+                         declare i int;
+                         i := 0;
+                         while(i < length(self.ownedapp_list.ufl_value) ){
+                               
+                               if(not exists(SELECT 1 from ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=self.ownedapp_list.ufl_value[i] AND CM_MEMBER_DATA is not null)){
+                                  insert into ODS..COMMUNITY_MEMBER_APP(CM_COMMUNITY_ID,CM_MEMBER_APP,CM_MEMBER_DATA) values (self.comm_wainame,self.ownedapp_list.ufl_value[i],'add');
+                               }else{
+                                  update ODS..COMMUNITY_MEMBER_APP set CM_MEMBER_DATA=NULL where CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=self.ownedapp_list.ufl_value[i];
+--                                 delete FROM ODS..COMMUNITY_MEMBER_APP where CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=self.communityapp_list.ufl_value[i];
+                               }
+                               i := i + 1;
+                         }
+                         self.ownedapp_list.vc_data_bind(e);
+                         self.communityapp_list.vc_data_bind(e);
+                  ]]></v:on-post>
+                </v:button>
+
+<br/><br/>
+                <v:button xhtml_class="real_button" value="<<" action="simple" name="remfromcommunityapp">
+                  <v:on-post><![CDATA[
+                         declare i int;
+                         i := 0;
+                         while(i < length(self.communityapp_list.ufl_value) ){
+
+                               if(not exists(SELECT 1 from ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=self.communityapp_list.ufl_value[i] AND CM_MEMBER_DATA is not null)){
+                                    update ODS..COMMUNITY_MEMBER_APP set CM_MEMBER_DATA='remove' where CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=self.communityapp_list.ufl_value[i];
+                               }else{
+                                    delete FROM ODS..COMMUNITY_MEMBER_APP where CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=self.communityapp_list.ufl_value[i];
+                               };
+
+                              i := i + 1;
+                         }
+                         self.ownedapp_list.vc_data_bind(e);
+                         self.communityapp_list.vc_data_bind(e);
+                  ]]></v:on-post>
+                </v:button>
+</td>
+<td align="center" valign="top">
+    <v:data-list
+        xhtml_style="width:100%"
+        name="communityapp_list"
+        sql="select CM_MEMBER_APP as KEYVAL, CM_MEMBER_APP as NAME FROM ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame AND (CM_MEMBER_DATA is null or CM_MEMBER_DATA='add')"  
+        key-column="KEYVAL"
+        value-column="NAME"
+        xhtml_size="15"
+        multiple="1" >
+    </v:data-list>
+</td>
+</tr>
+<tr>
+ <td colspan="3" align="right">
+                <v:button xhtml_class="real_button" value="Save" action="simple" name="save">
+                  <v:on-post><![CDATA[
+                         declare app_id,action VARCHAR;
+                         for(SELECT  CM_MEMBER_APP,CM_MEMBER_DATA from ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame and CM_MEMBER_DATA is not null) do {
+                              app_id:=CM_MEMBER_APP;
+                              action:=CM_MEMBER_DATA;
+                             if(action='add'){
+
+
+                               declare _wai_name, acc_type, app_type any;
+                               _wai_name:=app_id;
+                               
+                               declare exit handler for sqlstate '*', not found
+                               {
+                                  self.vc_is_valid := 0;
+                                  declare _use_sys_errors, _sys_error, _error any;
+                                  dbg_obj_print (__SQL_STATE,__SQL_MESSAGE);
+                                  if (isstring (__SQL_STATE))
+                                     _sys_error := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
+                                  else
+                                     _sys_error := '';
+                                  _error := 'Due to a transient problem in the system, your join request could not be
+                                      processed at the moment. The system administrators have been notified. Please
+                                      try again later';
+                                  _use_sys_errors := (select top 1 WS_SHOW_SYSTEM_ERRORS from WA_SETTINGS);
+                                  if (_use_sys_errors)
+                                    self.vc_error_message := _error || ' ' || _sys_error;
+                                  else
+                                    self.vc_error_message := _error;
+                                  rollback work;
+                                  return;
+                               };
+                               
+                               select WAI_TYPE_NAME into app_type from WA_INSTANCE where WAI_NAME = _wai_name;
+                               acc_type := (select max(WMT_ID) from WA_MEMBER_TYPE where WMT_APP = app_type);
+                               
+                               for(SELECT WAM_USER from WA_MEMBER WHERE WAM_INST = self.comm_wainame and WAM_STATUS<3)do{
+                                 
+                                 declare curr_member int;
+                                 curr_member:=WAM_USER;
+                                 if(not exists(select 1 from WA_MEMBER where WAM_USER=curr_member and WAM_INST=_wai_name)){                               
+                                    insert into WA_MEMBER(WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_STATUS)
+                                                values (curr_member, _wai_name, acc_type, 2);
+                                 }
+                               } 
+
+
+--                                (self as web_app).wa_notify_member_hcnaged (...)  --tova e za nadpisvane na methoda s cel da pravia neshto poveche - hosted_services.sql
+
+
+
+                               update ODS..COMMUNITY_MEMBER_APP set CM_MEMBER_DATA=NULL where CM_COMMUNITY_ID=self.comm_wainame and CM_MEMBER_APP=app_id;
+                             }else{
+                               -- pravim kvoto triabva pri iztrivane
+                               DELETE FROM ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame and CM_MEMBER_APP=app_id;
+                              
+                             }
+                         };
+                         self.ownedapp_list.vc_data_bind(e);
+                         self.communityapp_list.vc_data_bind(e);
+
+                  ]]></v:on-post>
+                </v:button>
+
+                <v:button xhtml_class="real_button" value="Cancel" action="simple" name="cancel">
+                  <v:on-post><![CDATA[
+                         declare app_id,action VARCHAR;
+                         for(SELECT  CM_MEMBER_APP,CM_MEMBER_DATA from ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame and CM_MEMBER_DATA is not null)do{
+                              app_id:=CM_MEMBER_APP;
+                              action:=CM_MEMBER_DATA;
+                             if(action='add'){
+                               DELETE FROM ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame and CM_MEMBER_APP=app_id;
+                             }else{
+                               UPDATE ODS..COMMUNITY_MEMBER_APP SET CM_MEMBER_DATA=NULL WHERE CM_COMMUNITY_ID=self.comm_wainame and CM_MEMBER_APP=app_id;
+                             }
+                         };
+                         self.ownedapp_list.vc_data_bind(e);
+                         self.communityapp_list.vc_data_bind(e);
+
+                  ]]></v:on-post>
+                </v:button>
+
+   </td>
+ </tr>
+</table>
+               </td>
+              <td class="advert1"><img src="/community/public/images/greygrad1.gif" width="200" height="460" /></td>
+            </tr>
+            <tr>
+              <td colspan="3" class="footernav">
+                  <a href="/community/public/aboutcommunity.html">About Community</a>
+                   | 
+                  <a href="/wa/faq.html">FAQ</a>
+                   | 
+                  <a href="#">Terms</a>
+                   | 
+                  <a href="#">Privacy</a>
+                   | 
+                  <a href="/wa/rabuse.vspx">Report Abuse</a>
+                   | 
+                  <a href="#">Advertise</a>
+                   | 
+                  <a href="#">Contact Us</a></td>
+            </tr>
+            <tr>
+              <td colspan="3" class="copyright">
+                  <div id="copy"><vm:copyright/></div>
+                  <div id="powered"><vm:powered-by/></div>
+                  <div id="disclaimer"><vm:disclaimer/></div>
+              </td>
+            </tr>
+          </table>
+          <map name="Map2" id="Map2">
+            <area shape="rect" coords="4,4,295,77" href="#" />
+          </map>
+         </td>
+        </tr>
+      </table>
+    </vm:body>
+  </vm:page>
+</v:page>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="../../widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page id="">
+    <vm:header>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:meta-keywords/>
+      <vm:page-title title="OpenLink Weblog Platform Login"/>
+      <vm:style url="/weblog/public/css/default.css"/>
+    </vm:header>
+    <vm:body onload="document.page_form.login_username.focus();">
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
+        <tr>
+          <td>
+            <div id="header">
+              <h1><vm:blog-title url="index.vspx"/></h1>
+              <h2><vm:welcome-message show-once="no"/></h2>
+            </div>
+            <div id="error">
+              <v:error-summary/>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td id="texttd">
+            <vm:login-form/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div id="powered"><vm:powered-by/></div>
+            <div id="copy"><vm:copyright/></div>
+            <div id="disclaimer"><vm:disclaimer/></div>
+          </td>
+        </tr>
+      </table>
+    </vm:body>
+  </vm:page>
+</v:page>
+

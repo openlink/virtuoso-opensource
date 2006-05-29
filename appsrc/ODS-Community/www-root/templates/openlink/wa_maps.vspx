@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="../../widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/community/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+ <vm:page custom_img_loc='/community/public/images/lightblue/'>
+ <v:variable name="base_url" type="varchar" default="''" persist="temp"/>
+ <v:variable name="ufname" type="varchar" default="null" param-name="ufname"/>
+ <v:variable name="uf_u_id" type="integer" default="null" persist="temp"/>
+ <v:on-init>
+  <![CDATA[
+    self.base_url := HTTP_REQUESTED_URL ();
+          
+
+
+  ]]>
+ </v:on-init>
+ <v:after-data-bind>
+  <![CDATA[
+     
+    if (is_empty_or_null (self.ufname))
+      {
+        self.ufname := self.user_name;
+        self.uf_u_id := self.user_id;
+      }
+    else
+      self.uf_u_id := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = self.ufname), self.user_id);
+  ]]>
+ </v:after-data-bind>
+      <vm:header id="header">
+      <title><vm:xd-title /> - Community members map</title>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:custom-style />
+      
+    </vm:header>
+    <vm:body>
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%" border="0" >
+        <tr>
+         <td>
+          <table border="0" cellpadding="0" cellspacing="0" id="main">
+            <tr>
+              <td colspan="2" id="topnav"><vm:xd-logo image="community_blank_thin550.jpg"/></td>
+              <td style="text-align:right;background:#86B9D9;padding-right:10px">
+                   <span class="lftmenu1"><vm:login-info format_string="%s"/><br/><vm:help-link/></span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3" id="navtabs">
+              <vm:appnav-block/>
+              </td>
+            </tr>
+            <tr>
+              <td id="left">
+                <vm:members-block />
+                <vm:blogs-block />
+                <vm:communities-block />
+              </td>
+              <td id="mainarea">
+                <br/>          
+                <h1 class="page_title"> Map of the members with public home addresses</h1>
+                <table>
+                 <tr>
+                   <td style="padding-left:10px;">
+                    <?vsp
+                      declare mapkey any;
+                      connection_set ('WA_SEARCH_PATH','/wa/');
+
+                      mapkey:=DB.DBA.WA_MAPS_GET_KEY();
+              
+                      if(self.user_name is not null and self.is_inst_member and isstring (mapkey) and length (mapkey) > 0){
+                    ?>
+                  <vm:map-control 
+	                    sql="sprintf ('select ' ||
+                                    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
+                                    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
+	                                  '  WAUI_U_ID as _KEY_VAL, \n' ||
+	                                  '  WA_SEARCH_USER_GET_EXCERPT_HTML_CUSTOMODSPATH (%d, vector(), WAUI_U_ID, '''', \n' ||
+	                                  '                                                 WAUI_FULL_NAME, U_NAME, WAUI_PHOTO_URL, U_E_MAIL,0,''%s'') as EXCERPT \n' ||
+	                                  'from  DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS \n' ||
+	                                  'where WAUI_LAT is not null and WAUI_LNG is not null and WAUI_U_ID = U_ID \n' ||
+	                                  '      and U_ID in (select WAM_USER from WA_MEMBER where WAM_INST = ''%s'' and WAM_STATUS<3 )', coalesce (self.user_id, http_nobody_uid ()),self.wa_home||'/',replace(self.comm_wainame,'''',''''''))"
+	                    baloon-inx="4"
+	                    lat-inx="1"
+	                    lng-inx="2"
+	                    key-name-inx="3"
+	                    key-val="self.uf_u_id"
+                      div_id="google_map"
+                      zoom="-1"
+                      base_url="self.base_url"
+                      wa_home_local="self.wa_home||'/'"
+                       />
+
+                      <div id="google_map" class="google_map" />
+                    <?vsp
+                      }
+                    ?>
+                   </td>
+                 </tr>
+                </table>
+              </td>
+              <td class="advert1"><img src="/community/public/images/greygrad1.gif" width="200" height="460" /></td>
+            </tr>
+            <tr>
+              <td colspan="3" class="footernav">
+                  <a href="/community/public/aboutcommunity.html">About Community</a>
+                   | 
+                  <a href="/wa/faq.html">FAQ</a>
+                   | 
+                  <a href="#">Terms</a>
+                   | 
+                  <a href="#">Privacy</a>
+                   | 
+                  <a href="/wa/rabuse.vspx">Report Abuse</a>
+                   | 
+                  <a href="#">Advertise</a>
+                   | 
+                  <a href="#">Contact Us</a></td>
+            </tr>
+            <tr>
+              <td colspan="3" class="copyright">
+                  <div id="copy"><vm:copyright/></div>
+                  <div id="powered"><vm:powered-by/></div>
+                  <div id="disclaimer"><vm:disclaimer/></div>
+              </td>
+            </tr>
+          </table>
+          <map name="Map2" id="Map2">
+            <area shape="rect" coords="4,4,295,77" href="#" />
+          </map>
+         </td>
+        </tr>
+      </table>
+    </vm:body>
+  </vm:page>
+</v:page>
