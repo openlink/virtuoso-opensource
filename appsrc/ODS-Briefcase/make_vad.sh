@@ -244,8 +244,8 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oDrive/new/od-a-dc.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oDrive/new/od-a-code.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oDrive/new/od-a-soap.sql', 1, 'report', $ISDAV);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oDrive/new/test/DET_Test.sql', 1, 'report', $ISDAV);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oDrive/new/test/RDF_Test.sql', 1, 'report', $ISDAV);" >> $STICKER
+  #echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oDrive/new/test/DET_Test.sql', 1, 'report', $ISDAV);" >> $STICKER
+  #echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/oDrive/new/test/RDF_Test.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER
