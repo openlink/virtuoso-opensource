@@ -138,8 +138,8 @@ do_command() {
 }
 
 directory_clean() {
-  $myrm vad 2>/dev/null
-  $myrm vad.* 2>/dev/null
+  $myrm -rf vad 2>/dev/null
+  $myrm -rf vad.* 2>/dev/null
   $myrm make_vad.log 2>/dev/null
   $myrm make_vad.xml 2>/dev/null
   $myrm *.db 2>/dev/null
