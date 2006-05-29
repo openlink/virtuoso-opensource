@@ -1,3 +1,22 @@
+May 29 2006, V4.5.3:
+  * Added OpenLink Data Spaces application framework
+  * Added OpenLink Data Spaces applications: 
+	Blog, Bookmark, Briefcase, Community, FeedManager
+	Gallery, WebMail, Wiki
+  * Added testsuites for XMLA and DAV/RDF
+  * Added support for JavaScript-lite Objects (JSO)
+  * Fixed network congestion problem
+  * Fixed performance issue loading VAD files
+  * Fixed performance issue on triggers
+  * Fixed platform-dependent memory leak in free-text indexing
+  * Fixed possible stale lock on page
+  * Fixed SPARQL access to DAV metadata
+  * Fixed recognition of MIME types in RDF
+  * Fixed syntax and typos
+  * Fixed compiler warnings
+  * Enhanced RFD/XML parser
+  * Enhanced Countries table in demo database
+	
 April 26 2006, V4.5.2:
   * Added project files and instructions to build on Windows
   * Added patched libtool.macosx for Mac OS X Universal builds

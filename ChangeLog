@@ -1,3 +1,445 @@
+2006-05-29 20:02  source
+
+	* Added mail sync
+	* Fixed WI library target to include new files
+	* Fixed building Wiki plugin
+
+2006-05-29 13:10  source
+
+	* Renamed main ODS package to ods_framework_dav.vad
+
+2006-05-29 13:03  source
+
+	* Added OpenLink Data Spaces applications into demo database
+
+2006-05-29 12:54  source
+
+	* Removed missing files
+
+2006-05-29 11:42  source
+
+	* Added OpenLink Data Space Community application
+
+2006-05-28 22:45  source
+
+	* Changed vad filenames
+
+2006-05-28 22:41  source
+
+	* Added OpenLink Data Space WebMail application
+
+2006-05-28 00:14  source
+
+	* Updated version to 4.5.3-pre3
+
+2006-05-28 00:13  source
+
+	* Added OpenLink Data Space Gallery application
+
+2006-05-27 23:51  source
+
+	* Added OpenLink Data Space Bookmark application
+
+2006-05-27 21:59  source
+
+	* Added appsrc for OpenLink Data Space applications
+
+2006-05-27 21:59  source
+
+	* Added OpenLink Data Space Wiki application
+	  (moved from ~/binsrc/samples/wikiv)
+
+2006-05-27 21:51  source
+
+	* Moved wikiv to ~/appsrc/ODS-Wiki
+
+2006-05-27 21:30  source
+
+	* Added OpenLink Data Space FeedManager application
+
+2006-05-27 21:11  source
+
+	* Added OpenLink Data Space Briefcase application
+
+2006-05-27 20:47  source
+
+	* Added ODS Blog application
+
+2006-05-27 20:46  source
+
+	* Added missing phrasematch.sql
+	* Small build cleanups
+
+2006-05-26 12:29  source
+
+	* Added GDATA atom/rss support
+
+2006-05-26 11:54  source
+
+	* Fixed compilation issue on some platforms
+
+2006-05-26 11:53  source
+
+	* Fixed tag names
+
+2006-05-26 11:51  source
+
+	* Fixed search on webdav properties
+
+2006-05-26 11:48  source
+
+	* Added backlink support
+
+2006-05-26 11:32  source
+
+	* Commented out debug lines
+
+2006-05-26 11:25  source
+
+	* Fixed problems in lexer
+
+2006-05-26 11:23  source
+
+	* Added location of flags in DAV
+
+2006-05-26 11:23  source
+
+	* Fixed country codes
+
+2006-05-26 11:17  source
+
+	* Added new images
+
+2006-05-25 11:35  source
+
+	* Updated version to 4.5.3-pre2
+
+2006-05-25 11:34  source
+
+	* Fixed syntax and typos
+	* Added description of SPARQL access to DAV metadata
+	* Added summery of VAD operations
+
+2006-05-25 11:31  source
+
+	* Fixed problem with CaseMode setting
+	* Fixed several wiki instances on one http path
+
+2006-05-25 11:28  source
+
+	* Added explaination to create Service on Windows
+
+2006-05-25 11:27  source
+
+	* Fixed check for documentation package
+
+2006-05-25 11:26  source
+
+	* Small layout changes
+
+2006-05-25 11:24  source
+
+	* Removed SPARQL exception
+
+2006-05-25 11:22  source
+
+	* Updated advanced search to look like the one used on the documentation
+	  server
+
+2006-05-25 11:21  source
+
+	* Changed name to OpenLink Data Spaces
+
+2006-05-25 11:20  source
+
+	* More reliable recognition of MIME type
+
+2006-05-25 11:16  source
+
+	* Updated version number
+
+2006-05-25 11:15  source
+
+	* Fixed BIF sql_split_text() function
+
+2006-05-25 11:11  source
+
+	* Added code for cross-referencing between objects, named constants,
+	  and debug dump
+
+2006-05-25 11:09  source
+
+	* When index is at end, leave the page
+
+2006-05-25 11:07  source
+
+	* Replaced flex command line params with %option to ensure portability
+	  across FLEX versions and to enable non-interactive parsing mode
+
+2006-05-25 10:42  source
+
+	* Added missing line continuation
+
+2006-05-25 10:35  source
+
+	* Added maphash3() function
+
+2006-05-25 10:32  source
+
+	* Extended Countries table with flags and latitude/longitude information
+
+2006-05-25 10:25  source
+
+	* Added new graphics
+
+2006-05-24 16:00  source
+
+	* Added OpenLink Data Spaces Framework
+
+2006-05-24 09:31  source
+
+	* Updated version to 4.5.3-pre1
+
+2006-05-24 09:26  source
+
+	* Added switch for spotlight integration
+
+2006-05-24 09:25  source
+
+	* Added local url attr
+	* Set is-local to the set of attrs
+
+2006-05-24 09:23  source
+
+	* New icons for feeds
+	* New vsp for handling google translations
+
+2006-05-24 09:22  source
+
+	* Renamed package from wa to Framework
+
+2006-05-24 09:19  source
+
+	* Fixed removal of old packages
+
+2006-05-24 09:15  source
+
+	* Various enhancements to SPARQL, blog and rss_feed tutorials
+
+2006-05-24 09:14  source
+
+	* Renamed package from wa to Framework
+	* Fixed update time
+	* Added select all checkboxes on Grant page
+	* Fixed documentation links
+	* Ajaxified monitor tabs
+
+2006-05-24 09:08  source
+
+	* Added XMLA testsuite
+	* Added DAV/RDF testsuite
+	* Various small fixes and cleanups
+
+2006-05-24 09:05  source
+
+	* Various small bugfixes
+
+2006-05-24 09:02  source
+
+	* Triggers are now faster because they do not result in free-text indexing
+
+2006-05-24 09:02  source
+
+	* Fix for parsing of MIME-type of RDF/XML files that have ho first-level
+	  'Description' elements.
+
+2006-05-24 08:58  source
+
+	* Integrated NNTP support
+	* Renamed package to ODS Wiki
+
+2006-05-24 08:52  source
+
+	* Fixed SPARQL demo
+
+2006-05-24 08:52  source
+
+	* Added missing .css files to documentation vad
+
+2006-05-24 08:51  source
+
+	* Added countries table
+
+2006-05-24 08:50  source
+
+	* Added support for vad_version
+
+2006-05-19 22:56  source
+
+	* Fixed problem in TOC generation due to bad tag
+
+2006-05-19 22:56  source
+
+	* Restructured page on RDF and SPARQL
+
+2006-05-19 22:52  source
+
+	* Fix for SPARQL queries with optional in optional in graph.
+
+2006-05-19 22:51  source
+
+	* Updated version number
+
+2006-05-19 22:51  source
+
+	* Added call to WS.WS.URIQA_VHOST_RESET
+
+2006-05-19 22:49  source
+
+	* Use UTF-8 code page for apps
+
+2006-05-19 22:48  source
+
+	* Fix for proper RDF/XML loading
+	* Extra conversion cases for different valmodes
+	* Final version of support of long O
+	* Initial support of long literals
+	* bif_http_escape() is extended to support TURTLE serializations
+
+2006-05-19 22:47  source
+
+	* Fix for SPARQL queries with optional in optional in graph
+	* Added support for external variables in SPARQL patterns and result sets
+
+2006-05-19 22:43  source
+
+	* Fixed GPF on internal errors during SQL text generation of inlined SPARQL
+
+2006-05-19 22:40  source
+
+	* Fixed wrong argument name
+
+2006-05-19 22:37  source
+
+	* iri_id_from_num can now get IRI_ID as argument.
+
+2006-05-19 22:34  source
+
+	* Initial support for JavaScript-lite Objects (JSO) for loading RDF data
+	  into C structures, like loading RDF mapping metadata
+
+2006-05-19 22:33  source
+
+	* Fixed platform-dependent memory leak in free-text indexing
+
+2006-05-19 22:31  source
+
+	* Fixed handling of blobs
+	* Fixed cursor and bookmark support
+
+2006-05-19 22:25  source
+
+	* Fix for import of IRIs with quotes
+
+2006-05-19 22:25  source
+
+	* Extended  bif_http_escape() to support TURTLE serializations
+
+2006-05-19 22:19  source
+
+	* Rewrote RDF/XML parser to be more efficient
+
+2006-05-19 22:09  source
+
+	* In itc_il_search, if there is local code or local test in the itc_ks,
+	  and the code signals an error, the buffer will stay occupied after
+	  control exits. Fixed by using itc_next and not itc_search.
+
+2006-05-19 22:03  source
+
+	* Fixed problem with SOAP rest protocol
+
+2006-05-19 21:58  source
+
+	* Added addler32 and tridgell32 functions
+
+2006-05-19 21:57  source
+
+	* Added bif_spotlight_status function
+
+2006-05-19 20:18  source
+
+	* Fixed compiler warning
+
+2006-05-19 20:10  source
+
+	* Fixed compiler warnings
+
+2006-05-19 20:04  source
+
+	* Small fix in comments
+
+2006-05-19 20:04  source
+
+	* Added URI for RDF
+
+2006-05-18 08:10  source
+
+	* Various speedups
+
+2006-05-17 09:48  source
+
+	* Setting SO_RCVBUF and SO_SNDBUF on some OSes like Mac OS X can
+	  have a real performance impact if they are set too small so it
+	  is generally best to leave them to the OS to sort out.
+	  (pvk)
+
+2006-05-17 00:44  source
+
+	* Added missing index
+
+2006-04-28 12:35  source
+
+	* Updated instructions for Win64 and VS2005
+
+2006-04-27 19:10  source
+
+	* Added build scripts for Windows 64 bit
+
+2006-04-27 19:06  source
+
+	* Make sure .NET framework version number is correct
+
+2006-04-27 18:58  source
+
+	* Fixed problems build clr and java hosting
+	* Added missing clr.def for clr hosting
+
+2006-04-27 18:52  source
+
+	* Use rm instead of del to avoid misleading errors for not existing
+	  files when building a fresh checkout
+	* Added deps of the .l build step of the .h generated by .y build step
+	* Fixed the sql_code generation to use '/' instead of '\' directory
+	  separator, as the sql_to_c awk script is oriented to '/'.
+
+2006-04-27 18:49  source
+
+	* Fixed code to start virtuoso server
+
+2006-04-27 18:43  source
+
+	* Updated version number
+
+2006-04-27 18:42  source
+
+	* Fixed compiler warning
+
+2006-04-27 18:38  source
+
+	* Updated SPARQL demo page
+	* Added new sparql_demo.php script
+
 2006-04-26 09:18  source
 
 	* Set version number to 4.5.2
