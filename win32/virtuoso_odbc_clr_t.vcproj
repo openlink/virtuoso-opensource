@@ -172,7 +172,7 @@
 						Name="VCCustomBuildTool"
 						CommandLine="cd $(InputDir)
 rm -f sql_code_clr.c
-gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG import_clr.sql &gt; sql_code_clr.c
 cd $(ProjectDir)
 "
 						Outputs="$(InputDir)\sql_code_clr.c"/>
@@ -183,7 +183,7 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="cd $(InputDir)
 rm -f sql_code_clr.c
-gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG import_clr.sql &gt; sql_code_clr.c
 cd $(ProjectDir)
 "
 						Outputs="$(InputDir)\sql_code_clr.c"/>
@@ -197,7 +197,7 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="cd $(InputDir)
 rm -f sql_code_clr.c
-gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_xslt.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG mono_type.xsl &gt; sql_code_xslt.c
 cd $(ProjectDir)
 "
 						Outputs="$(InputDir)\sql_code_xslt.c"/>
@@ -208,7 +208,7 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="cd $(InputDir)
 rm -f sql_code_clr.c
-gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_xslt.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG mono_type.xsl &gt; sql_code_xslt.c
 cd $(ProjectDir)
 "
 						Outputs="$(InputDir)\sql_code_xslt.c"/>

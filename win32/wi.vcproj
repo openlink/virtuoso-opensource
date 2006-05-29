@@ -316,6 +316,9 @@
 				RelativePath="..\libsrc\Wi\rdf_core.c">
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\rdfxml_parser.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\recovery.c">
 			</File>
 			<File
@@ -1013,11 +1016,12 @@
 						CommandLine="
 cd $(InputDir)
 rm -f scn3_vsnet.c
-flex -i -oscn3_vsnet.c $(InputPath)
+flex -oscn3_vsnet.c $(InputPath)
+flex -Pscn3splityy -oscn3split.c $(InputPath)
 cd $(ProjectDir)
 "
 						AdditionalDependencies="$(InputDir)sql3.h"
-						Outputs="$(InputDir)scn3_vsnet.c"/>
+						Outputs="$(InputDir)scn3_vsnet.c;$(InputDir)scn3split.c"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -1026,11 +1030,12 @@ cd $(ProjectDir)
 						CommandLine="
 cd $(InputDir)
 rm -f scn3_vsnet.c
-flex -i -oscn3_vsnet.c $(InputPath)
+flex -oscn3_vsnet.c $(InputPath)
+flex -Pscn3splityy -oscn3split.c $(InputPath)
 cd $(ProjectDir)
 "
 						AdditionalDependencies="$(InputDir)sql3.h"
-						Outputs="$(InputDir)scn3_vsnet.c"/>
+						Outputs="$(InputDir)scn3_vsnet.c;$(InputDir)scn3split.c"/>
 				</FileConfiguration>
 			</File>
 			<File

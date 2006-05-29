@@ -133,6 +133,9 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
+				RelativePath="..\libsrc\util\buildarg.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\util\cfg2.c">
 			</File>
 			<File
@@ -417,7 +420,8 @@
 						Name="VCCustomBuildTool"
 						CommandLine="cd $(InputDir)
 bash gen_all_gates.sh
-cd $(ProjectDir)"
+cd $(ProjectDir)
+"
 						Outputs="$(InputDir)\export_gate_virtuoso.c"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -426,7 +430,8 @@ cd $(ProjectDir)"
 						Name="VCCustomBuildTool"
 						CommandLine="cd $(InputDir)
 bash gen_all_gates.sh
-cd $(ProjectDir)"
+cd $(ProjectDir)
+"
 						Outputs="$(InputDir)\export_gate_virtuoso.c"/>
 				</FileConfiguration>
 			</File>

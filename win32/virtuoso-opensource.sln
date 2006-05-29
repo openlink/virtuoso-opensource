@@ -253,6 +253,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "zlib.vcproj", "{866
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtmail", "odbcmail.vcproj", "{4C517D78-E5B9-11DA-85E2-A4E5714C712A}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "maildrop", "maildrop.vcproj", "{C5F98602-E5B9-11DA-85E2-A4E5714C712A}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -419,6 +427,14 @@ Global
 		{86645C8E-3BBE-4E1E-A8AE-C6990B4ECC64}.Debug.Build.0 = Debug|Win32
 		{86645C8E-3BBE-4E1E-A8AE-C6990B4ECC64}.Release.ActiveCfg = Release|Win32
 		{86645C8E-3BBE-4E1E-A8AE-C6990B4ECC64}.Release.Build.0 = Release|Win32
+		{4C517D78-E5B9-11DA-85E2-A4E5714C712A}.Debug.ActiveCfg = Debug|Win32
+		{4C517D78-E5B9-11DA-85E2-A4E5714C712A}.Debug.Build.0 = Debug|Win32
+		{4C517D78-E5B9-11DA-85E2-A4E5714C712A}.Release.ActiveCfg = Release|Win32
+		{4C517D78-E5B9-11DA-85E2-A4E5714C712A}.Release.Build.0 = Release|Win32
+		{C5F98602-E5B9-11DA-85E2-A4E5714C712A}.Debug.ActiveCfg = Debug|Win32
+		{C5F98602-E5B9-11DA-85E2-A4E5714C712A}.Debug.Build.0 = Debug|Win32
+		{C5F98602-E5B9-11DA-85E2-A4E5714C712A}.Release.ActiveCfg = Release|Win32
+		{C5F98602-E5B9-11DA-85E2-A4E5714C712A}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

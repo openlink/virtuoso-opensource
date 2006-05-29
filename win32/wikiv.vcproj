@@ -51,7 +51,7 @@
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
-				ModuleDefinitionFile="..\binsrc\samples\wikiv\plugin\wikiv.def"
+				ModuleDefinitionFile="..\appsrc\ODS-Wiki\plugin\wikiv.def"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(ConfigurationName)/wikiv.pdb"
 				ImportLibrary="$(ConfigurationName)/wikiv.lib"/>
@@ -123,7 +123,7 @@
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
-				ModuleDefinitionFile="..\binsrc\samples\wikiv\plugin\wikiv.def"
+				ModuleDefinitionFile="..\appsrc\ODS-Wiki\plugin\wikiv.def"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(ConfigurationName)/wikiv.pdb"
 				ImportLibrary="$(ConfigurationName)/wikiv.lib"/>
@@ -167,13 +167,13 @@
 				RelativePath="..\libsrc\plugin\import_gate_virtuoso.c">
 			</File>
 			<File
-				RelativePath="..\binsrc\samples\wikiv\plugin\maclex.c">
+				RelativePath="..\appsrc\ODS-Wiki\plugin\maclex.c">
 			</File>
 			<File
-				RelativePath="..\binsrc\samples\wikiv\plugin\wikilex.c">
+				RelativePath="..\appsrc\ODS-Wiki\plugin\wikilex.c">
 			</File>
 			<File
-				RelativePath="..\binsrc\samples\wikiv\plugin\wikiv.c">
+				RelativePath="..\appsrc\ODS-Wiki\plugin\wikiv.c">
 			</File>
 		</Filter>
 		<Filter
@@ -188,7 +188,7 @@
 			Name="LexFiles"
 			Filter="">
 			<File
-				RelativePath="..\binsrc\samples\wikiv\plugin\maclex.l">
+				RelativePath="..\appsrc\ODS-Wiki\plugin\maclex.l">
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
@@ -215,7 +215,7 @@ cd $(ProjectDir)
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\binsrc\samples\wikiv\plugin\wikilex.l">
+				RelativePath="..\appsrc\ODS-Wiki\plugin\wikilex.l">
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
