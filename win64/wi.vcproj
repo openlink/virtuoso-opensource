@@ -590,6 +590,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\rdfxml_parser.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\recovery.c"
 				>
 			</File>
@@ -1858,8 +1862,8 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f scn3_vsnet.c&#x0D;&#x0A;flex -i -oscn3_vsnet.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
-						Outputs="$(InputDir)scn3_vsnet.c"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f scn3_vsnet.c&#x0D;&#x0A;flex -oscn3_vsnet.c $(InputPath)&#x0D;&#x0A;flex -Pscn3splityy -oscn3split.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)"
+						Outputs="$(InputDir)scn3_vsnet.c;$(InputDir)scn3split.c"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1867,8 +1871,8 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f scn3_vsnet.c&#x0D;&#x0A;flex -i -oscn3_vsnet.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
-						Outputs="$(InputDir)scn3_vsnet.c"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f scn3_vsnet.c&#x0D;&#x0A;flex -oscn3_vsnet.c $(InputPath)&#x0D;&#x0A;flex -Pscn3splityy -oscn3split.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)"
+						Outputs="$(InputDir)scn3_vsnet.c;$(InputDir)scn3split.c"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1876,8 +1880,8 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f scn3_vsnet.c&#x0D;&#x0A;flex -i -oscn3_vsnet.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
-						Outputs="$(InputDir)scn3_vsnet.c"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f scn3_vsnet.c&#x0D;&#x0A;flex -oscn3_vsnet.c $(InputPath)&#x0D;&#x0A;flex -Pscn3splityy -oscn3split.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)"
+						Outputs="$(InputDir)scn3_vsnet.c;$(InputDir)scn3split.c"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1885,8 +1889,8 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;rm -f scn3_vsnet.c&#x0D;&#x0A;flex -i -oscn3_vsnet.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
-						Outputs="$(InputDir)scn3_vsnet.c"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f scn3_vsnet.c&#x0D;&#x0A;flex -oscn3_vsnet.c $(InputPath)&#x0D;&#x0A;flex -Pscn3splityy -oscn3split.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)"
+						Outputs="$(InputDir)scn3_vsnet.c;$(InputDir)scn3split.c"
 					/>
 				</FileConfiguration>
 			</File>

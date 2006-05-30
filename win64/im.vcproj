@@ -177,7 +177,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib CORE_RL_wand_.lib CORE_RL_coders_.lib CORE_RL_magick_.lib CORE_RL_ttf_.lib CORE_RL_xlib_.lib CORE_RL_bzlib_.lib CORE_RL_zlib_.lib CORE_RL_lcms_.lib CORE_RL_tiff_.lib CORE_RL_filters_.lib CORE_RL_jpeg_.lib CORE_RL_jbig_.lib CORE_RL_jp2_.lib CORE_RL_png_.lib CORE_RL_wmf_.lib CORE_RL_libxml_.lib"
 				OutputFile="$(ConfigurationName)/im.dll"
 				LinkIncremental="1"
@@ -374,7 +373,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib CORE_RL_wand_.lib CORE_RL_coders_.lib CORE_RL_magick_.lib CORE_RL_ttf_.lib CORE_RL_xlib_.lib CORE_RL_bzlib_.lib CORE_RL_zlib_.lib CORE_RL_lcms_.lib CORE_RL_tiff_.lib CORE_RL_filters_.lib CORE_RL_jpeg_.lib CORE_RL_jbig_.lib CORE_RL_jp2_.lib CORE_RL_png_.lib CORE_RL_wmf_.lib CORE_RL_libxml_.lib"
 				OutputFile="$(ConfigurationName)/im.dll"
 				LinkIncremental="1"
