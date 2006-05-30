@@ -1,0 +1,323 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectType>Local</ProjectType>
+    <ProductVersion>8.0.50727</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{50E2DD3F-5B5E-4E62-9206-A41824905CD7}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ApplicationIcon>
+    </ApplicationIcon>
+    <AssemblyKeyContainerName>VirtuosoClient.snk</AssemblyKeyContainerName>
+    <AssemblyName>OpenLink.Data.Virtuoso</AssemblyName>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+    <DefaultClientScript>JScript</DefaultClientScript>
+    <DefaultHTMLPageLayout>Grid</DefaultHTMLPageLayout>
+    <DefaultTargetSchema>IE50</DefaultTargetSchema>
+    <DelaySign>false</DelaySign>
+    <OutputType>Library</OutputType>
+    <RootNamespace>OpenLink.Data.Virtuoso</RootNamespace>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+    <StartupObject>
+    </StartupObject>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>.\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <BaseAddress>285212672</BaseAddress>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>DEBUG;TRACE;FROMIDE</DefineConstants>
+    <DocumentationFile>
+    </DocumentationFile>
+    <DebugSymbols>true</DebugSymbols>
+    <FileAlignment>4096</FileAlignment>
+    <NoStdLib>false</NoStdLib>
+    <NoWarn>
+    </NoWarn>
+    <Optimize>false</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>4</WarningLevel>
+    <DebugType>full</DebugType>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>.\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <BaseAddress>285212672</BaseAddress>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>FROMIDE</DefineConstants>
+    <DocumentationFile>
+    </DocumentationFile>
+    <DebugSymbols>false</DebugSymbols>
+    <FileAlignment>4096</FileAlignment>
+    <NoStdLib>false</NoStdLib>
+    <NoWarn>
+    </NoWarn>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>1</WarningLevel>
+    <DebugType>none</DebugType>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;FROMIDE</DefineConstants>
+    <BaseAddress>285212672</BaseAddress>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>FROMIDE</DefineConstants>
+    <BaseAddress>285212672</BaseAddress>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <WarningLevel>1</WarningLevel>
+    <DebugType>
+    </DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;FROMIDE</DefineConstants>
+    <BaseAddress>285212672</BaseAddress>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>FROMIDE</DefineConstants>
+    <BaseAddress>285212672</BaseAddress>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <WarningLevel>1</WarningLevel>
+    <DebugType>
+    </DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System">
+      <Name>System</Name>
+    </Reference>
+    <Reference Include="System.Data">
+      <Name>System.Data</Name>
+    </Reference>
+    <Reference Include="System.Drawing">
+      <Name>System.Drawing</Name>
+    </Reference>
+    <Reference Include="System.EnterpriseServices">
+      <Name>System.EnterpriseServices</Name>
+    </Reference>
+    <Reference Include="System.Xml">
+      <Name>System.XML</Name>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ArrayOfLongPacked.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="BlobHandle.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="BufferType.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="CLI.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ConnectionOptions.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ConnectionPool.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ConnectionStringParser.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DataType.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DateTimeMarshaler.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Diagnostics.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DTC.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ExplicitString.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Future.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="FutureList.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="IConvertData.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ICreateErrors.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="IInnerCommand.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="IInnerConnection.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="IMarshal.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="InnerConnectionBase.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ISession.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="IVirtuosoError.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ManagedCommand.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ManagedConnection.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ManagedErrors.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Marshaler.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MD5.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MemoryHandle.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="OdbcCommand.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="OdbcConnection.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="OdbcErrors.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ParameterData.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Platform.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="RPC.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Service.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="SqlXml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="StatementList.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="TcpConnection.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="TcpSession.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Unix.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtDbType.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoCodeAccessPermission.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoCommand.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="VirtuosoCommandBuilder.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="VirtuosoConnection.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="VirtuosoDataAdapter.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="VirtuosoDataReader.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoError.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoErrorCollection.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoException.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoInfoMessage.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoParameter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoParameterCollection.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoPermission.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoPermissionAttribute.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoTransaction.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="VirtuosoWarning.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Win32.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <None Include="VirtuosoClient.snk" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+</Project>
