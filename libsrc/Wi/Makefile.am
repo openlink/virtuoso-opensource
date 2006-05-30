@@ -578,6 +578,7 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/tests/dav/dav.sql \
 	$(top_srcdir)/binsrc/tests/dav/dav_api.sql \
 	$(top_srcdir)/binsrc/tests/dav/dav_acct.sql \
+	$(top_srcdir)/binsrc/tests/dav/dav_meta.sql \
 	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfs.sql \
 	davxml2rdfxml.xsl \
 	davxml2n3xml.xsl \
