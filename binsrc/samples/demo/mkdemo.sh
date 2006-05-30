@@ -361,6 +361,8 @@ then
     (cd $BPEL; make)
     (cd $HOME/binsrc/tutorial ; make)
     (cd $HOME/binsrc/yacutia ; make)
+    (cd $HOME/appsrc ; make)
+    $LN $HOME/appsrc/*/*_dav.vad .
     fi
 else
     (cd $BPEL; chmod +x make_vad.sh ; ./make_vad.sh)
@@ -767,8 +769,6 @@ DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
 #
 #  OpenLink Data Spaces
 #
-(cd $HOME/appsrc ; make)
-$LN $HOME/appsrc/*/*_dav.vad .
 DO_COMMAND "vad_install ('ods_framework_dav.vad')" dba dba
 DO_COMMAND "vad_install ('ods_blog_dav.vad')" dba dba
 DO_COMMAND "vad_install ('ods_bookmark_dav.vad')" dba dba
