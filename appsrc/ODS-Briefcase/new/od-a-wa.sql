@@ -1,4 +1,6 @@
 --
+--  $Id$
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -320,7 +322,7 @@ create method wa_dashboard_last_item () for wa_oDrive
                          and AI_FLAG = 'G'
                        order by RES_MOD_TIME desc
                      ) acl
-              union all
+              union
                 select *
                   from (select top 10 RES_FULL_PATH, RES_MOD_TIME, RES_NAME, RES_OWNER
                           from WS.WS.SYS_DAV_RES

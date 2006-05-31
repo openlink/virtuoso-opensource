@@ -27,20 +27,13 @@ echoln "";
 
 load od-a-wa.sql;
 
-load dav/DET_HostFs.sql;
---load dav/DET_Blog.sql;
---load dav/DET_oMail.sql;
-load dav/DET_PropFilter.sql;
-load dav/DET_ResFilter.sql;
-load dav/DET_CatFilter.sql;
-
 load od-a-ddk.sql;
 load od-a-rdf.sql;
 load od-a-dc.sql;
 load od-a-code.sql;
 
-load test/DET_Test.sql;
-load test/RDF_Test.sql;
+load od-a-dc-data.sql;
+load od-a-rdf-data.sql;
 
 -- End --------------------------------------------------------------------
 echoln "Job finished on " $YYYYMMDD " at " $HHMMSS;
