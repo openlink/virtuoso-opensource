@@ -35,6 +35,16 @@ then
     VOS=1
 fi
 
+if [ "z$SERVER" = "z" ]  
+then
+    if [ "x$HOST_OS" != "x" ]
+    then
+	SERVER=virtuoso-odbc-t.exe
+    else
+	SERVER=virtuoso
+    fi
+fi
+
 . $HOME/binsrc/tests/suite/test_fn.sh
 
 if [ -f /usr/xpg4/bin/rm ]
@@ -74,11 +84,11 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "x$HOST_OS" != "x" ]
+  if [ "z$HOST_OS" != "z" ] 
     then
-      $BUILD/../bin/virtuoso-odbc-t +foreground &
+      "$SERVER" +foreground &
   else
-    virtuoso +wait
+      "$SERVER" +wait
   fi
   stat="true"
   while true
@@ -111,7 +121,7 @@ do_command_safe () {
   shift
   shift
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if [ "x$HOST_OS" != "x" ]
+  if [ "x$HOST_OS" != "x"  -a "z$BUILD" != "z" ]
   then
     $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
   else
