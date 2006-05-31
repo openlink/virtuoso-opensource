@@ -656,6 +656,22 @@ sqlo_place_dfe_after (sqlo_t * so, locus_t * loc, df_elt_t * after_this, df_elt_
   if (so->so_place_code_forr_cond && dfe->dfe_is_placed)
     return;
     */
+#ifdef L2_DEBUG
+  {
+    df_elt_t * old_super = dfe->dfe_super;
+    if (NULL != old_super)
+      {
+        if ((old_super == super) &&
+          ((NULL != dfe->dfe_prev) || (NULL != dfe->dfe_next)) &&
+          (after_this != dfe->dfe_prev) )
+          GPF_T1 ("Place an element that is placed already");
+        if ((old_super->_.sub.first == dfe) || (NULL != dfe->dfe_prev) ||
+          (old_super->_.sub.last == dfe) || (NULL != dfe->dfe_next) )
+          L2_DELETE (old_super->_.sub.first, old_super->_.sub.last, dfe, dfe_);
+      }
+  }
+#endif
+  L2_INSERT_AFTER (super->_.sub.first, super->_.sub.last, after_this, dfe, dfe_);
   if (DFE_TABLE == dfe->dfe_type)
     dfe->_.table.ot->ot_locus = loc;
   if (DFE_DT == dfe->dfe_type)
@@ -664,7 +680,6 @@ sqlo_place_dfe_after (sqlo_t * so, locus_t * loc, df_elt_t * after_this, df_elt_
   dfe->dfe_super = super;
   dfe->dfe_locus = loc;
   dfe->dfe_is_placed = DFE_PLACED;
-  L2_INSERT_AFTER (super->_.sub.first,super->_.sub.last, after_this, dfe, dfe_);
   if (so->so_gen_pt == after_this)
     so->so_gen_pt = dfe;
   sqlo_dfe_type (so, dfe);
@@ -3663,14 +3678,27 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
     default:
       break;
     }
+#ifdef L2_DEBUG
+  if (NULL != dfe->dfe_super)
+    {
+      L2_DELETE (dfe->dfe_super->_.sub.first, dfe->dfe_super->_.sub.last, dfe, dfe_)
+    }
+/* Note matching '#ifndef L2_DEBUG' in sqlo_dt_unplace */
+#endif
 }
 
 void
 sqlo_dt_unplace (sqlo_t * so, df_elt_t * start_dfe)
 {
   df_elt_t * dfe, * next = NULL;
+  L2_ASSERT_PROPER_ENDS(start_dfe->dfe_super->_.sub.first, start_dfe->dfe_super->_.sub.last, dfe_)
+  L2_ASSERT_CONNECTION(start_dfe->dfe_super->_.sub.first, start_dfe, dfe_)
+  L2_ASSERT_CONNECTION(start_dfe, start_dfe->dfe_super->_.sub.last, dfe_)
+#ifndef L2_DEBUG
   start_dfe->dfe_prev->dfe_next = NULL;
   start_dfe->dfe_super->_.sub.last = start_dfe->dfe_prev;
+/* Note '#ifdef L2_DEBUG' in sqlo_dfe_unplace */
+#endif
   for (dfe = start_dfe; dfe; dfe = next)
     {
       next = dfe->dfe_next;

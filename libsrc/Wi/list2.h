@@ -25,9 +25,73 @@
  *  
  *  
 */
+#ifndef __LIST2_H
+#define __LIST2_H
+
+/*#ifdef MALLOC_DEBUG
+#define L2_DEBUG
+#endif*/
+
+#ifdef L2_DEBUG
+#define L2_ASSERT_SOLO(elt, ep) { \
+  if (NULL != elt->ep##prev) \
+    { \
+      if (elt == elt->ep##prev->ep##next) \
+        GPF_T1("L2_DEBUG: elt is next of prev of elt before insert, about to destroy other list"); \
+    } \
+  if (NULL != elt->ep##next) \
+    { \
+      if (elt == elt->ep##next->ep##prev) \
+        GPF_T1("L2_DEBUG: elt is prev of next of elt before insert, about to destroy other list"); \
+    } \
+}
+
+#define L2_ASSERT_PROPER_ENDS(first, last, ep) { \
+  if (NULL != first) \
+    { \
+      if (NULL == last) GPF_T1("L2_DEBUG: last is NULL but furst is not"); \
+      if (NULL != first->ep##prev) GPF_T1("L2_DEBUG: _prev of first is not NULL"); \
+      if (NULL != last->ep##next) GPF_T1("L2_DEBUG: _next of last is not NULL"); \
+    } \
+  else \
+    if (NULL != last) GPF_T1("L2_DEBUG: first is NULL but last is not"); \
+}
+
+#define L2_ASSERT_CONNECTION(first, last, ep) { \
+  int __prev_ofs = ((char *)(&(first->ep##prev))) - ((char *)(first)); \
+  int __next_ofs = ((char *)(&(first->ep##next))) - ((char *)(first)); \
+  char *__iprev = NULL; \
+  char *__iter = (void *)first; \
+  while (__iter != last) { \
+      if (NULL == __iter) GPF_T1("L2_DEBUG: last not found to the right of first"); \
+      __iter = ((char **)(__iter + __next_ofs))[0]; \
+    } \
+}
+
+#define L2_ASSERT_DISCONNECTION(first, outer, ep) { \
+  int __prev_ofs = ((char *)(&(first->ep##prev))) - ((char *)(first)); \
+  int __next_ofs = ((char *)(&(first->ep##next))) - ((char *)(first)); \
+  char *__iprev = NULL; \
+  char *__iter = (void *)first; \
+  while (NULL != __iter) { \
+      if (outer == __iter) GPF_T1("L2_DEBUG: unexpected occurrence of outer to the right of first"); \
+      __iter = ((char **)(__iter + __next_ofs))[0]; \
+    } \
+}
+
+#else
+#define L2_ASSERT_SOLO(elt, ep)
+#define L2_ASSERT_PROPER_ENDS(first, last, ep)
+#define L2_ASSERT_CONNECTION(first, last, ep)
+#define L2_ASSERT_DISCONNECTION(first, outer, ep)
+#endif
 
 #define L2_PUSH(first, last, elt, ep) \
 { \
+  L2_ASSERT_SOLO(elt, ep) \
+  L2_ASSERT_PROPER_ENDS(first, last, ep) \
+  L2_ASSERT_CONNECTION(first, last, ep) \
+  L2_ASSERT_DISCONNECTION(first, elt, ep) \
   elt->ep##next = first; \
   if (first) \
     first->ep##prev = elt; \
@@ -39,6 +103,10 @@
 
 #define L2_PUSH_LAST(first, last, elt, ep) \
 { \
+  L2_ASSERT_SOLO(elt, ep) \
+  L2_ASSERT_PROPER_ENDS(first, last, ep) \
+  L2_ASSERT_CONNECTION(first, last, ep) \
+  L2_ASSERT_DISCONNECTION(first, elt, ep) \
   elt->ep##prev = last; \
   if (last) \
     last->ep##next = elt; \
@@ -49,6 +117,9 @@
 
 #define L2_DELETE(first, last, elt, ep) \
 { \
+  L2_ASSERT_PROPER_ENDS(first, last, ep) \
+  L2_ASSERT_CONNECTION(first, elt, ep) \
+  L2_ASSERT_CONNECTION(elt, last, ep) \
   if (elt->ep##prev) \
     elt->ep##prev->ep##next = elt->ep##next; \
   if (elt->ep##next) \
@@ -62,6 +133,15 @@
 
 #define L2_INSERT(first, last, before, it, ep) \
 { \
+  L2_ASSERT_PROPER_ENDS(first, last, ep) \
+  L2_ASSERT_CONNECTION(first, before, ep) \
+  L2_ASSERT_CONNECTION(before, last, ep) \
+  if (before != it->ep##next) \
+    { \
+      L2_ASSERT_SOLO(it, ep) \
+      L2_ASSERT_DISCONNECTION(first, it, ep) \
+    } \
+  L2_ASSERT_DISCONNECTION(first, it, ep) \
   if (before == first) \
     { \
       L2_PUSH (first, last, it, ep); \
@@ -78,12 +158,23 @@
 
 #define L2_INSERT_AFTER(first, last, after, it, ep)  \
 {  \
+  L2_ASSERT_PROPER_ENDS(first, last, ep) \
   if (!after) \
     { \
+      L2_ASSERT_SOLO(it, ep) \
+      L2_ASSERT_DISCONNECTION(first, it, ep) \
+      L2_ASSERT_CONNECTION(first, last, ep) \
       L2_PUSH (first, last, it, ep); \
     } \
   else \
     { \
+      if (after != it->ep##prev) \
+        { \
+          L2_ASSERT_SOLO(it, ep) \
+          L2_ASSERT_DISCONNECTION(first, it, ep) \
+        } \
+      L2_ASSERT_CONNECTION(first, after, ep) \
+      L2_ASSERT_CONNECTION(after, last, ep) \
       it->ep##next = after->ep##next;  \
       it->ep##prev = after; \
       after->ep##next = it; \
@@ -94,3 +185,4 @@
     } \
 }
 
+#endif
