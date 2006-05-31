@@ -949,7 +949,7 @@ create procedure ENEWS.WA.feed_refresh_int(
   declare xt any;
   declare items any;
   declare i integer;
-  declare new_tag, typef, newUri, oldUri varchar;
+  declare new_tag, newUri, oldUri varchar;
 
   delete
     from ENEWS.WA.FEED_ITEM
@@ -974,12 +974,9 @@ again:
   if (not isstring(new_tag))
     new_tag := md5(content);
 
-  if (new_tag = tag) {
+  if (new_tag = tag)
     return 0;
-  }
-
   tag := new_tag;
-  typef := http_request_header(resHdr, 'Content-Type', null, 'text/xml');
 
   xt := xml_tree_doc (xml_tree (content));
   if (xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt) is not null) {
@@ -1014,10 +1011,7 @@ create procedure ENEWS.WA.process_rss_item(
     comment_api,
     comment_rss,
     author varchar;
-  declare
-    data any;
 
-  data := xt;
   title := serialize_to_UTF8_xml (xpath_eval ('string(/item/title)', xt, 1));
   description := xpath_eval ('[ xmlns:content="http://purl.org/rss/1.0/modules/content/" ] string(/item/content:encoded)', xt, 1);
   if (is_empty_or_null(description))
@@ -1025,11 +1019,11 @@ create procedure ENEWS.WA.process_rss_item(
   description := serialize_to_UTF8_xml (description);
   description := ENEWS.WA.string2xml(description);
   link := cast (xpath_eval ('/item/link', xt, 1) as varchar);
-  if (isnull(link))
+  if (isnull(link)) {
     link := cast (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /item/@rdf:about', xt, 1) as varchar);
-  if (isnull(link))
-    if (isnull(cast(xpath_eval ('/item/guid[@isPermaLink = "false"]', xt, 1) as varchar)))
+    if ((isnull(link)) and isnull(cast(xpath_eval ('/item/guid[@isPermaLink = "false"]', xt, 1) as varchar)))
       link := cast (xpath_eval ('/item/guid', xt, 1) as varchar);
+  }
   guid := cast (xpath_eval ('/item/guid', xt, 1) as varchar);
   pubdate := ENEWS.WA.dt_convert(cast (xpath_eval ('[ xmlns:dc="http://purl.org/dc/elements/1.1/" ] /item/dc:date', xt, 1) as varchar));
   if (isnull(pubdate))
@@ -1041,7 +1035,7 @@ create procedure ENEWS.WA.process_rss_item(
   if (isnull(author))
     author := cast (xpath_eval ('/item/author', xt, 1) as varchar);
 
-  ENEWS.WA.process_insert(feed_id, title, description, link, guid, pubDate, comment_api, comment_rss, author, data);
+  ENEWS.WA.process_insert(feed_id, title, description, link, guid, pubDate, comment_api, comment_rss, author, xt);
 }
 ;
 
@@ -1062,10 +1056,8 @@ create procedure ENEWS.WA.process_atom_item(
     author varchar;
   declare
     content,
-    contents,
-    data any;
+    contents any;
 
-  data := xt;
   title := serialize_to_UTF8_xml (xpath_eval ('string(/entry/title)', xt, 1));
   if (xpath_eval ('/entry/content[@type = "application/xhtml+xml" or @type="xhtml"]', xt) is not null) {
     contents := xpath_eval ('/entry/content/*', xt, 0);
@@ -1087,18 +1079,20 @@ create procedure ENEWS.WA.process_atom_item(
   link := cast (xpath_eval ('/entry/link[@rel="alternate"]/@href', xt, 1) as varchar);
   guid := cast (xpath_eval ('/entry/id', xt, 1) as varchar);
   pubdate := ENEWS.WA.dt_convert(cast(xpath_eval ('/entry/created', xt, 1) as varchar), null);
-  if (isnull(pubDate))
+  if (isnull(pubDate)) {
     pubdate := ENEWS.WA.dt_convert(cast(xpath_eval ('/entry/modified', xt, 1) as varchar), null);
-  if (isnull(pubDate))
+    if (isnull(pubDate)) {
     pubdate := ENEWS.WA.dt_convert(cast(xpath_eval ('/entry/updated', xt, 1) as varchar), null);
   if (isnull(pubDate))
     pubdate := now();
+    }
+  }
 
   comment_api := null;
   comment_rss := null;
   author := cast (xpath_eval ('/entry/author/name', xt, 1) as varchar);
 
-  ENEWS.WA.process_insert(feed_id, title, description, link, guid, pubDate, comment_api, comment_rss, author, data);
+  ENEWS.WA.process_insert(feed_id, title, description, link, guid, pubDate, comment_api, comment_rss, author, xt);
 }
 ;
 
