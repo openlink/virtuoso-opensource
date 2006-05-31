@@ -413,10 +413,9 @@ report_error:
     }
   else /*if (is_computed)*/
     {
-      sqlc_warning ("01V01", "QW007",
+      sqlr_new_error ("42001", "SR518", 
 	  "Procedure name value of invalid type %s (%d) supplied in an indirect CALL statement",
 	  dv_type_title (DV_TYPE_OF (proc_name)), (int) DV_TYPE_OF (proc_name));
-      proc_name = NULL;
     }
   if (!proc || IS_REMOTE_ROUTINE_QR (proc))
     {
