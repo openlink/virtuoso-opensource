@@ -48,3 +48,7 @@ acknowledge incorporation of code from the following projects:
     This product uses the IE7 JavaScript library
     (http://dean.edwards.name/IE7) by Dean Edwards to make IE behave
     (almost) like a standards-compliant browser.
+
+* RTE
+    This product uses the Cross-Browser Rich Text Editor written by
+    Kevin Roth (http://www.kevinroth.com/rte/)
