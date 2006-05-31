@@ -55,7 +55,7 @@ JSO_STRUCT_END
 
 JSO_STRUCT_BEGIN qm_value virtrdf QuadMapValue		--!< Description of one of four column patterns of a mapping pattern.
 JSO_SCALAR qmvTableName STRING REQUIRED
-JSO_POINTER qmvColumns qm_column REQUIRED
+JSO_POINTER qmvColumns qm_column_array REQUIRED
 JSO_POINTER qmvFormat qm_format REQUIRED
 JSO_SCALAR qmvIRIContains STRING OPTIONAL
 JSO_SCALAR qmvColumnsToIRI STRING OPTIONAL
