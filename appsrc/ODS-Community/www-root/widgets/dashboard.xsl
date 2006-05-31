@@ -142,7 +142,7 @@
          clk := '';
          mboxid :=  wa_user_have_mailbox (self.user_name);
          if (length (uname))
-           aurl := '/wa/uhome.vspx?ufname=' || uname;
+           aurl := self.wa_home||'/uhome.vspx?ufname=' || uname;
          else if (length (email) and mboxid is not null)
           {
             aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);

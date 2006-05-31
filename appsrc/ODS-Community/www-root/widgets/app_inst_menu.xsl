@@ -39,7 +39,7 @@
 
       foreach (any app in arr) do
         {
-          if (check_package (app[1]))
+          if (wa_check_package (app[1]))
           {
             declare issel_class varchar;
             issel_class:='navtab_non_sel';
@@ -47,7 +47,7 @@
       ?>
         <td nowrap="nowrap" class="<?=issel_class?>">
       <v:url name="slice1" url="--sprintf ('?page=app_inst&app=%s', app[0])"
-          value="--WA_GET_APP_NAME (app[0])"
+          value="-- WA_GET_APP_NAME (app[0])"
           render-only="1"
        />
         </td>

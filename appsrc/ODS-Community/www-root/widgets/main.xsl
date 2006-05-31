@@ -59,10 +59,10 @@
     <v:variable name="visb" type="any" default="null"/>
     <v:variable name="arr" type="any" default="null"/>
     <v:variable name="pubres_url" type="varchar" default="''"/>
-    <v:variable name="WA_SEARCH_PATH" type="varchar" default="'/wa/'" persist="session"/>
+    <v:variable name="WA_SEARCH_PATH" type="varchar" default="'/ods/'" persist="session"/>
     <v:variable name="phome" type="varchar" default="null" persist="temp" />
     <v:variable name="isDav" type="int" default="1" persist="temp" />
-    <v:variable name="wa_home" type="varchar" default="'/wa'" />
+    <v:variable name="wa_home" type="varchar" default="'/ods'" />
  
  
  
@@ -196,7 +196,7 @@
             declare login_page,curr_page varchar;
            
             if (registry_get ('wa_home_link') = 0){
-                login_page :='/wa/login.vspx';
+                login_page :='/ods/login.vspx';
             }else{
                 login_page := registry_get ('wa_home_link');
             }
@@ -307,9 +307,6 @@
         ]]>
         
         </v:on-init>
-        <v:after-data-bind><![CDATA[
-                dbg_obj_print('');
-        ]]></v:after-data-bind>
 
     <html>
       <xsl:apply-templates/>
@@ -921,7 +918,7 @@ window.onload = function (e)
           if (self.comm_access <> 1){
               control.vc_enabled := 0;
           }else{
-            control.vu_url := sprintf ('/wa/edit_inst.vspx?wai_id=%d', self.comm_id);
+            control.vu_url := sprintf ('%s/edit_inst.vspx?wai_id=%d',self.wa_home,self.comm_id);
           }
         ]]></v:before-render>
       </v:url>
@@ -1227,7 +1224,7 @@ window.onload = function (e)
   <xsl:template match="vm:wa-link-org">
       <v:url name="wa_home_link"
     value="-- case when registry_get ('wa_home_title') = 0 then 'OPS Home' else registry_get ('wa_home_title') end"
-    url="-- case when registry_get ('wa_home_link') = 0 then '/wa/' else registry_get ('wa_home_link') end"/>
+    url="-- case when registry_get ('wa_home_link') = 0 then self.wa_home||'/?'||self.login_pars else registry_get ('wa_home_link')||'?'||self.login_pars end"/>
   </xsl:template>
 
   <xsl:template match="vm:wa-link">
@@ -1235,7 +1232,7 @@ window.onload = function (e)
         if (registry_get ('wa_home_link') = 0){
              http(sprintf('<a href="%s/?sid=%s&realm=%s">%s</a>',self.wa_home, coalesce(self.sid,''), coalesce(self.realm,'wa') ,case when registry_get ('wa_home_title') = 0 then 'OPS Home' else registry_get ('wa_home_title') end));
         }else{
-             http(sprintf('<a href="%s">%s</a>',registry_get ('wa_home_link') ,case when registry_get ('wa_home_title') = 0 then 'OPS Home' else registry_get ('wa_home_title') end));
+             http(sprintf('<a href="%s?sid=%s&realm=%s">%s</a>',registry_get ('wa_home_link'), coalesce(self.sid,''), coalesce(self.realm,'wa') ,case when registry_get ('wa_home_title') = 0 then 'OPS Home' else registry_get ('wa_home_title') end));
         }
         
       ?>
@@ -1413,7 +1410,7 @@ window.onload = function (e)
       if(self.user_name is null)
       {
     ?>
-      <br/><v:url name="login_url" value="--'Login'" url="--'/wa/login.vspx?URL='||self.base" format="%s" />
+      <br/><v:url name="login_url" value="--'Login'" url="--self.wa_home||'/login.vspx?URL='||self.base" format="%s" />
     <?vsp
       }
       if(self.user_name is not null)
@@ -1487,7 +1484,7 @@ window.onload = function (e)
                       <v:url name="invite2" url="--''">
                        <xsl:attribute name="value"> More...</xsl:attribute>
                         <v:before-render><![CDATA[
-                            control.vu_url := sprintf ('/wa/members.vspx?wai_id=%d', self.comm_id);
+                            control.vu_url := sprintf ('%s/members.vspx?wai_id=%d',self.wa_home, self.comm_id);
                         ]]></v:before-render>
                       </v:url>
                     </td>
@@ -1499,7 +1496,7 @@ window.onload = function (e)
   <xsl:template match="vm:blogs-block">
       <?vsp
   
-       if (check_package('blog2'))
+       if (wa_check_package('blog2'))
        {
       ?>
       <div class="lftmenu">
@@ -1532,7 +1529,7 @@ window.onload = function (e)
           <td nowrap="nowrap"><p>&nbsp;</p></td>
         </tr>
         <tr>
-          <td class="lftmenu_footer"><img src="/community/public/images/nav_arrrow1.gif" width="8" height="8" /><a href="#"> More...</a></td>
+          <td class="lftmenu_footer"><img src="/community/public/images/nav_arrrow1.gif" width="8" height="8" /><a href="<?V wa_expand_url (self.wa_home||'/app_inst.vspx?app=WEBLOG2', self.login_pars)?>"> More...</a></td>
           <td class="lftmenu_footer_img"><img src="/community/public/images/eaeaeecorner.gif" width="15" height="15" align="absbottom" /></td>
         </tr>
       </table>
@@ -1544,7 +1541,7 @@ window.onload = function (e)
   </xsl:template>
   <xsl:template match="vm:communities-block">
       <?vsp
-       if (check_package('Community'))
+       if (wa_check_package('Community'))
        {
       ?>
       <div class="lftmenu">
@@ -1595,7 +1592,7 @@ window.onload = function (e)
 
   <xsl:template match="vm:gallery-block">
       <?vsp
-        if (check_package('oGallery'))
+        if (wa_check_package('oGallery'))
         {
          declare i,ii int;
          
@@ -1765,7 +1762,7 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:signup-link">
-        <v:url name="url1" value="--'Sign up'" url="--'/wa/register.vspx'"/>
+        <v:url name="url1" value="--'Sign up'" url="--self.wa_home||'/register.vspx'"/>
   </xsl:template>
   <xsl:template match="vm:help-link">
         <v:url name="url1" value="--'Help'" url="'#'"/>
@@ -1799,7 +1796,7 @@ window.onload = function (e)
                  <v:url name="invite" url="--''">
                   <xsl:attribute name="value">Invite</xsl:attribute>
                    <v:before-render><![CDATA[
-                       control.vu_url := sprintf ('/wa/members.vspx?wai_id=%d', self.comm_id);
+                       control.vu_url := sprintf ('%s/members.vspx?wai_id=%d',self.wa_home,self.comm_id);
                    ]]></v:before-render>
                  </v:url>
            </td>
@@ -2180,7 +2177,7 @@ window.onload = function (e)
              <?vsp
                    if( self.app_membr_mode=0 or self.app_membr_mode=3){
                    ?>
-                    <a href="<?V sprintf('/wa/join.vspx?wai_id=%d&sid=%s&realm=%s',self.comm_id,coalesce(self.sid,''),coalesce(self.realm,'wa')) ?>"> 
+                    <a href="<?V sprintf('%s/join.vspx?wai_id=%d&sid=%s&realm=%s',self.wa_home,self.comm_id,coalesce(self.sid,''),coalesce(self.realm,'wa')) ?>"> 
                       <img alt="Join today" border="0">
                         <xsl:if test="@image">
                           <xsl:attribute name="src">&lt;?vsp
@@ -2205,7 +2202,7 @@ window.onload = function (e)
               
               if (self.is_public=0){
                   http_request_status ('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: %s\r\n\r\n', '/wa/'));
+                  http_header(sprintf('Location: %s\r\n\r\n', self.wa_home));
                 
               }        
               ?>
@@ -2246,7 +2243,7 @@ window.onload = function (e)
            if (self.is_inst_member=0 and self.is_public=0)
            {
               http_request_status ('HTTP/1.1 302 Found');
-              http_header(sprintf('Location: %s\r\n\r\n', '/wa/?sid='||self.sid||'&realm='||self.realm));
+              http_header(sprintf('Location: %s\r\n\r\n', self.wa_home||'/?sid='||self.sid||'&realm='||self.realm));
            }
            
            ?>
@@ -2382,7 +2379,7 @@ window.onload = function (e)
                 declare login_page,curr_page varchar;
                
                 if (registry_get ('wa_home_link') = 0){
-                    login_page :='/wa/login.vspx';
+                    login_page :=self.wa_home||'/login.vspx';
                 }else{
                     login_page := registry_get ('wa_home_link');
                 }
@@ -2490,7 +2487,7 @@ window.onload = function (e)
           if (self.is_inst_member=0){
               control.vc_enabled := 0;
           }else{
-            control.vu_url := '/wa/search.vspx?user_search=Search&page=2&us_within_members='||cast(self.comm_id as varchar);
+            control.vu_url := self.wa_home||'/search.vspx?user_search=Search&page=2&us_within_members='||cast(self.comm_id as varchar);
           }
         ]]></v:before-render>
       </v:url>
@@ -2512,10 +2509,10 @@ window.onload = function (e)
       http(sprintf ('<area shape="rect" coords="4,0,175,55" href="%s/members.vspx?wai_id=%d&sid=%s&realm=%s" />',self.wa_home, self.comm_id,coalesce(self.sid,''), coalesce(self.realm,'wa') ));
      }
      
-     if(check_package('enews2')){
+     if(wa_check_package('enews2')){
       http(sprintf('<area shape="rect" coords="176,0,350,55" href="%s" />',wa_expand_url ('?page=app_inst&app=eNews2', self.login_pars)));
      }
-     if(check_package('oDrive')){
+     if(wa_check_package('oDrive')){
         declare owner_odrive_home varchar;
       
         owner_odrive_home:='';
@@ -2533,6 +2530,23 @@ window.onload = function (e)
     ?>
     </map>
 
+</xsl:template>
+
+
+<xsl:template match="vm:bottom-links">
+                  <a href="/community/public/aboutcommunity.html">About Community</a>
+                   | 
+                  <a href="<?V self.wa_home ?>/faq.html">FAQ</a>
+                   | 
+                  <a href="#">Terms</a>
+                   | 
+                  <a href="#">Privacy</a>
+                   | 
+                  <a href="<?V self.wa_home ?>/rabuse.vspx">Report Abuse</a>
+                   | 
+                  <a href="#">Advertise</a>
+                   | 
+                  <a href="#">Contact Us</a>
 </xsl:template>
 
 </xsl:stylesheet>

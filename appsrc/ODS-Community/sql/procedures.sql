@@ -552,7 +552,7 @@ create procedure COMMUNITY.COMM_GET_WA_URL ()
         declare vhost_str, subdomain_str, domain_str ,port_str varchar;
         declare wa_host, wa_lpath, wa_url varchar;
 
-        wa_url:='/wa';
+        wa_url:='/ods';
 
         vhost_str:=http_map_get('vhost');
 
@@ -580,6 +580,6 @@ create procedure COMMUNITY.COMM_GET_WA_URL ()
           nf:
           return wa_url;
         
-      }else return '/wa';
+      }else return '/ods';
 }
 ;

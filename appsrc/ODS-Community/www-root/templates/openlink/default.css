@@ -505,10 +505,10 @@ table.form_layout
 	/*height: 250px;*/
 	/*width: 400px;*/
 	width: 100%;
-	background-image: url(/wa/images/containercorner2.gif);
+	background-image: url(/community/public/images/containercorner2.gif);
 	background-repeat: no-repeat;
 	background-position: right bottom;
-	list-style-image: url(/wa/images/news8icon.gif);
+	list-style-image: url(/community/public/images/news8icon.gif);
 }
 
 ul.info_container3 {

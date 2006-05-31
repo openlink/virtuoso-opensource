@@ -71,19 +71,8 @@
             </tr>
             <tr>
               <td colspan="3" class="footernav">
-                  <a href="/community/public/aboutcommunity.html">About Community</a>
-                   | 
-                  <a href="/wa/faq.html">FAQ</a>
-                   | 
-                  <a href="#">Terms</a>
-                   | 
-                  <a href="#">Privacy</a>
-                   | 
-                  <a href="/wa/rabuse.vspx">Report Abuse</a>
-                   | 
-                  <a href="#">Advertise</a>
-                   | 
-                  <a href="#">Contact Us</a></td>
+                  <vm:bottom-links/>
+              </td>
             </tr>
             <tr>
               <td colspan="3" class="copyright">
