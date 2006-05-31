@@ -1939,7 +1939,7 @@ create procedure DB.DBA.BLOG2_MAKE_RESOURCES(in path varchar)
       -- If the default host is not a default http port
       if (ini_port <> def_port)
 	{
-	  listen := '0.0.0.0:'||def_port;
+	  listen := ':'||def_port;
 
 	  DB.DBA.VHOST_REMOVE (lhost=>listen, vhost=>def_host, lpath=>'/weblog/public');
 	  DB.DBA.VHOST_REMOVE (lhost=>listen, vhost=>def_host, lpath=>'/weblog/templates');
