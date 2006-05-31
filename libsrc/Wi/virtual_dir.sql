@@ -367,27 +367,27 @@ create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
        , 0, ':=:');
 
       if (__tag (varr) = 193 and length (varr) > 1)
-  varr := aref (varr, 1);
+	varr := aref (varr, 1);
       else if (vhost = '*ini*')
-  varr := server_http_port ();
+	varr := server_http_port ();
       else if (vhost = '*sslini*')
-  varr := ssl_port;
+	varr := ssl_port;
       else
-  varr := '80';
+	varr := '80';
 
       if (__tag (larr) = 193 and length (larr) > 1)
-  larr := aref (larr, 1);
+	larr := aref (larr, 1);
       else if (lhost = '*ini*')
-  larr := server_http_port ();
+	larr := server_http_port ();
       else if (lhost = '*sslini*')
-  larr := ssl_port;
+	larr := ssl_port;
       else if (atoi (lhost))
-  larr := lhost;
+	larr := lhost;
       else
-  larr := '80';
+	larr := '80';
 
       if (larr <> varr)
-  signal ('22023', 'The port number of host and listen host must be the same.', 'HT045');
+	signal ('22023', 'The port number of host and listen host must be the same.', 'HT045');
     }
 --  ssl_port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'SSLPort');
 --  if (__tag (ssl_port) = 183)
@@ -452,6 +452,12 @@ create procedure VHOST_REMOVE (in vhost varchar := '*ini*',
       where HP_LISTEN_HOST = lhost and HP_HOST = vhost and HP_LPATH = lpath;
   if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (vhost) or DB.DBA.IS_EMPTY_OR_NULL (vhost))
     return NULL;
+
+  if (length (lpath) > 1 and aref (lpath, length (lpath) - 1) = ascii ('/') )
+    lpath := substring (lpath, 1, length (lpath) - 1);
+
+  lhost := replace (lhost, '0.0.0.0', '');
+
   whenever not found goto err_exit;
   open cr (exclusive, prefetch 1);
   fetch cr into ppath, vsp_user;
