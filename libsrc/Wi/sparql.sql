@@ -2090,9 +2090,9 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
 create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT (inout _env any)
 {
   _env := string_output();
-  http ('@prefix :rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix :rs <http://www.w3.org/2005/sparql-results#> .
-@prefix :xsd <http://www.w3.org/2001/XMLSchema#> .
+  http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rs: <http://www.w3.org/2005/sparql-results#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 [ rdf:type rs:results ;', _env);
 }
 ;
@@ -2127,7 +2127,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC (inout _env any, inout 
               declare res varchar;
               res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
               if (res is null)
-                res := sprintf ('bad://%d', iri_id_num (_val));
+                res := sprintf ('<bad://%d>', iri_id_num (_val));
 	      http (sprintf ('<%V> ] ;', res), _env);
 	    }	    
 	}
@@ -2136,23 +2136,24 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC (inout _env any, inout 
 	  declare lang, dt varchar;
 	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val);
 	  dt := DB.DBA.RDF_DATATYPE_OF_LONG (_val);
-	  http_value (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 0, _env);
+	  http ('"', _env)
+	  http_escape (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 11, _env, 1, 1);
 	  if (lang is not null)
 	    {
 	      if (dt is not null)
-                http (sprintf ('@"%V"^^<%V> ] ;',
+                http (sprintf ('"@"%V"^^<%V> ] ;',
 		    cast (lang as varchar), cast (dt as varchar)), _env);
 	      else
-                http (sprintf ('@"%V" ] ;',
+                http (sprintf ('"@"%V" ] ;',
 		    cast (lang as varchar)), _env);
 	    }
 	  else
 	    {
 	      if (dt is not null)
-                http (sprintf ('^^<%V> ] ;',
+                http (sprintf ('"^^<%V> ] ;',
 		    cast (dt as varchar)), _env);
 	      else
-                http (sprintf (' ] ;'), _env);
+                http (sprintf ('" ] ;'), _env);
 	    }
         }
 end_of_binding: ;  
@@ -2355,8 +2356,8 @@ create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_FIN (inout _env any) return
     ans := 'TRUE';
   else
     ans := 'FALSE';
-  http ('@prefix :rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix :rs <http://www.w3.org/2005/sparql-results#> .\n', ses);
+  http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rs: <http://www.w3.org/2005/sparql-results#> .\n', ses);
   http (sprintf ('[ rdf:type rs:results ; rs:boolean %s ]', ans), ses);
   return ses;
 }
