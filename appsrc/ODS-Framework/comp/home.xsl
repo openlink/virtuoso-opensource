@@ -622,7 +622,7 @@
   </xsl:template>
 
   <xsl:template match="vm:contacts-link">
-    <v:url name="inv_link" url="sn_connections.vspx">
+    <v:url name="inv_link" url="sn_connections.vspx?l=1">
       <xsl:attribute name="value">'<xsl:value-of select="@title"/>'</xsl:attribute>
     </v:url>
   </xsl:template>
@@ -707,7 +707,7 @@
 	         {
 		   ?>
 		   You have no connections. <br />
-		   <v:url name="search_users_fr" value="Search for Friends" url="search.vspx?page=2" render-only="1"/>
+		   <v:url name="search_users_fr" value="Search for Friends" url="search.vspx?page=2&amp;l=1" render-only="1"/>
 		   <?vsp
 		 }
 	       else

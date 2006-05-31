@@ -36,16 +36,82 @@ create procedure WA_GDATA_INIT ()
 }
 ;
 
+DB.DBA.VHOST_REMOVE (lpath=>'/dataspaces');
 DB.DBA.VHOST_REMOVE (lpath=>'/dataspaces/Gdata');
+DB.DBA.VHOST_DEFINE (lpath=>'/dataspaces', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
 DB.DBA.VHOST_DEFINE (lpath=>'/dataspaces/Gdata', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
 
 WA_GDATA_INIT ()
 ;
 
-
+create procedure wa_app_to_type (in app varchar)
+{
+  return get_keyword (lower (app), vector (
+	'weblog','WEBLOG2',
+	'feeds','eNews2',
+	'wiki','oWiki',
+	'briefcase','oDrive',
+	'mail','oMail',
+	'photos','oGallery',
+	'community','community',
+	'bookmark','bookmark',
+	'new','nntpf'
+	), app);
+};
 
 use ODS;
 
+create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
+{
+  declare ppath varchar;
+  declare path any;
+  declare app, uname, inst, url, appn varchar;
+
+  ppath := http_physical_path ();
+  path := split_and_decode (ppath, 0, '\0\0/');
+
+  app := null;
+  uname := null;
+  inst := null;
+
+
+  if (length (path) > 4)
+    app := path [4];
+  if (app is null or app not in ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'news'))
+   {
+     signal ('22023', 'Invalid application domain.');
+   }
+
+  appn := DB.DBA.wa_app_to_type (app);
+
+  if (length (path) > 5)
+    uname := path [5];
+
+  if (uname is null)
+    {
+      signal ('22023', 'Account is not specified.');
+    }
+
+  if (length (path) > 6)
+    inst := path [6];
+
+  if (inst is null)
+    {
+      url := DB.DBA.wa_link (0, sprintf ('app_inst.vspx?app=%U&ufname=%U', appn, uname));
+    }
+  else
+    {
+      declare exit handler for not found
+	{
+	  signal ('22023', 'No such application instance');
+	};
+      select WAM_HOME_PAGE into url from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where
+	  U_NAME = uname and WAM_USER = U_ID and WAM_INST = inst;
+    }
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header (sprintf ('Location: %s\n', url));
+  return null;
+};
 
 create procedure ODS.ODS.gdata
 	(
@@ -255,6 +321,7 @@ create procedure ODS.ODS.gdata
 };
 
 grant execute on gdata to GDATA_ODS;
+grant execute on redirect to GDATA_ODS;
 grant execute on DB.DBA.XML_URI_GET_STRING_OR_ENT to GDATA_ODS;
 grant select on WS.WS.SYS_DAV_RES to GDATA_ODS;
 

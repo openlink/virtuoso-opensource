@@ -4332,7 +4332,7 @@ create procedure WA_LINK (in add_host int := 0, in url varchar := null)
 	}
     }
 
-  if (length (url))
+  if (length (url) = 0)
     {
       ret := wa_url;
     }
