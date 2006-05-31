@@ -328,17 +328,6 @@ cont:
       dbg_obj_princ (_topic, DB.DBA.DAV_PERROR (_res));
       DB.DBA.DAV_CHECKIN_INT (_topic.ti_full_path(), null, null, 0);
       commit work;
-      if (_topic.ti_id <> 0)
-        {
-	  update WV.WIKI.TOPIC set AuthorName = _user
-	    where ResId = _topic.ti_res_id;
-	}
-      else
-        {
-	  update WV.WIKI.TOPIC set AuthorName = _user
-	    where ClusterId = _topic.ti_cluster_id
-	    and LocalName = _topic.ti_local_name;
-	}
       if ((_topic.ti_id = 0) and ({?'ReleaseLock'} is null)) 
 	{
 	  WV.WIKI.GETLOCK (WS.WS.COL_PATH(_topic.ti_col_id) || _filename, _user);

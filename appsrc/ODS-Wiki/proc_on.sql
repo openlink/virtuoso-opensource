@@ -241,7 +241,7 @@ create method ti_find_metadata_by_id () returns any for WV.WIKI.TOPICINFO
 	  --dbg_obj_print ('xxx y', self.ti_author_id);	
       self.ti_author := coalesce ( 
 	(select AuthorName from WV.WIKI.TOPIC where ResId = self.ti_res_id), 
-	(select U_NAME from SYS_USERS where U_ID = self.ti_author_id), 
+	WV.WIKI.USER_WIKI_NAME_2(self.ti_author_id), 
 	'Unknown');
       declare dav_path varchar;
       dav_path := DAV_HIDE_ERROR (DAV_SEARCH_PATH (self.ti_res_id, 'R'));
@@ -252,7 +252,6 @@ create method ti_find_metadata_by_id () returns any for WV.WIKI.TOPICINFO
 	}
 
     }
-  --dbg_obj_print ('topic:', self);
   return null;
 }
 ;
@@ -917,8 +916,14 @@ create trigger "Wiki_ClusterUpdate" before update on WS.WS.SYS_DAV_PROP order 10
 
 create trigger "Wiki_TopicTextInsert" after insert on WS.WS.SYS_DAV_RES order 10 referencing new as N
 {
+  declare exit handler for sqlstate '*' {
+    connection_set('oWiki trigger', NULL);  	
+    dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    resignal;
+  };
   if (connection_get('oWiki trigger') is not null)
     return;
+  --dbg_obj_princ ('done');
   declare _newtopic WV.WIKI.TOPICINFO;
   declare _cluster_name varchar;
   whenever not found goto skip;
@@ -976,6 +981,11 @@ create trigger "Wiki_TopicTextInsert" after insert on WS.WS.SYS_DAV_RES order 10
 
 create trigger "Wiki_TopicTextDelete" before delete on WS.WS.SYS_DAV_RES order 100 referencing old as O
 {
+  --dbg_obj_princ ('Wiki_TopicTextDelete: ', O.RES_ID, ' >  ', O.RES_FULL_PATH);
+  declare exit handler for sqlstate '*' {
+	--dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+  	resignal;
+  };
   declare _id integer;
   whenever not found goto skip;
   select TopicId into _id from WV.WIKI.TOPIC where ResId = O.RES_ID;
@@ -1319,6 +1329,7 @@ create procedure WV.WIKI.CREATEUSER (in _sysname varchar, in _name varchar, in _
 		resignal;
 	return;
   };
+  _name := WV.WIKI.USER_WIKI_NAME (_name);
   declare _gid, _uid integer;
   declare _oldname varchar;
   _uid := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = _sysname and U_IS_ROLE = 0 and U_ACCOUNT_DISABLED=0 and U_DAV_ENABLE=1), NULL);
@@ -1708,6 +1719,7 @@ fin:
 
 create procedure WV.WIKI.DELETETOPIC (in _id integer)
 {
+  --dbg_obj_princ ('DELETETOPIC: ', _id);
   delete from WV.WIKI.TOPIC where TopicId = _id;
   if (__proc_exists ('DB.DBA.WA_NEW_RM'))
      WA_NEW_WIKI_RM (_id);
@@ -3585,5 +3597,125 @@ create procedure WV.WIKI.DROP_ALL_MEMBERS ()
   for select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' do {
     delete from DB.DBA.WA_MEMBER where WAM_INST = WAI_NAME;
   }
+}
+;
+   
+create procedure WV.WIKI.USER_WIKI_NAME(in user_name varchar)
+{
+  return cast (WV.WIKI.CONVERTTITLETOWIKIWORD(user_name) as varchar);
+}
+;
+
+create procedure WV.WIKI.USER_WIKI_NAME_2(in user_id int)
+{
+  return cast (WV.WIKI.CONVERTTITLETOWIKIWORD( (select USERNAME from WV.WIKI.USERS where USERID = user_id) ) as varchar);
+}
+;
+
+create procedure WV.WIKI.TEMPLATE_TOPIC(in template_name varchar)
+{
+  declare _topic_name varchar;
+  _topic_name := WV.WIKI.CONVERTTITLETOWIKIWORD ('Template ' || template_name);
+  declare _topic WV.WIKI.TOPICINFO;
+  _topic := WV.WIKI.TOPICINFO ();
+  _topic.ti_default_cluster := 'Main';
+  _topic.ti_raw_title := _topic_name;
+  _topic.ti_find_id_by_raw_title ();
+  if (_topic.ti_id <> 0)
+    _topic.ti_find_metadata_by_id ();
+
+  return _topic;
+}
+;
+
+create procedure WV.WIKI.REPLACE_BULK (in _text varchar,
+	in _repls any)
+{
+  declare idx int;
+  for (idx:=0; idx<length(_repls); idx:=idx+2)
+    {
+      _text := replace (_text, _repls[idx], coalesce (_repls[idx+1], ''));
+    }
+  return _text;
+}
+;
+
+create procedure WV.WIKI.CREATE_HOME_PAGE_TOPIC (inout _template WV.WIKI.TOPICINFO,
+  	in home_page varchar,
+	in user_id int)
+{
+  for select U_NAME,USERNAME, U_E_MAIL, coalesce (U_FULL_NAME, U_NAME) as _full_name from DB.DBA.SYS_USERS, WV.WIKI.USERS 
+	where U_ID = user_id 
+	and U_ID = USERID do
+  {
+    declare _text varchar;
+    _text := WV.WIKI.REPLACE_BULK (cast (_template.ti_text as varchar), 
+	vector ('{USER}', USERNAME, '{FULLNAME}', _full_name, '{EMAIL}', U_E_MAIL));
+    WV.WIKI.UPLOADPAGE (_template.ti_col_id, home_page, _text, U_NAME);
+    return;
+  }
+}
+;
+
+create procedure WV.WIKI.CREATE_USER_PAGE(in user_id varchar, in user_name varchar)
+{
+  declare home_page varchar;
+  home_page := WV.WIKI.USER_WIKI_NAME (user_name);
+  if (exists (select 1 from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS
+	where LocalName = home_page and ClusterName = 'Main'))
+     return ;
+  declare _template WV.WIKI.TOPICINFO;
+  _template := WV.WIKI.TEMPLATE_TOPIC ('user');
+  if (_template.ti_id = 0)
+        WV.WIKI.APPSIGNAL (11001, 'Can not get template for creating home page', vector());
+  _template.ti_text := cast (_template.ti_text as varchar);
+  
+  declare _text varchar;
+  _text := WV.WIKI.CREATE_HOME_PAGE_TOPIC (_template, home_page, user_id);
+}
+;
+
+create procedure WV.WIKI.CREATE_ALL_USERS_PAGES ()
+{
+  for select USERID, USERNAME from WV.WIKI.USERS do
+    {
+      WV.WIKI.CREATE_USER_PAGE(USERID, USERNAME);
+    }
+}
+;
+
+
+create trigger WIKI_USERS_I after insert on WV.WIKI.USERS order 100 referencing new as N
+{
+   WV.WIKI.CREATE_USER_PAGE (N.USERID, N.USERNAME);
+}
+;
+
+create trigger WIKI_USERS_U after update on WV.WIKI.USERS order 100 referencing old as O, new as N
+{
+  if (N.USERNAME = O.USERNAME)
+    return;
+  declare _topic WV.WIKI.TOPICINFO;
+  _topic := WV.WIKI.TOPICINFO();
+  _topic.ti_raw_title := WV.WIKI.USER_WIKI_NAME(O.USERNAME);
+  _topic.ti_default_cluster := 'Main';
+  _topic.ti_find_id_by_raw_title();
+  if (_topic.ti_id <> 0)
+    {
+      _topic.ti_fill_cluster_by_id();
+      _topic.ti_find_metadata_by_id();
+      WV.WIKI.RENAMETOPIC (_topic, N.USERNAME, _topic.ti_cluster_id, WV.WIKI.USER_WIKI_NAME (N.USERNAME));
+    }
+}
+;
+
+create trigger SYS_USERS_WIKI_USERS_U after update on DB.DBA.SYS_USERS order 100 referencing old as O, new as N
+{
+  if (O.U_FULL_NAME <> N.U_FULL_NAME)
+    {
+      update WV.WIKI.USERS 
+	set USERNAME = WV.WIKI.USER_WIKI_NAME(N.U_FULL_NAME) 
+	where USERID = N.U_ID;
+    }
 }
 ;

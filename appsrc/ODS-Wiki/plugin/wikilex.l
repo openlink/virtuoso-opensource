@@ -389,6 +389,8 @@ char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
       if ((src == text) || ISNOTWIKIWORDCHAR(src[0]))
         {
 	  while (src[0] && ISNOTWIKIWORDCHAR(src[0])) src++;
+	  if (!src[0])
+	    break;
 	  if (isalpha (src[0]))
 	    (tgt++)[0] = toupper (src[0]);
 	  else 
@@ -412,6 +414,11 @@ void wlex_split_forced_link (wlex_state_t *st, char *text, char *delim)
   bm_alloc (title, textlen);
   href_start = text + 2; /* to omit first "[[" */
   title_end = text + textlen - 2; /* '... - 2' is to omit last "]]" */
+  /* handle the case of triple "[" */
+  if ((href_start[0] == '[') && (title_end > href_start)  && (title_end[-1] == ']'))
+    {
+      ++href_start; --title_end;
+    }
   if (NULL == delim) /* Same text is for both href and title */
     {
        href_end = title_end;
@@ -619,6 +626,7 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 	/* Other links. Their priorities are higher than anything else except <verbatim> */
 <INITIAL,TABLELINE>{MAILTO}				{ wlex_ahref (yytext, "mailto", yytext+7); }
 <INITIAL,TABLELINE>{ABSURI}				{ wlex_ahref (yytext, "absuri", yytext); }
+<INITIAL,TABLELINE>"[[["{LINKTITLE}"]]]"		{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword");  }
 <INITIAL,TABLELINE>"[["{PREDICATE}"::"{FORCEDWIKILINK}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", NULL, "forcedwikiword");  }
 <INITIAL,TABLELINE>"[["{MAILTO}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "mailto"); }
 <INITIAL,TABLELINE>"[["{MAILTO}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "mailto");  }

@@ -1,0 +1,2 @@
+| *full name* | %USERPROP{"FULLNAME"}% |
+| *e-mail*    | %USERPROP{"EMAIL"}% |

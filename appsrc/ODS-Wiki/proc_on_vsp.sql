@@ -1104,21 +1104,21 @@ create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out 
   declare full_path, pattern varchar;
   full_path := _host || '/' || WV.WIKI.STRJOIN ('/', path);
 
-  dbg_obj_print (full_path, domain);
+--  dbg_obj_print (full_path, domain);
   
 whenever not found goto nf;
   select DP_CLUSTER, DP_PATTERN into cluster_id, pattern  from WV.WIKI.DOMAIN_PATTERN_1 where domain like DP_PATTERN and _host like DP_HOST;
-  dbg_obj_princ (full_path, ' => ', pattern, ' ', _host);
+--  dbg_obj_princ (full_path, ' => ', pattern, ' ', _host);
 
       default_cluster := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = cluster_id);
       path := subseq (path, (length (split_and_decode (domain, 0, '\0\0/')) - 1));
-  dbg_obj_princ (path, split_and_decode (pattern, 0, '\0\0/'));
+--  dbg_obj_princ (path, split_and_decode (pattern, 0, '\0\0/'));
   if (0)
     {
 nf:
       declare _jpath varchar;
       _jpath := WV.WIKI.STRJOIN ('/', path);
-      dbg_obj_princ (_jpath);
+--      dbg_obj_princ (_jpath);
       if ( (_jpath not like 'wiki/main/%') and
 	   (_jpath <>  'wiki/Atom') )
         WV.WIKI.APPSIGNAL (11002, 'Path &url; to resource must start from "/wiki/main/"', vector('url', http_path()));
@@ -1340,6 +1340,14 @@ create procedure WV.WIKI.GETDOC (in _path varchar)
 }
 ;
    
+create procedure WV.WIKI.USER_WIKI_NAME_BY_NAME (in name varchar)
+{
+  declare _id int;
+  select U_ID into _id from DB.DBA.SYS_USERS where U_NAME = name;
+  return 'Main.' || WV.WIKI.USER_WIKI_NAME_2 (_id);
+}
+;
+   
 create procedure WV.WIKI.CHANGELOG (in _skip int:=0, in _rows int:=20, in _cluster_name varchar:= null)
 {    
   declare _res any;
@@ -1351,7 +1359,7 @@ create procedure WV.WIKI.CHANGELOG (in _skip int:=0, in _rows int:=20, in _clust
 		 LocalName as "topicname",
 		'Changed' as "action",
 		WV.WIKI.DATEFORMAT (RV_MOD_TIME) as "date",
-		RV_WHO as "who" ) ) ) ) into _res
+		WV.WIKI.USER_WIKI_NAME_BY_NAME (RV_WHO) as "who" ) ) ) ) into _res
 	from (select top (_skip, _rows) * from  WS.WS.SYS_DAV_RES_VERSION inner join WS.WS.SYS_DAV_RES on (RES_ID = RV_RES_ID)
 	  inner join WV.WIKI.TOPIC on (ResId = RES_ID)
 	  inner join WV.WIKI.CLUSTERS c on (ClusterId = c.ClusterId)
@@ -2368,15 +2376,15 @@ create function WV.WIKI.MKDIR (
   declare parts any;
   declare res int;
   parts := split_and_decode (WV.WIKI.FIX_PATH (path), 0, '\0\0/');
-  dbg_obj_princ ('>', path);
+--  dbg_obj_princ ('>', path);
   declare idx int;
   for (idx:=3; idx<=length(parts); idx := idx+1)
     {
        path := WV.WIKI.STRJOIN ('/', subseq (parts, 0, idx)) || '/';
-	   dbg_obj_princ ('=>', path, DB.DBA.DAV_SEARCH_ID (path, 'C'));
+--	   dbg_obj_princ ('=>', path, DB.DBA.DAV_SEARCH_ID (path, 'C'));
 	   if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'C')) is null)
        res := DB.DBA.DAV_COL_CREATE (path, '110100100NM', auth, grp, auth, passwd);
-       dbg_obj_princ (res);
+--       dbg_obj_princ (res);
     }
   return res;
 }

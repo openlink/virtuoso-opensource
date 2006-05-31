@@ -41,7 +41,7 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:NormalizeWikiWordLink'
 
 create function WV.WIKI.CONVERTTITLETOWIKIWORD (in _title varchar)
 {
-  return xpath_eval ('//a/@href', xtree_doc ("WikiV lexer" (concat ('[[', _title, ']]'), '', '', '', null), 2));
+  return xpath_eval ('//a/@href', xtree_doc ("WikiV lexer" (concat ('[[[', _title, ']]]'), '', '', '', null), 2));
 }
 ;
 

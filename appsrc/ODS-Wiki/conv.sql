@@ -332,11 +332,18 @@ create trigger WV_WIKI_COMMENT_NEWS_I after insert on COMMENT referencing new as
 
 create trigger WV_WIKI_TOPIC_NEWS_D before delete on TOPIC referencing old as O
 {
+  declare exit handler for sqlstate '*' {
+    -- dbg_obj_print (__SQL_MESSAGE, __SQL_STATE);
+    resignal;
+  };
   --dbg_obj_print ('WV_WIKI_TOPIC_NEWS_D: ', O.T_RFC_ID);
   declare grp int;
   grp := (select NG_GROUP from DB..NEWS_GROUPS where NG_NAME = O.T_NEWS_ID);
+  if (grp is null)
+    return;
   --dbg_obj_print ('grp=', grp);
   delete from DB.DBA.NEWS_MULTI_MSG where NM_KEY_ID = O.T_RFC_ID and NM_GROUP = grp;
+  --dbg_obj_print ('grp2=', grp);
   DB.DBA.ns_up_num (grp);
 };
 

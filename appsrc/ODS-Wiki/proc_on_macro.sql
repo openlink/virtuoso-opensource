@@ -1178,3 +1178,33 @@ create function WV.WIKI.MACRO_NOW (inout _data varchar, inout _context any, inou
   return WV.WIKI.DATEFORMAT(now());
 }
 ;
+
+create function WV.WIKI.MACRO_USERPROP (inout _data varchar, inout _context any, inout _env any)
+{
+  declare _username varchar;
+  _username := get_keyword ('ti_local_name', _env, NULL);
+  declare _vec any;
+  if (_username = 'TemplateUser')
+    return '';
+  select vector ('FULLNAME', U_FULL_NAME, 'EMAIL', U_E_MAIL) into _vec from DB.DBA.SYS_USERS, WV.WIKI.USERS
+	where U_ID = USERID
+	and USERNAME = _username;
+  declare _args any;
+  _args := WV.WIKI.PARSEMACROARGS (_data);
+  declare _prop varchar;
+  _prop := WV.WIKI.GETMACROPARAM (_args, 'param', NULL);
+
+  return get_keyword (_prop, _vec);
+}
+;
+  
+		      
+
+
+
+  
+		      
+
+
+
+  

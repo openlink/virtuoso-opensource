@@ -75,7 +75,7 @@ wiki_exec_no_error (
   SecurityCmt		long varchar,		-- User description, esp. security policy for the group - for admins only.
   DefaultPermission	varchar,
   constraint "User_InGroup2" foreign key (MainGroupId) references WV.WIKI.GROUPS (GroupId) on update set null on delete set null,
---  constraint "User_InSysUsers"  foreign key (UserId) references DB.DBA.SYS_USERS ("U_ID") on update set null on delete cascade,
+  constraint "User_InSysUsers"  foreign key (UserId) references DB.DBA.SYS_USERS (U_ID) on update set null on delete cascade,
   primary key (UserId)
 )')
 ;
@@ -394,7 +394,7 @@ wiki_exec_no_error (
 'create table WV.WIKI.HITCOUNTER (
 	TopicId		integer,
 	Cnt		integer not null,
-  	constraint "HitCounter_TopicId2" foreign key (TopicId) references WV.WIKI.TOPIC (TopicId) on update set null on delete set null,
+  	constraint "HitCounter_TopicId2" foreign key (TopicId) references WV.WIKI.TOPIC (TopicId) on update set null on delete cascade,
 	primary key (TopicId) 
 )')
 ;
@@ -403,7 +403,7 @@ wiki_exec_no_error (
 'create table WV.WIKI.COMMITCOUNTER (
 	AuthorId	integer primary key,
 	Cnt		integer default 0,
-  	constraint COMMITCOUNTER_USERS foreign key (AuthorId) references DB.DBA.SYS_USERS (U_ID) on update set null on delete set null
+  	constraint COMMITCOUNTER_USERS foreign key (AuthorId) references DB.DBA.SYS_USERS (U_ID) on update set null on delete cascade
 )')
 ;
 

@@ -25,88 +25,88 @@
                 xmlns:xhtml="http://www.w3.org/TR/xhtml1/strict"
                 xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/"
                 xmlns:fn2="http://www.w3.org/2004/07/xpath-functions">
-<!-- $Id$ -->
-<xsl:output
+  <!-- $Id$ -->
+  <xsl:output
    method="html"
    encoding="UTF-8"
-/>
+    />
 
-<!-- params made by "TopicInfo"::ti_xslt_vector() : -->
-<!--
-<xsl:param name="ti_default_cluster"/>
-<xsl:param name="ti_raw_name"/>	
-<xsl:param name="ti_raw_title"/>
-<xsl:param name="ti_wiki_name"/>
-<xsl:param name="ti_cluster_name"/>
-<xsl:param name="ti_local_name"/>
-<xsl:param name="ti_id"/>
-<xsl:param name="ti_cluster_id"/>
-<xsl:param name="ti_res_id"/>
-<xsl:param name="ti_col_id"/>
-<xsl:param name="ti_abstract"/>
-<xsl:param name="ti_text"/>
-<xsl:param name="ti_author_id"/>
-<xsl:param name="ti_etrx_id"/>
-<xsl:param name="ti_etrx_datetime"/>
-<xsl:param name="ti_mod_time"/>
--->
-<!-- params made by other functions : -->
-<xsl:param name="preview_mode"/>
-<xsl:param name="readonly"/>
-<xsl:param name="baseadjust"/>
-<xsl:param name="rnd"/>
-<xsl:param name="uid"/>
-<xsl:param name="sort"/>
-<xsl:param name="col"/>
-<xsl:param name="acs"/>
-<xsl:param name="acs_marker"/>
+  <!-- params made by "TopicInfo"::ti_xslt_vector() : -->
+  <!--
+  <xsl:param name="ti_default_cluster"/>
+  <xsl:param name="ti_raw_name"/>	
+  <xsl:param name="ti_raw_title"/>
+  <xsl:param name="ti_wiki_name"/>
+  <xsl:param name="ti_cluster_name"/>
+  <xsl:param name="ti_local_name"/>
+  <xsl:param name="ti_id"/>
+  <xsl:param name="ti_cluster_id"/>
+  <xsl:param name="ti_res_id"/>
+  <xsl:param name="ti_col_id"/>
+  <xsl:param name="ti_abstract"/>
+  <xsl:param name="ti_text"/>
+  <xsl:param name="ti_author_id"/>
+  <xsl:param name="ti_etrx_id"/>
+  <xsl:param name="ti_etrx_datetime"/>
+  <xsl:param name="ti_mod_time"/>
+  -->
+  <!-- params made by other functions : -->
+  <xsl:param name="preview_mode"/>
+  <xsl:param name="readonly"/>
+  <xsl:param name="baseadjust"/>
+  <xsl:param name="rnd"/>
+  <xsl:param name="uid"/>
+  <xsl:param name="sort"/>
+  <xsl:param name="col"/>
+  <xsl:param name="acs"/>
+  <xsl:param name="acs_marker"/>
 
-<!-- wikiref -->
-<xsl:param name="wikiref_params"/>
-<xsl:param name="wikiref_cont"/>
+  <!-- wikiref -->
+  <xsl:param name="wikiref_params"/>
+  <xsl:param name="wikiref_cont"/>
 
-<xsl:param name="realm"/>
-<xsl:param name="sid"/>
+  <xsl:param name="realm"/>
+  <xsl:param name="sid"/>
 
-<xsl:param name="dashboard">0</xsl:param>
+  <xsl:param name="dashboard">0</xsl:param>
 
-<xsl:variable name="hrefdisable">
+  <xsl:variable name="hrefdisable">
   <xsl:if test="$preview_mode = '1'">hrefdisable=on&amp;</xsl:if>
-</xsl:variable>
+  </xsl:variable>
 
-<xsl:include href="template.xsl"/>
-<xsl:include href="common.xsl"/>
+  <xsl:include href="template.xsl"/>
+  <xsl:include href="common.xsl"/>
 
-<xsl:template match="node()">
+  <xsl:template match="node()">
   <xsl:copy>
     <xsl:copy-of select="@*" />
     <xsl:apply-templates select="node()" />
   </xsl:copy>
-</xsl:template>
+  </xsl:template>
   
 
-<xsl:template match="nop[ancestor::title]"/>
+  <xsl:template match="nop[ancestor::title]"/>
 
-<xsl:template match="processing-instruction()">
+  <xsl:template match="processing-instruction()">
   <xsl:variable name="res" select="wv:ExpandMacro(name(.), string(.), ., $env)" />
   <!--<xsl:comment>Raw result of %<xsl:value-of select="name(.)"/>{<xsl:value-of select="string(.)"/>}%</xsl:comment>
   <xsl:copy-of select="$res" /> -->
   <xsl:comment>Begin of %<xsl:value-of select="name(.)"/>{<xsl:value-of select="string(.)"/>}%</xsl:comment>
   <xsl:apply-templates select="$res/node()" />
   <xsl:comment>End of %<xsl:value-of select="name(.)"/>{<xsl:value-of select="string(.)"/>}%</xsl:comment>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template match="hide" />
+  <xsl:template match="hide" />
 
-<xsl:template match="abstract">
+  <xsl:template match="abstract">
   <blockquote style="abstract"><xsl:apply-templates /></blockquote>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template match="MACRO_MAIN_TABLEOFCLUSTERS">
+  <xsl:template match="MACRO_MAIN_TABLEOFCLUSTERS">
   <table class="tableofclusters"><xsl:apply-templates /></table>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template match="Cluster">
+  <xsl:template match="Cluster">
   <xsl:choose>
     <xsl:when test="$dashboard = '1'">
 	    <xsl:variable name="ref"><a href="{@KEY}.{wv:GetMainTopicName(@KEY)}" style="qwikiword"><xsl:value-of select="Name"/></a></xsl:variable>
@@ -134,14 +134,14 @@
     </xsl:when>
     <xsl:otherwise>
 	    <xsl:variable name="ref"><a href="{@CLUSTERNAME}.{wv:GetMainTopicName(@CLUSTERNAME)}" style="qwikiword"><xsl:value-of select="@CLUSTERNAME"/></a></xsl:variable> 
-<!--	    <xsl:variable name="ref"><a href="{@CLUSTERNAME}.{wv:GetMainTopicName('Main')}" style="qwikiword"><xsl:value-of select="@CLUSTERNAME"/></a></xsl:variable> -->
+	<!--	    <xsl:variable name="ref"><a href="{@CLUSTERNAME}.{wv:GetMainTopicName('Main')}" style="qwikiword"><xsl:value-of select="@CLUSTERNAME"/></a></xsl:variable> -->
 	
       <tr><td><xsl:apply-templates select="$ref/node()" /></td><td><xsl:value-of select="@ABSTRACT"/></td></tr>
     </xsl:otherwise>
   </xsl:choose>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template match="table">
+  <xsl:template match="table">
   <xsl:choose>
     <xsl:when test="tr/th[@id = $sort] and ($acs = 1)">
       <xsl:copy>
@@ -172,9 +172,9 @@
       </xsl:copy>
     </xsl:otherwise>
   </xsl:choose>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template match="tr">
+  <xsl:template match="tr">
   <xsl:param name="stubs" select="2"/>
   <xsl:copy>
     <xsl:copy-of select="@*"/>
@@ -186,9 +186,9 @@
       <xsl:with-param name="stubs"><xsl:value-of select="1"/></xsl:with-param>
     </xsl:apply-templates>
   </xsl:copy>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template match="th[@id]">
+  <xsl:template match="th[@id]">
     <xsl:choose>
       <xsl:when test="a">
         <xsl:copy>
@@ -228,10 +228,10 @@
         </xsl:copy>
       </xsl:otherwise>
     </xsl:choose>
-</xsl:template>
+  </xsl:template>
 
 
-<xsl:template match="td">
+  <xsl:template match="td">
   <xsl:variable name="currpos" select="position()"/>
   <xsl:choose>	
    <xsl:when test="../td[(position() = ($currpos + 1)) and @style='colspanstub']">
@@ -247,10 +247,10 @@
     </td>
    </xsl:otherwise>
   </xsl:choose>
-</xsl:template>  
+  </xsl:template>  
 
 
-<xsl:template name="colspan">
+  <xsl:template name="colspan">
   <xsl:choose>
 	  <xsl:when test="../td[(position() = ($pos + 1)) and @style='colspanstub']">
 		  <xsl:call-template name="colspan">
@@ -264,13 +264,13 @@
 		  </td>
 	  </xsl:otherwise>		  
   </xsl:choose>
-</xsl:template>  
+  </xsl:template>  
 		   
-<xsl:template match="td[@style='colspanstub']">
-</xsl:template>
+  <xsl:template match="td[@style='colspanstub']">
+  </xsl:template>
   
 
-<xsl:template match="Parent">
+  <xsl:template match="Parent">
   <xsl:choose>
     <xsl:when test="@LOCALNAME != ''">
       /
@@ -291,9 +291,9 @@
       </xsl:call-template>
     </xsl:otherwise>
   </xsl:choose>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template match="WikiPath">
+  <xsl:template match="WikiPath">
  <xsl:param name="show_path"/>
  <xsl:if test="$show_path = '1'">
    <div class="wiki-nav-container">
@@ -302,10 +302,10 @@
      </xsl:apply-templates>
    </div>
  </xsl:if>
-</xsl:template>
+  </xsl:template>
 
 
-<xsl:template match="MailList">
+  <xsl:template match="MailList">
   <div class="mail-list">
     <table class="wiki_nav_container">
       <tr>
@@ -337,10 +337,10 @@
       </td>
     </tr>
   </table>
-</div>
-</xsl:template>
+    </div>
+  </xsl:template>
 
-<xsl:template match="message">
+  <xsl:template match="message">
   <tr>
     <td>
       <xsl:call-template name="e-mail">
@@ -364,26 +364,26 @@
       <xsl:value-of select="wv:funcall2 ('WV.WIKI.MAIL_EXCERPT', ../UserId, msg_id)"/> 
     </td>
   </tr>
-</xsl:template>
+  </xsl:template>
 
 
-<xsl:template match="MACRO_MAIN_DASHBOARD">
+  <xsl:template match="MACRO_MAIN_DASHBOARD">
   <table class="dashboard">
     <tr><th>Cluster</th><th>Operations</th></tr>
     <xsl:apply-templates>
       <xsl:with-param name="dashboard">1</xsl:with-param>
     </xsl:apply-templates>
   </table>
-</xsl:template>
+  </xsl:template>
 
 
-<xsl:template name="Navigation">
+  <xsl:template name="Navigation">
   <xsl:apply-templates select="//WikiPath">
 	<xsl:with-param name="show_path">1</xsl:with-param>
   </xsl:apply-templates>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template name="Root">
+  <xsl:template name="Root">
   <xsl:param name="is_new"/>
   <xsl:param name="revision"/>
   <xsl:param name="user"/>
@@ -455,8 +455,14 @@
               <xsl:with-param name="wikiref_cont">[DOCBOOK]</xsl:with-param>
             </xsl:call-template>
           </div>
+	  </span>
+	  <span id="top-mod-by">
+	    <xsl:call-template name="wikiref">
+	      <xsl:with-param name="ti_cluster_name">Main</xsl:with-param>
+	      <xsl:with-param name="ti_local_name"><xsl:value-of select="$ti_author"/></xsl:with-param>
+	      <xsl:with-param name="wikiref_cont"><xsl:value-of select="$ti_author"/></xsl:with-param>
+	    </xsl:call-template>
         </span>
-        <span id="top-mod-by"><xsl:value-of select="$ti_author"/></span>
         <span id="top-mod-time"><xsl:value-of select="wv:funcall1('WV.WIKI.MOD_TIME', $ti_res_id)"/></span>
       </div>
     </xsl:if>
@@ -497,11 +503,11 @@
         </div>
       </form>
   </xsl:if>
-<!--  <table width="100%" border="0"><tr><td align="left"> -->
-</xsl:template>
+    <!--  <table width="100%" border="0"><tr><td align="left"> -->
+  </xsl:template>
 
 
-<xsl:template match="Rev">
+  <xsl:template match="Rev">
  <xsl:param name="show_path"/>
  <xsl:if test="$show_path = '1'">
   <xsl:text> </xsl:text>
@@ -518,9 +524,9 @@
     </xsl:call-template> 
    </xsl:if>
  </xsl:if>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template name="Toolbar">
+  <xsl:template name="Toolbar">
   <xsl:param name="is_hist"/>
   <xsl:param name="sid"/>
   <xsl:param name="realm"/>
@@ -605,9 +611,9 @@
       </xsl:if>
     </xsl:if>
   </div>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template match="tag">
+  <xsl:template match="tag">
  <xsl:param name="privatep" select="0"/>	
  <xsl:param name="sid"/>
  <xsl:param name="realm"/>
@@ -619,18 +625,18 @@
    <xsl:text>, </xsl:text>
  </xsl:if>
  <xsl:text> </xsl:text>
-</xsl:template>	  
+  </xsl:template>	  
 
-<xsl:template match="tagset"/>
+  <xsl:template match="tagset"/>
 	
 
-<xsl:template match="span[@style='semanticvalue']">
+  <xsl:template match="span[@style='semanticvalue']">
   <span>
     <xsl:apply-templates select="node()"/>
   </span>
-</xsl:template>
+  </xsl:template>
 
-<xsl:template match="h1|h2|h3|h4|h5|h6">
+  <xsl:template match="h1|h2|h3|h4|h5|h6">
   <xsl:copy>
     <a>
  	<xsl:attribute name="name"><xsl:value-of select="wv:trim(text())"/></xsl:attribute>
@@ -638,6 +644,23 @@
     <xsl:copy-of select="@*" />
     <xsl:apply-templates select="node()" />
   </xsl:copy>
-</xsl:template>
+  </xsl:template>
 
 </xsl:stylesheet>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: xml
+sgml-omittag:nil
+sgml-shorttag:nil
+sgml-namecase-general:nil
+sgml-general-insert-case:lower
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:2
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->

@@ -38,7 +38,7 @@
 #define mlex_dbg_printf(x)
 #endif
 
-#define WIKIV_VERSION "0.4"
+#define WIKIV_VERSION "0.5"
 
 static dk_mutex_t *wikiv_lexer_mutex = NULL;
 
