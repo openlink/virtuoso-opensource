@@ -1,4 +1,6 @@
 --  
+--  $Id$
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -17,8 +19,6 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
---  
---$Id$
 
 create procedure wiki_exec_no_error (in text varchar)
 {

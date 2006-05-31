@@ -1,6 +1,4 @@
 --
---  wa_search_procs.sql
---
 --  $Id$
 --
 --  Procedures to support the WA search.

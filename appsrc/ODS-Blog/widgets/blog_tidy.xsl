@@ -1,4 +1,7 @@
+<?xml version="1.0"?>
 <!--
+ -
+ -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -18,9 +21,7 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:vi="http://www.openlinksw.com/weblog/">
     <xsl:output method="xml" indent="yes" encoding="utf-8" omit-xml-declaration="yes" media-type="text/html"/>
 

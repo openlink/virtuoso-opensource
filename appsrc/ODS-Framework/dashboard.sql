@@ -1,7 +1,4 @@
 --
---
---  dashboard.sql
---
 --  $Id$
 --
 --  WA Dasboard support

@@ -1,6 +1,4 @@
 --
---  atom_pub.sql
---
 --  $Id$
 --
 --  Atom publishing protocol support.

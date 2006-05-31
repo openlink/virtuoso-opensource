@@ -1,5 +1,6 @@
 %{
 /* 
+ * $Id$
  *  
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
@@ -21,7 +22,6 @@
  *  
  *  
 */
-/* $Id$ */
 
 #include <ctype.h>
 #include <stdlib.h>

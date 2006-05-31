@@ -1,3 +1,5 @@
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -18,7 +20,6 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
---$Id$
 
 create method ti_http_debug_print (in _caption varchar) returns any for WV.WIKI.TOPICINFO
 {

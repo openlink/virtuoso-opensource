@@ -1,6 +1,4 @@
 --
---  provinces.sql
---
 --  $Id$
 --
 --  Provinces list

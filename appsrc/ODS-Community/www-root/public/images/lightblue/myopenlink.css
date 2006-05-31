@@ -1,1 +1,389 @@
-#left {	background-color: #EAEAEE;	vertical-align: top;}#topnav {	background-color: #86B9D9;	width: 100%;}#mainarea {	background-color: #EAEAEE;	width: 98%;	vertical-align: top;	text-align: left;}#mainarea a:visited {	width: 100%;	font-family: Verdana, Arial, Helvetica, sans-serif;	color: #336699;}#mainarea a:hover {	width: 100%;	font-family: Verdana, Arial, Helvetica, sans-serif;	color: #009BEC;}#mainarea li {	font-size: 70%;	line-height: 175%;}#main {	width: 100%;	font-family: Verdana, Arial, Helvetica, sans-serif;}.maintext {	font-size: 80%;	color: #333333;}.lftmenu{	CLEAR: both;	FONT-FAMILY: Verdana, Tahoma, Verdana, Helv;	background-image:    url("images/lft_nav_grad1.gif");	background-repeat: repeat-x;	padding-left: 1px;	padding-top: 2px;	margin: 5px 5px 5px 0px;}.lftmenu1{	FONT-SIZE: 70%;	FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif;	color: #333333;	height: 20px;	padding: 2px 2px 3px;	width: 200px;}.lftmenu1 a:link {	color: #333333;	height: 20px;	text-decoration: none;}.lftmenu1 a:hover {	color: #FFFFFF;	height: 20px;	text-decoration: none;}.lftmenu_footer {	FONT-SIZE: 70%;	FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif;	color: #333333;	height: 15px;	width: 200px;	text-align: right;	padding-top: 2px;	padding-left: 3px;	padding-bottom: 10px;	}.lftmenu_footer a:link {	color: #333333;	height: 20px;	text-decoration: none;}.lftmenu_footer a:hover {	color: #FFFFFF;	height: 20px;	text-decoration: none;	}.lftmenu_footer_img {	margin: 0px;	padding: 0px;	vertical-align: bottom;}.lftmenu_title {	padding: 3px;	height: 25px;	font-weight: bold;	color: #333333;	background-color: #99B3C5;	background-image: url(images/stl_blu1_grad.gif);	background-repeat: repeat-x;	font-size: 80%;}.lftmenu_title a:link {	padding: 3px;	height: 25px;	font-weight: bold;	color: #333333;	text-decoration: none;}.lftmenu_title a:hover {	padding: 3px;	height: 25px;	font-weight: bold;	color: #FEFEFE;	text-decoration: underline;}.lftmenu_info {	CLEAR: both;	MARGIN-LEFT: 0cm;	FONT-FAMILY: Verdana, Tahoma, Verdana, Helv;	color: #000000;	padding: 2px 2px 2px 8px;	font-size: 70%;}/*navigation tabs level 1*/.navtabs {	font-size: 70%;	color: #333333;}#navtabs {	color: #333333;	vertical-align: top;	background-color: #99B3C5;	background-image: url(images/stl_blu1_grad.gif);	background-repeat: repeat-x;}.navtab_sel {	font-weight: bold;	color: #000000;	background-color: #B0CDE4;	height: 25px;	background-image: url(images/sel_nav_grad2.gif);	background-repeat: repeat-x;	vertical-align: middle;	padding-right: 5px;	padding-left: 5px;	font-size: 70%;	border-right-width: 1px;	border-right-style: solid;	border-right-color: #FEFEFE;}.navtab_sel a:link {	color: #000000;	text-decoration: none;}.navtab_non_sel {	color: #333333;	background-color: #99B3C5;	height: 25px;	vertical-align: middle;	font-weight: bold;	padding-right: 20px;	padding-left: 20px;	font-size: 80%;	background-image: url(images/stl_blu1_grad.gif);	border-right-width: 1px;	border-right-style: solid;	border-right-color: #FEFEFE;	background-repeat: repeat-x;	border-left-width: 1px;	border-left-style: solid;	border-left-color: #7F94A5;}.navtab_non_sel a:link {	color: #333333;	text-decoration: none;}.navtab_non_sel a:hover {	color: #FFFFFF;	height: 25px;}/*navigation tabs level 2*/.navtabs2 {	font-size: 70%;	color: #666666;}#navtabs2 {	color: #666666;	vertical-align: top;}.navtab_sel2 {	font-weight: bold;	color: #000000;	height: 25px;	vertical-align: middle;	padding-right: 5px;	padding-left: 7px;	font-size: 70%;	background-image: url(images/sel2_grad_nav.gif);	background-repeat: repeat-x;	background-color: EAEAEE;}.navtab_sel2 a:link {	color: #333333;	text-decoration: none;	padding-right: 4px;	padding-left: 4px;}.navtab_non_sel2 {	color: #666666;	background-color: #B0CDE4;	height: 25px;	vertical-align: middle;	font-weight: normal;	padding-right: 5px;	padding-left: 5px;	font-size: 70%;}.navtab_non_sel2 a:link {	color: #666666;	text-decoration: none;}.navtab_non_sel2 a:hover {	color: #FFFFFF;	height: 25px;}h1 {	font-size: 110%;	color: #000000;}h2 {	font-size: 100%;	color: #889FB1;}#mainarea p {	font-size: 70%;}h4 {	font-size: 80%;	color: #A4BFD5;}h3 {	font-size: 90%;	color: #99B3C5;}.copyright {	font-size: 70%;	color: #99B3C5;	padding-left: 20px;	text-align: right;	padding-right: 25px;	padding-top: 5px;}.footernav {	background-color: #99B3C5;	vertical-align: middle;	color: #FFFFFF;	padding-top: 3px;	padding-bottom: 3px;	padding-left: 20px;	font-size: 70%;	height: 25px;	text-align: left;}.footernav a:link {	text-decoration: none;	color: #FFFFFF;}.footernav a:hover {	color: #FFFFFF;	text-decoration: underline;}.infoarea1 {	padding: 2px;	text-align: left;	vertical-align: top;	line-height: 120%;	width: 700px;	margin: 5px;}.infoarea1 a:link {	color: #666666;	text-decoration: none;}.loginarea {	font-size: 70%;	padding: 3px;	padding-top: 3px;	padding-bottom: 3px;}.infoarea1 a:hover {	text-decoration: underline;}.navprefs {	font-size: 80%;	color: #FFFFFF;	text-align: right;	width: 100%;	padding-right: 50px;	border-left-width: 1px;	border-left-style: solid;	border-left-color: #7F94A5;}.navprefs a:link {	color: #FFFFFF;	text-decoration: none;}.navprefs a:hover {	color: #FFFFFF;	text-decoration: underline;}.advert1 {	text-align: left;	vertical-align: top;	padding: 10px;	background-color: #eaeaee;}.infoarea2 {	text-align: left;	width: 685px;	vertical-align: top;	line-height: 120%;	background-color: #FFFFFF;	border: 1px solid #99b3c5;	padding: 10px;	background-image: url(images/containercorner2.gif);	background-repeat: no-repeat;	background-position: right bottom;}.infoarea2 a:link {	color: #999999;	text-decoration: none;}.photoborder {	border: 3px solid #99B3C5;}.info_container {	border: 1px solid #99B3C5;	background-color: #FFFFFF;	padding: 10px;	margin-top: 10px;	vertical-align: top;	height: 250px;	width: 310px;	background-image: url(images/containercorner2.gif);	background-repeat: no-repeat;	background-position: right bottom;	list-style-image: url(images/news8icon.gif);}.info_container2 {	border: 1px solid #99B3C5;	width: 700px;}ul.info_container {	background-color: #FFFFFF;	background-image: url(images/containercorner1.gif);	background-repeat: no-repeat;	background-position: right bottom;	text-indent: 20px;}.infoarea2 a:hover {	text-decoration: underline;}
+/*
+ *  $Id$
+ *  
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *  
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *  
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  
+ */
+
+#left {
+	background-color: #EAEAEE;
+	vertical-align: top;
+}
+#topnav {
+	background-color: #86B9D9;
+	width: 100%;
+}
+#mainarea {
+	background-color: #EAEAEE;
+	width: 98%;
+	vertical-align: top;
+	text-align: left;
+}
+#mainarea a:visited {
+	width: 100%;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	color: #336699;
+}
+#mainarea a:hover {
+	width: 100%;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	color: #009BEC;
+}
+#mainarea li {
+	font-size: 70%;
+	line-height: 175%;
+}
+#main {
+	width: 100%;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+.maintext {
+	font-size: 80%;
+	color: #333333;
+}
+.lftmenu
+{
+	CLEAR: both;
+	FONT-FAMILY: Verdana, Tahoma, Verdana, Helv;
+	background-image:    url("images/lft_nav_grad1.gif");
+	background-repeat: repeat-x;
+	padding-left: 1px;
+	padding-top: 2px;
+	margin: 5px 5px 5px 0px;
+}
+.lftmenu1
+{
+	FONT-SIZE: 70%;
+	FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif;
+	color: #333333;
+	height: 20px;
+	padding: 2px 2px 3px;
+	width: 200px;
+}
+.lftmenu1 a:link {
+	color: #333333;
+	height: 20px;
+	text-decoration: none;
+}
+.lftmenu1 a:hover {
+	color: #FFFFFF;
+	height: 20px;
+	text-decoration: none;
+}
+.lftmenu_footer {
+	FONT-SIZE: 70%;
+	FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif;
+	color: #333333;
+	height: 15px;
+	width: 200px;
+	text-align: right;
+	padding-top: 2px;
+	padding-left: 3px;
+	padding-bottom: 10px;
+	}
+.lftmenu_footer a:link {
+	color: #333333;
+	height: 20px;
+	text-decoration: none;
+}
+.lftmenu_footer a:hover {
+	color: #FFFFFF;
+	height: 20px;
+	text-decoration: none;
+	}
+.lftmenu_footer_img {
+	margin: 0px;
+	padding: 0px;
+	vertical-align: bottom;
+}
+.lftmenu_title {
+	padding: 3px;
+	height: 25px;
+	font-weight: bold;
+	color: #333333;
+	background-color: #99B3C5;
+	background-image: url(images/stl_blu1_grad.gif);
+	background-repeat: repeat-x;
+	font-size: 80%;
+}
+.lftmenu_title a:link {
+	padding: 3px;
+	height: 25px;
+	font-weight: bold;
+	color: #333333;
+	text-decoration: none;
+}
+.lftmenu_title a:hover {
+	padding: 3px;
+	height: 25px;
+	font-weight: bold;
+	color: #FEFEFE;
+	text-decoration: underline;
+}
+.lftmenu_info {
+	CLEAR: both;
+	MARGIN-LEFT: 0cm;
+	FONT-FAMILY: Verdana, Tahoma, Verdana, Helv;
+	color: #000000;
+	padding: 2px 2px 2px 8px;
+	font-size: 70%;
+}
+
+/*navigation tabs level 1*/
+.navtabs {
+	font-size: 70%;
+	color: #333333;
+}
+#navtabs {
+	color: #333333;
+	vertical-align: top;
+	background-color: #99B3C5;
+	background-image: url(images/stl_blu1_grad.gif);
+	background-repeat: repeat-x;
+}
+.navtab_sel {
+	font-weight: bold;
+	color: #000000;
+	background-color: #B0CDE4;
+	height: 25px;
+	background-image: url(images/sel_nav_grad2.gif);
+	background-repeat: repeat-x;
+	vertical-align: middle;
+	padding-right: 5px;
+	padding-left: 5px;
+	font-size: 70%;
+	border-right-width: 1px;
+	border-right-style: solid;
+	border-right-color: #FEFEFE;
+}
+.navtab_sel a:link {
+	color: #000000;
+	text-decoration: none;
+}
+.navtab_non_sel {
+	color: #333333;
+	background-color: #99B3C5;
+	height: 25px;
+	vertical-align: middle;
+	font-weight: bold;
+	padding-right: 20px;
+	padding-left: 20px;
+	font-size: 80%;
+	background-image: url(images/stl_blu1_grad.gif);
+	border-right-width: 1px;
+	border-right-style: solid;
+	border-right-color: #FEFEFE;
+	background-repeat: repeat-x;
+	border-left-width: 1px;
+	border-left-style: solid;
+	border-left-color: #7F94A5;
+}
+.navtab_non_sel a:link {
+	color: #333333;
+	text-decoration: none;
+}
+.navtab_non_sel a:hover {
+	color: #FFFFFF;
+	height: 25px;
+}
+
+/*navigation tabs level 2*/
+
+.navtabs2 {
+	font-size: 70%;
+	color: #666666;
+}
+#navtabs2 {
+	color: #666666;
+	vertical-align: top;
+}
+.navtab_sel2 {
+	font-weight: bold;
+	color: #000000;
+	height: 25px;
+	vertical-align: middle;
+	padding-right: 5px;
+	padding-left: 7px;
+	font-size: 70%;
+	background-image: url(images/sel2_grad_nav.gif);
+	background-repeat: repeat-x;
+	background-color: EAEAEE;
+}
+.navtab_sel2 a:link {
+	color: #333333;
+	text-decoration: none;
+	padding-right: 4px;
+	padding-left: 4px;
+}
+.navtab_non_sel2 {
+	color: #666666;
+	background-color: #B0CDE4;
+	height: 25px;
+	vertical-align: middle;
+	font-weight: normal;
+	padding-right: 5px;
+	padding-left: 5px;
+	font-size: 70%;
+}
+.navtab_non_sel2 a:link {
+	color: #666666;
+	text-decoration: none;
+}
+.navtab_non_sel2 a:hover {
+	color: #FFFFFF;
+	height: 25px;
+}
+h1 {
+	font-size: 110%;
+	color: #000000;
+}
+h2 {
+	font-size: 100%;
+	color: #889FB1;
+}
+#mainarea p {
+	font-size: 70%;
+}
+h4 {
+	font-size: 80%;
+	color: #A4BFD5;
+}
+h3 {
+	font-size: 90%;
+	color: #99B3C5;
+}
+.copyright {
+	font-size: 70%;
+	color: #99B3C5;
+	padding-left: 20px;
+	text-align: right;
+	padding-right: 25px;
+	padding-top: 5px;
+}
+.footernav {
+	background-color: #99B3C5;
+	vertical-align: middle;
+	color: #FFFFFF;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	padding-left: 20px;
+	font-size: 70%;
+	height: 25px;
+	text-align: left;
+}
+.footernav a:link {
+	text-decoration: none;
+	color: #FFFFFF;
+}
+.footernav a:hover {
+	color: #FFFFFF;
+	text-decoration: underline;
+}
+.infoarea1 {
+	padding: 2px;
+	text-align: left;
+	vertical-align: top;
+	line-height: 120%;
+	width: 700px;
+	margin: 5px;
+}
+.infoarea1 a:link {
+	color: #666666;
+	text-decoration: none;
+}
+.loginarea {
+	font-size: 70%;
+	padding: 3px;
+	padding-top: 3px;
+	padding-bottom: 3px;
+}
+.infoarea1 a:hover {
+	text-decoration: underline;
+}
+.navprefs {
+	font-size: 80%;
+	color: #FFFFFF;
+	text-align: right;
+	width: 100%;
+	padding-right: 50px;
+	border-left-width: 1px;
+	border-left-style: solid;
+	border-left-color: #7F94A5;
+}
+.navprefs a:link {
+	color: #FFFFFF;
+	text-decoration: none;
+}
+.navprefs a:hover {
+	color: #FFFFFF;
+	text-decoration: underline;
+}
+.advert1 {
+	text-align: left;
+	vertical-align: top;
+	padding: 10px;
+	background-color: #eaeaee;
+}
+.infoarea2 {
+	text-align: left;
+	width: 685px;
+	vertical-align: top;
+	line-height: 120%;
+	background-color: #FFFFFF;
+	border: 1px solid #99b3c5;
+	padding: 10px;
+	background-image: url(images/containercorner2.gif);
+	background-repeat: no-repeat;
+	background-position: right bottom;
+}
+.infoarea2 a:link {
+	color: #999999;
+	text-decoration: none;
+}
+.photoborder {
+	border: 3px solid #99B3C5;
+}
+.info_container {
+	border: 1px solid #99B3C5;
+	background-color: #FFFFFF;
+	padding: 10px;
+	margin-top: 10px;
+	vertical-align: top;
+	height: 250px;
+	width: 310px;
+	background-image: url(images/containercorner2.gif);
+	background-repeat: no-repeat;
+	background-position: right bottom;
+	list-style-image: url(images/news8icon.gif);
+}
+.info_container2 {
+	border: 1px solid #99B3C5;
+	width: 700px;
+}
+ul.info_container {
+	background-color: #FFFFFF;
+	background-image: url(images/containercorner1.gif);
+	background-repeat: no-repeat;
+	background-position: right bottom;
+	text-indent: 20px;
+}
+.infoarea2 a:hover {
+	text-decoration: underline;
+}
+

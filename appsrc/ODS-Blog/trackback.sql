@@ -1,6 +1,4 @@
 --
---  trackback.sql
---
 --  $Id$
 --
 --  MT Trackback support.

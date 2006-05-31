@@ -1,6 +1,4 @@
 --
---  wa_maps.sql
---
 --  $Id$
 --
 --  Procedures to support the WA maps handling.

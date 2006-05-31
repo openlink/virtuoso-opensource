@@ -1,6 +1,4 @@
 --
---  blog.sql
---
 --  $Id$
 --
 --  Blogger API support.

@@ -1,4 +1,26 @@
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2006 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
 
+--
 -- select top %d, %d  B_CONTENT, B_TS, B_POST_ID, B_COMMENTS_NO as comments, B_TRACKBACK_NO as trackbacks, B_USER_ID, B_META, B_MODIFIED, B_STATE from SYS_BLOGS, (select BI_BLOG_ID as BA_C_BLOG_ID, BI_BLOG_ID as BA_M_BLOG_ID from SYS_BLOG_INFO where BI_BLOG_ID = ''%s'' union all select * from (select top 10 BA_C_BLOG_ID, BA_M_BLOG_ID from SYS_BLOG_ATTACHES where BA_M_BLOG_ID = ''%s'' order by BA_LAST_UPDATE desc) name1) name2 where B_BLOG_ID = BA_C_BLOG_ID order by B_TS desc;
 
 --set MACRO_SUBSTITUTION off;
