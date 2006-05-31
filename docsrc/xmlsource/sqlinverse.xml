@@ -25,9 +25,8 @@
   <sect1 id="sqlinverse"><title>SQL Inverse Functions</title>
 
     <para>Many virtual database application scenarios require performing various
-    conversions on data in legacy tables.  Examples of this are currency conversions,
-    conversions between British and metric units, replacing complex composite keys
-    with single numeric row id's and so forth.</para>
+    conversions on data in legacy tables.  An example of this is currency conversions,
+    conversions between British and metric units, replacing complex composite keys with single numeric row id's and so forth.</para>
 
     <para>SQL views are the normal way of implementing such conversions.  However,
     when making queries with selection criteria referencing the results of these
@@ -37,14 +36,14 @@
     we first have to convert and only then test the value of a column.</para>
 
     <para>Virtuoso introduces an SQL extension for dealing with these issues.
-    Virtuoso allows to define that two SQL functions are inverses of each other,
+    Virtuoso allows the definition of two SQL functions that are inverses of each other,
     for example <function>dollar_to_euro</function> and <function>euro_to_dollar</function> would be examples of inverse functions.</para>
 
     <para>Thus, when we define a view like:</para>
     <programlisting>create view euro_item as Select I_id, dollar_to_euro (I_price) as I_price, I_name from item;</programlisting>
 
     <para>We can further declare:</para>
-    <programlisting>bb..sinv_create_inverse ('euro_to_dollar', 'dollar_to_euro', 1);</programlisting>
+<programlisting>db..sinv_create_inverse ('euro_to_dollar', 'dollar_to_euro', 1);</programlisting>
 
     <para>and perform the query:</para>
     <programlisting>select * from euro_item where I_price > 100;</programlisting>
@@ -72,7 +71,7 @@
    order.  Amount a will be greater than amount b whether a and b be expressed
    in euros or dollars, as long as both a and b are in the same currency.
    Some other conversions such as compression, encryption, hashes and mappings
-   of arbitrary unique id's to another set of id's do not preserve collation.
+   of arbitrary unique ids to another set of ids do not preserve collation.
    Whether a particular mapping preserves collation is indicated by the third
    argument of <link linkend="fn_sinv_create_inverse"><function>sinv_create_inverse</function></link>.  In the above example we see a value of 1,
    meaning that collation is preserved.  Zero specifies that collation is not preserved.</para>
@@ -136,7 +135,7 @@ create function o_iid_o_id (in iid numeric)
 
 db..sinv_create_inverse ('O_IID', VECTOR ('O_IID_W_ID', 'O_IID_D_ID', 'O_IID_O_ID'), 0);</programlisting>
 
-    <para>The <link linkend="fn_sinv_create_inverse"><function>sinv_create_inverse</function></link> now defines an accessor for each of the arguments
+    <para>The <link linkend="fn_sinv_create_inverse"><function>sinv_create_inverse</function></link> now defines an accessory for each of the arguments
     of o_iid.  The first function in the vector retrieves the first argument of a call
     to o_iid, the second the second and so forth.  Since we are talking about mapping
     a set of values into one value it does not make sense to speak of preserving a collation,
@@ -144,7 +143,7 @@ db..sinv_create_inverse ('O_IID', VECTOR ('O_IID_W_ID', 'O_IID_D_ID', 'O_IID_O_I
     distinct combination of arguments of o_iid, we get a distinct value from which all the
     original arguments can be retrieved using the functions mentioned.</para>
 
-    <para>Now we define the same functions for constructing a synthetic one part customer id.
+    <para>Now we define the same functions for constructing a synthetic one-part customer id.
     The functions are exactly the same as for the order id.</para>
 
     <programlisting>create function c_iid (in w_id int, in d_id int, in c_id int) returns numeric
@@ -191,7 +190,7 @@ returns________
 102000000935
 </screen>
 
-    <para>The order #2 in distruict #2 of warehouse #1 refers to customer #935 or district #2 of warehouse #1.</para>
+    <para>The order #2 in district #2 of warehouse #1 refers to customer #935 or district #2 of warehouse #1.</para>
 
 
 <screen>
@@ -260,8 +259,8 @@ Select ($26 "aggregate")
     if we wish to generate unique numeric id's from keys consisting of arbitrary strings.</para>
 
     <para>To this effect, Virtuoso provides a mechanism for automatically generating mapping
-    functions which take a combination of n arguments of an arbitrary searchable data type
-    and generate a unique id for each distinct combination.  The id's are assigned as needed
+    functions, which take a combination of n arguments of an arbitrary searchable data type
+    and generate a unique id for each distinct combination.  The ids are assigned as needed
     and the mapping is persisted in an automatically generated table.</para>
 
 
@@ -282,7 +281,7 @@ Select ($26 "aggregate")
     sequence is the same as that of the mapping, thus sequence_set can be used for
     setting the sequence counter.  Note that sequence names are case sensitive.</para>
 
-    <para>When a new combination of w_id, d_id, o:_id is seen by o_iid, it inserts a
+<para>When a new combination of w_id, d_id, o_id is seen by o_iid, it inserts a
     row in the mapping table and assigns this  a new unique number.  This update of
     the mapping table is committed at the same time the enclosing transaction commits.
     The table is normally read with   read committed isolation  and updated with serializable
@@ -311,7 +310,7 @@ Select ($26 "aggregate")
 
     <sect2 id="updthoughinverses"><title>Updating through Inverses</title>
 
-    <para>A view which selects calls to functions which have  inverses is updateable.
+    <para>A view that selects calls to functions, which have inverses, is updateable.
     This means that the SQL compiler will use the inverse function on the value being
     assigned before assigning the column.  This is done for both insert and update
     operations.  No special declaration is needed.   If the function with inverse
@@ -347,6 +346,7 @@ SQL> update item_euro set i_price = 120 where i_id = 1234;
 		</note>
 
   </sect1>
+
 
 
 

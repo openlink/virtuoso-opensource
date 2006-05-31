@@ -194,8 +194,9 @@ USER_CREATE ('user', 'userpassword',
   vector ('SQL_ENABLE', 0, 'DAV_ENABLE', 1, 'PERMISSIONS', '110100000RR', 'DISABLED', 0));
 </programlisting>
 <para>This will create a new account named 'user' with password 'upwd', default
-  permissions for new resources created by the account will be rw-r---- and the account is
-  enabled and ready to use.</para>
+  permissions for new resources and collections created by the account will be '110100000RR'
+  (equivalent of UNIX 'rw-r----' permissions, recursive free-text indexing and metadata extraction)
+  and the account is enabled and ready to use.</para>
 <programlisting>
 DAV_ADD_USER ('user', 'userpassword', '110100000RR', 0, '/DAV/home/user/',
   'Full User Name', 'user@example.com', 'dav', 'davpassword');
@@ -428,7 +429,7 @@ priority that &quot;global&quot;:
 <para>
 New resources and collections take their initial permissions from the user default permissions mask, U_DEFAULT_PERMS of SYS_USERS.
 (see: <link linkend="davuseradm">WebDAV Users Administration</link>).
-In the case of a resource created as public or a collection mask of 'rw-rw-rw',
+In the case of a resource created as public or a collection mask of '110110110' (equivalent of UNIX 'rw-rw-rw'),
 then everybody can read and write it.
 </para>
 <example>
@@ -437,10 +438,11 @@ then everybody can read and write it.
 Consider a resource with the following permissions:
 </para>
 <screen>
-'rwxrw-r--'
+'111110100'
 </screen>
 <para>
-This can be executed, read and written to by the owner, group members can read
+This permission string is equivalent to UNIX 'rwxrw-r--'.
+The resource can be executed, read and written to by the owner, group members can read
 and write to it, and non authenticated (public) users or users not belonging to
 the group group can only read it.
 </para>
