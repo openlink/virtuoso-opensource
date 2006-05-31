@@ -326,7 +326,7 @@ create function WS.WS.DAV_TAG_NORMALIZE (in strg varchar) returns varchar
     {
       declare nword varchar;
       -- dbg_obj_princ ('word=', word);
-      word := trim (replace (replace (replace (replace (word, '\t', ' '), '''', ''), '"', ''), '\\', ''));
+      word := trim (replace (replace (replace (replace (word, '\t', ' '), '''', ''), '"', ''), '\\', '')); --'
       if (word <> '')
         {
 again:
@@ -1157,6 +1157,12 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/mac-binh
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/mac-compactpro','cpt')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/mods+xml','mods')
+;
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/msexcel','xls')
+;
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/mspowerpoint','ppt')
+;
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/msproject','mpp')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/msword','doc')
 ;
