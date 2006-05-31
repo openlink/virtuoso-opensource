@@ -1753,7 +1753,13 @@ sec_read_users (void)
     {
       caddr_t name = lc_nth_col (lc, 0);
       caddr_t pass = lc_nth_col (lc, 1);
-      if (!pass[0] && box_length (pass) > 1)
+      int disabled = (int) unbox (lc_nth_col (lc, 5));
+      if (!DV_STRINGP (pass))
+	{
+	  pass = box_string ("");
+	  disabled = 1;
+	}
+      else if (!pass[0] && box_length (pass) > 1)
 	{
 	  caddr_t pass_copy = dk_alloc_box_zero (box_length (pass) - 1, DV_STRING);
 	  memcpy (pass_copy, pass + 1, (size_t) (box_length (pass) - 1));
@@ -1773,7 +1779,7 @@ sec_read_users (void)
       sec_make_dd_user (box_string (name), pass,
 	  (oid_t) unbox (lc_nth_col (lc, 2)),
 	  (oid_t) unbox (lc_nth_col (lc, 3)),
-	  (int) unbox (lc_nth_col (lc, 5)),
+	  disabled,
 	  (int) unbox (lc_nth_col (lc, 6)),
 	  (int) unbox (lc_nth_col (lc, 7)));
       sec_set_user_data (name, lc_nth_col (lc, 4));
