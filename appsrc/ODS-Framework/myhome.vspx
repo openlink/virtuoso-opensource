@@ -65,7 +65,7 @@
      </tr>
   <tr>
     <td colspan="2">
-      <vm:if test="wa_vad_check ('oMail') is not null">
+      <vm:if test="wa_vad_check ('oMail') is not null and 1=0">
           <vm:dash-my-guestbook />
      </vm:if>
 
