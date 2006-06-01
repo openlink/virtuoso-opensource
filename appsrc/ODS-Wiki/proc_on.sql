@@ -2338,7 +2338,7 @@ create procedure WV.WIKI.DELICIOUSSYNC (in _cluster int, in _user varchar)
 create method ti_fill_url () for WV.WIKI.TOPICINFO
 {
   declare _home varchar;
-  _home := WV.WIKI.CLUSTERPARAM (self.ti_cluster_name, 'home', '/wiki/main/');
+  _home := WV.WIKI.CLUSTERPARAM (self.ti_cluster_name, 'home', '/wiki/main');
   self.ti_url := sprintf ('%s/%s',
 			  _home,
 			  WV.WIKI.READONLYWIKIWORDLINK (self.ti_cluster_name, self.ti_local_name));
