@@ -405,6 +405,7 @@ fi
 HOSTNAME=`uname -n`
 if [ $VOS -eq 1 -a "x$HOST_OS" != "x" ]
 then
+BINDIR=`cygpath -m "$BINDIR"`    
 PLUGINDIR=`echo "$BINDIR" | sed -e 's#/#\\\/#g; s# #\\ #g; s#-#\\-#g'`    
 else
 PLUGINDIR=`echo "$prefix/lib"| sed -e 's#/#\\\/#g; s# #\\ #g; s#-#\\-#g'` 
