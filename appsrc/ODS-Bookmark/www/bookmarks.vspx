@@ -72,7 +72,7 @@
     <![CDATA[
       if (not is_empty_or_null(self.tag)) {
         self.tab := 'tags';
-        self.node := concat('t#', self.tag);
+        self.node := 't#' || self.tag;
       } else if (not is_empty_or_null(self.link)) {
         self.tab := 'bookmarks';
         self.node := 'p#';
@@ -774,11 +774,8 @@
             <div class="new-form-body">
               <table cellspacing="0">
                 <tr>
-                  <th>
-                    <v:label for="i_file" value="Boolmarks source"/>
-                  </th>
-                  <td>
-                    <input type="file" name="i_file" size="60"></input>
+                  <td align="center">
+                    <b><v:label for="i_file" value="Import source"/> </b><input type="file" name="i_file" size="40"></input>
                   </td>
                 </tr>
               </table>
