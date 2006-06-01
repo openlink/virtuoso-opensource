@@ -723,8 +723,9 @@ create procedure BMK.WA.bookmark_import(
   declare
     V any;
 
+  -- check netscape format
   if (isnull(strcasestr(S, '<!doctype netscape-bookmark-file-1>')))
-    return;
+    goto _xbel;
   S := replace(S, '<p>', '');
   S := replace(S, '<HR>', '');
   S := replace(S, '<DD>', '');
@@ -734,15 +735,26 @@ create procedure BMK.WA.bookmark_import(
   V := xtree_doc(S, 2);
   V := xpath_eval('//dl', V);
   if (V is null)
+    goto _xbel;
+  BMK..bookmark_import_netscape(domain_id, folder_id, xml_cut(V));
+  goto _end;
+
+_xbel:;
+  -- check xbel format
+  V := BMK.WA.string2xml(S);
+  V := xpath_eval('/xbel', V);
+  if (V is null)
+    goto _end;
+  BMK..bookmark_import_xbel(domain_id, folder_id, xml_cut(V));
+
+_end:
     return;
-  --dbg_obj_print(V);
-  BMK..bookmark_import_tmp(domain_id, folder_id, xml_cut(V));
 }
 ;
 
 -----------------------------------------------------
 --
-create procedure BMK.WA.bookmark_import_tmp(
+create procedure BMK.WA.bookmark_import_netscape(
   in domain_id integer,
   in folder_id integer,
   in V any)
@@ -771,7 +783,45 @@ _a:
     tmp := BMK.WA.folder_create2(domain_id, folder_id, cast(T as VARCHAR));
     T := xpath_eval('/dl/dt/dl', V, N);
     if (not (T is null))
-      BMK.WA.bookmark_import_tmp(domain_id, tmp, xml_cut(T));
+      BMK.WA.bookmark_import_netscape(domain_id, tmp, xml_cut(T));
+    N := N + 1;
+  }
+_h3:
+  return;
+};
+
+-----------------------------------------------------
+--
+create procedure BMK.WA.bookmark_import_xbel(
+  in domain_id integer,
+  in folder_id integer,
+  in V any)
+{
+  declare tmp, T, Q any;
+  declare N integer;
+
+  if (V is null)
+    return;
+  N := 1;
+  while (1) {
+    T := xpath_eval('/folder/text()', V, N);
+    if (T is null)
+      goto _a;
+    Q := xpath_eval('/dl/dt/a/@href', V, N);
+    tmp := BMK.WA.bookmark_update(domain_id, cast(Q as VARCHAR), cast(T as VARCHAR), null);
+    BMK.WA.bookmark_parent(domain_id, tmp, folder_id);
+    N := N + 1;
+  }
+_a:
+  N := 1;
+  while (1) {
+    T := xpath_eval('/dl/dt/h3', V, N);
+    if (T is null)
+      goto _h3;
+    tmp := BMK.WA.folder_create2(domain_id, folder_id, cast(T as VARCHAR));
+    T := xpath_eval('/dl/dt/dl', V, N);
+    if (not (T is null))
+      BMK.WA.bookmark_import_xbel(domain_id, tmp, xml_cut(T));
     N := N + 1;
   }
 _h3:
@@ -1857,7 +1907,7 @@ create procedure BMK.WA.xml_get(
 --
 create procedure BMK.WA.string2xml (
   in content varchar,
-  in mode integer := 0) returns any
+  in mode integer := 0)
 {
   if (mode = 0) {
     declare exit handler for sqlstate '*' { goto _html; };
