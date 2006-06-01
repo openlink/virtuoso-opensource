@@ -1040,6 +1040,27 @@ create procedure BLOG2_MAKE_SUMMARY (in str any, inout meta any, in force int :=
   return str;
 };
 
+create procedure BLOG_GET_BLOG_KWDSP (in kwds varchar)
+{
+  declare BI_KWD varchar;
+  declare arr any;
+  result_names (BI_KWD);
+  if (not length (kwds))
+    return;
+  arr := split_and_decode (kwds, 0, '\0\0 ');
+  foreach (any kwd in arr) do
+    {
+      kwd := trim (kwd);
+      if (length (kwd) > 1)
+        result (kwd);
+    }
+};
+
+blog2_exec_no_error(
+  'create procedure view BLOG.DBA.BLOG_GET_BLOG_KWDS as BLOG.DBA.BLOG_GET_BLOG_KWDSP(kwds) (BI_KWD varchar)'
+)
+;
+
 create procedure BLOG2_HOME_GET_RSS_SQLX(in blogid varchar, in rep int := 1)
 {
   declare ses any;
@@ -1059,7 +1080,7 @@ http ('XMLELEMENT(\'pubDate\', BLOG.DBA.date_rfc1123(now())), \n', ses);
 http ('XMLELEMENT(\'generator\', \'Virtuoso Universal Server \' || sys_stat(\'st_dbms_ver\')), \n', ses);
 http ('XMLELEMENT(\'webMaster\', BI_E_MAIL), \n', ses);
 http ('XMLELEMENT(\'copyright\', BLOG..blog_utf2wide (BI_COPYRIGHTS)), \n', ses);
-http ('XMLELEMENT(\'category\', BI_KEYWORDS), \n', ses);
+http ('(select XMLAGG (XMLELEMENT (\'category\', BI_KWD)) from BLOG.DBA.BLOG_GET_BLOG_KWDS where kwds = BI_KEYWORDS) ,\n', ses);
 http ('\n', ses);
 http ('XMLELEMENT(\'language\', \'en-us\'), \n', ses);
 http ('\n', ses);
