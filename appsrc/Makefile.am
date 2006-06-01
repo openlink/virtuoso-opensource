@@ -24,8 +24,8 @@ SUBDIRS = ODS-Framework \
 	ODS-Bookmark \
 	ODS-Briefcase \
 	ODS-Community \
+	ODS-Discussion \
 	ODS-FeedManager \
 	ODS-Gallery \
-	ODS-NNTPFrontend \
 	ODS-Wiki \
 	ODS-WebMail

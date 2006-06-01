@@ -801,6 +801,7 @@ DO_COMMAND "vad_install ('ods_blog_dav.vad')" dba dba
 DO_COMMAND "vad_install ('ods_bookmark_dav.vad')" dba dba
 DO_COMMAND "vad_install ('ods_briefcase_dav.vad')" dba dba
 DO_COMMAND "vad_install ('ods_community_dav.vad')" dba dba
+DO_COMMAND "vad_install ('ods_discussion.vad')" dba dba
 DO_COMMAND "vad_install ('ods_feedmanager_dav.vad')" dba dba
 DO_COMMAND "vad_install ('ods_gallery_dav.vad')" dba dba
 DO_COMMAND "vad_install ('ods_webmail_dav.vad')" dba dba

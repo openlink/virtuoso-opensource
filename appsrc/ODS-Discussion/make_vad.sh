@@ -338,7 +338,7 @@ vad_create() {
 	  $ISQL $DSN dba dba vad.isql 1>/dev/null 2>/dev/null
 	fi
   cd $mydir
-  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER', '.', 'ods_nntpf_dav.vad')"
+  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER', '.', 'ods_discussion.vad')"
   do_command_safe $DSN "commit work"
   do_command_safe $DSN "checkpoint"
 }
@@ -350,6 +350,6 @@ virtuoso_init
 sticker_init
 vad_create
 virtuoso_shutdown
-chmod 644 ods_nntpf_dav.vad
+chmod 644 ods_discussion.vad
 #directory_clean
 
