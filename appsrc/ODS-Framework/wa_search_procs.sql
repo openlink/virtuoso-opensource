@@ -180,7 +180,7 @@ create function WA_SEARCH_USER_GET_EXCERPT_HTML (
   else
     {
       res := sprintf (
-	 '<div class="map_user_data"><a href="%s">%s''s Data Space</a><br />%s<br /><img class="%s" src="%s" alt="user_photo" border="0"/><br />%s</div>',
+	 '<div class="map_user_data"><a href="%s">%s''s Data Spaces</a><br />%s<br /><img class="%s" src="%s" alt="user_photo" border="0"/><br />%s</div>',
 	 WA_SEARCH_ADD_APATH (
 	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('uhome.vspx?ufname=%U', _U_NAME), _user_id, '&')),
 	 _WAUI_FULL_NAME,

@@ -134,7 +134,7 @@
       </td>
       </tr>
     <tr id="MT">
-     <td id="LC">
+     <td id="LC" style="white-space: nowrap;">
       <v:include name="loginp" url="adm_login.vspx"/>
       <!--div class="lmenu_ctr">
         &nbsp;
@@ -174,7 +174,7 @@
 	  if (vad_check_version ('Framework') is not null)
 	  {
           ?>
-	  <li><img src="images/vglobe_16.png" alt="WA" title="Data Space Applications" /><a href="<?V wa_link () ?>">Data Space Applications</a>
+	  <li><img src="images/vglobe_16.png" alt="WA" title="Data Space Applications" /><a href="<?V wa_link () ?>">OpenLink Data Spaces</a>
 	  </li>
 	  <?vsp
 	  }
