@@ -84,7 +84,24 @@ version_init() {
   for i in $file_list; do
       cat $i | grep '^/' | cut -d '/' -f 3 | sed -e 's/1\.//g' >> version.tmp
   done
-  VERSION=`cat version.tmp | awk ' BEGIN { cnt=0 } { cnt = cnt + $1 } END { print "1.05." cnt }'`
+  BASE="0"
+  echo $BASE
+  if [ -f version.base ] ; then
+      BASE=`cat version.base`
+  fi
+  VERSION=`cat version.tmp | awk ' BEGIN { cnt=0 } { cnt = cnt + $1 } END { print cnt }'`
+  VERSION=`expr $BASE + $VERSION`
+  CURR_VERSION=$VERSION
+  if [ -f version.curr ] ; then
+      CURR_VERSION=`cat version.curr`
+  fi
+  if [ $CURR_VERSION -gt $VERSION ] ; then
+      BASE=`expr $CURR_VERSION - $VERSION + 1`
+      echo $BASE > version.base
+      VERSION=$CURR_VERSION
+  fi
+  echo $VERSION > version.curr
+  VERSION="1.05.$VERSION"
   rm -f version.tmp
 }
 
