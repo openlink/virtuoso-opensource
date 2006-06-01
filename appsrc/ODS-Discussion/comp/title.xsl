@@ -30,7 +30,7 @@
     <table width="100%"  border="0" cellpadding="0" cellspacing="0">
       <tr>
         <td class="header_img"><img src="images/nntpserverhome400.jpg" alt="" name=""/></td>
-        <td class="header_top">OpenLink Virtuoso NNTP Front-end</td>
+        <td class="header_top">ODS Discussion</td>
       </tr>
     </table>
   </xsl:template>

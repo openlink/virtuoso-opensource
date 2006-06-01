@@ -49,7 +49,7 @@
             title="Virtuoso Product Blog (Atom)" 
             href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />        
       <link rel="stylesheet" type="text/css" href="nntpf.css" />
-      <title>Virtuoso NNTP Frontend</title>
+      <title>ODS Discussion</title>
     </head>
     <body>
       <vm:page>

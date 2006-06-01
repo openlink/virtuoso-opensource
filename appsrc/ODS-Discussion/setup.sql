@@ -405,7 +405,7 @@ nntpf_article_list (in _group integer)
 }
 ;
 
-registry_set ('__nntpf_ver', 'Virtuoso NNTP Front-End ' || sys_stat ('st_dbms_ver'))
+registry_set ('__nntpf_ver', 'ODS Discussion ' || sys_stat ('st_dbms_ver'))
 ;
 
 create procedure
@@ -2280,7 +2280,7 @@ http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null,\n', ses);
-http (sprintf (' \'%V\',\n', 'OpenLink Virtuoso NNTP Front-end'), ses);
+http (sprintf (' \'%V\',\n', 'ODS Discussion'), ses);
 http (' \'http://\' || HTTP_GET_HOST () || \'/images/vbloglogo.gif\',\n', ses);
 http (sprintf (' \'%V\',\n', _host), ses);
 http (' \'\',\n', ses);
@@ -2537,7 +2537,7 @@ http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null,\n', ses);
-http (sprintf (' \'%V\',\n', 'OpenLink Virtuoso NNTP Front-end'), ses);
+http (sprintf (' \'%V\',\n', 'ODS Discussion'), ses);
 http (' \'http://\' || HTTP_GET_HOST () || \'/images/vbloglogo.gif\',\n', ses);
 http (sprintf (' \'%V\',\n', _host), ses);
 http (' \'\',\n', ses);
@@ -2658,7 +2658,7 @@ nntpf_ret_bad_url (in lines any)
     <generator>Virtuoso Universal Server</generator>
     <webMaster/>
     <image>
-      <title>OpenLink Virtuoso NNTP Front-end</title>
+      <title>ODS Discussion</title>
       <url>%s/images/vbloglogo.gif</url>
       <link>%s/nntpf/</link>
       <description/>

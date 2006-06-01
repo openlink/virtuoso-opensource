@@ -34,7 +34,7 @@
     <head>
       <link rel="stylesheet" type="text/css" href="nntpf.css"/>
       <v:include url="virtuoso_app_links.xhtml"/>
-      <title>Virtuoso NNTP Frontend</title>
+      <title>ODS Discussion</title>
     </head>
     <body>
       <vm:page>
