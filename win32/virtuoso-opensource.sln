@@ -306,6 +306,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ods_community_vad", "commun
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ods_nntpf_vad", "nntpf_vad.vcproj", "{607116BE-F168-11DA-85E2-A4E5714C712A}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -516,6 +520,10 @@ Global
 		{C0990F5A-EFE3-11DA-85E2-A4E5714C712A}.Debug.Build.0 = Debug|Win32
 		{C0990F5A-EFE3-11DA-85E2-A4E5714C712A}.Release.ActiveCfg = Release|Win32
 		{C0990F5A-EFE3-11DA-85E2-A4E5714C712A}.Release.Build.0 = Release|Win32
+		{607116BE-F168-11DA-85E2-A4E5714C712A}.Debug.ActiveCfg = Debug|Win32
+		{607116BE-F168-11DA-85E2-A4E5714C712A}.Debug.Build.0 = Debug|Win32
+		{607116BE-F168-11DA-85E2-A4E5714C712A}.Release.ActiveCfg = Release|Win32
+		{607116BE-F168-11DA-85E2-A4E5714C712A}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection
