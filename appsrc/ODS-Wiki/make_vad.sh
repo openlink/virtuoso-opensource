@@ -432,9 +432,9 @@ ServerName   = the_big_server
 ServerEnable = 1
 QueueMax     = 50000
 
-[Plugins]
-LoadPath = ./plugin
-Load1 = plain, wikiv
+;[Plugins]
+;LoadPath = ./plugin
+;Load1 = plain, wikiv
 
 " > virtuoso.ini
   if [ -f virtuoso.lic ]
