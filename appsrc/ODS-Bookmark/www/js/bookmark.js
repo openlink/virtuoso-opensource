@@ -22,7 +22,8 @@
  */
 
 // ---------------------------------------------------------------------------
-function myPost(frm_name, fld_name, fld_value) {
+function myPost(frm_name, fld_name, fld_value)
+{
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
 }
@@ -43,7 +44,8 @@ function toolbarPost(value)
 
 // ---------------------------------------------------------------------------
 //
-function submitEnter(myForm, myButton, e) {
+function submitEnter(myForm, myButton, e)
+{
   var keycode;
   if (window.event)
     keycode = window.event.keyCode;
@@ -56,14 +58,15 @@ function submitEnter(myForm, myButton, e) {
     if (myButton != '') {
       doPost (myForm, myButton);
       return false;
-    } else
-      document.forms[myForm].submit();
+    }
+    document.forms[myForm].submit();
   }
   return true;
 }
 
 // ---------------------------------------------------------------------------
-function getObject(id, doc) {
+function getObject(id, doc)
+{
   if (doc == null)
     doc = document;
   if (doc.all)
@@ -72,14 +75,16 @@ function getObject(id, doc) {
 }
 
 // ---------------------------------------------------------------------------
-function confirmAction(confirmMsq, form, txt, selectionMsq) {
+function confirmAction(confirmMsq, form, txt, selectionMsq)
+{
   if (anySelected (form, txt, selectionMsq))
     return confirm(confirmMsq);
   return false;
 }
 
 // ---------------------------------------------------------------------------
-function selectCheck (obj, prefix) {
+function selectCheck (obj, prefix)
+{
   var objForm = obj.form;
   var oCount = 0;
   var tCount = 0;
@@ -109,7 +114,8 @@ function selectCheck (obj, prefix) {
 }
 
 // ---------------------------------------------------------------------------
-function enableElement(id, enableFlag) {
+function enableElement(id, enableFlag)
+{
   var element = document.getElementById(id);
   if (element != null) {
     if (enableFlag) {
@@ -121,7 +127,8 @@ function enableElement(id, enableFlag) {
 }
 
 // ---------------------------------------------------------------------------
-function selectAllCheckboxes (obj, prefix) {
+function selectAllCheckboxes (obj, prefix)
+{
   var objForm = obj.form;
   for (var i = 0; i < objForm.elements.length; i++) {
     var o = objForm.elements[i];
@@ -141,7 +148,8 @@ function selectAllCheckboxes (obj, prefix) {
 }
 
 // ---------------------------------------------------------------------------
-function anySelected (form, txt, selectionMsq) {
+function anySelected (form, txt, selectionMsq)
+{
   if ((form != null) && (txt != null)) {
     for (var i = 0; i < form.elements.length; i++) {
       var obj = form.elements[i];
@@ -156,7 +164,8 @@ function anySelected (form, txt, selectionMsq) {
 }
 
 // ---------------------------------------------------------------------------
-function coloriseTable(id) {
+function coloriseTable(id)
+{
   if (document.getElementsByTagName) {
     var table = document.getElementById(id);
     if (table != null) {
@@ -169,7 +178,8 @@ function coloriseTable(id) {
 }
 
 // ---------------------------------------------------------------------------
-function trim(sString) {
+function trim(sString)
+{
   while (sString.substring(0,1) == ' ')
     sString = sString.substring(1, sString.length);
 
@@ -180,7 +190,8 @@ function trim(sString) {
 }
 
 // ---------------------------------------------------------------------------
-function clickNode(obj) {
+function clickNode(obj)
+{
   var nodes = obj.parentNode.childNodes;
   for (var i=0; i<nodes.length; i++) {
     var node = nodes[i];
@@ -195,7 +206,8 @@ function clickNode(obj) {
 }
 
 // ---------------------------------------------------------------------------
-function clickNode2(obj) {
+function clickNode2(obj)
+{
   var nodes = obj.parentNode.childNodes;
   for (var i=0; i<nodes.length; i++) {
     var node = nodes[i];
@@ -206,7 +218,8 @@ function clickNode2(obj) {
 }
 
 // ---------------------------------------------------------------------------
-function addOption (form, text_name, box_name) {
+function addOption (form, text_name, box_name)
+{
   var box = form.elements[box_name];
   if (box) {
     var text = form.elements[text_name];
@@ -225,14 +238,16 @@ function addOption (form, text_name, box_name) {
 }
 
 // ---------------------------------------------------------------------------
-function deleteOption (form, box_name) {
+function deleteOption (form, box_name)
+{
   var box = form.elements[box_name];
   if (box)
 	  box.options[box.selectedIndex] = null;
 }
 
 // ---------------------------------------------------------------------------
-function composeOptions (form, box_name, text_name) {
+function composeOptions (form, box_name, text_name)
+{
   var box = form.elements[box_name];
   if (box) {
     var text = form.elements[text_name];
@@ -248,7 +263,8 @@ function composeOptions (form, box_name, text_name) {
 }
 
 // ---------------------------------------------------------------------------
-function showTag(tag) {
+function showTag(tag)
+{
   createHidden2(parent.document, 'F1', 'tag', tag);
   parent.document.forms['F1'].submit();
 }
@@ -260,7 +276,8 @@ function showTag(tag) {
 //   by their text (display) values
 //
 // ---------------------------------------------------------------------------
-function sortSelect(box) {
+function sortSelect(box)
+{
 	var o = new Array();
 	for (var i=0; i<box.options.length; i++)
 		o[o.length] = new Option( box.options[i].text, box.options[i].value, box.options[i].defaultSelected, box.options[i].selected) ;
@@ -408,7 +425,8 @@ function rowSelectValue(dstField, srcField, singleMode)
 // Hiddens functions
 //
 // ---------------------------------------------------------------------------
-function createHidden(frm_name, fld_name, fld_value) {
+function createHidden(frm_name, fld_name, fld_value)
+{
   var hidden;
 
   createHidden2(document, frm_name, fld_name, fld_value);
@@ -416,7 +434,8 @@ function createHidden(frm_name, fld_name, fld_value) {
 
 // ---------------------------------------------------------------------------
 //
-function createHidden2(doc, frm_name, fld_name, fld_value) {
+function createHidden2(doc, frm_name, fld_name, fld_value)
+{
   var hidden;
 
   if (doc.forms[frm_name]) {
