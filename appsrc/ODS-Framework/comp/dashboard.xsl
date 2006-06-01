@@ -780,14 +780,13 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-guestbook">
-
-    <vm:if test="wa_vad_check ('enews2') is not null and exists (select 1 from wa_member where WAM_APP_TYPE='eNews2' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id)">
+    <vm:if test="wa_vad_check ('oMail') is not null and exists (select 1 from wa_member where WAM_APP_TYPE='oMail' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id)">
       <div class="info_container">
         <h2><img src="images/icons/edit_16.png" width="16" height="16" /> My Guestbook</h2>
         <ul>
-          <li>guestbook entrie A - 1 day ago</li>
-          <li>guestbook entrie B - 2 day ago</li>
-          <li>guestbook entrie C - 3 day ago</li>
+          <li>guestbook entry A - 1 day ago</li>
+          <li>guestbook entry B - 2 day ago</li>
+          <li>guestbook entry C - 3 day ago</li>
         </ul>
         <p align="center">
         Add a comment
