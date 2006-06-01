@@ -4587,7 +4587,6 @@ create procedure OMAIL.WA.omail_smtp_message_deliver(
   in _source any)
 {
   declare _folder_id, _domain_id, _user_id, _msg_source integer;
-  declare _dcc_address any;
 
   _folder_id  := 100; -- Inbox
   _msg_source := -1;  -- SMTP
@@ -6770,13 +6769,10 @@ _skip:
 	dcc_address := subseq (_from, N, length (_from));
   insert into OMAIL.WA.CONVERSATION (C_DOMAIN_ID, C_USER_ID, C_ADDRESS, C_ADDRESSES, C_DESCRIPTION, C_TS)
     values (domain_id, user_id, dcc_address, _from, _dcc, now());
-  conversaton_id := identity_value();
-  dcc_address := sprintf('conversation-%d%s', conversaton_id, dcc_address);
-  update OMAIL.WA.CONVERSATION
-     set C_ADDRESS = dcc_address
-   where C_ID = conversaton_id;
+
   insert soft OMAIL.WA.FOLDERS(DOMAIN_ID, USER_ID, FOLDER_ID, NAME) values (domain_id, user_id, 100, 'Inbox');
-  return dcc_address;
+
+  return connection_get('conversation_address');
 }
 ;
 
@@ -7191,7 +7187,7 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
   rfc_references := N_NM_REF;
   if (not isnull(rfc_references)) {
     --declare exit handler for not found { signal ('CONV1', 'No such article.');};
-    declare exit handler for sqlstate '*' { return dbg_obj_print(__SQL_MESSAGE);};
+    --declare exit handler for sqlstate '*' { return dbg_obj_print(__SQL_MESSAGE);};
 
     refs := split_and_decode (rfc_references, 0, '\0\0 ');
     if (length (refs)) {

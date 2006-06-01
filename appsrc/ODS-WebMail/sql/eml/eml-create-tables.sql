@@ -303,13 +303,13 @@ OMAIL.WA.exec_no_error (
      OMAIL.WA.dsize_update(N.DOMAIN_ID, N.USER_ID, N.MSG_ID);
      if ((N.DOMAIN_ID <> 1) and (N.PART_ID = 1)) {
        declare id integer;
-       declare rfc_id, rfc_header, rfc_references, subject varchar;
+       declare rfc_id, rfc_header, rfc_references, subject, address varchar;
        declare ts datetime;
        declare nInstance any;
 
        nInstance := OMAIL.WA.domain_name(N.DOMAIN_ID);
-       select M_RFC_ID, M_RFC_HEADER, M_RFC_REFERENCES, SUBJECT, RCV_DATE
-         into rfc_id, rfc_header, rfc_references, subject, ts
+       select M_RFC_ID, M_RFC_HEADER, M_RFC_REFERENCES, SUBJECT, RCV_DATE, ADDRESS
+         into rfc_id, rfc_header, rfc_references, subject, ts, address
          from OMAIL.WA.MESSAGES
         where DOMAIN_ID = N.DOMAIN_ID
           and USER_ID   = N.USER_ID
@@ -319,14 +319,15 @@ OMAIL.WA.exec_no_error (
          rfc_id := OMAIL.WA.make_rfc_id (N.MSG_ID);
 
        if (isnull(rfc_references)) {
-         declare c_rfc_id, c_rfc_references any;
+         declare addresses any;
 
-         select C_RFC_ID, C_RFC_REFERENCES
-           into c_rfc_id, c_rfc_references
-           from OMAIL.WA.CONVERSATION
-          where C_DOMAIN_ID = N.DOMAIN_ID
-            and C_USER_ID   = N.USER_ID;
-         rfc_references := c_rfc_references || \' \' || c_rfc_id;
+         addresses := split_and_decode(OMAIL.WA.omail_address2str(\'to\',  ADDRESS, 2), 0, \'\0\0,\');
+         foreach (any address in addresses) do {
+           rfc_references := (select C_RFC_ID from OMAIL.WA.CONVERSATION where C_ADDRESS = trim(address));
+           if (not isnull(rfc_references))
+             goto _exit;
+         }
+       _exit:;
        }
 
        if (isnull(rfc_header))
@@ -389,6 +390,15 @@ OMAIL.WA.exec_no_error (
      OMAIL.WA.dsize_update(O.DOMAIN_ID, O.USER_ID, O.MSG_ID);
    }'
 )
+;
+
+OMAIL.WA.exec_no_error ('
+  create trigger CONVERSATION_B_I before insert on OMAIL.WA.CONVERSATION referencing new as N
+  {
+    N.C_ADDRESS := sprintf(\'conversation-%d%s\', N.C_ID, N.C_ADDRESS);
+    connection_set(\'conversation_address\', N.C_ADDRESS);
+  }
+')
 ;
 
 OMAIL.WA.exec_no_error ('
