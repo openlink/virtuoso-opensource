@@ -251,8 +251,9 @@
       <div style="padding: 0.5em 0 0.25em 0;">
         <div style="float: left; padding-left: 0.5em;">
           <xsl:call-template name="make_href">
-            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>uiedit.vspx</xsl:with-param>
-            <xsl:with-param name="label"><xsl:value-of select="/page/user_info/user_fullname"/> (<xsl:value-of select="/page/user_info/email"/>)</xsl:with-param>
+            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>myhome.vspx</xsl:with-param>
+            <xsl:with-param name="img_label"><xsl:value-of select="concat(' ', /page/user_info/user_fullname)"/> (<xsl:value-of select="/page/user_info/email"/>)</xsl:with-param>
+            <xsl:with-param name="img">/oMail/i/home_16.png</xsl:with-param>
           </xsl:call-template>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em;">
