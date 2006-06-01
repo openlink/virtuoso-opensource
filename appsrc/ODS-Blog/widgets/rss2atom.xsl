@@ -133,6 +133,10 @@
     <updated><xsl:apply-templates /></updated>
 </xsl:template>
 
+<xsl:template match="item/category">
+    <category term="{.}" />
+</xsl:template>
+
 <xsl:template match="item">
     <entry>
 	<xsl:if test="not (guid) and link">

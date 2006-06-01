@@ -3219,11 +3219,13 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:cmds-menu">
-    <vm:if test="blog_owner">
       <ul class="cmds-menu">
+    <vm:if test="blog_author">
         <li>
           <a href="<?V sprintf('index.vspx?page=edit_post&sid=%s&realm=wa', self.sid) ?>">New Post</a>
         </li>
+    </vm:if>
+    <vm:if test="blog_owner">
         <li>
           <a href="<?V sprintf('index.vspx?page=channels&sid=%s&realm=wa', self.sid) ?>">Home Page Links</a>
         </li>
@@ -3239,17 +3241,6 @@ window.onload = function (e)
         <li>
           <a href="<?V sprintf('index.vspx?page=ping&sid=%s&realm=wa', self.sid) ?>">Preferences</a>
         </li>
-	<?vsp
-	  -- disabled ; its a tab in new post
-          if (0 and length(get_keyword ('MoblogMIMETypes', self.opts)))
-          {
-        ?>
-        <li>
-          <a href="<?V sprintf('index.vspx?page=moblog_msg&sid=%s&realm=wa', self.sid) ?>">Moblog Messages</a>
-        </li>
-        <?vsp
-          }
-        ?>
         <li>
           <a href="<?V sprintf('index.vspx?page=community&sid=%s&realm=wa', self.sid) ?>">Related Blogs</a>
         </li>
@@ -3280,20 +3271,16 @@ window.onload = function (e)
         <li>
           <a href="<?V sprintf('index.vspx?page=templates&sid=%s&realm=wa', self.sid) ?>">Templates</a>
         </li>
+    </vm:if>
+    <vm:if test="blog_author">
         <li>
           <a href="<?V sprintf('index.vspx?page=category&sid=%s&realm=wa', self.sid) ?>">Categories</a>
         </li>
         <li>
           <a href="<?V sprintf('index.vspx?page=tags&sid=%s&realm=wa', self.sid) ?>">Tagging Settings</a>
         </li>
-        <!--li>
-          <a href="<?V sprintf('index.vspx?page=contacts&sid=%s&realm=wa', self.sid) ?>">Contact Network</a>
-        </li-->
-        <!--li>
-          <a href="<?V sprintf('index.vspx?page=list_comments&sid=%s&realm=wa', self.sid) ?>">Comments Management</a>
-        </li-->
-      </ul>
     </vm:if>
+      </ul>
   </xsl:template>
 
   <xsl:include href="calendar.xsl"/>
@@ -3404,7 +3391,7 @@ window.onload = function (e)
   <xsl:template match="vm:settings-link">
       <xsl:variable name="val">--get_keyword ('title', self.user_data, <xsl:apply-templates select="@title" mode="static_value"/>)</xsl:variable>
       <?vsp
-        if (self.blog_access = 1)
+        if (self.blog_access = 1 or self.blog_access = 2)
 	  {
       ?>
       <v:url name="settings_link" url="index.vspx?page=ping" value="{$val}"
@@ -3419,7 +3406,7 @@ window.onload = function (e)
   <xsl:template match="vm:new-post-link">
       <xsl:variable name="val">--get_keyword ('title', self.user_data, <xsl:apply-templates select="@title" mode="static_value"/>)</xsl:variable>
       <?vsp
-        if (self.blog_access = 1)
+        if (self.blog_access = 1 or self.blog_access = 2)
 	  {
       ?>
       <v:url name="new_post_link" url="index.vspx?page=edit_post" value="{$val}" xhtml_class="--case when self.page in ('edit_post', 'moblog_msg') and length (self.page) then 'blog_selected' else '' end" render-only="1">

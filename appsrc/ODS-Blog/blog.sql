@@ -5599,11 +5599,24 @@ BLOG_GET_SUBJECT (in postid varchar, in blogid varchar)
   for select MTC_NAME from MTYPE_CATEGORIES, MTYPE_BLOG_CATEGORY
   where MTB_CID = MTC_ID and MTC_BLOG_ID = MTB_BLOG_ID and MTB_POST_ID = postid and MTB_BLOG_ID = blogid do
     {
-  subj := subj || MTC_NAME || ' ';
+      subj := subj || MTC_NAME || ' ';
     }
   return trim (subj);
 }
 ;
+
+create procedure
+BLOG_TAGS_RENDER (in _postid varchar, in _blogid varchar)
+{
+  declare ses any;
+  ses := string_output ();
+  for select BT_TAG from BLOG..BLOG_POST_TAGS_STAT_2 where blogid = _blogid and postid = _postid
+    do
+      {
+	http_value (BT_TAG, 'category', ses);
+      }
+  return string_output_string (ses);
+};
 
 create procedure
 BLOG_ENCLOSURE_RENDER (inout meta any)

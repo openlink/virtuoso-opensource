@@ -84,6 +84,10 @@
 
 <xsl:template match="channel/category"/>
 
+<xsl:template match="item/category">
+    <dc:subject><xsl:value-of select="."/></dc:subject>
+</xsl:template>
+
 <xsl:template match="channel/generator"/>
 
 <xsl:template match="channel/image" />

@@ -1095,7 +1095,7 @@ http ('XMLELEMENT(\'http://wellformedweb.org/CommentAPI/:commentRss\', \'http://
 http ('XMLELEMENT(\'pubDate\', BLOG.DBA.date_rfc1123 (B_TS)),\n', ses);
 http ('XMLELEMENT(\'description\', BLOG..blog_utf2wide (BLOG.DBA.BLOG2_POST_RENDER(B_CONTENT, \'*default*\', B_USER_ID, null, B_IS_ACTIVE))),\n', ses);
 http ('XMLELEMENT(\'author\', BLOG..blog_utf2wide (U_FULL_NAME || \' <\'||U_E_MAIL||\'>\')),\n', ses);
-http ('XMLELEMENT(\'http://purl.org/dc/elements/1.1/:subject\', BLOG..BLOG_GET_SUBJECT (B_POST_ID,B_BLOG_ID)),\n', ses);
+http (' (select XMLAGG (XMLELEMENT (\'category\', BT_TAG)) from BLOG..BLOG_POST_TAGS_STAT_2 where blogid = B_BLOG_ID and postid = B_POST_ID) ,\n', ses);
 http ('XMLELEMENT(\'http://www.openlinksw.com/weblog/:version\', B_VER),\n', ses);
 http ('XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', BLOG..date_iso8601 (B_MODIFIED)),\n', ses);
 http ('BLOG..BLOG_ENCLOSURE_RENDER_SQLX (B_META) ))\n', ses);
@@ -1183,7 +1183,8 @@ http ('XMLELEMENT(\'http://wellformedweb.org/CommentAPI/:commentRss\', \'http://
 http ('XMLELEMENT(\'pubDate\', BLOG.DBA.date_rfc1123 (B_TS)),\n', ses);
 http ('XMLELEMENT(\'description\', BLOG..blog_utf2wide (BLOG.DBA.BLOG2_POST_RENDER(B_CONTENT, \'*default*\', B_USER_ID, null, B_IS_ACTIVE))),\n', ses);
 http ('XMLELEMENT(\'author\', BLOG..blog_utf2wide (U_FULL_NAME || \' <\'||U_E_MAIL||\'>\')),\n', ses);
-http ('XMLELEMENT(\'http://purl.org/dc/elements/1.1/:subject\', BLOG..BLOG_GET_SUBJECT (B_POST_ID,B_BLOG_ID)),\n', ses);
+--http ('XMLELEMENT(\'http://purl.org/dc/elements/1.1/:subject\', BLOG..BLOG_GET_SUBJECT (B_POST_ID,B_BLOG_ID)),\n', ses);
+http ('(select XMLAGG (XMLELEMENT (\'category\', BT_TAG)) from BLOG..BLOG_POST_TAGS_STAT_2 where blogid = B_BLOG_ID and postid = B_POST_ID) ,\n', ses);
 http ('XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', BLOG..date_iso8601 (B_MODIFIED)),\n', ses);
 http ('XMLELEMENT (\'http://www.itunes.com/DTDs/Podcast-1.0.dtd:author\', BLOG..blog_utf2wide (U_FULL_NAME)),\n', ses);
 http ('XMLELEMENT (\'http://www.itunes.com/DTDs/Podcast-1.0.dtd:subtitle\', BLOG..blog_utf2wide (B_TITLE)),\n', ses);
@@ -1250,7 +1251,7 @@ sql := 'select
   null as [item!5!pubDate!element],
   null as [item!5!description!element],
   null as [item!5!author!element],
-  null as [item!5!"dc:subject"!element],
+  null as [item!5!!xmltext],
   null as [item!5!!xmltext],
   null as [item!5!vi:version!element],
   null as [item!5!vi:modified!element]
@@ -1318,7 +1319,7 @@ select
   BLOG.DBA.date_rfc1123 (B_TS),
   BLOG.DBA.BLOG2_POST_RENDER (B_CONTENT, BI_FILTER, B_USER_ID, null, B_IS_ACTIVE),
   U_FULL_NAME || \' <\'||U_E_MAIL||\'>\',
-  BLOG..BLOG_GET_SUBJECT (B_POST_ID,B_BLOG_ID),
+  BLOG..BLOG_TAGS_RENDER (B_POST_ID,B_BLOG_ID),
   BLOG..BLOG_ENCLOSURE_RENDER (B_META),
   B_VER,
   BLOG.DBA.date_iso8601 (B_MODIFIED)

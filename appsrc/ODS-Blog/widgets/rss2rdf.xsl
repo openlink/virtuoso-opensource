@@ -203,6 +203,7 @@
 <xsl:template match="channel/cloud" />
 <xsl:template match="channel/category" />
 <xsl:template match="item/comments" />
+<xsl:template match="item/category" />
 <xsl:template match="item/enclosure" />
 
 <xsl:template name="date">
