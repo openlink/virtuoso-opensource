@@ -390,8 +390,8 @@ then
 fi
 virtuoso_shutdown
 STOP_SERVER
-chmod 644 feeds_dav.vad
-chmod 644 feeds_filesystem.vad
+chmod 644 $VAD_DAV
+chmod 644 $VAD_FS
 directory_clean
 
 echo 'Successful create'
