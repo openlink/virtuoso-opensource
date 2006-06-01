@@ -122,4 +122,3 @@ function slideshow(){
     setInterval("rotateimage()",pause)
   }
 }
-

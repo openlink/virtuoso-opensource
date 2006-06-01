@@ -671,4 +671,3 @@
     <xsl:if test="/root/@sid != ''">?sid=<xsl:value-of select="/root/@sid"/>&amp;realm=wa</xsl:if>
   </xsl:template>
 </xsl:stylesheet>
-

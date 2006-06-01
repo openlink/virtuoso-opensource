@@ -158,4 +158,3 @@ dataSet.prototype.setCurrent = function(current_id){
   this.current.description = this.list[current_id].description;
   this.current.visibility = this.list[current_id].visibility;
 }
-
