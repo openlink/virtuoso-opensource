@@ -613,18 +613,7 @@ function resetState()
 	var xmlhttp = initRequest();
 	xmlhttp.open("GET", URL + "?mode=reset" + urlParams("sid") + urlParams("realm"), false);
 	xmlhttp.onreadystatechange = function() {
-	  if (xmlhttp.readyState == 4) {
-      var item = xmlhttp.responseXML.getElementsByTagName("message")[0];
-      var message = item.firstChild.nodeValue;
-
-			if (message == 0) {
-        var idiv = window.document.getElementById("progressText");
-        idiv.innerHTML = "<b>New subscription</b>";
-			} else {
-        var idiv = window.document.getElementById("progressText");
-        idiv.innerHTML = "<b>Previous subscription</b>";
-			}
-	  }
+	  if (xmlhttp.readyState == 4) {}
 	}
 	xmlhttp.setRequestHeader("Pragma", "no-cache");
   xmlhttp.send(null);
@@ -662,10 +651,22 @@ function checkState()
 	xmlhttp.open("GET", URL + "?mode=state" + urlParams("sid") + urlParams("realm"), true);
 	xmlhttp.onreadystatechange = function() {
 	  if (xmlhttp.readyState == 4) {
-      var item = xmlhttp.responseXML.getElementsByTagName("message")[0];
-      var message = item.firstChild.nodeValue;
-      showProgress(message);
-			if (message < 100) {
+      var percentage;
+      var currentIndex;
+      var maxIndex;
+      var item;
+      item = xmlhttp.responseXML.getElementsByTagName("percentage")[0];
+      if (item)
+        percentage = item.firstChild.nodeValue;
+      item = xmlhttp.responseXML.getElementsByTagName("currentIndex")[0];
+      if (item)
+        currentIndex = item.firstChild.nodeValue;
+      item = xmlhttp.responseXML.getElementsByTagName("maxIndex")[0];
+      if (item)
+        maxIndex = item.firstChild.nodeValue;
+
+      showProgress(percentage, currentIndex, maxIndex);
+			if (percentage < 100) {
 				document.getElementById("btn_Subscribe").disabled=true;
 			  setTimeout("checkState()", 1000);
 			} else {
@@ -677,7 +678,7 @@ function checkState()
 	xmlhttp.send("");
 }
 
-var size=40;
+var size=100;
 var increment = 100/size;
 
 // create the progress bar
@@ -699,15 +700,12 @@ function createProgressBar()
 
 // show the current percentage
 //
-function showProgress(percentage)
+function showProgress(percentage, currentIndex, maxIndex)
 {
-  var percentageText = "";
-  if (percentage < 10) {
-    percentageText = "&nbsp;" + percentage;
-  } else {
-    percentageText = percentage;
-  }
-  centerCell.innerHTML = "<font color=\"white\">" + percentageText + "%</font>";
+  var percentageText = percentage;
+  if (percentage < 10)
+    percentageText = "&nbsp;" + percentageText;
+  centerCell.innerHTML = "<font color=\"white\">" + currentIndex + '&nbsp;out&nbsp;of&nbsp;' + maxIndex + "&nbsp;Subscriptions&nbsp;Completed</font>";
   var tableText = "";
   for (x = 0; x < size; x++) {
     var cell = window.document.getElementById("progress_" + x);

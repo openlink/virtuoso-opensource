@@ -119,6 +119,7 @@
       <v:variable name="v_folder_id" type="varchar" default="'0'"/>
       <v:variable name="v_folder_name" type="varchar" default="''"/>
       <v:variable name="v_source" type="integer" default="-1" persist="0"/>
+      <v:variable name="v_retrieve" type="integer" default="1" persist="0"/>
       <v:variable name="v_step" type="varchar" default="'0'" persist="0"/>
       <v:variable name="v_data" type="varchar" default="null" persist="temp"/>
       <v:variable name="v_rb" type="integer" param-name="rb" default="0"/>
@@ -255,6 +256,14 @@
                   </v:on-post>
                 </v:button>
               </td>
+            </tr>
+            <tr>
+              <th />
+              <td>
+                 <v:check-box name="f_retrieve" xhtml_id="retrieve" is-boolean="1" true-value="1" false-value="0" value="--self.v_retrieve" />
+                 <b><vm:label for="retrieve" value="Retrieve items now"/></b>
+              </td>
+              <td />
             </tr>
             <v:template type="simple" enabled="-- case when (self.v_source = 0) then 1 else 0 end">
               <tr>
@@ -413,6 +422,7 @@
                 declare retValue varchar;
                 declare url2 varchar;
 
+                self.v_retrieve := self.f_retrieve.ufl_selected;
                 if (self.v_source = 1) {
                   self.v_url := trim(get_keyword('source_1', e.ve_params, ''));
                   retValue := self.check_url(self.v_url, null, 1, 'local file name for OPML or OCS feeds');
@@ -431,12 +441,13 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Subscribe" xhtml_alt="Next" enabled="-- case when (self.v_source = 0) then 0 else 1 end">
+          <v:button action="simple" value="Subscribe" xhtml_alt="Subscribe" enabled="-- case when (self.v_source = 0) then 0 else 1 end">
             <v:on-post>
               <![CDATA[
                 declare retValue varchar;
                 declare url2 varchar;
 
+                self.v_retrieve := self.f_retrieve.ufl_selected;
                 if (self.v_source = 1) {
                   self.v_url := trim(get_keyword('source_1', e.ve_params, ''));
                   retValue := self.check_url(self.v_url, null, 1, 'local file name for OPML or OCS feeds');
@@ -475,10 +486,11 @@
               <td class="td_simple">
                 Directory:
                 <?vsp
-                  declare N, needHR integer;
+                  declare N, L, needHR integer;
                   declare aLinks any;
                   aLinks := self.directoryTreeLinks(self.v_directory_id);
-                  for (N := 0; N < length(aLinks); N := N + 1)
+                  L := length(aLinks);
+                  for (N := 0; N < L; N := N + 1)
                     http(sprintf('<a href="#" onclick="javascript: myPost(\'F1\', \'directory\', %d); return false" alt="%s" class="nolink3" title="%s"> %s</a>', aLinks[N][1], rtrim(aLinks[N][0], '/'), rtrim(aLinks[N][0], '/'), aLinks[N][0]));
                   http('<hr />');
                   if (self.v_directory_id) {
@@ -581,13 +593,14 @@
             </v:before-render>
             <v:on-post>
               <![CDATA[
-                declare i, N integer;
+                declare i, N, L integer;
                 declare feed_id, folder_id integer;
                 declare feed_uri, folder_name varchar;
                 declare v_data, params any;
 
                 params := e.ve_params;
-                for (i := 0; i < length(params); i := i + 2) {
+                L := length(params);
+                for (i := 0; i < L; i := i + 2) {
                   if (params[i] = 'cb_item') {
                     N := atoi(params[i+1]);
                     feed_uri := get_keyword(sprintf ('rss_%d', N), self.vc_event.ve_params, '');
@@ -690,12 +703,13 @@
           <v:button action="simple" value="Check" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                declare i, j, N integer;
+                declare i, j, N, L integer;
                 declare url, channel, channels, params any;
 
                 channels := vector('Checked');
                 params := e.ve_params;
-                for (i := 0; i < length(params); i := i + 2) {
+                L := length(params);
+                for (i := 0; i < L; i := i + 2) {
                   if (params[i] = 'cb_item') {
                     N := atoi(params[i+1]);
                     url := get_keyword(sprintf('$_rss_%d', N), params, '');
@@ -734,9 +748,10 @@
         </div>
         <div class="new-form-body">
           <?vsp
-            declare i, j integer;
+            declare i, j, n, l integer;
 
-            for (i := 1; i < length(self.v_data); i := i + 1)
+            l := length(self.v_data);
+            for (i := 1; i < l; i := i + 1)
               for (j := 0; j < length(self.v_data[i]); j := j + 2)
                 if (isstring(self.v_data[i][j+1]))
                   http(sprintf('<input type="hidden" name="$_%s_%d" value="%s"/>', self.v_data[i][j], i, coalesce(self.v_data[i][j+1], '')));
@@ -771,13 +786,14 @@
                    self.vc_is_valid := 0;
                   return;
                 }
-                declare i integr;
+                declare i, l integr;
                 declare feed_id varchar;
                 declare S, data, params any;
 
                 data := vector();
                 params := e.ve_params;
-                for (i := 0; i < length(params); i := i + 2)
+                l := length(params);
+                for (i := 0; i < l; i := i + 2)
                   if (params[i] like '$_%_1') {
                     S := replace(replace(params[i], '$_', ''), '_1', '');
                     data := vector_concat(data, vector(S, params[i+1]));
@@ -819,6 +835,8 @@
         </div>
         <div class="new-form-body">
           <?vsp
+            http(sprintf('<input type="hidden" name="$_retrieve" value="%d"/>', self.v_retrieve));
+
             if (length(self.v_data) > 18)
               http('<div id="feedsDiv" style="height: 400px; overflow: auto;">');
           ?>
@@ -912,6 +930,8 @@
         <?vsp
           declare i, j, n, k integer;
           declare data, selectFolder, S any;
+
+          http(sprintf('<input type="hidden" name="$_retrieve" value="%d"/>', self.v_retrieve));
 
           n := length(self.v_data);
           for (i := 1; i < n; i := i + 1) {

@@ -140,7 +140,10 @@
       </div>
       <div style="padding: 0.5em 0 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
         <div style="float: left; padding-left: 0.5em;">
-          <v:url url="--concat(ENEWS.WA.wa_home_link (), 'uiedit.vspx')" value="--self.accountName" enabled="--either(equ(self.account_role, 'public'), 0, 1)" xhtml_alt="--self.accountName"/>
+          <?vsp
+            if (self.account_role <> 'public')
+              http(sprintf('<a href="%Vmyhome.vspx?sid=%s&realm=%s" title="%V"><img src="image/home_16.png" border="0"/> %V</a>', ENEWS.WA.wa_home_link (), self.sid, self.realm, self.accountName, self.accountName));
+          ?>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em;">
        	  <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">

@@ -25,7 +25,7 @@
   declare domain_id, account_id integer;
   declare sid, realm any;
   declare aRequest, aSession any;
-  declare process, completed, started any;
+  declare process, percentage, started, currentIndex, maxIndex any;
 
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, '');
@@ -38,35 +38,45 @@
   process := cast(domain_id as varchar) || '_' || cast(account_id as varchar);
 
   declare exit handler for sqlstate '*' {
-    registry_remove ('feed_' || process || '_completed');
-    registry_remove ('feed_' || process || '_status');
+    registry_remove ('feed_' || process || '_percentage');
+    registry_remove ('feed_' || process || '_currentIndex');
+    registry_remove ('feed_' || process || '_maxIndex');
+    registry_remove ('feed_' || process || '_started');
     return;
     --dbg_obj_print(__SQL_MESSAGE);
   };
 
-  completed := registry_get ('feed_' || process || '_completed');
+  percentage := registry_get ('feed_' || process || '_percentage');
+  currentIndex := registry_get ('feed_' || process || '_currentIndex');
+  if (isinteger(currentIndex))
+    currentIndex := '';
+  maxIndex := registry_get ('feed_' || process || '_maxIndex');
+  if (isinteger(maxIndex))
+    maxIndex := '';
   started := registry_get ('feed_' || process || '_started');
 
   -- reset
   if (get_keyword ('mode', params, '') = 'reset') {
     --dbg_obj_print('reset');
 
-    registry_remove ('feed_' || process || '_completed');
-    registry_remove ('feed_' || process || '_status');
+    registry_remove ('feed_' || process || '_percentage');
+    registry_remove ('feed_' || process || '_currentIndex');
+    registry_remove ('feed_' || process || '_maxIndex');
+    registry_remove ('feed_' || process || '_started');
 
-    if (not(completed <> 0
-        and cast (completed as integer) < 100
-        and cast (completed as integer) > 0
+    if (not(percentage <> 0
+        and cast (percentage as integer) < 100
+        and cast (percentage as integer) > 0
         and started <> 0
         and cast (started as datetime ) > dateadd('minute', -120, now())))
     {
-      registry_set ('feed_' || process || '_completed', '0');
+      registry_set ('feed_' || process || '_percentage', '0');
       registry_set ('feed_' || process || '_started', datestring (now()));
     }
 
     http_rewrite ();
     http_header ('Content-Type: text/xml\r\n');
-    http(sprintf('<message>%s</message>', cast (completed as varchar)));
+    http(sprintf('<percentage>%s</percentage>', cast (percentage as varchar)));
 
     connection_set('stop_execution', '1');
     return (0);
@@ -74,13 +84,17 @@
 
   -- status
   if (get_keyword ('mode', params, '') = 'state') {
-    --dbg_obj_print('state', completed);
+    --dbg_obj_print('state', percentage);
 
     http_rewrite ();
     http_header ('Content-Type: text/xml\r\n');
-    if (isinteger(completed) and (completed = 0))
-      completed := 100;
-    http(sprintf('<message>%s</message>', cast (completed as varchar)));
+    if (isinteger(percentage) and (percentage = 0))
+      percentage := 100;
+    http('<root>');
+    http(sprintf('<percentage>%s</percentage>', cast (percentage as varchar)));
+    http(sprintf('<currentIndex>%s</currentIndex>', cast (currentIndex as varchar)));
+    http(sprintf('<maxIndex>%s</maxIndex>', cast (maxIndex as varchar)));
+    http('</root>');
 
     connection_set('stop_execution','1');
     return (0);
@@ -88,15 +102,15 @@
 
   -- exec
   if (get_keyword ('mode', params, '') = 'init') {
-    --dbg_obj_print('init', completed);
+    --dbg_obj_print('init', percentage);
 
-    if ( completed <> 0
-         and cast (completed as integer) < 100
-         and cast (completed as integer) > 0)
+    if ( percentage <> 0
+         and cast (percentage as integer) < 100
+         and cast (percentage as integer) > 0)
     {
       http_rewrite ();
       http_header ('Content-Type: text/html\r\n');
-      http(sprintf('<message>%s</message>', cast (completed as varchar)));
+      http(sprintf('<percentage>%s</percentage>', cast (percentage as varchar)));
       http_flush ();
 
       connection_set ('stop_execution', '1');
@@ -106,65 +120,74 @@
     -- flush and continue
     http_flush ();
 
-    declare I, N integer;
-    declare dataIndex, dataLength integer;
-    declare folder_id integer;
+    declare I, J, N integer;
+    declare dataLength, folder_id integer;
     declare feed_id, folder_name varchar;
-    declare data any;
+    declare data, rss, title, R, V any;
 
-    -- test folder names
-    for (i := 0; i < length(params); i := i + 2) {
-      if (params[i] = 'cb_item') {
-        N := atoi(params[i+1]);
+    R := cast(get_keyword('$_retrieve', params, '1') as integer);
+
+    -- test folder names & count subscriptions
+    j := length(params);
+    V := vector();
+    dataLength := 0;
+    for (i := 0; i < j; i := i + 2) {
+      if (params[i] like 'cb_item%') {
+        dataLength := dataLength + 1;
+        V := vector_concat(V, vector(params[i+1]));
         folder_name := trim(get_keyword(sprintf ('$_folder_name_%d', i), params, ''));
         if (folder_name <> '')
           if (not ENEWS.WA.folder_check_name(folder_name, 1)) {
-            registry_set('feed_' || process || '_completed', '100');
+            registry_set('feed_' || process || '_percentage', '100');
             connection_set ('stop_execution', '1');
             return (0);
           }
       }
     }
-
-    -- count subscriptions
-    dataLength := 0;
-    for (i := 0; i < length(params); i := i + 2)
-      if (params[i] like 'cb_item%')
-        dataLength := dataLength + 1;
+    registry_set('feed_' || process || '_maxIndex', cast (dataLength as varchar));
 
     -- exec subscriptions
-    dataIndex := 0;
-    for (i := 0; i < length(params); i := i + 2) {
-      if (params[i] like 'cb_item%') {
+    data := vector('rss', null, 'title', null, 'blog', null, 'format', null, 'lang', null, 'type', 'long');
+    for (i := 0; i < dataLength; i := i + 1) {
         commit work;
-        dataIndex := dataIndex + 1;
-        registry_set('feed_' || process || '_completed', cast (ceiling (((100.0 / dataLength) * dataIndex)) as varchar));
 
-        N := cast(params[i+1] as integer);
-        if (get_keyword(sprintf('$_rss_%d', N), params, '') <> '') {
-          data := vector('title', get_keyword(sprintf('$_title_%d', N), params, ''),
-                         'blog', get_keyword(sprintf('$_blog_%d', N), params, ''),
-                         'rss', get_keyword(sprintf('$_rss_%d', N), params, ''),
-                         'format', get_keyword(sprintf('$_format_%d', N), params, '')
-                        );
-          dbg_obj_print(N, get_keyword(sprintf('$_rss_%d', N), params, ''));
+      registry_set('feed_' || process || '_percentage', cast (ceiling (((100.0 / dataLength) * (i + 1))) as varchar));
+      registry_set('feed_' || process || '_currentIndex', cast ((i + 1) as varchar));
+
+      N := V[i];
+
+      rss := get_keyword ('$_rss_' || N, params, '');
+      if (rss <> '') {
+        title   := get_keyword ('$_title_'  || N, params);
+
+        aset(data, 1, rss);
+        aset(data, 3, title);
+        aset(data, 5, get_keyword ('$_blog_'   || N, params));
+        aset(data, 7, get_keyword ('$_format_' || N, params));
+        aset(data, 9, get_keyword ('$_lang_'   || N, params));
+
+        --dbg_obj_print(N, now(), rss);
           feed_id := ENEWS.WA.channel_create(data);
 
-          folder_name := trim(get_keyword(sprintf ('$_folder_name_%d', N), params, ''));
-          folder_id := cast(trim(get_keyword(sprintf ('$_folder_id_%d', N), params, '')) as integer);
-          ENEWS.WA.channel_domain(domain_id, feed_id, ENEWS.WA.wide2utf(get_keyword('title', data, '')), null, folder_name, folder_id);
+        folder_name := trim (get_keyword ('$_folder_name_' || N, params, ''));
+        folder_id := cast (trim (get_keyword ('$_folder_id_'|| N, params, '')) as integer);
+        ENEWS.WA.channel_domain(domain_id, feed_id, ENEWS.WA.wide2utf(title), null, folder_name, folder_id);
           {
             declare exit handler for sqlstate '*' { goto _next; };
-            if (ENEWS.WA.channel_feeds(feed_id) = 0)
+          if ((ENEWS.WA.channel_feeds(feed_id) = 0) and R)
               ENEWS.WA.feed_refresh(feed_id);
-            ENEWS.WA.tags_refresh(domain_id, account_id, 0);
           }
         }
       _next:;
       }
-    }
-    registry_remove ('feed_' || process || '_completed');
-    registry_remove ('feed_' || process || '_status');
+
+    -- update tags
+    ENEWS.WA.tags_refresh(domain_id, account_id, 0);
+
+    registry_remove ('feed_' || process || '_percentage');
+    registry_remove ('feed_' || process || '_currentIndex');
+    registry_remove ('feed_' || process || '_maxIndex');
+    registry_remove ('feed_' || process || '_started');
     http_flush(1);
 
     connection_set('stop_execution', '1');

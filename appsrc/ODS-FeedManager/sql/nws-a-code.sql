@@ -401,9 +401,12 @@ create procedure ENEWS.WA.page_name ()
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.menu_tree ()
+create procedure ENEWS.WA.menu_tree (
+  in access_role varchar := null)
 {
-  return sprintf (
+  declare S, T varchar;
+
+  S := sprintf (
 '<?xml version="1.0" ?>
 <menu_tree>
   <node name="Read" url="news.vspx" id="1" allowed="public guest reader author owner admin">
@@ -414,29 +417,34 @@ create procedure ENEWS.WA.menu_tree ()
     <node name="15" url="bookmark.vspx" id="15" place="link" allowed="reader author owner admin"/>
     <node name="16" url="settings.vspx" id="16" place="link" allowed="reader author owner admin"/>
   </node>
-  <node name="Manage" url="channels.vspx" id="2" allowed="author owner admin">
+  <node name="Administration"  url="channels.vspx"        id="2"                allowed="author owner admin">
     <node name="Feeds" url="channels.vspx" id="21" allowed="author owner admin">
       <node name="211" url="channels_create.vspx" id="211" place="link" allowed="author owner admin"/>
       <node name="212" url="channels_update.vspx" id="212" place="link" allowed="author owner admin"/>
       <node name="213" url="export.vspx" id="213" place="link" allowed="reader author owner admin"/>
     </node>
-    <node name="Folders" url="folders.vspx" id="23" allowed="author owner admin"/>
-    <node name="Smart Folders" url="sfolders.vspx" id="24" allowed="author owner admin">
-      <node name="241" url="sfolders_update.vspx" id="241" place="link" allowed="author owner admin"/>
-    </node>
-    <node name="Weblogs" url="weblog.vspx" id="22" allowed="author owner admin"/>
+    <node name="Folders"       url="folders.vspx" id="22"                       allowed="author owner admin"/>
+    <node name="Smart Folders" url="sfolders.vspx" id="23"                      allowed="author owner admin">
+      <node name="231"         url="sfolders_update.vspx" id="231" place="link" allowed="author owner admin"/>
   </node>
-  <node name="Administration" url="directories.vspx" id="4" allowed="admin">
-    <node name="Directories" url="directories.vspx" id="41" allowed="admin"/>
+    <node name="Weblogs"       url="weblog.vspx"          id="24"               allowed="author owner admin"/>
+    <Directories/>
   </node>
   <node name="%s" url="%s" id="5" allowed="public guest reader author owner admin"/>
 </menu_tree>', ENEWS.WA.wa_home_title (), ENEWS.WA.wa_home_link ());
+
+  T := '';
+  if (isnull(access_role) or (access_role = 'admin'))
+    T := '<node name="Directories"   url="directories.vspx"     id="25"               allowed="admin"/>';
+
+  return replace(S, '<Directories/>', T);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.navigation_root (in path varchar)
+create procedure ENEWS.WA.navigation_root (
+  in path varchar)
 {
   declare domain_id, user_id integer;
   declare access_role varchar;
@@ -448,7 +456,7 @@ create procedure ENEWS.WA.navigation_root (in path varchar)
   domain_id := cast(aPath[0] as integer);
   user_id := cast(aPath[1] as integer);
   access_role := ENEWS.WA.access_role(domain_id, user_id);
-  return xpath_eval (sprintf('/menu_tree/*[contains(@allowed, "%s")]', access_role), xml_tree_doc (ENEWS.WA.menu_tree ()), 0);
+  return xpath_eval (sprintf('/menu_tree/*[contains(@allowed, "%s")]', access_role), xml_tree_doc (ENEWS.WA.menu_tree (access_role)), 0);
 
 }
 ;
@@ -970,7 +978,7 @@ create procedure ENEWS.WA.feed_refresh_int(
   declare resHdr any;
   declare xt any;
   declare items any;
-  declare i integer;
+  declare N, L integer;
   declare new_tag, newUri, oldUri varchar;
 
   delete
@@ -1004,17 +1012,19 @@ again:
   if (xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt) is not null) {
     -- RSS formats
     items := xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt, 0);
-    for (i := 0; i < length (items); i := i + 1)
-      ENEWS.WA.process_rss_item(xml_cut(items[i]), id);
+    L := length (items);
+    for (N := 0; N < L; N := N + 1)
+      ENEWS.WA.process_rss_item(xml_cut(items[N]), id);
 
   } else if (xpath_eval ('/feed/entry', xt) is not null) {
     -- Atom format
     items := xpath_eval ('/feed/entry', xt, 0);
-    for (i := 0; i < length (items); i := i + 1)
-      ENEWS.WA.process_atom_item(xml_cut(items[i]), id);
+    L := length (items);
+    for (N := 0; N < L; N := N + 1)
+      ENEWS.WA.process_atom_item(xml_cut(items[N]), id);
   }
 
-  return i;
+  return L;
 }
 ;
 
@@ -1038,8 +1048,7 @@ create procedure ENEWS.WA.process_rss_item(
   description := xpath_eval ('[ xmlns:content="http://purl.org/rss/1.0/modules/content/" ] string(/item/content:encoded)', xt, 1);
   if (is_empty_or_null(description))
     description := xpath_eval ('string(/item/description)', xt, 1);
-  description := serialize_to_UTF8_xml (description);
-  description := ENEWS.WA.string2xml(description);
+  description := ENEWS.WA.string2xml (serialize_to_UTF8_xml (description));
   link := cast (xpath_eval ('/item/link', xt, 1) as varchar);
   if (isnull(link)) {
     link := cast (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /item/@rdf:about', xt, 1) as varchar);
@@ -1095,8 +1104,7 @@ create procedure ENEWS.WA.process_atom_item(
     description := xpath_eval ('string(/entry/content)', xt, 1);
     if (is_empty_or_null(description))
       description := xpath_eval ('string(/entry/summary)', xt, 1);
-    description := serialize_to_UTF8_xml (description);
-    description := ENEWS.WA.string2xml(description);
+    description := ENEWS.WA.string2xml (serialize_to_UTF8_xml (description));
   }
   link := cast (xpath_eval ('/entry/link[@rel="alternate"]/@href', xt, 1) as varchar);
   guid := cast (xpath_eval ('/entry/id', xt, 1) as varchar);
@@ -1242,11 +1250,12 @@ create procedure ENEWS.WA.channel_add(
   inout links any,
   in format varchar)
 {
-  declare N integer;
+  declare N, L integer;
   foreach (any link in links) do {
     if (isstring (link))
       link := xpath_eval ('/link', xtree_doc (link));
-    for (N := 1; N < length(channels); N := N + 1)
+    L := length(channels);
+    for (N := 1; N < L; N := N + 1)
       if (get_keyword('rss', channels[N]) = xpath_eval ('@href', link))
         goto _next;
     channels := vector_concat (channels, vector (vector ('title', xpath_eval ('@title', link), 'rss',  WS.WS.EXPAND_URL (uri, xpath_eval ('@href', link)), 'format', format)));
@@ -1292,7 +1301,7 @@ create procedure ENEWS.WA.channels_get (
   in uri varchar,
   inout xt any) returns any
 {
-  declare i, j int;
+  declare N, L int;
   declare title, home, email, rss, format, lang any;
   declare links, channels any;
 
@@ -1353,8 +1362,9 @@ create procedure ENEWS.WA.channels_get (
     channels := vector_concat (channels, vector ('OPML'));
     title := cast(xpath_eval ('/opml/head/title/text()', xt, 1) as varchar);
     outlines := xpath_eval ('/opml/body/outline', xt, 0);
-    for (i := 0; i < length (outlines); i := i + 1)
-      ENEWS.WA.channels_opml (channels, xml_cut(outlines[i]), title);
+    L := length (outlines);
+    for (N := 0; N < L; N := N + 1)
+      ENEWS.WA.channels_opml (channels, xml_cut(outlines[N]), title);
   }
 _end:
   return channels;
@@ -1367,7 +1377,7 @@ create procedure ENEWS.WA.channels_ocs (
   inout channels any,
   inout xt any)
 {
-  declare i, j, k integer;
+  declare i, j, k, l integer;
   declare title, home, email, rss, format, lang, upd_per, upd_freq any;
   declare links any;
   declare ns varchar;
@@ -1377,7 +1387,8 @@ create procedure ENEWS.WA.channels_ocs (
         ' xmlns:ocs1="http://InternetAlchemy.org/ocs/directory#" ' ||
         ' xmlns:dc="http://purl.org/metadata/dublin_core#" ] ';
   links := xpath_eval (ns || '/rdf:RDF/rdf:description[1]/rdf:description', xt, 0);
-  for (i := 0; i < length(links); i := i + 1) {
+  l := length(links);
+  for (i := 0; i < l; i := i + 1) {
     declare formats any;
     title := xpath_eval (ns || '/rdf:description/dc:title/text()', xml_cut (links[i]), 1);
     home := xpath_eval (ns || '/rdf:description/@about', xml_cut (links[i]), 1);
@@ -1423,7 +1434,7 @@ create procedure ENEWS.WA.channels_opml (
     format := 'http://my.netscape.com/rdf/simple/0.9/';
     channels := vector_concat (channels, vector (vector ('title', title, 'blog', home, 'rss', rss, 'format', format, 'lang', lang, 'folder', folder)));
   }
-  folder := concat(folder, '/', title);
+  folder := folder || '/' || title;
   outlines := xpath_eval ('/outline/outline', xt, 0);
   k := length(outlines);
   for (i := 0; i < k; i := i + 1)
@@ -1778,21 +1789,22 @@ create procedure ENEWS.WA.folder_id(
   in domain_id integer,
   in folder_name varchar)
 {
-  declare i, folder_id integer;
+  declare N, L, folder_id integer;
   declare aPath any;
 
   folder_id := null;
   if (not is_empty_or_null(folder_name)) {
     aPath := split_and_decode(trim(folder_name, '/'),0,'\0\0/');
-    for (i := 0; i < length(aPath); i := i + 1) {
-      if (i = 0) {
-        if (not exists (select 1 from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[i] and EFO_PARENT_ID is null))
-          insert into ENEWS.WA.FOLDER (EFO_DOMAIN_ID, EFO_NAME) values (domain_id, aPath[i]);
-        folder_id := (select EFO_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[i] and EFO_PARENT_ID is null);
+    L := length(aPath);
+    for (N := 0; N < L; N := N + 1) {
+      if (N = 0) {
+        if (not exists (select 1 from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[N] and EFO_PARENT_ID is null))
+          insert into ENEWS.WA.FOLDER (EFO_DOMAIN_ID, EFO_NAME) values (domain_id, aPath[N]);
+        folder_id := (select EFO_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[N] and EFO_PARENT_ID is null);
       } else {
-        if (not exists (select 1 from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[i] and EFO_PARENT_ID = folder_id))
-          insert into ENEWS.WA.FOLDER (EFO_DOMAIN_ID, EFO_PARENT_ID, EFO_NAME) values (domain_id, folder_id, aPath[i]);
-        folder_id := (select EFO_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[i] and EFO_PARENT_ID = folder_id);
+        if (not exists (select 1 from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[N] and EFO_PARENT_ID = folder_id))
+          insert into ENEWS.WA.FOLDER (EFO_DOMAIN_ID, EFO_PARENT_ID, EFO_NAME) values (domain_id, folder_id, aPath[N]);
+        folder_id := (select EFO_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_NAME = aPath[N] and EFO_PARENT_ID = folder_id);
       }
     }
   }
@@ -1943,12 +1955,13 @@ create procedure ENEWS.WA.folder_check_name(
   in is_path integer := 0)
 {
   if (is_path) {
-    declare i integer;
+    declare N, L integer;
     declare aPath any;
 
     aPath := split_and_decode(trim(folder_name, '/'),0,'\0\0/');
-    for (i := 0; i < length(aPath); i := i + 1)
-      if (not ENEWS.WA.validate('folder', aPath[i]))
+    L := length(aPath);
+    for (N := 0; N < L; N := N + 1)
+      if (not ENEWS.WA.validate('folder', aPath[N]))
         return 0;
     return 1;
   } else {
@@ -2175,11 +2188,12 @@ create procedure ENEWS.WA.directory_check_name(
   in is_path integer := 0)
 {
   if (is_path) {
-    declare i integer;
+    declare i, l integer;
     declare aPath any;
 
     aPath := split_and_decode(trim(directory_name, '/'),0,'\0\0/');
-    for (i := 0; i < length(aPath); i := i + 1)
+    l := length(aPath);
+    for (i := 0; i < l; i := i + 1)
       if (not ENEWS.WA.validate('folder', aPath[i]))
         return 0;
     return 1;
@@ -2300,7 +2314,7 @@ create procedure ENEWS.WA.weblog_refresh(
 {
   declare exit handler for sqlstate '*' { return __SQL_STATE; };
 
-  declare N integer;
+  declare N, L integer;
   declare v_api, v_uri, v_port, v_endpoint, v_user, v_password varchar;
   declare blogs any;
   declare req BLOG..blogRequest;
@@ -2328,7 +2342,8 @@ create procedure ENEWS.WA.weblog_refresh(
 
   blogs := BLOG.blogger.get_Users_Blogs(ENEWS.WA.weblog_uri(v_uri, v_port, v_endpoint), req);
 
-  for (N := 0; N < length(blogs); N :=  N + 1)
+  L := length(blogs);
+  for (N := 0; N < L; N :=  N + 1)
     ENEWS.WA.blog_create(weblog_id, get_keyword ('blogid', blogs[N]), get_keyword ('blogname', blogs[N]), get_keyword ('url', blogs[N]));
   return '';
 }
@@ -2977,12 +2992,13 @@ create procedure ENEWS.WA.tag_delete(
   inout tags varchar,
   inout T integer)
 {
-  declare N integer;
+  declare N, L integer;
   declare tags2 any;
 
-  tags2 := ENEWS.WA.tags2vector(tags);
   tags := '';
-  for (N := 0; N < length(tags2); N := N + 1)
+  tags2 := ENEWS.WA.tags2vector(tags);
+  L := length(tags2);
+  for (N := 0; N < L; N := N + 1)
     if (N <> T)
       tags := concat(tags, ',', tags2[N]);
   return trim(tags, ',');
@@ -3040,11 +3056,12 @@ create procedure ENEWS.WA.tags2search(
 create procedure ENEWS.WA.vector2tags(
   inout aVector any)
 {
-  declare N integer;
+  declare N, L integer;
   declare aResult any;
 
   aResult := '';
-  for (N := 0; N < length(aVector); N := N + 1)
+  L := length(aVector);
+  for (N := 0; N < L; N := N + 1)
     if (N = 0) {
       aResult := trim(aVector[N]);
     } else {
@@ -3060,10 +3077,11 @@ create procedure ENEWS.WA.tags2unique(
   inout aVector any)
 {
   declare aResult any;
-  declare N, M integer;
+  declare N, L, M integer;
 
   aResult := vector();
-  for (N := 0; N < length(aVector); N := N + 1) {
+  L := length(aVector);
+  for (N := 0; N < L; N := N + 1) {
     for (M := 0; M < length(aResult); M := M + 1)
       if (trim(lcase(aResult[M])) = trim(lcase(aVector[N])))
         goto _next;
@@ -3210,15 +3228,16 @@ create procedure ENEWS.WA.tags_item_rules(
 {
   declare exit handler for SQLSTATE '*' { goto _end;};
 
-  declare i integer;
+  declare N, L integer;
   declare content, rules, vectorTags, tags any;
 
   content := (select ENEWS.WA.xml2string(EFI_DESCRIPTION) from ENEWS.WA.FEED_ITEM where EFI_ID = item_id);
 	rules := user_tag_rules (account_id);
 	vectorTags := tag_document (content, 0, rules);
   tags := '';
-  for (i := 0; i < length(vectorTags); i := i + 2)
-    tags := concat (tags, ',', vectorTags[i]);
+  L := length(vectorTags);
+  for (N := 0; N < L; N := N + 2)
+    tags := concat (tags, ',', vectorTags[N]);
   tags := trim(tags, ',');
 
 _end:
@@ -3254,12 +3273,13 @@ create procedure ENEWS.WA.tags_item_content(
       foreach (any link in links) do
         tags := ENEWS.WA.tags_join(tags, cast (xpath_eval ('./@term', link, 1) as varchar));
     } else {
-      declare N integer;
+      declare N, L integer;
       declare V any;
 
-      V := ENEWS.WA.tags2vector(tags);
       tags := '';
-      for (N := 0; N < length(V); N := N + 1)
+      V := ENEWS.WA.tags2vector(tags);
+      L := length(V);
+      for (N := 0; N < L; N := N + 1)
         if (ENEWS.WA.validate_tag(V[N]))
           tags := ENEWS.WA.tags_join(tags, V[N]);
     }
@@ -3570,7 +3590,7 @@ create procedure ENEWS.WA.settings_atomVersion (
 -----------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.make_dasboard_item (
-  in dash any,
+  inout dash any,
   in tim datetime,
   in title varchar,
   in uname varchar,
@@ -3584,7 +3604,7 @@ create procedure ENEWS.WA.make_dasboard_item (
 
   declare ret any;
   declare ses any;
-  declare i, l int;
+  declare i, j, l int;
 
   ses := string_output ();
   http ('<feed-db>', ses);
@@ -3608,13 +3628,14 @@ create procedure ENEWS.WA.make_dasboard_item (
 
     xt := xtree_doc (dash);
     xp := xpath_eval ('/feed-db/*', xt, 0);
-    for (l := 0; l < length (xp); l := l + 1) {
+    l := length (xp);
+    for (j := 0; j < l; j := j + 1) {
 	    declare pid any;
-	    pid := xpath_eval ('number(@id)', xp[l]);
+	    pid := xpath_eval ('number(@id)', xp[j]);
 	    if (pid is null)
 	      pid := -2;
       if (action = 'insert' or pid <> id) {
-	      http (serialize_to_UTF8_xml (xp[l]), ses);
+	      http (serialize_to_UTF8_xml (xp[j]), ses);
 	      i := i + 1;
 	      if (i = 10)
 	        goto _end;
@@ -4126,7 +4147,7 @@ create procedure ENEWS.WA.string2xml (
   in content varchar,
   in mode integer := 0) returns any
 {
-  if (mode = 0) {
+  if (not mode) {
     declare exit handler for sqlstate '*' { goto _html; };
     return xml_tree_doc (xml_tree (content, 0));
   }
@@ -4159,26 +4180,6 @@ create procedure ENEWS.WA.normalize_space(
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.utfClear(
-  inout S varchar)
-{
-  declare N integer;
-  declare retValue varchar;
-
-  retValue := '';
-  for (N := 0; N < length(S); N := N + 1) {
-    if (S[N] <= 31) {
-      retValue := concat(retValue, '?');
-    } else {
-      retValue := concat(retValue, chr(S[N]));
-    }
-  }
-  return retValue;
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ENEWS.WA.utf2wide (
   inout S any)
 {
@@ -4205,10 +4206,11 @@ create procedure ENEWS.WA.vector_unique(
   in minLength integer := 0)
 {
   declare aResult any;
-  declare N, M integer;
+  declare N, L, M integer;
 
   aResult := vector();
-  for (N := 0; N < length(aVector); N := N + 1) {
+  L := length(aVector);
+  for (N := 0; N < L; N := N + 1) {
     if ((minLength = 0) or (length(aVector[N]) >= minLength)) {
       for (M := 0; M < length(aResult); M := M + 1)
         if (trim(aResult[M]) = trim(aVector[N]))
@@ -4228,10 +4230,11 @@ create procedure ENEWS.WA.vector_except(
   inout aExcept any)
 {
   declare aResult any;
-  declare N, M integer;
+  declare N, L, M integer;
 
   aResult := vector();
-  for (N := 0; N < length(aVector); N := N + 1) {
+  L := length(aVector);
+  for (N := 0; N < L; N := N + 1) {
     for (M := 0; M < length(aExcept); M := M + 1)
       if (aExcept[M] = aVector[N])
         goto _next;
@@ -4248,9 +4251,10 @@ create procedure ENEWS.WA.vector_contains(
   in aVector any,
   in value varchar)
 {
-  declare N integer;
+  declare N, L integer;
 
-  for (N := 0; N < length(aVector); N := N + 1)
+  L := length(aVector);
+  for (N := 0; N < L; N := N + 1)
     if (value = aVector[N])
       return 1;
   return 0;
@@ -4264,9 +4268,10 @@ create procedure ENEWS.WA.vector_search(
   in value varchar,
   in condition varchar := 'AND')
 {
-  declare N integer;
+  declare N, L integer;
 
-  for (N := 0; N < length(aVector); N := N + 1)
+  L := length(aVector);
+  for (N := 0; N < L; N := N + 1)
     if (value like concat('%', aVector[N], '%')) {
       if (condition = 'OR')
         return 1;
@@ -4285,10 +4290,11 @@ create procedure ENEWS.WA.vector2str(
   in delimiter varchar := ' ')
 {
   declare tmp, aResult any;
-  declare N integer;
+  declare N, L integer;
 
   aResult := '';
-  for (N := 0; N < length(aVector); N := N + 1) {
+  L := length(aVector);
+  for (N := 0; N < L; N := N + 1) {
     tmp := trim(aVector[N]);
     if (strchr (tmp, ' ') is not null)
       tmp := concat('''', tmp, '''');
@@ -4307,11 +4313,12 @@ create procedure ENEWS.WA.vector2str(
 create procedure ENEWS.WA.vector2rs(
   inout aVector any)
 {
-  declare N integer;
+  declare N, L integer;
   declare c0 varchar;
 
   result_names(c0);
-  for (N := 0; N < length(aVector); N := N + 1)
+  L := length(aVector);
+  for (N := 0; N < L; N := N + 1)
     result(aVector[N]);
 }
 ;
@@ -4321,14 +4328,15 @@ create procedure ENEWS.WA.vector2rs(
 create procedure ENEWS.WA.tagsDictionary2rs(
   inout aDictionary any)
 {
-  declare N integer;
+  declare N, L integer;
   declare c0 varchar;
   declare c1 integer;
   declare V any;
 
-  V := dict_to_vector(aDictionary, 1);
   result_names(c0, c1);
-  for (N := 1; N < length(V); N := N + 2)
+  V := dict_to_vector(aDictionary, 1);
+  L := length(V);
+  for (N := 1; N < L; N := N + 2)
     result(V[N][0], V[N][1]);
 }
 ;
@@ -4338,11 +4346,12 @@ create procedure ENEWS.WA.tagsDictionary2rs(
 create procedure ENEWS.WA.vector2src(
   inout aVector any)
 {
-  declare N integer;
+  declare N, L integer;
   declare aResult any;
 
   aResult := 'vector(';
-  for (N := 0; N < length(aVector); N := N + 1) {
+  L := length(aVector);
+  for (N := 0; N < L; N := N + 1) {
     if (N = 0)
       aResult := concat(aResult, '''', trim(aVector[N]), '''');
     if (N <> 0)
@@ -4379,9 +4388,10 @@ create procedure ENEWS.WA.set_keyword(
   inout params any,
   in    value  any)
 {
-  declare N integer;
+  declare N, L integer;
 
-  for (N := 0; N < length(params); N := N + 2)
+  L := length(params);
+  for (N := 0; N < L; N := N + 2)
     if (params[N] = name) {
       aset(params, N + 1, value);
       goto _end;
@@ -4477,8 +4487,8 @@ create procedure ENEWS.WA.news_tree(
     ENEWS.WA.news_tree_int(domain_id, 'r#0', retValue);
   } else {
     ENEWS.WA.news_tree_int(domain_id, 'r#1', retValue);
-    ENEWS.WA.news_tree_int(domain_id, 'r#2', retValue);
     ENEWS.WA.news_tree_int(domain_id, 'r#3', retValue);
+    ENEWS.WA.news_tree_int(domain_id, 'r#2', retValue);
   }
   http ('</node>', retValue);
   return string_output_string (retValue);
@@ -5178,7 +5188,7 @@ create procedure ENEWS.WA.validate_tag (
 create procedure ENEWS.WA.validate_tags (
   in S varchar)
 {
-  declare N integer;
+  declare N, L integer;
   declare V any;
 
   V := ENEWS.WA.tags2vector(S);
@@ -5186,7 +5196,8 @@ create procedure ENEWS.WA.validate_tags (
     return 0;
   if (length(V) <> length(ENEWS.WA.tags2unique(V)))
     return 0;
-  for (N := 0; N < length(V); N := N + 1)
+  L := length(V);
+  for (N := 0; N < L; N := N + 1)
     if (not ENEWS.WA.validate_tag(V[N]))
       return 0;
   return 1;
