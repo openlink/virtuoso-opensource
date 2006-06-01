@@ -229,7 +229,6 @@ directory_init() {
   cp images/*.gif vad/data/wa/images
   cp images/*.jpg vad/data/wa/images
   cp images/*.png vad/data/wa/images
-  cp $HOME/binsrc/weblog2/public/images/foaf.gif vad/data/wa/images
   cp icons/*.gif vad/data/wa/images/icons
   #cp icons/*.jpg vad/data/wa/images/icons
   cp icons/*.png vad/data/wa/images/icons
