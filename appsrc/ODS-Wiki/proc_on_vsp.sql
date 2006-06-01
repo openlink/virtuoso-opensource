@@ -1088,7 +1088,8 @@ create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out 
 {
   declare _startofs integer;
   declare _idx integer;
-  path := subseq(split_and_decode(aref (WS.WS.PARSE_URI(http_path()), 2), 0, '\0\0/'), 1);
+  path := http_path ();
+  path := subseq(split_and_decode(aref (WS.WS.PARSE_URI(path), 2), 0, '\0\0/'), 1);
   declare _host varchar;
   _host := DB.DBA.WA_GET_HOST();
 	  
@@ -1843,10 +1844,10 @@ create function WV.WIKI.FROZEN (in _topic WV.WIKI.TOPICINFO)
 -- remove spaces in the very begining and at the end
 -- replace all cons. spaces to one space
 -- if argument is array apply itself to each element
-create procedure WV.WIKI.TRIM_EX (in str_or_array any)
+create procedure WV.WIKI.TRIM_EX (in str_or_array any, in delim_expr varchar := '\\s', in repl varchar:=' ')
 {
   if (isstring (str_or_array))
-    return regexp_replace (trim (str_or_array), '\\s{2,}', ' ', 1, NULL);
+    return regexp_replace (trim (str_or_array), delim_expr || '{2,}', repl, 1, NULL);
   else if (isarray (str_or_array))
     {
       declare _res any;
