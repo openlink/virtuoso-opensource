@@ -1,0 +1,74 @@
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="nntpf_pref_page"
+  	xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+	xmlns:v="http://www.openlinksw.com/vspx/"
+	style="main.xsl"
+	doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+	doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+	on-error-redirect="nntpf_error.vsp"
+	on-deadlock-retry="3">
+  <html>
+    <head>
+      <link rel="alternate" 
+            type="application/rss+xml" 
+            title="Virtuoso Screencast Demos" 
+            href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
+      <link rel="alternate" 
+            type="application/rss+xml" 
+            title="Virtuoso Tutorials" 
+            href="http://demo.openlinksw.com/tutorial/rss.vsp" />
+      <link rel="alternate" 
+            type="application/rss+xml" 
+            title="Virtuoso Product Blog (RSS 2.0)" 
+            href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
+      <link rel="alternate" 
+            type="application/atom+xml" 
+            title="Virtuoso Product Blog (Atom)" 
+            href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />        
+      <link rel="stylesheet" type="text/css" href="nntpf.css"/>
+      <title>Virtuoso NNTP Frontend</title>
+    </head>
+   <vm:body>
+    <vm:page>
+      <div id="container">
+      <vm:login/>
+      <h1>Settings for <vm:user-name /></h1>
+      <div id="userstuff">
+	<p><vm:home-link >Home</vm:home-link></p>
+      </div>
+        <div id="main">
+          <div class="box">
+	  <h2>User Settings</h2>
+       	<v:form name="sform1" method="POST" type="simple">
+	  <vm:user-settings/>
+	  <vm:password-change/>
+	</v:form>
+           </div>
+	 </div>
+      </div>
+    </vm:page>
+   </vm:body>
+  </html>
+</v:page>

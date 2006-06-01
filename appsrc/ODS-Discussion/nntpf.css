@@ -1,0 +1,505 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
+{
+	color: #3333ff; text-decoration: none
+}
+
+body
+{
+  font-size: 0.7em;
+  color: #202020;
+#	background-color: rgb(204,204,204);
+  background-color: #99B3C5;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+a 
+{
+  text-decoration: none;
+  color: blue;
+}
+
+h1
+{
+  font-size: 1.5em; color: black
+}
+
+#PC
+{ 
+  margin-left: 3px;
+  margin-top: 19px;
+}
+
+#LT
+{
+  float: left;
+  clear: left;
+  width: 65%;
+  margin-right: 5px;
+}
+
+#RT
+{
+  margin-left: 5px;
+  float: left;
+  clear: right;
+}
+
+.nav_top 
+{
+  background-color: #798F9E;
+  padding: 5px;
+  color: #FFFFFF;
+  background-image: url(images/nav_grysteel1.gif);
+  background-repeat: repeat-x;
+  border-top-width: 1px;
+  border-top-style: solid;
+  border-top-color: #798F9E;
+}
+
+.nav_top a 
+{
+  font-weight: bold;
+  color: #FFFFFF;
+  text-decoration: none;
+}
+
+ .nav_top a:hover 
+{
+  font-weight: bold;
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+table.page_content
+{
+  width: 100%;
+}
+
+div.calendar
+{
+  background-color: #DAE2E5;
+  padding: 2px 5px;
+  border: 2px solid #FFFFFF;
+  margin-top: 4px;
+  margin-bottom: 5px;
+  margin-right: 5px;
+  background-image: url(images/nav_grysteel2.gif);
+  background-repeat: repeat-x;
+}
+
+div.login
+{
+
+}
+
+div.reset
+{
+	clear: both; float: none
+}
+
+.summary
+{
+	font-size: 90%
+}
+
+tr.head
+{
+	font-weight: bold
+}
+.artheaders
+{
+    BACKGROUND-COLOR: #f0f0d0
+}
+.header
+{
+	FONT-WEIGHT: bold;
+}
+.artbody
+{
+	WIDTH: auto; BACKGROUND-COLOR: #c0c0c0; min-width: 50%
+}
+
+#calendar {
+        margin-top: 2em;
+        margin-bottom: 2em;
+        font-size: 0.9em;
+        font-family: Tahoma, sans-serif;
+        text-align: center;
+        border-collapse: collapse;
+ 	background-color: #FFFFFF;
+	padding-top: 5px;
+	padding-bottom: 3px;
+	color: #FFFFFF;
+	border: 1px solid #CCCCCC;
+ }
+#calendar td, #calendar th {
+	padding: 2px;
+	color: #003333;
+}
+.calactive {
+	background: url(images/slvnav.jpg) repeat-x center;
+	border-right-width: 1px;
+	border-right-style: solid;
+	border-right-color: #CCCCCC;
+ }
+.calactive a {
+	color: #333333;
+ }
+.calnotactive a {
+	text-decoration: none;
+	color: #666666;
+ }
+.caltoday {
+	background: url(images/blunav3.jpg) repeat-x center;
+	color: white;
+	border:1px solid #6A7D8B;
+	font-weight: bold;
+ }
+.caltoday a {
+   color: #000000;
+ }
+.tb-url, .tb-url a {
+  font-family:georgia, verdana, arial, sans-serif;
+  color:#666;
+  font-size:1em;
+  font-weight:normal;
+  background:inherit;
+  padding: 0.3em;
+  width: 100%;
+}
+.tb-url .url {
+  color: #065;
+  background: inherit;
+  position: absolute;
+  width: 100%;
+  left: 500px;
+}
+h2 {
+	font-size: 1em;
+}
+.listing_row_odd {
+	padding: 2px;
+	margin: 10px;
+	background-color: #FFFFFF;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #006699;
+}
+.listing_row_even {
+	background-color: #EFEFEF;
+	border-top-width: 1px;
+	border-bottom-width: 1px;
+	border-top-style: solid;
+	border-bottom-style: solid;
+	border-top-color: #999999;
+	border-bottom-color: #999999;
+	padding: 2px;
+}
+.login_encapsul {
+	padding: 4px;
+	margin: 4px;
+	background-color: #DAE2E5;
+	background-image: url(images/nav_grysteel2.gif);
+	background-repeat: repeat-x;
+	border-top: 1px solid #FFFFFF;
+	border-right: 1px solid #FFFFFF;
+	border-bottom: 2px solid #FFFFFF;
+	border-left: 1px solid #FFFFFF;
+}
+
+div.menu
+{
+  height: 3ex;
+}
+
+table.menubar
+{
+  width: 100%;
+  padding: 3px;
+  background-image: url(images/nav_grysteel1.gif);
+  background-repeat: repeat-x;
+  background-color: #798F9E;
+  color: #FFFFFF;
+  border-top-width: 1px;
+  border-top-style: solid;
+  border-top-color: #798F9E;
+}
+
+table.menubar a
+{
+  color: #fff;
+}
+
+table.menubar a:hover
+{
+  color: yellow;
+}
+
+.nntp_groups_listing 
+{
+  border: 2px solid #FFFFFF;
+  padding: 4px;
+  margin: 4px;
+  background-color: #DAE2E5;
+  background-image: url(images/nav_grysteel2.gif);
+  background-repeat: repeat-x;
+}
+
+.nntp_groups_listing tr th
+{
+  text-align: left;
+}
+
+.news_summary_encapsul {
+  border: 2px solid #FFFFFF;
+  padding: 4px;
+  margin: 4px;
+  background-color: #DAE2E5;
+  background-image: url(images/nav_grysteel2.gif);
+  background-repeat: repeat-x;
+}
+.news_view_number {
+  padding: 4px;
+  margin: 4px;
+  background-color: #DAE2E5;
+  background-image: url(images/nav_grysteel2.gif);
+  background-repeat: repeat-x;
+}
+
+.header_img 
+{
+  border-top-width: 1px;
+  border-top-style: solid;
+  border-top-color: #FFFFFF;
+  background-color: #FFFFFF;
+}
+
+.header_top 
+{
+  font-size: 180%;
+  color: #798F9E;
+  background-color: #FFFFFF;
+  font-weight: bold;
+}
+
+#content 
+{
+  font: 11px Verdana, Arial, Helvetica, sans-serif;
+  background-color: #efefef;
+  border: 1px solid #999999;
+}
+
+
+#content td 
+{
+    border-style: solid;
+    border-width: 0px 0px 1px 1px;
+    border-color: #FFFFFF;
+    padding: 2px;
+}
+
+#content th
+{
+    background-color: #BBBBBB;
+    border-color: #FFFFFF;
+    border-style: solid;
+    border-width: 0px 0px 0px 1px;
+    text-align: center;
+    padding: 2px;
+}
+
+div.copyright
+{
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  margin-top: 3px;
+  font-size: 7pt;
+  text-align: right;
+  clear: left;
+  color: #fff;
+  background-color: #798F9E;
+  border-bottom: 1px solid #ddd;
+}
+
+table.user_id
+{
+  width: 100%;
+}
+
+tr.user_id
+{
+}
+
+td.user_id
+{
+  text-align: right;
+}
+
+td.last_cell
+{
+  text-align: right;
+}
+
+tr.article_listing_current
+{
+  background-color: #555;
+  color: #fff;
+  font-weight: bold;
+}
+
+tr.rss_list_empty
+{
+  font-style: italic;
+  color: darkgreen;
+}
+
+/* Widgets generated by macros in dialog.xsl */
+
+table.conf_dialog
+{
+  width: 100%;
+  background-color: white;
+  border: 2px solid black;
+}
+
+td.dialog_icon
+{
+  vertical-align: top;
+}
+
+td.dialog_message
+{
+}
+
+td.dialog_instr
+{
+  font-style: italic;
+}
+
+div.info_dialog
+{
+  background-image: url(images/nav_grysteel2.gif);  
+  background-repeat: repeat-x;
+  background-color: #DAE2E5;
+  border: 2px solid yellow;
+  padding: 3px;
+  margin: 5px;
+  margin-top: 10px;
+}
+
+div.info_dialog h3
+{
+  font-size: 14pt;
+  align: top;
+  margin-top: 10px;
+}
+
+div.info_dialog img.icon
+{
+  float: left;
+  align: top;
+  padding: 10px;
+}
+
+/* end dialog.xsl */
+
+a.nntp_group
+{
+  color: black;
+  text-decoration: none;
+}
+
+a.nntp_group:hover
+{
+  color: green;
+  text-decoration: underline;
+}
+
+a.nntp_group:visited
+{
+  color: black;
+  text-decoration: none;
+}
+
+a.nntp_group:active
+{
+  color: red;
+  text-decoration: underline;
+}
+
+/* Threaded message listing */
+
+a.thr_list_cmd
+{
+}
+
+a.thr_list_subj
+{
+  color: black;
+  font-weight: bolder;
+  text-decoration: none;
+}
+
+a.thr_list_subj:hover
+{
+  text-decoration: underline;
+}
+
+a.thr_list_date
+{
+  color: black;
+  text-decoration: none;
+}
+
+a.thr_list_date: hover
+{
+  color: black;
+  text-decoration: underline;
+}
+
+span.thr_list_from
+{
+  font-style: italic;
+}
+
+span.thr_msg_sel
+{
+  background-color: green;
+}
+
+.ng_subs
+{
+    margin-bottom: 5px;
+}
+
+.ng_subs_thread
+{
+    margin-left: 10px;
+}

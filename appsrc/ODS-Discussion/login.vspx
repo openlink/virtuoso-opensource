@@ -1,0 +1,86 @@
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<html>
+<body>
+<v:page name="digest_login" xmlns:v="http://www.openlinksw.com/vspx/"  on-error-redirect="nntpf_error.vsp" on-deadlock-retry="3">
+<v:variable name="you_never" persist="1" type="int" default="0" />
+<v:variable name="you_ever" type="int" default="0" />
+<H4>VSPX login control demo</H4>
+<v:login name="loginc" realm="vspx" mode="url" user-password="sql_user_password" user-password-check="sql_user_password_check" >
+<v:template type="if-no-login">
+<p>
+You are not logged in
+</p>
+</v:template>
+
+<v:login-form name="loginf" required="1" title="Login" user-title="User Name" password-title="Password" submit-title="Login" >
+</v:login-form>
+
+<v:template type="if-login">
+  <p>
+    Welcome to  login demo
+  </p>
+  <p>
+    SID: <?vsp http (self.sid); ?>
+  </p>
+  <p>
+    UID: <?vsp http_value (connection_get ('vspx_user')); ?>
+  </p>
+  <p>Effective user: '<?vsp http (user); ?>'
+  </p>
+  <p>
+    <v:url name="url01" value="--'test'" format="%s" url="--'http://openlinksw.com/'" />
+  </p>
+  <p>
+    How many time page is posted under login : <?vsp http_value ( coalesce (connection_get ('ctr'), 0) ); ?>
+  </p>
+  <p>
+    A persisted variable : <?vsp http_value (self.you_never); ?>
+  </p>
+    <?vsp connection_set ('ctr', coalesce (connection_get ('ctr'), 0) + 1); ?>
+    <v:button name="logoutb" action="logout" value="Logout" />
+
+</v:template>
+<v:after-data-bind>
+<![CDATA[
+  if (self.vc_authenticated)
+    {
+      set_user_id (connection_get ('vspx_user'), 0);
+    }
+]]>
+</v:after-data-bind>
+
+</v:login>
+
+<H4>Simple Form (login enabled browse feature)</H4>
+<table>
+  <tr>
+    <td>Company Name:</td>
+    <td><v:text name="fld2" value="" /></td>
+  </tr>
+</table>
+</v:page>
+</body>
+</html>
+

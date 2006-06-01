@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  	xmlns:v="http://www.openlinksw.com/vspx/"
+	name="nntpf_thread_view"
+	style="main.xsl"
+	on-error-redirect="nntpf_error.vsp"
+	on-deadlock-retry="3"
+	doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+	doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+	<v:variable name="grp" type="int" default="null" param-name="grp" />
+	<v:variable name="thr" type="varchar" default="''" param-name="thr" />
+
+	<v:variable name="grp_name" type="varchar" default="null" persit="temp" />
+	<v:variable name="thr_subj" type="varchar" default="null" persit="temp" />
+	<v:variable name="subs_type" type="varchar" default="null" persit="temp" />
+	<v:variable name="sub_e_mail" type="varchar" default="null" persit="temp" />
+  <html>
+    <head>
+      <v:include url="virtuoso_app_links.xhtml"/>
+      <link rel="stylesheet" type="text/css" href="nntpf.css"/>
+      <title>Virtuoso NNTP Frontend</title>
+    </head>
+    <body>
+      <vm:js/>
+      <vm:page>
+	<v:form name="nnv" method="POST" type="simple">
+	  <v:before-data-bind><![CDATA[
+		  declare continue handler for not found;
+		  select NG_NAME, NS_TYPE, NS_MAIL into
+		  self.grp_name, self.subs_type, self.sub_e_mail
+		  from NNTPF_SUBS, NEWS_GROUPS where
+		   NG_GROUP = NS_GROUP and NS_USER = self.u_id and NS_GROUP = self.grp and NS_THREAD_ID = self.thr;
+		  if (self.thr <> '')
+		    {
+		      select FTHR_SUBJ into self.thr_subj from NNFE_THR where FTHR_GROUP = self.grp and FTHR_MESS_ID = self.thr;
+		      self.thr_subj := '"' || self.thr_subj || '"' ;
+		    }
+		  else
+		    {
+		      self.thr_subj := 'all threads';
+		    }
+	    ]]></v:before-data-bind>
+          <vm:nntpf-title/>
+          <div class="menu">
+            <vm:menu-bar/>
+          </div>
+          <div id="PC">
+            <div id="LT">
+              <div class="login">
+                <vm:login/>
+	      </div>
+	      <div>
+	      <div class="error"><v:error-summary /></div>
+	      <table width="100%"
+		  class="news_summary_encapsul"
+		  cellspacing="0"
+		  border="0"
+		  cellpadding="0">
+		  <tr>
+		      <td>
+			  <h2>Subscription settings for: group <b><?V self.grp_name ?></b> about <b><?V self.thr_subj ?></b>
+			  </h2>
+			  <label>E-mail: </label><v:text value="--self.sub_e_mail" name="sub_email" xhtml_size="70" error-glyph="*">
+			      <v:validator name="vv_e_mail"
+				  test="regexp" regexp="[^@]+@([^\.]+.)*[^\.]+" message="Invalid e-mail address" />
+			  </v:text>
+			  <br />
+			  <v:check-box name="sub_cb" value="1" xhtml_id="sub_cb" initial-checked="--self.subs_type" />
+			  <label for="sub_cb">Send digests</label>
+			  <br />
+			  <br />
+			  <v:button name="cancel_bt" value="Cancel" action="simple">
+			      <v:on-post><![CDATA[
+				  self.vc_redirect ('nntpf_subs.vspx');
+			        ]]></v:on-post>
+			  </v:button>
+			  <v:button name="ok_bt" value="Save" action="simple">
+			      <v:on-post><![CDATA[
+				  if (not self.vc_is_valid)
+				    return;
+
+				  update NNTPF_SUBS set NS_MAIL = self.sub_email.ufl_value,
+				    NS_TYPE = self.sub_cb.ufl_selected
+				    where NS_USER = self.u_id and NS_GROUP = self.grp and NS_THREAD_ID = self.thr;
+
+				  self.vc_redirect ('nntpf_subs.vspx');
+				  ]]></v:on-post>
+			  </v:button>
+		      </td>
+		  </tr>
+	      </table>
+	      </div>
+            </div> <!-- LT -->
+            <div id="RT">
+              <div class="calctr">
+                <div class="calendar">
+                  <vm:nntp-cal />
+                </div>
+              </div>
+            </div> <!-- RT -->
+          </div> <!-- PC -->
+        </v:form>
+      </vm:page>
+    </body>
+  </html>
+</v:page>

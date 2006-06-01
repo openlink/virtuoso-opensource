@@ -1,0 +1,60 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2006 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+?>
+<pre>
+<?vsp
+  declare _page, _message varchar;
+  declare i, l int;
+  l := length (params);
+
+--  dbg_obj_print (params);
+
+  _page := get_keyword_ucase ('__PAGE', params, '');
+  _message := get_keyword_ucase ('__SQL_MESSAGE', params, '');
+
+--  dbg_obj_print (' _page = ', _page);
+--  dbg_obj_print (' _message = ', _message);
+
+  if (strstr (_page, 'nntpf_post.vspx'))
+    {
+       if (strstr (_message, '440') or strstr (_message, '441') or strstr (_message, '435'))
+	 {
+	   if (strstr (_message, 'Internet syntax'))
+	      http ('<b>Posting not allowed because the user has no valid email address.</b>');
+	   else
+	      http ('<b>' || _message || '</b>');
+	 }
+       else
+	 http ('<b>Incomplete article not posted - missing newsgroups</b>');
+    }
+  else
+    {
+       http ('<H3 style="color:red">Error:</H3>');
+       while (i < l)
+	 {
+	   http ('<b>'||params[i]); http ('</b>='); http (params[i+1]); http ('\n');
+	   i := i + 2;
+	 }
+    }
+  ?>
+</pre>

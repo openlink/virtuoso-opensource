@@ -1,0 +1,199 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<!-- news group list control; two states in main page and on the other pages -->
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:v="http://www.openlinksw.com/vspx/"
+                xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+                version="1.0">
+  <xsl:template match="vm:group-list">
+    <v:variable name="headdsid" type="varchar"/>
+    <v:variable name="r_count" type="integer" default="0"/>
+      <v:before-data-bind>
+        <![CDATA[
+  if (self.vc_authenticated)
+    self.headdsid := 'sid';
+  else
+    self.headdsid := 'none';
+        ]]>
+      </v:before-data-bind>
+      <table width="100%"
+             class="nntp_groups_listing"
+             cellspacing="0"
+             cellpadding="0">
+        <v:data-set name="ds_group_list"
+                    sql="select NG_GROUP, NG_NAME, NG_DESC
+                           from DB.DBA.NEWS_GROUPS
+                           where ns_rest (NG_GROUP, 0) = 1"
+                    nrows="10"
+                    scrollable="1"
+                    width="80"
+                    enabled="--nntpf_display_ds_group_list()">
+          <v:template name="template1" type="simple">
+            <tr class="listing_header_row">
+              <th colspan="3">
+                <v:label value="'Available newsgroups:'" format="%s" width="80"/>
+              </th>
+              <th colspan="2">
+                <v:label value="'View:'" format="%s" width="80"/>
+              </th>
+            </tr>
+          </v:template>
+          <v:template name="template2" type="repeat">
+            <v:template name="template7" type="if-not-exists">
+              <tr>
+                <td align="center" colspan="5">
+                  No group defined on this server.<!-- should not see this -->
+                </td>
+              </tr>
+            </v:template>
+            <v:template name="template4" type="browse">
+              <?vsp
+  self.r_count := self.r_count + 1;
+  http (sprintf ('<tr class="%s">',
+                   case
+                     when mod (self.r_count, 2)
+                     then 'listing_row_odd'
+                     else '' end));
+            ?>
+                <td align="left">
+                  <v:url value="RSS"
+                       url="--concat ('nntpf_rss_group.vspx?group=' ||
+                                      cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))"
+                       enabled="--self.vc_authenticated"
+                       xhtml_class="nntp_group_rss"/>
+                </td>
+                <td>
+                  <v:url name="nntp_groups"
+                         format="%s"
+                         value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                         url="--'nntpf_nthread_view.vspx?group=' ||
+                                cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                         xhtml_class="nntp_group"/>
+                </td>
+                <td>
+                  <v:url name="nntp_groups1"
+                         format="%s"
+                         value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
+                         url="--'nntpf_nthread_view.vspx?group=' ||
+                                cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                         xhtml_class="nntp_group"/>
+                </td>
+                <td>
+                  <v:url name="nntp_groups2"
+                         format="%s"
+                         value="--'list'"
+                         url="--'nntpf_nthread_view.vspx?group=' ||
+                              cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"/> |
+                  <v:url name="nntp_groups3"
+                         format="%s"
+                         value="--'thread'"
+                         url="--'nntpf_thread_view.vspx?group=' ||
+                              cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar) ||
+                              '&amp;thr=1'"/>
+                </td>
+<?vsp
+        http('</tr>');
+?>
+            </v:template>
+          </v:template>
+          <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+            <vm:ds-button-bar/>
+          </v:template>
+        </v:data-set>
+      </table>
+  <!-- Tree -->
+      <v:tree name="group_tree"
+              multi-branch="1"
+              orientation="vertical"
+              root="nntpf_group_tree_top"
+              start-path="--vector ()"
+              child-function="nntpf_group_child_node"
+              enabled="--abs (nntpf_display_ds_group_list() - 1)">
+        <v:node-template name="node_tmpl_gr">
+          <div style="margin-left:1em;">
+            <v:button name="group_tree_toggle"
+                      action="simple"
+                      style="image"
+                      xhtml_alt="--case (control.vc_parent as vspx_tree_node).tn_open
+                                     when 0
+                                     then 'Open'
+                                     else '-' end"
+                      value="--case (control.vc_parent as vspx_tree_node).tn_open
+                                 when 0
+                                 then 'images/plus.gif'
+                                 else 'images/minus.gif'
+                                 end" />
+            <v:label name="label1"
+                     value="--(control.vc_parent as vspx_tree_node).tn_value" />
+            <v:node />
+          </div>
+        </v:node-template>
+        <v:leaf-template name="leaf_tmpl_gr">
+          <div style="margin-left:1em;">
+            <img src="images/leaf.gif" border="0" alt="leaf node" />
+            <v:label name="label2"
+                     value="--(control.vc_parent as vspx_tree_node).tn_value" />
+          </div>
+        </v:leaf-template>
+      </v:tree>
+      <input type="hidden"
+             name="<?= self.headdsid ?>"
+             value="<?= self.sid ?>"
+             enabled="--self.vc_authenticated" />
+      <input type="hidden" name="realm" value="wa" />
+      <input type="hidden" name="group" value="" />
+    </xsl:template>
+    <xsl:template match="vm:change_page">
+      <![CDATA[
+        <?vsp
+
+  declare grp_thr, no_grp_thr any;
+
+  no_grp_thr := get_keyword ('disp_group', self.vc_page.vc_event.ve_params, NULL);
+  grp_thr := get_keyword ('disp_group_thr', self.vc_page.vc_event.ve_params, NULL);
+
+--  dbg_obj_print ('------------------------ Params ', self.vc_page.vc_event.ve_params);
+
+  if (no_grp_thr is not NULL)
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header (sprintf ('Location: nntpf_nthread_view.vspx?sid=%s&realm=%s&group=%s\r\n',
+                            self.sid,
+                            self.realm,
+                            no_grp_thr));
+    }
+
+  if (grp_thr is not NULL)
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header (sprintf ('Location: nntpf_thread_view.vspx?sid=%s&realm=%s&group=%s\r\n',
+                            self.sid,
+                            self.realm,
+                            grp_thr));
+    }
+      ?>
+    ]]>
+  </xsl:template>
+</xsl:stylesheet>

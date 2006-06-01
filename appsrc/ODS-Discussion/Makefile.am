@@ -19,13 +19,37 @@
 #  
 #  
 
-SUBDIRS = ODS-Framework \
-	ODS-Blog \
-	ODS-Bookmark \
-	ODS-Briefcase \
-	ODS-Community \
-	ODS-FeedManager \
-	ODS-Gallery \
-	ODS-NNTPFrontend \
-	ODS-Wiki \
-	ODS-WebMail
+TOP=@TOP@
+
+nodist_vad_DATA = ods_nntpf_dav.vad
+
+CLEANFILES =  \
+	make_nntpf_vad.log \
+	make_nntpf_vad.xml \
+	ods_nntpf_dav.vad \
+	vad.db \
+	virtuoso.ini \
+	vad.lck \
+	vad.log \
+	virtuoso.pxa \
+	virtuoso.tdb \
+	vad.trx
+
+ods_nntpf_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
+
+EXTRA_DIST = \
+	*.css \
+	*.xhtml \
+	*.sql \
+	*.vsp \
+	*.vspx \
+	*.xsl \
+	make_vad.sh \
+	comp/*.xsl \
+	images/*.gif \
+	images/*.jpg \
+	images/*.png 
