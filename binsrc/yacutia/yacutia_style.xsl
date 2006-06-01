@@ -145,7 +145,7 @@
           <img src="images/icons/apps_16.png"
                alt="ISQL"
                title="Interactive SQL popup"/>
-          <v:browse-button style="url" name="browse_button1" value="ISQL" selector="isql.vspx"
+          <v:browse-button style="url" name="browse_button1" value="Interactive  SQL (ISQL)" selector="isql.vspx"
               child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800"/>
         </li>
         <?vsp
@@ -183,7 +183,7 @@
 	  </li>
       </ul>
       <ul class="left_nav">
-        <li>Search</li>
+        <li>Related Content</li>
 	<li>
           <img src="images/icons/docs_16.png"
                alt="Documentation"
@@ -212,14 +212,14 @@
 	    <a href="/tutorial/index.vsp" target="_empty">Tutorials</a></li>
 	<li class="xtern">
           <img src="images/icons/web_16.png"
-               alt="OpenLink Software"
-               title="OpenLink Software" hspace="2"/>
-	    <a href="http://www.openlinksw.com">OpenLink Software</a></li>
-	<li class="xtern">
-          <img src="images/icons/web_16.png"
                alt="Virtuoso Web Site"
                title="Virtuoso Web Site" hspace="2"/>
 	    <a href="http://www.openlinksw.com/virtuoso">Virtuoso Web Site</a></li>
+	<li class="xtern">
+          <img src="images/icons/web_16.png"
+               alt="OpenLink Software"
+               title="OpenLink Software" hspace="2"/>
+	    <a href="http://www.openlinksw.com">OpenLink Software</a></li>
       </ul>
       <ul class="left_id">
         <li>Version: <?V sys_stat ('st_dbms_ver') ?></li>

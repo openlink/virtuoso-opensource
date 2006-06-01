@@ -35,7 +35,7 @@
     <xsl:choose>
       <xsl:when test="@browse_type='standalone' and @render='popup'">
         <v:browse-button style="url"
-                         value="DAV Browser"
+                         value="WebDAV Browser"
                          selector="popup_browser.vspx"
                          child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800"
                          browser-options="ses_type={@ses_type}&amp;list_type={@list_type}&amp;flt={@flt}&amp;flt_pat={@flt_pat}&amp;path={@path}&amp;browse_type={@browse_type}&amp;style_css={@style_css}&amp;w_title={@w_title}&amp;title={@title}&amp;advisory={@advisory}&amp;lang={@lang}&amp;view={@view}"/>
