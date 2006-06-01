@@ -1413,12 +1413,11 @@ window.onload = function (e)
         }
     if (self.user_name is not null)
     {
-        if (gt (vad_check_version ('wa'), '1.11.00')){
-    
+        if (gt (vad_check_version ('Framework'), '1.11.00')){
             if (registry_get ('wa_home_link') = 0){
                  http(sprintf('<a href="%s/uhome.vspx?ufname=%s&sid=%s&realm=%s">%s</a>',self.wa_home, self.user_name, coalesce(self.sid,''), coalesce(self.realm,'wa') ,self.user_name));
             }else{
-                 http(sprintf('<a href="%s/uhome.vspx?ufname=%s">%s</a>',registry_get ('wa_home_link') , self.user_name, self.user_name));
+                 http(sprintf('<a href="%s/uhome.vspx?ufname=%s&sid=%s&realm=%s">%s</a>',registry_get ('wa_home_link'), self.user_name, coalesce(self.sid,''), coalesce(self.realm,'wa') ,self.user_name));
             }
         };
     }
@@ -1840,7 +1839,7 @@ window.onload = function (e)
      <?vsp
       }
   ?>
-           <td class="navprefs"><vm:search-commusers-link /><vm:separator-whenownerlogedin /><vm:settings-link/> </td>
+           <td class="navprefs"><vm:search-commusers-link /><vm:separator-whenownerlogedin /><vm:settings-link/> <vm:separator-whenownerlogedin /> <vm:help-link/></td>
          </tr>
      </table>
 </xsl:template>
