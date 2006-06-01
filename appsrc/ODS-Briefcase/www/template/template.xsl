@@ -161,11 +161,12 @@
       </div>
       <div style="padding: 0.5em 0 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
         <div style="float: left; padding-left: 0.5em;">
-          <v:button action="simple" style="url" value="--ODRIVE.WA.session_user_description(self.vc_page.vc_event.ve_params)" xhtml_alt="--ODRIVE.WA.session_user_description(self.vc_page.vc_event.ve_params)">
-          	<v:on-post>
-              self.vc_redirect(sprintf('%suiedit.vspx', ODRIVE.WA.wa_home_link ()));
-          	</v:on-post>
-	        </v:button>
+          <?vsp
+            declare S varchar;
+
+            S := ODRIVE.WA.session_user_description(self.vc_page.vc_event.ve_params);
+            http(sprintf('<a href="%Vmyhome.vspx?sid=%s&realm=%s" title="%V"><img src="image/home_16.png" border="0"/> %V</a>', ODRIVE.WA.wa_home_link (), self.sid, self.realm, S, S));
+          ?>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em;">
           <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>

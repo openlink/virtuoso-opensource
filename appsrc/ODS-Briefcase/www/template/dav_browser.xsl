@@ -3770,20 +3770,7 @@
           ]]>
         </v:before-render>
       </v:url>
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''home'');'" xhtml_title="Home" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/home_32.png" border="0"/>' || self.toolbarLabel('Home');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" xhtml_title="Shared Folders" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/folder_violet.png" border="0"/>' || self.toolbarLabel('Shared Folders');
-          ]]>
-        </v:before-render>
-      </v:url>
+
       <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''up'');'" enabled="--self.toolbarEnable('up')" xhtml_title="Up" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
@@ -3796,7 +3783,27 @@
           <img src="image/grey_up_32.png" border="0" alt="Up"/><?vsp http(self.toolbarLabel('Up'));?>
         </span>
       </v:template>
+
       <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
+
+      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''home'');'" xhtml_title="Home" xhtml_class="toolbar">
+        <v:before-render>
+          <![CDATA[
+            control.ufl_value := '<img src="image/home_32.png" border="0"/>' || self.toolbarLabel('Home');
+          ]]>
+        </v:before-render>
+      </v:url>
+
+      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" xhtml_title="Shared Folders" xhtml_class="toolbar">
+        <v:before-render>
+          <![CDATA[
+            control.ufl_value := '<img src="image/folder_violet.png" border="0"/>' || self.toolbarLabel('Shared Folders');
+          ]]>
+        </v:before-render>
+      </v:url>
+
+      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
+
       <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''new'');'" enabled="--self.toolbarEnable('new')" xhtml_title="New Folder" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
@@ -3837,6 +3844,19 @@
 
       <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
 
+      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for property changes.'')) toolbarPost(''properties'');'" enabled="--self.toolbarEnable('properties')" xhtml_title="Properties" xhtml_class="toolbar">
+        <v:before-render>
+          <![CDATA[
+            control.ufl_value := '<img src="image/prop_32.png" border="0"/>' || self.toolbarLabel('Properties');
+          ]]>
+        </v:before-render>
+      </v:url>
+      <v:template type="simple" enabled="--case when self.toolbarEnable('properties') then 0 else 1 end">
+        <span class="toolbar">
+          <img src="image/grey_prop_32.png" border="0" alt="Properties"/><?vsp http(self.toolbarLabel('Properties'));?>
+        </span>
+      </v:template>
+
       <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected to be tagged.'')) toolbarPost(''tag'');'" enabled="--self.toolbarEnable('tag')" xhtml_title="Tag" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
@@ -3847,6 +3867,19 @@
       <v:template type="simple" enabled="--case when self.toolbarEnable('tag') then 0 else 1 end">
         <span class="toolbar">
           <img src="image/grey_tag_32.png" border="0" alt="Tag"/><?vsp http(self.toolbarLabel('Tag'));?>
+        </span>
+      </v:template>
+
+      <v:url value="--''" format="%s" url="--'javascript: if (singleSelected(document.F1, ''CB_'', ''No items were selected to be renamed. Please select an item before you click the Rename button.'', ''You can only rename one item at a time. Please deselect all but one.'')) renameShow(document.F1, ''CB_'', ''rename.vspx?src=s'');'" enabled="--self.toolbarEnable('rename')" xhtml_titile="Rename" xhtml_class="toolbar" >
+        <v:before-render>
+          <![CDATA[
+            control.ufl_value := '<img src="image/renm_32.png" border="0"/>' || self.toolbarLabel('Rename');
+          ]]>
+        </v:before-render>
+      </v:url>
+      <v:template type="simple" enabled="--case when self.toolbarEnable('rename') then 0 else 1 end">
+        <span class="toolbar">
+          <img src="image/grey_renm_32.png" border="0" alt="Rename"/><?vsp http(self.toolbarLabel('Rename'));?>
         </span>
       </v:template>
 
@@ -3876,31 +3909,6 @@
         </span>
       </v:template>
 
-      <v:url value="--''" format="%s" url="--'javascript: if (singleSelected(document.F1, ''CB_'', ''No items were selected to be renamed. Please select an item before you click the Rename button.'', ''You can only rename one item at a time. Please deselect all but one.'')) renameShow(document.F1, ''CB_'', ''rename.vspx?src=s'');'" enabled="--self.toolbarEnable('rename')" xhtml_titile="Rename" xhtml_class="toolbar" >
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/renm_32.png" border="0"/>' || self.toolbarLabel('Rename');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('rename') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_renm_32.png" border="0" alt="Rename"/><?vsp http(self.toolbarLabel('Rename'));?>
-        </span>
-      </v:template>
-
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for property changes.'')) toolbarPost(''properties'');'" enabled="--self.toolbarEnable('properties')" xhtml_title="Properties" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/prop_32.png" border="0"/>' || self.toolbarLabel('Properties');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('properties') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_prop_32.png" border="0" alt="Properties"/><?vsp http(self.toolbarLabel('Properties'));?>
-        </span>
-      </v:template>
       <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for deletion.'')) toolbarPost(''delete'');'" enabled="--self.toolbarEnable('delete')" xhtml_title="Delete" xhtml_class="toolbar" >
         <v:before-render>
           <![CDATA[
