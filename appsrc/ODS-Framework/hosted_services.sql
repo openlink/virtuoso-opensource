@@ -4647,7 +4647,7 @@ create procedure WA_GET_APP_NAME (in app varchar)
   else if (app = 'bookmark')
     return 'Bookmark';
   else if (app = 'nntpf')
-    return 'News';
+    return 'Discussion';
   else
     return app;
 };
