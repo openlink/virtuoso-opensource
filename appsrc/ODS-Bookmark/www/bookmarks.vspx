@@ -40,10 +40,10 @@
         imageStr := '&nbsp;&nbsp;';
       }
       if (self.account_role <> 'public') {
-        altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-        http(sprintf('<a href="#" onclick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
+        altStr := sprintf ('Sort Rows on %s in %s Order', titleName, directionStr);
+        http (sprintf ('<a href="#" onclick="javascript: myPost (''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
       } else {
-        http(sprintf('%s%s', titleName, imageStr));
+        http (sprintf ('%s%s', titleName, imageStr));
       }
     ]]>
   </v:method>
@@ -52,9 +52,9 @@
     <![CDATA[
       if (columnName = '')
         return;
-      self.ds.vc_reset();
+      self.ds.vc_reset ();
       if (self.n_order = columnName) {
-        self.n_direction := either(equ(self.n_direction, 'asc'), 'desc', 'asc');
+        self.n_direction := either (equ (self.n_direction, 'asc'), 'desc', 'asc');
       } else {
         self.n_direction := 'asc';
       }
@@ -86,10 +86,10 @@
 
   <v:method name="node_name" arglist="">
     <![CDATA[
-      if (BMK.WA.node_type(self.node) = 't') {
-        if (BMK.WA.node_suffix(self.node) = '')
+      if (BMK.WA.node_type (self.node) = 't') {
+        if (BMK.WA.node_suffix (self.node) = '')
           return 'Tags';
-        return BMK.WA.node_suffix(self.node);
+        return BMK.WA.node_suffix (self.node);
       }
       declare tree any;
       tree := xml_tree_doc(BMK.WA.bmk_tree(self.domain_id));
@@ -579,8 +579,8 @@
                 declare ts_max, ts_size integer;
                 declare ts_class varchar;
 
-                if (is_empty_or_null(self.tag))
-                  self.tag := BMK.WA.node_suffix(self.node);
+                if (is_empty_or_null (self.tag))
+                  self.tag := BMK.WA.node_suffix (self.node);
                 ts_max := 1;
                 for (select TS_TAG, TS_COUNT from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id order by TS_TAG) do {
                   if (TS_TAG = '') {
@@ -606,14 +606,14 @@
 
               self.mode_test();
               className := 'Root';
-              if (BMK.WA.node_type(self.node) = 'f') {
-                if (BMK.WA.node_id(self.node) <> 0)
+              if (BMK.WA.node_type (self.node) = 'f') {
+                if (BMK.WA.node_id (self.node) <> 0)
                   className := 'Folder';
-              } else if (BMK.WA.node_type(self.node) = 's') {
-                if (BMK.WA.node_id(self.node) <> 0)
+              } else if (BMK.WA.node_type (self.node) = 's') {
+                if (BMK.WA.node_id (self.node) <> 0)
                   className := 'Smart Folder';
-              } else if (BMK.WA.node_type(self.node) = 't') {
-                if (BMK.WA.node_suffix(self.node) <> '')
+              } else if (BMK.WA.node_type (self.node) = 't') {
+                if (BMK.WA.node_suffix (self.node) <> '')
                   className := 'Tag';
               }
               http(sprintf('<div id="channel_header">&nbsp;<b>%s: %s</b></div>', className, self.node_name()));
@@ -664,17 +664,17 @@
                     declare data any;
 
                     data := (select SF_DATA from BMK.WA.SFOLDER where SF_DOMAIN_ID = self.domain_id and SF_ID = BMK.WA.node_id(self.node));
-                    control.ds_sql := BMK.WA.sfolder_sql(self.domain_id, self.account_id, data);
+                    control.ds_sql := BMK.WA.sfolder_sql (self.domain_id, self.account_id, data);
 
-                  } else if ((BMK.WA.node_type(self.node) = 't') and not is_empty_or_null(BMK.WA.node_suffix(self.node))) {
+                  } else if ((BMK.WA.node_type (self.node) = 't') and not is_empty_or_null (BMK.WA.node_suffix (self.node))) {
                     declare data any;
 
                     BMK.WA.xml_set('tags', data, BMK.WA.node_suffix(self.node));
-                    control.ds_sql := BMK.WA.sfolder_sql(self.domain_id, self.account_id, data);
+                    control.ds_sql := BMK.WA.sfolder_sql (self.domain_id, self.account_id, data);
                   }
 
                   self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
-                  control.ds_sql := concat(control.ds_sql, ' order by ', self.n_order, ' ', self.n_direction, ', _ID');
+                  control.ds_sql := concat (control.ds_sql, ' order by ', self.n_order, ' ', self.n_direction, ', _ID');
                 _end:;
                 ]]>
               </v:before-data-bind>
@@ -1236,8 +1236,8 @@
                 }
 
               _end:
-                self.v_parent_id := cast(get_keyword('f_parent_id', self.vc_page.vc_event.ve_params, '0') as integer);
-                self.v_name := get_keyword('f_name', self.vc_page.vc_event.ve_params, '');
+                self.v_parent_id := cast (get_keyword ('f_parent_id', self.vc_page.vc_event.ve_params, '0') as integer);
+                self.v_name := get_keyword ('f_name', self.vc_page.vc_event.ve_params, '');
               ]]>
             </v:before-data-bind>
             <div class="new-form-header">
@@ -1257,14 +1257,14 @@
 
                           S := '!@#';
                           if (self.v_id <> 0)
-                            S := BMK.WA.folder_path(self.domain_id, self.v_id);
+                            S := BMK.WA.folder_path (self.domain_id, self.v_id);
                           (control as vspx_select_list).vsl_items:= vector ();
                           (control as vspx_select_list).vsl_item_values:= vector ();
                           (control as vspx_select_list).vsl_selected_inx := 0;
                           (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items, vector ('Select folder ...'));
                           (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector ('0'));
                           for (select F_ID, BMK.WA.folder_path2(F_DOMAIN_ID, F_ID) as F_PATH2, BMK.WA.folder_path(F_DOMAIN_ID, F_ID) as F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH) do {
-                            if (F_PATH like concat(S, '%'))
+                            if (F_PATH like concat (S, '%'))
                               goto _skip;
                             (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items, vector (F_PATH2));
                             (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector (cast(F_ID as varchar)));
@@ -1278,7 +1278,7 @@
 
                           N := 0;
                           foreach (any item in (control as vspx_select_list).vsl_item_values) do {
-                            if (item = cast(self.v_parent_id as varchar))
+                            if (item = cast (self.v_parent_id as varchar))
                               (control as vspx_select_list).vsl_selected_inx := N;
                             N := N + 1;
                           }
@@ -1292,7 +1292,7 @@
                     <v:label for="f_name" value="Folder name"/>
                   </th>
                   <td>
-                    <v:text name="f_name" null-value="--''" value="--BMK.WA.utf2wide(self.v_name)" xhtml_size="60"/>
+                    <v:text name="f_name" null-value="--''" value="--BMK.WA.utf2wide (self.v_name)" xhtml_size="60"/>
                   </td>
                 </tr>
               </table>
@@ -1303,19 +1303,19 @@
                   <![CDATA[
                     declare exit handler for SQLSTATE '*' {
                       if (__SQL_STATE = 'TEST') {
-                        self.vc_error_message := BMK.WA.test_clear(__SQL_MESSAGE);
+                        self.vc_error_message := BMK.WA.test_clear (__SQL_MESSAGE);
                         self.vc_is_valid := 0;
                         return;
                       }
                       resignal;
                     };
 
-                    self.v_name := BMK.WA.test(self.f_name.ufl_value, vector('name', 'Folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
-                    self.v_parent_id := cast(self.f_parent_id.ufl_value as integer);
+                    self.v_name := BMK.WA.test (self.f_name.ufl_value, vector ('name', 'Folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
+                    self.v_parent_id := cast (self.f_parent_id.ufl_value as integer);
                     if (self.v_parent_id = 0)
                       self.v_parent_id := null;
 
-                    if (BMK.WA.folder_check_unique(self.domain_id, self.v_parent_id, self.v_name, self.v_id))
+                    if (BMK.WA.folder_check_unique (self.domain_id, self.v_parent_id, self.v_name, self.v_id))
                       signal('TEST', 'Folder name already exists. Please, enter new name!<>');
 
                     if ((self.v_mode <> 'Folder/Create') and BMK.WA.folder_check_parent(self.domain_id, self.v_id, self.v_parent_id))
