@@ -94,7 +94,27 @@ VERSION_INIT()
       done
       LANG=POSIX
       export LANG
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=450 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+
+      BASE="0"
+      echo $BASE
+      if [ -f version.base ] ; then
+	  BASE=`cat version.base`
+      fi
+
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=450 } { cnt = cnt + $1 } END { print cnt }'`
+
+      VERSION=`expr $BASE + $VERSION`
+      CURR_VERSION=$VERSION
+      if [ -f version.curr ] ; then
+	  CURR_VERSION=`cat version.curr`
+      fi
+      if [ $CURR_VERSION -gt $VERSION ] ; then
+	  BASE=`expr $CURR_VERSION - $VERSION + 1`
+	  echo $BASE > version.base
+	  VERSION=$CURR_VERSION
+      fi
+      echo $VERSION > version.curr
+      VERSION=`echo $VERSION | awk ' { printf "1.%02.02f", $1/100 }'`
       rm -f version.tmp
       echo "$VERSION" > vad_version
   fi
