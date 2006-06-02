@@ -354,7 +354,7 @@ vad_create() {
 	  $ISQL $DSN dba dba vad.isql 1>/dev/null 2>/dev/null
 	fi
   cd $mydir
-  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER', '.', 'ods_discussion.vad')"
+  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER', '.', 'ods_discussion_dav.vad')"
   do_command_safe $DSN "commit work"
   do_command_safe $DSN "checkpoint"
 }

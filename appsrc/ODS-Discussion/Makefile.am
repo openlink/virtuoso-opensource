@@ -21,12 +21,12 @@
 
 TOP=@TOP@
 
-nodist_vad_DATA = ods_nntpf_dav.vad
+nodist_vad_DATA = ods_discussion_dav.vad
 
 CLEANFILES =  \
 	make_nntpf_vad.log \
 	make_nntpf_vad.xml \
-	ods_nntpf_dav.vad \
+	ods_discussion_dav.vad \
 	vad.db \
 	virtuoso.ini \
 	vad.lck \
@@ -35,7 +35,7 @@ CLEANFILES =  \
 	virtuoso.tdb \
 	vad.trx
 
-ods_nntpf_dav.vad: $(EXTRA_DIST)
+ods_discussion_dav.vad: $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
 
 clean-local:
