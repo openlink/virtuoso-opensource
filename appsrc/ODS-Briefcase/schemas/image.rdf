@@ -29,7 +29,7 @@
          xml:base="http://www.openlinksw.com/schemas/Image#">
   <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/Image#">
     <rdfs:label>Graphics</rdfs:label>
-    <rdfs:comment>The graphics file format general attributes.</rdfs:comment>
+        <rdfs:comment>Files based on standard computer Graphic formats (jpegs, gif, png etc..)</rdfs:comment>
     <virtrdf:catName>Graphics</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>

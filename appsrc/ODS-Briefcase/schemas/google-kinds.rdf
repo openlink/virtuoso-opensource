@@ -28,9 +28,9 @@
          xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
          xml:base="http://www.openlinksw.com/schemas/google-kinds#">
   <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/google-kinds#">
-    <rdfs:label>Google Kinds document</rdfs:label>
-    <rdfs:comment>Google Kinds document</rdfs:comment>
-    <virtrdf:catName>Kind Document (Google)</virtrdf:catName>
+        <rdfs:label>Google Data</rdfs:label>
+        <rdfs:comment>Items that conform to Google's Metadata Classification Scheme (Googlebase, Co-op, and others)</rdfs:comment>
+        <virtrdf:catName>Google Data</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>
   <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-kinds#title">

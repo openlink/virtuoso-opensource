@@ -24,9 +24,9 @@
 -->
 <rdf:RDF xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#" xmlns:rss="http://www.python.org/topics/xml/xbel/">
   <owl:Ontology rdf:about="http://www.apple.com/metadata#">
-    <rdfs:label>Spotlight Objects</rdfs:label>
-    <rdfs:comment>Spotlight creates searcheable &apos;Metadata Objects&apos; for various data files used by Apple (MacOS X) programs.</rdfs:comment>
-    <virtrdf:catName>Spotlight Objects</virtrdf:catName>
+	<rdfs:label>Spotlight's Data for Mac OS X filesystem content</rdfs:label>
+	<rdfs:comment>Spotlight's Metadata Classification Scheme</rdfs:comment>
+	<virtrdf:catName>Spotlight Data</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>
   <!-- Common Metadata Attribute Keys -->

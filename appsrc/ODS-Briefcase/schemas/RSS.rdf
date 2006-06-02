@@ -28,9 +28,9 @@
          xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
          xmlns:rss="http://purl.org/rss/1.0/">
   <owl:Ontology rdf:about="http://purl.org/rss/1.0/">
-    <rdfs:label>Content Syndication (like RSS and Atom)</rdfs:label>
-    <rdfs:comment>Weblogs and other content syndication feeds and logs.</rdfs:comment>
-    <virtrdf:catName>Feeds (RSS, Atom, RSS-RDF)</virtrdf:catName>
+        <rdfs:label>Syndicated Content (RSS 2.0, RSS 1.1, and Atom)</rdfs:label>
+        <rdfs:comment>Content feeds conforming to RSS 2.0, RSS 1.1, and Atom syndication formats.</rdfs:comment>
+        <virtrdf:catName>Syndicated Content</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>
   <rdf:Property rdf:about="http://purl.org/rss/1.0/title">

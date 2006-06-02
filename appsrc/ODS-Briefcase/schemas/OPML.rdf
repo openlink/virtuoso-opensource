@@ -29,9 +29,9 @@
          xmlns:rss="http://www.python.org/topics/xml/xbel/"
 	 >
   <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/OPML#">
-    <rdfs:label>Outline Processor Markup Language (OPML)</rdfs:label>
-    <rdfs:comment>OPML lets briefly describe content of documents or collections.</rdfs:comment>
-    <virtrdf:catName>Feed Lists (OPML, OCS)</virtrdf:catName>
+        <rdfs:label>Aggregated Content Channels (OPML, OCS)</rdfs:label>
+        <rdfs:comment>Syndicated Content Aggregation using OPML or OCS aggregation formats</rdfs:comment>
+        <virtrdf:catName>Aggregated Content Channels</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>
   <rdf:Property rdf:about="http://www.openlinksw.com/schemas/OPML#title">

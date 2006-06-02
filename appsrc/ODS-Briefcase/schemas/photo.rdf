@@ -29,7 +29,7 @@
          xml:base="http://www.openlinksw.com/schemas/Photo#">
   <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/Photo#">
     <rdfs:label>Photos</rdfs:label>
-    <rdfs:comment>The photo file format general attributes.</rdfs:comment>
+	<rdfs:comment>Camera generated still images that includes EXIF metadata</rdfs:comment>
     <virtrdf:catName>Photos</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>
