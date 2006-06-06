@@ -45,7 +45,16 @@
       <xsl:sort select="@class"/>
       <xsl:sort select="@time" order="descending"/>
       <xsl:if test="position() <= $nrows">
-        <xsl:apply-templates select="."/>
+        <xsl:if test=" (position() mod 2)= 0">
+           <xsl:apply-templates select=".">
+              <xsl:with-param name = "row_class" >listing_row_even</xsl:with-param> 
+           </xsl:apply-templates>
+      </xsl:if>
+        <xsl:if test=" (position() mod 2) > 0">
+           <xsl:apply-templates select=".">
+            <xsl:with-param name = "row_class" >listing_row_odd</xsl:with-param> 
+           </xsl:apply-templates>
+        </xsl:if>
       </xsl:if>
     </xsl:for-each>
   </table>
@@ -54,6 +63,7 @@
 
 <xsl:template match="dash-row">
   <tr>
+    <xsl:attribute name="class"><xsl:value-of select="$row_class"/></xsl:attribute>
     <td valign="top">
       <xsl:if test="@class = 'normal'">
         <img src="images/icons/about_16.png" border="0" alt="normal" title="normal"/>

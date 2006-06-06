@@ -130,6 +130,7 @@
                           <v:form type="update" name="_edit1_" if-not-exists="nothing" method="POST" >
                             <tr>
                               <td>
+                                
                                 <?V cast(self.vd.ds_current_row.te_rowset[0] as varchar) ?>
                                 <?vsp
                                   declare ttt varchar;
@@ -348,7 +349,7 @@
                           </v:form>
                         </v:template>
                         <vm:template type="browse">
-                          <tr>
+                          <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
                             <td>
                               <v:label format="%s" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
                               <?vsp

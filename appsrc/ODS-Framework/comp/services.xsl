@@ -66,7 +66,7 @@
       <v:data-set name="serv" scrollable="1" edit="1" data-source="self.dss">
         <vm:template type="repeat">
           <vm:template type="browse">
-            <tr>
+             <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
               <td>
                 <v:button style="url" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" action="simple" name="service_enter">
                   <v:after-data-bind>

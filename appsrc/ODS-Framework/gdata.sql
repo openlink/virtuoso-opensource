@@ -34,9 +34,10 @@ create procedure WA_GDATA_INIT ()
 }
 ;
 
-DB.DBA.VHOST_REMOVE (lpath=>'/dataspaces');
+DB.DBA.VHOST_REMOVE (lpath=>'/dataspace');
+DB.DBA.VHOST_DEFINE (lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
+
 DB.DBA.VHOST_REMOVE (lpath=>'/dataspaces/Gdata');
-DB.DBA.VHOST_DEFINE (lpath=>'/dataspaces', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
 DB.DBA.VHOST_DEFINE (lpath=>'/dataspaces/Gdata', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
 
 WA_GDATA_INIT ()
@@ -57,16 +58,38 @@ create procedure wa_app_to_type (in app varchar)
 	), app);
 };
 
+create procedure wa_type_to_app (in app varchar)
+{
+  return get_keyword (app, vector (
+	'WEBLOG2', 'weblog',
+	'eNews2',  'feeds',
+	'oWiki',   'wiki',
+	'oDrive',  'briefcase',
+	'oMail',   'mail',
+	'oGallery','photos',
+	'Community','community',
+	'Bookmark','bookmark',
+	'nntpf',    'new'
+	), app);
+};
+
+
 use ODS;
 
 create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 {
   declare ppath varchar;
-  declare path any;
+  declare path, pars, lines any;
   declare app, uname, inst, url, appn varchar;
+  declare vhost, lhost, p_path_str, full_path, p_full_path, l_path_str, gdata_url varchar;
+  declare id int;
 
+  lines := http_request_header ();
   ppath := http_physical_path ();
   path := split_and_decode (ppath, 0, '\0\0/');
+
+  vhost := http_map_get ('vhost');
+  lhost := http_map_get ('lhost');
 
   app := null;
   uname := null;
@@ -75,9 +98,37 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 
   if (length (path) > 4)
     app := path [4];
-  if (app is null or app not in ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'news'))
+
+  if (length (path) > 7 and path[5] = 'data' and path[6] = 'public' and path[7] = 'about.rdf')
+    app := 'users';
+
+  if (app is null or app not in ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'news', 'users'))
    {
-     signal ('22023', 'Invalid application domain.');
+     signal ('22023', sprintf ('Invalid application domain [%s].', app));
+   }
+
+  if (app = 'users')
+   {
+      uname := path[4];
+      select sne_id into id from DB.DBA.sn_entity where sne_name = uname;
+      pars := vector (':sne', cast (id as varchar));
+
+      p_path_str := '/DAV/VAD/wa';
+      l_path_str := (select top 1 HP_LPATH from DB.DBA.HTTP_PATH where HP_PPATH = p_path_str
+      and HP_HOST = vhost and HP_LISTEN_HOST = lhost);
+
+      if (l_path_str is not null)
+	full_path := concat (l_path_str, '/ufoaf.xml');
+      else
+	full_path := '/DAV/VAD/wa/ufoaf.xml';
+
+      p_full_path := http_physical_path_resolve (full_path, 1);
+      http_internal_redirect (full_path, p_full_path);
+      set_user_id ('dba');
+      set http_charset='utf-8';
+      http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+      WS.WS.GET (path, pars, lines);
+      return null;
    }
 
   appn := DB.DBA.wa_app_to_type (app);
@@ -106,6 +157,7 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
       select WAM_HOME_PAGE into url from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where
 	  U_NAME = uname and WAM_USER = U_ID and WAM_INST = inst;
     }
+redir:
   http_request_status ('HTTP/1.1 302 Found');
   http_header (sprintf ('Location: %s\n', url));
   return null;

@@ -48,7 +48,7 @@
       <vm:template type="repeat">
         <vm:template type="if-not-exists">No applications available</vm:template>
         <vm:template type="browse">
-          <tr>
+          <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
             <td>
               <vm:url value="--(control.vc_parent as vspx_row_template).te_rowset[0]" url="">
                 <v:after-data-bind>

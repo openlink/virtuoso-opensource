@@ -208,10 +208,10 @@
   <vm:template type="simple" condition="self.mdss.ds_rows_fetched">
     <table class="listing">
       <tr class="listing_header_row">
-	<th><v:url value="Name" url="services.vspx?sort-by=3" name="s1l" /></th>
-	<th><v:url value="Type" url="services.vspx?sort-by=9" name="s2l"/></th>
-	<th><v:url value="Description" url="services.vspx?sort-by=2" name="s3l" /></th>
-	<th><v:url value="Ownership" url="services.vspx?sort-by=4" name="s4l" /></th>
+	<th><v:url value="Name" url="services.vspx?sort-by=3" name="s1l" xhtml_class="listing_header_row" /></th>
+	<th><v:url value="Type" url="services.vspx?sort-by=9" name="s2l" xhtml_class="listing_header_row" /></th>
+	<th><v:url value="Description" url="services.vspx?sort-by=2" name="s3l" xhtml_class="listing_header_row" /></th>
+	<th><v:url value="Ownership" url="services.vspx?sort-by=4" name="s4l" xhtml_class="listing_header_row" /></th>
         <th>Actions</th>
         <th>Application Shortcuts</th>
       </tr>

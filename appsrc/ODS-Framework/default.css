@@ -737,6 +737,13 @@ tr.listing_header_row th
   white-space: nowrap;
 }
 
+a.listing_header_row, a.listing_header_row:visited, a.listing_header_row:hover
+{
+  white-space: nowrap;
+  padding: 2px;
+  color: #000000;
+}
+
 /* Listing-related commands - top and bottom */
 
 div.listing_top_ctl_grp

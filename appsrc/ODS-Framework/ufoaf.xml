@@ -29,8 +29,8 @@
     <sql:header xmlns:sql='urn:schemas-openlink-com:xml-sql'>
 	<sql:param name=":sne">-1</sql:param>
     </sql:header>
-    <foaf:Person>
-    <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
+    <foaf:Person rdf:about="">
+    <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql' sql:xsl="foaf.xsl"><![CDATA[
 	select
             xmlelement ('http://xmlns.com/foaf/0.1/:nick', wa_utf8_to_wide (u_name)),
             xmlelement ('http://xmlns.com/foaf/0.1/:title', either( equ(WA_OPTION_IS_PUBLIC(u_name,0),1), WAUI_TITLE,'' )),
@@ -80,6 +80,14 @@
 	        ),
 	    null),
 	    
+	    xmlelement ('http://xmlns.com/foaf/0.1/:based_near',
+	      xmlelement ('http://www.w3.org/2003/01/geo/wgs84_pos#:Point',
+	        xmlattributes (
+	              sprintf ('%.06f', WAUI_LAT) as 'http://www.w3.org/2003/01/geo/wgs84_pos#:lat',
+	              sprintf ('%.06f', WAUI_LNG) as 'http://www.w3.org/2003/01/geo/wgs84_pos#:long'
+		    )
+	         )), 
+	    
 	    xmlelement ('http://xmlns.com/foaf/0.1/:homepage',
 	    xmlattributes ( either( equ(WA_OPTION_IS_PUBLIC(u_name,7),1), WAUI_WEBPAGE,'') as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
 	    from sn_person, sys_users, WA_USER_INFO where sne_org_id = u_id and u_id = WAUI_U_ID
@@ -99,6 +107,23 @@
 			     select u_id,u_full_name,u_name from sn_person, sn_related, sys_users where sne_org_id = u_id
 			     and sne_id = snr_from and snr_to = :sne
 			     ) sub
+	]]></sql:sqlx>
+    <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
+	select xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
+	xmlelement ('http://www.openlinksw.com/virtuoso/ods/:'|| wa_type_to_app (WAI_TYPE_NAME),
+		xmlattributes (
+			'http://'|| WA_GET_HOST ()|| '/dataspace/' ||
+			U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) || '/' ||
+			wa_utf8_to_wide (WAI_NAME) || '/about.rdf'
+			as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about'),
+		xmlelement ('http://purl.org/dc/elements/1.1/:title', wa_utf8_to_wide (WAI_NAME)),
+		xmlelement ('http://purl.org/dc/elements/1.1/:description', wa_utf8_to_wide (WAI_DESCRIPTION)),
+		xmlelement ('http://www.openlinksw.com/virtuoso/ods/:owner',  xmlattributes (
+			'http://'|| WA_GET_HOST ()|| '/dataspace/' ||
+			U_NAME || '/about.rdf'
+			as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
+		))
+	from (select WAI_TYPE_NAME,WAI_NAME,WAI_DESCRIPTION,U_NAME from WA_MEMBER, WA_INSTANCE, sn_entity, SYS_USERS where WAM_INST = WAI_NAME and WAM_USER = U_ID and sne_name = u_name and sne_id = :sne and WAM_MEMBER_TYPE = 1 order by 1) sub
 	]]></sql:sqlx>
   </foaf:Person>
 </rdf:RDF>
