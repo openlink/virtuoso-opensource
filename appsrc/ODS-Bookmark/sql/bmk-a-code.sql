@@ -648,8 +648,8 @@ create procedure BMK.WA.user_name(
 -- Bookmarks
 --
 -------------------------------------------------------------------------------
-create procedure BMK.WA.bookmark_update
-(
+create procedure BMK.WA.bookmark_update (
+  in id integer,
   in domain_id integer,
   in uri any,
   in name any,
@@ -663,6 +663,14 @@ create procedure BMK.WA.bookmark_update
       values (uri, name, description);
     bookmark_id := identity_value ();
   }
+  if (exists(select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id)) {
+    update BMK.WA.BOOKMARK_DOMAIN
+       set BD_BOOKMARK_ID = bookmark_id,
+           BD_NAME = name,
+           BD_DESCRIPTION = description,
+           BD_LAST_UPDATE = now()
+     where BD_ID = id;
+  } else {
   if (not exists(select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and BD_BOOKMARK_ID = bookmark_id)) {
     insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE)
       values (domain_id, bookmark_id, name, description, now());
@@ -673,6 +681,7 @@ create procedure BMK.WA.bookmark_update
            BD_LAST_UPDATE = now()
      where BD_DOMAIN_ID = domain_id
        and BD_BOOKMARK_ID = bookmark_id;
+  }
   }
   return bookmark_id;
 }
@@ -770,7 +779,7 @@ create procedure BMK.WA.bookmark_import_netscape(
     if (T is null)
       goto _a;
     Q := xpath_eval('/dl/dt/a/@href', V, N);
-    tmp := BMK.WA.bookmark_update(domain_id, cast(Q as VARCHAR), cast(T as VARCHAR), null);
+    tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as VARCHAR), cast(T as VARCHAR), null);
     BMK.WA.bookmark_parent(domain_id, tmp, folder_id);
     N := N + 1;
   }
@@ -808,7 +817,7 @@ create procedure BMK.WA.bookmark_import_xbel(
     if (T is null)
       goto _a;
     Q := xpath_eval('/dl/dt/a/@href', V, N);
-    tmp := BMK.WA.bookmark_update(domain_id, cast(Q as VARCHAR), cast(T as VARCHAR), null);
+    tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as VARCHAR), cast(T as VARCHAR), null);
     BMK.WA.bookmark_parent(domain_id, tmp, folder_id);
     N := N + 1;
   }
@@ -2822,7 +2831,7 @@ create procedure BMK.WA.validate2 (
     if (isnull(regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
       goto _error;
   } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
-    if (isnull(regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_]*)?\$', propertyValue)))
+    if (isnull(regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=]*)?\$', propertyValue)))
       goto _error;
   } else if (propertyType = 'email') {
     if (isnull(regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))

@@ -84,19 +84,6 @@
     ]]>
   </v:method>
 
-  <v:method name="node_name" arglist="">
-    <![CDATA[
-      if (BMK.WA.node_type (self.node) = 't') {
-        if (BMK.WA.node_suffix (self.node) = '')
-          return 'Tags';
-        return BMK.WA.node_suffix (self.node);
-      }
-      declare tree any;
-      tree := xml_tree_doc(BMK.WA.bmk_tree(self.domain_id));
-      return cast(xpath_eval(sprintf('//*[@id = "%s"]/@name', self.node), tree, 1) as varchar);
-    ]]>
-  </v:method>
-
   <v:method name="node_code" arglist="in node vspx_tree_node">
     <![CDATA[
       return xpath_eval('./@id', node.tn_element, 1);
@@ -178,8 +165,8 @@
       <v:variable name="tbLabels" type="integer" default="1" />
       <v:variable name="charsLimit" type="integer" default="60" />
 
-      <v:variable persist="1" name="v_mode" type="varchar" default="''"/>
-      <v:variable persist="1" name="nodes" type="any" default="null"/>
+      <v:variable persist="1" name="v_mode" type="varchar" default="'browse'"/>
+      <v:variable persist="0" name="nodes" type="any" default="null"/>
       <v:variable name="v_id"  type="any" default="0"/>
       <v:variable name="v_parent_id" type="varchar" default="'0'"/>
       <v:variable name="v_uri" type="varchar" param-name="URI" default="''"/>
@@ -391,7 +378,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''Bookmark/Create'');'" enabled="--self.toolbarEnable('new')" xhtml_title="New Folder" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/add_32.png" border="0"/>' || self.toolbarLabel('New Bookmark');
+                control.ufl_value := '<img src="image/bmk_add_32.png" border="0"/>' || self.toolbarLabel('New Bookmark');
               ]]>
             </v:before-render>
           </v:url>
@@ -513,12 +500,16 @@
               <![CDATA[
                 if (self.pt_state is not null and not e.ve_is_post)
                   control.vc_set_control_state (self.pt_state);
-                if (self.pt_open and is_empty_or_null(self.node) and (self.account_role <> 'public')) {
+                if (is_empty_or_null(self.node)) {
                   declare tree, tmp any;
-                  tree := xml_tree_doc(BMK.WA.bmk_tree(self.domain_id));
+
+                  tree := xml_tree_doc (BMK.WA.bmk_tree (self.domain_id));
                   tmp := xpath_eval('//*[starts-with(@id, "f#")]', tree, 1);
-                  if (is_empty_or_null(tmp))
+                  if (is_empty_or_null(tmp)) {
                     tmp := xpath_eval('//*[starts-with(@id, "s#")]', tree, 1);
+                    if (is_empty_or_null(tmp))
+                      tmp := xpath_eval('//*[starts-with(@id, "p#")]', tree, 1);
+                  }
                   if (not is_empty_or_null(tmp))
                     self.node := xpath_eval('./@id', tmp, 1);
                 }
@@ -602,7 +593,7 @@
         <div style="width: 66%; height: 100%; float: right; overflow: auto; border: solid #7f94a5; border-width: 0px 0px 0px 1px;">
           <v:template type="simple" enabled="--case when (self.v_mode = 'browse') then 1 else 0 end">
             <?vsp
-              declare className any;
+              declare className, nodeName any;
 
               self.mode_test();
               className := 'Root';
@@ -616,7 +607,27 @@
                 if (BMK.WA.node_suffix (self.node) <> '')
                   className := 'Tag';
               }
-              http(sprintf('<div id="channel_header">&nbsp;<b>%s: %s</b></div>', className, self.node_name()));
+
+              nodeName := null;
+              if (BMK.WA.node_type (self.node) = 't') {
+                if (BMK.WA.node_suffix (self.node) = '') {
+                  nodeName := 'Tags';
+                } else {
+                  nodeName := BMK.WA.node_suffix (self.node);
+                }
+              } else {
+                declare tree any;
+
+                tree := xml_tree_doc(BMK.WA.bmk_tree(self.domain_id));
+                if (self.node <> '') {
+                  nodeName := cast(xpath_eval(sprintf('//*[@id = "%s"]/@name', self.node), tree, 1) as varchar);
+                } else {
+                  nodeName := cast(xpath_eval('//*[1]/@name', tree, 1) as varchar);
+                  self.node := cast(xpath_eval('//*[1]/@id', tree, 1) as varchar);
+                }
+              }
+
+              http(sprintf('<div id="channel_header">&nbsp;<b>%s: %s</b></div>', className, nodeName));
             ?>
             <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
               <v:before-data-bind>
@@ -1187,7 +1198,7 @@
                     };
 
                     self.v_name := BMK.WA.test(self.b_name.ufl_value, vector('name', 'Bookmark Name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
-                    self.v_uri := BMK.WA.test(self.b_uri.ufl_value, vector('name', 'Bookmark Location', 'class', 'uri', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
+                    self.v_uri := BMK.WA.test(self.b_uri.ufl_value, vector('name', 'Bookmark Location', 'class', 'uri', 'type', 'varchar', 'minLength', 1, 'maxLength', 100));
                     self.v_folder_id := self.b_folder_id.ufl_value;
                     self.v_folder_name := trim(self.b_folder_name.ufl_value);
                     if ((self.v_folder_name <> '') and (not BMK.WA.folder_check_name(self.v_folder_name, 1))) {
@@ -1196,7 +1207,7 @@
                   		return;
                     }
 
-                    tmp := BMK.WA.bookmark_update(self.domain_id, self.v_uri, self.v_name, self.v_description);
+                    tmp := BMK.WA.bookmark_update(self.v_id, self.domain_id, self.v_uri, self.v_name, self.v_description);
                     BMK.WA.bookmark_tags(self.domain_id, self.account_id, tmp, self.v_tags);
                     self.v_folder_id := BMK.WA.folder_create(self.domain_id, self.v_folder_name, self.v_folder_id);
                     BMK.WA.bookmark_parent(self.domain_id, tmp, self.v_folder_id);
