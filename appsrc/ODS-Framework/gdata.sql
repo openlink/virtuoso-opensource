@@ -37,8 +37,8 @@ create procedure WA_GDATA_INIT ()
 DB.DBA.VHOST_REMOVE (lpath=>'/dataspace');
 DB.DBA.VHOST_DEFINE (lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
 
-DB.DBA.VHOST_REMOVE (lpath=>'/dataspaces/Gdata');
-DB.DBA.VHOST_DEFINE (lpath=>'/dataspaces/Gdata', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
+DB.DBA.VHOST_REMOVE (lpath=>'/dataspaces/GData');
+DB.DBA.VHOST_DEFINE (lpath=>'/dataspaces/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
 
 WA_GDATA_INIT ()
 ;
