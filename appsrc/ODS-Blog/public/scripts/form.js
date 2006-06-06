@@ -155,3 +155,21 @@ function toggle_comment (id)
       img.src = "/weblog/public/images/minus.gif"
     }
 }
+
+    var ns6 = (document.getElementById)? true:false;
+
+    function displayComment (id)
+    {
+      var obj;
+      if (!ns6) return;
+      obj = document.getElementById ('ct_'+id);
+      obj.style.visibility = "visible";
+    }
+
+    function hideComment (id)
+    {
+      var obj;
+      if (!ns6) return;
+      obj = document.getElementById ('ct_'+id);
+      obj.style.visibility = "hidden";
+    }

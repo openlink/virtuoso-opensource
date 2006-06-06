@@ -589,9 +589,11 @@
                   show_categories := (select 1 from BLOG.DBA.MTYPE_CATEGORIES where MTC_BLOG_ID = self.blogid);
 		?>
                 <tr>
-                  <th>Trackback ping URLs</th>
-                  <th>Tags</th>
-                  <th>Category</th>
+		    <td><b>Trackback ping URLs</b><br/>
+			<small>You can specify multiple URLs, each on sigle line</small>
+		    </td>
+		    <td><b>Tags</b></td>
+		    <td><b>Category</b></td>
                 </tr>
                 <tr>
                   <td valign="top">

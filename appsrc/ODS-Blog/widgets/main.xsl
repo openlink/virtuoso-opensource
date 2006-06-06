@@ -183,6 +183,8 @@
     <v:variable name="cmf_open" type="int" default="0" persist="temp" param-name="cmf"/>
     <v:variable name="comm_ref" type="int" default="null" param-name="cmr"/>
     <v:variable name="cm_ctr" type="int" default="0" persist="temp" />
+    <v:variable name="official_host" type="varchar" default="null" persist="temp" />
+    <v:variable name="official_host_label" type="varchar" default="null" persist="temp" />
 
     <v:variable name="welcome_msg_flag" type="int" default="0" persist="session"/>
     <v:before-render>
@@ -572,6 +574,21 @@ else if (length (self.catid))
  self.user_info := WA_GET_USER_INFO (http_nobody_uid (), self.owner_u_id, visb, 0);
  BLOG..BLOG_SET_WA_OPTS (self.owner_name, self.user_opts, self.user_info, self.opts,
  			 self.photo, self.audio, self.owner, self.address);
+ self.official_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+ if (self.official_host is null or not exists (select 1 from HTTP_PATH where HP_HOST = self.official_host and HP_PPATH = self.phome))
+   self.official_host := '*ini*';
+ else if (strchr (self.official_host, ':') is null)
+   self.official_host := self.official_host || ':80';
+
+ self.official_host_label := self.official_host;
+
+ if (not exists (select 1 from HTTP_PATH where HP_HOST = self.official_host and HP_PPATH = self.phome))
+   self.official_host := '*ini*';
+
+
+ if (self.official_host_label = '*ini*')
+   self.official_host_label := sys_stat ('st_host_name') || ':' || server_http_port ();
+
       ]]>
     </v:on-init>
     <?vsp
@@ -1299,8 +1316,19 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:podcast-link">
+      <?vsp
+      {
+      declare tp varchar;
+      tp := '';
+      ?>
+      <xsl:if test="@type">
+	  <xsl:variable name="type">?:media=<xsl:value-of select="@type"/></xsl:variable>
+      <xsl:processing-instruction name="vsp">
+	  tp := '<xsl:value-of select="$type"/>';
+      </xsl:processing-instruction>
+      </xsl:if>
     <div>
-      <a href="&lt;?vsp http (sprintf ('http://%s%sgems/podcasts.xml', self.host, self.base)); ?>" class="{local-name()}">
+	<a href="&lt;?vsp http (sprintf ('http://%s%sgems/podcasts.xml%s', self.host, self.base, tp)); ?>" class="{local-name()}">
         <img border="0" alt="Podcasts" title="Podcasts" >
 	    <xsl:call-template name="feed-image">
 		<xsl:with-param name="default">'rss-icon-16.gif'</xsl:with-param>
@@ -1309,6 +1337,36 @@ window.onload = function (e)
 	<xsl:apply-templates />
       </a>
     </div>
+    <?vsp
+      }
+    ?>
+  </xsl:template>
+
+  <xsl:template match="vm:itunes-link">
+      <?vsp
+      {
+      declare tp varchar;
+      tp := '';
+      ?>
+      <xsl:if test="@type">
+	  <xsl:variable name="type">?:media=<xsl:value-of select="@type"/></xsl:variable>
+      <xsl:processing-instruction name="vsp">
+	  tp := '<xsl:value-of select="$type"/>';
+      </xsl:processing-instruction>
+      </xsl:if>
+    <div>
+	<a href="&lt;?vsp http (sprintf ('pcast://%s%sgems/podcasts.xml%s', self.host, self.base, tp)); ?>" class="{local-name()}">
+        <img border="0" alt="iTunes" title="iTunes" >
+	    <xsl:call-template name="feed-image">
+		<xsl:with-param name="default">'rss-icon-16.gif'</xsl:with-param>
+	    </xsl:call-template>
+        </img>
+	<xsl:apply-templates />
+      </a>
+    </div>
+    <?vsp
+      }
+    ?>
   </xsl:template>
 
   <xsl:template match="vm:mrss-link">
@@ -3000,12 +3058,16 @@ window.onload = function (e)
 		  cm_id := cast (control.tn_value as integer);
 		  --dbg_printf ('cm_id=[%d]', cm_id);
 		  declare exit handler for not found;
+		  _bm_id := null;
 		  select BM_NAME, BM_ID, BM_HOME_PAGE, BLOG..blog_date_fmt (BM_TS, self.tz) as BM_TS, BM_COMMENT, BM_TITLE
 		  into _bm_name, _bm_id, _bm_home_page, _bm_ts, _bm_comment, _bm_subj
 		  from BLOG.DBA.BLOG_COMMENTS where BM_POST_ID = self.postid and BM_ID = cm_id and BM_IS_PUB = 1;
-		  if (length (_bm_home_page) = 0)
+
+		  if (_bm_id is not null and isstring (_bm_home_page) and length (_bm_home_page) = 0)
 		    _bm_home_page := '#';
 		  self.cm_ctr := self.cm_ctr + 1;
+		  if (_bm_id is not null and isstring (_bm_home_page))
+		    {
 		?>
 		<!--a class="comment-no" name="<?V _bm_id ?>" onclick="javascript: toggle_comment ('<?V _bm_id ?>'); return flase"><img src="/weblog/public/images/minus.gif" border="0" id="img_<?V _bm_id ?>" /></a-->
 	        <div class="comment" id="msg_<?V _bm_id ?>">
@@ -3060,6 +3122,7 @@ window.onload = function (e)
               </div>
             </div>
 		<?vsp
+		}
 		}
 		?>
 		<v:node />
@@ -7241,6 +7304,22 @@ window.onload = function (e)
 	      </v:button>
 	  </td>
         </tr>
+        <tr>
+          <td><label for="blog_url1">Blog URL</label></td>
+	  <td>
+	      <v:label name="blog_url_host1" value="--self.official_host_label" format="http://%s" />
+	      <v:data-list
+		  sql="select HP_LPATH from HTTP_PATH where HP_HOST = self.official_host and HP_PPATH = self.phome"
+                  key-column="HP_LPATH"
+                  value-column="HP_LPATH"
+		  xhtml_class="textbox" xhtml_id="blog_url1" name="blog_url1" value="" >
+		  <v:before-render>
+		      control.ufl_value := rtrim (self.current_home, '/');
+		      control.vs_set_selected ();
+		  </v:before-render>
+	      </v:data-list>
+	  </td>
+        </tr>
         <tr><td colspan="2">
           <v:button xhtml_class="real_button" action="simple" name="blog_header_button" value="Save" xhtml_title="Save" xhtml_alt="Save">
             <v:on-post>
@@ -7250,9 +7329,11 @@ window.onload = function (e)
                 opts := self.opts;
                 opts := BLOG.DBA.BLOG2_SET_OPTION('WelcomeMessage', opts, self.welcome_msg.ufl_value);
 		self.opts := opts;
+		self.current_home := self.blog_url1.ufl_value || '/';
 
                 update BLOG.DBA.SYS_BLOG_INFO set
                   BI_TITLE = self.title1.ufl_value,
+		  BI_HOME = self.current_home,
                   BI_ABOUT = self.about1.ufl_value,
                   BI_DISCLAIMER = self.disc1.ufl_value,
                   BI_COPYRIGHTS = self.copy1.ufl_value,
@@ -10287,25 +10368,6 @@ window.onload = function (e)
        <v:url name="ubk_comm1" value="Back to Comments Management" url="index.vspx?page=ping&ping_tab=3&site_tab=3" />
 
       </div>
-      <script type="text/javascript"><![CDATA[
-    var ns6 = (document.getElementById)? true:false;
-
-    function displayComment (id)
-    {
-      var obj;
-      if (!ns6) return;
-      obj = document.getElementById ('ct_'+id);
-      obj.style.visibility = "visible";
-    }
-
-    function hideComment (id)
-    {
-      var obj;
-      if (!ns6) return;
-      obj = document.getElementById ('ct_'+id);
-      obj.style.visibility = "hidden";
-    }
-    ]]></script>
       <table class="listing">
     <tr class="listing_header_row">
         <th>Date</th>
@@ -10613,25 +10675,6 @@ window.onload = function (e)
         </v:on-post>
       </v:button>
     </div>
-    <script type="text/javascript">
-      <![CDATA[
-        var ns6 = (document.getElementById) ? true : false;
-        function displayComment(id)
-        {
-          var obj;
-          if (!ns6) return;
-          obj = document.getElementById('ct_'+id);
-          obj.style.visibility = "visible";
-        }
-        function hideComment(id)
-        {
-          var obj;
-          if (!ns6) return;
-          obj = document.getElementById('ct_'+id);
-          obj.style.visibility = "hidden";
-        }
-      ]]>
-    </script>
     <table class="listing">
       <tr class="listing_header_row">
         <th>Date</th>
@@ -11457,44 +11500,132 @@ window.onload = function (e)
       <div class="scroll-area">
     <table class="listing">
         <tr class="listing_header_row">
-      <th>Post Title</th>
-      <th>Pending Comments</th>
-      <th>Pending Trackbacks</th>
+      <th>Title</th>
+      <th>Date</th>
+      <th>SPAM Rate</th>
       <th>Action</th>
         </tr>
         <?vsp {
        declare login_pars any;
+       declare params, postid any;
+       declare _del, _spam, _ham, _pub, _kind any;
+
+       params := self.vc_event.ve_params;
+
+       postid := get_keyword ('editid', params, null);
+
+       if (postid is not null)
+         {
+            _del := atoi (get_keyword('del', params, '-1'));
+            _pub := atoi (get_keyword('pub', params, '-1'));
+            _spam := atoi (get_keyword('spam', params, '-1'));
+            _ham := atoi (get_keyword('ham', params, '-1'));
+            _kind := atoi (get_keyword('kind', params, '-1'));
+
+	   -- dbg_obj_print (_del,_pub,_spam,_ham,_kind,postid);
+
+          if (_del >= 0)
+            {
+              if (_kind = 0)
+	        {
+		  delete from BLOG..BLOG_COMMENTS where BM_BLOG_ID = self.blogid
+		  and BM_POST_ID = postid and BM_ID = _del;
+	        }
+              else
+                {
+		  delete from BLOG..MTYPE_TRACKBACK_PINGS where MP_POST_ID = postid and MP_ID = _del;
+		}
+              commit work;
+            }
+	 if (_spam >=0 or _ham >= 0)
+           {
+	      declare dummy, id, flag any;
+              if (_spam >=0)
+                id := _spam;
+              else
+                id := _ham;
+              whenever not found goto nfc;
+                {
+		  if (_kind = 0)
+		  {
+	  	  select filter_add_message (blob_to_string (BM_COMMENT), self.user_id, case when _spam >=0 then 1 else 0 end)
+                  into dummy
+                  from BLOG..BLOG_COMMENTS where BM_BLOG_ID = self.blogid and
+		  BM_POST_ID = postid and BM_ID = id;
+		  }
+		  else
+		  {
+                  select filter_add_message (blob_to_string (MP_EXCERPT)||' '||MP_TITLE, self.user_id, case when _spam >=0 then 1 else 0 end)
+                  into dummy
+                  from BLOG..MTYPE_TRACKBACK_PINGS where MP_POST_ID = postid and MP_ID = id;
+		  }
+                }
+            nfc:
+             commit work;
+          }
+           if (_pub >= 0)
+             {
+	     if (_kind = 0)
+	       {
+	       update BLOG..BLOG_COMMENTS set BM_IS_PUB = 1, BM_IS_SPAM = 0 where BM_BLOG_ID = self.blogid
+	       and BM_POST_ID = postid and BM_ID = _pub;
+	       }
+	     else
+	       {
+                update BLOG..MTYPE_TRACKBACK_PINGS set MP_IS_PUB = 1, MP_IS_SPAM = 0 where MP_POST_ID = postid and MP_ID = _pub;
+	       }
+	     commit work;
+	     }
+	 }
+
        login_pars := '';
        if (length (self.sid))
        login_pars := sprintf ('&sid=%s&realm=%s', self.sid, self.realm);
        declare ix int;
        ix := 0;
-       for select B_TITLE, B_POST_ID from BLOG..SYS_BLOGS where B_BLOG_ID = self.blogid
-       do {
-             declare pcom, ptb int;
-       pcom := (select count (*) from BLOG..BLOG_COMMENTS where BM_POST_ID = B_POST_ID and BM_BLOG_ID = self.blogid and BM_IS_PUB = 0);
-       ptb := (select count (*) from BLOG..MTYPE_TRACKBACK_PINGS where MP_POST_ID = B_POST_ID and MP_IS_PUB = 0);
-       if (pcom > 0 or ptb > 0)
+
+      for select BM_ID, BM_POST_ID, BM_TITLE, BM_TS, kind, BM_COMMENT, BM_IS_SPAM from (
+       select BM_ID, BM_POST_ID, BM_TITLE, BM_TS, 0 as kind, BM_COMMENT, BM_IS_SPAM from BLOG..BLOG_COMMENTS
+      where BM_IS_PUB = 0 and BM_BLOG_ID = self.blogid union all
+      select MP_ID, MP_POST_ID,  MP_TITLE, MP_TS, 1 as kind, MP_EXCERPT, MP_IS_SPAM from BLOG..MTYPE_TRACKBACK_PINGS, BLOG..SYS_BLOGS
+      where MP_IS_PUB = 0 and MP_POST_ID = B_POST_ID and B_BLOG_ID = self.blogid ) sub order by BM_TS desc do
          {
       ?>
       <tr class="<?V case when mod(ix,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-      <td><?V BLOG..blog_utf2wide (B_TITLE) ?></td>
-      <td><?V pcom ?></td>
-      <td><?V ptb ?></td>
-      <td>
-          <?vsp if (pcom) { ?>
-          <a href="index.vspx?page=edit_comments&amp;editid=<?V B_POST_ID ?>&amp;appr=0<?V login_pars ?>">Edit Comments</a>
-          <?vsp }
-                if (ptb) { ?>
-          <a href="index.vspx?page=edit_tb&amp;editid=<?V B_POST_ID ?>&amp;appr=0<?V login_pars ?>">Edit Trackbacks</a>
-          <?vsp } ?>
+	  <td>
+	      <a href="#"
+		  onmouseover="javascript: displayComment ('<?V BM_ID ?>_<?V kind ?>'); return false;"
+		  onmouseout="javascript: hideComment ('<?V BM_ID ?>_<?V kind ?>'); return false;"
+		  >
+		  <?vsp http (case when BM_IS_SPAM then '[SPAM]'else '' end); ?>
+		  <?V BLOG..blog_utf2wide (BM_TITLE) ?>
+	      </a>
+            <div style="position:absolute; background-color: white; color: black; padding: 1px 3px 2px 2px; border: 2px solid #000000; visibility:hidden; z-index:1000; width:400; height: 400; overflow: auto;"
+		id="ct_<?V BM_ID ?>_<?V kind ?>">
+		<?vsp http (blob_to_string (BM_COMMENT)) ; ?>
+      </div>
+      (<?vsp
+        http (case when kind then 'trackback'else 'comment' end);
+      ?>)
+  </td>
+  <td><?V BLOG..blog_date_fmt (BM_TS, self.tz) ?></td>
+  <td>
+      <?V spam_filter_message(BM_COMMENT, self.user_id) ?>
+  </td>
+	  <td>
+	      <a href="index.vspx?page=ping&amp;ping_tab=3&amp;site_tab=3<?V login_pars ?>&amp;editid=<?V BM_POST_ID ?>&amp;del=<?V BM_ID ?>&amp;kind=<?V kind ?>">Delete</a>
+            &amp;#160;
+	      <a href="index.vspx?page=ping&amp;ping_tab=3&amp;site_tab=3<?V login_pars ?>&amp;editid=<?V BM_POST_ID ?>&amp;spam=<?V BM_ID ?>&amp;kind=<?V kind ?>">Spam</a>
+            &amp;#160;
+	      <a href="index.vspx?page=ping&amp;ping_tab=3&amp;site_tab=3<?V login_pars ?>&amp;editid=<?V BM_POST_ID ?>&amp;ham=<?V BM_ID ?>&amp;kind=<?V kind ?>">Ham</a>
+            &amp;#160;
+	      <a href="index.vspx?page=ping&amp;ping_tab=3&amp;site_tab=3<?V login_pars ?>&amp;editid=<?V BM_POST_ID ?>&amp;pub=<?V BM_ID ?>&amp;kind=<?V kind ?>">Publish</a>
       </td>
         </tr>
-
       <?vsp
                  ix := ix + 1;
-               }
       }
+
       if (ix = 0)
         {
   ?>
@@ -11931,19 +12062,23 @@ window.onload = function (e)
     </tr>
     <?vsp
     {
-     declare params, j, p, c any;
+     declare params, j, p, c, h, ts any;
      params := self.vc_event.ve_params;
 
      j := atoi (get_keyword ('j', params, '0'));
      p := get_keyword ('p', params, '0');
+     h := get_keyword ('h', params, '0');
      c := atoi (get_keyword ('c', params, '0'));
+     ts := get_keyword ('ts', params, now ());
 
      if ({?'reset'} is not null)
        {
+         update BLOG..BLOG_WEBLOG_PING_LOG set WPL_STAT = 0 where WPL_JOB_ID = j and WPL_HOSTS_ID = h and WPL_TS = ts;
 	 commit work;
        }
      else if ({?'delete'} is not null)
        {
+         delete from BLOG..BLOG_WEBLOG_PING_LOG where WPL_JOB_ID = j and WPL_HOSTS_ID = h and WPL_TS = ts;
 	 commit work;
        }
 

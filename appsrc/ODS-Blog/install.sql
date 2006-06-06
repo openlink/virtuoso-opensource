@@ -138,18 +138,21 @@ log_enable (1)
 
 create procedure BLOG_PODCAST_UPGRADE ()
 {
-  if (registry_get ('__BLOG_PODCAST_UPGRADE') = 'done')
+  if (registry_get ('__BLOG_PODCAST_UPGRADE1') = 'done')
     return;
   declare meta "MWeblogPost";
+  declare enc BLOG.DBA."MWeblogEnclosure";
   for select B_POST_ID id, B_BLOG_ID bid, B_META mt from SYS_BLOGS do
     {
       meta := mt;
       if (mt is not null and meta.enclosure is not null)
 	{
-	  update SYS_BLOGS set B_HAVE_ENCLOSURE = 1 where B_BLOG_ID = bid and B_POST_ID = id;
+	  enc := meta.enclosure;
+	  update SYS_BLOGS set B_HAVE_ENCLOSURE = 1, B_ENCLOSURE_TYPE = enc."type"
+	      where B_BLOG_ID = bid and B_POST_ID = id;
 	}
     }
-  registry_set ('__BLOG_PODCAST_UPGRADE', 'done');
+  registry_set ('__BLOG_PODCAST_UPGRADE1', 'done');
 };
 
 
@@ -1150,6 +1153,9 @@ http ('<rss version="2.0" xmlns:wfw="http://wellformedweb.org/CommentAPI/" \n', 
 http ('    xmlns:slash="http://purl.org/rss/1.0/modules/slash/" \n', ses);
 http ('    xmlns:sql="urn:schemas-openlink-com:xml-sql">\n', ses);
 http ('<channel>\n', ses);
+http ('    <sql:header>\n', ses);
+http ('        <sql:param name=":media">%</sql:param>\n', ses);
+http ('    </sql:header>\n', ses);
 http ('<sql:sqlx sql:xsl=""><![CDATA[\n', ses);
 http ('select \n', ses);
 http ('XMLELEMENT(\'title\', BLOG..blog_utf2wide (BI_TITLE)), \n', ses);
@@ -1221,7 +1227,7 @@ http ('BLOG..SYS_BLOGS, BLOG..SYS_BLOG_INFO,\n', ses);
 http ('        (select BI_BLOG_ID as BA_C_BLOG_ID, BI_BLOG_ID as BA_M_BLOG_ID from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = <UID>\n', ses);
 http ('        union all select * from (select top 15 BA_C_BLOG_ID, BA_M_BLOG_ID from BLOG.DBA.SYS_BLOG_ATTACHES\n', ses);
 http ('          where BA_M_BLOG_ID = <UID> order by BA_LAST_UPDATE desc) name1) name2, DB.DBA.SYS_USERS\n', ses);
-http ('      where B_BLOG_ID = BA_C_BLOG_ID and B_HAVE_ENCLOSURE = 1 and B_STATE = 2 and BI_BLOG_ID = B_BLOG_ID and U_ID = B_USER_ID order by B_TS desc\n', ses);
+http ('      where B_BLOG_ID = BA_C_BLOG_ID and B_HAVE_ENCLOSURE = 1 and B_ENCLOSURE_TYPE like :media||\'%\' and B_STATE = 2 and BI_BLOG_ID = B_BLOG_ID and U_ID = B_USER_ID order by B_TS desc\n', ses);
 http (') sub\n', ses);
 http (']]></sql:sqlx>\n', ses);
 http ('</channel>\n', ses);
@@ -1869,8 +1875,11 @@ create procedure BLOG2_GET_PAGE_NAME() {
 }
 ;
 
--- !!! very bad kludge
 create procedure BLOG2_GET_HOME_DIR (inout home varchar) {
+
+  return home;
+
+-- !!! very bad kludge
   if (is_http_ctx ()) {
     declare p varchar;
     p := http_path ();
@@ -3965,34 +3974,29 @@ CREATE PROCEDURE BLOG2_HOME_GET_FOAF_SQLX (IN UID INTEGER)
   ses := string_output ();
 http ('<?xml version =\'1.0\' encoding=\'UTF-8\'?>\n', ses);
 http ('<rdf:RDF xmlns:rdf=\'http://www.w3.org/1999/02/22-rdf-syntax-ns#\' xmlns:rdfs=\'http://www.w3.org/2000/01/rdf-schema#\' xmlns:foaf=\'http://xmlns.com/foaf/0.1/\' xmlns:dc=\'http://purl.org/dc/elements/1.1/\' xmlns:plan=\'http://usefulinc.com/ns/scutter/0.1#\'>\n', ses);
-http ('<foaf:Person>\n', ses);
-http ('<sql:sqlx xmlns:sql=\'urn:schemas-openlink-com:xml-sql\'><![CDATA[\n', ses);
+http ('<foaf:Person rdf:about="">\n', ses);
+http ('<sql:sqlx xmlns:sql=\'urn:schemas-openlink-com:xml-sql\' sql:xsl="/DAV/VAD/blog2/widgets/foaf.xsl"><![CDATA[\n', ses);
 http ('select\n', ses);
 http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:name\', BLOG..blog_utf2wide(U_FULL_NAME)),\n', ses);
 http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:nick\', U_NAME),\n', ses);
 http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:mbox\',\n', ses);
 http ('XMLATTRIBUTES(\'mailto:\'||BI_E_MAIL as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')),\n', ses);
 http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:homepage\',\n', ses);
-http ('XMLATTRIBUTES(BI_HOME_PAGE as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')),\n', ses);
+http ('XMLATTRIBUTES(\'http://\'||BLOG..BLOG_GET_HOST () ||BI_HOME_PAGE as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')),\n', ses);
 http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:weblog\',\n', ses);
-http ('XMLATTRIBUTES(BI_HOME as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')),\n', ses);
+http ('XMLATTRIBUTES(\'http://\'||BLOG..BLOG_GET_HOST () ||BI_HOME as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')),\n', ses);
 http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:seeAlso\',\n', ses);
-http ('XMLATTRIBUTES(BI_HOME || \'gems/rss.xml\' as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\'))\n', ses);
+http ('XMLATTRIBUTES(\'http://\'||BLOG..BLOG_GET_HOST () ||BI_HOME || \'gems/rss.xml\' as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\'))\n', ses);
 http ('from BLOG..SYS_BLOG_INFO, "DB"."DBA"."SYS_USERS" where BI_OWNER = U_ID and BI_BLOG_ID = \'<UID>\'\n', ses);
 http (']]></sql:sqlx>\n', ses);
 http ('<sql:sqlx xmlns:sql=\'urn:schemas-openlink-com:xml-sql\'><![CDATA[\n', ses);
-http ('select\n', ses);
-http ('XMLAGG(XMLELEMENT(\'http://xmlns.com/foaf/0.1/:knows\',\n', ses);
-http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:Person\',\n', ses);
-http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:name\', BLOG..blog_utf2wide(BCD_AUTHOR_NAME)),\n', ses);
-http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:mbox\',\n', ses);
-http ('XMLATTRIBUTES(\'mailto:\'||BCD_AUTHOR_EMAIL as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')),\n', ses);
-http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:homepage\',\n', ses);
-http ('XMLATTRIBUTES(BCD_HOME_URI as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')),\n', ses);
-http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:weblog\',\n', ses);
-http ('XMLATTRIBUTES(BCD_HOME_URI as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')),\n', ses);
-http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:seeAlso\',\n', ses);
-http ('XMLATTRIBUTES(BCD_CHANNEL_URI as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')))))\n', ses);
+http ('select \n', ses);
+http ('XMLELEMENT(\'http://www.w3.org/2000/01/rdf-schema#:seeAlso\',\n', ses);
+http ('XMLELEMENT(\'http://purl.org/rss/1.0/:channel\',\n', ses);
+http ('XMLATTRIBUTES(BCD_CHANNEL_URI as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about\'), \n', ses);
+http ('XMLELEMENT(\'http://purl.org/dc/elements/1.1/:title\', BLOG..blog_utf2wide (BCD_TITLE)), \n', ses);
+http ('XMLELEMENT(\'http://purl.org/dc/elements/1.1/:description\', BLOG..blog_utf2wide (BCD_AUTHOR_NAME)) \n', ses);
+http (' )) \n', ses);
 http ('from BLOG..SYS_BLOG_CHANNELS, BLOG..SYS_BLOG_CHANNEL_INFO, BLOG..SYS_BLOG_CHANNEL_CATEGORY where BC_BLOG_ID = \'<UID>\' and BC_CHANNEL_URI = BCD_CHANNEL_URI and BC_CAT_ID = BCC_ID and BCC_BLOG_ID = BC_BLOG_ID and BCC_IS_BLOG = 1\n', ses);
 http (']]></sql:sqlx>\n', ses);
 http ('</foaf:Person>\n', ses);

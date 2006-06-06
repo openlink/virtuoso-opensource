@@ -104,7 +104,11 @@
 		  <vm:ocs-link>OCS</vm:ocs-link>
 		  <vm:opml-link>OPML</vm:opml-link>
 		  <vm:xbel-link>XBEL</vm:xbel-link>
-		  <vm:podcast-link>Podcast</vm:podcast-link>
+		  <vm:podcast-link>All Media (Podcast)</vm:podcast-link>
+		  <vm:podcast-link type="video">Videos</vm:podcast-link>
+		  <vm:podcast-link type="audio">Audio</vm:podcast-link>
+		  <vm:podcast-link type="image">Images</vm:podcast-link>
+		  <vm:itunes-link>ITunes Subscription</vm:itunes-link>
 		  <vm:mrss-link>mRSS</vm:mrss-link>
 		  <vm:gdata-link>GData</vm:gdata-link>
               </div>

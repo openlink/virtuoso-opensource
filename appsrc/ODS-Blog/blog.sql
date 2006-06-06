@@ -398,6 +398,7 @@ blog2_exec_no_error ('create table SYS_BLOGS (
       B_STATE integer,
       B_IS_ACTIVE integer default 0,
       B_HAVE_ENCLOSURE integer default 0,
+      B_ENCLOSURE_TYPE varchar default null,
       B_RFC_ID	varchar default null,
       B_RFC_HEADER long varchar,
       B_VER int default 1,
@@ -607,6 +608,10 @@ blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_RFC_HEADER', 'long varchar')
 
 blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_VER', 'int default 1')
 ;
+
+blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_ENCLOSURE_TYPE', 'varchar default null')
+;
+
 
 blog2_exec_no_error ('create index SYS_BLOGS_RFC_ID on SYS_BLOGS (B_RFC_ID)');
 
@@ -1531,8 +1536,8 @@ skip:
 
 create trigger BLOG_COMMENTS_U after update on MTYPE_TRACKBACK_PINGS referencing old as O, new as N
 {
-  if (N.MP_IS_PUB = 1)
-    update SYS_BLOGS set B_TRACKBACK_NO = B_TRACKBACK_NO - 1 where B_POST_ID = N.MP_POST_ID;
+  if (N.MP_IS_PUB = 1 and O.MP_IS_PUB = 0)
+    update SYS_BLOGS set B_TRACKBACK_NO = B_TRACKBACK_NO + 1 where B_POST_ID = N.MP_POST_ID;
 }
 ;
 
@@ -1646,7 +1651,10 @@ create trigger BLOG_COMMENTS_NO_U after update on BLOG_COMMENTS referencing old 
 	  B_BLOG_ID = BI_BLOG_ID and B_POST_ID = N.BM_POST_ID and BI_BLOG_ID = N.BM_BLOG_ID;
 
       set triggers off;
+      if (O.BM_IS_PUB = 0)
+	{
       update SYS_BLOGS set B_COMMENTS_NO = B_COMMENTS_NO + 1 where B_POST_ID = N.BM_POST_ID;
+	}
 
       update BLOG.DBA.SYS_BLOG_INFO
 	  set BI_LAST_UPDATE = now (),
