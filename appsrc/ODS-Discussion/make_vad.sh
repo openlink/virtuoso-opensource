@@ -182,6 +182,7 @@ directory_init() {
   cp *.css vad/data/nntpf
   cp *.sql vad/data/nntpf
   cp *.vsp vad/data/nntpf
+  cp $HOME/binsrc/tests/dav/DET_nntp.sql vad/data/nntpf
   cp comp/*.xsl vad/data/nntpf/comp
 # cp comp/*.xml vad/data/nntpf/comp
   cp images/*.png vad/data/nntpf/images
@@ -232,6 +233,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/nntpf_ddl.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/setup.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/mail_notify.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/DET_nntp.sql', 1, 'report', 1);" >> $STICKER  
   echo "      vhost_remove (lpath=>'/nntpf');" >> $STICKER
   echo "      vhost_define (lpath=>'/nntpf',ppath=>'/DAV/VAD/nntpf/', is_dav=>1, vsp_user=>'dba', def_page=>'nntpf_main.vspx');" >> $STICKER
   echo "    ]]>" >> $STICKER
@@ -245,6 +247,7 @@ sticker_init() {
   echo "  </sql>" >> $STICKER
   echo "</ddls>" >> $STICKER
   echo "<resources>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"nntpf/DET_nntp.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER  
 
   for file in `find vad/data/nntpf -type f -print | sort`
   do
