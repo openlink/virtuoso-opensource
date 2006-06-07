@@ -105,6 +105,9 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
   if (length (path) > 7 and path[5] = 'data' and path[6] = 'public' and path[7] = 'about.rdf')
     app := 'users';
 
+  if (app = 'about.rdf')
+    app := 'users';
+
   if (length (app) and app not in ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'news', 'users'))
    {
      signal ('22023', sprintf ('Invalid application domain [%s].', app));
@@ -119,7 +122,7 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
       select sne_id into id from DB.DBA.sn_entity where sne_name = uname;
       pars := vector (':sne', cast (id as varchar));
 
-      p_path_str := '/DAV/VAD/wa';
+      p_path_str := '/DAV/VAD/wa/';
       l_path_str := (select top 1 HP_LPATH from DB.DBA.HTTP_PATH where HP_PPATH = p_path_str
       and HP_HOST = vhost and HP_LISTEN_HOST = lhost);
 

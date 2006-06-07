@@ -477,7 +477,8 @@ td.ctl_title
 
 tr.ctl_grp_err
 {
-  background-color: yellow;
+  background-color: inherit;
+  color: red;
 }
 
 /* Control container */
@@ -851,12 +852,14 @@ div.error_dialog
 
 div.error_msg
 {
-  background-color: yellow;
+  background-color: inherit;
+  color: red;
 }
 
 table.error_msg
 {
-  background-color: yellow;
+  background-color: inherit;
+  color: red;
 }
 
 span.error_summary

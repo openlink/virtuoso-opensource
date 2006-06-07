@@ -87,7 +87,7 @@
 	    <?vsp
 	      {
 	        declare exit handler for sqlstate '*';
-	        http_value (http_client ('http://api.hostip.info/get_html.php?position=true'), 'pre');
+ 	        http_value (http_client (sprintf ('http://api.hostip.info/get_html.php?ip=%s&position=true', http_client_ip ())), 'pre');
               }
 	    ?>
 	    <a href="http://www.hostip.info">
@@ -143,7 +143,6 @@
             </v:text>
           </td>
           <td>
-            <div style="display:inline; color:red;"><vm:field-error field="regmail"/></div>
           </td>
         </tr>
         <tr>
@@ -154,7 +153,6 @@
             </v:text>
           </td>
           <td>
-            <div style="display:inline; color:red;"><vm:field-error field="regpwd"/></div>
           </td>
         </tr>
         <tr>
@@ -166,7 +164,6 @@
             </v:text>
           </td>
           <td>
-            <div style="display:inline; color:red;"><vm:field-error field="regpwd1"/></div>
           </td>
         </tr>
         <!--tr>
@@ -215,8 +212,8 @@
         </tr-->
         <tr>
           <td></td>
-          <td><v:check-box name="is_agreed" value="1" initial-checked="0"/>
-	      I agree to the <a href="terms.html" target="_blank">Terms of Service</a>.
+          <td><v:check-box name="is_agreed" value="1" initial-checked="0" xhtml_id="is_agreed"/>
+	      <label for="is_agreed">I agree to the <a href="terms.html" target="_blank">Terms of Service</a>.</label>
 	  </td>
         </tr>
         <tr>
@@ -313,12 +310,23 @@
 	 {
 	   declare coords any;
 	   declare exit handler for sqlstate '*';
-           xt := http_client ('http://api.hostip.info/');
+           xt := http_client (sprintf ('http://api.hostip.info/?ip=%s', http_client_ip ()));
 	   xt := xtree_doc (xt);
 	   country := cast (xpath_eval ('string (//countryName)', xt) as varchar);
 	   city := cast (xpath_eval ('string (//Hostip/name)', xt) as varchar);
 	   coords := cast (xpath_eval ('string(//ipLocation//coordinates)', xt) as varchar);
+	   lat := null;
+	   lng := null;
+ 	   if (country is not null and length (country) > 2)
+	     {
+	       country := (select WC_NAME from WA_COUNTRY where upper (WC_NAME) = country);
+	       if (country is not null)
+	         {
+		   declare exit handler for not found;
+                   select WC_LAT, WC_LNG into lat, lng from WA_COUNTRY where WC_NAME = country;
 	   WA_USER_EDIT (u_name1, 'WAUI_HCOUNTRY', country);
+		 }
+	     }
 	   WA_USER_EDIT (u_name1, 'WAUI_HCITY', city);
 	   if (coords is not null)
 	     {
@@ -327,12 +335,14 @@
 	         {
                    lat := atof (coords [0]);
 		   lng := atof (coords [1]);
+		 }
+	     }
+	   if (lat is not null and lng is not null)
+	     {
 		   WA_USER_EDIT (u_name1, 'WAUI_LAT', lat);
 		   WA_USER_EDIT (u_name1, 'WAUI_LNG', lng);
 		   WA_USER_EDIT (u_name1, 'WAUI_LATLNG_HBDEF', 0);
 		 }
-	     }
-
 	 }
 
 	 insert soft sn_person (sne_name, sne_org_id) values (u_name1, uid);

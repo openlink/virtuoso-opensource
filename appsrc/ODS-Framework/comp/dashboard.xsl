@@ -337,7 +337,7 @@
                     <tr>
                       <td>
                      <?vsp if (length (self.arr[37])) {
-                        self.photopath_size2:=subseq(self.arr[37],0,REGEXP_INSTR(self.arr[37],'\..{3}\$')-1)||'_size2'||subseq(self.arr[37],REGEXP_INSTR(self.arr[37],'\..{3}\$')-1);
+                        self.photopath_size2 := subseq(self.arr[37],0,REGEXP_INSTR(self.arr[37],'\..{3}\$')-1)||'_size2'||subseq(self.arr[37],REGEXP_INSTR(self.arr[37],'\..{3}\$')-1);
                        ?>
                                  <img src="<?V self.photopath_size2 ?>" width="115" border="1"/>
                     <?vsp } ?>
@@ -357,17 +357,17 @@
                             <tr>
                               <td></td>
                               <th><v:label name="1fname" value="First Name:" enabled="--case when coalesce(self.arr[1],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1fname1" value="--coalesce(self.arr[1],'')"/></td>
+                              <td><v:label name="1fname1" value="--wa_wide_to_utf8 (coalesce(self.arr[1],''))" format="%s"/></td>
                             </tr>
                             <tr>
                               <td></td>
                               <th><v:label name="1lname" value="Last Name:" enabled="--case when coalesce(self.arr[2],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="1lname1" value="--coalesce(self.arr[2],'')"/></td>
+                              <td><v:label name="1lname1" value="--wa_wide_to_utf8 (coalesce(self.arr[2],''))" format="%s"/></td>
                             </tr>
                             <tr>
                               <td></td>
                               <th><v:label name="1ffname" value="Full Name:" enabled="--case when coalesce(self.arr[3],'') <> '' then 1 else 0 end"/></th>
-                              <td><v:label name="lffname1" value="--coalesce(self.arr[3],'')"/></td>
+                              <td><v:label name="lffname1" value="--wa_wide_to_utf8 (coalesce(self.arr[3],''))" format="%s"/></td>
                             </tr>
           <?vsp
             if (length (self.arr[4]))
