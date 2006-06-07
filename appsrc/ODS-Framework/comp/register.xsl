@@ -83,6 +83,17 @@
           <td>
             <div style="display:inline; color:red;"><vm:field-error field="reguid"/></div>
           </td>
+	  <td rowspan="5">
+	    <?vsp
+	      {
+	        declare exit handler for sqlstate '*';
+	        http_value (http_client ('http://api.hostip.info/get_html.php?position=true'), 'pre');
+              }
+	    ?>
+	    <a href="http://www.hostip.info">
+	      <img src="http://api.hostip.info/flag.php" border="0" alt="IP Address Lookup" />
+	    </a>
+	  </td>
         </tr>
         <!--tr>
           <th><label for="regfirstname">First Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
@@ -221,6 +232,7 @@
       <v:on-post>
         <![CDATA[
 	 declare u_name1, dom_reg varchar;
+         declare country, city, lat, lng, xt, xp any;
 
 	 u_name1 := trim(self.reguid.ufl_value);
 
@@ -297,6 +309,31 @@
          --WA_USER_SET_INFO(u_name1,trim(self.regfirstname.ufl_value),trim(self.reglastname.ufl_value) );
 	 WA_USER_SET_INFO(u_name1, '', '');
 	 wa_reg_register (uid, u_name1);
+
+	 {
+	   declare coords any;
+	   declare exit handler for sqlstate '*';
+           xt := http_client ('http://api.hostip.info/');
+	   xt := xtree_doc (xt);
+	   country := cast (xpath_eval ('string (//countryName)', xt) as varchar);
+	   city := cast (xpath_eval ('string (//Hostip/name)', xt) as varchar);
+	   coords := cast (xpath_eval ('string(//ipLocation//coordinates)', xt) as varchar);
+	   WA_USER_EDIT (u_name1, 'WAUI_HCOUNTRY', country);
+	   WA_USER_EDIT (u_name1, 'WAUI_HCITY', city);
+	   if (coords is not null)
+	     {
+	       coords := split_and_decode (coords, 0, '\0\0\,');
+               if (length (coords) = 2)
+	         {
+                   lat := atof (coords [0]);
+		   lng := atof (coords [1]);
+		   WA_USER_EDIT (u_name1, 'WAUI_LAT', lat);
+		   WA_USER_EDIT (u_name1, 'WAUI_LNG', lng);
+		   WA_USER_EDIT (u_name1, 'WAUI_LATLNG_HBDEF', 0);
+		 }
+	     }
+
+	 }
 
 	 insert soft sn_person (sne_name, sne_org_id) values (u_name1, uid);
 
