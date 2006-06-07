@@ -272,6 +272,7 @@ dbg_obj_print('setvame');
 		 		   when 'WEBLOG2' then 'Weblog'
 		 		   when 'eNews2' then 'Feed Manager'
 		 		   when 'oDrive' then 'Briefcase'
+		 		   when 'Bookmark' then 'Bookmarks'
 				   else self.wa_type end;
 		    if (self.wa_cnt = 0)
 		      self.promo := '';
@@ -297,6 +298,7 @@ dbg_obj_print('setvame');
 		 		   when 'eNews2' then 'Feed Manager'
 		 		   when 'oDrive' then 'Briefcase'
 		 		   when 'oWiki' then 'Wiki'
+		 		   when 'Bookmark' then 'Bookmarks'
 				   else self.wa_type end;
 
                       if (self.wa_type = 'oMail')

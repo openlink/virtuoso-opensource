@@ -745,7 +745,7 @@
 	       </td>
 	       <td>
 		 <v:check-box name="srch_bookmark" initial-checked="--self.have_bookmark" xhtml_tabindex="10" xhtml_id="srch_bookmark"/>
-		 <label for="srch_bookmark">Bookmark</label>
+		 <label for="srch_bookmark">Bookmarks</label>
 	       </td>
 	     </tr>
 	    </table>

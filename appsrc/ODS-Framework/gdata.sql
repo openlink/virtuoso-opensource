@@ -97,15 +97,21 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 
 
   if (length (path) > 4)
-    app := path [4];
+    uname := path [4];
+
+  if (length (path) > 5)
+    app := path [5];
 
   if (length (path) > 7 and path[5] = 'data' and path[6] = 'public' and path[7] = 'about.rdf')
     app := 'users';
 
-  if (app is null or app not in ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'news', 'users'))
+  if (length (app) and app not in ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'news', 'users'))
    {
      signal ('22023', sprintf ('Invalid application domain [%s].', app));
    }
+
+  if (length (uname) = 0)
+    signal ('22023', 'Account is not specified.');
 
   if (app = 'users')
    {
@@ -133,18 +139,14 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 
   appn := DB.DBA.wa_app_to_type (app);
 
-  if (length (path) > 5)
-    uname := path [5];
-
-  if (uname is null)
-    {
-      signal ('22023', 'Account is not specified.');
-    }
 
   if (length (path) > 6)
     inst := path [6];
-
-  if (inst is null)
+  if (length (app) = 0)
+    {
+      url := DB.DBA.wa_link (0,  sprintf ('uhome.vspx?page=1&ufname=%U', uname));
+    }
+  else if (length (inst) = 0)
     {
       url := DB.DBA.wa_link (0, sprintf ('app_inst.vspx?app=%U&ufname=%U', appn, uname));
     }

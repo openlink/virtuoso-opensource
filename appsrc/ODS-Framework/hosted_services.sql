@@ -4644,8 +4644,8 @@ create procedure WA_GET_APP_NAME (in app varchar)
     return 'Photos';
   else if (app = 'xDiaspora' or app = 'Community')
     return 'Community';
-  else if (app = 'bookmark')
-    return 'Bookmark';
+  else if (app = 'Bookmark')
+    return 'Bookmarks';
   else if (app = 'nntpf')
     return 'Discussion';
   else
