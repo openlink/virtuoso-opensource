@@ -1530,6 +1530,28 @@ window.onload = function (e)
     <?vsp } ?>
 </xsl:template>
 
+  <xsl:template match="vm:ods-foaf-link">
+    <div>
+	<?vsp
+	{
+	 declare sne_id int;
+	 sne_id := (select sne_id from sn_person where sne_name = self.owner_name);
+	?>
+	<a href="&lt;?vsp http (sprintf ('%s/ufoaf.xml?:sne=%d', wa_link (), sne_id)); ?>"  class="{local-name()}">
+        <img border="0" alt="FOAF" title="FOAF">
+	    <xsl:call-template name="feed-image">
+		<xsl:with-param name="default">'foaf.png'</xsl:with-param>
+	    </xsl:call-template>
+        </img>
+	<xsl:apply-templates />
+      </a>
+      <?vsp
+         }
+      ?>
+  </div>
+</xsl:template>
+
+
   <xsl:template match="vm:linkblog-xbel-link">
     <?vsp
       if (get_keyword('ShowXBEL', self.opts, 1))
@@ -2818,6 +2840,7 @@ window.onload = function (e)
     <div>
       <vm:audio/>
     </div>
+    <vm:ods-foaf-link>FOAF</vm:ods-foaf-link>
     <div>
 	<v:url xhtml_class="button" name="full_profile" value="Full profile"
 	  url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link (),  self.owner_name)"
