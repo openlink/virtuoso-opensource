@@ -1537,7 +1537,7 @@ window.onload = function (e)
 	 declare sne_id int;
 	 sne_id := (select sne_id from sn_person where sne_name = self.owner_name);
 	?>
-	<a href="&lt;?vsp http (sprintf ('%s/ufoaf.xml?:sne=%d', wa_link (), sne_id)); ?>"  class="{local-name()}">
+	<a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/about.rdf', self.host, self.owner_name)); ?>"  class="{local-name()}">
         <img border="0" alt="FOAF" title="FOAF">
 	    <xsl:call-template name="feed-image">
 		<xsl:with-param name="default">'foaf.png'</xsl:with-param>
