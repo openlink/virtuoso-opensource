@@ -369,6 +369,6 @@ virtuoso_init
 sticker_init
 vad_create
 virtuoso_shutdown
-chmod 644 ods_discussion.vad
+chmod 644 ods_discussion_dav.vad
 #directory_clean
 
