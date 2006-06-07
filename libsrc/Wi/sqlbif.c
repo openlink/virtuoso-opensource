@@ -2046,7 +2046,7 @@ bif_substr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   strses_get_part ((dk_session_t *) str, res, from, to - from);
   else
   memcpy (res, str + from * sizeof_char, (to - from) * sizeof_char);
-  res[(to - from) * sizeof_char] = 0;
+  memset (res + ((to - from) * sizeof_char), 0, sizeof_char);
   return res;
 }
 
