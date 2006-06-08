@@ -1,3 +1,363 @@
+2006-06-08 12:57  source
+
+	* Minor cosmetic fix
+
+2006-06-08 12:49  source
+
+	* Set version to 4.5.3 for final release
+
+2006-06-08 12:48  source
+
+	* Flag for automake to use a better version of tar that can handle
+	  filenames longer than 99 characters (including path)
+
+2006-06-08 12:23  source
+
+	* Fixed missing files from make dist
+
+2006-06-07 15:10  source
+
+	* Fixes for GData and FOAF
+	* Small text changes
+
+2006-06-07 15:02  source
+
+	* Fixed FOAF link on blog homepage
+
+2006-06-07 14:12  source
+
+	* Fixed name of .vad package
+
+2006-06-07 12:49  source
+
+	* Fixed ODS Application URLs redirect
+
+2006-06-07 12:48  source
+
+	* Added ip lookup
+
+2006-06-07 12:41  source
+
+	* Fixed handling of FOAF information
+
+2006-06-07 12:40  source
+
+	* Fixed trailing '\0' in case of wide char
+
+2006-06-06 15:55  source
+
+	* Fixed GData endpoint URLs
+
+2006-06-06 11:53  source
+
+	* Updated version number to 4.5.3-pre6
+
+2006-06-06 11:52  source
+
+	* Fixed version number incrementor
+	* Fixed foaf support
+	* Small fixes to UI
+
+2006-06-06 11:23  source
+
+	* Fixed base version number
+
+2006-06-06 11:23  source
+
+	* Added missing file
+
+2006-06-06 11:17  source
+
+	* Fixed FOAF support
+	* Changed application name from News to Discussion
+	* Fixed css odd/even row support in settings section
+	* Fixed version incrementor
+
+2006-06-06 11:13  source
+
+	* Fixed updating bookmark
+	* Fixed URL check
+	* Fixed UI bugs
+
+2006-06-02 12:50  source
+
+	* Fixed RDF meta information
+
+2006-06-02 12:49  source
+
+	* Fixed whitespace
+
+2006-06-02 12:48  source
+
+	* Fixed vad version numbering
+
+2006-06-02 11:01  source
+
+	* Fixed name of application .vad file
+
+2006-06-01 20:59  source
+
+	* Minor layout fix
+
+2006-06-01 20:58  source
+
+	* Fixed calculating conversation_address
+	* Removed debugging code
+
+2006-06-01 20:42  source
+
+	* Changed nntpf to Discussion
+
+2006-06-01 20:38  source
+
+	* Merged latest feedmanager code
+
+2006-06-01 20:24  source
+
+	* Fixed problem with vad_check_version after package rename from 'wa'
+	  to 'Framework'
+
+2006-06-01 20:22  source
+
+	* Removed help-link
+
+2006-06-01 20:15  source
+
+	* Fixed toolbar grouping
+
+2006-06-01 20:08  source
+
+	* Fixed typos
+
+2006-06-01 20:08  source
+
+	* Fixed problem with PUBLIC bookmarks
+
+2006-06-01 20:05  source
+
+	* Indented code
+
+2006-06-01 20:04  source
+
+	* Created separate import functions for Netscape and BPEL formats
+
+2006-06-01 19:42  source
+
+	* Converted files to Unix
+
+2006-06-01 14:53  source
+
+	* Small text changes
+
+2006-06-01 14:51  source
+
+	* Fixed directory separator for win32 build
+
+2006-06-01 14:48  source
+
+	* Added building ODS Discussion on windows
+
+2006-06-01 14:46  source
+
+	* Fixed calculation path
+
+2006-06-01 14:46  source
+
+	* Fixed URL
+
+2006-06-01 14:43  source
+
+	* Removed debugging code
+
+2006-06-01 14:43  source
+
+	* Fixed vad version autoincrement
+
+2006-06-01 14:41  source
+
+	* Fixed technorati blog tagging
+
+2006-06-01 14:40  source
+
+	* Fixed check for webmail
+	* Fixed typos
+
+2006-06-01 14:38  source
+
+	* Disabled guestbook
+
+2006-06-01 13:57  source
+
+	* Changed title to ODS Discussion
+	* Fixed building on win32
+
+2006-06-01 12:45  source
+
+	* Renamed ODS-NNTPFrontend to ODS-Discussion
+
+2006-06-01 11:39  source
+
+	* Fixed application name
+
+2006-06-01 11:14  source
+
+	* Fixed categories/tags and community mode
+
+2006-06-01 10:50  source
+
+	* Added OpenLink Data Spaces NNTPFrontend application
+
+2006-06-01 09:29  source
+
+	* Fixed building ODS vad packages on Windows
+	* Fixed problem with plugins
+
+2006-06-01 09:27  source
+
+	* Commented out Plugins section in generated virtuoso.ini
+
+2006-06-01 09:12  source
+
+	* Fixed warning
+
+2006-05-31 14:30  source
+
+	* Added link to RTE
+
+2006-05-31 13:56  source
+
+	* Normalize interface name
+
+2006-05-31 13:53  source
+
+	* Fixed building ODS briefcase
+
+2006-05-31 13:49  source
+
+	* Removed deprecated file
+
+2006-05-31 13:48  source
+
+	* Fix for TTL output of result sets
+	* Fixed namespace prefix
+
+2006-05-31 13:46  source
+
+	* Fixed possible GPF when password is NULL
+
+2006-05-31 13:45  source
+
+	* Final fixes for loading arrays
+
+2006-05-31 13:44  source
+
+	* Added L2_DEBUG
+
+2006-05-31 13:42  source
+
+	* Replaced warning with error since it is not possible to continue if
+	  the procedure name is NULL
+
+2006-05-31 13:40  source
+
+	* Updated documentation
+
+2006-05-31 13:39  source
+
+	* Additional fixes for detecting office formats
+
+2006-05-31 13:12  source
+
+	* Added proper VOS copyright notices
+
+2006-05-31 12:54  source
+
+	* Fixed GDATA support
+	* Fixed redirect URL to ODS application
+
+2006-05-31 12:54  source
+
+	* Fixed building ODS framework
+
+2006-05-31 12:52  source
+
+	* Fixed building ODS community
+
+2006-05-31 12:52  source
+
+	* Fixed building ODS webmail
+
+2006-05-31 12:52  source
+
+	* Fixed building ODS wiki
+	* Merged latest fixes
+
+2006-05-31 12:49  source
+
+	* Fixed building ODS gallery
+
+2006-05-31 12:49  source
+
+	* Fixed building ODS briefcase
+	* Added missing RDF and MIME metadata
+
+2006-05-31 12:47  source
+
+	* Fixed building ODS bookmark
+
+2006-05-31 12:46  source
+
+	* Fixed ODS feedmanager
+
+2006-05-31 12:45  source
+
+	* Fixed building ODS feedmanager
+
+2006-05-31 12:45  source
+
+	* Fixed building ODS Blog
+
+2006-05-31 12:42  source
+
+	* Added build scripts for ODS Applications
+
+2006-05-31 12:35  source
+
+	* Fixed ODS Community app
+
+2006-05-31 12:09  source
+
+	* Fixed default listen address
+
+2006-05-30 12:39  source
+
+	* Updated version to 4.5.3-pre5
+
+2006-05-30 12:39  source
+
+	* Added missing dav_meta.sql file
+
+2006-05-30 09:36  source
+
+	* Build ODS apps before starting to build demo database
+
+2006-05-30 09:33  source
+
+	* Fixed initialization problem with OpenSSL 0.9.8
+
+2006-05-30 09:31  source
+
+	* Added support for building with VC 2005
+
+2006-05-30 09:30  source
+
+	* Added mail sync
+	* Fixed win64 build
+
+2006-05-29 20:30  source
+
+	* CHanged version to 4.5.3-pre4
+
 2006-05-29 20:02  source
 
 	* Added mail sync
