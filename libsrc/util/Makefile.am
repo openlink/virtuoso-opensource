@@ -109,7 +109,19 @@ getdate.c: getdate.y
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	getdate.y \
-	winlog.mc winlog.rc \
-	pcrelib/internal.h pcrelib/get.c pcrelib/maketables.c \
-	pcrelib/chartables.c pcrelib/study.c pcrelib/pcre.c \
-	pcrelib/pcre.h pcrelib/pcre_config.h pcrelib/printint.c
+	MSG_BG.bin \
+	MSG_EN.bin \
+	pcrelib/chartables.c \
+	pcrelib/get.c \
+	pcrelib/internal.h \
+	pcrelib/maketables.c \
+	pcrelib/pcre.c \
+	pcrelib/pcre.h \
+	pcrelib/pcre_config.h \
+	pcrelib/printint.c \
+	pcrelib/study.c \
+	win32/ptrlong.h \
+	win32/syslog.c \
+	win32/syslog.h \
+	winlog.mc \
+	winlog.rc

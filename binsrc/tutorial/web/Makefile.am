@@ -28,6 +28,7 @@
 EXTRA_DIST = \
 	*.css \
 	*.gif \
+	*.xml \
 	vs_b_1/*.sql \
 	vs_b_1/*.xml \
 	vs_b_2/*.vsp \
@@ -99,6 +100,12 @@ EXTRA_DIST = \
 	vs_u_7/*.sql \
 	vs_u_7/*.vsp \
 	vs_u_7/*.xml \
+	vs_xr_1/*.vsp \
+	vs_xr_1/*.xml \
+	vs_xr_1/*.xsl \
+	vs_xr_2/*.vsp \
+	vs_xr_2/*.xml \
+	vs_xr_2/*.xsl \
 	vs_x_1/*.vsp \
 	vs_x_1/*.xml \
 	vs_x_1/*.xsl \
@@ -108,12 +115,8 @@ EXTRA_DIST = \
 	vs_x_3/*.vsp \
 	vs_x_3/*.xml \
 	vs_x_3/*.xsl \
-	vs_xr_1/*.vsp \
-	vs_xr_1/*.xml \
-	vs_xr_1/*.xsl \
-	vs_xr_2/*.vsp \
-	vs_xr_2/*.xml \
-	vs_xr_2/*.xsl \
+	vx_s_1/*.vspx \
+	vx_s_1/*.xml \
 	vx_s_10/*.sql \
 	vx_s_10/*.vspx \
 	vx_s_10/*.xml \
@@ -122,8 +125,6 @@ EXTRA_DIST = \
 	vx_s_12/*.sql \
 	vx_s_12/*.vspx \
 	vx_s_12/*.xml \
-	vx_s_1/*.vspx \
-	vx_s_1/*.xml \
 	vx_s_2/*.vspx \
 	vx_s_2/*.xml \
 	vx_s_3/*.sql \
@@ -145,5 +146,4 @@ EXTRA_DIST = \
 	vx_s_8/*.xsl \
 	vx_s_9/*.sql \
 	vx_s_9/*.vspx \
-	vx_s_9/*.xml \
-	*.xml
+	vx_s_9/*.xml

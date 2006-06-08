@@ -135,5 +135,10 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST =  \
-	virtkey.snk virtclr.cs virt_http.cs \
-	import_clr.sql mono_type.xsl
+	*.sql \
+	*.xsl \
+	clr.def \
+	dotnet.cpp \
+	virtclr.cs \
+	virtkey.snk \
+	virt_http.cs

@@ -50,8 +50,6 @@ EXTRA_DIST = \
 	*.vspx \
 	*.xml \
 	*.xsl \
-	make_vad.sh \
-	vad_version \
 	comp/*.js \
 	comp/*.xml \
 	comp/*.xsl \
@@ -62,7 +60,8 @@ EXTRA_DIST = \
 	images/*.jpg \
 	images/*.png \
 	images/dav_browser/*.png \
-	images/yac_banner.jfif \
+	images/*.jfif \
+	make_vad.sh \
 	tmpl/SN_INV_TEMPLATE \
 	tmpl/WS_APPROVE_BY_USER_TEMPLATE \
 	tmpl/WS_CHANGE_BY_OWNER_TEMPLATE \
@@ -74,4 +73,7 @@ EXTRA_DIST = \
 	tmpl/WS_REG_TEMPLATE \
 	tmpl/WS_REJECT_BY_USER_TEMPLATE \
 	tmpl/WS_TERM_BY_OWNER_TEMPLATE \
-	tmpl/WS_TERM_BY_USER_TEMPLATE
+	tmpl/WS_TERM_BY_USER_TEMPLATE \
+	vad_version \
+	version.base \
+	version.curr

@@ -826,5 +826,4 @@ EXTRA_DIST = \
 	2pc_client.c bif_gnw.c bif_mts.c bif_purify.c crypt.c \
 	iodbcinst.c mts_client.c mts_com.cpp mtx.cpp name.c \
 	plugin_gate.c sql3_vc.c sql_code_cache_impl.c ssl.c \
-	string_tmpl.c
-
+	string_tmpl.c jso.c jso.h jso_reformat.awk rdf_mapping.jso

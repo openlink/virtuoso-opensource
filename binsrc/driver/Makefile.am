@@ -157,4 +157,4 @@ virt_vers_ru.c: Makefile
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST	= v.bmp virt.exp virt_u.exp
+EXTRA_DIST	= v.bmp virt.exp virt_u.exp unixodbc.c

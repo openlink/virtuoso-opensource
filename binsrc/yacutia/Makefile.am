@@ -47,16 +47,25 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	conductor.list \
 	*.css \
-	*.dtd \
-	help/*.xml \
 	*.htm \
 	*.html \
-	ie7/compatibility/complexspiral/*.css \
-	ie7/compatibility/complexspiral/*.gif \
-	ie7/compatibility/complexspiral/*.html \
-	ie7/compatibility/complexspiral/*.jpg \
+	*.js \
+	*.sql \
+	*.vsp \
+	*.vspx \
+	*.xml \
+	*.xsl \
+	conductor.list \
+	ent.dtd \
+	help/*.xml \
+	ie7/*.css \
+	ie7/*.gif \
+	ie7/*.htm \
+	ie7/*.html \
+	ie7/*.js \
+	ie7/*.png \
+	ie7/*.txt \
 	ie7/compatibility/*.css \
 	ie7/compatibility/*.gif \
 	ie7/compatibility/*.htm \
@@ -65,30 +74,26 @@ EXTRA_DIST = \
 	ie7/compatibility/*.js \
 	ie7/compatibility/*.png \
 	ie7/compatibility/*.xml \
-	ie7/*.css \
-	ie7/*.gif \
-	ie7/*.htm \
-	ie7/*.html \
-	ie7/*.js \
+	ie7/compatibility/complexspiral/*.css \
+	ie7/compatibility/complexspiral/*.gif \
+	ie7/compatibility/complexspiral/*.html \
+	ie7/compatibility/complexspiral/*.jpg \
 	ie7/license \
-	ie7/*.png \
 	ie7/src/*.htm \
 	ie7/src/*.js \
-	ie7/*.txt \
-	images/dav_browser/*.png \
 	images/*.gif \
-	images/icons/*.gif \
-	images/icons/*.png \
 	images/*.jpg \
 	images/*.png \
+	images/dav_browser/*.png \
+	images/icons/*.gif \
+	images/icons/*.png \
 	INSTALL \
-	*.js \
 	mkvad.ini \
 	mkvad.sh \
 	README \
-	*.sql \
 	syntax/*.css \
 	syntax/*.js \
+	toolkit/*.js \
 	toolkit/AUTHORS \
 	toolkit/COPYING \
 	toolkit/docs/*.css \
@@ -97,9 +102,5 @@ EXTRA_DIST = \
 	toolkit/HOWTO \
 	toolkit/images/*.gif \
 	toolkit/images/*.png \
-	toolkit/*.js \
 	toolkit/LICENSE \
-	*.vsp \
-	*.vspx \
-	*.xml \
-	*.xsl
+	vad_version

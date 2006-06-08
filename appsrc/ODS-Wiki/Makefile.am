@@ -51,31 +51,36 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST =  \
+	*.sql \
 	http/*.css \
-	http/images/*.gif \
-	http/images/*.jpg \
-	http/images/*.png \
 	http/*.vsp \
 	http/*.vspx \
 	http/*.xsl \
 	http/*.xslt \
+	http/images/*.gif \
+	http/images/*.jpg \
+	http/images/*.png \
 	initial/Main/*.txt \
 	initial/Wiki/*.txt \
-	*.isql \
 	kupu/common/*.css \
 	kupu/common/*.js \
+	kupu/common/kupu.pox \
+	kupu/common/kupu.pox.jspx \
+	kupu/common/kupudrawers/*.xml \
+	kupu/common/kupudrawers/*.xsl \
 	kupu/common/kupudrawers/drawer.xsl.metadata \
 	kupu/common/kupudrawers/logos/*.gif \
 	kupu/common/kupudrawers/logos/*.png \
-	kupu/common/kupudrawers/*.xml \
-	kupu/common/kupudrawers/*.xsl \
 	kupu/common/kupuimages/*.gif \
 	kupu/common/kupuimages/*.png \
 	kupu/common/kupupopups/*.html \
-	kupu/common/kupu.pox \
-	kupu/common/kupu.pox.jspx \
 	make_vad.sh \
+	plugin/maclex.l \
+	plugin/wikilex.l \
+	plugin/wikiv.c \
+	plugin/wikiv.def \
 	retry.sh \
+	setup.isql \
 	Skins/Clean/*.css \
 	Skins/Clean/*.xslt \
 	Skins/default/*.css \
@@ -84,5 +89,6 @@ EXTRA_DIST =  \
 	Skins/OpenLink/*.xslt \
 	Skins/white/*.css \
 	Skins/white/*.xslt \
-	*.sql \
-	Template/*.txt
+	Template/*.txt \
+	version.base \
+	version.curr

@@ -27,18 +27,28 @@
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	*.css \
-	ho_s_10/Point_ho_s_10.cs \
-	ho_s_10/Point_ho_s_10.dll \
+	*.xml \
+	ho_s_1/*.java \
+	ho_s_1/*.sql \
+	ho_s_1/*.vsp \
+	ho_s_1/*.xml \
+	ho_s_1/my_finances.class \
+	ho_s_1/Point.class \
 	ho_s_10/*.sql \
 	ho_s_10/*.vsp \
 	ho_s_10/*.xml \
-	ho_s_11/restricted.cs \
-	ho_s_11/restricted.dll \
+	ho_s_10/Point_ho_s_10.cs \
+	ho_s_10/Point_ho_s_10.dll \
 	ho_s_11/*.sql \
-	ho_s_11/unrestricted.cs \
-	ho_s_11/unrestricted.dll \
 	ho_s_11/*.vsp \
 	ho_s_11/*.xml \
+	ho_s_11/restricted.cs \
+	ho_s_11/restricted.dll \
+	ho_s_11/unrestricted.cs \
+	ho_s_11/unrestricted.dll \
+	ho_s_12/*.sql \
+	ho_s_12/*.vsp \
+	ho_s_12/*.xml \
 	ho_s_12/AssemblyInfo.cs \
 	ho_s_12/bin/WebService15.dll \
 	ho_s_12/Global.asax \
@@ -47,156 +57,101 @@ EXTRA_DIST = \
 	ho_s_12/Service1.asmx \
 	ho_s_12/Service1.asmx.cs \
 	ho_s_12/Service1.asmx.resx \
-	ho_s_12/*.sql \
-	ho_s_12/*.vsp \
 	ho_s_12/Web.config \
-	ho_s_12/*.xml \
 	ho_s_13/*.java \
 	ho_s_13/*.sql \
 	ho_s_13/*.vsp \
 	ho_s_13/*.xml \
-	ho_s_14/ho_s_14.cs \
-	ho_s_14/ho_s_14.dll \
 	ho_s_14/*.sql \
 	ho_s_14/*.vsp \
 	ho_s_14/*.xml \
+	ho_s_14/ho_s_14.cs \
+	ho_s_14/ho_s_14.dll \
+	ho_s_15/*.sql \
+	ho_s_15/*.vsp \
+	ho_s_15/*.xml \
 	ho_s_15/COM/COMTutorial.sln \
+	ho_s_15/COM/VirtCOMServer/*.txt \
 	ho_s_15/COM/VirtCOMServer/Debug/VirtCOMServer.dll \
 	ho_s_15/COM/VirtCOMServer/Resource.h \
 	ho_s_15/COM/VirtCOMServer/stdafx.cpp \
 	ho_s_15/COM/VirtCOMServer/stdafx.h \
-	ho_s_15/COM/VirtCOMServer/*.txt \
 	ho_s_15/COM/VirtCOMServer/VirtCOMObject.cpp \
 	ho_s_15/COM/VirtCOMServer/VirtCOMObject.h \
 	ho_s_15/COM/VirtCOMServer/VirtCOMServer.cpp \
 	ho_s_15/COM/VirtCOMServer/VirtCOMServer.dll \
-	ho_s_15/COM/VirtCOMServer/VirtCOMServerps.def \
-	ho_s_15/COM/VirtCOMServer/VirtCOMServerPS.vcproj \
-	ho_s_15/COM/VirtCOMServer/VirtCOMServerPS.vcproj.vspscc \
 	ho_s_15/COM/VirtCOMServer/VirtCOMServer.rc \
 	ho_s_15/COM/VirtCOMServer/VirtCOMServer.rgs \
 	ho_s_15/COM/VirtCOMServer/VirtCOMServer.tlb \
 	ho_s_15/COM/VirtCOMServer/VirtCOMServer.vcproj \
-	ho_s_15/*.sql \
+	ho_s_15/COM/VirtCOMServer/VirtCOMServerps.def \
+	ho_s_15/COM/VirtCOMServer/VirtCOMServerPS.vcproj \
+	ho_s_15/COM/VirtCOMServer/VirtCOMServerPS.vcproj.vspscc \
 	ho_s_15/VirtCOMObject.cpp \
 	ho_s_15/VirtCOMObject.h \
-	ho_s_15/*.vsp \
-	ho_s_15/*.xml \
-	ho_s_16/cgitest.rb \
 	ho_s_16/*.xml \
-	ho_s_1/*.class \
-	ho_s_1/*.java \
-	ho_s_1/*.sql \
-	ho_s_1/*.vsp \
-	ho_s_1/*.xml \
+	ho_s_16/cgitest.rb \
+	ho_s_2/*.sql \
+	ho_s_2/*.vsp \
+	ho_s_2/*.xml \
 	ho_s_2/ho_s_2.snk \
 	ho_s_2/MyFinances.cs \
 	ho_s_2/Point.cs \
 	ho_s_2/Point.dll \
-	ho_s_2/*.sql \
 	ho_s_2/tax.dll \
-	ho_s_2/*.vsp \
-	ho_s_2/*.xml \
+	ho_s_3/*.sql \
+	ho_s_3/*.vsp \
+	ho_s_3/*.xml \
+	ho_s_3/redcoalsms.cs \
+	ho_s_3/redcoalsms.dll \
+	ho_s_3/redcoalsmsref.cs \
 	ho_s_30/*.php \
-	ho_s_30/.sanep.php \
 	ho_s_30/*.sql \
-	ho_s_30/WebCalendar/AUTHORS \
-	ho_s_30/WebCalendar/ChangeLog \
-	ho_s_30/WebCalendar/docs/Makefile \
-	ho_s_30/WebCalendar/docs/php2html.pl \
-	ho_s_30/WebCalendar/docs/README \
+	ho_s_30/*.xml \
+	ho_s_30/.sanep.php \
 	ho_s_30/WebCalendar/*.gif \
 	ho_s_30/WebCalendar/*.html \
+	ho_s_30/WebCalendar/*.php \
+	ho_s_30/WebCalendar/*.sql \
+	ho_s_30/WebCalendar/AUTHORS \
+	ho_s_30/WebCalendar/ChangeLog \
+	ho_s_30/WebCalendar/docs/php2html.pl \
+	ho_s_30/WebCalendar/docs/README \
+	ho_s_30/WebCalendar/docs/Makefile \
 	ho_s_30/WebCalendar/includes/*.html \
 	ho_s_30/WebCalendar/includes/*.php \
 	ho_s_30/WebCalendar/install-datebook.patch \
-	ho_s_30/WebCalendar/*.php \
-	ho_s_30/WebCalendar/*.sql \
-	ho_s_30/WebCalendar/tools/check_translation.pl \
 	ho_s_30/WebCalendar/tools/*.php \
-	ho_s_30/WebCalendar/tools/translation_summary.pl \
 	ho_s_30/WebCalendar/tools/*.txt \
+	ho_s_30/WebCalendar/tools/check_translation.pl \
+	ho_s_30/WebCalendar/tools/translation_summary.pl \
 	ho_s_30/WebCalendar/tools/update_all.pl \
 	ho_s_30/WebCalendar/tools/update_translation.pl \
 	ho_s_30/WebCalendar/tools/upgrade_to_0.9.7.pl \
 	ho_s_30/WebCalendar/translations/*.txt \
-	ho_s_30/*.xml \
-	ho_s_3/redcoalsms.cs \
-	ho_s_3/redcoalsms.dll \
-	ho_s_3/redcoalsmsref.cs \
-	ho_s_3/*.sql \
-	ho_s_3/*.vsp \
-	ho_s_3/*.xml \
-	ho_s_4/redcoalsms.cs \
-	ho_s_4/redcoalsms.dll \
-	ho_s_4/redcoalsmsref.cs \
 	ho_s_4/*.sql \
 	ho_s_4/*.vspx \
 	ho_s_4/*.xml \
-	ho_s_5/redcoalsms_dom.cs \
-	ho_s_5/redcoalsms_dom.dll \
+	ho_s_4/redcoalsms.cs \
+	ho_s_4/redcoalsms.dll \
+	ho_s_4/redcoalsmsref.cs \
 	ho_s_5/*.sql \
 	ho_s_5/*.vspx \
 	ho_s_5/*.xml \
-	ho_s_6/button.aspx \
-	ho_s_6/calendar.aspx \
-	ho_s_6/code-render.aspx \
+	ho_s_5/redcoalsms_dom.cs \
+	ho_s_5/redcoalsms_dom.dll \
+	ho_s_6/*.aspx \
 	ho_s_6/*.css \
-	ho_s_6/databind-arraylist.aspx \
-	ho_s_6/databind-attribute.aspx \
-	ho_s_6/databind-class.aspx \
-	ho_s_6/databind-template.aspx \
-	ho_s_6/htmlanchor.aspx \
-	ho_s_6/htmlbutton.aspx \
-	ho_s_6/htmlgeneric.aspx \
-	ho_s_6/htmlimage.aspx \
-	ho_s_6/htmlinputbutton.aspx \
-	ho_s_6/htmlinputcheckbox.aspx \
-	ho_s_6/htmlinputfile.aspx \
-	ho_s_6/htmlinputhidden.aspx \
-	ho_s_6/htmlinputimage.aspx \
-	ho_s_6/htmlinputradiobutton.aspx \
-	ho_s_6/htmlinputtext.aspx \
-	ho_s_6/htmlselect.aspx \
-	ho_s_6/htmltable.aspx \
-	ho_s_6/htmltextarea.aspx \
-	ho_s_6/listitem.aspx \
 	ho_s_6/*.png \
-	ho_s_6/server-side-object.aspx \
-	ho_s_6/session1.aspx \
-	ho_s_6/tabcontrol2.aspx \
-	ho_s_6/tabcontrol2.cs \
-	ho_s_6/tabcontrol.aspx \
-	ho_s_6/tabcontrol.cs \
-	ho_s_6/temperature.aspx \
-	ho_s_6/validator1.aspx \
-	ho_s_6/web_adrotator.aspx \
-	ho_s_6/web_button.aspx \
-	ho_s_6/web_checkbox.aspx \
-	ho_s_6/web_checkboxlist.aspx \
-	ho_s_6/web_dropdownlist.aspx \
-	ho_s_6/web_hyperlink.aspx \
-	ho_s_6/web_image.aspx \
-	ho_s_6/web_imagebutton.aspx \
-	ho_s_6/web_label.aspx \
-	ho_s_6/web_linkbutton.aspx \
-	ho_s_6/web_listbox.aspx \
-	ho_s_6/web_literal.aspx \
-	ho_s_6/web_panel.aspx \
-	ho_s_6/web_placeholder.aspx \
-	ho_s_6/web_radiobutton.aspx \
-	ho_s_6/web_radiobuttonlist.aspx \
-	ho_s_6/web_repeater.aspx \
-	ho_s_6/web_table.aspx \
-	ho_s_6/web_textbox.aspx \
 	ho_s_6/*.xml \
+	ho_s_6/tabcontrol.cs \
+	ho_s_6/tabcontrol2.cs \
+	ho_s_7/*.aspx \
 	ho_s_7/*.sql \
-	ho_s_7/VirtSample.aspx \
-	ho_s_7/Web.config \
 	ho_s_7/*.xml \
-	ho_s_8/cgidb.pl \
-	ho_s_8/cgi.pl \
+	ho_s_7/Web.config \
 	ho_s_8/*.xml \
-	ho_s_9/cgitest.py \
+	ho_s_8/cgi.pl \
+	ho_s_8/cgidb.pl \
 	ho_s_9/*.xml \
-	*.xml
+	ho_s_9/cgitest.py

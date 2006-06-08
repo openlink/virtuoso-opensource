@@ -26,15 +26,16 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	*.css \
+	*.xml \
+	blog/*.sql \
+	blog/*.vspx \
+	blog/*.xml \
 	blog_bridge/*.sql \
 	blog_bridge/*.vspx \
 	blog_bridge/*.xml \
 	blog_query/*.sql \
 	blog_query/*.xml \
-	blog/*.sql \
-	blog/*.vspx \
-	blog/*.xml \
-	*.css \
 	forums/*.xml \
 	ibuyspy/*.xml \
 	petshop/*.sql \
@@ -43,5 +44,4 @@ EXTRA_DIST = \
 	rss_feed/*.vsp \
 	rss_feed/*.vspx \
 	rss_feed/*.xml \
-	rss_feed/*.xsl \
-	*.xml
+	rss_feed/*.xsl

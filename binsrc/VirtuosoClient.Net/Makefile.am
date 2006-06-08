@@ -26,8 +26,6 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	Makefile \
-	Makefile.mono \
 	ArrayOfLongPacked.cs \
 	AssemblyInfo.cs \
 	BlobHandle.cs \
@@ -57,6 +55,7 @@ EXTRA_DIST = \
 	InnerConnectionBase.cs \
 	ISession.cs \
 	IVirtuosoError.cs \
+	Makefile.mono \
 	ManagedCommand.cs \
 	ManagedConnection.cs \
 	ManagedErrors.cs \
@@ -79,23 +78,25 @@ EXTRA_DIST = \
 	TcpSession.cs \
 	Unix.cs \
 	VirtDbType.cs \
-	VirtuosoClientFactory.cs \
+	VirtuosoClient.NET.csproj \
+	VirtuosoClient.NET.vc2005.csproj \
 	VirtuosoClient.snk \
+	VirtuosoClientFactory.cs \
 	VirtuosoCodeAccessPermission.cs \
-	VirtuosoCommandBuilder.cs \
 	VirtuosoCommand.cs \
+	VirtuosoCommandBuilder.cs \
 	VirtuosoConnection.cs \
 	VirtuosoConnectionStringBuilder.cs \
 	VirtuosoDataAdapter.cs \
 	VirtuosoDataReader.cs \
-	VirtuosoErrorCollection.cs \
 	VirtuosoError.cs \
+	VirtuosoErrorCollection.cs \
 	VirtuosoException.cs \
 	VirtuosoInfoMessage.cs \
-	VirtuosoParameterCollection.cs \
 	VirtuosoParameter.cs \
-	VirtuosoPermissionAttribute.cs \
+	VirtuosoParameterCollection.cs \
 	VirtuosoPermission.cs \
+	VirtuosoPermissionAttribute.cs \
 	VirtuosoTransaction.cs \
 	VirtuosoWarning.cs \
 	Win32.cs

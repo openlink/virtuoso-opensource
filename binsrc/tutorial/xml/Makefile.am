@@ -55,13 +55,18 @@ EXTRA_DIST = \
 	sx_g_1/*.xml \
 	sx_h_1/*.vsp \
 	sx_h_1/*.xml \
+	usecases/*.sql \
+	usecases/*.vsp \
+	usecases/*.xml \
+	usecases/map01.xsd \
+	usecases/map02.xsd \
 	xq_s_1/*.xml \
-	xq_s_2a/*.sql \
-	xq_s_2a/*.vsp \
-	xq_s_2a/*.xml \
 	xq_s_2/*.sql \
 	xq_s_2/*.vsp \
 	xq_s_2/*.xml \
+	xq_s_2a/*.sql \
+	xq_s_2a/*.vsp \
+	xq_s_2a/*.xml \
 	xq_s_3/*.sql \
 	xq_s_3/*.vsp \
 	xq_s_3/*.xml \
@@ -70,8 +75,4 @@ EXTRA_DIST = \
 	xq_s_4/*.sql \
 	xq_s_4/*.vsp \
 	xq_s_4/*.xml \
-	xq_s_4/*.xsl \
-	usecases/*.sql \
-	usecases/*.vsp \
-	usecases/*.xml \
-	usecases/*.xsd
+	xq_s_4/*.xsl

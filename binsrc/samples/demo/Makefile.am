@@ -72,6 +72,8 @@ doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	*.sql \
+	*.txt \
 	CAT1 \
 	CAT2 \
 	CAT3 \
@@ -89,9 +91,8 @@ EXTRA_DIST = \
 	EMP7 \
 	EMP8 \
 	EMP9 \
+	flags.tar.gz \
 	mkdemo.bat \
 	mkdemo.ini \
 	mkdemo.sh \
-	mkdoc.sh \
-	*.sql \
-	*.txt
+	mkdoc.sh
