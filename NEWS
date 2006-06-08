@@ -1,9 +1,10 @@
-May 29 2006, V4.5.3:
-  * Added OpenLink Data Spaces application framework
-  * Added OpenLink Data Spaces applications: 
-	Blog, Bookmark, Briefcase, Community, FeedManager
-	Gallery, WebMail, Wiki
+June 8 2006, V4.5.3:
+  * Added OpenLink Data Spaces (ODS) application framework
+  * Added OpenLink Data Spaces (ODS) applications: 
+	Blog, Bookmark, Briefcase, Community, Discussion,
+	FeedManager, Gallery, WebMail, Wiki
   * Added testsuites for XMLA and DAV/RDF
+  * Added project files and instructions to build on win64
   * Added support for JavaScript-lite Objects (JSO)
   * Fixed network congestion problem
   * Fixed performance issue loading VAD files
@@ -12,6 +13,7 @@ May 29 2006, V4.5.3:
   * Fixed possible stale lock on page
   * Fixed SPARQL access to DAV metadata
   * Fixed recognition of MIME types in RDF
+  * Fixed OpenSSL 0.9.8 initialization
   * Fixed syntax and typos
   * Fixed compiler warnings
   * Enhanced RFD/XML parser
