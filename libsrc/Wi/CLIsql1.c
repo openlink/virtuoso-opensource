@@ -1255,9 +1255,6 @@ virtodbc__SQLExecDirect (
   int rc;
   ptrlong old_concur;
   char *cr_name = NULL;
-#if defined(PARAM_DEBUG)
-  FILE *fo;
-#endif
 /* Use comma operator to force that cbSqlStr is changed (if it is!)
    before it is used as an argument for box_n_string. */
   caddr_t string;
@@ -1401,13 +1398,6 @@ virtodbc__SQLExecDirect (
 
   cli_dbg_printf (("Executing %s on HDBC %lx, concurrency %d\n",
 	  stmt->stmt_id, stmt->stmt_connection, stmt->stmt_opts->so_concurrency));
-
-#if defined(PARAM_DEBUG)
-/*	   fo = fopen("c:\\clidv.log", "a");
-	  fprintf(fo, "\n\n******* ExecDirect (%s) ********\n", string);
-	  dbg_print_box(params, fo);
-	  fclose(fo);*/
-#endif
 
   stmt->stmt_status = STS_SERVER_DAE;
   stmt->stmt_pending.p_api = SQL_API_SQLEXECDIRECT;

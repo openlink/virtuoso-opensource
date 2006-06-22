@@ -3393,18 +3393,6 @@ na:
   rc = SQL_ERROR;
 
 ret:
-/* #if defined (DEBUG) && ! defined (UNIX) */
-#ifdef SQL_LOG_DEBUG
-  {
-    FILE *log = fopen ("c:\\sqlinfo.log", "a");
-    if (!log)
-      return rc;
-    fprintf (log, "finf = %d, rc=%d isshort=%d,  s %d l %ld, %s.\n",
-	fInfoType, rc, is_short, shortres, intres, strres ? strres : "-");
-    fflush (log);
-    fclose (log);
-  }
-#endif
   return rc;
 }
 

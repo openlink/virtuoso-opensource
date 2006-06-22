@@ -677,148 +677,6 @@ stmt_set_proc_return (cli_stmt_t * stmt, caddr_t * res)
 }
 
 
-#if defined(PARAM_DEBUG)
-
-void
-dbg_print_box (caddr_t object, FILE * out)
-{
-  char temp[256];
-
-  if (object == NULL)
-    {
-      OutputDebugString ("NULL");
-    }
-  else if (!IS_BOX_POINTER (object))
-    {
-      wsprintf (temp, "%ld ", (long) object);
-      OutputDebugString (temp);
-    }
-  else
-    {
-      dtp_t tag = box_tag (object);
-      switch (tag)
-	{
-	case DV_ARRAY_OF_POINTER:
-	case DV_LIST_OF_POINTER:
-	case DV_ARRAY_OF_XQVAL:
-	case DV_XTREE_HEAD:
-	case DV_XTREE_NODE:
-	  {
-	    long length = box_length (object) / sizeof (caddr_t);
-	    long n;
-	    OutputDebugString ("(");
-
-	    for (n = 0; n < length; n++)
-	      {
-		caddr_t elt = ((caddr_t *) object)[n];
-		if IS_POINTER
-		  (elt) dbg_print_box (elt, out);
-		else
-		  {
-		    wsprintf (temp, "%ld", (long) elt);
-		    OutputDebugString (temp);
-		  }
-		OutputDebugString (" ");
-	      }
-	    OutputDebugString (")");
-	    break;
-	  }
-
-	case DV_ARRAY_OF_LONG:
-	  {
-	    long length = box_length (object) / sizeof (ptrlong);
-	    long n;
-	    OutputDebugString ("L(");
-	    for (n = 0; n < length; n++)
-	      {
-		wsprintf (temp, "%ld ", (long) ((ptrlong *) object)[n]);
-		OutputDebugString (temp);
-	      }
-	    OutputDebugString (")");
-	    break;
-	  }
-
-	case DV_ARRAY_OF_DOUBLE:
-	  {
-	    long length = box_length (object) / sizeof (double);
-	    long n;
-	    OutputDebugString ("#D(");
-	    for (n = 0; n < length; n++)
-	      {
-		wsprintf (temp, "%lf ", ((double *) object)[n]);
-		OutputDebugString (temp);
-	      }
-	    OutputDebugString (")");
-	    break;
-	  }
-
-	case DV_ARRAY_OF_FLOAT:
-	  {
-	    long length = box_length (object) / sizeof (float);
-	    long n;
-	    OutputDebugString ("#F(");
-	    for (n = 0; n < length; n++)
-	      {
-		wsprintf (temp, "%f ", ((float *) object)[n]);
-		OutputDebugString (temp);
-	      }
-	    OutputDebugString (")");
-	    break;
-	  }
-
-	case DV_LONG_INT:
-	  wsprintf (temp, "%ld", unbox (object));
-	  OutputDebugString (temp);
-	  break;
-
-	case DV_SHORT_STRING:
-	case DV_LONG_STRING:
-	case DV_SYMBOL:
-	case DV_C_STRING:
-	  wsprintf (temp, "\"%s\"", object);
-	  OutputDebugString (temp);
-	  break;
-
-	case DV_SINGLE_FLOAT:
-	  wsprintf (temp, "%f", *(float *) object);
-	  OutputDebugString (temp);
-	  break;
-
-	case DV_DOUBLE_FLOAT:
-	  wsprintf (temp, "%lf", *(double *) object);
-	  OutputDebugString (temp);
-	  break;
-#ifndef O12
-	case DV_G_REF_CLASS:
-	  {
-	    int len = box_length (object);
-	    memcpy (temp, object, len - 4);
-	    temp[len - 4] = 0;
-	    wsprintf (temp, "<id %d %s>", len, temp);
-	    OutputDebugString (temp);
-	    break;
-	  }
-#endif
-
-	case DV_DB_NULL:
-	  OutputDebugString ("<DB NULL>");
-	  break;
-
-	case DV_NUMERIC:
-	  numeric_to_string ((numeric_t) object, temp);
-	  wsprintf (temp, "#N%s ", temp);
-	  OutputDebugString (temp);
-	  break;
-	default:
-	  {
-	    wsprintf (temp, "Wacky box tag = %d\n", (int) tag);
-	    OutputDebugString (temp);
-	  }
-	}
-    }
-}
-#endif
-
 #define STMT_IS_SELECT(stmt) \
 	((stmt)->stmt_compilation && (stmt)->stmt_compilation->sc_is_select == QT_SELECT)
 
@@ -826,9 +684,6 @@ dbg_print_box (caddr_t object, FILE * out)
 SQLRETURN
 stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 {
-#if defined(PARAM_DEBUG)
-  FILE *fo;
-#endif
   SQLRETURN rc = SQL_SUCCESS;
   stmt->stmt_is_proc_returned = 0;
 
@@ -869,15 +724,6 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 
       stmt->stmt_co_last_in_batch = 0;
       res = (caddr_t *) PrpcFutureNextResult (stmt->stmt_future);
-
-#if defined(PARAM_DEBUG)
-/*
-	  fo = fopen("c:\\clidv.log", "a");
-	  fprintf(fo, "\n\n******* stmt_process_result ********\n");
-	  dbg_print_box((char *)res, fo);
-	  fclose(fo);
-*/
-#endif
 
       if (DKSESSTAT_ISSET (stmt->stmt_connection->con_session, SST_BROKEN_CONNECTION))
 	{
@@ -1016,12 +862,6 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 	    }
 
 	case QA_COMPILED:
-#if defined(PARAM_DEBUG)
-/*	  fo = fopen("c:\\clidv.log", "a");
-	  OutputDebugString("\n******* stmt_process_result ********\n");*/
-	  dbg_print_box ((char *) res, fo);
-/*	  fclose(fo);*/
-#endif
 	  dk_free_tree ((caddr_t) stmt->stmt_compilation);
 	  stmt->stmt_compilation = ((stmt_compilation_t **) res)[1];
 	  dk_free_box ((box_t) res);

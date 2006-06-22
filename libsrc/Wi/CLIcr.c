@@ -316,44 +316,41 @@ virtodbc__SQLExtendedFetch (
   stmt_options_t *so = stmt->stmt_opts;
   cli_connection_t *con = stmt->stmt_connection;
 
-#if defined (WIN32) && defined (DEBUG)
-  char szBuffer[512];
-
+#if defined (DEBUG)
   switch (fFetchType)
     {
     case SQL_FETCH_FIRST:
-      wsprintf (szBuffer, "SQLExtendedFetch(..., FIRST, %ld)\n", irow);
+      cli_dbg_printf (("SQLExtendedFetch(..., FIRST, %ld)\n", irow));
       break;
 
     case SQL_FETCH_NEXT:
-      wsprintf (szBuffer, "SQLExtendedFetch(..., NEXT, %ld)\n", irow);
+      cli_dbg_printf (("SQLExtendedFetch(..., NEXT, %ld)\n", irow));
       break;
 
     case SQL_FETCH_PRIOR:
-      wsprintf (szBuffer, "SQLExtendedFetch(..., PRIOR, %ld)\n", irow);
+      cli_dbg_printf (("SQLExtendedFetch(..., PRIOR, %ld)\n", irow));
       break;
 
     case SQL_FETCH_LAST:
-      wsprintf (szBuffer, "SQLExtendedFetch(..., LAST, %ld)\n", irow);
+      cli_dbg_printf (("SQLExtendedFetch(..., LAST, %ld)\n", irow));
       break;
 
     case SQL_FETCH_ABSOLUTE:
-      wsprintf (szBuffer, "SQLExtendedFetch(..., ABSOLUTE, %ld)\n", irow);
+      cli_dbg_printf (("SQLExtendedFetch(..., ABSOLUTE, %ld)\n", irow));
       break;
 
     case SQL_FETCH_BOOKMARK:
-      wsprintf (szBuffer, "SQLExtendedFetch(..., BOOKMARK, BM %ld, %ld)\n", irow, bookmark_offset);
+      cli_dbg_printf (("SQLExtendedFetch(..., BOOKMARK, BM %ld, %ld)\n", irow, bookmark_offset));
       break;
 
     case SQL_FETCH_RELATIVE:
-      wsprintf (szBuffer, "SQLExtendedFetch(..., RELATIVE, %ld)\n", irow);
+      cli_dbg_printf (("SQLExtendedFetch(..., RELATIVE, %ld)\n", irow));
       break;
 
     default:
-      wsprintf (szBuffer, "Unknown fetch");
+      cli_dbg_printf (("Unknown fetch"));
       break;
     }
-  OutputDebugString (szBuffer);
 #endif
 
   VERIFY_INPROCESS_CLIENT (con);

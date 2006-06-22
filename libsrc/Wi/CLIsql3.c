@@ -365,9 +365,7 @@ ParseOptions (TCHAR *s, int clean_up)
 	  strcpy_ck (iniFile, "odbc.ini");
       }
 
-# ifdef DEBUG
-    printf ("USING %s\n", iniFile);
-# endif
+    cli_dbg_printf (("USING %s\n", iniFile));
 
     cfg_init (&pConfig, iniFile);
     section_narrow = virt_wide_to_ansi (section);

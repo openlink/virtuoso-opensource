@@ -54,21 +54,15 @@ virtodbc__SQLAllocHandle (SQLSMALLINT handleType,
     {
 
     case SQL_HANDLE_ENV:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLAllocHandle(ENV, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLAllocHandle(ENV, ...) called\n"));
       return virtodbc__SQLAllocEnv ((SQLHENV *) outputHandlePtr);
 
     case SQL_HANDLE_DBC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLAllocHandle(DBC, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLAllocHandle(DBC, ...) called\n"));
       return virtodbc__SQLAllocConnect ((SQLHENV) inputHandle, (SQLHDBC *) outputHandlePtr);
 
     case SQL_HANDLE_STMT:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLAllocHandle(STMT, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLAllocHandle(STMT, ...) called\n"));
       rc = virtodbc__SQLAllocStmt ((SQLHDBC) inputHandle, (SQLHSTMT *) outputHandlePtr);
       if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
 	{
@@ -115,15 +109,11 @@ virtodbc__SQLAllocHandle (SQLSMALLINT handleType,
       return rc;
 
     case SQL_HANDLE_DESC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLAllocHandle(DESC, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLAllocHandle(DESC, ...) called\n"));
       return SQL_ERROR;
 
     default:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLAllocHandle(UNKNOWN, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLAllocHandle(UNKNOWN, ...) called\n"));
       break;
 
     }
@@ -152,21 +142,15 @@ virtodbc__SQLFreeHandle (SQLSMALLINT handleType,
     {
 
     case SQL_HANDLE_ENV:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLFreeHandle(ENV, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLFreeHandle(ENV, ...) called\n"));
       return virtodbc__SQLFreeEnv ((SQLHENV) handle);
 
     case SQL_HANDLE_DBC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLFreeHandle(DBC, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLFreeHandle(DBC, ...) called\n"));
       return virtodbc__SQLFreeConnect ((SQLHDBC) handle);
 
     case SQL_HANDLE_STMT:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLFreeHandle(STMT, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLFreeHandle(STMT, ...) called\n"));
       if (stmt->stmt_app_row_descriptor)
 	{
 	  dk_free ((caddr_t) stmt->stmt_app_row_descriptor, sizeof (stmt_descriptor_t));
@@ -177,15 +161,11 @@ virtodbc__SQLFreeHandle (SQLSMALLINT handleType,
       return virtodbc__SQLFreeStmt ((SQLHSTMT) handle, SQL_DROP);
 
     case SQL_HANDLE_DESC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLFreeHandle(DESC, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLFreeHandle(DESC, ...) called\n"));
       return SQL_ERROR;
 
     default:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLFreeHandle(UNKNOWN, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLFreeHandle(UNKNOWN, ...) called\n"));
       break;
     }
 
@@ -210,9 +190,7 @@ SQLSetEnvAttr (SQLHENV environmentHandle,
     {
     case SQL_ATTR_CONNECTION_POOLING:
 
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetEnvAttr(..., CONN_POOLING, ...)\n");
-#endif
+      cli_dbg_printf (("SQLSetEnvAttr(..., CONN_POOLING, ...)\n"));
 
       switch ((SQLINTEGER) (ptrlong) ValuePtr)
 	{
@@ -225,10 +203,7 @@ SQLSetEnvAttr (SQLHENV environmentHandle,
       break;
 
     case SQL_ATTR_CP_MATCH:
-
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetEnvAttr(..., CP_MATCH, ...)\n");
-#endif
+      cli_dbg_printf (("SQLSetEnvAttr(..., CP_MATCH, ...)\n"));
       switch ((SQLINTEGER) (ptrlong) ValuePtr)
 	{
 	case SQL_CP_STRICT_MATCH:
@@ -239,11 +214,7 @@ SQLSetEnvAttr (SQLHENV environmentHandle,
       break;
 
     case SQL_ATTR_ODBC_VERSION:
-
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetEnvAttr(..., ODBC_VERSION, ...)\n");
-#endif
-
+      cli_dbg_printf (("SQLSetEnvAttr(..., ODBC_VERSION, ...)\n"));
       switch ((SQLINTEGER) (ptrlong) ValuePtr)
 	{
 	case SQL_OV_ODBC2:
@@ -254,11 +225,7 @@ SQLSetEnvAttr (SQLHENV environmentHandle,
       break;
 
     case SQL_ATTR_OUTPUT_NTS:
-
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetEnvAttr(..., ATTR_OUTPUT_NTS, ...)\n");
-#endif
-
+      cli_dbg_printf (("SQLSetEnvAttr(..., ATTR_OUTPUT_NTS, ...)\n"));
       switch ((SQLINTEGER) (ptrlong) ValuePtr)
 	{
 	case SQL_TRUE:
@@ -295,37 +262,22 @@ SQLGetEnvAttr (SQLHENV environmentHandle,
   switch (Attribute)
     {
     case SQL_ATTR_CONNECTION_POOLING:
-
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetEnvAttr(..., CONN_POOLING, ...)\n");
-#endif
-
+      cli_dbg_printf (("SQLGetEnvAttr(..., CONN_POOLING, ...)\n"));
       *((SQLINTEGER *) ValuePtr) = SQL_CP_OFF;
       break;
 
     case SQL_ATTR_CP_MATCH:
-
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetEnvAttr(..., CP_MATCH, ...)\n");
-#endif
+      cli_dbg_printf (("SQLGetEnvAttr(..., CP_MATCH, ...)\n"));
       *((SQLINTEGER *) ValuePtr) = env->env_cp_match;
       break;
 
     case SQL_ATTR_ODBC_VERSION:
-
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetEnvAttr(..., ODBC_VERSION, ...)\n");
-#endif
-
+      cli_dbg_printf (("SQLGetEnvAttr(..., ODBC_VERSION, ...)\n"));
       *((SQLINTEGER *) ValuePtr) = env->env_odbc_version;
       break;
 
     case SQL_ATTR_OUTPUT_NTS:
-
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetEnvAttr(..., ATTR_OUTPUT_NTS, ...)\n");
-#endif
-
+      cli_dbg_printf (("SQLGetEnvAttr(..., ATTR_OUTPUT_NTS, ...)\n"));
       *((SQLINTEGER *) ValuePtr) = (env->env_output_nts ? SQL_TRUE : SQL_FALSE);
       break;
     }
@@ -439,9 +391,7 @@ virtodbc__SQLGetDiagRec (SQLSMALLINT HandleType,
 
   nRecs = error_rec_count (err);
 
-#if defined(WIN32) && defined(DEBUG)
-  OutputDebugString ("SQLGetDiagRec called\n");
-#endif
+  cli_dbg_printf (("SQLGetDiagRec called\n"));
 
   if (RecNumber > nRecs)
     {
@@ -596,9 +546,7 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
       return SQL_INVALID_HANDLE;
     }
 
-#if defined(WIN32) && defined(DEBUG)
-  OutputDebugString ("SQLGetDiagField called\n");
-#endif
+  cli_dbg_printf (("SQLGetDiagField called\n"));
 
   if (!Handle)
     return (SQL_INVALID_HANDLE);
@@ -833,157 +781,115 @@ virtodbc__SQLGetStmtAttr (SQLHSTMT statementHandle,
   switch (Attribute)
     {
     case SQL_ATTR_IMP_PARAM_DESC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., IMP_PARAM_DESC, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., IMP_PARAM_DESC, ...) called\n"));
       *((SQLHANDLE *) ValuePtr) = (SQLHANDLE *) stmt->stmt_imp_param_descriptor;
       if (StringLengthPtr)
 	*StringLengthPtr = SQL_IS_POINTER;
       break;
 
     case SQL_ATTR_APP_PARAM_DESC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., APP_PARAM_DESC, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., APP_PARAM_DESC, ...) called\n"));
       *((SQLHANDLE *) ValuePtr) = (SQLHANDLE *) stmt->stmt_app_param_descriptor;
       if (StringLengthPtr)
 	*StringLengthPtr = SQL_IS_POINTER;
       break;
 
     case SQL_ATTR_IMP_ROW_DESC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., IMP_ROW_DESC, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., IMP_ROW_DESC, ...) called\n"));
       *((SQLHANDLE *) ValuePtr) = (SQLHANDLE *) stmt->stmt_imp_row_descriptor;
       if (StringLengthPtr)
 	*StringLengthPtr = SQL_IS_POINTER;
       break;
 
     case SQL_ATTR_APP_ROW_DESC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., APP_ROW_DESC, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., APP_ROW_DESC, ...) called\n"));
       *((SQLHANDLE *) ValuePtr) = (SQLHANDLE *) stmt->stmt_app_row_descriptor;
       if (StringLengthPtr)
 	*StringLengthPtr = SQL_IS_POINTER;
       break;
 
     case SQL_ATTR_ROW_ARRAY_SIZE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., ROW_ARRAY_SIZE, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., ROW_ARRAY_SIZE, ...) called\n"));
       *((SQLULEN *) ValuePtr) = stmt->stmt_rowset_size;
       break;
 
     case SQL_ATTR_CURSOR_SCROLLABLE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., CURSOR_SCROLLABLE, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., CURSOR_SCROLLABLE, ...) called\n"));
       *((SQLINTEGER *) ValuePtr) = SQL_NONSCROLLABLE;
       break;
 
     case SQL_ATTR_CURSOR_SENSITIVITY:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., CURSOR_SENSITIVITY, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., CURSOR_SENSITIVITY, ...) called\n"));
       *((SQLINTEGER *) ValuePtr) = SQL_UNSPECIFIED;
       break;
 
     case SQL_ATTR_ENABLE_AUTO_IPD:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., ENABLE_AUTO_IPD, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., ENABLE_AUTO_IPD, ...) called\n"));
       *((SQLINTEGER *) ValuePtr) = SQL_FALSE;
       break;
 
     case SQL_ATTR_FETCH_BOOKMARK_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., FETCH_BOOKMARK_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., FETCH_BOOKMARK_PTR, ...) called\n"));
       *((SQLPOINTER *) ValuePtr) = stmt->stmt_bookmark_ptr;
       break;
 
     case SQL_ATTR_METADATA_ID:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., METADATA_ID, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., METADATA_ID, ...) called\n"));
       *((SQLINTEGER *) ValuePtr) = stmt->stmt_connection->con_db_casemode == 2 ? SQL_TRUE : SQL_FALSE;
       break;
 
     case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., PARAM_BIND_OFFSET_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., PARAM_BIND_OFFSET_PTR, ...) called\n"));
       (*(SQLINTEGER **) ValuePtr) = (stmt->stmt_imp_param_descriptor ? stmt->stmt_imp_param_descriptor->d_bind_offset_ptr : NULL);
       break;
 
     case SQL_ATTR_PARAM_BIND_TYPE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., PARAM_BIND_TYPE, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., PARAM_BIND_TYPE, ...) called\n"));
       *((SQLINTEGER *) ValuePtr) = stmt->stmt_param_bind_type;
       break;
 
     case SQL_ATTR_PARAM_OPERATION_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., PARAM_OPERATION_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., PARAM_OPERATION_PTR, ...) called\n"));
       *((SQLINTEGER **) ValuePtr) = NULL;
       break;
 
     case SQL_ATTR_PARAM_STATUS_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., PARAM_STATUS_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., PARAM_STATUS_PTR, ...) called\n"));
       *((SQLSMALLINT **) ValuePtr) = (SQLSMALLINT *) stmt->stmt_param_status;
       break;
 
     case SQL_ATTR_PARAMS_PROCESSED_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., PARAM_PROCESSED_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., PARAM_PROCESSED_PTR, ...) called\n"));
       *((SQLINTEGER **) ValuePtr) = (SQLINTEGER *) stmt->stmt_pirow;
       break;
 
     case SQL_ATTR_PARAMSET_SIZE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., PARAMSET_SIZE, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., PARAMSET_SIZE, ...) called\n"));
       *((SQLULEN *) ValuePtr) = (SQLULEN) stmt->stmt_parm_rows;
       break;
 
     case SQL_ATTR_ROW_BIND_OFFSET_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., ROW_BIND_OFFSET_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., ROW_BIND_OFFSET_PTR, ...) called\n"));
       (*(SQLINTEGER **) ValuePtr) = (stmt->stmt_imp_row_descriptor ? stmt->stmt_imp_row_descriptor->d_bind_offset_ptr : NULL);
       break;
 
     case SQL_ATTR_ROW_OPERATION_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., ROW_OPERATION_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., ROW_OPERATION_PTR, ...) called\n"));
       *((SQLINTEGER **) ValuePtr) = NULL;
       break;
 
     case SQL_ATTR_ROW_STATUS_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., ROW_STATUS_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., ROW_STATUS_PTR, ...) called\n"));
       *((SQLSMALLINT **) ValuePtr) = (SQLSMALLINT *) stmt->stmt_row_status;
       break;
 
     case SQL_ATTR_ROWS_FETCHED_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., ROWS_FETCHED_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., ROWS_FETCHED_PTR, ...) called\n"));
       *((SQLULEN **) ValuePtr) = stmt->stmt_rows_fetched_ptr;
       break;
 
     case SQL_ATTR_MAX_LENGTH:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., MAX_LENGTH, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., MAX_LENGTH, ...) called\n"));
       *((SQLINTEGER *) ValuePtr) = 0;
       break;
 
@@ -1004,17 +910,12 @@ virtodbc__SQLGetStmtAttr (SQLHSTMT statementHandle,
     case SQL_PREFETCH_SIZE:
     case SQL_UNIQUE_ROWS:
     case SQL_GETLASTSERIAL:
+      cli_dbg_printf (("SQLGetStmtAttr(...) mapped to SQLGetStmtOption\n"));
 
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(...) mapped to SQLGetStmtOption\n");
-#endif
       return virtodbc__SQLGetStmtOption ((SQLHSTMT) stmt, (SQLUSMALLINT) Attribute, ValuePtr);
 
     default:
-
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetStmtAttr(..., UNKNOWN, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetStmtAttr(..., UNKNOWN, ...) called\n"));
       break;
     }
 
@@ -1051,9 +952,7 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
   switch (Attribute)
     {
     case SQL_ATTR_APP_PARAM_DESC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., APP_PARAM_DESC, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., APP_PARAM_DESC, ...) called\n"));
       if (ValuePtr != stmt->stmt_app_param_descriptor)
 	{
 	  set_error (&stmt->stmt_error, "01S02", "CL010", "Option value changed");
@@ -1062,9 +961,7 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
       break;
 
     case SQL_ATTR_APP_ROW_DESC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., APP_ROW_DESC, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., APP_ROW_DESC, ...) called\n"));
       if (ValuePtr != stmt->stmt_app_row_descriptor)
 	{
 	  set_error (&stmt->stmt_error, "01S02", "CL011", "Option value changed");
@@ -1073,9 +970,7 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
       break;
 
     case SQL_ATTR_CURSOR_SCROLLABLE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., CURSOR_SCROLLABLE, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., CURSOR_SCROLLABLE, ...) called\n"));
       if (((SQLINTEGER) (ptrlong) ValuePtr) != SQL_NONSCROLLABLE)
 	{
 	  set_error (&stmt->stmt_error, "01S02", "CL012", "Option value changed");
@@ -1084,9 +979,7 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
       break;
 
     case SQL_ATTR_CURSOR_SENSITIVITY:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., CURSOR_SENSITIVITY, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., CURSOR_SENSITIVITY, ...) called\n"));
       if (((SQLINTEGER) (ptrlong) ValuePtr) != SQL_UNSPECIFIED)
 	{
 	  set_error (&stmt->stmt_error, "01S02", "CL013", "Option value changed");
@@ -1095,9 +988,7 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
       break;
 
     case SQL_ATTR_ENABLE_AUTO_IPD:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., ENABLE_AUTO_IPD, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., ENABLE_AUTO_IPD, ...) called\n"));
       if (((SQLINTEGER) (ptrlong) ValuePtr) != SQL_FALSE)
 	{
 	  set_error (&stmt->stmt_error, "01S02", "CL014", "Option value changed");
@@ -1106,23 +997,17 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
       break;
 
     case SQL_ATTR_FETCH_BOOKMARK_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., FETCH_BOOKMARK_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., FETCH_BOOKMARK_PTR, ...) called\n"));
       stmt->stmt_bookmark_ptr = (SQLLEN *) ValuePtr;
       break;
 
     case SQL_ATTR_METADATA_ID:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., METADATA_ID, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., METADATA_ID, ...) called\n"));
       stmt->stmt_connection->con_db_casemode = ((SQLINTEGER) (ptrlong) ValuePtr) == SQL_TRUE ? 2 : 1;
       break;
 
     case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., PARAM_BIND_OFFSET_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., PARAM_BIND_OFFSET_PTR, ...) called\n"));
       if (stmt->stmt_imp_param_descriptor)
 	{
 	  stmt->stmt_imp_param_descriptor->d_bind_offset_ptr = (SQLINTEGER *) ValuePtr;
@@ -1136,16 +1021,12 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
       break;
 
     case SQL_ATTR_PARAM_BIND_TYPE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., PARAM_BIND_TYPE, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., PARAM_BIND_TYPE, ...) called\n"));
       stmt->stmt_param_bind_type = (SQLINTEGER) (ptrlong) ValuePtr;
       break;
 
     case SQL_ATTR_PARAM_OPERATION_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., PARAM_OPERATION_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., PARAM_OPERATION_PTR, ...) called\n"));
       if ((SQLSMALLINT *) ValuePtr)
 	{
 	  set_error (&stmt->stmt_error, "01S02", "CL016", "Option value changed");
@@ -1154,38 +1035,28 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
       break;
 
     case SQL_ATTR_PARAM_STATUS_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., PARAM_STATUS_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., PARAM_STATUS_PTR, ...) called\n"));
       stmt->stmt_param_status = (SQLUSMALLINT *) ValuePtr;
       break;
 
     case SQL_ATTR_PARAMS_PROCESSED_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., PARAM_PROCESSED_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., PARAM_PROCESSED_PTR, ...) called\n"));
       stmt->stmt_pirow = (SQLULEN *) ValuePtr;
       break;
 
     case SQL_ATTR_PARAMSET_SIZE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., PARAMSET_SIZE, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., PARAMSET_SIZE, ...) called\n"));
       stmt->stmt_parm_rows = (SQLINTEGER) (ptrlong) ValuePtr;
       break;
 
     case SQL_ATTR_ROW_ARRAY_SIZE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., ROW_ARRAY_SIZE, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., ROW_ARRAY_SIZE, ...) called\n"));
       stmt->stmt_is_deflt_rowset = 0;
       stmt->stmt_rowset_size = (SQLINTEGER) (ptrlong) ValuePtr;
       break;
 
     case SQL_ATTR_ROW_BIND_OFFSET_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., ROW_BIND_OFFSET_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., ROW_BIND_OFFSET_PTR, ...) called\n"));
       if (stmt->stmt_imp_row_descriptor)
 	stmt->stmt_imp_row_descriptor->d_bind_offset_ptr = (SQLINTEGER *) ValuePtr;
       else
@@ -1197,9 +1068,7 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
       break;
 
     case SQL_ATTR_ROW_OPERATION_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., ROW_OPERATION_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., ROW_OPERATION_PTR, ...) called\n"));
       if ((SQLSMALLINT *) ValuePtr)
 	{
 	  set_error (&stmt->stmt_error, "01S02", "CL018", "Option value changed");
@@ -1208,23 +1077,17 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
       break;
 
     case SQL_ATTR_ROW_STATUS_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., ROW_STATUS_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., ROW_STATUS_PTR, ...) called\n"));
       stmt->stmt_row_status = (SQLUSMALLINT *) ValuePtr;
       break;
 
     case SQL_ATTR_ROWS_FETCHED_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., ROWS_FETCHED_PTR, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., ROWS_FETCHED_PTR, ...) called\n"));
       stmt->stmt_rows_fetched_ptr = (SQLULEN *) ValuePtr;
       break;
 
     case SQL_ATTR_MAX_LENGTH:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., MAX_LENGTH, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., MAX_LENGTH, ...) called\n"));
       set_error (&stmt->stmt_error, "01S02", "CL019", "Option Value Changed");
       return (SQL_SUCCESS_WITH_INFO);
 
@@ -1245,15 +1108,11 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
     case SQL_TXN_TIMEOUT:
     case SQL_NO_CHAR_C_ESCAPE:
     case SQL_UNIQUE_ROWS:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(...) mapped to SQLSetStmtOption\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(...) mapped to SQLSetStmtOption\n"));
       return virtodbc__SQLSetStmtOption ((SQLHSTMT) stmt, (SQLUSMALLINT) Attribute, (SQLULEN) ValuePtr);
 
     default:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetStmtAttr(..., UNKNOWN, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetStmtAttr(..., UNKNOWN, ...) called\n"));
       break;
     }
 
@@ -1290,33 +1149,24 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
     {
 
     case SQL_ATTR_ASYNC_ENABLE:
-
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetConnectAttr(..., ASYNC_ENABLE, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetConnectAttr(..., ASYNC_ENABLE, ...) called\n"));
       con->con_async_mode = (SQLUINTEGER) (ptrlong) ValuePtr;
       break;
 
     case SQL_ATTR_QUERY_TIMEOUT:
     case SQL_ATTR_CONNECTION_TIMEOUT:
     case SQL_ATTR_LOGIN_TIMEOUT:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetConnectAttr(..., TIMEOUT, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetConnectAttr(..., TIMEOUT, ...) called\n"));
       con->con_timeout = (SQLUINTEGER) (ptrlong) ValuePtr;
       break;
 
     case SQL_ATTR_METADATA_ID:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetConnectAttr(..., METADATA_ID, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetConnectAttr(..., METADATA_ID, ...) called\n"));
       con->con_db_casemode = ((SQLINTEGER) (ptrlong) ValuePtr) == SQL_TRUE ? 2 : 1;
       break;
 
     case SQL_ATTR_MAX_ROWS:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetConnectAttr(..., MAX_ROWS, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetConnectAttr(..., MAX_ROWS, ...) called\n"));
       con->con_max_rows = (SQLUINTEGER) (ptrlong) ValuePtr;
       break;
 
@@ -1342,15 +1192,11 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
     case SQL_APPLICATION_NAME:
     case SQL_ENCRYPT_CONNECTION:
     case SQL_SERVER_CERT:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetConnectAttr(...) mapped to SQLSetConnectOption(...)\n");
-#endif
+      cli_dbg_printf (("SQLSetConnectAttr(...) mapped to SQLSetConnectOption(...)\n"));
       return virtodbc__SQLSetConnectOption (connectionHandle, (SQLUSMALLINT) Attribute, (SQLULEN) ValuePtr);
 
     default:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLSetConnectAttr(..., UNKNOWN, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLSetConnectAttr(..., UNKNOWN, ...) called\n"));
       break;
     }
 
@@ -1408,40 +1254,30 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
     {
 
     case SQL_ATTR_ASYNC_ENABLE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetConnectAttr(..., ASYNC_ENABLE, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetConnectAttr(..., ASYNC_ENABLE, ...) called\n"));
       *((SQLUINTEGER *) ValuePtr) = con->con_async_mode;
       break;
 
     case SQL_ATTR_LOGIN_TIMEOUT:
     case SQL_ATTR_QUERY_TIMEOUT:
     case SQL_ATTR_CONNECTION_TIMEOUT:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetConnectAttr(..., CONN_TIMEOUT, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetConnectAttr(..., CONN_TIMEOUT, ...) called\n"));
       *((SQLUINTEGER *) ValuePtr) = con->con_timeout;
       break;
 
     case SQL_ATTR_METADATA_ID:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetConnectAttr(..., METADATA_ID, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetConnectAttr(..., METADATA_ID, ...) called\n"));
       *((SQLINTEGER *) ValuePtr) = con->con_db_casemode == 2 ? SQL_TRUE : SQL_FALSE;
       break;
 
     case SQL_ATTR_AUTO_IPD:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetConnectAttr(..., AUTO_IPD, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetConnectAttr(..., AUTO_IPD, ...) called\n"));
       *((SQLINTEGER *) ValuePtr) = SQL_FALSE;
       break;
 
 #if defined(SQL_ATTR_CONNECTION_DEAD)
     case SQL_ATTR_CONNECTION_DEAD:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetConnectAttr(..., CONNECTION_DEAD, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetConnectAttr(..., CONNECTION_DEAD, ...) called\n"));
       if (con->con_session && DKSESSTAT_ISSET (con->con_session, SST_BROKEN_CONNECTION))
 	*((SQLINTEGER *) ValuePtr) = SQL_CD_TRUE;
       else
@@ -1450,9 +1286,7 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
 #endif
 
     case SQL_ATTR_MAX_ROWS:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetConnectAttr(..., MAX_ROWS, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetConnectAttr(..., MAX_ROWS, ...) called\n"));
       *((SQLUINTEGER *) ValuePtr) = con->con_max_rows;
 
       /* ODBC 2 */
@@ -1480,16 +1314,12 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
     case SQL_COPT_SS_ENLIST_IN_XA:
 #endif
     case SQL_COPT_SS_ENLIST_IN_DTC:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetConnectAttr(...) mapped to SQLGetConnectOption(...)\n");
-#endif
+      cli_dbg_printf (("SQLGetConnectAttr(...) mapped to SQLGetConnectOption(...)\n"));
       return virtodbc__SQLGetConnectOption (connectionHandle,
 	  (SQLUSMALLINT) Attribute, (SQLPOINTER) ValuePtr, StringLength, StringLengthPtr);
 
     default:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLGetConnectAttr(..., UNKNOWN, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLGetConnectAttr(..., UNKNOWN, ...) called\n"));
       break;
     }
 
@@ -1541,7 +1371,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
     SQLINTEGER * StringLengthPtr)
 {
   DESC (desc, descriptorHandle);
-#if defined(WIN32) && defined(DEBUG)
+#if defined(DEBUG)
   char *szDescType;
   char szDebugBuffer[256];
 #endif
@@ -1558,7 +1388,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
   bAppDesc = (desc->d_type == ROW_APP_DESCRIPTOR || desc->d_type == PARAM_APP_DESCRIPTOR);
   bRowDesc = (desc->d_type == ROW_APP_DESCRIPTOR || desc->d_type == ROW_IMP_DESCRIPTOR);
 
-#if defined(WIN32) && defined(DEBUG)
+#if defined(DEBUG)
   switch (desc->d_type)
     {
     case ROW_APP_DESCRIPTOR:
@@ -1580,7 +1410,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
     default:
       szDescType = "UNKNOWN_DESC";
     }
-  OutputDebugString (szDescType);
+
+  cli_dbg_printf (("%s", szDescType));
 #endif
 
   if (bRowDesc)
@@ -1615,9 +1446,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
     {
 
     case SQL_DESC_ALLOC_TYPE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLGetDescField(..., HEADER, ALLOC_TYPE, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., HEADER, ALLOC_TYPE, ...) called\n"));
       *((SQLSMALLINT *) ValuePtr) = SQL_DESC_ALLOC_AUTO;
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
@@ -1625,9 +1454,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       return (SQL_SUCCESS);
 
     case SQL_DESC_ARRAY_SIZE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLGetDescField(..., HEADER, ARRAY_SIZE, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., HEADER, ARRAY_SIZE, ...) called\n"));
       if (bAppDesc)
 	*((SQLULEN *) ValuePtr) = bRowDesc ? desc->d_stmt->stmt_rowset_size : desc->d_stmt->stmt_parm_rows;
       else
@@ -1638,9 +1465,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       return (SQL_SUCCESS);
 
     case SQL_DESC_ARRAY_STATUS_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLGetDescField(..., HEADER, ARRAY_STATUS_PTR, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., HEADER, ARRAY_STATUS_PTR, ...) called\n"));
       if (bAppDesc && ValuePtr)
 	*((SQLSMALLINT **) ValuePtr) = (SQLSMALLINT *) (bRowDesc ? desc->d_stmt->stmt_row_status : desc->d_stmt->stmt_param_status);
       else
@@ -1652,9 +1477,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       return (SQL_SUCCESS);
 
     case SQL_DESC_BIND_OFFSET_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLGetDescField(..., HEADER, BIND_OFFSET_PTR, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., HEADER, BIND_OFFSET_PTR, ...) called\n"));
       if (bAppDesc)
 	*((SQLINTEGER **) ValuePtr) = desc->d_bind_offset_ptr;
       else
@@ -1666,9 +1489,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       return (SQL_SUCCESS);
 
     case SQL_DESC_BIND_TYPE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLGetDescField(..., HEADER, BIND_OFFSET_PTR, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., HEADER, BIND_OFFSET_PTR, ...) called\n"));
       if (bAppDesc)
 	*((SQLUINTEGER *) ValuePtr) = bRowDesc ? desc->d_stmt->stmt_bind_type : desc->d_stmt->stmt_param_bind_type;
       else
@@ -1680,9 +1501,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       return (SQL_SUCCESS);
 
     case SQL_DESC_COUNT:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLGetDescField(..., HEADER, DESC_COUNT, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., HEADER, DESC_COUNT, ...) called\n"));
       *((SQLSMALLINT *) ValuePtr) = desc_count;
 
       if (StringLengthPtr)
@@ -1691,9 +1510,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       return (SQL_SUCCESS);
 
     case SQL_DESC_ROWS_PROCESSED_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLGetDescField(..., HEADER, ROWS_PROCESSED_PTR, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., HEADER, ROWS_PROCESSED_PTR, ...) called\n"));
       if (!bAppDesc)
 	{
 	  *((SQLULEN **) ValuePtr) = bRowDesc ? desc->d_stmt->stmt_rows_fetched_ptr : desc->d_stmt->stmt_pirow;
@@ -1878,10 +1695,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_AUTO_UNIQUE_VALUE:
-#if defined(WIN32) && defined(DEBUG)
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, AUTO_UNIQUE_VALUE, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, AUTO_UNIQUE_VALUE, ...) called\n", RecNumber));
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
 
@@ -1910,11 +1725,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_BASE_COLUMN_NAME:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, BASE_COLUMN_NAME, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, BASE_COLUMN_NAME, ...) called\n", RecNumber));
 
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
@@ -1942,11 +1753,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
     case SQL_DESC_BASE_TABLE_NAME:
     case SQL_DESC_TABLE_NAME:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, BASE_COLUMN_NAME, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, BASE_COLUMN_NAME, ...) called\n", RecNumber));
 
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
@@ -1972,11 +1779,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_CASE_SENSITIVE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, CASE_SENSITIVE, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, CASE_SENSITIVE, ...) called\n", RecNumber));
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
 
@@ -2002,11 +1806,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_CATALOG_NAME:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, CATALOG_NAME, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, CATALOG_NAME, ...) called\n", RecNumber));
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
       if (!bAppDesc && bRowDesc)
@@ -2031,11 +1832,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_CONCISE_TYPE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, CONCISE TYPE, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, CONCISE TYPE, ...) called\n", RecNumber));
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
 
@@ -2045,11 +1843,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_DATA_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, DATA_PTR, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, DATA_PTR, ...) called\n", RecNumber));
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLPOINTER);
 
@@ -2062,11 +1857,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_DATETIME_INTERVAL_CODE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, DATE_TIME_INTERVAL_CODE, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, DATE_TIME_INTERVAL_CODE, ...) called\n", RecNumber));
 
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
@@ -2080,11 +1871,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_DATETIME_INTERVAL_PRECISION:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, DATE_TIME_INTERVAL_PRECISION, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, DATE_TIME_INTERVAL_PRECISION, ...) called\n", RecNumber));
 
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLINTEGER);
@@ -2095,11 +1882,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_DISPLAY_SIZE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, DISPLAY_SIZE, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, DISPLAY_SIZE, ...) called\n", RecNumber));
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLINTEGER);
 
@@ -2117,11 +1901,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_FIXED_PREC_SCALE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, FIXED_PREC_SCALE, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, FIXED_PREC_SCALE, ...) called\n", RecNumber));
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
 
@@ -2143,11 +1924,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_INDICATOR_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, INDICATOR_PTR, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, INDICATOR_PTR, ...) called\n", RecNumber));
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLPOINTER);
 
@@ -2160,11 +1938,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_LABEL:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, LABEL, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, LABEL, ...) called\n", RecNumber));
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
 
@@ -2189,11 +1964,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
     case SQL_DESC_LENGTH:
     case SQL_DESC_OCTET_LENGTH:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, LENGTH, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, LENGTH, ...) called\n", RecNumber));
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLINTEGER);
 
@@ -2207,11 +1979,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_LITERAL_PREFIX:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, LITERAL_PREFIX, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, LITERAL_PREFIX, ...) called\n", RecNumber));
 
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
@@ -2270,11 +2038,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_LITERAL_SUFFIX:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, LITERAL_SUFFIX, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, LITERAL_SUFFIX, ...) called\n", RecNumber));
 
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
@@ -2336,11 +2100,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
     case SQL_DESC_TYPE_NAME:
     case SQL_DESC_LOCAL_TYPE_NAME:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, LOCAL_TYPE_NAME, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, LOCAL_TYPE_NAME, ...) called\n", RecNumber));
 
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
@@ -2399,11 +2159,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_NULLABLE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, NULLABLE, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, NULLABLE, ...) called\n", RecNumber));
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
 
@@ -2422,11 +2179,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     case SQL_DESC_SEARCHABLE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, SEARCHABLE, ...) called\n", RecNumber);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, SEARCHABLE, ...) called\n", RecNumber));
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
 
@@ -2558,11 +2312,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 
     default:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (szDescType);
-      wsprintf (szDebugBuffer, ": SQLGetDescField(...,Field %d, UNKNOWN (%d), ...) called\n", RecNumber, FieldIdentifier);
-      OutputDebugString (szDebugBuffer);
-#endif
+      cli_dbg_printf ((": SQLGetDescField(...,Field %d, UNKNOWN (%d), ...) called\n", RecNumber, FieldIdentifier));
       break;
     }
 
@@ -2619,7 +2369,7 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
     SQLINTEGER BufferLength)
 {
   DESC (desc, descriptorHandle);
-#if defined(WIN32) && defined(DEBUG)
+#if defined(DEBUG)
   char *szDescType;
   char szDebugBuffer[256];
 #endif
@@ -2630,7 +2380,7 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
 
   bAppDesc = (desc->d_type == ROW_APP_DESCRIPTOR || desc->d_type == PARAM_APP_DESCRIPTOR);
   bRowDesc = (desc->d_type == ROW_APP_DESCRIPTOR || desc->d_type == ROW_IMP_DESCRIPTOR);
-#if defined(WIN32) && defined(DEBUG)
+#if defined(DEBUG)
   switch (desc->d_type)
     {
     case ROW_APP_DESCRIPTOR:
@@ -2652,16 +2402,14 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
     default:
       szDescType = "UNKNOWN_DESC";
     }
-  OutputDebugString (szDescType);
+  cli_dbg_printf ((szDescType));
 #endif
 
   switch (FieldIdentifier)
     {
 
     case SQL_DESC_ARRAY_SIZE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLSetDescField(..., HEADER, ARRAY_SIZE, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLSetDescField(..., HEADER, ARRAY_SIZE, ...) called\n"));
       if (!bAppDesc)
 	{
 	  set_error (&(desc->d_stmt->stmt_error), "HY091", "CL021", "Invalid descriptor type");
@@ -2676,9 +2424,7 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
       return (SQL_SUCCESS);
 
     case SQL_DESC_ARRAY_STATUS_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLSetDescField(..., HEADER, ARRAY_STATUS_PTR, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLSetDescField(..., HEADER, ARRAY_STATUS_PTR, ...) called\n"));
       if (bRowDesc)
 	desc->d_stmt->stmt_row_status = (SQLUSMALLINT *) ValuePtr;
       else
@@ -2687,9 +2433,7 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
       return SQL_SUCCESS;
 
     case SQL_DESC_BIND_OFFSET_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLSetDescField(..., HEADER, BIND_OFFSET_PTR, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLSetDescField(..., HEADER, BIND_OFFSET_PTR, ...) called\n"));
       if (!bAppDesc)
 	{
 	  set_error (&desc->d_stmt->stmt_error, "HY091", "CL022", "Invalid descriptor type");
@@ -2704,9 +2448,7 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
       return SQL_SUCCESS;
 
     case SQL_DESC_BIND_TYPE:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLSetDescField(..., HEADER, BIND_TYPE, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLSetDescField(..., HEADER, BIND_TYPE, ...) called\n"));
       if (!bAppDesc)
 	{
 	  set_error (&desc->d_stmt->stmt_error, "HY091", "CL023", "Invalid descriptor type");
@@ -2721,17 +2463,13 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
       return SQL_SUCCESS;
 
     case SQL_DESC_COUNT:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLSetDescField(..., HEADER, COUNT, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLSetDescField(..., HEADER, COUNT, ...) called\n"));
       set_error (&desc->d_stmt->stmt_error, "HY091", "CL024", "Not supported");
 
       return SQL_ERROR;
 
     case SQL_DESC_ROWS_PROCESSED_PTR:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString (": SQLSetDescField(..., HEADER, ROWS_PROCESSED_PTR, ...) called\n");
-#endif
+      cli_dbg_printf ((": SQLSetDescField(..., HEADER, ROWS_PROCESSED_PTR, ...) called\n"));
       if (bAppDesc)
 	{
 	  set_error (&desc->d_stmt->stmt_error, "HY091", "CL025", "Invalid descriptor type");
@@ -2851,19 +2589,11 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
     case SQL_DESC_UNSIGNED:
     case SQL_DESC_UPDATABLE:
     case SQL_DESC_SCALE:
-#if defined(WIN32) && defined(DEBUG)
-      wsprintf (szDebugBuffer, ": SQLSetDescField(..., FIELD %d, %d, ...) called\n", RecNumber, FieldIdentifier);
-      OutputDebugString (szDebugBuffer);
-#endif
-
+      cli_dbg_printf ((": SQLSetDescField(..., FIELD %d, %d, ...) called\n", RecNumber, FieldIdentifier));
       return SQL_SUCCESS;
 
     default:
-#if defined(WIN32) && defined(DEBUG)
-      wsprintf (szDebugBuffer, ": SQLSetDescField(UNKNOWN, FIELD ? %d, %d, ...) called\n", RecNumber, FieldIdentifier);
-      OutputDebugString (szDebugBuffer);
-#endif
-
+      cli_dbg_printf ((": SQLSetDescField(UNKNOWN, FIELD ? %d, %d, ...) called\n", RecNumber, FieldIdentifier));
       return (SQL_SUCCESS);
     }
 
@@ -2931,9 +2661,7 @@ virtodbc__SQLGetDescRec (SQLHDESC descriptorHandle,
   DESC (desc, descriptorHandle);
   int bAppDesc = 0, bRowDesc = 0;
 
-#if defined(WIN32) && defined(DEBUG)
-  OutputDebugString ("SQLGetDescRec called\n");
-#endif
+  cli_dbg_printf (("SQLGetDescRec called\n"));
   if (!desc)
     return (SQL_INVALID_HANDLE);
 
@@ -2990,9 +2718,7 @@ SQLSetDescRec (SQLHDESC arg0,
     SQLLEN * arg8,
     SQLLEN * arg9)
 {
-#if defined(WIN32) && defined(DEBUG)
-  OutputDebugString ("SQLSetDescRec called\n");
-#endif
+  cli_dbg_printf (("SQLSetDescRec called\n"));
 
   return (SQL_SUCCESS);
 }
@@ -3005,9 +2731,7 @@ SQLCopyDesc (SQLHDESC arg0,
     SQLHDESC arg1)
 {
   DESC (desc, arg1);
-#if defined(WIN32) && defined(DEBUG)
-  OutputDebugString ("SQLCopyDesc called\n");
-#endif
+  cli_dbg_printf (("SQLCopyDesc called\n"));
 
   set_error (&desc->d_stmt->stmt_connection->con_environment->env_error, "IM001", "CL026", "Driver doesn't support this function");
 
@@ -3126,9 +2850,7 @@ SQLEndTran (SQLSMALLINT handleType,
     SQLHANDLE Handle,
     SQLSMALLINT completionType)
 {
-#if defined (WIN32) && defined(DEBUG)
-  OutputDebugString ("SQLEndTran called\n");
-#endif
+  cli_dbg_printf (("SQLEndTran called\n"));
   switch (handleType)
     {
     case SQL_HANDLE_DBC:
@@ -3174,9 +2896,7 @@ SQLBulkOperations (SQLHSTMT statementHandle,
   switch (Operation)
     {
     case SQL_ADD:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLBulkOperations (..., SQL_ADD, ...) called\n");
-#endif
+      cli_dbg_printf (("SQLBulkOperations (..., SQL_ADD, ...) called\n"));
       stmt->stmt_fetch_mode = FETCH_EXT;
 
       if (!stmt->stmt_rowset)
@@ -3190,9 +2910,7 @@ SQLBulkOperations (SQLHSTMT statementHandle,
       return virtodbc__SQLSetPos (statementHandle, 0, SQL_ADD, SQL_LOCK_NO_CHANGE);
 
     default:
-#if defined(WIN32) && defined(DEBUG)
-      OutputDebugString ("SQLBulkOperations (..., Bookmark, ...) called - ERROR\n");
-#endif
+      cli_dbg_printf (("SQLBulkOperations (..., Bookmark, ...) called - ERROR\n"));
       set_error (&stmt->stmt_error, "HYC00", "CL027", "Optional feature not supported");
       return (SQL_ERROR);
     }
@@ -3207,9 +2925,7 @@ SQLFetchScroll (SQLHSTMT statementHandle,
     SQLLEN fetchOffset)
 {
   STMT (stmt, statementHandle);
-#if defined(WIN32) && defined(DEBUG)
-  OutputDebugString ("SQLFetchScroll called\n");
-#endif
+  cli_dbg_printf (("SQLFetchScroll called\n"));
 
   if (!stmt)
     return (SQL_INVALID_HANDLE);
