@@ -2,27 +2,27 @@
  *  CLIodbc3.c
  *
  *  $Id$
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
+
 #include "CLI.h"
 #include "sqlver.h"
 #include "multibyte.h"
@@ -30,6 +30,8 @@
 #ifndef WIN32
 #define UNALIGNED
 #endif
+
+
 /**** SQLAllocHandle ****/
 
 SQLRETURN SQL_API
@@ -40,12 +42,12 @@ SQLAllocHandle (SQLSMALLINT handleType,
   return virtodbc__SQLAllocHandle (handleType, inputHandle, outputHandlePtr);
 }
 
+
 SQLRETURN SQL_API
 virtodbc__SQLAllocHandle (SQLSMALLINT handleType,
     SQLHANDLE inputHandle,
     SQLHANDLE * outputHandlePtr)
 {
-
   SQLRETURN rc;
 
   switch (handleType)
@@ -117,7 +119,6 @@ virtodbc__SQLAllocHandle (SQLSMALLINT handleType,
       OutputDebugString ("SQLAllocHandle(DESC, ...) called\n");
 #endif
       return SQL_ERROR;
-      break;
 
     default:
 #if defined(WIN32) && defined(DEBUG)
@@ -130,15 +131,16 @@ virtodbc__SQLAllocHandle (SQLSMALLINT handleType,
   return (SQL_SUCCESS);
 }
 
+
 /**** SQLFreeHandle ****/
 
 SQLRETURN SQL_API
 SQLFreeHandle (SQLSMALLINT handleType,
     SQLHANDLE handle)
 {
-
   return virtodbc__SQLFreeHandle (handleType, handle);
 }
+
 
 SQLRETURN SQL_API
 virtodbc__SQLFreeHandle (SQLSMALLINT handleType,
@@ -179,7 +181,6 @@ virtodbc__SQLFreeHandle (SQLSMALLINT handleType,
       OutputDebugString ("SQLFreeHandle(DESC, ...) called\n");
 #endif
       return SQL_ERROR;
-      break;
 
     default:
 #if defined(WIN32) && defined(DEBUG)
@@ -190,6 +191,7 @@ virtodbc__SQLFreeHandle (SQLSMALLINT handleType,
 
   return (SQL_SUCCESS);
 }
+
 
 /**** SQLSetEnvAttr ****/
 
@@ -262,14 +264,17 @@ SQLSetEnvAttr (SQLHENV environmentHandle,
 	case SQL_TRUE:
 	  env->env_output_nts = SQL_TRUE;
 	  break;
+
 	case SQL_FALSE:
 	  env->env_output_nts = SQL_FALSE;
 	  break;
 	}
       break;
     }
+
   return (SQL_SUCCESS);
 }
+
 
 /**** SQLGetEnvAttr ****/
 
@@ -281,8 +286,10 @@ SQLGetEnvAttr (SQLHENV environmentHandle,
     SQLINTEGER * StringLengthPtr)
 {
   ENV (env, environmentHandle);
+
   if (!env)
     return (SQL_INVALID_HANDLE);
+
   set_error (&env->env_error, NULL, NULL, NULL);
 
   switch (Attribute)
@@ -325,10 +332,10 @@ SQLGetEnvAttr (SQLHENV environmentHandle,
   return (SQL_SUCCESS);
 }
 
+
 int
 error_rec_count (sql_error_t * err)
 {
-
   if (err)
     {
       sql_error_rec_t *rec;
@@ -336,45 +343,52 @@ error_rec_count (sql_error_t * err)
 
       if (err->err_queue && !err->err_queue_head)
 	err->err_queue_head = err->err_queue;
+
       if (!err->err_queue && err->err_queue_head)
 	err->err_queue_head = NULL;
+
       rec = err->err_queue_head;
       while (rec)
 	{
 	  nCount += 1;
 	  rec = rec->sql_error_next;
 	}
+
       return nCount;
     }
-  else
-    return 0;
+
+  return 0;
 }
+
 
 sql_error_rec_t *
 error_goto_record (sql_error_t * err, int nRecord)
 {
-
   if (err)
     {
       sql_error_rec_t *rec;
       int nIndex = 1;
+
       if (err->err_queue && !err->err_queue_head)
 	err->err_queue_head = err->err_queue;
+
       if (!err->err_queue && err->err_queue_head)
 	err->err_queue_head = NULL;
-      rec = err->err_queue_head;
 
+      rec = err->err_queue_head;
       while (rec && nIndex < nRecord)
 	{
 	  nIndex += 1;
 	  rec = rec->sql_error_next;
 	}
+
       if (rec)
 	{
 	  err->err_queue = rec;
 	  return rec;
 	}
     }
+
   return (NULL);
 }
 
@@ -392,7 +406,6 @@ virtodbc__SQLGetDiagRec (SQLSMALLINT HandleType,
     SQLSMALLINT BufferLength,
     SQLSMALLINT * TextLengthPtr)
 {
-
   ENV (env, Handle);
   CON (con, Handle);
   STMT (stmt, Handle);
@@ -407,15 +420,19 @@ virtodbc__SQLGetDiagRec (SQLSMALLINT HandleType,
     case SQL_HANDLE_ENV:
       err = &env->env_error;
       break;
+
     case SQL_HANDLE_DBC:
       err = &con->con_error;
       break;
+
     case SQL_HANDLE_STMT:
       err = &stmt->stmt_error;
       break;
+
     case SQL_HANDLE_DESC:
       err = &desc->d_stmt->stmt_error;
       break;
+
     default:
       return SQL_INVALID_HANDLE;
     }
@@ -429,24 +446,23 @@ virtodbc__SQLGetDiagRec (SQLSMALLINT HandleType,
   if (RecNumber > nRecs)
     {
       V_SET_ODBC_STR ("00000", Sqlstate, 6, &pcbSqlstate, NULL);
+
       return SQL_NO_DATA_FOUND;
     }
 
   if (BufferLength < 0)
     return (SQL_ERROR);
+
   if (error_goto_record (err, RecNumber))
-    return virtodbc__SQLError ((SQLHENV) (HandleType == SQL_HANDLE_ENV ? Handle : SQL_NULL_HANDLE),
+    return virtodbc__SQLError (
+	(SQLHENV) (HandleType == SQL_HANDLE_ENV ? Handle : SQL_NULL_HANDLE),
 	(SQLHDBC) (HandleType == SQL_HANDLE_DBC ? Handle : SQL_NULL_HANDLE),
-	(SQLHSTMT) (HandleType == SQL_HANDLE_STMT ? Handle : (HandleType == SQL_HANDLE_DESC ? desc->d_stmt : SQL_NULL_HANDLE)),
-	Sqlstate,
-	NativeErrorPtr,
-	MessageText,
-	BufferLength,
-	TextLengthPtr,
-	SQL_FALSE);
+	(SQLHSTMT) (HandleType == SQL_HANDLE_STMT ? Handle : (HandleType == SQL_HANDLE_DESC ? desc->d_stmt : SQL_NULL_HANDLE)), 
+	Sqlstate, NativeErrorPtr, MessageText, BufferLength, TextLengthPtr, SQL_FALSE);
   else
     {
       V_SET_ODBC_STR ("00000", Sqlstate, 6, &pcbSqlstate, NULL);
+
       return (SQL_NO_DATA_FOUND);
     }
 }
@@ -467,27 +483,47 @@ SQLGetDiagRec (SQLSMALLINT HandleType,
   DESC (desc, Handle);
   SQLCHAR szSqlState[6];
   SQLRETURN rc;
-  cli_connection_t *conn = (HandleType == SQL_HANDLE_DBC ? con :
-      ( HandleType == SQL_HANDLE_STMT ? stmt->stmt_connection :
-	(HandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection : NULL)));
+  cli_connection_t *conn;
+
+  switch (HandleType)
+    {
+    case SQL_HANDLE_DBC:
+      conn = con;
+      break;
+
+    case SQL_HANDLE_STMT:
+      conn = stmt->stmt_connection;
+      break;
+
+    case SQL_HANDLE_DESC:
+      conn = desc->d_stmt->stmt_connection;
+      break;
+
+    default:
+      conn = NULL;
+      break;
+    }
+
   if (conn)
     {
       NDEFINE_OUTPUT_CHAR_NARROW (MessageText, conn, SQLSMALLINT);
 
       NMAKE_OUTPUT_CHAR_NARROW (MessageText, conn);
 
-      rc= virtodbc__SQLGetDiagRec (HandleType, Handle, RecNumber, szSqlState,
+      rc = virtodbc__SQLGetDiagRec (HandleType, Handle, RecNumber, szSqlState,
 	  NativeErrorPtr, szMessageText, _cbMessageText, _pcbMessageText);
 
       NSET_AND_FREE_OUTPUT_CHAR_NARROW (MessageText, conn);
     }
   else
     {
-      return virtodbc__SQLGetDiagRec (HandleType, Handle, RecNumber, wszSqlState,
-	  NativeErrorPtr, wszMessageText, cbMessageText, pcbMessageText);
+      return virtodbc__SQLGetDiagRec (HandleType, Handle, RecNumber,
+	  wszSqlState, NativeErrorPtr, wszMessageText, cbMessageText, pcbMessageText);
     }
+
   if (wszSqlState)
     memcpy (wszSqlState, szSqlState, 6);
+
   return rc;
 }
 
@@ -503,6 +539,7 @@ __setStringValue (const char *szNewValue, char *szDest, SQLINTEGER destLength)
       strncpy (szDest, szNewValue, destLength);
       szDest[destLength - 1] = '\x0';
     }
+
   return len;
 }
 
@@ -517,6 +554,7 @@ __setStringValue (const char *szNewValue, char *szDest, SQLINTEGER destLength)
 	  *pdestlen = (SQLSMALLINT) __setStringValue(nv,  (char *) dest, (SQLSMALLINT) destlen); \
         else \
 	  __setStringValue(nv, (char *) dest, (SQLSMALLINT) destlen)
+
 /**** SQLGetDiagField ****/
 
 SQLRETURN SQL_API
@@ -540,16 +578,20 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
     case SQL_HANDLE_ENV:
       err = &env->env_error;
       break;
+
     case SQL_HANDLE_DBC:
       err = &con->con_error;
       break;
+
     case SQL_HANDLE_STMT:
       err = &stmt->stmt_error;
       break;
+
     case SQL_HANDLE_DESC:
       err = &desc->d_stmt->stmt_error;
       stmt = desc->d_stmt;
       break;
+
     default:
       return SQL_INVALID_HANDLE;
     }
@@ -563,7 +605,6 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
 
   switch (nRecNumber)
     {
-
     case 0:			/* Header record */
 
       switch (nDiagIdentifier)
@@ -621,12 +662,15 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
 		case QT_UPDATE:
 		  setStringValueS ("UPDATE WHERE", (SQLCHAR *) pDiagInfoPtr, nBufferLength, pnStringLengthPtr);
 		  break;
+
 		case QT_SELECT:
 		  setStringValueS ("SELECT CURSOR", (SQLCHAR *) pDiagInfoPtr, nBufferLength, pnStringLengthPtr);
 		  break;
+
 		case QT_PROC_CALL:
 		  setStringValueS ("CALL", (SQLCHAR *) pDiagInfoPtr, nBufferLength, pnStringLengthPtr);
 		  break;
+
 		default:
 		  setStringValueS ("", (SQLCHAR *) pDiagInfoPtr, nBufferLength, pnStringLengthPtr);
 		  break;
@@ -647,10 +691,6 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
 	  (*(SQLINTEGER *) pDiagInfoPtr) = error_rec_count (err);
 	  break;
 
-
-/*                              default:
-   return(SQL_ERROR);
- */
 	}
       return (SQL_SUCCESS);
 
@@ -674,7 +714,6 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
 	    break;
 
 	  case SQL_DIAG_COLUMN_NUMBER:
-
 	    if (nHandleType != SQL_HANDLE_STMT)
 	      return (SQL_ERROR);
 
@@ -683,7 +722,6 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
 
 	  case SQL_DIAG_SERVER_NAME:
 	  case SQL_DIAG_CONNECTION_NAME:
-
 	    if (nHandleType == SQL_HANDLE_ENV)
 	      {
 		V_SET_ODBC_STR ("", pDiagInfoPtr, nBufferLength, pnStringLengthPtr, NULL);
@@ -691,13 +729,11 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
 	    else
 	      {
 		cli_connection_t *dest_conn = (nHandleType == SQL_HANDLE_DBC ? con : stmt->stmt_connection);
-		V_SET_ODBC_STR (dest_conn->con_dsn ? dest_conn->con_dsn : (SQLCHAR *) "",
-		    pDiagInfoPtr, nBufferLength, pnStringLengthPtr, NULL);
+		V_SET_ODBC_STR (dest_conn->con_dsn ? dest_conn->con_dsn : (SQLCHAR *) "", pDiagInfoPtr, nBufferLength, pnStringLengthPtr, NULL);
 	      }
 	    break;
 
 	  case SQL_DIAG_MESSAGE_TEXT:
-
 	    V_SET_ODBC_STR (rec->sql_error_msg, pDiagInfoPtr, nBufferLength, pnStringLengthPtr, NULL);
 	    break;
 
@@ -715,17 +751,14 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
 
 	  case SQL_DIAG_SQLSTATE:
 
-	    V_SET_ODBC_STR (!rec->sql_state ? "00000" : rec->sql_state,
-		pDiagInfoPtr, nBufferLength, pnStringLengthPtr, NULL);
+	    V_SET_ODBC_STR (!rec->sql_state ? "00000" : rec->sql_state, pDiagInfoPtr, nBufferLength, pnStringLengthPtr, NULL);
 	    break;
 
-/*                              default:
-   return (SQL_ERROR);
- */
 	  }
 	break;
       }
     }
+
   return (rc);
 }
 
@@ -742,36 +775,37 @@ SQLGetDiagField (SQLSMALLINT nHandleType,
   CON (con, Handle);
   STMT (stmt, Handle);
   DESC (desc, Handle);
+
   switch (nDiagIdentifier)
     {
-      case SQL_DIAG_DYNAMIC_FUNCTION:
-      case SQL_DIAG_SUBCLASS_ORIGIN:
-      case SQL_DIAG_CLASS_ORIGIN:
-      case SQL_DIAG_SERVER_NAME:
-      case SQL_DIAG_CONNECTION_NAME:
-      case SQL_DIAG_MESSAGE_TEXT:
-      case SQL_DIAG_SQLSTATE:
-	  {
-	    SQLRETURN rc;
-	    cli_connection_t *conn = (nHandleType == SQL_HANDLE_DBC ? con :
-		( nHandleType == SQL_HANDLE_STMT ? stmt->stmt_connection :
-		  (nHandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection : NULL)));
+    case SQL_DIAG_DYNAMIC_FUNCTION:
+    case SQL_DIAG_SUBCLASS_ORIGIN:
+    case SQL_DIAG_CLASS_ORIGIN:
+    case SQL_DIAG_SERVER_NAME:
+    case SQL_DIAG_CONNECTION_NAME:
+    case SQL_DIAG_MESSAGE_TEXT:
+    case SQL_DIAG_SQLSTATE:
+      {
+	SQLRETURN rc;
+	cli_connection_t *conn = (nHandleType == SQL_HANDLE_DBC ? con :
+	    (nHandleType == SQL_HANDLE_STMT ? stmt->stmt_connection :
+		(nHandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection : NULL)));
 
-	    NDEFINE_OUTPUT_NONCHAR_NARROW (pDiagInfoPtr, nBufferLength, pnStringLengthPtr, conn, SQLSMALLINT);
+	NDEFINE_OUTPUT_NONCHAR_NARROW (pDiagInfoPtr, nBufferLength, pnStringLengthPtr, conn, SQLSMALLINT);
 
-	    NMAKE_OUTPUT_NONCHAR_NARROW (pDiagInfoPtr, nBufferLength, conn);
+	NMAKE_OUTPUT_NONCHAR_NARROW (pDiagInfoPtr, nBufferLength, conn);
 
-	    rc = virtodbc__SQLGetDiagField (nHandleType, Handle, nRecNumber,
-		nDiagIdentifier, _pDiagInfoPtr, _nBufferLength, _pnStringLengthPtr);
+	rc = virtodbc__SQLGetDiagField (nHandleType, Handle, nRecNumber,
+	    nDiagIdentifier, _pDiagInfoPtr, _nBufferLength, _pnStringLengthPtr);
 
-	    NSET_AND_FREE_OUTPUT_NONCHAR_NARROW (pDiagInfoPtr, nBufferLength, pnStringLengthPtr, conn);
+	NSET_AND_FREE_OUTPUT_NONCHAR_NARROW (pDiagInfoPtr, nBufferLength, pnStringLengthPtr, conn);
 
-	    return rc;
-	  }
+	return rc;
+      }
 
-      default:
-	  return virtodbc__SQLGetDiagField (nHandleType, Handle, nRecNumber,
-		nDiagIdentifier, pDiagInfoPtr, nBufferLength, pnStringLengthPtr);
+    default:
+      return virtodbc__SQLGetDiagField (nHandleType, Handle, nRecNumber,
+	  nDiagIdentifier, pDiagInfoPtr, nBufferLength, pnStringLengthPtr);
     }
 }
 
@@ -787,12 +821,15 @@ virtodbc__SQLGetStmtAttr (SQLHSTMT statementHandle,
 {
   SQLINTEGER dummy;
   STMT (stmt, statementHandle);
+
   if (!stmt)
     return (SQL_INVALID_HANDLE);
+
   if (!ValuePtr)
     ValuePtr = &dummy;
 
   set_error (&stmt->stmt_error, NULL, NULL, NULL);
+
   switch (Attribute)
     {
     case SQL_ATTR_IMP_PARAM_DESC:
@@ -980,6 +1017,7 @@ virtodbc__SQLGetStmtAttr (SQLHSTMT statementHandle,
 #endif
       break;
     }
+
   return (SQL_SUCCESS);
 }
 
@@ -1004,8 +1042,10 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
     SQLINTEGER StringLength)
 {
   STMT (stmt, statementHandle);
+
   if (!stmt)
     return (SQL_INVALID_HANDLE);
+
   set_error (&stmt->stmt_error, NULL, NULL, NULL);
 
   switch (Attribute)
@@ -1216,6 +1256,7 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
 #endif
       break;
     }
+
   return (SQL_SUCCESS);
 }
 
@@ -1239,8 +1280,10 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
     SQLINTEGER StringLength)
 {
   CON (con, connectionHandle);
+
   if (!con)
     return (SQL_INVALID_HANDLE);
+
   set_error (&con->con_error, NULL, NULL, NULL);
 
   switch (Attribute)
@@ -1324,22 +1367,23 @@ SQLSetConnectAttr (SQLHDBC connectionHandle,
   CON (con, connectionHandle);
   switch (Attribute)
     {
-      case SQL_CURRENT_QUALIFIER:
-      case SQL_CHARSET:
-      case SQL_APPLICATION_NAME:
-	  {
-	    SQLRETURN rc;
-	    NDEFINE_INPUT_NONCHAR_NARROW (ValuePtr, StringLength);
+    case SQL_CURRENT_QUALIFIER:
+    case SQL_CHARSET:
+    case SQL_APPLICATION_NAME:
+      {
+	SQLRETURN rc;
+	NDEFINE_INPUT_NONCHAR_NARROW (ValuePtr, StringLength);
 
-	    NMAKE_INPUT_NONCHAR_NARROW (ValuePtr, StringLength, con);
+	NMAKE_INPUT_NONCHAR_NARROW (ValuePtr, StringLength, con);
 
-	    rc = virtodbc__SQLSetConnectAttr (connectionHandle, Attribute, _ValuePtr, (SQLINTEGER) _StringLength);
+	rc = virtodbc__SQLSetConnectAttr (connectionHandle, Attribute, _ValuePtr, (SQLINTEGER) _StringLength);
 
-	    NFREE_INPUT_NONCHAR_NARROW (ValuePtr, StringLength);
-	    return rc;
-	  }
-      default:
-	  return virtodbc__SQLSetConnectAttr (connectionHandle, Attribute, ValuePtr, StringLength);
+	NFREE_INPUT_NONCHAR_NARROW (ValuePtr, StringLength);
+	return rc;
+      }
+
+    default:
+      return virtodbc__SQLSetConnectAttr (connectionHandle, Attribute, ValuePtr, StringLength);
     }
 }
 
@@ -1354,8 +1398,10 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
     UNALIGNED SQLINTEGER * StringLengthPtr)
 {
   CON (con, connectionHandle);
+
   if (!con)
     return (SQL_INVALID_HANDLE);
+
   set_error (&con->con_error, NULL, NULL, NULL);
 
   switch (Attribute)
@@ -1396,11 +1442,10 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLGetConnectAttr(..., CONNECTION_DEAD, ...) called\n");
 #endif
-      if (con->con_session &&
-          DKSESSTAT_ISSET (con->con_session, SST_BROKEN_CONNECTION))
-        *((SQLINTEGER *) ValuePtr) = SQL_CD_TRUE;
+      if (con->con_session && DKSESSTAT_ISSET (con->con_session, SST_BROKEN_CONNECTION))
+	*((SQLINTEGER *) ValuePtr) = SQL_CD_TRUE;
       else
-        *((SQLINTEGER *) ValuePtr) = SQL_CD_FALSE;
+	*((SQLINTEGER *) ValuePtr) = SQL_CD_FALSE;
       break;
 #endif
 
@@ -1438,7 +1483,8 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLGetConnectAttr(...) mapped to SQLGetConnectOption(...)\n");
 #endif
-      return virtodbc__SQLGetConnectOption (connectionHandle, (SQLUSMALLINT) Attribute, (SQLPOINTER) ValuePtr, StringLength, StringLengthPtr);
+      return virtodbc__SQLGetConnectOption (connectionHandle,
+	  (SQLUSMALLINT) Attribute, (SQLPOINTER) ValuePtr, StringLength, StringLengthPtr);
 
     default:
 #if defined(WIN32) && defined(DEBUG)
@@ -1461,25 +1507,25 @@ SQLGetConnectAttr (SQLHDBC connectionHandle,
   CON (con, connectionHandle);
   switch (Attribute)
     {
-      case SQL_ATTR_CURRENT_CATALOG:
-      case SQL_ATTR_TRACEFILE:
-      case SQL_ATTR_TRANSLATE_LIB:
-      case SQL_CHARSET:
-      case SQL_APPLICATION_NAME:
-	  {
-	    SQLRETURN rc;
-	    NDEFINE_OUTPUT_NONCHAR_NARROW (ValuePtr, StringLength, StringLengthPtr, con, SQLINTEGER);
+    case SQL_ATTR_CURRENT_CATALOG:
+    case SQL_ATTR_TRACEFILE:
+    case SQL_ATTR_TRANSLATE_LIB:
+    case SQL_CHARSET:
+    case SQL_APPLICATION_NAME:
+      {
+	SQLRETURN rc;
+	NDEFINE_OUTPUT_NONCHAR_NARROW (ValuePtr, StringLength, StringLengthPtr, con, SQLINTEGER);
 
-	    NMAKE_OUTPUT_NONCHAR_NARROW (ValuePtr, StringLength, con);
+	NMAKE_OUTPUT_NONCHAR_NARROW (ValuePtr, StringLength, con);
 
-	    rc = virtodbc__SQLGetConnectAttr (connectionHandle, Attribute, _ValuePtr, _StringLength, _StringLengthPtr);
+	rc = virtodbc__SQLGetConnectAttr (connectionHandle, Attribute, _ValuePtr, _StringLength, _StringLengthPtr);
 
-	    NSET_AND_FREE_OUTPUT_NONCHAR_NARROW (ValuePtr, StringLength, StringLengthPtr, con);
-	    return rc;
-	  }
+	NSET_AND_FREE_OUTPUT_NONCHAR_NARROW (ValuePtr, StringLength, StringLengthPtr, con);
+	return rc;
+      }
 
-      default:
-	  return virtodbc__SQLGetConnectAttr (connectionHandle, Attribute, ValuePtr, StringLength, StringLengthPtr);
+    default:
+      return virtodbc__SQLGetConnectAttr (connectionHandle, Attribute, ValuePtr, StringLength, StringLengthPtr);
     }
 }
 
@@ -1518,18 +1564,22 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
     case ROW_APP_DESCRIPTOR:
       szDescType = "ARD";
       break;
+
     case ROW_IMP_DESCRIPTOR:
       szDescType = "IRD";
       break;
+
     case PARAM_IMP_DESCRIPTOR:
       szDescType = "IPD";
       break;
+
     case PARAM_APP_DESCRIPTOR:
       szDescType = "APD";
       break;
+
     default:
       szDescType = "UNKNOWN_DESC";
-    };
+    }
   OutputDebugString (szDescType);
 #endif
 
@@ -1553,9 +1603,9 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	     SQLBindParameter() should override any data previously set, including
 	     the data obtained from the ``automatic population''. */
 	  if (desc->d_stmt->stmt_compilation &&
-	      BOX_ELEMENTS(desc->d_stmt->stmt_compilation) > 3 &&
-	      desc->d_stmt->stmt_compilation->sc_params)
-	    desc_count = (SQLSMALLINT) BOX_ELEMENTS(desc->d_stmt->stmt_compilation->sc_params);
+	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation) > 3 && desc->d_stmt->stmt_compilation->sc_params)
+	    desc_count = (SQLSMALLINT) BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_params);
+
 	  if (desc_count < desc->d_stmt->stmt_n_parms)
 	    desc_count = desc->d_stmt->stmt_n_parms;
 	}
@@ -1571,6 +1621,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       *((SQLSMALLINT *) ValuePtr) = SQL_DESC_ALLOC_AUTO;
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       return (SQL_SUCCESS);
 
     case SQL_DESC_ARRAY_SIZE:
@@ -1583,6 +1634,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	return (SQL_ERROR);
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLUINTEGER);
+
       return (SQL_SUCCESS);
 
     case SQL_DESC_ARRAY_STATUS_PTR:
@@ -1590,12 +1642,13 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       OutputDebugString (": SQLGetDescField(..., HEADER, ARRAY_STATUS_PTR, ...) called\n");
 #endif
       if (bAppDesc && ValuePtr)
-	*((SQLSMALLINT **) ValuePtr) = (SQLSMALLINT *) (bRowDesc ?
-	    desc->d_stmt->stmt_row_status : desc->d_stmt->stmt_param_status);
+	*((SQLSMALLINT **) ValuePtr) = (SQLSMALLINT *) (bRowDesc ? desc->d_stmt->stmt_row_status : desc->d_stmt->stmt_param_status);
       else
 	*((SQLSMALLINT **) ValuePtr) = NULL;
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT *);
+
       return (SQL_SUCCESS);
 
     case SQL_DESC_BIND_OFFSET_PTR:
@@ -1606,8 +1659,10 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	*((SQLINTEGER **) ValuePtr) = desc->d_bind_offset_ptr;
       else
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT *);
+
       return (SQL_SUCCESS);
 
     case SQL_DESC_BIND_TYPE:
@@ -1618,8 +1673,10 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	*((SQLUINTEGER *) ValuePtr) = bRowDesc ? desc->d_stmt->stmt_bind_type : desc->d_stmt->stmt_param_bind_type;
       else
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLUINTEGER);
+
       return (SQL_SUCCESS);
 
     case SQL_DESC_COUNT:
@@ -1627,8 +1684,10 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       OutputDebugString (": SQLGetDescField(..., HEADER, DESC_COUNT, ...) called\n");
 #endif
       *((SQLSMALLINT *) ValuePtr) = desc_count;
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       return (SQL_SUCCESS);
 
     case SQL_DESC_ROWS_PROCESSED_PTR:
@@ -1640,11 +1699,13 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	  *((SQLULEN **) ValuePtr) = bRowDesc ? desc->d_stmt->stmt_rows_fetched_ptr : desc->d_stmt->stmt_pirow;
 	  if (StringLengthPtr)
 	    *StringLengthPtr = sizeof (SQLPOINTER);
+
 	  return (SQL_SUCCESS);
 	}
       else
 	{
 	  set_error (&desc->d_stmt->stmt_error, "HY091", "CL020", "Invalid descriptor field identifier");
+
 	  return (SQL_ERROR);
 	}
 
@@ -1657,14 +1718,17 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	  if (RecNumber)	/* bookmark */
 	    if (desc->d_stmt->stmt_compilation &&
 		desc->d_stmt->stmt_compilation->sc_columns &&
-		BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32)RecNumber))
+		BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 	      {
 		col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
+
 		if (ValuePtr)
 		  *((SQLSMALLINT *) ValuePtr) = (SQLSMALLINT) unbox (cd->cd_scale);
 	      }
+
 	  return (SQL_SUCCESS);
 	}
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
       break;
@@ -1672,67 +1736,76 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
     case SQL_DESC_NAME:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc)
 	{
 	  if (bRowDesc)
 	    {
 	      if (!RecNumber)	/* bookmark */
 		setStringValue ("Bookmark", ValuePtr, BufferLength, StringLengthPtr);
-	      else if (desc->d_stmt->stmt_compilation &&
-		  desc->d_stmt->stmt_compilation->sc_columns &&
-		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32)RecNumber))
+	      else if (desc->d_stmt->stmt_compilation
+		  && desc->d_stmt->stmt_compilation->sc_columns
+		  && BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 		{
 		  col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
-		  return str_box_to_buffer(cd->cd_name, (char *) ValuePtr,
+		  return str_box_to_buffer (cd->cd_name, (char *) ValuePtr,
 		      BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
 		}
+
 	      return (SQL_SUCCESS);
 	    }
 	  else
 	    {
 	      if (RecNumber > 0 &&
 		  desc->d_stmt->stmt_compilation &&
-		  BOX_ELEMENTS(desc->d_stmt->stmt_compilation) > 3 &&
+		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation) > 3 &&
 		  desc->d_stmt->stmt_compilation->sc_params &&
-		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_params) >= ((uint32)RecNumber))
+		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_params) >= ((uint32) RecNumber))
 		{
 		  param_desc_t *pd = (param_desc_t *) desc->d_stmt->stmt_compilation->sc_params[RecNumber - 1];
-		  if (PARAM_DESC_IS_EXTENDED(pd))
-		    return str_box_to_buffer(pd->pd_name, (char *) ValuePtr,
+		  if (PARAM_DESC_IS_EXTENDED (pd))
+		    return str_box_to_buffer (pd->pd_name, (char *) ValuePtr,
 			BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
 		}
 	    }
 	}
       else
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = 0;
+
       if (ValuePtr)
 	*((SQLCHAR *) ValuePtr) = 0;
+
       break;
 
     case SQL_DESC_OCTET_LENGTH_PTR:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLPOINTER);
+
       if (!bAppDesc)
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_PARAMETER_TYPE:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc && !bRowDesc)
 	{
 	  SQLSMALLINT iotype = SQL_PARAM_INPUT;
-          if (RecNumber > 0)
+	  if (RecNumber > 0)
 	    {
 	      /* As per the spec SQLBindParameter overrides data in the IPD.
-		 Therefore first look for the parameter binding structure.
-		 If not found examine the stmt compilation.
-		 BUG: SQLSetParam() always sets parameter type to SQL_PARAM_INPUT
-		 thus also inadvertently overriding the parameter type. */
+	         Therefore first look for the parameter binding structure.
+	         If not found examine the stmt compilation.
+	         BUG: SQLSetParam() always sets parameter type to SQL_PARAM_INPUT
+	         thus also inadvertently overriding the parameter type. */
 	      parm_binding_t *pb = NULL;
 	      if (RecNumber <= desc->d_stmt->stmt_n_parms)
 		{
@@ -1747,54 +1820,61 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 			}
 		    }
 		}
+
 	      if (pb != NULL && pb->pb_param_type != SQL_PARAM_TYPE_UNKNOWN)
 		iotype = pb->pb_param_type;
 	      else if (desc->d_stmt->stmt_compilation &&
-		       BOX_ELEMENTS(desc->d_stmt->stmt_compilation) > 3 &&
-		       desc->d_stmt->stmt_compilation->sc_params &&
-		       BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_params) >= ((uint32)RecNumber))
+		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation) > 3 &&
+		  desc->d_stmt->stmt_compilation->sc_params &&
+		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_params) >= ((uint32) RecNumber))
 		{
 		  param_desc_t *pd = (param_desc_t *) desc->d_stmt->stmt_compilation->sc_params[RecNumber - 1];
-		  if (PARAM_DESC_IS_EXTENDED(pd))
+		  if (PARAM_DESC_IS_EXTENDED (pd))
 		    iotype = (SQLSMALLINT) unbox (pd->pd_iotype);
 		}
 	    }
+
 	  if (ValuePtr)
 	    *((SQLSMALLINT *) ValuePtr) = iotype;
 	}
       else
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       break;
 
     case SQL_DESC_PRECISION:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       break;
 
     case SQL_DESC_SCHEMA_NAME:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc && bRowDesc)
 	{
-	  char* name = NULL;
+	  char *name = NULL;
 	  if (RecNumber > 0 &&
 	      desc->d_stmt->stmt_compilation &&
 	      desc->d_stmt->stmt_compilation->sc_columns &&
-	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32)RecNumber))
+	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 	    {
 	      col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
-	      if (COL_DESC_IS_EXTENDED(cd))
+	      if (COL_DESC_IS_EXTENDED (cd))
 		name = cd->cd_base_schema_name;
 	    }
-	  return str_box_to_buffer(name, (char *)ValuePtr,
-	      BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
+	  return str_box_to_buffer (name, (char *) ValuePtr, BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
 	}
       else
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_AUTO_UNIQUE_VALUE:
@@ -1804,6 +1884,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 #endif
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc && bRowDesc)
 	{
 	  if (ValuePtr)
@@ -1812,18 +1893,20 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	      if (RecNumber > 0 &&
 		  desc->d_stmt->stmt_compilation &&
 		  desc->d_stmt->stmt_compilation->sc_columns &&
-		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32)RecNumber))
+		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 		{
 		  col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
-		  if (COL_DESC_IS_EXTENDED(cd) && (unbox ((caddr_t) cd->cd_flags) & CDF_AUTOINCREMENT))
+		  if (COL_DESC_IS_EXTENDED (cd) && (unbox ((caddr_t) cd->cd_flags) & CDF_AUTOINCREMENT))
 		    *((SQLINTEGER *) ValuePtr) = SQL_TRUE;
 		}
 	    }
 	}
       else
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLINTEGER);
+
       break;
 
     case SQL_DESC_BASE_COLUMN_NAME:
@@ -1832,27 +1915,29 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, BASE_COLUMN_NAME, ...) called\n", RecNumber);
       OutputDebugString (szDebugBuffer);
 #endif
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc && bRowDesc)
 	{
-	  char* name = NULL;
+	  char *name = NULL;
 	  if (RecNumber > 0 &&
 	      desc->d_stmt->stmt_compilation &&
 	      desc->d_stmt->stmt_compilation->sc_columns &&
-	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32)RecNumber))
+	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 	    {
 	      col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
-	      if (COL_DESC_IS_EXTENDED(cd))
+	      if (COL_DESC_IS_EXTENDED (cd))
 		name = cd->cd_base_column_name;
 	      else
 		name = cd->cd_name;
 	    }
-	  return str_box_to_buffer(name, (char *) ValuePtr,
-	      BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
+	  return str_box_to_buffer (name, (char *) ValuePtr, BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
 	}
       else
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_BASE_TABLE_NAME:
@@ -1862,25 +1947,28 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, BASE_COLUMN_NAME, ...) called\n", RecNumber);
       OutputDebugString (szDebugBuffer);
 #endif
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc && bRowDesc)
 	{
-	  char* name = NULL;
+	  char *name = NULL;
 	  if (RecNumber > 0 &&
 	      desc->d_stmt->stmt_compilation &&
 	      desc->d_stmt->stmt_compilation->sc_columns &&
-	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32)RecNumber))
+	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 	    {
 	      col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
-	      if (COL_DESC_IS_EXTENDED(cd))
+	      if (COL_DESC_IS_EXTENDED (cd))
 		name = cd->cd_base_table_name;
 	    }
-	  return str_box_to_buffer(name, (char *) ValuePtr,
-	      BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
+
+	  return str_box_to_buffer (name, (char *) ValuePtr, BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
 	}
       else
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_CASE_SENSITIVE:
@@ -1907,6 +1995,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	}
       else
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLINTEGER);
 
@@ -1922,21 +2011,23 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	return (SQL_NO_DATA_FOUND);
       if (!bAppDesc && bRowDesc)
 	{
-	  char* name = NULL;
+	  char *name = NULL;
 	  if (RecNumber > 0 &&
 	      desc->d_stmt->stmt_compilation &&
 	      desc->d_stmt->stmt_compilation->sc_columns &&
-	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32)RecNumber))
+	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 	    {
 	      col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
-	      if (COL_DESC_IS_EXTENDED(cd))
+
+	      if (COL_DESC_IS_EXTENDED (cd))
 		name = cd->cd_base_catalog_name;
 	    }
-	  return str_box_to_buffer(name, (char *) ValuePtr,
-	      BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
+
+	  return str_box_to_buffer (name, (char *) ValuePtr, BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
 	}
       else
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_CONCISE_TYPE:
@@ -1947,6 +2038,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 #endif
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
 
@@ -1960,10 +2052,13 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 #endif
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLPOINTER);
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc && bRowDesc)
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_DATETIME_INTERVAL_CODE:
@@ -1975,6 +2070,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
 
@@ -1992,6 +2088,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLINTEGER);
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
 
@@ -2016,6 +2113,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	}
       else
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_FIXED_PREC_SCALE:
@@ -2041,6 +2139,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	}
       else if (bAppDesc)
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_INDICATOR_PTR:
@@ -2051,8 +2150,10 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 #endif
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLPOINTER);
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc)
 	return (SQL_ERROR);
 
@@ -2066,22 +2167,24 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 #endif
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc && bRowDesc)
 	{
-	  char* name = NULL;
+	  char *name = NULL;
 	  if (RecNumber > 0 &&
 	      desc->d_stmt->stmt_compilation &&
 	      desc->d_stmt->stmt_compilation->sc_columns &&
-	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32)RecNumber))
+	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 	    {
 	      col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
 	      name = cd->cd_name;
 	    }
-	  return str_box_to_buffer(name, (char *) ValuePtr,
-	      BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
+
+	  return str_box_to_buffer (name, (char *) ValuePtr, BufferLength, StringLengthPtr, 1, &desc->d_stmt->stmt_error);
 	}
       else
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_LENGTH:
@@ -2093,6 +2196,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 #endif
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLINTEGER);
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
 
@@ -2108,6 +2212,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       wsprintf (szDebugBuffer, ": SQLGetDescField(..., FIELD %d, LITERAL_PREFIX, ...) called\n", RecNumber);
       OutputDebugString (szDebugBuffer);
 #endif
+
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
 
@@ -2120,7 +2225,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	  rc = virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt, RecNumber, NULL, 0, NULL, &sqlType, NULL, NULL, NULL);
 	  if (rc != SQL_SUCCESS)
 	    return (rc);
-	  rc = virtodbc__SQLAllocHandle (SQL_HANDLE_STMT, desc->d_stmt->stmt_connection, (SQLHANDLE *) &helper_stmt);
+	  rc = virtodbc__SQLAllocHandle (SQL_HANDLE_STMT, desc->d_stmt->stmt_connection, (SQLHANDLE *) & helper_stmt);
 	  if (rc != SQL_SUCCESS)
 	    return (rc);
 	  rc = virtodbc__SQLGetTypeInfo (helper_stmt, sqlType);
@@ -2129,15 +2234,20 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	      virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) helper_stmt);
 	      return (rc);
 	    }
+
 	  rc = virtodbc__SQLFetch (helper_stmt, 0);
+
 	  if (rc != SQL_SUCCESS)
 	    {
 	      virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) helper_stmt);
 	      return (rc);
 	    }
+
 	  rc = virtodbc__SQLGetData (helper_stmt, 4, SQL_C_CHAR, ValuePtr, BufferLength, StringLengthPtr ? &strlen : NULL);
+
 	  if (StringLengthPtr)
 	    *StringLengthPtr = (SQLINTEGER) strlen;
+
 	  if (rc != SQL_SUCCESS)
 	    {
 	      virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) helper_stmt);
@@ -2156,6 +2266,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	}
       else
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_LITERAL_SUFFIX:
@@ -2175,26 +2286,33 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	  SQLLEN strlen = StringLengthPtr ? *StringLengthPtr : 0;
 
 	  rc = virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt, RecNumber, NULL, 0, NULL, &sqlType, NULL, NULL, NULL);
+
 	  if (rc != SQL_SUCCESS)
 	    return (rc);
-	  rc = virtodbc__SQLAllocHandle (SQL_HANDLE_STMT, desc->d_stmt->stmt_connection, (SQLHANDLE *) &helper_stmt);
+
+	  rc = virtodbc__SQLAllocHandle (SQL_HANDLE_STMT, desc->d_stmt->stmt_connection, (SQLHANDLE *) & helper_stmt);
 	  if (rc != SQL_SUCCESS)
 	    return (rc);
+
 	  rc = virtodbc__SQLGetTypeInfo (helper_stmt, sqlType);
 	  if (rc != SQL_SUCCESS)
 	    {
 	      virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) helper_stmt);
 	      return (rc);
 	    }
+
 	  rc = virtodbc__SQLFetch (helper_stmt, 0);
 	  if (rc != SQL_SUCCESS)
 	    {
 	      virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) helper_stmt);
 	      return (rc);
 	    }
+
 	  rc = virtodbc__SQLGetData (helper_stmt, 5, SQL_C_CHAR, ValuePtr, BufferLength, StringLengthPtr ? &strlen : NULL);
+
 	  if (StringLengthPtr)
 	    *StringLengthPtr = (SQLINTEGER) strlen;
+
 	  if (rc != SQL_SUCCESS)
 	    {
 	      virtodbc__SQLFreeHandle (SQL_HANDLE_STMT, (SQLHANDLE) helper_stmt);
@@ -2213,6 +2331,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	}
       else
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_TYPE_NAME:
@@ -2245,8 +2364,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 		}
 	      if (!sc->sc_is_select)
 		{
-		  set_error (&stmt->stmt_error,
-		      "07005", "CL038", "Statement does not have output cols.");
+		  set_error (&stmt->stmt_error, "07005", "CL038", "Statement does not have output cols.");
 		  return SQL_ERROR;
 		}
 	      if (was_bm_col && !stmt->stmt_opts->so_use_bookmarks)
@@ -2261,20 +2379,23 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 		  set_error (&stmt->stmt_error, "S1002", "CL040", "Column index too large.");
 		  return SQL_ERROR;
 		}
+
 	      if (was_bm_col)
 		cd = &bm_info;
 	      else
 		cd = (col_desc_t *) stmt->stmt_compilation->sc_columns[icol];
 
 	      type = (char *) DV_TYPE_TITLE (cd->cd_dtp);
+
 	      if (cd->cd_flags && CDF_XMLTYPE)
 		type = "XMLType";
-	      V_SET_ODBC_STR (type, ValuePtr, BufferLength, StringLengthPtr,
-		  &desc->d_stmt->stmt_error);
+
+	      V_SET_ODBC_STR (type, ValuePtr, BufferLength, StringLengthPtr, &desc->d_stmt->stmt_error);
 	    }
 	}
       else
 	return (SQL_ERROR);
+
       break;
 
     case SQL_DESC_NULLABLE:
@@ -2294,8 +2415,10 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	    RecNumber, NULL, 0, NULL, NULL, NULL, NULL, (SQLSMALLINT *) ValuePtr);
       else if (bAppDesc)
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       break;
 
     case SQL_DESC_SEARCHABLE:
@@ -2312,17 +2435,20 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       if (bRowDesc && !bAppDesc)
 	return virtodbc__SQLColAttributes ((SQLHSTMT) desc->d_stmt,
 	    RecNumber, SQL_COLUMN_SEARCHABLE, NULL, 0, NULL, (SQLLEN *) ValuePtr);
       else
 	return (SQL_ERROR);
+
       break;
 
 #if defined (SQL_DESC_ROWVER)
     case SQL_DESC_ROWVER:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc)
 	{
 	  if (ValuePtr)
@@ -2333,7 +2459,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 		  if (RecNumber > 0 &&
 		      desc->d_stmt->stmt_compilation &&
 		      desc->d_stmt->stmt_compilation->sc_columns &&
-		      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32)RecNumber))
+		      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 		    {
 		      col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
 		      if (DV_TIMESTAMP == cd->cd_dtp)
@@ -2344,16 +2470,20 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	}
       else
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       break;
 #endif
 
     case SQL_DESC_TYPE:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       if (bRowDesc)
 	return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt,
 	    RecNumber, NULL, 0, NULL, (SQLSMALLINT *) ValuePtr, NULL, NULL, NULL);
@@ -2362,6 +2492,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
     case SQL_DESC_UNNAMED:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!bAppDesc)
 	{
 	  if (bRowDesc)
@@ -2369,53 +2500,61 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	      if (ValuePtr && RecNumber > 0 &&
 		  desc->d_stmt->stmt_compilation &&
 		  desc->d_stmt->stmt_compilation->sc_columns &&
-		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32)RecNumber))
+		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >= ((uint32) RecNumber))
 		{
 		  col_desc_t *cd = (col_desc_t *) desc->d_stmt->stmt_compilation->sc_columns[RecNumber - 1];
-		  if (COL_DESC_IS_EXTENDED(cd) && cd->cd_name != NULL)
-		    *(SQLSMALLINT*)ValuePtr = 1;
+		  if (COL_DESC_IS_EXTENDED (cd) && cd->cd_name != NULL)
+		    *(SQLSMALLINT *) ValuePtr = 1;
 		  else
-		    *(SQLSMALLINT*)ValuePtr = 0;
+		    *(SQLSMALLINT *) ValuePtr = 0;
 		}
 	    }
 	  else
 	    {
 	      if (ValuePtr && RecNumber > 0 &&
 		  desc->d_stmt->stmt_compilation &&
-		  BOX_ELEMENTS(desc->d_stmt->stmt_compilation) > 3 &&
+		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation) > 3 &&
 		  desc->d_stmt->stmt_compilation->sc_params &&
-		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_params) >= ((uint32)RecNumber))
+		  BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_params) >= ((uint32) RecNumber))
 		{
 		  param_desc_t *pd = (param_desc_t *) desc->d_stmt->stmt_compilation->sc_params[RecNumber - 1];
-		  if (PARAM_DESC_IS_EXTENDED(pd) && pd->pd_name != NULL)
-		    *(SQLSMALLINT*)ValuePtr = 1;
+		  if (PARAM_DESC_IS_EXTENDED (pd) && pd->pd_name != NULL)
+		    *(SQLSMALLINT *) ValuePtr = 1;
 		  else
-		    *(SQLSMALLINT*)ValuePtr = 0;
+		    *(SQLSMALLINT *) ValuePtr = 0;
 		}
 	    }
 	}
       else
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       break;
 
     case SQL_DESC_UPDATABLE:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (!(!bAppDesc && bRowDesc))
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       break;
 
     case SQL_DESC_UNSIGNED:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
+
       if (bAppDesc)
 	return (SQL_ERROR);
+
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
+
       break;
 
     default:
@@ -2425,7 +2564,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       OutputDebugString (szDebugBuffer);
 #endif
       break;
-    };
+    }
+
   return (rc);
 }
 
@@ -2441,34 +2581,33 @@ SQLGetDescField (SQLHDESC descriptorHandle,
   DESC (desc, descriptorHandle);
   switch (FieldIdentifier)
     {
-      case SQL_DESC_NAME:
-      case SQL_DESC_LABEL:
-      case SQL_DESC_SCHEMA_NAME:
-      case SQL_DESC_BASE_COLUMN_NAME:
-      case SQL_DESC_BASE_TABLE_NAME:
-      case SQL_DESC_TABLE_NAME:
-      case SQL_DESC_CATALOG_NAME:
-      case SQL_DESC_LITERAL_PREFIX:
-      case SQL_DESC_LITERAL_SUFFIX:
-      case SQL_DESC_TYPE_NAME:
-      case SQL_DESC_LOCAL_TYPE_NAME:
-	  {
-	    SQLRETURN rc;
-	    NDEFINE_OUTPUT_NONCHAR_NARROW (ValuePtr, BufferLength, StringLengthPtr, desc->d_stmt->stmt_connection, SQLINTEGER);
+    case SQL_DESC_NAME:
+    case SQL_DESC_LABEL:
+    case SQL_DESC_SCHEMA_NAME:
+    case SQL_DESC_BASE_COLUMN_NAME:
+    case SQL_DESC_BASE_TABLE_NAME:
+    case SQL_DESC_TABLE_NAME:
+    case SQL_DESC_CATALOG_NAME:
+    case SQL_DESC_LITERAL_PREFIX:
+    case SQL_DESC_LITERAL_SUFFIX:
+    case SQL_DESC_TYPE_NAME:
+    case SQL_DESC_LOCAL_TYPE_NAME:
+      {
+	SQLRETURN rc;
+	NDEFINE_OUTPUT_NONCHAR_NARROW (ValuePtr, BufferLength, StringLengthPtr, desc->d_stmt->stmt_connection, SQLINTEGER);
 
-	    NMAKE_OUTPUT_NONCHAR_NARROW (ValuePtr, BufferLength, desc->d_stmt->stmt_connection);
+	NMAKE_OUTPUT_NONCHAR_NARROW (ValuePtr, BufferLength, desc->d_stmt->stmt_connection);
 
-	    rc = virtodbc__SQLGetDescField (descriptorHandle, RecNumber,
-		FieldIdentifier, _ValuePtr, _BufferLength, _StringLengthPtr);
-	    NSET_AND_FREE_OUTPUT_NONCHAR_NARROW (ValuePtr, BufferLength, StringLengthPtr, desc->d_stmt->stmt_connection);
-	    return rc;
-	  }
+	rc = virtodbc__SQLGetDescField (descriptorHandle, RecNumber, FieldIdentifier, _ValuePtr, _BufferLength, _StringLengthPtr);
+	NSET_AND_FREE_OUTPUT_NONCHAR_NARROW (ValuePtr, BufferLength, StringLengthPtr, desc->d_stmt->stmt_connection);
+	return rc;
+      }
 
-      default:
-	  return virtodbc__SQLGetDescField (descriptorHandle, RecNumber,
-	      FieldIdentifier, ValuePtr, BufferLength, StringLengthPtr);
+    default:
+      return virtodbc__SQLGetDescField (descriptorHandle, RecNumber, FieldIdentifier, ValuePtr, BufferLength, StringLengthPtr);
     }
 }
+
 
 /* SQLSetDescField */
 
@@ -2497,18 +2636,22 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
     case ROW_APP_DESCRIPTOR:
       szDescType = "ARD";
       break;
+
     case ROW_IMP_DESCRIPTOR:
       szDescType = "IRD";
       break;
+
     case PARAM_IMP_DESCRIPTOR:
       szDescType = "IPD";
       break;
+
     case PARAM_APP_DESCRIPTOR:
       szDescType = "APD";
       break;
+
     default:
       szDescType = "UNKNOWN_DESC";
-    };
+    }
   OutputDebugString (szDescType);
 #endif
 
@@ -2524,10 +2667,12 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
 	  set_error (&(desc->d_stmt->stmt_error), "HY091", "CL021", "Invalid descriptor type");
 	  return SQL_ERROR;
 	}
+
       if (bRowDesc)
 	desc->d_stmt->stmt_rowset_size = (SQLULEN) ValuePtr;
       else
 	desc->d_stmt->stmt_parm_rows = (SQLULEN) ValuePtr;
+
       return (SQL_SUCCESS);
 
     case SQL_DESC_ARRAY_STATUS_PTR:
@@ -2538,6 +2683,7 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
 	desc->d_stmt->stmt_row_status = (SQLUSMALLINT *) ValuePtr;
       else
 	desc->d_stmt->stmt_param_status = (SQLUSMALLINT *) ValuePtr;
+
       return SQL_SUCCESS;
 
     case SQL_DESC_BIND_OFFSET_PTR:
@@ -2549,10 +2695,12 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
 	  set_error (&desc->d_stmt->stmt_error, "HY091", "CL022", "Invalid descriptor type");
 	  return SQL_ERROR;
 	}
+
       if (bRowDesc)
 	desc->d_stmt->stmt_imp_row_descriptor->d_bind_offset_ptr = (SQLINTEGER *) ValuePtr;
       else
 	desc->d_stmt->stmt_imp_param_descriptor->d_bind_offset_ptr = (SQLINTEGER *) ValuePtr;
+
       return SQL_SUCCESS;
 
     case SQL_DESC_BIND_TYPE:
@@ -2564,10 +2712,12 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
 	  set_error (&desc->d_stmt->stmt_error, "HY091", "CL023", "Invalid descriptor type");
 	  return SQL_ERROR;
 	}
+
       if (bRowDesc)
 	desc->d_stmt->stmt_bind_type = (int) (ptrlong) ValuePtr;
       else
 	desc->d_stmt->stmt_param_bind_type = (int) (ptrlong) ValuePtr;
+
       return SQL_SUCCESS;
 
     case SQL_DESC_COUNT:
@@ -2575,6 +2725,7 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
       OutputDebugString (": SQLSetDescField(..., HEADER, COUNT, ...) called\n");
 #endif
       set_error (&desc->d_stmt->stmt_error, "HY091", "CL024", "Not supported");
+
       return SQL_ERROR;
 
     case SQL_DESC_ROWS_PROCESSED_PTR:
@@ -2584,12 +2735,15 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
       if (bAppDesc)
 	{
 	  set_error (&desc->d_stmt->stmt_error, "HY091", "CL025", "Invalid descriptor type");
+
 	  return SQL_ERROR;
 	}
+
       if (bRowDesc)
 	desc->d_stmt->stmt_rows_fetched_ptr = (SQLULEN *) ValuePtr;
       else
 	desc->d_stmt->stmt_pirow = (SQLULEN *) ValuePtr;
+
       return SQL_SUCCESS;
 
     case SQL_DESC_DATA_PTR:
@@ -2599,16 +2753,19 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
 	    {
 	      col_binding_t *col = stmt_nth_col (desc->d_stmt, RecNumber);
 	      col->cb_place = (caddr_t) ValuePtr;
+
 	      return (SQL_SUCCESS);
 	    }
 	  else
 	    {
 	      parm_binding_t *pb = stmt_nth_parm (desc->d_stmt, RecNumber);
 	      pb->pb_place = (caddr_t) ValuePtr;
+
 	      return (SQL_SUCCESS);
 	    }
 	}
       break;
+
     case SQL_DESC_OCTET_LENGTH:
       if (bAppDesc)
 	{
@@ -2616,12 +2773,14 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
 	    {
 	      col_binding_t *col = stmt_nth_col (desc->d_stmt, RecNumber);
 	      col->cb_max_length = (SQLLEN) ValuePtr;
+
 	      return (SQL_SUCCESS);
 	    }
 	  else
 	    {
 	      parm_binding_t *pb = stmt_nth_parm (desc->d_stmt, RecNumber);
 	      pb->pb_max_length = (SQLULEN) ValuePtr;
+
 	      return (SQL_SUCCESS);
 	    }
 	}
@@ -2633,16 +2792,19 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
 	    {
 	      col_binding_t *col = stmt_nth_col (desc->d_stmt, RecNumber);
 	      col->cb_length = (SQLLEN *) ValuePtr;
+
 	      return (SQL_SUCCESS);
 	    }
 	  else
 	    {
 	      parm_binding_t *pb = stmt_nth_parm (desc->d_stmt, RecNumber);
 	      pb->pb_length = (SQLLEN *) ValuePtr;
+
 	      return (SQL_SUCCESS);
 	    }
 	}
       break;
+
     case SQL_DESC_TYPE:
       if (bAppDesc)
 	{
@@ -2650,16 +2812,19 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
 	    {
 	      col_binding_t *col = stmt_nth_col (desc->d_stmt, RecNumber);
 	      col->cb_c_type = (int) (ptrlong) ValuePtr;
+
 	      return (SQL_SUCCESS);
 	    }
 	  else
 	    {
 	      parm_binding_t *pb = stmt_nth_parm (desc->d_stmt, RecNumber);
 	      pb->pb_c_type = (int) (ptrlong) ValuePtr;
+
 	      return (SQL_SUCCESS);
 	    }
 	}
       break;
+
     case SQL_DESC_DATETIME_INTERVAL_CODE:
     case SQL_DESC_DATETIME_INTERVAL_PRECISION:
     case SQL_DESC_DISPLAY_SIZE:
@@ -2690,6 +2855,7 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
       wsprintf (szDebugBuffer, ": SQLSetDescField(..., FIELD %d, %d, ...) called\n", RecNumber, FieldIdentifier);
       OutputDebugString (szDebugBuffer);
 #endif
+
       return SQL_SUCCESS;
 
     default:
@@ -2697,6 +2863,7 @@ virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
       wsprintf (szDebugBuffer, ": SQLSetDescField(UNKNOWN, FIELD ? %d, %d, ...) called\n", RecNumber, FieldIdentifier);
       OutputDebugString (szDebugBuffer);
 #endif
+
       return (SQL_SUCCESS);
     }
 
@@ -2714,31 +2881,34 @@ SQLSetDescField (SQLHDESC descriptorHandle,
   DESC (desc, descriptorHandle);
   switch (FieldIdentifier)
     {
-      case SQL_DESC_LITERAL_PREFIX:
-      case SQL_DESC_LITERAL_SUFFIX:
-      case SQL_DESC_LOCAL_TYPE_NAME:
-      case SQL_DESC_NAME:
-      case SQL_DESC_LABEL:
-      case SQL_DESC_TABLE_NAME:
-      case SQL_DESC_SCHEMA_NAME:
-      case SQL_DESC_CATALOG_NAME:
-      case SQL_DESC_BASE_COLUMN_NAME:
-      case SQL_DESC_BASE_TABLE_NAME:
-      case SQL_DESC_CONCISE_TYPE:
-      case SQL_DESC_TYPE_NAME:
-	  {
-	    SQLRETURN rc;
-	    NDEFINE_INPUT_NONCHAR_NARROW (ValuePtr, BufferLength);
+    case SQL_DESC_LITERAL_PREFIX:
+    case SQL_DESC_LITERAL_SUFFIX:
+    case SQL_DESC_LOCAL_TYPE_NAME:
+    case SQL_DESC_NAME:
+    case SQL_DESC_LABEL:
+    case SQL_DESC_TABLE_NAME:
+    case SQL_DESC_SCHEMA_NAME:
+    case SQL_DESC_CATALOG_NAME:
+    case SQL_DESC_BASE_COLUMN_NAME:
+    case SQL_DESC_BASE_TABLE_NAME:
+    case SQL_DESC_CONCISE_TYPE:
+    case SQL_DESC_TYPE_NAME:
+      {
+	SQLRETURN rc;
 
-	    NMAKE_INPUT_NONCHAR_NARROW (ValuePtr, BufferLength, desc->d_stmt->stmt_connection);
+	NDEFINE_INPUT_NONCHAR_NARROW (ValuePtr, BufferLength);
 
-	    rc = virtodbc__SQLSetDescField (descriptorHandle, RecNumber, FieldIdentifier, _ValuePtr, (SQLINTEGER) _BufferLength);
+	NMAKE_INPUT_NONCHAR_NARROW (ValuePtr, BufferLength, desc->d_stmt->stmt_connection);
 
-	    NFREE_INPUT_NONCHAR_NARROW (ValuePtr, BufferLength);
-	    return rc;
-	  }
-      default:
-	  return virtodbc__SQLSetDescField (descriptorHandle, RecNumber, FieldIdentifier, ValuePtr, BufferLength);
+	rc = virtodbc__SQLSetDescField (descriptorHandle, RecNumber, FieldIdentifier, _ValuePtr, (SQLINTEGER) _BufferLength);
+
+	NFREE_INPUT_NONCHAR_NARROW (ValuePtr, BufferLength);
+
+	return rc;
+      }
+
+    default:
+      return virtodbc__SQLSetDescField (descriptorHandle, RecNumber, FieldIdentifier, ValuePtr, BufferLength);
     }
 }
 
@@ -2797,8 +2967,8 @@ SQLGetDescRec (SQLHDESC descriptorHandle,
 
   NMAKE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection);
 
-  rc = virtodbc__SQLGetDescRec (descriptorHandle, RecNumber, szName, _cbName, _pcbName,
-      TypePtr, SubTypePtr, LengthPtr, PrecisionPtr, ScalePtr, NullablePtr);
+  rc = virtodbc__SQLGetDescRec (descriptorHandle, RecNumber, szName, _cbName,
+      _pcbName, TypePtr, SubTypePtr, LengthPtr, PrecisionPtr, ScalePtr, NullablePtr);
 
   NSET_AND_FREE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection);
 
@@ -2823,8 +2993,10 @@ SQLSetDescRec (SQLHDESC arg0,
 #if defined(WIN32) && defined(DEBUG)
   OutputDebugString ("SQLSetDescRec called\n");
 #endif
+
   return (SQL_SUCCESS);
 }
+
 
 /* SQLCopyDesc */
 
@@ -2832,15 +3004,16 @@ SQLRETURN SQL_API
 SQLCopyDesc (SQLHDESC arg0,
     SQLHDESC arg1)
 {
-
-  DESC(desc, arg1);
+  DESC (desc, arg1);
 #if defined(WIN32) && defined(DEBUG)
   OutputDebugString ("SQLCopyDesc called\n");
 #endif
-  set_error (&desc->d_stmt->stmt_connection->con_environment->env_error,
-		  "IM001", "CL026", "Driver doesn't support this function");
+
+  set_error (&desc->d_stmt->stmt_connection->con_environment->env_error, "IM001", "CL026", "Driver doesn't support this function");
+
   return (SQL_ERROR);
 }
+
 
 /* SQLColAttribute */
 SQLRETURN SQL_API
@@ -2858,8 +3031,7 @@ SQLColAttribute (SQLHSTMT statementHandle,
     )
 {
   return virtodbc__SQLColAttribute (statementHandle,
-    ColumnNumber, FieldIdentifier, CharacterAttributePtr,
-    BufferLength, StringLengthPtr, NumericAttributePtr);
+      ColumnNumber, FieldIdentifier, CharacterAttributePtr, BufferLength, StringLengthPtr, NumericAttributePtr);
 }
 
 
@@ -2880,60 +3052,71 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
   STMT (stmt, statementHandle);
   switch (FieldIdentifier)
     {
-      case SQL_DESC_NULLABLE:
-	  FieldIdentifier = SQL_COLUMN_NULLABLE; break;
-      case SQL_DESC_LENGTH:
-      case SQL_DESC_OCTET_LENGTH:
-      case SQL_DESC_SCALE:
-	  FieldIdentifier = SQL_COLUMN_SCALE; break;
-      case SQL_DESC_PRECISION:
-	  FieldIdentifier = SQL_COLUMN_PRECISION; break;
-      case SQL_DESC_TYPE:
-	  FieldIdentifier = SQL_COLUMN_TYPE; break;
+    case SQL_DESC_NULLABLE:
+      FieldIdentifier = SQL_COLUMN_NULLABLE;
+      break;
 
-      case SQL_DESC_LITERAL_SUFFIX:
-      case SQL_DESC_LITERAL_PREFIX:
-      case SQL_DESC_BASE_COLUMN_NAME:
-      case SQL_DESC_BASE_TABLE_NAME:
-      case SQL_DESC_CATALOG_NAME:
-      case SQL_DESC_LABEL:
-      case SQL_DESC_LOCAL_TYPE_NAME:
-      case SQL_DESC_NAME:
-      case SQL_DESC_TABLE_NAME:
-      case SQL_DESC_TYPE_NAME:
-      case SQL_DESC_SCHEMA_NAME:
-	    {
-	      SQLINTEGER data;
-	      SQLRETURN rc = virtodbc__SQLGetDescField ((SQLHDESC) stmt->stmt_imp_row_descriptor, ColumnNumber,
-		  FieldIdentifier, CharacterAttributePtr, BufferLength, &data);
-	      if (StringLengthPtr)
-		*StringLengthPtr = (SQLSMALLINT) data;
-	      return rc;
-	    }
+    case SQL_DESC_LENGTH:
+    case SQL_DESC_OCTET_LENGTH:
+    case SQL_DESC_SCALE:
+      FieldIdentifier = SQL_COLUMN_SCALE;
+      break;
 
-      case SQL_DESC_NUM_PREC_RADIX:
-      case SQL_DESC_UNNAMED:
-      case SQL_DESC_AUTO_UNIQUE_VALUE:
-      case SQL_DESC_CASE_SENSITIVE:
-      case SQL_DESC_CONCISE_TYPE:
-      case SQL_DESC_COUNT:
-      case SQL_DESC_DISPLAY_SIZE:
-      case SQL_DESC_FIXED_PREC_SCALE:
-      case SQL_DESC_SEARCHABLE:
-      case SQL_DESC_UNSIGNED:
-      case SQL_DESC_UPDATABLE:
-	    {
-	      SQLINTEGER data;
-	      SQLRETURN rc = virtodbc__SQLGetDescField ((SQLHDESC) stmt->stmt_imp_row_descriptor, ColumnNumber,
-		  FieldIdentifier, NumericAttributePtr, BufferLength, &data);
-	      if (StringLengthPtr)
-		*StringLengthPtr = (SQLSMALLINT) data;
-	      return rc;
-	    }
+    case SQL_DESC_PRECISION:
+      FieldIdentifier = SQL_COLUMN_PRECISION;
+      break;
+
+    case SQL_DESC_TYPE:
+      FieldIdentifier = SQL_COLUMN_TYPE;
+      break;
+
+    case SQL_DESC_LITERAL_SUFFIX:
+    case SQL_DESC_LITERAL_PREFIX:
+    case SQL_DESC_BASE_COLUMN_NAME:
+    case SQL_DESC_BASE_TABLE_NAME:
+    case SQL_DESC_CATALOG_NAME:
+    case SQL_DESC_LABEL:
+    case SQL_DESC_LOCAL_TYPE_NAME:
+    case SQL_DESC_NAME:
+    case SQL_DESC_TABLE_NAME:
+    case SQL_DESC_TYPE_NAME:
+    case SQL_DESC_SCHEMA_NAME:
+      {
+	SQLINTEGER data;
+	SQLRETURN rc = virtodbc__SQLGetDescField ((SQLHDESC) stmt->stmt_imp_row_descriptor, ColumnNumber,
+	    FieldIdentifier, CharacterAttributePtr, BufferLength, &data);
+
+	if (StringLengthPtr)
+	  *StringLengthPtr = (SQLSMALLINT) data;
+
+	return rc;
+      }
+
+    case SQL_DESC_NUM_PREC_RADIX:
+    case SQL_DESC_UNNAMED:
+    case SQL_DESC_AUTO_UNIQUE_VALUE:
+    case SQL_DESC_CASE_SENSITIVE:
+    case SQL_DESC_CONCISE_TYPE:
+    case SQL_DESC_COUNT:
+    case SQL_DESC_DISPLAY_SIZE:
+    case SQL_DESC_FIXED_PREC_SCALE:
+    case SQL_DESC_SEARCHABLE:
+    case SQL_DESC_UNSIGNED:
+    case SQL_DESC_UPDATABLE:
+      {
+	SQLINTEGER data;
+	SQLRETURN rc = virtodbc__SQLGetDescField ((SQLHDESC) stmt->stmt_imp_row_descriptor, ColumnNumber,
+	    FieldIdentifier, NumericAttributePtr, BufferLength, &data);
+
+	if (StringLengthPtr)
+	  *StringLengthPtr = (SQLSMALLINT) data;
+
+	return rc;
+      }
     }
 
-  return (virtodbc__SQLColAttributes(statementHandle, ColumnNumber, FieldIdentifier,
-	CharacterAttributePtr, BufferLength, StringLengthPtr, (SQLLEN *) NumericAttributePtr));
+  return (virtodbc__SQLColAttributes (statementHandle, ColumnNumber,
+	  FieldIdentifier, CharacterAttributePtr, BufferLength, StringLengthPtr, (SQLLEN *) NumericAttributePtr));
 }
 
 /* SQLEndTran */
@@ -2951,23 +3134,31 @@ SQLEndTran (SQLSMALLINT handleType,
     case SQL_HANDLE_DBC:
       {
 	CON (con, Handle);
+
 	if (!con)
 	  return (SQL_INVALID_HANDLE);
+
 	set_error (&con->con_error, NULL, NULL, NULL);
+
 	return virtodbc__SQLTransact (SQL_NULL_HENV, (SQLHDBC) con, completionType);
       }
+
     case SQL_HANDLE_ENV:
       {
 	ENV (env, Handle);
+
 	if (!env)
 	  return (SQL_INVALID_HANDLE);
+
 	set_error (&env->env_error, NULL, NULL, NULL);
+
 	return virtodbc__SQLTransact ((SQLHENV) env, SQL_NULL_HDBC, completionType);
       }
     }
 
   return (SQL_SUCCESS);
 }
+
 
 /* SQLBulkOperations */
 
@@ -2976,8 +3167,10 @@ SQLBulkOperations (SQLHSTMT statementHandle,
     SQLSMALLINT Operation)
 {
   STMT (stmt, statementHandle);
+
   if (!statementHandle)
     return (SQL_INVALID_HANDLE);
+
   switch (Operation)
     {
     case SQL_ADD:
@@ -2985,15 +3178,17 @@ SQLBulkOperations (SQLHSTMT statementHandle,
       OutputDebugString ("SQLBulkOperations (..., SQL_ADD, ...) called\n");
 #endif
       stmt->stmt_fetch_mode = FETCH_EXT;
+
       if (!stmt->stmt_rowset)
 	{
 	  /* when SQLBulkOperations is called without prior call SQLExtendedFetch/SQLFetchScroll */
-	  stmt->stmt_rowset = (caddr_t **) dk_alloc_box_zero (stmt->stmt_rowset_size * sizeof (caddr_t),
-	      DV_ARRAY_OF_POINTER);
+	  stmt->stmt_rowset = (caddr_t **) dk_alloc_box_zero (stmt->stmt_rowset_size * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 	  stmt->stmt_rowset_fill = 0;
 	  stmt->stmt_current_row = NULL;
 	}
+
       return virtodbc__SQLSetPos (statementHandle, 0, SQL_ADD, SQL_LOCK_NO_CHANGE);
+
     default:
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLBulkOperations (..., Bookmark, ...) called - ERROR\n");
@@ -3004,14 +3199,13 @@ SQLBulkOperations (SQLHSTMT statementHandle,
 }
 
 
-																									/****** SQLFetchScroll ******/
+/****** SQLFetchScroll ******/
 
 SQLRETURN SQL_API
 SQLFetchScroll (SQLHSTMT statementHandle,
     SQLSMALLINT fetchOrientation,
     SQLLEN fetchOffset)
 {
-
   STMT (stmt, statementHandle);
 #if defined(WIN32) && defined(DEBUG)
   OutputDebugString ("SQLFetchScroll called\n");
@@ -3021,15 +3215,20 @@ SQLFetchScroll (SQLHSTMT statementHandle,
     return (SQL_INVALID_HANDLE);
 
   stmt->stmt_fetch_mode = FETCH_EXT;
+
   if (fetchOrientation != SQL_FETCH_BOOKMARK)
-    return virtodbc__SQLExtendedFetch (statementHandle, fetchOrientation, fetchOffset, stmt->stmt_rows_fetched_ptr, stmt->stmt_row_status, 0);
+    return virtodbc__SQLExtendedFetch (statementHandle, fetchOrientation,
+	fetchOffset, stmt->stmt_rows_fetched_ptr, stmt->stmt_row_status, 0);
   else
     {
-      return virtodbc__SQLExtendedFetch (statementHandle, fetchOrientation, (stmt->stmt_bookmark_ptr ? *((SQLINTEGER *) stmt->stmt_bookmark_ptr) : 0), stmt->stmt_rows_fetched_ptr, stmt->stmt_row_status, fetchOffset);
+      return virtodbc__SQLExtendedFetch (statementHandle, fetchOrientation,
+	  (stmt->stmt_bookmark_ptr ? *((SQLINTEGER *) stmt->stmt_bookmark_ptr) : 0),
+	  stmt->stmt_rows_fetched_ptr, stmt->stmt_row_status, fetchOffset);
     }
 }
-/**** */
 
+
+/**** */
 
 SQLRETURN SQL_API
 SQLCloseCursor (SQLHSTMT hstmt)
@@ -3041,6 +3240,7 @@ SQLCloseCursor (SQLHSTMT hstmt)
   else
     {
       set_error (&stmt->stmt_error, "24000", "CL097", "Invalid cursor state.");
+
       return SQL_ERROR;
     }
 }

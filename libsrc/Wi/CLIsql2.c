@@ -4,27 +4,26 @@
  *  $Id$
  *
  *  Client API, ODBC Extensions
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #if !defined (__APPLE__)
 #include <wchar.h>
@@ -94,6 +93,7 @@ dk_set_t d_trx_set = 0;
 
 char __virtodbc_dbms_name[512];
 
+
 SQLRETURN SQL_API
 SQLBrowseConnect (
       SQLHDBC hdbc,
@@ -115,12 +115,12 @@ remove_search_escapes(char *szValue, char *szTo, size_t _max_szTo, SQLLEN *pLen,
       SQLLEN max_szTo = (SQLLEN) _max_szTo;
       if (SQL_NTS != nLen)
 	{
-	  strncpy(szTo, szValue, MIN (nLen, max_szTo));
+	  strncpy (szTo, szValue, MIN (nLen, max_szTo));
 	  szTo[MIN (nLen, max_szTo)] = 0;
 	}
       else
 	strcpy_size_ck (szTo, szValue, max_szTo);
-      *pLen = strlen(szTo);
+      *pLen = strlen (szTo);
     }
   else
     {
@@ -128,6 +128,7 @@ remove_search_escapes(char *szValue, char *szTo, size_t _max_szTo, SQLLEN *pLen,
       *pLen = 0;
     }
 }
+
 
 /*
    SQLColumns returns the results as a standard result set, ordered by
@@ -306,9 +307,8 @@ virtodbc__SQLColumns (
   SQLRETURN rc;
   UDWORD isODBC3 = stmt->stmt_connection->con_environment->env_odbc_version >= 3;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szTableName[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szColumnName[KUBL_IDENTIFIER_MAX_LENGTH];
+      _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
+      _szTableName[KUBL_IDENTIFIER_MAX_LENGTH], _szColumnName[KUBL_IDENTIFIER_MAX_LENGTH];
 
   if (is_empty (szTableQualifier, cbTableQualifier))
     {
@@ -316,64 +316,52 @@ virtodbc__SQLColumns (
       _szTableQualifier[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableQualifier, _szTableQualifier, sizeof (_szTableQualifier),
-	&cbqual, cbTableQualifier);
+    remove_search_escapes ((char *) szTableQualifier, _szTableQualifier, sizeof (_szTableQualifier), &cbqual, cbTableQualifier);
+
   if (is_empty (szTableOwner, cbTableOwner))
     {
       szTableOwner = NULL;
       _szTableOwner[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableOwner, _szTableOwner, sizeof (_szTableOwner),
-	&cbown, cbTableOwner);
+    remove_search_escapes ((char *) szTableOwner, _szTableOwner, sizeof (_szTableOwner), &cbown, cbTableOwner);
+
   if (is_empty (szTableName, cbTableName))
     {
       szTableName = NULL;
       _szTableName[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableName, _szTableName, sizeof (_szTableName),
-	&cbtab, cbTableName);
+    remove_search_escapes ((char *) szTableName, _szTableName, sizeof (_szTableName), &cbtab, cbTableName);
+
   if (is_empty (szColumnName, cbColumnName))
     {
       szColumnName = NULL;
       _szColumnName[0] = 0;
     }
   else
-    remove_search_escapes((char *) szColumnName, _szColumnName, sizeof (_szColumnName),
-	&cbcol, cbColumnName);
+    remove_search_escapes ((char *) szColumnName, _szColumnName, sizeof (_szColumnName), &cbcol, cbColumnName);
+
   DEFAULT_QUAL (stmt, cbqual);
 
-  virtodbc__SQLSetParam (hstmt, 1, SQL_C_ULONG, SQL_INTEGER, 0, 0,
-      &isODBC3,
-      NULL);
-  virtodbc__SQLSetParam (hstmt, 2, SQL_C_ULONG, SQL_INTEGER, 0, 0,
-      &isODBC3,
-      NULL);
+  virtodbc__SQLSetParam (hstmt, 1, SQL_C_ULONG, SQL_INTEGER, 0, 0, &isODBC3, NULL);
+  virtodbc__SQLSetParam (hstmt, 2, SQL_C_ULONG, SQL_INTEGER, 0, 0, &isODBC3, NULL);
 /*
-  virtodbc__SQLSetParam (hstmt, 2, SQL_C_ULONG, SQL_INTEGER, 0, 0,
-      &sizeof_wchar_t,
-      NULL);
+  virtodbc__SQLSetParam (hstmt, 2, SQL_C_ULONG, SQL_INTEGER, 0, 0, &sizeof_wchar_t, NULL);
 */
-  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent,
-      szTableQualifier ? &cbqual : &plen);
-  virtodbc__SQLSetParam (hstmt, 4, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      szTableOwner ? (SQLCHAR *)_szTableOwner : percent,
-      szTableOwner ? &cbown : &plen);
-  virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      szTableName ? (SQLCHAR *)_szTableName : percent,
-      szTableName ? &cbtab : &plen);
-  virtodbc__SQLSetParam (hstmt, 6, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      szColumnName ? (SQLCHAR *)_szColumnName : percent,
-      szColumnName ? &cbcol : &plen);
+  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableQualifier ? (SQLCHAR *) _szTableQualifier : percent, szTableQualifier ? &cbqual : &plen);
+  virtodbc__SQLSetParam (hstmt, 4, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableOwner ? (SQLCHAR *) _szTableOwner : percent, szTableOwner ? &cbown : &plen);
+  virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableName ? (SQLCHAR *) _szTableName : percent, szTableName ? &cbtab : &plen);
+  virtodbc__SQLSetParam (hstmt, 6, SQL_C_CHAR, SQL_CHAR, 0, 0, szColumnName ? (SQLCHAR *) _szColumnName : percent, szColumnName ? &cbcol : &plen);
 
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) (stmt->stmt_connection->con_db_casemode == 2
-	  ? sql_columnsw_text_casemode_2 : sql_columnsw_text_casemode_0), SQL_NTS);
+    rc = virtodbc__SQLExecDirect (hstmt,
+	(SQLCHAR *) (stmt->stmt_connection->con_db_casemode == 2 ?
+	    sql_columnsw_text_casemode_2 : sql_columnsw_text_casemode_0), SQL_NTS);
   else
-    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) (stmt->stmt_connection->con_db_casemode == 2
-	  ? sql_columns_text_casemode_2 : sql_columns_text_casemode_0), SQL_NTS);
+    rc = virtodbc__SQLExecDirect (hstmt,
+	(SQLCHAR *) (stmt->stmt_connection->con_db_casemode == 2 ?
+	    sql_columns_text_casemode_2 : sql_columns_text_casemode_0), SQL_NTS);
   /* With COL_ID returns columns in the same order as they were defined
      with create table. Without it they would be in alphabetical order. */
 
@@ -409,10 +397,7 @@ SQLColumns (
   NMAKE_INPUT_NARROW (ColumnName, stmt->stmt_connection);
 
   rc = virtodbc__SQLColumns (hstmt,
-      szTableQualifier, cbTableQualifier,
-      szTableOwner, cbTableOwner,
-      szTableName, cbTableName,
-      szColumnName, cbColumnName);
+      szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, szColumnName, cbColumnName);
 
   NFREE_INPUT_NARROW (TableQualifier);
   NFREE_INPUT_NARROW (TableOwner);
@@ -569,6 +554,7 @@ char *sql_tables_textw_casemode_2 =
 " KEY_MIGRATE_TO is NULL "
 "order by KEY_TABLE";
 
+
 SQLRETURN SQL_API
 virtodbc__SQLTables (
 	SQLHSTMT hstmt,
@@ -585,7 +571,7 @@ virtodbc__SQLTables (
   SQLLEN cbqual = cbTableQualifier, cbown = cbTableOwner, cbtab = cbTableName;
   SQLRETURN rc;
   SQLLEN cbtype = cbTableType;
-  /*int maxtyplen;*/
+  /*int maxtyplen; */
   SQLCHAR *percent = (SQLCHAR *) "%";
   SDWORD odbc_ver = stmt->stmt_connection->con_environment->env_odbc_version >= 3 ? 1 : 0;
   SQLLEN odbc_ver_len = 4;
@@ -593,18 +579,16 @@ virtodbc__SQLTables (
   SQLLEN no_sys_tbs_len = 4;
   char type_buffer[60], *type_ptr;
 
-/*  SQLCHAR *nada = (SQLCHAR *) "";*//* KEY_TABLE not like nada should match with all */
+  /*  SQLCHAR *nada = (SQLCHAR *) ""; *//* KEY_TABLE not like nada should match with all */
   SQLLEN plen = SQL_NTS;
 /*  int only_system_tables = 0, only_users_tables = 0;*/
   int QualEmpty = is_empty (szTableQualifier, cbTableQualifier);
   int OwnEmpty = is_empty (szTableOwner, cbTableOwner);
   int TabEmpty = is_empty (szTableName, cbTableName);
 
-  /*SQLCHAR *ptr1, *ptr2, *tab_typ_ptr;*/
+  /*SQLCHAR *ptr1, *ptr2, *tab_typ_ptr; */
   SQLCHAR _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szTableName[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szTableType[KUBL_IDENTIFIER_MAX_LENGTH];
+      _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH], _szTableName[KUBL_IDENTIFIER_MAX_LENGTH], _szTableType[KUBL_IDENTIFIER_MAX_LENGTH];
 
   if (QualEmpty)
     {
@@ -612,32 +596,32 @@ virtodbc__SQLTables (
       _szTableQualifier[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableQualifier, (char *) _szTableQualifier,
-	sizeof (_szTableQualifier), &cbqual, cbTableQualifier);
+    remove_search_escapes ((char *) szTableQualifier,
+	(char *) _szTableQualifier, sizeof (_szTableQualifier), &cbqual, cbTableQualifier);
+
   if (OwnEmpty)
     {
       szTableOwner = NULL;
       _szTableOwner[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableOwner, (char *) _szTableOwner,
-	sizeof (_szTableOwner), &cbown, cbTableOwner);
+    remove_search_escapes ((char *) szTableOwner, (char *) _szTableOwner, sizeof (_szTableOwner), &cbown, cbTableOwner);
+
   if (TabEmpty)
     {
       szTableName = NULL;
       _szTableName[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableName, (char *) _szTableName,
-	sizeof (_szTableName), &cbtab, cbTableName);
+    remove_search_escapes ((char *) szTableName, (char *) _szTableName, sizeof (_szTableName), &cbtab, cbTableName);
+
   if (is_empty (szTableType, cbTableType))
     {
       szTableType = NULL;
       _szTableType[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableType, (char *) _szTableType,
-	sizeof (_szTableType), &cbtype, cbTableType);
+    remove_search_escapes ((char *) szTableType, (char *) _szTableType, sizeof (_szTableType), &cbtype, cbTableType);
 
   if (is_percent (szTableQualifier, _szTableQualifier, cbTableQualifier) && OwnEmpty && TabEmpty)
     {
@@ -683,33 +667,35 @@ virtodbc__SQLTables (
 	    " NULL AS \\REMARKS VARCHAR(254) "
 	    "from DB.DBA.SYS_KEYS", SQL_NTS);
     }
-  else if (is_percent (szTableType, _szTableType, cbTableType)
-	   && QualEmpty && OwnEmpty && TabEmpty)
+  else if (is_percent (szTableType, _szTableType, cbTableType) && QualEmpty && OwnEmpty && TabEmpty)
     {
       /* Show valid table types, i.e. 'SYSTEM TABLE' and 'TABLE' */
       /* There are certainly always a table named SYS_USERS in SYS_KEYS,
-	 as well as some other system table with a different name, so the
-	 kludge below will produce two lines, one with SYSTEM TABLE
-	 and one just with TABLE in the fourth (TABLE_TYPE) column. */
+         as well as some other system table with a different name, so the
+         kludge below will produce two lines, one with SYSTEM TABLE
+         and one just with TABLE in the fourth (TABLE_TYPE) column. */
       rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
-	"select distinct"
-	" NULL AS \\TABLE_QUALIFIER VARCHAR(128),"
-	" NULL AS \\TABLE_OWNER VARCHAR(128),"
-	" NULL AS \\TABLE_NAME VARCHAR(128),"
-	" table_type (KEY_TABLE)"
-	"   AS \\TABLE_TYPE VARCHAR(128),"
-	" NULL AS \\REMARKS VARCHAR(254) "
-	"from DB.DBA.SYS_KEYS", SQL_NTS);
+	  "select distinct"
+	  " NULL AS \\TABLE_QUALIFIER VARCHAR(128),"
+	  " NULL AS \\TABLE_OWNER VARCHAR(128),"
+	  " NULL AS \\TABLE_NAME VARCHAR(128),"
+	  " table_type (KEY_TABLE)"
+	  "   AS \\TABLE_TYPE VARCHAR(128),"
+	  " NULL AS \\REMARKS VARCHAR(254) "
+	  "from DB.DBA.SYS_KEYS", SQL_NTS);
     }
   else
     {
       /* Normal case, i.e. the client really wants to see the tables */
       if (cbqual == 0)
 	szTableQualifier = NULL;
+
       if (cbown == 0)
 	szTableOwner = NULL;
+
       if (cbtab == 0)
 	szTableName = NULL;
+
       if (szTableName && 0 == strlen ((char *) _szTableName))
 	szTableName = NULL;
 
@@ -742,15 +728,13 @@ virtodbc__SQLTables (
 
 	  for (tab_typ_ptr = _szTableType, maxtyplen = cbtype;;)
 	    {
-	      if ((ptr2 = strncasestr (tab_typ_ptr,
-		  (SQLCHAR *) "TABLE", maxtyplen)))
+	      if ((ptr2 = strncasestr (tab_typ_ptr, (SQLCHAR *) "TABLE", maxtyplen)))
 		{
 		  /* Check also that it is not part of "SYSTEM TABLE", i.e.
-		   either "TABLE" is in the beginning, or it's not preceded
-		   by a space or alphanumeric character. (E.g. "HYPERTABLE" ?)
+		     either "TABLE" is in the beginning, or it's not preceded
+		     by a space or alphanumeric character. (E.g. "HYPERTABLE" ?)
 		   */
-		  if ((ptr2 == _szTableType) ||
-		      ((*(ptr2 - 1) != ' ') && !isalnum (*(ptr2 - 1))))
+		  if ((ptr2 == _szTableType) || ((*(ptr2 - 1) != ' ') && !isalnum (*(ptr2 - 1))))
 		    {
 		      /* If there are both SYSTEM TABLES and TABLES given in
 		       * the szTableType then clear both flags to zero, with
@@ -775,7 +759,7 @@ virtodbc__SQLTables (
 		    }
 		}
 	      else
-		break;	/* TABLE not found, break from the loop */
+		break;		/* TABLE not found, break from the loop */
 	    }
 #else
 	  unsigned char *szTypes = szTableType, *szComma, *szEnd, token_buffer[20];
@@ -791,12 +775,13 @@ virtodbc__SQLTables (
 
 	      /* skip the leading quote */
 	      if (szTypes - szTableType < cbtype && *szTypes == '\'')
-		  szTypes++;
+		szTypes++;
 
 	      /* find the comma */
 	      szComma = (unsigned char *) strchr ((const char *) szTypes, ',');
 
 	      szEnd = szComma ? szComma + 1 : szTableType + cbtype;
+
 	      /* end of string is considered comma */
 	      if (!szComma)
 		szComma = szTableType + cbtype - 1;
@@ -809,7 +794,7 @@ virtodbc__SQLTables (
 
 	      /* skip the trailing quote */
 	      if (szComma - szTableType < cbtype && *szComma == '\'')
-		  szComma--;
+		szComma--;
 
 	      memset (token_buffer, 0, sizeof (token_buffer));
 	      memcpy (token_buffer, szTypes, MIN (szComma - szTypes + 1, sizeof (token_buffer) - 1));
@@ -820,12 +805,16 @@ virtodbc__SQLTables (
 		do_views = 1;
 	      else if (!stricmp ((const char *) token_buffer, "SYSTEM TABLE"))
 		do_system = 1;
+
 	      szTypes = szEnd;
 	    }
+
 	  if (do_tables)
 	    strcat_ck (type_buffer, "GTABLE");
+
 	  if (do_views)
 	    strcat_ck (type_buffer, "GVIEW");
+
 	  if (do_system)
 	    strcat_ck (type_buffer, "GSYSTEM TABLE");
 #endif
@@ -836,37 +825,25 @@ virtodbc__SQLTables (
       DEFAULT_QUAL (stmt, cbqual);
 
 /* this param is whether to threat system tables as user ones */
-      virtodbc__SQLSetParam (hstmt, 1, SQL_C_LONG, SQL_INTEGER, 0, 0,
-		   &no_sys_tbs, &no_sys_tbs_len);
+      virtodbc__SQLSetParam (hstmt, 1, SQL_C_LONG, SQL_INTEGER, 0, 0, &no_sys_tbs, &no_sys_tbs_len);
 
-      virtodbc__SQLSetParam (hstmt, 2, SQL_C_LONG, SQL_INTEGER, 0, 0,
-		   &odbc_ver, &odbc_ver_len);
+      virtodbc__SQLSetParam (hstmt, 2, SQL_C_LONG, SQL_INTEGER, 0, 0, &odbc_ver, &odbc_ver_len);
 
+      virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0, (szTableQualifier || odbc_ver == 2 ? (SQLCHAR *) _szTableQualifier : percent), (szTableQualifier || odbc_ver == 2 ? &cbqual : &plen));
 
-      virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-		   (szTableQualifier || odbc_ver == 2 ? (SQLCHAR *)_szTableQualifier : percent),
-		   (szTableQualifier || odbc_ver == 2 ? &cbqual : &plen));
-
-      virtodbc__SQLSetParam (hstmt, 4, SQL_C_CHAR, SQL_CHAR, 0, 0,
-		   (szTableQualifier || odbc_ver == 2 ? (SQLCHAR *)_szTableQualifier : percent),
-		   (szTableQualifier || odbc_ver == 2 ? &cbqual : &plen));
+      virtodbc__SQLSetParam (hstmt, 4, SQL_C_CHAR, SQL_CHAR, 0, 0, (szTableQualifier || odbc_ver == 2 ? (SQLCHAR *) _szTableQualifier : percent), (szTableQualifier || odbc_ver == 2 ? &cbqual : &plen));
 
 
 /* The second parameter is the pattern the user himself gave in
    szTableOwner, or just a single percent if the szTableOwner was NULL: */
-      virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0,
-		   (szTableOwner ? (SQLCHAR *)_szTableOwner : percent),
-		   (szTableOwner ? &cbown : &plen));
+      virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0, (szTableOwner ? (SQLCHAR *) _szTableOwner : percent), (szTableOwner ? &cbown : &plen));
 
 /* The third parameter is the pattern the user himself gave in szTableName,
    or just a single percent if the szTableName was NULL: */
-      virtodbc__SQLSetParam (hstmt, 6, SQL_C_CHAR, SQL_CHAR, 0, 0,
-		   (szTableName ? (SQLCHAR *)_szTableName : percent),
-		   (szTableName ? &cbtab : &plen));
+      virtodbc__SQLSetParam (hstmt, 6, SQL_C_CHAR, SQL_CHAR, 0, 0, (szTableName ? (SQLCHAR *) _szTableName : percent), (szTableName ? &cbtab : &plen));
 
 /* this param is whether to threat system tables as user ones */
-      virtodbc__SQLSetParam (hstmt, 7, SQL_C_LONG, SQL_INTEGER, 0, 0,
-		   &no_sys_tbs, &no_sys_tbs_len);
+      virtodbc__SQLSetParam (hstmt, 7, SQL_C_LONG, SQL_INTEGER, 0, 0, &no_sys_tbs, &no_sys_tbs_len);
 
 /* The fourth parameter is for catching only system tables in case that
    the user has given "SYSTEM TABLE" spec in szTableType (but no "TABLE")
@@ -877,30 +854,24 @@ virtodbc__SQLTables (
    It is supposed that the system table are not prefixed with the
    explicit DB.DBA. prefix.
  */
-      virtodbc__SQLSetParam (hstmt, 8, SQL_C_CHAR, SQL_CHAR, 0, 0,
-		   type_ptr,
-		   &plen);
+      virtodbc__SQLSetParam (hstmt, 8, SQL_C_CHAR, SQL_CHAR, 0, 0, type_ptr, &plen);
+
 #if 0
 /* The fifth parameter is for "KEY_TABLE not like ?" which is used
    to get rid off the system tables, in the case that user wants only
    ordinary tables.
    Expression KEY_TABLE not like '' should match with all table names! */
 
-      virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0,
-		   (only_users_tables ? sys_table_prefix : nada),
-		   &plen);
+      virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0, (only_users_tables ? sys_table_prefix : nada), &plen);
 #endif
 
       if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
 	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
-	    (stmt->stmt_connection->con_db_casemode == 2 ?
-	     sql_tables_textw_casemode_2 :
-	     sql_tables_textw_casemode_0), SQL_NTS);
+	    (stmt->stmt_connection->con_db_casemode == 2 ? sql_tables_textw_casemode_2 : sql_tables_textw_casemode_0), SQL_NTS);
       else
 	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
-	    (stmt->stmt_connection->con_db_casemode == 2 ?
-	     sql_tables_text_casemode_2 :
-	     sql_tables_text_casemode_0), SQL_NTS);
+	    (stmt->stmt_connection->con_db_casemode == 2 ? sql_tables_text_casemode_2 : sql_tables_text_casemode_0), SQL_NTS);
+
 /* Should actually be, but Kubl doesn't currently allow expressions in
    order by: (by TABLE_TYPE, TABLE_QUALIFIER, TABLE_OWNER and TABLE_NAME)
    "order by "
@@ -940,10 +911,7 @@ SQLTables (
   NMAKE_INPUT_NARROW (TableType, stmt->stmt_connection);
 
   rc = virtodbc__SQLTables (hstmt,
-      szTableQualifier, cbTableQualifier,
-      szTableOwner, cbTableOwner,
-      szTableName, cbTableName,
-      szTableType, cbTableType);
+      szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, szTableType, cbTableType);
 
   NFREE_INPUT_NARROW (TableQualifier);
   NFREE_INPUT_NARROW (TableOwner);
@@ -979,41 +947,61 @@ SQLDescribeParam (
 {
   STMT (stmt, hstmt);
   stmt_compilation_t *sc = stmt->stmt_compilation;
+
   if (BOX_ELEMENTS (sc) > 3 && sc->sc_params)
     {
-      param_desc_t ** pds = (param_desc_t **) sc->sc_params;
-      param_desc_t * pd;
+      param_desc_t **pds = (param_desc_t **) sc->sc_params;
+      param_desc_t *pd;
+
       if (BOX_ELEMENTS (pds) < ipar)
 	{
 	  set_error (&stmt->stmt_error, "07009", "CL044", "Bad parameter index in SQLDescribeParam");
+
 	  return SQL_ERROR;
 	}
+
       pd = pds[ipar - 1];
 
       if (pfSqlType)
 	{
-	  ENV(env, stmt->stmt_connection->con_environment);
-	  *pfSqlType = dv_to_sql_type ((dtp_t) unbox (pd->pd_dtp),
-	      stmt->stmt_connection->con_defs.cdef_binary_timestamp);
-	  if (env && env->env_odbc_version == 3) {
-	    switch (*pfSqlType) {
-	      case SQL_DATE:	*pfSqlType = SQL_TYPE_DATE; break;
-	      case SQL_TIME:	*pfSqlType = SQL_TYPE_TIME; break;
-	      case SQL_TIMESTAMP:	*pfSqlType = SQL_TYPE_TIMESTAMP; break;
+	  ENV (env, stmt->stmt_connection->con_environment);
+
+	  *pfSqlType = dv_to_sql_type ((dtp_t) unbox (pd->pd_dtp), stmt->stmt_connection->con_defs.cdef_binary_timestamp);
+
+	  if (env && env->env_odbc_version == 3)
+	    {
+	      switch (*pfSqlType)
+		{
+		case SQL_DATE:
+		  *pfSqlType = SQL_TYPE_DATE;
+		  break;
+
+		case SQL_TIME:
+		  *pfSqlType = SQL_TYPE_TIME;
+		  break;
+
+		case SQL_TIMESTAMP:
+		  *pfSqlType = SQL_TYPE_TIMESTAMP;
+		  break;
+		}
 	    }
-	  }
 	}
+
       if (pcbColDef)
 	*pcbColDef = unbox (pd->pd_prec);
+
       if (pibScale)
 	*pibScale = (SQLSMALLINT) unbox (pd->pd_scale);
+
       if (pfNullable)
 	*pfNullable = unbox (pd->pd_nullable) ? SQL_NULLABLE : SQL_NO_NULLS;
+
       return SQL_SUCCESS;
     }
-  NOT_IMPL_FUN (hstmt,
-      "SQLDescribeParam: BOX_ELEMENTS (sc) <= 3 or no sc_params");
+
+  NOT_IMPL_FUN (hstmt, "SQLDescribeParam: BOX_ELEMENTS (sc) <= 3 or no sc_params");
 }
+
 
 SQLRETURN SQL_API
 SQLGetConnectOption (
@@ -1021,28 +1009,29 @@ SQLGetConnectOption (
 	SQLUSMALLINT fOption,
 	SQLPOINTER pvParam)
 {
-  CON(con, hdbc);
+  CON (con, hdbc);
   SQLRETURN rc;
 
   switch (fOption)
     {
-      case SQL_ATTR_CURRENT_CATALOG:
-      case SQL_ATTR_TRACEFILE:
-      case SQL_ATTR_TRANSLATE_LIB:
-	    {
-	      SQLINTEGER StrLen = 512, pl = 512, *StrLenPtr = &pl;
+    case SQL_ATTR_CURRENT_CATALOG:
+    case SQL_ATTR_TRACEFILE:
+    case SQL_ATTR_TRANSLATE_LIB:
+      {
+	SQLINTEGER StrLen = 512, pl = 512, *StrLenPtr = &pl;
 
-	      NDEFINE_OUTPUT_NONCHAR_NARROW (pvParam, StrLen, StrLenPtr, con, SQLINTEGER);
-	      NMAKE_OUTPUT_NONCHAR_NARROW_ALLOC (pvParam, StrLen, con);
-	      rc = virtodbc__SQLGetConnectOption (hdbc, fOption, _pvParam, _StrLen, _StrLenPtr);
-	      NSET_AND_FREE_OUTPUT_NONCHAR_NARROW_FREE (pvParam, StrLen, StrLenPtr, con);
-	      return rc;
-	    }
+	NDEFINE_OUTPUT_NONCHAR_NARROW (pvParam, StrLen, StrLenPtr, con, SQLINTEGER);
+	NMAKE_OUTPUT_NONCHAR_NARROW_ALLOC (pvParam, StrLen, con);
+	rc = virtodbc__SQLGetConnectOption (hdbc, fOption, _pvParam, _StrLen, _StrLenPtr);
+	NSET_AND_FREE_OUTPUT_NONCHAR_NARROW_FREE (pvParam, StrLen, StrLenPtr, con);
+	return rc;
+      }
 
-      default:
-	  return virtodbc__SQLGetConnectOption (hdbc, fOption, pvParam, 65536, NULL);
+    default:
+      return virtodbc__SQLGetConnectOption (hdbc, fOption, pvParam, 65536, NULL);
     }
 }
+
 
 SQLRETURN SQL_API
 virtodbc__SQLGetConnectOption (
@@ -1058,39 +1047,42 @@ virtodbc__SQLGetConnectOption (
   switch (fOption)
     {
     case SQL_AUTOCOMMIT:
-	if (pvParam)
-	  *(SQLLEN *) pvParam = con->con_autocommit;
+      if (pvParam)
+	*(SQLLEN *) pvParam = con->con_autocommit;
       break;
     case SQL_TXN_ISOLATION:
-	if (pvParam)
-	  *(SQLLEN *) pvParam = con->con_isolation;
+      if (pvParam)
+	*(SQLLEN *) pvParam = con->con_isolation;
       break;
 
     case SQL_ACCESS_MODE:
-	if (pvParam)
-	  *(SQLLEN *) pvParam = con->con_access_mode;
+      if (pvParam)
+	*(SQLLEN *) pvParam = con->con_access_mode;
       break;
 
     case SQL_CURRENT_QUALIFIER:
       V_SET_ODBC_STR (con->con_qualifier, pvParam, StringLength, StringLengthPtr, &con->con_error);
       break;
+
     case SQL_NO_CHAR_C_ESCAPE:
       if (pvParam)
 	*(SQLSMALLINT *) pvParam = (SQLSMALLINT) con->con_defs.cdef_no_char_c_escape;
       break;
+
     case SQL_CHARSET:
-	{
-	  char *chrs_name = "";
-	  if (CON_CONNECTED (con))
-	    {
-	      if (con->con_charset->chrs_name)
-		chrs_name = con->con_charset->chrs_name;
-	    }
-	  else
-	    chrs_name = (char *) con->con_charset;
-	  V_SET_ODBC_STR (chrs_name, pvParam, StringLength, StringLengthPtr, &con->con_error);
-	}
+      {
+	char *chrs_name = "";
+	if (CON_CONNECTED (con))
+	  {
+	    if (con->con_charset->chrs_name)
+	      chrs_name = con->con_charset->chrs_name;
+	  }
+	else
+	  chrs_name = (char *) con->con_charset;
+	V_SET_ODBC_STR (chrs_name, pvParam, StringLength, StringLengthPtr, &con->con_error);
+      }
       break;
+
     case SQL_APPLICATION_NAME:
       V_SET_ODBC_STR (application_name, pvParam, StringLength, StringLengthPtr, &con->con_error);
       break;
@@ -1119,8 +1111,10 @@ virtodbc__SQLGetConnectOption (
 	}
       break;
     }
+
   return rc;
 }
+
 
 SQLRETURN SQL_API
 SQLSetConnectOption (
@@ -1131,23 +1125,25 @@ SQLSetConnectOption (
   CON (con, hdbc);
   switch (fOption)
     {
-      case SQL_CURRENT_QUALIFIER:
-	  {
-	    SQLRETURN rc;
-	    SQLLEN StringLength = SQL_NTS;
-	    NDEFINE_INPUT_NONCHAR_NARROW (vParam, StringLength);
+    case SQL_CURRENT_QUALIFIER:
+      {
+	SQLRETURN rc;
+	SQLLEN StringLength = SQL_NTS;
+	NDEFINE_INPUT_NONCHAR_NARROW (vParam, StringLength);
 
-	    NMAKE_INPUT_NONCHAR_NARROW (vParam, StringLength, con);
+	NMAKE_INPUT_NONCHAR_NARROW (vParam, StringLength, con);
 
-	    rc = virtodbc__SQLSetConnectOption (hdbc, fOption, (SQLULEN)_vParam);
+	rc = virtodbc__SQLSetConnectOption (hdbc, fOption, (SQLULEN) _vParam);
 
-	    NFREE_INPUT_NONCHAR_NARROW (vParam, StringLength);
-	    return rc;
-	  }
-      default:
-	  return virtodbc__SQLSetConnectOption (hdbc, fOption, vParam);
+	NFREE_INPUT_NONCHAR_NARROW (vParam, StringLength);
+	return rc;
+      }
+
+    default:
+      return virtodbc__SQLSetConnectOption (hdbc, fOption, vParam);
     }
 }
+
 
 SQLRETURN SQL_API
 virtodbc__SQLSetConnectOption (
@@ -1159,9 +1155,11 @@ virtodbc__SQLSetConnectOption (
 #ifdef VIRTTP
   SQLUSMALLINT op = 0;
 #endif
+
   cli_dbg_printf (("SQLSetConnectOption (%ld, %d, %d)\n", con, fOption, vParam));
 
   VERIFY_INPROCESS_CLIENT (con);
+
   switch (fOption)
     {
     case SQL_AUTOCOMMIT:
@@ -1169,26 +1167,34 @@ virtodbc__SQLSetConnectOption (
 	virtodbc__SQLTransact (SQL_NULL_HENV, hdbc, SQL_COMMIT);
       con->con_autocommit = (int) vParam;
       break;
+
     case SQL_TXN_ISOLATION:
       con->con_isolation = (int) vParam;
       break;
+
     case SQL_ACCESS_MODE:
       con->con_access_mode = (int) vParam;
       break;
+
     case SQL_CURRENT_QUALIFIER:
       if (CON_CONNECTED (con))
 	{
-	  if (con->con_qualifier && vParam && strcmp ((const char *) con->con_qualifier, (char *)vParam))
+	  if (con->con_qualifier && vParam && strcmp ((const char *) con->con_qualifier, (char *) vParam))
 	    {
 	      SQLHSTMT stmt;
 	      SQLRETURN rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
+
 	      if (SQL_SUCCESS != rc)
 		return rc;
-	      rc = virtodbc__SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, 0, 0, (char *)vParam, SQL_NTS, NULL);
+
+	      rc = virtodbc__SQLBindParameter (stmt, 1, SQL_PARAM_INPUT,
+		  SQL_C_CHAR, SQL_CHAR, 0, 0, (char *) vParam, SQL_NTS, NULL);
+
 	      if (SQL_SUCCESS == rc)
 		rc = virtodbc__SQLExecDirect (stmt, (SQLCHAR *) "set_qualifier(?)", SQL_NTS);
 
-	      virtodbc__SQLFreeStmt(stmt, SQL_DROP);
+	      virtodbc__SQLFreeStmt (stmt, SQL_DROP);
+
 	      return rc;
 	    }
 	}
@@ -1196,6 +1202,7 @@ virtodbc__SQLSetConnectOption (
 	{
 	  if (con->con_qualifier)
 	    dk_free_box ((box_t) con->con_qualifier);
+
 	  con->con_qualifier = vParam ? (SQLCHAR *) box_string ((char *) vParam) : NULL;
 	}
       break;
@@ -1204,33 +1211,44 @@ virtodbc__SQLSetConnectOption (
       if (CON_CONNECTED (con))
 	{
 	  SQLHSTMT stmt;
-	  SQLRETURN rc = virtodbc__SQLAllocStmt(hdbc, &stmt);
+	  SQLRETURN rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
+
 	  if (SQL_SUCCESS != rc)
 	    return rc;
-	  con->con_defs.cdef_no_char_c_escape = ((int)vParam) != 0;
-	  rc = virtodbc__SQLExecDirect(stmt, (SQLCHAR *) (((int) vParam) ? "set NO_CHAR_C_ESCAPE OFF" : "set NO_CHAR_C_ESCAPE ON"), SQL_NTS);
-	  virtodbc__SQLFreeStmt(stmt, SQL_DROP);
+
+	  con->con_defs.cdef_no_char_c_escape = ((int) vParam) != 0;
+
+	  rc = virtodbc__SQLExecDirect (stmt,
+	      (SQLCHAR *) (((int) vParam) ? "set NO_CHAR_C_ESCAPE OFF" : "set NO_CHAR_C_ESCAPE ON"), SQL_NTS);
+
+	  virtodbc__SQLFreeStmt (stmt, SQL_DROP);
+
 	  return rc;
 	}
       else
 	goto nc;
       break;
+
     case SQL_CHARSET:
       if (CON_CONNECTED (con))
 	{
 	  SQLHSTMT stmt;
-	  SQLRETURN rc = virtodbc__SQLAllocStmt(hdbc, &stmt);
+	  SQLRETURN rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
 	  wchar_t charset_table[256];
 	  char szCharsetName[50];
 	  SQLLEN nCharsetLen;
+
 	  if (SQL_SUCCESS != rc)
 	    return rc;
+
 	  if (vParam)
 	    {
 	      int i;
-	      for (i = 0; i < 49 && ((char *)vParam)[i]; i++)
-		((char *)charset_table)[i] = szCharsetName[i] = toupper (((char *) vParam)[i]);
-	      ((char *)charset_table)[i] = szCharsetName[i] = 0;
+
+	      for (i = 0; i < 49 && ((char *) vParam)[i]; i++)
+		((char *) charset_table)[i] = szCharsetName[i] = toupper (((char *) vParam)[i]);
+
+	      ((char *) charset_table)[i] = szCharsetName[i] = 0;
 	      nCharsetLen = i;
 	    }
 	  else
@@ -1239,35 +1257,45 @@ virtodbc__SQLSetConnectOption (
 	      charset_table[0] = 0;
 	      nCharsetLen = SQL_NULL_DATA;
 	    }
+
 	  rc = virtodbc__SQLBindParameter (stmt, 1, SQL_PARAM_INPUT_OUTPUT,
-	      SQL_C_CHAR, SQL_CHAR, 0, 0,
-	      (char *)charset_table, sizeof (charset_table), &nCharsetLen);
+	      SQL_C_CHAR, SQL_CHAR, 0, 0, (char *) charset_table, sizeof (charset_table), &nCharsetLen);
+
 	  if (rc == SQL_SUCCESS)
-	    rc = virtodbc__SQLExecDirect(stmt, (SQLCHAR *) "__set ('CHARSET', ?)", SQL_NTS);
+	    rc = virtodbc__SQLExecDirect (stmt, (SQLCHAR *) "__set ('CHARSET', ?)", SQL_NTS);
+
 	  if (rc == SQL_SUCCESS && nCharsetLen > 0)
 	    {
 	      if (con->con_charset)
 		wide_charset_free (con->con_charset);
+
 	      con->con_charset = wide_charset_create (szCharsetName,
 		  (wchar_t *) charset_table, (int) (nCharsetLen - 1 / sizeof (wchar_t)), NULL);
 	    }
-	  virtodbc__SQLFreeStmt(stmt, SQL_DROP);
+
+	  virtodbc__SQLFreeStmt (stmt, SQL_DROP);
+
 	  return rc;
 	}
       else
 	{
 	  if (con->con_charset)
 	    dk_free_box ((box_t) con->con_charset);
+
 	  con->con_charset = vParam ? (wcharset_t *) box_string ((char *) vParam) : NULL;
 	}
       break;
+
     case SQL_APPLICATION_NAME:
-	{
-	  memset (application_name, 0, sizeof (application_name));
-	  if (vParam && ((char *)vParam)[0])
-	    strncpy (application_name, (char *)vParam, sizeof (application_name) - 1);
-	  return SQL_SUCCESS;
-	}
+      {
+	memset (application_name, 0, sizeof (application_name));
+
+	if (vParam && ((char *) vParam)[0])
+	  strncpy (application_name, (char *) vParam, sizeof (application_name) - 1);
+
+	return SQL_SUCCESS;
+      }
+
 #ifdef VIRTTP
 #undef dbg_printf
 #define dbg_printf(a) printf a
@@ -1276,123 +1304,143 @@ virtodbc__SQLSetConnectOption (
 	{
 #if 0
 	  int found = 0;
-	  DO_SET(d_trx_info_t* , info, &d_trx_set)
-	    {
-	      if (unbox((box_t)vParam) == unbox(info->d_trx_id))
-		{
-		  dk_set_push(&info->d_trx_hdbcs, (void *)hdbc);
-		  con->con_d_trx_id = box_num(unbox((box_t)vParam));
-		  found = 1;
-		}
-	    }
-	  END_DO_SET();
+	  DO_SET (d_trx_info_t *, info, &d_trx_set)
+	  {
+	    if (unbox ((box_t) vParam) == unbox (info->d_trx_id))
+	      {
+		dk_set_push (&info->d_trx_hdbcs, (void *) hdbc);
+		con->con_d_trx_id = box_num (unbox ((box_t) vParam));
+		found = 1;
+	      }
+	  }
+	  END_DO_SET ();
 	  if (!found)
 	    {
-	      NEW_VARZ(d_trx_info_t,info);
-	      info->d_trx_id = box_num(unbox((box_t)vParam));
-	      dk_set_push(&info->d_trx_hdbcs, (void *) hdbc);
-	      dk_set_push(&d_trx_set,info);
-	      con->con_d_trx_id = box_num(unbox((box_t)vParam));
+	      NEW_VARZ (d_trx_info_t, info);
+	      info->d_trx_id = box_num (unbox ((box_t) vParam));
+	      dk_set_push (&info->d_trx_hdbcs, (void *) hdbc);
+	      dk_set_push (&d_trx_set, info);
+	      con->con_d_trx_id = box_num (unbox ((box_t) vParam));
 	    }
 #else
-	  virt_rcon_t* vbranch = (virt_rcon_t*) vParam;
+	  virt_rcon_t *vbranch = (virt_rcon_t *) vParam;
 	  SQLHSTMT stmt;
 	  SQLRETURN rc;
+
 	  if (!vbranch || !vbranch->vtr_trx)
 	    {
 	      return SQL_ERROR;
 	    }
+
 	  rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
+
 	  if (SQL_SUCCESS != rc)
 	    return rc;
+
 	  rc = virtodbc__SQLBindParameter (stmt, 1, SQL_PARAM_INPUT,
-	      SQL_C_CHAR, SQL_CHAR, 0,
-	      0, (char *) vbranch->vtr_trx->vtx_cookie,
-	      SQL_NTS, NULL);
+	      SQL_C_CHAR, SQL_CHAR, 0, 0, (char *) vbranch->vtr_trx->vtx_cookie, SQL_NTS, NULL);
+
 	  if (SQL_SUCCESS == rc)
 	    rc = virtodbc__SQLExecDirect (stmt, (SQLCHAR *) "_2PC.DBA.virt_tp_enlist_branch (?)", SQL_NTS);
 
-	  virtodbc__SQLFreeStmt(stmt, SQL_DROP);
+	  virtodbc__SQLFreeStmt (stmt, SQL_DROP);
+
 	  return rc;
 #endif
 	}
       else
 	goto nc;
       break;
-  case SQL_VIRTTP_ABORT:
+
+    case SQL_VIRTTP_ABORT:
       op = SQL_TP_ABORT;
-  case SQL_VIRTTP_COMMIT:
+
+    case SQL_VIRTTP_COMMIT:
       if (CON_CONNECTED (con))
 	{
-	  tp_dtrx_t* tpd = (tp_dtrx_t*)vParam;
-	  d_trx_info_t* trx_i = 0;
+	  tp_dtrx_t *tpd = (tp_dtrx_t *) vParam;
+	  d_trx_info_t *trx_i = 0;
 	  int fail_pos = -1;
 	  int i;
 	  SQLRETURN rc = SQL_SUCCESS;
+
 	  if (SQL_TP_ABORT != op)
 	    op = SQL_TP_PREPARE;
-	  DO_SET (d_trx_info_t* , info, &d_trx_set)
-	    {
-	      if (unbox(tpd->dtrx_info) == unbox(info->d_trx_id))
-		{
-		  trx_i = info;
-		  dbg_printf(("found transaction %ld\n",dk_set_length(trx_i->d_trx_hdbcs)));
-		  break;
-		}
-	    }
-	  END_DO_SET()
-	      if (!trx_i)
-		return SQL_ERROR;
-again:
-	  i = 0;
-	  DO_SET(cli_connection_t* , cli_con, &trx_i->d_trx_hdbcs)
-	    {
-	      if (i != fail_pos)
-		{
-		  caddr_t res;
-		  future_t* f;
-		  dbg_printf(("sql_tp_transact... %x",op));
-		  f = PrpcFuture (cli_con->con_session, &s_sql_tp_transact, (short) op, 0);
-		  res = PrpcFutureNextResult (f);
-		  PrpcFutureFree(f);
-		  if (res != (caddr_t)SQL_SUCCESS)
-		    {
-		      dbg_printf(("commit failed %p\n",res));
-		      rc = 1 ;
-		      if (SQL_TP_PREPARE == op)
-			{
-			  op = SQL_TP_ABORT;
-			  fail_pos = i;
-			  goto again;
-			}
-		      else
-			{
-			  iter = nxt;
-			  continue;
-			}
-		    }
-		  else
-		    dbg_printf((" done\n"));
-		};
-	      i++;
-	      if (i>10)
-		GPF_T;
-	    }
+
+	  DO_SET (d_trx_info_t *, info, &d_trx_set)
+	  {
+	    if (unbox (tpd->dtrx_info) == unbox (info->d_trx_id))
+	      {
+		trx_i = info;
+		dbg_printf (("found transaction %ld\n", dk_set_length (trx_i->d_trx_hdbcs)));
+		break;
+	      }
+	  }
 	  END_DO_SET ();
+
+	  if (!trx_i)
+	    return SQL_ERROR;
+
+	again:
+	  i = 0;
+
+	  DO_SET (cli_connection_t *, cli_con, &trx_i->d_trx_hdbcs)
+	  {
+	    if (i != fail_pos)
+	      {
+		caddr_t res;
+		future_t *f;
+
+		dbg_printf (("sql_tp_transact... %x", op));
+		f = PrpcFuture (cli_con->con_session, &s_sql_tp_transact, (short) op, 0);
+		res = PrpcFutureNextResult (f);
+		PrpcFutureFree (f);
+
+		if (res != (caddr_t) SQL_SUCCESS)
+		  {
+		    dbg_printf (("commit failed %p\n", res));
+		    rc = 1;
+
+		    if (SQL_TP_PREPARE == op)
+		      {
+			op = SQL_TP_ABORT;
+			fail_pos = i;
+
+			goto again;
+		      }
+		    else
+		      {
+			iter = nxt;
+
+			continue;
+		      }
+		  }
+		else
+		  dbg_printf ((" done\n"));
+	      }
+	    i++;
+	    if (i > 10)
+	      GPF_T;
+	  }
+	  END_DO_SET ();
+
 	  if ((-1 == fail_pos) && (SQL_TP_PREPARE == op))
 	    {
 	      op = SQL_TP_COMMIT;
 	      goto again;
 	    }
-	  dk_set_delete(&d_trx_set,(void*)trx_i);
-	  dk_set_free(trx_i->d_trx_hdbcs);
-	  dk_free_box(trx_i->d_trx_id);
-	  dk_free(trx_i,sizeof(d_trx_info_t));
+
+	  dk_set_delete (&d_trx_set, (void *) trx_i);
+	  dk_set_free (trx_i->d_trx_hdbcs);
+	  dk_free_box (trx_i->d_trx_id);
+	  dk_free (trx_i, sizeof (d_trx_info_t));
+
 	  return rc;
 	}
       else
 	goto nc;
       break;
+
 #undef dbg_printf
 #define dbg_printf(a)
 #endif
@@ -1402,25 +1450,26 @@ again:
 #ifdef WIN32
       if (!MSDTC_IS_LOADED)
 	return SQL_ERROR;
+
       if (CON_CONNECTED (con))
 	{
 	  SQLRETURN rc;
 	  if (!vParam)
 	    {
-	      caddr_t* res;
-	      future_t * future;
+	      caddr_t *res;
+	      future_t *future;
 
-	      future = PrpcFuture (con->con_session,
-		  &s_sql_tp_transact,SQL_TP_UNENLIST,0);
+	      future = PrpcFuture (con->con_session, &s_sql_tp_transact, SQL_TP_UNENLIST, 0);
 	      res = (caddr_t *) PrpcFutureNextResult (future);
-	      PrpcFutureFree(future);
+	      PrpcFutureFree (future);
 
 	      if (DKSESSTAT_ISSET (con->con_session, SST_BROKEN_CONNECTION))
 		{
-		  PrpcFutureFree(future);
+		  PrpcFutureFree (future);
 		  set_error (&con->con_error, "08S01", "CL045", "Lost connection to server");
 		  return SQL_ERROR;
 		}
+
 	      if (res == (caddr_t *) SQL_SUCCESS)
 		{
 		  return SQL_SUCCESS;
@@ -1431,6 +1480,7 @@ again:
 		  set_error (&con->con_error, res[1], NULL, srv_msg);
 		  dk_free_tree ((caddr_t) res);
 		  dk_free_box (srv_msg);
+
 		  return SQL_ERROR;
 		}
 	    }
@@ -1446,36 +1496,38 @@ again:
 		      rc = virtodbc__SQLTransact (SQL_NULL_HENV, hdbc, SQL_ROLLBACK);
 		      if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
 			return rc;
+
 		      con->con_autocommit = 0;
 		    }
 		  else
 		    {
-		      set_error(&con->con_error,"42000", "CL094","Not possible to enlist an AUTOCOMMIT connection in MS DTC");
+		      set_error (&con->con_error, "42000", "CL094", "Not possible to enlist an AUTOCOMMIT connection in MS DTC");
 		      return SQL_ERROR;
 		    }
 		}
 
-	      mts_get_trx_cookie (con,(struct ITransaction*)vParam,(void **)&cookie,&cookie_len);
+	      mts_get_trx_cookie (con, (struct ITransaction *) vParam, (void **) &cookie, &cookie_len);
+
 	      if (cookie)
 		{
 		  SQLHANDLE stmt;
-		  char* enlist_command = (char*) dk_alloc(MTS_BUFSIZ);
-		  char* cookie_encoded = mts_bin_encode(cookie,cookie_len);
+		  char *enlist_command = (char *) dk_alloc (MTS_BUFSIZ);
+		  char *cookie_encoded = mts_bin_encode (cookie, cookie_len);
 
-		  snprintf(enlist_command, MTS_BUFSIZ,"select mts_enlist_transaction(\'%s\')",cookie_encoded);
-		  rc = virtodbc__SQLAllocStmt(hdbc, &stmt);
+		  snprintf (enlist_command, MTS_BUFSIZ, "select mts_enlist_transaction(\'%s\')", cookie_encoded);
+		  rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
 		  if (SQL_SUCCESS != rc)
 		    goto free_ret;
 
-		  rc = virtodbc__SQLExecDirect(stmt,enlist_command, SQL_NTS);
+		  rc = virtodbc__SQLExecDirect (stmt, enlist_command, SQL_NTS);
 		  if (SQL_SUCCESS == rc)
 		    {
 		      SQLINTEGER ret = 1;
 		      SQLLEN cols;
-		      rc = SQLBindCol(stmt,1,SQL_INTEGER,(SQLPOINTER)&ret,0,&cols);
+		      rc = SQLBindCol (stmt, 1, SQL_INTEGER, (SQLPOINTER) & ret, 0, &cols);
 		      if (SQL_SUCCESS == rc)
 			{
-			  rc = virtodbc__SQLFetch(stmt, 0);
+			  rc = virtodbc__SQLFetch (stmt, 0);
 			  if (SQL_SUCCESS == rc)
 			    {
 			      if (0 == ret)
@@ -1485,28 +1537,32 @@ again:
 			      else
 				{
 				  rc = SQL_ERROR;
-				  set_error(&con->con_error,"40001", "CL046","could not enlist transaction");
+				  set_error (&con->con_error, "40001", "CL046", "could not enlist transaction");
 				}
 
 			    }
 			}
 		    }
-		  virtodbc__SQLFreeStmt(stmt, SQL_DROP);
-free_ret :
+		  virtodbc__SQLFreeStmt (stmt, SQL_DROP);
+
+		free_ret:
 		  if (cookie_encoded)
-		    dk_free_box(cookie_encoded);
-		  dk_free(enlist_command,MTS_BUFSIZ);
+		    dk_free_box (cookie_encoded);
+		  dk_free (enlist_command, MTS_BUFSIZ);
+
 		  return rc;
 		}
 	      else
 		{
-		  set_error(&con->con_error,"25000", "CL047","could not enlist resource manager in transaction");
+		  set_error (&con->con_error, "25000", "CL047", "could not enlist resource manager in transaction");
+
 		  return SQL_ERROR;
-		};
+		}
 	    }
 	}
       else
 	goto nc;
+
       return SQL_SUCCESS;
       /* end of MTS support */
 #else
@@ -1519,34 +1575,37 @@ free_ret :
 #ifdef XA_IMPL
     case SQL_COPT_SS_ENLIST_IN_XA:
       if (CON_CONNECTED (con))
-        {
+	{
 	  int c;
-	  char* xid_str = 0;
-	  caddr_t* res;
-	  future_t * future;
-          if (!vParam)
+	  char *xid_str = 0;
+	  caddr_t *res;
+	  future_t *future;
+
+	  if (!vParam)
 	    {
 	      c = SQL_TP_UNENLIST;
 	    }
 	  else
 	    {
 	      c = SQL_XA_ENLIST;
-	      xid_str = xid_bin_encode ((void*)vParam);
+	      xid_str = xid_bin_encode ((void *) vParam);
 	      if (!xid_str)
 		return SQL_ERROR;
 	    }
-	  future = PrpcFuture (con->con_session,
-		&s_sql_tp_transact, c, xid_str);
+
+	  future = PrpcFuture (con->con_session, &s_sql_tp_transact, c, xid_str);
 	  res = (caddr_t *) PrpcFutureNextResult (future);
-	  PrpcFutureFree(future);
+	  PrpcFutureFree (future);
 	  dk_free_box (xid_str);
 
 	  if (DKSESSTAT_ISSET (con->con_session, SST_BROKEN_CONNECTION))
 	    {
-	      PrpcFutureFree(future);
+	      PrpcFutureFree (future);
 	      set_error (&con->con_error, "08S01", "CL045", "Lost connection to server");
+
 	      return SQL_ERROR;
 	    }
+
 	  if (res == (caddr_t *) SQL_SUCCESS)
 	    {
 	      return SQL_SUCCESS;
@@ -1557,33 +1616,36 @@ free_ret :
 	      set_error (&con->con_error, res[1], NULL, srv_msg);
 	      dk_free_tree ((caddr_t) res);
 	      dk_free_box (srv_msg);
+
 	      return SQL_ERROR;
 	    }
 	}
       else
 	goto nc;
 #endif
+
     case SQL_ENCRYPT_CONNECTION:
       if (con->con_encrypt)
 	{
 	  dk_free_box (con->con_encrypt);
 	  con->con_encrypt = NULL;
 	}
-      if (vParam && ((char *)vParam)[0])
+
+      if (vParam && ((char *) vParam)[0])
 	{
 	  con->con_encrypt = box_string ((char *) vParam);
 	}
       return SQL_SUCCESS;
 
     case SQL_SERVER_CERT:
-	{
-	  if (con->con_ca_list)
-	    dk_free_box (con->con_ca_list);
-	  con->con_ca_list = NULL;
-	  if (vParam && ((char *)vParam)[0])
-	    con->con_ca_list = box_string ((char *) vParam);
-	  return SQL_SUCCESS;
-	}
+      {
+	if (con->con_ca_list)
+	  dk_free_box (con->con_ca_list);
+	con->con_ca_list = NULL;
+	if (vParam && ((char *) vParam)[0])
+	  con->con_ca_list = box_string ((char *) vParam);
+	return SQL_SUCCESS;
+      }
 
     case SQL_PWD_CLEARTEXT:
       con->con_pwd_cleartext = (int) vParam;
@@ -1600,13 +1662,14 @@ nc:
   return SQL_ERROR;
 }
 
+
 SQLRETURN SQL_API
 SQLGetStmtOption (
       SQLHSTMT hstmt,
       SQLUSMALLINT fOption,
       SQLPOINTER pvParam)
 {
-	  return virtodbc__SQLGetStmtOption(hstmt, fOption, pvParam);
+  return virtodbc__SQLGetStmtOption (hstmt, fOption, pvParam);
 }
 
 
@@ -1618,6 +1681,7 @@ virtodbc__SQLGetStmtOption (
 {
   STMT (stmt, hstmt);
   stmt_options_t *so = stmt->stmt_opts;
+
   if (NULL == pvParam)
     return SQL_SUCCESS;
 
@@ -1648,64 +1712,75 @@ virtodbc__SQLGetStmtOption (
     case SQL_ROWSET_SIZE:
       *(SQLLEN *) pvParam = stmt->stmt_rowset_size;
       break;
+
     case SQL_KEYSET_SIZE:
       *(SQLLEN *) pvParam = so->so_keyset_size;
       break;
+
     case SQL_GET_BOOKMARK:
       return (virtodbc__SQLGetData (hstmt, 0, SQL_C_LONG, pvParam, sizeof (long), NULL));
+
     case SQL_MAX_LENGTH:
       *(SQLULEN *) pvParam = 64000000;
       break;
+
     case SQL_USE_BOOKMARKS:
       *(SQLULEN *) pvParam = so->so_use_bookmarks;
       break;
 
-	case SQL_BIND_TYPE:
-      *(SQLULEN *)pvParam = stmt->stmt_bind_type;
+    case SQL_BIND_TYPE:
+      *(SQLULEN *) pvParam = stmt->stmt_bind_type;
       break;
 
-	case SQL_CURSOR_TYPE:
-      *(SQLULEN *)pvParam = stmt->stmt_opts->so_cursor_type;
+    case SQL_CURSOR_TYPE:
+      *(SQLULEN *) pvParam = stmt->stmt_opts->so_cursor_type;
+      break;
+
+    case SQL_RETRIEVE_DATA:
+      *(SQLULEN *) pvParam = stmt->stmt_retrieve_data;
+      break;
+
+    case SQL_ROW_NUMBER:
+      switch (stmt->stmt_opts->so_cursor_type)
+	{
+	case SQL_CURSOR_STATIC:
+	  if (stmt->stmt_current_row)
+	    {
+	      long len = BOX_ELEMENTS (stmt->stmt_current_row);
+	      caddr_t bm = stmt->stmt_current_row[len - 2];
+	      *(SQLULEN *) pvParam = (unbox (bm));
+	    }
+	  else
+	    *(SQLULEN *) pvParam = 0;
 	  break;
 
-	case SQL_RETRIEVE_DATA:
-	  *(SQLULEN *)pvParam = stmt->stmt_retrieve_data;
+	case SQL_CURSOR_KEYSET_DRIVEN:
+	  if (stmt->stmt_current_row)
+	    {
+	      long len = BOX_ELEMENTS (stmt->stmt_current_row);
+	      caddr_t bm = stmt->stmt_current_row[len - 1];
+	      *(SQLULEN *) pvParam = (unbox (bm));
+	    }
+	  else
+	    *(SQLULEN *) pvParam = 0;
 	  break;
 
-	case SQL_ROW_NUMBER:
-		switch (stmt->stmt_opts->so_cursor_type) {
-			case SQL_CURSOR_STATIC:
-				if (stmt->stmt_current_row) {
-					long len = BOX_ELEMENTS(stmt->stmt_current_row);
-					caddr_t bm = stmt->stmt_current_row[len - 2];
-					*(SQLULEN *)pvParam = (unbox(bm));
-				} else
-					*(SQLULEN *)pvParam = 0;
-				break;
-			case SQL_CURSOR_KEYSET_DRIVEN:
-				if (stmt->stmt_current_row) {
-					long len = BOX_ELEMENTS(stmt->stmt_current_row);
-					caddr_t bm = stmt->stmt_current_row[len - 1];
-					*(SQLULEN *)pvParam = (unbox(bm));
-				} else
-					*(SQLULEN *)pvParam = 0;
-				break;
+	case SQL_CURSOR_DYNAMIC:
+	  *(SQLULEN *) pvParam = stmt->stmt_current_of;
+	  break;
+	}
+      break;
 
-			case SQL_CURSOR_DYNAMIC:
-				*(SQLULEN *)pvParam = stmt->stmt_current_of;
-				break;
-		}
-		break;
-
-	case SQL_PREFETCH_SIZE:
-		      *(SQLLEN *) pvParam = stmt->stmt_opts->so_prefetch;
-		break;
+    case SQL_PREFETCH_SIZE:
+      *(SQLLEN *) pvParam = stmt->stmt_opts->so_prefetch;
+      break;
 
     case SQL_UNIQUE_ROWS:
-      *(SQLULEN *)pvParam = stmt->stmt_opts->so_unique_rows;
+      *(SQLULEN *) pvParam = stmt->stmt_opts->so_unique_rows;
       break;
+
     case SQL_GETLASTSERIAL:
-      *(SQLINTEGER*) pvParam = unbox (stmt->stmt_identity_value);
+      *(SQLINTEGER *) pvParam = unbox (stmt->stmt_identity_value);
       break;
     }
 
@@ -1719,8 +1794,9 @@ SQLSetStmtOption (
       SQLUSMALLINT fOption,
       SQLULEN vParam)
 {
-	return virtodbc__SQLSetStmtOption(hstmt, fOption, vParam);
+  return virtodbc__SQLSetStmtOption (hstmt, fOption, vParam);
 }
+
 
 SQLRETURN SQL_API
 virtodbc__SQLSetStmtOption (
@@ -1730,19 +1806,23 @@ virtodbc__SQLSetStmtOption (
 {
   STMT (stmt, hstmt);
   stmt_options_t *so = stmt->stmt_opts;
+
   switch (fOption)
     {
     case SQL_CURSOR_TYPE:
       stmt->stmt_opts->so_cursor_type = vParam;
       if (stmt->stmt_is_deflt_rowset)
-	  stmt->stmt_rowset_size = 1;
+	stmt->stmt_rowset_size = 1;
       break;
+
     case SQL_KEYSET_SIZE:
       stmt->stmt_opts->so_keyset_size = vParam;
       break;
+
     case SQL_BIND_TYPE:
       stmt->stmt_bind_type = (int) vParam;
       break;
+
     case SQL_ASYNC_ENABLE:
 #ifndef WIN32
       so->so_is_async = vParam;
@@ -1773,6 +1853,7 @@ virtodbc__SQLSetStmtOption (
       stmt->stmt_is_deflt_rowset = 0;
       stmt->stmt_rowset_size = vParam;
       break;
+
     case SQL_USE_BOOKMARKS:
       so->so_use_bookmarks = vParam;
       break;
@@ -1782,7 +1863,7 @@ virtodbc__SQLSetStmtOption (
       break;
 
     case SQL_PREFETCH_SIZE:
-      stmt->stmt_opts->so_prefetch = (SDWORD)vParam;
+      stmt->stmt_opts->so_prefetch = (SDWORD) vParam;
       break;
 
     case SQL_UNIQUE_ROWS:
@@ -1803,9 +1884,9 @@ SQLSMALLINT functions3[SQL_API_ODBC3_ALL_FUNCTIONS_SIZE];
 #define F(n) \
     if (n < 100) \
       functions[n]=1; \
-    functions3[(n) >> 4] |= (1 << ((n) & 0x000F));
+    functions3[(n) >> 4] |= (1 << ((n) & 0x000F))
 #else
-#define F(n) functions[n]=1;
+#define F(n) functions[n]=1
 #endif
 
 SQLRETURN SQL_API
@@ -1814,101 +1895,101 @@ SQLGetFunctions (
       SQLUSMALLINT fFunction,
       SQLUSMALLINT * pfExists)
 {
-  F (SQL_API_SQLALLOCCONNECT)
-  F (SQL_API_SQLALLOCENV)
-  F (SQL_API_SQLALLOCSTMT)
-  F (SQL_API_SQLBINDCOL)
-  F (SQL_API_SQLCANCEL)
-  F (SQL_API_SQLCOLATTRIBUTES)
-  F (SQL_API_SQLCONNECT)
-  F (SQL_API_SQLDESCRIBECOL)
-  F (SQL_API_SQLDISCONNECT)
-  F (SQL_API_SQLERROR)
-  F (SQL_API_SQLEXECDIRECT)
-  F (SQL_API_SQLEXECUTE)
-  F (SQL_API_SQLFETCH)
-  F (SQL_API_SQLFREECONNECT)
-  F (SQL_API_SQLFREEENV)
-  F (SQL_API_SQLFREESTMT)
-  F (SQL_API_SQLGETCURSORNAME)
-  F (SQL_API_SQLNUMRESULTCOLS)
-  F (SQL_API_SQLPREPARE)
-  F (SQL_API_SQLROWCOUNT)
-  F (SQL_API_SQLSETCURSORNAME)
-  F (SQL_API_SQLSETPARAM)
-  F (SQL_API_SQLTRANSACT)
-  F (SQL_API_SQLTRANSACT + 1)
-  F (SQL_API_SQLBINDPARAMETER)
+  F (SQL_API_SQLALLOCCONNECT);
+  F (SQL_API_SQLALLOCENV);
+  F (SQL_API_SQLALLOCSTMT);
+  F (SQL_API_SQLBINDCOL);
+  F (SQL_API_SQLCANCEL);
+  F (SQL_API_SQLCOLATTRIBUTES);
+  F (SQL_API_SQLCONNECT);
+  F (SQL_API_SQLDESCRIBECOL);
+  F (SQL_API_SQLDISCONNECT);
+  F (SQL_API_SQLERROR);
+  F (SQL_API_SQLEXECDIRECT);
+  F (SQL_API_SQLEXECUTE);
+  F (SQL_API_SQLFETCH);
+  F (SQL_API_SQLFREECONNECT);
+  F (SQL_API_SQLFREEENV);
+  F (SQL_API_SQLFREESTMT);
+  F (SQL_API_SQLGETCURSORNAME);
+  F (SQL_API_SQLNUMRESULTCOLS);
+  F (SQL_API_SQLPREPARE);
+  F (SQL_API_SQLROWCOUNT);
+  F (SQL_API_SQLSETCURSORNAME);
+  F (SQL_API_SQLSETPARAM);
+  F (SQL_API_SQLTRANSACT);
+  F (SQL_API_SQLTRANSACT + 1);
+  F (SQL_API_SQLBINDPARAMETER);
 
-  F (SQL_API_SQLCOLUMNS)
-  F (SQL_API_SQLDRIVERCONNECT)
-  F (SQL_API_SQLGETCONNECTOPTION)
-  F (SQL_API_SQLGETDATA)
-  F (SQL_API_SQLGETFUNCTIONS)
-  F (SQL_API_SQLGETINFO)
-  F (SQL_API_SQLGETSTMTOPTION)
-  F (SQL_API_SQLGETTYPEINFO)
-  F (SQL_API_SQLPARAMDATA)
-  F (SQL_API_SQLPUTDATA)
-  F (SQL_API_SQLSETCONNECTOPTION)
-  F (SQL_API_SQLSETSTMTOPTION)
-  F (SQL_API_SQLSPECIALCOLUMNS)
-  F (SQL_API_SQLSTATISTICS)	/* Added by AK 17-JAN-1997. */
-  F (SQL_API_SQLTABLES)
+  F (SQL_API_SQLCOLUMNS);
+  F (SQL_API_SQLDRIVERCONNECT);
+  F (SQL_API_SQLGETCONNECTOPTION);
+  F (SQL_API_SQLGETDATA);
+  F (SQL_API_SQLGETFUNCTIONS);
+  F (SQL_API_SQLGETINFO);
+  F (SQL_API_SQLGETSTMTOPTION);
+  F (SQL_API_SQLGETTYPEINFO);
+  F (SQL_API_SQLPARAMDATA);
+  F (SQL_API_SQLPUTDATA);
+  F (SQL_API_SQLSETCONNECTOPTION);
+  F (SQL_API_SQLSETSTMTOPTION);
+  F (SQL_API_SQLSPECIALCOLUMNS);
+  F (SQL_API_SQLSTATISTICS);	/* Added by AK 17-JAN-1997. */
+  F (SQL_API_SQLTABLES);
 
-  __F (SQL_API_SQLBROWSECONNECT)
-  F (SQL_API_SQLCOLUMNPRIVILEGES)
-  __F (SQL_API_SQLDATASOURCES)
-  F (SQL_API_SQLDESCRIBEPARAM)
-  F (SQL_API_SQLEXTENDEDFETCH)
-  F (SQL_API_SQLFOREIGNKEYS)
-  F (SQL_API_SQLMORERESULTS)
-  F (SQL_API_SQLNATIVESQL)
-  F (SQL_API_SQLNUMPARAMS)
-  F (SQL_API_SQLPARAMOPTIONS)
-  F (SQL_API_SQLPRIMARYKEYS)	/* Added by AK 17-JAN-1997. */
-  F (SQL_API_SQLPROCEDURECOLUMNS)
-  F (SQL_API_SQLPROCEDURES)
-  F (SQL_API_SQLSETPOS)
-  F (SQL_API_SQLSETSCROLLOPTIONS)
-  F (SQL_API_SQLTABLEPRIVILEGES)
-  __F (SQL_API_SQLDRIVERS)
+  __F (SQL_API_SQLBROWSECONNECT);
+  F (SQL_API_SQLCOLUMNPRIVILEGES);
+  __F (SQL_API_SQLDATASOURCES);
+  F (SQL_API_SQLDESCRIBEPARAM);
+  F (SQL_API_SQLEXTENDEDFETCH);
+  F (SQL_API_SQLFOREIGNKEYS);
+  F (SQL_API_SQLMORERESULTS);
+  F (SQL_API_SQLNATIVESQL);
+  F (SQL_API_SQLNUMPARAMS);
+  F (SQL_API_SQLPARAMOPTIONS);
+  F (SQL_API_SQLPRIMARYKEYS);	/* Added by AK 17-JAN-1997. */
+  F (SQL_API_SQLPROCEDURECOLUMNS);
+  F (SQL_API_SQLPROCEDURES);
+  F (SQL_API_SQLSETPOS);
+  F (SQL_API_SQLSETSCROLLOPTIONS);
+  F (SQL_API_SQLTABLEPRIVILEGES);
+  __F (SQL_API_SQLDRIVERS);
 
 
 #if (ODBCVER >= 0x0300)
   /* ODBC 3 stuff */
-  F (SQL_API_SQLALLOCHANDLE)
-  F (SQL_API_SQLFREEHANDLE)
+  F (SQL_API_SQLALLOCHANDLE);
+  F (SQL_API_SQLFREEHANDLE);
 
-  F (SQL_API_SQLGETDIAGREC)
-  F (SQL_API_SQLGETDIAGFIELD)
+  F (SQL_API_SQLGETDIAGREC);
+  F (SQL_API_SQLGETDIAGFIELD);
 
-  F (SQL_API_SQLGETENVATTR)
-  F (SQL_API_SQLSETENVATTR)
+  F (SQL_API_SQLGETENVATTR);
+  F (SQL_API_SQLSETENVATTR);
 
-  F (SQL_API_SQLSETCONNECTATTR)
-  F (SQL_API_SQLGETCONNECTATTR)
+  F (SQL_API_SQLSETCONNECTATTR);
+  F (SQL_API_SQLGETCONNECTATTR);
 
-  F (SQL_API_SQLGETSTMTATTR)
-  F (SQL_API_SQLSETSTMTATTR)
+  F (SQL_API_SQLGETSTMTATTR);
+  F (SQL_API_SQLSETSTMTATTR);
 
-  F (SQL_API_SQLGETDESCFIELD)
-  F (SQL_API_SQLSETDESCFIELD)
+  F (SQL_API_SQLGETDESCFIELD);
+  F (SQL_API_SQLSETDESCFIELD);
 
-  F (SQL_API_SQLGETDESCREC)
-  __F (SQL_API_SQLSETDESCREC)
+  F (SQL_API_SQLGETDESCREC);
+  __F (SQL_API_SQLSETDESCREC);
 
-  __F (SQL_API_SQLCOPYDESC)
+  __F (SQL_API_SQLCOPYDESC);
 
 #if (ODBCVER < 0x0300)
-  F (SQL_API_SQLCOLATTRIBUTE)
+  F (SQL_API_SQLCOLATTRIBUTE);
 #endif
 
-  F (SQL_API_SQLENDTRAN)
+  F (SQL_API_SQLENDTRAN);
 
-  F (SQL_API_SQLFETCHSCROLL)
+  F (SQL_API_SQLFETCHSCROLL);
 
-  F (SQL_API_SQLBULKOPERATIONS)
+  F (SQL_API_SQLBULKOPERATIONS);
 #endif
 
   if (fFunction == SQL_API_ALL_FUNCTIONS)
@@ -1917,16 +1998,15 @@ SQLGetFunctions (
   else if (fFunction == SQL_API_ODBC3_ALL_FUNCTIONS)
     memcpy (pfExists, &functions3, SQL_API_ODBC3_ALL_FUNCTIONS_SIZE * sizeof (SQLSMALLINT));
 #endif
-  else
-    if (pfExists)
-      {
+  else if (pfExists)
+    {
 #if (ODBCVER >= 0x0300)
-	if (fFunction > 100)
-	  *pfExists = SQL_FUNC_EXISTS(functions3, fFunction) ? SQL_TRUE : SQL_FALSE;
-	else
+      if (fFunction > 100)
+	*pfExists = SQL_FUNC_EXISTS (functions3, fFunction) ? SQL_TRUE : SQL_FALSE;
+      else
 #endif
 	*pfExists = functions[fFunction];
-      }
+    }
 
   return SQL_SUCCESS;
 }
@@ -1971,10 +2051,10 @@ virtodbc__SQLGetInfo (
       strres = (char *) dbc->con_dsn;
       break;
 
-    /* The next three: This information type is implemented by the
-      Driver Manager alone.  */
+      /* The next three: This information type is implemented by the
+         Driver Manager alone.  */
 #ifndef __alpha
-    /* Doesn't work on 64 bit machines - disable them for now - PmN */
+      /* Doesn't work on 64 bit machines - disable them for now - PmN */
     case SQL_DRIVER_HDBC:
       intres = (SQLLEN) hdbc;
       break;
@@ -1998,13 +2078,13 @@ virtodbc__SQLGetInfo (
 
     case SQL_DRIVER_VER:
       /* A character string with the version of the driver and,
-	 optionally a description of the driver.
-	 At a minimum the version is of the form ##.##.####
-	 where the first two digits are the major version,
-	 the next two digits are the minor version, and
-	 the last four digits are the release version. */
-	strres = ODBC_DRV_VER " " ODBC_DRV_NAME;
-	break;
+         optionally a description of the driver.
+         At a minimum the version is of the form ##.##.####
+         where the first two digits are the major version,
+         the next two digits are the minor version, and
+         the last four digits are the release version. */
+      strres = ODBC_DRV_VER " " ODBC_DRV_NAME;
+      break;
 
     case SQL_DBMS_NAME:
 #if 1
@@ -2017,10 +2097,10 @@ virtodbc__SQLGetInfo (
 
     case SQL_DBMS_VER:
       /* The version is of the form ##.##.#### where the first two
-	digits are the major version, the next two digits are the
-	minor version, and the last four digits are the release
-	version. The driver can also append the DBMS product-specific
-	version as well. For example, "04.01.0000 Rdb 4.1" */
+         digits are the major version, the next two digits are the
+         minor version, and the last four digits are the release
+         version. The driver can also append the DBMS product-specific
+         version as well. For example, "04.01.0000 Rdb 4.1" */
       strres = (char *) dbc->con_db_ver;
       break;
 
@@ -2029,13 +2109,14 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_FETCH_DIRECTION:
-      intres = SQL_FD_FETCH_NEXT
-	| SQL_FD_FETCH_FIRST
-	  | SQL_FD_FETCH_LAST
-	    | SQL_FD_FETCH_PRIOR
-	      | SQL_FD_FETCH_ABSOLUTE
-		| SQL_FD_FETCH_RELATIVE
-		  | SQL_FD_FETCH_BOOKMARK;
+      intres =
+	  SQL_FD_FETCH_NEXT |
+	  SQL_FD_FETCH_FIRST |
+	  SQL_FD_FETCH_LAST |
+	  SQL_FD_FETCH_PRIOR |
+	  SQL_FD_FETCH_ABSOLUTE |
+	  SQL_FD_FETCH_RELATIVE |
+	  SQL_FD_FETCH_BOOKMARK;
 
       break;
 
@@ -2050,11 +2131,11 @@ virtodbc__SQLGetInfo (
 
     case SQL_ROW_UPDATES:
       /* "Y" if a keyset-driven or mixed cursor maintains row versions or
-	values for all fetched rows and therefore can detect any changes
-	made to a row by any user since the row was last fetched;
-	otherwise, "N".
-	Our cursor can prevent any changes being made to a row by any user,
-	but our cursor is not keyset-driven or mixed cursor. */
+         values for all fetched rows and therefore can detect any changes
+         made to a row by any user since the row was last fetched;
+         otherwise, "N".
+         Our cursor can prevent any changes being made to a row by any user,
+         but our cursor is not keyset-driven or mixed cursor. */
       strres = "N";
       break;			/* WAS: goto na; */
 
@@ -2075,17 +2156,15 @@ virtodbc__SQLGetInfo (
 
     case SQL_ACCESSIBLE_TABLES:
       /* Actually we should check whether user really has rights to all tables,
-	that is, whether he is super-user dba or belongs to the same group,
-	and whether there exists any protected tables in the system.
-	(The group-id of the user is not currently included in connection
-	structure, or at least I cannot find it.) */
-      strres = (char *) ((dbc->con_user && (char *)
-	  !strcmp ((char *) dbc->con_user, "dba")) ? "Y" : "N");
+         that is, whether he is super-user dba or belongs to the same group,
+         and whether there exists any protected tables in the system.
+         (The group-id of the user is not currently included in connection
+         structure, or at least I cannot find it.) */
+      strres = (char *) ((dbc->con_user && (char *) !strcmp ((char *) dbc->con_user, "dba")) ? "Y" : "N");
       break;
 
     case SQL_ACCESSIBLE_PROCEDURES:	/* The notes above apply here also. */
-      strres = (char *) ((dbc->con_user &&
-	  !strcmp ((char *) dbc->con_user, "dba")) ? "Y" : "N");
+      strres = (char *) ((dbc->con_user && !strcmp ((char *) dbc->con_user, "dba")) ? "Y" : "N");
       break;
 
     case SQL_PROCEDURES:
@@ -2112,7 +2191,7 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_DEFAULT_TXN_ISOLATION:
-      intres = SQL_TXN_REPEATABLE_READ;		/* SQL_TXN_SERIALIZABLE; */
+      intres = SQL_TXN_REPEATABLE_READ;	/* SQL_TXN_SERIALIZABLE; */
       break;
 
     case SQL_EXPRESSIONS_IN_ORDERBY:	/* E.g. ORDER BY abs(A) */
@@ -2123,9 +2202,17 @@ virtodbc__SQLGetInfo (
       is_short = 1;
       switch (dbc->con_db_casemode)
 	{
-	  case 0: shortres = SQL_IC_SENSITIVE; break;
-	  case 1: shortres = SQL_IC_UPPER; break;
-	  case 2: shortres = SQL_IC_MIXED; break;
+	case 0:
+	  shortres = SQL_IC_SENSITIVE;
+	  break;
+
+	case 1:
+	  shortres = SQL_IC_UPPER;
+	  break;
+
+	case 2:
+	  shortres = SQL_IC_MIXED;
+	  break;
 	}
       break;
 
@@ -2182,10 +2269,16 @@ virtodbc__SQLGetInfo (
 
 #ifdef SQL_OJ_CAPABILITIES
     case SQL_OJ_CAPABILITIES:	/* Constants SQL_OJ_* ??? */
-      intres = SQL_OJ_LEFT | SQL_OJ_RIGHT | SQL_OJ_INNER | SQL_OJ_NESTED
-	  | SQL_OJ_NOT_ORDERED | SQL_OJ_ALL_COMPARISON_OPS;
+      intres =
+	   SQL_OJ_LEFT |
+	  SQL_OJ_RIGHT |
+	  SQL_OJ_INNER |
+	  SQL_OJ_NESTED |
+	  SQL_OJ_NOT_ORDERED |
+	  SQL_OJ_ALL_COMPARISON_OPS;
       break;
 #endif
+
     case SQL_OWNER_TERM:
       strres = "owner";
       break;
@@ -2203,11 +2296,18 @@ virtodbc__SQLGetInfo (
       break;			/* For example, "database" or "directory" */
 
     case SQL_SCROLL_CONCURRENCY:
-      intres = SQL_SCCO_READ_ONLY | SQL_SCCO_LOCK | SQL_SCCO_OPT_ROWVER;
+      intres =
+	  SQL_SCCO_READ_ONLY |
+	  SQL_SCCO_LOCK |
+	  SQL_SCCO_OPT_ROWVER;
       break;
 
     case SQL_SCROLL_OPTIONS:
-	  intres = SQL_SO_FORWARD_ONLY | SQL_SO_STATIC | SQL_SO_KEYSET_DRIVEN | SQL_SO_DYNAMIC;
+      intres =
+	  SQL_SO_FORWARD_ONLY |
+	  SQL_SO_STATIC |
+	  SQL_SO_KEYSET_DRIVEN |
+	  SQL_SO_DYNAMIC;
       break;
 
     case SQL_TABLE_TERM:
@@ -2221,11 +2321,13 @@ virtodbc__SQLGetInfo (
 
     case SQL_USER_NAME:
       strres = (char *) dbc->con_user;
-      strupr(strres);
+      strupr (strres);
       break;
 
     case SQL_CONVERT_FUNCTIONS:
-      intres = SQL_FN_CVT_CAST | SQL_FN_CVT_CONVERT;
+      intres =
+	   SQL_FN_CVT_CAST |
+	  SQL_FN_CVT_CONVERT;
       break;
 
     case SQL_CONVERT_BIT:
@@ -2285,8 +2387,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WVARCHAR |
 	  SQL_CVT_WLONGVARCHAR |*/
 #endif
-	  SQL_CVT_VARCHAR
-	  ;
+	  SQL_CVT_VARCHAR;
       break;
 
     case SQL_CONVERT_VARCHAR:
@@ -2315,8 +2416,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WVARCHAR |
 /*	  SQL_CVT_WLONGVARCHAR |*/
 #endif
-	  SQL_CVT_VARCHAR
-	  ;
+	  SQL_CVT_VARCHAR;
       break;
 
     case SQL_CONVERT_TIME:
@@ -2346,8 +2446,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WVARCHAR |
 /*	  SQL_CVT_WLONGVARCHAR |*/
 #endif
-	  SQL_CVT_VARCHAR
-	  ;
+	  SQL_CVT_VARCHAR;
       break;
 
     case SQL_CONVERT_DECIMAL:
@@ -2376,8 +2475,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WVARCHAR |
 /*	  SQL_CVT_WLONGVARCHAR |*/
 #endif
-	  SQL_CVT_VARCHAR
-	  ;
+	  SQL_CVT_VARCHAR;
       break;
 
     case SQL_CONVERT_DOUBLE:
@@ -2407,8 +2505,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WVARCHAR |
 /*	  SQL_CVT_WLONGVARCHAR |*/
 #endif
-	  SQL_CVT_VARCHAR
-	  ;
+	  SQL_CVT_VARCHAR;
       break;
 
     case SQL_CONVERT_INTEGER:
@@ -2437,8 +2534,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WVARCHAR |
 /*	  SQL_CVT_WLONGVARCHAR |*/
 #endif
-	  SQL_CVT_VARCHAR
-	  ;
+	  SQL_CVT_VARCHAR;
       break;
 
     case SQL_CONVERT_LONGVARBINARY:
@@ -2466,8 +2562,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WVARCHAR |
 /*	  SQL_CVT_WLONGVARCHAR |*/
 #endif
-	  SQL_CVT_VARCHAR
-	  ;
+	  SQL_CVT_VARCHAR;
       break;
 
     case SQL_CONVERT_LONGVARCHAR:
@@ -2495,8 +2590,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WVARCHAR |
 /*	  SQL_CVT_WLONGVARCHAR |*/
 #endif
-	  SQL_CVT_VARCHAR
-	  ;
+	  SQL_CVT_VARCHAR;
       break;
 
 #if (ODBCVER >= 0x0300)
@@ -2523,8 +2617,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WCHAR |
 	  SQL_CVT_WVARCHAR |
 /*	  SQL_CVT_WLONGVARCHAR |*/
-	  SQL_CVT_VARCHAR
-	  ;
+	  SQL_CVT_VARCHAR;
 
     case SQL_CONVERT_WLONGVARCHAR:
       intres =
@@ -2549,89 +2642,97 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WCHAR |
 	  SQL_CVT_WVARCHAR |
 	  SQL_CVT_WLONGVARCHAR |
-	  SQL_CVT_VARCHAR
-	  ;
+	  SQL_CVT_VARCHAR;
 #endif
 
     case SQL_NUMERIC_FUNCTIONS:
       intres =
-	SQL_FN_NUM_ABS
-	| SQL_FN_NUM_MOD
-	| SQL_FN_NUM_SIGN
-	| SQL_FN_NUM_ACOS
-	| SQL_FN_NUM_ASIN
-	| SQL_FN_NUM_ATAN
-	| SQL_FN_NUM_ATAN2
-	| SQL_FN_NUM_CEILING
-	| SQL_FN_NUM_COS
-	| SQL_FN_NUM_COT
-	| SQL_FN_NUM_EXP
-	| SQL_FN_NUM_FLOOR
-	| SQL_FN_NUM_LOG
-	| SQL_FN_NUM_SIN
-	| SQL_FN_NUM_SQRT
-	| SQL_FN_NUM_TAN
-	| SQL_FN_NUM_PI
-	| SQL_FN_NUM_RAND
-	| SQL_FN_NUM_DEGREES
-	| SQL_FN_NUM_LOG10
-	| SQL_FN_NUM_POWER
-	| SQL_FN_NUM_RADIANS
-	| SQL_FN_NUM_ROUND
-	| SQL_FN_NUM_TRUNCATE;
+	  SQL_FN_NUM_ABS |
+	  SQL_FN_NUM_MOD |
+	  SQL_FN_NUM_SIGN |
+	  SQL_FN_NUM_ACOS |
+	  SQL_FN_NUM_ASIN |
+	  SQL_FN_NUM_ATAN |
+	  SQL_FN_NUM_ATAN2 |
+	  SQL_FN_NUM_CEILING |
+	  SQL_FN_NUM_COS |
+	  SQL_FN_NUM_COT |
+	  SQL_FN_NUM_EXP |
+	  SQL_FN_NUM_FLOOR |
+	  SQL_FN_NUM_LOG |
+	  SQL_FN_NUM_SIN |
+	  SQL_FN_NUM_SQRT |
+	  SQL_FN_NUM_TAN |
+	  SQL_FN_NUM_PI |
+	  SQL_FN_NUM_RAND |
+	  SQL_FN_NUM_DEGREES |
+	  SQL_FN_NUM_LOG10 |
+	  SQL_FN_NUM_POWER |
+	  SQL_FN_NUM_RADIANS |
+	  SQL_FN_NUM_ROUND |
+	  SQL_FN_NUM_TRUNCATE;
       break;
 
     case SQL_STRING_FUNCTIONS:
       intres =
-	SQL_FN_STR_CONCAT
-	| SQL_FN_STR_LEFT
-	| SQL_FN_STR_LTRIM
-	| SQL_FN_STR_LENGTH
-	| SQL_FN_STR_LCASE
-	| SQL_FN_STR_REPEAT
-	| SQL_FN_STR_RIGHT
-	| SQL_FN_STR_RTRIM
-	| SQL_FN_STR_SUBSTRING
-	| SQL_FN_STR_UCASE
-	| SQL_FN_STR_ASCII
-	| SQL_FN_STR_CHAR	/* Actually CHR, as CHAR is reserved word. */
-	| SQL_FN_STR_SPACE
-	| SQL_FN_STR_POSITION
-	| SQL_FN_STR_LOCATE | SQL_FN_STR_LOCATE_2;
+	  SQL_FN_STR_CONCAT |
+	  SQL_FN_STR_LEFT |
+	  SQL_FN_STR_LTRIM |
+	  SQL_FN_STR_LENGTH |
+	  SQL_FN_STR_LCASE |
+	  SQL_FN_STR_REPEAT |
+	  SQL_FN_STR_RIGHT |
+	  SQL_FN_STR_RTRIM |
+	  SQL_FN_STR_SUBSTRING |
+	  SQL_FN_STR_UCASE |
+	  SQL_FN_STR_ASCII |
+	  SQL_FN_STR_CHAR |	/* Actually CHR, as CHAR is reserved word. */
+	  SQL_FN_STR_SPACE |
+	  SQL_FN_STR_POSITION |
+	  SQL_FN_STR_LOCATE |
+	  SQL_FN_STR_LOCATE_2;
       break;
 
-    /* The following are still unimplemented (not in sqlbif.c)
-      SQL_FN_STR_INSERT | SQL_FN_STR_REPLACE
-      And the following of (ODBCVER >= 0x0200)
-      SQL_FN_STR_DIFFERENCE | SQL_FN_STR_SOUNDEX */
+      /* The following are still unimplemented (not in sqlbif.c)
+         SQL_FN_STR_INSERT | SQL_FN_STR_REPLACE
+         And the following of (ODBCVER >= 0x0200)
+         SQL_FN_STR_DIFFERENCE | SQL_FN_STR_SOUNDEX */
+
     case SQL_SYSTEM_FUNCTIONS:
-      intres = SQL_FN_SYS_USERNAME | SQL_FN_SYS_DBNAME | SQL_FN_SYS_IFNULL;
+      intres =
+	  SQL_FN_SYS_USERNAME |
+	  SQL_FN_SYS_DBNAME |
+	  SQL_FN_SYS_IFNULL;
       break;
 
     case SQL_TIMEDATE_FUNCTIONS:
       intres =
-	SQL_FN_TD_NOW
-	| SQL_FN_TD_CURDATE
-	| SQL_FN_TD_DAYOFMONTH
-	| SQL_FN_TD_DAYOFWEEK
-	| SQL_FN_TD_DAYOFYEAR
-	| SQL_FN_TD_MONTH
-	| SQL_FN_TD_QUARTER
-	| SQL_FN_TD_WEEK
-	| SQL_FN_TD_YEAR
-	| SQL_FN_TD_CURTIME
-	| SQL_FN_TD_HOUR
-	| SQL_FN_TD_MINUTE
-	| SQL_FN_TD_SECOND
-	| SQL_FN_TD_DAYNAME
-	| SQL_FN_TD_MONTHNAME
-	| SQL_FN_TD_TIMESTAMPADD
-	| SQL_FN_TD_TIMESTAMPDIFF
-	| SQL_FN_TD_EXTRACT;
+	  SQL_FN_TD_NOW |
+	  SQL_FN_TD_CURDATE |
+	  SQL_FN_TD_DAYOFMONTH |
+	  SQL_FN_TD_DAYOFWEEK |
+	  SQL_FN_TD_DAYOFYEAR |
+	  SQL_FN_TD_MONTH |
+	  SQL_FN_TD_QUARTER |
+	  SQL_FN_TD_WEEK |
+	  SQL_FN_TD_YEAR |
+	  SQL_FN_TD_CURTIME |
+	  SQL_FN_TD_HOUR |
+	  SQL_FN_TD_MINUTE |
+	  SQL_FN_TD_SECOND |
+	  SQL_FN_TD_DAYNAME |
+	  SQL_FN_TD_MONTHNAME |
+	  SQL_FN_TD_TIMESTAMPADD |
+	  SQL_FN_TD_TIMESTAMPDIFF |
+	  SQL_FN_TD_EXTRACT;
       break;
 
     case SQL_TXN_ISOLATION_OPTION:
-      intres = SQL_TXN_READ_UNCOMMITTED | SQL_TXN_REPEATABLE_READ | SQL_TXN_SERIALIZABLE | SQL_TXN_READ_COMMITTED;
+      intres =
+	  SQL_TXN_READ_UNCOMMITTED |
+	  SQL_TXN_REPEATABLE_READ |
+	  SQL_TXN_SERIALIZABLE |
+	  SQL_TXN_READ_COMMITTED;
       /* SQL_TXN_READ_UNCOMMITTED|SQL_TXN_READ_COMMITTED|SQL_TXN_VERSIONING */
       break;
 
@@ -2669,36 +2770,56 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_LOCK_TYPES:	/* SQLSetPos is not actually implemented. */
-      intres = SQL_LCK_NO_CHANGE | SQL_LCK_EXCLUSIVE | SQL_LCK_UNLOCK;
+      intres =
+	  SQL_LCK_NO_CHANGE |
+	  SQL_LCK_EXCLUSIVE |
+	  SQL_LCK_UNLOCK;
       break;
 
     case SQL_POS_OPERATIONS:
       intres =
-	SQL_POS_POSITION | SQL_POS_REFRESH | SQL_POS_UPDATE | SQL_POS_DELETE | SQL_POS_ADD;
+	  SQL_POS_POSITION |
+	  SQL_POS_REFRESH |
+	  SQL_POS_UPDATE |
+	  SQL_POS_DELETE |
+	  SQL_POS_ADD;
       break;
 
     case SQL_POSITIONED_STATEMENTS:
-      intres = SQL_PS_POSITIONED_DELETE
-	| SQL_PS_POSITIONED_UPDATE
+      intres =
+	  SQL_PS_POSITIONED_DELETE |
+	  SQL_PS_POSITIONED_UPDATE
 /*      | SQL_PS_SELECT_FOR_UPDATE */ ;
       /* The last one is commented out because otherwise JDBC Tests harness
-	generates statements like following which have not been implemented
-	in Kubl:
-	select * from ResultSetCursor for update of val */
+         generates statements like following which have not been implemented
+         in Kubl:
+         select * from ResultSetCursor for update of val */
       break;
 
     case SQL_GETDATA_EXTENSIONS:
-      intres = SQL_GD_ANY_COLUMN | SQL_GD_ANY_ORDER | SQL_GD_BLOCK | SQL_GD_BOUND;	/* CHECK THIS! */
+      intres =
+	  SQL_GD_ANY_COLUMN |
+	  SQL_GD_ANY_ORDER |
+	  SQL_GD_BLOCK |
+	  SQL_GD_BOUND;	/* CHECK THIS! */
       break;
 
     case SQL_BOOKMARK_PERSISTENCE:
-      intres = SQL_BP_CLOSE | SQL_BP_DELETE | SQL_BP_UPDATE
-	  | SQL_BP_TRANSACTION | SQL_BP_SCROLL | SQL_BP_OTHER_HSTMT;
+      intres =
+	  SQL_BP_CLOSE |
+	  SQL_BP_DELETE |
+	  SQL_BP_UPDATE |
+	  SQL_BP_TRANSACTION |
+	  SQL_BP_SCROLL |
+	  SQL_BP_OTHER_HSTMT;
 
       break;
 
     case SQL_STATIC_SENSITIVITY:
-      intres = SQL_SS_ADDITIONS | SQL_SS_DELETIONS | SQL_SS_UPDATES;
+      intres =
+	  SQL_SS_ADDITIONS |
+	  SQL_SS_DELETIONS |
+	  SQL_SS_UPDATES;
       break;
 
     case SQL_FILE_USAGE:
@@ -2726,7 +2847,7 @@ virtodbc__SQLGetInfo (
 
     case SQL_KEYWORDS:
       /* A comma separated list of all a database's SQL keywords that are NOT
-	also SQL92 keywords. */
+         also SQL92 keywords. */
       strres = "CHAR,INT,LONG,OBJECT_ID,REPLACING,SMALLINT,SOFT,VALUES";
       break;
 
@@ -2736,13 +2857,17 @@ virtodbc__SQLGetInfo (
 
     case SQL_OWNER_USAGE:
       /* Actually no effect, but at least doesn't generate syntax error. */
-      intres = SQL_OU_DML_STATEMENTS | SQL_OU_PRIVILEGE_DEFINITION;
+      intres =
+	  SQL_OU_DML_STATEMENTS |
+	  SQL_OU_PRIVILEGE_DEFINITION;
       break;
 
     case SQL_QUALIFIER_USAGE:
       /* Actually no effect, but at least doesn't generate syntax error.
-	 Owner must be present too. E.g. select * from muu.kuu.luu */
-      intres = SQL_QU_DML_STATEMENTS | SQL_QU_PRIVILEGE_DEFINITION;
+         Owner must be present too. E.g. select * from muu.kuu.luu */
+      intres =
+	  SQL_QU_DML_STATEMENTS |
+	  SQL_QU_PRIVILEGE_DEFINITION;
       break;
 
     case SQL_SPECIAL_CHARACTERS:
@@ -2750,8 +2875,12 @@ virtodbc__SQLGetInfo (
       break;
 
     case SQL_SUBQUERIES:
-      intres = SQL_SQ_EXISTS | SQL_SQ_COMPARISON | SQL_SQ_QUANTIFIED |
-	SQL_SQ_IN | SQL_SQ_CORRELATED_SUBQUERIES;/* Is the last one true? */
+      intres =
+	  SQL_SQ_EXISTS |
+	  SQL_SQ_COMPARISON |
+	  SQL_SQ_QUANTIFIED |
+	  SQL_SQ_IN |
+	  SQL_SQ_CORRELATED_SUBQUERIES;	/* Is the last one true? */
       break;
 
     case SQL_UNION:
@@ -2812,24 +2941,26 @@ virtodbc__SQLGetInfo (
     case SQL_MAX_CHAR_LITERAL_LEN:
       /* Depends on the length of whole statement? */
       intres = KUBL_ARBITRARY_MAX_VALUE1;
-      break;		/* Was 2000, but can be longer, e.g. for blobs. */
+      break;			/* Was 2000, but can be longer, e.g. for blobs. */
 
     case SQL_TIMEDATE_ADD_INTERVALS:
-      intres = SQL_FN_TSI_SECOND
-	  | SQL_FN_TSI_MINUTE
-	  | SQL_FN_TSI_HOUR
-	  | SQL_FN_TSI_DAY
-	  | SQL_FN_TSI_MONTH
-	  | SQL_FN_TSI_YEAR;
+      intres =
+	  SQL_FN_TSI_SECOND |
+	  SQL_FN_TSI_MINUTE |
+	  SQL_FN_TSI_HOUR |
+	  SQL_FN_TSI_DAY |
+	  SQL_FN_TSI_MONTH |
+	  SQL_FN_TSI_YEAR;
       break;
 
     case SQL_TIMEDATE_DIFF_INTERVALS:
-      intres = SQL_FN_TSI_SECOND
-	  | SQL_FN_TSI_MINUTE
-	  | SQL_FN_TSI_HOUR
-	  | SQL_FN_TSI_DAY
-	  | SQL_FN_TSI_MONTH
-	  | SQL_FN_TSI_YEAR;
+      intres =
+	  SQL_FN_TSI_SECOND |
+	  SQL_FN_TSI_MINUTE |
+	  SQL_FN_TSI_HOUR |
+	  SQL_FN_TSI_DAY |
+	  SQL_FN_TSI_MONTH |
+	  SQL_FN_TSI_YEAR;
       break;
 
     case SQL_NEED_LONG_DATA_LEN:
@@ -2838,7 +2969,7 @@ virtodbc__SQLGetInfo (
 
     case SQL_MAX_BINARY_LITERAL_LEN:	/* Currently we have no */
       intres = KUBL_ARBITRARY_MAX_VALUE1;
-      break;		/* binary literals like 0xDEADBEEF (intres = 8) */
+      break;			/* binary literals like 0xDEADBEEF (intres = 8) */
 
     case SQL_LIKE_ESCAPE_CLAUSE:
       strres = "Y";
@@ -2848,339 +2979,368 @@ virtodbc__SQLGetInfo (
       is_short = 1;
       shortres = SQL_QL_START;
       break;			/* Was: goto na; */
+
 /************** ODBC 3 additions ***********************/
 #if (ODBCVER >= 0x0300)
-	case SQL_ACTIVE_ENVIRONMENTS:
-	  is_short = 1;
-	  shortres = 0;
-	  break;
+    case SQL_ACTIVE_ENVIRONMENTS:
+      is_short = 1;
+      shortres = 0;
+      break;
 
-	case SQL_AGGREGATE_FUNCTIONS:
-	  intres = SQL_AF_ALL
-				| SQL_AF_AVG
-				| SQL_AF_COUNT
-				| SQL_AF_DISTINCT
-				| SQL_AF_MAX
-				| SQL_AF_MIN
-				| SQL_AF_SUM;
-	  break;
+    case SQL_AGGREGATE_FUNCTIONS:
+      intres =
+	  SQL_AF_ALL |
+	  SQL_AF_AVG |
+	  SQL_AF_COUNT |
+	  SQL_AF_DISTINCT |
+	  SQL_AF_MAX |
+	  SQL_AF_MIN |
+	  SQL_AF_SUM;
+      break;
 
-	case SQL_ALTER_DOMAIN:
-		intres = 0;
-		break;
+    case SQL_ALTER_DOMAIN:
+      intres = 0;
+      break;
 
-	case SQL_ASYNC_MODE:
-		intres = SQL_AM_NONE;
-		break;
+    case SQL_ASYNC_MODE:
+      intres = SQL_AM_NONE;
+      break;
 
-	case SQL_BATCH_ROW_COUNT:
+    case SQL_BATCH_ROW_COUNT:
 /*		intres = SQL_BRC_PROCEDURES; */
-		intres = 0;
-		break;
+      intres = 0;
+      break;
 
-	case SQL_BATCH_SUPPORT:
+    case SQL_BATCH_SUPPORT:
 /*		intres = SQL_BS_SELECT_PROC | SQL_BS_ROW_COUNT_PROC;*/
-		intres = 0;
-		break;
+      intres = 0;
+      break;
 
-	case SQL_CATALOG_NAME:
-		strres = "Y";
-		break;
+    case SQL_CATALOG_NAME:
+      strres = "Y";
+      break;
 
-	case SQL_COLLATION_SEQ:
-		strres = "";
-		break;
+    case SQL_COLLATION_SEQ:
+      strres = "";
+      break;
 
-	case SQL_CREATE_ASSERTION:
-		intres = 0;
-		break;
+    case SQL_CREATE_ASSERTION:
+      intres = 0;
+      break;
 
-	case SQL_CREATE_CHARACTER_SET:
-		intres = 0;
-		break;
+    case SQL_CREATE_CHARACTER_SET:
+      intres = 0;
+      break;
 
-	case SQL_CREATE_COLLATION:
-		intres = 0;
-		break;
+    case SQL_CREATE_COLLATION:
+      intres = 0;
+      break;
 
-	case SQL_CREATE_DOMAIN:
-		intres = 0;
-		break;
+    case SQL_CREATE_DOMAIN:
+      intres = 0;
+      break;
 
-	case SQL_CREATE_SCHEMA:
-		intres = 0;
-		break;
+    case SQL_CREATE_SCHEMA:
+      intres = 0;
+      break;
 
-	case SQL_CREATE_TABLE:
-		intres = SQL_CT_CREATE_TABLE |
-				SQL_CT_COMMIT_DELETE |
-				SQL_CT_COLUMN_DEFAULT |
-				SQL_CT_COLUMN_CONSTRAINT;
-		break;
+    case SQL_CREATE_TABLE:
+      intres =
+	  SQL_CT_CREATE_TABLE |
+	  SQL_CT_COMMIT_DELETE |
+	  SQL_CT_COLUMN_DEFAULT |
+	  SQL_CT_COLUMN_CONSTRAINT;
+      break;
 
-	case SQL_CREATE_TRANSLATION:
-		intres = 0;
-		break;
+    case SQL_CREATE_TRANSLATION:
+      intres = 0;
+      break;
 
-	case SQL_CREATE_VIEW:
-		intres = SQL_CV_CREATE_VIEW |SQL_CV_CHECK_OPTION;
-		break;
+    case SQL_CREATE_VIEW:
+      intres =
+	  SQL_CV_CREATE_VIEW |
+	  SQL_CV_CHECK_OPTION;
+      break;
 
 /*	case SQL_CURSOR_ROLLBACK_SQL_CURSOR_SENSITIVITY:
 		intres = SQL_UNSPECIFIED;
 		break;
 */
-	case SQL_DATETIME_LITERALS:
-		intres = SQL_DL_SQL92_DATE
-				| SQL_DL_SQL92_TIME
-				| SQL_DL_SQL92_TIMESTAMP;
-		break;
+    case SQL_DATETIME_LITERALS:
+      intres =
+	  SQL_DL_SQL92_DATE |
+	  SQL_DL_SQL92_TIME |
+	  SQL_DL_SQL92_TIMESTAMP;
+      break;
 
-	case SQL_DDL_INDEX:
-		intres = SQL_DI_CREATE_INDEX | SQL_DI_DROP_INDEX;
-		break;
+    case SQL_DDL_INDEX:
+      intres =
+	  SQL_DI_CREATE_INDEX |
+	  SQL_DI_DROP_INDEX;
+      break;
 
-	case SQL_DESCRIBE_PARAMETER:
-		strres = "N";
-		break;
+    case SQL_DESCRIBE_PARAMETER:
+      strres = "N";
+      break;
 
-	case SQL_DROP_ASSERTION:
-		intres = 0;
-		break;
+    case SQL_DROP_ASSERTION:
+      intres = 0;
+      break;
 
-	case SQL_DROP_CHARACTER_SET:
-		intres = 0;
-		break;
+    case SQL_DROP_CHARACTER_SET:
+      intres = 0;
+      break;
 
-	case SQL_DROP_COLLATION:
-		intres = 0;
-		break;
+    case SQL_DROP_COLLATION:
+      intres = 0;
+      break;
 
-	case SQL_DROP_DOMAIN:
-		intres = 0;
-		break;
+    case SQL_DROP_DOMAIN:
+      intres = 0;
+      break;
 
-	case SQL_DROP_SCHEMA:
-		intres = 0;
-		break;
+    case SQL_DROP_SCHEMA:
+      intres = 0;
+      break;
 
-	case SQL_DROP_TABLE:
-		intres = SQL_DT_DROP_TABLE;
-		break;
+    case SQL_DROP_TABLE:
+      intres = SQL_DT_DROP_TABLE;
+      break;
 
-	case SQL_DROP_TRANSLATION:
-		intres = 0;
-		break;
+    case SQL_DROP_TRANSLATION:
+      intres = 0;
+      break;
 
-	case SQL_DROP_VIEW:
-		intres = SQL_DV_DROP_VIEW;
-		break;
+    case SQL_DROP_VIEW:
+      intres = SQL_DV_DROP_VIEW;
+      break;
 
-	case SQL_DYNAMIC_CURSOR_ATTRIBUTES1:
-		/* don't know */
-		intres = SQL_CA1_NEXT |
-				 SQL_CA1_ABSOLUTE |
-				 SQL_CA1_RELATIVE |
-				 SQL_CA1_BOOKMARK |
-				 SQL_CA1_LOCK_NO_CHANGE |
-				 SQL_CA1_POS_POSITION |
-				 SQL_CA1_POS_UPDATE |
-				 SQL_CA1_POS_DELETE |
-				 SQL_CA1_POS_REFRESH |
-				 SQL_CA1_BULK_ADD;
-		break;
+    case SQL_DYNAMIC_CURSOR_ATTRIBUTES1:
+      /* don't know */
+      intres =
+	  SQL_CA1_NEXT |
+	  SQL_CA1_ABSOLUTE |
+	  SQL_CA1_RELATIVE |
+	  SQL_CA1_BOOKMARK |
+	  SQL_CA1_LOCK_NO_CHANGE |
+	  SQL_CA1_POS_POSITION |
+	  SQL_CA1_POS_UPDATE |
+	  SQL_CA1_POS_DELETE |
+	  SQL_CA1_POS_REFRESH |
+	  SQL_CA1_BULK_ADD;
+      break;
 
-	case SQL_DYNAMIC_CURSOR_ATTRIBUTES2:
-		/* don't know */
-		intres = SQL_CA2_READ_ONLY_CONCURRENCY |
-				 SQL_CA2_OPT_VALUES_CONCURRENCY |
-				 SQL_CA2_SENSITIVITY_ADDITIONS |
-				 SQL_CA2_SENSITIVITY_DELETIONS |
-				 SQL_CA2_SENSITIVITY_UPDATES |
-				 SQL_CA2_SIMULATE_UNIQUE /*|
-				 SQL_CA2_CRC_EXACT*/;
-		break;
+    case SQL_DYNAMIC_CURSOR_ATTRIBUTES2:
+      /* don't know */
+      intres =
+	  SQL_CA2_READ_ONLY_CONCURRENCY |
+	  SQL_CA2_OPT_VALUES_CONCURRENCY |
+	  SQL_CA2_SENSITIVITY_ADDITIONS |
+	  SQL_CA2_SENSITIVITY_DELETIONS |
+	  SQL_CA2_SENSITIVITY_UPDATES |
+	  SQL_CA2_SIMULATE_UNIQUE;
+      /* SQL_CA2_CRC_EXACT */
+      break;
 
-	case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1:
-		intres = SQL_CA1_NEXT |
-				 SQL_CA1_POS_POSITION;
-		break;
+    case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1:
+      intres =
+	  SQL_CA1_NEXT |
+	  SQL_CA1_POS_POSITION;
+      break;
 
-	case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2:
-		intres = SQL_CA2_READ_ONLY_CONCURRENCY |
-				 SQL_CA2_OPT_VALUES_CONCURRENCY |
-				 SQL_CA2_SENSITIVITY_ADDITIONS |
-				 SQL_CA2_SENSITIVITY_DELETIONS |
-				 SQL_CA2_SENSITIVITY_UPDATES |
-				 SQL_CA2_SIMULATE_UNIQUE;
-		break;
+    case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2:
+      intres =
+	  SQL_CA2_READ_ONLY_CONCURRENCY |
+	  SQL_CA2_OPT_VALUES_CONCURRENCY |
+	  SQL_CA2_SENSITIVITY_ADDITIONS |
+	  SQL_CA2_SENSITIVITY_DELETIONS |
+	  SQL_CA2_SENSITIVITY_UPDATES |
+	  SQL_CA2_SIMULATE_UNIQUE;
+      break;
 
-	case SQL_INDEX_KEYWORDS:
-		intres = SQL_IK_ALL;
-		break;
+    case SQL_INDEX_KEYWORDS:
+      intres = SQL_IK_ALL;
+      break;
 
-	case SQL_INFO_SCHEMA_VIEWS:
-		/* don't know */
-		intres = 0;
-		break;
+    case SQL_INFO_SCHEMA_VIEWS:
+      /* don't know */
+      intres = 0;
+      break;
 
-	case SQL_INSERT_STATEMENT:
-		/* don't know */
-		intres = 0;
-		break;
+    case SQL_INSERT_STATEMENT:
+      /* don't know */
+      intres = 0;
+      break;
 
-	case SQL_KEYSET_CURSOR_ATTRIBUTES1:
-		/* don't know */
-		intres = SQL_CA1_NEXT |
-				 SQL_CA1_ABSOLUTE |
-				 SQL_CA1_RELATIVE |
-				 SQL_CA1_BOOKMARK |
-				 SQL_CA1_LOCK_NO_CHANGE |
-				 SQL_CA1_POS_POSITION |
-				 SQL_CA1_POS_UPDATE |
-				 SQL_CA1_POS_DELETE |
-				 SQL_CA1_POS_REFRESH |
-				 SQL_CA1_BULK_ADD;
-		break;
+    case SQL_KEYSET_CURSOR_ATTRIBUTES1:
+      /* don't know */
+      intres =
+	  SQL_CA1_NEXT |
+	  SQL_CA1_ABSOLUTE |
+	  SQL_CA1_RELATIVE |
+	  SQL_CA1_BOOKMARK |
+	  SQL_CA1_LOCK_NO_CHANGE |
+	  SQL_CA1_POS_POSITION |
+	  SQL_CA1_POS_UPDATE |
+	  SQL_CA1_POS_DELETE |
+	  SQL_CA1_POS_REFRESH |
+	  SQL_CA1_BULK_ADD;
+      break;
 
-	case SQL_KEYSET_CURSOR_ATTRIBUTES2:
-		/* don't know */
-		intres = SQL_CA2_READ_ONLY_CONCURRENCY |
-				SQL_CA2_LOCK_CONCURRENCY |
-				SQL_CA2_OPT_VALUES_CONCURRENCY |
-				SQL_CA2_SENSITIVITY_ADDITIONS |
-				SQL_CA2_SENSITIVITY_DELETIONS |
-				SQL_CA2_SENSITIVITY_UPDATES |
-				SQL_CA2_SIMULATE_UNIQUE |
-				SQL_CA2_CRC_EXACT;
-		break;
+    case SQL_KEYSET_CURSOR_ATTRIBUTES2:
+      /* don't know */
+      intres =
+	  SQL_CA2_READ_ONLY_CONCURRENCY |
+	  SQL_CA2_LOCK_CONCURRENCY |
+	  SQL_CA2_OPT_VALUES_CONCURRENCY |
+	  SQL_CA2_SENSITIVITY_ADDITIONS |
+	  SQL_CA2_SENSITIVITY_DELETIONS |
+	  SQL_CA2_SENSITIVITY_UPDATES |
+	  SQL_CA2_SIMULATE_UNIQUE |
+	  SQL_CA2_CRC_EXACT;
+      break;
 
-	case SQL_MAX_ASYNC_CONCURRENT_STATEMENTS:
-		intres = 0;
-		break;
+    case SQL_MAX_ASYNC_CONCURRENT_STATEMENTS:
+      intres = 0;
+      break;
 
-	case SQL_MAX_IDENTIFIER_LEN:
-		is_short = 1;
-		intres = 128;
-		break;
+    case SQL_MAX_IDENTIFIER_LEN:
+      is_short = 1;
+      intres = 128;
+      break;
 
 /*	case SQL_MAX_ROW_SIZE_INCLUDES_LONG:
 		strres = "N";
 		break;
 */
-	case SQL_ODBC_INTERFACE_CONFORMANCE:
-		intres = SQL_OIC_CORE;
-		break;
 
-	case SQL_PARAM_ARRAY_ROW_COUNTS:
-		/* don't know */
-		intres = SQL_PARC_BATCH;
-		break;
+    case SQL_ODBC_INTERFACE_CONFORMANCE:
+      intres = SQL_OIC_CORE;
+      break;
 
-	case SQL_PARAM_ARRAY_SELECTS:
-		/* don't know */
-		intres = SQL_PAS_BATCH;
-		break;
+    case SQL_PARAM_ARRAY_ROW_COUNTS:
+      /* don't know */
+      intres = SQL_PARC_BATCH;
+      break;
 
-	case SQL_SQL_CONFORMANCE:
-		intres = SQL_SC_SQL92_ENTRY;
-		break;
+    case SQL_PARAM_ARRAY_SELECTS:
+      /* don't know */
+      intres = SQL_PAS_BATCH;
+      break;
 
-	case SQL_SQL92_DATETIME_FUNCTIONS:
-		intres = SQL_SDF_CURRENT_DATE
-				| SQL_SDF_CURRENT_TIME
-				| SQL_SDF_CURRENT_TIMESTAMP;
-		break;
+    case SQL_SQL_CONFORMANCE:
+      intres = SQL_SC_SQL92_ENTRY;
+      break;
 
-	case SQL_SQL92_FOREIGN_KEY_DELETE_RULE:
-		intres = SQL_SFKD_NO_ACTION;
-		break;
+    case SQL_SQL92_DATETIME_FUNCTIONS:
+      intres =
+	  SQL_SDF_CURRENT_DATE |
+	  SQL_SDF_CURRENT_TIME |
+	  SQL_SDF_CURRENT_TIMESTAMP;
+      break;
 
-	case SQL_SQL92_FOREIGN_KEY_UPDATE_RULE:
-		intres = SQL_SFKU_NO_ACTION;
-		break;
+    case SQL_SQL92_FOREIGN_KEY_DELETE_RULE:
+      intres = SQL_SFKD_NO_ACTION;
+      break;
 
-	case SQL_SQL92_GRANT:
-		intres = SQL_SG_DELETE_TABLE
-			| SQL_SG_INSERT_TABLE
-			| SQL_SG_REFERENCES_TABLE
-			| SQL_SG_REFERENCES_COLUMN
-			| SQL_SG_SELECT_TABLE
-			| SQL_SG_UPDATE_COLUMN
-			| SQL_SG_UPDATE_TABLE;
-		break;
+    case SQL_SQL92_FOREIGN_KEY_UPDATE_RULE:
+      intres = SQL_SFKU_NO_ACTION;
+      break;
 
-	case SQL_SQL92_NUMERIC_VALUE_FUNCTIONS:
-		/* don't know */
-		intres = 0;
-		break;
+    case SQL_SQL92_GRANT:
+      intres =
+	  SQL_SG_DELETE_TABLE |
+	  SQL_SG_INSERT_TABLE |
+	  SQL_SG_REFERENCES_TABLE |
+	  SQL_SG_REFERENCES_COLUMN |
+	  SQL_SG_SELECT_TABLE |
+	  SQL_SG_UPDATE_COLUMN |
+	  SQL_SG_UPDATE_TABLE;
+      break;
 
-	case SQL_SQL92_PREDICATES:
-		intres = SQL_SP_BETWEEN
-				| SQL_SP_COMPARISON
-				| SQL_SP_EXISTS
-				| SQL_SP_IN
-				| SQL_SP_ISNOTNULL
-				| SQL_SP_ISNULL
-				| SQL_SP_LIKE;
-		break;
+    case SQL_SQL92_NUMERIC_VALUE_FUNCTIONS:
+      /* don't know */
+      intres = 0;
+      break;
 
-	case SQL_SQL92_RELATIONAL_JOIN_OPERATORS:
-		/* don't know */
-		intres = 0;
-		break;
+    case SQL_SQL92_PREDICATES:
+      intres =
+	  SQL_SP_BETWEEN |
+	  SQL_SP_COMPARISON |
+	  SQL_SP_EXISTS |
+	  SQL_SP_IN |
+	  SQL_SP_ISNOTNULL |
+	  SQL_SP_ISNULL |
+	  SQL_SP_LIKE;
+      break;
 
-	case SQL_SQL92_REVOKE:
-		intres = 0;
-		break;
+    case SQL_SQL92_RELATIONAL_JOIN_OPERATORS:
+      /* don't know */
+      intres = 0;
+      break;
 
-	case SQL_SQL92_ROW_VALUE_CONSTRUCTOR:
-		intres = SQL_SRVC_VALUE_EXPRESSION | SQL_SRVC_NULL;
-		break;
+    case SQL_SQL92_REVOKE:
+      intres = 0;
+      break;
 
-	case SQL_SQL92_STRING_FUNCTIONS:
-		intres = SQL_SSF_SUBSTRING | SQL_SSF_LOWER | SQL_SSF_UPPER;
-		break;
+    case SQL_SQL92_ROW_VALUE_CONSTRUCTOR:
+      intres =
+	  SQL_SRVC_VALUE_EXPRESSION |
+	  SQL_SRVC_NULL;
+      break;
 
-	case SQL_SQL92_VALUE_EXPRESSIONS:
-		intres = SQL_SVE_CAST | SQL_SVE_CASE;
-		break;
+    case SQL_SQL92_STRING_FUNCTIONS:
+      intres =
+	  SQL_SSF_SUBSTRING |
+	  SQL_SSF_LOWER |
+	  SQL_SSF_UPPER;
+      break;
 
-	case SQL_STANDARD_CLI_CONFORMANCE:
-		intres = 0;
-		break;
+    case SQL_SQL92_VALUE_EXPRESSIONS:
+      intres =
+	  SQL_SVE_CAST |
+	  SQL_SVE_CASE;
+      break;
 
-	case SQL_STATIC_CURSOR_ATTRIBUTES1:
-		/* don't know */
-		intres = SQL_CA1_NEXT |
-				 SQL_CA1_ABSOLUTE |
-				 SQL_CA1_RELATIVE |
-				 SQL_CA1_BOOKMARK |
-				 SQL_CA1_LOCK_NO_CHANGE |
-				 SQL_CA1_POS_POSITION |
-				 SQL_CA1_POS_UPDATE |
-				 SQL_CA1_POS_DELETE |
-				 SQL_CA1_POS_REFRESH |
-				 SQL_CA1_BULK_ADD;
-		break;
+    case SQL_STANDARD_CLI_CONFORMANCE:
+      intres = 0;
+      break;
 
-	case SQL_STATIC_CURSOR_ATTRIBUTES2:
-		/* don't know */
-		intres = SQL_CA2_READ_ONLY_CONCURRENCY |
-				 SQL_CA2_OPT_VALUES_CONCURRENCY |
-				 SQL_CA2_SIMULATE_UNIQUE |
-				 SQL_CA2_CRC_EXACT;
-		break;
+    case SQL_STATIC_CURSOR_ATTRIBUTES1:
+      /* don't know */
+      intres =
+	  SQL_CA1_NEXT |
+	  SQL_CA1_ABSOLUTE |
+	  SQL_CA1_RELATIVE |
+	  SQL_CA1_BOOKMARK |
+	  SQL_CA1_LOCK_NO_CHANGE |
+	  SQL_CA1_POS_POSITION |
+	  SQL_CA1_POS_UPDATE |
+	  SQL_CA1_POS_DELETE |
+	  SQL_CA1_POS_REFRESH |
+	  SQL_CA1_BULK_ADD;
+      break;
 
-	case SQL_XOPEN_CLI_YEAR:
-		/* don't know */
-		strres = "";
-		break;
+    case SQL_STATIC_CURSOR_ATTRIBUTES2:
+      /* don't know */
+      intres =
+	  SQL_CA2_READ_ONLY_CONCURRENCY |
+	  SQL_CA2_OPT_VALUES_CONCURRENCY |
+	  SQL_CA2_SIMULATE_UNIQUE |
+	  SQL_CA2_CRC_EXACT;
+      break;
+
+    case SQL_XOPEN_CLI_YEAR:
+      /* don't know */
+      strres = "";
+      break;
 #endif
+
     default:
       goto na;
 
     }
+
   rc = SQL_SUCCESS;
   if (!strres && !is_short && cbInfoValueMax == 2)
     {
@@ -3192,10 +3352,13 @@ virtodbc__SQLGetInfo (
     {
       if (rgbInfoValue)
 	*(SQLUSMALLINT *) rgbInfoValue = shortres;
+
       if (pcbInfoValue)
 	*pcbInfoValue = 2;
+
       goto ret;
     }
+
   if (strres)
     {
       if (rgbInfoValue)
@@ -3203,24 +3366,28 @@ virtodbc__SQLGetInfo (
 	  if (cbInfoValueMax > 0)
 	    strncpy ((char *) rgbInfoValue, strres, cbInfoValueMax);
 	  /*
-	  if (cbInfoValueMax > 0)
-	    ((char *)rgbInfoValue)[cbInfoValueMax - 1] = '\0'; */
+	     if (cbInfoValueMax > 0)
+	     ((char *)rgbInfoValue)[cbInfoValueMax - 1] = '\0'; */
 	}
+
       if (pcbInfoValue)
 	{
 	  *pcbInfoValue = (SQLSMALLINT) strlen (strres);
 	}
+
       CHECK_SI_TRUNCATED (&dbc->con_error, cbInfoValueMax, strres);
     }
   else
     {
       if (rgbInfoValue)
 	*(SQLLEN *) rgbInfoValue = intres;
+
       if (pcbInfoValue)
 	*pcbInfoValue = 4;
     }
 
   goto ret;
+
 na:
   set_error (&dbc->con_error, "S1009", "CL048", "Information not available.");
   rc = SQL_ERROR;
@@ -3251,9 +3418,10 @@ SQLGetInfo (
 	SQLSMALLINT * pcbInfoValue)
 {
   CON (con, hdbc);
+
   switch (fInfoType)
     {
-      case SQL_DATABASE_NAME:
+    case SQL_DATABASE_NAME:
     case SQL_DATA_SOURCE_NAME:
     case SQL_DRIVER_NAME:
     case SQL_DRIVER_VER:
@@ -3291,21 +3459,21 @@ SQLGetInfo (
     case SQL_COLLATION_SEQ:
     case SQL_DESCRIBE_PARAMETER:
     case SQL_XOPEN_CLI_YEAR:
-	  {
-	    SQLRETURN rc;
-	    NDEFINE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, pcbInfoValue, con, SQLSMALLINT);
+      {
+	SQLRETURN rc;
+	NDEFINE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, pcbInfoValue, con, SQLSMALLINT);
 
-	    NMAKE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, con);
+	NMAKE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, con);
 
-	    rc = virtodbc__SQLGetInfo (hdbc, fInfoType, _rgbInfoValue, _cbInfoValueMax, _pcbInfoValue);
+	rc = virtodbc__SQLGetInfo (hdbc, fInfoType, _rgbInfoValue, _cbInfoValueMax, _pcbInfoValue);
 
-	    NSET_AND_FREE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, pcbInfoValue, con);
+	NSET_AND_FREE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, pcbInfoValue, con);
 
-	    return rc;
-	  }
+	return rc;
+      }
 
-      default:
-	  return virtodbc__SQLGetInfo (hdbc, fInfoType, rgbInfoValue, cbInfoValueMax, pcbInfoValue);
+    default:
+      return virtodbc__SQLGetInfo (hdbc, fInfoType, rgbInfoValue, cbInfoValueMax, pcbInfoValue);
     }
 }
 
@@ -3315,24 +3483,25 @@ SQLGetTypeInfo (
 	SQLHSTMT hstmt,
 	SQLSMALLINT fSqlType)
 {
-	return virtodbc__SQLGetTypeInfo(hstmt, fSqlType);
+  return virtodbc__SQLGetTypeInfo (hstmt, fSqlType);
 }
+
 
 SQLRETURN SQL_API
 virtodbc__SQLGetTypeInfo (
 	SQLHSTMT hstmt,
 	SQLSMALLINT fSqlType)
 {
-  STMT(stmt, hstmt);
+  STMT (stmt, hstmt);
   SQLLEN ii = fSqlType, iil = 4;
   SQLRETURN rc;
 
   virtodbc__SQLSetParam (hstmt, 1, SQL_C_LONG, SQL_INTEGER, 0, 0, &ii, &iil);
 
   if (stmt->stmt_connection->con_environment->env_odbc_version >= 3)
-	  rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) "DB.DBA.gettypeinfo3 (?, 3)", SQL_NTS);
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) "DB.DBA.gettypeinfo3 (?, 3)", SQL_NTS);
   else
-	  rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) "DB.DBA.gettypeinfo (?)", SQL_NTS);
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) "DB.DBA.gettypeinfo (?)", SQL_NTS);
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
 
   return rc;
@@ -3546,8 +3715,7 @@ virtodbc__SQLSpecialColumns (
   SQLLEN plen = SQL_NTS;
   SQLLEN cbqual = cbTableQualifier, cbown = cbTableOwner, cbtab = cbTableName;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szTableName[KUBL_IDENTIFIER_MAX_LENGTH];
+      _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH], _szTableName[KUBL_IDENTIFIER_MAX_LENGTH];
 
   if (is_empty_or_null (szTableQualifier, cbTableQualifier))
     {
@@ -3555,36 +3723,29 @@ virtodbc__SQLSpecialColumns (
       _szTableQualifier[0] = 0;
     }
   else
-    remove_search_escapes ((char *) szTableQualifier, _szTableQualifier,
-	sizeof (_szTableQualifier), &cbqual, cbTableQualifier);
+    remove_search_escapes ((char *) szTableQualifier, _szTableQualifier, sizeof (_szTableQualifier), &cbqual, cbTableQualifier);
+
   if (is_empty_or_null (szTableOwner, cbTableOwner))
     {
       szTableOwner = NULL;
       _szTableOwner[0] = 0;
     }
   else
-    remove_search_escapes ((char *) szTableOwner, _szTableOwner,
-	sizeof (_szTableOwner), &cbown, cbTableOwner);
+    remove_search_escapes ((char *) szTableOwner, _szTableOwner, sizeof (_szTableOwner), &cbown, cbTableOwner);
+
   if (is_empty_or_null (szTableName, cbTableName))
     {
       szTableName = NULL;
       _szTableName[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableName, _szTableName, sizeof (_szTableName),
-	&cbtab, cbTableName);
+    remove_search_escapes ((char *) szTableName, _szTableName, sizeof (_szTableName), &cbtab, cbTableName);
 
   DEFAULT_QUAL (stmt, cbqual);
 
-  virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent,
-	       szTableQualifier ? &cbqual : &plen);
-  virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableOwner ? (SQLCHAR *)_szTableOwner : percent,
-	       szTableOwner ? &cbown : &plen);
-  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableName ? (SQLCHAR *)_szTableName : percent,
-	       szTableName ? &cbtab : &plen);
+  virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableQualifier ? (SQLCHAR *) _szTableQualifier : percent, szTableQualifier ? &cbqual : &plen);
+  virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableOwner ? (SQLCHAR *) _szTableOwner : percent, szTableOwner ? &cbown : &plen);
+  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableName ? (SQLCHAR *) _szTableName : percent, szTableName ? &cbtab : &plen);
 
   if (SQL_ROWVER != fColType)
     {
@@ -3608,15 +3769,13 @@ virtodbc__SQLSpecialColumns (
       if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
 	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ?
-	     sql_special_columnsw1_casemode_2 :
-	     sql_special_columnsw1_casemode_0), SQL_NTS);
+		sql_special_columnsw1_casemode_2 : sql_special_columnsw1_casemode_0), SQL_NTS);
       else
 	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ?
-	     sql_special_columns1_casemode_2 :
-	     sql_special_columns1_casemode_0), SQL_NTS);
+		sql_special_columns1_casemode_2 : sql_special_columns1_casemode_0), SQL_NTS);
       /* With KP_NTH returns columns in the same order as they are in the
-      primary key. */
+         primary key. */
     }
   else
     {
@@ -3629,15 +3788,13 @@ virtodbc__SQLSpecialColumns (
       if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
 	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ?
-	     sql_special_columnsw2_casemode_2 :
-	     sql_special_columnsw2_casemode_0), SQL_NTS);
+		sql_special_columnsw2_casemode_2 : sql_special_columnsw2_casemode_0), SQL_NTS);
       else
 	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ?
-	     sql_special_columns2_casemode_2 :
-	     sql_special_columns2_casemode_0), SQL_NTS);
+		sql_special_columns2_casemode_2 : sql_special_columns2_casemode_0), SQL_NTS);
       /* With COL_ID returns columns in the same order as they were defined
-      with create table. Without it they would be in alphabetical order. */
+         with create table. Without it they would be in alphabetical order. */
     }
 
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
@@ -3671,10 +3828,7 @@ SQLSpecialColumns (
   NMAKE_INPUT_NARROW (TableName, stmt->stmt_connection);
 
   rc = virtodbc__SQLSpecialColumns (hstmt, fColType,
-      szTableQualifier, cbTableQualifier,
-      szTableOwner, cbTableOwner,
-      szTableName, cbTableName,
-      fScope, fNullable);
+      szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, fScope, fNullable);
 
   NFREE_INPUT_NARROW (TableQualifier);
   NFREE_INPUT_NARROW (TableOwner);
@@ -3682,6 +3836,7 @@ SQLSpecialColumns (
 
   return rc;
 }
+
 
 /*
    AK 17-JAN-1996 -- NOT THE FULL IMPLEMENTATION, BUT ENOUGH FOR DBDUMP
@@ -4053,8 +4208,7 @@ virtodbc__SQLStatistics (
   SQLLEN cb_uniques_only = 0;
   SQLLEN cbqual = cbTableQualifier, cbown = cbTableOwner, cbtab = cbTableName;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szTableName[KUBL_IDENTIFIER_MAX_LENGTH];
+      _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH], _szTableName[KUBL_IDENTIFIER_MAX_LENGTH];
 
   if (is_empty_or_null (szTableQualifier, cbTableQualifier))
     {
@@ -4062,57 +4216,40 @@ virtodbc__SQLStatistics (
       _szTableQualifier[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableQualifier, _szTableQualifier,
-	sizeof (_szTableQualifier), &cbqual, cbTableQualifier);
+    remove_search_escapes ((char *) szTableQualifier, _szTableQualifier, sizeof (_szTableQualifier), &cbqual, cbTableQualifier);
+
   if (is_empty_or_null (szTableOwner, cbTableOwner))
     {
       szTableOwner = NULL;
       _szTableOwner[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableOwner, _szTableOwner, sizeof (_szTableOwner),
-	&cbown, cbTableOwner);
+    remove_search_escapes ((char *) szTableOwner, _szTableOwner, sizeof (_szTableOwner), &cbown, cbTableOwner);
+
   if (is_empty_or_null (szTableName, cbTableName))
     {
       szTableName = NULL;
       _szTableName[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableName, _szTableName, sizeof (_szTableName),
-	&cbtab, cbTableName);
+    remove_search_escapes ((char *) szTableName, _szTableName, sizeof (_szTableName), &cbtab, cbTableName);
+
   DEFAULT_QUAL (stmt, cbqual);
 
-  virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent,
-	       szTableQualifier ? &cbqual : &plen);
-  virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableOwner ? (SQLCHAR *)_szTableOwner : percent,
-	       szTableOwner ? &cbown : &plen);
-  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableName ? (SQLCHAR *)_szTableName : percent,
-	       szTableName ? &cbtab : &plen);
-  virtodbc__SQLSetParam (hstmt, 4, SQL_C_SSHORT, SQL_INTEGER, 0, 0,
-	       &uniques_only, &cb_uniques_only);
-  virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent,
-	       szTableQualifier ? &cbqual : &plen);
-  virtodbc__SQLSetParam (hstmt, 6, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableOwner ? (SQLCHAR *)_szTableOwner : percent,
-	       szTableOwner ? &cbown : &plen);
-  virtodbc__SQLSetParam (hstmt, 7, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableName ? (SQLCHAR *)_szTableName : percent,
-	       szTableName ? &cbtab : &plen);
+  virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableQualifier ? (SQLCHAR *) _szTableQualifier : percent, szTableQualifier ? &cbqual : &plen);
+  virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableOwner ? (SQLCHAR *) _szTableOwner : percent, szTableOwner ? &cbown : &plen);
+  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableName ? (SQLCHAR *) _szTableName : percent, szTableName ? &cbtab : &plen);
+  virtodbc__SQLSetParam (hstmt, 4, SQL_C_SSHORT, SQL_INTEGER, 0, 0, &uniques_only, &cb_uniques_only);
+  virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableQualifier ? (SQLCHAR *) _szTableQualifier : percent, szTableQualifier ? &cbqual : &plen);
+  virtodbc__SQLSetParam (hstmt, 6, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableOwner ? (SQLCHAR *) _szTableOwner : percent, szTableOwner ? &cbown : &plen);
+  virtodbc__SQLSetParam (hstmt, 7, SQL_C_CHAR, SQL_CHAR, 0, 0, szTableName ? (SQLCHAR *) _szTableName : percent, szTableName ? &cbtab : &plen);
 
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
     rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
-	(stmt->stmt_connection->con_db_casemode == 2 ?
-	 sql_statistics_textw_casemode_2 :
-	 sql_statistics_textw_casemode_0), SQL_NTS);
+	(stmt->stmt_connection->con_db_casemode == 2 ? sql_statistics_textw_casemode_2 : sql_statistics_textw_casemode_0), SQL_NTS);
   else
     rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
-	(stmt->stmt_connection->con_db_casemode == 2 ?
-	 sql_statistics_text_casemode_2 :
-	 sql_statistics_text_casemode_0), SQL_NTS);
+	(stmt->stmt_connection->con_db_casemode == 2 ? sql_statistics_text_casemode_2 : sql_statistics_text_casemode_0), SQL_NTS);
 
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
 
@@ -4144,10 +4281,7 @@ SQLStatistics (
   NMAKE_INPUT_NARROW (TableName, stmt->stmt_connection);
 
   rc = virtodbc__SQLStatistics (hstmt,
-      szTableQualifier, cbTableQualifier,
-      szTableOwner, cbTableOwner,
-      szTableName, cbTableName,
-      fUnique, fAccuracy);
+      szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, fUnique, fAccuracy);
 
   NFREE_INPUT_NARROW (TableQualifier);
   NFREE_INPUT_NARROW (TableOwner);
@@ -4155,6 +4289,7 @@ SQLStatistics (
 
   return rc;
 }
+
 
 #if 0
 SQLRETURN SQL_API SQLDrivers (
@@ -4181,12 +4316,14 @@ SQLExtendedFetch (
 	SQLUSMALLINT * rgfRowStatus)
 {
   STMT (stmt, hstmt);
+
   if (stmt->stmt_fetch_mode == FETCH_FETCH)
     {
       set_error (&stmt->stmt_error, "HY010", "CL049", "Can't mix SQLFetch and SQLExtendedFetch.");
       return SQL_ERROR;
     }
   stmt->stmt_fetch_mode = FETCH_EXT;
+
   return (virtodbc__SQLExtendedFetch (hstmt, fFetchType, irow, pcrow, rgfRowStatus, 0));
 }
 
@@ -4306,27 +4443,26 @@ virtodbc__SQLForeignKeys (
 	SQLSMALLINT cbFkTableName)
 {
   STMT (stmt, hstmt);
-  char * qual = (char *) stmt->stmt_connection->con_qualifier;
+  char *qual = (char *) stmt->stmt_connection->con_qualifier;
   SQLLEN l1, l2, l3, l4, l5, l6;
   SQLRETURN rc;
   char _szPkTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	  _szPkTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szPkTableName[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szFkTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szFkTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szFkTableName[KUBL_IDENTIFIER_MAX_LENGTH];
+      _szPkTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
+      _szPkTableName[KUBL_IDENTIFIER_MAX_LENGTH],
+      _szFkTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
+      _szFkTableOwner[KUBL_IDENTIFIER_MAX_LENGTH], _szFkTableName[KUBL_IDENTIFIER_MAX_LENGTH];
 
   if (!szFkTableQualifier)
     {
       szFkTableQualifier = (SQLCHAR *) qual;
       cbFkTableQualifier = SQL_NTS;
     }
+
   if (!szPkTableQualifier)
     {
       szPkTableQualifier = (SQLCHAR *) qual;
       cbPkTableQualifier = SQL_NTS;
     }
-
 
   BIND_NAME_PART (hstmt, 1, szPkTableQualifier, _szPkTableQualifier, cbPkTableQualifier, l1);
   BIND_NAME_PART (hstmt, 2, szPkTableOwner, _szPkTableOwner, cbPkTableOwner, l2);
@@ -4337,14 +4473,10 @@ virtodbc__SQLForeignKeys (
 
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
     rc = virtodbc__SQLExecDirect (hstmt,
-	(SQLCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
-		  fk_textw_casemode_2 : fk_textw_casemode_0),
-	SQL_NTS);
+	(SQLCHAR *) (stmt->stmt_connection->con_db_casemode == 2 ? fk_textw_casemode_2 : fk_textw_casemode_0), SQL_NTS);
   else
     rc = virtodbc__SQLExecDirect (hstmt,
-	(SQLCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
-		  fk_text_casemode_2 : fk_text_casemode_0),
-	SQL_NTS);
+	(SQLCHAR *) (stmt->stmt_connection->con_db_casemode == 2 ? fk_text_casemode_2 : fk_text_casemode_0), SQL_NTS);
 
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
 
@@ -4390,9 +4522,7 @@ SQLForeignKeys (
       szPkTableQualifier, cbPkTableQualifier,
       szPkTableOwner, cbPkTableOwner,
       szPkTableName, cbPkTableName,
-      szFkTableQualifier, cbFkTableQualifier,
-      szFkTableOwner, cbFkTableOwner,
-      szFkTableName, cbFkTableName);
+      szFkTableQualifier, cbFkTableQualifier, szFkTableOwner, cbFkTableOwner, szFkTableName, cbFkTableName);
 
   NFREE_INPUT_NARROW (PkTableQualifier);
   NFREE_INPUT_NARROW (PkTableOwner);
@@ -4410,11 +4540,13 @@ SQLMoreResults (
 	SQLHSTMT hstmt)
 {
   STMT (stmt, hstmt);
-  col_binding_t * saved_cols;
+  col_binding_t *saved_cols;
 
   set_error (&stmt->stmt_error, NULL, NULL, NULL);
+
   if (stmt->stmt_opts->so_cursor_type != SQL_CURSOR_FORWARD_ONLY)
-	  return SQL_NO_DATA_FOUND;
+    return SQL_NO_DATA_FOUND;
+
   if (!stmt->stmt_parm_rows_to_go || !stmt->stmt_future)
     return SQL_NO_DATA_FOUND;
 
@@ -4446,6 +4578,7 @@ SQLMoreResults (
 
   stmt->stmt_at_end = 0;
   stmt->stmt_on_first_row = 1;
+
   return stmt_process_result (stmt, 1);
 }
 
@@ -4459,7 +4592,8 @@ virtodbc__SQLNativeSql (
     SQLINTEGER cbSqlStrMax,
     SQLINTEGER * pcbSqlStr)
 {
-  CON(con, hdbc);
+  CON (con, hdbc);
+
   if (!con)
     return (SQL_INVALID_HANDLE);
 
@@ -4469,19 +4603,21 @@ virtodbc__SQLNativeSql (
 	{
 	  if (cbSqlStrMax > 0)
 	    {
-	      strncpy((char *) szSqlStr, (const char *) szSqlStrIn, cbSqlStrMax);
+	      strncpy ((char *) szSqlStr, (const char *) szSqlStrIn, cbSqlStrMax);
 	      szSqlStr[cbSqlStrMax - 1] = '\x0';
 	    }
 	}
       else
 	{
-	  set_error(&con->con_error, "HY009", "CL092", "Invalid string or buffer length");
+	  set_error (&con->con_error, "HY009", "CL092", "Invalid string or buffer length");
 	  return (SQL_ERROR);
 	}
 
-      stmt_convert_brace_escapes(szSqlStr, pcbSqlStr);
+      stmt_convert_brace_escapes (szSqlStr, pcbSqlStr);
     }
-  set_error(&con->con_error, NULL, NULL, NULL);
+
+  set_error (&con->con_error, NULL, NULL, NULL);
+
   return (SQL_SUCCESS);
 }
 
@@ -4520,14 +4656,16 @@ SQLNumParams (
 {
   STMT (stmt, hstmt);
   stmt_compilation_t *sc = stmt->stmt_compilation;
+
   if (BOX_ELEMENTS (sc) > 3 && sc->sc_params)
     {
       if (pcpar)
 	*pcpar = (SQLSMALLINT) BOX_ELEMENTS (sc->sc_params);
+
       return SQL_SUCCESS;
     }
-  NOT_IMPL_FUN (hstmt,
-      "SQLNumParams: BOX_ELEMENTS (sc) <= 3  or no  sc_params");
+
+  NOT_IMPL_FUN (hstmt, "SQLNumParams: BOX_ELEMENTS (sc) <= 3  or no  sc_params");
 }
 
 void *
@@ -4535,43 +4673,48 @@ stmt_bhid_place (cli_stmt_t * stmt, long bhid)
 {
   if (SQL_API_SQLEXECDIRECT == stmt->stmt_pending.p_api)
     {
-      parm_binding_t * pb = stmt_nth_parm (stmt, BHID_COL(bhid));
+      parm_binding_t *pb = stmt_nth_parm (stmt, BHID_COL (bhid));
       size_t len = sqlc_sizeof (pb->pb_c_type, pb->pb_max_length);
       int btype = stmt->stmt_param_bind_type;
       size_t off = btype == 0 ? BHID_ROW (bhid) * len : BHID_ROW (bhid) * btype;
       int c_type = pb->pb_c_type;
+
       if (c_type == SQL_C_DEFAULT)
 	c_type = sql_type_to_sqlc_default (pb->pb_sql_type);
+
       stmt->stmt_next_putdata_dtp = (c_type == SQL_C_WCHAR ? DV_LONG_WIDE : DV_LONG_STRING);
 
 #ifndef MAP_DIRECT_BIN_CHAR
       stmt->stmt_next_putdata_translate_char_bin = (c_type == SQL_C_CHAR &&
-	  (pb->pb_sql_type == SQL_BINARY || pb->pb_sql_type == SQL_VARBINARY ||
-	   pb->pb_sql_type == SQL_LONGVARBINARY));
+	  (pb->pb_sql_type == SQL_BINARY || pb->pb_sql_type == SQL_VARBINARY || pb->pb_sql_type == SQL_LONGVARBINARY));
 #endif
+
       return (pb->pb_place + off);
       /* can't use stmt_param_place_ptr because of its different handling of the pb_place == 0 */
     }
+
   if (SQL_API_SQLSETPOS == stmt->stmt_pending.p_api)
     {
       int btype = stmt->stmt_bind_type;
-      col_binding_t * cb = stmt_nth_col (stmt, BHID_COL(bhid));
+      col_binding_t *cb = stmt_nth_col (stmt, BHID_COL (bhid));
       int c_type = cb->cb_c_type;
+
 #ifndef MAP_DIRECT_BIN_CHAR
       dtp_t col_dtp =
-	  stmt && stmt->stmt_compilation && stmt->stmt_compilation->sc_columns &&
-	  BOX_ELEMENTS (stmt->stmt_compilation->sc_columns) >= ((uint32) BHID_COL(bhid)) &&
-	  BHID_COL(bhid) > 0 ?
-	    ((dtp_t)((col_desc_t *)stmt->stmt_compilation->sc_columns[BHID_COL(bhid)-1])->cd_dtp) : DV_LONG_STRING;
+	  stmt && stmt->stmt_compilation && stmt->stmt_compilation->sc_columns
+	  && BOX_ELEMENTS (stmt->stmt_compilation->sc_columns) >=
+	  ((uint32) BHID_COL (bhid))
+	  && BHID_COL (bhid) >
+	  0 ? ((dtp_t) ((col_desc_t *) stmt->stmt_compilation->sc_columns[BHID_COL (bhid) - 1])->cd_dtp) : DV_LONG_STRING;
 
-      stmt->stmt_next_putdata_translate_char_bin = (c_type == SQL_C_CHAR &&
-	  col_dtp == DV_BLOB_BIN);
+      stmt->stmt_next_putdata_translate_char_bin = (c_type == SQL_C_CHAR && col_dtp == DV_BLOB_BIN);
 #endif
+
       stmt->stmt_next_putdata_dtp = (c_type == SQL_C_WCHAR ? DV_LONG_WIDE : DV_LONG_STRING);
-      return (cb->cb_place
-	      + (btype == 0 ? cb->cb_max_length * BHID_ROW (bhid)
-		 : btype * BHID_ROW (bhid)));
+
+      return (cb->cb_place + (btype == 0 ? cb->cb_max_length * BHID_ROW (bhid) : btype * BHID_ROW (bhid)));
     }
+
   return NULL;
 }
 
@@ -4580,8 +4723,7 @@ int
 stmt_col_sql_type (cli_stmt_t * stmt, int nth)
 {
   SQLSMALLINT t = SQL_C_CHAR;
-  virtodbc__SQLDescribeCol ((SQLHSTMT) stmt, (SQLUSMALLINT) nth, NULL, 0, NULL, &t,
-		    NULL, NULL, NULL);
+  virtodbc__SQLDescribeCol ((SQLHSTMT) stmt, (SQLUSMALLINT) nth, NULL, 0, NULL, &t, NULL, NULL, NULL);
   return t;
 }
 
@@ -4591,19 +4733,19 @@ stmt_dae_value (cli_stmt_t * stmt)
 {
   caddr_t v;
   caddr_t daeb;
-  SQLLEN /*len,*/ fill;
-  long bhid = ** (long**) stmt->stmt_current_dae;
+  SQLLEN /*len, */ fill;
+  long bhid = **(long **) stmt->stmt_current_dae;
   int c_type, sql_type;
 
   if (SQL_API_SQLEXECDIRECT == stmt->stmt_pending.p_api)
     {
-      parm_binding_t * pb = stmt_nth_parm (stmt, BHID_COL (bhid));
+      parm_binding_t *pb = stmt_nth_parm (stmt, BHID_COL (bhid));
       c_type = pb->pb_c_type;
       sql_type = pb->pb_sql_type;
     }
   else
     {
-      col_binding_t * cb = stmt_nth_col (stmt, BHID_COL (bhid));
+      col_binding_t *cb = stmt_nth_col (stmt, BHID_COL (bhid));
       c_type = cb->cb_c_type;
       sql_type = stmt_col_sql_type (stmt, BHID_COL (bhid));
     }
@@ -4613,9 +4755,7 @@ stmt_dae_value (cli_stmt_t * stmt)
       v = dk_alloc_box (1, DV_SHORT_STRING);
       v[0] = 0;
     }
-  else if (dk_set_length (stmt->stmt_dae_fragments) == 1 &&
-      (DV_TYPE_OF (stmt->stmt_dae_fragments->data) == DV_DB_NULL ||
-       DV_TYPE_OF (stmt->stmt_dae_fragments->data) == DV_STRING_SESSION))
+  else if (dk_set_length (stmt->stmt_dae_fragments) == 1 && (DV_TYPE_OF (stmt->stmt_dae_fragments->data) == DV_DB_NULL || DV_TYPE_OF (stmt->stmt_dae_fragments->data) == DV_STRING_SESSION))
     {
       v = (caddr_t) stmt->stmt_dae_fragments->data;
       dk_set_free (stmt->stmt_dae_fragments);
@@ -4625,44 +4765,42 @@ stmt_dae_value (cli_stmt_t * stmt)
     {
       size_t len = 0;
       DO_SET (caddr_t, f, &stmt->stmt_dae_fragments)
-	{
-	  len += box_length (f) - 1;
-	}
-      END_DO_SET();
+      {
+	len += box_length (f) - 1;
+      }
+      END_DO_SET ();
       if (len < MAX_READ_STRING)
 	{
 	  daeb = dk_alloc_box (len + 1, DV_SHORT_STRING);
 	  fill = 0;
 	  DO_SET (caddr_t, f, &stmt->stmt_dae_fragments)
-	    {
-	      len = box_length (f) - 1;
-	      memcpy (daeb + fill, f, len);
-	      fill += len;
-	      dk_free_box (f);
-	    }
-	  END_DO_SET();
+	  {
+	    len = box_length (f) - 1;
+	    memcpy (daeb + fill, f, len);
+	    fill += len;
+	    dk_free_box (f);
+	  }
+	  END_DO_SET ();
 	  daeb[fill] = 0;
-	  if ((c_type == SQL_C_CHAR || c_type == SQL_C_BINARY)
-	      && (sql_type == SQL_CHAR || sql_type == SQL_VARCHAR))
+	  if ((c_type == SQL_C_CHAR || c_type == SQL_C_BINARY) && (sql_type == SQL_CHAR || sql_type == SQL_VARCHAR))
 	    v = daeb;
 	  else
 	    {
-	      v = buffer_to_dv (daeb, &fill, c_type, sql_type, 0, stmt,
-		  CON_IS_INPROCESS (stmt->stmt_connection));
+	      v = buffer_to_dv (daeb, &fill, c_type, sql_type, 0, stmt, CON_IS_INPROCESS (stmt->stmt_connection));
 	      dk_free_box (daeb);
 	    }
 	}
       else
-	{ /* serialize larger DAE values as string sessions */
+	{			/* serialize larger DAE values as string sessions */
 	  dk_session_t *ses = strses_allocate ();
 
 	  strses_set_utf8 (ses, c_type == SQL_C_WCHAR ? 1 : 0);
 	  DO_SET (caddr_t, f, &stmt->stmt_dae_fragments)
-	    {
-	      len = box_length (f) - 1;
-	      session_buffered_write (ses, f, len);
-	      dk_free_box (f);
-	    }
+	  {
+	    len = box_length (f) - 1;
+	    session_buffered_write (ses, f, len);
+	    dk_free_box (f);
+	  }
 	  END_DO_SET ();
 	  v = (caddr_t) ses;
 	}
@@ -4670,7 +4808,7 @@ stmt_dae_value (cli_stmt_t * stmt)
       stmt->stmt_dae_fragments = NULL;
 
     }
-  dk_free_box ((caddr_t) *stmt->stmt_current_dae);
+  dk_free_box ((caddr_t) * stmt->stmt_current_dae);
   *stmt->stmt_current_dae = (long *) v;
 }
 
@@ -4688,16 +4826,17 @@ SQLParamData (
   dk_session_t *ses = stmt->stmt_connection->con_session;
   SDWORD last = stmt->stmt_last_asked_param;
 
-
-
   set_error (&stmt->stmt_error, NULL, NULL, NULL);
+
   if (STS_LOCAL_DAE == stmt->stmt_status)
     {
       if (stmt->stmt_current_dae)
 	{
 	  stmt_dae_value (stmt);
 	}
+
       stmt->stmt_current_dae = (long **) dk_set_pop (&stmt->stmt_dae);
+
       if (!stmt->stmt_current_dae)
 	{
 	  if (SQL_API_SQLEXECDIRECT == stmt->stmt_pending.p_api)
@@ -4715,16 +4854,18 @@ SQLParamData (
 		}
 	      return rc;
 	    }
+
 	  if (SQL_API_SQLSETPOS == stmt->stmt_pending.p_api)
 	    /* no server DAE allowed for this */
-	    return (virtodbc__SQLSetPos ((SQLHSTMT) stmt,
-					 (SQLUSMALLINT) stmt->stmt_pending.psp_irow,
-					 (SQLUSMALLINT) stmt->stmt_pending.psp_op,
-					 SQL_LOCK_NO_CHANGE));
+	    return (virtodbc__SQLSetPos ((SQLHSTMT) stmt, (SQLUSMALLINT) stmt->stmt_pending.psp_irow, (SQLUSMALLINT) stmt->stmt_pending.psp_op, SQL_LOCK_NO_CHANGE));
+
 	  set_error (&stmt->stmt_error, "S1010", "CL050", "Bad call to SQLParamData");
+
 	  return SQL_ERROR;
 	}
-      *prgbValue = stmt_bhid_place (stmt, **(long**)stmt->stmt_current_dae);
+
+      *prgbValue = stmt_bhid_place (stmt, **(long **) stmt->stmt_current_dae);
+
       return SQL_NEED_DATA;
     }
 
@@ -4732,27 +4873,31 @@ SQLParamData (
     {
       /* didn't ask. sequence error */
       set_error (&stmt->stmt_error, "S1010", "CL051", "No param was asked for.");
+
       return SQL_ERROR;
     }
+
   if (-1 == last || -2 == last)
     {
       /* A param eas being sent and this call marks it's complete.
-	 Send end mark and wait for instructions from server */
+         Send end mark and wait for instructions from server */
       if (-1 == last)
-        {
-          CATCH_WRITE_FAIL (ses)
-          {
+	{
+	  CATCH_WRITE_FAIL (ses)
+	  {
 	    session_buffered_write_char (0, ses);
 	    session_flush (ses);
-          }
-          END_WRITE_FAIL (ses);
-        }
+	  }
+	  END_WRITE_FAIL (ses);
+	}
       else
-        last = stmt->stmt_last_asked_param = -1;
+	last = stmt->stmt_last_asked_param = -1;
+
       rc = stmt_process_result (stmt, 1);
+
       if (rc == SQL_NEED_DATA)
 	{
-	  *prgbValue = (void*) stmt_bhid_place (stmt, stmt->stmt_last_asked_param);
+	  *prgbValue = (void *) stmt_bhid_place (stmt, stmt->stmt_last_asked_param);
 	  stmt->stmt_last_asked_param = -1;
 	}
       else
@@ -4760,8 +4905,10 @@ SQLParamData (
 	  memset (&stmt->stmt_pending, 0, sizeof (pending_call_t));
 	  stmt->stmt_last_asked_param = 0;
 	}
+
       return rc;
     }
+
   *prgbValue = stmt_bhid_place (stmt, last);
   stmt->stmt_last_asked_param = -1;
 
@@ -4782,9 +4929,7 @@ SQLPutData (
   dk_session_t *ses = stmt->stmt_connection->con_session;
   volatile SQLLEN newValue = (cbValue == SQL_NTS ?
       (stmt->stmt_next_putdata_dtp == DV_LONG_STRING ?
-	strlen((const char *)rgbValue) :
-	wcslen((wchar_t *)rgbValue) * sizeof (wchar_t)) :
-      cbValue);
+	  strlen ((const char *) rgbValue) : wcslen ((wchar_t *) rgbValue) * sizeof (wchar_t)) : cbValue);
 
   if (STS_LOCAL_DAE == stmt->stmt_status)
     {
@@ -4794,30 +4939,34 @@ SQLPutData (
       if (!stmt->stmt_current_dae)
 	{
 	  set_error (&stmt->stmt_error, "S1010", "CL052", "Bad place to call SQLPutData");
+
 	  return SQL_ERROR;
 	}
+
       if (SQL_NULL_DATA == cbValue)
 	{
 	  if (stmt->stmt_dae_fragments)
 	    {
-	      set_error (&stmt->stmt_error, "HY020", "CL085",
-		  "Attempt to concatenate NULL value");
+	      set_error (&stmt->stmt_error, "HY020", "CL085", "Attempt to concatenate NULL value");
+
 	      return SQL_ERROR;
 	    }
+
 	  dae = dk_alloc_box (0, DV_DB_NULL);
 	}
       else if (stmt->stmt_next_putdata_dtp == DV_LONG_WIDE && rgbValue != NULL && cbValue != 0)
-	{ /* put a session for wides */
+	{			/* put a session for wides */
 	  size_t wlen;
 	  wchar_t *wValue = (wchar_t *) rgbValue, *wptr;
 	  virt_mbstate_t ps;
 	  dk_session_t *ses;
-	  char * nbuffer;
+	  char *nbuffer;
 
 	  if (cbValue != SQL_NTS && cbValue % sizeof (wchar_t))
 	    {
 	      set_error (&stmt->stmt_error, "22023", "CLXXX",
 		  "Length argument passed to SQLPutData must be a multiple of the size of the wide char.");
+
 	      return SQL_ERROR;
 	    }
 	  wptr = wValue;
@@ -4834,29 +4983,32 @@ SQLPutData (
 	      size_t res;
 
 	      res = virt_wcsnrtombs ((unsigned char *) nbuffer, &wptr, wlen - (wptr - wValue), 65000, &ps);
-	      if (res == (size_t) -1)
+	      if (res == (size_t) - 1)
 		{
-		  set_error (&stmt->stmt_error, "22023", "CLXXX",
-		      "Invalid wide data passed to SQLPutData");
+		  set_error (&stmt->stmt_error, "22023", "CLXXX", "Invalid wide data passed to SQLPutData");
 		  dk_free (nbuffer, 65000);
 		  strses_free (ses);
 		  return SQL_ERROR;
 		}
+
 	      if (res != 0)
 		session_buffered_write (ses, nbuffer, res);
 	    }
+
 	  dae = (caddr_t) ses;
 	  dk_free (nbuffer, 65000);
 	}
       else if (rgbValue && (len = (cbValue < 0) ? strlen ((const char *) rgbValue) : cbValue) + 1 > MAX_READ_STRING)
-	{ /* make a session if the buffer is larger then 10 MB as well */
+	{			/* make a session if the buffer is larger then 10 MB as well */
 	  dk_session_t *ses = strses_allocate ();
 	  session_buffered_write (ses, (const char *) rgbValue, len);
 	  dae = (caddr_t) ses;
 	}
       else
 	dae = box_n_string ((SQLCHAR *) rgbValue, cbValue);
-      stmt->stmt_dae_fragments = dk_set_conc (stmt->stmt_dae_fragments, dk_set_cons ((void*) dae, NULL));
+
+      stmt->stmt_dae_fragments = dk_set_conc (stmt->stmt_dae_fragments, dk_set_cons ((void *) dae, NULL));
+
       return SQL_SUCCESS;
     }
 
@@ -4874,89 +5026,96 @@ SQLPutData (
 	{
 	  set_error (&stmt->stmt_error, "S1010", "CL054",
 	      "Invalid buffer length (even) in passing character data to binary column in SQLPutData");
+
 	  return SQL_ERROR;
 	}
-      for (src = (unsigned char *) rgbValue; src - ((unsigned char *)rgbValue) < newValue; src++)
+
+      for (src = (unsigned char *) rgbValue; src - ((unsigned char *) rgbValue) < newValue; src++)
 	{
 	  chr = toupper (*src);
 	  if ((chr < '0' || chr > '9') && (chr < 'A' || chr > 'F'))
 	    {
 	      set_error (&stmt->stmt_error, "S1010", "CL055",
 		  "Invalid buffer length (even) in passing character data to binary column in SQLPutData");
+
 	      return SQL_ERROR;
 	    }
 	}
     }
 #endif
+
   CATCH_WRITE_FAIL (ses)
   {
     if (SQL_NULL_DATA == cbValue)
       {
-        session_buffered_write_char (DV_DB_NULL, ses);
+	session_buffered_write_char (DV_DB_NULL, ses);
 	stmt->stmt_last_asked_param = -2;
       }
     else
       {
-        session_buffered_write_char (stmt->stmt_next_putdata_dtp, ses);
-        if (stmt->stmt_next_putdata_dtp == DV_LONG_STRING)
-          {
+	session_buffered_write_char (stmt->stmt_next_putdata_dtp, ses);
+
+	if (stmt->stmt_next_putdata_dtp == DV_LONG_STRING)
+	  {
 #ifndef MAP_DIRECT_BIN_CHAR
 	    if (stmt->stmt_next_putdata_translate_char_bin)
 	      {
-	        unsigned char *src = (unsigned char *) rgbValue, _lo, _hi, _res;
-	        print_long ((long) (newValue / 2), ses);
-	        for (src = (unsigned char *) rgbValue; src - ((unsigned char *)rgbValue) < newValue; src+=2)
-	          {
-		    _lo = toupper (src[1]); _hi = toupper (src[0]);
-		    _res = ((_hi - (_hi <= '9' ? '0' : 'A' + 10)) << 4) |
-		        (_lo - (_lo <= '9' ? '0' : 'A' + 10));
+		unsigned char *src = (unsigned char *) rgbValue, _lo, _hi, _res;
+		print_long ((long) (newValue / 2), ses);
+
+		for (src = (unsigned char *) rgbValue; src - ((unsigned char *) rgbValue) < newValue; src += 2)
+		  {
+		    _lo = toupper (src[1]);
+		    _hi = toupper (src[0]);
+		    _res = ((_hi - (_hi <= '9' ? '0' : 'A' + 10)) << 4) | (_lo - (_lo <= '9' ? '0' : 'A' + 10));
 		    session_buffered_write_char (_res, ses);
-	          }
+		  }
 	      }
 	    else
 #endif
 	      {
-	        print_long ((long) newValue, ses);
-	        session_buffered_write (ses, (const char *) rgbValue, newValue);
+		print_long ((long) newValue, ses);
+		session_buffered_write (ses, (const char *) rgbValue, newValue);
 	      }
-          }
-        else
-          {
-	    wchar_t *wstr = (wchar_t *)rgbValue;
+	  }
+	else
+	  {
+	    wchar_t *wstr = (wchar_t *) rgbValue;
 	    size_t utf8_len;
 	    virt_mbstate_t state;
 	    unsigned char mbs[VIRT_MB_CUR_MAX];
 	    size_t len = 0, i;
 
-	    wstr = (wchar_t *)rgbValue;
+	    wstr = (wchar_t *) rgbValue;
 	    memset (&state, 0, sizeof (virt_mbstate_t));
 	    utf8_len = virt_wcsnrtombs (NULL, &wstr, newValue / sizeof (wchar_t), 0, &state);
-	    if (utf8_len != (size_t) -1)
-	      {
-	        print_long ((long) utf8_len, ses);
 
-	        memset (&state, 0, sizeof (virt_mbstate_t));
-	        wstr = (wchar_t *)rgbValue;
-	        i = 0;
-	        while (i++ < newValue / sizeof (wchar_t))
-	          {
+	    if (utf8_len != (size_t) - 1)
+	      {
+		print_long ((long) utf8_len, ses);
+
+		memset (&state, 0, sizeof (virt_mbstate_t));
+		wstr = (wchar_t *) rgbValue;
+		i = 0;
+		while (i++ < newValue / sizeof (wchar_t))
+		  {
 		    len = virt_wcrtomb (mbs, *wstr++, &state);
 		    if (len > 0)
 		      session_buffered_write (ses, (char *) mbs, len);
-	          }
+		  }
 	      }
 	    else
 	      {
 		print_long ((long) 0, ses);
-		set_error (&stmt->stmt_error, "S1010", "CL093",
-		    "Invalid wide data supplied to SQLPutData");
+		set_error (&stmt->stmt_error, "S1010", "CL093", "Invalid wide data supplied to SQLPutData");
 		rc = SQL_ERROR;
 	      }
-          }
+	  }
       }
+
     session_flush (ses);
   }
-  END_WRITE_FAIL (ses)
+  END_WRITE_FAIL (ses);
 
   return rc;
 }
@@ -4989,15 +5148,18 @@ sql_get_bookmark (cli_stmt_t * stmt, caddr_t * row,
 {
   caddr_t box;
   SQLLEN len_read;
+
   if (!stmt->stmt_opts->so_use_bookmarks)
     {
       set_error (&stmt->stmt_error, "07009", "CL056", "Bookmarks not enable for statement");
+
       return SQL_ERROR;
     }
+
   box = box_num (stmt_row_bookmark (stmt, row));
-  dv_to_place (box, fCType, 0, cbValueMax, (caddr_t) rgbValue, &len_read,
-	       0, stmt, 0);
+  dv_to_place (box, fCType, 0, cbValueMax, (caddr_t) rgbValue, &len_read, 0, stmt, 0);
   dk_free_box (box);
+
   return SQL_SUCCESS;
 }
 
@@ -5026,37 +5188,41 @@ virtodbc__SQLGetData (
 #endif
   int rlen;
 
-  cli_dbg_printf (("SQLGetData (%lx, %d, %d, --, %d, --)\n",
-      hstmt, icol, fCType, cbValueMax));
+  cli_dbg_printf (("SQLGetData (%lx, %d, %d, --, %d, --)\n", hstmt, icol, fCType, cbValueMax));
 
   VERIFY_INPROCESS_CLIENT (stmt->stmt_connection);
 
   row = stmt->stmt_current_row;
   if (!row)
     {
-      set_error (&stmt->stmt_error,
-	  "S1010", "CL057", "Statement not fetched in SQLGetData.");
+      set_error (&stmt->stmt_error, "S1010", "CL057", "Statement not fetched in SQLGetData.");
       return SQL_ERROR;
     }
+
   if (0 == icol)
     return (sql_get_bookmark (stmt, row, fCType, rgbValue, cbValueMax, pcbValue));
+
   rlen = BOX_ELEMENTS (row);
+
   if (icol >= rlen)
     {
-      set_error (&stmt->stmt_error,
-	  "07009", "CL058", "Column out of range in SQLGetData");
+      set_error (&stmt->stmt_error, "07009", "CL058", "Column out of range in SQLGetData");
+
       return SQL_ERROR;
     }
+
   col = row[icol];
+
 #ifndef MAP_DIRECT_BIN_CHAR
-  if (stmt->stmt_compilation && stmt->stmt_compilation->sc_is_select &&
-      BOX_ELEMENTS (stmt->stmt_compilation->sc_columns) >= icol)
+  if (stmt->stmt_compilation && stmt->stmt_compilation->sc_is_select && BOX_ELEMENTS (stmt->stmt_compilation->sc_columns) >= icol)
     {
       col_desc = (col_desc_t *) stmt->stmt_compilation->sc_columns[icol - 1];
       is_blob_to_char = (fCType == SQL_C_CHAR || fCType == SQL_C_WCHAR) && col_desc->cd_dtp == DV_BLOB_BIN;
     }
 #endif
+
   set_error (&stmt->stmt_error, NULL, NULL, NULL);
+
 /* IvAn/DvBlobXper/001212 Case for XPER added */
   if (IS_BOX_POINTER (col) && IS_BLOB_HANDLE_DTP (DV_TYPE_OF (col)))
     {				/* it's a blob? */
@@ -5073,11 +5239,13 @@ virtodbc__SQLGetData (
 	  if (!cb->cb_not_first_getdata)
 	    {
 	      cb->cb_not_first_getdata = 1;
+
 	      return (SQL_SUCCESS);
 	    }
 	  else
 	    return (SQL_NO_DATA_FOUND);
 	}
+
       cb->cb_not_first_getdata = 1;
 
       if (!cbValueMax || (is_nts && cbValueMax == 1) || (is_wnts && cbValueMax == sizeof (wchar_t)))
@@ -5085,36 +5253,38 @@ virtodbc__SQLGetData (
 	  if (pcbValue)
 	    {
 #ifndef MAP_DIRECT_BIN_CHAR
-	      *pcbValue = length *
-		(is_wnts ? sizeof (wchar_t) : sizeof (char)) *
-		(is_blob_to_char ? 2 : 1);
+	      *pcbValue = length * (is_wnts ? sizeof (wchar_t) : sizeof (char)) * (is_blob_to_char ? 2 : 1);
 #else
 	      *pcbValue = length * (is_wnts ? sizeof (wchar_t) : sizeof (char));
 #endif
 	    }
+
 	  if (length)
 	    {
 	      set_data_truncated_success_info (stmt, "CL090", icol);
+
 	      return (SQL_SUCCESS_WITH_INFO);
 	    }
 	  else
-	    return(SQL_SUCCESS);
+	    return (SQL_SUCCESS);
 	}
 
       if (is_nts)
 	cbValueMax--;
+
       if (is_wnts)
 	{
 	  if (cbValueMax % sizeof (wchar_t))
-	    cbValueMax = ((int)(cbValueMax / sizeof (wchar_t))) * sizeof (wchar_t);
+	    cbValueMax = ((int) (cbValueMax / sizeof (wchar_t))) * sizeof (wchar_t);
+
 #ifdef SAFE_SQLGETDATA
-	  rgbValue_end = ((unsigned char *)(rgbValue))+cbValueMax;
+	  rgbValue_end = ((unsigned char *) (rgbValue)) + cbValueMax;
 #endif
 	  cbValueMax = cbValueMax / sizeof (wchar_t) - 1;
 	}
 #ifdef SAFE_SQLGETDATA
       else
-	rgbValue_end = ((unsigned char *)(rgbValue))+cbValueMax;
+	rgbValue_end = ((unsigned char *) (rgbValue)) + cbValueMax;
 #endif
       if (stmt->stmt_connection->con_autocommit
 	  || (stmt->stmt_compilation &&
@@ -5125,13 +5295,13 @@ virtodbc__SQLGetData (
 
       if (ref_cursor)
 	{
-	  val = (caddr_t *) PrpcSync (PrpcFuture (ses, &s_get_data,
-	      stmt->stmt_id, stmt->stmt_current_of, (long) icol,
+	  val = (caddr_t *) PrpcSync (PrpcFuture (ses, &s_get_data, stmt->stmt_id, stmt->stmt_current_of, (long) icol,
 #ifndef MAP_DIRECT_BIN_CHAR
-	      cbValueMax / (is_blob_to_char ? 2 : 1), (long) 0));
+		  cbValueMax / (is_blob_to_char ? 2 : 1),
 #else
-	      cbValueMax, (long) 0));
+		  cbValueMax,
 #endif
+		  (long) 0));
 	}
       else
 	{
@@ -5143,183 +5313,216 @@ virtodbc__SQLGetData (
 
 	  val = (caddr_t *) PrpcSync (PrpcFuture (ses, &s_get_data_ac,
 #ifndef MAP_DIRECT_BIN_CHAR
-	      bh->bh_current_page, cbValueMax / (is_blob_to_char ? 2 : 1), bh->bh_position, bh->bh_key_id, bh->bh_frag_no, bh->bh_dir_page, bh->bh_pages,  (DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), bh->bh_timestamp ));
+		  bh->bh_current_page,
+		  cbValueMax / (is_blob_to_char ? 2 : 1),
+		  bh->bh_position,
+		  bh->bh_key_id,
+		  bh->bh_frag_no, bh->bh_dir_page, bh->bh_pages, (DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), bh->bh_timestamp
 #else
-	      bh->bh_current_page, cbValueMax, bh->bh_position, bh->bh_key_id, bh->bh_frag_no, bh->bh_dir_page, bh->bh_pages, (DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), bh->bh_timestamp ));
+		  bh->bh_current_page,
+		  cbValueMax,
+		  bh->bh_position,
+		  bh->bh_key_id,
+		  bh->bh_frag_no, bh->bh_dir_page, bh->bh_pages, (DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), bh->bh_timestamp
 #endif
+	      ));
 	}
+
       if (0 == val)
 	{
 	  if (pcbValue)
 	    *pcbValue = 0;
+
 	  return SQL_NO_DATA_FOUND;
 	}
 
-      if (IS_BOX_POINTER (val) && IS_NONLEAF_DTP(box_tag (val)))
+      if (IS_BOX_POINTER (val) && IS_NONLEAF_DTP (box_tag (val)))
 	{
 	  long strings = box_length ((caddr_t) val) / sizeof (caddr_t);
 #ifdef SAFE_SQLGETDATA
 	  long inx;
-	  unsigned char *rgbValue_tail = (unsigned char *)rgbValue;
+	  unsigned char *rgbValue_tail = (unsigned char *) rgbValue;
 #else
 	  long inx, fill = 0;
 #endif
 	  if (val[0] == (caddr_t) QA_ERROR)
 	    {
 	      caddr_t srv_msg = cli_box_server_msg (val[2]);
+
 	      set_error (&stmt->stmt_error, val[1], NULL, srv_msg);
 	      dk_free_tree ((caddr_t) val);
 	      dk_free_box (srv_msg);
+
 	      return SQL_ERROR;
 	    }
+
 	  for (inx = 0; inx < strings; inx++)
 	    {
 	      /* take 1 off for the terminating 0 added by reader: */
 	      long len = box_length (val[inx]) - (IS_WIDE_STRING_DTP (box_tag (val[inx])) ? sizeof (wchar_t) : 1);
 	      switch (box_tag (val[inx]))
 		{
-		  case DV_ARRAY_OF_LONG:
-		      {
-			ptrlong *elt = (ptrlong *) val[inx];
-			bh->bh_current_page = (dp_addr_t) elt[1];
-			bh->bh_position = (int) elt[2];
-			continue;
-		      };
-		      break;
+		case DV_ARRAY_OF_LONG:
+		  {
+		    ptrlong *elt = (ptrlong *) val[inx];
+		    bh->bh_current_page = (dp_addr_t) elt[1];
+		    bh->bh_position = (int) elt[2];
+		    continue;
+		  }
+		  break;
 
-		  case DV_WIDE:
-		  case DV_LONG_WIDE:
-		      {
+		case DV_WIDE:
+		case DV_LONG_WIDE:
+		  {
 #ifdef SAFE_SQLGETDATA
-			if (is_nts)
-			  {
-			    int added =
-			      cli_wide_to_narrow (stmt->stmt_connection->con_charset,
-				0, (wchar_t *)val[inx], len / sizeof (wchar_t),
-				rgbValue_tail, rgbValue_end - rgbValue_tail, NULL, NULL );
-			    rgbValue_tail += added;
-			  }
-			else
-			  {
-			    int added = rgbValue_end - rgbValue_tail;
-			    if (added > len) added = len;
-			    memcpy (rgbValue_tail, val[inx], added);
-			    rgbValue_tail += added;
-			  }
-#else
-			if (is_nts)
-			  cli_wide_to_narrow (stmt->stmt_connection->con_charset,
-			      0, (wchar_t *)val[inx], len / sizeof (wchar_t),
-			      ((unsigned char *) rgbValue) + fill, len / sizeof (wchar_t), NULL, NULL);
-			else
-			  memcpy (((wchar_t *) rgbValue) + fill, val[inx], len);
-			fill += len / sizeof (wchar_t);
-#endif
-			break;
+		    if (is_nts)
+		      {
+			int added = cli_wide_to_narrow (stmt->stmt_connection->con_charset,
+			    0, (wchar_t *) val[inx], len / sizeof (wchar_t),
+			    rgbValue_tail, rgbValue_end - rgbValue_tail, NULL, NULL);
+			rgbValue_tail += added;
 		      }
-		  case DV_STRING:
+		    else
+		      {
+			int added = rgbValue_end - rgbValue_tail;
+
+			if (added > len)
+			  added = len;
+
+			memcpy (rgbValue_tail, val[inx], added);
+			rgbValue_tail += added;
+		      }
+#else
+		    if (is_nts)
+		      cli_wide_to_narrow (stmt->stmt_connection->con_charset,
+			  0, (wchar_t *) val[inx], len / sizeof (wchar_t),
+			  ((unsigned char *) rgbValue) + fill, len / sizeof (wchar_t), NULL, NULL);
+		    else
+		      memcpy (((wchar_t *) rgbValue) + fill, val[inx], len);
+
+		    fill += len / sizeof (wchar_t);
+#endif
+		    break;
+		  }
+
+		case DV_STRING:
 #ifndef MAP_DIRECT_BIN_CHAR
-		      if (is_blob_to_char)
-			{
+		  if (is_blob_to_char)
+		    {
 # ifdef SAFE_SQLGETDATA
-			  if (is_wnts)
-			    {
-			      int nbytes = (rgbValue_end - rgbValue_tail) / (2 * sizeof (wchar_t));
-			      if (nbytes > len)	nbytes = len;
-			      bin_dv_to_wstr_place ((unsigned char *) val[inx], (wchar_t *) rgbValue_tail, nbytes);
-			      rgbValue_tail += nbyte * 2 * sizeof (wchar_t);
-			    }
-			  else
-			    {
-			      int nbytes = (rgbValue_end - rgbValue_tail) / 2;
-			      if (nbytes > len) nbytes = len;
-			      bin_dv_to_str_place ((unsigned char *) val[inx], (char *) rgbValue_tail, nbytes);
-			      rgbValue_tail += nbyte * 2;
-			    }
-# else
-			  if (is_wnts)
-			    bin_dv_to_wstr_place ((unsigned char *) val[inx], ((wchar_t *) rgbValue) + fill, len);
-			  else
-			    bin_dv_to_str_place ((unsigned char *) val[inx], ((char *) rgbValue) + fill, len);
-			  fill += len * 2;
-# endif
+		      if (is_wnts)
+			{
+			  int nbytes = (rgbValue_end - rgbValue_tail) / (2 * sizeof (wchar_t));
+			  if (nbytes > len)
+			    nbytes = len;
+
+			  bin_dv_to_wstr_place ((unsigned char *) val[inx], (wchar_t *) rgbValue_tail, nbytes);
+			  rgbValue_tail += nbyte * 2 * sizeof (wchar_t);
 			}
 		      else
-#endif
 			{
-#ifdef SAFE_SQLGETDATA
-			  if (is_wnts)
-			    {
-			      int added =
-			        cli_narrow_to_wide (
-				  stmt->stmt_connection->con_charset, 0, (unsigned char *) val[inx], len,
-				  ((wchar_t *) rgbValue_tail), ((wchar_t *) rgbValue_end) - ((wchar_t *) rgbValue_tail));
-			      rgbValue_tail += added * sizeof(wchar_t);
-			    }
-			  else
-			    {
-			      int added = rgbValue_end - rgbValue_tail;
-			      if (added > len) added = len;
-			      memcpy (rgbValue_tail, val[inx], added);
-			      rgbValue_tail += added;
-			    }
-#else
-			  if (is_wnts)
-			    cli_narrow_to_wide (stmt->stmt_connection->con_charset, 0, (unsigned char *) val[inx], len,
-				((wchar_t *) rgbValue) + fill, len);
-			  else
-			    memcpy (((char *) rgbValue) + fill, val[inx], len);
-			  fill += len;
-#endif
-			}
-		    break;
+			  int nbytes = (rgbValue_end - rgbValue_tail) / 2;
 
-		  default:
-#ifdef SAFE_SQLGETDATA
-		    {
-		      int added = rgbValue_end - rgbValue_tail;
-		      if (added > len) added = len;
-		      memcpy (rgbValue_tail, val[inx], added);
-		      rgbValue_tail += added;
+			  if (nbytes > len)
+			    nbytes = len;
+
+			  bin_dv_to_str_place ((unsigned char *) val[inx], (char *) rgbValue_tail, nbytes);
+			  rgbValue_tail += nbyte * 2;
+			}
+# else
+		      if (is_wnts)
+			bin_dv_to_wstr_place ((unsigned char *) val[inx], ((wchar_t *) rgbValue) + fill, len);
+		      else
+			bin_dv_to_str_place ((unsigned char *) val[inx], ((char *) rgbValue) + fill, len);
+		      fill += len * 2;
+# endif
 		    }
-#else
-		    memcpy (((char *) rgbValue) + fill, val[inx], len);
-		    fill += len;
+		  else
 #endif
-		    break;
+		    {
+#ifdef SAFE_SQLGETDATA
+		      if (is_wnts)
+			{
+			  int added = cli_narrow_to_wide (stmt->stmt_connection->con_charset, 0,
+			      (unsigned char *) val[inx], len,
+			      ((wchar_t *) rgbValue_tail),
+			      ((wchar_t *) rgbValue_end) - ((wchar_t *) rgbValue_tail));
+			  rgbValue_tail += added * sizeof (wchar_t);
+			}
+		      else
+			{
+			  int added = rgbValue_end - rgbValue_tail;
+
+			  if (added > len)
+			    added = len;
+
+			  memcpy (rgbValue_tail, val[inx], added);
+			  rgbValue_tail += added;
+			}
+#else
+		      if (is_wnts)
+			cli_narrow_to_wide (stmt->stmt_connection->con_charset, 0,
+			    (unsigned char *) val[inx], len, ((wchar_t *) rgbValue) + fill, len);
+		      else
+			memcpy (((char *) rgbValue) + fill, val[inx], len);
+
+		      fill += len;
+#endif
+		    }
+		  break;
+
+		default:
+#ifdef SAFE_SQLGETDATA
+		  {
+		    int added = rgbValue_end - rgbValue_tail;
+
+		    if (added > len)
+		      added = len;
+
+		    memcpy (rgbValue_tail, val[inx], added);
+		    rgbValue_tail += added;
+		  }
+#else
+		  memcpy (((char *) rgbValue) + fill, val[inx], len);
+		  fill += len;
+#endif
+		  break;
 		}
 	    }
+
 #ifdef SAFE_SQLGETDATA
 	  if (is_nts)
 	    ((char *) rgbValue_tail)[0] = '\x0';
+
 	  if (is_wnts)
 	    ((wchar_t *) rgbValue_tail)[0] = L'\x0';
 #else
 	  if (is_nts)
 	    ((char *) rgbValue)[fill] = 0;
+
 	  if (is_wnts)
 	    ((wchar_t *) rgbValue)[fill] = L'\x0';
 #endif
+
 	  if (pcbValue)
 #ifndef MAP_DIRECT_BIN_CHAR
-	    *pcbValue = length *
-		(is_wnts ? sizeof (wchar_t) : sizeof (char)) *
-		(is_blob_to_char ? 2 : 1);
+	    *pcbValue = length * (is_wnts ? sizeof (wchar_t) : sizeof (char)) * (is_blob_to_char ? 2 : 1);
 #ifdef SAFE_SQLGETDATA
-	  cb->cb_read_up_to += (rgbValue_tail - ((unsigned char *)rgbValue)) / (is_blob_to_char ? 2 : 1);
+	  cb->cb_read_up_to += (rgbValue_tail - ((unsigned char *) rgbValue)) / (is_blob_to_char ? 2 : 1);
 #else
 	  cb->cb_read_up_to += fill / (is_blob_to_char ? 2 : 1);
 #endif
 #else
 	    *pcbValue = length * (is_wnts ? sizeof (wchar_t) : sizeof (char));
 #ifdef SAFE_SQLGETDATA
-	  cb->cb_read_up_to += (rgbValue_tail - ((unsigned char *)rgbValue));
+	  cb->cb_read_up_to += (rgbValue_tail - ((unsigned char *) rgbValue));
 #else
 	  cb->cb_read_up_to += fill;
 #endif
 #endif
 
 	  dk_free_tree ((box_t) val);
+
 	  if (bh->bh_length > (size_t) cb->cb_read_up_to)
 	    {
 	      set_data_truncated_success_info (stmt, "CL059", icol);
@@ -5328,9 +5531,10 @@ virtodbc__SQLGetData (
 	  else
 	    return SQL_SUCCESS;
 	}
+
       dk_free_tree ((caddr_t) val);
-      set_error (&stmt->stmt_error, "07006", "CL060",
-		 "Non string data received with SQLGetData.");
+      set_error (&stmt->stmt_error, "07006", "CL060", "Non string data received with SQLGetData.");
+
       return SQL_ERROR;
     }
   else
@@ -5344,14 +5548,11 @@ virtodbc__SQLGetData (
       /* Give sql_type always as zero as we don't know it. */
       int was_first = !cb->cb_not_first_getdata;
       cb->cb_not_first_getdata = 1;
-      piece_len = dv_to_place (col, fCType, 0, cbValueMax, (caddr_t) rgbValue, &len_read,
-	  cb->cb_read_up_to, stmt, icol);
+      piece_len = dv_to_place (col, fCType, 0, cbValueMax, (caddr_t) rgbValue, &len_read, cb->cb_read_up_to, stmt, icol);
 
       if (pcbValue)
 	{
-	  *pcbValue = ((SQL_NULL_DATA == len_read) ? SQL_NULL_DATA
-		       : ((0 == len_read) ? len_read
-			  : (len_read - cb->cb_read_up_to)));
+	  *pcbValue = ((SQL_NULL_DATA == len_read) ? SQL_NULL_DATA : ((0 == len_read) ? len_read : (len_read - cb->cb_read_up_to)));
 	}
 
       switch (piece_len)
@@ -5362,13 +5563,14 @@ virtodbc__SQLGetData (
 	  else
 	    return SQL_NO_DATA_FOUND;	/* Box of len 0 */
 
-	/* If dv_to_place copies pieces of zero length (that is, nothing), then
-	   return SQL_SUCCESS instead of SQL_SUCCESS_WITH_INFO, although the
-	   data in principle is (severely) truncated. However, we want to avoid
-	   idiot loops that would be produced in those cases where client gives
-	   cbValueMax either as zero (when fCType is SQL_C_BINARY or SQL_C_CHAR)
-	   or one (when fCType is SQL_C_CHAR), and instead go right to the next
-	   column. */
+	  /* If dv_to_place copies pieces of zero length (that is, nothing), then
+	     return SQL_SUCCESS instead of SQL_SUCCESS_WITH_INFO, although the
+	     data in principle is (severely) truncated. However, we want to avoid
+	     idiot loops that would be produced in those cases where client gives
+	     cbValueMax either as zero (when fCType is SQL_C_BINARY or SQL_C_CHAR)
+	     or one (when fCType is SQL_C_CHAR), and instead go right to the next
+	     column. */
+
 	case 0:
 	  if (was_first)
 	    return SQL_SUCCESS;
@@ -5376,21 +5578,22 @@ virtodbc__SQLGetData (
 	    return SQL_NO_DATA_FOUND;	/* Box of len 0 */
 
 	default:
-      /* If the data is truncated, then it is the task of dv_str_to_place
-	  function (called by dv_to_place) to set the error state with the call:
-	  set_error (err, "01004", "Data truncated."); */
-	    cb->cb_read_up_to += piece_len;	/* Was: += len_read; */
-	    if (cb->cb_read_up_to < len_read)	/* Data truncated? */
-	      {
-		set_data_truncated_success_info (stmt, "CL059", icol);
-		return (SQL_SUCCESS_WITH_INFO);
-	      }
-	    else
-	      /* The whole stuff has been got now. */
-	      return SQL_SUCCESS;
+	  /* If the data is truncated, then it is the task of dv_str_to_place
+	     function (called by dv_to_place) to set the error state with the call:
+	     set_error (err, "01004", "Data truncated."); */
+	  cb->cb_read_up_to += piece_len;	/* Was: += len_read; */
+	  if (cb->cb_read_up_to < len_read)	/* Data truncated? */
+	    {
+	      set_data_truncated_success_info (stmt, "CL059", icol);
+	      return (SQL_SUCCESS_WITH_INFO);
+	    }
+	  else
+	    /* The whole stuff has been got now. */
+	    return SQL_SUCCESS;
 	}
     }
 }
+
 
 SQLRETURN SQL_API
 SQLGetData (
@@ -5446,8 +5649,10 @@ SQLParamOptions (
 	SQLULEN * pirow)
 {
   STMT (stmt, hstmt);
+
   stmt->stmt_parm_rows = crow;
   stmt->stmt_pirow = pirow;
+
   return SQL_SUCCESS;
 }
 
@@ -5599,20 +5804,22 @@ virtodbc__SQLPrimaryKeys (
 /*  SQLCHAR *percent = (SQLCHAR *) "%"; */
   SQLLEN cbqual, cbown, cbname;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szTableName[KUBL_IDENTIFIER_MAX_LENGTH];
+      _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH], _szTableName[KUBL_IDENTIFIER_MAX_LENGTH];
 
   DEFAULT_QUAL (stmt, cbqual);
   BIND_NAME_PART (hstmt, 1, szTableQualifier, _szTableQualifier, cbTableQualifier, cbqual);
   BIND_NAME_PART (hstmt, 2, szTableOwner, _szTableOwner, cbTableOwner, cbown);
   BIND_NAME_PART (hstmt, 3, szTableName, _szTableName, cbTableName, cbname);
+
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
     rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	(stmt->stmt_connection->con_db_casemode == 2 ? sql_pk_textw_casemode_2 : sql_pk_textw_casemode_0), SQL_NTS);
   else
     rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	(stmt->stmt_connection->con_db_casemode == 2 ? sql_pk_text_casemode_2 : sql_pk_text_casemode_0), SQL_NTS);
+
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
+
   return rc;
 }
 
@@ -5639,10 +5846,7 @@ SQLPrimaryKeys (
   NMAKE_INPUT_NARROW (TableOwner, stmt->stmt_connection);
   NMAKE_INPUT_NARROW (TableName, stmt->stmt_connection);
 
-  rc = virtodbc__SQLPrimaryKeys (hstmt,
-      szTableQualifier, cbTableQualifier,
-      szTableOwner, cbTableOwner,
-      szTableName, cbTableName);
+  rc = virtodbc__SQLPrimaryKeys (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName);
 
   NFREE_INPUT_NARROW (TableQualifier);
   NFREE_INPUT_NARROW (TableOwner);
@@ -5664,24 +5868,15 @@ virtodbc__SQLProcedureColumns (
 	SQLCHAR * szColumnName,
 	SQLSMALLINT cbColumnName)
 {
-  static char *proc_cols_text =
-    "DB.DBA.SQL_PROCEDURE_COLUMNS (?, ?, ?, ?, ?, ?)";
-  static char *proc_cols_textw =
-    "DB.DBA.SQL_PROCEDURE_COLUMNSW (?, ?, ?, ?, ?, ?)";
-
+  static char *proc_cols_text = "DB.DBA.SQL_PROCEDURE_COLUMNS (?, ?, ?, ?, ?, ?)";
+  static char *proc_cols_textw = "DB.DBA.SQL_PROCEDURE_COLUMNSW (?, ?, ?, ?, ?, ?)";
 
   STMT (stmt, hstmt);
   SQLRETURN rc;
   SQLLEN cbqual = cbProcQualifier,
-    cbown = cbProcOwner,
-    cbname = cbProcName,
-    cbcol = cbColumnName,
-    cbcasemode = sizeof (long),
-    cbodbc3 = sizeof (long);
+      cbown = cbProcOwner, cbname = cbProcName, cbcol = cbColumnName, cbcasemode = sizeof (long), cbodbc3 = sizeof (long);
   char _szProcQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	  _szProcOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szProcName[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szColumnName[KUBL_IDENTIFIER_MAX_LENGTH];
+      _szProcOwner[KUBL_IDENTIFIER_MAX_LENGTH], _szProcName[KUBL_IDENTIFIER_MAX_LENGTH], _szColumnName[KUBL_IDENTIFIER_MAX_LENGTH];
   long casemode = stmt->stmt_connection->con_db_casemode == 2 ? 1 : 0;
   long isODBC3 = stmt->stmt_connection->con_environment->env_odbc_version >= 3;
 
@@ -5691,20 +5886,22 @@ virtodbc__SQLProcedureColumns (
       strcpy_ck (_szProcQualifier, (const char *) szProcQualifier);
       cbqual = (cbProcQualifier = SQL_NTS);
     }
+
   BIND_NAME_PART (hstmt, 1, szProcQualifier, _szProcQualifier, cbProcQualifier, cbqual);
   BIND_NAME_PART (hstmt, 2, szProcOwner, _szProcOwner, cbProcOwner, cbown);
   BIND_NAME_PART (hstmt, 3, szProcName, _szProcName, cbProcName, cbname);
   BIND_NAME_PART (hstmt, 4, szColumnName, _szColumnName, cbColumnName, cbcol);
 
-  virtodbc__SQLSetParam (hstmt, 5, SQL_C_LONG, SQL_INTEGER, 0, 0,
-      &casemode, &cbcasemode);
-  virtodbc__SQLSetParam (hstmt, 6, SQL_C_LONG, SQL_INTEGER, 0, 0,
-      &isODBC3, &cbodbc3);
+  virtodbc__SQLSetParam (hstmt, 5, SQL_C_LONG, SQL_INTEGER, 0, 0, &casemode, &cbcasemode);
+  virtodbc__SQLSetParam (hstmt, 6, SQL_C_LONG, SQL_INTEGER, 0, 0, &isODBC3, &cbodbc3);
+
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
     rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) proc_cols_textw, SQL_NTS);
   else
     rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) proc_cols_text, SQL_NTS);
+
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
+
   return rc;
 }
 
@@ -5736,10 +5933,7 @@ SQLProcedureColumns (
   NMAKE_INPUT_NARROW (ColumnName, stmt->stmt_connection);
 
   rc = virtodbc__SQLProcedureColumns (hstmt,
-      szProcQualifier, cbProcQualifier,
-      szProcOwner, cbProcOwner,
-      szProcName, cbProcName,
-      szColumnName, cbColumnName);
+      szProcQualifier, cbProcQualifier, szProcOwner, cbProcOwner, szProcName, cbProcName, szColumnName, cbColumnName);
 
   NFREE_INPUT_NARROW (ProcQualifier);
   NFREE_INPUT_NARROW (ProcOwner);
@@ -5864,17 +6058,15 @@ virtodbc__SQLProcedures (
   SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   char _szProcQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	  _szProcOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szProcName[KUBL_IDENTIFIER_MAX_LENGTH];
+      _szProcOwner[KUBL_IDENTIFIER_MAX_LENGTH], _szProcName[KUBL_IDENTIFIER_MAX_LENGTH];
 
-  if (is_empty_or_null(szProcQualifier, cbqual))
+  if (is_empty_or_null (szProcQualifier, cbqual))
     {
       szProcQualifier = NULL;
       _szProcQualifier[0] = 0;
     }
   else
-    remove_search_escapes((char *) szProcQualifier, _szProcQualifier, sizeof (_szProcQualifier),
-	&cbqual, cbProcQualifier);
+    remove_search_escapes ((char *) szProcQualifier, _szProcQualifier, sizeof (_szProcQualifier), &cbqual, cbProcQualifier);
 
   if (!szProcQualifier)
     {
@@ -5883,51 +6075,44 @@ virtodbc__SQLProcedures (
       strcpy_ck (_szProcQualifier, (const char *) szProcQualifier);
     }
 
-  if (is_empty_or_null(szProcOwner, cbowner))
+  if (is_empty_or_null (szProcOwner, cbowner))
     {
       szProcOwner = NULL;
       _szProcOwner[0] = 0;
     }
   else
-    remove_search_escapes((char *) szProcOwner, _szProcOwner, sizeof (_szProcOwner),
-	&cbowner, cbProcOwner);
+    remove_search_escapes ((char *) szProcOwner, _szProcOwner, sizeof (_szProcOwner), &cbowner, cbProcOwner);
 
-  if (is_empty_or_null(szProcName, cbname))
+  if (is_empty_or_null (szProcName, cbname))
     {
       szProcName = NULL;
       _szProcName[0] = 0;
     }
   else
-    remove_search_escapes((char *) szProcName, _szProcName, sizeof (_szProcName),
-	&cbname, cbProcName);
+    remove_search_escapes ((char *) szProcName, _szProcName, sizeof (_szProcName), &cbname, cbProcName);
 
   /* The first parameter is the pattern the user himself gave in
-    szProcQualifier, or just a single percent if the szProcQualifier
-    was NULL: */
-  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      (szProcQualifier ? (SQLCHAR *)_szProcQualifier : percent),
+     szProcQualifier, or just a single percent if the szProcQualifier
+     was NULL: */
+  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0, (szProcQualifier ? (SQLCHAR *) _szProcQualifier : percent),
       (szProcQualifier ? &cbqual : &plen));
 
   /* Similarly with szProcOwner and szProcName parameters: */
-  virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      (szProcOwner ? (SQLCHAR *)_szProcOwner : percent),
+  virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0, (szProcOwner ? (SQLCHAR *) _szProcOwner : percent),
       (szProcOwner ? &cbowner : &plen));
 
-  virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      (szProcName ? (SQLCHAR *)_szProcName : percent),
+  virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0, (szProcName ? (SQLCHAR *) _szProcName : percent),
       (szProcName ? &cbname : &plen));
 
 
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
     rc = virtodbc__SQLExecDirect (hstmt,
-	(SQLCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
-		  sql_proceduresw_casemode_2 :
-		  sql_proceduresw_casemode_0) , SQL_NTS);
+	(SQLCHAR *) (stmt->stmt_connection->con_db_casemode == 2 ?
+	    sql_proceduresw_casemode_2 : sql_proceduresw_casemode_0), SQL_NTS);
   else
     rc = virtodbc__SQLExecDirect (hstmt,
-	(SQLCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
-		  sql_procedures_casemode_2 :
-		  sql_procedures_casemode_0) , SQL_NTS);
+	(SQLCHAR *) (stmt->stmt_connection->con_db_casemode == 2 ? sql_procedures_casemode_2 : sql_procedures_casemode_0), SQL_NTS);
+
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
 
   return rc;
@@ -5956,10 +6141,7 @@ SQLProcedures (
   NMAKE_INPUT_NARROW (ProcOwner, stmt->stmt_connection);
   NMAKE_INPUT_NARROW (ProcName, stmt->stmt_connection);
 
-  rc = virtodbc__SQLProcedures (hstmt,
-      szProcQualifier, cbProcQualifier,
-      szProcOwner, cbProcOwner,
-      szProcName, cbProcName);
+  rc = virtodbc__SQLProcedures (hstmt, szProcQualifier, cbProcQualifier, szProcOwner, cbProcOwner, szProcName, cbProcName);
 
   NFREE_INPUT_NARROW (ProcQualifier);
   NFREE_INPUT_NARROW (ProcOwner);
@@ -5977,8 +6159,7 @@ SQLSetScrollOptions (
 	SQLUSMALLINT crowRowset)
 {
   STMT (stmt, hstmt);
-  if (!stmt->stmt_at_end &&
-      stmt->stmt_future)
+  if (!stmt->stmt_at_end && stmt->stmt_future)
     {
       set_error (&stmt->stmt_error, "S1010", "CL061", "Can't set scroll on open cursor");
       return SQL_ERROR;
@@ -6009,54 +6190,45 @@ virtodbc__SQLTablePrivileges (
   SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szTableName[KUBL_IDENTIFIER_MAX_LENGTH];
+      _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH], _szTableName[KUBL_IDENTIFIER_MAX_LENGTH];
 
-  if (is_empty_or_null(szTableQualifier, cbqual))
+  if (is_empty_or_null (szTableQualifier, cbqual))
     {
       szTableQualifier = NULL;
       _szTableQualifier[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableQualifier, _szTableQualifier, sizeof (_szTableQualifier),
-	&cbqual, cbTableQualifier);
+    remove_search_escapes ((char *) szTableQualifier, _szTableQualifier, sizeof (_szTableQualifier), &cbqual, cbTableQualifier);
 
-  if (is_empty_or_null(szTableOwner, cbowner))
+  if (is_empty_or_null (szTableOwner, cbowner))
     {
       szTableOwner = NULL;
       _szTableOwner[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableOwner, _szTableOwner, sizeof (_szTableOwner),
-	&cbowner, cbTableOwner);
+    remove_search_escapes ((char *) szTableOwner, _szTableOwner, sizeof (_szTableOwner), &cbowner, cbTableOwner);
 
-  if (is_empty_or_null(szTableName, cbname))
+  if (is_empty_or_null (szTableName, cbname))
     {
       szTableName = NULL;
       _szTableName[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableName, _szTableName, sizeof (_szTableName),
-	&cbname, cbTableName);
+    remove_search_escapes ((char *) szTableName, _szTableName, sizeof (_szTableName), &cbname, cbTableName);
 
 
   DEFAULT_QUAL (stmt, cbqual);
-  virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent),
-	       (szTableQualifier ? &cbqual : &plen));
+  virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0, (szTableQualifier ? (SQLCHAR *) _szTableQualifier : percent),
+      (szTableQualifier ? &cbqual : &plen));
 
 /* Similarly with szTableOwner and szTableName parameters: */
-  virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableOwner ? (SQLCHAR *)_szTableOwner : percent),
-	       (szTableOwner ? &cbowner : &plen));
+  virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0, (szTableOwner ? (SQLCHAR *) _szTableOwner : percent),
+      (szTableOwner ? &cbowner : &plen));
 
-  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableName ? (SQLCHAR *)_szTableName : percent),
-	       (szTableName ? &cbname : &plen));
+  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0, (szTableName ? (SQLCHAR *) _szTableName : percent),
+      (szTableName ? &cbname : &plen));
 
-
-  rc = virtodbc__SQLExecDirect (hstmt,
-      (SQLCHAR *) "DB.DBA.table_privileges(?,?,?)", SQL_NTS);
+  rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) "DB.DBA.table_privileges(?,?,?)", SQL_NTS);
 
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
 
@@ -6086,9 +6258,7 @@ SQLTablePrivileges (
   NMAKE_INPUT_NARROW (TableName, stmt->stmt_connection);
 
   rc = virtodbc__SQLTablePrivileges (hstmt,
-      szTableQualifier, cbTableQualifier,
-      szTableOwner, cbTableOwner,
-      szTableName, cbTableName);
+      szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName);
 
   NFREE_INPUT_NARROW (TableQualifier);
   NFREE_INPUT_NARROW (TableOwner);
@@ -6119,73 +6289,63 @@ virtodbc__SQLColumnPrivileges (
   SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
-	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szTableName[KUBL_IDENTIFIER_MAX_LENGTH],
-	_szColumnName[KUBL_IDENTIFIER_MAX_LENGTH];
+      _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
+      _szTableName[KUBL_IDENTIFIER_MAX_LENGTH], _szColumnName[KUBL_IDENTIFIER_MAX_LENGTH];
 
-  if (is_empty_or_null(szTableQualifier, cbqual))
+  if (is_empty_or_null (szTableQualifier, cbqual))
     {
       szTableQualifier = NULL;
       _szTableQualifier[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableQualifier, _szTableQualifier,
-	sizeof (_szTableQualifier), &cbqual, cbTableQualifier);
+    remove_search_escapes ((char *) szTableQualifier, _szTableQualifier, sizeof (_szTableQualifier), &cbqual, cbTableQualifier);
 
-  if (is_empty_or_null(szTableOwner, cbowner))
+  if (is_empty_or_null (szTableOwner, cbowner))
     {
       szTableOwner = NULL;
       _szTableOwner[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableOwner, _szTableOwner, sizeof (_szTableOwner),
-	&cbowner, cbTableOwner);
+    remove_search_escapes ((char *) szTableOwner, _szTableOwner, sizeof (_szTableOwner), &cbowner, cbTableOwner);
 
-  if (is_empty_or_null(szTableName, cbname))
+  if (is_empty_or_null (szTableName, cbname))
     {
       szTableName = NULL;
       _szTableName[0] = 0;
     }
   else
-    remove_search_escapes((char *) szTableName, _szTableName, sizeof (_szTableName),
-	&cbname, cbTableName);
+    remove_search_escapes ((char *) szTableName, _szTableName, sizeof (_szTableName), &cbname, cbTableName);
 
-  if (is_empty_or_null(szColumnName, cbcolnam))
+  if (is_empty_or_null (szColumnName, cbcolnam))
     {
       szColumnName = NULL;
       _szColumnName[0] = 0;
     }
   else
-    remove_search_escapes((char *) szColumnName, _szColumnName, sizeof (_szColumnName),
-	&cbcolnam, cbColumnName);
+    remove_search_escapes ((char *) szColumnName, _szColumnName, sizeof (_szColumnName), &cbcolnam, cbColumnName);
 
   DEFAULT_QUAL (stmt, cbqual);
+
   /* The first parameter is the pattern the user himself gave in
-    szTableQualifier, or just a single percent if the szTableQualifier
-    was NULL: */
-  virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent),
-	       (szTableQualifier ? &cbqual : &plen));
+     szTableQualifier, or just a single percent if the szTableQualifier
+     was NULL: */
+  virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0, (szTableQualifier ? (SQLCHAR *) _szTableQualifier : percent),
+      (szTableQualifier ? &cbqual : &plen));
 
 /* Similarly with szTableOwner, szTableName and szColumnName parameters: */
-  virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableOwner ? (SQLCHAR *)_szTableOwner : percent),
-	       (szTableOwner ? &cbowner : &plen));
+  virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0, (szTableOwner ? (SQLCHAR *) _szTableOwner : percent),
+      (szTableOwner ? &cbowner : &plen));
 
-  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableName ? (SQLCHAR *)_szTableName : percent),
-	       (szTableName ? &cbname : &plen));
+  virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0, (szTableName ? (SQLCHAR *) _szTableName : percent),
+      (szTableName ? &cbname : &plen));
 
-  virtodbc__SQLSetParam (hstmt, 4, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szColumnName ? (SQLCHAR *)_szColumnName : percent),
-	       (szColumnName ? &cbcolnam : &plen));
+  virtodbc__SQLSetParam (hstmt, 4, SQL_C_CHAR, SQL_CHAR, 0, 0, (szColumnName ? (SQLCHAR *) _szColumnName : percent),
+      (szColumnName ? &cbcolnam : &plen));
 
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-    rc = virtodbc__SQLExecDirect (hstmt,
-	(SQLCHAR *) "DB.DBA.column_privileges_utf8(?,?,?,?)", SQL_NTS);
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) "DB.DBA.column_privileges_utf8(?,?,?,?)", SQL_NTS);
   else
-    rc = virtodbc__SQLExecDirect (hstmt,
-	(SQLCHAR *) "DB.DBA.column_privileges(?,?,?,?)", SQL_NTS);
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) "DB.DBA.column_privileges(?,?,?,?)", SQL_NTS);
 
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
 
@@ -6219,10 +6379,7 @@ SQLColumnPrivileges (
   NMAKE_INPUT_NARROW (ColumnName, stmt->stmt_connection);
 
   rc = virtodbc__SQLColumnPrivileges (hstmt,
-      szTableQualifier, cbTableQualifier,
-      szTableOwner, cbTableOwner,
-      szTableName, cbTableName,
-      szColumnName, cbColumnName);
+      szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, szColumnName, cbColumnName);
 
   NFREE_INPUT_NARROW (TableQualifier);
   NFREE_INPUT_NARROW (TableOwner);
@@ -6231,6 +6388,7 @@ SQLColumnPrivileges (
 
   return rc;
 }
+
 
 #if 0
 /* Navigation Extensions prototypes */
