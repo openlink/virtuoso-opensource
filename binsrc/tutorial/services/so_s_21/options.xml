@@ -22,5 +22,6 @@
 -->
 <init>
 <src load_at_start="" load_to_clean="google_api.sql"/>
+<deps item="SOAPDEMO" example="SO-S-1" type="user" />
 <http_threads val="2" />
 </init>
