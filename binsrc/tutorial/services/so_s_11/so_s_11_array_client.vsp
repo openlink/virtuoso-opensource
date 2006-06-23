@@ -25,6 +25,13 @@
    declare idx, len integer;
    declare _list any;
    r := ''; sel := '';
+   -- When hosted in dav we set the 'Content' value to empty, because string_session will crate problems
+   declare _params any;
+   _params := vector();
+   for (declare i int,i:=0;i<length(params);i:=i+2)
+     if (params[i] <> 'Content')
+       _params := vector_concat(_params,vector(params[i],params[i+1]));
+   params := _params;
    _use_stored := {?'use_stored'};
    if (_use_stored is NULL)
      params := vector_concat (params, vector ('use_stored', NULL));

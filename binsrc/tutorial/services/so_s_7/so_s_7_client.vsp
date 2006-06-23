@@ -25,12 +25,19 @@
    r := '';
    if ({?'exec'} = 'Get data')
    {
+     -- When hosted in dav we set the 'Content' value to empty, because string_session will crate problems
+     declare _params any;
+     _params := vector();
+     for (declare i int,i:=0;i<length(params);i:=i+2)
+       if (params[i] <> 'Content')
+         _params := vector_concat(_params,vector(params[i],params[i+1]));
+     params := _params;
    if (not exists (select 1 from HTTP_PATH where HP_LPATH = '/xml-soap'))
      {
        r := 'get_NasdaqQuotes service hasn''t been initialized properly, please click on the "set initial state" link before running this demo.';
        goto endf;
      }
-   declare exit handler for sqlstate '*' { r := 'Invalid SOAP Service Response'; goto endf; };
+     declare exit handler for sqlstate '*' { r := 'Invalid SOAP Service Response:' || __SQL_MESSAGE; goto endf; };
    {
      result := soap_call (sprintf ('localhost:%s', server_http_port ()), '/xml-soap/so_s_7_server.vsp', null, 'get_NasdaqQuotes', params, 11);
    }
