@@ -69,6 +69,6 @@ create procedure WS.SOAP.ora_remote (in dsn varchar, in uid varchar, in pwd varc
 };
 
 
-grant execute on WS.SOAP.ms_remote to SOAP;
+grant execute on WS.SOAP.ms_remote to SOAP_SO_S_14;
 
-grant execute on WS.SOAP.ora_remote to SOAP;
+grant execute on WS.SOAP.ora_remote to SOAP_SO_S_14;
