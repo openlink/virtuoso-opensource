@@ -113,6 +113,42 @@ caddr_t * mp_list (mem_pool_t * mp, long n, ...);
     SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_MEM_POOL, NULL); \
     } while (0)
 
+#ifdef _DEBUG
+#define mp_box_tag_modify_impl(box,new_tag) \
+ do { \
+   box_tag_aux((box)) = (new_tag); \
+   } while (0)
+#else
+#define mp_box_tag_modify_impl(box,new_tag) (box_tag_aux((box)) = (new_tag))
+#endif
+
+#ifdef MALLOC_DEBUG
+#define mp_box_tag_modify(box,new_tag) \
+ do { \
+   if (DV_UNAME == new_tag) \
+     GPF_T1 ("Can't make UNAME by mp_box_tag_modify"); \
+   if (DV_UNAME == box_tag_aux(box)) \
+     GPF_T1 ("Can't alter UNAME by mp_box_tag_modify"); \
+   if (DV_REFERENCE == new_tag) \
+     GPF_T1 ("Can't make REFERENCE by mp_box_tag_modify"); \
+   if (DV_REFERENCE == box_tag_aux(box)) \
+     GPF_T1 ("Can't alter REFERENCE by mp_box_tag_modify"); \
+   if (TAG_FREE == new_tag) \
+     GPF_T1 ("Can't make TAG_FREE box by mp_box_tag_modify"); \
+   if (TAG_FREE == box_tag_aux(box)) \
+     GPF_T1 ("Can't alter TAG_FREE by mp_box_tag_modify"); \
+   if (TAG_BAD == new_tag) \
+     GPF_T1 ("Can't make TAG_BAD box by mp_box_tag_modify"); \
+   if (TAG_BAD == box_tag_aux(box)) \
+     GPF_T1 ("Can't alter TAG_BAD by mp_box_tag_modify"); \
+   mp_box_tag_modify_impl(box,new_tag); \
+   } while (0);
+#else
+#define mp_box_tag_modify(box,new_tag) mp_box_tag_modify_impl(box,new_tag)
+#endif
+
+
+
 #define dbg_t_alloc_box(len,dtp)	dbg_mp_alloc_box (DBG_ARGS THR_TMP_POOL, (len), (dtp))
 #define dbg_t_box_string(str)		dbg_mp_box_string (DBG_ARGS THR_TMP_POOL, (str))
 #define dbg_t_box_substr(str,n1,n2)	dbg_mp_box_substr (DBG_ARGS THR_TMP_POOL, (str), (n1), (n2))
