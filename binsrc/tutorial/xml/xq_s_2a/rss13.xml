@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="ISO-8859-1"?>
 <rss version="2.0">
   <channel>
     <title>Weblogs @ ASP.NET</title>
@@ -60,7 +60,7 @@
         </ul>
         <p>This tool was compiled for the .NET Framework 2.0 Beta 2. Oh, and it uses reflection so the enumeration constants are not hardcoded just in case the list changes between now and the RTM.</p>
         <p><a href="http://www.kennyandkarin.com/kenny/blog/specialfolders.zip">Download it here</a>. In an upcoming post I'll be talking about language choice and why I wrote this tool in C#!</p>
-        <p> </p>
+        <p>Â </p>
         <img src="http://weblogs.asp.net/KennyKerr/aggbug/413503.aspx" width="1" height="1"/>
       </content>
       <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Kenny Kerr</dc:creator>
@@ -163,7 +163,7 @@
       <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
       <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/dbrowning/services/trackbacks/413435.aspx</n0:ping>
       <source url="http://weblogs.asp.net/dbrowning/rss.aspx">.NET Brain Droppings</source>
-      <content><a href="http://dev4net.com/blog">Don's</a> post on <a href="http://dev4net.com/blog/archive/2005/06/16/2328.aspx">how to leverage differencing disks in Virtual PC</a> is truly enlightening.  I am the worst about creating ad hoc VPC images.  I have one base image with WinXP SP2 and Office on it; anytime I need a new "machine" I copy that base image, run <a href="http://www.sysinternals.com/Utilities/NewSid.html">NewSid</a>, and start installing software.  I know this is a waste of drive space (and effort), but I never really thought to much about it.<br/><br/> Well, I have now.  Don does a great job of laying out how he uses his base images combined with differencing disks to support multiple envionments.  This is kick ass stuff.  I'm linking his VPC Model here, but <a href="http://dev4net.com/blog/archive/2005/06/16/2328.aspx">go read the entire thing to get the details</a>.<br/><br/><img src="http://dev4net.members.winisp.net/images/Drawing1.png"/><p/><img src="http://weblogs.asp.net/dbrowning/aggbug/413435.aspx" width="1" height="1"/></content>
+      <content><a href="http://dev4net.com/blog">Don's</a> post on <a href="http://dev4net.com/blog/archive/2005/06/16/2328.aspx">how to leverage differencing disks in Virtual PC</a> is truly enlightening.Â  I am the worst about creating ad hoc VPC images.Â  I have one base image with WinXP SP2 and Office on it; anytime I need a new "machine" I copy that base image, run <a href="http://www.sysinternals.com/Utilities/NewSid.html">NewSid</a>, and start installing software.Â  I know this is a waste of drive space (and effort), but I never really thought to much about it.<br/><br/> Well, I have now.Â  Don does a great job of laying out how he uses his base images combined with differencing disks to support multiple envionments.Â  This is kick ass stuff.Â  I'm linking his VPC Model here, but <a href="http://dev4net.com/blog/archive/2005/06/16/2328.aspx">go read the entire thing to get the details</a>.<br/><br/><img src="http://dev4net.members.winisp.net/images/Drawing1.png"/><p/><img src="http://weblogs.asp.net/dbrowning/aggbug/413435.aspx" width="1" height="1"/></content>
       <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Don Browning</dc:creator>
     </item>
     <item>
@@ -180,7 +180,7 @@
       <content>
         <p>JetBrains <a href="http://www.jetbrains.com/mps/index.html">opened an EAP</a> for its Meta Programming System.</p>
         <p>I'm downloading it, I'll post my impressions after I find some time to play with it.</p>
-        <p> </p>
+        <p>Â </p>
         <img src="http://weblogs.asp.net/aaguiar/aggbug/413434.aspx" width="1" height="1"/>
       </content>
       <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Andres Aguiar</dc:creator>
@@ -197,15 +197,15 @@
       <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/jdennany/services/trackbacks/413430.aspx</n0:ping>
       <source url="http://weblogs.asp.net/jdennany/rss.aspx">Jerry Dennany's Occasional Clue</source>
       <content>
-        <p>Despite the lack of blog posts, I've really been immersed in WiX.  I'm learning to love and hate this project.  I really love the XML declarative style of creating MSIs.  I really hate the fact that WiX wraps the abomination known as Windows installer.  </p>
-        <p>I was very familiar with Windows Installer before this adventure. I've spent years working with both InstallShield and Wise, and have had to edit raw MSI tables many times in the past.  However, these commercial products do a much better job of hiding the complexities of Windows Installer than WiX does.  If you decide to adopt WiX, make certain that you have the time to invest in learning the ins and outs of the MSI SDK.  Even if you think that you know quite a bit in this area, be prepared to spend some time spelunking through MSI.chm.</p>
-        <p>Writing Custom Actions using WiX isn't a walk in the park, either.  I'll talk a bit about managed CAs a bit in the future.  Hopefully people will learn from my trials and tribulations in this area.</p>
+        <p>Despite the lack of blog posts, I've really been immersed in WiX.Â  I'm learning to love and hateÂ this project.Â  I really love the XML declarative style of creating MSIs.Â  I really hate the fact that WiX wraps the abomination known as Windows installer.Â  </p>
+        <p>I was very familiar with Windows Installer before this adventure. I've spent years working with both InstallShield and Wise, and have had to edit raw MSI tables many times in the past.Â  However, these commercial products do a much better job of hiding the complexities of Windows Installer than WiX does.Â  If you decide to adopt WiX, make certain that you have the time to invest in learning the ins and outs of the MSI SDK.Â  Even if you think that you know quite a bit in this area, be prepared to spend some time spelunking through MSI.chm.</p>
+        <p>Writing Custom Actions using WiX isn't a walk in the park, either.Â  I'll talk a bit about managed CAs a bit in the future.Â  Hopefully people will learn from my trials and tribulations in this area.</p>
         <p>Just to make sure that this blog entry has some substance, I'm going to give my WiX UI tip of the day:</p>
         <p>To define the default font, place the following in the &lt;UI/&gt; section:</p>
         <p>
-          <font face="Courier New" size="2">&lt;<font color="#a52a2a">UI</font>&gt;<br/>  &lt;<font color="#a52a2a">Property</font> <font color="#ff0000">Id</font>=<font color="#0000ff">"DefaultUIFont"</font>&gt;Tahoma8&lt;/<font color="#a52a2a">Property</font>&gt; <br/>  &lt;<font color="#a52a2a">TextStyle</font> <font color="#ff0000">Id</font>=<font color="#0000ff">"Tahoma8"</font> <font color="#ff0000">FaceName</font>=<font color="#0000ff">"Tahoma"</font> <font color="#ff0000">Size</font>=<font color="#0000ff">"8"</font> /&gt;  <br/>  <font color="#008000">&lt;!-- rest of UI (dialogs, etc) go here. --&gt;</font><br/>&lt;<font color="#a52a2a">UI</font>&gt;</font>
+          <font face="Courier New" size="2">&lt;<font color="#a52a2a">UI</font>&gt;<br/>Â  &lt;<font color="#a52a2a">Property</font> <font color="#ff0000">Id</font>=<font color="#0000ff">"DefaultUIFont"</font>&gt;Tahoma8&lt;/<font color="#a52a2a">Property</font>&gt; <br/>Â  &lt;<font color="#a52a2a">TextStyle</font> <font color="#ff0000">Id</font>=<font color="#0000ff">"Tahoma8"</font> <font color="#ff0000">FaceName</font>=<font color="#0000ff">"Tahoma"</font> <font color="#ff0000">Size</font>=<font color="#0000ff">"8"</font> /&gt;Â Â <br/>Â  <font color="#008000">&lt;!--Â rest ofÂ UI (dialogs, etc) go here.Â --&gt;</font><br/>&lt;<font color="#a52a2a">UI</font>&gt;</font>
         </p>
-        <p> </p>
+        <p>Â </p>
         <img src="http://weblogs.asp.net/jdennany/aggbug/413430.aspx" width="1" height="1"/>
       </content>
       <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Jerry Dennany</dc:creator>
@@ -222,22 +222,22 @@
       <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/conrad/services/trackbacks/413428.aspx</n0:ping>
       <source url="http://weblogs.asp.net/conrad/rss.aspx">Conrad Agramont's WebLog</source>
       <content>
-        <p>I guess I'll join the trend of puting job postings on a blog.  We're growing our development team at eQuest and we're looking for that special person that loves to develop web applications, server side components, and a touch lots of different Microsoft products and technologies.  If you're expereienced in MPS architecture, engineering, and/or development and want to work with a team of MPS experts, than this is youre future home!</p>
+        <p>I guess I'll join the trend of puting job postings on a blog.Â  We're growing our development team at eQuest and we're looking for that special person that loves to develop web applications, server side components, and a touch lots of different Microsoft products and technologies.Â  If you're expereienced in MPS architecture, engineering, and/or development and want to work with a team of MPS experts, than this is youre future home!</p>
         <p>If you're interested, please shoot me an email with your resume.</p>
         <p>Conrad Agramont, Senior Architect, <a href="mailto:conrada@eqinc.com">conrada@eqinc.com</a> </p>
         <p>
           <strong>Job Title: Software Development Engineer</strong>
         </p>
-        <p><strong>SUMMARY: <br/></strong>eQuest, a division of Planet Technologies Inc., is looking for a Software Development Engineer that is passionate about developing challenging applications and a desire to work with a variety Microsoft based products and technologies.  eQuest works with Service Providers and Telecommunications companies around the world to solve their business requires through the use of Microsoft products and technologies and custom integration with exciting software solutions.</p>
-        <p><br/>An ideal candidate will be heavily experienced in provisioning and automating Microsoft products and technologies (Active Directory, Exchange, Internet Information Services, and SQL Server).  Knowledge of Microsoft Solutions (Hosted Exchange &amp; Windows based Hosting) and the Microsoft Provisioning System is a plus.<br/></p>
-        <p>This position will also contribute to future product development for the eQuest Automation Framework (EAF).  EAF is an ASP.NET-based user interface and a collection of class libraries (built on Visual Studio.NET 2003 and C#) which provides a web based user interface to manage customers, users, and services in a Microsoft Hosted Exchange and Microsoft Web Hosting environment.</p>
-        <p><br/><strong>DUTIES AND RESPONSIBILITIES:</strong><br/>1. Develop component level specifications<br/>2. Perform peer based reviews for code efficiency and security.<br/>3. Participate in project related team meetings and reviews<br/>4. Work with Project Managers, Developers, and Testers to ensure proper scheduling, integration, and validation of your coding deliverables.<br/>5. Work directly with customers on feature design and requirements.<br/></p>
+        <p><strong>SUMMARY: <br/></strong>eQuest, a division of Planet Technologies Inc., is looking for a Software Development Engineer that is passionate about developing challenging applications and a desire to work with a variety Microsoft based products and technologies.Â  eQuest works with Service Providers and Telecommunications companies around the world to solve their business requires through the use of Microsoft products and technologies and custom integration with exciting software solutions.</p>
+        <p><br/>An ideal candidate will be heavily experienced in provisioning and automating Microsoft products and technologies (Active Directory, Exchange, Internet Information Services, and SQL Server).Â  Knowledge of Microsoft Solutions (Hosted Exchange &amp; Windows based Hosting) and the Microsoft Provisioning System is a plus.<br/></p>
+        <p>This position will also contribute to future product development for the eQuest Automation Framework (EAF).Â  EAF is an ASP.NET-based user interface and a collection of class libraries (built on Visual Studio.NET 2003 and C#) which provides a web based user interface to manage customers, users, and services in a Microsoft Hosted Exchange and Microsoft Web Hosting environment.</p>
+        <p><br/><strong>DUTIES AND RESPONSIBILITIES:</strong><br/>1.Â Develop component level specifications<br/>2.Â Perform peer based reviews for code efficiency and security.<br/>3.Â Participate in project related team meetings and reviews<br/>4.Â Work with Project Managers, Developers, and Testers to ensure proper scheduling, integration, and validation of your coding deliverables.<br/>5.Â Work directly with customers on feature design and requirements.<br/></p>
         <p>
           <strong>KNOWLEDGE &amp; SKILLS</strong>
         </p>
         <ul>
           <li>Understanding and experience in Microsoft Solution Framework (MSF) development process</li>
-          <li>Microsoft  Windows Server 2003 (Active Directory, Domain Name Service, &amp; Internet Information</li>
+          <li>MicrosoftÂ  Windows Server 2003 (Active Directory, Domain Name Service, &amp; Internet Information</li>
           <li>Services)</li>
           <li>Microsoft Exchange Server 2003</li>
           <li>Microsoft Provisioning System</li>
@@ -305,7 +305,7 @@
       <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/rchartier/services/trackbacks/413410.aspx</n0:ping>
       <source url="http://weblogs.asp.net/rchartier/rss.aspx">Rob Chartier ~ Contemplation...</source>
       <content>
-        <p>After it scans  your drive in, it gives a great visual representation of your drive.  Useful for deleting unused files that just eat up your disk space.</p>
+        <p>After it scansÂ  your drive in, it gives a great visual representation of your drive.Â  Useful for deleting unused files that just eat up your disk space.</p>
         <p>
           <a href="http://www.werkema.com/software/spacemonger.html">http://www.werkema.com/software/spacemonger.html</a>
         </p>
@@ -337,7 +337,7 @@
       <comments>http://weblogs.asp.net/lkempe/archive/2005/06/16/413404.aspx#comment</comments>
       <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">2</n0:comments>
       <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/lkempe/services/trackbacks/413404.aspx</n0:ping>
-      <source url="http://weblogs.asp.net/lkempe/rss.aspx">Laurent Kempé</source>
+      <source url="http://weblogs.asp.net/lkempe/rss.aspx">Laurent Kemp</source>
       <content>
         <table>
           <tbody>
@@ -352,7 +352,7 @@
         </table>
         <img src="http://weblogs.asp.net/lkempe/aggbug/413404.aspx" width="1" height="1"/>
       </content>
-      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Laurent Kempé</dc:creator>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Laurent Kemp</dc:creator>
     </item>
     <item>
       <title>Retina.NET Performance #1</title>
@@ -379,58 +379,58 @@
           <font face="Tahoma" size="2">This "User" entity has 12 properties (mostly strings) and a child entity of type "Currency" that is configured to use lazy load. The entity also has several constrints and triggers configured. If you want to see the code of the "User" class you can open the "Test" project in the Retina.NET VS.NET solution and look for the "User.cs" file.</font>
         </p>
         <p>
-          <font face="Tahoma" size="2">Using a profiler I obtained the results I wanted, and here I show a simplified execution tree and the most important discoveries:</font>
+          <font face="Tahoma" size="2">Using a profiler I obtained the results I wanted, and here I showÂ a simplifiedÂ execution tree and the most important discoveries:</font>
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <u>
-            <span lang="ES">Retina v1.0.0.6<span style="mso-tab-count: 8">                                                                                 </span>Inclusive<span style="mso-tab-count: 1">          </span>Exclusive<n0:p xmlns:n0="o"/></span>
+            <span lang="ES">Retina v1.0.0.6<span style="mso-tab-count: 8">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â </span>Inclusive<span style="mso-tab-count: 1">Â Â Â Â Â Â Â Â Â  </span>Exclusive<n0:p xmlns:n0="o"/></span>
           </u>
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <span lang="ES">
-            <n0:p xmlns:n0="o"> </n0:p>
+            <n0:p xmlns:n0="o">Â </n0:p>
           </span>
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt 0.5in; TEXT-INDENT: -0.25in; mso-list: l0 level1 lfo1; tab-stops: list -27.0pt">
           <span lang="ES" style="FONT-FAMILY: Symbol; mso-fareast-font-family: Symbol; mso-bidi-font-family: Symbol">
-            <span style="mso-list: Ignore">Â·<span style="FONT: 7pt 'Times New Roman'">         </span></span>
+            <span style="mso-list: Ignore">Â·<span style="FONT: 7pt 'Times New Roman'">Â Â Â Â Â Â Â Â  </span></span>
           </span>
-          <span lang="ES">InternalDataStoreBroker.Retrieve <span style="mso-tab-count: 5">                                          </span>100%<span style="mso-tab-count: 2">               </span>0.2%</span>
+          <span lang="ES">InternalDataStoreBroker.RetrieveÂ <span style="mso-tab-count: 5">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â </span>100%<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â Â Â  </span>0.2%</span>
         </p>
         <ul style="MARGIN-TOP: 0in" type="disc">
           <ul style="MARGIN-TOP: 0in" type="circle">
             <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level2 lfo1; tab-stops: list 1.0in">
-              <span lang="ES">Entity.ResetIsDirty<span style="mso-tab-count: 6">                                                          </span>9.5%<span style="mso-tab-count: 2">                </span>0.3%</span>
+              <span lang="ES">Entity.ResetIsDirty<span style="mso-tab-count: 6">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â </span>9.5%<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  </span>0.3%</span>
             </li>
             <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level2 lfo1; tab-stops: list 1.0in">
-              <span lang="ES">BaseEntityPersister.Retrieve<span style="mso-tab-count: 5">                                            </span>89.2%<span style="mso-tab-count: 2">              </span>0.7%</span>
+              <span lang="ES">BaseEntityPersister.Retrieve<span style="mso-tab-count: 5">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â </span>89.2%<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â Â  </span>0.7%</span>
               <ul style="MARGIN-TOP: 0in" type="square">
                 <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level3 lfo1; tab-stops: list 1.5in">
-                  <span lang="ES">IDbCommand.ExecuteReader<span style="mso-tab-count: 3">                               </span>42.6%<span style="mso-tab-count: 2">              </span>0.1%</span>
+                  <span lang="ES">IDbCommand.ExecuteReader<span style="mso-tab-count: 3">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â </span>42.6%<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â Â  </span>0.1%</span>
                 </li>
                 <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level3 lfo1; tab-stops: list 1.5in">
                   <b style="mso-bidi-font-weight: normal">
-                    <span lang="ES">Activator.CreateInstance<span style="mso-tab-count: 4">                                  </span>15.4%<span style="mso-tab-count: 2">             </span>0.3%<n0:p xmlns:n0="o"/></span>
+                    <span lang="ES">Activator.CreateInstance<span style="mso-tab-count: 4">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â </span>15.4%<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â  </span>0.3%<n0:p xmlns:n0="o"/></span>
                   </b>
                 </li>
                 <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level3 lfo1; tab-stops: list 1.5in">
-                  <span lang="ES">BaseEntityPersister.RetrieveChildEntities<span style="mso-tab-count: 2">               1</span>2.8%<span style="mso-tab-count: 2">              </span>3.9%</span>
+                  <span lang="ES">BaseEntityPersister.RetrieveChildEntities<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â 1</span>2.8%<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â Â  </span>3.9%</span>
                 </li>
                 <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level3 lfo1; tab-stops: list 1.5in">
                   <b style="mso-bidi-font-weight: normal">
-                    <span lang="ES">EntityStorageDefn.PopulateEntity<span style="mso-tab-count: 3">                   </span>20.2%<span style="mso-tab-count: 2">             </span>6%<n0:p xmlns:n0="o"/></span>
+                    <span lang="ES">EntityStorageDefn.PopulateEntity<span style="mso-tab-count: 3">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â </span>20.2%<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â  </span>6%<n0:p xmlns:n0="o"/></span>
                   </b>
                   <ul style="MARGIN-TOP: 0in" type="disc">
                     <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level4 lfo1; tab-stops: list 2.0in">
-                      <span lang="ES">SqlDataReader.get_Item<span style="mso-tab-count: 3">                            </span>47.1%<span style="mso-tab-count: 2">              </span>4.9%</span>
+                      <span lang="ES">SqlDataReader.get_Item<span style="mso-tab-count: 3">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â </span>47.1%<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â Â  </span>4.9%</span>
                     </li>
                     <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level4 lfo1; tab-stops: list 2.0in">
                       <b style="mso-bidi-font-weight: normal">
-                        <span lang="ES">EntityMember.SetValue<span style="mso-tab-count: 3">                         </span>40.3%<span style="mso-tab-count: 2">             </span>8.5%<n0:p xmlns:n0="o"/></span>
+                        <span lang="ES">EntityMember.SetValue<span style="mso-tab-count: 3">Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â </span>40.3%<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â  </span>8.5%<n0:p xmlns:n0="o"/></span>
                       </b>
                       <ul style="MARGIN-TOP: 0in" type="circle">
                         <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level5 lfo1; tab-stops: list 2.5in">
-                          <span lang="ES">Reflection.FieldInfo.SetValue<span style="mso-tab-count: 1">           </span>91.5%<span style="mso-tab-count: 2">              </span>4.5%</span>
+                          <span lang="ES">Reflection.FieldInfo.SetValue<span style="mso-tab-count: 1">Â Â Â Â Â Â Â Â Â Â  </span>91.5%<span style="mso-tab-count: 2">Â Â Â Â Â Â Â Â Â Â Â Â Â  </span>4.5%</span>
                         </li>
                       </ul>
                     </li>
@@ -440,7 +440,7 @@
             </li>
           </ul>
         </ul>
-        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt"><font face="Tahoma" size="2"/> </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt"><font face="Tahoma" size="2"/>Â </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <font face="Tahoma" size="2">The test was run 15 times on my dev machine (P4 2.0Gz, 1Gb Ram) and the average execution time for retrieving 1000 entities was 1564.60ms (1.54 for each entity), not too shaby at all for absolutely no tunning.</font>
         </p>
@@ -480,7 +480,7 @@
         <p/>
         <img src="http://weblogs.asp.net/andresv/aggbug/413403.aspx" width="1" height="1"/>
       </content>
-      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Andrés Vettori</dc:creator>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Andrè± Vettori</dc:creator>
     </item>
     <item>
       <title>What is a wiki, in the end???</title>
@@ -724,11 +724,11 @@
       <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/rchartier/services/trackbacks/413381.aspx</n0:ping>
       <source url="http://weblogs.asp.net/rchartier/rss.aspx">Rob Chartier ~ Contemplation...</source>
       <content>
-        <p>Katerina and I finally tied the knot - June 4, 2005.  Excellent turn out, nothing big went wrong, what an awesome day!</p>
-        <p><a href="http://www.chartier-family.com/ngallery/albums/136.aspx">Some pictures here...</a> (I will update them as more friends and family send them in to me)</p>
-        <p>There was a delay in my posting to my blog because of the obvious rush around the date.  We got hitched, moved in with each other, AND went on a quick (1 week) honeymoon into the interior of BC - Penticton, Kelowna, Osoyoos, etc.  </p>
-        <p>For those that are wondering about kids, well it is in the 5 year plan, late, but still there.  ;)</p>
-        <p> </p>
+        <p>Katerina and I finally tied the knot - June 4, 2005.Â  Excellent turn out, nothing big went wrong, what an awesome day!</p>
+        <p><a href="http://www.chartier-family.com/ngallery/albums/136.aspx">Some pictures here...</a>Â (I will update them as more friends and family send them in to me)</p>
+        <p>There was a delay in my posting to my blog because of the obviousÂ rush around the date.Â  We got hitched, moved in with each other, AND went on a quick (1 week) honeymoon into the interior of BC - Penticton, Kelowna, Osoyoos, etc.Â  </p>
+        <p>For those that are wondering about kids, well it is in the 5 year plan, late, but still there.Â  ;)</p>
+        <p>Â </p>
         <img src="http://weblogs.asp.net/rchartier/aggbug/413381.aspx" width="1" height="1"/>
       </content>
       <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Robert Chartier</dc:creator>
@@ -750,7 +750,7 @@ morning, I went ahead and downloaded Mike's <a href="http://angrypets.com/tools/
         <p>I followed the steps outlined for setup, but it didn't quite work the way it
 was outlined at first - I got the dreaded "yellow screen of death". This was due
 to the entries that I had made in the web.config. So I looked at the entries
-that were already in there, and I noticed that some <span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">section/</span><span style="COLOR: blue">&gt;</span> nodes were added to the <span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">system.web/</span><span style="COLOR: blue">&gt;</span> node. Moving the default configuration from
+that were already in there, and I noticed that some <span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">section/</span><span style="COLOR: blue">&gt;</span>Â nodes were added to the <span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">system.web/</span><span style="COLOR: blue">&gt;</span>Â node. Moving the default configuration from
 looking like this:</p>
         <pre><span style="COLOR: blue">&lt;</span>!-- copy and paste the following code --<span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">configSections</span><span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">sectionGroup</span><span style="COLOR: red">name</span>="<span style="COLOR: dodgerblue">AngryPets</span>" <span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">section</span><span style="COLOR: red">name</span>="<span style="COLOR: dodgerblue">ReverseDOS</span>" <span style="COLOR: red">type</span>="<span style="COLOR: dodgerblue">AngryPets.Web.Frameworks.ReverseDOS.FilterConfigHandler, AngryPets.Web.Frameworks.ReverseDOS</span>" /<span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span>/<span style="COLOR: maroon">sectionGroup</span><span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span>/<span style="COLOR: maroon">configSections</span><span style="COLOR: blue">&gt;</span></pre>
         <p class="media">Instead, mine now looks like this:</p>
@@ -849,7 +849,7 @@ http://www.franklins.net/calldotnetrocks
           </a>
           <font face="Verdana" size="2">. Cool stuff</font>
         </p>
-        <p><font face="Verdana" size="2"/> </p>
+        <p><font face="Verdana" size="2"/>Â </p>
         <img src="http://weblogs.asp.net/pleloup/aggbug/413317.aspx" width="1" height="1"/>
       </content>
       <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Paschal L</dc:creator>
@@ -869,7 +869,7 @@ http://www.franklins.net/calldotnetrocks
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <font face="Times New Roman">This blog entry was gleaned from </font>
           <a href="http://forum.tweakxp.com/forum/">
-            <font face="Times New Roman">TweakXP.com<span style="mso-spacerun: yes">  </span>Forums</font>
+            <font face="Times New Roman">TweakXP.com<span style="mso-spacerun: yes">Â  </span>Forums</font>
           </a>
           <span style="FONT-SIZE: 10pt; COLOR: navy; FONT-FAMILY: Arial">, a </span>
           <span style="COLOR: navy">
@@ -881,7 +881,7 @@ http://www.franklins.net/calldotnetrocks
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <n0:p xmlns:n0="o">
-            <font face="Times New Roman"> </font>
+            <font face="Times New Roman">Â </font>
           </n0:p>
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
@@ -889,7 +889,7 @@ http://www.franklins.net/calldotnetrocks
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <n0:p xmlns:n0="o">
-            <font face="Times New Roman"> </font>
+            <font face="Times New Roman">Â </font>
           </n0:p>
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
@@ -900,7 +900,7 @@ http://www.franklins.net/calldotnetrocks
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <n0:p xmlns:n0="o">
-            <font face="Times New Roman"> </font>
+            <font face="Times New Roman">Â </font>
           </n0:p>
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
@@ -936,14 +936,14 @@ http://www.franklins.net/calldotnetrocks
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <n0:p xmlns:n0="o">
-            <font face="Times New Roman"> </font>
+            <font face="Times New Roman">Â </font>
           </n0:p>
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <n0:p xmlns:n0="o"/>
           <span style="FONT-SIZE: 9pt; COLOR: black; FONT-FAMILY: Verdana">This tool checks your computer for infection by specific, prevalent malicious software (including Blaster, Sasser, and Mydoom) and helps to remove the infection if it is found. Microsoft will release an updated version of this tool on the second Tuesday of each month.<n0:p xmlns:n0="o"/></span>
         </p>
-        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt"><span style="mso-spacerun: yes"/> </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt"><span style="mso-spacerun: yes"/>Â </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <font face="Times New Roman">by Joli Ballew</font>
         </p>
@@ -952,7 +952,7 @@ http://www.franklins.net/calldotnetrocks
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <n0:p xmlns:n0="o">
-            <font face="Times New Roman"> </font>
+            <font face="Times New Roman">Â </font>
           </n0:p>
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
@@ -963,7 +963,7 @@ http://www.franklins.net/calldotnetrocks
         </p>
         <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
           <span style="FONT-SIZE: 9pt; FONT-FAMILY: Verdana">
-            <n0:p xmlns:n0="o"> </n0:p>
+            <n0:p xmlns:n0="o">Â </n0:p>
           </span>
         </p>
         <img src="http://weblogs.asp.net/Expertzone/aggbug/413314.aspx" width="1" height="1"/>
@@ -982,8 +982,8 @@ http://www.franklins.net/calldotnetrocks
       <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/jclarknet/services/trackbacks/413297.aspx</n0:ping>
       <source url="http://weblogs.asp.net/jclarknet/rss.aspx">Jason Clark's Blog</source>
       <content>
-        <p>Joel over at <a href="http://www.joelonsoftware.com/">Joel on software </a>threw out some interesting commentary about how life at FogBugz palace is, compared to the dismal rags over at Microsoft *laugh*.   <a href="http://radio.weblogs.com/0001011/2005/06/16.html#a10405">Scoble responded today </a>with a colorful synopsis of just how bad life is at Microsoft.  I don't know about Joel's developers, but I sit in front of a 22" Apple Cinema display and use a Dual 3.6 Xeon with 2GB of memory ,15K SCSI  and a Quadro 3400 FX at home.</p>
-        <p>On a side note, how does bug tracking software get titled as "painless project management"?  I've always wondered how you could classify a great bug tracking system as a project management system.  They may intertwine, but I don't see how you can micro-manage a project by bugs.  There is a lot more to the delivery software than stamping out bugs...</p>
+        <p>Joel over at <a href="http://www.joelonsoftware.com/">Joel on software </a>threw out some interesting commentary about how life at FogBugz palace is, compared to the dismal rags over at Microsoft *laugh*.Â Â  <a href="http://radio.weblogs.com/0001011/2005/06/16.html#a10405">Scoble responded today </a>with a colorful synopsis of just how bad life is at Microsoft.Â Â I don't know about Joel's developers, but I sit in front of a 22" Apple Cinema display and use a Dual 3.6 Xeon with 2GB of memory ,15K SCSIÂ  and a Quadro 3400 FX at home.</p>
+        <p>On a side note, how does bug tracking software get titled as "painless project management"?Â  I've always wondered how you could classify a great bug tracking system as a project management system.Â  They may intertwine, but I don't see how you can micro-manage a project by bugs.Â  There is a lot more to the delivery software than stamping out bugs...</p>
         <img src="http://weblogs.asp.net/jclarknet/aggbug/413297.aspx" width="1" height="1"/>
       </content>
       <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Jason Clark</dc:creator>

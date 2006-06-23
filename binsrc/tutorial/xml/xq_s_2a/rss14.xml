@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,7 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="ISO-8859-1" ?><rss version="2.0">
+<rss version="2.0">
   <channel>
     <title>Kingsley Idehen&#39;s Weblog</title>
     <link>http://www.openlinksw.com:80/blog/~kidehen/</link>

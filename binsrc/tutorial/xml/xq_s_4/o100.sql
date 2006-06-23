@@ -386,6 +386,21 @@ insert replacing attendees_sources values
      }</body></opml>'
 );
 
+
+insert replacing attendees_sources values
+(
+  'vloggercon', 'Vloggercon',
+'declare namespace ns="http://www.openlinksw.com/demo/";
+declare namespace n0="http://www.w3.org/1999/xhtml";
+<opml version="1.1"><head><title>Vloggercon</title></head><body>
+{
+  for $nod in document ("http://wiki.vloggercon.com/index.php?title=Attendees", "", 2, "UTF-8")//n0:ol[preceding-sibling::n0:a[@name="YES"]]/n0:li
+     return <outline text="{$nod/text()}" htmlUrl="{string($nod/n0:a[1][@href and @rel="nofollow"]/@href)}" title="{ns:getTitle($nod/text(), $nod/@href, <CACHE>)}"
+          xmlUrl="{ns:getFeed ($nod/n0:a[1][@href and @rel="nofollow"]/@href, <CACHE>)}" />
+}
+</body></opml>');
+
+
 create procedure gen_opml (in attendee_list varchar, in cache int := 1)
 {
   declare src any;
@@ -488,10 +503,11 @@ create procedure gen_foaf_one (in which varchar, in cache int := 1)
                 <foaf:name>{ string ($doc/head/title) }</foaf:name>{
       for $nod in $doc//outline
 	    let $att := $nod/@text
+	    let $url := replace ($nod/@htmlUrl, "}", "")
 	    return <foaf:member>
-	             <foaf:Person>
+	             <foaf:Person rdf:about="{$url}#{ urlify (normalize-space($att)) }">
 		        <foaf:name>{ normalize-space($att) }</foaf:name>
-			<foaf:homepage rdf:resource="{$nod/@htmlUrl}"/>
+			<foaf:homepage rdf:resource="{$url}"/>
 			<rdfs:seeAlso rdf:resource="{$nod/@xmlUrl}"/>
   		     </foaf:Person>
 	           </foaf:member>
@@ -669,7 +685,7 @@ create procedure init_xq_s_4_feeds ()
   declare ex, src any;
   declare i, l, dedl int;
 
-  ex := vector ('o100', 'gnomedexers', 'web2005', 'ceo', 'nigerian_bloggers', 'african_blogs', 'blogafrica', 'techcrunch', 'blog100', 'osc2003', 'osc2005');
+  ex := vector ('o100', 'vloggercon', 'gnomedexers', 'web2005', 'ceo', 'nigerian_bloggers', 'african_blogs', 'blogafrica', 'techcrunch', 'blog100', 'osc2003', 'osc2005');
 
   commit work;
   dedl := 5;
