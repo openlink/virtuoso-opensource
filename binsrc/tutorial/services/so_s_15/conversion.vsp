@@ -27,7 +27,7 @@
 <meta name="AUTHOR" content="James Chin (jchin@openlinksw.com), OpenLink Software">
 <meta HTTP-EQUIV="Pragma" CONTENT="no-cache">
 </head>
-<body bgcolor="#000000">
+<body>
 <?vsp
   declare _list, _result, _path, _out, r any;
   declare _amount, _from, _to varchar;
@@ -39,6 +39,13 @@
 
   if (get_keyword('Convert', params, '') <> '')
   {
+     -- When hosted in dav we set the 'Content' value to empty, because string_session will crate problems
+     declare _params any;
+     _params := vector();
+     for (declare i int,i:=0;i<length(params);i:=i+2)
+       if (params[i] <> 'Content')
+         _params := vector_concat(_params,vector(params[i],params[i+1]));
+     params := _params;
     _error := 0;
     doitagain: ;
     declare exit handler for sqlstate '*' { r := __SQL_MESSAGE; _error := _error + 1; if (_error > 4) goto endf; else goto doitagain; };

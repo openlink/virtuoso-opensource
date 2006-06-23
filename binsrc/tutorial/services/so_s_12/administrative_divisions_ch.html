@@ -1,4 +1,4 @@
-<SCRIPT language="JavaScript">
+<html>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -21,6 +21,12 @@
  -  
  -  
 -->
+<HEAD>
+       <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
+       <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=SOAP_SO_S_11/services.wsdl"></script>
+       <link rel="stylesheet" type="text/css" href="../demo.css" />
+<SCRIPT language="JavaScript">
+
 var ch = 2;
 
 var browsertype;
@@ -96,11 +102,6 @@ function dWait(dowhat){
   }
 }
 </SCRIPT>
-<html>
-<HEAD>
-       <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
-       <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=SOAP_SO_S_11/services.wsdl"></script>
-       <link rel="stylesheet" type="text/css" href="../demo.css" />
 </HEAD>
 <body onLoad="ajax.Start(countries,'');ajax.Start(administrative_divisions,'');">
 <H3>DHTML behaviours to Web Services</H3>

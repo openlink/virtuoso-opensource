@@ -134,7 +134,7 @@ create procedure exch.exch.convertRate(in ConvertFrom varchar, in ConvertTo varc
   _to_full := (select currency_full from exch.exch.currency_table where currency_short = ConvertTo);
   _oldamount := exch.dba.changeAmount(Amount);
   if (_oldamount is null)
-    return sprintf(_error, sprintf('Invalid amount supplied: %s', Amount));
+    return sprintf(_error, sprintf('Invalid amount supplied: %s', coalesce(Amount,0)));
   if (_from_full is null)
     return sprintf(_error, sprintf('Invalid currency supplied: %s', ConvertFrom));
   else if (_to_full is null)
@@ -149,7 +149,7 @@ create procedure exch.exch.convertRate(in ConvertFrom varchar, in ConvertTo varc
   http(sprintf('<shortname>%s</shortname>', ConvertFrom), _retxml);
   http(sprintf('<fullname>%s</fullname>', _from_full), _retxml);
   http(sprintf('<amount_number>%f</amount_number>', _oldamount[0]), _retxml);
-  http(sprintf('<amount_text>%s</amount_text>', Amount), _retxml);
+  http(sprintf('<amount_text>%s</amount_text>', coalesce(Amount,0)), _retxml);
   http('</From>', _retxml);
   if (_euro is not null)
   {
@@ -184,7 +184,7 @@ create procedure exch.exch.convertRateSimple(in ConvertFrom varchar, in ConvertT
   _to_full := (select currency_full from exch.exch.currency_table where currency_short = ConvertTo);
   _oldamount := exch.dba.changeAmount(Amount);
   if (_oldamount is null)
-    return sprintf(_error, sprintf('Invalid amount supplied: %s', Amount));
+    return sprintf(_error, sprintf('Invalid amount supplied: %s', coalesce(Amount,0)));
   if (_from_full is null)
     return sprintf(_error, sprintf('Invalid currency supplied: %s', ConvertFrom));
   else if (_to_full is null)
@@ -230,7 +230,7 @@ create procedure exch.exch.amountStyle(in amount decimal, in delimiter varchar)
 {
   declare _retval, _sign varchar;
   declare i integer;
-  _retval := sprintf('%f', amount);
+  _retval := sprintf('%f', coalesce(amount,0));
   _sign := coalesce(regexp_match('^-', _retval), '');
   if (delimiter = ',')
   {

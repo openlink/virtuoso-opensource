@@ -1,4 +1,4 @@
-<SCRIPT language="JavaScript">
+<html>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -21,6 +21,12 @@
  -  
  -  
 -->
+<HEAD>
+  <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
+  <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=exchange/services.wsdl"></script>
+
+  <link rel="stylesheet" type="text/css" href="/tutorial/services/demo.css" />
+<SCRIPT language="JavaScript">
 var currencyFrom = 'USD';
 var currencyTo = 'USD';
 var amount = '1';
@@ -171,12 +177,6 @@ function dWait(dowhat){
 }
 
 </SCRIPT>
-<html>
-<HEAD>
-  <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
-  <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=exchange/services.wsdl"></script>
-
-  <link rel="stylesheet" type="text/css" href="/tutorial/services/demo.css" />
 </HEAD>
 <body onLoad="ajax.Start(currencyList,'')">
     <xml ID="amountXSL" SRC="converted_value_ajax.xsl"></xml>

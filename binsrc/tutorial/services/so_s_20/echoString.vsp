@@ -122,7 +122,7 @@
 	       vector ('http://mssoapinterop.org/asmx/wsdl/WSDLInteropTestRpcEncService.asmx','ASP.NET (http://mssoapinterop.org/asmx/wsdl/WSDLInteropTestRpcEncService.wsdl)')
 		 );
        p0 := 'param0';
-       p1 := 'http://soapinterop/';
+       p1 := 'http://soapinterop.org/WSDLInteropTestRpcEnc';
        p2 := '';
        p3 := 'string';
        is_literal := 2;

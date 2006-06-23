@@ -23,7 +23,7 @@
 <?vsp
 
   declare _caller, _out_str, _soap_url, _err2, opl1, opl2, opl_home varchar;
-  declare state, msg, st, p0, temp_url varchar;
+  declare state, msg, st, p0, temp_url,_content varchar;
   declare _in, _out, _err any;
   declare meta any;
   declare urls any;
@@ -32,6 +32,16 @@
   _in := {?'in'};
   _out := {?'out'};
   opl_home := {?'opl_home'};
+  _content := {?'Content'};
+
+  -- If hosted in DAV we have a problem with Content param. 
+  if (internal_type(_content) = 185)
+  {
+     -- When hosted in dav we set the 'Content' value to empty, because string_session will crate problems
+     for (declare i int,i:=0;i<length(params);i:=i+2)
+     if (params[i] = 'Content' and internal_type(params[i+1]) <> 185)
+       _content := params[i+1];
+  }
 
   if (_caller= 'Compound1')
     {
@@ -68,7 +78,7 @@
 		      vector ( vector (''x'', ''http://soapinterop.org/xsd:x_Document''),
 		      vector ( composite (), vector (''ID'', ''%s''), ''%s'' )),
 		      11, NULL, NULL, ''%s'', 3)',
-		  _soap_url[1],_soap_url[2], {?'IDNbr'}, {?'Content'}, p0);
+		  _soap_url[1],_soap_url[2], {?'IDNbr'}, _content, p0);
        state := '00000';
        exec (st, state, msg, vector (), 1000, meta, _out_str);
 

@@ -101,6 +101,12 @@
 	   p1 := '';
 	 }
 
+       if (strstr (_soap_url, 'whitemesa') > 0 and _caller = 'InteropTestRpcEncoded')
+	 {
+	   p0 := 'http://soapinterop.org/WSDLInteropTestRpcEnc';
+	   p1 := '';
+	 }
+
        t_text := '';
 
        t_text := replace ({?'inputStrings'}, ' ', ''',''');
@@ -178,7 +184,8 @@ next:
     while (idx < len)
       {
         ch  := '';
-	if (idx = 0) ch := 'checked';
+        if ({?'soap_svc_url'} = urls[idx][0] or ({?'soap_svc_url'} is null and idx = 0))
+	        ch := 'checked';
 ?>
         <P><INPUT TYPE="radio" name="soap_svc_url" value="<?=urls[idx][0]?>" <?=ch?>><?=urls[idx][1]?>
 <?vsp

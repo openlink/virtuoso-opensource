@@ -27,7 +27,7 @@
 <meta name="AUTHOR" content="James Chin (jchin@openlinksw.com), OpenLink Software">
 <meta HTTP-EQUIV="Pragma" CONTENT="no-cache">
 </head>
-<body bgcolor="black">
+<body>
 <?vsp
   declare _list, _result, _path, _out, r any;
   declare _amount, _from, _to varchar;
@@ -50,7 +50,7 @@
 
     _path := TUTORIAL_XSL_DIR () || '/tutorial/services/so_s_15/currency_list.xsl';
 
-    http('<h2><font color="white" face="Helvetica">Currency Exchange Rate Converter</font></h2>\r\n<font color="white" size="3" face="Verdana, Arial, sans-serif"><form action="conversion.vsp" method="POST" target="exchangebottom">\r\n', _out);
+    http('<h2><font face="Helvetica">Currency Exchange Rate Converter</font></h2>\r\n<font size="3" face="Verdana, Arial, sans-serif"><form action="conversion.vsp" method="POST" target="exchangebottom">\r\n', _out);
     http(sprintf('Convert&nbsp;<input type="text" name="Amount" value="%s">&nbsp;', _amount), _out);
     http_value(xslt(_path, _list, vector('selectionname', 'ConvertFrom', 'selvalue', _from)), 0, _out);
     http('&nbsp;into&nbsp;', _out);
