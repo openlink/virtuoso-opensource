@@ -173,6 +173,11 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 
 #endif
 
+#define _DO_BOX_FAST_REV(inx, arr) \
+	do { \
+	    for (inx = (long)((arr) ? BOX_ELEMENTS(arr) : 0); inx--; /* no step */) \
+	      {
+
 #define DO_BOX(dtp, v, inx, arr) \
 	_DO_BOX(inx, (arr)) \
 	    dtp v = (dtp) (((void **)(arr)) [inx]);
@@ -188,6 +193,12 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define END_DO_BOX_FAST \
 	  }} while (0)
 
+#define DO_BOX_FAST_REV(dtp, v, inx, arr) \
+	_DO_BOX_FAST_REV(inx, (arr)) \
+	    dtp v = (dtp) (((void **)(arr)) [inx]);
+
+#define END_DO_BOX_FAST_REV \
+	  }} while (0)
 
 #ifdef DOUBLE_ALIGN
 
