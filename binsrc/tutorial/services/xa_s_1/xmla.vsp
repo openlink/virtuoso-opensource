@@ -19,14 +19,13 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
   declare resp, inp, outp varchar;
   declare url varchar;
   declare op, err, nfo, stmt, dsn varchar;
-  declare schema_rowsets, prop, prop_type, prop_value, prop_selected, prop_list any;
-  declare rest, rest_type, rest_value, rest_selected, rest_list any;
-  declare i, l, i1, tip_no, _cnt, _skip, n_row, bookmark int;
+  declare schema_rowsets, prop, prop_type, prop_value, prop_selected, prop_list, bookmarks any;
+  declare rest, rest_type, rest_value, rest_selected, rest_list, use_bookmark any;
+  declare i, l, i1, tip_no, idx, _cnt, _skip, n_row, bookmark int;
   declare sel, tip, uname, pwd, _dsn, direction varchar;
 
   url := get_keyword ('url' , params, 'http://localhost:' || server_http_port () || '/XMLA');
@@ -40,6 +39,8 @@
   n_row := get_keyword ('n_row' , params, '0');
   direction := get_keyword ('direction' , params, 'forward');
   bookmark := get_keyword ('bookmark' , params, '0');
+  use_bookmark := get_keyword ('use_bookmark' , params, 'off');
+  bookmarks := vector ();
 
   if ({?'add_dsn'} is not null)
     {
@@ -247,6 +248,12 @@
          prop_list := vector_concat (prop_list, vector ('n-rows', atoi (n_row)));
        if (bookmark = 'on')
          prop_list := vector_concat (prop_list, vector ('return-bookmark', 1));
+       if (use_bookmark = 'on')
+	 {
+	    declare sel_book any;
+	    sel_book := get_keyword ('sel_book' , params, '');
+            prop_list := vector_concat (prop_list, vector ('bookmark-from', sel_book));
+	 }
 
        resp := soap_client (url=>url,
 		 operation=>'Execute',
@@ -264,6 +271,9 @@
 		    -- 	  ||' mustUnderstand="1" SessionID="dbf4c1b3979f4d37ca9a2bb1809e3430"/>'
 		    --		 )),
 		    style=>2);
+
+       bookmarks := xpath_eval ('//BOOKMARK', xml_tree_doc (resp[0]), 0);
+
     }
 
     if (tip_no = 0)
@@ -494,6 +504,19 @@ err:;
 	    <option <?= select_if (direction, 'backward') ?>>backward</option>
 	  </select>
     </td>
+    </tr>
+<?vsp if (length (bookmarks) > 0) { ?>
+    <tr>
+    <td>Bookmarks</td>
+    <td>
+	  <select name="sel_book">
+<?vsp for (idx := 0; idx < length (bookmarks); idx := idx + 1) {
+	    http (sprintf ('<option>%s</option>', cast (bookmarks[idx] as varchar)));
+     } ?>
+	  </select>
+	  <input type="checkbox" name="use_bookmark"> Use this bookmark for next exec
+    </td>
+    <?vsp } ?>
     <?vsp } ?>
   </tr>
   <tr>
