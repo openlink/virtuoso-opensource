@@ -1163,11 +1163,10 @@ words away from &apos;user&apos; or &apos;interface&apos;.
 matches documents with SQL followed by a word beginning with &apos;interfac&apos;.
 	</para>
 <programlisting>
-&apos;&quot;dragon*&quot;
+&apos;&quot;dragon*&quot; and not &quot;once upon a time&quot;&apos;
 </programlisting>
 			<para>
-and not &quot;once upon a time&quot;&apos; matches documents with words
-beginning with &apos;dragon&apos; and not containing the phrase
+ matches documents with words beginning with &apos;dragon&apos; and not containing the phrase
 &apos;once upon a time&apos;.
 	</para>
 			</example>

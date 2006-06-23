@@ -113,10 +113,10 @@
 	  </varlistentry>
 	</variablelist>
       </para></refsect2>
-    <refsect2><title></title>
+    <!-- refsect2><title></title>
       <para></para></refsect2>
     <refsect2><title></title>
-      <para></para></refsect2>
+      <para></para></refsect2 -->
   </refsect1>
   <refsect1 id="ret_contains"><title>Return Types</title>
     <para>The contains is a predicate, therefore returning a
@@ -139,7 +139,7 @@
       Note that the name is in upper case and is case sensitive in all
       case modes.</para>
   </refsect1>
-  <refsect1 id="errors_contains"><title>Errors</title>
+  <!-- refsect1 id="errors_contains"><title>Errors</title>
     <table><title>Errors signalled by <function>contains</function></title>
       <tgroup cols="4">
 	<thead>
@@ -157,20 +157,74 @@
 	</tbody>
       </tgroup>
     </table>
-  </refsect1>
+  </refsect1 -->
   <refsect1 id="examples_contains"><title>Examples</title>
-    <example id="ex_contains"><title></title>
-      <para></para>
-      <screen></screen>
+    <example id="ex_contains"><title>Querying Free Text Indexed Columns using contains()</title>
+      <itemizedlist>
+		  <listitem>
+			  <para>Return the number of documents with one or more occurrences of &quot;virtual&quot; 
+				  immediately followed by &quot;database&quot;.</para>
+	  <programlisting>
+select count (*) from docs
+where contains (text, &apos;&quot;virtual database&quot;&apos;)
+	  </programlisting>
+  </listitem>
+  <listitem>
+	  <para>Specify documents with performance and either 
+		  &apos;tuning&apos; or optimization&apos; in any respective positions.</para>
+	  <programlisting>
+&apos;performance and (tuning or optimization)&apos;
+	  </programlisting>
+  </listitem>
+  <listitem>
+	  <para>
+		  Match documents with the word graphics more than 100
+		  words away from &apos;user&apos; or &apos;interface&apos;.
+	  </para>
+	  <programlisting>
+&apos;graphics and not (graphics near user near interface)&apos;
+	  </programlisting>
+  </listitem>
+  <listitem>
+	  <para>
+		  Match documents with SQL followed by a word beginning with &apos;interfac&apos;.
+	  </para>
+	  <programlisting>
+&apos;&quot;sql interfac*&quot;&apos;
+	  </programlisting>
+  </listitem>
+  <listitem>
+	  <para>
+		  Match documents with words beginning with &apos;dragon&apos; and not containing the phrase
+		  &apos;once upon a time&apos;.
+	  </para>
+	  <programlisting>
+&apos;&quot;dragon*&quot; and not &quot;once upon a time&quot;&apos; 
+	  </programlisting>
+  </listitem>
+</itemizedlist>
     </example>
+  
+	<note>
+		<title>Note:</title>
+		<para>
+			An expression may not consist of all negative terms, e.g. (not a) and (not
+			b) is not a valid expression but &apos;c and not a and not b&apos; is a valid
+			expression.
+		</para>
+		<para>
+			Note that the NEAR connective may not be used between AND&apos;ed or
+			OR&apos;ed terms. It can be used to combine words or phrases.
+		</para>
+	</note>
   </refsect1>
-<!--
   <refsect1 id="seealso_contains"><title>See Also</title>
-    <para><link linkend="fn_xpath_contains">xpath_cccontains</link></para>
-    <para><link linkend="fn"></link></para>
-    <para><link linkend="fn"></link></para>
-  </refsect1>
--->
+    <para><link linkend="fn_xpath_contains"><function>xpath_contains()</function></link></para>
+    <para><link linkend="freetext">The Free Text Index Chapter.</link></para>
+	<para><link linkend="fttfuncs">Other Free Text Functions.</link></para>
+	<para><link linkend="txttrig">Free Text Triggers.</link></para>
+</refsect1>
+
 </refentry>
 
 
