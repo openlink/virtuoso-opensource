@@ -85,10 +85,10 @@ select
  	null, null, null, null, null, null, null,
 	null, null, null, null, null, null,
         null, null, null, null, null,
-	BLOG_GET_TITLE (B_META, B_CONTENT),
-        \'http://\'||BLOG_GET_HOST ()||BLOG_GET_HOME_DIR (BI_HOME)||\'?id=\'||B_POST_ID,
-        \'http://\'||BLOG_GET_HOST ()||BLOG_GET_HOME_DIR (BI_HOME)||\'?id=\'||B_POST_ID,
-        \'http://\'||BLOG_GET_HOST ()||BLOG_GET_HOME_DIR (BI_HOME)||\'?id=\'||B_POST_ID||\'#comments\',
+        BLOG.DBA.BLOG_GET_TITLE (B_META, B_CONTENT),
+        \'http://\'||BLOG.DBA.BLOG_GET_HOST ()||BLOG.DBA.BLOG_GET_HOME_DIR (BI_HOME)||\'?id=\'||B_POST_ID,
+        \'http://\'||BLOG.DBA.BLOG_GET_HOST ()||BLOG.DBA.BLOG_GET_HOME_DIR (BI_HOME)||\'?id=\'||B_POST_ID,
+        \'http://\'||BLOG.DBA.BLOG_GET_HOST ()||BLOG.DBA.BLOG_GET_HOME_DIR (BI_HOME)||\'?id=\'||B_POST_ID||\'#comments\',
 	date_rfc1123 (B_TS),
 	B_CONTENT,
 	U_FULL_NAME || \' (\'||U_E_MAIL||\')\',
@@ -96,9 +96,7 @@ select
 	B_TS
 	from
 	(select TOP 15 B_CONTENT, B_TS, B_META, BI_HOME, B_POST_ID, U_FULL_NAME, U_E_MAIL, B_BLOG_ID from
-		SYS_BLOGS, SYS_BLOG_INFO, DB..SYS_USERS where BI_BLOG_ID = B_BLOG_ID and B_USER_ID = U_ID and
-		exists (select 1 from SYS_BLOG_DOMAINS where BD_DOMAIN = http_map_get (\'vhost\')
-		  and BD_BLOG_ID = B_BLOG_ID)
+                BLOG.DBA.SYS_BLOGS, BLOG.DBA.SYS_BLOG_INFO, DB..SYS_USERS where BI_BLOG_ID = B_BLOG_ID and B_USER_ID = U_ID
 		order by B_TS desc
 	) sub
 
