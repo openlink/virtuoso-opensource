@@ -22,16 +22,22 @@ changequote([, ])
 
 define(ok, [$1;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH $2 ": \"" $STATE "\"\t (must be OK)\n";])
+ECHO BOTH $2 ": \"" $STATE "\"\t (must be OK)\n";]);
 define(val, [$1;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH $3 ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $EQU $LAST[[1]] $2 "PASSED:" "***FAILED:";
-ECHO BOTH $3 ": \"" $LAST[[1]] "\"\t (must be: " $2 ")\n";])
+ECHO BOTH $3 ": \"" $LAST[[1]] "\"\t (must be: " $2 ")\n";]);
 define(valgt, [$1;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH $3 ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[[1]] $2 "PASSED:" "***FAILED:";
-ECHO BOTH $3 ": \"" $LAST[[1]] "\"\t (must be greater than " $2 ")\n";])
+ECHO BOTH $3 ": \"" $LAST[[1]] "\"\t (must be greater than " $2 ")\n";]);
 define(vallt, [$1;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH $3 ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $2 $LAST[[1]] "PASSED:" "***FAILED:";
-ECHO BOTH $3 ": \"" $LAST[[1]] "\"\t (must be less than " $2 ")\n";])
+ECHO BOTH $3 ": \"" $LAST[[1]] "\"\t (must be less than " $2 ")\n";]);
 define(val0, [$1;
 ECHO BOTH $2 ": \"" $LAST[[1]] "\n";])
 

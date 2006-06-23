@@ -2036,7 +2036,11 @@ DAV_RES_UPLOAD_STRSES_INT (
       {
         if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (id, 'R', 'DAV:checked-in', 0)) is not null)
           {
-		if ( (locked and (auto_version = 'DAV:checkout-unlocked-checkin')) or
+	     if (auto_version = 'DAV:checkout-checkin')
+	       {
+		 ; 
+	       }
+             else if ( (locked and (auto_version = 'DAV:checkout-unlocked-checkin')) or
 		     (auto_version = 'DAV:checkout') or
 		     (locked and (auto_version = 'DAV:locked-checkout')) )
 	          return "Versioning_CHECKOUT_INT" (id, content, type, permissions, ouid, ogid);

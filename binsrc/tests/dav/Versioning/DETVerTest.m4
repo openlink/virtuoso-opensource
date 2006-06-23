@@ -436,7 +436,7 @@ val(	[select get_doc_v_2 ('/DAV/versioning/VVC', 'file1-mv1.txt', 2)], ['content
 val(	[select get_doc_v_2 ('/DAV/versioning/VVC', 'file1-mv1.txt', 1)], ['hello world! - 10'],
 	[ " check first version of file1-mv1.txt by DET "])
 
-val(	[select max (rd_from_id) from ws.ws.sys_dav_res_diff, (select rd_res_id, max (rd_to_id) as max_rd_res_id from ws.ws.sys_dav_res_diff group by rd_res_id) a where a.rd_res_id = rd_res_id and max_rd_res_id = rd_to_id], [0],
+val(	[select max (rd_from_id) from ws.ws.sys_dav_res_diff, (select rd_res_id, max (rd_to_id) as max_rd_res_id from ws.ws.sys_dav_res_diff group by rd_res_id) a where a.rd_res_id = rd_res_id and max_rd_res_id = rd_to_id and rd_res_id = DAV_SEARCH_ID ('/DAV/versioning/file1-mv1.txt', 'R')], [0],
 	[ " check from_id for latest version "])
 
 
@@ -1095,5 +1095,46 @@ val(	[select DAV_HIDE_ERROR (get_prop('/DAV/versioning2/1.txt', 'DAV:checked-in'
 	[" DAV:checked-in property "])
 val(	[select DAV_HIDE_ERROR (get_prop('/DAV/versioning2/1.txt', 'DAV:version-history'))], [NULL],
 	[" DAV:version-history property "])
+
+
+ECHO BOTH "wrapping several versions in one\n";
+ok(   [DB.DBA.DAV_DELETE ('/DAV/versioning3/', 1, 'dav','dav')],
+	[" Deleting second verisioning collection"] )	
+valgt(   [select DB.DBA.DAV_COL_CREATE ('/DAV/versioning3/', '110100000R', 'dav', 'administrators', 'dav', 'dav')], [0],
+	[" Create test collection: "])
+valgt(  [select upload_doc ('/DAV/versioning3/file1.txt', 'content of file1.txt, version 1')], [0],
+	[ " upload inititial version of file1.txt "])
+valgt(  [select DB.DBA.DAV_VERSION_CONTROL ('/DAV/versioning3/file1.txt', 'dav', 'dav')], [0],
+	[ " set versioning control " ])
+ok(	[select DAV_PROP_SET ('/DAV/versioning3/file1.txt', 'DAV:auto-version', 'DAV:checkout-checkin', 'dav', 'dav')],
+	[ " set DAV:auto-version " ])
+valgt(  [select upload_doc ('/DAV/versioning3/file1.txt', 'content of file1.txt, version 2')], [0],
+	[ " upload second version of file1.txt "])
+valgt(  [select upload_doc ('/DAV/versioning3/file1.txt', 'content of file1.txt, version 3')], [0],
+	[ " upload third version of file1.txt "])
+valgt(  [select upload_doc ('/DAV/versioning3/file1.txt', 'content of file1.txt, version 4')], [0],
+	[ " upload fourth version of file1.txt "])
+val(	[select xpath_eval ('count (//version)', xtree_doc (get_doc_v_2 ('/DAV/versioning3/VVC', 'file1.txt', 'history.xml')))], [4],
+	[ " check number of versions in history "])
+valgt(  [select DAV_VERSION_FOLD_INT ('/DAV/versioning3/file1.txt', 2, 'dav')], [0],
+	[ " folding versions to version 2 "])
+val(	[select xpath_eval ('count (//version)', xtree_doc (get_doc_v_2 ('/DAV/versioning3/VVC', 'file1.txt', 'history.xml')))], [2],
+	[ " check number of versions in history after folding"])
+val(	[select get_doc_v ('/DAV/versioning3/file1.txt', 1)], ['content of file1.txt, version 1'],
+	[ " check the content of first version "])
+val( 	[select get_doc ('/DAV/versioning3/file1.txt')], ['content of file1.txt, version 4'],
+	[ " check the content of last version "])
+valgt(  [select upload_doc ('/DAV/versioning3/file1.txt', 'content of file1.txt, version 5')], [0],
+	[ " upload third version of file1.txt "])
+valgt(  [select DAV_VERSION_FOLD_INT ('/DAV/versioning3/file1.txt', 1, 'dav')], [0],
+	[ " folding versions to version 1 "])
+val(	[select xpath_eval ('count (//version)', xtree_doc (get_doc_v_2 ('/DAV/versioning3/VVC', 'file1.txt', 'history.xml')))], [1],
+	[ " check number of versions in history after folding"])
+val(	[select get_doc ('/DAV/versioning3/file1.txt')], ['content of file1.txt, version 5'],
+	[ " check the content of last version "])
+
+
+
+
 
 	

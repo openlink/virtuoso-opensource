@@ -1572,6 +1572,9 @@ create procedure WS.WS.GET_DAV_CHUNKED_QUOTA () returns integer
 }
 ;
 
+/*
+   GET METHOD
+*/
 
 create procedure WS.WS.GET (in path any, inout params any, in lines any)
 {
@@ -1871,6 +1874,8 @@ again:
       declare _server_etag, _xslt_sheet, _document_q, _xml_t varchar;
       declare fext, hdl_mode varchar;
       declare dot integer;
+      declare xml_mime_type varchar;
+
       -- XXX: temporary to avoid test noise
       set isolation='repeatable';
       whenever not found goto err_end;
@@ -1928,6 +1933,7 @@ again:
 	    }
 	}
       _xml_t := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-template', 0), '');
+      xml_mime_type := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql-mime-type', 0), 'text/xml');
       -- XML templates execution
       if (cont_type = 'text/xml' and
 	       (http_map_get ('xml_templates') or _xml_t = 'execute')
@@ -1936,7 +1942,8 @@ again:
 	  declare new_params, _enc any;
 	  declare _base_url varchar;
           _base_url := concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', full_path);
-          new_params := vector_concat (params, vector ('template', string_output_string (content), '__base_url', _base_url));
+          new_params := vector_concat (params, vector ('template', string_output_string (content),
+	  '__base_url', _base_url, 'contenttype', xml_mime_type));
           _enc := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql-encoding', 0));
           DB.DBA.__XML_TEMPLATE (path, new_params, lines, _enc);
           return;
@@ -2145,9 +2152,9 @@ end_xml:
 	          if (_xslt_sheet <> '')
 		    http_xslt (_xslt_sheet);
 		  else if (length (content) = 0)
-		    http_header (sprintf ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: %s\r\nContent-Type: text/xml\r\n', soap_print_box (now (), '', 1)));
+		    http_header (sprintf ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: %s\r\nContent-Type: %s\r\n', soap_print_box (now (), '', 1), xml_mime_type));
 		  else
-		    http_header (sprintf ('Content-Type: text/xml\r\nETag: "%s"\r\n', _server_etag));
+		    http_header (sprintf ('Content-Type: %s\r\nETag: "%s"\r\n', xml_mime_type, _server_etag));
 		}
 	    }
 	}
