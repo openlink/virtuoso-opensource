@@ -2,6 +2,14 @@
 
 @media screen, print {
 
+BODY {
+  background-image: url(leftbg.jpg);
+}
+
+#header {
+  background: navy url(logobg.jpg);
+}
+
 #searchbar {
   padding: 1em;
   text-align: center;
