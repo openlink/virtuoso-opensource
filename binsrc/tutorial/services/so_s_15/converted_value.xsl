@@ -1,3 +1,4 @@
+<?xml version='1.0'?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,12 +21,11 @@
  -  
  -  
 -->
-<?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/TR/WD-xsl">
   <xsl:template match="/">
     <xsl:for-each select="document">
       <xsl:for-each select="Conversion">
-        <font color="white" size="3" face="Verdana, Arial, sans-serif">
+        <font size="3" face="Verdana, Arial, sans-serif">
           <xsl:value-of select="From/amount_text" />
           &#xA0;
           <b>
