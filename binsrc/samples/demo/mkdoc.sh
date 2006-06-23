@@ -320,6 +320,8 @@ LOG "Directory init..."
   #$LN docsrc/pdf/*.html vad/data/doc/pdf/.
 
   $CP -f $HOME/binsrc/vsp/doc/* vad/data/doc/.
+  $CP -f $HOME/docsrc/vsp/doc/* vad/data/doc/.
+  # the later has latest stuff in and should be used.
 
   $CP docsrc/html_virt/*.html vad/data/doc/html/.
   $CP docsrc/html_virt/*.css vad/data/doc/html/.
@@ -392,6 +394,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/mksearch.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc',del_vsps => 1);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc/html',del_vsps => 1);" >> $STICKER
+  echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc/pdf');" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc/images',del_vsps => 1);" >> $STICKER
   echo "      DB.DBA.VHOST_DEFINE(" >> $STICKER
   echo "        lpath    => '/doc'," >> $STICKER
@@ -402,6 +405,7 @@ sticker_init() {
   echo "        def_page => 'index.html'" >> $STICKER
   echo "      )" >> $STICKER
   echo "      ;" >> $STICKER
+  echo "      DB.DBA.VHOST_DEFINE(lpath=>'/doc/pdf',ppath=>'/doc/pdf/');" >> $STICKER
 #  echo "      DB.DBA.VHOST_DEFINE(" >> $STICKER
 #  echo "        lpath    => '/doc/images'," >> $STICKER
 #  echo "        ppath    => '$BASE_PATH/doc/images/'," >> $STICKER
