@@ -1,3 +1,9 @@
+<complexType name="ArrayOfdivisions2D"
+   xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/" 
+   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+   xmlns="http://www.w3.org/2001/XMLSchema"
+   targetNamespace="services.wsdl"
+   xmlns:tns="services.wsdl">
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,12 +26,6 @@
  -  
  -  
 -->
-<complexType name="ArrayOfdivisions2D"
-   xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/" 
-   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
-   xmlns="http://www.w3.org/2001/XMLSchema"
-   targetNamespace="services.wsdl"
-   xmlns:tns="services.wsdl">
 
    <complexContent>
    <restriction base="enc:Array">
