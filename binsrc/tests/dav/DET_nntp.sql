@@ -45,6 +45,23 @@ create procedure "nntp_PARSE_SERVER_NAME"(in fullname varchar, out server varcha
 }
 ;
 
+create function "nntpf_display_message_text2"(in _text varchar, in ct varchar := 'text/plain', in ses any)
+{
+   _text := nntpf_replace_at (_text);
+   if (ct = 'text/plain')
+     http ('<pre class="artbody"> <br/>', ses);
+   else
+     http ('<div class="artbody">', ses);
+
+   http (_text, ses);
+
+   if (ct = 'text/plain')
+     http ('</pre>', ses);
+   else
+     http ('</div>', ses);
+}
+;
+
 create function "nntp_COMPOSE_HTML_NAME" (in title varchar, in id varchar) returns varchar
 {
   if (title is null or title = '')
@@ -102,26 +119,11 @@ create function "nntp_CHANNEL_DESC_NAMES" () returns any
 }
 ;
 
-create function "nntp_GET_USER_ID" (in domain_id int) returns int
-{
-  declare user_id int;
-  user_id := (select A.U_ID
-  from SYS_USERS A,
-       WA_MEMBER B,
-       WA_INSTANCE C
- where B.WAM_USER = A.U_ID
-   and B.WAM_MEMBER_TYPE = 1
-   and B.WAM_INST = C.WAI_NAME
-   and C.WAI_ID = domain_id);
-   return user_id;
-}
-;
-
 create function "nntp_ACCESS_PARAMS" (in detcol_id any, out access varchar, out gid integer, out uid integer)
 {
   declare access_tmp varchar;
   whenever not found goto ret;
-  access := '000000000N';
+  access := '100000000NN';
   gid := http_nogroup_gid ();
   uid := http_nobody_uid ();
   if (isinteger (detcol_id))
@@ -140,17 +142,17 @@ ret:
 --| The difference is that the DET function should not check whether the pair of name and password is valid; the auth_uid is not a null already.
 create function "nntp_DAV_AUTHENTICATE" (in id any, in what char(1), in req varchar, in auth_uname varchar, in auth_pwd varchar, in auth_uid integer)
 {
-  return 101;
   -- dbg_obj_princ ('nntp_DAV_AUTHENTICATE (', id, what, req, auth_uname, auth_pwd, auth_uid, http_dav_uid(), ')');
   if (auth_uid < 0)
     return -12;
-  if (not ('100' like req))
+  if (not ('110' like req))
   {
+    dbg_obj_princ ('a_uid2 is ', auth_uid, ', id[3] is ', id[3], ' mismatch');
     return -13;
   }
   if ((auth_uid <> id[3]) and (auth_uid <> http_dav_uid()))
   {
-    --dbg_obj_princ ('a_uid is ', auth_uid, ', id[3] is ', id[3], ' mismatch');
+    dbg_obj_princ ('a_uid is ', auth_uid, ', id[3] is ', id[3], ' mismatch');
     return -13;
   }
   return auth_uid;
@@ -164,7 +166,6 @@ create function "nntp_DAV_AUTHENTICATE" (in id any, in what char(1), in req varc
 --| Thus even if DET function allows anonymous access, the whole request may fail if mountpoint is not readable by public.
 create function "nntp_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 {
-  return 101;
   declare rc integer;
   declare puid, pgid, ruid, rgid integer;
   declare u_password, pperms varchar;
@@ -365,14 +366,25 @@ create function "nntp_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, 
     fullpath := colname || '/' || fullpath;
   }
   fullpath := DAV_CONCAT_PATH (DAV_SEARCH_PATH (id[1], 'C'), fullpath);
-  --dbg_obj_princ('fullpath:', fullpath, rightcol, folder_id, server_id, id);
   if ('C' = what)
   {
     if (id[6] >= 0)
       return -1;
+    dbg_obj_princ('C-fullpath: ', fullpath, id);      
     return vector (fullpath, 'C', 0, maxrcvdate,
       id, '100000000NN', 0, id[3], maxrcvdate, 'dav/unix-directory', rightcol );
   }
+  for select "nntp_COMPOSE_HTML_NAME"(FTHR_SUBJ, FTHR_MESS_ID) as orig_mname,
+        FTHR_MESS_ID as m_id, FTHR_DATE
+      from DB.DBA.NNFE_THR
+      where FTHR_MESS_ID = id[6]
+    do
+    {
+      dbg_obj_princ('R-fullpath: ', fullpath || orig_mname, id);
+      return vector (fullpath || orig_mname, 'R', 1024, FTHR_DATE,
+        id, 
+        '100000000NN', 0, id[3], FTHR_DATE, 'text/plain', orig_mname);
+    }
   return -1;
 }
 ;
@@ -380,7 +392,7 @@ create function "nntp_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
 create function "nntp_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in detcol_path varchar, in name_mask varchar, in recursive integer, in auth_uid integer) returns any
 {
-  dbg_obj_princ ('nntp_DAV_DIR_LIST (', detcol_id, path_parts, detcol_path, name_mask, recursive, auth_uid, ')');
+  --dbg_obj_princ ('nntp_DAV_DIR_LIST (', detcol_id, path_parts, detcol_path, name_mask, recursive, auth_uid, ')');
   declare mgroup_id, muser_id integer;
   declare mfolder_id, mserver_id varchar;
   declare top_davpath varchar;
@@ -400,7 +412,7 @@ create function "nntp_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in det
   mfolder_id := NULL;
   grand_res := vector();
   if ('C' = what and 1 = length(path_parts))
-    top_id := vector (UNAME'nntp', detcol_id, owner_uid, mgroup_id, null, null, -1); -- may be a fake id because top_id[4] may be NULL
+    top_id := vector (UNAME'nntp', detcol_id, mgroup_id, owner_uid, null, null, -1); -- may be a fake id because top_id[4] may be NULL
   else
     top_id := "nntp_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, what, mgroup_id, muser_id, mserver_id, mfolder_id);
   if (DAV_HIDE_ERROR (top_id) is null)
@@ -424,8 +436,8 @@ create function "nntp_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in det
         NG_SERVER = atoi(f_id)),
         cast('1980-01-01' as datetime));
       res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_name) || '/', 'C', 0, maxrcvdate,
-        vector (UNAME'nntp', detcol_id, mgroup_id, muser_id, mserver_id, f_id, -1),
-        '100000000NN', 0, muser_id, maxrcvdate, 'dav/unix-directory', orig_name) ) );
+        vector (UNAME'nntp', detcol_id, mgroup_id, owner_uid, mserver_id, f_id, -1),
+        '100000000NN', ownergid, owner_uid, maxrcvdate, 'dav/unix-directory', orig_name) ) );
     }
     grand_res := res;
   }
@@ -438,8 +450,8 @@ create function "nntp_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in det
     do
     { 
       res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_name) || '/', 'C', 0, maxrcvdate,
-        vector (UNAME'nntp', detcol_id, mgroup_id, muser_id, mserver_id, f_id, -1),
-        '100000000NN', 0, muser_id, maxrcvdate, 'dav/unix-directory', orig_name) ) );
+        vector (UNAME'nntp', detcol_id, mgroup_id, owner_uid, mserver_id, f_id, -1),
+        '100000000NN', ownergid, owner_uid, maxrcvdate, 'dav/unix-directory', orig_name) ) );
     }
     grand_res := res;    
   }
@@ -457,8 +469,8 @@ create function "nntp_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in det
       do
       {
         res := vector_concat(res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_name) || '/', 'C', 0, FTHR_DATE,
-          vector (UNAME'nntp', detcol_id, mgroup_id, muser_id,  mserver_id, f_id, -1),
-          '100000000NN', 0, muser_id, FTHR_DATE, 'dav/unix-directory', orig_name) ) );
+          vector (UNAME'nntp', detcol_id, mgroup_id, owner_uid,  mserver_id, f_id, -1),
+          '100000000NN', ownergid, owner_uid, FTHR_DATE, 'dav/unix-directory', orig_name) ) );
         reslen := reslen + 1;
       }
     }
@@ -476,8 +488,8 @@ create function "nntp_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in det
       do
       {
         res := vector_concat(res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_name) || '/', 'C', 0, FTHR_DATE,
-          vector (UNAME'nntp', detcol_id, mgroup_id, muser_id,  mserver_id, f_id, -1),
-          '100000000NN', 0, muser_id, FTHR_DATE, 'dav/unix-directory', orig_name) ) );
+          vector (UNAME'nntp', detcol_id, mgroup_id, owner_uid,  mserver_id, f_id, -1),
+          '100000000NN', ownergid, owner_uid, FTHR_DATE, 'dav/unix-directory', orig_name) ) );
         reslen := reslen + 1;
       }
     }
@@ -493,8 +505,8 @@ create function "nntp_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in det
     do
     {
       res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_mname), 'R', 1024, FTHR_DATE,
-        vector (UNAME'nntp', detcol_id, mgroup_id, muser_id, mserver_id, top_id[5], m_id),
-        '100000000NN', 0, muser_id, FTHR_DATE, 'text/plain', orig_mname) ) );
+        vector (UNAME'nntp', detcol_id, mgroup_id, owner_uid, mserver_id, top_id[5], m_id),
+        '100000000NN', ownergid, owner_uid, FTHR_DATE, 'text/plain', orig_mname) ) );
       reslen := reslen + 1;
     }
     grand_res := vector_concat (grand_res, res);
@@ -579,7 +591,6 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
       {
         hitlist := vector_concat (hitlist, vector (NG_GROUP));
       }
-      --dbg_obj_princ('test1:', length (hitlist));
       if (length (hitlist) <> 1)
         return -1;
       mfolder_id := cast(hitlist[0] as varchar);
@@ -593,7 +604,6 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
       {
         hitlist := vector_concat (hitlist, vector (FTHR_MESS_ID));
       }
-      --dbg_obj_princ('test2:', length (hitlist));
       if (length (hitlist) <> 1)
         return -1;
       mfolder_id := cast(hitlist[0] as varchar);
@@ -601,19 +611,16 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
     ctr := ctr + 1;
   }
   if ('C' = what)
-  {
-    --dbg_obj_princ('Collection:', mfolder_id);
     return vector (UNAME'nntp', detcol_id, group_id, owner_uid, mserver_id, mfolder_id, -1);
-  }
+
   len := length (path_parts);
   while (ctr < len)
   {
-    --dbg_obj_princ ('AAAAA:    ', group_id, orig_fnameext, orig_id, mfolder_id, mserver_id);
     hitlist := vector ();
     for select FTHR_MESS_ID
       from DB.DBA.NNFE_THR
-      where ((FTHR_GROUP = atoi(mfolder_id) and FTHR_REFER is null) or (FTHR_REFER = mfolder_id)) and      
-      ("nntp_COMPOSE_COMMENTS_NAME" (FTHR_SUBJ, FTHR_MESS_ID) = path_parts[ctr])
+      where (FTHR_GROUP = atoi(mfolder_id) or (FTHR_REFER = mfolder_id)) and
+      ("nntp_COMPOSE_HTML_NAME" (FTHR_SUBJ, FTHR_MESS_ID) = path_parts[ctr])
     do 
     {
       hitlist := vector_concat (hitlist, vector (FTHR_MESS_ID));
@@ -622,7 +629,7 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
       return -1;
     ctr := ctr + 1;
   }  
-  --dbg_obj_princ('WWWWWW: ', hitlist[0]);
+  --dbg_obj_princ(UNAME'nntp', detcol_id, group_id, owner_uid, mserver_id, mfolder_id, hitlist[0]);
   return vector (UNAME'nntp', detcol_id, group_id, owner_uid, mserver_id, mfolder_id, hitlist[0]);
 }
 ;
@@ -640,7 +647,7 @@ create function "nntp_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in wh
 --| When DAV_SEARCH_PATH_INT calls DET function, authentication is performed before the call.
 create function "nntp_DAV_SEARCH_PATH" (in id any, in what char(1)) returns any
 {
-  -- dbg_obj_princ ('nntp_DAV_SEARCH_PATH (', id, what, ')');
+  dbg_obj_princ ('nntp_DAV_SEARCH_PATH (', id, what, ')');
   return NULL;
 }
 ;
@@ -666,7 +673,103 @@ create function "nntp_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any,
 create function "nntp_DAV_RES_CONTENT" (in id any, inout content any, out type varchar, in content_mode integer) returns integer
 {
   dbg_obj_princ ('nntp_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
-  return -20;
+  declare str_out any;
+  str_out := string_output();
+  content := '';
+  if (id[6] is not null)
+  {
+    type := 'text/plain';
+    
+   declare _date, _from, _subj, _grps, _print_body, d_name varchar;
+   declare _body, _head, parsed_message any;
+   declare idx integer;
+
+   set isolation='committed';
+
+   select NM_HEAD, blob_to_string (NM_BODY)
+     into parsed_message, _body
+     from DB.DBA.NEWS_MSG
+     where NM_ID = id[6];
+
+   for (select NM_GROUP
+          from DB.DBA.NEWS_MULTI_MSG
+          where NM_KEY_ID = id[6]) do
+     {
+        if (ns_rest_rate_read (NM_GROUP) > 0)
+          {
+             content := '<h3>Excessive read detected, please try again later.</h3>';
+             return 0;
+          }
+     }
+
+   if (__tag (parsed_message) <> 193)
+     parsed_message := mime_tree (_body);
+
+   _head := parsed_message[0];
+   _subj := coalesce (get_keyword_ucase ('Subject', _head), '');
+   _from := coalesce (get_keyword_ucase ('From', _head), '');
+   _grps := coalesce (get_keyword_ucase ('Newsgroups', _head), '');
+   _date := coalesce (get_keyword_ucase ('Date', _head), '');
+
+   nntpf_decode_subj (_subj);
+
+   nntpf_decode_subj (_from);
+   _from := nntpf_replace_at (_from);
+
+   http ('<div class="artheaders">', str_out);
+   http (sprintf ('<span class="header">From:</span>%V<br/>', _from), str_out);
+   http (sprintf ('<span class="header">Subject:</span>%s<br/>', _subj), str_out);
+   http (sprintf ('<span class="header">Newsgroups:</span>%s<br/>', _grps), str_out);
+   http (sprintf ('<span class="header">Date:</span>%s<br/>', _date), str_out);
+   http ('</div><br/>', str_out);
+
+
+   --if (parsed_message[2] <> 0)
+   --  return nntpf_display_article_multi_part (parsed_message, _body, id, sid);
+
+   --nntpf_display_message_reply (sid, id);
+
+    _print_body := subseq (_body, parsed_message[1][0], parsed_message[1][1]);
+    if (length (_print_body) > 3)
+       _print_body := subseq (_print_body, 0, (length (_print_body) - 3));
+
+   -- CLEAR THIS
+
+   parsed_message := nntpf_get_mess_attachments (_print_body, 0);
+
+   _print_body := parsed_message[0];
+   
+   "nntpf_display_message_text2" (_print_body, get_keyword_ucase ('Content-Type', _head), str_out);
+
+   http ('<br/>', str_out);
+   idx := 1;
+   while (idx < length (parsed_message))
+     {
+        d_name := parsed_message[idx];
+        http (sprintf ('Download attachment : <a href="http://%s/INLINEFILE/%s?VSP=/nntpf/attachment.vsp&id=%U&part=%i&fn=%s"> %s </a><br/>',
+                       nntpf_get_host (vector ()),
+                       d_name,
+                       encode_base64 (id),
+                       idx,
+                       d_name,
+                       d_name), str_out);
+
+        if (d_name like '%.jpg' or d_name like '%.gif')
+          {
+             http (sprintf ('<img alt="attachment" src="http://%s/INLINEFILE/%s?VSP=/nntpf/attachment.vsp&id=%U&part=%i&fn=%s">',
+                   nntpf_get_host (vector()),
+                   d_name,
+                   encode_base64 (id),
+                   idx,
+                   d_name), str_out);
+             http ('<br/><br/><br/>', str_out);
+          }
+
+        idx := idx + 1;
+     }
+  }
+  content := string_output_string(str_out);
+  return 0;
 }
 ;
 
