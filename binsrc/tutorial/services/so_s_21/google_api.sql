@@ -110,6 +110,8 @@ create procedure WS.SOAPDEMO.GOOGLEAPI_PROXY (
       declare ses any;
       declare result,str_out any;
       
+      _key := replace(replace(_key,'<','&lt;'),'>','&gt;');
+      
       str_out := string_output();    
       
       if ( _action = 'Search Web')
@@ -183,5 +185,6 @@ create procedure WS.SOAPDEMO.GOOGLEAPI_PROXY (
   return string_output_string (str_out);
 };
 
+grant select on WS.WS.SYS_DAV_RES to SOAPDEMO;
 grant execute on WS.SOAPDEMO.GOOGLEAPI_PROXY to SOAPDEMO;
 grant execute on DB.DBA.XML_URI_GET_STRING_OR_ENT to SOAPDEMO;
