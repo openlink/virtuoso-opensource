@@ -420,6 +420,10 @@ $RM -rf flags flags.tar
 cat flags.tar.gz | gunzip - > flags.tar
 tar -xf flags.tar
 
+$RM -rf art art.tar
+cat art.tar.gz | gunzip - > art.tar
+tar -xf art.tar
+
 STOP_SERVER
 START_SERVER
 
@@ -429,8 +433,10 @@ START_SERVER
 BREAK
 LOAD_SQL mkdemo.sql dba dba
 LOAD_SQL countries.sql dba dba
+LOAD_SQL art.sql dba dba
 
 $RM -rf flags flags.tar
+$RM -rf art art.tar
 
 #
 #  Load MIME
