@@ -23,7 +23,7 @@
 <?vsp
   declare _list, _case, _text, _run, _qid, _trytoload varchar;
   declare _descr, _sparql_text, _default_graph_uri, _default_graph_fileonly, _etalon varchar;
-  declare _remote, _user_service, _user_default_graph_uri varchar;
+  declare _remote, _user_service, _user_default_graph_uri, _format varchar;
   declare _strstr_document, _strstr_proto integer;
   declare _lex_list any;
   declare _lex_last_row integer;
@@ -51,6 +51,7 @@
   if (_user_service is null or _user_service='')
     _user_service := concat ('http://', http_request_header (lines, 'Host', null, 'localhost'), '/sparql/');
   _user_default_graph_uri := {?'dflt_graph'};
+  _format := coalesce ({?'format'}, '');
   _trytoload := {?'trytoload'};
   _qid := sequence_next('_');
 ?>
@@ -117,6 +118,12 @@ WHERE {
     {
       ?><H2>Custom Query</H2><?vsp
     }
+    
+    if (_custom and (_text = '' or isnull(_text)))
+      _text := 'SELECT * WHERE {?x ?y ?z.}';
+      
+    if (_custom and (_user_default_graph_uri = '' or isnull(_user_default_graph_uri)))
+      _user_default_graph_uri := 'http://www.ldodds.com/ldodds.rdf';
 ?>
 <FORM
 ACTION="desk.vsp"
@@ -133,7 +140,9 @@ ENCTYPE="multipart/form-data"
 <?vsp 
   if (_remote <> 'y')
   {
-    if (_trytoload is not null and _trytoload <> '')
+    declare _havedata any;
+    _havedata := DB.DBA.SPARQL_EVAL_TO_ARRAY ('select * where {graph <'||_user_default_graph_uri||'> { ?s ?p ?o }}',_user_default_graph_uri,1);
+    if (length(_havedata) < 1)
     {
       {
         declare _data,_davpath,_data_xml any;
@@ -165,22 +174,6 @@ ENCTYPE="multipart/form-data"
         INSERT INTO "RQ"."RQ"."SPARQL_USER_UPLOADS" (SU_DAV_FULL_PATH,SU_GRAPH, SU_UPLOAD_TIME, SU_UPLOAD_IP)
           VALUES (_davpath,_user_default_graph_uri,now(),http_client_ip());
       }
-    } else {
-
-      declare _havedata any;
-      _havedata := DB.DBA.SPARQL_EVAL_TO_ARRAY ('select * where {graph <'||_user_default_graph_uri||'> { ?s ?p ?o }}',_user_default_graph_uri,1);
-      if (length(_havedata) < 1)
-      {
-?>
-  <tr>
-    <td></td>
-    <td>Your default graph have no data, probably because it hasn't been loaded. <br/>
-        Click on "Try to load" and we will try to load it.
-        <input type="submit" name="trytoload" value="Try to load"/>
-    </td>
-  </tr>
-<?vsp 
-      }
     }
   }
 ?>
@@ -191,7 +184,15 @@ ENCTYPE="multipart/form-data"
 <table BORDER=0>
 <tr><td COLSPAN=2><B>Query text:</B></td></tr>
 <tr><td COLSPAN=2><TEXTAREA NAME="text" COLS="80" ROWS="15"><?= _text ?></TEXTAREA></td></tr>
-<tr><td ALIGN=LEFT><input TYPE="SUBMIT" NAME="run" VALUE=" COMPILE AND EXECUTE "></td><td ALIGN=RIGHT><input TYPE="SUBMIT" NAME="run" VALUE=" Execution plan "></td></tr>
+<tr><td ALIGN=LEFT><input TYPE="SUBMIT" NAME="run" VALUE=" COMPILE AND EXECUTE ">
+(display result as <select name="format">
+<option value="" <?= case (_format) when '' then ' SELECTED' else '' end ?>>table</option>
+<option value="application/sparql-results+xml" <?= case (_format) when 'application/sparql-results+xml' then ' SELECTED' else '' end ?>>XML</option>
+<option value="text/rdf+n3" <?= case (_format) when 'text/rdf+n3' then ' SELECTED' else '' end ?>>TURTLE</option>
+<option value="application/sparql-results+json" <?= case (_format) when 'application/sparql-results+json' then ' SELECTED' else '' end ?>>JSON</option>
+<option value="application/javascript" <?= case (_format) when 'application/javascript' then ' SELECTED' else '' end ?>>Javascript</option>
+<option value="text/html" <?= case (_format) when 'text/html' then ' SELECTED' else '' end ?>>HTML</option>
+</select>)</td><td ALIGN=RIGHT><input TYPE="SUBMIT" NAME="run" VALUE=" Execution plan "></td></tr>
 </table>
 </FORM>
 <?vsp
@@ -243,7 +244,9 @@ ENCTYPE="multipart/form-data"
 	    WS.WS.STR_SQL_APOS(_text), ',',
 	    WS.WS.STR_SQL_APOS(_user_default_graph_uri), ',',
 	    cast ((_ms2-_ms1) as varchar) , ',',
-	    WS.WS.STR_SQL_APOS(_expected_text), ', 0)' );
+            WS.WS.STR_SQL_APOS(_expected_text), ',0,',
+            case (isnull (_format)) when 1 then 'NULL' else WS.WS.STR_SQL_APOS(_format) end,
+            ')' );
 	  exec (_rq_expn, _rq_state, _rq_msg);
 	  if (_rq_msg <> 'OK')
 	    {
@@ -323,7 +326,7 @@ ENCTYPE="multipart/form-data"
           ?><HR><B>Parse tree:</B><BR><PRE><?= sparql_explain(_text) ?></PRE><?vsp
         }
     }
-  if (_text = _sparql_text)
+  if ((_text = _sparql_text) and (_user_default_graph_uri = _default_graph_uri))
     {
       ?><HR><B>Expected result:</B><?vsp
 "RQ"."RQ"."PRINT_EXPECTED_RESULT" (_metas[0][2]);
