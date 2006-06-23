@@ -27,6 +27,10 @@
    r := ''; sel := '';
    if ({?'exec'} = 'Get data')
    {
+     -- When hosted in dav we set the 'Content' value to empty, because string_session will crate problems
+     for (declare i int,i:=0;i<length(params);i:=i+2)
+       if (params[i] = 'Content')
+         params[i+1] := '';
    declare exit handler for sqlstate '*' { r := __SQL_MESSAGE; goto endf; };
    {
      result := soap_call (sprintf ('localhost:%s', server_http_port ()), '/SOAP_SO_S_14/', null, 'ms_remote', params, 11);
