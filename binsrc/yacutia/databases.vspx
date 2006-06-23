@@ -207,7 +207,7 @@ ORDER BY sch_name"
 	        </td>
                 <td>
 		  <!-- Name mask -->
-		  Schema mask
+		  Catalog mask
                 </td>
                 <td>
                   <!--v:text name="t_mask" value="- -self.browse_mask"/-->
@@ -260,7 +260,7 @@ ORDER BY sch_name"
     <table class="listing">
       <tr class="listing_header_row">
 	<th> </th>
-	<th>Schema/Object Type</th>
+	<th>Catalog/Object Type</th>
       </tr>
       <v:form name="f1" method="POST" type="simple">
       <v:tree name="tr1" orientation="vertical" multi-branch="0"
