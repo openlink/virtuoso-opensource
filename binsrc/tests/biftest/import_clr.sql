@@ -939,7 +939,7 @@ aspx_copy_dav_dir_to_file_system (in dav_path varchar, in abs_path varchar, out 
 
   pos := strstr (dav_path, '/DAV/');
   path := subseq (dav_path, pos + length ('/DAV/'));
-  pos := strstr (path, '/');
+  pos := strrchr (path, '/') + 1;
   dir_name := "LEFT" (path, pos);
   dav_rel_path := concat ('/DAV/', dir_name);
 
