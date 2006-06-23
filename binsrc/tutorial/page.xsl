@@ -810,7 +810,7 @@
   if (dav_vsp = '1')
   {
     if (cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'EnabledDavVSP') <> dav_vsp)
-      error := 'Warning: WebDAV VSP Page Execution is currently disabled. Please enable in order to use this service.  Go to the Config file for the demo database (the file "demo.ini") and edit the section-key: EnableDavVSP = 0 by uncommenting and then changing the 0 to 1.';
+      error := 'Warning: WebDAV VSP Page Execution is currently disabled. Please enable in order to use this service.  Go to the Config file for the demo database (the file "demo.ini") and edit the section-key: EnabledDavVSP = 0 by uncommenting and then changing the 0 to 1.';
   }
 
   if (http_thr is not null and atoi(http_thr) > 1)
