@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 <!-- UseStockReviewSheet BPEL Process -->
 <process xmlns:tns="http://samples.cxdn.com" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" name="UseStockReviewSheet" targetNamespace="http://samples.cxdn.com" suppressJoinFailure="yes">
 <!-- List of services participating in this BPEL process -->

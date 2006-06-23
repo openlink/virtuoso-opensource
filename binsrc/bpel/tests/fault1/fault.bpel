@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 <process xmlns:tns="urn:echo:echoService" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" name="echo" targetNamespace="urn:echo:echoService">
   <partnerLinks>
     <partnerLink name="caller" partnerLinkType="tns:echoSLT"/>

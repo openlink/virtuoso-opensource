@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 <BPELSuitcase>
 	<BPELProcess id="CLREXEC" src="clr_exec.bpel">
 		<partnerLinkBindings>

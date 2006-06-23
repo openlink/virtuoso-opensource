@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0"
                 xmlns="http://samples.openlinksw.com/bpel"

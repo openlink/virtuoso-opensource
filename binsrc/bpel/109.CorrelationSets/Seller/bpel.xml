@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="UTF-8"?>
 <bpel-process id="Seller" src="Seller.bpel" wsdlLocation="Seller.wsdl" use-correlation-set="yes">
 
     <!--

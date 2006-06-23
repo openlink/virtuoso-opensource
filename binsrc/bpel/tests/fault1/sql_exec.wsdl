@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 <definitions name="sql_exec"
   targetNamespace="urn:echo:echoService"
   xmlns:tns="urn:echo:echoService"

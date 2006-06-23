@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 <process xmlns:tns="http://temp.org" xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:svc="http://samples.openlinksw.com/bpel" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing" xmlns:services="http://localhost:6666/StoreSvc/services.wsdl" xmlns:ora="http://schemas.oracle.com/xpath/extension" name="inventory" targetNamespace="http://temp.org">
   <partnerLinks>
 <!-- caller -->

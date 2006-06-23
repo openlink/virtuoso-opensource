@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
   -  
   -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
   -  
   -  
 -->
-<?xml version="1.0"?>
 <page connection="BPELSamplesDataSource" allow-client-style="no"
                         xmlns:xsql="http://www.openlinksw.com/virtuoso/xsql">
   <xsql:set-page-param name="id" xpath="number(/id)"/>

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="ISO-8859-1"?>
 <HelpTopic>
 <sect1 id="plinks">
     <title>OpenLink BPEL Process Manager Partner Links</title>

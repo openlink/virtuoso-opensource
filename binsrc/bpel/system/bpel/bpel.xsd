@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding="UTF-8"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version='1.0' encoding="UTF-8"?>
 <schema xmlns="http://www.w3.org/2001/XMLSchema"    
         xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
         xmlns:bpws="http://schemas.xmlsoap.org/ws/2003/03/business-process/" 

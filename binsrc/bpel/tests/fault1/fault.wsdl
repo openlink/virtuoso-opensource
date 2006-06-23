@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 <definitions xmlns:tns="urn:echo:echoService" xmlns:plt="http://schemas.xmlsoap.org/ws/2003/05/partner-link/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.xmlsoap.org/wsdl/" targetNamespace="urn:echo:echoService">
     <types>
 	<schema targetNamespace="urn:echo:echoService" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:s1="urn:echo:echoService">

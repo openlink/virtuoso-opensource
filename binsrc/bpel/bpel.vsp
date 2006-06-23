@@ -19,8 +19,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+?><?vsp
   declare scpuri, host varchar;
   declare opts any;
 
@@ -48,8 +47,7 @@
 if ({?'wsil'} is not null)
   {
     http_rewrite ();
-?>
-<?xml version="1.0" ?>
+?><?xml version="1.0" ?>
 <inspection xmlns="http://schemas.xmlsoap.org/ws/2001/10/inspection">
 <?vsp
   http_header ('Content-Type: text/xml\r\n');

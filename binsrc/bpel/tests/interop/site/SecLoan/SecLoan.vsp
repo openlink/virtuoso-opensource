@@ -19,8 +19,8 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+?><?vsp
+
   declare p any;
   p := 'WS.WS.'||TUTORIAL_VDIR_DIR ()||'/tutorial/tutorial.vsp';
   call (p) (path, params, lines);

@@ -1,3 +1,4 @@
+<?xml version='1.0'?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:virt="http://www.openlinksw.com/virtuoso/xslt">
 <xsl:output method="html" omit-xml-declaration="yes" indent="yes"/>
 <!-- ===================================================================================================================================== -->

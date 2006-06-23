@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="UTF-8"?>
 <v:page name="help" decor="bpel_decor.vspx" style="bpel_style_new.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:on-init>
     set isolation='committed';

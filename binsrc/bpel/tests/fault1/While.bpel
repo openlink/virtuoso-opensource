@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 <process xmlns:tns="http://samples.cxdn.com" xmlns:services="http://services.cxdn.com" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" name="While" targetNamespace="http://samples.cxdn.com" suppressJoinFailure="yes">
 <!--
     This process invokes an synchronous service n times by using a 

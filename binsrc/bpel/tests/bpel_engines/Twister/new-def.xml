@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="UTF-8"?>
 <definitions
     targetNamespace="http://www.smartcomps.org/twister/samples/new/definition/"
     xmlns="http://schemas.xmlsoap.org/wsdl/"

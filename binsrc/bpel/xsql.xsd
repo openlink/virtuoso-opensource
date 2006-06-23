@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSPY v5 U (http://www.xmlspy.com) by Ivan Mikhailov (OpenLink Software) -->
 <xs:schema targetNamespace="http://www.openlinksw.com/virtuoso/bpel" xmlns:xsql="http://www.openlinksw.com/virtuoso/xsql" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
   <xs:simpleType name="column-name">

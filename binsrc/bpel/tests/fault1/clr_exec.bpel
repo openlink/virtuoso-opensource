@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -20,7 +21,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 <process xmlns:tns="urn:echo:echoService" xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" name="clr_exec_test" targetNamespace="urn:echo:echoService" xmlns:bpelx="http://schemas.oracle.com/bpel/extension">
 
   <bpelv:exec binding="CLR" using="System"/>

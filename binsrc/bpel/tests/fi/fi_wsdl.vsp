@@ -1,4 +1,4 @@
-<?vsp 
+<?xml version="1.0"?><?vsp 
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,8 +19,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?xml version="1.0"?><?vsp http_header ('Content-Type: text/xml\r\n'); ?>
+?><?vsp http_header ('Content-Type: text/xml\r\n'); ?>
 <definitions name="Fi"
     targetNamespace="http://temp.org"
     xmlns:tns="http://temp.org"
