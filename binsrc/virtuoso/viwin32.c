@@ -1568,7 +1568,7 @@ usage (void)
 	);
   p = stpcpy (version, line);
 
-  sprintf (line, "Version %s%s (Release 4.0) as of %s\n",
+  sprintf (line, "Version %s%s (Release 4.5) as of %s\n",
       DBMS_SRV_VER, build_thread_model, build_date);
   p = stpcpy (p, line);
 
