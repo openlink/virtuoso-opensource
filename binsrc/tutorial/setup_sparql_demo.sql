@@ -662,7 +662,9 @@ WHERE
 }
 ;
 
-create procedure "RQ"."RQ"."DESK_RUN" (in _service_uri varchar, in _text varchar, in _default_graph_uri varchar, in _compiletime integer, in _expected_text varchar, in _brief integer)
+create procedure "RQ"."RQ"."DESK_RUN" (in _service_uri varchar, in _text varchar,
+  in _default_graph_uri varchar, in _compiletime integer, in _expected_text varchar,
+  in _brief integer, in _format varchar )
 {
   declare _sqltext, _state, _msg varchar;
   declare _metas, _rset any;
@@ -673,6 +675,8 @@ create procedure "RQ"."RQ"."DESK_RUN" (in _service_uri varchar, in _text varchar
     {
       declare _ms1, _ms2 integer;
       _ms1 := msec_time();
+      if (_format <> '')
+        _text := 'define output:valmode "LONG" ' || _text;
       _sqltext := string_output_string (sparql_to_sql_text (_text));
       _state := '00000';
       _metas := null;
@@ -690,7 +694,7 @@ create procedure "RQ"."RQ"."DESK_RUN" (in _service_uri varchar, in _text varchar
       DB.DBA.SPARQL_REXEC_WITH_META (_service_uri, _text, _default_graph_uri, vector(), '', 100, null, _metas, _rset);
       -- dbg_obj_princ ('_rset(before conversion)=', _rset);
       row_count := length (_rset);
-      if (row_count > 0)
+      if ((row_count > 0) and (_format = ''))
         {
 	  col_count := length (_rset[0]);
 	  for (row_ctr := row_count - 1; row_ctr >= 0 ; row_ctr := row_ctr - 1)
@@ -706,6 +710,15 @@ create procedure "RQ"."RQ"."DESK_RUN" (in _service_uri varchar, in _text varchar
 	}
     }
   -- dbg_obj_princ ('_metas=', _metas, '_rset=', _rset);
+  if (_format <> '')
+    {
+      declare ses any;
+      ses := string_output();      
+      DB.DBA.SPARQL_RESULTS_WRITE (ses, _metas, _rset, _format, 0);
+      http_value (ses, 'pre');
+      return;
+    }
+
   http ('<TABLE BORDER="1"><TR>');
   foreach (any _var in _metas[0]) do
     {
@@ -738,7 +751,8 @@ create procedure "RQ"."RQ"."DESK_RUN" (in _service_uri varchar, in _text varchar
       http ('</TR>');
     }
   http ('</TABLE>');
-return;
+  
+goto end_of_cmp;
   
   _actual_text := '';
   _res_ses := string_output();
@@ -782,6 +796,8 @@ return;
     }
   if (_brief = 0 or not (_expected_text = '' or _expected_text = _actual_text))
     http (string_output_string(_res_ses));
+
+end_of_cmp: ;
 };
 
 -- These are stubs while there are no appropriate BIFs.
