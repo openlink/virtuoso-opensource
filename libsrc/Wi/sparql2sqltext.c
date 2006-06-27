@@ -388,6 +388,10 @@ ssg_prin_id (spar_sqlgen_t *ssg, const char *name)
   sprintf_escaped_id (name, tmp, NULL);
   ssg_puts (tmp);
 #else
+#ifdef DEBUG
+  if (NULL != strstr (name, "CRASH"))  
+    ssg_puts ("!!!CRASH!!!");
+#endif
   ssg_putchar ('"');
   ssg_puts (name);
   ssg_putchar ('"');

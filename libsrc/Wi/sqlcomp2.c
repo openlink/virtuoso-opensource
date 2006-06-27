@@ -679,6 +679,13 @@ yyerror (const char *s)
   yy_new_error (s, NULL, NULL);
 }
 
+void
+yyfatalerror (const char *s)
+{
+  strcpy_ck (sql_err_text, s);
+  sql_err_text [sizeof (sql_err_text)-1] = '\0';
+  longjmp_splice (&parse_reset, 1);
+}
 
 void yyerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
 {
@@ -704,6 +711,25 @@ void yyerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
     strcpy (buf_for_next, " immediately before end of statement");
   strcat_ck (sql_err_text, buf);
   strcat_ck (sql_err_text, buf_for_next);
+  longjmp_splice (&parse_reset, 1);
+}
+
+
+void yyfatalerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
+{
+  char buf [2000];
+  int this_lineno = scn3_lineno;
+#ifdef DEBUG
+  int sm2, sm1, sp1;
+  sp1 = yyssp[1];
+  sm1 = yyssp[-1];
+  sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
+  snprintf (buf, sizeof (buf), ": %s [%d-%d-(%d)-%d] at '%s'", strg, sm2, sm1, yystate, sp1, yytext);
+#else
+  snprintf (buf, sizeof (buf), ": %s at '%s'", strg, yytext);
+#endif
+  scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
+  strcat_ck (sql_err_text, buf);
   longjmp_splice (&parse_reset, 1);
 }
 
@@ -1405,6 +1431,7 @@ sql_compile_1 (const char *string2, client_connection_t * cli,
 		*err = srv_make_new_error (sql_err_state[0] ? sql_err_state : "37000",
 		    sql_err_native[0] ? sql_err_native : "SQ074", "%s", sql_err_text);
 	      sqlc_set_client (old_cli);
+	      sql_pop_all_buffers ();
 	      if (!nested_sql_comp)
 		{
 		  MP_DONE();
@@ -1420,6 +1447,7 @@ sql_compile_1 (const char *string2, client_connection_t * cli,
 	{
 	  caddr_t tree1 = box_copy_tree ((box_t) tree);
 	  sqlc_set_client (old_cli);
+	  sql_pop_all_buffers ();
 	  if (!nested_sql_comp)
 	    {
 	      MP_DONE();
@@ -1437,6 +1465,7 @@ sql_compile_1 (const char *string2, client_connection_t * cli,
 	  ST *ret = (ST *) sqlo_top (&sc, &tree, NULL);
 	  tree1 = box_copy_tree ((box_t) (ret ? ret : tree));
 	  sqlc_set_client (old_cli);
+	  sql_pop_all_buffers ();
 	  if (!nested_sql_comp)
 	    {
 	      MP_DONE();
@@ -1453,6 +1482,7 @@ sql_compile_1 (const char *string2, client_connection_t * cli,
 	  float score = 0;
 	  sqlo_top (&sc, &tree, &score);
 	  sqlc_set_client (old_cli);
+	  sql_pop_all_buffers ();
 	  if (!nested_sql_comp)
 	    {
 	      MP_DONE();
@@ -1535,7 +1565,7 @@ sql_compile_1 (const char *string2, client_connection_t * cli,
     qr = NULL;
   }
   END_CATCH;
-
+  sql_pop_all_buffers ();
   if (qr)
     sqlc_assign_unknown_dtps (qr);
   if (err && !(*err))

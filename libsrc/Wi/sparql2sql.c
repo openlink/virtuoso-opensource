@@ -629,7 +629,7 @@ sparp_gp_trav_make_common_eqs_out (sparp_t *sparp, SPART *curr, void **trav_env_
         {
           char fake_var_buf[sizeof (SPART) + BOX_AUTO_OVERHEAD];
           SPART *fake_var;
-	  BOX_AUTO (fake_var, fake_var_buf, sizeof (SPART), DV_ARRAY_OF_POINTER);
+	  BOX_AUTO_TYPED (SPART *, fake_var, fake_var_buf, sizeof (SPART), DV_ARRAY_OF_POINTER);
 	  fake_var->type = SPAR_VARIABLE;
 	  fake_var->_.var.vname = var_name;
           sparp_equiv_get (sparp, curr, fake_var, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES);

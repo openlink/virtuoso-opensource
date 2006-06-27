@@ -357,7 +357,7 @@ scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_te
     RETURN_CODE (name); \
   } while (0)
 
-#define YY_FATAL_ERROR(msg) yyerror (msg)
+#define YY_FATAL_ERROR(msg) yyfatalerror (msg)
 
 %}
 
@@ -982,6 +982,23 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 .		TOK(LEXICAL_ERROR);	/* random non-SQL, non-HTML text */
 %%
 
+#ifndef SCN3SPLIT
+void
+sql_pop_all_buffers (void)
+#else
+void
+scn3split_pop_all_buffers (void)
+#endif
+{
+  while (scn3_include_depth > 0)
+    {
+      scn3_include_fragment_t *outer;
+      scn3_include_depth--;
+      outer = scn3_include_stack + scn3_include_depth;
+      yy_delete_buffer (YY_CURRENT_BUFFER);
+      yy_switch_to_buffer (outer->sif_buffer);
+    }
+}
 
 #ifndef SCN3SPLIT
 void
