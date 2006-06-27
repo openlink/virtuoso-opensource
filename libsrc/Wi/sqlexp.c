@@ -666,6 +666,10 @@ cv_bop_params (state_slot_t * l, state_slot_t * r, const char *op)
       !SSL_IS_UNTYPED_PARAM (r) &&
       SQW_DTP_COLIDE (l->ssl_dtp, l->ssl_class, r->ssl_dtp, r->ssl_class))
     {
+      if ((DV_UNAME == l->ssl_dtp) && (DV_STRING == r->ssl_dtp))
+        goto skip_warning;
+      if ((DV_UNAME == r->ssl_dtp) && (DV_STRING == l->ssl_dtp))
+        goto skip_warning;
       if (l->ssl_dtp != DV_TIMESTAMP && r->ssl_dtp != DV_TIMESTAMP)
 	{
 	  sqlc_warning ("01V01", "QW004",
@@ -684,6 +688,8 @@ cv_bop_params (state_slot_t * l, state_slot_t * r, const char *op)
 	      MAX_NAME_LEN, SSL_HAS_NAME (l) ? l->ssl_name : ssl_type_to_name (l->ssl_type),
 	      MAX_NAME_LEN, SSL_HAS_NAME (r) ? r->ssl_name : ssl_type_to_name (r->ssl_type));
 	}
+skip_warning:
+       /*no op */;
     }
 
   if (SSL_IS_UNTYPED_PARAM (r))

@@ -84,6 +84,7 @@
 
 #ifdef DEBUG
 #define yyerror(strg) yyerror_1(yystate, yyssa, yyssp, strg)
+#define yyfatalerror(strg) yyfatalerror_1(yystate, yyssa, yyssp, strg)
 #endif
 
 #define assert_ms_compat(text)

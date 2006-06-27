@@ -506,6 +506,7 @@ sqlr_new_error is void, and should never return.
     "UDT_REFERENCE" : \
     ((type) == DV_IRI_ID) ? "IRI_ID" : \
     ((type) == DV_IRI_ID_8) ? "IRI_ID" : \
-    "UNK_DV_TYPE")
+  ((type) == DV_UNAME) ? "UNAME" : \
+  "UNK_DV_TYPE" )
 #endif /* _WIDV_H */
 

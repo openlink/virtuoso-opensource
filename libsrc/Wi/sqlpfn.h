@@ -207,8 +207,10 @@ extern int scn3splityylex(void);
 #endif
 void yyrestart (FILE * in);
 void scn3splityyrestart (FILE * in);
-void sql_yy_reset (void);
-void scn3split_yy_reset (void);
+extern void sql_yy_reset (void);
+extern void scn3split_yy_reset (void);
+extern void sql_pop_all_buffers (void);
+extern void scn3split_pop_all_buffers (void);
 void yyerror (const char *s);
 extern int yydebug;
 extern jmp_buf_splice parse_reset;
