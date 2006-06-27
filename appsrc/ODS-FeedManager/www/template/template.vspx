@@ -75,7 +75,7 @@
           exec(sprintf('SET CHARSET = ''%s''',sCharset));
           exec(sprintf('SET HTTP_CHARSET = ''%s''',sCharset));
 
-          aSessInfo := ENEWS.WA.session_restore(aRequest, params, lines);
+          aSessInfo := ENEWS.WA.session_restore(aRequest, params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword('user_role', aSessInfo, '');

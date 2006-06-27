@@ -347,7 +347,7 @@
       if (d_first)
         http ('<img src="image/first_16.gif" alt="First" title="First" border="0" /> First');
     ?>
-    <v:button name="{@data-set}_first" action="simple" style="image" value="image/first_16.gif" xhtml_alt="First" text="&amp;nbsp;First"/>
+    <v:button name="{@data-set}_first" action="simple" style="image" value="image/first_16.gif" xhtml_alt="First" xhtml_title="First" text="&amp;nbsp;First"/>
     </xsl:if>
     <?vsp
       if (d_first or _first.vc_enabled)
@@ -355,14 +355,14 @@
       if (d_prev)
         http ('<img src="image/previous_16.gif" alt="Previous" title="Previous" border="0" /> Previous');
     ?>
-    <v:button name="{@data-set}_prev" action="simple" style="image" value="image/previous_16.gif" xhtml_alt="Previous" text="&amp;nbsp;Previous"/>
+    <v:button name="{@data-set}_prev" action="simple" style="image" value="image/previous_16.gif" xhtml_alt="Previous" xhtml_title="Previous" text="&amp;nbsp;Previous"/>
     <?vsp
       if (d_prev or _prev.vc_enabled)
         http ('&nbsp;');
       if (d_next)
         http ('<img src="image/next_16.gif" alt="Next" title="Next" border="0" /> Next');
     ?>
-    <v:button name="{@data-set}_next" action="simple" style="image" value="image/next_16.gif" xhtml_alt="Next" text="&amp;nbsp;Next"/>
+    <v:button name="{@data-set}_next" action="simple" style="image" value="image/next_16.gif" xhtml_alt="Next" xhtml_title="Next" text="&amp;nbsp;Next"/>
     <xsl:if test="not(@type) or @type = 'set'">
     <?vsp
       if (d_next or _next.vc_enabled)
@@ -370,7 +370,7 @@
       if (d_last)
         http ('<img src="image/last_16.gif" alt="Last" title="Last" border="0" /> Last');
     ?>
-    <v:button name="{@data-set}_last" action="simple" style="image" value="image/last_16.gif" xhtml_alt="Last" text="&amp;nbsp;Last"/>
+    <v:button name="{@data-set}_last" action="simple" style="image" value="image/last_16.gif" xhtml_alt="Last" xhtml_title="Last" text="&amp;nbsp;Last"/>
     </xsl:if>
     <?vsp
       }

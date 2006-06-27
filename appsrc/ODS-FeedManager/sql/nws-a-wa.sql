@@ -25,7 +25,7 @@
 -- ---------------------------------------------------
 
 ------------------------------------------------------------------------------
-create procedure ENEWS.WA.exec_no_error(in expr varchar, in execType varchar := '', in execTable varchar := '', in execColumn varchar := '')
+create procedure ENEWS.WA.exec_no_error (in expr varchar, in execType varchar := '', in execTable varchar := '', in execColumn varchar := '')
 {
   declare
     state,
@@ -96,13 +96,13 @@ ENEWS.WA.vhost();
 -- Insert data
 --
 -------------------------------------------------------------------------------
-ENEWS.WA.exec_no_error('insert replacing WA_TYPES(WAT_NAME, WAT_TYPE, WAT_REALM, WAT_DESCRIPTION) values (\'eNews2\', \'db.dba.wa_eNews2\', \'wa\', \'Feed Manager Application\')')
+ENEWS.WA.exec_no_error ('insert replacing WA_TYPES(WAT_NAME, WAT_TYPE, WAT_REALM, WAT_DESCRIPTION) values (\'eNews2\', \'db.dba.wa_eNews2\', \'wa\', \'Feed Manager Application\')')
 ;
-ENEWS.WA.exec_no_error('insert replacing WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'eNews2\', \'owner\', 1, 0)')
+ENEWS.WA.exec_no_error ('insert replacing WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'eNews2\', \'owner\', 1, 0)')
 ;
-ENEWS.WA.exec_no_error('insert replacing WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'eNews2\', \'author\', 2, 0)')
+ENEWS.WA.exec_no_error ('insert replacing WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'eNews2\', \'author\', 2, 0)')
 ;
-ENEWS.WA.exec_no_error('insert replacing WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'eNews2\', \'reader\', 3, 0)')
+ENEWS.WA.exec_no_error ('insert replacing WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'eNews2\', \'reader\', 3, 0)')
 ;
 
 -------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ ENEWS.WA.exec_no_error('insert replacing WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_
 --
 -- eNews class
 --
-ENEWS.WA.exec_no_error('
+ENEWS.WA.exec_no_error ('
   create type wa_eNews2 under web_app as (
       eNewsID varchar,
   	  owner integer
@@ -129,33 +129,38 @@ ENEWS.WA.exec_no_error('
 )
 ;
 
-ENEWS.WA.exec_no_error(
+ENEWS.WA.exec_no_error (
   'alter type wa_eNews2 drop method wa_membership_edit_form (stream any) returns any'
 )
 ;
 
-ENEWS.WA.exec_no_error(
+ENEWS.WA.exec_no_error (
   'alter type wa_eNews2 add overriding method wa_front_page_as_user(inout stream any, in user_name varchar) returns any'
 )
 ;
 
-ENEWS.WA.exec_no_error(
+ENEWS.WA.exec_no_error (
   'alter type wa_eNews2 add overriding method wa_size() returns int'
 )
 ;
 
-ENEWS.WA.exec_no_error(
+ENEWS.WA.exec_no_error (
   'alter type wa_eNews2 add method wa_vhost_options () returns any'
 )
 ;
 
-ENEWS.WA.exec_no_error(
+ENEWS.WA.exec_no_error (
   'alter type wa_eNews2 add method get_param (in param varchar) returns any'
 )
 ;
 
-ENEWS.WA.exec_no_error(
+ENEWS.WA.exec_no_error (
   'alter type wa_eNews2 add method wa_dashboard_last_item () returns any'
+)
+;
+
+ENEWS.WA.exec_no_error (
+  'alter type wa_eNews2 add overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar'
 )
 ;
 
@@ -366,4 +371,18 @@ create method wa_dashboard_last_item () for wa_eNews2
   userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
 
   return ENEWS.WA.dashboard_get(domainID, userID);
-};
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_eNews2
+{
+  declare domainID, userID integer;
+
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
+  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
+
+  return concat(ENEWS.WA.dav_url2(domainID, userID), 'OFM.rdf');
+}
+;

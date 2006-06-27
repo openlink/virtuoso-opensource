@@ -83,10 +83,10 @@
           http ('<channel>\n', retValue);
           for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
             http ('<title>', retValue);
-              http_value (ENEWS.WA.utf2wide(ENEWS.WA.domain_name(self.domain_id)), null, retValue);
+              http_value (ENEWS.WA.domain_name(self.domain_id), null, retValue);
             http ('</title>\n', retValue);
             http ('<description>', retValue);
-              http_value (ENEWS.WA.utf2wide(ENEWS.WA.domain_description(self.domain_id)), null, retValue);
+              http_value (ENEWS.WA.domain_description(self.domain_id), null, retValue);
             http ('</description>\n', retValue);
             http ('<managingEditor>', retValue);
               http_value (U_E_MAIL, null, retValue);
@@ -107,7 +107,7 @@
           foreach (any row in result) do {
             http ('<item>\n', retValue);
               http ('<title>', retValue);
-                http_value (ENEWS.WA.utf2wide(row[1]), null, retValue);
+                http_value (row[1], null, retValue);
               http ('</title>\n', retValue);
               http ('<description>', retValue);
                 http_value (charset_recode(ENEWS.WA.xml2string(ENEWS.WA.feed_description(row[0])), null, 'UTF-8'), null, retValue);

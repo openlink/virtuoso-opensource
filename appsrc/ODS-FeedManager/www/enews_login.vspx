@@ -38,6 +38,11 @@
         self.vc_redirect(sprintf('%slogin.vspx?URL=%U', ENEWS.WA.wa_home_link (), concat(HTTP_REQUESTED_URL(), '?URL=', get_keyword('URL', self.vc_page.vc_event.ve_params, ''))));
         return;
       }
+      if (self.account_role = 'expire') {
+        http_request_status ('HTTP/1.1 302 Found');
+        http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ENEWS.WA.wa_home_link (), HTTP_REQUESTED_URL()));;
+        return;
+      }
       self.vc_redirect('news.vspx');
     ]]>
   </v:after-data-bind>

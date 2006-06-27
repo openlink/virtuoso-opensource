@@ -30,7 +30,7 @@
   realm := get_keyword('realm', params, '');
 
   aRequest := ENEWS.WA.validate_request(lines,0);
-  aSession := ENEWS.WA.session_restore(aRequest, params, lines);
+  aSession := ENEWS.WA.session_restore(aRequest, params);
   domain_id := cast(get_keyword('domain_id', aSession, '0') as integer);
   account_id := cast(get_keyword('user_id', aSession, '0') as integer);
 

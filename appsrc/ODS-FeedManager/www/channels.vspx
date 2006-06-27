@@ -101,7 +101,7 @@
               <thead class="sortHeader">
                 <tr>
                   <th class="checkbox" width="1%">
-                    <input type="checkbox" name="cb_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')"/>
+                    <input type="checkbox" name="cb_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')" title="Select All" />
                   </th>
                   <th>
                     <?vsp self.sortColumn('Title', 'EF_TITLE'); ?>
@@ -135,7 +135,7 @@
                 <tr>
                   <td align="center">
                     <?vsp
-                      http (sprintf ('<input type="checkbox" name="cb_item" value="%d" />', control.te_rowset[0]));
+                      http (sprintf ('<input type="checkbox" name="cb_item" value="%d" title="%V" />', control.te_rowset[0], control.te_rowset[2]));
                     ?>
                   </td>
                   <td>

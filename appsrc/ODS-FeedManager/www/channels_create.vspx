@@ -85,11 +85,11 @@
       if (type = 0)
         return 'From URL (RSS/Atom/OPML/OCS...)';
       if (type = 1)
-        return 'Import from local file system (OPML, OCS)';
+        return 'Upload (OPML, OCS)';
       if (type = 2)
-        return 'Import from WebDAV file system (OPML, OCS)';
+        return 'Upload from WebDAV (OPML, OCS)';
       if (type = 3)
-        return 'Import from Server-side file system (OPML, OCS)';
+        return 'Upload from Server-side file system (OPML, OCS)';
       if (type = 4)
         return 'From directory of known (popular) feeds';
       return '';
@@ -160,21 +160,21 @@
                 Select feed(s) source
               </th>
               <td nowrap="nowrap">
-                <v:radio-button name="rb_0" xhtml_id="rb_0" value="0" group-name="choice_source" initial-checked="--either(lte(self.v_rb,0),1,0)"/>
+                <v:radio-button name="rb_0" xhtml_id="rb_0" value="0" group-name="choice_source" initial-checked="--either(lte(self.v_rb,0),1,0)" xhtml_title="--self.source_label(0)" />
                 <vm:label for="rb_0" value="--self.source_label(0)" />
                 <br />
-                <v:radio-button name="rb_1" xhtml_id="rb_1" value="1" group-name="choice_source" initial-checked="--either(equ(self.v_rb,1),1,0)"/>
+                <v:radio-button name="rb_1" xhtml_id="rb_1" value="1" group-name="choice_source" initial-checked="--either(equ(self.v_rb,1),1,0)" xhtml_title="--self.source_label(1)" />
                 <vm:label for="rb_1" value="--self.source_label(1)" />
                 <br />
-                <v:radio-button name="rb_2" xhtml_id="rb_2" value="2" group-name="choice_source" initial-checked="--either(equ(self.v_rb,2),1,0)"/>
+                <v:radio-button name="rb_2" xhtml_id="rb_2" value="2" group-name="choice_source" initial-checked="--either(equ(self.v_rb,2),1,0)" xhtml_title="--self.source_label(2)" />
                 <vm:label for="rb_2" value="--self.source_label(2)" />
                 <br />
                 <v:template type="simple" enabled="-- case when (ENEWS.WA.check_admin(self.account_id)) then 1 else 0 end">
-                  <v:radio-button name="rb_3" xhtml_id="rb_3" value="3" group-name="choice_source" initial-checked="--either(equ(self.v_rb,3),1,0)"/>
+                  <v:radio-button name="rb_3" xhtml_id="rb_3" value="3" group-name="choice_source" initial-checked="--either(equ(self.v_rb,3),1,0)" xhtml_title="--self.source_label(3)" />
                   <vm:label for="rb_3" value="--self.source_label(3)" />
                   <br />
                 </v:template>
-                <v:radio-button name="rb_4" xhtml_id="rb_4" value="4" group-name="choice_source" initial-checked="--either(equ(self.v_rb,4),1,0)"/>
+                <v:radio-button name="rb_4" xhtml_id="rb_4" value="4" group-name="choice_source" initial-checked="--either(equ(self.v_rb,4),1,0)" xhtml_title="--self.source_label(4)" />
                 <vm:label for="rb_4" value="--self.source_label(4)" />
               </td>
             </tr>
@@ -241,8 +241,6 @@
                   <v:text name="source_3" xhtml_size="70"/>
                   <vm:file_browser render="popup" list_type="details" path="DAV" browse_type="res" style_css="css/dav.css" w_title="File Browser" title="File Browser" lang="en" return_box="source_3"/>
                 </v:template>
-              </td>
-              <td width="100%" style="text-align: left;">
                 <v:button action="simple" value="Subscribe" xhtml_alt="Subscribe feed" enabled="-- case when (self.v_source = 0) then 1 else 0 end">
                   <v:on-post>
                     <![CDATA[
@@ -263,11 +261,10 @@
                  <v:check-box name="f_retrieve" xhtml_id="retrieve" is-boolean="1" true-value="1" false-value="0" value="--self.v_retrieve" />
                  <b><vm:label for="retrieve" value="Retrieve items now"/></b>
               </td>
-              <td />
             </tr>
             <v:template type="simple" enabled="-- case when (self.v_source = 0) then 1 else 0 end">
               <tr>
-                <td align="center" valign="center" colspan="3" style="border: solid #935000; border-width: 1px 0px 1px 0px;">
+                <td align="center" valign="center" colspan="2" style="border: solid #935000; border-width: 1px 0px 1px 0px;">
                   <br/>
                   <b>Use shortcuts below to subscribe to Blogspot blogs, LiveJournals, Xangas, Topix news, Google Groups and Yahoo Groups.</b>
                   <br/><br/>
@@ -277,7 +274,7 @@
                 <th>
                   <a href="http://www.blogspot.com"><img border="0" src="image/blogspot.gif"/></a>
                 </th>
-                <td nowrap="nowrap" colspan="2">
+                <td nowrap="nowrap">
                   <v:text name="blogspot" value="" xhtml_size="70%"/>
                   <v:button action="simple" value="Blogspot User">
                     <v:on-post>
@@ -297,7 +294,7 @@
                 <th>
                   <a href="http://www.livejournal.com"><img border="0" src="image/livejournal.gif"/></a>
                 </th>
-                <td nowrap="nowrap" colspan="2">
+                <td nowrap="nowrap">
                   <v:text name="livejournal" value="" xhtml_size="70%"/>
                   <v:button action="simple" value="LiveJournal User">
                     <v:on-post>
@@ -317,7 +314,7 @@
                 <th>
                   <a href="http://www.xanga.com"><img border="0" src="image/xangalogo.gif"/></a>
                 </th>
-                <td nowrap="nowrap" colspan="2">
+                <td nowrap="nowrap">
                   <v:text name="xanga" value="" xhtml_size="70%"/>
                   <v:button action="simple" value="Xanga User">
                     <v:on-post>
@@ -337,7 +334,7 @@
                 <th>
                   <a href="http://www.topix.net/"><img border="0" src="image/topix.gif"/></a>
                 </th>
-                <td nowrap="nowrap" colspan="2">
+                <td nowrap="nowrap">
                   <v:text name="topix" value="" xhtml_size="70%"/>
                   <v:button action="simple" value="Topix Zipcode">
                     <v:on-post>
@@ -357,7 +354,7 @@
                 <td class="td_label">
                   <a href="http://groups.yahoo.com/"><img border="0" src="image/ygroups.gif"/></a>
                 </td>
-                <td nowrap="nowrap" colspan="2">
+                <td nowrap="nowrap">
                   <v:text name="yahoo" value="" xhtml_size="70%"/>
                   <v:button action="simple" value="Yahoo Group">
                     <v:on-post>
@@ -377,7 +374,7 @@
                 <th>
                   <a href="http://groups-beta.google.com/"><img border="0" src="image/groups2beta.gif"/></a>
                 </th>
-                <td nowrap="nowrap" colspan="2">
+                <td nowrap="nowrap">
                   <v:text name="google" value="" xhtml_size="70%"/>
                   <v:button action="simple" value="Google Group">
                     <v:on-post>
@@ -394,18 +391,6 @@
                 </td>
               </tr>
             </v:template>
-          </table>
-          <table id="progressTable" cellspacing="0">
-            <tr>
-              <td>
-                <div id="progressText"></div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <div id="progress"></div>
-              </td>
-            </tr>
           </table>
         </div>
         <div class="new-form-footer">
@@ -516,7 +501,7 @@
                   <thead class="sortHeader">
                     <tr>
                       <th style="text-align: center; background-color: #B0CDE4;">
-                        <input type="checkbox" name="cbx_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_')"/>
+                        <input type="checkbox" name="cbx_all" value="Select All" title="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_')"/>
                       </th>
                       <th style="text-align: center; background-color: #B0CDE4; width: 100%;">Title</th>
                       <th style="text-align: center; background-color: #B0CDE4;">Feed folder</th>
@@ -541,7 +526,7 @@
                           S := '';
                           if (not isnull(EFD_DOMAIN_ID))
                             S := 'disabled="disabled"';
-                          http(sprintf('<input type="checkbox" name="cb_item" %s value="%d"/>', S, i));
+                          http(sprintf('<input type="checkbox" name="cb_item" %s value="%d" title="%V" />', S, i, EF_TITLE));
                         ?>
                       </td>
                       <td>
@@ -654,7 +639,7 @@
             <table id="feeds" cellspacing="0">
               <tr>
                 <td style="text-align: center; background-color: #B0CDE4;">
-                  <input type="checkbox" name="cbx_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_')"/>
+                  <input type="checkbox" name="cbx_all" value="Select All" title="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_')"/>
                 </td>
                 <th style="text-align: center; background-color: #B0CDE4;">Type</th>
                 <th style="text-align: center; background-color: #B0CDE4; width: 100%;">Title</th>
@@ -673,7 +658,7 @@
                     <?vsp
                       declare S varchar;
                       S := coalesce((select 'disabled="disabled"' from ENEWS.WA.FEED, ENEWS.WA.FEED_DOMAIN where EF_URI = get_keyword('rss', data, '') and EFD_FEED_ID = EF_ID and EFD_DOMAIN_ID = self.domain_id), '');
-                      http(sprintf('<input type="checkbox" name="cb_item" %s value="%d"/>', S, i));
+                      http(sprintf('<input type="checkbox" name="cb_item" %s value="%d" title="%V" />', S, i, get_keyword('title', data, '')));
                       k := length(data);
                       for (j := 0; j < k; j := j + 2)
                         http(sprintf('<input type="hidden" name="$_%s_%d" value="%s" />', data[j], i, coalesce(data[j+1], '')));
@@ -843,7 +828,7 @@
             <table id="feeds" cellspacing="0">
               <tr>
                 <td style="text-align: center; background-color: #B0CDE4;">
-                  <input type="checkbox" name="cbx_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_')"/>
+                  <input type="checkbox" name="cbx_all" value="Select All" title="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_')"/>
                 </td>
                 <th style="text-align: center; background-color: #B0CDE4; width: 100%;">Title</th>
                 <th style="text-align: center; background-color: #B0CDE4;">Feed folder</th>
@@ -867,7 +852,7 @@
                       declare S varchar;
 
                       S := coalesce((select 'disabled="disabled"' from ENEWS.WA.FEED, ENEWS.WA.FEED_DOMAIN where EF_URI = get_keyword('rss', data, '') and EFD_FEED_ID = EF_ID and EFD_DOMAIN_ID = self.domain_id), '');
-                      http(sprintf('<input type="checkbox" name="cb_item" %s value="%d"/>', S, i));
+                      http(sprintf('<input type="checkbox" name="cb_item" %s value="%d" title="%V" />', S, i, get_keyword('title', data, '')));
                       k := length(data);
                       for (j := 0; j < k; j := j + 2) {
                         S := data[j];
@@ -890,6 +875,7 @@
                 }
               ?>
             </table>
+            <span id="progressMax" style="display: none;"><?V length(self.v_data)-1 ?></span>
             <table id="progressTable" cellspacing="0">
               <tr>
                 <td>
@@ -908,15 +894,22 @@
           ?>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="Back" xhtml_onclick="javascript:history.back();return false;" xhtml_class="form-button">
+          <v:button action="simple" xhtml_id="btn_Back" value="Back" xhtml_onclick="javascript:history.back();return false;" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_data_bind(e);
               ]]>
             </v:on-post>
           </v:button>
-          <input type="button" id="btn_Subscribe" onclick="initState()" value="Subscribe"/>
-          <v:button action="simple" value="Cancel" xhtml_id="btn_Cancel" xhtml_class="form-button">
+          <input type="button" id="btn_Subscribe" onclick="javascript: progressText('Fetching Feeds for selected Channels'); initState()" value="Subscribe"/>
+          <v:button action="simple" name="btn_Background" xhtml_id="btn_Background" value="Background" xhtml_class="form-button" xhtml_style="display: none;">
+            <v:on-post>
+              <![CDATA[
+                self.vc_redirect('channels.vspx');
+               ]]>
+             </v:on-post>
+          </v:button>
+          <v:button action="simple" xhtml_id="btn_Stop" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_redirect('channels.vspx');
@@ -953,10 +946,11 @@
           <?vsp http(self.v_data[0]); ?> Feeds
         </div>
         <div class="new-form-body">
+          <span id="progressMax" style="display: none;"><?V length(self.v_data)-1 ?></span>
           <table id="progressTable" cellspacing="0">
             <tr>
               <td>
-                <div id="progressText">Subscription for <?V (length(self.v_data)-1)?> feeds</div>
+                <div id="progressText">Subscribing to <?V length(self.v_data)-1 ?> Channels and Fetching all associated Feeds</div>
               </td>
             </tr>
             <tr>
@@ -967,21 +961,14 @@
           </table>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="Back" xhtml_onclick="javascript:history.back();return false;" xhtml_class="form-button">
-            <v:on-post>
-              <![CDATA[
-                self.vc_data_bind(e);
-              ]]>
-            </v:on-post>
-          </v:button>
-          <input type="button" id="btn_Subscribe" onclick="initState()" value="Subscribe"/>
-          <v:button action="simple" value="Cancel" xhtml_id="btn_Cancel" xhtml_class="form-button">
+          <v:button action="simple" xhtml_id="btn_Background" value="Background" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_redirect('channels.vspx');
                ]]>
              </v:on-post>
           </v:button>
+          <input type="button" id="btn_Stop" onclick="javascript: stopState(); return true;" xhtml_class="form-button" />
         </div>
         <script type="text/javascript">
           <![CDATA[

@@ -753,13 +753,13 @@ ENEWS.WA.exec_no_error('
 --
 ENEWS.WA.exec_no_error('
   insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
-    values(\'eNews feed aggregator\', now(), \'ENEWS.WA.feeds_agregator()\', 10)
+    values(\'eNews feed aggregator\', now(), \'ENEWS.WA.feeds_agregator()\', 30)
 ')
 ;
 
 ENEWS.WA.exec_no_error('
   insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
-    values(\'eNews blog aggregator\', now(), \'ENEWS.WA.blogs_agregator()\', 10)
+    values(\'eNews blog aggregator\', now(), \'ENEWS.WA.blogs_agregator()\', 30)
 ')
 ;
 

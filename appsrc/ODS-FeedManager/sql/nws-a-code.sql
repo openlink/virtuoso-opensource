@@ -158,17 +158,13 @@ create procedure ENEWS.WA.http_response(in pError integer,in pParams varchar := 
 -------------------------------------------------------------------------------
 create procedure ENEWS.WA.session_restore(
   inout request any,
-  inout params any,
-  inout lines any)
+  inout params any)
 {
   declare exit handler for sqlstate '*' { goto _end; };
 
-  declare
-    domain_id integer;
-  declare
-    sSid varchar;
-  declare
-    options any;
+  declare domain_id integer;
+  declare sid, realm, userRole varchar;
+  declare options any;
 
 
   options := http_map_get('options');
@@ -179,17 +175,18 @@ create procedure ENEWS.WA.session_restore(
   if (is_empty_or_null(domain_id))
     goto _end;
 
-  sSid := get_keyword('sid', params, '');
+  sid := get_keyword('sid', params, '');
+  realm := get_keyword('realm', params, '');
   for (select U.U_ID,
               U.U_NAME,
               U.U_FULL_NAME
          from DB.DBA.VSPX_SESSION S,
               WS.WS.SYS_DAV_USER U
-        where S.VS_REALM = 'wa'
-          and S.VS_SID   = sSid
+        where S.VS_REALM = realm
+          and S.VS_SID   = sid
           and S.VS_UID   = U.U_NAME) do
   {
-    return vector('sid',        sSid,
+    return vector('sid',        sid,
                   'domain_id',  domain_id,
                   'user_id',    U_ID,
                   'user_name',  ENEWS.WA.user_name(U_NAME, U_FULL_NAME),
@@ -197,11 +194,14 @@ create procedure ENEWS.WA.session_restore(
                  );
   };
 _end:
+  userRole := 'public';
+  if ((sid <> '') or (realm <> 'wa'))
+    userRole := 'expire';
   domain_id := -1;
   return vector('domain_id', domain_id,
                 'user_id',   -1,
                 'user_name', 'Public User',
-                'user_role', 'public'
+                'user_role', userRole
                );
 }
 ;
@@ -414,6 +414,7 @@ create procedure ENEWS.WA.menu_tree (
     <node name="12" url="search.vspx" id="12" place="link" allowed="public guest reader author owner admin"/>
     <node name="13" url="error.vspx" id="13" place="link" allowed="public guest reader author owner admin"/>
     <node name="14" url="blog.vspx" id="14" place="link" allowed="reader author owner admin"/>
+    <node name="14" url="tags.vspx" id="14"  place="link" allowed="reader author owner admin"/>
     <node name="15" url="bookmark.vspx" id="15" place="link" allowed="reader author owner admin"/>
     <node name="16" url="settings.vspx" id="16" place="link" allowed="reader author owner admin"/>
   </node>
@@ -495,7 +496,7 @@ create procedure ENEWS.WA.domain_gems_create (
 
   read_perm := '110100100N';
   exec_perm := '111101101N';
-  home := home || 'OFM/';
+  home := home || ENEWS.WA.domain_gems_folder() || '/';
   DB.DBA.DAV_MAKE_DIR (home, account_id, null, read_perm);
 
   path := home || 'channels/';
@@ -575,18 +576,18 @@ create procedure ENEWS.WA.domain_gems_create (
 create procedure ENEWS.WA.domain_gems_delete(
   in domain_id integer,
   in account_id integer,
-  in appName varchar := 'OFM',
+  in appName varchar := 'Feed Subscriptions',
   in appGems varchar := null)
 {
-  declare tmp, home, path varchar;
+  declare tmp, davHome, home, path varchar;
 
-  home := ENEWS.WA.dav_home(account_id);
-  if (isnull(home))
+  davHome := ENEWS.WA.dav_home(account_id);
+  if (isnull(davHome))
     return;
 
   if (isnull(appGems))
     appGems := ENEWS.WA.domain_gems_name(domain_id);
-  home := home || appName || '/' || appGems || '/';
+  home := davHome || appName || '/' || appGems || '/';
 
   path := home || appName || '.rss';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
@@ -601,14 +602,19 @@ create procedure ENEWS.WA.domain_gems_delete(
   path := home || appName || '.foaf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
-  declare auth_uid, auth_pwd varchar;
+  declare auth_uid integrer;
 
-  auth_uid := coalesce((SELECT U_NAME FROM WS.WS.SYS_DAV_USER WHERE U_ID = account_id), '');
-  auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_ID = account_id), '');
-  if (auth_pwd[0] = 0)
-    auth_pwd := pwd_magic_calc(auth_uid, auth_pwd, 1);
+  auth_uid := http_dav_uid();
+  tmp := DB.DBA.DAV_DIR_LIST_INT (home, 0, '%', null, null, auth_uid);
+  if (not isinteger(tmp) and not length(tmp))
+    DB.DBA.DAV_DELETE_INT (home, 1, null, null, 0);
 
-  tmp := DB.DBA.DAV_DIR_LIST (home, 0, auth_uid, auth_pwd);
+  home := davHome || appName || '/';
+  tmp := DB.DBA.DAV_DIR_LIST_INT (home, 0, '%', null, null, auth_uid);
+  if (not isinteger(tmp) and (length(tmp) = 1) and (tmp[0][10] = 'channels'))
+    DB.DBA.DAV_DELETE_INT (home || 'channels/', 1, null, null, 0);
+
+  tmp := DB.DBA.DAV_DIR_LIST_INT (home, 0, '%', null, null, auth_uid);
   if (not isinteger(tmp) and not length(tmp))
     DB.DBA.DAV_DELETE_INT (home, 1, null, null, 0);
 
@@ -623,7 +629,10 @@ create procedure ENEWS.WA.domain_update (
   inout account_id integer)
 {
   ENEWS.WA.domain_gems_delete (domain_id, account_id, 'eNews');
+  ENEWS.WA.domain_gems_delete (domain_id, account_id, 'eNews', cast(domain_id as varchar));
+  ENEWS.WA.domain_gems_delete (domain_id, account_id, 'OFM');
   ENEWS.WA.domain_gems_delete (domain_id, account_id, 'OFM', cast(domain_id as varchar));
+  ENEWS.WA.domain_gems_delete (domain_id, account_id, ENEWS.WA.domain_gems_folder());
   ENEWS.WA.domain_gems_create (domain_id, account_id);
 
   ENEWS.WA.sfolder_create(domain_id, 'New items', '<settings><entry ID="read">r-</entry></settings>', 1);
@@ -669,6 +678,14 @@ create procedure ENEWS.WA.domain_description (
   in domain_id integer)
 {
   return coalesce((select WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id), 'OFM Instance');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.domain_gems_folder ()
+{
+  return 'Feed Subscriptions';
 }
 ;
 
@@ -1868,7 +1885,6 @@ create procedure ENEWS.WA.folder_child(
 ;
 
 -------------------------------------------------------------------------------
--------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.folder_delete(
   in domain_id integer,
@@ -1894,11 +1910,8 @@ create procedure ENEWS.WA.folder_delete(
 create procedure ENEWS.WA.folder_delete_all(
   in domain_id integer)
 {
-  declare folders any;
-
-  folders := ENEWS.WA.folder_root(domain_id);
-  foreach (varchar folder in folders) do
-    ENEWS.WA.folder_delete(domain_id, cast(folder as integer));
+  for (select EFO_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_PARENT_ID is null) do
+    ENEWS.WA.folder_delete(domain_id, EFO_ID);
 }
 ;
 
@@ -3583,7 +3596,7 @@ create procedure ENEWS.WA.settings_atomVersion (
   declare settings any;
 
   settings := ENEWS.WA.settings(domain_id, account_id);
-  return get_keyword('atomVersion', settings, '0.3');
+  return get_keyword('atomVersion', settings, '1.0');
 }
 ;
 
@@ -3762,7 +3775,22 @@ create procedure ENEWS.WA.dav_url (
   home := ENEWS.WA.dav_home(account_id);
   if (isnull(home))
     return '';
-  return concat(ENEWS.WA.host_url(), home, 'OFM/', ENEWS.WA.domain_gems_name(domain_id), '/');
+  return concat(ENEWS.WA.host_url(), home, ENEWS.WA.domain_gems_folder(), '/', ENEWS.WA.domain_gems_name(domain_id), '/');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.dav_url2 (
+  in domain_id integer,
+  in account_id integer)
+{
+  declare home varchar;
+
+  home := ENEWS.WA.dav_home(account_id);
+  if (isnull(home))
+    return '';
+  return replace(concat(home, ENEWS.WA.domain_gems_folder(), '/', ENEWS.WA.domain_gems_name(domain_id), '/'), ' ', '%20');
 }
 ;
 
@@ -4065,7 +4093,7 @@ create procedure ENEWS.WA.export_foaf_sqlx(
   http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:mbox\', \n', retValue);
   http ('XMLATTRIBUTES(\'mailto:\'||U_E_MAIL as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')), \n', retValue);
   http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:seeAlso\', \n', retValue);
-  http ('XMLATTRIBUTES(ENEWS.WA.dav_url(<DOMAIN_ID>, <USER_ID>) || \'OFM.rss\' as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\'))) \n', retValue);
+  http ('XMLATTRIBUTES(ENEWS.WA.dav_url(<DOMAIN_ID>, <USER_ID>) || \'OFM.rdf\' as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\'))) \n', retValue);
   http ('from DB.DBA.SYS_USERS where U_ID = <USER_ID> \n', retValue);
   http (']]></sql:sqlx>\n', retValue);
 

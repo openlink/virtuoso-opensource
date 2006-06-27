@@ -76,13 +76,13 @@
                   <v:label value="Auto-refresh at login"/>
                 </th>
                 <td>
-                  <v:check-box name="f_updateFeeds" xhtml_id="f_updateFeeds" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateFeeds', self.v_settings, '0') as integer)" />
+                  <v:check-box name="f_updateFeeds" xhtml_id="f_updateFeeds" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateFeeds', self.v_settings, '0') as integer)" xhtml_title="Auto-refresh feeds at login" />
                   <vm:label for="f_updateFeeds" value="for feeds"/>
                 </td>
               </tr>
               <tr>
                 <td>
-                  <v:check-box name="f_updateBlogs" xhtml_id="f_updateBlogs" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateBlogs', self.v_settings, '0') as integer)" />
+                  <v:check-box name="f_updateBlogs" xhtml_id="f_updateBlogs" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateBlogs', self.v_settings, '0') as integer)"  xhtml_title="Auto-refresh blogs at login" />
                   <vm:label for="f_updateBlogs" value="for blogs"/>
                 </td>
               </tr>
@@ -91,7 +91,7 @@
                   Feed icons
                 </th>
                 <td>
-                  <v:check-box name="f_feedIcons" xhtml_id="f_feedIcons" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('feedIcons', self.v_settings, '1') as integer)" />
+                  <v:check-box name="f_feedIcons" xhtml_id="f_feedIcons" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('feedIcons', self.v_settings, '1') as integer)"  xhtml_title="Show Feed Icons" />
                   <vm:label for="f_feedIcons" value="show"/>
                 </td>
               </tr>
@@ -105,7 +105,7 @@
                     <v:item value="1.0" name="1.0"/>
                     <v:before-data-bind>
                       <![CDATA[
-                        control.ufl_value := get_keyword('atomVersion', self.v_settings, '0.3');
+                        control.ufl_value := get_keyword('atomVersion', self.v_settings, '1.0');
                       ]]>
                     </v:before-data-bind>
                   </v:select-list>
@@ -118,14 +118,14 @@
               <tr>
                 <th width="30%">&nbsp;</th>
                 <td>
-          				<v:check-box name="f_conv" xhtml_id="f_conv" value="1" initial-checked="--get_keyword('conv', self.v_conversation, '1')"/>
+          				<v:check-box name="f_conv" xhtml_id="f_conv" value="1" initial-checked="--get_keyword('conv', self.v_conversation, '1')" xhtml_title="Enable conversation on this instance" />
           				<vm:label for="f_conv" value="Enable conversation on this instance" />
                 </td>
               </tr>
               <tr>
                 <th width="30%">&nbsp;</th>
                 <td>
-          				<v:check-box name="f_conv_init" xhtml_id="f_conv_init" value="1" initial-checked="--get_keyword('conv_init', self.v_conversation, '1')"/>
+          				<v:check-box name="f_conv_init" xhtml_id="f_conv_init" value="1" initial-checked="--get_keyword('conv_init', self.v_conversation, '1')" xhtml_title="Initialize the news group with existing posts" />
           				<vm:label for="f_conv_init" value="Initialize the news group with existing posts" />
                 </td>
               </tr>

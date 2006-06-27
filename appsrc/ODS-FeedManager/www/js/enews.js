@@ -607,36 +607,54 @@ function initRequest()
 // ---------------------------------------------------------------------------
 //
 var timer = null;
+var progressID = null;
+var progressMax = null;
 
 function resetState()
 {
 	var xmlhttp = initRequest();
-	xmlhttp.open("GET", URL + "?mode=reset" + urlParams("sid") + urlParams("realm"), false);
-	xmlhttp.onreadystatechange = function() {
-	  if (xmlhttp.readyState == 4) {}
-	}
+	xmlhttp.open("POST", URL + "?mode=reset" + urlParams("sid") + urlParams("realm"), false);
 	xmlhttp.setRequestHeader("Pragma", "no-cache");
   xmlhttp.send(null);
+  try {
+    progressID = xmlhttp.responseXML.getElementsByTagName("id")[0].firstChild.nodeValue;
+  } catch (e) { }
+}
+
+// ---------------------------------------------------------------------------
+//
+function stopState()
+{
+	var xmlhttp = initRequest();
+	xmlhttp.open("POST", URL+"?mode=stop&id="+progressID+urlParams("sid")+urlParams("realm"), false);
+	xmlhttp.setRequestHeader("Pragma", "no-cache");
+  xmlhttp.send(null);
+
+	timer = null;
+  doPost ('F1', 'btn_Background');
 }
 
 // ---------------------------------------------------------------------------
 //
 function initState()
 {
-	document.getElementById("btn_Subscribe").disabled=true;
+  hideObject('btn_Back');
+  hideObject('btn_Subscribe');
+  showObject('btn_Background');
+	document.getElementById("btn_Background").disabled = true;
+	document.getElementById("btn_Stop").disabled = true;
+ 	document.getElementById("btn_Stop").value = 'Stop';
 
-	// reset state
+	// reset state first
 	resetState();
 
+	// init state
 	var xmlhttp = initRequest();
-	xmlhttp.open("POST", URL, true);
-	xmlhttp.onreadystatechange = function() {
-	  if (xmlhttp.readyState == 4) {}
-	}
+	xmlhttp.open("POST", URL, false);
 	xmlhttp.setRequestHeader("Pragma", "no-cache");
   xmlhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-	xmlhttp.send("mode=init" + urlParams("sid") + urlParams("realm") + urlParams("cb_item") + urlParams("$_"));
-	//hideObject("feedsDiv");
+	xmlhttp.send("mode=init&id="+progressID+urlParams("sid")+urlParams("realm")+urlParams("cb_item")+urlParams("$_"));
+
 	hideObject("feeds");
   createProgressBar();
 	if (timer == null)
@@ -648,28 +666,24 @@ function initState()
 function checkState()
 {
 	var xmlhttp = initRequest();
-	xmlhttp.open("GET", URL + "?mode=state" + urlParams("sid") + urlParams("realm"), true);
+	xmlhttp.open("POST", URL+"?mode=state&id="+progressID+urlParams("sid")+urlParams("realm"), true);
 	xmlhttp.onreadystatechange = function() {
 	  if (xmlhttp.readyState == 4) {
-      var percentage;
-      var currentIndex;
-      var maxIndex;
-      var item;
-      item = xmlhttp.responseXML.getElementsByTagName("percentage")[0];
-      if (item)
-        percentage = item.firstChild.nodeValue;
-      item = xmlhttp.responseXML.getElementsByTagName("currentIndex")[0];
-      if (item)
-        currentIndex = item.firstChild.nodeValue;
-      item = xmlhttp.responseXML.getElementsByTagName("maxIndex")[0];
-      if (item)
-        maxIndex = item.firstChild.nodeValue;
+      var progressIndex;
 
-      showProgress(percentage, currentIndex, maxIndex);
-			if (percentage < 100) {
-				document.getElementById("btn_Subscribe").disabled=true;
-			  setTimeout("checkState()", 1000);
+      // progressIndex
+      try {
+        progressIndex = xmlhttp.responseXML.getElementsByTagName("index")[0].firstChild.nodeValue;
+      } catch (e) { }
+
+      showProgress(progressIndex);
+     	document.getElementById("btn_Background").disabled = false;
+     	document.getElementById("btn_Stop").disabled = false;
+			if ((progressIndex != null) && (progressIndex != progressMax)) {
+			  setTimeout("checkState()", 2000);
 			} else {
+       	document.getElementById("btn_Stop").value = 'Finish';
+       	document.getElementById("btn_Background").disabled = true;
 			  timer = null;
 			}
 	  }
@@ -678,38 +692,67 @@ function checkState()
 	xmlhttp.send("");
 }
 
-var size=100;
-var increment = 100/size;
+// ---------------------------------------------------------------------------
+//
+function progressText(txt)
+{
+  getObject('progressText').innerHTML = txt;
 
+  progressMax = 0;
+  var form = document.forms['F1'];
+  for (var i = 0; i < form.elements.length; i++) {
+    var obj = form.elements[i];
+    if (obj != null && obj.type == "checkbox" && obj.name.indexOf ('cb_item') != -1 && obj.checked)
+      progressMax += 1;
+  }
+  getObject('progressMax').innerHTML = progressMax;
+}
+
+var size = 40;
+var increment = 100 / size;
+
+// ---------------------------------------------------------------------------
+//
 // create the progress bar
 //
 function createProgressBar()
 {
+  progressMax = getObject('progressMax').innerHTML;
+
   var centerCellName;
   var tableText = "";
+  var tdText = "";
   for (x = 0; x < size; x++) {
-    tableText += "<td id=\"progress_" + x + "\" width=\"10\" height=\"20\" bgcolor=\"blue\"/>";
-    if (x == (size/2)) {
+    tdText = "";
+    if (x == ((size/2)-1)) {
       centerCellName = "progress_" + x;
+      tdText = "<font color=\"white\">" + 0 + '&nbsp;out&nbsp;of&nbsp;' + progressMax + "</font>"
     }
+    if (x == (size/2))
+      tdText = "<font color=\"white\">" + "Subscriptions</font>";
+    if (x == ((size/2)+1))
+      tdText = "<font color=\"white\">" + "Completed</font>";
+    tableText += "<td id=\"progress_" + x + "\" width=\"" + increment + "%\" height=\"20\" bgcolor=\"blue\">"+tdText+"</td>";
   }
   var idiv = window.document.getElementById("progress");
   idiv.innerHTML = "<table with=\"200\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr>" + tableText + "</tr></table>";
   centerCell = window.document.getElementById(centerCellName);
 }
 
+// ---------------------------------------------------------------------------
+//
 // show the current percentage
 //
-function showProgress(percentage, currentIndex, maxIndex)
+function showProgress(progressIndex)
 {
-  var percentageText = percentage;
-  if (percentage < 10)
-    percentageText = "&nbsp;" + percentageText;
-  centerCell.innerHTML = "<font color=\"white\">" + currentIndex + '&nbsp;out&nbsp;of&nbsp;' + maxIndex + "&nbsp;Subscriptions&nbsp;Completed</font>";
-  var tableText = "";
+  if (progressIndex == null)
+    progressIndex = progressMax;
+
+  var percentage = progressIndex * 100 / progressMax;
+  centerCell.innerHTML = "<font color=\"white\">" + progressIndex + '&nbsp;out&nbsp;of&nbsp;' + progressMax + "</font>";
   for (x = 0; x < size; x++) {
     var cell = window.document.getElementById("progress_" + x);
-    if ((cell) && percentage/x < increment) {
+    if ((cell) && (percentage/x < increment)) {
       cell.style.backgroundColor = "blue";
     } else {
       cell.style.backgroundColor = "red";

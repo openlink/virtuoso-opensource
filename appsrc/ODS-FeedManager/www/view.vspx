@@ -31,12 +31,6 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" href="css/style.css" type="text/css" />
-    <?vsp
-      declare css any;
-      css := (select EF_CSS from ENEWS.WA.FEED, ENEWS.WA.FEED_ITEM where EF_ID = EFI_FEED_ID and EFI_ID = atoi(get_keyword('fid', params)));
-      --if (not isnull(css))
-      --  http(sprintf('<link rel="stylesheet" href="%s" type="text/css" />', css));
-    ?>
     <script language="JavaScript" src="js/enews.js"></script>
   </head>
   <body>
@@ -48,9 +42,18 @@
       <input type="hidden" name="aid" value="&lt;?V get_keyword('aid', self.vc_event.ve_params) ?>"/>
       <input type="hidden" name="m" value="&lt;?V get_keyword('m', self.vc_event.ve_params) ?>"/>
       <?vsp
+        declare request, sessionInfo any;
+
+        request := ENEWS.WA.validate_request(self.vc_event.ve_lines, 0);
+        sessionInfo := ENEWS.WA.session_restore(request, self.vc_event.ve_params);
+        if (get_keyword('user_role', sessionInfo, '') = 'expire') {
+          http('<script type="text/javascript">parent.document.forms[\'F1\'].submit();</script>');
+          goto _end;
+        }
+
         declare i, mail_domain_id, domain_id, account_id, feed_id, item_id, tag_id integer;
         declare tag, tags, tagError, mode, account_name varchar;
-        declare sid, realm, data any;
+        declare sid, realm, data, request, sessionInfo any;
 
         sid := get_keyword('sid', self.vc_event.ve_params, '');
         realm := get_keyword('realm', self.vc_event.ve_params, '');
