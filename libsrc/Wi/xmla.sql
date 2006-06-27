@@ -905,9 +905,9 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
 	       			|| ''' AND DSN = ''' || xmla_get_dsn_name (_dsn) || '''';
 	}
       else
-        stmt := 'SELECT name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA,
-		 name_part (PK_TABLE, 2) as PK_TABLE_NAME, PKCOLUMN_NAME as PK_COLUMN_NAME,
-		 name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA,
+        stmt := 'SELECT upper (name_part (PK_TABLE, 1)) as PK_TABLE_SCHEMA,
+		 upper (name_part (PK_TABLE, 2)) as PK_TABLE_NAME, PKCOLUMN_NAME as PK_COLUMN_NAME,
+		 upper (name_part (FK_TABLE, 1)) as FK_TABLE_SCHEMA,
 		 name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME AS FK_COLUMN_NAME,
 		 KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME
 		 FROM DB.DBA.SYS_FOREIGN_KEYS WHERE PK_TABLE like ''' || _tbl || ''' OR FK_TABLE like ''' || _tbl || '''';
