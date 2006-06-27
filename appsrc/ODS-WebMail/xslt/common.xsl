@@ -48,7 +48,7 @@
   <xsl:template name="root_normal">
     <html>
       <head>
-        <title>OpenLink Software - oMail</title>
+        <title>OpenLink Software - Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
         <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
@@ -138,7 +138,7 @@
   <xsl:template name="root_popup">
     <html>
       <head>
-        <title>OpenLink oMail1</title>
+        <title>OpenLink Mail</title>
         <xsl:call-template name="css"/>
         <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
         <script language="JavaScript" src="/oMail/i/js/script.js"/>
@@ -158,7 +158,7 @@
   <xsl:template name="root_popup_box">
     <html>
       <head>
-        <title>OpenLink oMail</title>
+        <title>OpenLink Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
         <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
