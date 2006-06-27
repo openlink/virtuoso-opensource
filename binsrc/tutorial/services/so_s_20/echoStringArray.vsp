@@ -107,6 +107,12 @@
 	   p1 := '';
 	 }
 
+       if (strstr (_soap_url, 'whitemesa') > 0 and _caller = 'InteropTestRpcEncoded')
+	 {
+	   p0 := 'http://soapinterop.org/WSDLInteropTestRpcEnc';
+	   p1 := '';
+	 }
+
        t_text := '';
 
        t_text := replace ({?'inputStrings'}, ' ', ''',''');
