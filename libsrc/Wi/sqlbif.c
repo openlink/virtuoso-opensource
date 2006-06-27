@@ -3180,6 +3180,223 @@ get_next:
   return ((caddr_t) ptr);
 }
 
+caddr_t
+bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_arg (qst, args, 0, "sprintf_inverse");
+  caddr_t fmt = bif_string_arg (qst, args, 1, "sprintf_inverse");
+  long hide_errors = bif_long_arg (qst, args, 2, "sprintf_inverse");
+  dtp_t str_dtp = DV_TYPE_OF (str);
+  dk_set_t res = NULL;
+  char *str_tail = str;
+  char *fmt_tail = fmt;
+  char *field_start, *field_end, *next_field_start;
+  char *val_start, *val_end, *str_scan_tail;
+  int field_len, field_prec;
+  char field_fmt_buf[100];
+  char *field_fmt_tail;
+  int field_ctr = 0;
+  caddr_t val;
+  if ((DV_STRING != str_dtp) && (DV_UNAME != str_dtp))
+    {
+      if (0 == hide_errors)
+        bif_string_arg (qst, args, 0, "sprintf_inverse");
+      goto format_mismatch;
+    }
+  QR_RESET_CTX
+    {
+      while ('\0' != fmt_tail[0])
+        {
+          if ('%' == fmt_tail[0])
+            {
+              if ('%' == fmt_tail[1])
+                fmt_tail++;
+              else
+                goto next_field; /* see below */
+            }
+          if (str_tail[0] != fmt_tail[0])
+            goto format_mismatch; /* see below */
+          fmt_tail++; str_tail++;
+        }
+      if ('\0' != str_tail[0])
+        goto format_mismatch; /* see below */
+
+next_field:
+      field_start = fmt_tail;
+      field_len = field_prec = 0;
+      /* skip the percent */
+      fmt_tail++;
+      /* skip the modifier */
+      while (('\0' != fmt_tail[0]) && (NULL != strchr ("#0- +'", fmt_tail[0])))
+        fmt_tail++;
+      field_fmt_tail = field_fmt_buf;
+      /* skip the width */
+      while (('\0' != fmt_tail[0]) && (NULL != strchr ("0123456789", fmt_tail[0])))
+        {
+          if (field_fmt_tail - field_fmt_buf < sizeof (field_fmt_buf))
+            *field_fmt_tail++ = fmt_tail[0];
+          fmt_tail++;
+        }
+      *field_fmt_tail = 0;
+      field_len = atoi (field_fmt_buf);
+      /* skip the precision */
+      if ('.' == fmt_tail[0])
+        {
+          field_fmt_tail = field_fmt_buf;
+          fmt_tail++; /* skip the dot */
+          while (('\0' != fmt_tail[0]) && (NULL != strchr ("0123456789", fmt_tail[0])))
+            {
+              if (field_fmt_tail - field_fmt_buf < sizeof (field_fmt_buf))
+                *field_fmt_tail++ = fmt_tail[0];
+              fmt_tail++;
+            }
+          *field_fmt_tail = 0;
+          field_prec = atoi (field_fmt_buf);
+        }
+      /* skip the size modifier */
+      if (('\0' != fmt_tail[0]) && (NULL != strchr ("hlLq", fmt_tail[0])))
+        fmt_tail++;
+      if (('\0' != fmt_tail[0]) && (NULL != strchr ("diouxXeEfgcsSIVU", fmt_tail[0])))
+        fmt_tail++;
+      else
+        sqlr_new_error ("22023", "SR523",
+          "Invalid format string for sscanf at field %d (column %ld of format '%.1000s')", field_ctr, (long)(fmt_tail-fmt), fmt );
+      field_end = fmt_tail;
+      val_start = val_end = str_tail;
+  
+check_val_end:
+      next_field_start = field_end;
+      if ('\0' == fmt_tail[0])
+        {
+          while ('\0' != val_end[0]) val_end++;
+          str_scan_tail = val_end;
+          goto val_end_found;
+        }
+      str_scan_tail = val_end;
+      while ('\0' != next_field_start[0])
+        {
+          if ('%' == next_field_start[0])
+            {
+              if ('%' == next_field_start[1])
+                next_field_start++;
+              else
+                goto val_end_found; /* see below */
+            }
+          if (str_scan_tail[0] != next_field_start[0])
+            {
+              if ('\0' == str_scan_tail[0])
+                goto format_mismatch_mid_field; /* see below */
+              val_end++;
+              goto check_val_end; /* see above */
+            }
+          next_field_start++; str_scan_tail++;
+        }
+      if ('\0' != str_scan_tail[0])
+        goto format_mismatch_mid_field; /* see below */
+      
+val_end_found:
+      fmt_tail = next_field_start;
+      str_tail = str_scan_tail;
+      switch (field_end[-1])
+        {
+        case 'd':
+        case 'i':
+        case 'o':
+        case 'u':
+        case 'x':
+        case 'X':
+          goto sorry_unsupported;
+          break;
+  
+        case 'e':
+        case 'E':
+        case 'f':
+        case 'g':
+          goto sorry_unsupported;
+          break;
+  
+        case 'c':
+          goto sorry_unsupported;
+          break;
+  
+        case 's':
+          val = box_dv_short_nchars (val_start, val_end - val_start);
+          dk_set_push (&res, val);
+          break;
+  
+        case 'S': /* via sprintf_escaped_str_literal */
+          goto sorry_unsupported;
+          break;
+  
+        case 'I': /* via sprintf_escaped_id */
+          goto sorry_unsupported;
+          break;
+  
+        case 'U': /* via http_value_esc (qst, ses, arg, NULL, DKS_ESC_URI); */
+          goto sorry_unsupported;
+          break;
+        case 'V': /* via http_value_esc (qst, ses, arg, NULL, DKS_ESC_PTEXT); */
+          goto sorry_unsupported;
+          break;
+  
+        default:
+          GPF_T;
+        }
+      if ('\0' == fmt_tail[0])
+        goto return_res; /* see below */
+      goto next_field; /* see above */
+
+sorry_unsupported:
+      sqlr_new_error ("22023", "SR524",
+        "Sorry, unsupported format string for sscanf at field %d (column %ld of format '%.1000s')", field_ctr, (long)(fmt_tail-fmt), fmt );
+    }
+  QR_RESET_CODE
+    {
+      caddr_t err = thr_get_error_code (((query_instance_t *)qst)->qi_thread);
+      POP_QR_RESET;
+      if (!hide_errors)
+        {
+          while (NULL != res)
+            dk_free_tree (dk_set_pop (&res));
+          sqlr_resignal (err);
+        }
+      goto format_mismatch_mid_field; /* see below */
+    }
+  END_QR_RESET;
+
+format_mismatch_mid_field:
+  if (2 == hide_errors)
+    dk_set_push (&res, NEW_DB_NULL);
+
+format_mismatch:
+  switch (hide_errors)
+    {
+    case 2:
+      while ('\0' != fmt_tail[0])
+        {
+          if ('%' == fmt_tail[0])
+            {
+              if ('%' == fmt_tail[1])
+                fmt_tail++;
+              else
+                dk_set_push (&res, NEW_DB_NULL);
+            }
+          fmt_tail++;
+        }
+      /* no break: */
+    case 3:
+      return (caddr_t)(revlist_to_array (res));
+    default:
+      while (NULL != res)
+        dk_free_tree (dk_set_pop (&res));
+      return NEW_DB_NULL;
+    }
+
+return_res:
+  return (caddr_t)(revlist_to_array (res));
+}
+
+
 /* New functions by AK 15-JAN-1997. */
 
 /* strchr(str,chr)
@@ -5508,6 +5725,7 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
     goto cleanup;
   }
 cleanup:
+      sql_pop_all_buffers ();
       semaphore_leave (parse_sem);
       MP_DONE();
       sc_free (&sc);
@@ -5702,8 +5920,9 @@ nothing_to_commit:
       goto cleanup;
     }
 cleanup:
-  semaphore_leave (parse_sem);
+  scn3split_pop_all_buffers ();
   MP_DONE();
+  semaphore_leave (parse_sem);
   sc_free (&sc);
   dk_free_box (scn3split_ses);
   dk_free_box (start_filename);
@@ -7335,6 +7554,12 @@ do_long_string:
 		  res = strses_string (ses);
 		  dk_free_box ((box_t) ses);
 		  return res;
+		}
+	  case DV_IRI_ID: /* TBD: 64bit case */
+		{
+		  iri_id_t i = unbox_iri_id (data);
+		  snprintf (tmp, sizeof (tmp), "#i%ld", (long) i);
+		  break;
 		}
 	  default:
 	      goto cvt_error;
@@ -11514,6 +11739,7 @@ sql_bif_init (void)
   bif_define_typed ("concat", bif_concatenate, &bt_string); /* This is more to standard */
   bif_define_typed ("replace", bif_replace, &bt_string);
   bif_define_typed ("sprintf", bif_sprintf, &bt_varchar);
+  bif_define ("sprintf_inverse", bif_sprintf_inverse);
 
 /* Finding occurrences of characters and substrings in strings: */
   bif_define_typed ("strchr", bif_strchr, &bt_integer);
