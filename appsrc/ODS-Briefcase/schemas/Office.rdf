@@ -28,8 +28,8 @@
          xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
          xml:base="http://www.openlinksw.com/schemas/Office#">
   <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/Office#">
-    <rdfs:label>MS Word document (doc)</rdfs:label>
-    <rdfs:comment>The MS Word file format general attributes.</rdfs:comment>
+    <rdfs:label>Microsoft Office document</rdfs:label>
+    <rdfs:comment>The Microsoft Office format general attributes.</rdfs:comment>
     <virtrdf:catName>Office Documents (Microsoft)</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>

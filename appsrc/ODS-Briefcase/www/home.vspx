@@ -65,6 +65,57 @@
             msg := 'Can not update resource. ';
           }
 
+          if ((self.command_mode = 5) and (get_keyword('dav_destination', self.vc_page.vc_event.ve_params, '') = '1')) {
+            -- RDF Tripple Store
+
+            declare pos integer;
+            declare is_ttl, is_xml, rdf_data, rdf_xml, rdf_name, rdf_graph any;
+
+            if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '0') {
+              dav_filename := get_keyword('filename', get_keyword_ucase('attr-dav_file', self.vc_page.vc_event.ve_params));
+              if ((dav_filename like 'http://%') or (dav_filename like 'ftp://%')) {
+                rdf_data := http_get(dav_filename);
+              } else {
+                pos := position ('dav_file', params);
+                rdf_data := aref_set_0 (params, pos);
+              }
+            } else if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '1') {
+              dav_filename := get_keyword('dav_url', self.vc_page.vc_event.ve_params, '');
+              rdf_data := http_get(dav_filename);
+            }
+            rdf_name := trim(get_keyword('dav_name', self.vc_page.vc_event.ve_params));
+            pos := strrchr (rdf_name, '.');
+            if (not isnull(pos))
+              rdf_name := subseq (rdf_name, 0, pos);
+            rdf_graph := ODRIVE.WA.odrive_host_url() || WS.WS.FIXPATH(ODRIVE.WA.odrive_real_path(self.dir_path) || rdf_name);
+            {
+              declare continue handler for SQLSTATE '*' {
+                is_ttl := 0;
+              };
+              is_ttl := 1;
+              DB.DBA.RDF_TTL2HASH (rdf_data, rdf_graph, rdf_graph);
+            }
+            if (not is_ttl) {
+              {
+                declare continue handler for SQLSTATE '*' {
+                  is_xml := 0;
+                };
+                is_xml := 1;
+                rdf_xml := xtree_doc (rdf_data, 0, rdf_graph);
+              }
+            }
+            if (is_xml = 0 and is_ttl = 0)
+              signal ('TEST', 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.<>');
+
+            if (is_ttl) {
+              DB.DBA.TTLP (rdf_data, rdf_graph, rdf_graph);
+            } else {
+              DB.DBA.RDF_EXP_LOAD_RDFXML (rdf_graph, rdf_xml, 0);
+            }
+
+          } else {
+            -- WebDAV
+
           if (self.command_mode = 10) {
             self.dav_id := ODRIVE.WA.DAV_GET(self.dav_item, 'id');
             if (ODRIVE.WA.DAV_ERROR(self.dav_id))
@@ -140,6 +191,9 @@
             } else if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '1') {
               dav_filename := get_keyword('dav_url', self.vc_page.vc_event.ve_params, '');
               dav_file := http_get(dav_filename);
+              } else if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '2') {
+                dav_filename := get_keyword('dav_rdf', self.vc_page.vc_event.ve_params, '');
+                dav_file := (sparql define output:format 'RDF/XML' construct { ?s ?p ?o } where { graph ?:dav_filename { ?s ?p ?o } } );
             }
           }
           if (self.dav_type = 'R') {
@@ -198,7 +252,7 @@
 
             -- ACL
             if (ODRIVE.WA.DAV_GET(self.dav_item, 'acl') <> self.dav_acl)
-              dbg_obj_print(ODRIVE.WA.DAV_SET(self.dav_path, 'acl', self.dav_acl));
+                ODRIVE.WA.DAV_SET(self.dav_path, 'acl', self.dav_acl);
 
             -- Tags
             if (self.dav_type = 'R') {
@@ -245,13 +299,45 @@
             }
 
             if (dav_detType = 'ResFilter') {
-              self.dc_prepare();
+                -- save & validate metadata
+                declare rValue any;
+                rValue := self.dc_prepare();
+                if (rValue <> 1) {
+                  if (rValue = -1)
+                    self.vc_error_message := 'Bad metadata schema';
+                  if (rValue = -2)
+                    self.vc_error_message := 'Bad metadata property';
+                  if (rValue = -3)
+                    self.vc_error_message := 'Bad metadata condition';
+                  if (rValue = -4)
+                    self.vc_error_message := 'Bad metadata value';
+
+                  self.vc_is_valid := 0;
+                  return;
+                }
+
               ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:Filter-Params', self.search_dc);
               retValue := ODRIVE.WA.ResFilter_CONFIGURE(self.dav_path, self.search_dc);
               if (ODRIVE.WA.DAV_ERROR(retValue))
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
             } else if (dav_detType = 'CatFilter') {
-              self.dc_prepare();
+                -- save & validate metadata
+                declare rValue any;
+                rValue := self.dc_prepare();
+                if (rValue <> 1) {
+                  if (rValue = -1)
+                    self.vc_error_message := 'Bad metadata schema';
+                  if (rValue = -2)
+                    self.vc_error_message := 'Bad metadata property';
+                  if (rValue = -3)
+                    self.vc_error_message := 'Bad metadata condition';
+                  if (rValue = -4)
+                    self.vc_error_message := 'Bad metadata value';
+
+                  self.vc_is_valid := 0;
+                  return;
+                }
+
               ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:Filter-Params', self.search_dc);
               retValue := ODRIVE.WA.CatFilter_CONFIGURE(self.dav_path, self.search_dc);
               if (ODRIVE.WA.DAV_ERROR(retValue))
@@ -310,6 +396,7 @@
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
               if ((self.dav_type = 'R') and (ODRIVE.WA.DAV_GET_AUTOVERSION (dav_fullPath) = ''))
                 ODRIVE.WA.DAV_REMOVE_VERSION_CONTROL (dav_fullPath);
+              }
             }
           }
 

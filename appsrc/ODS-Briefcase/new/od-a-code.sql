@@ -895,6 +895,7 @@ create procedure ODRIVE.WA.odrive_proc(
           dirList := vector_concat(dirList, sharedList);
       }
     } else {
+      --dbg_obj_print(path, 1, dirFilter);
       dirList := ODRIVE.WA.DAV_DIR_FILTER(path, 1, dirFilter);
     }
     dirFilter := '%';
@@ -1570,6 +1571,8 @@ create procedure ODRIVE.WA.odrive_sharing_dir_list (
         where AI_PARENT_TYPE = 'R'
           and GI_SUPER = uid
           and AI_FLAG = 'G'
+          and RES_OWNER <> uid
+          and RES_GROUP <> uid
         order by RES_NAME, RES_ID
       ) do
   {
@@ -1593,6 +1596,8 @@ create procedure ODRIVE.WA.odrive_sharing_dir_list (
         where AI_PARENT_TYPE = 'C'
           and GI_SUPER = uid
           and AI_FLAG = 'G'
+          and COL_OWNER <> uid
+          and COL_GROUP <> uid
         order by COL_NAME, COL_ID
       ) do
   {
@@ -1682,7 +1687,7 @@ create procedure ODRIVE.WA.odrive_settings_atomVersion (
   declare settings any;
 
   settings := ODRIVE.WA.odrive_settings(params);
-  return get_keyword('atomVersion', settings, '0.3');
+  return get_keyword('atomVersion', settings, '1.0');
 }
 ;
 

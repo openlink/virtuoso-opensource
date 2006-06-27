@@ -328,6 +328,8 @@ create procedure ODRIVE.WA.dav_dc_subfilter(
     value := replace(concat(cast(value as varchar), '%'), '%%', '%');
   if (cast(value as varchar) = cast(empty_value as varchar))
     return;
+  if ((cond = 'contains_text') or (cond = 'may_contain_text'))
+    value := ODRIVE.WA.dc_search_string (value);
   filter := vector_concat(filter, vector(vector(name, cond, value)));
 }
 ;
@@ -408,3 +410,43 @@ create procedure ODRIVE.WA.dav_dc_restore_ns(inout pXml varchar)
   pXml := replace(pXml, 'xmlns:n0', 'xmlns:vmd');
   return pXml;
 };
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.dc_search_string (
+  in exp varchar)
+{
+  declare n int;
+  declare tmp, w varchar;
+  declare words any;
+
+  exp := trim (exp, ' ');
+  if (strchr (exp, ' ') is null)
+    return concat ('"', trim (exp, '"'), '"');
+
+  words := vector ();
+  tmp := exp;
+  w := regexp_match ('["][^"]+["]|[''][^'']+['']|[^"'' ]+', tmp, 1);
+  while (w is not null) {
+    w := trim (w, '"'' ');
+    words := vector_concat (words, vector (w));
+    w := regexp_match ('["][^"]+["]|[''][^'']+['']|[^"'' ]+', tmp, 1);
+  }
+  exp := '';
+  n := 0;
+  while (n < length(words)) {
+    w := words[n];
+    if (upper(w) in ('AND', 'OR')) {
+      exp := concat (exp, sprintf (' %s ', upper(w)));
+    } else {
+      if ((n = 0) or (upper(words[n-1]) in ('AND', 'OR'))) {
+        exp := concat (exp, sprintf ('"%s"', w));
+      } else {
+        exp := concat (exp, sprintf (' AND "%s"', w));
+      }
+    }
+    n := n + 1;
+  }
+  return exp;
+}
+;

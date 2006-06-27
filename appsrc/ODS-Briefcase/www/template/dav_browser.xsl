@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
- -
- -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -21,9 +18,11 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
+ -
 -->
+<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro">
-  <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
+  <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" />
   <!--=========================================================================-->
   <xsl:template match="vm:dav_browser">
     <v:template name="template_main" type="simple">
@@ -31,12 +30,12 @@
       <v:variable name="command" persist="0" type="integer" default="0" />
       <v:variable name="command_mode" persist="0" type="integer" default="0" />
       <v:variable name="command_save" persist="0" type="integer" default="0" />
-      <v:variable name="command_acl" persist="0" type="integer" default="0"/>
+      <v:variable name="command_acl" persist="0" type="integer" default="0" />
       <v:variable name="source" persist="0" type="varchar" default="''" />
       <v:variable name="item_array" persist="0" type="any" default="null" />
       <v:variable name="need_overwrite" persist="0" type="integer" default="0" />
       <v:variable name="dir_path" persist="1" type="varchar" default="'__root__'" />
-      <v:variable name="dir_right" persist="0" type="varchar" default="''"/>
+      <v:variable name="dir_right" persist="0" type="varchar" default="''" />
       <v:variable name="dir_select" persist="0" type="integer" default="0" />
       <v:variable name="dir_details" persist="1" type="integer" default="0" />
       <v:variable name="dir_order" persist="1" type="varchar" default="'column_#1'" />
@@ -50,22 +49,22 @@
       <v:variable name="search_simple" persist="0" param-name="keywords" type="any" default="null" />
       <v:variable name="search_advanced" persist="0" type="any" default="null" />
       <v:variable name="search_dc" persist="0" type="any" default="null" />
-      <v:variable name="vmdType" persist="0" type="varchar" default="null"/>
-      <v:variable name="vmdSchema" persist="0" type="varchar" default="null"/>
+      <v:variable name="vmdType" persist="0" type="varchar" default="null" />
+      <v:variable name="vmdSchema" persist="0" type="varchar" default="null" />
       <v:variable name="dav_vector" persist="0" type="any" default="null" />
-      <v:variable name="tabNo" param-name="tabNo" type="varchar" default="'1'"/>
-      <v:variable name="ace" persist="0" type="any"/>
+      <v:variable name="tabNo" param-name="tabNo" type="varchar" default="'1'" />
+      <v:variable name="ace" persist="0" type="any" />
       <v:variable name="dav_id"   type="integer" default="-1" />
       <v:variable name="dav_path" type="varchar" default="''" />
       <v:variable name="dav_type" type="varchar" default="''" />
       <v:variable name="dav_detType" type="varchar" default="''" />
       <v:variable name="dav_item" type="any" default="null" />
-      <v:variable name="dav_enable" type="integer" default="1"/>
-      <v:variable name="dav_propEnable" type="integer" default="1"/>
-      <v:variable name="dav_acl" persist="0" type="varbinary"/>
-      <v:variable name="dav_tags" persist="0" type="varchar"/>
-      <v:variable name="dav_tags2" persist="0" type="varchar"/>
-      <v:variable name="dav_metadata" persist="0" type="varchar" default="null"/>
+      <v:variable name="dav_enable" type="integer" default="1" />
+      <v:variable name="dav_propEnable" type="integer" default="1" />
+      <v:variable name="dav_acl" persist="0" type="varbinary" />
+      <v:variable name="dav_tags" persist="0" type="varchar" />
+      <v:variable name="dav_tags2" persist="0" type="varchar" />
+      <v:variable name="dav_metadata" persist="0" type="varchar" default="null" />
       <v:variable name="dav_content" type="varchar" default="'Can not find file'" />
 
       <v:on-init>
@@ -137,6 +136,57 @@
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'publicTags12', get_keyword('ts_publicTags12', self.vc_page.vc_event.ve_params, ''));
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'privateTags11', get_keyword('ts_privateTags11', self.vc_page.vc_event.ve_params, ''));
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'privateTags12', get_keyword('ts_privateTags12', self.vc_page.vc_event.ve_params, ''));
+
+          declare N integer;
+          declare mType, mSchema, mProperty, mCondition, mValue any;
+          declare params, suffix, aParams, cValue, rValue any;
+
+          params := self.vc_page.vc_event.ve_params;
+          rValue := 1;
+          N := 0;
+          while (N < length(params)) {
+            if (params[N] like 'ts_vmd_action%') {
+              if (params[N+1] = 'delete') {
+                aParams := split_and_decode(params[N], 0, '\0$0');
+                ODRIVE.WA.dav_dc_cut(self.search_dc, 'metadata', trim(aParams[1]));
+              }
+            } else if (params[N] like 'ts_vmd_condition%') {
+              aParams := split_and_decode(params[N], 0, '\0$0');
+              suffix := sprintf('$0%s$0', trim(aParams[1]));
+              if (get_keyword('ts_vmd_action' || suffix, params, '') <> 'delete') {
+                mType := get_keyword('ts_vmd_type' || suffix, params, '');
+                mSchema := get_keyword('ts_vmd_schema' || suffix, params, '');
+                mProperty := get_keyword('ts_vmd_property' || suffix, params, '');
+                mCondition := get_keyword('ts_vmd_condition' || suffix, params, '');
+                mValue  := get_keyword('ts_vmd_value' || suffix, params, '');
+
+                cValue := 1;
+                if (is_empty_or_null(mSchema))
+                  cValue := -1;
+                if (is_empty_or_null(mProperty))
+                  cValue := -2;
+                if (is_empty_or_null(mCondition))
+                  cValue := -3;
+                if ((mCondition in ('=', '&lt;', '&lt;=', '&gt;', '&gt;=')) and (not ODRIVE.WA.rdf_validate_property2(mType, mSchema, mProperty, mValue)))
+                  cValue := -4;
+                if (((cValue = 1) or (suffix <> get_keyword('ts_vmd_suffix', params))) and (get_keyword('ts_vmd_action' || suffix, params, '') <> 'reload'))
+                  ODRIVE.WA.dav_dc_set_metadata (self.search_dc,
+                                                 trim(aParams[1]),
+                                                 mType,
+                                                 mSchema,
+                                                 mProperty,
+                                                 mCondition,
+                                                 mValue
+                                                );
+                if (suffix = get_keyword('ts_vmd_suffix', params))
+                  cValue := 1;
+                if ((cValue < 0) and (rValue > 0))
+                  rValue := cValue;
+              }
+            }
+            N := N + 4;
+          }
+          return rValue;
         ]]>
       </v:method>
 
@@ -155,6 +205,7 @@
           declare anOptions any;
           declare N integer;
           anOptions := vector (
+            '', '',
             '=', 'equal to',
             '&lt;', 'less than',
             '&lt;=', 'less than or equal to',
@@ -167,7 +218,6 @@
             'contains_tags', 'contains keywords',
             'may_contain_tags', 'may contain keywords');
           http(sprintf('<select name="%s" class="%s" disabled="disabled">', name, class));
-          http(self.option_prepare('', '', aValue));
           if (isnull(aValues)) {
             for (N := 0; N < length(anOptions); N := N + 2)
               http(self.option_prepare(anOptions[N], anOptions[N+1], aValue));
@@ -193,7 +243,7 @@
          else
            secondSufix := 'grant';
 
-         http(sprintf('<input type="checkbox" value="1" name="%s_%s" %s onClick="javascript: uncheck(\'%s_%s\')"/>', itemName, itemSufix, itemChecked, itemName, secondSufix));
+         http(sprintf('<input type="checkbox" value="1" name="%s_%s" %s onClick="javascript: uncheck(\'%s_%s\')" />', itemName, itemSufix, itemChecked, itemName, secondSufix));
         ]]>
       </v:method>
 
@@ -213,6 +263,12 @@
 
       <v:method name="command_set" arglist="in command integer, in command_mode integer">
         <![CDATA[
+          self.command_restore(command, command_mode, 1);
+        ]]>
+      </v:method>
+
+      <v:method name="command_restore" arglist="in command integer, in command_mode integer, in restore_mode integer">
+        <![CDATA[
           self.tabNo := '1';
           self.command := command;
           self.command_mode := command_mode;
@@ -229,6 +285,7 @@
               self.dir_grouping := '';
               self.dir_cloud := 0;
             }
+            if (restore_mode)
             self.search_dc := null;
           }
         ]]>
@@ -246,7 +303,7 @@
           if (is_empty_or_null(self.command_save)) {
             self.command_set(0, 0);
           } else {
-            self.command_set(self.command_save[0], self.command_save[1]);
+            self.command_restore(self.command_save[0], self.command_save[1], 0);
             if (isnull(path)) {
               self.dir_path := self.command_save[2];
             } else {
@@ -412,10 +469,10 @@
 
           if (self.dir_order = columnName and self.dir_direction = 'desc') {
             directionStr := 'Ascending';
-            imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
+            imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down" />';
           } else if (self.dir_order = columnName and self.dir_direction = 'asc') {
             directionStr := 'Descending';
-            imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
+            imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up" />';
           } else {
             directionStr := 'Ascending';
             imageStr := '&nbsp;&nbsp;';
@@ -606,11 +663,11 @@
       </v:method>
 
       <v:form name="F1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
-        <?vsp http(sprintf('<input type="hidden" name="tabNo" id="tabNo" value="%s"/>', self.tabNo)); ?>
-        <?vsp http('<input type="hidden" name="f_tag_hidden" value=""/>'); ?>
-        <?vsp http('<input type="hidden" name="f_tag2_hidden" value=""/>'); ?>
+        <?vsp http(sprintf('<input type="hidden" name="tabNo" id="tabNo" value="%s" />', self.tabNo)); ?>
+        <?vsp http('<input type="hidden" name="f_tag_hidden" value="" />'); ?>
+        <?vsp http('<input type="hidden" name="f_tag2_hidden" value="" />'); ?>
 
-        <xsl:call-template name="toolBar"/>
+        <xsl:call-template name="toolBar" />
 
         <?vsp
           if (0)
@@ -671,8 +728,8 @@
         <v:template type="simple" enabled="-- case when ((self.command = 0) and (self.command_mode = 2)) then 1 else 0 end">
           <div class="boxHeader" style="text-align: center;">
             <b>Search </b>
-            <v:text name="simple" value="--self.search_simple" xhtml_onkeypress="return submitEnter(\'F1\', '', event)" xhtml_class="textbox" xhtml_size="70%"/>
-            <xsl:call-template name="nbsp"/>
+            <v:text name="simple" value="--self.search_simple" xhtml_onkeypress="return submitEnter(\'F1\', '', event)" xhtml_class="textbox" xhtml_size="70%" />
+            <xsl:call-template name="nbsp" />
             |
             <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
               <v:on-post>
@@ -701,22 +758,38 @@
         <v:template type="simple" enabled="-- case when ((self.command = 0) and (self.command_mode = 3)) then 1 else 0 end">
           <div id="c1">
             <div class="tabs">
-              <vm:tabCaption tab="7" tabs="11" caption="Base"/>
-              <vm:tabCaption tab="8" tabs="11" caption="Extended"/>
-              <vm:tabCaption tab="9" tabs="11" caption="Metadata"/>
-              <vm:tabCaption tab="11" tabs="11" caption="Options"/>
+              <vm:tabCaption tab="7" tabs="11" caption="Base" />
+              <vm:tabCaption tab="8" tabs="11" caption="Extended" />
+              <vm:tabCaption tab="9" tabs="11" caption="Metadata" />
+              <vm:tabCaption tab="11" tabs="11" caption="Options" />
             </div>
             <div class="contents">
-              <xsl:call-template name="search-dc-template7"/>
-              <xsl:call-template name="search-dc-template8"/>
-              <xsl:call-template name="search-dc-template9"/>
-              <xsl:call-template name="search-dc-template11"/>
+              <xsl:call-template name="search-dc-template7" />
+              <xsl:call-template name="search-dc-template8" />
+              <xsl:call-template name="search-dc-template9" />
+              <xsl:call-template name="search-dc-template11" />
             </div>
             <div class="new-form-footer">
               <v:button action="simple" value="Search" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
-                    self.dc_prepare();
+                    -- save & validate metadata
+                    declare rValue any;
+                    rValue := self.dc_prepare();
+                    if (rValue <> 1) {
+                      if (rValue = -1)
+                        self.vc_error_message := 'Bad metadata schema';
+                      if (rValue = -2)
+                        self.vc_error_message := 'Bad metadata property';
+                      if (rValue = -3)
+                        self.vc_error_message := 'Bad metadata condition';
+                      if (rValue = -4)
+                        self.vc_error_message := 'Bad metadata value';
+
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+
                     self.search_advanced := self.search_dc;
                     self.dir_order := get_keyword('ts_order', e.ve_params, '');
                     self.dir_direction := get_keyword('ts_direction', e.ve_params, '');
@@ -726,10 +799,35 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Save" enabled="--either(equ(self.dir_right, 'W'), 1, 0)" xhtml_class="button">
+              <v:button action="simple" value="Clear" xhtml_title="Clear Criteria" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
-                    self.dc_prepare();
+                    self.search_dc := null;
+                    self.search_advanced := null;
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" value="Save"  xhtml_title="Save as Smart Folder" enabled="--either(equ(self.dir_right, 'W'), 1, 0)" xhtml_class="button">
+                <v:on-post>
+                  <![CDATA[
+                    -- save & validate metadata
+                    declare rValue any;
+                    rValue := self.dc_prepare();
+                    if (rValue <> 1) {
+                      if (rValue = -1)
+                        self.vc_error_message := 'Bad metadata schema';
+                      if (rValue = -2)
+                        self.vc_error_message := 'Bad metadata property';
+                      if (rValue = -3)
+                        self.vc_error_message := 'Bad metadata condition';
+                      if (rValue = -4)
+                        self.vc_error_message := 'Bad metadata value';
+
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+
                     self.command_push(10, 1);
                     self.vc_data_bind(e);
                   ]]>
@@ -745,7 +843,7 @@
                 </v:on-post>
               </v:button>
             </div>
-            <div style="margin: 0 0 6px 0;"/>
+            <div style="margin: 0 0 6px 0;" />
           </div>
           <script>
             coloriseTable('properties');
@@ -851,7 +949,7 @@
                 self.dc_prepare();
             ]]>
           </v:before-data-bind>
-          <v:text name="formRight" type="hidden" value="--self.dav_enable"/>
+          <v:text name="formRight" type="hidden" value="--self.dav_enable" />
           <div class="new-form-header">
             <v:label format="%s">:
               <v:before-data-bind>
@@ -871,23 +969,23 @@
           </div>
            <div id="c1">
             <div class="tabs">
-              <vm:tabCaption tab="1" tabs="11" caption="Main"/>
+              <vm:tabCaption tab="1" tabs="11" caption="Main" />
               <v:template type="simple" enabled="-- gte(self.command_mode, 10)">
-              <vm:tabCaption tab="2" tabs="11" caption="Sharing"/>
+              <vm:tabCaption tab="2" tabs="11" caption="Sharing" />
               </v:template>
               <v:template type="simple" enabled="-- case when (gte(self.command_mode, 10) and ODRIVE.WA.dav_rdf_has_metadata(self.dav_path)) then 1 else 0 end">
-              <vm:tabCaption tab="3" tabs="11" caption="Metadata"/>
+              <vm:tabCaption tab="3" tabs="11" caption="Metadata" />
               </v:template>
               <v:template type="simple" enabled="-- case when (equ(self.command_mode, 10) and equ(self.dav_type, 'R') and ODRIVE.WA.det_action_enable(self.dav_path, 'version')) then 1 else 0 end">
-              <vm:tabCaption tab="11" tabs="11" caption="Versions"/>
+              <vm:tabCaption tab="11" tabs="11" caption="Versions" />
               </v:template>
               <v:template type="simple" enabled="-- equ(self.dav_type, 'C')">
-              <!-- <vm:tabCaption tab="4" tabs="10" caption="oMail"/> -->
-              <vm:tabCaption tab="5" tabs="11" caption="Filter"/>
-              <vm:tabCaption tab="6" tabs="11" caption="FS link"/>
-              <vm:tabCaption tab="7" tabs="11" caption="Base"/>
-              <vm:tabCaption tab="8" tabs="11" caption="Extended"/>
-              <vm:tabCaption tab="9" tabs="11" caption="Metadata"/>
+              <!-- <vm:tabCaption tab="4" tabs="10" caption="oMail" /> -->
+              <vm:tabCaption tab="5" tabs="11" caption="Filter" />
+              <vm:tabCaption tab="6" tabs="11" caption="FS link" />
+              <vm:tabCaption tab="7" tabs="11" caption="Base" />
+              <vm:tabCaption tab="8" tabs="11" caption="Extended" />
+              <vm:tabCaption tab="9" tabs="11" caption="Metadata" />
               </v:template>
             </div>
             <div class="contents">
@@ -896,54 +994,91 @@
                   <v:template type="simple" enabled="-- equ(self.command_mode, 5)">
                     <tr>
                       <th>
-                        <v:label for="dav_file" value="--'Source path - File'" format="%s"/>
+                        <vm:label for="dav_file" value="--'Destination'" />
                       </th>
-                      <td>
-                        <input type="radio" name="dav_source" value="0" checked="checked" /><xsl:call-template name="nbsp"/>
-                        <input type="file" name="dav_file" onChange="javascript: F1.dav_source[0].checked=true; getFileName(this);" onBlur="javascript: getFileName(this);" onFocus="javascript: F1.dav_source[0].checked=true;" size="40"/>
+                      <td style="padding-left: 4px">
+                        <input type="radio" name="dav_destination" id="dav_destination_0" value="0" checked="checked" onchange="javascript: toggleDavRows();" title="WebDAV" /><b><vm:label for="dav_destination_0" value="--'WebDAV'" /></b>
+                        <input type="radio" name="dav_destination" id="dav_destination_1" value="1" onchange="javascript: toggleDavRows();" title="RDF Store" /><b><vm:label for="dav_destination_1" value="--'RDF Store'" /></b>
                       </td>
                     </tr>
                     <tr>
-                      <th>
-                        <v:label for="dav_url" value="--'- URL'" format="%s"/>
+                      <th valign="top">
+                        <v:label for="dav_file" value="--'Source'" />
                       </th>
                       <td>
-                        <input type="radio" name="dav_source" value="1" /><xsl:call-template name="nbsp"/>
-                        <input type="text" name="dav_url" onBlur="javascript: getFileName(this);" onFocus="javascript: F1.dav_source[1].checked=true;" size="40"/>
+                        <table cellspacing="0" cellpadding="0">
+                          <tr>
+                            <td>
+                              <input type="radio" name="dav_source" id="dav_source_0" value="0" checked="checked" title="File" /><xsl:call-template name="nbsp" />
+                            </td>
+                            <td>
+                              <b><vm:label for="dav_source_0" value="--'File'" /></b>
+                            </td>
+                            <td>
+                              <input type="file" name="dav_file" onchange="javascript: F1.dav_source[0].checked=true; getFileName(this);" onblur="javascript: getFileName(this);" onFocus="javascript: F1.dav_source[0].checked=true;" size="40" />
+                            </td>
+                          </tr>
+                          <tr>
+                      <td>
+                              <input type="radio" name="dav_source" id="dav_source_1" value="1" title="URL" /><xsl:call-template name="nbsp" />
+                      </td>
+                            <td>
+                              <b><vm:label for="dav_source_1" value="--'URL'" /></b>
+                            </td>
+                            <td>
+                              <input type="text" name="dav_url" onblur="javascript: getFileName(this);" onFocus="javascript: F1.dav_source[1].checked=true;" size="40" />
+                            </td>
+                    </tr>
+                          <tr id="rdf_store">
+                            <td>
+                              <input type="radio" name="dav_source" id="dav_source_2" value="2" title="RDF Store" /><xsl:call-template name="nbsp" />
+                            </td>
+                            <td>
+                              <b><vm:label for="dav_source_2" value="--'RDF Store'" /></b>
+                            </td>
+                            <td>
+                              <input type="text" name="dav_rdf" onblur="javascript: getFileName(this);" onFocus="javascript: F1.dav_source[2].checked=true;" size="40" />
+                            </td>
+                          </tr>
+                        </table>
                       </td>
                     </tr>
                   </v:template>
                   <tr>
                     <th>
-                      <v:label for="dav_name" value="--either(equ(self.dav_type, 'R'), 'File name (*)', 'Folder name (*)')" format="%s"/>
+                      <span id="label_dav"><v:label for="dav_name" value="--either(equ(self.dav_type, 'R'), 'File name (*)', 'Folder name (*)')" /></span>
+                      <span id="label_rdf" style="display: none;"><v:label for="dav_name" value="--'RDF graph name'" /></span>
                     </th>
                     <td>
-                      <v:text name="dav_name" value="--get_keyword('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.utf2wide(ODRIVE.WA.DAV_GET(self.dav_item, 'name')))" format="%s" xhtml_disabled="disabled" xhtml_class="field-text"/>
+                      <span id="label_rdf_prefix" style="display: none;"><b><v:label for="dav_name" value="--ODRIVE.WA.odrive_host_url() || WS.WS.FIXPATH(ODRIVE.WA.odrive_real_path(self.dir_path))" /></b></span>
+                      <v:text name="dav_name" value="--get_keyword('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.utf2wide(ODRIVE.WA.DAV_GET(self.dav_item, 'name')))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
                     </td>
                   </tr>
                   <v:template type="simple" enabled="-- equ(self.dav_type, 'R')">
-                    <tr>
+                    <tr id="davRow_mime">
                       <th>
-                        <v:label for="dav_mime" value="--'File Mime Type'" format="%s"/>
+                        <v:label for="dav_mime" value="--'File Mime Type'" />
                       </th>
                       <td>
-                        <v:text name="dav_mime" value="--get_keyword('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-text"/>
+                        <v:text name="dav_mime" value="--get_keyword('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" />
                         <v:template type="simple" enabled="--self.dav_enable">
-                          <input type="button" value="Select" onClick="javascript:windowShow('mimes_select.vspx?params=dav_mime:s1;')" disabled="disabled" class="button"/>
+                          <input type="button" value="Select" onClick="javascript: windowShow('mimes_select.vspx?params=dav_mime:s1;')" disabled="disabled" class="button" />
                         </v:template>
                       </td>
                     </tr>
                   </v:template>
                   <v:template type="simple" enabled="-- case when ((self.dav_type = 'C') or (self.command_mode <> 10)) then 1 else 0 end">
-                    <xsl:call-template name="autoVersion"/>
+                    <xsl:call-template name="autoVersion">
+                      <xsl:with-param name="id" select="'davRow_version'"/>
+                    </xsl:call-template>
                   </v:template>
                   <v:template type="simple" enabled="-- equ(self.dav_type, 'C')">
                     <tr>
                       <th>
-                        <v:label for="dav_det" value="--'Folder type'" format="%s"/>
+                        <v:label for="dav_det" value="--'Folder type'" />
                       </th>
                       <td>
-                        <select name="dav_det" onchange="javascript:updateLabel(this.options[this.selectedIndex].value);" disabled="disabled">
+                        <select name="dav_det" onchange="javascript: updateLabel(this.options[this.selectedIndex].value);" disabled="disabled">
                           <?vsp
                             if (self.command_mode = 1) {
                               http(self.option_prepare('ResFilter',  'Smart Folder',                  'ResFilter'));
@@ -962,9 +1097,9 @@
                       </td>
                     </tr>
                   </v:template>
-                  <tr>
+                  <tr id="davRow_owner">
                     <th>
-                      <v:label for="dav_owner" value="--'Owner'" format="%s"/>
+                      <v:label for="dav_owner" value="--'Owner'" />
                     </th>
                     <td>
                       <v:text name="dav_owner" value="--get_keyword('dav_owner', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'ownerName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
@@ -976,29 +1111,29 @@
                         </v:after-data-bind>
                       </v:text>
                       <v:template type="simple" enabled="-- case when (ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(self.vc_page.vc_event.ve_params)) and (self.dav_enable = 1)) then 1 else 0 end;">
-                        <input type="button" value="Select" onClick="javascript:windowShow('users_select.vspx?mode=u&amp;params=dav_owner:s1;')" disabled="disabled" class="button"/>
+                        <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=u&amp;params=dav_owner:s1;')" disabled="disabled" class="button" />
                       </v:template>
                     </td>
                   </tr>
-                  <tr>
+                  <tr id="davRow_group">
                     <th>
-                      <v:label for="dav_group" value="--'Group'" format="%s"/>
+                      <v:label for="dav_group" value="--'Group'" />
                     </th>
                     <td>
-                      <v:text name="dav_group" value="--get_keyword('dav_group', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'groupName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short"/>
+                      <v:text name="dav_group" value="--get_keyword('dav_group', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'groupName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
                       <v:template type="simple" enabled="--self.dav_enable">
-                        <input type="button" value="Select" onClick="javascript:windowShow('users_select.vspx?mode=g&amp;params=dav_group:s1;')" disabled="disabled" class="button"/>
+                        <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=g&amp;params=dav_group:s1;')" disabled="disabled" class="button" />
                       </v:template>
                     </td>
                   </tr>
-                  <tr>
-                    <th>
-                      <v:label for="dav_group" value="--'Permissions'" format="%s"/>
+                  <tr id="davRow_perms">
+                    <th valign="top">
+                      <v:label for="dav_group" value="--'Permissions'" />
                     </th>
                     <td>
                       <table class="form-list" style="width: 1%;" cellspacing="0">
-                        <xsl:call-template name="permissions-header1"/>
-                        <xsl:call-template name="permissions-header2"/>
+                        <xsl:call-template name="permissions-header1" />
+                        <xsl:call-template name="permissions-header2" />
                         <tr>
                           <?vsp
                             declare i integer;
@@ -1013,34 +1148,34 @@
                                 checked := 'checked';
                               else
                                 checked := '';
-                              http(sprintf('<td align="center"><input type="checkbox" name="dav_perm%i" %s disabled="disabled"/></td>', i,  checked));
+                              http(sprintf('<td align="center"><input type="checkbox" name="dav_perm%i" %s disabled="disabled" /></td>', i,  checked));
                             }
                           ?>
                         </tr>
                       </table>
                     </td>
                   </tr>
-                  <tr>
+                  <tr id="davRow_text">
                     <th>
-                      <v:label for="dav_index" value="--'Full Text Search'" format="%s"/>
+                      <vm:label for="dav_index" value="--'Full Text Search'" />
                     </th>
                     <td>
                       <v:select-list name="dav_index" value="-- get_keyword('dav_index', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'freeText'))" xhtml_disabled="disabled">
-                        <v:item name="Off" value="N"/>
-                        <v:item name="Direct members" value="T"/>
-                        <v:item name="Recursively" value="R"/>
+                        <v:item name="Off" value="N" />
+                        <v:item name="Direct members" value="T" />
+                        <v:item name="Recursively" value="R" />
                       </v:select-list>
                     </td>
                   </tr>
-                  <tr>
+                  <tr id="davRow_metadata">
                     <th>
-                      <v:label for="dav_metagrab" value="--'Metadata Retrieval'" format="%s"/>
+                      <vm:label for="dav_metagrab" value="--'Metadata Retrieval'" />
                     </th>
                     <td>
-                      <v:select-list name="dav_metagrab" value="-- get_keyword('dav_metagrab', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'metaGrab'))" xhtml_disabled="disabled">
-                        <v:item name="Off" value="N"/>
-                        <v:item name="Direct members" value="M"/>
-                        <v:item name="Recursively" value="R"/>
+                      <v:select-list name="dav_metagrab" value="--get_keyword('dav_metagrab', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'metaGrab'))" xhtml_disabled="disabled">
+                        <v:item name="Off" value="N" />
+                        <v:item name="Direct members" value="M" />
+                        <v:item name="Recursively" value="R" />
                       </v:select-list>
                     </td>
                   </tr>
@@ -1048,8 +1183,8 @@
                     <tr>
                       <th />
                       <td valign="center">
-                        <input type="checkbox" name="dav_recursive" disabled="disabled"/>
-                        <b><v:label for="dav_recursive" value="--'Recursive'" format="%s"/></b>
+                        <input type="checkbox" name="dav_recursive" disabled="disabled" title="Recursive" />
+                        <b><v:label for="dav_recursive" value="--'Recursive'" /></b>
                       </td>
                     </tr>
                   </v:template>
@@ -1057,11 +1192,11 @@
                     <v:template type="simple" enabled="-- equ(self.dav_type, 'R')">
                       <tr>
                         <th>
-                          <v:label for="f_tag2" value="Public tags"/>
+                          <v:label for="f_tag2" value="Public tags" />
                         </th>
                         <td>
                           <v:template type="simple" enabled="--self.dav_enable">
-                            <v:text name="f_tag2" null-value="''" value="-- get_keyword('f_tag2', self.vc_page.vc_event.ve_params, '')" xhtml_class="textbox" xhtml_size="20%"/>
+                            <v:text name="f_tag2" null-value="''" value="-- get_keyword('f_tag2', self.vc_page.vc_event.ve_params, '')" xhtml_class="textbox" xhtml_size="20%" />
                             <v:button action="simple" style="image" value="image/add_16.png" xhtml_alt="Add Public Tag">
                               <v:on-post>
                                 <![CDATA[
@@ -1100,11 +1235,11 @@
                       </tr>
                       <tr>
                         <th>
-                          <v:label for="f_tag" value="Private tags"/>
+                          <v:label for="f_tag" value="Private tags" />
                         </th>
                         <td>
                           <v:template type="simple" enabled="--self.dav_enable">
-                            <v:text name="f_tag" null-value="''" value="-- get_keyword('f_tag', self.vc_page.vc_event.ve_params, '')" xhtml_class="textbox" xhtml_size="20%"/>
+                            <v:text name="f_tag" null-value="''" value="-- get_keyword('f_tag', self.vc_page.vc_event.ve_params, '')" xhtml_class="textbox" xhtml_size="20%" />
                             <v:button action="simple" style="image" value="image/add_16.png" xhtml_alt="Add Private Tag">
                               <v:on-post>
                                 <![CDATA[
@@ -1160,15 +1295,15 @@
                                 <tr>
                                   <td nowrap="nowarap">
                                     <v:select-list name="xml_name" enabled="--ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(self.vc_page.vc_event.ve_params))" xhtml_size="1" xhtml_disabled="disabled">
-                                      <v:item name="xml-sql" value="xml-sql"/>
-                                      <v:item name="xml-sql-root" value="xml-sql-root"/>
-                                      <v:item name="xml-sql-dtd" value="xml-sql-dtd"/>
-                                      <v:item name="xml-sql-schema" value="xml-sql-schema"/>
-                                      <v:item name="xml-sql-description" value="xml-sql-description"/>
-                                      <v:item name="xml-sql-encoding" value="xml-sql-encoding"/>
-                                      <v:item name="xml-stylesheet" value="xml-stylesheet"/>
-                                      <v:item name="xml-template" value="xml-template"/>
-                                      <v:item name="xper" value="xper"/>
+                                      <v:item name="xml-sql" value="xml-sql" />
+                                      <v:item name="xml-sql-root" value="xml-sql-root" />
+                                      <v:item name="xml-sql-dtd" value="xml-sql-dtd" />
+                                      <v:item name="xml-sql-schema" value="xml-sql-schema" />
+                                      <v:item name="xml-sql-description" value="xml-sql-description" />
+                                      <v:item name="xml-sql-encoding" value="xml-sql-encoding" />
+                                      <v:item name="xml-stylesheet" value="xml-stylesheet" />
+                                      <v:item name="xml-template" value="xml-template" />
+                                      <v:item name="xper" value="xper" />
                                     </v:select-list>
                                     <v:text name="custom_name" value="--''" xhtml_disabled="disabled" xhtml_class="field-short" />
                                   </td>
@@ -1234,7 +1369,7 @@
                               <table>
                                 <tr>
                                   <td nowrap="nowrap">
-                                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('c0')"/>
+                                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" />
                                   </td>
                                   <td>
                                     <v:label value="--''">
@@ -1279,7 +1414,7 @@
 
               <v:template type="simple" enabled="-- gte(self.command_mode, 10)">
                 <xsl:call-template name="security-template2">
-                  <xsl:with-param name="sufix" select="''"/>
+                  <xsl:with-param name="sufix" select="''" />
                 </xsl:call-template>
               </v:template>
 
@@ -1349,14 +1484,14 @@
               </v:template>
 
               <v:template type="simple" enabled="-- equ(self.dav_type, 'C')">
-                <xsl:call-template name="search-dc-template4"/>
-                <xsl:call-template name="search-dc-template5"/>
-                <xsl:call-template name="search-dc-template7"/>
-                <xsl:call-template name="search-dc-template8"/>
-                <xsl:call-template name="search-dc-template9"/>
+                <xsl:call-template name="search-dc-template4" />
+                <xsl:call-template name="search-dc-template5" />
+                <xsl:call-template name="search-dc-template7" />
+                <xsl:call-template name="search-dc-template8" />
+                <xsl:call-template name="search-dc-template9" />
               </v:template>
               <v:template type="simple" enabled="-- equ(self.dav_type, 'R')">
-                <xsl:call-template name="search-dc-template10"/>
+                <xsl:call-template name="search-dc-template10" />
               </v:template>
 
             </div>
@@ -1409,9 +1544,9 @@
             ]]>
           </v:before-data-bind>
           <div class="new-form-header">
-            <v:label value="-- concat('Edit file ', self.source)"/>
+            <v:label value="-- concat('Edit file ', self.source)" />
           </div>
-          <v:textarea name="file_content" value="-- self.dav_content" xhtml_cols="80" xhtml_rows="28"/>
+          <v:textarea name="file_content" value="-- self.dav_content" xhtml_cols="80" xhtml_rows="28" />
           <div class="new-form-footer">
             <v:button action="simple" value="Save" enabled="--ODRIVE.WA.odrive_write_permission(self.dav_path)">
               <v:on-post>
@@ -1487,7 +1622,7 @@
                   if (not ODRIVE.WA.DAV_ERROR(item)) {
               ?>
               <tr>
-                <td><?vsp http(sprintf('<img src="%s" alt="%s"/>', self.ui_image(ODRIVE.WA.DAV_GET(item, 'fullPath'), ODRIVE.WA.DAV_GET(item, 'type'), ODRIVE.WA.DAV_GET(item, 'mimeType')), self.ui_alt(ODRIVE.WA.DAV_GET(item, 'name'), ODRIVE.WA.DAV_GET(item, 'type'))));
+                <td><?vsp http(sprintf('<img src="%s" alt="%s" />', self.ui_image(ODRIVE.WA.DAV_GET(item, 'fullPath'), ODRIVE.WA.DAV_GET(item, 'type'), ODRIVE.WA.DAV_GET(item, 'mimeType')), self.ui_alt(ODRIVE.WA.DAV_GET(item, 'name'), ODRIVE.WA.DAV_GET(item, 'type'))));
                           http('&nbsp;&nbsp;');
                           http(self.ui_name(self.item_array[i])); ?>
                 </td>
@@ -1516,26 +1651,26 @@
           <v:template type="simple" enabled="-- equ(self.command, 22)">
              <div id="c1">
               <div class="tabs">
-                <vm:tabCaption tab="1" tabs="2" caption="Main"/>
-                <vm:tabCaption tab="2" tabs="2" caption="Sharing"/>
+                <vm:tabCaption tab="1" tabs="2" caption="Main" />
+                <vm:tabCaption tab="2" tabs="2" caption="Sharing" />
               </div>
               <div class="contents">
                 <div id="1" class="tabContent">
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th>
-                        <v:label for="prop_mime" value="--'File Mime Type'" format="%s"/>
+                        <v:label for="prop_mime" value="--'File Mime Type'" />
                       </th>
                       <td>
-                        <input type="text" name="prop_mime" class="field-text"/>
+                        <input type="text" name="prop_mime" class="field-text" />
                         <v:template type="simple">
-                          <input type="button" value="Select" onClick="javascript:windowShow('mimes_select.vspx?params=prop_mime:s1;')" disabled="disabled" class="button"/>
+                          <input type="button" value="Select" onClick="javascript: windowShow('mimes_select.vspx?params=prop_mime:s1;')" disabled="disabled" class="button" />
                         </v:template>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="prop_owner" value="--'Owner'" format="%s"/>
+                        <v:label for="prop_owner" value="--'Owner'" />
                       </th>
                       <td>
                         <v:text name="prop_owner" value="--'Do not change'" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
@@ -1547,34 +1682,34 @@
                           </v:after-data-bind>
                         </v:text>
                         <v:template type="simple" enabled="-- equ(ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(self.vc_page.vc_event.ve_params)), 1)">
-                          <input type="button" value="Select" onClick="javascript:windowShow('users_select.vspx?mode=u&amp;params=prop_owner:s1;')" disabled="disabled" class="button"/>
+                          <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=u&amp;params=prop_owner:s1;')" disabled="disabled" class="button" />
                         </v:template>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="prop_group" value="--'Group'" format="%s"/>
+                        <v:label for="prop_group" value="--'Group'" />
                       </th>
                       <td>
-                        <v:text name="prop_group" value="--'Do not change'" format="%s" xhtml_disabled="disabled" xhtml_class="field-short"/>
+                        <v:text name="prop_group" value="--'Do not change'" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
                         <v:template type="simple">
-                          <input type="button" value="Select" onClick="javascript:windowShow('users_select.vspx?mode=g&amp;params=prop_group:s1;')" disabled="disabled" class="button"/>
+                          <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=g&amp;params=prop_group:s1;')" disabled="disabled" class="button" />
                         </v:template>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label value="--'Add Permissions'" format="%s"/>
+                        <v:label value="--'Add Permissions'" />
                       </th>
                       <td>
                         <table class="form-list" style="width: 1%;" cellspacing="0">
-                          <xsl:call-template name="permissions-header1"/>
-                          <xsl:call-template name="permissions-header2"/>
+                          <xsl:call-template name="permissions-header1" />
+                          <xsl:call-template name="permissions-header2" />
                           <tr>
                             <?vsp
                               declare i integer;
                               for (i := 0; i < 9; i := i + 1)
-                                http(sprintf('<td align="center"><input type="checkbox" name="prop_add_perm%i" onClick="chkbx(this,prop_rem_perm%i);"/></td>', i, i));
+                                http(sprintf('<td align="center"><input type="checkbox" name="prop_add_perm%i" onClick="chkbx(this,prop_rem_perm%i);" /></td>', i, i));
                             ?>
                           </tr>
                         </table>
@@ -1582,17 +1717,17 @@
                     </tr>
                     <tr>
                       <th>
-                        <v:label value="--'Remove Permissions'" format="%s"/>
+                        <v:label value="--'Remove Permissions'" />
                       </th>
                       <td>
                         <table class="form-list" style="width: 1%;" cellspacing="0">
-                          <xsl:call-template name="permissions-header1"/>
-                          <xsl:call-template name="permissions-header2"/>
+                          <xsl:call-template name="permissions-header1" />
+                          <xsl:call-template name="permissions-header2" />
                           <tr>
                             <?vsp
                               declare i integer;
                               for (i := 0; i < 9; i := i + 1)
-                                http(sprintf('<td align="center"><input type="checkbox" name="prop_rem_perm%i" onClick="chkbx(this,prop_add_perm%i);"/></td>', i, i));
+                                http(sprintf('<td align="center"><input type="checkbox" name="prop_rem_perm%i" onClick="chkbx(this,prop_add_perm%i);" /></td>', i, i));
                             ?>
                           </tr>
                         </table>
@@ -1600,35 +1735,35 @@
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="prop_index" value="--'Full Text Search'" format="%s"/>
+                        <v:label for="prop_index" value="--'Full Text Search'" />
                       </th>
                       <td>
                         <v:select-list name="prop_index">
-                          <v:item name="Do not change" value="*"/>
-                          <v:item name="Off" value="N"/>
-                          <v:item name="Direct members" value="T"/>
-                          <v:item name="Recurcively" value="R"/>
+                          <v:item name="Do not change" value="*" />
+                          <v:item name="Off" value="N" />
+                          <v:item name="Direct members" value="T" />
+                          <v:item name="Recurcively" value="R" />
                         </v:select-list>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="prop_metagrab" value="--'Metadata Retrieval'" format="%s"/>
+                        <v:label for="prop_metagrab" value="--'Metadata Retrieval'" />
                       </th>
                       <td>
                         <v:select-list name="prop_metagrab">
-                          <v:item name="Do not change" value="*"/>
-                          <v:item name="Off" value="N"/>
-                          <v:item name="Direct members" value="M"/>
-                          <v:item name="Recursively" value="R"/>
+                          <v:item name="Do not change" value="*" />
+                          <v:item name="Off" value="N" />
+                          <v:item name="Direct members" value="M" />
+                          <v:item name="Recursively" value="R" />
                         </v:select-list>
                       </td>
                     </tr>
                     <tr>
                       <th />
                       <td valign="center">
-                        <input type="checkbox" name="prop_recursive"/>
-                        <v:label for="prop_recursive" value="--'Recursive'" format="%s"/>
+                        <input type="checkbox" name="prop_recursive" title="Recursive" />
+                        <v:label for="prop_recursive" value="--'Recursive'" />
                       </td>
                     </tr>
                     <tr>
@@ -1643,26 +1778,26 @@
                           <tr>
                             <td>
                               <v:select-list name="ch_prop" enabled="--ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(self.vc_page.vc_event.ve_params))" xhtml_size="1">
-                                <v:item name="---" value=""/>
-                                <v:item name="xml-sql" value="xml-sql"/>
-                                <v:item name="xml-sql-root" value="xml-sql-root"/>
-                                <v:item name="xml-sql-dtd" value="xml-sql-dtd"/>
-                                <v:item name="xml-sql-schema" value="xml-sql-schema"/>
-                                <v:item name="xml-sql-description" value="xml-sql-description"/>
-                                <v:item name="xml-sql-encoding" value="xml-sql-encoding"/>
-                                <v:item name="xml-stylesheet" value="xml-stylesheet"/>
-                                <v:item name="xml-template" value="xml-template"/>
-                                <v:item name="xper" value="xper"/>
+                                <v:item name="---" value="" />
+                                <v:item name="xml-sql" value="xml-sql" />
+                                <v:item name="xml-sql-root" value="xml-sql-root" />
+                                <v:item name="xml-sql-dtd" value="xml-sql-dtd" />
+                                <v:item name="xml-sql-schema" value="xml-sql-schema" />
+                                <v:item name="xml-sql-description" value="xml-sql-description" />
+                                <v:item name="xml-sql-encoding" value="xml-sql-encoding" />
+                                <v:item name="xml-stylesheet" value="xml-stylesheet" />
+                                <v:item name="xml-template" value="xml-template" />
+                                <v:item name="xper" value="xper" />
                               </v:select-list>
-                              <input type="text" name="ch_prop_name"/>
+                              <input type="text" name="ch_prop_name" />
                             </td>
                             <td>
-                              <input type="text" name="ch_prop_value" value="" class="field-short"/>
+                              <input type="text" name="ch_prop_value" value="" class="field-short" />
                             </td>
                             <td>
                               <v:select-list name="ch_prop_action">
-                                <v:item name="Update" value="U"/>
-                                <v:item name="Remove" value="R"/>
+                                <v:item name="Update" value="U" />
+                                <v:item name="Remove" value="R" />
                               </v:select-list>
                             </td>
                           </tr>
@@ -1673,7 +1808,7 @@
                 </div>
 
                 <xsl:call-template name="security-template2">
-                  <xsl:with-param name="sufix" select="'_properties'"/>
+                  <xsl:with-param name="sufix" select="'_properties'" />
                 </xsl:call-template>
               </div>
             </div>
@@ -1825,11 +1960,11 @@
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th>
-                    <v:label for="f_tag2" value="Public tags"/>
+                    <v:label for="f_tag2" value="Public tags" />
                   </th>
                   <td>
                     <v:template type="simple" enabled="--self.dav_enable">
-                      <v:text name="x_tag2" null-value="''" value="-- get_keyword('x_tag2', self.vc_page.vc_event.ve_params, '')" xhtml_class="textbox" xhtml_size="20%"/>
+                      <v:text name="x_tag2" null-value="''" value="-- get_keyword('x_tag2', self.vc_page.vc_event.ve_params, '')" xhtml_class="textbox" xhtml_size="20%" />
                       <v:button action="simple" style="image" value="image/add_16.png" xhtml_alt="Add Public Tag">
                         <v:on-post>
                           <![CDATA[
@@ -1866,11 +2001,11 @@
                 </tr>
                 <tr>
                   <th>
-                    <v:label for="f_tag" value="Private tags"/>
+                    <v:label for="f_tag" value="Private tags" />
                   </th>
                   <td>
                     <v:template type="simple" enabled="--self.dav_enable">
-                      <v:text name="x_tag" null-value="''" value="-- get_keyword('x_tag', self.vc_page.vc_event.ve_params, '')" xhtml_class="textbox" xhtml_size="20%"/>
+                      <v:text name="x_tag" null-value="''" value="-- get_keyword('x_tag', self.vc_page.vc_event.ve_params, '')" xhtml_class="textbox" xhtml_size="20%" />
                       <v:button action="simple" style="image" value="image/add_16.png" xhtml_alt="Add Private Tag">
                         <v:on-post>
                           <![CDATA[
@@ -1950,14 +2085,14 @@
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th>
-                    <v:label for="f_tag2" value="Public tags"/>
+                    <v:label for="f_tag2" value="Public tags" />
                   </th>
                   <td>ffff
                   </td>
                 </tr>
                 <tr>
                   <th>
-                    <v:label for="f_tag" value="Private tags"/>
+                    <v:label for="f_tag" value="Private tags" />
                   </th>
                   <td>fff
                   </td>
@@ -2042,7 +2177,7 @@
         <v:template type="simple" enabled="-- case when ((self.dir_select = 1) or ((self.command in (0)) and (self.command_mode in (0, 1)))) then 1 else 0 end">
           <div class="boxHeader">
             <b><v:label for="path" value="' Path '" /></b>
-            <v:text name="path" value="--ODRIVE.WA.utf2wide(ODRIVE.WA.path_show(self.dir_path))" xhtml_onkeypress="return submitEnter(\'F1\', \'GO_Path\', event)" xhtml_id="path" xhtml_size="60"/>
+            <v:text name="path" value="--ODRIVE.WA.utf2wide(ODRIVE.WA.path_show(self.dir_path))" xhtml_onkeypress="return submitEnter(\'F1\', \'GO_Path\', event)" xhtml_id="path" xhtml_size="60" />
             <v:button name="GO_Path" action="simple" style="image" value="image/go_16.png" xhtml_alt="Go">
               <v:on-post>
                 <![CDATA[
@@ -2070,13 +2205,13 @@
               </v:on-post>
             </v:button>
             <b><v:label for="list_type" value="' View '" /></b>
-            <v:select-list name="list_type" value="--self.dir_details" xhtml_onchange="javascript:doPost(\'F1\', \'reload\'); return false">
-              <v:item name="Details" value="0"/>
-              <v:item name="List" value="1"/>
+            <v:select-list name="list_type" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
+              <v:item name="Details" value="0" />
+              <v:item name="List" value="1" />
             </v:select-list>
             <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
-              <b><v:label for="filter" value="--' Display Filter Pattern '" format="%s"/></b>
-              <v:text name="filter" xhtml_id="filter" value="--self.search_filter" type="simple"/>
+              <b><v:label for="filter" value="--' Display Filter Pattern '" /></b>
+              <v:text name="filter" xhtml_id="filter" value="--self.search_filter" type="simple" />
               <v:button action="simple" style="image" value="image/filter_16.png" xhtml_alt="Filter">
                 <v:on-post>
                   <![CDATA[
@@ -2226,14 +2361,14 @@
           <v:template type="simple" enabled="-- case when ((self.command = 0) and ((self.command_mode = 2) or ((self.command_mode = 3) and (not isnull(self.search_advanced)))) and length(self.dsrc_items.ds_row_data)) then 1 else 0 end;">
             <div style="padding-bottom: 5px;">
               <?vsp
-        			  http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+        			  http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0" /> RSS</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
                 if (ODRIVE.WA.odrive_settings_atomVersion(self.vc_page.vc_event.ve_params) = '1.0') {
-        			    http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+        			    http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
         			  } else {
-        			    http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+        			    http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
         			  }
-        			  http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=rdf%s"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0"/> RDF</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
-        			  http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=xbel%s"><img src="image/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL"/> XBEL</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+        			  http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=rdf%s"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0" /> RDF</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+        			  http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=xbel%s"><img src="image/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL" /> XBEL</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
         			?>
             </div>
           </v:template>
@@ -2262,7 +2397,7 @@
                                 if ((self.dir_select = 0) and (self.dir_path <> '')) {
                                   http('<th style="text-align: left; padding-top: 0; padding-bottom: 0">');
                                   if (self.command_mode in (2,3))
-                                    http('<input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>');
+                                    http('<input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)" title="Select All" />');
                                   http('</th>');
                                 }
                               ?>
@@ -2286,7 +2421,7 @@
                           <tr>
                             <v:template type="simple" enabled="-- equ(self.dir_select, 0)">
                               <td class="td_image">
-                                <input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>
+                                <input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)" title="Select All" />
                               </td>
                             </v:template>
                             <td>
@@ -2356,7 +2491,7 @@
                               rowset := (control as vspx_row_template).te_rowset;
 
                               if ((self.dir_select = 0) and (self.dir_path <> ''))
-                                http(sprintf('<td class="td_image"><input type="checkbox" name="CB_%s"/></td>', rowset[8]));
+                                http(sprintf('<td class="td_image"><input type="checkbox" name="CB_%s" /></td>', rowset[8]));
                             ?>
                             <td nowrap="nowrap">
                               <v:button action="simple" style="image" value="''" text="''" format="%s" xhtml_title="--ODRIVE.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[0])">
@@ -2391,7 +2526,7 @@
                                 </v:on-post>
                               </v:button>
                               <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'content'))) then 0 else 1 end">
-                                <br /><i><v:label value="--ODRIVE.WA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'content'))" format="%s"/></i>
+                                <br /><i><v:label value="--ODRIVE.WA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>
                               </v:template>
                             </td>
                             <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#2')) then 1 else 0 end;">
@@ -2437,35 +2572,35 @@
                             </v:template>
                             <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#4')) then 1 else 0 end;">
                               <td nowrap="nowrap">
-                                <v:label value="--left((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[3], 10)" format="%s"/>
+                                <v:label value="--left((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[3], 10)" format="%s" />
                                 <font size="1">
-                                  <v:label value="--right((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[3], 8)" format="%s"/>
+                                  <v:label value="--right((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[3], 8)" />
                                 </font>
                               </td>
                             </v:template>
                             <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#5')) then 1 else 0 end;">
                               <td nowrap="nowrap">
-                                <v:label value="--either(equ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], 'R'), (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[4], ' ')" format="%s"/>
+                                <v:label value="--either(equ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], 'R'), (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[4], ' ')" />
                               </td>
                             </v:template>
                             <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#6')) then 1 else 0 end;">
                               <td nowrap="nowrap">
-                                <v:label value="--either(equ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], 'R'), (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[9], ' ')" format="%s"/>
+                                <v:label value="--either(equ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], 'R'), (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[9], ' ')" />
                               </td>
                             </v:template>
                             <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#7')) then 1 else 0 end;">
                               <td nowrap="nowrap">
-                                <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[5]" format="%s"/>
+                                <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[5]" />
                               </td>
                             </v:template>
                             <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#8')) then 1 else 0 end;">
                               <td nowrap="nowrap">
-                                <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[6]" format="%s"/>
+                                <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[6]" />
                               </td>
                             </v:template>
                             <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#9')) then 1 else 0 end;">
                               <td nowrap="nowrap">
-                                <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[7]" format="%s"/>
+                                <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[7]" />
                               </td>
                             </v:template>
                             <td nowrap="nowrap">
@@ -2478,16 +2613,6 @@
                                   ]]>
                                 </v:on-post>
                               </v:button>
-                              <xsl:if test="@view = 'popup'">
-                                <v:button style="url" action="simple" value="view" format="%s" enabled="--ODRIVE.WA.odrive_read_permission((control.vc_parent as vspx_row_template).te_rowset[8])" xhtml_title="View">
-                                  <v:on-post>
-                                    <![CDATA[
-                                      http_request_status('HTTP/1.1 302 Found');
-                                      http_header(sprintf('Location: view_file.vsp?sid=%s&realm=%s&path=%s&file=%s\r\n', self.sid ,self.realm, ODRIVE.WA.odrive_real_path(self.dir_path), (control.vc_parent as vspx_row_template).te_rowset[1]));
-                                    ]]>
-                                  </v:on-post>
-                                </v:button>
-                              </xsl:if>
                               <?vsp
                                 if  ((control as vspx_row_template).te_rowset[0] like '%.vsp'
                                   or (control as vspx_row_template).te_rowset[0] like '%.vspx'
@@ -2526,7 +2651,7 @@
                       <table>
                         <tr class="nocolor" align="center">
                           <td colspan="11">
-                            <vm:ds-navigation data-set="ds_items"/>
+                            <vm:ds-navigation data-set="ds_items" />
                           </td>
                         </tr>
                       </table>
@@ -2566,8 +2691,8 @@
 
         <v:template type="simple" enabled="-- case when (self.command in (20, 21)) then 1 else 0 end">
           <div class="boxHeader">
-            <v:label for="t_dest" value="--'Destination folder '" format="%s"/>
-            <v:text name="t_dest" value="--ODRIVE.WA.path_show(self.dir_path)" xhtml_id="t_dest" format="%s" xhtml_size="60"/>
+            <v:label for="t_dest" value="--'Destination folder '" />
+            <v:text name="t_dest" value="--ODRIVE.WA.path_show(self.dir_path)" xhtml_id="t_dest" format="%s" xhtml_size="60" />
             <v:button value="--(case self.command when 20 then 'Copy' when 21 then 'Move' end)" action="simple" xhtml_class="button">
               <v:on-post>
                 <![CDATA[
@@ -2616,7 +2741,7 @@
 
   <!--=========================================================================-->
   <xsl:template name="security-template2">
-    <xsl:param name="sufix"/>
+    <xsl:param name="sufix" />
     <div id="2" class="tabContent" style="display: none;">
       <v:template type="simple" enabled="-- equ(self.command_acl, 0)">
         <v:template type="simple" enabled="--self.dav_enable">
@@ -2633,10 +2758,10 @@
           </div>
         </v:template>
         <v:data-set nrows="10" scrollable="1">
-          <xsl:attribute name="sql"><xsl:value-of select="concat('select rs.* from ODRIVE.WA.odrive_acl_proc(rs0)(c0 integer, c1 integer, c2 integer, c3 integer) rs where rs0 = :param_acl', $sufix)"/></xsl:attribute>
-          <xsl:attribute name="name"><xsl:value-of select="concat('ds_acl', $sufix)"/></xsl:attribute>
+          <xsl:attribute name="sql"><xsl:value-of select="concat('select rs.* from ODRIVE.WA.odrive_acl_proc(rs0)(c0 integer, c1 integer, c2 integer, c3 integer) rs where rs0 = :param_acl', $sufix)" /></xsl:attribute>
+          <xsl:attribute name="name"><xsl:value-of select="concat('ds_acl', $sufix)" /></xsl:attribute>
           <v:param value="self.dav_acl">
-            <xsl:attribute name="name"><xsl:value-of select="concat('param_acl', $sufix)"/></xsl:attribute>
+            <xsl:attribute name="name"><xsl:value-of select="concat('param_acl', $sufix)" /></xsl:attribute>
           </v:param>
           <v:template type="simple" name-to-remove="table" set-to-remove="bottom">
             <table class="form-list" id="sharings" cellspacing="0">
@@ -2670,15 +2795,15 @@
               <table>
                 <tr>
                   <td>
-                    <v:label value="--ODRIVE.WA.odrive_ace_grantee((control.vc_parent as vspx_row_template).te_rowset[0])" format="%s"/>
+                    <v:label value="--ODRIVE.WA.odrive_ace_grantee((control.vc_parent as vspx_row_template).te_rowset[0])" />
                   </td>
                   <td>
-                    <v:label value="--ODRIVE.WA.odrive_ace_inheritance((control.vc_parent as vspx_row_template).te_rowset[1])" format="%s"/>
+                    <v:label value="--ODRIVE.WA.odrive_ace_inheritance((control.vc_parent as vspx_row_template).te_rowset[1])" />
                   </td>
                   <td>
-                    <v:label value="--ODRIVE.WA.odrive_ace_permissions((control.vc_parent as vspx_row_template).te_rowset[2])" format="%s"/>
+                    <v:label value="--ODRIVE.WA.odrive_ace_permissions((control.vc_parent as vspx_row_template).te_rowset[2])" />
                     /
-                    <v:label value="--ODRIVE.WA.odrive_ace_permissions((control.vc_parent as vspx_row_template).te_rowset[3])" format="%s"/>
+                    <v:label value="--ODRIVE.WA.odrive_ace_permissions((control.vc_parent as vspx_row_template).te_rowset[3])" />
                   </td>
                   <v:template type="simple" enabled="--self.dav_enable">
                     <td nowrap="nowrap">
@@ -2736,20 +2861,20 @@
           <table cellspacing="0">
             <tr>
               <th>
-                <v:label for="ace_user" value="User(s)/Group(s)"/>
+                <v:label for="ace_user" value="User(s)/Group(s)" />
               </th>
               <td>
                 <?vsp
-                  http(sprintf('<input type="text" name="ace_user" value="%s" disabled="disabled" class="field-short" title="Users/groups must be comma separated!"/>', ODRIVE.WA.odrive_user_name(self.ace[0], '')));
+                  http(sprintf('<input type="text" name="ace_user" value="%s" disabled="disabled" class="field-short" title="Users/groups must be comma separated!" />', ODRIVE.WA.odrive_user_name(self.ace[0], '')));
                 ?>
                 <v:template type="simple">
-                  <input type="button" value="Select" onClick="javascript:windowShow('users_select.vspx?dst=m&amp;params=ace_user:s1;',520)" class="button"/>
+                  <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?dst=m&amp;params=ace_user:s1;',520)" class="button" />
                 </v:template>
               </td>
             </tr>
             <tr>
               <th>
-                <v:label for="ace_inheritance" value="Inheritance"/>
+                <v:label for="ace_inheritance" value="Inheritance" />
               </th>
               <td>
                 <select name="ace_inheritance" disabled="disabled">
@@ -2765,7 +2890,7 @@
             </tr>
             <tr>
               <th valign="top">
-                <v:label value="Permissions"/>
+                <v:label value="Permissions" />
               </th>
               <td>
                 <table class="form-list" style="width: 1%;" cellspacing="0">
@@ -2881,11 +3006,11 @@
       <table class="form-body" cellspacing="0">
         <tr>
           <th>
-            <v:label for="dav_oMail_DomainId" value="--'oMail domain'" format="%s"/>
+            <v:label for="dav_oMail_DomainId" value="--'oMail domain'" />
           </th>
           <td>
             <v:text name="dav_oMail_DomainId" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat="client"/>
+              <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat="client" />
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := get_keyword('dav_oMail_DomainId', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:oMail-DomainId', '1'));
@@ -2896,11 +3021,11 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_oMail_FolderName" value="--'oMail folder name'" format="%s"/>
+            <v:label for="dav_oMail_FolderName" value="--'oMail folder name'" />
           </th>
           <td>
             <v:text name="dav_oMail_FolderName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client"/>
+              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := get_keyword('dav_oMail_FolderName', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:oMail-FolderName', 'Inbox'));
@@ -2911,11 +3036,11 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_oMail_NameFormat" value="--'oMail name format'" format="%s"/>
+            <v:label for="dav_oMail_NameFormat" value="--'oMail name format'" />
           </th>
           <td>
             <v:text name="dav_oMail_NameFormat" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client"/>
+              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := get_keyword('dav_oMail_NameFormat', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:oMail-NameFormat', '^from^ ^subject^'));
@@ -2934,11 +3059,11 @@
       <table class="form-body" cellspacing="0">
         <tr>
           <th>
-            <v:label for="dav_PropFilter_SearchPath" value="--'Search path'" format="%s"/>
+            <v:label for="dav_PropFilter_SearchPath" value="--'Search path'" />
           </th>
           <td>
             <v:text name="dav_PropFilter_SearchPath" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client"/>
+              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := get_keyword('dav_oMail_SearchPath', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:PropFilter-SearchPath', ODRIVE.WA.path_show(self.dir_path)));
@@ -2949,11 +3074,11 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_PropFilter_PropName" value="--'Property name'" format="%s"/>
+            <v:label for="dav_PropFilter_PropName" value="--'Property name'" />
           </th>
           <td>
             <v:text name="dav_PropFilter_PropName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client"/>
+              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := get_keyword('dav_PropFilter_PropName', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:PropFilter-PropName', ''));
@@ -2964,7 +3089,7 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_PropFilter_PropValue" value="--'Property value'" format="%s"/>
+            <v:label for="dav_PropFilter_PropValue" value="--'Property value'" />
           </th>
           <td>
             <v:text name="dav_PropFilter_PropValue" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
@@ -2986,26 +3111,26 @@
       <table class="form-body" cellspacing="0">
         <tr>
           <th>
-            <v:label for="ts_path" value="--'Search path'" format="%s"/>
+            <v:label for="ts_path" value="--'Search path'" />
           </th>
           <td>
-            <?vsp http(sprintf('<input type="text" name="ts_path" value="%V" disabled="disabled" class="field-text"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'path', ODRIVE.WA.path_show(self.dir_path)))); ?>
+            <?vsp http(sprintf('<input type="text" name="ts_path" value="%V" disabled="disabled" class="field-text" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'path', ODRIVE.WA.path_show(self.dir_path)))); ?>
           </td>
         </tr>
         <tr>
           <th>
-            <v:label for="ts_name" value="--'Search by file name'" format="%s"/>
+            <v:label for="ts_name" value="--'Search by file name'" />
           </th>
           <td>
-            <?vsp http(sprintf('<input type="text" name="ts_name" value="%V" disabled="disabled" class="field-text"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'name'))); ?>
+            <?vsp http(sprintf('<input type="text" name="ts_name" value="%V" disabled="disabled" class="field-text" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'name'))); ?>
           </td>
         </tr>
         <tr>
           <th>
-            <v:label for="ts_content" value="--'Search by content'" format="%s"/>
+            <v:label for="ts_content" value="--'Search by content'" />
           </th>
           <td>
-            <?vsp http(sprintf('<input type="text" name="ts_content" value="%V" disabled="disabled" class="field-text"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'content'))); ?>
+            <?vsp http(sprintf('<input type="text" name="ts_content" value="%V" disabled="disabled" class="field-text" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'base', 'content'))); ?>
           </td>
         </tr>
         <tr>
@@ -3029,88 +3154,86 @@
       <table class="form-body" cellspacing="0">
         <tr>
           <th>
-            <v:label for="ts_mime" value="--'Mime Type'" format="%s"/>
+            <v:label for="ts_mime" value="--'Mime Type'" />
           </th>
           <td>
-            <?vsp http(sprintf('<input type="text" name="ts_mime" value="%s" disabled="disabled" class="field-short"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'mime'))); ?>
+            <?vsp http(sprintf('<input type="text" name="ts_mime" value="%s" disabled="disabled" class="field-short" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'mime'))); ?>
             <v:template type="simple">
-              <input type="button" value="Select" onClick="javascript:windowShow('mimes_select.vspx?params=ts_mime:s1;')" disabled="disabled" class="button"/>
+              <input type="button" value="Select" onClick="javascript: windowShow('mimes_select.vspx?params=ts_mime:s1;')" disabled="disabled" class="button" />
             </v:template>
           </td>
         </tr>
         <tr>
           <th>
-            <v:label for="ts_owner" value="--'Owner ID'" format="%s"/>
+            <v:label for="ts_owner" value="--'Owner ID'" />
           </th>
           <td>
-            <?vsp http(sprintf('<input type="text" name="ts_owner" value="%s" disabled="disabled" class="field-short"/>', ODRIVE.WA.odrive_user_name(ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'owner', -1)))); ?>
+            <?vsp http(sprintf('<input type="text" name="ts_owner" value="%s" disabled="disabled" class="field-short" />', ODRIVE.WA.odrive_user_name(ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'owner', -1)))); ?>
             <v:template type="simple">
-              <input type="button" value="Select" onClick="javascript:windowShow('users_select.vspx?mode=u&amp;params=ts_owner:s1;')" disabled="disabled" class="button"/>
+              <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=u&amp;params=ts_owner:s1;')" disabled="disabled" class="button" />
             </v:template>
           </td>
         </tr>
         <tr>
           <th>
-            <v:label for="ts_group" value="--'Group ID'" format="%s"/>
+            <v:label for="ts_group" value="--'Group ID'" />
           </th>
           <td>
-            <?vsp http(sprintf('<input type="text" name="ts_group" value="%s" disabled="disabled" class="field-short"/>', ODRIVE.WA.odrive_user_name(ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'group', -1)))); ?>
+            <?vsp http(sprintf('<input type="text" name="ts_group" value="%s" disabled="disabled" class="field-short" />', ODRIVE.WA.odrive_user_name(ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'group', -1)))); ?>
             <v:template type="simple">
-              <input type="button" value="Select" onClick="javascript:windowShow('users_select.vspx?mode=g&amp;params=ts_group:s1;')" disabled="disabled" class="button"/>
+              <input type="button" value="Select" onClick="javascript: windowShow('users_select.vspx?mode=g&amp;params=ts_group:s1;')" disabled="disabled" class="button" />
             </v:template>
           </td>
         </tr>
         <tr>
           <th>
-            <v:label for="ts_createDate11" value="--'Creation date'" format="%s"/>
+            <v:label for="ts_createDate11" value="--'Creation date'" />
           </th>
           <td>
             <?vsp
-              self.search_condition('ts_createDate11', vector('=', '&lt;', '&lt;=', '&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate11'), '');
-              http(sprintf('<input type="text" name="ts_createDate12" value="%s" disabled="disabled"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate12')));
+              self.search_condition('ts_createDate11', vector('', '=', '&lt;', '&lt;=', '&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate11'), '');
+              http(sprintf('<input type="text" name="ts_createDate12" value="%s" disabled="disabled" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate12')));
             ?> and
             <?vsp
-              self.search_condition('ts_createDate21', vector('&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate21'), '');
-              http(sprintf('<input type="text" name="ts_createDate22" value="%s" disabled="disabled"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate22')));
+              self.search_condition('ts_createDate21', vector('', '&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate21'), '');
+              http(sprintf('<input type="text" name="ts_createDate22" value="%s" disabled="disabled" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate22')));
             ?> (yyyy-mm-dd)
           </td>
         </tr>
         <tr>
           <th>
-            <v:label for="ts_modifyDate11" value="--'Modification date'" format="%s"/>
+            <v:label for="ts_modifyDate11" value="--'Modification date'" />
           </th>
           <td>
             <?vsp
-              self.search_condition('ts_modifyDate11', vector('=', '&lt;', '&lt;=', '&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate11'), '');
-              http(sprintf('<input type="text" name="ts_modifyDate12" value="%s" disabled="disabled"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate12')));
+              self.search_condition('ts_modifyDate11', vector('', '=', '&lt;', '&lt;=', '&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate11'), '');
+              http(sprintf('<input type="text" name="ts_modifyDate12" value="%s" disabled="disabled" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate12')));
             ?> and
             <?vsp
-              self.search_condition('ts_modifyDate21', vector('&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate21'), '');
-              http(sprintf('<input type="text" name="ts_modifyDate22" value="%s" disabled="disabled"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate22')));
+              self.search_condition('ts_modifyDate21', vector('', '&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate21'), '');
+              http(sprintf('<input type="text" name="ts_modifyDate22" value="%s" disabled="disabled" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate22')));
             ?> (yyyy-mm-dd)
           </td>
         </tr>
         <tr>
           <th>
-            <v:label for="ts_publicTags11" value="--'Comma separated public tags'" format="%s"/>
+            <v:label for="ts_publicTags11" value="--'Comma separated public tags'" />
           </th>
           <td>
             <?vsp
               http('<input name="ts_publicTags11" type="hidden" value="contains_tags" />');
-              --self.search_condition('ts_publicTags11', vector('contains_tags', 'may_contain_tags', 'contains_text', 'may_contain_text'), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'publicTags11'), '');
-              http(sprintf('<input type="text" name="ts_publicTags12" value="%s" disabled="disabled" class="field-short"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'publicTags12')));
+              http(sprintf('<input type="text" name="ts_publicTags12" value="%s" disabled="disabled" class="field-short" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'publicTags12')));
             ?>
           </td>
         </tr>
         <tr>
           <th>
-            <v:label for="ts_privateTags11" value="--'Comma separated private tags'" format="%s"/>
+            <v:label for="ts_privateTags11" value="--'Comma separated private tags'" />
           </th>
           <td>
             <?vsp
               http('<input name="ts_privateTags11" type="hidden" value="contains_tags" />');
-              --self.search_condition('ts_privateTags11', vector('contains_tags', 'may_contain_tags', 'contains_text', 'may_contain_text'), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'privateTags11'), '');
-              http(sprintf('<input type="text" name="ts_privateTags12" value="%s" disabled="disabled" class="field-short"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'privateTags12')));
+              http(sprintf('<input type="text" name="ts_privateTags12" value="%s" disabled="disabled" class="field-short" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'privateTags12')));
             ?>
           </td>
         </tr>
@@ -3124,67 +3247,18 @@
       <v:template type="simple">
         <v:before-data-bind>
           <![CDATA[
-            declare N integer;
-            declare aParams any;
+            declare suffix, params any;
 
-            N := 0;
-            while (N < length(self.vc_page.vc_event.ve_params)) {
-              if (self.vc_page.vc_event.ve_params[N] like 'ts_vmd_btn_%') {
                 self.dc_prepare();
-                aParams := split_and_decode(self.vc_page.vc_event.ve_params[N], 0, '\0$0');
-                if (trim(aParams[0]) = 'ts_vmd_btn_update') {
-                  if (is_empty_or_null(get_keyword(sprintf('ts_vmd_condition$0%s$0', trim(aParams[1])), self.vc_page.vc_event.ve_params, '')))
-                    return;
-                  if (not ODRIVE.WA.rdf_validate_property2(get_keyword(sprintf('ts_vmd_type$0%s$0', trim(aParams[1])), self.vc_page.vc_event.ve_params, ''),
-                                                           get_keyword(sprintf('ts_vmd_schema$0%s$0', trim(aParams[1])), self.vc_page.vc_event.ve_params, ''),
-                                                           get_keyword(sprintf('ts_vmd_property$0%s$0', trim(aParams[1])), self.vc_page.vc_event.ve_params, ''),
-                                                           get_keyword(sprintf('ts_vmd_value$0%s$0', trim(aParams[1])), self.vc_page.vc_event.ve_params, ''))) {
-                    self.vc_error_message := 'Bad metadata value';
-                    self.vc_is_valid := 0;
-                    return;
-                  }
-                  ODRIVE.WA.dav_dc_set_metadata(self.search_dc,
-                                                trim(aParams[1]),
-                                                get_keyword(sprintf('ts_vmd_type$0%s$0', trim(aParams[1])), self.vc_page.vc_event.ve_params, ''),
-                                                get_keyword(sprintf('ts_vmd_schema$0%s$0', trim(aParams[1])), self.vc_page.vc_event.ve_params, ''),
-                                                get_keyword(sprintf('ts_vmd_property$0%s$0', trim(aParams[1])), self.vc_page.vc_event.ve_params, ''),
-                                                get_keyword(sprintf('ts_vmd_condition$0%s$0', trim(aParams[1])), self.vc_page.vc_event.ve_params, ''),
-                                                get_keyword(sprintf('ts_vmd_value$0%s$0', trim(aParams[1])), self.vc_page.vc_event.ve_params, '')
-                                               );
-                } else if (trim(aParams[0]) = 'ts_vmd_btn_add') {
-                  if (is_empty_or_null(get_keyword('ts_vmd_schema_add', self.vc_page.vc_event.ve_params, '')))
-                    return;
-                  if (is_empty_or_null(get_keyword('ts_vmd_property_add', self.vc_page.vc_event.ve_params, '')))
-                    return;
-                  if (is_empty_or_null(get_keyword('ts_vmd_condition_add', self.vc_page.vc_event.ve_params, '')))
-                    return;
-                  if (not ODRIVE.WA.rdf_validate_property2(get_keyword('ts_vmd_type_add', self.vc_page.vc_event.ve_params, ''),
-                                                           get_keyword('ts_vmd_schema_add', self.vc_page.vc_event.ve_params, ''),
-                                                           get_keyword('ts_vmd_property_add', self.vc_page.vc_event.ve_params, ''),
-                                                           get_keyword('ts_vmd_value_add', self.vc_page.vc_event.ve_params, ''))) {
-                    self.vc_error_message := 'Bad metadata value';
-                    self.vc_is_valid := 0;
-                    return;
-                  }
-                  ODRIVE.WA.dav_dc_set_metadata(self.search_dc,
-                                                trim(aParams[1]),
-                                                get_keyword('ts_vmd_type_add', self.vc_page.vc_event.ve_params, ''),
-                                                get_keyword('ts_vmd_schema_add', self.vc_page.vc_event.ve_params, ''),
-                                                get_keyword('ts_vmd_property_add', self.vc_page.vc_event.ve_params, ''),
-                                                get_keyword('ts_vmd_condition_add', self.vc_page.vc_event.ve_params, ''),
-                                                get_keyword('ts_vmd_value_add', self.vc_page.vc_event.ve_params, '')
-                                               );
-                } else if (trim(aParams[0]) = 'ts_vmd_btn_delete')
-                  ODRIVE.WA.dav_dc_cut(self.search_dc, 'metadata', trim(aParams[1]));
-              }
-              N := N + 4;
-            }
-            if (self.vmdType <> get_keyword('ts_vmd_type_add', self.vc_page.vc_event.ve_params)) {
+
+            params := self.vc_page.vc_event.ve_params;
+            suffix := get_keyword('ts_vmd_suffix', params);
+            if (self.vmdType <> get_keyword('ts_vmd_type' || suffix, params)) {
               self.vmdSchema := null;
             } else {
-              self.vmdSchema := get_keyword('ts_vmd_schema_add', self.vc_page.vc_event.ve_params);
+              self.vmdSchema := get_keyword('ts_vmd_schema' || suffix, params);
             }
-            self.vmdType := get_keyword('ts_vmd_type_add', self.vc_page.vc_event.ve_params);
+            self.vmdType := get_keyword('ts_vmd_type' || suffix, params);
             if (isnull(self.vmdType))
               self.vmdType := 'RDF';
             if (isnull(self.vmdSchema))
@@ -3214,52 +3288,53 @@
           </tr>
           <?vsp
             declare N integer;
+            declare suffix varchar;
 
             N := 0;
             for (select rs.* from ODRIVE.WA.dav_dc_metadata_rs(rs0)(c0 integer, c1 varchar, c2 varchar, c3 varchar, c4 varchar, c5 varchar, c6 varchar) rs where rs0 = self.search_dc order by c0) do {
               if (N < c0)
                 N := c0;
 
-              http('<tr>');
+              suffix := sprintf('$0%d$0', N);
+              http(sprintf('<tr id="row%s">', suffix));
                  http('<td>');
-                  http(sprintf('<input type="hidden" name="ts_vmd_type$0%d$0" value="%s"/>', c0, c1));
-                  http(sprintf('<input type="text" value="%s" onfocus="javascript:this.blur()" disabled="disabled" class="field-max"/>', c1));
+                  http(sprintf('<input type="hidden" name="ts_vmd_type%s" value="%s" />', suffix, c1));
+                  http(sprintf('<input type="text" value="%s" onfocus="javascript: this.blur()" disabled="disabled" class="field-max" />', c1));
                 http('</td>');
                  http('<td>');
-                  http(sprintf('<input type="hidden" name="ts_vmd_schema$0%d$0" value="%s"/>', c0, c2));
-                  http(sprintf('<input type="text" value="%s" onfocus="javascript:this.blur()" disabled="disabled" class="field-max"/>', c6));
+                  http(sprintf('<input type="hidden" name="ts_vmd_schema%s" value="%s" />', suffix, c2));
+                  http(sprintf('<input type="text" value="%s" onfocus="javascript: this.blur()" disabled="disabled" class="field-max" />', c6));
                 http('</td>');
                  http('<td>');
-                  http(sprintf('<input type="hidden" name="ts_vmd_property$0%d$0" value="%s"/>', c0, c3));
+                  http(sprintf('<input type="hidden" name="ts_vmd_property%s" value="%s" />', suffix, c3));
                   if (c1 = 'RDF') {
-                    http(sprintf('<input type="text" value="%s" onfocus="javascript:this.blur()" disabled="disabled" class="field-max"/>', ODRIVE.WA.rdf_get_property_title(c2, c3)));
+                    http(sprintf('<input type="text" value="%s" onfocus="javascript: this.blur()" disabled="disabled" class="field-max" />', ODRIVE.WA.rdf_get_property_title(c2, c3)));
                   } else {
-                    http(sprintf('<input type="text" value="%s" onfocus="javascript:this.blur()" disabled="disabled" class="field-max"/>', c3));
+                    http(sprintf('<input type="text" value="%s" onfocus="javascript: this.blur()" disabled="disabled" class="field-max" />', c3));
                   }
                 http('</td>');
                 http('<td>');
-                  self.search_condition(sprintf('ts_vmd_condition$0%d$0', c0), vector('=', '&lt;', '&lt;=', '&gt;', '&gt;=', 'starts_with', 'contains_substring', 'contains_text', 'may_contain_text'), c4, 'field-max');
+                  self.search_condition(sprintf('ts_vmd_condition%s', suffix), vector('=', '&lt;', '&lt;=', '&gt;', '&gt;=', 'starts_with', 'contains_substring', 'contains_text', 'may_contain_text'), c4, 'field-max');
                 http('</td>');
                 http('<td>');
-                  http(sprintf('<input type="text" name="ts_vmd_value$0%d$0" value="%V" disabled="disabled" class="field-max"/>', c0, c5));
+                  http(sprintf('<input type="text" name="ts_vmd_value%s" value="%V" disabled="disabled" class="field-max" />', suffix, c5));
                 http('</td>');
-                http('<td nowrap="nowrap">');
-                  http(sprintf('<input type="submit" name="ts_vmd_btn_update$0%d$0" value="Update" disabled="disabled" class="button" />', c0));
-                  http('&nbsp;');
-                  http(sprintf('<input type="submit" name="ts_vmd_btn_delete$0%d$0" value="Delete" disabled="disabled" class="button" />', c0));
+                http('<td align="center">');
+                  http(sprintf('<a href="#" onclick="javascript: createHidden(''F1'', ''ts_vmd_action%s'', ''delete''); toggleCell(''row%s''); return false;" title="Delete Criteria"><img src="image/del_16.png" border="0" /></a>', suffix, suffix));
                 http('</td>');
               http('</tr>');
             }
-            N := N + 1;
+            suffix := sprintf('$0%d$0', N+1);
             http('<tr>');
                http('<td>');
-                 http('<select name="ts_vmd_type_add" onchange="javascript:doPost(\'F1\', \'reload\'); return false" disabled="disabled" class="field-max">');
+                http(sprintf('<input type="hidden" name="ts_vmd_suffix" value="%s" />', suffix));
+                http(sprintf('<select name="ts_vmd_type%s" onchange="javascript: myPost(''F1'', ''ts_vmd_action%s'', ''reload''); return false;" disabled="disabled" class="field-max">', suffix, suffix));
                 http(self.option_prepare('RDF', 'RDF', self.vmdType));
                 http(self.option_prepare('WebDAV', 'WebDAV', self.vmdType));
                  http('</select>');
               http('</td>');
                http('<td>');
-                 http('<select name="ts_vmd_schema_add" onchange="javascript:doPost(\'F1\', \'reload\'); return false" disabled="disabled" class="field-max">');
+                http(sprintf('<select name="ts_vmd_schema%s" onchange="javascript: myPost(''F1'', ''ts_vmd_action%s'', ''reload''); return false;" disabled="disabled" class="field-max">', suffix, suffix));
                  if (self.vmdType = 'RDF') {
                   declare exit handler for sqlstate '*' { goto _skip; };
                   for (select RS_URI, RS_CATNAME from WS.WS.SYS_RDF_SCHEMAS order by RS_CATNAME) do
@@ -3272,22 +3347,22 @@
               http('</td>');
                http('<td>');
                  if (self.vmdType = 'RDF') {
-                   http('<select name="ts_vmd_property_add" disabled="disabled" class="field-max">');
+                  http(sprintf('<select name="ts_vmd_property%s" disabled="disabled" class="field-max">', suffix));
                    for (select c0, c1 from ODRIVE.WA.dav_rdf_schema_properties_short_rs(rs0)(c0 varchar, c1 varchar) rs where rs0 = self.vmdSchema order by c1) do
                      http(self.option_prepare(c0, c1, ''));
                    http('</select>');
                  } else {
-                  http('<input type="text" name="ts_vmd_property_add" disabled="disabled" class="field-max"/>');
+                  http(sprintf('<input type="text" name="ts_vmd_property%s" disabled="disabled" class="field-max" />', suffix));
                  }
               http('</td>');
               http('<td>');
-                self.search_condition('ts_vmd_condition_add', vector('=', '&lt;', '&lt;=', '&gt;', '&gt;=', 'starts_with', 'contains_substring', 'contains_text', 'may_contain_text'), '', 'field-max');
+                self.search_condition(sprintf('ts_vmd_condition%s"', suffix), vector('', '=', '&lt;', '&lt;=', '&gt;', '&gt;=', 'starts_with', 'contains_substring', 'contains_text', 'may_contain_text'), '', 'field-max');
               http('</td>');
               http('<td>');
-                http('<input type="text" name="ts_vmd_value_add" disabled="disabled" class="field-max"/>');
+                http(sprintf('<input type="text" name="ts_vmd_value%s" disabled="disabled" class="field-max" />', suffix));
               http('</td>');
-              http('<td>');
-                http(sprintf('<input type="submit" name="ts_vmd_btn_add$0%d$0" value="Add" disabled="disabled" class="button" />', N));
+              http('<td align="center">');
+                http(sprintf('<a href="#" onclick="javascript: myPost(''F1'', ''ts_vmd_action%s'', ''add''); return false;" title="Add Criteria"><img src="image/add_16.png" border="0" /></a>', suffix));
               http('</td>');
             http('</tr>');
           ?>
@@ -3317,7 +3392,7 @@
       <table class="form-body" cellspacing="0">
         <tr>
           <th >
-            <v:label value="File State" format="%s"/>
+            <v:label value="File State" />
           </th>
           <td>
             <?vsp
@@ -3331,7 +3406,7 @@
         <v:template type="simple" enabled="-- case when (equ(self.command_mode, 10)) then 1 else 0 end">
           <tr>
             <th >
-              <v:label value="--sprintf('Content is %s in Version Conrol', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%s"/>
+              <v:label value="--sprintf('Content is %s in Version Conrol', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%s" />
             </th>
             <td valign="center">
               <v:button action="simple" value="--sprintf('%s VC', either(equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button">
@@ -3356,7 +3431,7 @@
             </td>
           </tr>
         </v:template>
-        <xsl:call-template name="autoVersion"/>
+        <xsl:call-template name="autoVersion" />
         <v:template type="simple" enabled="-- case when (equ(ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'),1)) then 1 else 0 end">
           <tr>
             <th >
@@ -3452,7 +3527,7 @@
               Number of Versions in History
             </th>
             <td valign="center">
-              <v:label value="--ODRIVE.WA.DAV_GET_VERSION_COUNT(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))" format="%d"/>
+              <v:label value="--ODRIVE.WA.DAV_GET_VERSION_COUNT(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))" format="%d" />
             </td>
           </tr>
           <tr>
@@ -3485,7 +3560,7 @@
             <th>Versions</th>
             <td>
               <v:data-set name="ds_versions" sql="select rs.* from ODRIVE.WA.DAV_GET_VERSION_SET(rs0)(c0 varchar, c1 integer) rs where rs0 = :p0" nrows="0" scrollable="1">
-                <v:param name="p0" value="--ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath')"/>
+                <v:param name="p0" value="--ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath')" />
 
                 <v:template name="ds_versions_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                   <table class="form-list" style="width: auto;" id="versions" cellspacing="0">
@@ -3534,7 +3609,7 @@
                           </v:button>
                         </td>
                         <td nowrap="nowrap" align="right">
-                          <v:label value="--ODRIVE.WA.path_name((control.vc_parent as vspx_row_template).te_column_value('c0'))" format="%s"/>
+                          <v:label value="--ODRIVE.WA.path_name((control.vc_parent as vspx_row_template).te_column_value('c0'))" />
                         </td>
                         <td nowrap="nowrap" align="right">
                           <v:label>
@@ -3599,7 +3674,7 @@
             <v:label for="ts_max" value="Max Results" />
           </th>
           <td>
-            <?vsp http(sprintf('<input type="text" name="ts_max" value="%s" size="5"/>', ODRIVE.WA.dav_dc_get(self.search_dc, 'options', 'max', '100'))); ?>
+            <?vsp http(sprintf('<input type="text" name="ts_max" value="%s" size="5" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'options', 'max', '100'))); ?>
           </td>
         </tr>
         <tr>
@@ -3651,8 +3726,8 @@
         <tr>
           <th/>
           <td>
-            <v:check-box name="ts_cloud" xhtml_id="ts_cloud" value="1"/>
-            <vm:label for="ts_cloud" value="Show tag''s cloud"/>
+            <v:check-box name="ts_cloud" xhtml_id="ts_cloud" value="1" />
+            <vm:label for="ts_cloud" value="Show tag''s cloud" />
           </td>
         </tr>
       </table>
@@ -3662,11 +3737,13 @@
   <!--=========================================================================-->
   <!-- Auto Versioning -->
   <xsl:template name="autoVersion">
-    <tr>
-      <th >
-        <v:label for="dav_autoversion" value="--'Auto Versioning Content'" format="%s"/>
+    <xsl:param name="id" select="''"/>
+    <tr id="davRow_version">
+      <xsl:attribute name="id"><xsl:value-of select="$id" /></xsl:attribute>
+      <th>
+        <v:label for="dav_autoversion" value="--'Auto Versioning Content'" />
       </th>
-      <td valign="center">
+      <td>
         <?vsp
           declare tmp any;
 
@@ -3693,7 +3770,7 @@
   <!--=========================================================================-->
   <!-- Toolbar -->
   <xsl:template name="toolBar">
-    <?vsp http('<input type="hidden" name="toolbar_hidden" value=""/>'); ?>
+    <?vsp http('<input type="hidden" name="toolbar_hidden" value="" />'); ?>
     <?vsp
       if (0)
       {
@@ -3774,22 +3851,22 @@
       <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''up'');'" enabled="--self.toolbarEnable('up')" xhtml_title="Up" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
-            control.ufl_value := '<img src="image/up_32.png" border="0"/>' || self.toolbarLabel('Up');
+            control.ufl_value := '<img src="image/up_32.png" border="0" />' || self.toolbarLabel('Up');
           ]]>
         </v:before-render>
       </v:url>
       <v:template type="simple" enabled="--case when self.toolbarEnable('up') then 0 else 1 end">
         <span class="toolbar">
-          <img src="image/grey_up_32.png" border="0" alt="Up"/><?vsp http(self.toolbarLabel('Up'));?>
+          <img src="image/grey_up_32.png" border="0" alt="Up" /><?vsp http(self.toolbarLabel('Up'));?>
         </span>
       </v:template>
 
-      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
+      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
 
       <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''home'');'" xhtml_title="Home" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
-            control.ufl_value := '<img src="image/home_32.png" border="0"/>' || self.toolbarLabel('Home');
+            control.ufl_value := '<img src="image/home_32.png" border="0" />' || self.toolbarLabel('Home');
           ]]>
         </v:before-render>
       </v:url>
@@ -3797,145 +3874,153 @@
       <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" xhtml_title="Shared Folders" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
-            control.ufl_value := '<img src="image/folder_violet.png" border="0"/>' || self.toolbarLabel('Shared Folders');
+            control.ufl_value := '<img src="image/folder_violet.png" border="0" />' || self.toolbarLabel('Shared Folders');
           ]]>
         </v:before-render>
       </v:url>
 
-      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
-
       <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''new'');'" enabled="--self.toolbarEnable('new')" xhtml_title="New Folder" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
-            control.ufl_value := '<img src="image/new_fldr_32.png" border="0"/>' || self.toolbarLabel('New Folder');
+            control.ufl_value := '<img src="image/new_fldr_32.png" border="0" />' || self.toolbarLabel('New Folder');
           ]]>
         </v:before-render>
       </v:url>
       <v:template type="simple" enabled="--case when self.toolbarEnable('new') then 0 else 1 end">
         <span class="toolbar">
-          <img src="image/grey_new_fldr_32.png" border="0" alt="New Folder"/><?vsp http(self.toolbarLabel('New Folder'));?>
-        </span>
-      </v:template>
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''upload'');'" enabled="--self.toolbarEnable('upload')" xhtml_title="Upload" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/upld_32.png" border="0"/>' || self.toolbarLabel('Upload');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('upload') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_upld_32.png" border="0" alt="Upload"/><?vsp http(self.toolbarLabel('Upload'));?>
+          <img src="image/grey_new_fldr_32.png" border="0" alt="New Folder" /><?vsp http(self.toolbarLabel('New Folder'));?>
         </span>
       </v:template>
 
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for download.'')) toolbarPost(''download'');'" enabled="--self.toolbarEnable('download')" xhtml_title="Download" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/dwnld_32.png" border="0"/>' || self.toolbarLabel('Download');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('download') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_dwnld_32.png" border="0" alt="Download"/><?vsp http(self.toolbarLabel('Download'));?>
-        </span>
-      </v:template>
-
-      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
-
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for property changes.'')) toolbarPost(''properties'');'" enabled="--self.toolbarEnable('properties')" xhtml_title="Properties" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/prop_32.png" border="0"/>' || self.toolbarLabel('Properties');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('properties') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_prop_32.png" border="0" alt="Properties"/><?vsp http(self.toolbarLabel('Properties'));?>
-        </span>
-      </v:template>
-
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected to be tagged.'')) toolbarPost(''tag'');'" enabled="--self.toolbarEnable('tag')" xhtml_title="Tag" xhtml_class="toolbar">
-        <v:before-render>
-          <![CDATA[
-            control.ufl_value := '<img src="image/tag_32.png" border="0"/>' || self.toolbarLabel('Tag');
-          ]]>
-        </v:before-render>
-      </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('tag') then 0 else 1 end">
-        <span class="toolbar">
-          <img src="image/grey_tag_32.png" border="0" alt="Tag"/><?vsp http(self.toolbarLabel('Tag'));?>
-        </span>
-      </v:template>
+      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
 
       <v:url value="--''" format="%s" url="--'javascript: if (singleSelected(document.F1, ''CB_'', ''No items were selected to be renamed. Please select an item before you click the Rename button.'', ''You can only rename one item at a time. Please deselect all but one.'')) renameShow(document.F1, ''CB_'', ''rename.vspx?src=s'');'" enabled="--self.toolbarEnable('rename')" xhtml_titile="Rename" xhtml_class="toolbar" >
         <v:before-render>
           <![CDATA[
-            control.ufl_value := '<img src="image/renm_32.png" border="0"/>' || self.toolbarLabel('Rename');
+            control.ufl_value := '<img src="image/renm_32.png" border="0" />' || self.toolbarLabel('Rename');
           ]]>
         </v:before-render>
       </v:url>
       <v:template type="simple" enabled="--case when self.toolbarEnable('rename') then 0 else 1 end">
         <span class="toolbar">
-          <img src="image/grey_renm_32.png" border="0" alt="Rename"/><?vsp http(self.toolbarLabel('Rename'));?>
+          <img src="image/grey_renm_32.png" border="0" alt="Rename" /><?vsp http(self.toolbarLabel('Rename'));?>
         </span>
       </v:template>
 
       <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected to be copied.'')) toolbarPost(''copy'');'" enabled="--self.toolbarEnable('copy')" xhtml_title="Copy" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
-            control.ufl_value := '<img src="image/copy_32.png" border="0"/>' || self.toolbarLabel('Copy');
+            control.ufl_value := '<img src="image/copy_32.png" border="0" />' || self.toolbarLabel('Copy');
           ]]>
         </v:before-render>
       </v:url>
       <v:template type="simple" enabled="--case when self.toolbarEnable('copy') then 0 else 1 end">
         <span class="toolbar">
-          <img src="image/grey_copy_32.png" border="0" alt="Copy"/><?vsp http(self.toolbarLabel('Copy'));?>
+          <img src="image/grey_copy_32.png" border="0" alt="Copy" /><?vsp http(self.toolbarLabel('Copy'));?>
         </span>
       </v:template>
 
       <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected to be moved.'')) toolbarPost(''move'');'" enabled="--self.toolbarEnable('move')" xhtml_title="Move" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
-            control.ufl_value := '<img src="image/move_32.png" border="0"/>' || self.toolbarLabel('Move');
+            control.ufl_value := '<img src="image/move_32.png" border="0" />' || self.toolbarLabel('Move');
           ]]>
         </v:before-render>
       </v:url>
       <v:template type="simple" enabled="--case when self.toolbarEnable('move') then 0 else 1 end">
         <span class="toolbar">
-          <img src="image/grey_move_32.png" border="0" alt="Move"/><?vsp http(self.toolbarLabel('Move'));?>
+          <img src="image/grey_move_32.png" border="0" alt="Move" /><?vsp http(self.toolbarLabel('Move'));?>
         </span>
       </v:template>
 
       <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for deletion.'')) toolbarPost(''delete'');'" enabled="--self.toolbarEnable('delete')" xhtml_title="Delete" xhtml_class="toolbar" >
         <v:before-render>
           <![CDATA[
-            control.ufl_value := '<img src="image/del_32.png" border="0"/>' || self.toolbarLabel('Delete');
+            control.ufl_value := '<img src="image/del_32.png" border="0" />' || self.toolbarLabel('Delete');
           ]]>
         </v:before-render>
       </v:url>
       <v:template type="simple" enabled="--case when self.toolbarEnable('delete') then 0 else 1 end">
         <span class="toolbar">
-          <img src="image/grey_del_32.png" border="0" alt="Delete"/><?vsp http(self.toolbarLabel('Delete'));?>
+          <img src="image/grey_del_32.png" border="0" alt="Delete" /><?vsp http(self.toolbarLabel('Delete'));?>
         </span>
       </v:template>
-      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
+
+      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
+
+      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for property changes.'')) toolbarPost(''properties'');'" enabled="--self.toolbarEnable('properties')" xhtml_title="Properties" xhtml_class="toolbar">
+        <v:before-render>
+          <![CDATA[
+            control.ufl_value := '<img src="image/prop_32.png" border="0" />' || self.toolbarLabel('Properties');
+          ]]>
+        </v:before-render>
+      </v:url>
+      <v:template type="simple" enabled="--case when self.toolbarEnable('properties') then 0 else 1 end">
+        <span class="toolbar">
+          <img src="image/grey_prop_32.png" border="0" alt="Properties" /><?vsp http(self.toolbarLabel('Properties'));?>
+        </span>
+      </v:template>
+
+      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected to be tagged.'')) toolbarPost(''tag'');'" enabled="--self.toolbarEnable('tag')" xhtml_title="Tag" xhtml_class="toolbar">
+        <v:before-render>
+          <![CDATA[
+            control.ufl_value := '<img src="image/tag_32.png" border="0" />' || self.toolbarLabel('Tag');
+          ]]>
+        </v:before-render>
+      </v:url>
+      <v:template type="simple" enabled="--case when self.toolbarEnable('tag') then 0 else 1 end">
+        <span class="toolbar">
+          <img src="image/grey_tag_32.png" border="0" alt="Tag" /><?vsp http(self.toolbarLabel('Tag'));?>
+        </span>
+      </v:template>
+
+      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
+
+      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''upload'');'" enabled="--self.toolbarEnable('upload')" xhtml_title="Upload" xhtml_class="toolbar">
+        <v:before-render>
+          <![CDATA[
+            control.ufl_value := '<img src="image/upld_32.png" border="0" />' || self.toolbarLabel('Upload');
+          ]]>
+        </v:before-render>
+      </v:url>
+      <v:template type="simple" enabled="--case when self.toolbarEnable('upload') then 0 else 1 end">
+        <span class="toolbar">
+          <img src="image/grey_upld_32.png" border="0" alt="Upload" /><?vsp http(self.toolbarLabel('Upload'));?>
+        </span>
+      </v:template>
+
+      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for download.'')) toolbarPost(''download'');'" enabled="--self.toolbarEnable('download')" xhtml_title="Download" xhtml_class="toolbar">
+        <v:before-render>
+          <![CDATA[
+            control.ufl_value := '<img src="image/dwnld_32.png" border="0" />' || self.toolbarLabel('Download');
+          ]]>
+        </v:before-render>
+      </v:url>
+      <v:template type="simple" enabled="--case when self.toolbarEnable('download') then 0 else 1 end">
+        <span class="toolbar">
+          <img src="image/grey_dwnld_32.png" border="0" alt="Download" /><?vsp http(self.toolbarLabel('Download'));?>
+        </span>
+      </v:template>
+
+<!--
+      <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
+
       <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for mailing.'')) toolbarPost(''mail'');'" enabled="--self.toolbarEnable('mail')" xhtml_title="Mail" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
-            control.ufl_value := '<img src="image/mail_32.png" border="0"/>' || self.toolbarLabel('Mail');
+            control.ufl_value := '<img src="image/mail_32.png" border="0" />' || self.toolbarLabel('Mail');
           ]]>
         </v:before-render>
       </v:url>
       <v:template type="simple" enabled="--case when self.toolbarEnable('mail') then 0 else 1 end">
         <span class="toolbar">
-          <img src="image/grey_mail_32.png" border="0" alt="Mail"/><?vsp http(self.toolbarLabel('Mail'));?>
+          <img src="image/grey_mail_32.png" border="0" alt="Mail" /><?vsp http(self.toolbarLabel('Mail'));?>
         </span>
       </v:template>
+-->
+
     </div>
-    <div style="clear: both;"/>
+    <div style="clear: both;" />
   </xsl:template>
   <!--=========================================================================-->
 

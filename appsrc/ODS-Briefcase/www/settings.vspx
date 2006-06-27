@@ -83,7 +83,7 @@
                       <v:item value="1.0" name="1.0"/>
                       <v:before-data-bind>
                         <![CDATA[
-                          control.ufl_value := get_keyword('atomVersion', self.v_settings, '0.3');
+                          control.ufl_value := get_keyword('atomVersion', self.v_settings, '1.0');
                         ]]>
                       </v:before-data-bind>
                     </v:select-list>

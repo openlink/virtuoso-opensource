@@ -36,8 +36,8 @@ function toolbarPost(fld_value)
 }
 
 // ---------------------------------------------------------------------------
-//
-function submitEnter(myForm, myButton, e) {
+function submitEnter(myForm, myButton, e)
+{
   var keycode;
   if (window.event)
     keycode = window.event.keyCode;
@@ -57,7 +57,6 @@ function submitEnter(myForm, myButton, e) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function selectAllCheckboxes (form, btn)
 {
   for (var i = 0; i < form.elements.length; i = i + 1) {
@@ -78,7 +77,6 @@ function selectAllCheckboxes (form, btn)
 }
 
 // ---------------------------------------------------------------------------
-//
 function countSelected (form, txt)
 {
   var count = 1;
@@ -95,7 +93,6 @@ function countSelected (form, txt)
 }
 
 // ---------------------------------------------------------------------------
-//
 function getSelected (form, txt)
 {
   if ((form != null) && (txt != null)) {
@@ -164,6 +161,15 @@ function getFileName(obj)
   if (S.indexOf('#') > 0) {
     N = S.indexOf('#');
     S = S.substr(0, N);
+  }
+  if (document.F1.dav_destination[1].checked == '1') {
+    N = S.indexOf('.rdf');
+    S = S.substr(0, N);
+  }
+  if ((document.F1.dav_destination[0].checked == '1') && (document.F1.dav_source[2].checked == '1')) {
+    N = S.indexOf('.rdf');
+    if (N == -1)
+      S = S + '.rdf';
   }
   document.F1.dav_name.value = S;
 }
@@ -508,7 +514,6 @@ function addChecked (form, txt, selectionMsq)
 }
 
 // ---------------------------------------------------------------------------
-//
 function createHidden(frm_name, fld_name, fld_value)
 {
   var hidden;
@@ -523,5 +528,88 @@ function createHidden(frm_name, fld_name, fld_value)
       document.forms[frm_name].appendChild(hidden);
     }
     hidden.value = fld_value;
+  }
+}
+
+// ---------------------------------------------------------------------------
+function getObject(id)
+{
+  if (document.all)
+    return document.all[id];
+  return document.getElementById(id);
+}
+
+// ---------------------------------------------------------------------------
+showRow = (navigator.appName.indexOf("Internet Explorer") != -1) ? "block" : "table-row";
+
+// ---------------------------------------------------------------------------
+function toggleCell(cell)
+{
+  var c = getObject(cell);
+  if (c)
+    c.style.display = (c.style.display == "none") ? showRow : "none";
+}
+
+// ---------------------------------------------------------------------------
+function showTableRow(cell)
+{
+  var c = getObject(cell);
+  if ((c) && (c.style.display == "none"))
+    c.style.display = showRow;
+}
+
+// ---------------------------------------------------------------------------
+function showCell(cell)
+{
+  var c = getObject(cell);
+  if ((c) && (c.style.display == "none"))
+    c.style.display = "";
+}
+
+// ---------------------------------------------------------------------------
+function hideCell(cell)
+{
+  var c = getObject(cell);
+  if ((c) && (c.style.display != "none"))
+    c.style.display = "none";
+}
+
+// ---------------------------------------------------------------------------
+function toggleDavRows()
+{
+  if (document.forms['F1'].elements['dav_destination']) {
+    if (document.forms['F1'].elements['dav_destination'][0].checked == '1') {
+      showTableRow('davRow_mime');
+      showTableRow('davRow_version');
+      showTableRow('davRow_owner');
+      showTableRow('davRow_group');
+      showTableRow('davRow_perms');
+      showTableRow('davRow_text');
+      showTableRow('davRow_metadata');
+      showTableRow('davRow_metadata');
+
+      showTableRow('rdf_store');
+
+      showCell('label_dav');
+      hideCell('label_rdf');
+      hideCell('label_rdf_prefix');
+    }
+    if (document.forms['F1'].elements['dav_destination'][1].checked == '1') {
+      hideCell('davRow_metadata');
+      hideCell('davRow_text');
+      hideCell('davRow_perms');
+      hideCell('davRow_group');
+      hideCell('davRow_owner');
+      hideCell('davRow_version');
+      hideCell('davRow_mime');
+
+      hideCell('rdf_store');
+      if (document.forms['F1'].elements['dav_source'][2].checked == '1')
+        document.forms['F1'].elements['dav_source'][0].checked = '1';
+
+      hideCell('label_dav');
+      showCell('label_rdf');
+      showCell('label_rdf_prefix');
+    }
   }
 }
