@@ -28,8 +28,10 @@
 
   <xsl:template match="vm:instance-settings">
       <tr>
-        <th><label for="ianame1"><?V self.instance_descr ?></label></th>
-        <td>
+        <th><label for="ianame1"><?V self.instance_descr ?></label>
+            <?V case when self.instance_descr='Blog' then 'name' else '' end?>
+        </th>
+        <td colspan="2">
           <xsl:if test="@readonly">
             <?V wa_utf8_to_wide (self.iname) ?>
           </xsl:if>
@@ -66,13 +68,48 @@
           </xsl:if>
         </td>
       </tr>
+      <tr  style="vertical-align : baseline;">
+       <th>
+       Your <?V self.instance_descr?> will be accessible by this URL: <br/>
+       </th>
+       <td>
+       
+       <?vsp
+       
+        declare domain any;
+        domain:=null;
+        domain:=cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+        if ((domain is null or length(domain)=0) and is_http_ctx ())
+        {
+            declare lines any;
+            lines := http_request_header ();
+            if (isarray (lines))
+                domain := http_request_header (lines, 'Host', null, null);
+        };
+       ?>
+       http://<?V domain||self.ihome?>
+       </td>
+       <td align="right">
+       <?vsp
+         if (self.instance_descr in ('Blog', 'oWiki', 'Community','oGallery'))
+         {
+       ?>
+        <input type="button" name="change_url" value="Change" onclick="document.getElementById('change_defurl').style.display='block';"/>
+       <?vsp
+         };
+       ?>
+       </td>
+      </tr>
       <?vsp
         if (self.instance_descr in ('Blog', 'oWiki', 'Community','oGallery'))
         {
       ?>
       <xsl:if test="not (@edit = 'yes')">
         <tr>
-          <th><label for="ihome1"> <v:label name="l1" value="--self.instance_descr"/> address (URL)</label></th>
+        <td></td>
+        <td colspan="2">
+         <div id="change_defurl" style="display:none;">
+          <table><tr>
           <td>
             <xsl:if test="@readonly">
               <?V self.ihome ?>
@@ -103,6 +140,10 @@
                 </v:text>
                 <v:text name="ihome2" type="hidden" value="--case when e.ve_is_post then control.ufl_value else self.ihome end"/>
               </xsl:if>
+            </td>
+          </tr></table>
+          </div>
+            
             </td>
           </tr>
         </xsl:if>
@@ -220,7 +261,7 @@
       <v:template name="vb" type="simple" enabled="-- case when (self.page_type='new' or self.page_type='edit') then 1 else 0 end">
       <xsl:if test="not @edit">
       <tr>
-       <td colspan="2">
+       <td colspan="3">
 	 <span class="fm_ctl_btn">
           <v:button action="simple" name="adv" value="-- case when self.switch_adv then 'Simple' else 'Advanced' end">
             <v:on-post>

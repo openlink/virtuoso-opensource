@@ -50,6 +50,8 @@
     select top 1 WS_WEB_TITLE, WS_WEB_BANNER, WS_WELCOME_MESSAGE, WS_COPYRIGHT, WS_DISCLAIMER
        into self.banner, self.web_banner, self.welcome_message, self.copyright, self.disclaimer from WA_SETTINGS;
 
+    dbg_obj_print(self.welcome_message);
+    
     self.maps_key := WA_MAPS_GET_KEY ();
 
     if (not length(self.banner))
@@ -119,7 +121,7 @@
 
 <xsl:template match="vm:popup_page_wrapper">
   <xsl:apply-templates select="node()|processing-instruction()" />
-  <div id="copyright_ctr">Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
+  <div id="copyright_ctr">Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>aaaa
 </xsl:template>
 
 <xsl:template match="vm:login-top-button">
@@ -163,7 +165,12 @@
 </xsl:template>
 
 <xsl:template match="vm:copyright">
-    <?V coalesce (wa_utf8_to_wide (self.copyright), '') ?>
+    <xsl:text disable-output-escaping="yes">
+           &lt;?vsp
+               http(coalesce (wa_utf8_to_wide (self.copyright),''));
+           ?&gt;
+    </xsl:text>
+    
 </xsl:template>
 
 <xsl:template match="vm:disclaimer">
@@ -188,6 +195,7 @@
 </xsl:template>
 
 <xsl:template match="vm:greetings">
+<!--
 <?vsp
   if (length (self.sid))
     {
@@ -196,6 +204,7 @@
       http ('!');
     }
 ?>
+-->
 </xsl:template>
 
 <xsl:template match="vm:help-link">
@@ -267,9 +276,9 @@
           </tr>
           <tr>
 	      <td class="left" colspan="2">
-		  <b>
-		      <vm:greetings />
-	          </b>
+<!--
+           <b><vm:greetings /></b>
+--> 
             </td>
           </tr>
         </table>

@@ -63,9 +63,11 @@
 	    </tr>
 	    <tr>
 	      <td class="left" colspan="2">
+<!--
 		<b>
 		  <vm:greetings />
 		</b>
+-->
 	      </td>
 	    </tr>
 	  </table>

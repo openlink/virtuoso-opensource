@@ -95,8 +95,8 @@
     <v:data-source nrows="10"
                    initial-offset="0"
                    name="d_omail"
-                   data='--wa_dash_omail_v_data (self.grp_sel_no_thr, self.fordate, self.article_list_lenght)'
-                   meta="--wa_dash_omail_v_meta (self.grp_sel_no_thr, self.fordate, self.article_list_lenght)"
+                   data='--wa_dash_omail_v_data (self.grp_sel_no_thr, self.fordate, self.article_list_length)'
+                   meta="--wa_dash_omail_v_meta (self.grp_sel_no_thr, self.fordate, self.article_list_length)"
                    expression-type="array" />
     <v:data-set name="d_omail_list"
                 data-source="self.d_omail"

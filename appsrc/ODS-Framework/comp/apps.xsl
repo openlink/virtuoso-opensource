@@ -50,7 +50,7 @@
         <vm:template type="browse">
           <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
             <td>
-              <vm:url value="--(control.vc_parent as vspx_row_template).te_rowset[0]" url="">
+              <vm:url value="--WA_GET_APP_NAME ((control.vc_parent as vspx_row_template).te_rowset[0])" url="">
                 <v:after-data-bind>
                   <![CDATA[
                     declare s, url, params varchar;

@@ -498,7 +498,7 @@
                 </td>
               </tr>
               <tr>
-		  <th><label for="set_all">Set All</label></th>
+		  <th><label for="set_all">Set access for all fields as</label></th>
 		  <td class="ctrl">
 		      <v:select-list name="set_all1" value="0"
 			  xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>

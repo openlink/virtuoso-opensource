@@ -771,7 +771,7 @@
         key-name-inx="3"
         key-val="self.ufid"
         div_id="user_map"
-        zoom="11"
+        zoom="16"
         base_url="HTTP_REQUESTED_URL ()" />
 
    </v:template>

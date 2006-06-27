@@ -84,7 +84,7 @@ function pickMarkerIcon (icons, count)
  * parses the incoming XML, puts the markers on the map and
  * calculates and sets the zoom level to fit all the markers
 */
-function ProcessMarkerXML (map, icons, request, do_center)
+function ProcessMarkerXML (map, icons, request, do_center, custom_zoom_level)
 {
   try 
     {
@@ -153,7 +153,14 @@ function ProcessMarkerXML (map, icons, request, do_center)
 		  var minZoom = map.spec.getLowestZoomLevel(center, delta, map.viewSize) + ADDITIONAL_ZOOM_LEVELS;
                   if (minZoom < MIN_ZOOM_LEVEL)
                     minZoom = MIN_ZOOM_LEVEL;
+      if (custom_zoom_level<0){
 		  map.centerAndZoom(center, minZoom); 
+      }else{
+         if (custom_zoom_level<MIN_ZOOM_LEVEL) custom_zoom_level=MIN_ZOOM_LEVEL;
+         if (custom_zoom_level>MAX_ZOOM_LEVEL) custom_zoom_level=MIN_ZOOM_LEVEL;
+         map.centerAndZoom(center, custom_zoom_level); 
+      }
+
 //		  GEvent.addListener(map, "moveend", onMapMoved);
 		}
 	    }
@@ -192,7 +199,7 @@ function getLatLongFromBitmapSize ( map, x, y )
  * Util function
  * Constructs the query URL to the ajax server, clears the map and sends the request
 */
-function FillIconList(map, ajax_server_url, icons, inst, is_initial) 
+function FillIconList(map, ajax_server_url, icons, inst, is_initial, custom_zoom_level) 
 {
   try 
     {
@@ -232,7 +239,7 @@ function FillIconList(map, ajax_server_url, icons, inst, is_initial)
 
       request.open("GET", url, true);
       request.onreadystatechange = function () {
-         ProcessMarkerXML (map, icons, request, do_center);
+         ProcessMarkerXML (map, icons, request, do_center, custom_zoom_level);
       };
 
       map.clearOverlays ();
@@ -256,8 +263,10 @@ function FillIconList(map, ajax_server_url, icons, inst, is_initial)
  *   inst_id : the id of the search SQL stored in the ajax server search table
  *   
 */
-function initMap (div_id,ajax_server_url,icon_base_url,inst_id)
+function initMap (div_id,ajax_server_url,icon_base_url,inst_id, custom_zoom_level)
 {
+  if (typeof(custom_zoom_level)=='undefined') custom_zoom_level=-1;
+ 
   var map = new GMap(document.getElementById(div_id));
   var infoOpened = false;
 
@@ -307,11 +316,11 @@ function initMap (div_id,ajax_server_url,icon_base_url,inst_id)
 	  return;
 	}
 
-      FillIconList(map, ajax_server_url, icons, inst_id, false, null);
+      FillIconList(map, ajax_server_url, icons, inst_id, false, null, custom_zoom_level);
     }; 
 
   // init the map
   GEvent.addListener(map, "moveend", onMapMoved);
-  FillIconList(map, ajax_server_url, icons, inst_id, true);
+  FillIconList(map, ajax_server_url, icons, inst_id, true, custom_zoom_level);
   GEvent.addListener(map, "infowindowopen", onInfoWindowOpen); 
 }

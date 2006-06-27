@@ -30,7 +30,7 @@
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <vm:page>
     <vm:header>
-      <vm:title>Create New Application</vm:title>
+      <vm:title>Create New <?V self.instance_descr?></vm:title>
     </vm:header>
     <v:on-init>
       <![CDATA[
@@ -101,7 +101,6 @@
             self.ihome1.ufl_failed := 1;
             return;
           }
-dbg_obj_print('setvame');
           if(self.instance_descr='Blog'){
              connection_set('blog2_home', ihome);
 
@@ -256,7 +255,7 @@ dbg_obj_print('setvame');
 
       <vm:navigation1 on="admin"/>
       <vm:navigation2 on="application"/>
-      <vm:rawheader caption="Create New Application"/>
+      <vm:rawheader caption="Create New <?V self.instance_descr?>"/>
       <vm:body>
         <vm:login redirect="index.vspx"/>
         <div id="container">
@@ -281,7 +280,6 @@ dbg_obj_print('setvame');
 	      </v:local-variable>
 	      <v:form type="simple" method="POST" name="aform1">
 	      <v:template name="app_cr" type="simple" condition="self.promo = ''">
-              <h2>Application Details</h2>
                   <v:before-data-bind>
                     <![CDATA[
 		    if (not e.ve_is_post)
@@ -386,7 +384,7 @@ dbg_obj_print('setvame');
 		      }
                     ]]>
 		  </v:before-data-bind>
-		   <table  class="ctl_grp">
+		   <table  class="ctl_grp" >
                 <vm:instance-settings />
                 <v:after-data-bind>
                   <![CDATA[
@@ -403,7 +401,7 @@ dbg_obj_print('setvame');
                     }
                   ]]>
 		</v:after-data-bind>
-		<tr><td colspan="2">
+		<tr><td colspan="3">
 		<span class="fm_ctl_btn">
                 <v:button action="simple" name="cancel1" value="Cancel" >
                   <v:on-post>

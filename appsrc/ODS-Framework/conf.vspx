@@ -50,7 +50,7 @@
       <H1>Registration Confirmation</H1>
       <div><vm:label value="--self.message"/></div>
       <vm:template condition="self.activated">
-	<div>To login click <v:url value="here" url="-- case when length (self.url) and self.url <> 'uhome.vspx' then self.url else 'login.vspx' end"/>.</div>
+	<div>To login click <v:url value="here" url="-- case when length (self.url) and self.url <> 'uhome.vspx' and self.url <> 'myhome.vspx?l=1' then self.url else 'login.vspx' end"/>.</div>
       </vm:template>
     </vm:body>
   </vm:page>

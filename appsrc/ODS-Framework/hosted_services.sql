@@ -116,6 +116,7 @@ wa_exec_no_error('alter type web_app add method wa_addition_instance_urls (in lp
 wa_exec_no_error('alter type web_app add method wa_domain_set (in domain varchar) returns any');
 wa_exec_no_error('alter type web_app add method wa_size () returns int');
 wa_exec_no_error('alter type web_app add method wa_front_page_as_user (in stream any, in user_name varchar) returns any');
+wa_exec_no_error('alter type web_app add method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar');
 
 wa_exec_no_error_log(
   'CREATE TABLE WA_INDUSTRY
@@ -610,6 +611,13 @@ create method wa_home_url () for web_app
 }
 ;
 
+create method wa_rdf_url (in vhost varchar, in lhost varchar) for web_app
+{
+  return null;
+}
+;
+
+
 create method wa_addition_urls () for web_app
 {
   return null;
@@ -1026,11 +1034,12 @@ create method wa_new_inst (in login varchar) for web_app
   select WAI_ID, WAI_TYPE_NAME, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE
       into id, tn, is_pub, is_memb_visb from WA_INSTANCE where WAI_NAME = self.wa_name;
   -- WAM_STATUS = 1 means OWNER
-  set triggers off;
+  -- XXX: check this why is off
+  --set triggers off;
   insert into WA_MEMBER
       (WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_STATUS, WAM_HOME_PAGE, WAM_APP_TYPE, WAM_IS_PUBLIC, WAM_MEMBERS_VISIBLE)
       values (uid, self.wa_name, 1, 1, wa_set_url_t (self), tn, is_pub, is_memb_visb);
-  set triggers on;
+  --set triggers on;
   return id;
 }
 ;
@@ -1138,6 +1147,9 @@ wa_exec_no_error(
 create trigger WA_MEMBER_I after insert on WA_MEMBER referencing new as N {
   declare wa web_app;
   declare tn any;
+
+  if (N.WAM_MEMBER_TYPE = 1)
+    return;
 
   select WAI_INST, WAI_TYPE_NAME into wa, tn from WA_INSTANCE where WAI_NAME = N.WAM_INST;
 
@@ -4754,10 +4766,19 @@ create procedure WA_XPATH_EXPAND_URL (in url varchar)
 
 grant execute on WA_XPATH_GET_HTTP_URL to public;
 grant execute on WA_XPATH_EXPAND_URL to public;
+grant execute on WA_GET_HOST to public;
 
 xpf_extension ('http://www.openlinksw.com/ods/:getHttpUrl', 'DB.DBA.WA_XPATH_GET_HTTP_URL');
 xpf_extension ('http://www.openlinksw.com/ods/:getExpandUrl', 'DB.DBA.WA_XPATH_EXPAND_URL');
+xpf_extension ('http://www.openlinksw.com/ods/:getHost', 'DB.DBA.WA_GET_HOST');
 
+
+create procedure WA_RDF_ID (in str varchar)
+{
+  declare x any;
+  x := regexp_replace (str, '[^[:alnum:]]', '_', 1, null);
+  return x;
+};
 
 create procedure WA_APP_PREFIX (in app any)
 {
@@ -4888,3 +4909,38 @@ create procedure NNTP_NEWS_MSG_DEL (in app varchar)
   registry_remove ('__NNTP_NEWS_MSG_' || app);
 };
 
+
+
+create procedure WA_GET_HTTP_URL ()
+{
+  declare host, path, qstr, conn any;
+
+  conn := connection_get ('Atom_Self_URI');
+
+  if (conn is not null)
+    return conn;
+
+  host := WA_GET_HOST ();
+  path := http_path ();
+  qstr := http_request_get ('QUERY_STRING');
+  if (length (qstr))
+    qstr := '?' || qstr;
+  return 'http://' || host || path || qstr;
+};
+
+
+create procedure WS.WS.SYS_DAV_RES_RES_CONTENT_INDEX_HOOK (inout vtb any, inout r_id any)
+{
+-- so far hook function deals with wiki only
+-- note, hook function can be called from batch mode so it must not rely on
+-- trigger order
+   declare exit handler for sqlstate '*' {
+	--dbg_obj_princ (__SQL_STATE, ' ', __SQL_MESSAGE);
+	resignal;
+   };
+   if(__proc_exists ('WS.WS.META_WIKI_HOOK'))
+     {
+         call ('WS.WS.META_WIKI_HOOK') (vtb, r_id);
+     }
+  return 0;
+};

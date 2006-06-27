@@ -118,12 +118,46 @@
 
   <xsl:template match="vm:dash-blog-summary">
                    <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="info_container3">
-		     <tr><th class="info" colspan="3"><h2><?V WA_GET_APP_NAME ('WEBLOG2') ?></h2></th></tr>
+       <tr><th class="info" colspan="3"><h2><?V WA_GET_APP_NAME ('WEBLOG2') ?></h2> </th></tr>
                       <tr>
-                        <th>Subject</th><th>Creator</th><th>Date</th>
+                        <th><v:url name="orderby_instance"
+                                   value="Instance"
+                                   url="--'?order_by=instance&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="orderby_subject"
+                                   value="Subject"
+                                   url="--'?order_by=subject&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="orderby_creator"
+                                   value="Creator"
+                                   url="--'?order_by=creator&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
+                        <th><v:url name="orderby_date"
+                                   value="Date"
+                                   url="--'?order_by=date&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
 		    </tr>
-		    <xsl:call-template name="user-dashboard-item">
+    <xsl:call-template name="user-dashboard-item-extended">
 			<xsl:with-param name="app">WEBLOG2</xsl:with-param>
+    <xsl:with-param name="order_by">ts</xsl:with-param>
+    <xsl:with-param name="order_way">desc</xsl:with-param>
+
 		    </xsl:call-template>
                     </table>
   </xsl:template>
@@ -185,13 +219,197 @@
 		      ?>
   </xsl:template>
 
+
+
+  <xsl:template name="user-dashboard-item-extended">
+      <xsl:processing-instruction name="vsp">
+      {
+
+       declare order_by_str,order_way_str, prev_order_by_str varchar;
+       
+       order_by_str      := get_keyword('order_by', self.vc_event.ve_params,'');
+       order_way_str     := get_keyword('order_way', self.vc_event.ve_params,'');
+       prev_order_by_str := get_keyword('fprev_order_way', self.vc_event.ve_params,'');
+       
+       order_by_str:=( case when order_by_str='instance' then  'inst_name'
+                            when order_by_str='subject' then  'title'
+                            when order_by_str='creator' then  'author'
+                            when order_by_str='date' then  'ts'
+                            else 'ts'
+                       end);
+       if (order_by_str='') order_by_str:='ts';
+       if (order_way_str=''){
+          order_way_str:='ASC';
+          if(order_by_str='ts') order_way_str:='DESC';
+       }
+       
+       
+       declare q_str varchar;
+       q_str := 'select top 10 inst_name, title, ts, author, url, uname, email from '||
+                '  WA_USER_DASHBOARD_SP '||
+                '     (uid, inst_type) '||
+                '     (inst_name varchar, title nvarchar, ts datetime, author nvarchar, url nvarchar, uname varchar, email varchar) '||
+                '  WA_USER_DASHBOARD '||
+                'where uid = '||cast(self.u_id as varchar)||' and inst_type = \'<xsl:value-of select="$app"/>\' '||
+                'order by '||order_by_str||' '||order_way_str;
+
+       
+       declare state, msg, descs, rows any;
+       state := '00000';
+       exec (q_str, state, msg, vector (), 10, descs, rows);
+       
+       if (state &lt;&gt; '00000')
+         signal (state, msg);
+       
+       if (length (rows) = 0) dbg_obj_print('not found');
+    
+         declare i int;
+         declare inst_name,  uname, email varchar;
+         declare title ,author,url nvarchar;
+         declare ts datetime;
+        
+         while (i &lt; length (rows))
+         {
+               inst_name:=rows[i][0];
+
+               inst_name := rows[i][0];
+               title     := rows[i][1];
+               ts        := rows[i][2];
+               author    := rows[i][3];
+               url       := rows[i][4];
+               uname     := rows[i][5];
+               email     := rows[i][6];
+         
+         
+         declare aurl, mboxid, clk any;
+         aurl := '';
+         clk := '';
+         mboxid :=  wa_user_have_mailbox (self.u_name);
+         if (length (uname))
+           aurl := 'uhome.vspx?ufname=' || uname;
+         else if (length (email) and mboxid is not null)
+          {
+            aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
+            aurl := wa_expand_url (aurl, self.login_pars);
+            clk := sprintf ('javascript: window.open ("%s", "", "width=800,height=500"); return false', aurl);
+            aurl := '#';
+          }
+         else if (length (email))
+           aurl := 'mailto:'||email;
+      
+         if (aurl = '#')
+           ;
+         else if (length (aurl))
+           aurl := wa_expand_url (aurl, self.login_pars);
+         else
+           aurl := 'javascript:void (0)';
+      
+         if (not length (author) and length (uname))
+           author := uname;
+
+         declare inst_url_local varchar;
+         inst_url_local :='not specified';
+         inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
+
+         declare insttype_from_xsl varchar;
+         insttype_from_xsl:='';
+         insttype_from_xsl:='<xsl:value-of select="$app"/>';
+         
+
+		  </xsl:processing-instruction>
+        <tr align="left">
+       <?vsp
+            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki')
+            {
+       ?>       
+
+        <td nowrap="nowrap">
+       <?vsp
+              if(inst_url_local <> 'not specified')
+                 {
+       ?>
+         
+         <a href="<?V inst_url_local ?>"> <?V wa_utf8_to_wide(inst_name) ?> </a>
+         
+       <?vsp
+                 }else http(inst_url_local);
+       ?>
+         </td>
+       <?vsp
+            }     
+       ?>
+        <td nowrap="nowrap"><a href="<?V wa_expand_url (url, self.login_pars) ?>"><?V substring (coalesce (title, '*no title*'), 1, 80) ?></a></td>
+        <td nowrap="nowrap">
+        <?vsp
+            if (clk<>'')
+            {
+        ?>    
+            <a href="<?V aurl ?>" onclick="<?V clk ?>"><?V coalesce (author, '~unknown~') ?></a>
+        <?vsp 
+            }else
+            {
+       ?>
+            <?V coalesce (author, '~unknown~') ?>
+       <?vsp
+            } 
+        ?>
+        </td>
+        <td nowrap="nowrap"><?V wa_abs_date (ts) ?></td>
+           </tr>
+       <?vsp
+               i := i + 1;
+         }
+         if (not i)
+         {
+       ?>
+            <tr align="left"><td colspan="4">no items</td></tr>
+       <?vsp
+         }
+       }
+       ?>
+  </xsl:template>
+
+
+
+
   <xsl:template match="vm:dash-enews-summary">
                     <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="info_container3">
 		      <tr><th class="info" colspan="3"><H2><?V WA_GET_APP_NAME ('eNews2') ?></H2></th></tr>
                       <tr>
-                        <th>Subject</th><th>Creator</th><th>Date</th>
+                        <th><v:url name="enews_orderby_instance"
+                                   value="Instance"
+                                   url="--'?order_by=instance&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="enews_orderby_subject"
+                                   value="Subject"
+                                   url="--'?order_by=subject&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="enews_orderby_creator"
+                                   value="Creator"
+                                   url="--'?order_by=creator&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
+                        <th><v:url name="enews_orderby_date"
+                                   value="Date"
+                                   url="--'?order_by=date&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
                       </tr>
-		    <xsl:call-template name="user-dashboard-item">
+            <xsl:call-template name="user-dashboard-item-extended">
 			<xsl:with-param name="app">eNews2</xsl:with-param>
 		    </xsl:call-template>
                     </table>
@@ -200,11 +418,32 @@
                     <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="info_container3">
 		      <tr><th class="info" colspan="3"><H2><?V WA_GET_APP_NAME ('oMail') ?></H2></th></tr>
                       <tr>
-			  <th>Subject</th>
-			  <th>From</th>
-			  <th>Received</th>
+                        <th><v:url name="omail_orderby_subject"
+                                   value="Subject"
+                                   url="--'?order_by=subject&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="omail_orderby_creator"
+                                   value="From"
+                                   url="--'?order_by=creator&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
+                        <th><v:url name="omail_orderby_date"
+                                   value="Received"
+                                   url="--'?order_by=date&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
                       </tr>
-		    <xsl:call-template name="user-dashboard-item">
+		      <xsl:call-template name="user-dashboard-item-extended">
 			<xsl:with-param name="app">oMail</xsl:with-param>
 		    </xsl:call-template>
                     </table>
@@ -213,11 +452,40 @@
          <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="info_container3">
 		      <tr><th class="info" colspan="3"><H2><?V WA_GET_APP_NAME ('oWiki') ?></H2></th></tr>
                       <tr>
-			  <th>Topic</th>
-			  <th>From</th>
-			  <th>Opened</th>
+                        <th><v:url name="wiki_orderby_instance"
+                                   value="Instance"
+                                   url="--'?order_by=instance&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="wiki_orderby_subject"
+                                   value="Topic"
+                                   url="--'?order_by=subject&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="wiki_orderby_creator"
+                                   value="From"
+                                   url="--'?order_by=creator&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
+                        <th><v:url name="wiki_orderby_date"
+                                   value="Opened"
+                                   url="--'?order_by=date&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
                       </tr>
-		    <xsl:call-template name="user-dashboard-item">
+		    <xsl:call-template name="user-dashboard-item-extended">
 			<xsl:with-param name="app">oWiki</xsl:with-param>
 		    </xsl:call-template>
                     </table>
@@ -226,9 +494,32 @@
                     <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="info_container3">
 		      <tr><th class="info" colspan="3"><H2><?V WA_GET_APP_NAME ('oDrive') ?></H2></th></tr>
                       <tr>
-                        <th>Resource</th><th>Creator</th><th>Date</th>
+                        <th><v:url name="odrive_orderby_subject"
+                                   value="Resource"
+                                   url="--'?order_by=subject&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="odrive_orderby_creator"
+                                   value="Creator"
+                                   url="--'?order_by=creator&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
+                        <th><v:url name="odrive_orderby_date"
+                                   value="Date"
+                                   url="--'?order_by=date&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
                       </tr>
-		    <xsl:call-template name="user-dashboard-item">
+		    <xsl:call-template name="user-dashboard-item-extended">
 			<xsl:with-param name="app">oDrive</xsl:with-param>
 		    </xsl:call-template>
                     </table>
@@ -238,9 +529,32 @@
                     <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="info_container3">
 		      <tr><th class="info" colspan="3"><H2><?V WA_GET_APP_NAME ('bookmark') ?></H2></th></tr>
                       <tr>
-                        <th>Link</th><th>Creator</th><th>Date</th>
+                        <th><v:url name="bookm_orderby_subject"
+                                   value="Link"
+                                   url="--'?order_by=subject&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="bookm_orderby_creator"
+                                   value="Creator"
+                                   url="--'?order_by=creator&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
+                        <th><v:url name="bookm_orderby_date"
+                                   value="Date"
+                                   url="--'?order_by=date&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
                       </tr>
-		    <xsl:call-template name="user-dashboard-item">
+      <xsl:call-template name="user-dashboard-item-extended">
 			<xsl:with-param name="app">bookmark</xsl:with-param>
 		    </xsl:call-template>
                     </table>
@@ -386,6 +700,7 @@
                               <td><v:label name="lgender1" value="--coalesce(self.arr[5],'')"/></td>
                             </tr>
                             <tr>
+                              <td></td>
                               <th><v:label name="1bdate" value="Birthday:" enabled="--case when coalesce(self.arr[6],'') <> '' then 1 else 0 end"/></th>
                               <td><v:label name="lbdate1" value="--coalesce(self.arr[6],'')"/></td>
                             </tr>
@@ -634,7 +949,7 @@
 	                      key-name-inx="3"
 	                      key-val="self.uf_u_id"
                         div_id="google_map"
-                        zoom="15"
+                        zoom="17"
                         base_url="self.base_url"
                         mapservice_name="GOOGLE"
                          />
@@ -672,7 +987,7 @@
               while (0 = exec_next (h, null, null, dta))
               {
                 exec_result (dta);
-                http('<li><a href="'||dta[1]||'" >'||dta[0]||'</a></li>');
+                http('<li><a href="'||dta[1]||'?'||subseq(self.login_pars,1)||'" >'||dta[0]||'</a></li>');
               }
               exec_close (h);
           }else{
@@ -797,8 +1112,8 @@
                 <v:button name="bt_add" action="simple" value="Add">
                     <v:on-post>
                     <![CDATA[
-dbg_obj_print('marker');
---  declare msg_date any;
+                    
+  declare msg_date any;
 --  msg_date := sprintf ('Date: %s\r\n', date_rfc1123 (now ()));
 --  declare _body varchar;
 --  _body:=msg_date||'Subject: New guestbook entree\r\nContent-Type: text/plain; charset=UTF-8\r\n'||self.comment.ufl_value;

@@ -1,4 +1,5 @@
 --
+--
 --  $Id$
 --
 --  Atom publishing protocol support.
@@ -69,7 +70,22 @@ create procedure wa_type_to_app (in app varchar)
 	'oGallery','photos',
 	'Community','community',
 	'Bookmark','bookmark',
-	'nntpf',    'new'
+	'nntpf',    'discussion'
+	), app);
+};
+
+create procedure wa_type_to_appg (in app varchar)
+{
+  return get_keyword (app, vector (
+	'WEBLOG2', 'Weblogs',
+	'eNews2',  'Subscriptions',
+	'oWiki',   'Wikis',
+	'oDrive',  'Briefcases',
+	'oMail',   'Mailboxes',
+	'oGallery','Photos',
+	'Community','Communities',
+	'Bookmark','Bookmarks',
+	'nntpf',    'Discussions'
 	), app);
 };
 
@@ -82,7 +98,7 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
   declare path, pars, lines any;
   declare app, uname, inst, url, appn varchar;
   declare vhost, lhost, p_path_str, full_path, p_full_path, l_path_str, gdata_url varchar;
-  declare id int;
+  declare id, do_rdf int;
 
   lines := http_request_header ();
   ppath := http_physical_path ();
@@ -94,13 +110,22 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
   app := null;
   uname := null;
   inst := null;
+  do_rdf := 0;
 
 
   if (length (path) > 4)
     uname := path [4];
+  else
+    {
+      url := '/ods/sfront.vspx';
+      goto redir;
+    }
 
   if (length (path) > 5)
     app := path [5];
+
+  if (length (path) > 6)
+    inst := path [6];
 
   if (length (path) > 7 and path[5] = 'data' and path[6] = 'public' and path[7] = 'about.rdf')
     app := 'users';
@@ -116,20 +141,34 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
   if (length (uname) = 0)
     signal ('22023', 'Account is not specified.');
 
-  if (app = 'users')
+  if (app <> 'users' and length (inst) and length (path) > 7 and path[7] = 'about.rdf')
+    do_rdf := 1;
+
+  if (app = 'users' or (app is not null and inst = 'about.rdf'))
    {
+      declare atype, foaf varchar;
+
+      foaf := 'ufoaf.xml';
       uname := path[4];
       select sne_id into id from DB.DBA.sn_entity where sne_name = uname;
+
+      if (app is not null and inst = 'about.rdf')
+	{
+	  foaf := 'afoaf.xml';
+	  pars := vector (':sne', cast (id as varchar), ':atype', DB.DBA.wa_app_to_type (app));
+	}
+      else
       pars := vector (':sne', cast (id as varchar));
+
 
       p_path_str := '/DAV/VAD/wa/';
       l_path_str := (select top 1 HP_LPATH from DB.DBA.HTTP_PATH where HP_PPATH = p_path_str
       and HP_HOST = vhost and HP_LISTEN_HOST = lhost);
 
       if (l_path_str is not null)
-	full_path := concat (l_path_str, '/ufoaf.xml');
+	full_path := concat (l_path_str, '/', foaf);
       else
-	full_path := '/DAV/VAD/wa/ufoaf.xml';
+	full_path := '/DAV/VAD/wa/' || foaf;
 
       p_full_path := http_physical_path_resolve (full_path, 1);
       http_internal_redirect (full_path, p_full_path);
@@ -140,11 +179,11 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
       return null;
    }
 
+  pars := vector ();
+
   appn := DB.DBA.wa_app_to_type (app);
 
 
-  if (length (path) > 6)
-    inst := path [6];
   if (length (app) = 0)
     {
       url := DB.DBA.wa_link (0,  sprintf ('uhome.vspx?page=1&ufname=%U', uname));
@@ -155,12 +194,39 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
     }
   else
     {
+      declare _inst DB.DBA.web_app;
       declare exit handler for not found
 	{
 	  signal ('22023', 'No such application instance');
 	};
-      select WAM_HOME_PAGE into url from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where
-	  U_NAME = uname and WAM_USER = U_ID and WAM_INST = inst;
+      inst := replace (inst, '+', ' ');
+      select WAM_HOME_PAGE, WAI_INST into url, _inst from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE where
+	  U_NAME = uname and WAM_USER = U_ID and WAI_NAME = WAM_INST and WAM_INST = inst;
+
+      if (do_rdf)
+	{
+	  declare npars, hf any;
+	  --dbg_obj_print ('RDF');
+	  full_path := _inst.wa_rdf_url (vhost, lhost);
+	  if (full_path is null)
+	    signal ('22023', 'Not implemented');
+
+	  hf := WS.WS.PARSE_URI (full_path);
+	  full_path := hf[2];
+	  npars := hf[4];
+
+	  if (length (npars))
+	    pars := split_and_decode (npars);
+
+	  p_full_path := http_physical_path_resolve (full_path, 1);
+	  http_internal_redirect (full_path, p_full_path);
+	  set_user_id ('dba');
+	  set http_charset='utf-8';
+	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+	  WS.WS.GET (path, pars, lines);
+	  return null;
+	}
+
     }
 redir:
   http_request_status ('HTTP/1.1 302 Found');

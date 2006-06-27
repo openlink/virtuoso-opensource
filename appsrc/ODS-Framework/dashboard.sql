@@ -305,7 +305,7 @@ create procedure WA_USER_DASHBOARD_SP (in uid int, in inst_type varchar)
 		xp := xpath_eval ('//*[title]', ret, 0);
 		foreach (any ret1 in xp) do
 		  {
-		    title := xpath_eval ('string(title/text())', ret1);
+		    title := substring (xpath_eval ('string(title/text())', ret1), 1, 1024);
 		    ts := xpath_eval ('string (dt/text())', ret1);
 		    author := xpath_eval ('string (from/text())', ret1);
 		    url := xpath_eval ('string (link/text())', ret1);

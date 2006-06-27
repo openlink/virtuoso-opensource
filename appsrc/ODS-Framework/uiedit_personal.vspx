@@ -435,7 +435,7 @@
                 </td>
               </tr>
               <tr>
-		  <th><label for="set_all">Set All</label></th>
+		  <th><label for="set_all">Set access for all fields as </label></th>
 		  <td class="ctrl">
 		      <v:select-list name="set_all4" value="0"
 			  xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
@@ -454,7 +454,7 @@
 			      control.ufl_selected := self.issearch;
 			</v:after-data-bind>
 		    </v:check-box>
-		    <label for="in_search">Appear in search results</label>
+		    <label for="in_search">Include my profile in search results</label>
                 </td>
 	      </tr>
 
