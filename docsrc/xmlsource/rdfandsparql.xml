@@ -173,9 +173,9 @@ http://xmlns.com/foaf/0.1/mbox
 ...
 
 
-SQL>select distinct subseq (p, strchr (p, '#')) as fragment
+SQL>select distinct subseq ("p", strchr ("p", '#')) as fragment
   from (sparql select distinct ?p where { graph ?g { ?s ?p ?o } } ) as all_predicates
-  where p like '%#%';
+  where "p" like '%#%';
 fragment
 varchar
 ----------
@@ -185,6 +185,9 @@ varchar
 #comment
 ...
 </programlisting>
+<para>Note that names of variables returned from SPARQL are always case-sensitive and no case mode rules apply to them.
+Depending on CaseMode parameter in the virtuoso configudation file, double quotes should be used to refer to them in surrounding SQL code.
+</para>
 <para>
 It is possible to pass parameters to a  SPARQL query via a Virtuoso-specific syntax extension.
 '??' or '$?' indicates a positional parameter similar to '?' in plain SQL. '??' can be used in graph patterns or anywhere in the place of a SPARQL variable.
@@ -193,18 +196,21 @@ An IRI ID can not be passed, but an absolute IRI can.
 Using this notation, any dynamic SQL client, whether ODBC, JDBC or other can execute parametrized SPARQL queries, binding parametres just as with  dynamic SQL. 
 </para>
 <programlisting><![CDATA[
-SQL> create function param_passing_demo ();
+SQL> create function param_passing_demo ()
 {
   declare stat, msg varchar;
   declare mdata, rset any;
   exec ('sparql select ?s where { graph ?g { ?s ?? ?? }}',
     stat, msg,
-    vector ( -- Vector of two parameters
+    vector ( /* Vector of two parameters */
       'http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#int1',
       4 ),
-    10, -- Max no of rows
-    mdata, -- Variable to get metadata
-    rset ); -- Variable to get result-set
+    10, /* Max no of rows */
+    mdata, /* Variable to get metadata */
+    rset ); /* Variable to get result-set */
+  if (length (rset) = 0)
+    signal ('23000',
+      'No data found, try demo database with installed Virtuoso tutorials');
   return rset[0][0];
 }
 
@@ -230,11 +236,11 @@ name should use double quotes for escaping. E.g., the notation '?:"OrderLine"' w
 titled '"OrderLine"' whereas '?:OrderLine' can be converted to 'ORDERLINE' or 'orderline'.
 </para>
 <para>It is safer to avoid using variable names that conflict with column names of RDF system tables, esp. 'G', 'P', 'S' and 'O'.
-These names are not reserved now but they may cause subtle bugs when the SPARQL subquery is compiled into SQL code that refers to table columns of same names.
+These names are not reserved now but they may cause subtle bugs when an incorrect SPARQL subquery is compiled into SQL code that refers to table columns of same names.
 Some of these names may be rejected as syntax errors by future Virtuoso versions.
 </para>
 <programlisting><![CDATA[
-SQL> create procedure sql_vars_demo ();
+SQL> create procedure sql_vars_demo ()
 {
 #pragma prefix sort0: <http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#>
   declare RES varchar;
@@ -242,7 +248,7 @@ SQL> create procedure sql_vars_demo ();
   result_names (RES);
   obj := 4;
   for (sparql select ?subj where { graph ?g { ?subj sort0:int1 ?:obj } } ) do
-    result (RES);
+    result ("subj");
 }
 
 SQL> sql_vars_demo ();
