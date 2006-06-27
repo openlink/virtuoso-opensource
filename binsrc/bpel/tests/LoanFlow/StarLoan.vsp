@@ -32,9 +32,9 @@
  xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
  xmlns:ns0="http://www.autoloan.com/ns/autoloan"
  xmlns:wsa="http://schemas.xmlsoap.org/ws/2003/03/addressing"
- xmlns:tns="services.wsdl"
+ xmlns:tns="http://services.openlinksw.com"
  xmlns:plt="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
- targetNamespace="services.wsdl"
+ targetNamespace="http://services.openlinksw.com"
  name="VirtuosoSOAP" xmlns="http://schemas.xmlsoap.org/wsdl/">
 
 	<types>

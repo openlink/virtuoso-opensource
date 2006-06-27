@@ -72,20 +72,20 @@ soap_dt_define ('', '<complexType name="loanApplicationType" targetNamespace="ht
 soap_dt_define ('', '<element name="loanApplication" targetNamespace="http://www.autoloan.com/ns/autoloan" xmlns="http://www.w3.org/2001/XMLSchema" type="tns:loanApplicationType" xmlns:tns="http://www.autoloan.com/ns/autoloan" />')
 ;
 
-soap_dt_define ('', '<xsd:element name="ssn" targetNamespace="services.wsdl" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="xsd:string" />')
+soap_dt_define ('', '<xsd:element name="ssn" targetNamespace="http://services.openlinksw.com" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="xsd:string" />')
 ;
 
-soap_dt_define ('', '<xsd:element name="rating" targetNamespace="services.wsdl" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="xsd:int" />')
+soap_dt_define ('', '<xsd:element name="rating" targetNamespace="http://services.openlinksw.com" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="xsd:int" />')
 ;
 
-soap_dt_define ('', '<xsd:element name="error" targetNamespace="services.wsdl" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="xsd:string" />')
+soap_dt_define ('', '<xsd:element name="error" targetNamespace="http://services.openlinksw.com" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="xsd:string" />')
 ;
 
 create procedure CRATS..process
 	(
-	  in ssn varchar __soap_type 'services.wsdl:ssn',
-	  out rating int __soap_type 'services.wsdl:rating',
-	  out error varchar __soap_fault 'services.wsdl:error'
+	  in ssn varchar __soap_type 'http://services.openlinksw.com:ssn',
+	  out rating int __soap_type 'http://services.openlinksw.com:rating',
+	  out error varchar __soap_fault 'http://services.openlinksw.com:error'
 	)
   __soap_doc '__VOID__'
 {

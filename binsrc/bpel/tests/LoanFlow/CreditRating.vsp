@@ -30,15 +30,15 @@
  xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
  xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/"
  xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
- xmlns:ns0="services.wsdl"
- xmlns:dl="services.wsdl"
- xmlns:tns="services.wsdl"
+ xmlns:ns0="http://services.openlinksw.com"
+ xmlns:dl="http://services.openlinksw.com"
+ xmlns:tns="http://services.openlinksw.com"
  xmlns:plt="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
- targetNamespace="services.wsdl"
+ targetNamespace="http://services.openlinksw.com"
  name="VirtuosoSOAP" xmlns="http://schemas.xmlsoap.org/wsdl/">
 
 	<types>
-	<schema targetNamespace="services.wsdl"
+	<schema targetNamespace="http://services.openlinksw.com"
 	 xmlns="http://www.w3.org/2001/XMLSchema"
 	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
 	 <element name='ssn' type='xsd:string' />

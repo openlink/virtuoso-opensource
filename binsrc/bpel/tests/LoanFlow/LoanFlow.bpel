@@ -234,7 +234,7 @@
 	    <switch>
 
 	        <!-- If loanOffer1 is greater (worse) than loanOffer2 -->
-	        <case condition="bpws:getVariableData('loanOffer1','payload','/services:loanOffer/services:APR') &gt; bpws:getVariableData('loanOffer2','payload','/services:loanOffer/services:APR') ">
+	        <case condition="bpws:getVariableData('loanOffer1','payload','/auto:loanOffer/auto:APR') &gt; bpws:getVariableData('loanOffer2','payload','/auto:loanOffer/auto:APR') ">
 
 	            <!-- Then take loanOffer2 -->
 	            <assign>
