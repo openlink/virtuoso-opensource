@@ -23,7 +23,7 @@
 ?>
 <pre>
 <?vsp
-  declare _page, _message varchar;
+  declare _page, _message, _state varchar;
   declare i, l int;
   l := length (params);
 
@@ -31,9 +31,11 @@
 
   _page := get_keyword_ucase ('__PAGE', params, '');
   _message := get_keyword_ucase ('__SQL_MESSAGE', params, '');
+  _state := get_keyword_ucase ('__SQL_state', params, '');
 
---  dbg_obj_print (' _page = ', _page);
---  dbg_obj_print (' _message = ', _message);
+  -- dbg_obj_print (' _page = ', _page);
+  -- dbg_obj_print (' _message = ', _message);
+  -- dbg_obj_print (' _state = ', _state);
 
   if (strstr (_page, 'nntpf_post.vspx'))
     {
@@ -44,6 +46,8 @@
 	   else
 	      http ('<b>' || _message || '</b>');
 	 }
+     else if (_state = 'NNTPP')
+	 http ('<b>' || _message || '</b>');
        else
 	 http ('<b>Incomplete article not posted - missing newsgroups</b>');
     }

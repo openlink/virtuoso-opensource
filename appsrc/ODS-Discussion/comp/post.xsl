@@ -161,7 +161,10 @@
                          value="--self.grp_selected">
           <v:before-data-bind><v:script><![CDATA[
                       control.vsl_items := self.grp_list;
+		      if (self.grp_list is not NULL)
                       control.vsl_item_values := self.grp_list;
+		      else
+                        signal ('NNTPP', 'There no available group(s) for posting.');
            ]]></v:script></v:before-data-bind>
           </v:select-list>
           <font color="rgb(0,64,123)">

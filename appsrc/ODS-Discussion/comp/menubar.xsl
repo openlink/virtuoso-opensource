@@ -52,7 +52,7 @@
           <td>
             <v:url value="Preferences"
                    format="%s"
-		   url="/wa/uiedit.vspx" />
+		   url="--'../' || nntpf_get_wa_home () || '/uiedit.vspx'" />
           </td>
           <v:template type="simple"
                       condition="nntpf_conductor_installed_p()">
@@ -99,7 +99,7 @@
           <td>
             <v:url value="--'Preferences'"
                    format="%s"
-                   url="--'../wa/uiedit.vspx'" />
+		   url="--'../' || nntpf_get_wa_home () || '/uiedit.vspx'" />
           </td>
           <td>
             <v:url value="--'  NNTP Server admin '"

@@ -112,7 +112,7 @@
     </xsl:template>
     <xsl:template match="vm:register">
       <vm:template enabled="1">
-	<a href="../wa/register.vspx?ret=/nntpf/">Register</a>
+	<a href="../ods/register.vspx?ret=/nntpf/">Register</a>
       </vm:template>
     </xsl:template>
     <xsl:template match="vm:variable" />

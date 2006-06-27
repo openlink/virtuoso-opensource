@@ -67,7 +67,7 @@
                 ?>
                       <tr>
                         <td class="ctrl">
-                          <v:url format="%s" value="Forgot your password?" url="../wa/pass_recovery.vspx?ret=/nntpf/"/>
+			    <v:url format="%s" value="Forgot your password?" url="../ods/pass_recovery.vspx?ret=/nntpf/"/>
                         </td>
                       </tr>
                 <?vsp

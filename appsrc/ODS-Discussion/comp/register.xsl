@@ -205,7 +205,7 @@
            declare msg, aadr varchar;
            msg := 'Subject: Account registration confirmation\r\nContent-Type: text/html\r\n';
            msg := msg || '\r\nYour are registered.<br/>\r\n';
-           msg := msg || sprintf ('Click <a href="http://%s/wa/conf.vspx?sid=%s&realm=wa">here</a> to confirm your registration', nntpf_get_host (NULL), sid);
+           msg := msg || sprintf ('Click <a href="http://%s/%s/conf.vspx?sid=%s&realm=wa">here</a> to confirm your registration', nntpf_get_host (NULL), registry_get ('wa_home_link'), sid);
            msg := msg || '<br/>\r\nYour login is:' || self.reguid.ufl_value;
            msg := msg || '<br/>\r\nYour password is:' || self.regpwd.ufl_value;
 
