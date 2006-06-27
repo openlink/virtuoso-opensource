@@ -216,7 +216,7 @@ sticker_init() {
   echo "<sticker version=\"1.0.010505A\" xml:lang=\"en-UK\">" >> $STICKER
   echo "<caption>" >> $STICKER
   echo "  <name package=\"Community\">" >> $STICKER
-  echo "    <prop name=\"Title\" value=\"Community Application\"/>" >> $STICKER
+  echo "    <prop name=\"Title\" value=\"Community Module\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Copyright\" value=\"(C) 2003 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
