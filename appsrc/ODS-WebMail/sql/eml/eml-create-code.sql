@@ -2134,8 +2134,8 @@ create procedure OMAIL.WA.omail_get_settings (
   if (OMAIL.WA.omail_getp('msg_name',_settings) = 0)
     OMAIL.WA.omail_setparam('msg_name_txt',_settings, '');
 
-  if (OMAIL.WA.omail_getp('atom_version',_settings) = 0)
-    OMAIL.WA.omail_setparam('atom_version',_settings, '0.3');
+  if (OMAIL.WA.omail_getp('atom_version',_settings) = '')
+    OMAIL.WA.omail_setparam('atom_version',_settings, '1.0');
 
   if (OMAIL.WA.omail_getp('conversation', _settings) not in (0,1))
     OMAIL.WA.omail_setparam('conversation',_settings, 0);
@@ -3990,7 +3990,7 @@ create procedure OMAIL.WA.omail_search(
   aset(_page_params,1,vector('realm', _realm));
   aset(_page_params,2,vector('mode', get_keyword('mode',params, '')));
   aset(_page_params,3,vector('bp', OMAIL.WA.omail_params2str(_pnames,_params,',')));
-  aset(_page_params,4,vector('atom_version', get_keyword('atom_version',_settings,'0.3')));
+  aset(_page_params,4,vector('atom_version', get_keyword('atom_version',_settings,'1.0')));
   aset(_page_params,5,vector('user_info', OMAIL.WA.omail_array2xml(_user_info)));
 
   -- SQL Statement-------------------------------------------------------------------
@@ -4506,7 +4506,7 @@ create procedure OMAIL.WA.omail_set_mail(
       OMAIL.WA.omail_setparam('usr_sig_txt', _settings, trim(get_keyword('usr_sig_txt', params)));
 
     OMAIL.WA.omail_setparam('msg_reply', _settings, get_keyword('msg_reply', params));
-    OMAIL.WA.omail_setparam('atom_version', _settings, get_keyword('atom_version', params, '0.3'));
+    OMAIL.WA.omail_setparam('atom_version', _settings, get_keyword('atom_version', params, '1.0'));
     OMAIL.WA.omail_setparam('conversation', _settings, cast(get_keyword('conversation', params, '0') as integer));
 
     OMAIL.WA.omail_setparam('update_flag', _settings, 1);
