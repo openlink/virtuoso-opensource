@@ -310,6 +310,8 @@ sqlc_insert_autoincrements (sql_comp_t * sc, insert_node_t * ins,
 	sl = sqlc_new_temp (sc, "ainc", DV_LONG_INT);
 	if (old_sl)
 	  {
+	    if (col->col_sqt.sqt_dtp != DV_TIMESTAMP)
+	      goto next_col;  /* given value overrides automatic if identity column. */
 	    /* replace the slot in values with the autoinc value */
 	    dk_set_member (ins->ins_values, old_sl)->data = (caddr_t) sl;
 	  }
@@ -357,6 +359,7 @@ sqlc_insert_autoincrements (sql_comp_t * sc, insert_node_t * ins,
 	  }
 	cv_call (code, NULL, snext, sl, args);
       }
+  next_col: ;
   }
   END_DO_SET ();
 }
