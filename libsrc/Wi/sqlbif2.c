@@ -783,6 +783,14 @@ bif_sec_uid_to_user (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return NEW_DB_NULL;
 }
 
+static caddr_t
+bif_current_proc_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  if (IS_POINTER (qi) && qi->qi_query && qi->qi_query->qr_proc_name)
+    return box_string (qi->qi_query->qr_proc_name);
+  return NEW_DB_NULL;
+}
 
 void
 sqlbif2_init (void)
@@ -799,6 +807,7 @@ sqlbif2_init (void)
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
   bif_define_typed ("__sec_uid_to_user", bif_sec_uid_to_user, &bt_varchar);
+  bif_define ("current_proc_name", bif_current_proc_name);
   sqls_bif_init ();
   sqlo_inv_bif_int ();
 }
