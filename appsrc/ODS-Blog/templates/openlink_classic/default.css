@@ -847,7 +847,7 @@ a.title_link
   color:white;
 }
 
-#individual  {
+div.individual  {
     font-family:verdana, arial, sans-serif;
     font-weight: normal;
     font-size:11px;
@@ -863,7 +863,7 @@ a.title_link
 }
 
 
-#individual p {
+div.individual p {
     font-family:verdana, arial, sans-serif;               
     font-weight: normal;
     font-size:11px;

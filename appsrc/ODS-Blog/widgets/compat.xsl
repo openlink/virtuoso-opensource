@@ -113,6 +113,12 @@
 				  <vm:post-tags delimiter=" | " title="Tags: " />
 			      </div>
 			  </vm:if>
+			  <div class="spread_links">
+			      <vm:post-technorati-link title="Find related stories via Technorati">related</vm:post-technorati-link>
+			      <vm:post-delicious-link title="Post to del.icio.us">bookmark it!</vm:post-delicious-link>
+			      <vm:post-diggit-link title="submit digg.com">digg it!</vm:post-diggit-link>
+			      <vm:post-reddit-link title="post reddit">reddit!</vm:post-reddit-link>
+			  </div>
 			  <div class="post-actions">
 			      <vm:post-anchor title="#" />
 			      <vm:post-link title="PermaLink" />
@@ -151,8 +157,13 @@
 			      <vm:post-enclosure title="Enclosure: "><br /></vm:post-enclosure>
 			  </p>
 		      </div>
+		      <div class="spread_links">
+			  <vm:post-technorati-link title="Find related stories via Technorati">related</vm:post-technorati-link>
+			  <vm:post-delicious-link title="Post to del.icio.us">bookmark it!</vm:post-delicious-link>
+			  <vm:post-diggit-link title="submit digg.com">digg it!</vm:post-diggit-link>
+			  <vm:post-reddit-link title="post reddit">reddit!</vm:post-reddit-link>
+		      </div>
 		      <div class="post-actions">
-			  <vm:post-delicious-link title="Post to del.icio.us"/><br />
 			  <vm:post-actions />
 		      </div>
 		      </vm:if>

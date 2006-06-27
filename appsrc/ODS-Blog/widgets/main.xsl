@@ -42,6 +42,7 @@
     <v:variable name="page" type="varchar" default="''"/>
     <v:variable name="oldsid" type="varchar" default="''" persist="1"/>
     <v:variable name="user_name" type="varchar" default="null"/>
+    <v:variable name="user_pwd" type="varchar" default="null" persist="temp"/>
     <v:variable name="del_user_name" type="varchar" default="null"/>
     <v:variable name="user_id" type="int" default="0"/>
     <v:variable name="domain" type="varchar" default="null" persist="0"/>
@@ -186,6 +187,15 @@
     <v:variable name="official_host" type="varchar" default="null" persist="temp" />
     <v:variable name="official_host_label" type="varchar" default="null" persist="temp" />
 
+    <!-- eRDF data -->
+
+    <v:variable name="e_title" type="varchar" default="null" persist="temp" />
+    <v:variable name="e_author" type="varchar" default="null" persist="temp" />
+    <v:variable name="e_lat" type="real" default="null" persist="temp" />
+    <v:variable name="e_lng" type="real" default="null" persist="temp" />
+
+    <!-- end -->
+
     <v:variable name="welcome_msg_flag" type="int" default="0" persist="session"/>
     <v:before-render>
 	<xsl:choose>
@@ -326,8 +336,12 @@
             return;
           }
         }
-        self.user_id := (select U_ID from SYS_USERS where U_NAME = self.user_name);
-        -- fill in commin blog's variables
+	{
+	  declare exit handler for not found;
+	  select U_ID, pwd_magic_calc (U_NAME, U_PASSWORD, 1) into self.user_id, self.user_pwd
+	  from SYS_USERS where U_NAME = self.user_name;
+        }
+        -- fill-in the common blog page variables
         {
           whenever not found goto not_found_2;
           select
@@ -412,6 +426,15 @@
 	   self.current_template := '/DAV/VAD/blog2/templates/openlink';
         }
 	self.authors := self.owner;
+	-- initial eRDF values
+	self.e_author := self.owner;
+	self.e_title := self.title;
+
+	{
+	  declare exit handler for not found;
+	  select WAUI_LAT, WAUI_LNG into self.e_lat, self.e_lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.owner_u_id;
+	}
+
 	for select coalesce(U_FULL_NAME, U_NAME) as author_name
 	   from WA_MEMBER, SYS_USERS, BLOG..SYS_BLOG_INFO where BI_WAI_NAME = WAM_INST and WAM_USER = U_ID
 	   and WAM_MEMBER_TYPE = 2 and BI_BLOG_ID = self.blogid
@@ -692,14 +715,20 @@ else if (length (self.catid))
           if(self.dss.ds_rows_fetched > 0)
           {
             declare meta1 any;
+            declare rowset any;
             declare meta BLOG.DBA."MTWeblogPost";
-            meta1 := self.dss.get_item_value (0, 6);
+
+	    rowset := self.dss.ds_row_data[0];
+
+            meta1 := rowset[6];
             if (meta1 is not null and udt_instance_of (meta1, 'BLOG.DBA.MTWeblogPost'))
             {
               meta := meta1;
               if (length (meta.mt_keywords))
                 self.kwd := concat (self.kwd, ' ', meta.mt_keywords);
             }
+	    self.e_author := (select coalesce (U_FULL_NAME, U_NAME) from SYS_USERS where U_ID = rowset[5]);
+	    self.e_title := rowset[9];
           }
         }
         if (self.preview_post_mode)
@@ -732,7 +761,11 @@ else if (length (self.catid))
 
 
   <xsl:template match="vm:header">
-   <head profile="http://gmpg.org/xfn/11">
+   <?vsp
+   declare e_profile varchar;
+   e_profile := get_keyword('MetaDataProfile', self.opts, 'http://purl.org/NET/erdf/profile');
+   ?>
+   <head profile="<?V e_profile ?>">
       <xsl:text>&#10;</xsl:text>
       <?vsp
         declare icon varchar;
@@ -742,6 +775,8 @@ else if (length (self.catid))
           icon := self.stock_img_loc || 'fav.ico';
         http(sprintf('<link rel=\"shortcut icon\" href=\"%s\"/>', icon));
       ?>
+      <xsl:text>&#10;</xsl:text>
+      <!-- this kills the js buttons base href="<?V self.ur ?>" /-->
       <xsl:text>&#10;</xsl:text>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
       <xsl:text>&#10;</xsl:text>
@@ -776,181 +811,12 @@ else if (length (self.catid))
       <![CDATA[
         <div id="quickSub" style="position:absolute; visibility:hidden; z-index:1000;" onmouseout="return timeqs();" onmousemove="return delayqs();"></div>
       ]]>
-      <script type="text/javascript">
-  <![CDATA[
-function selectAllCheckboxes (form, btn, txt)
-{
-  var i;
-  for (i =0; i < form.elements.length; i++)
-    {
-      var contr = form.elements[i];
-      if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt) != -1)
-        {
-    contr.focus();
-    if (btn.value == 'Select All')
-      contr.checked = true;
-    else
-            contr.checked = false;
-  }
-    }
-  if (btn.value == 'Select All')
-    btn.value = 'Unselect All';
-  else
-    btn.value = 'Select All';
-  btn.focus();
-}
-function selectAllCheckboxes2 (form, btn, txt, txt2)
-{
-  var i;
-  for (i =0; i < form.elements.length; i++)
-    {
-      var contr = form.elements[i];
-      if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt)  != -1 && contr.name.indexOf(txt2) != -1)
-        {
-    contr.focus();
-    if (btn.value == 'Select All')
-      contr.checked = true;
-    else
-            contr.checked = false;
-  }
-    }
-  if (btn.value == 'Select All')
-    btn.value = 'Unselect All';
-  else
-    btn.value = 'Select All';
-  btn.focus();
-}
-]]>
-</script>
 <?vsp
   if (self.page = 'index' or length (self.page) = 0)
   {
 ?>
       <script type="text/javascript">
   <![CDATA[
-
-function
-getActiveStyleSheet ()
-{
-  var i, a;
-
-  for (i=0; (a = document.getElementsByTagName ("link")[i]); i++)
-    {
-      if (a.getAttribute ("rel").indexOf ("style") != -1
-          && a.getAttribute ("title")
-          && !a.disabled)
-        return a.getAttribute("title");
-    }
-
-  return null;
-}
-function setSelectedStyle()
-{
-  var a;
-  a = document.getElementsByName("style_selector")[0];
-  if (a)
-  {
-    for (i=0; (b=a.options[i]); i++)
-    {
-      if (b.text==getActiveStyleSheet())
-      a.options[i].selected=true;
-    }
-  }
-}
-
-function
-setActiveStyleSheet (title, save_cookie)
-{
-  if (save_cookie == 0)
-  {
-    var j, b;
-    for (j = 0; (b = document.getElementsByName ('save_sticky')[j]); j++)
-    {
-      if (b.checked == true)
-      {
-        save_cookie = 1;
-      }
-    }
-  }
-  var i, a, main, isset;
-  isset = 0;
-  for (i = 0; (a = document.getElementsByTagName ("link")[i]); i++)
-  {
-    if (a.getAttribute ("rel").indexOf ("style") != -1 && a.getAttribute ("title"))
-    {
-      a.disabled = true;
-      if (a.getAttribute ("title") == title)
-      {
-        isset = 1;
-        a.disabled = false;
-        if (save_cookie)
-        {
-          createCookie ("style", title, 365);
-        }
-      }
-    }
-  }
-  if (isset == 0)
-  {
-    for (i = 0; (a = document.getElementsByTagName ("link")[i]); i++)
-    {
-      if (a.getAttribute ("rel").indexOf ("style") != -1 && a.getAttribute ("title"))
-      {
-        a.disabled = false;
-        setSelectedStyle();
-        return null;
-      }
-    }
-  }
-  else
-    setSelectedStyle();
-}
-
-function getPreferredStyleSheet ()
-{
-  var i, a;
-
-  for (i=0; (a = document.getElementsByTagName ("link")[i]); i++)
-    {
-      if(a.getAttribute ("rel").indexOf ("style") != -1
-         && a.getAttribute ("rel").indexOf ("alt") == -1
-         && a.getAttribute ("title"))
-        return a.getAttribute ("title");
-    }
-
-  return null;
-}
-
-function createCookie (name, value, days)
-{
-  if (days)
-    {
-      var date = new Date();
-      date.setTime(date.getTime()+(days*24*60*60*1000));
-      var expires = "; expires="+date.toGMTString();
-    }
-  else expires = "";
-
-  document.cookie = name+"="+value+expires+"; path=/";
-}
-
-function readCookie(name) {
-  var nameEQ = name + "=";
-  var ca = document.cookie.split (';');
-  for(var i = 0; i < ca.length; i++) {
-    var c = ca[i];
-    while (c.charAt(0) == ' ') c = c.substring (1, c.length);
-    if (c.indexOf(nameEQ) == 0) return c.substring (nameEQ.length,
-c.length);
-  }
-  return null;
-}
-
-function makeSSMenu ()
-{
-  var x = document.getElementByID ('ss_menu_ctr');
-  var ssElems = getSSElems ();
-}
 
 window.onload = function (e)
 {
@@ -1188,6 +1054,10 @@ window.onload = function (e)
       </xsl:processing-instruction>
   </xsl:template>
 
+  <xsl:template match="vm:title">
+      <?vsp http_value (self.e_title); ?>
+  </xsl:template>
+
   <xsl:template match="vm:quicksub">
   </xsl:template>
 
@@ -1315,18 +1185,47 @@ window.onload = function (e)
     </div>
   </xsl:template>
 
+  <xsl:template match="vm:rss-usm-link">
+    <div>
+	<a href="&lt;?vsp http (sprintf ('http://%s%sgems/rss-usm.xml', self.host, self.base)); ?>" class="{local-name()}">
+	  <img border="0" alt="RSS (USM)" title="RSS (USM)" >
+	      <xsl:call-template name="feed-image">
+		  <xsl:with-param name="default">'rss-icon-16.gif'</xsl:with-param>
+	      </xsl:call-template>
+	  </img>
+	  <xsl:apply-templates />
+      </a>
+    </div>
+  </xsl:template>
+
   <xsl:template match="vm:podcast-link">
       <?vsp
       {
-      declare tp varchar;
+      declare tp, text varchar;
       tp := '';
       ?>
-      <xsl:if test="@type">
-	  <xsl:variable name="type">?:media=<xsl:value-of select="@type"/></xsl:variable>
+      <xsl:choose>
+	  <xsl:when test="@type">
+	      <xsl:variable name="val">get_keyword ('type', self.user_data, <xsl:apply-templates select="@type" mode="static_value"/>)</xsl:variable>
+	  </xsl:when>
+	  <xsl:otherwise>
+	      <xsl:variable name="val">''</xsl:variable>
+	  </xsl:otherwise>
+      </xsl:choose>
+      <xsl:choose>
+	  <xsl:when test="@text">
+	      <xsl:variable name="txt">get_keyword ('text', self.user_data, <xsl:apply-templates select="@text" mode="static_value"/>)</xsl:variable>
+	  </xsl:when>
+	  <xsl:otherwise>
+	      <xsl:variable name="txt">''</xsl:variable>
+	  </xsl:otherwise>
+      </xsl:choose>
       <xsl:processing-instruction name="vsp">
-	  tp := '<xsl:value-of select="$type"/>';
+	  text := <xsl:value-of select="$txt"/>;
+	  tp := <xsl:value-of select="$val"/>;
+	  if (length (tp))
+	    tp := '?:media=' || tp;
       </xsl:processing-instruction>
-      </xsl:if>
     <div>
 	<a href="&lt;?vsp http (sprintf ('http://%s%sgems/podcasts.xml%s', self.host, self.base, tp)); ?>" class="{local-name()}">
         <img border="0" alt="Podcasts" title="Podcasts" >
@@ -1334,7 +1233,7 @@ window.onload = function (e)
 		<xsl:with-param name="default">'rss-icon-16.gif'</xsl:with-param>
 	    </xsl:call-template>
         </img>
-	<xsl:apply-templates />
+	<?V text ?>
       </a>
     </div>
     <?vsp
@@ -1500,7 +1399,7 @@ window.onload = function (e)
 
     ?>
     <div>
-      <a href="&lt;?vsp http (sprintf ('http://%s%sgems/xbel.xml?:from=%s&amp;:to=%s', self.host, self.base, s1, s2)); ?>" class="{local-name()}">
+      <a href="<?vsp http (sprintf ('http://%s%sgems/xbel.xml?:from=%s&amp;amp;amp;:to=%s', self.host, self.base, s1, s2)); ?>" class="{local-name()}">
         <img border="0" alt="XBEL" title="XBEL">
 	    <xsl:call-template name="feed-image">
 		<xsl:with-param name="default">'blue-icon-16.gif'</xsl:with-param>
@@ -1770,7 +1669,7 @@ window.onload = function (e)
             {
       ?>
       <div>
-	  <a href="gems/rss_cat.xml?:cid=&lt;?V id ?>&amp;amp;:bid=&lt;?V self.blogid ?>" class="inlinelink"><img src="/weblog/public/images/rss-icon-16.gif" border="0" alt="RSS" title="RSS"/></a> <a class="inlinelink" href="<?vsp http(sprintf('index.vspx?page=%s&cat=%s%s', self.page, id, self.login_pars)); ?>"><?V BLOG..blog_utf2wide(name) ?></a>
+	  <a href="gems/rss_cat.xml?:cid=&lt;?V id ?>&amp;amp;amp;:bid=&lt;?V self.blogid ?>" class="inlinelink"><img src="/weblog/public/images/rss-icon-16.gif" border="0" alt="RSS" title="RSS"/></a> <a class="inlinelink" href="<?vsp http(sprintf('index.vspx?page=%s&amp;amp;amp;cat=%s%s', self.page, id, self.login_pars)); ?>"><?V BLOG..blog_utf2wide(name) ?></a>
       </div>
       <?vsp
             }
@@ -1783,8 +1682,8 @@ window.onload = function (e)
           {
       ?>
       <div>
-	  <a href="gems/rss_cat.xml?:cid=&lt;?V id ?>&amp;amp;:bid=&lt;?V self.blogid ?>" class="inlinelink"><img src="/weblog/public/images/rss-icon-16.gif" border="0" alt="RSS" title="RSS"/></a>
-        <a class="inlinelink" href="<?vsp http(sprintf('index.vspx?page=%s&cat=%s%s', self.page, id, self.login_pars)); ?>"><?V BLOG..blog_utf2wide(name) ?></a>
+	  <a href="gems/rss_cat.xml?:cid=&lt;?V id ?>&amp;amp;amp;:bid=&lt;?V self.blogid ?>" class="inlinelink"><img src="/weblog/public/images/rss-icon-16.gif" border="0" alt="RSS" title="RSS"/></a>
+        <a class="inlinelink" href="<?vsp http(sprintf('index.vspx?page=%s&amp;amp;amp;cat=%s%s', self.page, id, self.login_pars)); ?>"><?V BLOG..blog_utf2wide(name) ?></a>
       </div>
       <?vsp
         }
@@ -1943,7 +1842,7 @@ window.onload = function (e)
                           http ('|');
                         else
                           http ('with tags:');
-			http (sprintf ('&nbsp;<a href="index.vspx?page=summary&amp;tag=%s%s">%s</a>&nbsp;',
+			http (sprintf (' <a href="index.vspx?page=summary&amp;tag=%s%s">%s</a> ',
 			  BT_TAG, self.login_pars, BT_TAG));
                         cinx := cinx + 1;
                       }
@@ -1959,7 +1858,7 @@ window.onload = function (e)
                           http ('|');
                         else
                           http ('under category:');
-			http (sprintf ('&nbsp;<a href="index.vspx?page=summary&amp;cat=%s%s">%s</a>&nbsp;',
+			http (sprintf (' <a href="index.vspx?page=summary&amp;cat=%s%s">%s</a> ',
 			  MTB_CID, self.login_pars, MTC_NAME));
                         cinx := cinx + 1;
                       }
@@ -1975,7 +1874,7 @@ window.onload = function (e)
                             http ('|');
                           else
                             http ('On del.icio.us:');
-                          http (sprintf ('&nbsp;<a href="http://del.icio.us/tag/%U">%s</a>&nbsp;', BT_TAG, BT_TAG));
+                          http (sprintf (' <a href="http://del.icio.us/tag/%U">%s</a> ', BT_TAG, BT_TAG));
                           cinx := cinx + 1;
                         }
                       ?>
@@ -1990,7 +1889,7 @@ window.onload = function (e)
                             http ('|');
                           else
 			  http ('On de.lirio.us');
-			  http (sprintf ('&nbsp;<a href="http://de.lirio.us/rubric/entries/tags/%U">%s</a>&nbsp;', BT_TAG, BT_TAG));
+			  http (sprintf (' <a href="http://de.lirio.us/rubric/entries/tags/%U">%s</a> ', BT_TAG, BT_TAG));
                           cinx := cinx + 1;
                         }
                       ?>
@@ -2006,7 +1905,7 @@ window.onload = function (e)
                            http ('|');
                         else
                           http ('On technorati:');
-                        http (sprintf ('&nbsp;<a href="http://www.technorati.com/tag/%U">%s</a>&nbsp;', BT_TAG, BT_TAG));
+                        http (sprintf (' <a href="http://www.technorati.com/tag/%U">%s</a> ', BT_TAG, BT_TAG));
                         cinx := cinx + 1;
                       }
                     ?>
@@ -2041,11 +1940,11 @@ window.onload = function (e)
 
   <xsl:template match="vm:post-link">
       <xsl:call-template name="post-parts-check"/>
-      <v:url name="permalink_url" value="{@title}" format="%s" url="--concat('index.vspx?page=', self.page, '&id=', t_post_id)" render-only="1" />
+      <v:url name="permalink_url" value="{@title}" format="%s" url="--concat('index.vspx?page=', self.page, '&amp;amp;id=', t_post_id)" render-only="1" />
   </xsl:template>
 
   <xsl:template match="vm:post-delicious-link">
-      <a href="http://del.icio.us/post?url=<?U self.ur ?><?U sprintf ('?id=%s', t_post_id) ?>&amp;title=<?V control.te_rowset[9] ?>" class="spread_link">
+      <a href="http://del.icio.us/post?url=<?U self.ur ?><?U sprintf ('?id=%s', t_post_id) ?>&amp;amp;amp;title=<?vsp http(control.te_rowset[9]); ?>" class="spread_link">
 	  <img src="/weblog/public/images/delicious.gif" alt="{@title}" title="{@title}" border="0" hspace="1" />
 	  <xsl:apply-templates/>
       </a>
@@ -2073,14 +1972,14 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:post-diggit-link">
-      <a href="http://www.digg.com/submit?url=<?U self.ur ?><?U sprintf ('?id=%s', t_post_id) ?>&amp;phase=2" class="spread_link">
+      <a href="http://www.digg.com/submit?url=<?U self.ur ?><?U sprintf ('?id=%s', t_post_id) ?>&amp;amp;amp;phase=2" class="spread_link">
 	  <img src="/weblog/public/images/digman.gif" alt="{@title}" title="{@title}" border="0" hspace="1" />
 	  <xsl:apply-templates/>
       </a>
   </xsl:template>
 
   <xsl:template match="vm:post-reddit-link">
-      <a href="http://reddit.com/submit?url=<?U self.ur ?><?U sprintf ('?id=%s', t_post_id) ?>&amp;title=<?V control.te_rowset[9] ?>" class="spread_link">
+      <a href="http://reddit.com/submit?url=<?U self.ur ?><?U sprintf ('?id=%s', t_post_id) ?>&amp;amp;amp;title=<?vsp http(control.te_rowset[9]); ?>" class="spread_link">
 	  <img src="/weblog/public/images/reddithead.png" alt="{@title}" title="{@title}" border="0" hspace="1" />
 	  <xsl:apply-templates/>
       </a>
@@ -2088,7 +1987,9 @@ window.onload = function (e)
 
   <xsl:template match="vm:post-date">
       <xsl:call-template name="post-parts-check"/>
+      <span class="dc-date">
       <v:label name="label6" value="--BLOG..blog_date_fmt ((control.vc_parent as vspx_row_template).te_rowset[1], self.tz)" format="%s" render-only="1"/>
+      </span>
   </xsl:template>
 
   <xsl:template match="vm:post-modification-date">
@@ -2108,6 +2009,7 @@ window.onload = function (e)
 
   <xsl:template match="vm:post-author">
       <xsl:call-template name="post-parts-check"/>
+      <span class="dc-creator">
 	<?vsp
 	     {
 		    declare title_val any;
@@ -2133,6 +2035,7 @@ window.onload = function (e)
 		      http (title_val);
 	      }
 	  ?>
+      </span>
   </xsl:template>
 
   <xsl:template match="vm:post-body">
@@ -2214,9 +2117,11 @@ window.onload = function (e)
 
   <xsl:template match="vm:post-title">
       <xsl:call-template name="post-parts-check"/>
+      <span class="dc-title">
       <?vsp
         http (control.te_rowset[9]);
       ?>
+      </span>
   </xsl:template>
 
 
@@ -2276,17 +2181,15 @@ window.onload = function (e)
 	  {
       if (cinx = 0)
         {
-          ?>
-	  <xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$val"/>);</xsl:processing-instruction>
-          <?vsp
+          ?><xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$val"/>);</xsl:processing-instruction><?vsp
         }
       else
-      { ?>
-        <xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$delm"/>);</xsl:processing-instruction>
-        <?vsp
+      { ?><xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$delm"/>);</xsl:processing-instruction><?vsp
       }
       ?>
+      <span class="dc-subject">
       <a href="index.vspx?cat=<?vsp http (MTC_ID); ?><?V self.login_pars ?>" rel="category"><?vsp http (MTC_NAME); ?></a>
+      </span>
       <?vsp
             cinx := cinx + 1;
 	  }
@@ -2312,18 +2215,15 @@ window.onload = function (e)
     {
       if (cinx = 0)
         {
-          ?>
-	  <xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$val"/>);</xsl:processing-instruction>
-          <?vsp
+          ?><xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$val"/>);</xsl:processing-instruction><?vsp
         }
       else
-      { ?>
-        <xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$delm"/>);</xsl:processing-instruction>
-        <?vsp
-      }
+      { ?><xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$delm"/>);</xsl:processing-instruction><?vsp }
   ?>
-  <!--a href="<?V this_url ?>?tag=<?vsp http (BT_TAG); ?><?V self.login_pars ?>" rel="tag"><?vsp http (BT_TAG); ?></a-->
-  <a href="http://technorati.com/tag/<?vsp http (BT_TAG); ?>" rel="tag"><?vsp http (BT_TAG); ?></a>
+      <span class="dc-subject">
+	  <a href="<?V this_url ?>?tag=<?vsp http (BT_TAG); ?><?V self.login_pars ?>" rel="tag"><?vsp http (BT_TAG); ?></a>
+      </span>
+      <!--a href="http://technorati.com/tag/<?vsp http (BT_TAG); ?>" rel="tag"><?vsp http (BT_TAG); ?></a-->
   <?vsp
       cinx := cinx + 1;
     }
@@ -2396,7 +2296,7 @@ window.onload = function (e)
 	      if (self.page <> 'archive') {
 	      http ('&nbsp;');
             ?>
-	    <v:button name="refr1" style="image" action="simple" url="--sprintf ('index.vspx?page=%U%s', self.page, case when self.postid is not null then sprintf ('&id=%s', self.postid) else '' end)" value="/weblog/public/images/ref_16.png" xhtml_hspace="1" xhtml_alt="Refresh" xhtml_title="Refresh" text="Refresh" />
+	    <v:button name="refr1" style="image" action="simple" url="--sprintf ('index.vspx?page=%U%s', self.page, case when self.postid is not null then sprintf ('&amp;amp;amp;id=%s', self.postid) else '' end)" value="/weblog/public/images/ref_16.png" xhtml_hspace="1" xhtml_alt="Refresh" xhtml_title="Refresh" text="Refresh" />
 	    <?vsp
 	      }
 	    ?>
@@ -2419,6 +2319,7 @@ window.onload = function (e)
                   if(control.te_rowset[8] = 2 or self.blog_access in (1, 2))
                   {
                 ?>
+		<div id="post-<?V t_post_id ?>">
 		<xsl:choose>
 		    <xsl:when test="//vm:body-wrapper">
 			<?vsp
@@ -2432,6 +2333,7 @@ window.onload = function (e)
 			<xsl:call-template name="posts-default"/>
 		    </xsl:otherwise>
 		</xsl:choose>
+	        </div>
                 <?vsp
                   }
                 ?>
@@ -2617,7 +2519,7 @@ window.onload = function (e)
       {
     ?>
     <![CDATA[
-      <script language="JavaScript1.2" src="http://www.altavista.com/static/scripts/translate_engl.js"></script>
+    <script type="text/javascript" language="JavaScript1.2" src="http://www.altavista.com/static/scripts/translate_engl.js"></script>
     ]]>
     <?vsp
       }
@@ -2914,7 +2816,7 @@ window.onload = function (e)
       <li>
         <a>
           <xsl:attribute name="href">
-            &lt;?vsp http('index.vspx?page=' || <xsl:value-of select="$redirect"/> || '&amp;id=' || id || '&amp;sid=' || self.sid || '&amp;realm=' || self.realm ); ?&gt;
+            &lt;?vsp http('index.vspx?page=' || <xsl:value-of select="$redirect"/> || '&amp;amp;id=' || id || self.login_pars ); ?&gt;
           </xsl:attribute>
           <?vsp http_value (tit, null); ?>
         </a>
@@ -3140,7 +3042,7 @@ window.onload = function (e)
                 }
               ?>
 	      <v:url xhtml_class="cmd" name="cm_reply_btn_2" value="Reply"
-		  xhtml_title="Reply" xhtml_alt="Reply" render-only="1"
+		  xhtml_title="Reply" render-only="1"
 		  url="--sprintf ('index.vspx?id=%s&cmf=1&cmr=%d#comment_input_st', self.postid, cm_id)" />
               </div>
             </div>
@@ -3553,7 +3455,7 @@ window.onload = function (e)
         http ('<a href="#">&lt;&lt;</a>');
       }
     ?>
-    <v:button name="{@data-set}_prev" action="simple" style="url" value="&lt;&lt;"
+    <v:button name="{@data-set}_prev" action="simple" style="url" value="&amp;lt;&amp;lt;"
       xhtml_alt="Previous" xhtml_title="Previous" text="&nbsp;Previous">
     </v:button>
       <![CDATA[&nbsp;]]>
@@ -3632,8 +3534,8 @@ window.onload = function (e)
       http ('<a href="#">&gt;&gt;</a>');
       }
     ?>
-    <v:button name="{@data-set}_next" action="simple" style="url" value="&gt;&gt;"
-      xhtml_alt="Next" xhtml_title="Next" text="&nbsp;Next">
+    <v:button name="{@data-set}_next" action="simple" style="url" value="&amp;gt;&amp;gt;"
+      xhtml_title="Next" text="&nbsp;Next">
     </v:button>
     <!--
     <xsl:if test="not(@type) or @type = 'set'">
@@ -6699,6 +6601,21 @@ window.onload = function (e)
           <td/>
           <td><v:check-box name="show_tags_ckbx" xhtml_id="show_tags_ckbx" value="1" initial-checked="--get_keyword('TagGem', self.opts, 1)"/><label for="show_tags_ckbx">Show Tags</label></td>
         </tr>
+
+        <tr><th colspan="2"><h2>Meta Data Profile</h2></th></tr>
+        <tr>
+          <td><label for="e_profile"></label></td>
+	  <td>
+            <v:select-list xhtml_class="select" name="e_profile" xhtml_id="e_profile">
+		<v:item value="http://purl.org/NET/erdf/profile" name="eRDF"/>
+		<v:item value="http://gmpg.org/xfn/11" name="XFN"/>
+              <v:before-data-bind>
+		  control.ufl_value := get_keyword('MetaDataProfile', self.opts, 'http://purl.org/NET/erdf/profile');
+              </v:before-data-bind>
+            </v:select-list>
+	  </td>
+        </tr>
+
         <tr><th colspan="2"><h2>Filters</h2></th></tr>
         <tr>
           <td><label for="xsl_filter">XSL-T Filter for Posts</label></td>
@@ -6759,6 +6676,7 @@ window.onload = function (e)
                 opts := BLOG.DBA.BLOG2_SET_OPTION('ShowXBEL', opts, self.show_xbel_ckbx.ufl_selected);
                 opts := BLOG.DBA.BLOG2_SET_OPTION('TagGem', opts, self.show_tags_ckbx.ufl_selected);
                 opts := BLOG.DBA.BLOG2_SET_OPTION('Adblock', opts, self.adds_filter.ufl_value);
+                opts := BLOG.DBA.BLOG2_SET_OPTION('MetaDataProfile', opts, self.e_profile.ufl_value);
                 declare _photo, match varchar;
                 _photo := trim(self.icon1.ufl_value);
                 if (length(_photo) > 0)
@@ -8867,6 +8785,7 @@ window.onload = function (e)
               <input type="hidden" name="page" >
               <xsl:attribute name="value"><xsl:apply-templates select="@page" mode="static_value"/></xsl:attribute>
               </input>
+	      <div><v:label name="tmpl_msg" value="--''" render-only="0"/></div>
 	      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
 		  <tr valign="top">
 		      <td>
@@ -9000,7 +8919,75 @@ window.onload = function (e)
 			      ]]></v:before-render>
 							  </v:textarea>
 						      </div>
-						      <div>
+      <div class="form_actions">
+	  <v:text type="hidden" value="--concat ('/DAV/home/',self.user_name,'/')" name="tmpl_home_path" />
+	  <label for="load_tmpl_dav">Load template from DAV</label><br/>
+	  <v:text name="load_tmpl_dav" xhtml_size="80" xhtml_class="textbox" />
+	  <vm:dav_browser render="popup" list_type="details" flt="yes" flt_pat="*.vspx" path="DAV/home" browse_type="res" w_title="DAV Browser" title="DAV Browser" lang="en" return_box="load_tmpl_dav">
+	      <v:field name="path" ref="tmpl_home_path" />
+	  </vm:dav_browser>
+	  <v:button xhtml_class="real_button" value="Load" action="simple" name="load_tmpl_dav_bt">
+	      <v:on-post><![CDATA[
+		  declare cont, rc, mime, pwd any;
+		  if (not self.vc_is_valid)
+		    return;
+                  self.load_tmpl_dav.ufl_value := trim (self.load_tmpl_dav.ufl_value);
+		  if (self.load_tmpl_dav.ufl_value not like '/DAV/%.vspx')
+                    {
+		      self.vc_is_valid := 0;
+                      if (length (self.load_tmpl_dav.ufl_value) = 0)
+		        self.vc_error_message := 'The path is empty';
+	              else
+		        self.vc_error_message := 'Invalid path is specified';
+		      return;
+		    }
+
+		  rc := DAV_RES_CONTENT (self.load_tmpl_dav.ufl_value, cont, mime, self.user_name, self.user_pwd);
+                  if (rc < 0)
+		    {
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := 'The load operation failed: ' || DAV_PERROR (rc);
+		    }
+		  else
+                    {
+		      self.templ_src.ufl_value := blob_to_string (cont);
+		      self.tmpl_msg.ufl_value := 'Template is loaded sucesfully.';
+		    }
+		  ]]></v:on-post>
+	  </v:button>
+	  <br />
+	  <label for="save_tmpl_dav">Save template to DAV</label><br/>
+	  <v:text name="save_tmpl_dav" xhtml_size="80" xhtml_class="textbox" />
+	  <vm:dav_browser render="popup" list_type="details" flt="yes" flt_pat="*.vspx" path="DAV/home" browse_type="both" w_title="DAV Browser" title="DAV Browser" lang="en" return_box="save_tmpl_dav">
+	      <v:field name="path" ref="tmpl_home_path" />
+	  </vm:dav_browser>
+	  <v:button xhtml_class="real_button" value="Save" action="simple" name="save_tmpl_dav_bt">
+	      <v:on-post><![CDATA[
+		  declare cont, rc, mime, pwd any;
+		  if (not self.vc_is_valid)
+		    return;
+                  self.save_tmpl_dav.ufl_value := trim (self.save_tmpl_dav.ufl_value);
+		  if (self.save_tmpl_dav.ufl_value not like '/DAV/%.vspx')
+                    {
+		      self.vc_is_valid := 0;
+                      if (length (self.save_tmpl_dav.ufl_value) = 0)
+		        self.vc_error_message := 'The path is empty';
+	              else
+		        self.vc_error_message := 'Invalid path is specified';
+		      return;
+		    }
+                  rc := DAV_RES_UPLOAD (self.save_tmpl_dav.ufl_value, self.templ_src.ufl_value, '', '110100000RR',
+		  self.user_name, http_nogroup_gid (), self.user_name, self.user_pwd);
+                  if (rc < 0)
+		    {
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := DAV_PERROR (rc);
+		    }
+		  else
+                    self.tmpl_msg.ufl_value := 'Template is saved sucesfully.';
+		  ]]></v:on-post>
+	  </v:button>
+	  <br />
 							  <v:button xhtml_class="real_button" value="Save Changes" action="simple" name="save_tmpl_chages">
 							      <v:on-post><![CDATA[
 	          declare custom varchar;
@@ -12158,6 +12145,32 @@ window.onload = function (e)
     ?>
       </table>
   </div>
+  </xsl:template>
+
+  <xsl:template match="vm:atom-version">
+      <?V self.atomver ?>
+  </xsl:template>
+
+  <xsl:template match="vm:rss-version">
+      <?V self.rssver ?>
+  </xsl:template>
+
+  <xsl:template match="vm:erdf-data">
+      <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />
+      <link rel="schema.foaf" href="http://xmlns.com/foaf/0.1/" />
+      <link rel="schema.rss" href="http://purl.org/rss/1.0/" />
+      <link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />
+      <link rel="schema.rdfs" href="http://www.w3.org/2000/01/rdf-schema#" />
+
+      <meta name="dc.creator" content="<?V BLOG..blog_utf2wide (self.e_author) ?>" />
+      <meta name="dc.title" content="<?V BLOG..blog_utf2wide (self.e_title) ?>" />
+      <meta name="dc.rights" content="<?V BLOG..blog_utf2wide (self.copy) ?>" />
+      <?vsp
+        if (self.e_lat is not null and self.e_lng is not null) {
+      ?>
+      <meta name="geo.position" content="<?V sprintf ('%.06f', self.e_lat) ?>;<?V sprintf ('%.06f', self.e_lng) ?>" />
+      <meta name="ICBM" content="<?V sprintf ('%.06f', self.e_lat) ?>, <?V sprintf ('%.06f', self.e_lng) ?>" />
+      <?vsp } ?>
   </xsl:template>
 
   <xsl:template match="vm:*">

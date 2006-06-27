@@ -257,7 +257,7 @@
             <tr>
               <td>
 		  <?vsp if (self.dprev is not null) { ?>
-		  <a href="<?V sprintf (urlformat, year (self.dprev), month(self.dprev), 0) ?>" class="real_button" title="Previous">&lt;</a>
+		  <a href="<?V sprintf (urlformat, year (self.dprev), month(self.dprev), 0) ?>" class="real_button" title="Previous">&amp;lt;</a>
 		  <?vsp
 		  }
 		  ?>
@@ -267,7 +267,7 @@
               </td>
               <td>
 		  <?vsp if (self.dnext is not null) { ?>
-		  <a href="<?V sprintf (urlformat, year (self.dnext), month(self.dnext), 0) ?>" class="real_button" title="Next">&gt;</a>
+		  <a href="<?V sprintf (urlformat, year (self.dnext), month(self.dnext), 0) ?>" class="real_button" title="Next">&amp;gt;</a>
 		  <?vsp
 		  }
 		  ?>
@@ -485,7 +485,7 @@
                 declare safetext, tmpString, strText varchar;
                 strText := self.text2;
                 tmpString := trim(blob_to_string (strText));
-                tmpString := replace(tmpString, '\'', '&#39;');
+                tmpString := replace(tmpString, '''', '&#39;');
                 tmpString := replace(tmpString, '"', '&#34;');
                 tmpString := replace(tmpString, chr(10), ' ');
                 tmpString := replace(tmpString, chr(13), ' ');
@@ -556,7 +556,8 @@
 			    title="Briefcase"
 			    return_box="encl1">
 			    <v:field name="path" ref="b_home_path" />
- 		        </vm:dav_browser><br/>
+			</vm:dav_browser>
+			<br/>
 			<span id="ins_media_cb" style="">
 			    <v:check-box name="ins_media" value="1" xhtml_id="ins_media">
 				<v:before-render><![CDATA[

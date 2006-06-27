@@ -31,6 +31,7 @@
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns="http://purl.org/net/rss1.1#"
   xmlns:r="http://purl.org/net/rss1.1#"
+  xmlns:atom10="http://www.w3.org/2005/Atom"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -67,6 +68,7 @@
     </image>
 </xsl:template>
 
+<xsl:template match="atom10:*" />
 <xsl:template match="*"/>
 
 </xsl:stylesheet>

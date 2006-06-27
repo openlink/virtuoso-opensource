@@ -28,6 +28,7 @@
   xmlns:wfw="http://wellformedweb.org/CommentAPI/"
   xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
   xmlns:atom="http://purl.org/atom/ns#"
+  xmlns:atom10="http://www.w3.org/2005/Atom"
   xmlns="http://purl.org/atom/ns#"
   xmlns:vi="http://www.openlinksw.com/weblog/"
   xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
@@ -136,6 +137,7 @@
 <xsl:template match="item/enclosure" />
 <xsl:template match="itunes:*" />
 <xsl:template match="vi:version" />
+<xsl:template match="atom10:*" />
 
 <xsl:template match="@*" />
 

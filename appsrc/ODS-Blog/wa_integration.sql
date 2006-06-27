@@ -78,6 +78,7 @@ wa_exec_no_error('alter type wa_blog2 add overriding method wa_front_page_as_use
 wa_exec_no_error('alter type wa_blog2 add overriding method wa_size() returns int');
 wa_exec_no_error('alter type wa_blog2 add method wa_vhost_options () returns any');
 wa_exec_no_error('alter type wa_blog2 add method wa_dashboard_last_item () returns any');
+wa_exec_no_error('alter type wa_blog2 add overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar');
 
 
 insert replacing DB.DBA.WA_TYPES(WAT_NAME, WAT_DESCRIPTION, WAT_TYPE, WAT_REALM) values ('WEBLOG2', 'Blog', 'db.dba.wa_blog2', 'wa')
@@ -571,6 +572,21 @@ create method wa_home_url () for wa_blog2 {
 }
 ;
 
+
+create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_blog2
+{
+  declare p_path_str, l_path_str, full_path varchar;
+  p_path_str := (select BI_P_HOME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = self.blogid);
+  if (p_path_str is null)
+    signal ('22023', 'No such blog');
+  l_path_str := (select top 1 HP_LPATH from DB.DBA.HTTP_PATH where HP_PPATH = p_path_str and HP_HOST = vhost and HP_LISTEN_HOST = lhost);
+  if (l_path_str is null)
+    signal ('22023', 'No virtual directory found.');
+  full_path := concat (l_path_str, '/gems/index.rdf');
+  return full_path;
+}
+;
+
 create method wa_private_url () for wa_blog2 {
   declare uri varchar;
   uri := null;
@@ -916,10 +932,9 @@ create procedure BLOG2_UPGRADE_FROM_BLOG ()
 create procedure BLOG2_UPGRADE_FROM_BLOG2 ()
 {
   declare home, blog_home, exec_path, fpath, content, dav_pwd, ver any;
-  declare vd_tags any;
 
   -- XXX: change this when gems etc are changed
-  ver := '1.09';
+  ver := '1.10';
 
   if (registry_get ('__BLOG2_UPGRADE_FROM_BLOG2_ver') = ver)
     return;
@@ -928,16 +943,23 @@ create procedure BLOG2_UPGRADE_FROM_BLOG2 ()
 
   for select BI_HOME, BI_P_HOME, BI_OWNER, BI_BLOG_ID, BI_OPTIONS from BLOG.DBA.SYS_BLOG_INFO
     where BI_BLOG_ID <> '*weblog-root*'
-    do {
+    do
+      {
     home := subseq(BI_HOME, 0, length(BI_HOME) - 1);
-    vd_tags := '/tag/'||BI_BLOG_ID;
     exec_path := BI_P_HOME;
     DAV_MAKE_DIR (exec_path, http_dav_uid(), http_dav_uid()+1, '110110100N');
     fpath := exec_path || 'index.vspx';
     content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = registry_get('_blog2_path_') || 'index.vspx');
     DB.DBA.DAV_RES_UPLOAD(fpath, content, 'text/html', '111101101N', 'dav', null, 'dav', dav_pwd);
 
+    /* upgrade the gems with latest fixes */
+
     BLOG..BLOG2_UPGRADE_BLOG2_GEMS (BI_P_HOME, BI_BLOG_ID, dav_pwd, deserialize(blob_to_string (BI_OPTIONS)), BI_OWNER);
+
+    /* the rest is upgrade from an alfa code of blog2 */
+    if (registry_get ('__BLOG2_UPGRADE_FROM_BLOG2_ALFA_upgrade') = 'done')
+      goto end_upg;
+
 
     DB.DBA.VHOST_REMOVE(lpath=>home);
     DB.DBA.VHOST_DEFINE(ses_vars=>1,
@@ -950,24 +972,11 @@ create procedure BLOG2_UPGRADE_FROM_BLOG2 ()
                  ppr_fn=>'BLOG.DBA.BLOG2_RSS2WML_PP'
                 );
 
-    /* the rest is upgrade from an alfa code of blog2 */
-    if (registry_get ('__BLOG2_UPGRADE_FROM_BLOG2_ALFA_upgrade') = 'done')
-      goto end_upg;
-
     -- some special VDs that not needed
     DB.DBA.VHOST_REMOVE(lpath=>home || '/gems');
     DB.DBA.VHOST_REMOVE(lpath=>home || '/images');
     DB.DBA.VHOST_REMOVE(lpath=>home || '/audio');
     DB.DBA.VHOST_REMOVE(lpath=>home || '/templates');
-
-    -- must stay disabled
-    if (0)
-      {
-        DB.DBA.VHOST_REMOVE(lpath=>vd_tags);
-        DB.DBA.VHOST_DEFINE(opts=>vector('noinherit', 'yes'),
-                    is_dav=>1, lpath=>vd_tags, ppath=>BI_P_HOME||'index.vspx',
-                    vsp_user=>'dba', is_brws=>0);
-      }
 
     -- the old home directory
     blog_home := subseq (BI_P_HOME, 0, length(BI_P_HOME) - 1) || '_exec/';
@@ -988,13 +997,6 @@ create procedure BLOG2_UPGRADE_FROM_BLOG2 ()
                    def_page=>'index.vspx',
                    ppr_fn=>'BLOG.DBA.BLOG2_RSS2WML_PP'
                   );
-      if (0)
-        {
-          DB.DBA.VHOST_REMOVE(lpath=>vd_tags,vhost=>HP_HOST, lhost=>HP_LISTEN_HOST);
-          DB.DBA.VHOST_DEFINE(opts=>vector('noinherit', 'yes'),
-                    is_dav=>1, lpath=>vd_tags, ppath=>BI_P_HOME||'index.vspx',
-                    vsp_user=>'dba', is_brws=>0, vhost=>HP_HOST, lhost=>HP_LISTEN_HOST);
-        }
     }
 
     for select HP_HOST, HP_LISTEN_HOST, HP_LPATH from DB.DBA.HTTP_PATH where

@@ -80,6 +80,9 @@
 
     <xsl:template match="*">
 	<xsl:copy>
+	    <xsl:if test="local-name() = 'img' and not (@alt)">
+	      <xsl:attribute name="alt">Image</xsl:attribute>
+	    </xsl:if>
 	    <xsl:copy-of select="@*[not starts-with (name(), 'on')]"/>
 	    <xsl:if test="boolean($media) and (local-name() = 'a' or local-name() = 'img')  and @id[starts-with (., 'media_')]">
 		<xsl:copy-of select="@onclick"/>

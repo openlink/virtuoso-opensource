@@ -44,7 +44,7 @@ create procedure template_exec (in full_path varchar, inout path any, inout para
 
   set http_charset='UTF-8';
 
-  --dbg_printf ('start template_exec');
+  --dbg_printf ('start template_exec [%s]', full_path);
 
   -- uncomment this line to compile class per page
   --vspx_dispatch (full_path, path, params, lines);
@@ -329,7 +329,7 @@ create procedure make_temp_sp (in text any)
   /*
   declare exit handler for sqlstate '*'
     {
-      dbg_obj_print (__SQL_STATE, substring (text, 1, 1500));
+      dbg_printf ('[%s]\n%s', __SQL_STATE, substring (text, 1, 1500));
       resignal;
     };
   */
@@ -391,6 +391,8 @@ again:
 	    suff := '_'||suff;
 	  have_posts := 1;
 	}
+
+--      dbg_obj_print (wname);
 
       p_name := 'blog_wt_render_' || wname || suff;
 

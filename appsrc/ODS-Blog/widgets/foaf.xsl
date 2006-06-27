@@ -30,7 +30,7 @@
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:foaf="http://xmlns.com/foaf/0.1/"
   xmlns:vi="http://www.openlinksw.com/weblog/"
-  xmlns:ods="http://www.openlinksw.com/virtuoso/ods/"
+  xmlns:ods="http://openlinksw.com/ods/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
   version="1.0">
 

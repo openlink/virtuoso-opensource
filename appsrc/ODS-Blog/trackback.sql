@@ -356,7 +356,7 @@ CREATE PROCEDURE MT_TRACKBACK_DISCO (
   http (' xmlns:trackback="http://madskills.com/public/xml/rss/module/trackback/">', ses);
   http (sprintf ('<rdf:Description rdf:about="http://%s%s?date=%s#%s"', host, home, ts1, postid), ses);
   http (sprintf (' dc:identifer="http://%s%s?date=%s#%s"', host, home, ts1, postid), ses);
-  http (sprintf (' dc:title="%V" trackback:ping="http://%s/mt-tb/Http/trackback?id=%s">', title, host, postid),ses);
+  http (sprintf (' dc:title="%s" trackback:ping="http://%s/mt-tb/Http/trackback?id=%s">', title, host, postid),ses);
   http ('</rdf:Description></rdf:RDF>', ses);
 
   http ('\n-->', ses);

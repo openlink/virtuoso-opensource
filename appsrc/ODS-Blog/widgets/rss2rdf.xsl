@@ -34,6 +34,7 @@
   xmlns:rss="http://purl.org/rss/1.0/"
   xmlns:vi="http://www.openlinksw.com/weblog/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
+  xmlns:atom10="http://www.w3.org/2005/Atom"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -71,6 +72,7 @@
 <xsl:template match="vi:*" />
 <xsl:template match="channel/itunes:*" />
 <xsl:template match="item/itunes:*" />
+<xsl:template match="atom10:*" />
 
 
 <xsl:template match="text()">
@@ -197,7 +199,7 @@
 <!--xsl:template match="channel/link|r:channel/r:link" /-->
 <xsl:template match="channel/item|r:channel/r:item" />
 <xsl:template match="item/guid|r:item/r:guid" />
-<xsl:template match="item/link|r:item/r:link" />
+<!--xsl:template match="item/link|r:item/r:link" /-->
 <xsl:template match="channel/generator" />
 <xsl:template match="channel/webMaster" />
 <xsl:template match="channel/cloud" />

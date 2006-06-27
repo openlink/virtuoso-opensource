@@ -32,7 +32,7 @@
         on-deadlock-retry="5">
   <vm:page>
     <vm:header id="header">
-      <title><vm:blog-title url=""/></title>
+      <title><vm:title/></title>
       <vm:disco-rss-link/>
       <vm:disco-atom-link/>
       <vm:disco-pingback-link/>
@@ -45,6 +45,7 @@
       <vm:meta-description/>
       <vm:meta-keywords/>
       <vm:custom-style />
+      <vm:erdf-data />
       <!-- add your custom JavaScript code here -->
       <!-- end -->
     </vm:header>
@@ -98,18 +99,19 @@
               </div>
               <h2>Subscribe</h2>
               <div class="roll">
-		  <vm:atom-link>Atom</vm:atom-link>
-		  <vm:rss-link>RSS</vm:rss-link>
+		  <vm:atom-link>Atom <vm:atom-version /></vm:atom-link>
+		  <vm:rss-link>RSS <vm:rss-version/></vm:rss-link>
+		  <vm:rss-usm-link>RSS (USM) <vm:rss-version/></vm:rss-usm-link>
 		  <vm:rdf-link>RDF</vm:rdf-link>
-		  <vm:ocs-link>OCS</vm:ocs-link>
-		  <vm:opml-link>OPML</vm:opml-link>
+		  <vm:ocs-link>OCS 0.5</vm:ocs-link>
+		  <vm:opml-link>OPML 1.0</vm:opml-link>
 		  <vm:xbel-link>XBEL</vm:xbel-link>
-		  <vm:podcast-link>All Media (Podcast)</vm:podcast-link>
-		  <vm:podcast-link type="video">Videos</vm:podcast-link>
-		  <vm:podcast-link type="audio">Audio</vm:podcast-link>
-		  <vm:podcast-link type="image">Images</vm:podcast-link>
-		  <vm:itunes-link>ITunes Subscription</vm:itunes-link>
-		  <vm:mrss-link>mRSS</vm:mrss-link>
+		  <vm:podcast-link type="" text="Multimedia"/>
+		  <vm:podcast-link type="video" text="Videos"/>
+		  <vm:podcast-link type="audio" text="Audio"/>
+		  <vm:podcast-link type="image" text="Images"/>
+		  <vm:itunes-link>iTunes Subscription</vm:itunes-link>
+		  <vm:mrss-link>Media RSS (Yahoo!)</vm:mrss-link>
 		  <vm:gdata-link>GData</vm:gdata-link>
               </div>
 	    <div class="box">
@@ -209,7 +211,7 @@
 			  </div>
 		      </vm:if>
 		      <vm:if test="post-view">
-		      <div id="individual">
+		      <div class="individual">
 			  <p><b>About this entry:</b></p>
 			  <p>
 			      Author: <vm:post-author format=""/><br />
@@ -240,7 +242,7 @@
 	      <vm:if test="post-view">
 		      <vm:if test="trackbacks">
 			  <div class="trackbacks-ctr">
-			      <a name="trackback"><h2>TrackBacks</h2></a>
+			      <h2><a name="trackback">TrackBacks</a></h2>
 			      <div class="tb-url">
 				  TrackBack URL for this entry:
 				  <span class="url">
@@ -265,7 +267,7 @@
 		      </vm:if>
 		      <vm:if test="comments-or-enabled">
 			  <div class="comments-ctr">
-			      <a name="comments"><h2>Comments</h2></a>
+			      <h2><a name="comments">Comments</a></h2>
 
 			      <vm:comments-tree />
 

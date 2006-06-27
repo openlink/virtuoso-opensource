@@ -156,20 +156,194 @@ function toggle_comment (id)
     }
 }
 
-    var ns6 = (document.getElementById)? true:false;
+var ns6 = (document.getElementById)? true:false;
 
-    function displayComment (id)
-    {
+function displayComment (id)
+{
       var obj;
       if (!ns6) return;
       obj = document.getElementById ('ct_'+id);
       obj.style.visibility = "visible";
-    }
+}
 
-    function hideComment (id)
-    {
+function hideComment (id)
+{
       var obj;
       if (!ns6) return;
       obj = document.getElementById ('ct_'+id);
       obj.style.visibility = "hidden";
+}
+
+/*
+  JavaScript functions from the pages
+*/
+
+function selectAllCheckboxes (form, btn, txt)
+{
+  var i;
+  for (i =0; i < form.elements.length; i++)
+    {
+      var contr = form.elements[i];
+      if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt) != -1)
+        {
+    contr.focus();
+    if (btn.value == 'Select All')
+      contr.checked = true;
+    else
+            contr.checked = false;
+  }
     }
+  if (btn.value == 'Select All')
+    btn.value = 'Unselect All';
+  else
+    btn.value = 'Select All';
+  btn.focus();
+}
+
+function selectAllCheckboxes2 (form, btn, txt, txt2)
+{
+  var i;
+  for (i =0; i < form.elements.length; i++)
+    {
+      var contr = form.elements[i];
+      if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt)  != -1 && contr.name.indexOf(txt2) != -1)
+        {
+    contr.focus();
+    if (btn.value == 'Select All')
+      contr.checked = true;
+    else
+            contr.checked = false;
+  }
+    }
+  if (btn.value == 'Select All')
+    btn.value = 'Unselect All';
+  else
+    btn.value = 'Select All';
+  btn.focus();
+}
+
+
+function
+getActiveStyleSheet ()
+{
+  var i, a;
+
+  for (i=0; (a = document.getElementsByTagName ("link")[i]); i++)
+    {
+      if (a.getAttribute ("rel").indexOf ("style") != -1
+          && a.getAttribute ("title")
+          && !a.disabled)
+        return a.getAttribute("title");
+    }
+
+  return null;
+}
+
+function setSelectedStyle()
+{
+  var a;
+  a = document.getElementsByName("style_selector")[0];
+  if (a)
+  {
+    for (i=0; (b=a.options[i]); i++)
+    {
+      if (b.text==getActiveStyleSheet())
+      a.options[i].selected=true;
+    }
+  }
+}
+
+function
+setActiveStyleSheet (title, save_cookie)
+{
+  if (save_cookie == 0)
+  {
+    var j, b;
+    for (j = 0; (b = document.getElementsByName ('save_sticky')[j]); j++)
+    {
+      if (b.checked == true)
+      {
+        save_cookie = 1;
+    }
+    }
+  }
+  var i, a, main, isset;
+  isset = 0;
+  for (i = 0; (a = document.getElementsByTagName ("link")[i]); i++)
+  {
+    if (a.getAttribute ("rel").indexOf ("style") != -1 && a.getAttribute ("title"))
+    {
+      a.disabled = true;
+      if (a.getAttribute ("title") == title)
+      {
+        isset = 1;
+        a.disabled = false;
+        if (save_cookie)
+        {
+          createCookie ("style", title, 365);
+        }
+      }
+    }
+  }
+  if (isset == 0)
+  {
+    for (i = 0; (a = document.getElementsByTagName ("link")[i]); i++)
+    {
+      if (a.getAttribute ("rel").indexOf ("style") != -1 && a.getAttribute ("title"))
+      {
+        a.disabled = false;
+        setSelectedStyle();
+        return null;
+      }
+    }
+  }
+  else
+    setSelectedStyle();
+}
+
+function getPreferredStyleSheet ()
+{
+  var i, a;
+
+  for (i=0; (a = document.getElementsByTagName ("link")[i]); i++)
+    {
+      if(a.getAttribute ("rel").indexOf ("style") != -1
+         && a.getAttribute ("rel").indexOf ("alt") == -1
+         && a.getAttribute ("title"))
+        return a.getAttribute ("title");
+    }
+
+  return null;
+}
+
+function createCookie (name, value, days)
+{
+  if (days)
+    {
+      var date = new Date();
+      date.setTime(date.getTime()+(days*24*60*60*1000));
+      var expires = "; expires="+date.toGMTString();
+    }
+  else expires = "";
+
+  document.cookie = name+"="+value+expires+"; path=/";
+}
+
+function readCookie(name) {
+  var nameEQ = name + "=";
+  var ca = document.cookie.split (';');
+  for(var i = 0; i < ca.length; i++) {
+    var c = ca[i];
+    while (c.charAt(0) == ' ') c = c.substring (1, c.length);
+    if (c.indexOf(nameEQ) == 0) return c.substring (nameEQ.length,
+c.length);
+  }
+  return null;
+}
+
+function makeSSMenu ()
+{
+  var x = document.getElementByID ('ss_menu_ctr');
+  var ssElems = getSSElems ();
+}
+

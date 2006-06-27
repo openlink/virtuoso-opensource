@@ -74,6 +74,7 @@
 
 <xsl:template match="channel/itunes:*" />
 <xsl:template match="item/itunes:*" />
+<xsl:template match="atom:*" />
 
 <xsl:template match="channel/description[.!='']">
     <subtitle><xsl:apply-templates /></subtitle>
