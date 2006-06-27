@@ -741,7 +741,7 @@ gallery.showImagesInfo = function(){
 
   var path_arr = Array(
                         Array('path_my_albums','My Albums'),
-                        Array('path_pub_date',sdate2obj(ds_albums.current.pub_date).date),
+                        Array('path_pub_date',sdate2obj(ds_albums.current.pub_date).year),
                         Array('path_album_name',ds_albums.current.name)
                       )
 
@@ -777,7 +777,7 @@ gallery.showImageInfo = function(i){
 
   var path_arr = Array(
                         Array('path_my_albums','My Albums'),
-                        Array('path_pub_date',sdate2obj(ds_albums.current.pub_date).date),
+                        Array('path_pub_date',sdate2obj(ds_albums.current.pub_date).year),
                         Array('path_album_name',ds_albums.current.name),
                         Array('path_image_name',ds_current_album.list[i].name)
                       )
@@ -871,8 +871,8 @@ gallery.showSlideshowToolbar = function(){
   var manage = document.createElement('div');
   manage.setAttribute('id','buttons')
   //manage.appendChild(makeImg('res/i/skipb_24.gif',24,24,'manageSlideShowPrev','','Previus Picture'));
-  manage.appendChild(makeImg('/gallery/res/i/pause_24.gif',24,24,'manageSlideShow','','Start/Pause'));
-  manage.appendChild(makeImg('/gallery/res/i/skipf_24.gif',24,24,'manageSlideShowNext','','Next picture'));
+  manage.appendChild(makeImg('/photos/res/i/pause_24.gif',24,24,'manageSlideShow','','Start/Pause'));
+  manage.appendChild(makeImg('/photos/res/i/skipf_24.gif',24,24,'manageSlideShowNext','','Next picture'));
 
   img_tools = makeUl('img_tools')
   img_tools.appendChild(makeLi(manage));
@@ -1014,13 +1014,13 @@ gallery.manageSlideShow_click = function(){
   btn = document.getElementById('manageSlideShow');
   if(this.slideshow_run == 0){
     this.slideshow_run = 1;
-    btn.src = 'res/i/pause_24.gif'
+    btn.src = '/photos/res/i/pause_24.gif'
     rotateimage();
 
   }else{
     clearTimeout(timeOutId);
     this.slideshow_run = 0;
-    btn.src = 'res/i/play_24.gif'
+    btn.src = '/photos/res/i/play_24.gif'
   }
   gallery.statusSlideShow();
 }
@@ -1066,7 +1066,7 @@ gallery.statusSlideShow = function(){
   if(this.slideshow_run == 1){
     document.getElementById('btn_slideshow_status').innerHTML = "Play at intervals of "+(pause/1000)+" sec";
   }else{
-    document.getElementById('btn_slideshow_status').innerHTML = "Show is stoped";
+    document.getElementById('btn_slideshow_status').innerHTML = "Show is stopped";
   }
 }
 
@@ -1187,7 +1187,7 @@ gallery.tab_image_edit_click = function(){
   document.f1.edit_image_description.value = ds_current_album.current.description;
   document.f1.edit_image_name.value = ds_current_album.current.name;
   document.f1.edit_image_name_old.value = ds_current_album.current.name;
-  document.f1.edit_image_path.value = ds_albums.current.path;
+  document.f1.edit_image_path.value = ds_albums.current.fullpath;
 
   if(ds_current_album.current.visibility == 1){
     document.f1.image_visibility[0].checked = true
