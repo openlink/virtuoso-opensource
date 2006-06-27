@@ -2029,7 +2029,7 @@ if (is_dtd_ge)
 		  if (get_value (parser, 1))
 		    parser->tmp.dtd_sysuri = box_brcpy (&parser->tmp.value);
 		  else
-		    RET_INVALID_SOFT("Missing URI of of external DTD <!DOCTYPE ... SYSTEM ...>");
+		    RET_INVALID_SOFT("Missing URI of external DTD <!DOCTYPE ... SYSTEM ...>");
 		  is_external_id = 1;
 		  test_ws (parser);
 		}
@@ -2247,7 +2247,15 @@ start_token_again:
 	      if (
 		(NULL != parser->inner_tag->ot_descr) &&
 		parser->inner_tag->ot_descr->htmltd_is_ptext )
+                {
+                  if (test_string (parser, "--"))
+                    { 
+                      buf_ptr_t tmp2 = parser->pptr;
+                      if (!get_to_string (parser, "-->"))
+                        parser->pptr = tmp2;
+                    }
 		goto character_data; /* no tags may be closed this way inside <SCRIPT> or <STYLE> */
+                }
 	    }
 	  if (parser->cfg.auto_load_xmlschema_dtd)
 	    parser->cfg.auto_load_xmlschema_dtd = 0;
