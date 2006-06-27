@@ -1940,7 +1940,6 @@ qi_detach_from_stmt (query_instance_t * qi)
 #endif
       id_hash_remove (qi->qi_client->cli_cursors,
 	  (caddr_t) &qi->qi_cursor_name);
-      dbg_cli_printf (("detach %s, rc = %d\n", qi->qi_cursor_name, rc));
       dk_free_box (qi->qi_cursor_name);
       qi->qi_cursor_name = NULL;
     }
