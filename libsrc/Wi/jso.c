@@ -165,7 +165,7 @@ bif_jso_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
-jso_get_cd_and_rtti (caddr_t jclass, caddr_t jinstance, jso_class_descr_t **cd_ptr, jso_rtti_t **inst_rtti_ptr, int quiet_if_deleted)
+jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd_ptr, jso_rtti_t **inst_rtti_ptr, int quiet_if_deleted)
 {
   cd_ptr[0] = gethash (jclass, jso_classes);
   if (NULL == cd_ptr[0])
@@ -236,7 +236,6 @@ jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
         GPF_T1("jso_pin(): two rttis for one class instance");
       return;
     }
-  sethash (inst, known, inst_rtti);
   switch (inst_rtti->jrtti_status)
     {
     case JSO_STATUS_DELETED:  
@@ -246,6 +245,23 @@ jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
     case JSO_STATUS_NEW: break;
     default: GPF_T1("jso_pin(): unknown status");
     }
+  if (JSO_CAT_ARRAY == cd->jsocd_cat)
+    {
+      int full_length = BOX_ELEMENTS (inst);
+      if (full_length > cd->_.ad.jsoad_min_length)
+        {
+          int used_length = full_length;
+          while ((0 < used_length) && (NULL == inst[used_length - 1])) used_length--;
+          if (used_length < full_length)
+            {
+              caddr_t *new_inst = dk_alloc_box (used_length * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+              memcpy (new_inst, inst, used_length * sizeof (caddr_t));
+              /* memory of old inst is lost here */
+              inst = inst_rtti->jrtti_self = new_inst;
+            }
+        }
+    }
+  sethash (inst, known, inst_rtti);
   DO_BOX_FAST (jso_rtti_t *, sub, ctr, inst)
     {
       if (DV_ARRAY_OF_POINTER == DV_TYPE_OF(sub))
@@ -496,6 +512,28 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
           fld_ptr[0] = ((NULL == arg) ? box_num_nonull (0) : arg);
           goto make_retval; /* see below */
         }
+      if (uname_xmlschema_ns_uri_hash_anyURI == dt)
+        {
+          if (defarg_dtp && (DV_STRING != defarg_dtp) && (DV_UNAME != defarg_dtp))
+            sqlr_new_error ("22023", "SR519", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:anyURI, can not set it to constant <%.500s> of type %s",
+              jprop, jinstance, jclass, const_name, dv_type_title (defarg_dtp) );
+          if ((DV_STRING != arg_dtp) && (DV_UNAME != arg_dtp))
+            sqlr_new_error ("22023", "SR520", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:string, can not set it to %s",
+              jprop, jinstance, jclass, dv_type_title (arg_dtp) );
+          if (defarg_dtp)
+            fld_ptr[0] = box_copy (defarg);
+          else if (DV_UNAME == arg_dtp)
+            fld_ptr[0] = arg;
+          else
+            fld_ptr[0] = box_cast_to_UTF8 (qst, (bif_string_or_wide_or_null_arg (qst, args, 3, func_name)));
+          if (DV_UNAME != DV_TYPE_OF (fld_ptr[0]))
+            {
+              caddr_t uname = box_dv_uname_string (fld_ptr[0]);
+              dk_free_box (fld_ptr[0]);
+              fld_ptr[0] = uname;
+            }
+          goto make_retval; /* see below */
+        }
       if (uname_xmlschema_ns_uri_hash_boolean == dt)
         {
           if (defarg_dtp && (DV_LONG_INT != defarg_dtp))
@@ -542,13 +580,18 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
         }
       if (uname_xmlschema_ns_uri_hash_string == dt)
         {
-          if (defarg_dtp && (DV_STRING != defarg_dtp))
-            sqlr_new_error ("22023", "SR517", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:string, can not set it to constant <%.500s> of type %s",
+          if (defarg_dtp && (DV_STRING != defarg_dtp) && (DV_UNAME != defarg_dtp))
+            sqlr_new_error ("22023", "SR521", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:string, can not set it to constant <%.500s> of type %s",
               jprop, jinstance, jclass, const_name, dv_type_title (defarg_dtp) );
           if (!IS_STRING_DTP(arg_dtp) && (DV_WIDE != arg_dtp))
-            sqlr_new_error ("22023", "SR508", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:string, can not set it to %s",
+            sqlr_new_error ("22023", "SR522", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:string, can not set it to %s",
               jprop, jinstance, jclass, dv_type_title (arg_dtp) );
-          fld_ptr[0] = (defarg_dtp ? box_copy (defarg) : box_cast_to_UTF8 (qst, (bif_string_or_wide_or_uname_arg (qst, args, 3, func_name))));
+          if (defarg_dtp)
+            fld_ptr[0] = box_dv_short_string (defarg);
+          else if (DV_UNAME == arg_dtp)
+            fld_ptr[0] = box_dv_short_string (arg);
+          else
+            fld_ptr[0] = box_cast_to_UTF8 (qst, (bif_string_or_wide_or_null_arg (qst, args, 3, func_name)));
           goto make_retval; /* see below */
         }
       sqlr_new_error ("22023", "SR499", "Property <%.500s> of JSO RDF class <%.500s> has unsupported type <%.500s>",
@@ -595,6 +638,7 @@ jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *env)
   jso_class_descr_t *cd = rtti->jrtti_class;
   if (JSO_STATUS_DELETED == rtti->jrtti_status)
     return;
+  dk_set_push (env, list (3, box_copy (iri), uname_rdf_ns_uri_type, box_copy_tree (cd->jsocd_class_iri)));
   switch (cd->jsocd_cat)
     {
     case JSO_CAT_STRUCT:
@@ -619,7 +663,6 @@ jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *env)
         DO_BOX_FAST (caddr_t, val, ctr, rtti->jrtti_self)
           {
             char buf[RDF_NS_URI_LEN + 20];
-            caddr_t propname;
             if (NULL == val)
               continue;
             if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (val))

@@ -34,7 +34,7 @@ JSO_SCALAR qmfStrsqlvalOfShortTmpl STRING REQUIRED	--!< ... SQL representation o
 JSO_SCALAR qmfShortOfTypedsqlvalTmpl STRING REQUIRED	--!< ... makes short by SQL value with specified type and/or language
 JSO_SCALAR qmfShortOfSqlvalTmpl STRING REQUIRED		--!< ... makes short by sqlvalue with no language and a datatype specified by SQL type
 JSO_SCALAR qmfShortOfLongTmpl STRING REQUIRED		--!< ... makes short by long
-JSO_SCALAR qmfShortOf_uriTmpl STRING REQUIRED		--!< ... makes short by uri
+JSO_SCALAR qmfShortOfUriTmpl STRING REQUIRED		--!< ... makes short by uri
 -- Misc
 JSO_SCALAR qmfCmpFuncName STRING REQUIRED		--!< Name of comparison function that acts like strcmp but args are of this type
 JSO_SCALAR qmfTypeminTmpl STRING REQUIRED		--!< Template of expn that returns the smallest value of the type of value of arg
@@ -70,4 +70,10 @@ JSO_POINTER qmGraphMap qm_value OPTIONAL
 JSO_POINTER qmSubjectMap qm_value OPTIONAL
 JSO_POINTER qmPredicateMap qm_value OPTIONAL
 JSO_POINTER qmObjectMap qm_value OPTIONAL
+JSO_STRUCT_END
+
+JSO_STRUCT_BEGIN quad_storage virtrdf QuadStorage	--!< All mapping patterns plus tracking info.
+JSO_POINTER qsUserMaps quad_map_array OPTIONAL
+JSO_POINTER qsMjvMaps quad_map_array OPTIONAL
+JSO_POINTER qsDefaultMap quad_map REQUIRED
 JSO_STRUCT_END

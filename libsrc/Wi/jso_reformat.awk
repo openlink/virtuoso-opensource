@@ -313,7 +313,7 @@ function write_struct_begin (c_name, type_ns, type_local, cmt)
     report_error("JSO_STRUCT_BEGIN without JSO_STRUCT_END of previous structure")
   if (nsprefixes[type_ns])
     type_ns = nsprefixes[type_ns];
-  write_array(c_name "_array", type_ns, "array-of-" type_local, "struct " c_name "_s", type_ns, type_local, "0", "MAX", "")
+  write_array(c_name "_array", type_ns, "array-of-" type_local, "struct " c_name "_s *", type_ns, type_local, "0", "MAX", "")
   struct_c_name = c_name
   struct_type_ns = type_ns
   struct_type_local = type_local
@@ -391,6 +391,11 @@ BEGIN   {
   includes_printed = 0
   post_init = ""
   ns_idx = 0
+  if ((output_mode == "h") && h_wrapper)
+    {
+      print "#ifndef " h_wrapper
+      print "#define " h_wrapper
+    }
   if ((output_mode != "h") && (output_mode != "c") && (output_mode != "ttl") && (output_mode != "ttl-sample"))
     report_error("output_mode variable should be set to 'h', 'c' or 'ttl-sample'.\nGAWK command line should be, say,\ngawk -f jso_reformat.awk -v output_mode=h mystructures.jso")
   if ((output_mode == "ttl") || (output_mode == "ttl-sample"))
@@ -404,6 +409,8 @@ END 	{
   if (output_mode == "h")
     {
       print post_init
+      if (h_wrapper)
+        print "#endif"
     }
   if (output_mode == "c")
     {
