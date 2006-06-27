@@ -22,9 +22,15 @@
 
 -------------------------------------------------------------------------------
 PHOTO.WA._exec_no_error(
-  'insert soft WA_TYPES(WAT_NAME, WAT_TYPE, WAT_REALM, WAT_DESCRIPTION) values (\'oGallery\', \'db.dba.wa_photo\', \'wa\', \'oGallery\')'
+  'insert soft WA_TYPES(WAT_NAME, WAT_TYPE, WAT_REALM, WAT_DESCRIPTION) values (\'oGallery\', \'db.dba.wa_photo\', \'wa\', \'Gallery\')'
 )
 ;
+
+-------------------------------------------------------------------------------
+--PHOTO.WA._exec_no_error(
+--  'update WA_TYPES set WAT_DESCRIPTION = \'Gallery\' where WAT_DESCRIPTION = \'oGallery\''
+--)
+--;
 
 -------------------------------------------------------------------------------
 PHOTO.WA._exec_no_error(
@@ -236,7 +242,7 @@ create method wa_home_url () for wa_photo
 create method wa_class_details () for wa_photo
 {
   declare info varchar;
-  info := 'The Virtuoso oGallery Application allows you to run an online gallery system. It can be a private system, however in the spirit of web galleries these are often public for outsides to view image or pass comment.';
+  info := 'The Virtuoso Gallery Application allows you to run an online gallery system. It can be a private system, however in the spirit of web galleries these are often public for outsides to view image or pass comment.';
   return info;
 }
 ;
