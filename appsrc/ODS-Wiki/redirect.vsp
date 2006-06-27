@@ -1,0 +1,21 @@
+<?vsp
+
+  declare _cluster, host, domain varchar;
+  domain := http_map_get ('domain');
+  host:=   http_request_header(lines, 'Host', null, '*ini*');
+  _cluster := coalesce ((select ClusterName from WV.WIKI.DOMAIN_PATTERN_1, WV.WIKI.CLUSTERS where ClusterId = DP_CLUSTER and domain like DP_PATTERN and host like DP_HOST), 'Main');
+  
+  dbg_obj_princ (host, ' ====> ', domain, ' ', _cluster);
+
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header (sprintf ('Location: %s/main/?%s\r\n', domain, WV.WIKI.BUILD_URL_PART (params)));
+
+  dbg_obj_princ (WV.WIKI.BUILD_URL_PART (params));
+
+?>
+ 
+ 
+ 
+ 
+ 
+  

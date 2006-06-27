@@ -20,13 +20,15 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
+
+update DB.DBA.SYS_USERS set U_HOME = '/DAV/home/dav/' where U_ID = http_dav_uid() and U_HOME is null;
 WV.WIKI.CREATEGROUP('WikiAdmin', 'WikiAdmin', 'A group of WikiV managers', 0);
 WV.WIKI.CREATEGROUP('WikiUser', 'WikiUser', 'A group of all WikiV users', 0);
 WV.WIKI.CREATEUSER('Wiki', 'WikiEngineAdmin', 'WikiAdmin', 'Main administrator of WikiV', 0);
 WV.WIKI.CREATEUSER('WikiGuest', 'WikiAnonymouseUser', 'WikiUser', 'Anonymouse user of WikiV', 0);
 WV.WIKI.CREATEUSER('dav', 'DAVWikiAdmin', 'WikiAdmin', 'DAV administrator of WikiV', 0);
-WV.WIKI.CREATEINSTANCE('Main', WV.Wiki.WikiUId(), WV.Wiki.WikiAdminGId(), 0);
-WV.WIKI.CREATEINSTANCE('Doc', WV.Wiki.WikiUId(), WV.Wiki.WikiAdminGId(), 0);
+WV.WIKI.CREATEINSTANCE('Main', http_dav_uid(), WV.Wiki.WikiAdminGId(), 0);
+WV.WIKI.CREATEINSTANCE('Doc', http_dav_uid(), WV.Wiki.WikiAdminGId(), 0);
 
 wiki_exec_no_error ('DB.DBA.USER_GRANT_ROLE (\'WikiGuest\', \'MainReaders\')');
 wiki_exec_no_error ('DB.DBA.USER_GRANT_ROLE (\'WikiGuest\', \'DocReaders\')');
@@ -45,3 +47,4 @@ WV.WIKI.FIX_PERMISSIONS();
 WV.WIKI.SET_AUTOVERSION();
 WV.WIKI.STALE_ALL_XSLTS();
 WV.WIKI.CREATE_ALL_USERS_PAGES();
+WV.WIKI.SET_WIKI_MAIN();

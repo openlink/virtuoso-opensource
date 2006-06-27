@@ -20,8 +20,7 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
  */
-
-/*from Yacutia*/
+/* oWiki OpenLinkCSS stylesheet */
 
 body
 {
@@ -33,130 +32,87 @@ body
     margin-bottom: 0px;
     margin-left: 0px;
     margin-top: 0px;
-    background-color: #FFFFFF;
-    font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
+    background-color: #eee;
     font-size: 10px
+    font-size: 75%;
+    font-family: Verdana, 'Times New Roman', Helvetica, Utopia, Times, 'MS Serif', Serif;
+    color: #000000;
 }
 
-/* .txt
+
+/* Main page elements */
+
+
+/* Wraps entire page */
+#page {
+  margin:0 auto;
+  width:750px;
+}
+
+#header
 {
-    background-color: #FCFCFC;
-    font-size: 10px;
+  height: 57px;
+  background-repeat: no-repeat;
+  margin: 0;
+  padding: 0;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  background-color: #fff;
 }
-*/
 
-.page_head
+#sidebar {
+  font-size: 9pt;
+  color: #444;
+  width: 140px;
+  float: right;
+  padding-left: 4px;
+  border-left: 1px solid #aba;
+}
+
+#sidebar h3 {
+  font-size: 10pt;
+  color: #444;
+  margin-bottom: 0;
+}
+
+#main {
+  width: 600px;
+  float: left;
+  padding-right: 4px;
+}
+
+
+.wikitable 
 {
-	width: 100%;
-	background-color: #033566;
-	color: #FFFFFF;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 11px;
-}
-
-
-.copyright
-{
-	font-size: 9px;
-	text-align: right;
-	padding-right: 15px;
-	color: #666666;
-}
-
-
-.system_info
-{
-	font-size: 9px;
-}
-
-a {
-	text-decoration: none;
-	color: blue;
-}
-
-a:hover { text-decoration: underline }
-
-a.wikiword:hover { background-color: #DFDFDF }
-
-/* form container */
-
-div.fm
-{
-  background-color: white;
-  width: 100%;
-}
-
-div.fm_section
-{
-  border: 1px solid silver;
-  width: 100%;
-}
-
-div.fm_section_head
-{
-  font-size: 12pt;
-  font-weight: bold;
-  width: 100%;
-}
-
-div.fm_row
-{
-  clear: both;
-  width: 100%;
-}
-
-div.fm_button_row
-{
-  clear: both;
-  width: 100%;
-}
-
-div.box {
-  background-color: white;
-  color: black;
-  width: 100%;
-  margin: 0px; margin-bottom: 1em; padding: 2px;
-  border: 1px solid silver;
-  vertical-align: top;
-  overflow: auto;
-  overflow-y: auto;
-  overflow-x: auto;
-}
-
-div.help
-{
-  background-color: FFF0D9;
-  border: 1px solid green;
-  margin-top: 0.5ex;
-  margin-bottom: 0.5ex;
-}
-
-.wikitable {
 	font: 13px Verdana, Arial, Helvetica, sans-serif;
 	background-color: transparent;
 	border: 1px solid #999999;
   }
 
-.wikitable td{
+.wikitable td
+{
     background-color: #FFFFFF;
     border-width: 0px 0px 0px 0px;
     padding: 1px;
-  }
+}
 
-.wikitable th{
+.wikitable th
+{
     background-color: #eeddee;
     border-width: 1px 1px 1px 1px;
     text-align: center;
     padding: 1px;
-  }
+}
 
 
-.wikitable1 {
+.wikitable1 
+{
     font: 12px Verdana, Arial, Helvetica, sans-serif;
     background-color: #D5DCD5;
 }
 
-.wikitable1.td{
+.wikitable1.td
+{
     border-style: solid;
     border-width: 1px 1px 1px 1px;
     border-color: #000000;
@@ -164,7 +120,8 @@ div.help
     background-color: #efefef;
 }
 
-.wikitable1.th{
+.wikitable1.th
+{
     border-color: #000000;
     border-style: solid;
     border-width: 0px 0px 0px 1px;
@@ -172,69 +129,10 @@ div.help
     padding: 1px;
 }
 
-div.wiki_menu {
-  font: 13px Verdana, Arial, Helvetica, sans-serif;
-  padding: 2px;
-  width: 100%;
-  background-color: #D5DCF0;
-}
-div.wiki_menu_row {
-}
 
-.wiki_nav_container
+.wiki_mails_container 
 {
 	font: 13px Verdana, Arial, Helvetica, sans-serif;
-	padding: 2px;
-	width: 100%;
-	background-color: #D5DCF0;
-        border-top: 1px solid #7F94A5;
-        border-right: 1px solid  #7F94A5;
-        border-bottom: 1px solid #7F94A5;
-        border-left: 1px solid #7F94A5;
-}
-
-.wiki-nav-container
-{
-  height: 36px;
-  font: 13px Verdana, Arial, Helvetica, sans-serif;
-  font-weight:bold;
-  text-valign: center;
-  width: 60%;
-  float: left;
-}
-
-.other-output-toolbar
-{
-  height: 36px;
-  font: 13px Verdana, Arial, Helvetica, sans-serif;
-  width: 50%;
-  background-color: white;
-  float: right;
-  text-align: right;
-}
-
-.other-output-toolbar span
-{
-  padding: 1px;
-}
-
-
-.wiki-toolbar-container
-{
-	font: 13px Verdana, Arial, Helvetica, sans-serif;
-	background-color: #D5DCF0;
-        border-top: 1px solid #7F94A5;
-        border-right: 1px solid  #7F94A5;
-        border-bottom: 1px solid #7F94A5;
-        border-left: 1px solid #7F94A5;
-	width: 100%;
-	padding: 5px, 5px, 5px, 5px;
-	float:	left;
-}
-
-
-.wiki_mails_container {
-    font: 13px Verdana, Arial, Helvetica, sans-serif;
     width: 100%;
     background-color: #FFFFBB;
 }
@@ -244,12 +142,14 @@ div.wiki_menu_row {
     padding: 1px;
 }
 
-.wiki_mails_container.th{
+.wiki_mails_container.th
+{
     text-align: left;
     padding: 1px;
 }
 
-.wiki_mail_container {
+.wiki_mail_container 
+{
     font: 13px Verdana, Arial, Helvetica, sans-serif;
     width: 100%;
     background-color: #FFFFFF;
@@ -257,40 +157,15 @@ div.wiki_menu_row {
     border-left: 1px solid #006699;
 }
 
-.wiki_mail_header {
+.wiki_mail_header 
+{
     font: 13px Verdana, Arial, Helvetica, sans-serif;
     width: 100%;
     background-color: #FFFFBB;
 }
 
-
-.wiki-settings div{
-    font: 13px Verdana, Arial, Helvetica, sans-serif;
-    background-color: white;
-    border-top: 1px solid #006699;
-    border-left: 1px solid #006699;
-    border-bottom: 1px solid #006699;
-    border-right: 1px solid #006699;
-    padding-left: 5px; 
-    padding-right: 5px; 
-}
-
-.wiki-settings h2 {
-  margin-top: 0em; 
-  font-size: 120%;
-  padding: 0.2em;
-  position: relative;
-  top: -10px;
-  background: #eeeeee;
-  border: 1px solid #aaa;
-}
-
-.wiki-settings {
-    font: 13px Verdana, Arial, Helvetica, sans-serif;
-}
-
 div.wiki-error {
-    font: 13px Verdana, Arial, Helvetica, sans-serif;
+  font: 10px Verdana, Arial, Helvetica, sans-serif;
     background-color: red;
     border-top: 1px solid #006699;
     border-left: 1px solid #006699;
@@ -298,7 +173,8 @@ div.wiki-error {
     border-right: 1px solid #006699;
 }
 
-.wiki-error h2{
+.wiki-error h2
+{
     background-color: white;
 }
 .wiki-error h3{
@@ -313,95 +189,410 @@ div.wiki-error {
     text-align: left;
 }
 
-div.wiki_container {
+div.wiki_container 
+{
 	font: 13px Verdana, Arial, Helvetica, sans-serif;
 	background-color: #efefef;
 	border: 1px solid #999999;
-	width="10%"
+  width="10%";
 }
 	
-#wiki-settings-delicious h2 {
-	bgcolor: yellow
+.wikitoc ul 
+{
+  list-style-type: none;
+  font-size: 12pt;
 }
 
-.dashboard {
-	font: 13px Verdana, Arial, Helvetica, sans-serif;
-	background-color: #99BBBB;
-	border: 1px solid #999999;
+h1 {
+  margin-top: 10px; margin-bottom: 5px; margin-right: 3em;
+  font-size: 185%;
+  text-align: right;
   }
+h2 {
+  margin-top: 15px; margin-bottom: 5px; 
+  font-size: 165%;
+  }
+h3 {
+  margin-top: 15px; margin-bottom: 5px; 
+  font-size: 125%;
+  }
+h4 {
+  margin-top: 10px; margin-bottom: 5px; 
+  font-size: 115%;
+  }
+h5 {
+  margin-top: 5px; margin-bottom: 5px;
+  font-size: 100%;
+  }
+h6 {
+  margin-top: 5px; margin-bottom: 5px;
+  font-size: 100%;
+  }
+a 
+{
+  font-family: Verdana, Arial, sans-serif; 
+  text-decoration: none;
+}
+a:hover 
+{
+  text-decoration: underline;
+}
+a.wikiword:hover { 
+  background-color: #DFDFDF 
+}
 
 
+#header a 
+{
+  color: #ccc;
+}
+#header IMG 
+{
+  float: left;
+   margin: 0px;
+  padding: 0px;
+}
+#header #path 
+{
+  margin-top: 0px;
+  margin-bottom: 0px;
+  padding-Top: 15px;
+  margin-right: 15px;
+  text-shadow: 1em 1em 1em yellow;
+}
+input, textarea 
+{
+  border: 1px groove silver; 
+  padding: 1px;
+  margin: 0px;
+  font-family: Tahoma, sans-serif;
+  font-size: inherit;
+  font-family: inherit;
+}
+#navbartop input 
+{
+  border: 0px;
+  padding: 0px;
+}
+#navbartop, #navbarbottom 
+{
+  font-size: 90%;
+  background: #c1c1ff;
+  color: #003366;
+  margin: 0px;
+  padding-top: 2px;
+  padding-bottom: 0px;
+  margin-bottom: 2px;
+  width: 100%;
+}
+#navbartop #nav1, #navbartop #nav2 
+{
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+#navbartop 
+{
+  text-align: right;
+}
+#navbarbottom 
+{
+  clear: both;
+  background: silver;
+  color: black;
+}	
 
+#navbarbottom DIV { padding: 2px; padding-right: 1em; padding-left: 1em; }
+#navbartop a, #navbarbottom a {
+  color: #003366;
+  }
+#footer {
+  clear: both;
+  padding-left: 5px;
+  padding-top: 3px;
+  font-size: 10pt;
+  width: 100%;
+  color: #232;
+  background-color: #eee;
+  border-top: 1px solid #aaa;
+  font-size: 8pt;
+  font-family: Tahoma, Utopia, Times, Helvetica, sans-serif;
+  text-align: center;
+}
+#footer DIV {  padding: 2px;}
+TABLE {font-size: inherit; }
+form { display: inline; padding: 0px; margin: 0px; }
+
+#node-footer {
+  color: #232;
+  text-align: right;
+  font-size: 9pt;
+  font-style: italic;
+}
+
+#node-footer a {
+  font-style: normal;
+  color: #232;
+}
+
+#node-footer a:hover {
+  color: blue;
+}
+/* Contents layout */
+
+.login-area { 
+  position: absolute;
+  right: 10px;
+  height: 30px;
+}
+
+.login-area form { display: inline }
+
+#login-image { 
+  margin-right: 4px; 
+}
+
+#login-link { 
+  margin-left: 3px;
+  margin-right: 3px;
+}
+
+.login-area a {
+  color: #232;
+}
+
+.login-area a:hover {
+  color: #blue;
+}
+
+#wiki-path {
+  font-size: 75%;
+}
+
+ul.menu {
+  font-size: 9pt;
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+ul.menu li {
+  display: inline;
+  background-color: #eee;
+  color: green;
+  padding-left: 4px;
+}
+
+ul.menu li a {
+  color: #232;
+}
+
+ul.menu li a:hover {
+  color: blue;
+}
+
+ul.menu li input {
+  width: 8em;
+  font-size: 9pt;
+  color: #232;
+}
+
+ul.menu li select {
+  font-size: 9pt;
+  color: #232;
+}
+
+ul.menu form { display: inline };
+
+div.ul-search {
+  margin: 0;
+  padding: 0;
+  display: inline;
+}
+
+#content {
+ background: white;
+ color: black;
+ font-size: 10pt;
+}
+
+div.feed-container ul {
+  list-style-type: none;
+  padding-left: 0;
+  padding-top: 0px;
+  margin-top: 0px;
+  margin-bottom: 2px;
+  padding-top: 0px;
+}
+
+div.feed-container h3 {
+  padding-bottom: 0;
+  margin-bottom: 0px;
+}
+
+.system_info
+{
+	font-size: 8pt;
+}
+
+div.box {
+  background-color: white;
+  color: black;
+  width: 100%;
+  margin: 0px; margin-bottom: 0em; padding: 2px;
+  border: 1px solid silver;
+  vertical-align: top;
+  overflow: auto;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+div.help {
+  background-color: FFF0D9;
+  border: 1px solid green;
+  margin-top: 0.5ex;
+  margin-bottom: 0.5ex;
+}
+
+.wiki-nav-container
+{
+  display: inline;
+  font-size: 10pt;
+  font-weight: bold;
+  width: 50%;
+}
+
+.wiki-nav-container a {
+  color: #232;
+}
+
+.wiki-nav-container a:hover {
+  color: blue;
+}
+
+#other-output-toolbar
+{
+  height: 16px;
+  font: 13px Verdana, Arial, Helvetica, sans-serif;
+  width: 50%; 
+  background-color: white;
+  float: right;
+  text-align: right;
+}
+
+#other-output-toolbar span
+{
+  padding: 1px;
+}
+
+
+#wiki-toolbar-container
+{
+  padding-left: 5px;
+  padding-top: 3px;
+  font-size: 9pt;
+  width: 100%;
+  background-color: #eee;
+  color: #123
+}
+
+#wiki-toolbar-container a {
+  background-color: #eee;
+  color: #123;
+}
+
+#wiki-toolbar-container a:hover {
+  color: blue;
+}
+
+#wiki_mails_container {
+    font: 13px Verdana, Arial, Helvetica, sans-serif;
+    width: 100%;
+    background-color: #FFFFBB;
+    border-top: 1px solid #006699;
+    border-left: 1px solid #006699;
+}
+
+#wiki_mails_container td {
+    border-style: solid;
+    padding: 1px;
+}
+
+#wiki_mails_container th {
+    text-align: left;
+    padding: 1px;
+}
+
+#wiki_mail_container {
+    font: 13px Verdana, Arial, Helvetica, sans-serif;
+    width: 100%;
+    background-color: #FFFFFF;
+    border-top: 1px solid #006699;
+    border-left: 1px solid #006699;
+}
+
+#wiki_mail_header {
+    font: 13px Verdana, Arial, Helvetica, sans-serif;
+    width: 100%;
+    background-color: #FFFFBB;
+}
+
+#wiki-error {
+    font-size: 10pt;
+    background-color: white;
+    border-top: 1px solid #006699;
+    border-left: 1px solid #006699;
+    border-bottom: 1px solid #006699;
+    border-right: 1px solid #006699;
+}
+
+#wiki-error h2{
+    background-color: white;
+}
+
+#wiki-error h3{
+    background-color: white;
+}
 
 /* Layout */
 
-div.top
-{
-/*  border-bottom: 1px solid #ADC9E0; */
-}
-
 div.login
 {
-  width: 146px;
-  height: 50px;
-  padding: 5px;
-  margin: 3px;
-  list-style-type: none;
-  padding: 5px;
-
   font-size: 10pt;
   font-weight: bold;
-  float: left;
 }
 
-div.virtuoso-info
-{
-  width: 146px;
-  height: 100px;
-  padding: 5px;
-  margin: 3px;
-  list-style-type: none;
-  padding: 5px;
-  float: left;
-}
 #search {
   font: 13px Verdana, Arial, Helvetica, sans-serif;
   font-size: 10pt;
   font-weight: bold;
-}
-
-.ul-search
-{
-   margin: 0px;
-   list-style-type: none;
-   padding: 1px;
-   font-size: 10pt;
-}
-.search-button {
-  width: 200px;
   float: right;
 }
 
+div.ul-search
+{
+  display: inline;
+  margin: 0px;
+  list-style-type: none;
+  padding: 1px;
+  font-size: 10pt;
+}
+
+.search-button {
+  width: 300px;
+  float: right;
+}
 
 ul.left_nav
 {
-        /*float: left;
-        clear: both;*/
-        width: 146px;
-        padding: 3px;
-        margin: 2px;
-        list-style-type: none;
-        padding: 5px;
-        background-image: url(images/stl_blu1_grad.gif);
-        background-repeat: repeat-x;
-	font-size: 10pt;
+  list-style-type: none;
+  padding: 0; 
+  font-size: 10pt;
 }
 
 .user-navigation
 {
         padding: 3px;
         margin: 2px;
-        list-style-type: none;
         padding: 5px;
 	font-size: 10pt;
 }
@@ -409,7 +600,6 @@ ul.left_nav
 ul.left_nav li
 {
   margin: 0;
-  padding: 2px;
 }
 
 
@@ -426,7 +616,7 @@ div.diff-insert
 div.diff-delete
 {
   background-color: #FFAAAA
-}	
+}
 
 tr.search-first-col
 {
@@ -444,16 +634,13 @@ table.search-result
   left: 30%;
   top: 30%;
   width: 243px;
-  border-top: 1px solid #A5A0FF;
-  border-left: 1px solid #A5A0FF;
-  border-right: 1px solid #A5A0FF;
-  border-bottom: 1px solid #A5A0FF;
-  font-size: 12px;
+  font-size: 12pt;
   font-weight: bold;
   text-align: left;
 }
+
 .login-form span {
-  float right;
+  float: right;
 }
 
 .login-form-input {
@@ -469,16 +656,20 @@ div.center {
   height: 90%;
 }
 
+div.wiki-source-type {
+  display: inline;
+}
+
 .wiki-source-type {
-  background-color: red;
-  color: yellow;
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
   font-size: 10px;
-  float: right;
 }
 
 .wiki-source-type a {
-  color: yellow
+  color: #232;
+}
+
+.feed-container {
 }
 
 .RSS20_FEED a {
@@ -513,8 +704,7 @@ div.center {
 }
 
 .MACRO_ATOM_FEED a {
-  background-color: red;
-  color: yellow;
+  background-color: yellow;
 }
 
 .formdata {
@@ -524,10 +714,11 @@ div.center {
 }
 
 .formdata th {
-  text-align: left;
+  text-align: left; 
 }
 
 .advanced-search {
+  padding: 0px 0px 0px 0px;
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
   font-size: 10px;
 }
@@ -544,8 +735,14 @@ div.center {
 
 .wikitoc ul {
    list-style-type: none;
+   list-style-position: inside;
+   padding: 0 0 0 0;
+   margin: 0 0 0 0;
    font-size: 12pt;
 }
+
+.wikitoc li:hover {background-color: #FDF;}
+
 
 .report-buttons {
    width: 346px;
@@ -556,884 +753,14 @@ div.center {
    float: left;
 }
 
-
-@media screen, print {
-
-BODY {
-  margin: 0px;
-  padding: 0px;
-  font-size: 75%;
-  font-family: Verdana, 'Times New Roman', Helvetica, Utopia, Times, 'MS Serif', Serif;
-  background-color: #eee;
-  COLOR: #000000;
-  }
-h1 {
-  margin-top: 10px; margin-bottom: 5px; margin-right: 3em;
-  font-size: 185%;
-  text-align: right;
-  }
-h2 {
-  margin-top: 15px; margin-bottom: 5px; 
-  font-size: 165%;
-  }
-h3 {
-  margin-top: 15px; margin-bottom: 5px; 
-  font-size: 125%;
-  }
-h4 {
-  margin-top: 10px; margin-bottom: 5px; 
-  font-size: 115%;
-  }
-h5 {
-  margin-top: 5px; margin-bottom: 5px;
-  font-size: 100%;
-  }
-h6 {
-  margin-top: 5px; margin-bottom: 5px;
-  font-size: 100%;
-  }
-a {
-  font-family: Verdana, Arial, sans-serif; 
-  text-decoration: none;
-  }
-a:hover {
-  text-decoration: underline;
-  }
-
-#header {
-  margin: 0px;
-  font-size: 130%;
-  color: white;
-  text-align: right;
-  width: 100%;
-  height: 65px;
-  }
-#header a {   
-  color: #ccc;
-  }
-#header IMG {
-  float: left;
-  margin: 0px;
-  padding: 0px;
-  height: 65px;
-  }
-#header #path {
-  margin-top: 0px;
-  margin-bottom: 0px;
-  padding-Top: 15px;
-  margin-right: 15px;
-  text-shadow: 1em 1em 1em yellow;
-  }
-input, textarea { 
-  border: 1px groove silver; 
-  padding: 1px;
-  margin: 0px;
-  font-family: Tahoma, sans-serif;
-  font-size: inherit;
-  font-family: inherit;
-  }
-#navbartop input {
-  border: 0px;
-  padding: 0px;
-  }
-#navbartop, #navbarbottom {
-  font-size: 90%;
-  background: #c1c1ff;
-  color: #003366;
-  margin: 0px;
-  padding-top: 2px;
-  padding-bottom: 0px;
-  margin-bottom: 2px;
-  width: 100%;
-  }
-#navbartop #nav1, #navbartop #nav2 {
-  padding-top: 2px;
-  padding-bottom: 2px;
-  }
-#navbartop {
-  text-align: right;
-  }
-#navbarbottom {
-  clear: both;
-  background: silver;
-  color: black;
-  }
-#navbarbottom DIV { padding: 2px; padding-right: 1em; padding-left: 1em; }
-#navbartop a, #navbarbottom a {
-  color: #003366;
-  }
-#footer {
-  font-size: 8pt;
-  font-family: Tahoma, Utopia, Times, Helvetica, sans-serif;
-  text-align: center;
-  margin-top: 5px;
-  margin-left: 10px;
-  margin-right: 10px;
-  clear: both;
-  }
-#footer DIV {  padding: 2px;}
-TABLE {font-size: inherit; }
-form { display: inline; padding: 0px; margin: 0px; }
-}
-
-
-@media screen, print {
-
-verbatim { background-color: #E0E0E0 }
-
-#text {
-  background:#fff;
-  color:#000;
-  padding: 5px;
-  padding-left: 20px;
-  padding-right: 20px;
-  xmargin: 10px;
-  margin-left: 10px;
-  margin-right: 10px;
-  /*
-  IE bugfix help from http://www.glish.com/css/hacks.asp
-  */ 
-  voice-family: "\"}\"";
-  voice-family: inherit;
-  margin-left: 10px;
-  margin-right: 10px;
-  }
-
-html>body #text {
-  margin-left: 10px;
-  margin-right: 10px;
-  z-index: 400;
-  }
-DIV.homepage { 
-  PADDING: 2em;
-  TEXT-ALIGN: center;
-  }
-.search { color: inherit; background-color: inherit; padding: 2px; padding-bottom: 2em;}
-#currenttoc {
-  position: absolute;
-  left:0px;
-  top:100px;
-  width:197px;
-  background:#f0f0f0;
-  padding: 1px;
-  FONT-FAMILY: Tahoma, Utopia, Times, Helvetica, Sans-Serif;
-  }
-#currenttoc A {
-  display: block;
-  background-color: inherit;
-  color: Blue;
-  padding: 3px;
-  }
-#navbartop #nav2 {
-  background: #e1e1ff;
-  }
-.battenburg, .battenburg td, .battenburg tr { 
-  border: 0px;
-  padding: 0px;
-  margin: 0px;
-  border-collapse: collapse;
-  }
-.battenburg div, .burg {
-  display: compact;
-  padding: 1em;
-  padding-top: 0px;
-  margin: 1em;
-  margin-right: 2em;
-  margin-left: 0em;
-  border: #aaa solid 1px;
-  background: #efeea5;
-  }
-.burg { 
-  padding: 1em;
-  }
-.battenburg h2, .burg h2 { 
-  margin-top: 0em; 
-  font-size: 120%;
-  padding: 0.2em;
-  position: relative;
-  top: -10px;
-  background: #eeeeee;
-  border: 1px solid #aaa;
-}
-#opl	{ background: #ffeea8; }
-#office	{ background: #77dd99;}
-#tools	{ background: #abd;}
-#toolbox { background: #ffad87; }
-#linksinternal { } 
-#linksref { background: #b8ecef; }
-#news { background: #d3ceca; }
-p 
-{
-    margin-top: 2px;
-    margin-bottom: .7em;
-    text-align: left;
-}
-.formaltitle
-{
-    FONT-WEIGHT: bolder;
-    MARGIN: 5px
-}
-PRE
-{
-    FONT-SIZE: 100%;
-	MARGIN-BOTTOM: 1ex;
-    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
-	COLOR: Black;
-    BACKGROUND-COLOR: #F0F0F0;
-	BORDER: solid 1px #E0E0E0;
-}
-.note
-{
-    PADDING-RIGHT: 2px;
-    MARGIN-TOP: 20px;
-    PADDING-LEFT: 2px;
-    MARGIN-BOTTOM: 30px;
-    PADDING-BOTTOM: 2px;
-    PADDING-TOP: 2px;
-    BACKGROUND-COLOR: #fafadc;
-	COLOR: black;
-	BORDER: solid 1px #eaeacc;
-}
-.notetitle
-{
-    FONT-WEIGHT: bolder
-}
-.tip
-{
-    PADDING-RIGHT: 2px;
-    MARGIN-TOP: 20px;
-    PADDING-LEFT: 2px;
-    MARGIN-BOTTOM: 30px;
-    PADDING-BOTTOM: 2px;
-    PADDING-TOP: 2px;
-    BACKGROUND-COLOR: #dcfbdc;
-	COLOR: black;
-	BORDER: solid 1px #ccebcc;
-}
-.tiptitle
-{
-    FONT-WEIGHT: bolder
-}
-.refentrytitle
-{
-    MARGIN-TOP: 20px;
-    FONT-WEIGHT: bolder;
-    FONT-SIZE: 140%;
-    MARGIN-BOTTOM: 10px;
-    PADDING-BOTTOM: 2px;
-    COLOR: black;
-    PADDING-TOP: 5px;
-    FONT-FAMILY: Verdana, Sans-Serif
-}
-.refsect1title
-{
-    FONT-WEIGHT: bolder;
-    FONT-SIZE: 115%;
-    PADDING-BOTTOM: 5px
-}
-.refsect2title
-{
-    FONT-WEIGHT: bolder
-}
-.refsect1
-{
-    PADDING-BOTTOM: 10px
-}
-.refsect2
-{
-}
-.refpurpose
-{
-    PADDING-BOTTOM: 2px;
-    COLOR: navy;
-    PADDING-TOP: 2px;
-    FONT-FAMILY: Tahoma, Verdana, Sans-Serif
-}
-.funcsynopsis
-{
-    MARGIN-TOP: 10px;
-    FONT-SIZE: 110%;
-    MARGIN-BOTTOM: 10px;
-    COLOR: #777777;
-    FONT-FAMILY: Tahoma, Sans-Serif
-}
-.funcdef
-{
-    FONT-SIZE: 100%
-}
-.function
-{
-    FONT-SIZE: 100%;
-    COLOR: red;
-    FONT-FAMILY: Tahoma, Sans-Serif
-}
-.parameter
-{
-    FONT-SIZE: 100%;
-    COLOR: navy;
-    FONT-FAMILY: Tahoma, Sans-Serif
-}
-.paramdef
-{
-    FONT-SIZE: 100%;
-    FONT-FAMILY: Tahoma, Sans-serif
-}
-.paramdefoptional
-{
-    FONT-SIZE: 100%;
-    FONT-STYLE: italic;
-    FONT-FAMILY: Tahoma, Sans-serif
-}
-.optional
-{
-    FONT-SIZE: 100%;
-    COLOR: navy;
-    FONT-FAMILY: Tahoma, Sans-serif
-}
-.example
-{
-    MARGIN-TOP: 20px;
-    FONT-SIZE: 100%;
-    MARGIN-BOTTOM: 20px
-}
-.exampletitle
-{
-    FONT-WEIGHT: bolder;
-    FONT-SIZE: 100%;
-    BACKGROUND-IMAGE: none;
-    MARGIN-BOTTOM: 10px;
-    COLOR: teal;
-    BACKGROUND-REPEAT: repeat;
-    FONT-FAMILY: Verdana, Sans-Serif
-}
-.varlist
-{
-    FONT-SIZE: 100%;
-    MARGIN-LEFT: 1cm;
-    MARGIN-RIGHT: 0.5cm
-}
-.varterm
-{
-    FONT-WEIGHT: bolder;
-    FONT-SIZE: 10pt;
-    MARGIN-LEFT: 0cm;
-    COLOR: navy;
-    MARGIN-RIGHT: 0cm;
-    FONT-FAMILY: Verdana, Sans-Serif;
-    TEXT-ALIGN: right
-}
-.itemizedlist
-{
-    FONT-SIZE: 100%
-}
-.screen
-{
-    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
-	COLOR: Black;
-    BACKGROUND-COLOR: #F0F0F0;
-	BORDER: solid 1px #E0E0E0;
-}
-.programlisting
-{
-    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
-	COLOR: Black;
-    BACKGROUND-COLOR: #F0F0F0;
-	BORDER: solid 1px #E0E0E0;
-}
-.computeroutput, .classname
-{
-    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
-}
-.chapsep
-{
-    BORDER-TOP: 1px;
-    FONT-SIZE: 110%;
-    COLOR: white;
-    BORDER-BOTTOM: gray 1px solid;
-    FONT-FAMILY: Verdana, Sans-Serif;
-    BACKGROUND-COLOR: black
-}
-.funcindexitem
-{
-    BORDER-RIGHT: silver 1px solid;
-    BORDER-TOP: thin;
-    BORDER-LEFT: thin;
-    WIDTH: 170px;
-    BORDER-BOTTOM: silver 1px outset;
-    FONT-FAMILY: Verdana, Sans-Serif;
-    HEIGHT: 30px
-}
-.figure
-{
-    MARGIN-TOP: 2em;
-    MARGIN-BOTTOM: 3em;
-    MARGIN-LEFT: 5px;
-	margin-right: 2em;
-    COLOR: navy;
-    FONT-FAMILY: Tahoma, Sans-Serif;
-    TEXT-ALIGN: center
-}
-.important
-{
-    MARGIN: 10px 5px;
-    COLOR: red
-}
-.chapseptxt
-{
-    COLOR: white
-}
-table.data
-{
-    MARGIN-TOP: 2em;
-    MARGIN-BOTTOM: 3em;
-    BORDER-TOP: #cccccc 1px solid;
-    BORDER-COLLAPSE: collapse
-}
-table.data TH {
-    BORDER-RIGHT: #cccccc 1px solid;
-    BORDER-LEFT: #cccccc 1px solid;
-    BORDER-BOTTOM: #cccccc 1px solid;
-    BACKGROUND-COLOR: #eeeeee
-}
-table.data TD {
-    BORDER-RIGHT: #cccccc 1px solid;
-    FONT-WEIGHT: normal;
-    BORDER-LEFT: #cccccc 1px solid;
-    BORDER-BOTTOM: #cccccc 1px solid
-}
-caption
-{
-    COLOR: navy;
-    FONT-FAMILY: Tahoma, Sans-serif;
-    FONT-SIZE: 8pt;
-}
-.msgset, msg, msgexplain
-{
-    PADDING-BOTTOM: 5px;
-    PADDING-TOP: 3px;
-}
-.msgentry
-{
-    margin-left: 9em;
-    text-indent: -9em;
-    PADDING-BOTTOM: 1ex;
-}
-
-}
-
-@media print {
- #currenttoc {
-  display: none; 
- }
-
- body {  
-  background-image: none; 
- }
- 
- #text {
-  margin-left: 1em;
-  margin-right:0px;
- }
-
- #navbartop, #navbarbottom { 
-/*  display: none; 
-*/
- }
-
- html>body #text {
-  margin-left: 1em;
-  margin-right:0px;
-  }
-}
-
-@media screen, print {
-
-verbatim { background-color: #E0E0E0 }
-
-#text {
-  background:#fff;
-  color:#000;
-  padding: 5px;
-  padding-left: 20px;
-  padding-right: 20px;
-  xmargin: 10px;
-  margin-left: 10px;
-  margin-right: 10px;
-  /*
-  IE bugfix help from http://www.glish.com/css/hacks.asp
-  */
-  voice-family: "\"}\"";
-  voice-family: inherit;
-  margin-left: 10px;
-  margin-right: 10px;
-  }
-
-html>body #text {
-  margin-left: 10px;
-  margin-right: 10px;
-  z-index: 400;
-  }
-DIV.homepage {
-  PADDING: 2em;
-  TEXT-ALIGN: center;
-  }
-.search { color: inherit; background-color: inherit; padding: 2px; padding-bottom: 2em;}
-#currenttoc {
-  position: absolute;
-  left:0px;
-  top:100px;
-  width:197px;
-  background:#f0f0f0;
-  padding: 1px;
-  FONT-FAMILY: Tahoma, Utopia, Times, Helvetica, Sans-Serif;
-  }
-#currenttoc A {
-  display: block;
-  background-color: inherit;
-  color: Blue;
-  padding: 3px;
-  }
-#navbartop #nav2 {
-  background: #e1e1ff;
-  }
-.battenburg, .battenburg td, .battenburg tr {
-  border: 0px;
-  padding: 0px;
-  margin: 0px;
-  border-collapse: collapse;
-  }
-.battenburg div, .burg {
-  display: compact;
-  padding: 1em;
-  padding-top: 0px;
-  margin: 1em;
-  margin-right: 2em;
-  margin-left: 0em;
-  border: #aaa solid 1px;
-  background: #efeea5;
-  }
-.burg {
-  padding: 1em;
-  }
-.battenburg h2, .burg h2 {
-  margin-top: 0em;
-  font-size: 120%;
-  padding: 0.2em;
-  position: relative;
-  top: -10px;
-  background: #eeeeee;
-  border: 1px solid #aaa;
-}
-#opl	{ background: #ffeea8; }
-#office	{ background: #77dd99;}
-#tools	{ background: #abd;}
-#toolbox { background: #ffad87; }
-#linksinternal { }
-#linksref { background: #b8ecef; }
-#news { background: #d3ceca; }
-p
-{
-    margin-top: 2px;
-    margin-bottom: .7em;
-    text-align: left;
-}
-.formaltitle
-{
-    FONT-WEIGHT: bolder;
-    MARGIN: 5px
-}
-PRE
-{
-    FONT-SIZE: 100%;
-	MARGIN-BOTTOM: 1ex;
-    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
-	COLOR: Black;
-    BACKGROUND-COLOR: #F0F0F0;
-	BORDER: solid 1px #E0E0E0;
-}
-.note
-{
-    PADDING-RIGHT: 2px;
-    MARGIN-TOP: 20px;
-    PADDING-LEFT: 2px;
-    MARGIN-BOTTOM: 30px;
-    PADDING-BOTTOM: 2px;
-    PADDING-TOP: 2px;
-    BACKGROUND-COLOR: #fafadc;
-	COLOR: black;
-	BORDER: solid 1px #eaeacc;
-}
-.notetitle
-{
-    FONT-WEIGHT: bolder
-}
-.tip
-{
-    PADDING-RIGHT: 2px;
-    MARGIN-TOP: 20px;
-    PADDING-LEFT: 2px;
-    MARGIN-BOTTOM: 30px;
-    PADDING-BOTTOM: 2px;
-    PADDING-TOP: 2px;
-    BACKGROUND-COLOR: #dcfbdc;
-	COLOR: black;
-	BORDER: solid 1px #ccebcc;
-}
-.tiptitle
-{
-    FONT-WEIGHT: bolder
-}
-.refentrytitle
-{
-    MARGIN-TOP: 20px;
-    FONT-WEIGHT: bolder;
-    FONT-SIZE: 140%;
-    MARGIN-BOTTOM: 10px;
-    PADDING-BOTTOM: 2px;
-    COLOR: black;
-    PADDING-TOP: 5px;
-    FONT-FAMILY: Verdana, Sans-Serif
-}
-.refsect1title
-{
-    FONT-WEIGHT: bolder;
-    FONT-SIZE: 115%;
-    PADDING-BOTTOM: 5px
-}
-.refsect2title
-{
-    FONT-WEIGHT: bolder
-}
-.refsect1
-{
-    PADDING-BOTTOM: 10px
-}
-.refsect2
-{
-}
-.refpurpose
-{
-    PADDING-BOTTOM: 2px;
-    COLOR: navy;
-    PADDING-TOP: 2px;
-    FONT-FAMILY: Tahoma, Verdana, Sans-Serif
-}
-.funcsynopsis
-{
-    MARGIN-TOP: 10px;
-    FONT-SIZE: 110%;
-    MARGIN-BOTTOM: 10px;
-    COLOR: #777777;
-    FONT-FAMILY: Tahoma, Sans-Serif
-}
-.funcdef
-{
-    FONT-SIZE: 100%
-}
-.function
-{
-    FONT-SIZE: 100%;
-    COLOR: red;
-    FONT-FAMILY: Tahoma, Sans-Serif
-}
-.parameter
-{
-    FONT-SIZE: 100%;
-    COLOR: navy;
-    FONT-FAMILY: Tahoma, Sans-Serif
-}
-.paramdef
-{
-    FONT-SIZE: 100%;
-    FONT-FAMILY: Tahoma, Sans-serif
-}
-.paramdefoptional
-{
-    FONT-SIZE: 100%;
-    FONT-STYLE: italic;
-    FONT-FAMILY: Tahoma, Sans-serif
-}
-.optional
-{
-    FONT-SIZE: 100%;
-    COLOR: navy;
-    FONT-FAMILY: Tahoma, Sans-serif
-}
-.example
-{
-    MARGIN-TOP: 20px;
-    FONT-SIZE: 100%;
-    MARGIN-BOTTOM: 20px
-}
-.exampletitle
-{
-    FONT-WEIGHT: bolder;
-    FONT-SIZE: 100%;
-    BACKGROUND-IMAGE: none;
-    MARGIN-BOTTOM: 10px;
-    COLOR: teal;
-    BACKGROUND-REPEAT: repeat;
-    FONT-FAMILY: Verdana, Sans-Serif
-}
-.varlist
-{
-    FONT-SIZE: 100%;
-    MARGIN-LEFT: 1cm;
-    MARGIN-RIGHT: 0.5cm
-}
-.varterm
-{
-    FONT-WEIGHT: bolder;
-    FONT-SIZE: 10pt;
-    MARGIN-LEFT: 0cm;
-    COLOR: navy;
-    MARGIN-RIGHT: 0cm;
-    FONT-FAMILY: Verdana, Sans-Serif;
-    TEXT-ALIGN: right
-}
-.itemizedlist
-{
-    FONT-SIZE: 100%
-}
-.screen
-{
-    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
-	COLOR: Black;
-    BACKGROUND-COLOR: #F0F0F0;
-	BORDER: solid 1px #E0E0E0;
-}
-.programlisting
-{
-    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
-	COLOR: Black;
-    BACKGROUND-COLOR: #F0F0F0;
-	BORDER: solid 1px #E0E0E0;
-}
-.computeroutput, .classname
-{
-    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
-}
-.chapsep
-{
-    BORDER-TOP: 1px;
-    FONT-SIZE: 110%;
-    COLOR: white;
-    BORDER-BOTTOM: gray 1px solid;
-    FONT-FAMILY: Verdana, Sans-Serif;
-    BACKGROUND-COLOR: black
-}
-.funcindexitem
-{
-    BORDER-RIGHT: silver 1px solid;
-    BORDER-TOP: thin;
-    BORDER-LEFT: thin;
-    WIDTH: 170px;
-    BORDER-BOTTOM: silver 1px outset;
-    FONT-FAMILY: Verdana, Sans-Serif;
-    HEIGHT: 30px
-}
-.figure
-{
-    MARGIN-TOP: 2em;
-    MARGIN-BOTTOM: 3em;
-    MARGIN-LEFT: 5px;
-	margin-right: 2em;
-    COLOR: navy;
-    FONT-FAMILY: Tahoma, Sans-Serif;
-    TEXT-ALIGN: center
-}
-.important
-{
-    MARGIN: 10px 5px;
-    COLOR: red
-}
-.chapseptxt
-{
-    COLOR: white
-}
-table.data
-{
-    MARGIN-TOP: 2em;
-    MARGIN-BOTTOM: 3em;
-    BORDER-TOP: #cccccc 1px solid;
-    BORDER-COLLAPSE: collapse
-}
-table.data TH {
-    BORDER-RIGHT: #cccccc 1px solid;
-    BORDER-LEFT: #cccccc 1px solid;
-    BORDER-BOTTOM: #cccccc 1px solid;
-    BACKGROUND-COLOR: #eeeeee
-}
-table.data TD {
-    BORDER-RIGHT: #cccccc 1px solid;
-    FONT-WEIGHT: normal;
-    BORDER-LEFT: #cccccc 1px solid;
-    BORDER-BOTTOM: #cccccc 1px solid
-}
-caption
-{
-    COLOR: navy;
-    FONT-FAMILY: Tahoma, Sans-serif;
-    FONT-SIZE: 8pt;
-}
-.msgset, msg, msgexplain
-{
-    PADDING-BOTTOM: 5px;
-    PADDING-TOP: 3px;
-}
-.msgentry
-{
-    margin-left: 9em;
-    text-indent: -9em;
-    PADDING-BOTTOM: 1ex;
-}
-
-}
-
-@media print {
- #currenttoc {
-  display: none;
- }
-
- body {
-  background-image: none;
- }
-
- #text {
-  margin-left: 1em;
-  margin-right:0px;
- }
-
- #navbartop, #navbarbottom {
-/*  display: none;
-*/
- }
-
- html>body #text {
-  margin-left: 1em;
-  margin-right:0px;
-  }
-}
-
-.abstract{ background-color: #efefef; text-align: left; }
-
-
-
 table.edit-commands
 {
      background-color: #EFBBEF;
      width: 100%;
 }
 
-
-
-/* tabs */
-
 .portlet ul {
-  line-height: 1.5em;
   list-style-type: square;
-  list-style-image: url(bullet.gif);
-  font-size: 95%;
 }
 
 .portlet li {
@@ -1446,51 +773,51 @@ li#ca-talk {
 }
 
 #main-tab {
- margin: 0 0 0 0;
- padding: 0 0 0 0;
- line-height: 0em;
- position: relative;
- z-index: 2;
 }
 
 #main-tab ul {
-  list-style: none;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
 }
+
 #main-tab li {
-  display: inline;
-  border: 1px solid #aaa;
-  border-bottom: none;
-  padding: 0 0 .0em 0;
-  margin: 0 .3em 0 0;
-  overflow: visible;
-  background: white;
 }
 
 #main-tab a {
-  padding-left: .4em;
-  padding-right: .4em;
+  color: #232;
 }
 
-#main-tab a:hover { background-color: #FFFF55 }
-
-#main-tab li.selected {
-  border-color: #fabd23;
-  padding: 0 0 0.1em 0ex;
+#main-tab a:visited {
+  color: #232;
 }
 
-#content {
- margin: -1em 1em 0em 1em;
- padding: 1em 1em 1em 1em;
- background: white;
- color: black;
- border: 1px solid #aaa;
-/* border-right: none; */
- position: relative;
- width: 100%; 
- z-index: 1;
+#main-tab a:hover {
+  color: blue;
+}
+
+#main-tab li.selected a {
+  text-decoration: none;
 } 
 
-.tools-area td {
-	font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-	font-size: 10px;
+.kupuconfig {
+  background-color: white;
 }
+
+.textarea-box { width: 450px; height: 200px }
+.input-text { width: 450px; }
+
+#virtuoso-info {
+  border-top: 1px solid #aba;
+  margin-top: 40px;
+  font-size: 9pt;
+}
+
+#virtuoso-info a {
+  color: #232;
+}
+
+#virtuoso-info a:visited {
+  color: #232;
+}
+

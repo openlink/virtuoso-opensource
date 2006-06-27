@@ -612,6 +612,8 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 <VERBATIM>[^<\r\n]*[\r\n]		{ PRINT (yytext); }
 <VERBATIM>[ \t\r\n]			{ PRINT (yytext); }
 <VERBATIM>{SIMPLEWORD}			{ PRINT (yytext); }
+<VERBATIM>.				{ PRINT(yytext); }
+
 
 
 	/* PlainHtml */

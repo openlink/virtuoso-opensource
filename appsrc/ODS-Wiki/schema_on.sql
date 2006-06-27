@@ -550,10 +550,15 @@ create table WV.WIKI.EDIT_TEMP_STORAGE (
 wiki_exec_no_error('create table WV.WIKI.DOMAIN_PATTERN_1 (
 	DP_HOST		varchar,
 	DP_PATTERN	varchar,
-	DP_CLUSTER	int references WV.WIKI.CLUSTERS (ClusterId),
+	DP_CLUSTER	int references WV.WIKI.CLUSTERS (ClusterId) on delete cascade,
 	primary key (DP_HOST, DP_PATTERN))
 ')
 ;
+
+wiki_exec_no_error ('select case when (not isstring (registry_get(\'wiki_schema\'))) then exec (\'alter table WV.WIKI.DOMAIN_PATTERN_1 drop constraint "DOMAIN_PATTERN_1_CLUSTERS_DP_CLUSTER_ClusterId"\') end');
+wiki_exec_no_error ('select case when (not isstring (registry_get(\'wiki_schema\'))) then exec (\'alter table WV.WIKI.DOMAIN_PATTERN_1 add constraint "DOMAIN_PATTERN_1_CLUSTERS_DP_CLUSTER_ClusterId" foreign key (DP_CLUSTER) references WV.WIKI.CLUSTERS(ClusterId) on delete cascade\') end');
+
+registry_set('wiki_schema', '2');
 
 wiki_exec_no_error('create table WV.WIKI.DOCBOOK_IDS (	
 	DP_CLUSTER_ID int references WV.WIKI.CLUSTERS (ClusterId) on delete cascade,

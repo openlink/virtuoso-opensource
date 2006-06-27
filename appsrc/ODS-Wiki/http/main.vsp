@@ -327,7 +327,7 @@ cont:
       declare _res int;
       _res := WV.WIKI.UPLOADPAGE (_topic.ti_col_id, _filename, _text, (select COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = _topic.ti_col_id), _topic.ti_cluster_id, _user );
       --dbg_obj_princ (_topic, DB.DBA.DAV_PERROR (_res));
-      DB.DBA.DAV_CHECKIN_INT (_topic.ti_full_path(), null, null, 0);
+--      DB.DBA.DAV_CHECKIN_INT (_topic.ti_full_path(), null, null, 0);
       commit work;
       if ((_topic.ti_id = 0) and ({?'ReleaseLock'} is null)) 
 	{

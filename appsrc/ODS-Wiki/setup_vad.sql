@@ -36,16 +36,6 @@ WV.WIKI.SILENT_EXEC ('DB.DBA.USER_GRANT_ROLE (\'dav\', \'WikiUser\', 1)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_GRANT_ROLE (\'dav\', \'WikiAdmin\', 1)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_GRANT_ROLE (\'WikiGuest\', \'WikiUser\', 0)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_SET_QUALIFIER (\'Wiki\', \'WV\')');
-DB.DBA.VHOST_REMOVE(lpath=>'/wiki');
-DB.DBA.VHOST_REMOVE(lpath=>'/wiki/main');
 DB.DBA.VHOST_REMOVE(lpath=>'/wiki/resources');
-DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Main');
-DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Doc');
-DB.DBA.VHOST_DEFINE(is_dav=>1, lpath=>'/wiki/main/', ppath=>'/DAV/VAD/wiki/Root/main.vsp', vsp_user=>'Wiki', opts=>vector('noinherit' ,1, 'executable','yes'));
 DB.DBA.VHOST_DEFINE(is_dav=>1, lpath=>'/wiki/resources/', ppath=>'/DAV/VAD/wiki/Root/', vsp_user=>'Wiki', opts=>vector('executable','yes'));
-DB.DBA.VHOST_REMOVE(lpath=>'/wikix');
-DB.DBA.VHOST_REMOVE(lpath=>'/wiki/wikix');
-DB.DBA.VHOST_REMOVE(lpath=>'/wikiview');
-DB.DBA.VHOST_REMOVE(lpath=>'/DAV/wikiview');
-
 

@@ -1,0 +1,241 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="common.css" type="text/css"/>
+    <link rel="stylesheet" href="Skins/default/default.css" type="text/css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+    <title>Conversation page</title>
+  </head>
+  <body style="padding: 5px;">
+    <v:page name="conversation" style="comp.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+      <v:method name="getTitle" arglist="">
+        <![CDATA[
+          declare title any;
+
+          if (isnull(self.v_pid)) {
+            select ClusterName || '.' || LocalName into title from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS where TopicId = self.v_fid;
+          } else {
+            select C_SUBJECT into title from WV.WIKI.COMMENT where C_ID = self.v_pid;
+          }
+          return concat('Re: ', coalesce(title, '~ no title ~'));
+        ]]>
+      </v:method>
+
+      <v:method name="getComment" arglist="">
+        <![CDATA[
+          declare comment any;
+
+          if (isnull(self.v_pid)) {
+            select ClusterName || '.' || LocalName into comment from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS where TopicId = self.v_fid;
+          } else {
+            select C_TEXT into comment from WV.WIKI.COMMENT where C_ID = self.v_pid;
+          }
+          return coalesce(comment, '');
+        ]]>
+      </v:method>
+
+  	  <v:template type="simple" condition="not self.vc_is_valid">
+  	    <div class="error">
+  		    <p><v:error-summary/></p>
+  	    </div>
+  	  </v:template>
+      <v:on-init>
+        <![CDATA[
+          self.sid := get_keyword('sid', self.vc_event.ve_params);
+          self.realm := get_keyword('realm', self.vc_event.ve_params);
+	  declare _uname int;
+	  _uname := coalesce ((select VS_UID from DB.DBA.VSPX_SESSION where VS_SID = self.sid and VS_REALM = self.realm), 'WikiGuest');
+	  self.v_aid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _uname);
+        ]]>
+      </v:on-init>
+      <vm:popup_page_wrapper>
+        <vm:variables>
+          <v:variable persist="0" name="v_mode" type="varchar" default="'show'"/>
+          <v:variable persist="0" name="v_fid" param-name="fid" type="integer"/>
+          <v:variable persist="0" name="v_did" param-name="did" type="integer"/>
+          <v:variable persist="1" name="v_aid" type="integer"/>
+          <v:variable persist="0" name="v_pid" type="integer"/>
+        </vm:variables>
+        <v:form name="F1" type="simple" method="GET">
+          <input type="hidden" name="sid" value="&lt;?V get_keyword('sid', self.vc_event.ve_params) ?>"/>
+          <input type="hidden" name="realm" value="&lt;?V get_keyword('realm', self.vc_event.ve_params) ?>"/>
+          <div style="padding: 0 0 0.5em 0;">
+            <a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="images/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+          </div>
+          <div class="new-form-header">
+            Conversation
+          </div>
+          <div class="new-form-body">
+            <table cellspacing="0">
+              <tr>
+                <td>
+                  <v:label value="">
+                    <v:after-data-bind>
+                      <![CDATA[
+			dbg_obj_print ('>>>>', self.v_fid);
+                        control.ufl_value := (select ClusterName || '.' || LocalName from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS where TopicId = self.v_fid);
+                      ]]>
+                    </v:after-data-bind>
+                  </v:label>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <br /><b>Comments</b><hr />
+                  <v:tree name="comments_list" multi-branch="1" orientation="vertical" start-path="--self.v_fid" open-at="--'//*'" root="WV..CM_ROOT_NODE"	child-function="WV..CM_CHILD_NODE">
+	                  <v:node-template name="node_tmpl">
+	                    <div class="<?V case when control.tn_level = 0 then 'cm_node_top' else 'cm_node' end ?>">
+                    		<?vsp
+                      		{
+                      		  declare id, comment, title, u_name, last_update any;
+
+                      		  id := cast (control.tn_value as integer);			       
+			          dbg_obj_print (control.tn_element);
+                      		  declare exit handler for not found;
+				  if (id >= 0)
+				    {
+					select C_SUBJECT, cast (C_TEXT as varchar), C_AUTHOR, C_DATE
+	                      		    into title, comment, u_name, last_update
+	                      		    from WV.WIKI.COMMENT
+		              		   where C_ID = id;
+                      	?>
+			<div class="comment" id="msg_<?V id ?>">
+			  <div class="comment-header">
+			    <span class="comment-subj"><?V title ?></span> <br />
+			  </div>
+			  <div class="comment-msg">
+                            <?vsp
+                              http (comment);
+                            ?>
+	                  </div>
+			  <div class="comment-footer">
+		                        <span class="comment-user">
+		                          Posted by <?V WV.WIKI.UTF2WIDE (u_name) ?>
+		                        </span>
+		                        <span class="comment-date"> on <?V cast(last_update as varchar) ?></span>
+	                  </div>
+                          <div class="comment-actions">
+			    <v:button action="simple" style="url" value="Delete" xhtml_title="Delete" xhtml_class="button2">
+                              <v:on-post>
+                                <![CDATA[
+                        		      declare id int;
+                        		      id := cast ((control.vc_parent as vspx_tree_node).tn_value as integer);
+
+                                  delete from
+                                    WV.WIKI.COMMENT
+                                  where
+                                    C_ID = id;
+
+                                  self.v_mode := 'show';
+                                  self.vc_data_bind(e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+	                    <v:button action="simple" style="url" value="Reply" xhtml_title="Reply" xhtml_class="button2">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.v_pid := cast ((control.vc_parent as vspx_tree_node).tn_value as integer);;
+                                  self.v_mode := 'reply';
+                                  self.vc_data_bind(e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </div>
+                       </div>
+		                   <?vsp
+					}
+		                     }
+		                   ?>
+		                   <v:node />
+	                    </div>
+	                  </v:node-template>
+                  </v:tree>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <hr />
+                  <v:button action="simple" style="url" value="Reply" xhtml_title="Reply" xhtml_class="button2">
+                    <v:on-post>
+                      <![CDATA[
+                        self.v_pid := null;
+                        self.v_mode := 'reply';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <hr />
+                </td>
+              </tr>
+              <v:template type="simple" enabled="--case when (self.v_mode = 'reply') then 1 else 0 end">
+                <tr>
+                  <td>
+                    <table cellspacing="0">
+                      <tr>
+                        <th>
+                          <v:label for="f_name" value="Name" />
+                        </th>
+                        <td>
+                          <v:text name="f_name" value="--WV.WIKI.USER_DETAILS (self.v_aid, 'name')" xhtml_class="textbox" xhtml_size="70" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <v:label for="f_mail" value="E-Mail" />
+                        </th>
+                        <td>
+                          <v:text name="f_mail" value="--WV.WIKI.USER_DETAILS (self.v_aid, 'e-mail')" xhtml_class="textbox" xhtml_size="70" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          Comment
+                        </th>
+                        <td>
+			  <v:textarea name="f_text" xhtml_size="70"/>
+			</td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" align="center">
+                          <hr />
+                          <v:button action="simple" value="Post" xhtml_onclick="javascript:updateRTE(\'f_message\')" xhtml_title="Post" xhtml_class="button2">
+                            <v:on-post>
+                              <![CDATA[
+                                declare name, mail, title, comment any;
+                                declare rName, rMail, rTitle, rComment any;
+
+                                title := self.getTitle();
+                                comment := trim(self.f_text.ufl_value);
+                                name := trim(self.f_name.ufl_value);
+                                mail := trim(self.f_mail.ufl_value);
+
+                                insert into WV.WIKI.COMMENT (C_TOPIC_ID, C_PARENT_ID, C_SUBJECT, C_TEXT, C_AUTHOR, C_EMAIL, C_DATE)
+                                  values (self.v_fid, self.v_pid, title, comment, name, mail, now ());
+				self.v_pid := identity_value();
+
+                                self.v_mode := 'show';
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                          <v:button action="simple" value="Cancel" xhtml_title="Cancel" xhtml_class="button2">
+                            <v:on-post>
+                              <![CDATA[
+                                self.v_mode := 'show';
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </v:template>
+            </table>
+          </div>
+        </v:form>
+      </vm:popup_page_wrapper>
+    </v:page>
+  </body>
+</html>
+

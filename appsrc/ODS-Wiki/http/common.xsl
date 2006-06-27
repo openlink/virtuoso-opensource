@@ -189,7 +189,7 @@
     <table width="100%" class="wiki_nav_container">
       <tr>
         <th align="left">Attachment</th>
-        <th align="left">T</th>
+        <th align="left">Time</th>
         <th align="left">Action</th>
         <th align="left">Size</th>
         <th align="left">Date</th>

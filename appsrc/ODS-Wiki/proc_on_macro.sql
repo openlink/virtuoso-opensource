@@ -216,6 +216,10 @@ create function WV.WIKI.MACRO_WIKIUSERNAME (inout _data varchar, inout _context 
 
 create function WV.WIKI.MACRO_INCLUDE (inout _data varchar, inout _context any, inout _env any)
 {
+  --dbg_obj_princ ('WV.WIKI.MACRO_INCLUDE ', _data);
+--  declare exit handler for  not found {
+--    return '';
+--  };
   declare _args any;
   _args := WV.WIKI.PARSEMACROARGS (_data);
   declare _topic_name varchar;
@@ -230,11 +234,16 @@ create function WV.WIKI.MACRO_INCLUDE (inout _data varchar, inout _context any, 
   _topic.ti_find_id_by_raw_title ();  
   if (_topic.ti_id = 0)
     return '';
+  --dbg_obj_print (_topic);
   _topic.ti_find_metadata_by_id ();
+  --dbg_obj_print ('3');
   declare exit handler for sqlstate '*' {
+  --dbg_obj_print ('4');
     return NULL;
   }
   ;
+    WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _topic.ti_get_entity (null,1), 
+	vector_concat (_env, _topic.ti_xslt_vector()));
   return (XMLELEMENT ('MACRO_INCLUDE',
    xpath_eval ('//div[@class=\'topic-text\']',
     WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _topic.ti_get_entity (null,1), 
@@ -248,9 +257,10 @@ create function WV.WIKI.MACRO_CHANGELOG (inout _data varchar, inout _context any
   declare _skip, _rows int;
   params := null;
   _args := WV.WIKI.PARSEMACROARGS (_data);
-
+  --dbg_obj_print (_args);
   _skip := atoi (WV.WIKI.GETMACROPARAM (_args, 'skip', '0'));
   _rows := atoi (WV.WIKI.GETMACROPARAM (_args, 'rows', '20'));
+  --dbg_obj_print (_skip, ' ', _rows);
   if (WV.WIKI.GETMACROPARAM (_args, 'local', '0') = '1')
     _ent := WV.WIKI.CHANGELOG(_skip, _rows, get_keyword ('ti_cluster_name', _env, ''));
   else

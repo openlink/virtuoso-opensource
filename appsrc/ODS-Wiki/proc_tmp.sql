@@ -135,3 +135,23 @@ create procedure WV.WIKI.STRSQLAPOS (in str varchar)
   return trim(tmp);
 }
 ;
+
+create procedure WV.WIKI.SET_WIKI_MAIN()
+{
+  if (isstring(registry_get('wiki default uri')))
+     return;
+  registry_set ('wiki default uri', 'done');
+  DB.DBA.VHOST_REMOVE(lpath=>'/wiki');
+  DB.DBA.VHOST_REMOVE(lpath=>'/wiki/main');
+  DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Main');
+  DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Doc');
+  DB.DBA.VHOST_REMOVE(lpath=>'/wikix');
+  DB.DBA.VHOST_REMOVE(lpath=>'/wiki/wikix');
+  DB.DBA.VHOST_REMOVE(lpath=>'/wikiview');
+  DB.DBA.VHOST_REMOVE(lpath=>'/DAV/wikiview');
+  declare _id int;
+  _id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and WAI_NAME = 'Main');
+  if (_id is not null) 
+     DB.DBA.WA_SET_APP_URL (_id, '/wiki/');
+}
+;

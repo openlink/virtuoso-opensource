@@ -66,10 +66,10 @@ if ({?'type'} is not null)
 	     inner join WV.WIKI.TOPIC on (ResId = RES_ID)
              inner join WV.WIKI.CLUSTERS c on (ClusterId = c.ClusterId)) a;
 
-  declare _hist_id, _clustername, _topicname, _username, _action, _context varchar;
+  declare _clustername, _topicname, _username, _action, _context varchar;
   declare _date, _mod_date datetime;
   declare author, author_email varchar;
-  declare author_id int;
+  declare _hist_id, author_id int;
 
   if (_cluster <> '') {
     open cr;

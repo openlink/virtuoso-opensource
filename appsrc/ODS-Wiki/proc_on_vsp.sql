@@ -459,8 +459,10 @@ create function WV.WIKI.VSPXSLT (in _xslt_name varchar, inout _src any, inout _p
     _xslt_folder := '/DAV/VAD/wiki/Root/';
   else
     _xslt_folder := '/DAV/VAD/wiki/Root/Skins/' || _skin_name || '/';
+  --dbg_obj_print (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || _xslt_folder, _xslt_name));
   return
 --    xslt ( concat ('file://', _xslt_name), _src,
+    
     xslt ( concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || _xslt_folder, _xslt_name), _src,
       vector_concat (_params, vector ('env', _params))
     );
@@ -1121,7 +1123,7 @@ nf:
       _jpath := WV.WIKI.STRJOIN ('/', path);
 --      dbg_obj_princ (_jpath);
       if ( (_jpath not like 'wiki/main/%') and
-	   (_jpath <>  'wiki/Atom') )
+	   (_jpath <>  'wiki/Atom/') )
         WV.WIKI.APPSIGNAL (11002, 'Path &url; to resource must start from "/wiki/main/"', vector('url', http_path()));
       path := subseq (path, 2);     
     }
@@ -1349,26 +1351,33 @@ create procedure WV.WIKI.USER_WIKI_NAME_BY_NAME (in name varchar)
 }
 ;
    
-create procedure WV.WIKI.CHANGELOG (in _skip int:=0, in _rows int:=20, in _cluster_name varchar:= null)
+create procedure WV.WIKI.CHANGELOG (inout _skip integer, inout _rows integer, in _cluster_name varchar:= null)
 {    
-  declare _res any;
+--  declare exit handler for not found {
+--    return xtree_doc ('<a/>');
+--  };
+--  _skip := cast (_skip as integer);
+--  _rows := cast (_skip as integer);
+  --dbg_obj_princ ('WV.WIKI.CHANGELOG ', _skip, ' ', _rows, ' ', _cluster_name);
+  declare _res, _ent any;
+   
+  _res := XMLELEMENT ('Changelog');
+  _ent := xpath_eval ('/Changelog', _res);
   if (_cluster_name is not null)
+     {
     select XMLELEMENT ('ChangeLog',
   	XMLAGG (
  	    XMLELEMENT ('Entry',
 	      XMLATTRIBUTES (
-		 LocalName as "topicname",
+	        ClusterName || '.' || LocalName as "topicname",
 		'Changed' as "action",
 		WV.WIKI.DATEFORMAT (RV_MOD_TIME) as "date",
-		WV.WIKI.USER_WIKI_NAME_BY_NAME (RV_WHO) as "who" ) ) ) ) into _res
+		WV.WIKI.USER_WIKI_NAME_X (RV_WHO) as "who" ) ) ) ) into _res
 	from (select top (_skip, _rows) * from  WS.WS.SYS_DAV_RES_VERSION inner join WS.WS.SYS_DAV_RES on (RES_ID = RV_RES_ID)
 	  inner join WV.WIKI.TOPIC on (ResId = RES_ID)
 	  inner join WV.WIKI.CLUSTERS c on (ClusterId = c.ClusterId)
-	 where
-	  c.ClusterName = _cluster_name
-	 order by RV_MOD_TIME desc) a
-	 order by RV_MOD_TIME desc;
-	  
+	where c.ClusterName = _cluster_name ) a;
+     }	  
   else
     select XMLELEMENT ('ChangeLog',
   	XMLAGG (
@@ -1377,7 +1386,7 @@ create procedure WV.WIKI.CHANGELOG (in _skip int:=0, in _rows int:=20, in _clust
 	        ClusterName || '.' || LocalName as "topicname",
 		'Changed' as "action",
 		WV.WIKI.DATEFORMAT (RV_MOD_TIME) as "date",
-		RV_WHO as "who" ) ) ) ) into _res
+		WV.WIKI.USER_WIKI_NAME_X (RV_WHO) as "who" ) ) ) ) into _res
 	from (select top (_skip, _rows) * from  WS.WS.SYS_DAV_RES_VERSION inner join WS.WS.SYS_DAV_RES on (RES_ID = RV_RES_ID)
 	  inner join WV.WIKI.TOPIC on (ResId = RES_ID)
 	  inner join WV.WIKI.CLUSTERS c on (ClusterId = c.ClusterId) ) a;
@@ -2434,5 +2443,13 @@ create function WV.WIKI.USER_DETAILS (in uid int, in field_name varchar)
 	vector ('name', U_NAME, 
 		'e-mail', U_E_MAIL) from DB.DBA.SYS_USERS 
 	where U_ID = uid));
+}
+;
+
+create procedure WV.WIKI.UTF2WIDE (
+  inout S any)
+{
+  declare exit handler for sqlstate '*' { return S; };
+  return charset_recode (S, 'UTF-8', '_WIDE_');
 }
 ;

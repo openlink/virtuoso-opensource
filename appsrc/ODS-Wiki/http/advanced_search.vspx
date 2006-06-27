@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
- -
- -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -23,6 +20,7 @@
  -
  -
 -->
+<?xml version="1.0" encoding="UTF-8"?>
 <?vsp WV.WIKI.VSPHEADER (path,params,lines, 'Advanced Search');
 
 ?>
@@ -251,11 +249,11 @@
 	self.upar := self.upar || '&realm=' || self.realm;
 	
 	if (_cluster_search)
-	  exp1 := WV.WIKI.ADD_SYSINFO (exp1, 'Cluster', self.cluster_1.ufl_value, 1);
+	  exp1 := WV.WIKI.ADD_SYSINFO (exp1, 'cluster', self.cluster_1.ufl_value, 1);
 	else -- needed to distinguish wiki topic from text files
-	  exp1 := WV.WIKI.ADD_SYSINFO (exp1, 'Cluster', '', 1);
+	  exp1 := WV.WIKI.ADD_SYSINFO (exp1, 'cluster', '', 1);
 	  
-	  
+--	dbg_obj_print (exp1);  
 	vectorbld_acc (cr_params, exp1);
 	declare add_cr_text varchar;
 	add_cr_text := '';

@@ -105,7 +105,7 @@
 			  (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vspx_user),
 			  self.topic.ti_cluster_id,
 			  self.vspx_user);
-			DAV_CHECKIN_INT (self.topic.ti_full_path(), null, null, 0);
+--			DAV_CHECKIN_INT (self.topic.ti_full_path(), null, null, 0);
 		        self.vc_redirect (sprintf ('history.vspx?id=%ld', self.topic.ti_id));
 		      ]]></v:on-post>
 		    </v:button>

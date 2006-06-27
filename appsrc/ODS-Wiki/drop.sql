@@ -70,7 +70,8 @@ WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_AttachmentDelete"');
 WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_MEMBERSHIP');	  
 WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_SYS_USERS');	  
 WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_INSTANCE');
-
+WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextInsertPerms"');
+WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextUpdatePerms"');
 
 WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.DOMAIN_PATTERN');
 WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.LockToken');

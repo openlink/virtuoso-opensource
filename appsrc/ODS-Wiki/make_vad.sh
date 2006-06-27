@@ -83,6 +83,7 @@ version_init() {
   file_list=`find ./ -name Entries`
   for i in $file_list; do
       cat $i | grep '^/' | cut -d '/' -f 3 | sed -e 's/1\.//g' >> version.tmp
+	echo $i
   done
   BASE="0"
   echo $BASE
@@ -102,7 +103,7 @@ version_init() {
   fi
   echo $VERSION > version.curr
   VERSION="1.05.$VERSION"
-  rm -f version.tmp
+  # rm -f version.tmp
 }
 
 virtuoso_start() {
@@ -317,7 +318,7 @@ sticker_init() {
   oldIFS="$IFS"
   IFS='
 ' 
-  for file in `grep -l -r . *.sql`
+  for file in *.sql
   do
     if echo "$file" | grep -v "/CVS/" >/dev/null
     then
@@ -325,18 +326,18 @@ sticker_init() {
     fi
   done
   cd http
-  for file in `grep -l -r . *`
+  for file in `find . -type f | sed 's/^..//'`
   do
-    if echo "$file" | grep -v "/CVS/" >/dev/null
+    if echo "$file" | grep -v "CVS" >/dev/null
     then
       echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101N\" makepath=\"yes\"/>" >> $STICKER
     fi
   done
   cd ..
   cd initial/Main
-  for file in `grep -l -r . *`
+  for file in `find . -type f | sed 's/^..//'` 
   do
-    if echo "$file" | grep -v "/CVS/" >/dev/null
+    if echo "$file" | grep -v "CVS" >/dev/null
     then
       echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Main/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101R\" makepath=\"yes\"/>" >> $STICKER
     fi
@@ -344,9 +345,9 @@ sticker_init() {
   cd ..
   cd ..
   cd initial/Wiki
-  for file in `grep -l -r . *`
+  for file in `find . -type f | sed 's/^..//'` 
   do
-    if echo "$file" | grep -v "/CVS/" >/dev/null
+    if echo "$file" | grep -v "CVS" >/dev/null
     then
       echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Doc/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101R\" makepath=\"yes\"/>" >> $STICKER
     fi
@@ -354,16 +355,16 @@ sticker_init() {
   cd ..
   cd ..
   cd Template
-  for file in `grep -l -r . *`
+  for file in `find . -type f | sed 's/^..//'`
   do
-    if echo "$file" | grep -v "/CVS/" >/dev/null
+    if echo "$file" | grep -v "CVS" >/dev/null
     then
       echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Template/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101N\" makepath=\"yes\"/>" >> $STICKER
     fi
   done
   cd ..
   cd Skins
-  for file in `grep -l -r . *`
+  for file in `find . -type f | sed 's/^..//'`
   do
     if echo "$file" | grep -v "CVS" >/dev/null
     then
@@ -372,7 +373,7 @@ sticker_init() {
   done
   cd ..
   cd kupu
-  for file in `grep -l -r . *`
+  for file in `find . -type f | sed 's/^..//'`
   do
     if echo "$file" | grep -v "CVS" >/dev/null
     then
