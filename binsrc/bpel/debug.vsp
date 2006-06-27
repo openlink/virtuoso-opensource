@@ -19,8 +19,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+?><?vsp
   declare id, inst, node, scp, is_sync int;
   declare body, pl, endp any;
   declare content_type, soap_method, oper varchar;
