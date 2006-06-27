@@ -1004,6 +1004,14 @@ sec_set_user (query_instance_t * qi, char *name, char *pass, int is_update)
   xx_encrypt_passwd (enc_pass + 1, pass_len, name);
   if (is_update)
     {
+      caddr_t err = NULL;
+      if (upd_user_qr->qr_to_recompile)
+	{
+	  query_t * new_qr = qr_recompile (upd_user_qr, &err);
+	  if (!err)
+	    upd_user_qr = new_qr;
+	  PRINT_ERR(err);
+	}
       qr_rec_exec (upd_user_qr, cli, NULL, qi, NULL, 4,
 	  ":0", enc_pass, QRP_RAW,
 	  ":1", (ptrlong) user->usr_id, QRP_INT,
@@ -1013,6 +1021,13 @@ sec_set_user (query_instance_t * qi, char *name, char *pass, int is_update)
   else
     {
       caddr_t err = NULL;
+      if (set_user_qr->qr_to_recompile)
+	{
+	  query_t * new_qr = qr_recompile (set_user_qr, &err);
+	  if (!err)
+	    set_user_qr = new_qr;
+	  PRINT_ERR(err);
+	}
       err = qr_rec_exec (set_user_qr, cli, NULL, qi, NULL, 5,
 	  ":0", name, QRP_STR,
 	  ":1", enc_pass, QRP_RAW,
