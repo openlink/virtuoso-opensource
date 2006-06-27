@@ -103,6 +103,7 @@
 %token __TTL_NONPUNCT_END	/* Delimiting value for syntax highlighting */
 
 %type<box> blank
+%type<box> blank_block
 %type<box> subject
 %type<box> verb
 %%
@@ -130,6 +131,8 @@ clause
 	| subject
 		{ dk_free_box (ttlp_arg->ttlp_subj_uri); ttlp_arg->ttlp_subj_uri = $1; }
 		predicate_object_list semicolon_opt	{ /* no op */; }
+	| blank_block	{ /* no op */; }
+        | error { ttlyyerror ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
 	;
 
 keyword_list
@@ -149,11 +152,19 @@ predicate_object_list
 	| predicate_object_list _SEMI verb
 		{ dk_free_box (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = $3; }
 		object_list	{ /* no op */; }
+        | _COMMA { ttlyyerror ("Missing object before comma"); }
+        | _SEMI { ttlyyerror ("Missing predicate and object before semicolon"); }
+        | _DOT_WS { ttlyyerror ("Missing predicate and object before dot"); }
+        | error { ttlyyerror ("Predicate expected"); }
 	;
 
 object_list
 	: object	{;;;}
 	| object_list _COMMA object		{;;;}
+        | _COMMA { ttlyyerror ("Missing object before comma"); }
+        | _SEMI { ttlyyerror ("Missing object before semicolon"); }
+        | _DOT_WS { ttlyyerror ("Missing object before dot"); }
+        | error { ttlyyerror ("Object expected"); }
 	;
 
 verb
@@ -186,12 +197,16 @@ object
 blank
 	: BLANK_NODE_LABEL	{ $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1); dk_free_box ($1); }
 	| _LSQBRA_RSQBRA	{ $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL); }
-        | _LSQBRA
+        | blank_block		{ $$ = $1; }
+	;
+
+blank_block
+        : _LSQBRA
 		{ dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_subj_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
 		  ttlp_arg->ttlp_pred_uri = NULL; }
-		predicate_object_list _RSQBRA
+		predicate_object_list semicolon_opt _RSQBRA
 		{ $$ = ttlp_arg->ttlp_subj_uri;
 		  dk_free_box (ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
