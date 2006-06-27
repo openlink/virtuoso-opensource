@@ -22,7 +22,7 @@
  -
  -
 -->
-<v:page name="search" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="search" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
     <![CDATA[
       declare altStr, directionStr, imageStr varchar;
@@ -69,6 +69,7 @@
       self.v_keywords := trim(self.v_keywords);
       self.v_expression := trim(self.v_expression);
       self.v_tags := trim(self.v_tags);
+      self.v_folder_id := trim(self.v_folder_id);
 
       tmp := BMK.WA.ft2vector(self.v_keywords);
       tmp := BMK.WA.vector_unique(tmp, 2);
@@ -119,9 +120,12 @@
       if (self.v_mode <> 'simple') {
         BMK.WA.xml_set('expression', data, self.v_expression);
         BMK.WA.xml_set('tags', data, self.v_tags);
+        if ((self.v_folder_id <> '0') and (self.v_folder_id <> '0'))
+          BMK.WA.xml_set('folder', data, self.v_folder_id);
       }
 
       self.ds_data := vector ();
+      self.ds_meta := vector ();
       self.ds_tags := vector ();
       if (length(xpath_eval('//entry', data, 0)) = 0) {
         if (e.ve_is_post or (self.v_mode = 'simple')) {
@@ -140,6 +144,7 @@
       exec(sql, state, msg, vector(), 0, meta, result);
       if (state = '00000') {
         self.ds_data := result;
+        self.ds_meta := meta;
 
         if (self.f_cloud.ufl_selected = 1) {
           declare N integer;
@@ -175,6 +180,8 @@
         tmp := concat(tmp, sprintf('&%sexpression=%U', prefix, self.v_expression));
       if (not is_empty_or_null(self.v_tags))
         tmp := concat(tmp, sprintf('&%stags=%U', prefix, self.v_tags));
+      if (not is_empty_or_null(self.v_folder_id))
+        tmp := concat(tmp, sprintf('&%sfolder=%U', prefix, self.v_folder_id));
       if (mode = 'export') {
         if (not is_empty_or_null(self.v_type) and self.v_type <> 'text')
           tmp := concat(tmp, sprintf('&%stype=%U', prefix, self.v_type));
@@ -219,6 +226,7 @@
       <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
       <v:variable name="v_expression" type="varchar" default="''"/>
       <v:variable name="v_tags" type="varchar" default="''"/>
+      <v:variable name="v_folder_id" type="varchar" default="'0'"/>
 
       <v:variable name="v_type" type="varchar" default="'text'"/>
       <v:variable name="v_output" type="varchar" default="'html'"/>
@@ -247,6 +255,7 @@
             self.v_tags := BMK.WA.tags2unique(self.v_tags);
             self.v_tags := BMK.WA.vector2tags(self.v_tags);
           }
+          self.v_folder_id := trim(get_keyword('f_folder', self.vc_page.vc_event.ve_params, get_keyword('folder', self.vc_page.vc_event.ve_params, self.v_folder_id)));
           self.v_type := trim(get_keyword('f_type', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_type)));
           self.v_max := trim(get_keyword('f_max', self.vc_page.vc_event.ve_params, get_keyword('max', self.vc_page.vc_event.ve_params, self.v_max)));
           self.v_order := trim(get_keyword('f_order', self.vc_page.vc_event.ve_params, get_keyword('order', self.vc_page.vc_event.ve_params, self.v_order)));
@@ -275,7 +284,7 @@
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <v:text name="step" xhtml_id="step" type="hidden" value="1"/>
       <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
-        <div class="new-form-header">
+        <div class="new-form-header" style="margin-top: 6px;">
           <i><?V initcap(self.v_mode) ?> search found <?V length (self.ds_data) ?> bookmark(s) in last search</i>
         </div>
       </v:template>
@@ -307,11 +316,15 @@
                   <table id="search" class="grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
+                        <th width="1%" class="last"/>
                         <th>
                           <?vsp self.sortColumn('Name', '_NAME'); ?>
                         </th>
+                        <th>
+                          <?vsp self.sortColumn('Link', '_URI'); ?>
+                        </th>
                         <th class="last">
-                          <?vsp self.sortColumn('Location', '_URI'); ?>
+                          <?vsp self.sortColumn('Location', '_FOLDER_NAME'); ?>
                         </th>
                       </tr>
                     </thead>
@@ -323,7 +336,7 @@
                   <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr align="center">
-                        <td colspan="2">No matches found in BM DataSpace</td>
+                        <td colspan="4">No matches found in BM DataSpace</td>
                       </tr>
                     </table>
                   </v:template>
@@ -331,10 +344,12 @@
                   <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
-                        <td>
+                        <td valign="top">
                           <?vsp
                             http('<img src="image/web_16.png" border="0" alt="Bookmark" width="16"/>');
                           ?>
+                        </td>
+                        <td>
                           <v:url value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
                                  url="--(control.vc_parent as vspx_row_template).te_rowset[3]"
                                  format="%s"
@@ -344,7 +359,13 @@
                           <v:url value="--(control.vc_parent as vspx_row_template).te_rowset[3]"
                                  url="--(control.vc_parent as vspx_row_template).te_rowset[3]"
                                  format="%s"
-                                 xhtml_title="--BMK.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[2])"/>
+                                 xhtml_title="--(control.vc_parent as vspx_row_template).te_rowset[2]"/>
+                        </td>
+                        <td>
+                          <v:url value="--(control.vc_parent as vspx_row_template).te_rowset[6]"
+                                 url="--sprintf('bookmarks.vspx?folder=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[5], -1))"
+                                 format="%s"
+                                 xhtml_title="--BMK.WA.folder_path(self.domain_id, (control.vc_parent as vspx_row_template).te_rowset[5])"/>
                         </td>
                       </tr>
                     </table>
@@ -355,7 +376,7 @@
                 <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
                   <table>
                     <tr>
-                      <td align="center" colspan="2">
+                      <td align="center" colspan="4">
                         <vm:ds-navigation data-set="ds"/>
                       </td>
                     </tr>
@@ -455,10 +476,18 @@
                 </tr>
                 <tr>
                   <th>
-                    <v:label for="f_tags" value="Comma delimited tags" />
+                    <vm:label for="f_tags" value="Comma delimited tags" />
                   </th>
                   <td>
                     <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <vm:label for="f_folder" value="Folder"/>
+                  </th>
+                  <td>
+                    <v:data-list name="f_folder" value="--self.v_folder_id" sql="select 0 as F_ID, 'Select folder ...' as F_PATH2, '' as F_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH" key-column="F_ID" value-column="F_PATH2" xhtml_class="select"/>
                   </td>
                 </tr>
               </table>
@@ -522,11 +551,8 @@
           <v:button action="simple" value="Save" enabled="--case when (self.v_type = 'text') then 0 else 0 end;" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                declare tmp varchar;
-
                 self.update_params();
-                tmp := 'sfolders_update.vspx?return=yes' || self.do_url('save', 's_');;
-                self.vc_redirect(tmp);
+                self.vc_redirect('sfolders_update.vspx?return=yes' || self.do_url('save', 's_'));
               ]]>
             </v:on-post>
           </v:button>
@@ -567,6 +593,7 @@
                       self.v_step := 0;
                       self.v_mode := 'advanced';
                       self.ds_data := vector();
+                      self.ds_meta := vector();
                       self.ds_tags := vector();
                       self.vc_data_bind(e);
                     ]]>

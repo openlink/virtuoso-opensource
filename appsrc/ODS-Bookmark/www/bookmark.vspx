@@ -23,7 +23,7 @@
  -
  -
 -->
-<v:page name="bookmark" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="bookmark" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:after-data-bind>
     <![CDATA[
       self.url := sprintf('<a onClick="alert(''To drag the button to your toolbar, left click the link and while holding the mouse button down, drag it to the browser toolbar and release the button.''); return false;" href="javascript:location.href=''%s/bookmark/%d/bookmarks.vspx?URL=''+location.href+''&amp;TITLE=''+document.title">Bookmark with BM</a>', BMK.WA.host_url(), self.domain_id);
@@ -39,6 +39,7 @@
       <table width="90%" align="center">
         <tr>
           <td>
+             <br />
              You can bookmark URL from anywhere with the BM Bookmark button.
              <h3>Internet Explorer Users</h3>
              <ol>

@@ -23,7 +23,7 @@
  -
  -
 -->
-<v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/">
+<v:page name="export" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/">
   <v:variable name="domain_id" type="integer" param-name="did" default="-1"/>
   <v:variable name="account_id" type="integer" param-name="aid" default="-1"/>
 
@@ -42,8 +42,12 @@
       http_rewrite ();
       http_request_status ('HTTP/1.1 200 OK');
       if (self.v_output = 'BMK') {
-        http_header(sprintf ('Content-type: application/octet-stream\r\nContent-Disposition: inline; filename="%s"\r\n', 'Bookmarks.html'));
- 	      http_value(xslt (BMK.WA.xslt_full ('export.xsl'), xtree_doc(BMK.WA.bookmark_export(self.domain_id, null))));
+        declare params any;
+
+        params := self.vc_page.vc_event.ve_params;
+
+        http_header(sprintf ('Content-type: application/octet-stream\r\nContent-Disposition: inline; filename="%s"\r\n', get_keyword('file', params, 'Bookmarks.html')));
+        http_value(xslt (BMK.WA.xslt_full (get_keyword('format', params, 'Netscape') || '.xsl'), xtree_doc(BMK.WA.bookmark_export(self.domain_id, null))));
       } else {
         http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 

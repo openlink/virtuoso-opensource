@@ -20,7 +20,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
--------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 --
 -- Request Functions
 --
@@ -379,11 +379,72 @@ create procedure BMK.WA.wa_home_title ()
 --
 create procedure BMK.WA.page_name ()
 {
-  declare path, aPath any;
+  declare path, url, pageName varchar;
+  declare aPath any;
 
   path := http_path ();
   aPath := split_and_decode (path, 0, '\0\0/');
-  return aPath [length (aPath) - 1];
+  pageName := aPath [length (aPath) - 1];
+  if (pageName = 'error.vspx')
+    return pageName;
+  url := xpath_eval ('//*[@url = "'|| pageName ||'"]', xml_tree_doc (BMK.WA.menu_tree ()));
+  if ((url is not null))
+    return pageName;
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.menu_tree (
+  in access_role varchar := null)
+{
+  declare S, T varchar;
+
+  S :=
+'<?xml version="1.0" ?>
+<menu_tree>
+  <node name="Bookmarks"       url="bookmarks.vspx"       id="1"                allowed="public guest reader author owner admin">
+    <node name="11"            url="bookmarks.vspx"       id="11"  place="link" allowed="public guest reader author owner admin"/>
+    <node name="12"            url="search.vspx"          id="12"  place="link" allowed="public guest reader author owner admin"/>
+    <node name="13"            url="error.vspx"           id="13"  place="link" allowed="public guest reader author owner admin"/>
+    <node name="14"            url="settings.vspx"        id="14"  place="link" allowed="public guest reader author owner admin"/>
+    <node name="15"            url="bookmark.vspx"        id="15"  place="link" allowed="public guest reader author owner admin"/>
+  </node>
+</menu_tree>';
+
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.navigation_root (
+  in path varchar)
+{
+  declare domain_id, user_id integer;
+  declare access_role varchar;
+  declare aPath any;
+
+  aPath := split_and_decode(path,0,'\0\0/');
+  if (length(aPath) < 2)
+    return vector();
+  domain_id := cast(aPath[0] as integer);
+  user_id := cast(aPath[1] as integer);
+  access_role := BMK.WA.access_role(domain_id, user_id);
+  return xpath_eval (sprintf('/menu_tree/*[contains(@allowed, "%s")]', access_role), xml_tree_doc (BMK.WA.menu_tree (access_role)), 0);
+
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.navigation_child (
+  in path varchar,
+  in node any)
+{
+  path := concat (path, '[not @place]');
+  return xpath_eval (path, node, 0);
 }
 ;
 
@@ -750,11 +811,10 @@ create procedure BMK.WA.bookmark_import(
 
 _xbel:;
   -- check xbel format
-  V := BMK.WA.string2xml(S);
-  V := xpath_eval('/xbel', V);
+  V := xpath_eval('/xbel', BMK.WA.string2xml(S));
   if (V is null)
     goto _end;
-  BMK..bookmark_import_xbel(domain_id, folder_id, xml_cut(V));
+  BMK..bookmark_import_xbel(domain_id, folder_id, xml_cut(V), 'xbel');
 
 _end:
     return;
@@ -777,25 +837,25 @@ create procedure BMK.WA.bookmark_import_netscape(
   while (1) {
     T := xpath_eval('/dl/dt/a/text()', V, N);
     if (T is null)
-      goto _a;
+      goto _folder;
     Q := xpath_eval('/dl/dt/a/@href', V, N);
-    tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as VARCHAR), cast(T as VARCHAR), null);
+    tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as varchar), cast(T as varchar), null);
     BMK.WA.bookmark_parent(domain_id, tmp, folder_id);
     N := N + 1;
   }
-_a:
+_folder:
   N := 1;
   while (1) {
     T := xpath_eval('/dl/dt/h3', V, N);
     if (T is null)
-      goto _h3;
-    tmp := BMK.WA.folder_create2(domain_id, folder_id, cast(T as VARCHAR));
+      goto _exit;
+    tmp := BMK.WA.folder_create2(domain_id, folder_id, cast(T as varchar));
     T := xpath_eval('/dl/dt/dl', V, N);
     if (not (T is null))
       BMK.WA.bookmark_import_netscape(domain_id, tmp, xml_cut(T));
     N := N + 1;
   }
-_h3:
+_exit:
   return;
 };
 
@@ -804,36 +864,40 @@ _h3:
 create procedure BMK.WA.bookmark_import_xbel(
   in domain_id integer,
   in folder_id integer,
-  in V any)
+  in V any,
+  in tag varchar)
 {
-  declare tmp, T, Q any;
+  declare tmp, T, Q, D any;
   declare N integer;
 
   if (V is null)
     return;
+  T := xpath_eval(sprintf('/%s/title/text()', tag), V, 1);
+  if (T is null)
+    return;
+  folder_id := BMK.WA.folder_create2(domain_id, folder_id, cast(T as varchar));
+
   N := 1;
   while (1) {
-    T := xpath_eval('/folder/text()', V, N);
-    if (T is null)
-      goto _a;
-    Q := xpath_eval('/dl/dt/a/@href', V, N);
-    tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as VARCHAR), cast(T as VARCHAR), null);
+    Q := xpath_eval(sprintf('/%s/bookmark[%d]/@href', tag, N), V, 1);
+    if (Q is null)
+      goto _folder;
+    T := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/title/text())', tag, N), V, 1));
+    D := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/desc/text())', tag, N), V, 1));
+    tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as varchar), cast(T as varchar), D);
     BMK.WA.bookmark_parent(domain_id, tmp, folder_id);
     N := N + 1;
   }
-_a:
+_folder:
   N := 1;
   while (1) {
-    T := xpath_eval('/dl/dt/h3', V, N);
+    T := xpath_eval(sprintf('/%s/folder[%d]', tag, N), V, 1);
     if (T is null)
-      goto _h3;
-    tmp := BMK.WA.folder_create2(domain_id, folder_id, cast(T as VARCHAR));
-    T := xpath_eval('/dl/dt/dl', V, N);
-    if (not (T is null))
-      BMK.WA.bookmark_import_xbel(domain_id, tmp, xml_cut(T));
+      goto _exit;
+    BMK.WA.bookmark_import_xbel(domain_id, folder_id, xml_cut(T), 'folder');
     N := N + 1;
   }
-_h3:
+_exit:
   return;
 };
 
@@ -846,6 +910,7 @@ CREATE PROCEDURE BMK.WA.bookmark_export(
   declare retValue any;
 
   retValue := string_output ();
+  http('<?xml version ="1.0" encoding="UTF-8"?>\n', retValue);
   http(sprintf('<root name="Bookmarks" id="f#%d">', coalesce(folder_id, 0)), retValue);
   BMK.WA.bookmark_export_tmp(domain_id, folder_id, retValue);
   http('</root>', retValue);
@@ -862,9 +927,14 @@ CREATE PROCEDURE BMK.WA.bookmark_export_tmp(
 {
   declare id, type any;
 
+  --  http (sprintf('<bookmark name="%V" desc="%V" uri="%V" id="f#%d" />', BD_NAME, coalesce(BD_DESCRIPTION, ''), B_URI, BD_ID), retValue);
   for (select a.*, b.B_URI from BMK.WA.BOOKMARK_DOMAIN a, BMK.WA.BOOKMARK b where a.BD_BOOKMARK_ID = b.B_ID and a.BD_DOMAIN_ID = domain_id and coalesce(a.BD_FOLDER_ID, 0) = coalesce(folder_id, 0) order by a.BD_NAME) do {
-    http (sprintf('<bookmark name="%V" uri="%V" id="f#%d" />', BD_NAME, B_URI, BD_ID), retValue);
+    http (sprintf('<bookmark name="%V" uri="%V" id="f#%d">', BD_NAME, B_URI, BD_ID), retValue);
+    if (coalesce(BD_DESCRIPTION, '') <> '')
+      http (sprintf('<desc>%V</desc>', BD_DESCRIPTION), retValue);
+    http (sprintf('</bookmark>', BD_NAME, B_URI, BD_ID), retValue);
   }
+
   for (select F_ID, F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, 0) = coalesce(folder_id, 0) order by 2) do {
     http (sprintf('<folder name="%V" id="f#%d">', F_NAME, F_ID), retValue);
     BMK.WA.bookmark_export_tmp(domain_id, F_ID, retValue);
@@ -1028,47 +1098,33 @@ create procedure BMK.WA.folder_delete_all(
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.folder_name(
+  in domain_id integer,
+  in folder_id integer)
+{
+  return coalesce((select F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_ID = folder_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.folder_path(
   in domain_id integer,
   in folder_id integer)
 {
-  declare path, name varchar;
-  declare parent_id integer;
-
-  path := '/';
-  whenever not found goto nf;
-  while (folder_id > 0) {
-    select F_NAME, F_PARENT_ID into name, parent_id from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_ID = folder_id;
-    folder_id := parent_id;
-    path := concat ('/', name, path);
-  }
-  return trim(path, '/');
-nf:
-  return NULL;
+  return coalesce((select F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_ID = folder_id), '');
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.folder_path2(
-  in domain_id integer,
-  in folder_id integer)
+  inout path varchar)
 {
-  declare path varchar;
   declare aPath varchar;
 
-  path := BMK.WA.folder_path(domain_id, folder_id);
   aPath := split_and_decode(path,0,'\0\0/');
   return concat(repeat('~', length(aPath)-1), aPath[length(aPath)-1]);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.folder_level(
-  in path varchar)
-{
-  return (length(split_and_decode(path,0,'\0\0/')) - 1);
 }
 ;
 
@@ -1169,10 +1225,13 @@ create procedure BMK.WA.sfolder_sql(
       '  sprintf(\'b#%d\', a.BD_ID) _NODE, \n' ||
       '  a.BD_NAME                  _NAME, \n' ||
       '  b.B_URI                    _URI,  \n' ||
-      '  a.BD_LAST_UPDATE           _LAST_UPDATE \n' ||
+      '  a.BD_LAST_UPDATE                                   _LAST_UPDATE, \n' ||
+      '  a.BD_FOLDER_ID                                     _FOLDER_ID,   \n' ||
+      '  d.F_NAME                                           _FOLDER_NAME  \n' ||
       'from BMK.WA.BOOKMARK_DOMAIN a       \n' ||
       '       join BMK.WA.BOOKMARK b on b.B_ID = a.BD_BOOKMARK_ID \n' ||
       '         left join BMK.WA.BOOKMARK_DATA c on c.BD_MODE = 1 and c.BD_BOOKMARK_ID = b.B_ID and c.BD_OBJECT_ID = <ACCOUNT_ID> \n' ||
+      '           left join BMK.WA.FOLDER d on d.F_ID = a.BD_FOLDER_ID \n' ||
       'where a.BD_DOMAIN_ID = <DOMAIN_ID> <ITEM_DESCRIPTION> <WHERE> \n';
   } else {
     S :=
@@ -1182,7 +1241,9 @@ create procedure BMK.WA.sfolder_sql(
       '  sprintf(\'b#%d\', a.BD_ID) _NODE, \n' ||
       '  a.BD_NAME                  _NAME, \n' ||
       '  b.B_URI                    _URI,  \n' ||
-      '  a.BD_LAST_UPDATE           _LAST_UPDATE \n' ||
+      '  a.BD_LAST_UPDATE                                   _LAST_UPDATE, \n' ||
+      '  a.BD_FOLDER_ID                                     _FOLDER_ID,   \n' ||
+      '  d.F_NAME                                           _FOLDER_NAME  \n' ||
       'from                                \n' ||
       '  (select                           \n' ||
       '    BD_BOOKMARK_ID                  \n' ||
@@ -1199,6 +1260,7 @@ create procedure BMK.WA.sfolder_sql(
       '  where contains(BD_TAGS, \'[__lang "x-ViDoc"] <ACCOUNT_TAGS>\')) x \n' ||
       '    join BMK.WA.BOOKMARK_DOMAIN a on a.BD_BOOKMARK_ID = x.BD_BOOKMARK_ID <ITEM_DESCRIPTION> \n' ||
       '     join BMK.WA.BOOKMARK b on b.B_ID = a.BD_BOOKMARK_ID \n' ||
+      '        left join BMK.WA.FOLDER d on d.F_ID = a.BD_FOLDER_ID \n' ||
       'where a.BD_DOMAIN_ID = <DOMAIN_ID> <WHERE>\n';
   }
 
@@ -1223,6 +1285,13 @@ create procedure BMK.WA.sfolder_sql(
     S := replace(S, '<TAGS>', tmp);
     S := replace(S, '<DOMAIN_TAGS>', sprintf('%s and "^R%s"', tmp, cast(domain_id as varchar)));
     S := replace(S, '<ACCOUNT_TAGS>', sprintf('%s and "^UID%s"', tmp, cast(account_id as varchar)));
+  }
+
+  tmp := BMK.WA.xml_get('folder', data);
+  if (not is_empty_or_null(tmp)) {
+    tmp := cast(tmp as integer);
+    if (tmp > 0)
+      BMK.WA.sfolder_sql_where (where2, delimiter2, sprintf('d.F_PATH like \'%s%s\'', BMK.WA.folder_path(domain_id, tmp), '%'));
   }
 
   if (maxRows <> '')
@@ -1538,7 +1607,7 @@ create procedure BMK.WA.settings_atomVersion (
   declare settings any;
 
   settings := BMK.WA.settings(account_id);
-  return get_keyword('atomVersion', settings, '0.3');
+  return get_keyword('atomVersion', settings, '1.0');
 }
 ;
 
@@ -1641,6 +1710,60 @@ create procedure BMK.WA.dav_url (
   if (isnull(home))
     return '';
   return concat(BMK.WA.host_url(), home, 'BM/', BMK.WA.domain_gems_name(domain_id), '/');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.dav_url2 (
+  in domain_id integer,
+  in account_id integer)
+{
+  declare home varchar;
+
+  home := BMK.WA.dav_home(account_id);
+  if (isnull(home))
+    return '';
+  return replace(concat(home, 'BM/', BMK.WA.domain_gems_name(domain_id), '/'), ' ', '%20');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.dav_content (
+  inout uri varchar)
+{
+  declare cont varchar;
+  declare hp any;
+
+  declare exit handler for sqlstate '*' { return null;};
+
+  declare N integer;
+  declare oldUri, newUri, reqHdr, resHdr varchar;
+  declare auth_uid, auth_pwd varchar;
+
+  newUri := uri;
+  reqHdr := null;
+  BMK.WA.account_access (auth_uid, auth_pwd);
+  reqHdr := sprintf('Authorization: Basic %s', encode_base64(auth_uid || ':' || auth_pwd));
+
+_again:
+  N := N + 1;
+  oldUri := newUri;
+  commit work;
+  cont := http_get (newUri, resHdr, 'GET', reqHdr);
+  if (resHdr[0] like 'HTTP/1._ 30_ %') {
+    newUri := http_request_header (resHdr, 'Location');
+    newUri := WS.WS.EXPAND_URL (oldUri, newUri);
+    if (N > 15)
+      return null;
+    if (newUri <> oldUri)
+      goto _again;
+  }
+  if (resHdr[0] like 'HTTP/1._ 4__ %' or resHdr[0] like 'HTTP/1._ 5__ %')
+    return null;
+
+  return (cont);
 }
 ;
 
@@ -1974,8 +2097,9 @@ create procedure BMK.WA.utfClear(
 create procedure BMK.WA.utf2wide (
   inout S any)
 {
-  declare exit handler for sqlstate '*' { return S; };
+  if (isstring (S))
   return charset_recode (S, 'UTF-8', '_WIDE_');
+  return charset_recode (S, null, '_WIDE_');
 }
 ;
 
@@ -1984,8 +2108,9 @@ create procedure BMK.WA.utf2wide (
 create procedure BMK.WA.wide2utf (
   inout S any)
 {
-  declare exit handler for sqlstate '*' { return S; };
+  if (iswidestring (S))
   return charset_recode (S, '_WIDE_', 'UTF-8' );
+  return charset_recode (S, null, 'UTF-8' );
 }
 ;
 

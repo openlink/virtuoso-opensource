@@ -52,14 +52,85 @@ BMK.WA.exec_no_error('
   	F_DOMAIN_ID integer not null,
   	F_PARENT_ID integer,
   	F_NAME varchar not null,
+  	F_PATH varchar(1000) not null,
 
   	primary key (F_ID)
   )
 ');
 
+BMK.WA.exec_no_error(
+  'alter table BMK.WA.FOLDER add F_PATH varchar(1000)', 'C', 'BMK.WA.FOLDER', 'F_PATH'
+);
+
 BMK.WA.exec_no_error('
   create unique index SK_FOLDER_01 on BMK.WA.FOLDER(F_DOMAIN_ID, F_PARENT_ID, F_NAME)
 ');
+
+BMK.WA.exec_no_error('
+  create index SK_FOLDER_02 on BMK.WA.FOLDER(F_DOMAIN_ID, F_PATH)
+');
+
+BMK.WA.exec_no_error('
+  create trigger FOLDER_AI after insert on BMK.WA.FOLDER referencing new as N {
+    declare domain_id, folder_id integer;
+    declare path varchar;
+
+    domain_id := N.F_DOMAIN_ID;
+    folder_id := N.F_ID;
+    path := coalesce((select F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_ID = N.F_PARENT_ID), \'\');
+    path := path || \'/\' || N.F_NAME;
+    set triggers off;
+    update BMK.WA.FOLDER
+       set F_PATH = path
+     where F_DOMAIN_ID = domain_id
+       and F_ID = folder_id;
+    BMK.WA.folder_paths (domain_id, folder_id, path);
+    set triggers on;
+  }
+');
+
+BMK.WA.exec_no_error('
+  create trigger FOLDER_AU after update on BMK.WA.FOLDER referencing old as O, new as N {
+    if ((N.F_NAME <> O.F_NAME) or isnull(O.F_PATH)) {
+      declare domain_id, folder_id integer;
+      declare path varchar;
+
+      domain_id := N.F_DOMAIN_ID;
+      folder_id := N.F_ID;
+      path := coalesce((select F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_ID = N.F_PARENT_ID), \'\');
+      path := path || \'/\' || N.F_NAME;
+      set triggers off;
+      update BMK.WA.FOLDER
+         set F_PATH = path
+       where F_DOMAIN_ID = domain_id
+         and F_ID = folder_id;
+      BMK.WA.folder_paths (domain_id, folder_id, path);
+      set triggers on;
+    }
+  }
+');
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.folder_paths(
+  in domain_id integer,
+  in parent_id integer,
+  in path varchar)
+{
+  declare folder_id integer;
+  declare name varchar;
+
+  for (select F_NAME, F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_PARENT_ID = parent_id) do {
+    folder_id := F_ID;
+    name := F_NAME;
+    update BMK.WA.FOLDER
+       set F_PATH = path || '/' || name
+     where F_DOMAIN_ID = domain_id
+       and F_ID = folder_id;
+    BMK.WA.folder_paths(domain_id, folder_id, path || '/' || name);
+  }
+}
+;
 
 -------------------------------------------------------------------------------
 --
@@ -307,3 +378,17 @@ BMK.WA.exec_no_error('
     values(\'BM tags aggregator\', now(), \'BMK.WA.tags_agregator()\', 1440)
 ')
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.path_update()
+{
+  if (registry_get ('bmk_path_update') <> '1')
+    update BMK.WA.FOLDER
+       set F_NAME = F_NAME
+     where coalesce(F_PARENT_ID, 0) = 0;
+}
+;
+BMK.WA.path_update();
+--registry_remove ('bmk_path_update');
+registry_set ('bmk_path_update', '1');

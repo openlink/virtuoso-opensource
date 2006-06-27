@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id$ -->
 <!--
  -
  -  $Id$
@@ -22,9 +22,12 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
+<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
   <xsl:variable name="page_title" select="string (//vm:pagetitle)"/>
+
+  <xsl:include href="dav_browser.xsl"/>
 
   <!--=========================================================================-->
   <xsl:template match="head/title[string(.)='']" priority="100">
@@ -170,6 +173,7 @@
       	  </v:template>
           <!-- Navigation right column -->
           <td id="RC">
+            <v:vscx name="navbar" url="bmk_navigation.vspx" />
         	  <v:template type="simple" condition="not self.vc_is_valid">
         	    <div class="error">
         		    <p><v:error-summary/></p>

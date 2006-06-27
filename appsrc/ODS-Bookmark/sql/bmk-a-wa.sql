@@ -137,6 +137,11 @@ BMK.WA.exec_no_error(
 )
 ;
 
+BMK.WA.exec_no_error (
+  'alter type wa_bookmark add overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 -- wa_bookmark methods
@@ -336,3 +341,15 @@ create method wa_dashboard_last_item () for wa_bookmark
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_bookmark
+{
+  declare domainID, userID integer;
+
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
+  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
+
+  return concat(BMK.WA.dav_url2(domainID, userID), 'BM.rdf');
+}
+;
