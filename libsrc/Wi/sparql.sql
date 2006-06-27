@@ -1196,6 +1196,25 @@ create function DB.DBA.RDF_LANGUAGE_OF_SQLVAL (in v any) returns any
 }
 ;
 
+create function DB.DBA.RDF_IS_BLANK_REF (in v any) returns any
+{
+  if (not isstring (v))
+    return 0;
+  if ("LEFT" (v, 9) <> 'nodeID://')
+    return 0;
+  return 1;
+}
+;
+
+create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
+{
+  if (not isstring (v))
+    return 0;
+  if ("LEFT" (v, 9) = 'nodeID://')
+    return 0;
+  return 1;
+}
+;
 
 -----
 -- Partial emulation of XQuery Core Function Library (temporary, to be deleted soon)
@@ -1926,7 +1945,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       else if (182 = __tag (obj))
         {
           http ('"', ses);
-          http (http_escape_to_string (11, 1, 1, obj), ses);
+          http_escape (obj, 11, ses, 1, 1);
           http ('" ', ses);
         }
       else
@@ -2020,7 +2039,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
           else
             {
               res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = obj), sprintf ('_:bad_iid_%d', iri_id_num (obj)));
-              http (' rdf:resource="', ses); http_value (res, 0, ses); http ('/>', ses);
+              http (' rdf:resource="', ses); http_value (res, 0, ses); http ('"/>', ses);
             }
         }
       else if (193 = __tag (obj))
@@ -2136,7 +2155,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC (inout _env any, inout 
 	  declare lang, dt varchar;
 	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val);
 	  dt := DB.DBA.RDF_DATATYPE_OF_LONG (_val);
-	  http ('"', _env)
+	  http ('"', _env);
 	  http_escape (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 11, _env, 1, 1);
 	  if (lang is not null)
 	    {
@@ -3165,9 +3184,9 @@ create procedure
    -- dbg_obj_princ ('Statement to be executed by querySoap: ', stmt);
    res := exec (stmt, state, msg, vector (), 0, mdta, dta);
 
-   sparql_write_ns (ses);
-   sparql_write_head (ses, mdta);
-   sparql_write_res (ses, mdta, dta);
+   SPARQL_RESULTS_XML_WRITE_NS (ses);
+   SPARQL_RESULTS_XML_WRITE_HEAD (ses, mdta);
+   SPARQL_RESULTS_XML_WRITE_RES (ses, mdta, dta);
 
    -- dbg_obj_princ (mdta);
    http ('</sparql>', ses);
@@ -3180,7 +3199,7 @@ create procedure
 }
 ;
 
-create procedure sparql_write_ns (inout ses any)
+create procedure SPARQL_RESULTS_XML_WRITE_NS (inout ses any)
 {
   http ('<sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">', ses);
 }
@@ -3188,7 +3207,7 @@ create procedure sparql_write_ns (inout ses any)
 
 --sparql-protocol-query/#:querySoap
 
-create procedure sparql_write_head (inout ses any, in mdta any)
+create procedure SPARQL_RESULTS_XML_WRITE_HEAD (inout ses any, in mdta any)
 {
   declare i, l integer;
 
@@ -3214,19 +3233,18 @@ create procedure sparql_write_head (inout ses any, in mdta any)
 }
 ;
 
-create procedure sparql_write_res (inout ses any, in mdta any, inout dta any)
+create procedure SPARQL_RESULTS_XML_WRITE_RES (inout ses any, in mdta any, inout dta any)
 {
-
   http ('\n <results distinct="false" ordered="true">', ses);
 
-  for (declare x any, x := 0; x < length (dta); x := x + 1)
-      sparql_make_element (ses, mdta, dta[x]);
+  for (declare ctr integer, ctr := 0; ctr < length (dta); ctr := ctr + 1)
+      SPARQL_RESULTS_XML_WRITE_ROW (ses, mdta, dta[ctr]);
 
   http ('\n </results>', ses);
 }
 ;
 
-create procedure sparql_make_element (inout ses any, in mdta any, inout dta any)
+create procedure SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any, inout dta any)
 {
 
   http ('\n  <result>', ses);
@@ -3290,6 +3308,243 @@ end_of_binding: ;
 }
 ;
 
+create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout metas any, inout rset any, in is_js integer := 0)
+{
+  declare varctr, varcount, resctr, rescount integer;
+  varcount := length (metas[0]);
+  rescount := length (rset);
+  if (is_js)
+	http ('document.writeln(\'', ses);
+  http ('<table class="sparql">', ses);
+  http ('\n  <tr>', ses);
+  http ('\n    <th>Row</th>', ses);
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      http('\n    <th>', ses);
+      http_escape (metas[0][varctr][0], 11, ses, 0, 1);
+      http('</th>', ses);
+    }
+  http ('\n  </tr>', ses);
+  for (resctr := 0; resctr < rescount; resctr := resctr + 1)
+    {
+      http('\n  <tr>', ses);
+      http('\n    <td>', ses);
+	  http(cast((resctr + 1) as varchar), ses);
+	  http('</td>', ses);
+      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+        {
+          declare val any;
+          val := rset[resctr][varctr];
+          if (val is null)
+          {
+            goto end_of_val_print; -- see below
+          }
+          http('\n    <td>', ses);
+          if (isiri_id (val))
+            {
+	           http_escape (DB.DBA.RDF_QNAME_OF_IID (val), 11, ses, 0, 1);
+            }
+          else if (182 = __tag (val))
+			{
+			  http_escape (val, 11, ses, 1, 1);
+			}
+          else if (193 = __tag (val))
+            {
+              http_escape (val[1], 11, ses, 1, 1);
+            }
+          else
+            {
+              http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (val), 11, ses, 1, 1);
+            }
+          http ('</td>', ses);
+end_of_val_print: ;
+        }
+      http('\n  </tr>', ses);
+    }
+  http ('\n</table>', ses);
+  if (is_js)
+  {
+	  declare tmp_str varchar;
+	  tmp_str := string_output_string(ses);
+	  tmp_str := replace(tmp_str, '\n', '\');\ndocument.writeln(\'');
+	  ses := string_output();
+	  http (tmp_str, ses);
+	  http ('\');', ses);
+  }
+}
+;
+
+create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inout rset any)
+{
+  declare varctr, varcount, resctr, rescount integer;
+  varcount := length (metas[0]);
+  rescount := length (rset);
+  http ('\n{ "head": { "link": [], "vars": [', ses);
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      if (varctr > 0)
+        http(', "', ses);
+      else
+        http('"', ses);
+      http_escape (metas[0][varctr][0], 11, ses, 0, 1);
+      http('"', ses);
+    }
+  http ('] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', ses);
+  for (resctr := 0; resctr < rescount; resctr := resctr + 1)
+    {
+      declare need_comma integer;
+      if (resctr > 0)
+        http(',\n    {', ses);
+      else
+        http('\n    {', ses);
+      need_comma := 0;
+      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+        {
+          declare val any;
+          val := rset[resctr][varctr];
+          if (val is null)
+            goto end_of_val_print; -- see below
+          if (need_comma)
+            http('\t, "', ses);
+          else
+            {
+              http(' "', ses);
+              need_comma := 1;
+            }
+          http_escape (metas[0][varctr][0], 11, ses, 0, 1);
+          http('": { ', ses);
+          if (isiri_id (val))
+            {
+              if (val > #i1000000000)
+                http (sprintf ('"type": "bnode", "value": "_%d" }', iri_id_num (val)), ses);
+              else
+                {
+                  http ('"type": "uri", "value": "', ses);
+                  http_escape (DB.DBA.RDF_QNAME_OF_IID (val), 11, ses, 0, 1);
+                }
+            }
+          else if (193 = __tag (val))
+            {
+              declare res varchar;
+              if (257 <> val[0])
+                {
+                  http ('"type": "typed-literal", "datatype": "', ses);
+                  res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = val[0]));
+                  http_escape (res, 11, ses, 1, 1);
+                  http ('", "value": "', ses);
+                }
+              else if (257 <> val[2])
+                {
+                  http ('"type": "literal", "xml:lang": "', ses);
+                  res := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = val[2]));
+                  http_escape (res, 11, ses, 1, 1);
+                  http ('", "value": "', ses);
+                }
+              else
+                http ('"type": "literal", "value": "', ses);
+              http_escape (val[1], 11, ses, 1, 1);
+            }
+          else if (182 = __tag (val))
+            {
+              http ('"type": "literal", "value": "', ses);
+              http_escape (val, 11, ses, 1, 1);
+            }
+          else
+            {
+              http ('"type": "typed-literal", "datatype": "', ses);
+              http_escape (cast (DB.DBA.RDF_DATATYPE_OF_TAG (__tag (val)) as varchar), 11, ses, 1, 1);
+              http ('", "value": "', ses);
+              http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (val), 11, ses, 1, 1);
+            }
+          http ('" }', ses);
+
+end_of_val_print: ;
+        }
+      http('}', ses);
+    }
+  http (' ] } }', ses);
+}
+;
+
+create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in add_http_headers integer) returns varchar
+{
+  declare ret_mime varchar;
+  if ((1 = length (metas[0])) and
+    ('__ask_retval' = metas[0][0][0]) )
+    {
+      if (strstr (accept, 'application/sparql-results+json') is not null or strstr (accept, 'application/json') is not null)
+        {
+          if (strstr (accept, 'application/sparql-results+json') is not null)
+            ret_mime := 'application/sparql-results+json';
+          else
+            ret_mime := 'application/json';
+          http (
+            concat (
+              '{  "head": { "link": [] }, "boolean": ',
+              case (length (rset)) when 0 then 'false' else 'true' end,
+              '}'),
+            ses );
+        }
+      else
+        {
+          ret_mime := 'application/sparql-results+xml';
+          SPARQL_RESULTS_XML_WRITE_NS (ses);
+          http (
+            concat (
+              '\n <head></head>\n <boolean>',
+              case (length (rset)) when 0 then 'false' else 'true' end,
+              '</boolean>\n</sparql>'),
+            ses );
+        }
+    }
+  else if ((1 = length (rset)) and
+    (1 = length (rset[0])) and
+    (214 = __tag (rset[0][0])) )
+    {
+      declare triples any;
+      triples := dict_list_keys (rset[0][0], 1);
+      if (strstr (accept, 'text/rdf+n3') is not null)
+        {
+          ret_mime := 'text/rdf+n3';
+          DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+	}
+      else
+        {
+          ret_mime := 'application/rdf+xml';
+          DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, ses);
+	}
+    }
+  else if (strstr (accept, 'application/sparql-results+json') is not null or strstr (accept, 'application/json') is not null)
+    {
+      if (strstr (accept, 'application/sparql-results+json') is not null)
+        ret_mime := 'application/sparql-results+json';
+      else
+        ret_mime := 'application/json';
+      SPARQL_RESULTS_JSON_WRITE (ses, metas, rset);
+    }
+  else if (strstr (accept, 'text/html') is not null)
+    {
+      ret_mime := 'text/html';
+      SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0);
+    }
+  else if (strstr (accept, 'application/javascript') is not null)
+    {
+      ret_mime := 'application/javascript';
+      SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 1);
+    }
+  else
+    {
+      ret_mime := 'application/sparql-results+xml';
+      SPARQL_RESULTS_XML_WRITE_NS (ses);
+      SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
+      SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
+      http ('\n</sparql>', ses);
+    }
+  if (add_http_headers)
+    http_header ('Content-Type: ' || ret_mime || '\r\n');
+  return ret_mime;
+}
+;
 
 -- CLIENT --
 --select -- dbg_obj_princ (soap_client (url=>'http://neo:6666/SPARQL', operation=>'querySoap', target_namespace=>'urn:FIXME', soap_action =>'urn:FIXME:querySoap', parameters=> vector ('Command', soap_box_structure ('Statement' , 'select TEST from DB.DBA.SPARQL_TABLE3'), 'Properties', soap_box_structure ('PropertyList', 'None' )), style=>2));
@@ -3360,9 +3615,11 @@ create procedure DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (
 
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
 {
-  declare query, dflt_graph, full_query varchar;
+  declare query, dflt_graph, full_query,format varchar;
   declare named_graphs any;
   declare paramctr, paramcount, maxrows integer;
+  declare ses any;
+  ses := 0;
   query := null;
   dflt_graph := null;
   named_graphs := vector ();
@@ -3374,6 +3631,63 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
      return;
    };
   paramcount := length (params);
+  if ((0 = paramcount) or ((2 = paramcount) and ('Content' = params[0])))
+    {
+       declare redir varchar;
+       redir := registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT');
+       if (isstring (redir))
+         {
+            http_request_status ('HTTP/1.1 301 Moved Permanently');
+            http_header (sprintf ('Location: %s\r\n', redir));
+            return;
+         }
+http('<html xmlns="http://www.w3.org/1999/xhtml">');
+http('	<head>');
+http('		<title>Virtuoso SPARQL Query Form</title>');
+http('		<style type="text/css">');
+http('label.n');
+http('		{');
+http('		  display: inline;');
+http('		  margin-top: 10pt;');
+http('		}');
+http('		</style>');
+http('	</head>');
+http('	<body>');
+http('		<div id="header">');
+http('			<h1>OpenLink Virtuoso SPARQL Query</h1>');
+http('		</div>');
+http('		<div id="main">');
+http('			<form action="" method="GET">');
+http('			<fieldset>');
+http('			<legend>SPARQL Query Form</legend>');
+http('			  <label for="default-graph-uri">Default Graph URI</label>');
+http('			  <br />');
+http('			  <input type="text" name="default-graph-uri" id="default-graph-uri"');
+http('				  	value="http://www.ldodds.com/ldodds.rdf" size="80"/>');
+http('			  <br /><br />');
+http('			  <label for="query">Enter SPARQL Query</label>');
+http('			  <br />');
+http('			  <textarea rows="10" cols="60" name="query" id="query">SELECT * WHERE {?x ?y ?z.}</textarea>');
+http('			  <br /><br />');
+--http('			  <label for="maxrows">Max Rows:</label>');
+--http('			  <input type="text" name="maxrows" id="maxrows"');
+--http(sprintf('				  	value="%d"/>',maxrows));
+--http('			  <br />');
+http('			  <label for="format" class="n">Display Results As:</label>');
+http('			  <select name="format">');
+http('			    <option value="" selected="selected">HTML</option>');
+http('			    <option value="application/sparql-results+json">Javascript Object Notation</option>');
+http('			    <option value="application/sparql-results+xml">SPARQL Results Format</option>');
+http('			  </select>');
+http('			  <input type="submit" value="Run Query"/>');
+http('			  <input type="reset" value="Reset"/>');
+http('			</fieldset>');
+http('			</form>');
+http('		</div>');
+http('	</body>');
+http('</html>');
+       return;
+    }
   for (paramctr := 0; paramctr < paramcount; paramctr := paramctr + 2)
     {
       declare pname, pvalue varchar;
@@ -3391,6 +3705,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       else if ('maxrows' = pname)
         {
 	  maxrows := cast (pvalue as integer);
+	}
+      else if ('format' = pname)
+        {
+	  format := pvalue;
 	}
     }
   if (query is null)
@@ -3462,50 +3780,11 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 	query, state, msg );
       return;
     }
-  if ((1 = length (metas[0])) and
-    ('__ask_retval' = metas[0][0][0]) )
-    {
-      declare ses any;
-      ses := 0;
-      http_header ('Content-Type: application/sparql-results+xml\r\n');
-      sparql_write_ns (ses);
-      http (
-        concat (
-	  '\n <head></head>\n <boolean>',
-          case (length (rset)) when 0 then 'false' else 'true' end,
-          '</boolean>\n</sparql>'),
-        ses );
-    }
-  else if ((1 = length (rset)) and
-    (1 = length (rset[0])) and
-    (214 = __tag (rset[0][0])) )
-    {
-      declare triples, ses any;
       declare accept varchar;
       accept := http_request_header (lines, 'Accept', null, '');
-      triples := dict_list_keys (rset[0][0], 1);
-      ses := 0;
-      if (strstr (accept, 'text/rdf+n3') is not null)
-        {
-          http_header ('Content-Type: text/rdf+n3\r\n');
-          DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
-	}
-      else
-        {
-          http_header ('Content-Type: application/rdf+xml\r\n');
-          DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, ses);
-	}
-    }
-  else
-    {
-      declare ses any;
-      ses := 0;
-      http_header ('Content-Type: application/sparql-results+xml\r\n');
-      sparql_write_ns (ses);
-      sparql_write_head (ses, metas);
-      sparql_write_res (ses, metas, rset);
-      http ('\n</sparql>', ses);
-    }
+  if (format is not null and format <> '')
+    accept := format;
+  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
 }
 ;
     
