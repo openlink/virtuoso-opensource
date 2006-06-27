@@ -1218,6 +1218,9 @@ create trigger WA_INSTANCE_U after update on WA_INSTANCE referencing old as O, n
 create trigger WA_MEMBER_D after delete on WA_MEMBER
 {
   declare wa web_app;
+  declare exit handler for not found {
+    return;
+  };
   select WAI_INST into wa from WA_INSTANCE where WAI_NAME = WAM_INST;
   wa.wa_notify_member_changed(WAM_USER, WAM_MEMBER_TYPE, null, WAM_DATA, null, WAM_STATUS, null);
   return;
@@ -4571,7 +4574,7 @@ create procedure WA_SET_APP_URL
   if (h)
 	add_url_arr [1] := call (h) (inst, lpath);
 
-  dbg_obj_print (inst, add_url_arr);
+--  dbg_obj_print (inst, add_url_arr);
   ix := 0;
 
   foreach (any add_url in add_url_arr) do

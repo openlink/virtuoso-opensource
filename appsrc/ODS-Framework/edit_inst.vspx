@@ -128,7 +128,7 @@
                     goto err;
                   }
                   declare inst web_app;
-		  dbg_obj_print (self.inst);
+		  --dbg_obj_print (self.inst);
 		  inst := self.inst;
 		  -- We don't edit the instance name
 		  if (self.wa_type = 'oMail')

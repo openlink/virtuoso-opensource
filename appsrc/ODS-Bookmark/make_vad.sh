@@ -188,6 +188,8 @@ directory_init() {
     mkdir vad/data/bookmark/$dir
   done
 
+  cp $HOME/binsrc/tests/dav/DET_Bookmark.sql vad/data/bookmark/sql
+
   for file in `find sql www xslt -type f -print | LC_ALL=C sort | grep -v CVS | grep -v '.vspx-m' | grep -v '.vspx-sql'`
   do
     cp $file vad/data/bookmark/$file
@@ -257,6 +259,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/bookmark/sql/bmk-a-wa.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/bookmark/sql/bmk-a-table.sql', 1, 'report',  $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/bookmark/sql/bmk-a-code.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/bookmark/sql/DET_Bookmark.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER

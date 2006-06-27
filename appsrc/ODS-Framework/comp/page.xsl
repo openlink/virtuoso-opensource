@@ -192,6 +192,7 @@
 <?vsp
     }
 ?>
+-->
 </xsl:template>
 
 <xsl:template match="vm:greetings">

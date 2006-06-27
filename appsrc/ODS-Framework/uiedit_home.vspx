@@ -336,8 +336,8 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_LAT', lat);
                         WA_USER_EDIT (self.u_name, 'WAUI_LNG', lng);
 
-                        dbg_obj_print('self.set_hlatlng_def.ufl_value',self.set_hlatlng_def.ufl_value);
-                        dbg_obj_print('self.set_hlatlng_def.ufl_selected',self.set_hlatlng_def.ufl_selected);
+                        --dbg_obj_print('self.set_hlatlng_def.ufl_value',self.set_hlatlng_def.ufl_value);
+                        --dbg_obj_print('self.set_hlatlng_def.ufl_selected',self.set_hlatlng_def.ufl_selected);
 
                         WA_USER_EDIT (self.u_name, 'WAUI_LATLNG_HBDEF', (case when self.set_hlatlng_def.ufl_selected = 1 then 0 else 1 end) );
 

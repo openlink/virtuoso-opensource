@@ -142,6 +142,11 @@ BMK.WA.exec_no_error (
 )
 ;
 
+BMK.WA.exec_no_error (
+  'alter type wa_bookmark add overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 -- wa_bookmark methods
@@ -206,6 +211,16 @@ create method wa_new_inst (in login varchar) for wa_bookmark
   select WAI_ID into iWaiID from WA_INSTANCE where WAI_NAME = self.wa_name;
   self.BookmarkID := cast(iWaiID as varchar);
   update WA_INSTANCE set WAI_INST = self where WAI_ID = iWaiID;
+
+  declare path varchar;
+  path := sprintf ('/DAV/home/%s/Bookmarks/', login);
+  DB.DBA.DAV_MAKE_DIR (path, iUserID, null, '110100000N');
+  update WS.WS.SYS_DAV_COL set COL_DET = 'Bookmark' where COL_ID = DAV_SEARCH_ID (path, 'C');
+
+  declare path varchar;
+  path := sprintf ('/DAV/home/%s/Bookmarks/', login);
+  DB.DBA.DAV_MAKE_DIR (path, iUserID, null, '110100000N');
+  update WS.WS.SYS_DAV_COL set COL_DET = 'Bookmark' where COL_ID = DAV_SEARCH_ID (path, 'C');
 
   -- Add a virtual directory for BM - public www -------------------------
   VHOST_REMOVE(lpath    => concat('/bookmark/', self.BookmarkID));

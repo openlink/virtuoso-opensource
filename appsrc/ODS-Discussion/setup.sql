@@ -2712,3 +2712,9 @@ create procedure nntpf_get_wa_home ()
 };
 
 
+create procedure nntpf_get_wa_home ()
+{
+  return registry_get ('wa_home_link');
+};
+
+

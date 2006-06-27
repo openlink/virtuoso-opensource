@@ -22,7 +22,7 @@
 #
 
 LOGDIR=`pwd`
-VERSION="0.1.84"
+VERSION="0.2.01"
 LOGFILE="${LOGDIR}/make_vad.log"
 STICKER="${LOGDIR}/make_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
@@ -221,7 +221,7 @@ sticker_init() {
   echo "  <require>" >> $STICKER
   echo "   <name package=\"Framework\">" >> $STICKER
   echo "   </name>" >> $STICKER
-  echo "   <versions_later package=\"1.19.15\">" >> $STICKER
+  echo "   <versions_later package=\"1.22.75\">" >> $STICKER
   echo "    <prop name=\"Date\" value=\"2005-04-28\" />" >> $STICKER
   echo "    <prop name=\"Comment\"" >> $STICKER
   echo "	  value=\"An incompatible version of WA\" />" >> $STICKER
@@ -267,6 +267,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/procedures.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/images.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/dav_api.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/sioc.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/comments.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/rss.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/create_triggers.sql', 1, 'report', 1);" >> $STICKER
