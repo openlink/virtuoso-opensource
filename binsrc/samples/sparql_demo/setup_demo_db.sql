@@ -235,7 +235,7 @@ create procedure SPARQL_MKPATH (in path varchar)
 create procedure SPARQL_DAWG_LOAD_MANIFESTS ()
 {
   declare mflst any;
-  declare REPORT varchar;
+  declare REPORT,content_type varchar;
   result_names (REPORT);
   mflst := SPARQL_DAWG_MANIFEST_RDF_LIST();
   mflst := subseq (mflst, 0, length (mflst) - 1);
@@ -251,9 +251,13 @@ create procedure SPARQL_DAWG_LOAD_MANIFESTS ()
 	  SPARQL_MKPATH (davpath);
 	  DB.DBA.DAV_DELETE (davpath, 1, 'dav', 'dav');
     delete from RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (davuri);
+    if (davpath like '%.ttl')
+      content_type := 'application/x-turtle';
+    else 
+      content_type := 'application/rdf+xml';
 	  id := DB.DBA.DAV_RES_UPLOAD (davpath,
 	    file_to_string (filefullname),
-	    'application/rdf+xml',
+	    content_type,
 	    '110110110RR',
 	    'dav', 'dav', 'dav', 'dav' );
 	  SPARQL_REPORT (sprintf ('Uploading %s to %s: %s',
@@ -272,7 +276,7 @@ create procedure SPARQL_DAWG_LOAD_DATFILE (in rel_path varchar, in in_resultset 
   declare REPORT varchar;
   declare filefullname, davpath, davuri varchar;
   declare id integer;
-  declare graph_uri, dattext varchar;
+  declare graph_uri, dattext,content_type varchar;
   declare app_env any;
   app_env := null;
   if (not in_resultset)
@@ -282,9 +286,13 @@ create procedure SPARQL_DAWG_LOAD_DATFILE (in rel_path varchar, in in_resultset 
   davuri := SPARQL_DAV_DATA_URI() || rel_path;
   SPARQL_MKPATH (davpath);
   DB.DBA.DAV_DELETE (davpath, 1, 'dav', 'dav');
+  if (rel_path like '%.ttl')
+    content_type := 'application/x-turtle';
+  else
+    content_type := 'application/rdf+xml';
   id := DB.DBA.DAV_RES_UPLOAD (davpath,
     file_to_string (filefullname),
-    'application/rdf+xml',
+    content_type,
     '110110110RR',
     'dav', 'dav', 'dav', 'dav' );
   SPARQL_REPORT (sprintf ('Uploading %s to %s: %s',
