@@ -22,6 +22,16 @@
 
 /* Aggregate concat */
 
+create procedure yac_rep_exec (in _attached_qual varchar, in _attached_owner varchar, in _attached_name varchar,
+			       inout _stmt any, inout _stat any, inout _msg any)
+{
+   _stmt := replace (_stmt, '''', '''''');
+   _stmt := sprintf ('create nonincremental snapshot "%I"."%I"."%I" as ''%s''',
+	 _attached_qual, _attached_owner, _attached_name, _stmt);
+   return exec (_stmt, _stat, _msg);
+}
+;
+
 
 create function yac_agg_concat_init (inout _agg varchar)
 {

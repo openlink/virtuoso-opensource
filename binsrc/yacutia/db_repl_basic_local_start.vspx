@@ -114,7 +114,7 @@
 	    self.check_qr (concat (_local_qual, '.', _local_owner, '.', _local_name), self.repl_basic_local_sources[_idx]);
 
             _stmt := sprintf ('create nonincremental snapshot "%I"."%I"."%I" as ''%s''',
-            _local_qual, _local_owner, _local_name, self.repl_basic_local_sources[_idx]);
+            _local_qual, _local_owner, _local_name, replace (self.repl_basic_local_sources[_idx], '''', ''''''));
             _stat := '00000';
             _msg := '';
             if (0 <> exec (_stmt, _stat, _msg))

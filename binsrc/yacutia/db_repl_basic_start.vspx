@@ -226,11 +226,10 @@
               --  registry_set(sprintf('REPL_COUNT_%s_%s_%s',_attached_qual,_attached_owner,_attached_name),_stat || ' ' || _msg);
               goto next_tbl;
             }
-            _stmt := sprintf ('create nonincremental snapshot "%I"."%I"."%I" as ''%s''',
-            _attached_qual, _attached_owner, _attached_name, self.repl_basic_sources[_idx]);
             _stat := '00000';
             _msg := '';
-            if (0 <> exec (_stmt, _stat, _msg))
+	    if (0 <> yac_rep_exec (_attached_qual, _attached_owner, _attached_name,
+	    			   self.repl_basic_sources[_idx], _stat, _msg))
             {
               signal(_stat,_msg);
               --  registry_set(sprintf('REPL_COUNT_%s_%s_%s',_attached_qual,_attached_owner,_attached_name),_stat || ' ' || _msg);
