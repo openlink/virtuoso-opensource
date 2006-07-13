@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="COUNTRIES">
+  <refmeta>
+      <refentrytitle>COUNTRIES</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+      <refname>Editing the Demo Database data</refname>
+      <refpurpose>Using VSPX controls to edit the Demo Database data</refpurpose>
+  </refnamediv>
+
+
+  <refsect1 id="COUNTRIESa">
+      <title>Simple application to edit countries data from Demo Database</title>
+      <para>The following approaches are demonstrated:</para>
+      <itemizedlist mark="bullet">
+	  <listitem>Listing the data with data-set</listitem>
+	  <listitem>Editing the data with form controls</listitem>
+	  <listitem>inline images in from blob data</listitem>
+      </itemizedlist>
+      <para>
+	  In details example itself shows:
+      </para>
+      <itemizedlist>
+	  <listitem>How to build simple application to list a data.</listitem>
+	  <listitem>To edit and add strings and large objects.</listitem>
+      </itemizedlist>
+  </refsect1>
+</refentry>

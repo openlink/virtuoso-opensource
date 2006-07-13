@@ -1,0 +1,171 @@
+<html>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+  <head>
+  </head>
+  <body>
+    <v:page name="c_edit_page" xmlns:v="http://www.openlinksw.com/vspx/" fast-render="1">
+      <v:variable name="country" type="varchar" default="''" param-name="c" />
+      <v:variable name="code" type="varchar" default="''" />
+      <v:on-init>
+	if (length (self.country) and not e.ve_is_post)
+	  {
+            select Code into self.code from Demo.demo.Countries where Name = self.country;
+	  }
+      </v:on-init>
+      <font color="red">
+	<b>
+	  <v:error-summary/>
+	</b>
+      </font>
+      <v:form type="simple" method="POST" name="c_form" xhtml_enctype="multipart/form-data">
+	<table border="0" cellspacing="0" cellpadding="0">
+	  <tr>
+	    <td>
+	      Country
+	    </td>
+	    <td>
+	      <v:text name="c_name" value="--self.country" size="100">
+	      </v:text>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      ISO Country Code (2 letters)
+	    </td>
+	    <td>
+	      <v:text name="c_code" value="--self.code" size="2"/>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	     Small Flag Image
+	    </td>
+	    <td>
+	      <v:text name="c_sml_flag" value="" size="100" type="file"/>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      Large Flag Image
+	    </td>
+	    <td>
+	      <v:text name="c_flag" value="" size="100" type="file"/>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <v:button name="cancel_bt" value="Cancel" action="simple">
+		<v:on-post>
+		  self.vc_redirect ('c_data.vspx');
+		</v:on-post>
+	      </v:button>
+	      <v:button name="save_bt" value="Save" action="simple">
+		<v:on-post><![CDATA[
+		  declare sm, lg, c_code, c_name varchar;
+		  if (not self.vc_is_valid)
+		    return;
+
+		  sm := self.c_sml_flag.ufl_value;
+		  lg := self.c_flag.ufl_value;
+		  c_code := lower (self.c_code.ufl_value);
+		  c_name := self.c_name.ufl_value;
+
+		  if (length (self.country) and length (sm) = 0)
+		    {
+		      select SmallFlag into sm from Demo.demo.Flags where CountryCode = self.code;
+		    }
+		  if (length (self.country) and length (lg) = 0)
+                    {
+		      select LargeFlag into lg from Demo.demo.Flags where CountryCode = self.code;
+		    }
+
+		  if (length (c_name) = 0)
+		    {
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := 'The country name cannot be empty';
+		      return;
+		    }
+		  if (length (c_code) <> 2)
+		    {
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := 'The ISO country code should be two letters.';
+		      return;
+		    }
+		  if (length (sm) = 0)
+		    {
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := 'The small flag image cannot be empty';
+		      return;
+		    }
+		  if (length (lg) = 0)
+		    {
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := 'The large flag image cannot be empty';
+		      return;
+		    }
+
+		  if (c_code <> self.code and exists (select 1 from Demo.demo.Countries where Code = c_code))
+		    {
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := 'A country with same ISO code already exists.';
+		      return;
+		    }
+
+		  if (length (self.country))
+		    {
+                      update Demo.demo.Countries set Name = c_name,
+		      Code = c_code, SmallFlagDAVResourceName = c_code || '-flag.gif',
+		      LargeFlagDAVResourceName = c_code || '-lgflag.gif'
+		      where Name = self.country;
+
+		    }
+		  else
+		    {
+                      insert into Demo.demo.Countries (Name, Code, SmallFlagDAVResourceName, LargeFlagDAVResourceName)
+		        values (c_name, c_code, c_code || '-flag.gif', c_code || '-lgflag.gif');
+		    }
+		  if (length (sm) and length (lg))
+		    {
+		      if (length (self.country))
+		        delete from Demo.demo.Flags where CountryCode = self.code;
+		      insert replacing Demo.demo.Flags (CountryCode, SmallFlag, LargeFlag)
+			values (c_code, sm, lg);
+		    }
+
+	          update Demo..Countries set SmallFlagDAVResourceURI = '/DAV/sample_data/images/flags/'||SmallFlagDAVResourceName,
+		    LargeFlagDAVResourceURI = '/DAV/sample_data/images/flags/' || LargeFlagDAVResourceName
+                  where Name = c_name;
+
+		  self.vc_redirect ('c_data.vspx');
+		  ]]></v:on-post>
+	      </v:button>
+	    </td>
+	  </tr>
+	</table>
+      </v:form>
+    </v:page>
+  </body>
+</html>

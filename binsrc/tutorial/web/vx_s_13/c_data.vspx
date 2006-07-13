@@ -1,0 +1,102 @@
+<html>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+  <head>
+  </head>
+  <body>
+    <v:page name="data_set_page" xmlns:v="http://www.openlinksw.com/vspx/" fast-render="1">
+      <font color="red">
+	<b>
+	  <v:error-summary/>
+	</b>
+      </font>
+      <p>
+	<a href="rss.xml">RSS</a>
+	<a href="rdf.xml">RDF</a>
+	<a href="atom.xml">Atom</a>
+	<a href="/countries/Gdata">Gdata</a>
+      </p>
+      <table border="2" cellspacing="0" cellpadding="0">
+	<v:data-set name="ds" sql="select Name, Code, SmallFlag from Demo.demo.Countries, Demo.demo.Flags where Code = CountryCode" nrows="25" scrollable="1" cursor-type="dynamic">
+	  <v:template name="template1" type="simple">
+	    <tr>
+	      <td align="center" width="300">
+		<b>
+		  <v:label name="label2" value="Country" format="%s"/>
+		</b>
+	      </td>
+	      <td align="center">
+		<b>
+		  <v:label name="label3" value="Flag" format="%s"/>
+		</b>
+	      </td>
+	      <td align="center">
+		  <v:url name="u_new" action="simple" value="Add New" url="c_edit.vspx"/>
+	      </td>
+	    </tr>
+	  </v:template>
+	  <v:template name="template2" type="repeat">
+	    <v:template name="template7" type="if-not-exists">
+	      <tr>
+		<td align="center" colspan="5">
+		  <b>No rows selected</b>
+		</td>
+	      </tr>
+	    </v:template>
+	    <v:template name="template4" type="browse">
+	      <tr>
+		<td align="left" nowrap="1">
+		  <v:url name="label5" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" url="--sprintf ('c_disp.vspx?c=%U', (control.vc_parent as vspx_row_template).te_rowset[0])"/>
+		  <v:label name="label6" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="(%s)"/>
+		</td>
+		<td align="left" nowrap="1">
+		  <img src="<?V concat ('data:image/jpeg;base64,', encode_base64 (blob_to_string (control.te_rowset[2]))) ?>"
+		    height="24"/>
+		</td>
+		<td nowrap="1">
+		  <v:url name="u_edit" action="simple" value="Edit" url="--sprintf ('c_edit.vspx?c=%U', (control.vc_parent as vspx_row_template).te_rowset[0])"/>
+		  <v:button name="ds_delete" action="simple" value="Delete" style="url">
+		    <v:on-post>
+		      delete from Demo.demo.Countries where Name = self.ds.ds_current_row.te_rowset[0];
+		      self.ds.vc_data_bind (e);
+		    </v:on-post>
+		  </v:button>
+		</td>
+	      </tr>
+	    </v:template>
+	  </v:template>
+	  <v:template name="template3" type="simple">
+	    <tr>
+	      <td colspan="3" align="center">
+		<v:button name="ds_prev" action="simple" value="< Previous" style="url"/>
+		<v:button name="ds_next" action="simple" value="Next >" style="url"/>
+	      </td>
+	    </tr>
+	  </v:template>
+	</v:data-set>
+      </table>
+    </v:page>
+  </body>
+</html>
