@@ -336,6 +336,7 @@
   		    <example id="BLOG-QUERY" fspath="apps/blog_query"></example>
   		    <example id="FORUMS" fspath="apps/forums"></example>
   		    <example id="RSS-FEED" fspath="apps/rss_feed"></example>
+		    <example id="COUNTRIES" fspath="web/vx_s_13"></example>
         </group>
         <group Title="AJAX">
 					<example id="SO-S-24" fspath="services/so_s_24"></example>

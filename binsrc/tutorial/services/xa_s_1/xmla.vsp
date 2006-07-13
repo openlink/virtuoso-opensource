@@ -24,7 +24,7 @@
   declare url varchar;
   declare op, err, nfo, stmt, dsn varchar;
   declare schema_rowsets, prop, prop_type, prop_value, prop_selected, prop_list, bookmarks any;
-  declare rest, rest_type, rest_value, rest_selected, rest_list, use_bookmark any;
+  declare rest, rest_type, rest_value, rest_selected, rest_list, use_bookmark, use_rowcount any;
   declare i, l, i1, tip_no, idx, _cnt, _skip, n_row, bookmark int;
   declare sel, tip, uname, pwd, _dsn, direction varchar;
 
@@ -40,6 +40,7 @@
   direction := get_keyword ('direction' , params, 'forward');
   bookmark := get_keyword ('bookmark' , params, '0');
   use_bookmark := get_keyword ('use_bookmark' , params, 'off');
+  use_rowcount := get_keyword ('use_rowcount' , params, 'off');
   bookmarks := vector ();
 
   if ({?'add_dsn'} is not null)
@@ -253,6 +254,10 @@
 	    declare sel_book any;
 	    sel_book := get_keyword ('sel_book' , params, '');
             prop_list := vector_concat (prop_list, vector ('bookmark-from', sel_book));
+	 }
+       if (use_rowcount = 'on')
+	 {
+            prop_list := vector_concat (prop_list, vector ('retrieve-row-count', '1'));
 	 }
 
        resp := soap_client (url=>url,
@@ -515,6 +520,14 @@ err:;
      } ?>
 	  </select>
 	  <input type="checkbox" name="use_bookmark"> Use this bookmark for next exec
+    </td>
+  </tr>
+    <tr>
+    <td>
+	  Use rowcount for next exec
+    </td>
+    <td>
+	  <input type="checkbox" name="use_rowcount" <?= check_if (use_rowcount, 'on')  ?>>
     </td>
     <?vsp } ?>
     <?vsp } ?>
