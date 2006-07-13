@@ -49,7 +49,7 @@ extern "C" {
 #define VIRTRDF_NS_URI_LEN	42
 
 
-#define MAX_XML_LNAME_LENGTH 100				/* for local names, namespace prefixes and namespace URIs */
+#define MAX_XML_LNAME_LENGTH 500				/* for local names, namespace prefixes and namespace URIs */
 #define MAX_XML_QNAME_LENGTH (2*MAX_XML_LNAME_LENGTH + 1)	/* for qualified names (that have semicolons) */
 
 #define XP_TRANSLATE_HOST 1
