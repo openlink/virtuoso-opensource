@@ -174,6 +174,11 @@ walk_db (lock_trx_t * lt, page_func_t func)
 		ITC_IN_MAP (itc);
 		buf = itc_reset (itc);
 		ITC_IN_MAP (itc);
+		if (!buf->bd_content_map)
+		  {
+		    log_error ("Blog ref'referenced as index tree top node dp=%d key=%s\n", buf->bd_page, itc->itc_insert_key->key_name);
+		  }
+		else 
 		walk_dbtree (itc, &buf, 0, func, 0);
 		itc_page_leave (itc, buf);
 		ITC_LEAVE_MAP (itc);
