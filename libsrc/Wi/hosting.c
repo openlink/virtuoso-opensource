@@ -127,6 +127,19 @@ hosting_load_and_check_plugin (
       return hres;
     }
 
+  if (NULL != res->uv_gate)
+    {
+      if (_gate_export (res->uv_gate))
+	{
+	  DLL_CLOSE (dll);
+	  hres = (hosting_version_t *) calloc (1, sizeof (hosting_version_t));
+	  res = &(hres->hv_pversion);
+	  res->uv_filename = strdup (fname);
+	  res->uv_load_error = "Loaded plugin requires core functionality not provided by main application";
+	  return hres;
+	}
+    }
+
   hres = (hosting_version_t *) res;
 
   SET_DLL_PROC (hres, http_handler, HOSTING_HTTP_HANDLER, 1);

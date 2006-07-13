@@ -166,7 +166,7 @@ void bif_hosting_init (void);
 
 #define MD5_SIZE 16
 caddr_t box_md5 (caddr_t str);
-caddr_t md5 (caddr_t str);
+EXE_EXPORT (caddr_t, md5, (caddr_t str));
 caddr_t md5_ses (dk_session_t *ses);
 #ifdef _SSL
 caddr_t box_sha1 (caddr_t str);
