@@ -44,6 +44,51 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
     vector ('.XML', '.RDF', '.RDFS', '.RSS', '.RSS2', '.XBEL', '.FOAF', '.OPML', '.WSDL', '.BPEL', '.VSPX', '.VSCX', '.XDDL') ) )
     return 'text/xml';
   if (position (orig_res_ext_upper,
+    vector ('.TAR') ) )
+    return 'application/tar';
+  if (position (orig_res_ext_upper,
+    vector ('.TAZ') ) )
+    return 'application/taz';
+  if (position (orig_res_ext_upper,
+    vector ('.GZ') ) )
+    return 'application/gz';
+  if (position (orig_res_ext_upper,
+    vector ('.MSI') ) )
+    return 'application/msi';
+  if (position (orig_res_ext_upper,
+    vector ('.DMG') ) )
+    return 'application/dmg';
+  if (position (orig_res_ext_upper,
+    vector ('.ARJ') ) )
+    return 'application/arj';
+  if (position (orig_res_ext_upper,
+    vector ('.BZ') ) )
+    return 'application/bz';
+  if (position (orig_res_ext_upper,
+    vector ('.BZ2') ) )
+    return 'application/bz2';
+  if (position (orig_res_ext_upper,
+    vector ('.TGZ') ) )
+    return 'application/tgz';
+  if (position (orig_res_ext_upper,
+    vector ('.RAR') ) )
+    return 'application/rar';
+  if (position (orig_res_ext_upper,
+    vector ('.ZIP') ) )
+    return 'application/zip';
+  if (position (orig_res_ext_upper,
+    vector ('.CAB') ) )
+    return 'application/cab';
+  if (position (orig_res_ext_upper,
+    vector ('.LZH') ) )
+    return 'application/lzh';
+  if (position (orig_res_ext_upper,
+    vector ('.ACE') ) )
+    return 'application/ace';
+  if (position (orig_res_ext_upper,
+    vector ('.ISO') ) )
+    return 'application/iso';
+  if (position (orig_res_ext_upper,
     vector ('.TTL') ) )
     return 'application/text+ttl';
   return coalesce ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = lower (subseq (orig_res_ext, 1))));
@@ -444,6 +489,113 @@ errexit:
 }
 ;
 
+create function "DAV_EXTRACT_RDF_application/archive" (in type_descr varchar, in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas, extras any;
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_application/archive (', type_descr, orig_res_name, content, html_start, ')');
+  whenever sqlstate '*' goto errexit;
+  doc := xtree_doc (content, 0);
+  metas := vector (
+        'http://www.openlinksw.com/schemas/Archive#type', type_descr, type_descr);
+  extras := null; 
+  --vector (
+  --      'http://www.openlinksw.com/virtdav#dynRdfExtractor', 'application/archive');
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/tar" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('TAR archive', orig_res_name, content, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/taz" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('TAZ archive', orig_res_name, content, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/gz" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('Gzip archive', orig_res_name, content, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/msi" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('Microsoft installer', orig_res_name, content, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/dmg" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('DMG install package', orig_res_name, content, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/arj" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('ARJ archive', orig_res_name, content, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/bz" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+ return "DAV_EXTRACT_RDF_application/archive" ('BZ archive', orig_res_name, content, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/bz2" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('BZ2 archive', orig_res_name, content, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/tgz" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('TGZ archive', orig_res_name, content, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/rar" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('RAR archive', orig_res_name, content, html_start);
+}
+;
+ 
+create function "DAV_EXTRACT_RDF_application/zip" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('ZIP archive', orig_res_name, content, html_start);
+}
+;  
+
+create function "DAV_EXTRACT_RDF_application/cab" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('CAB archive', orig_res_name, content, html_start);
+}
+;  
+
+create function "DAV_EXTRACT_RDF_application/lzh" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('LZH archive', orig_res_name, content, html_start);
+}
+;  
+
+create function "DAV_EXTRACT_RDF_application/ace" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('ACE archive', orig_res_name, content, html_start);
+}
+;  
+
+create function "DAV_EXTRACT_RDF_application/iso" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/archive" ('ISO image archive', orig_res_name, content, html_start);
+}
+;  
+
 create function "DAV_EXTRACT_RDF_application/msword+xml" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   declare docprops any;
@@ -651,7 +803,7 @@ errexit:
 create function "DAV_EXTRACT_RDF_application/text+ttl" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   declare doc, metas, extras any;
-  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/rdf+xml (', orig_res_name, content, html_start, ')');
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_application/text+ttl (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
   metas := vector (
