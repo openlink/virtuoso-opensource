@@ -43,34 +43,26 @@
 
 
 void dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float * overhead_ret, locus_t *loc);
+#define ABS(x) (x < 0 ? -(x) : x)
 
 
 long
 dbe_key_count (dbe_key_t * key)
 {
+  dbe_table_t * tb = key->key_table;
   if (key->key_table->tb_count != DBE_NO_STAT_DATA)
     return MAX (key->key_table->tb_count, 1);
-#ifdef SQLO_STATISTICS
-  else if (key->key_table->tb_path_count > 0)
-    return (long) MIN ((key->key_table->tb_global_rows / key->key_table->tb_path_count), 1);
-#endif
-  else
-    return 1000;
+  else if (tb->tb_count_estimate == DBE_NO_STAT_DATA
+	   || ABS (tb->tb_count_delta ) > tb->tb_count_estimate / 5)
+    {
+      tb->tb_count_estimate = key_count_estimate (tb->tb_primary_key, 3, 1);
+      tb->tb_count_delta = 0;
+      return MAX (1, tb->tb_count_estimate);
+    }
+  else 
+    return MAX (1, ((long)(tb->tb_count_estimate + tb->tb_count_delta)));
 }
 
-
-#define COL_PRED_COST 0.02 /* itc_col_check */
-#define ROW_SKIP_COST 0.04 /* itc_row_check and 1 iteration of itc_page_search */
-#define INX_CMP_COST 0.25 /* one compare in random access lookup. Multiple by log2 of inx count to get cost of 1 random access */
-#define ROW_COST_PER_BYTE (COL_PRED_COST / 200) /* 200 b of row cost 1 itc_col_check */
-#define NEXT_PAGE_COST 5
-#define INX_ROW_INS_COST 1 /* cost of itc_insert_dv into inx */
-#define HASH_ROW_INS_COST 0.7 /* cost of adding a row to hash */
-#define HASH_LOOKUP_COST 0.6
-#define CV_INSTR_COST 0.1   /* avg cost of instruction in code_vec_run */
-
-#define HASH_COUNT_FACTOR(n)\
-  (0.05 * log(n) / log (2)) 
 
 
 float
@@ -81,10 +73,10 @@ dbe_key_unit_cost (dbe_key_t * key)
     {
       double lc = log (count);
       double l2 = log (2);
-      return (float) (INX_CMP_COST  * lc / l2);
+      return INX_INIT_COST + (float) (INX_CMP_COST  * lc / l2);
     }
   else
-    return 0;
+    return INX_INIT_COST;
 }
 
 
@@ -123,10 +115,14 @@ void
 sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 {
   *u1 = (float) COL_PRED_COST;
+  if (upper == lower)
+    upper = NULL;
   if (BOP_EQ == lower->_.bin.op)
-    *a1 = (float) 0.1;
+    *a1 = (float) 0.03;
+  else if (!upper)
+    *a1 = 0.3;
   else
-    *a1 = 0.5;
+    *a1 = 0.3 * 0.3;
 
   if (lower->dfe_type != DFE_TEXT_PRED &&
       lower->_.bin.left->dfe_type == DFE_COLUMN &&
@@ -183,7 +179,7 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 		}
 	      else
 		{
-		  *a1 = 0;
+		  *a1 = 0.001;
 		}
 	    }
 	}
@@ -194,7 +190,7 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 	      DVC_GREATER == cmp_boxes ((caddr_t) lower->_.bin.right->dfe_tree, left_col->col_max,
 		left_col->col_collation, left_col->col_collation))
 	    { /* lower boundry is a constant and it's above the max */
-	      *a1 = 0;
+	      *a1 = 0.001;
 	    }
 	  else if (DFE_IS_CONST (lower->_.bin.right) && left_col->col_hist)
 	    { /* lower bondry is a constant and there's a col histogram */
@@ -219,7 +215,7 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 	      DVC_LESS == cmp_boxes ((caddr_t) lower->_.bin.right->dfe_tree, left_col->col_min,
 		left_col->col_collation, left_col->col_collation))
 	    { /* upper boundry is a constant and it's below the min */
-	      *a1 = 0;
+	      *a1 = 0.001;
 	    }
 	  else if (DFE_IS_CONST (lower->_.bin.right) && left_col->col_hist)
 	    { /* upper bondry is a constant and there's a col histogram */
@@ -402,6 +398,357 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
 }
 
 
+
+caddr_t
+sqlo_iri_constant_name (ST* tree)
+{
+  if (ST_P (tree, CALL_STMT) && 1 == BOX_ELEMENTS (tree->_.call.params)
+      && DV_STRINGP (tree->_.call.name) && nc_strstr (tree->_.call.name, "iid_of_qname")
+      && DV_STRINGP (tree->_.call.params[0]))
+    return (caddr_t) tree->_.call.params[0];
+  return NULL;
+}
+
+
+#define  RDF_UNTYPED ((caddr_t) 1)
+#define RDF_LANG_STRING ((caddr_t) 2)
+
+caddr_t
+sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret)
+{
+  if (ST_P (tree, CALL_STMT) && 1 == BOX_ELEMENTS (tree->_.call.params)
+      && DV_STRINGP (tree->_.call.name) && nc_strstr (tree->_.call.name, "obj_of_sqlval")
+      && DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree->_.call.params[0]))
+    {
+      if (val_ret) 
+	*val_ret = (caddr_t) tree->_.call.params[0];
+      return RDF_UNTYPED;
+    }
+  if (ST_P (tree, CALL_STMT) && 3 == BOX_ELEMENTS (tree->_.call.params)
+      && DV_STRINGP (tree->_.call.name) && nc_strstr (tree->_.call.name, "RDF_MAKE_OBJ_OF_TYPEDSQLVAL")
+      && DV_STRINGP (tree->_.call.params[0])
+      && DV_STRINGP (tree->_.call.params[2]))
+    {
+      if (val_ret) 
+	*val_ret = (caddr_t) tree->_.call.params[0];
+      if (lang_ret)
+	*lang_ret = (caddr_t) tree->_.call.params[2];
+      return RDF_LANG_STRING;
+    }
+  return 0;
+}
+
+
+
+
+
+#define KS_CAST_UNDEF 16
+
+
+#define DTP_NORMALIZE(dtp) \
+switch (dtp) \
+{ \
+ case DV_WIDE: dtp = DV_LONG_WIDE; break; \
+ case DV_SHORT_INT: dtp = DV_LONG_INT; break; \
+}
+
+
+int
+rdf_obj_of_sqlval (caddr_t val, caddr_t * data_ret)
+{
+  dtp_t dtp = DV_TYPE_OF (val);
+  int len;
+  if (IS_NUM_DTP (dtp))
+    {
+      *data_ret = box_copy (val);
+      return 1;
+    }
+  if (DV_STRING == dtp
+      && (len = box_length (val)) <= 21)
+    {
+      caddr_t box = dk_alloc_box (len + 5, DV_STRING);
+      box[0] = 1;
+      box[1] = 1;
+      memcpy (box + 2, val, len - 1);
+      box[len + 1] = 0;
+      box[len + 2] = 1;
+      box[len + 3] = 1;
+      box[len + 4] = 0;
+      *data_ret =  box;
+      return 1;
+    }
+  return 0;
+}
+
+
+int
+rdf_obj_of_typed_sqlval (caddr_t val, caddr_t vtype, caddr_t lang, caddr_t * data_ret)
+{
+  dtp_t dtp = DV_TYPE_OF (val);
+  int len;
+  if (RDF_LANG_STRING != vtype)
+    return 0;
+  if (DV_STRING == dtp
+      && (len = box_length (val)) <= 21)
+    {
+      int lang_id = key_rdf_lang_id (lang);
+      caddr_t box;
+      if (!lang_id)
+	return 0;
+      box = dk_alloc_box (len + 5, DV_STRING);
+      box[0] = 1;
+      box[1] = 1;
+      memcpy (box + 2, val, len - 1);
+      box[len + 1] = 0;
+      box[len + 2] = lang_id & 0xff;
+      box[len + 3] = lang_id >> 8;
+      box[len + 4] = 0;
+      *data_ret =  box;
+      return 1;
+    }
+  return 0;
+}
+
+
+
+int
+sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
+{
+  caddr_t err = NULL;
+  dtp_t target_dtp = sp->sp_cl.cl_sqt.sqt_dtp;
+  dtp_t dtp = DV_TYPE_OF (data);
+  caddr_t name, vtype, lang;
+  if ((name = sqlo_iri_constant_name ((ST*) data)))
+    {
+      data = key_iri_from_name (name);
+      if (!data)
+	return KS_CAST_NULL;
+      if (sp->sp_col->col_sqt.sqt_dtp == DV_IRI_ID)
+	{
+	  ITC_SEARCH_PARAM (itc, data);
+	  ITC_OWNS_PARAM (itc, data);
+	  return KS_CAST_OK;
+      	}
+      else if (DV_ANY == sp->sp_col->col_sqt.sqt_dtp)
+	{
+	  caddr_t any_data  = box_to_any (data, &err);
+	  if (err)
+	    {
+	      dk_free_tree (err);
+	      return KS_CAST_UNDEF;
+	    }
+	  ITC_SEARCH_PARAM (itc, any_data);
+	  ITC_OWNS_PARAM (itc, any_data);
+	  dk_free_box (data);
+	  return KS_CAST_OK;
+	}
+      else
+	{
+	  dk_free_box (data);
+	  return KS_CAST_NULL;
+	}
+    }
+  if ((vtype = sqlo_rdf_obj_const_value ((ST*) data, &name, &lang)))
+    {
+      if (RDF_UNTYPED == vtype)
+	{
+	  if (!rdf_obj_of_sqlval  (name, &data))
+	    return KS_CAST_UNDEF;
+	}
+      else  if (RDF_LANG_STRING == vtype)
+	{
+	  if (!rdf_obj_of_typed_sqlval  (name, vtype, lang,  &data))
+	    return KS_CAST_UNDEF;
+
+	}
+      else 
+	return KS_CAST_UNDEF;
+      if (sp->sp_col->col_sqt.sqt_dtp == DV_IRI_ID)
+	{
+	  ITC_SEARCH_PARAM (itc, data);
+	  ITC_OWNS_PARAM (itc, data);
+	  return KS_CAST_OK;
+      	}
+      else if (DV_ANY == sp->sp_col->col_sqt.sqt_dtp)
+	{
+	  caddr_t any_data  = box_to_any (data, &err);
+	  if (err)
+	    {
+	      dk_free_tree (err);
+	      return KS_CAST_UNDEF;
+	    }
+	  ITC_SEARCH_PARAM (itc, any_data);
+	  ITC_OWNS_PARAM (itc, any_data);
+	  dk_free_box (data);
+	  return KS_CAST_OK;
+	}
+      else
+	{
+	  dk_free_box (data);
+	  return KS_CAST_NULL;
+	}
+    }
+  if (DV_DB_NULL == dtp)
+    return KS_CAST_NULL;
+  DTP_NORMALIZE (dtp);
+  DTP_NORMALIZE (target_dtp);
+  if (IS_UDT_DTP (target_dtp))
+    return KS_CAST_NULL;
+  else if (dtp == target_dtp)
+    {
+      ITC_SEARCH_PARAM (itc, data);
+    }
+  else if (DV_ANY == target_dtp)
+    {
+      data = box_to_any (data, &err);
+      if (err)
+	{
+	  dk_free_tree (err);
+	  return KS_CAST_UNDEF;
+	}
+      ITC_SEARCH_PARAM (itc, data);
+      ITC_OWNS_PARAM (itc, data);
+      return KS_CAST_OK;
+    }
+  else
+    {
+      if (IS_BLOB_DTP (target_dtp))
+	return KS_CAST_NULL;
+
+      if (IS_NUM_DTP (dtp) && IS_NUM_DTP (target_dtp))
+	{
+	  /* compare different number types.  If col more precise than arg, cast to col here, otherwise the cast is in itc_col_check */
+	  switch (target_dtp)
+	    {
+	    case DV_LONG_INT:
+	      ITC_SEARCH_PARAM (itc, data); /* all are more precise, no cast down */
+	      return 0;
+	    case DV_SINGLE_FLOAT:
+	      if (DV_LONG_INT == dtp)
+		goto cast_param_up;
+	      ITC_SEARCH_PARAM (itc, data);
+	      return 0;
+	    case DV_DOUBLE_FLOAT:
+	      goto cast_param_up;
+	    case DV_NUMERIC:
+	      if (DV_DOUBLE_FLOAT == dtp)
+		{
+		  ITC_SEARCH_PARAM (itc, data);
+		  return 0;
+		}
+	      goto cast_param_up;
+	    }
+	  return 0;
+	}
+    cast_param_up:
+      data = box_cast_to (NULL, data, dtp, target_dtp,
+			  sp->sp_cl.cl_sqt.sqt_precision, sp->sp_cl.cl_sqt.sqt_scale, &err);
+      if (err)
+	{
+	  dk_free_tree (err);
+	  return KS_CAST_UNDEF;
+	}
+      ITC_SEARCH_PARAM (itc, data);
+      ITC_OWNS_PARAM (itc, data);
+    }
+  return KS_CAST_OK;
+}
+
+
+
+int
+dfe_const_rhs (search_spec_t * sp, df_elt_t * pred, it_cursor_t * itc, int * v_fill)
+{
+  if (DFE_CONST == pred->_.bin.right->dfe_type
+      || sqlo_iri_constant_name (pred->_.bin.right->dfe_tree)
+      || sqlo_rdf_obj_const_value (pred->_.bin.right->dfe_tree, NULL, NULL))
+    {
+      int res = sample_search_param_cast (itc, sp, (caddr_t) pred->_.bin.right->dfe_tree);
+      *v_fill = itc->itc_search_par_fill;
+      return res;
+    }
+  return KS_CAST_UNDEF;
+}
+
+int
+dfe_const_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key,
+		   search_spec_t *sp, it_cursor_t * itc, int * v_fill)
+{
+  int res = 0;
+  if (lower->_.bin.left->_.col.col == (dbe_column_t *) CI_ROW)
+    SQL_GPF_T(NULL);
+  sp->sp_cl = *key_find_cl (key, lower->_.bin.left->_.col.col->col_id);
+  sp->sp_col = lower->_.bin.left->_.col.col;
+  sp->sp_collation = sp->sp_col->col_sqt.sqt_collation;
+
+  if (!upper || lower == upper)
+    {
+      int op = bop_to_dvc (lower->_.bin.op);
+
+      if (op == CMP_LT || op == CMP_LTE)
+	{
+	  sp->sp_min_op = CMP_NONE;
+	  sp->sp_max_op = op;
+	  res  =dfe_const_rhs (sp, lower, itc, v_fill);
+	  sp->sp_max = *v_fill - 1;
+	}
+      else
+	{
+	  sp->sp_max_op = CMP_NONE;
+	  sp->sp_min_op = op;
+	  res = dfe_const_rhs (sp, lower, itc, v_fill);
+	  sp->sp_min = *v_fill - 1;
+	}
+    }
+  else
+    {
+      sp->sp_min_op = bop_to_dvc (lower->_.bin.op);
+      sp->sp_max_op = bop_to_dvc (upper->_.bin.op);
+      res = dfe_const_rhs (sp, upper, itc, v_fill);
+	  sp->sp_max = *v_fill - 1;
+	  res |=  dfe_const_rhs (sp, lower, itc, v_fill);
+	  sp->sp_min = *v_fill - 1;
+    }
+  return res;
+}
+
+
+int
+sqlo_inx_sample (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts)
+{
+  int res, tb_count;
+  buffer_desc_t * buf;
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  search_spec_t specs[10];
+  int v_fill = 0, inx;
+  search_spec_t ** prev_sp;
+  ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
+  itc_from (itc, key);
+  memset (&specs,0,  sizeof (specs));
+  prev_sp = &itc->itc_specs;
+  for (inx = 0; inx < n_parts; inx++)
+    {
+      res = dfe_const_to_spec (lowers[inx], uppers[inx], key, &specs[inx],
+			       itc, &v_fill);
+      if (KS_CAST_OK != res)
+	{
+	  itc_free (itc);
+	  return KS_CAST_NULL == res ? 0 : -1;
+	}
+      *prev_sp = &specs[inx];
+      prev_sp = &specs[inx].sp_next;
+    }
+
+  buf = itc_reset (itc);
+  res = itc_sample (itc, &buf);
+  itc_page_leave (itc, buf);
+  tb_count = dbe_key_count (key->key_table->tb_primary_key);
+  return MIN (tb_count, res);
+}
+
+
+
 float
 dfe_hash_fill_unit (df_elt_t * dfe, float arity)
 {
@@ -472,6 +819,24 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
 }
 
 
+int
+pred_const_rhs (df_elt_t * pred)
+{
+  df_elt_t * r = pred->_.bin.right;
+  if (!r)
+    return 0;
+  if (DFE_CONST == r->dfe_type )
+    {
+      dtp_t dtp = DV_TYPE_OF (r->dfe_tree);
+      if (DV_SYMBOL != dtp && DV_ARRAY_OF_POINTER != dtp)
+	return 1;
+    }
+  if (sqlo_iri_constant_name (r->dfe_tree)
+      || sqlo_rdf_obj_const_value (r->dfe_tree, NULL, NULL))
+    return 1;
+  return 0;
+}
+
 void
 dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, int inx_only)
 {
@@ -483,13 +848,17 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
   dbe_table_t * tb = dfe->_.table.ot->ot_table;
   float p_cost, p_arity, rows_per_page;
   float inx_cost = 0;
-  float inx_arity = (float) dbe_key_count (dfe->_.table.key);
+  float inx_arity, inx_arity_guess_for_const_parts = -1;
   float col_arity = 1;
   float col_cost = (float) 0.12;
   float total_cost, total_arity;
   int is_indexed = 1;
+  df_elt_t * inx_uppers[5];
+  df_elt_t * inx_lowers[5];
+  int is_inx_const = 1, inx_const_fill = 0;
 
-
+  inx_arity = (float) dbe_key_count (dfe->_.table.key);
+  dfe->_.table.is_arity_sure = 0;
   if (!inx_only && dfe->_.table.inx_op)
     {
       *u1 = sqlo_inx_intersect_cost (dfe, dfe->_.table.col_preds, dfe->_.table.inx_op->dio_terms, a1);
@@ -498,6 +867,19 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
       return;
     }
 
+  if (!inx_only && dfe->dfe_unit > 0)
+    {
+      /* do not recompute if already known */
+      *a1 = dfe->dfe_arity;
+      *u1 = dfe->dfe_unit;
+      if (dfe->_.table.hash_role == HR_REF)
+	{
+	  float fu1, fa1, fo1;
+	  dfe_unit_cost (dfe->_.table.hash_filler, 0, &fu1, &fa1, &fo1);
+	  *overhead_ret += fu1;
+	}
+      return;
+    }
   inx_cost = dbe_key_unit_cost (dfe->_.table.key);
   DO_SET (dbe_column_t *, part, &dfe->_.table.key->key_parts)
     {
@@ -508,8 +890,23 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
 	  sqlo_pred_unit (lower, upper, &p_cost, &p_arity);
 	  if (is_indexed)
 	    {
-	      inx_arity *= p_arity;
 	      inx_cost += (float) COL_PRED_COST * log (dbe_key_count (key)) / log (2);  /*cost of compare * log2 of inx count */
+	      inx_arity *= p_arity;
+	      if (is_inx_const && inx_const_fill < 4
+		  && (lower ? pred_const_rhs (lower) : 1)
+		  && (upper ? pred_const_rhs (upper) : 1))
+		{
+		  inx_lowers[inx_const_fill] = lower;
+		  inx_uppers[inx_const_fill] = upper;
+		  inx_const_fill++;
+		}
+	      else 
+		{
+		  is_inx_const = 0;
+		  if (inx_const_fill && nth_part == inx_const_fill)
+		    inx_arity_guess_for_const_parts = inx_arity / p_arity; /* inx_arity before being multiplied by the p_arity of the non-const part.  Set exactly once, after seeingthe first non-constant key part. */
+		}
+		      
 	      if (!lower || BOP_EQ != lower->_.bin.op)
 		is_indexed = 0;
 	    }
@@ -534,8 +931,23 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
   END_DO_SET();
 
   if (unique)
-    inx_arity = 1;
+    inx_arity = MIN (1, inx_arity);
+  else if (LOC_LOCAL == dfe->dfe_locus && inx_const_fill
+	   && !(dfe->dfe_sqlo->so_sc->sc_is_update && 0 == strcmp (dfe->_.table.ot->ot_new_prefix, "t1")))
+    {
+      int inx_sample = sqlo_inx_sample (key, inx_lowers, inx_uppers, inx_const_fill);
+      if (-1 == inx_sample)
+	goto no_sample;
+      else if (0 == inx_sample)
+	inx_arity = 0.01;
+      else 
+	inx_arity = inx_sample * inx_arity / (inx_arity_guess_for_const_parts != -1 ? inx_arity_guess_for_const_parts : inx_arity);
+      /* Consider if 2 first key parts are const and third is var.  Getthe real arity for the const but do not forget the guess  for  the 3rd*/
+      dfe->_.table.is_arity_sure = 1;
+    no_sample: ;
+    }
   dfe->_.table.is_unique = unique;
+	
   total_cost = inx_cost + (col_cost + ROW_SKIP_COST) * inx_arity 
     + dbe_key_row_cost (dfe->_.table.key, &rows_per_page) * inx_arity;
   total_cost += NEXT_PAGE_COST * inx_arity / rows_per_page;
@@ -548,11 +960,6 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
       *overhead_ret = 0;
       return;
     }
-  if (dfe->_.table.is_unique &&
-      (!dfe->_.table.key ||
-	dfe->_.table.key->key_table->tb_count == DBE_NO_STAT_DATA))
-    total_arity = inx_arity = 1;
-
 
   /* the ordering key is now done. See if you need to join to the main row  */
   if (sqlo_table_any_nonkey_refd (dfe)
@@ -582,6 +989,14 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
       total_cost += p_cost * total_arity;
       total_arity *= p_arity;
     }
+  if (dfe->_.table.is_text_order)
+    {
+      /* very rough. 1/1000 selected, cost is 1.5*unit of text inx * 1/1000 of indexed table count.
+       * no accounting for whether text inx joins with main table or offband ops */
+      float text_key_cost = dbe_key_unit_cost (tb_text_key (dfe->_.table.ot->ot_table)->key_text_table->tb_primary_key);;
+      total_arity *= 0.001;
+      total_cost += 1.5 * text_key_cost + text_key_cost * dbe_key_count (dfe->_.table.ot->ot_table->tb_primary_key) * 0.001;
+    }
   if (HR_FILL == dfe->_.table.hash_role)
     {
       *a1 = 1;
@@ -598,13 +1013,13 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
       float fu1, fa1, fo1;
       dfe_unit_cost (dfe->_.table.hash_filler, 0, &fu1, &fa1, &fo1);
       *overhead_ret += fu1;
-      *a1 = total_arity;
-      *u1 = (float) HASH_LOOKUP_COST;
+      dfe->dfe_arity = *a1 = total_arity;
+      dfe->dfe_unit = *u1 = (float) HASH_LOOKUP_COST + HASH_ROW_COST * MAX (0,  total_arity - 1);
     }
   else
     {
-      *a1 = total_arity;
-      *u1 = total_cost;
+      dfe->dfe_arity = *a1 = total_arity;
+      dfe->dfe_unit = *u1 = total_cost;
     }
 }
 
@@ -647,8 +1062,114 @@ sqlo_set_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret)
 
 
 void
+sqlo_proc_table_cost (df_elt_t * dt_dfe, float * u1, float * a1)
+{
+  /* See  )what params are given.  Multiply cost by coefficient of each missing param */
+  op_table_t *ot = dfe_ot (dt_dfe);
+  ST * tree = ot->ot_dt;
+  caddr_t * formal = (caddr_t *) ot->ot_dt->_.proc_table.params;
+  caddr_t full_name = sch_full_proc_name (wi_inst.wi_schema, tree->_.proc_table.proc,
+					  cli_qual (sqlc_client ()), CLI_OWNER (sqlc_client ()));
+  query_t * proc = full_name ? sch_proc_def (wi_inst.wi_schema, full_name) : NULL;
+  float * costs = proc ? proc->qr_proc_cost : NULL;
+  int n_costs = costs ? (box_length ((caddr_t)costs) / sizeof (float )) - 2 : 0;
+  int inx;
+  if (costs)
+    {
+      *u1 = costs[0];
+      *a1 = costs[1];
+    }
+  else 
+    {
+      *u1 = 200;
+      *a1 = 10;
+    }
+  DO_BOX (caddr_t, name, inx, formal)
+    {
+      dtp_t name_dtp = DV_TYPE_OF (name);
+      if (!IS_STRING_DTP (name_dtp) && name_dtp != DV_SYMBOL)
+	goto not_given;
+	    
+      DO_SET (df_elt_t *, colp_dfe, &dt_dfe->_.sub.dt_preds)
+	{
+	  if (ST_P (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
+	      (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)
+	       || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)))
+	    goto next_arg;
+	  else if (ST_P (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
+		   (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)
+		    || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)))
+	    goto next_arg;
+	}
+      END_DO_SET();
+      DO_SET (df_elt_t *, colp_dfe, &dt_dfe->_.sub.dt_imp_preds)
+	{
+	  if (ST_P (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
+	      (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)
+	       || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)))
+	    goto next_arg;
+	  else if (ST_P (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
+		   (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)
+		    || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)))
+	    goto next_arg;
+	}
+      END_DO_SET();
+      DO_SET (df_elt_t *, colp_dfe, &dt_dfe->_.sub.ot->ot_join_preds)
+	{
+	  if (ST_P (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
+	      (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)
+	       || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)))
+	    goto next_arg;
+	  else if (ST_P (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
+		   (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)
+		    || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)))
+	    goto next_arg;
+	}
+      END_DO_SET();
+    not_given:
+      if (costs && inx < n_costs)
+	{
+	  *u1 *= costs[inx+2];
+	  *a1 *= costs[inx+2];
+	}
+      else
+	{
+	  *u1 *=  2;
+	  *a1 *= 2;
+	}
+    next_arg: ;
+    }
+  END_DO_BOX;
+}
+
+
+void
+sqlo_proc_cost (df_elt_t * dfe, float * u1, float * a1)
+{
+  ST * tree = dfe->dfe_tree;
+  *a1 = 1;
+  if (!ARRAYP (tree->_.call.name))
+    {
+      caddr_t full_name = sch_full_proc_name (wi_inst.wi_schema, tree->_.call.name,
+					      cli_qual (sqlc_client ()), CLI_OWNER (sqlc_client ()));
+      query_t * proc = full_name ? sch_proc_def (wi_inst.wi_schema, tree->_.call.name) : NULL;
+      float * costs = proc ? proc->qr_proc_cost : NULL;
+      if (bif_find (tree->_.call.name))
+	*u1 = 1;
+      else
+	*u1 = costs ? costs[0] : 20;
+    }
+  else
+    *u1 = 100;
+}
+
+
+void
 dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float * overhead_ret)
 {
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &dfe, 1000))
+    GPF_T1 ("stack overflow in cost model");
+
   switch (dfe->dfe_type)
     {
     case DFE_TABLE:
@@ -665,6 +1186,11 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 	    {
 	      *a1 = 0;
 	      *u1 = 1;
+	    }
+	  if (ST_P (dfe->_.sub.ot->ot_dt, PROC_TABLE))
+	    {
+	      sqlo_proc_table_cost (dfe, u1, a1);
+	      return;
 	    }
 	  dfe_list_cost (dfe->_.sub.first, u1, a1, overhead_ret, dfe->dfe_locus);
 	  if (dfe_ot (dfe) && ST_P (dfe_ot (dfe)->ot_dt, SELECT_STMT) &&
@@ -719,6 +1245,9 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 	*u1 = (float) MAX (1, 1 + log (input_arity / *a1) / log (2));
       break;
 
+    case DFE_CALL:
+      sqlo_proc_cost (dfe, u1, a1);
+      break;
     default:
       *u1 = CV_INSTR_COST;
       *a1 = 1;
@@ -756,7 +1285,7 @@ dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float * over
 	    }
 	  cum += arity * u1;
 	  arity *= a1;
-	  dfe->dfe_arity = arity;
+	  dfe->dfe_arity = a1;
 	  dfe->dfe_unit = u1;
 	}
       END_DO_BOX;
@@ -785,7 +1314,7 @@ dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float * over
 	    }
 	  cum += arity * u1;
 	  arity *= a1;
-	  dfe->dfe_arity = arity;
+	  dfe->dfe_arity = a1;
 	  dfe->dfe_unit = u1;
 	  dfe = dfe->dfe_next;
 	}

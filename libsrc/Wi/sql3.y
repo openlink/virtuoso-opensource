@@ -535,6 +535,10 @@
 %type <tree> user_defined_type_alter
 %type <tree> alter_type_action
 %type <box> array_modifier
+%type <tree> cost_decl 
+%type <list> cost_number_list 
+%type <box> cost_number 
+
 
 %token <box> TYPE FINAL_L METHOD CHECKED SYSTEM GENERATED SOURCE RESULT LOCATOR INSTANCE_L CONSTRUCTOR SELF_L OVERRIDING STYLE SQL_L GENERAL DETERMINISTIC NO_L CONTAINS READS DATA
 %token <box> MODIFIES INPUT CALLED ADA C COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
@@ -631,7 +635,7 @@
 %token WS_PRAGMA_LINE
 %token WS_PRAGMA_PREFIX_1 WS_PRAGMA_PREFIX_2 WS_PRAGMA_PREFIX_3
 %token WS_PRAGMA_C_ESC WS_PGRAGMA_UTF8_ESC WS_PRAGMA_PL_DEBUG WS_PRAGMA_SRC
-%token WS_COMMENT_EOL WS_COMMENT_BEGIN WS_COMMENT_END WS_COMMENT_LONG
+%token WS_COMMENT_EOL WS_COMMENT_BEGIN WS_COMMENT_END WS_COMMENT_LONG __COST
 
 /* Important! Do NOT add meaningful SQL tokens at the end of this list!
 Instead, add them _before_ WS_WHITESPACE. Tokens after WS_WHITESPACE is
@@ -3192,6 +3196,28 @@ rout_alt_type
 	| soap_kwd STRING opt_soap_enc_mode 	    { $$ = t_listbox (3, $2, (ptrlong) ($1|$3), NULL); }
 	;
 
+cost_number
+	: INTNUM {  $$ = t_box_float ((float) unbox ($1)); }
+	| APPROXNUM { double d;
+  switch (DV_TYPE_OF ($1)) 
+    { 
+    case DV_SINGLE_FLOAT: $$ = $1; break; 
+    case DV_DOUBLE_FLOAT: $$ = t_box_float ((float) unbox_double ($1)); break;
+    case DV_NUMERIC: numeric_to_double ((numeric_t) $1, &d); $$ = t_box_float ((float)d); break;
+    }
+}
+	;
+
+cost_number_list
+: cost_number { $$ = t_CONS ($1, NULL); }
+	| cost_number_list ',' cost_number { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
+	;
+
+cost_decl
+	: __COST '(' cost_number_list ')' { $$ = (ST*) t_list (2, PROC_COST, t_list_to_array ($3)); }
+	;
+
+
 routine_statement
 	: select_statement
 	| update_statement_positioned
@@ -3204,6 +3230,7 @@ routine_statement
 	| open_statement
 	| rollback_statement
 	| commit_statement
+	| cost_decl 
 	| /* empty */				{ $$ = t_listst (1, NULL_STMT); }
 	;
 

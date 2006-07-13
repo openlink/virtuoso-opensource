@@ -1,5 +1,6 @@
 struct keyword { char *keyword; int token; };
 %%
+__COST, __COST
 __SOAP_DOC, __SOAP_DOC
 __SOAP_DOCW, __SOAP_DOCW
 __SOAP_HEADER, __SOAP_HEADER

@@ -832,7 +832,10 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
     }
 
   if (!ses_exists)
+    {
     res = strses_allocate ();
+      strses_enable_paging (res, 1024 * 1024 * 10);
+    }
 
   if ((0 != from) && (((OFF_T)-1) == LSEEK (fd, from, SEEK_SET)))
     {

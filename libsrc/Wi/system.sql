@@ -2142,7 +2142,7 @@ returns ANY
 ;
 
 --!AWK PUBLIC
-create procedure SYS_STAT_ANALYZE (in tb_name varchar, in pcnt integer:=0, in ignore_vdb integer:=1)
+create procedure SYS_STAT_ANALYZE (in tb_name varchar, in pcnt integer:=5, in ignore_vdb integer:=1)
 {
   declare stmt, proc_name varchar;
   declare proc any;
@@ -2241,7 +2241,6 @@ create procedure SYS_STAT_ANALYZE (in tb_name varchar, in pcnt integer:=0, in ig
 map_done:;
    }
 
-  pcnt := ( pcnt / 5 ) * 5;
   connection_set ('rnd-stat-rate', 0.0);
 
   proc := string_output ();
@@ -2396,10 +2395,11 @@ fin:
 
 
 --!AWK PUBLIC
-create procedure SYS_DB_STAT (in pcnt integer:=0, in ignore_vdb integer:=1)
+create procedure SYS_DB_STAT (in pcnt integer:=null, in ignore_vdb integer:=1)
 {
         declare cnt integer;
         cnt:=0;
+	if (pcnt is null) pcnt := 5;
         for select distinct (KEY_TABLE) as TB_NAME from SYS_KEYS where
                 not exists (
                         select * from SYS_VIEWS where KEY_TABLE = V_NAME

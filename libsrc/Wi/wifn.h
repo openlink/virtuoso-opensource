@@ -89,6 +89,11 @@ void itc_clear_stats (it_cursor_t *it);
 void itc_from_keep_params (it_cursor_t * it, dbe_key_t * key);
 void itc_from_it (it_cursor_t * itc, index_tree_t * it);
 int itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret);
+int itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret);
+unsigned int64 key_count_estimate (dbe_key_t * key, int n_samples, int upd_col_stats);
+caddr_t  key_iri_from_name (caddr_t name);
+int  key_rdf_lang_id (caddr_t name);
+
 void plh_free (placeholder_t * pl);
 placeholder_t * plh_copy (placeholder_t * pl);
 buffer_desc_t * itc_set_by_placeholder (it_cursor_t * itc, placeholder_t * pl);

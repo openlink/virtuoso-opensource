@@ -38,8 +38,9 @@
 
 short db_buf_const_length[256];
 
+int  itc_random_leaf (it_cursor_t * itc, buffer_desc_t *buf, dp_addr_t * leaf_ret);
 int itc_down_rnd_check (it_cursor_t * itc, dp_addr_t leaf);
-int itc_up_rnd_check (it_cursor_t * itc);
+int itc_up_rnd_check (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 
 void
 const_length_init (void)
@@ -599,6 +600,8 @@ itc_create (void * isp, lock_trx_t * trx)
 }
 #endif
 
+void itc_col_stat_free (it_cursor_t * itc, int upd_col, float est);
+
 void
 itc_clear (it_cursor_t * it)
 {
@@ -631,25 +634,8 @@ itc_clear (it_cursor_t * it)
       it->itc_extension = NULL;
     }
 #endif
-#ifdef SQLO_STATISTICS
-  if (it->itc_random_search == RANDOM_SEARCH_AUTO)
-    {
-      dbe_table_t *tb = NULL;
-
-      if (it->itc_insert_key)
-	tb = it->itc_insert_key->key_table;
-      else if (it->itc_ks)
-	tb = it->itc_ks->ks_key->key_table;
-      else if (it->itc_row_key)
-	tb = it->itc_row_key->key_table;
-
-      if (tb && tb->tb_path_count < (double) (1LU << 31))
-	{
-	  tb->tb_global_rows += it->itc_st.global_rows;
-	  tb->tb_path_count += it->itc_st.path_count;
-	}
-    }
-#endif
+  if (it->itc_st.cols)
+    itc_col_stat_free (it, 0, 0);
 }
 
 
@@ -791,6 +777,14 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 		  : (n1 == n2 ? DVC_MATCH
 		      : DVC_GREATER)));
 
+	case DV_IRI_ID:
+	  {
+	    unsigned int32 i1 = LONG_REF_NA (dv1 + 1);
+	    unsigned int32 i2 = LONG_REF_NA (dv2 + 1);
+	    return ((i1 < i2 ? DVC_LESS
+		     : (i1 == i2 ? DVC_MATCH
+			: DVC_GREATER)));
+	  }
 	case DV_SHORT_STRING_SERIAL:
 	  n1 = dv1[1];
 	  dv1 += 2;
@@ -1452,6 +1446,8 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
   dbe_key_t *row_key = NULL;
 
   ITC_LEAVE_MAP (itc);
+  if (RANDOM_SEARCH_ON == itc->itc_random_search)
+    itc->itc_st.n_sample_rows++;
   if (key != itc->itc_key_id)
     {
 	{
@@ -1589,7 +1585,9 @@ start:
   ITC_LEAVE_MAP (it);
   if (!it->itc_landed)
     {
-      if (it->itc_search_mode == SM_READ)
+      if (RANDOM_SEARCH_ON == it->itc_random_search)
+	res = itc_random_leaf (it, *buf_ret, &leaf);
+      else if (it->itc_search_mode == SM_READ)
 	res = itc_page_split_search (it, *buf_ret, &leaf);
       else
 	res = itc_page_insert_search (it, *buf_ret, &leaf);
@@ -1597,61 +1595,6 @@ start:
   else
     {
       res = itc_page_search (it, buf_ret, &leaf);
-#ifdef SQLO_STATISTICS
-      if (it->itc_random_search != RANDOM_SEARCH_OFF)
-	{
-	  /* finished search */
-	  if (it->itc_notleftmost &&
-	      (buf_ret[0]->bd_page == it->itc_st.mostright[it->itc_curr_depth].page) &&
-	      (it->itc_curr_depth == it->itc_depth))
-	    {
-	      if ((it->itc_position == it->itc_st.mostright[it->itc_curr_depth].pos) ||
-		  res == DVC_INDEX_END)
-		{
-		  caddr_t * place;
-
-		  int idx;
-		  double ded_rows = 0;
-		  double rate = 0;
-
-		  for (idx = 0; idx < it->itc_depth; idx++)
-		    {
-		      ded_rows += it->itc_st.rows[idx];
-		    }
-		  ded_rows += it->itc_st.rows[it->itc_depth];
-
-		  it->itc_st.global_rows += ded_rows;
-		  it->itc_st.path_count++;
-
-		  if (it->itc_random_search == RANDOM_SEARCH_ON)
-		    {
-		      const char * name = SQLO_RATE_NAME;
-		      caddr_t *qst = it->itc_out_state;
-		      query_instance_t *qi = (query_instance_t *)qst;
-		      client_connection_t *cli = qi->qi_client;
-		      /* mostleft and mostright leafs reads always, so
-			 here is no division by zero */
-		      rate = it->itc_st.global_rows / it->itc_st.path_count /
-			  it->itc_st.global_hit_rows;
-
-		      place = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) &name);
-		      if (!place)
-			{
-			  caddr_t n2 = box_dv_short_string (name);
-			  caddr_t v2 = box_double (rate);
-			  id_hash_set (cli->cli_globals, (caddr_t) &n2, (caddr_t) &v2);
-			}
-		      else
-			{
-			  dk_free_tree (*place);
-			  *place = box_double (rate);
-			}
-		      cli->cli_globals_dirty = 1;
-		    }
-		}
-	    }
-	}
-#endif /* SQLO_STATISTICS */
     }
 
   if (!it->itc_landed && !leaf)
@@ -1735,9 +1678,16 @@ search_switch:
 	  {
 	    return DVC_INDEX_END;
 	  }
-#ifdef SQLO_STATISTICS
-	itc_up_rnd_check (it);
-#endif
+	if (RANDOM_SEARCH_ON == it->itc_random_search)
+	  {
+	    switch  (itc_up_rnd_check (it, buf_ret))
+	      {
+	      case DVC_MATCH: 
+		goto start;
+	      case DVC_INDEX_END:
+		return DVC_INDEX_END;
+	      }
+	  }
 	itc_up_transit (it, buf_ret);
 	/* We're in on the parent node. Where do we go now? */
 	ITC_LEAVE_MAP (it);
@@ -1777,18 +1727,7 @@ search_switch:
 	if (leaf)
 	  {
 	    /* Go down on the right edge. */
-#ifdef SQLO_STATISTICS
-	    if (itc_down_rnd_check (it, leaf))
 	      itc_down_transit (it, buf_ret, leaf);
-	    else if (it->itc_search_mode == SM_READ_EXACT)
-	      return DVC_LESS;
-	    else if (it->itc_desc_order)
-	      itc_prev_entry (it, *buf_ret);
-	    else
-	      itc_skip_entry (it, (*buf_ret)->bd_buffer);
-#else
-	      itc_down_transit (it, buf_ret, leaf);
-#endif
 	    goto start;
 	  }
 	else
@@ -1801,18 +1740,7 @@ search_switch:
 	/* If there's a way down, leaf will have it. */
 	if (leaf)
 	  {
-#ifdef SQLO_STATISTICS
-	    if (itc_down_rnd_check (it, leaf))
 	      itc_down_transit (it, buf_ret, leaf);
-	    else if (it->itc_search_mode == SM_READ_EXACT)
-	      return DVC_LESS;
-	    else if (it->itc_desc_order)
-	      itc_prev_entry (it, *buf_ret);
-	    else
-	      itc_skip_entry (it, (*buf_ret)->bd_buffer);
-#else
-	      itc_down_transit (it, buf_ret, leaf);
-#endif
 	    goto start;
 	  }
 	else
@@ -1952,136 +1880,6 @@ itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret)
     return (itc_search (it, buf_ret));
 }
 
-#ifdef SQLO_STATISTICS
-
-long lf = -100;
-
-static
-int count_all_rows_and_childs (it_cursor_t * it, buffer_desc_t * buf, int * rs, int * cs)
-{
-  int pos, rows = 0, childs = 0;
-  page_map_t *map = buf->bd_content_map;
-  db_buf_t page = buf->bd_buffer;
-  int idx = 0;
-  dp_addr_t last_leaf = 0;
-  int d = it->itc_curr_depth;
-
-  if ((!it->itc_landed && !it->itc_position) ||
-      (it->itc_landed && (it->itc_position == map->pm_entries[0])))
-    {
-      for (idx = 0; idx < map->pm_count; idx++)
-	{
-	  key_id_t key_id;
-	  pos = map->pm_entries[idx];
-	  if (!pos)
-	    break;
-	  key_id = SHORT_REF (page + pos + IE_KEY_ID);
-	  if (KI_LEFT_DUMMY == key_id)
-	    continue;
-	  if (!key_id)
-	    {
-	      dp_addr_t leaf = LONG_REF (page + pos + IE_LEAF);
-	      if (leaf)
-		last_leaf = leaf;
-	      childs++;
-	      continue;
-	    }
-	  if (IE_ISSET (page + pos, IEF_DELETE))
-	    continue;
-	  rows++;
-	}
-      if (rs && cs)
-	{
-	  rs[0] = rows;
-	  cs[0] = childs;
-	}
-#ifdef DEBUG
-      if (d < 0 || d >= ITC_TREE_LEVEL_MAX - 1)
-	GPF_T1 ("d out of range");
-#endif
-      if (it->itc_curr_depth < 0 || it->itc_curr_depth >= ITC_TREE_LEVEL_MAX - 1)
-	{ /* turn off the statistics for large tables */
-	  dbe_table_t *tb = NULL;
-
-	  it->itc_random_search = RANDOM_SEARCH_OFF;
-	  itc_clear_stats (it);
-
-	  if (it->itc_insert_key)
-	    tb = it->itc_insert_key->key_table;
-	  else if (it->itc_ks)
-	    tb = it->itc_ks->ks_key->key_table;
-	  else if (it->itc_row_key)
-	    tb = it->itc_row_key->key_table;
-	  if (tb)
-	    log_debug ("table %s too large. auto statistics turned off", tb->tb_name);
-	  else
-	    log_debug ("table <unknown> too large. Statistics turned off");
-	}
-      if (!d)
-	{
-	  it->itc_st.mostright[0].page = 0;
-	  it->itc_st.mostright[0].pos = pos;
-	  it->itc_st.mostright[1].page = last_leaf;
-	}
-      else
-	{
-	  if (it->itc_st.mostright[d].page == buf->bd_page)
-	    {
-	      it->itc_st.mostright[d+1].page = last_leaf;
-	      it->itc_st.mostright[d].pos = pos;
-	    }
-
-	}
-
-      return 1;
-    }
-  return 0;
-}
-
-static
-int set_rnd_vars_up (it_cursor_t * it, int rows, int childs)
-{
-  if (!it->itc_curr_depth)
-    {
-      it->itc_st.rows[0] = rows;
-      it->itc_st.childs[0] = childs;
-    }
-  else
-    {
-      int d = it->itc_curr_depth;
-      double pages;
-      if (it->itc_curr_depth < 1 || it->itc_curr_depth >= ITC_TREE_LEVEL_MAX - 1)
-	{ /* turn off the statistics for large tables */
-	  dbe_table_t *tb = NULL;
-
-	  it->itc_random_search = RANDOM_SEARCH_OFF;
-	  itc_clear_stats (it);
-
-	  if (it->itc_insert_key)
-	    tb = it->itc_insert_key->key_table;
-	  else if (it->itc_ks)
-	    tb = it->itc_ks->ks_key->key_table;
-	  else if (it->itc_row_key)
-	    tb = it->itc_row_key->key_table;
-	  if (tb)
-	    log_debug ("table %s too large. auto statistics turned off", tb->tb_name);
-	  else
-	    log_debug ("table <unknown> too large. Statistics turned off");
-
-	  return 1;
-	}
-#ifdef DEBUG
-      if (d < 0 || d >= ITC_TREE_LEVEL_MAX - 1)
-	GPF_T1 ("d out of range");
-#endif
-      pages = it->itc_st.childs[d-1];
-      it->itc_st.rows[d] = pages * rows;
-      it->itc_st.childs[d] = pages * childs;
-    }
-  return 1;
-}
-
-#endif /* SQLO_STATISTICS */
 
 int
 itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret)
@@ -2091,7 +1889,7 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
   key_id_t key_id;
   search_spec_t *sp;
   int res = DVC_LESS;
-  int pos, rows, childs;
+  int pos;
   char txn_clear = PS_LOCKS;
 
   if (ISO_UNCOMMITTED == it->itc_isolation)
@@ -2111,15 +1909,6 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 
   if (it->itc_wst)
     return (itc_text_search (it, buf_ret, leaf_ret));
-#ifdef SQLO_STATISTICS
-  /* first ent. at page */
-  if (it->itc_random_search != RANDOM_SEARCH_OFF &&
-      count_all_rows_and_childs (it, buf_ret[0], &rows, &childs))
-    {
-      set_rnd_vars_up (it, rows, childs);
-    }
-#endif /* SQLO_STATISTICS */
-
 
   while (1)
     {
@@ -2255,12 +2044,6 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	  *leaf_ret = leaf;
 	  if (!leaf && !sp)
 	    {
-#ifdef SQLO_STATISTICS
-	      if (it->itc_random_search == RANDOM_SEARCH_ON)
-		{
-		  it->itc_st.global_hit_rows++;
-		}
-#endif
 	      if (DVC_MATCH == itc_row_check (it, *buf_ret))
 		{
 		  if (it->itc_ks && it->itc_ks->ks_is_last
@@ -2351,10 +2134,6 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t * buf,
   int guess;
   int at_or_above_res = -100;
   key_id_t key_id;
-#ifdef SQLO_STATISTICS
-  int rows = 0;
-  int childs = 0;
-#endif
   if (map->pm_count == 0)
     {
       it->itc_position = 0;
@@ -2362,14 +2141,6 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t * buf,
       return DVC_GREATER;
     }
 
-#ifdef SQLO_STATISTICS
-  /* first ent. at page */
-  if (it->itc_random_search != RANDOM_SEARCH_OFF &&
-      count_all_rows_and_childs (it, buf, &rows, &childs))
-    {
-      set_rnd_vars_up (it, rows, childs);
-    }
-#endif /* SQLO_STATISTICS */
 
   for (;;)
     {
@@ -2561,23 +2332,13 @@ itc_from_keep_params (it_cursor_t * it, dbe_key_t * key)
   it->itc_key_id = key->key_id;
   it->itc_tree = key->key_fragments[0]->kf_it;
   it->itc_space = it->itc_tree->it_commit_space;
-#ifdef SQLO_STATISTICS
-  itc_clear_stats (it);
-#endif
 }
 
 
 void
 itc_clear_stats (it_cursor_t *it)
 {
-#ifdef SQLO_STATISTICS
   memset (&(it->itc_st), 0, sizeof (it->itc_st));
-  it->itc_random_pcnt = 0;
-  it->itc_rnd_seed = 0;
-  it->itc_notleftmost = 0;
-  it->itc_depth = 0;
-  it->itc_curr_depth = 0;
-#endif
 }
 
 long dbe_auto_sql_stats;
@@ -2595,18 +2356,6 @@ itc_from (it_cursor_t * it, dbe_key_t * key)
   it->itc_key_id = key->key_id;
   it->itc_tree = key->key_fragments[0]->kf_it;
   it->itc_space = it->itc_tree->it_commit_space;
-#ifdef SQLO_STATISTICS
-  itc_clear_stats (it);
-
-  if (dbe_auto_sql_stats &&
-      key->key_is_primary && it->itc_random_search == RANDOM_SEARCH_OFF &&
-      key->key_table->tb_count == DBE_NO_STAT_DATA &&
-      key->key_table->tb_path_count < (double) (1LU << 31) &&
-      !srv_have_global_lock (THREAD_CURRENT_THREAD))
-    {
-      it->itc_random_search = RANDOM_SEARCH_AUTO;
-    }
-#endif
 }
 
 
@@ -2625,9 +2374,6 @@ itc_from_it (it_cursor_t * itc, index_tree_t * it)
     }
   itc->itc_tree = it;
   itc->itc_space = it->it_commit_space;
-#ifdef SQLO_STATISTICS
-  itc_clear_stats (itc);
-#endif
 }
 
 
@@ -2881,88 +2627,406 @@ itc_read_ahead (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 
 /* random search support */
 
-#ifdef SQLO_STATISTICS
-int itc_down_rnd_check (it_cursor_t * itc, dp_addr_t leaf)
+
+int 
+itc_up_rnd_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
-  double random_search = (double) itc->itc_random_pcnt / MAX_PCNT_NUM;
-  if (random_search || itc->itc_random_search == RANDOM_SEARCH_AUTO)
+  if (itc->itc_st.n_sample_rows >= itc->itc_st.sample_size)
+    return DVC_INDEX_END;
+  itc->itc_st.n_sample_rows++; /* increment here also so as to guarantee termination even if table goes empty during the random scan. */
+  itc_page_leave (itc, *buf_ret);
+  *buf_ret = itc_reset (itc);
+  return DVC_MATCH;
+}
+
+
+
+typedef struct col_stat_s 
+{
+  id_hash_t *	cs_distinct;
+  long		cs_len;
+  long		cs_n_values;
+} col_stat_t;
+
+
+void
+itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
+{
+  dk_hash_iterator_t it;
+  id_hash_iterator_t hit;
+
+  dbe_column_t * col;
+  col_stat_t * cs;
+  caddr_t * data;
+  ptrlong * count;
+  dk_hash_iterator (&it, itc->itc_st.cols);
+  while (dk_hit_next (&it, (void**) &col, (void**) &cs))
     {
-      if (itc->itc_curr_depth >= ITC_TREE_LEVEL_MAX - 1)
-	{ /* turn off the statistics for large tables */
-	  dbe_table_t *tb = NULL;
-
-	  itc->itc_random_search = RANDOM_SEARCH_OFF;
-	  itc_clear_stats (itc);
-
-	  if (itc->itc_insert_key)
-	    tb = itc->itc_insert_key->key_table;
-	  else if (itc->itc_ks)
-	    tb = itc->itc_ks->ks_key->key_table;
-	  else if (itc->itc_row_key)
-	    tb = itc->itc_row_key->key_table;
-	  if (tb)
-	    log_debug ("table %s too large. auto statistics turned off", tb->tb_name);
-	  else
-	    log_debug ("table <unknown> too large. Statistics turned off");
-	}
-      if (!itc->itc_notleftmost)
+      id_hash_iterator (&hit, cs->cs_distinct);
+      while (hit_next (&hit, (caddr_t*) &data, (caddr_t*) &count))
 	{
-	  itc->itc_depth++;
-	  itc->itc_curr_depth++;
-#ifdef DEBUG
-	  if (itc->itc_curr_depth < 0 || itc->itc_curr_depth >= ITC_TREE_LEVEL_MAX)
-	    GPF_T1 ("d out of range");
-#endif
-	  return 1;
+	  dk_free_tree (*data);
+	}
+      if (upd_col)
+	{
+	  col->col_count = cs->cs_n_values / (float) itc->itc_st.n_sample_rows * est;
+	  if (itc->itc_st.n_sample_rows)
+	    {
+	      /* if n distinct under 2% of samples, assume that this is a flag.  If more distinct, scale pro rata.  */
+	      if (cs->cs_distinct->ht_inserts < itc->itc_st.n_sample_rows / 50)
+		col->col_n_distinct = cs->cs_distinct->ht_inserts;
+	      else 
+		col->col_n_distinct = (float)cs->cs_distinct->ht_inserts / (float)itc->itc_st.n_sample_rows * est;
+	      col->col_avg_len = cs->cs_len / itc->itc_st.n_sample_rows;
+	    }
+	  else 
+	    {
+	      col->col_n_distinct = 1;
+	      col->col_avg_len = 0; /* no data, use declared prec instead */
+	    }
+	}
+      id_hash_free (cs->cs_distinct);
+      dk_free ((caddr_t) cs, sizeof (col_stat_t));
+    }
+  hash_table_free (itc->itc_st.cols);
+  itc->itc_st.cols = NULL;
+}
+
+
+void
+itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  db_buf_t page = buf->bd_buffer;
+  int pos  = itc->itc_position;
+  key_id_t key_id = SHORT_REF (page + pos + IE_KEY_ID);
+  dbe_key_t * key;
+  if (!key_id ||  KI_LEFT_DUMMY == key_id)
+    return;
+  itc->itc_st.n_sample_rows++;
+  itc->itc_row_data = page + pos +  IE_FIRST_KEY;
+  itc->itc_row_key_id = key_id;
+  itc->itc_row_key = key = sch_id_to_key (wi_inst.wi_schema, key_id);
+  DO_SET (dbe_column_t *, col, &key->key_parts)
+    {
+      col_stat_t * col_stat;
+      caddr_t data = NULL;
+      dbe_column_t * current_col;
+      int len, off, is_data = 0;
+      ptrlong * place;
+      dbe_col_loc_t *cl  = key_find_cl (key, col->col_id);
+      ITC_COL (itc, (*cl), off, len);
+      if (!IS_BLOB_DTP (col->col_sqt.sqt_dtp))
+	{
+	  data = itc_box_column (itc, page, col->col_id, cl); 
+	  is_data = 1;
+	}
+      current_col = sch_id_to_column (wi_inst.wi_schema, col->col_id);
+      /* can be obsolete row, use the corresponding col of the current version of th key */
+      col_stat = (col_stat_t *) gethash ((void*) current_col, itc->itc_st.cols);
+      if (!col_stat)
+	{
+	  NEW_VARZ (col_stat_t, cs);
+	  sethash ((void*)current_col, itc->itc_st.cols, (void*) cs);
+	  cs->cs_distinct = id_hash_allocate (1001, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+	  col_stat = cs;
+	}
+
+      if (is_data)
+	{
+	  if (DV_DB_NULL != DV_TYPE_OF (data))
+	    {
+	      col_stat->cs_n_values++;
+	      col_stat->cs_len += len;
+	    }
+	  place = (ptrlong *) id_hash_get (col_stat->cs_distinct, (caddr_t) &data);
+	  if (place)
+	    {
+	      (*place)++;
+	      dk_free_tree (data);
 	}
       else
 	{
-	  long rnd_num;
-	  /* most right dive */
-	  if (itc->itc_random_search != RANDOM_SEARCH_AUTO &&
-	      leaf != itc->itc_st.mostright[itc->itc_curr_depth + 1].page)
+	      ptrlong one = 1;
+	      id_hash_set (col_stat->cs_distinct, (caddr_t) &data, (caddr_t)&one);
+	    }
+	}
+    }
+  END_DO_SET();
+}
+
+void
+itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  db_buf_t page = buf->bd_buffer;
+  int pos = itc->itc_position;
+  itc->itc_position = SHORT_REF (page+ DP_FIRST);
+  while (itc->itc_position)
 	    {
-	      if (itc->itc_curr_depth)
+      itc_row_col_stat (itc, buf);
+      itc->itc_position = IE_NEXT (page + itc->itc_position);
+    }
+  itc->itc_position = pos;
+}
+
+
+
+
+
+
+int32 inx_rnd_seed;
+
+int 
+itc_random_leaf (it_cursor_t * itc, buffer_desc_t *buf, dp_addr_t * leaf_ret)
+{
+  db_buf_t page = buf->bd_buffer;
+  page_map_t * pm = buf->bd_content_map;
+  int nth, pos;
+  key_id_t key_id;
+  if (pm->pm_count )
+    nth = sqlbif_rnd (&inx_rnd_seed) % pm->pm_count;
+  else 
+    return DVC_INDEX_END;
+  pos = pm->pm_entries[nth];
+  key_id = SHORT_REF (page + pos + IE_KEY_ID);
+  *leaf_ret = !key_id ||  key_id == KI_LEFT_DUMMY ? LONG_REF (page + pos + IE_LEAF) : 0;
+  itc->itc_position = SHORT_REF (page + DP_FIRST);  /* ret pos at start even if leaf taken is not the first so that itc_sample gets to count all leaves */
+    return DVC_MATCH;
+}
+
+
+int
+itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret, dp_addr_t * alt_leaf_ret)
+{
+  db_buf_t page = buf->bd_buffer;
+  int have_left_leaf = 0;
+  int pos = itc->itc_position; /* itc is at leftost match. Nothing at left of the itc */
+  int ctr = 0, leaf_ctr = 0;
+  while (pos)
 		{
-		  rnd_num = sqlbif_rnd (&itc->itc_rnd_seed) % MAX_RND_NUM;
-		  if (rnd_num > random_search * MAX_RND_NUM)
-		    return 0;
+      int res = DVC_MATCH;
+      search_spec_t * sp = itc->itc_specs;
+      key_id_t r_k_id = SHORT_REF (page + pos + IE_KEY_ID);
+      itc->itc_row_data = page + pos + (r_k_id ? IE_FIRST_KEY : IE_LP_FIRST_KEY);
+      if (KI_LEFT_DUMMY == r_k_id)
+	{
+	  if (LONG_REF (page + pos + IE_LEAF))
+	    {
+	      have_left_leaf = 1;
+	      leaf_ctr++;
 		}
 	    }
-	  itc->itc_curr_depth++;
-#ifdef DEBUG
-	  if (itc->itc_curr_depth < 0 || itc->itc_curr_depth >= ITC_TREE_LEVEL_MAX)
-	    GPF_T1 ("d out of range");
-#endif
-	  return 1;
-	}
-    }
-  return 1;
-}
-
-int itc_up_rnd_check (it_cursor_t * itc)
-{
-  double random_search = (double) itc->itc_random_pcnt / MAX_PCNT_NUM;
-  if (random_search || itc->itc_random_search == RANDOM_SEARCH_AUTO)
-    {
-      if (itc->itc_curr_depth == itc->itc_depth)
+      else 
 	{
-	  int idx;
-	  double ded_rows = 0;
-
-	  for (idx = 0; idx < itc->itc_depth; idx++)
+	  itc->itc_row_key_id = r_k_id;
+	  if (r_k_id)
+	    itc->itc_row_key = sch_id_to_key (isp_schema (NULL), r_k_id);
+	  while (sp)
 	    {
-	      ded_rows += itc->itc_st.rows[idx];
-	    }
-	  ded_rows += itc->itc_st.rows[itc->itc_depth];
-
-	  itc->itc_st.path_count++;
-	  itc->itc_st.global_rows += ded_rows;
+	      if (DVC_MATCH != (res = itc_compare_spec (itc, sp)))
+		break;
+	      sp = sp->sp_next;
 	}
-      itc->itc_curr_depth--;
+	  if (DVC_MATCH == res)
+	    {
+	      if (r_k_id)
+		ctr++;
+	      else 
+		{
+		  if (have_left_leaf)
+		    {
+		      /* prefer giving the next to leftmost instead of leftmost leaf if leftmost is left dummy.
+		       * The leftmost branch can be empty because the leaf with the left dummy never can get deleted */
+		      *alt_leaf_ret = LONG_REF (page + pos + IE_LEAF);
+		      have_left_leaf = 0;
     }
-  return 1;
+		  leaf_ctr++;
+		}
+	    }
+	}
+      pos = IE_NEXT (page + pos);
+    }
+  *leaf_ctr_ret = leaf_ctr;
+  return ctr;
 }
-#endif /* SQLO_STATISTICS */
 
+int
+itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret)
+{
+  dp_addr_t leaf, rnd_leaf;
+  int res;
+  int ctr  = 0, leaf_ctr = 0, leaf_estimate = 0;
+
+  it->itc_search_mode = SM_READ;
+ start:
+  if (!(*buf_ret)->bd_readers && !(*buf_ret)->bd_is_write)
+    GPF_T1 ("buffer not wired occupied in itc_search");
+  leaf = 0;
+  it->itc_is_on_row = 0;
+
+  ITC_LEAVE_MAP (it);
+  if (!(*buf_ret)->bd_content_map)
+    {
+      log_error ("Suspect index page dp=%d key=%s, probably blob ref'd as index node.", (*buf_ret)->bd_page, it->itc_insert_key->key_name);
+      return 0;
+    }
+  rnd_leaf = 0;
+  if (RANDOM_SEARCH_ON == it->itc_random_search)
+    res = itc_random_leaf (it, *buf_ret, &rnd_leaf);
+  else 
+    res = itc_page_split_search (it, *buf_ret, &leaf);
+  if (it->itc_st.cols)
+    itc_page_col_stat (it, *buf_ret);
+  ctr = itc_matches_on_page (it, *buf_ret, &leaf_ctr, &leaf);
+  if (leaf_estimate)
+    leaf_estimate = leaf_estimate * (*buf_ret)->bd_content_map->pm_count + leaf_ctr;
+  else if (leaf_ctr > 1)
+    leaf_estimate = leaf_ctr - 1;
+  if (rnd_leaf)
+    leaf = rnd_leaf;
+  switch (res)
+	{
+    case DVC_LESS:
+      {
+	if (leaf)
+	  {
+	    /* Go down on the right edge. */
+	    itc_down_transit (it, buf_ret, leaf);
+	    goto start;
+	  }
+
+	break;
+      }
+    case DVC_MATCH:
+      {
+	if (leaf)
+	    {
+	      itc_down_transit (it, buf_ret, leaf);
+	    goto start;
+	    }
+	break;
+      }
+    case DVC_GREATER:
+    case DVC_INDEX_END:
+      {
+	break;
+      }
+    }
+  return ctr + leaf_estimate;
+}
+
+
+
+
+unsigned int64
+key_count_estimate  (dbe_key_t * key, int n_samples, int upd_col_stats)
+{
+  int res = 0, n;
+  buffer_desc_t * buf;
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
+  itc_from (itc, key);
+  itc->itc_random_search = RANDOM_SEARCH_ON;
+  if (upd_col_stats)
+    itc->itc_st.cols = hash_table_allocate (23);
+  for (n = 0; n < n_samples; n++)
+    {
+      buf = itc_reset (itc);
+      res += itc_sample (itc, &buf);
+      itc_page_leave (itc, buf);
+      if (upd_col_stats)
+	{
+	  /* if doing cols also, adjust the sample to table size */
+	  if (n_samples < 100 && itc->itc_st.n_sample_rows < 0.01 * res / (n + 1))
+	    n_samples++;
+	}
+    }
+  if (upd_col_stats)
+    itc_col_stat_free (itc, 1, res / n_samples);
+  return res / n_samples;
+}
+
+
+caddr_t 
+key_iri_from_name (caddr_t name)
+{
+  int res;
+  caddr_t iri = NULL;
+  dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, "DB.DBA.RDF_URL");
+  dbe_key_t * key = tb ? tb_name_to_key (tb, "RU_QNAME", 1) : NULL;
+  dbe_column_t * iri_col = key && key->key_parts && key->key_parts->next ? key->key_parts->next->data : NULL;
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  buffer_desc_t * buf;
+  search_spec_t sp;
+  if (!iri_col)
+    return NULL;
+  ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
+  itc_from (itc, key);
+  ITC_SEARCH_PARAM (itc, name);
+  itc->itc_isolation = ISO_UNCOMMITTED;
+  itc->itc_specs = &sp;
+  memset (&sp, 0, sizeof (sp));
+  sp.sp_min_op = CMP_EQ;
+  sp.sp_cl = *key_find_cl (key, ((dbe_column_t *) key->key_parts->data)->col_id);
+  ITC_FAIL (itc)
+    {
+      buf = itc_reset (itc);
+      res = itc_search (itc, &buf);
+      if (DVC_MATCH == res)
+	{
+	  iri = itc_box_column (itc, buf->bd_buffer, iri_col->col_id, NULL);
+	}
+      itc_page_leave (itc, buf);
+    }
+	ITC_FAILED
+      {
+	return NULL;
+      }
+  END_FAIL (itc);
+  itc_free (itc);
+  return iri;
+}
+
+
+int 
+key_rdf_lang_id (caddr_t name)
+{
+  int res;
+  int id = 0;
+  dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, "DB.DBA.RDF_LANGUAGE");
+  dbe_key_t * key = tb ? tb->tb_primary_key : NULL;
+  dbe_column_t * twobyte_col = key && key->key_parts && key->key_parts->next ? key->key_parts->next->data : NULL;
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  buffer_desc_t * buf;
+  search_spec_t sp;
+  if (!twobyte_col)
+    return 0;
+  ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
+  itc_from (itc, key);
+  ITC_SEARCH_PARAM (itc, name);
+  itc->itc_isolation = ISO_UNCOMMITTED;
+  itc->itc_specs = &sp;
+  memset (&sp, 0, sizeof (sp));
+  sp.sp_min_op = CMP_EQ;
+  sp.sp_cl = *key_find_cl (key, ((dbe_column_t *) key->key_parts->data)->col_id);
+  ITC_FAIL (itc)
+    {
+      buf = itc_reset (itc);
+      res = itc_search (itc, &buf);
+      if (DVC_MATCH == res)
+	{
+	  id = (int) itc_box_column (itc, buf->bd_buffer, twobyte_col->col_id, NULL);
+	}
+      itc_page_leave (itc, buf);
+    }
+	ITC_FAILED
+      {
+	return 0;
+      }
+  END_FAIL (itc);
+  itc_free (itc);
+  return id;
+}
 

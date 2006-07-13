@@ -10745,6 +10745,14 @@ sql_tree_tmp * st_nvarchar;
 caddr_t bif_hash (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_md5_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
+
+caddr_t 
+bif_box_hash (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_num (box_hash (bif_arg (qst, args, 0, "box_hash")));
+}
+
+
 #if 1
 caddr_t bif_grouping (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_grouping_set_bitmap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
@@ -11841,6 +11849,7 @@ sql_bif_init (void)
   bif_define ("randomize", bif_randomize);
   bif_define_typed ("hash", bif_hash, &bt_integer);
   bif_define_typed ("md5_box", bif_md5_box, &bt_varchar);
+  bif_define_typed ("box_hash", bif_box_hash, &bt_integer);
 /* Bitwise: */
   bif_define_typed ("bit_and", bif_bit_and, &bt_integer);
   bif_define_typed ("bit_or", bif_bit_or, &bt_integer);

@@ -532,6 +532,7 @@ dbe_table_create (dbe_schema_t * sc, const char *name)
   tb->tb_qualifier = box_string (q);
   tb->tb_schema = sc;
   tb->tb_count = DBE_NO_STAT_DATA;
+  tb->tb_count_estimate = DBE_NO_STAT_DATA;
   if (!tb_triggers)
     tb_triggers = id_str_hash_create (101);
   {
@@ -2279,13 +2280,6 @@ qi_read_table_schema_old_keys (query_instance_t * qi, char *read_tb, dk_set_t ol
       dbe_key_sub_open (k);
     }
   END_DO_SET();
-#ifdef SQLO_STATISTICS
-  if (old_table && defined_table)
-    {
-      defined_table->tb_global_rows = old_table->tb_global_rows;
-      defined_table->tb_path_count = old_table->tb_path_count;
-    }
-#endif
 }
 
 

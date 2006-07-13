@@ -57,6 +57,16 @@ static void sch_create_table_as (query_instance_t *qi, ST * tree);
 
 
 
+#define AS_DBA(qi, exp) \
+{ \
+  oid_t old_u = qi->qi_u_id, old_g = qi->qi_g_id; \
+  qi->qi_u_id = U_ID_DBA; \
+  qi->qi_g_id = G_ID_DBA;\
+  exp; \
+  qi->qi_u_id = old_u;\
+  qi->qi_g_id = old_g;\
+}
+
 const char *add_col_text =
 "insert into SYS_COLS (\"TABLE\", \"COLUMN\", COL_ID, COL_DTP, COL_PREC, COL_CHECK, COL_SCALE, COL_DEFAULT, COL_NULLABLE, COL_OPTIONS)"
 " values (?, ?, ?, ?, ?, ?, ?, serialize (?), ?, ?)";
@@ -142,9 +152,11 @@ const char *drop_key_proc_text =
 "       super_tb.KEY_NAME = idx_name and super_tb.KEY_TABLE = tb_name and \n"
 "       super_tb.KEY_SUPER_ID = super_tb.KEY_ID and super_tb.KEY_MIGRATE_TO is NULL \n"
 "       and super_tb.KEY_ID = sub_tb.KEY_SUPER_ID \n"
-"       and sub_tb.KEY_MIGRATE_TO is NULL \n"
+"       and sub_tb.KEY_MIGRATE_TO is NULL option (order)\n"
+/* note option order.  If reversed join order, the result set will go empty afterdel of main key and the other keys will not be deleted */
 "  do \n"
 "    { \n"
+"      -- dbg_obj_print ('super ', super_key_id, 'sub ', sub_key_id);\n"
 "       delete from DB.DBA.SYS_KEY_PARTS where KP_KEY_ID = sub_key_id; \n"
 "       delete from DB.DBA.SYS_KEYS where KEY_ID = sub_key_id; \n"
 "       if (super_key_id <> sub_key_id) \n"
@@ -184,7 +196,7 @@ ddl_ensure_init (client_connection_t * cli)
       table_cols_qr = eql_compile ((case_mode == CM_MSSQL) ? table_cols_text_casemode_mssql : table_cols_text, cli);
       get_col_from_key_stmt = eql_compile ((case_mode == CM_MSSQL) ? get_col_from_key_text_casemode_mssql : get_col_from_key_text, cli);
 
-      ddl_std_proc (drop_key_proc_text, 1);
+      ddl_std_proc (drop_key_proc_text, 0);
       drop_key_stmt = sql_compile (drop_key_text, cli, NULL, SQLC_DEFAULT);
       key_id_stmt = eql_compile (key_id_text, cli);
       col_id_stmt = eql_compile (col_id_text, cli);
@@ -623,9 +635,9 @@ ddl_key_opt (query_instance_t * qi, char * tb_name, key_id_t key_id)
   if (! key_opt_qr)
     key_opt_qr = sql_compile ("DB.DBA.ddl_reorg_pk (?, ?)",
 			      bootstrap_cli, &err, SQLC_DEFAULT);
-  err = qr_rec_exec (key_opt_qr, qi->qi_client, NULL, qi, NULL, 2,
+  AS_DBA (qi, err = qr_rec_exec (key_opt_qr, qi->qi_client, NULL, qi, NULL, 2,
 		     ":0", tb_name, QRP_STR,
-		     ":1", (ptrlong) key_id, QRP_INT);
+		     ":1", (ptrlong) key_id, QRP_INT));
   if (err != (caddr_t) SQL_SUCCESS)
     {
       QI_POISON_TRX (qi);
@@ -1560,46 +1572,6 @@ isp_load_stats_data (client_connection_t *cli)
 }
 
 
-#ifdef SQLO_STATISTICS
-static void
-isp_estimate_tb_counts (client_connection_t *cli)
-{
-  id_casemode_hash_iterator_t hit;
-  dbe_table_t **tbptr;
-  dbe_schema_t *sc;
-
-  sc = isp_schema (NULL);
-  id_casemode_hash_iterator (&hit, sc->sc_name_to_object[sc_to_table]);
-  while (id_casemode_hit_next (&hit, (caddr_t *) & tbptr))
-    {
-      dbe_table_t *tb = *tbptr;
-
-      if (tb->tb_count == DBE_NO_STAT_DATA)
-	{
-	  it_cursor_t itc_auto;
-	  it_cursor_t *itc = &itc_auto;
-
-	  ITC_INIT (itc, NULL, cli->cli_trx);
-	  itc_from (itc, tb->tb_primary_key);
-	  ITC_FAIL (itc)
-	    {
-	      buffer_desc_t *buf;
-	      buf = itc_reset (itc);
-	      while (DVC_MATCH == itc_next (itc, &buf));
-	      itc_page_leave (itc, buf);
-	    }
-	  ITC_FAILED
-	    {
-	      log_debug ("isp_estimate_tb_counts : error reading table %s", tb->tb_name);
-	    }
-	  END_FAIL (itc);
-	  itc_free (itc);
-	}
-    }
-}
-#endif
-
-
 int
 recomp_mtx_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
 {
@@ -1631,10 +1603,6 @@ ddl_init_schema (void)
   ddl_ensure_table ("DB.DBA.SYS_COL_HIST", sys_col_hist_text);
   ddl_ensure_table ("DB.DBA.SYS_REPL_SUBSCRIBERS", sys_repl_subscribers_text);
   isp_load_stats_data (bootstrap_cli);
-#ifdef SQLO_STATISTICS
-  if (dbe_auto_sql_stats && !in_crash_dump)
-    isp_estimate_tb_counts (bootstrap_cli);
-#endif
   local_commit (bootstrap_cli);
 }
 
@@ -2384,7 +2352,7 @@ ddl_modify_col (query_instance_t * qi, char *table, caddr_t * column)
 	bootstrap_cli, &err, SQLC_DEFAULT);
 
   if (!err)
-    err = qr_rec_exec (modify_col_stmt, cli, NULL, qi, NULL, 10,
+    AS_DBA (qi, err = qr_rec_exec (modify_col_stmt, cli, NULL, qi, NULL, 10,
 	":0", (ptrlong) prec, QRP_INT,
 	":1", col_opts, QRP_STR,
 	":2", ddl_col_scale (((caddr_t *)column)[1]), QRP_RAW,
@@ -2394,7 +2362,7 @@ ddl_modify_col (query_instance_t * qi, char *table, caddr_t * column)
 	":6", (ptrlong) col->col_id, QRP_INT,
 	":7", tb->tb_name, QRP_STR,
 	":8", col->col_name, QRP_STR,
-	":9", (ptrlong) col->col_sqt.sqt_dtp, QRP_INT);
+	":9", (ptrlong) col->col_sqt.sqt_dtp, QRP_INT));
 
   if (err)
     {
@@ -2413,9 +2381,9 @@ ddl_drop_col (query_instance_t * qi, char *table, caddr_t * col)
   sql_error_if_remote_table (qi_name_to_table (qi, table));
   if (!dc_qr)
     dc_qr = sql_compile ("DB.DBA.ddl_drop_col (?, ?)", qi->qi_client, &err, SQLC_DEFAULT);
-  err = qr_rec_exec (dc_qr, qi->qi_client, NULL, qi, NULL, 2,
+  AS_DBA (qi, err = qr_rec_exec (dc_qr, qi->qi_client, NULL, qi, NULL, 2,
       ":0", table, QRP_STR,
-      ":1", col, QRP_STR);
+      ":1", col, QRP_STR));
   if (err != SQL_SUCCESS)
     {
       QI_POISON_TRX (qi);
@@ -2496,9 +2464,9 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
   ITC_INIT (it, QI_SPACE (qi), qi->qi_trx);
   itc_drop_index (it, key);
   itc_free (it);
-  qr_rec_exec (drop_key_stmt, qi->qi_client, NULL, qi, NULL, 2,
+  AS_DBA (qi, qr_rec_exec (drop_key_stmt, qi->qi_client, NULL, qi, NULL, 2,
       ":0", key->key_table->tb_name, QRP_STR,
-      ":1", key->key_name, QRP_STR);
+      ":1", key->key_name, QRP_STR));
 
   ddl_table_and_subtables_changed (qi, key->key_table->tb_name);
   POP_LOG;
@@ -2722,9 +2690,9 @@ ddl_rename_table_1 (query_instance_t * qi, char *old, char *new_name, caddr_t *e
       return;
     }
   old_tb = sch_name_to_table (isp_schema (NULL), old);
-  *err_ret = qr_rec_exec (ren_table, cli, &tb_lc, qi, NULL, 2,
+  AS_DBA(qi, *err_ret = qr_rec_exec (ren_table, cli, &tb_lc, qi, NULL, 2,
       ":0", new_name, QRP_STR,
-      ":1", old, QRP_STR);
+      ":1", old, QRP_STR));
   if (tb_lc)
     lc_free (tb_lc);
   if (SQL_SUCCESS != *err_ret)
@@ -2936,7 +2904,7 @@ ddl_droptable_pre (query_instance_t * qi, char *name)
 	}
     }
 
-  err = qr_rec_exec (repl_check_stmt, cli, &lc, qi, NULL, 1, ":0", name, QRP_STR);
+  AS_DBA (qi, err = qr_rec_exec (repl_check_stmt, cli, &lc, qi, NULL, 1, ":0", name, QRP_STR));
   if (err != SQL_SUCCESS)
     {
       lc_free (lc);
@@ -2994,8 +2962,8 @@ ddl_drop_table (query_instance_t * qi, char *name)
   del_st = sql_compile ("DB.DBA.vd_remote_table ('', ?, null)", cli, &err, SQLC_DEFAULT);
   if (del_st)
     {
-      err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
-	  ":0", name, QRP_STR);
+      AS_DBA (qi, err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
+	  ":0", name, QRP_STR));
       if (err)
 	{
 	  atomic_mode (qi, 0, atomic);
@@ -3011,8 +2979,8 @@ ddl_drop_table (query_instance_t * qi, char *name)
   del_st = sql_compile ("DB.DBA.vt_clear_text_index (?)", cli, &err, SQLC_DEFAULT);
   if (del_st)
     {
-      err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
-	  ":0", name, QRP_STR);
+      AS_DBA (qi, err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
+	  ":0", name, QRP_STR));
       if (err)
 	{
 	  atomic_mode (qi, 0, atomic);
@@ -3058,8 +3026,8 @@ ddl_drop_table (query_instance_t * qi, char *name)
       atomic_mode (qi, 0, atomic);
       sqlr_new_error ("42S02", "SQ025", "Bad table in drop table.");
     }
-  err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
-      ":0", name, QRP_STR);
+  AS_DBA (qi, err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
+      ":0", name, QRP_STR));
   if (err != SQL_SUCCESS)
     {
       /* the droptable proc call failed. May have inconsistent schema. Prevent commit */
@@ -6106,7 +6074,7 @@ ddl_standard_procs (void)
   ddl_std_proc (gti3_text, 1);	/* For SQLGetTypeInfo */
   ddl_std_proc (gti_text, 1);	/* For SQLGetTypeInfo */
   ddl_std_proc (gtijdbc_text, 1);	/* For SQLGetTypeInfo for JDBC */
-  ddl_std_proc (revoke_text, 1);
+  ddl_std_proc (revoke_text, 0);
   ddl_std_proc (lg_text, 0);
   ddl_std_proc (proc_table_privileges, 1);	/* For SQLTablePrivileges */
   ddl_std_proc (proc_new_key_id, 0);
@@ -6116,7 +6084,7 @@ ddl_standard_procs (void)
   ddl_std_proc (proc_owner_check, 0);
   ddl_std_proc (proc_add_col_recursive, 0);
   ddl_std_proc (proc_add_col, 1);
-  ddl_std_proc (proc_modify_col, 1);
+  ddl_std_proc (proc_modify_col, 0);
 #if 0
   ddl_std_proc (proc_del_user, 0);
 #endif
@@ -6132,9 +6100,9 @@ ddl_standard_procs (void)
   ddl_std_proc (stat_proc1, 1);
   ddl_std_proc (stat_proc2, 1);
   ddl_std_proc (wsst, 1);
-  ddl_std_proc (pk1, 1);
-  ddl_std_proc (pk2, 1);
-  ddl_std_proc (pk3, 1);
+  ddl_std_proc (pk1, 0);
+  ddl_std_proc (pk2, 0);
+  ddl_std_proc (pk3, 0);
   ddl_std_proc (collation_define_text, 0);
   ddl_std_proc (charset_define_text, 0);
   ddl_std_procs_inited = 1;
@@ -6231,6 +6199,11 @@ const char *sys_d_stat_text =
 "	key_stat (DB.DBA.SYS_FILL_NAME(KEY_TABLE), name_part (KEY_NAME, 2), 'n_new') as N_NEW\n"
 "	from SYS_KEYS  where KEY_MIGRATE_TO is null\n";
 
+const char * sys_col_auto_stats_text=
+"create view DB.DBA.SYS_COL_AUTO_STAT as \n"
+"select key_table as CSA_TABLE, \"COLUMN\" as CSA_COLUMN,  col_stat (col_id, 'n_distinct') as CSA_N_DISTINCT, col_stat (col_id, 'avg_len') as CSA_AVG_LEN, col_stat (col_id, 'n_values') as CSA_N_VALUES, key_stat (DB.DBA.SYS_FILL_NAME(KEY_TABLE), name_part (key_name, 2), 'n_est_rows') as CSA_N_ROWS\n"
+"from sys_keys, sys_key_parts, sys_cols where key_is_main = 1 and key_migrate_to is null and kp_key_id = key_id and col_id = kp_col";
+
 
 void
 ddl_ensure_stat_tables (void)
@@ -6241,7 +6214,7 @@ ddl_ensure_stat_tables (void)
   ddl_ensure_table ("do this allways",
       "select exec (sprintf ('drop view %s', V_NAME)) from DB.DBA.SYS_VIEWS \n"
       "  where \n"
-      "   V_NAME in ('DB.DBA.SYS_D_STAT', 'DB.DBA.SYS_L_STAT', 'DB.DBA.SYS_K_STAT') and \n"
+      "   V_NAME in ('DB.DBA.SYS_D_STAT', 'DB.DBA.SYS_L_STAT', 'DB.DBA.SYS_K_STAT', 'DB.DBA.SYS_COL_AUTO_STAT') and \n"
       "   strstr (blob_to_string (coalesce (V_TEXT, V_EXT)), 'SYS_FILL_NAME') is null");
   ddl_ensure_table ("do this allways",
       "select exec (sprintf ('drop view %s', V_NAME)) from DB.DBA.SYS_VIEWS \n"
@@ -6251,6 +6224,7 @@ ddl_ensure_stat_tables (void)
   ddl_ensure_table ("DB.DBA.SYS_K_STAT", sys_k_stat_text);
   ddl_ensure_table ("DB.DBA.SYS_L_STAT", sys_l_stat_text);
   ddl_ensure_table ("DB.DBA.SYS_D_STAT", sys_d_stat_text);
+  ddl_ensure_table ("DB.DBA.SYS_COL_AUTO_STAT", sys_col_auto_stats_text);
   ddl_ensure_table ("DB.DBA.SYS_END", "create table SYS_END (K varbinary, primary key (K) clustered)");
   {
     caddr_t err;

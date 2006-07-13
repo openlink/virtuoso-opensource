@@ -186,6 +186,7 @@
 #define COALESCE_EXP		(ptrlong)626
 #define NEW_ALIAS		(ptrlong)627
 #define REMOTE_ROUTINE_DECL	(ptrlong)628
+#define PROC_COST (ptrlong)633
 
 #define IN_MODE			(ptrlong)1
 #define OUT_MODE		(ptrlong)2

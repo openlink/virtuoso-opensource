@@ -1210,6 +1210,14 @@ _numeric_rc_clear (void *ptr)
 }
 
 
+
+int
+numeric_hash_cmp (caddr_t n1, caddr_t n2)
+{
+  return 0 == numeric_compare ((numeric_t) n1, (numeric_t) n2);
+}
+
+
 /*
  *  Initialize the number package
  */
@@ -1218,7 +1226,7 @@ numeric_init (void)
 {
   _numeric_rc = resource_allocate (200,
       _numeric_rc_allocate, _numeric_rc_free, _numeric_rc_clear, 0);
-
+  dk_dtp_register_hash (DV_NUMERIC, (box_hash_func_t) numeric_hash, numeric_hash_cmp);
   return NUMERIC_STS_SUCCESS;
 }
 

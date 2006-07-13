@@ -1366,24 +1366,38 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    return (box_num (key->key_fragments[0]->kf_it->it_commit_space->isp_remap->ht_count));
 	  if (0 == strcmp (stat_name, "n_rows"))
 	    return (box_num (key->key_table->tb_count));
-#ifdef SQLO_STATISTICS
 	  if (0 == strcmp (stat_name, "n_est_rows"))
 	    {
-	      if (!key->key_table->tb_path_count)
-		return box_num (-1);
-	      else
-		return (box_num ((long) (key->key_table->tb_global_rows / key->key_table->tb_path_count)));
+	      return box_num (tb->tb_count_estimate + tb->tb_count_delta);
 	    }
-#endif
 
 
 	  sqlr_new_error ("22023", "SR244",
-	      "Allowed stat names are touches, reads, lock_set, lock_waits, deadlocks.");
+	      "Allowed stat names are touches, reads, lock_set, lock_waits, deadlocks, lock_wait_time, lock_escalations, n_dirty, n_new, n_pages, n_est_rows, n_rows.");
 	}
     }
   END_DO_SET();
   sqlr_new_error ("42S12", "SR245", "Index %s not found in key_stat.", key_name);
   return NULL; /*dummy*/
+}
+
+
+caddr_t
+bif_col_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  long id = bif_long_arg (qst, args, 0, "col_stat");
+  caddr_t name = bif_string_arg (qst, args, 1, "col_stat");
+  dbe_column_t * col = sch_id_to_column (wi_inst.wi_schema, id);
+  if (!col)
+    sqlr_new_error ("42000", "ST001", "Bad column id in col_stat");
+  if (0 == strcmp (name, "n_distinct"))
+    return box_num (col->col_n_distinct);
+  if (0 == strcmp (name, "avg_len"))
+    return box_num (col->col_avg_len);
+  if (0 == strcmp (name, "n_values"))
+    return box_num (col->col_count);
+  sqlr_new_error ("42000", "ST002", "Bad attribute name in col_stat");
+  return NULL;
 }
 
 
@@ -2166,6 +2180,9 @@ row_map_fprint (FILE * out, db_buf_t row, dbe_key_t * key)
 	case DV_SHORT_INT:
 	  fprintf (out, " %d", SHORT_REF (row + off));
 	  break;
+	case DV_IRI_ID:
+	  fprintf (out, " #i%u ", (unsigned int32) LONG_REF (row + off));
+	  break;
 	case DV_LONG_INT:
 	  fprintf (out, " %d", (int) LONG_REF (row + off));
 	  break;
@@ -2859,6 +2876,7 @@ bif_status_init (void)
   bif_define ("status", bif_status);
   bif_define ("sys_stat", bif_sys_stat);
   bif_define_typed ("key_stat", bif_key_stat, &bt_integer);
+  bif_define_typed ("col_stat", bif_col_stat, &bt_integer);
   bif_define ("prof_enable", bif_profile_enable);
   bif_define ("prof_sample", bif_profile_sample);
   bif_define_typed ("msec_time", bif_msec_time, &bt_integer);

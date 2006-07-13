@@ -940,6 +940,7 @@ long num_check_prec (long val, int prec, char *title, caddr_t *err_ret);
 const char *dv_type_title (int type);
 
 /* sqlbif.c */
+void connection_set (client_connection_t *cli, caddr_t name, caddr_t val);
 void sprintf_escaped_table_name (char *out, char *name);
 void sprintf_escaped_str_literal (caddr_t str, char *out, dk_session_t *ses);
 caddr_t get_keyword_int (caddr_t * arr, char * item, char * me);

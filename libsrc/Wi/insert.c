@@ -1004,6 +1004,8 @@ itc_insert_unq_ck (it_cursor_t * it, db_buf_t thing, buffer_desc_t ** unq_buf)
 
   if (it->itc_insert_key)
     {
+      if (it->itc_insert_key->key_table && it->itc_insert_key->key_is_primary)
+	it->itc_insert_key->key_table->tb_count_delta++;
       it->itc_key_id = it->itc_insert_key->key_id;
       /* for key access statistics */
     }

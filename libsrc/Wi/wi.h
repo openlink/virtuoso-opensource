@@ -60,6 +60,9 @@
 /*
  *  Global features
  */
+#ifndef UNIVERSE		/* Support for remote tables */
+#define UNIVERSE 1
+#endif
 #ifndef REPLICATION_SUPPORT	/* Support for replication */
 # define REPLICATION_SUPPORT	1
 # define REPLICATION_SUPPORT2	1
@@ -450,11 +453,11 @@ typedef struct out_map_s
     /* placeholder_t i the common superclass of a placeholder, a bookmark whose position survives index updates, and of the index tree cursor */
 
 #define PLACEHOLDER_MEMBERS \
-  int			itc_type;  \
-  dp_addr_t		itc_page; \
-  short			itc_position; \
-  char			itc_is_on_row; \
+  char			itc_type:3;  \
+  char			itc_is_on_row:1; \
   char			itc_lock_mode; \
+  short			itc_position; \
+  dp_addr_t		itc_page; \
   index_space_t *	itc_space_registered; \
   it_cursor_t *		itc_next_on_page; \
   index_space_t *	itc_space; \
@@ -486,18 +489,10 @@ typedef void (*itc_clup_func_t) (it_cursor_t *);
 
 #define RA_MAX_ROOTS 80
 
-#ifdef SQLO_STATISTICS
-#define MAX_PCNT_NUM 1000
-#define DEF_PCNT_NUM 20
-#define MIN_PCNT_NUM 5
-#define RANDOM_COUNT 10
-#define MAX_RND_NUM 10000
 #define SQLO_RATE_NAME "rnd-stat-rate"
 
 typedef enum { RANDOM_SEARCH_OFF = 0, RANDOM_SEARCH_ON = 1, RANDOM_SEARCH_AUTO = 2 } random_search_mode;
-#define ITC_TREE_LEVEL_MAX 10
 
-#endif
 
 struct it_cursor_s
   {
@@ -505,8 +500,8 @@ struct it_cursor_s
 
     char			itc_is_allocated; /* true if dk_alloc'd (not automatic struct */
     short		itc_map_pos; /* index in page content map */
+    short			itc_pos_on_parent; /* when going up to parent from leaf, cache the pos of the leaf pointer if parent oage did not change */
     dp_addr_t		itc_parent_page;
-    int			itc_pos_on_parent; /* when going up to parent from leaf, cache the pos of the leaf pointer if parent oage did not change */
     jmp_buf_splice *	itc_fail_context; /* throw when deadlock or other exception inside index operation */
     itc_clup_func_t	itc_fail_cleanup; /* no in use */
     void *		itc_fail_cleanup_cd;
@@ -577,25 +572,12 @@ struct it_cursor_s
     caddr_t *		itc_out_state;  /* place out cols here. If null copy from itc_in_state */
     struct key_source_s *	itc_ks;
 
-#ifdef SQLO_STATISTICS
     char	        itc_random_search;
-    long		itc_random_pcnt;
-    int32		itc_rnd_seed;
-    int			itc_notleftmost;
-    int			itc_depth;
-    int			itc_curr_depth;
-    struct {
-      double		rows[ITC_TREE_LEVEL_MAX];
-      double		childs[ITC_TREE_LEVEL_MAX];
       struct {
-	dp_addr_t	page;
-	int		pos;
-      } mostright[ITC_TREE_LEVEL_MAX];
-      int		global_hit_rows;
-      double		global_rows;
-      int		path_count;
+      int	sample_size;  /* stop random search after this many rows */
+      int	n_sample_rows; /* count of rows retrieved in random traversal */
+      dk_hash_t *	cols;	/* hash from de_col_t to col_stat_t *for random sample col stats. */
     } itc_st;
-#endif
     /* data areas. not cleared at alloc */
     caddr_t		itc_search_params[MAX_SEARCH_PARAMS];
     caddr_t		itc_owned_search_params[MAX_SEARCH_PARAMS];
@@ -865,6 +847,10 @@ extern resource_t * pm_rc_4;
     } \
 }
 
+
+/*#define BUF_DEBUG*/
+#define buf_dbg_printf(a) /*printf a*/
+
 #define bd_readers bdf.r.readers
 #define bd_is_write bdf.r.is_write
 #define bd_being_read bdf.r.being_read
@@ -907,6 +893,9 @@ struct buffer_desc_s
   du_thread_t *	bd_writer; /* for debugging, the thread which has write access, if any */
 #ifdef PAGE_TRACE
   long		bd_trx_no;
+#endif
+#ifdef BUF_DEBUG
+  index_space_t *	bd_prev_space;
 #endif
 };
 

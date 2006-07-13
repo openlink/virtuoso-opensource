@@ -265,7 +265,7 @@ typedef struct lock_trx_s
 
 
 #define ITC_IS_LTRX(itc) \
-  (!itc->itc_ltrx->lt_is_excl)
+  (!itc->itc_ltrx ||  !itc->itc_ltrx->lt_is_excl)
 
 
 #if defined (PAGE_TRACE) | defined (MTX_DEBUG)

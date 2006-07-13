@@ -26,7 +26,7 @@
  *  
 */
 
-#include "wi.h"
+#include "sqlnode.h"
 
 
 long in_while_read;
@@ -731,12 +731,6 @@ itc_up_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   buffer_desc_t *tmp;
   buffer_desc_t *dest_buf = NULL;
   dp_addr_t up;
-#ifdef SQLO_STATISTICS
-  if (!itc->itc_notleftmost)
-    {
-      itc->itc_notleftmost = 1;
-    }
-#endif
 
 up_again:
   ITC_IN_MAP (itc);

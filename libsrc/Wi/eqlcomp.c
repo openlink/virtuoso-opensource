@@ -348,6 +348,7 @@ qr_free (query_t * qr)
       dk_free_box (qr->qr_trig_table);
       dk_free_box ((box_t) qr->qr_trig_upd_cols);
     }
+  dk_free_box ((caddr_t) qr->qr_proc_cost);
 #ifdef PLDBG
   dk_free_box (qr->qr_source);
   if (qr->qr_line_counts)

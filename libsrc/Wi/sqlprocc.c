@@ -782,6 +782,23 @@ sqlc_set_brk (query_t *qr, long line1, int what, caddr_t * inst)
   return rc;
 }
 
+
+void
+sqlc_proc_cost (sql_comp_t * sc, ST * stmt)
+{
+  query_t * qr = sc->sc_cc->cc_query;
+  caddr_t * numbers = (caddr_t*) stmt->_.op.arg_1;
+  int n_nums = BOX_ELEMENTS (numbers);
+  float * floats = (float*) dk_alloc_box_zero (sizeof (float) * (n_nums < 2 ? 2 : n_nums), DV_ARRAY_OF_FLOAT);
+  int inx;
+  DO_BOX (caddr_t, n, inx, numbers)
+    {
+      floats[inx] = unbox_float (n);
+    }
+  END_DO_BOX;
+  qr->qr_proc_cost = floats;
+}
+
 void
 sqlc_proc_stmt (sql_comp_t * sc, ST ** pstmt)
 {
@@ -909,6 +926,9 @@ sqlc_proc_stmt (sql_comp_t * sc, ST ** pstmt)
       break;
 #endif
 
+    case PROC_COST:
+      sqlc_proc_cost (sc, stmt);
+      break;
     default:
       sqlc_new_error (sc->sc_cc, "39000", "SQ088", "Statement not supported in a procedure context.");
     }

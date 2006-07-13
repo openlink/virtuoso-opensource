@@ -1152,20 +1152,47 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	      TS_ORDER_ITC (ts, state) = order_itc;
 	    }
 	  any_passed = 0;
-#ifdef SQLO_STATISTICS
 	  if (ts->ts_is_random)
 	    {
+	      static caddr_t rate_name = NULL;
+	      static caddr_t est_name = NULL;
+	      caddr_t fbox;
+	      unsigned int64 row_est = key_count_estimate (ts->ts_order_ks->ks_key, 3, 0);
 	      itc_clear_stats (order_itc);
+	      if (!est_name)
+		{
+		  est_name = box_dv_short_string ("row-count-estimate");
+		  rate_name = box_dv_short_string ("rnd-stat-rate");
+		}
+	      fbox = box_float (row_est);
+	      connection_set (qi->qi_client, est_name, fbox);
+	      dk_free_box (fbox);
+	      if (row_est < 1000)
+		{
+		  fbox = box_float (1);
+		  connection_set (qi->qi_client, rate_name, fbox);
+		  dk_free_box (fbox);
+		}
+	      else 
+		{
+		  float pct = (float) (ptrlong) ts->ts_rnd_pcnt;
 	      order_itc->itc_random_search = RANDOM_SEARCH_ON;
-	      order_itc->itc_random_pcnt = ((long)(ptrlong) ts->ts_rnd_pcnt / MIN_PCNT_NUM ) * MIN_PCNT_NUM;
-	      if (!order_itc->itc_random_pcnt)
-		order_itc->itc_random_pcnt = MIN_PCNT_NUM;
-	      if (order_itc->itc_random_pcnt >= MAX_PCNT_NUM / 2)
-		order_itc->itc_random_pcnt = DEF_PCNT_NUM;
+		  if (pct)
+		    pct = 1;
+		  if (pct >= 30)
+		    pct = 30;
+		  order_itc->itc_st.sample_size = (((float) row_est) / 100) * pct;
+		  if (order_itc->itc_st.sample_size < 200)
+		    order_itc->itc_st.sample_size = 200;
+		  else if (order_itc->itc_st.sample_size > 10000)
+		    order_itc->itc_st.sample_size = 10000;
+		  fbox = box_float ((float) row_est / (float) order_itc->itc_st.sample_size);
+		  connection_set (qi->qi_client, rate_name, fbox);
+		  dk_free_box (fbox);
+		}
 	    }
 	  else
 	    order_itc->itc_random_search = RANDOM_SEARCH_OFF;
-#endif
 	  rc = ks_start_search (ts->ts_order_ks, inst, state,
 	      order_itc, &order_buf, ts,
 	      ts->ts_is_unique ? SM_READ_EXACT : SM_READ);
@@ -1608,7 +1635,7 @@ delete_node_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 	main_buf = cr_buf;
       }
     QI_ROW_AFFECTED (inst);
-
+    cr_key->key_table->tb_count_delta--;
     if (more_keys)
       {
 	del_itc = &del_itc_auto;

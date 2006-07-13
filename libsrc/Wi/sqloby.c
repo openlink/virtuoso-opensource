@@ -310,6 +310,7 @@ sqlo_tb_key_cost (df_elt_t * tb_dfe, dbe_key_t * key, dk_set_t preds, int * is_u
   dk_set_t old_preds = tb_dfe->_.table.col_preds;
   tb_dfe->_.table.key = key;
   tb_dfe->_.table.col_preds = preds;
+  tb_dfe->dfe_unit = 0;
   dfe_table_cost (tb_dfe, &u, &a, &o, 0);
   *is_unq = tb_dfe->_.table.is_unique;
   tb_dfe->_.table.col_preds = old_preds;
@@ -437,6 +438,7 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 	  so->so_gen_pt = tb_dfe->dfe_prev;
 	  sqlo_dt_unplace (so, tb_dfe);
 	  tb_dfe->_.table.key = best;
+	  tb_dfe->dfe_unit = 0; /*recalc the cost next time */
 	  sqlo_place_table (so, tb_dfe);
 /*	}
       else if (tb_dfe->dfe_next)

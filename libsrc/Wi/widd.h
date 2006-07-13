@@ -89,8 +89,6 @@ extern dk_mutex_t * db_schema_mtx; /* global schema hash tables */
 #define LEAVE_SCHEMA mutex_enter (db_schema_mtx)
 
 #define DBE_NO_STAT_DATA	-1
-#define SQLO_STATISTICS		1
-
 #define TB_RLS_U	0
 #define TB_RLS_I	1
 #define TB_RLS_D	2
@@ -131,10 +129,8 @@ struct dbe_table_s
 
     /* SQL statistics members */
     long                tb_count;
-#ifdef SQLO_STATISTICS
-    double		tb_global_rows;
-    double		tb_path_count;
-#endif
+    int64	tb_count_estimate;
+    int			tb_count_delta;
 
     /* row level security functions */
     caddr_t		tb_rls_procs[TB_RLS_LAST + 1];
@@ -191,6 +187,7 @@ struct dbe_column_s
     caddr_t		col_max; /* max column value */
     caddr_t *		col_options; /* max column value */
     long		col_avg_len; /* average column length */
+    long		col_avg_blob_len;
   };
 
 

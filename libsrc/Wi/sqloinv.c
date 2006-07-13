@@ -361,7 +361,7 @@ sinv_call_has_col (ST * tree)
   return have_col;
 }
 
-static sinv_map_t *
+sinv_map_t *
 sinv_call_map (ST * tree, client_connection_t * cli)
 {
   SKIP_AS (tree);

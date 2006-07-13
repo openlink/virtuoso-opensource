@@ -237,6 +237,7 @@ struct query_s
     caddr_t		*qr_udt_mtd_info; /* not null if CREATE METHOD */
     long 		qr_obsolete_msec;
     caddr_t		qr_parse_tree;
+    float *		qr_proc_cost; /* box of floats: 0. unit cost 1. result set rows 2...n+2 multiplier if param 0...n is not given */
   };
 
 /* qr_remote_mode values */
@@ -461,10 +462,8 @@ typedef struct table_source_s
     state_slot_t *	ts_current_of;
     char		ts_is_unique;	/* Only one hit expected, don't look for more */
     char		ts_is_outer;
-#ifdef SQLO_STATISTICS
     char		ts_is_random; /* random search */
     caddr_t		ts_rnd_pcnt;
-#endif
     char		ts_no_blobs;
     char		 ts_ancestor_refd;
     code_vec_t		ts_after_join_test;

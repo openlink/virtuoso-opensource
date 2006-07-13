@@ -787,16 +787,12 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
   ts_alias_current_of (ts);
   table_source_om (sc->sc_cc, ts);
 
-#ifdef SQLO_STATISTICS  /* SQLO statistic gathering code */
   if (ot->ot_opts && sqlo_opt_value (ot->ot_opts, OPT_RANDOM_FETCH))
     {
       caddr_t res = sqlo_opt_value (ot->ot_opts, OPT_RANDOM_FETCH);
       ts->ts_is_random = 1;
       ts->ts_rnd_pcnt = res;
     }
-
-#endif
-
   return (data_source_t *) ts;
 }
 

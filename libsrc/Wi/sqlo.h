@@ -131,7 +131,8 @@ typedef struct jt_mark_s
 
 typedef struct df_inx_op_s 
 {
-  int		dio_op;
+  char		dio_op;
+  char		dio_is_join;  /* true if multiple tables, false if just using inx merge on keys of one table */
   dk_set_t	dio_terms;
   dbe_key_t *	dio_key;
   df_elt_t *	dio_table;
@@ -199,6 +200,7 @@ struct df_elt_s
       dk_set (df_elt_t*)	out_cols;
 
       char	is_unique:1;
+      char 	is_arity_sure:1;  /* if unique or comes from inx sample or n distinct */
       char	is_oby_order:1;
       char	single_locus:1;
       char		is_text_order:1;
@@ -595,6 +597,8 @@ void sqlg_find_aggregate_sqt (dbe_schema_t *schema, sql_type_t *arg_sqt, ST *fre
 int sqlo_is_postprocess (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * last_tb_dfe);
 
 #include "sqlofn.h"
+#include "sqloinv.h"
+
 
 #ifdef BIF_XML
 extern void
@@ -607,6 +611,27 @@ xr_auto_meta_data (sql_comp_t * sc, ST * tree);
 ST * sinv_check_exp (sqlo_t *so, ST *tree);
 ST * sinv_check_inverses (ST *tree, client_connection_t *cli);
 void sinv_sqlo_check_col_val (ST **pcol, ST **pval, dk_set_t *acol, dk_set_t *aval);
-
+sinv_map_t * sinv_call_map (ST * tree, client_connection_t * cli);
 int sqlo_is_contains_vdb_tb (sqlo_t *so, op_table_t *ot, char ctype, ST **args);
+
+
+
+/* cost model constants */
+
+#define COL_PRED_COST 0.02 /* itc_col_check */
+#define ROW_SKIP_COST 0.04 /* itc_row_check and 1 iteration of itc_page_search */
+#define INX_INIT_COST 1  /* fixed overhead of starting an index lookup */
+#define INX_CMP_COST 0.25 /* one compare in random access lookup. Multiple by log2 of inx count to get cost of 1 random access */
+#define ROW_COST_PER_BYTE (COL_PRED_COST / 200) /* 200 b of row cost 1 itc_col_check */
+#define NEXT_PAGE_COST 5
+#define INX_ROW_INS_COST 1 /* cost of itc_insert_dv into inx */
+#define HASH_ROW_INS_COST 0.7 /* cost of adding a row to hash */
+#define HASH_LOOKUP_COST 0.6
+#define HASH_ROW_COST 0.3
+#define CV_INSTR_COST 0.1   /* avg cost of instruction in code_vec_run */
+
+#define HASH_COUNT_FACTOR(n)\
+  (0.05 * log(n) / log (2)) 
+
+
 #endif /* _SQLO_H */

@@ -44,6 +44,7 @@
 #include "list2.h"
 #include "remote.h"
 #include "sqlrcomp.h"
+#include "sqloinv.h"
 
 
 
@@ -658,19 +659,12 @@ sqlo_place_dfe_after (sqlo_t * so, locus_t * loc, df_elt_t * after_this, df_elt_
     */
 #ifdef L2_DEBUG
   {
-    df_elt_t * old_super = dfe->dfe_super;
-    if (NULL != old_super)
-      {
-        if ((old_super == super) &&
-          ((NULL != dfe->dfe_prev) || (NULL != dfe->dfe_next)) &&
-          (after_this != dfe->dfe_prev) )
-          GPF_T1 ("Place an element that is placed already");
-        if ((old_super->_.sub.first == dfe) || (NULL != dfe->dfe_prev) ||
-          (old_super->_.sub.last == dfe) || (NULL != dfe->dfe_next) )
-          L2_DELETE (old_super->_.sub.first, old_super->_.sub.last, dfe, dfe_);
-      }
+    if (dfe->dfe_next || dfe->dfe_prev)
+      /*GPF_T1 ("placing already placed")*/;
   }
 #endif
+  dfe->dfe_next = NULL;
+  dfe->dfe_prev = NULL;
   L2_INSERT_AFTER (super->_.sub.first, super->_.sub.last, after_this, dfe, dfe_);
   if (DFE_TABLE == dfe->dfe_type)
     dfe->_.table.ot->ot_locus = loc;
@@ -2035,6 +2029,7 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 		   dk_set_t col_preds, dk_set_t * after_preds)
 {
   float cost, arity, ov;
+  float true_arity = -1;
   dbe_key_t *best = NULL;
   float  best_cost;
   int best_unq = 0;
@@ -2057,9 +2052,11 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
   if (is_pk_inx)
     {
       tb_dfe->_.table.key = ot->ot_table->tb_primary_key;
+      tb_dfe->dfe_unit = 0;
       dfe_table_cost (tb_dfe, &cost, &arity, &ov, 0);
       best_unq = tb_dfe->_.table.is_unique;
       best = ot->ot_table->tb_primary_key;
+      best_cost = cost;
     }
   else if (is_txt_inx)
     {
@@ -2070,6 +2067,10 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 
       tb_dfe->_.table.is_text_order = 1;
       best = tb_text_key (tb_dfe->_.table.ot->ot_table);
+      tb_dfe->_.table.key = best;
+      tb_dfe->dfe_unit = 0;
+      dfe_table_cost (tb_dfe, &best_cost, &tb_dfe->dfe_arity, &ov, 0);
+      best_unq = 0;
     }
   else
     {
@@ -2083,13 +2084,19 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 		  dfe_table_cost (tb_dfe, &cost, &arity, &ov, 0);
 		  best_unq = tb_dfe->_.table.is_unique;
 		  best = key;
+		  best_cost = cost;
 		  break;
 		}
 	    }
 	  else
 	    {
 	      tb_dfe->_.table.key = key;
+	      tb_dfe->dfe_unit = 0;
 	      dfe_table_cost (tb_dfe, &cost, &arity, &ov, 0);
+	      if (tb_dfe->_.table.is_unique)
+		true_arity = arity; /* reliable if unique but if many key parts with many distinct vals arity can be reported as less than 1. */
+	      else if (tb_dfe->_.table.is_arity_sure)
+		true_arity = -1 == true_arity ? arity : MIN (true_arity, arity);
 	      if (!best || cost < best_cost)
 		{
 		  best_cost = cost;
@@ -2110,6 +2117,8 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 	    {
 	      tb_dfe->_.table.is_text_order = 1;
 	      tb_dfe->_.table.key = tb_text_key (tb_dfe->_.table.ot->ot_table);
+	      tb_dfe->dfe_unit = 0;
+	      dfe_table_cost (tb_dfe, &tb_dfe->dfe_unit, &tb_dfe->dfe_arity, &ov, 0);
 	    }
 	  else
 	    {
@@ -2123,6 +2132,8 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
     SQL_GPF_T1 (so->so_sc->sc_cc, "sqlo table has no index");
   tb_dfe->_.table.key = best;
   tb_dfe->_.table.is_unique = best_unq;
+  tb_dfe->dfe_unit = best_cost;
+  tb_dfe->dfe_arity = true_arity != -1 ? true_arity : arity;
   sqlo_try_inx_int_joins (so, tb_dfe, &group, &best_group);
   if (group)
     {
@@ -2209,6 +2220,90 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
 	      t_box_string (((dbe_column_t *) text_key->key_parts->data)->col_name))));
     }
 }
+
+
+int
+is_call_only_dep_on (df_elt_t * dfe, op_table_t * ot)
+{
+  int inx;
+  if (!ST_P (dfe->dfe_tree, CALL_STMT))
+    return 0;
+  if (!(dfe->dfe_tables && !dfe->dfe_tables->next && dfe->dfe_tables->data == (void*) ot))
+    return 0;
+  DO_BOX (ST *, arg, inx, dfe->dfe_tree->_.call.params)
+    {
+      if (!ST_P (arg, COL_DOTTED))
+	return 0;
+    }
+  END_DO_BOX;
+  return  1;
+}
+
+void
+sqlo_make_inv_pred (sqlo_t * so, sinv_map_t * map, df_elt_t * left, df_elt_t * right, dk_set_t * preds_ret)
+{
+  /* left is an invertible  function call with columns as args, right is an exp.  map describes the fun in left */
+  client_connection_t * cli = sqlc_client ();
+  dk_set_t res = NULL;
+  int inx_inv;
+  int old_top_and = so->so_is_top_and;
+  ST * left_tree = left->dfe_tree;
+  ST * right_tree = right->dfe_tree;
+  so->so_is_top_and = 0;
+  DO_BOX (caddr_t, inverse, inx_inv, map->sinvm_inverse)
+    {
+      ST *clause;
+      ST *new_left, *new_right;
+      new_left =
+	(ST *) t_box_copy_tree ((caddr_t) left_tree->_.call.
+				params[inx_inv]);
+      new_right =
+	t_listst (3, CALL_STMT, t_sqlp_box_id_upcase (inverse),
+		  t_list (1, right_tree));
+
+      new_left = sinv_check_inverses (new_left, cli);
+      new_right = sinv_check_inverses (new_right, cli);
+
+      BIN_OP (clause, BOP_EQ, new_left, new_right);
+      clause = sinv_check_exp (so, clause);
+      t_set_push (&res, (void*) sqlo_df (so, clause));
+    }
+  END_DO_BOX;
+  so->so_is_top_and = old_top_and;
+
+  *preds_ret = dk_set_conc (res, *preds_ret);
+}
+
+
+
+int
+sqlo_col_inverse  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_preds)
+{
+  /* if pred is f (c1,...cn) = exp independent of tb_dfe and inverse of f exists and c1...cn are cols of tb_dfe 
+  * then generate AND of inverses of f app,lied to exp, equated to each of c1...cn */
+  sinv_map_t * map;
+  if (BOP_EQ != pred->_.bin.op)
+    return 0;
+
+  /* left if func of table and right is not of table ? */
+  if (is_call_only_dep_on (pred->_.bin.left, tb_dfe->_.table.ot)
+      && !dk_set_member (pred->_.bin.right->dfe_tables, (void*) tb_dfe->_.table.ot)
+      && (map = sinv_call_map (pred->_.bin.left->dfe_tree, sqlc_client ())))
+    {
+      sqlo_make_inv_pred  (so, map, pred->_.bin.left, pred->_.bin.right, col_preds);
+      return 1;
+    }
+  else if (is_call_only_dep_on (pred->_.bin.left, tb_dfe->_.table.ot)
+      && !dk_set_member (pred->_.bin.right->dfe_tables, (void*) tb_dfe->_.table.ot)
+	   && (map = sinv_call_map (pred->_.bin.left->dfe_tree, sqlc_client ())))
+    {
+      sqlo_make_inv_pred  (so, map, pred->_.bin.right, pred->_.bin.left, col_preds);
+      return 1;
+    }
+  return 0;
+}
+
+
 
 void
 sqlo_like_range (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_preds)
@@ -2318,6 +2413,8 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
 	      inv_pred->_.bin.op = (int) cmp_op_inverse (pred->_.bin.op);
 	      t_set_push (&col_preds, inv_pred);
 	    }
+	  else if (sqlo_col_inverse (so, tb_dfe, pred, &col_preds))
+	    ; /* no action, preds added by func if true */
 	  else
 	    {
 	      t_set_push (&after_preds, pred);
@@ -3336,7 +3433,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   int remote = sqlo_try_remote_hash (so, dfe);
   float ov = 0;
   dk_set_t preds = dfe->_.table.ot->ot_is_outer ? dfe->_.table.ot->ot_join_preds :  dfe->_.table.all_preds;
-  float fill_unit, fill_arity, hash_unit, ref_arity;
+  float fill_unit, fill_arity, ref_arity;
   dk_set_t hash_refs = NULL, hash_keys = NULL;
   df_elt_t * fill_dfe;
   dk_set_t org_preds = NULL, post_preds = NULL;
@@ -3344,6 +3441,8 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   op_table_t * ot = dfe->_.table.ot;
   if (RHJ_NONE == remote)
     return 0;
+  if (dfe->_.table.inx_op && dfe->_.table.inx_op->dio_is_join)
+    return 0; /* an inx op that joins tables is preferred over hash of one table.  Also if hash won, would have to unplace the joined table(s) of the inx op.  */
   ref_arity = dfe_arity_with_supers (dfe->dfe_prev);
   mode = (int) (ptrlong) sqlo_opt_value (ot->ot_opts, OPT_JOIN);
   dt_mode = (int) (ptrlong) sqlo_opt_value (super_ot->ot_opts, OPT_JOIN);
@@ -3417,7 +3516,6 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   fill_dfe->_.table.key = NULL;
   sqlo_tb_col_preds (so, fill_dfe, org_preds, NULL);
   dfe_unit_cost (fill_dfe, 1, &fill_unit, &fill_arity, &ov);
-  hash_unit = (float) 0.3;
   if (!mode)
     {
       if (super_ot && ST_P (super_ot->ot_dt, SELECT_STMT) &&
@@ -3439,7 +3537,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
 	}
       if (ref_arity < 1)
 	return 0;
-      if (dfe->dfe_unit * ref_arity < fill_unit + ref_arity * hash_unit)
+      if (dfe->dfe_unit * ref_arity < fill_unit + ref_arity * HASH_LOOKUP_COST + ref_arity * HASH_ROW_COST * MAX (0, dfe->dfe_arity -1))
 	{
 	  /* hash us not better */
 	  return 0;
@@ -3456,6 +3554,8 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   dfe->_.table.inx_op = NULL; /* if hash is better, no inx op */
   dfe->_.table.hash_role = HR_REF;
   dfe->_.table.hash_filler = fill_dfe;
+  dfe->dfe_unit = HASH_LOOKUP_COST + HASH_ROW_COST * MAX (0, dfe->dfe_arity - 1);
+  fill_dfe->dfe_unit = fill_unit;
   {
     int old_mode = so->so_place_code_forr_cond;
     df_elt_t * old_pt = so->so_gen_pt;
@@ -3464,6 +3564,10 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
     so->so_place_code_forr_cond = 1;
     DO_SET (df_elt_t *, h_key, &hash_keys)
       {
+	/* expression hash temp keys must be copied.  The same can be placed elsewhere. Unplacing an exp placed in many places is a consistency problem */
+	if (DFE_COLUMN != h_key->dfe_type && DFE_CONST != h_key->dfe_type)
+	  h_key = sqlo_layout_copy (so, h_key, fill_container);
+	iter->data = (void*) h_key;
 	sqlo_place_exp (so, fill_container, h_key);
       }
     END_DO_SET();
@@ -3560,7 +3664,7 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
       END_DO_BOX;
       return;
     }
-#ifndef NDEBUG
+#ifdef NEVERNDEBUG
   if (!so->so_dfe_unplace_pass && dfe->dfe_tree)
     {
       df_elt_t *orig_dfe = sqlo_df_elt (so, dfe->dfe_tree);
@@ -3571,7 +3675,7 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
   dfe->dfe_is_placed = 0;
   sqlo_locus_dfe_unplace (dfe);
   dfe->dfe_locus = NULL;
-
+  dfe->dfe_unit = 0;
   switch (dfe->dfe_type)
     {
     case DFE_DT:
@@ -3641,6 +3745,9 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
 	  {
 	    sqlo_dfe_unplace (so, (df_elt_t *) dfe->_.table.xpath_pred);
 	  }
+	sqlo_dfe_unplace (so, dfe->_.table.join_test);
+	sqlo_dfe_unplace (so, dfe->_.table.after_join_test);
+	sqlo_dfe_unplace (so, dfe->_.table.vdb_join_test);
 	if (dfe->_.table.inx_op)
 	  sqlo_inx_op_unplace (so, dfe->_.table.inx_op);
 	memset (&dfe->_, 0, sizeof (dfe->_.table));
@@ -3679,10 +3786,8 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
       break;
     }
 #ifdef L2_DEBUG
-  if (NULL != dfe->dfe_super)
-    {
-      L2_DELETE (dfe->dfe_super->_.sub.first, dfe->dfe_super->_.sub.last, dfe, dfe_)
-    }
+  dfe->dfe_next = NULL;
+  dfe->dfe_prev = NULL;
 /* Note matching '#ifndef L2_DEBUG' in sqlo_dt_unplace */
 #endif
 }
@@ -3701,7 +3806,12 @@ sqlo_dt_unplace (sqlo_t * so, df_elt_t * start_dfe)
 #endif
   for (dfe = start_dfe; dfe; dfe = next)
     {
+      df_elt_t * super = dfe->dfe_super;
       next = dfe->dfe_next;
+      if (DFE_DT != super->dfe_type && DFE_EXISTS != super->dfe_type
+	  && DFE_VALUE_SUBQ != super->dfe_type)
+	GPF_T1 ("unplace dfe without dt as super");
+      L2_DELETE (super->_.sub.first, super->_.sub.last, dfe, dfe_);
       sqlo_dfe_unplace (so, dfe);
     }
 }

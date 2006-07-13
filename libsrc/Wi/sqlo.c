@@ -687,7 +687,7 @@ sqlo_proc_table_cols (sqlo_t * so, op_table_t * ot)
   caddr_t * cols;
   int inx;
   ST *tree = ot->ot_dt;
-  so->so_this_dt->ot_fixed_order = 1;
+  /*so->so_this_dt->ot_fixed_order = 1;*/
 
   DO_BOX (caddr_t, param, inx, tree->_.proc_table.params)
   {

@@ -146,7 +146,7 @@ void
 sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, float best)
 {
   dk_set_t best_group = NULL;
-  float a1, cost;
+  float a1, cost, best_arity;
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
   int n_eqs;
   DO_SET (dbe_key_t *, k1, &tb->tb_keys)
@@ -178,6 +178,7 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
 		    {
 		      best_group = group;
 		      best = cost;
+		      best_arity = a1;
 		    }
 		}
 	    }
@@ -191,6 +192,8 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
       dio->dio_terms = best_group;
       dio->dio_op = IOP_AND;
       tb_dfe->_.table.inx_op = dio;
+      tb_dfe->dfe_unit = best;
+      tb_dfe->dfe_arity = best_arity;
     }
 }
 
@@ -492,6 +495,7 @@ sqlo_place_inx_int_join (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t group,
   t_NEW_VARZ (df_inx_op_t, dio);
   dio->dio_terms = group;
   dio->dio_op = IOP_AND;
+  dio->dio_is_join = 1;
   tb_dfe->_.table.inx_op = dio;
   DO_SET (df_inx_op_t *, dio, &group)
     {
