@@ -1,6 +1,4 @@
 --
---  dav.sql
---
 --  $Id$
 --
 --  WebDAV support.
