@@ -238,13 +238,19 @@ voidptrhashcmp (char *x, char *y)
 
 #define ROL(h) ((h << 1) | ((h >> 31) & 1))
 
+box_hash_func_t dtp_hash_func[256];
+
 id_hashed_key_t
 box_hash (caddr_t box)
 {
   id_hashed_key_t h;
+  dtp_t dtp;
   if (! IS_BOX_POINTER (box))
     return (uint32) ((ptrlong) box) & ID_HASHED_KEY_MASK;
-  switch (box_tag (box))
+  dtp = box_tag (box);
+  if (dtp_hash_func[dtp])
+    return ID_HASHED_KEY_MASK & dtp_hash_func[dtp] (box); 
+  switch (dtp)
     {
     case DV_LONG_INT:
       return (( *(long *) box) & ID_HASHED_KEY_MASK);
@@ -271,6 +277,16 @@ box_hash (caddr_t box)
     }
 }
 
+
+void dtp_set_cmp (dtp_t dtp, box_hash_cmp_func_t f);
+
+
+void
+dk_dtp_register_hash (dtp_t dtp, box_hash_func_t hf, box_hash_cmp_func_t cmp)
+{
+  dtp_hash_func[dtp] = hf;
+  dtp_set_cmp(dtp, cmp);
+}
 
 id_hashed_key_t
 treehash (char *strp)

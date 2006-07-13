@@ -383,3 +383,11 @@ dk_set_is_subset (dk_set_t super, dk_set_t sub)
   END_DO_SET();
   return 1;
 }
+
+/* Original signatures should exist for EXE-EXPORTed functions */
+#ifdef MALLOC_DEBUG
+#undef dk_set_delete
+int dk_set_delete (dk_set_t *set, void *item) { return dbg_dk_set_delete (__FILE__, __LINE__, set, item); }
+#undef dk_set_push
+void dk_set_push (s_node_t **set, void *item) {dbg_dk_set_push (__FILE__, __LINE__, set, item); }
+#endif

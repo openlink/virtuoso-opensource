@@ -413,6 +413,14 @@ box_t DBG_NAME(t_box_double) (DBG_PARAMS double d)
   return (box_t) box;
 }
 
+box_t DBG_NAME(t_box_float) (DBG_PARAMS float d)
+{
+  float *box = (float *) DBG_T_ALLOC_BOX (sizeof (float), DV_SINGLE_FLOAT);
+  *box = d;
+  return (box_t) box;
+}
+
+
 
 caddr_t *
 t_list (long n, ...)
@@ -500,6 +508,33 @@ t_list_remove_nth (caddr_t list, int pos)
   return res;
 }
 
+caddr_t *
+t_list_insert_before_nth (caddr_t list, caddr_t new_item, int pos)
+{
+  int len = BOX_ELEMENTS_INT (list);
+  caddr_t *res;
+  if ((pos < 0) || (pos > len))
+    GPF_T1("t_list_insert_before_nth (): bad index");
+  res = (caddr_t *)t_alloc_box ((len+1) * sizeof (ptrlong), box_tag (list));
+  memcpy (res, list, pos * sizeof (ptrlong));
+  res [pos] = new_item;
+  memcpy (res + pos + 1, ((caddr_t *)list) + pos, (len - pos) * sizeof (ptrlong));
+  return res;
+}
+
+caddr_t *
+t_list_insert_many_before_nth (caddr_t list, caddr_t *new_items, int ins_count, int pos)
+{
+  int len = BOX_ELEMENTS_INT (list);
+  caddr_t *res;
+  if ((pos < 0) || (pos > len))
+    GPF_T1("t_list_insert_before_nth (): bad index");
+  res = (caddr_t *)t_alloc_box ((len + ins_count) * sizeof (ptrlong), box_tag (list));
+  memcpy (res, list, pos * sizeof (ptrlong));
+  memcpy (res + pos, new_items, ins_count * sizeof (ptrlong));
+  memcpy (res + pos + ins_count, ((caddr_t *)list) + pos, (len - pos) * sizeof (ptrlong));
+  return res;
+}
 
 caddr_t *
 t_sc_list (long n, ...)

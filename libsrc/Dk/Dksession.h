@@ -151,16 +151,16 @@ struct session_s
  */
 session_t *session_allocate (int seslass);
 int session_free (session_t * ses);
-int session_set_address (session_t * ses, char *addrinfo);
-int session_listen (session_t * ses);
-int session_accept (session_t * ses, session_t * new_ses);
-int session_connect (session_t * ses);
-int session_disconnect (session_t * ses);
-int session_write (session_t * ses, char *buffer, int n_bytes);
-int session_read (session_t * ses, char *buffer, int n_bytes);
-int session_select (int ses_count, session_t ** reads, session_t ** writes,
-    timeout_t * timeout);
-int session_set_control (session_t * ses, int field, char *p_value, int size);
+EXE_EXPORT (int,  session_set_address, (session_t * ses, char *addrinfo));
+EXE_EXPORT (int, session_listen, (session_t * ses));
+EXE_EXPORT (int, session_accept, (session_t * ses, session_t * new_ses));
+EXE_EXPORT (int, session_connect, (session_t * ses));
+EXE_EXPORT (int, session_disconnect, (session_t * ses));
+EXE_EXPORT (int, session_write, (session_t * ses, char *buffer, int n_bytes));
+EXE_EXPORT (int, session_read, (session_t * ses, char *buffer, int n_bytes));
+EXE_EXPORT (int, session_select, (int ses_count, session_t ** reads, session_t ** writes,
+    timeout_t * timeout));
+EXE_EXPORT (int, session_set_control, (session_t * ses, int field, char *p_value, int size));
 int session_get_control (session_t * ses, int field, char *p_value, int size);
 int session_set_default_control (int field, char *p_value, int size);
 int session_get_default_control (int field, char *p_value, int size);

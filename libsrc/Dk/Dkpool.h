@@ -168,19 +168,24 @@ caddr_t * t_list (long n, ...);
 extern caddr_t *t_list_concat_tail (caddr_t list, long n, ...);
 extern caddr_t *t_list_concat (caddr_t list1, caddr_t list2);
 extern caddr_t *t_list_remove_nth (caddr_t list, int pos);
+extern caddr_t *t_list_insert_before_nth (caddr_t list, caddr_t new_item, int pos);
+extern caddr_t *t_list_insert_many_before_nth (caddr_t list, caddr_t *new_items, int ins_count, int pos);
 caddr_t * t_sc_list (long n, ...);
 
 #ifdef MALLOC_DEBUG
 caddr_t dbg_t_box_num (const char *file, int line, ptrlong box);
 caddr_t dbg_t_box_num_and_zero (const char *file, int line, ptrlong box);
 box_t dbg_t_box_double (const char *file, int line, double d);
+box_t dbg_t_box_float (const char *file, int line, float d);
 #define t_box_num(box) dbg_t_box_num (__FILE__, __LINE__, (box))
 #define t_box_double(d) dbg_t_box_double (__FILE__, __LINE__, (d))
+#define t_box_float(d) dbg_t_box_float (__FILE__, __LINE__, (d))
 #define t_box_num_and_zero(box) dbg_t_box_num_and_zero (__FILE__, __LINE__, (box))
 #else
 caddr_t t_box_num (ptrlong box);
 caddr_t t_box_num_and_zero (ptrlong box);
 box_t t_box_double (double d);
+box_t t_box_float (float d);
 #endif
 
 #define t_alloc(sz) t_alloc_box ((sz), DV_CUSTOM)

@@ -1180,6 +1180,14 @@ DBG_NAME(box_float) (DBG_PARAMS float d)
   return (box_t) box;
 }
 
+box_hash_cmp_func_t dtp_cmp_func[256];
+
+void
+dtp_set_cmp (dtp_t dtp, box_hash_cmp_func_t f)
+{
+  dtp_cmp_func[dtp] = f;
+}
+
 
 int
 box_equal (cbox_t b1, cbox_t b2)
@@ -1222,6 +1230,8 @@ box_equal (cbox_t b1, cbox_t b2)
       return b1_long_val == b2_long_val;
     }
 
+  if (b1_tag == b2_tag && dtp_cmp_func[b1_tag])
+    return dtp_cmp_func[b1_tag](b1, b2);
   l1 = box_length (b1);
   l2 = box_length (b2);
   if(l1 != l2)

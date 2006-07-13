@@ -4868,8 +4868,9 @@ ssl_server_init ()
 #endif
 # if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
   SSL_library_init ();
-# endif
+# else 
   SSLeay_add_all_algorithms();
+# endif
 #else
 #ifdef SSL_DK_ALLOC
   CRYPTO_set_mem_functions  (dk_ssl_alloc, dk_ssl_realloc, dk_ssl_free);

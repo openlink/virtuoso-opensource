@@ -59,6 +59,10 @@ struct s_node_s
 uint32 dk_set_length (s_node_t *set);
 dk_set_t dk_set_last (dk_set_t set);
 dk_set_t dk_set_conc (dk_set_t s1, dk_set_t s2);
+
+EXE_EXPORT (int, dk_set_delete, (dk_set_t *set, void *item));
+EXE_EXPORT (void, dk_set_push, (s_node_t **set, void *item));
+
 #ifdef MALLOC_DEBUG
 dk_set_t dbg_dk_set_cons (const char *file, int line, void * s1, dk_set_t s2);
 void **dbg_dk_set_to_array (const char *file, int line, s_node_t *set);
@@ -71,6 +75,10 @@ void *dbg_dk_set_pop (const char *file, int line, s_node_t **set);
 int dbg_dk_set_delete (const char *file, int line, dk_set_t *set, void *item);
 void dbg_dk_set_free (const char *file, int line, s_node_t *set);
 dk_set_t dbg_dk_set_copy (const char *file, int line, dk_set_t s);
+
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
+
 #define dk_set_cons(S1,S2)	dbg_dk_set_cons (__FILE__, __LINE__, (S1), (S2))
 #define dk_set_to_array(S)	dbg_dk_set_to_array (__FILE__, __LINE__, (S))
 #define list_to_array(S)	dbg_list_to_array (__FILE__, __LINE__, (S))
@@ -82,16 +90,18 @@ dk_set_t dbg_dk_set_copy (const char *file, int line, dk_set_t s);
 #define dk_set_delete(S,I)	dbg_dk_set_delete (__FILE__, __LINE__, (S), (I))
 #define dk_set_free(S)		dbg_dk_set_free (__FILE__,__LINE__, (S))
 #define dk_set_copy(S)		dbg_dk_set_copy (__FILE__,__LINE__, (S))
+
+#endif
+#endif
+
 #else
 dk_set_t dk_set_cons (void * s1, dk_set_t s2);
 void **dk_set_to_array (s_node_t *set);
 caddr_t list_to_array (dk_set_t l);
 caddr_t copy_list_to_array (dk_set_t l);
 caddr_t revlist_to_array (dk_set_t l);
-void dk_set_push (s_node_t **set, void *item);
 void dk_set_pushnew (s_node_t **set, void *item);
 void *dk_set_pop (s_node_t **set);
-int dk_set_delete (dk_set_t *set, void *item);
 void dk_set_free (s_node_t *set);
 dk_set_t dk_set_copy (dk_set_t s);
 #endif

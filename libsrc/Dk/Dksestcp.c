@@ -919,6 +919,11 @@ tcpses_disconnect (session_t *ses)
  * Globals used :
  */
 int last_w_errno;
+int
+tcpses_get_last_w_errno ()
+{
+  return last_w_errno;
+}
 
 static int
 tcpses_write (session_t *ses, char *buffer, int n_bytes)
@@ -960,7 +965,7 @@ tcpses_write (session_t *ses, char *buffer, int n_bytes)
 	}
       else
 	{
-	  test_broken (ses, n_out, errno);
+	  test_broken (ses, n_out, eno);
 	}
     }
 
@@ -993,6 +998,13 @@ tcpses_write (session_t *ses, char *buffer, int n_bytes)
  *
  * Globals used :
  */
+int last_r_errno;
+int
+tcpses_get_last_r_errno ()
+{
+  return last_r_errno;
+}
+
 static int
 tcpses_read (session_t *ses, char *buffer, int n_bytes)
 {
@@ -1024,6 +1036,8 @@ tcpses_read (session_t *ses, char *buffer, int n_bytes)
     {
       int eno = errno;
 /*    printf ("read eno = %d\n", eno); */
+
+      last_r_errno = eno;
       if (test_eintr (ses, n_in, eno) == SER_SUCC)
 	{
 	  /* Tested for possible EINTR caused by task switch signal etc. */
