@@ -712,16 +712,16 @@ create function "bookmark_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, 
 	  compilation := vector_concat (compilation, vector (cond_key, condtext));
 	}
 	execstate := '00000';
-	qry_text := 'select concat (DAV_CONCAT_PATH (_param.detcolpath, ''bookmark'', ''/'', "bookmark_FIXNAME" (WAI_NAME)), ''/'', "bookmark_COMPOSE_XBEL_NAME" (BD_NAME, BD_ID)),
+        qry_text := 'select concat (DAV_CONCAT_PATH (_param.detcolpath, ''bookmark'', ''/'', "bookmark_FIXNAME" (WAI_NAME)), ''/'', "bookmark_COMPOSE_XBEL_NAME" (_top.BD_NAME, _top.BD_ID)),
 		''R'', ''1024'', _top.BD_LAST_UPDATE,
-		vector (UNAME''bookmark'', ?, U_ID, 3, BD_DOMAIN_ID, BD_FOLDER_ID, null, null),
-		''110000000RR'', http_nogroup_gid(), U_ID, _top.BD_LAST_UPDATE, ''application/xbel+xml'', "bookmark_COMPOSE_XBEL_NAME" (BD_NAME, BD_ID)
+                vector (UNAME''bookmark'', ?, _users.U_ID, 3, _top.BD_DOMAIN_ID, _top.BD_FOLDER_ID, null, null),
+                ''110000000RR'', http_nogroup_gid(), _users.U_ID, _top.BD_LAST_UPDATE, ''application/xbel+xml'', "bookmark_COMPOSE_XBEL_NAME" (_top.BD_NAME, _top.BD_ID)
 		from
 		(select top 1 ? as detcolpath from WS.WS.SYS_DAV_COL) as _param,
 		BMK.WA.BOOKMARK_DOMAIN as _top
 		join DB.DBA.WA_INSTANCE as _instances on (WAI_ID = BD_DOMAIN_ID and WAI_TYPE_NAME = ''Bookmark'')
-		join WA_MEMBER as _members on (WAM_MEMBER_TYPE = 1 and WAM_INST = WAI_NAME and WAM_USER = U_ID)
-		join SYS_USERS as _users on (U_ID = ?)
+                join DB.DBA.WA_MEMBER as _members on (WAM_MEMBER_TYPE = 1 and WAM_INST = WAI_NAME)
+                join DB.DBA.SYS_USERS as _users on (WAM_USER = U_ID and U_ID = ?)
 		' || condtext;
 	  exec (qry_text, execstate, execmessage,
 		vector (detcol_id, detcol_path, owner_uid),
