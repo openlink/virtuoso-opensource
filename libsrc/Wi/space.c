@@ -307,6 +307,8 @@ isp_new_page (index_space_t * isp, dp_addr_t addr, int type, int in_pmap,
   dp_addr_t physical_dp;
 
   IN_DBS (dbs);
+  if (in_pmap)
+    GPF_T1 ("do not call isp_new_page in page map");
   if (dbs->dbs_n_free_pages - dbs->dbs_n_pages_on_hold < 10
       && !has_hold)
     {
@@ -329,7 +331,10 @@ isp_new_page (index_space_t * isp, dp_addr_t addr, int type, int in_pmap,
     }
 
   buf = bp_get_buffer (NULL, BP_BUF_REQUIRED);
+  if (buf->bd_readers != 1)
+    GPF_T1 ("expecting buf to be wired down when allocated");
   if (!in_pmap)
+    buf_dbg_printf (("Buf %x new in tree %x dp=%d\n", buf, isp, physical_dp));
     IN_PAGE_MAP (it);
 
   isp_set_buffer (isp, physical_dp, physical_dp, buf);

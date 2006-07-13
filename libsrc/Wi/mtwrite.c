@@ -86,6 +86,15 @@ buf_cancel_write (buffer_desc_t * buf)
    * this is if the bufffer is occupied when the write turn comes, the write will be skipped and the buffer rem'd from the queue.
    * Thus the bd_iq of an occupied buffer can be async reset by another thread. */
   io_queue_t * iq = buf->bd_iq;
+  if (buf->bd_space)
+    ASSERT_OUTSIDE_MAP (buf->bd_space->isp_tree);
+
+  /* Note that this can block waiting for IQ which is owned by another
+  thread in iq_schedule. The thread in iq_schedule can block on this
+  same page map when leaving the buffer after queue insertion, hence
+  deadlocking.  Hence this function's caller is required to own the
+  buffer but not to be in its tree's map when calling. */
+
   if (!buf->bd_is_write)
     GPF_T1 ("write cancel when nobody inside buffer");
   if (buf->bd_in_write_queue

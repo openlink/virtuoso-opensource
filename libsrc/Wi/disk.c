@@ -296,6 +296,53 @@ it_allocate (dbe_storage_t * dbs)
   return tree;
 }
 
+#ifdef BUF_DEBUG 
+dk_set_t temp_trees;
+dk_mutex_t * temp_trees_mtx;
+
+void
+it_temp_tree_active (index_tree_t * it)
+{
+  return;
+  mutex_enter (temp_trees_mtx);
+  dk_set_push (&temp_trees, (void*) it);
+  mutex_leave (temp_trees_mtx);
+}
+
+void
+it_temp_tree_done (index_tree_t * it)
+{
+  return;
+  mutex_enter (temp_trees_mtx);
+  dk_set_delete  (&temp_trees, (void*) it);
+  mutex_leave (temp_trees_mtx);
+}
+
+
+void
+it_temp_tree_check ()
+{
+  DO_SET (index_tree_t *, it, &temp_trees)
+    {
+      dk_hash_iterator_t hit;
+      void * dp;
+      buffer_desc_t * buf;
+      dk_hash_iterator (&hit, it->it_commit_space->isp_dp_to_buf);
+      
+    }
+  END_DO_SET();
+}
+
+
+#else
+#define it_temp_tree_active(a)
+#define it_temp_tree_done(a)
+#define it_temp_tree_check(a)
+#endif 
+
+
+
+
 
 index_tree_t *
 it_temp_allocate (dbe_storage_t * dbs)
@@ -312,6 +359,7 @@ it_temp_allocate (dbe_storage_t * dbs)
       dk_hash_set_rehash (tree->it_commit_space->isp_dp_to_buf, 2);
       dk_hash_set_rehash (tree->it_commit_space->isp_remap, 5);
       tree->it_storage = dbs;
+      it_temp_tree_active (tree);
       return tree;
     }
   else
@@ -319,6 +367,7 @@ it_temp_allocate (dbe_storage_t * dbs)
       tree->it_hi = NULL;
       tree->it_storage = dbs;
       tree->it_hash_first = 0;
+      it_temp_tree_active (tree);
       return tree;
     }
 }
@@ -355,6 +404,14 @@ void
 it_temp_free (index_tree_t * it)
 {
   /* free a temp tree */
+ 
+  /*Note the following problem scenario:  A  buffer becomes available in it_temp_free, space and pages set to 0. 
+   * This buffer then gets used in  another tree, no need to sync because the buffer in question is free. [B
+   * Another buffer in the same temp tree must be cancelled from the write queue. This leaves the mutexes and restarts the scan of the hash.  The hash will however still reference buffers that have been set free.   
+   * It may be that a buffer is then encountered which legitimately  belongs to another tree by this time.  
+   * An inadvertant write cancellation and page_wait_access with the wrong page map mtx may be attempted, which is objectionable. Worst case is an erronous mark as free and losing non-serialization of the buffer's rw gate. 
+   * Therefore  all cancellations get done first and then all buffers that remain are detached from the it being deleted. */
+  
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
   ptrlong dp, remap;
@@ -370,26 +427,38 @@ it_temp_free (index_tree_t * it)
   ITC_INIT (itc, NULL, NULL);
   itc_from_it (itc, it);
   isp = it->it_commit_space;
+  buf_dbg_printf (("temp tree %x free \n", isp));
  again:
   ITC_IN_MAP (itc);
   dk_hash_iterator (&hit, isp->isp_dp_to_buf);
   while (dk_hit_next (&hit, (void**) &dp, (void **) &buf))
     {
       ASSERT_IN_MAP (itc->itc_tree);
-      if (BUF_WIRED (buf))
+      if (buf->bd_space && buf->bd_space != isp)
+	GPF_T1 ("it_temp_free with buffer that belongs to other tree");
+      buf->bd_is_dirty = 0;
+      if (BUF_WIRED (buf)
+	  || buf->bd_in_write_queue ||buf->bd_iq)
 	{
 	  page_wait_access (itc, buf->bd_page, buf, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
-	  ITC_IN_MAP (itc);
+	  ITC_LEAVE_MAP (itc);
 	  buf_cancel_write (buf);
 	  ITC_IN_MAP (itc);
 	  page_leave_inner (buf);
 	  goto again; /* sequence broken, hash iterator to be re-inited */
 	}
-      else
+    }
+  ITC_IN_MAP (itc);
+  dk_hash_iterator (&hit, isp->isp_dp_to_buf);
+  while (dk_hit_next (&hit, (void**) &dp, (void **) &buf))
 	{
-	  buf->bd_is_write = 1;
-	  buf_cancel_write (buf);
-	  buf->bd_is_write = 0;
+      ASSERT_IN_MAP (itc->itc_tree);
+      if (buf->bd_space && buf->bd_space != isp)
+	GPF_T1 ("it_temp_free with buffer that belongs to other tree");
+      if (BUF_WIRED (buf)
+	  || buf->bd_in_write_queue ||buf->bd_iq)
+	{
+	  log_error ("it_temp_free:  Buffers should not be in write queue after cancellation.");
 	}
       BUF_BACKDATE(buf);
       buf->bd_space = NULL;
@@ -412,6 +481,7 @@ it_temp_free (index_tree_t * it)
     hi_free (it->it_hi);
   it->it_hi = NULL;
   it->it_hi_reuses = 0;
+  it_temp_tree_done (it);
   if (it->it_commit_space->isp_hash_size != it->it_commit_space->isp_dp_to_buf->ht_actual_size)
     it_free (it); /* rehashed to non-standard size. do not recycle.  */
   else
@@ -536,19 +606,24 @@ bp_found (buffer_desc_t * buf)
       bp_replace_count--; /* reuse of abandoned not counted as a replace */
       LEAVE_BP (bp);
       buf->bd_timestamp = bp->bp_ts;
+#ifdef BUF_DEBUG
+      buf->bd_prev_space = NULL;
+#endif
       return 1;
     }
   IN_PAGE_MAP (last_isp->isp_tree);
-  if (BUF_AVAIL (buf))
+  if (BUF_AVAIL (buf) 
+      && buf->bd_space == last_isp)
     {
       buf->bd_readers = 1;
-      if (buf->bd_space == last_isp)
-	{
 	  /* the buffer may have been freed from its isp between reading the last_isp and entering its map.
 	   */
+#ifdef BUF_DEBUG
+      buf->bd_prev_space = last_isp;
+      buf_dbg_printf (("Buf %x leaves tree %x\n", buf, last_isp));
+#endif
 	  if (!remhash (DP_ADDR2VOID (buf->bd_page), last_isp->isp_dp_to_buf))
 	    GPF_T1 ("buffer not in the hash of the would be space of residence");
-	}
       buf->bd_page = 0;
       buf->bd_space = NULL;
       bp->bp_next_replace = (int) ((buf - bp->bp_bufs) + 1);
@@ -2920,6 +2995,9 @@ wi_init_globals (void)
   mutex_option (lt_locks_mtx, "LT_LOCKS", NULL, NULL);
 
   hash_index_cache.hic_mtx = mutex_allocate ();
+#ifdef BUF_DEBUG
+  temp_trees_mtx = mutex_allocate ();
+#endif
   mutex_option (hash_index_cache.hic_mtx, "hash index cache", NULL, NULL);
   hash_index_cache.hic_hashes = id_hash_allocate (101, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   hash_index_cache.hic_col_to_it = hash_table_allocate (201);
