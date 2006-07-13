@@ -1040,7 +1040,7 @@ sqlc_update_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc)
       if (!upd->upd_place)
 	sqlc_new_error (sc->sc_cc, "09000", "SQ104",
 	    "Cursor with a sorted order by, distinct, grouping etc. "
-	    "is not referenceable in where current of");
+	    "is not referenceable in 'update %.200s ... where current of ...'", tb->tb_name );
       SC_NO_EXCEPT (sc);
 
       tc_init (&tc, TRIG_UPDATE, tb,
@@ -1236,8 +1236,7 @@ sqlc_delete_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc)
       if (!del->del_place)
 	sqlc_new_error (sc->sc_cc, "09000", "SQ109",
 	    "Cursor with a sorted order by, distinct, grouping etc. "
-	    "is not referenceable in where current of");
-
+	    "is not referenceable in 'delete from %.200s where current of ...'", tb->tb_name );
       tc_init (&tc, TRIG_DELETE, tb, NULL, NULL, 0);
       if (tc.tc_is_trigger)
 	{
