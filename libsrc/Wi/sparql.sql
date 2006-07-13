@@ -973,6 +973,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
 
 create function DB.DBA.RDF_SQLVAL_OF_LONG (in longobj any) returns any
 {
+  --dbg_obj_princ ('DB.DBA.RDF_SQLVAL_OF_LONG (', longobj, ', tag ', __tag (longobj));
   if (isiri_id (longobj))
     {
       if (longobj >= #i1000000000)
@@ -2450,13 +2451,13 @@ create function DB.DBA.RDF_LANGMATCHES (in r varchar, in t varchar)
 }
 ;
 
-create procedure DB.DBA."sparql_construct_init" (inout _env any)
+create procedure DB.DBA.SPARQL_CONSTRUCT_INIT (inout _env any)
 {
   _env := 0; -- No actual initialization
 }
 ;
 
-create procedure DB.DBA."sparql_construct_acc" (inout _env any, in opcodes any, in vars any, in stats any)
+create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in vars any, in stats any)
 {
   declare triple_ctr integer;
   declare blank_ids any;
@@ -2464,7 +2465,7 @@ create procedure DB.DBA."sparql_construct_acc" (inout _env any, in opcodes any, 
     {
       _env := dict_new ();
       if (0 < length (stats))
-        DB.DBA."sparql_construct_acc" (_env, stats, vector(), vector());
+        DB.DBA.SPARQL_CONSTRUCT_ACC (_env, stats, vector(), vector());
     }
   blank_ids := 0;
   for (triple_ctr := length (opcodes) - 1; triple_ctr >= 0; triple_ctr := triple_ctr-1)
@@ -2508,7 +2509,7 @@ create procedure DB.DBA."sparql_construct_acc" (inout _env any, in opcodes any, 
                 signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate');
               triple_vec[fld_ctr] := arg;
             }
-          else signal ('RDFXX', 'Bad opcode in DB.DBA."sparql_construct"()');
+          else signal ('RDFXX', 'Bad opcode in DB.DBA.SPARQL_CONSTRUCT()');
         }
       -- dbg_obj_princ ('generated triple:', triple_vec);
       dict_put (_env, triple_vec, 0);
@@ -2517,7 +2518,7 @@ end_of_adding_triple: ;
 }
 ;
 
-create procedure DB.DBA."sparql_construct_fin" (inout _env any)
+create procedure DB.DBA.SPARQL_CONSTRUCT_FIN (inout _env any)
 {
   if (214 <> __tag(_env))
     _env := dict_new ();
@@ -2525,17 +2526,17 @@ create procedure DB.DBA."sparql_construct_fin" (inout _env any)
 }
 ;
 
-create aggregate DB.DBA."sparql_construct" (in opcodes any, in vars any, in stats any) returns any
-from DB.DBA."sparql_construct_init", DB.DBA."sparql_construct_acc", DB.DBA."sparql_construct_fin"
+create aggregate DB.DBA.SPARQL_CONSTRUCT (in opcodes any, in vars any, in stats any) returns any
+from DB.DBA.SPARQL_CONSTRUCT_INIT, DB.DBA.SPARQL_CONSTRUCT_ACC, DB.DBA.SPARQL_CONSTRUCT_FIN
 ;
 
-create procedure DB.DBA."sparql_describe_init" (inout _env any)
+create procedure DB.DBA.SPARQL_DESCRIBE_INIT (inout _env any)
 {
   _env := 0; -- No actual initialization
 }
 ;
 
-create procedure DB.DBA."sparql_describe_acc" (inout _env any, in vars any, in stats any, in options any)
+create procedure DB.DBA.SPARQL_DESCRIBE_ACC (inout _env any, in vars any, in stats any, in options any)
 {
   declare var_ctr integer;
   declare blank_ids any;
@@ -2543,7 +2544,7 @@ create procedure DB.DBA."sparql_describe_acc" (inout _env any, in vars any, in s
     {
       _env := vector (dict_new (), options);
       if (0 < length (stats))
-        DB.DBA."sparql_describe_acc" (_env, stats, vector(), vector());
+        DB.DBA.SPARQL_DESCRIBE_ACC (_env, stats, vector(), vector());
     }
   for (var_ctr := length (vars) - 1; var_ctr >= 0; var_ctr := var_ctr - 1)
     {
@@ -2555,7 +2556,7 @@ create procedure DB.DBA."sparql_describe_acc" (inout _env any, in vars any, in s
 }
 ;
 
-create procedure DB.DBA."sparql_describe_fin" (inout _env any)
+create procedure DB.DBA.SPARQL_DESCRIBE_FIN (inout _env any)
 {
   declare subjects, options, res any;
   declare subj_ctr integer;
@@ -2585,8 +2586,8 @@ create procedure DB.DBA."sparql_describe_fin" (inout _env any)
 }
 ;
 
-create aggregate DB.DBA."sparql_describe" (in opcodes any, in vars any, in stats any) returns any
-from DB.DBA."sparql_describe_init", DB.DBA."sparql_describe_acc", DB.DBA."sparql_describe_fin"
+create aggregate DB.DBA.SPARQL_DESCRIBE (in opcodes any, in vars any, in stats any) returns any
+from DB.DBA.SPARQL_DESCRIBE_INIT, DB.DBA.SPARQL_DESCRIBE_ACC, DB.DBA.SPARQL_DESCRIBE_FIN
 ;
 
 create procedure DB.DBA.RDF_DESCRIBE_PUT (in dict any, in subj IRI_ID, inout options any)

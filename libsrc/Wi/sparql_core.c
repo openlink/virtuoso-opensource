@@ -74,7 +74,7 @@ spartlist_impl (sparp_t *sparp, ptrlong length, ptrlong type, ...)
     }
   va_end (ap);
   tree->type = type;
-  tree->srcline = box_num((NULL != sparp) ? ((NULL != sparp->sparp_curr_lexem) ? sparp->sparp_curr_lexem->sparl_lineno : 0) : 0);
+  tree->srcline = t_box_num ((NULL != sparp) ? ((NULL != sparp->sparp_curr_lexem) ? sparp->sparp_curr_lexem->sparl_lineno : 0) : 0);
   /*spart_check (sparp, tree);*/
   return tree;
 }
@@ -108,7 +108,7 @@ spartlist_with_tail_impl (sparp_t *sparp, ptrlong length, caddr_t tail, ptrlong 
     }
   va_end (ap);
   tree->type = type;
-  tree->srcline = box_num((NULL != sparp) ? ((NULL != sparp->sparp_curr_lexem) ? sparp->sparp_curr_lexem->sparl_lineno : 0) : 0);
+  tree->srcline = t_box_num ((NULL != sparp) ? ((NULL != sparp->sparp_curr_lexem) ? sparp->sparp_curr_lexem->sparl_lineno : 0) : 0);
   ((ptrlong *)(tree))[length] = tail_len;
   memcpy (((caddr_t *)(tree))+length+1, tail, sizeof(caddr_t) * tail_len);
   dk_free_box (tail);
@@ -169,7 +169,7 @@ sparyyerror_impl_1 (sparp_t *sparp, char *raw_text, int yystate, short *yyssa, s
       sm2,
       sm1,
       yystate,
-      sp1,
+      ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */,
       ((NULL == raw_text) ? "" : " at '"),
       ((NULL == raw_text) ? "" : raw_text),
       ((NULL == raw_text) ? "" : "'"),
@@ -571,10 +571,10 @@ void spar_gp_add_filter_for_named_graph (sparp_t *sparp)
             t_list (2,
               graph_expn_copy,
               spartlist (sparp, 4, SPAR_FUNCALL,
-              box_dv_uname_string ("SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"), 1,
-              t_list (1,
-                spar_make_variable (sparp,
-                  box_dv_uname_string (SPAR_VARNAME_NAMED_GRAPHS) ) ) ) ) );
+                box_dv_uname_string ("SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"), 1,
+                t_list (1,
+                  spar_make_variable (sparp,
+                    box_dv_uname_string (SPAR_VARNAME_NAMED_GRAPHS) ) ) ) ) );
           spar_gp_add_filter (sparp, filter);
         }
     }
@@ -657,7 +657,7 @@ blank_added:
         t_set_push (&var_tvectors, tvector_call);
     }
   ctor_call = spartlist (sparp, 4, SPAR_FUNCALL,
-    box_dv_uname_string ("sql:sparql_construct"), (ptrlong)(3),
+    box_dv_uname_string ("sql:SPARQL_CONSTRUCT"), (ptrlong)(3),
       t_list (3,
         spartlist (sparp, 4, SPAR_FUNCALL,
           box_dv_uname_string ("bif:vector"),
@@ -697,7 +697,7 @@ SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals)
         }
     }
   descr_call = spartlist (sparp, 4, SPAR_FUNCALL,
-    box_dv_uname_string ("sql:sparql_describe"), (ptrlong)(3),
+    box_dv_uname_string ("sql:SPARQL_DESCRIBE"), (ptrlong)(3),
       t_list (3,
         spartlist (sparp, 4, SPAR_FUNCALL,
           box_dv_uname_string ("LONG::bif:vector"),
@@ -1341,7 +1341,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	  case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
 	  case BOP_AND: case BOP_OR: case BOP_NOT:
 	    {
-	      sprintf (buf, "OPERATOR EXPRESSION (", tree->type);
+	      sprintf (buf, "OPERATOR EXPRESSION ("/*, tree->type*/);
 	      SES_PRINT (ses, buf);
 	      spart_dump_long ((void *)(tree->type), ses, 1);
 	      SES_PRINT (ses, "):");
@@ -1351,7 +1351,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	    }
           case ORDER_L:
             {
-	      sprintf (buf, "ORDERING (", tree->_.oby.direction);
+	      sprintf (buf, "ORDERING ("/*, tree->_.oby.direction*/);
 	      SES_PRINT (ses, buf);
 	      spart_dump_long ((void *)(tree->_.oby.direction), ses, 1);
 	      SES_PRINT (ses, "):");

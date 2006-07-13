@@ -296,7 +296,7 @@ SPART *ssg_find_gp_by_eq_idx (spar_sqlgen_t *ssg, ptrlong eq_idx);
 
 /*! Prints an SQL identifier. 'prin' instead of 'print' because it does not print whitespace or delim before the text */
 extern void ssg_prin_id (spar_sqlgen_t *ssg, const char *name);
-extern void ssg_print_literal (spar_sqlgen_t *ssg, caddr_t type, SPART *lit);
+extern void ssg_print_literal (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_equiv (spar_sqlgen_t *ssg, caddr_t selectid, sparp_equiv_t *eq, caddr_t as_name);
 
 extern ssg_valmode_t ssg_rettype_of_global_param (spar_sqlgen_t *ssg, caddr_t name);

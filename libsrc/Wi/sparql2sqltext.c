@@ -25,6 +25,8 @@
 #include "sqlparext.h"
 #include "sqlbif.h"
 #include "sqlcmps.h"
+#include "remote.h" /* for sqlrcomp.h */
+#include "sqlrcomp.h"
 #include "xmltree.h"
 #include "xml_ecm.h" /* for ecm_find_name etc. */
 #include "xpf.h"
@@ -64,8 +66,8 @@ void rdf_ds_load_all (void)
   fld->rdfdf_sqlval_tmpl = " DB.DBA.RDF_QNAME_OF_IID (^{alias-dot}^G)";
   fld->rdfdf_bool_tmpl = " NULL";
   fld->rdfdf_isref_of_short_tmpl = " 1";
-  fld->rdfdf_isuri_of_short_tmpl = " (^{tree}^ < 1000000000)";
-  fld->rdfdf_isblank_of_short_tmpl = " (^{tree}^ >= 1000000000)";
+  fld->rdfdf_isuri_of_short_tmpl = " (^{tree}^ < #i1000000000)";
+  fld->rdfdf_isblank_of_short_tmpl = " (^{tree}^ >= #i1000000000)";
   fld->rdfdf_islit_of_short_tmpl = " 0";
   fld->rdfdf_long_of_short_tmpl = " ^{tree}^ ";
   fld->rdfdf_datatype_of_short_tmpl = " 'http://www.w3.org/2001/XMLSchema#anyURI'";
@@ -96,8 +98,8 @@ void rdf_ds_load_all (void)
   fld->rdfdf_sqlval_tmpl = " DB.DBA.RDF_QNAME_OF_IID (^{alias-dot}^S)";
   fld->rdfdf_bool_tmpl = " NULL";
   fld->rdfdf_isref_of_short_tmpl = " 1";
-  fld->rdfdf_isuri_of_short_tmpl = " (^{tree}^ < 1000000000)";
-  fld->rdfdf_isblank_of_short_tmpl = " (^{tree}^ >= 1000000000)";
+  fld->rdfdf_isuri_of_short_tmpl = " (^{tree}^ < #i1000000000)";
+  fld->rdfdf_isblank_of_short_tmpl = " (^{tree}^ >= #i1000000000)";
   fld->rdfdf_islit_of_short_tmpl = " 0";
   fld->rdfdf_long_of_short_tmpl = " ^{tree}^ ";
   fld->rdfdf_datatype_of_short_tmpl = " 'http://www.w3.org/2001/XMLSchema#anyURI'";
@@ -128,8 +130,8 @@ void rdf_ds_load_all (void)
   fld->rdfdf_sqlval_tmpl = " DB.DBA.RDF_QNAME_OF_IID (^{alias-dot}^P)";
   fld->rdfdf_bool_tmpl = " NULL";
   fld->rdfdf_isref_of_short_tmpl = " 1";
-  fld->rdfdf_isuri_of_short_tmpl = " (^{tree}^ < 1000000000)";
-  fld->rdfdf_isblank_of_short_tmpl = " (^{tree}^ >= 1000000000)";
+  fld->rdfdf_isuri_of_short_tmpl = " (^{tree}^ < #i1000000000)";
+  fld->rdfdf_isblank_of_short_tmpl = " (^{tree}^ >= #i1000000000)";
   fld->rdfdf_islit_of_short_tmpl = " 0";
   fld->rdfdf_long_of_short_tmpl = " ^{tree}^ ";
   fld->rdfdf_datatype_of_short_tmpl = " 'http://www.w3.org/2001/XMLSchema#anyURI'";
@@ -160,8 +162,8 @@ void rdf_ds_load_all (void)
   fld->rdfdf_sqlval_tmpl = " DB.DBA.RQ_SQLVAL_OF_O (^{alias-dot}^O)";
   fld->rdfdf_bool_tmpl = " DB.DBA.RQ_BOOL_OF_O (^{alias-dot}^O)";
   fld->rdfdf_isref_of_short_tmpl = " DB.DBA.RQ_IID_OF_O (^{tree}^) is not null";
-  fld->rdfdf_isuri_of_short_tmpl = " (DB.DBA.RQ_IID_OF_O (^{tree}^) < 1000000000)";
-  fld->rdfdf_isblank_of_short_tmpl = " (DB.DBA.RQ_IID_OF_O (^{tree}^) >= 1000000000)";
+  fld->rdfdf_isuri_of_short_tmpl = " (DB.DBA.RQ_IID_OF_O (^{tree}^) < #i1000000000)";
+  fld->rdfdf_isblank_of_short_tmpl = " (DB.DBA.RQ_IID_OF_O (^{tree}^) >= #i1000000000)";
   fld->rdfdf_islit_of_short_tmpl = " DB.DBA.RQ_O_IS_LIT (^{tree}^)";
   fld->rdfdf_long_of_short_tmpl = " DB.DBA.RDF_LONG_OF_OBJ (^{tree}^)";
   fld->rdfdf_datatype_of_short_tmpl = " DB.DBA.RDF_DATATYPE_OF_OBJ (^{tree}^)";
@@ -523,8 +525,87 @@ ssg_expn_native_valmode (spar_sqlgen_t *ssg, SPART *tree)
   return NULL; /* Never reached, to keep compiler happy */
 }
 
+
 void
-ssg_print_literal (spar_sqlgen_t *ssg, caddr_t type, SPART *lit)
+ssg_print_box_as_sqlval (spar_sqlgen_t *ssg, caddr_t box)
+{
+  char smallbuf[MAX_QUAL_NAME_LEN + 100 + BOX_AUTO_OVERHEAD];
+  size_t buflen;
+  caddr_t tmpbuf;
+  int buffill = 0;
+  dtp_t dtp = DV_TYPE_OF (box);
+  buflen = 20 + (IS_BOX_POINTER(box) ? box_length (box) * 3 : 20);
+  BOX_AUTO (tmpbuf, smallbuf, buflen, DV_STRING);
+  ssg_putchar (' ');
+  switch (dtp)
+    {
+    case DV_LONG_INT:
+      buffill = sprintf (tmpbuf, "%ld", unbox (box));
+      break;
+    case DV_DB_NULL:
+      buffill = sprintf (tmpbuf, "NULL", unbox (box));
+      break;
+    case DV_STRING:
+      sqlc_string_literal (tmpbuf, buflen, &buffill, box);
+      break;
+    case DV_UNAME:
+      ssg_puts ("UNAME");
+      sqlc_string_literal (tmpbuf, buflen, &buffill, box);
+      break;
+    case DV_WIDE:
+      ssg_puts ("N");
+      sqlc_wide_string_literal (tmpbuf, buflen, &buffill, (wchar_t *) box);
+      break;
+    case DV_DOUBLE_FLOAT:
+      buffill = sprintf (tmpbuf, "%lg", unbox_double (box));
+      break;
+    case DV_NUMERIC:
+      numeric_to_string ((numeric_t)box, tmpbuf, buflen);
+      buffill = strlen (tmpbuf);
+      break;
+#if 0
+#ifndef MAP_DIRECT_BIN_CHAR
+    case DV_BIN:
+	{
+	  caddr_t bin_literal_prefix = rds_get_info (target_rds, -4);
+	  caddr_t bin_literal_suffix = rds_get_info (target_rds, -5);
+	  if (bin_literal_prefix)
+	    sprintf_more (text, tlen, fill, "%s", bin_literal_prefix);
+	  sqlc_bin_dv_print (exp, text, tlen, fill);
+	  if (bin_literal_suffix)
+	    sprintf_more (text, tlen, fill, "%s", bin_literal_suffix);
+	  sc->sc_exp_sqt.sqt_dtp = dtp;
+	}
+      break;
+#endif
+#endif
+    case DV_DATETIME:
+      ssg_puts ("CAST ('");
+      dt_to_string (box, tmpbuf, buflen);
+      ssg_puts (tmpbuf);
+      ssg_puts ("' AS DATETIME)");
+      break;
+    case DV_DATE:
+      ssg_puts ("CAST ('");
+      dt_to_string (box, tmpbuf, buflen);
+      ssg_puts (tmpbuf);
+      ssg_puts ("' AS DATE)");
+      break;
+    case DV_TIME:
+      ssg_puts ("CAST ('");
+      dt_to_string (box, tmpbuf, buflen);
+      ssg_puts (tmpbuf);
+      ssg_puts ("' AS DATETIME)");
+      break;
+    default:
+      spar_error (ssg->ssg_sparp, "Current implementation of SPARQL does not supprts literals of type %s", dv_type_title (dtp));
+      }
+  session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
+  BOX_DONE (tmpbuf, smallbuf);
+}
+
+void
+ssg_print_literal (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 {
   caddr_t value;
   int fill = 0;
@@ -553,12 +634,7 @@ ssg_print_literal (spar_sqlgen_t *ssg, caddr_t type, SPART *lit)
         ssg_puts ("(1=2)");
       return;
     }
-  buflen = 20 + (IS_BOX_POINTER(value) ? box_length (value) * 3 : 20);
-  BOX_AUTO (tmpbuf, smallbuf, buflen, DV_STRING);
-  ssg_putchar (' ');
-  sqlc_exp_print (ssg->ssg_sc, NULL /*comp_table_t * ct*/, (ST *)(value), tmpbuf, buflen, &fill);
-  session_buffered_write (ssg->ssg_out, tmpbuf, fill);
-  BOX_DONE (tmpbuf, smallbuf);
+  ssg_print_box_as_sqlval (ssg, value);
 }
 
 void
@@ -566,12 +642,9 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
 {
   caddr_t value;
   int fill = 0;
-  char smallbuf[MAX_QUAL_NAME_LEN + 100 + BOX_AUTO_OVERHEAD];
-  size_t buflen;
   dtp_t value_dtp;
   caddr_t datatype = NULL;
   caddr_t language = NULL;
-  caddr_t tmpbuf;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (lit))
     {
       if (SPAR_LIT == lit->type)
@@ -610,12 +683,7 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
       ssg_putchar (')');
       return;
     }
-  buflen = 20 + (IS_BOX_POINTER(value) ? box_length (value) * 3 : 20);
-  BOX_AUTO (tmpbuf, smallbuf, buflen, DV_STRING);
-  ssg_putchar (' ');
-  sqlc_exp_print (ssg->ssg_sc, NULL /*comp_table_t * ct*/, (ST *)(value), tmpbuf, buflen, &fill);
-  session_buffered_write (ssg->ssg_out, tmpbuf, fill);
-  BOX_DONE (tmpbuf, smallbuf);
+  ssg_print_box_as_sqlval (ssg, value);
 }
 
 void
@@ -932,8 +1000,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         else if (SSG_VALMODE_LONG == arg1_native)
           ssg_print_tmpl (ssg, arg1_native,
             (top_filter_op ?
-              " ((isiri(^{tree}^) and (^{tree}^ >= 1000000000))" :
-              " either (isiri(^{tree}^), gte (^{tree}^, 1000000000), 0)" ),
+              " ((isiri(^{tree}^) and (^{tree}^ >= #i1000000000))" :
+              " either (isiri(^{tree}^), gte (^{tree}^, #i1000000000), 0)" ),
             NULL, arg1 );
         else if (SSG_VALMODE_SQLVAL == arg1_native)
           ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_BLANK_REF (^{tree}^)", NULL, arg1);
@@ -1122,13 +1190,18 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
   if (name == strstr (name, "bif:"))
     {
       name = name + 4;
-      ssg_prin_id (ssg, name);
+      if (!strcasecmp(name, "left"))
+        ssg_puts ("LEFT");
+      else if (!strcasecmp(name, "right"))
+        ssg_puts ("RIGHT");
+      else
+        ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
     }
   else if (name == strstr (name, "sql:"))
     {
       name = name + 4;
       ssg_puts ("DB.DBA.");
-      ssg_prin_id (ssg, name);
+      ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
     }
   else
     {
