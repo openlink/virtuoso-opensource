@@ -360,7 +360,7 @@ create procedure
 
   -- data needs to be re-organized
   xmla_format_mdta (mdta);
-  xmla_make_cursors_state ("Properties", dta);
+  xmla_make_cursors_state ("Properties", dta, stmt);
   xmla_make_struct (mdta, dta);
   "ws_xmla_xsd" := vector_concat (vector (xmla_result_xsd ('return', 'root', 'root')) , DB.DBA.SOAP_LOAD_SCH (mdta, NULL, 1));
   return soap_box_structure ('root', case what when 'Data' then dta
@@ -905,9 +905,9 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
 	       			|| ''' AND DSN = ''' || xmla_get_dsn_name (_dsn) || '''';
 	}
       else
-        stmt := 'SELECT upper (name_part (PK_TABLE, 1)) as PK_TABLE_SCHEMA,
-		 upper (name_part (PK_TABLE, 2)) as PK_TABLE_NAME, PKCOLUMN_NAME as PK_COLUMN_NAME,
-		 upper (name_part (FK_TABLE, 1)) as FK_TABLE_SCHEMA,
+        stmt := 'SELECT name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA,
+		 name_part (PK_TABLE, 2) as PK_TABLE_NAME, PKCOLUMN_NAME as PK_COLUMN_NAME,
+		 name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA,
 		 name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME AS FK_COLUMN_NAME,
 		 KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME
 		 FROM DB.DBA.SYS_FOREIGN_KEYS WHERE PK_TABLE like ''' || _tbl || ''' OR FK_TABLE like ''' || _tbl || '''';
@@ -1718,19 +1718,19 @@ create procedure
 xmla_cursor_stmt_change (in _props any, inout _stmt varchar)
 {
   declare _direction, new_stmpt, _left_str, _left_str_u varchar;
-  declare _skip, _n_rows, _return_bookmark, _bookmark_from integer;
+  declare _skip, _n_rows, _return_bookmark, _bookmark_from, _return_row_count integer;
 
   _left_str := '';
 
   _direction := xmla_get_property (_props, 'direction', 'forward');
   _bookmark_from := xmla_get_property (_props, 'bookmark-from', NULL);
--- _direction := xmla_make_cursor_direction (xmla_get_property (_props, 'bookmark-from', _direction));
-
   _skip := xmla_get_property (_props, 'skip', 0);
   _skip := xmla_make_skip (_bookmark_from, _skip, 1);
 
   _n_rows := xmla_get_property (_props, 'n-rows', null);
   _return_bookmark := xmla_get_property (_props, 'return-bookmark', 0);
+  _return_row_count := xmla_get_property (_props, 'retrieve-row-count', 0);
+
   new_stmpt := 'select ';
 
   if (_direction = 'forward')
@@ -1750,6 +1750,9 @@ xmla_cursor_stmt_change (in _props any, inout _stmt varchar)
   if (_return_bookmark)
     new_stmpt := new_stmpt || '''_dummy_'' AS BOOKMARK, ';
 
+  if (_return_row_count)
+    new_stmpt := new_stmpt || '1 AS ROWCOUNT, ';
+
   _stmt := trim (_stmt);
 
   if (length (_stmt) > 6)
@@ -1763,10 +1766,10 @@ xmla_cursor_stmt_change (in _props any, inout _stmt varchar)
 ;
 
 create procedure
-xmla_make_cursors_state (in _props any, inout _dta any)
+xmla_make_cursors_state (in _props any, inout _dta any, in stmt any)
 {
   declare _direction varchar;
-  declare _return_bookmark, _skip, idx, idx2, len, _direc_save, _n_rows integer;
+  declare _return_bookmark, _return_row_count, _skip, idx, idx2, len, _direc_save, _n_rows integer;
   declare line, temp, _bookmark_from any;
 
   _return_bookmark := xmla_get_property (_props, 'return-bookmark', 0);
@@ -1775,9 +1778,24 @@ xmla_make_cursors_state (in _props any, inout _dta any)
 
   _direction := xmla_get_property (_props, 'direction', 'forward');
   _bookmark_from := xmla_get_property (_props, 'bookmark-from', NULL);
---  _direction := xmla_make_cursor_direction (xmla_get_property (_props, 'bookmark-from', _direction));
+  _return_row_count := xmla_get_property (_props, 'retrieve-row-count', 0);
 
   len := length (_dta);
+
+  if (_return_row_count)
+    {
+	declare _rows any;
+
+	_rows := xmla_get_rows_from_stmt (stmt);
+
+	for (idx := 0; idx < len; idx := idx + 1)
+	 {
+	   line := _dta[idx];
+	   aset (line, 1, _rows);
+  	   aset (_dta, idx, line);
+	 }
+     }
+
   _direc_save := 0;
   if (_direction = 'backward')
     _direc_save := len;
@@ -1885,6 +1903,33 @@ xmla_format_mdta (inout mdta any)
      }
 
     aset (mdta, 0, temp);
+}
+;
+
+
+create procedure
+xmla_get_rows_from_stmt (in stmt any)
+{
+   declare res, mdta, dta, state, msg any;
+   declare new_stmpt, tmp varchar;
+   declare pos integer;
+
+   declare exit handler for sqlstate '*'
+    {
+       return -1;
+    };
+
+   new_stmpt := 'SELECT count(*) ';
+   stmt := trim (stmt);
+   tmp := ucase (stmt);
+   pos := strstr (tmp, 'FROM');
+   tmp := "LEFT" (stmt, pos);
+
+   stmt := replace (stmt, tmp, new_stmpt);
+
+   res := exec (stmt, state, msg, vector (), 0, mdta, dta);
+
+   return dta[0][0];
 }
 ;
 
