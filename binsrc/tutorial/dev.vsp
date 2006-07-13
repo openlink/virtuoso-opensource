@@ -108,9 +108,9 @@
 	    
 	  http_value(xslt('file://'||_TUT_ROOT || '/page'||xml_output||'.xsl',_TUT_XML,_xsl_params),null,_stream);
 	  if (_file = '')
-	  	file_mkpath ('../..'||ph_path|| '/vad_files/vsp/tutorial'|| regexp_replace(req_path,'[^/]*$',''));
+	  	file_mkpath (http_root()||ph_path|| '/vad_files/vsp/tutorial'|| regexp_replace(req_path,'[^/]*$',''));
 		else
-	  	file_mkpath ('../..'||ph_path|| '/vad_files/vsp/tutorial'|| req_path);
+	  	file_mkpath (http_root()||ph_path|| '/vad_files/vsp/tutorial'|| req_path);
 	  _stream := string_output_string(_stream);
 	  if (xml_output <> '') {
 	    _stream := replace(_stream,'dc:dc=""','');
