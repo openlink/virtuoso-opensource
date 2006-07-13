@@ -220,6 +220,138 @@ bif_jso_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
+jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, int change_status)
+{
+#define SET_STATUS_FAILED \
+  do { \
+    if (!change_status) \
+      break; \
+    if (JSO_STATUS_NEW == inst_rtti->jrtti_status) \
+      inst_rtti->jrtti_status = JSO_STATUS_FAILED; \
+    if (JSO_STATUS_NEW == root_rtti->jrtti_status) \
+      root_rtti->jrtti_status = JSO_STATUS_FAILED; \
+    } while (0)
+  jso_rtti_t *known_rtti;
+  jso_class_descr_t *cd = inst_rtti->jrtti_class;
+  caddr_t *inst;
+  int ctr;
+  inst = inst_rtti->jrtti_self;
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (inst))
+    GPF_T1("jso_validate(): bad instance");
+  known_rtti = gethash (inst, known);
+  if (NULL != known_rtti)
+    {
+      if (inst_rtti != known_rtti)
+        GPF_T1("jso_validate(): two rttis for one class instance");
+      return;
+    }
+  switch (inst_rtti->jrtti_status)
+    {
+    case JSO_STATUS_DELETED:  
+      sqlr_new_error ("22023", "SR525", "JSO instance IRI <%.500s> is DELETED but is available from <%.500s>",
+        inst_rtti->jrtti_inst_iri, root_rtti->jrtti_inst_iri );
+    case JSO_STATUS_FAILED: break;
+    case JSO_STATUS_LOADED: return;
+    case JSO_STATUS_NEW: break;
+    default: GPF_T1("jso_validate(): unknown status");
+    }
+  switch (cd->jsocd_cat)
+    {
+    case JSO_CAT_ARRAY:
+      {
+        int full_length = BOX_ELEMENTS (inst);
+        if (full_length > cd->_.ad.jsoad_min_length)
+          {
+            int used_length = full_length;
+            int ctr;
+            while ((0 < used_length) && (NULL == inst[used_length - 1])) used_length--;
+            if (used_length < cd->_.ad.jsoad_min_length)
+              {
+                SET_STATUS_FAILED;
+                sqlr_new_error ("22023", "SR526", "JSO array instance <%.500s> of type <%.500s> is only %ld items long, should have at least %ld",
+                  inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, (long)used_length, (long)(cd->_.ad.jsoad_min_length) );
+              }
+            for (ctr = 0; ctr < used_length; ctr++)
+              if (NULL == inst[ctr])
+                {
+                  SET_STATUS_FAILED;
+                  sqlr_new_error ("22023", "SR527", "JSO array instance <%.500s> of type <%.500s> contains unitialized element %ld",
+                    inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, (long)ctr );
+                }
+          }
+        break;
+      }
+    case JSO_CAT_STRUCT:
+      {
+        int fld_ctr;
+        for (fld_ctr = cd->_.sd.jsosd_field_count; fld_ctr--; /*no step*/)
+          {
+            jso_field_descr_t *fldd = cd->_.sd.jsosd_field_list + fld_ctr;
+            if (NULL != JSO_FIELD_PTR (inst, fldd)[0])
+              {
+                if ((JSO_DEPRECATED == fldd->jsofd_required) && !change_status)
+                  {
+                    SET_STATUS_FAILED;
+                    sqlr_new_error ("22023", "SR529", "Deprecated property %.500s is set in JSO instance <%.500s> of type <%.500s>",
+                      fldd->jsofd_local_name, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri );
+                  }
+              }
+            else
+              {
+                if ((JSO_REQUIRED == fldd->jsofd_required) || (JSO_INHERITABLE == fldd->jsofd_required))
+                  {
+                    SET_STATUS_FAILED;
+                    sqlr_new_error ("22023", "SR528", "Uninitialized property %.500s in JSO instance <%.500s> of type <%.500s>",
+                      fldd->jsofd_local_name, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri );
+                  }
+              }
+          }
+        break;
+      }
+    }
+  sethash (inst, known, inst_rtti);
+  DO_BOX_FAST (jso_rtti_t *, sub, ctr, inst)
+    {
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF(sub))
+        jso_validate (sub, root_rtti, known, change_status);
+    }
+  END_DO_BOX_FAST;
+  if (change_status && (JSO_STATUS_FAILED == inst_rtti->jrtti_status))
+    inst_rtti->jrtti_status = JSO_STATUS_NEW;
+}
+
+
+caddr_t
+bif_jso_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t jclass = bif_string_or_wide_or_uname_arg (qst, args, 0, "jso_validate");
+  caddr_t jinstance = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_validate");
+  ptrlong change_status = bif_long_arg (qst, args, 2, "jso_validate");
+  dk_hash_t *known = hash_table_allocate (256);
+  jso_class_descr_t *cd;
+  jso_rtti_t *inst_rtti;
+  jclass = box_cast_to_UTF8_uname (qst, jclass);
+  jinstance = box_cast_to_UTF8_uname (qst, jinstance);
+  jso_get_cd_and_rtti (jclass, jinstance, &cd, &inst_rtti, 0);
+  QR_RESET_CTX
+    {
+      jso_validate (inst_rtti, inst_rtti, known, change_status);
+    }
+  QR_RESET_CODE
+    {
+      du_thread_t *self = THREAD_CURRENT_THREAD;
+      caddr_t err = thr_get_error_code (self);
+      POP_QR_RESET;
+      hash_table_free (known);
+      sqlr_resignal (err);
+    }
+  END_QR_RESET
+  hash_table_free (known);
+  return jinstance;
+}
+
+
+void
 jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
 {
   jso_rtti_t *known_rtti;
@@ -241,7 +373,10 @@ jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
     case JSO_STATUS_DELETED:  
       sqlr_new_error ("22023", "SR513", "JSO instance IRI <%.500s> is DELETED but is available from <%.500s>",
         inst_rtti->jrtti_inst_iri, root_rtti->jrtti_inst_iri );
-    case JSO_STATUS_FAILED: case JSO_STATUS_LOADED: return;
+    case JSO_STATUS_FAILED:
+      sqlr_new_error ("22023", "SR529", "JSO instance IRI <%.500s> contains inconsistent data but is available from <%.500s>",
+        inst_rtti->jrtti_inst_iri, root_rtti->jrtti_inst_iri );
+    case JSO_STATUS_LOADED: return;
     case JSO_STATUS_NEW: break;
     default: GPF_T1("jso_pin(): unknown status");
     }
@@ -430,6 +565,8 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
               {
                 ptrlong newsize = BOX_ELEMENTS (inst);
                 void *newinst;
+                if (newsize < 1)
+                  newsize = 1;
                 while (newsize <= idx) newsize *= 2;
                 if (newsize > cd->_.ad.jsoad_max_length)
                   newsize = cd->_.ad.jsoad_max_length;
@@ -728,6 +865,7 @@ void jso_init ()
   jso_rttis = hash_table_allocate (251);
   bif_define ("jso_new", bif_jso_new);
   bif_define ("jso_delete", bif_jso_delete);
+  bif_define ("jso_validate", bif_jso_validate);
   bif_define ("jso_pin", bif_jso_pin);
   bif_define ("jso_set", bif_jso_set);
   bif_define ("jso_get", bif_jso_get);
