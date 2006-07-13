@@ -34,14 +34,14 @@ grant all privileges to RQ
 
 DB.DBA.VHOST_REMOVE (lpath=>'/sparql_demo/')
 ;
-DB.DBA.VHOST_REMOVE (lpath=>'/sparql_demo')
-;
-DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/DAV/sparql_demo/', vsp_user=>'RQ', is_dav=>1, def_page => 'demo.vsp')
+DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/DAV/sparql_demo/', vsp_user=>'RQ', is_dav=>1, def_page => 'sparql_ajax.vsp')
 --DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/sparql_demo/', vsp_user=>'RQ')
 ;
 
 select case (isstring (registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT')))
-when 0 then registry_set ('WS.WS.SPARQL_DEFAULT_REDIRECT', '/sparql_demo/demo.vsp?case=custom_sparql')
+when equ(registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT'),'/sparql_demo/demo.vsp?case=custom_sparql')
+  then registry_set ('WS.WS.SPARQL_DEFAULT_REDIRECT', '/sparql_demo/sparql_ajax.vsp?goto=query_page')
+when 0 then registry_set ('WS.WS.SPARQL_DEFAULT_REDIRECT', '/sparql_demo/sparql_ajax.vsp?goto=query_page')
 else 1 end
 ;
 
