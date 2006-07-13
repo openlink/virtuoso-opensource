@@ -20,6 +20,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+
 use DB
 ;
 
@@ -32,7 +33,8 @@ create function "nntp_FIXNAME" (in mailname any) returns varchar
           replace (
             replace (
               replace (
-                replace (mailname, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_');
+                replace (
+                  replace (mailname, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_'), '\'', '_');
 }
 ;
 
@@ -147,12 +149,12 @@ create function "nntp_DAV_AUTHENTICATE" (in id any, in what char(1), in req varc
     return -12;
   if (not ('110' like req))
   {
-    dbg_obj_princ ('a_uid2 is ', auth_uid, ', id[3] is ', id[3], ' mismatch');
+    --dbg_obj_princ ('a_uid2 is ', auth_uid, ', id[3] is ', id[3], ' mismatch');
     return -13;
   }
   if ((auth_uid <> id[3]) and (auth_uid <> http_dav_uid()))
   {
-    dbg_obj_princ ('a_uid is ', auth_uid, ', id[3] is ', id[3], ' mismatch');
+    --dbg_obj_princ ('a_uid is ', auth_uid, ', id[3] is ', id[3], ' mismatch');
     return -13;
   }
   return auth_uid;
@@ -317,7 +319,6 @@ create function "nntp_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, 
   rightcol := NULL;  
   if (atoi(folder_id) = 0)
   {
-    --dbg_obj_princ('1');
     maxrcvdate := (select FTHR_DATE from DB.DBA.NNFE_THR where FTHR_MESS_ID = folder_id);
     while (folder_id is not null)
     {
@@ -334,13 +335,11 @@ create function "nntp_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, 
   }
   if ((server_id = '0' or server_id is null) and folder_id is not null)
   {
-    --dbg_obj_princ('2');
     server_id := folder_id;
     folder_id := null;
   }
   if (folder_id is not null)
   {
-    --dbg_obj_princ('3');
     if (maxrcvdate is null)
       maxrcvdate := (select NG_UP_TIME from DB.DBA.NEWS_GROUPS where NG_GROUP = folder_id);
     colname := (select "nntp_FIXNAME"(NG_NAME) from DB.DBA.NEWS_GROUPS where NG_GROUP = atoi(folder_id));
@@ -349,11 +348,9 @@ create function "nntp_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, 
     if (rightcol is null)
       rightcol := colname;
     fullpath := colname || '/' || fullpath;
-    --dbg_obj_princ('fullpath:', fullpath);
   }
   if (server_id is not null)
   {
-    --dbg_obj_princ('4', server_id);
     if (maxrcvdate is null)
       maxrcvdate := coalesce ((select max(NG_UP_TIME) from DB.DBA.NEWS_GROUPS where NG_SERVER = atoi(folder_id)),
       cast ('1980-01-01' as datetime) );
@@ -370,7 +367,6 @@ create function "nntp_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, 
   {
     if (id[6] >= 0)
       return -1;
-    dbg_obj_princ('C-fullpath: ', fullpath, id);      
     return vector (fullpath, 'C', 0, maxrcvdate,
       id, '100000000NN', 0, id[3], maxrcvdate, 'dav/unix-directory', rightcol );
   }
@@ -380,7 +376,6 @@ create function "nntp_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, 
       where FTHR_MESS_ID = id[6]
     do
     {
-      dbg_obj_princ('R-fullpath: ', fullpath || orig_mname, id);
       return vector (fullpath || orig_mname, 'R', 1024, FTHR_DATE,
         id, 
         '100000000NN', 0, id[3], FTHR_DATE, 'text/plain', orig_mname);
@@ -538,17 +533,14 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
   {
     if ('C' <> what)
     {
-      dbg_obj_princ ('resource with empty path - no items');
       return -1;
     }
-    --dbg_obj_princ('YYYYYYYYY');
     return vector (UNAME'nntp', detcol_id, group_id, owner_uid, mserver_id, mfolder_id, -1);
   }
   if ('' = path_parts[length(path_parts) - 1])
   {
     if ('C' <> what)
     {
-       --dbg_obj_princ ('resource without a name - no items');
       return -1;
     }
   }
@@ -556,7 +548,6 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
   {
     if ('R' <> what)
     {
-       --dbg_obj_princ ('non-resource with a name - no items');
       return -1;
     }
   }
@@ -582,7 +573,6 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
     }
     if (ctr = 1)
     {
-      --dbg_obj_princ (path_parts[ctr], orig_fnameext, orig_id);
       hitlist := vector ();
       for select NG_GROUP
         from DB.DBA.NEWS_GROUPS
@@ -629,7 +619,6 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
       return -1;
     ctr := ctr + 1;
   }  
-  --dbg_obj_princ(UNAME'nntp', detcol_id, group_id, owner_uid, mserver_id, mfolder_id, hitlist[0]);
   return vector (UNAME'nntp', detcol_id, group_id, owner_uid, mserver_id, mfolder_id, hitlist[0]);
 }
 ;
@@ -647,7 +636,7 @@ create function "nntp_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in wh
 --| When DAV_SEARCH_PATH_INT calls DET function, authentication is performed before the call.
 create function "nntp_DAV_SEARCH_PATH" (in id any, in what char(1)) returns any
 {
-  dbg_obj_princ ('nntp_DAV_SEARCH_PATH (', id, what, ')');
+  --dbg_obj_princ ('nntp_DAV_SEARCH_PATH (', id, what, ')');
   return NULL;
 }
 ;
@@ -672,7 +661,7 @@ create function "nntp_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any,
 --| If content_mode is 1 then content is a valid output stream before the call.
 create function "nntp_DAV_RES_CONTENT" (in id any, inout content any, out type varchar, in content_mode integer) returns integer
 {
-  dbg_obj_princ ('nntp_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
+  --dbg_obj_princ ('nntp_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
   declare str_out any;
   str_out := string_output();
   content := '';
