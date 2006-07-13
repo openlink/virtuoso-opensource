@@ -2810,6 +2810,161 @@ create function DB.DBA.RDF_LONG_CMP (in long1 any, in long2 any) returns integer
 }
 ;
 
+-----
+-- JSO procedures
+
+create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delete_first integer, in make_new integer)
+{
+  declare jinst_iri_id, jgraph_iri_id IRI_ID;
+  declare jclass varchar;
+  dbg_obj_princ ('JSO_LOAD_INSTANCE (', jgraph, ')');
+  jinst_iri_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (jinst);
+  jgraph_iri_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (jgraph);
+  jclass := (sparql
+    define input:storage ""
+    select ?t
+    where {
+      graph ?:jgraph {
+        { ?:jinst rdf:type ?t }
+        union
+        { ?s rdf:type ?t .
+          ?s rdf:name ?ji .
+          filter (str (?ji) = ?:jinst)
+          } } } );
+  if (jclass is null)
+    {
+      if (exists (sparql
+          define input:storage ""      
+          select ?x
+            where { graph ?:jgraph {
+                { ?:jinst ?x ?o }
+                union
+                { ?x rdf:name ?ji .
+                  filter (str (?ji) = ?:jinst)
+                  } } } ) )
+        signal ('22023', 'JSO_LOAD_INSTANCE can not detect the type of <' || jinst || '>');
+      else
+        signal ('22023', 'JSO_LOAD_INSTANCE can not find an object <' || jinst || '>');
+    }
+  if (delete_first)
+    jso_delete (jclass, jinst, 1);
+  if (make_new)
+    jso_new (jclass, jinst);
+  for (sparql
+      define input:storage ""      
+      select ?p ?o
+      where {
+        graph ?:jgraph {
+          { ?:jinst ?p ?o .
+            filter (!isBLANK (?o))
+            }
+          union
+          { ?:jinst ?p ?n .
+            ?n rdf:name ?o .
+            filter (isBLANK (?n))
+            }
+          union
+          { ?s rdf:name ?ji .
+            ?s ?p ?o .
+            filter ((str (?ji) = ?:jinst) && !isBLANK (?o))
+            }
+          union
+          { ?s rdf:name ?ji .
+            ?s ?p ?n .
+            ?n rdf:name ?o .
+            filter ((str (?ji) = ?:jinst) && isBLANK (?n))
+            }
+        } } ) do
+    {
+      if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type' = p)
+        {
+	  if (o <> jclass)
+            signal ('22023', 'JSO_LOAD_INSTANCE has found that the object <' || jinst || '> has multiple type declarations');
+	}
+      else if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#name' = p)
+        ;
+      else if ('http://www.openlinksw.com/schemas/virtrdf#inheritFrom' = p)
+        ;
+      else if ('http://www.openlinksw.com/schemas/virtrdf#noInherit' = p)
+        ;
+      else
+        jso_set (jclass, jinst, p, o);
+    }
+}
+;
+
+create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances any)
+{
+  instances := (
+    select vector_agg (vector (jclass, jinst))
+    from ( sparql
+      define input:storage ""      
+      select ?jclass ?jinst
+      where {
+        graph ?:jgraph {
+          { ?jinst rdf:type ?jclass .
+            filter (!isBLANK (?jinst)) }
+          union
+          { ?s rdf:type ?jclass .
+            ?s rdf:name ?jinst .
+            filter (isBLANK (?s))
+            } } }
+      ) as inst );
+}
+;
+
+create function JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1)
+{
+  declare jgraph_iri_id IRI_ID;
+  declare instances any;
+  dbg_obj_princ ('JSO_LOAD_GRAPH (', jgraph, ')');
+  jgraph_iri_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (jgraph);
+  JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
+-- Pass 1. Deleting all obsolete instances.
+  foreach (any j in instances) do
+    jso_delete (j[0], j[1], 1);
+-- Pass 2. Creating all instances.
+  foreach (any j in instances) do
+    jso_new (j[0], j[1]);
+-- Pass 3. Loading all instances.
+  foreach (any j in instances) do
+    JSO_LOAD_INSTANCE (jgraph, j[1], 0, 0);
+-- Pass 4. Making the inheritance.
+  for (sparql
+    define input:storage ""      
+    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+    select ?jdestclass ?dest ?pred ?srcpredval
+    where {
+        graph ?:jgraph {
+            ?dest rdf:type ?jdestclass .
+            ?dest virtrdf:inheritFrom ?src .
+            ?src ?pred ?srcpredval
+            optional {
+              ?dest1 virtrdf:noInherit ?pred
+              filter (?dest1 = ?dest) }
+            optional {
+              ?dest ?pred ?destval }
+            filter (!bound (?dest1) && !bound (?destval))
+          } } ) do
+    jso_set (jdestclass, dest, pred, srcpredval);
+-- Pass 5. Validation all instances.
+  foreach (any j in instances) do
+    jso_validate (j[0], j[1], 1);
+-- Pass 6. Pin all instances.
+  if (pin_now)
+    JSO_PIN_GRAPH (jgraph);
+}
+;
+
+create function JSO_PIN_GRAPH (in jgraph varchar)
+{
+  declare instances any;
+  JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
+  foreach (any j in instances) do
+    jso_pin (j[0], j[1]);
+}
+;
+
 
 -----
 -- Procedures to execute local SPARQL statements (obsolete, now SPARQL can be simply inlined in SQL)
@@ -3314,10 +3469,21 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
   varcount := length (metas[0]);
   rescount := length (rset);
   if (is_js)
-	http ('document.writeln(\'', ses);
+  {
+	  declare tmp_str varchar;
+	  declare tmp_ses any;
+	  tmp_ses := string_output();
+    http ('document.writeln(\'', tmp_ses);
+    SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(tmp_ses,metas,rset,0);
+	  tmp_str := string_output_string(tmp_ses);
+	  tmp_str := replace(tmp_str, '\n', '\');\ndocument.writeln(\'');
+	  http (tmp_str, ses);
+	  http ('\');', ses);
+	  return;
+  }
   http ('<table class="sparql">', ses);
   http ('\n  <tr>', ses);
-  http ('\n    <th>Row</th>', ses);
+  --http ('\n    <th>Row</th>', ses);
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
     {
       http('\n    <th>', ses);
@@ -3328,9 +3494,9 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
   for (resctr := 0; resctr < rescount; resctr := resctr + 1)
     {
       http('\n  <tr>', ses);
-      http('\n    <td>', ses);
-	  http(cast((resctr + 1) as varchar), ses);
-	  http('</td>', ses);
+      --http('\n    <td>', ses);
+	  --http(cast((resctr + 1) as varchar), ses);
+	  --http('</td>', ses);
       for (varctr := 0; varctr < varcount; varctr := varctr + 1)
         {
           declare val any;
@@ -3362,15 +3528,6 @@ end_of_val_print: ;
       http('\n  </tr>', ses);
     }
   http ('\n</table>', ses);
-  if (is_js)
-  {
-	  declare tmp_str varchar;
-	  tmp_str := string_output_string(ses);
-	  tmp_str := replace(tmp_str, '\n', '\');\ndocument.writeln(\'');
-	  ses := string_output();
-	  http (tmp_str, ses);
-	  http ('\');', ses);
-  }
 }
 ;
 
@@ -3615,13 +3772,14 @@ create procedure DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (
 
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
 {
-  declare query, dflt_graph, full_query,format varchar;
+  declare query, dflt_graph, full_query, format varchar;
   declare named_graphs any;
   declare paramctr, paramcount, maxrows integer;
   declare ses any;
   ses := 0;
   query := null;
   dflt_graph := null;
+  format := '';
   named_graphs := vector ();
   maxrows := 1024*1024; -- More than enough for web-interface.
   declare exit handler for sqlstate '*' {
@@ -3663,11 +3821,11 @@ http('			<legend>SPARQL Query Form</legend>');
 http('			  <label for="default-graph-uri">Default Graph URI</label>');
 http('			  <br />');
 http('			  <input type="text" name="default-graph-uri" id="default-graph-uri"');
-http('				  	value="http://www.ldodds.com/ldodds.rdf" size="80"/>');
+http('				  	value="" size="80"/>');
 http('			  <br /><br />');
 http('			  <label for="query">Enter SPARQL Query</label>');
 http('			  <br />');
-http('			  <textarea rows="10" cols="60" name="query" id="query">SELECT * WHERE {?x ?y ?z.}</textarea>');
+http('			  <textarea rows="10" cols="60" name="query" id="query">SELECT * WHERE {?s ?p ?o}</textarea>');
 http('			  <br /><br />');
 --http('			  <label for="maxrows">Max Rows:</label>');
 --http('			  <input type="text" name="maxrows" id="maxrows"');
@@ -3782,7 +3940,7 @@ http('</html>');
     }
       declare accept varchar;
       accept := http_request_header (lines, 'Accept', null, '');
-  if (format is not null and format <> '')
+  if (format <> '')
     accept := format;
   DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
 }
