@@ -2640,7 +2640,7 @@ xpyyerror_impl_1 (xpp_t *xpp, char *raw_text, int yystate, short *yyssa, short *
       sm2,
       sm1,
       yystate,
-      sp1,
+      ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */,
       ((NULL == raw_text) ? "" : " at '"),
       ((NULL == raw_text) ? "" : raw_text),
       ((NULL == raw_text) ? "" : "'"),
