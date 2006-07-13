@@ -60,9 +60,6 @@
 /*
  *  Global features
  */
-#ifndef UNIVERSE		/* Support for remote tables */
-#define UNIVERSE 1
-#endif
 #ifndef REPLICATION_SUPPORT	/* Support for replication */
 # define REPLICATION_SUPPORT	1
 # define REPLICATION_SUPPORT2	1
