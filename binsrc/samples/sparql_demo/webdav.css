@@ -1,0 +1,170 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *
+ *  See LICENSE file for details.
+ */
+
+/* ------------------ toolbar ---------------- */
+
+#dav_browser .toolbar {
+	margin: auto;
+	width: 99%;
+	background-color: #e1e1e1;
+	border:1px solid #cccccc;
+	height: 22px;
+	padding: 2px;
+
+}
+
+#dav_browser .toolbar_icon {
+	width: 20px;
+	height: 20px;
+	float: left;
+	margin-left: 1px;
+	cursor:pointer;
+
+}
+
+#dav_browser .toolbar_icon:hover {
+	border: 1px solid #000;
+}
+
+#dav_browser .toolbar_separator {
+	float: left;
+	width: 1px;
+	height: 19px;
+	background-color: #888;
+	border: 1px outset #aaa;
+	margin-top: 1px;
+}
+
+#dav_browser .toolbar_icon_down {
+	border: 1px solid #000;
+	background-color: #8af;
+
+}
+
+#dav_tree{
+  border:1px solid #999999;
+  background-color:#fff;
+  height:300px;
+  width:200px;
+  padding-right:5px;
+  float:left;
+  overflow:auto;
+}
+
+#dav_tree ul {
+	margin:0px;
+	padding:0px;
+	font-size:10px;
+	list-style-type:none;
+}
+
+#dav_tree li {
+	margin-top: .5em;
+	margin-left: 1.1em;
+	font-size:12px;
+	white-space: nowrap;
+	cursor:pointer;
+}
+
+#dav_browser #spliter {
+  width: 5px;
+  height: 300px;
+  float:left;
+  background-color:#999999;
+  border:1px solid #999999;
+}
+
+
+/* ---------------- grid -------------- */
+#dav_grid{
+  border:1px solid #999999;
+  width:510px;
+  height: 300px;
+  overflow:auto;
+  background-color:#fff;
+}
+
+#dav_grid table {
+	border-collapse: collapse;
+	font: menu;
+	width:100%;
+}
+
+#dav_grid tr {
+	border-left: 1px solid #000;
+	border-right: 1px solid #000;
+}
+
+#dav_grid tr.even {
+	background-color: #f0f0ff;
+}
+
+#dav_grid tr.odd {
+	background-color: #f8f8ff;
+}
+
+#dav_grid tr.hover {
+	background-color: #feb;
+	border: 2px solid #000;
+	cursor:pointer;
+}
+
+
+#dav_grid thead td {
+	background-color: #ebeadb;
+	font-weight: bold;
+	background-image: url(images/Grid_header.gif);
+	background-position: 0% 100%;
+	background-repeat: repeat-x;
+	border-left: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+}
+
+#dav_grid thead td.hover {
+	background-image: url(images/Grid_header_hover.gif);
+}
+
+#dav_grid td {
+	border-bottom: 1px solid #888;
+	border-left: 1px solid #888;
+	border-right: 1px solid #888;
+}
+
+#dav_grid td.index {
+	background-color: #aaa;
+}
+
+#dav_grid tr.selected td{
+	background: #0000ff !important;
+	color:#fff;
+}
+
+
+#dav_grid .header_value {
+	padding: 2px 3px;
+}
+
+#dav_grid .row_value {
+	padding: 2px 3px;
+}
+
+
+#dav_browser #action_buttons{
+  	width: 98%;
+	position: absolute;
+	bottom: 3px;
+	left: 0px;
+	height: 30px;
+	border-top: 2px outset;
+	z-index: 100;
+	text-align:right;
+	padding:5px;
+
+}

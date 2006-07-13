@@ -1,0 +1,281 @@
+/*
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+*/
+
+@import url("webdav.css");
+
+body {
+  font-family: sans-serif;
+  font-size: 9pt;
+}
+
+img { border: 0;} 
+
+#head { width: 98%; 
+  background-image: url(images/virtuoso_banner.gif);
+  background-color: #86B9D9;
+  height: 70px;
+  background-repeat: no-repeat;
+  float: left; clear: both;}
+
+#mid { 
+  width: 98%; 
+  float: left; clear: both;}
+
+#foot { 
+  border-top: 1px solid #86b9d9;
+  width: 98%;
+  font-size: 7pt;
+  text-align: right;
+  float: left; clear: both;}
+
+#head h1 {
+  font-size: 14pt;
+  color: #fff;
+  padding-left: 400px;
+}
+
+#nav_bar { 
+  float: left; clear: left; 
+  background-color: #86B9D9;
+  color: #ddd;
+  padding:4px;
+}
+
+#nav_bar ul { 
+	margin-left: 0px;
+  list-style-type: none; 
+  padding-left: 0px;
+}
+
+#nav_bar li { font-weight: bold;}
+
+#nav_bar li.tab_selected { border: 1px dotted #cee;}
+
+#nav_bar li:hover {
+  background-color: #666;
+  cursor: pointer;
+}
+
+#nav_bar a { color: #ddd; text-decoration: none;}
+
+#main_col { 
+  width: 75%;
+  float: left; clear: right; 
+  margin-left: 5px;}
+
+div.pager { 
+  float: left; clear: both;
+  background-color: #576; 
+  width: 99%;
+  text-align: center;}
+
+div.pager a { 
+  color: #ddd;
+  font-weight: bold;
+  text-decoration: none; 
+  padding-left: 10px;
+}
+
+label { font-size: 10pt; font-weight: bold;}
+#load,
+label.load { font-size: 8pt; font-weight: normal;}
+
+#r_query,
+#query {
+  width: 100%;
+  height: 20ex;
+}
+
+#r_default-graph-uri,
+#default-graph-uri {
+  width: 100%;
+}
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 2px;
+  overflow: auto;
+}
+
+.combo_list_option:hover {
+  background-color: #0080FF;
+  color: white;
+}
+
+.combo_list_input
+{
+  width: 97%;
+}
+
+#r_explain,
+#explain {
+  float: right;
+}
+
+#result,
+#request,
+#responce {
+  overflow:auto;
+  width:99%;
+}
+
+/* tree */
+#tree_containter {
+	margin: 0px;
+	padding: 0px;
+  /* White-space: nowrap; */
+  overflow:auto;
+  width:220px;
+}
+
+ul#tree_content
+{
+	margin-left: 0px;
+	padding-left: 0.0em;
+  /* White-space: nowrap; */
+	margin-left: 0px;
+}
+
+#tree_content ul {
+	margin-left: 0px;
+	padding-left: 0.5em;
+  /* White-space: nowrap; */
+	margin-left: 0px;
+}
+#tree_content li {
+  border:1px solid #86B9D9;
+	margin-left: 0px;
+	padding-left: 0.5em;
+  /* White-space: nowrap; */
+	margin-left: 0px;
+	clear:both;
+}
+
+#tree_content li:hover {
+  background-color: #86B9D9;
+  cursor: pointer;
+}
+
+/* ---------------- grid -------------- */
+
+#grid_etalon table,
+#grid table {
+	border-collapse: collapse;
+	font: menu;
+}
+
+/* ---------------- rows -------------- */
+
+#grid_etalon tr,
+#grid tr {
+	border-left: 1px solid #000;
+	border-right: 1px solid #000;
+}
+
+#grid_etalon tr.even,
+#grid tr.even {
+	background-color: #f0f0ff;
+}
+
+#grid_etalon tr.odd,
+#grid tr.odd {
+	background-color: #f8f8ff;
+}
+
+#grid_etalon tr.hover,
+#grid tr.hover {
+	background-color: #feb;
+	border: 2px solid #000;
+}
+
+/* ---------------- cols -------------- */
+
+#grid_etalon thead td,
+#grid thead td {
+	background-color: #ebeadb;
+	font-weight: bold;
+	background-image: url(images/Grid_header.gif);
+	background-position: 0% 100%;
+	background-repeat: repeat-x;
+	border-left: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+}
+
+#grid_etalon thead td.hover,
+#grid thead td.hover {
+	background-image: url(images/Grid_header_hover.gif);
+}
+
+#grid_etalon td,
+#grid td {
+	border-bottom: 1px solid #888;
+	border-left: 1px solid #888;
+	border-right: 1px solid #888;
+}
+
+#grid_etalon td.index,
+#grid td.index {
+	background-color: #aaa;
+}
+
+#grid_etalon .header_value,
+#grid .header_value {
+	padding: 2px 3px;
+}
+
+#grid_etalon .row_value,
+#grid .row_value {
+	padding: 2px 3px;
+}
+
+/* ---------------- tabres -------------- */
+
+ul#tabres {
+  margin-top: 5px;
+  list-style-type: none;
+  text-align: left;
+  border-bottom: 1px solid #000;
+  margin: 0px;
+}
+
+#tabres li.tab {
+  margin: 3px;
+  padding: 0px 3px;
+  display: inline;
+  border: 1px solid #000;
+  background-color: #aba;
+  cursor: pointer;
+}
+
+#tabres li.tab_selected {
+  border-bottom: 1px solid #fff;
+  background-color: #fff;
+}
+
+#tabres li.tab:hover {
+  background-color: #ddd;
+}
+
+#tabres li.tab_selected:hover {
+  background-color: #fff;
+}

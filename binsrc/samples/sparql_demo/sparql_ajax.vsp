@@ -1,0 +1,541 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?><?vsp
+
+  declare _remote, _user_service, _default_graph_uri, _query, _format varchar;
+  declare _strstr_document, _strstr_proto integer;
+  declare _rq_expn, _rq_state, _rq_msg, _load, _run, _list, _case varchar;
+  declare _ms1, _ms2 integer;
+  declare _rq_res any;
+  declare _metas any;
+
+  declare _lex_list any;
+  declare _lex_last_row integer;
+  declare _lex_ctr integer;
+  declare _lexem any;
+
+  _default_graph_uri := {?'default-graph-uri'};
+  _query := {?'query'};
+  _user_service := {?'service'};
+  _list := {?'list'};
+  _case := {?'case'};
+  _user_service := {?'service'};
+  _format := coalesce ({?'format'}, '');
+  _load := coalesce ({?'load'}, '');
+  if (_query is not null and _query <> 0)
+    if ({?'explain'}) _run := 'explain'; else _run := 'run';
+  if (_user_service)
+    _remote := 'y';
+
+  if (_list <> '' and _case <> '')
+  {
+    _metas := DB.DBA.SPARQL_EVAL_TO_ARRAY ('
+PREFIX tq: <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
+PREFIX tm: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?queryuri ?datauri ?etalonuri
+WHERE {
+  GRAPH ?g {
+    ?bn tm:name ' || WS.WS.STR_SQL_APOS(_case) || ' ;
+      tm:result ?etalonuri ;
+      tm:action
+        [ tq:query ?queryuri ;
+          tq:data ?datauri ] .
+    }
+  }', '', 10000); 
+    http_header('Content-type: text/xml\r\n');
+    if (length(_metas) > 0)
+    {
+      http('<responce>');
+      http_value(cast ("RQ"."RQ"."URI_GET" (_metas[0][0]) as varchar),'query');
+      if (coalesce ({?'r'}, '') <> '')
+        http_value(replace(_metas[0][1],'http://local.virt','http://'||DB.DBA.HTTP_GET_HOST()),'default-graph-uri');
+      else
+        http_value(_metas[0][1],'default-graph-uri');
+      http('<etalon><![CDATA[');
+      "RQ"."RQ"."PRINT_EXPECTED_RESULT" (_metas[0][2]);
+      http(']]></etalon>');
+      http('</responce>');
+    }
+    return;
+  }
+
+  if (_load <> '' and _load <> 'never') -- and strstr(_default_graph_uri,'://'))
+  {
+    declare _havedata any;
+    declare _is_ttl, _is_xml integer;
+    declare _load_uris any;
+    _load_uris := vector();
+    for(declare i int,i:=0; i < length(params); i := i + 1)
+    {
+      if (params[i] = 'loaduri')
+        _load_uris := vector_concat(_load_uris,vector(params[i + 1]));
+    }
+    if (length(_load_uris) = 0)
+      http('There ware no URIs to load.');
+    
+    foreach(varchar _load_uri in _load_uris)do
+    {
+      http('Trying to load:'||_load_uri||'<br/>');
+      _is_ttl := 0;
+      _is_xml := 0;
+      _havedata := DB.DBA.SPARQL_EVAL_TO_ARRAY ('select * where {graph <'||_load_uri||'> { ?s ?p ?o }}',_load_uri,1);
+      if (length(_havedata) < 1 or _load = 'always')
+      {
+        {
+          declare _data,_davpath,_data_xml any;
+          declare exit handler for SQLSTATE '*'
+          {
+            http('<p>There was an error, when we tried to load "'||_load_uri||'".<br/>');
+            http('The error returned was:<pre>');
+            http(__SQL_MESSAGE);
+            http('</pre></p>');
+          };
+          _data := "RQ"."RQ"."URI_GET" (_load_uri);
+          {
+            declare continue handler for SQLSTATE '*' {
+              _is_ttl := 0;
+            };
+            _is_ttl := 1;
+            DB.DBA.RDF_TTL2HASH(_data,_load_uri,_load_uri);
+          }
+          if (not(_is_ttl))
+          {
+            {
+              declare continue handler for SQLSTATE '*' {
+                _is_xml := 0;
+              };
+              _is_xml := 1;
+              _data_xml := xtree_doc (_data, 0, _load_uri);
+            }
+          }
+          --if (_is_xml = 0 and _is_ttl = 0)
+          --  signal('INVALID','The file you''ve tried to upload was not recognized as valid XML RDF or TURTLE RDF');
+
+          delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (_load_uri);
+          if (_is_ttl)
+            DB.DBA.TTLP(_data,_load_uri,_load_uri);
+          else
+            DB.DBA.RDF_EXP_LOAD_RDFXML(_load_uri,_data_xml,0);
+          _davpath := _load_uri;
+          if (strstr(_davpath,'://'))
+            _davpath := subseq(_load_uri,strstr(_davpath,'://') + 3,length(_davpath));
+          _davpath := DB.DBA.SPARQL_DAV_USER_DATA_PATH() || _davpath;
+          DB.DBA.SPARQL_MKPATH (_davpath);
+          DB.DBA.DAV_DELETE (_davpath, 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
+          DB.DBA.DAV_RES_UPLOAD (_davpath,
+                                 _data,
+                                 'text/plain',
+                                 '110110110RR',
+                                 http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
+          INSERT INTO "RQ"."RQ"."SPARQL_USER_UPLOADS" (SU_DAV_FULL_PATH,SU_GRAPH, SU_UPLOAD_TIME, SU_UPLOAD_IP)
+            VALUES (_davpath,_load_uri,now(),http_client_ip());
+          http('Done.<br/>');
+        }
+      } 
+      else
+      {
+        http('Skipped. There is data for this URI.<br/>');
+      }  
+    }
+    return;
+  }
+
+
+  if (_run is not null and _run = 'run')
+  {
+  
+    -- _strstr_document := strstr (_query,'document');
+    -- _strstr_proto := strstr (_query,'http://');
+    -- if ( _strstr_proto is null)
+    --   _strstr_proto := strstr (_query,'virt://');
+    -- if (_strstr_document is not null and _strstr_proto is not null and _strstr_document < _strstr_proto)
+    -- {
+    --   http ('<HR><B>Sorry, your query will not be executed due to security restrictions.</B>');
+    --   return;
+    -- }
+    _rq_state := '00000';
+    _rq_msg := 'OK';
+    _rq_expn := concat ('sparql_to_sql_text(',WS.WS.STR_SQL_APOS(_query),')');
+    _ms1 := msec_time();
+    _rq_res := exec (_rq_expn, _rq_state, _rq_msg);
+    _ms2 := msec_time();
+    if (_rq_msg <> 'OK')
+    {
+      ?><HR><B>Query compilation failed, SQLCODE <?= _rq_state ?>:</B><BR><PRE><XMP><?vsp http(_rq_msg); ?></XMP></PRE><?vsp
+    }
+    else
+    {
+      -- ?><HR><B>Query compiled successfully.</B> (<?= _ms2 - _ms1 ?> msec.)<BR><?vsp
+      _rq_state := '00000';
+      _rq_msg := 'OK';
+      _rq_expn := concat (
+      '"RQ"."RQ"."DESK_RUN"(',
+        case (_remote) when 'y' then WS.WS.STR_SQL_APOS (_user_service) else 'NULL' end,
+        ',',
+        WS.WS.STR_SQL_APOS(_query), ',',
+        WS.WS.STR_SQL_APOS(_default_graph_uri), ',',
+        cast ((_ms2-_ms1) as varchar) , ',',
+        WS.WS.STR_SQL_APOS(''), ',0,',
+        case (isnull (_format)) when 1 then 'NULL' else WS.WS.STR_SQL_APOS(_format) end,
+        ')' );
+      exec (_rq_expn, _rq_state, _rq_msg);
+      if (_rq_msg <> 'OK')
+      {
+        ?><B>Execution failed, SQLCODE <?= _rq_state ?>:</B><BR><PRE><XMP><?vsp http(_rq_msg); ?></XMP></PRE><?vsp
+      }
+    }
+    return;
+  }
+  if (_run is not null and _run = 'explain')
+  {
+    _rq_state := '00000';
+    _rq_msg := 'OK';
+    _ms1 := msec_time();
+    _rq_res := exec (concat ('sparql_to_sql_text(',WS.WS.STR_SQL_APOS(_query),')'), _rq_state, _rq_msg);
+    _ms2 := msec_time();
+
+    if (_rq_msg <> 'OK')
+    {
+      ?><HR><B>Query compilation failed, SQLCODE <?= _rq_state ?>:</B><BR><PRE><XMP><?= _rq_msg ?></XMP></PRE><?vsp
+    }
+    else
+    {
+
+      ?><HR><B>Query compiled successfully.</B> (<?= _ms2 - _ms1 ?> msec.)<BR><?vsp
+      _lex_list := sparql_lex_analyze (_query);
+      ?><HR><B>All lexemes of query:</B><table><?vsp
+      _lex_last_row := -1;
+      _lex_ctr := 0;
+      while (_lex_ctr < length (_lex_list))
+      {
+        _lexem := aref (_lex_list, _lex_ctr);
+        if (_lex_last_row <> aref (_lexem, 0))
+        {
+          if (_lex_last_row > 0)
+          {
+            ?></td></tr><?vsp
+          }
+          ?><tr><td><?= aref (_lexem, 0) ?></td><td><?vsp
+          _lex_last_row := aref (_lexem, 0);
+          ?><FONT COLOR="#FFFF00"><?vsp
+          http (repeat ('&nbsp;:&nbsp;', aref (_lexem, 1)));
+          ?></FONT><?vsp
+        }
+        if (length(_lexem) > 3)
+        {
+          ?><B><?= aref (_lexem, 2) ?></B><FONT SIZE=-2><?= aref (_lexem, 3) ?></FONT> <?vsp
+        }
+        else
+        {
+          ?><B>??<?= aref (_lexem, 2) ?>??</B><?vsp
+        }
+        _lex_ctr := _lex_ctr + 1;
+      }
+      ?></td></tr></table><?vsp
+
+      ?><HR><B>Execution plan:</B><BR><PRE><?= sparql_to_sql_text(_query) ?></PRE><?vsp
+      ?><HR><B>Parse tree:</B><BR><PRE><?= sparql_explain(_query) ?></PRE><?vsp
+    }
+    return;
+  }
+
+?><?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+  <head>
+    <title>Virtuoso SPARQL Query Demo</title>
+    <link rel="stylesheet" href="default.css" type="text/css"/>
+    <script type="text/javascript">
+      var toolkitPath="toolkit"; var featureList=["tab","ajax","combolist","window","tree","grid","dav"];
+    </script>
+    <script type="text/javascript" src="toolkit/loader.js"></script>
+    <script type="text/javascript" src="sparql_ajax.js"></script>
+    <script type="text/javascript">
+      var go_to = <?vsp if({?'goto'} = 'query_page') http('4'); else http('0');?>;
+    </script>
+  </head>
+  <body onload="init()">
+    <div id="head"><h1>Virtuoso SPARQL Query Demo</h1></div>
+    <div id="file_window_content"></div>
+    <div id="mid">
+      <div id="nav_bar">
+        <ul>
+          <li id="tab_home">Home</li>
+          <li id="tab_feature1">Execute Sparql Query</li>
+          <li id="tab_feature3">Choose DAWG Use Case</li>
+          <li id="tab_feature4">Browsing loaded data</li>
+        </ul>
+        <ul>
+          <li id="tab_query">Query Processor</li>
+        </ul>
+        <ul>
+          <li>Load W3C DAWG Use Cases</li>
+    <div id="tree_containter">
+      <ul id="tree_content"><?vsp
+          declare manifests any;
+          declare ctr integer;
+          manifests := "DB"."DBA".SPARQL_DAWG_MANIFEST_RDF_LIST();
+          manifests := subseq (manifests, 0, length (manifests) - 1);
+          for (ctr := 0; ctr <= length (manifests) - (1+6); ctr := ctr + 1)
+          {
+            declare m any;
+            m := "DB"."DBA".SPARQL_DAV_DATA_URI() || manifests[ctr];
+            m := subseq (m, 0, strrchr (m, '/'));
+            m := subseq (m, strrchr (m, '/')+1);
+            declare _tcases any;
+            _tcases := DB.DBA.SPARQL_EVAL_TO_ARRAY ('
+PREFIX tq: <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
+PREFIX tm: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?name ?rquri
+WHERE {
+  ?bn tm:name ?name ;
+    tm:action
+      [ tq:query ?rquri ] .
+  optional {
+    ?bn tm:result ?etalonuri 
+    }
+  }', DB.DBA.SPARQL_DAV_DATA_URI() || manifests[ctr], 10000);
+            foreach(any __itm in _tcases)do
+              foreach (any _tcase in _tcases) do
+              {
+                if (exists (select top 1 1 from DB.DBA.SPARQL_DAWG_STATUS where TEST_URI = _tcase[1] and TEST_STATUS = 'PASSED'))
+                  goto there_is_passed_test;
+              }
+            goto skip_failed_group;
+            there_is_passed_test:
+            http(sprintf('\n              <li><a href="#" onclick="folder_click(this)">%s</a>',m));
+	          ?>
+	          <ul>
+                      <?vsp
+
+            foreach (any _tcase in _tcases) do
+		        {
+              declare _name, _descr, _rquri, _origin varchar;
+              _name := _tcase[0]; _descr := _tcase[0]; _rquri := _tcase[1];
+              if (not exists (select top 1 1 from DB.DBA.SPARQL_DAWG_STATUS where TEST_URI = _rquri and TEST_STATUS = 'PASSED'))
+                goto skip_failed_test;
+              _origin := 'W3C DAWG';
+		          _descr := cast (_descr as varchar);
+		          _descr := replace (_descr, '\n', ' ');
+		          _descr := replace (_descr, '\t', ' ');
+		          _descr := replace (_descr, '    ', ' ');
+		          _descr := replace (_descr, '  ', ' ');
+		      ?><li><div style="padding-left:34px;"><a href="#" onclick="load_dawg('<?V manifests[ctr] ?>','<?vsp http_url(_name); ?>')"><?vsp http(replace(_descr,'-','-<wbr/>')); ?></a></div></li>
+		      <?vsp
+              skip_failed_test: ;
+		        }
+
+--             declare _tfiles any;
+--             _tfiles := DB.DBA.SPARQL_EVAL_TO_ARRAY ('
+-- PREFIX tq: <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
+-- PREFIX tm: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>
+-- PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+-- SELECT DISTINCT ?name
+-- WHERE {
+--   [ tq:data ?name ]
+--   }', DB.DBA.SPARQL_DAV_DATA_URI() || manifests[ctr], 10000);
+--
+--            foreach (any _tfile in _tfiles) do
+--		        {
+--              declare _name, _comment varchar;
+--              _name := subseq(_tfile[0], 1 + strrchr (_tfile[0], '/')); _comment := _tfile[0];
+--		          _comment := cast (_comment as varchar);
+--		          _comment := replace (_comment, '\n', ' ');
+--		          _comment := replace (_comment, '\t', ' ');
+--		          _comment := replace (_comment, '    ', ' ');
+--		          _comment := replace (_comment, '  ', ' ');
+--		          _comment := subseq(_comment,17);
+--		      ?><li><div><a href="#" onclick="view_file('<?V _comment ?>')"><?vsp http(_name); ?></a></div></li><?vsp
+--		        }
+
+	          ?></ul><?vsp
+            http('</li>');
+            skip_failed_group: ;
+          }
+        ?>
+      </ul>
+    </div>
+          <li><a href="#" onclick="open_dav()">Browse loaded data</a></li>
+        </ul>
+        <ul>
+           <li><a href="http://virtuoso.openlinksw.com/">Virtuoso Home</a></li>
+           <li><a href="http://docs.openlinksw.com/virtuoso">Virtuoso Documentation</a></li>
+        </ul>
+      </div>
+      <div id="main_col">
+      </div>
+      <div id="page_home">
+        <h2>OpenLink Virtuoso's SPARQL Implementation Demo</h2>
+        <h3>What it is SPARQL?</h3>
+        
+        <p>SPARQL is the W3C's query-language for RDF Data Management Systems (aka Triple Stores).</p>
+        <p>SPARQL is system-independent, fitting in alongside SQL for relational databases and 
+        XQuery for XML data. The development and evolution of this standard is 
+        overseen by the <a href="http://www.w3.org/2001/sw/DataAccess/">RDF Data Access Working Group</a> (DAWG) within 
+        W3C. Although The language is still in development, 
+        basic functionality is fully documented and publicly available.
+        </p>
+        
+        <h3> What is this demo about?</h3>
+        <p>It is a live demonstration of Virtuoso&apos;s implementation of 
+        <a href="http://www.w3.org/TR/rdf-dawg-uc/">DAWG&apos;s SPARQL test-suite</A>; a collection of SPARQL query language 
+        use-cases that enable interactive and simplified testing 
+        of a Triple Store&apos;s implementation.</p>
+        
+        <p>In this demo the RDF documents are stored within the Virtuoso server&apos;s 
+        database and are accessed via its <a href="http://asg.web.cmu.edu/rfc/rfc2518.html" target="_blank">WebDAV</a> 
+        implementation, making all the test-suite graphs URL accessible.</p>
+        
+        <h3>Limitations and differences in the demo</h3>
+        <p>Virtuoso&apos;s SPARQL compiler is still a work-in-progress (beta quality). 
+        Therefore, expect a degree of flux in this demo as the compiler evolves (rapidly).</p>
+        
+        <h3>Is there any technical support for this demo?</h3>
+        <p>Unlike other products of OpenLink Software, this demo 
+        is not supported by our 24x7 help service. Feel free to 
+        contact the authors of this demo directly: 
+        <a href="mailto:sparql@openlinksw.com">sparql@openlinksw.com</a>
+        .
+        </p>
+        <p>All feedback is appreciated, since our goal is to 
+        demonstrate the workability of SPARQL to the degree possible via this demo.</p>
+        <div class="pager"><a href="#" onclick="tab.go(1)">Next</a></div>
+      </div><!-- page_home -->
+      <div id="page_feature1">
+        <h2>Execute Sparql Query</h2>
+        <p>If you select "Query Processor" from the navigation you will see a form for quering the local Virtuoso RDF DATABASE</p>
+        <p>It has the following inputs:</p>
+        <ul>
+          <li>Graph - DEFAULT graph URI for the query</li>
+          <li>load data from URI - with tree options:
+            <ul>
+              <li>if there is no data for URI - the query engine will check if there is data for the selected URI and if there is none it
+                  will try to retrieve it and load it the RDF database</li>
+              <li>delete the currently loaded data, and load again - the engine will always delete all data for the current graph, retrieve it 
+                  and load it again.</li>
+              <li>never try to load - the engine will never try to retrieve or load data for the current graph</li>
+            </ul>
+            This option is only avaliable for quering the local query processor.
+          </li>
+          <li>SPARQL Query - The query to be send</li>
+          <li>Output format - select output format for the answer:
+            <ul>
+              <li>table - the result will show as rendered html table</li>
+              <li>XML - the result will show as RDF XML</li>
+              <li>TURTLE - if the query is CONSTRUCT/DESCRIBE the result will be shown in TURTLE format</li>
+              <li>JSON - the result will show as Javascript OBJECT Notation</li>
+              <li>Javascript - the result will show as javascript code writing an html table</li>
+              <li>HTML - the result will show as escaped html table (you will see the html table code)</li>
+            </ul>
+          </li>
+        </ul>
+        <p>When you click on "Run Query", request will be send to the server and the result will be shown below the query form.</p>
+        <p>You can see the request send and the responce from the server click on the tabs.</p>
+        <p>If you have chosen to load data you will see tab "data load result", in which you can view the result from data loading.</p>
+        <div class="pager"><a href="#" onclick="tab.go(0)">Previous</a><a href="#" onclick="tab.go(2)">Next</a></div>
+      </div><!-- page_feature1 -->
+      <div id="page_feature3">
+        <h2>Choose DAWG Use Case</h2>
+        <p>In the navigation on the left there is a tree with tested DAWG Use cases.</p>
+        <p>They are devided in sections. If you click on the [+] next to the section name you will see a list with Use cases and files.</p>
+        <p>Clicking on a Use case will preload Graph and query in the fields either in Query Processor
+           It will also load a table with the expected result as specified by W3C.</p>
+        <p>Then you can click on "Run Query" and compare the results.</p>
+        <div class="pager"><a href="#" onclick="tab.go(2)">Previous</a><a href="#" onclick="tab.go(4)">Next</a></div>
+      </div><!-- page_feature3 -->
+      <div id="page_feature4">
+        <h2>Browsing loaded data</h2>
+        <p>If you select "Browse loaded data" from the navigation you will see a WebDAV browser where you can browse the folder "/DAV/sparql_demo/data/"</p>
+        <p>This is the place where the initially loaded data and user loaded data is kept.</p>
+        <p>Please note that this is not all the data loaded in RDF Database. Just the once that whare loaded on initial state
+            or by the loading feature of this page.</p>
+        <p>The folders: data-xml, extencions, patches are holding files initially loaded on install time.</p>
+        <p>The folder user_data is holding files retrieved loading feature.</p>
+        <p>When the file is loaded the loading feature it will be saved in directories coping the directories structore of the URI. 
+            For ex. the URI http://www.ldodds.com/ldodds-knows.rdf will be saved in directory user_data/www.ldodds.com/, file named ldodds-knows.rdf</p>
+        <div class="pager"><a href="#" onclick="tab.go(3)">Previous</a></div>
+      </div><!-- page_feature4 -->
+      <div id="page_query">
+        <h2>Query Processor</h2>
+        <form>
+          <label for="default-graph-uri">Query Processor:</label>
+          <select id="remote" name="remote" onchange="switch_panels()">
+            <option value="">Local</option>
+            <option value="y">Remote</option>
+          </select>
+          <br/>
+          <br/>
+          <div id="local_panel">
+            <label for="load" style="float:left;height:55px;">Load data:</label>
+            <div style="padding-left:55pt;">
+              <input type="radio" value="ifnodata" name="load" id="load" checked="checked" />
+              <label for="load" class="load">if there is no data for the URI</label>
+              <br/>
+              <input type="radio" value="always" name="load" id="load_always"/>
+              <label for="load_always" class="load">delete the currently loaded data, and load again</label>
+              <br/>
+              <input type="radio" value="never" name="load" id="load_never"/>
+              <label for="load_never" class="load">never try to load</label>
+            </div>
+            <br/>
+          </div>
+          <div id="remote_panel">
+            <label for="service">Query Service Endpoint</label>
+            <br/>
+            <div id="sr_cl_div"></div>
+            <br/>
+          </div>
+          <div id="view_data_file" style="float:right;display:none;">
+            <a href="#" onclick="view_file()">view data file</a>
+          </div>
+          <label for="default-graph-uri">Graph</label>
+          <br/>
+          <input id="default-graph-uri" name="default-graph-uri" value="" onchange="OAT.Dom.hide($('view_data_file'));"/>
+          <br/>
+          <label for="query">SPARQL Query</label><br/>
+          <textarea id="query" name="query">SELECT * WHERE {?s ?p ?o}</textarea>
+          <br/>
+          <input type="button" id="explain" name="explain" value="Execution plan" onclick="rq_query('c')">
+          <label for="format">Output format</label>
+          <select id="format" onchange="format_change()">
+            <option value="">table</option>
+            <option value="application/sparql-results+xml">XML</option>
+            <option value="text/rdf+n3">TURTLE</option>
+            <option value="application/sparql-results+json">JSON</option>
+            <option value="application/javascript">Javascript</option>
+            <option value="text/html">HTML</option>
+          </select>
+          <input type="button" value="Run Query" onclick="rq_query()">
+          <input type="reset" value="Reset">
+          <!--<input type="checkbox" id="local_sparql"/>
+          <label for="local_sparql">Use local sparql endpoint</label>-->
+          <br/><br/>
+        </form>
+        <div id="res_area"></div>
+        <div id="etalon"></div>
+      </div><!-- page_query -->
+    </div><!-- mid -->
+    <div id="foot">Copyright &copy; <?V year(now()) ?> OpenLink Software, Inc</div>
+  </body>
+</html>

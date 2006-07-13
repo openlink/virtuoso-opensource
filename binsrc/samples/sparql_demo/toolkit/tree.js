@@ -1,0 +1,96 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *
+ *  See LICENSE file for details.
+ */
+/*
+	OAT.Tree.assign(div,dir,ext,reformat)
+*/
+
+OAT.Tree = {
+	imagePath:function(dir, name, ext) {
+		return "url("+dir+"/Tree_"+name+"."+ext+")";
+	},
+
+	assign:function(div,dir,ext,reformat) {
+		var elm = $(div);
+		OAT.Tree.recursiveWalk(elm,1,dir,ext,reformat);
+	},
+	
+	recursiveWalk:function(node,depth,dir,ext,reformat) {
+		if (node._Tree_signIcon) { node.removeChild(node._Tree_signIcon); node._Tree_signIcon = false; }
+		if (node._Tree_treeIcon) { node.removeChild(node._Tree_treeIcon); node._Tree_treeIcon = false; }
+		var temp = node.childNodes;
+		var childNodes = [];
+		for (var i=0;i<temp.length;i++) { childNodes[childNodes.length] = temp[i]; }
+		var str = (node.tagName ? node.tagName : "");
+		
+		switch (str.toLowerCase()) {
+			case "ul":
+				var parent = node.parentNode;
+				node.style.listStyleType = "none";
+				node._Tree_toggle = function() {
+					if (this._Tree_collapsed) { this._Tree_collapsed = 0; } else { this._Tree_collapsed = 1; }
+					this._Tree_update();
+				};
+				node._Tree_update = function() {
+					if (parent.tagName.toLowerCase() != "li") return;
+					if (this._Tree_collapsed) {
+						OAT.Dom.hide(this);
+						parent._Tree_signIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"plus",ext);
+					} else {
+						OAT.Dom.show(this);
+						parent._Tree_signIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"minus",ext);
+					}
+				}
+				if (parent.tagName.toLowerCase() == "li") {
+					parent._Tree_signIcon.style.cursor = "pointer";
+					parent._Tree_treeIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"node",ext);
+					parent._Tree_signIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"minus",ext);
+					var ref=function() { node._Tree_toggle(); }
+					OAT.Dom.attach(parent._Tree_signIcon,"click",ref);
+				}
+				
+				if (reformat) {
+					if (depth > 1) {
+						/* if specified, we collapse all deep levels */
+						node._Tree_collapsed = 1;
+						node._Tree_update();
+					} else {
+						node._Tree_collapsed = 0;
+						node._Tree_update();
+					}
+				}
+			break;
+			
+			case "li":
+				var tree = OAT.Dom.create("div",{"width":"16px","height":"16px","cssFloat":"left","styleFloat":"left"});
+				tree.style.marginRight = "2px";
+				tree.style.backgroundImage = OAT.Tree.imagePath(dir,"leaf",ext);
+				tree.style.backgroundRepeat = "no-repeat";
+				var sign = OAT.Dom.create("div",{"width":"16px","height":"16px","cssFloat":"left","styleFloat":"left"});
+				sign.style.backgroundImage = OAT.Tree.imagePath(dir,"blank",ext);
+				sign.style.backgroundRepeat = "no-repeat";
+				node._Tree_treeIcon = tree;
+				node._Tree_signIcon = sign;
+				if (childNodes.length) {
+					node.insertBefore(tree,childNodes[0]);
+					node.insertBefore(sign,tree);
+				} else {
+					node.appendChild(sign);
+					node.appendChild(tree);
+				}
+			break;
+		}
+		
+		/* recursion */
+		for (var i=0;i<childNodes.length;i++) {
+			OAT.Tree.recursiveWalk(childNodes[i],depth+1,dir,ext,reformat);
+		}
+	}
+}
+OAT.Loader.pendingCount--;
