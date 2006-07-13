@@ -218,7 +218,7 @@ create procedure SPARQL_MKPATH (in path varchar)
 create procedure SPARQL_DAWG_LOAD_MANIFESTS ()
 {
   declare mflst any;
-  declare REPORT varchar;
+  declare REPORT,content_type varchar;
   result_names (REPORT);
   mflst := SPARQL_DAWG_MANIFEST_RDF_LIST();
   mflst := subseq (mflst, 0, length (mflst) - 1);
@@ -234,9 +234,13 @@ create procedure SPARQL_DAWG_LOAD_MANIFESTS ()
 	  SPARQL_MKPATH (davpath);
 	  DB.DBA.DAV_DELETE (davpath, 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
 	  delete from RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (davuri);
+    if (davpath like '%.ttl')
+      content_type := 'application/x-turtle';
+    else 
+      content_type := 'application/rdf+xml';
 	  id := DB.DBA.DAV_RES_UPLOAD (davpath,
 	    t_file_to_string (filefullname,TUTORIAL_IS_DAV()),
-	    'application/rdf+xml',
+	    content_type,
 	    '110110110RR',
 	    http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
 	  SPARQL_REPORT (sprintf ('Uploading %s to %s: %s',
@@ -255,7 +259,7 @@ create procedure SPARQL_DAWG_LOAD_DATFILE (in rel_path varchar, in in_resultset 
   declare REPORT varchar;
   declare filefullname, davpath, davuri varchar;
   declare id integer;
-  declare graph_uri, dattext varchar;
+  declare graph_uri, dattext,content_type varchar;
   declare app_env any;
   app_env := null;
   if (not in_resultset)
@@ -265,9 +269,13 @@ create procedure SPARQL_DAWG_LOAD_DATFILE (in rel_path varchar, in in_resultset 
   davuri := SPARQL_DAV_DATA_URI() || rel_path;
   SPARQL_MKPATH (davpath);
   DB.DBA.DAV_DELETE (davpath, 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
+  if (rel_path like '%.ttl')
+    content_type := 'application/x-turtle';
+  else
+    content_type := 'application/rdf+xml';
   id := DB.DBA.DAV_RES_UPLOAD (davpath,
     t_file_to_string (filefullname,TUTORIAL_IS_DAV()),
-    'application/rdf+xml',
+    content_type,
     '110110110RR',
     http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav') );
   SPARQL_REPORT (sprintf ('Uploading %s to %s: %s',
@@ -524,12 +532,16 @@ grant all privileges to RQ
 
 DB.DBA.VHOST_REMOVE (lpath=>'/sparql_demo/')
 ;
-DB.DBA.VHOST_REMOVE (lpath=>'/sparql_demo')
-;
-DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/DAV/sparql_demo/', vsp_user=>'RQ', is_dav=>1, def_page => 'demo.vsp')
+DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/DAV/sparql_demo/', vsp_user=>'RQ', is_dav=>1, def_page => 'sparql_ajax.vsp')
 --DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/sparql_demo/', vsp_user=>'RQ')
 ;
 
+select case (isstring (registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT')))
+when equ(registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT'),'/sparql_demo/demo.vsp?case=custom_sparql')
+  then registry_set ('WS.WS.SPARQL_DEFAULT_REDIRECT', '/sparql_demo/sparql_ajax.vsp?goto=query_page')
+when 0 then registry_set ('WS.WS.SPARQL_DEFAULT_REDIRECT', '/sparql_demo/sparql_ajax.vsp?goto=query_page')
+else 1 end
+;
 
 create procedure "RQ"."RQ"."sparql_exec_no_error"(in expr varchar)
 {
@@ -739,6 +751,12 @@ create procedure "RQ"."RQ"."DESK_RUN" (in _service_uri varchar, in _text varchar
 --	      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, ses);
 	      DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
 	      http_value (string_output_string (ses));
+	    }
+	  else if (185 = __tag (_var))
+	    {
+	      http_value (string_output_string (_var));
+              -- http (', tag ');
+	      -- http_value (__tag (_var));
 	    }
 	  else
 	    {
