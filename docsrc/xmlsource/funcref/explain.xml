@@ -64,6 +64,10 @@
       constants. The default is 0, for forward only. If the statement is a
       SELECT and the cursor type is not forward only, the auxiliary SQL
       statements used by the cursor implementation are shown.</para>
+
+<para>
+Specifying a cursor type of -5 produces a diagnostic dump to the server's standard output.  This contains the costs associted with different join orders tried duringthe compilation.
+</para>
   </refsect1>
   <refsect1 id="seealso_explain"><title>See Also</title>
     <para></para>

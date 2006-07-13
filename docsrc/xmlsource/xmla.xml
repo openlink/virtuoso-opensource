@@ -224,6 +224,7 @@ and "urn:schemas-microsoft-com:xml-analysis:Execute" for Discover and Execute op
 <para>skip - integer</para>
 <para>n-rows integer</para>
 <para> bookmark-from - string </para>
+<para> retrieve-row-count - string </para>
 
 <para> The direction indicates in which direction the cursor moves from the
  bookmark-from. If there is no bookmark-from, the query is always forward
@@ -241,6 +242,10 @@ and "urn:schemas-microsoft-com:xml-analysis:Execute" for Discover and Execute op
  <para> If true, a bookmark element is added to each row of the result set. </para>
 
  <para> A simple request / responce is added to samples. </para>
+ 
+ <para> The retrieve-row-count element of the query options must be true for rowcount returning to be enabled.</para>
+
+ <para>If retrieve-row-count is specified, the response has a row-count element with a text value containing the total result set size of the query, irrespective of the specified window of rows retrieved.  Note that for large result sets getting the row count can be prohibitively expensive.</para>
  
 <title>Virtual directory Setup</title>
 
