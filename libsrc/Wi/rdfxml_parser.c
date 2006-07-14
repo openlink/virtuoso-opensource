@@ -300,13 +300,18 @@ xp_rdfxml_element (void *userdata, char * name, xml_parser_attrdata_t *attrdata)
               strcpy (full_element_name + l1, tmp_local);
             }
           inner->xrl_predicate = full_element_name;
+          inner->xrl_parsetype = XRL_PARSETYPE_RES_OR_LIT;
         }
       else if (!strcmp ("Seq", tmp_local))
         {
           xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "RDF/XML parser of Virtuoso does not support rdf:Seq syntax");
+          return;
         }
       else
+        {
         xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Unknown element in RDF namespace");
+          return;
+        }
     }
   else
     {
@@ -337,7 +342,10 @@ xp_rdfxml_element (void *userdata, char * name, xml_parser_attrdata_t *attrdata)
             {
               caddr_t inner_subj;
               if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+                {
                 xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:about' can not appear in element that is supposed to be property name");
+                  return;
+                }
               inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 0);
               XRL_SET_LOCAL (inner, xrl_subject, inner_subj);
               inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
@@ -346,7 +354,10 @@ xp_rdfxml_element (void *userdata, char * name, xml_parser_attrdata_t *attrdata)
             {
               caddr_t inner_subj;
               if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
+                {
                 xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:resource' can appear only in element that is supposed to be property name");
+                  return;
+                }
               inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 0);
               XRL_SET_LOCAL (inner, xrl_subject, inner_subj);
               inner->xrl_parsetype = XRL_PARSETYPE_EMPTYPROP;
@@ -381,14 +392,20 @@ xp_rdfxml_element (void *userdata, char * name, xml_parser_attrdata_t *attrdata)
           else if (!strcmp (tmp_local, "datatype"))
             {
               if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
+                {
                 xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:datatype' can appear only in property elements");
+                  return;
+                }
               XRL_SET_LOCAL (inner, xrl_datatype, xp_rdfxml_resolved_iid (xp, avalue, 0));
               inner->xrl_parsetype = XRL_PARSETYPE_LITERAL;
             }
           else if (!strcmp (tmp_local, "parseType"))
             {
               if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
+                {
                 xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:parseType' can appear only in property elements");
+                  return;
+                }
               if (!strcmp (avalue, "Resource"))
                 {
                   caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, NULL);
@@ -402,9 +419,13 @@ xp_rdfxml_element (void *userdata, char * name, xml_parser_attrdata_t *attrdata)
               else if (!strcmp (avalue, "Collection"))
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "RDF/XML parser of Virtuoso does not support parseType='Collection'");
+                  return;
                 }
               else
+                {
                 xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Unknown parseType");
+                  return;
+                }
             }
           else
             xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
@@ -431,8 +452,11 @@ xp_rdfxml_element (void *userdata, char * name, xml_parser_attrdata_t *attrdata)
   if ((NULL != inner->xrl_subject) || (NULL != inner_attr_props))
     {
       if (XRL_PARSETYPE_LITERAL == inner->xrl_parsetype)
+        {
         xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200,
           "Conflicting attributes: property value can not be a node and a literal simultaneously" );
+           return;
+        }
     }
 /*  if ((XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype) && (NULL != outer->xrl_subject))
     XRL_SET_LOCAL (inner, xrl_subject, box_copy_tree (outer->xrl_subject));
@@ -573,7 +597,10 @@ xp_rdfxml_character (xml_parser_t * parser,  char * s, int len)
         char *tail = s+len;
         while ((--tail) >= s)
           if (NULL == strchr (" \t\r\n", tail[0]))
+            {
             xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Non-whitespace character found instead of XML element");
+              return;
+            }
         break;
       }
     }
