@@ -1207,6 +1207,7 @@ row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int m
 	iri_id_t iid;
 	if (DV_IRI_ID != DV_TYPE_OF (data))
 	  {
+	    char* cl_name = __get_column_name (cl->cl_col_id, key);
 	    if (err_ret)
 	      *err_ret = srv_make_new_error ("22005", "SR130", "Bad type %.*s of value for IRI ID column %.*s",
 					     MAX_NAME_LEN, dv_type_title (DV_TYPE_OF (data)), MAX_NAME_LEN, cl_name);

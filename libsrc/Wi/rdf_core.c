@@ -50,7 +50,7 @@ tf_alloc (void)
 {
   NEW_VARZ (triple_feed_t, tf);
   tf->tf_blank_node_ids = id_hash_allocate (1021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
-  tf->tf_cached_iids = id_hash_allocate (1021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
+  tf->tf_cached_iids = id_hash_allocate (21021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
   return tf;
 }
 
@@ -103,6 +103,8 @@ tf_set_stmt_texts (triple_feed_t *tf, const char **stmt_texts, caddr_t *err_ptr)
 }
 
 
+int32 tf_rnd_seed;
+
 caddr_t
 tf_get_iid (triple_feed_t *tf, caddr_t uri)
 {
@@ -134,6 +136,16 @@ tf_get_iid (triple_feed_t *tf, caddr_t uri)
     {
       caddr_t iid = box_copy_tree (lc_nth_col (lc, 0));
       caddr_t key = box_copy (uri);
+      if (tf->tf_cached_iids->ht_count > 3 * tf->tf_cached_iids->ht_buckets)
+	{
+	  int rnd_inx = sqlbif_rnd (&tf_rnd_seed);
+	  caddr_t del_key, del_data;
+	  if (id_hash_remove_rnd (tf->tf_cached_iids, rnd_inx, (caddr_t)&del_key, (caddr_t) &del_data))
+	    {
+	      dk_free_tree (del_key);
+	      dk_free_tree (del_data);
+	    }
+	}
       id_hash_set (tf->tf_cached_iids, (caddr_t)(&key), (caddr_t)(&iid));      
       lc_free (lc);
       return box_copy_tree (iid);
