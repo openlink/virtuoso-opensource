@@ -2348,6 +2348,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
   dk_set_t after_preds = NULL;
   dk_set_t to_place = NULL;
   df_elt_t *text_pred = NULL;
+  int old_cond;
   DO_SET (df_elt_t *, pred, &preds)
     {
       if (text_pred && dk_set_member (text_pred->_.text.after_preds, pred))
@@ -2428,12 +2429,16 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
   sqlo_table_locus (so, tb_dfe, col_preds, &after_preds, nj_preds, &vdb_preds);
 
   tb_dfe->_.table.col_preds = col_preds;
+  /* save and reset the cond exp flag.  If you do col preds withthis flag on, you get the expression calculated AFTER the col is fetched, not before */
+  old_cond = so->so_place_code_forr_cond;
+  so->so_place_code_forr_cond = 0;
   DO_SET (df_elt_t *, col_pred, &col_preds)
     {
       col_pred->dfe_locus = tb_dfe->dfe_locus;
       sqlo_place_exp (so, tb_dfe, col_pred->_.bin.right);
     }
   END_DO_SET();
+  so->so_place_code_forr_cond = old_cond;
   merged_col_preds = sqlo_merge_col_preds (so, tb_dfe, col_preds, &to_place);
   if (MERGE_CONTRADICTION == merged_col_preds)
     {
