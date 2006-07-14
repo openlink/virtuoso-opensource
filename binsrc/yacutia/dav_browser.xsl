@@ -2137,6 +2137,7 @@ else
                               declare _ind, _tp varchar;
                               declare usr, grp vspx_select_list;
                               declare _user, _group, _pc, _target_col, _recurse, _col, _own, _grp integer;
+                              declare _set_user, _set_group integer;
                               declare _sperm, _rperm, _operm, _mime_type, one, zero, _cmp_perm varchar;
                               declare cur_usr varchar;
                               declare _props any;
@@ -2157,6 +2158,9 @@ else
                               _pc := 0;
                               _sperm := '000000000N';
                               _rperm := '000000000N';
+                              _set_user := 0;
+                              _set_group := 0;
+                              
                               if ('' <> get_keyword('recurse', control.vc_page.vc_event.ve_params, ''))
                                 _recurse := 1;
                               else
@@ -2193,6 +2197,7 @@ else
                               {
                               usr := control.vc_parent.vc_find_control('own_name');
                               _user := atoi(aref (usr.vsl_item_values, usr.vsl_selected_inx));
+                                _set_user := 1;
                               } else {
                                 _user := -2;
                               }
@@ -2202,6 +2207,7 @@ else
                               {
                                 grp := control.vc_parent.vc_find_control('grp_name');
                               _group := atoi(aref (grp.vsl_item_values, grp.vsl_selected_inx));
+                                _set_group := 1;
                               } else {
                                 _group := -2;
                               }
@@ -2245,9 +2251,9 @@ else
         _col := DAV_SEARCH_ID (_resname, 'C');
                                 select COL_PERMS, COL_OWNER, COL_GROUP into _operm, _own, _grp from WS.WS.SYS_DAV_COL where COL_ID = _col;
                                 _cmp_perm := _operm;
-                                if (_group = -2)
+                                if (_set_group = 0)
                                   _group := _grp;
-                                if (_user = -2)
+                                if (_set_user = 0)
                                   _user := _own;
                                 _ix := 0;
                                 while (_ix < 10)
@@ -2279,15 +2285,30 @@ else
                                 {
                                   _target_col := WS.WS.COL_PATH (_col);
                                   declare cur_type, cur_perms varchar;
-                                  declare cur_res_id any;
-                                  declare res_cur cursor for select RES_PERMS, RES_TYPE, RES_ID from WS.WS.SYS_DAV_RES where substring (RES_FULL_PATH, 1, length (_target_col)) = _target_col;
+                                  declare cur_res_id, cur_user, cur_group any;
+                                  declare res_cur cursor for select RES_PERMS, RES_TYPE, RES_ID, RES_OWNER, RES_GROUP from WS.WS.SYS_DAV_RES where substring (RES_FULL_PATH, 1, length (_target_col)) = _target_col;
                                   -- Only if permissions have changed (prevent free text reindexing)
                                   whenever not found goto next_one;
                                   open res_cur (prefetch 1, exclusive);
                                   while (1)
                                   {
-                                    fetch res_cur into cur_type, cur_perms, cur_res_id;
-                                    update WS.WS.SYS_DAV_RES set RES_OWNER = _user, RES_GROUP = _group where current of res_cur;
+                                    fetch res_cur into cur_perms, cur_type , cur_res_id, cur_user, cur_group;
+                                    _operm := cur_perms;
+                                    _ix := 0;
+                                    while (_ix < 10)
+                                    {
+                                      if (aref (_sperm, _ix) = one)
+                                        aset (_operm, _ix, one);
+                                      if (aref (_rperm, _ix) = one)
+                                        aset (_operm, _ix, zero);
+                                      _ix := _ix + 1;
+                                    }
+                                    if (_tp <> '*')
+                                      aset (_operm, 9, ascii (_tp));
+                                    if (_set_group = 1)
+                                      update WS.WS.SYS_DAV_RES set RES_GROUP = _group where current of res_cur;
+                                    if (_set_user = 1 )
+                                      update WS.WS.SYS_DAV_RES set RES_OWNER = _user where current of res_cur;
                                     if (cur_perms <> _operm)
                                       update WS.WS.SYS_DAV_RES set RES_PERMS = _operm where current of res_cur;
                                     if (_mime_type <> '' and cur_type <> _mime_type)
@@ -2308,9 +2329,32 @@ else
                                   }
                                   next_one:
                                   close res_cur;
-                                  update WS.WS.SYS_DAV_COL set COL_PERMS = _operm, COL_OWNER = _user, COL_GROUP = _group where  COL_ID <> _col and substring (WS.WS.COL_PATH (COL_ID), 1, length (_target_col)) = _target_col;
-                                  for(select COL_ID as cur_col_id FROM WS.WS.SYS_DAV_COL where  COL_ID <> _col and substring (WS.WS.COL_PATH (COL_ID), 1, length (_target_col)) = _target_col) do
+                                  declare cur_col_perms varchar;
+                                  declare cur_col_id, cur_col_user, cur_col_group any;
+                                  declare col_cur cursor for select COL_ID, COL_PERMS, COL_OWNER, COL_GROUP FROM WS.WS.SYS_DAV_COL where  COL_ID <> _col and substring (WS.WS.COL_PATH (COL_ID), 1, length (_target_col)) = _target_col;
+                                  whenever not found goto next_one2;
+                                  open col_cur (prefetch 1, exclusive);
+                                  while (1)
                                   {
+                                    fetch col_cur into cur_col_id, cur_col_perms, cur_col_user, cur_col_group;
+                                    _operm := cur_col_perms;
+                                    _ix := 0;
+                                    while (_ix < 10)
+                                  {
+                                      if (aref (_sperm, _ix) = one)
+                                        aset (_operm, _ix, one);
+                                      if (aref (_rperm, _ix) = one)
+                                        aset (_operm, _ix, zero);
+                                      _ix := _ix + 1;
+                                    }
+                                    if (_tp <> '*')
+                                      aset (_operm, 9, ascii (_tp));
+                                    if (_set_group = 1)
+                                      update WS.WS.SYS_DAV_COL set COL_GROUP = _group where current of col_cur;
+                                    if (_set_user = 1)
+                                      update WS.WS.SYS_DAV_COL set COL_OWNER = _user where current of col_cur;
+                                    if (cur_col_perms <> _operm)
+                                      update WS.WS.SYS_DAV_COL set COL_PERMS = _operm where current of col_cur;
                                     foreach (any _prop in _props) do
                                     {
                                       if (_prop[0] = 's')
@@ -2323,7 +2367,10 @@ else
                                         delete from WS.WS.SYS_DAV_PROP 
                                          where PROP_PARENT_ID = cur_col_id and PROP_TYPE = 'C';
                                     }
+                                    commit work;
                                   }
+                                  next_one2:
+                                  close col_cur;
                                 }
                                 _iix := _iix + 2;
                               }
@@ -2337,9 +2384,9 @@ else
                                 _operm := '000000000N';
                                 select RES_ID, RES_PERMS, RES_OWNER, RES_GROUP into _res_id, _operm, _own, _grp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _resname;
                                 _cmp_perm := _operm;
-                                if (_group = -2)
+                                if (_set_group = 0)
                                   _group := _grp;
-                                if (_user = -2)
+                                if (_set_user = 0)
                                   _user := _own;
                                 _ix := 0;
                                 while (_ix < 10)
@@ -2361,7 +2408,10 @@ else
                                   while (1)
                                   {
                                     fetch res_cur1 into cur_type1, cur_perms1;
-                                    update WS.WS.SYS_DAV_RES set RES_OWNER = _user, RES_GROUP = _group where current of res_cur1;
+                                    if (_set_group = 1)
+                                      update WS.WS.SYS_DAV_RES set RES_GROUP = _group where current of res_cur1;
+                                    if (_set_user = 1)
+                                      update WS.WS.SYS_DAV_RES set RES_OWNER = _user where current of res_cur1;
                                     if (cur_perms1 <> _operm)
                                       update WS.WS.SYS_DAV_RES set RES_PERMS = _operm where current of res_cur1;
                                     if (_mime_type <> '' and cur_type1 <> _mime_type)
