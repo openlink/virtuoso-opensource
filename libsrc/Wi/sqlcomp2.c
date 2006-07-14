@@ -697,7 +697,9 @@ void yyerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
   sp1 = yyssp[1];
   sm1 = yyssp[-1];
   sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
-  snprintf (buf, sizeof (buf), ": %s [%d-%d-(%d)-%d] at '%s'", strg, sm2, sm1, yystate, sp1, yytext);
+  snprintf (buf, sizeof (buf), ": %s [%d-%d-(%d)-%d] at '%s'", strg, sm2, sm1, yystate,
+    ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */,
+    yytext );
 #else
   snprintf (buf, sizeof (buf), ": %s at '%s'", strg, yytext);
 #endif
@@ -724,7 +726,9 @@ void yyfatalerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
   sp1 = yyssp[1];
   sm1 = yyssp[-1];
   sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
-  snprintf (buf, sizeof (buf), ": %s [%d-%d-(%d)-%d] at '%s'", strg, sm2, sm1, yystate, sp1, yytext);
+  snprintf (buf, sizeof (buf), ": %s [%d-%d-(%d)-%d] at '%s'", strg, sm2, sm1, yystate,
+    ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */,
+    yytext );
 #else
   snprintf (buf, sizeof (buf), ": %s at '%s'", strg, yytext);
 #endif
