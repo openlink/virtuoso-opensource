@@ -59,14 +59,6 @@ create function SPARQL_FILE_DATA_ROOT() returns varchar
 }
 ;
 
--- No need because this file is now built into the server executable
---create function DB.DBA.RDF_EXP_LOAD_RDFXML_XSL() returns varchar
---{
---  return 'http://local.virt/DAV/sparql_demo/rdf-exp-load.xsl';
---}
---;
-
-
 create procedure SPARQL_REPORT(in strg varchar)
 {
   if (__tag(strg) <> 182)
@@ -262,10 +254,9 @@ create procedure SPARQL_DAWG_LOAD_MANIFESTS ()
 	    'dav', 'dav', 'dav', 'dav' );
 	  SPARQL_REPORT (sprintf ('Uploading %s to %s: %s',
 	      filefullname, davpath,
-	      case (gt (id, 0)) when 1 then 'PASSED' else 'FAILED' end ));
-          DB.DBA.RDF_EXP_LOAD_RDFXML (davuri,
-	    xtree_doc (XML_URI_GET ('', davuri), 0, davuri),
-              0, null );
+	      case (gt (id, 0)) when 1 then 'PASSED' else 'FAILED' || DAV_PERROR (id) end ));
+          delete from RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (davuri);
+          DB.DBA.RDF_LOAD_RDFXML (XML_URI_GET ('', davuri), davuri, davuri);
 	}
     }
 }
@@ -279,6 +270,7 @@ create procedure SPARQL_DAWG_LOAD_DATFILE (in rel_path varchar, in in_resultset 
   declare graph_uri, dattext,content_type varchar;
   declare app_env any;
   app_env := null;
+  whenever sqlstate '*' goto err_rep;
   if (not in_resultset)
     result_names (REPORT);
   filefullname := SPARQL_FILE_DATA_ROOT() || rel_path;
@@ -297,17 +289,17 @@ create procedure SPARQL_DAWG_LOAD_DATFILE (in rel_path varchar, in in_resultset 
     'dav', 'dav', 'dav', 'dav' );
   SPARQL_REPORT (sprintf ('Uploading %s to %s: %s',
       filefullname, davpath,
-      case (gt (id, 0)) when 1 then 'PASSED' else 'FAILED' end ));
+      case (gt (id, 0)) when 1 then 'PASSED' else 'FAILED' || DAV_PERROR (id) end ));
   dattext := replace (cast (XML_URI_GET ('', davuri) as varchar), '# \044Id:', '# Id:');
   graph_uri := davuri;
   delete from RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_uri);
   if (rel_path like '%.ttl')
     DB.DBA.TTLP (dattext, davuri, graph_uri);
   else if (rel_path like '%.rdf')
-    DB.DBA.RDF_EXP_LOAD_RDFXML (
-      DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_uri),
-      xtree_doc (dattext, 0, davuri),
-      0, app_env );
+    DB.DBA.RDF_LOAD_RDFXML (dattext, davuri, graph_uri);
+  return graph_uri;
+err_rep:
+  result (sprintf ('%s: %s', __SQL_STATE, __SQL_MESSAGE));
   return graph_uri;
 }
 ;

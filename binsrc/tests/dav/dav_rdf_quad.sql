@@ -208,7 +208,7 @@ create procedure DB.DBA.DAV_RDF_REPLICATE_INT (in res_id integer, in restype var
   n3_list := xpath_eval ('/N3', n3v, 0);
   foreach (any n3 in n3_list) do
     {
-      declare s, p, o, dt, lang, v, app_env varchar;
+      declare s, p, o, dt, lang, v varchar;
       s := xpath_eval ('@N3S', n3);
       p := xpath_eval ('@N3P', n3);
       o := xpath_eval ('@N3O', n3);
@@ -222,11 +222,10 @@ create procedure DB.DBA.DAV_RDF_REPLICATE_INT (in res_id integer, in restype var
         v := v[0];
       -- dbg_obj_princ ('add quad:', s, p, o, v, dt, lang);
       if (o is not null)
-        DB.DBA.RDF_EXP_XSLT_ADD_QUAD (dav_rdf_graph_iid, s, p, o, app_env);
-      else if (dt is not null)
-        DB.DBA.RDF_EXP_XSLT_ADD_QUAD_L_TYPED (dav_rdf_graph_iid, s, p, v, dt, lang, app_env);
+        DB.DBA.RDF_QUAD_URI (dav_rdf_graph_uri, s, p, o);
       else
-        DB.DBA.RDF_EXP_XSLT_ADD_QUAD_L (dav_rdf_graph_iid, s, p, v, lang, app_env);
+        DB.DBA.RDF_QUAD_URI_L_TYPED (dav_rdf_graph_uri, s, p, v, dt, lang);
+      dbg_obj_princ ('added quad:', s, p, o, v, dt, lang);
     }
   no_op:;
 }
