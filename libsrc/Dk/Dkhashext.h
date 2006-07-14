@@ -128,6 +128,7 @@ caddr_t dbg_id_hash_add_new (const char *file, int line, id_hash_t *ht, caddr_t 
 void dbg_id_hash_rehash (const char *file, int line, id_hash_t *ht, uint32 new_sz);
 int dbg_id_hash_remove (const char *file, int line, id_hash_t *ht, caddr_t key);
 id_hash_t *dbg_id_str_hash_create (const char *file, int line, id_hashed_key_t buckets);
+int dbg_id_hash_remove_rnd (const char *file, int line, id_hash_t *ht, int inx, caddr_t key, caddr_t data);
 id_hash_t *dbg_id_strcase_hash_create (const char *file, int line, id_hashed_key_t buckets);
 void dbg_id_hash_copy (const char *file, int line, id_hash_t *to, id_hash_t *from);
 id_hash_t * dbg_id_tree_hash_create (const char *file, int line, id_hashed_key_t buckets);
@@ -140,6 +141,7 @@ id_hash_t * dbg_id_tree_hash_create (const char *file, int line, id_hashed_key_t
 #define id_hash_add_new(HT,KEY,DATA)		dbg_id_hash_add_new (__FILE__, __LINE__, (HT),(KEY),(DATA))
 #define id_hash_rehash(HT,NS)			dbg_id_hash_rehash (__FILE__, __LINE__, (HT),(NS))
 #define id_hash_remove(HT,KEY)			dbg_id_hash_remove (__FILE__, __LINE__, (HT),(KEY))
+#define id_hash_remove_rnd(HT,inx, KEY, data)			dbg_id_hash_remove_rnd (__FILE__, __LINE__, (HT),(inx), (KEY), (data))
 #define id_str_hash_create(BS)			dbg_id_str_hash_create (__FILE__, __LINE__, (BS))
 #define id_strcase_hash_create(BS)		dbg_id_strcase_hash_create (__FILE__, __LINE__, (BS))
 #define id_hash_copy(TO,FROM)			dbg_id_hash_copy (__FILE__, __LINE__, (TO), (FROM))
@@ -151,6 +153,7 @@ void id_hash_free (id_hash_t *hash);
 void id_hash_clear (id_hash_t *hash);
 void id_hash_rehash (id_hash_t *ht, uint32 new_sz);
 int id_hash_remove (id_hash_t *ht, caddr_t key);
+int id_hash_remove_rnd (id_hash_t *ht, int inx, caddr_t key, caddr_t data);
 id_hash_t *id_str_hash_create (id_hashed_key_t buckets);
 id_hash_t *id_strcase_hash_create (id_hashed_key_t buckets);
 void id_hash_copy (id_hash_t *to, id_hash_t *from);

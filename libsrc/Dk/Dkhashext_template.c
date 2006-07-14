@@ -210,6 +210,35 @@ DBG_HASHEXT_NAME(id_hash_remove) (DBG_PARAMS id_hash_t * ht, caddr_t key)
 }
 
 
+int
+DBG_HASHEXT_NAME(id_hash_remove_rnd) (DBG_PARAMS id_hash_t * ht, int inx, caddr_t key, caddr_t data)
+{
+  inx = (inx & ID_HASHED_KEY_MASK) % ht->ht_buckets;
+  if (BUCKET_IS_EMPTY (BUCKET (ht, inx), ht))
+    return 0;
+  {
+    /* The thing is in the bucket. Pop first on overflow list
+     * in. Mark bucket empty if no overflow list. */
+    
+    char *overflow = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
+    memcpy (key, BUCKET (ht, inx), ht->ht_key_length);
+    memcpy (data, BUCKET (ht, inx) + ht->ht_data_inx, ht->ht_data_length);
+    if (overflow)
+      {
+	memcpy (BUCKET (ht, inx), overflow,
+		ht->ht_data_length + ht->ht_key_length + sizeof (caddr_t));
+	DBG_HASHEXT_FREE (overflow, -1);
+      }
+    else
+      {
+	BUCKET_OVERFLOW (BUCKET (ht, inx), ht) = (char *) -1L;
+      }
+    ht->ht_deletes++;
+    ht->ht_count--;
+    return 1;
+  }
+}
+
 id_hash_t *
 DBG_HASHEXT_NAME(id_tree_hash_create) (DBG_PARAMS id_hashed_key_t buckets)
 {
