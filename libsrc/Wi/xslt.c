@@ -2991,7 +2991,7 @@ char * xslt_copy_text =
 "')))";
 
 id_hash_iterator_t *
-bif_dict_iterator_arg (caddr_t * qst, state_slot_t ** args, int nth, char *func, int chk_version)
+bif_dict_iterator_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version)
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
@@ -3037,6 +3037,7 @@ bif_dict_duplicate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_iterator_t *orig_hit = bif_dict_iterator_arg (qst, args, 0, "dict_duplicate", 0);
   id_hash_t *new_ht = (id_hash_t *)box_dict_hashtable_copy_hook ((caddr_t)(orig_hit->hit_hash));
   id_hash_iterator_t *new_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)new_ht);
+  new_ht->ht_dict_refctr -= 1; /* This is because box_dict_hashtable_copy_hook sets it to 1 and box_dv_dict_iterator increments */
   return (caddr_t)new_hit;
 }
 
