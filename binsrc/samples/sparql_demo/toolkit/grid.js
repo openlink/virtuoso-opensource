@@ -605,7 +605,6 @@ OAT.GridRow = function(obj,number) {
 				} /* all rows */
 			} /* below */
 		} /* if shift */
-		
 		self.selected ? self.deselect() : self.select();
 	}
 	

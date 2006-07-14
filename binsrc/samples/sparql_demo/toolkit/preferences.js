@@ -8,7 +8,7 @@
  *  See LICENSE file for details.
  */
 OAT.Preferences = {
-	windowTypeOverride:2,
+	windowTypeOverride:1,
 	xsltPath:"/DAV/JS/xslt",
 	version:"5.7.2006",
 	httpError:1,

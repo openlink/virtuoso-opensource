@@ -68,7 +68,8 @@ OAT.Dav = {
 	},
 
 	remove_parent:function(path) {
-		return path.substring(path.lastIndexOf('/',-1)+1,path.length);
+	  path = path.substring(0,path.lastIndexOf('/'));
+		return path.substring(path.lastIndexOf('/')+1,path.length);
 	},
 
   generate:function() {
@@ -82,6 +83,7 @@ OAT.Dav = {
 		        '   <href/>' +
 		        '   <resourcetype/>' +
 		        '   <getcontentlength/>' +
+		        '   <getcontenttype/>' +
 		        ' </prop>' +
 		        '</propfind>';
     //data = '<?xml version="1.0" encoding="utf'+'-8" ?><propfind xmlns="DAV:"><D:allprop/></propfind>';
@@ -205,10 +207,11 @@ OAT.DavType = function(el,root_el) {
   var prop = this.returnListOfNodes(propstat[0].childNodes);
 
   this.resourcetype = res_type;
-  this.creationdate = OAT.get_prop_value(prop,'lp0:creationdate');
-  this.lastmodified  = OAT.get_prop_value(prop,'lp0:getlastmodified');
+  this.creationdate  = OAT.get_prop_value(prop,'creationdate');
+  this.lastmodified  = OAT.get_prop_value(prop,'getlastmodified');
   this.displayname = null;
-  this.contentlength = OAT.get_prop_value(prop,'lp0:getcontentlength');
+  this.contentlength = OAT.get_prop_value(prop,'getcontentlength');
+  this.contenttype   = OAT.get_prop_value(prop,'getcontenttype');
   //getcontentlengt
 
 }
@@ -216,8 +219,9 @@ OAT.DavType = function(el,root_el) {
 //----------------------------------------------------------------------------
 OAT.get_prop_value = function (propList,propName){
   for(var i=0;i<propList.length;i++){
-    if(propList[i].nodeName == propName){
-      //alert(propList[i].nodeName);
+    tname = propList[i].nodeName;
+    tname = tname.substring(tname.indexOf(':')+1);
+    if(tname == propName){
       return propList[i].firstChild.nodeValue;
     }
   }
@@ -275,6 +279,7 @@ OAT.WebDav = {
   	OAT.Ajax.handleError(function(status,text){
   	  if(status == 404){
   	    var msg = "The user: '"+OAT.Ajax.user+"' doesn't appear to have a valid WebDAV home directory.\nPlease contact your Virtuoso Database Administrator about this problem."
+  	    var msg = "The requested URL "+OAT.WebDav.options.path +" was not found on this server."
   	    alert(msg);
   	    OAT.WebDav.options.user = "";
   	    OAT.WebDav.options.pass = "";
@@ -284,8 +289,8 @@ OAT.WebDav = {
   	    alert('Problem #'+status+': '+text);
   	  }
   	})
-    OAT.WebDav.dialog_user_pass();
 
+    OAT.WebDav.dialog_user_pass();
     var win = new OAT.Window({min:0,max:0,close:1,width:OAT.WebDav.options.width,height:OAT.WebDav.options.height,x:OAT.WebDav.options.x,y:OAT.WebDav.options.y,imagePath:OAT.WebDav.options.imagePath,title:"WebDAV Browser"});
     win.div.style.zIndex=1000;
     win.div.id = "dav_browser";
@@ -298,9 +303,21 @@ OAT.WebDav = {
   	      OAT.WebDav.new_col_name = prompt('Create new folder','New Folder');
   	      if(OAT.WebDav.new_col_name != null){
   	        OAT.Dav.create_col(OAT.WebDav.activeNode.id,OAT.WebDav.new_col_name,function(data){
-                var li = {name:OAT.WebDav.new_col_name,href:OAT.WebDav.activeNode.id+OAT.WebDav.new_col_name,resourcetype:'col'}
-  	            OAT.WebDav.activeNode.childNodes[1].appendChild(OAT.WebDav.create_tree_node(li));
+              var ul = OAT.Dom.create('ul');
+              var li = {name:OAT.WebDav.new_col_name,href:OAT.WebDav.activeNode.id+OAT.WebDav.new_col_name+'/',resourcetype:'col'}
+              var node = OAT.WebDav.create_tree_node(li);
+              ul.appendChild(node);
+	            OAT.WebDav.activeNode.appendChild(ul);
+	            var ref = function(data){
+                if(data.childNodes.length == 2){
+            		  data = data.childNodes[1];
+                }
+                data = OAT.Dav.dom2list(data);
+	              var el = data.root;
+	              OAT.WebDav.insert_into_grid(el,OAT.WebDav.grid.rows.length);
   	            alert('Succesfull');
+              };
+              OAT.Dav.list(li.href,ref);
   	          });
   	      }
   	    });
@@ -615,24 +632,40 @@ OAT.WebDav = {
   //---------------------------------
   show_resources_details:function(id){
   	OAT.WebDav.grid = new OAT.Grid("dav_grid",0);
-  	var header = ["Name",{value:"Size",align:OAT.Grid.ALIGN_RIGHT},"Type","Modified"];
+  	var header = ["Name",{value:"Size",align:OAT.GridData.ALIGN_RIGHT},"Type","Modified"];
   	OAT.WebDav.grid.createHeader(header);
     var data = this.find_col_resources(id);
     for(var i=0;i < data.list.length;i++){
       var el = data.list[i];
+      OAT.WebDav.insert_into_grid(el,i);
+    }
+  },
+
+  //---------------------------------
+  insert_into_grid:function(el,i){
       if(el.resourcetype == 'col'){
         var ico_type = 'node';
       }else{
         var ico_type = 'leaf';
       }
-
       var ico = OAT.WebDav.imagePathHtml(ico_type) + el.name;
-      var del = OAT.Dom.create('img');
-      OAT.WebDav.grid.createRow([{value:ico},{value:el.contentlength},el.resourcetype,el.lastmodified])
+      OAT.WebDav.grid.createRow([{value:ico},{value:el.contentlength,align:OAT.GridData.ALIGN_RIGHT},el.contenttype,OAT.WebDav.format_date(el.lastmodified)])
       OAT.Dom.attach(OAT.WebDav.grid.rows[i].html,'click',OAT.WebDav.list_click(el,i));
       OAT.Dom.attach(OAT.WebDav.grid.rows[i].html,'dblclick',OAT.WebDav.list_dblclick(el,i));
       OAT.WebDav.grid.rows[i].html.id = 'list_'+el.href;
-    }
+
+  },
+
+  //---------------------------------
+  format_date:function(fulldate){
+    var d = new Date(fulldate);
+    return d.getMonth()+'/'+d.getDate()+'/'+d.getYear()+' '+d.getHours()+':'+d.getMinutes() //04/24/2003 12:34
+  },
+
+  //---------------------------------
+  get_now:function(){
+    var d = new Date();
+    return d.getMonth()+'/'+d.getDate()+'/'+d.getYear()+' '+d.getHours()+':'+d.getMinutes() //Wed, 12 Jul 2006 12:58:13 GMT
   },
 
   //---------------------------------

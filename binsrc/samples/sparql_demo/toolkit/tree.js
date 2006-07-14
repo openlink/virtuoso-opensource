@@ -26,7 +26,7 @@ OAT.Tree = {
 		if (node._Tree_treeIcon) { node.removeChild(node._Tree_treeIcon); node._Tree_treeIcon = false; }
 		var temp = node.childNodes;
 		var childNodes = [];
-		for (var i=0;i<temp.length;i++) { childNodes[childNodes.length] = temp[i]; }
+		for (var i=0;i<temp.length;i++) { childNodes.push(temp[i]); }
 		var str = (node.tagName ? node.tagName : "");
 		
 		switch (str.toLowerCase()) {
@@ -42,17 +42,21 @@ OAT.Tree = {
 					if (this._Tree_collapsed) {
 						OAT.Dom.hide(this);
 						parent._Tree_signIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"plus",ext);
+						parent._Tree_treeIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"node-collapsed",ext);
 					} else {
 						OAT.Dom.show(this);
 						parent._Tree_signIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"minus",ext);
+						parent._Tree_treeIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"node-expanded",ext);
 					}
 				}
 				if (parent.tagName.toLowerCase() == "li") {
+					parent._Tree_treeIcon.style.cursor = "pointer";
 					parent._Tree_signIcon.style.cursor = "pointer";
-					parent._Tree_treeIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"node",ext);
+					parent._Tree_treeIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"node-expanded",ext);
 					parent._Tree_signIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"minus",ext);
 					var ref=function() { node._Tree_toggle(); }
 					OAT.Dom.attach(parent._Tree_signIcon,"click",ref);
+					OAT.Dom.attach(parent._Tree_treeIcon,"click",ref);
 				}
 				
 				if (reformat) {
