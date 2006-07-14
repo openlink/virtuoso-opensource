@@ -40,7 +40,7 @@
   _case := {?'case'};
   _user_service := {?'service'};
   _format := coalesce ({?'format'}, '');
-  _load := coalesce ({?'load'}, '');
+  _load := coalesce ({?'load'}, null);
   if (_query is not null and _query <> 0)
     if ({?'explain'}) _run := 'explain'; else _run := 'run';
   if (_user_service)
@@ -52,7 +52,7 @@
 PREFIX tq: <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
 PREFIX tm: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?queryuri ?datauri ?etalonuri
+SELECT ?queryuri ?datauri ?etalonuri ?comment
 WHERE {
   GRAPH ?g {
     ?bn tm:name ' || WS.WS.STR_SQL_APOS(_case) || ' ;
@@ -60,17 +60,19 @@ WHERE {
       tm:action
         [ tq:query ?queryuri ;
           tq:data ?datauri ] .
+      OPTIONAL { ?bn rdfs:comment ?comment }
     }
   }', '', 10000); 
     http_header('Content-type: text/xml\r\n');
     if (length(_metas) > 0)
     {
       http('<responce>');
+      http_value(_metas[0][0],'queryuri');
       http_value(cast ("RQ"."RQ"."URI_GET" (_metas[0][0]) as varchar),'query');
-      if (coalesce ({?'r'}, '') <> '')
-        http_value(replace(_metas[0][1],'http://local.virt','http://'||DB.DBA.HTTP_GET_HOST()),'default-graph-uri');
-      else
         http_value(_metas[0][1],'default-graph-uri');
+      --http_value(cast ("RQ"."RQ"."URI_GET" (_metas[0][1]) as varchar),'data');
+      http_value(_metas[0][3],'comment');
+      http_value(_metas[0][2],'etalonuri');
       http('<etalon><![CDATA[');
       "RQ"."RQ"."PRINT_EXPECTED_RESULT" (_metas[0][2]);
       http(']]></etalon>');
@@ -79,7 +81,7 @@ WHERE {
     return;
   }
 
-  if (_load <> '' and _load <> 'never') -- and strstr(_default_graph_uri,'://'))
+  if (not(isnull(_load)) and _load <> 'never') -- and strstr(_default_graph_uri,'://'))
   {
     declare _havedata any;
     declare _is_ttl, _is_xml integer;

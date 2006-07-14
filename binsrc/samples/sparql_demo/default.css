@@ -279,3 +279,53 @@ ul#tabres {
 #tabres li.tab_selected:hover {
   background-color: #fff;
 }
+
+
+/* ---------------- dawg -------------- */
+
+#dawg_content table {
+  border: 1px solid black;
+  border-collapse: collapse;
+  border-padding: 1ex;
+  margin-left: 2.5em;
+  margin-right: 2.5em;
+}
+
+#dawg_content table > tbody th {
+  border: 1px solid #8888aa; 
+  text-align: center;
+  font-weight: bold;
+}
+
+#dawg_content table > tbody td {
+  border: 1px solid #8888aa; 
+  background-color: #f7f8ff;
+  padding: 0.5ex;
+  font-family: courier,monospace;
+}
+
+#dawg_content div.query {
+  white-space: pre;
+  border: 1px solid #8888aa; 
+  font-family: courier,monospace;
+  background-color: #f7f8ff;
+  padding: 5px;
+  font-size: 88%; 
+  margin-top: 1em;
+  margin-left: 2.5em;
+  margin-right: 2.5em;
+  color: black;
+} 
+
+#dawg_content div.approval {
+  font-weight: bold;
+}
+#dawg_content h1,
+#dawg_content h2,
+#dawg_content h3 { color: #005A9C; background: white }
+#dawg_content h1 { font: 170% sans-serif }
+#dawg_content h2 { font: 140% sans-serif }
+#dawg_content h3 { font: 120% sans-serif }
+#dawg_content h4 { font: bold 100% sans-serif }
+#dawg_content h5 { font: italic 100% sans-serif }
+#dawg_content h6 { font: small-caps 100% sans-serif }

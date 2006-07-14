@@ -59,6 +59,14 @@ function init()
 	
 	OAT.Dom.hide($('remote_panel'));
 	//switch_panels();
+
+  var ref=function() { 
+    if (OAT.Dom.style($('tree_containter'),'display') == 'none')
+      OAT.Dom.show($('tree_containter'));
+    else 
+      OAT.Dom.hide($('tree_containter'));
+  }
+  OAT.Dom.attach($('tab_dawg'),"click",ref);
 }
 
 function switch_panels()
@@ -80,8 +88,10 @@ function view_file(path,fname,data)
 {
   if (!path)
   {
-    path = $v('default-graph-uri').replace('http://local.virt','');
+    path = $v('default-graph-uri');
   }
+  path = path.replace('http://local.virt','');
+  
   OAT.Dom.show(filewin.div);
   var response = function(data) { 
     var content = data.replace(/</g,'&lt;');
