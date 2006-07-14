@@ -170,6 +170,8 @@ int _gate_export (_gate_export_item_t *tgt)
 	  err = 0;
 	  break;
 	}
+      if (err)
+        break;
     }
   return err;
 }
