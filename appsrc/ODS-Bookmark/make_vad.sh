@@ -20,10 +20,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
-
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.0.13"
+VERSION="1.0.22"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"

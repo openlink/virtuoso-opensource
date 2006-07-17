@@ -175,7 +175,11 @@ BMK.WA.exec_no_error('
 ');
 
 BMK.WA.exec_no_error('
-  create unique index SK_BOOKMARK_DOMAIN_01 on BMK.WA.BOOKMARK_DOMAIN(BD_DOMAIN_ID, BD_BOOKMARK_ID)
+  drop index SK_BOOKMARK_DOMAIN_01 BMK.WA.BOOKMARK_DOMAIN
+');
+
+BMK.WA.exec_no_error('
+  create index SK_BOOKMARK_DOMAIN_01 on BMK.WA.BOOKMARK_DOMAIN(BD_DOMAIN_ID, BD_BOOKMARK_ID)
 ');
 
 -------------------------------------------------------------------------------

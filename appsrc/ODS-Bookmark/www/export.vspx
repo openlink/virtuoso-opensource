@@ -31,6 +31,7 @@
   <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
   <v:variable name="v_expression" type="varchar" default="''" param-name="expression"/>
   <v:variable name="v_tags" type="varchar" default="''" param-name="tags"/>
+  <v:variable name="v_folder_id" type="varchar" default="'0'" param-name="folder"/>
 
   <v:variable name="v_type" type="varchar" default="'text'" param-name="type"/>
   <v:variable name="v_max" type="varchar" default="'100'" param-name="max"/>
@@ -61,6 +62,8 @@
           BMK.WA.xml_set('keywords', data, self.v_keywords);
           BMK.WA.xml_set('expression', data, self.v_expression);
           BMK.WA.xml_set('tags', data, self.v_tags);
+          if (self.v_folder_id <> 0)
+            BMK.WA.xml_set('folder', data, self.v_folder_id);
 
           if (length(xpath_eval('//entry', data, 0)) = 0)
             goto _error;
@@ -107,23 +110,23 @@
             foreach (any row in result) do {
               http ('<item>\n', retValue);
                 http ('<title>', retValue);
-                  http_value (BMK.WA.utf2wide(row[2]), null, retValue);
+                  http_value (BMK.WA.utf2wide(row[3]), null, retValue);
                 http ('</title>\n', retValue);
                 http ('<description>', retValue);
-                  http_value (BMK.WA.xml2string(BMK.WA.bookmark_description(row[0])), null, retValue);
+                  http_value (BMK.WA.xml2string(BMK.WA.bookmark_description(row[1])), null, retValue);
                 http ('</description>\n', retValue);
                 http ('<link>', retValue);
-                  http_value (row[3], null, retValue);
+                  http_value (row[4], null, retValue);
                 http ('</link>\n', retValue);
                 http ('<guid>', retValue);
-                  http_value (row[1], null, retValue);
+                  http_value (row[2], null, retValue);
                 http ('</guid>\n', retValue);
                 http ('<pubDate>', retValue);
-                  http_value (BMK.WA.dt_rfc1123 (row[4]), null, retValue);
+                  http_value (BMK.WA.dt_rfc1123 (row[5]), null, retValue);
                 http ('</pubDate>\n', retValue);
                 if (self.v_output <> 'rss') {
                   http ('<vi:modified>', retValue);
-                    http_value (BMK.WA.dt_iso8601 (row[4]), null, retValue);
+                    http_value (BMK.WA.dt_iso8601 (row[5]), null, retValue);
                   http ('</vi:modified>\n', retValue);
                 }
               http ('</item>\n', retValue);

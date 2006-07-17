@@ -724,27 +724,19 @@ create procedure BMK.WA.bookmark_update (
       values (uri, name, description);
     bookmark_id := identity_value ();
   }
-  if (exists(select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id)) {
+  if (id = 0) {
+    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE)
+      values (domain_id, bookmark_id, name, description, now());
+    id := identity_value ();
+  } else {
     update BMK.WA.BOOKMARK_DOMAIN
        set BD_BOOKMARK_ID = bookmark_id,
            BD_NAME = name,
            BD_DESCRIPTION = description,
            BD_LAST_UPDATE = now()
      where BD_ID = id;
-  } else {
-  if (not exists(select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and BD_BOOKMARK_ID = bookmark_id)) {
-    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE)
-      values (domain_id, bookmark_id, name, description, now());
-  } else {
-    update BMK.WA.BOOKMARK_DOMAIN
-       set BD_NAME = name,
-           BD_DESCRIPTION = description,
-           BD_LAST_UPDATE = now()
-     where BD_DOMAIN_ID = domain_id
-       and BD_BOOKMARK_ID = bookmark_id;
   }
-  }
-  return bookmark_id;
+  return id;
 }
 ;
 
@@ -754,7 +746,11 @@ create procedure BMK.WA.bookmark_delete(
   in domain_id integer,
   in id integer)
 {
+  declare bookmark_id integer;
+
+  bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id);
   delete from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and BD_ID = id;
+  delete from BMK.WA.BOOKMARK_DATA where BD_MODE = 0 and BD_OBJECT_ID = domain_id and BD_BOOKMARK_ID = bookmark_id;
 }
 ;
 
@@ -770,16 +766,14 @@ create procedure BMK.WA.bookmark_description(
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.bookmark_parent(
-  in domain_id integer,
-  in bookmark_id integer,
+  in id integer,
   in folder_id integer)
 {
   if (is_empty_or_null(folder_id))
     folder_id := null;
   update BMK.WA.BOOKMARK_DOMAIN
      set BD_FOLDER_ID = folder_id
-   where BD_DOMAIN_ID = domain_id
-     and BD_BOOKMARK_ID = bookmark_id;
+   where BD_ID = id;
 }
 ;
 
@@ -840,7 +834,7 @@ create procedure BMK.WA.bookmark_import_netscape(
       goto _folder;
     Q := xpath_eval('/dl/dt/a/@href', V, N);
     tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as varchar), cast(T as varchar), null);
-    BMK.WA.bookmark_parent(domain_id, tmp, folder_id);
+    BMK.WA.bookmark_parent(tmp, folder_id);
     N := N + 1;
   }
 _folder:
@@ -885,7 +879,7 @@ create procedure BMK.WA.bookmark_import_xbel(
     T := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/title/text())', tag, N), V, 1));
     D := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/desc/text())', tag, N), V, 1));
     tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as varchar), cast(T as varchar), D);
-    BMK.WA.bookmark_parent(domain_id, tmp, folder_id);
+    BMK.WA.bookmark_parent(tmp, folder_id);
     N := N + 1;
   }
 _folder:
@@ -976,6 +970,7 @@ create procedure BMK.WA.bookmark_tags(
        and BD_OBJECT_ID = account_id
        and BD_BOOKMARK_ID = bookmark_id;
   }
+  BMK.WA.tags_refresh (domain_id, account_id, 1);
 }
 ;
 
@@ -1013,11 +1008,11 @@ create procedure BMK.WA.folder_id(
     for (i := 0; i < length(aPath); i := i + 1) {
       if (i = 0) {
         if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID is null))
-          insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_NAME) values (domain_id, aPath[i]);
+          insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_NAME, F_PATH) values (domain_id, aPath[i], '');
         folder_id := (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID is null);
       } else {
         if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID = folder_id))
-          insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_PARENT_ID, F_NAME) values (domain_id, folder_id, aPath[i]);
+          insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_PARENT_ID, F_NAME, F_PATH) values (domain_id, folder_id, aPath[i], '');
         folder_id := (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID = folder_id);
       }
     }
@@ -1056,7 +1051,7 @@ create procedure BMK.WA.folder_create2(
   declare folder_id integer;
 
   if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = folder_name and coalesce(F_PARENT_ID, 0) = coalesce(parent_id, 0)))
-    insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_PARENT_ID, F_NAME) values (domain_id, parent_id, folder_name);
+    insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_PARENT_ID, F_NAME, F_PATH) values (domain_id, parent_id, folder_name, '');
   return (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = folder_name and coalesce(F_PARENT_ID, 0) = coalesce(parent_id, 0));
 }
 ;
@@ -1078,10 +1073,15 @@ create procedure BMK.WA.folder_delete(
   in domain_id integer,
   in folder_id integer)
 {
+  -- delete childs
   for (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_PARENT_ID = folder_id) do
     BMK.WA.folder_delete(domain_id, F_ID);
 
-  delete from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and BD_FOLDER_ID = folder_id;;
+  -- delete bookmarks
+  for (select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and BD_FOLDER_ID = folder_id) do
+    BMK.WA.bookmark_delete(domain_id, BD_ID);
+
+  -- delete folder at last
   delete from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_ID = folder_id;
 }
 ;
@@ -1091,7 +1091,7 @@ create procedure BMK.WA.folder_delete(
 create procedure BMK.WA.folder_delete_all(
   in domain_id integer)
 {
-  for (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_PARENT_ID is null) do
+  for (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, 0) = 0) do
     BMK.WA.folder_delete(domain_id, F_ID);
 }
 ;
@@ -1130,6 +1130,21 @@ create procedure BMK.WA.folder_path2(
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.folder_path3(
+  in domain_id integer,
+  in folder_id integer)
+{
+  declare path any;
+
+  path := coalesce(BMK.WA.folder_path(domain_id, folder_id), '');
+  if (path <> '')
+    return path;
+  return '[Root Folder]';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.folder_check_name(
   in folder_name varchar,
   in is_path integer := 0)
@@ -1159,11 +1174,7 @@ create procedure BMK.WA.folder_check_unique(
 {
   declare retValue integer;
 
-  if (isnull(parent_id)) {
-    retValue := coalesce((select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID=domain_id and F_PARENT_ID is null and F_NAME=name), 0);
-  } else {
-    retValue := coalesce((select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID=domain_id and F_PARENT_ID=parent_id and F_NAME=name), 0);
-  }
+  retValue := coalesce((select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID=domain_id and coalesce(F_PARENT_ID, 0) = coalesce(parent_id, 0) and F_NAME=name), 0);
   if (folder_id = 0)
     return retValue;
   if (retValue = 0)
@@ -1221,6 +1232,7 @@ create procedure BMK.WA.sfolder_sql(
     S :=
       'select                              \n' ||
       '  distinct <MAX>                    \n' ||
+      '  1                                                  _TYPE, \n' ||
       '  a.BD_ID                    _ID,   \n' ||
       '  sprintf(\'b#%d\', a.BD_ID) _NODE, \n' ||
       '  a.BD_NAME                  _NAME, \n' ||
@@ -1237,6 +1249,7 @@ create procedure BMK.WA.sfolder_sql(
     S :=
       'select                              \n' ||
       '  distinct <MAX>                    \n' ||
+      '  1                                                  _TYPE, \n' ||
       '  a.BD_ID                    _ID,   \n' ||
       '  sprintf(\'b#%d\', a.BD_ID) _NODE, \n' ||
       '  a.BD_NAME                  _NAME, \n' ||
@@ -1730,6 +1743,19 @@ create procedure BMK.WA.dav_url2 (
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.geo_url (
+  in domain_id integer,
+  in account_id integer)
+{
+  for (select WAUI_LAT, WAUI_LNG from WA_USER_INFO where WAUI_U_ID = account_id) do
+    if ((not isnull(WAUI_LNG)) and (not isnull(WAUI_LAT)))
+      return sprintf('\n    <meta name="ICBM" content="%.2f, %.2f"><meta name="DC.title" content="%s">', WAUI_LNG, WAUI_LAT, BMK.WA.domain_name (domain_id));
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.dav_content (
   inout uri varchar)
 {
@@ -1984,6 +2010,21 @@ create procedure BMK.WA.export_opml_sqlx(
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.export_opml_xml(
+  in domain_id integer,
+  in account_id integer)
+{
+  declare aXML any;
+
+  aXML := (select XMLELEMENT ('opml', XMLATTRIBUTES('1.0' as 'version'), XMLELEMENT ('head'), XMLELEMENT ('body', XMLAGG (XMLELEMENT ('outline', XMLATTRIBUTES(BD_NAME as 'title', BD_NAME as 'text', 'rss' as 'type', B_URI as 'htmlUrl', B_URI as 'xmlUrl')))))
+             from BMK.WA.BOOKMARK_DOMAIN,
+                  BMK.WA.BOOKMARK
+            where BD_BOOKMARK_ID = B_ID and BD_DOMAIN_ID = domain_id);
+  return aXML;
+}
+;
 -----------------------------------------------------------------------------
 --
 create procedure BMK.WA.xml_set(
@@ -2116,6 +2157,25 @@ create procedure BMK.WA.wide2utf (
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.stringCut (
+  in S varchar,
+  in L integer := 60)
+{
+  declare tmp any;
+
+  if (not L)
+    return S;
+  tmp := BMK.WA.utf2wide(S);
+  if (not iswidestring(tmp))
+    return S;
+  if (length(tmp) > L)
+    return BMK.WA.wide2utf(concat(subseq(tmp, 0, L-3), '...'));
+  return BMK.WA.wide2utf(tmp);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.vector_unique(
   inout aVector any,
   in minLength integer := 0)
@@ -2161,7 +2221,7 @@ create procedure BMK.WA.vector_except(
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.vector_contains(
-  in aVector any,
+  inout aVector any,
   in value varchar)
 {
   declare N integer;
@@ -2170,6 +2230,23 @@ create procedure BMK.WA.vector_contains(
     if (value = aVector[N])
       return 1;
   return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.vector_cut(
+  inout aVector any,
+  in value varchar)
+{
+  declare N integer;
+  declare retValue any;
+
+  retValue := vector();
+  for (N := 0; N < length(aVector); N := N + 1)
+    if (value <> aVector[N])
+      retValue := vector_concat(retValue, vector(aVector[N]));
+  return retValue;
 }
 ;
 
@@ -2312,27 +2389,84 @@ _end:
 
 -------------------------------------------------------------------------------
 --
-create procedure BMK.WA.bmk_tree_int(
+create procedure BMK.WA.bmk_tree2(
   in domain_id integer,
+  in node varchar,
+  in path varchar)
+{
+  declare node_type, node_id any;
+
+  node_id := BMK.WA.node_id(node);
+  node_type := BMK.WA.node_type(node);
+  if ((node_type = 'r') and (node_id = 0))
+    return vector('Last Bookmarks', 'f#0', '');
+
+  if ((node_type = 'r') and (node_id = 1))
+    return vector('Bookmarks', 'f#0', path || '/f#0', 'Smart Folders', 's#0', path || '/s#0');
+
+  declare retValue any;
+  retValue := vector ();
+
+  if (node_type = 'f')
+    for (select F_ID, F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, 0) = coalesce(node_id, 0) order by 2) do
+      retValue := vector_concat(retValue, vector(F_NAME, sprintf('f#%d', F_ID), sprintf('%s/f#%d', path, F_ID)));
+
+  if ((node_type = 's') and (node_id = 0))
+    for (select SF_ID, SF_NAME from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id order by 2) do
+      retValue := vector_concat(retValue, vector(SF_NAME, sprintf('s#%d', SF_ID), sprintf('%s/s#%d', path, SF_ID)));
+
+  return retValue;
+    }
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.bmk_path2_int(
+  in domain_id integer,
+  in node varchar,
+  inout path varchar)
+{
+  declare node_type, node_id any;
+
+  node_id := BMK.WA.node_id(node);
+  node_type := BMK.WA.node_type(node);
+
+  if ((node_type = 'f') and (node_id <> 0))
+    for (select F_PARENT_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_ID, 0) = coalesce(node_id, 0)) do {
+      path := sprintf('f#%d/%s', coalesce(F_PARENT_ID, 0), path);
+      BMK.WA.bmk_path2_int(domain_id, sprintf('f#%d', coalesce(F_PARENT_ID, 0)), path);
+  }
+
+  if ((node_type = 's') and (node_id <> 0))
+    path := sprintf('s#0/%s', path);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.bmk_path2(
+  in domain_id integer,
+  in node varchar)
+{
+  declare path any;
+
+  path := node;
+  BMK.WA.bmk_path2_int(domain_id, node, path);
+  return path;
+    }
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.bmk_tree_int(
+  inout domain_id integer,
   in node_id any,
   inout retValue any)
 {
-  declare id, type any;
-
-  id := BMK.WA.node_id(node_id);
-  type := BMK.WA.node_type(node_id);
-  if (type = 'f') {
-    for (select F_ID, F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, 0) = id order by 2) do {
-      http (sprintf('<node name="%V" id="f#%d">', F_NAME, F_ID), retValue);
-      BMK.WA.bmk_tree_int(domain_id, sprintf('f#%d', F_ID), retValue);
-      http ('</node>', retValue);
-    }
-  }
-  if (type = 's') {
-    for (select SF_ID, SF_NAME from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id order by 2) do {
-      http (sprintf('<node name="%V" id="s#%d">', SF_NAME, SF_ID), retValue);
-      http ('</node>', retValue);
-    }
+  for (select F_ID, F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, 0) = coalesce(node_id, 0) order by 2) do {
+    http (sprintf('<node name="%V" id="f#%d">', F_NAME, F_ID), retValue);
+    BMK.WA.bmk_tree_int(domain_id, F_ID, retValue);
+    http ('</node>', retValue);
   }
 }
 ;
@@ -2347,14 +2481,17 @@ create procedure BMK.WA.bmk_tree(
   retValue := string_output ();
   http ('<node>', retValue);
   if (domain_id = -1) {
-    http ('<node name="Last Bookmarks" id="p#0">', retValue);
-    http ('</node>', retValue);
+    http ('<node name="Last Bookmarks" id="p#0" />', retValue);
   } else {
+    -- folders
     http ('<node name="Bookmarks" id="f#0">', retValue);
-    BMK.WA.bmk_tree_int(domain_id, 'f#0', retValue);
+    BMK.WA.bmk_tree_int(domain_id, 0, retValue);
     http ('</node>', retValue);
+
+    -- smart folders
     http ('<node name="Smart Folders" id="s#0">', retValue);
-    BMK.WA.bmk_tree_int(domain_id, 's#0', retValue);
+    for (select SF_ID, SF_NAME from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id order by 2) do
+      http (sprintf('<node name="%V" id="s#%d" />', SF_NAME, SF_ID), retValue);
     http ('</node>', retValue);
   }
   http ('</node>', retValue);
@@ -2386,21 +2523,8 @@ create procedure BMK.WA.bmk_child(
 create procedure BMK.WA.node_type(
   in code varchar)
 {
-  if (length(code) > 1)
-    if (substring(code,2,1) = '#')
+  if ((length(code) > 1) and (substring(code,2,1) = '#'))
       return left(code, 1);
-  return '';
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.node_prefix(
-  in code varchar)
-{
-  if (length(code) > 1)
-    if (substring(code,2,1) = '#')
-      return left(code, 2);
   return '';
 }
 ;
@@ -2412,8 +2536,7 @@ create procedure BMK.WA.node_id(
 {
   declare exit handler for sqlstate '*' { return 0; };
 
-  if (length(code) > 2)
-    if (substring(code,2,1) = '#')
+  if ((length(code) > 2) and (substring(code,2,1) = '#'))
       return cast(subseq(code, 2) as integer);
   return 0;
 }
@@ -2424,8 +2547,7 @@ create procedure BMK.WA.node_id(
 create procedure BMK.WA.node_suffix(
   in code varchar)
 {
-  if (length(code) > 2)
-    if (substring(code,2,1) = '#')
+  if ((length(code) > 2) and (substring(code,2,1) = '#'))
       return subseq(code, 2);
   return '';
 }

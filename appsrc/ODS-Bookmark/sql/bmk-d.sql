@@ -42,7 +42,7 @@ BMK.WA.exec_no_error('DROP TABLE BMK.WA.FOLDER');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.BOOKMARK');
 
 -- Types
-BMK.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'bookmark\'');
+BMK.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'Bookmark\'');
 BMK.WA.exec_no_error('drop type wa_bookmark');
 
 -- Procedures

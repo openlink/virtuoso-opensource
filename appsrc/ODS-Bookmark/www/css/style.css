@@ -454,7 +454,7 @@ table#feed th
   border-width: 0px 0px 1px 0px;
 }
 
-/*====== rows ======*/
+/*====== rows ======   background-color: #EFEFEF; */
 .td_border
 {
   border: solid #7f94a5;
@@ -463,11 +463,16 @@ table#feed th
 
 .td_row0
 {
-  background-color: #EFEFEF;
+  background-color: #F5F5EE;
 }
 
 .td_row1
 {
+}
+
+.td_sel
+{
+  background-color: #FFFFCC;
 }
 
 /*====== forms ======*/

@@ -147,12 +147,13 @@
         self.ds_meta := meta;
 
         if (self.f_cloud.ufl_selected = 1) {
-          declare N integer;
+          declare N, maxCnt integer;
           declare tag_object, tags, tags_dict any;
 
           tags_dict := dict_new();
           for (N := 0; N < length(self.ds_data); N := N + 1) {
-            tags := BMK.WA.tags_select(self.domain_id, self.account_id, self.ds_data[N][0]);
+            tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = self.ds_data[N][1]);
+            tags := BMK.WA.tags_select(self.domain_id, self.account_id, tmp);
             tags := split_and_decode (tags, 0, '\0\0,');
             foreach (any tag in tags) do {
               tag_object := dict_get(tags_dict, lcase(tag), vector(lcase(tag), 0));
@@ -160,8 +161,14 @@
               dict_put(tags_dict, lcase(tag), tag_object);
             }
           }
-          for (select p.* from BMK.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do
+
+          maxCnt := 0;
+          for (select p.* from BMK.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do {
             self.ds_tags := vector_concat(self.ds_tags, vector(vector(tag, cnt)));
+            if (cnt > maxCnt)
+              maxCnt := cnt;
+          }
+          self.ds_tags := vector_concat(vector(vector('', maxCnt)), self.ds_tags);
         }
       }
 
@@ -219,6 +226,8 @@
     </vm:header>
     <vm:menu/>
     <vm:variables>
+      <v:variable name="chars" type="integer" default="60" />
+
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
       <v:variable name="v_mode" type="varchar" default="'simple'"/>
       <v:variable name="v_step" param-name="step" type="integer" default="0"/>
@@ -242,6 +251,11 @@
     <vm:pagebody>
       <v:before-data-bind>
         <![CDATA[
+          declare settings any;
+
+          settings := BMK.WA.settings(self.account_id);
+          self.chars := cast(get_keyword('chars', settings, '60') as integer);
+
           self.v_mode := get_keyword('mode', self.vc_page.vc_event.ve_params, self.v_mode);
 
           self.v_keywords := trim(get_keyword('a_keywords', self.vc_page.vc_event.ve_params, get_keyword('s_keywords', self.vc_page.vc_event.ve_params, get_keyword('keywords', self.vc_page.vc_event.ve_params, ''))));
@@ -324,7 +338,10 @@
                           <?vsp self.sortColumn('Link', '_URI'); ?>
                         </th>
                         <th class="last">
-                          <?vsp self.sortColumn('Location', '_FOLDER_NAME'); ?>
+                          <?vsp self.sortColumn('Folder', '_FOLDER_NAME'); ?>
+                        </th>
+                        <th>
+                          Location
                         </th>
                       </tr>
                     </thead>
@@ -336,7 +353,7 @@
                   <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr align="center">
-                        <td colspan="4">No matches found in BM DataSpace</td>
+                        <td colspan="5">No matches found in BM DataSpace</td>
                       </tr>
                     </table>
                   </v:template>
@@ -344,28 +361,34 @@
                   <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
-                        <td valign="top">
+                        <td>
                           <?vsp
                             http('<img src="image/web_16.png" border="0" alt="Bookmark" width="16"/>');
                           ?>
                         </td>
                         <td>
-                          <v:url value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
-                                 url="--(control.vc_parent as vspx_row_template).te_rowset[3]"
+                          <v:url value="--BMK.WA.stringCut((control.vc_parent as vspx_row_template).te_rowset[3], self.chars)"
+                                 url="--(control.vc_parent as vspx_row_template).te_rowset[4]"
                                  format="%s"
-                                 xhtml_title="--BMK.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[2])"/>
+                                 xhtml_title="--BMK.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[3])"/>
                         </td>
                         <td>
-                          <v:url value="--(control.vc_parent as vspx_row_template).te_rowset[3]"
-                                 url="--(control.vc_parent as vspx_row_template).te_rowset[3]"
+                          <v:url value="--(control.vc_parent as vspx_row_template).te_rowset[4]"
+                                 url="--(control.vc_parent as vspx_row_template).te_rowset[4]"
                                  format="%s"
-                                 xhtml_title="--(control.vc_parent as vspx_row_template).te_rowset[2]"/>
+                                 xhtml_title="--(control.vc_parent as vspx_row_template).te_rowset[3]"/>
                         </td>
                         <td>
-                          <v:url value="--(control.vc_parent as vspx_row_template).te_rowset[6]"
-                                 url="--sprintf('bookmarks.vspx?folder=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[5], -1))"
+                          <v:url value="--coalesce((control.vc_parent as vspx_row_template).te_rowset[7], '[Root Folder]')"
+                                 url="--sprintf('bookmarks.vspx?folder=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[6], 0))"
                                  format="%s"
-                                 xhtml_title="--BMK.WA.folder_path(self.domain_id, (control.vc_parent as vspx_row_template).te_rowset[5])"/>
+                                 xhtml_title="--coalesce((control.vc_parent as vspx_row_template).te_rowset[7], '[Root Folder]')"/>
+                        </td>
+                        <td>
+                          <v:url value="--BMK.WA.folder_path3(self.domain_id, (control.vc_parent as vspx_row_template).te_rowset[6])"
+                                 url="--sprintf('bookmarks.vspx?location=%d', (control.vc_parent as vspx_row_template).te_rowset[1])"
+                                 format="%s"
+                                 xhtml_title="--BMK.WA.folder_path3(self.domain_id, (control.vc_parent as vspx_row_template).te_rowset[6])"/>
                         </td>
                       </tr>
                     </table>
@@ -376,7 +399,7 @@
                 <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
                   <table>
                     <tr>
-                      <td align="center" colspan="4">
+                      <td align="center" colspan="5">
                         <vm:ds-navigation data-set="ds"/>
                       </td>
                     </tr>
@@ -395,16 +418,18 @@
             <td width="20%" valign="top" style="border: solid #935000;  border-width: 1px 1px 1px 0px;">
               <div style="margin-left:3px; margin-top:3px;">
                 <?vsp
-                  declare N, ts_max, ts_size integer;
+                  declare N, ts_length, ts_max, ts_size integer;
 
-                  ts_max := length(self.ds_tags);
-                  for (N := 0; N < ts_max; N := N + 1) {
-                    ts_size := ((250.00 / ts_max) * self.ds_tags[N][1]) + 90;
-                    if (ts_size < 100)
-                      ts_size := 100;
+                  ts_length := length(self.ds_tags);
+                  for (N := 0; N < ts_length; N := N + 1) {
+                    if (N = 0) {
+                      ts_max := self.ds_tags[N][1];
+                    } else {
+                	    ts_size := ((150.00 * self.ds_tags[N][1]) / ts_max) + 100;
                     http (sprintf ('<a href="#" onclick="javascript: myPost(\'F1\', \'tag\', \'%s\');" name="btn_%s"><span class="nolink_b" style="font-size: %d%s;">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], ts_size, '%', self.ds_tags[N][0]));
                   }
-                  if (ts_max = 0)
+                  }
+                  if (ts_length <= 1)
                     http ('no tags');
                 ?>
               </div>
@@ -521,7 +546,8 @@
                   <td>
                     <v:select-list name="f_order" value="--self.v_order">
                       <v:item name="Name" value="_NAME"/>
-                      <v:item name="Location" value="_URI"/>
+                      <v:item name="Link" value="_URI"/>
+                      <v:item name="Folder" value="_FOLDER_NAME"/>
                     </v:select-list>
                   </td>
                 </tr>
@@ -540,7 +566,7 @@
                   <th/>
                   <td>
                     <v:check-box name="f_cloud" xhtml_id="f_cloud" value="1"/>
-                    <vm:label for="f_cloud" value="Show tag''s cloud"/>
+                    <vm:label for="f_cloud" value="Show tag cloud"/>
                   </td>
                 </tr>
               </table>

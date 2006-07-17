@@ -35,6 +35,13 @@ function myTags(fld_value)
 }
 
 // ---------------------------------------------------------------------------
+function vspxPost(fButton, fName, fValue)
+{
+  createHidden('F1', fName, fValue);
+  doPost ('F1', fButton);
+}
+
+// ---------------------------------------------------------------------------
 function toolbarPost(value)
 {
   document.F1.tbHidden.value = value;
@@ -80,7 +87,12 @@ function confirmAction(confirmMsq, form, txt, selectionMsq) {
 
 // ---------------------------------------------------------------------------
 function selectCheck (obj, prefix) {
-  var objForm = obj.form;
+  coloriseRow(getParent(obj, 'tr'), obj.checked);
+  enableToolbars(obj.form, prefix);
+}
+
+// ---------------------------------------------------------------------------
+function enableToolbars (objForm, prefix) {
   var oCount = 0;
   var tCount = 0;
   var mCount = 0;
@@ -109,6 +121,14 @@ function selectCheck (obj, prefix) {
 }
 
 // ---------------------------------------------------------------------------
+function getParent (obj, tag) {
+  var obj = obj.parentNode;
+  if (obj.tagName.toLowerCase() == tag)
+    return obj;
+  return getParent(obj, tag);
+}
+
+// ---------------------------------------------------------------------------
 function enableElement(id, enableFlag) {
   var element = document.getElementById(id);
   if (element != null) {
@@ -130,6 +150,7 @@ function selectAllCheckboxes (obj, prefix) {
         o.checked = true;
       else
         o.checked = false;
+      coloriseRow(getParent(o, 'tr'), o.checked);
     }
   }
   if (obj.value == 'Select All')
@@ -166,6 +187,13 @@ function coloriseTable(id) {
       }
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+function coloriseRow(obj, checked) {
+  obj.className = (obj.className).replace('td_sel', '');
+  if (checked)
+    obj.className = obj.className + ' ' + 'td_sel';
 }
 
 // ---------------------------------------------------------------------------
