@@ -97,46 +97,52 @@
 	      <h3>Cluster changes</h3>
 	      <ul>
 		<li>
+                  <img border="0" alt="ATOM" title="ATOM" src="{wv:ResourceHREF ('images/atom-icon-16.gif', $baseadjust)}"></img>
 		  <a>
-		    <img border="0" alt="ATOM" title="ATOM" src="{wv:ResourceHREF ('images/atom03.gif', $baseadjust)}"></img>
 		    <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','atom','cluster', $ti_cluster_name))"/></xsl:attribute>		
+                    Atom 1.0
 		  </a>
 		</li>
 		<li>
+                  <img border="0" alt="RSS" title="RSS" src="{wv:ResourceHREF ('images/rss-icon-16.gif', $baseadjust)}"></img>
 		  <a>
-		    <img border="0" alt="RSS" title="RSS" src="{wv:ResourceHREF ('images/rss20.gif', $baseadjust)}"></img>
 		    <xsl:attribute name="href">
 		      <xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','rss20','cluster', $ti_cluster_name))"/>
 		    </xsl:attribute>		
+                    RSS 2.0
 		  </a>
 		</li>
 		<li>
+                  <img border="0" alt="RDF" title="RDF" src="{wv:ResourceHREF ('images/rdf-icon-16.gif', $baseadjust)}"></img>
 		  <a>
-		    <img border="0" alt="RDF" title="RDF" src="{wv:ResourceHREF ('images/rdf.gif', $baseadjust)}"></img>
 		    <xsl:attribute name="href">
 		      <xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','rdf','cluster', $ti_cluster_name))"/>
 		    </xsl:attribute>		
+                    RDF
 		  </a>
 		</li>
 	      </ul>
 	      <h3>Site Changes</h3>
 	      <ul>
 		<li>
+                  <img border="0" alt="ATOM" title="ATOM" src="{wv:ResourceHREF ('images/atom-icon-16.gif', $baseadjust)}"></img>
 		  <a>
-		    <img border="0" alt="ATOM" title="ATOM" src="{wv:ResourceHREF ('images/atom03.gif', $baseadjust)}"></img>
 		    <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','atom'))"/></xsl:attribute>		
+                    Atom 1.0
 		  </a>
 		</li>
 		<li>
+                  <img border="0" alt="RSS" title="RSS" src="{wv:ResourceHREF ('images/rss-icon-16.gif', $baseadjust)}"></img>
 		  <a>
-		    <img border="0" alt="RSS" title="RSS" src="{wv:ResourceHREF ('images/rss20.gif', $baseadjust)}"></img>
 		    <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','rss20'))"/></xsl:attribute>		
+                    RSS 2.0
 		  </a>
 		</li>
 		<li>
+                  <img border="0" alt="RDF" title="RDF" src="{wv:ResourceHREF ('images/rdf-icon-16.gif', $baseadjust)}"></img>
 		  <a>
-		    <img border="0" alt="RDF" title="RDF" src="{wv:ResourceHREF ('images/rdf.gif', $baseadjust)}"></img>
 		    <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','rdf'))"/></xsl:attribute>		
+                    RDF
 		  </a>
 		</li>
 	      </ul>
@@ -147,9 +153,11 @@
 	    <div id="wiki-path">You are here: <xsl:copy-of select="//div[@class='wiki-nav-container']"/></div>
 	    <div id="content">
 	      <xsl:copy-of select="//div[@id='content']/."/>
+              <xsl:if test="//span[@id='top-mod-by']">
 	      <div id="node-footer">
 		Modified by <xsl:copy-of select="//span[@id='top-mod-by']"/> at <xsl:copy-of select="//span[@id='top-mod-time']"/>
 	      </div>
+              </xsl:if>
 	    </div>
 	  </div>
 	  <div id="footer">

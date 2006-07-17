@@ -593,16 +593,6 @@ MFONTMODNEXT	([\*=_])
 MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 %%
 
-	/* WikiLinks. This is the core :) They are of highest possible priority */
-<*>{WIKIWORD}				{ if (STATE(wlex_noautolink)) COPYTEXT; else wlex_ahref (wlex_wikiwordnorm (STATEPTR, yytext), "wikiword", yytext); }
-<*>{QWIKIWORD}				{ if (STATE(wlex_noautolink)) COPYTEXT; else wlex_ahref (wlex_wikiwordnorm (STATEPTR, yytext), "qwikiword", strchr (yytext, '.') + 1); }
-<*>{INTERWIKI}				{ if (STATE(wlex_noautolink)) COPYTEXT; else wlex_ahref (wlex_wikiwordnorm (STATEPTR, yytext), "interwiki", yytext); }
-<*>{NOP}({WIKIWORD}|{QWIKIWORD}|{INTERWIKI})	{ PRINT("<NOP />"); PRINTTEXT(strchr(yytext,'>')+1); }
-
-	/* xmlns must be removed for <html tag. this is workaround and must be replaced by proper handling XHTML */
-<INITIAL>{HTML}				{ PRINT ("<html>"); BEGIN(PLAINHTML); }
-<INITIAL>{DOCTYPE}			{ ; }
-
 	/* Verbatim */
 <INITIAL>^({WS}?)"<verbatim>"{WS_NL}	{ BEGIN(VERBATIM); wlex_verbatim(1); }
 <VERBATIM>^({WS}?)"</verbatim>"{WS_NL}	{ BEGIN(INITIAL); wlex_verbatim(0); }
@@ -612,7 +602,20 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 <VERBATIM>[^<\r\n]*[\r\n]		{ PRINT (yytext); }
 <VERBATIM>[ \t\r\n]			{ PRINT (yytext); }
 <VERBATIM>{SIMPLEWORD}			{ PRINT (yytext); }
+<VERBATIM>"<?"				{ PRINT ("&lt;?"); }
 <VERBATIM>.				{ PRINT(yytext); }
+
+
+
+	/* WikiLinks. This is the core :) They are of highest possible priority */
+<*>{WIKIWORD}				{ if (STATE(wlex_noautolink)) COPYTEXT; else wlex_ahref (wlex_wikiwordnorm (STATEPTR, yytext), "wikiword", yytext); }
+<*>{QWIKIWORD}				{ if (STATE(wlex_noautolink)) COPYTEXT; else wlex_ahref (wlex_wikiwordnorm (STATEPTR, yytext), "qwikiword", strchr (yytext, '.') + 1); }
+<*>{INTERWIKI}				{ if (STATE(wlex_noautolink)) COPYTEXT; else wlex_ahref (wlex_wikiwordnorm (STATEPTR, yytext), "interwiki", yytext); }
+<*>{NOP}({WIKIWORD}|{QWIKIWORD}|{INTERWIKI})	{ PRINT("<NOP />"); PRINTTEXT(strchr(yytext,'>')+1); }
+
+	/* xmlns must be removed for <html tag. this is workaround and must be replaced by proper handling XHTML */
+<INITIAL>{HTML}				{ PRINT ("<html>"); BEGIN(PLAINHTML); }
+<INITIAL>{DOCTYPE}			{ ; }
 
 
 
@@ -797,6 +800,7 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 <TABLEHEADER>"|"/{WS_NL}		{ PRINT("</TH></TR>\n</TABLE>\n"); BEGIN(INITIAL); wlex_reset(~WLEX_RESET_LIST); }
 <TABLEHEADER>"|"			{ PRINT("</TH><TH"); wlex_id_print (STATEPTR); PRINT (">"); }
 <TABLEHEADER>"<"			{ PRINT("&lt;"); }
+<TABLEHEADER>"*"			{ ; }
 <TABLEHEADER>.				{ PRINT(yytext); }
 
 

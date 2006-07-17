@@ -260,12 +260,7 @@ cont:
     {
 	--dbg_obj_princ ('_topic:', _topic);
        WV.WIKI.VSPTOPICVIEW_TEMP (path, lines, _topic, 
-	 vector_concat (WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust),
-	 	-- NOTE: acs, sort, col can be specified in "params"
-		-- following parameter values took place when parameters are not specified
-		 vector ('acs', 1,
-		 	 'sort', 1,
-			 'col', -1)),
+	 WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust),
 	 _cmd);
 	--dbg_obj_princ ('_cmd:', _cmd);
        return;
@@ -295,12 +290,7 @@ cont:
   if (_cmd = 'plain-html')
     {
 	WV.WIKI.VSPTOPICVIEW_PLAIN (path, lines, _topic,
-	 vector_concat (WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust),
-	 	-- NOTE: acs, sort, col can be specified in "params"
-		-- following parameter values took place when parameters are not specified
-		 vector ('acs', 1,
-		 	 'sort', 1,
-			 'col', -1)));
+	   WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
 
 	return;
     }  
@@ -503,12 +493,7 @@ create_or_view:
   else
    {
      if (WV.WIKI.VSPTOPICVIEW (path, lines, _topic,
-	 vector_concat (WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust),
-	 	-- NOTE: acs, sort, col can be specified in "params"
-		-- following parameter values took place when parameters are not specified
-		 vector ('acs', 1,
-		 	 'sort', 1,
-				 'col', -1))))
+		 WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust)))
 	   WV.WIKI.VSPFOOTER (path, params, lines);
 	 return;
    }

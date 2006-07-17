@@ -75,7 +75,6 @@ create trigger TOPIC_SIOC_I after insert on WV..TOPIC referencing new as N
   iri := wiki_post_iri (N.ClusterId, N.LocalName);
   c_iri := wiki_cluster_iri (N.ClusterId);
   ods_sioc_post (graph_iri, iri, c_iri, null, coalesce (N.TitleText, N.LocalName), N.T_CREATE_TIME, null);
-  return;
 }
 ;
 
@@ -91,7 +90,6 @@ create trigger TOPIC_SIOC_D before delete on WV..TOPIC referencing old as O
   graph_iri := get_graph ();
   iri := wiki_post_iri (O.ClusterId, O.LocalName);
   delete_quad_s_or_o (graph_iri, iri, iri);
-  return;
 }
 ;
 

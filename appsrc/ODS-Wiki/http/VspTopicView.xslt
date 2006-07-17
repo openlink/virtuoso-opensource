@@ -144,7 +144,7 @@
 
   <xsl:template match="table">
   <xsl:choose>
-    <xsl:when test="tr/th[@id = $sort] and ($acs = 1)">
+      <xsl:when test="tr/th[@id = number($sort)] and (number($acs) = 1)">
       <xsl:copy>
         <xsl:copy-of select="@*" />
         <xsl:apply-templates select="tr[th]">

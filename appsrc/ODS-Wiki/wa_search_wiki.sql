@@ -31,14 +31,14 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
   declare _ClusterName, _LocalName varchar;
   declare res varchar;
   declare _WAUI_FULL_NAME varchar;
-  declare _U_NAME varchar;
-  declare _content any;
+  declare _U_NAME, home_path varchar;
+  declare _content, _ClusterId any;
 
   _COL_PATH := DB.DBA.DAV_CONCAT_PATH (WS.WS.PARENT_PATH (WS.WS.HREF_TO_PATH_ARRAY (_RES_FULL_PATH)), null);
 
   _TitleText := null; _ClusterName := null; _LocalName := null;
-  select coalesce (TitleText, cast (LocalName as nvarchar)), ClusterName, LocalName
-    into _TitleText, _ClusterName, _LocalName
+  select coalesce (TitleText, cast (LocalName as nvarchar)), ClusterName, LocalName, C.ClusterId
+    into _TitleText, _ClusterName, _LocalName, _ClusterId
     from WV.WIKI.TOPIC T, WV.WIKI.CLUSTERS C
     where
       T.ClusterId = C.ClusterId
@@ -52,8 +52,10 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
   _U_NAME := null;
   select U_NAME into _U_NAME from DB.DBA.SYS_USERS where U_ID = _RES_OWNER;
 
-  _WIKI_PATH := sprintf ('/wiki/main/%s/%s', _ClusterName, _LocalName);
-  _WIKI_INSTANCE_PATH := sprintf ('/wiki/main/%s', _ClusterName);
+  home_path := WV.WIKI.CLUSTERPARAM (_ClusterId, 'home', '/wiki/main');
+
+  _WIKI_PATH := sprintf ('%s/%s/%s', home_path, _ClusterName, _LocalName);
+  _WIKI_INSTANCE_PATH := sprintf ('%s/%s', home_path, _ClusterName);
   res := sprintf ('<span><img src="%s" />Wiki <a href="%s">%s</a> <a href="%s">%s</a> <a href="%s">%s</a>',
            WA_SEARCH_ADD_APATH ('images/icons/wiki_16.png'),
 	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_PATH, '#'), _current_user_id)),

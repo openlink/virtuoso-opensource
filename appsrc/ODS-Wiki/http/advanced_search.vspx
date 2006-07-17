@@ -63,15 +63,11 @@
         self.clusters := (select XMLELEMENT ('clusters',
 											XMLAGG (
 											  XMLELEMENT ('cluster',
-											    ClusterName ) ) )
-											  from wv.wiki.clusters inner join 
-											     (select (WAI_INST as wa_wikiv).cluster_id id from WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and WAI_IS_PUBLIC) a 
-											     on (ClusterId = a.id) );
+                                     WAI_NAME ) ) )
+                                      from WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and WAI_IS_PUBLIC);
         declare ent any;
         ent := xpath_eval ('/clusters', self.clusters);
         XMLAppendChildren (ent, 
-           XMLELEMENT ('cluster', 'Doc'),
-           XMLELEMENT ('cluster', 'Main'),
            XMLELEMENT ('cluster', '**all public**'));
 	if (get_keyword ('search', params) is null)	
 	  {
@@ -219,14 +215,10 @@
 	            || ' RES_ID, RES_OWNER, RES_NAME, length (RES_CONTENT) as RES_LEN, RES_CR_TIME as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH, RES_MOD_TIME as RES_MOD_TIME_STR
                             from WS.WS.SYS_DAV_RES
                             where
-                             contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))
-                             and (RES_FULL_PATH like ''/DAV/VAD/wiki/%.txt''
-			     	  or RES_FULL_PATH like ''/DAV/home/%/wiki/%.txt'')';
+                             contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))';
 	cr_len_text := 'select count (*) from WS.WS.SYS_DAV_RES
                             where
-                             contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))
-                             and (RES_FULL_PATH like ''/DAV/VAD/wiki/%.txt''
-			     	  or RES_FULL_PATH like ''/DAV/home/%/wiki/%.txt'')';
+                             contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))';
 	
 	declare exit handler for sqlstate '37000' {
 	  self.ds_data := vector ();
@@ -310,6 +302,7 @@
       declare link varchar;
       href := WV.WIKI.MAKEHREFFROMRES (_res_id, _res_name, self.sid, self.realm, self.base) ;
       link := WV.WIKI.MAKELINKFROMRES (_res_id, self.base);
+      dbg_obj_print (_res_id, _full_path,  href);
       if (href is not null)
         {
         
@@ -335,8 +328,6 @@
 	
 endf:
 	vectorbld_final (res);
-	
---	dbg_obj_print ('after');
 	self.ds_data := res;
 	if (self.sqry in ('atom', 'rss20', 'rdf'))
 	  {

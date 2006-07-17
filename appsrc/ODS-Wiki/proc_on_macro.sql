@@ -133,36 +133,21 @@ create function WV.WIKI.MACRO_MAIN_ABSTRACT (inout _data varchar, inout _context
 
 create function WV.WIKI.MACRO_MAIN_TABLEOFCLUSTERS (inout _data varchar, inout _context any, inout _env any)
 {
-  declare _report any;
+  declare _report, _ent any;
   declare _uid int;
   _uid := cast (get_keyword ('uid', _env, '0') as integer);
-  _report := (
-      select XMLELEMENT ("MACRO_MAIN_TABLEOFCLUSTERS",
-        XMLAGG ( 
-          XMLELEMENT ('Cluster',
-	    XMLATTRIBUTES (c.ClusterName as "CLUSTERNAME", c.Abstract as "ABSTRACT") ) ) )
-      from (
-	select coalesce (n2.Abstract, N'') as "ABSTRACT", c2.ClusterName as "CLUSTERNAME"
-	from 
-	WV.WIKI.TOPIC as n2 inner join WV.WIKI.CLUSTERS as c2 
-	  on (n2.ClusterId = c2.ClusterId)
-	  inner join 
-	   (select WAI_NAME, WAI_INST from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME='oWiki' and WAI_IS_PUBLIC=1) W
-	   on (n2.ClusterId = (W.WAI_INST as wa_wikiv).cluster_id)
-	where 
-	  n2.LocalName = WV.WIKI.CLUSTERPARAM (c2.ClusterName, 'index-page', 'WelcomeVisitors')
-	union all 
-	    select coalesce (n4.Abstract, N'') as Abstract, c4.ClusterName
-	      from 
-	        WV.WIKI.TOPIC as n4 inner join WV.WIKI.CLUSTERS as c4
-	        on (n4.ClusterId = c4.ClusterId)
-	        inner join 
-		  (select WAI_NAME, WAI_INST from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME='oWiki' and WAI_IS_PUBLIC=0) W2
-		  on (n4.ClusterId = (W2.WAI_INST as wa_wikiv).cluster_id)
-		  inner join WA_MEMBER 
-		    on (W2.WAI_NAME = WAM_INST)
-		  where WAM_USER = _uid and  n4.LocalName = WV.WIKI.CLUSTERPARAM (c4.ClusterName, 'index-page', 'WelcomeVisitors')
-	) as c );
+  _report := XMLELEMENT ("MACRO_MAIN_TABLEOFCLUSTERS");
+  _ent := xpath_eval ('//MACRO_MAIN_TABLEOFCLUSTERS', _report);
+  for select WAI_NAME, WAI_INST from DB.DBA.WA_INSTANCE 
+	where WAI_TYPE_NAME='oWiki' and WAI_IS_PUBLIC=1
+  do {
+     XMLAppendChildren (_ent, XMLELEMENT ('Cluster',
+	 XMLATTRIBUTES (WAI_NAME as "CLUSTERNAME", 
+	                coalesce (
+           (select Abstract from WV.WIKI.TOPIC 
+              where ClusterId = (WAI_INST as wa_wikiv).cluster_id 
+              and LocalName = WV.WIKI.CLUSTERPARAM (WAI_NAME, 'index-page', 'WelcomeVisitors')), N'') as "ABSTRACT")));
+  }
   return _report;
 }
 ;
@@ -306,29 +291,20 @@ create function WV.WIKI.MACRO_DELICIOUSCATEGORIES (inout _data varchar, inout _c
 ;
 
 -- dash board
-
 create function WV.WIKI.MACRO_MAIN_DASHBOARD (inout _data varchar, inout _context any, inout _env any)
 {
-  declare _report any;
-  _report := (
-      select XMLELEMENT ("MACRO_MAIN_DASHBOARD",
-         XMLAGG(
-            XMLELEMENT ('Cluster',
-                      XMLATTRIBUTES (cl_name as "KEY"),
-                      XMLELEMENT (Name,
-                        case
-                          when (instance is null)
-                          then
-                            cl_name
-                          else
-                            (instance as wa_wikiv).wa_name
-                        end),
-                      XMLELEMENT ('Description', name ) ) ) )
-      from 
-        (select c.ClusterName as cl_name, WAI_INST as instance, WAI_NAME as name
-	  from WV.WIKI.CLUSTERS c INNER JOIN
-	    (select WAI_INST, WAI_NAME from WA_INSTANCE where WAI_TYPE_NAME = 'oWiki') inst
-          on ((inst.WAI_INST as wa_wikiv).cluster_id = c.ClusterId) ) a );
+  declare _report, _ent any;
+  _report := XMLELEMENT ('MACRO_MAIN_DASHBOARD');
+  _ent := xpath_eval ('//MACRO_MAIN_DASHBOARD', _report); 
+
+  for select WAI_INST, WAI_NAME, WAI_DESCRIPTION from WA_INSTANCE where WAI_TYPE_NAME = 'oWiki'
+  do
+    {
+      XMLAppendChildren (_ent, XMLELEMENT ('Cluster',
+                      XMLATTRIBUTES (WAI_NAME as "KEY"),
+                      XMLELEMENT (Name, WAI_NAME),
+                      XMLELEMENT ('Description', WAI_DESCRIPTION ) ) );
+    }
   return _report;
 }
 ;
@@ -1217,9 +1193,28 @@ create function WV.WIKI.MACRO_USERPROP (inout _data varchar, inout _context any,
   declare _vec any;
   if (_username = 'TemplateUser')
     return '';
+  whenever not found goto again;
   select vector ('FULLNAME', U_FULL_NAME, 'EMAIL', U_E_MAIL) into _vec from DB.DBA.SYS_USERS, WV.WIKI.USERS
 	where U_ID = USERID
 	and USERNAME = _username;
+  if (0)
+    {
+again:
+       whenever not found default;
+       declare _uid int;
+       declare parts any;
+       parts := regexp_parse('^(.*[^0-9])([0-9]*)\$', _username, 0);
+       if(parts is null or length(parts) <> 6)
+         return ''; 
+       _uid := atoi (subseq (_username, parts[4], parts[5]));
+       _username := subseq (_username, parts[2], parts[3]);
+  select vector ('FULLNAME', U_FULL_NAME, 'EMAIL', U_E_MAIL) into _vec from DB.DBA.SYS_USERS, WV.WIKI.USERS
+	where U_ID = USERID
+		and U_ID = _uid
+	and USERNAME = _username;
+    }
+      
+       
   declare _args any;
   _args := WV.WIKI.PARSEMACROARGS (_data);
   declare _prop varchar;

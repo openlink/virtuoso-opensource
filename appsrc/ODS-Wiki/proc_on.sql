@@ -849,8 +849,6 @@ create method ti_get_tags () for WV.WIKI.TOPICINFO
 create trigger "Wiki_ClusterInsert" after insert on WS.WS.SYS_DAV_PROP order 100 referencing new as N
 {
   declare exit handler for sqlstate '*' {
-	insert into WV.WIKI.APPERRORS (AppErrText) 
-	  values (__SQL_STATE || ':' || __SQL_MESSAGE);
  	resignal;
   }; 
   declare _cname varchar;
@@ -872,8 +870,6 @@ create trigger "Wiki_ClusterInsert" after insert on WS.WS.SYS_DAV_PROP order 100
 create trigger "Wiki_ClusterDelete" before delete on WS.WS.SYS_DAV_PROP order 100 referencing old as O
 {
   declare exit handler for sqlstate '*' {
-	insert into WV.WIKI.APPERRORS (AppErrText) 
-	  values (__SQL_STATE || ':' || __SQL_MESSAGE);
  	resignal;
   }; 
   if (O.PROP_NAME = 'WikiCluster')
@@ -888,8 +884,6 @@ create trigger "Wiki_ClusterDelete" before delete on WS.WS.SYS_DAV_PROP order 10
 create trigger "Wiki_ClusterDeleteContent" before delete on WV.WIKI.CLUSTERS referencing old as O
 {
   declare exit handler for sqlstate '*' {
-	insert into WV.WIKI.APPERRORS (AppErrText) 
-	  values (__SQL_STATE || ':' || __SQL_MESSAGE);
  	resignal;
   }; 
   DB.DBA.DAV_DELETE (WS.WS.COL_PATH(O.ColId), 1, 'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()));
@@ -942,7 +936,19 @@ create trigger "Wiki_TopicTextUpdatePerms" after insert on WS.WS.SYS_DAV_RES ord
 ;
 
 
-create trigger "Wiki_TopicTextInsert" after insert on WS.WS.SYS_DAV_RES order 5 referencing new as N
+create trigger "Wiki_TopicTextInsertMeta" after insert on WS.WS.SYS_DAV_RES order 1 referencing new as N
+{
+  declare _cluster_name varchar;
+  whenever not found goto skip;
+  select ClusterName into _cluster_name from WV.WIKI.CLUSTERS where ColId = N.RES_COL;
+  connection_set ('oWiki Topic', N.RES_NAME);
+  connection_set ('oWiki Cluster', _cluster_name);
+  skip: ;
+}
+;
+
+
+create trigger "Wiki_TopicTextInsert" after insert on WS.WS.SYS_DAV_RES order 100 referencing new as N
 {
   declare exit handler for sqlstate '*' {
     --dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
@@ -1008,12 +1014,10 @@ create trigger "Wiki_TopicTextDelete" before delete on WS.WS.SYS_DAV_RES order 1
 }
 ;
 
-create trigger "Wiki_TopicTextUpdate" after update on WS.WS.SYS_DAV_RES order 10 referencing old as O, new as N
+create trigger "Wiki_TopicTextUpdate" after update on WS.WS.SYS_DAV_RES order 100 referencing old as O, new as N
 {
   --dbg_obj_print ('Wiki_TopicTextUpdate', N.RES_FULL_PATH, connection_get ('oWiki trigger'));
   declare exit handler for sqlstate '*' {
-	insert into WV.WIKI.APPERRORS (AppErrText) 
-	  values (__SQL_STATE || ':' || __SQL_MESSAGE);
 	--dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
  	resignal;
   }; 
@@ -1161,6 +1165,10 @@ create function WV.WIKI.EXPANDMACRO (
     return XMLELEMENT (cast (_funname as varchar), xtree_doc (sprintf ('<div class="wiki-error"><h2>SQL STATE:</h2><h3><![CDATA[%s]]></h3><h2>SQL MESSAGE:</h2><h3><![CDATA[%s]]></h3></div>', __SQL_STATE, __SQL_MESSAGE)));
   }
   ;
+  declare exit handler for not found {
+    return XMLELEMENT (cast (_funname as varchar), xtree_doc (sprintf ('<div class="wiki-error"><h2>SQL STATE:</h2><h3><![CDATA[%s]]></h3></div>', 'nof found')));
+  }
+  ;   
 
   _funname := fix_identifier_case ('WV.Wiki.' || 'MACRO_' || replace (_name, ':', '_'));
   if (exists (select 1 from DB.DBA.SYS_PROCEDURES where P_NAME= _funname))
@@ -1338,6 +1346,8 @@ create procedure WV.WIKI.CREATEUSER (in _sysname varchar, in _name varchar, in _
     and not exists (select 1 from DB.DBA.SYS_USERS where U_ID = _uid and U_GROUP = WV.WIKI.WIKIUSERGID()) )
     WV.WIKI.APPSIGNAL (11001, 'System user accout "&UName;" is not a member of WikiUser group and can not be used for Wiki purposes',
       vector ('UName', _sysname) );
+  if (exists (select 1 from WV.WIKI.USERS where UserId = _uid))
+    return;
 again:
   if (exists (select 1 from WV.WIKI.USERS where UserName = _name))
     {
@@ -1404,7 +1414,7 @@ create procedure WV.WIKI.UPDATEACL (in _article varchar, in _gid int, in _bitmas
 }
 ;
 
-create procedure WV.WIKI.UPDATEGRANTS (in _cname varchar)
+create procedure WV.WIKI.UPDATEGRANTS (in _cname varchar, in signalerror int:=0)
 {
   declare _readers, _writers int;
   _readers := ( select U_ID from DB.DBA.SYS_USERS where U_NAME = _cname || 'Readers'
@@ -1412,7 +1422,12 @@ create procedure WV.WIKI.UPDATEGRANTS (in _cname varchar)
   _writers := ( select U_ID from DB.DBA.SYS_USERS where U_NAME = _cname || 'Writers'
   			and U_IS_ROLE = 1 );
   if ( (_readers is null) or (_writers is null) )
+    {
+      if (signalerror)
     signal ('WK002', 'No readers or writers group for ' || _cname);
+      else
+	 return;
+    }
   for select DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_PATH (ResId, 'R')) as _path
     from WV.WIKI.TOPIC natural inner join WV.WIKI.CLUSTERS
     where clustername = _cname
@@ -3766,5 +3781,35 @@ WS.WS.META_WIKI_HOOK (inout vtb any, inout r_id any)
       vt_batch_feed (vtb, WV.WIKI.SYSINFO_PRED () || ' cluster ' || _cluster, 0);
       --dbg_obj_princ (WV.WIKI.SYSINFO_PRED () || ' cluster ' || _cluster);
     }
+}
+;
+
+create procedure WV.WIKI.SANITY_CHECK()
+{
+  set triggers off;
+  for select WAI_NAME  as _name from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and not exists (select * from WV.WIKI.CLUSTERS where CLUSTERNAME = WAI_NAME) 
+  do 
+     {
+        delete from DB.DBA.WA_INSTANCE where WAI_NAME = _name and WAI_TYPE_NAME = 'oWiki';
+     }
+  for select WAM_INST as _name from DB.DBA.WA_MEMBER 
+    where WAM_APP_TYPE = 'oWiki' 
+    and not exists (select 1 from WV.WIKI.CLUSTERS where CLUSTERNAME = WAM_INST)
+  do 
+    {
+       delete from DB.DBA.WA_MEMBER where WAM_INST = _name and WAM_APP_TYPE = 'oWiki';
+    }
+  set triggers on;
+  declare vtb any;
+  for select RES_ID, RES_FULL_PATH from WS.WS.SYS_DAV_RES 
+    where contains (RES_CONTENT, '"DE3A857A5FFB11DA923AF0924C194AED cluster "') 
+    and not exists (select 1 from WV.WIKI.TOPIC where RESID = RES_ID)
+  do {
+    vtb := vt_batch ();
+    vt_batch_d_id (vtb, RES_ID);
+    vt_batch_feed (vtb, '"DE3A857A5FFB11DA923AF0924C194AED cluster "', 1);
+    vt_batch_feed (vtb, 'DE3A857A5FFB11DA923AF0924C194AED', 1);
+    WS.WS.VT_BATCH_PROCESS_WS_WS_SYS_DAV_RES (vtb);
+  }
 }
 ;

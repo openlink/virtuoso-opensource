@@ -1121,6 +1121,12 @@ whenever not found goto nf;
 nf:
       declare _jpath varchar;
       _jpath := WV.WIKI.STRJOIN ('/', path);
+      if (_jpath = 'wiki/main')
+         {
+           _base_adjust := 'main/';
+           _startofs := 2;
+           goto next2;
+         }
 --      dbg_obj_princ (_jpath);
       if ( (_jpath not like 'wiki/main/%') and
 	   (_jpath <>  'wiki/Atom/') )
@@ -1141,6 +1147,7 @@ whenever not found default;
       _local_name := path[_startofs];
       _startofs := _startofs + 1;
     }
+next2:
   if (_cluster is null or _cluster = '' or _cluster = 'main.vsp')
     _cluster := default_cluster;
   if ( (select 1 from WV..CLUSTERS where ClusterName = _cluster) is null) 
@@ -1664,8 +1671,12 @@ create procedure WV.WIKI.MAKE_PARAMS (
    wa_home_title := registry_get ('wa_home_title');
    if (isinteger (wa_home_title))
      wa_home_title := 'OPS Home';
-   vv := vector_concat (vv, vector ('wa_home_title', wa_home_title));
---   dbg_obj_print (vv);
+   vv := vector_concat (
+	   vector ('wa_home_title', wa_home_title),
+	   vector ('acs', '1',
+		   'sort', '1',
+		   'col', '-1'),
+           vv);
    return vv;
 	
 }

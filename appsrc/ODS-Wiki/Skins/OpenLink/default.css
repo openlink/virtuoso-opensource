@@ -32,7 +32,7 @@ body
     margin-bottom: 0px;
     margin-left: 0px;
     margin-top: 0px;
-    background-color: #eee;
+    background-color: #fff;
     font-size: 10px
     font-size: 75%;
     font-family: Verdana, 'Times New Roman', Helvetica, Utopia, Times, 'MS Serif', Serif;
@@ -45,8 +45,9 @@ body
 
 /* Wraps entire page */
 #page {
-  margin:0 auto;
-  width:750px;
+  margin:0px auto;
+  padding-left: 10px;
+  width:1040px;  
 }
 
 #header
@@ -63,7 +64,7 @@ body
 #sidebar {
   font-size: 9pt;
   color: #444;
-  width: 140px;
+  width: 130px;
   float: right;
   padding-left: 4px;
   border-left: 1px solid #aba;
@@ -76,7 +77,7 @@ body
 }
 
 #main {
-  width: 600px;
+  width: 900px; 
   float: left;
   padding-right: 4px;
 }
@@ -244,7 +245,7 @@ a.wikiword:hover {
 
 #header a 
 {
-  color: #ccc;
+  color: blue;
 }
 #header IMG 
 {
@@ -312,11 +313,11 @@ input, textarea
   font-size: 10pt;
   width: 100%;
   color: #232;
-  background-color: #eee;
+  background-color: #fff;
   border-top: 1px solid #aaa;
   font-size: 8pt;
   font-family: Tahoma, Utopia, Times, Helvetica, sans-serif;
-  text-align: center;
+  text-align: left;
 }
 #footer DIV {  padding: 2px;}
 TABLE {font-size: inherit; }
@@ -331,12 +332,8 @@ form { display: inline; padding: 0px; margin: 0px; }
 
 #node-footer a {
   font-style: normal;
-  color: #232;
 }
 
-#node-footer a:hover {
-  color: blue;
-}
 /* Contents layout */
 
 .login-area { 
@@ -377,13 +374,13 @@ ul.menu {
 
 ul.menu li {
   display: inline;
-  background-color: #eee;
+  background-color: #fff;
   color: green;
   padding-left: 4px;
 }
 
 ul.menu li a {
-  color: #232;
+  color: green;
 }
 
 ul.menu li a:hover {
@@ -462,7 +459,7 @@ div.help {
 }
 
 .wiki-nav-container a {
-  color: #232;
+  color: green;
 }
 
 .wiki-nav-container a:hover {
@@ -491,13 +488,13 @@ div.help {
   padding-top: 3px;
   font-size: 9pt;
   width: 100%;
-  background-color: #eee;
+  background-color: #fff;
   color: #123
 }
 
 #wiki-toolbar-container a {
-  background-color: #eee;
-  color: #123;
+  background-color: #fff;
+  color: green;
 }
 
 #wiki-toolbar-container a:hover {
@@ -821,3 +818,71 @@ li#ca-talk {
   color: #232;
 }
 
+html>body #text {
+ margin-left: 0px;
+ margin-right: 10px;
+ z-index: 400;
+ }
+DIV.homepage {
+ PADDING: 2em;
+ TEXT-ALIGN: center;
+ }
+.search { color: inherit; background-color: inherit; padding: 2px;
+padding-bottom: 2em;}
+#currenttoc {
+ position: absolute;
+ left:0px;
+ top:100px;
+ width:197px;
+ background:#f0f0f0;
+ padding: 1px;
+ FONT-FAMILY: Tahoma, Utopia, Times, Helvetica, Sans-Serif;
+ }
+#currenttoc A {
+ display: block;
+ background-color: inherit;
+ color: Blue;
+ padding: 3px;
+ }
+#navbartop #nav2 {
+ background: #e1e1ff;
+ }
+
+.battenburg, .battenburg td, .battenburg tr {
+ font-family: Verdana, Arial, Helvetica, sans-serif;
+ font-size: 12px;
+ border: 0px;
+ padding: 0px;
+ margin: 0px;
+ border-collapse: collapse;
+ }
+.battenburg div, .burg {
+ display: compact;
+ padding: 1em;
+ padding-top: 0px;
+ margin: 1em;
+ margin-right: 2em;
+ margin-left: 0em;
+ border: #aaa solid 1px;
+ background: #efeea5;
+ }
+.burg {
+ padding: 1em;
+ }
+.battenburg h2, .burg h2 {
+ margin-top: 0em;
+ font-size: 120%;
+ padding: 0.2em;
+ position: relative;
+ top: -10px;
+ background: #eee;
+ border: 1px solid #aaa;
+}
+
+#opl{ background: #ffeea8; }
+#office{ background: #77dd99;}
+#tools{ background: #abd;}
+#toolbox { background: #ffad87; }
+#linksinternal { }
+#linksref { background: #b8ecef; }
+#news { background: #d3ceca; }
