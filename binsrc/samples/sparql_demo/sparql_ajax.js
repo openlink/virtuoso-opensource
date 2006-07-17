@@ -162,6 +162,7 @@ function load_dawg(list,item)
     $('dawg_content').innerHTML +='<h3>Query</h3>';
     $('dawg_content').innerHTML +='  <a href="#" onclick="view_file(\'' + queryuri + '\')">' + queryuri + '</a><br>';
     $('dawg_content').innerHTML +='<div class="query" id="dawg_query">' + query.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
+    $('dawg_content').innerHTML +='  <br/><button name="load_dawg_query" id="load_dawg_query" onclick="load_dawg_query()">Load Query</button><br/>';
     $('dawg_content').innerHTML +='<h3>Results</h3>';
     $('dawg_content').innerHTML +='<p><a href="#" onclick="view_file(\'' + etalonuri + '\')">' + etalonuri + '</a></p>';
     $('dawg_content').innerHTML += '<div id="dawg_etalon">' + etalon + '</div>';

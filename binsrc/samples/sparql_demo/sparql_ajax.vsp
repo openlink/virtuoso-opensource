@@ -427,10 +427,11 @@ WHERE {
       </div><!-- page_home -->
       <div id="page_dawg">
         <h2>Dawg Use Case</h2>
-        <p>&lt;-- Pick from the tree on the left... 
-          <button name="load_dawg_query" id="load_dawg_query" onclick="load_dawg_query()">Load Dawg Test To Query Processor</button>
-        </p>
         <div id="dawg_content">
+          <p>The folder tree on the side bar contains <a href="http://www.w3.org/2001/sw/DataAccess/tests/">DAWG test cases</a> 
+             in functional groupings as presented by the <a href="http://www.w3c.org/">W3C</a>. Selecting an individual
+             test in the tree lets you view its query text and associated data and
+             load it in the query processor interface for editing and execution.</p>
         </div><!-- dawg_content -->
       </div><!-- page_dawg -->
       <div id="page_import_data">

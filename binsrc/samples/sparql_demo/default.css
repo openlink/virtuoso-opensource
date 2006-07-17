@@ -24,11 +24,16 @@
 @import url("webdav.css");
 
 body {
-  font-family: sans-serif;
+  font-family: arial, helvetica, sans-serif;
   font-size: 9pt;
+  color: #335;
 }
 
 img { border: 0;} 
+
+h1,h2,h3 { color: #005a9c }
+h2 { font-weight: normal;}
+h3 { font-weight: normal;}
 
 #head { width: 98%; 
   background-image: url(images/virtuoso_banner.gif);
@@ -194,6 +199,11 @@ ul#tree_content
 	clear:both;
 }
 
+#tree_content a {
+ outline-style : none;
+ 
+}
+
 #tree_content li:hover {
   background-color: #86B9D9;
   cursor: pointer;
@@ -279,6 +289,7 @@ ul#tabres {
   text-align: left;
   border-bottom: 1px solid #000;
   margin: 0px;
+  margin-bottom: 4px;
 }
 
 #tabres li.tab {
@@ -286,11 +297,14 @@ ul#tabres {
   padding: 0px 3px;
   display: inline;
   border: 1px solid #000;
-  background-color: #aba;
+  color: #888;
+  background-color: #fff;
   cursor: pointer;
 }
 
 #tabres li.tab_selected {
+  color: #000;
+  border: 1px solid #000;
   border-bottom: 1px solid #fff;
   background-color: #fff;
 }
@@ -343,6 +357,7 @@ ul#tabres {
 #dawg_content div.approval {
   font-weight: bold;
 }
+#page_dawg h2,
 #dawg_content h1,
 #dawg_content h2,
 #dawg_content h3 { color: #005A9C; background: white }
