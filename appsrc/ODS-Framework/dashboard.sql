@@ -114,13 +114,11 @@ create procedure wa_reg_register (in u_id int, in u_full_name varchar)
 
 create trigger vspx_wa_session_start_i after insert on vspx_session referencing new as N
 {
-  --dbg_obj_print ('insert');
   vspx_wa_session_start (N.VS_UID, null, N.VS_SID);
 };
 
 create trigger vspx_wa_session_start_u after update on vspx_session referencing old as O, new as N
 {
-  --dbg_obj_print ('update');
   vspx_wa_session_start (N.VS_UID, O.VS_UID, N.VS_SID);
 };
 
@@ -130,7 +128,6 @@ create procedure vspx_wa_session_start (in N_VS_UID any, in O_VS_UID any, in N_V
   declare id, u_id int;
 
 
---  dbg_obj_print (N_VS_UID, O_VS_UID);
 
   if (N_VS_UID is null or O_VS_UID is not null)
     return;
@@ -142,20 +139,12 @@ again:
       into log_count, log_day, log_max, log_week, log_month, max_time, last_time
       from wa_n_login;
 
-  --dbg_obj_print ('Registering a login:', N_VS_SID , ' to user account ', N_VS_UID);
-
-  -- DELME
-  --if (connection_get ('vs_sid') = N_VS_SID)
-  --  signal ('22023','double insert');
-  --else
-  --  connection_set ('vs_sid', N_VS_SID);
 
   log_count := log_count + 1;
   log_day := log_day + 1;
   log_week := log_week + 1;
   log_month := log_month + 1;
 
-  --dbg_obj_print (log_count, log_max);
   if (log_count > log_max)
     {
       log_max := log_count;

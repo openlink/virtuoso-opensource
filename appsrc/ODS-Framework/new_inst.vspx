@@ -415,7 +415,6 @@
 		  <v:on-post>
 		    declare url varchar;
 		    url := self.create_new_app (control, e);
-		    --dbg_obj_print (url);
 		    if (self.vc_is_valid)
 		      self.vc_redirect (url);
                   </v:on-post>

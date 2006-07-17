@@ -54,6 +54,10 @@ create procedure get_ods_link ()
   return sprintf ('http://%s/ods', get_cname ());
 };
 
+create procedure make_href (in u varchar)
+{
+  return WS.WS.EXPAND_URL (sprintf ('http://%s/', get_cname ()), u);
+};
 
 -- ODS object to IRI functions
 
@@ -187,36 +191,31 @@ create procedure fill_ods_sioc ()
       if (U_IS_ROLE)
 	{
 	  iri := user_group_iri (U_ID);
-	  if (iri is not null)
-	    {
-	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-	      	'http://rdfs.org/sioc/ns#Usergroup');
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#name', U_NAME);
-	    }
+	  sioc_group (graph_iri, iri, U_NAME);
 	}
       else -- sioc:User
 	{
 	  iri := user_iri (u_id);
 	  if (iri is not null)
 	    {
-	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-	      	'http://rdfs.org/sioc/ns#User');
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#name', U_NAME);
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#link', iri);
+	      sioc_user (graph_iri, iri, U_NAME, U_E_MAIL, U_FULL_NAME);
 	      -- it should be one row.
-	      for select WAUI_FIRST_NAME, WAUI_LAST_NAME from DB.DBA.WA_USER_INFO where WAUI_U_ID = u_id do
+	      for select WAUI_FIRST_NAME, WAUI_LAST_NAME, WAUI_TITLE,
+		WAUI_GENDER, WAUI_ICQ, WAUI_MSN, WAUI_AIM, WAUI_YAHOO, WAUI_BIRTHDAY,
+		    WAUI_BORG, WAUI_HPHONE, WAUI_HMOBILE, WAUI_BPHONE, WAUI_LAT,
+		    WAUI_LNG, WAUI_WEBPAGE
+		from DB.DBA.WA_USER_INFO where WAUI_U_ID = u_id do
 		{
-		  if (length (WAUI_FIRST_NAME))
-		    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#first_name', WAUI_FIRST_NAME);
-		  if (length (WAUI_LAST_NAME))
- 		    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#last_name', WAUI_LAST_NAME);
+		  sioc_user_info (graph_iri, iri, WAUI_FIRST_NAME, WAUI_LAST_NAME,
+		      WAUI_TITLE, U_FULL_NAME, WAUI_GENDER, WAUI_ICQ, WAUI_MSN, WAUI_AIM, WAUI_YAHOO, WAUI_BIRTHDAY, WAUI_BORG,
+	              	case when length (WAUI_HPHONE) then WAUI_HPHONE
+		      	when length (WAUI_HMOBILE) then WAUI_HMOBILE else  WAUI_BPHONE end,
+			WAUI_LAT,
+			WAUI_LNG,
+			WAUI_WEBPAGE
+			);
 		}
 
-	      if (length (u_e_mail))
-		{
-		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#email', 'mailto:'||u_e_mail);
-		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#email_sha1', sha1_digest (u_e_mail));
-		}
 
 	      for select WAI_ID, WAM_USER from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_USER = U_ID and WAM_INST = WAI_NAME do
 		{
@@ -236,8 +235,8 @@ create procedure fill_ods_sioc ()
       g_iri := user_group_iri (GI_SUB);
       if (iri is not null and g_iri is not null)
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#member_of', g_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, g_iri, 'http://rdfs.org/sioc/ns#has_member', iri);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('member_of'), g_iri);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, g_iri, sioc_iri ('has_member'), iri);
         }
     }
 
@@ -247,8 +246,7 @@ create procedure fill_ods_sioc ()
       declare _from_iri, _to_iri varchar;
       _from_iri := user_iri_ent (snr_from);
       _to_iri := user_iri_ent (snr_to);
-      DB.DBA.RDF_QUAD_URI (graph_iri, _from_iri, 'http://rdfs.org/sioc/ns#knows', _to_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, _to_iri, 'http://rdfs.org/sioc/ns#knows', _from_iri);
+      sioc_knows (graph_iri, _from_iri, _to_iri);
     }
 
   -- sioc:Forum
@@ -257,36 +255,31 @@ create procedure fill_ods_sioc ()
       iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
       if (iri is not null)
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://rdfs.org/sioc/ns#Forum');
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#name', WAI_NAME);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#type', DB.DBA.wa_type_to_app (WAI_TYPE_NAME));
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#description', WAI_DESCRIPTION);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, site_iri, 'http://rdfs.org/sioc/ns#host_of', iri);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#link', iri);
+	  sioc_forum (graph_iri, site_iri, iri, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION);
 
 	  for select WAM_USER from DB.DBA.WA_MEMBER where WAM_INST = WAI_NAME do
 	    {
 	      declare miri varchar;
 	      miri := user_iri (WAM_USER);
 	      if (miri is not null)
-	        DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_member', miri);
+	        DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_member'), miri);
 	    }
 	}
     }
-  if (__proc_exists ('fill_ods_blog_sioc'))
-    call ('fill_ods_blog_sioc') (graph_iri, site_iri);
+  if (__proc_exists ('sioc..fill_ods_blog_sioc'))
+    call ('sioc..fill_ods_blog_sioc') (graph_iri, site_iri);
 
-  if (__proc_exists ('fill_ods_feeds_sioc'))
-    call ('fill_ods_feeds_sioc') (graph_iri, site_iri);
+  if (__proc_exists ('sioc..fill_ods_feeds_sioc'))
+    call ('sioc..fill_ods_feeds_sioc') (graph_iri, site_iri);
 
-  if (__proc_exists ('fill_ods_wiki_sioc'))
-    call ('fill_ods_wiki_sioc') (graph_iri, site_iri);
+  if (__proc_exists ('sioc..fill_ods_wiki_sioc'))
+    call ('sioc..fill_ods_wiki_sioc') (graph_iri, site_iri);
 
-  if (__proc_exists ('fill_ods_mail_sioc'))
-    call ('fill_ods_mail_sioc') (graph_iri, site_iri);
+  if (__proc_exists ('sioc..fill_ods_mail_sioc'))
+    call ('sioc..fill_ods_mail_sioc') (graph_iri, site_iri);
 
-  if (__proc_exists ('fill_ods_mail_sioc'))
-    call ('fill_ods_photo_sioc') (graph_iri, site_iri);
+  if (__proc_exists ('sioc..fill_ods_photo_sioc'))
+    call ('sioc..fill_ods_photo_sioc') (graph_iri, site_iri);
   --fill_ods_dav_sioc (graph_iri, site_iri);
 };
 

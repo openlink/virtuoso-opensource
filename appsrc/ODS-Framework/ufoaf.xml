@@ -84,8 +84,8 @@
 	    xmlelement ('http://xmlns.com/foaf/0.1/:based_near',
 	      xmlelement ('http://www.w3.org/2003/01/geo/wgs84_pos#:Point',
 	        xmlattributes (
-	              sprintf ('%.06f', coalesce (WAUI_LAT, 0)) as 'http://www.w3.org/2003/01/geo/wgs84_pos#:lat',
-	              sprintf ('%.06f', coalesce (WAUI_LNG, 0)) as 'http://www.w3.org/2003/01/geo/wgs84_pos#:long'
+	              sprintf ('%.06f', coalesce (case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end, 0)) as 'http://www.w3.org/2003/01/geo/wgs84_pos#:lat',
+	              sprintf ('%.06f', coalesce (case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end, 0)) as 'http://www.w3.org/2003/01/geo/wgs84_pos#:long'
 		    )
 	         )), 
 	    

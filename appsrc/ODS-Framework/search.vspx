@@ -81,24 +81,17 @@
     self.srch_bookmark.vc_add_attribute ('disabled', '1');
 
   self.max_rows.ufl_value := '100';
-  --dbg_obj_print ('self.have_enews=', self.have_enews, ' self.have_wiki=', self.have_wiki, ' self.have_blog=', self.have_blog);
   ]]>
  </v:on-init>
  <v:after-data-bind>
   <![CDATA[
---  dbg_obj_print ('post', e.ve_params);
---  dbg_obj_print ('after_bind qry=', self.qry, ' self.expr.ufl_value=', self.expr.ufl_value);
---  dbg_obj_print ('after_bind qry_tags=', self.qry_tags, ' self.q_tags_expr.ufl_value=', self.q_tags_expr.ufl_value);
---  dbg_obj_print ('newest', self.newest);
   self.max_rows.ufl_value := cast (case self.qry_max_rows when 0 then 100 else self.qry_max_rows end as varchar);
   self.max_rows.vc_data_bind (e);
 
   if (length (get_keyword ('user_search', e.ve_params)) and not e.ve_is_post)
     {
---      dbg_obj_print ('in users_search');
       if (1 or self.us_first_name.ufl_value is null)
         {
---	  dbg_obj_print ('in users_search 2');
           self.page := 2; -- users search page
 	  self.search_masks.vc_data_bind (e);
           self.tabTemplate.vc_data_bind (e);
@@ -175,7 +168,6 @@
   declare query varchar;
   declare res, meta, rel_tags_data, rel_tags_meta, tags_vector any;
 
-  --dbg_obj_print ('do_search');
   tags_vector := vector ();
 
   query := null;
@@ -282,9 +274,7 @@
 	}
       else
 	 connection_set ('WA_SEARCH_PATH', '');
-      --dbg_printf ('do_search query=%s', query);
       exec (query, NULL, NULL, vector (), 0, meta, res);
-      --dbg_obj_print ('do_search res=', res);
       self.page_url := sprintf ('search.vspx?q=%U&q_tags=%U&r=%d&s=%d',
 		  trim (coalesce (self.expr.ufl_value, '')),
 		  trim (coalesce (self.q_tags_expr.ufl_value, '')),
@@ -361,7 +351,6 @@
 --  self.ds_rel_tags_data := rel_tags_data;
 --  self.ds_rel_tags_meta := rel_tags_meta;
 
---  dbg_obj_print('rel_tags_data=', rel_tags_data);
 --  if (length (rel_tags_data) > 0)
 --    {
 --      self.ds_rel_tags.vc_enabled := 1;
@@ -444,7 +433,6 @@
 	}
       else
 	 connection_set ('WA_SEARCH_PATH', '');
---      dbg_obj_print ('do_users_search query=', query);
 
       if (self.us_out_as.ufl_value = 'Map')
         {
@@ -454,7 +442,6 @@
           return;
         }
       exec (query, NULL, NULL, vector (), 0, meta, res);
-      --dbg_obj_print ('do_users_search res=', res);
 
       declare params varchar;
       params := '&us_out_as=Report';
@@ -534,7 +521,6 @@
   self.ds_rel_tags_data := rel_tags_data;
   self.ds_rel_tags_meta := rel_tags_meta;
 
---  dbg_obj_print('rel_tags_data=', rel_tags_data);
   if (length (rel_tags_data) > 0)
     {
       self.ds_rel_tags.vc_enabled := 1;
@@ -563,7 +549,6 @@
            declare upd_type varchar;
 
            arr := deserialize (decode_base64 (pars[inx+1]));
-           --dbg_obj_print ('inx=', inx, 'pars[inx]=', arr);
            upd_type := arr[0];
            upd_pk := arr[1];
 
@@ -924,7 +909,6 @@
 		       declare lat, lng real;
 		       lat := lng := null;
 		       select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.u_id;
---		       dbg_obj_print ('lat=', lat, 'lng=', lng, 'u_id=', self.u_id);
 		       if (lat is not null)
 			 {
 			   self.us_dist_pt_lat.ufl_value := sprintf ('%.6f', lat);
@@ -1102,7 +1086,6 @@
           <v:before-render><![CDATA[
            declare _max int;
            declare len any;
---           dbg_obj_print ('v:before-render', self.ds_data);
            len := length (self.ds_data);
            _max := 0;
            --if (len > 0)
@@ -1193,7 +1176,7 @@
       dta := self.ds_data;
       http_rewrite ();
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
-      http ('<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/">\r\n<channel>\r\n');
+      http ('<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:vi="http://www.openlinksw.com/ods/">\r\n<channel>\r\n');
       http ('<title>');
       if (self.page = 2)
         http_value (
@@ -1236,15 +1219,37 @@
 		''),
 	''' "'));
       http ('</description>');
+
+      http ('<pubDate>');
+      http_value (soap_print_box (now (), '', 1));
+      http ('</pubDate>');
+
+      http ('<managingEditor>');
+      if (self.u_id is not null)
+      {
+          http_value (wa_utf8_to_wide(self.u_full_name));
+	        http_value (sprintf ('<%s>', self.u_e_mail));
+      }else
+      {
+      http ('ODS Guest');
+      }
+	    http ('</managingEditor>');
+
+
       http (sprintf ('<openSearch:totalResults>%d</openSearch:totalResults>\r\n', length (dta)));
       http (sprintf ('<openSearch:startIndex>%d</openSearch:startIndex>\r\n', 0));
       http (sprintf ('<openSearch:itemsPerPage>%d</openSearch:itemsPerPage>\r\n', 10));
+      declare item_title varchar;
       foreach (any elm in dta) do
         {
           http ('<item>');
-          --http ('<title>');
-	  --http (elm[0]);
-          --http ('</title>');
+          http ('<title>');
+          item_title:=subseq(elm[0],strstr(elm[0],'<br'));
+          item_title:=replace(item_title,'<br />','');
+          item_title:=replace(item_title,'<br>','');
+          item_title:=replace(item_title,'</span>','');
+	        http (trim(regexp_replace (item_title,'<[^>]*>',' ',1,null)));
+          http ('</title>');
           http ('<description>');
 	  http (sprintf ('<![%s[', 'CDATA'));
 	  http (elm[0]);
@@ -1260,8 +1265,14 @@
 	    pdate := now ();
           http_value (soap_print_box (pdate, '', 1));
           http ('</pubDate>');
+
+          http ('<vi:modified>');
+          http_value (soap_print_box (pdate, '', 1));
+          http ('</vi:modified>');
+
           http ('</item>');
         }
+
       http ('</channel></rss>');
       if (self.output = 'xbel')
         http_xslt (DB.DBA.WA_GET_PPATH_URL ('comp/rss2xbel.xsl'));

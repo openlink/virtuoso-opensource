@@ -135,7 +135,6 @@ returns integer
           concat ('Address to coordinates MSN web service protocol error : ', __SQL_MESSAGE));
    };
 
---   dbg_obj_print (addr);
    post := 'a=&b=' || sprintf ('%U', addr) || '&c=0.0&d=0.0&e=0.0&f=0.0&g=&i=&r=0';
 
    res := http_get (
@@ -146,7 +145,6 @@ returns integer
 	'POST',
 	'Content-Type: application/x-www-form-urlencoded',
 	post);
---   dbg_obj_print (res, '\n');
 
    if (res is null)
      return 0;
@@ -438,7 +436,6 @@ create procedure WA_MAPS_AJAX_SEND_RESPONSE (
   center_lat := NULL;
   center_lng := NULL;
 
---  dbg_obj_print ('QRY:\n', _sql);
   exec (_sql, NULL, NULL, vector (), 0, NULL, NULL, hndl);
   while (0 = exec_next (hndl, NULL, NULL, row))
     {
@@ -447,7 +444,6 @@ create procedure WA_MAPS_AJAX_SEND_RESPONSE (
       declare _count integer;
       declare _key_data any;
 
---      dbg_obj_print (row);
       _baloon_col := row[_baloon_inx - 1];
       _lat := sprintf ('%.6f', row[_lat_inx - 1]);
       _lng := sprintf ('%.6f', row[_lng_inx - 1]);
@@ -515,7 +511,6 @@ create aggregate WA_MAPS_BIND_USERS_EXCERPT (
 create procedure WA_MAPS_BIND_USERS_EXCERPT_init (inout _agg any)
 {
   _agg := vector (0, NULL);
---  dbg_obj_print ('WA_MAPS_BIND_USERS_EXCERPT_init');
 }
 ;
 
@@ -525,7 +520,6 @@ create procedure WA_MAPS_BIND_USERS_EXCERPT_acc (
 {
    declare more_phrase varchar;
    more_phrase := '<div class="map_user_data">And more</div>';
---  dbg_obj_print ('WA_MAPS_BIND_USERS_EXCERPT_acc tag (agg)=', __tag (_agg), '_EXCERPT=', _EXCERPT);
 --  if (length (_agg) > 2000)
 --    {
 --      if (right (_agg, length (more_phrase)) <> more_phrase)
@@ -610,9 +604,7 @@ create procedure WA_MAPS_INITIAL_POINTS (
   _center_lat := null;
 
   -- project out the excert column in hope for the best
---  dbg_obj_print('1-',_sql);
   _sql := 'select _LNG, _LAT, _KEY_VAL from (' || _sql || ') pq';
---  dbg_obj_print('2-',_sql);
 
   -- browse through the data
   exec (_sql, NULL, NULL, vector (), 0, NULL, NULL, hndl);

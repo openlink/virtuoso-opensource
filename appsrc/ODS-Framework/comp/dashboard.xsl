@@ -261,8 +261,6 @@
        if (state &lt;&gt; '00000')
          signal (state, msg);
        
-       if (length (rows) = 0) dbg_obj_print('not found');
-    
          declare i int;
          declare inst_name,  uname, email varchar;
          declare title ,author,url nvarchar;

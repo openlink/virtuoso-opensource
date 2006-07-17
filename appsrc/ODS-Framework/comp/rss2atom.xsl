@@ -130,7 +130,7 @@
 </xsl:template>
 
 <xsl:template match="item/vi:modified">
-    <updated><xsl:apply-templates /></updated>
+    <updated><xsl:call-template name="date"/></updated>
 </xsl:template>
 
 <xsl:template match="item">
@@ -184,7 +184,6 @@
 		</xsl:when>
 		<xsl:otherwise>
 		    <name><xsl:value-of select="."/></name>
-		    <email><xsl:value-of select="."/></email>
 		</xsl:otherwise>
 	    </xsl:choose>
 	</author>

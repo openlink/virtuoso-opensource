@@ -94,7 +94,6 @@
                   {
                     self.vc_is_valid := 0;
 		    declare _use_sys_errors, _sys_error, _error any;
-		    --dbg_obj_print (__SQL_STATE,__SQL_MESSAGE);
 		    if (isstring (__SQL_STATE))
 		      _sys_error := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
 		    else

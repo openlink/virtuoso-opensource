@@ -156,7 +156,6 @@
                         _cdata := WA_GET_USER_INFO(0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1);
                         WA_USER_TEXT_SET(self.u_id, _cdata);
 
-			--dbg_obj_print(params);
 			self.vc_redirect ('uiedit.vspx?page=2');
                       ]]>
                     </v:on-post>

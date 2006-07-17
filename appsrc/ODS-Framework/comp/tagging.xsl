@@ -333,7 +333,6 @@ function selectAllCheckboxes (form, btn, txt)
 		       declare expr varchar;
 		       r := control.vc_parent;
 		       --dbg_vspx_control (r);
-		       --dbg_obj_print ('upd_row');
 		       o := r.te_ctr + self.dsr_rules.ds_rows_offs;
 		       dt := self.trs_data;
 		       if ((r.vc_find_control ('drull3') as vspx_field).ufl_selected = 0)

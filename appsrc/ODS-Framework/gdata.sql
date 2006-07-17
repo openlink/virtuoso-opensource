@@ -38,8 +38,8 @@ create procedure WA_GDATA_INIT ()
 DB.DBA.VHOST_REMOVE (lpath=>'/dataspace');
 DB.DBA.VHOST_DEFINE (lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
 
-DB.DBA.VHOST_REMOVE (lpath=>'/dataspaces/GData');
-DB.DBA.VHOST_DEFINE (lpath=>'/dataspaces/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
+DB.DBA.VHOST_REMOVE (lpath=>'/dataspace/GData');
+DB.DBA.VHOST_DEFINE (lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
 
 WA_GDATA_INIT ()
 ;
@@ -98,7 +98,7 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
   declare path, pars, lines any;
   declare app, uname, inst, url, appn varchar;
   declare vhost, lhost, p_path_str, full_path, p_full_path, l_path_str, gdata_url varchar;
-  declare id, do_rdf int;
+  declare id, do_rdf, do_sioc int;
 
   lines := http_request_header ();
   ppath := http_physical_path ();
@@ -130,8 +130,12 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
   if (length (path) > 7 and path[5] = 'data' and path[6] = 'public' and path[7] = 'about.rdf')
     app := 'users';
 
-  if (app = 'about.rdf')
+  if (app = 'about.rdf' or app = 'sioc.rdf')
+    {
+      if (app = 'sioc.rdf')
+	do_sioc := 1;
     app := 'users';
+    }
 
   if (length (app) and app not in ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'news', 'users'))
    {
@@ -156,6 +160,14 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 	{
 	  foaf := 'afoaf.xml';
 	  pars := vector (':sne', cast (id as varchar), ':atype', DB.DBA.wa_app_to_type (app));
+	}
+      else if (do_sioc)
+	{
+	  declare ses any;
+	  ses := sioc..sioc_compose_xml (uname, null, null);
+          http (ses);
+	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+	  return '';
 	}
       else
       pars := vector (':sne', cast (id as varchar));
@@ -195,12 +207,14 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
   else
     {
       declare _inst DB.DBA.web_app;
+      declare inst_type varchar;
       declare exit handler for not found
 	{
 	  signal ('22023', 'No such application instance');
 	};
       inst := replace (inst, '+', ' ');
-      select WAM_HOME_PAGE, WAI_INST into url, _inst from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE where
+      select WAM_HOME_PAGE, WAI_INST, WAI_TYPE_NAME into url, _inst, inst_type
+	  from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE where
 	  U_NAME = uname and WAM_USER = U_ID and WAI_NAME = WAM_INST and WAM_INST = inst;
 
       if (do_rdf)
@@ -226,7 +240,14 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 	  WS.WS.GET (path, pars, lines);
 	  return null;
 	}
-
+      else if (do_sioc)
+        {
+	  declare ses any;
+	  ses := sioc..sioc_compose_xml (uname, inst, inst_type);
+          http (ses);
+	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+	  return '';
+        }
     }
 redir:
   http_request_status ('HTTP/1.1 302 Found');

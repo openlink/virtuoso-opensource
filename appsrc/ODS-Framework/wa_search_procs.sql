@@ -577,14 +577,14 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
   declare _ClusterName, _LocalName varchar;
   declare res varchar;
   declare _WAUI_FULL_NAME varchar;
-  declare _U_NAME varchar;
-  declare _content any;
+  declare _U_NAME, home_path varchar;
+  declare _content, _ClusterId any;
 
   _COL_PATH := DB.DBA.DAV_CONCAT_PATH (WS.WS.PARENT_PATH (WS.WS.HREF_TO_PATH_ARRAY (_RES_FULL_PATH)), null);
 
   _TitleText := null; _ClusterName := null; _LocalName := null;
-  select coalesce (TitleText, cast (LocalName as nvarchar)), ClusterName, LocalName
-    into _TitleText, _ClusterName, _LocalName
+  select coalesce (TitleText, cast (LocalName as nvarchar)), ClusterName, LocalName, C.ClusterId
+    into _TitleText, _ClusterName, _LocalName, _ClusterId
     from WV.WIKI.TOPIC T, WV.WIKI.CLUSTERS C
     where
       T.ClusterId = C.ClusterId
@@ -598,10 +598,12 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
   _U_NAME := null;
   select U_NAME into _U_NAME from DB.DBA.SYS_USERS where U_ID = _RES_OWNER;
 
-  _WIKI_PATH := sprintf (\'/wiki/%s/%s\', _ClusterName, _LocalName);
-  _WIKI_INSTANCE_PATH := sprintf (\'/wiki/%s\', _ClusterName);
+  home_path := WV.WIKI.CLUSTERPARAM (_ClusterId, \'home\', \'/wiki/main\');
+
+  _WIKI_PATH := sprintf (\'%s/%s/%s\', home_path, _ClusterName, _LocalName);
+  _WIKI_INSTANCE_PATH := sprintf (\'%s/%s\', home_path, _ClusterName);
   res := sprintf (\'<span><img src="%s" />Wiki <a href="%s">%s</a> <a href="%s">%s</a> <a href="%s">%s</a>\',
-           WA_SEARCH_ADD_APATH (''images/icons/wiki_16.png''),
+           WA_SEARCH_ADD_APATH (\'images/icons/wiki_16.png\'),
 	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_PATH, \'#\'), _current_user_id)),
 		coalesce (_TitleText, N\'#No Title#\'),
 	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_INSTANCE_PATH, \'#\'), _current_user_id)),
@@ -610,7 +612,7 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
              WA_SEARCH_ADD_SID_IF_AVAILABLE ( sprintf (\'uhome.vspx?ufname=%U\', _U_NAME), _current_user_id, \'&\')),
            coalesce (_WAUI_FULL_NAME, \'#No Name#\'));
 
-  _content := coalesce (_RES_CONTENT, \'\');
+  _content := WV.WIKI.DELETE_SYSINFO_FOR (coalesce (_RES_CONTENT, \'\'));
   if (not isblob (_content))
     _content := cast (_content as varchar);
   _content := subseq (_content, 0, 200000);
@@ -885,7 +887,7 @@ create function WA_SEARCH_APP_GET_EXCERPT_HTML (
 		sprintf ('join.vspx?wai_id=%d', _WAI_ID), current_user_id)),
          WA_SEARCH_ADD_APATH ('images/icons/add_16.png'));
 
-  res := res || sprintf ('<br>%s</span>',
+  res := res || sprintf ('<br />%s</span>',
        left (
          search_excerpt (
            words,
@@ -972,7 +974,7 @@ create function WA_SEARCH_OMAIL_GET_EXCERPT_HTML (
   select NAME into _NAME from OMAIL.WA.FOLDERS where FOLDER_ID = _FOLDER_ID;
 
   res := sprintf (
-    ''<span><img src="%s"/> %s / %s : %s<br>%s</span>'',
+    ''<span><img src="%s"/> %s / %s : %s<br />%s</span>'',
        WA_SEARCH_ADD_APATH (''images/icons/mail_16.png''),
        _U_NAME,
        _NAME,
@@ -1505,8 +1507,8 @@ create function WA_SEARCH_CONTACTS (
 	 '  WA_SEARCH_ADD_APATH ( \n' ||
          '   WA_SEARCH_ADD_SID_IF_AVAILABLE ( \n' ||
          '    sprintf (''uhome.vspx?ufname=%%U'', U_NAME), %d, ''&'')) as _URL, \n' ||
-	 '  WAUI_LAT as _LAT, \n' ||
-	 '  WAUI_LNG as _LNG, \n' ||
+   '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
+   '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
 	 '  WAUI_U_ID as _KEY_VAL \n' ||
 	 ' from \n(\n%s\n) qry, DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS, DB.DBA.sn_person \n' ||
          ' where \n' ||

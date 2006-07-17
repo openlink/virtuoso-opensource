@@ -275,7 +275,7 @@
 
          if (not(self.is_agreed.ufl_selected ))
          {
-           self.regf1.vc_error_message := 'You have not agreed to the Therms of Service.';
+           self.regf1.vc_error_message := 'You have not agreed to the Terms of Service.';
            self.vc_is_valid := 0;
            return;
          };
@@ -374,7 +374,6 @@
 	   self.ret_page := self.url;
          else
            self.ret_page := 'uhome.vspx';
-	 --dbg_obj_print ('self.ret_page=', self.ret_page);
          if (_mail_verify_on)
          {
            -- determine existings default mail server

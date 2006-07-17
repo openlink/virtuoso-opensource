@@ -3404,7 +3404,8 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
           _bphone, _bmobile, _bregno, _bcareer, _bempltotal, _bvendor, _bservice, _bother, _bnetwork varchar;
   declare _bresume, _audio, _fav_books, _fav_music, _fav_movie long varchar;
   declare _WAUI_PHOTO_URL varchar;
-  declare _WAUI_LAT, _WAUI_LNG real;
+  declare _WAUI_LAT, _WAUI_LNG, _WAUI_BLAT, _WAUI_BLNG real;
+  declare _WAUI_LATLNG_HBDEF integer;
   declare _arr15, _arr16, _arr18, _arr22, _arr23, _arr25, _arr any;
 
 
@@ -3428,7 +3429,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
          WAUI_BINDUSTRY, WAUI_BORG, WAUI_BJOB, WAUI_BADDRESS1, WAUI_BADDRESS2, WAUI_BCODE, WAUI_BCITY,
          WAUI_BSTATE, WAUI_BCOUNTRY, WAUI_BTZONE, WAUI_BPHONE, WAUI_BMOBILE, WAUI_BREGNO,
          WAUI_BCAREER, WAUI_BEMPTOTAL, WAUI_BVENDOR, WAUI_BSERVICE, WAUI_BOTHER, WAUI_BNETWORK, WAUI_RESUME,
-         U_E_MAIL, WAUI_PHOTO_URL, WAUI_LAT, WAUI_LNG,
+         U_E_MAIL, WAUI_PHOTO_URL, WAUI_LAT, WAUI_LNG, WAUI_BLAT, WAUI_BLNG, WAUI_LATLNG_HBDEF,
 	 WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
 	 WAUI_SEARCHABLE
     INTO _utitle, _fname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum,
@@ -3436,7 +3437,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
          _haddress1, _haddress2, _hcode, _hcity, _hstate, _hcountry, _htzone, _hphone, _hmobile,
          _bindustr, _borg, _bjob, _baddress1, _baddress2, _bcode, _bcity, _bstate, _bcountry, _btzone,
          _bphone, _bmobile, _bregno, _bcareer, _bempltotal, _bvendor, _bservice, _bother, _bnetwork, _bresume,
-         _email, _WAUI_PHOTO_URL, _WAUI_LAT, _WAUI_LNG,
+         _email, _WAUI_PHOTO_URL, _WAUI_LAT, _WAUI_LNG, _WAUI_BLAT, _WAUI_BLNG, _WAUI_LATLNG_HBDEF,
          _audio, _fav_books, _fav_music, _fav_movie,
 	 is_search
     FROM WA_USER_INFO, DB.DBA.SYS_USERS  where WAUI_U_ID = U_ID  and  U_ID = ufid;
@@ -3615,6 +3616,9 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
 	  blob_to_string (_fav_music), ' ', blob_to_string (_fav_movie));
       }
 
+
+    if (_WAUI_LATLNG_HBDEF=0)
+    {
     if (atoi(visb[39]) = 3 or (atoi(visb[39]) = 2 and not(is_friend)))
       {
 	  _WAUI_LAT := null;
@@ -3624,7 +3628,26 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
       {
 	  _data := concat(_data, ' ', cast (_WAUI_LAT as varchar));
 	  _data := concat(_data, ' ', cast (_WAUI_LNG as varchar));
+       };
+       
+    }else if(_WAUI_LATLNG_HBDEF=1)
+    {  
+       if (atoi(visb[47]) = 3 or (atoi(visb[47]) = 2 and not(is_friend)))
+       {
+         _WAUI_BLAT := null;
+         _WAUI_BLNG := null;
+       }
+       else if (atoi(visb[47]) = 1 and umode = 1)
+       {
+         _data := concat(_data, ' ', cast (_WAUI_BLAT as varchar));
+         _data := concat(_data, ' ', cast (_WAUI_BLNG as varchar));
       }
+       
+    };
+
+
+
+
 
   };
 
