@@ -56,7 +56,7 @@ dk_set_t d_trx_set = 0;
 
 #define SYS_TABLE_PREFIX "SYS_%"
 #define METADATA_SEARCH_STRING_ESCAPE '\\'
-#define KUBL_IDENTIFIER_MAX_LENGTH 100
+#define KUBL_IDENTIFIER_MAX_LENGTH 128
 
 #define is_empty(S,CB) \
   ((0 == (CB)) || ((SQL_NTS == (CB)) && ( !(S) || ((S) && !*(S)) ) ) )
