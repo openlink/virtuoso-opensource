@@ -358,7 +358,7 @@ ttlyyerror_impl_1 (TTLP_PARAM const char *raw_text, int yystate, short *yyssa, s
       sm2,
       sm1,
       yystate,
-      sp1,
+      ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */ ,
       ((NULL == raw_text) ? "" : " at '"),
       ((NULL == raw_text) ? "" : raw_text),
       ((NULL == raw_text) ? "" : "'")
@@ -647,7 +647,10 @@ bif_rdf_load_turtle (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     stmt_texts, app_env,
     (query_instance_t *)qst, QST_CHARSET(qst), &err );
   if (NULL != err)
-    sqlr_resignal (err);
+    {
+      dk_free_tree (res);
+      sqlr_resignal (err);
+    }
   return res;
 }
 
