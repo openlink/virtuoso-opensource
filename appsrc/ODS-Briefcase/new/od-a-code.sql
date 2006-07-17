@@ -77,7 +77,7 @@ create procedure ODRIVE.WA.frozen_check()
 
   declare exit handler for not found { return 1; };
 
-  owner_id := (select U_ID from SYS_USERS where U_NAME = ODRIVE.WA.odrive_user());
+  owner_id := (select U_ID from SYS_USERS where U_NAME = ODRIVE.WA.account());
   if (is_empty_or_null((select TOP 1 1 from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oDrive' and  WAI_IS_FROZEN = 1 and WAI_NAME = WAM_INST and WAM_USER = owner_id)))
     return 0;
 
@@ -311,7 +311,7 @@ create procedure ODRIVE.WA.dt_gmt2user(
   if (isnull(pDate))
     return null;
   if (isnull(pUser))
-    pUser := ODRIVE.WA.odrive_user();
+    pUser := ODRIVE.WA.account();
   if (isnull(pUser))
     return pDate;
   tz := cast(coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), 0) as integer) * 60 - timezone(now());
@@ -331,7 +331,7 @@ create procedure ODRIVE.WA.dt_user2gmt(
   if (isnull(pDate))
     return null;
   if (isnull(pUser))
-    pUser := ODRIVE.WA.odrive_user();
+    pUser := ODRIVE.WA.account();
   if (isnull(pUser))
     return pDate;
   tz := cast(coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), 0) as integer) * 60;
@@ -653,6 +653,25 @@ create procedure ODRIVE.WA.wide2utf (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.stringCut (
+  in S varchar,
+  in L integer := 60)
+{
+  declare tmp any;
+
+  if (not L)
+    return S;
+  tmp := ODRIVE.WA.utf2wide(S);
+  if (not iswidestring(tmp))
+    return S;
+  if (length(tmp) > L)
+    return ODRIVE.WA.wide2utf(concat(subseq(tmp, 0, L-3), '...'));
+  return ODRIVE.WA.wide2utf(tmp);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.http_escape (
   in S any,
   in mode integer := 0) returns varchar
@@ -849,7 +868,7 @@ create procedure ODRIVE.WA.odrive_proc(
   dirList := vector();
   if ((dir_mode = 0) or (dir_select = 1)) {
     if (path = ODRIVE.WA.shared_name()) {
-      vspx_user := ODRIVE.WA.odrive_user();
+      vspx_user := ODRIVE.WA.account();
       dirList := ODRIVE.WA.odrive_sharing_dir_list(vspx_user);
     } else {
       path := ODRIVE.WA.odrive_real_path(path);
@@ -878,7 +897,7 @@ create procedure ODRIVE.WA.odrive_proc(
     }
     --dbg_obj_print(dirFilter);
     if (trim(path, '/') = ODRIVE.WA.shared_name()) {
-      sharedRoot := ODRIVE.WA.odrive_sharing_dir_list(ODRIVE.WA.odrive_user());
+      sharedRoot := ODRIVE.WA.odrive_sharing_dir_list(ODRIVE.WA.account());
       foreach (any item in sharedRoot) do {
         if (item[1] = 'C') {
           sharedList := ODRIVE.WA.DAV_DIR_FILTER(item[0], 1, dirFilter);
@@ -957,7 +976,7 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   declare uid, gid integer;
   declare auth_name varchar;
 
-  auth_name := ODRIVE.WA.odrive_user();
+  auth_name := ODRIVE.WA.account();
   uid := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = auth_name);
   gid := (select U_GROUP from WS.WS.SYS_DAV_USER where U_NAME = auth_name);
 
@@ -1041,9 +1060,20 @@ create procedure ODRIVE.WA.odrive_exec_permission (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.domain_name ()
+{
+  declare account_id integer;
+
+  account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = ODRIVE.WA.account());
+  return (select TOP 1 WAI_NAME from DB.DBA.WA_MEMBER join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST where WAI_TYPE_NAME = 'oDrive' and WAM_USER = account_id and WAM_MEMBER_TYPE = 1);
+}
+;
+
 -----------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.odrive_user() returns varchar
+create procedure ODRIVE.WA.account() returns varchar
 {
   declare vspx_user varchar;
 
@@ -1077,7 +1107,7 @@ create procedure ODRIVE.WA.odrive_group_own(
   if (group_name = 'dav')
     return 1;
   if (isnull(user_name))
-    user_name := ODRIVE.WA.odrive_user();
+    user_name := ODRIVE.WA.account();
   if (exists(select 1 from DB.DBA.SYS_USERS u1, ODRIVE.WA.GROUPS g, DB.DBA.SYS_USERS u2 where u1.U_NAME=group_name and u1.U_ID=g.GROUP_ID and u1.U_IS_ROLE=1 and g.USER_ID=u2.U_ID and u2.U_NAME=user_name))
     return 1;
   return 0;
@@ -1156,6 +1186,22 @@ create procedure ODRIVE.WA.odrive_url ()
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.geo_url ()
+{
+  declare account_id integer;
+  declare domain_name varchar;
+
+  account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = ODRIVE.WA.account());
+  domain_name :=  (select TOP 1 WAI_NAME from DB.DBA.WA_MEMBER join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST where WAI_TYPE_NAME = 'oDrive' and WAM_USER = account_id and WAM_MEMBER_TYPE = 1);
+  for (select WAUI_LAT, WAUI_LNG from WA_USER_INFO where WAUI_U_ID = account_id) do
+    if ((not isnull(WAUI_LNG)) and (not isnull(WAUI_LAT)))
+      return sprintf('\n    <meta name="ICBM" content="%.2f, %.2f"><meta name="DC.title" content="%s">', WAUI_LNG, WAUI_LAT, domain_name);
+  return '';
+}
+;
+
 -----------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.odrive_dav_home(
@@ -1165,7 +1211,7 @@ create procedure ODRIVE.WA.odrive_dav_home(
   declare colID integer;
 
   if (isnull(user_name))
-    user_name := ODRIVE.WA.odrive_user();
+    user_name := ODRIVE.WA.account();
   user_home := ODRIVE.WA.dav_home_create(user_name);
   if (isinteger(user_home))
     return '/DAV/';
@@ -1392,7 +1438,7 @@ create procedure ODRIVE.WA.odrive_shortcut_path(
         declare path varchar;
         declare uid integer;
         declare gid integer;
-        DB.DBA.DAV_OWNER_ID(ODRIVE.WA.odrive_user(), null, uid, gid);
+        DB.DBA.DAV_OWNER_ID(ODRIVE.WA.account(), null, uid, gid);
 
         if (pathType = 'R') {
           for (select TOP 1 RES_FULL_PATH
@@ -2146,7 +2192,7 @@ create procedure ODRIVE.WA.DAV_INIT_INT ()
   declare
     user_name varchar;
 
-  user_name := coalesce(ODRIVE.WA.odrive_user(), 'nobody');
+  user_name := coalesce(ODRIVE.WA.account(), 'nobody');
   DB.DBA.DAV_OWNER_ID(user_name, null, uid, gid);
   return vector(null, '', 0, null, 0, USER_GET_OPTION(user_name, 'PERMISSIONS'), gid, uid, null, '', null);
 }
@@ -2377,7 +2423,7 @@ create procedure ODRIVE.WA.DAV_API_PARAMS (
     gname := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = gid);
 
   if (isnull(auth_name))
-    auth_name := ODRIVE.WA.odrive_user();
+    auth_name := ODRIVE.WA.account();
   if (isnull(auth_pwd)) {
     auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = auth_name), '');
     if (auth_pwd[0] = 0)
@@ -2498,7 +2544,7 @@ create procedure ODRIVE.WA.DAV_COPY (
   declare uname, gname varchar;
   declare uid, gid integer;
 
-  auth_name := ODRIVE.WA.odrive_user();
+  auth_name := ODRIVE.WA.account();
   uid := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = auth_name);
   gid := (select U_GROUP from WS.WS.SYS_DAV_USER where U_NAME = auth_name);
   ODRIVE.WA.DAV_API_PARAMS (uid, gid, uname, gname, auth_name, auth_pwd);

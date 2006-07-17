@@ -66,6 +66,7 @@
       <v:variable name="dav_tags2" persist="0" type="varchar" />
       <v:variable name="dav_metadata" persist="0" type="varchar" default="null" />
       <v:variable name="dav_content" type="varchar" default="'Can not find file'" />
+      <v:variable name="chars" type="integer" default="60" />
 
       <v:on-init>
         <![CDATA[
@@ -74,6 +75,7 @@
           settings := ODRIVE.WA.odrive_settings(self.vc_page.vc_event.ve_params);
 
           self.tbLabels := cast(get_keyword('tbLabels', settings, '1') as integer);
+          self.chars := cast(get_keyword('chars', settings, '60') as integer);
 
           self.dir_columns := vector();
           self.dir_columns := vector_concat(self.dir_columns, vector(vector('column_#1', 'c0', 'Name',          1, 0, vector(cast(get_keyword('column_#1', settings, '1') as integer), 1), 'width="50%"')));
@@ -559,17 +561,6 @@
         ]]>
       </v:method>
 
-      <v:method name="ui_name" arglist="in name varchar">
-        <![CDATA[
-          declare chars integer;
-
-          chars := ODRIVE.WA.odrive_settings_chars(self.vc_page.vc_event.ve_params);
-          if (chars and (length(name) > chars))
-            return concat(subseq(name, 0, chars-3), '...');
-          return name;
-        ]]>
-      </v:method>
-
       <v:method name="ui_size" arglist="in itemSize integer, in itemType varchar">
         <![CDATA[
           declare S varchar;
@@ -597,12 +588,12 @@
         ]]>
       </v:method>
 
-      <v:method name="do_url_int" arglist="in param varchar, in section varchar, in path varchar">
+      <v:method name="do_url_int" arglist="in param varchar, in section varchar, in path varchar, in defaultValue varchar">
         <![CDATA[
           declare T varchar;
 
-          T := ODRIVE.WA.dav_dc_get(self.search_dc, section, path, '');
-          if (T = '')
+          T := ODRIVE.WA.dav_dc_get(self.search_dc, section, path, defaultValue);
+          if (T = defaultValue)
             return '';
 
           return sprintf('&%s=%U', param, T);
@@ -621,25 +612,25 @@
             tmp := concat(tmp, sprintf('&b2=%U', trim(self.search_simple)));
           }
           if (self.command_mode = 3) {
-            tmp := concat(tmp, self.do_url_int('b1',  'base',     'path'));
-            tmp := concat(tmp, self.do_url_int('b2',  'base',     'name'));
-            tmp := concat(tmp, self.do_url_int('b3',  'base',     'content'));
+            tmp := concat(tmp, self.do_url_int('b1',  'base',     'path', ''));
+            tmp := concat(tmp, self.do_url_int('b2',  'base',     'name', ''));
+            tmp := concat(tmp, self.do_url_int('b3',  'base',     'content', ''));
 
-            tmp := concat(tmp, self.do_url_int('a1',  'advanced', 'mime'));
-            tmp := concat(tmp, self.do_url_int('a2',  'advanced', 'owner'));
-            tmp := concat(tmp, self.do_url_int('a3',  'advanced', 'group'));
-            tmp := concat(tmp, self.do_url_int('a4',  'advanced', 'createDate11'));
-            tmp := concat(tmp, self.do_url_int('a5',  'advanced', 'createDate12'));
-            tmp := concat(tmp, self.do_url_int('a6',  'advanced', 'createDate21'));
-            tmp := concat(tmp, self.do_url_int('a7',  'advanced', 'createDate22'));
-            tmp := concat(tmp, self.do_url_int('a8',  'advanced', 'modifyDate11'));
-            tmp := concat(tmp, self.do_url_int('a9',  'advanced', 'modifyDate12'));
-            tmp := concat(tmp, self.do_url_int('a10', 'advanced', 'modifyDate21'));
-            tmp := concat(tmp, self.do_url_int('a11', 'advanced', 'modifyDate22'));
-            tmp := concat(tmp, self.do_url_int('a12', 'advanced', 'publicTags11'));
-            tmp := concat(tmp, self.do_url_int('a13', 'advanced', 'publicTags12'));
-            tmp := concat(tmp, self.do_url_int('a14', 'advanced', 'privateTags11'));
-            tmp := concat(tmp, self.do_url_int('a15', 'advanced', 'privateTags12'));
+            tmp := concat(tmp, self.do_url_int('a1',  'advanced', 'mime', ''));
+            tmp := concat(tmp, self.do_url_int('a2',  'advanced', 'owner', '-1'));
+            tmp := concat(tmp, self.do_url_int('a3',  'advanced', 'group', '-1'));
+            tmp := concat(tmp, self.do_url_int('a4',  'advanced', 'createDate11', ''));
+            tmp := concat(tmp, self.do_url_int('a5',  'advanced', 'createDate12', ''));
+            tmp := concat(tmp, self.do_url_int('a6',  'advanced', 'createDate21', ''));
+            tmp := concat(tmp, self.do_url_int('a7',  'advanced', 'createDate22', ''));
+            tmp := concat(tmp, self.do_url_int('a8',  'advanced', 'modifyDate11', ''));
+            tmp := concat(tmp, self.do_url_int('a9',  'advanced', 'modifyDate12', ''));
+            tmp := concat(tmp, self.do_url_int('a10', 'advanced', 'modifyDate21', ''));
+            tmp := concat(tmp, self.do_url_int('a11', 'advanced', 'modifyDate22', ''));
+            tmp := concat(tmp, self.do_url_int('a12', 'advanced', 'publicTags11', ''));
+            tmp := concat(tmp, self.do_url_int('a13', 'advanced', 'publicTags12', ''));
+            tmp := concat(tmp, self.do_url_int('a14', 'advanced', 'privateTags11', ''));
+            tmp := concat(tmp, self.do_url_int('a15', 'advanced', 'privateTags12', ''));
 
             N := 1;
             for (select rs.* from ODRIVE.WA.dav_dc_metadata_rs(rs0)(c0 integer, c1 varchar, c2 varchar, c3 varchar, c4 varchar, c5 varchar) rs where rs0 = self.search_dc) do {
@@ -662,7 +653,6 @@
         ]]>
       </v:method>
 
-      <v:form name="F1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
         <?vsp http(sprintf('<input type="hidden" name="tabNo" id="tabNo" value="%s" />', self.tabNo)); ?>
         <?vsp http('<input type="hidden" name="f_tag_hidden" value="" />'); ?>
         <?vsp http('<input type="hidden" name="f_tag2_hidden" value="" />'); ?>
@@ -1624,7 +1614,7 @@
               <tr>
                 <td><?vsp http(sprintf('<img src="%s" alt="%s" />', self.ui_image(ODRIVE.WA.DAV_GET(item, 'fullPath'), ODRIVE.WA.DAV_GET(item, 'type'), ODRIVE.WA.DAV_GET(item, 'mimeType')), self.ui_alt(ODRIVE.WA.DAV_GET(item, 'name'), ODRIVE.WA.DAV_GET(item, 'type'))));
                           http('&nbsp;&nbsp;');
-                          http(self.ui_name(self.item_array[i])); ?>
+                          http(ODRIVE.WA.stringCut(self.item_array[i], self.chars)); ?>
                 </td>
                 <td class="td_number"><?vsp http(self.ui_size(ODRIVE.WA.DAV_GET(item, 'length'), ODRIVE.WA.DAV_GET(item, 'type'))); ?></td>
                 <td><?vsp http(self.ui_date(ODRIVE.WA.DAV_GET(item, 'modificationTime'))); ?></td>
@@ -2315,7 +2305,7 @@
                   state := '00000';
                   exec(control.ds_sql, state, msg, control.ds_parameters, 0, meta, result);
                   if (state = '00000') {
-                    declare I, N integer;
+                    declare I, N, maxCnt integer;
                     declare tag_object, tags, tags_dict any;
 
                     tags_dict := dict_new();
@@ -2335,8 +2325,13 @@
                         dict_put(tags_dict, lcase(tag), tag_object);
                       }
                     }
-                    for (select p.* from ODRIVE.WA.tagsDictionary2rs(p0)(c0 varchar, c1 integer, c2 varchar) p where p0 = tags_dict order by c0) do
+                    maxCnt := 0;
+                    for (select p.* from ODRIVE.WA.tagsDictionary2rs(p0)(c0 varchar, c1 integer, c2 varchar) p where p0 = tags_dict order by c0) do {
                       self.dir_tags := vector_concat(self.dir_tags, vector(vector(c0, c1, c2)));
+                      if (c1 > maxCnt)
+                        maxCnt := c1;
+                    }
+                    self.dir_tags := vector_concat(vector(vector('', maxCnt)), self.dir_tags);
                   }
                 }
               ]]>
@@ -2358,6 +2353,11 @@
             </v:after-data-bind>
           </v:data-source>
 
+          <v:template type="simple" enabled="-- case when ((self.command = 0) and ((self.command_mode = 2) or ((self.command_mode = 3) and not isnull(self.search_advanced)))) then 1 else 0 end;">
+            <div class="new-form-header" style="margin-top: 6px;">
+              <i><?V either(equ(self.command_mode, 2), 'Simple', 'Advansed') ?> search found <?V length(self.dsrc_items.ds_row_data) ?> resource(s) in last search</i>
+            </div>
+          </v:template>
           <v:template type="simple" enabled="-- case when ((self.command = 0) and ((self.command_mode = 2) or ((self.command_mode = 3) and (not isnull(self.search_advanced)))) and length(self.dsrc_items.ds_row_data)) then 1 else 0 end;">
             <div style="padding-bottom: 5px;">
               <?vsp
@@ -2500,7 +2500,7 @@
                                     declare rowset any;
                                     rowset := ((control.vc_parent) as vspx_row_template).te_rowset;
                                     control.ufl_value := self.ui_image(rowset[8], rowset[1], rowset[4]);
-                                    control.bt_text := concat('&nbsp;&nbsp;', self.ui_name(rowset[0]));
+                                    control.bt_text := concat('&nbsp;&nbsp;', ODRIVE.WA.stringCut(rowset[0], self.chars));
                                   ]]>
                                 </v:before-data-bind>
                                 <v:on-post>
@@ -2669,16 +2669,18 @@
                 <td width="20%" valign="top" style="border: solid #7F94A5;  border-width: 1px 1px 1px 0px;">
                   <div style="margin-left:3px; margin-top:3px; overflow: auto; height: 360px;">
                     <?vsp
-                      declare N, ts_max, ts_size integer;
+                      declare N, ts_length, ts_max, ts_size integer;
 
-                      ts_max := length(self.dir_tags);
-                      for (N := 0; N < ts_max; N := N + 1) {
-                        ts_size := (250.00 / ts_max) * self.dir_tags[N][1];
-                        if (ts_size < 100)
-                          ts_size := 100;
+                      ts_length := length(self.dir_tags);
+                      for (N := 0; N < ts_length; N := N + 1) {
+                        if (N = 0) {
+                          ts_max := self.dir_tags[N][1];
+                        } else {
+                    	    ts_size := ((150.00 * self.dir_tags[N][1]) / ts_max) + 100;
                         http (sprintf ('<a href="#" onclick="javascript: document.forms[''F1''].tag_hidden.value = ''%s%s''; doPost (''F1'', ''tag_search''); return false;" name="btn_%s"><span class="nolink_b" style="font-size: %d%s;">%s</span></a> ', self.dir_tags[N][2], self.dir_tags[N][0], self.dir_tags[N][0], ts_size, '%', self.dir_tags[N][0]));
                       }
-                      if (ts_max = 0)
+                      }
+                      if (ts_length <= 1)
                         http ('no tags');
                     ?>
                     &nbsp;
@@ -2711,7 +2713,6 @@
             </v:button>
           </div>
         </v:template>
-      </v:form>
     </v:template>
   </xsl:template>
 
@@ -3727,7 +3728,7 @@
           <th/>
           <td>
             <v:check-box name="ts_cloud" xhtml_id="ts_cloud" value="1" />
-            <vm:label for="ts_cloud" value="Show tag''s cloud" />
+            <vm:label for="ts_cloud" value="Show tag cloud" />
           </td>
         </tr>
       </table>

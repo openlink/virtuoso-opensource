@@ -42,6 +42,81 @@
       http_request_status ('HTTP/1.1 200 OK');
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 
+      if (self.v_output = 'about') {
+        self.account_id := cast(get_keyword('aid', self.vc_page.vc_event.ve_params, '-1') as integer);
+        http ('<?xml version ="1.0" encoding="UTF-8"?>\n');
+        http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
+        http ('<channel>\n');
+        for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
+          http ('<title>');
+            http_value (ODRIVE.WA.utf2wide(coalesce(U_FULL_NAME, U_NAME)));
+          http ('</title>\n');
+          http ('<description>');
+            http_value (ODRIVE.WA.utf2wide(coalesce(U_FULL_NAME, U_NAME)));
+          http ('</description>\n');
+          http ('<managingEditor>');
+            http_value (U_E_MAIL);
+          http ('</managingEditor>\n');
+          http ('<pubDate>');
+            http_value (ODRIVE.WA.dt_rfc1123(now()));
+          http ('</pubDate>\n');
+          http ('<generator>');
+            http_value ('Virtuoso Universal Server ' || sys_stat('st_dbms_ver'));
+          http ('</generator>\n');
+          http ('<webMaster>');
+            http_value (U_E_MAIL);
+          http ('</webMaster>\n');
+          http ('<link>');
+            http_value (ODRIVE.WA.odrive_url());
+          http ('</link>\n');
+        }
+        for select top 15 *
+              from (select *
+                      from (select top 15 RES_FULL_PATH, RES_MOD_TIME, RES_NAME, RES_OWNER
+                              from WS.WS.SYS_DAV_RES
+                                     join WS.WS.SYS_DAV_ACL_INVERSE on AI_PARENT_ID = RES_ID
+                                       join WS.WS.SYS_DAV_ACL_GRANTS on GI_SUB = AI_GRANTEE_ID
+                             where AI_PARENT_TYPE = 'R'
+                               and GI_SUPER = self.account_id
+                               and AI_FLAG = 'G'
+                             order by RES_MOD_TIME desc
+                           ) acl
+                    union
+                      select *
+                        from (select top 15 RES_FULL_PATH, RES_MOD_TIME, RES_NAME, RES_OWNER
+                                from WS.WS.SYS_DAV_RES
+                               where RES_OWNER = self.account_id
+                                 and RES_PERMS like '1%'
+                               order by RES_MOD_TIME desc
+                           ) own
+                   ) sub
+             order by RES_MOD_TIME desc do {
+
+          http ('<item>\n');
+            http ('<title>');
+              http_value (ODRIVE.WA.utf2wide(RES_NAME));
+            http ('</title>\n');
+            http ('<description>');
+              http_value (ODRIVE.WA.utf2wide(RES_FULL_PATH));
+            http ('</description>\n');
+            http ('<link>');
+              http_value (concat(ODRIVE.WA.odrive_host_url(), ODRIVE.WA.utf2wide(RES_FULL_PATH)));
+            http ('</link>\n');
+            http ('<pubDate>');
+              http_value (ODRIVE.WA.dt_rfc1123 (RES_MOD_TIME));
+            http ('</pubDate>\n');
+            http ('<vi:modified>');
+              http_value (ODRIVE.WA.dt_iso8601 (RES_MOD_TIME));
+            http ('</vi:modified>\n');
+          http ('</item>\n');
+        }
+        http ('</channel>\n');
+        http ('</rss>');
+
+   	    http_xslt (ODRIVE.WA.xslt_full ('rss2rdf.xsl'));
+
+        goto _end;
+      } else {
       self.account := ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params);
       if (is_empty_or_null(self.account))
         goto _error;
@@ -162,6 +237,7 @@
     	    http_xslt (ODRIVE.WA.xslt_full ('rss2atom.xsl'));
 
         goto _end;
+      }
       }
     _error:
       http('<?xml version="1.0" ?><empty />');

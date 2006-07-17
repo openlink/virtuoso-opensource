@@ -122,10 +122,8 @@
       <v:variable name="d_deleted" type="any" default="null" persist="0" />
     </vm:variables>
     <vm:pagebody>
-      <v:form name="F1" type="simple">
         <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
         <v:text name="f_mode" type="hidden" value="--self.v_mode"/>
-        <v:template type="simple">
           <div class="new-form-header">
             <v:label format="%s" value="--concat(initcap(self.v_mode), ' Group')"/>
           </div>
@@ -285,14 +283,12 @@
             </v:button>
           </div>
 
-        </v:template>
         <script>
           <![CDATA[
             coloriseTable('members');
             initTab(2, 1);
           ]]>
         </script>
-      </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

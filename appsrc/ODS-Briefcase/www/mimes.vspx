@@ -73,10 +73,9 @@
       <v:variable name="mimes_direction" persist="1" type="varchar" default="'asc'" />
     </vm:variables>
     <vm:pagebody>
-      <v:template type="simple">
         <v:before-data-bind>
           <![CDATA[
-            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.odrive_user()), 1), 'W', 'R');
+            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.account()), 1), 'W', 'R');
           ]]>
         </v:before-data-bind>
       	<v:data-source name="dsrc" expression-type="sql" nrows="--ODRIVE.WA.odrive_settings_rows(self.vc_page.vc_event.ve_params)" initial-offset="0">
@@ -182,7 +181,6 @@
             coloriseTable('mimes');
           ]]>
         </script>
-      </v:template>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

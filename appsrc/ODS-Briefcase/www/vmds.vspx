@@ -73,10 +73,9 @@
       <v:variable name="vmds_direction" persist="1" type="varchar" default="'asc'" />
     </vm:variables>
     <vm:pagebody>
-      <v:form name="F1" type="simple" method="POST">
         <v:before-data-bind>
           <![CDATA[
-            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.odrive_user()), 1), 'W', 'R');
+            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.account()), 1), 'W', 'R');
           ]]>
         </v:before-data-bind>
       	<v:data-source name="dsrc" expression-type="sql" nrows="--ODRIVE.WA.odrive_settings_rows(self.vc_page.vc_event.ve_params)" initial-offset="0">
@@ -128,7 +127,7 @@
             <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
               <table>
                 <tr align="center">
-                  <td colspan="4">No Schemas</td>
+                <td colspan="5">No Schemas</td>
                 </tr>
               </table>
             </v:template>
@@ -177,11 +176,13 @@
           </v:template>
 
           <v:template type="simple" name-to-remove="table" set-to-remove="top">
+          <table>
             <tr align="center">
               <td colspan="5">
                 <vm:ds-navigation data-set="ds"/>
               </td>
             </tr>
+          </table>
           </v:template>
 
         </v:data-set>
@@ -190,7 +191,6 @@
             coloriseTable('vmds');
           ]]>
         </script>
-      </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

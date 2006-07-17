@@ -61,16 +61,14 @@
       <v:variable name="v_right" type="varchar" default="'W'"/>
     </vm:variables>
     <vm:pagebody>
-      <v:form name="F1" type="simple">
         <v:before-data-bind>
           <![CDATA[
-            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.odrive_user()), 1), 'W', 'R');
+            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.account()), 1), 'W', 'R');
           ]]>
         </v:before-data-bind>
         <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
         <v:text name="formRight" type="hidden" value="--self.v_right"/>
         <v:text name="f_mode" type="hidden" value="--self.v_mode"/>
-        <v:template type="simple">
           <div class="new-form-header">
             <v:label format="%s" value="--concat(initcap(self.v_mode), ' MIME Type')"/>
           </div>
@@ -269,7 +267,6 @@
             </v:button>
           </div>
 
-        </v:template>
         <script>
           <![CDATA[
             coloriseTable('list2');
@@ -277,7 +274,6 @@
             initTab(2, 1);
           ]]>
         </script>
-      </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

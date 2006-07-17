@@ -150,6 +150,11 @@ ODRIVE.WA.odrive_exec_no_error(
 )
 ;
 
+ODRIVE.WA.odrive_exec_no_error (
+  'alter type wa_oDrive add overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 -- OPS methods
@@ -348,5 +353,16 @@ create method wa_dashboard_last_item () for wa_oDrive
   }
   http ('</dav-db>', ses);
   return string_output_string (ses);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_oDrive
+{
+  declare userID integer;
+
+  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
+  return sprintf ('%sexport.vspx?output=about&aid=%d', ODRIVE.WA.odrive_url (), userID);
 }
 ;

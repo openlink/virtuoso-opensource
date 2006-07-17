@@ -60,7 +60,7 @@
           grp := xpath_eval (sprintf ('/odrive_menu_tree/node[.//*[@url = "%s"]]/@allowed', page_name), xe, 1);
           grp := cast (grp as varchar);
 
-          if (ODRIVE.WA.odrive_check_grants (ODRIVE.WA.odrive_user(), grp))
+          if (ODRIVE.WA.odrive_check_grants (ODRIVE.WA.account(), grp))
             self.nav_pos_fixed := 1;
           control.vc_open_at (sprintf ('//*[@url = "%s"]', page_name));
         }
@@ -99,7 +99,7 @@
                 if ((control.vc_parent as vspx_tree_node).tn_open = 1)
                   control.ufl_active := 0;
                 else
-                  control.ufl_active := ODRIVE.WA.odrive_check_grants(ODRIVE.WA.odrive_user(), grp);
+                  control.ufl_active := ODRIVE.WA.odrive_check_grants(ODRIVE.WA.account(), grp);
               }
             ]]>
           </v:after-data-bind>

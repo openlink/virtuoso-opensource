@@ -23,8 +23,13 @@
  -
  -
 -->
+
 <html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
-  <head>
+  <head profile="http://internetalchemy.org/2003/02/profile">
+    <?vsp
+      http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.account()));
+      http(sprintf('<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s/dataspace/%U/briefcase/%U/sioc.rdf"/>', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.account(), ODRIVE.WA.domain_name()));
+    ?>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
@@ -32,6 +37,9 @@
     <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos"	href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
+    <?vsp
+      http(ODRIVE.WA.geo_url());
+    ?>
     <link rel="stylesheet" href="css/style.css" type="text/css" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <script language="JavaScript" type="text/javascript" src="js/odrive.js" />

@@ -69,10 +69,9 @@
       <v:variable name="v_right" type="varchar" default="'W'"/>
     </vm:variables>
     <vm:pagebody>
-      <v:form name="F1" type="simple">
         <v:before-data-bind>
           <![CDATA[
-            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.odrive_user()), 1), 'W', 'R');
+            self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.account()), 1), 'W', 'R');
             if ((not ODRIVE.WA.dav_rdf_notDeprecated(self.v_uri)) and (self.v_mode = 'update'))
               self.v_right := 'R';
           ]]>
@@ -80,7 +79,6 @@
         <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
         <v:text name="formRight" type="hidden" value="--self.v_right"/>
         <v:text name="f_mode" type="hidden" value="--self.v_mode"/>
-        <v:template type="simple">
           <div class="new-form-header">
             <v:label format="%s" value="--concat(initcap(self.v_mode), ' Schema')"/>
           </div>
@@ -531,8 +529,6 @@
             </v:button>
           </div>
 
-        </v:template>
-
         <script>
           <![CDATA[
             coloriseTable('properties');
@@ -541,7 +537,6 @@
             initTab(3, 1);
           ]]>
         </script>
-      </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

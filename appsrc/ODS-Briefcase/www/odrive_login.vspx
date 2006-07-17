@@ -28,8 +28,8 @@
     <![CDATA[
       if (self.vc_authenticated) {
         set_qualifier ('DB');
-        if ((self.page_owner is null and ODRIVE.WA.odrive_check_grants(ODRIVE.WA.odrive_user(), self.page_owner) <> 1) or
-				    (self.page_owner <> '' and ODRIVE.WA.odrive_check_grants(ODRIVE.WA.odrive_user(), self.page_owner) <> 1))
+        if ((self.page_owner is null and ODRIVE.WA.odrive_check_grants(ODRIVE.WA.account(), self.page_owner) <> 1) or
+            (self.page_owner <> '' and ODRIVE.WA.odrive_check_grants(ODRIVE.WA.account(), self.page_owner) <> 1))
 				{
           self.vc_redirect('home.vspx');
           return;

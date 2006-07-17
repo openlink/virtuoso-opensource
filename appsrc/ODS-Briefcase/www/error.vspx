@@ -36,7 +36,6 @@
       <v:variable name="msg" type="varchar" default="''" param-name="__SQL_MESSAGE" persist="0"/>
     </vm:variables>
     <vm:pagebody>
-      <v:form name="F1" type="simple">
         <div class="form-header">
           <img class="dialog_icon" src="image/stop_16.png" alt="Stop" title="Stop"/>
           An error has occured when processing "<?V self.page_name ?>" page.
@@ -62,7 +61,6 @@
         <div class="form-footer">
           <v:button action="simple" name="cancel" value="Go back" xhtml_onclick="javascript:history.back(); return false;"/>
         </div>
-      </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

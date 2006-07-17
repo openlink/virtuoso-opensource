@@ -69,6 +69,7 @@ ODRIVE.WA.rdf_upload('XBRL.rdf');
 ODRIVE.WA.rdf_upload('DOAP.rdf');
 ODRIVE.WA.rdf_upload('opl-lic.rdf');
 ODRIVE.WA.rdf_upload('google-kinds.rdf');
+ODRIVE.WA.rdf_upload('archive.rdf');
 
 -- register schemas
 --
@@ -80,6 +81,7 @@ DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/Image#',null,'http://
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/Email#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/EML.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/RDF#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/RDF.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/Photo#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/photo.rdf','replacing');
+DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/Archive#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/archive.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/MODS#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/MODS.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/Office#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/Office.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/OPML#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/OPML.rdf','replacing');
@@ -116,6 +118,7 @@ DAV_REGISTER_MIME_TYPE ('application/x-apple-spotlight', 'Spotlight Objects', 'm
 DAV_REGISTER_MIME_TYPE ('application/x-openlink-image', 'JPEG Image', 'jpg', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/rdf+xml', 'RDF', 'rdf', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/x-openlink-photo', 'Photo', 'jpg', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/zip', 'ZIP Archive', 'zip', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/x-openlinksw-vad', 'OpenLink Virtuoso VAD package', 'vad', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/x-openlinksw-vsp', 'VSP Virtuoso Server Page', 'vsp', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/x-openlinksw-vspx+xml', 'VSP Virtuoso Server Page', 'vspx', null, 'replacing');
@@ -150,6 +153,7 @@ DAV_REGISTER_MIME_RDF('application/x-openlink-image', 'http://www.openlinksw.com
 DAV_REGISTER_MIME_RDF('text/eml', 'http://www.openlinksw.com/schemas/Email#');
 DAV_REGISTER_MIME_RDF('application/rdf+xml', 'http://www.openlinksw.com/schemas/RDF#');
 DAV_REGISTER_MIME_RDF('application/x-openlink-photo', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('application/zip', 'http://www.openlinksw.com/schemas/Archive#');
 DAV_REGISTER_MIME_RDF('application/x-openlinksw-vad', 'http://www.openlinksw.com/schemas/VAD#');
 DAV_REGISTER_MIME_RDF('application/x-openlinksw-vsp', 'http://www.openlinksw.com/schemas/VSPX#');
 DAV_REGISTER_MIME_RDF('application/x-openlinksw-vspx+xml', 'http://www.openlinksw.com/schemas/VSPX#');
@@ -161,3 +165,33 @@ DAV_REGISTER_MIME_RDF('application/xbrl+xml', 'http://www.openlinksw.com/schemas
 DAV_REGISTER_MIME_RDF('application/doap+rdf', 'http://www.openlinksw.com/schemas/doap#');
 DAV_REGISTER_MIME_RDF('application/license', 'http://www.openlinksw.com/schemas/OplLic#');
 DAV_REGISTER_MIME_RDF('application/google-kinds+xml', 'http://www.openlinksw.com/schemas/google-kinds#');
+DAV_REGISTER_MIME_RDF('image/bmp', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/gif', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/ief', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/jpeg', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/png', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/tiff', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/x-cmu-raster', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/x-portable-anymap', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/x-portable-bitmap', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/x-portable-graymap', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/x-portable-pixmap', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/x-rgb', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/x-xbitmap', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/x-xpixmap', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/x-xwindowdump', 'http://www.openlinksw.com/schemas/Photo#');
+DAV_REGISTER_MIME_RDF('image/bmp', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/gif', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/ief', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/jpeg', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/png', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/tiff', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/x-cmu-raster', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/x-portable-anymap', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/x-portable-bitmap', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/x-portable-graymap', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/x-portable-pixmap', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/x-rgb', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/x-xbitmap', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/x-xpixmap', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('image/x-xwindowdump', 'http://www.openlinksw.com/schemas/Image#');

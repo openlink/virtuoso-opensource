@@ -37,7 +37,6 @@
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
     </vm:variables>
     <vm:pagebody>
-      <v:form name="F1" type="simple">
         <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
         <div class="new-form-header">
           Settings
@@ -175,7 +174,7 @@
                 chars := trim(self.f_chars.ufl_value);
 
                 ODRIVE.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
-                ODRIVE.WA.test(chars, vector('name', 'Max lenght of name', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
+                ODRIVE.WA.test(chars, vector('name', 'Max length of name', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
 
                 self.v_settings := ODRIVE.WA.set_keyword('rows', self.v_settings, cast(cast(rows as integer) as varchar));
                 self.v_settings := ODRIVE.WA.set_keyword('chars', self.v_settings, cast(cast(chars as integer) as varchar));
@@ -210,7 +209,6 @@
             initTab(2, 1);
           ]]>
         </script>
-      </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

@@ -346,7 +346,7 @@
               retValue := ODRIVE.WA.DAV_SET(self.dav_path, 'detType', either(equ(dav_detType, ''), null, dav_detType));
               if (dav_detType = 'oMail') {
                 ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-DomainId', get_keyword('dav_oMail_DomainId', self.vc_page.vc_event.ve_params));
-                ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-UserName', ODRIVE.WA.odrive_user());
+                  ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-UserName', ODRIVE.WA.account());
                 ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-FolderName', get_keyword('dav_oMail_FolderName', self.vc_page.vc_event.ve_params));
                 ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-NameFormat', get_keyword('dav_oMail_NameFormat', self.vc_page.vc_event.ve_params));
               }

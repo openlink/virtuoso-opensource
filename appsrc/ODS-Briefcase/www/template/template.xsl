@@ -137,13 +137,13 @@
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
-    <v:form name="FS" type="simple" xhtml_enctype="multipart/form-data">
+    <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
       <div style="height: 65px; background-color: #fff;">
         <div style="float: left;  padding-top: 3px;">
           <img src="image/drivebanner_sml.jpg" border="0"/>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-          <v:text name="keywords" value="" xhtml_onkeypress="return submitEnter(\'FS\', \'GO\', event)"/>
+          <v:text name="keywords" value="" xhtml_onkeypress="return submitEnter(\'F1\', \'GO\', event)"/>
           <xsl:call-template name="nbsp"/>
           <v:button name="GO" action="simple" style="url" value="Search" xhtml_alt="Simple Search">
           	<v:on-post>
@@ -178,15 +178,10 @@
         <br style="clear: left;"/>
       </div>
       <v:include url="odrive_login.vspx"/>
-    </v:form>
     <table id="RCT">
-      <tr id="RCT_head">
-        <td>
-    	    <v:vscx name="navbar" url="odrive_navigation.vspx" />
-        </td>
-      </tr>
       <tr>
-        <td>
+          <td id="RC">
+      	    <v:vscx name="navbar" url="odrive_navigation.vspx" />
       	  <v:template type="simple" condition="not self.vc_is_valid">
       	    <div class="error">
       		    <p><v:error-summary/></p>
@@ -198,6 +193,7 @@
       	</td>
       </tr>
     </table>
+    </v:form>
     <div class="footer">
       <a href="<?V ODRIVE.WA.wa_home_link () ?>aboutus.html" title="About Us">About Us</a> |
       <a href="<?V ODRIVE.WA.wa_home_link () ?>faq.html" title="FAQ">FAQ</a> |
