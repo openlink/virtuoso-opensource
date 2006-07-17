@@ -46,20 +46,27 @@
 <HTML> 
   <head>
  	<TITLE>Upload file</TITLE> 
+  <link rel="stylesheet" href="default.css" type="text/css"/>
  	<script language="JavaScript">
  	  function change_file_input(obj)
  	  {
  	    inp = document.getElementById('file_input');
  	    if (obj.value == 'upl')
- 	      inp.innerHTML = '<input type="file" name="file" size="100" id="file"/>';
+ 	      inp.innerHTML = '<input type="file" name="file" size="50" id="file"/>';
  	    else if (obj.value == 'txt')
- 	      inp.innerHTML = '<textarea name="file" cols="76" rows="20" id="file"></textarea>';
+ 	      inp.innerHTML = '<textarea name="file" cols="76" rows="10" id="file"></textarea>';
  	    else
- 	      inp.innerHTML = '<input type="text" name="file" size="100" id="file"/>';
+ 	      inp.innerHTML = '<input type="text" name="file" id="file"/>';
  	  }
  	</script>
+ 	<style>
+#file,
+#graph {		
+  width:100%;
+}
+		</style>
  	</head>
-  <BODY TEXT="#000000" LINK="#0000CC" VISITED="#3300CC" BGCOLOR="#EEEEEE" TOPMARGIN="0">
+  <BODY>
  	  <form method="post" enctype="multipart/form-data">
 <?vsp
   if (_upload is not null and _upload = 'Upload')
@@ -197,19 +204,11 @@
         VALUES (_davpath,_graph,now(),http_client_ip());
 ?>
   <h3>File uploaded.</h3>
-  <table>
-    <tr>
-      <td colspan="3">
+  <p>
         Saved as:<?= _davpath ?><br/>
         Grapth: <?= _graph ?>
-      </td>
-    </tr>
-    <tr>
-      <td><a href="browse_data.vsp?path=<?V substring(_davpath,1,strrchr(_davpath,'/') + 1) ?>">list dir</a></td>
-      <td><a href="browse_data.vsp?path=<?V substring(_davpath,1,strrchr(_davpath,'/') + 1) ?>&file=<?V subseq(_davpath,strrchr(_davpath,'/') + 1) ?>">view file</a></td>
-      <td><a href="desk.vsp?case=custom_sparql&dflt_graph=<?V _graph ?>">query</a></td>
-    </tr>
-  </table>
+  </p>
+  <a href="?">Upload another</a>
 <?vsp      
   	}
   }
@@ -218,49 +217,39 @@
   {
     _upload_form:;
 ?>
- 	<H4>Upload file</H4> 
- 	  <TABLE> 
- 	    <tr>
- 	      <td><input type="radio" name="source" value="upl" id="s_upl" onchange="change_file_input(this)"<?vsp if (_source = 'upl') http(' checked="checked"'); ?>/></td> 
- 	      <td><label for="s_upl">from local filesystem</label></td>
- 	    </tr> 
- 	    <tr>
- 	      <td><input type="radio" name="source" value="dav" id="s_dav" onchange="change_file_input(this)"<?vsp if (_source = 'dav') http(' checked="checked"'); ?>/></td> 
- 	      <td><label for="s_dav">from server WebDav</label></td>
- 	    </tr> 
- 	    <tr>
- 	      <td><input type="radio" name="source" value="ext" id="s_ext" onchange="change_file_input(this)"<?vsp if (_source = 'ext') http(' checked="checked"'); ?>/></td> 
- 	      <td><label for="s_ext">from external resource (link)</label></td>
- 	    </tr> 
- 	    <tr>
- 	      <td><input type="radio" name="source" value="txt" id="s_txt" onchange="change_file_input(this)"<?vsp if (_source = 'txt') http(' checked="checked"'); ?>/></td> 
- 	      <td><label for="s_txt">from text</label></td>
- 	    </tr> 
- 	    <tr>
- 	      <td><label for="graph">Graph:</label></td> 
- 	      <td><input type="text" name="graph" size="100" id="graph" value="<?V _graph ?>"/></td>
- 	    </tr> 
- 	    <tr>
- 	      <td><label for="file_input">File:</label></td> 
- 	      <td>
+ 	<H3>Upload file</H3> 
+ 	<input type="radio" name="source" value="upl" id="s_upl" onchange="change_file_input(this)"<?vsp if (_source = 'upl') http(' checked="checked"'); ?>/>
+ 	<label for="s_upl">from local filesystem</label>
+ 	<br/>
+ 	<input type="radio" name="source" value="dav" id="s_dav" onchange="change_file_input(this)"<?vsp if (_source = 'dav') http(' checked="checked"'); ?>/>
+ 	<label for="s_dav">from server WebDav</label></td>
+ 	<br/>
+ 	<input type="radio" name="source" value="ext" id="s_ext" onchange="change_file_input(this)"<?vsp if (_source = 'ext') http(' checked="checked"'); ?>/>
+ 	<label for="s_ext">from external resource (link)</label>
+ 	<br/>
+ 	<input type="radio" name="source" value="txt" id="s_txt" onchange="change_file_input(this)"<?vsp if (_source = 'txt') http(' checked="checked"'); ?>/>
+ 	<label for="s_txt">from text</label>
+ 	<br/>
+ 	<label for="graph">Graph:</label>
+ 	<input type="text" name="graph" id="graph" value="<?V _graph ?>"/>
+ 	<br/>
+ 	<label for="file_input">File:</label>
+ 	<br/>
  	        <div id="file_input">
  	          <?vsp
        	    if (_source = 'upl')
-       	      http('<input type="file" name="file" size="100" id="file"/>');
+      http('<input type="file" size="50" name="file" id="file"/>');
        	    else if (_source = 'txt')
        	    {
-       	      http('<textarea name="file" cols="76" rows="20" id="file">');
+      http('<textarea name="file" cols="76" rows="10" id="file">');
        	      http_value(_data,null);
        	      http('</textarea>');
        	    }
        	    else
-       	      http('<input type="text" name="file" size="100" id="file"/>');
+      http('<input type="text" name="file" id="file"/>');
        	    ?>
        	  </div>
-        </td>
- 	    </tr> 
- 	    <tr>
- 	      <td colspan="2">
+ 	<br/>
  	        <input type="submit" name="upload" value="Upload"/>
  	        <?vsp
  	          if (_show_overwrite)
@@ -271,9 +260,6 @@
  	        <?vsp
  	        }
  	        ?>
- 	      </td> 
- 	    </tr> 
- 	  </TABLE> 
 <?vsp
   }
   _end:;

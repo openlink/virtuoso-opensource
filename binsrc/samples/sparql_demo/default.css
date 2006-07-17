@@ -61,19 +61,36 @@ img { border: 0;}
   padding:4px;
 }
 
+#nav_bar ul li ul li{ 
+  margin-left: 10px;
+}
+
 #nav_bar ul { 
 	margin-left: 0px;
   list-style-type: none; 
   padding-left: 0px;
 }
 
-#nav_bar li { font-weight: bold;}
+#nav_bar li { 
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#nav_bar li.nohover:hover {
+  background-color: #86B9D9;
+  cursor: auto;
+}
+
+#nav_bar li.l2,
+#tab_import_data,
+#tab_dawg {
+  margin-left:15px;
+}
 
 #nav_bar li.tab_selected { border: 1px dotted #cee;}
 
 #nav_bar li:hover {
   background-color: #666;
-  cursor: pointer;
 }
 
 #nav_bar a { color: #ddd; text-decoration: none;}
@@ -82,6 +99,12 @@ img { border: 0;}
   width: 75%;
   float: left; clear: right; 
   margin-left: 5px;}
+
+#import_data_frame {
+  border:0px;
+  width: 100%;
+  height: 500px;
+}
 
 div.pager { 
   float: left; clear: both;
@@ -132,7 +155,7 @@ label.load { font-size: 8pt; font-weight: normal;}
   float: right;
 }
 
-#result,
+/* #result,*/
 #request,
 #responce {
   overflow:auto;

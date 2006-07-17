@@ -27,12 +27,10 @@ function init()
   
   tab = new OAT.Tab ("main_col");
   tab.add ("tab_home","page_home");
-  tab.add ("tab_feature1","page_feature1");
-  tab.add ("tab_feature3","page_feature3");
-  tab.add ("tab_feature4","page_feature4");
   tab.add ("tab_query","page_query");
+  tab.add ("tab_dawg","page_dawg");
+  tab.add ("tab_import_data","page_import_data");
 //  tab.add ("tab_query_remote","page_query_remote");
-  tab.go (4); /* is 0-based index... */
 	$('load').checked = true;
   tab.go (go_to); /* is 0-based index... */
 
@@ -98,7 +96,7 @@ function view_file(path,fname,data)
     $('file_window_content').innerHTML = '<pre>' + content + '</pre>'; 
     return false;
   };
-  if (data)
+  if (data != undefined)
     response(data);
   else
   {
@@ -124,43 +122,82 @@ function open_dav()
 
 function load_dawg(list,item)
 {
-  var r = get_r();
-  if (!r && !$('tab_query').className.match('tab_selected'))
-    tab.go(4);
+  tab.go (2);
+  $('dawg_content').innerHTML = 'Loading data ...';
   var callback = function(data) {
     var ch = data.firstChild.childNodes;
+    var queryuri = '';
+    var query = '';
+    var default_graph_uri = '';
+    var data = '';
+    var comment = '';
+    var etalonuri = '';
     var etalon = '';
     for(var i = 0; i < ch.length; i++)
     {
-      if (ch[i].nodeName == 'query')
-        $(r+'query').value = ch[i].firstChild.nodeValue;
+      if (ch[i].nodeName == 'queryuri')
+        queryuri = ch[i].firstChild.nodeValue;
+      else if (ch[i].nodeName == 'query')
+        query = ch[i].firstChild.nodeValue;
       else if (ch[i].nodeName == 'default-graph-uri')
-        $(r+'default-graph-uri').value = ch[i].firstChild.nodeValue;
+        default_graph_uri = ch[i].firstChild.nodeValue;
+      else if (ch[i].nodeName == 'data')
+        data = ch[i].firstChild.nodeValue;
+      else if (ch[i].nodeName == 'comment')
+        comment = (ch[i].firstChild)?ch[i].firstChild.nodeValue:'';
+      else if (ch[i].nodeName == 'etalonuri')
+        etalonuri = ch[i].firstChild.nodeValue;
       else if (ch[i].nodeName == 'etalon')
       {
-        $(r+'etalon').innerHTML = '<hr/><b>Expected result:</b>' + ch[i].firstChild.nodeValue;
+        etalon = ch[i].firstChild.nodeValue;
       }
+      }
+    
+    $('dawg_content').innerHTML = '<h2>' + decodeURIComponent(item).replace(/\+/g,' ') +'</h2>';
+    $('dawg_content').innerHTML +='<p>' + comment +'</p>';
+    $('dawg_content').innerHTML +='<h3>Data</h3>';
+    $('dawg_content').innerHTML +='<p><a href="#" id="dawg_dgu" onclick="view_file(\'' + default_graph_uri + '\')">' + default_graph_uri + '</a><br></p>';
+    if (data)
+      $('dawg_content').innerHTML +='<div class="query">' + data.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
+    $('dawg_content').innerHTML +='<h3>Query</h3>';
+    $('dawg_content').innerHTML +='  <a href="#" onclick="view_file(\'' + queryuri + '\')">' + queryuri + '</a><br>';
+    $('dawg_content').innerHTML +='<div class="query" id="dawg_query">' + query.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
+    $('dawg_content').innerHTML +='<h3>Results</h3>';
+    $('dawg_content').innerHTML +='<p><a href="#" onclick="view_file(\'' + etalonuri + '\')">' + etalonuri + '</a></p>';
+    $('dawg_content').innerHTML += '<div id="dawg_etalon">' + etalon + '</div>';
+
+  };
+  OAT.Ajax.command(OAT.Ajax.GET, "./sparql_ajax.vsp?list=" + list + "&case=" + item, function(){return '';}, callback, OAT.Ajax.TYPE_XML);
+}
+function load_dawg_query()
+{
+  if (!$('dawg_query') || !$('dawg_query').innerHTML)
+  {
+    alert('Please select DAWG use case from the tree on the left first!');
+    return;
     }
+  tab.go(1);
+  $('query').value = $('dawg_query').innerHTML.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+  $('default-graph-uri').value = $('dawg_dgu').innerHTML;
+  $('etalon').innerHTML = '<hr/><b>Expected result:</b>' + $('dawg_etalon').innerHTML;
 
-    OAT.Dom.show($('view_data_file'));
-    $(r+'format').selectedIndex = 0; 
-    $(r+'result').innerHTML = ''; 
+  $('format').selectedIndex = 0; 
+  $('result').innerHTML = ''; 
 
-    var table = find_child_element($(r+'etalon'),'table');
+  var table = find_child_element($('etalon'),'table');
     if (table)
     { 
-      $(r+'etalon').innerHTML += '<div id="grid_etalon"></div>'; 
-      table = find_child_element($(r+'etalon'),'table');
+    $('etalon').innerHTML += '<div id="grid_etalon"></div>'; 
+    table = find_child_element($('etalon'),'table');
       var grid = new OAT.Grid("grid_etalon",0);
       load_grid(grid,table);
       table.parentNode.removeChild(table);
     }
     else
     {
-      $(r+'etalon').innerHTML += '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
+    $('etalon').innerHTML += '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
     }
-  };
-  OAT.Ajax.command(OAT.Ajax.GET, "./sparql_ajax.vsp?list=" + list + "&case=" + item + "&r=" + r, function(){return '';}, callback, OAT.Ajax.TYPE_XML);
+  //OAT.Dom.hide($('tree_containter'));
 }
 
 function get_r(){
@@ -294,22 +331,6 @@ function rq_query(param,dl)
       tabres_html += '<div id="autoload">' + dl + '</div>';
     $(r+'res_area').innerHTML += tabres_html;
     
-    var table = find_child_element($(r+'result'),'table');
-    if (table && $(r+'format').selectedIndex == 0 && param != 'c')
-    {
-      $(r+'result').innerHTML += '<div id="grid"></div>'; 
-      table = find_child_element($(r+'result'),'table');
-      var grid = new OAT.Grid("grid",0);
-      load_grid(grid,table);
-      table.parentNode.removeChild(table);
-    }
-    else
-    {
-      if (!is_r() && !param)
-        $(r+'result').innerHTML = '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
-      else
-        $(r+'result').innerHTML = data;
-    }
     var body_str = body();
     var request = '';
     request += '<div id="request"><pre>';
@@ -338,6 +359,23 @@ function rq_query(param,dl)
     if (dl)
       tabres.add ("tabres_autoload","autoload");
     tabres.go(0);
+
+    var table = find_child_element($(r+'result'),'table');
+    if (table && $(r+'format').selectedIndex == 0 && param != 'c')
+    {
+      $(r+'result').innerHTML += '<div id="grid"></div>'; 
+      table = find_child_element($(r+'result'),'table');
+      var grid = new OAT.Grid("grid",0);
+      load_grid(grid,table);
+      table.parentNode.removeChild(table);
+    }
+    else
+    {
+      if (!is_r() && !param)
+        $(r+'result').innerHTML = '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
+      else
+        $(r+'result').innerHTML = data;
+    }
 
   };
   //if (!is_r() && !param && $('local_sparql').checked)

@@ -273,7 +273,7 @@ WHERE {
     <script type="text/javascript" src="toolkit/loader.js"></script>
     <script type="text/javascript" src="sparql_ajax.js"></script>
     <script type="text/javascript">
-      var go_to = <?vsp if({?'goto'} = 'query_page') http('4'); else http('0');?>;
+      var go_to = <?vsp if({?'goto'} = 'query_page') http('1'); else http('0');?>;
     </script>
   </head>
   <body onload="init()">
@@ -283,16 +283,14 @@ WHERE {
       <div id="nav_bar">
         <ul>
           <li id="tab_home">Home</li>
-          <li id="tab_feature1">Execute Sparql Query</li>
-          <li id="tab_feature3">Choose DAWG Use Case</li>
-          <li id="tab_feature4">Browsing loaded data</li>
         </ul>
         <ul>
           <li id="tab_query">Query Processor</li>
         </ul>
         <ul>
-          <li>Load W3C DAWG Use Cases</li>
-    <div id="tree_containter">
+          <li class="nohover">Saved queries</li>
+          <li class="l2" id="tab_dawg">DAWG Tests</li>
+    <div id="tree_containter" style="display:none;">
       <ul id="tree_content"><?vsp
           declare manifests any;
           declare ctr integer;
@@ -378,11 +376,15 @@ WHERE {
         ?>
       </ul>
     </div>
-          <li><a href="#" onclick="open_dav()">Browse loaded data</a></li>
+          <li class="nohover">RDF Data Imports</li>
+          <li id="tab_import_data">Import Data</li>
+          <li class="l2"><a href="#" onclick="open_dav()">View Imported Data</a></li>
         </ul>
         <ul>
-           <li><a href="http://virtuoso.openlinksw.com/">Virtuoso Home</a></li>
+           <li><a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">Query Service Documentation</a></li>
            <li><a href="http://docs.openlinksw.com/virtuoso">Virtuoso Documentation</a></li>
+           <li><a href="http://virtuoso.openlinksw.com/wiki/main/">Virtuoso Wiki</a></li>
+           <li><a href="http://virtuoso.openlinksw.com/blog/">Virtuoso Blog</a></li>
         </ul>
       </div>
       <div id="main_col">
@@ -422,62 +424,18 @@ WHERE {
         </p>
         <p>All feedback is appreciated, since our goal is to 
         demonstrate the workability of SPARQL to the degree possible via this demo.</p>
-        <div class="pager"><a href="#" onclick="tab.go(1)">Next</a></div>
       </div><!-- page_home -->
-      <div id="page_feature1">
-        <h2>Execute Sparql Query</h2>
-        <p>If you select "Query Processor" from the navigation you will see a form for quering the local Virtuoso RDF DATABASE</p>
-        <p>It has the following inputs:</p>
-        <ul>
-          <li>Graph - DEFAULT graph URI for the query</li>
-          <li>load data from URI - with tree options:
-            <ul>
-              <li>if there is no data for URI - the query engine will check if there is data for the selected URI and if there is none it
-                  will try to retrieve it and load it the RDF database</li>
-              <li>delete the currently loaded data, and load again - the engine will always delete all data for the current graph, retrieve it 
-                  and load it again.</li>
-              <li>never try to load - the engine will never try to retrieve or load data for the current graph</li>
-            </ul>
-            This option is only avaliable for quering the local query processor.
-          </li>
-          <li>SPARQL Query - The query to be send</li>
-          <li>Output format - select output format for the answer:
-            <ul>
-              <li>table - the result will show as rendered html table</li>
-              <li>XML - the result will show as RDF XML</li>
-              <li>TURTLE - if the query is CONSTRUCT/DESCRIBE the result will be shown in TURTLE format</li>
-              <li>JSON - the result will show as Javascript OBJECT Notation</li>
-              <li>Javascript - the result will show as javascript code writing an html table</li>
-              <li>HTML - the result will show as escaped html table (you will see the html table code)</li>
-            </ul>
-          </li>
-        </ul>
-        <p>When you click on "Run Query", request will be send to the server and the result will be shown below the query form.</p>
-        <p>You can see the request send and the responce from the server click on the tabs.</p>
-        <p>If you have chosen to load data you will see tab "data load result", in which you can view the result from data loading.</p>
-        <div class="pager"><a href="#" onclick="tab.go(0)">Previous</a><a href="#" onclick="tab.go(2)">Next</a></div>
-      </div><!-- page_feature1 -->
-      <div id="page_feature3">
-        <h2>Choose DAWG Use Case</h2>
-        <p>In the navigation on the left there is a tree with tested DAWG Use cases.</p>
-        <p>They are devided in sections. If you click on the [+] next to the section name you will see a list with Use cases and files.</p>
-        <p>Clicking on a Use case will preload Graph and query in the fields either in Query Processor
-           It will also load a table with the expected result as specified by W3C.</p>
-        <p>Then you can click on "Run Query" and compare the results.</p>
-        <div class="pager"><a href="#" onclick="tab.go(2)">Previous</a><a href="#" onclick="tab.go(4)">Next</a></div>
-      </div><!-- page_feature3 -->
-      <div id="page_feature4">
-        <h2>Browsing loaded data</h2>
-        <p>If you select "Browse loaded data" from the navigation you will see a WebDAV browser where you can browse the folder "/DAV/sparql_demo/data/"</p>
-        <p>This is the place where the initially loaded data and user loaded data is kept.</p>
-        <p>Please note that this is not all the data loaded in RDF Database. Just the once that whare loaded on initial state
-            or by the loading feature of this page.</p>
-        <p>The folders: data-xml, extencions, patches are holding files initially loaded on install time.</p>
-        <p>The folder user_data is holding files retrieved loading feature.</p>
-        <p>When the file is loaded the loading feature it will be saved in directories coping the directories structore of the URI. 
-            For ex. the URI http://www.ldodds.com/ldodds-knows.rdf will be saved in directory user_data/www.ldodds.com/, file named ldodds-knows.rdf</p>
-        <div class="pager"><a href="#" onclick="tab.go(3)">Previous</a></div>
-      </div><!-- page_feature4 -->
+      <div id="page_dawg">
+        <h2>Dawg Use Case</h2>
+        <p>&lt;-- Pick from the tree on the left... 
+          <button name="load_dawg_query" id="load_dawg_query" onclick="load_dawg_query()">Load Dawg Test To Query Processor</button>
+        </p>
+        <div id="dawg_content">
+        </div><!-- dawg_content -->
+      </div><!-- page_dawg -->
+      <div id="page_import_data">
+        <iframe id="import_data_frame" name="import_data_frame" src="data_upload.vsp"></iframe>
+      </div><!-- page_import_data -->
       <div id="page_query">
         <h2>Query Processor</h2>
         <form>
