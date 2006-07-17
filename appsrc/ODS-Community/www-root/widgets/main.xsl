@@ -355,11 +355,15 @@
       <xsl:text>&#10;</xsl:text>
       <link rel="foaf" type="application/rdf+xml" title="FOAF"     href="<?Vself.ur?>/dataspace/<?Vself.owner_name?>/about.rdf" />
       <xsl:text>&#10;</xsl:text>
+      <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('%s/dataspace/%U/community/%U/sioc.rdf', self.ur, self.owner_name, self.comm_wainame), '+', '%2B')); ?>" />
+      <xsl:text>&#10;</xsl:text>
       <?vsp
         declare icon varchar;
         icon := self.stock_img_loc || 'fav.ico';
         http(sprintf('<link rel=\"shortcut icon\" href=\"%s\"/>', icon));
       ?>
+      
+
       <xsl:text>&#10;</xsl:text>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
       <xsl:text>&#10;</xsl:text>
@@ -2595,7 +2599,7 @@ window.onload = function (e)
              
 ?>
       <meta name="ICBM" content="<?V sprintf( '%.06f' , _lat)?>, <?V sprintf( '%.06f' , _lng)?>" />
-      <meta name="DC.title" content="'<?Vself.title?>" />
+      <meta name="DC.title" content="'<?Vreplace (sprintf ('%U',self.comm_wainame),'+', '%2B')?>" />
 <?vsp
         self.has_geolatlng:=1;
 

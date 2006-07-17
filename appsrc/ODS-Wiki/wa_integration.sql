@@ -83,6 +83,10 @@ wa_exec_no_error(
 )
 ;
 
+wa_exec_no_error(
+  'alter type wa_wikiv add overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar'
+)
+;
 
 insert soft WA_TYPES(WAT_NAME, WAT_DESCRIPTION, WAT_TYPE, WAT_REALM) values ('oWiki', 'oWiki', 'db.dba.wa_wikiv', 'wikiv')
 ;
@@ -628,5 +632,15 @@ create procedure WV.WIKI.CREATEINSTANCE (in cluster_name varchar,
     where
       WAI_ID = id;
   return id;
+}
+;
+
+
+create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_wikiv
+{
+--  dbg_obj_princ (full_path, ' => ', pattern, ' ', _host);
+  declare _cluster_name varchar;
+  _cluster_name := (select CLUSTERNAME from WV.WIKI.CLUSTERS where CLUSTERID = self.cluster_id);
+  return sprintf ('/wiki/resources/gems.vsp?type=rdf&cluster=%U', _cluster_name);
 }
 ;

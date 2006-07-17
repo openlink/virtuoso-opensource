@@ -145,10 +145,15 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
   if (length (uname) = 0)
     signal ('22023', 'Account is not specified.');
 
-  if (app <> 'users' and length (inst) and length (path) > 7 and path[7] = 'about.rdf')
+  if (app <> 'users' and length (inst) and length (path) > 7)
+    {
+      if (path[7] = 'about.rdf')
     do_rdf := 1;
+      else if (path[7] = 'sioc.rdf')
+	do_sioc := 1;
+    }
 
-  if (app = 'users' or (app is not null and inst = 'about.rdf'))
+  if (app = 'users' or (app is not null and (inst = 'about.rdf' or inst = 'sioc.rdf')))
    {
       declare atype, foaf varchar;
 

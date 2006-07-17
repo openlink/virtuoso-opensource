@@ -36,7 +36,10 @@ if ({?'type'} is not null)
  	_clusterwithpoint := _cluster || '.'; 
   }
   _base := aref (split_and_decode (http_request_header (lines, 'Host'), 0, '\0\0:'), 0);
+  if (server_http_port () <> '80')
   _base := 'http://' || _base || ':' || server_http_port () || '/';
+  else
+    _base := 'http://' || _base || '/';
   _home :=  _base || 'wiki/main/';
 
   declare cr cursor for select 
@@ -84,7 +87,7 @@ if ({?'type'} is not null)
 
 
    http_header ('Content-Type: text/xml; charset="ISO-8859-1"\r\n');
-   http ('<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:vi="http://www.openlinksw.com/weblog/">\r\n<channel>\r\n');
+   http ('<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:vi="http://www.openlinksw.com/ods/">\r\n<channel>\r\n');
    http ('<title>');
    if ({?'cluster'} is null)
      http ('Site Changelog');

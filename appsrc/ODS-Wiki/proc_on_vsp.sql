@@ -1582,6 +1582,14 @@ create function WV.WIKI.SIDURLPART (in sid varchar, in realm varchar)
 ;
 
 
+create function WV.WIKI.GET_QHOST (in hostname varchar, in portname varchar)
+{
+  if (portname <> '80')
+    return hostname || ':' || portname;
+  return hostname;
+}
+;
+
 -- stolen from Blog2
 create function WV.WIKI.GET_HOST ()
 {
@@ -1595,14 +1603,14 @@ create function WV.WIKI.GET_HOST ()
           declare hpa any;
           hp := sys_connected_server_address ();
           hpa := split_and_decode (hp, 0, '\0\0:');
-          ret := ret || ':' || hpa[1];
+          ret := WV.WIKI.GET_QHOST (ret, hpa[1]);
         }
     }
   else
    {
      ret := sys_connected_server_address ();
      if (ret is null)
-       ret := sys_stat ('st_host_name')||':'||server_http_port ();
+       ret := WV.WIKI.GET_QHOST (sys_stat ('st_host_name'),server_http_port ());
    }
 
   return ret;

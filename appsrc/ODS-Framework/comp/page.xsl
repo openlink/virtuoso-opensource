@@ -50,7 +50,6 @@
     select top 1 WS_WEB_TITLE, WS_WEB_BANNER, WS_WELCOME_MESSAGE, WS_COPYRIGHT, WS_DISCLAIMER
        into self.banner, self.web_banner, self.welcome_message, self.copyright, self.disclaimer from WA_SETTINGS;
 
-    dbg_obj_print(self.welcome_message);
     
     self.maps_key := WA_MAPS_GET_KEY ();
 
@@ -67,12 +66,10 @@
       }
 
     cookie_vec := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
-    --dbg_obj_print ('cookie_vec=',cookie_vec);
     if (get_keyword('sid', self.vc_event.ve_params) is null and get_keyword('sid', cookie_vec) is not null and WA_IS_REGULAR_FEED ())
       {
         declare pars, pos any;
         pars := self.vc_event.ve_params;
-	--dbg_obj_print (pars);
 	sid := get_keyword('sid', cookie_vec);
 	pos := position ('sid', pars);
 	if (pos > 0)
@@ -86,9 +83,12 @@
       	  {
 	    pars := vector_concat (pars, vector ('sid', sid, 'realm', 'wa')) ;
 	  }
+
+
 	self.vc_event.ve_params := pars;
-        --dbg_obj_print ('SID=', sid);
+
       }
+
      if (self.template is not null)
        {
          declare t_src, dummy any;
@@ -192,7 +192,6 @@
 <?vsp
     }
 ?>
--->
 </xsl:template>
 
 <xsl:template match="vm:greetings">
@@ -1375,7 +1374,6 @@ if (frm is not null)
     if (ds.ds_rows_total > t)
       t := ds.ds_rows_total;
     c := ds.ds_rows_offs/ds.ds_nrows;
-    -- dbg_obj_print ('n=',n, ' t=',t,' c=', c, ' ds_rows_total=', ds.ds_rows_total);
     if ((t/n) > 20)
       i := (t/n) - 20;
     while (t and i < (t/n)+1)

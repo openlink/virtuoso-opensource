@@ -1243,7 +1243,7 @@ create procedure wa_vad_check (in pname varchar)
   declare nam varchar;
   nam := get_keyword (pname, vector ('blog2','Weblog','oDrive','Briefcase','enews2','Feed Manager',
   				      'oMail','Mail','bookmark','Bookmarks','oGallery','Gallery' ,
-				      'wiki','Wiki', 'wa', 'Framework'), null);
+				      'wiki','Wiki', 'wa', 'Framework','nntpf','Discussion'), null);
   if (nam is null)
     return vad_check_version (pname);
   else

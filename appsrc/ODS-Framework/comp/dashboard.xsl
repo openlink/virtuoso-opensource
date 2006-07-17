@@ -317,7 +317,7 @@
 		  </xsl:processing-instruction>
         <tr align="left">
        <?vsp
-            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki')
+            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark')
             {
        ?>       
 
@@ -525,17 +525,25 @@
 
   <xsl:template match="vm:dash-bookmark-summary">
                     <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="info_container3">
-		      <tr><th class="info" colspan="3"><H2><?V WA_GET_APP_NAME ('bookmark') ?></H2></th></tr>
+                      <tr><th class="info" colspan="3"><H2><?V WA_GET_APP_NAME ('Bookmark') ?></H2></th></tr>
                       <tr>
-                        <th><v:url name="bookm_orderby_subject"
-                                   value="Link"
-                                   url="--'?order_by=subject&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
-                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
-                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                        <th><v:url name="bmk_orderby_instance"
+                                   value="Instance"
+                                   url="--'?order_by=instance&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
                                            '&'||http_request_get('QUERY_STRING')"
                              /></th>
-                        <th><v:url name="bookm_orderby_creator"
+                        <th><v:url name="bmk_orderby_link"
+                                   value="Bookmark"
+                                   url="--'?order_by=link&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="bmk_orderby_creator"
                                    value="Creator"
                                    url="--'?order_by=creator&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
@@ -543,7 +551,7 @@
                                                          else 'asc' end) ||
                                            '&'||http_request_get('QUERY_STRING')"
                             /></th>
-                        <th><v:url name="bookm_orderby_date"
+                        <th><v:url name="bmk_orderby_date"
                                    value="Date"
                                    url="--'?order_by=date&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
@@ -553,7 +561,7 @@
                             /></th>
                       </tr>
       <xsl:call-template name="user-dashboard-item-extended">
-			<xsl:with-param name="app">bookmark</xsl:with-param>
+        <xsl:with-param name="app">Bookmark</xsl:with-param>
 		    </xsl:call-template>
                     </table>
   </xsl:template>
