@@ -2328,7 +2328,7 @@ create procedure OMAIL.WA.omail_open_url (
   in _user_id integer,
   in _msg_id integer)
 {
-  return concat(OMAIL.WA.omail_url(_domain_id), sprintf('/open.vsp?sid=%s&realm=%s&op=%d', _sid, _realm, _msg_id));
+  return concat(OMAIL.WA.omail_url(_domain_id), sprintf('open.vsp?sid=%s&realm=%s&op=%d', _sid, _realm, _msg_id));
 }
 ;
 

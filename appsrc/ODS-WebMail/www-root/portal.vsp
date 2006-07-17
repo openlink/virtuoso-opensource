@@ -20,12 +20,11 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-?>
 <?vsp
   declare errorCount, N integer;
   declare waID, user_id integer;
-  declare wa_home_title, wa_home_link, user_name, user_fullName, procName, procID varchar;
-  declare vOptions any;
+  declare wa_home_title, wa_home_link, user_name, user_fullName, procName, procID, S varchar;
+  declare vOptions, geoParams any;
 
   declare exit handler for sqlstate '90001' { OMAIL.WA.utl_doredirect(__sql_message); return;};
   declare exit handler for sqlstate '90005' { return; }; --download
@@ -100,7 +99,11 @@ exec_start:;
        AND VS_UID   = U_NAME
        AND VS_REALM = 'wa';
 
-    params := vector_concat(params, vector('user_info', vector('user_id', user_id, 'user_name', user_name, 'user_fullname', user_fullName, 'domain_id', waID, 'email', waName)));
+    geoParams := vector();
+    for (select WAUI_LAT, WAUI_LNG from WA_USER_INFO where WAUI_U_ID = user_id) do
+      if ((not isnull(WAUI_LNG)) and (not isnull(WAUI_LAT)))
+        geoParams := vector('latitude', sprintf('%.2f', WAUI_LAT), 'longitude', sprintf('%.2f', WAUI_LNG));
+    params := vector_concat(params, vector('user_info', vector('user_id', user_id, 'user_name', user_name, 'user_fullname', user_fullName, 'domain_id', waID, 'email', waName, 'foafUrl', OMAIL.WA.host_url () || '/dataspace/' || user_name || '/about.rdf', 'geo', geoParams)));
   } else {
     OMAIL.WA.utl_redirect(wa_home_link || 'index.wspx');
     return;
@@ -120,8 +123,12 @@ exec_start:;
   return;
 
 bad_session:
+  S := HTTP_REQUESTED_URL() || '?';
+  for (N := 0; N < length(params); N := N + 2)
+    if ((params[N] <> 'sid') and (params[N] <> 'realm') and (params[N] <> 'Content'))
+      S := S || params[N] || '=' || cast(params[N+1] as varchar) || '&';
   http_request_status ('HTTP/1.1 302 Found');
-  http_header (sprintf ('Location: %s\r\n', wa_home_link));
+  http_header (sprintf ('Location: %slogin.vspx?URL=%U\r\n', wa_home_link, rtrim(S, '&')));
 
 system_error:
   http('The user doesn\'t have any mail box defined');

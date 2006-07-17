@@ -1,0 +1,100 @@
+<!--
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+-->
+<?vsp
+  declare _user_id, _domain_id integer;
+  declare _sid, _realm, _output varchar;
+  declare _params any;
+
+  _realm     := 'wa';
+  _sid       := '';
+  _output    := get_keyword('output', params, '');
+  _domain_id := 1;
+
+  if (_output = 'about') {
+    declare sql, state, msg, meta, result any;
+
+    _user_id := get_keyword('uid', params, '0');
+    _params  := vector();
+    _params  := vector_concat(_params, vector('q_max', 15));
+    sql      := OMAIL.WA.omail_msg_search(_domain_id, _user_id, _params, 0);
+    state    := '00000';
+    exec(sql[0][0], state, msg, sql[1][0], 0, meta, result);
+    if (state <> '00000')
+      goto _error;
+
+    http_rewrite ();
+    http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+    http ('<?xml version ="1.0" encoding="UTF-8"?>\n');
+    http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
+    http ('<channel>\n');
+    for (select U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = _user_id) do {
+      http ('<title>');
+        http_value (OMAIL.WA.utf2wide(OMAIL.WA.domain_name(_domain_id)));
+      http ('</title>\n');
+      http ('<description>');
+        http_value (OMAIL.WA.utf2wide(OMAIL.WA.domain_description(_domain_id)));
+      http ('</description>\n');
+      http ('<managingEditor>');
+        http_value (U_E_MAIL);
+      http ('</managingEditor>\n');
+      http ('<pubDate>');
+        http_value (OMAIL.WA.dt_rfc1123(now()));
+      http ('</pubDate>\n');
+      http ('<generator>');
+        http_value ('Virtuoso Universal Server ' || sys_stat('st_dbms_ver'));
+      http ('</generator>\n');
+      http ('<webMaster>');
+        http_value (U_E_MAIL);
+      http ('</webMaster>\n');
+      http ('<link>');
+        http_value (OMAIL.WA.omail_url(_domain_id));
+      http ('</link>\n');
+    }
+    foreach (any row in result) do {
+      http ('<item>\n');
+        http ('<title>');
+          http_value (OMAIL.WA.utf2wide(row[0]));
+        http ('</title>\n');
+        http ('<link>');
+          http_value (OMAIL.WA.omail_open_url(_sid, _realm, _domain_id, _user_id, row[4]));
+        http ('</link>\n');
+        http ('<pubDate>');
+          http_value (OMAIL.WA.dt_rfc1123 (row[7]));
+        http ('</pubDate>\n');
+        http ('<vi:modified>');
+          http_value (OMAIL.WA.dt_iso8601 (row[7]));
+        http ('</vi:modified>\n');
+      http ('</item>\n');
+    }
+    http ('</channel>\n');
+    http ('</rss>');
+
+    http_xslt (OMAIL.WA.omail_xslt_full ('export/rss2rdf.xsl'));
+    goto _end;
+  }
+_error:
+  http('<?xml version="1.0" ?><empty />');
+
+_end:
+  http_flush();
+?>

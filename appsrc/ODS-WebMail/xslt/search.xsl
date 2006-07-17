@@ -72,7 +72,7 @@
               <xsl:with-param name="params"><xsl:value-of select="//export"/>&amp;output=atom10</xsl:with-param>
               <xsl:with-param name="title">Atom 1.0</xsl:with-param>
               <xsl:with-param name="img_label"> Atom</xsl:with-param>
-              <xsl:with-param name="img">/oMail/i/blue-icon-16.gif.gif</xsl:with-param>
+              <xsl:with-param name="img">/oMail/i/blue-icon-16.gif</xsl:with-param>
             </xsl:call-template>
           </xsl:if>
           <xsl:call-template name="make_href">

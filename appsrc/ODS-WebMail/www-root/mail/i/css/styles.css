@@ -125,7 +125,7 @@ input[readonly]
 #tree
 {
   padding: 2px;
-  width: 170px;
+  width: 200px;
   min-height: 222px;
   overflow: auto;
 }
@@ -205,7 +205,7 @@ colgroup col.w80p
 /* -- base class header ------------------------------------------------ */
 .content
 {
-  font-size: 12px;
+  font-size: 1em;
   background-color: #fff;
   margin: 1px 0px 1px 0px;
 }
@@ -213,7 +213,6 @@ colgroup col.w80p
 .content caption
 {
   text-align: left;
-  font-size: 1em;
   font-weight: bold;
   background-color: #b0cde4;
   padding: 5px;
@@ -228,7 +227,6 @@ colgroup col.w80p
 
 .content thead th, .content td thead th
 {
-  font-size: 1em;
   font-weight: bold;
   text-align: left;
   padding: 3px 2px 3px 3px;
@@ -258,12 +256,6 @@ colgroup col.w80p
   border-width: 0px 0px 1px 0px;
   border-color: #F3F3EE;
   padding: 2px;
-}
-
-.content tbody td.clear
-{
-  border: 0px;
-  padding: 0 2px 0 2px;
 }
 
 .content tfoot tr

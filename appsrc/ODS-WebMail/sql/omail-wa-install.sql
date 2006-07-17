@@ -171,6 +171,11 @@ OMAIL.WA.exec_no_error(
 )
 ;
 
+OMAIL.WA.exec_no_error(
+  'alter type wa_mail add overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 create constructor method wa_mail (inout stream any) for wa_mail
@@ -396,3 +401,15 @@ create method wa_dashboard_last_item () for wa_mail
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_mail
+{
+  declare domainID, userID integer;
+
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
+  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
+
+  return sprintf('http://' || DB.DBA.http_get_host () || '/oMail/res/export.vsp?output=about&did=%d&uid=%d', domainID, userID);
+}
+;

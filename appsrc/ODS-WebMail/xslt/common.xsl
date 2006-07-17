@@ -47,7 +47,7 @@
   <!-- ========================================================================== -->
   <xsl:template name="root_normal">
     <html>
-      <head>
+      <head profile="http://internetalchemy.org/2003/02/profile">
         <title>OpenLink Software - Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
@@ -66,12 +66,7 @@
           <tr>
             <xsl:if test="contains('box,open,write,search',/page/@id)">
               <td valign="top" class="left">
-                <!-- durvoto na Vesko -->
-                <xsl:call-template name="folder_tree">
-                  <xsl:with-param name="url_cl">open.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;op=<xsl:value-of select="/page/message/msg_id"/>,<xsl:value-of select="/page/list_pos"/>,<xsl:value-of select="/page/message/type_id"/>,2</xsl:with-param>
-                  <xsl:with-param name="url_op">open.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;op=<xsl:value-of select="/page/message/msg_id"/>,<xsl:value-of select="/page/list_pos"/>,<xsl:value-of select="/page/message/type_id"/>,1</xsl:with-param>
-                </xsl:call-template>
-                <!-- /durvoto na Vesko -->
+                <xsl:call-template name="folder_tree" />
               </td>
             </xsl:if>
             <xsl:if test="contains('folders,ch_pop3',/page/@id)">
@@ -157,7 +152,7 @@
   <!-- ========================================================================== -->
   <xsl:template name="root_popup_box">
     <html>
-      <head>
+      <head profile="http://internetalchemy.org/2003/02/profile">
         <title>OpenLink Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
@@ -177,12 +172,7 @@
           <tr>
             <xsl:if test="contains('box,open,write,search',/page/@id)">
               <td valign="top" class="left">
-                <!-- durvoto na Vesko -->
-                <xsl:call-template name="folder_tree">
-                  <xsl:with-param name="url_cl">open.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;op=<xsl:value-of select="/page/message/msg_id"/>,<xsl:value-of select="/page/list_pos"/>,<xsl:value-of select="/page/message/type_id"/>,2</xsl:with-param>
-                  <xsl:with-param name="url_op">open.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;op=<xsl:value-of select="/page/message/msg_id"/>,<xsl:value-of select="/page/list_pos"/>,<xsl:value-of select="/page/message/type_id"/>,1</xsl:with-param>
-                </xsl:call-template>
-                <!-- /durvoto na Vesko -->
+                <xsl:call-template name="folder_tree" />
               </td>
             </xsl:if>
             <td width="90%" class="right" valign="top">
@@ -196,6 +186,9 @@
 
   <!-- ========================================================================== -->
   <xsl:template name="links">
+    <link rel="foaf" type="application/rdf+xml" title="FOAF">
+      <xsl:attribute name="href"><xsl:value-of select="/page/user_info/foafurl" /></xsl:attribute>
+    </link>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
@@ -203,6 +196,12 @@
     <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos"	href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
+    <meta name="ICBM">
+      <xsl:attribute name="content"><xsl:value-of select="/page/user_info/geo/longitude" />, <xsl:value-of select="/page/user_info/geo/latitude" /></xsl:attribute>
+    </meta>
+    <meta name="DC.title">
+      <xsl:attribute name="content"><xsl:value-of select="/page/user_info/email" /></xsl:attribute>
+    </meta>
   </xsl:template>
 
   <!-- ========================================================================== -->

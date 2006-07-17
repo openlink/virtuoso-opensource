@@ -20,9 +20,9 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-
 // ---------------------------------------------------------------------------
-function Is() {
+function Is()
+{
     var agent = navigator.userAgent.toLowerCase();
     this.major = parseInt(navigator.appVersion);
     this.minor = parseFloat(navigator.appVersion);
@@ -62,7 +62,8 @@ function delay(gap) { /* gap is in millisecs */
 }
 
 // ---------------------------------------------------------------------------
-function showAddr(){
+function showAddr()
+{
 	if (is.ie4) {
 		showAddr_ie();
 	} else {
@@ -71,7 +72,8 @@ function showAddr(){
 }
 
 // ---------------------------------------------------------------------------
-function showAddr_ie(){
+function showAddr_ie()
+{
 	if(AddrStatus == 0) {
   	AddrObj.visibility = "visible";
   	if (eval(doc + '["att"]'))
@@ -86,13 +88,15 @@ function showAddr_ie(){
 }
 
 // ---------------------------------------------------------------------------
-function showAddr_ns(){
+function showAddr_ns()
+{
 	wwidth = window.outerWidth - 320;
 	window.open(winusrl,"hp","width=300,height=500,top=190,left=" + wwidth + ", location=no,scrollbars=yes");
 }
 
 // ---------------------------------------------------------------------------
-function AddAdr(obj,addr) {
+function AddAdr(obj,addr)
+{
 	fld = eval('document.f1.'+ obj.name);
 	if (obj.checked == true) {
 		if (fld.value.indexOf('~no name~') != -1)
@@ -109,7 +113,8 @@ function AddAdr(obj,addr) {
 }
 
 // ---------------------------------------------------------------------------
-function ClearFld(obj,fvalue) {
+function ClearFld(obj,fvalue)
+{
 	if (obj.value.indexOf(fvalue) != -1)
 		obj.value = '';
 }
@@ -118,14 +123,16 @@ function ClearFld(obj,fvalue) {
 showRow = (navigator.appName.indexOf("Internet Explorer") != -1) ? "block" : "table-row";
 
 // ---------------------------------------------------------------------------
-function getObject(id) {
+function getObject(id)
+{
   if (document.all)
     return document.all[id];
   return document.getElementById(id);
 }
 
 // ---------------------------------------------------------------------------
-function toggleCell(cell) {
+function toggleCell(cell)
+{
   var c = getObject('row_'+cell);
   c.style.display = (c.style.display == "none") ? showRow : "none";
   var l = getObject('label_'+cell);
@@ -145,7 +152,8 @@ function toggleCell(cell) {
 }
 
 // ---------------------------------------------------------------------------
-function toggleTab(obj, noValue) {
+function toggleTab(obj, noValue)
+{
   if (obj.checked == true) {
     document.getElementById('plain').style.display = 'none';
     document.getElementById('rte').style.display = 'block';
@@ -159,7 +167,8 @@ function toggleTab(obj, noValue) {
 }
 
 // ---------------------------------------------------------------------------
-function initTab(obj) {
+function initTab(obj)
+{
   initValue(obj);
   toggleTab(obj, true);
   returnValue(obj);
@@ -313,13 +322,15 @@ function attachSubmit(value) {
 
 // ---------------------------------------------------------------------------
 //
-function formSubmit(myField, myValue) {
+function formSubmit(myField, myValue)
+{
   createHidden (document, myField, myValue);
   document.f1.submit ();
 }
 
 // ---------------------------------------------------------------------------
-function confirmAction (confirmMsq, form, txt, selectionMsq) {
+function confirmAction (confirmMsq, form, txt, selectionMsq)
+{
   if (anySelected (form, txt, selectionMsq))
     return confirm (confirmMsq);
   return false;
@@ -327,7 +338,8 @@ function confirmAction (confirmMsq, form, txt, selectionMsq) {
 
 // ---------------------------------------------------------------------------
 //
-function anySelected (form, txt, selectionMsq) {
+function anySelected (form, txt, selectionMsq)
+{
   if ((form != null) && (txt != null)) {
     for (var i = 0; i < form.elements.length; i++) {
       var obj = form.elements[i];
@@ -369,7 +381,6 @@ function showTab2(tab, tabs)
 }
 
 // ---------------------------------------------------------------------------
-//
 function initTab2(tabs, defaultNo)
 {
   var divNo = document.getElementById('tabNo');
@@ -383,7 +394,6 @@ function initTab2(tabs, defaultNo)
 }
 
 // ---------------------------------------------------------------------------
-//
 function saveCheckbox(obj)
 {
   createHidden(document, 'ch_'+obj.name, obj.checked ? '1': '');

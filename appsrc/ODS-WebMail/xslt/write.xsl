@@ -59,13 +59,14 @@
             returnValue(document.forms['f1'].elements['mt']);
             for (var i = 0; i < values.length; i++) {
               var elem = document.forms['f1'].elements[ids[i]];
-              if (elem)
+              if (elem) {
                 if ((elem.type == 'checkbox' || elem.type == 'radio') && values[i] != elem.checked)
                   return "You have attempted to leave this page. If you have made any changes to the fields without clicking the Send or Save buttons, your changes will be lost. Are you sure you want to exit this page?";
                 if (!(elem.type == 'checkbox' || elem.type == 'radio') && elem.value != values[i])
                   return "You have attempted to leave this page. If you have made any changes to the fields without clicking the Send or Save buttons, your changes will be lost. Are you sure you want to exit this page?";
             }
           }
+        }
         }
         function activateToggles() {
           var x_cc = false;

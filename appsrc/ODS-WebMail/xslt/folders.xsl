@@ -66,9 +66,8 @@
     <xsl:for-each select="folder">
       <tr>
         <xsl:call-template name="LH"/>
-        <td class="clear">
+        <td>
           <xsl:apply-templates select="ftree/fnode"/>
-          <xsl:call-template name="nbsp"/>
           <xsl:call-template name="make_href">
             <xsl:with-param name="url">box.vsp</xsl:with-param>
             <xsl:with-param name="label"><xsl:value-of select="name"/></xsl:with-param>
@@ -76,20 +75,20 @@
             <xsl:with-param name="params">bp=<xsl:value-of select="folder_id"/>,,,</xsl:with-param>
           </xsl:call-template>
         </td>
-        <td class="clear" align="right">
+        <td align="right">
           <xsl:value-of select="all_cnt"/>
         </td>
-        <td class="clear" align="right">
+        <td align="right">
           <xsl:value-of select="new_cnt"/>
         </td>
-        <td class="clear" align="right">
+        <td align="right">
           <xsl:call-template name="size2str">
             <xsl:with-param name="size" select="all_size"/>
             <xsl:with-param name="mode" select="0"/>
           </xsl:call-template>
           <xsl:call-template name="nbsp"/>
         </td>
-        <td class="clear" nowrap="nowrap">
+        <td nowrap="nowrap">
           <xsl:if test="folder_id > 99">
             <xsl:call-template name="make_href">
               <xsl:with-param name="url">tools.vsp</xsl:with-param>
@@ -102,7 +101,7 @@
           </xsl:if>
           <xsl:call-template name="nbsp"/>
         </td>
-        <td class="clear" nowrap="nowrap">
+        <td nowrap="nowrap">
           <xsl:if test="folder_id > 130">
             <xsl:call-template name="make_href">
               <xsl:with-param name="url">tools.vsp</xsl:with-param>
@@ -115,7 +114,7 @@
           </xsl:if>
           <xsl:call-template name="nbsp"/>
         </td>
-        <td class="clear" nowrap="nowrap">
+        <td nowrap="nowrap">
           <xsl:if test="folder_id > 130">
             <xsl:call-template name="make_href">
               <xsl:with-param name="url">tools.vsp</xsl:with-param>
@@ -136,17 +135,16 @@
   <xsl:template match="ftree/fnode">
     <xsl:choose>
       <xsl:when test=". = 'F'">
-        <img src="/oMail/i/re_t_cl.gif" align="top"/>
+        <img src="/oMail/i/folder_16.png" align="top"/>
+        <xsl:call-template name="nbsp"/>
       </xsl:when>
       <xsl:when test=". = '-'">
-        <img src="/oMail/i/re_g_cl.gif" align="top"/>
-      </xsl:when>
-      <xsl:when test=". = 'I'">
-        <img src="/oMail/i/re_l.gif" align="top"/>
-        <img src="/oMail/i/c.gif" align="top" height="1" width="10"/>
+        <img src="/oMail/i/folder_16.png" align="top"/>
+        <xsl:call-template name="nbsp"/>
       </xsl:when>
       <xsl:otherwise>
-        <img src="/oMail/i/c.gif" align="top" height="1" width="10"/>
+        <xsl:call-template name="nbsp"/>
+        <img src="/oMail/i/c.gif" align="top" height="1" width="16"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
