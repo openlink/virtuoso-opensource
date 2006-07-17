@@ -2291,7 +2291,23 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
 
-      if (!(!bAppDesc && bRowDesc))
+      if (!bAppDesc && bRowDesc)
+	{
+	  if (RecNumber > 0 &&
+	      desc->d_stmt->stmt_compilation &&
+	      desc->d_stmt->stmt_compilation->sc_columns &&
+	      BOX_ELEMENTS (desc->d_stmt->stmt_compilation->sc_columns) >=
+	      ((uint32) RecNumber))
+	    {
+	      col_desc_t *cd =
+		  (col_desc_t *) desc->d_stmt->stmt_compilation->
+		  sc_columns[RecNumber - 1];
+	      if (ValuePtr)
+		*((SQLSMALLINT *) ValuePtr) =
+		    (SQLSMALLINT) unbox (cd->cd_updateable);
+	    }
+	}
+      else
 	return (SQL_ERROR);
 
       if (StringLengthPtr)
