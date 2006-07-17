@@ -121,6 +121,7 @@ ENEWS.WA.exec_no_error('
     EFI_AUTHOR varchar,
     EFI_LAST_UPDATE datetime,
     EFI_DELETE_FLAG integer,
+    EFI_ENCLOSURE integer,
     EFI_DATA long xml,
 
     constraint FK_FEED_ITEM_01 FOREIGN KEY (EFI_FEED_ID) references ENEWS.WA.FEED (EF_ID) ON DELETE CASCADE,
@@ -128,6 +129,10 @@ ENEWS.WA.exec_no_error('
   	primary key (EFI_ID)
   )
 ');
+
+ENEWS.WA.exec_no_error(
+  'alter table ENEWS.WA.FEED_ITEM add EFI_ENCLOSURE integer', 'C', 'ENEWS.WA.FEED_ITEM', 'EFI_ENCLOSURE'
+);
 
 ENEWS.WA.exec_no_error('
   create trigger ENEWS_FEED_ITEM_WA_IN after insert on ENEWS.WA.FEED_ITEM referencing new as N {
@@ -250,8 +255,14 @@ ENEWS.WA.exec_no_error('
   )
 ');
 
+
+
 ENEWS.WA.exec_no_error('
-  create unique index SK_FEED_DOMAIN_01 on ENEWS.WA.FEED_DOMAIN(EFD_DOMAIN_ID, EFD_FEED_ID)
+  drop index SK_FEED_DOMAIN_01 ENEWS.WA.FEED_DOMAIN
+');
+
+ENEWS.WA.exec_no_error('
+  create index SK_FEED_DOMAIN_01 on ENEWS.WA.FEED_DOMAIN(EFD_DOMAIN_ID, EFD_FEED_ID)
 ');
 
 -------------------------------------------------------------------------------

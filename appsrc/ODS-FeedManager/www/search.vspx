@@ -158,7 +158,7 @@
         self.ds_data := result;
 
         if (self.f_cloud.ufl_selected = 1) {
-          declare N integer;
+          declare N, maxCnt integer;
           declare tag_object, tags, tags_dict any;
 
           tags_dict := dict_new();
@@ -171,8 +171,13 @@
               dict_put(tags_dict, lcase(tag), tag_object);
             }
           }
-          for (select p.* from ENEWS.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do
+          maxCnt := 0;
+          for (select p.* from ENEWS.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do {
             self.ds_tags := vector_concat(self.ds_tags, vector(vector(tag, cnt)));
+            if (cnt > maxCnt)
+              maxCnt := cnt;
+          }
+          self.ds_tags := vector_concat(vector(vector('', maxCnt)), self.ds_tags);
         }
       }
 
@@ -347,6 +352,7 @@
                         <th width="1%">
                           <img src="image/flag.gif" border="0"/>
                         </th>
+                        <th width="1%" class="last"/>
                         <th>
                           <?vsp self.sortColumn('Headline', 'EFI_TITLE'); ?>
                         </th>
@@ -407,6 +413,8 @@
                         </td>
                         <td>
                           <img src="image/html.png" border="0" alt="folder" width="16"/>
+                        </td>
+                        <td>
                           <v:url
                             value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
                             format="%s"
@@ -461,16 +469,18 @@
             <td width="20%" valign="top" style="border: solid #935000;  border-width: 1px 1px 1px 0px;">
               <div style="margin-left:3px; margin-top:3px;">
                 <?vsp
-                  declare N, ts_max, ts_size integer;
+                  declare N, ts_length, ts_max, ts_size integer;
 
-                  ts_max := length(self.ds_tags);
-                  for (N := 0; N < ts_max; N := N + 1) {
-                    ts_size := ((250.00 / ts_max) * self.ds_tags[N][1]) + 90;
-                    if (ts_size < 100)
-                      ts_size := 100;
+                  ts_length := length(self.ds_tags);
+                  for (N := 0; N < ts_length; N := N + 1) {
+                    if (N = 0) {
+                      ts_max := self.ds_tags[N][1];
+                    } else {
+                	    ts_size := ((150.00 * self.ds_tags[N][1]) / ts_max) + 100;
                     http (sprintf ('<a href="#" onclick="javascript: myPost(\'F1\', \'tag\', \'%s\');" name="btn_%s"><span class="nolink_b" style="font-size: %d%s;">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], ts_size, '%', self.ds_tags[N][0]));
                   }
-                  if (ts_max = 0)
+                  }
+                  if (ts_length <= 1)
                     http ('no tags');
                 ?>
               </div>
@@ -649,7 +659,7 @@
                   <th/>
                   <td>
                     <v:check-box name="f_cloud" xhtml_id="f_cloud" value="1"/>
-                    <vm:label for="f_cloud" value="Show tag''s cloud"/>
+                    <vm:label for="f_cloud" value="Show tag cloud"/>
                   </td>
                 </tr>
               </table>

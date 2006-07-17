@@ -107,8 +107,8 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:pagewrapper">
-    <v:variable name="nav_pos_fixed" type="int" default="0"/>
-    <v:variable name="nav_top" type="int" default="0"/>
+    <v:variable name="nav_pos_fixed" type="integer" default="0"/>
+    <v:variable name="nav_top" type="integer" default="0"/>
     <v:variable name="nav_tip" type="varchar" default="''"/>
     <xsl:for-each select="//v:variable">
       <xsl:copy-of select="."/>
@@ -170,14 +170,7 @@
       	  </v:template>
           <!-- Navigation right column -->
           <td id="RC">
-            <table id="RCT">
-              <tr id="RCT_head">
-                <td>
             	    <v:vscx name="navbar" url="enews_navigation.vspx" />
-                </td>
-              </tr>
-              <tr id="RCT_body">
-                <td>
               	  <v:template type="simple" condition="not self.vc_is_valid">
               	    <div class="error">
               		    <p><v:error-summary/></p>
@@ -189,9 +182,6 @@
               	</td>
               </tr>
             </table>
-          </td>
-        </tr>
-      </table>
     </v:form>
     <div class="footer">
       <a href="<?V ENEWS.WA.wa_home_link () ?>aboutus.html" title="About Us">About Us</a> |
@@ -226,6 +216,7 @@
         <li><xsl:call-template name="vm:atom-link"/></li>
         <li><xsl:call-template name="vm:rss-link"/></li>
         <li><xsl:call-template name="vm:rdf-link"/></li>
+        <li><xsl:call-template name="vm:podcast-link"/></li>
         <li><xsl:call-template name="vm:ocs-link"/></li>
         <li><xsl:call-template name="vm:opml-link"/></li>
         <li><xsl:call-template name="vm:foaf-link"/></li>
@@ -272,6 +263,13 @@
   <xsl:template name="vm:foaf-link">
     <?vsp
       http(sprintf('<a href="%sOFM.foaf" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
+    ?>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template name="vm:podcast-link">
+    <?vsp
+      http(sprintf('<a href="%sOFM.podcast" target="_blank" title="PODCAST export" alt="PODCAST export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> Podcast</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
     ?>
   </xsl:template>
 

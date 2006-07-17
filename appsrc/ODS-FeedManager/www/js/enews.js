@@ -35,6 +35,13 @@ function myTags(fld_value)
 }
 
 // ---------------------------------------------------------------------------
+function vspxPost(fButton, fName, fValue)
+{
+  createHidden('F1', fName, fValue);
+  doPost ('F1', fButton);
+}
+
+// ---------------------------------------------------------------------------
 //
 function submitEnter(myForm, myButton, e) {
   var keycode;

@@ -259,7 +259,7 @@
     	    _end:
             self.v_name := get_keyword('f_name', self.vc_page.vc_event.ve_params, '');
             self.v_api := get_keyword('f_api', self.vc_page.vc_event.ve_params, 'Blogger');
-            self.v_uri := get_keyword('f_uri', self.vc_page.vc_event.ve_params, '');
+            self.v_uri := get_keyword('f_uri', self.vc_page.vc_event.ve_params, 'http://');
             self.v_port := get_keyword('f_port', self.vc_page.vc_event.ve_params, '80');
             self.v_endpoint := get_keyword('f_endpoint', self.vc_page.vc_event.ve_params, '/RPC2');
             self.v_user := get_keyword('f_user', self.vc_page.vc_event.ve_params, '');

@@ -21,20 +21,26 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
+
 <v:page name="channels_create" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:method name="check_url" arglist="in url varchar, in url2 varchar, in type integer, in msg any">
     <![CDATA[
       declare exit handler for sqlstate '*' { goto _error; };
+      declare retValue any;
 
+      retValue := '';
       self.v_data := null;
       url := trim(url);
-      if (is_empty_or_null(url))
-        return sprintf('Please enter corect %s', msg);
+      if (is_empty_or_null(url)) {
+        retValue := sprintf('Please enter corect %s', msg);
+        goto _error;
+      }
 
-      if (exists(select 1 from ENEWS.WA.FEED_DOMAIN, ENEWS.WA.FEED where EFD_DOMAIN_ID = self.domain_id and EFD_FEED_ID = EF_ID and EF_URI = url2))
-        return sprintf('There is already subscription for this feed (%s).', url2);
+      if (exists(select 1 from ENEWS.WA.FEED_DOMAIN, ENEWS.WA.FEED where EFD_DOMAIN_ID = self.domain_id and EFD_FEED_ID = EF_ID and EF_URI = url2)) {
+        retValue := sprintf('There is already subscription for this feed (%s).', url2);
+        goto _error;
+      }
 
       if (type = 0) {
         self.v_data := ENEWS.WA.channels_uri(url2);
@@ -49,17 +55,16 @@
         self.v_data := ENEWS.WA.channels_content(url2);
       }
     _error:
-      declare retValue any;
 
+      if (retValue = '')
       if (is_empty_or_null(self.v_data)) {
         retValue := sprintf('Unknown %s.', msg);
       } else if (length(self.v_data) <= 1) {
         retValue := 'Feed(s) source is bad or empty.';
       } else if ((type <> 0) and (self.v_data[0] <> 'OPML') and (self.v_data[0] <> 'OCS')) {
         retValue := 'Feed(s) source type must be OPML or OCS.';
-      } else {
-        retValue := '';
       }
+
       if (retValue <> '') {
         self.vc_error_message := retValue;
         self.vc_is_valid := 0;
@@ -248,6 +253,11 @@
 
                       self.v_url := trim(get_keyword('source_0', e.ve_params, ''));
                       retValue := self.check_url(self.v_url, self.v_url, 0, 'feed(s) URL');
+                      if (retValue <> '') {
+                        --self.vc_error_message := retValue;
+                        self.vc_is_valid := 0;
+                        self.v_data := null;
+                      }
                       if (retValue = '')
                         self.vc_data_bind(e);
                     ]]>
