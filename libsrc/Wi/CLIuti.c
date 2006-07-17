@@ -3397,3 +3397,78 @@ stmt_convert_brace_escapes (SQLCHAR * statement_text, SQLINTEGER * newCB)
 
   return statement_text;
 }
+
+
+/*
+ *  Compute DISPLAY_SIZE from col_desc
+ */
+SQLLEN
+col_desc_get_display_size (col_desc_t *cd, int cli_binary_timestamp)
+{
+   switch ((dtp_t) cd->cd_dtp)
+    {
+    case DV_SHORT_INT:
+      return 6;
+
+    case DV_LONG_INT:
+      return 11;
+
+    case DV_SINGLE_FLOAT:
+    case DV_DOUBLE_FLOAT:
+      return 22;
+
+    case DV_NUMERIC:
+      return 2 + unbox (cd->cd_precision);
+
+    case DV_STRING:
+    case DV_UNAME:
+    case DV_BLOB:
+    case DV_BLOB_WIDE:
+    case DV_BLOB_XPER:
+    case DV_WIDE:
+    case DV_LONG_WIDE:
+      return unbox (cd->cd_precision);
+
+    case DV_BIN:
+    case DV_BLOB_BIN:
+      return 2 * unbox (cd->cd_precision);
+
+    case DV_DATE:
+      return 10;
+
+    case DV_TIMESTAMP:
+      {
+	int scale = unbox (cd->cd_scale);
+ 	
+	if (cli_binary_timestamp)
+	  return 2 * unbox (cd->cd_precision);	/* SQL_BINARY */
+ 	else if (scale)
+	  return 20 + scale;
+	else
+	  return 19; 
+      }
+
+    case DV_DATETIME:
+      {
+	int scale = unbox (cd->cd_scale);
+ 	
+ 	if (scale)
+	  return 20 + scale;
+	else
+	  return 19; 
+      }
+
+    case DV_TIME:
+      {
+	int scale = unbox (cd->cd_scale);
+ 	
+ 	if (scale)
+	  return 9 + scale;
+	else
+	  return 8; 
+      }
+
+    default:
+      return SQL_NO_TOTAL;
+    }
+}
