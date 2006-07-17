@@ -225,7 +225,7 @@ create procedure DB.DBA.DAV_RDF_REPLICATE_INT (in res_id integer, in restype var
         DB.DBA.RDF_QUAD_URI (dav_rdf_graph_uri, s, p, o);
       else
         DB.DBA.RDF_QUAD_URI_L_TYPED (dav_rdf_graph_uri, s, p, v, dt, lang);
-      dbg_obj_princ ('added quad:', s, p, o, v, dt, lang);
+      -- dbg_obj_princ ('added quad:', s, p, o, v, dt, lang);
     }
   no_op:;
 }
