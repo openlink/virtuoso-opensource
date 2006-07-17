@@ -170,7 +170,7 @@
     <v:data-list
         xhtml_style="width:100%"
         name="ownedapp_list"
-        sql="select WAI_NAME as KEYVAL,WAI_NAME as NAME FROM DB.DBA.WA_INSTANCE,DB.DBA.WA_MEMBER
+        sql="select wa_utf8_to_wide(WAI_NAME) as KEYVAL,wa_utf8_to_wide(WAI_NAME) as NAME FROM DB.DBA.WA_INSTANCE,DB.DBA.WA_MEMBER
              WHERE
                  WAM_USER=self.user_id
              AND WAM_MEMBER_TYPE=1
@@ -214,10 +214,10 @@
                          i := 0;
                          while(i < length(self.communityapp_list.ufl_value) ){
 
-                               if(not exists(SELECT 1 from ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=self.communityapp_list.ufl_value[i] AND CM_MEMBER_DATA is not null)){
-                                    update ODS..COMMUNITY_MEMBER_APP set CM_MEMBER_DATA='remove' where CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=self.communityapp_list.ufl_value[i];
+                               if(not exists(SELECT 1 from ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=wa_utf8_to_wide(self.communityapp_list.ufl_value[i]) AND CM_MEMBER_DATA is not null)){
+                                    update ODS..COMMUNITY_MEMBER_APP set CM_MEMBER_DATA='remove' where CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=wa_utf8_to_wide(self.communityapp_list.ufl_value[i]);
                                }else{
-                                    delete FROM ODS..COMMUNITY_MEMBER_APP where CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=self.communityapp_list.ufl_value[i];
+                                    delete FROM ODS..COMMUNITY_MEMBER_APP where CM_COMMUNITY_ID=self.comm_wainame AND CM_MEMBER_APP=wa_utf8_to_wide(self.communityapp_list.ufl_value[i]);
                                };
 
                               i := i + 1;
@@ -231,7 +231,7 @@
     <v:data-list
         xhtml_style="width:100%"
         name="communityapp_list"
-        sql="select CM_MEMBER_APP as KEYVAL, CM_MEMBER_APP as NAME FROM ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame AND (CM_MEMBER_DATA is null or CM_MEMBER_DATA='add')"  
+        sql="select CM_MEMBER_APP as KEYVAL, wa_utf8_to_wide(CM_MEMBER_APP) as NAME FROM ODS..COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.comm_wainame AND (CM_MEMBER_DATA is null or CM_MEMBER_DATA='add')"  
         key-column="KEYVAL"
         value-column="NAME"
         xhtml_size="15"

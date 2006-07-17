@@ -56,6 +56,7 @@
  </v:after-data-bind>
       <vm:header id="header">
       <title><vm:xd-title /> - Community members map</title>
+      <vm:meta-geourl />
       <vm:meta-owner/>
       <vm:meta-authors/>
       <vm:meta-description/>
@@ -83,6 +84,7 @@
                 <vm:members-block />
                 <vm:blogs-block />
                 <vm:communities-block />
+                <vm:rdf-based-block />
               </td>
               <td id="mainarea">
                 <br/>          

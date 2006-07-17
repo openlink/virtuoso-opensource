@@ -23,7 +23,7 @@
  -
  -
 -->
-<v:page style="/DAV/VAD/community/www-root/widgets/main.xsl"
+<v:page style="../../widgets/main.xsl"
         name="home"
         xmlns:vm="http://www.openlinksw.com/vspx/community/"
         xmlns:v="http://www.openlinksw.com/vspx/"
@@ -33,6 +33,7 @@
  <vm:page custom_img_loc='/community/public/images/lightblue/'>
       <vm:header id="header">
       <title><vm:xd-title /></title>
+      <vm:meta-geourl />
       <vm:meta-owner/>
       <vm:meta-authors/>
       <vm:meta-description/>
@@ -59,6 +60,7 @@
                   <vm:members-block />
                   <vm:blogs-block />
                   <vm:communities-block />
+                  <vm:rdf-based-block />
 
                 </td>
               <td id="mainarea">          

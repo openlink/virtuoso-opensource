@@ -87,10 +87,11 @@
     <v:variable name="isDav" type="int" default="1" persist="temp" />
     <v:variable name="wa_home" type="varchar" default="'/ods'" />
  
- 
- 
     <v:variable name="app_type" type="varchar" default="null" param-name="app" />
     <v:variable name="login_pars" type="varchar" default="''" persist="temp" />
+
+    <v:variable name="has_geolatlng" type="int" default="0" persist="temp" />
+
 
     <v:before-render>
       <xsl:if test="@stock_img_loc">
@@ -350,7 +351,9 @@
 
 
   <xsl:template match="vm:header">
-   <head profile="http://gmpg.org/xfn/11">
+   <head profile="http://internetalchemy.org/2003/02/profile">
+      <xsl:text>&#10;</xsl:text>
+      <link rel="foaf" type="application/rdf+xml" title="FOAF"     href="<?Vself.ur?>/dataspace/<?Vself.owner_name?>/about.rdf" />
       <xsl:text>&#10;</xsl:text>
       <?vsp
         declare icon varchar;
@@ -726,12 +729,14 @@ window.onload = function (e)
     <a href="http://www.openlinksw.com/virtuoso/">
       <img alt="Powered by OpenLink Virtuoso Universal Server" border="0">
         <xsl:if test="@image">
-          <xsl:attribute name="src">&lt;?vsp
+          <xsl:attribute name="src">
+          &lt;?vsp
             if (self.custom_img_loc)
               http(self.custom_img_loc || '<xsl:value-of select="@image"/>');
             else
               http(self.stock_img_loc || 'PoweredByVirtuoso.gif');
-          ?&gt;</xsl:attribute>
+          ?&gt;
+          </xsl:attribute>
         </xsl:if>
         <xsl:if test="not @image">
           <xsl:attribute name="src">&lt;?vsp http(self.stock_img_loc || 'PoweredByVirtuoso.gif'); ?&gt;</xsl:attribute>
@@ -1662,12 +1667,12 @@ window.onload = function (e)
           <table border="0" cellpadding="0" cellspacing="0">
            <tr>
              <td>
-              <a href="<?V dta[0] ?>" target="_blank"><img src="<?V dta[0] ?>" width="100" height="75" border="0" class="photoborder" /></a>
+              <a href="<?V '/photos/'||self.user_name||'/?'||subseq(self.login_pars,1)||'#'||subseq(dta[0],locate('/gallery/',dta[0])+7) ?>" target="_blank"><img src="<?V dta[0] ?>" width="100" height="75" border="0" class="photoborder" /></a>
              </td>
            </tr>
            <tr>
              <td><br/><p><strong><?V dta[4] ?></strong><br />
-                 <a href="<?V self.wa_home?>/uhome.vspx?page=1&ufname=<?V coalesce(dta[3],dta[2]) ?>"><?V coalesce(dta[2],dta[3]) ?></a><br />
+                 <a href="<?V self.wa_home?>/uhome.vspx?page=1&ufname=<?V coalesce(dta[3],dta[2])||self.login_pars ?>"><?V coalesce(dta[2],dta[3]) ?></a><br />
                  <?V wa_abs_date(dta[1])?></p>
              </td>
            </tr>
@@ -2570,5 +2575,68 @@ window.onload = function (e)
                    | 
                   <a href="#">Contact Us</a>
 </xsl:template>
+
+<xsl:template match="vm:meta-geourl">
+<?vsp
+
+        if(self.owner_id>0)
+        {
+             declare _lat, _lng any;
+               
+             whenever not found goto not_found_jump;
+             select 
+                   case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end,
+                   case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end
+             into  _lat,
+                   _lng
+             from  DB.DBA.WA_USER_INFO
+   	         where WAUI_LAT is not null and WAUI_LNG is not null and WAUI_U_ID = self.owner_id ;
+         
+             
+?>
+      <meta name="ICBM" content="<?V sprintf( '%.06f' , _lat)?>, <?V sprintf( '%.06f' , _lng)?>" />
+      <meta name="DC.title" content="'<?Vself.title?>" />
+<?vsp
+        self.has_geolatlng:=1;
+
+        not_found_jump:
+        
+        http('');
+        
+        }
+?>
+</xsl:template>
+
+<xsl:template match="vm:rdf-based-block">
+ <table> 
+  <tr>
+   <td>
+    <vm:if test="self.has_geolatlng">
+
+    <a href="http://geourl.org/near/?p=<?Vself.ur||self.comm_home?>" target="_blank">
+      <img alt="GeoURL" border="0">
+        <xsl:if test="@image">
+          <xsl:attribute name="src">
+          &lt;?vsp
+            if (self.custom_img_loc)
+              http(self.custom_img_loc || '<xsl:value-of select="@image"/>');
+            else
+              http(self.stock_img_loc || 'geo_globe.png');
+          ?&gt;
+          </xsl:attribute>
+        </xsl:if>
+        <xsl:if test="not @image">
+          <xsl:attribute name="src">&lt;?vsp http(self.stock_img_loc || 'geo_globe.png'); ?&gt;</xsl:attribute>
+        </xsl:if>
+      </img>
+    </a>
+    
+    </vm:if>
+</td>
+ </tr>
+</table>
+</xsl:template>
+
+
 
 </xsl:stylesheet>

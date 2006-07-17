@@ -75,7 +75,13 @@
                  <table width="175" border="0" cellpadding="0" cellspacing="0" style="margin-left:10px;margin-top:10px">
                     <tr><td class="lftmenu_title">&nbsp;
                     <?vsp
+                        if (self.user_id>0)
+                        {
                         http(self.user_name|| '\'s ' || WA_GET_APP_NAME (self.app_type));
+                        }else
+                        {
+                          http(WA_GET_APP_NAME (self.app_type));
+                        }  
                     ?>
                      </td></tr>
 	                   <?vsp
@@ -132,7 +138,6 @@
               </td>
               <td id="mainarea"><br/>
                   <?vsp
-                  dbg_obj_print(self.app_type);
                   if (self.app_type = 'WEBLOG2')
                     {
                   ?>
