@@ -314,7 +314,7 @@ SQL> db..user_set_option ('myuser', 'DAVQuota', 5242880);
 <orderedlist>
 <listitem>The client requests a file or connection from Virtuoso.</listitem>
 <listitem>Virtuoso challenges the request, informing that client: Digest is in use, what the realm name is.</listitem>
-<listitem>The client prompts the user for credentials.  The client creats an MD5 hash of the credentials and the realm name and resubmits the request, this time supplying the MD5 hash.</listitem>
+<listitem>The client prompts the user for credentials.  The client creates an MD5 hash of the credentials and the realm name and resubmits the request, this time supplying the MD5 hash.</listitem>
 <listitem>If Virtuoso approves the credentials then the resource or connection is granted to the client, and the data is returned.</listitem>
 </orderedlist>
 </sect3>
@@ -323,30 +323,25 @@ SQL> db..user_set_option ('myuser', 'DAVQuota', 5242880);
 <title>WebDAV Symbolic Links</title>
 <para>Virtuoso supports a special type of WebDAV resources, a redirect
   reference resource, named WebDAV links.  This is to extend the WebDAV service
-  to enable clients to create new access paths to existing resources.</para>
-<para>The redirect reference resources are resources whose default response
-  is an HTTP/1.1 302 (Found) status code, redirecting the client to a different
-  resource, the target resource.  A redirect reference makes it possible to
-  access the target resource indirectly, through any URI mapped to the redirect
+  to allow multiple access paths to existing resources.</para>
+<para>As with conventional HTTP, the redirect reference simply responds to the client 
+  with an HTTP/1.1 302 (Found) status code, redirecting the client to a different
+  resource, the target specified in the redirect resource, using the 
+  <computeroutput>Location:</computeroutput> header.  This behavior is equivelent 
+  to UNIX symbolic links.  A redirect reference makes it possible to
+  access the target resource indirectly through any URI mapped to the redirect
   reference resource.  The integrity is not guaranteed for associated redirect
   reference resources.</para>
-<para>The example of working of links is:</para>
-<screen>/a/b.html [linked to /c/d/f.html]</screen>
-<para>When the user-agent requests /a/b.html it will receive '302 Found' and
-  the Location header will be set to the /c/d/f.html.  Hence it will go to
-  /c/d/f.html.  This behavior is equivelent to UNIX symbolic links.</para>
-<para>WebDAV links behaviour in resource manipulation requests.  When some
-  link is moved the target will have the same properties as source, ie. it will
-  be a link.  When copy operation is made the target will have content of
-  the reference ie. it will be a resource, not a link.  Delete operation on
-  link will remove only the redirect reference resource , not the referenced
-  target itself.  Content upload requests will change the content of the
-  reference target.</para>
-<para>This functionality is achieved by adding a special WebDAV property
-  'redirectref'.  Its value must contain the reference target URL.  Hence the
-  WebDAV links can be targeted not only to the WebDAV repository itself, they
-  can be targeted to any HTTP accessible resource.</para>
-<para>The WebDAV links can be made with DAV API function DAV_PROP_SET(),
+  <para>WebDAV links do not provide a way to circumvent WebDAV security or 
+  virtual directories.  The target resource must be directly available to the 
+  client being redirected.</para>
+  <para>WebDAV links are achieved by adding a special WebDAV property, 
+  &apos;<computeroutput>redirectref</computeroutput>&apos;, whose value 
+  must contain the reference target URL.</para>
+  <para>WebDAV link targets are not limited to the WebDAV repository, and may 
+  target any HTTP accessible resource.</para>
+  <para>The WebDAV links can be made with DAV API function 
+  <link linkend="fn_dav_api_change"><function>DAV_PROP_SET()</function></link>,
   or can be done via the <link linkend="contentmanagement">Content Management</link>
   interface of the Admin UI.  In the admin UI select
   WebDAV/WebDAV Services/Content Management and press on the
@@ -354,15 +349,35 @@ SQL> db..user_set_option ('myuser', 'DAVQuota', 5242880);
   the target, permissions, owner and enter the name of the link.  Pressing
   the <emphasis>Add</emphasis> button will create the new link in the current
   WebDAV folder.</para>
-<para>To create the same link via PL or directly from the ISQL tool, the
-  following statement can be executed:</para>
-<programlisting><![CDATA[
-SQL> select DAV_RES_UPLOAD ('/DAV/link','','','110100000NN',
-  [dav_owner_uid], [dav_owner_pwd], [dav_admin_uid], [dav_admin_pwd]);
 
-SQL> DAV_PROP_SET ('/DAV/link', 'redirectref',
-  '[URL for the target]', [dav_owner_uid], [dav_owner_pwd]);
+  <example id="ex_create_webdav_link"><title>WebDAV Links Programmatically</title>
+  <para>Assuming that we are creating the link as the administrator 
+  using the default WebDAV administrator username and password, creating a link 
+  from <computeroutput>/a/b.html</computeroutput> to <computeroutput>/c/d/f.html</computeroutput> 
+  could be as follows:</para>
+  <programlisting><![CDATA[
+SQL> select DAV_RES_UPLOAD ('/DAV/a/b.html','','','110100000NN', 'dav', 'nobody', 'dav', 'dav');
+
+SQL> DAV_PROP_SET ('/DAV/a/b.html', 'redirectref', '/c/d/f.html', 'dav', 'dav');
 ]]></programlisting>
+  <para>The target, &apos;<computeroutput>/c/d/f.html</computeroutput>&apos; could be 
+  any HTTP URL.  In this case it will be a resource on the same HTTP server.</para>
+</example>
+
+<tip><title>See Also:</title>
+<para><link linkend="fn_dav_api_add">DAV Add and Update functions</link> and 
+  <link linkend="fn_dav_api_change">DAV Manipulation functions</link>.</para>
+</tip>
+
+<formalpara><title>WebDAV links behaviour in resource manipulation requests</title>
+<para>When some
+  link is moved the target will have the same properties as source, ie. it will
+  be a link.  When a copy operation is made the target will have content of
+  the reference i.e. it will be a resource, not a link.  Delete operation on
+  link will remove only the redirect reference resource, not the referenced
+  target itself.  Content upload requests will change the content of the
+  referenced target.</para>
+</formalpara>
 </sect2>
 <sect2 id="accesspermofwebres">
 <title>Access Right Permissions of Web Resources</title>

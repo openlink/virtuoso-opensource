@@ -1016,10 +1016,9 @@ ____________________________________________________________________
       function.  This function changes the foreign key checking behavior globally
       across the database so it is very important to remember to enable foreign key
       constraint checking again afterwards.</para>
-      <para>Columns can be defined as having a foreign keys and a default value,
+      <para>Columns can be defined as having foreign keys and a default value,
       however, the default value must not violate the constaint at the time of
-      inserts or update attempted assuming the default value as this will be
-      rejected in the normal way.</para>
+      insert or update as this will be rejected in the normal way.</para>
 
 <example id="ex_fkeysinuse"><title>Creating tables with foreign key constraints</title>
 	<para>First the Primary key table must be defined before it can be referenced:</para>
@@ -1744,6 +1743,42 @@ _______________________________________________________________________________
 </programlisting>
 </sect2>
 </sect1>
+
+<sect1 id="updatestmt">
+	<title>UPDATE Statement</title>
+	
+	<para>Existing rows (or records) are changed in the database using the UPDATE statement.</para>
+	
+	<para>NULL values can be utilized using the <computeroutput>NULL</computeroutput> keyword without 
+		any quotes.  Since NULL is a special keyword you do not need to enclose it in single quotes, doing so 
+		will cause it be read as a string-literal.</para>
+	
+	<para>The update statement is made up by selecting the table to update, the search condition that 
+		identifies which rows you want to update, and the <computeroutput>column=value</computeroutput>  
+		of each column you wish to change.  </para>
+		
+	<example id="ex_updatestatement"><title>Basic Update Statement</title>
+		<para>A table can be updated using:</para>
+		<screen><![CDATA[
+update demo.dba.employees e
+  set username = 'thing'
+  where email_address = 'thing@thingdom.com'
+  ;
+]]></screen>
+	</example>
+	
+	
+	<example id="ex_updatestatementfrom"><title>Update from Select</title>
+		<para>It is possible to update one table based on a select from another 
+		table.  Ensure that the selection is properly conditioned to update.</para>
+	<screen><![CDATA[
+update demo.dba.employees e
+	set username = (select U_NAME from DB.DBA.SYS_USERS u where u.U_EMAIL = e.email_address)
+	;
+]]></screen>	
+	</example>
+</sect1>
+
 	<sect1 id="SELECTSTMT">
 		<title>SELECT Statement</title>
 		<sect2 id="selectsyntax">
