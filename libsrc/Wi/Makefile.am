@@ -519,9 +519,7 @@ SQL_FILES_VDB		= \
 	vdb.sql
 
 SQL_FILES_SPARQL	= \
-	sparql.sql \
-	$(top_srcdir)/binsrc/tests/rdf/rdf-exp-load.xsl \
-	$(top_srcdir)/binsrc/tests/rdf/rdf-exp-rdfxml2dict.xsl
+	sparql.sql
 
 SQL_FILES_1		= \
 	oledb.sql \
