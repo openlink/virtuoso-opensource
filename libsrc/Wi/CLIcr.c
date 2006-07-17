@@ -418,6 +418,8 @@ virtodbc__SQLExtendedFetch (
 
   if (stmt->stmt_opts->so_rpc_timeout)
     PrpcFutureSetTimeout (stmt->stmt_future, (long) stmt->stmt_opts->so_rpc_timeout);
+  else
+    PrpcFutureSetTimeout (stmt->stmt_future, 2000000000L); /* infinite, 2M s = 23 days  */
 
   stmt->stmt_row_status = rgfRowStatus;
   rc = stmt_process_rowset (stmt, fFetchType, pcrow);
