@@ -285,6 +285,7 @@ virtodbc__SQLColAttributes (
   SQLRETURN rc = SQL_SUCCESS;
   STMT (stmt, hstmt);
   stmt_compilation_t *sc = stmt->stmt_compilation;
+  int use_binary_timestamp;
 
   icol--;
   if (!sc)
@@ -318,6 +319,8 @@ virtodbc__SQLColAttributes (
   else
     cd = (col_desc_t *) stmt->stmt_compilation->sc_columns[icol];
 
+  use_binary_timestamp = stmt->stmt_connection->con_defs.cdef_binary_timestamp;
+
   switch (fDescType)
     {
     case SQL_COLUMN_COUNT:
@@ -346,13 +349,13 @@ virtodbc__SQLColAttributes (
 #endif
     case SQL_COLUMN_TYPE:
       if (pfDesc)
-	*pfDesc = dv_to_sql_type ((dtp_t) cd->cd_dtp, stmt->stmt_connection->con_defs.cdef_binary_timestamp);
+	*pfDesc = dv_to_sql_type ((dtp_t) cd->cd_dtp, use_binary_timestamp);
       break;
 
     case SQL_COLUMN_TYPE_NAME:
       if (rgbDesc)
 	sql_type_to_sql_type_name (dv_to_sql_type ((dtp_t) cd->cd_dtp,
-		stmt->stmt_connection->con_defs.cdef_binary_timestamp), ((char *) rgbDesc), cbDescMax);
+		use_binary_timestamp), ((char *) rgbDesc), cbDescMax);
       if (pcbDesc)
 	*pcbDesc = (SQLSMALLINT) strlen ((char *) rgbDesc);
       break;
@@ -379,17 +382,12 @@ virtodbc__SQLColAttributes (
 #endif
     case SQL_COLUMN_SCALE:
       if (pfDesc)
-	{
-	  ptrlong scale = unbox (cd->cd_scale);
-	  if (IS_STRING_DTP (cd->cd_dtp) && !scale)
-	    scale = unbox (cd->cd_precision);
-	  *(SDWORD *) pfDesc = (SDWORD) scale;
-	}
+	*pfDesc = unbox (cd->cd_scale);
       break;
 
     case SQL_COLUMN_DISPLAY_SIZE:
       if (pfDesc)
-	*pfDesc = 2 + MAX (box_length (cd->cd_name), ((uint32) unbox (cd->cd_precision)));
+	*pfDesc = col_desc_get_display_size (cd, use_binary_timestamp);
       break;
 
 #if ODBCVER >= 0x0300
@@ -402,12 +400,12 @@ virtodbc__SQLColAttributes (
 
     case SQL_COLUMN_UNSIGNED:
       if (pfDesc)
-	*pfDesc = 0;
+	*pfDesc = 0;	/* Virtuoso does not support unsigned types */
       break;
 
     case SQL_COLUMN_MONEY:
       if (pfDesc)
-	*pfDesc = 0;
+	*pfDesc = 0;	/* Virtuoso does not support money types */
       break;
 
     case SQL_COLUMN_UPDATABLE:
@@ -422,7 +420,7 @@ virtodbc__SQLColAttributes (
 
     case SQL_COLUMN_CASE_SENSITIVE:
       if (pfDesc)
-	*pfDesc = 1;
+	*pfDesc = (IS_STRING_DTP (cd->cd_dtp) || IS_BLOB_DTP (cd->cd_dtp)) ? 1 : 0;
       break;
 
     case SQL_COLUMN_SEARCHABLE:
