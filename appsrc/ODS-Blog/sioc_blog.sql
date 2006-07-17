@@ -35,28 +35,32 @@ create procedure blog_post_iri (in blog_id varchar, in post_id varchar)
 create procedure fill_ods_blog_sioc (in graph_iri varchar, in site_iri varchar)
 {
   declare iri, cr_iri, blog_iri varchar;
-  for select B_BLOG_ID, B_POST_ID, BI_WAI_NAME, B_USER_ID, B_TITLE, B_TS, B_MODIFIED from BLOG..SYS_BLOGS, BLOG..SYS_BLOG_INFO
+  for select B_BLOG_ID, B_POST_ID, BI_WAI_NAME, B_USER_ID, B_TITLE, B_TS, B_MODIFIED, BI_HOME from BLOG..SYS_BLOGS, BLOG..SYS_BLOG_INFO
     where B_BLOG_ID = BI_BLOG_ID do
     {
       iri := blog_post_iri (B_BLOG_ID, B_POST_ID);
       blog_iri := blog_iri (BI_WAI_NAME);
       cr_iri := user_iri (B_USER_ID);
-      ods_sioc_post (graph_iri, iri, blog_iri, cr_iri, B_TITLE, B_TS, B_MODIFIED);
+      ods_sioc_post (graph_iri, iri, blog_iri, cr_iri, B_TITLE, B_TS, B_MODIFIED, BI_HOME ||'?id='||B_POST_ID);
     }
 };
 
 create trigger SYS_BLOGS_SIOC_I after insert on BLOG..SYS_BLOGS referencing new as N
 {
-  declare iri, graph_iri, cr_iri, blog_iri varchar;
+  declare iri, graph_iri, cr_iri, blog_iri, home varchar;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
   graph_iri := get_graph ();
   iri := blog_post_iri (N.B_BLOG_ID, N.B_POST_ID);
-  blog_iri := blog_iri ((select BI_WAI_NAME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.B_BLOG_ID));
+  for select BI_WAI_NAME, BI_HOME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.B_BLOG_ID do
+    {
+      blog_iri := blog_iri (BI_WAI_NAME);
+      home := BI_HOME;
+    }
   cr_iri := user_iri (N.B_USER_ID);
-  ods_sioc_post (graph_iri, iri, blog_iri, cr_iri, N.B_TITLE, N.B_TS, N.B_MODIFIED);
+  ods_sioc_post (graph_iri, iri, blog_iri, cr_iri, N.B_TITLE, N.B_TS, N.B_MODIFIED, home ||'?id='||N.B_POST_ID);
   return;
 };
 

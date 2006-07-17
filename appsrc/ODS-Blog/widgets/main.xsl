@@ -763,7 +763,7 @@ else if (length (self.catid))
   <xsl:template match="vm:header">
    <?vsp
    declare e_profile varchar;
-   e_profile := get_keyword('MetaDataProfile', self.opts, 'http://purl.org/NET/erdf/profile');
+   e_profile := get_keyword('MetaDataProfile', self.opts, 'http://purl.org/NET/erdf/profile http://internetalchemy.org/2003/02/profile');
    ?>
    <head profile="<?V e_profile ?>">
       <xsl:text>&#10;</xsl:text>
@@ -1115,6 +1115,8 @@ window.onload = function (e)
     </xsl:if>
     <link rel="EditURI" type="application/rsd+xml" title="RSD" href="&lt;?vsp http (sprintf ('http://%s%sgems/rsd.xml', self.host, self.base)); ?>" />
       <xsl:text>&#10;</xsl:text>
+	    <link rel="foaf" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/about.rdf', self.host, self.owner_name)); ?>" />
+      <xsl:text>&#10;</xsl:text>
   </xsl:template>
 
 
@@ -1449,6 +1451,10 @@ window.onload = function (e)
       ?>
   </div>
 </xsl:template>
+
+  <xsl:template match="vm:disco-ods-sioc-link">
+      <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/weblog/%U/sioc.rdf', self.host, self.owner_name, self.inst_name), '+', '%2B')); ?>" />
+  </xsl:template>
 
 
   <xsl:template match="vm:linkblog-xbel-link">

@@ -58,7 +58,6 @@ a:hover { text-decoration: underline }
 
 #header {
   margin: 0px;
-  padding: 0px 4px 0px 0px;
   background-color : white;
   background-image: url(/weblog/public/images/blogbanner_blank_sml.jpg);
   background-repeat: no-repeat;
@@ -153,11 +152,6 @@ form
   border: 0px;
   background: inherit;
   color: black;
-}
-
-ul.cmds-menu {
-  list-style-type: none;
-  padding: 0px;
 }
 
 div.box { width: 200px;

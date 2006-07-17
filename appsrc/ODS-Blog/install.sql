@@ -3378,7 +3378,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
 {
   declare xt, ss, tags, tagstr, is_act, have_encl any;
   declare title, author, authorid, home varchar;
-  declare mid, rfc, author_mail varchar;
+  declare mid, rfc, author_mail, enc_type varchar;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID
   where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
@@ -3416,9 +3416,16 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   ss := string_output_string (ss);
 
   title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
+  enc_type := null;
 
   if (N.B_META is not null and (N.B_META as "MWeblogPost").enclosure is not null)
+    {
+      declare enc BLOG.DBA."MWeblogEnclosure";
+      enc := (N.B_META as "MWeblogPost").enclosure;
+      if (udt_instance_of ((N.B_META as "MWeblogPost").enclosure, 'BLOG.DBA.MWeblogEnclosure'))
+	enc_type := enc."type";
     have_encl := 1;
+    }
   else
     have_encl := 0;
 
@@ -3439,6 +3446,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
    B_CONTENT = ss, --serialize_to_UTF8_xml (xt)
    B_IS_ACTIVE = is_act,
    B_HAVE_ENCLOSURE = have_encl,
+   B_ENCLOSURE_TYPE = enc_type,
    B_RFC_ID = mid, B_RFC_HEADER = rfc
      where B_BLOG_ID = N.B_BLOG_ID and B_POST_ID = N.B_POST_ID;
   set triggers on;
@@ -3460,7 +3468,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
 
 create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_BLOGS order 1 referencing old as O, new as N
 {
-  declare xt, ss, tags, tagstr, is_act, home, author, authorid, title, have_encl any;
+  declare xt, ss, tags, tagstr, is_act, home, author, authorid, title, have_encl, enc_type any;
   declare ver int;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
@@ -3493,8 +3501,15 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
       ss := string_output_string (ss);
 
       title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
+      enc_type := null;
       if (N.B_META is not null and (N.B_META as "MWeblogPost").enclosure is not null)
+	{
+	  declare enc BLOG.DBA."MWeblogEnclosure";
+	  enc := (N.B_META as "MWeblogPost").enclosure;
+	  if (udt_instance_of ((N.B_META as "MWeblogPost").enclosure, 'BLOG.DBA.MWeblogEnclosure'))
+	    enc_type := enc."type";
 	have_encl := 1;
+	}
       else
 	have_encl := 0;
 
@@ -3512,6 +3527,7 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
 	  B_CONTENT = ss, --serialize_to_UTF8_xml (xt)
 	  B_IS_ACTIVE = is_act,
 	  B_HAVE_ENCLOSURE = have_encl,
+	  B_ENCLOSURE_TYPE = enc_type,
 	  B_VER = ver
 	  where B_BLOG_ID = N.B_BLOG_ID and B_POST_ID = N.B_POST_ID;
       set triggers on;

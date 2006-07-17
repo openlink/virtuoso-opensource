@@ -40,6 +40,7 @@
       <vm:disco-foaf-link/>
       <vm:disco-rsd-link/>
       <vm:disco-opml-link/>
+      <vm:disco-ods-sioc-link/>
       <vm:meta-owner/>
       <vm:meta-authors/>
       <vm:meta-description/>
