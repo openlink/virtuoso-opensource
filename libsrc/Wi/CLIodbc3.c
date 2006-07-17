@@ -2810,6 +2810,7 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
       FieldIdentifier = SQL_COLUMN_TYPE;
       break;
 
+      /* SQLCHAR */
     case SQL_DESC_LITERAL_SUFFIX:
     case SQL_DESC_LITERAL_PREFIX:
     case SQL_DESC_BASE_COLUMN_NAME:
@@ -2822,42 +2823,66 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
     case SQL_DESC_TYPE_NAME:
     case SQL_DESC_SCHEMA_NAME:
       {
-	SQLINTEGER data;
-	SQLRETURN rc = virtodbc__SQLGetDescField ((SQLHDESC) stmt->stmt_imp_row_descriptor, ColumnNumber,
-	    FieldIdentifier, CharacterAttributePtr, BufferLength, &data);
+	SQLINTEGER datalen;
+	SQLRETURN rc;
+
+	rc = virtodbc__SQLGetDescField ((SQLHDESC) stmt->stmt_imp_row_descriptor, ColumnNumber, FieldIdentifier, CharacterAttributePtr, BufferLength, &datalen);
 
 	if (StringLengthPtr)
-	  *StringLengthPtr = (SQLSMALLINT) data;
+	  *StringLengthPtr = (SQLSMALLINT) datalen;
 
 	return rc;
       }
 
-    case SQL_DESC_NUM_PREC_RADIX:
-    case SQL_DESC_UNNAMED:
-    case SQL_DESC_AUTO_UNIQUE_VALUE:
-    case SQL_DESC_CASE_SENSITIVE:
+      /* SQLSMALLINT */
     case SQL_DESC_CONCISE_TYPE:
     case SQL_DESC_COUNT:
-    case SQL_DESC_DISPLAY_SIZE:
     case SQL_DESC_FIXED_PREC_SCALE:
     case SQL_DESC_SEARCHABLE:
+    case SQL_DESC_UNNAMED:
     case SQL_DESC_UNSIGNED:
     case SQL_DESC_UPDATABLE:
       {
-	SQLINTEGER data;
-	SQLRETURN rc = virtodbc__SQLGetDescField ((SQLHDESC) stmt->stmt_imp_row_descriptor, ColumnNumber,
-	    FieldIdentifier, NumericAttributePtr, BufferLength, &data);
+	SQLSMALLINT data = 0;
+	SQLINTEGER datalen;
+	SQLRETURN rc;
+
+	rc = virtodbc__SQLGetDescField ((SQLHDESC) stmt->stmt_imp_row_descriptor, ColumnNumber, FieldIdentifier, &data, sizeof (data), &datalen);
+
+	if (NumericAttributePtr)
+	  *NumericAttributePtr = (SQLLEN) data;
 
 	if (StringLengthPtr)
-	  *StringLengthPtr = (SQLSMALLINT) data;
+	  *StringLengthPtr = (SQLSMALLINT) datalen;
+
+	return rc;
+      }
+
+      /* SQLINTEGER */
+    case SQL_DESC_AUTO_UNIQUE_VALUE:
+    case SQL_DESC_CASE_SENSITIVE:
+    case SQL_DESC_DISPLAY_SIZE:
+    case SQL_DESC_NUM_PREC_RADIX:
+      {
+	SQLINTEGER data = 0;
+	SQLINTEGER datalen;
+	SQLRETURN rc;
+
+	rc = virtodbc__SQLGetDescField ((SQLHDESC) stmt->stmt_imp_row_descriptor, ColumnNumber, FieldIdentifier, &data, sizeof (data), &datalen);
+
+	if (NumericAttributePtr)
+	  *NumericAttributePtr = (SQLLEN) data;
+
+	if (StringLengthPtr)
+	  *StringLengthPtr = (SQLSMALLINT) datalen;
 
 	return rc;
       }
     }
 
-  return (virtodbc__SQLColAttributes (statementHandle, ColumnNumber,
-	  FieldIdentifier, CharacterAttributePtr, BufferLength, StringLengthPtr, (SQLLEN *) NumericAttributePtr));
+  return (virtodbc__SQLColAttributes (statementHandle, ColumnNumber, FieldIdentifier, CharacterAttributePtr, BufferLength, StringLengthPtr, (SQLLEN *) NumericAttributePtr));
 }
+
 
 /* SQLEndTran */
 
