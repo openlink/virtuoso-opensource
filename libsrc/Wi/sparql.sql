@@ -3923,3 +3923,127 @@ http('</html>');
 
 registry_set ('/!sparql/', 'no_vsp_recompile')
 ;
+
+
+
+
+-- RDF parallel load 
+
+
+
+
+
+
+create procedure DB.DBA.TTLP_EXEC_TRIPLE_W (
+  in g_iid IRI_ID,
+  in s_iid IRI_ID,
+  in p_iid IRI_ID,
+  in o_iid any)
+{
+  log_enable (0);
+  insert soft DB.DBA.RDF_QUAD (G,S,P,O)
+  values (g_iid, s_iid, p_iid, o_iid);
+  commit work;
+}
+;
+
+
+
+create procedure DB.DBA.TTLP_EXEC_TRIPLE_A (
+  in g_uri varchar, in g_iid IRI_ID,
+  in s_uri varchar, in s_iid IRI_ID,
+  in p_uri varchar, in p_iid IRI_ID,
+  in o_uri varchar, in o_iid IRI_ID,
+  inout app_env any )
+{
+  declare err any;
+  app_env[1] := aq_request (app_env[0], 'DB.DBA.TTLP_EXEC_TRIPLE_W', vector (g_iid, s_iid, p_iid, o_iid));
+  if (mod (app_env[1], 4000) = 0)
+    {
+      commit work;
+      aq_wait (app_env[0], app_env[1], err, 1);
+      aq_wait_all (app_env[0]);
+    }
+}
+;
+
+create procedure DB.DBA.TTLP_EXEC_TRIPLE_L_A (
+  in g_uri varchar, in g_iid IRI_ID,
+  in s_uri varchar, in s_iid IRI_ID,
+  in p_uri varchar, in p_iid IRI_ID,
+  in o_val any, in o_type varchar, in o_lang varchar,
+  inout app_env any )
+{
+  declare err any;
+  if ('http://www.w3.org/2001/XMLSchema#boolean' = o_type)
+    {
+      if (('true' = o_val) or ('1' = o_val))
+        o_val := 1;
+      else if (('false' = o_val) or ('0' = o_val))
+        o_val := 0;
+      else signal ('RDFXX', 'Invalid notation of boolean literal');
+    }
+  else if ('http://www.w3.org/2001/XMLSchema#dateTime' = o_type)
+    {
+      o_val := __xqf_str_parse ('dateTime', o_val);
+    }
+  else if ('http://www.w3.org/2001/XMLSchema#double' = o_type)
+    {
+      o_val := cast (o_val as double precision);
+    }
+  else if ('http://www.w3.org/2001/XMLSchema#float' = o_type)
+    {
+      o_val := cast (o_val as float);
+    }
+  else if ('http://www.w3.org/2001/XMLSchema#integer' = o_type)
+    {
+      o_val := cast (o_val as int);
+    }
+  else if (isstring (o_type) or isstring (o_lang))
+    {
+      if (not isstring (o_type))
+        o_type := null;
+      if (not isstring (o_lang))
+        o_lang := null;
+      insert soft  DB.DBA.RDF_QUAD (G,S,P,O)
+      values (g_iid, s_iid, p_iid,
+        DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
+          o_val,
+          DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type),
+          o_lang ) );
+      return;
+    }
+  app_env[1] := aq_request (app_env[0], 'DB.DBA.TTLP_EXEC_TRIPLE_W', vector  (g_iid, s_iid, p_iid, DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (o_val)));
+  if (mod (app_env[1], 4000) = 0)
+    {
+      commit work;
+      aq_wait (app_env[0], app_env[1], err, 1);
+      aq_wait_all (app_env[0]);
+    }
+}
+;
+
+
+create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar)
+{
+  declare app_env, err any;
+  app_env := vector (async_queue (6), 0);
+  rdf_load_turtle (strg, base, graph,
+    vector (
+      'DB.DBA.TTLP_EXEC_NEW_GRAPH(?,?)',
+      'select DB.DBA.TTLP_EXEC_NEW_BLANK(?,?)',
+      'select DB.DBA.TTLP_EXEC_GET_IID(?,?,?)',
+      'DB.DBA.TTLP_EXEC_TRIPLE_A(?,?, ?,?, ?,?, ?,?, ?)',
+      'DB.DBA.TTLP_EXEC_TRIPLE_L_A(?,?, ?,?, ?,?, ?,?,?, ?)',
+      'commit work' ),
+    app_env);
+  commit work;
+  aq_wait (app_env[0], app_env[1], err, 1);
+  aq_wait_all (app_env[0]);
+}
+
+
+grant execute on DB.DBA.TTLP_MT  to SPARQL_UPDATE
+;
+grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_W  to SPARQL_UPDATE
+;
