@@ -51,7 +51,7 @@ noinst_HEADERS = \
 	virtext.h virtpwd.h widd.h widisk.h widv.h wifn.h wi.h wirpce.h \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
-	xpf.h xqf.h xslt_impl.h
+	xpf.h xqf.h xslt_impl.h aqueue.h
 
 
 generated_code = \
@@ -100,6 +100,7 @@ libwi_la_SOURCES = \
 	turtle_p.c \
 	schspace.c \
 	arith.c \
+	aqueue.c \
 	auxfiles.c \
 	bif_diff.c \
 	bif_intl.c \

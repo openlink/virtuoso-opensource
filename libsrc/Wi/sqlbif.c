@@ -11680,6 +11680,7 @@ fin:
 
 void ssl_constant_init ();
 void bif_diff_init ();
+void bif_aq_init ();
 
 void
 sql_bif_init (void)
@@ -12109,7 +12110,7 @@ sql_bif_init (void)
   bif_define ("__grouping", bif_grouping);
   bif_define ("__grouping_set_bitmap", bif_grouping_set_bitmap);
   bif_hosting_init ();
-
+  bif_aq_init ();
   bif_diff_init();
   return;
 }
