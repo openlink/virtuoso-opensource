@@ -36,7 +36,7 @@ gawk -f sql_to_c.awk -v init_name=_2pc -v pl_stats=PLDBG %SQL_FILES_2PC% > sql_c
 set SQL_FILES_VDB=vdb.sql
 gawk -f sql_to_c.awk -v init_name=_vdb -v pl_stats=PLDBG %SQL_FILES_VDB% > sql_code_vdb.c
 
-set SQL_FILES_SPARQL=sparql.sql ../../binsrc/tests/rdf/rdf-exp-load.xsl ../../binsrc/tests/rdf/rdf-exp-rdfxml2dict.xsl
+set SQL_FILES_SPARQL=sparql.sql 
 gawk -f sql_to_c.awk -v init_name=_sparql -v pl_stats=PLDBG %SQL_FILES_SPARQL% > sql_code_sparql.c
 
 @echo #include "sql_code_cache_impl.c" > sql_code_cache.c
