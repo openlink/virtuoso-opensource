@@ -138,6 +138,9 @@
 				RelativePath="..\libsrc\Wi\2pc.c">
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\aqueue.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\arith.c">
 			</File>
 			<File
