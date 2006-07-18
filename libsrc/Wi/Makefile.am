@@ -207,6 +207,7 @@ libwi_odbc_la_SOURCES = \
 	turtle_p.c \
 	schspace.c \
 	arith.c \
+	aqueue.c \
 	auxfiles.c \
 	bif_diff.c \
 	bif_intl.c \
