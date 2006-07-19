@@ -58,10 +58,10 @@ create procedure DBA.SOAPODRIVE.Browse (
   http ('<rows>\n', sStream);
   for (N := 0; N < length(result); N := N + 1) {
     tags := DB.DBA.DAV_PROP_GET(result[N][0], ':virtpublictags', uName, uPassword);
-    if (not isstring(tags))
+    if (ODRIVE.WA.DAV_ERROR (tags))
       tags := '';
-    tags := DB.DBA.DAV_PROP_GET(result[N][0], ':virtprivatetags', uName, uPassword);
-    if (not isstring(tags2))
+    tags2 := DB.DBA.DAV_PROP_GET(result[N][0], ':virtprivatetags', uName, uPassword);
+    if (ODRIVE.WA.DAV_ERROR (tags2))
       tags2 := '';
     http (sprintf('<row number="%d">\n', N+1), sStream);
       http ('<name>', sStream);
