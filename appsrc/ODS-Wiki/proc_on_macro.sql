@@ -370,13 +370,13 @@ create function WV.WIKI.MACRO_ATOM_FEED (inout _data varchar, inout _context any
 
 create function WV.WIKI.MACRO_FEED_RSS (inout _data varchar, inout _context any, inout _env any)
 {
-  return WV.WIKI.FEED (_env, _data, 'rss20', 'rss20.gif');
+  return WV.WIKI.FEED (_env, _data, 'rss20', 'rss-icon-16.gif');
 }
 ;
 
 create function WV.WIKI.MACRO_FEED_ATOM (inout _data varchar, inout _context any, inout _env any)
 {
-  return WV.WIKI.FEED (_env, _data, 'atom', 'atom03.gif');
+  return WV.WIKI.FEED (_env, _data, 'atom', 'atom-icon-16.gif');
 }
 ;
 

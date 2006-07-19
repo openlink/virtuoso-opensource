@@ -34,13 +34,13 @@
    
     <v:variable name="url" type="varchar" default="null" persist="0"
 		xmlns:v="http://www.openlinksw.com/vspx/" />
-    <vm:pagetitle>Settings</vm:pagetitle>
     <v:variable name="delicious_enable" type="integer"/>
     <v:variable name="webmail_enable" type="integer"/>
     <v:variable name="host" type="vadchar"/>
     <v:variable name="wa_domain" type="varchar" default="null" persist="0"/>
     <v:variable name="domains" type="varchar" default="null" persist="0"/>
     <v:variable name="skins" type="varchar" default="null" persist="0"/>
+    <v:variable name="email_obfuscation_types" type="varchar" default="null" persist="0"/>
     <v:variable name="index_page" type="varchar" default="'WelcomeVisitors'" persist="0"/>
     <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
     <v:variable name="cluster" type="varchar" default="'Main'" param-name="cluster"/>
@@ -124,6 +124,15 @@
 			XMLAppendChildren (sks, 
 			  XMLELEMENT ('skin', sk));
 		}
+                declare email_obfuscation_types_ent any;
+	        self.email_obfuscation_types := XMLELEMENT ('email_obfuscation_types');
+                email_obfuscation_types_ent := xpath_eval ('/email_obfuscation_types', self.email_obfuscation_types);
+	        for select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'WV.%.EMAIL_OBFUSCATE_%'
+                do {
+ 		  XMLAppendChildren (email_obfuscation_types_ent, 
+		    XMLELEMENT ('type', subseq (P_NAME, 24)));
+                }		
+dbg_obj_print (self.email_obfuscation_types);
                 ]]>
               </v:script>
           </v:before-data-bind>
@@ -157,6 +166,7 @@
             WV.WIKI.SETCLUSTERPARAM (self.cluster, 'webmail_domain', self.webmail_domains.ufl_value);
             WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin', self.wiki_skin.ufl_value);
             WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin2', self.wiki_skin_2.ufl_value);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'email-obfuscate', self.email_obfuscation.ufl_value);
 	    WV.WIKI.SETCLUSTERPARAM (self.cluster, 'new-topic-template', self.new_topic_template_text.ufl_value);
 	    WV.WIKI.SETCLUSTERPARAM (self.cluster, 'new-category-template', self.new_category_template_text.ufl_value);
 	    if (WV.WIKI.TRIM(self.skin2_vhost_regexp_text.ufl_value) = '')
@@ -329,6 +339,23 @@
               </div>
             </td>
           </tr>
+	  <tr>
+	    <td>
+	      <div class="wiki-setttings-omail">
+		<h2>Anti SPAM</h2>
+		<p>
+		   <table width="100%">
+                    <tr>
+		      <th>e-mail obfuscation:</th>
+		      <td>
+			<v:data-list name="email_obfuscation" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster, 'email-obfuscate', 'NONE')" list-document="--self.email_obfuscation_types" list-match="/email_obfuscation_types/type" list-key-path="." list-value-path="."/>
+		      </td>
+                    </tr>
+                   </table>
+	 	</p>
+	      </div>
+	    </td>
+	  </tr> 
 	  <tr>
 	    <td>
 	      <div class="wiki-setttings-omail">

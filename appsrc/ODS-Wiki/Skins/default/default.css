@@ -577,6 +577,10 @@ div.wiki-source-type {
   font-weight: bold;
 }
 
+.report {
+  font-size: 12px;
+}
+
 .report span {
   font-weight: bold;
 }

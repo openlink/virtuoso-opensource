@@ -2472,3 +2472,44 @@ create procedure WV.WIKI.UTF2WIDE (
   return charset_recode (S, 'UTF-8', '_WIDE_');
 }
 ;
+
+create function WV.WIKI.EMAIL_OBFUSCATE (in clustername varchar, in mailto varchar)
+{
+  dbg_obj_print (clustername, mailto);
+  declare _type, _proc varchar;
+  _type := WV.WIKI.CLUSTERPARAM (clustername , 'email-obfuscate', 'AT');
+  _proc := fix_identifier_case ('WV.WIKI.EMAIL_OBFUSCATE_' || _type);
+  if ((mailto like 'mailto:%') or (mailto like 'MAILTO:%'))
+    mailto := subseq (mailto, 7);
+  if (__proc_exists (_proc))
+    return call (_proc) (mailto);
+  return mailto;
+}
+;
+
+create function WV.WIKI.EMAIL_OBFUSCATE_NONE (in mailto varchar)
+{
+  return xtree_doc ('<a href="mailto:' || mailto || '">' || mailto || '</a>');
+}
+;
+
+create function WV.WIKI.EMAIL_OBFUSCATE_NOSPAM (in mailto varchar)
+{
+  return replace(mailto, '@', ' NOSPAM ');
+}
+;
+
+create function WV.WIKI.EMAIL_OBFUSCATE_AT (in mailto varchar)
+{
+  return replace (replace(mailto, '@', ' (AT) '), '.', ' (dot) ');
+}
+;
+
+
+
+
+grant execute on WV.WIKI.EMAIL_OBFUSCATE to public
+;
+
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:email_obfuscate', 'WV.WIKI.EMAIL_OBFUSCATE')
+;

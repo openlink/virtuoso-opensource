@@ -451,18 +451,16 @@ endf:
 							<v:template name="result_in_formats" type="simple" enabled="--length(self.ds_data)">
 								<div class="search-result-in-format">
 							  in formats:
-							  <div class="ATOM_FEED">
 							    <a href="<?V 'advanced_search.vspx?' || self.upar || '&output=atom' ?>">
-							      <img border="0" alt="ATOM" title="ATOM" src="images/atom03.gif"/>
+                           <img border="0" alt="ATOM" title="ATOM" src="images/atom-icon-16.gif"/>
 							      </a>
 							    <a href="<?V 'advanced_search.vspx?' || self.upar || '&output=rss20' ?>">
-							      <img border="0" alt="RSS" title="RSS" src="images/rss20.gif"/>
+                           <img border="0" alt="RSS" title="RSS" src="images/rss-icon-16.gif"/>
 							      </a>
 							    <a href="<?V 'advanced_search.vspx?' || self.upar || '&output=rdf' ?>">
-							      <img border="0" alt="RDF" title="RDF" src="images/rdf.gif"/>
+                           <img border="0" alt="RDF" title="RDF" src="images/rdf-icon-16.gif"/>
 							      </a>
 									</div>
-								</div>
 							</v:template>
 							<v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="100" scrollable="1" instantiate="-- case when self.ds_len > 0 then 1 else 0 end">
 								<div class="report">Search result for <span>

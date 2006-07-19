@@ -90,15 +90,16 @@
         </xsl:template>
         <xsl:template match="vm:body">
           <body>            
+           <div id="page">
             <vm:logo/>
             <div class="login-area">
               <vm:wiki-login/>
             </div>
-            <div class="aux-info-area">
-              <vm:virtuoso-info/>
-            </div>
-            <div class="working-area">
               <xsl:apply-templates/>
+            <vm:virtuoso-info/>
+           <!-- 
+             <div class="aux-info-area">
+            </div> -->
             </div>
           </body>
         </xsl:template>

@@ -49,6 +49,10 @@
       </xsl:otherwise>
     </xsl:choose>      
   </xsl:template>
+  <xsl:template match="a[@style='mailto']">
+    <xsl:param name="ti_cluster_name"/>
+    <xsl:copy-of select="wv:email_obfuscate($ti_cluster_name, @href)"/>
+  </xsl:template>
   
   <xsl:template name="arg">
     <xsl:param name="argument"/>

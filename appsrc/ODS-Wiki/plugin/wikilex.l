@@ -572,6 +572,7 @@ ABSURI		({PROTOCOL}(({USERNAME}(("!"{LOCALRES})?)"@")?){DOMAINNAME}(((":"{LOCALR
 DUMMYURI	({PROTOCOL}([A-Za-z0-9_.:|/?+%&-=]+))
 LINKTITLE	([^\r\n\[\]\|]+)
 FORCEDWIKILINK	([^\r\n\[\]~@:\\/{}<>\|]+)
+EMAIL		({USERNAME}"@"{DOMAINNAME}(("?"{LOCALRES})?))
 MAILTO		("mailto:"{USERNAME}"@"{DOMAINNAME}(("?"{LOCALRES})?))
 TAGNAME		((([A-Z][A-Z0-9]*)|([a-z][a-z0-9]*))((":"{USERNAME})?))
 MACRONAME	([A-Z]+(":"[A-Z]+)?)
@@ -630,6 +631,7 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 
 	/* Other links. Their priorities are higher than anything else except <verbatim> */
 <INITIAL,TABLELINE>{MAILTO}				{ wlex_ahref (yytext, "mailto", yytext+7); }
+<INITIAL,TABLELINE>{EMAIL}				{ wlex_ahref (yytext, "mailto", yytext); }
 <INITIAL,TABLELINE>{ABSURI}				{ wlex_ahref (yytext, "absuri", yytext); }
 <INITIAL,TABLELINE>"[[["{LINKTITLE}"]]]"		{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword");  }
 <INITIAL,TABLELINE>"[["{PREDICATE}"::"{FORCEDWIKILINK}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", NULL, "forcedwikiword");  }
