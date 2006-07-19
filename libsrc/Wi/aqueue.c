@@ -47,14 +47,7 @@ aq_thread_func (aq_thread_t * aqt)
     {
       async_queue_t * aq = aqt->aqt_aq;
       aq_request_t * aqr = aqt->aqt_aqr;
-      rc = lt_enter (aqt->aqt_cli->cli_trx);
-      if (LTE_OK != rc)
-	{
-	  IN_TXN;
-	  lt_rollback (aqt->aqt_cli->cli_trx, TRX_CONT);
-	  LEAVE_TXN;
-	  lt_enter (aqt->aqt_cli->cli_trx);
-	}
+      lt_enter_anyway (aqt->aqt_cli->cli_trx);
       aqr->aqr_state = AQR_RUNNING;
       /* with privs of te owner of the aq being served */
       aqt->aqt_cli->cli_user = aq->aq_cli->cli_user;

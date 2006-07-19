@@ -388,6 +388,8 @@ int lt_leave_real (lock_trx_t * lt);
 int lt_enter (lock_trx_t * lt);
 int lt_leave (lock_trx_t * lt);
 #endif
+int lt_enter_anyway (lock_trx_t * lt);
+
 
 void qi_free (caddr_t * inst);
 void qi_inst_state_free_rsts (caddr_t *qi);

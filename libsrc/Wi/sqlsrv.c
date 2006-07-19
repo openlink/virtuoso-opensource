@@ -751,7 +751,7 @@ dbev_disconnect (client_connection_t * cli)
   if (proc->qr_to_recompile)
     proc = qr_recompile (proc, NULL);
   params = (caddr_t *) list (0);
-  lt_enter (cli->cli_trx);
+  lt_enter_anyway (cli->cli_trx);
   err = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
 		 params, NULL, 0);
   dk_free_box ((caddr_t) params);
@@ -986,7 +986,7 @@ dbev_connect (client_connection_t * cli)
   if (proc->qr_to_recompile)
     proc = qr_recompile (proc, NULL);
   params = (caddr_t *) list (0);
-  lt_enter (cli->cli_trx);
+  lt_enter_anyway (cli->cli_trx);
   err = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
 		 params, NULL, 0);
   dk_free_box ((caddr_t) params);
@@ -2827,6 +2827,40 @@ lt_enter (lock_trx_t * lt)
   else
   {
     rc = lt->lt_error == LTE_OK ? LTE_DEADLOCK : lt->lt_error;
+  }
+  LEAVE_TXN;
+  return rc;
+}
+
+
+int
+lt_enter_anyway (lock_trx_t * lt)
+{
+  /* enter the trx.  If it is benig rolled back, wait.  if it is not pending, roll back */
+  int rc;
+  IN_TXN;
+  if (LT_CLOSING == lt->lt_status)
+    {
+      lt_wait_until_dead (lt);
+      lt->lt_threads++;
+      LEAVE_TXN;
+      return LTE_DEADLOCK;
+    }
+  if (LT_PENDING == lt->lt_status)
+    {
+      rc = LTE_OK;
+#ifdef INPROCESS_CLIENT
+      if (!IS_INPROCESS_CLIENT (lt->lt_client))
+#endif
+	{
+	  lt_threads_inc_inner (lt);
+	}
+    }
+  else
+  {
+    rc = lt->lt_error == LTE_OK ? LTE_DEADLOCK : lt->lt_error;
+    lt->lt_threads++;
+    lt_rollback (lt, TRX_CONT);
   }
   LEAVE_TXN;
   return rc;
