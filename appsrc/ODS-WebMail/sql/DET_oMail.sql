@@ -203,7 +203,8 @@ create function "oMail_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any,
           ((mfolder_id is null and PARENT_ID is null) or (mfolder_id is not null and PARENT_ID = mfolder_id)) and
           ((orig_id is null) or (FOLDER_ID = orig_id)) and
           ("oMail_FIXNAME" (NAME) = orig_fnameext)
-      do {
+      do
+        {
         hitlist := vector_concat (hitlist, vector (FOLDER_ID));
         }
       if (length (hitlist) <> 1)
@@ -321,7 +322,6 @@ create function "oMail_DAV_COL_MOUNT_HERE" (in parent_id any, in full_mount_path
 
 create function "oMail_DAV_DELETE" (in detcol_id any, in path_parts any, in what char(1), in silent integer, in auth_uid integer) returns integer
 {
-  declare rc, orig_id integer;
   return -20;
 }
 ;
@@ -353,7 +353,6 @@ create function "oMail_DAV_PROP_SET" (in id any, in st char(0), in propname varc
 
 create function "oMail_DAV_PROP_GET" (in id any, in what char(0), in propname varchar, in auth_uid integer)
 {
-  declare ret varchar;
   -- dbg_obj_princ ('oMail_DAV_PROP_GET (', id, what, propname, auth_uid, ')');
   return -11;
 }
@@ -361,7 +360,6 @@ create function "oMail_DAV_PROP_GET" (in id any, in what char(0), in propname va
 
 create function "oMail_DAV_PROP_LIST" (in id any, in what char(0), in propmask varchar, in auth_uid integer)
 {
-  declare ret any;
   -- dbg_obj_princ ('oMail_DAV_PROP_LIST (', id, what, propmask, auth_uid, ')');
   return vector ();
 }
@@ -850,8 +848,6 @@ create function "oMail_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts any
 
 create function "oMail_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite integer, in auth_uid integer) returns any
 {
-  declare pfc_spath, pfc_name, pfc_value varchar;
-  declare rc integer;
   -- dbg_obj_princ ('oMail_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite, auth_uid, ')');
   return -20;
 }
