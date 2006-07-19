@@ -74,12 +74,12 @@
               </v:on-post>
             </v:button>
             <div class="menuBar" id="exportBar">
-              <a class="menuButton button2" onMouseDown="return this.blur();" onClick="return menuPopup(this, 'exportMenu');">export</a>
+          <a class="menuButton button2" onMouseDown="return this.blur();" onClick="return menuPopup(this, 'exportMenu');" title="Export Feeds">export</a>
               <div class="menu" id="exportMenu">
                 <?vsp
-                  http(sprintf('<a class="menuItem" href="%sOFM.ocs" target="_blank"><img src="image/%s" border="0" alt="%s"/></a>', ENEWS.WA.dav_url(self.domain_id, self.account_id), 'ocs.gif', 'OCS Export'));
-                  http(sprintf('<a class="menuItem" href="%sOFM.opml" target="_blank"><img src="image/%s" border="0" alt="%s"/></a>', ENEWS.WA.dav_url(self.domain_id, self.account_id), 'opml.gif', 'OPML Export'));
-                  http(sprintf('<a class="menuItem" href="%sOFM.foaf" target="_blank"><img src="image/%s" border="0" alt="%s"/></a>', ENEWS.WA.dav_url(self.domain_id, self.account_id), 'foaf.gif', 'FOAF Export'));
+              http(sprintf('<a class="menuItem" href="%sOFM.ocs" target="_blank" title="%s"><img src="image/%s" border="0" alt="%s"/> %s</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id), 'OCS Export', 'blue-icon-16.gif', 'OCS Export', 'OCS'));
+              http(sprintf('<a class="menuItem" href="%sOFM.opml" target="_blank" title="%s"><img src="image/%s" border="0" alt="%s"/> %s</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id), 'OPML Export', 'blue-icon-16.gif', 'OPML Export', 'OPML'));
+              http(sprintf('<a class="menuItem" href="%sOFM.foaf" target="_blank" title="%s"><img src="image/%s" border="0" alt="%s"/> %s</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id), 'FOAF Export', 'foaf.png', 'FOAF Export', 'FOAF'));
                 ?>
               </div>
             </div>
