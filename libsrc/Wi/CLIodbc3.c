@@ -2790,6 +2790,7 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
     )
 {
   STMT (stmt, statementHandle);
+
   switch (FieldIdentifier)
     {
     case SQL_DESC_NULLABLE:
@@ -2808,6 +2809,18 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
 
     case SQL_DESC_TYPE:
       FieldIdentifier = SQL_COLUMN_TYPE;
+      break;
+
+    case SQL_DESC_AUTO_UNIQUE_VALUE:
+      FieldIdentifier = SQL_COLUMN_AUTO_INCREMENT;
+      break;
+	
+    case SQL_DESC_CASE_SENSITIVE:
+      FieldIdentifier = SQL_COLUMN_CASE_SENSITIVE;
+      break;
+
+    case SQL_DESC_DISPLAY_SIZE:
+      FieldIdentifier = SQL_COLUMN_DISPLAY_SIZE;
       break;
 
       /* SQLCHAR */
@@ -2859,9 +2872,6 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
       }
 
       /* SQLINTEGER */
-    case SQL_DESC_AUTO_UNIQUE_VALUE:
-    case SQL_DESC_CASE_SENSITIVE:
-    case SQL_DESC_DISPLAY_SIZE:
     case SQL_DESC_NUM_PREC_RADIX:
       {
 	SQLINTEGER data = 0;
