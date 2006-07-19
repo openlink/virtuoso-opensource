@@ -714,7 +714,8 @@ create procedure BMK.WA.bookmark_update (
   in domain_id integer,
   in uri any,
   in name any,
-  in description any)
+  in description any,
+  in folder_id integer)
 {
   declare bookmark_id integer;
 
@@ -724,16 +725,21 @@ create procedure BMK.WA.bookmark_update (
       values (uri, name, description);
     bookmark_id := identity_value ();
   }
+  if (is_empty_or_null(folder_id))
+    folder_id := null;
+  if (id = 0)
+    id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), 0);
   if (id = 0) {
-    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE)
-      values (domain_id, bookmark_id, name, description, now());
+    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, BD_FOLDER_ID)
+      values (domain_id, bookmark_id, name, description, now(), folder_id);
     id := identity_value ();
   } else {
     update BMK.WA.BOOKMARK_DOMAIN
        set BD_BOOKMARK_ID = bookmark_id,
            BD_NAME = name,
            BD_DESCRIPTION = description,
-           BD_LAST_UPDATE = now()
+           BD_LAST_UPDATE = now(),
+           BD_FOLDER_ID = folder_id
      where BD_ID = id;
   }
   return id;
@@ -781,6 +787,7 @@ create procedure BMK.WA.bookmark_parent(
 --
 create procedure BMK.WA.bookmark_import(
   in domain_id integer,
+  in account_id integer,
   in folder_id integer,
   in S any)
 {
@@ -807,8 +814,15 @@ _xbel:;
   -- check xbel format
   V := xpath_eval('/xbel', BMK.WA.string2xml(S));
   if (V is null)
-    goto _end;
+    goto _delicious;
   BMK..bookmark_import_xbel(domain_id, folder_id, xml_cut(V), 'xbel');
+
+_delicious:;
+  V := xtree_doc(S, 2);
+  V := xpath_eval('/posts', V);
+  if (V is null)
+    goto _end;
+  BMK..bookmark_import_delicious(domain_id, account_id, folder_id, xml_cut(V));
 
 _end:
     return;
@@ -833,8 +847,7 @@ create procedure BMK.WA.bookmark_import_netscape(
     if (T is null)
       goto _folder;
     Q := xpath_eval('/dl/dt/a/@href', V, N);
-    tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as varchar), cast(T as varchar), null);
-    BMK.WA.bookmark_parent(tmp, folder_id);
+    BMK.WA.bookmark_update(0, domain_id, cast(Q as varchar), cast(T as varchar), null, folder_id);
     N := N + 1;
   }
 _folder:
@@ -878,8 +891,7 @@ create procedure BMK.WA.bookmark_import_xbel(
       goto _folder;
     T := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/title/text())', tag, N), V, 1));
     D := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/desc/text())', tag, N), V, 1));
-    tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as varchar), cast(T as varchar), D);
-    BMK.WA.bookmark_parent(tmp, folder_id);
+    BMK.WA.bookmark_update(0, domain_id, cast(Q as varchar), cast(T as varchar), D, folder_id);
     N := N + 1;
   }
 _folder:
@@ -889,6 +901,40 @@ _folder:
     if (T is null)
       goto _exit;
     BMK.WA.bookmark_import_xbel(domain_id, folder_id, xml_cut(T), 'folder');
+    N := N + 1;
+  }
+_exit:
+  return;
+};
+
+-----------------------------------------------------
+--
+create procedure BMK.WA.bookmark_import_delicious(
+  in domain_id integer,
+  in account_id integer,
+  in folder_id integer,
+  in V any)
+{
+  declare tmp, T, Q, D, TG any;
+  declare N integer;
+
+  if (V is null)
+    return;
+
+  N := 1;
+  while (1) {
+    Q := xpath_eval(sprintf('//post[%d]/@href',  N), V, 1);
+    if (Q is null)
+      goto _exit;
+    T := xpath_eval(sprintf('string(//post[%d]/@description)', N), V, 1);
+    D := xpath_eval(sprintf('string(//post[%d]/@extended)', N), V, 1);
+    tmp := BMK.WA.bookmark_update(0, domain_id, cast(Q as varchar), cast(T as varchar), D, folder_id);
+    tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = tmp);
+    TG := cast(xpath_eval(sprintf('string(//post[%d]/@tag)', N), V, 1) as varchar);
+    if (TG <> 'system:unfiled') {
+      TG := replace(TG, ' ', ',');
+      BMK.WA.bookmark_tags(domain_id, account_id, tmp, TG);
+    }
     N := N + 1;
   }
 _exit:

@@ -794,19 +794,21 @@
               <table cellspacing="0">
                 <tr>
                   <th>
-                    <v:label for="i_file" value="Source - File System"/>
+                    <v:label for="i_file" value="Source"/>
                   </th>
+                  <td width="1%" nowrap="nowarap">
+                    <input type="radio" name="i_source" id="i_source_0" value="0" checked="checked" /><xsl:call-template name="nbsp"/><b><vm:label for="i_source_0" value="--'File'" /></b>
+                  </td>
                   <td>
-                    <input type="radio" name="i_source" value="0" checked="checked" /><xsl:call-template name="nbsp"/>
                     <input type="file" name="i_file" onchange="javascript: F1.i_source[0].checked=true;" onfocus="javascript: F1.i_source[0].checked=true;" size="40"/>
                   </td>
                 </tr>
                 <tr>
-                  <th>
-                    - WebDAV
-                  </th>
+                  <th />
+                  <td nowrap="nowarap">
+                    <input type="radio" name="i_source" id="i_source_1" value="1" /><xsl:call-template name="nbsp"/><b><vm:label for="i_source_1" value="--'WebDAV'" /></b>
+                  </td>
                   <td>
-                    <input type="radio" name="i_source" value="1" /><xsl:call-template name="nbsp"/>
                     <v:text name="i_dav" value="--''" xhtml_onfocus="javascript: F1.i_source[1].checked=true;" xhtml_size="40"/><v:browse-button value="Browse..."
                       selector="popup_browser.vspx"
                       child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"
@@ -814,6 +816,13 @@
                       <v:field name="i_dav" />
                     </v:browse-button>
                   </td>
+                </tr>
+                <tr>
+                  <th />
+                  <td nowrap="nowarap">
+                    <input type="radio" name="i_source" id="i_source_2" value="2" /><xsl:call-template name="nbsp"/><b><vm:label for="i_source_2" value="--'del.icio.us'" /></b>
+                  </td>
+                  <td />
                 </tr>
               </table>
             </div>
@@ -823,6 +832,7 @@
                   <![CDATA[
                     declare S, uri any;
 
+                    S := '';
                     if (get_keyword ('i_source', self.vc_page.vc_event.ve_params, '-1') = '0') {
                     S := trim(get_keyword('i_file', self.vc_page.vc_event.ve_params, ''));
                     } else if (get_keyword ('i_source', self.vc_page.vc_event.ve_params, '-1') = '1') {
@@ -839,11 +849,35 @@
                         self.vc_is_valid := 0;
                         return;
                       }
+                    } else if (get_keyword ('i_source', self.vc_page.vc_event.ve_params, '-1') = '2') {
+                      declare deliciousUser, deliciousPwd, errorMsg varchar;
+                      declare settings, hdr, V any;
+
+                      settings := BMK.WA.settings(self.account_id);
+                      deliciousUser := get_keyword('deliciousUser', settings, '');
+                      deliciousPwd := get_keyword('deliciousPwd', settings, '');
+
+                      declare exit handler for sqlstate '*'
+                      {
+                        self.vc_error_message := 'Cannot connect to del.icio.us server';
+                        self.vc_is_valid := 0;
+                        return;
+                      };
+  		                commit work;
+                      S := http_get('http://del.icio.us/api/posts/all?', hdr, 'POST', sprintf ('Content-Type: text/xml\r\nDepth: 1\r\nAuthorization: Basic %s', encode_base64 (concat(deliciousUser, ':', deliciousPwd))));
+                      V := xml_tree_doc (xml_tree (S, 2));
+                      errorMsg := xpath_eval('string(//title)', V);
+                      if (errorMsg is not null and errorMsg <> '') {
+                        self.vc_error_message := errorMsg;
+                        self.vc_is_valid := 0;
+                        return;
                     }
+                    }
+
                     self.v_folder_id := null;
                     if (BMK.WA.node_type(self.bNode) = 'f')
                       self.v_folder_id := BMK.WA.node_id(self.bNode);
-                    BMK.WA.bookmark_import(self.domain_id, self.v_folder_id, S);
+                    BMK.WA.bookmark_import(self.domain_id, self.account_id, self.v_folder_id, S);
 
                     self.bMode := 'browse';
                     self.vc_data_bind(e);
@@ -1306,9 +1340,8 @@
                   		return;
                     }
 
-                    tmp := BMK.WA.bookmark_update(self.v_id, self.domain_id, self.v_uri, self.v_name, self.v_description);
                     self.v_folder_id := BMK.WA.folder_create(self.domain_id, self.v_folder_name, self.v_folder_id);
-                    BMK.WA.bookmark_parent(tmp, self.v_folder_id);
+                    tmp := BMK.WA.bookmark_update(self.v_id, self.domain_id, self.v_uri, self.v_name, self.v_description, self.v_folder_id);
                     tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = tmp);
                     BMK.WA.bookmark_tags(self.domain_id, self.account_id, tmp, self.v_tags);
 

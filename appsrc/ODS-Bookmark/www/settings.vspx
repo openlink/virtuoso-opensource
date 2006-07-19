@@ -44,13 +44,21 @@
     <vm:header/>
     <vm:variables>
       <v:variable name="v_settings" persist="0" type="varchar" default="null"/>
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
     </vm:variables>
     <vm:pagebody>
+      <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <div class="new-form-header" style="margin-top: 6px;">
         Preferences
       </div>
-      <div class="new-form-body">
-        <table cellspacing="0">
+      <div id="c1">
+        <div class="tabs">
+          <vm:tabCaption tab="1" tabs="2" caption="Main"/>&nbsp;
+          <vm:tabCaption tab="2" tabs="2" caption="Links"/>&nbsp;
+        </div>
+        <div class="contents">
+          <div id="1" class="tabContent" style="display: none;">
+            <table class="form-body" cellspacing="0">
           <tr>
             <th width="30%">
               <v:label for="f_chars" value="Limit of the names to"/>
@@ -92,6 +100,32 @@
           </tr>
         </table>
       </div>
+          <div id="2" class="tabContent" style="display: none;">
+            <table class="form-body" cellspacing="0">
+              <tr>
+                <th width="30%">
+                  <v:label for="f_delicious" value="del.icio.us"/>
+                </th>
+                <th width="1%" nowrap="nowrap">
+                  <v:label for="f_deliciousUser" value="- user name"/>
+                </th>
+                <td>
+                  <v:text name="f_deliciousUser" null-value="--''" value="--get_keyword('deliciousUser', self.v_settings, '')" />
+                </td>
+              </tr>
+              <tr>
+                <th />
+                <th nowrap="nowrap">
+                  <v:label for="f_deliciousPwd" value="- password"/>
+                </th>
+                <td>
+                  <v:text name="f_deliciousPwd" type="password" null-value="--''" value="--get_keyword('deliciousPwd', self.v_settings, '')" />
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
       <div class="new-form-footer">
         <v:button action="simple" value="Save" xhtml_class="form-button">
           <v:on-post>
@@ -108,6 +142,8 @@
               self.v_settings := BMK.WA.set_keyword('rows', self.v_settings, cast(cast(rows as integer) as varchar));
               self.v_settings := BMK.WA.set_keyword('tbLabels', self.v_settings, self.f_tbLabels.ufl_selected);
               self.v_settings := BMK.WA.set_keyword('atomVersion', self.v_settings, self.f_atomVersion.ufl_value);
+              self.v_settings := BMK.WA.set_keyword('deliciousUser', self.v_settings, self.f_deliciousUser.ufl_value);
+              self.v_settings := BMK.WA.set_keyword('deliciousPwd', self.v_settings, self.f_deliciousPwd.ufl_value);
 
               insert replacing BMK.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.v_settings));
               commit work;
@@ -126,6 +162,11 @@
       	  </v:on-post>
         </v:button>
       </div>
+      <script>
+        <![CDATA[
+          initTab(2, 1);
+        ]]>
+      </script>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
