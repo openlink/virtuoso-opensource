@@ -1453,7 +1453,13 @@ window.onload = function (e)
 </xsl:template>
 
   <xsl:template match="vm:disco-ods-sioc-link">
-      <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/weblog/%U/sioc.rdf', self.host, self.owner_name, self.inst_name), '+', '%2B')); ?>" />
+    <?vsp
+    declare id_part varchar;
+    id_part := '';
+    if (self.postid is not null)
+      id_part := self.postid || '/';
+    ?>
+      <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/weblog/%U/%ssioc.rdf', self.host, self.owner_name, self.inst_name, id_part), '+', '%2B')); ?>" />
   </xsl:template>
 
 

@@ -133,6 +133,13 @@ create procedure forum_iri (in inst_type varchar, in wai_name varchar)
   return sprintf ('http://%s%s/%U/%U/%U', get_cname(), get_base_path (), _member, tp, wai_name);
 };
 
+create procedure post_iri (in u_name varchar, in inst_type varchar, in wai_name varchar, in post_id varchar)
+{
+  declare tp varchar;
+  tp := DB.DBA.wa_type_to_app (inst_type);
+  return sprintf ('http://%s%s/%U/%U/%U/%U', get_cname(), get_base_path (), u_name, tp, wai_name, post_id);
+};
+
 create procedure forum_iri_n (in inst_type varchar, in wai_name varchar, in n_wai_name varchar)
 {
   declare _member, tp varchar;
@@ -984,14 +991,29 @@ create trigger sn_related_SIOC_D before delete on DB.DBA.sn_related referencing 
   return;
 };
 
-create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in inst_type varchar)
+create procedure rdf_head (inout ses any)
 {
-  declare state, qry, msg, maxrows, metas, rset, graph, iri any;
+  http ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">', ses);
+};
+
+create procedure rdf_tail (inout ses any)
+{
+  http ('</rdf:RDF>', ses);
+};
+
+create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in inst_type varchar, in postid varchar := null)
+{
+  declare state, tp, qry, msg, maxrows, metas, rset, graph, iri any;
   declare ses any;
 
-
+--  dbg_obj_print (u_name,wai_name,inst_type,postid);
   graph := get_graph ();
-  if (wai_name is null)
+  ses := string_output ();
+
+  if (inst_type = 'users')
+    inst_type := null;
+
+  if (wai_name is null and inst_type is null and postid is null)
     {
       iri := user_obj_iri (u_name);
       qry := sprintf ('sparql ' ||
@@ -1006,26 +1028,90 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	 ' ',
 	 graph, u_name, u_name, graph, u_name);
     }
-  else
+  else if (wai_name is null and postid is null)
     {
-      iri := forum_iri (inst_type, wai_name);
-      qry := sprintf ('sparql \n' ||
+      tp := DB.DBA.wa_type_to_app (inst_type);
+      iri := user_obj_iri (u_name);
+      qry := sprintf ('sparql ' ||
          ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
          ' prefix foaf: <http://xmlns.com/foaf/0.1/#> \n' ||
    	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
          ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
          ' construct { ?s ?p ?o } \n' ||
-         ' from <%s> where { { \n' ||
-	 '   ?s ?p ?o . ?s sioc:name "%s" FILTER sql:ODS_FILTER_FORUM (?p, ?o) } union  \n' ||
-         '   { ?s ?p ?o . ?s sioc:has_container ?ob . ?ob sioc:name "%s" FILTER sql:ODS_FILTER_POST (?p, ?o) } \n'||
-	 '   union { ?s ?p ?o . ?s sioc:host_of ?forum . ?forum sioc:name "%s" FILTER sql:ODS_FILTER_FORUM_SITE (?p, ?o, "%s") } }'||
-	 ' ',
-	 graph, wai_name, wai_name, wai_name, iri);
+         ' from <%s> where { \n' ||
+         '    ?s sioc:has_member ?member  . ?member sioc:name "%s" . ?s ?p ?o . ?s sioc:type "%s"'||
+	 '    FILTER sql:ODS_FILTER_USER_FORUM (?p, ?o, "%s/%s") '||
+	 ' } ',
+	 graph, u_name, tp, graph, u_name);
     }
-
-  if (0 and isstring (file_stat ('sioc_debug.rq')))
+  else if (postid is null)
     {
-      qry := 'sparql ' || file_to_string ('sioc_debug.rq');
+      declare triples, num any;
+      iri := forum_iri (inst_type, wai_name);
+      rdf_head (ses);
+      triples := (sparql
+   	  prefix sioc: <http://rdfs.org/sioc/ns#>
+          construct { ?s ?p ?o } where
+            	{
+		  graph ?:graph
+		  {
+		    ?s ?p ?o . ?s sioc:host_of ?forum . ?forum sioc:name ?:wai_name
+		    FILTER sql:ODS_FILTER_FORUM_SITE (?p, ?o, ?:iri)
+		  }
+		}
+	    );
+      rset := dict_list_keys (triples, 1);
+      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
+
+      triples := (sparql
+   	  prefix sioc: <http://rdfs.org/sioc/ns#>
+          construct { ?s ?p ?o } where
+            	{
+		  graph ?:graph
+		  {
+		    ?s ?p ?o .
+		    ?s sioc:name ?:wai_name
+		    FILTER sql:ODS_FILTER_FORUM (?p, ?o)
+		  }
+		}
+	    );
+      rset := dict_list_keys (triples, 1);
+      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
+
+      triples := (sparql
+   	  prefix sioc: <http://rdfs.org/sioc/ns#>
+   	  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+          construct { ?s ?p ?o . ?ob sioc:container_of ?s } where
+    {
+		  graph ?:graph
+		  {
+		    ?s rdf:type sioc:Post .
+		    ?s ?p ?o .
+		    ?s sioc:created_at ?created .
+		    ?s sioc:has_container ?ob .
+		    ?ob sioc:name ?:wai_name
+		    FILTER sql:ODS_FILTER_POST (?p, ?o)
+		  }
+		}
+		order by desc (?created) limit 80
+	    );
+      rset := dict_list_keys (triples, 1);
+      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
+      rdf_tail (ses);
+      goto ret;
+    }
+  else -- the post
+    {
+      iri := post_iri (u_name, inst_type, wai_name, postid);
+      qry := sprintf ('sparql ' ||
+         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
+         ' construct { <%s> rdf:type sioc:Post . <%s> ?p ?o }  \n' ||
+         ' from <%s> where { \n' ||
+	 '   <%s> ?p ?o . ' ||
+	 ' FILTER regex (?p, "^http://rdfs.org/sioc/ns#*") \n' ||
+	 ' } ',
+	 iri, iri, graph, iri);
     }
 
   maxrows := 0;
@@ -1034,14 +1120,13 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
   set_user_id ('dba');
   exec (qry, state, msg, vector(), maxrows, metas, rset);
 --  dbg_obj_print (msg);
-  ses := string_output ();
   DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, '', 1);
+
+ret:
   return ses;
 };
 
 DB.DBA.wa_exec_no_error('ods_sioc_init ()');
-
---xpf_extension ('http://www.openlinksw.com/ods#UserQuad', 'sioc.DBA.ODS_FILTER_USER');
 
 use DB;
 
@@ -1049,7 +1134,7 @@ create procedure ODS_FILTER_FORUM (in p any, in o any)
 {
   if (p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' and o = 'http://rdfs.org/sioc/ns#Forum')
     return 1;
-  else if (p like 'http://rdfs.org/sioc/ns#%')
+  else if (p like 'http://rdfs.org/sioc/ns#%' and p <> 'http://rdfs.org/sioc/ns#container_of')
     return 1;
   return 0;
 };
@@ -1098,8 +1183,6 @@ create procedure ODS_FILTER_FORUM_SITE (in p any, in o any, in m any)
     return 1;
   return 0;
 };
-
-grant execute on ODS_FILTER_USER to public;
 
 
 delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'ODS_SIOC_RDF';

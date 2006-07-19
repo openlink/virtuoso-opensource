@@ -81,7 +81,6 @@
             </v:text>
           </td>
           <td>
-            <div style="display:inline; color:red;"><vm:field-error field="reguid"/></div>
           </td>
 	  <td rowspan="5">
 	    <?vsp

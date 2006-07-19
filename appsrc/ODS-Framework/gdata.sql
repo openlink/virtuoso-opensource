@@ -96,7 +96,7 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 {
   declare ppath varchar;
   declare path, pars, lines any;
-  declare app, uname, inst, url, appn varchar;
+  declare app, uname, inst, url, appn, post varchar;
   declare vhost, lhost, p_path_str, full_path, p_full_path, l_path_str, gdata_url varchar;
   declare id, do_rdf, do_sioc int;
 
@@ -110,6 +110,7 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
   app := null;
   uname := null;
   inst := null;
+  post := null;
   do_rdf := 0;
 
 
@@ -151,6 +152,12 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
     do_rdf := 1;
       else if (path[7] = 'sioc.rdf')
 	do_sioc := 1;
+
+      if (length (path) > 8 and path[8] = 'sioc.rdf')
+	{
+	  post := path[7];
+	  do_sioc := 1;
+	}
     }
 
   if (app = 'users' or (app is not null and (inst = 'about.rdf' or inst = 'sioc.rdf')))
@@ -166,10 +173,10 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 	  foaf := 'afoaf.xml';
 	  pars := vector (':sne', cast (id as varchar), ':atype', DB.DBA.wa_app_to_type (app));
 	}
-      else if (do_sioc)
+      else if (do_sioc or (app is not null and inst = 'sioc.rdf'))
 	{
 	  declare ses any;
-	  ses := sioc..sioc_compose_xml (uname, null, null);
+	  ses := sioc..sioc_compose_xml (uname, null, app);
           http (ses);
 	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 	  return '';
@@ -248,7 +255,7 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
       else if (do_sioc)
         {
 	  declare ses any;
-	  ses := sioc..sioc_compose_xml (uname, inst, inst_type);
+	  ses := sioc..sioc_compose_xml (uname, inst, inst_type, post);
           http (ses);
 	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 	  return '';
