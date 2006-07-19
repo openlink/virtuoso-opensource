@@ -178,7 +178,7 @@ function load_dawg_query()
     return;
     }
   tab.go(1);
-  $('query').value = $('dawg_query').innerHTML.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+  $('query').value = $('dawg_query').innerHTML.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"');
   $('default-graph-uri').value = $('dawg_dgu').innerHTML;
   $('etalon').innerHTML = '<hr/><b>Expected result:</b>' + $('dawg_etalon').innerHTML;
 
