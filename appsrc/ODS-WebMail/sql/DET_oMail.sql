@@ -26,14 +26,14 @@ use DB
 
 create function "oMail_DAV_AUTHENTICATE" (in id any, in what char(1), in req varchar, in auth_uname varchar, in auth_pwd varchar, in auth_uid integer) returns integer
 {
-  dbg_obj_princ ('oMail_DAV_AUTHENTICATE (', id, what, req, auth_uname, auth_pwd, auth_uid, ')');
+  -- dbg_obj_princ ('oMail_DAV_AUTHENTICATE (', id, what, req, auth_uname, auth_pwd, auth_uid, ')');
   if (auth_uid < 0)
     return -12;
   if (not ('100' like req))
     return -13;
   if ((auth_uid <> id[3]) and (auth_uid <> http_dav_uid()))
     {
-      dbg_obj_princ ('a_uid is ', auth_uid, ', id[3] is ', id[3], ' mismatch');
+      -- dbg_obj_princ ('a_uid is ', auth_uid, ', id[3] is ', id[3], ' mismatch');
       return -13;
     }
   return auth_uid;
@@ -57,25 +57,25 @@ create function "oMail_NORM" (in value any) returns varchar
 create function "oMail_GET_CONFIG" (in detcol_id integer, out mdomain_id integer, out muser_id integer, out mfolder_id integer, out mnamefmt varchar) returns integer
 {
   declare md,mu,mf varchar;
-  dbg_obj_princ ('oMail_GET_CONFIG (', detcol_id, '...)');
+  -- dbg_obj_princ ('oMail_GET_CONFIG (', detcol_id, '...)');
   whenever not found goto nf;
   if (isarray (detcol_id))
     return -20;
   select "oMail_NORM" (PROP_VALUE) into md from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:oMail-DomainId' and PROP_PARENT_ID = detcol_id and PROP_TYPE = 'C';
-  dbg_obj_princ ('virt:oMail-DomainId = ', md);
+  -- dbg_obj_princ ('virt:oMail-DomainId = ', md);
   mdomain_id := cast (md as integer);
   select "oMail_NORM" (PROP_VALUE) into mu from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:oMail-UserName' and PROP_PARENT_ID = detcol_id and PROP_TYPE = 'C';
-  dbg_obj_princ ('virt:oMail-UserName = ', mu);
+  -- dbg_obj_princ ('virt:oMail-UserName = ', mu);
   select U_ID into muser_id from WS.WS.SYS_DAV_USER where U_NAME = mu;
   select "oMail_NORM" (PROP_VALUE) into mf from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:oMail-FolderName' and PROP_PARENT_ID = detcol_id and PROP_TYPE = 'C';
-  dbg_obj_princ ('virt:oMail-FolderName = ', mf);
+  -- dbg_obj_princ ('virt:oMail-FolderName = ', mf);
   if ('NULL' = mf)
     mfolder_id := null;
   else
     select FOLDER_ID into mfolder_id from OMAIL.WA.FOLDERS where NAME = mf;
-  dbg_obj_princ ('Folder-ID = ', mfolder_id);
+  -- dbg_obj_princ ('Folder-ID = ', mfolder_id);
   select "oMail_NORM" (PROP_VALUE) into mnamefmt from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:oMail-NameFormat' and PROP_PARENT_ID = detcol_id and PROP_TYPE = 'C';
-  dbg_obj_princ ('virt:oMail-NameFormat = ', mnamefmt);
+  -- dbg_obj_princ ('virt:oMail-NameFormat = ', mnamefmt);
   return 0;
 nf:
   return -1;
@@ -439,7 +439,7 @@ create function "oMail_DAV_DIR_SINGLE" (in id any, in what char(0), in path any,
   declare mnamefmt varchar;
   declare f_id integer;
   declare fullpath, rightcol, resname varchar;
-   dbg_obj_princ ('oMail_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
+  -- dbg_obj_princ ('oMail_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
   f_id := id[4];
   fullpath := '';
   rightcol := NULL;
@@ -505,11 +505,11 @@ create function "oMail_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in de
   declare reslen, prev_is_patched integer;
   declare top_id any;
   declare what char (1);
-   dbg_obj_princ ('oMail_DAV_DIR_LIST (', detcol_id, path_parts, detcol_path, name_mask, recursive, auth_uid, ')');
+  -- dbg_obj_princ ('oMail_DAV_DIR_LIST (', detcol_id, path_parts, detcol_path, name_mask, recursive, auth_uid, ')');
   mnamefmt := null;
   if (0 > "oMail_GET_CONFIG" (detcol_id, mdomain_id, muser_id, mfolder_id, mnamefmt))
     {
-       dbg_obj_princ ('broken collection description - no items');
+      -- dbg_obj_princ ('broken collection description - no items');
       return vector();
     }
   if ((0 = length (path_parts)) or ('' = path_parts[length (path_parts) - 1]))
@@ -520,10 +520,10 @@ create function "oMail_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in de
     top_id := vector (UNAME'oMail', detcol_id, mdomain_id, muser_id, mfolder_id, -1); -- may be a fake id because top_id[4] may be NULL
   else
     top_id := "oMail_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, what, mdomain_id, muser_id, mfolder_id, mnamefmt);
-   dbg_obj_princ ('found top_id ', top_id, ' of type ', what);
+  -- dbg_obj_princ ('found top_id ', top_id, ' of type ', what);
   if (DAV_HIDE_ERROR (top_id) is null)
     {
-       dbg_obj_princ ('no top id - no items');
+      -- dbg_obj_princ ('no top id - no items');
       return vector();
     }
   top_davpath := DAV_CONCAT_PATH (detcol_path, path_parts);
@@ -545,12 +545,12 @@ create function "oMail_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in de
   do
     {
       declare merged varchar;
-       dbg_obj_princ ('about to put col to dir list: ', orig_name, ' for folder ', f_id, ' of ', mdomain_id, ' owned by ', muser_id);
+      -- dbg_obj_princ ('about to put col to dir list: ', orig_name, ' for folder ', f_id, ' of ', mdomain_id, ' owned by ', muser_id);
       if (regexp_parse (' - Wm.Id[1-9][0-9]*(.[^/]*)?\044', orig_name, 0)) -- Suspicious names should be qualified
         {
           merged := "oMail_FNMERGE" (orig_name, 'F', f_id);
           prev_is_patched := 1; -- The current one is with merging for sure.
-	   dbg_obj_princ ('Suspicious -- made merged');
+	  -- dbg_obj_princ ('Suspicious -- made merged');
         }
       else if (orig_name = prev_raw_name)
         {
@@ -563,7 +563,7 @@ create function "oMail_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in de
               prev_merged := "oMail_FNMERGE" (orig_name, f_id);
               res[reslen-1][10] := prev_merged;
               res[reslen-1][0] := DAV_CONCAT_PATH (top_davpath, prev_merged);
-	       dbg_obj_princ ('Both current and prev namesake are merged', f_id, prev_id);
+	      -- dbg_obj_princ ('Both current and prev namesake are merged', f_id, prev_id);
             }
           prev_is_patched := 1; -- The current one is with merging for sure.
         }
@@ -571,7 +571,7 @@ create function "oMail_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in de
         {
           merged := orig_name;
           prev_is_patched := 0;
-           dbg_obj_princ ('Current is not merged');
+          -- dbg_obj_princ ('Current is not merged');
         }
       declare maxrcvdate datetime;
       maxrcvdate := coalesce ((select max(RCV_DATE)
@@ -616,7 +616,7 @@ create function "oMail_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in de
         {
           merged := "oMail_FNMERGE" (orig_mname, 'M', m_id);
           prev_is_patched := 1; -- The current one is with merging for sure.
-	   dbg_obj_princ ('Suspicious -- made merged');
+	  -- dbg_obj_princ ('Suspicious -- made merged');
         }
       else if (orig_mname = prev_raw_name)
         {
@@ -629,7 +629,7 @@ create function "oMail_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in de
               prev_merged := "oMail_FNMERGE" (orig_mname, 'M', prev_id);
               res[reslen-1][10] := prev_merged || '.eml';
               res[reslen-1][0] := DAV_CONCAT_PATH (top_davpath, prev_merged || '.eml');
-	       dbg_obj_princ ('Both current and prev namesake are merged', m_id, prev_id);
+	      -- dbg_obj_princ ('Both current and prev namesake are merged', m_id, prev_id);
             }
           prev_is_patched := 1; -- The current one is with merging for sure.
         }
@@ -637,7 +637,7 @@ create function "oMail_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in de
         {
           merged := orig_mname;
           prev_is_patched := 0;
-           dbg_obj_princ ('Current is not merged');
+          -- dbg_obj_princ ('Current is not merged');
         }
 --                                               0                                                1    2      3
       res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, merged) || '.eml', 'R', DSIZE, RCV_DATE,
