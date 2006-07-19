@@ -187,7 +187,10 @@
   <!-- ========================================================================== -->
   <xsl:template name="links">
     <link rel="foaf" type="application/rdf+xml" title="FOAF">
-      <xsl:attribute name="href"><xsl:value-of select="/page/user_info/foafurl" /></xsl:attribute>
+      <xsl:attribute name="href"><xsl:value-of select="/page/user_info/foaf" /></xsl:attribute>
+    </link>
+    <link rel="meta" type="application/rdf+xml" title="SIOC">
+      <xsl:attribute name="href"><xsl:value-of select="/page/user_info/sioc" /></xsl:attribute>
     </link>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
