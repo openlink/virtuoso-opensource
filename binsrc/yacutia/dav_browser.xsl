@@ -2483,38 +2483,6 @@ else
                   </div>
                   <!--<a href="#" class="inline_hlp">?</a>-->
                   <br/>
-                  <table class="wg_perms" summary="DAV object permissions marked for removal">
-                    <caption>Remove these</caption>
-                    <tbody>
-                      <tr>
-                        <td class="subj" colspan="3">Owner</td>
-                        <td class="subj" colspan="3">Group</td>
-                        <td class="subj" colspan="3">Others</td>
-                      </tr>
-                      <tr>
-                        <td class="attr"><label for="rperm_ur">read</label></td>
-                        <td class="attr"><label for="rperm_uw">write</label></td>
-                        <td class="attr"><label for="rperm_ux">exec</label></td>
-                        <td class="attr"><label for="rperm_gr">read</label></td>
-                        <td class="attr"><label for="rperm_gw">write</label></td>
-                        <td class="attr"><label for="rperm_gx">exec</label></td>
-                        <td class="attr"><label for="rperm_or">read</label></td>
-                        <td class="attr"><label for="rperm_ow">write</label></td>
-                        <td class="attr"><label for="rperm_ox">exec</label></td>
-                      </tr>
-                      <tr>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_ur);" id="rperm_ur" name="rperm_ur"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_uw);" id="rperm_uw" name="rperm_uw"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_ux);" id="rperm_ux" name="rperm_ux"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_gr);" id="rperm_gr" name="rperm_gr"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_gw);" id="rperm_gw" name="rperm_gw"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_gx);" id="rperm_gx" name="rperm_gx"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_or);" id="rperm_or" name="rperm_or"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_ow);" id="rperm_ow" name="rperm_ow"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_ox);" id="rperm_ox" name="rperm_ox"/></td>
-                      </tr>
-                    </tbody>
-                  </table>
                   <table class="wg_perms" summary="DAV object permissions marked for addition">
                     <caption>Add these</caption>
                     <tbody>
@@ -2544,6 +2512,38 @@ else
                         <td><input type="checkbox" onclick="chkbx(this,rperm_or);" id="perm_or" name="perm_or"/></td>
                         <td><input type="checkbox" onclick="chkbx(this,rperm_ow);" id="perm_ow" name="perm_ow"/></td>
                         <td><input type="checkbox" onclick="chkbx(this,rperm_ox);" id="perm_ox" name="perm_ox"/></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <table class="wg_perms" summary="DAV object permissions marked for removal">
+                    <caption>Remove these</caption>
+                    <tbody>
+                      <tr>
+                        <td class="subj" colspan="3">Owner</td>
+                        <td class="subj" colspan="3">Group</td>
+                        <td class="subj" colspan="3">Others</td>
+                      </tr>
+                      <tr>
+                        <td class="attr"><label for="rperm_ur">read</label></td>
+                        <td class="attr"><label for="rperm_uw">write</label></td>
+                        <td class="attr"><label for="rperm_ux">exec</label></td>
+                        <td class="attr"><label for="rperm_gr">read</label></td>
+                        <td class="attr"><label for="rperm_gw">write</label></td>
+                        <td class="attr"><label for="rperm_gx">exec</label></td>
+                        <td class="attr"><label for="rperm_or">read</label></td>
+                        <td class="attr"><label for="rperm_ow">write</label></td>
+                        <td class="attr"><label for="rperm_ox">exec</label></td>
+                      </tr>
+                      <tr>
+                        <td><input type="checkbox" onclick="chkbx(this,perm_ur);" id="rperm_ur" name="rperm_ur"/></td>
+                        <td><input type="checkbox" onclick="chkbx(this,perm_uw);" id="rperm_uw" name="rperm_uw"/></td>
+                        <td><input type="checkbox" onclick="chkbx(this,perm_ux);" id="rperm_ux" name="rperm_ux"/></td>
+                        <td><input type="checkbox" onclick="chkbx(this,perm_gr);" id="rperm_gr" name="rperm_gr"/></td>
+                        <td><input type="checkbox" onclick="chkbx(this,perm_gw);" id="rperm_gw" name="rperm_gw"/></td>
+                        <td><input type="checkbox" onclick="chkbx(this,perm_gx);" id="rperm_gx" name="rperm_gx"/></td>
+                        <td><input type="checkbox" onclick="chkbx(this,perm_or);" id="rperm_or" name="rperm_or"/></td>
+                        <td><input type="checkbox" onclick="chkbx(this,perm_ow);" id="rperm_ow" name="rperm_ow"/></td>
+                        <td><input type="checkbox" onclick="chkbx(this,perm_ox);" id="rperm_ox" name="rperm_ox"/></td>
                       </tr>
                     </tbody>
                   </table>
