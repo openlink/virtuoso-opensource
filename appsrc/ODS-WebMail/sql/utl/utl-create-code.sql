@@ -71,33 +71,6 @@ create procedure OMAIL.WA.utl_arr_dump_recu(
 ;
 
 --==================================================
-create procedure OMAIL.WA.utl_array2xml(
-  in _arr any)
-{
-  declare _ind integer;
-  declare _rs,_node,_value varchar;
-
-  _rs  := '';
-  for (_ind := 0;_ind < length(_arr); _ind := _ind + 2) {
-  	if (isstring(_arr[_ind])) {
-  	  _node := lower(cast(_arr[_ind] as varchar));
-  	  if (isarray(_arr[_ind+1]) and not isstring(_arr[_ind+1])) {
-  	    _value := OMAIL.WA.utl_array2xml(aref(_arr,_ind+1)) ;
-
-  	  } else if (isnull(_arr[_ind+1])) {
-  	    _value := '';
-
-  	  } else {
-  	    _value := cast(_arr[_ind+1] as varchar);
-  	  }
-  	  _rs := sprintf('%s<%s>%s</%s>\n',_rs,_node,_value,_node);
-    }
-  }
-  return _rs;
-}
-;
-
---==================================================
 create procedure OMAIL.WA.utl_combos2arr(
   inout _params any,
   in    _kword   varchar,

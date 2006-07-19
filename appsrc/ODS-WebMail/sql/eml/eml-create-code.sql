@@ -137,7 +137,7 @@ create procedure OMAIL.WA.omail_addr(
 
   aset(_page_params,0,vector('sid',_sid));
   aset(_page_params,1,vector('realm',_realm));
-  aset(_page_params,2,vector('user_info', OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,2,vector('user_info', OMAIL.WA.array2xml(_user_info)));
 
   -- XML structure-------------------------------------------------------------------
   return concat(OMAIL.WA.omail_page_params(_page_params), _sql_result1);
@@ -280,16 +280,29 @@ create procedure OMAIL.WA.omail_array2string(
 
 -------------------------------------------------------------------------------
 --
-create procedure OMAIL.WA.omail_array2xml(
-  in _array any)
+create procedure OMAIL.WA.array2xml(
+  in V any)
 {
   declare N integer;
-  declare _rs varchar;
+  declare S, node, value varchar;
 
-  _rs  := '';
-  for (N := 0; N < length(_array); N := N + 2)
-    _rs := sprintf('%s<%s>%s</%s>\n',_rs, cast(_array[N] as varchar),cast(_array[N+1] as varchar),cast(_array[N] as varchar));
-  return _rs;
+  S  := '';
+  for (N := 0; N < length(V); N := N + 2) {
+  	if (isstring(V[N])) {
+  	  node := lower(cast(V[N] as varchar));
+  	  if (isarray(V[N+1]) and not isstring(V[N+1])) {
+  	    value := OMAIL.WA.array2xml(V[N+1]) ;
+
+  	  } else if (isnull(V[N+1])) {
+  	    value := '';
+
+  	  } else {
+  	    value := cast(V[N+1] as varchar);
+  	  }
+  	  S := sprintf('%s<%s>%s</%s>\n', S, node, value, node);
+    }
+  }
+  return S;
 }
 ;
 
@@ -367,7 +380,7 @@ create procedure OMAIL.WA.omail_attach(
   aset(_page_params,1,vector('realm',_realm));
   aset(_page_params,2,vector('msg_id',OMAIL.WA.omail_getp('msg_id',_params)));
   aset(_page_params,3,vector('ap',OMAIL.WA.omail_params2str(_pnames,_params,',')));
-  aset(_page_params,4,vector('user_info',OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,4,vector('user_info',OMAIL.WA.array2xml(_user_info)));
 
   -- XML structure-------------------------------------------------------------------
   return concat(OMAIL.WA.omail_page_params(_page_params), _sql_result1);
@@ -557,7 +570,7 @@ create procedure OMAIL.WA.omail_box(
   aset(_page_params,1,vector('realm',_realm));
   aset(_page_params,2,vector('folder_id',get_keyword('folder_id',_params)));
   aset(_page_params,3,vector('bp',OMAIL.WA.omail_params2str(_pnames,_params,',')));
-  aset(_page_params,4,vector('user_info', OMAIL.WA.utl_array2xml(_user_info)));
+  aset(_page_params,4,vector('user_info', OMAIL.WA.array2xml(_user_info)));
 
   if (get_keyword('msg_result',_settings) <> '') {
     OMAIL.WA.omail_setparam('aresults',_params,get_keyword('msg_result',_settings));
@@ -671,7 +684,7 @@ create procedure OMAIL.WA.omail_ch_pop3(
   -- Page Params---------------------------------------------------------------------
   aset(_page_params,0,vector('sid',_sid));
   aset(_page_params,1,vector('realm',_realm));
-  aset(_page_params,2,vector('user_info',OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,2,vector('user_info',OMAIL.WA.array2xml(_user_info)));
 
   -- SQL Statement-------------------------------------------------------------------
   _sql_result1 := sprintf(' %s',OMAIL.WA.omail_get_pop3_acc(_domain_id,_user_id,OMAIL.WA.omail_getp('acc_id',_params)));
@@ -1499,7 +1512,7 @@ create procedure OMAIL.WA.omail_err(
 
   aset(_page_params,0,vector('sid',_sid));
   aset(_page_params,1,vector('realm',_realm));
-  aset(_page_params,2,vector('user_info',OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,2,vector('user_info',OMAIL.WA.array2xml(_user_info)));
 
   -- XML structure-------------------------------------------------------------
   _rs := '';
@@ -1580,7 +1593,7 @@ create procedure OMAIL.WA.omail_folders(
   aset(_page_params,0,vector('sid',_sid));
   aset(_page_params,1,vector('realm',_realm));
   aset(_page_params,2,vector('parent_id',_parent_id));
-  aset(_page_params,3,vector('user_info',OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,3,vector('user_info',OMAIL.WA.array2xml(_user_info)));
 
   -- SQL Statement-------------------------------------------------------------
   _sql_statm  := vector('SELECT FOLDER_ID,NAME FROM OMAIL.WA.FOLDERS where DOMAIN_ID = ? and USER_ID = ? and PARENT_ID');
@@ -1790,7 +1803,7 @@ create procedure OMAIL.WA.omail_get_att_parts(
   _body_parts  := mime_tree(_source);
 
   _freetext_id := sequence_next ('OMAIL.WA.omail_seq_eml_freetext_id');
-  _aparams     := OMAIL.WA.omail_array2xml(aref(_body_parts,0));
+  _aparams     := OMAIL.WA.array2xml(aref(_body_parts,0));
   _encoding    := get_keyword_ucase('Content-Transfer-Encoding',aref(_body_parts,0),'');
   _mime_type   := get_keyword_ucase('Content-Type',aref(_body_parts,0),'');
   _content_id  := get_keyword_ucase('Content-ID',aref(_body_parts,0),'');
@@ -1961,7 +1974,7 @@ create procedure OMAIL.WA.omail_get_mime_parts(
 
       } else {
         _freetext_id := sequence_next ('OMAIL.WA.omail_seq_eml_freetext_id');
-        _aparams     := OMAIL.WA.utl_array2xml(aref(aref(_mime_parts,N),0));
+        _aparams     := OMAIL.WA.array2xml(aref(aref(_mime_parts,N),0));
         _encoding    := get_keyword_ucase('Content-Transfer-Encoding',aref(aref(_mime_parts,N),0),'');
         _dispos      := get_keyword_ucase('Content-Disposition',aref(aref(_mime_parts,N),0),'');
         _mime_type   := get_keyword_ucase('Content-Type',aref(aref(_mime_parts,N),0),'');
@@ -2677,7 +2690,7 @@ create procedure OMAIL.WA.omail_message(
   aset(_page_params,1,vector('realm',_realm));
   aset(_page_params,2,vector('op',OMAIL.WA.omail_params2str(_pnames,_params,',')));
   aset(_page_params,3,vector('list_pos',OMAIL.WA.omail_getp('list_pos',_params)));
-  aset(_page_params,4,vector('user_info',OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,4,vector('user_info',OMAIL.WA.array2xml(_user_info)));
 
   -- XML structure-------------------------------------------------------------------
   _rs := '';
@@ -3531,7 +3544,7 @@ create procedure OMAIL.WA.omail_print(
   aset(_page_params,1,vector('realm',_realm));
   aset(_page_params,2,vector('op',OMAIL.WA.omail_params2str(_pnames,_params,',')));
   aset(_page_params,3,vector('list_pos',OMAIL.WA.omail_getp('list_pos',_params)));
-  aset(_page_params,4,vector('user_info',OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,4,vector('user_info',OMAIL.WA.array2xml(_user_info)));
 
   -- XML structure-------------------------------------------------------------------
   _rs := '';
@@ -3642,7 +3655,7 @@ create procedure OMAIL.WA.omail_receive_message(
     _type_id   := OMAIL.WA.res_get_mimetype_id(_mime_type);
     _pdefault  := 1;
     if (_type_id not in (10100, 10110)) {
-      _aparams  := OMAIL.WA.utl_array2xml(vector('content-type','text/plain'));
+      _aparams  := OMAIL.WA.array2xml(vector('content-type','text/plain'));
       insert into OMAIL.WA.MSG_PARTS(DOMAIN_ID,MSG_ID,USER_ID,PART_ID,TYPE_ID,TDATA,DSIZE,APARAMS,PDEFAULT,FREETEXT_ID)
         values (_domain_id,_msg_id,_user_id,_part_id,_type_id,'',0,_aparams,_pdefault,_freetext_id);
       _freetext_id := sequence_next ('OMAIL.WA.omail_seq_eml_freetext_id');
@@ -3650,7 +3663,7 @@ create procedure OMAIL.WA.omail_receive_message(
       _part_id     := 10;
       _fname       := subseq(_mime_type,locate('/',_mime_type),length(_mime_type));
     }
-    _aparams := OMAIL.WA.utl_array2xml(vector('content-type',_mime_type));
+    _aparams := OMAIL.WA.array2xml(vector('content-type',_mime_type));
     _tags := OMAIL.WA.tags_rules(_user_id, _body);
     insert into OMAIL.WA.MSG_PARTS(DOMAIN_ID,MSG_ID,USER_ID,PART_ID,TYPE_ID,TDATA,TAGS,DSIZE,APARAMS,PDEFAULT,FREETEXT_ID,FNAME)
       values (_domain_id,_msg_id,_user_id,_part_id,_type_id,_body,_tags,_dsize,_aparams,_pdefault,_freetext_id,_fname);
@@ -3991,7 +4004,7 @@ create procedure OMAIL.WA.omail_search(
   aset(_page_params,2,vector('mode', get_keyword('mode',params, '')));
   aset(_page_params,3,vector('bp', OMAIL.WA.omail_params2str(_pnames,_params,',')));
   aset(_page_params,4,vector('atom_version', get_keyword('atom_version',_settings,'1.0')));
-  aset(_page_params,5,vector('user_info', OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,5,vector('user_info', OMAIL.WA.array2xml(_user_info)));
 
   -- SQL Statement-------------------------------------------------------------------
   _sql_result2 := sprintf('<folders>%s</folders>',OMAIL.WA.omail_folders_list(_domain_id,_user_id,vector()));
@@ -4442,7 +4455,7 @@ create procedure OMAIL.WA.omail_sendok(
   -- Page Params---------------------------------------------------------------------
   aset(_page_params,0,vector('sid',_sid));
   aset(_page_params,1,vector('realm',_realm));
-  aset(_page_params,2,vector('user_info',OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,2,vector('user_info',OMAIL.WA.array2xml(_user_info)));
 
 
   -- XML structure-------------------------------------------------------------------
@@ -4524,7 +4537,7 @@ create procedure OMAIL.WA.omail_set_mail(
   -- Page Params---------------------------------------------------------------------
   aset(_page_params,0,vector('sid',_sid));
   aset(_page_params,1,vector('realm',_realm));
-  aset(_page_params,2,vector('user_info',OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,2,vector('user_info',OMAIL.WA.array2xml(_user_info)));
 
   -- XML structure-------------------------------------------------------------------
   _rs := OMAIL.WA.omail_page_params(_page_params);
@@ -4833,7 +4846,7 @@ create procedure OMAIL.WA.omail_tools(
   aset(_page_params,2,vector('object_id', _params[0]));
   aset(_page_params,3,vector('object_name', sprintf('<![CDATA[%s]]>', OMAIL.WA.omail_folder_name(_domain_id, _user_id, _params[0]))));
   aset(_page_params,4,vector('tp',_tp));
-  aset(_page_params,5,vector('user_info', OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params,5,vector('user_info', OMAIL.WA.array2xml(_user_info)));
 
   -- XML structure-------------------------------------------------------------------
   _rs := concat(OMAIL.WA.omail_page_params(_page_params), _result1);
@@ -5331,7 +5344,7 @@ create procedure OMAIL.WA.omail_write(
   aset(_page_params,0,vector('sid',_sid));
   aset(_page_params,1,vector('realm',_realm));
   aset(_page_params,2,vector('wp',OMAIL.WA.omail_params2str(_pnames,_params,',')));
-  aset(_page_params,3,vector('user_info',OMAIL.WA.omail_array2xml(_user_info)));
+  aset(_page_params, 3, vector('user_info', OMAIL.WA.array2xml(_user_info)));
   aset(_page_params,4,vector('save_copy', get_keyword('save_copy', _settings, '1')));
   aset(_page_params,5,vector('conversation', get_keyword('conversation', _settings, '0')));
 
@@ -5743,7 +5756,7 @@ create procedure OMAIL.WA.omail_api_message_create_recu(
   _rs := sprintf('%s<attached>%d</attached>\n',                           _rs, get_keyword('attached',  pParams));
   _rs := sprintf('%s<priority>%d</priority>\n',                           _rs, get_keyword('priority',  pParams));
   _rs := sprintf('%s<tags>%s</tags>\n',                                   _rs, get_keyword('tags',      pParams));
-  _rs := sprintf('%s<address><addres_list>%s</addres_list></address>\n',  _rs, OMAIL.WA.utl_array2xml(get_keyword('address', pParams)));
+  _rs := sprintf('%s<address><addres_list>%s</addres_list></address>\n',  _rs, OMAIL.WA.array2xml(get_keyword('address', pParams)));
   return _rs;
 }
 ;
