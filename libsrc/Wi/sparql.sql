@@ -1889,7 +1889,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
       else
         {
           res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = subj));
-          http (' about="', ses); http_value (res, 0, ses); http ('">', ses);
+          http (' rdf:about="', ses); http_value (res, 0, ses); http ('">', ses);
         }
       if (not isiri_id (pred))
         {
@@ -4041,9 +4041,13 @@ create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varc
   aq_wait (app_env[0], app_env[1], err, 1);
   aq_wait_all (app_env[0]);
 }
-
+;
 
 grant execute on DB.DBA.TTLP_MT  to SPARQL_UPDATE
 ;
 grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_W  to SPARQL_UPDATE
+;
+grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_A  to SPARQL_UPDATE
+;
+grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_L_A  to SPARQL_UPDATE
 ;
