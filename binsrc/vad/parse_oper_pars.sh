@@ -1,4 +1,4 @@
-gawk -f operpars.awk <oper.pars >oper.errs
+#!/bin/sh
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
@@ -19,4 +19,6 @@ gawk -f operpars.awk <oper.pars >oper.errs
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
+
+gawk -f operpars.awk <oper.pars >oper.errs
 #mv oper_pars.incl g:/binsrc/dbdump/oper_pars.incl
