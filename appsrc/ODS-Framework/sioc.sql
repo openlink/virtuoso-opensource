@@ -205,7 +205,7 @@ create procedure ods_graph_init ()
   graph_iri := get_graph ();
   DB.DBA.RDF_QUAD_URI (graph_iri, site_iri, rdf_iri ('type'),
       sioc_iri ('Site'));
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, site_iri, sioc_iri ('link'), get_ods_link ());
+  DB.DBA.RDF_QUAD_URI (graph_iri, site_iri, sioc_iri ('link'), get_ods_link ());
   return;
 };
 
@@ -248,11 +248,11 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
 {
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('User'));
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), U_NAME);
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('link'), iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
 
   if (length (u_e_mail))
     {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('email'), 'mailto:'||u_e_mail);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||u_e_mail);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('email_sha1'), sha1_digest (u_e_mail));
     }
 
@@ -297,6 +297,10 @@ create procedure sioc_user_info (
 {
   if (iri is null)
     return;
+
+  delete_quad_sp (graph_iri, iri, sioc_iri ('first_name'));
+  delete_quad_sp (graph_iri, iri, sioc_iri ('last_name'));
+
   if (length (waui_first_name))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('first_name'), waui_first_name);
   if (length (waui_last_name))
@@ -389,7 +393,7 @@ create procedure sioc_forum (in graph_iri varchar, in site_iri varchar,
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('description'), wai_description);
   DB.DBA.RDF_QUAD_URI (graph_iri, site_iri, sioc_iri ('host_of'), iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_host'), site_iri);
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('link'), iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
 
   -- ATOM
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('FeedInstance'));
@@ -446,7 +450,9 @@ create procedure ods_sioc_post (
       if (link is not null)
 	link := make_href (link);
 
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('link'), coalesce (link, iri));
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
+      if (link is not null)
+        DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('links_to'), link);
 
       -- ATOM
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('EntryInstance'));
@@ -617,7 +623,7 @@ create procedure fill_ods_dav_sioc (in graph_iri varchar, in site_iri varchar)
 		}
 
 	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('title'), RES_NAME);
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('link'), iri);
+	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
 	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('created_at'), sioc_date (RES_CR_TIME));
 	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('modified_at') , sioc_date (RES_MOD_TIME));
 	    }
@@ -660,7 +666,8 @@ create procedure delete_quad_s_or_o (in _g any, in _s any, in _o any)
   _g := DB.DBA.RDF_MAKE_IID_OF_QNAME (_g);
   _s := DB.DBA.RDF_MAKE_IID_OF_QNAME (_s);
   _o := DB.DBA.RDF_MAKE_IID_OF_QNAME (_o);
-  delete from DB.DBA.RDF_QUAD where G = _g and (S = _s or O = _o);
+  delete from DB.DBA.RDF_QUAD where G = _g and S = _s;
+  delete from DB.DBA.RDF_QUAD where G = _g and O = _o;
 };
 
 create procedure update_quad_s_o (in _g any, in _o any, in _n any)
@@ -740,7 +747,7 @@ create trigger SYS_USERS_SIOC_U after update on DB.DBA.SYS_USERS referencing old
 
       if (length (N.U_E_MAIL))
     {
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('email'), 'mailto:'||N.U_E_MAIL);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||N.U_E_MAIL);
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('email_sha1'), sha1_digest (N.U_E_MAIL));
 
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||N.U_E_MAIL);
@@ -902,7 +909,7 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
     }
 
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), N.WAI_NAME);
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('link'), iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
 };
 
 
@@ -988,37 +995,42 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
     {
       iri := user_obj_iri (u_name);
       qry := sprintf ('sparql ' ||
-         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-         ' prefix foaf: <http://xmlns.com/foaf/0.1/#> ' ||
-   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> ' ||
-         ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> ' ||
-         ' construct { ?s ?p ?o } ' ||
-         ' from <%s> where { { ' ||
-	 '   ?s ?p ?o . ?s sioc:name "%s" FILTER (isLiteral (?o) && regex(?p, "^http://rdfs.org/sioc/ns#*") ) } union  ' ||
-         '   { ?s sioc:has_member ?member . ?member sioc:name "%s" . ?s ?p ?o  filter (isLiteral (?o) && regex(?p, "^http://rdfs.org/sioc/ns#*")) } } '||
+         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+         ' prefix foaf: <http://xmlns.com/foaf/0.1/#> \n' ||
+   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
+         ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
+         ' construct { ?s ?p ?o } \n' ||
+         ' from <%s> where { { \n' ||
+	 '   ?s ?p ?o . ?s sioc:name "%s" FILTER (sql:ODS_FILTER_USER (?p, ?o)) } union  \n' ||
+         '   { ?s sioc:has_member ?member . ?member sioc:name "%s" . ?s ?p ?o  filter sql:ODS_FILTER_USER_FORUM (?p, ?o, "%s/%s") } } '||
 	 ' ',
-	 graph, u_name, u_name);
+	 graph, u_name, u_name, graph, u_name);
     }
   else
     {
       iri := forum_iri (inst_type, wai_name);
-      qry := sprintf ('sparql ' ||
-         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-         ' prefix foaf: <http://xmlns.com/foaf/0.1/#> ' ||
-   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> ' ||
-         ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> ' ||
-         ' construct { ?s ?p ?o } ' ||
-         ' from <%s> where { { ' ||
-	 '   ?s ?p ?o . ?s sioc:name "%s" FILTER (regex(?p, "^http://rdfs.org/sioc/ns#*") ) } union  ' ||
-         '   { ?s ?p ?o . ?s sioc:has_container ?ob . ?ob sioc:name "%s" filter (regex(?p, "^http://rdfs.org/sioc/ns#*")) } '||
-	 '   union { ?s ?p ?o . ?s sioc:host_of ?forum . ?forum sioc:name "%s" } } ' ||
+      qry := sprintf ('sparql \n' ||
+         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+         ' prefix foaf: <http://xmlns.com/foaf/0.1/#> \n' ||
+   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
+         ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
+         ' construct { ?s ?p ?o } \n' ||
+         ' from <%s> where { { \n' ||
+	 '   ?s ?p ?o . ?s sioc:name "%s" FILTER sql:ODS_FILTER_FORUM (?p, ?o) } union  \n' ||
+         '   { ?s ?p ?o . ?s sioc:has_container ?ob . ?ob sioc:name "%s" FILTER sql:ODS_FILTER_POST (?p, ?o) } \n'||
+	 '   union { ?s ?p ?o . ?s sioc:host_of ?forum . ?forum sioc:name "%s" FILTER sql:ODS_FILTER_FORUM_SITE (?p, ?o, "%s") } }'||
 	 ' ',
-	 graph, wai_name, wai_name, wai_name);
+	 graph, wai_name, wai_name, wai_name, iri);
+    }
+
+  if (0 and isstring (file_stat ('sioc_debug.rq')))
+    {
+      qry := 'sparql ' || file_to_string ('sioc_debug.rq');
     }
 
   maxrows := 0;
   state := '00000';
---  dbg_printf ('%s', qry);
+  --dbg_printf ('%s', qry);
   set_user_id ('dba');
   exec (qry, state, msg, vector(), maxrows, metas, rset);
 --  dbg_obj_print (msg);
@@ -1029,7 +1041,66 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 
 DB.DBA.wa_exec_no_error('ods_sioc_init ()');
 
+--xpf_extension ('http://www.openlinksw.com/ods#UserQuad', 'sioc.DBA.ODS_FILTER_USER');
+
 use DB;
+
+create procedure ODS_FILTER_FORUM (in p any, in o any)
+{
+  if (p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' and o = 'http://rdfs.org/sioc/ns#Forum')
+    return 1;
+  else if (p like 'http://rdfs.org/sioc/ns#%')
+    return 1;
+  return 0;
+};
+
+create procedure ODS_FILTER_POST (in p any, in o any)
+{
+  if (p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' and o = 'http://rdfs.org/sioc/ns#Post')
+    return 1;
+  else if (p like 'http://rdfs.org/sioc/ns#%')
+    return 1;
+  return 0;
+};
+
+create procedure ODS_FILTER_USER (in p any, in o any)
+{
+  --dbg_obj_print (p, o);
+  if (p = 'http://rdfs.org/sioc/ns#creator_of')
+    return 0;
+  else if (p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' and o <> 'http://rdfs.org/sioc/ns#User')
+    return 0;
+  else if (p not like 'http://rdfs.org/sioc/ns#%' and p <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+    return 0;
+  return 1;
+};
+
+create procedure ODS_FILTER_USER_FORUM (in p any, in o any, in m any)
+{
+  if (p = 'http://rdfs.org/sioc/ns#has_member' and o = m)
+    return 1;
+  else if (p like 'http://rdfs.org/sioc/ns#%'
+    and p <> 'http://rdfs.org/sioc/ns#container_of'
+    and p <> 'http://rdfs.org/sioc/ns#has_member')
+    return 1;
+  else if (p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' and o = 'http://rdfs.org/sioc/ns#Forum')
+    return 1;
+  return 0;
+};
+
+create procedure ODS_FILTER_FORUM_SITE (in p any, in o any, in m any)
+{
+  if (p = 'http://rdfs.org/sioc/ns#host_of' and o = m)
+    return 1;
+  else if (p like 'http://rdfs.org/sioc/ns#%' and p <> 'http://rdfs.org/sioc/ns#host_of')
+    return 1;
+  else if (p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' and o = 'http://rdfs.org/sioc/ns#Site')
+    return 1;
+  return 0;
+};
+
+grant execute on ODS_FILTER_USER to public;
+
 
 delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'ODS_SIOC_RDF';
 --insert soft DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)

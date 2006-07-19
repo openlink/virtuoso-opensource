@@ -98,6 +98,7 @@
        }
 
 --         self.topmenu_level:=get_keyword('l',self.vc_event.ve_params,'0');
+      self.st_host := WA_GET_HOST ();
 
       ]]></v:on-init>
   <v:method name="set_page_error" arglist="in err any">
@@ -866,6 +867,7 @@
     <v:variable name="template" type="varchar" default="null" param-name="template-name" />
     <v:variable name="template_xml" type="any" default="null" persist="temp" />
     <v:variable name="home_children" type="any" default="null" persist="temp" />
+    <v:variable name="st_host" type="any" default="null" persist="temp" />
 
     <v:variable name="web_banner" type="any" default="null" persist="temp" />
     <v:variable name="welcome_message" type="any" default="null" persist="temp" />
@@ -2636,6 +2638,10 @@ if (i > 0)
   <a href="{@href}<?V self.login_pars ?>">
     <xsl:apply-templates />
   </a>
+</xsl:template>
+
+<xsl:template match="vm:disco-ods-sioc-link">
+  <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/sioc.rdf', self.st_host, self.fname), '+', '%2B')); ?>" />
 </xsl:template>
 
 </xsl:stylesheet>
