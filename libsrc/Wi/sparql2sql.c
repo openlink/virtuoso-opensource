@@ -48,7 +48,7 @@ sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
   int in_rescan = 0;
   void *save_trav_env_this = BADBEEF_BOX; /* To keep gcc 4.0 happy */
   int retcode = 0;
-  if (trav_env_this > sparp->sparp_trav_envs + SPARP_MAX_SYNTDEPTH)
+  if (trav_env_this == (sparp->sparp_trav_envs + SPARP_MAX_SYNTDEPTH))
     spar_error (sparp, "The nesting depth of subexpressions exceed limits of SPARQL compiler");
 
 scan_for_children:
@@ -1696,3 +1696,71 @@ sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
       equivs[equiv_ctr]->e_gp = NULL;
     }
 }
+
+
+int
+sparp_set_retval_selid_cbk (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+{
+  if (SPAR_IS_BLANK_OR_VAR (curr))
+    curr->_.var.selid = t_box_copy (common_env);
+  return 0;
+}
+
+void
+sparp_set_retval_and_order_selid (sparp_t *sparp)
+{
+  int ctr;
+  void *trav_envs [SPARP_MAX_SYNTDEPTH];
+  caddr_t top_gp_selid = sparp->sparp_expr->_.req_top.pattern->_.gp.selid;
+  DO_BOX_FAST (SPART *, filt, ctr, sparp->sparp_expr->_.req_top.retvals)
+    {
+      sparp_gp_trav_int (sparp, filt, trav_envs + 1, top_gp_selid,
+        NULL, NULL,
+        sparp_set_retval_selid_cbk, NULL, NULL );
+    }
+  END_DO_BOX_FAST;
+  DO_BOX_FAST (SPART *, oby, ctr, sparp->sparp_expr->_.req_top.order)
+    {
+      sparp_gp_trav_int (sparp, oby->_.oby.expn, trav_envs + 1, top_gp_selid,
+        NULL, NULL,
+        sparp_set_retval_selid_cbk, NULL, NULL );
+    }
+  END_DO_BOX_FAST;
+}
+
+int
+sparp_set_special_order_selid_cbk (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+{
+  SPART *new_gp = (SPART *)common_env;
+  if (SPAR_IS_BLANK_OR_VAR (curr))
+    {
+      sparp_equiv_t *eq;
+      int idx = curr->_.var.equiv_idx;
+/* !!! TBD: replace with silent detach if needed.
+      if (SPART_BAD_EQUIV_IDX != idx)
+        spar_internal_error (sparp, "sparp_set_special_order_selid(): attempt to attach a filter with used variable"); */
+      curr->_.var.selid = t_box_copy (new_gp->_.gp.selid);
+      eq = sparp_equiv_get (sparp, new_gp, curr, SPARP_EQUIV_INS_VARIABLE/* !!!TBD: add | SPARP_EQUIV_ADD_CONST_READ*/);
+      if (NULL == eq)
+        spar_internal_error (sparp, "sparp_set_special_order_selid(): variable in order by comes from nowhere");
+      curr->_.var.equiv_idx = eq->e_own_idx;
+    }
+  return 0;
+}
+
+void
+sparp_set_special_order_selid (sparp_t *sparp, SPART *new_gp)
+{
+  int ctr;
+  void *trav_envs [SPARP_MAX_SYNTDEPTH];
+  caddr_t top_gp_selid = sparp->sparp_expr->_.req_top.pattern->_.gp.selid;
+  DO_BOX_FAST (SPART *, oby, ctr, sparp->sparp_expr->_.req_top.order)
+    {
+      sparp_gp_trav_int (sparp, oby->_.oby.expn, trav_envs + 1, new_gp,
+        NULL, NULL,
+        sparp_set_special_order_selid_cbk, NULL, NULL );
+    }
+  END_DO_BOX_FAST;
+}
+
+

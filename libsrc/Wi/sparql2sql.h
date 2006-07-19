@@ -122,6 +122,8 @@ extern int sparp_equivs_have_same_fixedvalue (sparp_t *sparp, sparp_equiv_t *fir
 /*! Performs all basic term rewritings of the query tree */
 extern void sparp_rewrite_basic (sparp_t *sparp);
 
+extern void sparp_set_special_order_selid (sparp_t *sparp, SPART *new_gp);
+
 /* PART 2. OUTPUT GENERATOR */
 
 struct spar_sqlgen_s;
@@ -323,13 +325,16 @@ extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
 
 extern void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_valmode_t needed);
 
-extern void ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *tree, int pass);
+extern void ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *tree, int pass, int print_union_flags);
 
 #define SSG_PRINT_UNION_NOFIRSTHEAD	0x01	/*!< Flag to suppress printing of 'SELECT retvallist' of the first member of the union */
 #define SSG_PRINT_UNION_NONEMPTY_STUB	0x02	/*!< Flag to print a stub that returns a 1-row result of single column, instead of a stub with empty resultset */
-extern void ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags, int retval_flags, ssg_valmode_t needed);
+#define SSG_PRINT_UNION_LIM_OR_OFS	0x04	/*!< Flag to print 'TOP n,m' or 'TOP n' or nothing in front of select */
+#define SSG_PRINT_UNION_ORDER_BY	0x08	/*!< Flag to print ORDER BY clause (or nothing if there's no sorting criteria) */
+#define SSG_PRINT_UNION_TOPLEVEL	0x10	/*!< This is set only at top level of codegeneration of the final SQL query. */
+extern void ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int print_union_flags, int retval_flags, ssg_valmode_t needed);
 
-extern void ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm);
+extern void ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm, int in_subselect);
 
 /*! Fills in ssg->ssg_out with an SQL text */
 extern void ssg_make_sql_query_text (spar_sqlgen_t *ssg);

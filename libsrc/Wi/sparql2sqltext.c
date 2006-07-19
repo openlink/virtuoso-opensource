@@ -543,7 +543,7 @@ ssg_print_box_as_sqlval (spar_sqlgen_t *ssg, caddr_t box)
       buffill = sprintf (tmpbuf, "%ld", unbox (box));
       break;
     case DV_DB_NULL:
-      buffill = sprintf (tmpbuf, "NULL", unbox (box));
+      buffill = sprintf (tmpbuf, "NULL");
       break;
     case DV_STRING:
       sqlc_string_literal (tmpbuf, buflen, &buffill, box);
@@ -609,9 +609,6 @@ ssg_print_literal (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 {
   caddr_t value;
   int fill = 0;
-  char smallbuf[MAX_QUAL_NAME_LEN + 100 + BOX_AUTO_OVERHEAD];
-  size_t buflen;
-  caddr_t tmpbuf;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (lit))
     {
       if (SPAR_LIT == lit->type)
@@ -2370,9 +2367,20 @@ void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART **retvals, ccaddr_t selid)
 }
 
 void
-ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int flags, ssg_valmode_t needed)
+ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int print_union_flags, int flags, ssg_valmode_t needed)
 {
   int res_ctr, res_len;
+  if (SSG_PRINT_UNION_LIM_OR_OFS & print_union_flags)
+    {
+      char buf[40];
+      long lim = unbox (ssg->ssg_tree->_.req_top.limit);
+      long ofs = unbox (ssg->ssg_tree->_.req_top.offset);
+      if (0 != ofs)
+        sprintf (buf, " TOP %ld, %ld", ofs, lim);
+      else
+        sprintf (buf, " TOP %ld", lim);
+      ssg_puts (buf);
+    }
   res_len = BOX_ELEMENTS_INT(retlist);
   if (0 == res_len)
     {
@@ -2411,7 +2419,7 @@ ssg_print_filter (spar_sqlgen_t *ssg, SPART *tree)
 
 
 void
-ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *tree, int pass)
+ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *tree, int pass, int print_union_flags)
 {
   switch (SPART_TYPE(tree))
     {
@@ -2456,6 +2464,7 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *tree, int pass)
       }
     case SPAR_GP:
       {
+        int print_sub_flags;
         if (1 == pass)
           {
             int eq_ctr;
@@ -2470,10 +2479,27 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *tree, int pass)
             retlist = (caddr_t *)list_to_array (retvals_set);
             ssg_puts (" (");
             ssg->ssg_indent++;
-            ssg_print_union (ssg, tree, (SPART **)retlist, 0,
+            print_sub_flags = ((SSG_PRINT_UNION_TOPLEVEL & print_union_flags) ? (SSG_PRINT_UNION_LIM_OR_OFS & print_union_flags) : 0);
+            ssg_print_union (ssg, tree, (SPART **)retlist, print_sub_flags,
               ( SSG_RETVAL_FROM_FIRST_UNION_MEMBER | SSG_RETVAL_FROM_JOIN_MEMBER |
                 SSG_RETVAL_USES_ALIAS | SSG_RETVAL_NAME_INSTEAD_OF_TREE | SSG_RETVAL_MUST_PRINT_SOMETHING ),
               SSG_VALMODE_AUTO );
+            if (SSG_PRINT_UNION_ORDER_BY & print_union_flags)
+              {
+                int oby_ctr;
+                ssg_newline (0);
+                ssg_puts ("ORDER BY");
+                ssg->ssg_indent++;
+                sparp_set_special_order_selid (ssg->ssg_sparp, tree);
+                DO_BOX_FAST(SPART *, oby_itm, oby_ctr, ssg->ssg_tree->_.req_top.order)
+                  {
+                    if (oby_ctr > 0)
+                      ssg_putchar (',');
+                    ssg_print_orderby_item (ssg, tree, oby_itm, 1);
+                  }
+                END_DO_BOX_FAST;
+                ssg->ssg_indent--;
+              }
             dk_free_box (retlist);
             ssg->ssg_indent--;
             ssg_puts (") AS ");
@@ -2486,7 +2512,7 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *tree, int pass)
 }
 
 void
-ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags, int retval_flags, ssg_valmode_t needed)
+ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int print_union_flags, int retval_flags, ssg_valmode_t needed)
 {
   SPART **members;
   int memb_ctr, memb_count;
@@ -2509,13 +2535,13 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
       SPART *member = members[memb_ctr];
       ccaddr_t prev_itm_alias = uname___empty;
       int itm_idx;
-      if ((memb_ctr > 0) || !(SSG_PRINT_UNION_NOFIRSTHEAD & head_flags))
+      if ((memb_ctr > 0) || !(SSG_PRINT_UNION_NOFIRSTHEAD & print_union_flags))
         {
           ssg_newline (0);
           if (memb_ctr > 0)
             ssg_puts ("UNION ALL ");
           ssg_puts ("SELECT");
-          ssg_print_retval_list (ssg, members[memb_ctr], retlist, retval_flags, needed);
+          ssg_print_retval_list (ssg, members[memb_ctr], retlist, print_union_flags, retval_flags, needed);
         }
       retval_flags &= ~SSG_RETVAL_USES_ALIAS; /* Aliases are not printed in resultsets of union, except the very first one */
       ssg_newline (0);
@@ -2526,7 +2552,7 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
           char buf[20];
           ssg_newline (0);
           sprintf (buf, "stub-%s", member->_.gp.selid);
-          if (SSG_PRINT_UNION_NONEMPTY_STUB & head_flags)
+          if (SSG_PRINT_UNION_NONEMPTY_STUB & print_union_flags)
             ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD) AS ");
           else
             ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD where 1=2) AS ");
@@ -2551,7 +2577,7 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
                   ssg_newline (1);
                 }
             }
-          ssg_print_table_exp (ssg, itm, 1); /* PASS 1, printing what's in FROM */
+          ssg_print_table_exp (ssg, itm, 1, print_union_flags); /* PASS 1, printing what's in FROM */
           if (itm_is_opt)
             {
               save_where_l_printed = ssg->ssg_where_l_printed;
@@ -2586,7 +2612,7 @@ end_of_table_list: ;
       ssg->ssg_indent++;
       DO_BOX_FAST (SPART *, itm, itm_idx, member->_.gp.members)
         {
-          ssg_print_table_exp (ssg, itm, 2); /* PASS 2, printing what's in WHERE */
+          ssg_print_table_exp (ssg, itm, 2, print_union_flags); /* PASS 2, printing what's in WHERE */
         }
       END_DO_BOX_FAST;
       for (equiv_ctr = 0; equiv_ctr < member->_.gp.equiv_count; equiv_ctr++)
@@ -2606,9 +2632,13 @@ end_of_table_list: ;
 }
 
 void
-ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm)
+ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm, int in_subselect)
 {
-  ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL);
+  SPART *expn = oby_itm->_.oby.expn;
+  if (in_subselect)
+    ssg_print_scalar_expn (ssg, expn, SSG_VALMODE_SQLVAL);
+  else
+    ssg_print_retval_simple_expn (ssg, gp, expn, SSG_VALMODE_SQLVAL);
   switch (oby_itm->_.oby.direction)
     {
     case ASC_L: ssg_puts (" ASC"); break;
@@ -2624,6 +2654,7 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   ptrlong subtype = tree->_.req_top.subtype;
   const char *formatter;
   ssg_valmode_t retvalmode;
+  int print_union_flags = SSG_PRINT_UNION_NOFIRSTHEAD | SSG_PRINT_UNION_NONEMPTY_STUB | SSG_PRINT_UNION_TOPLEVEL;
   int top_retval_flags =
     SSG_RETVAL_TOPMOST |
     SSG_RETVAL_FROM_JOIN_MEMBER |
@@ -2631,6 +2662,8 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     SSG_RETVAL_MUST_PRINT_SOMETHING |
     SSG_RETVAL_CAN_PRINT_NULL |
     SSG_RETVAL_USES_ALIAS ;
+  int need_order_by = 0;
+  int need_lim_or_ofs = 0;
   ccaddr_t top_selid = tree->_.req_top.pattern->_.gp.selid;
   ssg->ssg_equiv_count = tree->_.req_top.equiv_count;
   ssg->ssg_equivs = tree->_.req_top.equivs;
@@ -2638,6 +2671,12 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
   if ((NULL != formatter) && (NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
     spar_sqlprint_error ("'output:valmode' declaration conflicts with 'output:format'");
+  if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && (NULL == formatter))
+    need_order_by = 1;
+  lim = unbox (tree->_.req_top.limit);
+  ofs = unbox (tree->_.req_top.offset);
+  if ((2147483647 != lim) || (0 != ofs))
+    need_lim_or_ofs = 1;
   switch (subtype)
     {
     case SELECT_L:
@@ -2654,9 +2693,7 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           ssg_newline (0);
         }
       ssg_puts ("SELECT");
-      lim = unbox (tree->_.req_top.limit);
-      ofs = unbox (tree->_.req_top.offset);
-      if ((2147483647 != lim) || (0 != ofs))
+      if (need_lim_or_ofs)
         {
           char buf[40];
           if (0 != ofs)
@@ -2671,7 +2708,7 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       if (NULL == retvalmode)
         retvalmode = ((NULL != formatter) ? SSG_VALMODE_LONG : SSG_VALMODE_SQLVAL);
       ssg_print_retval_list (ssg, tree->_.req_top.pattern,
-        tree->_.req_top.retvals, top_retval_flags, retvalmode );
+        tree->_.req_top.retvals, 0, top_retval_flags, retvalmode );
       break;
     case CONSTRUCT_L:
     case DESCRIBE_L:
@@ -2692,13 +2729,18 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         }
       retvalmode = SSG_VALMODE_SQLVAL;
       ssg_print_retval_list (ssg, tree->_.req_top.pattern,
-        tree->_.req_top.retvals, top_retval_flags, retvalmode );
+        tree->_.req_top.retvals, print_union_flags, top_retval_flags, retvalmode );
       if (NULL != formatter)
         {
           ssg_puts (" ) AS \"callret-0\" LONG VARCHAR");
           ssg->ssg_indent -= 1;
           ssg_newline (0);
         }
+      if (need_lim_or_ofs)
+        print_union_flags |= SSG_PRINT_UNION_LIM_OR_OFS;
+      if (need_order_by)
+        print_union_flags |= SSG_PRINT_UNION_ORDER_BY;
+      need_order_by = 0;
       break;
     case ASK_L:
       if (NULL != formatter)
@@ -2713,9 +2755,8 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     default: spar_sqlprint_error ("ssg_make_sql_query_text(): unsupported type of tree");
     }
   ssg_print_union (ssg, tree->_.req_top.pattern, tree->_.req_top.retvals,
-    SSG_PRINT_UNION_NOFIRSTHEAD | SSG_PRINT_UNION_NONEMPTY_STUB | SSG_RETVAL_MUST_PRINT_SOMETHING,
-    top_retval_flags, retvalmode );
-  if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && (NULL == formatter))
+    print_union_flags, top_retval_flags, retvalmode );
+  if (need_order_by)
     {
       ssg_newline (0);
       ssg_puts ("ORDER BY");
@@ -2724,7 +2765,7 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         {
 	  if (oby_ctr > 0)
             ssg_putchar (',');
-          ssg_print_orderby_item (ssg, tree->_.req_top.pattern, oby_itm);
+          ssg_print_orderby_item (ssg, tree->_.req_top.pattern, oby_itm, 0);
         }
       END_DO_BOX_FAST;
       ssg->ssg_indent--;
