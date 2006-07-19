@@ -1892,8 +1892,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
       if (!bAppDesc && bRowDesc)
 	{
-	  return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt,
-	      RecNumber, NULL, 0, NULL, NULL, NULL, (SQLSMALLINT *) ValuePtr, NULL);
+	  return virtodbc__SQLColAttributes ((SQLHSTMT) desc->d_stmt,
+	      RecNumber, SQL_COLUMN_DISPLAY_SIZE, NULL, 0, NULL, (SQLLEN *) ValuePtr);
 	}
       else
 	return (SQL_ERROR);
