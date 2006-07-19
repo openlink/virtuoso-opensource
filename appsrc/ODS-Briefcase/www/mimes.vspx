@@ -46,7 +46,7 @@
         imageStr := '&nbsp;&nbsp;';
       }
       altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-      http(sprintf('<a href="#" onClick="javascript: myPost(''ds'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
+      http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
     ]]>
   </v:method>
   <v:method name="sortChange" arglist="in columnName varchar">
