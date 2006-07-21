@@ -26,6 +26,11 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	*.css \
+	*.js \
+	*.php \
 	*.sql \
 	*.vsp \
-	sparql_demo.php
+	images/*.gif \
+	images/*.png \
+	toolkit/*.js \
