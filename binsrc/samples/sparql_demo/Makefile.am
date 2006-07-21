@@ -33,4 +33,4 @@ EXTRA_DIST = \
 	*.vsp \
 	images/*.gif \
 	images/*.png \
-	toolkit/*.js \
+	toolkit/*.js
