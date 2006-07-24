@@ -773,8 +773,13 @@ void
 jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *env)
 {
   jso_class_descr_t *cd = rtti->jrtti_class;
-  if (JSO_STATUS_DELETED == rtti->jrtti_status)
+  if ((JSO_STATUS_DELETED == rtti->jrtti_status) || (JSO_STATUS_LOADED == rtti->jrtti_status))
+    {
+      caddr_t status = box_dv_short_string ((JSO_STATUS_DELETED == rtti->jrtti_status) ? "deleted" : "loaded");
+      dk_set_push (env, list (3, box_copy (iri), box_dv_uname_string (VIRTRDF_NS_URI "jso-type"), box_copy_tree (cd->jsocd_class_iri)));
+      dk_set_push (env, list (3, box_copy (iri), box_dv_uname_string (VIRTRDF_NS_URI "status"), status));
     return;
+    }
   dk_set_push (env, list (3, box_copy (iri), uname_rdf_ns_uri_type, box_copy_tree (cd->jsocd_class_iri)));
   switch (cd->jsocd_cat)
     {
@@ -805,7 +810,7 @@ jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *env)
             if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (val))
               val = ((jso_rtti_t *)(val))->jrtti_inst_iri;
             sprintf (buf, "%s_%d", RDF_NS_URI, ctr+1);
-            dk_set_push (env, list (3, box_copy (iri), box_dv_uname_string(buf), box_copy_tree (val)));
+            dk_set_push (env, list (3, box_copy (iri), box_dv_uname_string (buf), box_copy_tree (val)));
           }
         END_DO_BOX_FAST;
         break;
