@@ -1600,9 +1600,9 @@ create procedure DB.DBA.TTLP_EXEC_TRIPLE_L (
 grant execute on DB.DBA.TTLP_EXEC_TRIPLE_L to SPARQL_UPDATE
 ;
 
-create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar)
+create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar, in flags integer := 0)
 {
-  return rdf_load_turtle (strg, base, graph,
+  return rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EXEC_NEW_GRAPH(?,?)',
       'select DB.DBA.TTLP_EXEC_NEW_BLANK(?,?)',

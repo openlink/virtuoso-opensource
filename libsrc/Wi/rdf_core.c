@@ -171,15 +171,15 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t err = NULL;
   /*xml_ns_2dict_t ns_2dict;*/
   caddr_t graph_uri;
-  caddr_t *stmt_texts;
+  ccaddr_t *stmt_texts;
   caddr_t app_env;
   int omit_top_rdf = 0;
   int n_args = BOX_ELEMENTS (args);
-  wcharset_t * volatile charset = QST_CHARSET (qst) ? QST_CHARSET (qst) : default_charset;
+  /*wcharset_t * volatile charset = QST_CHARSET (qst) ? QST_CHARSET (qst) : default_charset;*/
   text_arg = bif_arg (qst, args, 0, "rdf_load_rdfxml");
   omit_top_rdf = bif_long_arg (qst, args, 1, "rdf_load_rdfxml");
   graph_uri = bif_string_arg (qst, args, 2, "rdf_load_rdfxml");
-  stmt_texts = bif_strict_type_array_arg (DV_STRING, qst, args, 3, "rdf_load_rdfxml");
+  stmt_texts = (ccaddr_t *)bif_strict_type_array_arg (DV_STRING, qst, args, 3, "rdf_load_rdfxml");
   app_env = bif_arg (qst, args, 4, "rdf_load_rdfxml");
   if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (stmt_texts))
     sqlr_new_error ("22023", "RDF01",
@@ -303,6 +303,7 @@ ttlp_alloc (void)
   ttlp_t *ttlp = &global_ttlp;
 #endif
   memset (ttlp, 0, sizeof (ttlp_t));
+  ttlp->ttlp_lexlineno = 1;
   ttlp->ttlp_tf = tf_alloc();
   return ttlp;
 }
@@ -571,28 +572,76 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
 
 caddr_t
 rdf_load_turtle (
-  caddr_t str, caddr_t base_uri, caddr_t graph_uri,
+  caddr_t text, caddr_t base_uri, caddr_t graph_uri, long flags,
   caddr_t *stmt_texts, caddr_t app_env,
   query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret )
 {
+  bh_from_client_fwd_iter_t bcfi;
+  bh_from_disk_fwd_iter_t bdfi;
+  dk_session_fwd_iter_t dsfi;
+  /* !!!TBD: add wide support: int text_strg_is_wide = 0; */
+  dtp_t dtp_of_text = DV_TYPE_OF (text);
   caddr_t res;
   ttlp_t *ttlp;
   triple_feed_t *tf;
+  if (DV_BLOB_XPER_HANDLE == dtp_of_text)
+    sqlr_new_error ("42000", "SP036", "Unable to parse TURTLE from persistent XML object");
   if (!ttl_lex_mtx)
     ttl_lex_mtx = mutex_allocate ();
   mutex_enter (ttl_lex_mtx);
   ttlp = ttlp_alloc ();
+  ttlp->ttlp_flags = flags;
   tf = ttlp->ttlp_tf;
   tf->tf_qi = qi;
   tf->tf_graph_uri = box_copy (graph_uri);
   tf->tf_app_env = app_env;
-  if (DV_STRING_SESSION == DV_TYPE_OF (str))
-    ttlp->ttlp_input = (dk_session_t *)str;
-  else
+  if ((DV_BLOB_HANDLE == dtp_of_text) /* !!!TBD: add wide support: || (DV_BLOB_WIDE_HANDLE == dtp_of_text)*/ )
     {
-      ttlp->ttlp_text = str;
-      ttlp->ttlp_text_len = strlen (str);
+      blob_handle_t *bh = (blob_handle_t *) text;
+#if 0 /* !!!TBD: add wide support: */
+      text_strg_is_wide = ((DV_BLOB_WIDE_HANDLE == dtp_of_text) ? 1 : 0);
+#endif      
+      if (bh->bh_ask_from_client)
+        {
+          bcfi_reset (&bcfi, bh, qi->qi_client);
+          ttlp->ttlp_iter = bcfi_read;
+          ttlp->ttlp_iter_abend = bcfi_abend;
+          ttlp->ttlp_iter_data = &bcfi;
+	  goto iter_is_set;
+        }
+      bdfi_reset (&bdfi, bh, qi);
+      ttlp->ttlp_iter = bdfi_read;
+      ttlp->ttlp_iter_data = &bdfi;
+      goto iter_is_set;
     }
+  if (DV_STRING_SESSION == dtp_of_text)
+    {
+      dk_session_t *ses = (dk_session_t *) text;
+      dsfi_reset (&dsfi, ses);
+      ttlp->ttlp_iter = dsfi_read;
+      ttlp->ttlp_iter_data = &dsfi;
+      goto iter_is_set;
+    }
+#if 0 /* !!!TBD: add wide support: */
+   if (IS_WIDE_STRING_DTP (dtp_of_text))
+    {
+      text_len = (s_size_t) (box_length(text)-sizeof(wchar_t));
+      text_strg_is_wide = 1;
+      goto iter_is_set;
+    }
+#endif
+  if (IS_STRING_DTP (dtp_of_text))
+    {
+      ttlp->ttlp_text = text;
+      ttlp->ttlp_text_len = box_length(text) - 1;
+      goto iter_is_set;
+    }
+  mutex_leave (ttl_lex_mtx);
+  ttlp_free (ttlp);
+  sqlr_new_error ("42000", "SP037",
+    "Unable to parse TURTLE from data of type %s (%d)", dv_type_title (dtp_of_text), dtp_of_text);
+
+iter_is_set:
   ttlp->ttlp_err_hdr = "TURTLE RDF loader";
   if (NULL == query_charset)
     query_charset = default_charset;
@@ -607,9 +656,8 @@ rdf_load_turtle (
   ttlp->ttlp_base_uri = box_copy (base_uri);
   QR_RESET_CTX
     {
-      tf_set_stmt_texts (tf, stmt_texts, NULL);
-      ttlyyrestart (NULL);
-      /*BEGIN TURTLE;*/
+      tf_set_stmt_texts (tf, (const char **)stmt_texts, NULL);
+      ttlyy_reset ();
       ttlyyparse();
     }
   QR_RESET_CODE
@@ -617,6 +665,11 @@ rdf_load_turtle (
       du_thread_t *self = THREAD_CURRENT_THREAD;
       ttlp->ttlp_catched_error = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
+      if (NULL != ttlp->ttlp_iter_abend)
+        {
+          ttlp->ttlp_iter_abend (ttlp->ttlp_iter_data);
+          ttlp->ttlp_iter_abend = NULL;
+        }
       /*no POP_QR_RESET*/;
     }
   END_QR_RESET
@@ -635,15 +688,16 @@ bif_rdf_load_turtle (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t str = bif_string_or_wide_or_null_or_strses_arg (qst, args, 0, "rdf_load_turtle");
   caddr_t base_uri = bif_string_or_wide_or_uname_arg (qst, args, 1, "rdf_load_turtle");
   caddr_t graph_uri = bif_string_or_wide_or_uname_arg (qst, args, 2, "rdf_load_turtle");
-  caddr_t *stmt_texts = bif_strict_type_array_arg (DV_STRING, qst, args, 3, "rdf_load_turtle");
-  caddr_t app_env = bif_arg (qst, args, 4, "rdf_load_turtle");
+  long flags = bif_long_arg (qst, args, 3, "rdf_load_turtle");
+  caddr_t *stmt_texts = bif_strict_type_array_arg (DV_STRING, qst, args, 4, "rdf_load_turtle");
+  caddr_t app_env = bif_arg (qst, args, 5, "rdf_load_turtle");
   caddr_t err = NULL;
   caddr_t res;
   if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (stmt_texts))
     sqlr_new_error ("22023", "RDF01",
       "The argument #4 of rdf_load_turtle() should be a vector of %d texts of SQL statements",
       COUNTOF__TRIPLE_FEED );
-  res = rdf_load_turtle (str, base_uri, graph_uri,
+  res = rdf_load_turtle (str, base_uri, graph_uri, flags,
     stmt_texts, app_env,
     (query_instance_t *)qst, QST_CHARSET(qst), &err );
   if (NULL != err)

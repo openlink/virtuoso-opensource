@@ -24,6 +24,7 @@
 #define __RDF_CORE_H
 #include "langfunc.h"
 #include "sqlnode.h"
+#include "xmlparser.h" /* for xml_read_func_t and xml_read_abend_func_t */
 
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */
 
@@ -52,6 +53,7 @@ extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
 
+#define TTLP_STRING_MAY_CONTAIN_CRLF	0x01
 
 typedef struct ttlp_s
 {
@@ -59,9 +61,12 @@ typedef struct ttlp_s
   const char *ttlp_text;	/*!< Full source text, if short, or the beginning of long text, or an empty string */
   int ttlp_text_len;		/*!< Length of \c ttlp_text */
   int ttlp_text_ofs;		/*!< Current position in \c ttlp_text */
-  dk_session_t *ttlp_input;	/*!< Long input */
+  xml_read_func_t ttlp_iter;
+  xml_read_abend_func_t ttlp_iter_abend;
+  void *ttlp_iter_data;
   const char *ttlp_input_name;	/*!< URI or file name or other name of source */
   encoding_handler_t *ttlp_enc;	/*!< Encoding of the source */
+  long ttlp_flags;		/*!< Flags for dirty load */
   /* lexer */
   int ttlp_lexlineno;		/*!< Current line number */
   int ttlp_lexdepth;		/*!< Current number of not-yet-closed parenthesis */
@@ -102,7 +107,7 @@ extern void ttlp_free (ttlp_t *ttlp);
 
 #define YY_DECL int ttlyylex (void *yylval)
 extern int ttlyylex (void *yylval);
-extern void ttlyyrestart (FILE *input_file);
+extern void ttlyy_reset (void);
 extern int ttlyyparse (void);
 
 extern void ttlyyerror_impl (TTLP_PARAM const char *raw_text, const char *strg);
@@ -130,7 +135,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
    id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict*/ );
 
 extern caddr_t rdf_load_turtle (
-  caddr_t str, caddr_t base_uri, caddr_t graph_uri,
+  caddr_t str, caddr_t base_uri, caddr_t graph_uri, long flags,
   caddr_t *stmts, caddr_t app_env,
   query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret );
 

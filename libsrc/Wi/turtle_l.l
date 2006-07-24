@@ -1,6 +1,7 @@
 %option 8bit
 %option case-sensitive
 %option never-interactive
+%option noyywrap
 %{
 /* 
  *  
@@ -45,7 +46,6 @@
     { \
       int rest_len = ttlp_inst.ttlp_text_len - ttlp_inst.ttlp_text_ofs; \
       int get_len = (max_size); \
-      dk_session_t *ses; \
       if (rest_len > 0) \
         { \
           if (get_len > rest_len) \
@@ -55,19 +55,9 @@
           ttlp_inst.ttlp_text_ofs += get_len; \
           break; \
         } \
-      ses = ttlp_inst.ttlp_input; \
-      if (NULL != ses) \
+      if (NULL != ttlp_inst.ttlp_iter) \
         { \
-          CATCH_READ_FAIL (ses) \
-            { \
-              (result) = session_buffered_read (ses, (buf), (max_size)); \
-            } \
-          FAILED \
-            { \
-              (result) = 0; \
-              ttlp_inst.ttlp_input = NULL; \
-            } \
-          END_READ_FAIL (ses); \
+          (result) = ttlp_inst.ttlp_iter (ttlp_inst.ttlp_iter_data, buf, max_size); \
           break; \
         } \
       (result) = 0; \
@@ -292,8 +282,8 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
 <INITIAL>[""]		{ yymore(); BEGIN TURTLE_DQ; }
 <TURTLE_SQ>['']		{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '\''); BEGIN INITIAL; return TURTLE_STRING; }
 <TURTLE_DQ>[""]		{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_SQ>{S_NL}	{ ttlyyerror ("End-of-line in a short single-quoted string"); yymore(); }
-<TURTLE_DQ>{S_NL}	{ ttlyyerror ("End-of-line in a short double-quoted string"); yymore(); }
+<TURTLE_SQ>{S_NL}	{ if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_inst.ttlp_flags)) ttlyyerror ("End-of-line in a short single-quoted string"); ttlp_inst.ttlp_lexlineno++; yymore(); }
+<TURTLE_DQ>{S_NL}	{ if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_inst.ttlp_flags)) ttlyyerror ("End-of-line in a short double-quoted string"); ttlp_inst.ttlp_lexlineno++; yymore(); }
 <TURTLE_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_DQ>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_SQ>[\\]		{ ttlyyerror ("Bad escape sequence in a short single-quoted string"); }
@@ -311,6 +301,12 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
 <INITIAL>.		{ ttlyyerror ("Invalid character in INITIAL expression"); }
 
 %%
+
+void ttlyy_reset (void)
+{
+  ttlyyrestart (NULL);
+  BEGIN INITIAL;
+}
 
 caddr_t
 ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
@@ -341,8 +337,7 @@ ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
 	  if (NULL == ttlp->ttlp_enc)
 	    ttlp->ttlp_enc = &eh__ISO8859_1;
 	}
-      ttlyyrestart (NULL);
-      /*BEGIN INITIAL;*/
+      ttlyy_reset ();
       for (;;)
         {
           caddr_t lex_value = NULL;
@@ -377,10 +372,4 @@ ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
   ttlp_free (ttlp);
   result_array = revlist_to_array (lexems);
   return result_array;
-}
-
-int
-ttlyywrap (void)
-{
-  return (1);
 }
