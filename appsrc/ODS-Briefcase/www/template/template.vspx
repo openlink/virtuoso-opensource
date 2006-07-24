@@ -28,7 +28,7 @@
   <head profile="http://internetalchemy.org/2003/02/profile">
     <?vsp
       http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.account()));
-      http(sprintf('<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s/dataspace/%U/briefcase/%U/sioc.rdf"/>', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.account(), ODRIVE.WA.domain_name()));
+      http(sprintf('<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', replace(sprintf('%s/dataspace/%U/briefcase/%U/sioc.rdf', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.account(), ODRIVE.WA.domain_name()), '+', '%2B')));
     ?>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />

@@ -2772,8 +2772,7 @@ create procedure ODRIVE.WA.DAV_RDF_PROP_SET (
   declare uname, gname varchar;
 
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
-  DB.DBA.DAV_PROP_REMOVE(path, single_schema, auth_name, auth_pwd);
-  return DB.DBA.DAV_RDF_PROP_SET(path, single_schema, rdf, auth_name, auth_pwd);
+  return DB.DBA.DAV_RDF_PROP_SET_INT(path, single_schema, rdf, auth_name, auth_pwd, 1, 1, 1);
 }
 ;
 

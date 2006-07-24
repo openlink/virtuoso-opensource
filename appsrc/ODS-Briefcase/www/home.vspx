@@ -384,7 +384,7 @@
                     property := subseq (param, delim+2);
                     ODRIVE.WA.dav_rdf_set_property(self.dav_metadata, property, self.vc_page.vc_event.ve_params[N+1]);
                   }
-                ODRIVE.WA.dav_rdf_set_metadata (self.dav_path, self.dav_metadata);
+                  retValue := ODRIVE.WA.dav_rdf_set_metadata (self.dav_path, self.dav_metadata);
               }
             }
           }

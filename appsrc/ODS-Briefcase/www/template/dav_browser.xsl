@@ -1594,7 +1594,7 @@
                 <tr>
                   <th width="50%">Name</th>
                   <th>Size</th>
-                  <th>Date Modified</th>
+                <th nowrap="nowrap">Date Modified</th>
                   <th>Mime Type</th>
                   <th>Kind</th>
                   <th>Owner</th>
@@ -1616,8 +1616,8 @@
                           http('&nbsp;&nbsp;');
                           http(ODRIVE.WA.stringCut(self.item_array[i], self.chars)); ?>
                 </td>
-                <td class="td_number"><?vsp http(self.ui_size(ODRIVE.WA.DAV_GET(item, 'length'), ODRIVE.WA.DAV_GET(item, 'type'))); ?></td>
-                <td><?vsp http(self.ui_date(ODRIVE.WA.DAV_GET(item, 'modificationTime'))); ?></td>
+              <td class="td_number" nowrap="nowrap"><?vsp http(self.ui_size(ODRIVE.WA.DAV_GET(item, 'length'), ODRIVE.WA.DAV_GET(item, 'type'))); ?></td>
+              <td nowrap="nowrap"><?vsp http(self.ui_date(ODRIVE.WA.DAV_GET(item, 'modificationTime'))); ?></td>
                 <td><?vsp http(either(equ(ODRIVE.WA.DAV_GET(item, 'type'), 'R'), ODRIVE.WA.DAV_GET(item, 'mimeType'), '&nbsp;')); ?></td>
                 <td><?V ODRIVE.WA.DAV_GET(item, 'ownerName') ?></td>
                 <td><?V ODRIVE.WA.DAV_GET(item, 'groupName') ?></td>

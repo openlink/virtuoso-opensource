@@ -21,6 +21,45 @@
 --
 --
 
+SOAP_LOAD_SCH (
+'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+ <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="http://www.openlinksw.com/odrive" xmlns:od="http://www.openlinksw.com/odrive">
+	<xs:element name="version">
+ 		<xs:complexType mixed="true">
+ 			<xs:attribute name="number" use="required" type="xs:integer"/>
+ 		</xs:complexType>
+ 	</xs:element>
+ 	<xs:element name="versions">
+ 		<xs:complexType>
+ 			<xs:sequence>
+ 				<xs:element ref="od:version"/>
+ 			</xs:sequence>
+ 		</xs:complexType>
+ 	</xs:element>
+ 	<xs:element name="row">
+ 		<xs:complexType>
+ 			<xs:sequence>
+		    <xs:element name="name" type="xs:string"/>
+		    <xs:element name="dateModified" type="xs:dateTime"/>
+		    <xs:element name="kind" type="xs:string"/>
+		    <xs:element name="size" type="xs:integer"/>
+		    <xs:element name="owner" type="xs:string"/>
+		    <xs:element name="group" type="xs:string"/>
+		    <xs:element name="permissions" type="xs:string"/>
+		    <xs:element name="tags" type="xs:string"/>
+		    <xs:element ref="od:versions" minOccurs="0"/>
+ 			</xs:sequence>
+ 			<xs:attribute name="number" use="required" type="xs:integer"/>
+ 		</xs:complexType>
+ 	</xs:element>
+  <xs:complexType name="rows">
+    <xs:sequence>
+      <xs:element ref="od:row" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+ </xs:schema>')
+;
+
 -----------------------------------------------------------------------------
 --
 create procedure DBA.SOAPODRIVE.Browse (
@@ -28,7 +67,7 @@ create procedure DBA.SOAPODRIVE.Browse (
   in uPassword varchar,
   in path varchar,
   in dateBegin dateTime,
-  in dateEnd dateTime) returns xmltype
+  in dateEnd dateTime) __SOAP_OPTIONS (__SOAP_TYPE:='http://www.openlinksw.com/odrive:rows', "PartName" := 'rows')
 {
   declare N, M integer;
   declare tags, tags2, data, sql, params, state, msg, meta, result any;
@@ -103,9 +142,11 @@ create procedure DBA.SOAPODRIVE.Browse (
   }
   http ('</rows>\n', sStream);
 
-  return new xmltype(string_output_string(sStream));
+  return xml_tree_doc(string_output_string(sStream));
 }
 ;
 
+grant execute on "http://www.openlinksw.com/odrive:rows" to SOAPODrive
+;
 grant execute on DBA.SOAPODRIVE.Browse to SOAPODrive
 ;

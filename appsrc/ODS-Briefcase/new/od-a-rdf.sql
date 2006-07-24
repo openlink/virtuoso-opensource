@@ -468,7 +468,8 @@ create procedure ODRIVE.WA.dav_rdf_set_metadata (
   inout metadata varchar) returns any
 {
   if (not isnull(metadata))
-    ODRIVE.WA.DAV_RDF_PROP_SET(path, 'http://local.virt/DAV-RDF', xslt('http://local.virt/davxml2rdfxml', metadata));
+    return ODRIVE.WA.DAV_RDF_PROP_SET(path, 'http://local.virt/DAV-RDF', xslt('http://local.virt/davxml2rdfxml', metadata));
+  return 0;
 }
 ;
 
