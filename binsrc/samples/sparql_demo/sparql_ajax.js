@@ -195,9 +195,10 @@ function load_dawg_query()
     { 
     $('etalon').innerHTML += '<div id="grid_etalon"></div>'; 
     table = find_child_element($('etalon'),'table');
-      var grid = new OAT.Grid("grid_etalon",0);
-      load_grid(grid,table);
+    grid2 = new OAT.Grid("grid_etalon",0);
+    load_grid(grid2,table);
       table.parentNode.removeChild(table);
+    grid2.ieFix();
     }
     else
     {
@@ -380,6 +381,9 @@ function rq_query(param,dl)
       var grid = new OAT.Grid("grid",0);
       load_grid(grid,table);
       table.parentNode.removeChild(table);
+      grid.ieFix();
+      if (typeof grid2 != 'undefined')
+        grid2.ieFix();
     }
     else
     {

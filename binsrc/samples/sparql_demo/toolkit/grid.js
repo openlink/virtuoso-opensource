@@ -67,6 +67,7 @@ OAT.GridData = {
 
 			OAT.Dom.unlink(obj.tmp_resize);
 			OAT.Dom.unlink(obj.tmp_resize_start);
+			
 			OAT.GridData.forbidSort = 1;
 			var ref = function() { OAT.GridData.forbidSort = 0;	}
 			setTimeout(ref,100);
@@ -90,6 +91,7 @@ OAT.GridData = {
 				/* we need to move OAT.GridData.index before index */
 				var i1 = OAT.GridData.index;
 				var i2 = index;
+
 				obj.header.cells[i1].html.parentNode.insertBefore(obj.header.cells[i1].html,obj.header.cells[i2].html);
 				var cell = obj.header.cells[i1];
 				obj.header.cells.splice(i1,1);
@@ -224,6 +226,17 @@ OAT.Grid = function(something,autoNumber) {
 			this.header.cells[i].number = i;
 		}
 		return cell;
+	}
+
+	this.ieFix = function() {
+		for (var i=0;i<self.header.cells.length;i++) {
+			var html = self.header.cells[i].html;
+			OAT.Dom.addClass(html,"hover");
+			OAT.Dom.removeClass(html,"hover");
+			var value = self.header.cells[i].value;
+			var dims = OAT.Dom.getWH(value);
+			value.style.width = dims[0]+"px";
+		}
 	}
 
 	this.createHeader = function(paramsList) { /* add new header */
@@ -484,9 +497,10 @@ OAT.GridHeaderCell = function(obj,number,params) {
 		mover.style.backgroundImage = "url("+obj.imagesPath+"/Grid_none.gif)";
 		this.container.appendChild(mover);
 		var callback = function (event) {
+			var pos = OAT.Dom.eventPos(event);
 			OAT.GridData.resizing = obj;
 			OAT.GridData.index = self.number;
-			OAT.GridData.x = event.clientX;
+			OAT.GridData.x = pos[0];
 			var h = obj.html.offsetHeight;
 			var x = self.container.offsetWidth+1;
 			OAT.GridData.w = x;
