@@ -282,7 +282,9 @@ for "<xsl:value-of select="$class" />"
 <xsl:template match="wsdl:operation" mode="ret_params" >
 <xsl:variable name="msg" select="wsdl:output/@message"/>
 <xsl:for-each select="/wsdl:definitions/wsdl:message[@name = $msg]/part" >
-    <xsl:text>      </xsl:text>"<xsl:value-of select="@name" />" := xml_cut (xpath_eval ('//<xsl:call-template name="xpf_elm"/>', xe, 1));
+    <xsl:text> declare temp any;     </xsl:text>
+    <xsl:text> temp:= </xsl:text> xpath_eval ('//<xsl:call-template name="xpf_elm"/>', xe, 1); if (temp is NULL) return NULL;
+    <xsl:text>      </xsl:text>"<xsl:value-of select="@name" />" := xml_cut (temp);
     <xsl:if test="@type != '' or @element != ''">
 	<xsl:text>      </xsl:text>"<xsl:value-of select="@name" />" := soap_box_xml_entity_validating ("<xsl:value-of select="@name" />", '<xsl:call-template name="par_type"/>', <xsl:call-template name="type_mode"/>);
     </xsl:if>
