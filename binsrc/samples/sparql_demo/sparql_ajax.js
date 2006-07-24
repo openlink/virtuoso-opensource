@@ -59,12 +59,17 @@ function init()
 	//switch_panels();
 
   var ref=function() { 
-    if (OAT.Dom.style($('tree_containter'),'display') == 'none')
+    if ($('tree_containter')._Tree_collapsed == 0)
+    {
       OAT.Dom.show($('tree_containter'));
-    else 
+      $('tree_containter')._Tree_collapsed = 1;
+    } else {
       OAT.Dom.hide($('tree_containter'));
+      $('tree_containter')._Tree_collapsed = 0;
+    }
   }
   OAT.Dom.attach($('tab_dawg'),"click",ref);
+  $('tree_containter')._Tree_collapsed = 0;
 }
 
 function switch_panels()
@@ -183,7 +188,7 @@ function load_dawg_query()
   $('etalon').innerHTML = '<hr/><b>Expected result:</b>' + $('dawg_etalon').innerHTML;
 
   $('format').selectedIndex = 0; 
-  $('result').innerHTML = ''; 
+  $('res_area').innerHTML = '';
 
   var table = find_child_element($('etalon'),'table');
     if (table)
@@ -286,7 +291,7 @@ function rq_query(param,dl)
   var body = function()
   {
     var body = '';
-    var params = ['default-graph-uri','query','format'];
+    var params = ['default-graph-uri','query','format','maxrows'];
     if (param == 'c')
       params.push('explain');
     if (is_r())
@@ -319,6 +324,12 @@ function rq_query(param,dl)
   }
   var callback = function(data,xmlhttp) 
   { 
+    OAT.Dom.unlink($('res_container'));
+    OAT.Dom.unlink($('result'));
+    OAT.Dom.unlink($('request'));
+    OAT.Dom.unlink($('response'));
+    OAT.Dom.unlink($('autoload'));
+
     $(r+'res_area').innerHTML = '';
     var tabres_html = '';
     tabres_html += '<ul id="tabres">';
@@ -372,7 +383,7 @@ function rq_query(param,dl)
     }
     else
     {
-      if (!is_r() && !param)
+      if (!param)
         $(r+'result').innerHTML = '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
       else
         $(r+'result').innerHTML = data;

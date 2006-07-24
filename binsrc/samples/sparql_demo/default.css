@@ -35,35 +35,39 @@ h1,h2,h3 { color: #005a9c }
 h2 { font-weight: normal;}
 h3 { font-weight: normal;}
 
-#head { width: 98%; 
+#container
+{
+  width: 100%;
+  background-color: #fff;
+  color: #333;
+}
+
+#head { 
   background-image: url(images/virtuoso_banner.gif);
   background-color: #86B9D9;
   height: 70px;
   background-repeat: no-repeat;
-  float: left; clear: both;}
-
-#mid { 
-  width: 98%; 
-  float: left; clear: both;}
+}
 
 #foot { 
   border-top: 1px solid #86b9d9;
-  width: 98%;
+  width: 100%;
   font-size: 7pt;
-  text-align: right;
-  float: left; clear: both;}
+  text-align: right;}
 
 #head h1 {
   font-size: 14pt;
   color: #fff;
   padding-left: 400px;
+  padding-top: 20px;
 }
 
 #nav_bar { 
-  float: left; clear: left; 
+  float: left; 
   background-color: #86B9D9;
   color: #ddd;
   padding:4px;
+  width:220px;
 }
 
 #nav_bar ul li ul li{ 
@@ -74,6 +78,10 @@ h3 { font-weight: normal;}
 	margin-left: 0px;
   list-style-type: none; 
   padding-left: 0px;
+}
+
+#nav_bar ul.nospace { 
+	margin-bottom: 0px;
 }
 
 #nav_bar li { 
@@ -101,27 +109,15 @@ h3 { font-weight: normal;}
 #nav_bar a { color: #ddd; text-decoration: none;}
 
 #main_col { 
-  width: 75%;
-  float: left; clear: right; 
-  margin-left: 5px;}
+  margin-left: 225px;
+  padding: 1em;
+}
+
 
 #import_data_frame {
   border:0px;
   width: 100%;
   height: 500px;
-}
-
-div.pager { 
-  float: left; clear: both;
-  background-color: #576; 
-  width: 99%;
-  text-align: center;}
-
-div.pager a { 
-  color: #ddd;
-  font-weight: bold;
-  text-decoration: none; 
-  padding-left: 10px;
 }
 
 label { font-size: 10pt; font-weight: bold;}
@@ -178,6 +174,7 @@ label.load { font-size: 8pt; font-weight: normal;}
 
 ul#tree_content
 {
+	margin-top: 0px;
 	margin-left: 0px;
 	padding-left: 0.0em;
   /* White-space: nowrap; */
