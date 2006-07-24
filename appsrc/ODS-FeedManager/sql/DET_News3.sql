@@ -582,10 +582,12 @@ create function "News3_DAV_RES_CONTENT" (in id any, inout content any, out type 
       signal('22023', trim(hdr[0], '\r\n'), 'EN000');
       return 0;
     }
-    if (content_mode = 1)
-      http_value (ext_content, content);
-    else
+    if ((content_mode = 0) or (content_mode = 2))
       content := ext_content;
+    else if (content_mode = 1)
+      http (ext_content, content);
+    else if (content_mode = 3)
+      http (ext_content);
 --  content := DB.DBA.XML_URI_GET(id[2], '');
     return 0;
   }
@@ -598,6 +600,8 @@ create function "News3_DAV_RES_CONTENT" (in id any, inout content any, out type 
         http_value (EFI_DESCRIPTION, content);
       else if (content_mode = 2)
         content := EFI_DESCRIPTION;
+      else if (content_mode = 3)
+        http_value (EFI_DESCRIPTION);
       return 0;
     }
   return -1;
