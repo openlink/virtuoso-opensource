@@ -199,7 +199,7 @@ create procedure ATOM.ATOM.gdata
   if (meth = 'GET' and q is null and id is null and "updated-min" is null and "updated-max" is null and author is null)
     {
       if ("atom-pub" = 1)
-	http_header ('Content-Type: application/x.atom+xml\r\n');
+	http_header ('Content-Type: application/atom+xml\r\n');
       else
 	http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 
@@ -225,7 +225,7 @@ create procedure ATOM.ATOM.gdata
     {
       declare search_pars, outp, d1, d2, cat any;
       if ("atom-pub" = 1)
-	http_header ('Content-Type: application/x.atom+xml\r\n');
+	http_header ('Content-Type: application/atom+xml\r\n');
       else
 	http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 
@@ -323,6 +323,8 @@ create procedure ATOM.ATOM.gdata
 
       --dbg_printf ('Atom_Self_URI=%s', connection_get ('Atom_Self_URI'));
       WS.WS.GET (path, search_pars, lines);
+      if ("atom-pub" = 1)
+	http_header ('Content-Type: application/atom+xml\r\n');
       return NULL;
     }
   else if (meth = 'POST') -- new post

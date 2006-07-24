@@ -58,7 +58,7 @@
 	    lpath := null;
 	    lpath := (select top 1 HP_LPATH from HTTP_PATH where HP_HOST = host and HP_PPATH = phome);
 	    if (lpath is not null)
-	      self.home := lpath;
+	    self.home := rtrim(lpath,'/') || '/';
 	  }
 	]]>
     </v:on-init>

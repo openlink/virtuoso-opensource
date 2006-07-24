@@ -3256,8 +3256,8 @@ create procedure BLOG2_BLOG_IT(in blogid any, in sid any, in realm any, in user_
 	}
 
       DB.DBA.DAV_RES_UPLOAD_STRSES_INT (bi_phome2||'media/' || file, m_cont, '', '110100100N', b_own, null, null, null, 0);
-      insert into BLOG..SYS_BLOGS (B_APPKEY, B_BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID, B_TS, B_META, B_STATE)
-	  values ('', blogid, content, res.postid, user_id, now(), res, 2);
+      insert into BLOG..SYS_BLOGS (B_APPKEY, B_BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID, B_TS, B_META, B_STATE, B_TITLE)
+	  values ('', blogid, content, res.postid, user_id, now(), res, 2, res.title);
       i := i + 1;
     }
   nfbm:;

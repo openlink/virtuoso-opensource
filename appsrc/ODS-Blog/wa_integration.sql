@@ -79,6 +79,7 @@ wa_exec_no_error('alter type wa_blog2 add overriding method wa_size() returns in
 wa_exec_no_error('alter type wa_blog2 add method wa_vhost_options () returns any');
 wa_exec_no_error('alter type wa_blog2 add method wa_dashboard_last_item () returns any');
 wa_exec_no_error('alter type wa_blog2 add overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar');
+wa_exec_no_error('alter type wa_blog2 add overriding method wa_post_url (in vhost varchar, in lhost varchar, in inst_name varchar, in post any) returns varchar');
 
 
 insert replacing DB.DBA.WA_TYPES(WAT_NAME, WAT_DESCRIPTION, WAT_TYPE, WAT_REALM) values ('WEBLOG2', 'Blog', 'db.dba.wa_blog2', 'wa')
@@ -586,6 +587,19 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_blog2
   return full_path;
 }
 ;
+
+create method wa_post_url (in vhost varchar, in lhost varchar, in inst_name varchar, in post any) for wa_blog2
+{
+  declare p_path_str, l_path_str, full_path varchar;
+  p_path_str := (select BI_P_HOME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = self.blogid);
+  if (p_path_str is null)
+    signal ('22023', 'No such blog');
+  l_path_str := (select top 1 HP_LPATH from DB.DBA.HTTP_PATH where HP_PPATH = p_path_str and HP_HOST = vhost and HP_LISTEN_HOST = lhost);
+  if (l_path_str is null)
+    signal ('22023', 'No virtual directory found.');
+  full_path := concat (rtrim (l_path_str, '/'), '/?id=', post);
+  return full_path;
+};
 
 create method wa_private_url () for wa_blog2 {
   declare uri varchar;

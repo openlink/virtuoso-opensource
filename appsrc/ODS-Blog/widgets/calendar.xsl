@@ -797,6 +797,7 @@
                       B_USER_ID,
                       B_META,
 		      B_STATE,
+		      B_TITLE,
 		      B_TS)
                     values(
                       'appKey',
@@ -807,6 +808,7 @@
                       self.user_id,
 		      res,
 		      _post_state,
+		      post_title,
 		      bdate);
                     self.preview_post_id := id;
                   }

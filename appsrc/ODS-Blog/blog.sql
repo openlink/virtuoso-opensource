@@ -2233,13 +2233,16 @@ procedure "blogger.newPost" (
     }
   else
     {
+      declare dummy, title any;
       if (length (trim (content)) = 0)
         signal ('22023', 'Empty posts are not allowed');
       req.postId := cast (sequence_next ('blogger.postid') as varchar);
       if (req.postId = '0') -- start from 1
         req.postId := cast (sequence_next ('blogger.postid') as varchar);
-      insert into SYS_BLOGS (B_APPKEY, B_BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID, B_TS, B_STATE)
-       values (req.appkey, req.blogid, req.content, req.postId, req.auth_userid, now (), req.publish);
+      dummy := null;
+      title := BLOG_GET_TITLE (dummy, req.content);
+      insert into SYS_BLOGS (B_APPKEY, B_BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID, B_TS, B_STATE, B_TITLE)
+       values (req.appkey, req.blogid, req.content, req.postId, req.auth_userid, now (), req.publish, title);
     }
   postId := req.postId;
 }
@@ -2627,7 +2630,7 @@ returns varchar
     call ('newPost_' || req.appkey) (req);
   else
     {
-      declare cnt any;
+      declare cnt, title any;
       declare pings any;
       req.postId := cast (sequence_next ('blogger.postid') as varchar);
       if (req.postId = '0') -- start from 1
@@ -2645,9 +2648,10 @@ returns varchar
       if (length (trim (cnt)) = 0)
         signal ('22023', 'Empty posts are not allowed');
 
-      insert into SYS_BLOGS (B_APPKEY, B_BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID, B_TS, B_META, B_STATE)
+      title := BLOG_GET_TITLE (struct, cnt);
+      insert into SYS_BLOGS (B_APPKEY, B_BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID, B_TS, B_META, B_STATE, B_TITLE)
       values (req.appkey, req.blogid,
-        cnt, struct.postId, req.auth_userid, struct.dateCreated, struct, req.publish);
+        cnt, struct.postId, req.auth_userid, struct.dateCreated, struct, req.publish, title);
       struct.description := cnt;
       struct.mt_tb_ping_urls := pings;
       BLOG_SEND_TB_PINGS (struct);
@@ -5870,8 +5874,8 @@ create procedure BLOG_INSERT_MESSAGE (in _uid integer, in params any, in img_pat
       || get_keyword ('changed_name', params, '') || ' </pre></div>';
     }
 
-  insert into SYS_BLOGS (B_APPKEY, B_BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID, B_TS, B_META)
-   values  ('', blogId, bcont, postId, _uid, now (), res);
+  insert into SYS_BLOGS (B_APPKEY, B_BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID, B_TS, B_META, B_TITLE)
+   values  ('', blogId, bcont, postId, _uid, now (), res, res.title);
 
 }
 ;
