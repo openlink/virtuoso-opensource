@@ -466,7 +466,7 @@ create procedure OMAIL.WA.omail_box(
   declare _rs,_sid,_realm,_bp,_sql_result1,_sql_result2,_faction,_pnames,_ip varchar;
   declare _order,_direction,_params,_page_params any;
   declare _user_info, _settings any;
-  declare _aresults,_user_id,_folder_id,_domain_id integer;
+  declare _pageSize,_user_id,_folder_id,_domain_id integer;
 
   -- SECURITY CHECK ------------------------------------------------------------------
   _sid       := get_keyword('sid',params,'');
@@ -476,7 +476,7 @@ create procedure OMAIL.WA.omail_box(
   -- TEMP constants -------------------------------------------------------------------
   _user_id   := get_keyword('user_id',_user_info);
   _domain_id := 1;
-  _aresults  := 10;
+  _pageSize  := 10;
 
   -- GET SETTINGS ------------------------------
   _settings := OMAIL.WA.omail_get_settings(_domain_id, _user_id, 'base_settings');
@@ -575,7 +575,7 @@ create procedure OMAIL.WA.omail_box(
   if (get_keyword('msg_result',_settings) <> '') {
     OMAIL.WA.omail_setparam('aresults',_params,get_keyword('msg_result',_settings));
   } else {
-    OMAIL.WA.omail_setparam('aresults',_params,_aresults);
+    OMAIL.WA.omail_setparam('aresults',_params,_pageSize);
   }
 
   OMAIL.WA.omail_set_settings(_domain_id, _user_id, 'base_settings', _settings);
@@ -2768,8 +2768,8 @@ create procedure OMAIL.WA.omail_message_body_parse_func(
 create procedure OMAIL.WA.omail_message_list(
   in _user_id    integer,
   in _folder_id  integer,
-  in _askiped    integer,
-  in _aresults   integer,
+  in _skipped    integer,
+  in _pageSize   integer,
   in _sortby     varchar)
 {
   declare _rs  varchar;
@@ -2785,10 +2785,10 @@ create procedure OMAIL.WA.omail_message_list(
           and FOLDER_ID = _folder_id
         ORDER BY MSTATUS)
   do {
-    if (N >= (_askiped + _aresults))
+    if (N >= (_skipped + _pageSize))
       return _rs;
     _rows := vector(SUBJECT,ATTACHED,ADDRESS,DSIZE,MSG_ID,MSTATUS,PRIORITY,RCV_DATE);
-    _rs   := sprintf('%s%s',_rs,OMAIL.WA.omail_result2xml(_descr,_rows,N,_askiped));
+    _rs   := sprintf('%s%s',_rs,OMAIL.WA.omail_result2xml(_descr,_rows,N,_skipped));
     N  := N + 1;
   };
   _rs := sprintf('%s<order>%s</order><direction>%s</direction>',_rs,substring (_sortby,1,1),substring (_sortby,2,1));
@@ -2840,10 +2840,10 @@ create procedure OMAIL.WA.omail_msg_list(
 
   _order      := vector('','MSTATUS','PRIORITY','ADDRES_INFO','SUBJECT','RCV_DATE','DSIZE','ATTACHED');
   _direction  := vector('',' ','desc');
-  _sql_statm  := vector(sprintf('SELECT SUBJECT,ATTACHED,ADDRESS,DSIZE DSIZE,MSG_ID,MSTATUS,PRIORITY,RCV_DATE FROM OMAIL.WA.MESSAGES where DOMAIN_ID = ? and USER_ID = ? and FOLDER_ID = ? and PARENT_ID IS NULL ORDER BY %s %s,RCV_DATE desc',aref(_order,OMAIL.WA.omail_getp('order',_params)),aref(_direction,OMAIL.WA.omail_getp('direction',_params))));
-  _sql_params := vector(vector(1,_user_id,OMAIL.WA.omail_getp('folder_id',_params)));
+  _sql_statm  := sprintf('SELECT SUBJECT,ATTACHED,ADDRESS,DSIZE DSIZE,MSG_ID,MSTATUS,PRIORITY,RCV_DATE FROM OMAIL.WA.MESSAGES where DOMAIN_ID = ? and USER_ID = ? and FOLDER_ID = ? and PARENT_ID IS NULL ORDER BY %s %s,RCV_DATE desc', _order[OMAIL.WA.omail_getp('order',_params)], _direction[OMAIL.WA.omail_getp('direction',_params)]);
+  _sql_params := vector(1, _user_id, OMAIL.WA.omail_getp('folder_id',_params));
 
-  return OMAIL.WA.omail_sql_exec(_sql_statm,_sql_params,OMAIL.WA.omail_getp('skiped',_params),OMAIL.WA.omail_getp('aresults',_params),concat(cast(OMAIL.WA.omail_getp('order',_params) as varchar),cast(OMAIL.WA.omail_getp('direction',_params) as varchar)));
+  return OMAIL.WA.omail_sql_exec(_domain_id, _user_id, _sql_statm, _sql_params, OMAIL.WA.omail_getp('skiped',_params),OMAIL.WA.omail_getp('aresults',_params),concat(cast(OMAIL.WA.omail_getp('order',_params) as varchar),cast(OMAIL.WA.omail_getp('direction',_params) as varchar)));
 }
 ;
 
@@ -3061,14 +3061,12 @@ create procedure OMAIL.WA.omail_msg_search(
   }
   _sql_statm   := concat(_sql_statm, ' ORDER BY %s %s, RCV_DATE desc');
   _sql_statm   := sprintf(_sql_statm, aref(_order, cast(get_keyword('order',_params,'5') as integer)), aref(_direction, cast(get_keyword('direction',_params,'0') as integer)));
-  _sql_statm   := vector(_sql_statm);
-  _sql_params  := vector(_sql_params);
 
   if (not _exec)
     return vector(_sql_statm, _sql_params);
   if (_empty)
     return sprintf('<skiped>0</skiped><show_res>%d</show_res><all_res>0</all_res>', get_keyword('aresults', _params,10));
-  return OMAIL.WA.omail_sql_exec(_sql_statm,_sql_params,get_keyword('skiped',_params,0),get_keyword('aresults',_params,10),concat(cast(get_keyword('order',_params,'5') as varchar), cast(get_keyword('direction',_params,'0') as varchar)));
+  return OMAIL.WA.omail_sql_exec(_domain_id, _user_id, _sql_statm, _sql_params, get_keyword('skiped',_params,0), get_keyword('aresults',_params,10), concat(cast(get_keyword('order',_params,'5') as varchar), cast(get_keyword('direction',_params,'0') as varchar)), cast(get_keyword('q_cloud',_params,'0') as integer));
 }
 ;
 
@@ -3691,7 +3689,7 @@ create procedure OMAIL.WA.omail_result2xml(
   in _descr    any,
   in _rows      any,
   in _ind      integer,
-  in _askiped  integer)
+  in _skipped  integer)
 {
   declare _i integer;
   declare _rs,_cell varchar;
@@ -3699,7 +3697,7 @@ create procedure OMAIL.WA.omail_result2xml(
   _rs := '';
   _i := 0;
 
-  if (_ind < _askiped)
+  if (_ind < _skipped)
     return '';
 
   _rs   := sprintf('<message>');
@@ -3906,7 +3904,7 @@ create procedure OMAIL.WA.omail_search(
 {
   -- www procedure
 
-  declare _aresults, _user_id, _folder_id, _domain_id integer;
+  declare _pageSize, _user_id, _folder_id, _domain_id integer;
   declare _rs, _sid, _realm, _sql_result1, _sql_result2, _pnames varchar;
   declare _order, _direction, _params, _page_params any;
   declare _user_info, _settings any;
@@ -3918,7 +3916,7 @@ create procedure OMAIL.WA.omail_search(
   -- TEMP constants -------------------------------------------------------------------
   _user_id   := get_keyword('user_id',_user_info);
   _domain_id := 1;
-  _aresults  := 10;
+  _pageSize  := 10;
 
   declare exit handler for SQLSTATE '*' {
     if (__SQL_STATE = '1901') {
@@ -3992,6 +3990,9 @@ create procedure OMAIL.WA.omail_search(
     OMAIL.WA.omail_delete_message(_domain_id,_user_id,params,_params);
   }
 
+  if (get_keyword('c_tag', params, '') <> '')
+    OMAIL.WA.omail_setparam('q_tags', params, OMAIL.WA.tags_join(get_keyword('q_tags', params, ''), get_keyword('c_tag', params, '')));
+
   _params := vector_concat(_params, params);
   _sql_result1 := OMAIL.WA.omail_msg_search(_domain_id, _user_id, _params);
 
@@ -4017,25 +4018,27 @@ create procedure OMAIL.WA.omail_search(
   if (get_keyword('mode',_params,'') = 'advanced') {
     tmp := concat(tmp, '&amp;mode=advanced');
     if (get_keyword('q_fid', _params, '0') <> '0')
-      tmp := concat(tmp, sprintf('&amp;fid=%U', get_keyword('q_fid', _params, '0')));
+      tmp := concat(tmp, sprintf('&amp;fid=%U', get_keyword('q_fid', _params)));
     if (get_keyword('q_attach', _params, '0') = '1')
-      tmp := concat(tmp, sprintf('&amp;attach=%U', get_keyword('q_attach', _params, '0')));
+      tmp := concat(tmp, sprintf('&amp;attach=%U', get_keyword('q_attach', _params)));
     if (get_keyword('q_after', _params, '') = '1')
       tmp := concat(tmp, sprintf('&amp;after=%U', OMAIL.WA.dt_string(get_keyword('q_after_d', _params, ''), get_keyword('q_after_m', _params, ''), get_keyword('q_after_y', _params, ''))));
     if (get_keyword('q_before', _params, '') = '1')
       tmp := concat(tmp, sprintf('&amp;before=%U', OMAIL.WA.dt_string(get_keyword('q_before_d', _params, ''), get_keyword('q_before_m', _params, ''), get_keyword('q_before_y', _params, ''))));
     if (get_keyword('q_from', _params, '') <> '')
-      tmp := concat(tmp, sprintf('&amp;from=%U', get_keyword('q_from', _params, '0')));
+      tmp := concat(tmp, sprintf('&amp;from=%U', get_keyword('q_from', _params)));
     if (get_keyword('q_to', _params, '') <> '')
-      tmp := concat(tmp, sprintf('&amp;to=%U', get_keyword('q_to', _params, '0')));
+      tmp := concat(tmp, sprintf('&amp;to=%U', get_keyword('q_to', _params)));
     if (get_keyword('q_subject', _params, '') <> '')
-      tmp := concat(tmp, sprintf('&amp;subject=%U', get_keyword('q_subject', _params, '0')));
+      tmp := concat(tmp, sprintf('&amp;subject=%U', get_keyword('q_subject', _params)));
     if (get_keyword('q_body', _params, '') <> '')
-      tmp := concat(tmp, sprintf('&amp;body=%U', get_keyword('q_body', _params, '0')));
+      tmp := concat(tmp, sprintf('&amp;body=%U', get_keyword('q_body', _params)));
     if (get_keyword('q_tags', _params, '') <> '')
-      tmp := concat(tmp, sprintf('&amp;tags=%U', get_keyword('q_tags', _params, '0')));
+      tmp := concat(tmp, sprintf('&amp;tags=%U', get_keyword('q_tags', _params)));
     if (get_keyword('q_max', _params, '') <> '')
-      tmp := concat(tmp, sprintf('&amp;max=%U', get_keyword('q_max', _params, '')));
+      tmp := concat(tmp, sprintf('&amp;max=%U', get_keyword('q_max', _params)));
+    if (get_keyword('q_cloud', _params, '') <> '')
+      tmp := concat(tmp, sprintf('&amp;cloud=%U', get_keyword('q_cloud', _params)));
   } else {
     if (get_keyword('q', _params, '0') <> '0')
       tmp := concat(tmp, sprintf('&amp;q=%U', get_keyword('q', _params, '')));
@@ -4070,6 +4073,7 @@ create procedure OMAIL.WA.omail_search(
   _rs := sprintf('%s%s' ,_rs, OMAIL.WA.utl_form_select_year ('q_before_y', get_keyword('q_before_y',params,''), now()));
   _rs := sprintf('%s</q_before>' ,_rs);
   _rs := sprintf('%s<q_max>%s</q_max>' ,_rs, get_keyword('q_max', params, '100'));
+  _rs := sprintf('%s<q_cloud>%s</q_cloud>', _rs, get_keyword('q_cloud', params, '0'));
   _rs := sprintf('%s</query>' ,_rs);
   _rs := sprintf('%s<messages>' ,_rs);
   _rs := sprintf('%s%s' ,_rs, _sql_result1);
@@ -4199,58 +4203,20 @@ create procedure OMAIL.WA.omail_select_exec(
  in _sql  varchar,
  in _params any)
 {
-  declare _err_state,_rs,_msg varchar;
   declare _ind,_len integer;
+  declare _state, _rs, _msg varchar;
   declare _descr,_rows any;
 
-  _err_state := '00000';
-  _rs := '';
-
-  exec(_sql, _err_state, _msg, _params, 1000, _descr, _rows);
-
-  if (_err_state <> '00000'){
-    return (sprintf('Error: %s',_err_state));
-  };
+  _state := '00000';
+  exec(_sql, _state, _msg, _params, 1000, _descr, _rows);
+  if (_state <> '00000')
+    return (sprintf('Error: %s', _state));
 
   if (isarray(_rows)){
-    _ind := 0;
-    _len := length(_rows);
-
-    while(_ind < _len) {
-      _rs := sprintf('%s%s',_rs,OMAIL.WA.omail_select_xml(aref(_descr,0),_rows,_ind));
-      _ind := _ind + 1;
-    };
-    return _rs;
-  }
-  return '1';
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure OMAIL.WA.omail_select_exec_simple(
-  in _sql  varchar,
-  in _params any)
-{
-  declare _err_state,_rs,_msg varchar;
-  declare _ind,_len integer;
-  declare _descr,_rows any;
-
-  _err_state := '00000';
   _rs := '';
-
-  exec(_sql, _err_state, _msg, _params, 1000, _descr, _rows);
-
-  if (_err_state <> '00000')
-    return (sprintf('Error: %s',_err_state));
-
-  if (isarray(_rows)) {
-    _ind := 0;
     _len := length(_rows);
-    while(_ind < _len){
-      _rs := sprintf('%s%s',_rs,OMAIL.WA.omail_select_xml(aref(_descr,0),_rows,_ind));
-      _ind := _ind + 1;
-    }
+    for (_ind := 0; _ind < _len; _ind := _ind + 1)
+      _rs := _rs || OMAIL.WA.omail_select_xml(_descr[0], _rows[_ind]);
     return _rs;
   }
   return '1';
@@ -4269,7 +4235,7 @@ create procedure OMAIL.WA.omail_select_next_prev(
 
   _order := vector('','MSTATUS','PRIORITY','ADDRES_INFO','SUBJECT','RCV_DATE','DSIZE');
   _direction := vector('',' ','desc');
-  _sql := sprintf('SELECT MSG_ID FROM OMAIL.WA.MESSAGES where DOMAIN_ID = ? and USER_ID = ? and FOLDER_ID = ? and PARENT_ID IS NULL ORDER BY %s %s,RCV_DATE desc',aref(_order,OMAIL.WA.omail_getp('order',_params)),aref(_direction,OMAIL.WA.omail_getp('direction',_params)));
+  _sql := sprintf('SELECT MSG_ID FROM OMAIL.WA.MESSAGES where DOMAIN_ID = ? and USER_ID = ? and FOLDER_ID = ? and PARENT_ID IS NULL ORDER BY %s %s,RCV_DATE desc', _order[OMAIL.WA.omail_getp('order',_params)], _direction[OMAIL.WA.omail_getp('direction',_params)]);
   _sql_params := vector(_domain_id, _user_id, OMAIL.WA.omail_getp('folder_id', _params));
   return OMAIL.WA.omail_select_next_prev_exec(_sql,_sql_params,_params);
 }
@@ -4282,31 +4248,30 @@ create procedure OMAIL.WA.omail_select_next_prev_exec(
  in _sql_params any,
  in _params any)
 {
-  declare _err_state,_rs,_msg varchar;
+  declare _state,_rs,_msg varchar;
   declare _ind,_len,_buf integer;
   declare _descr,_rows any;
 
-  _err_state := '00000';
+  _state := '00000';
+  exec(_sql, _state, _msg, _sql_params, 1000, _descr, _rows);
+
+  if (_state <> '00000')
+    return (sprintf('Error: %s', _state));
+
   _rs := '';
   _buf := '';
-
-  exec(_sql, _err_state, _msg, _sql_params, 1000, _descr, _rows);
-
-  if (_err_state <> '00000')
-    return (sprintf('Error: %s', _err_state));
-
   if (isarray(_rows)) {
     _ind := 0;
     _len := length(_rows);
 
     while(_ind < _len) {
-      if (aref(aref(_rows,_ind),0) = OMAIL.WA.omail_getp('msg_id',_params)) {
+      if (_rows[_ind][0] = OMAIL.WA.omail_getp('msg_id',_params)) {
         _rs := sprintf('%s <prev>%s</prev>',_rs,cast(_buf as varchar));
         if (_ind + 1 < _len)
           _rs := sprintf('%s <next>%d</next>',_rs,aref(aref(_rows,_ind + 1),0));
         return _rs;
       }
-      _buf := aref(aref(_rows,_ind),0);
+      _buf := _rows[_ind][0];
       _ind := _ind + 1;
     }
   }
@@ -4316,29 +4281,25 @@ create procedure OMAIL.WA.omail_select_next_prev_exec(
 
 -------------------------------------------------------------------------------
 --
-create procedure OMAIL.WA.omail_select_xml(in _descr any,in _rows any,in _ind integer){
+create procedure OMAIL.WA.omail_select_xml(in _descr any, in _values any)
+{
   declare _i integer;
   declare _rs,_cell varchar;
-  declare _val any;
+  declare _value any;
+
   _rs := '';
-
-  while(_i < length(_descr)){
-          _cell := lower (aref(aref(_descr,_i),0));
-          if (isnull(aref(aref(_rows,_ind),_i))){
-              if (aref(aref(_descr,_i),1) = 189)
-                  _val := 0;
+  for (_i := 0; _i < length(_descr); _i := _i + 1) {
+    _cell := lower (_descr[_i][0]);
+    _value := _values[_i];
+    if (isnull(_value)) {
+      if (_descr[_i][1] = 189)
+        _value := 0;
               else
-                  _val := '';
-          } else {
-            _val := aref(aref(_rows,_ind),_i);
-          };
-
-          _val := cast(_val as varchar);
-          _val := replace(_val,'&','&amp;');
-
-          _rs := sprintf('%s<%s>%s</%s>',_rs,_cell,cast(_val as varchar),_cell);
-          --_rs := sprintf('%s<%s type="%s">%s</%s>',_rs,_cell,cast((aref(aref(_descr,_i),1)) as varchar),cast(_val as varchar),_cell);
-          _i := _i + 1;
+        _value := '';
+    }
+    _value := cast(_value as varchar);
+    _value := replace(_value, '&', '&amp;');
+    _rs := sprintf('%s<%s>%s</%s>', _rs, _cell, _value, _cell);
         }
   return _rs;
 }
@@ -4707,52 +4668,68 @@ create procedure OMAIL.WA.omail_split_ename(
 -------------------------------------------------------------------------------
 --
 create procedure OMAIL.WA.omail_sql_exec(
+  in _domain_id integer,
+  in _user_id integer,
   in _sql_statm  any,
   in _sql_params any,
-  in _askiped    integer,
-  in _aresults   integer,
-  in _sortby     varchar)
+  in _skipped integer,
+  in _pageSize integer,
+  in _sortby varchar,
+  in _cloud integer := 0)
 {
-  declare _sql_loc,_err_state,_rs,_msg varchar;
-  declare _ind,_len integer;
-  declare _descr,_rows any;
+  declare _ind, _len, _max integer;
+  declare _state,_rs, _msg varchar;
+  declare _descr, _rows, _object, _tags, _dict any;
 
-  _err_state := '00000';
-  _sql_loc := concat(_sql_statm[0], ' FOR XML AUTO');
-  exec(_sql_loc, _err_state, _msg, _sql_params[0], 1000, _descr, _rows);
+  _state := '00000';
+  _sql_statm := concat(_sql_statm, ' FOR XML AUTO');
+  exec(_sql_statm, _state, _msg, _sql_params, 1000, _descr, _rows);
 
-  if (_err_state <> '00000') {
-    signal(_err_state, _msg);
+  if (_state <> '00000') {
+    signal(_state, _msg);
     return;
   }
 
   _rs := ' ';
   _len := length(_rows);
-  if (_askiped >= _len) {
-    _askiped := floor((_len - 1) / _aresults) * _aresults;
-    if (_askiped < 0)
-      _askiped := 0;
+  if (_skipped >= _len) {
+    _skipped := floor((_len - 1) / _pageSize) * _pageSize;
+    if (_skipped < 0)
+      _skipped := 0;
   }
+  _max := 0;
+  _dict := dict_new();
   for (_ind := 0; _ind < _len; _ind := _ind + 1) {
-    if (_ind + 1 = _askiped)
-      _rs := sprintf('%s<prev_msg>%d</prev_msg>\n',_rs,aref(aref(_rows,_ind),4));
-    if (_ind >= _askiped) {
-      -- skip some hits
-      if (_ind >= (_askiped + _aresults)) { -- exit procedure and return result
-        _rs := sprintf('%s<next_msg>%d</next_msg>\n<order>%s</order>\n<direction>%s</direction>\n<skiped>%d</skiped>\n<show_res>%d</show_res>\n<all_res>%d</all_res>\n',_rs,aref(aref(_rows,_ind),4),substring (_sortby,1,1),substring (_sortby,2,1),_askiped,_aresults,_len);
-        return _rs;
-      };
+    if (_ind + 1 = _skipped)
+      _rs := sprintf('%s<prev_msg>%d</prev_msg>\n', _rs, _rows[_ind][4]);
+    if (_ind = (_skipped + _pageSize))
+      _rs := sprintf('%s<next_msg>%d</next_msg>\n', _rs, _rows[_ind][4]);
+    if ((_ind >= _skipped) and  (_ind < (_skipped + _pageSize))) {
       _rs := sprintf('%s<message>\n',_rs);
-      _rs := sprintf('%s<position>%d</position>\n%s\n',_rs,_ind+1,OMAIL.WA.omail_select_xml(aref(_descr,0),_rows,_ind));
-
-      if (length(_sql_statm) > 1 ) {
-        OMAIL.WA.omail_vec_values(_sql_params,1,aref(aref(_rows,_ind),0));
-        _rs := sprintf('%s%s',_rs,sql_exec_simple(aref(_sql_statm,1),aref(_sql_params,1)));
-      }
+      _rs := sprintf('%s<position>%d</position>\n%s\n', _rs, _ind+1, OMAIL.WA.omail_select_xml(_descr[0], _rows[_ind]));
       _rs := sprintf('%s</message>',_rs);
     }
+    if (_cloud) {
+      _tags := OMAIL.WA.tags_select(_domain_id, _user_id, _rows[_ind][4]);
+      if (_tags <> '') {
+        _tags := split_and_decode (_tags, 0, '\0\0,');
+        foreach (any _tag in _tags) do {
+          _object := dict_get(_dict, lcase(_tag), vector(lcase(_tag), 0));
+          _object[1] := _object[1] + 1;
+          if (_object[1] > _max)
+            _max := _object[1];
+          dict_put(_dict, lcase(_tag), _object);
+        }
+      }
+    }
   }
-  return sprintf('%s<order>%s</order><direction>%s</direction><skiped>%d</skiped><show_res>%d</show_res><all_res>%d</all_res>',_rs,substring (_sortby,1,1),substring (_sortby,2,1),_askiped,_aresults,_len);
+  if (_cloud) {
+    _rs := _rs || sprintf('<ctags count="%d">', _max);
+    for (select p.* from OMAIL.WA.tagsDictionary2rs(p0)(_tag varchar, _cnt integer) p where p0 = _dict order by _tag) do
+      _rs := _rs || sprintf('<ctag count="%d">%s</ctag>', _cnt, _tag);
+    _rs := _rs || '</ctags>';
+  }
+  return sprintf('%s<order>%s</order><direction>%s</direction><skiped>%d</skiped><show_res>%d</show_res><all_res>%d</all_res>', _rs, substring (_sortby,1,1), substring (_sortby,2,1), _skipped, _pageSize, _len);
 }
 ;
 
@@ -4779,10 +4756,10 @@ create procedure OMAIL.WA.omail_str2params(
   _ind := 0;
   _int := 0;
   while((_ind < length(_names_arr))) {
-    aset(_params, _int, cast(aref(_names_arr,_ind) as varchar));
+    aset(_params, _int, cast(_names_arr[_ind] as varchar));
     _int := _int + 1;
     if (_ind < length(_values_arr))
-      aset(_params,_int,cast(aref(_values_arr,_ind) as integer));
+      aset(_params,_int,cast(_values_arr[_ind] as integer));
     _int := _int + 1;
     _ind := _ind + 1;
   }
@@ -6252,6 +6229,23 @@ create procedure OMAIL.WA.vector2rs(
   result_names(c0);
   for (N := 0; N < length(aVector); N := N + 1)
     result(aVector[N]);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.tagsDictionary2rs(
+  inout aDictionary any)
+{
+  declare N integer;
+  declare c0 varchar;
+  declare c1 integer;
+  declare V any;
+
+  V := dict_to_vector(aDictionary, 1);
+  result_names(c0, c1);
+  for (N := 1; N < length(V); N := N + 2)
+    result(V[N][0], V[N][1]);
 }
 ;
 

@@ -411,6 +411,7 @@
   <!-- ======================================================================= -->
   <xsl:template name="make_checkbox">
     <xsl:param name="name"/>
+    <xsl:param name="id"/>
     <xsl:param name="value"/>
     <xsl:param name="checked"/>
     <xsl:param name="class">-1</xsl:param>
@@ -419,6 +420,9 @@
 
     <input type="checkbox">
       <xsl:attribute name="name"><xsl:value-of select="$name"/></xsl:attribute>
+      <xsl:if test="$id != ''">
+        <xsl:attribute name="id"><xsl:value-of select="$id"/></xsl:attribute>
+      </xsl:if>
       <xsl:attribute name="value"><xsl:value-of select="$value"/></xsl:attribute>
       <xsl:if test="$checked=$value">
         <xsl:attribute name="checked">checked</xsl:attribute>

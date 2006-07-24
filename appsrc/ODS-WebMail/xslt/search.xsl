@@ -91,11 +91,46 @@
           </xsl:call-template>
         </div>
       </xsl:if>
+      <xsl:choose>
+        <xsl:when test="query/q_cloud != 1">
+          <xsl:call-template name="message_table"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <table cellspacing="0" cellpadding="0" width="100%" >
+            <tr>
+              <td valign="top">
       <xsl:call-template name="message_table"/>
+              </td>
+              <td width="20%" valign="top" style="border: solid #935000;  border-width: 1px 1px 1px 1px;">
+                <div style="margin-left:3px; margin-top:3px;">
+                  <xsl:choose>
+                    <xsl:when test="//ctags/@count = 0">
+                      no tags
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <xsl:apply-templates select="//ctags/ctag"/>
+                    </xsl:otherwise>
+                  </xsl:choose>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </xsl:otherwise>
+      </xsl:choose>
       <xsl:apply-templates select="folders" mode="combo"/>
       <xsl:call-template name="advance_search"/>
     </form>
     <xsl:call-template name="js_check_all"/>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="ctag">
+    <a href="#">
+      <xsl:attribute name="onclick">javascript: formSubmit('c_tag', '<xsl:value-of select="."/>');</xsl:attribute>
+      <span class="nolink_b">
+        <xsl:attribute name="style">font-size: <xsl:value-of select="((150 * number(./@count)) div number(//ctags/@count)) + 100"/>%</xsl:attribute>
+        <xsl:value-of select="."/>
+      </span>
+    </a>
   </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template match="folders" mode="search">
@@ -259,7 +294,7 @@
                   </td>
                 </tr>
                 <tr>
-                  <th width="50%">
+                  <th>
                     <label for="q_order">Order by</label>
                   </th>
                   <td>
@@ -271,7 +306,7 @@
                   </td>
                 </tr>
                 <tr>
-                  <th width="50%">
+                  <th>
                     <label for="q_direction">Direction</label>
                   </th>
                   <td>
@@ -280,6 +315,18 @@
                       <xsl:with-param name="selected"><xsl:value-of select="//messages/direction"/></xsl:with-param>
                       <xsl:with-param name="list">1:Asc;2:Desc;</xsl:with-param>
                     </xsl:call-template>
+                  </td>
+                </tr>
+                <tr>
+                  <th />
+                  <td>
+                    <xsl:call-template name="make_checkbox">
+                      <xsl:with-param name="name">q_cloud</xsl:with-param>
+                      <xsl:with-param name="id">q_cloud</xsl:with-param>
+                      <xsl:with-param name="value">1</xsl:with-param>
+                      <xsl:with-param name="checked"><xsl:if test="query/q_cloud = 1">1</xsl:if></xsl:with-param>
+                    </xsl:call-template>
+                    <label for="q_cloud">Show tag cloud</label>
                   </td>
                 </tr>
               </table>
