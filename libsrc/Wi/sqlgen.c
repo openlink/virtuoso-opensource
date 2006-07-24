@@ -1880,6 +1880,7 @@ sqlg_setp_append (data_source_t ** head, setp_node_t * setp)
   table_source_t * last = (table_source_t *) sql_node_last (*head);
   if (IS_TS_NODE (last)
       && !last->src_gen.src_after_code
+      && !last->ts_inx_op
       && !last->src_gen.src_after_test
       && !setp->src_gen.src_pre_code
       && !last->ts_is_outer
