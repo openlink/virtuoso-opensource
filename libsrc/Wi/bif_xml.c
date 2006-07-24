@@ -2315,7 +2315,7 @@ void
 bx_push_ct (close_tag_t ** ct_ret, int e_level,  caddr_t e_name, caddr_t e_trailing)
 {
   close_tag_t * ct = (close_tag_t *) dk_alloc (sizeof (close_tag_t));
-  char * local = strrchr (e_name, ':');
+  /*char * local = strrchr (e_name, ':');*/
 
   ct->ct_level = e_level;
   ct->ct_trailing = e_trailing;

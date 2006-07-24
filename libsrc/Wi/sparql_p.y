@@ -132,12 +132,15 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token FILTER_L		/*:: PUNCT_SPAR_LAST("FILTER") ::*/
 %token FROM_L		/*:: PUNCT_SPAR_LAST("FROM") ::*/
 %token GRAPH_L		/*:: PUNCT_SPAR_LAST("GRAPH") ::*/
+%token IRI_L		/*:: PUNCT_SPAR_LAST("IRI") ::*/
+%token IN_L		/*:: PUNCT_SPAR_LAST("IN") ::*/
 %token isBLANK_L	/*:: PUNCT_SPAR_LAST("isBLANK") ::*/
 %token isIRI_L		/*:: PUNCT_SPAR_LAST("isIRI") ::*/
 %token isLITERAL_L	/*:: PUNCT_SPAR_LAST("isLITERAL") ::*/
 %token isURI_L		/*:: PUNCT_SPAR_LAST("isURI") ::*/
 %token LANG_L		/*:: PUNCT_SPAR_LAST("LANG") ::*/
 %token LANGMATCHES_L	/*:: PUNCT_SPAR_LAST("LANGMATCHES") ::*/
+%token LIKE_L		/*:: PUNCT_SPAR_LAST("LIKE") ::*/
 %token LIMIT_L		/*:: PUNCT_SPAR_LAST("LIMIT") ::*/
 %token NAMED_L		/*:: PUNCT_SPAR_LAST("NAMED") ::*/
 %token NIL_L		/*:: PUNCT_SPAR_LAST("NIL") ::*/
@@ -254,6 +257,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %left _AMP_AMP
 %nonassoc _BANG
 %nonassoc _EQ _NOT_EQ
+%nonassoc IN_L LIKE_L
 %nonassoc _LT _LE _GT _GE 
 %left _PLUS _MINUS
 %left _SLASH _STAR
@@ -685,6 +689,12 @@ spar_expn		/* [43]  	Expression	  ::=  	ConditionalOrExpression	*/
 	| spar_expn _EQ spar_expn {	/* [47]  	RelationalExpression	  ::=  	NumericExpression ( ('='|'!='|'<'|'>'|'<='|'>=') NumericExpression )?	*/
 		  SPAR_BIN_OP ($$, BOP_EQ, $1, $3); }
 	| spar_expn _NOT_EQ spar_expn	{ SPAR_BIN_OP ($$, BOP_NEQ, $1, $3); }
+        | spar_expn LIKE_L spar_expn	{	/* Virtuoso-specific extension */
+		$$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, LIKE_L, t_list (2, $1, $3)); }
+        | spar_expn IN_L _LPAR spar_expns _RPAR	{	/* Virtuoso-specific extension */
+                dk_set_t args = $4;
+                t_set_push (&args, $1);
+		$$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, IN_L, t_revlist_to_array (args)); }
 	| spar_expn _LT spar_expn	{ SPAR_BIN_OP ($$, BOP_LT, $1, $3); }
 	| spar_expn _GT spar_expn	{ SPAR_BIN_OP ($$, BOP_LT, $3, $1); }
 	| spar_expn _LE spar_expn	{ SPAR_BIN_OP ($$, BOP_LTE, $1, $3); }
@@ -719,6 +729,8 @@ spar_expn		/* [43]  	Expression	  ::=  	ConditionalOrExpression	*/
 spar_built_in_call	/* [52]  	BuiltInCall	  ::= */
 	: STR_L _LPAR spar_expn _RPAR	/*... : 'STR' '(' Expression ')' */
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, STR_L, t_list (1, $3)); }
+	| IRI_L _LPAR spar_expn _RPAR	/*... : 'IRI' '(' Expression ')' */
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, IRI_L, t_list (1, $3)); }
 	| LANG_L _LPAR spar_expn _RPAR	/*... | 'LANG' '(' Expression ')' */
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, LANG_L, t_list (1, $3)); }
 	| LANGMATCHES_L _LPAR spar_expn _COMMA spar_expn _RPAR	/*... | 'LANGMATCHES' '(' Expression ',' Expression ')' */

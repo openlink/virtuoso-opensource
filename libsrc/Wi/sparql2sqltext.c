@@ -403,7 +403,6 @@ ssg_prin_id (spar_sqlgen_t *ssg, const char *name)
 ssg_valmode_t
 ssg_equiv_native_valmode (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq)
 {
-  caddr_t name_as_expn = NULL;
   int var_count, var_ctr;
   ssg_valmode_t shortest_common;
   int gp_member_idx;
@@ -477,15 +476,23 @@ ssg_expn_native_valmode (spar_sqlgen_t *ssg, SPART *tree)
   switch (SPART_TYPE (tree))
     {
     case BOP_EQ: case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
-    case BOP_LIKE: case BOP_SAME: case BOP_NSAME:
+    /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
+    case BOP_SAME: case BOP_NSAME:
     case BOP_AND: case BOP_OR: case BOP_NOT:
       return SSG_VALMODE_BOOL;
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
-    case SPAR_BUILT_IN_CALL:
     case SPAR_LIT:
     case SPAR_QNAME:
     case SPAR_QNAME_NS:
       return SSG_VALMODE_SQLVAL;
+    case SPAR_BUILT_IN_CALL:
+      switch (tree->_.builtin.btype)
+        {
+        case IN_L: case LIKE_L: case LANGMATCHES_L: case REGEX_L: case BOUND_L:
+	case isIRI_L: case isURI_L: case isBLANK_L: case isLITERAL_L: return SSG_VALMODE_BOOL;
+        case IRI_L: return SSG_VALMODE_LONG;
+        default: return SSG_VALMODE_SQLVAL;
+        }
     case SPAR_FUNCALL:
       return ssg_rettype_of_function (ssg, tree->_.funcall.qname);
     case SPAR_CONV:
@@ -608,7 +615,6 @@ void
 ssg_print_literal (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 {
   caddr_t value;
-  int fill = 0;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (lit))
     {
       if (SPAR_LIT == lit->type)
@@ -638,7 +644,6 @@ void
 ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
 {
   caddr_t value;
-  int fill = 0;
   dtp_t value_dtp;
   caddr_t datatype = NULL;
   caddr_t language = NULL;
@@ -990,7 +995,58 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
       else
         ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_DATATYPE);
       return;
+    case LIKE_L:
+      if (SSG_VALMODE_BOOL != needed)
+        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL);
+      else
+        {
+          ssg_puts (" (cast ("); ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_SQLVAL);
+          ssg_puts (" as varchar) like cast ("); ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL);
+          ssg_puts (" as varchar))"); 
+        }
+      return;
+    case IN_L:
+      if (SSG_VALMODE_BOOL != needed)
+        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL);
+      else
+        {
+          int argctr;
+          int format_is_common = 1;
+          ssg_valmode_t op_fmt;
+          DO_BOX_FAST (SPART *, argN, argctr, tree->_.builtin.args)
+            {
+              ssg_valmode_t argN_native;
+              if (0 == argctr)
+                continue;
+              argN_native = ssg_expn_native_valmode (ssg, argN);
+              if (argN_native != arg1_native)
+                {
+                  format_is_common = 0;
+                  break;
+                }
+            }
+          END_DO_BOX_FAST;
+          op_fmt = (format_is_common ? arg1_native : SSG_VALMODE_SQLVAL);
+          if ((SSG_VALMODE_LONG == op_fmt) || (IS_BOX_POINTER (op_fmt) && op_fmt->rdfdf_ok_for_any_sqlvalue))
+            op_fmt = SSG_VALMODE_SQLVAL;
+          DO_BOX_FAST (SPART *, argN, argctr, tree->_.builtin.args)
+            {
+              switch (argctr)
+                {
+                case 0: ssg_puts (" ("); break;
+                case 1: ssg_puts (" in ("); break;
+                default: ssg_puts (" ,");
+                }
+              ssg_print_scalar_expn (ssg, argN, op_fmt);
+            }
+          END_DO_BOX_FAST;
+          ssg_puts ("))");
+        }
+      return;
     case isBLANK_L:
+      if (SSG_VALMODE_BOOL != needed)
+        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL);
+      else
       {
         if (IS_BOX_POINTER (arg1_native))
           ssg_print_tmpl (ssg, arg1_native, arg1_native->rdfdf_isblank_of_short_tmpl, NULL, arg1);
@@ -1004,8 +1060,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
           ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_BLANK_REF (^{tree}^)", NULL, arg1);
         else
           spar_sqlprint_error ("ssg_print_scalar_expn(): bad native type for isBLANK()");
-        return;
       }
+      return;
     case LANG_L:
       if (SSG_VALMODE_SQLVAL != needed)
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL);
@@ -1014,6 +1070,9 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
       return;
     case isURI_L:
     case isIRI_L:
+      if (SSG_VALMODE_BOOL != needed)
+        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL);
+      else
       {
         if (IS_BOX_POINTER (arg1_native))
           ssg_print_tmpl (ssg, arg1_native, arg1_native->rdfdf_isuri_of_short_tmpl, NULL, arg1);
@@ -1027,9 +1086,12 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
           ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_URI_REF (^{tree}^)", NULL, arg1);
         else
           spar_sqlprint_error ("ssg_print_scalar_expn(): bad native type for isURI()");
-        return;
       }
+      return;
     case isLITERAL_L:
+      if (SSG_VALMODE_BOOL != needed)
+        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL);
+      else
       {
         if (IS_BOX_POINTER (arg1_native))
           ssg_print_tmpl (ssg, arg1_native, arg1_native->rdfdf_islit_of_short_tmpl, NULL, arg1);
@@ -1042,11 +1104,12 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
           ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_LITERAL (^{tree}^)", NULL, arg1);
         else
           spar_sqlprint_error ("ssg_print_scalar_expn(): bad native type for isLITERAL()");
-        return;
       }
+      return;
+    case IRI_L:
+      spar_sqlprint_error ("ssg_print_scalar_expn(): sorry, IRI built-in is not implemented");
     case STR_L:
       {
-        arg1_native = ssg_expn_native_valmode (ssg, arg1);
         if (SSG_VALMODE_SQLVAL != needed)
           {
             ssg_print_valmoded_scalar_expn (ssg, tree, needed,
@@ -1070,8 +1133,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         return;
       }
     case REGEX_L:
-      if (SSG_VALMODE_SQLVAL != needed)
-        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL);
+      if (SSG_VALMODE_BOOL != needed)
+        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL);
       else
         { /*!!!TBD extra 'between'*/
           ssg_puts (" DB.DBA.RDF_REGEX (");
@@ -1087,8 +1150,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         }
       return;
     case LANGMATCHES_L:
-      if (SSG_VALMODE_SQLVAL != needed)
-        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL);
+      if (SSG_VALMODE_BOOL != needed)
+        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL);
       else
         {
           ssg_puts (" DB.DBA.RDF_LANGMATCHES (");
@@ -1188,9 +1251,9 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
     {
       name = name + 4;
       if (!strcasecmp(name, "left"))
-        ssg_puts ("LEFT");
+        ssg_puts ("\"LEFT\"");
       else if (!strcasecmp(name, "right"))
-        ssg_puts ("RIGHT");
+        ssg_puts ("\"RIGHT\"");
       else
         ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
     }
@@ -1417,7 +1480,8 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed)
     case BOP_LTE:	ssg_print_bop_bool_expn (ssg, tree, " <= "	, " lte ("	, 0, SSG_VALMODE_BOOL); return;
     case BOP_GT:	ssg_print_bop_bool_expn (ssg, tree, " > "	, " gt ("	, 0, SSG_VALMODE_BOOL); return;
     case BOP_GTE:	ssg_print_bop_bool_expn (ssg, tree, " >= "	, " gte ("	, 0, SSG_VALMODE_BOOL); return;
-    case BOP_LIKE:	ssg_print_bop_bool_expn (ssg, tree, " like "	, " strlike ("	, 0, SSG_VALMODE_BOOL); return;
+   /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP!
+			ssg_print_bop_bool_expn (ssg, tree, " like "	, " strlike ("	, 0, SSG_VALMODE_BOOL); return; */
 /*
     case BOP_SAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")"); return;
     case BOP_NSAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")"); return;
@@ -1626,7 +1690,8 @@ ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree)
     case BOP_LTE:	ssg_print_bop_cmp_expn (ssg, tree, " <= "	, " lte ("	, 1, SSG_VALMODE_BOOL); return;
     case BOP_GT:	ssg_print_bop_cmp_expn (ssg, tree, " > "	, " gt ("	, 1, SSG_VALMODE_BOOL); return;
     case BOP_GTE:	ssg_print_bop_cmp_expn (ssg, tree, " >= "	, " gte ("	, 1, SSG_VALMODE_BOOL); return;
-    case BOP_LIKE:	ssg_print_bop_bool_expn (ssg, tree, " LIKE "	, " strlike ("	, 1, SSG_VALMODE_BOOL); return;
+/*case BOP_LIKE: Like is built-in in SPARQL, not a BOP!
+			ssg_print_bop_bool_expn (ssg, tree, " LIKE "	, " strlike ("	, 1, SSG_VALMODE_BOOL); return; */
 /*
     case BOP_SAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")"); return;
     case BOP_NSAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")"); return;
@@ -1655,14 +1720,23 @@ ssg_print_where_or_and (spar_sqlgen_t *ssg, const char *location)
     }
   else if (NULL != ssg->ssg_where_l_text)
     {
+      if ('\b' == ssg->ssg_where_l_text[0])
+        {
+          ssg_newline (SSG_INDENT_FACTOR);
+          ssg_puts (ssg->ssg_where_l_text + 1);
+        }
+      else
+        {
       ssg_newline (0);
       ssg_puts (ssg->ssg_where_l_text);
+    }
     }
   ssg->ssg_where_l_printed = 1;
   if (NULL != location)
     {
-      ssg_puts (" -- ");
+      ssg_puts (" /* ");
       ssg_puts (location);
+      ssg_puts (" */ ");
       ssg_newline (1);
     }
 }
@@ -2193,8 +2267,10 @@ void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, s
     case BOP_LTE:	ssg_print_retval_bop_calc_expn (ssg, gp, tree, " lte ("		, ", ", ")"	, 1, needed); return;
     case BOP_GT:	ssg_print_retval_bop_calc_expn (ssg, gp, tree, " gt ("		, ", ", ")"	, 1, needed); return;
     case BOP_GTE:	ssg_print_retval_bop_calc_expn (ssg, gp, tree, " gte ("		, ", ", ")"	, 1, needed); return;
+/*case BOP_LIKE: Like is built-in in SPARQL, not a BOP!
+			ssg_print_retval_bop_calc_expn (ssg, gp, tree, " like "	, " strlike ("	, 0, SSG_VALMODE_BOOL); return;
+*/
 /*
-    case BOP_LIKE:	ssg_print_retval_bop_calc_expn (ssg, gp, tree, " like "	, " strlike ("	, 0, SSG_VALMODE_BOOL); return;
     case BOP_SAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")"); return;
     case BOP_NSAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")"); return;
 */

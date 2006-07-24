@@ -113,7 +113,7 @@ scan_for_children:
       }
     case BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
-    case BOP_LIKE:
+    /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
     case BOP_SAME: case BOP_NSAME:
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
     case BOP_AND: case BOP_OR: case BOP_NOT:
@@ -1404,7 +1404,10 @@ sparp_equiv_get_subvalue_ro (sparp_equiv_t **equivs, ptrlong equiv_count, SPART 
 int
 sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner, int add_if_missing)
 {
-  int o_ctr, o_count, i_ctr, i_count;
+#ifdef DEBUG
+  int o_ctr, o_count;
+#endif
+  int i_ctr, i_count;
   int o_listed_in_i = 0;
 #ifdef DEBUG
   int i_listed_in_o = 0;
@@ -1551,7 +1554,10 @@ found_in_gp:
 int
 sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
 {
-  int ctr1, ctr2, ret;
+#ifdef DEBUG
+  int ctr1, ctr2;
+#endif
+  int ret;
   SPART *sec_gp;
   if (pri == sec)
     return SPARP_EQUIV_MERGE_DUPE;
@@ -1735,8 +1741,8 @@ sparp_set_special_order_selid_cbk (sparp_t *sparp, SPART *curr, void **trav_env_
   if (SPAR_IS_BLANK_OR_VAR (curr))
     {
       sparp_equiv_t *eq;
-      int idx = curr->_.var.equiv_idx;
 /* !!! TBD: replace with silent detach if needed.
+      int idx = curr->_.var.equiv_idx;
       if (SPART_BAD_EQUIV_IDX != idx)
         spar_internal_error (sparp, "sparp_set_special_order_selid(): attempt to attach a filter with used variable"); */
       curr->_.var.selid = t_box_copy (new_gp->_.gp.selid);
@@ -1753,7 +1759,6 @@ sparp_set_special_order_selid (sparp_t *sparp, SPART *new_gp)
 {
   int ctr;
   void *trav_envs [SPARP_MAX_SYNTDEPTH];
-  caddr_t top_gp_selid = sparp->sparp_expr->_.req_top.pattern->_.gp.selid;
   DO_BOX_FAST (SPART *, oby, ctr, sparp->sparp_expr->_.req_top.order)
     {
       sparp_gp_trav_int (sparp, oby->_.oby.expn, trav_envs + 1, new_gp,

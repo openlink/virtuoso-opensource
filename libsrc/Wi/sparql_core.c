@@ -996,7 +996,7 @@ const char *spart_dump_opname (ptrlong opname, int is_op)
     case BOP_LTE: return "boolean operation '<='";
     case BOP_GT: return "boolean operation '>'";
     case BOP_GTE: return "boolean operation '>='";
-    case BOP_LIKE: return "boolean operation 'like'";
+    /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! return "boolean operation 'like'"; */
     case BOP_SAME: return "boolean operation '=='";
     case BOP_NSAME: return "boolean operation '!=='";
     case BOP_PLUS: return "arithmetic operation '+'";
@@ -1020,12 +1020,15 @@ const char *spart_dump_opname (ptrlong opname, int is_op)
     case FILTER_L: return "FILTER";
     case FROM_L: return "FROM";
     case GRAPH_L: return "GRAPH gp";
+    case IRI_L: return "IRI builtin";
+    case IN_L: return "IN";
     case isBLANK_L: return "isBLANK builtin";
     case isIRI_L: return "isIRI builtin";
     case isLITERAL_L: return "isLITERAL builtin";
     case isURI_L: return "isURI builtin";
     case LANG_L: return "LANG builtin";
     case LANGMATCHES_L: return "LANGMATCHES builtin";
+    case LIKE_L: return "LIKE";
     case LIMIT_L: return "LIMIT";
     case NAMED_L: return "NAMED";
     case NIL_L: return "NIL";
@@ -1336,7 +1339,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	    }
 	  case BOP_EQ: case BOP_NEQ:
 	  case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
-	  case BOP_LIKE:
+	  /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
 	  case BOP_SAME: case BOP_NSAME:
 	  case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
 	  case BOP_AND: case BOP_OR: case BOP_NOT:
@@ -1611,7 +1614,6 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sparp_t * sparp;
   caddr_t str = bif_string_arg (qst, args, 0, "sparql_explain");
   dk_session_t *res;
-  caddr_t err = NULL;
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
@@ -1636,7 +1638,6 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   spar_query_env_t sparqre;
   sparp_t * sparp;
   caddr_t str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");
-  caddr_t err = NULL;
   spar_sqlgen_t ssg;
   sql_comp_t sc;
   MP_START ();

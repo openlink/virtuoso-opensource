@@ -403,12 +403,15 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{F}{I}{L}{T}{E}{R}		{ return FILTER_L; }
 <SPARQL>{F}{R}{O}{M}			{ return FROM_L; }
 <SPARQL>{G}{R}{A}{P}{H}			{ return GRAPH_L; }
+<SPARQL>{I}{R}{I}			{ return IRI_L; }
+<SPARQL>{I}{N}				{ return IN_L; }
 <SPARQL>{I}{S}{B}{L}{A}{N}{K}		{ return isBLANK_L	; }
 <SPARQL>{I}{S}{I}{R}{I}			{ return isIRI_L; }
 <SPARQL>{I}{S}{L}{I}{T}{E}{R}{A}{L}	{ return isLITERAL_L	; }
 <SPARQL>{I}{S}{U}{R}{I}			{ return isURI_L; }
 <SPARQL>{L}{A}{N}{G}			{ return LANG_L; }
 <SPARQL>{L}{A}{N}{G}{M}{A}{T}{C}{H}{E}{S}	{ return LANGMATCHES_L	; }
+<SPARQL>{L}{I}{K}{E}			{ return LIKE_L; }
 <SPARQL>{L}{I}{M}{I}{T}			{ return LIMIT_L; }
 <SPARQL>{N}{A}{M}{E}{D}			{ return NAMED_L; }
 <SPARQL>{N}{I}{L}			{ return NIL_L; }
