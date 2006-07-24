@@ -27,6 +27,7 @@
 <!-- ==================================================================== -->
 
 	<xsl:param name="imgroot">../images/</xsl:param>
+	<xsl:param name="mode">static</xsl:param>
 	<xsl:param name="chap">overview</xsl:param>
 
 <!-- ==================================================================== -->
@@ -221,7 +222,7 @@
  <xsl:param name="fn"></xsl:param>
  <xsl:param name="cat"></xsl:param>
 <div id="currenttoc">
- <xsl:if test="/book/@id='virtdocs'">
+ <xsl:if test="/book/@id='virtdocs' or $mode='server'">
  <form method="post" action="/doc/adv_search.vspx">
   <div class="search"><xsl:text>Keyword Search: </xsl:text><br />
   <input type="text" name="q" /><xsl:text> </xsl:text><input type="submit" name="go" value="Go" />
@@ -229,7 +230,10 @@
   </form>
   </xsl:if>
 
- <div><a href="index.html">Home</a></div>
+ <div><a href="http://www.openlinksw.com/">www.openlinksw.com</a></div>
+ <div><a href="http://docs.openlinksw.com/">docs.openlinksw.com</a></div>
+ <br />
+ <div><a href="index.html">Book Home</a></div>
  <br />
  <div><a href="contents.html">Contents</a></div>
  <div><a href="preface.html">Preface</a></div>
@@ -363,11 +367,15 @@
 
 <xsl:template name="rssfeednavlinks">
   <xsl:if test="$rss='yes'">
-    <a class="feedlink" href="{/book/@id}.opml" title="The OPML Feed of this book allows you to monitor
+    <a class="feedlnk" href="{/book/@id}.opml" title="The OPML Feed of this book allows you to monitor
 changes in the documentation.  This could also help keep you informed of new
-features and fixes to the product.">OPML</a><xsl:text> </xsl:text>
+features and fixes to the product."><img src="/doc/opml.gif" alt="OPML" /></a><xsl:text> </xsl:text>
     <xsl:if test="parent::chapter|self::chapter">
-      <a class="feedlink" href="{parent::chapter/@id|self::chapter/@id}.rss" title="Stay up-to-date with this chapter.  Chapter RSS Feed for {parent::chapter/title|self::chapter/title}">RSS</a>
+      <a class="feedlnk" href="{parent::chapter/@id|self::chapter/@id}.rss" title="Stay up-to-date with this chapter.  Chapter RSS Feed for {parent::chapter/title|self::chapter/title}"><img src="/doc/feed-icon-16x16.gif" alt="RSS" /></a>
+      <a class="feedlnk" href="{parent::chapter/@id|self::chapter/@id}.rdf" title="Stay up-to-date with this chapter using RDF">
+        <img src="/doc/rdf_flyer-16.gif" alt="RDF" /></a>
+      <a class="feedlnk" href="{parent::chapter/@id|self::chapter/@id}.xml" title="Stay up-to-date with this chapter using ATOM">
+        <img src="/doc/feed-icon-16x16-blue.gif" alt="Atom" /></a>
     </xsl:if>
   <xsl:text> </xsl:text>
   </xsl:if>

@@ -19,6 +19,7 @@
 	<xsl:param name="refentry">NULL</xsl:param>
 	<xsl:param name="pdflocation">../pdf/<xsl:value-of select="/book/@id" />.pdf</xsl:param>
 	<xsl:param name="rss">no</xsl:param>
+	<xsl:param name="mode">static</xsl:param>
 
 <!-- ==================================================================== -->
 
@@ -28,7 +29,8 @@
 
 <xsl:template match="/book">
 <html>
-<head>
+<head profile=" http://internetalchemy.org/2003/02/profile">
+  <!--  script type="text/javascript" src="/doc/util.js"></script -->
   <xsl:variable name="chapnode" select="/book/chapter[./sect1/@id=$chap]/@id|/book/chapter[@id=$chap]/@id" />
   <xsl:variable name="prevnode" select="/book/chapter/sect1[@id=$chap]/preceding-sibling::sect1[1]|/book/chapter[@id=$chap]/preceding-sibling::chapter[1]" />
   <xsl:variable name="prevnodetitle" select="$prevnode/title"/>
@@ -40,6 +42,49 @@
   <xsl:variable name="nextchaptitle" select="$nextchap/title"/>
 
   <xsl:call-template name="rssfeedlink" />
+  <xsl:if test="$mode='server'">
+    <meta name="geo.position" content="42.485836;-71.214287" />
+    <meta name="geo.country" content="us" />
+    <meta name="ICBM" content="42.485836,-71.214287" />
+  </xsl:if>    
+    <link rel="foaf" type="application/rdf+xml" title="FOAF"
+      href="http://www.openlinksw.com/dataspace/uda/about.rdf" />
+    
+    <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />
+        
+    <xsl:for-each select="/book/chapter[@id = $chap]/chapterinfo/keywordset/keyword">
+      <meta name="dc.subject" content="{.}" />
+    </xsl:for-each>
+    <xsl:for-each select="/book/chapter[sect1/@id = $chap]/chapterinfo/keywordset/keyword">
+      <meta name="dc.subject" content="{.}" />
+    </xsl:for-each>
+    <xsl:for-each select="/book/chapter/sect1[@id = $chap]/sect1info/keywordset/keyword">
+      <meta name="dc.subject" content="{.}" />
+    </xsl:for-each>
+        
+    <meta name="dc.title">
+      <xsl:attribute name="content">
+        <xsl:call-template name="titler2" />
+      </xsl:attribute>
+    </meta>
+    <meta name="dc.subject">
+      <xsl:attribute name="content">
+        <xsl:call-template name="titler2" />
+      </xsl:attribute>
+    </meta>
+    <meta name="dc.creator">
+      <xsl:attribute name="content">
+        <xsl:apply-templates select="/book/bookinfo/authorgroup/author" />
+      </xsl:attribute>
+    </meta>
+    <meta name="dc.copyright">
+      <xsl:attribute name="content">
+        <xsl:value-of select="/book/bookinfo/copyright/holder" />
+        <xsl:text>, </xsl:text>
+        <xsl:value-of select="/book/bookinfo/copyright/year" />
+      </xsl:attribute>
+    </meta>
+
 
   <link rel="top" href="index.html" title="{/book/title}" />
   <link rel="search" href="/doc/adv_search.vspx" title="Search {/book/title}" />
@@ -84,11 +129,12 @@
 
   <link rel="shortcut icon" href="{$imgroot}misc/favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" type="text/css" href="doc.css"/>
+  <link rel="stylesheet" type="text/css" href="/doc/translation.css" />
   <title><xsl:call-template name="titler2" /></title>
   <meta http-equiv="Content-Type" content="text/xhtml; charset=UTF-8" />
   <meta name="author"><xsl:attribute name="content"><xsl:apply-templates select="/book/bookinfo/authorgroup/author" /></xsl:attribute></meta>
-  <meta name="COPYRIGHT"><xsl:attribute name="content"><xsl:value-of select="/book/bookinfo/copyright/holder" /><xsl:text>, </xsl:text><xsl:value-of select="/book/bookinfo/copyright/year" /></xsl:attribute></meta>
-  <meta name="KEYWORDS">
+  <meta name="copyright"><xsl:attribute name="content"><xsl:value-of select="/book/bookinfo/copyright/holder" /><xsl:text>, </xsl:text><xsl:value-of select="/book/bookinfo/copyright/year" /></xsl:attribute></meta>
+  <meta name="keywords">
     <xsl:attribute name="content">
       <xsl:for-each select="/book/chapter[@id = $chap]/chapterinfo/keywordset/keyword">
         <xsl:value-of select="." /><xsl:text>; </xsl:text>
@@ -127,6 +173,7 @@
  <xsl:call-template name="navbartop" />
  <xsl:call-template name="current-toc" />
  <xsl:call-template name="text" />
+ <xsl:call-template name="translation" />
  <xsl:call-template name="footer" />
 </xsl:template>
 
@@ -143,12 +190,14 @@
     <xsl:text>Also available as PDF:</xsl:text>
     <a href="http://www.adobe.com/" target="_top">(PDF Reader)</a>
   </p>
+  <xsl:if test="$mode='static'">
   <p>
     <a href="{$pdflocation}" target="_top">
   <img src="{$imgroot}misc/acopdflogo.gif" width="30" height="30" border="0" alt="PDF Version" />
       <xsl:text>Local Offline</xsl:text>
     </a>
   </p>
+  </xsl:if>
   <p>
     <a href="http://docs.openlinksw.com/pdf/virtdocs.pdf" target="_top">
       <img src="{$imgroot}misc/acopdflogo.gif" width="30" height="30" border="0" alt="PDF Version" />
@@ -156,6 +205,7 @@
     </a>
   </p>
  </div>
+ <xsl:call-template name="translation" />
  <xsl:call-template name="footer" />
 </xsl:template>
 
@@ -201,6 +251,7 @@
  </table>
  </div>
  </div>
+ <xsl:call-template name="translation" />
  <xsl:call-template name="footer" />
 </xsl:template>
 
@@ -256,6 +307,7 @@
   </xsl:for-each>
   </div>
  </div>
+ <xsl:call-template name="translation" />
  <xsl:call-template name="footer" />
 </xsl:template>
 
@@ -319,6 +371,7 @@
   </xsl:for-each>
   <xsl:apply-templates />
  </div>
+ <xsl:call-template name="translation" />
  <xsl:call-template name="footer" />
 </xsl:template>
 
@@ -404,10 +457,63 @@
 <xsl:template name="rssfeedlink">
   <xsl:if test="$rss='yes'">
     <xsl:if test="normalize-space(//self::*[@id = $chap]/ancestor-or-self::chapter)">
-      <link rel="alternate" type="application/rss+xml" title="RSS" href="{//self::*[@id = $chap]/ancestor-or-self::chapter/@id}.rss"></link>
+      <link rel="alternate" type="application/rss+xml" title="RSS" 
+      		href="{//self::*[@id = $chap]/ancestor-or-self::chapter/@id}.rss"></link>
+      <link rel="alternate" type="application/atom+xml" title="ATOM" 
+      		href="{//self::*[@id = $chap]/ancestor-or-self::chapter/@id}.xml"></link>
+      <link rel="alternate" type="application/rdf+xml" title="RDF" 
+      		href="{//self::*[@id = $chap]/ancestor-or-self::chapter/@id}.rdf"></link>
     </xsl:if>
     <link rel="alternate" type="application/opml+xml" title="OPML" href="{/book/@id}.opml"></link>
   </xsl:if>
 </xsl:template>
+
+<xsl:template name="translation">
+<xsl:if test="$mode='server'">
+ <div id="machinetranslation">
+<h3><span>Other Languages</span></h3>
+<ul>
+  <li>
+    <a href="/doc/translate.vsp?langpair=en%7Cfr&hl=fr" title="Fran&#231;ais - Traduction par Google">
+                <img src="/images/misc/flag-france.gif" alt="Fran&#231;ais" />
+                <span>Fran&#231;ais</span></a>
+  </li>
+  <li>
+    <a href="/doc/translate.vsp?langpair=en%7Ces&hl=es" title="Espa&#241;ol - Traducci&#243;n de Google">
+                <img src="/images/misc/flag-spain.gif" alt="Espa&#241;ol" />
+                <span>Espa&#241;ol</span></a>
+  </li>
+  <li>
+    <a href="/doc/translate.vsp?langpair=en%7Cde&hl=de" title="Deutsch - &#220;bersetzung durch Google">
+                <img src="/images/misc/flag-germany.gif" alt="Deutsche" />
+                <span>Deutsch</span></a>
+  </li>
+  <li>
+    <a href="/doc/translate.vsp?langpair=en%7Cit&hl=it" title="Italiano - Traduzione da Google">
+                <img src="/images/misc/flag-italy.gif" alt="Italiano" />
+                <span>Italiano</span></a>
+  </li>
+  <li>
+    <a href="/doc/translate.vsp?langpair=en%7Cpt&hl=pt" title="Portugu&#234;s - Tradu&#231;&#227;o por Google">
+                <img src="/images/misc/flag-portugal.gif" alt="Portugu&#234;s" />
+                <span>Portugu&#234;s</span></a>
+  </li>
+  <li>
+    <a href="/doc/translate.vsp?langpair=en%7Cja&hl=ja" title="Japanese - Translation by Google">
+                <img src="/images/misc/flag-japan.gif" alt="Japanese" />
+                <span>Japanese</span></a>
+  </li>
+  <li>
+    <a href="/doc/translate.vsp?langpair=en%7Czh&hl=zh" title="Simplified Chinese - Translation by Google">
+                <img src="/images/misc/flag-china.gif" alt="Simplified Chinese" />
+                <span>Chinese</span></a>
+  </li>
+
+</ul>
+ </div>
+  </xsl:if>
+</xsl:template>
+
+
 
 </xsl:stylesheet>

@@ -901,14 +901,25 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 SYSTEM "xmlref\/\1
   <!ENTITY rdfandsparql       SYSTEM "rdfandsparql.xml">
 ]>
 <book id="virtdocs">
-	<title>Virtuoso Universal Server</title>
+	<title>OpenLink Virtuoso Universal Server: Documentation</title>
 	<bookinfo>
 		<authorgroup><author><email>virtuoso.docs@openlinksw.com</email>
 		<firstname>OpenLink Software Documentation Team</firstname></author></authorgroup>
 		<copyright>
 			<year>1999 - 2006</year>
-			<holder>OpenLink Software.</holder>
+			<holder>OpenLink Software</holder>
 		</copyright>
+		<keywordset>
+			<keyword>documentation</keyword>
+			<keyword>docs</keyword>
+                        <keyword>openlink</keyword>
+                        <keyword>openlink software</keyword>
+                        <keyword>virtuoso</keyword>
+                        <keyword>database</keyword>
+                        <keyword>SQL</keyword>
+                        <keyword>PL</keyword>
+                        <keyword>RDBMS</keyword>
+		</keywordset>
 	</bookinfo>
 	<toc/>
 	<lot/>

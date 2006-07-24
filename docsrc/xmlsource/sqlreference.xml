@@ -3146,7 +3146,7 @@ statement.
 
 <example id="ex_settingisolations"><title>Setting the isolation level</title>
 <programlisting>
-set isolation='serialized';
+set isolation='serializable';
 </programlisting>
 </example>
 

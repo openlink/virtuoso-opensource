@@ -13,17 +13,11 @@
 
 <!-- ==================================================================== -->
 
-<xsl:include href="html_functions.xsl" />
-<xsl:include href="html_sect1_common.xsl"/>
+<xsl:template match="para">
+<xsl:apply-templates />
+<xsl:text>
 
-<xsl:template match="figure">
-<table class="figure" border="0" cellpadding="0" cellspacing="0">
-<caption>Figure: <xsl:call-template name="pos" /> <xsl:value-of select="./title"/></caption>
-<tr><td><img>
-  <xsl:attribute name="alt"><xsl:value-of select="title" /></xsl:attribute>
-  <xsl:attribute name="src"><xsl:value-of select="$serveraddr"/>/<xsl:value-of select="$imgroot"/><xsl:value-of select="graphic/@fileref"/></xsl:attribute>
-</img></td></tr>
-</table>
+</xsl:text>
 </xsl:template>
 
 <xsl:template match="/book">
@@ -50,18 +44,21 @@
 
 <xsl:template match="sect1">
   <item>
-    <author><xsl:value-of select="/book/bookinfo/authorgroup/author/email" /></author>
-    <subject><xsl:value-of select="title" /></subject>
-    <category><xsl:value-of select="title" /></category>
     <guid><xsl:value-of select="$serveraddr" />/<xsl:value-of select="@id" />.html</guid>
+    <author><xsl:value-of select="/book/bookinfo/authorgroup/author/email" /></author>
+    <!-- subject><xsl:value-of select="title" /></subject -->
+    <category><xsl:value-of select="title" /></category>
+    <link><xsl:value-of select="$serveraddr" />/<xsl:value-of select="@id" />.html</link>
     <pubDate><xsl:value-of select="$thedate" /></pubDate>
     <title><xsl:value-of select="title" /></title>
     <description>
+      <!--
     <base href="{$serveraddr}" />
     <link rel="stylesheet" type="text/css" href="{$serveraddr}/doc.css"/>
     <style>body { padding: 1em; }</style>
-    <xsl:apply-templates />
-    <xsl:call-template name="footer" />
+      -->
+      <xsl:apply-templates select="para[position() &lt; 4]|formalpara/para[position() &lt; 4]" />
+      <!-- xsl:call-template name="footer" /  -->
     </description>
   </item>
 </xsl:template>
@@ -69,18 +66,22 @@
 <xsl:template match="refentry">
   <xsl:variable name="cat"><xsl:value-of select="refmeta/refmiscinfo" /></xsl:variable>
   <item>
-    <author><xsl:value-of select="/book/bookinfo/authorgroup/author/email" /></author>
-    <subject><xsl:value-of select="/book//keyword[@id=$cat]" /></subject>
-    <category><xsl:value-of select="/book//keyword[@id=$cat]" /></category>
     <guid><xsl:value-of select="$serveraddr" />/<xsl:value-of select="@id" />.html</guid>
+    <author><xsl:value-of select="/book/bookinfo/authorgroup/author/email" /></author>
+    <!-- subject><xsl:value-of select="/book//keyword[@id=$cat]" /></subject -->
+    <category><xsl:value-of select="/book//keyword[@id=$cat]" /></category>
+    <link><xsl:value-of select="$serveraddr" />/<xsl:value-of select="@id" />.html</link>
     <pubDate><xsl:value-of select="$thedate" /></pubDate>
-    <title><xsl:value-of select="refmeta/refentrytitle" /></title>
+    <title>Function: <xsl:value-of select="refmeta/refentrytitle" /></title>
     <description>
+      <!-- 
     <base href="{$serveraddr}" />
     <link rel="stylesheet" type="text/css" href="{$serveraddr}/doc.css"/>
     <style>body { padding: 1em; }</style>
-    <xsl:apply-templates />
-    <xsl:call-template name="footer" />
+      -->
+      <xsl:apply-templates select="refnamediv/refpurpose" />
+      <xsl:apply-templates select="refsect1[title='Description']/para[position() &lt; 4]" />
+      <!-- xsl:call-template name="footer" / -->
     </description>
   </item>
 </xsl:template>

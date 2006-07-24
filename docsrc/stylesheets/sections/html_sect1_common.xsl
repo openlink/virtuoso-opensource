@@ -110,19 +110,23 @@
 
 <xsl:template match="note">
 <div class="note">
-<div class="notetitle"><xsl:value-of select="./title" /></div>
-<div class="notetext"><xsl:apply-templates /></div>
+<xsl:if test="not(normalize-space(title))"><div class="notetitle">Note:</div></xsl:if>
+<xsl:apply-templates />
 </div>
 </xsl:template>
 
-<xsl:template match="note/title" />
+<xsl:template match="note/title">
+<div class="notetitle"><xsl:apply-templates /></div>
+</xsl:template>
 
-<xsl:template match="tip/title" />
+<xsl:template match="tip/title">
+<div class="tiptitle"><xsl:apply-templates /></div>
+</xsl:template>
 
 <xsl:template match="tip">
+<xsl:if test="not(normalize-space(title))"><div class="tiptitle">Tip:</div></xsl:if>
 <div class="tip">
-<div class="tiptitle"><xsl:value-of select="./title" /></div>
-<div class="tiptext"><xsl:apply-templates /></div>
+<xsl:apply-templates />
 </div>
 </xsl:template>
 
@@ -139,10 +143,32 @@
 <xsl:template match="refsect1/table/title" /> <!-- override for functions -->
 
 <xsl:template match="table/tgroup/thead/row"><tr><xsl:apply-templates/></tr></xsl:template>
-<xsl:template match="table/tgroup/thead/row/entry"><th class="data"><xsl:apply-templates/></th></xsl:template>
+<xsl:template match="table/tgroup/thead/row/entry"><th class="data">
+        <xsl:if test="@morerows &gt; 0">
+          <xsl:attribute name="rowspan">
+            <xsl:value-of select="1+@morerows"/>
+          </xsl:attribute>
+        </xsl:if>
+        <xsl:if test="@morecols &gt; 0">
+          <xsl:attribute name="colspan">
+            <xsl:value-of select="1+@morecols"/>
+          </xsl:attribute>
+        </xsl:if>
+<xsl:apply-templates/></th></xsl:template>
 
 <xsl:template match="table/tgroup/tbody/row"><tr><xsl:apply-templates/></tr></xsl:template>
-<xsl:template match="table/tgroup/tbody/row/entry"><td class="data"><xsl:apply-templates/></td></xsl:template>
+<xsl:template match="table/tgroup/tbody/row/entry"><td class="data">
+        <xsl:if test="@morerows &gt; 0">
+          <xsl:attribute name="rowspan">
+            <xsl:value-of select="1+@morerows"/>
+          </xsl:attribute>
+        </xsl:if>
+        <xsl:if test="@morecols &gt; 0">
+          <xsl:attribute name="colspan">
+            <xsl:value-of select="1+@morecols"/>
+          </xsl:attribute>
+        </xsl:if>
+<xsl:apply-templates/></td></xsl:template>
 
 <xsl:template match="emphasis">
 <strong><xsl:apply-templates/></strong>

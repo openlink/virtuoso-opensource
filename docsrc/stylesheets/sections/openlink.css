@@ -122,4 +122,15 @@ a.feedlink {
   padding-right: 2px;
   margin: 0px;
 }
+a.feedlnk {
+  border: 0px solid black;
+  margin: 0px;
+  padding: 0px;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+a.feedlnk img {
+  border: 0px solid black;
+}
+ 
 }
