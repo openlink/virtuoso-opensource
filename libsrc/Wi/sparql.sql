@@ -184,11 +184,81 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME (in qname varchar) returns IRI_ID
     }
   if (qname is null)
     return null;
+  if (isiri_id (qname))
+    return qname;
   signal ('RDFXX', 'Wrong tag of argument in DB.DBA.RDF_MAKE_IID_OF_QNAME()');
 }
 ;
 
 grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME to SPARQL_SELECT
+;
+
+create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID
+{
+  if (__tag (qname) in (182, 217, 225, 230))
+    {
+      declare res IRI_ID;
+      if (__tag (qname) <> 182)
+        qname := cast (qname as varchar);
+      if (qname like 'nodeID://%')
+        return null;
+      set isolation='commited';
+      res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
+      if (res is not null)
+        return res;
+      set isolation='serializable';
+      res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
+      if (res is not null)
+        return res;
+      res := iri_id_from_num (sequence_next ('RDF_URL_IID_NAMED'));
+      insert into DB.DBA.RDF_URL (RU_IID, RU_QNAME) values (res, qname);
+      commit work;
+      return res;
+    }
+  if (qname is null)
+    return null;
+  if (isiri_id (qname))
+    return qname;
+  return null;
+}
+;
+
+grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE to SPARQL_SELECT
+;
+
+create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID
+{
+  if (193 = __tag (qname))
+    qname := DB.DBA.RDF_STRSQLVAL_OF_LONG (qname);
+  if (__tag (qname) in (182, 217, 225, 230))
+    {
+      declare res IRI_ID;
+      if (__tag (qname) <> 182)
+        qname := cast (qname as varchar);
+      if (qname like 'nodeID://%')
+        return null;
+      set isolation='commited';
+      res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
+      if (res is not null)
+        return res;
+      set isolation='serializable';
+      res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
+      if (res is not null)
+        return res;
+      res := iri_id_from_num (sequence_next ('RDF_URL_IID_NAMED'));
+      insert into DB.DBA.RDF_URL (RU_IID, RU_QNAME) values (res, qname);
+      commit work;
+      return res;
+    }
+  if (qname is null)
+    return null;
+  if (isiri_id (qname))
+    return qname;
+  return null;
+}
+;
+
+grant execute on DB.DBA.RDF_MAKE_IID_OF_LONG to SPARQL_SELECT
 ;
 
 create function DB.DBA.RDF_QNAME_OF_IID (in iid IRI_ID) returns varchar
@@ -4024,11 +4094,11 @@ create procedure DB.DBA.TTLP_EXEC_TRIPLE_L_A (
 ;
 
 
-create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar)
+create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar, in flags integer)
 {
   declare app_env, err any;
   app_env := vector (async_queue (6), 0);
-  rdf_load_turtle (strg, base, graph,
+  rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EXEC_NEW_GRAPH(?,?)',
       'select DB.DBA.TTLP_EXEC_NEW_BLANK(?,?)',
