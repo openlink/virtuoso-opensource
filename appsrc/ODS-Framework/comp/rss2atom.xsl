@@ -116,7 +116,15 @@
 </xsl:template>
 
 <xsl:template match="item/description">
-    <content type="html">
+    <content>
+      <xsl:choose>
+	<xsl:when test="@type">	
+	   <xsl:attribute name="type"><xsl:value-of select="@type"/></xsl:attribute>
+        </xsl:when>
+        <xsl:otherwise>
+	   <xsl:attribute name="type">html</xsl:attribute>
+        </xsl:otherwise>
+      </xsl:choose>
 	<xsl:apply-templates />
     </content>
 </xsl:template>
@@ -167,7 +175,15 @@
 <xsl:template match="@*" />
 
 <xsl:template match="text()">
+  <xsl:param name="keep-space"/>
+  <xsl:choose>
+    <xsl:when test="not $keep-space">
   <xsl:value-of select="normalize-space(.)" />
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="." />
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <xsl:template name="author">

@@ -138,7 +138,7 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
     app := 'users';
     }
 
-  if (length (app) and app not in ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'news', 'users'))
+  if (length (app) and app not in ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users'))
    {
      signal ('22023', sprintf ('Invalid application domain [%s].', app));
    }
@@ -225,6 +225,10 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 	  signal ('22023', 'No such application instance');
 	};
       inst := replace (inst, '+', ' ');
+
+      if (app = 'discussion' and do_sioc)
+	goto nntpf;
+
       select WAM_HOME_PAGE, WAI_INST, WAI_TYPE_NAME into url, _inst, inst_type
 	  from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE where
 	  U_NAME = uname and WAM_USER = U_ID and WAI_NAME = WAM_INST and WAM_INST = inst;
@@ -254,6 +258,7 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 	}
       else if (do_sioc)
         {
+	  nntpf:
 	  declare ses any;
 	  ses := sioc..sioc_compose_xml (uname, inst, inst_type, post);
           http (ses);

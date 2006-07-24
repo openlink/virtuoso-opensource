@@ -323,6 +323,7 @@ sticker_init() {
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/trs_export.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/foaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/ufoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
+  echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/ufoaf.xml', 'xml-sql-encoding', 'UTF-8', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/afoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/sfoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      vhost_remove (lpath=>'/wa');" >> $STICKER

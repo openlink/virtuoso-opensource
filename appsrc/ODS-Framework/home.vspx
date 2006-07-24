@@ -35,6 +35,7 @@
     <title>User Home</title>
     <vm:user-home-map />
     <vm:disco-ods-sioc-link />
+    <vm:erdf-data />
   </vm:header>
   <!-- END HEADER -->
   <!-- BODY -->

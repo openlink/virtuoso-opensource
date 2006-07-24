@@ -33,6 +33,7 @@
 
     <v:variable persist="0" name="secretq" type="varchar" default="''"/>
     <v:variable persist="0" name="secreta" type="varchar" default="''"/>
+    <v:variable persist="0" name="sioc_limit" type="int" default="10"/>
 
     <v:before-data-bind>
       <![CDATA[
@@ -40,6 +41,7 @@
         SELECT WAUI_SEC_QUESTION, WAUI_SEC_ANSWER
           INTO _secretq, _secreta
          FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
+	self.sioc_limit := coalesce (USER_GET_OPTION (self.u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
 
          self.secretq := _secretq;
          self.secreta := _secreta;
@@ -192,6 +194,38 @@
 
                         WA_USER_EDIT (self.u_name, 'SEC_QUESTION', self.sec_question.ufl_value);
                         WA_USER_EDIT (self.u_name, 'SEC_ANSWER', self.sec_answer.ufl_value);
+			self.vc_redirect ('uiedit.vspx?page=5');
+                      ]]>
+                    </v:on-post>
+		</v:button>
+	    </span>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2" align="left">
+                  <h3>Applications restrictions</h3>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="sioc_limit1">SIOC query result limit</label></th>
+                <td nowrap="nowrap">
+                  <v:text error-glyph="*" xhtml_id="sioc_limit1" name="sioc_limit1" value="--self.sioc_limit" >
+		    <v:validator test="value" min="1" max="1000" message="Positive number between 1 and 1000 is required"
+		      name="vv_sioca1"
+		      empty-alowed="0"/>
+                  </v:text>
+                  <div style="display:inline; color:red;"><v:error-summary match="sioc_limit" /></div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2" class="ctrl">
+		      <span class="fm_ctl_btn">
+		  <input type="reset" name="reset_btn2" value="Cancel" />
+                  <v:button name="bt_set1" value="Save Restrictions" action="simple">
+                    <v:on-post>
+                      <![CDATA[
+		        if(self.vc_is_valid = 0) return;
+                        USER_SET_OPTION (self.u_name, 'SIOC_POSTS_QUERY_LIMIT', atoi (self.sioc_limit1.ufl_value));
 			self.vc_redirect ('uiedit.vspx?page=5');
                       ]]>
                     </v:on-post>

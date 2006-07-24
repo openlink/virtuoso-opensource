@@ -127,8 +127,10 @@ create procedure forum_iri (in inst_type varchar, in wai_name varchar)
 {
   declare _member, tp varchar;
   tp := DB.DBA.wa_type_to_app (inst_type);
-
   declare exit handler for not found { return null; };
+  if (inst_type = 'nntpf')
+    return sprintf ('http://%s%s/%U/%U', get_cname(), get_base_path (), tp, wai_name);
+
   select U_NAME into _member from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where WAM_INST = wai_name and WAM_USER = U_ID and WAM_MEMBER_TYPE = 1;
   return sprintf ('http://%s%s/%U/%U/%U', get_cname(), get_base_path (), _member, tp, wai_name);
 };
@@ -177,12 +179,12 @@ create procedure briefcase_iri (in wai_name varchar)
   return forum_iri ('oDrive', wai_name);
 };
 
-create procedure community_iri (in wai_name varchar)
+create procedure xd_iri (in wai_name varchar)
 {
   return forum_iri ('Community', wai_name);
 };
 
-create procedure bookmark_iri (in wai_name varchar)
+create procedure bmk_iri (in wai_name varchar)
 {
   return forum_iri ('Bookmark', wai_name);
 };
@@ -195,6 +197,11 @@ create procedure mail_iri (in wai_name varchar)
 create procedure photo_iri (in wai_name varchar)
 {
   return forum_iri ('oGallery', wai_name);
+};
+
+create procedure nntp_iri (in grp varchar)
+{
+  return forum_iri ('nntpf', grp);
 };
 
 create procedure ods_sioc_clean_all ()
@@ -385,7 +392,9 @@ create procedure sioc_knows (in graph_iri varchar, in _from_iri varchar, in _to_
 
 -- Forum
 
-create procedure sioc_forum (in graph_iri varchar, in site_iri varchar,
+create procedure sioc_forum (
+    	in graph_iri varchar,
+	in site_iri varchar,
         in iri varchar,
      	in wai_name varchar,
     	in wai_type_name varchar,
@@ -423,7 +432,8 @@ create procedure ods_sioc_post (
     in ts any,
     in modf any,
     in link any := null,
-    in content any := null
+    in content any := null,
+    in tags varchar := null
     )
 {
 
@@ -452,7 +462,11 @@ create procedure ods_sioc_post (
       if (ts is not null)
         DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('created_at'), sioc_date(ts));
       if (modf is not null)
+	{
         DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('modified_at'), sioc_date(modf));
+	  if (ts is null)
+	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('created_at'), sioc_date(modf));
+	}
 
       if (link is not null)
 	link := make_href (link);
@@ -602,6 +616,15 @@ create procedure fill_ods_sioc ()
 
   if (__proc_exists ('sioc..fill_ods_photo_sioc'))
     call ('sioc..fill_ods_photo_sioc') (graph_iri, site_iri);
+
+  if (__proc_exists ('sioc..fill_ods_nntp_sioc'))
+    call ('sioc..fill_ods_nntp_sioc') (graph_iri, site_iri);
+
+  if (__proc_exists ('sioc..fill_ods_bmk_sioc'))
+    call ('sioc..fill_ods_bmk_sioc') (graph_iri, site_iri);
+
+  if (__proc_exists ('sioc..fill_ods_xd_sioc'))
+    call ('sioc..fill_ods_xd_sioc') (graph_iri, site_iri);
   --fill_ods_dav_sioc (graph_iri, site_iri);
 };
 
@@ -635,6 +658,12 @@ create procedure fill_ods_dav_sioc (in graph_iri varchar, in site_iri varchar)
 	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('modified_at') , sioc_date (RES_MOD_TIME));
 	    }
       }
+};
+
+
+create procedure nntp_post_iri (in grp varchar, in msgid varchar)
+{
+  return sprintf ('http://%s%s/discussion/%U/%U', get_cname(), get_base_path (), grp, msgid);
 };
 
 
@@ -1047,6 +1076,10 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
   else if (postid is null)
     {
       declare triples, num any;
+      declare lim any;
+
+      lim := coalesce (DB.DBA.USER_GET_OPTION (u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
+
       iri := forum_iri (inst_type, wai_name);
       rdf_head (ses);
       triples := (sparql
@@ -1078,25 +1111,50 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
       rset := dict_list_keys (triples, 1);
       DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
 
-      triples := (sparql
+      qry := sprintf ('sparql
    	  prefix sioc: <http://rdfs.org/sioc/ns#>
    	  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-          construct { ?s ?p ?o . ?ob sioc:container_of ?s } where
+          construct
     {
-		  graph ?:graph
+		?forum sioc:container_of ?post .
+		?post  sioc:has_container ?forum .
+		?post rdf:type sioc:Post .
+		?post sioc:title ?title .
+		?post sioc:link ?link .
+		?post sioc:links_to ?links_to .
+		?post sioc:modified_at ?modified .
+		?post sioc:created_at ?created .
+		?post sioc:has_creator ?creator
+	   }
+	  where
+                {
+                  graph <%s>
+                  {
+                    ?post rdf:type sioc:Post .
+                    ?post sioc:has_container ?forum .
+                    optional { ?post sioc:modified_at ?modified } .
+                    optional { ?post sioc:created_at ?created } .
+		    optional { ?post sioc:links_to ?links_to } .
+		    optional { ?post sioc:link ?link } .
+		    optional { ?post sioc:has_creator ?creator } .
+		    ?post sioc:title ?title  .
+                    ?forum sioc:name "%s"
+                  }
+                }
+                order by desc (?created) limit %d
+	    ', graph, wai_name, lim);
+      rset := null;
+      maxrows := 0;
+      state := '00000';
+      set_user_id ('dba');
+--      dbg_printf ('%s', qry);
+      exec (qry, state, msg, vector(), maxrows, metas, rset);
+      if (state = '00000')
 		  {
-		    ?s rdf:type sioc:Post .
-		    ?s ?p ?o .
-		    ?s sioc:created_at ?created .
-		    ?s sioc:has_container ?ob .
-		    ?ob sioc:name ?:wai_name
-		    FILTER sql:ODS_FILTER_POST (?p, ?o)
-		  }
-		}
-		order by desc (?created) limit 80
-	    );
+	  triples := rset[0][0];
       rset := dict_list_keys (triples, 1);
       DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
+        }
       rdf_tail (ses);
       goto ret;
     }

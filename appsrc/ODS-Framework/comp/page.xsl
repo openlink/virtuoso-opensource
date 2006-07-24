@@ -63,6 +63,9 @@
       {
         self.f_full_name := coalesce ((select U_FULL_NAME from SYS_USERS where U_NAME = self.fname), self.fname);
         self.fname_or_empty := self.fname;
+	declare exit handler for not found;
+	select WAUI_LAT, WAUI_LNG into self.e_lat, self.e_lng from WA_USER_INFO, DB.DBA.SYS_USERS where
+		WAUI_U_ID = U_ID and U_NAME =  self.fname;
       }
 
     cookie_vec := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
@@ -851,6 +854,8 @@
     <v:variable name="return_url" type="varchar" persist="session" default="null" param-name="RETURL" />
     <v:variable name="fname" type="varchar" default="null" persist="pagestate" param-name="ufname" />
     <v:variable name="f_full_name" type="varchar" default="null" persist="pagestate" />
+    <v:variable name="e_lat" type="float" default="0" persist="pagestate" />
+    <v:variable name="e_lng" type="float" default="0" persist="pagestate" />
     <v:variable name="fname_or_empty" type="varchar" default="''" persist="temp" />
     <v:variable name="login_pars" type="varchar" default="''" persist="temp" />
     <v:variable name="u_group" type="int" default="null" persist="session" />
@@ -2642,6 +2647,24 @@ if (i > 0)
 
 <xsl:template match="vm:disco-ods-sioc-link">
   <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/sioc.rdf', self.st_host, self.fname), '+', '%2B')); ?>" />
+</xsl:template>
+
+<xsl:template match="vm:disco-sioc-app-link">
+  <?vsp if (length (self.fname)) {  ?>
+  <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/%s/sioc.rdf', self.st_host, self.fname, wa_type_to_app (self.app_type)), '+', '%2B')); ?>" />
+  <?vsp } ?>
+</xsl:template>
+
+<xsl:template match="vm:erdf-data">
+    <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />
+    <link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />
+    <meta name="dc.title" content="<?V wa_utf8_to_wide (self.f_full_name) ?>" />
+    <?vsp
+    if (self.e_lat is not null and self.e_lng is not null) {
+    ?>
+    <meta name="geo.position" content="<?V sprintf ('%.06f', self.e_lat) ?>;<?V sprintf ('%.06f', self.e_lng) ?>" />
+    <meta name="ICBM" content="<?V sprintf ('%.06f', self.e_lat) ?>, <?V sprintf ('%.06f', self.e_lng) ?>" />
+    <?vsp } ?>
 </xsl:template>
 
 </xsl:stylesheet>
