@@ -165,6 +165,24 @@ create procedure MKDOC_DO_GROUP_FEED (
       _params := vector_concat (_constant_params, vector (_iter_name, _id) ) ;
       _html := xslt (_xsl_name, _docfull, _params );
 
+      if(_ext = '.rss')
+      {
+        MKDOC_DO_GROUP_FEED (_html, _target,
+          vector(_id),
+          'file://docsrc/doc/rss2rdf.xsl',
+          _constant_params, 'chap', 'Sect1 RDF', '.rdf' );
+
+        MKDOC_DO_GROUP_FEED (_html, _target,
+          vector(_id),
+          'file://docsrc/doc/rss2atom.xsl',
+          _constant_params, 'chap', 'Sect1 ATOM', '.xml' );
+
+        MKDOC_DO_GROUP_FEED (_html, _target,
+          vector(_id),
+          'file://docsrc/doc/rss2xbel.xsl',
+          _constant_params, 'chap', 'Sect1 XBEL', '.xbl' );
+      }
+
       _ses := string_output();
       http_value (_html, null, _ses);
       _name := cast (_id as varchar);
@@ -251,7 +269,8 @@ create procedure MKDOC_DO_FEEDS (in _docsrc varchar, in _target varchar, in _opt
   MKDOC_DO_GROUP_FEED (_docfull, _target,
     _books,
     'file://docsrc/stylesheets/sections/opml_sect1_mp.xsl',
-    _options, 'chap', 'Book OPMLs', '.opml' );
+    vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options), 
+    'chap', 'Book OPMLs', '.opml' );
 
   _chapters := xpath_eval ('/book/chapter/@id', _docfull, 0);
   result ('Building list of plain chapters', 'done');
@@ -259,7 +278,8 @@ create procedure MKDOC_DO_FEEDS (in _docsrc varchar, in _target varchar, in _opt
   MKDOC_DO_GROUP_FEED (_docfull, _target,
     _chapters,
     'file://docsrc/stylesheets/sections/rss_sect1_mp.xsl',
-    _options, 'chap', 'Sect1 RSS', '.rss' );
+    vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options),
+    'chap', 'Sect1 RSS', '.rss' );
 }
 ;
 
@@ -305,7 +325,7 @@ MKDOC_STALE_STYLESHEETS();
 
 --MKDOC_DO_ALL('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector('rss', 'yes'));  -- with rss feed links
 
---MKDOC_DO_FEEDS('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector('serveraddr', 'http://localhost:8890/doc/html', 'thedate', soap_print_box(now(), '', 1)));
+--MKDOC_DO_FEEDS('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector('serveraddr', 'http://localhost:8890/doc/html'));
 
 ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 ECHO BOTH ": Rendering HTML docs: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
