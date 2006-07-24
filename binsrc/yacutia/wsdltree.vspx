@@ -186,12 +186,12 @@
       ?>
       <tr>
 	<td colspan="3">
-	  <v:textarea name="crproc_textfield1" xhtml_cols="80" xhtml_rows="25" value=""/>
+	  <v:textarea name="crproc_textfield1" xhtml_cols="90" xhtml_rows="25" value=""/>
 	</td>
       </tr>
       <tr>
 	<td>
-    	<v:button action="simple" name="execute_src" value="Execute">
+    	<v:button action="simple" name="execute_src" value="Create User Defined Type">
           <v:on-post>
             <v:script><![CDATA[
 		 declare ses, text_t any;
@@ -215,7 +215,7 @@
             ]]></v:script>
           </v:on-post>
         </v:button>
-    	<v:button action="simple" name="save" value="Save as">
+    	<v:button action="simple" name="save" value="Save To File">
           <v:on-post>
             <![CDATA[
   declare text_t, f_name any;

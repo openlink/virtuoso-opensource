@@ -24,7 +24,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <v:page name="http_serv_mgmt" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
 
-  <vm:pagetitle>SOAP Services - HTTP Endpoints</vm:pagetitle>
+  <vm:pagetitle>Web Service Endpoints</vm:pagetitle>
   <vm:pagewrapper>
   <vm:variables>
     <v:variable name="err_msg" persist="temp" type="varchar" default="''" />
@@ -39,9 +39,9 @@
     <v:variable name="sxp_openat" persist="session" type="varchar" default="null" />
   </vm:variables>
   <vm:menu>
-    <vm:menuitem value="SOAP Services - HTTP Endpoints"/>
+    <vm:menuitem value="Web Service Endpoints"/>
   </vm:menu>
-  <vm:header caption="SOAP Services - HTTP Endpoints">
+  <vm:header caption="Web Service Endpoints">
   </vm:header>
   <vm:pagebody>
       <vm:help id="soap_services" sect=""/>
@@ -110,22 +110,14 @@
 		  </v:label>
 		</td>
 		<td>
-		</td>
-	       </tr>
-	       <tr>
-		 <td colspan="5">
-		   <div class="<?V case when control.tn_open then 'scroll_area' else '' end ?>">
-		     <table class="listing">
-	       <?vsp
-	         if (control.tn_open) {
-	       ?>
-	       <tr class="listing_row_odd">
-		 <td style="width:16px;"> </td>
-		 <td>Logical Path</td>
-		 <td>Type</td>
-		 <td>Executes as</td>
-		 <td>
-		   <v:url name="add_new1" value="Add new directory" url="">
+		   <!--<v:url name="add_new1" value="New Web Service Endpoint" url="">-->
+		    <v:button action="simple" style="image" name="add_new1"
+		      value="images/icons/add_16.png"
+		      url=""
+		      xhtml_alt="New"
+		      xhtml_title="New"
+		      text="&#160;New Web Service Endpoint"
+		      >
 		     <v:after-data-bind><![CDATA[
 		      declare xt, xp1 any;
 		      declare _host, _port, _httphost, _host1, _httphost1, tmp any;
@@ -148,12 +140,29 @@
 		      www_split_host (_host1, _host, _port);
 		      www_split_host (_httphost1, _httphost, tmp);
 
-		        control.vu_url := sprintf (
+		        --control.vu_url := sprintf (
+		        control.bt_url := sprintf (
 		          'soap_services_edit.vspx?mode=add1&_host=%s&_port=%s&_httphost=%s',
 			  _host, _port, _httphost);
 		    ]]></v:after-data-bind>
-		   </v:url>
+		   <!--</v:url>-->
+		   </v:button>
 		 </td>
+	       </tr>
+	       <tr>
+		 <td colspan="5">
+		   <div class="<?V case when control.tn_open then 'scroll_area' else '' end ?>">
+		     <table class="listing">
+	       <?vsp
+	         if (control.tn_open) {
+	       ?>
+	       <tr class="listing_row_odd">
+		 <th style="width:16px;"> </th>
+		 <th>Logical Path</th>
+		 <th>Type</th>
+		 <th>Executes as</th>
+		 <th>
+		 </th>
 	       </tr>
 	       <?vsp } ?>
                <v:node/>

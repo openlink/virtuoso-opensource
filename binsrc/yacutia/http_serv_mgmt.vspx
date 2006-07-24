@@ -183,6 +183,43 @@
 		  </v:label>
 		</td>
 		<td class="listing_col_action">
+		   <!--<v:url name="add_new1" value="Add new directory" url="">-->
+		    <v:button action="simple" style="image" name="add_new1"
+		      value="images/icons/add_16.png"
+		      url=""
+		      xhtml_alt="New"
+		      xhtml_title="New"
+		      text="&#160;New Directory"
+		      >
+		     <v:after-data-bind><![CDATA[
+		      declare xt, xp1 any;
+		      declare _host, _port, _httphost, _host1, _httphost1, tmp any;
+
+		      _host := _port := _httphost :=  '';
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+
+		      _host1 := cast (xpath_eval ('@clhost',xt) as varchar);
+		      _httphost1 := cast (xpath_eval ('@chost',xt) as varchar);
+
+		      if ((control.vc_parent as vspx_tree_node).tn_open)
+		        {
+			  xp1 := sprintf ('//node[@clhost="%s" and @chost="%s"]', _host1, _httphost1);
+			  if (self.hxp_openat is null or self.hxp_openat <> xp1)
+			    {
+			      self.hxp_openat := xp1;
+			    }
+			}
+
+		      www_split_host (_host1, _host, _port);
+		      www_split_host (_httphost1, _httphost, tmp);
+
+		        --control.vu_url := sprintf (
+		        control.bt_url := sprintf (
+		          'http_add_path.vspx?mode=add1&_host=%s&_port=%s&_httphost=%s',
+			  _host, _port, _httphost);
+		    ]]></v:after-data-bind>
+		   <!--</v:url>-->
+		   </v:button>
 		  <v:button name="item_stop1" action="simple" value="Stop" style="url">
 		    <v:after-data-bind><![CDATA[
 		      declare xt, xp, vh any;
@@ -300,34 +337,6 @@
 		 <td>Type</td>
 		 <td>Executes as</td>
 		 <td>
-		   <v:url name="add_new1" value="Add new directory" url="">
-		     <v:after-data-bind><![CDATA[
-		      declare xt, xp1 any;
-		      declare _host, _port, _httphost, _host1, _httphost1, tmp any;
-
-		      _host := _port := _httphost :=  '';
-		      xt := (control.vc_parent as vspx_tree_node).tn_element;
-
-		      _host1 := cast (xpath_eval ('@clhost',xt) as varchar);
-		      _httphost1 := cast (xpath_eval ('@chost',xt) as varchar);
-
-		      if ((control.vc_parent as vspx_tree_node).tn_open)
-		        {
-			  xp1 := sprintf ('//node[@clhost="%s" and @chost="%s"]', _host1, _httphost1);
-			  if (self.hxp_openat is null or self.hxp_openat <> xp1)
-			    {
-			      self.hxp_openat := xp1;
-			    }
-			}
-
-		      www_split_host (_host1, _host, _port);
-		      www_split_host (_httphost1, _httphost, tmp);
-
-		        control.vu_url := sprintf (
-		          'http_add_path.vspx?mode=add1&_host=%s&_port=%s&_httphost=%s',
-			  _host, _port, _httphost);
-		    ]]></v:after-data-bind>
-		   </v:url>
 		 </td>
 	       </tr>
 	       <?vsp } ?>

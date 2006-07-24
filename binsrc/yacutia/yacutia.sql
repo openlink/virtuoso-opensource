@@ -391,13 +391,13 @@ create procedure adm_menu_tree ()
 --   </node>
  '</node>
  <node name="Web Services" url="soap_services.vspx"  id="120" tip="Web Services permit the exposure and consumption of functions for distributed applications" allowed="yacutia_web">
-   <node name="SOAP Services" url="soap_services.vspx"  id="121" allowed="yacutia_soap_page">
-     <node name="Soap Options Edit" url="soap_services_list.vspx" id="122" place="1" allowed="yacutia_soap_page"/>
-     <node name="Soap Options List" url="soap_services_edit.vspx" id="123" place="1" allowed="yacutia_soap_page"/>
-     <node name="Soap Options List" url="soap_options_edit.vspx" id="124" place="1" allowed="yacutia_soap_page"/>
-     <node name="Delete SOAP Path" url="soap_del_path.vspx" id="165" place="1" allowed="yacutia_soap_page"/>
+   <node name="Web Service Endpoints" url="soap_services.vspx"  id="121" allowed="yacutia_soap_page">
+     <node name="Web Service Endpoint Edit" url="soap_services_list.vspx" id="122" place="1" allowed="yacutia_soap_page"/>
+     <node name="Web Service Endpoint List" url="soap_services_edit.vspx" id="123" place="1" allowed="yacutia_soap_page"/>
+     <node name="Web Service Endpoint List" url="soap_options_edit.vspx" id="124" place="1" allowed="yacutia_soap_page"/>
+     <node name="Delete Web Service Endpoint" url="soap_del_path.vspx" id="165" place="1" allowed="yacutia_soap_page"/>
    </node>
-   <node name="WSDL Services" url="wsdl_services.vspx"  id="125" allowed="yacutia_wsdl_page">
+   <node name="WSDL Import / Export" url="wsdl_services.vspx"  id="125" allowed="yacutia_wsdl_page">
      <node name="Import" url="wsdl_services.vspx" id="126" place="1" allowed="yacutia_wsdl_page">
        <node name="Import" url="wsdl_services.vspx" id="127" place="1" allowed="yacutia_wsdl_page"/>
      </node>

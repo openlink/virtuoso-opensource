@@ -1052,6 +1052,20 @@ table.form_layout
         background-color: #FFFFFF;
 }
  
+.page_tab_sub
+{
+        font-size: 11px;
+        text-align: left;
+        white-space: nowrap;
+        padding: 2px 4px;
+        border-top: 1px solid #999999;
+        border-right: 1px solid #999999;
+        border-bottom: 1px solid #CCCCCC;
+        border-left: 1px solid #FFFFFF;
+        background-repeat: repeat-x;
+        background-color: #FFFFFF;
+}
+ 
 .page_tab_empty
 {
     white-space: nowrap;
