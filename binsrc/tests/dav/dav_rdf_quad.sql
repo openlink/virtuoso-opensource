@@ -220,12 +220,12 @@ create procedure DB.DBA.DAV_RDF_REPLICATE_INT (in res_id integer, in restype var
       v := coalesce (xquery_eval ('if (exists(*)) then * else string ()', n3), '');
       if (isarray(v))
         v := v[0];
-      -- dbg_obj_princ ('add quad:', s, p, o, v, dt, lang);
+--      dbg_obj_princ ('add quad:', s, p, o, v, dt, lang);
       if (o is not null)
         DB.DBA.RDF_QUAD_URI (dav_rdf_graph_uri, s, p, o);
       else
         DB.DBA.RDF_QUAD_URI_L_TYPED (dav_rdf_graph_uri, s, p, v, dt, lang);
-      -- dbg_obj_princ ('added quad:', s, p, o, v, dt, lang);
+--      dbg_obj_princ ('added quad:', s, p, o, v, dt, lang);
     }
   no_op:;
 }
