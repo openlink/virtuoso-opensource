@@ -1745,7 +1745,7 @@ vector_to_text (caddr_t vec, size_t box_len, dtp_t vectype, char *dest, size_t d
 	  *dest_ptr++ = ',';
 	}			/* Separating comma. */
 
-      sprintf_vecitem (dest_ptr, sprintf_formatter, vec, vectype, inx);
+      sprintf_vecitem (dest_ptr, (size_t)(dest_ptr - dest_size), sprintf_formatter, vec, vectype, inx);
       inx++;
       dest_ptr += strlen (dest_ptr);
     }

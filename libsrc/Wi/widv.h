@@ -367,14 +367,14 @@ i.e. (DV_ARRAY_OF_POINTER==(vectype)) || (DV_LIST_OF_POINTER==(vectype)))
 
 /* So we use this one instead. All those sprintf's return same kind of
    result, an integer. */
-#define sprintf_vecitem(temp_ptr,sprintf_formatter,vec,vectype,inx)\
+#define sprintf_vecitem(temp_ptr, temp_ptr_size, sprintf_formatter,vec,vectype,inx)\
    ((DV_ARRAY_OF_LONG == (vectype)) ? \
-	   snprintf(temp_ptr,sizeof(temp_ptr),sprintf_formatter,(((ptrlong *)(vec))[inx]))\
+	   snprintf(temp_ptr,temp_ptr_size,sprintf_formatter,(((ptrlong *)(vec))[inx]))\
  : ((DV_ARRAY_OF_DOUBLE == (vectype)) ? \
-	   snprintf(temp_ptr,sizeof(temp_ptr),sprintf_formatter,(((double *)(vec))[inx]))\
+	   snprintf(temp_ptr,temp_ptr_size,sprintf_formatter,(((double *)(vec))[inx]))\
  : ((DV_ARRAY_OF_FLOAT == (vectype)) ? \
-	   snprintf(temp_ptr,sizeof(temp_ptr),sprintf_formatter,(((float *)(vec))[inx]))\
- : snprintf(temp_ptr,sizeof(temp_ptr),get_sprintf_formatter_of_elem((((caddr_t *)(vec))[inx])),\
+	   snprintf(temp_ptr,temp_ptr_size,sprintf_formatter,(((float *)(vec))[inx]))\
+ : snprintf(temp_ptr,temp_ptr_size,get_sprintf_formatter_of_elem((((caddr_t *)(vec))[inx])),\
 		   (ptrlong)(((caddr_t *)(vec))[inx])))))
 
 /* The "prototype" for this macro is:
