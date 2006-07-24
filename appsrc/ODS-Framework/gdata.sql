@@ -138,7 +138,8 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
     app := 'users';
     }
 
-  if (length (app) and app not in ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users'))
+  if (length (app) and app not in
+      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users'))
    {
      signal ('22023', sprintf ('Invalid application domain [%s].', app));
    }
@@ -152,12 +153,13 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
     do_rdf := 1;
       else if (path[7] = 'sioc.rdf')
 	do_sioc := 1;
-
-      if (length (path) > 8 and path[8] = 'sioc.rdf')
+      else if (length (path) > 8 and path[8] = 'sioc.rdf')
 	{
 	  post := path[7];
 	  do_sioc := 1;
 	}
+      else
+	 post := path[7];
     }
 
   if (app = 'users' or (app is not null and (inst = 'about.rdf' or inst = 'sioc.rdf')))
@@ -265,6 +267,12 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 	  return '';
         }
+      else if (post is not null)
+	{
+	  url := _inst.wa_post_url (vhost, lhost, inst, post);
+	  if (url is null)
+	    signal ('22023', 'Not implemented');
+	}
     }
 redir:
   http_request_status ('HTTP/1.1 302 Found');

@@ -117,6 +117,7 @@ wa_exec_no_error('alter type web_app add method wa_domain_set (in domain varchar
 wa_exec_no_error('alter type web_app add method wa_size () returns int');
 wa_exec_no_error('alter type web_app add method wa_front_page_as_user (in stream any, in user_name varchar) returns any');
 wa_exec_no_error('alter type web_app add method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar');
+wa_exec_no_error('alter type web_app add method wa_post_url (in vhost varchar, in lhost varchar, in inst_name varchar, in post any) returns varchar');
 
 wa_exec_no_error_log(
   'CREATE TABLE WA_INDUSTRY
@@ -612,6 +613,12 @@ create method wa_home_url () for web_app
 ;
 
 create method wa_rdf_url (in vhost varchar, in lhost varchar) for web_app
+{
+  return null;
+}
+;
+
+create method wa_post_url (in vhost varchar, in lhost varchar, in inst_name varchar, in post any) for web_app
 {
   return null;
 }
