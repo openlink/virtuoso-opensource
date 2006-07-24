@@ -8,9 +8,10 @@
  *  See LICENSE file for details.
  */
 OAT.Preferences = {
-	windowTypeOverride:1,
+	useCursors:1,
+	windowTypeOverride:2,
 	xsltPath:"/DAV/JS/xslt",
-	version:"5.7.2006",
+	version:"20.7.2006",
 	httpError:1,
 	allowDefaultResize:1,
 	allowDefaultDrag:1

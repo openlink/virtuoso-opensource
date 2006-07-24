@@ -42,6 +42,7 @@
 	OAT.Dom.moveBy(element,dx,dy)
 	OAT.Dom.resizeBy(element,dx,dy)
 	OAT.Dom.getScroll()
+	OAT.Dom.decodeImage(data)
 	OAT.Dom.dump(element)
 */
 
@@ -322,12 +323,12 @@ OAT.Dom = {
 	getLT:function(something) {
 		var elm = $(something);
 		var curr_x,curr_y;
-		if (elm.style.left) {
+		if (elm.style.left && elm.style.position != "relative") {
 			curr_x = parseInt(elm.style.left);
 		} else {
 			curr_x = elm.offsetLeft;
 		}
-		if (elm.style.top) {
+		if (elm.style.top && elm.style.position != "relative") {
 			curr_y = parseInt(elm.style.top);
 		} else {
 			curr_y = elm.offsetTop;
@@ -423,6 +424,20 @@ OAT.Dom = {
 		var h = curr_h + dy;
 		elm.style.width = w + "px";
 		elm.style.height = h + "px"; 
+	},
+	
+	decodeImage:function(data) {
+		var decoded = OAT.Crypto.base64d(data);
+		var mime = "image/";
+		switch (decoded.charAt(1)) {
+			case "I": mime += "gif"; break;
+			case "P": mime += "png"; break;
+			case "M": mime += "bmp"; break;
+			default: mime += "jpeg"; break;
+			
+		}
+		var src="data:"+mime+";base64,"+data;
+		return src;
 	},
 	
 	getScroll:function() {

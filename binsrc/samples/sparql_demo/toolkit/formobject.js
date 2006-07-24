@@ -32,7 +32,6 @@
 	object.userSet - whether user may change its value
 	object.bindRecordCallback - for binding to ds
 	object.bindPageCallback - for binding to ds
-	object.bindPagesize - for binding to ds
 	object.datasources - array of objects:
 	{
 		name:"name",
@@ -68,9 +67,9 @@ OAT.FormObjectNames = {
 	"barchart":"Bar chart",
 	"pivot":"Pivot table",
 	"image":"Image",
+	"imagelist":"Image list",
 	"twostate":"Two state control",
-	"nav":"Single record navigation",
-	"multinav":"Multiple record navigation",
+	"nav":"Navigation",
 	"url":"URL",
 	"date":"Date",
 	"gem":"Syndication gem"
@@ -80,13 +79,13 @@ OAT.FormObjectNames = {
 OAT.FormObject = {
 	init:function(fo) { /* basic default properties */
 		fo.name = "";
+		fo.hidden = 0;
 		fo.resizable = false;
 		fo.userSet = false;
 		fo.form = false;
 		fo.elm = OAT.Dom.create("div");
 		fo.bindRecordCallback = false;
 		fo.bindPageCallback = false;
-		fo.bindPageSize = -1;
 		fo.datasources = [];
 		fo.properties = [];
 		fo.css = [];
@@ -289,8 +288,9 @@ OAT.FormObject = {
 			return self.elm.innerHTML;
 		}
 		
-		self.bindRecordCallback = function(dataRow,currentIndex,totalCount) {
+		self.bindRecordCallback = function(dataRow,currentIndex) {
 			if (self.datasources[0].realIndexes[0] == -1) { return; }
+			if (!dataRow) { return; }
 			var value = dataRow[self.datasources[0].realIndexes[0]];
 			self.setValue(value);
 		}
@@ -328,8 +328,9 @@ OAT.FormObject = {
 			if (self.datasources[0].realIndexes[0] != -1) { self.elm.value = ""; }
 		}
 		
-		self.bindRecordCallback = function(dataRow,currentIndex,totalCount) {
+		self.bindRecordCallback = function(dataRow,currentIndex) {
 			if (self.datasources[0].realIndexes[0] == -1) { return; }
+			if (!dataRow) { return; }
 			var value = dataRow[self.datasources[0].realIndexes[0]];
 			self.setValue(value);
 		}
@@ -359,8 +360,9 @@ OAT.FormObject = {
 		self.clear = function() {
 			self.elm.value = "";
 		}
-		self.bindRecordCallback = function(dataRow,currentIndex,totalCount) {
+		self.bindRecordCallback = function(dataRow,currentIndex) {
 			if (self.datasources[0].realIndexes[0] == -1) { return; }
+			if (!dataRow) { return; }
 			var value = dataRow[self.datasources[0].realIndexes[0]];
 			self.setValue(value);
 		}
@@ -383,8 +385,9 @@ OAT.FormObject = {
 			self.elm.checked = (x ? true : false);
 		}
 
-		self.bindRecordCallback = function(dataRow,currentIndex,totalCount) {
+		self.bindRecordCallback = function(dataRow,currentIndex) {
 			if (self.datasources[0].realIndexes[0] == -1) { return; }
+			if (!dataRow) { return; }
 			var value = dataRow[self.datasources[0].realIndexes[0]];
 			self.setValue(value);
 		}
@@ -415,7 +418,10 @@ OAT.FormObject = {
 		self.properties = [
 /*0*/		{name:"Key",type:"string",value:""},
 /*1*/		{name:"Zoom level",type:"select",value:"2",options:[["0 - Far","0"],"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15",["16 - Near","16"]]},
-/*2*/		{name:"Provider",type:"select",value:OAT.MapData.TYPE_G,options:[["Google",OAT.MapData.TYPE_G],["Yahoo!",OAT.MapData.TYPE_Y],["MS Virtual Earth",OAT.MapData.TYPE_MS]]},
+/*2*/		{name:"Provider",type:"select",value:OAT.MapData.TYPE_G,options:[
+				["Google",OAT.MapData.TYPE_G],["Yahoo!",OAT.MapData.TYPE_Y],
+				["MS Virtual Earth",OAT.MapData.TYPE_MS],["OpenLayers",OAT.MapData.TYPE_OL]
+			]},
 /*3*/		{name:"All markers at once?",type:"bool",value:"0"},
 /*4*/		{name:"Pin data source",type:"form",value:false},
 /*5*/		{name:"Map type",type:"select",value:"Map",options:["Map","Satellite","Hybrid"]},
@@ -424,7 +430,8 @@ OAT.FormObject = {
 				["Circle, center",OAT.MapData.FIX_ROUND1],
 				["Circle, no center",OAT.MapData.FIX_ROUND2],
 				["Vertical stack",OAT.MapData.FIX_STACK]
-			]}
+			]},
+/*7*/		{name:"Marker image",type:"select",value:"",options:[["Normal",""],["People","p"]]}
 		];
 		if (designMode) {
 			self.elm.innerHTML = "Map";
@@ -439,7 +446,7 @@ OAT.FormObject = {
 						self.map.openWindow(marker,self.properties[4].value.div);
 					}
 				}
-				self.form.ds.advanceRecord(index);
+				self.form.dso.advanceRecord(index);
 			}
 		}
 		
@@ -468,30 +475,23 @@ OAT.FormObject = {
 		self.getValue = function() { return false; }
 		self.init = function() {
 			self.zoom = parseInt(self.properties[1].value);
-			/* compatibility fix */
-			if (self.properties[2].value == "Google") { self.properties[2].value = OAT.MapData.TYPE_G; }
-			if (self.properties[2].value == "Yahoo!") { self.properties[2].value = OAT.MapData.TYPE_Y; }
-			/* --- */
 			switch (parseInt(self.properties[2].value)) {
-				case OAT.MapData.TYPE_G:
-					self.prefix = "g";
-					self.provider = OAT.MapData.TYPE_G;
-				break;
-				case OAT.MapData.TYPE_Y:
-					self.prefix = "y";
-					self.provider = OAT.MapData.TYPE_Y;
-				break;
-				case OAT.MapData.TYPE_MS:
-					self.prefix = "g";
-					self.provider = OAT.MapData.TYPE_MS;
-				break;
+				case OAT.MapData.TYPE_G: self.provider = OAT.MapData.TYPE_G; break;
+				case OAT.MapData.TYPE_Y: self.provider = OAT.MapData.TYPE_Y; break;
+				case OAT.MapData.TYPE_MS: self.provider = OAT.MapData.TYPE_MS; break;
+				case OAT.MapData.TYPE_OL: self.provider = OAT.MapData.TYPE_OL; break;
 			}
+			self.prefix = self.properties[7].value;
 			self.multi = (self.properties[3].value == "1" ? 1 : 0);
 			self.fix = parseInt(self.properties[6].value);
 			self.markers = [];
 			/* markers available */
 			self.markerPath = "/DAV/JS/images/markers/";
-			self.markerFiles = ["marker-red.png","marker-green.png","marker-yellow.png","marker-blue.png"]; 
+			self.markerFiles = []; 
+			for (var i=1;i<=12;i++) {
+				var name = self.prefix + (i<10?"0":"") + i +".png";
+				self.markerFiles.push(name);
+			}
 			self.markerIndex = 0;
 			self.markerMapping = {};
 			self.map = new OAT.Map(self.elm,self.provider,self.fix,20);
@@ -506,12 +506,13 @@ OAT.FormObject = {
 			}
 		}
 		
-		self.bindRecordCallback = function(dataRow,currentIndex,totalCount) {
+		self.bindRecordCallback = function(dataRow,currentIndex) {
+			if (!dataRow) { return; }
 			var lat = parseFloat(dataRow[self.datasources[0].realIndexes[0]]);
 			var lon	= parseFloat(dataRow[self.datasources[1].realIndexes[0]]);
 			var color = (self.datasources[2].columnIndexes[0] == -1 ? 1 : dataRow[self.datasources[2].realIndexes[0]]);
 			if (!(color in self.markerMapping)) {
-				self.markerMapping[color] = self.markerPath + self.prefix + self.markerFiles[self.markerIndex];
+				self.markerMapping[color] = self.markerPath + self.markerFiles[self.markerIndex];
 				self.markerIndex++;
 				if (self.markerIndex >= self.markerFiles.length) { self.markerIndex = 0; }
 			}
@@ -521,16 +522,15 @@ OAT.FormObject = {
 				if (!self.multi) { self.setValue([value]); }
 			}
 		}
-		self.bindPageCallback = function(dataRows,currentPageIndex,totalCount) {
+		self.bindPageCallback = function(dataRows,currentPageIndex) {
 			var values = [];
-			var startIndex = currentPageIndex*(self.bindPageSize == -1 ? 0 : self.bindPageSize);
 			for (var i=0;i<dataRows.length;i++) {
 				var lat = parseFloat(dataRows[i][self.datasources[0].realIndexes[0]]);
 				var lon	= parseFloat(dataRows[i][self.datasources[1].realIndexes[0]]);
 				var color = (self.datasources[2].columnIndexes[0] == -1 ? 1 : dataRows[i][self.datasources[2].realIndexes[0]]);
-				var index = startIndex+i;
+				var index = currentPageIndex+i;
 				if (!(color in self.markerMapping)) {
-					self.markerMapping[color] = self.markerPath + self.prefix + self.markerFiles[self.markerIndex];
+					self.markerMapping[color] = self.markerPath + self.markerFiles[self.markerIndex];
 					self.markerIndex++;
 					if (self.markerIndex >= self.markerFiles.length) { self.markerIndex = 0; }
 				}
@@ -581,7 +581,7 @@ OAT.FormObject = {
 			self.chart.attachTextY(textY);
 		}
 		
-		self.bindPageCallback = function(dataRows, currentPageIndex, totalCount) {
+		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			var value = [];
 			var ds = self.datasources[0];
 			for (var i=0;i<dataRows.length;i++) {
@@ -703,7 +703,7 @@ OAT.FormObject = {
 			
 		} /* init() */
 
-		self.bindPageCallback = function(dataRows, currentPageIndex, totalCount) {
+		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			var value = [];
 			var ds_1 = self.datasources[1];
 			var ds_2 = self.datasources[2];
@@ -812,13 +812,12 @@ OAT.FormObject = {
 			self.grid.createHeader(data); 
 		}
 		
-		self.bindRecordCallback = function(dataRow, currentIndex, totalCount) {
-			/* for now, assume that all rows are present */
+		self.bindRecordCallback = function(dataRow, currentIndex) {
 			for (var i=0;i<self.grid.rows.length;i++) { self.grid.rows[i].deselect(); }
-			self.grid.rows[currentIndex].select();
+			if (self.grid.rows.length + self.pageIndex >= currentIndex) { self.grid.rows[currentIndex - self.pageIndex].select(); }
 		}
 		
-		self.bindPageCallback = function(dataRows, currentPageIndex, totalCount) {
+		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			var value = [];
 			var ds = self.datasources[0];
 			if (self.showAll && dataRows.length) {
@@ -832,7 +831,9 @@ OAT.FormObject = {
 				}
 				value.push(row);
 			}
+			self.grid.rowOffset = currentPageIndex;
 			self.setValue(value);
+			self.pageIndex = currentPageIndex;
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	},
@@ -855,29 +856,89 @@ OAT.FormObject = {
 		}
 		self.setValue = function(value) {
 			if (OAT.Dom.isIE()) { return; }
-//			self.elm.src = "data:image/gif;base64,R0lGODdhMAAwAPAAAAAAAP///ywAAAAAMAAwAAAC8IyPqcvt3wCcDkiLc7C0qwyGHhSWpjQu5yqmCYsapyuvUUlvONmOZtfzgFzByTB10QgxOR0TqBQejhRNzOfkVJ+5YiUqrXF5Y5lKh/DeuNcP5yLWGsEbtLiOSpa/TPg7JpJHxyendzWTBfX0cxOnKPjgBzi4diinWGdkF8kjdfnycQZXZeYGejmJlZeGl9i2icVqaNVailT6F5iJ90m6mvuTS4OK05M0vDk0Q4XUtwvKOzrcd3iq9uisF81M1OIcR7lEewwcLp7tuNNkM3uNna3F2JQFo97Vriy/Xl4/f1cf5VWzXyym7PHhhx4dbgYKAAA7";
-//			value = "R0lGODdhMAAwAPAAAAAAAP///ywAAAAAMAAwAAAC8IyPqcvt3wCcDkiLc7C0qwyGHhSWpjQu5yqmCYsapyuvUUlvONmOZtfzgFzByTB10QgxOR0TqBQejhRNzOfkVJ+5YiUqrXF5Y5lKh/DeuNcP5yLWGsEbtLiOSpa/TPg7JpJHxyendzWTBfX0cxOnKPjgBzi4diinWGdkF8kjdfnycQZXZeYGejmJlZeGl9i2icVqaNVailT6F5iJ90m6mvuTS4OK05M0vDk0Q4XUtwvKOzrcd3iq9uisF81M1OIcR7lEewwcLp7tuNNkM3uNna3F2JQFo97Vriy/Xl4/f1cf5VWzXyym7PHhhx4dbgYKAAA7";
-			
-			if (value.match(/^http/)) {
+			if (value.match(/\./)) {
 				/* URL */
 				self.elm.src = value;
 				return; 
 			}
-			/* base64 data */
-			var decoded = OAT.Crypto.base64d(value);
-			var mime = "image/";
-			switch (decoded.charAt(1)) {
-				case "I": mime += "gif"; break;
-				case "P": mime += "png"; break;
-				case "M": mime += "bmp"; break;
-				default: mime += "jpeg"; break;
-				
-			}
-			var src="data:"+mime+";base64,"+value;
-			self.elm.src = src;
+			self.elm.src = OAT.Dom.decodeImage(value);
 		}
-		self.bindRecordCallback = function(dataRow,currentIndex,totalCount) {
+		self.bindRecordCallback = function(dataRow,currentIndex) {
+			if (!dataRow) { return; }
 			var value = dataRow[self.datasources[0].realIndexes[0]];
+			self.setValue(value);
+		}
+		self.notify = function() { /* when waiting for new image, clear the old one */
+			self.clear();
+		}
+		OAT.FormObject.abstractParent(self,x,y);
+	},
+	
+	imagelist:function(x,y,designMode) {
+		var self = this;
+		OAT.FormObject.init(self);
+		self.name="imagelist";
+		if (designMode) {
+			self.elm = OAT.Dom.create("div",{border:"1px solid #00f",backgroundColor:"#ddf",width:"100px",height:"100px"});
+			self.elm.innerHTML = "Image list";
+		} else {
+			self.elm = OAT.Dom.create("table");
+			self.tbody = OAT.Dom.create("tbody");
+			var thead = OAT.Dom.create("thead");
+			self.elm.appendChild(thead);
+			self.elm.appendChild(self.tbody);
+		}
+		self.properties = [
+			{name:"Columns",type:"select",value:"3",options:["1","2","3","4","5","6","7","8"]}
+		];
+		self.datasources = [
+			{name:"Small image",variable:false,columnIndexes:[-1],names:[],realIndexes:[]},
+			{name:"Large image",variable:false,columnIndexes:[-1],names:[],realIndexes:[]}
+		];
+		self.clear = function() {
+			OAT.Dom.clear(self.tbody);
+		}
+		self.setValue = function(value) {
+			self.clear();
+			if (OAT.Dom.isIE()) { return; }
+			var limit = parseInt(self.properties[0].value);
+			var tr = OAT.Dom.create("tr");
+			
+			for (var i=0;i<value.length;i++) {
+				var small = value[i][0];
+				var large = value[i][0]; /* large == link */
+				var img = OAT.Dom.create("img");
+				if (small.match(/\./)) {
+					img.src = small;
+				} else {
+					img.src = OAT.Dom.decodeImage(small);
+				}
+				var td = OAT.Dom.create("td");
+				var a = OAT.Dom.create("a");
+				a.target = "_blank";
+				a.href = large;
+				
+				a.appendChild(img);
+				td.appendChild(a)
+				tr.appendChild(td);
+				
+				if (!((i+1) % limit)) {
+					self.tbody.appendChild(tr);
+					var tr = OAT.Dom.create("tr");
+			}
+			} /* for all images */
+			if ((i+1) % limit) { self.tbody.appendChild(tr); }
+		}
+		
+		self.bindPageCallback = function(dataRows, currentPageIndex) {
+			var value = [];
+			var ds1 = self.datasources[0];
+			var ds2 = self.datasources[1];
+			for (var i=0;i<dataRows.length;i++) {
+				var small = dataRows[i][ds1.realIndexes[0]];
+				var large = dataRows[i][ds2.realIndexes[0]];
+				value.push([small,large]);
+		}
 			self.setValue(value);
 		}
 		self.notify = function() { /* when waiting for new image, clear the old one */
@@ -892,6 +953,7 @@ OAT.FormObject = {
 		self.name="twostate";
 		self.resizable = true;
 		self.elm = OAT.Dom.create("div");
+		self.rowOffset = 0; /* for grid auto-numbering */
 		self.datasources = [
 			{name:"Columns",variable:true,names:[],columnIndexes:[],realIndexes:[]}
 		];
@@ -943,8 +1005,13 @@ OAT.FormObject = {
 				
 				case "Tabular":
 					self.grid.clearData();
+					self.grid.rowOffset = self.rowOffset;
 					for (var i=0;i<data.length;i++) {
 						self.grid.createRow(data[i]);
+					}
+					for (var i=0;i<self.grid.rows.length;i++) { self.grid.rows[i].deselect(); }
+					if (self.grid.rows.length + self.pageIndex >= self.recordIndex && self.recordIndex >= self.pageIndex) { 
+						self.grid.rows[self.recordIndex - self.pageIndex].select(); 
 					}
 				break;
 			}
@@ -1026,7 +1093,8 @@ OAT.FormObject = {
 			} /* switch */
 		} /* FormObject::init() */
 		
-		self.bindRecordCallback = function(dataRow, currentIndex, totalCount) {
+		self.bindRecordCallback = function(dataRow, currentIndex) {
+			self.recordIndex = currentIndex;
 			var value = [];
 			var ds = self.datasources[0];
 			for (var i=0;i<ds.realIndexes.length;i++) {
@@ -1034,15 +1102,16 @@ OAT.FormObject = {
 			}
 			self.lastValueSingle = value;
 			if (self.properties[0].value == "Single") { self.setValue(value); }
-
-			/* for now, assume that all rows are present */
 			if (!self.grid) { return; }
 			for (var i=0;i<self.grid.rows.length;i++) { self.grid.rows[i].deselect(); }
-			self.grid.rows[currentIndex].select();
+			if (self.grid.rows.length + self.pageIndex >= self.recordIndex) { 
+				self.grid.rows[self.recordIndex - self.pageIndex].select(); 
+			}
 
 		}
 		
-		self.bindPageCallback = function(dataRows, currentPageIndex, totalCount) {
+		self.bindPageCallback = function(dataRows, currentPageIndex) {
+			self.pageIndex = currentPageIndex;
 			var value = [];
 			var ds = self.datasources[0];
 			for (var i=0;i<dataRows.length;i++) {
@@ -1053,6 +1122,7 @@ OAT.FormObject = {
 				value.push(row);
 			}
 			self.lastValueTabular = value;
+			self.rowOffset = currentPageIndex;
 			if (self.properties[0].value == "Tabular") { self.setValue(value); }
 		}
 		OAT.FormObject.abstractParent(self,x,y);
@@ -1064,82 +1134,44 @@ OAT.FormObject = {
 		self.name="nav";
 		self.elm = OAT.Dom.create("div");
 		self.first = OAT.Dom.create("input");
+		self.prevp = OAT.Dom.create("input");
 		self.prev = OAT.Dom.create("input");
 		self.next = OAT.Dom.create("input");
+		self.nextp = OAT.Dom.create("input");
 		self.last = OAT.Dom.create("input");
 		self.first.setAttribute("type","button");
+		self.prevp.setAttribute("type","button");
 		self.prev.setAttribute("type","button");
 		self.next.setAttribute("type","button");
+		self.nextp.setAttribute("type","button");
 		self.last.setAttribute("type","button");
-		self.first.value = "<<";
+		self.first.value = "|<<";
+		self.prevp.value = "<<";
 		self.prev.value = "<";
 		self.next.value = ">";
-		self.last.value = ">>";
+		self.nextp.value = ">>";
+		self.last.value = ">>|";
+		
 		self.current = OAT.Dom.create("input");
 		self.current.setAttribute("type","text");
 		self.current.setAttribute("size","2");
 		self.total = OAT.Dom.create("span");
 		self.elm.appendChild(self.first);
+		self.elm.appendChild(self.prevp);
 		self.elm.appendChild(self.prev);
 		self.elm.appendChild(self.current);
-		self.elm.appendChild(OAT.Dom.text(" / "));
-		self.elm.appendChild(self.total);
+//		self.elm.appendChild(self.total);
 		self.elm.appendChild(self.next);
-		self.elm.appendChild(self.last);
+		self.elm.appendChild(self.nextp);
+//		self.elm.appendChild(self.last);
 		self.clear = function() {
-			self.total.innerHTML = "";
+//			self.total.innerHTML = "";
 			self.current.value = "";
 		}
 		
-		self.bindRecordCallback = function(dataRow,currentIndex,totalCount) {
+		self.bindRecordCallback = function(dataRow,currentIndex) {
 			self.current.value = currentIndex+1;
-			self.total.innerHTML = totalCount;
-		}
-		OAT.FormObject.abstractParent(self,x,y);
-	},
-
-	multinav:function(x,y,designMode) {
-		var self = this;
-		OAT.FormObject.init(self);
-		self.name="multinav";
-		self.elm = OAT.Dom.create("div");
-		self.first = OAT.Dom.create("input");
-		self.prev = OAT.Dom.create("input");
-		self.next = OAT.Dom.create("input");
-		self.last = OAT.Dom.create("input");
-		self.first.setAttribute("type","button");
-		self.prev.setAttribute("type","button");
-		self.next.setAttribute("type","button");
-		self.last.setAttribute("type","button");
-		self.first.value = "<<";
-		self.prev.value = "<";
-		self.next.value = ">";
-		self.last.value = ">>";
-		self.current = OAT.Dom.create("input");
-		self.current.setAttribute("type","text");
-		self.current.setAttribute("size","2");
-		self.total = OAT.Dom.create("span");
-		self.elm.appendChild(self.first);
-		self.elm.appendChild(self.prev);
-		self.elm.appendChild(OAT.Dom.text(" Page "));
-		self.elm.appendChild(self.current);
-		self.elm.appendChild(OAT.Dom.text(" / "));
-		self.elm.appendChild(self.total);
-		self.elm.appendChild(self.next);
-		self.elm.appendChild(self.last);
-		
-		self.clear = function() {
-			self.total.innerHTML = "";
-			self.current.value = "";
-		}
-		
-		self.properties = [{name:"Page size",value:50,type:"string"}];
-		self.init = function() {
-			self.bindPageSize = parseInt(self.properties[0].value);
-		}
-		self.bindPageCallback = function(dataRow,currentIndex,totalCount) {
-			self.current.value = currentIndex+1;
-			self.total.innerHTML = totalCount;
+//			self.total.innerHTML = totalCount;
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	},
@@ -1237,7 +1269,7 @@ OAT.FormObject = {
 			return self.elm.innerHTML;
 		}
 	
-		self.bindRecordCallback = function(dataRow,currentIndex,totalCount) {
+		self.bindRecordCallback = function(dataRow,currentIndex) {
 			if (self.datasources[0].realIndexes[0] == -1) { return; }
 			var value = dataRow[self.datasources[0].realIndexes[0]];
 			var label = (self.datasources[1].realIndexes[0] == -1 ? value : dataRow[self.datasources[1].realIndexes[0]]);
@@ -1257,31 +1289,43 @@ OAT.FormObject = {
 			/* load saved query, add information about stylesheet, save as new saved query */
 			var source = self.properties[1].value;
 			var ss = self.properties[2].value;
-			var target = self.properties[2].value;
+			var target = self.properties[3].value;
 			if (source == "") { alert("Please select a saved query to process"); return; }
 			if (ss == "") { alert("Please select a stylesheet to create a feed"); return; }
 			if (target == "") { alert("Please select a target feed file"); return; }
 			
-			var processRef = function(xmlDoc) {
-				/* we have source saved query. append a stylesheet and save */
+			var processRef = function(query) {
+				/* we have saved source query. append a stylesheet and save */
+				var q = new OAT.SqlQuery();
+				q.fromString(query);
+				var result = q.toString(OAT.SqlQueryData.TYPE_SQLX_ELEMENTS);
+				var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+				xml += '<root xmlns:sql="urn:schemas-openlink-com:xml-sql"';
+				xml += ' sql:xsl="'+ss+'" ';
+				xml += '><sql:sqlx>'+result+'</sql:sqlx></root>';
+				var send_ref = function() { return xml; }
+				var recv_ref = function() { alert("New saved query created"); }
+				OAT.Ajax.command(OAT.Ajax.PUT + OAT.Ajax.AUTH_BASIC,target,send_ref,recv_ref,OAT.Ajax.TYPE_TEXT);
 			}
 			
-			OAT.Ajax.command(OAT.Ajax.GET,source,function(){return "";},processRef,OAT.Ajax.TYPE_XML,{});
+			OAT.Ajax.command(OAT.Ajax.GET,source,function(){return "";},processRef,OAT.Ajax.TYPE_TEXT,{});
 		}
 		
 		if (designMode) {
 			self.elm.innerHTML = "GEM";
 		} else {
-			self.link = Dom.create("a");
-			self.image = Dom.create("img");
+			self.link = OAT.Dom.create("a");
+			self.image = OAT.Dom.create("img");
 			self.elm.appendChild(self.link);
 			self.link.appendChild(self.image);
 		}
 		self.properties = [
-			{name:"Icon",value:"",type:"file",onselect:false},
-			{name:"Saved query",value:"",type:"file",onselect:apply},
-			{name:"XSLT template",value:"",type:"file",onselect:apply},
-			{name:"Resulting file",value:"",type:"file",onselect:apply}
+			{name:"Icon",value:"",type:"file",onselect:false,dialog:"open_dialog"},
+			{name:"Saved query",value:"",type:"file",onselect:apply,dialog:"open_dialog"},
+			{name:"XSLT template",value:"",type:"file",onselect:apply,dialog:"open_dialog"},
+			{name:"Resulting file",value:"",type:"file",onselect:apply,dialog:"browser"},
+			{name:"Link name",value:"RSS Feed",type:"string"},
+			{name:"MIME type",value:"application/rss+xml",type:"string"}
 		];
 		self.init = function() {
 			self.image.src = self.properties[0].value; /* draw proper icon */
@@ -1289,6 +1333,7 @@ OAT.FormObject = {
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	}
+	
 	
 }
 OAT.Loader.pendingCount--;

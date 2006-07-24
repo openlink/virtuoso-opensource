@@ -32,7 +32,7 @@ OAT.Combolist = function(optList,value) {
 	this.input.value = value;
 	this.input.className = "combo_list_input";
 	
-	this.list = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px"});
+	this.list = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",zIndex:200});
 	this.list.className = "combo_list_list";
 	OAT.Dom.attach(this.input,"keyup",function(){obj.value = obj.input.value; obj.onchange();});
 	OAT.Instant.assign(this.list);
@@ -42,18 +42,25 @@ OAT.Combolist = function(optList,value) {
 	}
 	
 	this.addOption = function(option) {
+		var t = option;
+		var v = option;
+		if (typeof(option) == "object") { 
+			t = option[0];
+			v = option[1];
+		}
 		var opt = OAT.Dom.create("div");
 		opt.className = "combo_list_option";
-		opt.innerHTML = option;
+		opt.innerHTML = t;
+		opt.value = v;
 		attach(opt);
 		this.list.appendChild(opt);
 	}
 
 	var attach = function(option) {
 		var ref = function(event) {
-			obj.value = option.innerHTML;
+			obj.value = option.value;
 			obj.input.value = option.innerHTML;
-			obj.onchange();
+			obj.onchange(obj.value);
 			obj.list._Instant_hide();
 		}
 		OAT.Dom.attach(option,"click",ref);

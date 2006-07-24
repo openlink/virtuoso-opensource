@@ -64,8 +64,7 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 	OAT.Dom.attach(cancel,"click",function(){self.cancel();});
 	
 	var keyPress = function(event) {
-/*		var src = OAT.Dom.source(event);
-		if (!OAT.Dom.isChild(src,win.div)) { return; } */
+		if (self.okBtn.getAttribute("disabled") == "disabled") { return; }
 		if (event.keyCode == 13) { self.ok(); }
 		if (event.keyCode == 27) { self.cancel(); }
 	}

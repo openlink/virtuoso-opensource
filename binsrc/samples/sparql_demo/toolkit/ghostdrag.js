@@ -50,6 +50,7 @@ OAT.GhostDragData = {
 			elm.parentNode.removeChild(elm);
 		} else {
 			/* mouseup at wrong place - let's animate it back */
+			obj.onFail();
 			var coords = OAT.Dom.position(obj.originalElement);
 			var x = coords[0];
 			var y = coords[1];
@@ -99,16 +100,17 @@ OAT.GhostDragData = {
 		if (!elm) return 0;
 		if (elm.style.display.toLowerCase() == "none") return 0;
 		var coords = OAT.Dom.position(elm);
-		var x = coords[0];
-		var y = coords[1];
-		var w = parseInt(elm.offsetWidth);
-		var h = parseInt(elm.offsetHeight);
+		var x = coords[0]-2;
+		var y = coords[1]-2;
+		var w = parseInt(elm.offsetWidth)+2;
+		var h = parseInt(elm.offsetHeight)+2;
 		return (x_ >= x && x_ <= x+w && y_ >= y && y_ <= y+h);
 	} /* OAT.GhostDragData.pos(); */
 }
 
 OAT.GhostDrag = function() {
 	var self = this;
+	this.onFail = function(){};
 	this.sources = [];
 	this.processes = [];
 	this.callbacks = [];

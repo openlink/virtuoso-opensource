@@ -38,12 +38,16 @@ OAT.Instant = {
 		/* element shown, checking where user clicked */
 		var node = OAT.Dom.source(event);
 		/* walk up from the clicker. if we find instant element, then user clicked on it -> do nothing */
+		window.nodes = [];
 		do {
+			window.nodes.push(node);
 			if (node == OAT.Instant.element) { return; }
 			node = node.parentNode;
 		} while (node != document.body && node != document);
+		if (OAT.Instant.element) {
 		OAT.Instant.element._Instant_callback();
 		OAT.Instant.element._Instant_hide();
+	}
 	}
 }
 OAT.Loader.pendingCount--;

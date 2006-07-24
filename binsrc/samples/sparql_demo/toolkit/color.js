@@ -13,7 +13,7 @@
 
 OAT.Color = {
 	pick:function(x,y,callback) {
-		var div = OAT.Dom.create("div",{position:"absolute",backgroundColor:"#fff",border:"2px solid #000",padding:"2px",width:"168px"});
+		var div = OAT.Dom.create("div",{position:"absolute",backgroundColor:"#fff",border:"2px solid #000",padding:"2px",width:"168px",zIndex:200});
 		this.div = div;
 		if (OAT.Dom.isIE()) { div.style.width = "170px"; } else { div.style.width = "162px"; }
 		OAT.Drag.create(div,div);

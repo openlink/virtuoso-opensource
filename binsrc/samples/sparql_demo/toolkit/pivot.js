@@ -129,6 +129,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			elm.style.color = "";
 		}
 	}
+	this.gd.onFail = self.lightOff;
 	
 	this.isNull = function(data) {
 		return (data == 0 || data == false || !data);
@@ -139,7 +140,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		elm.style.backgroundColor = "#888";
 		elm.style.padding = "2px";
 		elm.style.cursor = "pointer";
-		OAT.Dom.attach(elm,"mouseup",obj.lightOff);
+		OAT.Dom.attach(elm,"mouseup",function(e) { obj.lightOff(); });
 	}
 	
 	this.filterOK = function(index) {
@@ -307,6 +308,11 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				obj.go();
 			}
 			/* contents */
+			var close = OAT.Dom.create("div",{position:"absolute",top:"3px",right:"3px",cursor:"pointer"});
+			close.innerHTML = "X";
+			OAT.Dom.attach(close,"click",refresh);
+			obj.propPage.appendChild(close);
+			
 			var asc = OAT.Dom.create("div",{cursor:"pointer"});
 			if (cond.sort == 1) { asc.style.fontWeight = "bold"; }
 			asc.innerHTML = "Ascending";
@@ -325,6 +331,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			var ch = OAT.Dom.create("input");
 			ch.setAttribute("type","checkbox");
 			ch.checked = (cond.hideNulls ? false : true);
+			ch.__checked = (cond.hideNulls ? "0" : "1");
 			showNulls.appendChild(ch);
 			showNulls.appendChild(OAT.Dom.text(" Show empty items"));
 			OAT.Dom.attach(ch,"change",function(){cond.hideNulls = (cond.hideNulls ? 0 : 1);refresh();});
@@ -462,6 +469,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			var pair = getPair(p);
 			div.appendChild(pair[0]);
 			pair[1].checked = !(p in cond.blackList);
+			pair[1].__checked = (p in cond.blackList ? "0" : "1");
 			OAT.Dom.attach(pair[1],"change",getRef(pair[1],p));
 		}
 		return div;

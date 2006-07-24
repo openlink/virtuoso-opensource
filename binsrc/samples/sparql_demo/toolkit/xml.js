@@ -114,9 +114,13 @@ OAT.Xml = {
 	
 	getElementsByTagName:function(elem,tagName) {
 		var result = [];
-		var all = elem.getElementsByTagName("*");
-		for (var i=0;i<all.length;i++) 
-			if (all[i].localName == tagName || all[i].baseName == tagName) { result.push(all[i]); }
+		var elems = elem;
+		if (!(elems instanceof Array)) { elems = [elem]; }
+		for (var i=0;i<elems.length;i++) {
+			var all = elems[i].getElementsByTagName("*");
+			for (var j=0;j<all.length;j++) 
+				if (all[j].localName == tagName || all[j].baseName == tagName) { result.push(all[j]); }
+		}
 		return result;
 	}
 }

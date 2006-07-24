@@ -210,9 +210,13 @@ OAT.DavType = function(el,root_el) {
   this.creationdate  = OAT.get_prop_value(prop,'creationdate');
   this.lastmodified  = OAT.get_prop_value(prop,'getlastmodified');
   this.displayname = null;
-  this.contentlength = OAT.get_prop_value(prop,'getcontentlength');
+  var cl = OAT.get_prop_value(prop,'getcontentlength');
+  /* ondrej: display size in kbytes */
+  var num = parseInt(cl);
+  if (isNaN(num)) { num = 0; }
+  this.contentlength = Math.round(num/1024) + " kB";
   this.contenttype   = OAT.get_prop_value(prop,'getcontenttype');
-  //getcontentlengt
+  
 
 }
 
@@ -247,7 +251,7 @@ OAT.WebDav = {
       height:420,
       x:120,
       y:120,
-      imagePath:'ajax-tools/toolkit/images/',
+      imagePath:'/DAV/JS/images/',
       imageExt:'gif',
       onResClick:function(){},
       onOpenClick:function(){},
@@ -315,7 +319,7 @@ OAT.WebDav = {
                 data = OAT.Dav.dom2list(data);
 	              var el = data.root;
 	              OAT.WebDav.insert_into_grid(el,OAT.WebDav.grid.rows.length);
-  	            alert('Succesfull');
+  	            alert('Succesful');
               };
               OAT.Dav.list(li.href,ref);
   	          });
@@ -585,7 +589,7 @@ OAT.WebDav = {
 		sign.style.backgroundRepeat = "no-repeat";
     OAT.Dom.attach(sign, 'click', OAT.WebDav.col_sign_click);
 
-    var sp = OAT.Dom.create('span',{backgroundImage:OAT.WebDav.imagePath("node"),backgroundRepeat:"no-repeat",padding:"1px",paddingLeft:"17px"});
+    var sp = OAT.Dom.create('span',{backgroundImage:OAT.WebDav.imagePath("node-collapsed"),backgroundRepeat:"no-repeat",padding:"1px",paddingLeft:"17px"});
     sp.innerHTML = el.name;
     OAT.Dom.attach(sp, 'click', OAT.WebDav.col_name_click);
 
@@ -644,7 +648,7 @@ OAT.WebDav = {
   //---------------------------------
   insert_into_grid:function(el,i){
       if(el.resourcetype == 'col'){
-        var ico_type = 'node';
+        var ico_type = 'node-collapsed';
       }else{
         var ico_type = 'leaf';
       }
@@ -659,7 +663,12 @@ OAT.WebDav = {
   //---------------------------------
   format_date:function(fulldate){
     var d = new Date(fulldate);
-    return d.getMonth()+'/'+d.getDate()+'/'+d.getYear()+' '+d.getHours()+':'+d.getMinutes() //04/24/2003 12:34
+	var lz = function(s) {
+		var ss = s.toString();
+		if (ss.length == 1) { ss = "0"+ss; }
+		return ss;
+	}
+    return lz(d.getMonth()+1)+'/'+lz(d.getDate())+'/'+d.getFullYear()+' '+lz(d.getHours())+':'+lz(d.getMinutes()) //04/24/2003 12:34
   },
 
   //---------------------------------
@@ -679,7 +688,7 @@ OAT.WebDav = {
     for(var i=0;i < data.list.length;i++){
       var el = data.list[i];
       if(el.resourcetype == 'col'){
-        var ico_type = 'node';
+        var ico_type = 'node-collapsed';
       }else{
         var ico_type = 'leaf';
       }
@@ -742,8 +751,7 @@ OAT.WebDav = {
 
   //---------------------------------
   col_sign_click:function(e){
-    if (!e) var e = window.event
-    var obj = (e.target) ? e.target : e.srcElement
+    var obj = OAT.Dom.source(e);
     var node = obj.parentNode;
     if(node.getAttribute('loaded') != -1){
       OAT.WebDav.toggle(node);
@@ -753,16 +761,14 @@ OAT.WebDav = {
 
   //---------------------------------
   col_name_click:function(e){
-    if (!e) var e = window.event
-    var obj = (e.target) ? e.target : e.srcElement
-
+    var obj = OAT.Dom.source(e);
     var node = obj.parentNode;
-
     OAT.WebDav.sel_tree_node(node);
 
-    if(!node.getAttribute('loaded')){
-      // Loading new childs
       OAT.WebDav.activeNode = node;
+
+    if(!node.getAttribute('loaded')){
+      // Loading new children
       OAT.WebDav.get_list();
 
     }else {
@@ -785,10 +791,14 @@ OAT.WebDav = {
   sel_tree_node:function(obj){
     var parent = obj.parentNode.parentNode;
 
+	window.o1 = obj;
+	window.o2 = parent;
+	window.oo = OAT.WebDav.activeNode.childNodes[1];
+
     OAT.WebDav.activeNode.childNodes[1].style.backgroundColor="";
     OAT.WebDav.activeNode.childNodes[1].style.color="";
 
-    obj.childNodes[1].style.backgroundColor="#0000ff";
+    obj.childNodes[1].style.backgroundColor="#00f";
     obj.childNodes[1].style.color="#fff";
 
   },

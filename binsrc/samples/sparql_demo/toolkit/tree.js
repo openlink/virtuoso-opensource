@@ -12,6 +12,15 @@
 */
 
 OAT.Tree = {
+	applyImage:function(elm,dir,name,ext) {
+		if (OAT.Dom.isIE() && ext.toLowerCase() == "png") {
+			var path = dir + "/Tree_"+name+"."+ext;
+			elm.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+path+"', sizingMethod='crop')";
+		} else {
+			elm.style.backgroundImage = OAT.Tree.imagePath(dir,name,ext);
+		}
+	},
+
 	imagePath:function(dir, name, ext) {
 		return "url("+dir+"/Tree_"+name+"."+ext+")";
 	},
@@ -41,19 +50,19 @@ OAT.Tree = {
 					if (parent.tagName.toLowerCase() != "li") return;
 					if (this._Tree_collapsed) {
 						OAT.Dom.hide(this);
-						parent._Tree_signIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"plus",ext);
-						parent._Tree_treeIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"node-collapsed",ext);
+						OAT.Tree.applyImage(parent._Tree_signIcon,dir,"plus",ext);
+						OAT.Tree.applyImage(parent._Tree_treeIcon,dir,"node-collapsed",ext);
 					} else {
 						OAT.Dom.show(this);
-						parent._Tree_signIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"minus",ext);
-						parent._Tree_treeIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"node-expanded",ext);
+						OAT.Tree.applyImage(parent._Tree_signIcon,dir,"minus",ext);
+						OAT.Tree.applyImage(parent._Tree_treeIcon,dir,"node-expanded",ext);
 					}
 				}
 				if (parent.tagName.toLowerCase() == "li") {
 					parent._Tree_treeIcon.style.cursor = "pointer";
 					parent._Tree_signIcon.style.cursor = "pointer";
-					parent._Tree_treeIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"node-expanded",ext);
-					parent._Tree_signIcon.style.backgroundImage = OAT.Tree.imagePath(dir,"minus",ext);
+					OAT.Tree.applyImage(parent._Tree_signIcon,dir,"minus",ext);
+					OAT.Tree.applyImage(parent._Tree_treeIcon,dir,"node-expanded",ext);
 					var ref=function() { node._Tree_toggle(); }
 					OAT.Dom.attach(parent._Tree_signIcon,"click",ref);
 					OAT.Dom.attach(parent._Tree_treeIcon,"click",ref);
@@ -74,10 +83,10 @@ OAT.Tree = {
 			case "li":
 				var tree = OAT.Dom.create("div",{"width":"16px","height":"16px","cssFloat":"left","styleFloat":"left"});
 				tree.style.marginRight = "2px";
-				tree.style.backgroundImage = OAT.Tree.imagePath(dir,"leaf",ext);
+				OAT.Tree.applyImage(tree,dir,"leaf",ext);
 				tree.style.backgroundRepeat = "no-repeat";
 				var sign = OAT.Dom.create("div",{"width":"16px","height":"16px","cssFloat":"left","styleFloat":"left"});
-				sign.style.backgroundImage = OAT.Tree.imagePath(dir,"blank",ext);
+				OAT.Tree.applyImage(sign,dir,"blank",ext);
 				sign.style.backgroundRepeat = "no-repeat";
 				node._Tree_treeIcon = tree;
 				node._Tree_signIcon = sign;

@@ -9,6 +9,7 @@
  */
 /*
 	new OAT.Grid(something,autoNumber);
+	Grid.rowOffset = 0;
 	Grid.createRow(data, [index]);
 	Grid.createHeader(data);
 	Grid.rows[i].addCell(data, [index]);
@@ -17,7 +18,7 @@
 	Grid.removeColumn(index);
 	Grid.clearData();
 	Grid.imagesPath = "../images";
-	Grid.rows[i].select()/deselect()
+	Grid.rows[i].select()/deselect();
 	
 	OAT.GridData.LIMIT
 	OAT.GridData.ALIGN_CENTER
@@ -74,8 +75,7 @@ OAT.GridData = {
 		if (OAT.GridData.dragging) {
 			var obj = OAT.GridData.dragging;
 			OAT.GridData.dragging = false;
-			if (obj.tmp_drag) {
-				/* reorder */
+			if (obj.tmp_drag) { /* reorder */
 				var index = -1;
 				for (var i=0;i<obj.header.cells.length;i++) {
 					if (obj.header.cells[i].signal) {
@@ -191,6 +191,7 @@ OAT.Grid = function(something,autoNumber) {
 	this.reorderNotifier = false; /* notify app of reordering */
 	this.sortFunc = false;        /* custom sorting routine */
 	this.imagesPath = "../images";
+	this.rowOffset = 0;
 	
 	this.div = $(something);
 	OAT.Dom.clear(this.div);
@@ -208,10 +209,11 @@ OAT.Grid = function(something,autoNumber) {
 	this.html.appendChild(this.rowBlock);
 	
 	var obj = this;
+	var self = this;
 	
 	this.clearData = function() {
-		this.rows = [];
-		OAT.Dom.clear(this.rowBlock);
+		self.rows = [];
+		OAT.Dom.clear(self.rowBlock);
 	}
 	
 	this.appendHeader = function(paramsObj,index) { /* append one header */
@@ -252,7 +254,7 @@ OAT.Grid = function(something,autoNumber) {
 		}
 
 		if (this.autoNumber) {
-			row.addCell({value:number+1,align:OAT.GridData.ALIGN_CENTER});
+			row.addCell({value:self.rowOffset+number+1,align:OAT.GridData.ALIGN_CENTER});
 			OAT.Dom.addClass(row.cells[0].html,"index");
 		} 
 
@@ -605,6 +607,7 @@ OAT.GridRow = function(obj,number) {
 				} /* all rows */
 			} /* below */
 		} /* if shift */
+		
 		self.selected ? self.deselect() : self.select();
 	}
 	

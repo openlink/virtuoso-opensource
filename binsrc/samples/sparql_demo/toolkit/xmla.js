@@ -14,7 +14,7 @@
 	password
 	query
 	-
-	execute(callback)  <-- needs endpoint && dsn && user && password && query
+	execute(callback,cursorOptions)  <-- needs endpoint && dsn && user && password && query
 	discover(callback) <-- needs endpoint
 	dbschema(callback) <-- needs endpoint && dsn
 	tables(catalog,callback)   <-- needs endpoint && dsn
@@ -72,16 +72,26 @@ OAT.Xmla = {
 		return [header,body];
 	},
 	
-	execute:function(callback) {
+	execute:function(callback,cursorOptions) {
+		var options = {
+			offset:0,
+			limit:0
+		}
+		if (cursorOptions) for (var p in cursorOptions) { options[p] = cursorOptions[p]; }
 		var ref = function() {
 			var data = '<Execute env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
 				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
-				'<Command><Statement><![CDATA['+OAT.Xmla.query+']]></Statement></Command>'
+				'<Command><Statement><![CDATA['+OAT.Xmla.query+']]></Statement></Command>'+
 				'<Properties><PropertyList>'+
 				'<DataSourceInfo>'+OAT.Xmla.dsn+'</DataSourceInfo>'+
 				'<UserName>'+OAT.Xmla.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.password+'</Password>'+
-				'</PropertyList></Properties></Execute>';
+				'<Password>'+OAT.Xmla.password+'</Password>';
+			if (OAT.Preferences.useCursors && options.limit) {
+//				data += '<retrieve-row-count>1</retrieve-row-count>';
+				data += '<n-rows>'+options.limit+'</n-rows>';
+				data += '<skip>'+options.offset+'</skip>';
+			}			
+			data += '</PropertyList></Properties></Execute>';
 			return data;
 		}
 		var cBack = function(data) {
@@ -89,7 +99,7 @@ OAT.Xmla = {
 			callback(result);
 		}
 		
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Xmla.executeHeader);
+		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_TEXT, OAT.Xmla.executeHeader);
 	},
 	
 	discover:function(callback) {
@@ -105,7 +115,7 @@ OAT.Xmla = {
 			var result = OAT.Xmla.discover_array(data);
 			callback(result);
 		}
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_TEXT, OAT.Xmla.discoverHeader);
 	},
 	
 	dbschema:function(callback) {
@@ -126,7 +136,7 @@ OAT.Xmla = {
 			callback(result);
 		}
 		
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_TEXT, OAT.Xmla.discoverHeader);
 	},
 	
 	tables:function(catalog,callback) {
@@ -155,7 +165,7 @@ OAT.Xmla = {
 			var result = OAT.Xmla.tables_array(data);
 			callback(catalog,result);
 		}
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_TEXT, OAT.Xmla.discoverHeader);
 	},
 
 	columns:function(catalog,schema,table,callback) {
@@ -181,7 +191,7 @@ OAT.Xmla = {
 			callback(result);
 		}
 		
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_TEXT, OAT.Xmla.discoverHeader);
 	},
 	
 	qualifiers:function(callback) {
@@ -201,7 +211,7 @@ OAT.Xmla = {
 			callback(result);
 		}
 		
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_TEXT, OAT.Xmla.discoverHeader);
 	},
 	
 	providerTypes:function(callback) {
@@ -221,7 +231,7 @@ OAT.Xmla = {
 			callback(result);
 		}
 		
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_TEXT, OAT.Xmla.discoverHeader);
 	},
 	
 	primaryKeys:function(catalog,schema,table,callback) {
@@ -248,7 +258,7 @@ OAT.Xmla = {
 			var result = OAT.Xmla.primaryKeys_array(catalog,schema,table,data);
 			callback(result);
 		}
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_TEXT, OAT.Xmla.discoverHeader);
 	},
 	
 	foreignKeys:function(catalog,schema,table,callback) {
@@ -273,7 +283,7 @@ OAT.Xmla = {
 			var result = OAT.Xmla.foreignKeys_array(catalog,schema,table,data);
 			callback(result);
 		}
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_TEXT, OAT.Xmla.discoverHeader);
 	},
 
 /* --------------------------- */	
