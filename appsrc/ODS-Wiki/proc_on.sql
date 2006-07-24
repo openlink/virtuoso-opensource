@@ -293,7 +293,6 @@ create method ti_run_lexer (in _env any) returns varchar for WV.WIKI.TOPICINFO
   	coalesce (self.ti_cluster_name, 'Main'),
 	coalesce (self.ti_local_name, 'WelcomeVisitors'),
 	self.ti_curuser_wikiname, _env);
-  --dbg_obj_print (_res);
   return _res;
 }
 ;

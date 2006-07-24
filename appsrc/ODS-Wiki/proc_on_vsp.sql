@@ -1085,6 +1085,48 @@ create function WV.WIKI.LPATH_OFFSET (in lpath varchar)
 }
 ;
     
+
+--! decodes /wiki/Atom/<topicid>/.. 
+create procedure WV.WIKI.ATOMDECODEWIKIPATH (out _topicid int, out _cluster varchar)
+{
+  declare path any;
+  path := http_path ();
+  path := subseq(split_and_decode(aref (WS.WS.PARSE_URI(path), 2), 0, '\0\0/'), 1);
+  declare _host varchar;
+  _host := DB.DBA.WA_GET_HOST();
+	  
+  declare domain varchar;
+  domain := http_map_get ('domain');
+  declare full_path, pattern varchar;
+  full_path := _host || '/' || WV.WIKI.STRJOIN ('/', path);
+  
+  declare _cluster_id int;
+whenever not found goto nf;
+  select DP_CLUSTER into _cluster_id from WV.WIKI.DOMAIN_PATTERN_1 where domain like DP_PATTERN and _host like DP_HOST;
+  if (0)
+    {
+nf:
+       path := subseq (path, 1);
+         
+    }
+  else
+    path := subseq (path, (length (split_and_decode (domain, 0, '\0\0/')) - 2));
+  if (path[0] = 'Atom') 
+    {
+      _cluster := 'Main';
+      if (length (path) > 1)
+        _cluster := path[1];       
+      if (length (path) > 2)
+        _topicid := atoi (path[2]);
+      return;
+    }
+  _topicid := 0;
+  _cluster := null;
+  return 0;
+
+}
+;
+
 --! \return "details" vector - dictionary of additional parameters
 create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out _cluster varchar, out _local_name varchar, out _attach varchar, out _base_adjust varchar, in lines any)
 {
@@ -1107,15 +1149,10 @@ create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out 
   declare full_path, pattern varchar;
   full_path := _host || '/' || WV.WIKI.STRJOIN ('/', path);
 
---  dbg_obj_print (full_path, domain);
-  
 whenever not found goto nf;
   select DP_CLUSTER, DP_PATTERN into cluster_id, pattern  from WV.WIKI.DOMAIN_PATTERN_1 where domain like DP_PATTERN and _host like DP_HOST;
---  dbg_obj_princ (full_path, ' => ', pattern, ' ', _host);
-
       default_cluster := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = cluster_id);
       path := subseq (path, (length (split_and_decode (domain, 0, '\0\0/')) - 1));
---  dbg_obj_princ (path, split_and_decode (pattern, 0, '\0\0/'));
   if (0)
     {
 nf:
