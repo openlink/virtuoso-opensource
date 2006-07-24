@@ -165,6 +165,7 @@ BMK.WA.exec_no_error('
   	BD_FOLDER_ID integer,
     BD_NAME varchar,
     BD_DESCRIPTION varchar,
+    BD_CREATED datetime,
     BD_LAST_UPDATE datetime,
 
     constraint FK_BOOKMARK_DOMAIN_01 FOREIGN KEY (BD_BOOKMARK_ID) references BMK.WA.BOOKMARK (B_ID) on delete cascade,
@@ -173,6 +174,10 @@ BMK.WA.exec_no_error('
     primary key (BD_ID)
   )
 ');
+
+BMK.WA.exec_no_error(
+  'alter table BMK.WA.BOOKMARK_DOMAIN add BD_CREATED datetime', 'C', 'BMK.WA.BOOKMARK_DOMAIN', 'BD_CREATED'
+);
 
 BMK.WA.exec_no_error('
   drop index SK_BOOKMARK_DOMAIN_01 BMK.WA.BOOKMARK_DOMAIN

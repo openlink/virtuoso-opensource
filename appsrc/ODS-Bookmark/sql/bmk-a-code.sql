@@ -730,8 +730,8 @@ create procedure BMK.WA.bookmark_update (
   if (id = 0)
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), 0);
   if (id = 0) {
-    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, BD_FOLDER_ID)
-      values (domain_id, bookmark_id, name, description, now(), folder_id);
+    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, BD_CREATED, BD_FOLDER_ID)
+      values (domain_id, bookmark_id, name, description, now(), now(), folder_id);
     id := identity_value ();
   } else {
     update BMK.WA.BOOKMARK_DOMAIN

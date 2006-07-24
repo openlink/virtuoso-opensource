@@ -27,7 +27,7 @@
   <head profile="http://internetalchemy.org/2003/02/profile">
     <?vsp
       http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', BMK.WA.host_url (), BMK.WA.account()));
-      http(sprintf('<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s/dataspace/%U/bookmark/%U/sioc.rdf"/>', BMK.WA.host_url (), BMK.WA.account(), BMK.WA.domain_name(self.domain_id)));
+      http(sprintf('<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', replace(sprintf('%s/dataspace/%U/bookmark/%U/sioc.rdf', BMK.WA.host_url (), BMK.WA.account(), BMK.WA.domain_name(self.domain_id)), '+', '%2B')));
     ?>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
