@@ -252,6 +252,11 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	  itc->itc_search_mode = SM_READ;
 	  buf = itc_reset (itc);
 	  rc = itc_next (itc, &buf);
+	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
+	    {
+	      itc_page_leave (itc, buf);
+	      return IOP_AT_END;
+	    }
 	  break;
 	case IOP_TARGET:
 	  is_random = 1;
@@ -263,6 +268,11 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	  is_random = 0;
 	  buf = page_reenter_excl (itc);
 	  rc = itc_next (itc, &buf);
+	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
+	    {
+	      itc_page_leave (itc, buf);
+	      return IOP_AT_END;
+	    }
 	  break;
 	}
       FAILCK (itc);
