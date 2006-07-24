@@ -185,7 +185,7 @@
       if (_is_ttl)
         DB.DBA.TTLP(_data,_graph,_graph);
       else
-        DB.DBA.RDF_EXP_LOAD_RDFXML(_graph,_data_xml,0);
+        DB.DBA.RDF_LOAD_RDFXML(_data,_graph,_graph);
   
       DB.DBA.SPARQL_MKPATH (_davpath);
       if (DB.DBA.DAV_SEARCH_ID(_davpath,'R') > 0)
