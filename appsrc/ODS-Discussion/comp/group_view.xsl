@@ -225,7 +225,7 @@
             <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
           </td>
           <td>
-            <a href="nntpf_disp_artcicle.vspx?id=<?=sprintf ('%U', encode_base64 (control.te_rowset[3]))?>"
+            <a href="nntpf_disp_article.vspx?id=<?=sprintf ('%U', encode_base64 (control.te_rowset[3]))?>"
                onclick="javascript: doPostValueN ('nntpf', 'disp_artic', '<?=sprintf ('%s', (control.te_rowset[3]))?>'); return false">
               Read
             </a>

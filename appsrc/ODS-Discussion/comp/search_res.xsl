@@ -117,7 +117,7 @@
 <?vsp
 	self._temp_id := encode_base64 (control.te_rowset[3]);
 ?>
-		<a href="nntpf_disp_artcicle.vspx?id=<?=self._temp_id?>" onclick="javascript: doPostValueN ('nntpf_s_res', 'disp_artic', '<?=self._temp_id?>'); return false">Read</a>
+		<a href="nntpf_disp_article.vspx?id=<?=self._temp_id?>" onclick="javascript: doPostValueN ('nntpf_s_res', 'disp_artic', '<?=self._temp_id?>'); return false">Read</a>
      		<xsl:call-template name="vm:disp_cancel"/>
             </td>
           <?vsp
