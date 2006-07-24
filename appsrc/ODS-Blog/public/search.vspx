@@ -807,9 +807,9 @@
                           {
                         ?>
 			<a href="<?V self.qurl ?>html" target="_blank"><img src="/weblog/public/images/html401.gif" border="0" title="HTML" alt="HTML"/></a>
-                        <a href="<?V self.qurl ?>xml" target="_blank"><img src="/weblog/public/images/rss-icon-16.gif" border="0" title="RSS" alt="RSS"/></a>
-			<a href="<?V self.qurl ?>atom" target="_blank"><img src="/weblog/public/images/atom-icon-16.gif" border="0" title="ATOM" alt="ATOM"/></a>
-                        <a href="<?V self.qurl ?>rdf" target="_blank"><img src="/weblog/public/images/rdf-icon-16.gif" border="0" title="RDF" alt="RDF"/></a>
+                        <a href="<?V self.qurl ?>xml" target="_blank"><img src="/weblog/public/images/rss-icon-16.gif" border="0" title="RSS" alt="RSS" hspace="3"/>RSS v2.0</a>
+			<a href="<?V self.qurl ?>atom" target="_blank"><img src="/weblog/public/images/atom-icon-16.gif" border="0" title="ATOM" alt="ATOM" hspace="3"/>Atom 1.0</a>
+                        <a href="<?V self.qurl ?>rdf" target="_blank"><img src="/weblog/public/images/rdf-icon-16.gif" border="0" title="RDF" alt="RDF" hspace="3"/>RDF</a>
                         <a href="<?V self.qurl ?>xbel" target="_blank"><img src="/weblog/public/images/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL" hspace="3"/>XBEL</a>
 			<a href="<?V sprintf ('search.vspx?blogid=%U&type=%s&kwds=%U&OpenSearch', self.blogid, self.qt.ufl_value, coalesce (self.expr.ufl_value, self.qry))  ?>" target="_blank"><img src="/weblog/public/images/blue-icon-16.gif" border="0" hspace="3"/>OpenSearch</a>
                         <a href="<?V self.gurl ?>" target="_blank"><img src="/weblog/public/images/blue-icon-16.gif" border="0" title="GData" alt="GData" hspace="3"/>GData</a>
@@ -824,9 +824,9 @@
                   <v:label name="ct1" value="--length (self.ds_data)" format=" (%d)" render-only="1"/>
                   <v:template name="rest" type="simple" condition="length (self.sqry)">
                     from search by "<?V BLOG..blog_utf2wide(self.qry) ?>" <br />
-                    <a href="<?V self.qurl ?>xml"><img src="/weblog/public/images/rss-icon-16.gif" border="0"/></a>
-		    <a href="<?V self.qurl ?>atom"><img src="/weblog/public/images/atom-icon-16.gif" border="0"/></a>
-                    <a href="<?V self.qurl ?>rdf"><img src="/weblog/public/images/rdf-icon-16.gif" border="0"/></a>
+                    <a href="<?V self.qurl ?>xml"><img src="/weblog/public/images/rss-icon-16.gif" border="0" hspace="3"/>RSS 2.0</a>
+		    <a href="<?V self.qurl ?>atom"><img src="/weblog/public/images/atom-icon-16.gif" border="0" hspace="3"/>Atom 1.0</a>
+                    <a href="<?V self.qurl ?>rdf"><img src="/weblog/public/images/rdf-icon-16.gif" border="0" hspace="3"/>RDF</a>
 		    <a href="<?V self.qurl ?>xbel"><img src="/weblog/public/images/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL" hspace="3"/>XBEL</a>
         <a href="<?V sprintf ('search.vspx?blogid=%U&type=%s&kwds=%U&OpenSearch', self.blogid, self.qt.ufl_value, coalesce (self.expr.ufl_value, self.qry))  ?>"><img src="/weblog/public/images/blue-icon-16.gif" border="0" hspace="3"/>OpenSearch</a>
                   </v:template>
