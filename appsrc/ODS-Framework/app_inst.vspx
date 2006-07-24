@@ -31,6 +31,7 @@
 <vm:page>
   <vm:header>
     <vm:title>Applications</vm:title>
+    <vm:disco-sioc-app-link />
   </vm:header>
   <vm:pagewrapper>
     <v:variable name="ufid" type="integer" default="-1"/>
