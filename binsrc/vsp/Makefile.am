@@ -46,55 +46,59 @@ uninstall-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST =  \
+	*.css \
+	*.html \
+	*.sql \
+	*.txt \
+	*.vsp \
+	admin/*.css \
+	admin/*.html \
+	admin/*.js \
+	admin/*.sql \
+	admin/*.vsp \
+	admin/*.vspx \
 	admin/admin_dav/*.css \
 	admin/admin_dav/*.html \
-	admin/admin_dav/images/16x16/*.gif \
 	admin/admin_dav/*.js \
 	admin/admin_dav/*.sql \
 	admin/admin_dav/*.vsp \
 	admin/admin_dav/*.vspx \
 	admin/admin_dav/*.xml \
 	admin/admin_dav/*.xsl \
+	admin/admin_dav/images/16x16/*.gif \
 	admin/admin_news/*.sql \
 	admin/admin_news/*.vsp \
 	admin/admin_repl/*.js \
 	admin/admin_repl/*.vsp \
 	admin/admin_trx_repl/*.vsp \
-	admin/*.css \
 	admin/dbpump/*.html \
-	admin/dbpump/*.isql \
-	admin/dbpump/oper.pars \
-	admin/dbpump/operpars.awk \
-	admin/dbpump/parse_oper_pars.sh \
-	admin/dbpump/schema.osql \
 	admin/dbpump/*.sql \
 	admin/dbpump/*.txt \
 	admin/dbpump/*.vsp \
 	admin/dbpump/*.xsl \
+	admin/dbpump/oper.pars \
+	admin/dbpump/operpars.awk \
+	admin/dbpump/parse_oper_pars.sh \
+	admin/dbpump/root.isql \
+	admin/dbpump/schema.osql \
+	admin/debug/*.sql \
+	admin/debug/*.vspx \
 	admin/debug/filter.awk \
 	admin/debug/make_vad.sh \
 	admin/debug/read.me \
 	admin/debug/run_tests.sh \
-	admin/debug/*.sql \
-	admin/debug/*.vspx \
-	admin/*.html \
 	admin/images/*.gif \
 	admin/images/*.jpg \
-	admin/*.js \
-	admin/*.sql \
-	admin/vad/*.dtd \
 	admin/vad/*.gif \
 	admin/vad/*.vsp \
-	admin/*.vsp \
-	admin/*.vspx \
-	*.css \
+	admin/vad/vad_sticker.dtd \
 	doc/*.css \
 	doc/*.gif \
+	doc/*.jpg \
 	doc/*.png \
 	doc/*.vsp \
 	doc/*.vspx \
 	doc/*.xsl \
-	*.html \
 	images/*.gif \
 	images/*.jpg \
 	images/*.png \
@@ -102,23 +106,33 @@ EXTRA_DIST =  \
 	mime/*.htm \
 	mime/*.vsp \
 	soapdemo/*.css \
-	soapdemo/demo.jar \
-	soapdemo/GNUmakefile \
 	soapdemo/*.html \
 	soapdemo/*.java \
+	soapdemo/*.sql \
+	soapdemo/*.vsp \
+	soapdemo/demo.jar \
+	soapdemo/GNUmakefile \
 	soapdemo/r4/*.sql \
-	soapdemo/r4/*.xsd \
+	soapdemo/r4/complex-doc-1.xsd \
+	soapdemo/r4/complex-doc-2.xsd \
+	soapdemo/r4/complex-doc-3.xsd \
+	soapdemo/r4/complex-rpc-encoded.xsd \
+	soapdemo/r4/dime-doc.xsd \
+	soapdemo/r4/dime-rpc.xsd \
+	soapdemo/r4/round4xsd-1.xsd \
+	soapdemo/r4/round4xsd-2.xsd \
+	soapdemo/r4/round4xsd-3.xsd \
+	soapdemo/r4/round4xsd-4.xsd \
+	soapdemo/r4/simple-doc-literal-1.xsd \
+	soapdemo/r4/simple-doc-literal-2.xsd \
+	soapdemo/r4/simple-doc-literal-3.xsd \
+	soapdemo/r4/simple-rpc-encoded.xsd \
 	soapdemo/round2-base.vb \
 	soapdemo/saxapi.jar \
 	soapdemo/soaprt.jar \
-	soapdemo/*.sql \
-	soapdemo/*.vsp \
 	soapdemo/xerces.jar \
-	*.sql \
-	*.txt \
 	vsmx/*.css \
 	vsmx/*.gif \
 	vsmx/*.jpg \
 	vsmx/*.vspx \
-	vsmx/*.xsl \
-	*.vsp
+	vsmx/*.xsl

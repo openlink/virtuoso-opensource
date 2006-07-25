@@ -125,6 +125,9 @@ EXTRA_DIST = \
 	vx_s_12/*.sql \
 	vx_s_12/*.vspx \
 	vx_s_12/*.xml \
+	vx_s_13/*.sql \
+	vx_s_13/*.vspx \
+	vx_s_13/*.xml \
 	vx_s_2/*.vspx \
 	vx_s_2/*.xml \
 	vx_s_3/*.sql \
