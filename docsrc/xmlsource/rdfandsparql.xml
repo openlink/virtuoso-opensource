@@ -478,23 +478,21 @@ id="rdfapidataimport"><title>Data Import</title>
 <programlisting>
 -- This parses TTL (TURTLE or N3 resource and places its triples into DB.DBA.RDF_QUAD.
 create procedure DB.DBA.TTLP (
-    in strg varchar,  -- text of the resource
+    in strg any,       -- text of the resource
     in base varchar,  -- base IRI to resolve relative IRIs to absolute
-    in graph varchar) -- target graph IRI, parsed triples will appear in that graph.
+    in graph varchar ) -- target graph IRI, parsed triples will appear in that graph.
 
 -- This does not load TTL content, instead it returns a dict of triples in 'long valmode'
 create function DB.DBA.RDF_TTL2HASH (
-    in strg varchar,
+    in strg any,
     in base varchar,
-    in graph varchar) returns any
+    in graph varchar ) returns any
 
 -- This parses TTL (TURTLE or N3 resource and places its triples into DB.DBA.RDF_QUAD.
-create procedure DB.DBA.RDF_EXP_LOAD_RDFXML (
-    in g any,                         -- target graph IRI, can be IRI string or integer or IRI ref num
-    inout ent any,                    -- XML entity that contain RDF/XML document
-    in process_as_large_xper integer, -- special mode to load large documents in many transactions of relatively small
-size
-    in app_env any := null )          -- application environment for callbacks, unused in current version
+create procedure DB.DBA.RDF_LOAD_RDFXML (
+    in strg any,           -- text of and XML document
+    in base_iri varchar,   -- base IRI to resolve relative IRIs
+    in graph_iri varchar ) -- the IRI of destination graph
 </programlisting>
 <programlisting>
 -- Simple insertion of a quad where object is a node
@@ -509,7 +507,7 @@ create procedure DB.DBA.RDF_QUAD_URI_L (in g_uri varchar, in s_uri varchar, in p
 -- Serializes vector of triples into a session, in TURTLE syntax
 create procedure DB.DBA.RDF_TRIPLES_TO_TTL (
     inout triples any, -- vector of triples in 'long valmode'.
-    inout ses any) -- an output stream in server default encoding
+    inout ses any )    -- an output stream in server default encoding
 
 -- Serializes vector of triples into a session, in RDF/XML syntax.
 -- In current version, every triple is printed in separate rdf:Description tag, no nesting.
@@ -517,7 +515,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (
     inout triples any,          -- vector of triples in 'long valmode'.
     in print_top_level integer, -- zero if only rdf:Description tags should be written, non-zero if the rdf:RDF top-lev
 el element should also be written
-    inout ses any)              -- an output stream in server default encoding
+    inout ses any )             -- an output stream in server default encoding
 </programlisting>
 </sect3>
 <sect3 id="rdfapidataquery"><title>Data query</title>
@@ -526,13 +524,13 @@ el element should also be written
 create procedure DB.DBA.SPARQL_EVAL (
     in query varchar,      -- text of SPARQL query to execute
     in dflt_graph varchar, -- default graph IRI, if not NULL then this overrides what's specified in query
-    in maxrows integer)    -- limit on numbers of rows that should be returned.
+    in maxrows integer )   -- limit on numbers of rows that should be returned.
 
 -- Similar to SPARQL_EVAL, but returns a vector of vectors of SQL values.
 create function DB.DBA.SPARQL_EVAL_TO_ARRAY (
     in query varchar,      -- text of SPARQL query to execute
     in dflt_graph varchar, -- text of SPARQL query to execute
-    in maxrows integer)    -- limit on numbers of rows that should be returned.
+    in maxrows integer )   -- limit on numbers of rows that should be returned.
 returns any
 </programlisting>
 <programlisting>
@@ -545,7 +543,7 @@ create procedure DB.DBA.SPARQL_REXEC (
     in req_hdr any,        -- additional HTTP header lines that should be passed to the service; 'Host: ...' is most po
 pular.
     in maxrows integer,    -- limit on numbers of rows that should be returned.
-    in bnode_dict any)     -- dictionary of bnode ID references.
+    in bnode_dict any )    -- dictionary of bnode ID references.
 
 -- Similar to SPARQL_REXEC (), but returns a vector of vectors of SQL values.
 -- All arguments are the same.
