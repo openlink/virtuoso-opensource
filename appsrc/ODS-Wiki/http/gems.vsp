@@ -28,6 +28,7 @@ if ({?'type'} is not null)
   declare _cluster, _clusterwithpoint varchar;
   declare _home varchar;
   declare _base varchar;
+  declare _topicid int;
   if ({?'cluster'} is null) {
 	_cluster := '';
 	_clusterwithpoint := '';

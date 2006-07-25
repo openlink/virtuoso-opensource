@@ -41,7 +41,7 @@
      <title >oWiki <xsl:value-of select="@cluster"/> Weblog</title>
     </xsl:if>
     <link  rel="alternate"><xsl:value-of select="@home"/></link>
-    <copyright >Copyright (c) 1999-2005, OpenLink Software</copyright>
+    <copyright >Copyright (c) 1999-2006, OpenLink Software</copyright>
     <author >
       <name><xsl:value-of select="@name"/></name>
       <email><xsl:value-of select="@email"/></email>
