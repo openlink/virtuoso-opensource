@@ -3973,10 +3973,37 @@ DB.DBA.XQ_TEMPLATE (inout q varchar, inout ctx varchar, inout ses any, inout map
 
 --!AWK PUBLIC
 create procedure
-DB.DBA.SQLX_TEMPLATE (inout q varchar, inout params any, inout ses any)
+DB.DBA.SQLX_OR_SPARQL_TEMPLATE (inout q varchar, inout params any, inout ses any, inout q_type any)
 {
-  declare h, res any;
-  exec (q,  null, null, params, 0, null, null, h);
+  declare h, res, qry any;
+  qry := q;
+
+  if (q_type)
+    {
+      declare arr, _text, decl, i, l any;
+      _text := substring (qry, 7, length (qry));
+      arr := sparql_lex_analyze (_text);
+      l := length (arr)-2;
+      for (i := 0; i < l; i := i + 1)
+        {
+	  declare elm any;
+	  if (isstring (arr[i][2]) and isstring (arr[i+1][2]) and isstring (arr[i+2][2]))
+	    {
+	      elm := lower (arr[i][2]);
+	      if (elm = 'define' and lower (arr[i+1][2]) = 'output:format')
+		{
+		  if (upper (arr[i+2][2]) = '"RDF/XML"')
+		    goto done;
+		  else
+		    signal ('22023', 'The output:format must be RDF/XML');
+		}
+	    }
+	}
+      qry := 'SPARQL define output:format "RDF/XML" ' || _text;
+      done:;
+    }
+
+  exec (qry,  null, null, params, 0, null, null, h);
   while (0 = exec_next(h, null, null, res))
     {
       if (isarray (res) and length (res))
@@ -3985,6 +4012,8 @@ DB.DBA.SQLX_TEMPLATE (inout q varchar, inout params any, inout ses any)
 	    {
 	      if (isentity (elm))
 		http_value (elm, null, ses);
+	      else if (isstring (elm) or __tag (elm) = 185)
+		http (elm, ses);
 	    }
 	}
     }

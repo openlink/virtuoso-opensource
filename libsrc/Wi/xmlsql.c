@@ -5268,6 +5268,7 @@ xml_template_get_sqlx_parms (client_connection_t * cli, const caddr_t text, id_h
   caddr_t * ret = NULL;
   caddr_t *place;
   int inx = 0, named_params = 0;
+  caddr_t _text = text;
 
   qr = sql_compile (text, cli, err, SQLC_NO_REMOTE);
 
@@ -5437,21 +5438,30 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 	  dk_free_tree (err);
 	  return 1;
 	}
-      else if (0 == strcmp (name, XMLSQL_NS ":sqlx"))
+      else if (0 == strcmp (name, XMLSQL_NS ":sqlx") || 0 == strcmp (name, XMLSQL_NS ":sparql"))
 	{
 	  client_connection_t *cli = qi->qi_client;
 	  caddr_t params = NULL;
+	  ptrlong flag = (0 == strcmp (name, XMLSQL_NS ":sparql") ? 1 : 0);
+	  caddr_t q_type = box_num (flag);
 
 	  if (!sqlx_qr)
-	    sqlx_qr = sch_proc_def (isp_schema (NULL), "DB.DBA.SQLX_TEMPLATE");
+	    sqlx_qr = sch_proc_def (isp_schema (NULL), "DB.DBA.SQLX_OR_SPARQL_TEMPLATE");
 
 	  if (sqlx_qr && sqlx_qr->qr_to_recompile)
 	    sqlx_qr = qr_recompile (sqlx_qr, NULL);
 
 	  if (sqlx_qr)
 	    {
-	      caddr_t *exec_pars = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+	      caddr_t *exec_pars = (caddr_t *) dk_alloc_box (4 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 	      caddr_t sqlx_query = current[1];
+	      caddr_t _text = sqlx_query;
+
+	      if (flag)
+		{
+		  sqlx_query = dk_alloc_box (box_length (_text)+7, DV_STRING);
+		  snprintf (sqlx_query, box_length (_text)+7, "SPARQL %s", _text);
+		}
 
 	      params = (caddr_t) xml_template_get_sqlx_parms (cli, sqlx_query, pars, &err);
 
@@ -5460,13 +5470,17 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 		  exec_pars [0] = (caddr_t) &sqlx_query;
 		  exec_pars [1] = (caddr_t) &params;
 		  exec_pars [2] = (caddr_t) &ses;
+		  exec_pars [3] = (caddr_t) &q_type;
 		  err = qr_exec (cli, sqlx_qr, CALLER_LOCAL, NULL, NULL, NULL, exec_pars, NULL, 0);
 	        }
 	      dk_free_box ((box_t) exec_pars);
+	      dk_free_box (q_type);
+	      if (flag)
+		dk_free_box (sqlx_query);
 	    }
 	  else
 	    {
-	      err = srv_make_new_error ("42001", "HT004", "No DB.DBA.SQLX_TEMPLATE defined");
+	      err = srv_make_new_error ("42001", "HT004", "No DB.DBA.SQLX_OR_SPARQL_TEMPLATE defined");
 	    }
 
 	  if (err && ARRAYP (err))
