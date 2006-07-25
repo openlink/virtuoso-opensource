@@ -20,7 +20,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-<?vsp
+
   declare errorCount, N integer;
   declare waID, user_id integer;
   declare wa_home_title, wa_home_link, user_name, user_fullName, procName, procID, S varchar;
