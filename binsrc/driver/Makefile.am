@@ -22,7 +22,7 @@
 #
 #  Driver version and description
 #
-DRIVER_VERS	= 04.50.2902
+DRIVER_VERS	= 04.50.2911
 DRIVER_DESC	= OpenLink Virtuoso ODBC Driver
 
 
