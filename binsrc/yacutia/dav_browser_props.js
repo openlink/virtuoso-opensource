@@ -30,7 +30,7 @@ function init()
   var tab = new Tab ("tab_viewport");
   tab.add ("tab_owner_perms","owner_perms");
   tab.add ("tab_props","props");
-  tab.go (1); /* is 0-based index... */
+  tab.go (0); /* is 0-based index... */
   
   pr_inx = 1;
 
@@ -50,18 +50,18 @@ function init()
 
 //  alert (read_cookie ('dav_show_scr_adv'));
 
-  if (read_cookie ('dav_show_scr_adv') == 'true')
-    {
-      block_show ('vp_1');
-      block_hide ('vp_2');
-      check_box ('wg_vs_adv');
-    }
-  else
-    {
-      block_show ('vp_2');
-      block_hide ('vp_1');
-      uncheck_box ('wg_vs_adv');
-    }
+  //if (read_cookie ('dav_show_scr_adv') == 'true')
+  //  {
+  //    block_show ('vp_1');
+  //    block_hide ('vp_2');
+  //    check_box ('wg_vs_adv');
+  //  }
+  //else
+  //  {
+  //    block_show ('vp_2');
+  //    block_hide ('vp_1');
+  //    uncheck_box ('wg_vs_adv');
+  //  }
 
 }
 

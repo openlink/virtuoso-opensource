@@ -2069,10 +2069,10 @@ else
                     </div>
                     <div style="display: block;" id="props">
                       <div class="wg_view_switch">
-                        <input class="wg_view_switch_sel" id="wg_vs_adv" onchange="cb_toggle (this, 'vp_1', 'vp_2')" type="checkbox"/>
-                        <label for="wg_vs_adv">Advanced</label>
+                        <!--<input class="wg_view_switch_sel" id="wg_vs_adv" onchange="cb_toggle (this, 'vp_1', 'vp_2')" type="checkbox"/>
+                        <label for="wg_vs_adv">Advanced</label>-->
                         <div class="wg_view_switch_vport" id="vp_1" style="display: block;">
-                          <h3>Advanced properties edit script</h3>
+                          <h3>Properties edit script</h3>
                           <div class="wg_grid_vport">
                             <table class="wg_grid" cellpadding="0" cellspacing="0">
                               <thead>
@@ -2106,8 +2106,8 @@ else
                             <!--<a href="#" class="inline_hlp">?</a>-->
                           </div> <!-- wg_cmd_button_row -->
                         </div> <!-- wg_view_switch_vport -->
-                        <div style="display: none;" class="vg_view_switch_vport" id="vp_2">
-                        </div>
+                        <!--<div style="display: none;" class="vg_view_switch_vport" id="vp_2">
+                        </div>-->
                       </div> <!-- vg_view_switch -->
                       <input id="ckb_set_ft_idx" name="ckb_set_ft_idx" type="checkbox"/>
                       <label for="ckb_set_ft_idx">Set Free-text indexing</label>
