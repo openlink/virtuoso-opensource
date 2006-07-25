@@ -1753,11 +1753,11 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L (
 grant execute on DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L to SPARQL_SELECT
 ;
 
-create function DB.DBA.RDF_TTL2HASH (in str varchar, in base varchar, in graph varchar) returns any
+create function DB.DBA.RDF_TTL2HASH (in str varchar, in base varchar, in graph varchar, in flags integer := 0) returns any
 {
   declare res any;
   res := dict_new ();
-  rdf_load_turtle (str, base, graph,
+  rdf_load_turtle (str, base, graph, flags,
     vector (
       'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH(?,?)',
       'select DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK(?,?)',
