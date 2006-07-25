@@ -359,7 +359,9 @@
 	    }
 
       if (self.vc_event.ve_button is not null and 
-          (self.vc_event.ve_button.vc_name = 'next' or self.vc_event.ve_button.vc_name = 'back'))
+          (self.vc_event.ve_button.vc_name = 'next' or 
+           self.vc_event.ve_button.vc_name = 'back' or 
+           self.vc_event.ve_button.vc_name = 'finish'))
       {
         -- Get all tabs
         declare tabs any;
@@ -374,6 +376,8 @@
         pos := position(self.tab1.tb_active.vc_name,tabs);
         if (self.vc_event.ve_button.vc_name = 'back')
           pos := pos - 2;
+        if (self.vc_event.ve_button.vc_name = 'finish')
+          pos := length(tabs) - 1;
         
         declare new_tab_switch_button vspx_button;
         new_tab_switch_button := self.frm_edit_path.vc_find_control ('tab1_switch_' || tabs[pos]);
@@ -1750,6 +1754,8 @@
                 <v:button action="simple" name="back" value="Back" enabled="--neq(self.tab1.tb_active.vc_name,'opt_tab1')">
                 </v:button>
                 <v:button action="simple" name="next" value="Next" enabled="--neq(self.tab1.tb_active.vc_name,'opt_tab10')">
+                </v:button>
+                <v:button action="simple" name="finish" value="Finish" enabled="--case when self.tab1.tb_active.vc_name in ('opt_tab1','opt_tab10') then 0 else 1 end">
                 </v:button>
                 <v:button action="simple" name="save" value="Save Changes" enabled="--equ(self.tab1.tb_active.vc_name,'opt_tab10')">
 		  <v:after-data-bind>
