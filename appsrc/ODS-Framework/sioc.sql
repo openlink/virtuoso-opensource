@@ -1079,6 +1079,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
       declare lim any;
 
       lim := coalesce (DB.DBA.USER_GET_OPTION (u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
+      tp := DB.DBA.wa_type_to_app (inst_type);
 
       iri := forum_iri (inst_type, wai_name);
       rdf_head (ses);
@@ -1111,6 +1112,8 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
       rset := dict_list_keys (triples, 1);
       DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
 
+      if (tp = 'feeds' or tp = 'community')
+	{
       qry := sprintf ('sparql
    	  prefix sioc: <http://rdfs.org/sioc/ns#>
    	  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -1118,6 +1121,8 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
     {
 		?forum sioc:container_of ?post .
 		?post  sioc:has_container ?forum .
+		    ?forum sioc:has_parent ?pforum .
+		    ?pforum sioc:parent_of ?forum .
 		?post rdf:type sioc:Post .
 		?post sioc:title ?title .
 		?post sioc:link ?link .
@@ -1130,19 +1135,54 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
                 {
                   graph <%s>
                   {
-                    ?post rdf:type sioc:Post .
+			?pforum sioc:name "%s" .
+			?pforum sioc:parent_of ?forum .
                     ?post sioc:has_container ?forum .
                     optional { ?post sioc:modified_at ?modified } .
                     optional { ?post sioc:created_at ?created } .
 		    optional { ?post sioc:links_to ?links_to } .
 		    optional { ?post sioc:link ?link } .
 		    optional { ?post sioc:has_creator ?creator } .
+			optional { ?post sioc:title ?title }
+		      }
+		    }
+		    order by desc (?created) limit %d
+		', graph, wai_name, lim);
+	}
+      else
+	{
+	  qry := sprintf ('sparql
+	      prefix sioc: <http://rdfs.org/sioc/ns#>
+	      prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	      construct
+	       {
+		    ?forum sioc:container_of ?post .
+		    ?post  sioc:has_container ?forum .
+		    ?post rdf:type sioc:Post .
 		    ?post sioc:title ?title  .
-                    ?forum sioc:name "%s"
+		    ?post sioc:link ?link .
+		    ?post sioc:links_to ?links_to .
+		    ?post sioc:modified_at ?modified .
+		    ?post sioc:created_at ?created .
+		    ?post sioc:has_creator ?creator
+	       }
+	      where
+		    {
+		      graph <%s>
+		      {
+			?forum sioc:name "%s" .
+			?post sioc:has_container ?forum .
+			optional { ?post sioc:modified_at ?modified } .
+			optional { ?post sioc:created_at ?created } .
+			optional { ?post sioc:links_to ?links_to } .
+			optional { ?post sioc:link ?link } .
+			optional { ?post sioc:has_creator ?creator } .
+			optional { ?post sioc:title ?title }
                   }
                 }
                 order by desc (?created) limit %d
 	    ', graph, wai_name, lim);
+	}
       rset := null;
       maxrows := 0;
       state := '00000';
@@ -1192,7 +1232,8 @@ create procedure ODS_FILTER_FORUM (in p any, in o any)
 {
   if (p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' and o = 'http://rdfs.org/sioc/ns#Forum')
     return 1;
-  else if (p like 'http://rdfs.org/sioc/ns#%' and p <> 'http://rdfs.org/sioc/ns#container_of')
+  else if (p like 'http://rdfs.org/sioc/ns#%' and p <> 'http://rdfs.org/sioc/ns#container_of'
+    and p <> 'http://rdfs.org/sioc/ns#parent_of')
     return 1;
   return 0;
 };
@@ -1224,6 +1265,7 @@ create procedure ODS_FILTER_USER_FORUM (in p any, in o any, in m any)
     return 1;
   else if (p like 'http://rdfs.org/sioc/ns#%'
     and p <> 'http://rdfs.org/sioc/ns#container_of'
+    and p <> 'http://rdfs.org/sioc/ns#parent_of'
     and p <> 'http://rdfs.org/sioc/ns#has_member')
     return 1;
   else if (p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' and o = 'http://rdfs.org/sioc/ns#Forum')

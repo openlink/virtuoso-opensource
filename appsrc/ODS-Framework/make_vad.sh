@@ -305,6 +305,7 @@ sticker_init() {
   echo "  <sql purpose=\"pre-install\"></sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\">" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
+  echo "      declare rc any; " >> $STICKER
   echo "      registry_set('_wa_path_', '/DAV/VAD/wa/');" >> $STICKER
   echo "      registry_set('_wa_version_', '$VERSION');" >> $STICKER
   echo "      registry_set('_wa_build_', '$PACKDATE');" >> $STICKER
@@ -323,7 +324,7 @@ sticker_init() {
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/trs_export.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/foaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/ufoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
-  echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/ufoaf.xml', 'xml-sql-encoding', 'UTF-8', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
+  echo "      rc := DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/ufoaf.xml', 'xml-sql-encoding', 'UTF-8', 'dav', null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/afoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/sfoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      vhost_remove (lpath=>'/wa');" >> $STICKER

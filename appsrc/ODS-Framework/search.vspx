@@ -283,7 +283,7 @@
 
       if (WA_IS_REGULAR_FEED ())
       {
-	self.gurl := '/dataspaces/Gdata/';
+	self.gurl := '/dataspace/GData/';
 
 	if (self.srch_people.ufl_selected)
 	  self.gurl := self.gurl || 'people,';
@@ -305,7 +305,7 @@
 	  self.gurl := self.gurl || '/';
 
 	if (self.srch_people.ufl_selected and self.srch_news.ufl_selected and self.srch_blogs.ufl_selected and self.srch_wikis.ufl_selected and  self.srch_dav.ufl_selected and self.srch_apps.ufl_selected and self.srch_omail.ufl_selected)
-	  self.gurl := '/dataspaces/Gdata/';
+	  self.gurl := '/dataspace/GData/';
 
        if (length (self.q_tags_expr.ufl_value))
 	  {
@@ -495,7 +495,7 @@
     }
       if (WA_IS_REGULAR_FEED ())
       {
-        self.gurl := '/dataspaces/Gdata/users/';
+        self.gurl := '/dataspace/GData/users/';
         if (length (self.us_tags.ufl_value))
 	  {
 	    declare arr, ses, tag_str any;
@@ -1033,11 +1033,11 @@
       <td colspan="3" align="left">
        <v:template name="search_rss_plate" type="simple" enabled="--self.plate_enabled">
 	<v:url name="rss_url" value="search.vspx" url="--self.page_url || '&o=xml'"
-	      format="<image src=''images/orange-icon-16.gif'' border=''0'' alt=''rss'' title=''rss''/>"/>
+	      format="<image src=''images/orange-icon-16.gif'' border=''0'' alt=''rss'' title=''rss''/> RSS"/>
 	<v:url name="atom_url" value="search.vspx" url="--self.page_url || '&o=atom'"
-	      format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''atom'' title=''atom''/>"/>
+	      format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''atom'' title=''atom''/> Atom"/>
 	<v:url name="rdf_url" value="search.vspx" url="--self.page_url || '&o=rdf'"
-	      format="<image src=''images/rdf-icon-16.gif'' border=''0'' alt=''rdf'' title=''rdf''/>"/>
+	      format="<image src=''images/rdf-icon-16.gif'' border=''0'' alt=''rdf'' title=''rdf''/> RDF"/>
 	<v:url name="xbel_url" value="search.vspx" url="--self.page_url || '&o=xbel'"
 	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''xbel'' title=''xbel''/> XBEL"/>
 	<v:url name="opensearch_url" value="search.vspx" url="--self.page_url || '&o=opensearch'"
@@ -1046,7 +1046,7 @@
 	   {
 	   ?>
 	<v:url name="gdata_url" value="search.vspx" url="--self.gurl"
-	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''GData'' title=''Gdata''/> GData"/>
+	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''GData'' title=''GData''/> GData"/>
 	<?vsp
 	   }
 	?>
@@ -1198,7 +1198,7 @@
 	  }
 	else
 	  {
-	    http (connection_get ('GData_URI'));
+	    http_value (connection_get ('GData_URI'), null);
 	  }
       http ('</link>');
       http ('<description>About ');
@@ -1248,12 +1248,10 @@
           item_title:=replace(item_title,'<br />','');
           item_title:=replace(item_title,'<br>','');
           item_title:=replace(item_title,'</span>','');
-	        http (trim(regexp_replace (item_title,'<[^>]*>',' ',1,null)));
+	        http_value (trim(regexp_replace (item_title,'<[^>]*>',' ',1,null)), null);
           http ('</title>');
           http ('<description>');
-	  http (sprintf ('<![%s[', 'CDATA'));
-	  http (elm[0]);
-	  http (']]' || '>');
+	  http_value (elm[0], null);
           http ('</description>');
           if (length (elm) > 4)
             {
