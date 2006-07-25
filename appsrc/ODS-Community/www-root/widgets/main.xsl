@@ -821,7 +821,7 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:copyright">
-      2005 OpenLink Software
+      2006 OpenLink Software
     <xsl:value-of select="."/>
   </xsl:template>
 
