@@ -290,7 +290,10 @@
           </td>
           <td class="box" id="right">
             <div class="box">
+	      <vm:if test="not-post-view">
               <vm:calendar vm:url="index.vspx" />
+	      </vm:if>
+	      <br/>
 	      <vm:foaf-link/>
               <vm:rss-feeds />
               <vm:if test="ocs">
