@@ -32,6 +32,11 @@ create procedure feed_mgr_iri (in domain_id int)
   return feeds_iri (inst);
 };
 
+create procedure feed_post_url (in vhost varchar, in lhost varchar, in feed_id varchar, in post any)
+{
+  return concat('/enews2/news.vspx?link=', post);
+};
+
 -- this represents post in the given feed
 create procedure feeds_post_iri (in feed_id int, in item_id int)
 {
