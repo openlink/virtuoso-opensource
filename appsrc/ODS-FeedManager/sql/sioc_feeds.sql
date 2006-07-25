@@ -54,7 +54,7 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar)
     {
       iri := feed_iri (EF_ID);
       m_iri := feed_mgr_iri (EFD_DOMAIN_ID);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_container', m_iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_parent', m_iri);
       DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, 'http://rdfs.org/sioc/ns#parent_of', iri);
     }
   for select EFI_FEED_ID, EFI_ID, EFI_TITLE, EFI_DESCRIPTION, EFI_LINK, EFI_AUTHOR,  EFI_PUBLISH_DATE from ENEWS..FEED_ITEM do
@@ -76,7 +76,7 @@ create trigger FEEDD_SIOC_I after insert on ENEWS..FEED_DOMAIN referencing new a
   graph_iri := get_graph ();
   iri := feed_iri (N.EFD_FEED_ID);
   m_iri := feed_mgr_iri (N.EFD_DOMAIN_ID);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_container', m_iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_parent', m_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, 'http://rdfs.org/sioc/ns#parent_of', iri);
   return;
 };
@@ -91,8 +91,8 @@ create trigger FEEDD_SIOC_D before delete on ENEWS..FEED_DOMAIN referencing old 
   graph_iri := get_graph ();
   iri := feed_iri (O.EFD_FEED_ID);
   m_iri := feed_mgr_iri (O.EFD_DOMAIN_ID);
-  delete_quad_s_p_o (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_container', m_iri);
-  delete_quad_s_p_o (graph_iri, m_iri, 'http://rdfs.org/sioc/ns#has_container', iri);
+  delete_quad_s_p_o (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_parent', m_iri);
+  delete_quad_s_p_o (graph_iri, m_iri, 'http://rdfs.org/sioc/ns#parent_of', iri);
   return;
 };
 

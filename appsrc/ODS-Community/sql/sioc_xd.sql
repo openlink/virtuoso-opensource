@@ -28,7 +28,7 @@ create procedure fill_ods_xd_sioc (in graph_iri varchar, in site_iri varchar)
     {
       firi := xd_iri (CM_COMMUNITY_ID);
       iri := forum_iri (WAI_TYPE_NAME, CM_MEMBER_APP);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_container', firi);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_parent', firi);
       DB.DBA.RDF_QUAD_URI (graph_iri, firi, 'http://rdfs.org/sioc/ns#parent_of', iri);
     }
 };
@@ -47,7 +47,7 @@ create trigger COMMUNITY_MEMBER_APP_SIOC_I after insert on ODS.COMMUNITY.COMMUNI
     do
       {
 	iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
-	DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_container', firi);
+	DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_parent', firi);
 	DB.DBA.RDF_QUAD_URI (graph_iri, firi, 'http://rdfs.org/sioc/ns#parent_of', iri);
       }
   return;
