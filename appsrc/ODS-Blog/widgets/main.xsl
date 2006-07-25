@@ -1055,7 +1055,7 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:title">
-      <?vsp http_value (self.e_title); ?>
+      <?vsp http (self.e_title); ?>
   </xsl:template>
 
   <xsl:template match="vm:quicksub">
@@ -1419,7 +1419,7 @@ window.onload = function (e)
   <xsl:template match="vm:foaf-link">
     <?vsp if (self.have_comunity_blog is null or self.have_comunity_blog = 0) { ?>
     <div>
-	<a href="&lt;?vsp http (sprintf ('http://%s%sgems/foaf.xml', self.host, self.base)); ?>"  class="{local-name()}">
+	<a href="&lt;?vsp http (sprintf ('http://%s%sgems/blogroll.rdf', self.host, self.base)); ?>"  class="{local-name()}">
         <img border="0" alt="FOAF" title="FOAF">
 	    <xsl:call-template name="feed-image">
 		<xsl:with-param name="default">'foaf.png'</xsl:with-param>
@@ -2930,48 +2930,58 @@ window.onload = function (e)
   <xsl:template match="vm:if">
     <v:template type="simple">
       <xsl:attribute name="name">if_<xsl:value-of select="generate-id()" /></xsl:attribute>
-      <xsl:attribute name="condition">
         <xsl:choose>
-          <xsl:when test="@test = 'blog'">exists (select 1 from BLOG.DBA.BLOG_CHANNELS, BLOG.DBA.SYS_BLOG_CHANNEL_INFO where BC_BLOG_ID = self.blogid and length (BC_RSS_URI) and BC_HOME_URI is not null and BC_RSS_URI = BCD_CHANNEL_URI and BCD_IS_BLOG = 1)</xsl:when>
-          <xsl:when test="@test = 'channels'"> exists (select 1 from BLOG.DBA.BLOG_CHANNELS, BLOG.DBA.SYS_BLOG_CHANNEL_INFO where BC_BLOG_ID = self.blogid and length (BC_RSS_URI) and BC_HOME_URI is not null and BC_RSS_URI = BCD_CHANNEL_URI and BCD_IS_BLOG = 0)</xsl:when>
-          <xsl:when test="@test = 'ocs'"> exists (select 1 from BLOG.DBA.BLOG_CHANNELS where  BC_BLOG_ID = self.blogid and length (BC_RSS_URI) and BC_HOME_URI is null and BC_FORM = 'OCS')</xsl:when>
-          <xsl:when test="@test = 'opml'"> exists (select 1 from BLOG.DBA.BLOG_CHANNELS where  BC_BLOG_ID = self.blogid and length (BC_RSS_URI) and BC_HOME_URI is null and BC_FORM = 'OPML')</xsl:when>
-          <xsl:when test="@test = 'comments'"> self.comm</xsl:when>
-          <xsl:when test="@test = 'comments-or-enabled'"> self.comm or length (self.comments_list.ds_row_data)</xsl:when>
-          <xsl:when test="@test = 'register'"> self.reg</xsl:when>
-          <xsl:when test="@test = 'contact'"> self.cont</xsl:when>
-          <xsl:when test="@test = 'subscribe'"> exists (select 1 from BLOG.DBA.SYS_ROUTING where R_ITEM_ID = self.blogid and R_TYPE_ID = 2 and R_PROTOCOL_ID = 4)</xsl:when>
-          <xsl:when test="@test = 'blog_owner'"> self.blog_access = 1</xsl:when>
-          <xsl:when test="@test = 'blog_author'"> self.blog_access = 2 or self.blog_access = 1</xsl:when>
-          <xsl:when test="@test = 'blog_reader'"> self.blog_access = 3</xsl:when>
-          <xsl:when test="@test = 'browse_posts'"> self.postid is null</xsl:when>
-          <xsl:when test="@test = 'have_community'"> self.have_comunity_blog is not null</xsl:when>
-          <xsl:when test="@test = 'name'"> get_keyword('ShowName', self.opts)</xsl:when>
-          <xsl:when test="@test = 'photo'"> length(self.photo) and get_keyword('ShowPhoto', self.opts)</xsl:when>
-          <xsl:when test="@test = 'audio'"> length(self.audio) and get_keyword('ShowAudio', self.opts)</xsl:when>
-          <xsl:when test="@test = 'email'"> get_keyword('ShowEmail', self.opts)</xsl:when>
-          <xsl:when test="@test = 'aim'"> get_keyword('ShowAim', self.opts)</xsl:when>
-          <xsl:when test="@test = 'icq'"> get_keyword('ShowIcq', self.opts)</xsl:when>
-          <xsl:when test="@test = 'yahoo'"> get_keyword('ShowYahoo', self.opts)</xsl:when>
-          <xsl:when test="@test = 'msn'"> get_keyword('ShowMsn', self.opts)</xsl:when>
-          <xsl:when test="@test = 'web'"> get_keyword('ShowWeb', self.opts)</xsl:when>
-          <xsl:when test="@test = 'loc'"> get_keyword('ShowLoc', self.opts)</xsl:when>
-          <xsl:when test="@test = 'bio'"> get_keyword('ShowBio', self.opts) and get_keyword('Biography', self.opts)</xsl:when>
-          <xsl:when test="@test = 'int'"> get_keyword('ShowInt', self.opts)</xsl:when>
-          <xsl:when test="@test = 'fav'"> get_keyword('ShowFav', self.opts)</xsl:when>
-          <xsl:when test="@test = 'amazon'"> get_keyword('ShowAmazon', self.opts) and get_keyword('AmazonID', self.opts)</xsl:when>
-          <xsl:when test="@test = 'ebay'"> get_keyword('ShowEbay', self.opts)</xsl:when>
-          <xsl:when test="@test = 'ass'"> get_keyword('ShowAss', self.opts)</xsl:when>
-          <xsl:when test="@test = 'fish'"> get_keyword('ShowFish', self.opts)</xsl:when>
-          <xsl:when test="@test = 'google'"> get_keyword('ShowGoogle', self.opts)</xsl:when>
-          <xsl:when test="@test = 'tagid'"> self.tagid is not null</xsl:when>
-          <xsl:when test="@test = 'trackbacks'">get_keyword ('EnableTrackback', self.opts, 1)</xsl:when>
-          <xsl:when test="@test = 'referral'">get_keyword ('EnableReferral', self.opts, 1)</xsl:when>
-          <xsl:when test="@test = 'login'"> length (self.sid) </xsl:when>
-          <xsl:when test="@test = 'have_tags'"> exists (select top 1 1 from BLOG..BLOG_POST_TAGS_STAT_2 where postid = t_post_id and blogid = control.te_rowset[10]) </xsl:when>
-          <xsl:when test="@test = 'have_categories'"> exists (select top 1 1 from BLOG..MTYPE_BLOG_CATEGORY where MTB_POST_ID = t_post_id and MTB_BLOG_ID = control.te_rowset[10]) </xsl:when>
-          <xsl:when test="@test = 'post-view'"> length (self.postid) </xsl:when>
-          <xsl:when test="@test = 'summary-post-view'"> length (self.postid) = 0 </xsl:when>
+	<xsl:when test="starts-with (@test, 'not-')">
+	  <xsl:variable name="modifier">not </xsl:variable>
+	  <xsl:variable name="test"><xsl:value-of select="substring-after (@test, 'not-')"/></xsl:variable>
+	</xsl:when>
+	<xsl:otherwise>
+	  <xsl:variable name="modifier"></xsl:variable>
+	  <xsl:variable name="test"><xsl:value-of select="@test"/></xsl:variable>
+	</xsl:otherwise>
+      </xsl:choose>
+      <xsl:attribute name="condition"><xsl:value-of select="$modifier"/>
+        <xsl:choose>
+          <xsl:when test="$test = 'blog'">exists (select 1 from BLOG.DBA.BLOG_CHANNELS, BLOG.DBA.SYS_BLOG_CHANNEL_INFO where BC_BLOG_ID = self.blogid and length (BC_RSS_URI) and BC_HOME_URI is not null and BC_RSS_URI = BCD_CHANNEL_URI and BCD_IS_BLOG = 1)</xsl:when>
+          <xsl:when test="$test = 'channels'"> exists (select 1 from BLOG.DBA.BLOG_CHANNELS, BLOG.DBA.SYS_BLOG_CHANNEL_INFO where BC_BLOG_ID = self.blogid and length (BC_RSS_URI) and BC_HOME_URI is not null and BC_RSS_URI = BCD_CHANNEL_URI and BCD_IS_BLOG = 0)</xsl:when>
+          <xsl:when test="$test = 'ocs'"> exists (select 1 from BLOG.DBA.BLOG_CHANNELS where  BC_BLOG_ID = self.blogid and length (BC_RSS_URI) and BC_HOME_URI is null and BC_FORM = 'OCS')</xsl:when>
+          <xsl:when test="$test = 'opml'"> exists (select 1 from BLOG.DBA.BLOG_CHANNELS where  BC_BLOG_ID = self.blogid and length (BC_RSS_URI) and BC_HOME_URI is null and BC_FORM = 'OPML')</xsl:when>
+          <xsl:when test="$test = 'comments'"> self.comm</xsl:when>
+          <xsl:when test="$test = 'comments-or-enabled'"> self.comm or length (self.comments_list.ds_row_data)</xsl:when>
+          <xsl:when test="$test = 'register'"> self.reg</xsl:when>
+          <xsl:when test="$test = 'contact'"> self.cont</xsl:when>
+          <xsl:when test="$test = 'subscribe'"> exists (select 1 from BLOG.DBA.SYS_ROUTING where R_ITEM_ID = self.blogid and R_TYPE_ID = 2 and R_PROTOCOL_ID = 4)</xsl:when>
+          <xsl:when test="$test = 'blog_owner'"> self.blog_access = 1</xsl:when>
+          <xsl:when test="$test = 'blog_author'"> self.blog_access = 2 or self.blog_access = 1</xsl:when>
+          <xsl:when test="$test = 'blog_reader'"> self.blog_access = 3</xsl:when>
+          <xsl:when test="$test = 'browse_posts'"> self.postid is null</xsl:when>
+          <xsl:when test="$test = 'have_community'"> self.have_comunity_blog is not null</xsl:when>
+          <xsl:when test="$test = 'name'"> get_keyword('ShowName', self.opts)</xsl:when>
+          <xsl:when test="$test = 'photo'"> length(self.photo) and get_keyword('ShowPhoto', self.opts)</xsl:when>
+          <xsl:when test="$test = 'audio'"> length(self.audio) and get_keyword('ShowAudio', self.opts)</xsl:when>
+          <xsl:when test="$test = 'email'"> get_keyword('ShowEmail', self.opts)</xsl:when>
+          <xsl:when test="$test = 'aim'"> get_keyword('ShowAim', self.opts)</xsl:when>
+          <xsl:when test="$test = 'icq'"> get_keyword('ShowIcq', self.opts)</xsl:when>
+          <xsl:when test="$test = 'yahoo'"> get_keyword('ShowYahoo', self.opts)</xsl:when>
+          <xsl:when test="$test = 'msn'"> get_keyword('ShowMsn', self.opts)</xsl:when>
+          <xsl:when test="$test = 'web'"> get_keyword('ShowWeb', self.opts)</xsl:when>
+          <xsl:when test="$test = 'loc'"> get_keyword('ShowLoc', self.opts)</xsl:when>
+          <xsl:when test="$test = 'bio'"> get_keyword('ShowBio', self.opts) and get_keyword('Biography', self.opts)</xsl:when>
+          <xsl:when test="$test = 'int'"> get_keyword('ShowInt', self.opts)</xsl:when>
+          <xsl:when test="$test = 'fav'"> get_keyword('ShowFav', self.opts)</xsl:when>
+          <xsl:when test="$test = 'amazon'"> get_keyword('ShowAmazon', self.opts) and get_keyword('AmazonID', self.opts)</xsl:when>
+          <xsl:when test="$test = 'ebay'"> get_keyword('ShowEbay', self.opts)</xsl:when>
+          <xsl:when test="$test = 'ass'"> get_keyword('ShowAss', self.opts)</xsl:when>
+          <xsl:when test="$test = 'fish'"> get_keyword('ShowFish', self.opts)</xsl:when>
+          <xsl:when test="$test = 'google'"> get_keyword('ShowGoogle', self.opts)</xsl:when>
+          <xsl:when test="$test = 'tagid'"> self.tagid is not null</xsl:when>
+          <xsl:when test="$test = 'trackbacks'">get_keyword ('EnableTrackback', self.opts, 1)</xsl:when>
+          <xsl:when test="$test = 'referral'">get_keyword ('EnableReferral', self.opts, 1)</xsl:when>
+          <xsl:when test="$test = 'login'"> length (self.sid) </xsl:when>
+          <xsl:when test="$test = 'have_tags'"> exists (select top 1 1 from BLOG..BLOG_POST_TAGS_STAT_2 where postid = t_post_id and blogid = control.te_rowset[10]) </xsl:when>
+          <xsl:when test="$test = 'have_categories'"> exists (select top 1 1 from BLOG..MTYPE_BLOG_CATEGORY where MTB_POST_ID = t_post_id and MTB_BLOG_ID = control.te_rowset[10]) </xsl:when>
+          <xsl:when test="$test = 'post-view'"> length (self.postid) </xsl:when>
+          <xsl:when test="$test = 'summary-post-view'"> length (self.postid) = 0 </xsl:when>
         </xsl:choose>
       </xsl:attribute>
       <xsl:apply-templates />
@@ -12169,19 +12179,29 @@ window.onload = function (e)
 
   <xsl:template match="vm:erdf-data">
       <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />
+      <xsl:text>&#10;</xsl:text>
       <link rel="schema.foaf" href="http://xmlns.com/foaf/0.1/" />
+      <xsl:text>&#10;</xsl:text>
       <link rel="schema.rss" href="http://purl.org/rss/1.0/" />
+      <xsl:text>&#10;</xsl:text>
       <link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />
+      <xsl:text>&#10;</xsl:text>
       <link rel="schema.rdfs" href="http://www.w3.org/2000/01/rdf-schema#" />
+      <xsl:text>&#10;</xsl:text>
 
       <meta name="dc.creator" content="<?V BLOG..blog_utf2wide (self.e_author) ?>" />
+      <xsl:text>&#10;</xsl:text>
       <meta name="dc.title" content="<?V BLOG..blog_utf2wide (self.e_title) ?>" />
+      <xsl:text>&#10;</xsl:text>
       <meta name="dc.rights" content="<?V BLOG..blog_utf2wide (self.copy) ?>" />
+      <xsl:text>&#10;</xsl:text>
       <?vsp
         if (self.e_lat is not null and self.e_lng is not null) {
       ?>
       <meta name="geo.position" content="<?V sprintf ('%.06f', self.e_lat) ?>;<?V sprintf ('%.06f', self.e_lng) ?>" />
+      <xsl:text>&#10;</xsl:text>
       <meta name="ICBM" content="<?V sprintf ('%.06f', self.e_lat) ?>, <?V sprintf ('%.06f', self.e_lng) ?>" />
+      <xsl:text>&#10;</xsl:text>
       <?vsp } ?>
   </xsl:template>
 
