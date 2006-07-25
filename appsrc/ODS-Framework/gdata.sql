@@ -138,8 +138,15 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
     app := 'users';
     }
 
+  if (uname = 'feed')
+    {
+      app := 'feed';
+      post := inst;
+      uname := 'nobody';
+    }
+
   if (length (app) and app not in
-      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users'))
+      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed'))
    {
      signal ('22023', sprintf ('Invalid application domain [%s].', app));
    }
@@ -227,9 +234,13 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 	  signal ('22023', 'No such application instance');
 	};
       inst := replace (inst, '+', ' ');
+      _inst := null;
+      url := null;
 
       if (app = 'discussion' and do_sioc)
 	goto nntpf;
+      if (app = 'feed' and post is not null)
+	goto do_post;
 
       select WAM_HOME_PAGE, WAI_INST, WAI_TYPE_NAME into url, _inst, inst_type
 	  from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE where
@@ -269,7 +280,11 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
         }
       else if (post is not null)
 	{
+	  do_post:
+	  if (_inst is not null)
 	  url := _inst.wa_post_url (vhost, lhost, inst, post);
+	  else if (__proc_exists ('sioc..'||app||'_post_url'))
+	    url := call ('sioc..'||app||'_post_url') (vhost, lhost, inst, post);
 	  if (url is null)
 	    signal ('22023', 'Not implemented');
 	}
