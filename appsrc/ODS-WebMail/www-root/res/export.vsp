@@ -38,7 +38,7 @@
     _params  := vector_concat(_params, vector('q_max', 15));
     sql      := OMAIL.WA.omail_msg_search(_domain_id, _user_id, _params, 0);
     state    := '00000';
-    exec(sql[0][0], state, msg, sql[1][0], 0, meta, result);
+    exec(sql[0], state, msg, sql[1], 0, meta, result);
     if (state <> '00000')
       goto _error;
 

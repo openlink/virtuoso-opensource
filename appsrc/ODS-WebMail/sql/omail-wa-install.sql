@@ -200,10 +200,9 @@ create method wa_drop_instance () for wa_mail
      and WAI_TYPE_NAME = 'oMail'
      and WAM_USER = iUser;
 
-  if (iCount = 1) {
-    OMAIL.WA.omail_delete_user_data(1, iUser);
     OMAIL.WA.omail_delete_user_data(iWaiID, iUser);
-  }
+  if (iCount = 1)
+    OMAIL.WA.omail_delete_user_data(1, iUser);
 
   delete from WA_MEMBER where WAM_INST = self.wa_name;
   delete from WA_INSTANCE where WAI_NAME = self.wa_name;
@@ -393,11 +392,14 @@ create method get_param (in param varchar) for wa_mail
 --
 create method wa_dashboard_last_item () for wa_mail
 {
-  declare userID integer;
+  declare waID, domainID, userID integer;
 
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
   userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-
-  return OMAIL.WA.dashboard_get(1, userID);
+  waID := coalesce((select top 1 WAI_ID from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = userID and WAI_TYPE_NAME = 'oMail' order by WAI_ID), 0);
+  if (waID = domainID)
+    domainID := 1;
+  return OMAIL.WA.dashboard_get(domainID, userID);
 }
 ;
 

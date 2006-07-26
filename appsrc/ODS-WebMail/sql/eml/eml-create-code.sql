@@ -1332,6 +1332,7 @@ create procedure OMAIL.WA.omail_delete_user_data(
   delete from OMAIL.WA.EXTERNAL_POP_ACC where DOMAIN_ID = _domain_id and USER_ID = _user_id;
   for (select FOLDER_ID from OMAIL.WA.FOLDERS where DOMAIN_ID = _domain_id and USER_ID = _user_id and PARENT_ID IS NULL) do
     OMAIL.WA.omail_del_folder(_domain_id,_user_id,FOLDER_ID,0);
+  delete from OMAIL.WA.SETTINGS         where DOMAIN_ID = _domain_id and USER_ID = _user_id;
 }
 ;
 
@@ -2286,7 +2287,7 @@ create procedure OMAIL.WA.dashboard_delete(
     xp := xpath_eval ('/mail-db/*', xt, 0);
     l := length (xp);
     for (i := 0; i < l; i := i + 1) {
-      if (cast(xpath_eval ('//mail/@id', xp[i], 1) as integer) <> _msg_id)
+      if (cast(xpath_eval ('number(@id)', xp[i], 1) as integer) <> _msg_id)
   	    http (serialize_to_UTF8_xml (xp[i]), stream);
 	  }
   }
@@ -4911,7 +4912,7 @@ create procedure OMAIL.WA.omail_export(
 
     sql   := OMAIL.WA.omail_msg_search(_domain_id, _user_id, _params, 0);
     state := '00000';
-    exec(sql[0][0], state, msg, sql[1][0], 0, meta, result);
+    exec(sql[0], state, msg, sql[1], 0, meta, result);
     if (state <> '00000')
       goto _error;
 
@@ -6166,8 +6167,9 @@ create procedure OMAIL.WA.utf2wide (
 create procedure OMAIL.WA.wide2utf (
   inout S any)
 {
-  declare exit handler for sqlstate '*' { return S; };
+  if (iswidestring (S))
   return charset_recode (S, '_WIDE_', 'UTF-8' );
+  return S;
 }
 ;
 
