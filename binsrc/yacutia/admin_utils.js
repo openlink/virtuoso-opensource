@@ -23,7 +23,7 @@
 function selectAllCheckboxes (form, btn)
 {
   var i;
-  for (i in form.elements)
+  for (i = 0;i < form.elements.length;i++)
     {
       var contr = form.elements[i];
       if (contr != null && contr.type == "checkbox")
