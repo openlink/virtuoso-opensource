@@ -32,9 +32,18 @@ create procedure blog_post_iri (in blog_id varchar, in post_id varchar)
   return sprintf ('http://%s%s/%U/weblog/%U/%U', get_cname(), get_base_path (), _member, _inst, post_id);
 };
 
+create procedure blog_comment_iri (in blog_id varchar, in post_id varchar, in cid int)
+{
+  declare _member, _inst varchar;
+  declare exit handler for not found { return null; };
+  select U_NAME, BI_WAI_NAME into _member, _inst from DB.DBA.SYS_USERS, BLOG..SYS_BLOG_INFO, BLOG..SYS_BLOGS
+      where BI_OWNER = U_ID and BI_BLOG_ID = B_BLOG_ID and B_BLOG_ID = blog_id and B_POST_ID = post_id;
+  return sprintf ('http://%s%s/%U/weblog/%U/%U/%d', get_cname(), get_base_path (), _member, _inst, post_id, cid);
+};
+
 create procedure fill_ods_blog_sioc (in graph_iri varchar, in site_iri varchar)
 {
-  declare iri, cr_iri, blog_iri varchar;
+  declare iri, cr_iri, blog_iri, cm_iri varchar;
   for select B_BLOG_ID, B_POST_ID, BI_WAI_NAME, B_USER_ID, B_TITLE, B_TS, B_MODIFIED, BI_HOME from BLOG..SYS_BLOGS, BLOG..SYS_BLOG_INFO
     where B_BLOG_ID = BI_BLOG_ID do
     {
@@ -42,6 +51,14 @@ create procedure fill_ods_blog_sioc (in graph_iri varchar, in site_iri varchar)
       blog_iri := blog_iri (BI_WAI_NAME);
       cr_iri := user_iri (B_USER_ID);
       ods_sioc_post (graph_iri, iri, blog_iri, cr_iri, B_TITLE, B_TS, B_MODIFIED, BI_HOME ||'?id='||B_POST_ID);
+      for select BM_ID, BM_COMMENT, BM_NAME, BM_E_MAIL, BM_TS, BM_TITLE from BLOG..BLOG_COMMENTS
+       where BM_BLOG_ID = B_BLOG_ID and BM_POST_ID = B_POST_ID and BM_IS_PUB = 1 do
+       {
+	 cm_iri := blog_comment_iri (B_BLOG_ID, B_POST_ID, BM_ID);
+	 ods_sioc_post (graph_iri, cm_iri, blog_iri, null, BM_TITLE, BM_TS, BM_TS, BI_HOME ||'?id='||B_POST_ID);
+	 DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
+	 DB.DBA.RDF_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', iri);
+       }
     }
 };
 
@@ -90,6 +107,64 @@ create trigger SYS_BLOGS_SIOC_U after update on BLOG..SYS_BLOGS referencing old 
   cr_iri := user_iri (N.B_USER_ID);
   delete_quad_s_or_o (graph_iri, iri, iri);
   ods_sioc_post (graph_iri, iri, blog_iri, cr_iri, N.B_TITLE, N.B_TS, N.B_MODIFIED);
+  return;
+};
+
+create trigger BLOG_COMMENTS_SIOC_I after insert on BLOG..BLOG_COMMENTS referencing new as N
+{
+  declare iri, graph_iri, cr_iri, blog_iri, home, post_iri varchar;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  if (N.BM_IS_PUB = 0)
+    return;
+  graph_iri := get_graph ();
+  iri := blog_comment_iri (N.BM_BLOG_ID, N.BM_POST_ID, N.BM_ID);
+  for select BI_WAI_NAME, BI_HOME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.BM_BLOG_ID do
+    {
+      blog_iri := blog_iri (BI_WAI_NAME);
+      home := BI_HOME;
+    }
+  ods_sioc_post (graph_iri, iri, blog_iri, null, N.BM_TITLE, N.BM_TS, N.BM_TS, home ||'?id='||N.BM_POST_ID);
+  post_iri := blog_post_iri (N.BM_BLOG_ID, N.BM_POST_ID);
+  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
+  return;
+};
+
+create trigger BLOG_COMMENTS_SIOC_D after delete on BLOG..BLOG_COMMENTS referencing old as O
+{
+  declare iri, graph_iri, cr_iri, blog_iri varchar;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  iri := blog_comment_iri (O.BM_BLOG_ID, O.BM_POST_ID, O.BM_ID);
+  delete_quad_s_or_o (graph_iri, iri, iri);
+  return;
+};
+
+create trigger BLOG_COMMENTS_SIOC_U after update on BLOG..BLOG_COMMENTS referencing old as O, new as N
+{
+  declare iri, graph_iri, cr_iri, blog_iri, post_iri varchar;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  if (N.BM_IS_PUB = 0 and O.BM_IS_PUB = 0)
+    return;
+  graph_iri := get_graph ();
+  iri := blog_comment_iri (N.BM_BLOG_ID, N.BM_POST_ID, N.BM_ID);
+  blog_iri := blog_iri ((select BI_WAI_NAME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.BM_BLOG_ID));
+  delete_quad_s_or_o (graph_iri, iri, iri);
+  if (N.BM_IS_PUB = 0)
+    return;
+  ods_sioc_post (graph_iri, iri, blog_iri, null, N.BM_TITLE, N.BM_TS, N.BM_TS);
+  post_iri := blog_post_iri (N.BM_BLOG_ID, N.BM_POST_ID);
+  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
   return;
 };
 
