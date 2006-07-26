@@ -162,11 +162,13 @@ function load_dawg(list,item)
     $('dawg_content').innerHTML +='<p>' + comment +'</p>';
     $('dawg_content').innerHTML +='<h3>Data</h3>';
     $('dawg_content').innerHTML +='<p><a href="#" id="dawg_dgu" onclick="view_file(\'' + default_graph_uri + '\')">' + default_graph_uri + '</a><br></p>';
+    $('dawg_dgu').setAttribute('dawgdata',default_graph_uri);
     if (data)
       $('dawg_content').innerHTML +='<div class="query">' + data.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
     $('dawg_content').innerHTML +='<h3>Query</h3>';
     $('dawg_content').innerHTML +='  <a href="#" onclick="view_file(\'' + queryuri + '\')">' + queryuri + '</a><br>';
-    $('dawg_content').innerHTML +='<div class="query" id="dawg_query">' + query.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
+    $('dawg_content').innerHTML +='<div class="query" id="dawg_query">' + query.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br/>').replace(/ /g,'&nbsp;') + '</div>';
+    $('dawg_query').setAttribute('dawgdata',query);
     $('dawg_content').innerHTML +='  <br/><button name="load_dawg_query" id="load_dawg_query" onclick="load_dawg_query()">Load Query</button><br/>';
     $('dawg_content').innerHTML +='<h3>Results</h3>';
     $('dawg_content').innerHTML +='<p><a href="#" onclick="view_file(\'' + etalonuri + '\')">' + etalonuri + '</a></p>';
@@ -183,8 +185,10 @@ function load_dawg_query()
     return;
     }
   tab.go(1);
-  $('query').value = $('dawg_query').innerHTML.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"');
-  $('default-graph-uri').value = $('dawg_dgu').innerHTML;
+  //$('query').value = $('dawg_query').innerHTML.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&nbsp;/g,String.fromCharCode(32)).replace(/<br>/gi,'\n');
+  $('query').value = $('dawg_query').getAttribute('dawgdata');
+  //$('default-graph-uri').value = $('dawg_dgu').innerHTML;
+  $('default-graph-uri').value = $('dawg_dgu').getAttribute('dawgdata');
   $('etalon').innerHTML = '<hr/><b>Expected result:</b>' + $('dawg_etalon').innerHTML;
 
   $('format').selectedIndex = 0; 
