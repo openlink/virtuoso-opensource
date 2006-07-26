@@ -143,7 +143,7 @@ WHERE {
           if (_is_ttl)
             DB.DBA.TTLP(_data,_load_uri,_load_uri);
           else
-            DB.DBA.RDF_EXP_LOAD_RDFXML(_load_uri,_data_xml,0);
+            DB.DBA.RDF_LOAD_RDFXML(_data,_load_uri,_load_uri);
           _davpath := _load_uri;
           if (strstr(_davpath,'://'))
             _davpath := subseq(_load_uri,strstr(_davpath,'://') + 3,length(_davpath));

@@ -159,7 +159,7 @@ ENCTYPE="multipart/form-data"
         _data := "RQ"."RQ"."URI_GET" (_user_default_graph_uri);
         _data_xml := xtree_doc (_data, 0, _user_default_graph_uri);
         delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (_user_default_graph_uri);
-        DB.DBA.RDF_EXP_LOAD_RDFXML(_user_default_graph_uri,_data_xml,0);
+        DB.DBA.RDF_LOAD_RDFXML(_data,_user_default_graph_uri,_user_default_graph_uri);
         _davpath := _user_default_graph_uri;
         if (strstr(_davpath,'://'))
           _davpath := subseq(_user_default_graph_uri,strstr(_davpath,'://') + 3,length(_davpath));
