@@ -47,7 +47,7 @@ function Tab(elm) {
 			obj.go(index);
 		}
 		Dom.attach(element_1,"click",ref);
-		this.go(index);
+//		this.go(index);
 	};
 
 	this.clear = function() {
