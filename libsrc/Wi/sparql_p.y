@@ -557,7 +557,7 @@ spar_graph_nodes	/* [32]  	ObjectList	  ::=  	GraphNode ( ',' ObjectList )?	*/
 
 spar_verb		/* [33]  	Verb	  ::=  	VarOrBlankNodeOrIRIref | 'a'	*/
 	: spar_var_or_blank_node_or_iriref
-	| a_L { $$ = t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"); }
+	| a_L { $$ = spartlist (sparp_arg, 2, SPAR_QNAME, t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")); }
 	;
 
 spar_triples_node	/* [34]  	TriplesNode	  ::=  	Collection | BlankNodePropertyList	*/
