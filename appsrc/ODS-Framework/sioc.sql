@@ -1164,7 +1164,9 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 		    ?post sioc:links_to ?links_to .
 		    ?post sioc:modified_at ?modified .
 		    ?post sioc:created_at ?created .
-		    ?post sioc:has_creator ?creator
+		    ?post sioc:has_creator ?creator .
+		    ?post sioc:reply_of ?reply .
+		    ?reply sioc:has_reply ?post
 	       }
 	      where
 		    {
@@ -1177,6 +1179,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 			optional { ?post sioc:links_to ?links_to } .
 			optional { ?post sioc:link ?link } .
 			optional { ?post sioc:has_creator ?creator } .
+			optional { ?post sioc:reply_of ?reply } .
 			optional { ?post sioc:title ?title }
                   }
                 }
