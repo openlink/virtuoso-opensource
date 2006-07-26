@@ -71,7 +71,6 @@
                   <v:label value="">
                     <v:after-data-bind>
                       <![CDATA[
-			dbg_obj_print ('>>>>', self.v_fid);
                         control.ufl_value := (select ClusterName || '.' || LocalName from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS where TopicId = self.v_fid);
                       ]]>
                     </v:after-data-bind>
@@ -89,7 +88,7 @@
                       		  declare id, comment, title, u_name, last_update any;
 
                       		  id := cast (control.tn_value as integer);			       
-			          dbg_obj_print (control.tn_element);
+			          
                       		  declare exit handler for not found;
 				  if (id >= 0)
 				    {

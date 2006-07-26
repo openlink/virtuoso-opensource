@@ -3810,5 +3810,22 @@ create procedure WV.WIKI.SANITY_CHECK()
     vt_batch_feed (vtb, 'DE3A857A5FFB11DA923AF0924C194AED', 1);
     WS.WS.VT_BATCH_PROCESS_WS_WS_SYS_DAV_RES (vtb);
   }
+  for select CLUSTERNAME from WV.WIKI.CLUSTERS c
+      where not exists (select 1 from WV.WIKI.CLUSTERSETTINGS s where s.CLUSTERID = c.CLUSTERID and PARAMNAME = 'atom-pub') do
+    WV..ATOM_PUB_VHOST_DEFINE (CLUSTERNAME);
 }
 ;
+
+
+create function WV.WIKI.RESOURCE_CANONICAL (in res_id int)
+{
+  return DB.DBA.DAV_SEARCH_PATH (res_id, 'R');
+}
+;
+
+create function WV.WIKI.CLUSTER_CANONICAL (in _clustername varchar)
+{
+  return (select DB.DBA.DAV_SEARCH_PATH (COLID, 'C') from WV.WIKI.CLUSTERS where CLUSTERNAME = _clustername);
+}
+;
+

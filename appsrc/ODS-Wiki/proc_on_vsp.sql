@@ -1113,11 +1113,11 @@ nf:
     path := subseq (path, (length (split_and_decode (domain, 0, '\0\0/')) - 2));
   if (path[0] = 'Atom') 
     {
-      _cluster := 'Main';
+      _cluster := null;
       if (length (path) > 1)
         _cluster := path[1];       
       if (length (path) > 2)
-        _topicid := atoi (path[2]);
+        _topicid := coalesce ((select TOPICID from WV.WIKI.TOPIC natural join WV.WIKI.CLUSTERS where CLUSTERNAME = _cluster and LOCALNAME = path[2]), 0);
       return;
     }
   _topicid := 0;
@@ -2512,7 +2512,7 @@ create procedure WV.WIKI.UTF2WIDE (
 
 create function WV.WIKI.EMAIL_OBFUSCATE (in clustername varchar, in mailto varchar)
 {
-  dbg_obj_print (clustername, mailto);
+  --dbg_obj_print (clustername, mailto);
   declare _type, _proc varchar;
   _type := WV.WIKI.CLUSTERPARAM (clustername , 'email-obfuscate', 'AT');
   _proc := fix_identifier_case ('WV.WIKI.EMAIL_OBFUSCATE_' || _type);
@@ -2524,11 +2524,39 @@ create function WV.WIKI.EMAIL_OBFUSCATE (in clustername varchar, in mailto varch
 }
 ;
 
-create function WV.WIKI.EMAIL_OBFUSCATE_NONE (in mailto varchar)
+
+create function WV.WIKI.EMAIL_OBFUSCATE_MAILTO (in mailto varchar)
 {
   return xtree_doc ('<a href="mailto:' || mailto || '">' || mailto || '</a>');
 }
 ;
+
+create function WV.WIKI.EMAIL_OBFUSCATE_NONE (in mailto varchar)
+{
+  return '<none>';
+}
+;
+
+create function WV.WIKI.EMAIL_OBFUSCATE_HEX (in mailto varchar)
+{
+  return replace (mailto, '@', '[]');
+}
+;
+
+create function WV.WIKI.EMAIL_OBFUSCATE_ALL_HEX (in mailto varchar)
+{
+  return mailto;
+  declare ss any;
+  ss := string_output ();
+  declare idx int;
+  for (idx:=0;idx<length(mailto);idx:=idx+1)
+    {
+      http (sprintf ('&#%02ld;', mailto[idx]), ss);
+    }
+  return xtree_doc ('<div><![CDATA[' || string_output_string (ss) || ']]></div>');
+}
+;
+
 
 create function WV.WIKI.EMAIL_OBFUSCATE_NOSPAM (in mailto varchar)
 {
@@ -2538,7 +2566,7 @@ create function WV.WIKI.EMAIL_OBFUSCATE_NOSPAM (in mailto varchar)
 
 create function WV.WIKI.EMAIL_OBFUSCATE_AT (in mailto varchar)
 {
-  return replace (replace(mailto, '@', ' (AT) '), '.', ' (dot) ');
+  return replace (replace(mailto, '@', '{at}'), '.', '{dot}');
 }
 ;
 

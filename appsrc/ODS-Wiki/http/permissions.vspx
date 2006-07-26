@@ -135,7 +135,7 @@
         <v:before-data-bind><![CDATA[
           if (get_keyword ('url', params) is not null)
             self.url := get_keyword ('url', params);
-          dbg_obj_print (self.url);
+          
         ]]></v:before-data-bind>
         
         <div class="wiki_button">

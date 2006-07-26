@@ -122,6 +122,10 @@ if ({?'type'} is not null)
 
   whenever not found goto fin;
 
+  --dbg_obj_print ({?'mode'});
+ if ({?'mode'} = 'list')
+   http_header ('Content-Type: application/atomserv+xml\r\n');
+ else
    http_header ('Content-Type: text/xml; charset="ISO-8859-1"\r\n');
    http ('<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:vi="http://www.openlinksw.com/ods/">\r\n<channel>\r\n');
    http ('<title>');

@@ -241,6 +241,8 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
       insert soft WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER)
 	values ('%', _home || '/main', self.cluster_id);
     }
+  
+  WV..ATOM_PUB_VHOST_DEFINE (_cluster_name);
   return (self as web_app).wa_new_inst(login);
 }
 ;
@@ -413,6 +415,17 @@ cont:
 }
 ;
 
+
+create trigger WIKI_WA_INSTANCE before delete on DB.DBA.WA_INSTANCE referencing old as O
+{
+  if (O.WAI_TYPE_NAME <> 'oWiki')
+    return;
+  declare _lpath varchar;
+  _lpath := WV.WIKI.CLUSTERPARAM (O.WAI_NAME, 'atom-pub');
+  if (_lpath is not null)
+     DB.DBA.VHOST_REMOVE (lpath=>_lpath);
+}
+;
 
 create method wa_front_page_as_user (inout stream any, in user_name varchar) for wa_wikiv
 {
