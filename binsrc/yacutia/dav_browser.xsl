@@ -76,8 +76,7 @@
   <script type="text/javascript">
   function selectAllCheckboxes (form, btn)
     {
-      var i;
-      for (i in form.elements)
+            for (var i = 0;i &lt; form.elements.length;i++)
         {
           var contr = form.elements[i];
           if (contr != null &amp;&amp; contr.type == "checkbox")
@@ -2061,13 +2060,13 @@ else
                   </div --> <!-- preset_sel -->
                   <div id="t_tabs">
                     <ul id="tab_row">
-                      <li class="tab" id="tab_owner_perms">Ownership and Permissions</li>
-                      <li class="tab tab_selected" id="tab_props">Properties</li>
+                      <li class="tab tab_selected" id="tab_owner_perms">Ownership and Permissions</li>
+                      <li class="tab" id="tab_props">Properties</li>
                     </ul>
                     <div id="tab_viewport">
                       <xsl:text> </xsl:text>
                     </div>
-                    <div style="display: block;" id="props">
+                    <div style="display: none;" id="props">
                       <div class="wg_view_switch">
                         <!--<input class="wg_view_switch_sel" id="wg_vs_adv" onchange="cb_toggle (this, 'vp_1', 'vp_2')" type="checkbox"/>
                         <label for="wg_vs_adv">Advanced</label>-->
@@ -2465,7 +2464,7 @@ else
                         </v:button>
                   </div>
                 </div>
-                <div style="display: none;" id="owner_perms">
+                <div style="display: block;" id="owner_perms">
                   <br/><h4>Ownership</h4>
                   <input id="cm_owner" name="cm_owner" type="checkbox"/>
                   <label for="cm_owner">Set User</label>
