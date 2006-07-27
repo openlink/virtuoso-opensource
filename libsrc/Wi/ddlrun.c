@@ -4966,8 +4966,8 @@ const char *gti_text =
 const char *gti3_text =
 "create procedure gettypeinfo3 (in t integer, in odbc3 integer) "
 "{"
-"  declare TYPE_NAME, LITERAL_PREFIX, LITERAL_SUFFIX, LOCAL_TYPE_NAME,"
-"  CREATE_PARAMS varchar(32); "
+"  declare TYPE_NAME, LOCAL_TYPE_NAME, CREATE_PARAMS varchar(128); "
+"  declare LITERAL_PREFIX, LITERAL_SUFFIX varchar(8); "
 "  declare DATA_TYPE,NULLABLE, CASE_SENSITIVE, SEARCHABLE, UNSIGNED_ATTRIBUTES,"
 "  AUTO_INCREMENT, MONEY, MAXIMUM_SCALE, MINIMUM_SCALE smallint; "
 "  declare \\PRECISION integer; "
