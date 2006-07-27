@@ -325,6 +325,15 @@ function rq_query(param,dl)
   //OAT.Ajax.httpError=0;
   OAT.Ajax.errorRef = function(status,response,xmlhttp)
   {
+    if (!response)
+    {
+      param = 'ob';
+      response = 'There was a problem with your request! The server returned status code: ' + status + '<br/>\n';
+      response += 'Unfortunatelly your browser does not allow us to show the error. ';
+      response += 'This is known to be a bug in Opera Browser.<br/>\n';
+      response += 'However you can click this link which will open a new window with the error: <br/>\n';
+      response += '<a target="_blank" href="/sparql/?' + body() + '">/sparql/?' + body() + '</a>';
+    }
     callback(response,xmlhttp);
   }
   var callback = function(data,xmlhttp) 
