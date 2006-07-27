@@ -1831,17 +1831,6 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
       break;
 
-    case SQL_DESC_CONCISE_TYPE:
-      cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, CONCISE TYPE, ...) called\n", RecNumber));
-
-      if (StringLengthPtr)
-	*StringLengthPtr = sizeof (SQLSMALLINT);
-
-      if (RecNumber > desc_count)
-	return (SQL_NO_DATA_FOUND);
-
-      break;
-
     case SQL_DESC_DATA_PTR:
       cli_dbg_printf ((": SQLGetDescField(..., FIELD %d, DATA_PTR, ...) called\n", RecNumber));
 
@@ -2231,16 +2220,57 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       break;
 #endif
 
+    case SQL_DESC_CONCISE_TYPE:
     case SQL_DESC_TYPE:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
 
-      if (StringLengthPtr)
-	*StringLengthPtr = sizeof (SQLSMALLINT);
-
       if (bRowDesc)
-	return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt,
-	    RecNumber, NULL, 0, NULL, (SQLSMALLINT *) ValuePtr, NULL, NULL, NULL);
+	{
+	  SQLSMALLINT conciseType;
+
+	  rc = virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt, RecNumber, NULL, 0, NULL, &conciseType, NULL, NULL, NULL);
+
+	  if (rc != SQL_SUCCESS)
+	    return rc;
+
+	  if (FieldIdentifier == SQL_DESC_TYPE)
+	    {
+	      switch (conciseType)
+		{
+		case SQL_TYPE_DATE:
+		case SQL_TYPE_TIME:
+		case SQL_TYPE_TIMESTAMP:
+		case SQL_DATE:
+		case SQL_TIME:
+		case SQL_TIMESTAMP:
+		  conciseType = SQL_DATETIME;
+		  break;
+
+		case SQL_INTERVAL_MONTH:
+		case SQL_INTERVAL_YEAR:
+		case SQL_INTERVAL_YEAR_TO_MONTH:
+		case SQL_INTERVAL_DAY:
+		case SQL_INTERVAL_HOUR:
+		case SQL_INTERVAL_MINUTE:
+		case SQL_INTERVAL_DAY_TO_HOUR:
+		case SQL_INTERVAL_DAY_TO_MINUTE:
+		case SQL_INTERVAL_HOUR_TO_MINUTE:
+		case SQL_INTERVAL_SECOND:
+		case SQL_INTERVAL_DAY_TO_SECOND:
+		case SQL_INTERVAL_HOUR_TO_SECOND:
+		case SQL_INTERVAL_MINUTE_TO_SECOND:
+		  conciseType = SQL_INTERVAL;
+		  break;
+
+		default:
+		  break;
+		}
+	    }
+
+	  *(SQLSMALLINT *) ValuePtr = conciseType;
+	  return rc;
+	}
       break;
 
     case SQL_DESC_UNNAMED:
@@ -2807,7 +2837,7 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
       FieldIdentifier = SQL_COLUMN_PRECISION;
       break;
 
-    case SQL_DESC_TYPE:
+    case SQL_DESC_CONCISE_TYPE:
       FieldIdentifier = SQL_COLUMN_TYPE;
       break;
 
@@ -2848,7 +2878,7 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
       }
 
       /* SQLSMALLINT */
-    case SQL_DESC_CONCISE_TYPE:
+    case SQL_DESC_TYPE:
     case SQL_DESC_COUNT:
     case SQL_DESC_FIXED_PREC_SCALE:
     case SQL_DESC_SEARCHABLE:
