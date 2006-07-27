@@ -457,7 +457,7 @@ WHERE {
         <p>All feedback is appreciated, since our goal is to 
         demonstrate the workability of SPARQL to the degree possible via this demo.</p>
       </div><!-- page_home -->
-      <div id="page_dawg">
+      <div id="page_dawg" style="display:none;">
         <h2>Dawg Use Case</h2>
         <div id="dawg_content">
           <p>The folder tree on the side bar contains <a href="http://www.w3.org/2001/sw/DataAccess/tests/">DAWG test cases</a> 
@@ -466,10 +466,10 @@ WHERE {
              load it in the query processor interface for editing and execution.</p>
         </div><!-- dawg_content -->
       </div><!-- page_dawg -->
-      <div id="page_import_data">
+      <div id="page_import_data" style="display:none;">
         <iframe id="import_data_frame" name="import_data_frame" src="data_upload.vsp"></iframe>
       </div><!-- page_import_data -->
-      <div id="page_query">
+      <div id="page_query" style="display:none;">
         <h2>Query Processor</h2>
         <form>
           <label for="default-graph-uri">Query Processor:</label>
@@ -504,7 +504,20 @@ WHERE {
           </div>
           <label for="default-graph-uri">Graph</label>
           <br/>
-          <input id="default-graph-uri" name="default-graph-uri" value="" onchange="OAT.Dom.hide($('view_data_file'));"/>
+          <?vsp
+
+            declare default_dgu varchar;
+            default_dgu := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
+            --if (default_dgu is null)
+            --{
+            --  default_dgu := sys_stat ('st_host_name');
+            --  if (server_http_port () <> '80')
+            --    default_dgu := default_dgu ||':'|| server_http_port ();
+            --};
+            if (default_dgu is not null)
+              default_dgu := 'http://' || default_dgu || '/dataspace';
+          ?>
+          <input id="default-graph-uri" name="default-graph-uri" value="<?V default_dgu ?>" onchange="OAT.Dom.hide($('view_data_file'));"/>
           <br/>
           <label for="query">SPARQL Query</label><br/>
           <textarea id="query" name="query">SELECT * WHERE {?s ?p ?o}</textarea>
