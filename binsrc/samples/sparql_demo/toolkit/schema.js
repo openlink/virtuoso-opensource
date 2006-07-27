@@ -1,0 +1,75 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *
+ *  See LICENSE file for details.
+ */
+/*
+*/
+OAT.Schema = {
+	getType:function(schemaElements,name) {
+		var schemas = schemaElements;
+		if (!(schemas instanceof Array)) { schemas = [schemaElements]; }
+		var availTypeNodes = OAT.Xml.getElementsByTagName(schemas,"complexType");
+		for (var i=0;i<availTypeNodes.length;i++) {
+			var node = availTypeNodes[i];
+			if (node.getAttribute("name") == name) {
+				/* correct type node */
+				var result = {};
+				var elems = OAT.Xml.getElementsByTagName(node,"element");
+				for (var i=0;i<elems.length;i++) {
+					var n = elems[i].getAttribute("name");
+					var t = elems[i].getAttribute("type").split(":").pop();
+					result[n] = OAT.Schema.getType(schemas,t);
+				}
+				/* also try arrays */
+				if (elems.length) { return result; }
+				var res = OAT.Xml.getElementsByTagName(node,"restriction");
+				if (res.length && res[0].getAttribute("base").split(":").pop() == "Array") {
+					/* is array! */
+					result = [];
+					var a = OAT.Xml.getElementsByTagName(res[0],"attribute")[0];
+					var t = a.getAttribute("wsdl:arrayType").split(":").pop().match(/(.*)\[\]/)[1];					
+					result.push(OAT.Schema.getType(schemas,t));
+				}
+				return result;
+				
+			}
+		}
+		return name;
+	},
+	getElement:function(schemaElements,name) {
+		var schemas = schemaElements;
+		if (!(schemas instanceof Array)) { schemas = [schemaElements]; }
+		var availElementNodes = OAT.Xml.getElementsByTagName(schemas,"element");
+		for (var i=0;i<availElementNodes.length;i++) {
+			var node = availElementNodes[i];
+			if (node.getAttribute("name") == name) {
+				/* correct type node */
+				var result = {};
+				var elems = OAT.Xml.getElementsByTagName(node,"element");
+				for (var i=0;i<elems.length;i++) {
+					var n = elems[i].getAttribute("name");
+					var t = elems[i].getAttribute("type").split(":").pop();
+					result[n] = OAT.Schema.getType(schemas,t);
+				}
+				/* also try arrays */
+				if (elems.length) { return result; }
+				var res = OAT.Xml.getElementsByTagName(node,"restriction");
+				if (res.length && res[0].getAttribute("base").split(":").pop() == "Array") {
+					/* is array! */
+					result = [];
+					var a = OAT.Xml.getElementsByTagName(res[0],"attribute")[0];
+					var t = a.getAttribute("wsdl:arrayType").split(":").pop().match(/(.*)\[\]/)[1];
+					result.push(OAT.Schema.getType(schemas,t));
+				}
+				return result;
+			}
+		}
+		return false;
+	}
+}
+OAT.Loader.pendingCount--;
