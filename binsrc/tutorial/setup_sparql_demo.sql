@@ -76,7 +76,7 @@ create procedure SPARQL_DAWG_COMPILE (in rquri varchar, in in_result integer := 
   SPARQL_REPORT ('SPARQL_DAWG_COMPILE on ' || rquri);
   rqtext := replace (cast (XML_URI_GET ('', rquri) as varchar), '# \044Id:', '# Id:');
   lexems := sparql_lex_analyze (rqtext);
-  dbg_obj_princ (lexems);
+  --dbg_obj_princ (lexems);
   prev_line := lexems[1][0]; ses := string_output ();
   http (sprintf ('%3d | ', prev_line), ses);
   lcount := length (lexems) - 1;
