@@ -646,6 +646,14 @@ else
                   </tr>
                 </v:template>
                 <v:template name="dav_template002" type="simple" enabled="-- equ(self.crfolder_mode, 2)">
+                  <script type="text/javascript">
+                    var toolkitPath="toolkit"; var featureList=["combolist"];
+                  </script>
+                  <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>
+                  <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
+                  <script type="text/javascript">
+                      window.onload = init_upload;
+                  </script>
                   <tr>
                     <td>Path to File<span class="redstar">*</span></td>
                     <td>
@@ -661,7 +669,19 @@ else
                   <tr>
                     <td nowrap="nowrap">MIME Type (blank for extension default)</td>
                     <td>
+                      <div id="mime_cl"></div>
+                      <script language="javascript">
+                        var mime_types = new Array();
+                        <?vsp
+                          for(select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE)do
+                            http(sprintf('mime_types.push("%s");',T_TYPE));
+                          
+                          http(sprintf('var cur_mime_type = "%s"',get_keyword('mime_type', self.vc_page.vc_event.ve_params, '')));
+                        ?>
+                      </script>
+                      <!--
                       <v:text name="mime_type" value="--(get_keyword('mime_type', self.vc_page.vc_event.ve_params, ''))" />
+                      -->
                     </td>
                   </tr>
                 </v:template>
@@ -1085,6 +1105,14 @@ else
         }
         nferr:;
     </v:before-data-bind>
+                <script type="text/javascript">
+                  var toolkitPath="toolkit"; var featureList=["combolist"];
+                </script>
+                <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>
+                <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
+                <script type="text/javascript">
+                    window.onload = init_prop_edit;
+                </script>
               <table>
                 <?vsp
                   declare _name, perms, cur_user, _res_type varchar;
@@ -1127,6 +1155,17 @@ else
                 <tr>
                   <th>MIME Type</th>
                   <td style="white-space: nowrap;">
+                    <div id="mime_cl"></div>
+                    <script language="javascript">
+                      var mime_types = new Array();
+                      <?vsp
+                        for(select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE)do
+                          http(sprintf('mime_types.push("%s");',T_TYPE));
+                        
+                        http(sprintf('var cur_mime_type = "%s"',_res_type));
+                      ?>
+                    </script>
+                    <!--
                     <?vsp
                       http(sprintf('<input type="text" name="mime_type1" value="%s"/>', _res_type));
                     ?>
@@ -1137,6 +1176,7 @@ else
                         http(sprintf('<option value="%s">%s</option>',T_TYPE,T_TYPE));
                     ?>
                     </select>
+                    -->
                   </td>
                 </tr>
                 <?vsp

@@ -65,6 +65,28 @@ function init()
 
 }
 
+function init_prop_edit() 
+{
+  var mt_cl = new Combolist([],cur_mime_type);
+  mt_cl.input.name = "mime_type1";
+  $("mime_cl").appendChild(mt_cl.div);
+  for (var i = 0; i < mime_types.length; i++)
+  {
+    mt_cl.addOption(mime_types[i]);
+  }
+}
+
+function init_upload() 
+{
+  var mt_cl = new Combolist([],cur_mime_type);
+  mt_cl.input.name = "mime_type";
+  $("mime_cl").appendChild(mt_cl.div);
+  for (var i = 0; i < mime_types.length; i++)
+  {
+    mt_cl.addOption(mime_types[i]);
+  }
+}
+
 function directive_add(){
   var pr_instr = $("pr_instr")[$("pr_instr").selectedIndex];
   var pr_name = pr_name_cl.value; //$("pr_name").value;
