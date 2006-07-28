@@ -101,7 +101,7 @@
                   is_xml := 0;
                 };
                 is_xml := 1;
-                rdf_xml := xtree_doc (rdf_data, 0, rdf_graph);
+                xtree_doc (rdf_data, 0, rdf_graph);
               }
             }
             if (is_xml = 0 and is_ttl = 0)
@@ -110,7 +110,7 @@
             if (is_ttl) {
               DB.DBA.TTLP (rdf_data, rdf_graph, rdf_graph);
             } else {
-              DB.DBA.RDF_EXP_LOAD_RDFXML (rdf_graph, rdf_xml, 0);
+              DB.DBA.RDF_LOAD_RDFXML (rdf_data, rdf_graph, rdf_graph);
             }
 
           } else {
