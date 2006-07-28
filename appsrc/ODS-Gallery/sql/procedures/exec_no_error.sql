@@ -50,9 +50,9 @@ create procedure PHOTO.WA._exec_no_error(in expr varchar, in execType varchar :=
     expr := sprintf(expr, maxID);
   }
   exec(expr, state, message, vector(), 0, meta, result);
-  if(message <> 0){
-    dbg_obj_print();
-    dbg_obj_print('error:',message);
-  }
+  --if(message <> 0){
+    --dbg_obj_print();
+    --dbg_obj_print('error:',message);
+  --}
 }
 ;

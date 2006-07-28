@@ -30,6 +30,30 @@
     <html>
       <head>
         <title>Photo Gallery</title>
+        <link rel="meta" type="application/rdf+xml" title="SIOC" href="root/host" >
+          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/dataspace/<xsl:value-of select="root/user/user_name"/>/<xsl:value-of select="root/app_type"/>/<xsl:value-of select="root/instance"/>/sioc.rdf</xsl:attribute>
+        </link>
+
+        <link rel="alternate" type="application/atom+xml">
+          <xsl:attribute name="title"><xsl:value-of select="user/user_name"/>&#39;s Photos Atom</xsl:attribute>
+          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/><xsl:value-of select="root/instance"/>atom.xml</xsl:attribute>
+        </link>
+
+
+        <link rel="alternate" type="application/rss+xml">
+          <xsl:attribute name="title"><xsl:value-of select="user/user_name"/>&#39;s Photos RSS</xsl:attribute>
+          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/><xsl:value-of select="root/instance"/>rss.xml</xsl:attribute>
+        </link>
+
+      <link rel="pingback" href="http://localhost:84/mt-tb" >
+        </link>
+
+
+      <link rel="meta" type="application/rdf+xml" title="FOAF" href="http://localhost:84/weblog/darco/gems/foaf.xml" >
+        </link>
+
+      <link rel="EditURI" type="application/rsd+xml" title="RSD" href="http://localhost:84/weblog/darco/gems/rsd.xml" >
+        </link>
 
         <script language="JavaScript" src="/photos/res/js/ajax.js"></script>
         <script language="JavaScript" src="/photos/res/js/dataset.js"></script>

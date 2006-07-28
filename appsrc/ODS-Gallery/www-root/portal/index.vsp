@@ -22,7 +22,6 @@
 --
 ?>
 <?vsp
-dbg_obj_print('>>>>',params);
   declare auth_uid,_mime_type varchar;
   declare current_user photo_user;
   declare _sid,home_url varchar;
@@ -118,7 +117,10 @@ dbg_obj_print('>>>>',params);
   http(sprintf('<first_name>%s</first_name>',current_user.first_name),_xml);
   http(sprintf('<last_name>%s</last_name>',current_user.last_name),_xml);
   http(sprintf('<user_name>%s</user_name>',current_user.auth_uid),_xml);
-  http('</user>',_xml);
+  http('</user>',_xml);     --&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/%s/sioc.rdf', self.st_host, self.fname, wa_type_to_app (self.app_type)), '+', '%2B')); ?>
+  http(sprintf('<host>%s</host>',WA_GET_HOST ()),_xml);
+  http(sprintf('<app_type>photos</app_type>'),_xml);
+  http(sprintf('<instance>%s</instance>',replace(current_instance.name, ' ', '%2B')),_xml);
   http(sprintf('<wa_home_title>%s</wa_home_title>',wa_home_title),_xml);
   http(sprintf('<wa_home_link>%s</wa_home_link>',wa_home_link),_xml);
 

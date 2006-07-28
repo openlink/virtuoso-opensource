@@ -37,14 +37,12 @@
     <v:on-init>
       declare auth_uid varchar;
       declare current_user photo_user;
-      dbg_obj_print('------------');
       auth_uid := PHOTO.WA._session_user(self.vc_page.vc_event.ve_params,current_user);
       if(auth_uid = ''){
         http_request_status ('HTTP/1.1 302 Found');
         http_header (sprintf ('Location: %s\r\n', '/wa/'));
         return;
       }
-      dbg_obj_print(auth_uid);
     </v:on-init>
       <vm:body>
 

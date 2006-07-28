@@ -233,7 +233,7 @@ create method wa_front_page (inout stream any) for wa_photo
 -------------------------------------------------------------------------------
 create method wa_home_url () for wa_photo
 {
-  return (select CONCAT(HOME_URL,'/') from PHOTO.WA.SYS_INFO where WAI_NAME = self.wa_name);
+  return coalesce((select CONCAT(HOME_URL,'/') from PHOTO.WA.SYS_INFO where WAI_NAME = self.wa_name),'/gallery');
 }
 ;
 

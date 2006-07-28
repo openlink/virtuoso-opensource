@@ -221,7 +221,7 @@ create procedure PHOTO.WA.edit_album(
   }else{
     col_id := DAV_SEARCH_ID(concat(home_path,old_name,'/'),'C');
   }
-dbg_obj_print('>>',col_id);
+
   if(col_id > 0){
     declare res any;
     DAV_PROP_REMOVE(DAV_SEARCH_PATH (col_id,'C'),'pub_date',current_user.auth_uid,current_user.auth_pwd);

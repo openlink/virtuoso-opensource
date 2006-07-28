@@ -57,7 +57,7 @@ create trigger SYS_DAV_RES_PHOTO_SIOC_D after delete on WS.WS.SYS_DAV_RES refere
 create trigger SYS_DAV_RES_PHOTO_SIOC_U after update on WS.WS.SYS_DAV_RES referencing old as O, new as N
 {
   declare dir varchar;
-  declare iri, c_iri, creator_iri varchar;
+  declare iri, c_iri, creator_iri, old_iri varchar;
   declare pos int;
   declare graph_iri varchar;
   declare exit handler for sqlstate '*' {
@@ -69,12 +69,47 @@ create trigger SYS_DAV_RES_PHOTO_SIOC_U after update on WS.WS.SYS_DAV_RES refere
   if (pos is null)
     return;
 
+  dir := subseq (N.RES_FULL_PATH, 0,pos);
+  pos := strrchr (dir, '/');
   dir := subseq (N.RES_FULL_PATH, 0, pos+1);
+
   graph_iri := get_graph ();
 
   -- delete old
-  iri := dav_res_iri (O.RES_FULL_PATH);
-  delete_quad_s_or_o (graph_iri, iri, iri);
+  old_iri := dav_res_iri (O.RES_FULL_PATH);
+
+  iri := dav_res_iri (N.RES_FULL_PATH);
+  for select WAI_NAME from PHOTO..SYS_INFO where HOME_PATH = dir and N.RES_OWNER = OWNER_ID do
+    {
+      creator_iri := user_iri (N.RES_OWNER);
+      c_iri := photo_iri (WAI_NAME);
+      delete_quad_s_or_o (graph_iri, old_iri, old_iri);
+      ods_sioc_post (graph_iri, iri, c_iri, creator_iri, N.RES_NAME, N.RES_CR_TIME, N.RES_MOD_TIME, null);
+    }
+
+  return;
+};
+
+create trigger SYS_DAV_RES_PHOTO_SIOC_U after insert on WS.WS.SYS_DAV_RES referencing new as N
+{
+  declare dir varchar;
+  declare iri, c_iri, creator_iri, old_iri varchar;
+  declare pos int;
+  declare graph_iri varchar;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  pos := strrchr (N.RES_FULL_PATH, '/');
+  if (pos is null)
+    return;
+
+  dir := subseq (N.RES_FULL_PATH, 0,pos);
+  pos := strrchr (dir, '/');
+  dir := subseq (N.RES_FULL_PATH, 0, pos+1);
+
+  graph_iri := get_graph ();
 
   iri := dav_res_iri (N.RES_FULL_PATH);
   for select WAI_NAME from PHOTO..SYS_INFO where HOME_PATH = dir and N.RES_OWNER = OWNER_ID do
