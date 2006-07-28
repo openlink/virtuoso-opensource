@@ -256,7 +256,7 @@ self.vc_data_bind(e);
             </table>
           </v:template>
           <v:template type="edit" name-to-remove="" set-to-remove="none" name="data_set_browse_edit_template">
-            <v:form triggers="off" type="update" method="POST" action="" if-not-exists="nothing" name="data_set_browse_edit_form" table="DB.DBA.NEWS_SERVERS">
+            <v:form type="update" method="POST" action="" if-not-exists="nothing" name="data_set_browse_edit_form" table="DB.DBA.NEWS_SERVERS">
               <v:key default="null" name="upd_NS_ID" column="NS_ID" value="--self.data_set_browse.ds_current_row.te_rowset[0]" />
               <v:template type="simple" name-to-remove="table" set-to-remove="both" name="data_set_browse_edit_template_2">
                 <table class="data_set_container" width="100%" border="1" cellspacing="0" cellpadding="0" id="ds_data_set_browse">
@@ -288,7 +288,7 @@ self.vc_data_bind(e);
             </v:form>
           </v:template>
           <v:template type="add" name-to-remove="table" set-to-remove="none" name="data_set_browse_add_template">
-            <v:form triggers="off" type="update" method="POST" action="" if-not-exists="insert" name="data_set_browse_add_form" table="DB.DBA.NEWS_SERVERS">
+            <v:form type="update" method="POST" action="" if-not-exists="insert" name="data_set_browse_add_form" table="DB.DBA.NEWS_SERVERS">
               <v:validator
                 name="address_unique_validator"
                 test="sql"
