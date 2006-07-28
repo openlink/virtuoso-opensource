@@ -1761,7 +1761,8 @@ xmla_cursor_stmt_change (in _props any, inout _stmt varchar)
   _left_str_u := ucase (_left_str, 6);
 
   if (_left_str_u = 'SELECT')
-    _stmt := replace (_stmt, _left_str, new_stmpt);
+    _stmt := replace (_stmt, _left_str, new_stmpt, 1);
+
 }
 ;
 
@@ -1925,7 +1926,7 @@ xmla_get_rows_from_stmt (in stmt any)
    pos := strstr (tmp, 'FROM');
    tmp := "LEFT" (stmt, pos);
 
-   stmt := replace (stmt, tmp, new_stmpt);
+   stmt := replace (stmt, tmp, new_stmpt, 1);
 
    res := exec (stmt, state, msg, vector (), 0, mdta, dta);
 
