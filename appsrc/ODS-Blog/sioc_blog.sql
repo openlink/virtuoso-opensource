@@ -43,7 +43,7 @@ create procedure blog_comment_iri (in blog_id varchar, in post_id varchar, in ci
 
 create procedure fill_ods_blog_sioc (in graph_iri varchar, in site_iri varchar)
 {
-  declare iri, cr_iri, blog_iri, cm_iri varchar;
+  declare iri, cr_iri, blog_iri, cm_iri, tiri varchar;
   for select B_BLOG_ID, B_POST_ID, BI_WAI_NAME, B_USER_ID, B_TITLE, B_TS, B_MODIFIED, BI_HOME from BLOG..SYS_BLOGS, BLOG..SYS_BLOG_INFO
     where B_BLOG_ID = BI_BLOG_ID do
     {
@@ -59,6 +59,12 @@ create procedure fill_ods_blog_sioc (in graph_iri varchar, in site_iri varchar)
 	 DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
 	 DB.DBA.RDF_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', iri);
        }
+      for select BT_TAG from BLOG..BLOG_POST_TAGS_STAT_2 where blogid = B_BLOG_ID and postid = B_POST_ID do
+	{
+          tiri := sprintf ('http://%s%s?tag=%s', get_cname(), BI_HOME, BT_TAG);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('topic'), tiri);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, tiri, rdfs_iri ('label'), BT_TAG);
+	}
     }
 };
 
@@ -166,6 +172,44 @@ create trigger BLOG_COMMENTS_SIOC_U after update on BLOG..BLOG_COMMENTS referenc
   DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
   return;
+};
+
+create trigger BLOG_TAG_SIOC_I after insert on BLOG..BLOG_TAG referencing new as N
+{
+  declare iri, graph_iri, post_iri, tarr varchar;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  post_iri := blog_post_iri (N.BT_BLOG_ID, N.BT_POST_ID);
+  for select BI_HOME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.BT_BLOG_ID do
+    {
+      tarr := split_and_decode (N.BT_TAGS, 0, '\0\0,');
+      foreach (any elm in tarr) do
+	{
+	  elm := trim(elm);
+	  elm := replace (elm, ' ', '_');
+	  if (length (elm))
+	    {
+	      iri := sprintf ('http://%s%s?tag=%s', get_cname(), BI_HOME, elm);
+	      DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, sioc_iri ('topic'), iri);
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), elm);
+	    }
+	}
+    }
+};
+
+create trigger BLOG_TAG_SIOC_D after delete on BLOG..BLOG_TAG referencing old as O
+{
+  declare iri, graph_iri, post_iri varchar;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  post_iri := blog_post_iri (O.BT_BLOG_ID, O.BT_POST_ID);
+  delete_quad_sp (graph_iri, post_iri, sioc_iri ('topic'));
 };
 
 use DB;

@@ -1789,6 +1789,18 @@ create procedure BLOG_MAKE_ALL_BLOGS_IN_ONE ()
 }
 ;
 
+create trigger WA_USER_INFO_GEO_U after update (WAUI_LAT) on WA_USER_INFO referencing new as N
+{
+  declare host_id, job_id int;
+  host_id := cast ((select WH_ID from BLOG..SYS_BLOG_WEBLOG_HOSTS where WH_URL = 'http://geourl.org/ping/?p=') as varchar);
+  for select BI_BLOG_ID from BLOG.DBA.SYS_BLOG_INFO where BI_OWNER = N.WAUI_U_ID do
+    {
+      job_id := (select top 1 R_JOB_ID from BLOG..SYS_ROUTING where R_DESTINATION_ID = host_id and R_ITEM_ID = BI_BLOG_ID);
+      update BLOG.DBA.BLOG_WEBLOG_PING_LOG set WPL_STAT = 0 where WPL_HOSTS_ID = host_id and WPL_JOB_ID = job_id;
+    }
+  return;
+};
+
 BLOG..blog2_exec_no_error ('DB.DBA.BLOG_MAKE_ALL_BLOGS_IN_ONE ()')
 ;
 

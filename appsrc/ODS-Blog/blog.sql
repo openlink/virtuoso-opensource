@@ -1023,17 +1023,22 @@ blog2_exec_no_error ('create index BLOG_WEBLOG_PING_LOG_STAT on BLOG_WEBLOG_PING
 
 create trigger SYS_BLOG_WEBLOG_PING_I after insert on SYS_BLOG_WEBLOG_PING referencing new as N
 {
-  declare jid int;
-  declare url varchar;
+  declare jid, proto_id int;
+  declare url, proto varchar;
+
   declare exit handler for not found {
     return;
   };
-  select WH_URL into url from SYS_BLOG_WEBLOG_HOSTS where WH_ID = N.WP_HOSTS_ID;
+  select WH_URL, WH_PROTO into url, proto from SYS_BLOG_WEBLOG_HOSTS where WH_ID = N.WP_HOSTS_ID;
   if (length (url) and not exists (select 1 from SYS_ROUTING where R_ITEM_ID = N.WP_BLOG_ID and R_DESTINATION_ID = N.WP_HOSTS_ID and R_TYPE_ID = 4))
     {
+      if (proto = 'REST')
+	proto_id := 6;
+      else
+        proto_id := 7;
       jid := coalesce((select top 1 R_JOB_ID from BLOG..SYS_ROUTING order by R_JOB_ID desc), 0)+1;
       insert into SYS_ROUTING (R_JOB_ID, R_TYPE_ID, R_PROTOCOL_ID, R_DESTINATION_ID, R_FREQUENCY, R_ITEM_ID)
-	  values (jid, 4, 7, N.WP_HOSTS_ID, 5, N.WP_BLOG_ID);
+	  values (jid, 4, proto_id, N.WP_HOSTS_ID, 5, N.WP_BLOG_ID);
     }
 }
 ;
@@ -1094,6 +1099,8 @@ insert soft SYS_BLOG_WEBLOG_HOSTS (WH_URL, WH_NAME, WH_PROTO) values ('http://ap
 insert soft SYS_BLOG_WEBLOG_HOSTS (WH_URL, WH_NAME, WH_PROTO) values ('http://api.moreover.com/RPC2', 'Moreover', 'xml-rpc');
 
 insert soft SYS_BLOG_WEBLOG_HOSTS (WH_URL, WH_NAME, WH_PROTO, WH_METHOD) values ('http://rpc.weblogs.com/RPC2', 'Weblog.com (extended)', 'xml-rpc', 'weblogUpdates.extendedPing');
+
+insert soft SYS_BLOG_WEBLOG_HOSTS (WH_URL, WH_NAME, WH_PROTO, WH_METHOD) values ('http://geourl.org/ping/?p=', 'GeoURL', 'REST', 'ping');
 
 
 blog2_exec_no_error ('create table SYS_BLOG_SEARCH_ENGINE (
@@ -7264,6 +7271,16 @@ ROUTING_PROCESS_PINGS (in job_id int, in proto_id int, in dst varchar, in dst_id
 		{
 		    rc := DB.DBA.XMLRPC_CALL (subseq (use_pings, length ('xml-rpc:'), length (use_pings)),
 		    'weblogUpdates.ping', vector (nam, url));
+		}
+	      else if (WH_PROTO = 'REST')
+		{
+		  declare hf, ping_url any;
+		  ping_url := sprintf ('%s%U', WH_URL, url);
+		  http_get (ping_url, hf);
+		  if (isarray (hf) and length (hf) and hf[0] not like 'HTTP/1._ 200 %')
+		    {
+		      rc := xml_tree (sprintf ('<response><flerror>1</flerror><message>%V</message></response>', hf[0]));
+		    }
 		}
 	    }
 

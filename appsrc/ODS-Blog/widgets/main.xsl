@@ -6758,9 +6758,24 @@ window.onload = function (e)
                 {
                   if (p[i] <> '')
                   {
-		    declare pu varchar;
-		    pu := (select WH_URL from BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS where WH_ID = p[i]);
+		    declare pu, pn varchar;
+		    declare pjob int;
+		    pu := '';
+		    for select WH_URL, WH_NAME from BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS where WH_ID = p[i] do
+		    {
+		      pu := WH_URL;
+		      pn := WH_NAME;
+		    }
+		    if (pu <> '')
                     insert into BLOG.DBA.SYS_BLOG_WEBLOG_PING(WP_HOSTS_ID, WP_BLOG_ID, WP_URL) values(p[i], self.blogid, pu);
+		    if (pn = 'GeoURL')
+		      {
+		        -- insert one record
+			pjob := (select top 1 R_JOB_ID from BLOG..SYS_ROUTING
+				where R_DESTINATION_ID = p[i] and R_ITEM_ID = self.blogid);
+			insert into BLOG.DBA.BLOG_WEBLOG_PING_LOG (WPL_JOB_ID,WPL_HOSTS_ID,WPL_STAT)
+			values (pjob, p[i], 0);
+		      }
                   }
                   i := i + 1;
                 }
