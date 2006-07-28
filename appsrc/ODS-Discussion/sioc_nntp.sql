@@ -22,13 +22,20 @@
 
 use sioc;
 
+create procedure nntp_role_iri (in name varchar)
+{
+  return sprintf ('http://%s%s/discussion/%U#reader', get_cname(), get_base_path (), name);
+};
+
 create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar)
 {
-  declare iri, firi, title, arr, link varchar;
+  declare iri, firi, title, arr, link, riri varchar;
   for select NG_GROUP, NG_NAME, NG_DESC, NG_TYPE from DB.DBA.NEWS_GROUPS do
     {
       firi := forum_iri ('nntpf', NG_NAME);
       sioc_forum (graph_iri, site_iri, firi, NG_NAME, 'nntpf', NG_DESC);
+      riri := nntp_role_iri (NG_NAME);
+      DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
       for select NM_ID, NM_REC_DATE, NM_HEAD from DB.DBA.NEWS_MSG, DB.DBA.NEWS_MULTI_MSG
 	where NM_GROUP = NG_GROUP and NM_KEY_ID = NM_ID and NM_TYPE = NG_TYPE do
 	  {
@@ -39,13 +46,21 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar)
 	    link := sprintf ('http://%s/nntpf/nntpf_disp_article.vspx?id=%U', DB.DBA.WA_GET_HOST (), encode_base64 (NM_ID));
 	    ods_sioc_post (graph_iri, iri, firi, null, title, NM_REC_DATE, NM_REC_DATE, link);
 	  }
+       for select U_NAME from DB.DBA.SYS_USERS where U_DAV_ENABLE = 1 and U_NAME <> 'nobody' and U_NAME <> 'nogroup' and U_IS_ROLE = 0
+	 do
+	   {
+	     declare user_iri varchar;
+             user_iri := user_obj_iri (U_NAME);
+	     DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_member'), user_iri);
+	     DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioc_iri ('has_function'), riri);
+	   }
     }
 };
 
 
 create trigger NEWS_GROUPS_SIOC_I after insert on DB.DBA.NEWS_GROUPS referencing new as N
 {
-  declare firi, graph_iri, site_iri varchar;
+  declare firi, graph_iri, site_iri, riri varchar;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
@@ -54,6 +69,16 @@ create trigger NEWS_GROUPS_SIOC_I after insert on DB.DBA.NEWS_GROUPS referencing
   graph_iri := get_graph ();
   firi := forum_iri ('nntpf', N.NG_NAME);
   sioc_forum (graph_iri, site_iri, firi, N.NG_NAME, 'nntpf', N.NG_DESC);
+  riri := nntp_role_iri (N.NG_NAME);
+  DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
+  for select U_NAME from DB.DBA.SYS_USERS where U_DAV_ENABLE = 1 and U_NAME <> 'nobody' and U_NAME <> 'nogroup' and U_IS_ROLE = 0
+    do
+      {
+	declare user_iri varchar;
+	user_iri := user_obj_iri (U_NAME);
+	DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_member'), user_iri);
+	DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioc_iri ('has_function'), riri);
+      }
   return;
 };
 
