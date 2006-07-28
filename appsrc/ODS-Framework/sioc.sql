@@ -247,6 +247,11 @@ create procedure rdf_iri (in s varchar)
   return concat ('http://www.w3.org/1999/02/22-rdf-syntax-ns#', s);
 };
 
+create procedure rdfs_iri (in s varchar)
+{
+  return concat ('http://www.w3.org/2000/01/rdf-schema#', s);
+};
+
 create procedure geo_iri (in s varchar)
 {
   return concat ('http://www.w3.org/2003/01/geo/wgs84_pos#', s);
@@ -1154,6 +1159,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	  qry := sprintf ('sparql
 	      prefix sioc: <http://rdfs.org/sioc/ns#>
 	      prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	      prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 	      construct
 	       {
 		    ?forum sioc:container_of ?post .
@@ -1166,7 +1172,8 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 		    ?post sioc:created_at ?created .
 		    ?post sioc:has_creator ?creator .
 		    ?post sioc:reply_of ?reply .
-		    ?reply sioc:has_reply ?post
+		    ?reply sioc:has_reply ?post .
+		    ?post sioc:topic ?topic . ?topic rdfs:label ?label
 	       }
 	      where
 		    {
@@ -1180,7 +1187,8 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 			optional { ?post sioc:link ?link } .
 			optional { ?post sioc:has_creator ?creator } .
 			optional { ?post sioc:reply_of ?reply } .
-			optional { ?post sioc:title ?title }
+			optional { ?post sioc:title ?title } .
+			optional { ?post sioc:topic ?topic . ?topic rdfs:label ?label } .
                   }
                 }
                 order by desc (?created) limit %d

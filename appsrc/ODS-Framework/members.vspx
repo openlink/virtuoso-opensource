@@ -433,6 +433,8 @@
     </div>
     <table class="listing">
     <v:form type="simple" method="POST" name="add_form_1">
+<!--
+
     <tr>
 	<td width="20%">
             <v:text xhtml_id="reguid" error-glyph="*" name="reguid" value="--get_keyword ('reguid', params)">
@@ -546,7 +548,327 @@
             </v:button>
 	</td>
     </tr>
+-->
 </v:form>
+
+
+
+<tr>
+<td colspan="4">
+  <v:method name="add_member" arglist="in userName varchar">
+    <![CDATA[
+      declare N integer;
+      declare userDescr varchar;
+
+      if (
+          lcase(self.u_name) = lcase(userName) or
+          strstr(self.str_alreadymembers,userName) IS NOT NULL
+          )
+      {
+        self.str_alreadyinlist := self.str_alreadyinlist||', '||userName;
+
+        return;
+      }
+
+      N := (select U_ID from DB.DBA.SYS_USERS where U_NAME = userName);
+      if (isnull(N))
+        return;
+
+      userDescr := coalesce((select U_FULL_NAME from DB.DBA.SYS_USERS where U_NAME = userName), '');
+      if (isnull(self.d_added))
+        self.d_added := vector();
+      self.delete_member(userName, 0);
+      for (N := 0; N < length(self.d_added); N := N + 1)
+        if (lcase(self.d_added[N][0]) = lcase(userName))
+          return;
+      self.d_added := vector_concat(self.d_added, vector(vector(userName, userDescr)));
+    ]]>
+  </v:method>
+  <v:method name="delete_member" arglist="in userName varchar, in mode integer">
+    <![CDATA[
+      declare N integer;
+
+      if (isnull(self.d_deleted))
+        self.d_deleted := vector();
+      if (mode) {
+        declare tmp any;
+        tmp := vector();
+        for (N := 0; N < length(self.d_added); N := N + 1)
+          if (lcase(self.d_added[N][0]) <> lcase(userName))
+            tmp := vector_concat(tmp, vector(self.d_added[N]));
+        self.d_added := tmp;
+      }
+      for (N := 0; N < length(self.d_deleted); N := N + 1)
+        if (lcase(self.d_deleted[N]) = lcase(userName))
+          return;
+      self.d_deleted := vector_concat(self.d_deleted, vector(lcase(userName)));
+    ]]>
+  </v:method>
+
+  
+  <v:before-data-bind>
+    <![CDATA[
+    
+      self.str_alreadymembers:='';
+      for (select U_NAME from DB.DBA.WA_MEMBER,DB.DBA.SYS_USERS where U_ID = WAM_USER and WAM_STATUS <> 1  and WAM_INST = self.iname) do
+      {
+        self.str_alreadymembers:=self.str_alreadymembers||','||U_NAME;
+      };
+    
+      self.str_alreadyinlist :=  '';
+
+      declare exit handler for not found { goto _end; };
+
+      declare N, I integer;
+
+
+     if (get_keyword('member_name', self.vc_page.vc_event.ve_params, '') <> '')
+      {
+
+        declare tmp any;
+
+        tmp := split_and_decode (get_keyword('member_name', self.vc_page.vc_event.ve_params, ''), 0, '\0\0,');
+        for (I := 0; I < length(tmp); I := I + 1)
+         {
+          self.add_member(trim(tmp[I]));
+         }
+      }
+
+
+      for (N := 0; N < length(self.vc_page.vc_event.ve_params); N := N + 2) {
+
+        if (self.vc_page.vc_event.ve_params[N] like 'delete_%') {
+          self.delete_member(replace(self.vc_page.vc_event.ve_params[N], 'delete_', ''), 1);
+        }
+      }
+      
+    _end:;
+    ]]>
+
+  </v:before-data-bind>
+      <vm:variable name="d_added" type="any" default="null" persist="0" />
+      <vm:variable name="d_deleted" type="any" default="null" persist="0" />
+      <vm:variable name="str_alreadyinlist" type="varchar" default="''" persist="0" />
+      <vm:variable name="str_alreadymembers" type="varchar" default="''" persist="0" />
+
+
+            <div style="padding: 0 0 0.5em 0;">
+              <v:text name="member_name" type="hidden" value="--''" format="%s"/>
+              <input type="button" value="Add member(s) to invite list" onClick="javascript:windowShow('users_select.vspx?dst=m&src=s&params=member_name:s1;', 550)" class="button"/>
+            </div>
+            <?vsp
+                if(length(self.d_added)>0)
+                {
+            ?>
+            <table class="listing" id="members" cellspacing="0" wodht="98%"> 
+              <tr class="listing_header_row">
+                <th> Name </th>
+                <th>Description </th>
+                <th width="1%">Membership Type(status)</th>
+                <th align="center" width="1%">Action </th>
+              </tr>
+              <?vsp
+                declare member_type_options varchar;
+                member_type_options:='';
+                for (select * from WA_MEMBER_TYPE where WMT_APP = (select WAI_TYPE_NAME from WA_INSTANCE where WAI_NAME = self.iname) and WMT_ID <> 1 and WMT_ID <> -1) do
+                {
+                     member_type_options:=member_type_options||sprintf('<option value="%d" >%s</option>',WMT_ID,WMT_NAME);
+                };
+              
+                declare N integer;
+                declare _U_NAME,_U_FULL_NAME varchar;
+
+                N := 0;
+                _U_NAME:='';
+                _U_FULL_NAME:='';
+                
+                for (N := 0; N < length(self.d_added); N := N + 1)
+                {
+                  
+                  _U_NAME:=self.d_added[N][0];
+                  _U_FULL_NAME:=self.d_added[N][1];
+
+                    http('<tr class="'||(case when mod(N,2) = 0 then 'listing_row_odd' else 'listing_row_even' end)||'" >');
+                    http('<td nowrap="nowrap">');
+                    http(_U_NAME);
+                    http('</td>');
+                    http('<td nowrap="nowrap">');
+                    http(_U_FULL_NAME);
+                    http('</td>');
+                    http('<td nowrap="nowrap" align="center">');
+                    http('<select name="membership_type_'||_U_NAME||'" id="membership_type_'||_U_NAME||'" style="width:90%">');
+                    http(member_type_options);
+                    http('</select>');
+                    http('</td>');
+                    http('<td nowrap="nowrap">');
+                    http(sprintf('<input type="submit" name="delete_%s" value="Delete" class="button" />', _U_NAME));
+                    http('</td>');
+                    http('</tr>');
+                }
+
+                if (not N)
+                  http('<tr align="left"><td colspan="4">No members to invite</td></tr>');
+              }
+              if (length(self.str_alreadyinlist)>2)
+                  self.str_alreadyinlist:=subseq(self.str_alreadyinlist,1);
+              ?>
+            </table>
+      <?vsp
+        if (length(self.str_alreadyinlist)>0)
+        {
+      ?>     
+        <div style="color:red;">You have selecte users that were already in the list:<?Vself.str_alreadyinlist?></div>
+      <?vsp
+        }
+      ?>     
+      <div class="new-form-footer">
+
+      <v:button name="btn_invite" action="simple" value="Invite member(s)" xhtml_class="form-button" enabled="--length(self.d_added)">
+        <v:on-post>
+          <![CDATA[
+        
+            self.current_member_model := (select WAI_MEMBER_MODEL from WA_INSTANCE where WAI_ID = self.iid);
+                                     
+--            self.current_member_model := 4;
+                                                 
+            -- check if user exists
+            declare _u_id, _u_name any;
+            declare model_type integer;
+            declare N integer;
+            
+        
+            for (N := 0; N < length(self.d_added); N := N + 1)
+            {
+              
+              _u_name :=self.d_added[N][0];
+
+              model_type := cast(get_keyword('membership_type_'||_u_name, self.vc_page.vc_event.ve_params, -1) as integer);
+
+              
+              if( model_type < 1) {
+                self.vc_is_valid := 0;
+                self.vc_error_message := 'Incorect Mebership type';
+                goto nextcycle;
+              }
+              
+
+              if(_u_name is null or _u_name = '') {
+                self.vc_is_valid := 0;
+                self.vc_error_message := 'Login Name cannot be empty.';
+--                return 0;
+                goto nextcycle;
+              }
+              _u_id := (select U_ID from SYS_USERS where U_NAME = _u_name and U_DAV_ENABLE = 1 and U_IS_ROLE = 0);
+              if(_u_id is null) {
+                self.vc_is_valid := 0;
+                self.vc_error_message := 'Entered user does not exist.';
+--                return 0;
+                goto nextcycle;
+              }
+              if (_u_id = self.u_id)
+              {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := 'You are owner of this application.';
+--                        return 0;
+                        goto nextcycle;
+            }
+              
+              if (exists(select 1 from WA_MEMBER where WAM_USER = _u_id and WAM_INST = self.iname and WAM_STATUS = 2))
+              {
+                self.vc_error_message := 'User is already member of application';
+                self.vc_is_valid := 0;
+--                return;
+                goto nextcycle;
+        
+              }
+              if (exists(select 1 from WA_MEMBER where WAM_USER = _u_id and WAM_INST = self.iname and WAM_STATUS = 4))
+              {
+                self.vc_error_message := 'User is already pending';
+                self.vc_is_valid := 0;
+--                return;
+                goto nextcycle;
+              }
+              -- create session
+              declare _expire, _sid any;
+              if (self.current_member_model = 2)
+              {
+                _sid := md5 (concat(datestring(now()), http_client_ip(), http_path()));
+                _expire := coalesce((select top 1 WS_REGISTRATION_EMAIL_EXPIRY from WA_SETTINGS), 1);
+                insert into VSPX_SESSION ( VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
+                values ( 'wa', _sid, _u_name, serialize (vector ('vspx_user', _u_name)), dateadd ('hour', _expire, now()));
+                connection_set('__sid', _sid);
+              }
+              -- add member
+              declare exit handler for sqlstate '*' {
+                self.vc_error_message := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
+                self.vc_is_valid := 0;
+                rollback work;
+--                return;
+                goto nextcycle;
+              };
+              {
+                 declare exit handler for sqlstate '*' {
+                   self.vc_is_valid := 0;
+                   declare _use_sys_errors, _sys_error, _error any;
+                   _sys_error := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+                   _error := _u_name||' - Due to a transient problem in the system, your invitation could not be
+                       processed at the moment. The system administrators have been notified. Please
+                       try again later.';
+                   _use_sys_errors := (select top 1 WS_SHOW_SYSTEM_ERRORS from WA_SETTINGS);
+                   if(_use_sys_errors) {
+                     self.vc_error_message := self.vc_error_message||_error || ' ' || _sys_error||' ';
+                   }
+                   else {
+                     self.vc_error_message :=self.vc_error_message || _error||' ';
+                   }
+                   rollback work;
+ --                  return;
+                   goto nextcycle;
+                 };
+                
+                if (self.current_member_model = 2)
+                {
+                  insert soft WA_MEMBER(WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_STATUS)
+                    values(_u_id, self.iname, model_type, 4);
+                }
+                else
+                {
+                  insert soft WA_MEMBER(WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_STATUS)
+                    values(_u_id, self.iname, model_type, 2);
+                }
+              }
+        
+             nextcycle:;
+            }
+        
+            
+            -- refresh dataset
+            self.dss_members.ds_parameters := null;
+            self.dss_members.vc_data_bind (e);
+            self.ds_members.vc_data_bind(e);
+
+            self.d_added:=vector();
+            self.btn_invite.vc_data_bind (e);
+            self.btn_invite_cancel.vc_data_bind (e);
+            
+        ]]>
+        </v:on-post>
+      </v:button>
+
+      <v:button name="btn_invite_cancel" action="simple" value="Cancel" xhtml_class="form-button" enabled="--length(self.d_added)">
+        <v:on-post>
+          <![CDATA[
+            self.vc_redirect('members.vspx?wai_id='||cast(self.iid as varchar));
+          ]]>
+        </v:on-post>
+      </v:button>
+     </div>
+
+   </td>
+  </tr>
+
+  
+
       </table>
       <vm:variable name="current_member_model" type="int" default="0" persist="0"/>
   </v:form>

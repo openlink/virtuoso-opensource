@@ -196,3 +196,45 @@ function submenuShowHide ()
       document.getElementById('myods_cell').className=' ';
     } 
 }
+
+function divShowHide ( divname, div_action)
+{
+  alert(divname);
+  _div=document.getElementById(divname);
+  if (div_action=='show')
+    {
+      _div.style.display='block'
+    }
+  else
+    {
+      _div.style.display='none';
+    } 
+}
+
+function divs_switch ( showhide, divname_a, divname_b)
+{
+  _div_a=document.getElementById(divname_a);
+  _div_b=document.getElementById(divname_b);
+
+
+  if(showhide){
+     _div_a.style.display='block'
+     _div_b.style.display='none';
+  }else
+  {
+     _div_a.style.display='none'
+     _div_b.style.display='block';
+  }
+}
+
+function windowShow(sPage, width, height)
+{
+  if (width == null)
+    width = 500;
+  if (height == null)
+    height = 420;
+  sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
+  win = window.open(sPage, null, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+  win.window.focus();
+}
+
