@@ -328,7 +328,7 @@ err:;
   <input type="hidden" name="tip_no" value="<?= tip_no ?>" />
   <table class="tableentry">
   <tr>
-    <td>Enter a XMLa endpoint URL</td>
+    <td>Enter a XMLA Endpoint's URL</td>
     <td><input type="text" name="url" value="<?=url?>" size="70%" /></td>
   </tr>
   <tr>
@@ -483,7 +483,7 @@ err:;
     </td>
     <tr>
     </tr>
-    <td colspan="2">Virtuoso extensions</td>
+    <td colspan="2">Virtuoso's Scrollable Cursor Extensions</td>
     </td>
     </tr>
     <tr>
@@ -533,8 +533,8 @@ err:;
     <?vsp } ?>
   </tr>
   <tr>
-    <td>Render Response</td>
-    <td><input type="checkbox" name="xars" ></td>
+    <td>HTML Formatted Response</td>
+    <td><input type="checkbox" name="xars" checked></td>
   </tr>
   <tr>
     <td>Start Call</td>
