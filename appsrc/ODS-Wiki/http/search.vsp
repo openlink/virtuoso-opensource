@@ -20,8 +20,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-?>
-<?vsp 
+
   declare search_word varchar;
   declare sid, realm varchar;
   declare _uid int;
@@ -142,4 +141,3 @@ endf:
 		    _topic.ti_xslt_vector(), 'default'));
    WV.WIKI.VSPFOOTER (path,params,lines);
 ?>
-

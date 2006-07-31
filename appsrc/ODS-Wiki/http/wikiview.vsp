@@ -20,8 +20,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-?>
-<?vsp
+
   declare _cmd varchar;
   declare _note_id varchar;
   declare _text varchar;
@@ -99,4 +98,5 @@ again:
   WV.WIKI.VSPHEADER (path,params,lines, _note.ni_raw_title);
   WV.WIKI.VSPNOTEREADONLY (path,params,lines, _uid, _note.ni_id, _base_adjust);
   --declare _searchmode, _searchtext varchar;
-  WV.WIKI.VSPFOOTER (path,params,lines); ?>
+  WV.WIKI.VSPFOOTER (path,params,lines); 
+?>

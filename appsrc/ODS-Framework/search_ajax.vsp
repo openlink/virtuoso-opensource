@@ -23,6 +23,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
+
   declare _wmd_inst  integer;
   declare _lat_min, _lat_max, _lng_min, _lng_max double precision; -- the bounds of the map
   declare _lat_step, _lng_step double precision; -- the size of the single icon

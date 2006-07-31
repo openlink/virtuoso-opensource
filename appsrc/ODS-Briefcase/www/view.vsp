@@ -20,8 +20,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-?>
-<?vsp
+
   declare auth_uid, auth_pwd, mode, file, uri, req_header, res_header, content, contentType varchar;
 
   mode := get_keyword('mode', params, '');

@@ -26,7 +26,6 @@
 <?vsp WV.WIKI.VSPHEADER (path,params,lines, 'Tags');
 
 ?>
-<!-- $Id$ -->
     <v:page 
 	  name="main" 
 	  style="comp.xsl"
