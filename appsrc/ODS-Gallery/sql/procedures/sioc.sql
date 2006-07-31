@@ -90,7 +90,7 @@ create trigger SYS_DAV_RES_PHOTO_SIOC_U after update on WS.WS.SYS_DAV_RES refere
   return;
 };
 
-create trigger SYS_DAV_RES_PHOTO_SIOC_U after insert on WS.WS.SYS_DAV_RES referencing new as N
+create trigger SYS_DAV_RES_PHOTO_SIOC_I after insert on WS.WS.SYS_DAV_RES referencing new as N
 {
   declare dir varchar;
   declare iri, c_iri, creator_iri, old_iri varchar;
