@@ -35,6 +35,7 @@
   xmlns:vi="http://www.openlinksw.com/weblog/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:atom10="http://www.w3.org/2005/Atom"
+  xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -206,7 +207,16 @@
 <xsl:template match="channel/category" />
 <xsl:template match="item/comments" />
 <xsl:template match="item/category" />
-<xsl:template match="item/enclosure" />
+
+<xsl:template match="item/enclosure">
+    <enc:enclosure>
+	<enc:Enclosure>
+	    <enc:type><xsl:value-of select="@type"/></enc:type>
+	    <enc:length><xsl:value-of select="@length"/></enc:length>
+	    <enc:url><xsl:value-of select="@url"/></enc:url>
+	</enc:Enclosure>
+    </enc:enclosure>
+</xsl:template>
 
 <xsl:template name="date">
   <xsl:variable name="m" select="substring(., 9, 3)" />
