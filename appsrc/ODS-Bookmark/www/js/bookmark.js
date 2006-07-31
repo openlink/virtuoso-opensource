@@ -114,6 +114,8 @@ function enableToolbars (objForm, prefix) {
   enableElement('tbMove_gray', mCount==0);
   enableElement('tbRename', oCount==1);
   enableElement('tbRename_gray', oCount!=1);
+  enableElement('tbSharing', oCount==1);
+  enableElement('tbSharing_gray', oCount!=1);
   enableElement('tbProperties', oCount==1);
   enableElement('tbProperties_gray', oCount!=1);
   enableElement('tbDelete', oCount>0);
@@ -174,6 +176,24 @@ function anySelected (form, txt, selectionMsq) {
     return false;
   }
   return true;
+}
+
+// ---------------------------------------------------------------------------
+//
+function updateGrants(objName)
+{
+  var frm = document.forms['F1'];
+  for (var i = 0; i < frm.elements.length; i = i + 1) {
+    var obj = frm.elements[i];
+    if (obj != null && obj.type == "checkbox" && obj.name == objName) {
+      if (obj.checked) {
+        if (frm.grants.value.indexOf(obj.value+',') == -1)
+          frm.grants.value = frm.grants.value + obj.value+',';
+      } else {
+        frm.grants.value = (frm.grants.value).replace(obj.value+',', '');
+      }
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -258,6 +258,34 @@ BMK.WA.exec_no_error('
   )
 ');
 
+-------------------------------------------------------------------------------
+--
+-- Conatins sharings
+--
+-------------------------------------------------------------------------------
+BMK.WA.exec_no_error ('
+  create table BMK.WA.GRANTS (
+    G_ID integer identity,
+    G_GRANTER_ID integer not null,
+    G_GRANTEE_ID integer not null,
+    G_TYPE char(1) not null,
+    G_OBJECT_TYPE char(1) not null,
+    G_OBJECT_ID integer not null,
+
+    PRIMARY KEY (G_ID)
+  )
+');
+
+BMK.WA.exec_no_error('
+  create index SK_GRANTS_01 on BMK.WA.GRANTS (G_GRANTER_ID, G_OBJECT_TYPE, G_OBJECT_ID)
+');
+
+BMK.WA.exec_no_error('
+  create index SK_GRANTS_02 on BMK.WA.GRANTS (G_GRANTEE_ID, G_OBJECT_TYPE, G_OBJECT_ID)
+');
+
+-------------------------------------------------------------------------------
+--
 BMK.WA.exec_no_error('
   drop table BMK.WA.BOOKMARK_DOMAIN_BD_DESCRIPTION_WORDS
 ');
@@ -398,6 +426,7 @@ create procedure BMK.WA.path_update()
      where coalesce(F_PARENT_ID, 0) = 0;
 }
 ;
-BMK.WA.path_update();
---registry_remove ('bmk_path_update');
-registry_set ('bmk_path_update', '1');
+BMK.WA.path_update()
+;
+registry_set ('bmk_path_update', '1')
+;

@@ -683,9 +683,19 @@ create procedure BMK.WA.account_delete(
   in domain_id integer,
   in account_id integer)
 {
-  DECLARE CONTINUE HANDLER FOR SQLSTATE '*' {return 0; };
+  declare iCount any;
 
-  DELETE FROM BMK.WA.SETTINGS WHERE S_ACCOUNT_ID = account_id;
+  select count(WAM_USER) into iCount
+    from WA_MEMBER,
+         WA_INSTANCE
+   where WAI_NAME = WAM_INST
+     and WAI_TYPE_NAME = 'Bookmark'
+     and WAM_USER = account_id;
+
+  if (iCount = 0) {
+    delete from BMK.WA.SETTINGS where S_ACCOUNT_ID = account_id;
+    delete from BMK.WA.GRANTS where G_GRANTER_ID = account_id or G_GRANTEE_ID = account_id;
+  }
   BMK.WA.domain_gems_delete(domain_id, account_id);
 
   return 1;
@@ -2437,8 +2447,10 @@ _end:
 --
 create procedure BMK.WA.bmk_tree2(
   in domain_id integer,
+  in user_id integer,
   in node varchar,
-  in path varchar)
+  in path varchar,
+  in mode varchar := 'bookmarks')
 {
   declare node_type, node_id any;
 
@@ -2450,8 +2462,15 @@ create procedure BMK.WA.bmk_tree2(
   if ((node_type = 'r') and (node_id = 1))
     return vector('Bookmarks', 'f#0', path || '/f#0', 'Smart Folders', 's#0', path || '/s#0');
 
+  if ((node_type = 'r') and (node_id = 2))
+    return vector('Shared Bookmarks', 'u#0', path || '/u#0');
+
   declare retValue any;
   retValue := vector ();
+
+  if ((node_type = 'u') and (node_id = 0))
+    for (select distinct U_ID, U_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = user_id and G_GRANTER_ID = U_ID order by 2) do
+      retValue := vector_concat(retValue, vector(U_NAME, sprintf('u#%d', U_ID), sprintf('%s/u#%d', path, U_ID)));
 
   if (node_type = 'f')
     for (select F_ID, F_NAME from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, 0) = coalesce(node_id, 0) order by 2) do
@@ -2460,6 +2479,14 @@ create procedure BMK.WA.bmk_tree2(
   if ((node_type = 's') and (node_id = 0))
     for (select SF_ID, SF_NAME from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id order by 2) do
       retValue := vector_concat(retValue, vector(SF_NAME, sprintf('s#%d', SF_ID), sprintf('%s/s#%d', path, SF_ID)));
+
+  if (node_type = 'u')
+    for (select distinct F_ID, F_NAME from BMK.WA.FOLDER, BMK.WA.GRANTS where G_OBJECT_TYPE = 'F' and F_ID = G_OBJECT_ID and G_GRANTEE_ID = user_id and G_GRANTER_ID = node_id order by 2) do
+      retValue := vector_concat(retValue, vector(F_NAME, sprintf('F#%d', F_ID), sprintf('%s/F#%d', path, F_ID)));
+
+  if (node_type = 'F')
+    for (select F_ID, F_NAME from BMK.WA.FOLDER where F_PARENT_ID = node_id order by 2) do
+      retValue := vector_concat(retValue, vector(F_NAME, sprintf('F#%d', F_ID), sprintf('%s/F#%d', path, F_ID)));
 
   return retValue;
     }
@@ -2485,6 +2512,9 @@ create procedure BMK.WA.bmk_path2_int(
 
   if ((node_type = 's') and (node_id <> 0))
     path := sprintf('s#0/%s', path);
+
+  if ((node_type = 'u') and (node_id <> 0))
+    path := sprintf('u#0/%s', path);
 }
 ;
 
@@ -3283,8 +3313,10 @@ create procedure BMK.WA.validate_tags (
 create procedure BMK.WA.version_update()
 {
   for (select WAI_ID, WAM_USER
-         from DB.DBA.WA_MEMBER join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST
-        where WAI_TYPE_NAME = 'Bookmark' and WAM_MEMBER_TYPE = 1) do {
+         from DB.DBA.WA_MEMBER
+                join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST
+        where WAI_TYPE_NAME = 'Bookmark'
+          and WAM_MEMBER_TYPE = 1) do {
     BMK.WA.domain_update(WAI_ID, WAM_USER);
   }
 }
