@@ -2463,7 +2463,7 @@ create procedure BMK.WA.bmk_tree2(
     return vector('Bookmarks', 'f#0', path || '/f#0', 'Smart Folders', 's#0', path || '/s#0');
 
   if ((node_type = 'r') and (node_id = 2))
-    return vector('Shared Bookmarks', 'u#0', path || '/u#0');
+    return vector('Bookmarks shared by', 'u#0', path || '/u#0');
 
   declare retValue any;
   retValue := vector ();
