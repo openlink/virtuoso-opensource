@@ -769,7 +769,7 @@ AC_SUBST(openssl_LDFLAGS)
 ##########################################################################
 AC_ARG_ENABLE(openldap, [dnl
 AC_HELP_STRING([--enable-openldap(=DIR)], [enable the OpenLDAP support])
-AC_HELP_STRING([--disable-openldap], [disable the OpenSSL support (default)])dnl
+AC_HELP_STRING([--disable-openldap], [disable the OpenLDAP support (default)])dnl
 ], [
      case "${enableval}" in
        yes)      with_ldap="yes" ;;
