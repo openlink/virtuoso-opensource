@@ -76,7 +76,6 @@ WHERE {
       http_value(_metas[0][0],'queryuri');
       http_value(cast ("RQ"."RQ"."URI_GET" (_metas[0][0]) as varchar),'query');
         http_value(_metas[0][1],'default-graph-uri');
-      --http_value(cast ("RQ"."RQ"."URI_GET" (_metas[0][1]) as varchar),'data');
       http_value(_metas[0][3],'comment');
       http_value(_metas[0][2],'etalonuri');
       http('<etalon><![CDATA[');
@@ -87,7 +86,7 @@ WHERE {
     return;
   }
 
-  if (not(isnull(_load)) and _load <> 'never') -- and strstr(_default_graph_uri,'://'))
+  if (not(isnull(_load)) and _load <> 'never')
   {
     declare _havedata any;
     declare _is_ttl, _is_xml integer;
@@ -136,8 +135,6 @@ WHERE {
               _data_xml := xtree_doc (_data, 0, _load_uri);
             }
           }
-          --if (_is_xml = 0 and _is_ttl = 0)
-          --  signal('INVALID','The file you''ve tried to upload was not recognized as valid XML RDF or TURTLE RDF');
 
           delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (_load_uri);
           if (_is_ttl)
@@ -172,15 +169,6 @@ WHERE {
   if (_run is not null and _run = 'run')
   {
   
-    -- _strstr_document := strstr (_query,'document');
-    -- _strstr_proto := strstr (_query,'http://');
-    -- if ( _strstr_proto is null)
-    --   _strstr_proto := strstr (_query,'virt://');
-    -- if (_strstr_document is not null and _strstr_proto is not null and _strstr_document < _strstr_proto)
-    -- {
-    --   http ('<HR><B>Sorry, your query will not be executed due to security restrictions.</B>');
-    --   return;
-    -- }
     _rq_state := '00000';
     _rq_msg := 'OK';
     _rq_expn := concat ('sparql_to_sql_text(',WS.WS.STR_SQL_APOS(_query),')');
@@ -193,28 +181,9 @@ WHERE {
     }
     else
     {
-      -- ?><HR><B>Query compiled successfully.</B> (<?= _ms2 - _ms1 ?> msec.)<BR><?vsp
-      --_rq_state := '00000';
-      --_rq_msg := 'OK';
-      --_rq_expn := concat (
-      --'"RQ"."RQ"."DESK_RUN"(',
-      --  case (_remote) when 'y' then WS.WS.STR_SQL_APOS (_user_service) else 'NULL' end,
-      --  ',',
-      --  WS.WS.STR_SQL_APOS(_query), ',',
-      --  WS.WS.STR_SQL_APOS(_default_graph_uri), ',',
-      --  cast ((_ms2-_ms1) as varchar) , ',',
-      --  WS.WS.STR_SQL_APOS(''), ',0,',
-      --  case (isnull (_format)) when 1 then 'NULL' else WS.WS.STR_SQL_APOS(_format) end,
-      --  ')' );
-      --exec (_rq_expn, _rq_state, _rq_msg);
-      --if (_rq_msg <> 'OK')
-      --{
-      --  ?><B>Execution failed, SQLCODE <?= _rq_state ?>:</B><BR><PRE><XMP><?vsp http(_rq_msg); ?></XMP></PRE><?vsp
-      --}
       declare row_ctr, row_count, col_ctr, col_count integer;
       declare _rmetas,_rset any;
       DB.DBA.SPARQL_REXEC_WITH_META (_user_service, _query, _default_graph_uri, vector(), '', _maxrows, null, _rmetas, _rset);
-      -- dbg_obj_princ ('_rset(before conversion)=', _rset);
       row_count := length (_rset);
       if ((row_count > 0))
       {
@@ -378,29 +347,6 @@ WHERE {
               skip_failed_test: ;
 		        }
 
---             declare _tfiles any;
---             _tfiles := DB.DBA.SPARQL_EVAL_TO_ARRAY ('
--- PREFIX tq: <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
--- PREFIX tm: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>
--- PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
--- SELECT DISTINCT ?name
--- WHERE {
---   [ tq:data ?name ]
---   }', DB.DBA.SPARQL_DAV_DATA_URI() || manifests[ctr], 10000);
---
---            foreach (any _tfile in _tfiles) do
---		        {
---              declare _name, _comment varchar;
---              _name := subseq(_tfile[0], 1 + strrchr (_tfile[0], '/')); _comment := _tfile[0];
---		          _comment := cast (_comment as varchar);
---		          _comment := replace (_comment, '\n', ' ');
---		          _comment := replace (_comment, '\t', ' ');
---		          _comment := replace (_comment, '    ', ' ');
---		          _comment := replace (_comment, '  ', ' ');
---		          _comment := subseq(_comment,17);
---		      ?><li><div><a href="#" onclick="view_file('<?V _comment ?>')"><?vsp http(_name); ?></a></div></li><?vsp
---		        }
-
 	          ?></ul><?vsp
             http('</li>');
             skip_failed_group: ;
@@ -508,12 +454,6 @@ WHERE {
 
             declare default_dgu varchar;
             default_dgu := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
-            --if (default_dgu is null)
-            --{
-            --  default_dgu := sys_stat ('st_host_name');
-            --  if (server_http_port () <> '80')
-            --    default_dgu := default_dgu ||':'|| server_http_port ();
-            --};
             if (default_dgu is not null)
               default_dgu := 'http://' || default_dgu || '/dataspace';
           ?>
@@ -542,8 +482,6 @@ WHERE {
           </select>
           <input type="button" value="Run Query" onclick="rq_query()">
           <input type="reset" value="Reset">
-          <!--<input type="checkbox" id="local_sparql"/>
-          <label for="local_sparql">Use local sparql endpoint</label>-->
           <br/><br/>
         </form>
         <div id="res_area"></div>

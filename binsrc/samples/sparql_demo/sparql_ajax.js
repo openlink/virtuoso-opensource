@@ -43,6 +43,7 @@ function init()
   sr_cl.addOption("http://xmlarmyknife.org/api/rdf/sparql/query");
   sr_cl.addOption("http://www.sparql.org/sparql");
   sr_cl.addOption("http://www.govtrack.us/sparql");
+  sr_cl.addOption("http://abdera.watson.ibm.com:8080/sparql");
 
   OAT.Tree.assign("tree_content","images","gif",true);
 
