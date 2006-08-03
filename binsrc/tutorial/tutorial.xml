@@ -323,9 +323,6 @@
 	      <group Title="Importing Web Content">
 					<example id="VS-R-1" fspath="web/vs_r_1"></example>
 	      </group>
-	      <group Title="XML for Analysis Services">
-					<example id="XA-S-1" fspath="services/xa_s_1"></example>
-      </group>
 	      </group>
     </subsection>
     <subsection Title="Web 2.0" fspath="web2">
@@ -355,6 +352,9 @@
 	      <group Title="Generating XML reports">
 					<example id="VS-XR-1" fspath="web/vs_xr_1"></example>
 					<example id="VS-XR-2" fspath="web/vs_xr_2"></example>
+	      </group>
+	      <group Title="XML for Analysis Services">
+					<example id="XA-S-1" fspath="services/xa_s_1"></example>
 	      </group>
       </group>
     </subsection>
