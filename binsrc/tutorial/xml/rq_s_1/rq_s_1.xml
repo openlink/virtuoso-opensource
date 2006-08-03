@@ -34,8 +34,8 @@
     <refsect1 id="RQ-S-1">
     <title>Tutorial Description</title>
 
-	  <para>The following tutorial is part of the demo db. </para>
-	  <para>If you are running demo database try this link <ulink url="/sparql_demo/">/sparql_demo/</ulink>. 
-	  If not run your demo db and point your browser to http://[host]:[port]/sparql_demo/</para>
+	  <para>The following tutorial depends on the isparql.vad package, which is preinstalled in the demo db. </para>
+	  <para>If you are running demo database or have installed isparql.vad package try this link <ulink url="/isparql/">/isparql/</ulink>. 
+	  If not run your demo db and point your browser to http://[host]:[port]/isparql/</para>
     </refsect1>
 </refentry>
