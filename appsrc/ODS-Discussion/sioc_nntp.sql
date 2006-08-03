@@ -43,7 +43,7 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar)
 	    arr := deserialize (NM_HEAD);
 	    title := get_keyword ('Subject', arr[0]);
 	    DB.DBA.nntpf_decode_subj (title);
-	    link := sprintf ('http://%s/nntpf/nntpf_disp_article.vspx?id=%U', DB.DBA.WA_GET_HOST (), encode_base64 (NM_ID));
+	    link := sprintf ('http://%s/nntpf/nntpf_disp_article.vspx?id=%U', DB.DBA.WA_CNAME (), encode_base64 (NM_ID));
 	    ods_sioc_post (graph_iri, iri, firi, null, title, NM_REC_DATE, NM_REC_DATE, link);
 	  }
        for select U_NAME from DB.DBA.SYS_USERS where U_DAV_ENABLE = 1 and U_NAME <> 'nobody' and U_NAME <> 'nogroup' and U_IS_ROLE = 0
@@ -117,7 +117,7 @@ create trigger NEWS_MULTI_MSG_SIOC_I after insert on DB.DBA.NEWS_MULTI_MSG refer
   arr := deserialize (m_head);
   title := get_keyword ('Subject', arr[0]);
   DB.DBA.nntpf_decode_subj (title);
-  link := sprintf ('http://%s/nntpf/nntpf_disp_article.vspx?id=%U', DB.DBA.WA_GET_HOST (), encode_base64 (m_id));
+  link := sprintf ('http://%s/nntpf/nntpf_disp_article.vspx?id=%U', DB.DBA.WA_CNAME (), encode_base64 (m_id));
   ods_sioc_post (graph_iri, iri, firi, null, title, m_date, m_date, link);
   return;
 };
