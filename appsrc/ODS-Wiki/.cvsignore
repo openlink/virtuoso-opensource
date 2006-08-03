@@ -4,6 +4,7 @@ make_wiki_vad.log
 make_wiki_vad.xml
 vad
 *.vad
+*.tmp
 vad.db
 vad.log
 vad.trx
