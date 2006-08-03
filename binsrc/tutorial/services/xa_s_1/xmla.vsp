@@ -479,7 +479,10 @@ err:;
     </tr>
     <tr>
     <td>Statement</td>
-    <td><input type="text" name="stmt" value="<?=stmt?>" size="70%" />
+    <td>
+	<TEXTAREA name="stmt" rows=5 cols=55>
+	   <?=stmt?>
+	</TEXTAREA>
     </td>
     <tr>
     </tr>
