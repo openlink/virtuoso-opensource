@@ -90,9 +90,9 @@
             <div class="box">
               <h2>Subscribe</h2>
               <div class="roll">
-		  <vm:atom-link>Atom</vm:atom-link>
-		  <vm:rss-link>RSS</vm:rss-link>
-		  <vm:rdf-link>RDF</vm:rdf-link>
+		  <vm:atom-link>Atom <vm:atom-version /></vm:atom-link>
+		  <vm:rss-link>RSS <vm:rss-version/></vm:rss-link>
+		  <vm:rdf-link>RDF RSS 1.0</vm:rdf-link>
 		  <vm:summary-ocs-link>OCS</vm:summary-ocs-link>
 		  <vm:summary-opml-link>OPML</vm:summary-opml-link>
 		  <vm:summary-xbel-link>XBEL</vm:summary-xbel-link>

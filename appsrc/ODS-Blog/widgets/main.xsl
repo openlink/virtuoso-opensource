@@ -57,6 +57,7 @@
     <v:variable name="current_home" type="varchar" default="''"/>
     <v:variable name="_new_sid" type="varchar" default="null" persist="temp" />
     <v:variable name="host" type="varchar" default="''"/>
+    <v:variable name="chost" type="varchar" default="''"/> <!-- CNAME of the host -->
     <v:variable name="base" type="varchar" default="''"/>
     <v:variable name="home" type="varchar" default="''"/>
     <v:variable name="ur" type="varchar" default="''"/>
@@ -251,6 +252,7 @@
 	  }
 
   self.host := http_request_header (lines, 'Host');
+  self.chost := sioc..get_cname ();
 
   self.current_domain := self.host;
   if (strstr (self.host, ':'))
@@ -1115,7 +1117,7 @@ window.onload = function (e)
     </xsl:if>
     <link rel="EditURI" type="application/rsd+xml" title="RSD" href="&lt;?vsp http (sprintf ('http://%s%sgems/rsd.xml', self.host, self.base)); ?>" />
       <xsl:text>&#10;</xsl:text>
-	    <link rel="foaf" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/about.rdf', self.host, self.owner_name)); ?>" />
+	    <link rel="foaf" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/about.rdf', self.chost, self.owner_name)); ?>" />
       <xsl:text>&#10;</xsl:text>
   </xsl:template>
 
@@ -1438,7 +1440,7 @@ window.onload = function (e)
 	 declare sne_id int;
 	 sne_id := (select sne_id from sn_person where sne_name = self.owner_name);
 	?>
-	<a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/about.rdf', self.host, self.owner_name)); ?>"  class="{local-name()}">
+	<a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/about.rdf', self.chost, self.owner_name)); ?>"  class="{local-name()}">
         <img border="0" alt="FOAF" title="FOAF">
 	    <xsl:call-template name="feed-image">
 		<xsl:with-param name="default">'foaf.png'</xsl:with-param>
@@ -1459,7 +1461,7 @@ window.onload = function (e)
     if (self.postid is not null)
       id_part := self.postid || '/';
     ?>
-      <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/weblog/%U/%ssioc.rdf', self.host, self.owner_name, self.inst_name, id_part), '+', '%2B')); ?>" />
+      <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/weblog/%U/%ssioc.rdf', self.chost, self.owner_name, self.inst_name, id_part), '+', '%2B')); ?>" />
   </xsl:template>
 
 
@@ -2757,7 +2759,7 @@ window.onload = function (e)
     <vm:ods-foaf-link>FOAF</vm:ods-foaf-link>
     <div>
 	<v:url xhtml_class="button" name="full_profile" value="Full profile"
-	  url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link (),  self.owner_name)"
+	  url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link (1),  self.owner_name)"
 	  render-only="1"
 	  is-local="1"
 	    />
@@ -3267,13 +3269,13 @@ window.onload = function (e)
 	   {
 	?>
         <li>
-	    <a href="<?V sprintf('%s/edit_inst.vspx?wai_id=%d&sid=%s&realm=wa&RETURL=%U', wa_link (), self.inst_id, self.sid, self.return_url_1) ?>">Membership and Visibility Settings</a>
+	    <a href="<?V sprintf('%s/edit_inst.vspx?wai_id=%d&sid=%s&realm=wa&RETURL=%U', wa_link (1), self.inst_id, self.sid, self.return_url_1) ?>">Membership and Visibility Settings</a>
         </li>
         <li>
-	    <a href="<?V sprintf('%s/members.vspx?wai_id=%d&sid=%s&realm=wa&RETURL=%U', wa_link (), self.inst_id, self.sid, self.return_url_1) ?>">Members of this blog</a>
+	    <a href="<?V sprintf('%s/members.vspx?wai_id=%d&sid=%s&realm=wa&RETURL=%U', wa_link (1), self.inst_id, self.sid, self.return_url_1) ?>">Members of this blog</a>
         </li>
         <li>
-	    <a href="<?V sprintf('%s/delete_inst.vspx?wai_id=%d&sid=%s&realm=wa&RETURL=%U', wa_link (), self.inst_id, self.sid, self.return_url_1) ?>">Delete this blog</a>
+	    <a href="<?V sprintf('%s/delete_inst.vspx?wai_id=%d&sid=%s&realm=wa&RETURL=%U', wa_link (1), self.inst_id, self.sid, self.return_url_1) ?>">Delete this blog</a>
         </li>
 	<?vsp
 	  }
@@ -3376,11 +3378,11 @@ window.onload = function (e)
               if (self.custom_img_loc)
                 http(self.custom_img_loc || '<xsl:value-of select="@image"/>');
               else
-                http(self.stock_img_loc || 'audio_16.gif');
+                http(self.stock_img_loc || 'audio_16.GIF');
             ?&gt;</xsl:attribute>
           </xsl:if>
           <xsl:if test="not @image">
-            <xsl:attribute name="src">&lt;?vsp http(self.stock_img_loc || 'audio_16.gif'); ?&gt;</xsl:attribute>
+            <xsl:attribute name="src">&lt;?vsp http(self.stock_img_loc || 'audio_16.GIF'); ?&gt;</xsl:attribute>
           </xsl:if>
         </img>
       </a>
@@ -7827,7 +7829,7 @@ window.onload = function (e)
               </xsl:if>
             </img>
 	    <b><v:url name="over_ref22" format="%s" value="View My Profile"
-	    url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link (), self.owner_name)"
+	    url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link (1), self.owner_name)"
 	    render-only="1"
 	    is-local="1"
 		    />
@@ -7893,7 +7895,7 @@ window.onload = function (e)
           <td colspan="2">
             <ul>
               <li>
-		  <v:url name="over_ref1" format="%s" value="--'Edit my author profile'" url="--sprintf ('%s/uiedit.vspx?RETURL=%U', wa_link(), self.return_url_1)" is-local="1"/>
+		  <v:url name="over_ref1" format="%s" value="--'Edit my author profile'" url="--sprintf ('%s/uiedit.vspx?RETURL=%U', wa_link(1), self.return_url_1)" is-local="1"/>
               </li>
               <li>
                 <v:url name="over_ref3" format="%s" value="--'Edit my mobile settings'" url="--'index.vspx?page=ping&ping_tab=6'"/>
@@ -9405,7 +9407,7 @@ window.onload = function (e)
 	if (self.user_name is not null)
 	  {
       ?>
-      <v:url name="login_info_label" value="--self.user_name" url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link(), self.user_name)">
+      <v:url name="login_info_label" value="--self.user_name" url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link(1), self.user_name)" is-local="1">
           <v:before-render>
 	    control.vu_format := get_keyword ('format_string', self.user_data, '<xsl:value-of select="@format_string"/>');
         </v:before-render>
@@ -11056,7 +11058,7 @@ window.onload = function (e)
 	    <br />
 	    <br />
        <h2>Tagging Settings</h2>
-       <div><a href="<?V wa_link () ?>/tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;RETURL=<?U self.return_url_1 ?>">Content Tagging Settings</a></div>
+       <div><a href="<?V wa_link (1) ?>/tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;RETURL=<?U self.return_url_1 ?>">Content Tagging Settings</a></div>
        <br/>
        <div>
 	   <v:check-box name="cb_app_tags" value="1" initial-checked="1" xhtml_id="cb_add_tags" />

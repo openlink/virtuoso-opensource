@@ -619,7 +619,7 @@
                       <br/>
 		      <a href="#" onclick="getTags()">Suggest</a>
 		      <![CDATA[&#160;]]>
-		      <v:url name="new_tag_rule_url" value="New Tag Rule" url="--sprintf ('%s/tags.vspx?RETURL=%U', wa_link(), self.return_url_1)" render-only="1"/>
+		      <v:url name="new_tag_rule_url" value="New Tag Rule" url="--sprintf ('%s/tags.vspx?RETURL=%U', wa_link(1), self.return_url_1)" render-only="1"/>
                     </div>
                   </td>
                   <td width="19%">

@@ -103,7 +103,7 @@
 		  <vm:atom-link>Atom <vm:atom-version /></vm:atom-link>
 		  <vm:rss-link>RSS <vm:rss-version/></vm:rss-link>
 		  <vm:rss-usm-link>RSS (USM) <vm:rss-version/></vm:rss-usm-link>
-		  <vm:rdf-link>RDF</vm:rdf-link>
+		  <vm:rdf-link>RDF RSS 1.0</vm:rdf-link>
 		  <vm:ocs-link>OCS 0.5</vm:ocs-link>
 		  <vm:opml-link>OPML 1.0</vm:opml-link>
 		  <vm:xbel-link>XBEL</vm:xbel-link>
