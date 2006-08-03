@@ -37,7 +37,7 @@ create function DB.DBA.DAV_FULL_PATH_TO_IRI (in dav_iri varchar, in _str varchar
   declare _ses any;
   _ses := string_output();
   http (dav_iri, _ses);
-  http_escape (subseq (_str, 5), 7, _ses, 0, 1);
+  http_escape (subseq (_str, 4), 7, _ses, 0, 1);
   return string_output_string(_ses);
 }
 ;
