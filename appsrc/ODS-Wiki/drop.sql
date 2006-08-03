@@ -125,6 +125,13 @@ WV.WIKI.SILENT_EXEC ('drop trigger WV.Wiki.WV_WIKI_COMMITCOUNTER_FK_CHECK_UPDATE
 ;
 WV.WIKI.SILENT_EXEC ('drop trigger DB.DBA.SYS_USERS_WIKI_USERS_U')
 ;
+WV.WIKI.SILENT_EXEC ('drop trigger WV.Wiki.Wiki_ClusterDeleteContent')
+;
+WV.WIKI.SILENT_EXEC ('drop trigger WV.DBA.WIKI_UPSTREAM_D')
+;
+WV.WIKI.SILENT_EXEC ('drop trigger WV.Wiki.WIKI_UPSTREAM_D')
+;
+
 WV.WIKI.SILENT_EXEC ('delete from DB.DBA.SYS_XPF_EXTENSIONS where XPE_PNAME like ''WV.WIKI.%'' ')
 ;
 
@@ -224,6 +231,17 @@ WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.Lock')
 WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.LOCK')
 ;
 
+WV.WIKI.SILENT_EXEC ('drop table WV..UPSTREAM_ENTRY')
+;
+
+WV.WIKI.SILENT_EXEC ('drop table WV..UPSTREAM')
+;
+
+
+
+
+
+
 WV.WIKI.SILENT_EXEC ('delete from WA_TYPES where WAT_NAME = \'oWiki\' or WAT_NAME=\'WIKIV\'');
 
 WV.WIKI.SILENT_EXEC ('drop type wa_wikiv');
@@ -246,10 +264,9 @@ DB.DBA.VHOST_REMOVE(lpath=>'/wikiview')
 ;
 DB.DBA.VHOST_REMOVE(lpath=>'/DAV/wikiview')
 ;
-select EXEC ('drop procedure "'|| p_name ||'"') from sys_procedures where p_name like 'WV.Wiki.%'
+select EXEC ('drop procedure "'|| p_name ||'"') from sys_procedures where p_name like 'WV.%.%'
 ;
-select EXEC ('drop procedure "'|| p_name ||'"') from sys_procedures where p_name like 'WV.WIKI.%'
-;
+
 DB.DBA.DAV_DELETE ('/DAV/VAD/wiki/', 0, 'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()))
 ;
 

@@ -1,0 +1,33 @@
+<v:page
+   name="settings" 
+   on-deadlock-retry="5" 
+   style="comp.xsl" 
+   on-error-redirect="../main/" 
+   xmlns:v="http://www.openlinksw.com/vspx/" 
+   xmlns:vm="http://www.openlinksw.com/vspx/macro"> 
+
+  <vm:page title="Upstream configuration">
+    <vm:body>
+      <table>
+	<tr>
+	  <td>
+	    <vm:tab/>
+	  </td>
+	</tr>
+	<tr>
+	  <td valign="top">
+	    <vm:upstream-list/>
+ 	  </td>
+	  <td>
+	    <vm:upstream-edit/>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <vm:main-topic/>
+	  </td>
+	</tr>
+      </table>
+    </vm:body>
+  </vm:page>
+</v:page>

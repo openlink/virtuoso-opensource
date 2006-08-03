@@ -167,6 +167,7 @@ create procedure WV.WIKI.gdata
 	--  dbg_obj_princ (http_request_header ());
   declare auth any;
   auth := DB.DBA.vsp_auth_vec (http_request_header());
+  declare _user varchar;
   if (auth = 0)
     {
        http_body_read ();
@@ -183,6 +184,8 @@ create procedure WV.WIKI.gdata
           http_request_status ('HTTP/1.1 401 Unauthorized');
           return NULL;
         }
+      _user := get_keyword ('username', auth);
+      connection_set ('HTTP_CLI_UID', _user);
     }
 
 
@@ -314,22 +317,29 @@ create procedure WV.WIKI.gdata
     }
   else if (meth = 'PUT')
     {
-      if (_topicid = 0)
-	hstat := 'HTTP/1.1 404 Not Found';
-      else 
-        { 
           declare title2, content2 varchar;
           title2 := xpath_eval ('/entry/title/text()', xt);
           content2 := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
         
           declare _newtopic WV.WIKI.TOPICINFO;
           _newtopic := WV.WIKI.TOPICINFO();
-          _newtopic.ti_id := _topicid;
-          _newtopic.ti_find_metadata_by_id();
-          _newtopic.ti_update_text (content2, 'dav'); 
-	  --dbg_obj_print (_newtopic);
+	  _newtopic.ti_default_cluster := 'Main';
+	  _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
+	  _newtopic.ti_parse_raw_name ();
+	  _newtopic.ti_fill_cluster_by_name ();
+          _newtopic.ti_find_id_by_local_name ();
+	  if (_newtopic.ti_id <> 0)
+	    {
+	       declare _res int;
+	       _res := WV.WIKI.UPLOADPAGE (_newtopic.ti_col_id, _newtopic.ti_local_name || '.txt',
+	 content2, 
+	 _user);
+--               _newtopic.ti_update_text (content2, 'dav'); 
           hstat := 'HTTP/1.1 200 OK';
         }
+	   else
+	     hstat := 'HTTP/1.1 404 Not Found';
+        
     }
   else if (meth = 'POST')
     {
@@ -343,20 +353,33 @@ create procedure WV.WIKI.gdata
       declare _res int;
       _res := WV.WIKI.UPLOADPAGE (_newtopic.ti_col_id, _newtopic.ti_local_name || '.txt',
 	 content, 
-	 (select u.U_NAME  from WS.WS.SYS_DAV_COL, DB.DBA.SYS_USERS u where COL_ID = _topic.ti_col_id and u.U_ID = COL_OWNER));
+	 _user);
+
+
+
       --dbg_obj_print (_newtopic, _res);
  
       hstat := 'HTTP/1.1 201 Created';
     }
   else if (meth = 'DELETE')
     {
-      if (_topicid = 0)
-	hstat := 'HTTP/1.1 404 Not Found';
-      else
+          declare _newtopic WV.WIKI.TOPICINFO;
+          _newtopic := WV.WIKI.TOPICINFO();
+	  _newtopic.ti_default_cluster := 'Main';
+	  _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
+	  _newtopic.ti_parse_raw_name ();
+	  _newtopic.ti_fill_cluster_by_name ();
+          _newtopic.ti_find_id_by_local_name ();
+	  if (_newtopic.ti_id <> 0)
         {
-          DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (_topic.ti_res_id, 'R'), 1, null, null, 0);
+	       _newtopic.ti_find_metadata_by_id ();
+	       declare _res int;
+	       _res := DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (_newtopic.ti_res_id, 'R'), 1, null, null, 0);      
+	       --dbg_obj_print (_res);
 	  hstat := 'HTTP/1.1 200 OK';
         }
+	   else
+	     hstat := 'HTTP/1.1 404 Not Found';
     }
   http_request_status (hstat);
   return NULL;

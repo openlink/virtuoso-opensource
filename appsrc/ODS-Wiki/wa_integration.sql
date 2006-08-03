@@ -155,7 +155,7 @@ create method wa_join_approve (in login varchar) for wa_wikiv {
 create method wa_new_inst (in login varchar) for wa_wikiv {
   declare _home varchar;
   _home := connection_get ('wiki_home');
-  --dbg_obj_print ('home: ', _home);
+  --dbg_obj_print ('home: ', self);
   declare _full_name varchar;
   _full_name := coalesce((select U_FULL_NAME from SYS_USERS where U_NAME = login), login);
 
@@ -618,19 +618,23 @@ create procedure WV.WIKI.CREATEINSTANCE (in cluster_name varchar,
   in _group int,
   in signal_err int := 1)
 {
+--dbg_obj_print (cluster_name);
   if (exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = cluster_name))
     return WV.WIKI.ERROR (-1000, signal_err);
+--dbg_obj_print(1, (select ClusterId from WV.WIKI.CLUSTERS where ClusterName = cluster_name));
   if (exists (select 1 from WV.WIKI.CLUSTERS where ClusterName  = cluster_name))
     return WV.WIKI.ERROR (-1002, signal_err);
   declare inst wa_wikiv;
   inst := (select __udt_instantiate_class (fix_identifier_case (WAT_TYPE), 0) from WA_TYPES where WAT_NAME = 'oWiki');
+--dbg_obj_print (inst);
   if (inst is null)
     return WV.WIKI.ERROR (-1001, signal_err);
   inst := inst.wa_name := cluster_name;
   inst := inst.wa_member_model := 2; -- approved based
-
+--dbg_obj_print(inst);
   declare h, id any;
   h := udt_implements_method (inst, fix_identifier_case ('wa_new_inst'));
+--dbg_obj_print(h);
   if (h)
     id := call (h) (inst, (select U_NAME from DB.DBA.SYS_USERS where U_ID = _owner));
   else 

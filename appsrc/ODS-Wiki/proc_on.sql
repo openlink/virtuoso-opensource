@@ -967,6 +967,7 @@ create trigger "Wiki_TopicTextInsert" after insert on WS.WS.SYS_DAV_RES order 10
   _newtopic.ti_text := cast (N.RES_CONTENT as varchar);
   _newtopic.ti_e_mail := WV.WIKI.MAILBOXFORTOPICNEW (_newtopic.ti_id, _cluster_name, _newtopic.ti_local_name);
   _newtopic.ti_compile_page ();
+  _newtopic.ti_register_for_upstream('I');
   connection_set ('oWiki Topic', N.RES_NAME);
   connection_set ('oWiki Cluster', _cluster_name);
   declare _perms varchar;
@@ -1007,6 +1008,11 @@ create trigger "Wiki_TopicTextDelete" before delete on WS.WS.SYS_DAV_RES order 1
   declare _id integer;
   whenever not found goto skip;
   select TopicId into _id from WV.WIKI.TOPIC where ResId = O.RES_ID;
+  declare _topic WV.WIKI.TOPICINFO;
+  _topic := WV.WIKI.TOPICINFO();
+  _topic.ti_id := _id;
+  _topic.ti_find_metadata_by_id ();
+  _topic.ti_register_for_upstream ('D');
   delete from WV.WIKI.SEMANTIC_OBJ where SO_OBJECT_ID = _id;
   WV.WIKI.DELETETOPIC (_id);
   skip: ;
@@ -1051,6 +1057,7 @@ create trigger "Wiki_TopicTextUpdate" after update on WS.WS.SYS_DAV_RES order 10
   _newtopic.ti_text := cast (N.RES_CONTENT as varchar);
 --  dbg_obj_princ (3, _newtopic);
   _newtopic.ti_compile_page ();
+  _newtopic.ti_register_for_upstream ('U');
   connection_set ('oWiki Topic', _local_name);
   connection_set ('oWiki Cluster', _cluster_name);
   skip_insert: ;

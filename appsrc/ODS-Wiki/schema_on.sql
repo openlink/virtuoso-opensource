@@ -639,4 +639,34 @@ as (
   constructor method TOPICINFO ()
 ;
 
+wiki_exec_no_error ('
+alter type WV.WIKI.TOPICINFO add method ti_register_for_upstream (in optype varchar(1)) returns any')
+;
 
+wiki_exec_no_error ('
+create table WV..UPSTREAM (
+       UP_ID int identity,
+       UP_CLUSTER_ID int references WV.WIKI.CLUSTERS(CLUSTERID),
+       UP_NAME varchar,
+       UP_URI varchar,
+       UP_USER varchar,
+       UP_PASSWD varchar,
+       UP_WIKIWORD_CONV_METHOD varchar,
+       UP_WIKIWORD_CONV_CONTEXT varchar,
+       primary key (UP_ID)
+)')
+;
+
+wiki_exec_no_error ('
+create table WV..UPSTREAM_ENTRY (
+       UE_ID int identity,
+       UE_STREAM_ID int references WV..UPSTREAM (UP_ID),
+       UE_TOPIC_ID int,
+       UE_CLUSTER_NAME varchar,
+       UE_LOCAL_NAME varchar,
+       UE_OP varchar(1), -- U - update, D - delete
+       UE_STATUS int, -- 1 - sent
+       UE_LAST_TRY datetime,
+       primary key (UE_ID)
+)')
+;

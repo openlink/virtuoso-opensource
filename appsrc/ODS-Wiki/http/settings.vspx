@@ -43,7 +43,8 @@
     <v:variable name="email_obfuscation_types" type="varchar" default="null" persist="0"/>
     <v:variable name="index_page" type="varchar" default="'WelcomeVisitors'" persist="0"/>
     <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
-    <v:variable name="cluster" type="varchar" default="'Main'" param-name="cluster"/>
+    <v:variable name="cluster_name" type="varchar" default="'Main'" param-name="cluster"/>
+    <v:variable name="cluster" type="int"/> 
     <v:variable name="new_topic_template" type="varchar" default="''" persist="0"/>
     <v:variable name="new_category_template" type="varchar" default="''" persist="0"/>
     <v:variable name="skin2_vhost_regexp" type="varchar" default="''" persist="0"/>
@@ -68,25 +69,27 @@
       set isolation='committed';
       if ({?'name'} is not null)
           self.name.ufl_value := {?'name'};		  
-      self.source_page := WV.WIKI.READONLYWIKIWORDLINK (self.cluster, '');
+    --dbg_obj_print (self.cluster_name);
+     self.cluster := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME= self.cluster_name);
+      self.source_page := WV.WIKI.READONLYWIKIWORDLINK (self.cluster_name, '');
     </v:on-init>
     <v:before-data-bind><![CDATA[
 	    
       self.vspx_user := coalesce((select vs_uid from
         VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
-      self.index_page := WV.WIKI.CLUSTERPARAM (self.cluster, 'index-page', 'WelcomeVisitors');
-      self.new_topic_template := WV.WIKI.CLUSTERPARAM (self.cluster, 'new-topic-template', '');
-      self.new_category_template := WV.WIKI.CLUSTERPARAM (self.cluster, 'new-category-template', '');
-      self.skin2_vhost_regexp := WV.WIKI.CLUSTERPARAM (self.cluster, 'skin2-vhost-regexp', '');
+      self.index_page := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'index-page', 'WelcomeVisitors');
+      self.new_topic_template := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'new-topic-template', '');
+      self.new_category_template := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'new-category-template', '');
+      self.skin2_vhost_regexp := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'skin2-vhost-regexp', '');
     ]]></v:before-data-bind>
     <v:after-data-bind>
       <![CDATA[
 	self.index_page_tmpl.vc_data_bind(e);
 	self.topic_templates.vc_data_bind(e);
-	-- dbg_obj_print (self.cluster);
+	-- dbg_obj_print (self.cluster_name);
 	declare pwd varchar;
 	declare cluster_col_id int;
-	cluster_col_id := (select ColId from WV.WIKI.CLUSTERS where ClusterName = self.cluster);
+	cluster_col_id := (select ColId from WV.WIKI.CLUSTERS where ClusterName = self.cluster_name);
 	pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = self.vspx_user);
 	if (DAV_HIDE_ERROR (DAV_AUTHENTICATE (cluster_col_id, 'C', '_1_', self.vspx_user, pwd)) is not null)
 	  self.enabled := '@@hidden@@';
@@ -94,22 +97,23 @@
       ]]>
     </v:after-data-bind>
     <vm:body>
+      <vm:tab/>
       <v:form name="common_setting" type="simple" method="POST">
        <v:template name="form_tmpl" type="simple">
         <v:text type="hidden" name="name" value="--self.name.ufl_value">
 	</v:text>
-        <v:text type="hidden" name="cluster_text" value="--self.cluster">
+        <v:text type="hidden" name="cluster_text" value="--self.cluster_name">
           <v:before-data-bind>
             <v:script>
               <![CDATA[       
                 if (self.delicious_enable is null)
-                  self.delicious_enable := WV.WIKI.CLUSTERPARAM (self.cluster, 'delicious_enabled', 2);
+                  self.delicious_enable := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'delicious_enabled', 2);
                 if (self.webmail_enable is null)
-                  self.webmail_enable := WV.WIKI.CLUSTERPARAM (self.cluster, 'webmail_enabled', 2);
+                  self.webmail_enable := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'webmail_enabled', 2);
                 if (self.conv_enable is null)
-                  self.conv_enable := WV.WIKI.CLUSTERPARAM (self.cluster, 'conv_enabled', 2);
+                  self.conv_enable := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'conv_enabled', 2);
                 if (self.ldap_enable is null)
-                  self.ldap_enable := WV.WIKI.CLUSTERPARAM (self.cluster, 'ldap_enabled', 2);
+                  self.ldap_enable := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'ldap_enabled', 2);
                 if (self.host is null)
                   self.host := aref (split_and_decode (http_request_header (lines, 'Host'), 0, '\0\0:'), 0);
 		self.domains := (select XMLELEMENT ('domains',
@@ -132,7 +136,6 @@
  		  XMLAppendChildren (email_obfuscation_types_ent, 
 		    XMLELEMENT ('type', subseq (P_NAME, 24)));
                 }		
-dbg_obj_print (self.email_obfuscation_types);
                 ]]>
               </v:script>
           </v:before-data-bind>
@@ -142,52 +145,52 @@ dbg_obj_print (self.email_obfuscation_types);
 	    if (not self.vc_is_valid)
 	      return;
 	    declare cluster_id int;
-	    cluster_id := (select ClusterId from WV.WIKI.CLUSTERS where ClusterName = self.cluster);
+	    cluster_id := self.cluster;
 	    self.is_sync := atoi (get_keyword ('delicious_sync_now', params, '0'));
             if ({?'save'} is not null) {
-            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'delicious_user', self.delicious_user.ufl_value);
-                    WV.WIKI.SETCLUSTERPARAM (self.cluster, 'delicious_update_interval', cast (self.delicious_update_interval.ufl_value as integer) * 60);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_user', self.delicious_user.ufl_value);
+                    WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_update_interval', cast (self.delicious_update_interval.ufl_value as integer) * 60);
             if (self.delicious_passwd.ufl_value is not null 
                          and self.delicious_passwd.ufl_value <> '')
-            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'delicious_digest', encode_base64 (self.delicious_user.ufl_value || ':' || self.delicious_passwd.ufl_value) );
---            if (self.cluster_dns.ufl_value is not null
+            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_digest', encode_base64 (self.delicious_user.ufl_value || ':' || self.delicious_passwd.ufl_value) );
+--            if (self.cluster_name_dns.ufl_value is not null
 --              and self.cluster_dns.ufl_value <> '')
 --              WV.WIKI.SETCLUSTERDNS (self.cluster, self.cluster_dns.ufl_value);
-	    WV.WIKI.SETCLUSTERPARAM (self.cluster, 'index-page', self.index_page_name.ufl_value);
-            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'delicious_enabled', self.delicious_enable);
-	    if (self.webmail_enable = 1 and (WV.WIKI.CLUSTERPARAM (self.cluster, 'webmail_initialized') is null))
+	    WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'index-page', self.index_page_name.ufl_value);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_enabled', self.delicious_enable);
+	    if (self.webmail_enable = 1 and (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'webmail_initialized') is null))
 	      {
 		DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/webmail.sql', 1, 'report', 1);
-		WV.WIKI.SETCLUSTERPARAM (self.cluster, 'webmail_initialized', 1);
+		WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'webmail_initialized', 1);
 	      }
-	    WV.WIKI.TOGGLE_CONVERSATION (self.cluster, 2 - self.conv_enable);
-	    WV.WIKI.SETCLUSTERPARAM (self.cluster, 'conv_enabled', self.conv_enable);
-            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'webmail_enabled', self.webmail_enable);
-            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'webmail_domain', self.webmail_domains.ufl_value);
-            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin', self.wiki_skin.ufl_value);
-            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin2', self.wiki_skin_2.ufl_value);
-            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'email-obfuscate', self.email_obfuscation.ufl_value);
-	    WV.WIKI.SETCLUSTERPARAM (self.cluster, 'new-topic-template', self.new_topic_template_text.ufl_value);
-	    WV.WIKI.SETCLUSTERPARAM (self.cluster, 'new-category-template', self.new_category_template_text.ufl_value);
+	    WV.WIKI.TOGGLE_CONVERSATION (self.cluster_name, 2 - self.conv_enable);
+	    WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'conv_enabled', self.conv_enable);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'webmail_enabled', self.webmail_enable);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'webmail_domain', self.webmail_domains.ufl_value);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin', self.wiki_skin.ufl_value);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2', self.wiki_skin_2.ufl_value);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'email-obfuscate', self.email_obfuscation.ufl_value);
+	    WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'new-topic-template', self.new_topic_template_text.ufl_value);
+	    WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'new-category-template', self.new_category_template_text.ufl_value);
 	    if (WV.WIKI.TRIM(self.skin2_vhost_regexp_text.ufl_value) = '')
-		WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin2-vhost-regexp', NULL);
+		WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2-vhost-regexp', NULL);
 	    else 
-		WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin2-vhost-regexp', WV.WIKI.TRIM (self.skin2_vhost_regexp_text.ufl_value));
+		WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2-vhost-regexp', WV.WIKI.TRIM (self.skin2_vhost_regexp_text.ufl_value));
 	    if (self.is_sync)
 	      {
 	        WV.WIKI.DELICIOUSSYNC (cluster_id, self.vspx_user);
 	      }
-            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'ldap_enabled', self.ldap_enable);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'ldap_enabled', self.ldap_enable);
 	    if (self.ldap_enable = 1)
 	      {
-	        WV.WIKI.SETCLUSTERPARAM(self.cluster, 'ldap_address', trim (self.ldap_address_f.ufl_value));
-		WV.WIKI.SETCLUSTERPARAM(self.cluster, 'ldap_base', trim (self.ldap_base_f.ufl_value));
-		WV.WIKI.SETCLUSTERPARAM(self.cluster, 'ldap_bind', trim (self.ldap_bind_f.ufl_value));
-		WV.WIKI.SETCLUSTERPARAM(self.cluster, 'ldap_uid', trim (self.ldap_uid_f.ufl_value));
-		WV.WIKI.SETCLUSTERPARAM(self.cluster, 'ldap_version', atoi (trim (self.ldap_version_f.ufl_value)));
-		WV.WIKI.SETCLUSTERPARAM(self.cluster, 'ldap_port', trim (self.ldap_port_f.ufl_value));
+	        WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_address', trim (self.ldap_address_f.ufl_value));
+		WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_base', trim (self.ldap_base_f.ufl_value));
+		WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_bind', trim (self.ldap_bind_f.ufl_value));
+		WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_uid', trim (self.ldap_uid_f.ufl_value));
+		WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_version', atoi (trim (self.ldap_version_f.ufl_value)));
+		WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_port', trim (self.ldap_port_f.ufl_value));
 	      }
-	    WV.WIKI.SETCLUSTERPARAM(self.cluster, 'ldap_port', trim (self.ldap_port_f.ufl_value));
+	    WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_port', trim (self.ldap_port_f.ufl_value));
 	    self.sync_tmpl.vc_data_bind(e);
             self.vc_data_bind (e);
             }
@@ -195,19 +198,19 @@ dbg_obj_print (self.email_obfuscation_types);
           </v:on-post>
 	  <v:after-data-bind>
 	    <![CDATA[
-	    if (WV.WIKI.CLUSTERPARAM (self.cluster, 'delicious_last_update') is not null)
+	    if (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'delicious_last_update') is not null)
 	      self.sync_message := 'last ping: ' 
-	        || WV.WIKI.DATEFORMAT (WV.WIKI.CLUSTERPARAM (self.cluster, 'delicious_last_update'));
+	        || WV.WIKI.DATEFORMAT (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'delicious_last_update'));
 	    else
 	      self.sync_message := '';
-	    self.ldap_address := WV.WIKI.CLUSTERPARAM(self.cluster, 'ldap_address', '');
-	    self.ldap_base := WV.WIKI.CLUSTERPARAM(self.cluster, 'ldap_base', '');
-	    self.ldap_bind := WV.WIKI.CLUSTERPARAM(self.cluster, 'ldap_bind', '');
-	    self.ldap_uid := WV.WIKI.CLUSTERPARAM(self.cluster, 'ldap_uid', 'uid');
-	    self.ldap_version := WV.WIKI.CLUSTERPARAM(self.cluster, 'ldap_version', 2);
+	    self.ldap_address := WV.WIKI.CLUSTERPARAM(self.cluster_name, 'ldap_address', '');
+	    self.ldap_base := WV.WIKI.CLUSTERPARAM(self.cluster_name, 'ldap_base', '');
+	    self.ldap_bind := WV.WIKI.CLUSTERPARAM(self.cluster_name, 'ldap_bind', '');
+	    self.ldap_uid := WV.WIKI.CLUSTERPARAM(self.cluster_name, 'ldap_uid', 'uid');
+	    self.ldap_version := WV.WIKI.CLUSTERPARAM(self.cluster_name, 'ldap_version', 2);
 	    self.ldap_tmpl.vc_data_bind(e);
 
-	    self.technorati_api_key := WV.WIKI.CLUSTERPARAM(self.cluster,'technorati_api_key', '');
+	    self.technorati_api_key := WV.WIKI.CLUSTERPARAM(self.cluster_name,'technorati_api_key', '');
 	    self.technorati_tmpl.vc_data_bind(e);
 	    ]]>
 	  </v:after-data-bind>
@@ -215,7 +218,7 @@ dbg_obj_print (self.email_obfuscation_types);
 	<table class="wiki-settings">
           <tr>
             <td>
-              <h2>Settings for cluster <v:label name="cluster_l1" value="--self.cluster"/> </h2>
+              <h2>Settings for cluster <v:label name="cluster_l1" value="--self.cluster_name"/> </h2>
             </td>
           </tr>
           <tr>
@@ -233,7 +236,7 @@ dbg_obj_print (self.email_obfuscation_types);
                   <table width="100%">
 <!--                    <tr>
                       <th width="50%">Fully Qualified Hostname (host.domain):</th>
-                      <td><v:text name="cluster_dns" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster, 'dns', self.host)">
+                      <td><v:text name="cluster_dns" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'dns', self.host)">
 			  <v:validator test="regexp" regexp='[a-zA-Z0-9._-]+\.([a-zA-Z]{2,4})' message="Domain name is expected" runat="client"/>
 			</v:text></td>
                     </tr> -->
@@ -275,7 +278,7 @@ dbg_obj_print (self.email_obfuscation_types);
                     </tr>
                     <tr>
                       <th>user name:</th>
-                      <td><v:text name="delicious_user" format="%s" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster, 'delicious_user', '')" enabled="--case when self.delicious_enable = 1 then 1 else 0 end">
+                      <td><v:text name="delicious_user" format="%s" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'delicious_user', '')" enabled="--case when self.delicious_enable = 1 then 1 else 0 end">
 			</v:text></td>
                     </tr>
                     <tr>
@@ -285,7 +288,7 @@ dbg_obj_print (self.email_obfuscation_types);
                     <tr>
                       <th>minimum of update interval (in minutes):</th>
                       <td>
-                        <v:text error-glyph="*" name="delicious_update_interval" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster, 'delicious_update_interval', 600)/60" enabled="--case when self.delicious_enable = 1 then 1 else 0 end">
+                        <v:text error-glyph="*" name="delicious_update_interval" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'delicious_update_interval', 600)/60" enabled="--case when self.delicious_enable = 1 then 1 else 0 end">
 			  <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat="client"/>
                           <v:validator test="value" min="10" max="999999" empty-allowed="0" message="number greater than 10 and less than 999999 is expected" runat="client"/>
                         </v:text>
@@ -330,7 +333,7 @@ dbg_obj_print (self.email_obfuscation_types);
 		    <tr>
 		      <th>e-mail domain:</th>
 		      <td>
-			<v:data-list name="webmail_domains" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster, 'webmail_domain', 'domain.com')" list-document="--self.domains" list-match="/domains/domain" list-key-path="." list-value-path="."  enabled="--case when self.webmail_enable = 1 then 1 else 0 end"/>
+			<v:data-list name="webmail_domains" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'webmail_domain', 'domain.com')" list-document="--self.domains" list-match="/domains/domain" list-key-path="." list-value-path="."  enabled="--case when self.webmail_enable = 1 then 1 else 0 end"/>
 		      </td>
 			
                     </tr>
@@ -348,7 +351,7 @@ dbg_obj_print (self.email_obfuscation_types);
                     <tr>
 		      <th>e-mail obfuscation:</th>
 		      <td>
-			<v:data-list name="email_obfuscation" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster, 'email-obfuscate', 'NONE')" list-document="--self.email_obfuscation_types" list-match="/email_obfuscation_types/type" list-key-path="." list-value-path="."/>
+			<v:data-list name="email_obfuscation" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'email-obfuscate', 'NONE')" list-document="--self.email_obfuscation_types" list-match="/email_obfuscation_types/type" list-key-path="." list-value-path="."/>
 		      </td>
                     </tr>
                    </table>
@@ -365,13 +368,13 @@ dbg_obj_print (self.email_obfuscation_types);
 		    <tr>
 		      <th>Primary Skin:</th>
 		      <td>
-			<v:data-list name="wiki_skin" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster, 'skin', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="."/>
+			<v:data-list name="wiki_skin" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'skin', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="."/>
 		      </td>
                     </tr>
 		    <tr>
 		      <th>Secondary Skin:</th>
 		      <td>
-			<v:data-list name="wiki_skin_2" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster, 'skin2', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="."/>
+			<v:data-list name="wiki_skin_2" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'skin2', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="."/>
 		      </td>
 		    </tr>
 		    <tr>
@@ -548,7 +551,7 @@ dbg_obj_print (self.email_obfuscation_types);
 	       <v:on-post><![CDATA[
  	        if (not self.vc_is_valid)
 		  return;
-	        WV.WIKI.SETCLUSTERPARAM(self.cluster, 'technorati_api_key', trim (self.technorati_api_key_f.ufl_value));
+	        WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'technorati_api_key', trim (self.technorati_api_key_f.ufl_value));
 		self.technorati_tmpl.vc_data_bind(e);
 	       ]]></v:on-post>
 	      </v:button>

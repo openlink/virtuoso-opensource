@@ -302,7 +302,6 @@
       declare link varchar;
       href := WV.WIKI.MAKEHREFFROMRES (_res_id, _res_name, self.sid, self.realm, self.base) ;
       link := WV.WIKI.MAKELINKFROMRES (_res_id, self.base);
-      dbg_obj_print (_res_id, _full_path,  href);
       if (href is not null)
         {
         
