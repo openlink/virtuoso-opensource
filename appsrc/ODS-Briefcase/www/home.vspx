@@ -407,10 +407,10 @@
   	  }
     ]]>
   </v:on-init>
-  <vm:pagetitle>oDrive Home</vm:pagetitle>
+  <vm:pagetitle>Briefcase Home</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
-      oDrive Home
+      Briefcase  Home
     </vm:header>
     <vm:pagebody>
       <vm:dav_browser />
