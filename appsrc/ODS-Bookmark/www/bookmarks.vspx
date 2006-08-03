@@ -70,27 +70,53 @@
 
   <v:method name="mode_test" arglist="">
     <![CDATA[
-      declare id, folder_id, params any;
+      declare id, grant_id, user_id, folder_id, params any;
 
       params := self.vc_page.vc_event.ve_params;
       if (not is_empty_or_null (self.bTag)) {
         self.bTab := 'tags';
-        self.bNode := 't#' || self.bTag;
+        self.bNode := BMK.WA.make_node('t', self.bTag);
       } else if (not is_empty_or_null (get_keyword('link', params, ''))) {
         self.bTab  := 'bookmarks';
-        self.bNode := 'p#0';
+        self.bNode := BMK.WA.make_node('p', 0);
+        self.bPath := '/' || self.bNode;
       } else if (not is_empty_or_null (get_keyword('folder', params, ''))) {
+        grant_id := cast (get_keyword ('grant', params, '0') as integer);
+        folder_id := cast (get_keyword ('folder', params, '0') as integer);
         self.bTab := 'bookmarks';
+        if (grant_id <> 0)
+          self.bTab := 'shared';
         self.bMode := 'browse';
-        self.bNode := 'f#' || get_keyword('folder', params, '');
-        self.bBookmark := 'pt_node_' || self.bNode;
+        if ((folder_id = 0) and (grant_id <> 0)) {
+          user_id := (select G_GRANTER_ID from BMK.WA.GRANTS where G_ID = grant_id);
+          self.bNode := BMK.WA.make_node ('u', user_id);
+          self.bPath := '/' || BMK.WA.make_node ('u', 0) || '/' || BMK.WA.make_node ('u', user_id);
+        } else {
+          self.bNode := BMK.WA.make_node ('f', folder_id);
+          if (grant_id <> 0)
+            self.bNode := ucase(self.bNode);
+          self.bPath := BMK.WA.bmk_path2 (self.bNode, grant_id);
+        }
+        self.bBookmark := 'pt_node_' || self.bPath;
       } else if (not is_empty_or_null (get_keyword('location', params, ''))) {
+        grant_id := cast (get_keyword ('grant', params, '0') as integer);
+        folder_id := cast (get_keyword ('folder', params, '0') as integer);
         self.bTab := 'bookmarks';
+        if (grant_id <> 0)
+          self.bTab := 'shared';
         self.bMode := 'browse';
-        self.bLocation := 'b#' || get_keyword('location', params);
-        folder_id  := coalesce((select BD_FOLDER_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = cast(get_keyword('location', params) as integer)), 0);
-        self.bNode := 'f#' || cast(folder_id as varchar);
-        self.bBookmark := 'pt_node_' || self.bNode;
+        if ((folder_id = 0) and (grant_id <> 0)) {
+          user_id := (select G_GRANTER_ID from BMK.WA.GRANTS where G_ID = grant_id);
+          self.bNode := BMK.WA.make_node ('u', user_id);
+          self.bPath := '/' || BMK.WA.make_node ('u', 0) || '/' || BMK.WA.make_node ('u', user_id);
+        } else {
+          self.bNode := BMK.WA.make_node ('f', folder_id);
+          if (grant_id <> 0)
+            self.bNode := ucase(self.bNode);
+          self.bPath := BMK.WA.bmk_path2 (self.bNode, grant_id);
+        }
+        self.bBookmark := 'pt_node_' || self.bPath;
+        self.bLocation := BMK.WA.make_node ('b', get_keyword ('location', params));
       }
     ]]>
   </v:method>
@@ -121,43 +147,43 @@
 
   <v:method name="validateNode" arglist="in domain_id integer">
     <![CDATA[
-      declare N, node_type, node_id, nodes any;
+      declare N, node_type, node_id, nodes, tmp any;
 
       node_id := BMK.WA.node_id(self.bNode);
       node_type := BMK.WA.node_type(self.bNode);
 
-      if ((node_type = 'f') and (node_id <> 0) and (exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_ID = node_id)))
+      if ((lcase(node_type) = 'f') and (node_id <> 0) and (exists (select 1 from BMK.WA.FOLDER where F_ID = node_id)))
         goto _next;
 
-      if ((node_type = 's') and (node_id <> 0) and (exists (select 1 from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id and SF_ID = node_id)))
-        goto _next;
-
-      if (self.bNode in ('r#0', 'r#1', 'f#0', 's#0', 'u#0'))
+      if ((node_type = 's') and (node_id <> 0) and (exists (select 1 from BMK.WA.SFOLDER where SF_ID = node_id)))
         goto _next;
 
       if ((node_type = 'u') and (exists (select 1 from DB.DBA.SYS_USERS where U_ID = node_id)))
         goto _next;
 
-      if ((node_type = 'F') and (node_id <> 0) and (exists (select 1 from BMK.WA.FOLDER where F_ID = node_id)))
+      if (self.bNode in (BMK.WA.make_node('r', 0), BMK.WA.make_node('r', 1), BMK.WA.make_node('r', 2), BMK.WA.make_node('f', 0), BMK.WA.make_node('s', 0), BMK.WA.make_node('u', 0)))
         goto _next;
 
-      self.bNode := 'f#0';
+      self.bNode := BMK.WA.make_node('f', 0);
     _next:;
-      nodes := split_and_decode(BMK.WA.bmk_path2(domain_id, self.bNode), 0, '\0\0/');
-      for (N := 0; N < length(nodes) - 1; N := N + 1)
-        if (not BMK.WA.vector_contains(self.bState, nodes[N]))
-          self.bState := vector_concat(self.bState, vector(nodes[N]));
+      tmp := '';
+      nodes := split_and_decode(trim(self.bPath, '/'), 0, '\0\0/');
+      for (N := 0; N < length(nodes) - 1; N := N + 1) {
+        tmp := concat(tmp, '/', nodes[N]);
+        if (not BMK.WA.vector_contains(self.bState, tmp))
+          self.bState := vector_concat(self.bState, vector(tmp));
+      }
     ]]>
   </v:method>
 
-  <v:method name="showTree" arglist="in level integer, in domain_id integer, in user_id integer, in node varchar, in path varchar, in mode varchar">
+  <v:method name="showTree" arglist="in level integer, in domain_id integer, in user_id integer, in node varchar, in path varchar">
     <![CDATA[
       declare N, isOpen integer;
       declare nodes, image, image2, alt, class any;
 
       if (isnull(self.bState))
         self.bState := vector();
-      nodes := BMK.WA.bmk_tree2(domain_id, user_id, node, path, mode);
+      nodes := BMK.WA.bmk_tree2(domain_id, user_id, node, path);
       if (level = 1)
         self.validateNode(domain_id);
       for (N := 0; N < length(nodes); N := N + 3) {
@@ -169,7 +195,7 @@
         image := 'plus.gif';
         image2 := 'folder_16.png';
         alt := 'Open Node';
-        if (BMK.WA.vector_contains(self.bState, nodes[N+1])) {
+        if (BMK.WA.vector_contains(self.bState, nodes[N+2])) {
           image := 'minus.gif';
           image2 := 'folder_open_16.png';
           alt := 'Close Node';
@@ -180,15 +206,15 @@
           image2 := 'user_16.png';
 
         class := 'nolink_b';
-        if (nodes[N+1] = self.bNode) {
+        if (nodes[N+2] = self.bPath) {
           class := 'nolink_a';
           self.bName := nodes[N];
         }
 
-        http(sprintf('<a href="#" name="pt_toggle_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_toggle\', \'%s\'); return false"><img src="image/%s" border="0" class="nolink" alt="%s" title="%s" /></a>', nodes[N+1], nodes[N+1], image, alt, alt));
-        http(sprintf('<a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="image/%s" border="0" /> %s</a>', nodes[N+1], nodes[N+1], class, nodes[N], nodes[N], image2, nodes[N]));
+        http(sprintf('<a href="#" name="pt_toggle_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_toggle\', \'%s\', \'pt_path\', \'%s\'); return false"><img src="image/%s" border="0" class="nolink" alt="%s" title="%s" /></a>', nodes[N+2], nodes[N+1], nodes[N+2], image, alt, alt));
+        http(sprintf('<a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="image/%s" border="0" /> %s</a>', nodes[N+2], nodes[N+1], nodes[N+2], class, nodes[N], nodes[N], image2, nodes[N]));
         if (image = 'minus.gif')
-          self.showTree(level+1, domain_id, user_id, nodes[N+1], nodes[N+2], mode);
+          self.showTree(level+1, domain_id, user_id, nodes[N+1], nodes[N+2]);
 
         http ('</div>');
       }
@@ -206,6 +232,7 @@
       <v:variable persist="0" name="bTag" type="varchar" default="null" />
       <v:variable persist="1" name="bTab" type="varchar" default="'bookmarks'"/>
       <v:variable persist="1" name="bNode" type="varchar" default="'f#0'"/>
+      <v:variable persist="1" name="bPath" type="varchar" default="'/f#0'"/>
       <v:variable persist="temp" name="bName" type="varchar" default="''"/>
       <v:variable persist="temp" name="bLocation" type="any" default="''"/>
       <v:variable persist="0" name="bNodes" type="any" default="null"/>
@@ -253,9 +280,9 @@
           if (e.ve_button is not null)  {
             if (e.ve_button.vc_name = 'pt_browse') {
               if (get_keyword('pt_toggle', e.ve_params, '') <> '') {
-                self.bBookmark := 'pt_toggle_' || get_keyword('pt_toggle', e.ve_params);
+                self.bBookmark := 'pt_toggle_' || get_keyword ('pt_path', e.ve_params);
               } else if (get_keyword('pt_node', e.ve_params, '') <> '') {
-                self.bBookmark := 'pt_node_' || get_keyword('pt_node', e.ve_params);
+                self.bBookmark := 'pt_node_' || get_keyword ('pt_path', e.ve_params);
               }
             } else if (e.ve_button.vc_name = 'pt_tags') {
               self.bBookmark := 'pt_tag_' || self.bTag;
@@ -277,21 +304,28 @@
                   declare cmd any;
                   cmd := get_keyword ('tbHidden', e.ve_params, '');
                   if (cmd = 'bookmarks') {
-                    if (self.bTab <> 'bookmarks')
-                      self.bNode := 'f#0';
+                    if (self.bTab <> 'bookmarks') {
+                      self.bNode := BMK.WA.make_node('f', 0);
+                      self.bPath := BMK.WA.make_path('', 'f', 0);
+                    }
                     self.bTab := 'bookmarks';
                     self.bMode := 'browse';
                   }
+
                   if (cmd = 'tags') {
-                    if (self.bTab <> 'tags')
-                      self.bNode := 't#';
+                    if (self.bTab <> 'tags') {
+                      self.bNode := BMK.WA.make_node('t', 0);
+                      self.bPath := BMK.WA.make_path('', 't', 0);
+                    }
                     self.bTab := 'tags';
                     self.bMode := 'browse';
                   }
 
                   if (cmd = 'shared') {
-                    if (self.bTab <> 'shared')
-                      self.bNode := 'u#0';
+                    if (self.bTab <> 'shared') {
+                      self.bNode := BMK.WA.make_node('u', 0);
+                      self.bPath := BMK.WA.make_path('', 'u', 0);
+                    }
                     self.bTab := 'shared';
                     self.bMode := 'browse';
                   }
@@ -305,7 +339,9 @@
                     self.bMode := 'Folder/Create';
                     self.v_id := 0;
                   }
+
                   if (cmd = 'Smart Folder/Create') {
+                    self.bTab := 'bookmarks';
                     self.bMode := 'Smart Folder/Create';
                     self.v_id := 0;
                   }
@@ -567,7 +603,7 @@
             </v:url>
           </span>
           <span id="tbSharing_gray" class="toolbar" style="display: inline;">
-            <img src="image/grey_grant_32.png" border="0" alt="Sharing"/><?vsp http(self.toolbarLabel('Sharing'));?>
+            <img src="image/grey_grants_32.png" border="0" alt="Sharing"/><?vsp http(self.toolbarLabel('Sharing'));?>
           </span>
 
           <span id="tbProperties" class="toolbar" style="display: none">
@@ -606,12 +642,12 @@
               <?vsp
             if (self.bTab = 'bookmarks') {
               if (self.domain_id = -1) {
-                self.showTree(1, self.domain_id, self.account_id, 'r#0', '', self.bTab);
+                self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 0), '');
                 } else {
-                self.showTree(1, self.domain_id, self.account_id, 'r#1', '', self.bTab);
+                self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 1), '');
               }
             } else if ((self.bTab = 'shared') and (self.domain_id <> -1)) {
-              self.showTree(1, self.domain_id, self.account_id, 'r#2', '', self.bTab);
+              self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 2), '');
                 }
               ?>
           <v:template type="simple" enabled="--either(equ(self.bTab, 'tags'), 1, 0)">
@@ -623,24 +659,30 @@
                 <v:button name="pt_browse" action="simple" style="url" value="Submit">
                   <v:on-post>
                     <![CDATA[
-                      declare node any;
+                      declare node, path any;
+
+                      path := get_keyword ('pt_path', e.ve_params, '');
 
                       -- touggle
                       node := get_keyword('pt_toggle', e.ve_params, '');
                       if (node <> '') {
-                        if (BMK.WA.vector_contains(self.bState, node)) {
-                          self.bState := BMK.WA.vector_cut(self.bState, node);
-                          if (BMK.WA.bmk_path2(self.domain_id, self.bNode) like concat(BMK.WA.bmk_path2(self.domain_id, node), '%'))
+                        if (BMK.WA.vector_contains(self.bState, path)) {
+                          self.bState := BMK.WA.vector_cut(self.bState, path);
+                          if (self.bPath like concat(path, '%')) {
                             self.bNode := node;
+                            self.bPath := path;
+                          }
                         } else {
-                          self.bState := vector_concat(self.bState, vector(node));
+                          self.bState := vector_concat (self.bState, vector(path));
                         }
                       }
 
                       -- node
                       node := get_keyword('pt_node', e.ve_params, '');
-                      if (node <> '')
+                      if (node <> '') {
                         self.bNode := node;
+                        self.bPath := path;
+                      }
 
                       self.vc_data_bind (e);
                    ]]>
@@ -725,7 +767,7 @@
                                               _LAST_UPDATE
                                          from (select 0                        _TYPE,
                                                       F_ID                     _ID,
-                                              sprintf(\'f#%d\', F_ID)  _NODE,
+                                                      BMK.WA.make_node(\'f\', F_ID)  _NODE,
                                               F_NAME                   _NAME,
                                               \'\'                     _URI,
                                               null                    _LAST_UPDATE
@@ -735,7 +777,7 @@
                                         union
                                                select 1                        _TYPE,
                                                       BD_ID                    _ID,
-                                              sprintf(\'b#%d\', BD_ID) _NODE,
+                                                      BMK.WA.make_node(\'b\', BD_ID) _NODE,
                                               BD_NAME                  _NAME,
                                               B_URI                    _URI,
                                               BD_LAST_UPDATE           _LAST_UPDATE
@@ -750,7 +792,7 @@
                   } else if ((BMK.WA.node_type(self.bNode) = 's') and (BMK.WA.node_id(self.bNode) = 0)) {
                     control.ds_sql := 'select 1                        _TYPE,
                                               SF_ID                    _ID,
-                                              sprintf(\'s#%d\', SF_ID) _NODE,
+                                              BMK.WA.make_node(\'s\', SF_ID) _NODE,
                                               SF_NAME                  _NAME,
                                               \'\'                     _URI,
                                               null                    _LAST_UPDATE
@@ -771,9 +813,9 @@
                     control.ds_sql := BMK.WA.sfolder_sql (self.domain_id, self.account_id, data);
 
                   } else if ((BMK.WA.node_type(self.bNode) = 'u') and (BMK.WA.node_id(self.bNode) = 0)) {
-                    control.ds_sql := 'select 1                        _TYPE,
+                    control.ds_sql := 'select distinct 1                     _TYPE,
                                               U_ID                     _ID,
-                                              sprintf(\'u#%d\', U_ID)  _NODE,
+                                              BMK.WA.make_node(\'u\', U_ID)  _NODE,
                                               U_NAME                   _NAME,
                                               \'\'                     _URI,
                                               null                    _LAST_UPDATE
@@ -792,7 +834,7 @@
                                               _LAST_UPDATE
                                          from (select 0                        _TYPE,
                                                       F_ID                     _ID,
-                                                      sprintf(\'F#%d\', F_ID)  _NODE,
+                                                      BMK.WA.make_node(\'F\', F_ID)  _NODE,
                                                       F_NAME                   _NAME,
                                                       \'\'                     _URI,
                                                       null                     _LAST_UPDATE
@@ -805,7 +847,7 @@
                                                 union
                                                select 1                        _TYPE,
                                                       BD_ID                    _ID,
-                                                      sprintf(\'B#%d\', BD_ID) _NODE,
+                                                      BMK.WA.make_node(\'B\', BD_ID) _NODE,
                                                       BD_NAME                  _NAME,
                                                       B_URI                    _URI,
                                                       BD_LAST_UPDATE           _LAST_UPDATE
@@ -829,7 +871,7 @@
                                               _LAST_UPDATE
                                          from (select 0                        _TYPE,
                                                       F_ID                     _ID,
-                                                      sprintf(\'F#%d\', F_ID)  _NODE,
+                                                      BMK.WA.make_node(\'F\', F_ID)  _NODE,
                                                       F_NAME                   _NAME,
                                                       \'\'                     _URI,
                                                       null                     _LAST_UPDATE
@@ -838,7 +880,7 @@
                                                 union
                                                select 1                        _TYPE,
                                                       BD_ID                    _ID,
-                                                      sprintf(\'B#%d\', BD_ID) _NODE,
+                                                      BMK.WA.make_node(\'B\', BD_ID) _NODE,
                                                       BD_NAME                  _NAME,
                                                       B_URI                    _URI,
                                                       BD_LAST_UPDATE           _LAST_UPDATE
@@ -924,6 +966,9 @@
                                   xhtml_title="--BMK.WA.utf2wide((control.vc_parent as vspx_row_template).te_column_value('_NAME'))">
                           <v:on-post>
                             <![CDATA[
+                              if (not BMK.WA.vector_contains(self.bState, self.bPath))
+                                self.bState := vector_concat(self.bState, vector(self.bPath));
+                              self.bPath := concat(self.bPath, '/', (control.vc_parent as vspx_row_template).te_column_value('_NODE'));
                               self.bNode := (control.vc_parent as vspx_row_template).te_column_value('_NODE');
                               self.vc_data_bind (e);
                            ]]>
@@ -1204,7 +1249,7 @@
                           (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector ('0'));
                           for (select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH) do {
                             for (N := 0; N < length(self.bNodes); N := N + 1) {
-                              if ((BMK.WA.node_type(self.bNodes[N]) = 'f') and (F_PATH like concat(BMK.WA.folder_path(self.domain_id, BMK.WA.node_id(self.bNodes[N])), '%')))
+                              if ((BMK.WA.node_type(self.bNodes[N]) = 'f') and (F_PATH like concat(BMK.WA.folder_path (BMK.WA.node_id(self.bNodes[N])), '%')))
                                 goto _skip;
                             }
                             (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items, vector (F_PATH2));
@@ -1246,7 +1291,7 @@
 
                     for (N := 0; N < length(self.bNodes); N := N + 1) {
                       if (BMK.WA.node_type(self.bNodes[N]) = 'f') {
-                        BMK.WA.folder_parent(self.domain_id, BMK.WA.node_id(self.bNodes[N]), self.v_folder_id);
+                        BMK.WA.folder_parent (BMK.WA.node_id(self.bNodes[N]), self.v_folder_id);
                       } else if (BMK.WA.node_type(self.bNodes[N]) = 'b') {
                         BMK.WA.bookmark_parent(BMK.WA.node_id(self.bNodes[N]), self.v_folder_id);
                       }
@@ -1722,7 +1767,7 @@
 
                           S := '!@#';
                           if (self.v_id <> 0)
-                            S := BMK.WA.folder_path (self.domain_id, self.v_id);
+                            S := BMK.WA.folder_path (self.v_id);
                           (control as vspx_select_list).vsl_items:= vector ();
                           (control as vspx_select_list).vsl_item_values:= vector ();
                           (control as vspx_select_list).vsl_selected_inx := 0;

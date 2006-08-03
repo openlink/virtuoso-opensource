@@ -33,7 +33,6 @@
   <v:variable name="v_tags" type="varchar" default="''" param-name="tags"/>
   <v:variable name="v_folder_id" type="varchar" default="'0'" param-name="folder"/>
 
-  <v:variable name="v_type" type="varchar" default="'text'" param-name="type"/>
   <v:variable name="v_max" type="varchar" default="'100'" param-name="max"/>
   <v:variable name="v_order" type="varchar" default="'_NAME'" param-name="order"/>
   <v:variable name="v_direction" type="varchar" default="'desc'" param-name="direction"/>
@@ -68,7 +67,7 @@
           if (length(xpath_eval('//entry', data, 0)) = 0)
             goto _error;
 
-      	  sql := BMK.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_type, self.v_max);
+          sql := BMK.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_max);
           sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
 
           state := '00000';

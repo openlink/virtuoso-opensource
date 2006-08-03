@@ -35,9 +35,10 @@ function myTags(fld_value)
 }
 
 // ---------------------------------------------------------------------------
-function vspxPost(fButton, fName, fValue)
+function vspxPost(fButton, fName, fValue, f2Name, f2Value)
 {
   createHidden('F1', fName, fValue);
+  createHidden('F1', f2Name, f2Value);
   doPost ('F1', fButton);
 }
 
@@ -176,6 +177,15 @@ function anySelected (form, txt, selectionMsq) {
     return false;
   }
   return true;
+}
+
+// ---------------------------------------------------------------------------
+function changeState (obj, fld_name) {
+  if (obj != null && obj.type == "checkbox" && obj.checked) {
+    document.F1.elements[fld_name].disabled = false;
+  } else {
+    document.F1.elements[fld_name].disabled = true;
+  }
 }
 
 // ---------------------------------------------------------------------------

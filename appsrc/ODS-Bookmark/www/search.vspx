@@ -70,6 +70,8 @@
       self.v_expression := trim(self.v_expression);
       self.v_tags := trim(self.v_tags);
       self.v_folder_id := trim(self.v_folder_id);
+      self.v_own := self.f_own.ufl_selected;
+      self.v_shared := self.f_shared.ufl_selected;
 
       tmp := BMK.WA.ft2vector(self.v_keywords);
       tmp := BMK.WA.vector_unique(tmp, 2);
@@ -78,16 +80,6 @@
       tmp := BMK.WA.tags2vector(self.v_tags);
       tmp := BMK.WA.vector_unique(tmp);
       self.v_tags := BMK.WA.vector2tags(tmp);
-    ]]>
-  </v:method>
-
-  <v:method name="enable_it" arglist="in what varchar, in flag int">
-    <![CDATA[
-      if (self.f_type.ufl_value = what)
-        return flag;
-      if (self.v_expression is null and self.f_type.ufl_value is null and self.v_type = what)
-        return flag;
-      return case when flag then 0 else 1 end;
     ]]>
   </v:method>
 
@@ -108,7 +100,6 @@
 
       BMK.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
       if (self.v_mode <> 'simple') {
-        if (self.v_type = 'text')
           BMK.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
         BMK.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
         BMK.WA.test(self.v_max, vector('name', 'Max Records', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
@@ -122,6 +113,8 @@
         BMK.WA.xml_set('tags', data, self.v_tags);
         if ((self.v_folder_id <> '0') and (self.v_folder_id <> '0'))
           BMK.WA.xml_set('folder', data, self.v_folder_id);
+        BMK.WA.xml_set('own', data, self.v_own);
+        BMK.WA.xml_set('shared', data, self.v_shared);
       }
 
       self.ds_data := vector ();
@@ -135,13 +128,23 @@
         return;
       }
 
-      declare sql, state, msg, meta, result any;
-
-  	  sql := BMK.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_type, self.v_max);
-      sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
+      declare sql, sqlParams, state, msg, meta, result, maxRows any;
 
       state := '00000';
-      exec(sql, state, msg, vector(), 0, meta, result);
+      sql := '';
+      sqlParams := vector();
+      if (BMK.WA.xml_get('shared', data) = '1') {
+        sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql(rs0, rs1, rs2, rs3)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _ACCOUNT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
+        maxRows := self.v_max;
+        if (maxRows <> '')
+          maxRows := 'TOP ' || maxRows;
+        sql := replace(sql, '<MAX>', maxRows);
+        sqlParams := vector(self.domain_id, self.account_id, data, self.v_max);
+      } else if (BMK.WA.xml_get('own', data) = '1') {
+        sql := BMK.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_max);
+      }
+      sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
+      exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000') {
         self.ds_data := result;
         self.ds_meta := meta;
@@ -190,8 +193,6 @@
       if (not is_empty_or_null(self.v_folder_id))
         tmp := concat(tmp, sprintf('&%sfolder=%U', prefix, self.v_folder_id));
       if (mode = 'export') {
-        if (not is_empty_or_null(self.v_type) and self.v_type <> 'text')
-          tmp := concat(tmp, sprintf('&%stype=%U', prefix, self.v_type));
         if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
           tmp := concat(tmp, sprintf('&%smax=%U', prefix, self.v_max));
         if (not is_empty_or_null(self.v_order) and self.v_order <> '_NAME')
@@ -236,8 +237,9 @@
       <v:variable name="v_expression" type="varchar" default="''"/>
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_folder_id" type="varchar" default="'0'"/>
+      <v:variable name="v_own" type="integer" default="1"/>
+      <v:variable name="v_shared" type="integer" default="1"/>
 
-      <v:variable name="v_type" type="varchar" default="'text'"/>
       <v:variable name="v_output" type="varchar" default="'html'"/>
       <v:variable name="v_max" type="varchar" default="'100'"/>
       <v:variable name="v_order" type="varchar" default="'_NAME'" />
@@ -258,6 +260,7 @@
 
           self.v_mode := get_keyword('mode', self.vc_page.vc_event.ve_params, self.v_mode);
 
+          -- main
           self.v_keywords := trim(get_keyword('a_keywords', self.vc_page.vc_event.ve_params, get_keyword('s_keywords', self.vc_page.vc_event.ve_params, get_keyword('keywords', self.vc_page.vc_event.ve_params, ''))));
           self.v_expression := trim(get_keyword('f_expression', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_expression)));
           self.v_tags := trim(get_keyword('f_tags', self.vc_page.vc_event.ve_params, get_keyword('tags', self.vc_page.vc_event.ve_params, self.v_tags)));
@@ -270,7 +273,8 @@
             self.v_tags := BMK.WA.vector2tags(self.v_tags);
           }
           self.v_folder_id := trim(get_keyword('f_folder', self.vc_page.vc_event.ve_params, get_keyword('folder', self.vc_page.vc_event.ve_params, self.v_folder_id)));
-          self.v_type := trim(get_keyword('f_type', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_type)));
+
+          -- options
           self.v_max := trim(get_keyword('f_max', self.vc_page.vc_event.ve_params, get_keyword('max', self.vc_page.vc_event.ve_params, self.v_max)));
           self.v_order := trim(get_keyword('f_order', self.vc_page.vc_event.ve_params, get_keyword('order', self.vc_page.vc_event.ve_params, self.v_order)));
           self.v_direction := trim(get_keyword('f_direction', self.vc_page.vc_event.ve_params, get_keyword('direction', self.vc_page.vc_event.ve_params, self.v_direction)));
@@ -282,10 +286,6 @@
       </v:before-data-bind>
       <v:on-post>
         <![CDATA[
-          declare tmp vspx_control;
-
-          tmp := self.example.vc_find_control(self.f_type.ufl_value||'_help');
-          self.example.tb_active := tmp;
           if (e.ve_button = control) {
             self.a_keywords.ufl_value := '';
             self.f_expression.ufl_value := '';
@@ -337,6 +337,11 @@
                         <th>
                           <?vsp self.sortColumn('Link', '_URI'); ?>
                         </th>
+                        <v:template type="simple" enabled="-- case when (self.v_shared = 1) then 1 else 0 end;">
+                          <th>
+                            User
+                          </th>
+                       </v:template>
                         <th class="last">
                           <?vsp self.sortColumn('Folder', '_FOLDER_NAME'); ?>
                         </th>
@@ -378,17 +383,24 @@
                                  format="%s"
                                  xhtml_title="--(control.vc_parent as vspx_row_template).te_rowset[3]"/>
                         </td>
+                        <v:template type="simple" enabled="-- case when (self.v_shared = 1) then 1 else 0 end;">
                         <td>
-                          <v:url value="--coalesce((control.vc_parent as vspx_row_template).te_rowset[7], '[Root Folder]')"
-                                 url="--sprintf('bookmarks.vspx?folder=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[6], 0))"
+                            <?vsp
+                              http(coalesce((SELECT U_NAME FROM WS.WS.SYS_DAV_USER, BMK.WA.GRANTS WHERE U_ID = G_GRANTER_ID and G_ID = (control.vc_parent as vspx_row_template).te_rowset[8]), ''));
+                            ?>
+                          </td>
+                        </v:template>
+                        <td>
+                          <v:url value="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[7], (control.vc_parent as vspx_row_template).te_rowset[8])"
+                                 url="--sprintf('bookmarks.vspx?folder=%d&grant=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[6], 0), coalesce((control.vc_parent as vspx_row_template).te_rowset[8], 0))"
                                  format="%s"
-                                 xhtml_title="--coalesce((control.vc_parent as vspx_row_template).te_rowset[7], '[Root Folder]')"/>
+                                 xhtml_title="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[7], (control.vc_parent as vspx_row_template).te_rowset[8])"/>
                         </td>
                         <td>
-                          <v:url value="--BMK.WA.folder_path3(self.domain_id, (control.vc_parent as vspx_row_template).te_rowset[6])"
-                                 url="--sprintf('bookmarks.vspx?location=%d', (control.vc_parent as vspx_row_template).te_rowset[1])"
+                          <v:url value="--BMK.WA.folder_path3 ((control.vc_parent as vspx_row_template).te_rowset[6], (control.vc_parent as vspx_row_template).te_rowset[8])"
+                                 url="--sprintf('bookmarks.vspx?location=%d&folder=%d&grant=%d', (control.vc_parent as vspx_row_template).te_rowset[1], coalesce((control.vc_parent as vspx_row_template).te_rowset[6], 0), coalesce((control.vc_parent as vspx_row_template).te_rowset[8], 0))"
                                  format="%s"
-                                 xhtml_title="--BMK.WA.folder_path3(self.domain_id, (control.vc_parent as vspx_row_template).te_rowset[6])"/>
+                                 xhtml_title="--BMK.WA.folder_path3 ((control.vc_parent as vspx_row_template).te_rowset[6], (control.vc_parent as vspx_row_template).te_rowset[8])"/>
                         </td>
                       </tr>
                     </table>
@@ -448,7 +460,6 @@
       		<div class="contents">
             <div id="1" class="tabContent" style="display: none;">
               <table class="form-body" cellspacing="0">
-                <v:template type="simple" enabled="--case when (self.v_type = 'text') then 1 else 0 end;">
                   <tr>
                     <th>
                       <v:label for="" value="Space delimited keyword list" />
@@ -457,45 +468,11 @@
                       <v:text name="a_keywords" value="--self.v_keywords" xhtml_class="textbox" xhtml_size="60"/>
                     </td>
                   </tr>
-                </v:template>
                 <tr>
                   <th>
-                    <v:label for="f_expression" value="--case when (self.v_type = 'text') then 'or expression' else case when (self.v_type = 'xpath') then 'XPath Expression' else 'XQuery Expression' end end;" />
+                    <v:label for="f_expression" value="--'or expression'" />
                   </th>
                   <td>
-                    <v:tab name="example" initial-active="text_help">
-                      <v:template name="xpath_help" type="simple">
-                        <v:select-list name="xp" xhtml_onchange="javascript: document.F1.f_expression.value = this.value">
-                          <v:item value="" name="* select an example *"/>
-                          <v:item value="//p[a]" name="paragraph with link(s)"/>
-                          <v:item value="//p[contains(.,\'Virtuoso\')]" name="about Virtuoso"/>
-                          <v:item value="//a[@href]/@href" name="link targets"/>
-                          <v:item value="//a/text()" name="link titles"/>
-                          <v:item value="//a[@name or @id]" name="link references"/>
-                          <v:item value="//b" name="text in bold"/>
-                          <v:item value="//i" name="text in italic"/>
-                          <v:item value="//p[b or i or u or s or small or big]/*" name="formatting"/>
-                          <v:item value="//p[b or i or u or s or small or big]/ancestor::*" name="section with formatting"/>
-                          <v:item value="//*[@class]" name="css formated sections"/>
-                          <v:item value="//table[.//tr/td]" name="tables"/>
-                          <v:item value="//img[@src]" name="images"/>
-                          <v:item value="//p[img[@src]]" name="sections with images"/>
-                          <v:item value="//p[a/@href[contains(.,\'.xml\')]]" name="about XML"/>
-                        </v:select-list>
-                        <br/>
-                      </v:template>
-                      <v:template name="xquery_help" type="simple">
-                        <v:select-list name="xq" xhtml_onchange="javascript: document.F1.f_expression.value = this.value">
-                          <v:item value="" name="* select an example *"/>
-                          <v:item value="for $i in node()//table return $i" name="all tables"/>
-                          <v:item value="for $t in node()//table return <ul> {for $i in $t//tr return <li>{$i/td/text()}</li> }</ul>" name="table to list"/>
-                          <v:item value="for $i in node()//a return <p>{ string($i/@href) }</p>" name="list of links"/>
-                          <v:item value="for $i in node() return <p>{ .//text() }</p>" name="text nodes"/>
-                          <v:item value="for $i in node()//p[contains(.,\'Virtuoso\')] return <p>{ string($i) }</p>" name="about Virtuoso"/>
-                        </v:select-list>
-                        <br/>
-                      </v:template>
-                    </v:tab>
             			  <v:textarea name="f_expression" value="--self.v_expression" xhtml_rows="2" xhtml_cols="50"/>
                   </td>
                 </tr>
@@ -509,28 +486,30 @@
                 </tr>
                 <tr>
                   <th>
-                    <vm:label for="f_folder" value="Folder"/>
+                    <vm:label for="f_folder" value="Search in folder"/>
                   </th>
                   <td>
-                    <v:data-list name="f_folder" value="--self.v_folder_id" sql="select 0 as F_ID, 'Select folder ...' as F_PATH2, '' as F_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH" key-column="F_ID" value-column="F_PATH2" xhtml_class="select"/>
+                    <v:data-list name="f_folder" xhtml_id="f_folder" value="--self.v_folder_id" sql="select 0 as F_ID, 'Select folder ...' as F_PATH2, '' as F_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH" key-column="F_ID" value-column="F_PATH2" xhtml_class="select"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th/>
+                  <td>
+                    <v:check-box name="f_own" initial-checked="self.v_own" xhtml_id="f_own" value="1" xhtml_onclick="javascript: changeState(this, \'f_folder\');" />
+                    <b><vm:label for="f_own" value="Search in my own bookmarks"/></b>
+                  </td>
+                </tr>
+                <tr>
+                  <th/>
+                  <td>
+                    <v:check-box name="f_shared" initial-checked="self.v_shared" xhtml_id="f_shared" value="1"/>
+                    <b><vm:label for="f_shared" value="Search in my shared bookmarks"/></b>
                   </td>
                 </tr>
               </table>
             </div>
             <div id="2" class="tabContent" style="display: none;">
               <table class="form-body" cellspacing="0">
-                <tr>
-                  <th>
-                    <v:label for="f_type" value="Expression Type" />
-                  </th>
-                  <td>
-                    <v:select-list name="f_type" value="" auto-submit="1">
-                      <v:item name="Text" value="text"/>
-                      <v:item name="XPath" value="xpath"/>
-                      <v:item name="XQuery" value="xquery"/>
-                    </v:select-list>
-                  </td>
-                </tr>
                 <tr>
                   <th>
                     <v:label for="f_max" value="Max Results" />
@@ -566,7 +545,7 @@
                   <th/>
                   <td>
                     <v:check-box name="f_cloud" xhtml_id="f_cloud" value="1"/>
-                    <vm:label for="f_cloud" value="Show tag cloud"/>
+                    <b><vm:label for="f_cloud" value="Show tag cloud"/></b>
                   </td>
                 </tr>
               </table>
@@ -574,14 +553,6 @@
           </div>
         </div>
         <div class="form-footer">
-          <v:button action="simple" value="Save" enabled="--case when (self.v_type = 'text') then 0 else 0 end;" xhtml_class="form-button">
-            <v:on-post>
-              <![CDATA[
-                self.update_params();
-                self.vc_redirect('sfolders_update.vspx?return=yes' || self.do_url('save', 's_'));
-              ]]>
-            </v:on-post>
-          </v:button>
           <v:button action="simple" value="Search" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -601,6 +572,7 @@
         <script type="text/javascript">
           <![CDATA[
             initTab(2, 1);
+            changeState(document.F1.elements['f_own'], 'f_folder');
           ]]>
         </script>
       </v:template>
