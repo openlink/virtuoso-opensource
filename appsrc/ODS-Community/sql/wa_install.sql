@@ -47,6 +47,7 @@ COMMUNITY.exec_no_error('
   overriding method wa_front_page (stream any) returns any,
   overriding method wa_home_url() returns varchar,
   overriding method wa_drop_instance() returns any,
+  method apply_custom_settings () returns any,
   method wa_vhost_options () returns any
   '
 )
@@ -73,9 +74,9 @@ COMMUNITY.exec_no_error('alter type ODS..wa_community add overriding method wa_d
 COMMUNITY.exec_no_error('alter type ODS..wa_community add overriding method wa_dashboard_last_item () returns any')
 ;
 
+COMMUNITY.exec_no_error('alter type ODS..wa_community add overriding method apply_custom_settings (in template_path varchar, in logoimg_path varchar, in welcomeimg_path varchar) returns any')
+;
 
-
---wa_exec_no_error('alter type wa_blog2 add overriding method wa_size() returns int');
 
 
 create constructor method wa_community (inout stream any) for wa_community {
@@ -629,3 +630,16 @@ create method wa_dashboard_last_item () for ODS.COMMUNITY.wa_community
   http ('</comm-db>', ses);
   return string_output_string (ses);
 };
+create method apply_custom_settings ( in template_path varchar, in logoimg_path varchar, in welcomeimg_path varchar) for ODS.COMMUNITY.wa_community
+{
+  
+  update ODS.COMMUNITY.SYS_COMMUNITY_INFO
+  set
+    CI_TEMPLATE=template_path,
+    CI_CSS=template_path||'/default.css'
+  where
+    CI_COMMUNITY_ID = self.wa_name;
+
+  return;
+};
+

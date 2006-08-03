@@ -23,7 +23,7 @@
  -
  -
 -->
-<v:page style="../../widgets/main.xsl"
+<v:page style="/DAV/VAD/community/www-root/widgets/main.xsl"
         name="home"
         xmlns:vm="http://www.openlinksw.com/vspx/community/"
         xmlns:v="http://www.openlinksw.com/vspx/"

@@ -1,6 +1,4 @@
 --  
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -585,3 +583,36 @@ create procedure COMMUNITY.COMM_GET_WA_URL ()
       }else return '/ods';
 }
 ;
+
+
+
+create procedure COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS (in option_type varchar)
+{
+    declare res_name, res_path varchar;
+
+    result_names (res_name,res_path);
+
+
+  if (option_type='TEMPLATE_LIST')
+  {
+    for 
+--      select rtrim (WS.WS.COL_PATH (COL_ID), '/') as PATH, COL_NAME as NAME FROM WS.WS.SYS_DAV_COL
+--      where WS..COL_PATH (COL_ID) like registry_get('_community_path_') || 'www-root/templates/_*'
+      select rtrim (WS.WS.COL_PATH (COL_ID), '/') as PATH, COL_NAME as NAME FROM WS.WS.SYS_DAV_COL
+      where WS..COL_PATH (COL_ID) like '/DAV/VAD/community/' || 'www-root/templates/_*'
+    do
+    {
+		    result ( cast( NAME as varchar), cast(PATH as varchar));
+    }
+  }else if(option_type='INSTANCE_LOGOS')
+  {
+    result ( 'Default','/DAV/VAD/community/www-root/public/images/lightblue/community_blank_thin550.jpg');
+    result ( 'logo_green','/DAV/VAD/community/www-root/public/images/xdia_nig_banner.jpg');
+  }else if(option_type='WELCOME_PHOTOS')
+  {
+    result ( 'Default','/DAV/VAD/community/www-root/public/images/lightblue/comm_blank_welcome.png');
+    result ( 'welcome_green','/DAV/VAD/community/www-root/public/images/welcome_nig_2.gif');
+  }else result ('','');
+  
+
+};
