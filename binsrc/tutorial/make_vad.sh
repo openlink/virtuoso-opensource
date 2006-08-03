@@ -83,7 +83,7 @@ VERSION_INIT()
   done
   LANG=POSIX
   export LANG
-  VERSION=`cat version.tmp | awk ' BEGIN { cnt=160 } { cnt = cnt + $1 } END { printf "1.0%01.04f", cnt/10000 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=180 } { cnt = cnt + $1 } END { printf "1.0%01.04f", cnt/10000 }'`
   rm -f version.tmp
       echo "$VERSION" > vad_version
   fi
@@ -293,20 +293,6 @@ directory_init() {
 
   cd $LOGDIR
 
-#get sparql_demo
-  cp -r $HOME/binsrc/samples/sparql_demo .
-  cat $HOME/binsrc/tests/rdf/demo_data/sparql_dawg.tar.gz | gunzip - > sparql_demo/sparql_dawg.tar 
-  tar -xf sparql_demo/sparql_dawg.tar 
-  rm  sparql_demo/sparql_dawg/*.sql
-  cat $HOME/binsrc/tests/rdf/demo_data/sparql_extensions.tar.gz | gunzip - > sparql_demo/sparql_extensions.tar
-  tar -xf sparql_demo/sparql_extensions.tar
-  rm sparql_demo/sparql_extensions.tar
-  rm -rf `find sparql_demo -type d -name CVS`
-  
-  mv sparql_demo vad_files/vsp/tutorial/xml/rq_s_1
-  mv sparql_dawg vad_files/vsp/tutorial/xml/rq_s_1
-  cd $LOGDIR
-
 }
 
 virtuoso_shutdown() {
@@ -407,28 +393,6 @@ sticker_init() {
   echo "    exec('drop table XQ.XQ.TEST_CASES',_sql_state,_sql_message);" >> $STICKER
 	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/postsetup.sql', 1, 'report', $ISDAV);" >> $STICKER
 	echo "" >> $STICKER
-# sparql_demo
-  cd vad_files/vsp/tutorial/xml/rq_s_1 > /dev/null 2>&1
-  echo "    \"DB\".\"DBA\".\"DAV_COL_CREATE\" ('/DAV/sparql_demo/', '110100100NN', http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));" >> $STICKER
-  echo "    \"DB\".\"DBA\".\"DAV_COL_CREATE\" ('/DAV/sparql_demo/data/', '110110110RR', http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));" >> $STICKER
-  echo "    \"DB\".\"DBA\".\"DAV_COL_CREATE\" ('/DAV/sparql_demo/images/', '110100100NN', http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));" >> $STICKER
-  echo "    \"DB\".\"DBA\".\"DAV_COL_CREATE\" ('/DAV/sparql_demo/toolkit/', '110100100NN', http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/xml/rq_s_1/sparql_dawg/manifest-rdf-list.sql', 1, 'report', $ISDAV);" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/xml/rq_s_1/sparql_dawg/rdf-list.sql', 1, 'report', $ISDAV);" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/xml/rq_s_1/sparql_dawg/rq-list.sql', 1, 'report', $ISDAV);" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/xml/rq_s_1/sparql_dawg/ttl-list.sql', 1, 'report', $ISDAV);" >> $STICKER
-
-  for file in `find sparql_demo -name '*.vsp'` `find sparql_demo -name '*.xsl'` `find sparql_demo -name '*.css'` `find sparql_demo -name '*.gif'` `find sparql_demo -name '*.jpg'` `find sparql_demo -name '*.png'` `find sparql_demo -name '*.js'`
-  do
-    name=`echo "$file" | cut -b13-`
-    if [ "$ISDAV" = "1" ] ; then
-      echo "    \"DB\".\"DBA\".\"DAV_COPY\"('$BASE_PATH/tutorial/xml/rq_s_1/sparql_demo/$name','/DAV/sparql_demo/$name',1,'111101101NN',http_dav_uid(),http_dav_uid() + 1,'dav',(SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));" >> $STICKER
-    else
-      echo "    \"DB\".\"DBA\".\"DAV_RES_UPLOAD\"('/DAV/sparql_demo/$name', file_to_string (http_root()||'$BASE_PATH/tutorial/xml/rq_s_1/sparql_demo/$name'), '', '111101101NN', http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));" >> $STICKER
-    fi
-  done
-	echo "" >> $STICKER
-  cd $LOGDIR
 	echo "" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
@@ -464,11 +428,6 @@ sticker_init() {
   echo "       return \\'$BASE_PATH\\';" >> $STICKER
   echo "    }');" >> $STICKER
   echo "" >> $STICKER
-  echo "    declare _sql_state,_sql_message varchar;" >> $STICKER
-  echo "    exec('drop table DB.DBA.SPARQL_DAWG_STATUS',_sql_state,_sql_message);" >> $STICKER
-  echo "    if (not(lt (sys_stat ('st_dbms_ver'), '04.50.2902'))) {" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/setup_sparql_demo.sql', 1, 'report', $ISDAV);" >> $STICKER
-  echo "    };" >> $STICKER
   echo "" >> $STICKER
 	echo "  </sql>" >> $STICKER
 	echo "</procedures>" >> $STICKER
