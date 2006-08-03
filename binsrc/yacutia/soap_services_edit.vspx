@@ -601,7 +601,7 @@
 			</v:button>
                         </td>
 			<td class="<?V self.astyle ('opt_tab10') ?>" align="center">
-			<v:button name="tab1_switch_opt_tab10" action="simple" value="Published Objects" style="url" xhtml_style="uddi">
+			<v:button name="tab1_switch_opt_tab10" action="simple" value="Publish Objects" style="url" xhtml_style="uddi">
 			  <v:after-data-bind>
 			    if (not control.vc_focus)
 			      return;
@@ -1017,6 +1017,15 @@
 
       		<v:template type="simple" name="pub_procs2" enabled="--case when (self.sp_add <> 1 and self.sp_desc <> 1 and self.subtab = 1) then 1 else 0 end">
   	        <h3>Publish Procedures for user <v:label name="l_add_pr_user" value="--self.soapuser" format="%s"/></h3>
+            <table class="ctl_grp">
+              <tr>
+                <td>
+                  <img src="images/icons/filter_32.png" alt="Filter" title="Filter"/>
+                </td>
+                <td>
+                  Catalog
+                </td>
+                <td>
             <v:select-list name="sl_catalog2" xhtml_style="width:200" xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload10\');">
                                 <v:after-data-bind>
                                   <v:script><![CDATA[
@@ -1039,7 +1048,9 @@
                                   ]]></v:script>
                                 </v:after-data-bind>
                               </v:select-list>
-            <v:button action="simple" name="reload10" value="Reload">
+              </td>
+              <td align="right">
+                  <v:button action="simple" name="reload10" value="Update Display">
                                 <v:on-post>
                                   <![CDATA[
                   self.browse_cat :=  get_keyword('sl_catalog2', params, self.browse_cat);
@@ -1047,6 +1058,9 @@
                                   ]]>
                                 </v:on-post>
                               </v:button>
+              </td>
+            </tr>
+          </table>
             <v:data-set name="ds_add_procedures" sql="select P_NAME, position(p_name, self.roles_grant_list) AS STATE from DB.DBA.SYS_PROCEDURES
 			  where self.browse_cat = name_part (p_name, 0) and p_name not like '%.vsp' and P_TYPE is null
                           order by p_name" nrows="1000" scrollable="1" edit="1">
@@ -1244,6 +1258,15 @@
 
       		<v:template type="simple" name="pub_mod2" enabled="--case when (self.sp_add <> 1 and self.sp_desc <> 1 and self.subtab = 2) then 1 else 0 end">
   	        <h3>Publish PL Modules for user <v:label name="l_add_mod_user" value="--self.soapuser" format="%s"/></h3>
+            <table class="ctl_grp">
+              <tr>
+                <td>
+                  <img src="images/icons/filter_32.png" alt="Filter" title="Filter"/>
+                </td>
+                <td>
+                  Catalog
+                </td>
+                <td>
             <v:select-list name="sl_catalog20" xhtml_style="width:200" xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload20\');">
                                 <v:after-data-bind>
                                   <v:script><![CDATA[
@@ -1266,7 +1289,9 @@
                                   ]]></v:script>
                                 </v:after-data-bind>
                               </v:select-list>
-            <v:button action="simple" name="reload20" value="Reload">
+                </td>
+                <td align="right">
+                  <v:button action="simple" name="reload20" value="Update Display">
                                 <v:on-post>
                                   <![CDATA[
                   self.browse_cat :=  get_keyword('sl_catalog20', params, self.browse_cat);
@@ -1274,6 +1299,9 @@
                                   ]]>
                                 </v:on-post>
                               </v:button>
+                </td>
+              </tr>
+            </table>
             <v:data-set name="ds_add_modules" sql="select P_NAME, position(p_name, self.mod_grant_list) AS STATE from DB.DBA.SYS_PROCEDURES
 			  where self.browse_cat = name_part (p_name, 0) and p_name not like '%.vsp' and P_TYPE = 3
                           order by p_name" nrows="1000" scrollable="1" edit="1">
@@ -1391,6 +1419,15 @@
       		
       		<v:template type="simple" name="pub_udt2" enabled="--case when (self.sp_add <> 1 and self.sp_desc <> 1 and self.subtab = 3) then 1 else 0 end">
   	        <h3>Publish User Defined Types for user <v:label name="l_add_udt_user" value="--self.soapuser" format="%s"/></h3>
+            <table class="ctl_grp">
+              <tr>
+                <td>
+                  <img src="images/icons/filter_32.png" alt="Filter" title="Filter"/>
+                </td>
+                <td>
+                  Catalog
+                </td>
+                <td>
             <v:select-list name="sl_catalog30" xhtml_style="width:200" xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload30\');">
               <v:after-data-bind>
                 <v:script><![CDATA[
@@ -1413,7 +1450,9 @@
                 ]]></v:script>
               </v:after-data-bind>
             </v:select-list>
-            <v:button action="simple" name="reload30" value="Reload">
+                </td>
+                <td align="right">
+                  <v:button action="simple" name="reload30" value="Update Display">
               <v:on-post>
                 <![CDATA[
                   self.browse_cat :=  get_keyword('sl_catalog30', params, self.browse_cat);
@@ -1421,6 +1460,9 @@
                 ]]>
               </v:on-post>
             </v:button>
+                </td>
+              </tr>
+            </table>
             <v:data-set name="ds_add_udt" sql="select distinct UT_NAME,position(UT_NAME, self.udt_grant_list) AS STATE from DB.DBA.SYS_USER_TYPES
 			  where self.browse_cat = name_part (UT_NAME, 0)
                           order by UT_NAME" nrows="1000" scrollable="1" edit="1">
