@@ -23,11 +23,9 @@ TOP=@TOP@
 
 SUBDIRS = . tests
 
-if HAVE_MONO 
 VIRT_MONO=virtuoso-mono-cli-t
 VIRT_CLR=virtclr.dll virt_http.dll
 virtuoso_mono_cli_t_PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
-endif
 
 if WITH_IODBC
 VIRT_IODBC_MONO=virtuoso-iodbc-mono-cli-t
@@ -35,8 +33,10 @@ VIRT_IODBC_CLR=virtclr.dll
 virtuoso_iodbc_mono_cli_t_PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
 endif
 
+if HAVE_MONO 
 bin_PROGRAMS = $(VIRT_MONO) $(VIRT_IODBC_MONO) 
 bin_SCRIPTS  = $(VIRT_CLR) $(VIRT_IODBC_CLR)
+endif
 
 noinst_HEADERS = clr_ll_api.h mono.h
 
