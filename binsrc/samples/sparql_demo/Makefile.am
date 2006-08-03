@@ -22,8 +22,8 @@
 nodist_vad_DATA = isparql_dav.vad
 
 CLEANFILES = \
-	make_bookmark_vad.log \
-	make_bookmark_vad.xml \
+	make_isparql_vad.log \
+	make_isparql_vad.xml \
 	isparql_dav.vad \
 	virtuoso.db \
 	virtuoso.ini \
@@ -52,4 +52,5 @@ EXTRA_DIST = \
 	images/*.gif \
 	images/*.png \
 	make_vad.sh \
-	toolkit/*.js
+	toolkit/*.js \
+	vad_version

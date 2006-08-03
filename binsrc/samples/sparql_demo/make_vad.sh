@@ -223,6 +223,8 @@ directory_init() {
     cat $HOME/binsrc/tests/rdf/demo_data/sparql_dawg.tar.gz | gunzip - > sparql_dawg.tar
     tar -xf sparql_dawg.tar
     rm  sparql_dawg/*.sql
+    rm sparql_dawg.tar
+
     cat $HOME/binsrc/tests/rdf/demo_data/sparql_extensions.tar.gz | gunzip - > sparql_extensions.tar
     tar -xf sparql_extensions.tar
     rm sparql_extensions.tar
@@ -387,6 +389,7 @@ vad_create() {
 
 
 BANNER "STARTED PACKAGING iSPARQL VAD"
+
 STOP_SERVER
 $myrm $LOGFILE 2>/dev/null
 directory_clean
@@ -397,6 +400,6 @@ sticker_init
 vad_create
 virtuoso_shutdown
 chmod 644 isparql_dav.vad
-#chmod 644 virtuoso.trx
-#directory_clean
+directory_clean
+
 BANNER "FINISHED PACKAGING iSPARQL VAD"
