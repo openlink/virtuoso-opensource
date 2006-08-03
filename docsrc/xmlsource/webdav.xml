@@ -508,7 +508,7 @@ configuration.</para>
 The automatic maintenance of the SPARQL queriable metadata can be
 disabled and enable using the function
 DB.DBA.DAVREPLICATE_ALL_TO_RDF_QUAD.  An argument of 1 enables this
-and a 0 disables this. Te setting stays in effect until it is changed
+and a 0 disables this. The setting stays in effect until it is changed
 with the same function.  For new database, the feature is on by
 default.  Old databases are by default upgraded to have a SPARQL
 queriable DAV metadata graph upon startup if the URIQA default host
@@ -521,7 +521,7 @@ resource IRI's.</para>
 
 <para>
 If the URIQA default name of the host is localhost:1113, then, the
-graph will be http://localhost:1113/DAV/ .</para>
+graph will be http://localhost:1113/DAV .</para>
 
 <para>
 The IRI's of DAV resources will be  like http://localhost:1113/DAV/docsrc/XMLDOM.xml , meaning that these are directly usable from a user agent for accessing the resource.</para>
@@ -532,7 +532,7 @@ The IRI's of DAV resources will be  like http://localhost:1113/DAV/docsrc/XMLDOM
 <para>
 <programlisting>
 <![CDATA[
-SQL> sparql select ?s ?o from <http://localhost:1113/DAV/> where {?s <http://www.openlinksw.com/schemas/DAV#ownerUser> ?o};
+SQL> sparql select ?s ?o from <http://localhost:1113/DAV> where {?s <http://www.openlinksw.com/schemas/DAV#ownerUser> ?o};
 s                                                                                 o
 VARCHAR                                                                           VARCHAR
 _______________________________________________________________________________
@@ -541,7 +541,7 @@ http://localhost:1113/DAV/docsrc/2pc.xml                                        
 http://localhost:1113/DAV/docsrc/Virtdocs.spp                                     mailto:somebody@example.domain
 
 
-SQL> sparql select ?p ?o from <http://localhost:1113/DAV/> where {<http://localhost:1113/DAV/docsrc/2pc.xml> ?p ?o};
+SQL> sparql select ?p ?o from <http://localhost:1113/DAV> where {<http://localhost:1113/DAV/docsrc/2pc.xml> ?p ?o};
 p                                                                                 o
 VARCHAR                                                                           VARCHAR
 _______________________________________________________________________________
@@ -579,6 +579,141 @@ http://purl.org/dc/terms/extent                                                 
 http://www.openlinksw.com/schemas/DAV#tag - There is one triple  for each  public tag of the DAV resource.  The value is the string of the tag as a SQL string.</para>
 
 <para>
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type - The RDF schema for MIME-type of of the DAV resource.  If the resource is not recognized as one of the below, this predicate will be omitted.</para>
+
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle"
+		orient="land" pgwide="0">
+	<title>RDF Schema by  MIME-type</title>
+	<tgroup align="char" charoff="50" char="." cols="2">
+		<colspec align="left" colnum="1" colsep="0" colwidth="20pc" />
+		<thead>
+			<row>
+				<entry>MIME- ype</entry>
+				<entry>RDF Schema</entry>
+			</row>
+		</thead>
+		<tbody>
+			<row>
+				<entry>application/bpel+xml</entry>
+				<entry>http://www.openlinksw.com/schemas/WSDL#</entry>
+			</row>
+			<row>
+				<entry>application/doap+rdf</entry>
+				<entry>http://www.openlinksw.com/schemas/doap#</entry>
+			</row>
+			<row>
+				<entry>application/foaf+xml</entry>
+				<entry>http://xmlns.com/foaf/0.1/</entry>
+			</row>
+			<row>
+				<entry>application/google-kinds+xml</entry>
+				<entry>http://www.openlinksw.com/schemas/google-kinds#</entry>
+			</row>
+			<row>
+				<entry>application/license</entry>
+				<entry>http://www.openlinksw.com/schemas/OplLic#</entry>
+			</row>
+			<row>
+				<entry>application/mods+xml</entry>
+				<entry>http://www.openlinksw.com/schemas/MODS#</entry>
+			</row>
+			<row>
+				<entry>application/msexcel</entry>
+				<entry>http://www.openlinksw.com/schemas/Office#</entry>
+			</row>
+			<row>
+				<entry>application/mspowerpoint</entry>
+				<entry>http://www.openlinksw.com/schemas/Office#</entry>
+			</row>
+			<row>
+				<entry>application/msproject</entry>
+				<entry>http://www.openlinksw.com/schemas/Office#</entry>
+			</row>
+			<row>
+				<entry>application/msword</entry>
+				<entry>http://www.openlinksw.com/schemas/Office#</entry>
+			</row>
+			<row>
+				<entry>application/msword+xml</entry>
+				<entry>http://www.openlinksw.com/schemas/Office#</entry>
+			</row>
+			<row>
+				<entry>application/opml+xml</entry>
+				<entry>http://www.openlinksw.com/schemas/OPML#</entry>
+			</row>
+			<row>
+				<entry>application/pdf</entry>
+				<entry>http://www.openlinksw.com/schemas/Office#</entry>
+			</row>
+			<row>
+				<entry>application/rdf+xml</entry>
+				<entry>http://www.openlinksw.com/schemas/RDF#</entry>
+			</row>
+			<row>
+				<entry>application/rss+xml</entry>
+				<entry>http://purl.org/rss/1.0/</entry>
+			</row>
+			<row>
+				<entry>application/wsdl+xml</entry>
+				<entry>http://www.openlinksw.com/schemas/WSDL#</entry>
+			</row>
+			<row>
+				<entry>application/x-openlink-image</entry>
+				<entry>http://www.openlinksw.com/schemas/Image#</entry>
+			</row>
+			<row>
+				<entry>application/x-openlink-photo</entry>
+				<entry>http://www.openlinksw.com/schemas/Photo#</entry>
+			</row>
+			<row>
+				<entry>application/x-openlinksw-vad</entry>
+				<entry>http://www.openlinksw.com/schemas/VAD#</entry>
+			</row>
+			<row>
+				<entry>application/x-openlinksw-vsp</entry>
+				<entry>http://www.openlinksw.com/schemas/VSPX#</entry>
+			</row>
+			<row>
+				<entry>application/x-openlinksw-vspx+xml</entry>
+				<entry>http://www.openlinksw.com/schemas/VSPX#</entry>
+			</row>
+			<row>
+				<entry>application/xbel+xml</entry>
+				<entry>http://www.python.org/topics/xml/xbel</entry>
+			</row>
+			<row>
+				<entry>application/xbrl+xml</entry>
+				<entry>http://www.openlinksw.com/schemas/xbrl#</entry>
+			</row>
+			<row>
+				<entry>application/xddl+xml</entry>
+				<entry>http://www.openlinksw.com/schemas/XDDL#</entry>
+			</row>
+			<row>
+				<entry>application/zip</entry>
+				<entry>http://www.openlinksw.com/schemas/Archive#</entry>
+			</row>
+			<row>
+				<entry>text/directory</entry>
+				<entry>http://www.w3.org/2001/vcard-rdf/3.0#</entry>
+			</row>
+			<row>
+				<entry>text/eml</entry>
+				<entry>http://www.openlinksw.com/schemas/Email#</entry>
+			</row>
+			<row>
+				<entry>text/html</entry>
+				<entry>http://www.openlinksw.com/schemas/XHTML#</entry>
+			</row>
+			<row>
+				<entry>text/wiki </entry>
+				<entry>http://www.openlinksw.com/schemas/Wiki#</entry>
+			</row>
+		</tbody>
+	</tgroup>
+</table>
+
+	<para>
 Additional predicates may  exist as a result of resource type specific metadata extraction. </para>
 
 </sect2>

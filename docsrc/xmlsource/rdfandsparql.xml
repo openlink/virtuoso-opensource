@@ -480,7 +480,23 @@ id="rdfapidataimport"><title>Data Import</title>
 create procedure DB.DBA.TTLP (
     in strg any,       -- text of the resource
     in base varchar,  -- base IRI to resolve relative IRIs to absolute
-    in graph varchar ) -- target graph IRI, parsed triples will appear in that graph.
+    in graph varchar , -- target graph IRI, parsed triples will appear in that graph.
+    in flags int)   -- flags, use 0
+
+For loading a file of any greater length, it is most practical to use the file_to_string_output function with this, as follows:
+
+SQL> ttlp (file_to_string_output ('data.ttl'), '', 'http://my_graph', 0);
+
+
+-- This parses TTL (TURTLE or N3 resource and places its triples into DB.DBA.RDF_QUAD.
+create procedure DB.DBA.TTLP_mt (
+    in strg any,       -- text of the resource
+    in base varchar,   -- base IRI to resolve relative IRIs to absolute
+    in graph varchar,  -- target graph IRI, parsed triples will appear in that graph.
+    in flags int) -- flags, use 0
+
+
+-- The ttlp_mt procedure is like ttlp but loads the file on multiple threads, using parallel IO and multiprocessing if available.  The functions does not leave a transaction log.  Hence, after successful load, one should execute the checkpoint statement to make sure that a server restart does not wipe outthe results.
 
 -- This does not load TTL content, instead it returns a dict of triples in 'long valmode'
 create function DB.DBA.RDF_TTL2HASH (
@@ -488,7 +504,7 @@ create function DB.DBA.RDF_TTL2HASH (
     in base varchar,
     in graph varchar ) returns any
 
--- This parses TTL (TURTLE or N3 resource and places its triples into DB.DBA.RDF_QUAD.
+-- This parses RDF XML   and places its triples into DB.DBA.RDF_QUAD.
 create procedure DB.DBA.RDF_LOAD_RDFXML (
     in strg any,           -- text of and XML document
     in base_iri varchar,   -- base IRI to resolve relative IRIs
@@ -698,85 +714,114 @@ xsd:integer (in strg varchar) returns integer
 <para>(assuming that the query contains declaration 'PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;')</para>
 </sect2>
 </sect1>
-<sect1 id="rdfsparqlprotocolendpoint"><title>SPARQL Protocol End Point</title>
-<para>The Virtuoso Server supports SPARQL protocol according to 'SPARQL Protocol for RDF ', W3C Working Draft 25 January 2006. The server contains both SPARQL protocol server (HTTP service endpoint) and functions of SPARQL protocol client that let application execute remote SPARQL query and receive the result as a typical result set.</para>
-<para>Supported features include
 
-
-</para>
+<sect1 id="rdfsparqlprotocolendpoint"><title>Virtuoso SPARQL Query Service</title>
+<sect2 id="rdfsparqlprotocolendpointintro"><title>Introduction</title>
+<para>The Virtuoso SPARQL query service implements the <ulink url="http://www.w3.org/TR/rdf-sparql-protocol/">SPARQL Protocol for RDF</ulink>
+(W3C Working Draft 25 January 2006) providing SPARQL query processing for RDF data available on the open internet.</para>
+<para>The query processor extends the standard protocol to provide support for multiple output formats.
+At present this uses additional query parameters.</para>
+<para>Supported features include</para>
 <itemizedlist mark="bullet" spacing="compact">
 <listitem>GET and POST requests;</listitem>
 <listitem>variety of transfer MIME-types, including RDF /XML and   TURTLE;</listitem>
 <listitem>default-graph-uri environment parameter;</listitem>
 <listitem>all sorts of queries including CONSTRUCT and DESCRIBE.</listitem>
 </itemizedlist>
-<sect2 id="rdfsupportedmethodsofprotocol"><title>Supported Methods and End Point URI </title>
-
-<para>Virtuoso reserves the path '/sparql/' and a synonym path
-'/SPARQL/' for SPARQL service. In the current implementation, Virtuoso
-defines virtual directories for HTTP requests that come to the port
-specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso
-configuration file and refer to one of these two path strings. So if
-the Virtuoso installation on host example.com listens for HTTP requests on
-port 8080 then client  applications should use the 'service endpoint' string
-equal to 'http://example.com:8080/sparql/'.</para>
-
-<para>Both GET and POST requests are supported by both server and
-client. The server recognizes the 'Accept: ...' line of request header
-to find MIME types preferred by the connected client and adjust the
-output mode of the response.</para>
-
-<para>The client chooses between GET and POST automatically, using the length of query text as a criterion. Queries longer than 1900 bytes are POST-ed, short queries are sent in GET mode.</para>
 </sect2>
-<sect2 id="rdfsupportedmimesofprotocol"><title>Supported MIME Types of SPARQL Protocol</title>
 
-<para>All standard MIME types of SPARQL Protocol are supported. SPARQL
-client supports 'application/sparql-results+xml' for results of SELECT
-and ASK queries, 'application/rdf+xml' and 'text/rdf+n3' for results
-of CONSTRUCT and DESCRIBE queries. If the HTTP header returned by the
-remote server does not contain 'Content-Type' line, the MIME type may
-be guessed from  the text of the returned body. The current implementation
-does not support results of SELECT returned in RDF /XML, TURTLE or
-'sparql-results-2'.</para>
-
-<para>The Virtuoso  SPARQL server can produce 'application/sparql-results+xml' for results of SELECT and ASK queries, 'application/rdf+xml' and 'text/rdf+n3' for results of CONSTRUCT and DESCRIBE queries.</para>
+<sect2 id="rdfsupportedprotocolendpointuri"><title>Service Endpoint </title>
+<para>Virtuoso reserves the path '/sparql/' and a synonym path '/SPARQL/' for SPARQL service.</para>
+<para>In the current implementation, Virtuoso defines virtual directories for HTTP requests that come to the port
+specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file and refer to one of these
+two path strings. So if the Virtuoso installation on host example.com listens for HTTP requests on
+port 8080 then client  applications should use the 'service endpoint' string equal to 'http://example.com:8080/sparql/'.</para>
+<para>Both GET and POST requests are supported by both server and client. The server recognizes the 'Accept: ...' line of request header
+to find MIME types preferred by the connected client and adjust the output mode of the response.</para>
+<para>The client chooses between GET and POST automatically, using the length of query text as a criterion.</para>
+<para>If the SPARQL endpoint is accessed without any url and query entered, will be shown page with interactive query form.</para>
 </sect2>
-<sect2 id="rdfsparqlclientfunctions"><title>SPARQL Client Functions</title>
-<para>
-The  SPARQL client can be invoked by three similar functions. All the  functions get the following list of arguments:
-</para>
-<itemizedlist mark="bullet" spacing="compact">
-<listitem>'service' - service URI such as   'http://example.com/sparql/';</listitem>
-<listitem>'query' - text of the query;</listitem>
-<listitem>'dflt_graph' - default graph URI (string   or NULL);</listitem>
-<listitem>'named_graphs' - vector of named graphs (or NULL to not   override what's specified in the query;</listitem>
-<listitem>'req_hdr' - additional HTTP header lines that should be   passed to the service; 'Host: ...' is most popular.</listitem>
-<listitem>'maxrows' - limit on numbers of rows that should be   returned (actual size of result set may differ).</listitem>
-<listitem>'bnode_dict' - dictionary of known blank node names, or   NULL for usual loading.</listitem>
-</itemizedlist>
-<para>DBA.SPARQL_REXEC () behaves like DBA.SPARQL_EVAL, but executes the query on the specified server. The procedure does not return anything. Instead, it creates a result set.</para>
+
+<sect2 id="rdfsupportedrequestmethodsofprotocol"><title>Request Methods</title>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Methods List</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Method</entry>
+        <entry>Supported?</entry>
+        <entry>Notes</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>GET</entry>
+        <entry>Yes</entry>
+        <entry>short queries are sent in GET mode</entry>
+      </row>
+      <row>
+        <entry>POST</entry>
+        <entry>Yes</entry>
+        <entry>Queries longer than 1900 bytes are POST-ed.</entry>
+      </row>
+      <row>
+        <entry>DELETE</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>PUT</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect2>
+
+<sect2 id="rdfsparqlclientfunctions"><title>Functions</title>
+<para>The SPARQL client can be invoked by three similar functions:</para>
+
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Functions List</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Function</entry>
+        <entry>Notes</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>DB.DBA.SPARQL_REXEC</entry>
+        <entry>behaves like DBA.SPARQL_EVAL, but executes the query on the specified server. The procedure does not return anything. Instead, it creates a result set. </entry>
+      </row>
+      <row>
+        <entry>DB.DBA.SPARQL_REXEC_TO_ARRAY</entry>
+        <entry>behaves like DBA.SPARQL_EXEC_TO_ARRAY (), but executes the query on the specified server. The function return a vector of rows, where every row is represented by a vector of values of fields.</entry>
+      </row>
+      <row>
+        <entry>DB.DBA.SPARQL_REXEC_WITH_META</entry>
+        <entry>has no local 'SPARQL_EVAL' analog. It produces not only an array of result rows but also array of metadata about result set in a format used by the exec () function. This function can be used when the result should be passed later to exec_result_names () and exec_result () built-in functions. To process local query in similar style, an application can use plain SQL built-in function exec (): an SPARQL query (with 'SPARQL' keyword in front) can be passed to exec () instead of text of plain SQL SELECT statement.</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+
 <programlisting>
 create procedure DB.DBA.SPARQL_REXEC (
     in service varchar, in query varchar, in dflt_graph varchar, in named_graphs any,
     in req_hdr any, in maxrows integer, in bnode_dict any );
 </programlisting>
-<para>Similarly, DBA.SPARQL_REXEC_TO_ARRAY () behaves like DBA.SPARQL_EXEC_TO_ARRAY (), but executes the query on the specified server. The function return a vector of rows, where every row is represented by a vector of valeus of fields.</para>
+
 <programlisting>
 create function DB.DBA.SPARQL_REXEC_TO_ARRAY (
     in service varchar, in query varchar, in dflt_graph varchar, in named_graphs any,
     in req_hdr any, in maxrows integer, in bnode_dict any )
     returns any;
 </programlisting>
-
-<para>The function DBA.SPARQL_REXEC_WITH_META () has no local
-'SPARQL_EVAL' analog. It produces not only an array of result rows but
-also array of metadata about result set in a format used by the exec ()
-function. This function can be used when the result should be passed
-later to exec_result_names () and exec_result () built-in
-functions. To process local query in similar style, an application can
-use plain SQL built-in function exec (): an SPARQL query (with
-'SPARQL' keyword in front) can be passed to exec () instead of text of
-plain SQL SELECT statement.</para>
 
 <programlisting>
 create procedure DB.DBA.SPARQL_REXEC_WITH_META (
@@ -786,6 +831,70 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
     out resultset any) -- results as 'long valmode' values.
 </programlisting>
 
+</sect2>
+
+<sect2 id="rdfrequestparamsofunctions"><title>Request Parameters</title>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Request Parameters List</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Parameter</entry>
+        <entry>Notes</entry>
+        <entry>Required?</entry>
+        <entry>Occurrence</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>service</entry>
+        <entry>service URI such as 'http://example.com/sparql/'</entry>
+        <entry>Yes</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>query</entry>
+        <entry>text of the query</entry>
+        <entry>Yes</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>dflt_graph</entry>
+        <entry>default graph URI (string or NULL)</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>named_graphs</entry>
+        <entry>vector of named graphs (or NULL to not override what's specified in the query</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>req_hdr</entry>
+        <entry>additional HTTP header lines that should be passed to the service; 'Host: ...' is most popular</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>maxrows</entry>
+        <entry>limit on numbers of rows that should be returned (actual size of result set may differ)</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+      <row>
+        <entry>bnode_dict</entry>
+        <entry>dictionary of known blank node names, or NULL for usual loading</entry>
+        <entry>No</entry>
+        <entry></entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect2>
+
+<sect2 id="rdfresponsecodeofprotocol"><title>Response Codes</title>
 <para>If the query is a CONSTRUCT or DESCRIBE then the result set
 consists of a single row and a single column, the value inside is a
 dictionary of triples in 'long valmode'. Note that the dictionary
@@ -794,7 +903,167 @@ loose database connection trying to fetch a result set row that
 contain a dictionary object. This disconnect will be safe for server,
 so the client can re-connect to the server, but the disconnected
 transaction will be rolled back.</para>
-
 </sect2>
+
+<sect2 id="rdfsupportedmimesofprotocol"><title>Response Format</title>
+<para>All standard MIME types of SPARQL Protocol are supported:</para>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Supported MIME Types list</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Mimetype</entry>
+        <entry>Supported for result of Query</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>'application/sparql-results+xml'</entry>
+        <entry>SELECT</entry>
+      </row>
+      <row>
+        <entry>'application/sparql-results+xml'</entry>
+        <entry>ASK</entry>
+      </row>
+      <row>
+        <entry>'application/rdf+xml'</entry>
+        <entry>CONSTRUCT</entry>
+      </row>
+      <row>
+        <entry>'application/rdf+xml'</entry>
+        <entry>DESCRIBE</entry>
+      </row>
+      <row>
+        <entry>'text/rdf+n3'</entry>
+        <entry>CONSTRUCT</entry>
+      </row>
+      <row>
+        <entry>'text/rdf+n3'</entry>
+        <entry>DESCRIBE</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+<para>If the HTTP header returned by the remote server does not contain 'Content-Type' line, the MIME type may be guessed from  the text of the returned body. </para>
+<para>The current implementation does not support results of SELECT returned in RDF /XML, TURTLE or 'sparql-results-2'.</para>
+<para>Error messages returned from the service are returned as XML documents, using the mime type application/xml. The documents consist of a single element containing an error message.</para>
+</sect2>
+
+<sect2 id="rdfsupportedmimesaddofprotocol"><title>Additional Response Formats -- SELECT</title>
+<para>Use the format parameter to select one of the following alternate output formats:</para>
+
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Additional Response formats list</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Format Value</entry>
+        <entry>Description</entry>
+        <entry>Mimetype</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>HTML</entry>
+        <entry>HTML document containing query summary and tabular results</entry>
+        <entry>text/html</entry>
+      </row>
+      <row>
+        <entry>json</entry>
+        <entry>JSON serialization of results. Conforms to the draft specification Serializing SPARQL Query Results in JSON</entry>
+        <entry>application/sparql-results+json</entry>
+      </row>
+      <row>
+        <entry>js</entry>
+        <entry>Javascript serialization of results. Generates an HTML table with the CSS class sparql. The table contains a column indicating row number and additional columns for each query variable. Each query solution contributes one row of the table. Unbound variables are indicated with a non-breaking space in the appropriate table cells.</entry>
+        <entry>application/javascript</entry>
+      </row>
+      <row>
+        <entry>table</entry>
+        <entry></entry>
+        <entry>text/html</entry>
+      </row>
+      <row>
+        <entry>XML</entry>
+        <entry></entry>
+        <entry>text/html</entry>
+      </row>
+      <row>
+        <entry>TURTLE</entry>
+        <entry></entry>
+        <entry>text/html</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect2>
+
+<sect2 id="rdfsparqlendpointexamples"><title>Examples</title>
+<para>Virtuoso's SPARQL Implementation Demo offers a live demonstration of Virtuoso's implementation of
+<ulink url="http://www.w3.org/TR/rdf-dawg-uc/">DAWG's SPARQL test-suite</ulink>;
+a collection of SPARQL query language use-cases that enable interactive and simplified testing of a Triple Store's implementation.
+Can be found at 'http://example.com:8080/sparql_demo/' depending on the local Virtuoso Server Configuration, or live at <ulink url="http://demo.openlinksw.com/sparql_demo">Virtuoso Demo Server</ulink>.
+</para>
+</sect2>
+
+<sect2 id="rdfsparqlendpointimplnotes"><title>Implementation Notes</title>
+<para>This service has been implemented using <ulink url="http://docs.openlinksw.com/virtuoso">Virtuoso Server</ulink>.</para>
+</sect2>
+
+<sect2 id="rdftables"><title>Virtuoso Semantic Bank end point</title>
+    <para>
+	What is Piggy Bank?
+	Piggy Bank is an extension to the Firefox Web browser that turns it into a Semantic Web browser, letting you make use of existing information on the Web in more useful and flexible ways not offered by the original Web sites. 
+
+    </para>
+    <para>
+	What is Semantic Bank?
+	Semantic Bank is the server companion of Piggy Bank that lets you persist, share and publish data collected by individuals, groups or communities. Here is a screen shot of one in action: 
+
+	What can I do with this?
+	A Semantic Bank allows you to:
+	persist your information remotely on a server. This is useful, for example, if you want to share data between two of your computers or to avoid losing it due to mistakes or failure. 
+	share information with other people. The ability to tag resources creates a powerful serendipitous categorization (as proven by things like del.icio.us or Flickr). 
+	lets you publish your information, both in the "pure" RDF form (for those who know how to make use of it) or to regular web pages, with the usual Longwell facetted browsing view of it 
+	How can I help?
+	Semantic Bank is an open source software and built around the spirit of open participation and collaboration.
+	There are several ways you can help:
+	Install a Semantic Bank and lets us know about it, so that we can update the list of available Semantic Banks. 
+	Subscribe to our mailing lists to show your interest and give us feedback 
+	Report problems and ask for new features through our issue tracking system. 
+	Send us patches or fixes to the code 
+	Licensing and Legal Issues
+	Semantic Bank is open source software and is licensed under the BSD license.
+	Note, however, that this software ships with libraries that are not released under the same license; that we interpret their licensing terms to be compatible with ours and that we are redistributing them unmodified. For more information on the licensing terms of the libraries Semantic Bank depends on, please refer to the source code.
+
+    </para>
+    <para>
+	Download location:
+	<ulink url="http://simile.mit.edu/dist/semantic-bank/">"http://simile.mit.edu/dist/semantic-bank/</ulink>
+    </para>
+    <para>
+	The Virtuoso Semantic Bank end point.
+
+	Before you can publish, you must register with one or more Semantic Banks:
+	Invoke the menu command Tools » Piggy Bank » My Semantic Bank Accounts.... 
+	Click Add... in the Semantic Bank Accounts dialog box. 
+	In the popup dialog box, type in the URL to the Virtuoso Semantic Bank you want to register with.  Example: http://servar_name:server_port/bank
+	Enter an account a valid Virtuoso DAV user. (Note: currently we do not use encryption during authentication; do not use your precious password here.) 
+	Click OK, wait for the account to get registered, and then dismiss the Semantic Bank Accounts dialog box. 
+	To publish an item, just click the corresponding Publish button (much like how you save the item). To publish all the items being viewed, click the Publish All button.
+
+    </para>
+    <para>
+
+	What is the Graph Name used by Virtuoso for the Triples from PiggyBank? 
+
+	http://simile.org/piggybank/&lt;piggybank-generated-name&gt;
+
+	    The piggybank-generated-name is Virtuoso DAV user.
+    </para>
+</sect2>
+
 </sect1>
 </chapter>
