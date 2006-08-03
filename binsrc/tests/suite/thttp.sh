@@ -717,6 +717,9 @@ MaxKeepAlives = 6
 KeepAliveTimeout = 15
 MaxCachedProxyConnections = 10
 ProxyConnectionCacheTimeout = 15
+
+[URIQA]
+DefaultHost = localhost:$HTTPPORT
 END_HTTP1
 ;;
 esac
@@ -786,6 +789,8 @@ case $1 in
    sleep 4
    if [ $BLOG_TEST -eq 1 ]
    then
+       DoCommand $DSN "registry_set ('__blog_api_tests__', '1');" 
+       DoCommand $DSN "checkpoint;" 
        DoCommand $DSN "VAD_INSTALL ('ods_dav.vad', 0, 1);" 
        DoCommand $DSN "VAD_INSTALL ('blog_dav.vad', 0, 1);" 
    fi
