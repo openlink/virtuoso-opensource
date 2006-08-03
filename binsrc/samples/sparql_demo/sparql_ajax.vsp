@@ -19,248 +19,6 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?><?vsp
-
-  declare _remote, _user_service, _default_graph_uri, _query, _format varchar;
-  declare _strstr_document, _strstr_proto integer;
-  declare _rq_expn, _rq_state, _rq_msg, _load, _run, _list, _case varchar;
-  declare _ms1, _ms2 integer;
-  declare _rq_res any;
-  declare _metas any;
-
-  declare _lex_list any;
-  declare _lex_last_row integer;
-  declare _lex_ctr integer;
-  declare _lexem any;
-  declare _maxrows integer;
-
-  _default_graph_uri := {?'default-graph-uri'};
-  _query := {?'query'};
-  _user_service := {?'service'};
-  _list := {?'list'};
-  _case := {?'case'};
-  _user_service := {?'service'};
-  _format := coalesce ({?'format'}, '');
-  _format := coalesce ({?'format'}, '');
-  _load := coalesce ({?'load'}, null);
-  if (_query is not null and _query <> 0)
-    if ({?'explain'}) _run := 'explain'; else _run := 'run';
-  if (_user_service)
-    _remote := 'y';
-  _maxrows := cast(coalesce ({?'maxrows'}, 100) as integer);
-
-  if (_list <> '' and _case <> '')
-  {
-    declare _sql varchar;
-    _sql := '
-PREFIX tq: <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
-PREFIX tm: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?queryuri ?datauri ?etalonuri ?comment
-WHERE {
-  GRAPH ?g {
-    ?bn tm:name ''' || (replace(_case,'''','\\''')) || ''' ;
-      tm:result ?etalonuri ;
-      tm:action
-        [ tq:query ?queryuri ;
-          tq:data ?datauri ] .
-      OPTIONAL { ?bn rdfs:comment ?comment }
-    }
-  }';
-
-    _metas := DB.DBA.SPARQL_EVAL_TO_ARRAY (_sql, '', 10000); 
-    http_header('Content-type: text/xml\r\n');
-    if (length(_metas) > 0)
-    {
-      http('<responce>');
-      http_value(_metas[0][0],'queryuri');
-      http_value(cast ("RQ"."RQ"."URI_GET" (_metas[0][0]) as varchar),'query');
-        http_value(_metas[0][1],'default-graph-uri');
-      http_value(_metas[0][3],'comment');
-      http_value(_metas[0][2],'etalonuri');
-      http('<etalon><![CDATA[');
-      "RQ"."RQ"."PRINT_EXPECTED_RESULT" (_metas[0][2]);
-      http(']]></etalon>');
-      http('</responce>');
-    }
-    return;
-  }
-
-  if (not(isnull(_load)) and _load <> 'never')
-  {
-    declare _havedata any;
-    declare _is_ttl, _is_xml integer;
-    declare _load_uris any;
-    _load_uris := vector();
-    for(declare i int,i:=0; i < length(params); i := i + 1)
-    {
-      if (params[i] = 'loaduri')
-        _load_uris := vector_concat(_load_uris,vector(params[i + 1]));
-    }
-    if (length(_load_uris) = 0)
-      http('There ware no URIs to load.');
-    
-    foreach(varchar _load_uri in _load_uris)do
-    {
-      http('Trying to load:'||_load_uri||'<br/>');
-      _is_ttl := 0;
-      _is_xml := 0;
-      _havedata := DB.DBA.SPARQL_EVAL_TO_ARRAY ('select * where {graph <'||_load_uri||'> { ?s ?p ?o }}',_load_uri,1);
-      if (length(_havedata) < 1 or _load = 'always')
-      {
-        {
-          declare _data,_davpath,_data_xml any;
-          declare exit handler for SQLSTATE '*'
-          {
-            http('<p>There was an error, when we tried to load "'||_load_uri||'".<br/>');
-            http('The error returned was:<pre>');
-            http(__SQL_MESSAGE);
-            http('</pre></p>');
-          };
-          _data := "RQ"."RQ"."URI_GET" (_load_uri);
-          {
-            declare continue handler for SQLSTATE '*' {
-              _is_ttl := 0;
-            };
-            _is_ttl := 1;
-            DB.DBA.RDF_TTL2HASH(_data,_load_uri,_load_uri);
-          }
-          if (not(_is_ttl))
-          {
-            {
-              declare continue handler for SQLSTATE '*' {
-                _is_xml := 0;
-              };
-              _is_xml := 1;
-              _data_xml := xtree_doc (_data, 0, _load_uri);
-            }
-          }
-
-          delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (_load_uri);
-          if (_is_ttl)
-            DB.DBA.TTLP(_data,_load_uri,_load_uri);
-          else
-            DB.DBA.RDF_LOAD_RDFXML(_data,_load_uri,_load_uri);
-          _davpath := _load_uri;
-          if (strstr(_davpath,'://'))
-            _davpath := subseq(_load_uri,strstr(_davpath,'://') + 3,length(_davpath));
-          _davpath := DB.DBA.SPARQL_DAV_USER_DATA_PATH() || _davpath;
-          DB.DBA.SPARQL_MKPATH (_davpath);
-          DB.DBA.DAV_DELETE (_davpath, 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
-          DB.DBA.DAV_RES_UPLOAD (_davpath,
-                                 _data,
-                                 'text/plain',
-                                 '110110110RR',
-                                 http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
-          INSERT INTO "RQ"."RQ"."SPARQL_USER_UPLOADS" (SU_DAV_FULL_PATH,SU_GRAPH, SU_UPLOAD_TIME, SU_UPLOAD_IP)
-            VALUES (_davpath,_load_uri,now(),http_client_ip());
-          http('Done.<br/>');
-        }
-      } 
-      else
-      {
-        http('Skipped. There is data for this URI.<br/>');
-      }  
-    }
-    return;
-  }
-
-
-  if (_run is not null and _run = 'run')
-  {
-  
-    _rq_state := '00000';
-    _rq_msg := 'OK';
-    _rq_expn := concat ('sparql_to_sql_text(',WS.WS.STR_SQL_APOS(_query),')');
-    _ms1 := msec_time();
-    _rq_res := exec (_rq_expn, _rq_state, _rq_msg);
-    _ms2 := msec_time();
-    if (_rq_msg <> 'OK')
-    {
-      ?><HR><B>Query compilation failed, SQLCODE <?= _rq_state ?>:</B><BR><PRE><XMP><?vsp http(_rq_msg); ?></XMP></PRE><?vsp
-    }
-    else
-    {
-      declare row_ctr, row_count, col_ctr, col_count integer;
-      declare _rmetas,_rset any;
-      DB.DBA.SPARQL_REXEC_WITH_META (_user_service, _query, _default_graph_uri, vector(), '', _maxrows, null, _rmetas, _rset);
-      row_count := length (_rset);
-      if ((row_count > 0))
-      {
-	      col_count := length (_rset[0]);
-	      for (row_ctr := row_count - 1; row_ctr >= 0 ; row_ctr := row_ctr - 1)
-	      {
-          for (col_ctr := col_count - 1; col_ctr >= 0 ; col_ctr := col_ctr - 1)
-	        {
-		        declare val any;
-		        val := _rset[row_ctr][col_ctr];
-		        _rset[row_ctr][col_ctr] := DB.DBA.RDF_SQLVAL_OF_LONG (val);
-		      }
-      }
-    }
-      declare accept varchar;
-      accept := http_request_header (lines, 'Accept', null, '');
-      if (_format <> '')
-        accept := _format;
-      declare ses any;
-      ses := 0;      
-      DB.DBA.SPARQL_RESULTS_WRITE (ses, _rmetas, _rset, accept, 1);
-    }
-    return;
-  }
-  if (_run is not null and _run = 'explain')
-  {
-    _rq_state := '00000';
-    _rq_msg := 'OK';
-    _ms1 := msec_time();
-    _rq_res := exec (concat ('sparql_to_sql_text(',WS.WS.STR_SQL_APOS(_query),')'), _rq_state, _rq_msg);
-    _ms2 := msec_time();
-
-    if (_rq_msg <> 'OK')
-    {
-      ?><HR><B>Query compilation failed, SQLCODE <?= _rq_state ?>:</B><BR><PRE><XMP><?= _rq_msg ?></XMP></PRE><?vsp
-    }
-    else
-    {
-
-      ?><HR><B>Query compiled successfully.</B> (<?= _ms2 - _ms1 ?> msec.)<BR><?vsp
-      _lex_list := sparql_lex_analyze (_query);
-      ?><HR><B>All lexemes of query:</B><table><?vsp
-      _lex_last_row := -1;
-      _lex_ctr := 0;
-      while (_lex_ctr < length (_lex_list))
-      {
-        _lexem := aref (_lex_list, _lex_ctr);
-        if (_lex_last_row <> aref (_lexem, 0))
-        {
-          if (_lex_last_row > 0)
-          {
-            ?></td></tr><?vsp
-          }
-          ?><tr><td><?= aref (_lexem, 0) ?></td><td><?vsp
-          _lex_last_row := aref (_lexem, 0);
-          ?><FONT COLOR="#FFFF00"><?vsp
-          http (repeat ('&nbsp;:&nbsp;', aref (_lexem, 1)));
-          ?></FONT><?vsp
-        }
-        if (length(_lexem) > 3)
-        {
-          ?><B><?= aref (_lexem, 2) ?></B><FONT SIZE=-2><?= aref (_lexem, 3) ?></FONT> <?vsp
-        }
-        else
-        {
-          ?><B>??<?= aref (_lexem, 2) ?>??</B><?vsp
-        }
-        _lex_ctr := _lex_ctr + 1;
-      }
-      ?></td></tr></table><?vsp
-
-      ?><HR><B>Execution plan:</B><BR><PRE><?= sparql_to_sql_text(_query) ?></PRE><?vsp
-      ?><HR><B>Parse tree:</B><BR><PRE><?= sparql_explain(_query) ?></PRE><?vsp
-    }
-    return;
-  }
-
 ?><?xml version="1.0"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
@@ -268,7 +26,7 @@ WHERE {
     <title>Virtuoso SPARQL Query Demo</title>
     <link rel="stylesheet" href="default.css" type="text/css"/>
     <script type="text/javascript">
-      var toolkitPath="toolkit"; var featureList=["tab","ajax","combolist","window","tree","grid","dav"];
+      var toolkitPath="toolkit"; var featureList=["tab","ajax","combolist","window","tree","grid","dav","xml"];
     </script>
     <script type="text/javascript" src="toolkit/loader.js"></script>
     <script type="text/javascript" src="sparql_ajax.js"></script>
@@ -291,7 +49,7 @@ WHERE {
           <li class="nohover">Saved queries</li>
           <li class="l2" id="tab_dawg">DAWG Tests</li>
         </ul>
-    <div id="tree_containter" style="display:none;">
+    <div id="tree_container" style="display:none;">
       <ul id="tree_content"><?vsp
           declare manifests any;
           declare ctr integer;
@@ -353,6 +111,25 @@ WHERE {
           }
         ?>
     </div>
+        <ul class="nospace">
+          <li class="l2" id="tab_sq">Other Sample Queries</li>
+        </ul>
+    <div id="tree_container2" style="display:none;">
+      <ul id="tree_content2"><?vsp
+          for (SELECT DISTINCT SQ_GROUP AS _SQ_GROUP FROM RQ.RQ.SAMPLE_QUERIES)do
+          {
+	          ?><li><a href="#" onclick="folder_click(this)"><?V _SQ_GROUP ?></a>
+	          <ul><?vsp
+	          for (SELECT SQ_NAME AS _SQ_NAME FROM RQ.RQ.SAMPLE_QUERIES WHERE SQ_GROUP = _SQ_GROUP ORDER BY SQ_ORDER)do
+	          {
+	            ?>
+		          <li><div style="padding-left:34px;"><a href="#" onclick="load_sq('<?V _SQ_GROUP ?>','<?vsp http_url(_SQ_NAME); ?>')"><?vsp http(replace(_SQ_NAME,'-','-<wbr></wbr>')); ?></a></div></li><?vsp
+		        }
+	          ?></ul></li><?vsp
+          }
+        ?>
+      </ul>  
+    </div>
         <ul>
           <li class="nohover">RDF Data Imports</li>
           <li id="tab_import_data">Import Data</li>
@@ -411,6 +188,15 @@ WHERE {
              test in the tree lets you view its query text and associated data and
              load it in the query processor interface for editing and execution.</p>
         </div><!-- dawg_content -->
+      </div><!-- page_dawg -->
+      <div id="page_sq" style="display:none;">
+        <h2>Other Sample Queries</h2>
+        <div id="sq_content">
+          <p>The folder tree on the side bar contains other sample queries that can help you test the service or
+             create your own queries. Selecting an individual
+             test in the tree lets you view its query text and associated data and
+             load it in the query processor interface for editing and execution.</p>
+        </div><!-- sq_content -->
       </div><!-- page_dawg -->
       <div id="page_import_data" style="display:none;">
         <iframe id="import_data_frame" name="import_data_frame" src="data_upload.vsp"></iframe>

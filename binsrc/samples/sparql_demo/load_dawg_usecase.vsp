@@ -1,63 +1,67 @@
-<?vsp 
---  
+<?vsp
+--
+--  $Id$
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
-?>
-<?vsp
-  declare _list, _case, _text, _run varchar;
-  declare _name, _comment varchar;
-  declare _text long varchar;
-  declare _tfiles any;
+--
+--
+
+  declare _list, _case varchar;
+  declare _metas any;
+
   _list := {?'list'};
-  if (_list is null)
-    _list := '';
   _case := {?'case'};
-  if (_case is null)
-    _case := '';
-  _text := {?'text'};
-  _run := {?'run'};
-  _tfiles := DB.DBA.SPARQL_EVAL_TO_ARRAY ('
+
+  if (_list <> '' and _case <> '')
+  {
+    declare _sql varchar;
+    _sql := '
 PREFIX tq: <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
 PREFIX tm: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT DISTINCT ?fulluri
+SELECT ?queryuri ?datauri ?etalonuri ?comment
 WHERE {
   GRAPH ?g {
-    [ tq:data ?fulluri ]
-  } }', '', 10000); 
-?>
-<HTML>
-<BODY TEXT="#000000" LINK="#0000CC" VISITED="#3300CC" BGCOLOR="#EEEEEE" TOPMARGIN=0>
-<?vsp
-?>
-<H3>File <?= _case ?> in <?= _list ?></H3>
-<?vsp foreach (any _tfile in _tfiles) do
-  {
-    if (_tfile[0] like '%' || '/' || _list || '/' || _case)
-      {
-        ?><PRE><?= "RQ"."RQ"."URI_GET"(_tfile[0]) ?><PRE><?vsp
-        goto printed;
-      }
-  }
-printed: ;
-?>
-</BODY>
-</HTML>
+    ?bn tm:name ''' || (replace(_case,'''','\\''')) || ''' ;
+      tm:result ?etalonuri ;
+      tm:action
+        [ tq:query ?queryuri ;
+          tq:data ?datauri ] .
+      OPTIONAL { ?bn rdfs:comment ?comment }
+    }
+  }';
 
+    _metas := DB.DBA.SPARQL_EVAL_TO_ARRAY (_sql, '', 10000);
+    http_header('Content-type: text/xml\r\n');
+    if (length(_metas) > 0)
+    {
+      http('<responce>');
+      http_value(_metas[0][0],'queryuri');
+      http_value(cast ("RQ"."RQ"."URI_GET" (_metas[0][0]) as varchar),'query');
+      http_value(_metas[0][1],'default-graph-uri');
+      http_value(_metas[0][3],'comment');
+      http_value(_metas[0][2],'etalonuri');
+      http('<etalon><![CDATA[');
+      "RQ"."RQ"."PRINT_EXPECTED_RESULT" (_metas[0][2]);
+      http(']]></etalon>');
+      http('</responce>');
+    }
+    return;
+  }
+?>

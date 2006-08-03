@@ -1,0 +1,80 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2006 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+
+  declare _user_service, _default_graph_uri, _query, _format varchar;
+  declare _rq_expn, _rq_state, _rq_msg varchar;
+  declare _rq_res any;
+
+  declare _maxrows integer;
+
+  _default_graph_uri := {?'default-graph-uri'};
+  _query := {?'query'};
+  _user_service := {?'service'};
+  _format := coalesce ({?'format'}, '');
+  _maxrows := cast(coalesce ({?'maxrows'}, 100) as integer);
+
+  _rq_state := '00000';
+  _rq_msg := 'OK';
+  _rq_expn := concat ('sparql_to_sql_text(',WS.WS.STR_SQL_APOS(_query),')');
+  _rq_res := exec (_rq_expn, _rq_state, _rq_msg);
+  if (_rq_msg <> 'OK')
+  {
+    http_request_status ('HTTP/1.1 500 Query compilation failed');
+    ?><hr><b>Query compilation failed, SQLCODE <?= _rq_state ?>:</b><br><pre><xmp><?vsp http(_rq_msg); ?></xmp></pre><?vsp
+  }
+  else
+  {
+    declare exit handler for sqlstate '*' {
+      http_request_status ('HTTP/1.1 500 Remote SPARQL Request Failed');
+      http('<b>Remote SPARQL execution failed, SQLCODE ' || __SQL_STATE || '</b>');
+      http('<br><pre><xmp>' || __SQL_MESSAGE || '</xmp></pre>');
+    };
+    declare row_ctr, row_count, col_ctr, col_count integer;
+    declare _rmetas,_rset any;
+    DB.DBA.SPARQL_REXEC_WITH_META (_user_service, _query, _default_graph_uri, vector(), '', _maxrows, null, _rmetas, _rset);
+    row_count := length (_rset);
+    if ((row_count > 0))
+    {
+      col_count := length (_rset[0]);
+      for (row_ctr := row_count - 1; row_ctr >= 0 ; row_ctr := row_ctr - 1)
+      {
+        for (col_ctr := col_count - 1; col_ctr >= 0 ; col_ctr := col_ctr - 1)
+        {
+	        declare val any;
+	        val := _rset[row_ctr][col_ctr];
+	        _rset[row_ctr][col_ctr] := DB.DBA.RDF_SQLVAL_OF_LONG (val);
+	      }
+      }
+    }
+    declare accept varchar;
+    accept := http_request_header (lines, 'Accept', null, '');
+    if (_format <> '')
+      accept := _format;
+    declare ses any;
+    ses := 0;
+    DB.DBA.SPARQL_RESULTS_WRITE (ses, _rmetas, _rset, accept, 1);
+  }
+  return;
+
+?>

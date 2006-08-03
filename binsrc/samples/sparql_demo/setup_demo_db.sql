@@ -1,43 +1,41 @@
---  
+--
+--  $Id$
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
---  ! ! ! DEVELOPER WARNING ! ! !
---  When you edit this file you must also edit binsrc/tutorial/setup_sparql_demo.sql.
---  It conatins the data here modified to be installable vie tutorial vad.
+--load 'sparql_dawg/manifest-rdf-list.sql';
+--load 'sparql_dawg/rdf-list.sql';
+--load 'sparql_dawg/rq-list.sql';
+--load 'sparql_dawg/ttl-list.sql';
+--set banner on;
+--set blobs on;
+--set echo on;
+--set types on;
+--set verbose on;
 
-load 'sparql_dawg/manifest-rdf-list.sql';
-load 'sparql_dawg/rdf-list.sql';
-load 'sparql_dawg/rq-list.sql';
-load 'sparql_dawg/ttl-list.sql';
-set banner on;
-set blobs on;
-set echo on;
-set types on;
-set verbose on;
-
-DAV_COL_CREATE ('/DAV/sparql_demo/data/', '110110110RR', 'dav', 'dav', 'dav', 'dav');
+--DAV_COL_CREATE ('/DAV/sparql_demo/data/', '110110110RR', 'dav', 'dav', 'dav', 'dav');
 
 create function SPARQL_DAV_DATA_PATH() returns varchar
 {
-  return '/DAV/sparql_demo/data/';
+  return '/DAV/VAD/iSPARQL/data/';
 }
 ;
 
@@ -70,7 +68,7 @@ create procedure SPARQL_REPORT(in strg varchar)
 }
 ;
 
-drop table DB.DBA.SPARQL_DAWG_STATUS;
+"RQ"."RQ"."sparql_exec_no_error"('drop table DB.DBA.SPARQL_DAWG_STATUS');
 
 create table DB.DBA.SPARQL_DAWG_STATUS (
   TEST_URI	varchar not null,
@@ -94,7 +92,7 @@ create procedure SPARQL_DAWG_COMPILE (in rquri varchar, in in_result integer := 
   SPARQL_REPORT ('SPARQL_DAWG_COMPILE on ' || rquri);
   rqtext := replace (cast (XML_URI_GET ('', rquri) as varchar), '# \044Id:', '# Id:');
   lexems := sparql_lex_analyze (rqtext);
-  dbg_obj_princ (lexems);
+  --dbg_obj_princ (lexems);
   prev_line := lexems[1][0]; ses := string_output ();
   http (sprintf ('%3d | ', prev_line), ses);
   lcount := length (lexems) - 1;
@@ -189,7 +187,7 @@ create procedure SPARQL_DAWG_COMPILE_ALL ()
   rqlst := subseq (rqlst, 0, length (rqlst) - 1);
   foreach (varchar rq in rqlst) do
     {
-      SPARQL_DAWG_COMPILE (SPARQL_DAV_DATA_URI() || rq);
+      SPARQL_DAWG_COMPILE (SPARQL_DAV_DATA_URI() || rq, 1);
     }
 }
 ;
@@ -223,6 +221,7 @@ create procedure SPARQL_MKPATH (in path varchar)
   SPARQL_MKPATH (subseq (path, 0, length (path) - 1));
   DAV_COL_CREATE (path, '110110110RR', 'dav', 'dav', 'dav', 'dav');
 }
+;
 
 create procedure SPARQL_DAWG_LOAD_MANIFESTS ()
 {
@@ -237,24 +236,24 @@ create procedure SPARQL_DAWG_LOAD_MANIFESTS ()
         {
 	  declare filefullname, davpath, davuri varchar;
 	  declare id integer;
-	  filefullname := SPARQL_FILE_DATA_ROOT() || mfname;
-	  davpath := SPARQL_DAV_DATA_PATH() || mfname;
+	  --filefullname := SPARQL_FILE_DATA_ROOT() || mfname;
+	  --davpath := SPARQL_DAV_DATA_PATH() || mfname;
 	  davuri := SPARQL_DAV_DATA_URI() || mfname;
-	  SPARQL_MKPATH (davpath);
-	  DB.DBA.DAV_DELETE (davpath, 1, 'dav', 'dav');
-    delete from RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (davuri);
-    if (davpath like '%.ttl')
-      content_type := 'application/x-turtle';
-    else 
-      content_type := 'application/rdf+xml';
-	  id := DB.DBA.DAV_RES_UPLOAD (davpath,
-	    file_to_string (filefullname),
-	    content_type,
-	    '110110110RR',
-	    'dav', 'dav', 'dav', 'dav' );
-	  SPARQL_REPORT (sprintf ('Uploading %s to %s: %s',
-	      filefullname, davpath,
-	      case (gt (id, 0)) when 1 then 'PASSED' else 'FAILED' || DAV_PERROR (id) end ));
+	  --SPARQL_MKPATH (davpath);
+	  --DB.DBA.DAV_DELETE (davpath, 1, 'dav', 'dav');
+    --delete from RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (davuri);
+    --if (davpath like '%.ttl')
+    --  content_type := 'application/x-turtle';
+    --else
+    --  content_type := 'application/rdf+xml';
+	  --id := DB.DBA.DAV_RES_UPLOAD (davpath,
+	  --  file_to_string (filefullname),
+	  --  content_type,
+	  --  '110110110RR',
+	  --  'dav', 'dav', 'dav', 'dav' );
+	  --SPARQL_REPORT (sprintf ('Uploading %s to %s: %s',
+	  --    filefullname, davpath,
+	  --    case (gt (id, 0)) when 1 then 'PASSED' else 'FAILED' || DAV_PERROR (id) end ));
           delete from RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (davuri);
           DB.DBA.RDF_LOAD_RDFXML (XML_URI_GET ('', davuri), davuri, davuri);
 	}
@@ -273,23 +272,23 @@ create procedure SPARQL_DAWG_LOAD_DATFILE (in rel_path varchar, in in_resultset 
   whenever sqlstate '*' goto err_rep;
   if (not in_resultset)
     result_names (REPORT);
-  filefullname := SPARQL_FILE_DATA_ROOT() || rel_path;
+  --filefullname := SPARQL_FILE_DATA_ROOT() || rel_path;
   davpath := SPARQL_DAV_DATA_PATH() || rel_path;
   davuri := SPARQL_DAV_DATA_URI() || rel_path;
-  SPARQL_MKPATH (davpath);
-  DB.DBA.DAV_DELETE (davpath, 1, 'dav', 'dav');
-  if (rel_path like '%.ttl')
-    content_type := 'application/x-turtle';
-  else
-    content_type := 'application/rdf+xml';
-  id := DB.DBA.DAV_RES_UPLOAD (davpath,
-    file_to_string (filefullname),
-    content_type,
-    '110110110RR',
-    'dav', 'dav', 'dav', 'dav' );
-  SPARQL_REPORT (sprintf ('Uploading %s to %s: %s',
-      filefullname, davpath,
-      case (gt (id, 0)) when 1 then 'PASSED' else 'FAILED' || DAV_PERROR (id) end ));
+  --SPARQL_MKPATH (davpath);
+  --DB.DBA.DAV_DELETE (davpath, 1, 'dav', 'dav');
+  --if (rel_path like '%.ttl')
+  --  content_type := 'application/x-turtle';
+  --else
+  --  content_type := 'application/rdf+xml';
+  --id := DB.DBA.DAV_RES_UPLOAD (davpath,
+  --  file_to_string (filefullname),
+  --  content_type,
+  --  '110110110RR',
+  --  'dav', 'dav', 'dav', 'dav' );
+  --SPARQL_REPORT (sprintf ('Uploading %s to %s: %s',
+  --    filefullname, davpath,
+  --    case (gt (id, 0)) when 1 then 'PASSED' else 'FAILED' || DAV_PERROR (id) end ));
   dattext := replace (cast (XML_URI_GET ('', davuri) as varchar), '# \044Id:', '# Id:');
   graph_uri := davuri;
   delete from RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_uri);
@@ -354,7 +353,7 @@ create procedure SPARQL_DAWG_EVAL_ONE (in rquri varchar, in daturi varchar, in r
   declare REPORT varchar;
   declare ses any;
   declare rqtext, dattext, sqltext varchar;
-  declare graph_uri varchar;  
+  declare graph_uri varchar;
   declare app_env any;
   declare rset, row any;
   declare etalon_vars, etalon_rowids, etalon_rows any;
@@ -421,7 +420,7 @@ create procedure SPARQL_DAWG_EVAL_ONE (in rquri varchar, in daturi varchar, in r
         rquri, 'PASSED/no-etalon', '00000', sprintf ('%d rows', rcount));
       SPARQL_REPORT ('PASSED/no-etalon');
       return;
-    }    
+    }
   etalon_vars := DB.DBA.SPARQL_EVAL_TO_ARRAY ('
 PREFIX rs: <http://www.w3.org/2001/sw/DataAccess/tests/result-set#>
 SELECT ?var
@@ -479,7 +478,7 @@ WHERE {
 --!      dump_large_text_impl (
 --!        sprintf ('  completed with state %s msg %s and %d rows',
 --!        rexec_stat, rexec_msg, length (rexec_rrows) ) );
-    }    
+    }
   insert replacing SPARQL_DAWG_STATUS (
     TEST_URI, TEST_STATUS, TEST_STATE, TEST_MESSAGE)
   values (

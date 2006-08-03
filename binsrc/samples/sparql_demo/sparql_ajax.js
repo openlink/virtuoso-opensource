@@ -29,6 +29,7 @@ function init()
   tab.add ("tab_home","page_home");
   tab.add ("tab_query","page_query");
   tab.add ("tab_dawg","page_dawg");
+  tab.add ("tab_sq","page_sq");
   tab.add ("tab_import_data","page_import_data");
 //  tab.add ("tab_query_remote","page_query_remote");
 	$('load').checked = true;
@@ -45,7 +46,13 @@ function init()
   sr_cl.addOption("http://www.govtrack.us/sparql");
   sr_cl.addOption("http://abdera.watson.ibm.com:8080/sparql");
 
+  sr_cl.addOption("http://km.aifb.uni-karlsruhe.de/services/sparql/SPARQL");
+  sr_cl.addOption("http://jena.hpl.hp.com:3040/backstage");
+  sr_cl.addOption("http://my.opera.com/community/sparql/sparql");
+  sr_cl.addOption("http://www.wasab.dk/morten/2005/04/sparqlette/");
+
   OAT.Tree.assign("tree_content","images","gif",true);
+  OAT.Tree.assign("tree_content2","images","gif",true);
 
   filewin = new OAT.Window({close:1,min:0,max:0,x:450,y:155,width:500,height:400,title:"View File",imagePath:"images/"});
   filewin.content.appendChild($("file_window_content"));
@@ -60,17 +67,30 @@ function init()
 	//switch_panels();
 
   var ref=function() { 
-    if ($('tree_containter')._Tree_collapsed == 0)
+    if ($('tree_container')._Tree_collapsed == 0)
     {
-      OAT.Dom.show($('tree_containter'));
-      $('tree_containter')._Tree_collapsed = 1;
+      OAT.Dom.show($('tree_container'));
+      $('tree_container')._Tree_collapsed = 1;
     } else {
-      OAT.Dom.hide($('tree_containter'));
-      $('tree_containter')._Tree_collapsed = 0;
+      OAT.Dom.hide($('tree_container'));
+      $('tree_container')._Tree_collapsed = 0;
     }
   }
   OAT.Dom.attach($('tab_dawg'),"click",ref);
-  $('tree_containter')._Tree_collapsed = 0;
+  $('tree_container')._Tree_collapsed = 0;
+
+  var ref2=function() { 
+    if ($('tree_container2')._Tree_collapsed == 0)
+    {
+      OAT.Dom.show($('tree_container2'));
+      $('tree_container2')._Tree_collapsed = 1;
+    } else {
+      OAT.Dom.hide($('tree_container2'));
+      $('tree_container2')._Tree_collapsed = 0;
+    }
+  }
+  OAT.Dom.attach($('tab_sq'),"click",ref2);
+  $('tree_container2')._Tree_collapsed = 0;
 }
 
 function switch_panels()
@@ -117,7 +137,7 @@ function open_dav()
 		mode:'open_dialog',
 		user:'',
 		pass:'',
-		pathDefault:"/DAV/sparql_demo/data/",
+		pathDefault:"/DAV/VAD/iSPARQL/data/",
 		imagePath:'images/',
 		imageExt:'gif',
 		toolbar:{new_folder:false},
@@ -176,8 +196,9 @@ function load_dawg(list,item)
     $('dawg_content').innerHTML += '<div id="dawg_etalon">' + etalon + '</div>';
 
   };
-  OAT.Ajax.command(OAT.Ajax.GET, "./sparql_ajax.vsp?list=" + list + "&case=" + item, function(){return '';}, callback, OAT.Ajax.TYPE_XML);
+  OAT.Ajax.command(OAT.Ajax.GET, "./load_dawg_usecase.vsp?list=" + list + "&case=" + item, function(){return '';}, callback, OAT.Ajax.TYPE_XML);
 }
+
 function load_dawg_query()
 {
   if (!$('dawg_query') || !$('dawg_query').innerHTML)
@@ -186,9 +207,7 @@ function load_dawg_query()
     return;
     }
   tab.go(1);
-  //$('query').value = $('dawg_query').innerHTML.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&nbsp;/g,String.fromCharCode(32)).replace(/<br>/gi,'\n');
   $('query').value = $('dawg_query').getAttribute('dawgdata');
-  //$('default-graph-uri').value = $('dawg_dgu').innerHTML;
   $('default-graph-uri').value = $('dawg_dgu').getAttribute('dawgdata');
   $('etalon').innerHTML = '<hr/><b>Expected result:</b>' + $('dawg_etalon').innerHTML;
 
@@ -209,7 +228,54 @@ function load_dawg_query()
     {
     $('etalon').innerHTML += '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
     }
-  //OAT.Dom.hide($('tree_containter'));
+  //OAT.Dom.hide($('tree_container'));
+}
+
+function load_sq(list,item)
+{
+  tab.go (3);
+  $('sq_content').innerHTML = 'Loading data ...';
+  var callbacksq = function(data) {
+    var ch = data.firstChild.childNodes;
+    var query = '';
+    var default_graph_uri = '';
+    var comment = '';
+    for(var i = 0; i < ch.length; i++)
+    {
+      if (ch[i].nodeName == 'query')
+        query = ch[i].firstChild.nodeValue;
+      else if (ch[i].nodeName == 'default-graph-uri')
+        default_graph_uri = ch[i].firstChild.nodeValue;
+      else if (ch[i].nodeName == 'comment')
+        comment = (ch[i].firstChild)?ch[i].firstChild.nodeValue:'';
+    }
+    
+    $('sq_content').innerHTML = '<h2>' + decodeURIComponent(item).replace(/\+/g,' ') +'</h2>';
+    $('sq_content').innerHTML +='<p>' + comment +'</p>';
+    $('sq_content').innerHTML +='<h3>Data</h3>';
+    $('sq_content').innerHTML +='<p><a href="' + default_graph_uri + '" id="sq_dgu" target="blank">' + default_graph_uri + '</a><br></p>';
+    $('sq_dgu').setAttribute('sqdata',default_graph_uri);
+    $('sq_content').innerHTML +='<h3>Query</h3>';
+    $('sq_content').innerHTML +='<div class="query" id="sq_query">' + query.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br/>').replace(/ /g,'&nbsp;') + '</div>';
+    $('sq_query').setAttribute('sqdata',query);
+    $('sq_content').innerHTML +='  <br/><button name="load_sq_query" id="load_sq_query" onclick="load_sq_query()">Load Query</button><br/>';
+  };
+  OAT.Ajax.command(OAT.Ajax.GET, "./load_sq.vsp?list=" + list + "&case=" + item, function(){return '';}, callbacksq, OAT.Ajax.TYPE_XML);
+}
+
+function load_sq_query()
+{
+  if (!$('sq_query') || !$('sq_query').innerHTML)
+  {
+    alert('Please select sample query from the tree on the left first!');
+    return;
+  }
+  tab.go(1);
+  $('query').value = $('sq_query').getAttribute('sqdata');
+  $('default-graph-uri').value = $('sq_dgu').getAttribute('sqdata');
+
+  $('format').selectedIndex = 0; 
+  $('res_area').innerHTML = '';
 }
 
 function get_r(){
@@ -326,12 +392,12 @@ function rq_query(param,dl)
   //OAT.Ajax.httpError=0;
   OAT.Ajax.errorRef = function(status,response,xmlhttp)
   {
+    param = 'er';
     if (!response)
     {
-      param = 'ob';
       response = 'There was a problem with your request! The server returned status code: ' + status + '<br/>\n';
       response += 'Unfortunatelly your browser does not allow us to show the error. ';
-      response += 'This is known to be a bug in Opera Browser.<br/>\n';
+      response += 'This is a known bug in the Opera Browser.<br/>\n';
       response += 'However you can click this link which will open a new window with the error: <br/>\n';
       response += '<a target="_blank" href="/sparql/?' + body() + '">/sparql/?' + body() + '</a>';
     }
@@ -401,7 +467,7 @@ function rq_query(param,dl)
     }
     else
     {
-      if (!param)
+      if (!param || (param == 'er' && !is_r()))
         $(r+'result').innerHTML = '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
       else
         $(r+'result').innerHTML = data;
@@ -415,11 +481,11 @@ function rq_query(param,dl)
   
   var endpoint = '';
   if (!is_r() && !param)
-  {
-    //load_data(param);
     endpoint = '/sparql/?'
-  } else
-    endpoint = window.location.pathname;
+  else if (param == 'c')
+    endpoint = 'explain.vsp?';
+  else 
+    endpoint = 'remote.vsp?';
   
   OAT.Ajax.command(OAT.Ajax.POST, endpoint, body, callback, OAT.Ajax.TYPE_TEXT,{'Accept':format});
 }
@@ -463,7 +529,7 @@ function load_data(param)
       rq_query(param,data);
     };
     
-    OAT.Ajax.command(OAT.Ajax.POST, window.location.pathname, ldbody, ldcallback, OAT.Ajax.TYPE_TEXT);
+    OAT.Ajax.command(OAT.Ajax.POST, 'load_uris.vsp?', ldbody, ldcallback, OAT.Ajax.TYPE_TEXT);
   }
   else
     rq_query(param,'Skipped.');

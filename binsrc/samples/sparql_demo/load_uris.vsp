@@ -1,0 +1,114 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2006 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+
+  declare _load varchar;
+
+  _load := coalesce ({?'load'}, null);
+
+  if (not(isnull(_load)) and _load <> 'never')
+  {
+    declare _havedata any;
+    declare _is_ttl, _is_xml integer;
+    declare _load_uris any;
+    _load_uris := vector();
+    for(declare i int,i:=0; i < length(params); i := i + 1)
+    {
+      if (params[i] = 'loaduri')
+        _load_uris := vector_concat(_load_uris,vector(params[i + 1]));
+    }
+    if (length(_load_uris) = 0)
+      http('There ware no URIs to load.');
+
+    foreach(varchar _load_uri in _load_uris)do
+    {
+      http('Trying to load:'||_load_uri||'<br/>');
+      _is_ttl := 0;
+      _is_xml := 0;
+      _havedata := DB.DBA.SPARQL_EVAL_TO_ARRAY ('select * where {graph <'||_load_uri||'> { ?s ?p ?o }}',_load_uri,1);
+      if (length(_havedata) < 1 or _load = 'always')
+      {
+        {
+          declare _data,_davpath,_data_xml any;
+          declare exit handler for SQLSTATE '*'
+          {
+            http('<p>There was an error, when we tried to load "'||_load_uri||'".<br/>');
+            http('The error returned was:<pre>');
+            http(__SQL_MESSAGE);
+            http('</pre></p>');
+          };
+          _data := "RQ"."RQ"."URI_GET" (_load_uri);
+          {
+            declare continue handler for SQLSTATE '*' {
+              _is_ttl := 0;
+            };
+            _is_ttl := 1;
+            DB.DBA.RDF_TTL2HASH(_data,_load_uri,_load_uri);
+          }
+          if (not(_is_ttl))
+          {
+            {
+              declare continue handler for SQLSTATE '*' {
+                _is_xml := 0;
+              };
+              _is_xml := 1;
+              _data_xml := xtree_doc (_data, 0, _load_uri);
+            }
+          }
+
+          if (_is_xml and xpath_eval('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /rdf:RDF',_data_xml))
+          {
+            XMLReplace(_data_xml,xpath_eval('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] //rdf:Seq',_data_xml),null);
+            _data := serialize_to_UTF8_xml(_data_xml);
+          }
+
+          delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (_load_uri);
+          if (_is_ttl)
+            DB.DBA.TTLP(_data,_load_uri,_load_uri);
+          else
+            DB.DBA.RDF_LOAD_RDFXML(_data,_load_uri,_load_uri);
+          _davpath := _load_uri;
+          if (strstr(_davpath,'://'))
+            _davpath := subseq(_load_uri,strstr(_davpath,'://') + 3,length(_davpath));
+          _davpath := DB.DBA.SPARQL_DAV_USER_DATA_PATH() || _davpath;
+          DB.DBA.SPARQL_MKPATH (_davpath);
+          DB.DBA.DAV_DELETE (_davpath, 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
+          DB.DBA.DAV_RES_UPLOAD (_davpath,
+                                 _data,
+                                 'text/plain',
+                                 '110110110RR',
+                                 http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
+          INSERT INTO "RQ"."RQ"."SPARQL_USER_UPLOADS" (SU_DAV_FULL_PATH,SU_GRAPH, SU_UPLOAD_TIME, SU_UPLOAD_IP)
+            VALUES (_davpath,_load_uri,now(),http_client_ip());
+          http('Done.<br/>');
+        }
+      }
+      else
+      {
+        http('Skipped. There is data for this URI.<br/>');
+      }
+    }
+    return;
+  }
+
+?>

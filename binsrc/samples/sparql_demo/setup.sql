@@ -1,27 +1,25 @@
---  
+--
+--  $Id$
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
-
---  ! ! ! DEVELOPER WARNING ! ! !
---  When you edit this file you must also edit binsrc/tutorial/setup_sparql_demo.sql.
---  It conatins the data here modified to be installable vie tutorial vad.
+--
+--
 
 create user "RQ"
 ;
@@ -34,13 +32,19 @@ grant all privileges to RQ
 
 DB.DBA.VHOST_REMOVE (lpath=>'/sparql_demo/')
 ;
-DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/DAV/sparql_demo/', vsp_user=>'RQ', is_dav=>1, def_page => 'sparql_ajax.vsp')
+DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'RQ', is_dav=>1, def_page => 'sparql_ajax.vsp')
+;
+
+DB.DBA.VHOST_REMOVE (lpath=>'/isparql/')
+;
+DB.DBA.VHOST_DEFINE (lpath=>'/isparql/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'RQ', is_dav=>1, def_page => 'sparql_ajax.vsp')
 ;
 
 select case (isstring (registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT')))
 when equ(registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT'),'/sparql_demo/demo.vsp?case=custom_sparql')
-  then registry_set ('WS.WS.SPARQL_DEFAULT_REDIRECT', '/sparql_demo/sparql_ajax.vsp?goto=query_page')
-when 0 then registry_set ('WS.WS.SPARQL_DEFAULT_REDIRECT', '/sparql_demo/sparql_ajax.vsp?goto=query_page')
+  then registry_remove ('WS.WS.SPARQL_DEFAULT_REDIRECT')
+when equ(registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT'),'/sparql_demo/sparql_ajax.vsp?goto=query_page')
+  then registry_remove ('WS.WS.SPARQL_DEFAULT_REDIRECT')
 else 1 end
 ;
 
@@ -55,11 +59,11 @@ create procedure "RQ"."RQ"."sparql_exec_no_error"(in expr varchar)
 create table "RQ"."RQ"."SPARQL_USER_UPLOADS"(
   SU_ID integer IDENTITY,
   SU_DAV_FULL_PATH varchar not null,
-  SU_GRAPH varchar not null, 
-  SU_UPLOAD_TIME datetime not null, 
-  SU_UPLOAD_IP   varchar(15) not null, 
+  SU_GRAPH varchar not null,
+  SU_UPLOAD_TIME datetime not null,
+  SU_UPLOAD_IP   varchar(15) not null,
   SU_DELETED integer not null default 0,
-  
+
   primary key(SU_ID)
 )
 ')
@@ -95,14 +99,14 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?name
 WHERE {
   [ rs:resultVariable ?name ]
-  }', _graph_uri, 10000); 
+  }', _graph_uri, 10000);
   _distlines := DB.DBA.SPARQL_EVAL_TO_ARRAY ('
 PREFIX rs: <http://www.w3.org/2001/sw/DataAccess/tests/result-set#>
 SELECT ?sln
 WHERE
 {
   [ rs:solution ?sln ]
-  }', _graph_uri, 10000); 
+  }', _graph_uri, 10000);
   _lines := DB.DBA.SPARQL_EVAL_TO_ARRAY ('
 PREFIX rs: <http://www.w3.org/2001/sw/DataAccess/tests/result-set#>
 SELECT ?sln ?name ?val
@@ -132,7 +136,7 @@ WHERE
         {
           http ('<TD><PRE>'); http_value (dict_get (_valdict, _dl[0] || '-' || _var[0], '')); http ('</PRE></TD>');
         }
-      http ('</TR>'); 
+      http ('</TR>');
     }
   http ('</TABLE>');
 }

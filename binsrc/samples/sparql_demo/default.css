@@ -81,6 +81,7 @@ h3 { font-weight: normal;}
 }
 
 #nav_bar ul.nospace { 
+	margin-top: 0px;
 	margin-bottom: 0px;
 }
 
@@ -96,7 +97,8 @@ h3 { font-weight: normal;}
 
 #nav_bar li.l2,
 #tab_import_data,
-#tab_dawg {
+#tab_dawg,
+#tab_sq {
   margin-left:15px;
 }
 
@@ -141,6 +143,11 @@ label.load { font-size: 8pt; font-weight: normal;}
   overflow: auto;
 }
 
+.combo_list_option {
+	padding: 1px;
+	cursor: pointer;
+}
+
 .combo_list_option:hover {
   background-color: #0080FF;
   color: white;
@@ -164,7 +171,8 @@ label.load { font-size: 8pt; font-weight: normal;}
 }
 
 /* tree */
-#tree_containter {
+#tree_container,
+#tree_container2 {
 	margin: 0px;
 	padding: 0px;
   /* White-space: nowrap; */
@@ -172,22 +180,27 @@ label.load { font-size: 8pt; font-weight: normal;}
   width:220px;
 }
 
-ul#tree_content
+ul#tree_content,
+ul#tree_content2
 {
 	margin-top: 0px;
-	margin-left: 0px;
 	padding-left: 0.0em;
   /* White-space: nowrap; */
 	margin-left: 0px;
+	margin-bottom: 0px;
 }
 
-#tree_content ul {
+#tree_content  ul,
+#tree_content2 ul
+{
 	margin-left: 0px;
 	padding-left: 0.5em;
   /* White-space: nowrap; */
 	margin-left: 0px;
 }
-#tree_content li {
+#tree_content  li, 
+#tree_content2 li
+{
   border:1px solid #86B9D9;
 	margin-left: 0px;
 	padding-left: 0.5em;
@@ -196,12 +209,15 @@ ul#tree_content
 	clear:both;
 }
 
-#tree_content a {
+#tree_content  a 
+#tree_content2 a
+{
  outline-style : none;
  
 }
 
-#tree_content li:hover {
+#tree_content  li:hover, 
+#tree_content2 li:hover{
   background-color: #86B9D9;
   cursor: pointer;
 }
@@ -338,7 +354,8 @@ ul#tabres {
   font-family: courier,monospace;
 }
 
-#dawg_content div.query {
+#dawg_content div.query,
+#sq_content   div.query {
   white-space: pre;
   border: 1px solid #8888aa; 
   font-family: courier,monospace;
@@ -355,12 +372,22 @@ ul#tabres {
   font-weight: bold;
 }
 #page_dawg h2,
+#page_sq h2,
 #dawg_content h1,
+#sq_content   h1,
 #dawg_content h2,
-#dawg_content h3 { color: #005A9C; background: white }
-#dawg_content h1 { font: 170% sans-serif }
-#dawg_content h2 { font: 140% sans-serif }
-#dawg_content h3 { font: 120% sans-serif }
-#dawg_content h4 { font: bold 100% sans-serif }
-#dawg_content h5 { font: italic 100% sans-serif }
-#dawg_content h6 { font: small-caps 100% sans-serif }
+#sq_content   h2,
+#dawg_content h3,
+#sq_content   h3 { color: #005A9C; background: white }
+#dawg_content h1,
+#sq_content   h1 { font: 170% sans-serif }
+#dawg_content h2,
+#sq_content   h2 { font: 140% sans-serif }
+#dawg_content h3,
+#sq_content   h3 { font: 120% sans-serif }
+#dawg_content h4,
+#sq_content   h4 { font: bold 100% sans-serif }
+#dawg_content h5,
+#sq_content   h5 { font: italic 100% sans-serif }
+#dawg_content h6,
+#sq_content   h6 { font: small-caps 100% sans-serif }

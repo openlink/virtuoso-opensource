@@ -1,26 +1,26 @@
-<?vsp 
---  
+<?vsp
+--
+--  $Id$
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
-?>
-<?vsp
+--
+
   declare _source,_upload,_graph, _tempfile,_davpath varchar;
   declare _file,_data,_data_xml any;
   declare _rc,_error,_filelimit,i,_is_ttl, _is_xml, _overwrite,_show_overwrite integer;
@@ -36,16 +36,16 @@
     _overwrite := 1;
   else
     _overwrite := 0;
-  
+
   _filelimit := 3 * 1024 * 1024;
-  
+
  if (_source is null or _source = '')
    _source := 'upl';
-   
+
 ?>
-<HTML> 
+<HTML>
   <head>
- 	<TITLE>Upload file</TITLE> 
+ 	<TITLE>Upload file</TITLE>
   <link rel="stylesheet" href="default.css" type="text/css"/>
  	<script language="JavaScript">
  	  function change_file_input(obj)
@@ -82,7 +82,7 @@
           http('</pre></p>');
           goto _upload_form;
       };
-      
+
       if (_source = 'upl')
       {
         _data := _file;
@@ -127,12 +127,12 @@
   	  _davpath := replace(_davpath,'//','/');
   	  if (_graph is null or _graph = '')
   	    _graph := 'http://local.virt' || _davpath;
-      
-      if (10 < (select count(*) 
-                 from RQ.RQ.SPARQL_USER_UPLOADS 
+
+      if (10 < (select count(*)
+                 from RQ.RQ.SPARQL_USER_UPLOADS
                 where SU_UPLOAD_IP = http_client_ip() AND SU_UPLOAD_TIME > dateadd('minute', -1,now())))
         signal('UPLIMIT','You have loaded more than 10 files in less than a minute. Please try again later.');
-      
+
       if (length(_data) > _filelimit)
         signal('LIMIT','File limit of ' || cast(_filelimit as varchar) || ' bytes exceeded.');
 
@@ -175,18 +175,18 @@
             _tmp_dav_path := (SELECT SU_DAV_FULL_PATH FROM RQ.RQ.SPARQL_USER_UPLOADS WHERE SU_GRAPH = _graph);
             DELETE FROM DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (_graph);
             DB.DBA.DAV_DELETE (_tmp_dav_path,
-               1, 
+               1,
                'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
             UPDATE RQ.RQ.SPARQL_USER_UPLOADS SET SU_DELETED = 1 WHERE SU_GRAPH = _graph AND SU_DELETED = 0;
           }
         }
       }
-        
+ 
       if (_is_ttl)
         DB.DBA.TTLP(_data,_graph,_graph);
       else
         DB.DBA.RDF_LOAD_RDFXML(_data,_graph,_graph);
-  
+
       DB.DBA.SPARQL_MKPATH (_davpath);
       if (DB.DBA.DAV_SEARCH_ID(_davpath,'R') > 0)
       {
@@ -209,15 +209,15 @@
         Grapth: <?= _graph ?>
   </p>
   <a href="?">Upload another</a>
-<?vsp      
+<?vsp
   	}
   }
-  
+
   if (_upload is null or _upload <> 'Upload' or _error)
   {
     _upload_form:;
 ?>
- 	<H3>Upload file</H3> 
+ 	<H3>Upload file</H3>
  	<input type="radio" name="source" value="upl" id="s_upl" onchange="change_file_input(this)"<?vsp if (_source = 'upl') http(' checked="checked"'); ?>/>
  	<label for="s_upl">from local filesystem</label>
  	<br/>
@@ -264,6 +264,6 @@
   }
   _end:;
 ?>
- 	  </form> 
- 	</BODY> 
-</HTML> 
+ 	  </form>
+ 	</BODY>
+</HTML>
