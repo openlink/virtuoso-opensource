@@ -361,6 +361,7 @@ create procedure
   -- data needs to be re-organized
   xmla_format_mdta (mdta);
   xmla_make_cursors_state ("Properties", dta, stmt);
+  xmla_sparql_result (mdta, dta, stmt);
   xmla_make_struct (mdta, dta);
   "ws_xmla_xsd" := vector_concat (vector (xmla_result_xsd ('return', 'root', 'root')) , DB.DBA.SOAP_LOAD_SCH (mdta, NULL, 1));
   return soap_box_structure ('root', case what when 'Data' then dta
@@ -1931,6 +1932,38 @@ xmla_get_rows_from_stmt (in stmt any)
    res := exec (stmt, state, msg, vector (), 0, mdta, dta);
 
    return dta[0][0];
+}
+;
+
+
+create procedure
+xmla_sparql_result (inout mdta any, inout dta any, in stmt any)
+{
+  declare idx, idx2, tmdta any;
+
+  stmt := ucase (trim (stmt));
+
+  if ("LEFT" (stmt, 6) <> 'SPARQL')
+     return;
+
+  tmdta := mdta[0];
+
+  for (idx := 0; idx < length (tmdta); idx := idx + 1)
+    {
+        declare temp, line any;
+
+  	if (mdta[0][idx][1] = 242)
+	  {
+	    for (idx2 := 0; idx2 < length (dta); idx2 := idx2 + 1)
+	      {
+  		 line := dta[idx2];
+  		 temp := line[idx];
+  		 temp := cast (temp as varchar);
+    		 aset (line, idx, temp);
+    	         aset (dta, idx2, line);
+	       }
+	   }
+    }
 }
 ;
 

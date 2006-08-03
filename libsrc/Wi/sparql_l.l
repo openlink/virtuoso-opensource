@@ -438,7 +438,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>"["				TOKPAR_OPEN (_LSQBRA,']', GET_CURRENT_BEGIN)
 <SPARQL>"]"				TOKPAR_CLOSE (_RSQBRA,']')
 
-<SPARQL>"<"([^<>''{}|^`\001-\040])*">"	{
+<SPARQL>"<"([^<>''|^`\001-\037])*">"	{
     sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 2);
     return Q_IRI_REF;
   }

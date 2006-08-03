@@ -9808,7 +9808,13 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
 	 }
        else if (0 == stricmp (type_ref, SOAP_ANY_TYPE)) /* any type, revert to old serializer */
 	 {
+	   dtp_t dtp = DV_TYPE_OF(box);
 	   soap_print_tag (tag, ses, type_ref, ctx, 0, elem, qualified, NULL);
+	   /* TBD: make more consistent the bellow, not lay on the logic under cover
+	      in this cases the soap_print_box dont' print the closing >
+	    */
+	   if (dtp == DV_XML_ENTITY || dtp == DV_OBJECT || dtp == DV_REFERENCE)
+             SES_PRINT (ses, ">");
 	   *err_ret = soap_print_box (box, ses, NULL, ctx->soap_version, NULL, 0, ctx);
 	   if (DV_TYPE_OF(box) != DV_DB_NULL) /* tag is closed in soap_print_box */
 	     soap_print_tag (tag, ses, type_ref, ctx, 1, elem, qualified, NULL);

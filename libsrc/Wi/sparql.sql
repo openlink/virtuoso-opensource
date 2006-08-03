@@ -1801,10 +1801,10 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
     graph,
     vector (
       'DB.DBA.TTL2HASH_EXEC_NEW_GRAPH(?,?)',
-      'select DB.DBA.TTL2HASH_EXEC_NEW_BLANK(?,?)',
-      'select DB.DBA.TTL2HASH_EXEC_GET_IID(?,?,?)',
-      'DB.DBA.TTL2HASH_EXEC_TRIPLE(?,?, ?,?, ?,?, ?,?, ?)',
-      'DB.DBA.TTL2HASH_EXEC_TRIPLE_L(?,?, ?,?, ?,?, ?,?,?, ?)',
+      'select DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK(?,?)',
+      'select DB.DBA.RDF_TTL2HASH_EXEC_GET_IID(?,?,?)',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE(?,?, ?,?, ?,?, ?,?, ?)',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L(?,?, ?,?, ?,?, ?,?,?, ?)',
       'isinteger(0)' ),
     res,
     base );
@@ -2382,8 +2382,8 @@ from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS
 create function DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any)
 {
   declare ctr integer;
-  if (not isiri (graph_iri))
-    graph_iri := DB.DBA.RDF_MAKE_IID_FROM_QNAME (graph_iri);
+  if (not isiri_id (graph_iri))
+    graph_iri := DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
   for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
     {
       insert replacing DB.DBA.RDF_QUAD (G,S,P,O)
@@ -2398,8 +2398,8 @@ grant execute on DB.DBA.RDF_INSERT_TRIPLES to SPARQL_UPDATE
 create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any)
 {
   declare ctr integer;
-  if (not isiri (graph_iri))
-    graph_iri := DB.DBA.RDF_MAKE_IID_FROM_QNAME (graph_iri);
+  if (not isiri_id (graph_iri))
+    graph_iri := DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
   for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
     {
       delete from DB.DBA.RDF_QUAD
@@ -3078,7 +3078,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       http_url (uri, 0, req_body);
     }
   req_body := string_output_string (req_body);
-  local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, application/rdf+xml';
+  local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, application/rdf+xml, application/xml';
   if (length (req_body) + length (service) >= 1900)
     {
       req_method := 'POST';
@@ -3102,14 +3102,15 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   -- dbg_obj_princ ('Returned header: ', ret_hdr);
   -- dbg_obj_princ ('Returned body: ', ret_body);
   ret_content_type := http_request_header (ret_hdr, 'Content-Type', null, null);
-  if (ret_content_type is null)
+  if (ret_content_type is null or ret_content_type not in ('application/sparql-results+xml','application/rdf+xml','text/rdf+n3'))
     {
       declare ret_begin, ret_html any;
       ret_begin := "LEFT" (ret_body, 1024);
       ret_html := xtree_doc (ret_begin, 2);
       if (xpath_eval ('/html|/xhtml', ret_html) is not null)
         ret_content_type := 'text/html';
-      else if (xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql', ret_html) is not null)
+      else if (xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql', ret_html) is not null
+            or xpath_eval ('[xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"] /rset2:sparql', ret_html) is not null)
         ret_content_type := 'application/sparql-results+xml';
       else if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /rdf:rdf', ret_html) is not null)
         ret_content_type := 'application/rdf+xml';
@@ -3124,13 +3125,16 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       declare ret_xml, var_list, var_metas, ret_row, out_nulls any;
       declare var_ctr, var_count integer;
       declare vect_acc any;
+      declare row_inx integer;
       -- dbg_obj_princ ('application/sparql-results+xml ret_body=', ret_body);
       ret_xml := xtree_doc (ret_body, 0);
-      var_list := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql/rset:head/rset:variable', ret_xml, 0);
+      var_list := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] [xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"]
+                               /rset:sparql/rset:head/rset:variable | /rset2:sparql/rset2:head/rset2:variable', ret_xml, 0);
       if (0 = length (var_list))
         {
 	  declare bool_ret any;
-          bool_ret := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql/rset:boolean', ret_xml);
+          bool_ret := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] [xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"]
+                                   /rset:sparql/rset:boolean | /rset2:sparql/rset2:boolean', ret_xml);
 	  if (bool_ret is not null)
 	    {
 	      bool_ret := cast (bool_ret as varchar);
@@ -3177,14 +3181,18 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
         exec_result_names (var_metas);
       else if (1 = res_mode)
         vectorbld_init (vect_acc);
-      for (ret_row := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql/rset:results/rset:result', ret_xml);
+      row_inx := 0;
+      for (ret_row := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] [xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"]
+                                   /rset:sparql/rset:results/rset:result | /rset2:sparql/rset2:results/rset2:result', ret_xml);
         ret_row is not null;
-        ret_row := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] following-sibling::rset:result', ret_row) )
+        ret_row := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] [xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"]
+                                following-sibling::rset:result | following-sibling::rset2:result', ret_row) )
         {
           declare out_fields, ret_cols any;
           declare col_ctr, col_count integer;
           out_fields := out_nulls;
-          ret_cols := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] rset:binding', ret_row, 0);
+          ret_cols := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] [xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"]
+                                   rset:binding | rset2:binding', ret_row, 0);
           col_count := length (ret_cols);
           for (col_ctr := col_count - 1; col_ctr >= 0; col_ctr := col_ctr - 1)
             {
@@ -3240,6 +3248,10 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
             exec_result (out_fields);
           else if (1 = res_mode)
             vectorbld_acc (vect_acc, out_fields);
+          row_inx := row_inx + 1;
+          if (maxrows is not null and maxrows > 0 and row_inx >= maxrows)
+            ret_row := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] [xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"]
+                                    ../rset:result[position() = last()] | ../rset2:result[position() = last()]', ret_row);
         }
       metas := vector (var_metas, 1);
       if (0 = res_mode)
@@ -3254,10 +3266,8 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
     }
   if (strstr (ret_content_type, 'application/rdf+xml') is not null)
     {
-      declare res_xml any;
       declare res_dict any;
-      res_xml := xtree_doc (ret_body);
-      res_dict := DB.DBA.RDF_EXP_RDFXML2DICT ('http://local.virt/tmp', res_xml);
+      res_dict := DB.DBA.RDF_RDFXML_TO_DICT (ret_body,'http://local.virt/tmp','');
       metas := vector (vector (vector ('res_dict', 242, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0)), 1);
       if (0 = res_mode)
         {
@@ -3286,7 +3296,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
     {
       signal ('RDFZZ', sprintf (
           'DB.DBA.SPARQL_REXEC(''%.300s'', ...) returned Content-Type ''%.300s'' status ''%.300s''\n%.1000s',
-          service, ret_content_type, ret_hdr[0], ret_body ) );
+          service, ret_content_type, ret_hdr[0], "LEFT" (ret_body, 1024) ) );
     }
   if (strstr (ret_content_type, 'text/html') is not null)
     {
@@ -3858,6 +3868,14 @@ http('		<div id="header">');
 http('			<h1>OpenLink Virtuoso SPARQL Query</h1>');
 http('		</div>');
 http('		<div id="main">');
+http('			<p>This query page is designed to help you test Openlink Virtuoso SPARQL protocol endpoint. <br/>');
+http('			Consult the <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VOSSparqlProtocol">Virtuoso Wiki page</a> describing the service ');
+http('			or the <a href="http://docs.openlinksw.com/virtuoso/">Online Virtuoso Documentation</a> section <a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">RDF Database and SPARQL</a>.</p>');
+http('			<p>There is also a rich Web based user interface with sample queries. ');
+if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is null)
+  http('			In order to use it you must install the isparql.vad package.</p>');
+else
+  http('			You can access it at: <a href="/isparql">/isparql</a>.</p>');
 http('			<form action="" method="GET">');
 http('			<fieldset>');
 http('			<legend>Query</legend>');
