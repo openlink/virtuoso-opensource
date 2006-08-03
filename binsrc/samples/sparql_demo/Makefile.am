@@ -19,6 +19,25 @@
 #  
 #  
 
+nodist_vad_DATA = isparql_dav.vad
+
+CLEANFILES = \
+	make_bookmark_vad.log \
+	make_bookmark_vad.xml \
+	isparql_dav.vad \
+	virtuoso.db \
+	virtuoso.ini \
+	virtuoso.lck \
+	virtuoso.log \
+	virtuoso.pxa \
+	virtuoso.tdb \
+	virtuoso.trx
+
+isparql_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
 
 # ----------------------------------------------------------------------
 #
@@ -28,9 +47,9 @@
 EXTRA_DIST = \
 	*.css \
 	*.js \
-	*.php \
 	*.sql \
 	*.vsp \
 	images/*.gif \
 	images/*.png \
+	make_vad.sh \
 	toolkit/*.js

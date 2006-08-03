@@ -19,3 +19,4 @@ mkdoc.output
 Makefile.in
 Makefile
 default.ini
+plugin

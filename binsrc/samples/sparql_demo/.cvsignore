@@ -1,0 +1,13 @@
+*.vad
+vad
+make_isparql_vad.log
+make_isparql_vad.xml
+sparql_dawg.tar
+vad
+vad_version
+virtuoso.db
+virtuoso.ini
+virtuoso.log
+virtuoso.pxa
+virtuoso.tdb
+virtuoso.trx

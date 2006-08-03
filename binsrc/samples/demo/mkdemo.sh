@@ -359,6 +359,7 @@ then
     if [ "x$HOST_OS" = "x" ]
     then
         (cd $BPEL; make)
+        (cd $HOME/binsrc/samples/sparql_demo ; make)
         (cd $HOME/binsrc/tutorial ; make)
         (cd $HOME/binsrc/yacutia ; make)
         (cd $HOME/appsrc ; make)
@@ -751,73 +752,44 @@ else
 fi
 
 #
-# Sparql demo
-#
-# This is part of tutorial vad now
-#rm -rf sparql_demo
-#rm -rf sparql_dawg
-#cp -r $HOME/binsrc/samples/sparql_demo .
-#cat $HOME/binsrc/tests/rdf/demo_data/sparql_dawg.tar.gz | gunzip - > sparql_demo/sparql_dawg.tar
-#tar -xvf sparql_demo/sparql_dawg.tar
-#rm  sparql_demo/sparql_dawg/*.sql
-#cat $HOME/binsrc/tests/rdf/demo_data/sparql_extensions.tar.gz | gunzip - > sparql_demo/sparql_extensions.tar
-#tar -xvf sparql_demo/sparql_extensions.tar
-## No more need because this XSL is now in server executable
-##cp $HOME/binsrc/tests/rdf/rdf-exp-load.xsl sparql_demo/rdf-exp-load.xsl
-
-#echo "select DB.DBA.DAV_COL_CREATE ('/DAV/sparql_demo/', '110100100NN', 'dav','dav', 'dav', 'dav');" > $TEMPFILE
-#for f in `find sparql_demo -name '*.vsp'` `find sparql_demo -name '*.xsl'`
-#do
-#   echo "select DB.DBA.DAV_RES_UPLOAD ('/DAV/$f', file_to_string ('$f'), '', '111101101NN', 'dav', 'dav', 'dav', 'dav');" >> $TEMPFILE
-#done
-#LOAD_SQL $TEMPFILE dba $DBPWD
-
-## No more need because these these Virtuoso/PL texts are now in server executable
-##LOAD_SQL $HOME/binsrc/tests/rdf/rdf-exp.sql dba $DBPWD
-##LOAD_SQL $HOME/libsrc/Wi/sparql.sql dba $DBPWD
-
-#LOAD_SQL sparql_demo/setup_demo_db.sql dba $DBPWD
-#LOAD_SQL sparql_demo/setup.sql dba $DBPWD
-
-#rm -rf sparql_demo
-#rm -rf sparql_dawg
-
-#
 #  Checkpoint and shutdown the demo database
 #
 
 BREAK
 
 
-cp $BPEL/bpel_dav.vad ./
+$LN $BPEL/bpel_dav.vad .
+$LN $HOME/binsrc/samples/sparql_demo/isparql_dav.vad .
 $LN $HOME/binsrc/tutorial/tutorial_dav.vad .
 $LN $HOME/binsrc/yacutia/conductor_dav.vad .
 
 DO_COMMAND "vad_install ('doc_dav.vad')" dba dba
 DO_COMMAND "vad_install ('bpel_dav.vad')" dba dba
-if [ $VOS -eq 1 ]
-then
+DO_COMMAND "vad_install ('isparql_dav.vad')" dba dba
 DO_COMMAND "vad_install ('tutorial_dav.vad')" dba dba
 DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
 
-#
-#  OpenLink Data Spaces
-#
-DO_COMMAND "vad_install ('ods_framework_dav.vad')" dba dba
-DO_COMMAND "vad_install ('ods_blog_dav.vad')" dba dba
-DO_COMMAND "vad_install ('ods_bookmark_dav.vad')" dba dba
-DO_COMMAND "vad_install ('ods_briefcase_dav.vad')" dba dba
-DO_COMMAND "vad_install ('ods_community_dav.vad')" dba dba
-DO_COMMAND "vad_install ('ods_discussion_dav.vad')" dba dba
-DO_COMMAND "vad_install ('ods_feedmanager_dav.vad')" dba dba
-DO_COMMAND "vad_install ('ods_gallery_dav.vad')" dba dba
-DO_COMMAND "vad_install ('ods_webmail_dav.vad')" dba dba
-DO_COMMAND "vad_install ('ods_wiki_dav.vad')" dba dba
+if [ $VOS -eq 1 ]
+then
+    #
+    #  OpenLink Data Spaces
+    #
+    DO_COMMAND "vad_install ('ods_framework_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_blog_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_bookmark_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_briefcase_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_community_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_discussion_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_feedmanager_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_gallery_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_webmail_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_wiki_dav.vad')" dba dba
 fi
 
 
 DO_COMMAND checkpoint
 DO_COMMAND shutdown
+
 
 #
 # Dump and restore the db to remove the free pages
