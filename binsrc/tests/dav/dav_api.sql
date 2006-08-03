@@ -5683,11 +5683,74 @@ create procedure DAV_EXTRACT_AND_SAVE_RDF (in resid integer)
 }
 ;
 
+create procedure DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(in mime_type varchar) returns varchar
+{
+	if (mime_type = 'application/bpel+xml')
+		return 'http://www.openlinksw.com/schemas/WSDL#';
+	if (mime_type = 'application/doap+rdf')
+		return 'http://www.openlinksw.com/schemas/doap#';
+	if (mime_type = 'application/foaf+xml')
+		return 'http://xmlns.com/foaf/0.1/';
+	if (mime_type = 'application/google-kinds+xml')
+		return 'http://www.openlinksw.com/schemas/google-kinds#';
+	if (mime_type = 'application/license')
+		return 'http://www.openlinksw.com/schemas/OplLic#';
+	if (mime_type = 'application/mods+xml')
+		return 'http://www.openlinksw.com/schemas/MODS#';
+	if (mime_type = 'application/msexcel')
+		return 'http://www.openlinksw.com/schemas/Office#';
+	if (mime_type = 'application/mspowerpoint')
+		return 'http://www.openlinksw.com/schemas/Office#';
+	if (mime_type = 'application/msproject')
+		return 'http://www.openlinksw.com/schemas/Office#';
+	if (mime_type = 'application/msword')
+		return 'http://www.openlinksw.com/schemas/Office#';
+	if (mime_type = 'application/msword+xml')
+		return 'http://www.openlinksw.com/schemas/Office#';
+	if (mime_type = 'application/opml+xml')
+		return 'http://www.openlinksw.com/schemas/OPML#';
+	if (mime_type = 'application/pdf')
+		return 'http://www.openlinksw.com/schemas/Office#';
+	if (mime_type = 'application/rdf+xml')
+		return 'http://www.openlinksw.com/schemas/RDF#';
+	if (mime_type = 'application/rss+xml')
+		return 'http://purl.org/rss/1.0/';
+	if (mime_type = 'application/wsdl+xml')
+		return 'http://www.openlinksw.com/schemas/WSDL#';
+	if (mime_type = 'application/x-openlink-image')
+		return 'http://www.openlinksw.com/schemas/Image#';
+	if (mime_type = 'application/x-openlink-photo')
+		return 'http://www.openlinksw.com/schemas/Photo#';
+	if (mime_type = 'application/x-openlinksw-vad')
+		return 'http://www.openlinksw.com/schemas/VAD#';
+	if (mime_type = 'application/x-openlinksw-vsp')
+		return 'http://www.openlinksw.com/schemas/VSPX#';
+	if (mime_type = 'application/x-openlinksw-vspx+xml')
+		return 'http://www.openlinksw.com/schemas/VSPX#';
+	if (mime_type = 'application/xbel+xml')
+		return 'http://www.python.org/topics/xml/xbel/';
+	if (mime_type = 'application/xbrl+xml')
+		return 'http://www.openlinksw.com/schemas/xbrl#';
+	if (mime_type = 'application/xddl+xml')
+		return 'http://www.openlinksw.com/schemas/XDDL#';
+	if (mime_type = 'application/zip')
+		return 'http://www.openlinksw.com/schemas/Archive#';
+	if (mime_type = 'text/directory')
+		return 'http://www.w3.org/2001/vcard-rdf/3.0#';
+	if (mime_type = 'text/eml')
+		return 'http://www.openlinksw.com/schemas/Email#';
+	if (mime_type = 'text/html')
+		return 'http://www.openlinksw.com/schemas/XHTML#';
+	if (mime_type = 'text/wiki')
+		return 'http://www.openlinksw.com/schemas/Wiki#';	        
+}
+;
+
 create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resname varchar, in restype varchar, inout rescontent any)
 {
-  declare resttype varchar;
+  declare resttype, res_type_uri varchar;
   declare old_prop_id integer;
-  declare html_start, full_xml any;
+  declare html_start, full_xml, type_tree any;
   declare old_n3, addon_n3, spotlight_addon_n3 any;
   -- dbg_obj_princ ('DAV_EXTRACT_AND_SAVE_RDF_INT (', resid, resname, restype, rescontent, ')');
   html_start := null;
@@ -5705,6 +5768,10 @@ create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resnam
           goto addon_n3_set;
 	};
       addon_n3 := call ('DB.DBA.DAV_EXTRACT_RDF_' || restype)(resname, rescontent, html_start);
+      res_type_uri := DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(restype);
+	  type_tree := xtree_doc ('<N3 N3S="http://local.virt/this" N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" N3O="' || res_type_uri || '"/>' );
+	  addon_n3 := DAV_RDF_MERGE (addon_n3, type_tree, null, 0);
+	  --dbg_obj_princ ('test:', addon_n3);
 addon_n3_set: ;      
     }
   -- dbg_obj_princ ('addon_n3 is', addon_n3);
@@ -5724,7 +5791,7 @@ addon_n3_set: ;
     old_n3 := DAV_RDF_MERGE (old_n3, addon_n3, null, 0);
   if (spotlight_addon_n3 is not null)
     old_n3 := DAV_RDF_MERGE (old_n3, spotlight_addon_n3, null, 0);
-  -- dbg_obj_princ ('will update: ', old_n3);
+  --dbg_obj_princ ('will update: ', old_n3);
   update WS.WS.SYS_DAV_PROP set PROP_VALUE = serialize (DAV_RDF_PREPROCESS_RDFXML (old_n3, N'http://local.virt/this', 1))
   where PROP_ID = old_prop_id;
   goto no_op;
@@ -5737,7 +5804,7 @@ no_old:
       else
         addon_n3 := spotlight_addon_n3;
     }
-  -- dbg_obj_princ ('will insert: ', addon_n3);
+  --dbg_obj_princ ('will insert: ', addon_n3);
   insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
   values
     (WS.WS.GETID ('P'), 'http://local.virt/DAV-RDF', 'R', resid,
