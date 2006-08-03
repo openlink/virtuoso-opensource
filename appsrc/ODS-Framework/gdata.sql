@@ -35,14 +35,58 @@ create procedure WA_GDATA_INIT ()
 }
 ;
 
+
+WA_GDATA_INIT ();
+
+create procedure ODS_INIT_VHOST ()
+{
+  declare http_port, default_host, default_port, cname, inet, vhost varchar;
+  declare arr any;
+
+  cname := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  http_port := server_http_port ();
+
+  arr := split_and_decode (cname, 0, '\0\0:');
+  if (length (arr) > 1)
+    {
+      default_host := arr[0];
+      default_port := arr[1];
+      vhost := cname;
+      inet := ':'||default_port;
+    }
+  else if (length (arr) = 1)
+    {
+      default_host := cname;
+      default_port := '80';
+      vhost := cname || ':80';
+      inet := ':'||default_port;
+    }
+
 DB.DBA.VHOST_REMOVE (lpath=>'/dataspace');
 DB.DBA.VHOST_DEFINE (lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
 
 DB.DBA.VHOST_REMOVE (lpath=>'/dataspace/GData');
 DB.DBA.VHOST_DEFINE (lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
 
-WA_GDATA_INIT ()
-;
+  if (cname is not null and default_port <> http_port)
+    {
+--      dbg_obj_print (default_port, http_port, vhost, inet);
+      DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/ods');
+      DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace');
+      DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace/GData');
+
+      DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/ods',ppath=>'/DAV/VAD/wa/', is_dav=>1,
+	  vsp_user=>'dba', def_page=>'sfront.vspx');
+      DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
+      DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
+    }
+  insert replacing WA_DOMAINS (WD_DOMAIN,WD_HOST,WD_LISTEN_HOST,WD_LPATH,WD_MODEL)
+      values (default_host, vhost, inet, '/ods', 0);
+};
+
+ODS_INIT_VHOST ();
+
+drop procedure ODS_INIT_VHOST;
 
 create procedure wa_app_to_type (in app varchar)
 {
@@ -329,7 +373,7 @@ create procedure ODS.ODS.gdata
   vhost := http_map_get ('vhost');
   lhost := http_map_get ('lhost');
 
-  h := DB.DBA.WA_GET_HOST ();
+  h := DB.DBA.WA_CNAME ();
 --  dbg_printf ('meth=[%s] path=[%s]', meth, http_path ());
   path := split_and_decode (ppath, 0, '\0\0/');
 

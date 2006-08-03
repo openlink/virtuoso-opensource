@@ -57,7 +57,7 @@
 
 	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 37),1) * length (WAUI_PHOTO_URL), 
 	    xmlelement ('http://xmlns.com/foaf/0.1/:depiction', 
-	    xmlattributes ( 'http://' || WA_GET_HOST () || WAUI_PHOTO_URL as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')
+	    xmlattributes ( 'http://' || WA_CNAME () || WAUI_PHOTO_URL as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')
 	       ),
 	    null),
 	    
@@ -110,14 +110,14 @@
     <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
 	select xmlelement ('http://xmlns.com/foaf/0.1/:knows',
 	       xmlelement ('http://xmlns.com/foaf/0.1/:Person',
-                 xmlattributes ('http://'|| WA_GET_HOST ()|| '/dataspace/' || u_name  as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about'),
+                 xmlattributes ('http://'|| WA_CNAME ()|| '/dataspace/' || u_name  as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about'),
  	                   either ( length (u_full_name) , 
 	                    xmlelement ('http://xmlns.com/foaf/0.1/:name', wa_utf8_to_wide (u_full_name)), null),
 			    xmlelement ('http://xmlns.com/foaf/0.1/:nick', wa_utf8_to_wide (u_name)),
 
 			    xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
 			    	xmlattributes (
-			    	'http://'|| WA_GET_HOST ()|| '/dataspace/' || u_name || '/about.rdf'
+			    	'http://'|| WA_CNAME ()|| '/dataspace/' || u_name || '/about.rdf'
 			    	as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
 
 			    ))
@@ -133,13 +133,13 @@
       select 
       xmlelement ('http://openlinksw.com/ods/1.0/:'|| wa_type_to_appg (tname), 
       xmlelement ('http://www.w3.org/1999/02/22-rdf-syntax-ns#:Seq', 
-      xmlattributes ('http://'|| WA_GET_HOST ()|| '/dataspace/' || uname || '/' || wa_type_to_app (tname) 
+      xmlattributes ('http://'|| WA_CNAME ()|| '/dataspace/' || uname || '/' || wa_type_to_app (tname) 
 			as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about'),
 	   (
 
 	  select xmlagg (
 	   xmlelement ('http://www.w3.org/1999/02/22-rdf-syntax-ns#:li',
-	   xmlattributes ( 'http://'||WA_GET_HOST ()|| '/dataspace/' || U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) || sprintf 
+	   xmlattributes ( 'http://'||WA_CNAME ()|| '/dataspace/' || U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) || sprintf 
 	   ('/%U', wa_utf8_to_wide (WAI_NAME)) as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')
 
 		))
@@ -151,25 +151,25 @@
 	]]></sql:sqlx>
     <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
 	select xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
-	xmlattributes ('http://'||WA_GET_HOST ()|| '/dataspace/' || U_NAME || '/sioc.rdf' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')),
+	xmlattributes ('http://'||WA_CNAME ()|| '/dataspace/' || U_NAME || '/sioc.rdf' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')),
 	xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
-	xmlattributes ('http://'||WA_GET_HOST ()|| '/sparql/' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
+	xmlattributes ('http://'||WA_CNAME ()|| '/sparql/' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
           from sn_entity, SYS_USERS where sne_name = U_NAME and sne_id = :sne
 	]]></sql:sqlx>
   </foaf:Person>
     <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
 	  select 
 	  xmlelement ('http://openlinksw.com/ods/1.0/:'||wa_type_to_app (WAI_TYPE_NAME),
-	  xmlattributes ('http://'||WA_GET_HOST ()|| '/dataspace/' || U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) 
+	  xmlattributes ('http://'||WA_CNAME ()|| '/dataspace/' || U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) 
 	  || sprintf ('/%U' , wa_utf8_to_wide (WAI_NAME)) as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about'),
 		xmlelement ('http://purl.org/dc/elements/1.1/:title', wa_utf8_to_wide (WAI_NAME)),
 		xmlelement ('http://purl.org/dc/elements/1.1/:description', wa_utf8_to_wide (WAI_DESCRIPTION)),
 		xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
-		xmlattributes ('http://'||WA_GET_HOST ()|| '/dataspace/' || U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) || sprintf ('/%U', wa_utf8_to_wide (WAI_NAME))  || '/about.rdf' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')),
+		xmlattributes ('http://'||WA_CNAME ()|| '/dataspace/' || U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) || sprintf ('/%U', wa_utf8_to_wide (WAI_NAME))  || '/about.rdf' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')),
 		xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
-		xmlattributes ('http://'||WA_GET_HOST ()|| '/dataspace/' || U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) || sprintf ('/%U', wa_utf8_to_wide (WAI_NAME))  || '/sioc.rdf' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')),
+		xmlattributes ('http://'||WA_CNAME ()|| '/dataspace/' || U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) || sprintf ('/%U', wa_utf8_to_wide (WAI_NAME))  || '/sioc.rdf' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')),
 		xmlelement ('http://openlinksw.com/ods/1.0/:owner',
-		xmlattributes ('http://'||WA_GET_HOST ()|| '/dataspace/' || U_NAME || '/about.rdf' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
+		xmlattributes ('http://'||WA_CNAME ()|| '/dataspace/' || U_NAME || '/about.rdf' as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
 		)
 		from WA_MEMBER, WA_INSTANCE, sn_entity, SYS_USERS where WAM_INST = WAI_NAME and WAM_USER = U_ID and sne_name = U_NAME and sne_id = :sne and WAM_MEMBER_TYPE = 1 
 	]]></sql:sqlx>

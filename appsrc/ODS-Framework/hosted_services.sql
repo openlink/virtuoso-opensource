@@ -900,7 +900,7 @@ closed:
     declare _mail_body any;
     _mail_body := WA_GET_EMAIL_TEMPLATE('WS_JOIN_APPROVE_TEMPLATE');
     -- WA_MAIL_TEMPLATES(templ, web_app, user_name, app_action_url)
-    _mail_body := WA_MAIL_TEMPLATES(_mail_body, self, _user_name, sprintf('http://%s/%s', WA_GET_HOST(), self.wa_home_url()));
+    _mail_body := WA_MAIL_TEMPLATES(_mail_body, self, _user_name, sprintf('http://%s/%s', WA_CNAME(), self.wa_home_url()));
     _mail_body := dat || 'Subject: Application registration notification\r\nContent-Type: text/plain; charset=UTF-8\r\n' || _mail_body;
     smtp_send(_smtp_server, _owner_e_mail, _user_e_mail, _mail_body);
     return;
@@ -1367,6 +1367,31 @@ for xml explicit'
 }
 ;
 
+create procedure WA_CNAME ()
+{
+  declare default_host, ret varchar;
+  default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (default_host is not null)
+    return default_host;
+  ret := sys_stat ('st_host_name');
+  if (server_http_port () <> '80')
+    ret := ret ||':'|| server_http_port ();
+  return ret;
+};
+
+create procedure WA_DEFAULT_DOMAIN ()
+{
+  declare cname, arr varchar;
+  cname := WA_CNAME ();
+  arr := split_and_decode (cname, 0, '\0\0:');
+  if (length (arr) = 2)
+    return arr[0];
+  else if (length (arr) = 1)
+    return arr[0];
+  else
+    return cname;
+};
+
 create procedure WA_GET_HOST()
 {
   declare ret varchar;
@@ -1438,7 +1463,7 @@ create procedure WA_MAIL_TEMPLATES(in templ varchar,
     }
     templ := replace(templ, '%app_owner%', _u_name);
     templ := replace(templ, '%app_name%', app.wa_name);
-    templ := replace(templ, '%app_url%', concat('http://', WA_GET_HOST(), app.wa_home_url()));
+    templ := replace(templ, '%app_url%', concat('http://', WA_CNAME(), app.wa_home_url()));
   }
   templ := replace(templ, '%wa_home%', wa_link (1));
   templ := replace(templ, '%service_url%', wa_link (1));
@@ -4394,7 +4419,7 @@ create procedure WA_LINK (in add_host int := 0, in url varchar := null)
       if (hf[1] = '')
 	{
 	  hf[0] := 'http';
-  	  hf[1] := WA_GET_HOST ();
+  	  hf[1] := wa_cname ();
 	  wa_url := vspx_uri_compose (hf);
 	}
     }
@@ -4417,7 +4442,8 @@ create procedure WA_SET_APP_URL
 	in domain any := '\173Default Domain\175',
 	in old_path any := null,
 	in old_host any := null,
-	in old_ip any := null
+	in old_ip any := null,
+	in silent int := 0
 	)
 {
    declare inst web_app;
@@ -4433,6 +4459,10 @@ create procedure WA_SET_APP_URL
    declare vd_opts, h any;
    declare vd_user, vd_pp, vd_auth varchar;
 
+--   dbg_obj_print ('WA_SET_APP_URL',app_id,lpath,prefix,domain,old_path,old_host,old_ip,silent);
+
+   if (domain is null)
+     domain := '{Default Domain}';
 
    if (length(lpath) = 0)
      lpath := '/';
@@ -4589,6 +4619,8 @@ create procedure WA_SET_APP_URL
 
    if (exists(select 1 from HTTP_PATH where HP_HOST= _vhost and HP_LISTEN_HOST= _lhost and HP_LPATH = lpath))
      {
+       if (silent)
+	 return;
        signal ('42000', 'This site already exists');
      }
 

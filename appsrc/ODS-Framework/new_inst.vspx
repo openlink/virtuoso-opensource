@@ -37,7 +37,8 @@
         if (self.instance_descr is null)
           self.instance_descr := coalesce(
             (select WAT_DESCRIPTION from WA_TYPES where WAT_NAME = get_keyword('wa_name', self.vc_event.ve_params)),
-            (select WAT_DESCRIPTION from WA_TYPES, WA_INSTANCE where WAT_NAME = WAI_TYPE_NAME and WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), '');
+	    (select WAT_DESCRIPTION from WA_TYPES, WA_INSTANCE
+	    	where WAT_NAME = WAI_TYPE_NAME and WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), '');
         self.wa_type := self.wa_name;
         if (self.wa_type in ('oDrive', 'oMail'))
         {
@@ -69,7 +70,7 @@
       ihome := self.ihome1.ufl_value;
       ihome := replace(ihome, '\\', '/');
 
-      if (self.instance_descr in ('Blog','Community','oGallery'))
+      if (self.wa_type in ('WEBLOG2','Community','oGallery'))
       {
         while (strstr(ihome, '//') is not null)
         {
@@ -101,35 +102,37 @@
             self.ihome1.ufl_failed := 1;
             return;
           }
-          if(self.instance_descr='Blog'){
+	  if (self.wa_type = 'WEBLOG2')
+	    {
              connection_set('blog2_home', ihome);
-
-          }else if(self.instance_descr='Community'){
-
+            }
+	  else if(self.wa_type = 'Community')
+	    {
              connection_set('community_customendpoint', ihome);
-
-          }else if(self.instance_descr='oGallery'){
-
+            }
+	  else if(self.wa_type = 'oGallery')
+	    {
              connection_set('ogallery_customendpoint', ihome);
-
           };
         }
         else
         {
-          if(self.instance_descr='Blog'){
+	  if (self.wa_type = 'WEBLOG2')
+	    {
              connection_set('blog2_home', null);
 
-          }else if(self.instance_descr='Community'){
+            }
+	  else if (self.wa_type = 'Community')
+	    {
              connection_set('community_customendpoint', null);
-
-          }else if(self.instance_descr='oGallery'){
-
+            }
+	  else if (self.wa_type = 'oGallery')
+	    {
              connection_set('ogallery_customendpoint', ihome);
-
           };
         }
       }
-      else if (self.instance_descr = 'oWiki')
+      else if (self.wa_type = 'oWiki')
       {
         declare _instance_name varchar;
         _instance_name := coalesce(self.iname1.ufl_value, '');
@@ -151,7 +154,9 @@
         self.iname1.ufl_failed := 1;
         return;
       }
-      if (self.switch_adv=0){
+
+      if (self.switch_adv=0)
+        {
         self.idesc1.ufl_value := self.idesc;
         self.imodel1.ufl_value := cast(self.imodel as varchar);
         _len := length(coalesce(self.idesc, ''));
@@ -193,7 +198,127 @@
       }
       self.inst := self.inst.wa_member_model := atoi(self.imodel1.ufl_value);
 
+
+
+      declare logo_ext, welcome_ext varchar;
+
+      logo_ext := '';
+      welcome_ext := '';
+
+
+      if(self.wa_type='Community' and cast(self.switch_adv as integer)){
+
+
+        if(self.logo_group.ufl_value='logo_use_combo')
+        {
+              logo_ext := subseq(self.ilogo_c1.ufl_Value,strrchr(self.ilogo_c1.ufl_Value,'.'));
+        }else
+        {
+
+          if (self.ilogo_isdav_cb.ufl_selected)
+          {
+
+            if (self.t_ilogopath_dav.ufl_value is null or length(self.t_ilogopath_dav.ufl_value)<1)
+            {
+              self.vc_error_message := 'The path to resource that you have selected for you community logo is invalid.';
+              self.vc_is_valid := 0;
+              return;
+
+            }else
+              logo_ext := subseq(self.t_ilogopath_dav.ufl_value,strrchr(self.t_ilogopath_dav.ufl_value,'.'));
+
+            if(lower(logo_ext) not in ('.jpg','.gif','.png'))
+            {
+              self.vc_error_message := 'The type of resource that you have selected for your community logo is invalid. Please use JPG,GIF or PNG';
+              self.vc_is_valid := 0;
+              return;
+            }
+
+          }else
+          {
+
+            if (self.t_ilogopath_fs.ufl_value is null or length(self.t_ilogopath_fs.ufl_value)<1)
+            {
+              self.vc_error_message := 'The path to resource that you have selected for your community logo is invalid.';
+              self.vc_is_valid := 0;
+              return;
+
+            }else{
+              declare _filename varchar;
+
+              _filename:=get_keyword('filename',get_keyword('attr-t_ilogopath_fs',self.vc_event.ve_params,''),'');
+              logo_ext := subseq(_filename,strrchr(_filename,'.'));
+            }
+            if(lower(logo_ext) not in ('.jpg','.gif','.png'))
+            {
+              self.vc_error_message := 'The type of resource that you have selected for your community logo is invalid. Please use JPG,GIF or PNG';
+              self.vc_is_valid := 0;
+              return;
+            }
+          }
+
+        }
+
+
+        if(self.welcome_group.ufl_value='welcome_use_combo')
+        {
+            welcome_ext := subseq(self.iwelcome_c1.ufl_value,strrchr(self.iwelcome_c1.ufl_value,'.'));
+
+
+        }else
+        {
+
+          if (self.iwelcome_isdav_cb.ufl_selected)
+          {
+
+            if (self.t_iwelcomepath_dav.ufl_value is null or length(self.t_iwelcomepath_dav.ufl_value)<1)
+            {
+              self.vc_error_message := 'The path to resource that you have selected for your community welcome image is invalid.';
+              self.vc_is_valid := 0;
+              return;
+
+            }else
+              welcome_ext := subseq(self.t_iwelcomepath_dav.ufl_value,strrchr(self.t_iwelcomepath_dav.ufl_value,'.'));
+
+            if(lower(welcome_ext) not in ('.jpg','.gif','.png'))
+            {
+              self.vc_error_message := 'The type of resource that you have selected for you community welcome image is invalid. Please use JPG,GIF or PNG';
+              self.vc_is_valid := 0;
+              return;
+            }
+
+          }else
+          {
+
+            if (self.t_iwelcomepath_fs.ufl_value is null or length(self.t_iwelcomepath_fs.ufl_value)<1)
+            {
+              self.vc_error_message := 'The path to resource that you have selected for your community welcome image is invalid.';
+              self.vc_is_valid := 0;
+              return;
+
+            }else{
+              declare _filename varchar;
+
+              _filename:=get_keyword('filename',get_keyword('attr-t_iwelcomepath_fs',self.vc_event.ve_params,''),'');
+              welcome_ext := subseq(_filename,strrchr(_filename,'.'));
+            }
+            if(lower(welcome_ext) not in ('.jpg','.gif','.png'))
+            {
+              self.vc_error_message := 'The type of resource that you have selected for your community welcome image is invalid. Please use JPG,GIF or PNG';
+              self.vc_is_valid := 0;
+              return;
+            }
+          }
+
+        }
+
+
+
+      }
+
+
       declare h, id any;
+
       -- create new instance
       h := udt_implements_method (self.inst, 'wa_new_inst');
       declare exit handler for sqlstate '*'
@@ -216,9 +341,13 @@
              WAI_NAME = self.inst.wa_name,
              WAI_DESCRIPTION = self.idesc1.ufl_value
        where WAI_ID = id;
-
-      if (self.main_domain.ufl_value <> '{Default Domain}')
+       -- VD creation
         {
+	  declare silent int;
+          declare lpath, default_lpath varchar;
+	  silent := 1;
+	  if (self.main_domain.ufl_value <> '{Default Domain}')
+	    silent := 0;
           declare exit handler for sqlstate '*'
           {
             rollback work;
@@ -226,9 +355,120 @@
             self.vc_error_message := __SQL_MESSAGE;
             return;
           };
-          WA_SET_APP_URL (id, self.ihome1.ufl_value, self.sub_domain.ufl_value, self.main_domain.ufl_value);
+          default_lpath := self.ihome;
+	  lpath := self.ihome1.ufl_value;
+
+	  -- these two cases currently needs instance id in the URL
+	  if (lpath is null)
+	    {
+		if (self.wa_type = 'eNews2')
+		{
+		  lpath := sprintf('/enews2/%d', id);
+		}
+		else if (self.wa_type = 'Bookmark')
+		{
+		  lpath := sprintf('/bookmark/%d', id);
+		}
+		else if (self.wa_type = 'oMail')
+		{
+		  lpath := sprintf('/oMail');
+		}
+		else if (self.wa_type = 'oDrive')
+		{
+		  lpath := '/odrive';
+		}
+	    }
+	  if (default_lpath is null)
+            default_lpath := lpath;
+--	  dbg_obj_print (self.wa_type, lpath, default_lpath);
+	  if (lpath is not null)
+	    WA_SET_APP_URL (id, lpath, self.sub_domain.ufl_value, self.main_domain.ufl_value, null, null, null, silent);
+          if (default_lpath is not null)
+	    WA_SET_APP_URL (id, default_lpath, null, wa_default_domain (), null, null, null, 1);
         }
       commit work;
+
+      if(self.wa_type='Community' and cast(self.switch_adv as integer))
+      {
+
+        declare new_inst_upload_path varchar;
+        declare logo_res_type,welcome_res_type varchar;
+
+        logo_res_type := '';
+        welcome_res_type := '';
+
+        new_inst_upload_path:=self.inst.wa_home_url ();
+        new_inst_upload_path:=sprintf('/DAV/home/%s%stemplates/custom/',self.u_name,new_inst_upload_path);
+
+
+        if(self.logo_group.ufl_value='logo_use_combo')
+        {
+           YACUTIA_DAV_COPY(self.ilogo_c1.ufl_value, new_inst_upload_path||'community_logo_img'||logo_ext, 1, '110110000R','dav','dav');
+        }else{
+          if (self.ilogo_isdav_cb.ufl_selected)
+          {
+
+              YACUTIA_DAV_COPY(self.t_ilogopath_dav.ufl_value, new_inst_upload_path||'community_logo_img'||logo_ext, 1, '110110000R','dav','dav');
+          }else
+          {
+           logo_res_type := get_keyword('Content-Type',get_keyword('attr-t_ilogopath_fs',self.vc_event.ve_params));
+           DB.DBA.DAV_DELETE (new_inst_upload_path||'community_logo_img'||logo_ext, 0, 'dav', 'dav');
+           YACUTIA_DAV_RES_UPLOAD(new_inst_upload_path||'community_logo_img'||logo_ext,self.t_ilogopath_fs.ufl_value,logo_res_type,'110100000R','dav','dav');
+          }
+        }
+
+        if(self.welcome_group.ufl_value='welcome_use_combo')
+        {
+           YACUTIA_DAV_COPY(self.iwelcome_c1.ufl_Value, new_inst_upload_path||'community_welcome_img'||welcome_ext, 1, '110110000R','dav','dav');
+        }else
+        {
+          if (self.iwelcome_isdav_cb.ufl_selected)
+          {
+              YACUTIA_DAV_COPY(self.t_iwelcomepath_dav.ufl_value, new_inst_upload_path||'community_welcome_img'||welcome_ext, 1, '110110000R','dav','dav');
+          }else
+          {
+            welcome_res_type := get_keyword('Content-Type',get_keyword('attr-t_iwelcomepath_fs',self.vc_event.ve_params));
+            DB.DBA.DAV_DELETE (new_inst_upload_path||'community_welcome_img'||logo_ext, 0, 'dav', 'dav');
+            YACUTIA_DAV_RES_UPLOAD (new_inst_upload_path||'community_welcome_img'||welcome_ext,self.t_iwelcomepath_fs.ufl_value,welcome_res_type,'110100000R','dav','dav');
+          }
+        }
+
+
+      if(udt_implements_method (self.inst, 'apply_custom_settings')<>0){
+        
+         declare h_comm any;
+   
+         -- create new instance
+         h_comm := udt_implements_method (self.inst, 'apply_custom_settings');
+         declare exit handler for sqlstate '*'
+         {
+           self.vc_error_message := WA_RETRIEVE_MESSAGE (concat (__SQL_STATE, ' ', __SQL_MESSAGE));
+           self.vc_is_valid := 0;
+           rollback work;
+           return;
+         };
+         call (h_comm) (self.inst, self.itempl_c1.ufl_value,new_inst_upload_path||'community_logo_img'||logo_ext,new_inst_upload_path||'community_welcome_img'||welcome_ext);
+      }
+      
+
+--        dbg_obj_print('              START                     ');
+--        dbg_obj_print('UPLOAD_PATH',new_inst_upload_path);
+--        dbg_obj_print('template',self.itempl_c1.ufl_value);
+--        dbg_obj_print('logo_combo_or_upload',self.logo_group.ufl_value);
+--        dbg_obj_print('logo_combo_value',self.ilogo_c1.ufl_Value);
+--        dbg_obj_print('logo_upload_fspath',self.t_ilogopath_fs.ufl_value);
+--        dbg_obj_print('logo_upload_isDAV',self.ilogo_isdav_cb.ufl_selected);
+--        dbg_obj_print('logo_upload_davpath',self.t_ilogopath_dav.ufl_value);
+--        dbg_obj_print('welcome_combo_or_upload',self.welcome_group.ufl_value);
+--        dbg_obj_print('welcome_combo_value',self.iwelcome_c1.ufl_Value);
+--        dbg_obj_print('welcome_upload_fspath',self.t_iwelcomepath_fs.ufl_value);
+--        dbg_obj_print('welcome_upload_isDAV',self.iwelcome_isdav_cb.ufl_selected);
+--        dbg_obj_print('welcome_upload_davpath',self.t_iwelcomepath_dav.ufl_value);
+--        dbg_obj_print('              END                     ');
+        }
+
+
+
       return self.inst.wa_home_url ();
     ]]>
     </v:method>
@@ -250,6 +490,8 @@
       <vm:variable name="page_type" type="varchar" default="'new'" persist="0"/>
       <vm:variable name="wa_desc" type="varchar" default="null" persist="0"/>
       <vm:variable name="wa_cnt" type="int" default="0" persist="0"/>
+      <vm:variable name="itemplate" type="varcahr" default="null" persist="0"/>
+
       <vm:navigation on="settings"/>
       <vm:subnavigation-new on="site"/>
 
@@ -291,13 +533,7 @@
 
 
 
-		       app_suff := case self.wa_type
-		 		   when 'WEBLOG2' then 'Weblog'
-		 		   when 'eNews2' then 'Feed Manager'
-		 		   when 'oDrive' then 'Briefcase'
-		 		   when 'oWiki' then 'Wiki'
-		 		   when 'Bookmark' then 'Bookmarks'
-				   else self.wa_type end;
+		      app_suff := WA_GET_APP_NAME (self.wa_type);
 
                       if (self.wa_type = 'oMail')
                       {
@@ -317,7 +553,6 @@
 			  _iname := sprintf ('%s%s', self.u_first_name, app_suff);
 			else
 			  _iname := sprintf ('%s\'s %s', self.u_first_name, app_suff);
-                        --_iname := sprintf('%s_%s_%d', self.instance_descr, self.u_name, _cnt + 1);
                         while (exists(select 1 from WA_INSTANCE where WAI_NAME = _iname))
                         {
                           _cnt := _cnt + 1;
@@ -325,11 +560,10 @@
 			    _iname := sprintf ('%s%s%d', self.u_first_name, app_suff, _cnt);
 			  else
 		            _iname := sprintf ('%s\'s %s (%d)', self.u_first_name, app_suff, _cnt);
-                          --_iname := sprintf('%s_%s_%d', self.instance_descr, self.u_name, _cnt + 1);
                         }
                         self.iname := _iname;
                         self.idesc := concat(coalesce(self.u_full_name, self.u_name), '\'s ', self.instance_descr);
-                        if (self.instance_descr = 'Blog')
+                        if (self.wa_type = 'WEBLOG2')
                         {
                           _cnt2 := 0;
                           _ihome := sprintf('%s%s', '/weblog/', self.u_name);
@@ -340,7 +574,7 @@
                           }
                           self.ihome := _ihome;
                         }
-                        if (self.instance_descr = 'oGallery')
+                        else if (self.wa_type = 'oGallery')
                         {
                           _cnt2 := 0;
                           _ihome := sprintf('%s%s', '/photos/', self.u_name);
@@ -351,7 +585,7 @@
                           }
                           self.ihome := _ihome;
                         }
-                        if (self.instance_descr = 'Community')
+                        else if (self.wa_type = 'Community')
                         {
                           declare state, message, meta, result any;
                           declare sql_q varchar;
@@ -368,15 +602,14 @@
                           _ihome := sprintf('/community/%s_community_%d', self.u_name, _cnt2);
                           self.ihome := _ihome;
                         }
-
-                        if (self.instance_descr = 'oWiki')
+                        else if (self.wa_type = 'oWiki')
                         {
                           _cnt2 := 0;
                           _ihome := sprintf('/%U/%U', self.u_name, 'wiki');
                           while (exists(select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _ihome))
                           {
                             _cnt2 := _cnt2 + 1;
-                            _ihome := sprintf('/%U/%U%d', self.u_name, '/wiki/', _cnt2);
+			    _ihome := sprintf('/%U/wiki/%d', self.u_name, _cnt2);
                           }
                           self.ihome := _ihome;
                         }

@@ -27,9 +27,10 @@
     xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
 
   <xsl:template match="vm:instance-settings">
+
       <tr>
         <th><label for="ianame1"><?V self.instance_descr ?></label>
-            <?V case when self.instance_descr='Blog' then 'name' else '' end?>
+            <?V case when self.wa_type = 'WEBLOG2' then 'name' else '' end?>
         </th>
         <td colspan="2">
           <xsl:if test="@readonly">
@@ -68,6 +69,9 @@
           </xsl:if>
         </td>
       </tr>
+  
+       <xsl:if test="not @edit">
+ 
       <tr  style="vertical-align : baseline;">
        <th>
        Your <?V self.instance_descr?> will be accessible by this URL: <br/>
@@ -90,20 +94,25 @@
        http://<?V domain||self.ihome?>
        </td>
        <td align="right">
+      <xsl:if test="not (@edit = 'yes')">
        <?vsp
-         if (self.instance_descr in ('Blog', 'oWiki', 'Community','oGallery'))
+         if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community','oGallery'))
          {
        ?>
         <input type="button" name="change_url" value="Change" onclick="document.getElementById('change_defurl').style.display='block';"/>
        <?vsp
          };
        ?>
+       </xsl:if>
        </td>
       </tr>
+      </xsl:if>
       <?vsp
-        if (self.instance_descr in ('Blog', 'oWiki', 'Community','oGallery'))
+        if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community','oGallery'))
         {
       ?>
+
+
       <xsl:if test="not (@edit = 'yes')">
         <tr>
         <td></td>
@@ -189,6 +198,255 @@
 	      </v:text>
               </td>
             </tr>
+            <xsl:if test="not @edit">
+
+              <?vsp
+                if (self.wa_type in ('Community'))
+                {
+              ?>
+            <tr>
+              <th><label for="itempl_c1"><?vsp http(self.instance_descr); ?> template</label></th>
+              <td>
+                <v:select-list xhtml_id="itempl_c1" xhtml_style="width: 155px" name="itempl_c1">
+                  <v:before-data-bind>
+                    
+                    if (__proc_exists ('ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS')){
+                  
+                    declare res_names_arr, res_path_arr any;
+                    
+                    
+                    res_names_arr:=vector();
+                    res_path_arr:=vector();
+                    
+                    for select res_name, res_path 
+                        from ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS (option_type) (res_name varchar , res_path varchar) dummy_sp
+                        where option_type = 'TEMPLATE_LIST'
+                    do{
+                       res_names_arr:=vector_concat(res_names_arr,vector(res_name));
+                       res_path_arr:=vector_concat(res_path_arr,vector(res_path));
+                      } 
+                       control.vsl_items:=res_names_arr;
+                       control.vsl_item_values:=res_path_arr;
+                   
+                    }
+                    control.ufl_value := self.itemplate;
+                  
+                  
+                  </v:before-data-bind>
+                </v:select-list>
+              </td>
+
+            </tr>
+            <tr>
+              <th><?vsp http(self.instance_descr); ?> banner logo</th>
+              <td>
+                <table cellspacing="0" cellpadding="0" border="0">
+                  <v:radio-group name="logo_group">
+
+                  <tr>
+                    <td>
+          	           <v:radio-button name="ilogo_use_combo" value="--'logo_use_combo'" initial-checked="1" xhtml_id="ilogo_use_combo"/>
+          	           <label for="ilogo_use_combo">Use <?vsp http(self.instance_descr); ?> Logo</label>
+                    </td>
+                    <td>
+          	           <v:radio-button name="ilogo_use_upload" value="--'logo_use_upload'" xhtml_id="ilogo_use_upload"/>
+          	           <label for="ilogo_use_upload">Upload User Supplied Logo</label>
+                       <v:check-box name="ilogo_isdav_cb" value="1" xhtml_id="ilogo_isdav_cb" initial-checked="1" xhtml_onclick="divs_switch(this.checked,\'logodav_div\',\'logofs_div\')" />
+                       
+                       <label for="ilogo_isdav_cb"><strong>WebDAV</strong></label>
+                   </td>
+                  </tr>
+                  </v:radio-group>
+
+                  <tr>
+                    <td>
+
+                       <v:select-list xhtml_id="ilogo_c1" name="ilogo_c1" xhtml_style="width: 155px">
+                         <v:before-data-bind>
+                           
+                           if (__proc_exists ('ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS')){
+                         
+                           declare res_names_arr, res_path_arr any;
+                           
+                           
+                           res_names_arr:=vector();
+                           res_path_arr:=vector();
+                           
+                           for select res_name, res_path 
+                               from ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS (option_type) (res_name varchar , res_path varchar) dummy_sp
+                               where option_type = 'INSTANCE_LOGOS'
+                           do{
+                              res_names_arr:=vector_concat(res_names_arr,vector(res_name));
+                              res_path_arr:=vector_concat(res_path_arr,vector(res_path));
+                             } 
+                              control.vsl_items:=res_names_arr;
+                              control.vsl_item_values:=res_path_arr;
+                          
+                           }
+                         </v:before-data-bind>
+                       </v:select-list>
+                       
+                       
+                       
+                    </td>
+                    <td style=" padding: 0px 0px 0px 5px;">
+                       <div id="logofs_div" style="display:none;">
+                       <v:text name="t_ilogopath_fs" xhtml_size="70" type="file" value="Browse..." />
+                       </div>
+                       <div id="logodav_div" style="display:block;">
+                       <v:template name="upl_dav_logo" type="simple">
+                         <v:text name="t_ilogopath_dav" xhtml_size="70">
+                         <v:before-render>
+                             <![CDATA[
+                             if (not self.vc_event.ve_is_post)
+                             {
+                              declare banner varchar;
+                              banner := (select top 1 WS_WEB_BANNER from WA_SETTINGS);
+                              if (banner is null or banner = '' or banner = 'default')
+                              control.ufl_value := '';
+                              else
+                              control.ufl_value := banner;
+                             }
+                             ]]>
+                         </v:before-render>
+                         </v:text>
+                         <vm:dav_browser
+                             ses_type="yacutia"
+                             render="popup"
+                             list_type="details"
+                             flt="yes" flt_pat=""
+                             path="DAV/VAD/wa/images/"
+                             start_path="PATH_AND_FILE"
+                             browse_type="both"
+                             w_title="DAV Browser"
+                             title="DAV Browser"
+                             advisory="Choose Logo"
+                             lang="en" return_box="t_ilogopath_dav"
+                         />
+                       </v:template>
+                       </div>
+                      <script type="text/javascript">
+                      if(!document.getElementById('ilogo_isdav_cb').checked)
+                      {
+                        document.getElementById('logodav_div').style.display='none';
+                        document.getElementById('logofs_div').style.display='block';
+                        
+                      }
+                      </script>
+
+                    </td>
+                  </tr>
+                </table>
+
+              </td>
+            </tr>
+
+            <tr>
+              <th><?vsp http(self.instance_descr); ?> welcome photo</th>
+              <td>
+                <table cellspacing="0" cellpadding="0" border="0">
+                  <v:radio-group name="welcome_group">
+                  <tr>
+                    <td>
+          	         <v:radio-button name="iwelcome_use_combo" value="--'welcome_use_combo'" initial-checked="1" xhtml_id="iwelcome_use_combo" />
+          	         <label for="iwelcome_use_combo">Use <?vsp http(self.instance_descr); ?> Photo</label>
+                    </td>
+                    <td>
+          	          <v:radio-button name="iwelcome_use_upload" value="--'welcome_use_upload'" xhtml_id="iwelcome_use_upload"/>
+          	          <label for="ilogo_use_upload">Upload User Supplied Photo</label>
+                      <v:check-box name="iwelcome_isdav_cb" value="1" xhtml_id="iwelcome_isdav_cb" initial-checked="1" xhtml_onclick="divs_switch(this.checked,\'welcomedav_div\',\'welcomefs_div\')"/>
+                      <label for="iwelcome_isdav_cb"><strong>WebDAV</strong></label>
+                   </td>
+                  </tr>
+                  </v:radio-group>
+                  <tr>
+                    <td>
+                       <v:select-list xhtml_id="iwelcome_c1" name="iwelcome_c1" xhtml_style="width: 155px">
+                         <v:before-data-bind>
+                           
+                           if (__proc_exists ('ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS')){
+                         
+                           declare res_names_arr, res_path_arr any;
+                           
+                           
+                           res_names_arr:=vector();
+                           res_path_arr:=vector();
+                           
+                           for select res_name, res_path 
+                               from ODS.COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS (option_type) (res_name varchar , res_path varchar) dummy_sp
+                               where option_type = 'WELCOME_PHOTOS'
+                           do{
+                              res_names_arr:=vector_concat(res_names_arr,vector(res_name));
+                              res_path_arr:=vector_concat(res_path_arr,vector(res_path));
+                             } 
+                              control.vsl_items:=res_names_arr;
+                              control.vsl_item_values:=res_path_arr;
+                          
+                           }
+                         </v:before-data-bind>
+                       </v:select-list>
+                       
+                    </td>
+                    <td style=" padding: 0px 0px 0px 5px;">
+                       <div id="welcomefs_div" style="display:none;">
+
+                       <v:text name="t_iwelcomepath_fs" xhtml_size="70" type="file" value="Browse..." />
+                        </div>
+                        <div id="welcomedav_div" style="display:block;">
+                       <v:template name="upl_dav_welcome" type="simple">
+                         <v:text name="t_iwelcomepath_dav" xhtml_size="70">
+                         <v:before-render>
+                             <![CDATA[
+                             if (not self.vc_event.ve_is_post)
+                             {
+                              declare banner varchar;
+                              banner := (select top 1 WS_WEB_BANNER from WA_SETTINGS);
+                              if (banner is null or banner = '' or banner = 'default')
+                              control.ufl_value := '';
+                              else
+                              control.ufl_value := banner;
+                             }
+                             ]]>
+                         </v:before-render>
+                         </v:text>
+                         <vm:dav_browser
+                             ses_type="yacutia"
+                             render="popup"
+                             list_type="details"
+                             flt="yes" flt_pat=""
+                             path="DAV/VAD/wa/images/"
+                             start_path="PATH_AND_FILE"
+                             browse_type="both"
+                             w_title="DAV Browser"
+                             title="DAV Browser"
+                             advisory="Choose Logo"
+                             lang="en" return_box="t_iwelcomepath_dav"
+                         />
+                       </v:template>
+                       </div>
+                      <script type="text/javascript">
+
+                      if(!document.getElementById('iwelcome_isdav_cb').checked)
+                      {
+                        document.getElementById('welcomefs_div').style.display='none';
+                        document.getElementById('welcomefs_div').style.display='block';
+                        
+                      }
+                      </script>
+                    </td>
+                  </tr>
+                </table>
+
+
+
+              </td>
+            </tr>
+              <?vsp
+              }
+              ?>
+            </xsl:if>
+
+
             <tr>
               <th><label for="imodel1">Member model</label></th>
               <td>
@@ -267,15 +525,30 @@
             <v:on-post>
               <v:script>
                <![CDATA[
-                 --dbg_obj_print(self.switch_adv);
-		 --dbg_vspx_control (self.v1);
+
                  if (self.switch_adv = 0)
                    self.switch_adv := 1;
                  else
                    self.switch_adv := 0;
+
+
                  self.vc_data_bind(e);
+                 
                  self.is_public1.ufl_selected := self.is_public;
                  self.is_visible1.ufl_selected := self.is_visible;
+
+          
+                 self.ilogo_isdav_cb.ufl_selected := 1;
+                 self.iwelcome_isdav_cb.ufl_selected := 1;
+
+
+                 self.ilogo_use_combo.ufl_selected := 1;
+                 self.ilogo_use_upload.ufl_selected := 0;
+
+                 self.iwelcome_use_combo.ufl_selected := 1;
+                 self.iwelcome_use_upload.ufl_selected := 0;
+
+
                ]]>
              </v:script>
            </v:on-post>

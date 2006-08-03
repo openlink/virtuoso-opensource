@@ -40,7 +40,6 @@
          where WAI_ID = self.iid;
         if (self.instance_descr is null)
           self.instance_descr := coalesce((select WAT_DESCRIPTION from WA_TYPES where WAT_NAME = get_keyword('wa_name', self.vc_event.ve_params)), (select WAT_DESCRIPTION from WA_TYPES, WA_INSTANCE where WAT_NAME = WAI_TYPE_NAME and WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), '');
-        if (self.instance_descr = 'Blog')
           self.ihome := self.inst.wa_home_url();
         if (self.wa_type in ('oMail'))
         {
@@ -95,6 +94,15 @@
       <vm:variable name="domains" type="varchar" default="null" persist="0"/>
       <vm:variable name="switch_adv" type="int" default="1" persist="0"/>
       <vm:variable name="page_type" type="varchar" default="'edit'" persist="0"/>
+
+      <vm:variable name="itemplate" type="varcahr" default="null" persist="0"/>
+      <vm:variable name="ilogo" type="varcahr" default="null" persist="0"/>
+      <vm:variable name="iwelcome_photo" type="varcahr" default="null" persist="0"/>
+      <vm:variable name="logo_isdav" type="int" default="1" persist="0"/>
+      <vm:variable name="welcome_isdav" type="int" default="1" persist="0"/>
+      <vm:variable name="logo_use_comboorupload" type="int" default="1" persist="0"/>
+      <vm:variable name="welcome_use_comboorupload" type="int" default="1" persist="0"/>
+
       <vm:navigation on="settings"/>
       <vm:navigation1 on="services"/>
       <vm:rawheader caption="Application Properties"/>

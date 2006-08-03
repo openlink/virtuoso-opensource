@@ -34,8 +34,8 @@
     </vm:header>
     <v:on-init>
       <![CDATA[
-        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_DESCRIPTION into
-        self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.idesc from
+        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_DESCRIPTION, WAI_TYPE_NAME into
+        self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.idesc, self.wa_type from
         DB.DBA.WA_INSTANCE where WAI_ID = self.iid;
         self.instance_descr := self.idesc;
       ]]>
@@ -61,6 +61,7 @@
       <vm:rawheader caption="Application Deletion"/>
       <vm:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
       <vm:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
+      <vm:variable name="wa_type" type="varchar" default="null" persist="0"/>
       <vm:variable name="imodel" type="int" default="null" persist="0"/>
       <vm:variable name="is_public" type="int" default="null" persist="0"/>
       <vm:variable name="is_visible" type="int" default="null" persist="0"/>

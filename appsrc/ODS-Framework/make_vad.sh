@@ -289,6 +289,11 @@ sticker_init() {
   echo "<dependencies/>" >> $STICKER
   echo "<procedures uninstallation=\"supported\">" >> $STICKER
   echo "  <sql purpose=\"pre-install\"><![CDATA[" >> $STICKER
+  echo "    declare ini, case_mode, cname, is_api varchar; " >> $STICKER
+  echo "    ini := virtuoso_ini_path (); " >> $STICKER
+  echo "    case_mode := cfg_item_value (ini, 'Parameters', 'CaseMode'); " >> $STICKER
+  echo "    cname := cfg_item_value (ini, 'URIQA', 'DefaultHost'); " >> $STICKER
+  echo "    is_api := registry_get ('__blog_api_tests__'); " >> $STICKER
   echo "    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) " >> $STICKER
   echo "      { " >> $STICKER
   echo "         result ('ERROR', 'The ods package requires server version $NEED_VERSION or greater'); " >> $STICKER
@@ -298,6 +303,14 @@ sticker_init() {
   echo "       {" >> $STICKER
   echo "          DB.DBA.VAD_RENAME ('wa', 'Framework');" >> $STICKER
   echo "       }" >> $STICKER
+  echo "      if (not isstring (is_api) and case_mode <> '2') { " >> $STICKER
+  echo "	  result ('ERROR', 'The ODS Framework needs server to run in CaseMode 2, please check your INI file.'); " >> $STICKER
+  echo "	  signal ('FATAL', 'The ODS Framework needs server to run in CaseMode 2, please check your INI file.'); " >> $STICKER
+  echo "	}" >> $STICKER
+  echo "      if (not isstring (is_api) and cname is null) { " >> $STICKER
+  echo "	  result ('ERROR', 'The ODS Framework needs DefaultHost to be specified in URIQA INI section.'); " >> $STICKER
+  echo "	  signal ('FATAL', 'The ODS Framework needs DefaultHost to be specified in URIQA INI section.'); " >> $STICKER
+  echo " 	}" >> $STICKER
   echo "  ]]></sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\"></sql>" >> $STICKER
   echo "</procedures>" >> $STICKER

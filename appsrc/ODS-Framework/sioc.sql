@@ -29,14 +29,7 @@ use sioc;
 
 create procedure get_cname ()
 {
-  declare default_host, ret varchar;
-  default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-  if (default_host is not null)
-    return default_host;
-  ret := sys_stat ('st_host_name');
-  if (server_http_port () <> '80')
-    ret := ret ||':'|| server_http_port ();
-  return ret;
+  return DB.DBA.wa_cname ();
 };
 
 create procedure get_base_path ()
