@@ -313,6 +313,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ods_discussion_vad", "nntpf
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "isparql_vad", "isparql_vad.vcproj", "{6260E42E-239D-11DB-9594-FD7021681415}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -347,7 +351,6 @@ Global
 		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Release.Build.0 = Release|.NET
 		{CA03DBF1-2C7E-4732-8F41-65030876DDE7}.Debug.ActiveCfg = Debug|Win32
 		{CA03DBF1-2C7E-4732-8F41-65030876DDE7}.Release.ActiveCfg = Release|Win32
-		{CA03DBF1-2C7E-4732-8F41-65030876DDE7}.Release.Build.0 = Release|Win32
 		{58F7DCEF-D5DE-402D-8F50-39B67C8B9E9E}.Debug.ActiveCfg = Debug|Win32
 		{58F7DCEF-D5DE-402D-8F50-39B67C8B9E9E}.Debug.Build.0 = Debug|Win32
 		{58F7DCEF-D5DE-402D-8F50-39B67C8B9E9E}.Release.ActiveCfg = Release|Win32
@@ -512,6 +515,10 @@ Global
 		{607116BE-F168-11DA-85E2-A4E5714C712A}.Debug.ActiveCfg = Debug|Win32
 		{607116BE-F168-11DA-85E2-A4E5714C712A}.Release.ActiveCfg = Release|Win32
 		{607116BE-F168-11DA-85E2-A4E5714C712A}.Release.Build.0 = Release|Win32
+		{6260E42E-239D-11DB-9594-FD7021681415}.Debug.ActiveCfg = Debug|Win32
+		{6260E42E-239D-11DB-9594-FD7021681415}.Debug.Build.0 = Debug|Win32
+		{6260E42E-239D-11DB-9594-FD7021681415}.Release.ActiveCfg = Release|Win32
+		{6260E42E-239D-11DB-9594-FD7021681415}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

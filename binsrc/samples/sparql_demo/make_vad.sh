@@ -26,7 +26,7 @@ LOGDIR=`pwd`
 LOGFILE="${LOGDIR}/make_isparql_vad.log"
 STICKER="${LOGDIR}/make_isparql_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
-SERVER=${SERVER-virtuoso}
+SERVER=${SERVER-}
 THOST=${THOST-localhost}
 TPORT=${TPORT-8440}
 PORT=${PORT-1940}
@@ -57,6 +57,16 @@ VOS=0
 if [ -f ../../../autogen.sh ]
 then
     VOS=1
+fi
+
+if [ "z$SERVER" = "z" ]  
+then
+    if [ "x$HOST_OS" != "x" ]
+    then
+	SERVER=virtuoso-odbc-t.exe
+    else
+	SERVER=virtuoso
+    fi
 fi
 
 . $HOME/binsrc/tests/suite/test_fn.sh
@@ -100,11 +110,11 @@ virtuoso_start() {
     timeout=600
     $myrm -f *.lck
 
-    if [ "x$HOST_OS" != "x" ]
+    if [ "z$HOST_OS" != "z" ] 
     then
-	$BUILD/../bin/virtuoso-odbc-t +foreground &
+	"$SERVER" +foreground &
     else
-	virtuoso +wait
+	"$SERVER" +wait
     fi
     stat="true"
     while true
@@ -138,12 +148,7 @@ do_command_safe () {
     shift
     shift
     echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-    if [ "x$HOST_OS" != "x" ]
-    then
-	$BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
-    else
-	$ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
-    fi
+    $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
     if test $? -ne 0
     then
 	LOG "***FAILED: starting $command"

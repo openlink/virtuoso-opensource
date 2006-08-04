@@ -30,7 +30,7 @@
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="FALSE"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile="$(ConfigurationName)\isql_native/isql_native.pch"
 				AssemblerListingLocation="$(ConfigurationName)\isql_native/"
 				ObjectFile="$(ConfigurationName)\isql_native/"
