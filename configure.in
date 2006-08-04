@@ -986,7 +986,7 @@ AC_SUBST(php4_LDFLAGS)
 
 ##########################################################################
 #                                                                        #
-# PHP 4.x hosting                                                        #
+# PHP 5.x hosting                                                        #
 #                                                                        #
 ##########################################################################
 
@@ -1061,8 +1061,8 @@ AC_SUBST(php5_LDFLAGS)
 ##########################################################################
 have_mono="no"
 AC_ARG_ENABLE(mono, [dnl
-AC_HELP_STRING[--enable-mono], [enable Mono extension])
-AC_HELP_STRING[--disable-mono], [disable Mono extension (default)])dnl
+AC_HELP_STRING([--enable-mono], [enable Mono extension])
+AC_HELP_STRING([--disable-mono], [disable Mono extension (default)])dnl
 ], [
      case "${enableval}" in
        yes)      BUILD_OPTS="$BUILD_OPTS mono" 
