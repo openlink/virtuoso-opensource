@@ -79,9 +79,9 @@ DB.DBA.VHOST_DEFINE (lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_
 	  vsp_user=>'dba', def_page=>'sfront.vspx');
       DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
       DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
+      insert replacing WA_DOMAINS (WD_DOMAIN,WD_HOST,WD_LISTEN_HOST,WD_LPATH,WD_MODEL)
+	  values (default_host, vhost, inet, '/ods', 0);
     }
-  insert replacing WA_DOMAINS (WD_DOMAIN,WD_HOST,WD_LISTEN_HOST,WD_LPATH,WD_MODEL)
-      values (default_host, vhost, inet, '/ods', 0);
 };
 
 ODS_INIT_VHOST ();
