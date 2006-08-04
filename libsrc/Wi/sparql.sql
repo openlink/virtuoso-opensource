@@ -3873,7 +3873,7 @@ http('			Consult the <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VOSS
 http('			or the <a href="http://docs.openlinksw.com/virtuoso/">Online Virtuoso Documentation</a> section <a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">RDF Database and SPARQL</a>.</p>');
 http('			<p>There is also a rich Web based user interface with sample queries. ');
 if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is null)
-  http('			In order to use it you must install the isparql.vad package.</p>');
+  http('			In order to use it you must install the iSPARQL package (isparql_dav.vad).</p>');
 else
   http('			You can access it at: <a href="/isparql">/isparql</a>.</p>');
 http('			<form action="" method="GET">');
