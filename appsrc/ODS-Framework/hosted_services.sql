@@ -4582,6 +4582,8 @@ create procedure WA_SET_APP_URL
        else
          _vhost := domain;
        declare exit handler for not found {
+           if (silent)
+             return;
 	   rollback work;
 	   signal ('22023', sprintf ('No such wa domain %s', domain));
 	 };

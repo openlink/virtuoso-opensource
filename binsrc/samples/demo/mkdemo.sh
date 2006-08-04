@@ -784,6 +784,7 @@ then
     DO_COMMAND "vad_install ('ods_gallery_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_webmail_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_wiki_dav.vad')" dba dba
+    DO_COMMAND "delete from wa_domains where WD_DOMAIN = 'localhost'" dba dba
 fi
 
 
