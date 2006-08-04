@@ -4,5 +4,5 @@
 *.lo
 Makefile.in
 Makefile
-virtuoso-php4-t
-virtuoso-iodbc-php4-t
+virtuoso-php5-t
+virtuoso-iodbc-php5-t

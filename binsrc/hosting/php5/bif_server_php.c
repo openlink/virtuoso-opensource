@@ -1,29 +1,31 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "php.h"
 
 #if defined (__cplusplus) && !defined (WIN32)
 #include <strstream.h>
@@ -32,51 +34,74 @@
 #define C_BEGIN()
 #define C_END()
 
-C_BEGIN ()
-#define uint16  unsigned short
-#define uint8   unsigned char
-#include <ksrvext.h>
-    C_END ()
 #undef YYDEBUG
+
 #ifdef _PHP
+
 #ifdef __MINGW32__
 #define storage _tempnam (NULL, NULL)
 #elif defined (WIN32)
-     typedef unsigned int uint;
-     typedef unsigned long ulong;
-     WINBASEAPI DWORD WINAPI
-	 SignalObjectAndWait (HANDLE hObjectToSignal,
+typedef unsigned int uint;
+typedef unsigned long ulong;
+WINBASEAPI DWORD WINAPI
+SignalObjectAndWait (HANDLE hObjectToSignal,
     HANDLE hObjectToWaitOn, DWORD dwMilliseconds, BOOL bAlertable);
 #define storage _tempnam (NULL, NULL)
 #else
 #define storage tmpnam (NULL)
 #endif
 #define MAX_FILENAME_LEN 8096
+
 #undef thread_s
 #undef semaphore_s
 #define semaphore_t semaphore_s
 #define thread_t thread_s
-#include "php.h"
-#include "php_main.h"
-#include "php_ini.h"
-#include "rfc1867.h"
+
+C_BEGIN ()
+#define uint16  unsigned short
+#define uint8   unsigned char
+#include <ksrvext.h>
+C_END ()
+
 #include "php_globals.h"
 #include "php_variables.h"
-#include "php_content_types.h"
-#include "ext/standard/info.h"
+#include "zend_hash.h"
+#include "zend_modules.h"
+/* #include "zend_interfaces.h" */
+#include "zend.h"
+/* #include "zend_extensions.h" */
+#include "php_ini.h"
+#include "php_globals.h"
+#include "php_main.h"
+#include "fopen_wrappers.h"
+#include "ext/standard/php_standard.h"
+/* #include "rfc1867.h" */
+/* #include "php_content_types.h" */
+/* #include "ext/standard/info.h" */
+#include "zend_compile.h"
+#include "zend_execute.h"
+#include "zend_highlight.h"
+#include "zend_indent.h"
+/* #include "zend_exceptions.h" */
+/* #include "php_getopt.h" */
 #include "ksrvextphp.h"
-     int php_virt_module_shutdown_wrapper ()
+
+
+int
+php_virt_module_shutdown_wrapper ()
 {
   TSRMLS_FETCH ();
   php_module_shutdown (TSRMLS_C);
   return SUCCESS;
 }
 
+
 static int
 sapi_virtuoso_deactivate (TSRMLS_D)
 {
   return SUCCESS;
 }
+
 
 char *virt_env_lst[] = {
   "DOCUMENT_ROOT",
@@ -106,9 +131,7 @@ char *virt_env_lst[] = {
   "REQUEST_URI",
   "SCRIPT_NAME",
   NULL
-}
-
-;
+};
 
 
 static sapi_module_struct virtuoso_sapi_module = {
@@ -145,20 +168,24 @@ static sapi_module_struct virtuoso_sapi_module = {
 };
 
 
-
-static sapi_post_entry php_app_post_entry = {
-  APP_POST_CONTENT_TYPE,
-  sizeof (APP_POST_CONTENT_TYPE) - 1,
-  sapi_read_standard_form_data,
-  php_std_post_handler
+#if 0
+static sapi_post_entry php_app_post_entry =
+{
+    APP_POST_CONTENT_TYPE,
+    sizeof(APP_POST_CONTENT_TYPE)-1,
+    sapi_read_standard_form_data,
+    php_std_post_handler
 };
 
-static sapi_post_entry php_multi_post_entry = {
-  MULTIPART_CONTENT_TYPE,
-  sizeof (MULTIPART_CONTENT_TYPE) - 1,
-  sapi_read_standard_form_data,
-  rfc1867_post_handler
+
+static sapi_post_entry php_multi_post_entry =
+{
+    MULTIPART_CONTENT_TYPE,
+    sizeof(MULTIPART_CONTENT_TYPE)-1,
+    sapi_read_standard_form_data,
+    rfc1867_post_handler
 };
+#endif
 
 
 int
@@ -177,6 +204,7 @@ sapi_virtuoso_ub_write (const char *str, uint str_length TSRMLS_DC)
 
   return 0;
 }
+
 
 static int
 sapi_virtuoso_activate (TSRMLS_D)
@@ -565,6 +593,7 @@ sapi_virtuoso_read_cookies (TSRMLS_D)
   return ap_lines_get (t1->in_lines, "Cookie");
 }
 
+
 static void
 sapi_virtuoso_register_variables (zval * track_vars_array TSRMLS_DC)
 {
@@ -617,7 +646,7 @@ virt_get_uri (caddr_t * qi, char *base, char *uri)
     }
 
   return ret;
-};
+}
 
 
 zend_op_array *
@@ -658,7 +687,7 @@ virt_php_compile_file (zend_file_handle * file_handle, int type TSRMLS_DC)
     }
 
   return php_compile_file (file_handle, type TSRMLS_CC);
-};
+}
 
 
 /* The fopen wrapper
@@ -698,6 +727,7 @@ virt_fopen_wrapper_for_zend (const char *filename, char **opened_path)
   return php_fopen_func (filename, opened_path);
 }
 
+
 /* The file destructor wrapper */
 static void
 virt_zend_file_handle_dtor (zend_file_handle * fh)
@@ -713,11 +743,14 @@ virt_zend_file_handle_dtor (zend_file_handle * fh)
     }
 
   zend_file_handle_dtor (fh);
-};
+}
 
-PHP_INI_BEGIN ()PHP_INI_END ()
-     static
-     PHP_MINIT_FUNCTION (virt)
+
+PHP_INI_BEGIN()
+PHP_INI_END()
+
+static 
+PHP_MINIT_FUNCTION (virt)
 {
   REGISTER_INI_ENTRIES ();
   return SUCCESS;
@@ -747,6 +780,7 @@ PHP_MINFO_FUNCTION (virt)
   php_info_print_table_end ();
 }
 
+
 zend_module_entry virt_module_entry = {
   STANDARD_MODULE_HEADER,
   "Virtuoso",
@@ -760,11 +794,13 @@ zend_module_entry virt_module_entry = {
   STANDARD_MODULE_PROPERTIES
 };
 
+
 #ifdef WIN32
 #define VIRT_PHP_RUNTIME_NAME "DLL"
 #else
 #define VIRT_PHP_RUNTIME_NAME "shared object"
 #endif
+
 
 static int
 php_module_startup_int (sapi_module_struct * sapi_module)
@@ -814,10 +850,16 @@ virtuoso_php_init (void)
   tsrm_startup (1, 1, 0, NULL);
   sapi_startup (&virtuoso_sapi_module);
   virtuoso_sapi_module.startup (&virtuoso_sapi_module);
+
   check_php_version ();
-  zend_startup_module (&virt_module_entry);
-  sapi_register_post_entry (&php_app_post_entry);
-  sapi_register_post_entry (&php_multi_post_entry);
+
+#if 0
+  zend_startup_module(&virt_module_entry);
+  TSRMLS_FETCH();
+  sapi_register_post_entry(&php_app_post_entry TSRMLS_CC);
+  sapi_register_post_entry(&php_multi_post_entry TSRMLS_CC);
+#endif
+
   php_fopen_func = zend_fopen;
   php_compile_file = zend_compile_file;
   zend_fopen = virt_fopen_wrapper_for_zend;
@@ -826,7 +868,6 @@ virtuoso_php_init (void)
   if (php_ini_opened_path)
     log_debug ("PHP config path [%s]", php_ini_opened_path);
 }
-
 
 
 void
@@ -874,6 +915,7 @@ prepare_params (caddr_t * in, dk_session_t ** out, int *to_free)
       SES_WRITE (*out, in[br + 1]);
     }
 }
+
 
 caddr_t
 http_handler_php (char *file, caddr_t * params, caddr_t * lines,
@@ -934,9 +976,7 @@ http_handler_php (char *file, caddr_t * params, caddr_t * lines,
   thr_atrp_php.in_lines = lines;
   thr_atrp_php.coockie = NULL;
 
-
   SET_THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT, &thr_atrp_php);
-
 
   if (php_module_startup_int (&virtuoso_sapi_module) == FAILURE)
     {
@@ -1060,7 +1100,6 @@ http_handler_php (char *file, caddr_t * params, caddr_t * lines,
 
   /* FREE the memory & handles */
 
-
   if (to_free)
     strses_free (post);
 
@@ -1124,10 +1163,8 @@ bif_http_handler_php (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (BOX_ELEMENTS (args) > 3)	/* the 1-st parameter is a content of PHP page not a file  */
     {
-      caddr_t what =
-	  bif_string_or_null_arg (qst, args, 3, "http_handler_php");
-      res =
-	  http_handler_php ((what ? what : file), params, lines,
+      caddr_t what = bif_string_or_null_arg (qst, args, 3, "http_handler_php");
+      res = http_handler_php ((what ? what : file), params, lines,
 	  (what ? file : NULL), &head_ret, (query_instance_t *) qst);
       if (ssl_is_settable (args[3]))
 	qst_set (qst, args[3], (caddr_t) head_ret);
@@ -1135,8 +1172,7 @@ bif_http_handler_php (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	dk_free_tree (head_ret);
     }
   else
-    res =
-	http_handler_php (file, params, lines, NULL, NULL,
+    res = http_handler_php (file, params, lines, NULL, NULL,
 	(query_instance_t *) qst);
 
   if (is_alocated)
@@ -1171,6 +1207,7 @@ bif_php_str (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 #endif
 
+
 void
 init_func_php (void)
 {
@@ -1182,6 +1219,7 @@ init_func_php (void)
 #endif
 }
 
+
 #ifndef ONLY_PHP
 int
 main (int argc, char *argv[])
@@ -1189,8 +1227,11 @@ main (int argc, char *argv[])
 #ifdef MALLOC_DEBUG
   dbg_malloc_enable ();
 #endif
-  build_set_special_server_model ("PHP4");
+
+  build_set_special_server_model ("PHP5");
+
   VirtuosoServerSetInitHook (init_func_php);
+
   return VirtuosoServerMain (argc, argv);
 }
 #endif

@@ -30,7 +30,7 @@ AC_REVISION($Id$)
 ##########################################################################
 
 AC_INIT([Virtuoso Open Source Edition],
-	[4.5.4-rc2],
+	[4.5.4-rc3],
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
@@ -916,41 +916,43 @@ fi
 
 ##########################################################################
 #                                                                        #
-# PHP hosting                                                            #
+# PHP 4.x hosting                                                        #
 #                                                                        #
 ##########################################################################
 
-have_php="no"
-AC_ARG_ENABLE(php, [dnl
-AC_HELP_STRING([--enable-php], [enable PHP extension])
-AC_HELP_STRING([--disable-php], [disable PHP extension (default)])dnl
+with_php4="no"
+AC_ARG_ENABLE(php4, [dnl
+AC_HELP_STRING([--enable-php4], [enable PHP 4.x extension])
+AC_HELP_STRING([--disable-php4], [disable PHP 4.x extension (default)])dnl
 ], [
      case "${enableval}" in
-       yes)      with_php="yes" ;;
-       no)       with_php="no" ;;
-       /*)       with_php="${enableval}" ;;
-       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-php) ;;
+       yes)      with_php4="yes" ;;
+       no)       with_php4="no" ;;
+       /*)       with_php4="${enableval}" ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-php4) ;;
      esac
   ],
-  [ with_php="no" ])
+  [ with_php4="no" ])
 
-if test "x$with_php" != "xno" 
+if test "x$with_php4" != "xno" 
 then
-    AC_MSG_CHECKING([if libphp4 lib usability])
+    AC_MSG_CHECKING([libphp4 lib usability])
     old_CPPFLAGS="$CPPFLAGS"
     old_LDFLAGS="$LDFLAGS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-    case "$with_php" in
+    case "$with_php4" in
 	yes) 
-	   php_LDFLAGS="-lphp4"
-	   LDFLAGS="$LDFLAGS $php_LDFLAGS" ;;
+	   php4_LDFLAGS="-lphp4"
+	   LDFLAGS="$LDFLAGS $php4_LDFLAGS"
+	   ;;
 	*) 
-	   php_CFLAGS="-I$with_php/include/php/main -I$with_php/include/php/Zend -I$with_php/include/php/TSRM -I$with_php/include/php"
-	   php_LDFLAGS="-L$with_php/lib -lphp4"
-	   CPPFLAGS="$CPPFLAGS $php_CFLAGS" 
-	   LDFLAGS="$LDFLAGS $php_LDFLAGS"
-	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_php/lib" 
-	   export LD_LIBRARY_PATH ;;
+	   php4_CFLAGS="-I$with_php4/include/php/main -I$with_php4/include/php/Zend -I$with_php4/include/php/TSRM -I$with_php4/include/php"
+	   php4_LDFLAGS="-L$with_php4/lib -lphp4"
+	   CPPFLAGS="$CPPFLAGS $php4_CFLAGS" 
+	   LDFLAGS="$LDFLAGS $php4_LDFLAGS"
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_php4/lib" 
+	   export LD_LIBRARY_PATH 
+	   ;;
     esac
     AC_TRY_RUN([
 #include <stdio.h>
@@ -964,22 +966,92 @@ main ()
 }],
 [
  AC_MSG_RESULT(good)
- BUILD_OPTS="$BUILD_OPTS php"
+ BUILD_OPTS="$BUILD_OPTS php4"
  AC_DEFINE(_PHP, 1, [PHP])
- have_php="yes"
+ with_php4="yes"
 ],
 [
  AC_MSG_RESULT(bad)
- with_php="no"
+ with_php4="no"
 ])
     LDFLAGS="$old_LDFLAGS"
     CPPFLAGS="$old_CPPFLAGS"
     LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH
 fi
-AM_CONDITIONAL(HAVE_PHP, test "x$have_php" != "xno" )
-AC_SUBST(php_CFLAGS)
-AC_SUBST(php_LDFLAGS)
+AM_CONDITIONAL(HAVE_PHP4, test "x$with_php4" != "xno" )
+AC_SUBST(php4_CFLAGS)
+AC_SUBST(php4_LDFLAGS)
+
+
+##########################################################################
+#                                                                        #
+# PHP 4.x hosting                                                        #
+#                                                                        #
+##########################################################################
+
+with_php5="no"
+AC_ARG_ENABLE(php5, [dnl
+AC_HELP_STRING([--enable-php5], [enable PHP 5.x extension])
+AC_HELP_STRING([--disable-php5], [disable PHP 5.x extension (default)])dnl
+], [
+     case "${enableval}" in
+       yes)      with_php5="yes" ;;
+       no)       with_php5="no" ;;
+       /*)       with_php5="${enableval}" ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-php5) ;;
+     esac
+  ],
+  [ with_php5="no" ])
+
+if test "x$with_php5" != "xno" 
+then
+    AC_MSG_CHECKING([libphp5 lib usability])
+    old_CPPFLAGS="$CPPFLAGS"
+    old_LDFLAGS="$LDFLAGS"
+    old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    case "$with_php5" in
+	yes) 
+	   php5_LDFLAGS="-lphp5"
+	   LDFLAGS="$LDFLAGS $php5_LDFLAGS"
+	   ;;
+	*) 
+	   php5_CFLAGS="-I$with_php5/include/php/main -I$with_php5/include/php/Zend -I$with_php5/include/php/TSRM -I$with_php5/include/php"
+	   php5_LDFLAGS="-L$with_php5/lib -lphp5"
+	   CPPFLAGS="$CPPFLAGS $php5_CFLAGS" 
+	   LDFLAGS="$LDFLAGS $php5_LDFLAGS"
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_php5/lib" 
+	   export LD_LIBRARY_PATH 
+	   ;;
+    esac
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <php.h>  
+int 
+main ()
+{
+  return 0;  
+}],
+[
+ AC_MSG_RESULT(good)
+ BUILD_OPTS="$BUILD_OPTS php5"
+ AC_DEFINE(_PHP, 1, [PHP])
+ with_php5="yes"
+],
+[
+ AC_MSG_RESULT(bad)
+ with_php5="no"
+])
+    LDFLAGS="$old_LDFLAGS"
+    CPPFLAGS="$old_CPPFLAGS"
+    LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
+fi
+AM_CONDITIONAL(HAVE_PHP5, test "x$with_php5" != "xno" )
+AC_SUBST(php5_CFLAGS)
+AC_SUBST(php5_LDFLAGS)
 
 
 ##########################################################################
@@ -2001,6 +2073,7 @@ AC_CONFIG_FILES([
 	binsrc/hosting/mono/tests/Makefile
 	binsrc/hosting/perl/Makefile
 	binsrc/hosting/php4/Makefile
+	binsrc/hosting/php5/Makefile
 	binsrc/hosting/python/Makefile
 	binsrc/hosting/ruby/Makefile
 	binsrc/maildrop/Makefile

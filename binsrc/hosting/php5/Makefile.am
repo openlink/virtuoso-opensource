@@ -19,53 +19,53 @@
 #  
 #  
 
-
 if WITH_IODBC
-VIRT_IODBC = virtuoso-iodbc-php4-t
+VIRT_IODBC = virtuoso-iodbc-php5-t
 endif
 
-if HAVE_PHP4 
-bin_PROGRAMS = virtuoso-php4-t $(VIRT_IODBC)
+if HAVE_PHP5
+bin_PROGRAMS = virtuoso-php5-t $(VIRT_IODBC)
 endif
 
 BUILT_SOURCES = ksrvext.h 
 
-virtuoso_iodbc_php4_t_SOURCES = \
+virtuoso_php5_t_SOURCES = \
 	bif_server_php.c
 
-virtuoso_php4_t_SOURCES = \
-	bif_server_php.c
+virtuoso_php5_t_CFLAGS  = @VIRT_AM_CFLAGS@ $(php5_CFLAGS)
+virtuoso_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc
+virtuoso_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
+virtuoso_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
+virtuoso_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
+virtuoso_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
+virtuoso_php5_t_CFLAGS  += -D_PHP -DZTS -DPTHREADS
 
-virtuoso_php4_t_CFLAGS  = @VIRT_AM_CFLAGS@ $(php4_CFLAGS)
-virtuoso_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc
-virtuoso_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
-virtuoso_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
-virtuoso_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
-virtuoso_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
-virtuoso_php4_t_CFLAGS  += -D_PHP -DZTS -DPTHREADS
+virtuoso_php5_t_LDFLAGS  = $(VIRT_AM_LDFLAGS) 
 
-virtuoso_php4_t_LDFLAGS  = $(VIRT_AM_LDFLAGS) 
-
-virtuoso_php4_t_LDADD = \
+virtuoso_php5_t_LDADD = \
         ../../virtuoso/libvirtuoso-t.la \
-	$(php4_LDFLAGS) \
+	$(php5_LDFLAGS) \
 	@LIBS@ \
 	-lm
 
-virtuoso_iodbc_php4_t_CFLAGS  = @VIRT_AM_CFLAGS@ $(php4_CFLAGS)
-virtuoso_iodbc_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc
-virtuoso_iodbc_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
-virtuoso_iodbc_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
-virtuoso_iodbc_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
-virtuoso_iodbc_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
-virtuoso_iodbc_php4_t_CFLAGS  += -D_PHP -DZTS -DPTHREADS
 
-virtuoso_iodbc_php4_t_LDFLAGS  = $(VIRT_AM_LDFLAGS)
+virtuoso_iodbc_php5_t_SOURCES = \
+	bif_server_php.c
 
-virtuoso_iodbc_php4_t_LDADD = \
+virtuoso_iodbc_php5_t_CFLAGS  = @VIRT_AM_CFLAGS@ $(php5_CFLAGS)
+virtuoso_iodbc_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc
+virtuoso_iodbc_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
+virtuoso_iodbc_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
+virtuoso_iodbc_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
+virtuoso_iodbc_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
+virtuoso_iodbc_php5_t_CFLAGS  += -D_PHP -DZTS -DPTHREADS
+
+virtuoso_iodbc_php5_t_LDFLAGS  = $(VIRT_AM_LDFLAGS)
+
+virtuoso_iodbc_php5_t_LDADD = \
 	$(iodbc_LDFLAGS) \
         ../../virtuoso/libvirtuoso-t.la \
-	$(php4_LDFLAGS) \
+	$(php5_LDFLAGS) \
 	@LIBS@ \
 	-lm
 
