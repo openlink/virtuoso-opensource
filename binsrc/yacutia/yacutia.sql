@@ -3157,7 +3157,8 @@ db.dba.vview_browse_proc (in path varchar,
 
 create procedure DB.DBA.MSG_NEWS_DOWNLOAD_MESSAGES(in _ns_id integer, in _ng_id integer, in _mode varchar)
 {
-  new_news (atoi (_ng_id));
+  if (isstring (_ng_id))
+      new_news (atoi (_ng_id));
   return '';
 }
 ;
