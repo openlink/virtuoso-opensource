@@ -33,6 +33,8 @@
   <v:variable name="v_tags" type="varchar" default="''" param-name="tags"/>
   <v:variable name="v_folder_id" type="varchar" default="'0'" param-name="folder"/>
 
+  <v:variable name="v_own" type="integer" default="0" param-name="own"/>
+  <v:variable name="v_shared" type="integer" default="0" param-name="shared"/>
   <v:variable name="v_max" type="varchar" default="'100'" param-name="max"/>
   <v:variable name="v_order" type="varchar" default="'_NAME'" param-name="order"/>
   <v:variable name="v_direction" type="varchar" default="'desc'" param-name="direction"/>
@@ -56,7 +58,7 @@
           goto _end;
 
         } else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
-          declare data, sql, state, msg, meta, result any;
+          declare data, sql, sqlParams, state, msg, meta, rows, maxRows any;
 
           BMK.WA.xml_set('keywords', data, self.v_keywords);
           BMK.WA.xml_set('expression', data, self.v_expression);
@@ -67,11 +69,21 @@
           if (length(xpath_eval('//entry', data, 0)) = 0)
             goto _error;
 
-          sql := BMK.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_max);
-          sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
-
           state := '00000';
-          exec(sql, state, msg, vector(), 0, meta, result);
+          sql := '';
+          sqlParams := vector();
+          if (self.v_shared = 1) {
+            sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql(rs0, rs1, rs2, rs3, rs4, rs5)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _ACCOUNT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
+            maxRows := self.v_max;
+            if (maxRows <> '')
+              maxRows := 'TOP ' || maxRows;
+            sql := replace(sql, '<MAX>', maxRows);
+            sqlParams := vector(self.domain_id, self.account_id, data, self.v_max, self.v_own, self.v_shared);
+          } else if (self.v_own = 1) {
+          sql := BMK.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_max);
+          }
+          sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
+          exec(sql, state, msg, sqlParams, 0, meta, rows);
           if (state <> '00000')
             goto _error;
 
@@ -106,7 +118,7 @@
                 http_value (BMK.WA.bookmark_url(self.domain_id), null, retValue);
               http ('</link>\n', retValue);
             }
-            foreach (any row in result) do {
+            foreach (any row in rows) do {
               http ('<item>\n', retValue);
                 http ('<title>', retValue);
                   http_value (BMK.WA.utf2wide(row[3]), null, retValue);

@@ -1419,7 +1419,9 @@ create procedure BMK.WA.shared_sql(
   inout domain_id integer,
   inout account_id integer,
   inout data varchar,
-  in maxRows varchar := '')
+  in maxRows varchar := '',
+  in own integer := 1,
+  in shared integer := 1)
 {
   declare N, gid, did, aid, fid, bid integer;
   declare newData any;
@@ -1432,7 +1434,7 @@ create procedure BMK.WA.shared_sql(
   result_names(c0, c1, c2, c3, c4, c5, c6, c7, c8);
 
   -- search in my own
-  if (not is_empty_or_null(BMK.WA.xml_get('own', data))) {
+  if (own = 1) {
     state := '00000';
     sql := BMK.WA.sfolder_sql(domain_id, account_id, data, maxRows);
     exec(sql, state, msg, vector(), 0, meta, rows);
@@ -1442,6 +1444,7 @@ create procedure BMK.WA.shared_sql(
   }
 
   -- search in my shared
+  if (shared = 1) {
   for (select G_ID, G_GRANTER_ID, G_OBJECT_TYPE, G_OBJECT_ID from BMK.WA.GRANTS where G_GRANTEE_ID = account_id order by G_GRANTER_ID) do {
     newData := data;
     gid := G_ID;
@@ -1469,6 +1472,7 @@ create procedure BMK.WA.shared_sql(
         result(row[0], row[1], row[2], row[3], row[4], row[5], fid, row[7], gid);
       }
   }
+}
 }
 ;
 

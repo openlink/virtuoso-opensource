@@ -70,8 +70,6 @@
       self.v_expression := trim(self.v_expression);
       self.v_tags := trim(self.v_tags);
       self.v_folder_id := trim(self.v_folder_id);
-      self.v_own := self.f_own.ufl_selected;
-      self.v_shared := self.f_shared.ufl_selected;
 
       tmp := BMK.WA.ft2vector(self.v_keywords);
       tmp := BMK.WA.vector_unique(tmp, 2);
@@ -80,6 +78,9 @@
       tmp := BMK.WA.tags2vector(self.v_tags);
       tmp := BMK.WA.vector_unique(tmp);
       self.v_tags := BMK.WA.vector2tags(tmp);
+
+      self.v_own := self.f_own.ufl_selected;
+      self.v_shared := self.f_shared.ufl_selected;
     ]]>
   </v:method>
 
@@ -113,8 +114,6 @@
         BMK.WA.xml_set('tags', data, self.v_tags);
         if ((self.v_folder_id <> '0') and (self.v_folder_id <> '0'))
           BMK.WA.xml_set('folder', data, self.v_folder_id);
-        BMK.WA.xml_set('own', data, self.v_own);
-        BMK.WA.xml_set('shared', data, self.v_shared);
       }
 
       self.ds_data := vector ();
@@ -133,14 +132,14 @@
       state := '00000';
       sql := '';
       sqlParams := vector();
-      if (BMK.WA.xml_get('shared', data) = '1') {
-        sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql(rs0, rs1, rs2, rs3)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _ACCOUNT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
+      if (self.v_shared = 1) {
+        sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql(rs0, rs1, rs2, rs3, rs4, rs5)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _ACCOUNT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
         maxRows := self.v_max;
         if (maxRows <> '')
           maxRows := 'TOP ' || maxRows;
         sql := replace(sql, '<MAX>', maxRows);
-        sqlParams := vector(self.domain_id, self.account_id, data, self.v_max);
-      } else if (BMK.WA.xml_get('own', data) = '1') {
+        sqlParams := vector(self.domain_id, self.account_id, data, self.v_max, self.v_own, self.v_shared);
+      } else if (self.v_own = 1) {
         sql := BMK.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_max);
       }
       sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
@@ -193,6 +192,10 @@
       if (not is_empty_or_null(self.v_folder_id))
         tmp := concat(tmp, sprintf('&%sfolder=%U', prefix, self.v_folder_id));
       if (mode = 'export') {
+        if (not is_empty_or_null(self.v_own))
+          tmp := concat(tmp, sprintf('&%sown=%s', prefix, cast(self.v_own as varchar)));
+        if (not is_empty_or_null(self.v_shared))
+          tmp := concat(tmp, sprintf('&%sshared=%s', prefix, cast(self.v_shared as varchar)));
         if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
           tmp := concat(tmp, sprintf('&%smax=%U', prefix, self.v_max));
         if (not is_empty_or_null(self.v_order) and self.v_order <> '_NAME')
@@ -275,10 +278,11 @@
           self.v_folder_id := trim(get_keyword('f_folder', self.vc_page.vc_event.ve_params, get_keyword('folder', self.vc_page.vc_event.ve_params, self.v_folder_id)));
 
           -- options
-          self.v_max := trim(get_keyword('f_max', self.vc_page.vc_event.ve_params, get_keyword('max', self.vc_page.vc_event.ve_params, self.v_max)));
-          self.v_order := trim(get_keyword('f_order', self.vc_page.vc_event.ve_params, get_keyword('order', self.vc_page.vc_event.ve_params, self.v_order)));
-          self.v_direction := trim(get_keyword('f_direction', self.vc_page.vc_event.ve_params, get_keyword('direction', self.vc_page.vc_event.ve_params, self.v_direction)));
-
+          self.v_own := self.f_own.ufl_selected;
+          self.v_shared := self.f_shared.ufl_selected;
+          self.v_max := trim(get_keyword('f_max', self.vc_page.vc_event.ve_params, self.v_max));
+          self.v_order := trim(get_keyword('f_order', self.vc_page.vc_event.ve_params, self.v_order));
+          self.v_direction := trim(get_keyword('f_direction', self.vc_page.vc_event.ve_params, self.v_direction));
           self.v_cloud := self.f_cloud.ufl_selected;
 
           self.sortChange (get_keyword ('sortColumn', e.ve_params, ''));
