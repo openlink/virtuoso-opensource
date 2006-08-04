@@ -39,6 +39,7 @@ SOAP_LOAD_SCH (
  	<xs:element name="row">
  		<xs:complexType>
  			<xs:sequence>
+		    <xs:element name="path" type="xs:string"/>
 		    <xs:element name="name" type="xs:string"/>
 		    <xs:element name="dateModified" type="xs:dateTime"/>
 		    <xs:element name="kind" type="xs:string"/>
@@ -90,12 +91,15 @@ create procedure DBA.SOAPODRIVE.Browse (
   if (state <> '00000')
     signal (state, msg);
 
-  declare sStream any;
+  declare sStream, resource any;
 
   sStream := string_output();
   http ('<?xml version="1.0"?>\n', sStream);
   http ('<rows>\n', sStream);
   for (N := 0; N < length(result); N := N + 1) {
+    resource := DB.DBA.DAV_DIR_LIST(result[N][0], -1, uName, uPassword);
+    if (ODRIVE.WA.DAV_ERROR (resource))
+      goto _end;
     tags := DB.DBA.DAV_PROP_GET(result[N][0], ':virtpublictags', uName, uPassword);
     if (ODRIVE.WA.DAV_ERROR (tags))
       tags := '';
@@ -103,8 +107,11 @@ create procedure DBA.SOAPODRIVE.Browse (
     if (ODRIVE.WA.DAV_ERROR (tags2))
       tags2 := '';
     http (sprintf('<row number="%d">\n', N+1), sStream);
-      http ('<name>', sStream);
+      http ('<path>', sStream);
         http_value (ODRIVE.WA.utf2wide(result[N][0]), null, sStream);
+      http ('</path>\n', sStream);
+      http ('<name>', sStream);
+        http_value (resource[0][10], null, sStream);
       http ('</name>\n', sStream);
       http ('<dateModified>', sStream);
         http_value (result[N][3], null, sStream);
@@ -139,6 +146,7 @@ create procedure DBA.SOAPODRIVE.Browse (
         http ('</versions>\n', sStream);
       }
     http ('</row>\n', sStream);
+  _end:;
   }
   http ('</rows>\n', sStream);
 

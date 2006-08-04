@@ -332,8 +332,8 @@
       <br />
       Server version: <?V sys_stat('st_dbms_ver') ?><br/>
       Server build date: <?V sys_stat('st_build_date') ?><br/>
-      oDrive version: <?V registry_get('_oDrive_version_') ?><br/>
-      oDrive build date: <?V registry_get('_oDrive_build_') ?><br/>
+      Briefcase version: <?V registry_get('_oDrive_version_') ?><br/>
+      Briefcase build date: <?V registry_get('_oDrive_build_') ?><br/>
     </div>
   </xsl:template>
 
