@@ -154,6 +154,31 @@
 	  return 'page_tab_selected';
 	return 'page_tab';
       </v:method>
+
+      <v:method name="ensure_soapuser" arglist="">
+        self.soapuser := self.dl_soapuser.ufl_value;
+			  if (self.soapuser = ' __none' or self.soapuser = '')
+			    {
+			      if (
+			         length (self.roles_grant_list) > 0 or
+			         length (self.mod_grant_list) > 0 or
+			         length (self.udt_grant_list) > 0 or
+			         length (self.xml_grant_list)
+			        )
+			      {
+			        declare ui int;
+				select max(U_ID) into ui from DB.DBA.SYS_USERS;
+				self.soapuser := sprintf ('SOAP_%d', ui);
+				USER_CREATE (self.soapuser, md5 (datestring (now())), vector ('DISABLED', 1));
+				self.dl_soapuser.ufl_value :=  self.soapuser;
+				USER_SET_QUALIFIER (self.soapuser, self.soapuser);
+			      }
+			    else
+			      {
+			        self.soapuser := NULL;
+			      }
+			  }
+      </v:method>
       <v:before-data-bind>
 	<v:script>
           <![CDATA[
@@ -1151,7 +1176,11 @@
                       {
                         if (_params[inx] = 'cb_add_pr') {
                           if (not(position(_params[inx + 1],self.roles_grant_list)))
+                          {
                             self.roles_grant_list := vector_concat(self.roles_grant_list,vector(_params[inx + 1]));
+                            self.ensure_soapuser();
+                			      exec(sprintf('GRANT EXECUTE ON %s TO %s',_params[inx + 1], self.soapuser));
+                          }
                         }
                         inx := inx + 2;
                       }
@@ -1173,7 +1202,10 @@
                         if (_params[inx] = 'cb_add_pr') {
                           indx := position(_params[inx + 1], self.roles_grant_list);
                           if (indx)
+                          {
                             self.roles_grant_list := vector_concat(subseq(self.roles_grant_list,0,indx - 1),subseq(self.roles_grant_list,indx,length(self.roles_grant_list)));
+                			      exec(sprintf('REVOKE EXECUTE ON %s FROM %s',_params[inx + 1], self.soapuser));
+                          }
                         }
                         inx := inx + 2;
                       }
@@ -1381,7 +1413,11 @@
                       {
                         if (_params[inx] = 'cb_add_mod') {
                           if (not(position(_params[inx + 1],self.mod_grant_list)))
+                          {
                             self.mod_grant_list := vector_concat(self.mod_grant_list,vector(_params[inx + 1]));
+                            self.ensure_soapuser();
+			                      exec(sprintf('GRANT EXECUTE ON %s TO %s',_params[inx + 1], self.soapuser));
+                          }
                                     }
                         inx := inx + 2;
                       }
@@ -1403,7 +1439,10 @@
                         if (_params[inx] = 'cb_add_mod') {
                           indx := position(_params[inx + 1], self.mod_grant_list);
                           if (indx)
+                          {
                             self.mod_grant_list := vector_concat(subseq(self.mod_grant_list,0,indx - 1),subseq(self.mod_grant_list,indx,length(self.mod_grant_list)));
+                			      exec(sprintf('REVOKE EXECUTE ON %s FROM %s',_params[inx + 1], self.soapuser));
+                          }
                         }
                         inx := inx + 2;
                       }
@@ -1542,7 +1581,27 @@
                       {
                         if (_params[inx] = 'cb_add_udt') {
                           if (not(position(_params[inx + 1],self.udt_grant_list)))
+                          {
                             self.udt_grant_list := vector_concat(self.udt_grant_list,vector(_params[inx + 1]));
+                            self.ensure_soapuser();
+                			      exec(sprintf('GRANT EXECUTE ON %s TO %s',_params[inx + 1], self.soapuser));
+                			      declare vho, lho, lp varchar;
+                			      vho := self._httphost;
+                			      lho := self._host;
+                		        lp := self.lpath;
+                			      
+                			      if (not exists (select 1 from DB.DBA.SYS_SOAP_UDT_PUB where
+                				          SUP_CLASS = _params[inx + 1] and
+                				          SUP_HOST = vho and SUP_LHOST = lho and SUP_END_POINT = lp)
+                				        and 
+                				        exists (select 1 from DB.DBA.HTTP_PATH
+	                                where HP_LISTEN_HOST = lho and HP_HOST = vho and HP_LPATH = lp)
+                				      )
+                				      {
+                				        insert into DB.DBA.SYS_SOAP_UDT_PUB (SUP_CLASS,SUP_HOST,SUP_LHOST,SUP_END_POINT)
+                				        values (_params[inx + 1], vho, lho, lp);
+                				      }
+                          }
                                     }
                         inx := inx + 2;
                       }
@@ -1564,7 +1623,10 @@
                         if (_params[inx] = 'cb_add_udt') {
                           indx := position(_params[inx + 1], self.udt_grant_list);
                           if (indx)
+                          {
                             self.udt_grant_list := vector_concat(subseq(self.udt_grant_list,0,indx - 1),subseq(self.udt_grant_list,indx,length(self.udt_grant_list)));
+                			      exec(sprintf('REVOKE EXECUTE ON %s FROM %s',_params[inx + 1], self.soapuser));
+                          }
                         }
                         inx := inx + 2;
                       }
@@ -1662,7 +1724,11 @@
                       {
                         if (_params[inx] = 'cb_add_xml') {
                           if (not(position(_params[inx + 1],self.xml_grant_list)))
+                          {
                             self.xml_grant_list := vector_concat(self.xml_grant_list,vector(_params[inx + 1]));
+                            self.ensure_soapuser();
+                			      grant_xml_template (_params[inx + 1], self.soapuser);
+                          }
                         }
                         inx := inx + 2;
                       }
@@ -1678,13 +1744,21 @@
                       declare item varchar;
                       declare _params any;
                       declare indx integer;
+                      declare obj varchar;
                       _params := control.vc_page.vc_event.ve_params;
                       while (inx < length(_params))
                       {
                         if (_params[inx] = 'cb_add_xml') {
                           indx := position(_params[inx + 1], self.xml_grant_list);
                           if (indx)
+                          {
                             self.xml_grant_list := vector_concat(subseq(self.xml_grant_list,0,indx - 1),subseq(self.xml_grant_list,indx,length(self.xml_grant_list)));
+                            select blob_to_string (PROP_VALUE) into obj 
+                              from WS.WS.SYS_DAV_PROP, WS.WS.SYS_DAV_RES
+                              where PROP_TYPE = 'R' and PROP_NAME = 'xml-soap-method' and RES_ID = PROP_PARENT_ID 
+                              and RES_FULL_PATH = _params[inx + 1];
+                			      exec(sprintf('REVOKE EXECUTE ON %s FROM %s',obj, self.soapuser));
+                          }
                         }
                         inx := inx + 2;
                       }
@@ -1852,28 +1926,8 @@
 
                         if (self.vspuser = ' __none' or self.vspuser = '')
                           self.vspuser := NULL;
-                        self.soapuser := self.dl_soapuser.ufl_value;
-			if (self.soapuser = ' __none' or self.soapuser = '')
-			  {
-			    if (
-			         length (self.roles_grant_list) > 0 or
-			         length (self.mod_grant_list) > 0 or
-			         length (self.udt_grant_list) > 0 or
-			         length (self.xml_grant_list)
-			       )
-			      {
-			        declare ui int;
-				select max(U_ID) into ui from DB.DBA.SYS_USERS;
-				self.soapuser := sprintf ('SOAP_%d', ui);
-				USER_CREATE (self.soapuser, md5 (datestring (now())), vector ('DISABLED', 1));
-				self.dl_soapuser.ufl_value :=  self.soapuser;
-				USER_SET_QUALIFIER (self.soapuser, self.soapuser);
-			      }
-			    else
-			      {
-			        self.soapuser := NULL;
-			      }
-			  }
+                        
+                        self.ensure_soapuser();
 
 			 self.security := self.s_authmethod.ufl_value;
                         if ( self.security = 'none') self.security := NULL;
