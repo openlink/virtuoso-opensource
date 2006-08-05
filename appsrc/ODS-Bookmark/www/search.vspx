@@ -112,7 +112,7 @@
       if (self.v_mode <> 'simple') {
         BMK.WA.xml_set('expression', data, self.v_expression);
         BMK.WA.xml_set('tags', data, self.v_tags);
-        if ((self.v_folder_id <> '0') and (self.v_folder_id <> '0'))
+        if (self.v_folder_id <> '0')
           BMK.WA.xml_set('folder', data, self.v_folder_id);
       }
 
@@ -246,7 +246,7 @@
       <v:variable name="v_output" type="varchar" default="'html'"/>
       <v:variable name="v_max" type="varchar" default="'100'"/>
       <v:variable name="v_order" type="varchar" default="'_NAME'" />
-      <v:variable name="v_direction" type="varchar" default="'desc'" />
+      <v:variable name="v_direction" type="varchar" default="'asc'" />
       <v:variable name="v_cloud" type="integer" default="0" />
 
       <v:variable name="ds_data" type="any" default="null"/>
@@ -396,13 +396,13 @@
                         </v:template>
                         <td>
                           <v:url value="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[7], (control.vc_parent as vspx_row_template).te_rowset[8])"
-                                 url="--sprintf('bookmarks.vspx?folder=%d&grant=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[6], 0), coalesce((control.vc_parent as vspx_row_template).te_rowset[8], 0))"
+                                 url="--sprintf('bookmarks.vspx?folder=%d&grant=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[6], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[8], -1))"
                                  format="%s"
                                  xhtml_title="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[7], (control.vc_parent as vspx_row_template).te_rowset[8])"/>
                         </td>
                         <td>
                           <v:url value="--BMK.WA.folder_path3 ((control.vc_parent as vspx_row_template).te_rowset[6], (control.vc_parent as vspx_row_template).te_rowset[8])"
-                                 url="--sprintf('bookmarks.vspx?location=%d&folder=%d&grant=%d', (control.vc_parent as vspx_row_template).te_rowset[1], coalesce((control.vc_parent as vspx_row_template).te_rowset[6], 0), coalesce((control.vc_parent as vspx_row_template).te_rowset[8], 0))"
+                                 url="--sprintf('bookmarks.vspx?location=%d&folder=%d&grant=%d', (control.vc_parent as vspx_row_template).te_rowset[1], coalesce((control.vc_parent as vspx_row_template).te_rowset[6], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[8], -1))"
                                  format="%s"
                                  xhtml_title="--BMK.WA.folder_path3 ((control.vc_parent as vspx_row_template).te_rowset[6], (control.vc_parent as vspx_row_template).te_rowset[8])"/>
                         </td>

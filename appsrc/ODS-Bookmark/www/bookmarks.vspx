@@ -80,43 +80,43 @@
         self.bTab  := 'bookmarks';
         self.bNode := BMK.WA.make_node('p', 0);
         self.bPath := '/' || self.bNode;
-      } else if (not is_empty_or_null (get_keyword('folder', params, ''))) {
-        grant_id := cast (get_keyword ('grant', params, '0') as integer);
-        folder_id := cast (get_keyword ('folder', params, '0') as integer);
+      } else if (not is_empty_or_null (get_keyword ('location', params, ''))) {
+        grant_id := cast (get_keyword ('grant', params, '-1') as integer);
+        folder_id := cast (get_keyword ('folder', params, '-1') as integer);
         self.bTab := 'bookmarks';
-        if (grant_id <> 0)
+        if (grant_id >= 0)
           self.bTab := 'shared';
         self.bMode := 'browse';
-        if ((folder_id = 0) and (grant_id <> 0)) {
+        if ((folder_id = -1) and (grant_id >= 0)) {
           user_id := (select G_GRANTER_ID from BMK.WA.GRANTS where G_ID = grant_id);
           self.bNode := BMK.WA.make_node ('u', user_id);
-          self.bPath := '/' || BMK.WA.make_node ('u', 0) || '/' || BMK.WA.make_node ('u', user_id);
+          self.bPath := '/' || BMK.WA.make_node ('u', -1) || '/' || BMK.WA.make_node ('u', user_id);
         } else {
           self.bNode := BMK.WA.make_node ('f', folder_id);
-          if (grant_id <> 0)
-            self.bNode := ucase(self.bNode);
-          self.bPath := BMK.WA.bmk_path2 (self.bNode, grant_id);
-        }
-        self.bBookmark := 'pt_node_' || self.bPath;
-      } else if (not is_empty_or_null (get_keyword('location', params, ''))) {
-        grant_id := cast (get_keyword ('grant', params, '0') as integer);
-        folder_id := cast (get_keyword ('folder', params, '0') as integer);
-        self.bTab := 'bookmarks';
-        if (grant_id <> 0)
-          self.bTab := 'shared';
-        self.bMode := 'browse';
-        if ((folder_id = 0) and (grant_id <> 0)) {
-          user_id := (select G_GRANTER_ID from BMK.WA.GRANTS where G_ID = grant_id);
-          self.bNode := BMK.WA.make_node ('u', user_id);
-          self.bPath := '/' || BMK.WA.make_node ('u', 0) || '/' || BMK.WA.make_node ('u', user_id);
-        } else {
-          self.bNode := BMK.WA.make_node ('f', folder_id);
-          if (grant_id <> 0)
+          if (grant_id >= 0)
             self.bNode := ucase(self.bNode);
           self.bPath := BMK.WA.bmk_path2 (self.bNode, grant_id);
         }
         self.bBookmark := 'pt_node_' || self.bPath;
         self.bLocation := BMK.WA.make_node ('b', get_keyword ('location', params));
+      } else if (not is_empty_or_null (get_keyword ('folder', params, ''))) {
+        grant_id := cast (get_keyword ('grant', params, '-1') as integer);
+        folder_id := cast (get_keyword ('folder', params, '-1') as integer);
+        self.bTab := 'bookmarks';
+        if (grant_id >= 0)
+          self.bTab := 'shared';
+        self.bMode := 'browse';
+        if ((folder_id = -1) and (grant_id >= 0)) {
+          user_id := (select G_GRANTER_ID from BMK.WA.GRANTS where G_ID = grant_id);
+          self.bNode := BMK.WA.make_node ('u', user_id);
+          self.bPath := '/' || BMK.WA.make_node ('u', -1) || '/' || BMK.WA.make_node ('u', user_id);
+        } else {
+          self.bNode := BMK.WA.make_node ('f', folder_id);
+          if (grant_id >= 0)
+            self.bNode := ucase(self.bNode);
+          self.bPath := BMK.WA.bmk_path2 (self.bNode, grant_id);
+        }
+        self.bBookmark := 'pt_node_' || self.bPath;
       }
     ]]>
   </v:method>
@@ -152,19 +152,19 @@
       node_id := BMK.WA.node_id(self.bNode);
       node_type := BMK.WA.node_type(self.bNode);
 
-      if ((lcase(node_type) = 'f') and (node_id <> 0) and (exists (select 1 from BMK.WA.FOLDER where F_ID = node_id)))
+      if ((lcase(node_type) = 'f') and (node_id >= 0) and (exists (select 1 from BMK.WA.FOLDER where F_ID = node_id)))
         goto _next;
 
-      if ((node_type = 's') and (node_id <> 0) and (exists (select 1 from BMK.WA.SFOLDER where SF_ID = node_id)))
+      if ((node_type = 's') and (node_id >= 0) and (exists (select 1 from BMK.WA.SFOLDER where SF_ID = node_id)))
         goto _next;
 
       if ((node_type = 'u') and (exists (select 1 from DB.DBA.SYS_USERS where U_ID = node_id)))
         goto _next;
 
-      if (self.bNode in (BMK.WA.make_node('r', 0), BMK.WA.make_node('r', 1), BMK.WA.make_node('r', 2), BMK.WA.make_node('f', 0), BMK.WA.make_node('s', 0), BMK.WA.make_node('u', 0)))
+      if (self.bNode in (BMK.WA.make_node('r', 0), BMK.WA.make_node('r', 1), BMK.WA.make_node('r', 2), BMK.WA.make_node('f', -1), BMK.WA.make_node('s', -1), BMK.WA.make_node('u', -1)))
         goto _next;
 
-      self.bNode := BMK.WA.make_node('f', 0);
+      self.bNode := BMK.WA.make_node('f', -1);
     _next:;
       tmp := '';
       nodes := split_and_decode(trim(self.bPath, '/'), 0, '\0\0/');
@@ -200,9 +200,9 @@
           image2 := 'folder_open_16.png';
           alt := 'Close Node';
         }
-        if ((BMK.WA.node_type(nodes[N+1]) = 'u') and (BMK.WA.node_id(nodes[N+1]) = 0))
+        if ((BMK.WA.node_type(nodes[N+1]) = 'u') and (BMK.WA.node_id(nodes[N+1]) = -1))
           image2 := 'group_16.png';
-        if ((BMK.WA.node_type(nodes[N+1]) = 'u') and (BMK.WA.node_id(nodes[N+1]) <> 0))
+        if ((BMK.WA.node_type(nodes[N+1]) = 'u') and (BMK.WA.node_id(nodes[N+1]) >= 0))
           image2 := 'user_16.png';
 
         class := 'nolink_b';
@@ -228,7 +228,7 @@
     </vm:header>
     <vm:variables>
       <v:variable persist="0" name="n_order" type="varchar" default="'_NAME'" />
-      <v:variable persist="0" name="n_direction" type="varchar" default="'desc'" />
+      <v:variable persist="0" name="n_direction" type="varchar" default="'asc'" />
       <v:variable persist="0" name="bTag" type="varchar" default="null" />
       <v:variable persist="1" name="bTab" type="varchar" default="'bookmarks'"/>
       <v:variable persist="1" name="bNode" type="varchar" default="'f#0'"/>
@@ -243,7 +243,7 @@
       <v:variable name="tbLabels" type="integer" default="1" />
       <v:variable name="chars" type="integer" default="60" />
 
-      <v:variable name="v_id"  type="any" default="0"/>
+      <v:variable name="v_id" type="any" default="-1"/>
       <v:variable name="v_parent_id" type="varchar" default="'0'"/>
       <v:variable name="v_uri" type="varchar" param-name="URI" default="'http://'"/>
       <v:variable name="v_name" type="varchar" param-name="TITLE" default="''"/>
@@ -268,7 +268,7 @@
 
           if (get_keyword('URI', self.vc_page.vc_event.ve_params, '') <> '') {
             self.bMode := 'Bookmark/Create';
-            self.v_id := 0;
+            self.v_id := -1;
           }
           self.bTab := lcase(get_keyword('tab', e.ve_params, self.bTab));
           self.bTag := lcase(get_keyword('tag', e.ve_params, ''));
@@ -305,8 +305,8 @@
                   cmd := get_keyword ('tbHidden', e.ve_params, '');
                   if (cmd = 'bookmarks') {
                     if (self.bTab <> 'bookmarks') {
-                      self.bNode := BMK.WA.make_node('f', 0);
-                      self.bPath := BMK.WA.make_path('', 'f', 0);
+                      self.bNode := BMK.WA.make_node('f', -1);
+                      self.bPath := BMK.WA.make_path('', 'f', -1);
                     }
                     self.bTab := 'bookmarks';
                     self.bMode := 'browse';
@@ -314,8 +314,8 @@
 
                   if (cmd = 'tags') {
                     if (self.bTab <> 'tags') {
-                      self.bNode := BMK.WA.make_node('t', 0);
-                      self.bPath := BMK.WA.make_path('', 't', 0);
+                      self.bNode := BMK.WA.make_node('t', -1);
+                      self.bPath := BMK.WA.make_path('', 't', -1);
                     }
                     self.bTab := 'tags';
                     self.bMode := 'browse';
@@ -323,8 +323,8 @@
 
                   if (cmd = 'shared') {
                     if (self.bTab <> 'shared') {
-                      self.bNode := BMK.WA.make_node('u', 0);
-                      self.bPath := BMK.WA.make_path('', 'u', 0);
+                      self.bNode := BMK.WA.make_node('u', -1);
+                      self.bPath := BMK.WA.make_path('', 'u', -1);
                     }
                     self.bTab := 'shared';
                     self.bMode := 'browse';
@@ -332,19 +332,21 @@
 
                   if (cmd = 'Bookmark/Create') {
                     self.bMode := 'Bookmark/Create';
-                    self.v_id := 0;
+                    self.v_id := -1;
                     self.v_tags := '';
                   }
+
                   if (cmd = 'Folder/Create') {
                     self.bMode := 'Folder/Create';
-                    self.v_id := 0;
+                    self.v_id := -1;
                   }
 
                   if (cmd = 'Smart Folder/Create') {
                     self.bTab := 'bookmarks';
                     self.bMode := 'Smart Folder/Create';
-                    self.v_id := 0;
+                    self.v_id := -1;
                   }
+
                   if (cmd = 'import') {
                     self.bMode := 'import';
                   }
@@ -722,19 +724,19 @@
               self.mode_test();
               className := 'Root';
               if (BMK.WA.node_type (self.bNode) = 'f') {
-                if (BMK.WA.node_id (self.bNode) <> 0)
+                if (BMK.WA.node_id (self.bNode) >= 0)
                   className := 'Folder';
               } else if (BMK.WA.node_type (self.bNode) = 's') {
-                if (BMK.WA.node_id (self.bNode) <> 0)
+                if (BMK.WA.node_id (self.bNode) >= 0)
                   className := 'Smart Folder';
               } else if (BMK.WA.node_type (self.bNode) = 't') {
                 if (BMK.WA.node_suffix (self.bNode) <> '')
                   className := 'Tag';
               } else if (BMK.WA.node_type (self.bNode) = 'u') {
-                if (BMK.WA.node_id (self.bNode) <> 0)
+                if (BMK.WA.node_id (self.bNode) >= 0)
                   className := 'User';
               } else if (BMK.WA.node_type (self.bNode) = 'F') {
-                if (BMK.WA.node_id (self.bNode) <> 0)
+                if (BMK.WA.node_id (self.bNode) >= 0)
                   className := 'Folder';
               }
 
@@ -773,7 +775,7 @@
                                               null                    _LAST_UPDATE
                                          from BMK.WA.FOLDER
                                         where F_DOMAIN_ID = <DOMAIN_ID>
-                                          and coalesce(F_PARENT_ID, 0) = <ID>
+                                                  and coalesce(F_PARENT_ID, -1) = <ID>
                                         union
                                                select 1                        _TYPE,
                                                       BD_ID                    _ID,
@@ -785,11 +787,11 @@
                                               BMK.WA.BOOKMARK
                                         where BD_DOMAIN_ID = <DOMAIN_ID>
                                           and BD_BOOKMARK_ID = B_ID
-                                                  and coalesce(BD_FOLDER_ID, 0) = <ID>) x';
+                                                  and coalesce(BD_FOLDER_ID, -1) = <ID>) x';
                     control.ds_sql := replace(control.ds_sql, '<DOMAIN_ID>', cast(self.domain_id as varchar));
                     control.ds_sql := replace(control.ds_sql, '<ID>', BMK.WA.node_suffix(self.bNode));
 
-                  } else if ((BMK.WA.node_type(self.bNode) = 's') and (BMK.WA.node_id(self.bNode) = 0)) {
+                  } else if ((BMK.WA.node_type(self.bNode) = 's') and (BMK.WA.node_id(self.bNode) = -1)) {
                     control.ds_sql := 'select 1                        _TYPE,
                                               SF_ID                    _ID,
                                               BMK.WA.make_node(\'s\', SF_ID) _NODE,
@@ -800,7 +802,7 @@
                                         where SF_DOMAIN_ID = <DOMAIN_ID>';
                     control.ds_sql := replace(control.ds_sql, '<DOMAIN_ID>', cast(self.domain_id as varchar));
 
-                  } else if ((BMK.WA.node_type(self.bNode) = 's') and (BMK.WA.node_id(self.bNode) <> 0)) {
+                  } else if ((BMK.WA.node_type(self.bNode) = 's') and (BMK.WA.node_id(self.bNode) >= 0)) {
                     declare data any;
 
                     data := (select SF_DATA from BMK.WA.SFOLDER where SF_DOMAIN_ID = self.domain_id and SF_ID = BMK.WA.node_id(self.bNode));
@@ -812,7 +814,7 @@
                     BMK.WA.xml_set('tags', data, BMK.WA.node_suffix(self.bNode));
                     control.ds_sql := BMK.WA.sfolder_sql (self.domain_id, self.account_id, data);
 
-                  } else if ((BMK.WA.node_type(self.bNode) = 'u') and (BMK.WA.node_id(self.bNode) = 0)) {
+                  } else if ((BMK.WA.node_type(self.bNode) = 'u') and (BMK.WA.node_id(self.bNode) = -1)) {
                     control.ds_sql := 'select distinct 1                     _TYPE,
                                               U_ID                     _ID,
                                               BMK.WA.make_node(\'u\', U_ID)  _NODE,
@@ -825,7 +827,7 @@
                                           and G_GRANTER_ID = U_ID';
                     control.ds_sql := replace(control.ds_sql, '<USER_ID>', cast(self.account_id as varchar));
 
-                  } else if ((BMK.WA.node_type(self.bNode) = 'u') and (BMK.WA.node_id(self.bNode) <> 0)) {
+                  } else if ((BMK.WA.node_type(self.bNode) = 'u') and (BMK.WA.node_id(self.bNode) >= 0)) {
                     control.ds_sql := 'select _TYPE,
                                               _ID,
                                               _NODE,
@@ -876,7 +878,7 @@
                                                       \'\'                     _URI,
                                                       null                     _LAST_UPDATE
                                                  from BMK.WA.FOLDER
-                                                where coalesce(F_PARENT_ID, 0) = <ID>
+                                                where coalesce(F_PARENT_ID, -1) = <ID>
                                                 union
                                                select 1                        _TYPE,
                                                       BD_ID                    _ID,
@@ -887,7 +889,7 @@
                                                  from BMK.WA.BOOKMARK_DOMAIN,
                                                       BMK.WA.BOOKMARK
                                                 where BD_BOOKMARK_ID = B_ID
-                                                  and coalesce(BD_FOLDER_ID, 0) = <ID>) x';
+                                                  and coalesce(BD_FOLDER_ID, -1) = <ID>) x';
                     control.ds_sql := replace(control.ds_sql, '<ID>', BMK.WA.node_suffix(self.bNode));
 
                   }
@@ -1863,7 +1865,7 @@
               <![CDATA[
                  declare exit handler for not found goto _end;
 
-                if (isnull(get_keyword('f_name', self.vc_page.vc_event.ve_params))) {
+                if (isnull(get_keyword ('s_name', self.vc_page.vc_event.ve_params))) {
                   declare data any;
 
                   select SF_NAME,
@@ -1887,6 +1889,7 @@
                 self.v_keywords := trim(get_keyword('s_keywords', self.vc_page.vc_event.ve_params, ''));
                 self.v_expression := trim(get_keyword('s_expression', self.vc_page.vc_event.ve_params, ''));
                 self.v_tags := trim(get_keyword('s_tags', self.vc_page.vc_event.ve_params, ''));
+                self.v_folder_id := trim(get_keyword ('s_folder_id', self.vc_page.vc_event.ve_params, '0'));
               ]]>
             </v:before-data-bind>
             <div class="new-form-header">
@@ -1961,8 +1964,8 @@
                     self.v_folder_id := cast(self.s_folder_id.ufl_value as integer);
 
                     BMK.WA.test(self.v_name, vector('name', 'Smart folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
-                    tmp := coalesce((select SF_ID from BMK.WA.SFOLDER where SF_DOMAIN_ID = self.domain_id and SF_NAME = self.v_name), '');
-                    if (((self.bMode = 'Smart Folder/Create') and (tmp <> '')) or ((self.bMode = 'Smart Folder/Update') and (tmp <> self.v_id) and (tmp <> '')))
+                    tmp := coalesce((select SF_ID from BMK.WA.SFOLDER where SF_DOMAIN_ID = self.domain_id and SF_NAME = self.v_name), -1);
+                    if (((self.bMode = 'Smart Folder/Create') and (tmp <> -1)) or ((self.bMode = 'Smart Folder/Update') and (tmp <> self.v_id) and (tmp <> -1)))
                       signal('TEST', 'Smart folder name already exists. Please, enter new ''Smart folder name''!<>');
                     BMK.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
                     BMK.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
@@ -1981,7 +1984,7 @@
                     BMK.WA.xml_set('keywords', data, self.v_keywords);
                     BMK.WA.xml_set('expression', data, self.v_expression);
                     BMK.WA.xml_set('tags', data, self.v_tags);
-                    if ((self.v_folder_id <> '0') and (self.v_folder_id <> '0'))
+                    if (self.v_folder_id <> '0')
                       BMK.WA.xml_set('folder', data, self.v_folder_id);
                     data := BMK.WA.xml2string(data);
 
