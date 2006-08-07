@@ -1,23 +1,23 @@
-#  
+#
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#  
+#
 #  Copyright (C) 1998-2006 OpenLink Software
-#  
+#
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#  
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#  
-#  
+#
+#
 
 
 # ----------------------------------------------------------------------
@@ -26,33 +26,16 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	copy.url \
+	*.rdf \
+	*.sql \
+	*.url \
+	*.xsl \
 	.dav_load.sh \
 	.dav_load.sql \
 	dav_metr.sh \
-	dav-rdf-schema-example.rdf \
-	eget.url \
-	emkcol.url \
-	eopt.url \
-	eprop.url \
-	ermcol.url \
-	get.url \
-	lmove.url \
-	lock.url \
-	mkcol.url \
-	move.url \
-	nlock.url \
-	nunlock.url \
-	opt.url \
-	prop.url \
-	put.url \
 	rdav.sh \
 	Resource.pdf \
-	rmcol.url \
-	*.sql \
-	unlock.url \
+	Versioning/*.sql \
 	Versioning/DETVerTest.m4 \
 	Versioning/GNUmakefile \
-	Versioning/*.sql \
-	Versioning/test.m4 \
-	*.xsl
+	Versioning/test.m4
