@@ -187,8 +187,6 @@ directory_init() {
     mkdir vad/data/bookmark/$dir
   done
 
-  cp $HOME/binsrc/tests/dav/DET_Bookmark.sql vad/data/bookmark/sql
-
   for file in `find sql www xslt -type f -print | LC_ALL=C sort | grep -v CVS | grep -v '.vspx-m' | grep -v '.vspx-sql'`
   do
     cp $file vad/data/bookmark/$file
