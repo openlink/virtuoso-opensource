@@ -314,8 +314,8 @@
 
                   if (cmd = 'tags') {
                     if (self.bTab <> 'tags') {
-                      self.bNode := BMK.WA.make_node('t', -1);
-                      self.bPath := BMK.WA.make_path('', 't', -1);
+                      self.bNode := 't';
+                      self.bPath := 't';
                     }
                     self.bTab := 'tags';
                     self.bMode := 'browse';
