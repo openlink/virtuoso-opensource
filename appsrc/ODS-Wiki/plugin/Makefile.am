@@ -85,4 +85,9 @@ media_wikilex.c: media_wikilex.l
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = maclex.l wikilex.l wikiv.def
+EXTRA_DIST = \
+	maclex.l \
+	media_maclex.l \
+	media_wikilex.l \
+	wikilex.l \
+	wikiv.def

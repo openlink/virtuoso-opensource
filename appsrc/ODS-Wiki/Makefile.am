@@ -30,6 +30,9 @@ CLEANFILES = \
 	make_wiki_vad.log \
 	make_wiki_vad.xml \
 	ods_wiki_dav.vad \
+	vad.db \
+	vad.trx \
+	vad.log \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.lck \
@@ -76,10 +79,6 @@ EXTRA_DIST =  \
 	kupu/common/kupuimages/*.png \
 	kupu/common/kupupopups/*.html \
 	make_vad.sh \
-	plugin/maclex.l \
-	plugin/wikilex.l \
-	plugin/wikiv.c \
-	plugin/wikiv.def \
 	retry.sh \
 	setup.isql \
 	Skins/Clean/*.css \
