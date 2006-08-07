@@ -31,7 +31,7 @@ create function "bookmark_FIXNAME" (in mailname any) returns varchar
             replace (
               replace (
                 replace (
-                  replace (mailname, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_');
+                  replace (mailname, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_'); --"
 }
 ;
 
@@ -617,7 +617,15 @@ create procedure "bookmark_DAV_FC_PRED_METAS" (inout pred_metas any)
     'RES_CR_TIME',              vector ('BOOKMARK_DOMAIN'     , 0, 'datetime' , 'BD_LAST_UPDATE'        ),
     'RES_MOD_TIME',             vector ('BOOKMARK_DOMAIN'     , 0, 'datetime' , 'BD_LAST_UPDATE'  ),
     'RES_PERMS',                vector ('BOOKMARK_DOMAIN'     , 0, 'varchar'  , '(''110000000RR'')'   ),
-    'RES_CONTENT',              vector ('BOOKMARK_DOMAIN'     , 0, 'text'     , 'BD_DESCRIPTION'   )
+    'RES_CONTENT',              vector ('BOOKMARK_DOMAIN'     , 0, 'text'     , 'BD_DESCRIPTION'   ),
+    'PROP_NAME',		vector ('BOOKMARK_DOMAIN'	, 0, 'varchar'	, '(''BD_DESCRIPTION'')'	),
+    'PROP_VALUE',		vector ('SYS_DAV_PROP'	, 1, 'text'	, 'BD_DESCRIPTION'	),
+    'RES_TAGS',			vector ('all-tags'	, 0, 'varchar'  , 'BD_TAGS'	), -- 'varchar', not 'text-tag' because there's no free-text on union
+    'RES_PUBLIC_TAGS',		vector ('public-tags'	, 0, 'varchar'	, 'BD_TAGS'	), -- 'varchar', not 'text-tag' because there's no free-text in table!
+    'RES_PRIVATE_TAGS',		vector ('private-tags'	, 0, 'varchar'	, 'BD_TAGS'	), -- 'varchar', not 'text-tag' because there's no free-text in table!
+    'RDF_PROP',			vector ('fake-prop'	, 1, 'varchar'	, NULL	),
+    'RDF_VALUE',		vector ('fake-prop'	, 2, 'XML'	, NULL	),
+    'RDF_OBJ_VALUE',		vector ('fake-prop'	, 3, 'XML'	, NULL	)
     );
 }
 ;
@@ -637,7 +645,19 @@ create procedure "bookmark_DAV_FC_TABLE_METAS" (inout table_metas any)
 
     'SYS_USERS'   , vector (      ''      ,
                                         ''      ,
-                                                NULL            , NULL          , NULL          )
+                                                NULL            , NULL          , NULL          ),
+    'public-tags'	, vector (	'\n  inner join BMK.WA.BOOKMARK_DATA as ^{alias}^ on ((^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (^{alias}^.BD_MODE = 0)^{andpredicates}^)'	,
+					'\n  exists (select 1 from BMK.WA.BOOKMARK_DATA as ^{alias}^ where (^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (^{alias}^.BD_MODE = 0)^{andpredicates}^)'	,
+						'BD_TAGS'	, 'BD_TAGS'	, NULL	),
+    'private-tags'	, vector (	'\n  inner join BMK.WA.BOOKMARK_DATA as ^{alias}^ on ((^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (^{alias}^.BD_MODE = 1) and (^{alias}^.BD_OBJECT_ID = ^{uid}^)^{andpredicates}^)'	,
+					'\n  exists (select 1 from BMK.WA.BOOKMARK_DATA as ^{alias}^ where (^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (^{alias}^.BD_MODE = 1) and (^{alias}^.BD_OBJECT_ID = ^{uid}^)^{andpredicates}^)'	,
+						'BD_TAGS'	, 'BD_TAGS'	, NULL	),
+    'all-tags'		, vector (	'\n  inner join BMK.WA.BOOKMARK_DATA as ^{alias}^ on ((^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (((^{alias}^.BD_MODE = 1) and (^{alias}^.BD_OBJECT_ID = ^{uid}^)) or (^{alias}^.BD_MODE = 0))^{andpredicates}^)'	,
+					'\n  exists (select 1 from BMK.WA.BOOKMARK_DATA as ^{alias}^ where (^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (((^{alias}^.BD_MODE = 1) and (^{alias}^.BD_OBJECT_ID = ^{uid}^)) or (^{alias}^.BD_MODE = 0))^{andpredicates}^)'	,
+						'BD_TAGS'	, 'BD_TAGS'	, NULL	),
+    'fake-prop'	, vector (	'\n  inner join WS.WS.SYS_DAV_PROP as ^{alias}^ on ((^{alias}^.PROP_PARENT_ID is null) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'	,
+					'\n  exists (select 1 from WS.WS.SYS_DAV_PROP as ^{alias}^ where (^{alias}^.PROP_PARENT_ID is null) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'	,
+						'PROP_VALUE'	, 'PROP_VALUE'	, '[__quiet __davprop xmlns:virt="virt"] fakepropthatprobablyneverexists'	)
 	);
 }
 ;
