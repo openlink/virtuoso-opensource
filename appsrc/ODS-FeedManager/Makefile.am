@@ -44,8 +44,6 @@ clean-local:
 EXTRA_DIST = \
 	make_vad.sh \
 	sql/*.sql \
-	sql/install.bat \
-	sql/uninstall.bat \
 	www/*.vsp \
 	www/*.vspx \
 	www/css/*.css \
