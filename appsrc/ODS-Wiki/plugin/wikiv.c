@@ -199,12 +199,18 @@ caddr_t bif_wikiv_lexer (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   return bif_wikiv_lexer_impl (qst, err, args, "WikiV lexer", 1);
 }
 
+caddr_t bif_wikiv_name (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  return box_string ("WikiV");
+}
+
 void wikiv_connect (void *appdata)
 {
   wikiv_WIKIVERSION = box_dv_short_string (WIKIV_VERSION);
   wikiv_lexer_mutex = mutex_allocate ();
   bif_define ("WikiV macroexpander", bif_wikiv_macroexpander);
   bif_define ("WikiV lexer", bif_wikiv_lexer);
+  bif_define ("WikiV name", bif_wikiv_name);
 }
 
 #ifdef _USRDLL

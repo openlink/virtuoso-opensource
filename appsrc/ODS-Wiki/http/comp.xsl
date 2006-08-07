@@ -43,6 +43,28 @@
     </v:button>
   </xsl:template>
       
+  <xsl:template match="vm:setting-section">
+   <tr>
+      <td>
+	<div class="wiki-settings-templates">
+	  <h2><xsl:value-of select="@name"/></h2>
+	  <p>
+	    <table width="100%">
+	      <xsl:apply-templates/>
+	    </table>
+	  </p>
+	</div>
+      </td>
+    </tr>
+  </xsl:template>
+  <xsl:template match="vm:setting-parameter">
+    <tr>
+      <th width="50%"><xsl:value-of select="@name"/></th>
+      <td>
+	<xsl:apply-templates/>
+      </td>
+    </tr>
+  </xsl:template>
   <xsl:template match="vm:page">
     <v:variable name="cluster" type="int"/>
     <v:on-init>

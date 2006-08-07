@@ -288,8 +288,9 @@ create method ti_run_lexer (in _env any) returns varchar for WV.WIKI.TOPICINFO
   else
     _text := cast (self.ti_text as varchar);
   _text := WV.WIKI.DELETE_SYSINFO_FOR (_text, NULL);
-  declare _res varchar;
-  _res := "WikiV lexer" (_text || '\r\n', 
+  declare _res, _lexer varchar;
+  _lexer := WV..LEXER (self.ti_cluster_id);
+  _res := call (_lexer) (_text || '\r\n', 
   	coalesce (self.ti_cluster_name, 'Main'),
 	coalesce (self.ti_local_name, 'WelcomeVisitors'),
 	self.ti_curuser_wikiname, _env);

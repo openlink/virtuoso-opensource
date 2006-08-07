@@ -39,7 +39,8 @@
     <v:variable name="host" type="vadchar"/>
     <v:variable name="wa_domain" type="varchar" default="null" persist="0"/>
     <v:variable name="domains" type="varchar" default="null" persist="0"/>
-    <v:variable name="skins" type="varchar" default="null" persist="0"/>
+    <v:variable name="skins" type="any" default="null" persist="0"/>
+    <v:variable name="plugins" type="varchar" default="null" persist="0"/>
     <v:variable name="email_obfuscation_types" type="varchar" default="null" persist="0"/>
     <v:variable name="index_page" type="varchar" default="'WelcomeVisitors'" persist="0"/>
     <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
@@ -128,6 +129,15 @@
 			XMLAppendChildren (sks, 
 			  XMLELEMENT ('skin', sk));
 		}
+		declare plugins any;
+		self.plugins := XMLELEMENT ('plugins', XMLELEMENT ('plugin', XMLATTRIBUTES ('oWiki' as "name", 0 as "id")));
+	        plugins := xpath_eval ('/plugins', self.plugins);
+		foreach (any pl in WV..PLUGIN_NAMES()) do {
+			XMLAppendChildren (plugins, 
+			  XMLELEMENT ('plugin',
+			    XMLATTRIBUTES (pl[1] as "name",
+			    		      	       pl[0] as "id")));
+                }
                 declare email_obfuscation_types_ent any;
 	        self.email_obfuscation_types := XMLELEMENT ('email_obfuscation_types');
                 email_obfuscation_types_ent := xpath_eval ('/email_obfuscation_types', self.email_obfuscation_types);
@@ -168,6 +178,7 @@
             WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'webmail_enabled', self.webmail_enable);
             WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'webmail_domain', self.webmail_domains.ufl_value);
             WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin', self.wiki_skin.ufl_value);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'plugin', self.wiki_plugin.ufl_value);
             WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2', self.wiki_skin_2.ufl_value);
             WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'email-obfuscate', self.email_obfuscation.ufl_value);
 	    WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'new-topic-template', self.new_topic_template_text.ufl_value);
@@ -519,15 +530,8 @@
 	      </div>
 	    </td>
 	  </tr>
-          <tr>
-	    <td>
-	      <div class="wiki-settings-templates">
-		<h2>Conversations (NNTP integration)</h2>
-		<p>
-		  <table width="100%">
-		    <tr>
-		      <th width="50%">Conversation (NNTP integration)</th>
-		      <td>
+	  <vm:setting-section name="Conversation (NNTP integration)">
+	     <vm:setting-parameter name="Conversation (NNTP integration)">
 			<v:button name="conv_toggle" action="simple" xhtml_disabled="--self.enabled" 
 				value="--case when self.conv_enable = 1 then 'Turn Off' else 'Turn On' end">
 			  <v:on-post>
@@ -538,13 +542,13 @@
                               ]]>
                           </v:on-post>
                         </v:button>
-                      </td>
-		    </tr>
-		  </table>
-		</p>
-	      </div>
-	    </td>
-	  </tr>
+	    </vm:setting-parameter>
+         </vm:setting-section>
+         <vm:setting-section name="Syntax">
+	   <vm:setting-parameter name="Compatibility">
+		<v:data-list name="wiki_plugin" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'plugin', 'oWiki')" list-document="--self.plugins" list-match="/plugins/plugin" list-key-path="@name" list-value-path="@id"/>
+          </vm:setting-parameter>
+        </vm:setting-section>	     
           <tr>
             <td align="left">
               <v:button name="save" action="submit" value="Save Changes" xhtml_disabled="--self.enabled">
