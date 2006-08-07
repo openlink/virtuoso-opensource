@@ -78,6 +78,7 @@ create table WS.WS.VFS_SITE (
     VS_REDIRECT int default 1,
     VS_STORE 	int default 1,
     VS_UDATA	long varbinary,
+    VS_DLOAD_META int default 0,
     primary key (VS_HOST, VS_ROOT))
 create index VS_HOST_ROOT on WS.WS.VFS_SITE (VS_HOST, VS_URL, VS_ROOT)
 ;
@@ -115,3 +116,8 @@ create procedure WS.WS.VFS_TBL_UPGRADE ()
 --!AFTER
 WS.WS.VFS_TBL_UPGRADE ()
 ;
+
+--!AFTER
+alter table WS.WS.VFS_SITE add VS_DLOAD_META int default 0
+;
+

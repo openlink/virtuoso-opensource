@@ -36,15 +36,16 @@ create procedure WS.WS.COPY_PAGE (in _host varchar, in _url varchar, in _root va
   declare _idx, _del, _stat, _msg, _desc, _t_url, _opts, _c_type varchar;
   declare _resp_w, _dav_method, _d_imgs, _opage, _url_to_update varchar;
   declare _dav_enabled, _auth varchar;
-  declare dt, redirs, redir_flag, store_flag integer;
+  declare dt, redirs, redir_flag, store_flag, try_to_get_rdf integer;
   declare _since datetime;
+  declare _udata any;
 
   _url_to_update := _url;
 
   whenever not found goto nf_opt;
   select VS_NEWER, VS_OPTIONS, VS_METHOD, VS_URL, VS_SRC, VS_OPAGE,
-         coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1)
-      into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, redir_flag, store_flag
+         coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0), deserialize (VS_UDATA)
+      into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, redir_flag, store_flag, try_to_get_rdf, _udata
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
   select VU_ETAG into _etag from VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
 nf_opt:
@@ -158,7 +159,7 @@ check_redir:
   _tmp := subseq (_tmp, strchr (_tmp, ' ') + 1, length (_tmp));
   _resp_w := _tmp;
   _tmp := subseq (_tmp, 0, strchr (_tmp, ' '));
-  _c_type := WS.WS.FIND_KEYWORD (_resp, 'Content-Type:');
+  _c_type := coalesce (http_request_header (_resp, 'Content-Type'), '');
 
   if (_tmp = '200' and (isstring (_content) or __tag (_content) = 185))
     {
@@ -174,6 +175,8 @@ check_redir:
 	}
       _etag := WS.WS.FIND_KEYWORD (_resp, 'ETag:');
       WS.WS.LOCAL_STORE (_host, _url, _root, _content, _etag, _c_type, store_flag);
+      if (try_to_get_rdf)
+        WS.WS.VFS_EXTRACT_RDF (_host, _start_url, _udata, _url, _content, _c_type);
     }
   else if (_tmp = '401')
     {
@@ -1789,3 +1792,63 @@ create procedure WS.WS.VFS_GO (in url varchar)
   WS.WS.SERV_QUEUE_TOP (hi[1], hi[1], 0, 0, NULL, NULL);
 }
 ;
+
+
+create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _start_path varchar, in opts any, in url varchar, inout content any, in ctype varchar)
+{
+  declare mime_type, _graph, _base varchar;
+  declare html_start, xd any;
+
+  html_start := null;
+
+  _graph := WS.WS.MAKE_URL (_host, _start_path);
+  _base := WS.WS.MAKE_URL (_host, url);
+
+  declare exit handler for sqlstate '*'
+  {
+    return;
+  };
+
+  mime_type := DB.DBA.DAV_GUESS_MIME_TYPE (url, content, html_start);
+
+  if (get_keyword ('meta_foaf', opts, 0) = 1 and mime_type = 'application/foaf+xml')
+    {
+      DB.DBA.RDF_LOAD_RDFXML (content, '', _graph);
+    }
+  else if (get_keyword ('meta_rss', opts, 0) = 1 and mime_type = 'application/rss+xml')
+    {
+      DB.DBA.RDF_LOAD_RDFXML (content, '', _graph);
+    }
+  else if ((get_keyword ('meta_rdf', opts, 0) = 1) and mime_type = 'application/rdf+xml')
+    {
+      DB.DBA.RDF_LOAD_RDFXML (content, '', _graph);
+    }
+  else if (mime_type = 'text/html' or ctype = 'text/html')
+    {
+      declare profile varchar;
+      declare xt any;
+      xt := xtree_doc (content, 2);
+      profile := cast (xpath_eval ('/html/head/@profile', xt) as varchar);
+      if (get_keyword ('meta_erdf', opts, 0) = 1 and strstr (profile, 'http://purl.org/NET/erdf/profile') is not null)
+        {
+	  xd := xslt ('http://local.virt/erdf2rdfxml', xt, vector ('baseUri', _base));
+	  DB.DBA.RDF_LOAD_RDFXML (serialize_to_UTF8_xml (xd), '', _graph);
+	}
+      -- currently no profile in RDFa, we try it to extract directly
+      if (get_keyword ('meta_rdfa', opts, 0) = 1)
+        {
+	  declare xmlnss, i, l, nss any;
+	  xmlnss := xmlnss_get (xt);
+	  nss := '<namespaces>';
+          for (i := 0, l := length (xmlnss); i < l; i := i + 2)
+	    {
+	      nss := nss || sprintf ('<namespace prefix="%s">%s</namespace>', xmlnss[i], xmlnss[i+1]);
+	    }
+	  nss := nss || '</namespaces>';
+	  xd := xslt ('http://local.virt/rdfa2rdfxml', xt, vector ('baseUri', _base, 'nss', xtree_doc (nss)));
+	  DB.DBA.RDF_LOAD_RDFXML (serialize_to_UTF8_xml (xd), '', _graph);
+	}
+    }
+}
+;
+
