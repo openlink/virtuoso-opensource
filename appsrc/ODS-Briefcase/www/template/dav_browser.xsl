@@ -2356,12 +2356,12 @@
             </v:after-data-bind>
           </v:data-source>
 
-          <v:template type="simple" enabled="-- case when ((self.command = 0) and ((self.command_mode = 2) or ((self.command_mode = 3) and not isnull(self.search_advanced)))) then 1 else 0 end;">
+        <v:template type="simple" enabled="-- case when (self.vc_is_valid and (self.command = 0) and ((self.command_mode = 2) or ((self.command_mode = 3) and not isnull(self.search_advanced)))) then 1 else 0 end;">
             <div class="new-form-header" style="margin-top: 6px;">
             <i><?V either(equ(self.command_mode, 2), 'Simple', 'Advanced') ?> search found <?V length(self.dsrc_items.ds_row_data) ?> resource(s) in last search</i>
             </div>
           </v:template>
-          <v:template type="simple" enabled="-- case when ((self.command = 0) and ((self.command_mode = 2) or ((self.command_mode = 3) and (not isnull(self.search_advanced)))) and length(self.dsrc_items.ds_row_data)) then 1 else 0 end;">
+        <v:template type="simple" enabled="-- case when ((self.command = 0) and ((self.command_mode = 2) or ((self.command_mode = 3) and (not isnull(self.search_advanced)))) and length(self.dsrc_items.ds_row_data) and self.vc_is_valid) then 1 else 0 end;">
             <div style="padding-bottom: 5px;">
               <?vsp
         			  http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0" /> RSS</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
