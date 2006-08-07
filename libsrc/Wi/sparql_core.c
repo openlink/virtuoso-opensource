@@ -1511,7 +1511,8 @@ sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre)
   sparp->sparp_err_hdr = t_box_dv_short_string ("SPARQL compiler");
   if ((NULL == query_charset) /*&& (!sparqre->xqre_query_charset_is_set)*/)
     {
-      query_charset = QST_CHARSET(sparqre->sparqre_qi);
+      if (NULL != sparqre->sparqre_qi)
+        query_charset = QST_CHARSET (sparqre->sparqre_qi);
       if (NULL == query_charset)
         query_charset = default_charset;
     }
