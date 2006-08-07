@@ -89,5 +89,6 @@ EXTRA_DIST = \
 	maclex.l \
 	media_maclex.l \
 	media_wikilex.l \
+	mediawiki.def \
 	wikilex.l \
 	wikiv.def

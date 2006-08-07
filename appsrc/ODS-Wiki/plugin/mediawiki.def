@@ -1,0 +1,3 @@
+LIBRARY MEDIAWIKI
+EXPORTS
+  mediawiki_check @1

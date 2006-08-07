@@ -318,6 +318,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "isparql_vad", "isparql_vad.
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mediawiki", "mediawiki.vcproj", "{408E2482-2623-11DB-9BB9-97600548391D}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -521,6 +525,10 @@ Global
 		{6260E42E-239D-11DB-9594-FD7021681415}.Debug.Build.0 = Debug|Win32
 		{6260E42E-239D-11DB-9594-FD7021681415}.Release.ActiveCfg = Release|Win32
 		{6260E42E-239D-11DB-9594-FD7021681415}.Release.Build.0 = Release|Win32
+		{408E2482-2623-11DB-9BB9-97600548391D}.Debug.ActiveCfg = Debug|Win32
+		{408E2482-2623-11DB-9BB9-97600548391D}.Debug.Build.0 = Debug|Win32
+		{408E2482-2623-11DB-9BB9-97600548391D}.Release.ActiveCfg = Release|Win32
+		{408E2482-2623-11DB-9BB9-97600548391D}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection
