@@ -41,6 +41,7 @@ function init()
   sr_cl.img.src = "images/cl.gif";
   $("sr_cl_div").appendChild(sr_cl.div);
   sr_cl.addOption("http://demo.openlinksw.com/sparql");
+  sr_cl.addOption("http://myopenlink.net:8890/sparql/");
   sr_cl.addOption("http://xmlarmyknife.org/api/rdf/sparql/query");
   sr_cl.addOption("http://www.sparql.org/sparql");
   sr_cl.addOption("http://www.govtrack.us/sparql");
