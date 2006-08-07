@@ -4540,8 +4540,8 @@ create procedure DAV_FC_TABLE_METAS (inout table_metas any)
     'private-tags'	, vector (	'\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'	,
 					'\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'	,
 						'DT_TAGS'	, 'DT_TAGS'	, NULL	),
-    'all-tags'		, vector (	'\n  inner join (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'	,
-					'\n  exists (select 1 from (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'	,
+    'all-tags'		, vector (	'\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid() or ^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'	,
+					'\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid() or ^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'	,
 						'DT_TAGS'	, 'DT_TAGS'	, NULL	)
     );
 }
