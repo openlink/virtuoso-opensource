@@ -1,23 +1,23 @@
-#  
+#
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#  
+#
 #  Copyright (C) 1998-2006 OpenLink Software
-#  
+#
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#  
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#  
-#  
+#
+#
 
 if WITH_IODBC
     IODBC_LIBS = libwi_odbc.la
@@ -406,14 +406,14 @@ libwi_odbc_la_SOURCES += \
 	bif_xper.c
 
 libwi_base_la_cflags  = @VIRT_AM_CFLAGS@
-libwi_base_la_cflags  += -Dlint -DNEW_HASH 
+libwi_base_la_cflags  += -Dlint -DNEW_HASH
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc
-libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Dk 
-libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/zlib 
-libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Wi 
-libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/langfunc 
-libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/plugin 
-libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Tidy 
+libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Dk
+libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/zlib
+libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Wi
+libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/langfunc
+libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/plugin
+libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Tidy
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Xml.new
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/odbcsdk/include
 libwi_base_la_cflags  += -DVAD
@@ -473,8 +473,8 @@ libwic_la_SOURCES += \
 
 libwic_la_CFLAGS  = @VIRT_AM_CFLAGS@
 libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc
-libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
-libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
+libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
+libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc
 libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include
 libwic_la_LDLAGS  = -static
@@ -515,7 +515,7 @@ SQL_FILES		= \
 	cov_time.xsl
 
 #SQL_FILES_BLOG		= \
-#	$(top_srcdir)/binsrc/weblog2/widgets/rss2rdf.xsl 
+#	$(top_srcdir)/binsrc/weblog2/widgets/rss2rdf.xsl
 
 SQL_FILES_VDB		= \
 	vdb.sql
@@ -563,9 +563,9 @@ SQL_FILES_1		+= \
 	$(top_srcdir)/binsrc/vspx/vspx_log_format.xsl \
 	$(top_srcdir)/binsrc/vspx/vspx.xsd \
 	$(top_srcdir)/binsrc/vspx/vspx.xsl \
-	hosting.sql 
+	hosting.sql
 
-#	$(top_srcdir)/binsrc/tags/phrasematch.sql 
+#	$(top_srcdir)/binsrc/tags/phrasematch.sql
 
 SQL_FILES_AUTO		= \
 	autoexec.sql
@@ -575,22 +575,24 @@ SQL_FILES_ADM		= \
 	$(top_srcdir)/binsrc/vspx/browser/admin_dav_browser.sql
 
 SQL_FILES_DAV		= \
-	$(top_srcdir)/binsrc/tests/dav/dav.sql \
-	$(top_srcdir)/binsrc/tests/dav/dav_api.sql \
 	$(top_srcdir)/binsrc/tests/dav/dav_acct.sql \
+	$(top_srcdir)/binsrc/tests/dav/dav_api.sql \
 	$(top_srcdir)/binsrc/tests/dav/dav_meta.sql \
-	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfs.sql \
-	davxml2rdfxml.xsl \
-	davxml2n3xml.xsl \
-	rdfxml2n3xml.xsl \
-	n3xml2uriqahtml.xsl \
-	$(top_srcdir)/binsrc/tests/dav/uriqa.sql \
+	$(top_srcdir)/binsrc/tests/dav/dav_rdf_quad.sql \
+	$(top_srcdir)/binsrc/tests/dav/dav.sql \
 	$(top_srcdir)/binsrc/tests/dav/DET_CatFilter.sql \
 	$(top_srcdir)/binsrc/tests/dav/DET_HostFs.sql \
-	$(top_srcdir)/binsrc/tests/dav/DET_ResFilter.sql \
 	$(top_srcdir)/binsrc/tests/dav/DET_PropFilter.sql \
+	$(top_srcdir)/binsrc/tests/dav/DET_ResFilter.sql \
+	$(top_srcdir)/binsrc/tests/dav/uriqa.sql \
 	$(top_srcdir)/binsrc/tests/dav/Versioning/DET_Versioning.sql \
-	$(top_srcdir)/binsrc/tests/dav/dav_rdf_quad.sql
+	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfs.sql \
+	$(top_srcdir)/binsrc/tests/dav/davxml2n3xml.xsl \
+	$(top_srcdir)/binsrc/tests/dav/davxml2rdfxml.xsl \
+	$(top_srcdir)/binsrc/tests/dav/erdf2rdfxml.xsl \
+	$(top_srcdir)/binsrc/tests/dav/n3xml2uriqahtml.xsl \
+	$(top_srcdir)/binsrc/tests/dav/rdfa2rdfxml.xsl \
+	$(top_srcdir)/binsrc/tests/dav/rdfxml2n3xml.xsl
 
 SQL_FILES_VAD		= \
 	$(top_srcdir)/binsrc/vad/vad_root.sql \
@@ -777,18 +779,6 @@ sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES)
 blog_pages.sql: FORCE
 	(cd $(top_srcdir)/binsrc/weblog ; gmake)
 
-davxml2rdfxml.xsl: ../../binsrc/tests/dav/davxml2rdfxml.xsl
-	cp ../../binsrc/tests/dav/davxml2rdfxml.xsl davxml2rdfxml.xsl
-
-davxml2n3xml.xsl: ../../binsrc/tests/dav/davxml2n3xml.xsl
-	cp ../../binsrc/tests/dav/davxml2n3xml.xsl davxml2n3xml.xsl
-
-rdfxml2n3xml.xsl: ../../binsrc/tests/dav/rdfxml2n3xml.xsl
-	cp ../../binsrc/tests/dav/rdfxml2n3xml.xsl rdfxml2n3xml.xsl
-
-n3xml2uriqahtml.xsl: ../../binsrc/tests/dav/n3xml2uriqahtml.xsl
-	cp ../../binsrc/tests/dav/n3xml2uriqahtml.xsl n3xml2uriqahtml.xsl
-
 .PHONY: generated
 generated: \
 	sqlwords.h sql3.c scn3.c scn3split.c \
@@ -816,8 +806,7 @@ EXTRA_DIST = \
 	snapshot_repl.sql soap.sql sparql.sql system2.sql system.sql \
 	uddi.sql useraggr.sql users.sql vdb.sql virtual_dir.sql vt_text.sql \
 	xml_a.sql xmla.sql xml_view.sql \
-	blog.xsl cov_report.xsl cov_time.xsl davxml2n3xml.xsl \
-	davxml2rdfxml.xsl n3xml2uriqahtml.xsl rdfxml2n3xml.xsl \
+	blog.xsl cov_report.xsl cov_time.xsl \
 	soap12_router.xsl soap_import_sch.xsl soap_sch.xsl soap_xmlrpc.xsl \
 	wsdl_expand.xsl wsdl_import.xsl wsdl_parts.xsl wsrp_error.xsl \
 	wsrp_interm.xsl wsrp_resp.xsl wsrp_ultim.xsl xmlrpc_soap.xsl \
