@@ -19,7 +19,7 @@
 #  
 #  
 
-lib_LTLIBRARIES = wikiv.la
+lib_LTLIBRARIES = wikiv.la mediawiki.la
 
 wikiv_la_SOURCES = \
 	wikiv.c \
@@ -39,9 +39,26 @@ wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
 wikiv_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
 wikiv_la_LDFLAGS = -module -avoid-version -export-dynamic
 
-BUILT_SOURCES = maclex.c wikilex.c
-CLEANFILES = maclex.c wikilex.c
+mediawiki_la_SOURCES = \
+	mediawiki.c \
+	media_maclex.c \
+	media_wikilex.c \
+	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
 
+mediawiki_la_CFLAGS  = @VIRT_AM_CFLAGS@
+mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc
+mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
+mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
+mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
+mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
+mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
+mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
+
+mediawiki_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
+mediawiki_la_LDFLAGS = -module -avoid-version -export-dynamic
+
+BUILT_SOURCES = maclex.c wikilex.c media_maclex.c media_wikilex.c
+CLEANFILES = maclex.c wikilex.c media_maclex.c media_wikilex.c
 
 maclex.c: maclex.l
 	echo "$(LEX) -8 -Pmacyy $(srcdir)/maclex.l failed" > lex.macyy.c
@@ -52,6 +69,16 @@ wikilex.c: wikilex.l
 	echo "$(LEX) -8 -Pwikiyy $(srcdir)/wikilex.l failed" > lex.wikiyy.c
 	$(LEX)  -8 -Pwikiyy $(srcdir)/wikilex.l
 	mv lex.wikiyy.c wikilex.c
+
+media_maclex.c: media_maclex.l
+	echo "$(LEX) -8 -Pmacyy $(srcdir)/media_maclex.l failed" > lex.macyy.c
+	$(LEX) -8 -Pmacyy $(srcdir)/media_maclex.l
+	mv lex.macyy.c media_maclex.c
+
+media_wikilex.c: media_wikilex.l
+	echo "$(LEX) -8 -Pwikiyy $(srcdir)/wikilex.l failed" > lex.wikiyy.c
+	$(LEX)  -8 -Pwikiyy $(srcdir)/media_wikilex.l
+	mv lex.wikiyy.c media_wikilex.c
 
 # ----------------------------------------------------------------------
 #

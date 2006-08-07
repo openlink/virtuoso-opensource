@@ -1,11 +1,11 @@
+.deps
 .libs
 *.lo
 maclex.c
-wikilex.c
-wikiv.la
-wikiv.so.1.0.0
-plugin_sample.la
-plugin_sample.so.1.0.0
-.deps
 Makefile
 Makefile.in
+media_maclex.c
+mediawiki.la
+media_wikilex.c
+wikilex.c
+wikiv.la
