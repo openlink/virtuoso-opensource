@@ -1053,8 +1053,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         else if (SSG_VALMODE_LONG == arg1_native)
           ssg_print_tmpl (ssg, arg1_native,
             (top_filter_op ?
-              " ((isiri(^{tree}^) and (^{tree}^ >= #i1000000000))" :
-              " either (isiri(^{tree}^), gte (^{tree}^, #i1000000000), 0)" ),
+                " ((isiri_id (^{tree}^) and (^{tree}^ >= #i1000000000))" :
+                " either (isiri_id (^{tree}^), gte (^{tree}^, #i1000000000), 0)" ),
             NULL, arg1 );
         else if (SSG_VALMODE_SQLVAL == arg1_native)
           ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_BLANK_REF (^{tree}^)", NULL, arg1);
@@ -1079,8 +1079,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         else if (SSG_VALMODE_LONG == arg1_native)
           ssg_print_tmpl (ssg, arg1_native,
             (top_filter_op ?
-              " ((isiri(^{tree}^) and (^{tree}^ < 1000000000))" :
-              " either (isiri(^{tree}^), lt (^{tree}^, 1000000000), 0)" ),
+                " ((isiri_id (^{tree}^) and (^{tree}^ < 1000000000))" :
+                " either (isiri_id (^{tree}^), lt (^{tree}^, 1000000000), 0)" ),
             NULL, arg1 );
         else if (SSG_VALMODE_SQLVAL == arg1_native)
           ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_URI_REF (^{tree}^)", NULL, arg1);
@@ -1098,7 +1098,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         else if (SSG_VALMODE_LONG == arg1_native)
           ssg_print_tmpl (ssg, arg1_native,
             (top_filter_op ?
-              " (not (isiri(^{tree}^))" : "(0 = isiri(^{tree}^))" ),
+                " (not (isiri_id (^{tree}^))" : "(0 = isiri_id (^{tree}^))" ),
             NULL, arg1);
         else if (SSG_VALMODE_SQLVAL == arg1_native)
           ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_LITERAL (^{tree}^)", NULL, arg1);
