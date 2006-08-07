@@ -71,10 +71,6 @@
       self.v_tags := trim(self.v_tags);
       self.v_folder_id := trim(self.v_folder_id);
 
-      tmp := BMK.WA.ft2vector(self.v_keywords);
-      tmp := BMK.WA.vector_unique(tmp, 2);
-      self.v_keywords := BMK.WA.vector2str(tmp);
-
       tmp := BMK.WA.tags2vector(self.v_tags);
       tmp := BMK.WA.vector_unique(tmp);
       self.v_tags := BMK.WA.vector2tags(tmp);
@@ -309,7 +305,7 @@
       <v:template type="simple">
         <v:before-render>
           <![CDATA[
-            control.vc_enabled := length (self.ds_data);
+            control.vc_enabled := case when (length (self.ds_data) and self.vc_is_valid = 1) then 1 else 0 end;
           ]]>
         </v:before-render>
         <div style="padding-bottom: 5px;">

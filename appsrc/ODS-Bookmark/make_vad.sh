@@ -22,7 +22,7 @@
 #
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.2.28"
+VERSION="1.2.29"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"

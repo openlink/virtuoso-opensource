@@ -20,14 +20,10 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-------------------------------------------------------------------------------
--- nws-d.sql
--- script for cleaning wa instalation.
-------------------------------------------------------------------------------
-
 -- Scheduler
 ENEWS.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'eNews feed aggregator\'');
 ENEWS.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'eNews blog aggregator\'');
+ENEWS.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'eNews tags aggregator\'');
 
 -- Triggers
 ENEWS.WA.exec_no_error('DROP TDRIGGER WA_MEMBER_AU_ENEWS');

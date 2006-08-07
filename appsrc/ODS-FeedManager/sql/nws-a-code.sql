@@ -5030,8 +5030,13 @@ create procedure ENEWS.WA.test (
       signal ('TEST', valueMessage);
     if (__SQL_STATE = 'EMPTY')
       signal ('TEST', sprintf('Field ''%s'' cannot be empty!<>', valueName));
-    if (__SQL_STATE = 'CLASS')
+    if (__SQL_STATE = 'CLASS') {
+      if (valueType = 'free-text') {
+        signal ('TEST', sprintf('Field ''%s'' contains invalid characters or noise words!<>', valueName));
+      } else {
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters!<>', valueName));
+      }
+    }
     if (__SQL_STATE = 'TYPE')
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters for \'%s\'!<>', valueName, valueType));
     if (__SQL_STATE = 'MIN')

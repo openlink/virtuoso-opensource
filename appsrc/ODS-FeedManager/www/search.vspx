@@ -75,10 +75,6 @@
       self.v_after := trim(self.v_after);
       self.v_before := trim(self.v_before);
 
-      tmp := ENEWS.WA.ft2vector(self.v_keywords);
-      tmp := ENEWS.WA.vector_unique(tmp, 2);
-      self.v_keywords := ENEWS.WA.vector2str(tmp);
-
       tmp := ENEWS.WA.tags2vector(self.v_tags);
       tmp := ENEWS.WA.vector_unique(tmp);
       self.v_tags := ENEWS.WA.vector2tags(tmp);
@@ -153,7 +149,6 @@
 
       state := '00000';
       exec(sql, state, msg, vector(), 0, meta, result);
-      --dbg_obj_print(state, msg);
       if (state = '00000') {
         self.ds_data := result;
 
@@ -324,11 +319,12 @@
       <v:template type="simple">
         <v:before-render>
           <![CDATA[
-            control.vc_enabled := length (self.ds_data);
+            control.vc_enabled := case when (length (self.ds_data) and self.vc_is_valid = 1) then 1 else 0 end;
           ]]>
         </v:before-render>
         <div style="padding-bottom: 5px;">
           <?vsp
+            self.update_params();
     			  http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s" class="gems"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
             if (ENEWS.WA.settings_atomVersion(self.domain_id, self.account_id) = '1.0') {
     			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom10%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
