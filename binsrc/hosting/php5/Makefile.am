@@ -74,23 +74,3 @@ ksrvext.h:
 
 clean-local:
 	rm -rf ksrvext.h
-	rm -rf tests/php_tests
-	rm -rf tests/phpsrv.db
-	rm -rf tests/phpsrv.log
-	rm -rf tests/phpsrv.trx
-	rm -rf tests/tphp.pxa
-	rm -rf tests/tphp.tdb
-	rm -rf tests/tphpsrv.output
-
-
-# ----------------------------------------------------------------------
-#
-#  Additional files to distribute
-#
-# ----------------------------------------------------------------------
-EXTRA_DIST = \
-	bif_server_php.c \
-	tests/php_tests.tgz \
-	tests/tphpdav.sql \
-	tests/tphp.sql \
-	tests/tphpsrv.sh
