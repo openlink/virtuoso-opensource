@@ -3992,6 +3992,7 @@ http('</html>');
   http_header (sprintf ('X-SPARQL-default-graph: %U\r\n', dflt_graph));
 --  http (sprintf ('<!-- X-SPARQL-default-graph: %U\r\n -->\n', dflt_graph));
 --  http ('<!-- Query:\n' || query || '\n-->\n', 0);
+  set_user_id ('SPARQL');
   exec (sqltext, state, msg, vector(), maxrows, metas, rset);
   -- dbg_obj_princ ('exec metas=', metas);
   if (state <> '00000')
@@ -4138,4 +4139,8 @@ grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_W  to SPARQL_UPDATE
 grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_A  to SPARQL_UPDATE
 ;
 grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_L_A  to SPARQL_UPDATE
+;
+
+--!AFTER
+DB.DBA.EXEC_STMT ('grant SPARQL_SELECT to "SPARQL"', 0)
 ;
