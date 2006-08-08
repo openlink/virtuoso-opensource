@@ -56,7 +56,7 @@
 	</tr>
 	<tr>
 	  <td colspan="2" class="ctrl">
-	    <v:button name="user_sset" value="Submit" action="simple">
+	    <v:button name="user_sset" value="Save" action="simple">
 	      <v:on-post>
 		<![CDATA[
 		USER_SET_OPTION (self.u_name, 'FULL_NAME', self.fullname.ufl_value);
