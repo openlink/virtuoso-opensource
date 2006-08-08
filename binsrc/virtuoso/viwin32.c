@@ -1541,6 +1541,29 @@ wisvc_send_wait_hint (unsigned long every_n_msec, unsigned long wait_n_secs)
 }
 
 
+#ifndef PACKAGE_NAME
+
+/* Virtuoso */
+# define PACKAGE_NAME		DBMS_SRV_NAME
+
+# ifdef OEM_BUILD
+#  define PACKAGE_FIBER		"(OEM Lite Edition)"
+#  define PACKAGE_THREAD	"(OEM Enterprise Edition)"
+# else 
+#  define PACKAGE_FIBER		"(Lite Edition)"
+#  define PACKAGE_THREAD	"(Enterprise Edition)"
+# endif
+
+#else
+
+/* VOS */
+#define PACKAGE_FIBER		"(fibers)"
+#define PACKAGE_THREAD		"(multi threaded)"
+
+#endif
+
+
+
 /*
  *  Display the normal commandline usage and
  *  the +service usage; then dies
@@ -1556,16 +1579,9 @@ usage (void)
   int lic;
 #endif
 
-  sprintf (line, "%s %s\n", DBMS_SRV_NAME,
+  sprintf (line, "%s %s\n", PACKAGE_NAME,
 	build_thread_model[0] == '-' && build_thread_model[1] == 'f' ?
-#ifdef PACKAGE_NAME
-	"(Open Source Edition)" : "(Open Source Edition)"
-#elif defined(OEM_BUILD)
-	"(OEM Lite Edition)" : "(OEM Enterprise Edition)"
-#else
-	"(Lite Edition)" : "(Enterprise Edition)"
-#endif
-	);
+	PACKAGE_FIBER : PACKAGE_THREAD);
   p = stpcpy (version, line);
 
   sprintf (line, "Version %s%s (Release 4.5) as of %s\n",
@@ -1575,7 +1591,7 @@ usage (void)
   sprintf (line, "Compiled for 32 Bit Windows Operating Environments\n");
   p = stpcpy (p, line);
 
-  if (0 != build_special_server_model[0])
+  if (build_special_server_model && strlen(build_special_server_model) > 1)
     {
       sprintf (line, "Hosted Runtime Environments: %s\n", build_special_server_model);
       p = stpcpy (p, line);
