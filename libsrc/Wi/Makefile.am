@@ -524,6 +524,7 @@ SQL_FILES_SPARQL	= \
 	sparql.sql
 
 SQL_FILES_1		= \
+	simile.sql \
 	oledb.sql \
         information_schema.sql
 
@@ -802,7 +803,7 @@ EXTRA_DIST = \
 	list_lex_props.sh \
 	2pc.sql autoexec.sql ftp.sql hosting.sql http_auth.sql \
 	information_schema.sql mail_cli.sql nn_svr.sql odbccat.sql \
-	oledb.sql openxml.sql pop3_svr.sql replddk.sql repl.sql \
+	simile.sql oledb.sql openxml.sql pop3_svr.sql replddk.sql repl.sql \
 	snapshot_repl.sql soap.sql sparql.sql system2.sql system.sql \
 	uddi.sql useraggr.sql users.sql vdb.sql virtual_dir.sql vt_text.sql \
 	xml_a.sql xmla.sql xml_view.sql \
