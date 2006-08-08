@@ -49,7 +49,8 @@
       <v:variable name="search_simple" persist="0" param-name="keywords" type="any" default="null" />
       <v:variable name="search_advanced" persist="0" type="any" default="null" />
       <v:variable name="search_dc" persist="0" type="any" default="null" />
-      <v:variable name="noTags" type="integer" default="1" />
+      <v:variable name="noTags" persist="temp" type="integer" default="0" />
+      <v:variable name="noPrepare" persist="temp" type="integer" default="0" />
       <v:variable name="vmdType" persist="0" type="varchar" default="null" />
       <v:variable name="vmdSchema" persist="0" type="varchar" default="null" />
       <v:variable name="dav_vector" persist="0" type="any" default="null" />
@@ -120,6 +121,8 @@
 
       <v:method name="dc_prepare" arglist="">
         <![CDATA[
+          if (self.noPrepare)
+            return;
           ODRIVE.WA.dav_dc_set_base(self.search_dc, 'path', get_keyword('ts_path', self.vc_page.vc_event.ve_params, ODRIVE.WA.path_show(self.dir_path)));
           ODRIVE.WA.dav_dc_set_base(self.search_dc, 'name', get_keyword('ts_name', self.vc_page.vc_event.ve_params, ''));
           ODRIVE.WA.dav_dc_set_base(self.search_dc, 'content', get_keyword('ts_content', self.vc_page.vc_event.ve_params, ''));
@@ -135,7 +138,7 @@
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'modifyDate12', get_keyword('ts_modifyDate12', self.vc_page.vc_event.ve_params, ''));
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'modifyDate21', get_keyword('ts_modifyDate21', self.vc_page.vc_event.ve_params, ''));
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'modifyDate22', get_keyword('ts_modifyDate22', self.vc_page.vc_event.ve_params, ''));
-          if (self.noTags) {
+          if (not self.noTags) {
             ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'publicTags11', get_keyword('ts_publicTags11', self.vc_page.vc_event.ve_params, 'contains_tags'));
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'publicTags12', get_keyword('ts_publicTags12', self.vc_page.vc_event.ve_params, ''));
             ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'privateTags11', get_keyword('ts_privateTags11', self.vc_page.vc_event.ve_params, 'contains_tags'));
@@ -670,7 +673,7 @@
               <v:on-post>
                 <![CDATA[
                   self.command_set(0, 3);
-                self.noTags := 0;
+                self.noTags := 1;
                   ODRIVE.WA.dav_dc_set_base(self.search_dc, 'path', ODRIVE.WA.odrive_real_path(self.dir_path));
                   ODRIVE.WA.dav_dc_set_base(self.search_dc, 'name', trim(self.simple.ufl_value));
                   ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'publicTags12', get_keyword ('f_tag2_hidden', e.ve_params, ''));
@@ -696,7 +699,7 @@
               <v:on-post>
                 <![CDATA[
                   self.command_set(0, 3);
-                self.noTags := 0;
+                self.noTags := 1;
                   ODRIVE.WA.dav_dc_set_base(self.search_dc, 'path', ODRIVE.WA.odrive_real_path(self.dir_path));
                   ODRIVE.WA.dav_dc_set_base(self.search_dc, 'name', trim(self.simple.ufl_value));
                   ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'privateTags12', get_keyword ('f_tag_hidden', e.ve_params, ''));
@@ -797,6 +800,7 @@
                   <![CDATA[
                     self.search_dc := null;
                     self.search_advanced := null;
+                  self.noPrepare := 1;
                     self.vc_data_bind(e);
                   ]]>
                 </v:on-post>
@@ -2259,7 +2263,7 @@
                     } else if (isnull(strstr(tags, tag))) {
                       tags := concat(tags, ', ', tag);
                     }
-                  self.noTags := 0;
+                  self.noTags := 1;
                     ODRIVE.WA.dav_dc_set_advanced(self.search_dc, concat(tagType, 'Tags12'), tags);
                     self.search_advanced := self.search_dc;
                     self.vc_data_bind(e);
