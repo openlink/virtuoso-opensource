@@ -1,3 +1,1506 @@
+2006-08-08 16:53  source
+
+	* Updated version to 4.5.4 for final release
+
+2006-08-08 16:50  source
+
+	* Fixed problem importing an SSL certificate on WIN64 with OpenSSL 0.9.8
+
+2006-08-08 16:13  source
+
+	* Fixed problem importing bookmarks
+
+2006-08-08 15:13  source
+
+	* Changed parameter named_graphs from No to Yes
+
+2006-08-08 13:19  source
+
+	* Changed version to 4.5.4-rc8
+
+2006-08-08 13:19  source
+
+	* Changed labels Submit to Search
+	* Changed lables Reset to Clear
+
+2006-08-08 13:18  source
+
+	* Changed label Submit to Save
+
+2006-08-08 12:54  source
+
+	* Fixed usage string
+
+2006-08-08 12:18  source
+
+	* Removed undefined javascript function
+	* Default cluster is identified by URI conversation
+	* Adjusted date format
+
+2006-08-08 11:13  source
+
+	* Fixed header and whitespace
+
+2006-08-08 11:12  source
+
+	* Fixed whitespace
+
+2006-08-08 11:11  source
+
+	* Added support for SIMILE
+
+2006-08-08 10:46  source
+
+	* Additional icons
+
+2006-08-08 10:43  source
+
+	* Fixes for noPrepare and noTags
+
+2006-08-08 10:35  source
+
+	* Added doc for RDF_INSERT_TRIPLES and RDF_DELETE_TRIPLES
+
+2006-08-08 10:34  source
+
+	* Added support for CREATE VIEW ... AS SPARQL SELECT
+
+2006-08-07 22:41  source
+
+	* Small fix to dav template
+
+2006-08-07 22:39  source
+
+	* Fixed bug with missing aliases in DAV_DIR_FILTER()
+
+2006-08-07 21:58  source
+
+	* Removed non-existing test files
+
+2006-08-07 20:46  source
+
+	* Minor fixes for building sql_code_dav.c
+
+2006-08-07 20:43  source
+
+	* Added new .xsl stylesheets
+
+2006-08-07 20:22  source
+
+	* Replaced isiri() with isiri_id()
+
+2006-08-07 19:21  source
+
+	* Fixed Tags bug
+
+2006-08-07 18:20  source
+
+	* Fix for RES_TAGS in DAV_DIR_FILTER
+
+2006-08-07 18:18  source
+
+	* Fix for DAV_DIR_FILTER with RES_TAG or RES_PROP or RDF_VALUE
+
+2006-08-07 16:56  source
+
+	* Updated version number to 4.5.4-rc7
+
+2006-08-07 15:17  source
+
+	* Fixed mediawiki plugin for win32
+
+2006-08-07 14:59  source
+
+	* Fixed make dist
+
+2006-08-07 14:33  source
+
+	* Use new DET_Bookmark.sql
+
+2006-08-07 14:13  source
+
+	* Removed deprecated files
+
+2006-08-07 13:53  source
+
+	* Added extra demo endpoint
+
+2006-08-07 13:51  source
+
+	* Import RDF metadata from content imports
+
+2006-08-07 13:49  source
+
+	* Force SPARQL endpoint to run queries as SPARQL which has the SPARQL_SELECT
+	  role granted
+
+2006-08-07 13:47  source
+
+	* Fixed compilation of SPARQL views during server startup
+
+2006-08-07 13:11  source
+
+	* Added support for mediawiki syntax
+
+2006-08-07 12:46  source
+
+	* Added support for multiple wiki syntax parsers
+
+2006-08-07 12:43  source
+
+	* Fixed problem with noise words
+
+2006-08-05 10:41  source
+
+	* Updated version to 4.5.4-rc6
+
+2006-08-05 10:40  source
+
+	* Fixed bug showing all bookmarks twice
+
+2006-08-04 22:20  source
+
+	* Fixed Search: tags cloud link does not work correctly
+
+2006-08-04 15:49  source
+
+	* Prevent errorneous record to be inserted in the wa_domains table
+
+2006-08-04 14:26  source
+
+	* Fixed build dependency
+
+2006-08-04 13:33  source
+
+	* Updated version to 4.5.4-rc5
+
+2006-08-04 13:33  source
+
+	* Fixed search and export gems errors
+
+2006-08-04 13:28  source
+
+	* Changed isparql.vad to isparql_dav.vad
+
+2006-08-04 13:27  source
+
+	* Changed publish and un-publish to take effect immediately
+
+2006-08-04 13:27  source
+
+	* Check argument before runnning new_news
+
+2006-08-04 13:23  source
+
+	* The ODS default domain should not appear in the wa_domains table nor
+	  try to make additional VD as it is already created
+
+2006-08-04 10:27  source
+
+	* Updated version to 4.5.4-rc4
+
+2006-08-04 10:26  source
+
+	* Fixed building sparql_dav.vad on windows
+
+2006-08-04 08:07  source
+
+	* Fixed small typos
+
+2006-08-04 00:31  source
+
+	* Added support for building both php 4.x and php 5.x hosting servers
+
+2006-08-03 22:48  source
+
+	* Fixed version numbering
+	* Fixed cleaning temporary files
+
+2006-08-03 21:20  source
+
+	* More files to ignore
+
+2006-08-03 21:10  source
+
+	* Updated version number to 4.5.4-rc2
+
+2006-08-03 21:08  source
+
+	* Added atom publishing
+	* Added atom publishing endpoint: authentication
+	* Upgrade fix conversation.vspx now has vspx_user var
+	* Removed debugging info
+
+2006-08-03 21:06  source
+
+	* Removed dependency on Community package
+	* Removed double slash
+	* Added extra options for "Create Community" interface
+	* Fixed bad check for cname
+	* Added default domain
+	* Add endpoints under default host
+	* Ensure default host in the domains
+
+2006-08-03 21:02  source
+
+	* Add endpoints under default host.
+	* Ensure default host in the domains
+
+2006-08-03 21:02  source
+
+	* Fixed xsl path bug in default template
+	* Added extra options for "Create Community" interface
+
+2006-08-03 20:52  source
+
+	* Updated SOAP service
+	* Changed oDrive label in page titles
+
+2006-08-03 20:51  source
+
+	* Added new icons for shared, grants etc
+
+2006-08-03 20:50  source
+
+	* Added option to search in either shared or own bookmarks or both
+
+2006-08-03 20:48  source
+
+	* Add endpoints under default host
+	* Ensure default host in domains
+
+2006-08-03 19:55  source
+
+	* Create separate VAD package for iSPARQL demo
+
+2006-08-03 18:48  source
+
+	* Merged latest SPARQL sample code
+	* Removed old files
+
+2006-08-03 18:23  source
+
+	* Added text describing the page and referring to docs and isparql package
+	* Fixed wrong procedure names
+	* XML entity and related need tag to be closed in outer code as print_box
+	  does not close them
+	* Allow IRI to contain spaces and curly braces, as they are accepted by the
+	  W3C validator
+	* Fixed procedure names in RDF_RDFXML_TO_DICT
+	* Added support for application/xml in REXEC and results with namespace
+	  http://www.w3.org/2001/sw/DataAccess/rf1/result2
+	* Fixed a problem showing error in remote execution and big response
+
+2006-08-03 18:17  source
+
+	* Merged latest documentation changes
+
+2006-08-03 18:17  source
+
+	* Removed SPARQL demo from tutorials into separate isparql.vad
+
+2006-08-03 18:16  source
+
+	* Moved XA-S-1 from Web 1.0 to Web 2.0
+
+2006-08-03 18:13  source
+
+	* Fixed space for statement
+
+2006-08-03 18:11  source
+
+	* Updated to depend on new isparql.vad
+
+2006-08-03 18:10  source
+
+	* Fixed layout of Filter in Publish Objects tab
+
+2006-08-03 18:09  source
+
+	* Added endpoint for default host
+
+2006-08-03 18:07  source
+
+	* Added DAV_GET_RES_TYPE_URI_BY_MIME_TYPE
+
+2006-08-03 18:07  source
+
+	* Fixed trailing slash
+
+2006-08-03 12:35  source
+
+	* Fixed build problem using --disable-mono and --with-iodbc in configure
+
+2006-08-01 11:34  source
+
+	* Added IBM sparql to remote sparql endpoints drop down
+	* Fixed default graph default value
+	* Cleared absolute files
+	* Cleaned code
+
+2006-08-01 11:31  source
+
+	* Fixed default graph for dav to http://host/DAV
+
+2006-08-01 11:26  source
+
+	* Fixed text label
+
+2006-08-01 10:47  source
+
+	* Fixed typo
+
+2006-07-31 15:35  source
+
+	* Small fixes to comment header
+
+2006-07-31 12:46  source
+
+	* Fixed typo in insert trigger name
+
+2006-07-31 12:45  source
+
+	* Fixed URL escape
+
+2006-07-31 12:44  source
+
+	* Added icons for shared bookmark support
+
+2006-07-31 12:43  source
+
+	* Added support for shared bookmarks
+
+2006-07-31 12:42  source
+
+	* Fixed rss rdf enclosures
+
+2006-07-28 16:57  source
+
+	* Added index on PHOTO..SYS_INFO.HOME_PATH
+	* Bug fix for populated rfd_quad
+	* Only delete data if there is a match
+	* Removed debugging code
+
+2006-07-28 16:54  source
+
+	* Added sioc:topic
+	* Added blog comments in sioc
+	* Added GeoURL pinging in blog
+	* Upgrade functionality ODS applications admin
+		Settings - applications - members - invite members
+	  functionality like oDriver groups
+
+2006-07-28 16:49  source
+
+	* Added GeoURL pinging in blog
+
+2006-07-28 16:48  source
+
+	* Fixed RDF upload
+
+2006-07-28 16:48  source
+
+	* Added sioc:topic
+	* Added GeoURL pinging in blog
+	* Added blog comments in sioc
+
+2006-07-28 15:33  source
+
+	* Added missing argument to function replace
+
+2006-07-28 15:31  source
+
+	* Changed text
+
+2006-07-28 15:30  source
+
+	* Removed dbg_ info
+
+2006-07-28 15:29  source
+
+	* Triggers should not be disabled when creating ore removing news server
+	  (since phpBB integration depends on them)
+
+2006-07-28 15:28  source
+
+	* Fixed mime types selection in single edit properties page
+	* Added mime types selection in resouce upload
+
+2006-07-27 15:27  source
+
+	* Added default graph
+
+2006-07-27 15:26  source
+
+	* Added text for Opera problem with HTTP status code 400
+
+2006-07-27 15:26  source
+
+	* New files from upstream OAT project
+
+2006-07-27 14:38  source
+
+	* Fixed column lengths for SQLGetTypeInfo
+
+2006-07-27 12:50  source
+
+	* Fixed bug in SQL_DESC_TYPE and SQL_DESC_CONCISE_TYPE
+
+2006-07-26 20:42  source
+
+	* Updated version number to 4.5.4-rc1
+
+2006-07-26 20:36  source
+
+	* Fixed 'a' shorthand
+
+2006-07-26 20:34  source
+
+	* Fixed calles to deprecated function DB.DBA.RDF_EXP_LOAD_RDFXML
+
+2006-07-26 15:58  source
+
+	* Added blog comments in SIOC
+
+2006-07-26 15:57  source
+
+	* Added blog comment in SIOC
+
+2006-07-26 15:54  source
+
+	* Fixed visualization problem when loading page
+	* Fixed CRLF
+
+2006-07-26 15:51  source
+
+	* Fixed select all checkbox problem in safari
+
+2006-07-26 15:51  source
+
+	* Fixed visualization problem when loading page
+
+2006-07-26 13:37  source
+
+	* Fixed win32 build
+
+2006-07-26 13:27  source
+
+	* Fixed IE problem when loading DAWG usecase to query form
+
+2006-07-26 12:49  source
+
+	* Added missing images
+
+2006-07-26 12:40  source
+
+	* Added atom endpoint
+	* Removed debug info
+
+2006-07-26 12:38  source
+
+	* Fixed displaying duplicate mail messages
+
+2006-07-25 23:04  source
+
+	* Updated version number of ODBC driver
+
+2006-07-25 20:08  source
+
+	* Updated version to 4.5.4-pre7
+
+2006-07-25 19:44  source
+
+	* Added feed_post_url()
+
+2006-07-25 19:42  source
+
+	* Fixed missing argument to DB.DBA.RDF_TTL2HASH
+
+2006-07-25 19:40  source
+
+	* Fixed ODS-Feedmanager links
+
+2006-07-25 18:37  source
+
+	* Removed extra <?vsp line
+
+2006-07-25 18:36  source
+
+	* Fixed xml parse error in SIOC data
+	* Fixed IODBC in seeAlso xml template to execute SPARQL
+	* Updated version numbers
+
+2006-07-25 18:32  source
+
+	* Fixed parent_of and has_parent
+
+2006-07-25 18:31  source
+
+	* Fixed xml parse error in SIOC data
+
+2006-07-25 18:27  source
+
+	* Fixed copyright
+
+2006-07-25 16:27  source
+
+	* Added SIOC in seeAlso xml template to execute sparql
+
+2006-07-25 16:25  source
+
+	* Merged latest documentation
+
+2006-07-25 16:24  source
+
+	* Changed webdav properties behaviour
+
+2006-07-25 16:24  source
+
+	* Added Finish button to navigation
+
+2006-07-25 12:26  source
+
+	* Added missing files from make dist
+
+2006-07-24 23:13  source
+
+	* More files to ignore
+
+2006-07-24 23:09  source
+
+	* Updated version number to 4.5.4-pre6
+
+2006-07-24 23:08  source
+
+	* Search should have option for rags cloud display
+
+2006-07-24 23:00  source
+
+	* Fixed serialization of resource content directly into output http
+
+2006-07-24 22:59  source
+
+	* Added SIOC to VAD package
+
+2006-07-24 22:59  source
+
+	* Added SIOC to vad package
+
+2006-07-24 22:57  source
+
+	* Fixed entry page
+
+2006-07-24 22:20  source
+
+	* Improved diagnostics
+
+2006-07-24 15:23  source
+
+	* Fixed buffer length calculation
+
+2006-07-24 13:46  source
+
+	* Fixed debug comment
+
+2006-07-24 13:46  source
+
+	* Fixed IE bug
+
+2006-07-24 13:45  source
+
+	* Fixes for MT loading of TURTLE
+
+2006-07-24 12:48  source
+
+	* Added Atom publishing protocol
+
+2006-07-24 12:47  source
+
+	* Added SIOC support for discussion
+	* Fixed Atom publishing protocol
+
+2006-07-24 12:44  source
+
+	* Added SIOC support
+
+2006-07-24 12:44  source
+
+	* Updated SOAP service
+	* Fixed bug with metadata properties
+
+2006-07-24 12:43  source
+
+	* Added SIOC support
+	* Added new column for BOOKMARK_DOMAIN table: BD_CREATED
+
+2006-07-24 12:41  source
+
+	* Fixed GeoURL
+
+2006-07-24 11:45  source
+
+	* Fixed wrong size in snprintf causing memory corruption
+
+2006-07-24 08:03  source
+
+	* Highlight sub-tabs for object types
+	* Changed New link position and outlook
+	* Added Icons
+	* Changed publishing UI
+	* Changed labels
+	* Added next/back navigation
+	* Changed labels of SOAP and WSDL in navigation
+
+2006-07-24 08:01  source
+
+	* Added multi-feed support
+
+2006-07-24 08:00  source
+
+	* Added maxrows flag
+	* Changed remote execurion behaviour
+	* Fixed several problems with Safari and IE
+	* Fixed bug choosing DAWG usecases containing apos in title
+
+2006-07-24 07:59  source
+
+	* Fixed BIF function name changed from DB.DBA.RDF_EXP_LOAD_RDFXML to
+	  DB.DBA.RDF_LOAD_RDFXML
+
+2006-07-24 07:57  source
+
+	* Merged newer version of OAT
+
+2006-07-24 07:56  source
+
+	* Merged latest documentation fixes
+
+2006-07-24 07:55  source
+
+	* Added support for IN and LIKE operators (implemented as builtins)
+	* Fixed garbage collection
+
+2006-07-24 07:54  source
+
+	* If itc_next or itc_search return DVC_GREATER or DBV_INDEX_END, leave
+	  the page and return IOP_AT_END
+
+2006-07-24 07:50  source
+
+	* INX op disables option for inlining setp into order or main ks
+
+2006-07-24 07:49  source
+
+	* Fixed TURTLE reader
+
+2006-07-24 07:48  source
+
+	* Fixed empty resultset
+
+2006-07-21 13:26  source
+
+	* Updated images
+
+2006-07-21 13:03  source
+
+	* Fixed typo
+
+2006-07-21 13:02  source
+
+	* Additional files to distribute
+
+2006-07-19 16:05  source
+
+	* Map SQL_DESC_AUTO_UNIQUE_VALUE, SQL_DESC_CASE_SENSITIVE and
+	  SQL_DESC_DISPLAY_SIZE to equivalent SQLColAttributes (ODBC 2.x) call
+
+2006-07-19 15:58  source
+
+	* Use SQLColAttributes (SQL_COLUMN_DISPLAY_SIZE) instead of
+	  SQLDescribeCol(scale)
+
+2006-07-19 15:32  source
+
+	* Updated version number
+
+2006-07-19 15:32  source
+
+	* Fixed "Unsupported case" error on Write Message tab
+
+2006-07-19 15:31  source
+
+	* Removed unused var declarations
+
+2006-07-19 15:29  source
+
+	* Export gems icons changed
+
+2006-07-19 15:28  source
+
+	* Fixed javascript error after sorting by column name
+
+2006-07-19 15:28  source
+
+	* Fixed SOAP error
+
+2006-07-19 15:18  source
+
+	* Removed debug messages
+
+2006-07-19 14:55  source
+
+	* Do not check the NULL in fk row
+
+2006-07-19 14:54  source
+
+	* Added support for LIMIT, OFFSET and ORDER BY for sparql construct
+
+2006-07-19 14:53  source
+
+	* Sync entry into transactions for aqueue threads and other db
+	  connect/disconnects.
+
+2006-07-19 14:34  source
+
+	* Updated version
+
+2006-07-19 14:33  source
+
+	* Fixed SIOC path
+
+2006-07-19 08:51  source
+
+	* Updated version to 4.5.4-pre5
+
+2006-07-19 08:50  source
+
+	* Update rss2rdf
+
+2006-07-19 08:48  source
+
+	* Updated rss2rdf
+
+2006-07-19 08:48  source
+
+	* Added Del.icio.us bookmark import
+	* Updated rss2rdf
+
+2006-07-19 08:45  source
+
+	* Tidied sioc files
+
+2006-07-19 08:42  source
+
+	* Fixed email obfuscation support
+	* Proper image css cleanup
+
+2006-07-19 08:01  source
+
+	* Fixed comment
+
+2006-07-19 07:49  source
+
+	* Fix for Opera
+
+2006-07-19 07:49  source
+
+	* Changed position of add & remove permissions
+
+2006-07-19 07:48  source
+
+	* Unqualified use of rdf:about is deprecated
+	* Added mising grants
+
+2006-07-18 21:37  source
+
+	* Updated windows project files
+
+2006-07-18 16:07  source
+
+	* Added aqueue.c to second library
+
+2006-07-18 12:44  source
+
+	* Remove unwanted files from sparql generated code
+
+2006-07-18 12:39  source
+
+	* Added RDF parallel load
+
+2006-07-18 12:38  source
+
+	* Added async_queue and related functions
+
+2006-07-17 19:14  source
+
+	* Update version to 4.5.4-pre4
+
+2006-07-17 19:14  source
+
+	* Layout changes for dawg
+
+2006-07-17 19:11  source
+
+	* Fixed layout of sparql query help page
+	* Added border=1 to HTML result
+
+2006-07-17 19:10  source
+
+	* Fixed memory leak
+
+2006-07-17 16:04  source
+
+	* Updated version to 4.5.4-pre3
+
+2006-07-17 15:29  source
+
+	* Removed debug messages
+
+2006-07-17 15:20  source
+
+	* Added missing file
+
+2006-07-17 14:20  source
+
+	* Missing patches from previous commit
+
+2006-07-17 13:43  source
+
+	* Removed unwanted files from sparql target
+
+2006-07-17 13:28  source
+
+	* Setting sql_query_timeout to 0 had no effect. Make this set it to near
+	  maxint for about 23 days.
+
+2006-07-17 13:08  source
+
+	* Fixed TYPE_NAME, LOCAL_TYPENAME and CREATE_PARAMS length to 32
+
+2006-07-17 13:06  source
+
+	* Fixed max identifier length for column/table/procedure names to 128
+
+2006-07-17 12:51  source
+
+	* Added new function to calculate display size
+
+2006-07-17 12:50  source
+
+	* Fixed ODBC 2.x SQLColAttributes
+
+2006-07-17 12:48  source
+
+	* Fixed SQLSMALLINT/SQLINTEGER mapping of arguments
+
+2006-07-17 12:46  source
+
+	* Fixed SQLGetDescField (SQL_DESC_UPDATABLE)
+
+2006-07-17 11:04  source
+
+	* Added SIOC support
+	* Added GeoURL tags support
+	* Fixed FOAF support
+	* Fixed problem with special chars in application name
+	* Fixed problem uninstalling/deleting ODS application
+
+2006-07-17 11:01  source
+
+	* Added sanity check
+	* Fixed search support
+	* Fixed url support
+	* Fixed plugin support
+	* Fixed RDF exposure
+	* Fixed uninstall functionality
+	* Fixed broken upgrade functionality
+	* Fixed various skins issues
+	* Fixed search returning bad link
+
+2006-07-17 10:58  source
+
+	* Added SIOC auto-discovery
+	* Fixed FOAF support
+	* Fixed enclusure not appearing in multimedia feed
+
+2006-07-17 10:54  source
+
+	* Fixed ODS home
+
+2006-07-17 10:53  source
+
+	* Added Bookmark to dashboard
+	* Added ATOM and FOAF in ODS RDF storage
+	* Added more SIOC support
+	* Upgrade search rss data generation to support rss2_to_atom1.0 transformation
+	* Fixed GEO lat/lng parameter depending on Home/Business address
+	* Fixed GEO lat/lng description text
+	* Fixed SIOC autodiscovery
+	* Fixed wiki article link
+	* Removed debug code
+	* Fixed typos
+
+2006-07-17 10:49  source
+
+	* Added FOAF auto-discovery feature
+	* Added GeoURL tags support
+	* Added about.rdf
+	* Added Cloud tag display
+	* Fixed displaying file name
+	* Fixed DT006 Cannot convert to datetime error
+
+2006-07-17 10:46  source
+
+	* Added FOAF Auto-discovery feature
+	* Added GeoURL tags support
+	* Added Cloud tag display
+	* Update OPML import
+	* Fixed failed access to feeds instance
+	* Fixed tag link with "-" shows javascript error
+	* Fixed Search: link to feed redirects to login page
+
+2006-07-17 10:42  source
+
+	* Use same folder icons as the other ODS apps
+
+2006-07-17 10:39  source
+
+	* Added FOAF Auto-discovery Feature
+	* Added GeoURL tags support
+	* Added about.rdf
+
+2006-07-17 10:37  source
+
+	* Added FOAF Auto-discovery feature
+	* Added GeoURL tags support
+	* Updated search page
+	* Update import page
+	* Fixed uninstall problem
+	* Fixed bad function name
+	* Fixed problem with main tree positioning
+	* Fixed Search: folder column shows error
+	* Fixed Show tags cloud
+	* Fixed polder path problem
+	* Fixed tag list contains already added tag
+	* Fixed Search: Folder value shows as (NULL)
+	* Fixed Add Bookmark: returns SR133 error
+	* Fixed move bug
+
+2006-07-17 09:01  source
+
+	* Rearranged navigation
+	* New Dawg behaviour
+
+2006-07-17 08:55  source
+
+	* Merged latest documentation changes
+
+2006-07-14 17:30  source
+
+	* New Dawg behaviour
+
+2006-07-14 17:30  source
+
+	* Merged patches from upstream OAT archive
+
+2006-07-14 17:27  source
+
+	* Fixed a bug in setting permisions, owners & groups in webdav
+
+2006-07-14 17:10  source
+
+	* Fix to let _gate_export() properly signal an error if not all names
+	  can be linked
+
+2006-07-14 17:08  source
+
+	* Added id_hash_delete_rnd()
+
+2006-07-14 17:07  source
+
+	* Added security role for SPARQL
+
+2006-07-14 17:06  source
+
+	* Added better error reporting in debug build
+
+2006-07-14 17:05  source
+
+	* Fixed error message for bad type for iri col
+	* Added cache replacement for tf_cached_iid
+
+2006-07-14 07:15  source
+
+	* Updated version number
+
+2006-07-14 07:14  source
+
+	* Fixed computed col pred conditions for value subq, i.e. cond expression
+
+2006-07-14 07:12  source
+
+	* Fixed memory leak in dict_duplicate()
+
+2006-07-13 13:19  source
+
+	* Added missing icons
+
+2006-07-13 13:17  source
+
+	* Added new tutorials
+
+2006-07-13 13:13  source
+
+	* Added missing images
+
+2006-07-13 13:12  source
+
+	* Added Ajax version of sparql sample
+
+2006-07-13 13:08  source
+
+	* Added meta data for ODS-Gallery
+
+2006-07-13 12:30  source
+
+	* SPARQL to SQL compilation fixes including
+	  1. Proper support for case modes (in bif:lname and sql:lname function
+	     names
+	  2. Proper support for xsd:date, xsd:time and xsd:dateTime literals
+	     in expressions.
+
+2006-07-13 11:22  source
+
+	* No Universe support in vos
+
+2006-07-13 10:37  source
+
+	* Added pluggable box hash and compare because numerics are in a large box
+	  with uninited end, so string hash is not good.
+	* Added stub functions for EXE-export of dk_set_push and dk_set_delete
+	  when MALLOC_DEBUG is set
+	* Added t_box_float.
+	* Added t_list_insert_many_before_nth
+	* Added t_list_insert_before_nth
+
+2006-07-13 10:32  source
+
+	* Added bif_jso_validate()
+
+2006-07-13 10:32  source
+
+	* Fixed SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE problem when returning
+	  javascript results
+	* Cleared Graph default value Changed query default value
+	* Fix for uninitialized format on remote SPARQL exec
+	* Added tree of quad maps instead of list
+	* Added functions for attaching and detaching filters
+	* Bugfix for case when triple is matched to quad map and constant field
+	  of triple matches to the non-const field of quad map
+
+2006-07-13 10:29  source
+
+	* When freeing temp tree:
+	  1. in cancel of write, could deadlock between page map and
+	     iq_mtx.
+	  2. could free a buffer and then revisit it after it was reallocated
+	     to other tree, serializing on wrong page map etc.
+	  Further, turn off not-in-any-check for mtx debug since timing impact
+	  is excessive.
+
+2006-07-13 10:28  source
+
+	* Added __cost directive for procedures
+	* Cost model for and join order for procedures and procedure views.
+	* New implementation of random table option
+	* Sampling of table and column cardinality on demain
+	* Sampling of search condition selectivity when leading const key parts
+	* Certain items of ddlrun not allowd for public
+	* Add sys_col_auto_stats view and col_stat bif to see auto samples
+	* Understand rdf const funcs from iri and ext const syntax as const for
+	  in- cost model
+	* do not try  hash join if already have join inx op
+	* use swapping strses if file too long in file_to_string_output
+	* numeric box_hash corrected, box_hash bif added
+	* slqlo_statistics define out. auxfiles.c
+
+2006-07-13 10:21  source
+
+	* Added rowcount
+	* Fixed foreign keys
+
+2006-07-13 10:20  source
+
+	* Fix to remove garbage from error message
+
+2006-07-13 10:18  source
+
+	* Check for inx root not being proper node
+
+2006-07-13 10:07  source
+
+	* Initial support for FCGI
+
+2006-07-13 10:07  source
+
+	* Added better diagnostics
+
+2006-07-13 10:06  source
+
+	* Increased xml local name from 100 to 500 characters
+
+2006-07-13 08:27  source
+
+	* Merged documentation fixes
+
+2006-07-13 08:26  source
+
+	* Small fixes to tutorials
+
+2006-07-13 08:25  source
+
+	* Fixed path to tutorials
+
+2006-07-13 08:23  source
+
+	* Changed to ajax driven sparql demo
+	* Fixed files content-types when loaded in DAV
+
+2006-07-13 08:20  source
+
+	* Fixed snapshot replication
+
+2006-07-13 08:17  source
+
+	* Fixed copyright headers
+
+2006-07-13 08:11  source
+
+	* Fixed dav permissions
+
+2006-07-13 08:09  source
+
+	* Added more metadata vectors
+
+2006-07-13 08:08  source
+
+	* Removed debug lines
+
+2006-07-13 07:59  source
+
+	* Fixed files content-types when loaded in DAV
+
+2006-07-13 07:59  source
+
+	* Changed to ajax driven sparql demo
+
+2006-06-27 19:29  source
+
+	* Small doc fix
+
+2006-06-27 19:29  source
+
+	* Added support for xsd:anyURI type in Java-Script style Objects.
+	* Map DB.DBA.SYS_USERS to RDF_QUAD
+	* Added bif_jso_validate
+	* Rewrote triple with long qm_list into union of triples with short qm_list
+	* New calculation of smalles common valmode
+
+2006-06-27 19:22  source
+
+	* Fixed SOAP problem with InteropTestRpcEncoded
+
+2006-06-27 19:20  source
+
+	* Added meta information on bookmarks
+
+2006-06-27 19:17  source
+
+	* Namespace fixes
+
+2006-06-27 19:16  source
+
+	* Fixed cr/lf at beginning of response
+
+2006-06-27 19:14  source
+
+	* Additional SIOC support
+	* Removed debug code
+	* Added missing files
+
+2006-06-27 15:48  source
+
+	* Added support for JSON serialization of SPARQL result-sets.
+	* Added recognition of MIME application/json in SPARQL web service.
+	* Added new calculation of smallest common valmode, search for triple
+	  by selid and tabid, valmode hierarchy.
+	* Added redirect to default page (like SPARQL demo) when the query is
+	  not specified.
+	* Fixed uninitialized format on remote SPARQL exec.
+	* Small bugfixes
+
+2006-06-27 15:43  source
+
+	* Fixed invalid syntax error message on semicolon at the end of [ ... ]
+	  blank node.
+	* Added workaround for popular syntax bug: top-level blank node subject
+	  without predicate-object-list after subject (because all predicates
+	  and objects are inside square brackets).
+	* Improved error diagnostics.
+
+2006-06-27 15:42  source
+
+	* Up case column names.
+
+2006-06-27 15:41  source
+
+	* Added function bif_sprintf_inverse
+
+2006-06-27 15:41  source
+
+	* No more warnings about mismatch UNAME versus VARCHAR.
+
+2006-06-27 15:39  source
+
+	* trig on insert
+
+2006-06-27 15:27  source
+
+	* Added proper error recovery for cases when SPARQL compilation creates
+	  an SQL text with syntax errors, yyparse signals an error and next
+	  parse runs yyrestart() that writes to an yy_input_buffer that resided
+	  in memory pool of previous compilation.
+
+2006-06-27 15:23  source
+
+	* Added support for xsd:anyURI type in Java-Script style Objects
+
+2006-06-27 15:22  source
+
+	* Made an explicit value given to an identity column in insert override
+	  the value from the sequence
+
+2006-06-27 15:21  source
+
+	* Added function to return current stored procedure name
+
+2006-06-27 15:19  source
+
+	* Removed debugging code
+
+2006-06-27 15:17  source
+
+	* Fixed parsing "--" inside SCRIPT tag
+	* Fixed typo
+
+2006-06-27 15:14  source
+
+	* Added RDF dataspace
+	* Fixed session id
+	* Fixed ODS directory
+	* Fixed FOAF content
+	* Fixed typos
+	* Additional UI changes
+	* Updated version number
+
+2006-06-27 15:10  source
+
+	* Added eRDF support
+	* Fixed ATOM version
+	* Fixed FOAF support
+	* Fixed ODS urls
+	* Fixed podcast link with old widget
+	* Fixed problem upgrading to newer release
+	* Additional UI fixes
+	* Updated version number
+
+2006-06-27 15:03  source
+
+	* Fixed move bug
+	* Added path column to folders
+	* Added dataspace RDF
+	* Additional UI fixes
+	* Updated version number
+
+2006-06-27 14:58  source
+
+	* Additional permission checks
+	* Changed atom version to 1.0
+	* Fixed description for MS Office document
+	* Added RDF tripple store import/export
+	* Updated DAV browser UI
+	* Updated advanced metadata search UI
+	* Added verbose error messages for metadata
+	* Updated version number
+
+2006-06-27 14:52  source
+
+	* Fixed package name
+	* Fixed empty post list
+	* Fixed ODS home directory
+	* Updated package version
+
+2006-06-27 14:46  source
+
+	* Fixed typos
+
+2006-06-27 14:46  source
+
+	* Fixed publishing date
+	* Fixed location of image
+	* Fixed icon paths
+	* Fixed typos
+
+2006-06-27 14:43  source
+
+	* Updated version number
+
+2006-06-27 14:42  source
+
+	* Fixed title
+
+2006-06-27 14:42  source
+
+	* Updated atom version
+
+2006-06-27 14:41  source
+
+	* Added support for SIOC
+	* Added missing file
+	* Added support for free text function hook
+	* Added new conversation page
+	* Small layout fixes
+
+2006-06-27 14:36  source
+
+	* Added support for FOAF
+	* Added support for SIOC
+	* Added application name mapping
+	* Additional GDATA support
+	* Fixed title bar
+	* Fixed dataspace redirect
+	* Fixed version number calculation
+	* Small layout fixes
+
+2006-06-23 15:17  source
+
+	* Added DO_BOX_FAST_REV macro
+
+2006-06-23 15:17  source
+
+	* Added mp_box_tag_modify()
+
+2006-06-23 15:14  source
+
+	* Merged latest documentation fixes
+
+2006-06-23 15:13  source
+
+	* Set release to 4.5
+
+2006-06-23 15:13  source
+
+	* Renamed Schema to Catalog
+
+2006-06-23 15:12  source
+
+	* Added background logos
+
+2006-06-23 15:11  source
+
+	* Added new test code for RDF meta data
+
+2006-06-23 15:10  source
+
+	* Get only last directory part
+
+2006-06-23 15:10  source
+
+	* Fixed autoversioning
+	* Added dav_version_fold_int
+
+2006-06-23 15:07  source
+
+	* Added additional meta information
+
+2006-06-23 15:00  source
+
+	* Added registration of demo page as a default page for SPARQL web
+	  service endpoint.
+	* Various fixes and enhancements
+
+2006-06-23 14:48  source
+
+	* Added art demo
+
+2006-06-23 14:48  source
+
+	* Use latest vsp docs for VAD package
+	* Fixed path for pdf
+
+2006-06-23 14:44  source
+
+	* Fixed warning text
+
+2006-06-23 14:39  source
+
+	* Moved <complexType ... > tag to start of file
+
+2006-06-23 14:38  source
+
+	* Reshuffled tags to fix javascript error
+
+2006-06-23 14:34  source
+
+	* Moved  <complextype ...> tag before comment
+
+2006-06-23 14:33  source
+
+	* Replace < .. > with &lt; and &gt;
+	* Added missing grant
+
+2006-06-23 14:31  source
+
+	* Added missing tag
+
+2006-06-23 14:29  source
+
+	* Fixed incorrect resource name in grant
+
+2006-06-23 14:26  source
+
+	* Added missing contenttype to FORM
+
+2006-06-23 14:26  source
+
+	* Fixed problem when hosted in DAV
+
+2006-06-23 14:24  source
+
+	* Sync with original SQL files
+	* Added autoload functionality
+
+2006-06-23 14:23  source
+
+	* Extended sample to use bookmarks
+
+2006-06-23 14:16  source
+
+	* Added qualifier and owner information to query to fix S0002 error
+
+2006-06-23 14:03  source
+
+	* Moved <?xml ...> tag to start of file
+
+2006-06-22 23:09  source
+
+	* Use cli_dbg_printf instead of OutputDebugString
+	* Removed old debugging code
+
+2006-06-22 21:05  source
+
+	* Reindented code
+
 2006-06-08 12:57  source
 
 	* Minor cosmetic fix

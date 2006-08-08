@@ -1,3 +1,19 @@
+August 8 2006, V4.5.4:
+  * Added support for CREATE VIEW ... AS SPARQL SELECT
+  * Added support for SPARQL IN and LIKE operators
+  * Added support for SPARL LIMIT, OFFSET and ORDER BY constructions
+  * Added new SPARQL demo VAD package using OpenLink Ajax Toolkit (OAT)
+  * Added additional support and docs for RDF_TRIPLES and RDF_QUAD
+  * Added additional support for ATOM, DAWG, GDATA, GeoURL, SIMILE and SIOC
+  * Added multiple plugins for ODS-Wiki
+  * Added support for PHP 5.x hosting
+  * Added new cost model and join order for procedures and procedure views
+  * Fixed SQLColAttribute and SQLColAttributes in ODBC driver
+  * Fixed memory leak
+  * Fixed FOAF support
+  * Small changes and bugfixes to virtuoso server
+  * Small changes and bugfixes to ODS applications
+
 June 8 2006, V4.5.3:
   * Added OpenLink Data Spaces (ODS) application framework
   * Added OpenLink Data Spaces (ODS) applications: 
