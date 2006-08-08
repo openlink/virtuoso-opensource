@@ -657,6 +657,38 @@ defined and should not be used by applications.</para>
 create function DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any)
 create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any)
 </programlisting>
+<para>The application can use SPARQL construct statement in order to compose a dictionary of triples to be inserted or deleted,
+then convert the dictionary into array, then pass the array as a parameter to RDF_INSERT_TRIPLES or RDF_DELETE_TRIPLES.
+This is slow and overcomplicated for simple cases when the application should, say, delete from RDF_QUAD by using simple filters like
+</para>
+<programlisting>
+delete from DB.DBA.RDF_QUAD
+where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (
+    'http://local.virt/DAV/sparql_demo/data/data-xml/source-simple2/source-data-01.rdf' );
+</programlisting>
+<para>
+On the other hand, simple filters does not work when search criteria refer to triples that are affected by the modification.
+Consider a function that deletes all triples whose subjects are nodes of type 'http://xmlns.com/foaf/0.1/Person'.
+Type information is stored in triples that will be deleted, so the simplest function is
+something like this:
+</para>
+<programlisting><![CDATA[
+create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
+{
+  declare pdata_dict, pdata_array any;
+  pdata_dict := ((
+      sparql construct { ?s ?p ?o }
+      where { graph ?:foaf_graph {
+              ?s ?p ?o . ?s rdf:type <http://xmlns.com/foaf/0.1/Person>
+            } }
+      ));
+  pdata_array := dict_list_keys (pdata_dict, 1);
+  RDF_DELETE_TRIPLES (foaf_graph, pdata_array);
+};
+
+DELETE_PERSONAL_DATA (
+  'http://local.virt/DAV/sparql_demo/data/data-xml/source-simple2/source-data-01.rdf' );
+]]></programlisting>
 <para>As soon as the Virtuoso SPARQL implementation is extended to provide fine grained   access rights the , SPARQL syntax will be extended with 'INSERT INTO ... CONSTRUCT ...', 'INSERT INTO ... DESCRIBE ...', and 'DELETE FROM ... CONSTRUCT ...' statements.
 </para>
 </sect2>
