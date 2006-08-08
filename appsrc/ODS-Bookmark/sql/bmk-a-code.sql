@@ -730,7 +730,7 @@ create procedure BMK.WA.bookmark_update (
       values (uri, name, description);
     bookmark_id := identity_value ();
   }
-  if (is_empty_or_null(folder_id))
+  if (cast(folder_id as integer) <= 0)
     folder_id := null;
   if (id = -1)
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
