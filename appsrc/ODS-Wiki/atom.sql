@@ -323,7 +323,7 @@ create procedure WV.WIKI.gdata
         
           declare _newtopic WV.WIKI.TOPICINFO;
           _newtopic := WV.WIKI.TOPICINFO();
-	  _newtopic.ti_default_cluster := 'Main';
+	  _newtopic.ti_default_cluster := coalesce (_cluster, 'Main');
 	  _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
 	  _newtopic.ti_parse_raw_name ();
 	  _newtopic.ti_fill_cluster_by_name ();
@@ -346,7 +346,7 @@ create procedure WV.WIKI.gdata
       content := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
       declare _newtopic WV.WIKI.TOPICINFO;
       _newtopic := WV.WIKI.TOPICINFO();
-      _newtopic.ti_default_cluster := 'Main';
+      _newtopic.ti_default_cluster := coalesce (_cluster, 'Main');
       _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
       _newtopic.ti_parse_raw_name ();
       _newtopic.ti_fill_cluster_by_name ();
@@ -365,7 +365,7 @@ create procedure WV.WIKI.gdata
     {
           declare _newtopic WV.WIKI.TOPICINFO;
           _newtopic := WV.WIKI.TOPICINFO();
-	  _newtopic.ti_default_cluster := 'Main';
+	  _newtopic.ti_default_cluster := coalesce (_cluster, 'Main');
 	  _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
 	  _newtopic.ti_parse_raw_name ();
 	  _newtopic.ti_fill_cluster_by_name ();

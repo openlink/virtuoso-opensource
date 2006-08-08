@@ -175,10 +175,12 @@
 	    <th>password</th>
 	    <td><v:text name="upstream_password" value="--get_keyword ('passwd', self.defval, '')"/></td>
 	  </tr>
+<!--
 	  <tr>
 	    <th>target cluster</th>
 	    <td><v:text name="upstream_cluster" value="--get_keyword ('rcluster', self.defval, '')"/></td>
 	  </tr>
+-->
 	  <v:hidden name="id2" value="--get_keyword('id', self.defval)"/>
           <tr>
 	    <td align="left">

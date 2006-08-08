@@ -100,6 +100,8 @@ create function ATOM_RTOPIC (
     in default_cluster varchar,
     in local_name varchar)
 {
+-- target cluster is prohibited for now
+   return local_name;
     if (rcluster is null
 	or rcluster = '')
       return default_cluster || '.' || local_name;

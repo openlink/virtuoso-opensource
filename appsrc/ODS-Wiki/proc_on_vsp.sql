@@ -1092,6 +1092,12 @@ create procedure WV.WIKI.ATOMDECODEWIKIPATH (out _topicid int, out _cluster varc
   declare path any;
   path := http_path ();
   path := subseq(split_and_decode(aref (WS.WS.PARSE_URI(path), 2), 0, '\0\0/'), 1);
+  if (path[0] = 'dataspace' and length (path) > 3)
+    {
+      _cluster := path[3];
+      _topicid := 0;
+      return 0;
+    }
   declare _host varchar;
   _host := DB.DBA.WA_GET_HOST();
 	  

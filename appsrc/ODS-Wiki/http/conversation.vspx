@@ -92,7 +92,7 @@
                       		  declare exit handler for not found;
 				  if (id >= 0)
 				    {
-					select C_SUBJECT, cast (C_TEXT as varchar), C_AUTHOR, C_DATE
+					select C_SUBJECT, cast (C_TEXT as varchar), C_AUTHOR, WV.WIKI.DATEFORMAT(C_DATE)
 	                      		    into title, comment, u_name, last_update
 	                      		    from WV.WIKI.COMMENT
 		              		   where C_ID = id;
@@ -196,7 +196,7 @@
                       <tr>
                         <td colspan="2" align="center">
                           <hr />
-                          <v:button action="simple" value="Post" xhtml_onclick="javascript:updateRTE(\'f_message\')" xhtml_title="Post" xhtml_class="button2">
+                          <v:button action="simple" value="Post" xhtml_title="Post" xhtml_class="button2">
                             <v:on-post>
                               <![CDATA[
                                 declare name, mail, title, comment any;
