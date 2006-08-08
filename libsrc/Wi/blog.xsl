@@ -1,30 +1,31 @@
+<?xml version="1.0"?>
 <!--
- -  
+ -
+ -  $Id$
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2006 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
 -->
-<?xml version="1.0"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" >
-<xsl:output method="xhtml" 
-  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" 
-  doctype-public="-//W3C//DTD XHTML 1.0 Transitional//EN" 
+<xsl:output method="xhtml"
+  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+  doctype-public="-//W3C//DTD XHTML 1.0 Transitional//EN"
   indent="yes"/>
 
 <xsl:template match="/">
@@ -200,7 +201,7 @@ a:hover { text-decoration: underline }
       <xsl:apply-templates select="/blog/navigation/opml" />
       <!-- xsl:apply-templates select="/blog/navigation/channelroll" / -->
       <div class="roll" >
-        <div align="center" style="margin-bottom: 3px;"><b>Syndication</b></div>        
+        <div align="center" style="margin-bottom: 3px;"><b>Syndication</b></div>
         <div><a href="rss.xml"><img src="/images/xml.gif" border="0"/><br />RSS</a></div>
         <div><a href="index.ocs">OCS</a></div>
         <div><a href="index.opml">OPML</a></div>
