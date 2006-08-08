@@ -104,8 +104,8 @@
       <tr>
         <td>&nbsp;</td>
         <td>
-          <v:button name="go_adv_search" action="submit" value="Submit"/>
-          <input type="reset" name="reset" value="Reset" />
+          <v:button name="go_adv_search" action="submit" value="Search"/>
+          <input type="reset" name="reset" value="Clear" />
         </td>
       </tr>
   </vm:template>
