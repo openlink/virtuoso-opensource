@@ -900,7 +900,7 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
       <row>
         <entry>named_graphs</entry>
         <entry>vector of named graphs (or NULL to not override what's specified in the query</entry>
-        <entry>No</entry>
+        <entry>Yes</entry>
         <entry></entry>
       </row>
       <row>
