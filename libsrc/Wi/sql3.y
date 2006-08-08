@@ -247,6 +247,7 @@
 %type <intval> opt_with_data
 %type <tree> base_table_def
 %type <tree> view_def
+%type <tree> view_def_select_and_opt
 %type <tree> view_query_spec
 %type <tree> create_index_def
 %type <list> base_table_element_commalist
@@ -1087,12 +1088,21 @@ view_query_spec
 	| query_no_from_spec
 	;
 
+view_def_select_and_opt
+	: opt_column_commalist AS view_query_spec opt_with_check_option
+		{ $$ = t_listst (5, VIEW_DEF, NULL /* temp value, will set in view_def rule */,
+			sqlp_view_def ((ST **) $1,
+			  $3, 0), NULL, (ptrlong) $4); }
+	| opt_column_commalist AS SPARQL_L sqlonly_query_exp
+		{ $$ = t_listst (5, VIEW_DEF, NULL /* temp value, will set in view_def rule */,
+			sqlp_view_def ((ST **) $1,
+			  $4, 0), NULL, (ptrlong) 0); }
+	;
+
 view_def
-	: CREATE VIEW new_table_name { sqlp_in_view ($3); } opt_column_commalist
-		AS view_query_spec opt_with_check_option
-		{ $$ = t_listst (5, VIEW_DEF, $3,
-			sqlp_view_def ((ST **) $5,
-			  $7, 0), NULL, (ptrlong) $8); }
+	: CREATE VIEW new_table_name { sqlp_in_view ($3); }
+		view_def_select_and_opt
+                { $$ = $5; $$->_.view_def.name = $3; }
 	| CREATE PROCEDURE VIEW new_table_name AS q_table_name '(' column_commalist_or_empty ')' '(' proc_col_list ')'
 		{ $$ = (ST*) t_list (5, VIEW_DEF, $4,
 		    t_list (4, PROC_TABLE, $6, $8,
