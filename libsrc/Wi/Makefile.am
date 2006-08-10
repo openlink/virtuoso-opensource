@@ -773,7 +773,7 @@ sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES)
 
 sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES)
 	@echo "Generating sql_code_sparql.c"
-	@-gawk -f sql_to_c.awk -v init_name=_sparql -v pl_stats=$(PLSTATS) $(SQL_FILES_SPARQL) > sql_code_sparql.c.tmp
+	@-LANG=C gawk -f sql_to_c.awk -v init_name=_sparql -v pl_stats=$(PLSTATS) $(SQL_FILES_SPARQL) > sql_code_sparql.c.tmp
 	@-[ -s sql_code_sparql.c.tmp ] && mv sql_code_sparql.c.tmp sql_code_sparql.c
 	@touch sql_code_sparql.c
 
