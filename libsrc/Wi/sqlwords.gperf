@@ -1,4 +1,4 @@
-struct keyword { char *keyword; int token; };
+struct keyword { char *keiiyword; int token; };
 %%
 __COST, __COST
 __SOAP_DOC, __SOAP_DOC
