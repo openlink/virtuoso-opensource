@@ -86,6 +86,7 @@ char *virt_env_lst[] = {
   "HTTP_ACCEPT_LANGUAGE",
   "HTTP_HOST",
   "HTTP_KEEP_ALIVE",
+  "HTTP_REFERER",
   "HTTP_USER_AGENT",
   "HTTP_VIA",
   "PATH",
@@ -110,6 +111,11 @@ char *virt_env_lst[] = {
 
 ;
 
+/*
+   "REMOTE_HOST"
+   "HTTP_CONNECTION"
+   "PATH_TRANSLATED"
+*/  
 
 static sapi_module_struct virtuoso_sapi_module = {
   "Virtuoso",
@@ -571,9 +577,17 @@ sapi_virtuoso_register_variables (zval * track_vars_array TSRMLS_DC)
   thr_atrp *t1 =
       (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
   char *temp = ap_lines_get_line0 (t1->in_lines);
+  int i = 0;
 
   if (temp)
     php_register_variable ("PHP_SELF", temp, track_vars_array TSRMLS_CC);
+  while (NULL != virt_env_lst[i])
+    {
+      temp = ap_lines_get (t1->in_lines, virt_env_lst[i]);
+      if (NULL != temp)
+	php_register_variable (virt_env_lst[i], temp, track_vars_array TSRMLS_CC);
+      i ++;
+    }
 }
 
 
