@@ -371,7 +371,7 @@ ap_lines_get (caddr_t * lines, char *key)
   if (!strncasecmp (key, "QUERY_STRING", 12))
     return lines ? lines[0] : NULL;
 
-  if (!strncasecmp (key, "SCRIPT_NAME", 11))
+  if (!strncasecmp (key, "SCRIPT_NAME", 11) && script_path)
     {
       int len = strlen (srv_www_root ());
       strncpy (script_name, script_path + len * sizeof (char), 2048);
