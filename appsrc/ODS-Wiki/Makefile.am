@@ -27,9 +27,9 @@ SUBDIRS = plugin
 nodist_vad_DATA = ods_wiki_dav.vad
 
 CLEANFILES = \
+	*.vad \
 	make_wiki_vad.log \
 	make_wiki_vad.xml \
-	ods_wiki_dav.vad \
 	vad.db \
 	vad.trx \
 	vad.log \

@@ -24,9 +24,9 @@ TOP=@TOP@
 nodist_vad_DATA = ods_bookmark_dav.vad
 
 CLEANFILES = \
+	*.vad \
 	make_bookmark_vad.log \
 	make_bookmark_vad.xml \
-	ods_bookmark_dav.vad \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.lck \

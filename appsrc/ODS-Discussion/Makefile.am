@@ -24,9 +24,9 @@ TOP=@TOP@
 nodist_vad_DATA = ods_discussion_dav.vad
 
 CLEANFILES =  \
+	*.vad \
 	make_nntpf_vad.log \
 	make_nntpf_vad.xml \
-	ods_discussion_dav.vad \
 	vad.db \
 	virtuoso.ini \
 	vad.lck \

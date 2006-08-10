@@ -24,9 +24,9 @@ TOP=@TOP@
 nodist_vad_DATA = ods_briefcase_dav.vad
 
 CLEANFILES = \
+	*.vad \
 	make_briefcase_vad.log \
 	make_briefcase_vad.xml \
-	ods_briefcase_dav.vad \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.lck \

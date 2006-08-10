@@ -24,9 +24,9 @@ TOP=@TOP@
 nodist_vad_DATA = ods_framework_dav.vad
 
 CLEANFILES =  \
+	*.vad \
 	make_ods_vad.log \
 	make_ods_vad.xml \
-	ods_framework_dav.vad \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.lck \

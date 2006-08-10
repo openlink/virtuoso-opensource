@@ -24,9 +24,9 @@ TOP=@TOP@
 nodist_vad_DATA = ods_feedmanager_dav.vad
 
 CLEANFILES = \
+	*.vad \
 	make_feedmanager_vad.log \
 	make_feedmanager_vad.xml \
-	ods_feedmanager_dav.vad \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.lck \

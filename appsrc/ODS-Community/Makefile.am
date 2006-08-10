@@ -24,9 +24,9 @@ TOP=@TOP@
 nodist_vad_DATA = ods_community_dav.vad
 
 CLEANFILES = \
+	*.vad \
 	make_community_vad.log \
 	make_community_vad.xml \
-	ods_community_dav.vad \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.lck \

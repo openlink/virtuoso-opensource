@@ -1,9 +1,8 @@
 #!/bin/sh
-#  clean.sh
 #
-#  $Id:
+#  $Id$
 #
-#  Change above line and this line
+#  Cleanup after running the testsuite
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
@@ -25,27 +24,34 @@
 #  
 #  
 
-# 
-#  Clean up the mess
-#
-
 . ./test_fn.sh
 
 rm -f *.log
 rm -f *.out
 rm -f *.output
+rm -f *.vad
 rm -f comp.ok comp.tmp
 rm -f ident.txt audit.txt dump backup.stat
 rm -f core core.* debug.txt ftp_test_file test_file new.ini
 rm -f $DELETEMASK
 rm -rf remote1 remote2 t1 t2 t3 nw1 nw2 nw3 nw4 nw5 
-rm -f virtuoso.ini virtuoso.lck virtuoso.trx virtuoso.db virtuoso.log
 rm -rf http tproxy rep1 rep2 rep3 xslt wcopy oremote1 oremote2 vspx soap12  
 rm -f txslt.diff vvv?.bp
 rm -f tpc-d/tpcd.output tpc-d/tsqlo.output  
-rm -f virt.odbc t1.xml t2.xml t3.xml t4.xml bpel4ws.vad bpel_temp.sql 
+rm -f virt.odbc t1.xml t2.xml t3.xml t4.xml bpel_temp.sql 
 rm -rf plugins msdtc1 msdtc2 msdtc3 tutorial_test fault1_req fault1 "echo" Flow bpel_audit vad 
 rm -f *.svr
 rm -f wierr.rep1 wierr.rep2 wierr.rep3
 rm -f noise.txt
 rm -f $SRVMSGLOGFILE
+rm -rf classlib
+
+#
+#  Remove databases
+#
+rm -f new.db new.db.sr2 new.db.sr3 new.log.sr2 new.pxa new.tdb
+rm -f virtuoso.ini virtuoso.lck virtuoso.trx virtuoso.log
+rm -f virtuoso.db.*
+rm -f virtuoso.log.*
+rm -f virtuoso.trx.*
+rm -f virtuoso.db virtuoso.pxa virtuoso.tdb

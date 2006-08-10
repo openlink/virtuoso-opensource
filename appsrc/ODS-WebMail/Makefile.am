@@ -24,7 +24,7 @@ TOP=@TOP@
 nodist_vad_DATA = ods_webmail_dav.vad
 
 CLEANFILES =  \
-	ods_webmail_dav.vad \
+	*.vad \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.lck \
