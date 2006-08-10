@@ -25,6 +25,7 @@
 #
 #  Globals
 #
+USAGE=0
 OUTPUT_FILE=""
 PRODUCT_NAME="OpenLink Application"
 PRODUCT_VERSION="1.0"
@@ -72,17 +73,20 @@ done
 #
 #  Make sure we at least know where to write output to
 #
-if test "x$OUTPUT_FILE" = "x"
+if test "$USAGE" -eq 0
 then
-    echo "makever: -o flag missing" >&2
-    USAGE=1
+    if test "x$OUTPUT_FILE" = "x"
+    then
+        echo "makever: -o flag missing" >&2
+        USAGE=1
+    fi
 fi
 
 
 #
 #  Show Usage information
 #
-if test "$USAGE"
+if test "$USAGE"  -eq 1
 then
    cat >&2 <<-EOF_USAGE
 
