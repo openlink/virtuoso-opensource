@@ -82,6 +82,7 @@ EXTRA_DIST = \
 	README* \
 	autogen.sh \
 	bin/makever \
+	bin/generate \
 	bin/libtool.macosx \
 	bin/installer/virtuoso.ini bin/installer/demo.ini \
 	win32/mkperlenv.pl \

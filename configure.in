@@ -243,17 +243,14 @@ if test "$LEX" != flex ; then
  AC_MSG_ERROR(You need to install flex)
 fi
 
-AC_PATH_PROG(GAWK,gawk)
-if test \! -f "$GAWK" ;  then
-    AC_MSG_ERROR(You need to install gawk)
-fi
-AC_PATH_PROG(GPERF,gperf, missing)
-AM_CONDITIONAL(HAVE_GPERF, test "x$GPERF" != "x")
-AC_PATH_PROG(HTMLDOC,htmldoc)
+AC_PATH_PROG(HTMLDOC, htmldoc)
 AM_CONDITIONAL(WITH_HTMLDOC, test "x$HTMLDOC" != "x")
-AC_PATH_PROG(PERL,perl)
-AC_PATH_PROG(PYTHON,python)
-AC_PATH_PROG(RUBY,ruby)
+
+AC_PATH_PROG(GAWK, gawk, gawk)
+AC_PATH_PROG(GPERF,gperf, gperf)
+AC_PATH_PROG(PERL, perl, perl)
+AC_PATH_PROG(PYTHON, python, python)
+AC_PATH_PROG(RUBY, ruby, ruby)
 #AC_DECL_YYTEXT
 
 ##########################################################################

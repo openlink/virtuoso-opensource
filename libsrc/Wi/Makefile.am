@@ -35,6 +35,10 @@ if WITH_IMSG
     IMSG_BIF= bif_pop3.c bif_nntp.c
 endif
 
+
+GEN=${top_srcdir}/bin/generate
+
+
 noinst_LTLIBRARIES = libwi.la libwic.la $(IODBC_LIBS)
 noinst_HEADERS = \
 	2pc_client.h 2pc.h arith.h bif_text.h bif_xper.h blobio.h CLI.h \
@@ -615,15 +619,7 @@ SQL_FILES_IMSG		 = pop3_svr.sql \
 endif
 
 sqlwords.h: sqlwords.gperf
-if HAVE_GPERF
-	-rm -f sqlwords.h.tmp
-	$(GPERF) -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ sqlwords.gperf -Nlex_hash_kw | sed -e 's/char \*keyword/char *keiiyword/g' >sqlwords.h.tmp
-	-test -s sqlwords.h.tmp && mv sqlwords.h.tmp sqlwords.h
-	-rm -f sqlwords.h.tmp
-else
-	$(SHELL) $(top_srcdir)/binsrc/config/missing gperf -v
-endif
-	touch sqlwords.h
+	@${GEN} ${GPERF} -o sqlwords.h -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ sqlwords.gperf -Nlex_hash_kw 
 
 sql3.c: sql3.y
 	$(YACC) -vd -osql3.c ../../libsrc/Wi/sql3.y
@@ -694,102 +690,93 @@ turtle_l.c: turtle_l.l turtle_p.h
 	$(LEX) -Pttlyy -oturtle_l.c ../../libsrc/Wi/turtle_l.l
 
 sql_code.c: $(SQL_FILES) $(AWK_FILES)
-	@echo "Generating sql_code.c"
-	@-LANG=C gawk -f sql_to_c.awk -v pl_stats=$(PLSTATS) $(SQL_FILES) > sql_code.c.tmp
-	@-[ -s sql_code.c.tmp ] && mv sql_code.c.tmp sql_code.c
-	@touch sql_code.c
+	@${GEN} ${GAWK} -o sql_code.c -f sql_to_c.awk \
+		-v pl_stats=$(PLSTATS) $(SQL_FILES)
 
 sql_code_1.c: $(SQL_FILES_1) $(AWK_FILES)
-	@echo "Generating sql_code_1.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_1 -v pl_stats=$(PLSTATS) $(SQL_FILES_1) > sql_code_1.c.tmp
-	@-[ -s sql_code_1.c.tmp ] && mv sql_code_1.c.tmp sql_code_1.c
-	@touch sql_code_1.c
+	@${GEN} ${GAWK} -o sql_code_1.c -f sql_to_c.awk \
+		-v init_name=_1 -v pl_stats=$(PLSTATS) $(SQL_FILES_1)
 
 sql_code_ddk.c: $(SQL_FILES_DDK) $(AWK_FILES)
-	@echo "Generating sql_code_ddk.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_ddk -v pl_stats=$(PLSTATS) $(SQL_FILES_DDK) > sql_code_ddk.c.tmp
-	@-[ -s sql_code_ddk.c.tmp ] && mv sql_code_ddk.c.tmp sql_code_ddk.c
-	@touch sql_code_ddk.c
+	@${GEN} ${GAWK} -o sql_code_ddk.c -f sql_to_c.awk \
+		-v init_name=_ddk -v pl_stats=$(PLSTATS) $(SQL_FILES_DDK)
 
 sql_code_adm.c: $(SQL_FILES_ADM) $(AWK_FILES)
-	@echo "Generating sql_code_adm.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_adm -v pl_stats=$(PLSTATS) $(SQL_FILES_ADM) > sql_code_adm.c.tmp
-	@-[ -s sql_code_adm.c.tmp ] && mv sql_code_adm.c.tmp sql_code_adm.c
-	@touch sql_code_adm.c
+	@${GEN} ${GAWK} -o sql_code_adm.c -f sql_to_c.awk \
+		-v init_name=_adm -v pl_stats=$(PLSTATS) $(SQL_FILES_ADM)
 
 sql_code_dav.c: $(SQL_FILES_DAV) $(AWK_FILES)
-	@echo "Generating sql_code_dav.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_dav -v pl_stats=$(PLSTATS) $(SQL_FILES_DAV) > sql_code_dav.c.tmp
-	@-[ -s sql_code_dav.c.tmp ] && mv sql_code_dav.c.tmp sql_code_dav.c
-	@touch sql_code_dav.c
+	@${GEN} ${GAWK} -o sql_code_dav.c -f sql_to_c.awk \
+		-v init_name=_dav -v pl_stats=$(PLSTATS) $(SQL_FILES_DAV)
 
 sql_code_vad.c: $(SQL_FILES_VAD) $(AWK_FILES)
-	@echo "Generating sql_code_vad.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_vad -v pl_stats=$(PLSTATS) $(SQL_FILES_VAD) > sql_code_vad.c.tmp
-	@-[ -s sql_code_vad.c.tmp ] && mv sql_code_vad.c.tmp sql_code_vad.c
-	@touch sql_code_vad.c
+	@${GEN} ${GAWK} -o sql_code_vad.c -f sql_to_c.awk \
+		-v init_name=_vad -v pl_stats=$(PLSTATS) $(SQL_FILES_VAD)
 
 sql_code_dbp.c: $(SQL_FILES_DBP) $(AWK_FILES)
-	@echo "Generating sql_code_dbpump.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_dbp -v pl_stats=$(PLSTATS) $(SQL_FILES_DBP) > sql_code_dbp.c.tmp
-	@-[ -s sql_code_dbp.c.tmp ] && mv sql_code_dbp.c.tmp sql_code_dbp.c
-	@touch sql_code_dbp.c
+	@${GEN} ${GAWK} -o sql_code_dbp.c -f sql_to_c.awk \
+		-v init_name=_dbp -v pl_stats=$(PLSTATS) $(SQL_FILES_DBP)
 
 sql_code_uddi.c: $(SQL_FILES_UDDI) $(AWK_FILES)
-	@echo "Generating sql_code_uddi.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_uddi -v pl_stats=$(PLSTATS) $(SQL_FILES_UDDI) > sql_code_uddi.c.tmp
-	@-[ -s sql_code_uddi.c.tmp ] && mv sql_code_uddi.c.tmp sql_code_uddi.c
-	@touch sql_code_uddi.c
+	@${GEN} ${GAWK} -o sql_code_uddi.c -f sql_to_c.awk \
+		-v init_name=_uddi -v pl_stats=$(PLSTATS) $(SQL_FILES_UDDI) 
 
 sql_code_imsg.c: $(SQL_FILES_IMSG) $(AWK_FILES)
-	@echo "Generating sql_code_imsg.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_imsg -v pl_stats=$(PLSTATS) $(SQL_FILES_IMSG) > sql_code_imsg.c.tmp
-	@-[ -s sql_code_imsg.c.tmp ] && mv sql_code_imsg.c.tmp sql_code_imsg.c
-	@touch sql_code_imsg.c
+	@${GEN} ${GAWK} -o sql_code_imsg.c -f sql_to_c.awk \
+		-v init_name=_imsg -v pl_stats=$(PLSTATS) $(SQL_FILES_IMSG)
 
 sql_code_auto.c: $(SQL_FILES_AUTO) $(AWK_FILES)
-	@echo "Generating sql_code_auto.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_auto -v pl_stats=$(PLSTATS) $(SQL_FILES_AUTO) > sql_code_auto.c.tmp
-	@-[ -s sql_code_auto.c.tmp ] && mv sql_code_auto.c.tmp sql_code_auto.c
-	@touch sql_code_auto.c
+	@${GEN} ${GAWK} -o sql_code_auto.c -f sql_to_c.awk \
+		-v init_name=_auto -v pl_stats=$(PLSTATS) $(SQL_FILES_AUTO)
 
 sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES)
-	@echo "Generating sql_code_2pc.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_2pc -v pl_stats=$(PLSTATS) $(SQL_FILES_2PC) > sql_code_2pc.c.tmp
-	@-[ -s sql_code_2pc.c.tmp ] && mv sql_code_2pc.c.tmp sql_code_2pc.c
-	@touch sql_code_2pc.c
+	@${GEN} ${GAWK} -o sql_code_2pc.c -f sql_to_c.awk \
+		-v init_name=_2pc -v pl_stats=$(PLSTATS) $(SQL_FILES_2PC)
 
 #sql_code_blog.c: $(SQL_FILES_BLOG) $(AWK_FILES)
-#	@echo "Generating sql_code_blog.c"
-#	@-LANG=C gawk -f sql_to_c.awk -v init_name=_blog -v pl_stats=$(PLSTATS) $(SQL_FILES_BLOG) > sql_code_blog.c.tmp
-#	@-[ -s sql_code_blog.c.tmp ] && mv sql_code_blog.c.tmp sql_code_blog.c
-#	@touch sql_code_blog.c
+#	@${GEN} ${GAWK} -o sql_code_2pc.c -f sql_to_c.awk \
+#		-v init_name=_blog -v pl_stats=$(PLSTATS) $(SQL_FILES_BLOG)
 
 sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES)
-	@echo "Generating sql_code_vdb.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_vdb -v pl_stats=$(PLSTATS) $(SQL_FILES_VDB) > sql_code_vdb.c.tmp
-	@-[ -s sql_code_vdb.c.tmp ] && mv sql_code_vdb.c.tmp sql_code_vdb.c
-	@touch sql_code_vdb.c
+	@${GEN} ${GAWK} -o sql_code_vdb.c -f sql_to_c.awk \
+		-v init_name=_vdb -v pl_stats=$(PLSTATS) $(SQL_FILES_VDB)
 
 sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES)
-	@echo "Generating sql_code_sparql.c"
-	@-LANG=C gawk -f sql_to_c.awk -v init_name=_sparql -v pl_stats=$(PLSTATS) $(SQL_FILES_SPARQL) > sql_code_sparql.c.tmp
-	@-[ -s sql_code_sparql.c.tmp ] && mv sql_code_sparql.c.tmp sql_code_sparql.c
-	@touch sql_code_sparql.c
+	@${GEN} ${GAWK} -o sql_code_sparql.c -f sql_to_c.awk \
+		-v init_name=_sparql -v pl_stats=$(PLSTATS) $(SQL_FILES_SPARQL)
 
 blog_pages.sql: FORCE
 	(cd $(top_srcdir)/binsrc/weblog ; gmake)
 
 .PHONY: generated
 generated: \
-	sqlwords.h sql3.c scn3.c scn3split.c \
-	xpathp.c xpathp.h xpscn.c \
-	sparql_p.c sparql_p.h sparql_l.c \
-	turtle_p.c turtle_p.h turtle_l.c \
-	sql_code.c sql_code_1.c sql_code_ddk.c sql_code_adm.c sql_code_dav.c sql_code_vad.c sql_code_dbp.c \
-	sql_code_uddi.c sql_code_imsg.c sql_code_auto.c sql_code_2pc.c sql_code_cache.c sql_code_vdb.c sql_code_sparql.c
-
-
+	scn3.c \
+	scn3split.c \
+	sparql_l.c \
+	sparql_p.c \
+	sparql_p.h \
+	sql3.c \
+	sql_code_1.c \
+	sql_code_2pc.c \
+	sql_code_adm.c \
+	sql_code_auto.c \
+	sql_code.c \
+	sql_code_cache.c \
+	sql_code_dav.c \
+	sql_code_dbp.c \
+	sql_code_ddk.c \
+	sql_code_imsg.c \
+	sql_code_sparql.c \
+	sql_code_uddi.c \
+	sql_code_vad.c \
+	sql_code_vdb.c \
+	sqlwords.h \
+	turtle_l.c \
+	turtle_p.c \
+	turtle_p.h \
+	xpathp.c \
+	xpathp.h \
+	xpscn.c 
 
 
 # ----------------------------------------------------------------------

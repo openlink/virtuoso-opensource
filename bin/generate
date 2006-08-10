@@ -1,0 +1,186 @@
+#!/bin/sh
+#
+#  $Id$
+#
+#  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+#  project.
+#  
+#  Copyright (C) 1998-2006 OpenLink Software
+#  
+#  This project is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by the
+#  Free Software Foundation; only version 2 of the License, dated June 1991.
+#  
+#  This program is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#  General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+#  
+
+#DEBUG
+#set -x
+#DEBUG
+
+# ----------------------------------------------------------------------
+#  Fix issues with LOCALE
+# ----------------------------------------------------------------------
+LANG=C
+export LANG
+
+# ----------------------------------------------------------------------
+#  Color settings
+# ----------------------------------------------------------------------
+B=`tput bold 2>/dev/null`
+N=`tput sgr0 2>/dev/null`
+
+# ----------------------------------------------------------------------
+#  Globals
+# ----------------------------------------------------------------------
+OUTPUT_FILE=
+EXTRA_ARGS=
+ERROR="${B}** ERROR **${N}"
+WARNING="${B}* WARNING *${N}"
+USAGE=0
+
+
+# ----------------------------------------------------------------------
+#  Parse command line
+# ----------------------------------------------------------------------
+while  test "x$1" != "x"
+do
+   case "$1" in
+       -o)	
+          shift
+	  OUTPUT_FILE="$1"
+	  ;;
+	
+	-\?)
+	  USAGE=1
+	  ;;
+
+	*)
+	  EXTRA_ARGS="$EXTRA_ARGS $1"
+	  ;;
+   esac
+
+   shift
+done
+
+
+if test "$USAGE" -eq 1 || test -z "$EXTRA_ARGS"
+then
+    cat <<-EOF_USAGE
+
+	Usage: $0 prog -o outputfile [args]...
+
+	This script tries to runs a command and pipe standard output to a file.
+
+	If the program does not exist but the output file already exists,
+	the user is warned that any new data is not parsed and the output
+	file is not overwritten. The timestamp of the output file is
+	changed to now, so the next make command will continue.
+
+	If the output file does not exist, or the program fails, the
+	user gets an appropriate error message.
+	
+EOF_USAGE
+    exit 1
+fi
+
+
+# ----------------------------------------------------------------------
+#  Reset arguments
+# ----------------------------------------------------------------------
+set - $EXTRA_ARGS
+PROG=$1
+shift
+
+VERSION=`$PROG --version 2>/dev/null | head -1`
+
+if test -z "$VERSION"
+then
+    if test -f "$OUTPUT_FILE"
+    then
+	#
+	#  Program not found, but outputfile already exists
+	#
+        cat >&2 <<-EOF_WARNING
+
+	${WARNING}: You should have the ${B}${PROG}${N} program installed on your system.
+
+	Please check the ${B}INSTALL${N} and ${B}README${N} files for
+	instructions to build and install Virtuoso on your system.
+
+	However since the file ${OUTPUT_FILE} exists on your system we
+	will try to use it, but all changes you made to the underlying
+	source files will be ignored.
+
+	Please rerun 'make'
+
+EOF_WARNING
+	
+	#
+	# Fix timestamp so hopefully make will continue next time
+	#
+	touch -c "$OUTPUT_FILE"
+
+	# 
+	#  Abort make, so user is forced to read the above error message
+	#
+	exit 1
+
+    else
+	#
+	#  Program not found, and outputfile does not exists
+	#
+	cat >&2 <<-EOF_MISSING
+
+	${ERROR}: You must have the ${B}${PROG}${N} program installed on your system.
+
+	Please check the ${B}INSTALL${N} and ${B}README${N} files for
+	instructions to build and install Virtuoso on your system.
+	         
+EOF_MISSING
+	
+	#
+	#  Abort make
+	#
+	exit 1
+    fi
+fi
+
+
+# ----------------------------------------------------------------------
+#  Generate some output
+# ----------------------------------------------------------------------
+echo "* Generating $OUTPUT_FILE using $VERSION"
+
+$PROG $* > tmp.$OUTPUT_FILE
+STATUS=$?
+
+if test $STATUS -eq 0 && test -s tmp.$OUTPUT_FILE
+then
+    mv tmp.$OUTPUT_FILE $OUTPUT_FILE
+else
+    cat >&2 <<-EOF_FAILED
+
+	${ERROR}: Code generation failed. Please check the above error(s).
+
+EOF_FAILED
+    
+    #
+    #  Abort make
+    #
+    rm -f tmp.$OUTPUT_FILE
+    exit 1
+fi
+
+
+# ----------------------------------------------------------------------
+#  All done
+# ----------------------------------------------------------------------
+exit 0
