@@ -1,4 +1,4 @@
-<html>
+<?xml version="1.0"?>
 <!--
  -
  -  $Id$
@@ -21,8 +21,8 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
+<html>
   <head>
     <link rel="stylesheet" href="css/dav.css" type="text/css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>

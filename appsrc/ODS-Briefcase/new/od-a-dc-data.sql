@@ -19,7 +19,6 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
---
 
 DB.DBA.DAV_COL_CREATE ('/DAV/test/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 

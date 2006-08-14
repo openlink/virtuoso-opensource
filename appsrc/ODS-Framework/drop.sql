@@ -19,7 +19,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
---
+
 drop procedure WA_GET_EMAIL_TEMPLATE;
 drop procedure WA_SET_EMAIL_TEMPLATE;
 drop procedure wa_exec_no_error_log;

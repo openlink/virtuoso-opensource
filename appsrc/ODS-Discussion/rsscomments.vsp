@@ -22,5 +22,6 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-  http_header ('Content-Type: text/xml\r\n'); http (NNTPF_GR_COMMENTS (params, lines));
+  http_header ('Content-Type: text/xml\r\n'); 
+  http (NNTPF_GR_COMMENTS (params, lines));
 ?>

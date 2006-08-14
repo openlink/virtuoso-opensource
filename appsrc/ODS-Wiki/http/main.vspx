@@ -21,7 +21,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="processes_page" on-deadlock-retry="3"
 	decor="wiki_decor.vspx" style="wiki_style.xsl"

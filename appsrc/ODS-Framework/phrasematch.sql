@@ -19,7 +19,6 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
---  
 
 create procedure AP_EXEC_NO_ERROR (in expr varchar)
 {

@@ -19,7 +19,6 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
---
 
 --      declare source any;
 --	source := file_to_string (http_root()||'/wa/home.vspx');

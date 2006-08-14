@@ -21,7 +21,6 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
---
 
 create function WA_SEARCH_ADD_SID_IF_AVAILABLE (in url varchar, in _user_id integer, in connector varchar := '?')
 returns varchar

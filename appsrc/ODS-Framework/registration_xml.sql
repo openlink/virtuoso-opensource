@@ -19,7 +19,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
---
+
 UPDATE WA_SETTINGS SET WS_REGISTRATION_XML = xtree_doc('
 <pages xmlns="http://www.openlinksw.com/wa/registration/" xmlns:v="http://www.openlinksw.com/vspx/">
   <page name="General Settings">

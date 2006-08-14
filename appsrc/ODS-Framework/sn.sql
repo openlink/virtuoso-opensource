@@ -19,7 +19,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
---  
+
 create procedure wa_exec_no_error(in expr varchar) {
   declare state, message, meta, result any;
   exec(expr, state, message, vector(), 0, meta, result);

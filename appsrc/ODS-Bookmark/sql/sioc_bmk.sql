@@ -1,4 +1,6 @@
 --
+--  $Id$
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -17,6 +19,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+
 use sioc;
 
 create procedure bmk_post_iri (in domain_id varchar, in bmk_id int)

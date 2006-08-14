@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
  -
  -  $Id$
@@ -19,7 +20,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="blog_left_page"
@@ -175,4 +175,3 @@
     </body>
   </vm:page>
 </v:page>
-
