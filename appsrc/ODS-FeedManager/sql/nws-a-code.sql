@@ -162,23 +162,25 @@ create procedure ENEWS.WA.session_restore(
 {
   declare domain_id, user_id, user_name, user_role, sid, realm, options any;
 
-  declare exit handler for sqlstate '*' { domain_id := -1; goto _end; };
+  declare exit handler for sqlstate '*' {
+    domain_id := -2;
+    goto _end;
+  };
 
   sid := get_keyword('sid', params, '');
-  realm := get_keyword('realm', params, '');
-
-  user_id   := -1;
-  user_name := 'Expire session';
-  user_role := 'expire';
+  realm := get_keyword('realm', params, 'wa');
 
   options := http_map_get('options');
   if (not is_empty_or_null(options))
     domain_id := get_keyword('domain', options);
   if (is_empty_or_null(domain_id))
-    domain_id := cast(request[5] as integer);
-  if (is_empty_or_null(domain_id))
+    domain_id := atoi(request[5]);
+  if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
     domain_id := -1;
 
+_end:
+  domain_id := cast(domain_id as integer);
+  user_id := -1;
   for (select U.U_ID,
               U.U_NAME,
               U.U_FULL_NAME
@@ -192,13 +194,21 @@ create procedure ENEWS.WA.session_restore(
     user_name := ENEWS.WA.user_name(U_NAME, U_FULL_NAME);
     user_role := ENEWS.WA.access_role(domain_id, U_ID);
   }
+  if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
+    domain_id := -1;
 
-_end:
-  if ((user_id <> -1) and (domain_id = -1)) {
-    user_id   := -1;
+  if (user_id = -1)
+    if (domain_id = -1) {
+      user_role := 'expire';
+      user_name := 'Expire session';
+    } else if (domain_id = -2) {
     user_role := 'public';
     user_name := 'Public User';
+    } else {
+      user_role := 'guest';
+      user_name := 'Guest User';
   }
+
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
                 'user_name', user_name,
@@ -3665,6 +3675,8 @@ create procedure ENEWS.WA.dav_home(
   declare cid integer;
 
   name := coalesce((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), -1);
+  if (isinteger(name))
+    return null;
   home := ENEWS.WA.dav_home_create(name);
   if (isinteger(home))
     return null;
@@ -3751,6 +3763,8 @@ create procedure ENEWS.WA.dav_url (
 {
   declare home varchar;
 
+  if (account_id < 0)
+    account_id := ENEWS.WA.domain_owner_id (domain_id);
   home := ENEWS.WA.dav_home(account_id);
   if (isnull(home))
     return '';
@@ -4538,6 +4552,9 @@ create procedure ENEWS.WA.enews_path2_int(
       path := sprintf('f#%d/%s', coalesce(EFD_FOLDER_ID, 0), path);
       ENEWS.WA.enews_path2_int(domain_id, sprintf('f#%d', coalesce(EFD_FOLDER_ID, 0)), path);
 }
+
+  if ((node_type = 'p') and (node_id <> 0))
+    path := sprintf('P#0/%s', path);
 
   if (node_type = 's')
     path := sprintf('S#0/%s', path);
@@ -5418,7 +5435,7 @@ create procedure ENEWS.WA.version_update()
   declare channel, title any;
   declare channel_id, directory_id integer;
 
-  channel := vector('type', 'long', 'title', 'The Art Weblog', 'blog', 'http://art.weblogsinc.com/', 'rss', 'http://art.weblogsinc.com/rss.xml', 'format', 'http://my.netscape.com/rdf/simple/0.9/', 'lang', 'en-us', 'updatePeriod', 'daily', 'updateFrequency', 4, 'data', '<settings><entry ID="imageUrl">http://www.weblogsinc.com/common/media/feedlogo-win.gif</entry><entry ID="iconUrl">http://art.weblogsinc.com/</entry></settings>');
+  channel := vector('type', 'long', 'title', 'The Art Weblog', 'blog', 'http://art.weblogsinc.com/', 'rss', 'http://art.weblogsinc.com/rss.xml', 'format', 'http://my.netscape.com/rdf/simple/0.9/', 'lang', 'en-us', 'updatePeriod', 'daily', 'updateFrequency', 4, 'data', '<settings><entry ID="imageUrl">http://art.weblogsinc.com/media/feedlogo.gif</entry><entry ID="iconUrl">http://art.weblogsinc.com/</entry></settings>');
   title := 'The Art Weblog';
   channel_id := ENEWS.WA.channel_create(channel);
   directory_id := (select ED_ID from ENEWS.WA.DIRECTORY where ENEWS.WA.directory_path(ED_ID) = 'Arts');
@@ -5430,7 +5447,7 @@ create procedure ENEWS.WA.version_update()
   directory_id := (select ED_ID from ENEWS.WA.DIRECTORY where ENEWS.WA.directory_path(ED_ID) = 'Arts');
   ENEWS.WA.channel_directory(channel_id, null, directory_id);
 
-  channel := vector('type', 'long', 'title', 'The Digital Music Weblog', 'blog', 'http://digitalmusic.weblogsinc.com/', 'rss', 'http://digitalmusic.weblogsinc.com/rss.xml', 'format', 'http://my.netscape.com/rdf/simple/0.9/', 'lang', 'en-us', 'updatePeriod', 'daily', 'updateFrequency', 4, 'data', '<settings><entry ID="imageUrl">http://www.weblogsinc.com/common/media/feedlogo-win.gif</entry><entry ID="iconUrl">http://digitalmusic.weblogsinc.com/</entry></settings>');
+  channel := vector('type', 'long', 'title', 'The Digital Music Weblog', 'blog', 'http://digitalmusic.weblogsinc.com/', 'rss', 'http://digitalmusic.weblogsinc.com/rss.xml', 'format', 'http://my.netscape.com/rdf/simple/0.9/', 'lang', 'en-us', 'updatePeriod', 'daily', 'updateFrequency', 4, 'data', '<settings><entry ID="imageUrl">http://digitalmusic.weblogsinc.com/media/feedlogo.gif</entry><entry ID="iconUrl">http://digitalmusic.weblogsinc.com/</entry></settings>');
   title := 'The Digital Music Weblog';
   channel_id := ENEWS.WA.channel_create(channel);
   directory_id := (select ED_ID from ENEWS.WA.DIRECTORY where ENEWS.WA.directory_path(ED_ID) = 'Arts/Music');

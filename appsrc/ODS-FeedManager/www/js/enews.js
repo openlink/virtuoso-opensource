@@ -169,7 +169,7 @@ function loadIFrame(id, domainID, accountID, flag, mode)
     flag = 'r1';
   if (mode == null)
     mode = 'channel';
-  if (mode != 'p') {
+  if ((mode != 'p') && (accountID != '-1')) {
     readObject('feed_'+id, flag, document);
     flagObject('image_'+id, flag, document);
     showCount(document);

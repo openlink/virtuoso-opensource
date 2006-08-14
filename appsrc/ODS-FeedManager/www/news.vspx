@@ -62,6 +62,8 @@
 
   <v:method name="linkClass" arglist="inout flag any">
     <![CDATA[
+      if (self.account_role in ('public', 'guest'))
+        return 'unread';
       return either(equ(flag, 1), 'read', 'unread');
     ]]>
   </v:method>
@@ -78,6 +80,10 @@
           self.fNode := 'c#';
         self.fNode := concat(self.fNode, cast(coalesce((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = cast(self.link as integer)), '') as varchar));
       }
+      if (isnull(self.fState))
+        self.fState := self.fxState;
+      if (is_empty_or_null(self.fNode))
+        self.fNode := self.fxNode;
     ]]>
   </v:method>
 
@@ -99,9 +105,23 @@
     <![CDATA[
       declare N, node_type, node_id, node, nodes any;
 
+      if (domain_id = -2) {
+        if (self.fNode like 'c%')
+          self.fNode := '';
+      } else {
+        if (self.fNode like 'p%')
+          self.fNode := 'c#0';
+      }
+
       node := self.fNode;
       node_id := ENEWS.WA.node_id(self.fNode);
       node_type := ENEWS.WA.node_type(self.fNode);
+
+      if (self.fNode in ('r#0', 'r#1', 'f#0', 'S#0', 'w#0', 'P#0'))
+        goto _next;
+
+      if (self.fNode like 't#%')
+        goto _next;
 
       if ((node_type = 'p') and (exists (select 1 from ENEWS.WA.FEED where EF_ID = node_id)))
         goto _next;
@@ -113,9 +133,6 @@
         goto _next;
 
       if ((node_type = 'b') and (exists (select 1 from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id and EB_ID = node_id and EB_WEBLOG_ID = EW_ID)))
-        goto _next;
-
-      if (self.fNode in ('r#0', 'r#1', 'f#0', 'S#0', 'w#0'))
         goto _next;
 
       for (select TOP 1 EFD_ID,
@@ -131,15 +148,12 @@
         self.fNode := sprintf('b#%d', EB_ID);
         goto _next;
       }
-      --self.fState := vector();
       self.fNode := '';
     _next:;
-      if (node <> self.fNode) {
         nodes := split_and_decode(ENEWS.WA.enews_path2(domain_id, self.fNode), 0, '\0\0/');
         for (N := 0; N < length(nodes) - 1; N := N + 1)
           if (not ENEWS.WA.vector_contains(self.fState, nodes[N]))
             self.fState := vector_concat(self.fState, vector(nodes[N]));
-      }
     ]]>
   </v:method>
 
@@ -204,10 +218,12 @@
       <v:variable persist="temp" name="fName" type="varchar" default="''"/>
       <v:variable persist="0" name="fTag" type="varchar" default="null" />
       <v:variable persist="0" name="link" type="varchar" default="null" />
-      <v:variable persist="session" name="fTab" type="varchar" default="'feeds'"/>
-      <v:variable persist="session" name="fNode" type="varchar" default="''"/>
-      <v:variable persist="session" name="fState" type="any" default="null" />
-      <v:variable persist="session" name="fBookmark" type="varchar" default="null" />
+      <v:variable persist="1" name="fTab" type="varchar" default="'feeds'"/>
+      <v:variable persist="1" name="fNode" type="varchar" default="''"/>
+      <v:variable persist="1" name="fState" type="any" default="null" />
+      <v:variable persist="1" name="fBookmark" type="varchar" default="null" />
+      <v:variable persist="0" name="fxNode" type="varchar" default="''"/>
+      <v:variable persist="0" name="fxState" type="any" default="null" />
     </vm:variables>
     <vm:pagebody>
       <v:before-data-bind>
@@ -289,11 +305,13 @@
         <div class="feed_subpane1">
               <?vsp
             if (self.fTab = 'feeds')
-              if (self.domain_id = -1) {
+              if (self.domain_id = -2) {
                 self.showTree(1, self.domain_id, 'r#0', '');
                 } else {
                 self.showTree(1, self.domain_id, 'r#1', '');
                 }
+            self.fxNode := self.fNode;
+            self.fxState := self.fState;
               ?>
           <v:template type="simple" enabled="--either(equ(self.fTab, 'tags'), 1, 0)">
                   <?vsp
@@ -357,9 +375,13 @@
 
             self.mode_test();
             mt := sprintf('Selected as <select name="mark" onchange="javascript: if (anySelected(this.form, \'cb_item\', \'No posts were selected to mark as \'+this.options[this.selectedIndex].text+\'.\')) {this.form.submit();} else {this.selectedIndex = 0}"><option/><option value="r1">read</option><option value="r0">unread</option><option value="f1">flagged</option><option value="f0">unflagged</option></select>');
+            if (self.account_role in ('public', 'guest'))
+              mt := '';
             st := sprintf('View <select name="show" onchange="javascript: this.form.submit();"><option value="">all</option><option value="r1">read</option><option value="r0">unread</option><option value="f1">flagged</option><option value="f0">unflagged</option></select> posts');
             sv := get_keyword('show', self.vc_page.vc_event.ve_params, '');
             st := replace(st, sprintf('value="%s"', sv), sprintf('value="%s" selected="selected"', sv));
+            if (self.account_role in ('public', 'guest'))
+              st := '';
             if (ENEWS.WA.node_type(self.fNode) = 'p')
               for (select EF_TITLE,
                           EF_HOME_URI,
@@ -379,7 +401,7 @@
                             join ENEWS.WA.FEED on EF_ID = EFD_FEED_ID
                     where EFD_ID = ENEWS.WA.node_id(self.fNode)) do {
                 http(sprintf('<div id="channel_header"><div style="float: left; padding-left: 0.5em;"><b><a href="%s" target="_blank" alt="Feed %s" title="Feed %s"><img src="%s" border="0"/> %s</a></b>&nbsp</div><div style="float: right; text-align: right; padding-right: 0.5em;"><a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a></div><br style="clear: left;"/></div>', EF_HOME_URI, EFD_TITLE, EFD_TITLE, ENEWS.WA.channel_image(self.domain_id, self.account_id, EF_DATA, 'image/docs_16.gif'), EFD_TITLE, self.fNode));
-                http(sprintf('<div id="channel_subheader">&nbsp;<b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s </div>', ENEWS.WA.dt_value(EF_LAST_UPDATE), mt, st));
+                http(sprintf('<div id="channel_subheader">&nbsp;<b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> %s %s </div>', ENEWS.WA.dt_value(EF_LAST_UPDATE), mt, st));
               }
             if (ENEWS.WA.node_type(self.fNode) = 's')
               for (select ESFO_ID,
@@ -388,7 +410,7 @@
                     where ESFO_ID = ENEWS.WA.node_id(self.fNode)
                       and ESFO_DOMAIN_ID = self.domain_id) do {
                 http(sprintf('<div id="channel_header">&nbsp;<b><a href="sfolders_update.vspx?sid=%s&realm=%s&id=%s" alt="Smart folder %s" title="Smart folder %s"><img src="image/sfolder_16.jpg" border="0"/> %s</a></b></div>', self.sid, self.realm, ESFO_ID, ESFO_NAME, ESFO_NAME, ESFO_NAME));
-                http(sprintf('<div id="channel_subheader">&nbsp;<b>Posts</b>: <span id="feed_count">0 (0)</span> | %s | %s </div>', mt, st));
+                http(sprintf('<div id="channel_subheader">&nbsp;<b>Posts</b>: <span id="feed_count">0 (0)</span> %s %s </div>', mt, st));
               }
             if (ENEWS.WA.node_type(self.fNode) = 'b')
               for (select EB_ID,
@@ -404,7 +426,7 @@
               }
             if ((ENEWS.WA.node_type(self.fNode) = 't') and not is_empty_or_null(ENEWS.WA.node_suffix(self.fNode))) {
                http(sprintf('<div id="channel_header">&nbsp;<b>Tag: %s</b></div>', ENEWS.WA.node_suffix(self.fNode)));
-               http(sprintf('<div id="channel_subheader">&nbsp;<b>Posts</b>: <span id="feed_count">0 (0)</span> | %s | %s </div>', mt, st));
+               http(sprintf('<div id="channel_subheader">&nbsp;<b>Posts</b>: <span id="feed_count">0 (0)</span> %s %s </div>', mt, st));
             }
           ?>
           <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
@@ -499,7 +521,7 @@
               <table id="feed" style="width: 100%;" cellspacing="0">
                 <thead class="sortHeader">
                   <tr>
-                     <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
+                    <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
                       <th width="1%">
                         <input type="checkbox" name="cb_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')"/>
                       </th>
@@ -543,7 +565,7 @@
                     }
                   ?>
                   <tr>
-                     <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
+                    <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
                       <td align="center">
                         <?vsp
                           http (sprintf ('<input type="checkbox" name="cb_item" value="%d" />', ((control.vc_parent) as vspx_row_template).te_column_value('EFI_ID')));

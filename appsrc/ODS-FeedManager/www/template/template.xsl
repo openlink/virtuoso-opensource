@@ -119,7 +119,7 @@
         <div style="float: left;  padding-top: 3px;">
           <img src="image/enewsbanner_sml.jpg"/>
         </div>
-     	  <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
+        <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
             <v:text name="keywords" value="" xhtml_onkeypress="return submitEnter(\'F1\', \'GO\', event)"/>
             <xsl:call-template name="nbsp"/>
@@ -141,17 +141,17 @@
       <div style="padding: 0.5em 0 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
         <div style="float: left; padding-left: 0.5em;">
           <?vsp
-            if (self.account_role <> 'public')
+            if (self.account_id > -1)
               http(sprintf('<a href="%Vmyhome.vspx?sid=%s&realm=%s" title="%V"><img src="image/home_16.png" border="0"/> %V</a>', ENEWS.WA.wa_home_link (), self.sid, self.realm, self.accountName, self.accountName));
           ?>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em;">
-       	  <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
+          <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
             <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
             |
       	  </v:template>
           <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>
-       	  <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
+          <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
             |
             <a href="<?V ENEWS.WA.wa_home_link () ?>" title="Logout">Logout</a>
       	  </v:template>
@@ -162,7 +162,7 @@
       <table id="MTB">
         <tr>
           <!-- Navigation left column -->
-       	  <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
+          <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
             <td id="LC">
               <xsl:call-template name="vm:others"/>
               <xsl:call-template name="vm:formats"/>

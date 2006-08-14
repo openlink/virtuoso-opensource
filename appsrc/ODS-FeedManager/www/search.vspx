@@ -58,6 +58,8 @@
 
   <v:method name="linkClass" arglist="inout flag any">
     <![CDATA[
+      if (self.account_role in ('public', 'guest'))
+        return 'unread';
       return either(equ(flag, 1), 'read', 'unread');
     ]]>
   </v:method>
@@ -494,6 +496,18 @@
       		<div class="contents">
             <div id="1" class="tabContent" style="display: none;">
               <table class="form-body" cellspacing="0">
+                <tr>
+                  <th>
+                    <v:label for="f_type" value="Expression Type" />
+                  </th>
+                  <td>
+                    <v:select-list name="f_type" value="" auto-submit="1">
+                      <v:item name="Text" value="text"/>
+                      <v:item name="XPath" value="xpath"/>
+                      <v:item name="XQuery" value="xquery"/>
+                    </v:select-list>
+                  </td>
+                </tr>
                 <v:template type="simple" enabled="--case when (self.v_type = 'text') then 1 else 0 end;">
                   <tr>
                     <th>
@@ -545,6 +559,7 @@
             			  <v:textarea name="f_expression" value="--self.v_expression" xhtml_rows="2" xhtml_cols="70"/>
                   </td>
                 </tr>
+                <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
                 <tr>
                   <th>
                     <v:label for="f_tags" value="Comma delimited tags" />
@@ -577,6 +592,7 @@
                     </v:select-list>
                   </td>
                 </tr>
+                </v:template>
                 <tr>
                   <th>
                     <v:label for="f_after" value="Date after"/>
@@ -599,18 +615,6 @@
             </div>
             <div id="2" class="tabContent" style="display: none;">
               <table class="form-body" cellspacing="0">
-                <tr>
-                  <th>
-                    <v:label for="f_type" value="Expression Type" />
-                  </th>
-                  <td>
-                    <v:select-list name="f_type" value="" auto-submit="1">
-                      <v:item name="Text" value="text"/>
-                      <v:item name="XPath" value="xpath"/>
-                      <v:item name="XQuery" value="xquery"/>
-                    </v:select-list>
-                  </td>
-                </tr>
                 <tr>
                   <th>
                     <v:label for="f_max" value="Max Results" />
@@ -662,7 +666,7 @@
           </div>
         </div>
         <div class="form-footer">
-          <v:button action="simple" value="Save" enabled="--case when (self.v_type = 'text') then 1 else 0 end;" xhtml_class="form-button">
+          <v:button action="simple" value="Save" enabled="--case when ((self.v_type = 'text') and not (self.account_role in ('public', 'guest'))) then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 declare tmp varchar;
