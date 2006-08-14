@@ -1421,8 +1421,9 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       caddr_t url,
 	  xslt_url = ws->ws_xslt_url, xslt_parms = ws->ws_xslt_params;
       caddr_t err = NULL, * exec_params = NULL;
-      caddr_t current_url = dk_alloc_box (strlen (http_port) + strlen (ws->ws_path_string) + 18, DV_SHORT_STRING);
-      snprintf (current_url, sizeof (current_url), "http://localhost:%s%s", http_port, ws->ws_path_string);
+      size_t current_url_len = strlen (http_port) + strlen (ws->ws_path_string) + 18;
+      caddr_t current_url = dk_alloc_box (current_url_len, DV_SHORT_STRING);
+      snprintf (current_url, current_url_len, "http://localhost:%s%s", http_port, ws->ws_path_string);
       url = current_url;
 
       if (!http_xslt_qr || http_xslt_qr->qr_to_recompile)
