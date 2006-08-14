@@ -505,11 +505,11 @@
                           {
                         ?>
                         <a href="<?V self.qurl ?>html"><img src="html401.gif" border="0" title="HTML" alt="HTML"/></a>
-                        <a href="<?V self.qurl ?>xml"><img src="feed-icon-16x16.gif" border="0" title="RSS" alt="RSS"/></a>
-                        <a href="<?V self.qurl ?>atom"><img src="feed-icon-16x16-blue.gif" border="0" title="ATOM" alt="ATOM"/></a>
-                        <a href="<?V self.qurl ?>rdf"><img src="rdf_flyer-16.gif" border="0" title="RDF" alt="RDF"/></a>
-                        <a href="<?V self.qurl ?>xbel"><img src="xbel01.gif" border="0" title="XBEL" alt="XBEL"/></a>
-                        <a href="<?V sprintf ('adv_search.vspx?type=%s&kwds=%U&OpenSearch', self.qt.ufl_value, coalesce (self.expr.ufl_value, self.qry))  ?>"><img src="opensearch.gif" border="0"/></a>
+                        <a href="<?V self.qurl ?>xml"><img src="feed-icon-16x16.gif" border="0" title="RSS" alt="RSS"/> RSS</a>
+                        <a href="<?V self.qurl ?>atom"><img src="feed-icon-16x16-blue.gif" border="0" title="ATOM" alt="ATOM"/> Atom</a>
+                        <a href="<?V self.qurl ?>rdf"><img src="rdf_flyer-16.gif" border="0" title="RDF" alt="RDF"/> RDF</a>
+                        <a href="<?V self.qurl ?>xbel"><img src="feed-icon-16x16-blue.gif" border="0" title="XBEL" alt="XBEL"/> XBEL</a>
+                        <a href="<?V sprintf ('adv_search.vspx?type=%s&kwds=%U&OpenSearch', self.qt.ufl_value, coalesce (self.expr.ufl_value, self.qry))  ?>"><img src="feed-icon-16x16-blue.gif" border="0"/> OpenSearch</a>
                         <?vsp
                           }
                         ?>
