@@ -618,3 +618,5 @@ conductor/toolkit/validation.js
 conductor/toolkit/window.js
 conductor/toolkit/xml.js
 conductor/toolkit/xmla.js
+conductor/sparql_input.vspx  
+conductor/sparql_load.vspx

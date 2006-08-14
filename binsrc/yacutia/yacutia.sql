@@ -217,7 +217,7 @@ create procedure adm_menu_tree ()
      <node name="LDAP Import" url="ldap_import_1.vspx" place="1" id="14" allowed="yacutia_accounts_page"/>
      <node name="LDAP Import" url="ldap_import_2.vspx" place="1" id="15" allowed="yacutia_accounts_page"/>
      <node name="LDAP Import" url="ldap_import_3.vspx" place="1" id="16" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Servers" url="ldap_server.vspx" id="178" place="1" allowed="yacutia_accounts_page"/>
+     <node name="LDAP Servers" url="ldap_server.vspx" id="179" place="1" allowed="yacutia_accounts_page"/>
    </node>
    <node name="Scheduler" url="sys_queues.vspx"  tip="Event Scheduling" id="17" allowed="yacutia_queues_page">
      <node name="Scheduler" url="sys_queues.vspx" id="18" place="1" allowed="yacutia_queues_page">
@@ -382,6 +382,9 @@ create procedure adm_menu_tree ()
      <node name="XQuery" url="xquery4.vspx" id="115" place="1" allowed="yacutia_xquery_page"/>
      <node name="XQuery" url="xquery_templates.vspx" id="173" place="1" allowed="yacutia_xquery_page"/>
      <node name="XQuery" url="xquery_adv.vspx" id="178" place="1" allowed="yacutia_xquery_page"/>
+   </node>',
+  '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
+     <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',
 --   <node name="XML Schema" url="xml_xsd.vspx"  id="116" allowed="yacutia_xml_schema_check_page">
 --      <node name="XML Schema" url="xml_xsd.vspx" id="117" place="1" allowed="yacutia_xml_schema_check_page"/>
@@ -1307,7 +1310,7 @@ vdb_link_tables (in pref any,
       tbl_qual := aref (_r_tbl, 0);
       tbl_user := aref (_r_tbl, 1);
       tbl_name := aref (_r_tbl, 2);
-      rname := make_full_name (tbl_qual, tbl_user, tbl_name);
+      rname := make_full_name (null, tbl_user, tbl_name);
 
       n_qual := get_keyword (sprintf ('%s_catalog_%d', pref, i), params, '');
       n_user := get_keyword (sprintf ('%s_schema_%d', pref, i), params, '');
@@ -4508,7 +4511,7 @@ err:
 }
 ;
 
-create procedure YAC_DAV_PROP_REMOVE (in path varchar, in prop varchar, in usr varchar)
+create procedure YAC_DAV_PROP_REMOVE (in path varchar, in prop varchar, in usr varchar, in silent int := 0)
 {
   declare rc, flag, pwd any;
 
@@ -4521,7 +4524,7 @@ create procedure YAC_DAV_PROP_REMOVE (in path varchar, in prop varchar, in usr v
   rc := 0;
   rc := DB.DBA.DAV_PROP_REMOVE (path, prop, usr, pwd);
 err:
-  if (rc < 0)
+  if (rc < 0 and silent = 0)
     signal ('22023', YAC_GET_DAV_ERR (rc));
 }
 ;
