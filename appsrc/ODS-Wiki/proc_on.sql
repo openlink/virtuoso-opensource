@@ -3137,7 +3137,7 @@ create procedure WV.WIKI.GET_MAINTOPIC (in _cluster_name varchar)
   if (_topic.ti_id = 0)
     WV.WIKI.APPSIGNAL (11001, 'Main index page does not exist. Please ask administrator to create new one',
       vector () );
-  return _topic.ti_id;
+  return _topic;
 }
 ;
 			  
@@ -3823,9 +3823,24 @@ create procedure WV.WIKI.SANITY_CHECK()
   for select CLUSTERNAME from WV.WIKI.CLUSTERS c
       where not exists (select 1 from WV.WIKI.CLUSTERSETTINGS s where s.CLUSTERID = c.CLUSTERID and PARAMNAME = 'atom-pub') do
     WV..ATOM_PUB_VHOST_DEFINE (CLUSTERNAME);
+  for select WAI_NAME from DB.DBA.WA_INSTANCE
+    where WAI_TYPE_NAME = 'oWiki'
+    and WAI_IS_PUBLIC = 1
+  do {
+    WV.WIKI.ENSURE_IS_PUBLIC (WAI_NAME);
+  }
 }
 ;
 
+
+create procedure WV.WIKI.ENSURE_IS_PUBLIC (in _cluster varchar)
+{
+  whenever sqlstate '*' goto fin;
+  DB.DBA.USER_GRANT_ROLE ('WikiGuest', _cluster || 'Readers');
+fin:
+  ;
+}
+;
 
 create function WV.WIKI.RESOURCE_CANONICAL (in res_id int)
 {

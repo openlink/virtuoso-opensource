@@ -519,6 +519,13 @@ int wlex_count_header_level (char * line)
   return cnt;
 }
 
+/*! counts number of conseq symbol appearence */
+int strcount (char * line, char symbol)
+{
+  int counter = 0;
+  while (*line++ == symbol) ++counter;
+  return counter;
+}
 
 #ifndef WLEX_TEST
 #undef YY_INPUT
@@ -568,8 +575,8 @@ LOCALRES	([A-Za-z0-9_.:|/?+%&-=]+)
 FRAG		("#"{LOCALRES})
 USERNAME	([A-Za-z]([A-Za-z0-9_-]*))
 ABSURI		({PROTOCOL}(({USERNAME}(("!"{LOCALRES})?)"@")?){DOMAINNAME}(((":"{LOCALRES})|("/"(({LOCALRES}?))))({FRAG}?))?)
-DUMMYURI	({PROTOCOL}([A-Za-z0-9_.:|/?+%&-=]+))
-LINKTITLE	([^\r\n\[\]\|]+)
+DUMMYURI	({PROTOCOL}([A-Za-z0-9_.:|/?+%&-=~#]+))
+LINKTITLE	([^[\]\|]+)
 FORCEDWIKILINK	([^\r\n\[\]~@:\\/{}<>\|]+)
 EMAIL		({USERNAME}"@"{DOMAINNAME}(("?"{LOCALRES})?))
 MAILTO		("mailto:"{USERNAME}"@"{DOMAINNAME}(("?"{LOCALRES})?))
@@ -683,21 +690,21 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 				}
 
 	/* Titles */
-<INITIAL,TABLELINE>^{WS}*"---"([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"---#"{WS}	{ BEGIN(INITIAL); wlex_headerlevel (1); }
-<INITIAL,TABLELINE>^{WS}*"--"([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"--#"{WS}	{ BEGIN(INITIAL); wlex_headerlevel (1); }
-<INITIAL,TABLELINE>^{WS}*"----"([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"-----"([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"------"([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"-------"([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"--------"([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"---------"([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"------#"{WS}	{ BEGIN(INITIAL); wlex_headerlevel (1); }
+<INITIAL,TABLELINE>^{WS}*"====="	{ BEGIN(INITIAL); wlex_headerlevel (5); }
+<INITIAL,TABLELINE>^{WS}*"===="		{ BEGIN(INITIAL); wlex_headerlevel (4); }
+<INITIAL,TABLELINE>^{WS}*"==="		{ BEGIN(INITIAL); wlex_headerlevel (3); }
+<INITIAL,TABLELINE>^{WS}*"=="		{ BEGIN(INITIAL); wlex_headerlevel (2); } 
+
+<INITIAL,TABLELINE>"====="	{ wlex_reset (~0); }
+<INITIAL,TABLELINE>"===="	{ wlex_reset (~0); }
+<INITIAL,TABLELINE>"==="	{ wlex_reset (~0); }
+<INITIAL,TABLELINE>"=="		{ wlex_reset (~0); }
+
 <INITIAL,TABLELINE>"!!"		{ if (STATE(wlex_headerlevel)) PRINT("<NOTOC />"); else PRINT(yytext); }
 
 	/* Lists */
-<INITIAL,TABLELINE>^([ ][ ][ ])+"*"{WS}			{ BEGIN(INITIAL); wlex_list ((strchr(yytext, '*') - yytext) / 3, WLEX_LIST_UL, NULL); }
+<INITIAL,TABLELINE>^("*")+{WS}			{ BEGIN(INITIAL); wlex_list ( strcount (yytext, '*'), WLEX_LIST_UL, NULL); }
+<INITIAL,TABLELINE>^("*:"){WS}+			{ PRINT (yytext + 2); } 
 <INITIAL,TABLELINE>^([ ][ ][ ])+[1-9]([0-9]*)([.]?){WS}	{ BEGIN(INITIAL); wlex_list ((strdigit(yytext) - yytext) / 3, WLEX_LIST_OL, NULL); }
 <INITIAL,TABLELINE>^([ ][ ][ ])+{DEFTERM}":"{WS}	{ BEGIN(INITIAL); wlex_list ((strnonws(yytext) - yytext) / 3, WLEX_LIST_DL, yytext); }
 <INITIAL,TABLELINE>^([\t])+"*"{WS}			{ BEGIN(INITIAL); wlex_list (strchr(yytext, '*') - yytext, WLEX_LIST_UL, NULL); }
@@ -705,66 +712,17 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 <INITIAL,TABLELINE>^([\t])+{DEFTERM}":"{WS}		{ BEGIN(INITIAL); wlex_list (strnonws(yytext) - yytext, WLEX_LIST_DL, yytext); }
 
 	/* Font processing */
-<INITIAL,TABLELINE>{WS}*{MFONTMODS}		{ COPYTEXT; }
+       /*<INITIAL,TABLELINE>{WS}*{MFONTMODS}		{ COPYTEXT; } */
 
-
-<INITIAL,TABLELINE>^"=="/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>^"__"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>^"*"/{NOTAWORDSTART}		{ COPYTEXT; }
-<INITIAL,TABLELINE>^"_"/{NOTAWORDSTART}		{ COPYTEXT; }
-<INITIAL,TABLELINE>^"="/{NOTAWORDSTART}		{ COPYTEXT; }
-
-<INITIAL,TABLELINE>{WS}"=="/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"__"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"*"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"_"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"="/{NOTAWORDSTART}	{ COPYTEXT; }
-
-<INITIAL,TABLELINE>{NOTAWORDEND}"=="/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{NOTAWORDEND}"__"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{NOTAWORDEND}"*"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{NOTAWORDEND}"_"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{NOTAWORDEND}"="/{NOTAWORDSTART}	{ COPYTEXT; }
-
-<INITIAL,TABLELINE>"=="/{NOTAWORDSTART}	{
-        if (WLEX_FONT_BTT == STATE(wlex_font))
-	  wlex_font (WLEX_FONT_DEFAULT);
-        else if (WLEX_FONT_TT == STATE(wlex_font))
-	  {
-	    wlex_font (WLEX_FONT_DEFAULT);
-	    PRINTTEXT("=");
-	  }
-        else COPYTEXT;
-    }
-
-<INITIAL,TABLELINE>"__"/{NOTAWORDSTART}	{
-	if (WLEX_FONT_BI == STATE(wlex_font))
-	   wlex_font (WLEX_FONT_DEFAULT);
-        else if (WLEX_FONT_I == STATE(wlex_font))
-	  {
-	    wlex_font (WLEX_FONT_DEFAULT);
-	    PRINTTEXT("_");
-	  }
-	else COPYTEXT;
-    }
-
-<INITIAL,TABLELINE>"*"/{NOTAWORDSTART}	{ if (WLEX_FONT_B == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>"_"/{NOTAWORDSTART}	{ if (WLEX_FONT_I == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>"'''''"/{NOTAWORDSTART}	{ if (WLEX_FONT_BI == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>"'''"/{NOTAWORDSTART}	{ if (WLEX_FONT_B == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>"''"/{NOTAWORDSTART}	{ if (WLEX_FONT_I == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
 <INITIAL,TABLELINE>"="/{NOTAWORDSTART}	{ if (WLEX_FONT_TT == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
 
-<INITIAL,TABLELINE>{WS}"=="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BTT); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"__"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BI); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"*"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}"'''''"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BI); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}"'''"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}"''"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
 <TABLEHEADER>{WS}"*"		{ STATE(wlex_in_any_text) = 1; }
-<INITIAL,TABLELINE>{WS}"_"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_TT); } else COPYTEXT; }
-
-<INITIAL,TABLELINE>^"=="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BTT); } else COPYTEXT; }
-<INITIAL,TABLELINE>^"__"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BI); } else COPYTEXT; }
-<INITIAL,TABLELINE>^"*"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
-<TABLEHEADER>^"*"		{ STATE(wlex_in_any_text) = 1; }
-<INITIAL,TABLELINE>^"_"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
-<INITIAL,TABLELINE>^"="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_TT); } else COPYTEXT; }
 
 
 

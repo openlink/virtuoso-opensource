@@ -86,7 +86,9 @@ WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_MEMBERSHIP')
 ;	  
 WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_SYS_USERS')
 ;	  
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_INSTANCE')
+WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_INSTANCE_U')
+;
+WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_INSTANCE_D')
 ;
 WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextInsertPerms"')
 ;

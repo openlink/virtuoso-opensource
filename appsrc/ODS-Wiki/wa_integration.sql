@@ -153,6 +153,14 @@ create method wa_join_approve (in login varchar) for wa_wikiv {
 ;
 
 create method wa_new_inst (in login varchar) for wa_wikiv {
+  declare exit handler for sqlstate '*' {
+  	  dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+  	  resignal;
+  };
+  declare exit handler for not found {
+  	  dbg_obj_print ('nf');
+  	  resignal;
+  };
   declare _home varchar;
   _home := connection_get ('wiki_home');
   --dbg_obj_print ('home: ', self);
@@ -243,7 +251,9 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
     }
   
   WV..ATOM_PUB_VHOST_DEFINE (_cluster_name);
-  return (self as web_app).wa_new_inst(login);
+  declare _id int;
+  _id := (self as web_app).wa_new_inst(login);
+  return _id;
 }
 ;
 
@@ -395,28 +405,24 @@ create trigger WIKI_WA_MEMBERSHIP_OPEN after insert on DB.DBA.WA_MEMBER order 10
 }
 ;
   
-    
-create trigger WIKI_WA_INSTANCE after update on DB.DBA.WA_INSTANCE order 100 referencing new as N, old as O
+create trigger WIKI_WA_INSTANCE_U after update on DB.DBA.WA_INSTANCE referencing new as N
 {
-  --dbg_obj_princ ('triiger WIKI_WA_INSTANCE: ', N.WAI_IS_PUBLIC);
   if (N.WAI_TYPE_NAME <> 'oWiki')
     return;  
   declare _cluster_id int;
-  _cluster_id := (N.WAI_INST as wa_wikiv).cluster_id;
-  declare _cluster_name varchar;
   if (N.WAI_IS_PUBLIC = 1)
     {
-whenever sqlstate '42000' goto cont;
-	_cluster_name := (select CLUSTERNAME from WV.WIKI.CLUSTERS where CLUSTERID = _cluster_id);
-	DB.DBA.USER_GRANT_ROLE ('WikiGuest', _cluster_name || 'Readers');
-cont:
-	;
+	declare exit handler for sqlstate '*' {
+		dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+		return;
+	};
+	DB.DBA.USER_GRANT_ROLE ('WikiGuest', N.WAI_NAME || 'Readers');
     }
 }
 ;
 
 
-create trigger WIKI_WA_INSTANCE before delete on DB.DBA.WA_INSTANCE referencing old as O
+create trigger WIKI_WA_INSTANCE_D before delete on DB.DBA.WA_INSTANCE referencing old as O
 {
   if (O.WAI_TYPE_NAME <> 'oWiki')
     return;

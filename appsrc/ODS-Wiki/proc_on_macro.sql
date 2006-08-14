@@ -646,7 +646,7 @@ create function WV.WIKI.MACRO_TOC  (inout _data varchar, inout _context any, ino
   {
     for \$t in //h1 | //h2 | //h3 | //h4 | //h5 | //h6
     return
-	<li> { for \044nb in wv:nnbsps(\$t/local-name())//y return <span width="10%">.</span> } <img src="{\044baseadjust}../resources/images/d.gif"/> <a href="#{wv:trim(\$t/text())}"> { \$t/text() } </a>  </li>
+	<li> { for \044nb in wv:nnbsps(\$t/local-name())//y return <label style="width: 10px; color:white;">_</span> } <img src="{\044baseadjust}../resources/images/d.gif"/> <a href="#{wv:trim(\$t/text())}"> { \$t/text() } </a>  </li>
   }
   </ul>
  </div>
