@@ -121,8 +121,7 @@
   </error>
   <error id="4001">
     <title>Bad tag(s)</title>
-    <descr>The tag is too short or contains bad characters.</descr>
-    <decision>Please, go <back/> and try again with a new tag(s) without bad characters and length with more than 1 character.</decision>
+    <descr>One of the tags is too short or contains bad characters or is a noise word.</descr>
     <button/>
   </error>
   <error id="TEST">

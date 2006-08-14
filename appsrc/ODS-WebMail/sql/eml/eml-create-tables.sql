@@ -484,130 +484,134 @@ create procedure OMAIL.WA.dsize_update (in _domain_id integer, in _user_id integ
      and USER_ID   = _user_id
      and MSG_ID    = _msg_id;
   set triggers on;
-};
-
--- CREATE INDEXES --------------------------------------------------------------
-OMAIL.WA.exec_no_error (
- 'drop table OMAIL.WA.MESSAGES_ADDRESS'
-)
-;
-
-OMAIL.WA.exec_no_error(
-  'create text xml index on OMAIL.WA.MESSAGES(ADDRESS) with key FREETEXT_ID not insert using function'
-)
+}
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure OMAIL.WA.MESSAGES_ADDRESS_index_hook (inout vtb any, inout d_id any)
+create procedure OMAIL.WA.MESSAGES_ADDRESS_HOOK (inout vtb any, inout d_id any, in mode any)
 {
-  declare _user_id, _folder_id, _address, _subject any;
+  declare _user_id, _folder_id, _address any;
 
-  select USER_ID, FOLDER_ID, ADDRESS, SUBJECT into _user_id, _folder_id, _address, _subject from OMAIL.WA.MESSAGES where FREETEXT_ID = d_id;
+  select USER_ID, FOLDER_ID, ADDRESS into _user_id, _folder_id, _address from OMAIL.WA.MESSAGES where FREETEXT_ID = d_id;
 
   if (not isnull(_address))
-    vt_batch_feed (vtb, _address, 0, 1);
+    vt_batch_feed (vtb, _address, mode, 1);
   if (not isnull(_folder_id))
-    vt_batch_feed (vtb, sprintf ('^F%d', _folder_id), 0);
+    vt_batch_feed (vtb, sprintf ('^F%d', _folder_id), mode);
   if (not isnull(_user_id))
-    vt_batch_feed (vtb, sprintf ('^UID%d', _user_id), 0);
-  if (not isnull(_subject))
-    vt_batch_feed (vtb, _subject, 0);
-
-  return 1;
-};
-
--------------------------------------------------------------------------------
---
-create procedure OMAIL.WA.MESSAGES_ADDRESS_unindex_hook (inout vtb any, inout d_id any)
-{
-  declare _user_id, _folder_id, _address, _subject any;
-
-  select USER_ID, FOLDER_ID, ADDRESS, SUBJECT into _user_id, _folder_id, _address, _subject from OMAIL.WA.MESSAGES where FREETEXT_ID = d_id;
-
-  if (not isnull(_address))
-    vt_batch_feed (vtb, _address, 1, 1);
-  if (not isnull(_folder_id))
-    vt_batch_feed (vtb, sprintf ('^F%d', _folder_id), 1);
-  if (not isnull(_user_id))
-    vt_batch_feed (vtb, sprintf ('^UID%d', _user_id), 1);
-  if (not isnull(_subject))
-    vt_batch_feed (vtb, _subject, 1);
-
-  return 1;
-};
-
-OMAIL.WA.vt_index_OMAIL_WA_MESSAGES ();
-DB.DBA.vt_batch_update('OMAIL.WA.MESSAGES', 'on', 1);
-
-
-OMAIL.WA.exec_no_error(
- 'drop table OMAIL.WA.MSG_PARTS_TDATA_WORDS'
-)
-;
-
-OMAIL.WA.exec_no_error('
-  create text index on OMAIL.WA.MSG_PARTS(TDATA) with key FREETEXT_ID not insert using function
-');
-
--------------------------------------------------------------------------------
---
-create procedure OMAIL.WA.MSG_PARTS_TDATA_index_hook (inout vtb any, inout d_id any)
-{
-  declare _user_id, _tdata, _tags, _part_id any;
-
-  select USER_ID, TDATA, TAGS, PART_ID into _user_id, _tdata, _tags, _part_id from OMAIL.WA.MSG_PARTS where FREETEXT_ID = d_id;
-
-  if (not isnull(_user_id))
-    vt_batch_feed (vtb, sprintf ('^UID%d', _user_id), 0);
-
-  if (not is_empty_or_null(_tdata))
-    vt_batch_feed (vtb, _tdata, 0);
-
-  if (not is_empty_or_null(_tags)) {
-    _tags := split_and_decode (_tags, 0, '\0\0,');
-    foreach (any tag in _tags) do {
-      tag := concat('^T', trim(tag));
-      tag := replace (tag, ' ', '_');
-      vt_batch_feed (vtb, tag, 0);
-    }
-  }
-
-  if (_part_id = 1)
-    vt_batch_feed (vtb, '^P', 0);
-
-  return 1;
-};
-
--------------------------------------------------------------------------------
---
-create procedure OMAIL.WA.MSG_PARTS_TDATA_unindex_hook (inout vtb any, inout d_id any)
-{
-  declare _user_id, _tdata, _tags, _part_id any;
-
-  select USER_ID, TDATA, TAGS, PART_ID into _user_id, _tdata, _tags, _part_id from OMAIL.WA.MSG_PARTS where FREETEXT_ID = d_id;
-
-  if (not isnull(_user_id))
-    vt_batch_feed (vtb, sprintf ('^UID%d', _user_id), 0);
-
-  if (not is_empty_or_null(_tdata))
-    vt_batch_feed (vtb, _tdata, 1);
-
-  if (not is_empty_or_null(_tags)) {
-    _tags := split_and_decode (_tags, 0, '\0\0,');
-    foreach (any tag in _tags) do {
-      tag := concat('^T', trim(tag));
-      tag := replace (tag, ' ', '_');
-      vt_batch_feed (vtb, tag, 1);
-    }
-  }
-
-  if (_part_id = 1)
-    vt_batch_feed (vtb, '^P', 1);
+    vt_batch_feed (vtb, sprintf ('^UID%d', _user_id), mode);
 
   return 1;
 }
 ;
 
-OMAIL.WA.vt_index_OMAIL_WA_MSG_PARTS ();
-DB.DBA.vt_batch_update('OMAIL.WA.MSG_PARTS', 'on', 1);
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.drop_index ()
+{
+  if (registry_get ('mail_index_version') <> '1')
+    OMAIL.WA.exec_no_error('drop table OMAIL.WA.MESSAGES_ADDRESS_WORDS');
+}
+;
+
+OMAIL.WA.drop_index ()
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.MESSAGES_ADDRESS_INDEX_HOOK (inout vtb any, inout d_id any)
+{
+  return OMAIL.WA.MESSAGES_ADDRESS_HOOK (vtb, d_id, 0);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.MESSAGES_ADDRESS_UNINDEX_HOOK (inout vtb any, inout d_id any)
+{
+  return OMAIL.WA.MESSAGES_ADDRESS_HOOK (vtb, d_id, 1);
+}
+;
+
+OMAIL.WA.exec_no_error(
+  'create text xml index on OMAIL.WA.MESSAGES (ADDRESS) with key FREETEXT_ID not insert CLUSTERED WITH (FOLDER_ID) using function'
+)
+;
+
+OMAIL.WA.vt_index_OMAIL_WA_MESSAGES ()
+;
+DB.DBA.vt_batch_update ('OMAIL.WA.MESSAGES', 'off', null)
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.MSG_PARTS_TDATA_HOOK (inout vtb any, inout d_id any, in mode any)
+{
+  declare _user_id, _tdata, _tags, _part_id any;
+
+  select USER_ID, TDATA, TAGS, PART_ID into _user_id, _tdata, _tags, _part_id from OMAIL.WA.MSG_PARTS where FREETEXT_ID = d_id;
+
+  if (_part_id <> 1)
+    return 1;
+
+  if (not isnull(_user_id))
+    vt_batch_feed (vtb, sprintf ('^UID%d', _user_id), mode);
+
+  if (not is_empty_or_null(_tdata))
+    vt_batch_feed (vtb, _tdata, mode);
+
+  if (not is_empty_or_null(_tags)) {
+    _tags := split_and_decode (_tags, 0, '\0\0,');
+    foreach (any tag in _tags) do {
+      tag := concat('^T', trim(tag));
+      tag := replace (tag, ' ', '_');
+      vt_batch_feed (vtb, tag, mode);
+    }
+  }
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.drop_index()
+{
+  if (registry_get ('mail_index_version') <> '1')
+    OMAIL.WA.exec_no_error ('drop table OMAIL.WA.MSG_PARTS_TDATA_WORDS');
+}
+;
+
+OMAIL.WA.drop_index()
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.MSG_PARTS_TDATA_index_hook (inout vtb any, inout d_id any)
+{
+  return OMAIL.WA.MSG_PARTS_TDATA_HOOK (vtb, d_id, 0);
+    }
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.MSG_PARTS_TDATA_unindex_hook (inout vtb any, inout d_id any)
+{
+  return OMAIL.WA.MSG_PARTS_TDATA_HOOK (vtb, d_id, 1);
+  }
+;
+
+OMAIL.WA.exec_no_error('
+  create text index on OMAIL.WA.MSG_PARTS(TDATA) with key FREETEXT_ID not insert CLUSTERED WITH (TAGS) using function
+')
+;
+
+OMAIL.WA.vt_index_OMAIL_WA_MSG_PARTS ()
+;
+DB.DBA.vt_batch_update('OMAIL.WA.MSG_PARTS', 'off', null)
+;
+
+-------------------------------------------------------------------------------
+--
+registry_set ('mail_index_version', '1')
+;

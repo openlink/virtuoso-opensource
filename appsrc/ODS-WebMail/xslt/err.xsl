@@ -44,7 +44,7 @@
   <!-- ========================================================================== -->
   <xsl:template match = "title">
     <tr>
-      <td rowspan="3" class="warning">Error <xsl:value-of select="../../../error"/></td>
+      <td rowspan="3" class="warning">Error: <xsl:value-of select="../../../error"/></td>
       <td><h1><xsl:apply-templates/></h1></td>
     </tr>
   </xsl:template>

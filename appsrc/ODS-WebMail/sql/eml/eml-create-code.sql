@@ -414,7 +414,7 @@ create procedure OMAIL.WA.omail_attachment_get(
     _tdata := split_and_decode(_tdata,0,'=');
   } else if ((_encoding = 'base64')) {
     _tdata := encode_base64(_tdata);
-  };
+  }
   return vector('type_id',_type_id,'data',_tdata,'params',_aparams);
 }
 ;
@@ -3005,7 +3005,7 @@ create procedure OMAIL.WA.omail_msg_search(
     }
 
     if (get_keyword('q_subject',_params,'') <> '') {
-      _sql_statm  := sprintf('%s and SUBJECT LIKE ?',_sql_statm);
+      _sql_statm  := sprintf('%s and ucase(SUBJECT) LIKE ucase(?)',_sql_statm);
       _sql_params := vector_concat(_sql_params,vector(concat('%',get_keyword('q_subject',_params,''),'%')));
     }
 
@@ -3017,7 +3017,7 @@ create procedure OMAIL.WA.omail_msg_search(
     if (tmp <> '')
       _aquery := sprintf('%s and %s', _aquery, tmp);
 
-    OMAIL.WA.test(get_keyword('q_tags', _params, ''), vector('name', 'Tags', 'class', 'tags'));
+    OMAIL.WA.test(get_keyword('q_tags', _params, ''), vector ('name', 'Tags', 'class', 'tags', 'message', 'One of the tags is too short or contains bad characters or is a noise word!'));
     tmp := OMAIL.WA.tags2search(get_keyword('q_tags', _params, ''));
     if (tmp <> '')
       _aquery := sprintf('%s and %s', _aquery, tmp);
@@ -5896,11 +5896,16 @@ create procedure OMAIL.WA.test (
 
   declare exit handler for SQLSTATE '*' {
     if (not is_empty_or_null(valueMessage))
-      signal ('TEST', valueMessage);
+      signal ('TEST', valueMessage || '<>');
     if (__SQL_STATE = 'EMPTY')
       signal ('TEST', sprintf('Field ''%s'' cannot be empty!<>', valueName));
-    if (__SQL_STATE = 'CLASS')
+    if (__SQL_STATE = 'CLASS') {
+      if (valueType = 'free-text') {
+        signal ('TEST', sprintf('Field ''%s'' contains invalid characters or noise words!<>', valueName));
+      } else {
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters!<>', valueName));
+      }
+    }
     if (__SQL_STATE = 'TYPE')
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters for \'%s\'!<>', valueName, valueType));
     if (__SQL_STATE = 'MIN')
