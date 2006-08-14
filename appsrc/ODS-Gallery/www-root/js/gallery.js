@@ -1475,6 +1475,15 @@ gallery.feed_atom_click = function(){
   feed_url('atom.xml');
 }
 
+//------------------------------------------------------------------------------
+gallery.feed_xbel_click = function(){
+  feed_url('xbel.xml');
+}
+
+//------------------------------------------------------------------------------
+gallery.feed_mrss_click = function(){
+  feed_url('mrss.xml');
+}
 
 //------------------------------------------------------------------------------
 feed_url = function(type){
