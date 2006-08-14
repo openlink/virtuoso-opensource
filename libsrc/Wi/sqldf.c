@@ -1498,7 +1498,7 @@ sqlo_pred_body (sqlo_t * so, locus_t * loc, df_elt_t * tb_dfe, df_elt_t * pred)
 	df_elt_t * old_pt = so->so_gen_pt;
 	df_elt_t * body = dfe_container (so, DFE_PRED_BODY, tb_dfe);
 	char prev = so->so_place_code_forr_cond;
-	so->so_place_code_forr_cond = 1;
+	/* so->so_place_code_forr_cond = 1; -- Commented out as recomended by Orri */
 	so->so_gen_pt = body->_.sub.first;
 	pred->dfe_locus = loc;
 	l = sqlo_place_exp (so, pred, pred->_.bin.left);
