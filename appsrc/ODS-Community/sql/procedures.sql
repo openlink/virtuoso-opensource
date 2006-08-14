@@ -608,11 +608,11 @@ create procedure COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS (in option_type varcha
     }
   }else if(option_type='INSTANCE_LOGOS')
   {
-    result ( 'Default','/DAV/VAD/community/www-root/public/images/lightblue/community_blank_thin550.jpg');
+    result ( 'logo_blue','/DAV/VAD/community/www-root/public/images/lightblue/community_blank_thin550.jpg');
     result ( 'logo_green','/DAV/VAD/community/www-root/public/images/xdia_nig_banner.jpg');
   }else if(option_type='WELCOME_PHOTOS')
   {
-    result ( 'Default','/DAV/VAD/community/www-root/public/images/lightblue/comm_blank_welcome.png');
+    result ( 'welcome_blue','/DAV/VAD/community/www-root/public/images/lightblue/comm_blank_welcome.png');
     result ( 'welcome_green','/DAV/VAD/community/www-root/public/images/welcome_nig_2.gif');
   }else result ('','');
   

@@ -281,22 +281,6 @@
         }
 
         self.authors := self.owner;
-        for select
-              coalesce(U_FULL_NAME, U_NAME) as author_name
-            from
-              WA_INSTANCE,
-              WA_MEMBER,
-              SYS_USERS
-            where
-              WAI_TYPE_NAME = 'Community' and
-              (WAI_INST as ODS..wa_community).comm_home = self.comm_home and
-              WAI_NAME = WAM_INST and
-              WAM_MEMBER_TYPE = 2 and
-              WAM_USER = U_ID
-        do
-        {
-          self.authors := self.authors || ', ' || author_name;
-        }
 
         if(self.user_name and length(self.user_name) > 0)
         {
@@ -2464,22 +2448,6 @@ window.onload = function (e)
             }
            
             self.authors := self.owner;
-            for select
-                  coalesce(U_FULL_NAME, U_NAME) as author_name
-                from
-                  WA_INSTANCE,
-                  WA_MEMBER,
-                  SYS_USERS
-                where
-                  WAI_TYPE_NAME = 'Community' and
-                  (WAI_INST as ODS..wa_community).comm_home = self.comm_home and
-                  WAI_NAME = WAM_INST and
-                  WAM_MEMBER_TYPE = 2 and
-                  WAM_USER = U_ID
-            do
-            {
-              self.authors := self.authors || ', ' || author_name;
-            }
            
             if(self.user_name and length(self.user_name) > 0)
             {

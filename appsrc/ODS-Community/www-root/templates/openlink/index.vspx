@@ -63,7 +63,7 @@
 
                 </td>
               <td id="mainarea">          
-                <img src="http://localhost:8890/community/public/images/lightblue/comm_blank_welcome.png" width="700" height="250" border="0"/></td>
+                <img id="welcome_image" src="http://localhost:8890/community/public/images/lightblue/comm_blank_welcome.png" width="700" height="250" border="0"/></td>
               <td rowspan="3" class="advert1"><img src="/community/public/images/greygrad1.gif" width="200" height="600" /></td>
             </tr>
             <tr>

@@ -155,6 +155,21 @@ create procedure COMMUNITY.community_install()
                       ses_vars   => 1
                      );
 
+--eliminate instances with type DB.DBA.wa_community
+  for select WAI_ID as _wai_id, WAI_INST as _wai_inst from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Community'  do
+  {
+      declare _inst_type varchar;
+      
+      _inst_type:=cast(udt_instance_of (_wai_inst) as varchar);
+
+      if (strstr(_inst_type,'ODS.COMMUNITY.wa_community') is NULL)
+      { 
+         delete from DB.DBA.WA_INSTANCE A where A.WAI_ID=_wai_id;
+
+      }  
+  }
+                    
+
 }
 ;
 
@@ -633,10 +648,46 @@ create method wa_dashboard_last_item () for ODS.COMMUNITY.wa_community
 create method apply_custom_settings ( in template_path varchar, in logoimg_path varchar, in welcomeimg_path varchar) for ODS.COMMUNITY.wa_community
 {
   
+
+    declare customtemplate_path,customtemplate_lpath varchar;
+ 
+    customtemplate_path:='';
+    customtemplate_path:=subseq(logoimg_path,0,strrchr(logoimg_path,'/'));
+    customtemplate_lpath:='';
+    select top 1 HP_LPATH into customtemplate_lpath from DB.DBA.HTTP_PATH where HP_PPATH=customtemplate_path;        
+
+ 
+   declare src any;
+   src := (select blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_FULL_PATH = template_path||'/index.vspx');
+   
+
+    declare xt, xs any;
+  
+    declare exit handler for sqlstate '*'
+    {
+        dbg_obj_print(cast(now() as varchar)||' - xslt error - ',regexp_match ('[^\r\n]*', __SQL_MESSAGE));
+        return;
+    };
+    xt := xtree_doc (src, 256, DB.DBA.vspx_base_url (customtemplate_lpath || '/index.vspx'));
+    xt := xslt (ODS..COMM_GET_PPATH_URL ('www-root/widgets/apply_custom_settings.xsl'), xt, vector('custom_imgpath', customtemplate_lpath||'/','logo_img',subseq(logoimg_path,strrchr(logoimg_path,'/')+1),'welcome_img',customtemplate_lpath||'/'||subseq(welcomeimg_path,strrchr(logoimg_path,'/')+1) ));
+--    xt := xslt ('file:xd\\www-root\\widgets\\apply_custom_settings.xsl', xt, vector('custom_imgpath', customtemplate_lpath||'/','logo_img',subseq(logoimg_path,strrchr(logoimg_path,'/')+1),'welcome_img',customtemplate_lpath||'/'||subseq(welcomeimg_path,strrchr(logoimg_path,'/')+1) ));
+
+    declare _stream any;
+  
+    _stream := string_output();
+    http_value(xt,null,_stream);
+ 
+    DB.DBA.DAV_DELETE (customtemplate_path || '/index.vspx', 0, 'dav', 'dav');
+    DB.DBA.YACUTIA_DAV_RES_UPLOAD(customtemplate_path || '/index.vspx',string_output_string(_stream),'application/x-openlinksw-vspx+xml','110100100R','dav','dav');
+ 
+    DB.DBA.DAV_DELETE (customtemplate_path || '/default.css', 0, 'dav', 'dav');
+    DB.DBA.YACUTIA_DAV_COPY(template_path||'/default.css', customtemplate_path || '/default.css', 1, '110100100R','dav','dav');
+ 
+ 
   update ODS.COMMUNITY.SYS_COMMUNITY_INFO
   set
-    CI_TEMPLATE=template_path,
-    CI_CSS=template_path||'/default.css'
+     CI_TEMPLATE=customtemplate_path ,
+     CI_CSS=customtemplate_path ||'/default.css'
   where
     CI_COMMUNITY_ID = self.wa_name;
 
