@@ -259,12 +259,14 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
     {
     case JSO_CAT_ARRAY:
       {
+        jso_class_descr_t *fld_type_cd = gethash (cd->_.ad.jsoad_member_type, jso_classes);
+        int ctr;
         int full_length = BOX_ELEMENTS (inst);
+        int used_length = full_length;
         if (full_length > cd->_.ad.jsoad_min_length)
           {
-            int used_length = full_length;
-            int ctr;
             while ((0 < used_length) && (NULL == inst[used_length - 1])) used_length--;
+          }
             if (used_length < cd->_.ad.jsoad_min_length)
               {
                 SET_STATUS_FAILED;
@@ -272,12 +274,24 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
                   inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, (long)used_length, (long)(cd->_.ad.jsoad_min_length) );
               }
             for (ctr = 0; ctr < used_length; ctr++)
-              if (NULL == inst[ctr])
+          {
+            jso_rtti_t * sub = ((jso_rtti_t **)(inst))[ctr];
+            if (NULL == sub)
                 {
                   SET_STATUS_FAILED;
                   sqlr_new_error ("22023", "SR527", "JSO array instance <%.500s> of type <%.500s> contains unitialized element %ld",
                     inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, (long)ctr );
                 }
+            if (NULL != fld_type_cd)
+              {
+                if (sub->jrtti_class->jsocd_class_iri != cd->_.ad.jsoad_member_type)
+                  {
+                    SET_STATUS_FAILED;
+                    sqlr_new_error ("22023", "SR531", "Item # %d of JSO array <%.500s> of type <%.500s> is of wrong type <%.500s>, must be <%.500s>",
+                      ctr, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri,
+                      sub->jrtti_class->jsocd_class_iri, cd->_.ad.jsoad_member_type );
+                  }
+              }
           }
         break;
       }
@@ -287,13 +301,25 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
         for (fld_ctr = cd->_.sd.jsosd_field_count; fld_ctr--; /*no step*/)
           {
             jso_field_descr_t *fldd = cd->_.sd.jsosd_field_list + fld_ctr;
-            if (NULL != JSO_FIELD_PTR (inst, fldd)[0])
+            jso_class_descr_t *fld_type_cd = gethash (fldd->jsofd_type, jso_classes);
+            jso_rtti_t *sub = (jso_rtti_t *)(JSO_FIELD_PTR (inst, fldd)[0]);
+            if (NULL != sub)
               {
                 if ((JSO_DEPRECATED == fldd->jsofd_required) && !change_status)
                   {
                     SET_STATUS_FAILED;
                     sqlr_new_error ("22023", "SR529", "Deprecated property %.500s is set in JSO instance <%.500s> of type <%.500s>",
                       fldd->jsofd_local_name, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri );
+                  }
+                if (NULL != fld_type_cd)
+                  {
+                    if (sub->jrtti_class->jsocd_class_iri != fldd->jsofd_type)
+                      {
+                        SET_STATUS_FAILED;
+                        sqlr_new_error ("22023", "SR530", "Property %.500s of JSO instance <%.500s> of type <%.500s> is of wrong type <%.500s>, must be <%.500s>",
+                          fldd->jsofd_local_name, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri,
+                          sub->jrtti_class->jsocd_class_iri, fldd->jsofd_type );
+                      }
                   }
               }
             else
@@ -316,6 +342,32 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
         jso_validate (sub, root_rtti, known, change_status);
     }
   END_DO_BOX_FAST;
+  switch (cd->jsocd_cat)
+    {
+    case JSO_CAT_ARRAY:
+      {
+        DO_BOX_FAST (jso_rtti_t *, sub, ctr, inst)
+          {
+            if (NULL != sub)
+              jso_validate (sub, root_rtti, known, change_status);
+          }
+        END_DO_BOX_FAST;
+        break;
+      }
+    case JSO_CAT_STRUCT:
+      {
+        int fld_ctr;
+        for (fld_ctr = cd->_.sd.jsosd_field_count; fld_ctr--; /*no step*/)
+          {
+            jso_field_descr_t *fldd = cd->_.sd.jsosd_field_list + fld_ctr;
+            jso_class_descr_t *fld_type_cd = gethash (fldd->jsofd_type, jso_classes);
+            jso_rtti_t *sub = (jso_rtti_t *)(JSO_FIELD_PTR (inst, fldd)[0]);
+            if ((NULL != sub) && (NULL != fld_type_cd))
+              jso_validate (sub, root_rtti, known, change_status);
+          }
+        break;
+      }
+    }
   if (change_status && (JSO_STATUS_FAILED == inst_rtti->jrtti_status))
     inst_rtti->jrtti_status = JSO_STATUS_NEW;
 }
@@ -646,7 +698,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
         }
       if (uname_xmlschema_ns_uri_hash_any == dt)
         {
-          fld_ptr[0] = ((NULL == arg) ? box_num_nonull (0) : arg);
+          fld_ptr[0] = ((NULL == arg) ? box_num_nonull (0) : box_copy_tree (arg));
           goto make_retval; /* see below */
         }
       if (uname_xmlschema_ns_uri_hash_anyURI == dt)
