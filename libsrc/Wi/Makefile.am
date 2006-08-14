@@ -689,6 +689,9 @@ turtle_lex_props.c: list_lex_props.sh turtle_p.y
 turtle_l.c: turtle_l.l turtle_p.h
 	$(LEX) -Pttlyy -oturtle_l.c ../../libsrc/Wi/turtle_l.l
 
+
+AWK_FILES = sql_to_c.awk
+
 sql_code.c: $(SQL_FILES) $(AWK_FILES)
 	@${GEN} ${GAWK} -o sql_code.c -f sql_to_c.awk \
 		-v pl_stats=$(PLSTATS) $(SQL_FILES)
