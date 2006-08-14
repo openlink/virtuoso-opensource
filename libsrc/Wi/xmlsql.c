@@ -5268,7 +5268,6 @@ xml_template_get_sqlx_parms (client_connection_t * cli, const caddr_t text, id_h
   caddr_t * ret = NULL;
   caddr_t *place;
   int inx = 0, named_params = 0;
-  caddr_t _text = text;
 
   qr = sql_compile (text, cli, err, SQLC_NO_REMOTE);
 
@@ -5459,8 +5458,16 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 
 	      if (flag)
 		{
-		  sqlx_query = dk_alloc_box (box_length (_text)+7, DV_STRING);
-		  snprintf (sqlx_query, box_length (_text)+7, "SPARQL %s", _text);
+		  caddr_t def_graph_uri = xml_find_attribute (current, "default-graph-uri", XMLSQL_NS);
+		  /* SPARQL define input:default-graph-uri ""(space) */
+		  size_t q_len = box_length (_text) + 7 + (def_graph_uri != NULL ? box_length (def_graph_uri) + 34 : 0); 
+
+		  sqlx_query = dk_alloc_box (q_len, DV_STRING);
+		  if (def_graph_uri != NULL)
+		    snprintf (sqlx_query, q_len, "SPARQL define input:default-graph-uri \"%s\" %s", 
+			def_graph_uri, _text);
+		  else
+		    snprintf (sqlx_query, q_len, "SPARQL %s", _text);
 		}
 
 	      params = (caddr_t) xml_template_get_sqlx_parms (cli, sqlx_query, pars, &err);
