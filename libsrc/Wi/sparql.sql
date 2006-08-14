@@ -3740,6 +3740,16 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       ret_mime := 'application/javascript';
       SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 1);
     }
+  else if (accept = 'application/soap+xml')
+    {
+      ret_mime := 'application/soap+xml';
+      http ('<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope"><soapenv:Body><query-result xmlns="http://www.w3.org/2005/09/sparql-protocol-types/#">', ses);
+      SPARQL_RESULTS_XML_WRITE_NS (ses);
+      SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
+      SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
+      http ('\n</sparql>', ses);
+      http ('</query-result></soapenv:Body></soapenv:Envelope>', ses);
+    }
   else
     {
       ret_mime := 'application/sparql-results+xml';
@@ -3779,12 +3789,12 @@ VHOST_REMOVE (lpath=>'/sparql')
 VHOST_REMOVE (lpath=>'/services/sparql-query')
 ;
 
-VHOST_DEFINE (lpath=>'/services/sparql-query', ppath=>'/SOAP/', soap_user=>'SPARQL',
-              soap_opts => vector ('ServiceName', 'XMLAnalysis', 'elementFormDefault', 'qualified'))
-;
+--VHOST_DEFINE (lpath=>'/services/sparql-query', ppath=>'/SOAP/', soap_user=>'SPARQL',
+--              soap_opts => vector ('ServiceName', 'XMLAnalysis', 'elementFormDefault', 'qualified'))
+--;
 
-grant execute on DB.."querySoap" to "SPARQL"
-;
+--grant execute on DB.."querySoap" to "SPARQL"
+--;
 
 
 -----
@@ -3796,7 +3806,7 @@ DB.DBA.VHOST_DEFINE (lpath=>'/sparql/', ppath=>'/!sparql/', is_dav=>1, vsp_user=
 create procedure DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (
   inout path varchar, inout params any, inout lines any,
   in httpcode varchar, in httpstatus varchar,
-  in query varchar, in state varchar, in msg varchar)
+  in query varchar, in state varchar, in msg varchar, in accept varchar := null)
 {
 --  declare exit handler for sqlstate '*' { signal (state, msg); };
   if (httpstatus is null)
@@ -3810,6 +3820,15 @@ create procedure DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (
         errtitle := subseq (msg, 0, delim);
       httpstatus := sprintf ('Error %s %s', state, errtitle);
     }
+  if (accept is not null and accept = 'application/soap+xml')
+    {
+      declare err_str any;
+      http_request_status (sprintf ('HTTP/1.1 500 %s', httpstatus));
+      err_str := soap_make_error ('320', state, msg, 12);
+      http (err_str);
+      return;
+    }
+
   http_request_status (sprintf ('HTTP/1.1 %s %s', httpcode, httpstatus));
   http_header ('Content-Type: text/plain\r\n');
   http (concat (state, ' Error ', msg));
@@ -3821,26 +3840,60 @@ create procedure DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (
 }
 ;
 
+create procedure DB.DBA.SPARQL_WSDL (in lines any)
+{
+  declare host any;
+  host := http_request_header (lines, 'Host', null, null);
+    http (sprintf ('<?xml version="1.0" encoding="utf-8"?>
+    <description xmlns="http://www.w3.org/2006/01/wsdl"
+		 xmlns:tns="http://www.w3.org/2005/08/sparql-protocol-query/#"
+		 targetNamespace="http://www.w3.org/2005/08/sparql-protocol-query/#">
+      <include location="http://www.w3.org/TR/rdf-sparql-protocol/sparql-protocol-query.wsdl" />
+      <service name="SparqlService" interface="tns:SparqlQuery">
+	<endpoint name="SparqlEndpoint" binding="tns:querySoap" address="http://%s/sparql"/>
+      </service>
+    </description>', host));
+}
+;
+
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
 {
   declare query, dflt_graph, full_query, format varchar;
   declare named_graphs any;
   declare paramctr, paramcount, maxrows integer;
-  declare ses any;
+  declare ses, content any;
+  declare def_max, add_http_headers int;
+  declare http_meth, content_type varchar;
+
   ses := 0;
   query := null;
   dflt_graph := null;
   format := '';
+  add_http_headers := 1;
   named_graphs := vector ();
   maxrows := 1024*1024; -- More than enough for web-interface.
+  http_meth := http_request_get ('REQUEST_METHOD');
+  content_type := http_request_header (lines, 'Content-Type', null, '');
+  content := null;
+
   declare exit handler for sqlstate '*' {
     DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
       '500', 'SPARQL Request Failed',
-      query, __SQL_STATE, __SQL_MESSAGE );
+      query, __SQL_STATE, __SQL_MESSAGE, format);
      return;
    };
+
+  -- the WSDL
+  if (http_path () = '/sparql/services.wsdl')
+    {
+      http_header ('Content-Type: application/wsdl+xml\r\n');
+--      http_header ('Content-Type: text/xml\r\n');
+      DB.DBA.SPARQL_WSDL (lines);
+      return;
+    }
+
   paramcount := length (params);
-  if ((0 = paramcount) or ((2 = paramcount) and ('Content' = params[0])))
+  if (((0 = paramcount) or ((2 = paramcount) and ('Content' = params[0]))) and content_type <> 'application/soap+xml')
     {
        declare redir varchar;
        redir := registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT');
@@ -3916,7 +3969,7 @@ http('</html>');
       pvalue := params [paramctr+1];
       if ('query' = pname)
         query := pvalue;
-      else if ('default-graph-uri' = pname)
+      else if ('default-graph-uri' = pname and length (pvalue))
         dflt_graph := pvalue;
       else if ('named-graph-uri' = pname)
         {
@@ -3931,10 +3984,79 @@ http('</html>');
         {
 	  format := pvalue;
 	}
+      else if (query is null and 'query-uri' = pname and length (pvalue))
+	{
+	  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExternalQuerySource') = '1')
+	    {
+	      declare uri varchar;
+	      declare hf, hdr, charset any;
+	      uri := pvalue;
+	      if (uri like 'http://%' and uri not like 'http://localdav.virt/%' and uri not like 'http://local.virt/dav/%')
+		{
+		  query := http_get (uri, hdr);
+		  if (hdr[0] not like '% 200%')
+		    signal ('22023', concat ('HTTP request failed: ', hdr[0], 'for URI ', uri));
+		  charset := http_request_header (hdr, 'Content-Type', 'charset', '');
+		  if (charset <> '')
+		    {
+		      query := charset_recode (query, charset, 'UTF-8');
+		    }
     }
+	      else
+		{
+		  query := XML_URI_GET ('', pvalue);
+	        }
+	    }
+	  else
+	    {
+	       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+		    '403', 'Prohibited', query, '22023', 'The external query sources are prohibited.');
+	       return;
+	    }
+	}
+      else if ('xslt-uri' = pname and length (pvalue))
+	{
+	  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExternalXsltSource') = '1')
+	    {
+	      add_http_headers := 0;
+	      http_xslt (pvalue);
+	    }
+	  else
+	    {
+	       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+		    '403', 'Prohibited', query, '22023', 'The XSL-T transformation is prohibited');
+	       return;
+	    }
+	}
+    }
+  def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
+  if (def_max > 0 and def_max < maxrows)
+    maxrows := def_max;
+
+  -- SOAP 1.2 operation begins
+  if (http_meth = 'POST' and content_type = 'application/soap+xml')
+    {
+       declare xt, ng any;
+       content := http_body_read ();
+--       dbg_obj_print (string_output_string (content));
+       xt := xtree_doc (content);
+       query := charset_recode (xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] string (/soap:Envelope/soap:Body/sp:query-request/sp:query)', xt), '_WIDE_', 'UTF-8');
+       dflt_graph := charset_recode (xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] string (/soap:Envelope/soap:Body/sp:query-request/sp:default-graph-uri)', xt), '_WIDE_', 'UTF-8');
+       ng := xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] /soap:Envelope/soap:Body/sp:query-request/sp:named-graph-uri', xt, 0);
+
+       foreach (any frag in ng) do
+	 {
+	   declare pvalue varchar;
+	   pvalue := charset_recode (xpath_eval ('string(.)', frag), '_WIDE_', 'UTF-8');
+	   if (position (pvalue, named_graphs) < 0)
+	     named_graphs := vector_concat (named_graphs, vector (pvalue));
+	 }
+       format := 'application/soap+xml';
+    }
+
   if (query is null)
     {
-      if (strstr (http_request_header (lines, 'Content-Type', null, ''), 'application/xml') is not null)
+      if (strstr (content_type, 'application/xml') is not null)
         {
           DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
             '400', 'Bad Request',
@@ -3943,7 +4065,7 @@ http('</html>');
 	}
       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
         '400', 'Bad Request',
-        query, '22023', 'The request does not contain text of SPARQL query' );
+        query, '22023', 'The request does not contain text of SPARQL query', format);
       return;
     }
   if (dflt_graph is null)
@@ -3980,7 +4102,7 @@ http('</html>');
     {
       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
         '400', 'Bad Request',
-	query, state, msg );
+	query, state, msg, format);
       return;
     }
   sqltext := string_output_string (sparql_to_sql_text (full_query));
@@ -3999,14 +4121,14 @@ http('</html>');
     {
       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
         '500', 'SPARQL Request Failed',
-	query, state, msg );
+	query, state, msg, format);
       return;
     }
   declare accept varchar;
   accept := http_request_header (lines, 'Accept', null, '');
   if (format <> '')
     accept := format;
-  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
+  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers);
 }
 ;
 
