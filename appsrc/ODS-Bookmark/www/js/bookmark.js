@@ -181,10 +181,14 @@ function anySelected (form, txt, selectionMsq) {
 
 // ---------------------------------------------------------------------------
 function changeState (obj, fld_name) {
-  if (obj != null && obj.type == "checkbox" && obj.checked) {
+  if (obj) {
+    if (obj.type == "checkbox" && obj.checked) {
     document.F1.elements[fld_name].disabled = false;
   } else {
     document.F1.elements[fld_name].disabled = true;
+  }
+  } else {
+    document.F1.elements[fld_name].disabled = false;
   }
 }
 

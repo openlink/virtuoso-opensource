@@ -157,47 +157,59 @@ create procedure BMK.WA.session_restore(
   inout params any,
   inout lines any)
 {
-  declare exit handler for sqlstate '*' { goto _end; };
+  declare domain_id, user_id, user_name, user_role, sid, realm, options any;
 
-  declare
-    domain_id integer;
-  declare
-    sSid varchar;
-  declare
-    options any;
+  declare exit handler for sqlstate '*' {
+    domain_id := -2;
+    goto _end;
+  };
 
+  sid := get_keyword('sid', params, '');
+  realm := get_keyword('realm', params, 'wa');
 
   options := http_map_get('options');
   if (not is_empty_or_null(options))
     domain_id := get_keyword('domain', options);
   if (is_empty_or_null(domain_id))
-    domain_id := cast(request[5] as integer);
-  if (is_empty_or_null(domain_id))
-    goto _end;
+    domain_id := atoi(request[5]);
+  if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+    domain_id := -1;
 
-  sSid := get_keyword('sid', params, '');
+_end:
+  domain_id := cast(domain_id as integer);
+  user_id := -1;
   for (select U.U_ID,
               U.U_NAME,
               U.U_FULL_NAME
          from DB.DBA.VSPX_SESSION S,
               WS.WS.SYS_DAV_USER U
-        where S.VS_REALM = 'wa'
-          and S.VS_SID   = sSid
+        where S.VS_REALM = realm
+          and S.VS_SID   = sid
           and S.VS_UID   = U.U_NAME) do
   {
-    return vector('sid',        sSid,
-                  'domain_id',  domain_id,
-                  'user_id',    U_ID,
-                  'user_name',  BMK.WA.user_name(U_NAME, U_FULL_NAME),
-                  'user_role',  BMK.WA.access_role(domain_id, U_ID)
-                 );
-  };
-_end:
+    user_id   := U_ID;
+    user_name := BMK.WA.user_name(U_NAME, U_FULL_NAME);
+    user_role := BMK.WA.access_role(domain_id, U_ID);
+  }
+  if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
   domain_id := -1;
+
+  if (user_id = -1)
+    if (domain_id = -1) {
+      user_role := 'expire';
+      user_name := 'Expire session';
+    } else if (domain_id = -2) {
+      user_role := 'public';
+      user_name := 'Public User';
+    } else {
+      user_role := 'guest';
+      user_name := 'Guest User';
+    }
+
   return vector('domain_id', domain_id,
-                'user_id',   -1,
-                'user_name', 'Public User',
-                'user_role', 'public'
+                'user_id',   user_id,
+                'user_name', user_name,
+                'user_role', user_role
                );
 }
 ;
@@ -727,8 +739,8 @@ create procedure BMK.WA.bookmark_update (
 
   bookmark_id := (select B_ID from BMK.WA.BOOKMARK where B_URI = uri);
   if (is_empty_or_null(bookmark_id)) {
-    insert into BMK.WA.BOOKMARK (B_URI, B_NAME, B_DESCRIPTION)
-      values (uri, name, description);
+    insert into BMK.WA.BOOKMARK (B_URI, B_NAME, B_DESCRIPTION, B_CREATED)
+      values (uri, name, description, now());
     bookmark_id := identity_value ();
   }
   if (cast(folder_id as integer) <= 0)
@@ -1783,6 +1795,8 @@ create procedure BMK.WA.dav_home(
   declare cid integer;
 
   name := coalesce((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), -1);
+  if (isinteger(name))
+    return null;
   home := BMK.WA.dav_home_create(name);
   if (isinteger(home))
     return null;
@@ -1869,6 +1883,8 @@ create procedure BMK.WA.dav_url (
 {
   declare home varchar;
 
+  if (account_id < 0)
+    account_id := BMK.WA.domain_owner_id (domain_id);
   home := BMK.WA.dav_home(account_id);
   if (isnull(home))
     return '';

@@ -31,11 +31,16 @@ BMK.WA.exec_no_error('
     B_URI varchar not null,
     B_NAME varchar,
     B_DESCRIPTION varchar,
+    B_CREATED datetime,
     B_LAST_VISITED datetime,
 
     primary key (B_ID)
   )
 ');
+
+BMK.WA.exec_no_error(
+  'alter table BMK.WA.BOOKMARK add B_CREATED datetime', 'C', 'BMK.WA.BOOKMARK', 'B_CREATED'
+);
 
 BMK.WA.exec_no_error('
   create unique index SK_BOOKMARK_01 on BMK.WA.BOOKMARK(B_URI)

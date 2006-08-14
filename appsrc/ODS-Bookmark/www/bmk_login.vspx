@@ -36,9 +36,12 @@
         self.vc_redirect(sprintf('%slogin.vspx?URL=%U', BMK.WA.wa_home_link (), sprintf('%s?URI=%s&TITLE=%V', HTTP_REQUESTED_URL(), get_keyword('URL', self.vc_page.vc_event.ve_params, ''), get_keyword('TITLE', self.vc_page.vc_event.ve_params, ''))));
         return;
       }
-      if (BMK.WA.check_grants2(self.account_role, page_name))
+      if (self.account_role = 'expire') {
+        http_request_status ('HTTP/1.1 302 Found');
+        http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', BMK.WA.wa_home_link (), HTTP_REQUESTED_URL()));;
         return;
-      self.vc_redirect('bookmarks.vspx');
+      }
+        return;
     ]]>
   </v:after-data-bind>
 </v:login>

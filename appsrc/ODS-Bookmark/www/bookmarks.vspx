@@ -38,12 +38,8 @@
         directionStr := 'Ascending';
         imageStr := '&nbsp;&nbsp;';
       }
-      if (self.account_role <> 'public') {
         altStr := sprintf ('Sort Rows on %s in %s Order', titleName, directionStr);
         http (sprintf ('<a href="#" onclick="javascript: myPost (''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
-      } else {
-        http (sprintf ('%s%s', titleName, imageStr));
-      }
     ]]>
   </v:method>
 
@@ -130,15 +126,17 @@
 
   <v:method name="toolbarEnable" arglist="in cmd varchar">
     <![CDATA[
-      if ((cmd = 'Bookmark/Create') and (self.bTab = 'shared'))
+      if ((cmd = 'shared') and ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
         return 0;
-      if ((cmd = 'Folder/Create') and (self.bTab = 'shared'))
+      if ((cmd = 'Bookmark/Create') and ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
         return 0;
-      if ((cmd = 'Smart Folder/Create') and (self.bTab = 'shared'))
+      if ((cmd = 'Folder/Create') and ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
         return 0;
-      if ((cmd = 'import') and (self.bTab = 'shared'))
+      if ((cmd = 'Smart Folder/Create') and ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
         return 0;
-      if ((cmd = 'export') and (self.bTab = 'shared'))
+      if ((cmd = 'import') and ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
+        return 0;
+      if ((cmd = 'export') and ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
         return 0;
       return 1;
     ]]>
@@ -229,15 +227,15 @@
       <v:variable persist="0" name="n_order" type="varchar" default="'_NAME'" />
       <v:variable persist="0" name="n_direction" type="varchar" default="'asc'" />
       <v:variable persist="0" name="bTag" type="varchar" default="null" />
-      <v:variable persist="1" name="bTab" type="varchar" default="'bookmarks'"/>
-      <v:variable persist="1" name="bNode" type="varchar" default="'f#0'"/>
-      <v:variable persist="1" name="bPath" type="varchar" default="'/f#0'"/>
+      <v:variable persist="0" name="bTab" type="varchar" default="'bookmarks'"/>
       <v:variable persist="temp" name="bName" type="varchar" default="''"/>
       <v:variable persist="temp" name="bLocation" type="any" default="''"/>
       <v:variable persist="0" name="bNodes" type="any" default="null"/>
-      <v:variable persist="1" name="bMode" type="varchar" default="'browse'"/>
-      <v:variable persist="1" name="bState" type="any" default="null" />
-      <v:variable persist="1" name="bBookmark" type="varchar" default="null" />
+      <v:variable persist="0" name="bMode" type="varchar" default="'browse'"/>
+      <v:variable persist="0" name="bBookmark" type="varchar" default="null" />
+      <v:variable persist="0" name="bNode" type="varchar" default="'f#-1'"/>
+      <v:variable persist="0" name="bPath" type="varchar" default="'/f#-1'"/>
+      <v:variable persist="0" name="bState" type="any" default="null" />
 
       <v:variable name="tbLabels" type="integer" default="1" />
       <v:variable name="chars" type="integer" default="60" />
@@ -474,13 +472,18 @@
             </v:before-render>
           </v:url>
 
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" xhtml_title="Show Shared Bookmarks" xhtml_class="toolbar">
+          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" enabled="--self.toolbarEnable('shared')" xhtml_title="Show Shared Bookmarks" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
                 control.ufl_value := '<img src="image/shared_32.png" border="0"/>' || self.toolbarLabel('Shared Bookmarks');
               ]]>
             </v:before-render>
           </v:url>
+          <v:template type="simple" enabled="--case when self.toolbarEnable('shared') then 0 else 1 end">
+            <span class="toolbar">
+              <img src="image/grey_shared_32.png" border="0" alt="Shared Bookmarks"/><?vsp http(self.toolbarLabel('Shared Bookmarks'));?>
+            </span>
+          </v:template>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
 
@@ -642,7 +645,7 @@
         <div style="width: 33.8%; height: 100%; float: left; overflow: auto;">
               <?vsp
             if (self.bTab = 'bookmarks') {
-              if (self.domain_id = -1) {
+              if (self.domain_id = -2) {
                 self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 0), '');
                 } else {
                 self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 1), '');
@@ -760,6 +763,7 @@
                   control.ds_parameters := null;
                   control.ds_sql := 'select 0 _TYPE, F_ID _ID, \'\' _NODE, F_NAME _NAME, \'\' _URI from BMK.WA.FOLDER where 1=0';
                   if (BMK.WA.node_type(self.bNode) = 'f') {
+                    if (self.domain_id >= 0) {
                     control.ds_sql := 'select _TYPE,
                                               _ID,
                                               _NODE,
@@ -789,6 +793,23 @@
                                                   and coalesce(BD_FOLDER_ID, -1) = <ID>) x';
                     control.ds_sql := replace(control.ds_sql, '<DOMAIN_ID>', cast(self.domain_id as varchar));
                     control.ds_sql := replace(control.ds_sql, '<ID>', BMK.WA.node_suffix(self.bNode));
+                    } else {
+                      control.ds_sql := 'select _TYPE,
+                                                _ID,
+                                                _NODE,
+                                                _NAME,
+                                                _URI,
+                                                _LAST_UPDATE
+                                           from (select TOP 100
+                                                        1                              _TYPE,
+                                                        B_ID                           _ID,
+                                                        BMK.WA.make_node(\'b\', B_ID)  _NODE,
+                                                        B_NAME                         _NAME,
+                                                        B_URI                          _URI,
+                                                        B_CREATED                      _LAST_UPDATE
+                                                   from BMK.WA.BOOKMARK
+                                                  order by B_CREATED desc) x';
+                    }
 
                   } else if ((BMK.WA.node_type(self.bNode) = 's') and (BMK.WA.node_id(self.bNode) = -1)) {
                     control.ds_sql := 'select 1                        _TYPE,
@@ -906,7 +927,7 @@
                 <table id="bookmarks" style="width: 100%;" cellspacing="0">
                   <thead class="sortHeader">
                     <tr>
-                       <v:template type="simple" enabled="--case when ((self.account_role = 'public') or (self.bTab = 'shared')) then 0 else 1 end">
+                      <v:template type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')) then 0 else 1 end">
                         <th class="checkbox" width="1%">
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                         </th>
@@ -925,7 +946,7 @@
                 <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                   <table>
                     <tr>
-                      <v:template type="simple" enabled="--case when ((self.account_role = 'public') or (self.bTab = 'shared')) then 0 else 1 end">
+                      <v:template type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')) then 0 else 1 end">
                         <td align="center">
                           <?vsp
                             declare S varchar;

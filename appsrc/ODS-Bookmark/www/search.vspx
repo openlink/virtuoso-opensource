@@ -75,8 +75,10 @@
       tmp := BMK.WA.vector_unique(tmp);
       self.v_tags := BMK.WA.vector2tags(tmp);
 
+      if (not (self.account_role in ('public', 'guest'))) {
       self.v_own := self.f_own.ufl_selected;
       self.v_shared := self.f_shared.ufl_selected;
+      }
     ]]>
   </v:method>
 
@@ -274,8 +276,10 @@
           self.v_folder_id := trim(get_keyword('f_folder', self.vc_page.vc_event.ve_params, get_keyword('folder', self.vc_page.vc_event.ve_params, self.v_folder_id)));
 
           -- options
+          if (not (self.account_role in ('public', 'guest'))) {
           self.v_own := self.f_own.ufl_selected;
           self.v_shared := self.f_shared.ufl_selected;
+          }
           self.v_max := trim(get_keyword('f_max', self.vc_page.vc_event.ve_params, self.v_max));
           self.v_order := trim(get_keyword('f_order', self.vc_page.vc_event.ve_params, self.v_order));
           self.v_direction := trim(get_keyword('f_direction', self.vc_page.vc_event.ve_params, self.v_direction));
@@ -492,6 +496,7 @@
                     <v:data-list name="f_folder" xhtml_id="f_folder" value="--self.v_folder_id" sql="select 0 as F_ID, 'Select folder ...' as F_PATH2, '' as F_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH" key-column="F_ID" value-column="F_PATH2" xhtml_class="select"/>
                   </td>
                 </tr>
+                <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
                 <tr>
                   <th/>
                   <td>
@@ -506,6 +511,7 @@
                     <b><vm:label for="f_shared" value="Search in my shared bookmarks"/></b>
                   </td>
                 </tr>
+                </v:template>
               </table>
             </div>
             <div id="2" class="tabContent" style="display: none;">
