@@ -1,5 +1,8 @@
+<?xml version="1.0"?>
 <!--
  -  
+ -  $Id$
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/TR/WD-xsl">
   <!-- Identity transformation template -->
   <xsl:template><xsl:copy><xsl:apply-templates select="@* | * | comment() | processing-instruction() | text()"/></xsl:copy></xsl:template>

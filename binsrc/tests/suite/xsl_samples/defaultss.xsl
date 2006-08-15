@@ -1,5 +1,8 @@
+<?xml version="1.0"?>
 <!--
  -  
+ -  $Id$
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="defaultss.xsl"?>
 <!--
   IE5 default style sheet, provides a view of any XML document

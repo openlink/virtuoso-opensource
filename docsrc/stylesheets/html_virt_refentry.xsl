@@ -1,5 +1,8 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
 <!--
  -  
+ -  $Id$
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="ISO-8859-1"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/TR/WD-xsl" result-ns="html" version="1.0">
 <xsl:template match="/">
 <xsl:apply-templates/>

@@ -1,5 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
  -  
+ -  $Id$
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:output method="xml" indent="yes" doctype-public="-//WAPFORUM//DTD WML 1.1//EN" doctype-system="http://www.wapforum.org/DTD/wml_1.1.xml" encoding="utf-8"/>
   <xsl:param name="base" />

@@ -1,5 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -  
+ -  $Id$
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vd="http://www.openlinksw.com/vspx/deps/" xmlns:vz="http://www.openlinksw.com/vspx/v-zard" xmlns:xs="http://www.w3.org/2001/XMLSchema" >
 <xsl:output method="XML" cdata-section-elements="v:on-init v:before-data-bind v:after-data-bind v:on-post v:before-render v:method" />
 <xsl:key name="named-toplevel" match="/xs:schema/*" use="if (empty (/xs:schema/@targetNamespace), @name, concat (/xs:schema/@targetNamespace, ':', @name))"/>

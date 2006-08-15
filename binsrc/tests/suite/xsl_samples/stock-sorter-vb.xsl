@@ -1,5 +1,8 @@
+<?xml version="1.0"?>
 <!--
  -  
+ -  $Id$
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<?xml version="1.0"?>
 
 <!-- Note that this style sheet relies on the XMLDocument and XSLDocument properties and thus
      only works when browsing XML -->
