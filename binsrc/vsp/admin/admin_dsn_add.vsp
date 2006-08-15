@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,9 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<!-- -*- html -*- -->
-<?vsp
+
   declare drivers, at_str, at_def any;
   declare driver_str, driver_def any;
   declare driver_t, driver_te, type_dsn varchar;

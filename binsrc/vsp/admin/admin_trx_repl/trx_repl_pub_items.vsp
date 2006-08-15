@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -22,8 +24,9 @@
 ?>
 <!- -*- html -*- ->
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
-<?vsp adm_pre_page(lines); ?>
 <?vsp
+ adm_pre_page(lines);
+
 declare _acct varchar;
 declare _item varchar;
 declare _idx, _len integer;

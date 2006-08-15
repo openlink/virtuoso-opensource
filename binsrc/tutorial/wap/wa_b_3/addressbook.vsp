@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
 
    declare _user_name, _login_ok varchar;
   declare _sid varchar;
@@ -93,8 +94,7 @@
   }else{
     _login_ok := 'NO';
   }
-?>
-<?vsp
+
 if ( (_login_ok = 'YES' ) and (_to_do = 'LIST' or _add_ok = 'YES' or _update_ok = 'YES' or _delete_ok = 'YES' ) )
 { http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
 ?><?xml version="1.0"?>
@@ -190,8 +190,7 @@ if ( (_login_ok = 'YES' ) and (_to_do = 'LIST' or _add_ok = 'YES' or _update_ok 
 </wml>
 <?vsp
 }
-?>
-<?vsp
+
 if ((_login_ok = 'YES' ) and( _to_do = 'ERASE' ) )
 { http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
 ?><?xml version="1.0"?>
@@ -253,8 +252,7 @@ if ((_login_ok = 'YES' ) and( _to_do = 'ERASE' ) )
 </wml>
 <?vsp
 }
-?>
-<?vsp
+
 if ( (_login_ok = 'YES' ) and (_to_do = 'MODIFY1' ) )
 { http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
 ?><?xml version="1.0"?>
@@ -316,8 +314,7 @@ if ( (_login_ok = 'YES' ) and (_to_do = 'MODIFY1' ) )
 </wml>
 <?vsp
 }
-?>
-<?vsp
+
 if ( (_login_ok = 'YES' ) and (_to_do = 'MODIFY2' ) )
 { http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
 ?><?xml version="1.0"?>

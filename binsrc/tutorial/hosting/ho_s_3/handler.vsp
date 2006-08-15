@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -45,8 +47,7 @@
 <?vsp
     }
    }
-?>
-<?vsp
+
   declare _add_it, _delete_it integer;
   declare _supplier_id varchar;
 

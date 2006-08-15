@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,9 +21,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp adm_pre_page(lines); ?>
-<?vsp
+
+ adm_pre_page(lines);
+
 declare col, pcol, _u_id integer;
 declare name, nname, pname, res, parent varchar;
 _u_id := DB.DBA.adm_dav_check_auth (lines);

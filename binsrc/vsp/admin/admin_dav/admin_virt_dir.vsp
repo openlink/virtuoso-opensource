@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,9 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<!-- -*- html -*- -->
-<?vsp
+
   declare _page, _site, _new, _lpath, _ppath, _host, _lhost, _text varchar;
   declare _def_page, _brow, _vsp, _soap, _security, _realm, _auth_func, _xmlt varchar;
   declare _after_func, _ses_vars, _listen, _action, _from, _err_fill varchar;

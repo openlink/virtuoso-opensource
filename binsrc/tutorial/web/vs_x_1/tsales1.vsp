@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
 http_xslt (TUTORIAL_XSL_DIR () || '/tutorial/web/vs_x_1/tsales2.xsl',vector ('p', 666, 'param2', 555));
 ?>
 <sales>

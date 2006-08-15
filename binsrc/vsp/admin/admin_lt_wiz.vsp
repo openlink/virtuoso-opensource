@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -20,7 +22,7 @@
 --  
 --  
 ?>
-<!-- -*- html -*- -->
+
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 
 <?vsp

@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
      http_header('Content-type: text/vnd.wap.wml\n');
 
      declare tree any;
@@ -99,7 +100,7 @@
      http_xslt (TUTORIAL_XSL_DIR () || '/tutorial/wap/wa_b_1/html2wml.xsl', vector('base', _this_url));
      set http_charset='utf-8';
      tree := xtree_doc (_res, 0, '', 'UTF-8', 'x-any');
-?><?vsp
+
      http('<document>');
      http_value(tree);
      http('<wml1>');

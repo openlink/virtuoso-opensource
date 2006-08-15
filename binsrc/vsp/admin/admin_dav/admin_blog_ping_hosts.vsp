@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,9 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<!-- -*- html -*- -->
-<?vsp
+
   declare id, proto, des, endp varchar;
   declare userid int;
   declare _duplicate int;

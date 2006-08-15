@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
 declare this, saved_pars, b64_pars varchar;
 declare _u_id integer;
 _u_id := DB.DBA.adm_dav_check_auth (lines);
@@ -97,9 +98,7 @@ if ({?'host'} is not null)
   </TR>
 <?vsp
           }
-?>
 
-<?vsp
        for select SUP_CLASS from SYS_SOAP_UDT_PUB where SUP_LHOST = {?'lhost'} and SUP_HOST = {?'host'}
 		and SUP_END_POINT = {?'lpath'}
        do {

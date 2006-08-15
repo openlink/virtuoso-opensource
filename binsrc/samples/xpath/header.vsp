@@ -19,8 +19,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
   declare _version_id any;
 -- 020801
   _version_id := split_and_decode('$Id$', 0, '\x0\x0\x20');

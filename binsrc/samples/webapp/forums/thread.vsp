@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp 
+ 
   declare pkind, pid, tid, msgid, mid integer;
   declare usr, n, fdesc, mdesc, tdesc, mtext, mtitle, mauth, mtime, sid, raddr, f, fid, fname, mname varchar;
   declare _bk_source_xml, _bk_source any;

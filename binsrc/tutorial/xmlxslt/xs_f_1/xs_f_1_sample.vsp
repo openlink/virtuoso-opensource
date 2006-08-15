@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
   declare ses any;
   ses := string_output();
   xml_auto('select cat.CategoryID, ord.OrderID, ord.OrderDate, ord.CustomerID, prod.ProductName, det.quantity, det.unitprice from Demo.demo.Orders ord, Demo.demo.Order_details det, Demo.demo.Products prod, Demo.demo.Categories cat where ord.OrderID > 11050 and ord.OrderID < 11070 and det.OrderID = ord.OrderID and det.ProductID = prod.ProductID and prod.CategoryID = cat.CategoryID  and cat.CategoryID = 1 order by cat.CategoryID, ord.OrderID for xml auto', vector (), ses);

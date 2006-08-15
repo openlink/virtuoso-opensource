@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,9 +21,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp adm_pre_page(lines); ?>
-<?vsp
+
+ adm_pre_page(lines);
+
 --no_c_escapes-
   declare msgid, _u_id integer;
   declare own, _type varchar;
@@ -216,10 +218,9 @@ declare _title varchar;
       _title := 'News Message ';
     else
       _title := concat ('Message ', cast (msgid as varchar), '');
-?>
-<?vsp adm_page_header(_title, NULL); ?>
 
-<?vsp
+ adm_page_header(_title, NULL);
+
 
     if (_type = 'news')
       msg := coalesce ((select blob_to_string (NM_BODY) from DB.DBA.NEWS_MSG

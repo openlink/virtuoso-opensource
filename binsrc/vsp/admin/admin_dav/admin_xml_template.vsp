@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp adm_pre_page(lines);
+ adm_pre_page(lines);
 --no_c_escapes-
   if (1 <> adm_dav_check_auth (lines)) {adm_tell_unauth_dav(lines); return (0);}
 

@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
 
    declare _user_name, _user_pass, _login_ok varchar;
   declare _sid varchar;
@@ -55,8 +56,7 @@
     }
 
   }
-?>
-<?vsp
+
    if ( _login_ok = 'YES' ) { http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
 ?><?xml version="1.0"?>
 <!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">

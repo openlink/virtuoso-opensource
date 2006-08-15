@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,9 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<!-- -*- html -*- -->
-<?vsp adm_pre_page(lines);
+ adm_pre_page(lines);
 
   --dbg_obj_print ('params : ', params);
   if (not adm_check_auth (lines)) { adm_tell_unauth (lines); return (0); }
@@ -232,9 +232,13 @@ status_page_display:
         <TD CLASS="genlisthead">Linked From</TD>
         <TD CLASS="genlisthead">Linked As</TD>
       </TR>
-<?vsp adm_lt_status_display ('T', params, _dsn); ?>
-<?vsp adm_lt_status_display ('S', params, _dsn); ?>
-<?vsp adm_lt_status_display ('V', params, _dsn); ?>
+<?vsp
+ adm_lt_status_display ('T', params, _dsn);
+
+ adm_lt_status_display ('S', params, _dsn);
+
+ adm_lt_status_display ('V', params, _dsn);
+?>
      </TABLE>
      <input type="submit" name="OK" value="OK">
     </FORM>

@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
  declare _mm_bcc, _mm_body, _mm_cc, _mm_fld, _mm_from, _mm_own, _mm_rec_date, _mm_snd_time, _mm_subj, _mm_to varchar;
  declare _mm_id, _mm_is_readed, _is_draft varchar;
    declare _user_name, _user_pass, _login_ok varchar;
@@ -70,8 +71,7 @@
 
    }
   }
-?>
-<?vsp
+
 if(_login_ok <> 'NO' )
 {  http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
 ?><?xml version="1.0"?>

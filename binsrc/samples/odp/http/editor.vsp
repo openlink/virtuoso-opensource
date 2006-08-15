@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
   declare _r_id varchar;
   declare _editor_nodeid integer;
   declare _txt varchar;
@@ -30,8 +31,9 @@
   _editor_nodeid := ODP.ODP.EDITOR__NODE_GET(_r_id);
 whenever not found goto nf_error;
  ?>
-<?vsp ODP.ODP.VSP_HEADER(path,params,lines,concat (_r_id, ' - editor')); ?>
 <?vsp
+ ODP.ODP.VSP_HEADER(path,params,lines,concat (_r_id, ' - editor'));
+
   select _frag into _txt
   from ODP.ODP.EDITOR_PROFILE
   where NODEID=_editor_nodeid and xpath_contains (XPER, '/Profile/displayname', _frag);
@@ -48,8 +50,7 @@ whenever not found goto nf_error;
 <TR><TH ALIGN=LEFT>&nbsp;e-mail&nbsp;</TH><TD ALIGN=LEFT>&nbsp;<A HREF="<?= _frag ?>"><?= _frag ?></A>&nbsp;</TD></TR>
 <?vsp
     }
-?>
-<?vsp
+
   for
     select _frag
     from ODP.ODP.EDITOR_PROFILE
@@ -60,8 +61,7 @@ whenever not found goto nf_error;
 <TR><TH ALIGN=LEFT>&nbsp;home&nbsp;</TH><TD ALIGN=LEFT>&nbsp;<A HREF="<?= _frag ?>"><?= _frag ?></A>&nbsp;</TD></TR>
 <?vsp
     }
-?>
-<?vsp
+
   for
     select _frag
     from ODP.ODP.EDITOR_PROFILE
@@ -72,8 +72,7 @@ whenever not found goto nf_error;
 <TR><TH ALIGN=LEFT>&nbsp;AIM&nbsp;</TH><TD ALIGN=LEFT>&nbsp;<?= _frag ?>&nbsp;</TD></TR>
 <?vsp
     }
-?>
-<?vsp
+
   for
     select _frag
     from ODP.ODP.EDITOR_PROFILE
@@ -115,9 +114,9 @@ no_bookmarks:
 <TABLE BORDER=0><TR><TD ALIGN=LEFT><?= _txt ?></TD></TR></TABLE>
 <?vsp
 no_text:
-?>
-<?vsp ODP.ODP.VSP_FOOTER(path,params,lines); ?>
-<?vsp
+
+ ODP.ODP.VSP_FOOTER(path,params,lines);
+
   return;
 nf_error:
   return ODP.ODP.VSP_ERROR(path,params,lines,'Database contains no topic matching you request');

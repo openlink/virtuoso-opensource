@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
    declare ht varchar;
    ht := DB.DBA.XML_URI_GET (null, TUTORIAL_XSL_DIR () || '/tutorial/xmlsql/xs_s_7/xs_s_7.html');
    ht := xml_tree_doc (xml_tree (ht, 1));

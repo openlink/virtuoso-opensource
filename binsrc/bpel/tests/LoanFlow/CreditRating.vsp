@@ -1,5 +1,7 @@
 <?xml version="1.0"?><?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,7 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?><?vsp http_header ('Content-Type: text/xml\r\n'); ?>
+ http_header ('Content-Type: text/xml\r\n'); ?>
 <definitions
  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
  xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"

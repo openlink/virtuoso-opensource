@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
   declare _r_id varchar;
   declare _topic_nodeid integer;
   declare _is_first integer;
@@ -34,8 +35,9 @@
   _r_id := {?'r_id'};
   _topic_nodeid := ODP.ODP.TOPIC__NODE_GET(_r_id);
   whenever not found goto nf_error;
+
+ ODP.ODP.VSP_HEADER(path,params,lines,_r_id);
 ?>
-<?vsp ODP.ODP.VSP_HEADER(path,params,lines,_r_id); ?>
 <TABLE BORDER=0 WIDTH="100%"><TR><TH ALIGN=LEFT><FONT SIZE=+1><?vsp ODP.ODP.VSP_TOPIC_PATH_HREFS(path,params,lines,_r_id); ?></FONT></TH>
 <?vsp
   whenever not found goto no_structure;

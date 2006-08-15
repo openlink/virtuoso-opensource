@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -21,8 +23,9 @@
 --  
 ?>
 <!- -*- html -*- ->
-<?vsp adm_pre_page(lines); ?>
 <?vsp
+ adm_pre_page(lines);
+
 declare _acct, _log varchar;
 if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
 _acct := get_keyword ('acct', params, '');

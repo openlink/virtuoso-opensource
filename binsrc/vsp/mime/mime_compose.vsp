@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,9 +21,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp adm_pre_page(lines); ?>
-<?vsp
+
+ adm_pre_page(lines);
+
 --no_c_escapes-
   declare _id, _msg, _submit, _msg_attrs, _part, _own, _addr, _addr1, _msg_file, _msg_file_attrs, _msg_text_type varchar;
   declare _u_id integer;

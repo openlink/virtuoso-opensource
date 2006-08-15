@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
 declare dirarr, filearr any;
 declare curdir, dirname, root, virtd, _lpath, _edit varchar;
 declare ix, len, root_len, _u_id integer;
@@ -101,8 +102,7 @@ if (aref (curdir, length (curdir) - 1) <> ascii ('/'))
 	}
       ix := ix + 1;
     }
-?>
-<?vsp
+
   len := length (filearr);
   ix := 0;
   while (ix < len)

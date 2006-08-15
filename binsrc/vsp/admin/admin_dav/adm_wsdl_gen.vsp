@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,9 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<!-- -*- html -*- -->
-<?vsp adm_pre_page(lines);
+ adm_pre_page(lines);
   declare _u_id integer;
   declare _q, _page varchar;
   if (1 <> (_u_id := adm_dav_check_auth (lines)))
@@ -129,8 +129,7 @@
     goto endv;
   };
 
-?>
-  <?vsp
+
      if ({?'exec'} = 'Execute') {
      declare ses any;
      declare saved_q any;

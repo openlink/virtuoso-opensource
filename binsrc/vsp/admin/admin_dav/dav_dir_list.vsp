@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
 declare col, pcol, _u_id, _ix integer;
 declare name, nname, pname, res, parent, usr, gname, perms, _mod, _lpath, _edit varchar;
 _u_id := DB.DBA.adm_dav_check_auth (lines);
@@ -146,8 +147,9 @@ _mod := substring (cast (mod as varchar) , 1, 19);
 <td> <?=_mod?> </td>
 </tr>
 
-<?vsp } ?>
-<?vsp for select RES_NAME, RES_PERMS as perm, RES_OWNER as own, RES_GROUP as grp,
+<?vsp
+ }
+ for select RES_NAME, RES_PERMS as perm, RES_OWNER as own, RES_GROUP as grp,
                  RES_TYPE as type, length (RES_CONTENT) as len, RES_MOD_TIME as mod
       from WS.WS.SYS_DAV_RES where RES_COL = col
       and (RES_OWNER = _u_id or RES_OWNER = 0 or _u_id = 1)

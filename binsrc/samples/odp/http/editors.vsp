@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
   declare _r_id varchar;
   declare _txt varchar;
   declare _profile any;
@@ -29,8 +30,9 @@ whenever not found goto nf_error;
   if (not isentity(_profile))
     return ODP.ODP.VSP_ERROR(path,params,lines,'Database contains invalid data about editors');
  ?>
-<?vsp ODP.ODP.VSP_HEADER(path,params,lines,'List of all editors'); ?>
-<?vsp 
+<?vsp
+ ODP.ODP.VSP_HEADER(path,params,lines,'List of all editors');
+ 
 next_profile:
   _r_id := xpath_eval('@id', _profile);
   _txt := cast (xpath_eval('//displayname', _profile) as varchar);
@@ -47,8 +49,7 @@ next_profile:
 <TR><TH ALIGN=LEFT>&nbsp;e-mail&nbsp;</TH><TD ALIGN=LEFT>&nbsp;<A HREF="<?= _frag ?>"><?= _frag ?></A>&nbsp;</TD></TR>
 <?vsp
     }
-?>
-<?vsp
+
   for
     select _frag
     from ODP.ODP.PROFILE
@@ -59,8 +60,7 @@ next_profile:
 <TR><TH ALIGN=LEFT>&nbsp;home&nbsp;</TH><TD ALIGN=LEFT>&nbsp;<A HREF="<?= _frag ?>"><?= _frag ?></A>&nbsp;</TD></TR>
 <?vsp
     }
-?>
-<?vsp
+
   for
     select _frag
     from ODP.ODP.PROFILE
@@ -71,8 +71,7 @@ next_profile:
 <TR><TH ALIGN=LEFT>&nbsp;AIM&nbsp;</TH><TD ALIGN=LEFT>&nbsp;<?= _frag ?>&nbsp;</TD></TR>
 <?vsp
     }
-?>
-<?vsp
+
   for
     select _frag
     from ODP.ODP.PROFILE

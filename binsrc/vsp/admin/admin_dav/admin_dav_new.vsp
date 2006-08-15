@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
   -- This parameters is needed for WebDAV browser
   declare _current_uri, _show_browser, _trf_doc, _q_scope, _sty_to_ent, _sid_id, _sys, _mod, _link_name, _ename varchar;
   declare _dav_result any;

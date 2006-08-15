@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,10 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-
-
-<?vsp if ({?'uid'})
+ if ({?'uid'})
 {
   if (exists (select 1 from app_user where ap_id = {?'uid'} and ap_pwd = {?'pwd'}))
     {

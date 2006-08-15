@@ -1,4 +1,6 @@
 <?vsp 
+--
+--  $Id$
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
 declare _res, _res1, _type, _perms, _ext, one, _idx, _coll, _cpath varchar;
 declare _col, _own, _grp, _pl, _ix integer;
 declare _path any;

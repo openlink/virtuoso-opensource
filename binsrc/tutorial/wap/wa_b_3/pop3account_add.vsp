@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
   declare _user_name, _login_ok varchar;
   declare _sid varchar;
   declare _err long varchar;
@@ -73,9 +74,7 @@
   _login_ok := 'NO';
   _err_msg := 'Login session expired';
  }
-?>
 
-<?vsp
 if (_login_ok = 'YES' and _allow_to_add = 'YES')
 {
  if ( exists(select * from wappop3account where _username = _user_name))
@@ -104,8 +103,7 @@ if (_login_ok = 'YES' and _allow_to_add = 'YES')
 </wml>
 <?vsp
 }
-?>
-<?vsp
+
 if(_allow_to_add = 'NO' or _popaccount_already_exists = 'YES')
 { http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
 ?><?xml version="1.0"?>
@@ -123,8 +121,7 @@ if(_allow_to_add = 'NO' or _popaccount_already_exists = 'YES')
 </wml>
 <?vsp
 }
-?>
-<?vsp
+
 if(_login_ok = 'NO')
 { http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
 ?><?xml version="1.0"?>

@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,10 +21,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp ODP.ODP.VSP_HEADER(path,params,lines,'What You Want Is What You Find'); ?>
 
-<?vsp
+ ODP.ODP.VSP_HEADER(path,params,lines,'What You Want Is What You Find');
+
 declare xp_search_command,
         xp_category_search_command,
         search_word varchar;

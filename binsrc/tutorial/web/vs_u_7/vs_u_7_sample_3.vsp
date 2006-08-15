@@ -1,5 +1,7 @@
 <?vsp 
 --  
+--  $Id$
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
@@ -19,8 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+
   declare sid, id varchar;
   declare cr dynamic cursor for  select c.CompanyName, c.Phone, c.Fax, c.CustomerID, o.OrderID, o.ShippedDate , od.ProductID, od.Quantity from demo..Customers c , demo..Orders o, demo..Order_Details od where c.CompanyName like 'A%' and o.CustomerID = c.CustomerID and od.OrderID = o.OrderID order by c.CustomerID;
   declare bm any;
