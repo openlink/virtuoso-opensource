@@ -1,4 +1,7 @@
+<?xml version="1.0"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
 <v:page name="xslt_incling" fast-render="1">
   <table border="0" width="100%" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData" align="center" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
     <tr>

@@ -1,4 +1,7 @@
+<?xml version="1.0"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
 <v:page name="db_backup_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
    fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
    xmlns:xhtml="http://www.w3.org/1999/xhtml"

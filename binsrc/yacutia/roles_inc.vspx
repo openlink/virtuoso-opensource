@@ -1,4 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,8 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
-<?xml version="1.0" encoding="UTF-8"?>
 <table class="listing" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <?vsp
     if (get_keyword('mode', control.vc_page.vc_event.ve_params) = 'create')

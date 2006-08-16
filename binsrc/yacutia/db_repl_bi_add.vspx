@@ -1,4 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,8 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
-<?xml version="1.0" encoding="UTF-8"?>
 <v:page name="event_edit_page"
   decor="yacutia_decor.vspx"
   style="yacutia_style.xsl"

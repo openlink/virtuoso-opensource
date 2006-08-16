@@ -1,4 +1,7 @@
+<?xml version="1.0"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
 <v:page name="xml_sql_query_check_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" vm:owner="yacutia_sql_xml_page" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
  <vm:pagetitle>XML View Definition</vm:pagetitle>
  <vm:pagewrapper>

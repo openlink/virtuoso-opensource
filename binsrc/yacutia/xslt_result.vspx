@@ -1,4 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,8 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
-<?xml version="1.0" encoding="UTF-8"?>
 <v:page name="xslt_result_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" vm:owner="yacutia_xslt_page" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso XSLT transformation</vm:pagetitle>
   <vm:pagewrapper>

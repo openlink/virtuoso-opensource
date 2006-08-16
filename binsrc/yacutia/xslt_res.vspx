@@ -1,4 +1,7 @@
+<?xml version="1.0"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
 <html>
  <head>
 	<link rel="stylesheet" href="yacutia_style.css" type="text/css"/>

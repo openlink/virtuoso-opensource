@@ -1,4 +1,7 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,8 +23,7 @@
  -  
  -  
 -->
-<!-- $Id$ -->
-<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <v:page name="custom_condition" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:variable name="wsdl_str" type="any" default="null"/>

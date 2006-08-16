@@ -1,4 +1,7 @@
+<?xml version="1.0"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
 <table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center" xmlns:v="http://www.openlinksw.com/vspx/" >
   <tr> <td bgcolor="#83BFE8">
             <p><span style="{color:red}">The Role  </span>

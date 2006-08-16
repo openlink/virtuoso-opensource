@@ -1,4 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,8 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
-<?xml version="1.0" encoding="UTF-8" ?>
 <table border="0" cellspacing="0" cellpadding="3" class="MainData">
   <v:variable persist="0" name="ename" type="varchar" default="''"/>
   <v:variable persist="1" name="error_str1" type="varchar" default="''"/>

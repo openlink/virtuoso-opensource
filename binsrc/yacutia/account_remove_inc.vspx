@@ -1,4 +1,7 @@
+<?xml version="1.0"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
 <v:form name="account_form" type="simple" method="POST" xmlns:v="http://www.openlinksw.com/vspx/">
 <div class="confirm_dialog">
   <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>

@@ -1,4 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,8 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
-<?xml version="1.0" encoding="UTF-8"?>
 <?vsp SET ISOLATION = 'Commited'; ?>
 <v:page name="dashboard_item_show"
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/">

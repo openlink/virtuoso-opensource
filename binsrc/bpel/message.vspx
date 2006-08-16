@@ -1,5 +1,8 @@
+<?xml version="1.0"?>
 <!--
  -  
+ -  $Id$
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
 <v:page xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" name="message_page" decor="bpel_decor.vspx" style="bpel_style.xsl">
     <v:on-init>
       --dbg_obj_print ('self.msg', self.msg);

@@ -1,5 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  -  
+ -  $Id$
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<?xml version="1.0" encoding="UTF-8"?>
 <v:page name="uddi_serve_page"
         decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"

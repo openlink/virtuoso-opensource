@@ -21,7 +21,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
 <v:page name="home_page" decor="interop_decor.vspx" style="interop_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
    <vm:pagetitle>OpenLink BPEL Interoperability Home</vm:pagetitle>
 <vm:pagewrapper>

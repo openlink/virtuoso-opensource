@@ -1,4 +1,4 @@
-<html>
+<?xml version="1.0"?>
 <!--
  -
  -  $Id$
@@ -23,6 +23,7 @@
  -
  -
 -->
+<html>
   <head>
   </head>
   <body>

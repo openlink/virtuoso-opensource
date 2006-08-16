@@ -21,7 +21,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
 <v:page name="activity_page" decor="bpel_decor.vspx" style="bpel_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:on-init>
     set isolation='committed';

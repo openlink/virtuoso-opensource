@@ -1,4 +1,7 @@
+<?xml version="1.0"?>
 <!--
+ -  
+ -  $Id$
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -20,7 +23,6 @@
  -  
  -  
 -->
-<!-- $Id$ -->
 <v:data-set fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" name="group_info" nrows="10" scrollable="1" cursor-type="keyset" edit="1">
   <v:sql>
     <![CDATA[
