@@ -189,10 +189,13 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
     }
 
   if (length (app) and app not in
-      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed'))
+      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql'))
    {
      signal ('22023', sprintf ('Invalid application domain [%s].', app));
    }
+
+  if (app = 'sparql' and length (inst) = 0)
+    signal ('22023', sprintf ('Invalid application domain [%s].', app));
 
   if (length (uname) = 0)
     signal ('22023', 'Account is not specified.');
@@ -284,6 +287,28 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 	goto nntpf;
       if (app = 'feed' and post is not null)
 	goto do_post;
+      -- the stored SPARQL queries
+      if (app = 'sparql')
+	{
+	  declare content, mime, rc, pwd, rid any;
+
+	  declare exit handler for not found {
+	    http_request_status ('HTTP/1.1 404 Not found');
+	    return;
+	  };
+	  pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
+	  rid := DB.DBA.DAV_SEARCH_ID ('/DAV/home/' || uname || '/SPARQL/' || inst, 'R');
+	  rc := DB.DBA.DAV_AUTHENTICATE (rid, 'R', '1__', uname, pwd);
+	  if (rc < 0)
+	    {
+	      http_request_status ('HTTP/1.1 403 Prohibited');
+	      signal ('22023', 'Access is not permited');
+	    }
+	  select RES_CONTENT, RES_TYPE into content, mime from WS.WS.SYS_DAV_RES where RES_ID = rid;
+	  http_header (sprintf ('Content-Type: %s\r\n', mime));
+	  http (content);
+	  return '';
+	}
 
       select WAM_HOME_PAGE, WAI_INST, WAI_TYPE_NAME into url, _inst, inst_type
 	  from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE where

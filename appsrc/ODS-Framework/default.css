@@ -470,7 +470,8 @@ tr.ctl_grp_title
   font-weight: bold;
 }
 
-td.ctl_title
+td.ctl_title,
+span.ctl_title
 {
   font-weight: bold;
 }
@@ -712,13 +713,15 @@ td.dav_listing_cmds_container
 /*  background-color: red;*/
 }
 
-table.listing
+table.listing,
+table.sparql
 {
   width: 100%;
   background-color: white;
 }
 
-table.listing th
+table.listing th,
+table.sparql th
 {
   border-color: #FFFFFF;
   border-style: solid;
@@ -727,7 +730,8 @@ table.listing th
 }
 
 
-tr.listing_header_row
+tr.listing_header_row,
+table.sparql tr th
 {
   background-image: url(images/stl_blu1_grad.gif);
   background-repeat: repeat-x;
@@ -2621,6 +2625,20 @@ table.formdata
 .tag_link:active { color: #ffffff; text-decoration: none; background: #cccccc; }
 
 
+table.sparql
+{
+  border: 0px;
+}
 
+table.sparql tr,
+table.sparql th,
+table.sparql td
+{
+  border: 0px;
+}
 
+table.sparql tr:nth-child(odd)
+{
+  background-color: #f0f0f0;
+}
 

@@ -140,6 +140,12 @@
             <vm:dash-wiki-summary/>
             <?vsp
               }
+            else if (self.app_type = 'Bookmark')
+              {
+            ?>
+            <vm:dash-bookmark-summary/>
+            <?vsp
+              }
             else if (self.app_type = 'oDrive')
               {
             ?>

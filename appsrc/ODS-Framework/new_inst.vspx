@@ -401,35 +401,35 @@
         new_inst_upload_path:=sprintf('/DAV/home/%s%stemplates/custom/',self.u_name,new_inst_upload_path);
 
 
+        DB.DBA.DAV_DELETE (new_inst_upload_path||'community_logo_img'||logo_ext, 0, 'dav', 'dav');
+        DB.DBA.DAV_DELETE (new_inst_upload_path||'community_welcome_img'||logo_ext, 0, 'dav', 'dav');
+
         if(self.logo_group.ufl_value='logo_use_combo')
         {
-           YACUTIA_DAV_COPY(self.ilogo_c1.ufl_value, new_inst_upload_path||'community_logo_img'||logo_ext, 1, '110110000R','dav','dav');
+           YACUTIA_DAV_COPY(self.ilogo_c1.ufl_value, new_inst_upload_path||'community_logo_img'||logo_ext, 1, '110100100R','dav','dav');
         }else{
           if (self.ilogo_isdav_cb.ufl_selected)
           {
-
-              YACUTIA_DAV_COPY(self.t_ilogopath_dav.ufl_value, new_inst_upload_path||'community_logo_img'||logo_ext, 1, '110110000R','dav','dav');
+              YACUTIA_DAV_COPY(self.t_ilogopath_dav.ufl_value, new_inst_upload_path||'community_logo_img'||logo_ext, 1, '110100100R','dav','dav');
           }else
           {
            logo_res_type := get_keyword('Content-Type',get_keyword('attr-t_ilogopath_fs',self.vc_event.ve_params));
-           DB.DBA.DAV_DELETE (new_inst_upload_path||'community_logo_img'||logo_ext, 0, 'dav', 'dav');
-           YACUTIA_DAV_RES_UPLOAD(new_inst_upload_path||'community_logo_img'||logo_ext,self.t_ilogopath_fs.ufl_value,logo_res_type,'110100000R','dav','dav');
+              YACUTIA_DAV_RES_UPLOAD(new_inst_upload_path||'community_logo_img'||logo_ext,self.t_ilogopath_fs.ufl_value,logo_res_type,'110100100R','dav','dav');
           }
         }
 
         if(self.welcome_group.ufl_value='welcome_use_combo')
         {
-           YACUTIA_DAV_COPY(self.iwelcome_c1.ufl_Value, new_inst_upload_path||'community_welcome_img'||welcome_ext, 1, '110110000R','dav','dav');
+           YACUTIA_DAV_COPY(self.iwelcome_c1.ufl_Value, new_inst_upload_path||'community_welcome_img'||welcome_ext, 1, '110100100R','dav','dav');
         }else
         {
           if (self.iwelcome_isdav_cb.ufl_selected)
           {
-              YACUTIA_DAV_COPY(self.t_iwelcomepath_dav.ufl_value, new_inst_upload_path||'community_welcome_img'||welcome_ext, 1, '110110000R','dav','dav');
+              YACUTIA_DAV_COPY(self.t_iwelcomepath_dav.ufl_value, new_inst_upload_path||'community_welcome_img'||welcome_ext, 1, '110100100R','dav','dav');
           }else
           {
             welcome_res_type := get_keyword('Content-Type',get_keyword('attr-t_iwelcomepath_fs',self.vc_event.ve_params));
-            DB.DBA.DAV_DELETE (new_inst_upload_path||'community_welcome_img'||logo_ext, 0, 'dav', 'dav');
-            YACUTIA_DAV_RES_UPLOAD (new_inst_upload_path||'community_welcome_img'||welcome_ext,self.t_iwelcomepath_fs.ufl_value,welcome_res_type,'110100000R','dav','dav');
+              YACUTIA_DAV_RES_UPLOAD (new_inst_upload_path||'community_welcome_img'||welcome_ext,self.t_iwelcomepath_fs.ufl_value,welcome_res_type,'110100100R','dav','dav');
           }
         }
 

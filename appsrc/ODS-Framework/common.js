@@ -238,3 +238,34 @@ function windowShow(sPage, width, height)
   win.window.focus();
 }
 
+
+function callSparql (graph, qry_id, res_id, rdf_gem)
+{
+  var qry_in = document.getElementById (qry_id);
+  var div = document.getElementById (res_id);
+  var gem = document.getElementById (rdf_gem);
+  var qry = qry_in.value;
+  var endpoint = '/sparql/?';
+  var format = 'text/html';
+  var callback = function(data,xmlhttp)
+     {
+       div.innerHTML = data; 
+       gem.innerHTML = '<a href="' + endpoint + 'query='+ encodeURIComponent (qry) + '&format=' + 
+	  encodeURIComponent('application/sparql-results+xml') +
+          '&default-graph-uri='+encodeURIComponent (graph) +
+          '"><img src="images/orange-icon-16.gif" border="0" hspace="3"> XML</a>';
+     }
+  var body = function()
+     {
+       var body = 'query='+encodeURIComponent (qry)+'&format='+ encodeURIComponent('text/html') +
+          '&default-graph-uri='+encodeURIComponent (graph);
+       return body; 
+     }
+  OAT.Ajax.errorRef = function(status,response,xmlhttp)
+  {
+    div.innerHTML = '<div class="error_msg"><pre>' + response + '</pre></div>';
+  }
+  OAT.Ajax.command(OAT.Ajax.POST, endpoint, body, callback, OAT.Ajax.TYPE_TEXT,{'Accept':format});
+}
+
+
