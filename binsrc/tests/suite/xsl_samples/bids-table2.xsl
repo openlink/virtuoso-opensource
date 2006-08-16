@@ -51,7 +51,7 @@
       end = i;
       return time.substring(0,start) + time.substring(end, time.length);
     }
-  ]]></xsl:script> -->
+  ]]></xsl:script> -->
 
   <xsl:template match="/">
     <TABLE STYLE="border:1px solid black">

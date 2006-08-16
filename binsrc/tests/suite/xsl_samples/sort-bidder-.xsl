@@ -32,7 +32,7 @@
         <TD STYLE="background-color:lightgrey">Time</TD>
         <TD>Bidder</TD>
       </TR>
-      <xsl:for-each select="AUCTIONBLOCK/ITEM/BIDS/BID"><xsl:sort select="BIDDER" order="descending" />
+      <xsl:for-each select="AUCTIONBLOCK/ITEM/BIDS/BID"><xsl:sort select="BIDDER" order="descending" />
         <TR STYLE="font-family:Verdana; font-size:12pt; padding:0px 6px">
           <TD>$<xsl:value-of select="PRICE"/></TD>
           <TD STYLE="background-color:lightgrey"><xsl:value-of select="TIME"/></TD>

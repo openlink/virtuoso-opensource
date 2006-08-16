@@ -112,7 +112,7 @@
     function even(e) {
       return absoluteChildNumber(e)%2 == 0;
     }
-  ]]></xsl:script> -->
+  ]]></xsl:script> -->
   
 </xsl:stylesheet>
 

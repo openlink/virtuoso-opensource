@@ -44,13 +44,13 @@
         <xsl:apply-templates select="spec/body/div1 | spec/back/*">
 <!-- OBSOLETE	
           <xsl:template match="div1|div2|div3|div4|div5|div6">
-            <DIV STYLE="margin-left:1em"><!-- <xsl:eval>sectionNum(this)</xsl:eval> - ->
+            <DIV STYLE="margin-left:1em"><!-- <xsl:eval>sectionNum(this)</xsl:eval> - ->
               <xsl:value-of select="head"/>
               <xsl:apply-templates select="div2|div3|div4|div5|div6"/>
             </DIV>
           </xsl:template>
           <xsl:template match="inform-div1">
-            <DIV STYLE="margin-left:1em"><!-- <xsl:eval>sectionNum(this)</xsl:eval> - ->
+            <DIV STYLE="margin-left:1em"><!-- <xsl:eval>sectionNum(this)</xsl:eval> - ->
               <xsl:value-of select="head"/> (Non-Normative)
               <xsl:apply-templates select="div2"/>
             </DIV>
@@ -83,6 +83,6 @@
       return formatIndex(prodCount++, "1");
     }
 
-  ]]></xsl:script> -->
+  ]]></xsl:script> -->
 
 </xsl:stylesheet>

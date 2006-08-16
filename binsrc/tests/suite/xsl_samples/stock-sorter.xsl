@@ -155,5 +155,5 @@
         total += p.nodeTypedValue;
       return formatNumber(total/count, "#.0") + "%";
     }
-  ]]></xsl:script> -->
+  ]]></xsl:script> -->
 </xsl:stylesheet>

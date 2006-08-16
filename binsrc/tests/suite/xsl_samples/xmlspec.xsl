@@ -388,6 +388,6 @@
       return formatIndex(prodCount++, "1");
     }
 
-  ]]></xsl:script> -->
+  ]]></xsl:script> -->
 
 </xsl:stylesheet>

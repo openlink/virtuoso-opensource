@@ -106,6 +106,6 @@
         price = 0.9*price;
       return qty*price;
     }
-  ]]></xsl:script> -->
+  ]]></xsl:script> -->
 </xsl:stylesheet>
 

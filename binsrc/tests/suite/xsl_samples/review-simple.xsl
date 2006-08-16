@@ -139,11 +139,11 @@
     <DIV class="menuhead">Menu selections from the <I><xsl:value-of select="/story/restaurant/name"/></I></DIV>
     <TABLE CELLSPACING="0">
       <TR><TD class="menuhead">Appetizers</TD></TR>
-      <xsl:apply-templates select="appetizer"><xsl:sort select="description"/></xsl:apply-templates>
+      <xsl:apply-templates select="appetizer"><xsl:sort select="description"/></xsl:apply-templates>
       <TR>
         <TD class="menuhead"><DIV class="dingbat">u u u</DIV>Entrees</TD>
       </TR>
-      <xsl:apply-templates select="entree"><xsl:sort select=description" /></xsl:apply-templates>
+      <xsl:apply-templates select="entree"><xsl:sort select=description" /></xsl:apply-templates>
     </TABLE>
   </xsl:template>
 

@@ -121,6 +121,6 @@
     return time.substring(0,start) + time.substring(end, time.length);
   }
 
-  ]]></xsl:script> -->
+  ]]></xsl:script> -->
 
 </xsl:stylesheet>
