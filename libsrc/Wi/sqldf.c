@@ -4213,11 +4213,36 @@ sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
   df_elt_t * so_dfe = so->so_dfe;
   op_table_t * prev_dt = so->so_this_dt;
   float sc1= so->so_best_score;
+  df_elt_t * containing_dt = super;
+  int is_in_pass_through = 0;
   df_elt_t * best1 = so->so_best;
   df_elt_t * pt = so->so_gen_pt;
   so->so_this_dt = ot;
   so->so_gen_pt = ot->ot_work_dfe->_.sub.first;
   ot->ot_work_dfe->_.sub.ot = ot;
+  while (containing_dt)
+    {
+      if (DFE_DT == containing_dt->dfe_type)
+	{
+	  if (LOC_LOCAL != containing_dt->dfe_locus)
+	    is_in_pass_through = 1;
+	  break;
+	}
+      containing_dt = containing_dt->dfe_super;
+    }
+  if (SQLO_LAY_EXISTS == is_top
+      && !is_in_pass_through)
+    {
+      /* we do a subq and the whole top query is not pass through. 
+       * if super is remote and the subq fits in same loc, pass through into the same loc as its super 
+       * if the super is local or another vdb place, then do not apply pass through to the subq so as to allow virt side hash join etc. */
+      locus_t * suggested_locus = sqlo_dt_locus (so, ot, super ? super->dfe_locus : LOC_LOCAL);
+      if (suggested_locus == super->dfe_locus && LOC_LOCAL != super->dfe_locus)
+	ot->ot_work_dfe->dfe_locus = suggested_locus;
+      else
+	ot->ot_work_dfe->dfe_locus = LOC_LOCAL; /* if exists subq, do not dopass through so as to be able to use hash join locally etc. */
+    }
+  else
   ot->ot_work_dfe->dfe_locus = sqlo_dt_locus (so, ot, super ? super->dfe_locus : LOC_LOCAL);
   ot->ot_eq_hash = NULL;
   sqlo_init_eqs (so, ot);
