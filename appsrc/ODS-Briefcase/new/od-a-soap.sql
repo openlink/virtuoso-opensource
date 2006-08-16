@@ -38,6 +38,7 @@ SOAP_LOAD_SCH (
  	<xs:element name="row">
  		<xs:complexType>
  			<xs:sequence>
+		    <xs:element name="uri" type="xs:string"/>
 		    <xs:element name="path" type="xs:string"/>
 		    <xs:element name="name" type="xs:string"/>
 		    <xs:element name="dateModified" type="xs:dateTime"/>
@@ -70,7 +71,7 @@ create procedure DBA.SOAPODRIVE.Browse (
   in dateEnd dateTime) __SOAP_OPTIONS (__SOAP_TYPE:='http://www.openlinksw.com/odrive:rows', "PartName" := 'rows')
 {
   declare N, M integer;
-  declare tags, tags2, data, sql, params, state, msg, meta, result any;
+  declare tags, tags2, data, sql, params, state, msg, meta, rows any;
   declare sVersions, aVersions any;
 
   ODRIVE.WA.dav_dc_set_base(data, 'path', path);
@@ -80,13 +81,12 @@ create procedure DBA.SOAPODRIVE.Browse (
   ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate21',  '<=');
   ODRIVE.WA.dav_dc_set_advanced(data, 'modifyDate22',  cast(dateEnd as varchar));
 
-  sql := 'select TOP 100 rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
-  sql := concat(sql, ' order by c9, c3, c1');
+  sql := 'select TOP 100 rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ? order by c9, c3, c1';
   params := vector(path, 0, 20, data, uName, uPassword);
 
   set_user_id('dba');
   state := '00000';
-  exec(sql, state, msg, params, 0, meta, result);
+  exec(sql, state, msg, params, 0, meta, rows);
   if (state <> '00000')
     signal (state, msg);
 
@@ -95,45 +95,48 @@ create procedure DBA.SOAPODRIVE.Browse (
   sStream := string_output();
   http ('<?xml version="1.0"?>\n', sStream);
   http ('<rows>\n', sStream);
-  for (N := 0; N < length(result); N := N + 1) {
-    resource := DB.DBA.DAV_DIR_LIST(result[N][0], -1, uName, uPassword);
+  for (N := 0; N < length(rows); N := N + 1) {
+    resource := DB.DBA.DAV_DIR_LIST(rows[N][0], -1, uName, uPassword);
     if (ODRIVE.WA.DAV_ERROR (resource))
       goto _end;
-    tags := DB.DBA.DAV_PROP_GET(result[N][0], ':virtpublictags', uName, uPassword);
+    tags := DB.DBA.DAV_PROP_GET(rows[N][0], ':virtpublictags', uName, uPassword);
     if (ODRIVE.WA.DAV_ERROR (tags))
       tags := '';
-    tags2 := DB.DBA.DAV_PROP_GET(result[N][0], ':virtprivatetags', uName, uPassword);
+    tags2 := DB.DBA.DAV_PROP_GET(rows[N][0], ':virtprivatetags', uName, uPassword);
     if (ODRIVE.WA.DAV_ERROR (tags2))
       tags2 := '';
     http (sprintf('<row number="%d">\n', N+1), sStream);
+      http ('<uri>', sStream);
+        http_value (sprintf('%s/%s', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.utf2wide(rows[N][0])), null, sStream);
+      http ('</uri>\n', sStream);
       http ('<path>', sStream);
-        http_value (ODRIVE.WA.utf2wide(result[N][0]), null, sStream);
+        http_value (ODRIVE.WA.utf2wide(rows[N][0]), null, sStream);
       http ('</path>\n', sStream);
       http ('<name>', sStream);
         http_value (resource[0][10], null, sStream);
       http ('</name>\n', sStream);
       http ('<dateModified>', sStream);
-        http_value (result[N][3], null, sStream);
+        http_value (rows[N][3], null, sStream);
       http ('</dateModified>', sStream);
       http ('<kind>', sStream);
-        http_value (result[N][9], null, sStream);
+        http_value (rows[N][9], null, sStream);
       http ('</kind>\n', sStream);
       http ('<size>', sStream);
-        http_value (cast(result[N][2] as varchar), null, sStream);
+        http_value (cast(rows[N][2] as varchar), null, sStream);
       http ('</size>\n', sStream);
       http ('<owner>', sStream);
-        http_value (result[N][5], null, sStream);
+        http_value (rows[N][5], null, sStream);
       http ('</owner>\n', sStream);
       http ('<group>', sStream);
-        http_value (result[N][6], null, sStream);
+        http_value (rows[N][6], null, sStream);
       http ('</group>\n', sStream);
       http ('<permissions>', sStream);
-        http_value (result[N][7], null, sStream);
+        http_value (rows[N][7], null, sStream);
       http ('</permissions>\n', sStream);
       http ('<tags>', sStream);
         http_value (ODRIVE.WA.tags_join(tags, tags2), null, sStream);
       http ('</tags>\n', sStream);
-      sVersions := DB.DBA.DAV_PROP_GET(ODRIVE.WA.DAV_GET_VERSION_HISTORY_PATH(result[N][0]), 'DAV:version-set', uName, uPassword);
+      sVersions := DB.DBA.DAV_PROP_GET(ODRIVE.WA.DAV_GET_VERSION_HISTORY_PATH(rows[N][0]), 'DAV:version-set', uName, uPassword);
       if (isstring(sVersions)) {
         http ('<versions>\n', sStream);
         aVersions := xpath_eval ('/href', xtree_doc(sVersions), 0);

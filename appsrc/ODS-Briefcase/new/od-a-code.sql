@@ -931,9 +931,9 @@ create procedure ODRIVE.WA.odrive_proc(
     dirFilter := '%';
 
   } else if (dir_mode = 20) {
-    path := ODRIVE.WA.odrive_real_path(ODRIVE.WA.dav_dc_get(dir_params, 'base', 'path', '/DAV/'));
+    path := ODRIVE.WA.dav_dc_get(dir_params, 'base', 'path', '/DAV/');
     dirFilter := ODRIVE.WA.dav_dc_filter(dir_params);
-    dirList := DB.DBA.DAV_DIR_FILTER(path, 1, dirFilter, dir_account, ODRIVE.WA.DAV_API_PWD(dir_account));
+    dirList := DB.DBA.DAV_DIR_FILTER(path, 1, dirFilter, dir_account, dir_psw);
     dirFilter := '%';
   }
 
