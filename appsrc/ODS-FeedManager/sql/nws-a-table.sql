@@ -292,11 +292,15 @@ ENEWS.WA.exec_no_error(
 );
 
 ENEWS.WA.exec_no_error('
-  create index SK_FEED_ITEM_DATA_01 on ENEWS.WA.FEED_ITEM_DATA(EFID_DOMAIN_ID, EFID_ITEM_ID)
+  drop index SK_FEED_ITEM_DATA_01 ENEWS.WA.FEED_ITEM_DATA
 ');
 
 ENEWS.WA.exec_no_error('
-  create index SK_FEED_ITEM_DATA_02 on ENEWS.WA.FEED_ITEM_DATA(EFID_ACCOUNT_ID, EFID_ITEM_ID)
+  drop index SK_FEED_ITEM_DATA_02 ENEWS.WA.FEED_ITEM_DATA
+');
+
+ENEWS.WA.exec_no_error ('
+  create index SK_FEED_ITEM_DATA_01 on ENEWS.WA.FEED_ITEM_DATA(EFID_ITEM_ID)
 ');
 
 -------------------------------------------------------------------------------
@@ -777,6 +781,27 @@ ENEWS.WA.exec_no_error('
 ENEWS.WA.exec_no_error('
   insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
     values(\'eNews tags aggregator\', now(), \'ENEWS.WA.tags_agregator()\', 10080)
+')
+;
+
+create procedure ENEWS.WA.tags_procedure (
+  in domain_id any,
+  in account_id any,
+  in item_id any)
+{
+  declare tag varchar;
+  declare tags any;
+
+  result_names (tag);
+  tags := ENEWS.WA.tags_account_item_select (domain_id, account_id, item_id);
+  tags := split_and_decode (tags, 0, '\0\0,');
+  foreach (any tag in tags) do
+  	result (trim (tag));
+}
+;
+
+ENEWS.WA.exec_no_error ('
+  create procedure view ENEWS.WA.TAGS_VIEW as ENEWS.WA.tags_procedure (domain_id, account_id, item_id) (EFTV_TAG varchar)
 ')
 ;
 

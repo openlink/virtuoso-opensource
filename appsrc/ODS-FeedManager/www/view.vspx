@@ -130,13 +130,17 @@
               tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
               tags := ENEWS.WA.tags_join(tags, tag);
               ENEWS.WA.tags_account_item(account_id, item_id, tags);
+              if (account_id = ENEWS.WA.domain_owner_id(domain_id))
+                ENEWS.WA.tags_domain_item(domain_id, item_id, tags);
             } else {
               tagError := '<span style="color: red; font-weight: bold;">&nbsp;The expression is not valid tag!</span>';
             }
           } else if (get_keyword('dtag', self.vc_event.ve_params, '') <> '') {
             tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
-            tags := ENEWS.WA.tag_delete(tags, cast(get_keyword('dtag', self.vc_event.ve_params, '0') as integer));
+            tags := ENEWS.WA.tag_delete(tags, cast(get_keyword('dtag', self.vc_event.ve_params, '-1') as integer));
             ENEWS.WA.tags_account_item(account_id, item_id, tags);
+            if (account_id = ENEWS.WA.domain_owner_id(domain_id))
+              ENEWS.WA.tags_domain_item(domain_id, item_id, tags);
           }
         _skip:;
 

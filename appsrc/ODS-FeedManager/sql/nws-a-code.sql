@@ -379,7 +379,7 @@ _end:
 --
 create procedure ENEWS.WA.wa_home_link ()
 {
-	return case when registry_get ('wa_home_link') = 0 then '/ods/' else registry_get ('wa_home_link') end;
+	return case when isinteger(registry_get ('wa_home_link')) then '/ods/' else registry_get ('wa_home_link') end;
 }
 ;
 
@@ -387,7 +387,7 @@ create procedure ENEWS.WA.wa_home_link ()
 --
 create procedure ENEWS.WA.wa_home_title ()
 {
-	return case when registry_get ('wa_home_title') = 0 then 'ODS Home' else registry_get ('wa_home_title') end;
+	return case when isinteger(registry_get ('wa_home_title')) then 'ODS Home' else registry_get ('wa_home_title') end;
 }
 ;
 
@@ -1179,7 +1179,7 @@ create procedure ENEWS.WA.process_insert(
   inout data any)
 {
   declare item_id, enclosure integer;
-  declare tags varchar;
+  declare item_tags varchar;
 
   if (isnull(guid) and not isnull(link))
     guid := link;
@@ -1200,13 +1200,13 @@ create procedure ENEWS.WA.process_insert(
   item_id := (select EFI_ID from ENEWS.WA.FEED_ITEM where EFI_FEED_ID = feed_id and EFI_GUID = guid);
 
   -- post tags
-  tags := ENEWS.WA.tags_item (item_id);
+  item_tags := ENEWS.WA.tags_item (item_id);
 
   -- domain tags
   for (select EFD_DOMAIN_ID, EFD_TAGS from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = feed_id) do {
     if (ENEWS.WA.conversation_enable(EFD_DOMAIN_ID))
       ENEWS.WA.nntp_root (EFD_DOMAIN_ID, item_id);
-    ENEWS.WA.tags_domain_item(EFD_DOMAIN_ID, item_id, EFD_TAGS, tags);
+    ENEWS.WA.tags_domain_item2 (EFD_DOMAIN_ID, item_id, ENEWS.WA.tags_join(EFD_TAGS, item_tags));
   }
 }
 ;
@@ -1706,7 +1706,7 @@ create procedure ENEWS.WA.channel_delete(
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.channel_feeds(
-  inout feed_id varchar)
+  inout feed_id integer)
 {
   return (select count(*) from ENEWS.WA.FEED_ITEM where EFI_FEED_ID = feed_id and coalesce(EFI_DELETE_FLAG, 0) = 0);
 }
@@ -2997,8 +2997,8 @@ create procedure ENEWS.WA.tag_delete(
   declare N, L integer;
   declare tags2 any;
 
-  tags := '';
   tags2 := ENEWS.WA.tags2vector(tags);
+  tags := '';
   L := length(tags2);
   for (N := 0; N < L; N := N + 1)
     if (N <> T)
@@ -3298,14 +3298,7 @@ create procedure ENEWS.WA.tags_item_domain(
   inout item_id integer,
   inout domain_id integer)
 {
-  declare exit handler for SQLSTATE '*' { goto _end;};
-
-  declare tags any;
-
-  tags := (select EFD_TAGS from ENEWS.WA.FEED_DOMAIN, ENEWS.WA.FEED_ITEM where EFD_DOMAIN_ID = domain_id and EFD_FEED_ID = EFI_FEED_ID and EFI_ID = item_id);
-
-_end:
-  return tags;
+  return (select EFD_TAGS from ENEWS.WA.FEED_DOMAIN, ENEWS.WA.FEED_ITEM where EFD_DOMAIN_ID = domain_id and EFD_FEED_ID = EFI_FEED_ID and EFI_ID = item_id);
 }
 ;
 
@@ -3314,7 +3307,7 @@ _end:
 create procedure ENEWS.WA.tags_item (
   inout item_id integer)
 {
-  declare exit handler for SQLSTATE '*' { return;};
+  declare exit handler for SQLSTATE '*' { return '';};
 
   declare tags any;
 
@@ -3336,6 +3329,25 @@ create procedure ENEWS.WA.tags_item (
         values(item_id, tags, now());
     }
   }
+  return tags;
+}
+;
+
+---------------------------------------------------------------------------------
+----
+create procedure ENEWS.WA.tags_domain_item2 (
+  inout domain_id integer,
+  inout item_id integer,
+  in domainTags varchar)
+{
+  declare owner_id integer;
+  declare ownerTags varchar;
+
+  owner_id := ENEWS.WA.domain_owner_id(domain_id);
+  ownerTags := ENEWS.WA.tags_join(domainTags, ENEWS.WA.tags_item_rules(item_id, owner_id));
+  ENEWS.WA.tags_domain_item (domain_id, item_id, ownerTags);
+  if (not is_empty_or_null(ownerTags))
+    ENEWS.WA.tags_account_item(owner_id, item_id, ownerTags);
 }
 ;
 
@@ -3344,17 +3356,10 @@ create procedure ENEWS.WA.tags_item (
 create procedure ENEWS.WA.tags_domain_item (
   inout domain_id integer,
   inout item_id integer,
-  inout tags varchar,
-  in tags2 varchar := null)
+  inout tags varchar)
 {
-  declare owner_id integer;
-  declare publicTags varchar;
-
-  if (isnull(tags2))
-    tags2 := (select EFID_TAGS from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_DOMAIN_ID is null and EFID_ACCOUNT_ID is null);
-  tags := ENEWS.WA.tags_join(tags2, tags);
   if (exists(select 1 from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_DOMAIN_ID = domain_id)) {
-    if (is_empty_or_null(tags) or (tags = tags2)) {
+    if (is_empty_or_null(tags)) {
       delete from ENEWS.WA.FEED_ITEM_DATA
        where EFID_ITEM_ID = item_id
          and EFID_DOMAIN_ID = domain_id;
@@ -3366,20 +3371,11 @@ create procedure ENEWS.WA.tags_domain_item (
          and EFID_DOMAIN_ID = domain_id;
     }
   } else {
-    if (not is_empty_or_null(tags) and (tags <> tags2)) {
+    if (not is_empty_or_null(tags)) {
       insert into ENEWS.WA.FEED_ITEM_DATA(EFID_ITEM_ID, EFID_DOMAIN_ID, EFID_TAGS, EFID_LAST_UPDATE)
         values(item_id, domain_id, tags, now());
     }
   }
-
-  publicTags := tags;
-  owner_id := ENEWS.WA.domain_owner_id(domain_id);
-  tags2 := ENEWS.WA.tags_item_rules(item_id, owner_id);
-  tags := ENEWS.WA.tags_join(tags, tags2);
-  tags2 := (select EFID_TAGS from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_DOMAIN_ID is null and EFID_ACCOUNT_ID = owner_id);
-  tags := ENEWS.WA.tags_join(tags, tags2);
-  if (not is_empty_or_null(tags) and (publicTags <> tags))
-    ENEWS.WA.tags_account_item(owner_id, item_id, tags);
 }
 ;
 
@@ -3417,7 +3413,7 @@ create procedure ENEWS.WA.tags_account_item_select(
     tags := (select EFID_TAGS from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_DOMAIN_ID = domain_id);
   if (isnull(tags))
     tags := (select EFID_TAGS from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_DOMAIN_ID is null and EFID_ACCOUNT_ID is null);
-  return tags;
+  return coalesce(tags, '');
 }
 ;
 
@@ -3881,9 +3877,11 @@ create procedure ENEWS.WA.export_rss_sqlx_int(
   http('    XMLELEMENT(\'guid\', EFI_GUID), \n', retValue);
   http('    XMLELEMENT(\'link\', EFI_LINK), \n', retValue);
   http('    XMLELEMENT(\'pubDate\', ENEWS.WA.dt_rfc1123 (EFI_PUBLISH_DATE)),\n', retValue);
+  http ('    (select XMLAGG (XMLELEMENT (\'category\', EFTV_TAG)) from ENEWS.WA.TAGS_VIEW where domain_id = <DOMAIN_ID> and account_id = <USER_ID> and item_id = EFI_ID), \n', retValue);
   http('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', ENEWS.WA.dt_iso8601 (EFI_PUBLISH_DATE)),\n', retValue);
   http('    ENEWS.WA.enclosure_render_sqlx (EFI_DATA)))\n', retValue);
   http('from (select top 15  \n', retValue);
+  http ('        EFI_ID, \n', retValue);
   http('        EFI_TITLE, \n', retValue);
   http('        EFI_DESCRIPTION, \n', retValue);
   http('        EFI_PUBLISH_DATE, \n', retValue);
@@ -4800,7 +4798,7 @@ create procedure ENEWS.WA.dt_user2gmt(
 create procedure ENEWS.WA.dt_value(
   in pDate datetime,
   in pDefault datetime := null,
-  in pUser datetime := null)
+  in pUser varchar := null)
 {
   if (isnull(pDefault))
     pDefault := now();
