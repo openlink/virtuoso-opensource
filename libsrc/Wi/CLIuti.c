@@ -764,14 +764,15 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
       if (DKSESSTAT_ISSET (stmt->stmt_connection->con_session, SST_BROKEN_CONNECTION))
 	{
 	  set_error (&stmt->stmt_error, "08S01", "CL067", "Lost connection to server");
-
 	  return SQL_ERROR;
 	}
-
       if (IS_BOX_POINTER (res) && ((ptrlong *) res)[0] == QA_ROWS_AFFECTED)
 	{
-	  stmt->stmt_rows_affected += (SDWORD) unbox (((caddr_t *) res)[1]);
+	  /* Number of affected rows is known so start with 0 */
+ 	  if (stmt->stmt_rows_affected == -1)
+	    stmt->stmt_rows_affected = 0;
 
+	  stmt->stmt_rows_affected += (SDWORD) unbox (((caddr_t *) res)[1]);
 	  if (BOX_ELEMENTS (res) > 2)
 	    {
 	      dk_free_box (stmt->stmt_identity_value);

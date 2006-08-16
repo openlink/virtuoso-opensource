@@ -1352,9 +1352,7 @@ virtodbc__SQLExecDirect (
 
   stmt->stmt_n_rows_to_get = stmt->stmt_opts->so_prefetch;
 
-  if (SO_CURSOR_TYPE (stmt->stmt_opts) != SQL_CURSOR_DYNAMIC)
-    stmt->stmt_rows_affected = 0;
-  else
+  /* Initialize to not available */
     stmt->stmt_rows_affected = -1;
 
   dk_free_tree (stmt->stmt_prefetch_row);
