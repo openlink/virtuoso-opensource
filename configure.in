@@ -2074,6 +2074,9 @@ AC_CONFIG_FILES([
 	binsrc/hosting/python/Makefile
 	binsrc/hosting/ruby/Makefile
 	binsrc/maildrop/Makefile
+	binsrc/oat/Makefile
+	binsrc/oat/images/Makefile
+	binsrc/oat/toolkit/Makefile
 	binsrc/mono/Makefile
 	binsrc/samples/demo/Makefile
 	binsrc/samples/docbookview/Makefile
