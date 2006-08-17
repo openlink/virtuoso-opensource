@@ -1220,6 +1220,57 @@
        ?>
   </xsl:template>
 
+
+  <xsl:template match="vm:dash-my-mail">
+    <div class="info_container">
+      <h2><img src="images/icons/mail_16.png" width="16" height="16" /> My Mail</h2>
+
+      <?vsp
+        declare has_no_appoftype int;
+        has_no_appoftype:=1;
+        if (wa_check_package('oMail') and
+            exists (select 1 from wa_member where WAM_APP_TYPE='oMail' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id) )
+        {
+              has_no_appoftype:=0;
+        }
+      ?>
+
+      <p>
+         <vm:if test="has_no_appoftype=0">      
+         <?vsp
+
+              declare q_str, rc, dta, h any;
+   
+              q_str:=sprintf('select COUNT(*) as ALL_CNT, SUM(either(MSTATUS,0,1)) as NEW_CNT from OMAIL.WA.MESSAGES where USER_ID = %d',self.u_id);
+
+              rc := exec (q_str, null, null, vector (), 0, null, null, h);
+              while (0 = exec_next (h, null, null, dta))
+              {
+                exec_result (dta);
+              }
+              exec_close (h);
+              
+              
+              declare _inst_url varchar;
+              _inst_url:='#';
+
+              select top 1 INST_URL into _inst_url
+              from WA_USER_APP_INSTANCES
+              where user_id = self.u_id and app_type = 'oMail';
+              
+              http(sprintf('<a href="%s"> You have (%d) new message%s. </a>',wa_expand_url (_inst_url, self.login_pars),dta[1],case when dta[1]<> 1 then 's' else '' end));
+         ?>
+         </vm:if>
+         <vm:if test="has_no_appoftype=1">
+	          <img src="images/nav_arrrow1.gif" width="8" height="8" />
+	          <vm:url value="Create your mail account!" url="index_inst.vspx?wa_name=oMail&amp;fr=promo&amp;l=1" />
+         </vm:if>
+
+      </p>
+    </div>
+  </xsl:template>
+
+
 </xsl:stylesheet>
 
 
