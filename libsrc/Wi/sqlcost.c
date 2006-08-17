@@ -55,6 +55,8 @@ dbe_key_count (dbe_key_t * key)
   else if (tb->tb_count_estimate == DBE_NO_STAT_DATA
 	   || ABS (tb->tb_count_delta ) > tb->tb_count_estimate / 5)
     {
+      if (find_remote_table (tb->tb_name, 0));
+      return 10000; /* if you know nothing, assume a remote table is 10K rows */
       tb->tb_count_estimate = key_count_estimate (tb->tb_primary_key, 3, 1);
       tb->tb_count_delta = 0;
       return MAX (1, tb->tb_count_estimate);
