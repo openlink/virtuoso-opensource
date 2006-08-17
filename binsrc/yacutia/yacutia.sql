@@ -1201,6 +1201,8 @@ next:
     }
   else
     {
+      declare inx_name varchar;
+      inx_name := null;
       if (sys_stat ('vdb_attach_autocommit') > 0) vd_autocommit (dsn, 1);
         {
            declare exit handler for SQLSTATE '*'
@@ -1208,7 +1210,7 @@ next:
 
            pkeys := sql_statistics (dsn, tbl_qual, tbl_user, tbl_name, 0, 1);
         };
-next2:
+      next2:
 
       if (not pkeys) pkeys := NULL;
 
@@ -1219,11 +1221,17 @@ next2:
     while (idx < pkeys_len)
     {
       pkey_curr := aref (pkeys, idx);
+	       if (inx_name is null)
+	         inx_name := pkey_curr[5];
+	       --dbg_obj_print (inx_name, pkey_curr[5]);
+	       if (inx_name <> pkey_curr[5])
+	         goto pk_end;
       pkey_col := aref (pkey_curr, 8);
             if (pkey_col is not null)
         my_pkeys := vector_concat (my_pkeys, vector(pkey_col));
       idx := idx +1;
     }
+	  pk_end:;
   }
       else
   {
@@ -1231,7 +1239,7 @@ next2:
     pkeys_len := 0;
   }
     }
-
+  --dbg_obj_print (my_pkeys);
   return my_pkeys;
 }
 ;
