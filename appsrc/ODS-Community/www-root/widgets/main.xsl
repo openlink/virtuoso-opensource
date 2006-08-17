@@ -2564,11 +2564,13 @@ window.onload = function (e)
              from  DB.DBA.WA_USER_INFO
    	         where WAUI_LAT is not null and WAUI_LNG is not null and WAUI_U_ID = self.owner_id ;
          
-             
+             if(_lat is not NULL and _lng is not NULL)
+             {
 ?>
       <meta name="ICBM" content="<?V sprintf( '%.06f' , _lat)?>, <?V sprintf( '%.06f' , _lng)?>" />
       <meta name="DC.title" content="'<?Vreplace (sprintf ('%U',self.comm_wainame),'+', '%2B')?>" />
 <?vsp
+             }
         self.has_geolatlng:=1;
 
         not_found_jump:
