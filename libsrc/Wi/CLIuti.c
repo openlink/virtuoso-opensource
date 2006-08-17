@@ -812,6 +812,9 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 	      if (stmt->stmt_compilation->sc_is_select == QT_SELECT)
 		return SQL_NO_DATA_FOUND;
 
+	      /* Number of affected rows is known so start with 0 */
+              if (stmt->stmt_rows_affected < 0)
+                stmt->stmt_rows_affected = 0;
 
 	      if (stmt->stmt_parm_rows_to_go)
 		continue;
@@ -913,6 +916,12 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 	    dk_free_box (srv_msg);
 	  }
 	  dk_free_tree ((box_t) res);
+
+          /* In case of SQLSetPos returning SQL_ERROR */
+	  if (stmt->stmt_compilation && 
+	      QT_SELECT != stmt->stmt_compilation->sc_is_select &&
+	      stmt->stmt_rows_affected == -1)
+	      stmt->stmt_rows_affected = 0;
 
 	  return SQL_ERROR;
 
