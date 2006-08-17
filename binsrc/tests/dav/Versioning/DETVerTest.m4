@@ -178,10 +178,20 @@ create function get_res_prop (in coll varchar, in res varchar, in idx int)
 }
 ;
 
+create function copy (in source varchar, in dest varchar)
+{
+  declare _rc int; 
+  _rc := DAV_COPY (source, dest, 1, '110100000RR', 'dav', 'administrators',
+     'dav', 'dav');
+  return _rc;
+}
+
 changequote([, ])
 
 ECHO BOTH "Checking versioning, Pass 0 ...\n";
 
+ok(   [delete from WS.WS.SYS_DAV_LOCK],
+	[" Clear all locks"] )	
 ok(   [DB.DBA.DAV_DELETE ('/DAV/versioning/', 1, 'dav','dav')],
 	[" Deleting verisioning collection"] )	
 ok(   [DB.DBA.DAV_DELETE ('/DAV/vers/', 1, 'dav','dav')],
@@ -1135,6 +1145,58 @@ val(	[select get_doc ('/DAV/versioning3/file1.txt')], ['content of file1.txt, ve
 
 
 
+-- DAV_COPY test
 
+ok(   [DB.DBA.DAV_DELETE ('/DAV/vers_copy/', 1, 'dav','dav')],
+	[" Delete verisioning collection"] )	
+valgt(   [select DB.DBA.DAV_COL_CREATE ('/DAV/vers_copy/', '110100000R', 'dav', 'administrators', 'dav', 'dav')], [0],
+	[" Create test collection: "])	
+valgt(   [select upload_docs ('/DAV/vers_copy/', 20)], [0],
+	[ " Upload docs to collection /DAV/vers_copy/ "])
 
+valgt(  [select DB.DBA.DAV_VERSION_CONTROL ('/DAV/vers_copy/test1.txt', 'dav', 'dav')], [0],
+	[ " set versioning control on text1.txt " ])
+ok(	[select DAV_PROP_SET ('/DAV/vers_copy/test1.txt', 'DAV:auto-version', 'DAV:checkout-checkin', 'dav', 'dav')],
+ 	[ " set auto-version for test1.txt "] )
+
+valgt(  [select DB.DBA.DAV_VERSION_CONTROL ('/DAV/vers_copy/test2.txt', 'dav', 'dav')], [0],
+	[ " set versioning control on text2.txt " ])
+ok(	[select DAV_PROP_SET ('/DAV/vers_copy/test2.txt', 'DAV:auto-version', 'DAV:checkout-checkin', 'dav', 'dav')],
+ 	[ " set auto-version for test2.txt "] )
+
+valgt(  [select copy ('/DAV/vers_copy/test3.txt', '/DAV/vers_copy/test2.txt')], [0],
+	[ " copy test3.txt to test2.txtt " ])
 	
+val(	[select get_doc_v_2 ('/DAV/vers_copy/VVC', 'test2.txt', 1)], ['hello world! - 2'],
+	[ " check last version of file2.txt by DET "])
+val(	[select get_doc_v_2 ('/DAV/vers_copy/VVC', 'test2.txt', 2)], ['hello world! - 3'],
+	[ " check last version of file2.txt by DET "])
+
+
+-- DAV_COPY test # 2
+
+valgt(  [select DB.DBA.DAV_VERSION_CONTROL ('/DAV/vers_copy/test4.txt', 'dav', 'dav')], [0],
+	[ " set versioning control on text4.txt " ])
+ok(	[select DAV_PROP_SET ('/DAV/vers_copy/test4.txt', 'DAV:auto-version', 'DAV:locked-checkout', 'dav', 'dav')],
+ 	[ " set auto-version for test4.txt "] )
+valgt(  [select lock_res ('/DAV/vers_copy/test4.txt')], [0],
+	[ " lock test4.txt" ])
+valgt(  [select copy ('/DAV/vers_copy/test5.txt', '/DAV/vers_copy/test4.txt')], [0],
+	[ " copy test5.txt to test4.txtt " ])
+valgt(	[select DAV_CHECKIN ('/DAV/vers_copy/test4.txt', 'dav', 'dav')], [0],
+	[" checkin test4.txt "])
+val(	[select get_doc_v_2 ('/DAV/vers_copy/VVC', 'test4.txt', 1)], ['hello world! - 4'],
+	[ " check prev version of file4.txt by DET "])
+val(	[select get_doc_v_2 ('/DAV/vers_copy/VVC', 'test4.txt', 2)], ['hello world! - 5'],
+	[ " check last version of file4.txt by DET "])
+
+valgt(  [select copy ('/DAV/vers_copy/test7.txt', '/DAV/vers_copy/test6.txt')], [0],
+	[ " copy test7.txt to test6.txtt " ])
+val(	[select get_doc ('/DAV/vers_copy/test6.txt')], ['hello world! - 7'],
+	[ " check content of test6"])
+valgt(  [select lock_res ('/DAV/vers_copy/test6.txt')], [0],
+	[ " lock test6.txt" ])
+vallt(  [select copy ('/DAV/vers_copy/test8.txt', '/DAV/vers_copy/test6.txt')], [0],
+	[ " copy test8.txt to test6.txtt " ])
+val(	[select get_doc ('/DAV/vers_copy/test6.txt')], ['hello world! - 7'],
+	[ " check content of test6"])

@@ -209,10 +209,21 @@ create function get_res_prop (in coll varchar, in res varchar, in idx int)
 }
 ;
 
+create function copy (in source varchar, in dest varchar)
+{
+  declare _rc int; 
+  _rc := DAV_COPY (source, dest, 1, '110100000RR', 'dav', 'administrators',
+     'dav', 'dav');
+  return _rc;
+}
+
 
 
 ECHO BOTH "Checking versioning, Pass 0 ...\n";
 
+delete from WS.WS.SYS_DAV_LOCK;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH " Clear all locks"  ": \"" $STATE "\"\t (must be OK)\n";	
 DB.DBA.DAV_DELETE ('/DAV/versioning/', 1, 'dav','dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Deleting verisioning collection"  ": \"" $STATE "\"\t (must be OK)\n";	
@@ -2085,6 +2096,116 @@ ECHO BOTH  " check the content of last version " ": \"" $LAST[1] "\"\t (must be:
 
 
 
+-- DAV_COPY test
+
+DB.DBA.DAV_DELETE ('/DAV/vers_copy/', 1, 'dav','dav');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH " Delete verisioning collection"  ": \"" $STATE "\"\t (must be OK)\n";	
+select DB.DBA.DAV_COL_CREATE ('/DAV/vers_copy/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH " Create test collection: " ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH " Create test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";	
+select upload_docs ('/DAV/vers_copy/', 20);
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " Upload docs to collection /DAV/vers_copy/ " ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH  " Upload docs to collection /DAV/vers_copy/ " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
+
+select DB.DBA.DAV_VERSION_CONTROL ('/DAV/vers_copy/test1.txt', 'dav', 'dav');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " set versioning control on text1.txt "  ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH  " set versioning control on text1.txt "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
+select DAV_PROP_SET ('/DAV/vers_copy/test1.txt', 'DAV:auto-version', 'DAV:checkout-checkin', 'dav', 'dav');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " set auto-version for test1.txt "  ": \"" $STATE "\"\t (must be OK)\n";
+
+select DB.DBA.DAV_VERSION_CONTROL ('/DAV/vers_copy/test2.txt', 'dav', 'dav');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " set versioning control on text2.txt "  ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH  " set versioning control on text2.txt "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
+select DAV_PROP_SET ('/DAV/vers_copy/test2.txt', 'DAV:auto-version', 'DAV:checkout-checkin', 'dav', 'dav');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " set auto-version for test2.txt "  ": \"" $STATE "\"\t (must be OK)\n";
+
+select copy ('/DAV/vers_copy/test3.txt', '/DAV/vers_copy/test2.txt');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " copy test3.txt to test2.txtt "  ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH  " copy test3.txt to test2.txtt "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
+
+select get_doc_v_2 ('/DAV/vers_copy/VVC', 'test2.txt', 1);
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " check last version of file2.txt by DET " ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $EQU $LAST[1] 'hello world! - 2' "PASSED:" "***FAILED:";
+ECHO BOTH  " check last version of file2.txt by DET " ": \"" $LAST[1] "\"\t (must be: " 'hello world! - 2' ")\n";
+select get_doc_v_2 ('/DAV/vers_copy/VVC', 'test2.txt', 2);
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " check last version of file2.txt by DET " ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $EQU $LAST[1] 'hello world! - 3' "PASSED:" "***FAILED:";
+ECHO BOTH  " check last version of file2.txt by DET " ": \"" $LAST[1] "\"\t (must be: " 'hello world! - 3' ")\n";
 
 
+-- DAV_COPY test # 2
+
+select DB.DBA.DAV_VERSION_CONTROL ('/DAV/vers_copy/test4.txt', 'dav', 'dav');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " set versioning control on text4.txt "  ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH  " set versioning control on text4.txt "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
+select DAV_PROP_SET ('/DAV/vers_copy/test4.txt', 'DAV:auto-version', 'DAV:locked-checkout', 'dav', 'dav');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " set auto-version for test4.txt "  ": \"" $STATE "\"\t (must be OK)\n";
+select lock_res ('/DAV/vers_copy/test4.txt');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " lock test4.txt"  ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH  " lock test4.txt"  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
+select copy ('/DAV/vers_copy/test5.txt', '/DAV/vers_copy/test4.txt');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " copy test5.txt to test4.txtt "  ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH  " copy test5.txt to test4.txtt "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
+select DAV_CHECKIN ('/DAV/vers_copy/test4.txt', 'dav', 'dav');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH " checkin test4.txt " ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH " checkin test4.txt " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
+select get_doc_v_2 ('/DAV/vers_copy/VVC', 'test4.txt', 1);
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " check prev version of file4.txt by DET " ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $EQU $LAST[1] 'hello world! - 4' "PASSED:" "***FAILED:";
+ECHO BOTH  " check prev version of file4.txt by DET " ": \"" $LAST[1] "\"\t (must be: " 'hello world! - 4' ")\n";
+select get_doc_v_2 ('/DAV/vers_copy/VVC', 'test4.txt', 2);
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " check last version of file4.txt by DET " ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $EQU $LAST[1] 'hello world! - 5' "PASSED:" "***FAILED:";
+ECHO BOTH  " check last version of file4.txt by DET " ": \"" $LAST[1] "\"\t (must be: " 'hello world! - 5' ")\n";
 	
+select copy ('/DAV/vers_copy/test7.txt', '/DAV/vers_copy/test6.txt');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " copy test7.txt to test6.txtt "  ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH  " copy test7.txt to test6.txtt "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
+select get_doc ('/DAV/vers_copy/test6.txt');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " check content of test6" ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $EQU $LAST[1] 'hello world! - 7' "PASSED:" "***FAILED:";
+ECHO BOTH  " check content of test6" ": \"" $LAST[1] "\"\t (must be: " 'hello world! - 7' ")\n";
+select lock_res ('/DAV/vers_copy/test6.txt');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " lock test6.txt"  ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
+ECHO BOTH  " lock test6.txt"  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
+select copy ('/DAV/vers_copy/test8.txt', '/DAV/vers_copy/test6.txt');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " copy test8.txt to test6.txtt "  ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $GT 0 $LAST[1] "PASSED:" "***FAILED:";
+ECHO BOTH  " copy test8.txt to test6.txtt "  ": \"" $LAST[1] "\"\t (must be less than " 0 ")\n";
+select get_doc ('/DAV/vers_copy/test6.txt');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
+ECHO BOTH  " check content of test6" ": \"" $STATE "\"\t (must be OK)\n";
+ECHO BOTH $IF $EQU $LAST[1] 'hello world! - 7' "PASSED:" "***FAILED:";
+ECHO BOTH  " check content of test6" ": \"" $LAST[1] "\"\t (must be: " 'hello world! - 7' ")\n";

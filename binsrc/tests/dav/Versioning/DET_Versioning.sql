@@ -1648,7 +1648,7 @@ create procedure DAV_CHECKIN_INT (in path varchar, in auth varchar, in pwd varch
     return -20;
   _checked_out := DAV_PROP_GET_INT (_id, 'R', 'DAV:checked-out', 0);
   if (DAV_HIDE_ERROR (_checked_out) is null)
-    return -1;
+    return -38;
   if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (_id, 'R', 'DAV:checked-in', 0)) is not null)
     return -11;
 

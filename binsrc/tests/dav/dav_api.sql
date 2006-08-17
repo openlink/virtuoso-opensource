@@ -2353,8 +2353,16 @@ DAV_COPY_INT (in path varchar,
     }
   if (('C' = st) and destination between path and DAV_COL_PATH_BOUNDARY (path))
     return -30;
+
+  declare auto_version varchar;
+  if (st = 'R')
+    auto_version := DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT(d_id, 'R', 'DAV:auto-version', 0));
+  else
+    auto_version := NULL;
   if (check_locks)
     {
+      if (auto_version <> 'DAV:locked-checkout')
+        {
       if (0 <> (rc := DAV_IS_LOCKED (id , st, check_locks)))
 	return rc;
       if (d_id is null)
@@ -2363,6 +2371,19 @@ DAV_COPY_INT (in path varchar,
         rc := DAV_IS_LOCKED (d_id , st, check_locks);
       if (0 <> rc)
 	return (case when rc = -8 then -9 else rc end);
+    }
+      else
+        {
+          rc := DAV_IS_LOCKED (d_id , st, check_locks);
+ 	  if (rc = -8)
+             { 
+               rc := DAV_CHECKOUT_INT (d_id, null, null, 0);
+	       if (rc < 0)
+                 return rc;
+             }
+          else if (0 <> rc)
+             return rc;
+        }
     }
 
   if (isarray (dp_id))
