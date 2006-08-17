@@ -2034,6 +2034,32 @@ bif_xenc_get_key_algo (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
     return NEW_DB_NULL;
 }
 
+static
+caddr_t bif_xenc_key_raw_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
+{
+  caddr_t name = bif_key_name_arg (qst, args, 0, "xenc_key_RAW_read");
+  caddr_t key_data = bif_string_arg (qst, args, 1, "xenc_key_RAW_read");
+  xenc_key_t * k;
+  int len;
+  unsigned char * key_base64 = (unsigned char *) box_copy (key_data);
+  len = xenc_decode_base64 ((char *)key_base64, (char *)(key_base64 + box_length (key_base64)));
+
+  mutex_enter (xenc_keys_mtx);
+  k = xenc_key_create (name, XENC_BASE64_ALGO, DSIG_HMAC_SHA1_ALGO,  0);
+
+  if (NULL == k)
+    {
+      mutex_leave (xenc_keys_mtx);
+      SQLR_NEW_KEY_EXIST_ERROR (name);
+    }
+
+  k->ki.raw.k = key_base64;
+  k->ki.raw.bits = len * 8;
+
+  mutex_leave (xenc_keys_mtx);
+  return box_dv_short_string (k->xek_name);
+}
+
 static caddr_t
 bif_xenc_get_key_identifier (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
@@ -5538,6 +5564,27 @@ bif_xenc_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t res = NULL;
   SES_PRINT (ses, text);
   dsig_sha1_digest (ses, strses_length (ses), &res);
+  dk_free_box (ses);
+  return res;
+}
+
+
+static caddr_t
+bif_xenc_hmac_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * text = bif_string_arg (qst, args, 0, "xenc_hmac_sha1_digest");
+  caddr_t name = bif_string_arg (qst, args, 1, "xenc_hmac_sha1_digest");
+  xenc_key_t * key = xenc_get_key_by_name (name, 1);
+  dk_session_t * ses = strses_allocate ();
+  caddr_t res = NULL;
+  int rc = 0;
+
+  SES_PRINT (ses, text);
+  rc = dsig_hmac_sha1_digest (ses, strses_length (ses), key, &res);
+  dk_free_box (ses);
+  if (0 == rc)
+    sqlr_new_error ("42000", "XENC36", "Could not make HMAC-SHA1 digest");
+
   return res;
 }
 
@@ -5629,6 +5676,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_key_3DES_read", bif_xenc_key_3des_read);
   bif_define ("xenc_key_RSA_read", bif_xenc_key_rsa_read);
   bif_define ("xenc_key_DSA_read", bif_xenc_key_dsa_read);
+  bif_define ("xenc_key_RAW_read", bif_xenc_key_raw_read);
   bif_define ("xenc_key_serialize", bif_xenc_key_serialize);
   bif_define ("xenc_X509_certificate_serialize", bif_xenc_x509_cert_serialize);
   bif_define ("xenc_set_primary_key", bif_xenc_set_primary_key);
@@ -5653,6 +5701,7 @@ void bif_xmlenc_init ()
 #endif
   bif_define ("X509_get_subject", bif_x509_get_subject);
   bif_define ("xenc_sha1_digest", bif_xenc_sha1_digest);
+  bif_define ("xenc_hmac_sha1_digest", bif_xenc_hmac_sha1_digest);
 
   xenc_cert_X509_idx = ecm_find_name ("X.509", (void*)xenc_cert_types, xenc_cert_types_len,
 					 sizeof (xenc_cert_type_t));

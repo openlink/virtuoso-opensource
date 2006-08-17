@@ -36,6 +36,7 @@ int xenc_canon_exc_algo (dk_session_t * ses_in, long len, dk_session_t * ses_out
 	dk_session_t * ses_out, xenc_try_block_t * t);
 */
 int dsig_sha1_digest (dk_session_t * ses_in, long len, caddr_t * digest_out);
+int dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out);
 
 /* signature functions
    typedef int (*dsig_algo_f) (dk_session_t * ses_in, long len, xenc_key_t * key,

@@ -1288,7 +1288,7 @@ dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
 {
   unsigned char * data;
   HMAC_CTX ctx;
-  unsigned char key_data[3 * 8];
+  unsigned char key_data[4 * 8]; /* the length of the aes 256 larger keys will be rejected */
   unsigned char md [SHA_DIGEST_LENGTH + 1];
   unsigned char md64 [SHA_DIGEST_LENGTH * 2 + 1];
   unsigned int hmac_len = 0;
@@ -1311,6 +1311,12 @@ dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
           key_len = key->ki.aes.bits / 8;
 	  break;
 #endif
+      case DSIG_KEY_RAW:
+	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
+	    return 0;
+	  memcpy (key_data, key->ki.raw.k, key->ki.raw.bits / 8);
+	  key_len = key->ki.raw.bits / 8;
+	  break;
       default:
 	  return 0;
     }
@@ -1345,6 +1351,7 @@ dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
       memcpy (sign_out[0], md64, l);
       sign_out[0][l] = 0;
     }
+  dk_free_box ((box_t) data);
   return SHA_DIGEST_LENGTH;
 }
 

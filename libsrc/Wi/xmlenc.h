@@ -328,6 +328,11 @@ struct xenc_key_s
       caddr_t		tkt;
     } kerb;
 #endif
+    struct  dsig_raw_keyinfo_s
+    {
+      unsigned char *   k;
+      int               bits;
+    } raw;
   } ki; /* union is select by xek_type */
   EVP_PKEY *	xek_evp_key;
   EVP_PKEY *	xek_evp_private_key;
