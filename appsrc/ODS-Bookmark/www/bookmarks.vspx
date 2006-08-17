@@ -1001,6 +1001,25 @@
                                format="%s"
                                enabled="--case when (lcase(BMK.WA.node_type((control.vc_parent as vspx_row_template).te_column_value('_NODE'))) = 'b') then 1 else 0 end"
                                xhtml_title="--BMK.WA.utf2wide((control.vc_parent as vspx_row_template).te_column_value('_NAME'))"/>
+                        <?vsp
+                          declare N integer;
+                          declare node, tags any;
+
+                          node := (control as vspx_row_template).te_column_value('_NODE');
+                          if (BMK.WA.node_type(node) = 'b') {
+                            tags := BMK.WA.tags_select2(self.domain_id, self.account_id, BMK.WA.node_id(node));
+                            if (not is_empty_or_null(tags)) {
+                              http('<br /><i>Tags: ');
+                              tags := split_and_decode (tags, 0, '\0\0,');
+                              for (N := 0; N < length(tags); N := N + 1) {
+                                http(sprintf('<a href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s">%s</a>', BMK.WA.bookmark_url(self.domain_id), self.sid, self.realm, tags[N], tags[N]));
+                                if (N <> length(tags)-1)
+                                  http(' | ');
+                              }
+                              http('</i>');
+                            }
+                          }
+                        ?>
                       </td>
                     </tr>
                   </table>
@@ -1107,7 +1126,7 @@
                         return;
                       };
   		                commit work;
-                      S := http_get('http://del.icio.us/api/posts/all?', hdr, 'POST', sprintf ('Content-Type: text/xml\r\nDepth: 1\r\nAuthorization: Basic %s', encode_base64 (concat(deliciousUser, ':', deliciousPwd))));
+                      S := http_client('https://api.del.icio.us/v1/posts/all', deliciousUser, deliciousPwd, 'GET', null, null, null, null);
                       V := xml_tree_doc (xml_tree (S, 2));
                       errorMsg := xpath_eval('string(//title)', V);
                       if (errorMsg is not null and errorMsg <> '') {

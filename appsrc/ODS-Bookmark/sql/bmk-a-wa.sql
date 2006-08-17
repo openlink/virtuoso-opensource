@@ -339,10 +339,11 @@ create method get_param (in param varchar) for wa_bookmark
 --
 create method wa_dashboard_last_item () for wa_bookmark
 {
-  declare userID integer;
+  declare domainID, userID integer;
 
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
   userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-  return BMK.WA.dashboard_get(userID);
+  return BMK.WA.dashboard_get(domainID, userID);
 }
 ;
 

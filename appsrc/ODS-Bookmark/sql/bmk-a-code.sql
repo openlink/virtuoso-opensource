@@ -773,8 +773,13 @@ create procedure BMK.WA.bookmark_delete(
   declare bookmark_id integer;
 
   bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id);
-  delete from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and BD_ID = id;
+  delete from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id;
   delete from BMK.WA.BOOKMARK_DATA where BD_MODE = 0 and BD_OBJECT_ID = domain_id and BD_BOOKMARK_ID = bookmark_id;
+  commit work;
+  {
+    declare exit handler for SQLSTATE '*' { return; };
+    delete from BMK.WA.BOOKMARK where B_ID = bookmark_id;
+  }
 }
 ;
 
@@ -882,7 +887,8 @@ _folder:
   }
 _exit:
   return;
-};
+}
+;
 
 -----------------------------------------------------
 --
@@ -923,7 +929,8 @@ _folder:
   }
 _exit:
   return;
-};
+}
+;
 
 -----------------------------------------------------
 --
@@ -933,7 +940,7 @@ create procedure BMK.WA.bookmark_import_delicious(
   in folder_id integer,
   in V any)
 {
-  declare tmp, T, Q, D, TG any;
+  declare tmp, T, Q, D, TG, TGA any;
   declare N integer;
 
   if (V is null)
@@ -950,14 +957,20 @@ create procedure BMK.WA.bookmark_import_delicious(
     tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = tmp);
     TG := cast(xpath_eval(sprintf('string(//post[%d]/@tag)', N), V, 1) as varchar);
     if (TG <> 'system:unfiled') {
-      TG := replace(TG, ' ', ',');
+      TGA := split_and_decode(TG, 0, '\0\0 ');
+      TG := '';
+      foreach (any tag in TGA) do
+        if (BMK.WA.validate_tag (tag))
+          TG := concat(TG, tag, ',');
+      TG := trim(TG, ',');
       BMK.WA.bookmark_tags(domain_id, account_id, tmp, TG);
     }
     N := N + 1;
   }
 _exit:
   return;
-};
+}
+;
 
 -------------------------------------------------------------------------------
 --
@@ -974,7 +987,8 @@ CREATE PROCEDURE BMK.WA.bookmark_export(
   http('</root>', retValue);
 
   return string_output_string (retValue);
-};
+}
+;
 
 -------------------------------------------------------------------------------
 --
@@ -998,7 +1012,8 @@ CREATE PROCEDURE BMK.WA.bookmark_export_tmp(
     BMK.WA.bookmark_export_tmp(domain_id, F_ID, retValue);
     http ('</folder>', retValue);
   }
-};
+}
+;
 
 -------------------------------------------------------------------------------
 --
@@ -1024,8 +1039,8 @@ create procedure BMK.WA.bookmark_tags(
          and BD_BOOKMARK_ID = bookmark_id;
   }
   if (not exists (select 1 from BMK.WA.BOOKMARK_DATA where BD_MODE = 1 and BD_OBJECT_ID = account_id and BD_BOOKMARK_ID = bookmark_id)) {
-    insert into BMK.WA.BOOKMARK_DATA(BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID, BD_TAGS)
-      values(1, account_id, bookmark_id, tags);
+    insert into BMK.WA.BOOKMARK_DATA(BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID, BD_TAGS, BD_LAST_UPDATE)
+      values(1, account_id, bookmark_id, tags, now());
   } else {
     update BMK.WA.BOOKMARK_DATA
        set BD_TAGS = tags,
@@ -1051,6 +1066,20 @@ create procedure BMK.WA.tags_select(
   if (isnull(tags))
     tags := (select BD_TAGS from BMK.WA.BOOKMARK_DATA where BD_MODE = 0 and BD_OBJECT_ID = domain_id and BD_BOOKMARK_ID = bookmark_id);
   return tags;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.tags_select2(
+  inout domain_id integer,
+  inout account_id integer,
+  inout id integer)
+{
+  declare bookmark_id integer;
+
+  bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id);
+  return BMK.WA.tags_select (domain_id, account_id, bookmark_id);
 }
 ;
 
@@ -2306,7 +2335,7 @@ create procedure BMK.WA.utf2wide (
 {
   if (isstring (S))
   return charset_recode (S, 'UTF-8', '_WIDE_');
-  return charset_recode (S, null, '_WIDE_');
+  return S;
 }
 ;
 
@@ -2765,6 +2794,7 @@ create procedure BMK.WA.show_excerpt(
 ;
 
 create procedure BMK.WA.dashboard_get(
+  in domain_id integer,
   in user_id integer)
 {
   declare ses any;
@@ -2780,6 +2810,7 @@ create procedure BMK.WA.dashboard_get(
                      DB.DBA.WA_INSTANCE c,
                      DB.DBA.WA_MEMBER d
                 where a.BD_BOOKMARK_ID = b.B_ID
+                  and a.BD_DOMAIN_ID = domain_id
                   and d.WAM_USER = user_id
                   and d.WAM_INST = C.WAI_NAME
                   and c.WAI_ID = a.BD_DOMAIN_ID
@@ -3180,11 +3211,11 @@ create procedure BMK.WA.test (
 
   } else if (valueType = 'varchar') {
     tmp := get_keyword('minLength', params);
-    if (not isnull(tmp) and (length(value) < tmp))
+    if (not isnull(tmp) and (length(BMK.WA.utf2wide(value)) < tmp))
       signal('MINLENGTH', cast(tmp as varchar));
 
     tmp := get_keyword('maxLength', params);
-    if (not isnull(tmp) and (length(value) > tmp))
+    if (not isnull(tmp) and (length(BMK.WA.utf2wide(value)) > tmp))
       signal('MAXLENGTH', cast(tmp as varchar));
   }
   return value;

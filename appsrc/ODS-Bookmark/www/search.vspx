@@ -380,6 +380,23 @@
                                  url="--(control.vc_parent as vspx_row_template).te_rowset[4]"
                                  format="%s"
                                  xhtml_title="--BMK.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[3])"/>
+                          <?vsp
+                            declare N, node integer;
+                            declare node, tags any;
+
+                            node := (control as vspx_row_template).te_rowset[1];
+                            tags := BMK.WA.tags_select2(self.domain_id, self.account_id, node);
+                            if (not is_empty_or_null(tags)) {
+                              http('<br /><i>Tags: ');
+                              tags := split_and_decode (tags, 0, '\0\0,');
+                              for (N := 0; N < length(tags); N := N + 1) {
+                                http(sprintf('<a href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s">%s</a>', BMK.WA.bookmark_url(self.domain_id), self.sid, self.realm, tags[N], tags[N]));
+                                if (N <> length(tags)-1)
+                                  http(' | ');
+                              }
+                              http('</i>');
+                            }
+                          ?>
                         </td>
                         <td>
                           <v:url value="--(control.vc_parent as vspx_row_template).te_rowset[4]"
