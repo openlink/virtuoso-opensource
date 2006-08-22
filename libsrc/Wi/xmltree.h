@@ -929,6 +929,8 @@ extern caddr_t uname_virtrdf_ns_uri;
 extern caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
 extern caddr_t uname_virtrdf_ns_uri_QuadStorage;
 extern caddr_t uname_virtrdf_ns_uri_bitmask;
+extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;
+extern caddr_t uname_virtrdf_ns_uri_loadAs;
 extern caddr_t uname_xml;
 extern caddr_t uname_xmlns;
 extern caddr_t uname_xml_colon_base;

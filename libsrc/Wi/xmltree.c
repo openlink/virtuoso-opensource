@@ -9512,6 +9512,8 @@ caddr_t uname_virtrdf_ns_uri;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
 caddr_t uname_virtrdf_ns_uri_QuadStorage;
 caddr_t uname_virtrdf_ns_uri_bitmask;
+caddr_t uname_virtrdf_ns_uri_isSubclassOf;
+caddr_t uname_virtrdf_ns_uri_loadAs;
 caddr_t uname_xml;
 caddr_t uname_xmlns;
 caddr_t uname_xml_colon_base;
@@ -9579,6 +9581,8 @@ xml_tree_init (void)
   UNAME_IT(uname_virtrdf_ns_uri_DefaultQuadStorage	, VIRTRDF_NS_URI "DefaultQuadStorage"	);
   UNAME_IT(uname_virtrdf_ns_uri_QuadStorage	, VIRTRDF_NS_URI "QuadStorage"	);
   UNAME_IT(uname_virtrdf_ns_uri_bitmask		, VIRTRDF_NS_URI "bitmask"	);
+  UNAME_IT(uname_virtrdf_ns_uri_isSubclassOf	, VIRTRDF_NS_URI "isSubclassOf"	);
+  UNAME_IT(uname_virtrdf_ns_uri_loadAs		, VIRTRDF_NS_URI "loadAs"	);
   UNAME_IT(uname_xml				, "xml"				);
   UNAME_IT(uname_xmlns				, "xmlns"			);
   UNAME_IT(uname_xml_colon_base			, "xml:base"			);
