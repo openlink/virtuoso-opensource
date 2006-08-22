@@ -29,13 +29,18 @@
 #include "Dk.h"
 #include "xmltree.h"
 
+
+/* Part 1. Java Script style objects with named instances and properties. */
+
 /* A property of a class MAY, MUST or SHOULD NOT appear in declaration of instances of the class. TBD: support for it :) */
 #define JSO_OPTIONAL	11	/*!< The property is fully optional */
 #define JSO_INHERITABLE	12	/*!< The property is required but it can be inherited */
 #define JSO_REQUIRED	13	/*!< The property is required, it should be specified directly even if can be inherited */
-#define JSO_DEPRECATED	14	/*!< The property is deprecated and should not be specified at all */
+#define JSO_PRIVATE	14	/*!< The property is deprecated and should not be specified at all */
+#define JSO_DEPRECATED	15	/*!< The property is never loaded. It's used only in C code */
 
 #define JSO_ANY		"http://www.w3.org/2001/XMLSchema#any"			/*!< Arbitrary boxed SQL value */
+#define JSO_ANY_array	"http://www.w3.org/2001/XMLSchema#any"			/*!< A vector of abitrary boxed SQL values */
 #define JSO_ANY_URI	"http://www.w3.org/2001/XMLSchema#anyURI"		/*!< boxed DV_UNAME in UTF-8 encoding */
 #define JSO_BOOLEAN	"http://www.w3.org/2001/XMLSchema#boolean"		/*!< Bool as ptrlong 1 or 0 */
 #define JSO_BITMASK	"http://www.openlinksw.com/schemas/virtrdf#bitmask"	/*!< Bitmask as ptrlong, can be loaded as OR of a list of values */
@@ -121,5 +126,12 @@ extern dk_hash_t *jso_consts;		/*!< All known named constants, e.g., made by jso
 extern dk_hash_t *jso_classes;		/*!< All known JSO classes, e.g., made by jso_define_class() */
 extern dk_hash_t *jso_properties;	/*!< All known property names of all JSO classes, to cross-check classes for duplicate names */
 extern dk_hash_t *jso_rttis;		/*!< All JSO class instances of all classes, to distinguish between missing insntances and type mismatches */
+
+
+/* Part 2. A small storage of triples that are not preset properties of objects. */
+
+extern caddr_t jso_triple_add (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj);
+extern caddr_t jso_triple_get_objs (caddr_t * qst, caddr_t jsubj, caddr_t jpred);
+extern caddr_t jso_triple_get_subjs (caddr_t * qst, caddr_t jpred, caddr_t jobj);
 
 #endif
