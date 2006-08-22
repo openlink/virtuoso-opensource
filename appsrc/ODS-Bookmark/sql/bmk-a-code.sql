@@ -963,11 +963,12 @@ create procedure BMK.WA.bookmark_import_delicious(
         if (BMK.WA.validate_tag (tag))
           TG := concat(TG, tag, ',');
       TG := trim(TG, ',');
-      BMK.WA.bookmark_tags(domain_id, account_id, tmp, TG);
+      BMK.WA.bookmark_tags(domain_id, account_id, tmp, TG, 0);
     }
     N := N + 1;
   }
 _exit:
+  BMK.WA.tags_refresh (domain_id, account_id, 0);
   return;
 }
 ;
@@ -1001,7 +1002,7 @@ CREATE PROCEDURE BMK.WA.bookmark_export_tmp(
 
   --  http (sprintf('<bookmark name="%V" desc="%V" uri="%V" id="f#%d" />', BD_NAME, coalesce(BD_DESCRIPTION, ''), B_URI, BD_ID), retValue);
   for (select a.*, b.B_URI from BMK.WA.BOOKMARK_DOMAIN a, BMK.WA.BOOKMARK b where a.BD_BOOKMARK_ID = b.B_ID and a.BD_DOMAIN_ID = domain_id and coalesce(a.BD_FOLDER_ID, -1) = coalesce(folder_id, -1) order by a.BD_NAME) do {
-    http (sprintf('<bookmark name="%V" uri="%V" id="f#%d">', BD_NAME, B_URI, BD_ID), retValue);
+    http (sprintf('<bookmark name="%V" uri="%V" id="b#%d">', BD_NAME, B_URI, BD_ID), retValue);
     if (coalesce(BD_DESCRIPTION, '') <> '')
       http (sprintf('<desc>%V</desc>', BD_DESCRIPTION), retValue);
     http (sprintf('</bookmark>', BD_NAME, B_URI, BD_ID), retValue);
@@ -1024,7 +1025,8 @@ create procedure BMK.WA.bookmark_tags(
   inout domain_id integer,
   inout account_id integer,
   inout bookmark_id integer,
-  inout tags any)
+  inout tags any,
+  in mode integer := 1)
 {
   if (not exists (select 1 from BMK.WA.BOOKMARK_DATA where BD_MODE = 0 and BD_OBJECT_ID = domain_id and BD_BOOKMARK_ID = bookmark_id)) {
     insert into BMK.WA.BOOKMARK_DATA(BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID, BD_TAGS, BD_LAST_UPDATE)
@@ -1049,6 +1051,7 @@ create procedure BMK.WA.bookmark_tags(
        and BD_OBJECT_ID = account_id
        and BD_BOOKMARK_ID = bookmark_id;
   }
+  if (mode)
   BMK.WA.tags_refresh (domain_id, account_id, 1);
 }
 ;
@@ -3147,7 +3150,7 @@ create procedure BMK.WA.test (
     if (__SQL_STATE = 'EMPTY')
       signal ('TEST', sprintf('Field ''%s'' cannot be empty!<>', valueName));
     if (__SQL_STATE = 'CLASS') {
-      if (valueType = 'free-text') {
+      if (valueType in ('free-text', 'tags')) {
         signal ('TEST', sprintf('Field ''%s'' contains invalid characters or noise words!<>', valueName));
       } else {
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters!<>', valueName));

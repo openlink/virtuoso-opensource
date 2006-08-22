@@ -1419,18 +1419,18 @@
 
                     self.v_name := trim(self.r_name.ufl_value);
                     if (BMK.WA.node_type(self.v_id) = 'b') {
-                      BMK.WA.test(self.v_name, vector('name', 'Bookmark', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
+                      BMK.WA.test(self.v_name, vector('name', 'Bookmark', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                       update BMK.WA.BOOKMARK_DOMAIN set BD_NAME = self.v_name where BD_ID = BMK.WA.node_id(self.v_id);
 
                     } else if (BMK.WA.node_type(self.v_id) = 'f') {
-                      BMK.WA.test(self.v_name, vector('name', 'Folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
+                      BMK.WA.test(self.v_name, vector('name', 'Folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                       self.v_parent_id := (select F_PARENT_ID from BMK.WA.FOLDER where F_ID = BMK.WA.node_id(self.v_id));
                       if (BMK.WA.folder_check_unique(self.domain_id, self.v_parent_id, self.v_name, BMK.WA.node_id(self.v_id)))
                         signal('TEST', 'Folder name already exists. Please, enter new name!<>');
                       update BMK.WA.FOLDER set F_NAME = self.v_name where F_ID = BMK.WA.node_id(self.v_id);
 
                     } else if (BMK.WA.node_type(self.v_id) = 's') {
-                      BMK.WA.test(self.v_name, vector('name', 'Smart folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
+                      BMK.WA.test(self.v_name, vector('name', 'Smart folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                       tmp := coalesce((select SF_ID from BMK.WA.SFOLDER where SF_DOMAIN_ID = self.domain_id and SF_NAME = self.v_name), -1);
                       if ((tmp <> BMK.WA.node_id(self.v_id)) and (tmp <> -1))
                         signal('TEST', 'Smart folder name already exists. Please, enter new name!<>');
@@ -1734,8 +1734,8 @@
                       resignal;
                     };
 
-                    self.v_name := BMK.WA.test(self.b_name.ufl_value, vector('name', 'Bookmark Name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
-                    self.v_uri := BMK.WA.test(self.b_uri.ufl_value, vector('name', 'Bookmark Link', 'class', 'uri', 'type', 'varchar', 'minLength', 1, 'maxLength', 100));
+                    self.v_name := BMK.WA.test(self.b_name.ufl_value, vector('name', 'Bookmark Name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
+                    self.v_uri := BMK.WA.test(self.b_uri.ufl_value, vector('name', 'Bookmark Link', 'class', 'uri', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                     self.v_folder_id := self.b_folder_id.ufl_value;
                     self.v_folder_name := trim(self.b_folder_name.ufl_value);
                     if ((self.v_folder_name <> '') and (not BMK.WA.folder_check_name(self.v_folder_name, 1))) {
@@ -1864,7 +1864,7 @@
                       resignal;
                     };
 
-                    self.v_name := BMK.WA.test (self.f_name.ufl_value, vector ('name', 'Folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
+                    self.v_name := BMK.WA.test (self.f_name.ufl_value, vector ('name', 'Folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                     self.v_parent_id := cast (self.f_parent_id.ufl_value as integer);
                     if (self.v_parent_id = 0)
                       self.v_parent_id := null;
@@ -2002,7 +2002,7 @@
                     self.v_tags := trim(self.s_tags.ufl_value);
                     self.v_folder_id := cast(self.s_folder_id.ufl_value as integer);
 
-                    BMK.WA.test(self.v_name, vector('name', 'Smart folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 60));
+                    BMK.WA.test(self.v_name, vector('name', 'Smart folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                     tmp := coalesce((select SF_ID from BMK.WA.SFOLDER where SF_DOMAIN_ID = self.domain_id and SF_NAME = self.v_name), -1);
                     if (((self.bMode = 'Smart Folder/Create') and (tmp <> -1)) or ((self.bMode = 'Smart Folder/Update') and (tmp <> self.v_id) and (tmp <> -1)))
                       signal('TEST', 'Smart folder name already exists. Please, enter new ''Smart folder name''!<>');

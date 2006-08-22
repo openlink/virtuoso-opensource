@@ -33,7 +33,9 @@
     ]]>
     <TITLE>My Bookmarks</TITLE>
     <H1>My Bookmarks</H1>
+    <DL><![CDATA[<p>]]>
     <xsl:apply-templates/>
+    </DL>
   </xsl:template>
   <xsl:template match="folder">
     <DL><![CDATA[<p>]]><![CDATA[<DT>]]><H3>
