@@ -1069,7 +1069,7 @@
             {
               whenever not found goto ef;
               select BLOG..blog_utf2wide(BV_NAME), BV_E_MAIL, BV_HOME, BV_ID, BV_NOTIFY, BV_POST_ID into
-                self.name1.ufl_value, self.email1.ufl_value, self.url1.ufl_value, self.vid,
+                self.name1.ufl_value, self.email1.ufl_value, self.openid_url.ufl_value, self.vid,
                 is_notify, _post_id from
                 BLOG.DBA.SYS_BLOG_VISITORS where BV_BLOG_ID = self.blogid and BV_ID = cvid;
               if (_post_id = self.postid)
@@ -1120,6 +1120,9 @@
 	    if (self.show_comment_input)
 	      {
 	  ?>
+	  <![CDATA[
+	  <script type='text/javascript' src='/weblog/public/scripts/openid.js'></script>
+	  ]]>
           <table class="postcomment" border="0">
             <tr>
               <th>Name</th>
@@ -1145,8 +1148,19 @@
             </tr>
             <tr>
               <th>Web Site</th>
-              <td>
-                <v:text xhtml_class="textbox" name="url1" value="" xhtml_size="50"/>
+	      <td id='outerbox' style='padding: 0.4em; margin-left: 100px; margin-right: 100px; width: auto;' nowrap="true">
+		  <v:text name="oid_sig" value="--self.openid_sig" type="hidden" xhtml_id="oid_sig" />
+		  <span id='img'>
+		      <img src="<?V case when length (self.openid_sig) then '/weblog/public/images/login-bg.gif' else '' end ?>"
+			  width="16" height="16" hspace="1"
+			  style="<?V case when length (self.openid_sig) then '' else 'display: none;' end ?>" />
+		  </span>
+		  <v:text xhtml_class="textbox" name="openid_url" value="" xhtml_size="50" xhtml_id="openid_url"/>
+		  <input type='button' value='Verify' id='verify_button' onclick="javascript: onClickVerify(event);"
+		      class="textbox"
+		      />
+		  <br/>
+		  <span id='msg'></span>
               </td>
               <td/>
       </tr>
@@ -1270,7 +1284,7 @@
 	    return;
 	  }
 
-	  if (length (self.url1.ufl_value) and lower (self.url1.ufl_value) not like 'http://%' and lower (self.url1.ufl_value) not like 'https://%')
+	  if (length (self.openid_url.ufl_value) and lower (self.openid_url.ufl_value) not like 'http://%' and lower (self.openid_url.ufl_value) not like 'https://%')
            {
 	     self.vc_error_message := 'Invalid Web Site URL, pleasee enter correct value';
 	     self.vc_is_valid := 0;
@@ -1303,7 +1317,7 @@
            insert into BLOG.DBA.BLOG_COMMENTS
             (BM_BLOG_ID, BM_POST_ID, BM_COMMENT, BM_NAME, BM_E_MAIL, BM_HOME_PAGE, BM_ADDRESS, BM_TS, BM_REF_ID)
             values
-            (self.blogid, self.postid, self.comment2, self.name1.ufl_value, self.email1.ufl_value, self.url1.ufl_value, http_client_ip (), now (), self.comm_ref);
+            (self.blogid, self.postid, self.comment2, self.name1.ufl_value, self.email1.ufl_value, self.openid_url.ufl_value, http_client_ip (), now (), self.comm_ref);
            comm_id := identity_value ();
 
 	   declare cu vspx_field;
@@ -1319,9 +1333,6 @@
              }
 
                        self.comment2 := '';
-                       --self.dss.vc_data_bind (e);
-                       --self.posts.vc_data_bind (e);
-                       --self.comments_list.vc_data_bind (e);
                        if (self.cook1.ufl_selected)
                        {
                         if (self.vid is not null)
@@ -1335,7 +1346,7 @@
 			    update BLOG.DBA.SYS_BLOG_VISITORS set
 			      BV_NAME = self.name1.ufl_value,
 			      BV_E_MAIL = self.email1.ufl_value,
-			      BV_HOME = self.url1.ufl_value,
+			      BV_HOME = self.openid_url.ufl_value,
 			      BV_NOTIFY = self.notify_me.ufl_selected,
 			      BV_POST_ID = self.postid
 			      where BV_BLOG_ID = self.blogid and BV_ID = self.vid;
@@ -1346,7 +1357,7 @@
 			      insert replacing BLOG.DBA.SYS_BLOG_VISITORS (BV_ID, BV_BLOG_ID, BV_NAME, BV_E_MAIL,
 			      BV_HOME, BV_IP, BV_NOTIFY, BV_POST_ID, BV_VIA_DOMAIN)
 			      values (self.vid, self.blogid, self.name1.ufl_value,
-			      self.email1.ufl_value, self.url1.ufl_value, http_client_ip (),
+			      self.email1.ufl_value, self.openid_url.ufl_value, http_client_ip (),
 			      self.notify_me.ufl_selected, self.postid, self.host);
                           }
 			expires := date_rfc1123 (dateadd ('month', 1, now()));

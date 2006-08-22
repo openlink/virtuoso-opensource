@@ -187,6 +187,7 @@
     <v:variable name="cm_ctr" type="int" default="0" persist="temp" />
     <v:variable name="official_host" type="varchar" default="null" persist="temp" />
     <v:variable name="official_host_label" type="varchar" default="null" persist="temp" />
+    <v:variable name="openid_sig" type="varchar" default="null" persist="temp" param-name="oid_sig"/>
 
     <!-- eRDF data -->
 
