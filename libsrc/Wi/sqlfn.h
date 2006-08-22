@@ -671,6 +671,7 @@ void remote_table_source_input (remote_table_source_t * ts, caddr_t * inst,
 
 #if UNIVERSE
 void rds_reaper (void);
+int vdb_is_col_visible (dbe_key_t * key, dbe_column_t * col);
 #endif
 
 caddr_t deref_node_main_row (it_cursor_t * it, buffer_desc_t ** buf,
