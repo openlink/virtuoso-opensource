@@ -54,7 +54,7 @@
                 self.acct := _acct;
               self._item := cast(deserialize(decode_base64(get_keyword('item', self.vc_page.vc_event.ve_params))) as varchar);
               self._item_type := atoi(get_keyword('item_type', self.vc_page.vc_event.ve_params, '0'));
-              dbg_obj_print(self.acct, self._item, self._item_type);
+              --dbg_obj_print(self.acct, self._item, self._item_type);
             ]]>
           </v:script>
         </v:before-data-bind>

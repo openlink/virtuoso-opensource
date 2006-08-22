@@ -43,7 +43,7 @@
       <v:variable name="pks_v" persist="1" type="any" default="null" />
       <v:variable name="pkeys" persist="0" type="any" default="null" />
       <v:variable name="avail" persist="0" type="any" default="null" />
-      <v:variable name="tbl" persist="0" type="any" default="null" param-name="tbl"/>
+      <v:variable name="tbl" persist="0" type="varchar" default="null" param-name="tbl"/>
       <v:variable name="proc_col_mode" persist="temp" type="any" default="null" />
       <v:variable name="xsd_types" persist="temp" type="any" default="null" />
       <v:variable persist="1" name="vdb_object_errs" type="any" default="null"/>
@@ -114,7 +114,7 @@
                     <tr>
 		      <td valign="top">
 			<!-- MAIN -->
-			<h3><v:label name="tbl_tit" value="--self.tbl"/></h3>
+			<h3><v:label name="tbl_tit" value="--ltrim (self.tbl, '.')"/></h3>
 			<v:form name="link_options_form" type="simple" method="POST" action="">
 			  <v:on-init><![CDATA[
 			    if (self.pkeys is null)
@@ -132,8 +132,13 @@
 				if (not length (q))
 			          q := null;
 				o := name_part (self.tbl, 1);
+				if (not isstring (o) or length (o) = 0)
+				  {
+				    o := null;
+				  }
 				n := name_part (self.tbl, 2);
 
+				--dbg_obj_print (q,o,n);
 				cols := sql_columns (self.current_dsn, q, o, n, NULL);
 				avail := vector ();
 				foreach (any elm in cols) do

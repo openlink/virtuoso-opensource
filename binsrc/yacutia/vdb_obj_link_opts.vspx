@@ -269,17 +269,24 @@ againt:
         _l_tbl := arr[i][1];
 
         http ('<tr class="">');
-	if (_r_tbl[0] is not null)
+	if (length (_r_tbl[0]))
 	  {
 	    http (sprintf('<td>%s.%s.%s</td>', _r_tbl[0], _r_tbl[1], _r_tbl[2]));
 	    rtbl_name := concat (_r_tbl[0], '.', _r_tbl[1], '.', _r_tbl[2]);
 	  }
-	else
+	else if (length (_r_tbl[1]))
 	  {
 	    http (sprintf('<td>%s.%s</td>', _r_tbl[1], _r_tbl[2]));
 	    rtbl_name := concat ('.', _r_tbl[1], '.', _r_tbl[2]);
           }
-        http (sprintf('<td><input type="text" name="%s_catalog_%d" value="%s" size="3" /></td>', pref, i, coalesce (_l_tbl[0], 'DB')));
+        else
+          {
+	    http (sprintf('<td>%s</td>', _r_tbl[2]));
+	    rtbl_name := '..' || _r_tbl[2];
+          }
+	http (sprintf('<td><input type="text" name="%s_catalog_%d" value="%s" size="3" /></td>', pref, i,
+	   case when length (_l_tbl[0]) then _l_tbl[0] else 'DB' end
+	));
         http (sprintf('<td><input type="text" name="%s_schema_%d" value="%s" size="15" /></td>', pref, i, _l_tbl[1]));
         http (sprintf('<td><input type="text" name="%s_name_%d" value="%s" size="30" /></td>', pref, i, _l_tbl[2]));
 	http ('<td>');

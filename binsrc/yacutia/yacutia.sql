@@ -1325,6 +1325,7 @@ vdb_link_tables (in pref any,
       n_name := get_keyword (sprintf ('%s_name_%d', pref, i), params, '');
 
       --dbg_printf ('local  :%s.%s.%s', n_qual, n_user, n_name);
+      --dbg_obj_print (n_qual,n_user,n_name, rname);
 
       if (n_qual = '' or n_user = '' or n_name = '')
         {

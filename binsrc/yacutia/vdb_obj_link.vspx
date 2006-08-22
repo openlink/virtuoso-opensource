@@ -629,18 +629,12 @@
           while (n < size)
             {
 
-	      if (aref (aref (user_table_list, n), 0) is not null)
-	        {
-                   table_name := sprintf ('%s.%s.%s', aref (aref (user_table_list, n), 0),
-                                                 aref (aref (user_table_list, n), 1),
-						 aref (aref (user_table_list, n), 2));
-		}
+	      if (length (user_table_list[n][0]))
+	       table_name := sprintf ('%s.%s.%s', user_table_list[n][0], user_table_list[n][1], user_table_list[n][2]);
+	      else if (length (user_table_list[n][1]))
+	        table_name := sprintf ('%s.%s', user_table_list[n][1], user_table_list[n][2]);
 	      else
-                {
-                   table_name := sprintf ('%s.%s',
-                                                 aref (aref (user_table_list, n), 1),
-						 aref (aref (user_table_list, n), 2));
-                }
+                table_name := user_table_list[n][2];
 
               table_value := encode_base64 (serialize (vector (aref (aref (user_table_list, n), 0),
                                                                aref (aref (user_table_list, n), 1),
