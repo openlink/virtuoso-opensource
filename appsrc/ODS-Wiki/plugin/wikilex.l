@@ -630,9 +630,9 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 <INITIAL,TABLELINE>^({WS}?)"</noautolink>"{WS_NL}		{ STATE(wlex_noautolink) = 0; }
 
 	/* Other links. Their priorities are higher than anything else except <verbatim> */
-<INITIAL,TABLELINE>{MAILTO}				{ wlex_ahref (yytext, "mailto", yytext+7); }
-<INITIAL,TABLELINE>{EMAIL}				{ wlex_ahref (yytext, "mailto", yytext); }
-<INITIAL,TABLELINE>{ABSURI}				{ wlex_ahref (yytext, "absuri", yytext); }
+<INITIAL,TABLELINE>{MAILTO}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "mailto", yytext+7); else COPYTEXT; }
+<INITIAL,TABLELINE>{EMAIL}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "mailto", yytext); else COPYTEXT; }
+<INITIAL,TABLELINE>{ABSURI}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "absuri", yytext); else COPYTEXT; }
 <INITIAL,TABLELINE>"[[["{LINKTITLE}"]]]"		{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword");  }
 <INITIAL,TABLELINE>"[["{PREDICATE}"::"{FORCEDWIKILINK}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", NULL, "forcedwikiword");  }
 <INITIAL,TABLELINE>"[["{MAILTO}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "mailto"); }
@@ -708,68 +708,19 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 	/* Font processing */
 <INITIAL,TABLELINE>{WS}*{MFONTMODS}		{ COPYTEXT; }
 
+<INITIAL,TABLELINE>{WS}*"__"/{NOTAWORDSTART}	{ if (WLEX_FONT_BI == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>{WS}*"*"/{NOTAWORDSTART}	{ if (WLEX_FONT_B == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>{WS}*"_"/{NOTAWORDSTART}	{ if (WLEX_FONT_I == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>{WS}*"=="/{NOTAWORDSTART}	{ if (WLEX_FONT_BTT == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>{WS}*"="/{NOTAWORDSTART}	{ if (WLEX_FONT_TT == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
 
-<INITIAL,TABLELINE>^"=="/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>^"__"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>^"*"/{NOTAWORDSTART}		{ COPYTEXT; }
-<INITIAL,TABLELINE>^"_"/{NOTAWORDSTART}		{ COPYTEXT; }
-<INITIAL,TABLELINE>^"="/{NOTAWORDSTART}		{ COPYTEXT; }
+<INITIAL,TABLELINE>{WS}*"__"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BI); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}*"*"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}*"_"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}*"=="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BTT); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}*"="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_TT); } else COPYTEXT; }
 
-<INITIAL,TABLELINE>{WS}"=="/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"__"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"*"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"_"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"="/{NOTAWORDSTART}	{ COPYTEXT; }
-
-<INITIAL,TABLELINE>{NOTAWORDEND}"=="/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{NOTAWORDEND}"__"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{NOTAWORDEND}"*"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{NOTAWORDEND}"_"/{NOTAWORDSTART}	{ COPYTEXT; }
-<INITIAL,TABLELINE>{NOTAWORDEND}"="/{NOTAWORDSTART}	{ COPYTEXT; }
-
-<INITIAL,TABLELINE>"=="/{NOTAWORDSTART}	{
-        if (WLEX_FONT_BTT == STATE(wlex_font))
-	  wlex_font (WLEX_FONT_DEFAULT);
-        else if (WLEX_FONT_TT == STATE(wlex_font))
-	  {
-	    wlex_font (WLEX_FONT_DEFAULT);
-	    PRINTTEXT("=");
-	  }
-        else COPYTEXT;
-    }
-
-<INITIAL,TABLELINE>"__"/{NOTAWORDSTART}	{
-	if (WLEX_FONT_BI == STATE(wlex_font))
-	   wlex_font (WLEX_FONT_DEFAULT);
-        else if (WLEX_FONT_I == STATE(wlex_font))
-	  {
-	    wlex_font (WLEX_FONT_DEFAULT);
-	    PRINTTEXT("_");
-	  }
-	else COPYTEXT;
-    }
-
-<INITIAL,TABLELINE>"*"/{NOTAWORDSTART}	{ if (WLEX_FONT_B == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>"_"/{NOTAWORDSTART}	{ if (WLEX_FONT_I == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>"="/{NOTAWORDSTART}	{ if (WLEX_FONT_TT == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-
-<INITIAL,TABLELINE>{WS}"=="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BTT); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"__"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BI); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"*"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
 <TABLEHEADER>{WS}"*"		{ STATE(wlex_in_any_text) = 1; }
-<INITIAL,TABLELINE>{WS}"_"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_TT); } else COPYTEXT; }
-
-<INITIAL,TABLELINE>^"=="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BTT); } else COPYTEXT; }
-<INITIAL,TABLELINE>^"__"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BI); } else COPYTEXT; }
-<INITIAL,TABLELINE>^"*"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
-<TABLEHEADER>^"*"		{ STATE(wlex_in_any_text) = 1; }
-<INITIAL,TABLELINE>^"_"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
-<INITIAL,TABLELINE>^"="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_TT); } else COPYTEXT; }
-
-
-
-
  
 	/* Other formatting */
 <INITIAL,TABLELINE>^({WS}?)"---"			{ PRINT("<HR />"); }
