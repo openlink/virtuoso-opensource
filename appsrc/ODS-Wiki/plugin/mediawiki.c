@@ -39,7 +39,7 @@
 #define mlex_dbg_printf(x)
 #endif
 
-#define WIKIV_VERSION "0.5"
+#define WIKIV_VERSION "0.1"
 
 static dk_mutex_t *wikiv_lexer_mutex = NULL;
 
@@ -201,7 +201,7 @@ caddr_t bif_wikiv_lexer (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 
 caddr_t bif_wikiv_name (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
-  return box_string ("MediaWiki");
+  return box_dv_short_string  ("MediaWiki");
 }
 
 void wikiv_connect (void *appdata)

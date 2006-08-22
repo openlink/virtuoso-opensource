@@ -405,14 +405,17 @@ char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
 
 void wlex_split_forced_link (wlex_state_t *st, char *text, char *delim)
 {
+  int offset = 1;
   bufmem_t *href = &(st->hrefbuf);
   bufmem_t *title = &(st->titlebuf);
   int textlen = strlen (text);
   char *href_start, *href_end, *title_start, *title_end;
   bm_alloc (href, textlen);
   bm_alloc (title, textlen);
-  href_start = text + 2; /* to omit first "[[" */  
-  title_end = text + textlen - 2; /* '... - 2' is to omit last "]]" */
+  if ('[' == text[1])
+    offset = 2;
+  href_start = text + offset; /* to omit first "[[" */  
+  title_end = text + textlen - offset; /* '... - 2' is to omit last "]]" */
   /* handle the case of triple "[" */
   if ((href_start[0] == '[') && (title_end > href_start)  && (title_end[-1] == ']'))
     {
@@ -520,11 +523,50 @@ int wlex_count_header_level (char * line)
 }
 
 /*! counts number of conseq symbol appearence */
-int strcount (char * line, char symbol)
+int char_count (char * line, char symbol)
 {
   int counter = 0;
   while (*line++ == symbol) ++counter;
   return counter;
+}
+
+int strcount_int (char * line, char* symbols)
+{
+  char* sym;
+  for (sym = symbols; sym[0]; ++sym)
+    {
+      int cnt = char_count (line, sym[0]); 
+      if (cnt)
+        return cnt;
+    }
+  return 0;
+}
+
+/*! counts number of conseq symbols appearence  */
+int strcount (char *line, char *symbols)
+{
+  int counter = 0;
+  while (line[0])
+    {
+      int cnt = strcount_int (line, symbols);
+      if (!cnt)
+		return counter;
+	  counter += cnt;
+	  line += cnt;
+    }
+  return counter;
+}
+
+
+void
+wlex_mediawiki_list (char* line)
+{
+  int cnt = strcount (line, "*#");
+  /* assert (c > 0) */
+  if (line[cnt-1] == '#')
+    wlex_list (cnt, WLEX_LIST_OL, NULL);
+  else
+    wlex_list (cnt, WLEX_LIST_UL, NULL);
 }
 
 #ifndef WLEX_TEST
@@ -598,6 +640,7 @@ DOCTYPE		("<!DOCTYPE")([^>]*>)
 MFONTMOD	("\*"|"=="|"__")
 MFONTMODNEXT	([\*=_])
 MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
+LISTMARK    ("*"|"#")
 %%
 
 	/* Verbatim */
@@ -636,28 +679,32 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 <INITIAL,TABLELINE>^({WS}?)"</noautolink>"{WS_NL}		{ STATE(wlex_noautolink) = 0; }
 
 	/* Other links. Their priorities are higher than anything else except <verbatim> */
-<INITIAL,TABLELINE>{MAILTO}				{ wlex_ahref (yytext, "mailto", yytext+7); }
-<INITIAL,TABLELINE>{EMAIL}				{ wlex_ahref (yytext, "mailto", yytext); }
-<INITIAL,TABLELINE>{ABSURI}				{ wlex_ahref (yytext, "absuri", yytext); }
+<INITIAL,TABLELINE>{MAILTO}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "mailto", yytext+7); else COPYTEXT; }
+<INITIAL,TABLELINE>{EMAIL}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "mailto", yytext); else COPYTEXT; }
+<INITIAL,TABLELINE>{ABSURI}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "absuri", yytext); else COPYTEXT; }
 <INITIAL,TABLELINE>"[[["{LINKTITLE}"]]]"		{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword");  }
 <INITIAL,TABLELINE>"[["{PREDICATE}"::"{FORCEDWIKILINK}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", NULL, "forcedwikiword");  }
 <INITIAL,TABLELINE>"[["{MAILTO}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "mailto"); }
-<INITIAL,TABLELINE>"[["{MAILTO}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "mailto");  }
+<INITIAL,TABLELINE>"[["{MAILTO}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "mailto");  }
 <INITIAL,TABLELINE>"[["{WIKIWORD}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "wikiword"); }
-<INITIAL,TABLELINE>"[["{WIKIWORD}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "wikiword");  }
+<INITIAL,TABLELINE>"[["{WIKIWORD}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "wikiword");  }
 <INITIAL,TABLELINE>"[["{QWIKIWORD}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "qwikiword");  }
-<INITIAL,TABLELINE>"[["{QWIKIWORD}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "qwikiword");  }
+<INITIAL,TABLELINE>"[["{QWIKIWORD}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "qwikiword");  }
 <INITIAL,TABLELINE>"[["{INTERWIKI}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "interwiki");  }
-<INITIAL,TABLELINE>"[["{INTERWIKI}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "interwiki");  }
+<INITIAL,TABLELINE>"[["{INTERWIKI}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "interwiki");  }
 <INITIAL,TABLELINE>"[["{DUMMYURI}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
-<INITIAL,TABLELINE>"[["{DUMMYURI}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "absuri"); }
+<INITIAL,TABLELINE>"[["{DUMMYURI}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "absuri"); }
 <INITIAL,TABLELINE>"[["{FRAG}" "{LINKTITLE}"]]"		{ wlex_forced_link (STATEPTR, yytext, " ", 0, "anchorhere"); }
-<INITIAL,TABLELINE>"[["{FRAG}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "anchorhere");  }
+<INITIAL,TABLELINE>"[["{FRAG}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "anchorhere");  }
 <INITIAL,TABLELINE>"[["{LINKTITLE}"]]"			{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword"); }
-<INITIAL,TABLELINE>"[["{FORCEDWIKILINK}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 1, "forcedwikiword");  }
-<INITIAL,TABLELINE>"[["{LOCALRES}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "reluri");  }
+<INITIAL,TABLELINE>"[["{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 1, "forcedwikiword");  }
+<INITIAL,TABLELINE>"[["{LOCALRES}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "reluri");  }
 <INITIAL,TABLELINE>"[["{PREDICATE}"::"{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", "|", "forcedwikiword");  }
 <INITIAL,TABLELINE>"[["{PREDICATE}":="{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_div_with_pred (STATEPTR, yytext, ":=", "|", "semanticvalue");  }
+<INITIAL,TABLELINE>"["{ABSURI}"|"{LINKTITLE}"]"		{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
+<INITIAL,TABLELINE>"["{ABSURI}{WS}{LINKTITLE}"]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
+<INITIAL,TABLELINE>"[["{LINKTITLE}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 1, "forcedwikiword"); }
+
 
 	/* HTML tags */
 <INITIAL>"<"("pre"|"PRE")[^\r\n<>]*">"	{ if (!STATE(wlex_xmp_depth)) STATE(wlex_format_lock) += 1; PRINT(yytext); }
@@ -703,25 +750,21 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 <INITIAL,TABLELINE>"!!"		{ if (STATE(wlex_headerlevel)) PRINT("<NOTOC />"); else PRINT(yytext); }
 
 	/* Lists */
-<INITIAL,TABLELINE>^("*")+{WS}			{ BEGIN(INITIAL); wlex_list ( strcount (yytext, '*'), WLEX_LIST_UL, NULL); }
+<INITIAL,TABLELINE>^{LISTMARK}+			{ BEGIN(INITIAL); wlex_mediawiki_list (yytext); }
 <INITIAL,TABLELINE>^("*:"){WS}+			{ PRINT (yytext + 2); } 
-<INITIAL,TABLELINE>^([ ][ ][ ])+[1-9]([0-9]*)([.]?){WS}	{ BEGIN(INITIAL); wlex_list ((strdigit(yytext) - yytext) / 3, WLEX_LIST_OL, NULL); }
-<INITIAL,TABLELINE>^([ ][ ][ ])+{DEFTERM}":"{WS}	{ BEGIN(INITIAL); wlex_list ((strnonws(yytext) - yytext) / 3, WLEX_LIST_DL, yytext); }
-<INITIAL,TABLELINE>^([\t])+"*"{WS}			{ BEGIN(INITIAL); wlex_list (strchr(yytext, '*') - yytext, WLEX_LIST_UL, NULL); }
-<INITIAL,TABLELINE>^([\t])+[1-9]([0-9]*)([.]?){WS}	{ BEGIN(INITIAL); wlex_list (strdigit(yytext) - yytext, WLEX_LIST_OL, NULL); }
-<INITIAL,TABLELINE>^([\t])+{DEFTERM}":"{WS}		{ BEGIN(INITIAL); wlex_list (strnonws(yytext) - yytext, WLEX_LIST_DL, yytext); }
+
 
 	/* Font processing */
        /*<INITIAL,TABLELINE>{WS}*{MFONTMODS}		{ COPYTEXT; } */
 
-<INITIAL,TABLELINE>"'''''"/{NOTAWORDSTART}	{ if (WLEX_FONT_BI == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>"'''"/{NOTAWORDSTART}	{ if (WLEX_FONT_B == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>"''"/{NOTAWORDSTART}	{ if (WLEX_FONT_I == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>"="/{NOTAWORDSTART}	{ if (WLEX_FONT_TT == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>{WS}*"'''''"/{NOTAWORDSTART}	{ if (WLEX_FONT_BI == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>{WS}*"'''"/{NOTAWORDSTART}	{ if (WLEX_FONT_B == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>{WS}*"''"/{NOTAWORDSTART}	{ if (WLEX_FONT_I == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
+<INITIAL,TABLELINE>{WS}*"="/{NOTAWORDSTART}	{ if (WLEX_FONT_TT == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
 
-<INITIAL,TABLELINE>{WS}"'''''"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BI); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"'''"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}"''"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}*"'''''"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BI); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}*"'''"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}*"''"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
 <TABLEHEADER>{WS}"*"		{ STATE(wlex_in_any_text) = 1; }
 
 
