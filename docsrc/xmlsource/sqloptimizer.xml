@@ -48,6 +48,15 @@
   columns.  Additionally, histograms can be made for value distribution of
   individual columns.</para>
 
+<para>
+
+Virtuoso automatically maintains statistics about tables in the local
+database.  When tables are attached from known types of remote DBMS's,
+Virtuoso also attempts to retrieve statistics information if
+available.  
+
+The sys_stat_analyze or sys_db_stat stoerd procedures can be used to force an update of statistics, also recompiling all SQL statements or procedures depending on these statistics.  Once this is done, this overrides the automatic statistics.  The values of automatic statistics can be seen in the SYS_COL_AUTO_STAT table.
+</para>
   <para>The stored procedure:</para>
   <para><link linkend="fn_sys_stat_analyze"><function>DB.DBA.SYS_STAT_ANALYZE
     <paramdef>in <parameter>full_table_name</parameter> varchar</paramdef>
@@ -55,7 +64,9 @@
     </function></link></para>
 
   <para>constructs the basic table statistics and feeds it into the
-  DB.DBA.SYS_COL_STAT system table.</para>
+  DB.DBA.SYS_COL_STAT system table.
+The <link linkend="fn_sys_db_stat">DB.DBA.SYS_DB_STAT</link> stored procedure performs this operation on the entire database.
+</para>
 
   <para>The stored procedure:</para>
   <para><link linkend="fn_sys_stat_histogram"><function>DB.DBA.SYS_STAT_HISTOGRAM
@@ -67,7 +78,7 @@
 
   <para>constructs table column histogram and feeds it into the
   DB.DBA.SYS_COL_HIST system table.  The default value of prec, in both cases,
-  is 1, which implies that all rows will be examine.</para>
+  is 5, which implies that  a five percent sample of the table will be used.  A   percentage of 0 means thatthe whole table will be read.</para>
 
 <example id="ex_sqlopt1"><title>Demonstration of the STAT_ANALYSE &amp; STAT_HISTOGRAM Procedures</title>
 <para>The following script is intended for use with the ISQL program as the

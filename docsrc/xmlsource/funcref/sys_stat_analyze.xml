@@ -59,15 +59,14 @@ discarded, because some of them may compile differently in the light of the new 
     <refsect2><title>table_name</title>
       <para>The full name of the table exactly as in the KEY_TABLE column of SYS_KEYS.</para></refsect2>
     <refsect2><title>pcnt</title>
-      <para>Determines how much of the database to gather statistics for.  
-	  Legal values are 0, or between 5 - 500.  Any non-zero value will gather 
-	  information on a random subset of the database tables, the greater the value, 
-	  the larger the subset.</para></refsect2>
+      <para>Determines the sample size for statistics gathering.  
+	  A value of 0 will read the whole  table.  The default is 5, for an approximately five percentsample of the table.
+</para></refsect2>
     <refsect2><title>ignore_vdb</title>
       <para>Determines whether remote tables are considered.  By default 
 	  remote tables (ignore_vdb = 1) are ignored.  Setting this value to 0 
 	  will cause this function to gather statistical information for remote 
-	  tables also.</para></refsect2>
+	  tables also.  A percentage of 0 will read the remote table from beginning to end.  A non-zero percentage will access the statistics tables of the remote DBMS if it is of a supported type, see the sys_stat_vdb_mappers table. </para></refsect2>
  </refsect1>
 	
  <!--

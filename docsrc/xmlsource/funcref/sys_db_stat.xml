@@ -60,23 +60,18 @@ for each column, COL, traversed in the database:</para>
  <member>CS_N_ROWS - count (XXX)</member>
 </simplelist>
 
-<para>If remote tables are not ignored and random traversal is switched on 
-then SYS_DB_STAT reads the first 1000 rows and restores statistics by the first 
-1000 rows of table.</para>
+
 
   </refsect1>
   <refsect1 id="params_SYS_DB_STAT"><title>Parameters</title>
     <refsect2><title>pcnt</title>
-      <para>Rate that affects percentage of database coverage. If it is less than 5 
-then this parameter is ignored. If pcnt more than 500 then SYS_DB_STAT acts 
-as if the parameter was equal to 500. There is no accurate conformity between 
-pcnt and percentage of databse coverage, but it is known that 5 usually means 
-10 percent of covarage and 500 means almost 100 percent.</para></refsect2>
+      <para>Rate that affects percentage of database coverage.  Zero means that the whole database is read. The default is 5, for a random sample of approximately 5 percent of each table.</para>
+</refsect2>
     <refsect2><title>ignore_vdb</title>
       <para>By default SYS_DB_STAT does not analyze the remote tables. To 
 allow statistics gathering over linked tables, set this parameter to zero. 
 Remote tables can be very large or access to them can be very slow or both. 
-If this parameter is set to zero and pcnt is zero, SYS_DB_STAT could take a lot of time.</para></refsect2>
+If this parameter is set to zero and pcnt is zero, SYS_DB_STAT will read the remote tables from start to end which may take very long.  If pcnt is non-zero, this function will use its knowledge of the remote DBMS to get statistics in a DBMS specific manner if the DBMS is supported.  See sys_stat_vdb_mappers table.</para></refsect2>
   </refsect1>
   <refsect1 id="ret_SYS_DB_STAT"><title>Return Types</title>
     <para>None.</para>
