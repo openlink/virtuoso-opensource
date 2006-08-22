@@ -75,11 +75,17 @@
         self.fNode := concat('t#', self.fTag);
       } else if (not is_empty_or_null(self.link)) {
         self.fTab := 'feeds';
-        self.fNode := 'p#';
-        if (self.domain_id <> -1)
           self.fNode := 'c#';
+        if (self.domain_id <= -1)
+          self.fNode := 'p#';
         self.fNode := concat(self.fNode, cast(coalesce((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = cast(self.link as integer)), '') as varchar));
       }
+      self.state_init();
+    ]]>
+  </v:method>
+
+  <v:method name="state_init" arglist="">
+    <![CDATA[
       if (isnull(self.fState))
         self.fState := self.fxState;
       if (is_empty_or_null(self.fNode))
@@ -105,7 +111,7 @@
     <![CDATA[
       declare N, node_type, node_id, node, nodes any;
 
-      if (domain_id = -2) {
+      if (domain_id <= -1) {
         if (self.fNode like 'c%')
           self.fNode := '';
       } else {
@@ -176,7 +182,7 @@
         alt := 'Open';
         if (ENEWS.WA.vector_contains(self.fState, nodes[N+1])) {
           alt := 'Close';
-          if (node_type in ('f', 'S', 'w'))
+          if (node_type in ('f', 'S', 'w', 'P'))
             image := 'folder_open_16.png';
           if (node_type in ('s'))
             image := 'sfolder_16.jpg';
@@ -305,7 +311,7 @@
         <div class="feed_subpane1">
               <?vsp
             if (self.fTab = 'feeds')
-              if (self.domain_id = -2) {
+              if (self.domain_id <= -1) {
                 self.showTree(1, self.domain_id, 'r#0', '');
                 } else {
                 self.showTree(1, self.domain_id, 'r#1', '');
@@ -325,6 +331,7 @@
                       declare node any;
 
                       -- touggle
+                      self.state_init();
                       node := get_keyword('pt_toggle', e.ve_params, '');
                       if (node <> '')
                         if (ENEWS.WA.vector_contains(self.fState, node)) {
@@ -338,6 +345,8 @@
                       if (node <> '')
                         self.fNode := node;
 
+                      self.fxNode := self.fNode;
+                      self.fxState := self.fState;
                         self.vc_data_bind (e);
                      ]]>
                     </v:on-post>

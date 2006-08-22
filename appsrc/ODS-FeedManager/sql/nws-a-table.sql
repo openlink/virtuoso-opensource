@@ -801,7 +801,12 @@ create procedure ENEWS.WA.tags_procedure (
 ;
 
 ENEWS.WA.exec_no_error ('
-  create procedure view ENEWS.WA.TAGS_VIEW as ENEWS.WA.tags_procedure (domain_id, account_id, item_id) (EFTV_TAG varchar)
+  drop view ENEWS.WA.TAGS_VIEW
+')
+;
+
+ENEWS.WA.exec_no_error ('
+  create procedure view ENEWS..TAGS_VIEW as ENEWS.WA.tags_procedure (domain_id, account_id, item_id) (EFTV_TAG varchar)
 ')
 ;
 

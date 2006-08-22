@@ -3877,7 +3877,7 @@ create procedure ENEWS.WA.export_rss_sqlx_int(
   http('    XMLELEMENT(\'guid\', EFI_GUID), \n', retValue);
   http('    XMLELEMENT(\'link\', EFI_LINK), \n', retValue);
   http('    XMLELEMENT(\'pubDate\', ENEWS.WA.dt_rfc1123 (EFI_PUBLISH_DATE)),\n', retValue);
-  http ('    (select XMLAGG (XMLELEMENT (\'category\', EFTV_TAG)) from ENEWS.WA.TAGS_VIEW where domain_id = <DOMAIN_ID> and account_id = <USER_ID> and item_id = EFI_ID), \n', retValue);
+  http ('    (select XMLAGG (XMLELEMENT (\'category\', EFTV_TAG)) from ENEWS..TAGS_VIEW where domain_id = <DOMAIN_ID> and account_id = <USER_ID> and item_id = EFI_ID), \n', retValue);
   http('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', ENEWS.WA.dt_iso8601 (EFI_PUBLISH_DATE)),\n', retValue);
   http('    ENEWS.WA.enclosure_render_sqlx (EFI_DATA)))\n', retValue);
   http('from (select top 15  \n', retValue);
@@ -4289,8 +4289,9 @@ create procedure ENEWS.WA.normalize_space(
 create procedure ENEWS.WA.utf2wide (
   inout S any)
 {
-  declare exit handler for sqlstate '*' { return S; };
+  if (isstring (S))
   return charset_recode (S, 'UTF-8', '_WIDE_');
+  return S;
 }
 ;
 
@@ -4603,7 +4604,7 @@ create procedure ENEWS.WA.enews_tree2(
   retValue := vector ();
 
   if (node_type = 'P')
-   for (select distinct top 10 EF_ID, EF_TITLE from ENEWS.WA.FEED order by EF_LAST_UPDATE desc) do
+    for (select distinct top 10 EF_ID, EF_TITLE from ENEWS.WA.FEED, ENEWS.WA.FEED_ITEM where EFI_FEED_ID = EF_ID order by EFI_LAST_UPDATE desc) do
      retValue := vector_concat(retValue, vector(EF_TITLE, sprintf('p#%d', EF_ID), sprintf('%s/p#%d', path, EF_ID)));
 
   if (node_type = 'f') {
@@ -5046,7 +5047,7 @@ create procedure ENEWS.WA.test (
     if (__SQL_STATE = 'EMPTY')
       signal ('TEST', sprintf('Field ''%s'' cannot be empty!<>', valueName));
     if (__SQL_STATE = 'CLASS') {
-      if (valueType = 'free-text') {
+      if (valueType in ('free-text', 'tags')) {
         signal ('TEST', sprintf('Field ''%s'' contains invalid characters or noise words!<>', valueName));
       } else {
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters!<>', valueName));
@@ -5110,11 +5111,11 @@ create procedure ENEWS.WA.test (
 
   } else if (valueType = 'varchar') {
     tmp := get_keyword('minLength', params);
-    if (not isnull(tmp) and (length(value) < tmp))
+    if (not isnull(tmp) and (length(ENEWS.WA.utf2wide(value)) < tmp))
       signal('MINLENGTH', cast(tmp as varchar));
 
     tmp := get_keyword('maxLength', params);
-    if (not isnull(tmp) and (length(value) > tmp))
+    if (not isnull(tmp) and (length(ENEWS.WA.utf2wide(value)) > tmp))
       signal('MAXLENGTH', cast(tmp as varchar));
   }
   return value;

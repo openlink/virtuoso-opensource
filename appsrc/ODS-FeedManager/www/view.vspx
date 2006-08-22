@@ -106,14 +106,15 @@
 
             tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
             tags := ENEWS.WA.tags2vector (tags);
-            tt := 'Tags:';
+            tt := '';
             for (i := 0; i < length(tags); i := i + 1)
-              tt := concat(tt, sprintf(' %s,', tags[i]));
-            tt := trim(tt, ',');
-            if (tt = 'Tags:')
-              tt := concat(tt, ' None');
+              tt := tt || sprintf(' %s |', tags[i]);
+            tt := trim(tt, '|');
+            if (tt <> '')
+              tt := 'Tags:' || tt;
             http(sprintf('<div id="feed_header">&nbsp;<b>Post</b>: <i>%s</i> | <b>Author</b>: <i>%s</i> | <b>Feed</b>: <i>%s</i>%s</div>', lt, author, ut, en));
             http(sprintf('<div id="feed_subheader">&nbsp;<b>Posted on</b>: <i>%s</i>, <b>Updated on</b>: <i>%s</i>| %s %s</div>', ENEWS.WA.dt_value(EFI_PUBLISH_DATE, EFI_LAST_UPDATE, account_name), ENEWS.WA.dt_value(EFI_LAST_UPDATE, null, account_name), mt, ct));
+            if (tt <> '')
             http(sprintf('<div id="feed_subheader">&nbsp;%s</div>', tt));
             http('<div id="feed_body">');
             xml_tree_doc_set_ns_output(description, 1);
@@ -193,6 +194,7 @@
             bt := '';
             ct := '';
             cv := '';
+            tt := '';
             if (account_id >= 0) {
             if (coalesce(EFID_READ_FLAG, 0) = 1) {
                 rt := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%d\', \'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, domain_id, account_id, 'r0', mode, 'Mark unread', 'Mark unread');
@@ -235,16 +237,16 @@
             } else {
               tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
               tags := ENEWS.WA.tags2vector (tags);
-              tt := 'Tags:';
               for (i := 0; i < length(tags); i := i + 1)
-                tt := concat(tt, sprintf(' %s,', tags[i]));
-              tt := trim(tt, ',');
-              if (tt = 'Tags:')
-                tt := concat(tt, ' None');
+                tt := concat(tt, sprintf(' %s |', tags[i]));
+              tt := trim(tt, '|');
+              if (tt <> '')
+                tt := 'Tags:' || tt;
             }
 
             http(sprintf('<div id="feed_header">&nbsp;<b>Post</b>: <i>%s</i> | <b>Author</b>: <i>%s</i> | <b>Feed</b>: <i>%s</i>%s</div>', lt, author, ut, en));
             http(sprintf('<div id="feed_subheader">&nbsp;<b>Posted on</b>: <i>%s</i>, <b>Updated on</b>: <i>%s</i>%s %s %s %s %s %s</div>', ENEWS.WA.dt_value(EFI_PUBLISH_DATE, EFI_LAST_UPDATE, account_name), ENEWS.WA.dt_value(EFI_LAST_UPDATE, null, account_name), rt, ft, mt, bt, ct, cv));
+            if (tt <> '')
             http(sprintf('<div id="feed_subheader">&nbsp;%s</div>', tt));
             http('<div id="feed_body">');
             xml_tree_doc_set_ns_output(description, 1);

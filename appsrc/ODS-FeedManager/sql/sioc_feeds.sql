@@ -23,7 +23,7 @@
 use sioc;
 
 -- the same as feeds_iri (wai_name)
-create procedure feed_mgr_iri (in domain_id int)
+create procedure feed_mgr_iri (in domain_id integer)
 {
   declare inst varchar;
   declare exit handler for not found { return null; };
@@ -39,7 +39,7 @@ create procedure feed_post_url (in vhost varchar, in lhost varchar, in feed_id v
 ;
 
 -- this represents post in the given feed
-create procedure feeds_post_iri (in feed_id int, in item_id int)
+create procedure feeds_post_iri (in feed_id integer, in item_id integer)
 {
   declare feed_title, item_title varchar;
   declare exit handler for not found { return null; };
@@ -48,9 +48,38 @@ create procedure feeds_post_iri (in feed_id int, in item_id int)
 ;
 
 -- this represents a feed, not an instance
-create procedure feed_iri (in feed_id int)
+create procedure feed_iri (in feed_id integer)
 {
   return sprintf ('http://%s%s/feed/%d', get_cname(), get_base_path (), feed_id);
+}
+;
+
+-- this represents author in the diven post
+create procedure author_iri (inout feed_id integer, inout author any, inout content any)
+{
+  declare a_name, a_email, a_uri, f_uri any;
+
+  a_uri := null;
+  if (isnull(author))
+    goto _end;
+  if (xpath_eval ('/item', content) is not null) {
+    -- RSS
+    ENEWS.WA.mail_address_split (author, a_name, a_email);
+  } else if (xpath_eval ('/entry', content) is not null) {
+    -- Atom
+    a_uri := cast(xpath_eval ('/entry/author/uri', content, 1) as varchar);
+    if (not isnull(a_uri))
+      goto _end;
+    a_name := cast(xpath_eval ('/entry/author/name', content, 1) as varchar);
+    a_email := cast(xpath_eval ('/entry/author/email', content, 1) as varchar);
+  }
+  if (not isnull(a_name)) {
+    f_uri := (select EF_URI from ENEWS.WA.FEED where EF_ID = feed_id);
+    a_uri := f_uri || '#' || replace (sprintf ('%U', a_name), '+', '%2B');
+  }
+_end:
+  --dbg_obj_print(a_uri);
+  return a_uri;
 }
 ;
 
@@ -108,7 +137,7 @@ create trigger FEEDD_SIOC_D before delete on ENEWS..FEED_DOMAIN referencing old 
 -- ENEWS..FEED_ITEM
 create trigger FEED_ITEM_SIOC_I after insert on ENEWS..FEED_ITEM referencing new as N
 {
-  declare iri, graph_iri, f_iri varchar;
+  declare iri, graph_iri, f_iri, a_iri varchar;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
@@ -116,7 +145,25 @@ create trigger FEED_ITEM_SIOC_I after insert on ENEWS..FEED_ITEM referencing new
   graph_iri := get_graph ();
   f_iri := feed_iri (N.EFI_FEED_ID);
   iri := feeds_post_iri (N.EFI_FEED_ID, N.EFI_ID);
-  ods_sioc_post (graph_iri, iri, f_iri, null, N.EFI_TITLE, N.EFI_PUBLISH_DATE, null, N.EFI_LINK);
+  a_iri := author_iri (N.EFI_FEED_ID, N.EFI_AUTHOR, N.EFI_DATA);
+  ods_sioc_post (graph_iri, iri, f_iri, a_iri, N.EFI_TITLE, N.EFI_PUBLISH_DATE, null, N.EFI_LINK);
+  return;
+}
+;
+
+create trigger FEED_ITEM_SIOC_U after update on ENEWS..FEED_ITEM referencing old as O, new as N
+{
+  declare iri, graph_iri, f_iri, a_iri varchar;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  f_iri := feed_iri (N.EFI_FEED_ID);
+  iri := feeds_post_iri (N.EFI_FEED_ID, N.EFI_ID);
+  a_iri := author_iri (N.EFI_FEED_ID, N.EFI_AUTHOR, N.EFI_DATA);
+  delete_quad_s_or_o (graph_iri, iri, iri);
+  ods_sioc_post (graph_iri, iri, f_iri, a_iri, N.EFI_TITLE, N.EFI_PUBLISH_DATE, null, N.EFI_LINK);
   return;
 }
 ;
@@ -135,23 +182,7 @@ create trigger FEED_ITEM_SIOC_D before delete on ENEWS..FEED_ITEM referencing ol
 }
 ;
 
-create trigger FEED_ITEM_SIOC_U after update on ENEWS..FEED_ITEM referencing old as O, new as N
-{
-  declare iri, graph_iri, f_iri varchar;
-  declare exit handler for sqlstate '*' {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  graph_iri := get_graph ();
-  f_iri := feed_iri (N.EFI_FEED_ID);
-  iri := feeds_post_iri (N.EFI_FEED_ID, N.EFI_ID);
-  delete_quad_s_or_o (graph_iri, iri, iri);
-  ods_sioc_post (graph_iri, iri, f_iri, null, N.EFI_TITLE, N.EFI_PUBLISH_DATE, null, N.EFI_LINK);
-  return;
-}
-;
-
-create procedure feeds_post_iri (in feed_id int, in item_id int)
+create procedure feeds_post_iri (in feed_id integer, in item_id integer)
 {
   declare feed_title, item_title varchar;
   declare exit handler for not found { return null; };
