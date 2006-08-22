@@ -309,6 +309,48 @@ create procedure WA_USER_DASHBOARD_SP (in uid int, in inst_type varchar)
 };
 
 
+create procedure WA_COMMON_DASHBOARD_SP (in inst_type varchar)
+{
+  declare inst_name, title, author, url nvarchar;
+  declare ts datetime;
+  declare uname, email varchar;
+  declare inst web_app;
+  declare h, ret any;
+
+  result_names (inst_name, title, ts, author, url, uname, email);
+  for select WAM_INST, WAI_INST, WAM_HOME_PAGE from WA_MEMBER, WA_INSTANCE where WAI_NAME = WAM_INST
+    and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = inst_type do
+      {
+	inst := WAI_INST;
+	h := udt_implements_method (inst, fix_identifier_case ('wa_dashboard_last_item'));
+	if (h)
+	  {
+	    ret := call (h) (inst);
+	    if (length (ret))
+	      {
+		declare xp any;
+		ret := xtree_doc (ret);
+
+		xp := xpath_eval ('//*[title]', ret, 0);
+		foreach (any ret1 in xp) do
+		  {
+		    title := substring (xpath_eval ('string(title/text())', ret1), 1, 1024);
+		    ts := xpath_eval ('string (dt/text())', ret1);
+		    author := xpath_eval ('string (from/text())', ret1);
+		    url := xpath_eval ('string (link/text())', ret1);
+		    uname := cast(xpath_eval ('string (uid/text())', ret1) as varchar);
+		    email := cast(xpath_eval ('string (email/text())', ret1) as varchar);
+
+		    ts := cast (ts as datetime);
+		    result (WAM_INST, title, ts, author, url, uname, email);
+		  }
+	     }
+	  }
+      }
+};
+
+
+
 create procedure wa_abs_date (in  dt datetime)
 {
   declare diff, ddiff int;

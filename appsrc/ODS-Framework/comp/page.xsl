@@ -2665,6 +2665,7 @@ if (i > 0)
     <meta name="geo.position" content="<?V sprintf ('%.06f', self.e_lat) ?>;<?V sprintf ('%.06f', self.e_lng) ?>" />
     <meta name="ICBM" content="<?V sprintf ('%.06f', self.e_lat) ?>, <?V sprintf ('%.06f', self.e_lng) ?>" />
     <?vsp } ?>
+    <link rel="openid.server" title="OpenID Server" href="<?V wa_link (1, '/openid') ?>" />
 </xsl:template>
 
 </xsl:stylesheet>

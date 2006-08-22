@@ -71,7 +71,7 @@
         (length (self.sid) = 0)
       )
    {
-     firstcolumn_wide:=35;
+     firstcolumn_wide:=20;
    } 
    
 
@@ -79,15 +79,33 @@
    <td width="<?Vcast(firstcolumn_wide as varchar)||'%'?>" valign="top">
       <table border="0" width="100%" height="100%" class="settings">
       <?vsp
-        if ( ( length (self.sid) and self.u_name <> self.fname )
-              or
-             (length (self.sid) = 0)
-           )
-        {
+        
         declare i int;
-        for select * from WA_USER_APP_INSTANCES sub where
-          user_id = self.u_id and app_type = self.app_type and fname = self.fname do
+        declare q_str, rc, dta, h any;
+
+        if(length(self.fname)>0 and self.fname<>coalesce(self.u_name,''))
+        {
+        q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL'||
+                       ' from WA_MEMBER, WA_INSTANCE, SYS_USERS '||
+                       ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WA_MEMBER.WAM_USER=SYS_USERS.U_ID and U_NAME=''%s'' and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.fname,self.app_type);
+        }else
           {
+        q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL'||
+                       ' from WA_MEMBER, WA_INSTANCE '||
+                       ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.app_type);
+        }
+        
+
+        declare INST_URL,INST_NAME varchar;
+
+        rc := exec (q_str, null, null, vector (), 0, null, null, h);
+        while (0 = exec_next (h, null, null, dta))
+        {
+          exec_result (dta);
+          
+          INST_URL:=coalesce(dta[1],'#');
+          INST_NAME:=coalesce(dta[0],'');
+
       ?>
       <tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
         <td nowrap="nowrap">
@@ -96,7 +114,9 @@
       </tr>
       <?vsp
           i := i + 1;
+
           }
+          exec_close (h);
         
           if (i = 0 and length (self.fname))
           {
@@ -108,14 +128,11 @@
        </tr>
       <?vsp
           }
-        }  
       ?>
      </table>
     </td>
     <td width="<?Vcast((100-firstcolumn_wide) as varchar)||'%'?>">
          <?vsp
-         if (self.u_id = self.ufid)
-           {
             if (self.app_type = 'WEBLOG2')
               {
             ?>
@@ -152,6 +169,11 @@
             <vm:dash-odrive-summary/>
             <?vsp
               }
+            else if (self.app_type = 'oGallery')
+              {
+            ?>
+            <vm:dash-ogallery-summary/>
+            <?vsp
            }
          ?>
         </td>

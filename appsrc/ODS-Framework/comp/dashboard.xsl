@@ -245,6 +245,9 @@
        
        
        declare q_str varchar;
+
+       if(self.u_id>0 and self.topmenu_level='1'){
+
        q_str := 'select top 10 inst_name, title, ts, author, url, uname, email from '||
                 '  WA_USER_DASHBOARD_SP '||
                 '     (uid, inst_type) '||
@@ -252,6 +255,25 @@
                 '  WA_USER_DASHBOARD '||
                 'where uid = '||cast(self.u_id as varchar)||' and inst_type = \'<xsl:value-of select="$app"/>\' '||
                 'order by '||order_by_str||' '||order_way_str;
+       }else if( (length(self.fname)>0) and (self.fname &lt;&gt; coalesce(self.u_name,'')) ){
+
+        q_str := 'select top 10 inst_name, title, ts, author, url, uname, email from '||
+                 '  WA_USER_DASHBOARD_SP '||
+                 '     (uid, inst_type) '||
+                 '     (inst_name varchar, title nvarchar, ts datetime, author nvarchar, url nvarchar, uname varchar, email varchar) '||
+                 '  WA_USER_DASHBOARD '||
+                 'where uid = '||cast(self.ufid as varchar)||' and inst_type = \'<xsl:value-of select="$app"/>\' '||
+                 'order by '||order_by_str||' '||order_way_str;
+       }else{
+       
+       q_str := 'select distinct top 10 inst_name, title, ts, author, url, uname, email from '||
+                '  WA_COMMON_DASHBOARD_SP '||
+                '     (inst_type) '||
+                '     (inst_name varchar, title nvarchar, ts datetime, author nvarchar, url nvarchar, uname varchar, email varchar) '||
+                '  WA_USER_DASHBOARD '||
+                'where inst_type = \'<xsl:value-of select="$app"/>\' '||
+                'order by '||order_by_str||' '||order_way_str;
+       }       
 
        
        declare state, msg, descs, rows any;
@@ -577,6 +599,42 @@
 		    </xsl:call-template>
                     </table>
   </xsl:template>
+
+  <xsl:template match="vm:dash-ogallery-summary">
+          <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="info_container3">
+		      <tr><th class="info" colspan="3"><H2><?V WA_GET_APP_NAME ('oGallery') ?></H2></th></tr>
+          <tr>
+                        <th><v:url name="ogallery_orderby_subject"
+                                   value="Resource"
+                                   url="--'?order_by=subject&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                             /></th>
+                        <th><v:url name="ogallery_orderby_creator"
+                                   value="Creator"
+                                   url="--'?order_by=creator&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
+                        <th><v:url name="ogallery_orderby_date"
+                                   value="Date"
+                                   url="--'?order_by=date&prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&'||http_request_get('QUERY_STRING')"
+                            /></th>
+          </tr>
+		    <xsl:call-template name="user-dashboard-item-extended">
+			<xsl:with-param name="app">oGallery</xsl:with-param>
+		    </xsl:call-template>
+                    </table>
+  </xsl:template>
+
 
 
   <xsl:template match="vm:dash-my-wahts-new">

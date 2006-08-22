@@ -31,6 +31,12 @@
   <v:variable name="login_blocked" type="varchar" default="null" persist="0"/>
   <v:variable name="login_attempts" type="integer" default="0" persist="0" />
   <v:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
+  <!-- OpenID signin -->
+  <v:variable name="_return_to" type="varchar" default="null" persist="0" param-name="return_to" />
+  <v:variable name="_identity" type="varchar" default="null" persist="0" param-name="identity" />
+  <v:variable name="_assoc_handle" type="varchar" default="null" persist="0" param-name="assoc_handle" />
+  <v:variable name="_trust_root" type="varchar" default="null" persist="0" param-name="trust_root" />
+
   <table cellpadding="0" cellspacing="0" border="0" width="90%">
     <tr>
       <td valign="bottom" align="right" width="100%">
@@ -168,8 +174,17 @@
 		  pars := pars || '&fr=' || self.promo;
                 url := vspx_uri_add_parameters (self.url, pars);
 		--dbg_obj_print ('login_if_login ', url);
+		if (self._return_to is not null)
+		  {
+                    --dbg_obj_print ('----------------------------------------------');
+		    --dbg_obj_print (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid);
+                    OPENID..checkid_immediate (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid);
+		  }
+		else
+		  {
                 http_request_status ('HTTP/1.1 302 Found');
                 http_header (concat (http_header_get (), sprintf ('Location: %s\r\n', url)));
+              }
               }
               self.login_attempts := 0;
             ?>
@@ -182,13 +197,24 @@
              {
                expire := date_rfc1123 (dateadd ('hour', 1, now()));
                cook_str := sprintf ('Set-Cookie: sid=%s; expires=%s;\r\n', self.sid, expire);
-	       if (strstr ('Set-Cookie: sid=', http_header_get ()) is null)
+	       if (strstr (http_header_get (), 'Set-Cookie: sid=') is null)
 	         {
 		   cook_str := concat (http_header_get (), cook_str);
 		   http_header (cook_str);
 		   --dbg_obj_print ('cook_str=',cook_str,'\n');
 	         }
              }
+	     if (self.vc_authenticated and length (self.sid) and self._return_to is not null)
+	       {
+	         expire := date_rfc1123 (dateadd ('hour', 1, now()));
+	         cook_str := sprintf ('Set-Cookie: openid.sid=%s; expires=%s; path=/;\r\n', self.sid, expire);
+	         if (strstr (http_header_get (), 'Set-Cookie: openid.sid=') is null)
+		   {
+		     cook_str := concat (http_header_get (), cook_str);
+		     http_header (cook_str);
+		     --dbg_obj_print ('cook_str=',cook_str);
+		   }
+	       }
              ]]>
            </v:on-post>
           <xsl:call-template name="login-after-data-bind"/>
