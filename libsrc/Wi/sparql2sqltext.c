@@ -1033,8 +1033,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
             {
               switch (argctr)
                 {
-                case 0: ssg_puts (" ("); break;
-                case 1: ssg_puts (" in ("); break;
+                case 0: ssg_puts (top_filter_op ? " (" : " position ("); break;
+                case 1: ssg_puts (top_filter_op ? " in (" : ", vector ("); break;
                 default: ssg_puts (" ,");
                 }
               ssg_print_scalar_expn (ssg, argN, op_fmt);
