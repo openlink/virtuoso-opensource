@@ -196,8 +196,6 @@ create procedure WV.WIKI.gdata
   declare u_id, ver, to_trim int;
   declare full_path, p_full_path, ct, id varchar;
   declare title, content, author_name, author_mail, hstat, h varchar;
-  declare struct BLOG.DBA."MTWeblogPost";
-  declare req BLOG.DBA."blogRequest";
   declare "atom-pub", i int;
   declare vhost, lhost, p_path_str, l_path_str, gdata_url varchar;
 
@@ -392,3 +390,17 @@ use DB
 ;
   
 
+-- atom related xslt functions
+
+create function WV.WIKI.ATOM_PUB_URI(in _cluster_name varchar)
+{
+  return '/dataspace/' || WV.WIKI.CLUSTERPARAM (_cluster_name, 'owner', 'dav') || '/wiki/' || _cluster_name || '/atom-pub';
+}
+;
+
+grant execute on WV.WIKI.ATOM_PUB_URI to public
+;
+
+
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:atom_pub_uri', 'WV.WIKI.ATOM_PUB_URI')
+;

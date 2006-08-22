@@ -47,6 +47,9 @@
 	<link rel="alternate" type="application/rss+xml" title="Changelog (RDF)" href="{$baseadjust}../gems.vsp?cluster={$ti_cluster_name}&amp;type=rdf"></link>
 	<link rel="self" type="application/atom+xml"
 	  href="/wiki/Atom"/>
+	<link rel="meta" type="application/rdf+xml" title="SIOC" href="{wv:sioc_uri($ti_cluster_name)}" />
+	<link rel="service.post" type="application/x.atom+xml"
+	      href="{wv:atom_pub_uri($ti_cluster_name)}"/>
       </header>
       <body>
 	<div id="page">
