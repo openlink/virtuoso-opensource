@@ -26,7 +26,8 @@ CategoryWiki CategoryUnix
 
 ---
 
-<small> Number of hits: %HIT:COUNTER% </small>
+   * <small> Number of hits: %HIT:COUNTER% </small>
+   * <small> <nop>%SYNTAX%-%WIKIVERSION% </small>
 
 ---++ Semantic Web support
 

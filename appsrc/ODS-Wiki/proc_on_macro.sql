@@ -630,9 +630,9 @@ endf:
 create function WV.WIKI.MACRO_TOC  (inout _data varchar, inout _context any, inout _env any)
 {
   declare _xml_doc any;
-  declare _cluster_name, _lexer varchar;
+  declare _cluster_name, _lexer, _lexer_name varchar;
   _cluster_name := get_keyword ('ti_cluster_name', _env, 'Main');
-  _lexer := WV..LEXER (get_keyword ('ti_cluster_name', _env, 'Main'));
+  WV..LEXER (get_keyword ('ti_cluster_name', _env, 'Main'), _lexer, _lexer_name);
   _xml_doc :=  xtree_doc(call (_lexer) (get_keyword ('ti_text', _env, '') || '\r\n', 
 	_cluster_name,
 	get_keyword ('ti_local_name', _env, WV.WIKI.CLUSTERPARAM (_cluster_name, 'index-page', 'WelcomeVisitors')),

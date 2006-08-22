@@ -91,6 +91,20 @@ create trigger TOPIC_SIOC_D before delete on WV..TOPIC referencing old as O
 }
 ;
 
-
 use DB
+;
+
+-- sioc related xslt functions
+
+create function WV.WIKI.SIOC_URI(in _cluster_name varchar)
+{
+  return '/dataspace/' || WV.WIKI.CLUSTERPARAM (_cluster_name, 'owner', 'dav') || '/wiki/' || _cluster_name || '/sioc.rdf';
+}
+;
+
+grant execute on WV.WIKI.SIOC_URI to public
+;
+
+
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:sioc_uri', 'WV.WIKI.SIOC_URI')
 ;

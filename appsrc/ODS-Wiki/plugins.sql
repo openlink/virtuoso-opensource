@@ -43,14 +43,16 @@ create function PLUGIN_LEXER (in idx int)
 }
 ;
 
-create function LEXER (in _cluster_name varchar)
+create procedure LEXER (in _cluster_name varchar, out _lexer varchar, out _lexer_name varchar)
 {
-  declare _lexer varchar;
-  _lexer := WV.WIKI.CLUSTERPARAM (_cluster_name, 'plugin');
-  _lexer := PLUGIN_BY_ID (_lexer);
+  _lexer_name := WV.WIKI.CLUSTERPARAM (_cluster_name, 'plugin');
+  _lexer := PLUGIN_BY_ID (_lexer_name);
+  _lexer_name := NAME_BY_ID (_lexer_name);
   if (not __proc_exists (_lexer, 2))
+    { 
     _lexer := PLUGIN_BY_ID (null);
-  return _lexer;
+      _lexer_name := NAME_BY_ID (null);
+    }
 }
 ;
 
@@ -93,14 +95,27 @@ create function PLUGIN_NAMES()
 }
 ;
 
-create function PLUGIN_BY_ID (in idx varchar)
+create function POSTFIX_BY_ID (in idx varchar)
 {
   if (idx is null or idx = '0')
-    return 'WikiV lexer';
+    return '';
   else
-    return 'WikiV lexer ' || idx;
+    return ' ' || idx;
 }
 ;
+
+create function PLUGIN_BY_ID (in idx varchar)
+{
+  return 'WikiV lexer' || POSTFIX_BY_ID (idx);
+}
+;
+
+create function NAME_BY_ID (in idx varchar)
+{
+  return 'WikiV name' || POSTFIX_BY_ID (idx);
+}
+;
+
 
 use DB
 ;

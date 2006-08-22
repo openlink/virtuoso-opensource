@@ -280,7 +280,7 @@ create method ti_full_name () returns varchar for WV.WIKI.TOPICINFO
 create method ti_run_lexer (in _env any) returns varchar for WV.WIKI.TOPICINFO
 {
   declare exit handler for sqlstate '*' {
-    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
     return '';
   }
   ;
@@ -289,13 +289,14 @@ create method ti_run_lexer (in _env any) returns varchar for WV.WIKI.TOPICINFO
     _text := self.ti_text;
   else
     _text := cast (self.ti_text as varchar);
-  _text := WV.WIKI.DELETE_SYSINFO_FOR (_text, NULL);
-  declare _res, _lexer varchar;
-  _lexer := WV..LEXER (self.ti_cluster_id);
+  declare _res, _lexer, _lexer_name varchar;
+  WV..LEXER (self.ti_cluster_id, _lexer, _lexer_name);
+  _lexer_name := cast (call (_lexer_name) () as varchar);
+  if (_env is null) _env := vector();
   _res := call (_lexer) (_text || '\r\n', 
   	coalesce (self.ti_cluster_name, 'Main'),
 	coalesce (self.ti_local_name, 'WelcomeVisitors'),
-	self.ti_curuser_wikiname, _env);
+	self.ti_curuser_wikiname, vector_concat (_env, vector ('SYNTAX', _lexer_name)));
   return _res;
 }
 ;
