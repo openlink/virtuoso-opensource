@@ -239,6 +239,14 @@ then
     LOG "***ABORTED: tsqlo.sh: SQLO remote tests (sqlovdb.sql)"
     exit 1
 fi
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$DS1" "LOCALPORT=$DS2" < tinl.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tsqlo.sh: SQLO remote tests (tinl.sql)"
+    exit 1
+fi
+
+
 fi
 #
 #	Begin TPC-D VDB Suite
@@ -379,6 +387,7 @@ else
 	fi
 	LOG "PASSED: Attach remote tables"
        RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$dsn" "LOCALPORT=$DS2" < ../sqlovdb.sql
+       RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$dsn" "LOCALPORT=$DS2" < ../tinl.sql
        RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < load_query.sql
      done
 fi
