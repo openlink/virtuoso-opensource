@@ -2466,6 +2466,8 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
     {
       tb_dfe->_.table.vdb_join_test = sqlo_and_list_body (so, LOC_LOCAL, tb_dfe, vdb_preds);
     }
+  if (after_preds || vdb_preds)
+    tb_dfe->dfe_unit = 0; /* recalc the cost if more preds were added */
 }
 
 int
@@ -3594,6 +3596,146 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
 
 
 void
+sqlo_strip_in_join (ST* tree, caddr_t joined_table_prefix, caddr_t * joined_col_ret, ST** subq_col_ret)
+{
+  int inx;
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    return;
+  if (ST_P (tree, BOP_EQ)
+      && ST_P (tree->_.bin_exp.left, COL_DOTTED) && ST_P (tree->_.bin_exp.right, COL_DOTTED)
+      && tree->_.bin_exp.left->_.col_ref.prefix && tree->_.bin_exp.right->_.col_ref.prefix)
+    {
+      if (0 == strcmp (tree->_.bin_exp.left->_.col_ref.prefix, joined_table_prefix))
+	{
+	  if (*joined_col_ret)
+	    {
+	      *joined_col_ret= (caddr_t) -1;
+	      return;
+	    }
+	  *joined_col_ret = tree->_.bin_exp.left->_.col_ref.name;
+	  *subq_col_ret = tree->_.bin_exp.right;
+	  tree->_.bin_exp.left = (ST*) t_box_num (1);
+	  tree->_.bin_exp.right = (ST*) t_box_num (1);
+	}
+      else if (0 == strcmp (tree->_.bin_exp.right->_.col_ref.prefix, joined_table_prefix))
+	{
+	  if (*joined_col_ret)
+	    {
+	      *joined_col_ret= (caddr_t) -1;
+	      return;
+	    }
+	  *joined_col_ret = tree->_.bin_exp.right->_.col_ref.name;
+	  *subq_col_ret = tree->_.bin_exp.left;
+	  tree->_.bin_exp.left = (ST*) t_box_num (1);
+	  tree->_.bin_exp.right = (ST*) t_box_num (1);
+	}
+    }
+  DO_BOX (ST *, sub, inx, tree)
+    {
+      sqlo_strip_in_join (sub, joined_table_prefix, joined_col_ret, subq_col_ret);
+    }
+  END_DO_BOX;
+}
+
+
+int
+sqlo_all_refs_stripped (ST* tree, caddr_t joined_table_prefix)
+{
+  int inx;
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    return 1;
+  if (ST_P (tree, COL_DOTTED))
+    return (tree->_.col_ref.prefix ? 0 != strcmp (tree->_.col_ref.prefix, joined_table_prefix) : 1);
+  DO_BOX (ST *, sub, inx, tree)
+    {
+      if (!sqlo_all_refs_stripped (sub, joined_table_prefix))
+	return 0;
+    }
+  END_DO_BOX;
+  return 1;
+}
+
+
+void
+sqlo_try_in_loop (sqlo_t *so, op_table_t * ot, df_elt_t * tb_dfe, df_elt_t ** subq_to_unplace, float * prev_score)
+{
+  int flag = (int)(ptrlong) sqlo_opt_value (ot->ot_opts, OPT_SUBQ_LOOP);
+  if (SUBQ_NO_LOOP == flag)
+    return;
+  if (DFE_TABLE != tb_dfe->dfe_type
+      || IS_BOX_POINTER (tb_dfe->dfe_super->dfe_locus))
+    return; /* if not a table or a table in a pss through dt.  For pass through ,let theremote decide */
+  DO_SET (df_elt_t *, pred, &tb_dfe->_.table.all_preds)
+    {
+      if (DFE_EXISTS == pred->dfe_type 
+	  && 1 == dk_set_length (pred->dfe_tables ) && tb_dfe->_.table.ot == (op_table_t *)pred->dfe_tables->data
+	  && (pred->dfe_locus != tb_dfe->dfe_locus || (LOC_LOCAL == tb_dfe->dfe_locus && LOC_LOCAL == pred->dfe_locus ))
+	  && SUBQ_NO_LOOP != (int)(ptrlong) sqlo_opt_value (pred->_.sub.ot->ot_opts, OPT_SUBQ_LOOP))
+	{
+	  /* existence depending on this table alone.  Now what col is the joined col? */
+	  caddr_t joined_col_name = NULL;
+	  ST * subq_out_col = NULL;
+	  ST * copy = (ST*) t_box_copy_tree ((caddr_t) pred->dfe_tree);
+	  sqlo_strip_in_join (copy, tb_dfe->_.table.ot->ot_new_prefix, &joined_col_name, &subq_out_col);
+	  if (joined_col_name && (caddr_t)-1 != joined_col_name
+	      && sqlo_all_refs_stripped (copy, tb_dfe->_.table.ot->ot_new_prefix))
+	    {
+	      df_elt_t * subq_dfe, * subq_join;
+	      caddr_t subq_prefix;
+	      float in_loop_score;
+	      dk_set_t old_ot_preds;
+	      /* we try maing the existence into an outer loop */
+	      copy->_.select_stmt.selection = 
+		t_list (1, t_list (5, BOP_AS, t_box_copy_tree ((caddr_t) subq_out_col),
+				   NULL, subq_out_col->_.col_ref.name, NULL));
+	      if (IS_BOX_POINTER (copy->_.select_stmt.top))
+		copy->_.select_stmt.top->_.top.all_distinct = 1;
+	      else 
+		copy->_.select_stmt.top = (ST*)(ptrlong)1; /*distinct */
+	      sqlo_scope (so, &copy);
+	      subq_dfe = sqlo_df (so, copy);
+	      subq_prefix = subq_dfe->_.sub.ot->ot_new_prefix;
+	      so->so_gen_pt = tb_dfe->dfe_prev;
+	      sqlo_dt_unplace (so, tb_dfe);
+	      subq_dfe->_.sub.ot->ot_dfe = subq_dfe;
+	      sqlo_place_table (so, subq_dfe);
+	      /* remove the subq pred and put the join equality there */
+	      old_ot_preds = t_set_copy (ot->ot_preds);
+	      t_set_delete (&ot->ot_preds, (void*) pred);
+	      subq_join = sqlo_df (so, (ST*) t_list (5, BOP_EQ, 
+						     t_list (3, COL_DOTTED, subq_prefix, subq_out_col->_.col_ref.name), 
+						     t_list (3, COL_DOTTED, tb_dfe->_.table.ot->ot_new_prefix, joined_col_name),
+						     NULL, NULL));
+	      t_set_push (&ot->ot_preds, (void*) subq_join);
+	      sqlo_place_table (so, tb_dfe);
+	      in_loop_score = sqlo_score (ot->ot_work_dfe, ot->ot_work_dfe->_.sub.in_arity);
+	      if (in_loop_score > *prev_score && SUBQ_LOOP != flag)
+		{
+		  so->so_gen_pt = subq_dfe->dfe_prev;
+		  sqlo_dt_unplace (so, tb_dfe);
+		  sqlo_dt_unplace (so, subq_dfe);
+		  ot->ot_preds = old_ot_preds;
+		  sqlo_place_table (so, tb_dfe); /*put it back */
+		  sqlo_try_hash (so, tb_dfe, ot, prev_score);
+		  return;
+		}
+	      /* the opt choice is made. */
+	      *prev_score = in_loop_score;
+	      /* for the unplacing, put the org exists pred in all_preds so it gets  unplaced for future use in other scenarios */
+	      t_set_push (&tb_dfe->_.table.all_preds, (void*) pred);
+	      pred->dfe_is_placed = DFE_PLACED;
+	      ot->ot_preds = old_ot_preds;
+	      *subq_to_unplace = subq_dfe;
+	      return;
+	    }
+	}
+    }
+  END_DO_SET();
+}
+
+
+
+void
 sqlo_dfe_array_unplace (sqlo_t * so, df_elt_t ** arr)
 {
   int inx;
@@ -3681,6 +3823,7 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
   sqlo_locus_dfe_unplace (dfe);
   dfe->dfe_locus = NULL;
   dfe->dfe_unit = 0;
+  dfe->dfe_unit_includes_vdb = 0;
   switch (dfe->dfe_type)
     {
     case DFE_DT:
@@ -3987,10 +4130,12 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
     {
       if (dfe_suitable_for_next (dfe, must_be_next))
 	{
+	  df_elt_t * in_loop_dfe = NULL;
 	  any_tried = 1;
 	  sqlo_place_table (so, dfe);
 	  this_score = sqlo_score (ot->ot_work_dfe, ot->ot_work_dfe->_.sub.in_arity);
 	  sqlo_try_hash (so, dfe, ot, &this_score);
+	  sqlo_try_in_loop (so, ot, dfe, &in_loop_dfe, &this_score);
 	  if (-1 == so->so_best_score || this_score < so->so_best_score)
 	    {
 	      sqlo_layout_1 (so, ot, is_top);
@@ -4082,6 +4227,11 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 
 	  so->so_gen_pt = dfe->dfe_prev;
 	  sqlo_dt_unplace (so, dfe);
+	  if (in_loop_dfe)
+	    {
+	      so->so_gen_pt = in_loop_dfe->dfe_prev;
+	      sqlo_dt_unplace (so, in_loop_dfe);
+	    }
 	}
     }
   END_DO_SET ();

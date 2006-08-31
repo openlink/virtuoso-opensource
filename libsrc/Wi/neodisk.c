@@ -690,6 +690,7 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
 
   mcp_delta_count = 0;
 
+  wi_check_all_compact (0);
   DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
     {
       IN_BP (bp);
@@ -709,6 +710,7 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
 
   cpt_rollback (LT_KILL_FREEZE);
   iq_shutdown (IQ_STOP);
+  wi_check_all_compact (0);
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
       it_cache_check (it);

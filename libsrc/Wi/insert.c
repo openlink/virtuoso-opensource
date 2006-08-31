@@ -332,6 +332,20 @@ pg_delete_move_cursors (it_cursor_t * itc, dp_addr_t dp_from,
   prev_ent = ent; \
   IE_SET_NEXT (page_to + prev_ent, 0); \
 
+#define LINK_PREV_NC(ent)   \
+  if (prev_ent) \
+    { \
+      IE_SET_NEXT (page_to + prev_ent, ent); \
+    } \
+  else \
+    { \
+      SHORT_SET (page_to + DP_FIRST, ent); \
+    } \
+  prev_ent = ent; \
+  IE_SET_NEXT (page_to + prev_ent, 0); \
+
+
+
 #define ADD_MAP_ENT(ent, len) \
   map_append (is_to_extend ? &buf_ext->bd_content_map : &buf_from->bd_content_map, ent); \
   map_to = is_to_extend ? buf_ext->bd_content_map : buf_from->bd_content_map; \
@@ -427,6 +441,7 @@ pg_write_compact (it_cursor_t * it, buffer_desc_t * buf_from,
     {
       ITC_LEAVE_MAP (it);
     }
+  if (insert)
   insert_len = row_length (insert, it->itc_insert_key);
   while (1)
     {
@@ -699,6 +714,8 @@ itc_split (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
   extend = isp_new_page (it->itc_space,
       dp_parent ? dp_parent : buf->bd_page,
       DPF_INDEX, 0, it->itc_n_pages_on_hold);
+  if (dp_parent)
+    dp_may_compact ((*buf_ret)->bd_storage, dp_parent);
 
   ITC_IN_MAP (it);
   ITC_MARK_NEW (it);
@@ -771,7 +788,7 @@ itc_split (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
 
   /* Now search for the place to insert the extend. */
   ext_pos = find_leaf_pointer (parent, buf->bd_page, NULL, NULL);
-  if (!ext_pos)
+  if (ext_pos <= 0)
     GPF_T;			/* Parent with no ref. to child leaf */
 
   it->itc_position = ext_pos;
@@ -1448,6 +1465,8 @@ delete_from_cursor:
       it->itc_page, new_pos, NULL);
   it->itc_position = new_pos;
   map->pm_bytes_free += (short) ROW_ALIGN (len);
+  if (map->pm_bytes_free > (PAGE_DATA_SZ * 2) / 3)  /* if less than 2/3 full */
+    dp_may_compact ((*buf_ret)->bd_storage, LONG_REF ((*buf_ret)->bd_buffer + DP_PARENT));
   if (itc_delete_single_leaf (it, buf_ret))
     return DVC_MATCH;
   if (0 == SHORT_REF (page + DP_FIRST))
@@ -1457,6 +1476,7 @@ delete_from_cursor:
       buffer_desc_t *parent;
       if (map->pm_bytes_free != PAGE_SZ - DP_DATA)
 	GPF_T;			/* Bad free count */
+      rdbg_printf_2 (("    Deleting page L=%d\n", old_buf->bd_page));
       while (1)
 	{
 	  dp_addr_t dp_parent;
@@ -1482,7 +1502,7 @@ delete_from_cursor:
       buf = parent;
       it->itc_page = buf->bd_page;
       pos = find_leaf_pointer (buf, old_leaf, NULL, NULL);
-      if (!pos)
+      if (pos <= 0)
 	GPF_T;			/* No leaf pointer in parent in delete */
       it->itc_position = pos;
       it->itc_is_on_row = 1;
@@ -1503,5 +1523,458 @@ delete_from_cursor:
   itc_delete_rl_bust (it, pos);
   *buf_ret = buf;
   return DVC_MATCH;
+}
+
+
+
+
+dp_addr_t 
+ie_leaf (db_buf_t row)
+{
+  key_id_t k = SHORT_REF (row + IE_KEY_ID);
+  if (!k || KI_LEFT_DUMMY == k)
+    return LONG_REF (row + IE_LEAF);
+  else
+    return 0;
+}
+
+typedef struct page_rel_s
+{
+  short		pr_lp_pos;
+  dp_addr_t	pr_dp;
+  buffer_desc_t *	pr_buf;
+  short		pr_old_fill;
+  short 		pr_new_fill;
+  short		pr_old_lp_len;
+  short		pr_new_lp_len;
+  short		pr_deleted;
+  buffer_desc_t *	pr_new_buf;
+  db_buf_t		pr_leaf_ptr;
+} page_rel_t;
+
+#define MAX_CP_BATCH (PAGE_DATA_SZ / 12)
+#define CP_CHANGED 2
+#define CP_STILL_INSIDE 1
+#define CP_REENTER 0
+
+
+#define START_PAGE(pr) \
+{  \
+  prev_ent = 0; \
+  pg_fill = DP_DATA; \
+  pr->pr_new_buf = buffer_allocate (DPF_INDEX); \
+  page_to = pr->pr_new_buf->bd_buffer; \
+}
+
+
+#define cmp_printf(a) printf a
+
+int
+it_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int pr_fill, int target_fill, int *pos_ret)
+{
+  /* the pr's are filled, move the data */
+  it_cursor_t itc_auto;
+  page_map_t * pm;
+  it_cursor_t * itc = NULL;
+  page_rel_t * target_pr;
+  db_buf_t page_to;
+  int n_target_pages, pg_fill, n_del = 0, n_ins = 0, n_leaves = 0;
+  int prev_ent = 0, org_count = parent->bd_content_map->pm_count;
+  int inx, first_after, first_lp_inx;
+  target_pr = &pr[0];
+  n_target_pages = 1;
+  START_PAGE (target_pr);
+  for (inx = 0; inx < pr_fill; inx++)
+    {
+      buffer_desc_t * buf = pr[inx].pr_buf;
+      db_buf_t page = buf->bd_buffer;
+      int pos = SHORT_REF (buf->bd_buffer + DP_FIRST);
+      if (!pr[inx].pr_deleted)
+	n_ins++;
+      else 
+	n_del++;
+      while (pos)
+	{
+	  int len = ROW_ALIGN (row_length (page + pos, it->it_key));
+	  if (pg_fill + len < target_fill)
+	    {
+	      memcpy (page_to + pg_fill, buf->bd_buffer + pos, len);
+	      LINK_PREV (pg_fill);
+	      pg_fill += len;
+	      pos = IE_NEXT (page + pos);
+	      continue;
+	    }
+	  if (pg_fill < target_fill && pg_fill + len < PAGE_SZ)
+	    {
+	      memcpy (page_to + pg_fill, buf->bd_buffer + pos, len);
+	      LINK_PREV (pg_fill);
+	      pg_fill += len;
+	      pos = IE_NEXT (page + pos);
+	      continue;
+	    }
+	  if (pg_fill != target_pr->pr_new_fill)
+	    GPF_T1 ("different page fills in compact check and actual compact");
+	  target_pr++;
+	  START_PAGE (target_pr);
+	  memcpy (page_to + pg_fill, buf->bd_buffer + pos, len);
+	  LINK_PREV (pg_fill);
+	  pg_fill += len;
+	  pos = IE_NEXT (page + pos);
+	}
+    }
+  if (pg_fill != target_pr->pr_new_fill)
+    GPF_T1 ("different page fills on compact check and compact");
+  /* update the leaf pointers on the parent page */
+  pm = parent->bd_content_map;
+  for (inx = 0; inx < pm->pm_count; inx++)
+    {
+      if (pm->pm_entries[inx] == pr[0].pr_lp_pos)
+	{
+	  first_lp_inx = inx;
+	  break;
+	}
+    }
+  if (0 == first_lp_inx)
+    SHORT_SET (parent->bd_buffer + DP_FIRST, IE_NEXT (parent->bd_buffer + pr[pr_fill-1].pr_lp_pos));
+  else
+    IE_SET_NEXT (parent->bd_buffer + pm->pm_entries[first_lp_inx - 1], IE_NEXT (parent->bd_buffer + pr[pr_fill-1].pr_lp_pos));
+  itc = &itc_auto;
+  ITC_INIT (itc, NULL, NULL);
+  itc_from_it (itc, it);
+  {
+    int dp_first = SHORT_REF (parent->bd_buffer + DP_FIRST);
+    int pos = dp_first;
+    int new_count = 0;
+    while (pos)
+      {
+	new_count++;
+	pos = IE_NEXT (parent->bd_buffer + pos);
+      }
+    if (org_count - pr_fill != new_count)
+      GPF_T1 ("bad unlink of compacted in compact");
+    pg_write_compact (itc, parent, -1, NULL,  0, NULL, 0, NULL);
+    /* if the page is empty, pg_write_compact erroneously puts 20 as the first row instead of 0 */
+    if (!dp_first)
+      SHORT_SET (parent->bd_buffer + DP_FIRST, 0);
+    pg_make_map (parent);
+    if (parent->bd_content_map->pm_count != org_count - pr_fill)
+      GPF_T1 ("bad quantity deleted from the parent map in compact");
+  }
+  pm = parent->bd_content_map;
+  page_to = parent->bd_buffer;
+  prev_ent = first_lp_inx ? pm->pm_entries[first_lp_inx - 1] : 0;
+  first_after= prev_ent ? IE_NEXT (parent->bd_buffer + prev_ent) : SHORT_REF (parent->bd_buffer + DP_FIRST);
+  pg_fill = ROW_ALIGN (pm->pm_filled_to);
+  for (inx = 0; inx < pr_fill; inx++)
+    {
+      if (pr[inx].pr_deleted)
+	break;
+      memcpy (page_to + pg_fill, pr[inx].pr_leaf_ptr, pr[inx].pr_new_lp_len);
+      LINK_PREV_NC (pg_fill);
+      pg_fill += pr[inx].pr_new_lp_len;
+    }
+  IE_SET_NEXT (parent->bd_buffer + prev_ent, first_after);
+  *pos_ret = prev_ent;
+  pg_make_map (parent);
+  /* delete the pages that are not needed */
+  IN_PAGE_MAP (it);
+  for (inx = 0; inx < pr_fill; inx++)
+    {
+      if (pr[inx].pr_deleted)
+	{
+	  rdbg_printf_2 (("D=%d ", pr[inx].pr_buf->bd_page));
+	  isp_free_page (it->it_commit_space, pr[inx].pr_buf);
+	}
+      else 
+	{
+	  rdbg_printf_2 (("W=%d ", pr[inx].pr_buf->bd_page));
+		  	  memcpy (pr[inx].pr_buf->bd_buffer + DP_DATA, pr[inx].pr_new_buf->bd_buffer + DP_DATA, pr[inx].pr_new_fill - DP_DATA);
+	  SHORT_SET (pr[inx].pr_buf->bd_buffer + DP_FIRST, SHORT_REF (pr[inx].pr_new_buf->bd_buffer + DP_FIRST));
+	  pg_make_map (pr[inx].pr_buf);
+	  n_leaves += pr[inx].pr_buf->bd_content_map->pm_count;
+	  page_mark_change (pr[inx].pr_buf, RWG_WAIT_SPLIT);
+	  page_leave_inner (pr[inx].pr_buf);
+	}
+    }
+  page_mark_change (parent, RWG_WAIT_SPLIT);
+  cmp_printf (("  Compacted %d pages to %d under %ld first =%d, org count=%d\n", pr_fill, pr_fill - n_del, parent->bd_page, first_lp_inx, org_count));
+  if (parent->bd_content_map->pm_count != org_count - n_del )
+    GPF_T1 ("mismatch of leaves before and after compact");
+  return n_leaves;
+}
+
+void
+pr_free (page_rel_t * pr, int pr_fill)
+{
+  int inx, leave = 1;
+  for (inx = 0; inx < pr_fill; inx++)
+    {
+      dk_free_box (pr[inx].pr_leaf_ptr);
+      if (pr[inx].pr_new_buf)
+	{
+	  dk_free (pr[inx].pr_new_buf->bd_buffer, -1);
+	  dk_free ((caddr_t) pr[inx].pr_new_buf, sizeof (buffer_desc_t));
+	}
+      if (leave && pr[inx].pr_buf->bd_is_write)
+	page_leave_inner (pr[inx].pr_buf);
+    }
+}
+
+
+
+
+int
+it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int pr_fill, int * pos_ret)
+{
+  /* look at the pr's and see if can rearrange so as to save one or more pages.
+   * if so, verify therearrange and update the pr array. */
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = NULL;
+  page_rel_t * target_pr;
+  int total_fill = 0, n_target_pages, pg_fill, n_leaves = 0, n_leaves_2;
+  int olp_sum = 0, nlp_sum = 0;
+  int target_fill, est_res_pages;
+  int inx;
+  int n_source_pages = 0;
+  for (inx = 0; inx < pr_fill; inx++)
+    {
+      page_map_t * pm =  pr[inx].pr_buf->bd_content_map;
+      int dp_fill = PAGE_DATA_SZ - pm->pm_bytes_free;
+      total_fill += dp_fill;
+      n_source_pages++;
+    }
+  est_res_pages = ((total_fill + (total_fill / 12)) / PAGE_DATA_SZ) + 1;
+  if (est_res_pages>= n_source_pages)
+    return CP_STILL_INSIDE;
+  for (inx = 0; inx < pr_fill; inx++)
+    {
+      BD_SET_IS_WRITE (pr[inx].pr_buf, 1);
+      n_leaves += pr[inx].pr_buf->bd_content_map->pm_count;
+    }
+  LEAVE_PAGE_MAP (it);
+  /* could be savings.  Make precise relocation calculations */
+  target_fill = MIN (PAGE_SZ, DP_DATA + (total_fill / est_res_pages));
+  target_pr = &pr[0];
+  n_target_pages = 1;
+  pg_fill = DP_DATA;
+  itc = &itc_auto;
+  ITC_INIT (itc, NULL, NULL);
+  itc_from_it (itc, it);
+
+  for (inx = 0; inx < pr_fill; inx++)
+    {
+      buffer_desc_t * buf = pr[inx].pr_buf;
+      db_buf_t page = buf->bd_buffer;
+      int pos = SHORT_REF (buf->bd_buffer + DP_FIRST);
+      if (!pos)
+	{
+	  log_error ("Unexpected empty db %d in compact", buf->bd_page);
+	  return CP_REENTER;
+	}
+      if (0 == inx)
+	{
+	  target_pr->pr_leaf_ptr = itc_make_leaf_entry (itc, page+pos, target_pr->pr_dp);
+	  target_pr->pr_new_lp_len = ROW_ALIGN (box_length (target_pr->pr_leaf_ptr));
+	}
+      while (pos)
+	{
+	  dp_addr_t leaf = ie_leaf (page + pos);
+	  int len = ROW_ALIGN (row_length (page + pos, it->it_key));
+	  if (leaf)
+	    return CP_REENTER; /* do not compact inner pages, would have to relocate parent dp's of children  */
+	  if (pg_fill + len < target_fill)
+	    {
+	      pg_fill += len;
+	      pos = IE_NEXT (page + pos);
+	      continue;
+	    }
+	  if (pg_fill < target_fill && pg_fill + len < PAGE_SZ)
+	    {
+	      pg_fill += len;
+	      pos = IE_NEXT (page + pos);
+	      continue;
+	    }
+	  target_pr->pr_new_fill = pg_fill;
+	  if (++n_target_pages == pr_fill)
+	    return CP_REENTER; /* as many pages in result and source */
+	  target_pr++;
+	  pg_fill = DP_DATA + len;
+	  target_pr->pr_leaf_ptr = itc_make_leaf_entry (itc, page+pos, target_pr->pr_dp);
+	  target_pr->pr_new_lp_len = ROW_ALIGN (box_length (target_pr->pr_leaf_ptr));
+	  pos = IE_NEXT (page + pos);
+	}
+    }
+  target_pr->pr_new_fill = pg_fill;
+  for (inx = 0; inx < pr_fill; inx++)
+    {
+      nlp_sum += pr[inx].pr_new_lp_len;
+      olp_sum += pr[inx].pr_old_lp_len;
+    }
+  if (nlp_sum - olp_sum >= ROW_ALIGN (parent->bd_content_map->pm_bytes_free))
+    {
+      fprintf (stderr, "nlp_sum - olp_sum > pm_bytes_free\n");
+      return CP_REENTER; /* the new leaf pointers would not fit on parent.  Do nothing */
+    }
+  /* can compact now.  Will be at least 1 page shorter */
+  for (inx = n_target_pages; inx < pr_fill; inx++)
+    {
+      pr[inx].pr_deleted = 1;
+    }
+  n_leaves_2 = it_compact (it, parent, pr, pr_fill, target_fill, pos_ret);
+  if (n_leaves != n_leaves_2)
+    GPF_T1 ("compact ends up with different leaf counts before and after");
+  return CP_CHANGED;
+}
+
+
+
+#define CHECK_COMPACT \
+{  \
+  if (pr_fill > 1) \
+    {\
+      compact_rc = it_try_compact (it, parent, pr, pr_fill, &pos); \
+      pr_free (pr, pr_fill); \
+      if (CP_REENTER == compact_rc) \
+	IN_PAGE_MAP (it); \
+      if (CP_CHANGED == compact_rc) \
+        any_change = CP_CHANGED; \
+    } \
+  pr_fill = 0; \
+}
+
+
+#define BUF_COMPACT_READY(buf, leaf, it) \
+  (buf && !buf->bd_is_write && !buf->bd_readers && buf->bd_is_dirty \
+   && !buf->bd_being_read && !buf->bd_to_bust && !buf->bd_write_waiting && !buf->bd_waiting_read \
+   && !gethash ((void*)(ptrlong)leaf, it->it_commit_space->isp_page_to_cursor) \
+   && !gethash ((void*)(ptrlong)leaf, it->it_locks)) 
+
+
+int
+it_cp_check_node (index_tree_t *it, buffer_desc_t *parent)
+{
+  page_rel_t pr[MAX_CP_BATCH];
+  int pr_fill = 0, pos, any_change = 0, compact_rc;
+  db_buf_t page = parent->bd_buffer;
+  ASSERT_IN_MAP (it);
+  parent->bd_is_write = 1;
+  /* loop over present and dirty children, find possible sequences to compact. Rough check first. */
+  pos = SHORT_REF (parent->bd_buffer + DP_FIRST);
+  while (pos)
+    {
+      dp_addr_t leaf = ie_leaf (page + pos);
+      if (leaf)
+	{
+	  buffer_desc_t * buf = (buffer_desc_t*) gethash ((void*)(ptrlong) leaf, it->it_commit_space->isp_dp_to_buf);
+	  if (BUF_COMPACT_READY (buf, leaf, it))
+	    {
+	      if (!gethash ((void*)(void*)(ptrlong)leaf, it->it_commit_space->isp_remap))
+		GPF_T1 ("In compact, no remap dp fpr a dirty buffer");
+	      memset (&pr[pr_fill], 0, sizeof (page_rel_t));
+	      pr[pr_fill].pr_buf = buf;
+	      pr[pr_fill].pr_dp = leaf;
+	      pr[pr_fill].pr_old_lp_len = ROW_ALIGN(row_length (page + pos, it->it_key));
+	      pr[pr_fill].pr_lp_pos = pos;
+	      pr_fill++;
+	    }
+	  else
+	    {
+	      CHECK_COMPACT;
+	    }
+	}
+      else 
+	{
+	  CHECK_COMPACT;
+	}
+      if (!pos)
+	break;
+      pos = IE_NEXT (page + pos);
+    }
+  CHECK_COMPACT;
+  if (CP_CHANGED == any_change)
+    parent->bd_is_dirty = 1;
+  page_leave_inner (parent);
+  return any_change;
+}
+
+
+
+dk_hash_t * dp_compact_checked;
+dk_mutex_t * dp_compact_mtx;
+
+void
+dp_may_compact (dbe_storage_t *dbs, dp_addr_t dp)
+{
+  mutex_enter (dp_compact_mtx);
+  remhash ((void*)(ptrlong)dp, dp_compact_checked);
+  mutex_leave (dp_compact_mtx);
+}
+
+
+int
+dp_is_compact_checked (dbe_storage_t * dbs, dp_addr_t dp)
+{
+  int rc;
+  mutex_enter (dp_compact_mtx);
+  rc = (int)(ptrlong) gethash ((void*)(ptrlong)dp, dp_compact_checked);
+  if (!rc)
+    sethash ((void*)(ptrlong) dp, dp_compact_checked, (void*) 1);
+  mutex_leave (dp_compact_mtx);
+  return rc;
+}
+
+
+
+void
+it_check_compact (index_tree_t * it, int age_limit)
+{
+  int rc;
+  void *dp;
+  buffer_desc_t *buf, *parent;
+  dk_hash_iterator_t hit;
+  /* rough check for possible activity.  Can do outside map */
+  if (it->it_commit_space->isp_dp_to_buf->ht_count < 50
+      || it->it_commit_space->isp_remap->ht_count < 50)
+    return;
+  IN_PAGE_MAP (it);
+ again:
+  ASSERT_IN_MAP (it);
+  dk_hash_iterator (&hit, it->it_commit_space->isp_dp_to_buf);
+  while (dk_hit_next (&hit, &dp, (void**) &buf))
+    {
+      if (buf->bd_pool && buf->bd_pool->bp_ts - buf->bd_timestamp >= age_limit)
+	{
+	  dp_addr_t parent_dp = LONG_REF (buf->bd_buffer + DP_PARENT);
+	  parent = (buffer_desc_t *) gethash ((void*)(ptrlong) parent_dp,  it->it_commit_space->isp_dp_to_buf);
+	  if (BUF_COMPACT_READY (parent, parent_dp, it))
+	    {
+	      if (!dp_is_compact_checked (parent->bd_storage, parent->bd_page))
+		{
+		  rc = it_cp_check_node (it, parent);
+		  if (CP_CHANGED == rc)
+		    goto again;
+		}
+	    }
+	}
+    }
+  LEAVE_PAGE_MAP (it);
+}
+
+
+void
+wi_check_all_compact (int age_limit)
+{
+  /*  call before writing old dirty out. Also before pre-checkpoint flush of all things.  */
+  dbe_storage_t * dbs = wi_inst.wi_master;
+#ifndef AUTO_COMPACT
+  return;
+#endif 
+  if (!dbs)
+    return; /* atthe very start of init*/
+  DO_SET (index_tree_t *, it, &dbs->dbs_trees)
+    {
+      it_check_compact (it, age_limit);
+    }
+  END_DO_SET();
 }
 

@@ -172,6 +172,7 @@ struct df_elt_s
 {
   short	dfe_type;
   char	dfe_is_placed;
+  char	dfe_unit_includes_vdb:1;
   locus_t *	dfe_locus;
   dk_set_t	dfe_remote_locus_refs;
   ST *	dfe_tree;
@@ -625,8 +626,8 @@ int sqlo_is_contains_vdb_tb (sqlo_t *so, op_table_t *ot, char ctype, ST **args);
 #define ROW_COST_PER_BYTE (COL_PRED_COST / 200) /* 200 b of row cost 1 itc_col_check */
 #define NEXT_PAGE_COST 5
 #define INX_ROW_INS_COST 1 /* cost of itc_insert_dv into inx */
-#define HASH_ROW_INS_COST 0.7 /* cost of adding a row to hash */
-#define HASH_LOOKUP_COST 0.6
+#define HASH_ROW_INS_COST 1.1 /* cost of adding a row to hash */
+#define HASH_LOOKUP_COST 0.9
 #define HASH_ROW_COST 0.3
 #define CV_INSTR_COST 0.1   /* avg cost of instruction in code_vec_run */
 

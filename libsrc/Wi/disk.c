@@ -659,6 +659,7 @@ bp_stat_action (buffer_pool_t * bp)
   if ((n_dirty * 100) / (n_clean + n_dirty) > bp_flush_trig_pct
     || action_ctr++ % 10 == 0)
     {
+      wi_check_all_compact (age_limit);
       mt_write_dirty (bp, age_limit, 0);
     }
   if (n_clean)
@@ -2962,6 +2963,9 @@ mem_cache_init (void)
 db_buf_t rbp_allocate (void);
 void rbp_free (caddr_t p);
 
+extern dk_hash_t * dp_compact_checked;
+extern dk_mutex_t * dp_compact_mtx;
+
 
 void
 wi_init_globals (void)
@@ -3002,6 +3006,9 @@ wi_init_globals (void)
   hash_index_cache.hic_hashes = id_hash_allocate (101, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   hash_index_cache.hic_col_to_it = hash_table_allocate (201);
   hash_index_cache.hic_pk_to_it = hash_table_allocate (201);
+  dp_compact_mtx = mutex_allocate ();
+  dp_compact_checked = hash_table_allocate (1000);
+  dk_hash_set_rehash (dp_compact_checked, 3);
 }
 
 

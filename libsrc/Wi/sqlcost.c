@@ -55,7 +55,7 @@ dbe_key_count (dbe_key_t * key)
   else if (tb->tb_count_estimate == DBE_NO_STAT_DATA
 	   || ABS (tb->tb_count_delta ) > tb->tb_count_estimate / 5)
     {
-      if (find_remote_table (tb->tb_name, 0));
+      if (find_remote_table (tb->tb_name, 0))
       return 10000; /* if you know nothing, assume a remote table is 10K rows */
       tb->tb_count_estimate = key_count_estimate (tb->tb_primary_key, 3, 1);
       tb->tb_count_delta = 0;
@@ -120,7 +120,11 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
   if (upper == lower)
     upper = NULL;
   if (BOP_EQ == lower->_.bin.op)
+    {
     *a1 = (float) 0.03;
+      if (lower->_.bin.left == lower->_.bin.right)
+	*a1 = 1; /* recognize the dummy 1=1 */
+    }
   else if (!upper)
     *a1 = 0.3;
   else
@@ -880,6 +884,10 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
 	  dfe_unit_cost (dfe->_.table.hash_filler, 0, &fu1, &fa1, &fo1);
 	  *overhead_ret += fu1;
 	}
+      if (dfe->_.table.join_test)
+	{
+	  dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret);
+	}
       return;
     }
   inx_cost = dbe_key_unit_cost (dfe->_.table.key);
@@ -988,9 +996,13 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
   if (dfe->_.table.join_test)
     {
       dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret);
-      total_cost += p_cost * total_arity;
-      total_arity *= p_arity;
     }
+  else
+    {
+      p_cost = 0;
+      p_arity = 1;
+    }
+
   if (dfe->_.table.is_text_order)
     {
       /* very rough. 1/1000 selected, cost is 1.5*unit of text inx * 1/1000 of indexed table count.
@@ -1001,12 +1013,12 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
     }
   if (HR_FILL == dfe->_.table.hash_role)
     {
-      *a1 = 1;
-      *u1 = total_cost + total_arity * dfe_hash_fill_unit (dfe, total_arity);
+      float fill_arity = total_arity * p_arity; /* join pred may filter before hash insertion */
+      total_cost = total_cost + fill_arity * dfe_hash_fill_unit (dfe, fill_arity);
       if (dfe->dfe_locus && IS_BOX_POINTER (dfe->dfe_locus))
 	{
 	  dfe->_.table.hash_role = HR_NONE;
-	  *u1 += sqlo_dfe_locus_rpc_cost (dfe->dfe_locus, dfe);
+	  total_cost += sqlo_dfe_locus_rpc_cost (dfe->dfe_locus, dfe);
 	  dfe->_.table.hash_role = HR_FILL;
 	}
     }
@@ -1015,14 +1027,12 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
       float fu1, fa1, fo1;
       dfe_unit_cost (dfe->_.table.hash_filler, 0, &fu1, &fa1, &fo1);
       *overhead_ret += fu1;
-      dfe->dfe_arity = *a1 = total_arity;
-      dfe->dfe_unit = *u1 = (float) HASH_LOOKUP_COST + HASH_ROW_COST * MAX (0,  total_arity - 1);
+      total_cost = (float) HASH_LOOKUP_COST + HASH_ROW_COST * MAX (0,  total_arity - 1);
     }
-  else
-    {
+  total_cost += p_cost * total_arity;
+  total_arity *= p_arity;
       dfe->dfe_arity = *a1 = total_arity;
       dfe->dfe_unit = *u1 = total_cost;
-    }
 }
 
 
@@ -1198,12 +1208,19 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 	  if (dfe_ot (dfe) && ST_P (dfe_ot (dfe)->ot_dt, SELECT_STMT) &&
 	      !sqlo_is_postprocess (dfe->dfe_sqlo, dfe, NULL))
 	    {
+	      int is_distinct = SEL_IS_DISTINCT (dfe_ot (dfe)->ot_dt);
 	      ST *top_exp = SEL_TOP (dfe_ot (dfe)->ot_dt);
 	      ptrlong top_cnt = sqlo_select_top_cnt (dfe->dfe_sqlo, top_exp);
 
 	      if (top_cnt && top_cnt < *a1)
 		{
 		  *u1 /= *a1 / top_cnt;
+		}
+	      if (is_distinct)
+		{
+		  /* assume 10% are droped, 1.2 * hash ref cost per incoming */
+		  *u1 += *a1 * HASH_LOOKUP_COST * 1.3;
+		  *a1 *= 0.9;
 		}
 	    }
 	  if (dfe->dfe_type == DFE_EXISTS)
@@ -1310,7 +1327,11 @@ dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float * over
 		    }
 		  if (dfe->dfe_locus != LOC_LOCAL &&
 		      (DFE_TABLE != dfe->dfe_type || HR_REF != dfe->_.table.hash_role))
+		    {
+		      if (!dfe->dfe_unit_includes_vdb)
 		    u1 += sqlo_dfe_locus_rpc_cost (dfe->dfe_locus, dfe);
+		      dfe->dfe_unit_includes_vdb = 1;
+		    }
 		}
 	      loc = dfe->dfe_locus;
 	    }

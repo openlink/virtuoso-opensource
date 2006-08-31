@@ -335,6 +335,8 @@ void pg_delete_move_cursors (it_cursor_t * itc, dp_addr_t dp_from,
 			     int from,
 			     dp_addr_t page_to, int to,
 			     buffer_desc_t * buf_to);
+void dp_may_compact (dbe_storage_t *dbs, dp_addr_t);
+void wi_check_all_compact (int age_limit);
 
 /* tree.c */
 

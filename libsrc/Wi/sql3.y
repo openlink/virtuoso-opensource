@@ -1630,6 +1630,8 @@ sql_option
 	| QUIETCAST_L { $$ = CONS (OPT_SPARQL, CONS (1, NULL)); }
 	| HASH { $$ = CONS (OPT_JOIN, CONS (OPT_HASH, NULL)); }
 	| LOOP { $$ = CONS (OPT_JOIN, CONS (OPT_LOOP, NULL)); }
+	| LOOP EXISTS { $$ = CONS (OPT_SUBQ_LOOP, CONS (SUBQ_LOOP, NULL)); }
+	| DO NOT LOOP EXISTS { $$ = CONS (OPT_SUBQ_LOOP, CONS (SUBQ_NO_LOOP, NULL)); }
 	| INDEX identifier { $$ = CONS (OPT_INDEX, CONS ($2, NULL)); }
 	| INDEX PRIMARY KEY { $$ = CONS (OPT_INDEX, CONS (t_box_string ("PRIMARY KEY"), NULL)); }
 	| INDEX TEXT_L KEY { $$ = CONS (OPT_INDEX, CONS (t_box_string ("TEXT KEY"), NULL)); }
