@@ -55,6 +55,9 @@ sqlo_dfe_list_print (dk_set_t list, int offset)
 void
 sqlo_dfe_print (df_elt_t * dfe, int offset)
 {
+  int is_rec = offset == -1;
+  if (offset < 0)
+    offset = 8;
   sqlo_print (("%*.*s", offset, offset, " "));
   if (!IS_BOX_POINTER (dfe))
     {
@@ -193,6 +196,17 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	  }
 	if (dfe->_.table.col_preds)
 	  sqlo_print (("%*.*s", offset, offset, " "));
+	if (dfe->_.table.inx_op && !is_rec)
+	  {
+	    sqlo_print (("Index AND:\n{\n"));
+	    DO_SET (df_inx_op_t *, term, &dfe->_.table.inx_op->dio_terms)
+	      {
+		sqlo_dfe_print (term->dio_table, -1);
+		sqlo_print (("\n"));
+	      }
+	    END_DO_SET();
+	    sqlo_print (("\n}"));
+	  }
 	if (dfe->_.table.out_cols)
 	  {
 	    sqlo_print (("  out cols: "));

@@ -652,6 +652,25 @@ sqlg_inx_op_and_ks (sqlo_t * so, inx_op_t * and_iop, inx_op_t * iop,
 }
 
 
+void
+sqlg_inx_op_ks_out_cols (sqlo_t * so, key_source_t * ks, df_elt_t * ks_tb_dfe, df_elt_t * top_tb_dfe)
+{
+  DO_SET (df_elt_t *, col_dfe, &top_tb_dfe->_.table.out_cols)
+    {
+      if (col_dfe->dfe_is_placed != DFE_GEN)
+	{
+	  if (0 == strcmp (col_dfe->dfe_tree->_.col_ref.prefix, ks_tb_dfe->_.table.ot->ot_new_prefix)
+	      && dk_set_member (ks->ks_key->key_parts, (void*)col_dfe->_.col.col))
+	    {
+	      col_dfe->dfe_is_placed = DFE_GEN;
+	      sqlg_ks_out_col (so, ks_tb_dfe, ks, col_dfe->_.col.col);
+	    }
+	}
+  }
+  END_DO_SET ();
+}
+
+
 
 
 inx_op_t *
@@ -684,6 +703,7 @@ sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * paren
       }
     case IOP_KS:
       iop->iop_ks = sqlg_key_source_create (so, dio->dio_table, dio->dio_key);
+      sqlg_inx_op_ks_out_cols (so, iop->iop_ks, dio->dio_table, tb_dfe);
       iop->iop_itc = ssl_new_itc (so->so_sc->sc_cc);
       break;
     }
