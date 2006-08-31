@@ -1822,7 +1822,7 @@ caddr_t box_md5 (caddr_t);
 caddr_t
 bif_md5_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg = bif_arg (qst, args, 0, "hash");
+  caddr_t arg = bif_arg (qst, args, 0, "md5_box");
   return (box_md5 (arg));
 }
 
