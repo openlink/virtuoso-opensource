@@ -1692,3 +1692,23 @@ div.validator_err_ctr p
 	padding: 30px;
 	line-height: 1.3em;
 }
+
+table.stat_table
+{
+  background-color: white;
+}
+
+table.stat_table td
+{
+  font-weight: bold;
+  font-size: 80%;
+}
+
+table.stat_table th
+{
+  border-color: #99B3C5;
+  border-style: solid;
+  border-width: 0px 0px 1px 0px;
+  padding: 2px;
+  color: #033566;
+}
