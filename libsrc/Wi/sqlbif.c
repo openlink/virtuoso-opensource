@@ -253,13 +253,14 @@ void  bif_kerberos_init (void);
 id_hash_t *name_to_bif;
 id_hash_t *name_to_bif_type;
 
+#define bif_arg_nochecks(qst,args,nth) QST_GET ((qst), (args)[(nth)])
 
 caddr_t
 bif_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   if (((uint32) nth) >= BOX_ELEMENTS (args))
   sqlr_new_error ("22003", "SR030", "Too few arguments for %s.", func);
-  return (QST_GET (qst, args[nth]));
+  return bif_arg_nochecks(qst,args,nth);
 }
 
 
@@ -301,6 +302,18 @@ bif_strict_type_array_arg (dtp_t element_dtp, caddr_t * qst, state_slot_t ** arg
 			func, dv_type_title (element_dtp), nth + 1, dv_type_title (DV_TYPE_OF (el)), DV_TYPE_OF (el));
     }
   END_DO_BOX;
+  return arg;
+}
+
+caddr_t
+bif_string_or_uname_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if ((dtp != DV_UNAME) && (dtp != DV_STRING))
+    sqlr_new_error ("22023", "SR014",
+  "Function %s needs a string or a UNAME as argument %d, not an arg of type %s (%d)",
+  func, nth + 1, dv_type_title (dtp), dtp);
   return arg;
 }
 
@@ -3300,6 +3313,35 @@ val_end_found:
       switch (field_end[-1])
         {
         case 'd':
+          {
+            int acc = 0;
+            int is_neg = 0;
+            const char *val_tail = val_start;
+            if (val_tail == val_end)
+              goto format_mismatch_mid_field;
+            if ('+' == val_tail[0])
+              {
+                val_tail++;
+                if (val_tail == val_end)
+                  goto format_mismatch_mid_field;
+              }
+            else if ('-' == val_tail[0])
+              {
+                is_neg = 1;
+                val_tail++;
+                if (val_tail == val_end)
+                  goto format_mismatch_mid_field;
+              }
+            while (val_tail < val_end)
+              {
+                if (!isdigit (val_tail[0]))
+                  goto format_mismatch_mid_field;
+                acc = acc * 10 + (val_tail[0] - '0');
+                val_tail++;
+              }
+            dk_set_push (&res, box_num (is_neg ? -acc : acc));
+            break;
+          }
         case 'i':
         case 'o':
         case 'u':
@@ -4837,7 +4879,74 @@ bif_ifnull (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (box_copy_tree (bif_arg (qst, args, is_null, "ifnull")));
 }
 
+caddr_t
+bif_and (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int argctr, argcount = BOX_ELEMENTS (args);
+  for (argctr = 0; argctr < argcount; argctr++)
+    {
+      caddr_t arg = bif_arg_nochecks(qst,args,argctr);
+      dtp_t dtp = DV_TYPE_OF (arg);
+      switch (dtp)
+        {
+        case DV_DB_NULL: return NEW_DB_NULL;
+        case DV_SHORT_INT:
+        case DV_LONG_INT:
+        case DV_CHARACTER:
+        case DV_C_SHORT:    /* These are  */
+        case DV_C_INT:    /*  not needed? */
+          if (0 == unbox (arg))
+	    return 0;
+        }
+    }
+  return 1;
+}
 
+caddr_t
+bif_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int argctr, argcount = BOX_ELEMENTS (args);
+  for (argctr = 0; argctr < argcount; argctr++)
+    {
+      caddr_t arg = bif_arg_nochecks(qst,args,argctr);
+      dtp_t dtp = DV_TYPE_OF (arg);
+      switch (dtp)
+        {
+        case DV_DB_NULL: return NEW_DB_NULL;
+        case DV_SHORT_INT:
+        case DV_LONG_INT:
+        case DV_CHARACTER:
+        case DV_C_SHORT:    /* These are  */
+        case DV_C_INT:    /*  not needed? */
+          if (0 == unbox (arg))
+            continue;
+        /* no break */
+        default: return 1;
+        }
+    }
+  return 0;
+}
+
+caddr_t
+bif_not (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg1 = bif_arg (qst, args, 0, "not");
+  int condition = 0;
+
+  dtp_t dtp = DV_TYPE_OF (arg1);
+  switch (dtp)
+    {
+    case DV_DB_NULL: return NEW_DB_NULL;
+    case DV_SHORT_INT:
+    case DV_LONG_INT:
+    case DV_CHARACTER:
+    case DV_C_SHORT:    /* These are  */
+    case DV_C_INT:    /*  not needed? */
+      return (0 == unbox (arg1)) ? 1 : 0;
+    default:
+      return 0;
+  }
+}
 
 /* ================================================================== */
 /*  COMPARISON FUNCTIONS FOR NUMERIC ARGUMENTS, ETC.      */
@@ -6541,13 +6650,13 @@ find_index_to_vector (caddr_t item, caddr_t vec, int veclen,
   elem_size = sizeof (float);
   break;
     }
-  case DV_STRING:
+  case DV_STRING: case DV_UNAME:
     {
   /* if item is a string, then use its first character
     (which could be a terminating zero if string is empty),
     otherwise it must be an integer, which should be an unsigned
     ascii value of the character. */
-  if ((DV_SHORT_STRING == item_type) || (DV_LONG_STRING == item_type))
+  if ((DV_STRING == item_type) || (DV_UNAME == item_type))
     {
     item = ((caddr_t) (ptrlong) *((unsigned char *) item));
     }
@@ -6667,7 +6776,7 @@ bif_get_keyword_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char *me = "get_keyword_ucase";
   int n_args = BOX_ELEMENTS (args);
-  caddr_t item = bif_string_arg (qst, args, 0, me);
+  caddr_t item = bif_string_or_uname_arg (qst, args, 0, me);
   caddr_t arr = (caddr_t) bif_array_arg (qst, args, 1, me);
   long is_set_0 = (long) ((n_args > 3) ? bif_long_arg (qst, args, 3, me) : 0);
   int inx;
@@ -11802,6 +11911,9 @@ sql_bif_init (void)
   bif_define ("__min", bif_min);
   bif_define_typed ("either", bif_either, &bt_any);
   bif_define_typed ("ifnull", bif_ifnull, &bt_any);
+  bif_define_typed ("__and", bif_and, &bt_integer);
+  bif_define_typed ("__or", bif_or, &bt_integer);
+  bif_define_typed ("__not", bif_not, &bt_integer);
 
 /* Comparison functions */
   bif_define_typed ("lt", bif_lt, &bt_integer);
