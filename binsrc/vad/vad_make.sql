@@ -1114,6 +1114,7 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   registry_set ('VAD_errcount', '0');
   registry_set ('VAD_wet_run', '0');
   registry_set ('VAD_is_run', '1');
+  connection_set ('vad_pkg_fullname', null);
   result_names (SQL_STATE, SQL_MESSAGE);
   {
     declare exit handler for sqlstate '*'
@@ -1129,7 +1130,8 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     if ('0' = registry_get ('VAD_errcount'))
       {
   "VAD"."DBA"."VAD_ATOMIC" (0);
-  result ('00000', 'No errors detected, installation complete.');
+  result ('00000', sprintf ('No errors detected, installation of the "%s" is complete.',
+	coalesce (connection_get ('vad_pkg_fullname'), fname)));
   result ('00000', 'Now making a final checkpoint.');
   exec ('checkpoint');
   result ('00000', 'Final checkpoint is made.');
@@ -1297,6 +1299,8 @@ create procedure "VAD"."DBA"."VAD_READ" (
       declare items any;
       declare j, n, ix integer;
       "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (parr, doc, pkg_name, pkg_vers, pkg_fullname, 0);
+
+      connection_set ('vad_pkg_fullname', pkg_fullname);
 
       items := xpath_eval ('/sticker/procedures/sql[@purpose=\'pre-install\']', doc, 0);
       n := length (items);
