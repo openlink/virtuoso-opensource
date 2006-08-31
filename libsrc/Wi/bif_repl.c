@@ -54,6 +54,9 @@ sched_do_round (void)
   query_t *qr;
   client_connection_t * save_cli = THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT);
 
+  if (cpt_is_global_lock ())
+    return;
+
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, sched_cli);
   local_start_trx (sched_cli);
   qr = sql_compile ("scheduler_do_round(0)", sched_cli, &err, SQLC_DEFAULT);
