@@ -66,6 +66,26 @@ update t1 set fi6 = 11 where fi2 = 4 and fi3 = 5 and fi6 = 22;
 echo both $if $equ $rowcnt 0 "PASSED" "*** FAILED";
 echo both " t1 inx int update 3\n";
 
+create procedure f (in a any) {return a;};
+
+select count (*) from t1 a, t1 b where a.fi2 = 3 and b.fi3 = 4 and a.row_no = b.row_no;
+echo both $if $equ $last[1] 130 "PASSED" "***FAILED";
+echo both ": inx int join 1\n";
+
+
+select count (*) from t1 a, t1 b where a.fi2 = 3 and b.fi3 = 4 and a.row_no = b.row_no and f(a.row_no) < 2000;
+echo both $if $equ $last[1] 25 "PASSED" "***FAILED";
+echo both ": inx int join 2\n";
+
+select count (*) from t1 a, t1 b where a.fi2 = 3 and b.fi3 = 4 and a.row_no = b.row_no and f(a.row_no + b.row_no) < 4000;
+echo both $if $equ $last[1] 25 "PASSED" "***FAILED";
+echo both ": inx int join 3\n";
+
+select count (*) from t1 a, t1 b, t1 c where a.fi2 = 4 and b.fi2 = 4 and c.fi3 = 3 and a.row_no = b.row_no and b.row_no = c.row_no and f(a.fi2) is not null and f(c.fs1) is not null;
+echo both $if $equ $last[1] 130  "PASSED" "***FAILED";
+echo both ": inx int join 3 tables\n";
+
+
 
 drop table t1;
 -- the next test tjoin needs to fill this from scratch
