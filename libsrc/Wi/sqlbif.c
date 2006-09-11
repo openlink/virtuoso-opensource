@@ -494,6 +494,36 @@ bif_string_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, co
   }
   return arg;
 }
+
+caddr_t
+bif_string_or_uname_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_DB_NULL == dtp)
+  {
+    return (NULL);
+  }
+#ifndef O12
+  if (dtp == DV_BLOB_HANDLE || dtp == DV_BLOB_WIDE_HANDLE)
+  {
+    caddr_t bs = blob_to_string (((query_instance_t *) qst)->qi_trx, arg);
+    qst_set (qst, args[nth], bs);
+    return bs;
+  }
+#endif
+  if (dtp != DV_STRING && dtp != DV_UNAME
+      && dtp != DV_C_STRING
+      && !IS_WIDE_STRING_DTP (dtp))
+    {
+      sqlr_new_error ("22023", "SR007",
+    "Function %s needs a string or UNAME or NULL as argument %d, "
+    "not an arg of type %s (%d)",
+    func, nth + 1, dv_type_title (dtp), dtp);
+  }
+  return arg;
+}
+
 bif_type_t bt_varchar = {NULL, DV_LONG_STRING, 0, 0};
 bif_type_t bt_wvarchar = {NULL, DV_WIDE, 0, 0};
 bif_type_t bt_varbinary = {NULL, DV_BIN, 0, 0};
@@ -2485,7 +2515,7 @@ bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* First count the required length for a resulting string buffer. */
   for (inx = 0; inx < n_args; inx++)
   {
-    a = bif_string_or_wide_or_null_arg (qst, args, inx, "concat");
+      a = bif_string_or_uname_or_wide_or_null_arg (qst, args, inx, "concat");
     if (NULL == a)
   {
     continue;
@@ -2506,7 +2536,7 @@ bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   for (inx = 0; inx < n_args; inx++)
   {
-    a = bif_string_or_wide_or_null_arg (qst, args, inx, "concat");
+      a = bif_string_or_uname_or_wide_or_null_arg (qst, args, inx, "concat");
     if (NULL == a)
       continue;
     dtp1 = DV_TYPE_OF (a);
@@ -3228,12 +3258,13 @@ bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
                 goto next_field; /* see below */
             }
           if (str_tail[0] != fmt_tail[0])
-            goto format_mismatch; /* see below */
+            goto POP_format_mismatch; /* see below */
           fmt_tail++; str_tail++;
         }
       if ('\0' != str_tail[0])
-        goto format_mismatch; /* see below */
-
+        {
+          goto POP_format_mismatch; /* see below */
+        }
 next_field:
       field_start = fmt_tail;
       field_len = field_prec = 0;
@@ -3298,14 +3329,14 @@ check_val_end:
           if (str_scan_tail[0] != next_field_start[0])
             {
               if ('\0' == str_scan_tail[0])
-                goto format_mismatch_mid_field; /* see below */
+                goto POP_format_mismatch_mid_field; /* see below */
               val_end++;
               goto check_val_end; /* see above */
             }
           next_field_start++; str_scan_tail++;
         }
       if ('\0' != str_scan_tail[0])
-        goto format_mismatch_mid_field; /* see below */
+        goto POP_format_mismatch_mid_field; /* see below */
       
 val_end_found:
       fmt_tail = next_field_start;
@@ -3318,24 +3349,24 @@ val_end_found:
             int is_neg = 0;
             const char *val_tail = val_start;
             if (val_tail == val_end)
-              goto format_mismatch_mid_field;
+              goto POP_format_mismatch_mid_field;
             if ('+' == val_tail[0])
               {
                 val_tail++;
                 if (val_tail == val_end)
-                  goto format_mismatch_mid_field;
+                  goto POP_format_mismatch_mid_field;
               }
             else if ('-' == val_tail[0])
               {
                 is_neg = 1;
                 val_tail++;
                 if (val_tail == val_end)
-                  goto format_mismatch_mid_field;
+                  goto POP_format_mismatch_mid_field;
               }
             while (val_tail < val_end)
               {
                 if (!isdigit (val_tail[0]))
-                  goto format_mismatch_mid_field;
+                  goto POP_format_mismatch_mid_field;
                 acc = acc * 10 + (val_tail[0] - '0');
                 val_tail++;
               }
@@ -3385,12 +3416,24 @@ val_end_found:
           GPF_T;
         }
       if ('\0' == fmt_tail[0])
-        goto return_res; /* see below */
+        {
+          POP_QR_RESET;
+          return (caddr_t)(revlist_to_array (res));
+        }
       goto next_field; /* see above */
 
 sorry_unsupported:
       sqlr_new_error ("22023", "SR524",
         "Sorry, unsupported format string for sscanf at field %d (column %ld of format '%.1000s')", field_ctr, (long)(fmt_tail-fmt), fmt );
+
+POP_format_mismatch_mid_field:
+      POP_QR_RESET;
+      goto format_mismatch_mid_field; /* see below */
+
+POP_format_mismatch:
+      POP_QR_RESET;
+      goto format_mismatch; /* see below */
+
     }
   QR_RESET_CODE
     {
@@ -3433,8 +3476,6 @@ format_mismatch:
         dk_free_tree (dk_set_pop (&res));
       return NEW_DB_NULL;
     }
-
-return_res:
   return (caddr_t)(revlist_to_array (res));
 }
 
@@ -6770,6 +6811,21 @@ get_keyword_int (caddr_t * arr, char * item1, char * me)
 
 
 /* same as the above but only for DV_ARRAY_OF_VECTOR with string keys */
+
+caddr_t
+get_keyword_ucase_int (caddr_t * arr, const char * item, caddr_t dflt)
+{
+  int inx, len = BOX_ELEMENTS (arr);
+  for (inx = 0; inx < len; inx += 2)
+    {
+      caddr_t key = arr[inx];
+      dtp_t keydtp = DV_TYPE_OF (key);
+      if (IS_STRING_DTP (keydtp) && !stricmp (key, item))
+        return box_copy_tree (arr [inx + 1]);
+    }
+  return box_copy_tree (dflt);
+}
+
 
 caddr_t
 bif_get_keyword_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
