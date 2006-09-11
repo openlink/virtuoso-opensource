@@ -1336,7 +1336,7 @@ ins_qnode (instruction_t * ins, caddr_t * qst)
 void
 vdb_enter (query_instance_t * qi)
 {
-  lock_trx_t * lt = qi->qi_trx;
+  lock_trx_t *lt = qi->qi_trx;
   IN_TXN;
   CHECK_DK_MEM_RESERVE (lt);
   if (LT_PENDING != lt->lt_status)
@@ -1346,9 +1346,11 @@ vdb_enter (query_instance_t * qi)
 	  lt_ack_freeze_inner (lt);
 	}
       else
-	lt_rollback (lt, TRX_CONT);
-      LEAVE_TXN;
-      sqlr_new_error ("40001", "VD047", "Transaction killed during VDB call");
+	{
+	  lt_rollback (lt, TRX_CONT);
+	  LEAVE_TXN;
+	  sqlr_new_error ("40001", "VD047", "Transaction killed during VDB call");
+	}
     }
   lt->lt_vdb_threads++;
   LEAVE_TXN;
