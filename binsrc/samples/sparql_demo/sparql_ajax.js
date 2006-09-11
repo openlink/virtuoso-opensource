@@ -32,7 +32,9 @@ function init()
   tab.add ("tab_sq","page_sq");
   tab.add ("tab_import_data","page_import_data");
 //  tab.add ("tab_query_remote","page_query_remote");
+  tab.go (1); /* is 0-based index... */
 	$('load').checked = true;
+  $('remote').selectedIndex = 0;
   tab.go (go_to); /* is 0-based index... */
 
   var sr_cl = new OAT.Combolist([],"http://demo.openlinksw.com/sparql");
@@ -52,8 +54,8 @@ function init()
   sr_cl.addOption("http://my.opera.com/community/sparql/sparql");
   sr_cl.addOption("http://www.wasab.dk/morten/2005/04/sparqlette/");
 
-  OAT.Tree.assign("tree_content","images","gif",true);
-  OAT.Tree.assign("tree_content2","images","gif",true);
+  OAT.Tree.assign("dawg_tree_container", "images", "gif", true,"dawg_tree");
+  OAT.Tree.assign("samples_tree_container", "images", "gif", true, "samples_tree");
 
   filewin = new OAT.Window({close:1,min:0,max:0,x:450,y:155,width:500,height:400,title:"View File",imagePath:"images/"});
   filewin.content.appendChild($("file_window_content"));
@@ -68,30 +70,34 @@ function init()
 	//switch_panels();
 
   var ref=function() { 
-    if ($('tree_container')._Tree_collapsed == 0)
+    if ($('dawg_tree_container')._Tree_collapsed == 0)
     {
-      OAT.Dom.show($('tree_container'));
-      $('tree_container')._Tree_collapsed = 1;
+      OAT.Dom.show($('dawg_tree_container'));
+      $('dawg_tree_container')._Tree_collapsed = 1;
+      OAT.Dom.hide ($('samples_tree_container'));
+      $('samples_tree_container')._Tree_collapsed = 0;
     } else {
-      OAT.Dom.hide($('tree_container'));
-      $('tree_container')._Tree_collapsed = 0;
+      OAT.Dom.hide($('dawg_tree_container'));
+      $('dawg_tree_container')._Tree_collapsed = 0;
     }
   }
-  OAT.Dom.attach($('tab_dawg'),"click",ref);
-  $('tree_container')._Tree_collapsed = 0;
+  OAT.Dom.attach($('tab_dawg_toggle'),"click",ref);
+  $('dawg_tree_container')._Tree_collapsed = 0;
 
   var ref2=function() { 
-    if ($('tree_container2')._Tree_collapsed == 0)
+    if ($('samples_tree_container')._Tree_collapsed == 0)
     {
-      OAT.Dom.show($('tree_container2'));
-      $('tree_container2')._Tree_collapsed = 1;
+      OAT.Dom.show($('samples_tree_container'));
+      $('samples_tree_container')._Tree_collapsed = 1;
+      OAT.Dom.hide ($('dawg_tree_container'));
+      $('dawg_tree_container')._Tree_collapsed = 0;
     } else {
-      OAT.Dom.hide($('tree_container2'));
-      $('tree_container2')._Tree_collapsed = 0;
+      OAT.Dom.hide($('samples_tree_container'));
+      $('samples_tree_container')._Tree_collapsed = 0;
     }
   }
-  OAT.Dom.attach($('tab_sq'),"click",ref2);
-  $('tree_container2')._Tree_collapsed = 0;
+  OAT.Dom.attach($('tab_sq_toggle'),"click",ref2);
+  $('samples_tree_container')._Tree_collapsed = 0;
 }
 
 function switch_panels()
@@ -180,7 +186,8 @@ function load_dawg(list,item)
       }
       }
     
-    $('dawg_content').innerHTML = '<h2>' + decodeURIComponent(item).replace(/\+/g,' ') +'</h2>';
+    $('dawg_content').innerHTML ='';
+    $('dawg_content').innerHTML += '<h2>' + decodeURIComponent(item).replace(/\+/g,' ') +'</h2>';
     $('dawg_content').innerHTML +='<p>' + comment +'</p>';
     $('dawg_content').innerHTML +='<h3>Data</h3>';
     $('dawg_content').innerHTML +='<p><a href="#" id="dawg_dgu" onclick="view_file(\'' + default_graph_uri + '\')">' + default_graph_uri + '</a><br></p>';
@@ -191,6 +198,7 @@ function load_dawg(list,item)
     $('dawg_content').innerHTML +='  <a href="#" onclick="view_file(\'' + queryuri + '\')">' + queryuri + '</a><br>';
     $('dawg_content').innerHTML +='<div class="query" id="dawg_query">' + query.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br/>').replace(/ /g,'&nbsp;') + '</div>';
     $('dawg_query').setAttribute('dawgdata',query);
+    $('dawg_query').setAttribute('dawglist',list);
     $('dawg_content').innerHTML +='  <br/><button name="load_dawg_query" id="load_dawg_query" onclick="load_dawg_query()">Load Query</button><br/>';
     $('dawg_content').innerHTML +='<h3>Results</h3>';
     $('dawg_content').innerHTML +='<p><a href="#" onclick="view_file(\'' + etalonuri + '\')">' + etalonuri + '</a></p>';
@@ -212,7 +220,17 @@ function load_dawg_query()
   $('default-graph-uri').value = $('dawg_dgu').getAttribute('dawgdata');
   $('etalon').innerHTML = '<hr/><b>Expected result:</b>' + $('dawg_etalon').innerHTML;
 
+  if($('query').value.match('CONSTRUCT'))
+    $('format').selectedIndex = 2; 
+  else 
   $('format').selectedIndex = 0; 
+    
+  if ($('usesoap').checked)
+  {
+    $('usesoap').checked = false;
+    usesoap_change($('usesoap'));
+  }
+
   $('res_area').innerHTML = '';
 
   var table = find_child_element($('etalon'),'table');
@@ -275,16 +293,10 @@ function load_sq_query()
   $('query').value = $('sq_query').getAttribute('sqdata');
   $('default-graph-uri').value = $('sq_dgu').getAttribute('sqdata');
 
-  $('format').selectedIndex = 0; 
   $('res_area').innerHTML = '';
+  $('etalon').innerHTML = ''; 
 }
 
-function get_r(){
-  //if ($('tab_query_remote').className.match('tab_selected'))
-  //  return 'r_';
-  //else
-    return '';
-}
 function is_r()
 {
   if($v('remote') == 'y')
@@ -295,7 +307,7 @@ function is_r()
 
 function format_change()
 {
-  $(get_r()+'etalon').innerHTML = ''; 
+  $('etalon').innerHTML = ''; 
 }
 
 function find_child_element(data,node)
@@ -321,16 +333,22 @@ function find_child_element(data,node)
 }
 
 function load_grid(grid,table){
+  var minlen = table.rows[0].cells.length;
   for(var i = 0;i < table.rows.length;i++)
   {
     var row = table.rows[i];
     var cells = Array();
-    for(var n = 0;n < row.cells.length;n++)
+    //for(var n = 0;n < row.cells.length;n++)
+    for(var n = 0;n < minlen;n++)
+    {
+      if (row.cells[n])
     {
       if (i == 0)
         cells.push({value:row.cells[n].innerHTML.replace(/<PRE>/ig,'').replace(/<\/PRE>/ig,''),align:OAT.GridData.ALIGN_CENTER});
       else
         cells.push(row.cells[n].innerHTML.replace(/<PRE>/ig,'').replace(/<\/PRE>/ig,''));
+      } else 
+        cells.push('');
     }
     if (i == 0)
       grid.createHeader(cells);
@@ -348,29 +366,54 @@ function rq_query(param,dl)
     return;
   };
     
-  var r = get_r();
-  if (is_r() && $v(r+'service') == '')
+  if (is_r() && $v('service') == '')
   {
     alert('You must specify "Query Service Endpoint"!');
     return;
   }
   if (param == 'c')
-    $(r+'etalon').innerHTML = '';
-  $(r+'res_area').innerHTML = 'Sending query...';
+    $('etalon').innerHTML = '';
+  $('res_area').innerHTML = 'Sending query...';
 
   var format = $v('format');
   if (!format) format = 'text/html';
+  var content_type = 'application/x-www-form-urlencoded';
+  
+  // If we use SOAP ...
+  if (!is_r() && !param && $('usesoap').checked == true)
+  {
+    format = 'application/soap+xml';
+    content_type = 'application/soap+xml';
+  }
+  var ReqHeaders = {'Accept':format,'Content-Type':content_type};
 
   var body = function()
   {
     var body = '';
+    
+    // If we use SOAP we generate SOAP Request
+    if (!is_r() && !param && $('usesoap').checked == true)
+    {
+      body += '<?xml version="1.0" encoding="UTF-8"?>\n';
+      body += '<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n'; 
+      body += '  <soapenv:Body>\r\n'; 
+      body += '    <query-request xmlns="http://www.w3.org/2005/09/sparql-protocol-types/#">\n'; 
+      body += '      <query><![CDATA[' + $v('query').replace(']]>',']]>]]<![CDATA[>') + ']]></query>\r\n'; 
+      body += '      <default-graph-uri><![CDATA[' + $v('default-graph-uri').replace(']]>',']]>]]<![CDATA[>') + ']]></default-graph-uri>\n'; 
+      body += '    </query-request>\n'; 
+      body += '  </soapenv:Body>\n'; 
+      body += '</soapenv:Envelope>\n'; 
+
+      return body;
+    }
+    
     var params = ['default-graph-uri','query','format','maxrows'];
     if (param == 'c')
       params.push('explain');
     if (is_r())
       params.push('service');
     else
-      ;//params.push('load');
+      ;
     for(var i = 0; i < params.length; i++)
     {
       if (body != '') 
@@ -378,20 +421,20 @@ function rq_query(param,dl)
       if (!(params[i] == 'default-graph-uri' && $v('default-graph-uri') == '')) // Patch ot skip default graph if it is empty;
       {
         body += params[i] + '=';
-        if ($(r+params[i]).type == 'radio')
+        if ($(params[i]).type == 'radio')
         {
-          for(var n = 0; n < $(r+params[i]).form.elements[$(r+params[i]).name].length;n++)
-            if ($(r+params[i]).form.elements[$(r+params[i]).name][n].checked)
-              body += encodeURIComponent($(r+params[i]).form.elements[$(r+params[i]).name][n].value); 
+          for(var n = 0; n < $(params[i]).form.elements[$(params[i]).name].length;n++)
+            if ($(params[i]).form.elements[$(params[i]).name][n].checked)
+              body += encodeURIComponent($(params[i]).form.elements[$(params[i]).name][n].value); 
         }
         else
-          body += encodeURIComponent($v(r+params[i])); 
+          body += encodeURIComponent($v(params[i])); 
       }
     }
     return body;
   };
   //OAT.Ajax.httpError=0;
-  OAT.Ajax.errorRef = function(status,response,xmlhttp)
+  OAT.Ajax.errorRef = function(status,response,headers)
   {
     param = 'er';
     if (!response)
@@ -402,9 +445,9 @@ function rq_query(param,dl)
       response += 'However you can click this link which will open a new window with the error: <br/>\n';
       response += '<a target="_blank" href="/sparql/?' + body() + '">/sparql/?' + body() + '</a>';
     }
-    callback(response,xmlhttp);
+    callback(response,headers);
   }
-  var callback = function(data,xmlhttp) 
+  var callback = function(data,headers) 
   { 
     OAT.Dom.unlink($('res_container'));
     OAT.Dom.unlink($('result'));
@@ -412,7 +455,7 @@ function rq_query(param,dl)
     OAT.Dom.unlink($('response'));
     OAT.Dom.unlink($('autoload'));
 
-    $(r+'res_area').innerHTML = '';
+    $('res_area').innerHTML = '';
     var tabres_html = '';
     tabres_html += '<ul id="tabres">';
     tabres_html += '<li id="tabres_result">result</li><li id="tabres_request">request</li><li id="tabres_response">response</li>';
@@ -423,28 +466,31 @@ function rq_query(param,dl)
     tabres_html += '<div id="result">' + data + '</div>';
     if (dl)
       tabres_html += '<div id="autoload">' + dl + '</div>';
-    $(r+'res_area').innerHTML += tabres_html;
+    $('res_area').innerHTML += tabres_html;
     
     var body_str = body();
     var request = '';
     request += '<div id="request"><pre>';
     request += 'POST ' + endpoint + ' HTTP 1.1\r\n';
     request += 'Host: ' + window.location.host + '\r\n';
-    request += 'Accept: ' + format + '\r\n';
-    request += 'Content-Type: application/x-www-form-urlencoded' + '\r\n';
+    if (ReqHeaders) {
+		  for (var p in ReqHeaders) {
+		    request += p + ': ' + ReqHeaders[p] + '\r\n';
+		  }
+		}
     request += 'Content-Length: ' + body_str.length + '\r\n';
     request += '\r\n';
-    request += body_str;
+    request += body_str.replace(/&/g,'&amp;').replace(/</g,'&lt;');
     request += '</pre></div>'; 
-    $(r+'res_area').innerHTML += request; 
+    $('res_area').innerHTML += request; 
 
     var response = '';
     response += '<div id="response"><pre>';
-    response += xmlhttp.obj.getAllResponseHeaders();
+    response += headers;
     response += '\r\n';
     response += data.replace(/&/g,'&amp;').replace(/</g,'&lt;');
     response += '</pre></div>'; 
-    $(r+'res_area').innerHTML += response; 
+    $('res_area').innerHTML += response; 
 
     var tabres = new OAT.Tab ("res_container");
     tabres.add ("tabres_result","result");
@@ -454,11 +500,11 @@ function rq_query(param,dl)
       tabres.add ("tabres_autoload","autoload");
     tabres.go(0);
 
-    var table = find_child_element($(r+'result'),'table');
-    if (table && $(r+'format').selectedIndex == 0 && param != 'c')
+    var table = find_child_element($('result'),'table');
+    if (table && $('format').selectedIndex == 0 && param != 'c')
     {
-      $(r+'result').innerHTML += '<div id="grid"></div>'; 
-      table = find_child_element($(r+'result'),'table');
+      $('result').innerHTML += '<div id="grid"></div>'; 
+      table = find_child_element($('result'),'table');
       var grid = new OAT.Grid("grid",0);
       load_grid(grid,table);
       table.parentNode.removeChild(table);
@@ -468,10 +514,19 @@ function rq_query(param,dl)
     }
     else
     {
-      if (!param || (param == 'er' && !is_r()))
-        $(r+'result').innerHTML = '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
-      else
-        $(r+'result').innerHTML = data;
+      if (param)
+      {
+        $('result').innerHTML = data;
+      } else {
+        var shtype = 'xml';
+        if ($v('format') == 'application/sparql-results+json' || 
+            $v('format') == 'application/javascript' )
+          shtype = 'javascript';
+        else if ($v('format') == 'text/html')
+          shtype = 'html';
+        $('result').innerHTML = '<textarea name="code" class="' + shtype + '">' + data + '</textarea>';
+        dp.SyntaxHighlighter.HighlightAll('code',0,0);
+      }
     }
 
   };
@@ -488,7 +543,7 @@ function rq_query(param,dl)
   else 
     endpoint = 'remote.vsp?';
   
-  OAT.Ajax.command(OAT.Ajax.POST, endpoint, body, callback, OAT.Ajax.TYPE_TEXT,{'Accept':format});
+  OAT.Ajax.command(OAT.Ajax.POST, endpoint, body, callback, OAT.Ajax.TYPE_TEXT,ReqHeaders);
 }
 
 function load_data(param)
@@ -511,12 +566,12 @@ function load_data(param)
         body += encodeURIComponent($v('default-graph-uri')); 
       }
       
-      var pattern = /FROM *<(.*)>/gi;        // recognizes words; global
+      var pattern = /(FROM|GRAPH) *<(.*)>/gi;        // recognizes words; global
       var token = pattern.exec($v('query'));   // get the first match
       while (token != null)
       {
         body += '&loaduri=';
-        body += encodeURIComponent(token[1]); 
+        body += encodeURIComponent(token[2]); 
         token = pattern.exec($v('query'));    // get the next match
       }
       
@@ -540,5 +595,21 @@ function load_data(param)
 function folder_click(t)
 {
   var Childs = t.parentNode.childNodes;
-  Childs[Childs.length - 1]._Tree_toggle();
+  for(var i = 0;i < Childs.length;i++)
+  {
+    if (Childs[i]._Tree_toggle)
+      Childs[i]._Tree_toggle();
+  }
+}
+
+function usesoap_change(ch)
+{
+  if (ch.checked)
+  {
+    $('format').disabled = true;
+    $('maxrows').disabled = true;
+  } else {
+    $('format').disabled = false;
+    $('maxrows').disabled = false;
+  }
 }
