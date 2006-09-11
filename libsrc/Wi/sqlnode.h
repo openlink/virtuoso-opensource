@@ -492,6 +492,7 @@ typedef struct remote_table_source_s
   {
     data_source_t	src_gen;
     char *		rts_text;
+    id_hashed_key_t	rts_text_hash_no;
     struct remote_ds_s *rts_rds;
     dk_set_t		rts_out_slots;
     dk_set_t		rts_params;

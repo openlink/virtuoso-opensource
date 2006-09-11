@@ -888,6 +888,10 @@ extern long dbev_enable; /* from sqlsrv.c */
 extern int in_srv_global_init;
 extern long vd_param_batch;
 
+#define VD_ARRAY_PARAMS_NONE 0
+#define VD_ARRAY_PARAMS_DML  1
+#define VD_ARRAY_PARAMS_ALL  2
+
 extern long vd_opt_arrayparams;
 extern unsigned long checkpointed_last_time;
 extern long vsp_in_dav_enabled;

@@ -947,6 +947,7 @@ void connection_set (client_connection_t *cli, caddr_t name, caddr_t val);
 void sprintf_escaped_table_name (char *out, char *name);
 void sprintf_escaped_str_literal (caddr_t str, char *out, dk_session_t *ses);
 caddr_t get_keyword_int (caddr_t * arr, char * item, char * me);
+caddr_t get_keyword_ucase_int (caddr_t * arr, const char * item, caddr_t dflt);
 extern char *find_repl_account_in_src_text (char **src_text_ptr);
 
 

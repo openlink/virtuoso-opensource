@@ -1395,6 +1395,7 @@ virt_recover_status (client_connection_t * cli, struct in_addr *addr,
   int reconnect_ctr = 0;
   int rc;
   SQLINTEGER ret = -1;
+  char * stmt_text = "select _2PC.DBA._0001_GET_TRX_STATE (?)";
 
   snprintf (name, sizeof (name), "%s:%ld", inet_ntoa (addr[0]), port);
   _2pc_printf (("connecting to %s", name));
@@ -1409,7 +1410,7 @@ re_connect:
     goto fin;
   if (rcon->rc_txn_capable != SQL_TC_NONE)
     RCON_SET_AUTOCOMMIT (rcon, 1);
-  rst = rc_stmt (rcon, "select _2PC.DBA._0001_GET_TRX_STATE (?)", &err);
+  rst = rc_stmt (rcon, stmt_text, strhash ((caddr_t)&stmt_text), &err);
   if (err)
     {
       if (!reconnect_ctr && rcon->rc_to_disconnect

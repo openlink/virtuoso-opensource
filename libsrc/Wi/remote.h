@@ -109,6 +109,7 @@ typedef struct rds_connection_s
 #ifdef INPROCESS_CLIENT
     int			rc_inprocess;
 #endif
+    int 		rc_hdbc_access_mode;
   } rds_connection_t;
 
 
