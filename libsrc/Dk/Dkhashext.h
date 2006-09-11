@@ -203,6 +203,7 @@ caddr_t box_dict_iterator_copy_hook(caddr_t orig_iter);
 int box_dict_iterator_destr_hook(caddr_t iter);
 
 EXE_EXPORT (caddr_t, id_hash_get, (id_hash_t *ht, caddr_t key));
+EXE_EXPORT (caddr_t, id_hash_get_with_hash_number, (id_hash_t *ht, caddr_t key, id_hashed_key_t inx));
 EXE_EXPORT (caddr_t, id_hash_get_with_ctx, (id_hash_t *ht, caddr_t key, void *ctx));
 caddr_t id_hash_get_key (id_hash_t * ht, caddr_t key);
 caddr_t id_hash_get_key_by_place (id_hash_t * ht, caddr_t place);

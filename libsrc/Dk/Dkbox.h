@@ -496,6 +496,24 @@ extern uint32 big_endian_box_length (const void *box);
     (hash) = byte_buffer_hash_res; \
     } while (0)
 
+#define NTS_BUFFER_HASH(hash,text) \
+  do { \
+    uint32 byte_buffer_hash_res = (text[0]); \
+    const unsigned char *byte_buffer_hash_text = ((const unsigned char *)(text)); \
+    const unsigned char *byte_buffer_hash_tail = byte_buffer_hash_text; \
+    while (byte_buffer_hash_text[0]) \
+      { \
+	byte_buffer_hash_res = (byte_buffer_hash_res * 0x41010021) + (byte_buffer_hash_text)[0]; \
+	byte_buffer_hash_text++; \
+      } \
+    (hash) = byte_buffer_hash_res; \
+    } while (0)
+
+
+
+
+
+
 #define UNB_HDR_HASH	0
 #define UNB_HDR_REFCTR	1
 #define UNB_HDR_BOXHEAD	3

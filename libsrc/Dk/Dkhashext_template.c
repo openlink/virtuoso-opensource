@@ -93,7 +93,8 @@ DBG_HASHEXT_NAME(id_hash_clear) (DBG_PARAMS id_hash_t * hash)
 void
 DBG_HASHEXT_NAME(id_hash_set) (DBG_PARAMS id_hash_t * ht, caddr_t key, caddr_t data)
 {
-  caddr_t place = id_hash_get (ht, key);
+  id_hashed_key_t inx = ht->ht_hash_func (key);
+        caddr_t place = id_hash_get_with_hash_number (ht, key, inx);
   if (place)
     {
       memcpy (place, data, ht->ht_data_length);
@@ -101,7 +102,6 @@ DBG_HASHEXT_NAME(id_hash_set) (DBG_PARAMS id_hash_t * ht, caddr_t key, caddr_t d
   else
     {
       char *bucket;
-      id_hashed_key_t inx = ht->ht_hash_func (key);
       ID_HASHED_KEY_CHECK(inx);
       ID_CHECK_REHASH (ht);
       inx = (inx & ID_HASHED_KEY_MASK) % ht->ht_buckets;

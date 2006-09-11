@@ -60,6 +60,30 @@ id_hash_get (id_hash_t * ht, caddr_t key)
 
 
 caddr_t
+id_hash_get_with_hash_number (id_hash_t * ht, caddr_t key, id_hashed_key_t inx)
+{
+  ID_HASHED_KEY_CHECK(inx);
+  inx = (inx & ID_HASHED_KEY_MASK) % ht->ht_buckets;
+
+  if (BUCKET_IS_EMPTY (BUCKET (ht, inx), ht))
+    return ((caddr_t) NULL);
+  if (ht->ht_cmp (BUCKET (ht, inx), key))
+    return (BUCKET (ht, inx) + ht->ht_data_inx);
+  else
+    {
+      char *ext = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
+      while (ext)
+	{
+	  if (ht->ht_cmp (ext, key))
+	    return (ext + ht->ht_data_inx);
+	  ext = BUCKET_OVERFLOW (ext, ht);
+	}
+    }
+  return ((caddr_t) NULL);
+}
+
+
+caddr_t
 id_hash_get_with_ctx (id_hash_t * ht, caddr_t key, void *ctx)
 {
   id_hashed_key_t inx = ht->ht_hash_func (key);
@@ -155,7 +179,7 @@ strhash (char *strp)
 {
   char *str = *(char **) strp;
   id_hashed_key_t h;
-  BYTE_BUFFER_HASH (h, str, strlen(str));
+ NTS_BUFFER_HASH (h, str);
   return (h & ID_HASHED_KEY_MASK);
 }
 
