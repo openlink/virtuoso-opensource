@@ -53,6 +53,11 @@ uriprefix='http://www.w3.org/2000/01/'
 publishingdate='2004-02-10 20:54'
 cache_file 'rdf-schema'		'<owl:Onthology rdf:about=\"http://www.w3.org/2000/01/rdf-schema#\"/>'	'An RDF description of the RDF and RDFS vocalulary'
 
+fileprefix='openlinksw-sparql/'
+uriprefix='http://www.openlinksw.com/sparql/'
+publishingdate='2006-09-11 01:25'
+cache_file 'virtrdf-data-formats.ttl'	''	'Quad Map memtadata for generic formats of relational-to-RDF data mapping'
+
 cat texts.tmp
 echo "void cache_resources (void)"
 echo "{"

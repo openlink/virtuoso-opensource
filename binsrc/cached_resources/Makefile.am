@@ -30,6 +30,7 @@ cached_resources.c: \
 	w3-TR-xhtml1-DTD/xhtml1-frameset.dtd \
 	w3-TR-xhtml1-DTD/xhtml1-strict.dtd \
 	w3-TR-xhtml1-DTD/xhtml1-transitional.dtd \
+	openlinksw-sparql/virtrdf-data-formats.ttl \
 	res_to_c.awk cache_gen.sh
 	@cache_gen.sh > cached_resources.c
 
@@ -45,6 +46,7 @@ clean:
 EXTRA_DIST = \
 	cache_gen.sh res_to_c.awk \
 	cached_resources.c \
+	openlinksw-sparql/virtrdf-data-formats.ttl \
 	w3-2000-01/rdf-schema \
 	w3-2000-01/README.txt \
 	w3-TR-xhtml1-DTD/README.txt \
