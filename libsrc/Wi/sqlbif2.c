@@ -536,7 +536,7 @@ float compiler_unit_msecs = 0;
 
 #define SQLO_NITERS 1000
 
-#define COL_COUNT "select count (*) from sys_cols a where col_dtp > 0 and exists (select 1 from sys_cols b table option (loop) where a.\"TABLE\" = b.\"TABLE\" and a.\"COLUMN\" = b.\"COLUMN\")"
+#define COL_COUNT "select count (*) from SYS_COLS a where COL_DTP > 0 and exists (select 1 from SYS_COLS b table option (loop) where a.\"TABLE\" = b.\"TABLE\" and a.\"COLUMN\" = b.\"COLUMN\")"
 
 void
 srv_calculate_sqlo_unit_msec (void)
