@@ -2164,47 +2164,113 @@ returns ANY
 }
 ;
 
---!AWK PUBLIC
-create procedure SYS_STAT_ANALYZE (in tb_name varchar, in pcnt integer:=5, in ignore_vdb integer:=1)
+--!AWK AFTER
+insert soft SYS_STAT_VDB_MAPPERS
+  (SVDM_TYPE,
+   SVDM_PROC,
+   SVDM_DBMS_NAME_MASK,
+   SVDM_DBMS_VER_MASK)
+ values
+  ('SYS_COL_STAT',
+   'DB.DBA.__INFORMIX_SYS_COL_STAT',
+   '%INFORMIX%',
+   '%')
+;
+
+
+create procedure DB.DBA.__INFORMIX_SYS_COL_STAT (in DSN varchar, in RT_NAME varchar, in RT_REMOTE_NAME varchar)
 {
-  declare stmt, proc_name varchar;
-  declare proc any;
-  declare cr cursor for
-      select c."COLUMN", c.COL_DTP
-      from DB.DBA.SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS c
-      where
-        k.KEY_TABLE = tb_name and
-	c."COLUMN" <> '_IDN' and
-	k.KEY_IS_MAIN = 1 and
-	k.KEY_MIGRATE_TO is null and
-	kp.KP_KEY_ID = k.KEY_ID and
-	COL_ID = KP_COL and
-	COL_DTP not in (125, 131, 132, 134, 254);
-  declare is_vdb integer;
-  declare tot_count integer;
-  declare _ds_dsn, _rt_remote_name varchar;
-  declare _ds_conn_str any;
+  declare _meta, _res any;
+  declare i_meta, i_res any;
+  declare CS_COL, CS_N_DISTINCT, CS_MIN, CS_MAX, CS_AVG_LEN, CS_N_VALUES, CS_N_ROWS int;
+  declare tabid, colid int;
 
-  _ds_dsn := _rt_remote_name := NULL;
+  rexecute (DSN, 'select t.nrows, c.colname, c.colno, c.colmin, c.colmax, c.collength, c.coltype from systables t, syscolumns c where c.tabid = t.tabid and t.owner = ? and t.tabname = ?',
+      NULL, NULL, vector (name_part (RT_REMOTE_NAME, 1, NULL), name_part (RT_REMOTE_NAME, 2, NULL)), NULL, _meta, _res);
+
+ rexecute (DSN, 'select part1, nunique from sysindexes i, systables t where t.tabid = i.tabid and t.owner = ? and t.tabname = ?',
+      NULL, NULL, vector (name_part (RT_REMOTE_NAME, 1, NULL), name_part (RT_REMOTE_NAME, 2, NULL)), NULL, i_meta, i_res);
+
+  if (isarray (_res) and length (_res) > 0 and isarray (_res[0]) and isarray (_meta) and isarray (_meta[0]))
     {
-      declare exit handler for not found { _ds_dsn := _rt_remote_name := NULL; };
+      declare _len, i_len, col_type int;
+      declare arr, crow any;
+      if (isarray (i_res) and length (i_res) > 0 and isarray (i_res[0]) and isarray (i_meta) and isarray (i_meta[0]))
+        i_len := length (i_res);
+      else
+        i_len := 0;
 
-      select RT_DSN, RT_REMOTE_NAME, deserialize (DS_CONN_STR)
-	     into _ds_dsn, _rt_remote_name, _ds_conn_str
-	     from DB.DBA.SYS_REMOTE_TABLE, DB.DBA.SYS_DATA_SOURCE
-	     where RT_NAME = tb_name and RT_DSN = DS_DSN;
+      result_names (CS_COL, CS_N_DISTINCT, CS_MIN, CS_MAX, CS_AVG_LEN, CS_N_VALUES, CS_N_ROWS);
+      arr := make_array (7, 'any');
+      _len := length (_res);
+      for (declare i int, i := 0; i < _len; i := i + 1)
+	 {
+	   crow := _res[i];
+	   CS_N_ROWS := crow[0];
+	   CS_COL := trim(crow[1]);
+	   CS_AVG_LEN := crow[5];
+	   CS_N_VALUES := CS_N_ROWS;
+	   CS_N_DISTINCT := CS_N_ROWS / 10;
+	   col_type := mod (crow[6], 256);
+
+	   if (col_type = 5 or col_type = 8)
+	     {
+	       CS_AVG_LEN := crow[5]/256;
     }
 
-  if (_ds_dsn is not NULL)
-	is_vdb := 1;
+	   if (col_type = 0 or col_type = 13 or col_type = 15 or col_type = 16)
+	     {
+	       if (crow[5] > 0)
+		 {
+		   CS_AVG_LEN := mod (crow[5], 256);
+		 }
   else
-	is_vdb := 0;
+		 {
+		   CS_AVG_LEN := mod ((crow[5] + 65536), 256);
+		 }
+	     }
+	   else if (col_type = 10 or col_type = 14)
+	     {
+	       CS_AVG_LEN := mod (crow[5], 256);
+	     }
 
-  if ((ignore_vdb = 1) AND (is_vdb = 1))
-    return;
+	   if (col_type > 0 and col_type < 7)
+	     {
+	       CS_MIN := crow[3];
+	       CS_MAX := crow[4];
+	     }
+	   else
+	     {
+	       CS_MIN := null;
+	       CS_MAX := null;
+	     }
 
-  if (is_vdb)
+	   for (declare j int, j := 0; j < i_len; j := j + 1)
+	      {
+                if (i_res[j][0] = crow[2])
     {
+		    CS_N_DISTINCT := i_res[j][1];
+		    j := i_len;
+		  }
+	      }
+
+	   if (cs_n_distinct is null) cs_n_distinct := cs_n_rows;
+	   result (CS_COL, CS_N_DISTINCT, CS_MIN, CS_MAX, CS_AVG_LEN, CS_N_VALUES, CS_N_ROWS);
+	 }
+    }
+  return null;
+}
+;
+
+
+--!AWK PUBLIC
+create procedure SYS_STAT_ANALYZE_VDB (
+	in _ds_dsn varchar,
+	in _rt_remote_name varchar,
+	in _ds_conn_str any,
+	in tb_name varchar
+	)
+{
       declare vdb_stats_mapper varchar;
       declare exit handler for sqlstate '*', NOT FOUND { goto map_done; };
       declare _dbms_name, _dbms_ver varchar;
@@ -2249,9 +2315,9 @@ create procedure SYS_STAT_ANALYZE (in tb_name varchar, in pcnt integer:=5, in ig
           _min := rr[2];
           _max := rr[3];
           -- limit the min/max so they fit on the row.
-          if (isstring (_min) || iswidestring (_min) || isbinary (_min))
+      if (isstring (_min) or iswidestring (_min) or isbinary (_min))
             _min := left (_min, 1000);
-          if (isstring (_max) || iswidestring (_max) || isbinary (_max))
+      if (isstring (_max) or iswidestring (_max) or isbinary (_max))
             _max := left (_max, 1000);
 	  insert into DB.DBA.SYS_COL_STAT
 	    (CS_TABLE, CS_COL, CS_N_DISTINCT, CS_MIN, CS_MAX, CS_AVG_LEN, CS_N_VALUES, CS_N_ROWS)
@@ -2260,9 +2326,63 @@ create procedure SYS_STAT_ANALYZE (in tb_name varchar, in pcnt integer:=5, in ig
 	   res_inx := res_inx + 1;
 	 }
       __ddl_changed (tb_name);
-      return;
+  -- stats are done
+  return 1;
 map_done:;
+  -- stats are not done
+  return 0;
+}
+;
+
+
+--!AWK PUBLIC
+create procedure SYS_STAT_ANALYZE (in tb_name varchar, in pcnt integer:=5, in ignore_vdb integer:=1)
+{
+  declare stmt, proc_name varchar;
+  declare proc any;
+  declare cr cursor for
+      select c."COLUMN", c.COL_DTP
+      from DB.DBA.SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS c
+      where
+        k.KEY_TABLE = tb_name and
+	c."COLUMN" <> '_IDN' and
+	k.KEY_IS_MAIN = 1 and
+	k.KEY_MIGRATE_TO is null and
+	kp.KP_KEY_ID = k.KEY_ID and
+	COL_ID = KP_COL and
+	COL_DTP not in (125, 131, 132, 134, 254);
+  declare rc integer;
+  declare is_vdb integer;
+  declare tot_count integer;
+  declare _ds_dsn, _rt_remote_name varchar;
+  declare _ds_conn_str any;
+
+  _ds_dsn := _rt_remote_name := NULL;
+    {
+      declare exit handler for not found { _ds_dsn := _rt_remote_name := NULL; };
+
+      select RT_DSN, RT_REMOTE_NAME, deserialize (DS_CONN_STR)
+	     into _ds_dsn, _rt_remote_name, _ds_conn_str
+	     from DB.DBA.SYS_REMOTE_TABLE, DB.DBA.SYS_DATA_SOURCE
+	     where RT_NAME = tb_name and RT_DSN = DS_DSN;
    }
+
+  if (_ds_dsn is null)
+    is_vdb := 0;
+  else
+    is_vdb := 1;
+
+  if (is_vdb and ignore_vdb)
+    return;
+
+  rc := 0;
+
+  if (pcnt > 0)
+    rc := SYS_STAT_ANALYZE_VDB (_ds_dsn, _rt_remote_name, _ds_conn_str, tb_name);
+
+  -- stats are done via vdb statistics
+  if (rc = 1)
+    return;
 
   connection_set ('rnd-stat-rate', 0.0);
 
@@ -3780,6 +3900,10 @@ DB.DBA.__XML_TEMPLATE (in path any, in params any, in lines any, in enc any := n
     http_header (sprintf ('Content-type: %s; charset="%s"\r\nCache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: -1;\r\n', {?'contenttype'}, enc));
   else if (xslt is null)
     http_header (sprintf ('Content-type: text/xml; charset="%s"\r\nCache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: -1;\r\n', enc));
+  if ({?'content-filename'} is not null)
+    {
+      http_header (concat (http_header_get (), sprintf ('Content-Disposition: inline; filename="%s"\r\n', {?'content-filename'})));
+    }
   __pop_user_id ();
 }
 ;
