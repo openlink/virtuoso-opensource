@@ -14,7 +14,7 @@
 	d = new OAT.DataSource(limit);
 	
 	d.bindRecord(simpleCallback);
-	d.bindPage(multiCallback, pageSize);
+	d.bindPage(multiCallback);
 	
 	d.advancePage(something);   something: "-1","+1",number
 	d.advanceRecord(something);   something: "-1","+1",number
@@ -36,9 +36,11 @@ OAT.DataSource = function(pageSize) {
 	self.pageSize = pageSize; /* if 0 then fetch all */
 	self.limit = pageSize;
 	
-	self.type = 0; /* 1 - sql, 2 - wsdl */
+	self.type = 0; /* 1 - sql, 2 - wsdl, 3 - rest */
 	self.query = "";
-	self.wsdl = "";
+	self.url = "";
+	self.format = 0; /* xml / json */
+	self.xpath = 0;
 	self.service = "";
 	self.inputObj = {};
 	self.outputFields = [];
@@ -101,42 +103,39 @@ OAT.DataSource = function(pageSize) {
 		self.type = 1;
 	}
 	
+	this.setREST = function(url,format,xpath,queryString,outputFields) {
+		self.url = url;
+		self.query = queryString;
+		self.outputFields = outputFields;
+		self.type = 3;
+		self.format = format;
+		self.xpath = xpath;
+	}
+
 	this.setWSDL = function(wsdl,service,inputObj,outputFields) {
-		self.wsdl = wsdl;
+		self.url = wsdl;
 		self.service = service;
 		self.inputObj = inputObj;
 		self.outputFields = outputFields;
 		self.type = 2;
 	}
 	
-	this.wsdl2table = function(obj) { /* converts wsdl's output object into two-dimensional structure */
+	this.ws2table = function(obj,xmlDoc,nsObj) { /* converts wsdl's output object into two-dimensional structure */
 		var allValues = {};
 		var data = [];
-		function getValues(o,propertyName) {
-			var list = [];
-			if (typeof(o) != "object") { return list; }
-			for (var p in o) {
-				var v = o[p];
-				if (p == propertyName) { list.append(v); }
-				if (v instanceof Object) {
-					if (v instanceof Array) {
-						for (var i=0;i<v.length;i++) {
-							list.append(getValues(v[i],propertyName));
-						}
-					} else {
-						list.append(getValues(v,propertyName));
-					}
-				} /* recursion */
-			} /* for all properties */
-			return list;
-		}
 		
 		/* analyze maximum count */
 		var max = 0;
 		for (var i=0;i<self.outputFields.length;i++) {
 			var name = self.outputFields[i];
 			/* find number of appearances of this output field in output object */
-			var values = getValues(obj,name);
+			if (self.xpath) { /* makes sense only for non-JSON data */
+				var nodes = OAT.Xml.xpath(xmlDoc,name,nsObj);
+				var values = [];
+				for (var j=0;j<nodes.length;j++) { values.push(OAT.Xml.textValue(nodes[j])); }
+			} else {
+				var values = OAT.JSObj.getAllValues(obj,name);
+			}
 			allValues[name] = values;
 			var l = values.length;
 			if (l > max) { max = l; }
@@ -146,7 +145,8 @@ OAT.DataSource = function(pageSize) {
 			for (var j=0;j<self.outputFields.length;j++) {
 				var name = self.outputFields[j];
 				var values = allValues[name];
-				row.push(values[i % values.length]);
+				var v = (values.length ? values[i % values.length] : "");
+				row.push(v);
 			}
 			data.push(row);
 		}
@@ -193,13 +193,43 @@ OAT.DataSource = function(pageSize) {
 			
 			case 2: /* wsdl */
 				var ref = function(outputObj) {
-					var data = self.wsdl2table(outputObj);
+					var data = self.ws2table(outputObj);
 					self.processData(data,index);
 					if (self.checkAvailability(index,false)) { callback(); }
 	}
-				OAT.WS.invoke(self.wsdl,self.service,ref,self.inputObj);
+				OAT.WS.invoke(self.url,self.service,ref,self.inputObj);
 			break;
 	
+			case 3: /* rest */
+				var ref = function(text) {
+					var obj = {};
+					var nsObj = {};
+					var xmlDoc = false;
+					if (self.format == 0) { /* xml */
+						/* analyze namespaces */
+						var ns = text.match(/xmlns="([^"]*)"/);
+						if (ns) { nsObj[" "] = ns[1]; }
+						var ns = text.match(/xmlns:[^=]+="[^"]*"/g);
+						for (var i=0;i<ns.length;i++) {
+							var tmp = ns[i];
+							var r = tmp.match(/xmlns:([^=]+)="([^"]*)"/);
+							nsObj[r[1]] = r[2];
+						}
+						/* BAD HACK FOR GECKO - remove default namespace - THIS IS WRONG AND UGLY!!! */
+						var t = text.replace(/xmlns="[^"]*"/g,"");
+						/***/
+						xmlDoc = OAT.Xml.createXmlDoc(t);
+						obj = OAT.JSObj.createFromXmlNode(xmlDoc.documentElement);
+					} 
+					if (self.format == 1) { /* json */
+						obj = OAT.JSON.parse(text);
+					}
+					var data = self.ws2table(obj,xmlDoc,nsObj);
+					self.processData(data,index);
+					if (self.checkAvailability(index,false)) { callback(); }
+				}
+				OAT.Ajax.command(OAT.Ajax.GET,self.url,function(){return self.query;},ref,OAT.Ajax.TYPE_TEXT,{});
+			break;
 		}
 		
 	}

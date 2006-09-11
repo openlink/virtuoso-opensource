@@ -22,7 +22,8 @@ OAT.Form = function(formDesignerObj) {
 		url:"", /* link to saved query or wsdl */
 		query:"", /* only for type == 1 (sql) */
 		service:"", /* name of wsdl service */
-		rootElement:"" /* name of root input wsdl element */
+		rootElement:"", /* name of root input wsdl element */
+		xpath:0 /* use xpath for output names? */
 	}
 	this.fieldBinding = {
 		selfFields:[], /* indexes */
@@ -60,16 +61,10 @@ OAT.Form = function(formDesignerObj) {
 	
 	this.refresh = function(callback,do_links) {
 		/* we know binding type. let's create columns, relations etc */
-		self.inputFields = [];
-		self.outputFields = [];
-		if (do_links) {
-			self.fieldBinding.selfFields = [];
-			self.fieldBinding.masterFields = [];
-			self.fieldBinding.masterForms = [];
-		}
-		
 		switch (self.ds.type) {
 			case 1:
+				self.inputFields = [];
+				self.outputFields = [];
 				switch (self.ds.subtype) {
 					case 1: /* query */
 						var queryObj = new OAT.SqlQuery();
@@ -126,34 +121,15 @@ OAT.Form = function(formDesignerObj) {
 			break; /* data source types */
 			
 			case 2: /* wsdl */
+				self.inputFields = [];
+				self.outputFields = [];
 				var wsdl = self.ds.url;
-				function getProps(obj) {
-					var list = [];
-					for (var p in obj) {
-						if (typeof(obj[p]) == "object") {
-							if (obj[p] instanceof Array) {
-								var v0 = obj[p][0];
-								if (typeof(v0) == "object") {
-									list.append(getProps(v0));
-								} else {
-									list.push(p);
-								}
-							} else {
-								list.append(getProps(obj[p]));
-							}
-						} else {
-							list.push(p);
-						}
-					}
-					return list;
-				}
-				
 				var paramsRef = function(input,output) {
 					/* easy; just first-level */
 					for (var p in input) { self.ds.rootElement = p; }
 					for (var p in input[self.ds.rootElement]) { self.inputFields.push(p); }
 					/* massive; all levels */
-					self.outputFields = getProps(output);
+					self.outputFields = OAT.JSObj.getStringIndexes(output);
 					callback();
 				}
 				var servicesRef = function(arr) {
@@ -175,11 +151,27 @@ OAT.Form = function(formDesignerObj) {
 				} else {
 					OAT.WS.listParameters(wsdl,self.ds.service,paramsRef);
 				}
+			break; /* case 2 - wsdl */
+
+			case 3: /* rest */
+				if (do_links) {
+					self.inputFields = $v("bind_rest_in").split(",");
+					self.outputFields = $v("bind_rest_out").split(",");
+					for (var i=0;i<self.inputFields.length;i++) {
+						self.inputFields[i] = self.inputFields[i].trim();
+					}
+					for (var i=0;i<self.outputFields.length;i++) {
+						self.outputFields[i] = self.outputFields[i].trim();
+					}
+				}
+				callback();
 			break;
 		}
 	}
 	
 	this.heuristicBind = function() { /* xxx */
+		if (self.fieldBinding.selfFields.length != 0) { return; }
+		
 		/* heuristic - automatic binding to parent form */
 		for (var i=0;i<self.inputFields.length;i++) {
 			var parts = self.inputFields[i].split("."); 
@@ -200,6 +192,8 @@ OAT.Form = function(formDesignerObj) {
 	} /* tryParents */
 	
 	this.relationalBind = function(catalog,schema,table,callback) {
+		if (self.fieldBinding.selfFields.length != 0) { return; }
+
 		/* get foreign keys and try to figure out bindings to masters */
 		var fkRef = function(pole) {
 			for (var i=0;i<pole.length;i++) {

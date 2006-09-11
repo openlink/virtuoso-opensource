@@ -15,7 +15,6 @@
 	m.optimalPosition(pointArr)
 */
 
-window.pyca = [];
 OAT.MapData = {
 	TYPE_G:1,
 	TYPE_Y:2,
@@ -44,16 +43,6 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 		case OAT.MapData.TYPE_G: self.obj = new GMap2(self.elm); break;
 		case OAT.MapData.TYPE_Y: self.obj = new YMap(self.elm); break;
 		case OAT.MapData.TYPE_MS: 
-			var params = {};
-			params.latitude = 34.0453522;
-			params.longitude = -118.26197;
-			params.zoomlevel = 16;
-			params.mapstyle = 'r';
-			params.showScaleBar = true;
-			params.showDashboard = true;
-			params.dashboardSize = "normal";
-			params.dashboardX = 3;
-			params.dashboardY = 3;
 			self.elm.id = 'our_mapping_element';
 			self.obj = new VEMap('our_mapping_element');
 			self.obj.LoadMap();
@@ -241,18 +230,19 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 		}	
 	}
 	
-	this.addMarker = function(lat,lon,file,clickCallback) { /* array of [lat,lon,file,callback]; will callback(marker) when clicked */
+	this.addMarker = function(lat,lon,file,w,h,clickCallback) { /* array of [lat,lon,file,callback]; will callback(marker) when clicked */
+		window.debug.push([w,h,file]);
 		switch (self.provider) {
 			case OAT.MapData.TYPE_G: 
 				var icon = new GIcon(G_DEFAULT_ICON,file);
-				icon.iconSize = new GSize(18,41);
+				icon.iconSize = new GSize(w,h);
 				icon.shadow = "";
 				var marker = new GMarker(new GLatLng(lat,lon),icon);
 				self.obj.addOverlay(marker);
 				if (clickCallback) { GEvent.addListener(marker,'click',function(){clickCallback(marker);}); }
 			break;
 			case OAT.MapData.TYPE_Y: 
-				var icon = new YImage(file,new YSize(18,41));
+				var icon = new YImage(file,new YSize(w,h));
 				var marker = new YMarker(new YGeoPoint(lat,lon),icon);
 				self.obj.addOverlay(marker);
 				if (clickCallback) { YEvent.Capture(marker,EventsList.MouseClick,function(){clickCallback(marker);}); }
@@ -275,7 +265,7 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 			case OAT.MapData.TYPE_OL: 
 			    var marker = new OpenLayers.Marker(
 			        new OpenLayers.LonLat(lon,lat), 
-			        new OpenLayers.Icon(file,new OpenLayers.Size(18,41))
+			        new OpenLayers.Icon(file,new OpenLayers.Size(w,h))
 				);
 			    self.markersLayer.addMarker(marker);
 				marker.closeInfoWindow = function() { if (marker.__win) {
@@ -398,6 +388,7 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 			break;
 			
 			case OAT.MapData.TYPE_Y:
+				window.marker = marker;
 				marker.openSmartWindow(" ");
 				var inner = $("ysaeid");
 				if (inner) {

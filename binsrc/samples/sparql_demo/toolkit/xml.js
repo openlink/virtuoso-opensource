@@ -8,10 +8,9 @@
  *  See LICENSE file for details.
  */
 /*
-	var xml = OAT.Xml.getTreeURL(url);
 	var xml = OAT.Xml.getTreeString(string);
-	var xml = OAT.Xml.transformURL(xml,url); (url contains XSL file)
- 	var xml = OAT.Xml.transformString(xml,string); (string contains XSL file)
+	var xml = OAT.Xml.createXmlDoc(string); (create xmlDoc from string)
+ 	var xml = OAT.Xml.transformXSLT(xmlDoc,xslDoc);
 	var txt = OAT.Xml.textValue(elem);
 	var list = OAT.Xml.getElementsByTagName(elem,tagName);
 */
@@ -34,28 +33,6 @@ OAT.Xml = {
 		}
 	},
 	
-	getTreeURL:function(url) {
-/* to be thoroughly tested: */
-		var xml = OAT.Sjax.command(url);
-		return xml;
-/* */
-
-		if (document.implementation && document.implementation.createDocument) {				
-			var xml = document.implementation.createDocument("", "", null);
-			xml.async = false;
-			xml.load(url);
-			return xml;
-		} else if (window.ActiveXObject) {
-			var xml = new ActiveXObject("Microsoft.XMLDOM");
-			xml.async = false;
-			xml.load(url);
-			return xml;
-		} else {
-			alert("Ooops - no XML parser available");
-			return false;
-		}
-	},
-
 	getTreeString:function(string) {
 		if (document.implementation && document.implementation.createDocument) {				
 			var parser = new DOMParser();
@@ -72,44 +49,40 @@ OAT.Xml = {
 		}
 	},
 	
-	transformURL:function(xml,url) {
+	transformXSLT:function(xmlDoc,xslDoc) {
 		if (document.implementation && document.implementation.createDocument) {				
-			var xsl = OAT.Xml.getTreeURL(url);
-/*			var xsl = document.implementation.createDocument("", "", null);
-			xsl.async = false;
-			xsl.load(url);*/
 			var xslProc = new XSLTProcessor();
-			xslProc.importStylesheet(xsl);
-			var result = xslProc.transformToDocument(xml);
+			xslProc.importStylesheet(xslDoc);
+			var result = xslProc.transformToDocument(xmlDoc);
 			return result;
 		} else if (window.ActiveXObject) {
-			var xsl = OAT.Xml.getTreeURL(url);
-			var result = xml.transformNode(xsl);
-			return result;
+			var result = xmlDoc.transformNode(xslDoc);
+			var rDoc = OAT.Xml.createXmlDoc(result);
+			return rDoc;
 		} else {
-			alert("Ooops - no XML parser available");
+			alert("Ooops - no XSL parser available");
 			return false;
 		}
 	},
 	
-	transformString:function(xml,string) {
+	createXmlDoc:function(string) {
 		if (document.implementation && document.implementation.createDocument) {				
 			var parser = new DOMParser();
-			var xsl = parser.parseFromString(string, "text/xml");
-			var xslProc = new XSLTProcessor();
-			xslProc.importStylesheet(xsl);
-			var result = xslProc.transformToDocument(xml);
-			return result;
+			var xml = parser.parseFromString(string, "text/xml");
+			return xml;
 		} else if (window.ActiveXObject) {
-			var xsl = new ActiveXObject("Microsoft.XMLDOM")
-			xsl.async = false;
-			xsl.loadXML(url);
-			var result = xml.transformNode(xsl);
-			return result;
+			var xml = new ActiveXObject("Microsoft.XMLDOM")
+			xml.loadXML(string);
+			if (xml.parseError.errorCode) {
+				alert('IE XML ERROR: '+xml.parseError.reason+' ('+xml.parseError.errorCode+')');
+				return false;
+			}
+			return xml;
 		} else {
 			alert("Ooops - no XML parser available");
 			return false;
 		}
+		return false;
 	},
 	
 	getElementsByTagName:function(elem,tagName) {
@@ -122,6 +95,38 @@ OAT.Xml = {
 				if (all[j].localName == tagName || all[j].baseName == tagName) { result.push(all[j]); }
 		}
 		return result;
+	},
+	
+	childElements:function(elem) {
+		var result = [];
+		var all = elem.getElementsByTagName("*");
+		for (var i=0;i<all.length;i++) {
+			if (all[i].parentNode == elem) { result.push(all[i]); }
+		}
+		return result;
+	},
+	
+	xpath:function(xmlDoc,xpath,nsObject) {
+		var result = [];
+		function resolver(prefix) {
+			var b = " ";
+			if (prefix in nsObject) { return nsObject[prefix]; }
+			if (b in nsObject) { return nsObject[" "]; } /* default ns */
+			return ""; /* fallback; should not happen */
+		}
+		if (document.evaluate) {
+			var it = xmlDoc.evaluate(xpath,xmlDoc,resolver,XPathResult.ANY_TYPE,null); 
+			var node;
+			while ((node = it.iterateNext())) {	result.push(node); }
+			return result;
+		} else if (window.ActiveXObject) {
+			var tmp = xmlDoc.selectNodes(xpath);
+			for (var i=0;i<tmp.length;i++) { result.push(tmp[i]); }
+			return result;
+		} else {
+			alert("Ooops - no XML parser available");
+			return false;
+		}
 	}
 }
 OAT.Loader.pendingCount--;

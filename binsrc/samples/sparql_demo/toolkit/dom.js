@@ -43,6 +43,7 @@
 	OAT.Dom.resizeBy(element,dx,dy)
 	OAT.Dom.getScroll()
 	OAT.Dom.decodeImage(data)
+	OAT.Dom.safeXML(str)
 	OAT.Dom.dump(element)
 */
 
@@ -451,6 +452,15 @@ OAT.Dom = {
 		return [l,t];
 	},
 	
+	toSafeXML:function(str) {
+		if (typeof(str) != "string") { return str; }
+		return str.replace(/&/g,"&amp;").replace(/>/g,"&gt;").replace(/</g,"&lt;");
+	},
+	
+	fromSafeXML:function(str) {
+		return str.replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<");
+	},
+
 	dump:function(element) {
 		var elm = $(element);
 		var text = "";

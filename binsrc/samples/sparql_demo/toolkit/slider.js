@@ -33,7 +33,7 @@ OAT.SliderData = {
 		var newpos = delta + OAT.SliderData.initPos;
 		var newval = o.positionToValue(newpos);
 		$("d").innerHTML = newval;
-		if (newval >= o.options.minValue && newval <= o.options.maxValue && newval != o.value) { o.slideTo(newval); }
+		if (newval >= o.options.minValue && newval <= o.options.maxValue && newval != o.value) { o.slideTo(newval,true); }
 	},
 	up:function() {
 		OAT.SliderData.obj = false;
@@ -42,7 +42,7 @@ OAT.SliderData = {
 
 OAT.Slider = function(something,optObj) {
 	var self = this;
-	
+	this.value = 0;
 	this.options = {
 		minValue:0,
 		maxValue:100,
@@ -68,11 +68,11 @@ OAT.Slider = function(something,optObj) {
 		return Math.round(val);
 	}
 	
-	this.slideTo = function(value) {
+	this.slideTo = function(value,forward) {
 		self.value = value;
 		var pos = self.valueToPosition(value);
 		self.elm.style[self.options.cssProperty] = pos + "px";
-		self.onchange(value);
+		if (forward) { self.onchange(value); }
 	}
 	
 	this.onchange = function(value) {}
@@ -87,7 +87,7 @@ OAT.Slider = function(something,optObj) {
 	OAT.Dom.attach(self.elm,"mousedown",startRef);
 	
 	this.init = function() {
-		self.slideTo(self.options.initValue);
+		self.slideTo(self.options.initValue,true);
 	}
 }
 

@@ -47,6 +47,9 @@ OAT.MsWin = function(optObj) {
 	this.move = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",width:"100%",height:"16px",backgroundColor:"#0000a0",fontWeight:"bold",color:"#fff"}); 
 	this.div.appendChild(this.move);
 	OAT.Drag.create(this.move,this.div);
+	this.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
+		return l < 0 || t < 14;
+	}
 	
 	if (options.close) {
 		this.closeBtn = OAT.Dom.create("div",{cssFloat:"right",styleFloat:"right",fontSize:"1px",marginTop:"1px",cursor:"pointer",width:"16px",height:"14px",backgroundImage:"url("+options.imagePath+"MsWin_close.png)"});

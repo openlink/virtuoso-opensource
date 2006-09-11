@@ -13,6 +13,7 @@
 	OAT.Loader.loadAttacher(callback)
 */
 window.OAT = {};
+window.debug = [];
 
 Array.prototype.find = function(str) {
 	var index = -1;
@@ -20,15 +21,46 @@ Array.prototype.find = function(str) {
 	return index;
 }
 
+Array.prototype.append = function(arr) {
+	var a = arr;
+	if (typeof(arr) != "object") { a = [arr]; }
+	for (var i=0;i<a.length;i++) { this.push(a[i]); }
+}
+
 String.prototype.trim = function() {
 	var result = this.match(/^ *(.*?) *$/);
 	return (result ? result[1] : this);
 }
 
+Date.prototype.toHumanString = function() {
+	var h = this.getHours()+""; if (h.length == 1) { h = "0"+h; }
+	var m = this.getMinutes()+""; if (m.length == 1) { m = "0"+m; }
+	var s = this.getSeconds()+""; if (s.length == 1) { s = "0"+s; }
+	return this.getDate()+"."+(this.getMonth()+1)+"."+this.getFullYear()+" "+h+":"+m+":"+s;
+}
+
+Date.prototype.printMonth = function() {
+	var m = (this.getMonth()+1)+""; if (m.length == 1) { m = "0"+m; }
+	return this.getFullYear()+"/"+m;
+}
+
+Date.prototype.printDay = function() {
+	return this.getDate()+"."+(this.getMonth()+1)+".";
+}
+
+Date.prototype.printHour = function() {
+	var h = this.getHours()+""; if (h.length == 1) { h = "0"+h; }
+	return h+":00";
+}
+
+Date.prototype.printMinute = function() {
+	var h = this.getHours()+""; if (h.length == 1) { h = "0"+h; }
+	var m = this.getMinutes()+""; if (m.length == 1) { m = "0"+m; }
+	return h+":"+m;
+}
 
 OAT.Dependencies = {
 	ajax:["dom","crypto"],
-	dom:[],
 	drag:"dom",
 	resize:"dom",
 	soap:"ajax",
@@ -43,16 +75,13 @@ OAT.Dependencies = {
 	animation:"dom",
 	quickedit:["dom","instant"],
 	dimmer:"dom",
-	bezier:[],
 	canvas:"dom",
 	grid:"dom",
-	xml:[],
 	combolist:["dom","instant"],
 	formobject:["dom","drag","resize","datasource"],
 	color:["dom","drag"],
 	combobutton:["dom","instant"],
 	pivot:["dom","ghostdrag","statistics","instant","barchart"],
-	statistics:[],
 	upload:"dom",
 	validation:"dom",
 	combobox:["dom","instant"],
@@ -63,27 +92,21 @@ OAT.Dependencies = {
 	ticker:"dom",
 	rotator:"dom",
 	calendar:["dom","drag"],
-	crypto:[],
-	json:[],
 	graph:["dom","canvas"],
 	dav:["dom","grid","tree","toolbar"],
-	sqlquery:[],
-	preferences:[],
 	barchart:"dom",
-	webclip:[],
-	bindings:[],
 	fisheye:"dom",
 	dialog:["dom","window","dimmer"],
-	datasource:[],
+	datasource:["jsobj","json","xml"],
 	gmaps:["gapi","map"],
 	ymaps:["map"],
 	simplefx:["dom"],
-	gapi:[],
 	msapi:["map","layers"],
-	atlascompat:[],
-	layers:[],
-	map:[],
-	slider:["dom"]
+	slider:["dom"],
+	ws:["xml","soap","ajax","schema"],
+	schema:["xml"],
+	timeline:["dom","slider","tlscale"],
+	form:["jsobj"]
 }
 
 OAT.Files = {
@@ -143,7 +166,12 @@ OAT.Files = {
 	layers:"layers.js",
 	map:"map.js",
 	slider:"slider.js",
-	atlascompat:"AtlasCompat.js"
+	ws:"ws.js",
+	form:"form.js",
+	schema:"schema.js",
+	timeline:"timeline.js",
+	tlscale:"tlscale.js",
+	jsobj:"jsobj.js"
 }
 
 OAT.Loader = {
@@ -197,20 +225,18 @@ OAT.Loader = {
 		for (var i=0;i<featureList.length;i++) {
 			OAT.Loader.addFeature(featureList[i]);
 		}
-		/* ie compat library */
-		if (featureList.find("msapi") != -1 && document.addEventListener) {
-			OAT.Loader.addFeature("atlascompat");
-		}
 	},
 
 	addFeature:function(name) {
 		OAT.Loader.loadList[name] = 1;
+		if (name in OAT.Dependencies) {
 		var value = OAT.Dependencies[name];
 		var arr = (typeof(value) == "object" ? value : [value]);
 		for (var i=0;i<arr.length;i++) {
 			OAT.Loader.addFeature(arr[i]);
 		}
 	}
+}
 }
 
 OAT.Loader.makeDep();

@@ -25,12 +25,12 @@ OAT.Tree = {
 		return "url("+dir+"/Tree_"+name+"."+ext+")";
 	},
 
-	assign:function(div,dir,ext,reformat) {
+	assign:function(div,dir,ext,reformat,classNamePrefix) {
 		var elm = $(div);
-		OAT.Tree.recursiveWalk(elm,1,dir,ext,reformat);
+		OAT.Tree.recursiveWalk(elm,1,dir,ext,reformat,classNamePrefix);
 	},
 	
-	recursiveWalk:function(node,depth,dir,ext,reformat) {
+	recursiveWalk:function(node,depth,dir,ext,reformat,classNamePrefix) {
 		if (node._Tree_signIcon) { node.removeChild(node._Tree_signIcon); node._Tree_signIcon = false; }
 		if (node._Tree_treeIcon) { node.removeChild(node._Tree_treeIcon); node._Tree_treeIcon = false; }
 		var temp = node.childNodes;
@@ -40,6 +40,8 @@ OAT.Tree = {
 		
 		switch (str.toLowerCase()) {
 			case "ul":
+				var cName = classNamePrefix + "_ul_" + Math.ceil(depth/2);
+				OAT.Dom.addClass(node,cName);
 				var parent = node.parentNode;
 				node.style.listStyleType = "none";
 				node._Tree_toggle = function() {
@@ -81,6 +83,8 @@ OAT.Tree = {
 			break;
 			
 			case "li":
+				var cName = classNamePrefix + "_li_" + Math.ceil(depth/2);
+				OAT.Dom.addClass(node,cName);
 				var tree = OAT.Dom.create("div",{"width":"16px","height":"16px","cssFloat":"left","styleFloat":"left"});
 				tree.style.marginRight = "2px";
 				OAT.Tree.applyImage(tree,dir,"leaf",ext);
@@ -102,7 +106,7 @@ OAT.Tree = {
 		
 		/* recursion */
 		for (var i=0;i<childNodes.length;i++) {
-			OAT.Tree.recursiveWalk(childNodes[i],depth+1,dir,ext,reformat);
+			OAT.Tree.recursiveWalk(childNodes[i],depth+1,dir,ext,reformat,classNamePrefix);
 		}
 	}
 }

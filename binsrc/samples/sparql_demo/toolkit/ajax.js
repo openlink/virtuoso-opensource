@@ -54,18 +54,19 @@ OAT.Ajax = {
 		var callback_response = function() {
 			if (!request.state) { return; } /* cancelled */
 			if (xmlhttp.getReadyState() == 4) {
+				var headers = xmlhttp.getAllResponseHeaders();
 				OAT.Ajax.number--;
 				if (OAT.Ajax.endRef && !OAT.Ajax.number) { OAT.Ajax.endRef(); }
 				if (xmlhttp.getStatus().toString().charAt(0) == "2" || xmlhttp.getStatus() == 0) {
 //					alert(xmlhttp.getResponseText());
 					if (return_type == OAT.Ajax.TYPE_TEXT) {
-		  				return_func(xmlhttp.getResponseText(),xmlhttp);
+		  				return_func(xmlhttp.getResponseText(),headers);
 		  			} else {
-						return_func(xmlhttp.getResponseXML(),xmlhttp);
+						return_func(xmlhttp.getResponseXML(),headers);
 		  			}
 				} else {
 					if (OAT.Ajax.errorRef){
-						OAT.Ajax.errorRef(xmlhttp.getStatus(),xmlhttp.getResponseText(),xmlhttp);
+						OAT.Ajax.errorRef(xmlhttp.getStatus(),xmlhttp.getResponseText());
 					} else if (OAT.Ajax.httpError) {
 						var tmp = confirm("Problem retrieving data, status="+xmlhttp.getStatus()+", do you want to see returned problem description?");
 						if (tmp) { alert(xmlhttp.getResponseText()); }
@@ -124,16 +125,6 @@ OAT.Ajax = {
 		}
 		if (OAT.Ajax.endRef) { OAT.Ajax.endRef(); }
 		OAT.Ajax.number = 0;
-	}
-}
-
-OAT.Sjax = {
-	command:function(url) {
-		var xmlhttp = new XMLHTTP();
-		xmlhttp.open("GET",url,false);
-		xmlhttp.obj.overrideMimeType('text/xml');
-		xmlhttp.send();
-		return xmlhttp.getResponseXML();
 	}
 }
 
@@ -197,6 +188,12 @@ OAT.XMLHTTP = function() {
 		if (!this.iframe) {
 			this.obj.setRequestHeader(name,value);
 		}
+	}
+	this.getAllResponseHeaders = function() {
+		if (!this.iframe) {
+			return this.obj.getAllResponseHeaders();
+		}
+		return {};
 	}
 	this.isIframe = function() {
 		return this.iframe;

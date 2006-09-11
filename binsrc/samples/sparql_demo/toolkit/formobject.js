@@ -68,10 +68,11 @@ OAT.FormObjectNames = {
 	"pivot":"Pivot table",
 	"image":"Image",
 	"imagelist":"Image list",
-	"twostate":"Two state control",
+	"twostate":"Tabular/Columnar Combo",
 	"nav":"Navigation",
 	"url":"URL",
 	"date":"Date",
+	"timeline":"Time line",
 	"gem":"Syndication gem"
 }
 
@@ -413,7 +414,8 @@ OAT.FormObject = {
 		self.datasources = [
 			{name:"Latitude",variable:false,columnIndexes:[-1],names:[],realIndexes:[]},
 			{name:"Longitude",variable:false,columnIndexes:[-1],names:[],realIndexes:[]},
-			{name:"Marker color",variable:false,columnIndexes:[-1],names:[],realIndexes:[]}
+			{name:"Marker color",variable:false,columnIndexes:[-1],names:[],realIndexes:[]},
+			{name:"Marker image",variable:false,columnIndexes:[-1],names:[],realIndexes:[]}
 		];
 		self.properties = [
 /*0*/		{name:"Key",type:"string",value:""},
@@ -431,7 +433,9 @@ OAT.FormObject = {
 				["Circle, no center",OAT.MapData.FIX_ROUND2],
 				["Vertical stack",OAT.MapData.FIX_STACK]
 			]},
-/*7*/		{name:"Marker image",type:"select",value:"",options:[["Normal",""],["People","p"]]}
+/*7*/		{name:"Marker image",type:"select",value:"",options:[["Normal",""],["People","p"]]},
+/*8*/		{name:"Marker width",type:"string",value:"18"},
+/*9*/		{name:"Marker height",type:"string",value:"41"}
 		];
 		if (designMode) {
 			self.elm.innerHTML = "Map";
@@ -439,17 +443,18 @@ OAT.FormObject = {
 
 		self.clickRef = function(index) {
 			return function(marker) {
+				window.debug.push(marker);
+				window.debug.push(index);
 				self.map.closeWindow();
 				/* call for data */
-				if (self.form.pinForm) {
-					self.form.pinForm.oneShotCallback = function() {
+				if (self.properties[4].value != -1) {
+					self.properties[4].value.oneShotCallback = function() {
 						self.map.openWindow(marker,self.properties[4].value.div);
 					}
 				}
 				self.form.dso.advanceRecord(index);
 			}
 		}
-		
 		self.setValue = function(value) { /* lat,lon,index,image */
 			self.map.removeMarkers();
 			if (self.multi) {
@@ -458,7 +463,7 @@ OAT.FormObject = {
 					var lat = value[i][0];
 					var lon = value[i][1];
 					pointArr.push([lat,lon]); 
-					self.map.addMarker(lat,lon,value[i][3],self.clickRef(value[i][2]));
+					self.map.addMarker(lat,lon,value[i][3],self.markerWidth,self.markerHeight,self.clickRef(value[i][2]));
 				}
 				self.map.optimalPosition(pointArr);
 				var az = self.map.getZoom();
@@ -467,7 +472,7 @@ OAT.FormObject = {
 			} else {
 				var lat = value[0][0];
 				var lon = value[0][1];
-				self.map.addMarker(lat,lon,value[0][3],self.clickRef(value[0][2]));
+				self.map.addMarker(lat,lon,value[0][3],self.markerWidth,self.markerHeight,self.clickRef(value[0][2]));
 				self.zoom = self.map.getZoom();
 				self.map.centerAndZoom(lat,lon,self.zoom);
 			}
@@ -484,6 +489,8 @@ OAT.FormObject = {
 			self.prefix = self.properties[7].value;
 			self.multi = (self.properties[3].value == "1" ? 1 : 0);
 			self.fix = parseInt(self.properties[6].value);
+			self.markerWidth = parseInt(self.properties[8].value);
+			self.markerHeight = parseInt(self.properties[9].value);
 			self.markers = [];
 			/* markers available */
 			self.markerPath = "/DAV/JS/images/markers/";
@@ -535,6 +542,9 @@ OAT.FormObject = {
 					if (self.markerIndex >= self.markerFiles.length) { self.markerIndex = 0; }
 				}
 				var image = self.markerMapping[color];			
+				if (self.datasources[3].columnIndexes[0] != -1) { /* custom image */
+					image = dataRows[i][self.datasources[3].realIndexes[0]];
+				}
 				if (!isNaN(lat) && !isNaN(lon)) {
 					values.push([lat,lon,index,image]);
 				}
@@ -1332,8 +1342,135 @@ OAT.FormObject = {
 			self.link.href = self.properties[3].value; /* will point at this feed */
 		}
 		OAT.FormObject.abstractParent(self,x,y);
+	},
+
+	timeline:function(x,y,designMode) {
+		var self = this;
+		OAT.FormObject.init(self);
+		self.name="timeline";
+		self.resizable = true;
+		self.elm = OAT.Dom.create("div",{border:"1px solid #00f",backgroundColor:"#ddf",width:"100px",height:"100px",overflow:"hidden"});
+		self.datasources = [
+			{name:"Time",variable:false,columnIndexes:[-1],names:[],realIndexes:[]},
+			{name:"Band",variable:false,columnIndexes:[-1],names:[],realIndexes:[]},
+			{name:"Label",variable:false,columnIndexes:[-1],names:[],realIndexes:[]},
+			{name:"Link",variable:false,columnIndexes:[-1],names:[],realIndexes:[]}
+		];
+		self.properties = [
+			{name:"Lookup bubble content",type:"form",value:false},
+		]
+		if (designMode) {
+			self.elm.innerHTML = "Timeline";
+		} else {
+			self.elm.style.backgroundColor = "transparent";
+			self.elm.style.border = "none";
+		}
+
+		self.openWindow = function(x,y) {
+			OAT.Dom.show(self.window.div);
+			self.window.div.style.left = x+"px";
+			self.window.div.style.top = y+"px";
+		}
+		
+		self.closeWindow = function() {
+			OAT.Dom.hide(self.window.div);
+		}
+		
+		self.clickRef = function(index) {
+			return function(event) {
+				var coords = OAT.Dom.eventPos(event);
+				if (self.properties[0].value != -1) {
+					self.properties[0].value.oneShotCallback = function() {
+						self.openWindow(coords[0],coords[1]+25);
+					}
+				}
+				self.closeWindow();
+				self.form.dso.advanceRecord(index);
+			}
+		}
+		
+		self.setValue = function(value) { /* time,band,label,link,index */
+			self.timeline.clear();
+			window.value = value;
+			var bands = {};
+			for (var i=0;i<value.length;i++) {
+				var b = value[i][1];
+				bands[b] = 1;
 	}
 	
+			var index = 0;
+			var colors = ["rgb(255,204,153)","rgb(255,255,153)","rgb(153,255,153)",
+							"rgb(153,255,255)","rgb(153,204,255)","rgb(204,153,255)","rgb(255,153,204)"];
+			
+			for (var p in bands) {
+				var c = colors[index % colors.length];
+				self.timeline.addBand(p,c);
+				index++;
+			}
+			
+			for (var i=0;i<value.length;i++) { 
+				var time = value[i][0];
+				var band = value[i][1];
+				var label = value[i][2];
+				var link = value[i][3];
+				var index = value[i][4];
+				var div = OAT.Dom.create("div",{left:"-7px"});
+				var ball = OAT.Dom.create("div",{width:"16px",height:"16px",cssFloat:"left",styleFloat:"left"});
+				ball.style.backgroundImage = "url(/DAV/JS/images/Timeline_circle.png)";
+				if (link == "") {
+					var t = OAT.Dom.create("span");
+				} else {
+					var t = OAT.Dom.create("a");
+					t.href = link;
+					t.target = "_blank";
+				}
+				t.innerHTML = label;
+				div.appendChild(ball);
+				div.appendChild(t);
+				var elm = self.timeline.addEvent(band,time,false,div,"#abf");
+				OAT.Dom.attach(elm,"click",self.clickRef(index));
+			}
+			self.timeline.draw();
+			self.timeline.slider.slideTo(0,1);
+		}
+		
+		self.getValue = function() { return false; }
+		
+		self.init = function() {
+			self.tlElm = OAT.Dom.create("div",{position:"absolute",width:"100%",left:"0px",top:"0px"});
+			self.sliderElm = OAT.Dom.create("div",{position:"absolute",width:"100%",left:"0px",bottom:"0px",height:"20px"});
+			var h = OAT.Dom.getWH(self.elm)[1];
+			self.tlElm.style.height = (h - 22)+"px"; 
+			self.elm.appendChild(self.tlElm);
+			self.elm.appendChild(self.sliderElm);
+			self.timeline = new OAT.Timeline(self.tlElm,self.sliderElm,{});
+			
+			self.window = new OAT.Window({close:1,max:0,min:0,width:0,height:0,x:0,y:0,title:"Lookup window",resize:0});
+			if (self.properties[0].value != -1) {
+				document.body.appendChild(self.window.div);
+				self.window.content.appendChild(self.properties[0].value.div);
+				self.window.onclose = self.closeWindow;
+				self.closeWindow(); 
+			}
+		}
+		
+		self.bindPageCallback = function(dataRows,currentPageIndex) {
+			var values = [];
+			for (var i=0;i<dataRows.length;i++) {
+				var time = dataRows[i][self.datasources[0].realIndexes[0]];
+				var index = self.datasources[1].realIndexes[0];
+				var band = (index == -1 ? "Data" : dataRows[i][index]);
+				var label = dataRows[i][self.datasources[2].realIndexes[0]];
+				var index = self.datasources[3].realIndexes[0];
+				var link = (index == -1 ? "" : dataRows[i][index]);
+				var index = currentPageIndex+i;
+				values.push([time,band,label,link,index]);
+			}
+			self.setValue(values);
+		}
+		
+		OAT.FormObject.abstractParent(self,x,y);
+	} /* timeline */
 	
 }
 OAT.Loader.pendingCount--;

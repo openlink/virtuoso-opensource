@@ -16,14 +16,25 @@ OAT.Schema = {
 		var availTypeNodes = OAT.Xml.getElementsByTagName(schemas,"complexType");
 		for (var i=0;i<availTypeNodes.length;i++) {
 			var node = availTypeNodes[i];
+			
 			if (node.getAttribute("name") == name) {
 				/* correct type node */
 				var result = {};
 				var elems = OAT.Xml.getElementsByTagName(node,"element");
 				for (var i=0;i<elems.length;i++) {
 					var n = elems[i].getAttribute("name");
-					var t = elems[i].getAttribute("type").split(":").pop();
+					var t = elems[i].getAttribute("type");
+					if (t) {
+						t = t.split(":").pop();
 					result[n] = OAT.Schema.getType(schemas,t);
+					} else {
+						var ref = elems[i].getAttribute("ref").split(":").pop();
+						var type = OAT.Schema.getElement(schemas,ref);
+						if (elems.length > 1) {
+							result[ref] = type;
+						} else return [type];
+					}
+					
 				}
 				/* also try arrays */
 				if (elems.length) { return result; }
@@ -41,6 +52,7 @@ OAT.Schema = {
 		}
 		return name;
 	},
+	
 	getElement:function(schemaElements,name) {
 		var schemas = schemaElements;
 		if (!(schemas instanceof Array)) { schemas = [schemaElements]; }
@@ -53,8 +65,17 @@ OAT.Schema = {
 				var elems = OAT.Xml.getElementsByTagName(node,"element");
 				for (var i=0;i<elems.length;i++) {
 					var n = elems[i].getAttribute("name");
-					var t = elems[i].getAttribute("type").split(":").pop();
+					var t = elems[i].getAttribute("type");
+					if (t) {
+						t = t.split(":").pop();
 					result[n] = OAT.Schema.getType(schemas,t);
+					} else {
+						var ref = elems[i].getAttribute("ref").split(":").pop();
+						var type = OAT.Schema.getElement(schemas,ref);
+						if (elems.length > 1) {
+							result[ref] = type;
+						} else return [type];
+					}
 				}
 				/* also try arrays */
 				if (elems.length) { return result; }

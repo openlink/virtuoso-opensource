@@ -111,11 +111,16 @@ OAT.WS = {
 	},
 	
 	parseResponse:function(url,xmlDoc,service,callback) { /* parse response from wsdl-compliant ws */
+		window.obj = [];
+		window.node = [];
+		window.debug = [];
 		var parseObject = function(obj,node) {
+			window.obj.push(obj);
+			window.node.push(node);
 			if (typeof(obj) == "object") {
 				if (obj instanceof Array) {
 					var a = [];
-					var elms = node.childNodes;
+					var elms = OAT.Xml.childElements(node);
 					for (var i=0;i<elms.length;i++) { 
 						var oneValue = parseObject(obj[0],elms[i])
 						a.push(oneValue); 
@@ -125,7 +130,7 @@ OAT.WS = {
 					var o = {};
 					for (var p in obj) {
 						var elm = OAT.Xml.getElementsByTagName(node,p)[0];
-						o[p] = parseObject(obj[p],elm);
+						if (elm) { o[p] = parseObject(obj[p],elm); }
 					}
 					return o;
 				}

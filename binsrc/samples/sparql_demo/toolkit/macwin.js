@@ -59,6 +59,9 @@ OAT.MacWin = function(optObj) {
 	OAT.Drag.create(this.move,this.div);
 	OAT.Drag.create(this.div.cornerElms[0],this.div);
 	OAT.Drag.create(this.div.cornerElms[1],this.div);
+	this.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
+		return l < 5 || t < 20;
+	}
 	
 	this.closeBtn = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left",fontSize:"1px",marginTop:"5px",marginRight:"1px",width:"13px",height:"13px",backgroundImage:"url("+options.imagePath+"MacWin_blank.gif)"});
 	this.move.appendChild(this.closeBtn);
