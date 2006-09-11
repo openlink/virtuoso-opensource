@@ -52,5 +52,6 @@ EXTRA_DIST = \
 	images/*.gif \
 	images/*.png \
 	make_vad.sh \
+	syntax/*.js \
 	toolkit/*.js \
 	vad_version
