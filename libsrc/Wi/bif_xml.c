@@ -63,6 +63,9 @@ extern "C" {
   ((NULL != (xn)->xn_xp->xp_parser) && \
    (DEAD_HTML & ((xn)->xn_xp->xp_parser->cfg.input_is_html)) )
 
+#ifdef WBXML2
+#include "wbxml.h"
+#endif
 void
 bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func,
     dk_set_t *ret_set, dk_set_t *head_set);
@@ -5978,6 +5981,54 @@ bif_xmlnss_xpath_pre (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res_str;
 }
 
+#ifdef WBXML2
+caddr_t
+bif_wbxml2xml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t in = bif_arg (qst, args, 0, "wbxml2xml");
+  caddr_t ret_xml = NULL;
+  WBXMLError ret = WBXML_OK;
+  WB_UTINY *wbxml = NULL, *xml = NULL;
+  WB_LONG wbxml_len = 0;
+  WBXMLGenXMLParams params;
+  long box_in_len = box_length (in);
+
+  /* Init Default Parameters */
+  params.lang = WBXML_LANG_UNKNOWN;
+  params.gen_type = WBXML_GEN_XML_INDENT;
+  params.indent = 1;
+  params.keep_ignorable_ws = FALSE;
+
+  wbxml_len =  box_in_len - 1;
+  wbxml = wbxml_realloc(wbxml, wbxml_len);
+  memcpy(wbxml, in, wbxml_len);
+
+  ret = wbxml_conv_wbxml2xml (wbxml, wbxml_len, &xml, &params);
+
+  if (ret != WBXML_OK)
+    {
+
+      *err_ret = srv_make_new_error ("23000", wbxml_errors_string(ret), "WBXML");
+      goto end;
+    }
+
+  ret_xml = box_dv_short_string (xml);
+
+end:
+  wbxml_free(wbxml);
+  wbxml_free(xml);
+  return ret_xml ? ret_xml : dk_alloc_box (0, DV_DB_NULL);
+}
+;
+
+caddr_t
+bif_xml2wbxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int argcount = BOX_ELEMENTS (args);	/* number of arguments in the call */
+}
+;
+
+#endif
 
 void
 bif_xml_init (void)
@@ -6075,6 +6126,10 @@ bif_xml_init (void)
   bif_define_typed ("xte_expand_xmlns", bif_xte_expand_xmlns, &bt_any);
   bif_define_typed ("xmlnss_get", bif_xmlnss_get, &bt_xml_entity);
   bif_define_typed ("xmlnss_xpath_pre", bif_xmlnss_xpath_pre, &bt_varchar);
+#ifdef WBXML2
+  bif_define_typed ("wbxml2xml", bif_wbxml2xml, &bt_varchar);
+  bif_define_typed ("xml2wbxml", bif_xml2wbxml, &bt_any);
+#endif
   bif_text_init ();
   bif_ap_init ();
   xml_schema_init ();
