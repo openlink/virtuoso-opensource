@@ -801,8 +801,10 @@ qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq)
 void
 qr_resume_pending_nodes (query_t * subq, caddr_t * inst)
 {
+  dk_set_t nodes = subq->qr_bunion_reset_nodes ? subq->qr_bunion_reset_nodes : subq->qr_nodes;
+  /* if the qr is a union term, continue the nodes that belong to the union term itself. qr_nodes is null and the nodes of the union term are added to the nodes of the containing qr */
 cont_innermost_loop:
-  DO_SET (data_source_t *, src, &subq->qr_nodes)
+  DO_SET (data_source_t *, src, &nodes)
   {
     if (inst[src->src_in_state])
       {
@@ -1336,7 +1338,7 @@ ins_qnode (instruction_t * ins, caddr_t * qst)
 void
 vdb_enter (query_instance_t * qi)
 {
-  lock_trx_t *lt = qi->qi_trx;
+  lock_trx_t * lt = qi->qi_trx;
   IN_TXN;
   CHECK_DK_MEM_RESERVE (lt);
   if (LT_PENDING != lt->lt_status)

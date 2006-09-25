@@ -402,6 +402,7 @@ union_node_input (union_node_t * un, caddr_t * inst, caddr_t * state)
       qst_set (inst, un->uni_nth_output, box_num (nth + 1));
       qn_record_in_state ((data_source_t *) un, inst, inst);
       qn_input (((query_t *) out_list->data)->qr_head_node, inst, inst);
+      qr_resume_pending_nodes ((query_t*) out_list->data, inst);
       state = NULL;
     }
 }

@@ -1316,6 +1316,48 @@ cv_is_local (code_vec_t cv)
   return 1;
 }
 
+
+dk_set_t
+cv_assigned_slots (code_vec_t cv)
+{
+  state_slot_t ** out;
+  dk_set_t res = NULL;
+  if (!cv)
+    return NULL;
+  DO_INSTR (ins, 0, cv)
+    {
+      switch (ins->ins_type)
+	{
+	case INS_CALL:
+	case INS_CALL_IND:
+	  if (ins->_.call.ret)
+	    dk_set_push (&res, (void*) ins->_.call.ret);
+	  break;
+	case IN_ARTM_FPTR:
+	case IN_ARTM_IDENTITY:
+	case IN_ARTM_PLUS: case IN_ARTM_MINUS:
+	case IN_ARTM_TIMES: case IN_ARTM_DIV:
+	  if (ins->_.artm.result)
+	    dk_set_push (&res, (void*) ins->_.artm.result);
+	  break;
+	case INS_SUBQ:
+	  if (ins->_.subq.query && ins->_.subq.query->qr_select_node 
+	      && ((out = ins->_.subq.query->qr_select_node->sel_out_slots)))
+	    {
+	      int inx;
+	      DO_BOX (state_slot_t *, ssl, inx, out)
+		{
+		  if (ssl->ssl_type == SSL_VARIABLE || ssl->ssl_type == SSL_COLUMN)
+		    dk_set_push (&res,  (void*) ssl);
+		}	      
+	      END_DO_BOX;
+	    }
+	}
+    }
+  END_DO_INSTR
+  return res;
+}
+
 static short
 cv_find_label (sql_comp_t * sc, dk_hash_t *ht, jmp_label_t label)
 {

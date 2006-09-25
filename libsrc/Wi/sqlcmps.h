@@ -392,7 +392,7 @@ void sqlc_table_ref_list (sql_comp_t *sc, ST** refs);
 caddr_t * sel_expand_stars (sql_comp_t * sc, ST ** selection, ST** from);
 
 int cv_is_local (code_vec_t cv);
-
+dk_set_t cv_assigned_slots (code_vec_t cv);
 void sqlc_ct_generate (sql_comp_t * sc, comp_table_t * ct);
 
 state_slot_t * sqlc_asg_stmt (sql_comp_t * sc, ST * stmt, dk_set_t * code);
