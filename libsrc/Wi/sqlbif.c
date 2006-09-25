@@ -10631,6 +10631,63 @@ bif_mutex_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+long
+mem_traverse (int32 ** arr, int sz, int step, int wr)
+{
+  int inx;
+  long sum = 0;
+  int ainx = 0;
+  for (ainx = 0; ainx < sz; ainx++)
+    {
+      for (inx = 0; inx < 1024; inx += step)
+	{
+	  sum += arr[ainx][inx];
+	  if (wr)
+	    arr[ainx][inx]++;
+	}
+    }
+  return sum;
+}
+
+caddr_t
+bif_mem_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  long inx, ctr, inx2;
+  long sum = 0;
+  long n = (long) bif_long_arg (qst, args, 0, "mem_meter");
+  long sz = (long) bif_long_arg (qst, args, 1, "mem_meter");
+  int32 ** arr;
+  for (ctr = 0; ctr < n; ctr++)
+    {
+      int32 ** arr = (int32 **) malloc (sizeof (void*) * sz);
+      for (inx = 0; inx < sz; inx ++)
+	{
+	  arr[inx] = (int32*) malloc (sizeof (int32) * 1024);
+	  memset (arr[inx], 0, 1024 * sizeof (int32));
+	}
+      for (inx= 0; inx < sz; inx++)
+	{
+	  for (inx2 = 0; inx2 < 1024; inx2++)
+	    sum += arr[inx][inx2];
+	}
+      sum += mem_traverse (arr, sz, 10, 0);
+      sum += mem_traverse (arr, sz, 10, 1);
+      sum += mem_traverse (arr, sz, 7, 0);
+      sum += mem_traverse (arr, sz, 22, 0);
+      sum += mem_traverse (arr, sz, 9, 1);
+      sum += mem_traverse (arr, sz, 40, 0);
+      sum += mem_traverse (arr, sz, 10, 1);
+      sum += mem_traverse (arr, sz, 7, 0);
+      sum += mem_traverse (arr, sz, 11, 1);
+      
+      for (inx = 0; inx < sz; inx++)
+	free ((void*) arr[inx]);
+      free ((void*) arr);
+    }
+  return box_num (sum);
+}
+
+
 caddr_t
 bif_malloc_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -12147,6 +12204,7 @@ sql_bif_init (void)
   bif_define ("__set", bif_set);
   bif_define_typed ("vector_concat", bif_vector_concatenate, &bt_any);
   bif_define ("mutex_meter", bif_mutex_meter);
+  bif_define ("mem_meter", bif_mem_meter);
   bif_define ("mutex_stat", bif_mutex_stat);
   bif_define ("self_meter", bif_self_meter);
   bif_define ("malloc_meter", bif_malloc_meter);
