@@ -170,7 +170,7 @@ create procedure TUT_generate_files(
 	  result_names('status');	
 	  result('Preparing for generating files.');
 	};
-	paths := vector('/','/search.vsp','/rss.vsp','/opml.vsp','/ocs.vsp');
+	paths := vector('/','/search.vsp','/rss.vsp','/opml.vsp','/ocs.vsp','/sioc.vsp');
   foreach (any tut_path in xpath_eval('//@wwwpath',_TUT_XML,0))do
   {
 	  if (length(tut_path) > 5 and (
@@ -227,6 +227,8 @@ create procedure TUT_generate_files(
 	  if (trim(gen_path,'/') <> '')
 	    _xsl_params := vector_concat(_xsl_params,vector('path',ltrim(gen_path,'/')));
 	    
+	  _xsl_params := vector_concat(_xsl_params,vector('now_rfc1123',date_rfc1123(now())));
+
 	  _stream := string_output();
 	  http_rewrite(_stream);
   	if (gen_path like '%/rss.vsp')
@@ -235,6 +237,8 @@ create procedure TUT_generate_files(
   		xml_output := '_opml_output';
   	else if (gen_path = '/ocs.vsp')
   		xml_output := '_ocs_output';
+  	else if (gen_path = '/sioc.vsp')
+  		xml_output := '_sioc_output';
     else
       xml_output := '';
 	  

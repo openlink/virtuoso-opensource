@@ -22,7 +22,7 @@
 -->
 <tutorial>
   <section Title="Data Management">
-    <subsection Title="SQL Database" fspath="hosting">
+    <subsection Title="SQL" fspath="hosting">
       <group Title="User Defined Types">
         <group Title=".NET CLR Runtime Hosting">
     			<example id="HO-S-2" fspath="hosting/ho_s_2"></example>
@@ -40,9 +40,9 @@
         </group>
       </group>
     </subsection>
-    <subsection Title="XML Database" fspath="xml">
+    <subsection Title="XML" fspath="xml">
     <!--<subsection Title="SQLX" fspath="xml">-->
-      <group Title="XML Database">
+      <group Title="XML">
         <group Title="XML Query (XQuery) Language">
 					<!--<example id="XQ-S-1" fspath="xml/xq_s_1"></example>-->
 					<example id="XQ-S-2" fspath="xml/xq_s_2"></example>
@@ -108,13 +108,6 @@
 					<example id="XS-F-1" fspath="xmlxslt/xs_f_1"></example>
 					<example id="XS-F-2" fspath="xmlxslt/xs_f_2"></example>
 	      </group>
-      </group>
-    </subsection>
-    <subsection Title="RDF Database" fspath="rdf">
-      <group Title="RDF Database">
-        <group Title="PHP hosted">
-					<example id="RQ-S-2" fspath="rdf/rq_s_2"></example>
-        </group>
       </group>
     </subsection>
     <!-- We keep those because of the old implementation -->
@@ -374,8 +367,18 @@
 	      </group>
       </group>
     </subsection>
-    <subsection Title="Internet Protocols (NNTP)" fspath="intprot">
-      <group Title="Internet Protocols (NNTP)">
+    <subsection Title="RDF" fspath="rdf">
+      <group Title="RDF">
+	      <group Title="RDF NET Services">
+					<example id="RN-S-1" fspath="services/rn_s_1"></example>
+	      </group>
+        <group Title="PHP hosted">
+					<example id="RQ-S-2" fspath="rdf/rq_s_2"></example>
+        </group>
+      </group>
+    </subsection>
+    <subsection Title="NNTP" fspath="intprot">
+      <group Title="NNTP">
 	      <group Title="SMTP & POP3 Services">
 					<example id="SM-S-1" fspath="intprot/sm_s_1"></example>
 					<example id="SM-S-2" fspath="intprot/sm_s_2"></example>

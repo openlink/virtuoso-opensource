@@ -33,7 +33,7 @@
     <xsl:text disable-output-escaping="yes"><![CDATA[<?vsp
 		  http_header ('Content-Type: text/xml\r\n');
       declare _path,_domain varchar;
-      _domain := 'http://' || HTTP_GET_HOST();
+      _domain := 'http://' || regexp_replace(HTTP_GET_HOST(),':80$','');
       _path := _domain || http_map_get('domain') || '/'; 
 		  
 		  declare _outlines any;

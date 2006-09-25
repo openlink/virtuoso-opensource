@@ -52,6 +52,7 @@
         <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
         <link href="{concat($mount_point,'/tutorial3.css')}" rel="stylesheet" type="text/css"/>
         <link href="{concat($mount_point,'/syntax/SyntaxHighlighter.css')}" rel="stylesheet" type="text/css"/>
+        <link rel="meta" type="application/rdf+xml" title="SIOC" href="{concat($mount_point,'/sioc.vsp')}" />
       </head>
       <body>
         <table border="0" cellpadding="0" cellspacing="0" id="top">
@@ -1208,7 +1209,7 @@
         http_rewrite ();
         http ('<?xml version="1.0" ?>');
         http ('<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearchdescription/1.0/">');
-        http ('<Url>http://'|| HTTP_GET_HOST() || http_path() || '?q={searchTerms}&amp;cnt={count}&amp;sp={startPage}&amp;output=xml' || '</Url>');
+        http ('<Url>http://'|| regexp_replace(HTTP_GET_HOST(),':80$','') || http_path() || '?q={searchTerms}&amp;cnt={count}&amp;sp={startPage}&amp;output=xml' || '</Url>');
         http ('<Format>http://a9.com/-/spec/opensearchrss/1.0/</Format>');
         http ('<ShortName>OpenLink Virtuoso Tutorial</ShortName>');
         http ('<LongName>OpenLink Virtuoso Features Demonstrations and Tutorials</LongName>');
@@ -1218,7 +1219,7 @@
         http ('<Tags>');
         http_value (kwds);
         http ('</Tags>');
-        http ('<Image>http://'|| HTTP_GET_HOST() || http_map_get('domain') || '/leftlogo.gif</Image>');
+        http ('<Image>http://'|| regexp_replace(HTTP_GET_HOST(),':80$','') || http_map_get('domain') || '/leftlogo.gif</Image>');
         http ('<SampleSearch>');
         http_value (kwds);
         http ('</SampleSearch>');
@@ -1389,7 +1390,7 @@
           http ('OpenLink Virtuoso Features Demonstrations and Tutorials');
           http ('</title>');
           http ('<link>');
-          http (sprintf ('http://%s', HTTP_GET_HOST()));
+          http (sprintf ('http://%s', regexp_replace(HTTP_GET_HOST(),':80$','')));
           http_value (qurl || 'text');
           http ('</link>');
           http ('<description>About ');
@@ -1409,10 +1410,10 @@
             http ('<title>');
             http_value (res[1]);
             http ('</title>');
-            http (sprintf ('<link>http://%s%s/', HTTP_GET_HOST(), http_map_get('domain')));
+            http (sprintf ('<link>http://%s%s/', regexp_replace(HTTP_GET_HOST(),':80$',''), http_map_get('domain')));
             http_value (res[3]);
             http ('</link>');
-            http (sprintf ('<guid>http://%s%s/', HTTP_GET_HOST(), http_map_get('domain')));
+            http (sprintf ('<guid>http://%s%s/', regexp_replace(HTTP_GET_HOST(),':80$',''), http_map_get('domain')));
             http_value (res[3]);
             http ('</guid>');
             http ('<pubDate>');

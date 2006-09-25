@@ -7,13 +7,13 @@ page_common.xsl
 page_rss_output.xsl
 page_opml_output.xsl
 page_ocs_output.xsl
+page_sioc_output.xsl
 rdf.vsp
 rss2atom.xsl
 rss2rdf.xsl
 rss2xbel.xsl
 setup_tutorial.sql
 setup_search.sql
-setup_sparql_demo.sql
 tutorial.xml
 tutorial3.css
 xbel.vsp

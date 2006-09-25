@@ -26,12 +26,13 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <xsl:output method="xml" indent="yes"/>
 	<xsl:include href="page_common.xsl"/>
+	<xsl:param name="now_rfc1123"><?V date_rfc1123(now())?></xsl:param>
 	
   <xsl:template match="tutorial">
     <?vsp
 		  http_header ('Content-Type: text/xml\r\n');
       declare _path,_domain varchar;
-      _domain := 'http://' || HTTP_GET_HOST();
+      _domain := 'http://' || regexp_replace(HTTP_GET_HOST(),':80$','');
       _path := _domain || http_map_get('domain') || '/'; 
     ?>
 		<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -50,7 +51,7 @@
 				<link><?V _path ?><xsl:value-of select="$subsecpath"/><xsl:if test="$subsecpath != ''">/</xsl:if></link>
 				<description/>
 				<managingEditor>support@openlinksw.com</managingEditor>
-				<pubDate><?V date_rfc1123(now())?></pubDate>
+				<pubDate><xsl:value-of select="$now_rfc1123"/></pubDate>
 				<generator>Virtuoso Universal Server <?V sys_stat('st_dbms_ver') ?></generator>
 				<webMaster>support@openlinksw.com</webMaster>
 				<image>

@@ -72,7 +72,8 @@
   		or req_path = '/search.vsp'
   		or req_path like '%/rss.vsp'
   		or req_path = '/opml.vsp'
-  		or req_path = '/ocs.vsp') 
+  		or req_path = '/ocs.vsp'
+  		or req_path = '/sioc.vsp') 
   {
   	if (req_path like '%/rss.vsp')
   		xml_output := '_rss_output';
@@ -80,6 +81,8 @@
   		xml_output := '_opml_output';
   	else if (req_path = '/ocs.vsp')
   		xml_output := '_ocs_output';
+  	else if (req_path = '/sioc.vsp')
+  		xml_output := '_sioc_output';
   	_our_path := 1;
 	  _file := 'index.vsp';
 	  
@@ -108,6 +111,8 @@
 	  if (trim(req_path,'/') <> '')
 	    _xsl_params := vector_concat(_xsl_params,vector('path',ltrim(req_path,'/')));
 	    
+	  _xsl_params := vector_concat(_xsl_params,vector('now_rfc1123',date_rfc1123(now())));
+	  
 	  http_value(xslt('file://'||_TUT_ROOT || '/page'||xml_output||'.xsl',_TUT_XML,_xsl_params),null,_stream);
 	  if (_file = '')
 	  	file_mkpath (http_root()||ph_path|| '/vad_files/vsp/tutorial'|| regexp_replace(req_path,'[^/]*$',''));
