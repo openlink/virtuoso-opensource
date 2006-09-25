@@ -74,7 +74,7 @@ MAKE_CFG ()
   file=$1
   port=$2
   httpport=$3
-  cat $file | sed -e "s/HTTPPORT/$httpport/g" -e "s/PORT/$port/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" > $CFGFILE
+  cat $file | sed -e "s/HTTPPORT/$httpport/g" -e "s/PORT/$port/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" -e "s/PLDBG/$PLDBG/g" -e "s/CASE_MODE/$CASE_MODE/g" > $CFGFILE
 }
 
 # decide witch server options set to use based on the server's name
