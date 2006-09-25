@@ -114,11 +114,12 @@ page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_in_map)
 
   if (!buf)
     {
-      if (DP_DELETED == phys_dp || dbs_is_free_page (it->itc_tree->it_storage, phys_dp))
+      if ((DP_DELETED == phys_dp || dbs_is_free_page (it->itc_tree->it_storage, phys_dp))
+	  && !strchr (wi_inst.wi_open_mode, 'a'))
 	{
 	  log_error ("Reference to page with free remap dp = %ld, remap = %ld",
 		     (long) phys_dp, (long) dp);
-	  if (DBS_PAGE_IN_RANGE (it->itc_tree->it_storage, phys_dp))
+	  if (0 && DBS_PAGE_IN_RANGE (it->itc_tree->it_storage, phys_dp))
 	    dbs_page_allocated (it->itc_space->isp_tree->it_storage, phys_dp);
 	  else
 	    return PF_OF_DELETED;

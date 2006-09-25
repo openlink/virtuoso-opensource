@@ -2558,9 +2558,10 @@ itc_read_ahead_blob (it_cursor_t * itc, ra_req_t *ra )
       index_space_t * bisp;
       buffer_desc_t * btmp;
       ITC_IN_MAP (itc);
-      if (dbs_is_free_page (itc->itc_tree->it_storage, ra->ra_dp[inx]))
+      if (!DBS_PAGE_IN_RANGE (itc->itc_tree->it_storage, ra->ra_dp[inx]) 
+	  ||dbs_is_free_page (itc->itc_tree->it_storage, ra->ra_dp[inx]) || 0 == ra->ra_dp[inx])
 	{
-	  log_error ("*** read-ahead of a free page dp L=%ld",
+	  log_error ("*** read-ahead of a free or out of range page dp L=%ld",
 	       ra->ra_dp[inx]);
 	  continue;
 	}
@@ -2849,12 +2850,13 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
   return ctr;
 }
 
-int
+int64
 itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret)
 {
   dp_addr_t leaf, rnd_leaf;
   int res;
-  int ctr  = 0, leaf_ctr = 0, leaf_estimate = 0;
+  int ctr  = 0, leaf_ctr = 0;
+  int64 leaf_estimate = 0;
 
   it->itc_search_mode = SM_READ;
  start:
@@ -2920,7 +2922,8 @@ itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret)
 unsigned int64
 key_count_estimate  (dbe_key_t * key, int n_samples, int upd_col_stats)
 {
-  int res = 0, n;
+  int64 res = 0;
+  int n;
   buffer_desc_t * buf;
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;

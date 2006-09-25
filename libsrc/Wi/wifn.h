@@ -89,7 +89,7 @@ void itc_clear_stats (it_cursor_t *it);
 void itc_from_keep_params (it_cursor_t * it, dbe_key_t * key);
 void itc_from_it (it_cursor_t * itc, index_tree_t * it);
 int itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret);
-int itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret);
+int64 itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret);
 unsigned int64 key_count_estimate (dbe_key_t * key, int n_samples, int upd_col_stats);
 caddr_t  key_iri_from_name (caddr_t name);
 int  key_rdf_lang_id (caddr_t name);
@@ -661,7 +661,7 @@ int  bl_check (blob_layout_t * bl);
 void blob_layout_free (blob_layout_t * bl);
 
 box_t blob_layout_ctor (dtp_t blob_handle_dtp, dp_addr_t start, dp_addr_t dir_start, size_t length, size_t diskbytes, index_tree_t * it);
-void blob_read_dir (it_cursor_t * itc, dp_addr_t ** pages, int * is_complete, dp_addr_t dir_start);
+int blob_read_dir (it_cursor_t * itc, dp_addr_t ** pages, int * is_complete, dp_addr_t dir_start);
 box_t blob_layout_from_handle_ctor (blob_handle_t *bh);
 int itc_print_blob_col_non_txn (it_cursor_t * row_itc, dk_session_t * row, caddr_t data, int is_extension);
 int bh_fill_buffer_from_blob (index_space_t * isp, lock_trx_t * lt, blob_handle_t * bh,

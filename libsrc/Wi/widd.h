@@ -128,7 +128,7 @@ struct dbe_table_s
     dbe_key_t *	tb__text_key;
 
     /* SQL statistics members */
-    long                tb_count;
+    int64                tb_count;
     int64	tb_count_estimate;
     int			tb_count_delta;
 
@@ -180,8 +180,8 @@ struct dbe_column_s
     caddr_t 		col_xml_base_uri;
 
     /* SQL statistics members */
-    long                col_count; /* non-null */
-    long                col_n_distinct; /* count of distinct */
+    int64                col_count; /* non-null */
+    int64                col_n_distinct; /* count of distinct */
     caddr_t *           col_hist;
     caddr_t		col_min; /* min column value */
     caddr_t		col_max; /* max column value */
@@ -227,10 +227,6 @@ struct dbe_key_s
   dbe_table_t *	key_table;
   int			key_n_parts;
   dk_set_t		key_parts;
-
-  db_buf_t		key_min;
-  db_buf_t		key_max;
-  long		key_count;
 
   int			key_n_significant;
   int			key_decl_parts;

@@ -537,6 +537,8 @@ errexit:
   return 0;
 }
 
+#define BLOB_AT_END_ERROR 2
+
 
 static int
 bh_pickup_page (blob_handle_t * bh, it_cursor_t * itc_from, int *at_end)
@@ -547,7 +549,7 @@ bh_pickup_page (blob_handle_t * bh, it_cursor_t * itc_from, int *at_end)
 
   if (!page_wait_blob_access (itc_from, bh->bh_current_page, &buf_from, PA_READ, bh, 1))
     {
-      *at_end = 1;
+      *at_end = BLOB_AT_END_ERROR;
       bh->bh_current_page = bh->bh_page;	/* ready for reuse */
       bh->bh_state.bufpos = 0;
       bh->bh_state.buflen = 0;
@@ -610,6 +612,8 @@ again:
   if (len && bh->bh_state.bufpos == bh->bh_state.buflen)
     {
       bh_pickup_page (bh, itc_from, at_end);
+      if (BLOB_AT_END_ERROR == *at_end)
+	return 0;
       goto again;
     }
 
@@ -1232,6 +1236,8 @@ bh_fill_data_buffer (blob_handle_t * bh, buffer_desc_t * buf, it_cursor_t * itc_
 	  bh->bh_position = 0;
 	  status_ret[0] = BLOB_ALL_RECEIVED;
 	}
+      if (BLOB_AT_END_ERROR == __at_end)
+	*status_ret = BLOB_ALL_RECEIVED;
       LONG_SET (buf->bd_buffer + DP_BLOB_LEN, nout);
       *data_len_in_bytes = nout;
       return ncout;
@@ -1350,6 +1356,7 @@ blob_chain_delete (it_cursor_t * itc, blob_layout_t * bl)
     }
   if (!bl->bl_page_dir_complete)
     blob_read_dir (itc, &bl->bl_pages, &bl->bl_page_dir_complete, bl->bl_dir_start);
+  if (bl->bl_page_dir_complete) /* see if no error in reading page dir */
   blob_delete_via_dir (itc, bl);
   blob_layout_free (bl);
 }
@@ -2903,21 +2910,24 @@ bh_find_page (blob_handle_t * bh, size_t offset)
 }
 
 
-void
+int
 blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_addr_t start)
 {
+  int error = 0;
   buffer_desc_t *buf = NULL;
   long items_on_page;
   int n;
   dk_set_t pages_list = NULL;
   if (*is_complete)
     return;
-  dk_free_box ((box_t) *pages);
   while (start)
     {
       long next;
       if (!page_wait_blob_access (tmp_itc, start, &buf, PA_READ, NULL, 1))
+	{
+	  error = 1;
 	break;
+	}
       items_on_page = (LONG_REF (buf->bd_buffer + DP_BLOB_LEN)) / sizeof (dp_addr_t);
       if (items_on_page)
 	{
@@ -2932,6 +2942,12 @@ blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_
       ITC_LEAVE_MAP (tmp_itc);
       start = next;
     }
+  if (error)
+    {
+      dk_set_free (pages_list);
+      return BLOB_FREE;
+      }
+  dk_free_box ((box_t) *pages);
   n = dk_set_length (pages_list);
   *is_complete = 1;
   if (n > 0)
@@ -2961,9 +2977,9 @@ bh_fetch_dir (index_space_t * isp /* unused */, lock_trx_t * lt, blob_handle_t *
     return 0;
   ITC_INIT (itc, isp, lt);
   itc_from_it (itc, bh->bh_it);
-  blob_read_dir (itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page);
-  return 0;
+  return blob_read_dir (itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page);
 }
+
 
 int
 blob_check (blob_handle_t * bh)
@@ -3198,7 +3214,11 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
   if (!isWide)
     {
       bh->bh_position = (int) (from % PAGE_DATA_SZ);
-      bh_fetch_dir (NULL, lt, bh);
+      if (BLOB_FREE == bh_fetch_dir (NULL, lt, bh))
+	{
+	  sqlr_new_error ("22023", "SR099",
+			  "Reading deleted blob in subseq.");
+	}
       if (pidx)
 	{
 	  if (bh->bh_pages)
@@ -3306,7 +3326,12 @@ blob_to_string_isp (lock_trx_t * lt, index_space_t *isp, caddr_t bhp)
   if (!bytes)
     goto return_empty_string;		/* see below */
 
-  bh_fetch_dir (isp, lt, bh);
+  if  (BLOB_FREE == bh_fetch_dir (isp, lt, bh))
+    {
+
+          sqlr_new_error ("22023", "SR099",
+			  "Reading deleted blob in blob_to_string");
+    }
   bh_read_ahead (isp, lt, bh, 0, (unsigned) bh->bh_length);
 
   string_list = bh_string_list (/* isp, */ lt, bh,
