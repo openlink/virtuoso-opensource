@@ -347,7 +347,7 @@ echo "  <resources>" >> $STICKER
 for file in $FLIST
 do
     name=$file
-echo "    <file type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner='dav' dav_grp='administrators' dav_perm='111101101N' makepath=\"yes\"/>" >> $STICKER
+echo "    <file type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner='dav' dav_grp='administrators' dav_perm='111101101NN' makepath=\"yes\"/>" >> $STICKER
 done
 
 echo "  </resources>" >> $STICKER
