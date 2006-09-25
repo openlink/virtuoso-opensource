@@ -2808,7 +2808,10 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         tree->_.req_top.retvals, print_union_flags, top_retval_flags, retvalmode );
       if (NULL != formatter)
         {
-          ssg_puts (" ) AS \"callret-0\" LONG VARCHAR");
+          ssg_puts (" ) AS \"callret");
+          if (NULL != tree->_.req_top.formatmode_name)
+            ssg_puts (tree->_.req_top.formatmode_name);
+          ssg_puts ("-0\" LONG VARCHAR");
           ssg->ssg_indent -= 1;
           ssg_newline (0);
         }
