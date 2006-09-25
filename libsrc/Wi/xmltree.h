@@ -927,6 +927,7 @@ extern caddr_t uname_rdf_ns_uri_parseType;
 extern caddr_t uname_space;
 extern caddr_t uname_virtrdf_ns_uri;
 extern caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
+extern caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
 extern caddr_t uname_virtrdf_ns_uri_QuadStorage;
 extern caddr_t uname_virtrdf_ns_uri_bitmask;
 extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;

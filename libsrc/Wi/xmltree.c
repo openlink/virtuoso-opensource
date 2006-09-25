@@ -3624,7 +3624,7 @@ void bif_xquery_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *f
       } while (0)
 
 caddr_t
-xpath_or_xquery_eval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char *funname, ptrlong predicate_type, int with_cache)
+xpath_or_xquery_eval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *funname, ptrlong predicate_type, int with_cache)
 {
   volatile int v_inx = 1;
   int first;
@@ -4284,7 +4284,7 @@ printed:
 
 
 caddr_t
-xpath_or_xquery_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char *funname, ptrlong predicate_type)
+xpath_or_xquery_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *funname, ptrlong predicate_type)
 {
   xp_query_t * xqr = NULL;
   query_instance_t * qi = (query_instance_t *) qst;
@@ -9510,6 +9510,7 @@ caddr_t uname_rdf_ns_uri_parseType;
 caddr_t uname_space;
 caddr_t uname_virtrdf_ns_uri;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
+caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
 caddr_t uname_virtrdf_ns_uri_QuadStorage;
 caddr_t uname_virtrdf_ns_uri_bitmask;
 caddr_t uname_virtrdf_ns_uri_isSubclassOf;
@@ -9579,6 +9580,7 @@ xml_tree_init (void)
   UNAME_IT(uname_space				, "space"			);
   UNAME_IT(uname_virtrdf_ns_uri			, VIRTRDF_NS_URI		);
   UNAME_IT(uname_virtrdf_ns_uri_DefaultQuadStorage	, VIRTRDF_NS_URI "DefaultQuadStorage"	);
+  UNAME_IT(uname_virtrdf_ns_uri_QuadMapFormat	, VIRTRDF_NS_URI "QuadMapFormat"	);
   UNAME_IT(uname_virtrdf_ns_uri_QuadStorage	, VIRTRDF_NS_URI "QuadStorage"	);
   UNAME_IT(uname_virtrdf_ns_uri_bitmask		, VIRTRDF_NS_URI "bitmask"	);
   UNAME_IT(uname_virtrdf_ns_uri_isSubclassOf	, VIRTRDF_NS_URI "isSubclassOf"	);

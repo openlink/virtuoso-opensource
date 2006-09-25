@@ -505,7 +505,7 @@ err_queue_append (sql_error_rec_t ** q1, sql_error_rec_t ** q2)
 }
 
 sql_error_rec_t *
-cli_make_error (char * state, char *virt_state, char * msg, int col)
+cli_make_error (const char * state, const char *virt_state, const char * msg, int col)
 {
   caddr_t msg_box;
   int msg_len = msg ? (int) strlen (msg) : 0;
@@ -530,9 +530,8 @@ cli_make_error (char * state, char *virt_state, char * msg, int col)
   return rec;
 }
 
-
 void
-set_error_ext (sql_error_t * err, char *state, char *virt_state, char *message, int col, int rc)
+set_error_ext (sql_error_t * err, const char *state, const char *virt_state, const char *message, int col, int rc)
 {
   if (NULL == state && NULL == message)
     {
@@ -563,21 +562,21 @@ set_error_ext (sql_error_t * err, char *state, char *virt_state, char *message, 
 
 
 void
-set_error (sql_error_t * err, char *state, char *virt_state, char *message)
+set_error (sql_error_t * err, const char *state, const char *virt_state, const char *message)
 {
   set_error_ext (err, state, virt_state, message, 0, SQL_ERROR);
 }
 
 
 void
-set_success_info (sql_error_t * err, char *state, char *virt_state, char *message, int col)
+set_success_info (sql_error_t * err, const char *state, char *virt_state, const char *message, int col)
 {
   set_error_ext (err, state, virt_state, message, col, SQL_SUCCESS_WITH_INFO);
 }
 
 
 void
-set_data_truncated_success_info (cli_stmt_t *stmt, char *virt_state, SQLUSMALLINT icol)
+set_data_truncated_success_info (cli_stmt_t *stmt, const char *virt_state, SQLUSMALLINT icol)
 {
   char *base_col;
   char icol_buf[30];

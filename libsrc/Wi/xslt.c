@@ -2835,7 +2835,7 @@ bif_xslt_profile_disable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 
 
 void
-xstu_dump_uses (xslt_template_t * xst, xslt_template_uses_t * xstu, char *type, dk_session_t *res)
+xstu_dump_uses (xslt_template_t * xst, xslt_template_uses_t * xstu, const char *type, dk_session_t *res)
 {
   char buf[100];
   sprintf (buf, "\n      <template_profile type=\"%s\"", type);
