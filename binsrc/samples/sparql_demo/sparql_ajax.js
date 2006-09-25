@@ -517,6 +517,8 @@ function rq_query(param,dl)
       if (param)
       {
         $('result').innerHTML = data;
+      } else if (data.length > 10 * 1024) {
+        $('result').innerHTML = '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
       } else {
         var shtype = 'xml';
         if ($v('format') == 'application/sparql-results+json' || 
