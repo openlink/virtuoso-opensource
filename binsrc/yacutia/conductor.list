@@ -28,6 +28,7 @@ conductor/cont_type_edit.vspx
 conductor/cont_type_remove.vspx
 conductor/databases.vspx
 conductor/databases_drop.vspx
+conductor/databases_grants.vspx
 conductor/databases_proc_edit.vspx
 conductor/databases_table_edit.vspx
 conductor/databases_udt_custom.vspx
@@ -36,6 +37,8 @@ conductor/databases_view_edit.vspx
 conductor/databases_table_constraints.vspx
 conductor/db_const_drop_conf.vspx
 conductor/db_const_drop_errs.vspx
+conductor/db_grant_many.vspx
+conductor/db_grant_errs.vspx
 conductor/dav_browser.xsl
 conductor/dav_browser.css
 conductor/dav_browser_props.js

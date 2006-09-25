@@ -38,6 +38,7 @@
     <v:variable persist="1" name="browse_udt" type="integer" default="0"/>
     <v:variable persist="temp" name="row_count" type="integer" default="1"/>
     <v:variable persist="1" name="db_object_to_drop" type="any" default="null"/>
+    <v:variable persist="1" name="db_object_to_grant" type="any" default="null"/>
     <v:variable name="db_tree_state" persist="session" type="any" default="null" />
     <v:variable name="db_ds_state" persist="session" type="any" default="null" />
     <v:variable name="last_bmk" persist="session" type="varchar" default="null" />
@@ -70,6 +71,32 @@
 	else
           {
 	    self.vc_error_message := 'There are no object selected to perform operation delete.';
+	    self.vc_is_valid := 0;
+          }
+	  ]]></v:method>
+    <v:method name="grant_sel" arglist="inout ds vspx_data_set, in typ varchar, inout e vspx_event"><![CDATA[
+	declare i, arr any;
+	declare chil vspx_control;
+	declare cb vspx_check_box;
+ 	declare tb varchar;
+
+	i := 0;
+	arr := vector (typ);
+	while ((chil := ds.ds_iterate_rows (i)) is not null)
+	  {
+	    cb := chil.vc_find_control ('cb_'||typ||'s_select');
+	    tb := get_keyword (cb.vc_instance_name, e.ve_params);
+	    if (tb is not null)
+	      arr := vector_concat (arr, vector (tb));
+	  }
+	 if (length (arr) > 1)
+	  {
+	    self.db_object_to_grant := arr;
+	    self.vc_redirect ('db_grant_many.vspx');
+	  }
+	else
+          {
+	    self.vc_error_message := 'There are no object selected to perform privileges operations.';
 	    self.vc_is_valid := 0;
           }
 	  ]]></v:method>
@@ -401,6 +428,14 @@ ORDER BY sch_name"
                            http_header (sprintf('Location: databases_table_constraints.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                         ]]></v:script></v:on-post>
                       </v:button>
+                      <v:button name="b_table_grants"  style="url"
+                      value="Privileges"
+                      action="simple">
+                        <v:on-post><v:script><![CDATA[
+                           http_request_status ('HTTP/1.1 302 Found');
+                           http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                        ]]></v:script></v:on-post>
+                      </v:button>
                     </td>
                   <?vsp http ('</tr>'); ?>
                 </table>
@@ -419,6 +454,17 @@ ORDER BY sch_name"
 		      value="images/icons/del_16.png">
 		      <v:on-post>
 			self.drop_sel (self."ds_tables", 'table', e);
+		      </v:on-post>
+		    </v:button>
+ 		    <v:button name="grants_on_selected_tables"
+		      action="simple"
+		      style="image"
+		      xhtml_alt="Privileges On Selected"
+		      xhtml_title="Privileges On Selected"
+		      text="&#160;Privileges On Selected"
+		      value="images/icons/security_16.png">
+		      <v:on-post>
+			self.grant_sel (self."ds_tables", 'table', e);
 		      </v:on-post>
 		    </v:button>
 		    <vm:ds-navigation data-set="ds_tables"/>
@@ -510,6 +556,14 @@ ORDER BY sch_name"
                            http_header (sprintf('Location: databases_view_edit.vspx?sid=%s&realm=%s&mode=edit&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                         ]]></v:script></v:on-post>
                       </v:button>
+                      <v:button name="b_view_grants"  style="url"
+                      value="Privileges"
+                      action="simple">
+                        <v:on-post><v:script><![CDATA[
+                           http_request_status ('HTTP/1.1 302 Found');
+                           http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                        ]]></v:script></v:on-post>
+                      </v:button>
                     </td>
                   <?vsp http ('</tr>'); ?>
                 </table>
@@ -528,6 +582,17 @@ ORDER BY sch_name"
 		      value="images/icons/del_16.png">
 		      <v:on-post>
 			self.drop_sel (self."ds_views", 'view', e);
+		      </v:on-post>
+		    </v:button>
+		    <v:button name="grants_on_selected_views"
+		      action="simple"
+		      style="image"
+		      xhtml_alt="Privileges On Selected"
+		      xhtml_title="Privileges On Selected"
+		      text="&#160;Privileges On Selected"
+		      value="images/icons/security_16.png">
+		      <v:on-post>
+			self.grant_sel (self."ds_views", 'view', e);
 		      </v:on-post>
 		    </v:button>
 		    <vm:ds-navigation data-set="ds_views"/>
@@ -629,6 +694,14 @@ ORDER BY sch_name"
                                      (control.vc_parent as vspx_row_template).te_rowset[0]));
                         ]]></v:script></v:on-post>
                       </v:button>
+                      <v:button name="b_proc_grants"  style="url"
+                      value="Privileges"
+                      action="simple">
+                        <v:on-post><v:script><![CDATA[
+                           http_request_status ('HTTP/1.1 302 Found');
+                           http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                        ]]></v:script></v:on-post>
+                      </v:button>
                     </td>
                   <?vsp http ('</tr>'); ?>
                 </table>
@@ -647,6 +720,17 @@ ORDER BY sch_name"
 		      value="images/icons/del_16.png">
 		      <v:on-post>
 			self.drop_sel (self."ds_procs", 'procedure', e);
+		      </v:on-post>
+		    </v:button>
+		    <v:button name="grants_on_selected_procedures"
+		      action="simple"
+		      style="image"
+		      xhtml_alt="Privileges On Selected"
+		      xhtml_title="Privileges On Selected"
+		      text="&#160;Privileges On Selected"
+		      value="images/icons/security_16.png">
+		      <v:on-post>
+			self.grant_sel (self."ds_procs", 'procedure', e);
 		      </v:on-post>
 		    </v:button>
 		  </td>
@@ -733,6 +817,14 @@ ORDER BY sch_name"
                       <v:label name="l_udt_type" value="--coalesce((SELECT _TYPE from DB.DBA.DEFINED_TYPES WHERE _CLASS = (control.vc_parent as vspx_row_template).te_rowset[0]), 'sql')" format="%s"/>
                     </td>
                     <td class="listing_col" align="left" valign="center">
+                      <v:button name="b_udt_grants"  style="url"
+                      value="Privileges"
+                      action="simple">
+                        <v:on-post><v:script><![CDATA[
+                           http_request_status ('HTTP/1.1 302 Found');
+                           http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                        ]]></v:script></v:on-post>
+                      </v:button>
                     </td>
                   <?vsp http ('</tr>'); ?>
                 </table>
@@ -751,6 +843,17 @@ ORDER BY sch_name"
 		      value="images/icons/del_16.png">
 		      <v:on-post>
 			self.drop_sel (self."ds_udt", 'type', e);
+		      </v:on-post>
+		    </v:button>
+		    <v:button name="grants_on_selected_udt"
+		      action="simple"
+		      style="image"
+		      xhtml_alt="Privileges On Selected"
+		      xhtml_title="Privileges On Selected"
+		      text="&#160;Privileges On Selected"
+		      value="images/icons/security_16.png">
+		      <v:on-post>
+			self.grant_sel (self."ds_udt", 'type', e);
 		      </v:on-post>
 		    </v:button>
 		  </td>

@@ -269,6 +269,9 @@ create procedure adm_menu_tree ()
      <node name="Databases-udt-edit" url="databases_udt_edit.vspx" id="54" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-export" url="ie.vspx" id="176" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-export" url="databases_export.vspx" id="177" place="1" allowed="yacutia_databases_page"/>
+     <node name="Databases-grants" url="databases_grants.vspx" id="191" place="1" allowed="yacutia_databases_page"/>
+     <node name="Databases-grants" url="db_grant_many.vspx" id="192" place="1" allowed="yacutia_databases_page"/>
+     <node name="Databases-grants" url="db_grant_errs.vspx" id="193" place="1" allowed="yacutia_databases_page"/>
    </node>',
 --   <node name="Schema Editor" url="xddl.vspx?init=xddl"  id="52" allowed="yacutia_xddl_page">
 --     <node name="edit" url="xddl.vspx" id="53" place="1" allowed="yacutia_xddl_page"/>
@@ -3397,7 +3400,7 @@ indirect_grants (in object_name varchar,
 
   while (i < length(user_ids))
     {
-      if (user_ids[i] = 0 ) -- DBA group
+      if (user_ids[i] = 0 or user_ids[i] = 3) -- DBA user or group
         return 'AAAAAA';
       i := i + 1;
     }
