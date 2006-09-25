@@ -419,143 +419,6 @@
                 </td>
               </tr>
 	      </v:template>
-              <tr>
-                <td>
-                  Account Roles
-                </td>
-                <td colspan="3">
-                  <table class="complex_selector">
-                    <tr>
-                      <td style="width:216" align="left" valign="bottom">Available</td>
-                      <td/>
-                      <td style="width:216" align="left" valign="bottom">Selected</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <v:data-list name="sl_roles_available"
-                                     xhtml_size="5"
-                                     xhtml_style="width:216"
-                                     xhtml_multiple="TRUE"
-                                     sql="select U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 1 and U_NAME <> self.default_group_name and 0 = position (U_NAME, self.roles_grant_list) order by upper (U_NAME)"
-                                     key-column="u_name"
-                                     value-column="u_name"
-                                     xhtml_tabindex="12">
-                          <v:before-render>
-                            <v:script>
-                              <![CDATA[
-  if (check_grants (connection_get ('vspx_user'), '') <> 1)
-    {
-      (control as vspx_select_list).vsl_items := vector ();
-      (control as vspx_select_list).vsl_item_values := vector ();
-      (control as vspx_select_list).vsl_selected_inx := 0;
-    }
-                              ]]>
-                            </v:script>
-                          </v:before-render>
-                        </v:data-list>
-                      </td>
-                      <td>
-                        <table border="0" align="center" width="100%"> <!-- buttons container -->
-                          <tr>
-                            <td class="complex_selector_buttons">
-                              <v:button action="simple"
-                                        name="b_add_role"
-                                        value="&gt;&gt;"
-                                        xhtml_tabindex="13">
-                                <v:on-post>
-                                  <![CDATA[
-
-  declare cnt, i integer;
-  cnt := length (params);
-  i := 0;
-
-  while (i < cnt)
-    {
-      if (aref (params, i) = 'sl_roles_available' and
-          position (params [i + 1], self.roles_grant_list) = 0)
-        self.roles_grant_list := vector_concat (self.roles_grant_list,
-                                                vector (params [i + 1]));
-        i := i + 2;
-    }
-  self.sl_roles_available.vc_data_bind (e);
-  self.sl_roles_assigned.vc_data_bind (e);
-
-                                  ]]>
-                                </v:on-post>
-                                <v:before-render>
-                                  <![CDATA[
-  if (self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1)
-    control.vc_enabled := 0;
-                                  ]]>
-                                </v:before-render>
-                              </v:button>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td align="center">
-                              <v:button action="simple"
-                                        name="b_rem_role"
-                                        value="&lt;&lt;"
-                                        xhtml_tabindex="14">
-                                <v:on-post>
-                                 <![CDATA[
-
-  declare cnt, i, indx integer;
-  declare roles any;
-  roles := vector ();
-  cnt := length (self.roles_grant_list);
-  i := 0;
-
-  while (i < cnt)
-    {
-      indx := position (self.roles_grant_list [i], params);
-
-      if (indx <= 1 or params [indx - 2] <> 'sl_roles_assigned')
-        roles := vector_concat (roles, vector (self.roles_grant_list [i]));
-
-      i := i + 1;
-    }
-  self.roles_grant_list := roles;
-  self.sl_roles_available.vc_data_bind (e);
-  self.sl_roles_assigned.vc_data_bind (e);
-
-                                 ]]>
-                               </v:on-post>
-                               <v:before-render>
-                                 <![CDATA[
-
-  if (self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1)
-    control.vc_enabled := 0;
-
-                                 ]]>
-                               </v:before-render>
-                              </v:button>
-                            </td>
-                          </tr>
-                        </table> <!-- buttons container -->
-                      </td>
-                      <td>
-                        <v:select-list name="sl_roles_assigned"
-                                       xhtml_id="u_sl_roles_assigned"
-                                       xhtml_multiple="TRUE"
-                                       xhtml_tabindex="15">
-                          <v:before-data-bind>
-                           <v:script>
-                             <![CDATA[
-
-  (control as vspx_select_list).vsl_items := self.roles_grant_list;
-  (control as vspx_select_list).vsl_item_values := self.roles_grant_list;
-  (control as vspx_select_list).vsl_selected_inx := 0;
-
-                             ]]>
-                           </v:script>
-                         </v:before-data-bind>
-                        </v:select-list>
-                      </td>
-                    </tr>
-                  </table> <!-- complex_selector -->
-                </td>
-              </tr> <!-- account roles row -->
             </table> <!-- left side -->
           </td>
           <td>
@@ -685,6 +548,144 @@
             </table> <!-- right side -->
           </td>
         </tr>
+              <tr>
+                <td colspan="2">
+                  
+                  <table class="complex_selector">
+                    <caption style="text-align:left;">Account Roles</caption>
+                    <tr>
+                      <td style="width:216" align="left" valign="bottom">Available</td>
+                      <td/>
+                      <td style="width:216" align="left" valign="bottom">Selected</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <v:data-list name="sl_roles_available"
+                                     xhtml_size="5"
+                                     xhtml_style="width:216px"
+                                     xhtml_multiple="TRUE"
+                                     sql="select U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 1 and U_NAME <> self.default_group_name and 0 = position (U_NAME, self.roles_grant_list) order by upper (U_NAME)"
+                                     key-column="u_name"
+                                     value-column="u_name"
+                                     xhtml_tabindex="12">
+                          <v:before-render>
+                            <v:script>
+                              <![CDATA[
+  if (check_grants (connection_get ('vspx_user'), '') <> 1)
+    {
+      (control as vspx_select_list).vsl_items := vector ();
+      (control as vspx_select_list).vsl_item_values := vector ();
+      (control as vspx_select_list).vsl_selected_inx := 0;
+    }
+                              ]]>
+                            </v:script>
+                          </v:before-render>
+                        </v:data-list>
+                      </td>
+                      <td>
+                        <table border="0" align="center" width="100%"> <!-- buttons container -->
+                          <tr>
+                            <td class="complex_selector_buttons">
+                              <v:button action="simple"
+                                        name="b_add_role"
+                                        value="&gt;&gt;"
+                                        xhtml_tabindex="13">
+                                <v:on-post>
+                                  <![CDATA[
+
+  declare cnt, i integer;
+  cnt := length (params);
+  i := 0;
+
+  while (i < cnt)
+    {
+      if (aref (params, i) = 'sl_roles_available' and
+          position (params [i + 1], self.roles_grant_list) = 0)
+        self.roles_grant_list := vector_concat (self.roles_grant_list,
+                                                vector (params [i + 1]));
+        i := i + 2;
+    }
+  self.sl_roles_available.vc_data_bind (e);
+  self.sl_roles_assigned.vc_data_bind (e);
+
+                                  ]]>
+                                </v:on-post>
+                                <v:before-render>
+                                  <![CDATA[
+  if (self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1)
+    control.vc_enabled := 0;
+                                  ]]>
+                                </v:before-render>
+                              </v:button>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td align="center">
+                              <v:button action="simple"
+                                        name="b_rem_role"
+                                        value="&lt;&lt;"
+                                        xhtml_tabindex="14">
+                                <v:on-post>
+                                 <![CDATA[
+
+  declare cnt, i, indx integer;
+  declare roles any;
+  roles := vector ();
+  cnt := length (self.roles_grant_list);
+  i := 0;
+
+  while (i < cnt)
+    {
+      indx := position (self.roles_grant_list [i], params);
+
+      if (indx <= 1 or params [indx - 2] <> 'sl_roles_assigned')
+        roles := vector_concat (roles, vector (self.roles_grant_list [i]));
+
+      i := i + 1;
+    }
+  self.roles_grant_list := roles;
+  self.sl_roles_available.vc_data_bind (e);
+  self.sl_roles_assigned.vc_data_bind (e);
+
+                                 ]]>
+                               </v:on-post>
+                               <v:before-render>
+                                 <![CDATA[
+
+  if (self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1)
+    control.vc_enabled := 0;
+
+                                 ]]>
+                               </v:before-render>
+                              </v:button>
+                            </td>
+                          </tr>
+                        </table> <!-- buttons container -->
+                      </td>
+                      <td>
+                        <v:select-list name="sl_roles_assigned"
+                                       xhtml_id="u_sl_roles_assigned"
+                                     xhtml_size="5"
+                                     xhtml_style="width:216px"
+                                       xhtml_multiple="TRUE"
+                                       xhtml_tabindex="15">
+                          <v:before-data-bind>
+                           <v:script>
+                             <![CDATA[
+
+  (control as vspx_select_list).vsl_items := self.roles_grant_list;
+  (control as vspx_select_list).vsl_item_values := self.roles_grant_list;
+  (control as vspx_select_list).vsl_selected_inx := 0;
+
+                             ]]>
+                           </v:script>
+                         </v:before-data-bind>
+                        </v:select-list>
+                      </td>
+                    </tr>
+                  </table> <!-- complex_selector -->
+                </td>
+              </tr> <!-- account roles row -->
         <tr>
           <td colspan="4">
             <v:button action="simple" name="cancel" value="Cancel" xhtml_tabindex="21">
