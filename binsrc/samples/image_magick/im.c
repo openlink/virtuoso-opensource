@@ -52,6 +52,17 @@ static caddr_t *im_env = NULL;
   mutex_leave (im_mutex); \
 }
 
+#define WandExitMacroExt(wand,draw,pixel) \
+{ \
+  DestroyMagickWand(wand); \
+  if (NULL != draw) \
+    DestroyDrawingWand (draw); \
+  if (NULL != pixel) \
+    DestroyPixelWand(pixel); \
+  MagickWandTerminus();\
+  mutex_leave (im_mutex); \
+}
+
 MagickBooleanType status;
 MagickWand *magick_wand;
 
@@ -995,6 +1006,143 @@ caddr_t bif_im_ThumbnailImageBlob (caddr_t * qst, caddr_t * err, state_slot_t **
   return res;
 }
 
+#ifdef HasTTF
+caddr_t 
+bif_im_AnnotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  size_t length = 0;
+  char * szMe = "IM AnnotateImageBlob";
+  caddr_t res, image_blob;
+  caddr_t blob = (caddr_t)bif_arg (qst, args, 0, szMe);
+  long blob_size = box_length (blob) - 1;
+  long x_pos = bif_long_arg (qst, args, 1, szMe);
+  long y_pos = bif_long_arg (qst, args, 2, szMe);
+  caddr_t text = bif_string_arg (qst, args, 3, szMe);
+  int n_args = BOX_ELEMENTS(args);
+  long angle = n_args > 4 ? bif_long_arg (qst, args, 4, szMe) : 0;
+  long f_size = n_args > 5 ? bif_long_arg (qst, args, 5, szMe) : 12;
+  char *text_color = n_args > 6 ? bif_string_arg (qst, args, 6, szMe) : "black" ;
+  DrawingWand *drawing_wand;
+  PixelWand *pixel_wand;
+  dtp_t dtp = DV_TYPE_OF (blob);
+
+  if (IS_STRING_DTP (dtp))
+    blob_size = box_length (blob) - 1;
+  else if (dtp == DV_BIN)
+    blob_size = box_length (blob);
+  else
+    {
+      sqlr_new_error ("22023", "IM001", "AnnotateImageBlob needs string or binary as 1-st argument");
+    }
+
+  mutex_enter (im_mutex);
+  MagickWandGenesis();
+  magick_wand=NewMagickWand();
+  drawing_wand = NewDrawingWand ();
+  pixel_wand = NewPixelWand();
+
+  status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
+  if (status == MagickFalse)
+    {
+      WandExitMacroExt(magick_wand, drawing_wand, pixel_wand);
+      sqlr_new_error ("22023", "IM001", "Cannot open file");
+    }
+  status = PixelSetColor (pixel_wand, text_color);   
+  if (status == MagickFalse)
+    {
+      WandExitMacroExt(magick_wand, drawing_wand, pixel_wand);
+      sqlr_new_error ("22023", "IM001", "Cannot set color");
+    }
+  DrawSetFillColor (drawing_wand , pixel_wand);
+  DrawSetFontSize (drawing_wand, f_size);
+  MagickResetIterator (magick_wand);
+  while (MagickNextImage (magick_wand) != MagickFalse)
+    {
+      status = MagickAnnotateImage (magick_wand, drawing_wand, x_pos, y_pos, angle, text);
+      if (status == MagickFalse)
+	{
+	  WandExitMacroExt(magick_wand, drawing_wand, pixel_wand);
+	  sqlr_new_error ("22023", "IM001", "Cannot annotate image");
+	}
+    }
+  image_blob = MagickGetImagesBlob(magick_wand, &length);
+  if (length != 0)
+    {
+      res = dk_alloc_box (length, DV_BIN);
+      memcpy (res, image_blob, length);
+      MagickRelinquishMemory(image_blob);
+    }
+  else
+    res = NEW_DB_NULL;
+  magick_wand=DestroyMagickWand(magick_wand);
+  drawing_wand = DestroyDrawingWand (drawing_wand);
+  pixel_wand = DestroyPixelWand(pixel_wand);
+  MagickWandTerminus();
+  mutex_leave (im_mutex);
+  return res;
+}
+#endif
+
+caddr_t 
+bif_im_CreateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  size_t length = 0;
+  char * szMe = "IM CreateImageBlob";
+  caddr_t res, image_blob;
+  long x_size = bif_long_arg (qst, args, 0, szMe);
+  long y_size = bif_long_arg (qst, args, 1, szMe);
+  caddr_t bg_color = (caddr_t)bif_string_arg (qst, args, 2, szMe);
+  caddr_t fmt = (caddr_t)bif_string_arg (qst, args, 3, szMe);
+
+  PixelWand *pixel_wand;
+
+  if (x_size <= 0 || y_size <= 0)
+    {
+      sqlr_new_error ("22023", "IM001", "Negative image size");
+    }
+
+  if (x_size*y_size > 3333279) /* 10M / 3 color - 54byte */
+    sqlr_new_error ("22023", "IM001", "Too large image image size requested");
+
+  mutex_enter (im_mutex);
+  MagickWandGenesis();
+  magick_wand=NewMagickWand();
+  pixel_wand = NewPixelWand();
+
+  status = PixelSetColor( pixel_wand, bg_color );   
+  if (status == MagickFalse)
+    {
+      WandExitMacroExt(magick_wand, NULL, pixel_wand);
+      sqlr_new_error ("22023", "IM001", "Cannot set color");
+    }
+  status = MagickNewImage (magick_wand, x_size, y_size, pixel_wand);
+  if (status == MagickFalse)
+    {
+      WandExitMacroExt(magick_wand, NULL, pixel_wand);
+      sqlr_new_error ("22023", "IM001", "Cannot create image");
+    }
+  status = MagickSetImageFormat(magick_wand, fmt);
+  if (status == MagickFalse)
+    {
+      WandExitMacroExt(magick_wand, NULL, pixel_wand);
+      sqlr_new_error ("22023", "IM001", "Cannot set image format");
+    }
+  image_blob = MagickGetImagesBlob (magick_wand, &length);
+  if (length != 0)
+    {
+      res = dk_alloc_box (length, DV_BIN);
+      memcpy (res, image_blob, length);
+      MagickRelinquishMemory(image_blob);
+    }
+  else
+    res = NEW_DB_NULL;
+  magick_wand = DestroyMagickWand (magick_wand);
+  pixel_wand = DestroyPixelWand (pixel_wand);
+  MagickWandTerminus();
+  mutex_leave (im_mutex);
+  return res;
+}
+
 void im_connect (void *appdata)
 {
   im_IMVERSION = box_dv_short_string (IM_VERSION);
@@ -1027,6 +1175,10 @@ void im_connect (void *appdata)
   bif_define ("IM ResampleImageBlob", bif_im_ResampleImageBlob);
   bif_define ("IM RotateImageBlob", bif_im_RotateImageBlob);
   bif_define ("IM CropImageBlob", bif_im_CropImageBlob);
+#ifdef HasTTF
+  bif_define ("IM AnnotateImageBlob", bif_im_AnnotateImageBlob);
+#endif
+  bif_define ("IM CreateImageBlob", bif_im_CreateImageBlob);
 }
 
 #ifdef _USRDLL
