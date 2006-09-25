@@ -386,6 +386,190 @@ remote connections are in manual commit mode.
   Commit</link> section for more information.</para>
 	</sect2>
 	<!-- ======================================== -->
+        <sect2 id="VDB_SQLFUNCTIONS">
+		<title>Virtual Database and SQL Functions</title>
+		<para>
+Different DBMS's support slightly different sets of SQL built-in functions
+with slightly differing names. For example, what is called substring on Virtuoso
+is called substr on Informix. Virtuoso allows declaring equivalences between local
+user-defined or built-in functions and user defined or built-in functions on remote servers.
+Knowing that a function exists on a remote database allows passing processing closer to the data,
+resulting in evident gains in performance.
+</para>
+		<para>
+To declare that substring is called substr on DSN inf10, you can execute:
+</para>
+<programlisting>
+db..vd_pass_through_function ('inf10', 'substring', 'substr');
+</programlisting>
+		<para>
+The first argument is the name of the remote database, as used with attach table and related statements.
+If user defined functions with qualified names are involved, the names should be qualified in
+the vd_pass_through_function call also. If many qualified or unqualified forms of the name are in use,
+one should declatre the mapping for them all.
+</para>
+		<para>
+To verify whether this declaration takes effect, one can use explain to see the query execution plan, for example:
+</para>
+<programlisting>
+explain ('select substring (str, 1, 2) from inf10.sample_table');
+</programlisting>
+		<para>
+The declarations are persistent and can be dropped by using a last argument of NULL
+for a given function. The declarations are kept at the level of a DSN and not at the level
+of the type of DBMS because different instances can have different user defined functions defined.
+</para>
+	</sect2>
+        <!-- ======================================== -->
+        <sect2 id="VDB_SQLOPTSTATISTICS">
+		<title>Virtual Database and SQL Optimizer Statistics</title>
+		<para>
+If a query can be executed in its entirety on a single remote database, then optimizing this query
+is excluusively the business of the remote database, as it gets the whole query text.
+Virtuoso rewrites some things and suggests a join order but these are not binding on the remote database.
+</para>
+		<para>
+If a query involves tables from multiple remote databases or a a mix of local and remote tables,
+knowing  basic SQL statistics on the tables is essential for producing a meaningful query plan.
+Virtuoso has information on indices existing on remote tables and if the remote table is attached
+from a known type of DBMS, Virtuoso may read the DBMS specific statistics at attach time.
+</para>
+		<para>
+Note that the statistics of the remote database should be up to date before attaching.
+</para>
+		<para>
+The function sys_db_stat can be used for forcing a refresh of Virtuoso's statistics on remote tables.
+</para>
+<programlisting>
+sys_db_stat (5, 0)
+</programlisting>
+		<para>
+will go through all tables, local and remote. For local tables, it will update statistics with a 5 percent
+sampling rate and for remote tables it will refresh the statistics if the type of the host DBMS is among
+the supported ones.  If the remote DBMS is of an unknown type, Virtuoso will take the count of the remote
+table and select the 1000 first rows to get a sample of data lengths and column cardinalities.
+ This is not very precise but will be better than nothing.
+</para>
+		<para>
+In order to force a full read of a remote  table for statistics gathering, one can use
+</para>
+<programlisting>
+db..sys_stat_analyze ('fully qualified table name', 0, 0);
+</programlisting>
+		<para>
+The table name is case sensitive, with all qualifiers, as it appears in SYS_KEYS and other system tables.
+This will read the whole table.
+</para>
+                <para>
+Statistics on local as well as remote tables are kept in SYS_COL_STAT.
+One may look at this table to see the effects of remote statistics collection.
+In special cases, if a special effect is desired or the information is not otherwise available,
+as in the case of a very large table on an unsupported type of server, it is possible to manually
+update the contents of the table.  Shutting down and restarting Virtuoso will force a reload of the statistics information.
+</para>
+		<para>
+Presently Oracle, Informix and Virtuoso are supported for direct access to the remote database's
+statistics system tables.  It is possible to define hook functions for accessing this same information
+from any other type of DBMS. Please contact support for instructions on this.
+</para>
+	</sect2>
+        <!-- ======================================== -->
+        <sect2 id="VDB_DISTRQUERYOPTM">
+		<title>Distributed Query Optimization</title>
+		<para>
+When a query contains mixes of tables from different sources, the compiler must decide on an efficient
+execution plan that minimizes the number of round trips to remote servers and evaluates query conditions
+close to the data when possible. Additionally, any normal query optimization considerations such as choice
+of join order and join type apply. See the section on SQL optimization and optimizer hints for more on this.
+Additionally, the SQL optimizer uses round trip time statistics for the servers involved in the query.
+</para>
+		<para>
+In the following examples, we use the tables r1..t1, r2..t1 and t1, of which r1..t1 is on a server close by,
+r2..t1 on a server farther  away and t1 on the local server.  The column row_no is a unique key and the string1
+column is in indexed with 300 distinct values, the column fs1 has 3 distinct values.  The tables all have 100000
+rows.  A round trip to r1  takes 10 ms and a round trip to r2 takes 100 ms.
+</para>
+		<para>
+Consider
+</para>
+<programlisting>
+select * from r1..t1 a, t1 b where a.row_no = b.row_no and a.fs1 = 'value1';
+</programlisting>
+		<para>
+The compiler notices that 33333 rows will be selected from r1..t1 based on fs1. It will decide to read these
+into a hash table, causing one linnear scan of r1..t1 with relatively few round trips. Then it will read t1
+locally and select trhe rows for which there is a matching entry in the hash. This is slightly faster
+than doing 33333 random lookups of t1.  If fewer rows were selected from r1..t1, the compiler would do a
+loop join with the local t1 as the inner loop.
+</para>
+		<para>
+The absolute worst plan would be a loop join with t1 as the outer loop, with 100000 round trips to r1.
+</para>
+		<para>
+Now, if many tables are accessed from the same data source, the compiler tries to bundle these together into one statement. Thus, for:
+</para>
+<programlisting>
+select * from r1..t1 a, r1..t1 b, t1 c where c.string1 = '111' and b.row_no = c.row_no and a.row_no = b.row_no + 1;
+</programlisting>
+		<para>
+The compiler will probably do the outer loop for t1, which is expected to select 100000/300 rows. Then it will do a
+round trip to r1 with the statement.
+</para>
+<programlisting>
+select * from t1 a, t1 b where a.row_no = b.row_no + 1 and a.row_no = ?.
+</programlisting>
+                <para>
+This is likely better than doing the remote part as an outer loop, bringing all the approx 100000 results in.
+333  round trips selecting 1 row is better than 100000 rows transferred.  If the data source were further away,
+this could be otherwise, hence the importance of the round trip time statistic.
+</para>
+		<para>
+In distributed queries, the compiler will honor the option (order) and the join types e.hg. table option *(hash)
+insofar the tables are local.
+</para>
+		<para>
+Thus, if we wrote
+</para>
+<programlisting>
+select * from r1..t1 a, t1 b, r1..t1 c where c.string1 = '111' and b.row_no = c.row_no and a.row_no = b.row_no + 1 option (order);
+</programlisting>
+		<para>
+the compiler could not merge the two tablesfrom r1 into a single query because the order were given and there is
+an intervening table not located on r1.
+</para>
+	</sect2>
+        <!-- ======================================== -->
+        <sect2 id="VDB_ARRAYPARAMETERS">
+		<title>Use of Array Parameters</title>
+		<para>
+ODBC and other data access API's usually offer a mecahnism for executing  a single parametrized
+statement multiple times with a single client-server round trip. This is usually called support of array parameters.
+</para>
+		<para>
+Virtuoso can make use of array parameter support in ODBC drivers when available. Consider the statement:
+</para>
+<programlisting>
+insert into r1..t1 select * from t1;
+</programlisting>
+		<para>
+Without array parameters, this would make a round trip to r1 for each row inn t1. With array parameters enabled,
+with a batch size of 100, this would make only 1000 round trips for 100000 rows, resulting in dramatic increase
+in performance. Typically, if the remote server is on the same machine, array parameters make such batch operations
+about 3x faster. If the remote is farther away, the gain is greater.
+</para>
+		<para>
+Array parameters are used if the remote database and its ODBC driver support them. The feature is globally disabled
+in the default configuration because some ODBC drivers falsely claim to support array parameters. To enable this
+feature, the the ArrayOptimization entry in the [VDB] section of the ini file to 1.  To set the batch size, use the
+NumArrayParameters setting. 100 is a reasonable value.
+</para>
+		<para>
+Some ODBC drivers also support array parameters for select statements. To enable using this, you can set the
+ArrayOptimization setting to 2.  This may however not work with some drivers even if DML (insert/update/delete)
+statements do work with array parameters.
+</para>
+	</sect2>
+        <!-- ======================================== -->
 	<sect2 id="TIMESTAMP_AUTOINCREMENT">
 		<title>Timestamps &amp; Autoincrement</title>
 		<para>

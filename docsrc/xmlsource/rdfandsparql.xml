@@ -693,7 +693,7 @@ DELETE_PERSONAL_DATA (
 </para>
 </sect2>
 </sect1>
-<sect1 id="rdfsparqlimplementationextent"><title>SPARQL Implementation Extent</title>
+<sect1 id="rdfsparqlimplementationextent"><title>SPARQL Implementation</title>
 
 
 <para>Virtuoso's RDF support is at an early implementation  stage. The SPARQL language is fairly complete but none of the support functions such as data loading or triple storage are optimized. Many pieces of the present implementation that are written in Virtuoso/PL will be rewritten in C for performance.</para>
@@ -735,7 +735,7 @@ VARCHAR
 </programlisting>
 <sect2 id="rdfsparqlandxquery"><title>SPARQL and XQuery</title>
 <para>In the current implementation, the XQuery Function Library is not available from SPARQL .</para>
-<para>As a termporary workaround, string parsing functions are made available, because they are widely used in W3C DAWG examples and the like. They are</para>
+<para>As a temporary workaround, string parsing functions are made available, because they are widely used in W3C DAWG examples and the like. They are:</para>
 <programlisting>
 xsd:boolean (in strg any) returns integer
 xsd:dateTime (in strg any) returns datetime

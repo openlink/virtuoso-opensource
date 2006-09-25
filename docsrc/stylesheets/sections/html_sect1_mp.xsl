@@ -465,6 +465,7 @@
       		href="{//self::*[@id = $chap]/ancestor-or-self::chapter/@id}.rdf"></link>
     </xsl:if>
     <link rel="alternate" type="application/opml+xml" title="OPML" href="{/book/@id}.opml"></link>
+    <link rel="meta" type="application/rdf+xml" title="SIOC" href="{/book/@id}.sioc.rdf" />
   </xsl:if>
 </xsl:template>
 

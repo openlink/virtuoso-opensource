@@ -402,6 +402,32 @@ select count (*) from t1 a, t1 b table option  (hash) where .row_no = b.row_no o
   <para>This forces the a, b join order and specifies that the join will be
   a hash join.</para>
   </example>
+
+  <example id="ex_optinandjoin"><title>IN Predicate and Joins</title>
+  <para>Sometimes statements of the form</para>
+<programlisting>
+select col from t1 where t1.key in (select key from t2)
+</programlisting>
+  <para>get optimized into a loop over t2 and a nested lookup on t1, as in </para>
+<programlisting>
+select .... from (select distinct key from t2) f, t1 where t1.key = f.key.
+</programlisting>
+<para>This oprtimization is mostly done when there is an index on t1.key and the IN subquery selects fewer roows than the other conditions on t1 would select.</para>
+<para>In some cases the developer may wish to explicitly force this optimization to be made or not to be made.  This is done with the LOOP EXISTS query option, as follows:</para>
+<programlisting>
+select row_no from t1 where row_no in (select row_no from t1 where fi2 = 2) option (loop exists)
+</programlisting>
+<para>will force the IN subquery to become a joined derived table.</para>
+<programlisting>
+select row_no from t1 where row_no in (select row_no from t1 where fi2 = 2) option (do not loop exists)
+</programlisting>
+<programlisting>
+select row_no from t1 where row_no in (select row_no from t1 where fi2 = 2 option (do not loop exists))
+</programlisting>
+  <para>will prevent this optimization.  Note that the option (do not loop exists) can be either in the subquery or in the enclosing query.</para>
+  <para>The same logic applies to IN predicates in searched update or delete statements.</para>
+  </example>
+
   </sect2>
 
   <sect2 id="vdbcoststats"><title>VDB Statistics for the SQL Compiler Collection</title>

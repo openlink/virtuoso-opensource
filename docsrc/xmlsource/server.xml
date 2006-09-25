@@ -1004,6 +1004,28 @@ This is a timeout in seconds before Virtuoso closes an idle HTTP 1.1 connection.
         outside world under any situation.</para>
         </note>
 				</listitem>
+                                <listitem id="ini_HTTPServer_HTTPLogFile">
+				<formalpara><title>HTTPLogFile = log.out</title>
+<para>If specified, Virtuoso will produce an HTTP server log file with the date
+appended to the name given in the parameter and the files extention as ".out".
+The log file is rotated daily.</para>
+</formalpara>
+<para>It will contain the following information:</para>
+
+<para><computeroutput>logDDMMYYYY.out</computeroutput> :-</para>
+<simplelist>
+  <member>Client IP address</member>
+  <member>Date and time of request/response</member>
+  <member>Timestamp (milliseconds)</member>
+  <member>Request/response line</member>
+</simplelist>
+
+<para>An example of which is:</para>
+<programlisting><![CDATA[
+127.0.0.1 - - [12/Sep/2006:12:31:17 +0300] "GET /ods/ HTTP/1.1" 200 19453 "" "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.0.6) Gecko.."
+127.0.0.1 - - [12/Sep/2006:12:31:18 +0300] "GET /ods/default.css HTTP/1.1" 200 41389 "http://localhost:8894/ods/" "Mozilla/5.0 (Windows; U; ..."
+127.0.0.1 - - [12/Sep/2006:12:31:19 +0300] "GET /ods/common.js HTTP/1.1" 200 7481 "http://localhost:8894/ods/" "Mozilla/5.0 (Windows; U; ..."]]></programlisting>
+				</listitem>
 				<listitem id="ini_HTTPServer_MacCachedProxyConnections">
 					<formalpara>
 						<title>MaxCachedProxyConnections = 10</title>
