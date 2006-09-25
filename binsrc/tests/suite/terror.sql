@@ -1051,3 +1051,37 @@ ECHO BOTH ": duplicate column inx STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 select cast ('2005-02-31' as date);
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": bug 10188 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+
+
+
+create procedure bf ()
+{
+  declare _b1 any;
+  select b1 into _b1 from blobs where row_no = 1;
+  delete from blobs where row_no = 1;
+  commit work;
+  insert into blobs (row_no, b1) values (1,  _b1);
+}
+
+
+
+create procedure bf2 ()
+{
+  declare _b1 any;
+  select b1 into _b1 from blobs where row_no = 2;
+  delete from blobs where row_no = 2;
+  commit work;
+  return blob_to_string (_b1);
+}
+echo both "Error messages about reading free pages and bad blobs are expected next.  Ignore until a message says that this is no longer expected.\n";
+
+--bf();
+--bf2();
+
+--echo both $if $equ $sqlstate "22023" "PASSED" "***FAILED";
+--echo both ": deleted blob read in blob_to_string\n";
+
+echo both "Error messages about bad blobs or reading free pages are not expected after this point.\n";
+
