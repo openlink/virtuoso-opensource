@@ -47,6 +47,7 @@ ECHO BOTH ": proc table no params with calculations " $rowcnt " rows\n";
 drop procedure n_range;
 create procedure n_range (in first integer, in  last integer)
 {
+  __cost (22.2, 10, 1e3, 1e2);
   /*dbg_obj_print ('first = ', first, 'last = ', last);*/
   declare n, n2 integer;
   n := first;
