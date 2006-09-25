@@ -5692,13 +5692,13 @@ create procedure vspx_get_user_info (inout vspx_dbname varchar, inout vspx_user 
 
 -- VSPX dispatcher procedure, all .vspx goes there
 create procedure
-vspx_dispatch (in resource_name varchar, inout path any, inout params any, inout lines any, in class_name varchar := null, in compile_only int := 0)
+vspx_dispatch (in resource_name varchar, inout path any, inout params any, inout lines any, in class_name varchar := null, in compile_only int := 0, in vspx_dbname varchar := NULL, in vspx_user varchar := NULL)
 {
   declare signature varchar;
   declare compile, executed, now int;
   declare recompilation_is_allowed int;
   declare page vspx_page;
-  declare vspx_dbname, vspx_user, full_class_name, q_full_class_name varchar;
+  declare full_class_name, q_full_class_name varchar;
   declare subclass_name, full_subclass_name, q_full_subclass_name varchar;
   declare h any;
   declare new_signature varchar;
@@ -5708,6 +5708,7 @@ vspx_dispatch (in resource_name varchar, inout path any, inout params any, inout
 
   --vspx_dbname := fix_identifier_case (dbname());
   --vspx_user := fix_identifier_case (user);
+  if (vspx_user is null and vspx_dbname is null)
   vspx_get_user_info (vspx_dbname, vspx_user);
   if (class_name is null)
     class_name := vspx_get_class_name (resource_name);
