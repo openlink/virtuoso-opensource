@@ -52,6 +52,9 @@ create procedure MKDOC_STALE_STYLESHEETS ()
   xslt_stale (concat('file://', _path, '/opml_sect1_mp.xsl'));
   xslt_stale (concat('file://', _path, '/../html_debug.xsl'));
   xslt_stale (concat('file://', _path, '/html_plain.xsl'));
+  xslt_stale (concat('file://', _path, '/sioc_book.xsl'));
+  xslt_stale (concat('file://', _path, '/sioc_sect1.xsl'));
+--  xslt_stale (concat('file://', _path, '/sioc_chap.xsl'));
 }
 ;
 
@@ -259,7 +262,7 @@ create procedure MKDOC_DO_FEEDS (in _docsrc varchar, in _target varchar, in _opt
 {
   declare "Progress" varchar;
   declare _doc, _docfull any;
-  declare _spec_chapters, _chapters, _books, _functions, _vspx_controls any;
+  declare _spec_chapters, _chapters, _books, _functions, _vspx_controls, _sect1s any;
   result_names ("Progress");
 
   _docfull := MKDOC_GET_VIRTDOC(_docsrc, 1);
@@ -274,6 +277,12 @@ create procedure MKDOC_DO_FEEDS (in _docsrc varchar, in _target varchar, in _opt
     vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options), 
     'chap', 'Book OPMLs', '.opml' );
 
+  MKDOC_DO_GROUP_FEED (_docfull, _target,
+    _books,
+    'file://docsrc/stylesheets/sections/sioc_book.xsl',
+    vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options), 
+    'chap', 'Book SIOC', '.sioc.rdf' );
+
   _chapters := xpath_eval ('/book/chapter/@id', _docfull, 0);
   result ('Building list of plain chapters', 'done');
 
@@ -282,6 +291,22 @@ create procedure MKDOC_DO_FEEDS (in _docsrc varchar, in _target varchar, in _opt
     'file://docsrc/stylesheets/sections/rss_sect1_mp.xsl',
     vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options),
     'chap', 'Sect1 RSS', '.rss' );
+
+--  MKDOC_DO_GROUP_FEED (_docfull, _target,
+--    _chapters,
+--    'file://docsrc/stylesheets/sections/sioc_chap.xsl',
+--    vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options), 
+--    'chap', 'Chap SIOC', '.sioc.rdf' );
+
+  _sect1s := xpath_eval ('/book/chapter/sect1/@id', _docfull, 0);
+  result ('Building list of sect1s', 'done');
+
+  MKDOC_DO_GROUP_FEED (_docfull, _target,
+    _sect1s,
+    'file://docsrc/stylesheets/sections/sioc_sect1.xsl',
+    vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options), 
+    'chap', 'Sect1 SIOC', '.sioc.rdf' );
+
 }
 ;
 
