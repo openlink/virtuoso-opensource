@@ -3605,6 +3605,7 @@ srv_global_init (char *mode)
 	  sec_new_user (NULL, "dba", "dba");
 	}
       local_commit (bootstrap_cli);
+      c_checkpoint_interval = 0;
       sf_makecp (sf_make_new_log_name(wi_inst.wi_master), bootstrap_cli->cli_trx, 1, CPT_NORMAL);
       IN_TXN;
       lt_leave (bootstrap_cli->cli_trx);

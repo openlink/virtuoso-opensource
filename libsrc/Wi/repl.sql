@@ -1730,9 +1730,10 @@ create procedure REPL_SUBSCR_TBL (in serv varchar, in _pub varchar, in tbl varch
           _col_dtp := aref(_col, 1);
           _col_check := aref(_col, 4);
 	  declare _col_options any;
-	  _col_options := _col[5];
+	  _col_options := deserialize(_col[5]);
 
-	  if (_col_dtp in (125, 132) and atoi (get_keyword ('xml_col', deserialize (_col_options), '0')) > 0)
+	  if (_col_dtp in (125, 132) and _col_options is not null and 
+              atoi (get_keyword ('xml_col', coalesce(_col_options, vector()), '0')) > 0)
 	    stmt := concat (stmt, sprintf ('\"%I\" LONG XML', _col_name));
 	  else
 	    stmt := concat (stmt, REPL_PRINT_COL_DEF (_col));
