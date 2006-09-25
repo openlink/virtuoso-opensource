@@ -202,7 +202,7 @@ sec_proc_check (query_t * proc, oid_t group, oid_t user)
 
 
 void
-sec_dd_grant (dbe_schema_t * sc, char *object, char *column,
+sec_dd_grant (dbe_schema_t * sc, const char *object, const char *column,
     int is_grant, int op, oid_t grantee)
 {
   dk_hash_t *g_hash;
