@@ -480,6 +480,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   if (cfg_get_parm (wholefile, "\nno_mt_write:", 0))
     disk_no_mt_write = 1;
 
+  dbe_auto_sql_stats = (long) (ptrlong) cfg_get_parm (wholefile, "\nauto_sql_stats:", 0);
   callstack_on_exception = (long) (ptrlong) cfg_get_parm (wholefile, "\ncallstack_on_exception:", 0);
 
   pl_debug_all = (long) (ptrlong) cfg_get_parm (wholefile, "\npl_debug:", 0);
@@ -683,6 +684,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   vt_batch_size_limit = (int) (ptrlong) cfg_get_parm (wholefile, "\nfree_text_batch:", 0);
   if (!vt_batch_size_limit )
     vt_batch_size_limit  = 1000000;
+  vd_opt_arrayparams = (int) (ptrlong) cfg_get_parm (wholefile, "\nvd_array_params:", 0);;
+  vd_param_batch = (int) (ptrlong) cfg_get_parm (wholefile, "\nvd_param_batch:", 0);;
   n_fds_per_file = (int) (ptrlong) cfg_get_parm (wholefile, "\nfds_per_file:", 0);
   if (!n_fds_per_file)
     n_fds_per_file = 1;
