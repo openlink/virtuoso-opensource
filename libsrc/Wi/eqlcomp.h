@@ -137,16 +137,18 @@ typedef struct dependence_def_s
 typedef dk_set_t dependent_t;
 
 dependence_def_t *dependence_def_new (int sz);
-void qr_uses_object (query_t *qr, char *object, dependent_t *dep, dependence_def_t *dependence);
-void object_mark_affected (char *object, dependence_def_t *dependence);
+void qr_uses_object (query_t *qr, const char *object, dependent_t *dep, dependence_def_t *dependence);
+void object_mark_affected (const char *object, dependence_def_t *dependence);
 void qr_drop_obj_dependencies (query_t *qr, dependent_t *dep, dependence_def_t *ddef);
 
-void qr_uses_table (query_t * qr, char *tb);
+void qr_uses_table (query_t * qr, const char *tb);
 
-void tb_mark_affected (char *tb);
-void udt_mark_affected (char *tb);
+void tb_mark_affected (const char *tb);
+void udt_mark_affected (const char *tb);
+extern void jso_mark_affected (const char *jso_inst);
 int udt_is_qr_used (char *name);
-void qr_uses_type (query_t * qr, char *udt);
+void qr_uses_type (query_t * qr, const char *udt);
+void qr_uses_jso (query_t * qr, const char *jso_iri);
 void qc_free (struct query_cursor_s * qc);
 
 search_spec_t ** ks_col_specs (key_source_t * ks, dbe_column_t * col,

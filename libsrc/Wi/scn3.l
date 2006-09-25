@@ -235,6 +235,7 @@ scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_te
    sparqre->sparqre_external_namespaces = scn3_namespaces;
    sparqre->sparqre_compiled_text = NULL;
    sparqre->sparqre_catched_error = NULL;
+   sparqre->sparqre_super_sc = top_sc;
    sparp_compile_subselect (sparqre);
    if (NULL != sparqre->sparqre_catched_error)
      yyerror (ERR_MESSAGE (sparqre->sparqre_catched_error));
@@ -830,7 +831,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <COMMENT>.|((([^/\r\n*])|([*][^/\r\n*]))+)	{ RETURN_WS(WS_COMMENT_LONG); }
 
 	/* IvAn/Fix4AritmSql/000828 Invalid lexems should be handled explicitly */
-<SQL>([^A-Za-z0-9_'"+\-*/(){}<=>?.,:;# \t\r\n\[\]]+)		TOK(LEXICAL_ERROR)
+<SQL>([^A-Za-z0-9_''""+\-*/(){}<=>?.,:;# \t\r\n\[\]]+)		TOK(LEXICAL_ERROR)
 
         /* hex literal rules */
 <SQL>X'		{

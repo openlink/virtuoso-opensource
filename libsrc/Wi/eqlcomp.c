@@ -79,12 +79,14 @@ ssl_free (state_slot_t * ssl)
 
 static dependence_def_t *tb_name_to_qr_dep = NULL;
 static dependence_def_t *udt_name_to_qr_dep = NULL;
+static dependence_def_t *jso_iri_to_qr_dep = NULL;
 
 #define ALLOC_DEPS	\
   if (!tb_name_to_qr_dep) \
     { \
       tb_name_to_qr_dep = dependence_def_new (101); \
       udt_name_to_qr_dep = dependence_def_new (101); \
+      jso_iri_to_qr_dep = dependence_def_new (101); \
     }
 
 
@@ -94,7 +96,7 @@ dk_mutex_t * qr_dep_mtx, * qr_type_dep_mtx;
 */
 
 static int
-qr_add_used_object (query_t *qr, char *tb, dependent_t *dep)
+qr_add_used_object (query_t *qr, const char *tb, dependent_t *dep)
 {
   caddr_t new_tb;
   DO_SET (char *, ctb, (dk_set_t *) dep)
@@ -121,7 +123,7 @@ dependence_def_new (int sz)
 
 
 void
-qr_uses_object (query_t * qr, char *tb, dependent_t *dep, dependence_def_t *ddef)
+qr_uses_object (query_t * qr, const char *tb, dependent_t *dep, dependence_def_t *ddef)
 {
   dk_set_t *place;
   if (!qr)
@@ -143,7 +145,7 @@ qr_uses_object (query_t * qr, char *tb, dependent_t *dep, dependence_def_t *ddef
 
 
 void
-qr_uses_table (query_t * qr, char *tb)
+qr_uses_table (query_t * qr, const char *tb)
 {
   ALLOC_DEPS;
   qr_uses_object (qr, tb, &qr->qr_used_tables, tb_name_to_qr_dep);
@@ -151,7 +153,7 @@ qr_uses_table (query_t * qr, char *tb)
 
 
 void
-object_mark_affected (char *tb, dependence_def_t *ddef)
+object_mark_affected (const char *tb, dependence_def_t *ddef)
 {
   dk_set_t *place;
   mutex_enter (ddef->ddef_mtx);
@@ -169,7 +171,7 @@ object_mark_affected (char *tb, dependence_def_t *ddef)
 
 
 void
-tb_mark_affected (char *tb)
+tb_mark_affected (const char *tb)
 {
   ALLOC_DEPS;
   object_mark_affected (tb, tb_name_to_qr_dep);
@@ -198,24 +200,38 @@ qr_drop_dependencies (query_t * qr)
   ALLOC_DEPS;
   qr_drop_obj_dependencies (qr, &qr->qr_used_tables, tb_name_to_qr_dep);
   qr_drop_obj_dependencies (qr, &qr->qr_used_udts, udt_name_to_qr_dep);
+  qr_drop_obj_dependencies (qr, &qr->qr_used_jsos, jso_iri_to_qr_dep);
 }
 
 
 void
-udt_mark_affected (char *tb)
+udt_mark_affected (const char *tb)
 {
   ALLOC_DEPS;
   object_mark_affected (tb, udt_name_to_qr_dep);
 }
 
+void
+jso_mark_affected (const char *jso_inst)
+{
+  ALLOC_DEPS;
+  object_mark_affected (jso_inst, jso_iri_to_qr_dep);
+}
+
 
 void
-qr_uses_type (query_t * qr, char *udt)
+qr_uses_type (query_t * qr, const char *udt)
 {
   ALLOC_DEPS;
   qr_uses_object (qr, udt, &qr->qr_used_udts, udt_name_to_qr_dep);
 }
 
+void
+qr_uses_jso (query_t * qr, const char *jso_iri)
+{
+  ALLOC_DEPS;
+  qr_uses_object (qr, jso_iri, &qr->qr_used_jsos, jso_iri_to_qr_dep);
+}
 
 int
 object_is_qr_used (char *name, dependence_def_t *ddef)
@@ -266,10 +282,9 @@ qr_free (query_t * qr)
   if (!qr)
     return;
   qr_drop_dependencies (qr);
-  dk_free_tree (list_to_array (qr->qr_used_tables));
-  dk_free_tree (list_to_array (qr->qr_used_udts));
-  qr->qr_used_tables = NULL;
-  qr->qr_used_udts = NULL;
+  while (NULL != qr->qr_used_tables) dk_free_tree (dk_set_pop (&(qr->qr_used_tables)));
+  while (NULL != qr->qr_used_udts) dk_free_tree (dk_set_pop (&(qr->qr_used_udts)));
+  while (NULL != qr->qr_used_jsos) dk_free_tree (dk_set_pop (&(qr->qr_used_jsos)));
   if (!qr->qr_text_is_constant)
     dk_free_box (qr->qr_text);
   dk_free_tree (qr->qr_parse_tree);

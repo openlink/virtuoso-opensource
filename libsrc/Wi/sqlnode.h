@@ -167,16 +167,17 @@ struct query_s
     dk_set_t		qr_bunion_reset_nodes; /* for a bunion term, nodes of enclosing qr that make up this term and are to be reset when resetting the bunion ter, on error */
     dk_set_t		qr_used_cursors;
     data_source_t *	qr_head_node;
-    int			qr_is_ddl;
+
     state_slot_t *	qr_current_of;	/* if this is a cursor, use this in
 					   SQL 'where current of' */
 
     caddr_t		qr_proc_name;	/*!< If SQL procedure, this is the name */
     caddr_t		qr_trig_table;	/*!< If trigger, name of table */
+    char		qr_is_ddl:1;
+    char		qr_is_complete:1; /* false while trig being compiled */
     char		qr_trig_time;	/*!< If trigger, time of launch: before/after/instead */
     char		qr_trig_event;	/*!< If trigger, type of event: insert/delete/update */
     user_aggregate_t *  qr_aggregate;	/*!< If user-defined aggregate, this points to the implementation */
-    char		qr_is_complete; /* false while trig being compiled */
     oid_t *		qr_trig_upd_cols;
     int			qr_trig_order;
     dbe_table_t *	qr_trig_dbe_table;
@@ -196,22 +197,24 @@ struct query_s
     query_t *		qr_next;
     query_t *		qr_prev;
     caddr_t		qr_text;
-    int  		qr_text_is_constant;
     dk_set_t		qr_used_tables;  /* ref'd tables' qualified names */
     dk_set_t		qr_used_udts;  /* ref'd udts' qualified names */
-    char		qr_to_recompile;
-    char		qr_no_co_if_no_cr_name;	/* if select stmt exec'd from client */
+    dk_set_t		qr_used_jsos;  /* ref'd JSO IRIs (for SPARQL queries with quad maps) */
+    char		qr_to_recompile:1;
+    char		qr_no_co_if_no_cr_name:1;	/* if select stmt exec'd from client */
+    char  		qr_text_is_constant:1;
+    char		qr_is_bunion_term:1;
+    char		qr_is_remote_proc:1;
+    char 			qr_unique_rows:1;
+    char		qr_remote_mode;
     caddr_t		qr_qualifier; /* qualifier current when this was compiled */
     caddr_t		qr_owner;
-    char		qr_remote_mode;
-    char		 qr_is_bunion_term;
     struct union_node_s *	qr_bunion_node;
 
     struct query_cursor_s *	qr_cursor;
     int			qr_cursor_type;
     state_slot_t **	qr_xp_temp;
     dk_set_t		qr_unrefd_data;	/* garbage, free when freeing qr */
-    int		 qr_is_remote_proc;
 #ifdef REPLICATION_SUPPORT2
     caddr_t		qr_proc_repl_acct; /* transactional replication account name */
 #endif
@@ -221,9 +224,8 @@ struct query_s
     query_t		*qr_module;
     dk_set_t		qr_temp_keys;
     long 		qr_brk;
-
-    int			qr_unique_rows;
     int			qr_hidden_columns;
+
 
 #ifdef PLDBG
     caddr_t 		qr_source; 	 /* source file */

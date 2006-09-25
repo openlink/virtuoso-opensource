@@ -5348,7 +5348,7 @@ caddr_t
 bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   volatile caddr_t res = NULL;
-  caddr_t uri = bif_string_arg (qst, args, 0, "http_get");
+  caddr_t uri = bif_string_or_uname_arg (qst, args, 0, "http_get");
   caddr_t err = NULL;
   caddr_t * head = NULL;
   dk_session_t * volatile ses = NULL;
@@ -5369,13 +5369,13 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #endif
   IO_SECT (qst);
   if (n_args > 2)
-    method = bif_string_arg (qst, args, 2, "http_get");
+    method = bif_string_or_uname_arg (qst, args, 2, "http_get");
   if (n_args > 3)
     header = bif_string_or_null_arg (qst, args, 3, "http_get");
   if (n_args > 4)
-    body = bif_string_arg (qst, args, 4, "http_get");
+    body = bif_string_or_null_arg (qst, args, 4, "http_get");
   if (n_args > 5)
-    proxy = bif_string_arg (qst, args, 5, "http_get");
+    proxy = bif_string_or_null_arg (qst, args, 5, "http_get");
 #ifdef DEBUG
   printf("\nhttp_get(\"%s\", ...)\n", uri);
 #endif

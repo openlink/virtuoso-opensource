@@ -125,7 +125,8 @@ extern void jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_
 extern dk_hash_t *jso_consts;		/*!< All known named constants, e.g., made by jso_define_const() */
 extern dk_hash_t *jso_classes;		/*!< All known JSO classes, e.g., made by jso_define_class() */
 extern dk_hash_t *jso_properties;	/*!< All known property names of all JSO classes, to cross-check classes for duplicate names */
-extern dk_hash_t *jso_rttis;		/*!< All JSO class instances of all classes, to distinguish between missing insntances and type mismatches */
+extern dk_hash_t *jso_rttis_of_names;	/*!< All JSO class instances of all classes, to distinguish between missing insntances and type mismatches */
+extern dk_hash_t *jso_rttis_of_structs;	/*!< Similar to jso_rttis_of_names but keys are 'jrtti_self' structures, not instance IRIs */
 
 
 /* Part 2. A small storage of triples that are not preset properties of objects. */
