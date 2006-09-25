@@ -3211,10 +3211,10 @@ sql_code_global_init ()
   sqls_define_ddk ();
   sqls_define_sparql ();
   sqls_define_dav ();
+  cache_resources();
   sqls_define_2pc ();
   sqls_define ();
   sqls_define_blog ();
-  cache_resources();
   sqls_define_1 ();
   sqls_define_adm ();
 #ifdef VAD

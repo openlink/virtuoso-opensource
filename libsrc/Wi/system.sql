@@ -139,17 +139,6 @@ create procedure XML_URI_RESOLVE_LIKE_GET (in base_uri varchar, in rel_uri varch
 }
 ;
 
-create table SYS_CACHED_RESOURCES
-(
-  CRES_URI		varchar not null,
-  CRES_PUBLIC_ID	varchar,
-  CRES_CONTENT		long varchar,
-  CRES_LOADING_DATE	datetime,
-  CRES_COMMENT		long varchar,
-  primary key (CRES_URI)
-)
-;
-
 create function XML_URI_GET_AND_CACHE (in absolute_uri varchar)
 {
   declare head, content any;

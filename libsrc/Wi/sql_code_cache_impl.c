@@ -27,9 +27,7 @@
 
 void virt_bootstrap_cache_resource (const char **src_text, const char *uri, const char *pubid, const char *dat, const char *comment)
 {
-  static char * cres_load_qr_text = "insert soft SYS_CACHED_RESOURCES\
-    (CRES_URI, CRES_PUBLIC_ID, CRES_CONTENT, CRES_LOADING_DATE, CRES_COMMENT)\
-    values (?, ?, ?, cast (? as datetime), ?)";
+  static char * cres_load_qr_text = "DB.DBA.SYS_CACHED_RESOURCE_ADD (?, ?, ?, cast (? as datetime), ?)";
   static query_t *cres_load_qr;
   caddr_t text;
   char *tgt_text_tail;
