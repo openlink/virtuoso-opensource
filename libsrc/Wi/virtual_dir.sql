@@ -338,7 +338,7 @@ create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
 --  if (aref (ppath, length (ppath) - 1) <> ascii ('/'))
 --    ppath := concat (ppath, '/');
   if (lpath not like '/%' or (ppath not like '/%' and lower(ppath) not like 'http://%'))
-    signal ('22023', 'Missing leading slash in lpath or ppath patameter.', 'HT058');
+    signal ('22023', 'Missing leading slash in lpath or ppath parameter.', 'HT058');
 
   if (ppath like '/DAV/%' and is_dav <> 1)
     signal ('22023', 'The physical path must points to the dav domain.', 'HT044');
