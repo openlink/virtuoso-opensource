@@ -145,6 +145,7 @@ create function WS.WS.URIQA_FULL_URI (inout path varchar, inout params varchar, 
       if (res is not null)
         goto complete;
     }
+--                         2         34       56              789            0
   pairs := regexp_parse ('^([A-Za-z]+)([ \\t]+)([^ \\t\\r\\n]+)(([ \\t]+)HTTP([^ \\t\\r\\n]+))?[ \\t\\r\\n]*\044', lines[0], 0);
   if (pairs is null)
     {
@@ -153,6 +154,7 @@ create function WS.WS.URIQA_FULL_URI (inout path varchar, inout params varchar, 
       goto complete;
     }
   head_uri := split_and_decode (subseq (lines[0], pairs[6], pairs[7]), 0, '%+');
+  head_uri := subseq (head_uri, 6); -- in order to trim leading '/URIQA'
   -- dbg_obj_princ ('WS.WS.URIQA_FULL_URI see User-Agent=', http_request_header (lines, 'User-Agent'));
   host := http_request_header (lines, 'Host');
   if (isstring (host))
@@ -375,7 +377,24 @@ create function WS.WS.URIQA_HANDLER_LOCALDAV (inout op varchar, inout uri varcha
     st := 'R';
   id := DAV_SEARCH_ID (res_path, st);
   if (DAV_HIDE_ERROR (id) is null)
-    return vector ('URIQA', id, NULL, NULL);
+    {
+      if ((id = -1) and (st = 'R') and (split[5] = ''))
+        {
+	  declare id_try2 any;
+	  id_try2 := DAV_SEARCH_ID (res_path || '/', 'C');
+          if (DAV_HIDE_ERROR (id_try2) is not null)
+            {
+	      id := id_try2;
+	      st := 'C';
+	      res_path := res_path || '/';
+	      split[2] := res_path;
+	      uri := uri || '/';
+	      goto id_found;
+	    }
+	}
+      return vector ('URIQA', id, NULL, DAV_PERROR (id) || sprintf ('; path "%s"', res_path));
+    }
+id_found:
   a_uid := null;
   a_gid := null;    
   uid := DAV_AUTHENTICATE_HTTP (id, st, case (op) when 'MGET' then '1__' else '11_' end, 1, lines, a_uname, a_pwd, a_uid, a_gid, a_perms);
@@ -658,7 +677,9 @@ create procedure WS.WS."/!URIQA/" (inout path varchar, inout params any, inout l
     upper_line := '';
   if (
    (upper_line like 'GET /URIQA/ HTTP/%') or
-   (trim (upper_line, ' \r\n') like 'GET /URIQA/') )
+   (upper_line like 'GET /URIQA HTTP/%') or
+   (trim (upper_line, ' \r\n') like 'GET /URIQA/') or
+   (trim (upper_line, ' \r\n') like 'GET /URIQA') )
     {
       http ('<html><head><title>URIQA quick test</title></head><body>
 <form method="GET" action="/uriqa/">
