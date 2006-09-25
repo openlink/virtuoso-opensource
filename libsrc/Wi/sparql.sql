@@ -170,7 +170,13 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME (in qname varchar) returns IRI_ID
       if (__tag (qname) <> 182)
         qname := cast (qname as varchar);
       if (qname like 'nodeID://%')
-        signal ('RDFXX', 'Cannot make IID for nodeID:// in DB.DBA.RDF_MAKE_IID_OF_QNAME()');
+        {
+          declare bniid integer;
+          bniid := sprintf_inverse (qname, 'nodeID://%d', 2)[0];
+          if (bniid is null)
+            signal ('RDFXX', sprintf ('Cannot make IID for IRI <%.100s> in DB.DBA.RDF_MAKE_IID_OF_QNAME()', qname));
+          return iri_id_from_num (bniid);
+        }
       set isolation='commited';
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
@@ -181,7 +187,6 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME (in qname varchar) returns IRI_ID
         return res;
       res := iri_id_from_num (sequence_next ('RDF_URL_IID_NAMED'));
       insert into DB.DBA.RDF_URL (RU_IID, RU_QNAME) values (res, qname);
-      commit work;
       return res;
     }
   if (qname is null)
@@ -203,7 +208,13 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID
       if (__tag (qname) <> 182)
         qname := cast (qname as varchar);
       if (qname like 'nodeID://%')
+        {
+          declare bniid integer;
+          bniid := sprintf_inverse (qname, 'nodeID://%d', 2)[0];
+          if (bniid is null)
         return null;
+          return iri_id_from_num (bniid);
+        }
       set isolation='commited';
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
@@ -214,7 +225,6 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID
         return res;
       res := iri_id_from_num (sequence_next ('RDF_URL_IID_NAMED'));
       insert into DB.DBA.RDF_URL (RU_IID, RU_QNAME) values (res, qname);
-      commit work;
       return res;
     }
   if (qname is null)
@@ -238,7 +248,13 @@ create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID
       if (__tag (qname) <> 182)
         qname := cast (qname as varchar);
       if (qname like 'nodeID://%')
+        {
+          declare bniid integer;
+          bniid := sprintf_inverse (qname, 'nodeID://%d', 2)[0];
+          if (bniid is null)
         return null;
+          return iri_id_from_num (bniid);
+        }
       set isolation='commited';
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
@@ -249,7 +265,6 @@ create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID
         return res;
       res := iri_id_from_num (sequence_next ('RDF_URL_IID_NAMED'));
       insert into DB.DBA.RDF_URL (RU_IID, RU_QNAME) values (res, qname);
-      commit work;
       return res;
     }
   if (qname is null)
@@ -360,7 +375,6 @@ mknew_ser:
   insert into DB.DBA.RDF_DATATYPE
     (RDT_IID, RDT_TWOBYTE, RDT_QNAME)
   values (iid, res, DB.DBA.RDF_QNAME_OF_IID (iid));
-  commit work;
   return res;
 }
 ;
@@ -388,7 +402,6 @@ mknew_ser:
   if (0 = bit_and (res, 255))
     res := sequence_next ('RDF_LANGUAGE_TWOBYTE');
   insert into DB.DBA.RDF_LANGUAGE (RL_ID, RL_TWOBYTE) values (id, res);
-  commit work;
   return res;
 }
 ;
@@ -406,6 +419,8 @@ create function DB.DBA.RDF_DATATYPE_OF_TAG (in t integer)
     return UNAME'http://www.w3.org/2001/XMLSchema#dateTime';
   if (t = 191)
     return UNAME'http://www.w3.org/2001/XMLSchema#double';
+  if (t = 204) /* DB NULL */
+    return NULL;
   signal ('RDFXX', sprintf ('Unsupported tag in DB.DBA.RDF_DATATYPE_OF_TAG(): %d', t));
 }
 ;
@@ -574,7 +589,6 @@ create function DB.DBA.RDF_MAKE_RO_ID_OF_STRING (in v varchar) returns integer
             {
               id := sequence_next ('RDF_RO_ID');
               insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG) values (id, tridgell, v);
-              commit work;
             }
         }
     }
@@ -590,7 +604,6 @@ create function DB.DBA.RDF_MAKE_RO_ID_OF_STRING (in v varchar) returns integer
             {
               id := sequence_next ('RDF_RO_ID');
               insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL) values (id, v);
-              commit work;
             }
         }
     }
@@ -625,11 +638,11 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any
 {
   declare l, t int;
   t := __tag (v);
-  if (not t in (182, 217, 225, 230))
+  if (not t in (126, 182, 217, 225, 230))
     return v;
   if (225 = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t)
+  else if (217 = t or 126 = t)
     v := cast (v as varchar);
   else if (230 = t)
     v := serialize_to_UTF8_xml (v);
@@ -658,11 +671,11 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, 
   declare l, t, dt_twobyte, lang_twobyte int;
   declare dt_s, lang_s varchar;
   t := __tag (v);
-  if (not t in (182, 217, 225, 230))
+  if (not t in (126, 182, 217, 225, 230))
     signal ('RDFXX', 'DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL() accepts only string representations of typed values');
   if (225 = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t)
+  else if (217 = t or 126 = t)
     v := cast (v as varchar);
   else if (230 = t)
     v := serialize_to_UTF8_xml (v);
@@ -980,9 +993,11 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 {
   if (193 <> __tag(longobj))
     return longobj;
-  if (isstring (longobj[4]))
-    return longobj[4];
   if (length (longobj) > 5)
+    return call (longobj[5] || '_OBJ_OF_LONG')(longobj);
+  else if ((length (longobj) = 5) and isstring (longobj[4]))
+    return longobj[4];
+  else
     {
       declare l, dt_twobyte, lang_twobyte int;
       declare v, dt_s, lang_s varchar;
@@ -1016,7 +1031,6 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
         }
       return concat (dt_s, v, '\0', lang_s);
     }
-  return DB.DBA.RDF_OBJ_OF_SQLVAL (longobj[2]);
 }
 ;
 
@@ -1063,11 +1077,11 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
 {
   declare l, t int;
   t := __tag (v);
-  if (not t in (182, 217, 225, 230))
+  if (not t in (126, 182, 217, 225, 230))
     return v;
   if (225 = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t)
+  else if (217 = t or 126 = t)
     v := cast (v as varchar);
   else if (230 = t)
     v := serialize_to_UTF8_xml (v);
@@ -1825,9 +1839,12 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
 {
   declare tcount, tctr integer;
   tcount := length (triples);
-  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TTL:');
-  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
-    -- dbg_obj_princ (triples[tctr]);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TTL:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  if (0 = tcount)
+    {
+      http ('# Empty TURTLE', ses);
+      return;
+    }
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare subj,pred,obj any;
@@ -2388,6 +2405,7 @@ create function DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any)
     graph_iri := DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
   for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
     {
+      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES: ', graph_iri, triples[ctr][0], triples[ctr][1], triples[ctr][2]);
       insert replacing DB.DBA.RDF_QUAD (G,S,P,O)
       values (graph_iri, triples[ctr][0], triples[ctr][1], DB.DBA.RDF_OBJ_OF_LONG (triples[ctr][2]));
     }
@@ -2414,6 +2432,34 @@ create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any)
 ;
 
 grant execute on DB.DBA.RDF_DELETE_TRIPLES to SPARQL_UPDATE
+;
+
+create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_dict any)
+{
+  declare triples any;
+  declare len integer;
+  triples := dict_list_keys (triples_dict, 1);
+  len := length (triples);
+  DB.DBA.RDF_INSERT_TRIPLES (graph_iri, triples);
+  return len;
+}
+;
+
+grant execute on DB.DBA.SPARQL_INSERT_DICT_CONTENT to SPARQL_UPDATE
+;
+
+create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_dict any)
+{
+  declare triples any;
+  declare len integer;
+  triples := dict_list_keys (triples_dict, 1);
+  len := length (triples);
+  DB.DBA.RDF_DELETE_TRIPLES (graph_iri, triples);
+  return len;
+}
+;
+
+grant execute on DB.DBA.SPARQL_DELETE_DICT_CONTENT to SPARQL_UPDATE
 ;
 
 -----
@@ -2487,7 +2533,10 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
               if (i is null)
                 goto end_of_adding_triple;
               if ((2 > fld_ctr) and not isiri_id (i))
-                signal ('RDF01', sprintf ('Bad variable value in CONSTRUCT: only object of a triple can be a literal like "%.30s"', DB.DBA.RDF_STRSQLVAL_OF_LONG (i)));
+                signal ('RDF01',
+                  sprintf ('Bad variable value in CONSTRUCT: "%.100s" is not a valid %s, only object of a triple can be a literal',
+                    DB.DBA.RDF_STRSQLVAL_OF_LONG (i),
+                    case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               if ((1 = fld_ctr) and isiri_id (i) and (i >= #i1000000000))
                 signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate');
               triple_vec[fld_ctr] := i;
@@ -2504,8 +2553,12 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
             }
           else if (3 = op)
             {
+              if (arg is null)
+                goto end_of_adding_triple;
               if ((2 > fld_ctr) and not isiri_id (arg))
-                signal ('RDF01', sprintf ('Bad const value in CONSTRUCT: only object of a triple can be a literal like "%.30s"', DB.DBA.RDF_STRSQLVAL_OF_LONG (arg)));
+                signal ('RDF01', sprintf ('Bad const value in CONSTRUCT: "%.100s" is not a valid %s, only object of a triple can be a literal',
+                  DB.DBA.RDF_STRSQLVAL_OF_LONG (arg),
+                  case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               if ((1 = fld_ctr) and isiri_id (arg) and (arg >= #i1000000000))
                 signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate');
               triple_vec[fld_ctr] := arg;
@@ -2528,6 +2581,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_FIN (inout _env any)
 }
 ;
 
+--!AWK PUBLIC
 create aggregate DB.DBA.SPARQL_CONSTRUCT (in opcodes any, in vars any, in stats any) returns any
 from DB.DBA.SPARQL_CONSTRUCT_INIT, DB.DBA.SPARQL_CONSTRUCT_ACC, DB.DBA.SPARQL_CONSTRUCT_FIN
 ;
@@ -2841,28 +2895,149 @@ grant execute on DB.DBA.RDF_LONG_CMP to SPARQL_SELECT
 -----
 -- JSO procedures
 
-create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delete_first integer, in make_new integer)
+create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in rootinst varchar, in destinst varchar, in dest_iid iri_id, inout noinherits any, inout inh_stack any)
 {
-  declare jinst_iri_id, jgraph_iri_id IRI_ID;
+  declare base_iid iri_id;
+  declare baseinst varchar;
+  -- dbg_obj_princ ('JSO_MAKE_INHERITANCE (', jgraph, class, rootinst, destinst, ')');
+  inh_stack := vector_concat (inh_stack, vector (destinst));
+  baseinst := null;
+  if (not exists (sparql
+      prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+      ask where {
+        graph ?:jgraph { ?:dest_iid rdf:type `iri(?:class)`
+          } } ) )
+    signal ('22023', 'JSO_MAKE_INHERITANCE has not found object <' || destinst || '> of type <' || class || '>');
+/* This fails. !!!TBD: fix sparql2sql.c to preserve data about equalities, fixed values and globals when triples are moved from gp to gp
+  for (sparql
+    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+    select ?srcinst
+    where {
+        graph ?:jgraph {
+            { {
+                ?destnode rdf:type `iri(?:class)` .
+                filter (?destnode = iri(?:destinst)) }
+              union
+              {
+                ?destnode rdf:type `iri(?:class)` .
+                ?destnode rdf:name `iri(?:destinst)` } } .
+            ?destnode virtrdf:inheritFrom ?srcinst .
+            ?srcinst rdf:type `iri(?:class)` .
+          } } ) do
+*/
+  for (sparql
+    define output:valmode "LONG"
+    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+    select ?src_iid
+    where {
+        graph ?:jgraph { ?:dest_iid virtrdf:inheritFrom ?src_iid } } ) do
+    {
+      declare srcinst varchar;
+      srcinst := DB.DBA.RDF_QNAME_OF_IID (src_iid);
+      if (baseinst is null)
+        {
+          if (not exists (sparql
+              prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+              ask where { graph ?:jgraph { ?:src_iid rdf:type `iri(?:class)` } } ) )
+            signal ('22023', 'JSO_LOAD_INSTANCE has found that the object <' || destinst || '> has wrong virtrdf:inheritFrom <' || srcinst || '> that is not an instance of type <' || class || '>');
+          base_iid := src_iid;
+          baseinst := srcinst;
+        }
+      else if (baseinst <> srcinst)
+        signal ('22023', 'JSO_LOAD_INSTANCE has found that the object <' || destinst || '> has multiple virtrdf:inheritFrom declarations: <' || baseinst || '> and <' || srcinst || '>');
+    }
+  if (position (baseinst, inh_stack))
+    signal ('22023', 'JSO_LOAD_INSTANCE has found that the object <' || baseinst || '> is recursively inherited from itself');
+/* This fails. !!!TBD: fix sparql2sql.c to preserve data about equalities, fixed values and globals when triples are moved from gp to gp
+  for (sparql
+    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+    select ?pred
+    where {
+        graph ?:jgraph {
+            { {
+                ?destnode rdf:type `iri(?:class)` .
+                filter (?destnode = iri(?:destinst)) }
+              union
+              {
+                ?destnode rdf:type `iri(?:class)` .
+                ?destnode rdf:name `iri(?:destinst)` } } .
+            ?destnode virtrdf:noInherit ?pred .
+          } } ) do
+*/
+  for (sparql
+    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+    select ?pred
+    where {
+        graph ?:jgraph {
+            ?:dest_iid virtrdf:noInherit ?pred
+          } } ) do
+    {
+      if (baseinst is null)
+        signal ('22023', 'JSO_LOAD_INSTANCE has found that the object <' || destinst || '> has set virtrdf:noInherit but has no virtrdf:inheritFrom');
+      dict_put (noinherits, "pred", destinst);
+    }
+  if (baseinst is null)
+    return;
+  for (select "pred", "predval"
+    from (sparql
+      define output:valmode "LONG"
+      prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+      select ?pred, ?predval
+      where {
+          graph ?:jgraph {
+              ?:base_iid ?pred ?predval
+            } } ) as "t00"
+      where not exists (sparql
+          prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+          ask where { graph ?:jgraph { ?:t00.pred virtrdf:loadAs virtrdf:jsoTriple } } )
+      ) do
+    {
+      "pred" := DB.DBA.RDF_QNAME_OF_IID ("pred");
+      if (DB.DBA.RDF_LANGUAGE_OF_LONG ("predval") is not null)
+        signal ('22023', 'JSO_LOAD_INSTANCE does not support language marks on objects');
+      if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type' = "pred")
+        ;
+      else if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#name' = "pred")
+        ;
+      else if ('http://www.openlinksw.com/schemas/virtrdf#inheritFrom' = "pred")
+        ;
+      else if ('http://www.openlinksw.com/schemas/virtrdf#noInherit' = "pred")
+        ;
+      else if (dict_get (noinherits, "pred", baseinst) = baseinst) -- trick here, instead of (dict_get (noinherits, pred, null) is null) that does not handle inheritance of booleans properly.
+        {
+          jso_set (class, rootinst, "pred", DB.DBA.RDF_SQLVAL_OF_LONG ("predval"), isiri_id ("predval"));
+          dict_put (noinherits, pred, baseinst);
+        }
+    }
+  JSO_MAKE_INHERITANCE (jgraph, class, rootinst, baseinst, base_iid, noinherits, inh_stack);
+}
+;
+
+create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delete_first integer, in make_new integer, in jsubj_iid iri_id := 0)
+{
+  declare jinst_iid, jgraph_iid IRI_ID;
   declare jclass varchar;
-  dbg_obj_princ ('JSO_LOAD_INSTANCE (', jgraph, ')');
-  jinst_iri_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (jinst);
-  jgraph_iri_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (jgraph);
+  declare noinherits, inh_stack any;
+  -- dbg_obj_princ ('JSO_LOAD_INSTANCE (', jgraph, ')');
+  noinherits := dict_new ();
+  jinst_iid := DB.DBA.RDF_MAKE_IID_OF_QNAME (jinst);
+  jgraph_iid := DB.DBA.RDF_MAKE_IID_OF_QNAME (jgraph);
+  if (jsubj_iid is null)
+    {
+      jsubj_iid := (sparql
+        define output:valmode "LONG"
+        select ?s
+        where { graph ?:jgraph { ?s rdf:name ?:jinst } } );
+      if (jsubj_iid is null)
+        jsubj_iid := jinst_iid;
+    }
   jclass := (sparql
-#    define input:storage ""
     select ?t
     where {
-      graph ?:jgraph {
-        { ?:jinst rdf:type ?t }
-        union
-        { ?s rdf:type ?t .
-          ?s rdf:name ?ji .
-          filter (str (?ji) = ?:jinst)
-          } } } );
+      graph ?:jgraph { ?:jsubj_iid rdf:type ?t } } );
   if (jclass is null)
     {
       if (exists (sparql
-#          define input:storage ""
           select ?x
             where { graph ?:jgraph {
                 { ?:jinst ?x ?o }
@@ -2878,35 +3053,26 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
     jso_delete (jclass, jinst, 1);
   if (make_new)
     jso_new (jclass, jinst);
-  for (sparql
-#      define input:storage ""      
-      select ?p ?o
+  for (select "p", coalesce ("o2", "o1") as "o"
+      from (sparql
+          define output:valmode "LONG"
+          select ?p ?o1 ?o2
       where {
         graph ?:jgraph {
-          { ?:jinst ?p ?o .
-            filter (!isBLANK (?o))
-            }
-          union
-          { ?:jinst ?p ?n .
-            ?n rdf:name ?o .
-            filter (isBLANK (?n))
-            }
-          union
-          { ?s rdf:name ?ji .
-            ?s ?p ?o .
-            filter ((str (?ji) = ?:jinst) && !isBLANK (?o))
-            }
-          union
-          { ?s rdf:name ?ji .
-            ?s ?p ?n .
-            ?n rdf:name ?o .
-            filter ((str (?ji) = ?:jinst) && isBLANK (?n))
-            }
-        } } ) do
+              { ?:jsubj_iid ?p ?o1 }  optional { ?o1 rdf:name ?o2 }
+            } }
+        ) as "t00"
+      where not exists (sparql
+          prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+          ask where { graph ?:jgraph_iid { ?:t00.p virtrdf:loadAs virtrdf:jsoTriple } } )
+      ) do
     {
+      "p" := DB.DBA.RDF_QNAME_OF_IID ("p");
+      if (DB.DBA.RDF_LANGUAGE_OF_LONG ("o") is not null)
+        signal ('22023', 'JSO_LOAD_INSTANCE does not support language marks on objects');
       if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type' = "p")
         {
-	  if ("o" <> jclass)
+	  if (DB.DBA.RDF_SQLVAL_OF_LONG ("o") <> jclass)
             signal ('22023', 'JSO_LOAD_INSTANCE has found that the object <' || jinst || '> has multiple type declarations');
 	}
       else if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#name' = "p")
@@ -2916,18 +3082,28 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
       else if ('http://www.openlinksw.com/schemas/virtrdf#noInherit' = "p")
         ;
       else
-        jso_set (jclass, jinst, "p", "o");
+        {
+          jso_set (jclass, jinst, "p", DB.DBA.RDF_SQLVAL_OF_LONG ("o"), isiri_id ("o"));
+          dict_put (noinherits, "p", jinst);
+        }
     }
+  inh_stack := vector ();
+  JSO_MAKE_INHERITANCE (jgraph, jclass, jinst, jinst, jsubj_iid, noinherits, inh_stack);
 }
 ;
 
 create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances any)
 {
+  -- dbg_obj_princ ('JSO_LIST_INSTANCES_OF_GRAPH (', jgraph, '...)');
   instances := (
-    select vector_agg (vector ("jclass", "jinst"))
+    select vector_agg (
+      vector (
+        DB.DBA.RDF_QNAME_OF_IID ("jclass"),
+        DB.DBA.RDF_QNAME_OF_IID ("jinst"),
+        coalesce ("s", "jinst") ) )
     from ( sparql
-#      define input:storage ""      
-      select ?jclass ?jinst
+      define output:valmode "LONG"
+      select ?jclass ?jinst ?s
       where {
         graph ?:jgraph {
           { ?jinst rdf:type ?jclass .
@@ -2938,49 +3114,46 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
             filter (isBLANK (?s))
             } } }
       ) as inst );
+  -- dbg_obj_princ ('... gets ', instances);
 }
 ;
 
 create function JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1)
 {
-  declare jgraph_iri_id IRI_ID;
-  declare instances any;
-  dbg_obj_princ ('JSO_LOAD_GRAPH (', jgraph, ')');
-  jgraph_iri_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (jgraph);
+  declare jgraph_iid IRI_ID;
+  declare instances, chk any;
+  -- dbg_obj_princ ('JSO_LOAD_GRAPH (', jgraph, ')');
+  jgraph_iid := DB.DBA.RDF_MAKE_IID_OF_QNAME (jgraph);
   JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
--- Pass 1. Deleting all obsolete instances.
+/* Pass 1. Deleting all obsolete instances. */
   foreach (any j in instances) do
     jso_delete (j[0], j[1], 1);
--- Pass 2. Creating all instances.
+/* Pass 2. Creating all instances. */
   foreach (any j in instances) do
     jso_new (j[0], j[1]);
--- Pass 3. Loading all instances.
+/* Pass 3. Loading all instances, including loading inherited values. */
   foreach (any j in instances) do
-    JSO_LOAD_INSTANCE (jgraph, j[1], 0, 0);
--- Pass 4. Making the inheritance.
-  for (sparql
-#    define input:storage ""      
-    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-    select ?jdestclass ?dest ?pred ?srcpredval
-    where {
-        graph ?:jgraph {
-            ?dest rdf:type ?jdestclass .
-            ?dest virtrdf:inheritFrom ?src .
-            ?src ?pred ?srcpredval
-            optional {
-              ?dest1 virtrdf:noInherit ?pred
-              filter (?dest1 = ?dest) }
-            optional {
-              ?dest ?pred ?destval }
-            filter (!bound (?dest1) && !bound (?destval))
-          } } ) do
-    jso_set ("jdestclass", "dest", "pred", "srcpredval");
--- Pass 5. Validation all instances.
+    JSO_LOAD_INSTANCE (jgraph, j[1], 0, 0, j[2]);
+/* Pass 4. Validation all instances. */
   foreach (any j in instances) do
     jso_validate (j[0], j[1], 1);
--- Pass 6. Pin all instances.
+/* Pass 5. Pin all instances. */
   if (pin_now)
-    JSO_PIN_GRAPH (jgraph);
+    {
+      foreach (any j in instances) do
+        jso_pin (j[0], j[1]);
+    }
+/* Pass 6. Load all separate triples */
+  for (sparql
+      prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+      select ?s ?p ?o
+      where { graph ?:jgraph_iid { ?p virtrdf:loadAs virtrdf:jsoTriple . ?s ?p ?o } } ) do
+    jso_triple_add ("s", "p", "o");
+  chk := jso_triple_get_objs (
+    UNAME'http://www.openlinksw.com/schemas/virtrdf#loadAs',
+    UNAME'http://www.openlinksw.com/schemas/virtrdf#loadAs' );
+  if ((1 <> length (chk)) or (cast (chk[0] as varchar) <> 'http://www.openlinksw.com/schemas/virtrdf#jsoTriple'))
+    signal ('22023', 'JSO_LOAD_GRAPH has not found expected metadata in the graph');
 }
 ;
 
@@ -2993,6 +3166,109 @@ create function JSO_PIN_GRAPH (in jgraph varchar)
 }
 ;
 
+create function JSO_SYS_GRAPH () returns varchar
+{
+  return 'http://www.openlinksw.com/schemas/virtrdf#';
+}
+;
+
+create function JSO_DUMP_IRI (in v varchar, inout ses any)
+{
+--            0         1         2         3      %
+--            01234567890123456789012345678901234567-
+  if (v like 'http://www.w3.org/2000/01/rdf-schema#%')
+    { http ('rdfs:' || subseq (v, 37), ses); return; }
+--            0         1         2         3         4  %
+--            01234567890123456789012345678901234567890123-
+  if (v like 'http://www.w3.org/1999/02/22-rdf-syntax-ns#%')
+    { http ('rdf:' || subseq (v, 43), ses); return; }
+--            0         1         2         %
+--            0123456789012345678901234567890-
+  if (v like 'http://www.w3.org/2002/07/owl#%')
+    { http ('owl:' || subseq (v, 30), ses); return; }
+--            0         1         2         3  %
+--            0123456789012345678901234567890123-
+  if (v like 'http://www.w3.org/2001/XMLSchema#%')
+    { http ('xsd:' || subseq (v, 33), ses); return; }
+--            0         1         2         3         4 %
+--            0123456789012345678901234567890123456789012-
+  if (v like 'http://www.openlinksw.com/schemas/virtrdf#%')
+    { http ('virtrdf:' || subseq (v, 42), ses); return; }
+--            0         1         2         3         4      %
+--            012345678901234567890123456789012345678901234567-
+  if (v like 'http://www.openlinksw.com/virtrdf-data-formats#%')
+    { http ('rdfdf:' || subseq (v, 47), ses); return; }
+  http ('<', ses);
+  http_escape (v, 12, ses, 1, 1);
+  http ('>', ses);
+}
+;
+
+create function JSO_DUMP_FLD (in v any, inout ses any)
+{
+  if (__tag(v) = 217)
+    JSO_DUMP_IRI (cast (v as varchar), ses);
+  else if (182 = __tag (v))
+    {
+      http ('"', ses);
+      http_escape (v, 11, ses, 1, 1);
+      http ('"', ses);
+    }
+  else if (isinteger (v))
+    http_value (v, 0, ses);
+  else
+    {
+      http ('"', ses);
+      http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (v), 11, ses, 1, 1);
+      http ('"^^<', ses);
+      http_escape (cast (DB.DBA.RDF_DATATYPE_OF_TAG (__tag (v)) as varchar), 12, ses, 1, 1);
+      http ('>', ses);
+    }
+}
+;
+
+create function JSO_DUMP_ALL () returns any
+{
+  declare proplist, ses any;
+  declare prev_obj any;
+  declare ctr, len integer;
+  ses := string_output ();
+  proplist := jso_proplist ();
+  gvector_sort (proplist, 1, 0, 1);
+  prev_obj := null;
+  len := length (proplist);
+  for (ctr := 0; ctr < len; ctr := ctr+1)
+    {
+      declare obj any;
+      obj := proplist[ctr][0];
+      if (obj = prev_obj)
+        http (';\n  ', ses);
+      else
+        {
+	  if (prev_obj is null)
+	    http (
+'@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
+@prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#> .
+', ses );
+          else
+	    http ('.\n', ses);
+	  prev_obj := obj;
+	  JSO_DUMP_FLD (obj, ses);
+          http ('\n  ', ses);
+	}
+      JSO_DUMP_FLD (proplist[ctr][1], ses);
+      http ('\t', ses);
+      JSO_DUMP_FLD (proplist[ctr][2], ses);
+    }
+  if (prev_obj is not null)
+    http ('.\n', ses);
+  return ses;
+}
+;
 
 -----
 -- Procedures to execute local SPARQL statements (obsolete, now SPARQL can be simply inlined in SQL)
@@ -3371,8 +3647,7 @@ grant execute on DB.DBA.SPARQL_REXEC_WITH_META to SPARQL_SELECT
 -----
 -- SPARQL SOAP web service (incomplete, do not try to use in applications!)
 
-create procedure
-"querySoap"  (in  "Command" varchar
+create procedure "querySoap"  (in  "Command" varchar
 	    , in  "Properties" any
 	    , out "Error" any __soap_fault '__XML__'
 	    , out "ws_sparql_xsd" any
@@ -3486,6 +3761,13 @@ create procedure SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any, inout
       else
         {
 	  declare lang, dt varchar;
+	  if (__tag (_val) = 185) -- string output
+	    {
+              http (sprintf ('\n   <binding name="%s"><literal>', _name), ses);
+	      http_value (_val, 0, ses);
+              http ('</literal></binding>', ses);
+              goto end_of_binding;
+	    }
 	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val);
 	  dt := DB.DBA.RDF_DATATYPE_OF_LONG (_val);
 	  if (lang is not null)
@@ -3526,12 +3808,12 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
 	  declare tmp_str varchar;
 	  declare tmp_ses any;
 	  tmp_ses := string_output();
-    http ('document.writeln(\'', tmp_ses);
+    http ('document.writeln(''', tmp_ses);
     SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(tmp_ses,metas,rset,0);
 	  tmp_str := string_output_string(tmp_ses);
-	  tmp_str := replace(tmp_str, '\n', '\');\ndocument.writeln(\'');
+	  tmp_str := replace(tmp_str, '\n', ''');\ndocument.writeln(''');
 	  http (tmp_str, ses);
-	  http ('\');', ses);
+	  http (''');', ses);
 	  return;
   }
   http ('<table class="sparql" border="1">', ses);
@@ -3556,6 +3838,7 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
           val := rset[resctr][varctr];
           if (val is null)
           {
+            http('\n    <td></td>', ses);
             goto end_of_val_print; -- see below
           }
           http('\n    <td>', ses);
@@ -3571,6 +3854,10 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
             {
               http_escape (val[1], 11, ses, 1, 1);
             }
+	  else if (185 = __tag (val)) -- string output
+	    {
+              http_escape (cast (val as varchar), 11, ses, 1, 1);
+	    }
           else
             {
               http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (val), 11, ses, 1, 1);
@@ -3659,6 +3946,11 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
               http ('"type": "literal", "value": "', ses);
               http_escape (val, 11, ses, 1, 1);
             }
+          else if (185 = __tag (val))
+            {
+              http ('"type": "literal", "value": "', ses);
+              http_escape (cast (val as varchar), 11, ses, 1, 1);
+            }
           else
             {
               http ('"type": "typed-literal", "datatype": "', ses);
@@ -3678,9 +3970,14 @@ end_of_val_print: ;
 
 create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in add_http_headers integer) returns varchar
 {
+  declare singlefield varchar;
   declare ret_mime varchar;
-  if ((1 = length (metas[0])) and
-    ('__ask_retval' = metas[0][0][0]) )
+  if ((1 >= length (rset)) and (1 = length (metas[0])))
+    singlefield := metas[0][0][0];
+  else
+    singlefield := NULL;
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield);
+  if ('__ask_retval' = singlefield)
     {
       if (strstr (accept, 'application/sparql-results+json') is not null or strstr (accept, 'application/json') is not null)
         {
@@ -3713,7 +4010,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     {
       declare triples any;
       triples := dict_list_keys (rset[0][0], 1);
-      if (strstr (accept, 'text/rdf+n3') is not null)
+      if (strstr (accept, 'text/rdf+n3') is not null or (accept = 'auto'))
         {
           ret_mime := 'text/rdf+n3';
           DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
@@ -3730,6 +4027,13 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         ret_mime := 'application/sparql-results+json';
       else
         ret_mime := 'application/json';
+      if (('callretRDF/XML-0' = singlefield) or ('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield))
+        {
+          http('"', ses);
+          http_escape (cast (rset[0][0] as varchar), 11, ses, 0, 1);
+          http('"', ses);
+        }
+      else
       SPARQL_RESULTS_JSON_WRITE (ses, metas, rset);
     }
   else if (strstr (accept, 'text/html') is not null)
@@ -3751,6 +4055,16 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
       http ('\n</sparql>', ses);
       http ('</query-result></soapenv:Body></soapenv:Envelope>', ses);
+    }
+  else if (('callretRDF/XML-0' = singlefield) and ('auto' = accept))
+    {
+      ret_mime := 'application/rdf+xml';
+      http (rset[0][0]);
+    }
+  else if ((('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield)) and ('auto' = accept))
+    {
+      ret_mime := 'text/rdf+n3';
+      http (rset[0][0]);
     }
   else
     {
@@ -3952,6 +4266,7 @@ http('			  <select name="format">');
 http('			    <option value="text/html" selected="selected">HTML</option>');
 http('			    <option value="application/sparql-results+xml">XML</option>');
 http('			    <option value="text/rdf+n3">TURTLE</option>');
+http('          <option value="application/rdf+xml">RDF</option>');
 http('			    <option value="application/sparql-results+json">JSON</option>');
 http('			    <option value="application/javascript">Javascript</option>');
 http('			  </select>');
@@ -4137,9 +4452,7 @@ http('</html>');
 registry_set ('/!sparql/', 'no_vsp_recompile')
 ;
 
-
-
-
+-----
 -- RDF parallel load 
 
 
