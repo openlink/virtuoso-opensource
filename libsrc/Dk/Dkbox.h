@@ -563,7 +563,7 @@ extern void dk_check_domain_of_connectivity (box_t box);
 EXE_EXPORT (int, dk_free_tree, (box_t box));
 EXE_EXPORT (int, dk_free_box_and_numbers, (box_t box));
 EXE_EXPORT (int, dk_free_box_and_int_boxes, (box_t pbox));
-EXE_EXPORT (ptrlong, unbox, (box_t  n));
+EXE_EXPORT (ptrlong, unbox, (ccaddr_t n));
 EXE_EXPORT (box_t, box_num, (ptrlong n));
 EXE_EXPORT (box_t, box_num_nonull, (ptrlong n));
 EXE_EXPORT (box_t, box_string, (const char *string));

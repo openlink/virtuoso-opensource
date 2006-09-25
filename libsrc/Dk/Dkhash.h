@@ -44,7 +44,7 @@ typedef struct hash_elt_s hash_elt_t;
 
 struct hash_elt_s
   {
-    void *		key;
+    const void *	key;
     void *		data;
     hash_elt_t *	next;
   };
@@ -89,13 +89,13 @@ extern void dbg_dk_rehash (const char *file, int line, dk_hash_t *ht, uint32 new
 #else
 extern dk_hash_t *hash_table_allocate (uint32 size);
 extern void hash_table_free (dk_hash_t *table);
-extern void *sethash (void *key, dk_hash_t *ht, void *data);
-extern int remhash (void *key, dk_hash_t *ht);
+extern void *sethash (const void *key, dk_hash_t *ht, void *data);
+extern int remhash (const void *key, dk_hash_t *ht);
 extern void clrhash (dk_hash_t *table);
 extern void dk_rehash (dk_hash_t *ht, uint32 new_sz);
 #endif
 
-extern void *gethash (void *key, dk_hash_t *ht);
+extern void *gethash (const void *key, dk_hash_t *ht);
 extern void maphash (maphash_func func, dk_hash_t *table);
 extern void maphash3 (maphash3_func func, dk_hash_t *table, void *env);
 extern void maphash_no_remhash (maphash_func func, dk_hash_t *table);

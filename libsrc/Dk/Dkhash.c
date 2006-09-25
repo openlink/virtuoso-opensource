@@ -271,7 +271,7 @@ ht_stats (dk_hash_t *ht)
 
 
 void *
-gethash (void *key, dk_hash_t *ht)
+gethash (const void *key, dk_hash_t *ht)
 {
   uint32 inx = HASH_INX (ht, key);
   hash_elt_t *elt = &ht->ht_elements[inx];
@@ -296,7 +296,7 @@ gethash (void *key, dk_hash_t *ht)
 
 
 void *
-DBG_NAME(sethash) (DBG_PARAMS void *key, dk_hash_t *ht, void *data)
+DBG_NAME(sethash) (DBG_PARAMS const void *key, dk_hash_t *ht, void *data)
 {
   uint32 inx = HASH_INX (ht, key);
   hash_elt_t *elt = &ht->ht_elements[inx];
@@ -376,7 +376,7 @@ DBG_NAME(sethash) (DBG_PARAMS void *key, dk_hash_t *ht, void *data)
 
 
 int
-DBG_NAME(remhash) (DBG_PARAMS void *key, dk_hash_t *ht)
+DBG_NAME(remhash) (DBG_PARAMS const void *key, dk_hash_t *ht)
 {
   uint32 inx = HASH_INX (ht, key);
   hash_elt_t *elt = &ht->ht_elements[inx];

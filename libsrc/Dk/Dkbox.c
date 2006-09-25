@@ -729,7 +729,7 @@ dk_free_box_and_int_boxes (box_t box)
 /* Number Boxes */
 
 ptrlong
-unbox (box_t box)
+unbox (ccaddr_t box)
 {
   if (!IS_BOX_POINTER (box))
     return (ptrlong) box;
