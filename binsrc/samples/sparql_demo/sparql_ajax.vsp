@@ -307,6 +307,7 @@ WHERE {
             <option value="">table</option>
             <option value="application/sparql-results+xml">XML</option>
             <option value="text/rdf+n3">TURTLE</option>
+                <option value="application/rdf+xml">RDF</option>
             <option value="application/sparql-results+json">JSON</option>
             <option value="application/javascript">Javascript</option>
             <option value="text/html">HTML</option>
