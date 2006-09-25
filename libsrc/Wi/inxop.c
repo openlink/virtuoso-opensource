@@ -263,6 +263,11 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	  itc->itc_search_mode = SM_READ_EXACT;
 	  rc = itc_il_search (itc, &buf, qst, &iop->iop_il, (placeholder_t*) itc, 
 			      !itc->itc_desc_order);
+	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
+	    {
+	      itc_page_leave (itc, buf);
+	      return IOP_AT_END;
+	    }
 	  break;
 	case IOP_NEXT:
 	  is_random = 0;
