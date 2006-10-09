@@ -178,7 +178,7 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /*wcharset_t * volatile charset = QST_CHARSET (qst) ? QST_CHARSET (qst) : default_charset;*/
   text_arg = bif_arg (qst, args, 0, "rdf_load_rdfxml");
   omit_top_rdf = bif_long_arg (qst, args, 1, "rdf_load_rdfxml");
-  graph_uri = bif_string_arg (qst, args, 2, "rdf_load_rdfxml");
+  graph_uri = bif_string_or_wide_or_uname_arg (qst, args, 2, "rdf_load_rdfxml");
   stmt_texts = (ccaddr_t *)bif_strict_type_array_arg (DV_STRING, qst, args, 3, "rdf_load_rdfxml");
   app_env = bif_arg (qst, args, 4, "rdf_load_rdfxml");
   if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (stmt_texts))
@@ -274,7 +274,7 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case 7:
       enc = bif_string_arg (qst, args, 6, "rdf_load_rdfxml");
     case 6:
-      base_uri = bif_string_arg (qst, args, 5, "rdf_load_rdfxml");
+      base_uri = bif_string_or_uname_arg (qst, args, 5, "rdf_load_rdfxml");
     case 5:
     case 4:
     case 3:
