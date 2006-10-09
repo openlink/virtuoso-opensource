@@ -301,6 +301,18 @@ static int sparscn_NUMBER_double (void *yylval, sparp_t *sparp)
 	/* Internals of triple-double-quoted SPARQL string lit */
 %x SPARQL_DDDQ
 
+	/* Whitespace between 'WHERE' keyword and '(' or '{' after it */
+%x SPARQL_AFTER_WHERE
+
+	/* A fragment of SQL text between 'WHERE (' and matching ')' */
+%x SPARQL_SQL_FRAGMENT
+
+	/* A comment inside SPARQL_SQL_FRAGMENT */
+%x SPARQL_SQL_COMMENT
+
+	/* Single-quoted string inside SPARQL_SQL_FRAGMENT */
+%x SPARQL_SQL_SQSTRING
+
 	/* Special unreacheable state to fill the first item of sparp->sparp_lexstates */
 %x UNREACHEABLE
 
@@ -347,7 +359,7 @@ SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{H
 S_NL		((\r\n)|(\n\r)|\n|\r)
 HEX		([0-9A-Fa-f])
 
- /*
+ /* These definitions seem to be correct but some Bisons fails to macroexpand them correctly:
   SPAR_NCCHAR1p	([A-Za-z\200-\377])
   SPAR_NCCHAR1	({SPAR_NCCHAR1p}|[_])
   SPAR_VARNAME	(({SPAR_NCCHAR1}|[0-9])+)
@@ -362,74 +374,103 @@ SPAR_VARNAME	([A-Za-z0-9_]+)
 SPAR_NCCHAR	([A-Za-z0-9_-])
 SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
 SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
-SPAR_SQLNAME	(([A-Za-z_][A-Za-z0-9_]*)|([""]([^""\n]|([""][""]))*[""]))
+SPAR_PLAIN_SQLNAME	([A-Za-z_][A-Za-z0-9_]*)
+SPAR_DQ_SQLNAME		([""][^""\\\r\n]*[""])
+SPAR_SQLNAME		(([A-Za-z_][A-Za-z0-9_]*)|([""][^""\\\r\n]*[""]))
 SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 
 %%
 
-<SPARQL>"&&"		{ return _AMP_AMP; }
-<SPARQL>"`"		{ return _BACKQUOTE; }
-<SPARQL>"!"		{ return _BANG; }
-<SPARQL>"||"		{ return _BAR_BAR; }
-<SPARQL>"^^"		{ return _CARET_CARET	; }
-<SPARQL>","		{ return _COMMA; }
-<SPARQL>"."		{ return _DOT; }
-<SPARQL>"="		{ return _EQ; }
-<SPARQL>">="		{ return _GE; }
-<SPARQL>">"		{ return _GT; }
-<SPARQL>"<="		{ return _LE; }
-<SPARQL>"<"		{ return _LT; }
-<SPARQL>"-"		{ return _MINUS; }
-<SPARQL>"!="		{ return _NOT_EQ; }
-<SPARQL>"+"		{ return _PLUS; }
-<SPARQL>";"		{ return _SEMI; }
-<SPARQL>"/"		{ return _SLASH; }
-<SPARQL>"*"		{ return _STAR; }
+	/* Plain non-keyword punctuators */
 
-<SPARQL>"a"				{ return a_L; }
-<SPARQL>{A}{S}				{ return AS_L; }
-<SPARQL>{A}{S}{C}			{ return ASC_L; }
-<SPARQL>{A}{S}{K}			{ return ASK_L; }
-<SPARQL>{B}{A}{S}{E}			{ return BASE_L; }
-<SPARQL>{B}{O}{U}{N}{D}			{ return BOUND_L; }
-<SPARQL>{B}{Y}				{ return BY_L; }
+<SPARQL>"&&"		{ return _AMP_AMP	; }
+<SPARQL>"`"		{ return _BACKQUOTE	; }
+<SPARQL>"!"		{ return _BANG		; }
+<SPARQL>"||"		{ return _BAR_BAR	; }
+<SPARQL>"^^"		{ return _CARET_CARET	; }
+<SPARQL>","		{ return _COMMA		; }
+<SPARQL>"."		{ return _DOT		; }
+<SPARQL>"="		{ return _EQ		; }
+<SPARQL>">="		{ return _GE		; }
+<SPARQL>">"		{ return _GT		; }
+<SPARQL>"<="		{ return _LE		; }
+<SPARQL>"<"		{ return _LT		; }
+<SPARQL>"-"		{ return _MINUS		; }
+<SPARQL>"!="		{ return _NOT_EQ	; }
+<SPARQL>"+"		{ return _PLUS		; }
+<SPARQL>";"		{ return _SEMI		; }
+<SPARQL>"/"		{ return _SLASH		; }
+<SPARQL>"*"		{ return _STAR		; }
+
+	/* Keyword punctuators */
+
+<SPARQL>"a"				{ return a_L		; }
+<SPARQL>{A}{L}{T}{E}{R}			{ return ALTER_L	; }
+<SPARQL>{A}{S}				{ return AS_L		; }
+<SPARQL>{A}{S}{C}			{ return ASC_L		; }
+<SPARQL>{A}{S}{K}			{ return ASK_L		; }
+<SPARQL>{B}{A}{S}{E}			{ return BASE_L		; }
+<SPARQL>{B}{O}{U}{N}{D}			{ return BOUND_L	; }
+<SPARQL>{B}{Y}				{ return BY_L		; }
+<SPARQL>{C}{L}{A}{S}{S}			{ return CLASS_L	; }
 <SPARQL>{C}{O}{N}{S}{T}{R}{U}{C}{T}	{ return CONSTRUCT_L	; }
+<SPARQL>{C}{R}{E}{A}{T}{E}		{ return CREATE_L	; }
 <SPARQL>{D}{A}{T}{A}{T}{Y}{P}{E}	{ return DATATYPE_L	; }
-<SPARQL>{D}{E}{F}{I}{N}{E}		{ return DEFINE_L; }
-<SPARQL>{D}{E}{S}{C}			{ return DESC_L; }
+<SPARQL>{D}{E}{F}{I}{N}{E}		{ return DEFINE_L	; }
+<SPARQL>{D}{E}{L}{E}{T}{E}		{ return DELETE_L	; }
+<SPARQL>{D}{E}{S}{C}			{ return DESC_L		; }
 <SPARQL>{D}{E}{S}{C}{R}{I}{B}{E}	{ return DESCRIBE_L	; }
 <SPARQL>{D}{I}{S}{T}{I}{N}{C}{T}	{ return DISTINCT_L	; }
-<SPARQL>{F}{A}{L}{S}{E}			{ return false_L; }
-<SPARQL>{F}{I}{L}{T}{E}{R}		{ return FILTER_L; }
-<SPARQL>{F}{R}{O}{M}			{ return FROM_L; }
-<SPARQL>{G}{R}{A}{P}{H}			{ return GRAPH_L; }
-<SPARQL>{I}{R}{I}			{ return IRI_L; }
-<SPARQL>{I}{N}				{ return IN_L; }
+<SPARQL>{D}{R}{O}{P}			{ return DROP_L		; }
+<SPARQL>{E}{X}{C}{L}{U}{S}{I}{V}{E}	{ return EXCLUSIVE_L	; }
+<SPARQL>{F}{A}{L}{S}{E}			{ return false_L	; }
+<SPARQL>{F}{I}{L}{T}{E}{R}		{ return FILTER_L	; }
+<SPARQL>{F}{R}{O}{M}			{ return FROM_L		; }
+<SPARQL>{F}{U}{N}{C}{T}{I}{O}{N}	{ return FUNCTION_L	; }
+<SPARQL>{G}{R}{A}{P}{H}			{ return GRAPH_L	; }
+<SPARQL>{I}{R}{I}			{ return IRI_L		; }
+<SPARQL>{I}{N}				{ return IN_L		; }
+<SPARQL>{I}{N}{S}{E}{R}{T}		{ return INSERT_L	; }
 <SPARQL>{I}{S}{B}{L}{A}{N}{K}		{ return isBLANK_L	; }
-<SPARQL>{I}{S}{I}{R}{I}			{ return isIRI_L; }
+<SPARQL>{I}{S}{I}{R}{I}			{ return isIRI_L	; }
 <SPARQL>{I}{S}{L}{I}{T}{E}{R}{A}{L}	{ return isLITERAL_L	; }
-<SPARQL>{I}{S}{U}{R}{I}			{ return isURI_L; }
-<SPARQL>{L}{A}{N}{G}			{ return LANG_L; }
+<SPARQL>{I}{S}{U}{R}{I}			{ return isURI_L	; }
+<SPARQL>{L}{A}{N}{G}			{ return LANG_L		; }
 <SPARQL>{L}{A}{N}{G}{M}{A}{T}{C}{H}{E}{S}	{ return LANGMATCHES_L	; }
-<SPARQL>{L}{I}{K}{E}			{ return LIKE_L; }
-<SPARQL>{L}{I}{M}{I}{T}			{ return LIMIT_L; }
-<SPARQL>{N}{A}{M}{E}{D}			{ return NAMED_L; }
-<SPARQL>{N}{I}{L}			{ return NIL_L; }
-<SPARQL>{O}{F}{F}{S}{E}{T}		{ return OFFSET_L; }
+<SPARQL>{L}{I}{K}{E}			{ return LIKE_L		; }
+<SPARQL>{L}{I}{M}{I}{T}			{ return LIMIT_L	; }
+<SPARQL>{N}{A}{M}{E}{D}			{ return NAMED_L	; }
+<SPARQL>{N}{I}{L}			{ return NIL_L		; }
+<SPARQL>{N}{O}{T}			{ return NOT_L		; }
+<SPARQL>{N}{U}{L}{L}			{ return NULL_L		; }
+<SPARQL>{O}{B}{J}{E}{C}{T}		{ return OBJECT_L	; }
+<SPARQL>{O}{F}				{ return OF_L		; }
+<SPARQL>{O}{F}{F}{S}{E}{T}		{ return OFFSET_L	; }
 <SPARQL>{O}{P}{T}{I}{O}{N}{A}{L}	{ return OPTIONAL_L	; }
-<SPARQL>{O}{R}{D}{E}{R}			{ return ORDER_L; }
-<SPARQL>{P}{R}{E}{F}{I}{X}		{ return PREFIX_L; }
-<SPARQL>{R}{E}{G}{E}{X}			{ return REGEX_L; }
-<SPARQL>{S}{E}{L}{E}{C}{T}		{ return SELECT_L; }
-<SPARQL>{S}{T}{R}			{ return STR_L; }
-<SPARQL>{T}{R}{U}{E}			{ return true_L; }
-<SPARQL>{U}{N}{I}{O}{N}			{ return UNION_L; }
-<SPARQL>{W}{H}{E}{R}{E}			{ return WHERE_L; }
+<SPARQL>{O}{P}{T}{I}{O}{N}		{ return OPTION_L	; }
+<SPARQL>{O}{R}{D}{E}{R}			{ return ORDER_L	; }
+<SPARQL>{P}{R}{E}{D}{I}{C}{A}{T}{E}	{ return PREDICATE_L	; }
+<SPARQL>{P}{R}{E}{F}{I}{X}		{ return PREFIX_L	; }
+<SPARQL>{Q}{U}{A}{D}			{ return QUAD_L		; }
+<SPARQL>{R}{E}{G}{E}{X}			{ return REGEX_L	; }
+<SPARQL>{R}{E}{T}{U}{R}{N}{S}		{ return RETURNS_L	; }
+<SPARQL>{S}{E}{L}{E}{C}{T}		{ return SELECT_L	; }
+<SPARQL>{S}{U}{B}{C}{L}{A}{S}{S}	{ return SUBCLASS_L	; }
+<SPARQL>{S}{U}{B}{J}{E}{C}{T}		{ return SUBJECT_L	; }
+<SPARQL>{S}{T}{R}			{ return STR_L		; }
+<SPARQL>{S}{T}{O}{R}{A}{G}{E}		{ return STORAGE_L	; }
+<SPARQL>{T}{R}{U}{E}			{ return true_L		; }
+<SPARQL>{U}{N}{I}{O}{N}			{ return UNION_L	; }
+<SPARQL>{U}{S}{I}{N}{G}			{ return USING_L	; }
+<SPARQL>{W}{H}{E}{R}{E}			{ BEGIN SPARQL_AFTER_WHERE; return WHERE_L	; }
 
-<SPARQL>{S}{O}{U}{R}{C}{E}		{ return GRAPH_L; }
+	/* Keyword punctuators of the SPARQL described in first drafts of W3C spec */
+
+<SPARQL>{S}{O}{U}{R}{C}{E}		{ return GRAPH_L	; }
 <SPARQL>{A}{N}{D}			{ return _AMP_AMP; }
 <SPARQL>{O}{R}				{ return _BAR_BAR; }
 
+	/* Grouping non-keyword punctuators */
 
 <SPARQL>"("				TOKPAR_OPEN (_LPAR,')', GET_CURRENT_BEGIN)
 <SPARQL>")"				TOKPAR_CLOSE (_RPAR,')')
@@ -438,7 +479,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>"["				TOKPAR_OPEN (_LSQBRA,']', GET_CURRENT_BEGIN)
 <SPARQL>"]"				TOKPAR_CLOSE (_RSQBRA,']')
 
-<SPARQL>"<"([^<>''|^`\001-\037])*">"	{
+	/* Name lexems */
+
+<SPARQL>"<"([^<>''{}|^`\001-\040])*">"	{
     sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 2);
     return Q_IRI_REF;
   }
@@ -452,7 +495,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
     return QUEST_VARNAME;
   }
 
-<SPARQL>"$"{SPAR_VARNAME}	{
+<SPARQL>[$]{SPAR_VARNAME}	{
     sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 1);
     return DOLLAR_VARNAME;
   }
@@ -462,7 +505,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
     return QUEST_COLON_PARAMNAME;
   }
 
-<SPARQL>"$:"{SPAR_PARAMNAME}	{
+<SPARQL>[$]":"{SPAR_PARAMNAME}	{
     sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 1);
     return DOLLAR_COLON_PARAMNAME;
   }
@@ -474,7 +517,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
     return QUEST_COLON_PARAMNUM;
   }
 
-<SPARQL>"$?"{SPAR_PARAMNAME}	{
+<SPARQL>[$]"?"{SPAR_PARAMNAME}	{
     char buf[20]; sprintf (buf, ":%ld", sparp->sparp_sparqre->sparqre_param_ctr[0]);
     sparp->sparp_sparqre->sparqre_param_ctr[0] += 1;
     sparyylval.box = t_box_dv_uname_string (buf);
@@ -485,6 +528,17 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
     sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 1);
     return LANGTAG;
   }
+
+<SPARQL>{SPAR_PLAIN_SQLNAME}		{ sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_PLAIN_ID; }
+<SPARQL>{SPAR_SQLNAME}"."{SPAR_SQLNAME}("."{SPAR_SQLNAME})?("."{SPAR_SQLNAME})? { sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_SQL_DOTTEDNAME; }
+
+	/* Numeric lexems */
+
+<SPARQL>{INTEGER_LITERAL}			{ return sparscn_NUMBER_int (yylval, sparp); }
+<SPARQL>{DECIMAL_LITERAL}			{ return sparscn_NUMBER_decimal (yylval, sparp); }
+<SPARQL>{DOUBLE_LITERAL}			{ return sparscn_NUMBER_double (yylval, sparp); }
+
+	/* String lexems */
 
 <SPARQL>([""][^""\\\n]*[""])|([''][^''\\\n]*['']) {
     sparyylval.box = t_box_dv_short_nchars (sparyytext+1, sparyyleng - 2);
@@ -520,14 +574,63 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL_SQ><<EOF>>		{ sparyyerror ("Unterminated short single-quoted string"); }
 <SPARQL_DQ><<EOF>>		{ sparyyerror ("Unterminated short double-quoted string"); }
 
-<SPARQL>{INTEGER_LITERAL}			{ return sparscn_NUMBER_int (yylval, sparp); }
-<SPARQL>{DECIMAL_LITERAL}			{ return sparscn_NUMBER_decimal (yylval, sparp); }
-<SPARQL>{DOUBLE_LITERAL}			{ return sparscn_NUMBER_double (yylval, sparp); }
+	/* SQL fragments */
 
-<SPARQL>("#"(.*))?{S_NL}		{ sparp->sparp_lexlineno++; }
-<SPARQL>"#"(.*)				{ }
-<SPARQL>[ \t]+				{ }
-<SPARQL>[A-Za-z]+	{ sparyyerror ("Invalid keyword in SPARQL expression"); }
+<SPARQL_AFTER_WHERE>"{" { BEGIN SPARQL; TOKPAR_OPEN (_LBRA, '}', GET_CURRENT_BEGIN) }
+<SPARQL_AFTER_WHERE>"(" { BEGIN SPARQL; TOKPAR_OPEN (_LPAR, ')', SPARQL_SQL_FRAGMENT) }
+<SPARQL_AFTER_WHERE>['']['']['']	{ SET_INNER_BEGIN(SPARQL_SSSQ); BEGIN_INNER; }
+<SPARQL_AFTER_WHERE>[""][""][""]	{ SET_INNER_BEGIN(SPARQL_DDDQ); BEGIN_INNER; }
+<SPARQL_AFTER_WHERE>['']		{ SET_INNER_BEGIN(SPARQL_SQ); BEGIN_INNER; }
+<SPARQL_AFTER_WHERE>[""]		{ SET_INNER_BEGIN(SPARQL_DQ); BEGIN_INNER; }
+<SPARQL_AFTER_WHERE><<EOF>>	{ sparyyerror ("Unexpected end of SPARQL expression after WHERE keyword"); }
+
+<SPARQL_SQL_FRAGMENT>[^-''""/(){}]+ { yymore(); }
+
+<SPARQL_SQL_FRAGMENT>"{"	{ TOKPAR_FAKE_OPEN('}', SPARQL_SQL_FRAGMENT); yymore(); }
+<SPARQL_SQL_FRAGMENT>"}"	{ TOKPAR_FAKE_CLOSE('}'); yymore(); }
+<SPARQL_SQL_FRAGMENT>"("	{ TOKPAR_FAKE_OPEN(')', SPARQL_SQL_FRAGMENT); yymore(); }
+<SPARQL_SQL_FRAGMENT>")"	{
+    TOKPAR_FAKE_CLOSE(')');
+    if (SPARQL == GET_CURRENT_BEGIN)
+      {
+        sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng-1);
+        return SPARQL_CONDITION_AFTER_WHERE_LPAR;
+      }
+    else
+      yymore();
+  }
+
+<SPARQL_SQL_FRAGMENT>("--".*)?{S_NL}	{ sparp->sparp_lexlineno++; yymore(); }
+<SPARQL_SQL_FRAGMENT>"--".*	 { sparyyerror ("Unterminated comment in SQL fragment after WHERE keyword"); }
+<SPARQL_SQL_FRAGMENT>"-"		{ yymore(); }
+<SPARQL_SQL_FRAGMENT>['']	{ BEGIN SPARQL_SQL_SQSTRING; yymore(); }
+<SPARQL_SQL_FRAGMENT>[""]([^""\r\n]+)[""]	{ yymore(); }
+<SPARQL_SQL_FRAGMENT>[""][^""\r\n]* { sparyyerror ("Unterminated double-quoted identifier in SQL fragment after WHERE keyword"); }
+
+<SPARQL_SQL_SQSTRING>['']	{ BEGIN SPARQL_SQL_FRAGMENT; yymore(); }
+<SPARQL_SQL_SQSTRING>{S_NL}     { sparp->sparp_lexlineno++; yymore(); }
+<SPARQL_SQL_SQSTRING>\\{S_NL}[^''\\\r\n]*  { sparp->sparp_lexlineno++; yymore(); }
+<SPARQL_SQL_SQSTRING>\\.[^''\\\r\n]*	{ yymore(); }
+<SPARQL_SQL_SQSTRING>''[^''\\\r\n]*  { yymore(); }
+<SPARQL_SQL_SQSTRING>[^''\\\r\n]+ { yymore(); }
+<SPARQL_SQL_SQSTRING><<EOF>>	{ sparyyerror ("Unterminated single-quoted string in SQL fragment after WHERE keyword"); }
+
+	/* Whitespace and comments */
+
+<SPARQL,SPARQL_AFTER_WHERE>("#"(.*))?{S_NL}		{ sparp->sparp_lexlineno++; }
+<SPARQL,SPARQL_AFTER_WHERE>"#"(.*)				{ }
+<SPARQL,SPARQL_AFTER_WHERE>[ \t]+				{ }
+
+<SPARQL_SQL_FRAGMENT>"/\*"	{ BEGIN (SPARQL_SQL_COMMENT); yymore(); }
+<SPARQL_SQL_FRAGMENT><<EOF>>	{ sparyyerror ("Unterminated SQL fragment after WHERE keyword"); }
+
+<SPARQL_SQL_COMMENT>"/\*"  { sparyyerror ("Nested C style comments not supported"); }
+<SPARQL_SQL_COMMENT>"\*/"	{ BEGIN (SPARQL_SQL_FRAGMENT); yymore(); }
+<SPARQL_SQL_COMMENT>.|((([^/\r\n*])|([*][^/\r\n*]))+)	{ yymore(); }
+
+	/* Traps; these rules should be latest rules in the file. */
+
+<SPARQL_AFTER_WHERE>.	{ sparyyerror ("Only '{', '(' and a string literal are allowed after WHERE keyword in SPARQL expression"); }
 <SPARQL>.		{ sparyyerror ("Invalid character in SPARQL expression"); }
 
 %%

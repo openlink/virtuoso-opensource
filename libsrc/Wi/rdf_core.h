@@ -24,6 +24,7 @@
 #define __RDF_CORE_H
 #include "langfunc.h"
 #include "sqlnode.h"
+#include "rdf_mapping_jso.h"
 #include "xmlparser.h" /* for xml_read_func_t and xml_read_abend_func_t */
 
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */

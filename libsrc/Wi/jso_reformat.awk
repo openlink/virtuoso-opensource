@@ -92,12 +92,15 @@ function top_h ()
 
 function write_array_h (c_name, type_ns, type_local, el_c_name, el_ns, el_local, mincount, maxcount, cmt)
 {
+  if (group_c_type == "")
+    {
   top_h()
   print ""
   if (cmt != "")
     print "/*! " cmt " */"
   print "#define JSO_IRI_OF_" c_name " " c_esc(type_ns type_local)
   print "typedef " el_c_name " *" c_name "_t;"
+    }
 }
 
 function write_const_h (ns, c_name, expn, cmt)
@@ -107,6 +110,19 @@ function write_const_h (ns, c_name, expn, cmt)
     cmt = "\t/*! " cmt " */"
   print "#define " c_name "\t" expn cmt
 }
+
+function write_group_begin_h (cmt)
+{
+  if (cmt != "")
+    cmt = "\t/*! " cmt " */"
+  print "  " group_c_type "_t " group_c_name ";" cmt
+}
+
+function write_group_end_h ()
+{
+
+}
+
 
 function write_struct_begin_h (cmt)
 {
@@ -121,6 +137,7 @@ function write_struct_begin_h (cmt)
 
 function write_scalar_h (c_name, type, status, cmt)
 {
+  if (group_c_type == "")
   print "  " c_type_name(type) "\t" c_name ";\t/*!< " cmt " */"
 }
 
@@ -149,6 +166,8 @@ function top_c ()
 
 function write_array_c (c_name, type_ns, type_local, el_c_name, el_ns, el_local, mincount, maxcount, cmt)
 {
+  if (group_c_type == "")
+    {
   top_c()
   print ""
   if (cmt != "")
@@ -161,12 +180,23 @@ function write_array_c (c_name, type_ns, type_local, el_c_name, el_ns, el_local,
   print "    { 0, -1, NULL, NULL },"
   print "    { " c_esc(el_ns el_local), ", " mincount ", " maxcount "} } };"
   post_init = post_init "\n  jso_define_class(&jso__" c_name ");"
+    }
 }
 
 function write_const_c (ns, c_name, expn, cmt)
 {
   top_c()
   post_init = post_init "\n  jso_define_const(" c_esc(ns c_name) ", " c_name ");"
+}
+
+function write_group_begin_c (cmt)
+{
+
+}
+
+function write_group_end_c ()
+{
+
 }
 
 function write_struct_begin_c (cmt, header_name)
@@ -178,7 +208,10 @@ function write_struct_begin_c (cmt, header_name)
 
 function write_scalar_c (c_name, type, status, cmt)
 {
+  if (group_c_type == "")
   print "  { NULL\t," c_esc(c_name) "\t, " type "\t, JSO_" status "\t, JSO_FIELD_OFFSET(" struct_c_name "_t," c_name ")\t, NULL },"
+  else
+    print "  { NULL\t," c_esc(group_c_name "-" c_name) "\t, " type "\t, JSO_" status "\t, JSO_FIELD_OFFSET(" struct_c_name "_t," group_c_name "." c_name ")\t, NULL },"
 }
 
 function write_struct_end_c ()
@@ -202,11 +235,14 @@ function write_struct_end_c ()
 
 function write_array_ttl (c_name, type_ns, type_local, el_c_name, el_ns, el_local, mincount, maxcount, cmt)
 {
+  if (group_c_type == "")
+    {
   print ttl_iri(type_ns type_local)
   print "\trdf:type rdfs:Class ;"
   if (cmt != "")
     print "\trdfs:comment " ttl_esc(cmt) " ;"
   print "\t."
+    }
 }
 
 function write_const_ttl (ns, c_name, expn, cmt)
@@ -216,6 +252,14 @@ function write_const_ttl (ns, c_name, expn, cmt)
   if (cmt != "")
     print "\trdfs:comment " ttl_esc(expn " -- " cmt) " ;"
   print "\t."
+}
+
+function write_group_begin_ttl (cmt)
+{
+}
+
+function write_group_end_ttl ()
+{
 }
 
 function write_struct_begin_ttl (cmt)
@@ -229,7 +273,7 @@ function write_struct_begin_ttl (cmt)
 
 function write_scalar_ttl (c_name, type, status, cmt)
 {
-  print ttl_iri(struct_type_ns c_name)
+  print ttl_iri(struct_type_ns group_prop_prefix c_name)
   print "\trdf:type rdf:Property ;"
   if (cmt != "")
     print "\trdfs:comment " ttl_esc(cmt) " ;"
@@ -245,6 +289,13 @@ function write_struct_end_ttl ()
   print ""
 }
 
+function write_group_begin_ttlsample (cmt)
+{
+}
+
+function write_group_end_ttlsample ()
+{
+}
 
 function write_struct_begin_ttlsample (cmt)
 {
@@ -330,6 +381,27 @@ function write_struct_begin (c_name, type_ns, type_local, cmt)
     write_struct_begin_ttlsample(cmt)
 }
 
+function write_group_begin (c_name, type_ns, c_type, cmt)
+{
+  if (group_c_name != "")
+    report_error("JSO_GROUP_BEGIN without JSO_GROUP_END of previous group")
+  if (struct_c_name == "")
+    report_error("JSO_GROUP_BEGIN outside structure")
+  if (nsprefixes[type_ns])
+    type_ns = nsprefixes[type_ns];
+  group_c_name = c_name
+  group_type_ns = type_ns
+  group_c_type = c_type
+  group_prop_prefix = c_name "-"
+  if (output_mode == "h")
+    write_group_begin_h(cmt)
+  if (output_mode == "c")
+    write_group_begin_c(cmt)
+  if (output_mode == "ttl")
+    write_group_begin_ttl(cmt)
+  if (output_mode == "ttl-sample")
+    write_group_begin_ttlsample(cmt)
+}
 
 function write_scalar (c_name, type, status, cmt)
 {
@@ -350,6 +422,8 @@ function write_struct_end ()
 {
   if (struct_c_name == "")
     report_error("JSO_STRUCT_END without matching JSO_STRUCT_BEGIN")
+  if (group_c_name != "")
+    report_error("JSO_STRUCT_END without JSO_GROUP_END of previous group")
   if (output_mode == "h")
     write_struct_end_h()
   if (output_mode == "c")
@@ -363,6 +437,25 @@ function write_struct_end ()
   struct_type_local = ""
 }
 
+function write_group_end ()
+{
+  if (group_c_name == "")
+    report_error("JSO_GROUP_END without matching JSO_GROUP_BEGIN")
+  if (output_mode == "h")
+    write_group_end_h()
+  if (output_mode == "c")
+    write_group_end_c()
+  if (output_mode == "ttl")
+    write_group_end_ttl()
+  if (output_mode == "ttl-sample")
+    write_group_end_ttlsample()
+  group_c_name = ""
+  group_c_type = ""
+  group_type_ns = ""
+  group_type_local = ""
+  group_prop_prefix = ""
+}
+
 function write_plain_comment (cmt)
 {
   if ((output_mode == "h") || (output_mode == "c"))
@@ -374,12 +467,16 @@ function write_plain_comment (cmt)
 
 BEGIN   {
   c_type_names["JSO_ANY"] = "ccaddr_t"
+  c_type_names["JSO_ANY_array"] = "ccaddr_t *"
+  c_type_names["JSO_ANY_URI"] = "ccaddr_t"
   c_type_names["JSO_BOOLEAN"] = "ptrlong"
   c_type_names["JSO_BITMASK"] = "ptrlong"
   c_type_names["JSO_DOUBLE"] = "double *"
   c_type_names["JSO_INTEGER"] = "ptrlong"
   c_type_names["JSO_STRING"] = "ccaddr_t"
   ttl_type_iris["JSO_ANY"] = "xsd:any"
+  ttl_type_iris["JSO_ANY_array"] = "xsd:any"
+  ttl_type_iris["JSO_ANY_URI"] = "xsd:anyURI"
   ttl_type_iris["JSO_BOOLEAN"] = "xsd:boolean"
   ttl_type_iris["JSO_BITMASK"] = "xsd:unsignedInteger"
   ttl_type_iris["JSO_DOUBLE"] = "xsd:double"
@@ -387,6 +484,8 @@ BEGIN   {
   ttl_type_iris["JSO_STRING"] = "xsd:string"
   nsprefixes["virtrdf"] = "http://www.openlinksw.com/schemas/virtrdf#"
   struct_c_name = ""
+  group_c_name = ""
+  group_prop_prefix = ""
   error_reported = 0
   includes_printed = 0
   post_init = ""
@@ -420,13 +519,13 @@ END 	{
   }
 
 #          1                      2---------------------- 3             4------------- 5             6-------------------- 7             8---------------------- 9             10------------ 11            12------------------- 13            14----- 15            16----------- 17                            18------- 
-match($0,"^(JSO_ARRAY[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]+)([0-9]+)([[:space:]]+)(([0-9]+)|MAX)([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
+match($0,"^(JSO_ARRAY[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]+)([0-9]+)([[:blank:]]+)(([0-9]+)|MAX)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_array(line[2], line[4], line[6], line[8], line[10], line[12], line[14], line[16], line[18])
   next
   }
  
 #          1                      2---------------------- 3             4------------- 5             6-------------------- 7             8---------------------- 9             10------------ 11            12------------------- 13            14----- 15            16----------- 17
-match($0,"^(JSO_ARRAY[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]+)([0-9]+)([[:space:]]+)(([0-9]+)|MAX)([[:space:]]*)$",line)	{
+match($0,"^(JSO_ARRAY[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]+)([0-9]+)([[:blank:]]+)(([0-9]+)|MAX)([[:blank:]]*)$",line)	{
   write_array(line[2], line[4], line[6], line[8], line[10], line[12], line[14], line[16], "")
   next
   }
@@ -436,14 +535,14 @@ match($0,"^JSO_ARRAY.*$",line)	{
   next
   }
 
-#          1                      2------------- 3             4---------------------- 5             6-------------------- 7                             8-------- 
-match($0,"^(JSO_CONST[[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)((([^\n-])|(-[^\n]))+)([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
+#          1                      2------------- 3             4---------------------- 5             6-------------- 7                             8-------- 
+match($0,"^(JSO_CONST[[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([-]?[^ \t\n-]+)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_const(line[2], line[4], line[6], line[8])
   next
   }
 
-#          1                      2------------- 3             4---------------------- 5             6-------------------- 7
-match($0,"^(JSO_CONST[[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)((([^\n-])|(-[^\n]))+)([[:space:]]*)$",line)	{
+#          1                      2------------- 3             4---------------------- 5             6-------------- 7
+match($0,"^(JSO_CONST[[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([-]?[^ \t\n-]+)([[:blank:]]*)$",line)	{
   write_const(line[2], line[4], line[6], "")
   next
   }
@@ -453,14 +552,41 @@ match($0,"^JSO_CONST.*$",line)	{
   next
   }
 
+#          1                             2---------------------- 3             4------------- 5             6--------------------- 7                             8-------- 
+match($0,"^(JSO_GROUP_BEGIN[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9_]*)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
+  write_group_begin(line[2], line[4], line[6], line[8])
+  next
+  }
+
+#          1                             2---------------------- 3             4------------- 5             6--------------------- 7
+match($0,"^(JSO_GROUP_BEGIN[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9_]*)([[:blank:]]*)$",line)	{
+  write_group_begin(line[2], line[4], line[6], "")
+  next
+  }
+
+match($0,"^JSO_GROUP_BEGIN.*$",line)	{
+  report_error("Invalid arguments of JSO_GROUP_BEGIN")
+  next
+  }
+
+match($0,"^JSO_GROUP_END([[:blank:]]*)$",line)	{
+  write_group_end()
+  next
+  }
+
+match($0,"^JSO_GROUP_END.*$",line)	{
+  report_error("JSO_GROUP_END can not contain any arguments or comments")
+  next
+  }
+
 #          1                          2---------------------- 3             4------------- 7                             
-match($0,"^(JSO_NAMESPACE[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)(([[:space:]])(+--!<[[:space:]]*[^\r\n]*)?)$",line)	{
+match($0,"^(JSO_NAMESPACE[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)(([[:blank:]])(+--!<[[:blank:]]*[^\r\n]*)?)$",line)	{
   nsprefixes[line[2]] = line[6]
   next
   }
 
 #          1                          2---------------------- 3             4------------- 7                             
-match($0,"^(JSO_NAMESPACE[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)(([[:space:]])(+--!<[[:space:]]*[^\r\n]*)?)$",line)	{
+match($0,"^(JSO_NAMESPACE[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)(([[:blank:]])(+--!<[[:blank:]]*[^\r\n]*)?)$",line)	{
   nsprefixes[line[2]] = line[6]
   next
   }
@@ -471,13 +597,13 @@ match($0,"^JSO_NAMESPACE.*$",line)	{
   }
 
 #          1                             2---------------------- 3             4------------- 5             6-------------------- 7                             8-------- 
-match($0,"^(JSO_STRUCT_BEGIN[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
+match($0,"^(JSO_STRUCT_BEGIN[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_struct_begin(line[2], line[4], line[6], line[8])
   next
   }
 
 #          1                             2---------------------- 3             4------------- 5             6-------------------- 7
-match($0,"^(JSO_STRUCT_BEGIN[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]*)$",line)	{
+match($0,"^(JSO_STRUCT_BEGIN[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]*)$",line)	{
   write_struct_begin(line[2], line[4], line[6], "")
   next
   }
@@ -488,13 +614,13 @@ match($0,"^JSO_STRUCT_BEGIN.*$",line)	{
   }
 
 #          1                       2---------------------- 3             4---------------------- 5             6------- 7                             8-------- 
-match($0,"^(JSO_SCALAR[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([A-Z_]+)([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
+match($0,"^(JSO_SCALAR[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_scalar(line[2], "JSO_" line[4], line[6], line[8])
   next
   }
 
 #          1                       2---------------------- 3             4---------------------- 5             6------- 7
-match($0,"^(JSO_SCALAR[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([A-Z_]+)([[:space:]]*)$",line)	{
+match($0,"^(JSO_SCALAR[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+)([[:blank:]]*)$",line)	{
   write_scalar(line[2], "JSO_" line[4], line[6], "")
   next
   }
@@ -505,13 +631,13 @@ match($0,"^JSO_SCALAR.*$",line)	{
   }
 
 #          1                        2---------------------- 3             4---------------------- 5             6------- 7                             8-------- 
-match($0,"^(JSO_POINTER[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([A-Z_]+)([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
+match($0,"^(JSO_POINTER[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_scalar(line[2], "JSO_IRI_OF_" line[4], line[6], line[8])
   next
   }
 
 #          1                        2---------------------- 3             4---------------------- 5             6------- 7
-match($0,"^(JSO_POINTER[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([A-Z_]+)([[:space:]]*)$",line)	{
+match($0,"^(JSO_POINTER[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+)([[:blank:]]*)$",line)	{
   write_scalar(line[2], "JSO_IRI_OF_" line[4], line[6], "")
   next
   }
@@ -521,7 +647,7 @@ match($0,"^JSO_POINTER.*$",line)	{
   next
   }
 
-match($0,"^JSO_STRUCT_END([[:space:]]*)$",line)	{
+match($0,"^JSO_STRUCT_END([[:blank:]]*)$",line)	{
   write_struct_end()
   next
   }
@@ -531,18 +657,18 @@ match($0,"^JSO_STRUCT_END.*$",line)	{
   next
   }
 
-match($0,"^([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
+match($0,"^([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   report_error("Special comments like '--!<...' can not appear on separate lines. Use plain '--...' comment instead")
   next
   }
 
 #          1                           2
-match($0,"^([[:space:]]*--[[:space:]]*)([^\r\n]*)$",line)	{
+match($0,"^([[:blank:]]*--[[:blank:]]*)([^\r\n]*)$",line)	{
   write_plain_comment(line[2])
   next
   }
 
-match($0,"^([[:space:]]*)$",line)	{
+match($0,"^([[:blank:]]*)$",line)	{
   next
   }
 

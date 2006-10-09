@@ -959,6 +959,8 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, const char *txt)
 void
 rdf_core_init (void)
 {
+  jso_init ();
+  rdf_mapping_jso_init ();
   bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);
   bif_set_uses_index (bif_rdf_load_rdfxml);
   bif_define ("rdf_load_turtle", bif_rdf_load_turtle);

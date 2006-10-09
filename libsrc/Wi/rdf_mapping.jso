@@ -1,14 +1,32 @@
-JSO_CONST virtrdf SPART_VARR_EXPORTED	0x001
-JSO_CONST virtrdf SPART_VARR_IS_REF	0x002
-JSO_CONST virtrdf SPART_VARR_IS_IRI	0x004
-JSO_CONST virtrdf SPART_VARR_IS_BLANK	0x008
-JSO_CONST virtrdf SPART_VARR_IRI_CALC	0x010
-JSO_CONST virtrdf SPART_VARR_IS_LIT	0x020
-JSO_CONST virtrdf SPART_VARR_TYPED	0x040
-JSO_CONST virtrdf SPART_VARR_FIXED	0x080
-JSO_CONST virtrdf SPART_VARR_NOT_NULL	0x100
-JSO_CONST virtrdf SPART_VARR_GLOBAL	0x200
-JSO_CONST virtrdf SPART_VARR_CONFLICT	0x400
+-- Flags that describe restrictions on possible values of the variable or the use of the var
+JSO_CONST virtrdf SPART_VARR_EXPORTED		0x001	--!< The variable is exported to the final result-set
+JSO_CONST virtrdf SPART_VARR_IS_REF		0x002	--!< The value is a node reference, IRI or blank
+JSO_CONST virtrdf SPART_VARR_IS_IRI		0x004	--!< The value is an IRI node reference
+JSO_CONST virtrdf SPART_VARR_IS_BLANK		0x008	--!< The value is a blank node reference
+JSO_CONST virtrdf SPART_VARR_IRI_CALC		0x010	--!< The variable an IRI calculated by other data, e_iri_classes of equiv class will contain known formats of possible values of the variable
+JSO_CONST virtrdf SPART_VARR_IS_LIT		0x020	--!< The value is a literal
+JSO_CONST virtrdf SPART_VARR_TYPED		0x040	--!< The value is a literal of a known type and the type is saved as e_datatype of equiv class
+JSO_CONST virtrdf SPART_VARR_FIXED		0x080	--!< The value is known and e_fixedvalue contains either SQL representation of the literal or IRI string of the IRI node reference
+JSO_CONST virtrdf SPART_VARR_NOT_NULL		0x100	--!< The variable is always bound, can't be NULL
+JSO_CONST virtrdf SPART_VARR_ALWAYS_NULL	0x200	--!< The variable is never bound, can't have value other than NULL
+JSO_CONST virtrdf SPART_VARR_GLOBAL		0x400	--!< The variable is a global parameter
+JSO_CONST virtrdf SPART_VARR_CONFLICT		0x800	--!< The variable should match conflicting requirements or should appear in the result set of an empty union, so it is never bound
+
+-- Flags of actions to be done in case of match of triple pattern to conditions of the quad map
+JSO_CONST virtrdf SPART_QM_EMPTY		0x002	--!< The quad map does not contain real mapping but it's a root of tree of submaps and it can set a common 'exclusive'
+JSO_CONST virtrdf SPART_QM_EXCLUSIVE		0x004	--!< The quad map is an almost-exclusive storage for triples whos fields match fixed fields of the map. Red cut in the pattern matching search.
+JSO_CONST virtrdf SPART_QM_OK_FOR_ANY_QUAD	0x008	--!< Nonzero if the quad map may contain any quad so it can be used as a default qm of the storage.
+
+
+JSO_STRUCT_BEGIN rdf_val_range virtrdf ValRange		--!< Description of set of possible values of a variable or a format or an pattern item.
+JSO_SCALAR rvrRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values stored at the field
+JSO_SCALAR rvrDatatype STRING OPTIONAL			--!< Datatype of stored values, if fixed
+JSO_SCALAR rvrLanguage STRING OPTIONAL			--!< Language, if fixed
+JSO_SCALAR rvrFixedValue ANY OPTIONAL			--!< Value of stored values, if fixed
+JSO_SCALAR rvrIriClasses ANY_array PRIVATE		--!< Possible types of the IRI, if the IRI is calculateable
+JSO_SCALAR rvrIriClassCount INTEGER PRIVATE		--!< Number of used items of rvrIRIClasses
+-- Don't forget to add NULLS to SPART_RVR_LIST_OF_NULLS when adding fields here
+JSO_STRUCT_END
 
 JSO_STRUCT_BEGIN qm_format virtrdf QuadMapFormat	--!< Description of single field where RDF data may come from.
 JSO_SCALAR qmfName STRING REQUIRED			--!< Name used for error messages and debugging
@@ -28,6 +46,7 @@ JSO_SCALAR qmfSqlvalOfShortTmpl STRING REQUIRED		--!< ... SQL value from short
 JSO_SCALAR qmfDatatypeOfShortTmpl STRING REQUIRED	--!< ... datatype IRI STRING from short
 JSO_SCALAR qmfLanguageOfShortTmpl STRING REQUIRED	--!< ... language ID STRING from short
 JSO_SCALAR qmfBoolOfShortTmpl STRING REQUIRED		--!< ... boolean value from short
+JSO_SCALAR qmfIidOfShortTmpl STRING REQUIRED		--!< ... URI_ID from short
 JSO_SCALAR qmfUriOfShortTmpl STRING REQUIRED		--!< ... URI STRING from short
 JSO_SCALAR qmfStrsqlvalOfShortTmpl STRING REQUIRED	--!< ... SQL representation of the STRING value of short
 -- Templates of expressions that make short values from other representations
@@ -36,16 +55,23 @@ JSO_SCALAR qmfShortOfSqlvalTmpl STRING REQUIRED		--!< ... makes short by sqlvalu
 JSO_SCALAR qmfShortOfLongTmpl STRING REQUIRED		--!< ... makes short by long
 JSO_SCALAR qmfShortOfUriTmpl STRING REQUIRED		--!< ... makes short by uri
 -- Misc
+JSO_SCALAR qmfIsBijection BOOLEAN REQUIRED		--!< Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+JSO_SCALAR qmfIsStable BOOLEAN REQUIRED			--!< Nonzero if sql values are in order IFF of short values are in order
 JSO_SCALAR qmfCmpFuncName STRING REQUIRED		--!< Name of comparison function that acts like strcmp but args are of this type
 JSO_SCALAR qmfTypeminTmpl STRING REQUIRED		--!< Template of expn that returns the smallest value of the type of value of arg
 JSO_SCALAR qmfTypemaxTmpl STRING REQUIRED		--!< Template of expn that returns the biggest possible value of the type of value of arg
 -- Metadata about values that can be stored in this field
+JSO_SCALAR qmfColumnCount INTEGER OPTIONAL		--!< Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
 JSO_SCALAR qmfOkForAnySqlvalue BOOLEAN REQUIRED		--!< Nonzero if the field format can store any possible SQL value (even if the field itself can not)
-JSO_SCALAR qmfRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values stored at the field
-JSO_SCALAR qmfDatatype STRING OPTIONAL			--!< Datatype of stored values, if fixed
-JSO_SCALAR qmfLanguage STRING OPTIONAL			--!< Language, if fixed
-JSO_SCALAR qmfFixedValue ANY OPTIONAL			--!< Value of stored values, if fixed
 JSO_SCALAR qmfUriIdOffset INTEGER OPTIONAL		--!< The value that should be added to locally stored ref id in order to get portable ref id
+JSO_SCALAR qmfCustomString1 STRING OPTIONAL		--!< The value that can be used as a value of ^{custom-string-1}^ in templates
+JSO_POINTER qmfSuperFormats qm_format_array OPTIONAL	--!< Array of formats that can store any value that current format can store
+JSO_GROUP_BEGIN qmfValRange virtrdf rdf_val_range	--!< Natural restrictions on values stored in the source column of format
+JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
+JSO_SCALAR rvrDatatype STRING OPTIONAL
+JSO_SCALAR rvrLanguage STRING OPTIONAL
+JSO_SCALAR rvrFixedValue ANY OPTIONAL
+JSO_GROUP_END
 JSO_STRUCT_END
 
 JSO_STRUCT_BEGIN qm_column virtrdf QuadMapColumn	--!< Description of single source RDBMS column.
@@ -57,23 +83,56 @@ JSO_STRUCT_BEGIN qm_value virtrdf QuadMapValue		--!< Description of one of four 
 JSO_SCALAR qmvTableName STRING REQUIRED
 JSO_POINTER qmvColumns qm_column_array REQUIRED
 JSO_POINTER qmvFormat qm_format REQUIRED
-JSO_SCALAR qmvIRIContains STRING OPTIONAL
+JSO_SCALAR qmvColumnsFormKey BOOLEAN REQUIRED
 JSO_SCALAR qmvColumnsToIRI STRING OPTIONAL
+JSO_SCALAR qmvIriClass ANY_URI OPTIONAL			--!< Known IRI class, if the IRI is calculateable
+JSO_GROUP_BEGIN qmvRange virtrdf rdf_val_range		--!< Natural restrictions on values stored in the source column of format
+JSO_SCALAR rvrRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values stored at the field
+JSO_SCALAR rvrDatatype STRING OPTIONAL			--!< Datatype of stored values, if fixed
+JSO_SCALAR rvrLanguage STRING OPTIONAL			--!< Language, if fixed
+JSO_SCALAR rvrFixedValue ANY OPTIONAL			--!< Value of stored values, if fixed
+JSO_GROUP_END
 JSO_STRUCT_END
 
-JSO_STRUCT_BEGIN quad_map virtrdf QuadMap		--!< Description of single mapping pattern.
-JSO_SCALAR qmGraph STRING OPTIONAL
-JSO_SCALAR qmSubject STRING OPTIONAL
-JSO_SCALAR qmPredicate STRING OPTIONAL
-JSO_SCALAR qmObject ANY OPTIONAL
-JSO_POINTER qmGraphMap qm_value OPTIONAL
-JSO_POINTER qmSubjectMap qm_value OPTIONAL
-JSO_POINTER qmPredicateMap qm_value OPTIONAL
-JSO_POINTER qmObjectMap qm_value OPTIONAL
+JSO_STRUCT_BEGIN quad_map virtrdf QuadMap		--!< Description of single mapping pattern, including its subpatterns.
+JSO_GROUP_BEGIN qmGraphRange virtrdf rdf_val_range	--!< Restrictions on graph
+JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
+JSO_SCALAR rvrDatatype STRING OPTIONAL
+JSO_SCALAR rvrLanguage STRING OPTIONAL
+JSO_SCALAR rvrFixedValue ANY OPTIONAL
+JSO_GROUP_END
+JSO_GROUP_BEGIN qmSubjectRange virtrdf rdf_val_range	--!< Restrictions on subject
+JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
+JSO_SCALAR rvrDatatype STRING OPTIONAL
+JSO_SCALAR rvrLanguage STRING OPTIONAL
+JSO_SCALAR rvrFixedValue ANY OPTIONAL
+JSO_GROUP_END
+JSO_GROUP_BEGIN qmPredicateRange virtrdf rdf_val_range	--!< Restrictions on predicate
+JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
+JSO_SCALAR rvrDatatype STRING OPTIONAL
+JSO_SCALAR rvrLanguage STRING OPTIONAL
+JSO_SCALAR rvrFixedValue ANY OPTIONAL
+JSO_GROUP_END
+JSO_GROUP_BEGIN qmObjectRange virtrdf rdf_val_range	--!< Restrictions on object
+JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
+JSO_SCALAR rvrDatatype STRING OPTIONAL
+JSO_SCALAR rvrLanguage STRING OPTIONAL
+JSO_SCALAR rvrFixedValue ANY OPTIONAL
+JSO_GROUP_END
+JSO_POINTER qmGraphMap qm_value OPTIONAL		--!< Graph map if triple has a variable in graph position
+JSO_POINTER qmSubjectMap qm_value OPTIONAL		--!< Subject map if triple has a variable in subject position
+JSO_POINTER qmPredicateMap qm_value OPTIONAL		--!< Predicate map if triple has a variable in predicate position
+JSO_POINTER qmObjectMap qm_value OPTIONAL		--!< Object map if triple has a variable in object position
+JSO_SCALAR qmTableName STRING REQUIRED			--!< Table name where mapped rows are from
+JSO_SCALAR qmTableRowFilter STRING OPTIONAL		--!< Filter expression that is true for rows that should be mapped, will appear in WHERE clauses
+JSO_POINTER qmUserSubMaps quad_map_array OPTIONAL	--!< Array of user-defined submaps, should never appear in MJVs or default storage
+JSO_SCALAR qmMatchingFlags BITMASK OPTIONAL		--!< What should be done in case of match of triple pattern to conditions of the quad map.
+JSO_SCALAR qmPriorityOrder INTEGER OPTIONAL		--!< Integer to specify default order in parent's qmUserSubMaps.
 JSO_STRUCT_END
 
 JSO_STRUCT_BEGIN quad_storage virtrdf QuadStorage	--!< All mapping patterns plus tracking info.
-JSO_POINTER qsUserMaps quad_map_array OPTIONAL
 JSO_POINTER qsMjvMaps quad_map_array OPTIONAL
+JSO_POINTER qsUserMaps quad_map_array OPTIONAL
 JSO_POINTER qsDefaultMap quad_map REQUIRED
+JSO_SCALAR qsAlterInProgress ANY OPTIONAL
 JSO_STRUCT_END

@@ -153,6 +153,28 @@ create procedure DB.DBA.RDF_GLOBAL_RESET ()
   sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 0);
   __atomic (0);
 --  checkpoint;
+  DB.DBA.RDF_GLOBAL_RESET ();
+  TTLP (
+    XML_URI_GET(
+      'http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl', '' ),
+    '', 'http://www.openlinksw.com/schemas/virtrdf#' );
+  TTLP ('
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
+@prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#> .
+@prefix atom: <http://atomowl.org/ontologies/atomrdf#> .
+
+virtrdf:DefaultQuadStorage
+  rdf:type virtrdf:QuadStorage ;
+  virtrdf:qsUserMaps virtrdf:DefaultQuadStorage-UserMaps ;
+  virtrdf:qsDefaultMap virtrdf:DefaultQuadMap .
+virtrdf:DefaultQuadStorage-UserMaps
+      rdf:type virtrdf:array-of-QuadMap .
+  ', '', 'http://www.openlinksw.com/schemas/virtrdf#' );
+--  checkpoint;
 }
 ;
 
@@ -1835,53 +1857,9 @@ grant execute on DB.DBA.RDF_RDFXML_TO_DICT to SPARQL_UPDATE
 -----
 -- Export into external serializations
 
-create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
+create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
 {
-  declare tcount, tctr integer;
-  tcount := length (triples);
-  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TTL:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
-  if (0 = tcount)
-    {
-      http ('# Empty TURTLE', ses);
-      return;
-    }
-  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
-    {
-      declare subj,pred,obj any;
       declare res varchar;
-      subj := triples[tctr][0];
-      pred := triples[tctr][1];
-      obj := triples[tctr][2];
-      if (not isiri_id (subj))
-        {
-          if (subj is null)
-            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): subject is NULL');
-          signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): subject is literal');
-        }
-      if (subj >= #i1000000000)
-        http (sprintf ('_:b%d ', iri_id_num (subj)), ses);
-      else
-        {
-          res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = subj));
-          http ('<', ses);
-          http_escape (res, 12, ses, 1, 1);
-	  http ('> ', ses);
-        }
-      if (not isiri_id (pred))
-        {
-          if (pred is null)
-            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): predicate is NULL');
-          signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): predicate is literal');
-        }
-      if (pred >= #i1000000000)
-        signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): blank node as predicate');
-      else
-        {
-          res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = pred));
-          http ('<', ses);
-          http_escape (res, 12, ses, 1, 1);
-          http ('> ', ses);
-        }
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): object is NULL');
       if (isiri_id (obj))
@@ -1929,6 +1907,60 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
           http_escape (cast (DB.DBA.RDF_DATATYPE_OF_TAG (__tag (obj)) as varchar), 12, ses, 1, 1);
           http ('> ', ses);
         }
+}
+;
+
+grant execute on DB.DBA.RDF_LONG_TO_TTL to SPARQL_SELECT
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
+{
+  declare tcount, tctr integer;
+  declare res varchar;
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TTL:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  if (0 = tcount)
+    {
+      http ('# Empty TURTLE', ses);
+      return;
+    }
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      declare subj,pred,obj any;
+      subj := triples[tctr][0];
+      pred := triples[tctr][1];
+      obj := triples[tctr][2];
+      if (not isiri_id (subj))
+        {
+          if (subj is null)
+            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): subject is NULL');
+          signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): subject is literal');
+        }
+      if (subj >= #i1000000000)
+        http (sprintf ('_:b%d ', iri_id_num (subj)), ses);
+      else
+        {
+          res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = subj));
+          http ('<', ses);
+          http_escape (res, 12, ses, 1, 1);
+	  http ('> ', ses);
+        }
+      if (not isiri_id (pred))
+        {
+          if (pred is null)
+            signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): predicate is NULL');
+          signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): predicate is literal');
+        }
+      if (pred >= #i1000000000)
+        signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): blank node as predicate');
+      else
+        {
+          res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = pred));
+          http ('<', ses);
+          http_escape (res, 12, ses, 1, 1);
+          http ('> ', ses);
+        }
+      DB.DBA.RDF_LONG_TO_TTL (obj, ses);
       http ('.\n', ses);
     }
 }
@@ -2903,6 +2935,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
   inh_stack := vector_concat (inh_stack, vector (destinst));
   baseinst := null;
   if (not exists (sparql
+      define input:storage ""
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       ask where {
         graph ?:jgraph { ?:dest_iid rdf:type `iri(?:class)`
@@ -2910,6 +2943,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
     signal ('22023', 'JSO_MAKE_INHERITANCE has not found object <' || destinst || '> of type <' || class || '>');
 /* This fails. !!!TBD: fix sparql2sql.c to preserve data about equalities, fixed values and globals when triples are moved from gp to gp
   for (sparql
+    define input:storage ""
     prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
     select ?srcinst
     where {
@@ -2926,6 +2960,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
           } } ) do
 */
   for (sparql
+    define input:storage ""
     define output:valmode "LONG"
     prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
     select ?src_iid
@@ -2933,14 +2968,15 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
         graph ?:jgraph { ?:dest_iid virtrdf:inheritFrom ?src_iid } } ) do
     {
       declare srcinst varchar;
-      srcinst := DB.DBA.RDF_QNAME_OF_IID (src_iid);
+      srcinst := DB.DBA.RDF_QNAME_OF_IID ("src_iid");
       if (baseinst is null)
         {
           if (not exists (sparql
+              define input:storage ""
               prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-              ask where { graph ?:jgraph { ?:src_iid rdf:type `iri(?:class)` } } ) )
+              ask where { graph ?:jgraph { ?:"src_iid" rdf:type `iri(?:class)` } } ) )
             signal ('22023', 'JSO_LOAD_INSTANCE has found that the object <' || destinst || '> has wrong virtrdf:inheritFrom <' || srcinst || '> that is not an instance of type <' || class || '>');
-          base_iid := src_iid;
+          base_iid := "src_iid";
           baseinst := srcinst;
         }
       else if (baseinst <> srcinst)
@@ -2950,6 +2986,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
     signal ('22023', 'JSO_LOAD_INSTANCE has found that the object <' || baseinst || '> is recursively inherited from itself');
 /* This fails. !!!TBD: fix sparql2sql.c to preserve data about equalities, fixed values and globals when triples are moved from gp to gp
   for (sparql
+    define input:storage ""
     prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
     select ?pred
     where {
@@ -2965,6 +3002,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
           } } ) do
 */
   for (sparql
+    define input:storage ""
     prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
     select ?pred
     where {
@@ -2980,6 +3018,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
     return;
   for (select "pred", "predval"
     from (sparql
+      define input:storage ""
       define output:valmode "LONG"
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       select ?pred, ?predval
@@ -2988,8 +3027,9 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
               ?:base_iid ?pred ?predval
             } } ) as "t00"
       where not exists (sparql
+          define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-          ask where { graph ?:jgraph { ?:t00.pred virtrdf:loadAs virtrdf:jsoTriple } } )
+          ask where { graph ?:jgraph { ?:"t00"."pred" virtrdf:loadAs virtrdf:jsoTriple } } )
       ) do
     {
       "pred" := DB.DBA.RDF_QNAME_OF_IID ("pred");
@@ -3006,7 +3046,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
       else if (dict_get (noinherits, "pred", baseinst) = baseinst) -- trick here, instead of (dict_get (noinherits, pred, null) is null) that does not handle inheritance of booleans properly.
         {
           jso_set (class, rootinst, "pred", DB.DBA.RDF_SQLVAL_OF_LONG ("predval"), isiri_id ("predval"));
-          dict_put (noinherits, pred, baseinst);
+          dict_put (noinherits, "pred", baseinst);
         }
     }
   JSO_MAKE_INHERITANCE (jgraph, class, rootinst, baseinst, base_iid, noinherits, inh_stack);
@@ -3025,6 +3065,7 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
   if (jsubj_iid is null)
     {
       jsubj_iid := (sparql
+        define input:storage ""
         define output:valmode "LONG"
         select ?s
         where { graph ?:jgraph { ?s rdf:name ?:jinst } } );
@@ -3032,12 +3073,14 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
         jsubj_iid := jinst_iid;
     }
   jclass := (sparql
+    define input:storage ""
     select ?t
     where {
       graph ?:jgraph { ?:jsubj_iid rdf:type ?t } } );
   if (jclass is null)
     {
       if (exists (sparql
+          define input:storage ""
           select ?x
             where { graph ?:jgraph {
                 { ?:jinst ?x ?o }
@@ -3055,6 +3098,7 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
     jso_new (jclass, jinst);
   for (select "p", coalesce ("o2", "o1") as "o"
       from (sparql
+          define input:storage ""
           define output:valmode "LONG"
           select ?p ?o1 ?o2
       where {
@@ -3063,8 +3107,9 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
             } }
         ) as "t00"
       where not exists (sparql
+          define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-          ask where { graph ?:jgraph_iid { ?:t00.p virtrdf:loadAs virtrdf:jsoTriple } } )
+          ask where { graph ?:jgraph_iid { ?:"t00"."p" virtrdf:loadAs virtrdf:jsoTriple } } )
       ) do
     {
       "p" := DB.DBA.RDF_QNAME_OF_IID ("p");
@@ -3103,6 +3148,7 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
         coalesce ("s", "jinst") ) )
     from ( sparql
       define output:valmode "LONG"
+      define input:storage ""
       select ?jclass ?jinst ?s
       where {
         graph ?:jgraph {
@@ -3145,6 +3191,7 @@ create function JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1)
     }
 /* Pass 6. Load all separate triples */
   for (sparql
+      define input:storage ""
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       select ?s ?p ?o
       where { graph ?:jgraph_iid { ?p virtrdf:loadAs virtrdf:jsoTriple . ?s ?p ?o } } ) do
@@ -3271,6 +3318,951 @@ create function JSO_DUMP_ALL () returns any
 ;
 
 -----
+-- Internal routines for SPARQL quad map syntax extensions
+
+create procedure DB.DBA.RDF_QM_CHANGE (in warninglist any)
+{
+  declare STATE, MESSAGE varchar;
+  result_names (STATE, MESSAGE);
+  foreach (any warnings in warninglist) do
+    {
+     foreach (any warning in warnings) do
+       result (warning[0], warning[1]);
+    }
+  commit work;
+}
+;
+
+create function DB.DBA.RDF_QM_APPLY_CHANGES (in deleted any, in affected any) returns any
+{
+  declare ctr, len integer;
+  declare graphiri varchar;
+  graphiri := JSO_SYS_GRAPH ();
+  commit work;
+  DB.DBA.JSO_LOAD_GRAPH (graphiri, 0);
+  DB.DBA.JSO_PIN_GRAPH (graphiri);
+  len := length (deleted);
+  for (ctr := 0; ctr < len; ctr := ctr + 2)
+    jso_delete (deleted [ctr], deleted [ctr+1], 1);
+  len := length (affected);
+  for (ctr := 0; ctr < len; ctr := ctr + 1)
+    jso_mark_affected (affected [ctr]);
+  return vector (vector ('00000', 'Transaction committed, SPARQL compiler re-configured'));
+}
+;
+
+create function DB.DBA.RDF_QM_ASSERT_JSO_TYPE (in inst varchar, in expected varchar, in allow_missing integer := 0) returns integer
+{
+  declare actual varchar;
+  if (expected is null)
+    {
+      actual := coalesce ((sparql
+          define input:storage ""
+          prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+          select ?t where {
+            graph `sql:JSO_SYS_GRAPH NIL` { `iri(?:inst)` rdf:type ?t } } ));
+      if (actual is not null)
+        signal ('22023', 'The RDF QM schema object <' || inst || '> already exists, type <' || actual || '>');
+    }
+  else
+    {
+      declare hit integer;
+      hit := 0;
+      for (sparql
+        define input:storage ""
+        prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+        select ?t where {
+          graph `sql:JSO_SYS_GRAPH NIL` { `iri(?:inst)` rdf:type ?t } } ) do
+        {
+          if ("t" <> expected)
+            signal ('22023', 'The RDF QM schema object <' || inst || '> has type <' || actual || '>, cannot use same identifier for <' || expected || '>');
+          hit := 1;
+        }
+      if (not hit)
+        {
+          if (allow_missing)
+            return 0;
+          signal ('22023', 'The RDF QM schema object <' || inst || '> does not exists, should be of type <' || expected || '>');
+        }
+    }
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (in storage varchar, in req_flag integer)
+{
+  declare graphiri varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (storage, 'http://www.openlinksw.com/schemas/virtrdf#QuadStorage');
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    select ?startdt where {
+        graph ?:graphiri {
+            `iri(?:storage)` virtrdf:qsAlterInProgress ?startdt .
+          } } ) do
+    {
+      if (req_flag)
+        return;
+      signal ('22023', 'The quad storage "' || storage || '" is edited by other client, started ' || cast ("startdt" as varchar));
+    }
+  if (not req_flag)
+    return;
+  signal ('22023', 'The quad storage "' || storage || '" is not flagged as being edited, cannot change it' );
+}
+;
+
+create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_CONTAINS_MAPPING (in storage varchar, in qmid varchar, in must_contain integer)
+{
+  declare graphiri varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  if (exists (sparql define input:storage ""
+        ask where {
+          graph ?:graphiri {
+            { `iri(?:storage)` virtrdf:qsDefaultMap `iri(?:qmid)` }
+            union
+            { `iri(?:storage)` virtrdf:qsUserMaps ?qmlist .
+              ?qmlist ?p `iri(?:qmid)` .
+            } } } ) )
+    {
+      if (must_contain)
+        return;
+      signal ('22023', 'The quad storage "' || storage || '" contains quad map ' || qmid );
+    }
+  if (not must_contain)
+    return;
+  signal ('22023', 'The quad storage "' || storage || '" does not contains quad map ' || qmid );
+}
+;
+
+create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_IS_FLAGGED (in storage varchar)
+{
+  if (not DB.DBA.RDF_QM_GET_STORAGE_FLAG (storage))
+    signal ('22023', 'The quad storage "' || storage || '" is not flagged as being edited' );
+}
+;
+
+create function DB.DBA.RDF_QM_GC_SUBTREE (in id varchar) returns integer
+{
+  declare graphiri varchar;
+  declare objs any;
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', id, ')');
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  for (sparql define input:storage "" select ?s where {
+          graph ?g { ?s ?p `iri(?:id)` } } ) do
+    {
+      -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', id, ') does not delete: side link', "s");
+      return "s";
+    }
+  objs := (select VECTOR_AGG (sub."o") from
+    (sparql define input:storage ""
+     select ?o where {
+         graph ?:graphiri { `iri(?:id)` ?p ?o . filter (!isliteral (?o)) } } ) as sub );
+  for (sparql define input:storage ""
+    delete from graph ?:graphiri { `iri(?:id)` ?p ?o }
+    where { graph ?:graphiri { `iri(?:id)` ?p ?o } } ) do {;}
+  foreach (varchar obj in objs) do
+    DB.DBA.RDF_QM_GC_SUBTREE (obj);
+  return NULL;
+}
+;
+
+create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) returns any
+{
+  declare qmid, qmgraph varchar;
+  qmid := get_keyword_ucase ('ID', mapname, NULL);
+  qmgraph := get_keyword_ucase ('GRAPH', mapname, NULL);
+  if (qmid is null)
+    {
+      qmid := coalesce ((sparql
+          define input:storage ""
+          prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+          select ?s where {
+            graph `sql:JSO_SYS_GRAPH NIL` {
+                ?s rdf:type virtrdf:QuadMap .
+                ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:qmgraph)` .
+                ?s virtrdf:qmTableName "" .
+              } } ));
+      if (qmid is null)
+        return vector (vector ('00100', 'Quad map for graph <' || qmgraph || '> is not found'));
+    }
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (qmid, 'http://www.openlinksw.com/schemas/virtrdf#QuadMap');
+  if (storage is null)
+    {
+      delete from RDF_QUAD
+      where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (DB.DBA.JSO_SYS_GRAPH()) and
+        O = DB.DBA.RDF_MAKE_IID_OF_QNAME (qmid);
+      DB.DBA.RDF_QM_GC_SUBTREE (qmid);
+      delete from RDF_QUAD
+      where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (DB.DBA.JSO_SYS_GRAPH()) and
+        S = DB.DBA.RDF_MAKE_IID_OF_QNAME (qmid);
+      return vector (vector ('00000', 'Quad map <' || qmid || '> is deleted'));
+    }
+  else
+    {
+--      declare submaps_iid any;
+--      submaps_iid := coalesce ((sparql
+--          define input:storage ""
+--          define output:valmode "LONG"
+--          prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+--          select ?subm where {
+--            graph `sql:JSO_SYS_GRAPH NIL` {
+--                ?:storage virtrdf:qmUserSubMaps ?subm .
+--              } } ));
+--      delete from RDF_QUAD
+--      where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (DB.DBA.JSO_SYS_GRAPH()) and
+--        S = submaps_iid and
+--        O = DB.DBA.RDF_MAKE_IID_OF_QNAME (qmid);
+      DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (storage, NULL, qmid);
+      return vector (vector ('00000', 'Quad map <' || qmid || '> is no longer used in storage <' || storage || '>'));
+    }
+}
+;
+
+create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in iritmpl varchar, in arglist any) returns any
+{
+  declare graphiri varchar;
+  declare superformatsid varchar;
+  declare res any;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  if (strstr (iritmpl, '^{URIQADefaultHost}^') is not null)
+    {
+      declare host varchar;
+      host := registry_get ('URIQADefaultHost');
+      if (not isstring (host))
+        signal ('22023', 'Can not use ^{URIQADefaultHost}^ in IRI template if there is no DefaultHost parameter in [URIQA] section of Virtuoso configuration file');
+      iritmpl := replace (iritmpl, '^{URIQADefaultHost}^', host);
+    }
+  superformatsid := classiri || '--SuperFormats';
+  foreach (any arg in arglist) do
+    if (UNAME'in' <> arg[0])
+      signal ('22023', 'Only "in" parameters are now supported in argument lists of class formats, "' || arg[0] || '" is not supported in CREATE IRI CLASS <' || classiri || '>' );
+  if (length (arglist) = 0)
+    signal ('22023', 'Empty argument list in CREATE IRI CLASS <' || classiri || '>');
+  if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
+    {
+      declare side_s varchar;
+      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri);
+      if (side_s is not null)
+        signal ('22023', 'Can not change iri class <' || classiri || '> because it is used by other quad map objects, e.g., <' || side_s || '>');
+      res := vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> has been dropped'));
+    }
+  else
+    res := vector ();
+  if (length (arglist) > 1)
+    {
+      for (sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      insert in graph ?:graphiri
+        {
+          `iri(?:classiri)`
+            rdf:type virtrdf:QuadMapFormat ;
+            virtrdf:inheritFrom rdfdf:multipart-uri ;
+            virtrdf:noInherit virtrdf:qmfCustomString1 ;
+            virtrdf:qmfCustomString1 `?:iritmpl` ;
+            virtrdf:qmfSuperFormats `iri(?:superformatsid)` .
+          `iri(?:superformatsid)`
+            rdf:type virtrdf:array-of-QuadMapFormat .
+        }
+      where {} ) do {;}
+      return vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:multipart-uri)')));
+    }
+  else /* arglist is 1 item long */
+    {
+      declare basetype, basetypeiri varchar;
+      basetype := lower (arglist[0][2]);
+      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'doubleprecision')))
+        signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '>' );
+      basetype := 'sql-' || basetype || '-uri';
+      if (not (coalesce (arglist[0][3], 0)))
+        basetype := basetype || '-nullable';
+      basetypeiri := 'http://www.openlinksw.com/virtrdf-data-formats#' || basetype;
+      for (sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      insert in graph ?:graphiri
+        {
+          `iri(?:classiri)`
+            rdf:type virtrdf:QuadMapFormat;
+            virtrdf:inheritFrom `iri(?:basetypeiri)`;
+            virtrdf:noInherit virtrdf:qmfCustomString1;
+            virtrdf:qmfCustomString1 ?:iritmpl;
+            virtrdf:qmfSuperFormats `iri(?:superformatsid)` .
+          `iri(?:superformatsid)`
+            rdf:type virtrdf:array-of-QuadMapFormat .
+        }
+      where {} ) do {;}
+      return vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ')')));
+    }
+  return vector_concat (res, vector (vector ('22023', 'DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT() is not yet implemented')));
+}
+;
+
+create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS (in classiri varchar, in uriprint any, in uriparse any) returns any
+{
+/*
+   uriprint is, say,
+            vector ( 'DB.DBA.RDF_DF_GRANTEE_ID_URI' ,
+                vector (
+                    vector ( 306,  'id' ,  'integer' ,  NULL ) ),  'varchar' ,  NULL ),
+   uriparse is, say,
+            vector ( 'DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE' ,
+                vector (
+                    vector ( 306,  'id_iri' ,  'varchar' ,  NULL ) ),  'integer' ,  NULL ) ),
+*/
+  declare uriprintname, uriparsename varchar;
+  declare numofnotnulls integer;
+  declare graphiri varchar;
+  declare superformatsid varchar;
+  declare res any;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  superformatsid := classiri || '--SuperFormats';
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, NULL);
+  uriprintname := uriprint[0];
+  uriparsename := uriparse[0];
+  if (uriparsename <> uriprintname || '_INVERSE')
+    signal ('22023', 'Name of inverse function should be "' || uriprintname || '_INVERSE", not "' || uriparsename || '", other variants are not supported by the current version' );
+  if (uriprint[2] <> 'varchar')
+    signal ('22023', 'IRI composing function "' || uriprintname || '" should return varchar, not ' || uriprint[2]);
+  if (1 <> length (uriprint[1]))
+    signal ('22023', 'IRI composing function "' || uriprintname || '" should have exactly one argument');
+  foreach (any arg in uriprint[1]) do
+    if (UNAME'in' <> arg[0])
+      signal ('22023', 'Only "in" parameters are now supported in argument lists of IRI class functions, not "' || arg[0] || '"');
+  if (1 <> length (uriparse[1]))
+    signal ('22023', 'IRI parsing function "' || uriparsename || '" should have exactly one argument');
+  foreach (any arg in uriparse[1]) do
+    if (UNAME'in' <> arg[0])
+      signal ('22023', 'Only "in" parameters are now supported in argument lists of IRI class functions, not "' || arg[0] || '"');
+  if (uriparse[1][0][2] <> 'varchar')
+    signal ('22023', 'IRI parsing function "' || uriparsename || '" should have argument of type varchar, not ' || uriparse[1][0][2]);
+  if (uriparse[2] <> uriprint[1][0][2])
+    signal ('22023', 'The return value of "' || uriparsename || '" and the argument of "' || uriprintname || '" should be of the same data type');
+  numofnotnulls :=
+    coalesce (uriprint[1][0][3], 0) + coalesce (uriprint[3], 0) +
+    coalesce (uriparse[1][0][3], 0) + coalesce (uriparse[3], 0);
+  if ((0 <> numofnotnulls) and (4 <> numofnotnulls))
+    signal ('22023', 'Both arguments and return values of both "' || uriparsename || '" and "' || uriprintname || '" should be either all four nullable or all four NOT NULL');
+  declare arglist, basetype, basetypeiri varchar;
+  arglist := uriprint[1];
+  basetype := lower (arglist[0][2]);
+  if (not (basetype in ('integer', 'varchar' /*, 'date', 'doubleprecision'*/)))
+    signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '> USING FUNCTION' );
+  basetype := 'sql-' || basetype || '-uri-fn';
+  if (not (coalesce (arglist[0][3], 0)))
+    basetype := basetype || '-nullable';
+  basetypeiri := 'http://www.openlinksw.com/virtrdf-data-formats#' || basetype;
+  if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
+    {
+      declare side_s varchar;
+      side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri);
+      if (side_s is not null)
+        signal ('22023', 'Can not change iri class <' || classiri || '> because it is used by other quad map objects, e.g., <' || side_s || '>');
+      res := vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> has been dropped'));
+    }
+  else
+    res := vector ();
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    insert in graph ?:graphiri
+      {
+        `iri(?:classiri)`
+          rdf:type virtrdf:QuadMapFormat;
+          virtrdf:inheritFrom `iri(?:basetypeiri)`;
+          virtrdf:noInherit virtrdf:qmfCustomString1;
+          virtrdf:qmfCustomString1 ?:uriprintname;
+          virtrdf:qmfSuperFormats `iri(?:superformatsid)` .
+        `iri(?:superformatsid)`
+          rdf:type virtrdf:array-of-QuadMapFormat .
+      }
+    where {} ) do {;}
+  return vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ') using ' || uriprintname)));
+}
+;
+
+create function DB.DBA.RDF_QM_DEFINE_SUBCLASS (in subclassiri varchar, in superclassiri varchar) returns any
+{
+  declare graphiri varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (subclassiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat');
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (superclassiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat');
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    insert in graph ?:graphiri
+      {
+        `iri(?:subclassiri)` virtrdf:isSubclassOf `iri(?:superclassiri)` .
+      }
+    where {} ) do {;}
+  return vector (vector ('00000', 'IRI class <' || subclassiri || '> is now known as a subclass of <' || superclassiri || '>'));
+}
+;
+
+create function DB.DBA.RDF_QM_DROP_QUAD_STORAGE (in storage varchar) returns any
+{
+  declare graphiri varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (storage, 0);
+  DB.DBA.RDF_QM_GC_SUBTREE (storage);
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    delete from graph ?:graphiri {
+        `iri(?:storage)` ?p ?o
+      }
+    where { graph ?:graphiri {
+            `iri(?:storage)` ?p ?o .
+          } } ) do {;}
+  return vector (vector ('00000', 'Quad storage <' || storage || '> is removed from the quad mapping schema'));
+}
+;
+
+create function DB.DBA.RDF_QM_DEFINE_QUAD_STORAGE (in storage varchar) returns any
+{
+  declare graphiri, qsusermaps varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (storage, NULL);
+  qsusermaps := storage || '--UserMaps';
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    insert in graph ?:graphiri {
+        `iri(?:storage)`
+          rdf:type virtrdf:QuadStorage ;
+          virtrdf:qsUserMaps `iri(?:qsusermaps)` .
+        `iri(?:qsusermaps)`
+          rdf:type virtrdf:array-of-QuadMap .
+      }
+    where {} ) do {;}
+  return vector (vector ('00000', 'A new empty quad storage <' || storage || '> is added to the quad mapping schema'));
+}
+;
+
+create function DB.DBA.RDF_QM_BEGIN_ALTER_QUAD_STORAGE (in storage varchar) returns any
+{
+  declare graphiri varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (storage, 0);
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    insert in graph ?:graphiri {
+        `iri(?:storage)` virtrdf:qsAlterInProgress `bif:now NIL` .
+      }
+    where {} ) do {;}
+  return vector (vector ('00000', 'Quad storage <' || storage || '> is flagged as being edited'));
+}
+;
+
+create function DB.DBA.RDF_QM_END_ALTER_QUAD_STORAGE (in storage varchar) returns any
+{
+  declare graphiri varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (storage, 'http://www.openlinksw.com/schemas/virtrdf#QuadStorage');
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    delete from graph ?:graphiri {
+        `iri(?:storage)` virtrdf:qsAlterInProgress ?dtstart
+      }
+    where { graph ?:graphiri {
+            `iri(?:storage)` virtrdf:qsAlterInProgress ?dtstart .
+          } } ) do {;}
+  return vector (vector ('00000', 'Quad storage <' || storage || '> is unflagged and can be edited by other transactions'));
+}
+;
+
+create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, inout tablename varchar) returns varchar
+{
+/* iqi qmv: vector ( UNAME'http://www.openlinksw.com/schemas/oplsioc#user_iri' , vector ( 'DB.DBA.SYS_USERS.U_ID'  ) ) */
+  declare graphiri varchar;
+  declare colnames any;
+  declare colctr, colcount integer;
+  declare fmtid, iriclassid, qmvid, qmvcolsid varchar;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  fmtid := qmv[0];
+  if (fmtid <> UNAME'literal')
+    DB.DBA.RDF_QM_ASSERT_JSO_TYPE (fmtid, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat');
+  colnames := qmv[1];
+  colcount := length (colnames);
+  for (colctr := 0; colctr < colcount; colctr := colctr + 1)
+    {
+      declare colname varchar;
+      declare dotpos integer;
+      colname := colnames [colctr];
+      dotpos := strrchr (colname, '.');
+      if (dotpos is not null)
+        {
+          if (tablename is null)
+            {
+              tablename := "LEFT" (colname, dotpos);
+              if (strchr (tablename, '.') is null or (strchr (tablename, '.') = strrchr (tablename, '.')))
+                signal ('22023', 'Table name "' || tablename || '" should be fully qualified, like DB.DBA.SYS_USERS');
+              if (not exists (select top 1 1 from DB.DBA.SYS_COLS where "TABLE" = tablename))
+                signal ('22023', 'No table "' || tablename || '" in database, please check spelling and character case');
+            }
+          else
+            if (tablename <> "LEFT" (colname, dotpos))
+              signal ('22023', 'All columns of values of quad mapping should be in same table, say in "' || tablename || '", column name "' || colname || '" violates this rule');
+          colnames [colctr] := subseq (colname, dotpos+1);
+        }
+    }
+  if (tablename is null)
+    signal ('22023', 'Table name is not specified for quad map value of ' || fldname);
+  for (colctr := 0; colctr < colcount; colctr := colctr + 1)
+    {
+      declare colname varchar;
+      colname := colnames [colctr];
+      if (not exists (select top 1 1 from DB.DBA.SYS_COLS where "TABLE" = tablename and "COLUMN" = colname))
+        signal ('22023', 'No column "' || colname || '" in table "' || tablename || '" in database, please check spelling and character case');
+    }
+  if (fmtid = UNAME'literal')
+    {
+      declare coldtp, colnullable integer;
+      declare coltype varchar;
+      select COL_DTP, COL_NULLABLE into coldtp, colnullable
+      from DB.DBA.SYS_COLS where "TABLE" = tablename and "COLUMN" = colnames[0];
+      coltype := case (coldtp)
+        when 125 then 'longvarchar'
+        when 128 then 'datetime' -- timestamp
+        when 129 then 'date'
+        when 131 then 'longvarbinary'
+        when 189 then 'integer'
+        when 182 then 'varchar'
+        when 211 then 'datetime'
+        else NULL end;
+      if (coltype is null)
+        signal ('22023', 'The datatype of column "' || colnames[0] ||
+          '" of table "' || tablename || '" (COL_DTP=' || cast (coldtp as varchar) ||
+          ') can not be mapped to an RDF literal in current version of Virtuoso' );
+      fmtid := 'http://www.openlinksw.com/virtrdf-data-formats#sql-' || coltype;
+      if (colnullable)
+        fmtid := fmtid || '-nullable';
+      iriclassid := null;
+    }
+  else
+    iriclassid := fmtid;
+  qmvid := 'sys:qmv-' || md5 (serialize (vector (fmtid, tablename, colnames)));
+  qmvcolsid := qmvid || '-cols';
+/* Trick to avoid repeating re-declarations */
+  if (exists (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    ask where {
+        graph ?:graphiri {
+          ?:qmvid
+            rdf:type virtrdf:QuadMapValue ;
+            virtrdf:qmvTableName ?:tablename ;
+            virtrdf:qmvColumns `iri(?:qmvcolsid)` ;
+            virtrdf:qmvFormat `iri(?:fmtid)` . } } ) )
+    return qmvid;
+/* Create everything if qmv has not been found */
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    delete from graph ?:graphiri {
+      `iri(?:qmvid)` ?p ?o . }
+    where { graph ?:graphiri {
+            `iri(?:qmvid)` ?p ?o .
+          } } ) do {;}
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    delete from graph ?:graphiri {
+      `iri(?:qmvcolsid)` ?p ?o }
+    where { graph ?:graphiri {
+            `iri(?:qmvcolsid)` ?p ?o .
+          } } ) do {;}
+  -- dbg_obj_princ ('tablename=', tablename);
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    insert in graph ?:graphiri {
+        `iri(?:qmvid)`
+          rdf:type virtrdf:QuadMapValue;
+          virtrdf:qmvTableName ?:tablename;
+          virtrdf:qmvColumns `iri(?:qmvcolsid)`;
+          virtrdf:qmvFormat `iri(?:fmtid)`;
+          virtrdf:qmvIriClass `iri(?:iriclassid)`;
+          virtrdf:qmvColumnsFormKey 0 .  #!!!TBD: detection of unique keys.
+        `iri(?:qmvcolsid)`
+          rdf:type virtrdf:array-of-QuadMapColumn .
+      }
+    where {} ) do {;}
+  for (colctr := 0; colctr < colcount; colctr := colctr + 1)
+    {
+      declare colname, qmvcolscolid varchar;
+      colname := colnames [colctr];
+      qmvcolscolid := qmvid || '-col-' || colname;
+      for (sparql define input:storage ""
+        prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+        insert in graph ?:graphiri {
+            `iri(?:qmvcolsid)`
+              `iri (bif:sprintf ("%s%d", str (rdf:_), ?:colctr+1))` `iri(?:qmvcolscolid)` .
+            `iri(?:qmvcolscolid)`
+              rdf:type virtrdf:QuadMapColumn ;
+              virtrdf:qmvcColumnName ?:colname .
+          }
+        where {} ) do {;}
+    }
+  return qmvid;
+}
+;
+
+create procedure DB.DBA.RDF_QM_NORMALIZE_QMV (
+  inout qmv any, inout qmvfix any, inout qmvid any,
+  in can_be_literal integer, in fldname varchar, inout tablename any )
+{
+  qmvid := qmvfix := NULL;
+  if ((193 = __tag (qmv)) and (2 = length (qmv)))
+    qmvid := DB.DBA.RDF_QM_DEFINE_MAP_VALUE (qmv, fldname, tablename);
+  else if (217 = __tag (qmv))
+      qmvfix := DB.DBA.RDF_MAKE_IID_OF_QNAME (qmv);
+  else if (qmv is not null and not can_be_literal)
+    signal ('22023', 'Quad map declaration can not specify a literal (non-IRI) constant for its ' || fldname);
+  else
+    qmvfix := qmv;
+}
+;
+
+create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
+  in qmrawid varchar, in qmid varchar, in qmparentid varchar,
+  in qmv_g any, in qmv_s any, in qmv_p any, in qmv_o any,
+  in is_real integer, in rowfilter varchar, in opts any ) returns any
+{
+  declare graphiri, old_actual_type varchar;
+  declare tablename, qmvid_g, qmvid_s, qmvid_p, qmvid_o varchar;
+  declare qmvfix_g, qmvfix_s, qmvfix_p, qmvfix_o any;
+  declare qm_exclusive, qm_empty, qm_is_default, qmusersubmaps varchar;
+  declare qm_order integer;
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_DEFINE_MAPPING (', storage, qmrawid, qmid, qmparentid, qmv_g, qmv_s, qmv_p, qmv_o, is_real, rowfilter, opts, ')');
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (storage, 1);
+--  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (qmid, NULL);
+  old_actual_type := coalesce ((sparql define input:storage ""
+      prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+      select ?t where {
+        graph ?:graphiri { `iri(?:qmid)` rdf:type ?t } } ));
+  if (old_actual_type is not null)
+    {
+      declare old_lstiri, old_side_use varchar;
+      if (old_actual_type <> 'http://www.openlinksw.com/schemas/virtrdf#QuadMap')
+        signal ('22023', 'The RDF QM schema object <' || qmid || '> already exists, type <' || old_actual_type || '>');
+      old_lstiri := (sparql define input:storage ""
+        select ?lst where { graph ?:graphiri {
+            `iri(?:storage)` virtrdf:qsUserMaps ?lst } } );
+      old_side_use := coalesce ((sparql define input:storage ""
+          select ?s where {
+            graph ?:graphiri { ?s ?p `iri(?:qmid)` filter ((?s != iri(?:storage)) && (?s != iri(?:old_lstiri))) } } ) );
+      if (old_side_use is not null)
+        signal ('22023', 'Can not re-create the RDF Quad Mapping <' || qmid || '> because it is referenced by <' || old_side_use || '>');
+      DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (storage, NULL, qmid);
+      DB.DBA.RDF_QM_GC_SUBTREE (qmid);
+    }
+  if (qmparentid is not null)
+    DB.DBA.RDF_QM_ASSERT_JSO_TYPE (qmparentid, 'http://www.openlinksw.com/schemas/virtrdf#QuadMap');
+  DB.DBA.RDF_QM_ASSERT_STORAGE_CONTAINS_MAPPING (storage, qmid, 0);
+  tablename := NULL;
+  DB.DBA.RDF_QM_NORMALIZE_QMV (qmv_g, qmvfix_g, qmvid_g, 0, 'graph', tablename);
+  DB.DBA.RDF_QM_NORMALIZE_QMV (qmv_s, qmvfix_s, qmvid_s, 0, 'subject', tablename);
+  DB.DBA.RDF_QM_NORMALIZE_QMV (qmv_p, qmvfix_p, qmvid_p, 0, 'predicate', tablename);
+  DB.DBA.RDF_QM_NORMALIZE_QMV (qmv_o, qmvfix_o, qmvid_o, 1, 'object', tablename);
+  if (get_keyword_ucase ('EXCLUSIVE', opts))
+    qm_exclusive := 'http://www.openlinksw.com/schemas/virtrdf#SPART_QM_EXCLUSIVE';
+  else
+    qm_exclusive := NULL;
+  if (get_keyword_ucase ('OK_FOR_ANY_QUAD', opts))
+    qm_is_default := 'http://www.openlinksw.com/schemas/virtrdf#SPART_QM_OK_FOR_ANY_QUAD';
+  else
+    qm_is_default := NULL;
+  if (not is_real)
+    {
+      qm_empty := 'http://www.openlinksw.com/schemas/virtrdf#SPART_QM_EMPTY';
+      if (tablename is null)
+        tablename := '';
+    }
+  else
+    {
+      qm_empty := NULL;
+      if (tablename is null)
+        signal ('22023', 'At least one field of a quad map should be map value, not a constant');
+    }
+  qm_order := get_keyword_ucase ('ORDER', opts);
+  if (not is_real)
+    qmusersubmaps := qmid || '--UserSubMaps';
+  else
+    qmusersubmaps := NULL;
+  if (qm_is_default is not null)
+    {
+      if (qm_order is not null)
+        signal ('22023', 'ORDER option is not applicable to default quad map');
+      if (qmparentid is not null)
+        signal ('22023', 'A default quad map can not be a sub-map of other quad map');
+    }
+  for (sparql define input:storage ""
+    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+    insert in graph ?:graphiri {
+        `iri(?:qmid)`
+          rdf:type virtrdf:QuadMap ;
+          virtrdf:qmGraphRange-rvrFixedValue ?:qmvfix_g ;
+          virtrdf:qmGraphMap `iri(?:qmvid_g)` ;
+          virtrdf:qmSubjectRange-rvrFixedValue ?:qmvfix_s ;
+          virtrdf:qmSubjectMap `iri(?:qmvid_s)` ;
+          virtrdf:qmPredicateRange-rvrFixedValue ?:qmvfix_p ;
+          virtrdf:qmPredicateMap `iri(?:qmvid_p)` ;
+          virtrdf:qmObjectRange-rvrFixedValue ?:qmvfix_o ;
+          virtrdf:qmObjectMap `iri(?:qmvid_o)` ;
+          virtrdf:qmTableName ?:tablename ;
+          virtrdf:qmTableRowFilter ?:rowfilter ;
+          virtrdf:qmUserSubMaps `iri(?:qmusersubmaps)` ;
+          virtrdf:qmMatchingFlags `iri(?:qm_exclusive)` ;
+          virtrdf:qmMatchingFlags `iri(?:qm_empty)` ;
+          virtrdf:qmMatchingFlags `iri(?:qm_is_default)` ;
+          virtrdf:qmPriorityOrder ?:qm_order .
+        `iri(?:qmusersubmaps)`
+          rdf:type virtrdf:array-of-QuadMap .
+          }
+        where {} ) do {;}
+  if (qm_is_default is not null)
+    DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (storage, qmid);
+  else
+    DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (storage, qmparentid, qmid, qm_order);
+  return vector (vector ('00000', 'Quad map <' || qmid || '> has been created and added to the <' || storage || '>'));
+}
+;
+
+create function DB.DBA.RDF_QM_ATTACH_MAPPING (in storage varchar, in source varchar, in opts any) returns any
+{
+  declare graphiri varchar;
+  declare qmid, qmgraph varchar;
+  declare qm_order, qm_is_default integer;
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  qmid := get_keyword_ucase ('ID', opts, NULL);
+  qmgraph := get_keyword_ucase ('GRAPH', opts, NULL);
+  DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (storage, 1);
+  DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (source, 0);
+  if (qmid is null)
+    {
+      qmid := coalesce ((sparql define input:storage ""
+          prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+          select ?s where {
+            graph ?:graphiri {
+                ?s rdf:type virtrdf:QuadMap .
+                ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:qmgraph)` .
+                ?s virtrdf:qmMatchingFlags virtrdf:SPART_QM_EMPTY .
+              } } ));
+      if (qmid is null)
+        return vector (vector ('00100', 'Quad map for graph <' || qmgraph || '> is not found'));
+    }
+  qm_order := coalesce ((sparql define input:storage ""
+      select ?o where { graph ?:graphiri {
+              `iri(?:qmid)` virtrdf:qmPriorityOrder ?o } } ) );
+  if (exists (sparql define input:storage ""
+      ask where { graph ?:graphiri {
+              `iri(?:qmid)` virtrdf:qmMatchingFlags virtrdf:SPART_QM_OK_FOR_ANY_QUAD } } ) )
+    qm_is_default := 1;
+  else
+    qm_is_default := 0;
+  DB.DBA.RDF_QM_ASSERT_STORAGE_CONTAINS_MAPPING (storage, qmid, 0);
+  DB.DBA.RDF_QM_ASSERT_STORAGE_CONTAINS_MAPPING (source, qmid, 1);
+  DB.DBA.RDF_QM_ASSERT_JSO_TYPE (qmid, 'http://www.openlinksw.com/schemas/virtrdf#QuadMap');
+  if (qm_is_default)
+    DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (storage, qmid);
+  else
+    DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (storage, NULL, qmid, NULL /* !!!TBD: place real value instead of constant NULL */);
+  return vector (vector ('00000', 'Quad map <' || qmid || '> is added to the storage <' || storage || '>'));
+}
+;
+
+create procedure DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (in storage varchar, in qmparent varchar, in qmid varchar, in qmorder integer)
+{
+  declare graphiri, lstiri varchar;
+  declare iris_and_orders any;
+  declare ctr, qmid_is_printed integer;
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (', storage, qmparent, qmid, qmorder, ')');
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  if (qmparent is not null)
+    lstiri := (sparql define input:storage ""
+      select ?lst where { graph ?:graphiri {
+          `iri(?:qmparent)` virtrdf:qmUserSubMaps ?lst } } );
+  else
+    lstiri := (sparql define input:storage ""
+      select ?lst where { graph ?:graphiri {
+          `iri(?:storage)` virtrdf:qsUserMaps ?lst } } );
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE: storage=', storage, ', qmparent=', qmparent, ', lstiri=', lstiri);
+  if (qmorder is null)
+    qmorder := 1999;
+  iris_and_orders := (
+    select VECTOR_AGG (vector (sub."id", sub."p", sub."ord1"))
+    from (
+      select sp."id", sp."p", sp."ord1"
+      from (
+        sparql define input:storage ""
+        select ?id ?p
+          (bif:coalesce (?ord,
+              1000 + bif:aref (
+                bif:sprintf_inverse (
+                  str(?p),
+                  bif:concat (str (rdf:_), "%d"),
+                  2),
+                0 ) ) ) as ?ord1
+        where { graph ?:graphiri {
+                `iri(?:lstiri)` ?p ?id .
+                filter (! bif:isnull (bif:aref (
+                      bif:sprintf_inverse (
+                        str(?p),
+                        bif:concat (str (rdf:_), "%d"),
+                        2),
+                      0 ) ) ) .
+                optional {?id virtrdf:qmProirityOrder ?ord} } } ) as sp
+      order by 2, 1 ) as sub );
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE: found ', iris_and_orders);
+  foreach (any itm in iris_and_orders) do
+    {
+      declare id, p varchar;
+      id := itm[0];
+      p := itm[1];
+      for (sparql define input:storage ""
+        delete from graph ?:graphiri {
+         `iri(?:lstiri)` `iri(?:p)` `iri(?:id)` . }
+        where { } ) do {;}
+    }
+  ctr := 1;
+  qmid_is_printed := 0;
+  foreach (any itm in iris_and_orders) do
+    {
+      declare id varchar;
+      declare ord integer;
+      id := itm[0];
+      ord := itm[2];
+      if (ord > qmorder)
+        {
+          for (sparql define input:storage ""
+            insert in graph ?:graphiri {
+             `iri(?:lstiri)`
+               `iri(bif:sprintf("%s%d", str(rdf:_), ?:ctr))`
+                 `iri(?:qmid)` . }
+            where { } ) do {;}
+          -- dbg_obj_princ ('DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE: qmid is printed: ', ctr);
+          ctr := ctr + 1;
+          qmid_is_printed := 1;
+        }
+      for (sparql define input:storage ""
+        insert in graph ?:graphiri {
+         `iri(?:lstiri)`
+           `iri(bif:sprintf("%s%d", str(rdf:_), ?:ctr))`
+             `iri(?:id)` . }
+        where { } ) do {;}
+      ctr := ctr + 1;
+    }
+  if (not qmid_is_printed)
+    {
+      for (sparql define input:storage ""
+        insert in graph ?:graphiri {
+         `iri(?:lstiri)`
+           `iri(bif:sprintf("%s%d", str(rdf:_), ?:ctr))`
+             `iri(?:qmid)` . }
+        where { } ) do {;}
+      -- dbg_obj_princ ('DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE: qmid is printed: ', ctr);
+      ctr := ctr + 1;
+    }
+}
+;
+
+create procedure DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (in storage varchar, in qmparent varchar, in qmid varchar)
+{
+  declare graphiri, lstiri varchar;
+  declare iris_and_orders any;
+  declare ctr integer;
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (', storage, qmparent, qmid, ')');
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  if (qmparent is not null)
+    lstiri := (sparql define input:storage ""
+      select ?lst where { graph ?:graphiri {
+          `iri(?:qmparent)` virtrdf:qmUserSubMaps ?lst } } );
+  else
+    lstiri := (sparql define input:storage ""
+      select ?lst where { graph ?:graphiri {
+          `iri(?:storage)` virtrdf:qsUserMaps ?lst } } );
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE: storage=', storage, ', qmparent=', qmparent, ', lstiri=', lstiri);
+  iris_and_orders := (
+    select VECTOR_AGG (vector (sub."id", sub."p", sub."ord1"))
+    from (
+      select sp."id", sp."p", sp."ord1"
+      from (
+        sparql define input:storage ""
+        select ?id ?p
+          (bif:coalesce (?ord,
+              1000 + bif:aref (
+                bif:sprintf_inverse (
+                  str(?p),
+                  bif:concat (str (rdf:_), "%d"),
+                  2),
+                0 ) ) ) as ?ord1
+        where { graph ?:graphiri {
+                `iri(?:lstiri)` ?p ?id .
+                filter (! bif:isnull (bif:aref (
+                      bif:sprintf_inverse (
+                        str(?p),
+                        bif:concat (str (rdf:_), "%d"),
+                        2),
+                      0 ) ) ) .
+                optional {?id virtrdf:qmProirityOrder ?ord} } } ) as sp
+      order by 2, 1 ) as sub );
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE: found ', iris_and_orders);
+  foreach (any itm in iris_and_orders) do
+    {
+      declare id, p varchar;
+      id := itm[0];
+      p := itm[1];
+      for (sparql define input:storage ""
+        delete from graph ?:graphiri {
+         `iri(?:lstiri)` `iri(?:p)` `iri(?:id)` . }
+        where { } ) do {;}
+    }
+  ctr := 1;
+  foreach (any itm in iris_and_orders) do
+    {
+      declare id varchar;
+      declare ord integer;
+      id := itm[0];
+      ord := itm[2];
+      if (id <> qmid)
+        {
+          for (sparql define input:storage ""
+            insert in graph ?:graphiri {
+             `iri(?:lstiri)`
+               `iri(bif:sprintf("%s%d", str(rdf:_), ?:ctr))`
+                 `iri(?:id)` . }
+            where { } ) do {;}
+          ctr := ctr + 1;
+        }
+      else
+        {
+          -- dbg_obj_princ ('DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE: skipping ', qmid);
+          ;
+        }
+    }
+}
+;
+
+create procedure DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (in storage varchar, in qmid varchar)
+{
+  declare graphiri, old_qmid varchar;
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (', storage, qmid, ')');
+  graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  old_qmid := coalesce ((sparql define input:storage ""
+      select ?qm where { graph ?:graphiri {
+              `iri(?:storage)` virtrdf:qsDefaultMap ?qm } } ) );
+  if (old_qmid is not null)
+    {
+      if (cast (old_qmid as varchar) = cast (qmid as varchar))
+        return;
+      signal ('22023', 'Quad map storage <' || storage || '> has set a default quad map <' || old_qmid || '>, drop it before adding <' || qmid || '>');
+    }
+  for (sparql define input:storage ""
+    insert in graph ?:graphiri { `iri(?:storage)` virtrdf:qsDefaultMap `iri(?:qmid)` . }
+    where {} ) do {;}
+}
+;
+
+create function DB.DBA.RDF_QM_AUTO_LITERAL_FIELD (in colname varchar) returns any
+{
+  return vector (UNAME'literal', vector (colname));
+}
+;
+
+
+-----
 -- Procedures to execute local SPARQL statements (obsolete, now SPARQL can be simply inlined in SQL)
 
 create procedure DB.DBA.SPARQL_EVAL_TO_ARRAY (in query varchar, in dflt_graph varchar, in maxrows integer)
@@ -3380,7 +4372,10 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   -- dbg_obj_princ ('Returned header: ', ret_hdr);
   -- dbg_obj_princ ('Returned body: ', ret_body);
   ret_content_type := http_request_header (ret_hdr, 'Content-Type', null, null);
-  if (ret_content_type is null or ret_content_type not in ('application/sparql-results+xml','application/rdf+xml','text/rdf+n3'))
+  if (ret_content_type is null or
+    (strstr (ret_content_type, 'application/sparql-results+xml') is null and
+      strstr (ret_content_type, 'application/rdf+xml') is null and
+      strstr (ret_content_type, 'text/rdf+n3') is null ) )
     {
       declare ret_begin, ret_html any;
       ret_begin := "LEFT" (ret_body, 1024);
@@ -3396,7 +4391,9 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
         strstr (ret_begin, '<xhtml>') is not null )
         ret_content_type := 'text/html';
       else
+        {
         ret_content_type := 'text/plain';
+    }
     }
   if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
     {
@@ -3688,8 +4685,6 @@ create procedure SPARQL_RESULTS_XML_WRITE_NS (inout ses any)
 }
 ;
 
---sparql-protocol-query/#:querySoap
-
 create procedure SPARQL_RESULTS_XML_WRITE_HEAD (inout ses any, in mdta any)
 {
   declare i, l integer;
@@ -3745,7 +4740,7 @@ create procedure SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any, inout
         {
           if (_val >= #i1000000000)
 	    {
-	      http (sprintf ('\n   <binding name="%s"><bnode>nodeID://%d</bnode></binding>', _name, iri_id_num (_val)));
+	      http (sprintf ('\n   <binding name="%s"><bnode>nodeID://%d</bnode></binding>', _name, iri_id_num (_val)), ses);
 	    }
 	  else
 	    {
@@ -3795,6 +4790,183 @@ end_of_binding: ;
     }
 
   http ('\n  </result>', ses);
+}
+;
+
+create procedure SPARQL_RESULTS_RDFXML_WRITE_NS (inout ses any)
+{
+  http ('<rdf:RDF xmlns:res="http://www.w3.org/2005/sparql-results#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:nodeID="rset">
+    <rdf:type rdf:resource="http://www.w3.org/2005/sparql-results#ResultSet" />', ses);
+}
+;
+
+create procedure SPARQL_RESULTS_RDFXML_WRITE_HEAD (inout ses any, in mdta any)
+{
+  declare i, l integer;
+  mdta := mdta[0];
+  i := 0; l := length (mdta);
+  while (i < l)
+    {
+      declare _name varchar;
+      declare _type, _type_name, nill int;
+      _name := mdta[i][0];
+      _type := mdta[i][1];
+      if (length (mdta[i]) > 4)
+        nill := mdta[i][4];
+      else
+        nill := 0;
+      http (sprintf ('\n    <res:resultVariable>%V</res:resultVariable>', _name), ses);
+      i := i + 1;
+    }
+}
+;
+
+create procedure SPARQL_RESULTS_RDFXML_WRITE_RES (inout ses any, in mdta any, inout dta any)
+{
+  for (declare ctr integer, ctr := 0; ctr < length (dta); ctr := ctr + 1)
+    {
+      http ( sprintf ('\n    <res:solution rdf:nodeID="r%d">', ctr), ses);
+      SPARQL_RESULTS_RDFXML_WRITE_ROW (ses, mdta, dta, ctr);
+      http ('\n    </res:solution>', ses);
+    }
+}
+;
+
+create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, inout dta any, in rowno integer)
+{
+  mdta := mdta[0];
+  for (declare x any, x := 0; x < length (mdta); x := x + 1)
+    {
+      declare _name varchar;
+      declare _val any;
+      _name := mdta[x][0];
+      _val := dta[rowno][x];
+      if (_val is null)
+        goto end_of_binding;
+      http (sprintf ('\n      <res:binding rdf:nodeID="r%dc%d"><res:variable>%V</res:variable><res:value', rowno, x, _name), ses);
+      if (isiri_id (_val))
+        {
+          if (_val >= #i1000000000)
+	    {
+	      http (sprintf (' rdf:nodeID="nodeID://%d"/></res:binding>', iri_id_num (_val)), ses);
+	    }
+	  else
+	    {
+              declare res varchar;
+              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
+              if (res is null)
+                res := sprintf ('bad://%d', iri_id_num (_val));
+              http (sprintf (' rdf:resource="%V"/></res:binding>', res), ses);
+	    }
+	}
+      else
+        {
+	  declare lang, dt varchar;
+	  if (__tag (_val) = 185) -- string output
+	    {
+              http ('>', ses);
+	      http_value (_val, 0, ses);
+              http ('</res:value></res:binding>', ses);
+              goto end_of_binding;
+	    }
+	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val);
+	  dt := DB.DBA.RDF_DATATYPE_OF_LONG (_val);
+	  if (lang is not null)
+	    {
+	      if (dt is not null)
+                http (sprintf (' xml:lang="%V" datatype="%V">', cast (lang as varchar), cast (dt as varchar)), ses);
+	      else
+                http (sprintf (' xml:lang="%V">', cast (lang as varchar)), ses);
+	    }
+	  else
+	    {
+	      if (dt is not null)
+                http (sprintf (' datatype="%V">', cast (dt as varchar)), ses);
+	      else
+                http ('>', ses);
+	    }
+	  http_value (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 0, ses);
+          http ('</res:value></res:binding>', ses);
+        }
+end_of_binding: ;
+    }
+}
+;
+
+create procedure SPARQL_RESULTS_TTL_WRITE_NS (inout ses any)
+{
+  http ('@prefix res: <http://www.w3.org/2005/sparql-results#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+[] rdf:type res:ResultSet ;', ses);
+}
+;
+
+create procedure SPARQL_RESULTS_TTL_WRITE_HEAD (inout ses any, in mdta any)
+{
+  declare i, l integer;
+  mdta := mdta[0];
+  i := 0; l := length (mdta);
+  while (i < l)
+    {
+      declare _name varchar;
+      declare _type, _type_name, nill int;
+      _name := mdta[i][0];
+      _type := mdta[i][1];
+      if (length (mdta[i]) > 4)
+        nill := mdta[i][4];
+      else
+        nill := 0;
+      http ('\n  res:resultVariable "', ses);
+      http_escape (_name, 11, ses, 0, 1);
+      http ('"', ses);
+      i := i + 1;
+      if (i < l)
+        http (' ;', ses);
+    }
+}
+;
+
+create procedure SPARQL_RESULTS_TTL_WRITE_RES (inout ses any, in mdta any, inout dta any)
+{
+  declare ctr, len integer;
+  ctr := 0; len := length (dta);
+  while (ctr < len)
+    {
+      http ('\n  res:solution [', ses);
+      SPARQL_RESULTS_TTL_WRITE_ROW (ses, mdta, dta, ctr);
+      http (' ]', ses);
+      ctr := ctr + 1;
+      if (ctr < len)
+        http (' ;', ses);
+    }
+}
+;
+
+create procedure SPARQL_RESULTS_TTL_WRITE_ROW (inout ses any, in mdta any, inout dta any, in rowno integer)
+{
+  declare need_semicolon integer;
+  mdta := mdta[0];
+  need_semicolon := 0;
+  for (declare x any, x := 0; x < length (mdta); x := x + 1)
+    {
+      declare _name varchar;
+      declare _val any;
+      _name := mdta[x][0];
+      _val := dta[rowno][x];
+      if (_val is not null)
+        {
+          if (need_semicolon)
+            http (' ;', ses);
+          else
+            need_semicolon := 1;
+          http ('\n      res:binding [ res:variable "', ses);
+          http_escape (_name, 11, ses, 0, 1);
+          http ('" ; res:value ', ses);
+          DB.DBA.RDF_LONG_TO_TTL (_val, ses);
+          http (' ]', ses);
+        }
+    }
 }
 ;
 
@@ -4003,8 +5175,9 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
               '</boolean>\n</sparql>'),
             ses );
         }
+      goto body_complete;
     }
-  else if ((1 = length (rset)) and
+  if ((1 = length (rset)) and
     (1 = length (rset[0])) and
     (214 = __tag (rset[0][0])) )
     {
@@ -4020,8 +5193,9 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           ret_mime := 'application/rdf+xml';
           DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, ses);
 	}
+      goto body_complete;
     }
-  else if (strstr (accept, 'application/sparql-results+json') is not null or strstr (accept, 'application/json') is not null)
+  if (strstr (accept, 'application/sparql-results+json') is not null or strstr (accept, 'application/json') is not null)
     {
       if (strstr (accept, 'application/sparql-results+json') is not null)
         ret_mime := 'application/sparql-results+json';
@@ -4035,18 +5209,21 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         }
       else
       SPARQL_RESULTS_JSON_WRITE (ses, metas, rset);
+      goto body_complete;
     }
-  else if (strstr (accept, 'text/html') is not null)
+  if (strstr (accept, 'text/html') is not null)
     {
       ret_mime := 'text/html';
       SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0);
+      goto body_complete;
     }
-  else if (strstr (accept, 'application/javascript') is not null)
+  if (strstr (accept, 'application/javascript') is not null)
     {
       ret_mime := 'application/javascript';
       SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 1);
+      goto body_complete;
     }
-  else if (accept = 'application/soap+xml')
+  if (strstr (accept, 'application/soap+xml') is not null)
     {
       ret_mime := 'application/soap+xml';
       http ('<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope"><soapenv:Body><query-result xmlns="http://www.w3.org/2005/09/sparql-protocol-types/#">', ses);
@@ -4055,25 +5232,51 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
       http ('\n</sparql>', ses);
       http ('</query-result></soapenv:Body></soapenv:Envelope>', ses);
+      goto body_complete;
     }
-  else if (('callretRDF/XML-0' = singlefield) and ('auto' = accept))
+  if (('callretRDF/XML-0' = singlefield) and ('auto' = accept))
     {
       ret_mime := 'application/rdf+xml';
       http (rset[0][0]);
+      goto body_complete;
     }
-  else if ((('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield)) and ('auto' = accept))
+  if ((('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield)) and ('auto' = accept))
     {
       ret_mime := 'text/rdf+n3';
       http (rset[0][0]);
+      goto body_complete;
     }
-  else
+  if (strstr (accept, 'application/sparql-results+xml') is null)
     {
+      if (strstr (accept, 'text/rdf+n3') is not null)
+        {
+          ret_mime := 'text/rdf+n3';
+          SPARQL_RESULTS_TTL_WRITE_NS (ses);
+          SPARQL_RESULTS_TTL_WRITE_HEAD (ses, metas);
+          if (length (rset) > 0)
+            http (' ;', ses);
+          SPARQL_RESULTS_TTL_WRITE_RES (ses, metas, rset);
+          http (' .', ses);
+          goto body_complete;
+        }
+      if (strstr (accept, 'application/rdf+xml') is not null)
+        {
+          ret_mime := 'application/rdf+xml';
+          SPARQL_RESULTS_RDFXML_WRITE_NS (ses);
+          SPARQL_RESULTS_RDFXML_WRITE_HEAD (ses, metas);
+          SPARQL_RESULTS_RDFXML_WRITE_RES (ses, metas, rset);
+          http ('\n  </rdf:Description>', ses);
+          http ('\n</rdf:RDF>', ses);
+          goto body_complete;
+        }
+    }
       ret_mime := 'application/sparql-results+xml';
       SPARQL_RESULTS_XML_WRITE_NS (ses);
       SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
       SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
       http ('\n</sparql>', ses);
-    }
+
+body_complete:
   if (add_http_headers)
     http_header ('Content-Type: ' || ret_mime || '\r\n');
   return ret_mime;
@@ -4179,7 +5382,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare paramctr, paramcount, maxrows integer;
   declare ses, content any;
   declare def_max, add_http_headers int;
-  declare http_meth, content_type varchar;
+  declare http_meth, content_type, ini_dflt_graph varchar;
 
   ses := 0;
   query := null;
@@ -4189,6 +5392,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   named_graphs := vector ();
   maxrows := 1024*1024; -- More than enough for web-interface.
   http_meth := http_request_get ('REQUEST_METHOD');
+  ini_dflt_graph := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultGraph');
   content_type := http_request_header (lines, 'Content-Type', null, '');
   content := null;
 
@@ -4219,64 +5423,91 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
             http_header (sprintf ('Location: %s\r\n', redir));
             return;
          }
-http('<html xmlns="http://www.w3.org/1999/xhtml">');
-http('	<head>');
-http('		<title>Virtuoso SPARQL Query Form</title>');
-http('		<style type="text/css">');
+http('<html xmlns="http://www.w3.org/1999/xhtml">\n');
+http('	<head>\n');
+http('		<title>Virtuoso SPARQL Query Form</title>\n');
+http('		<style type="text/css">\n');
 http('label.n');
-http('{ display: inline; margin-top: 10pt; }');
-http('body { font-family: arial, helvetica, sans-serif; font-size: 9pt; color: #234; }');
-http('fieldset { border: 2px solid #86b9d9; }');
-http('legend { font-size: 12pt; color: #86b9d9; }');
-http('label { font-weight: bold; }');
-http('h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: normal; color: #fff; height: 4ex; text-align: right; vertical-align: middle; padding-right:  8px; }');
-http('		</style>');
-http('	</head>');
-http('	<body>');
-http('		<div id="header">');
-http('			<h1>OpenLink Virtuoso SPARQL Query</h1>');
-http('		</div>');
-http('		<div id="main">');
-http('			<p>This query page is designed to help you test Openlink Virtuoso SPARQL protocol endpoint. <br/>');
-http('			Consult the <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VOSSparqlProtocol">Virtuoso Wiki page</a> describing the service ');
-http('			or the <a href="http://docs.openlinksw.com/virtuoso/">Online Virtuoso Documentation</a> section <a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">RDF Database and SPARQL</a>.</p>');
-http('			<p>There is also a rich Web based user interface with sample queries. ');
+http('{ display: inline; margin-top: 10pt; }\n');
+http('body { font-family: arial, helvetica, sans-serif; font-size: 9pt; color: #234; }\n');
+http('fieldset { border: 2px solid #86b9d9; }\n');
+http('legend { font-size: 12pt; color: #86b9d9; }\n');
+http('label { font-weight: bold; }\n');
+http('h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: normal; color: #fff; height: 4ex; text-align: right; vertical-align: middle; padding-right:  8px; }\n');
+http('		</style>\n');
+http('		<script language="JavaScript">\n');
+http('var last_format = 1;\n');
+http('function format_select(query_obg)\n');
+http('{\n');
+http('  var query = query_obg.value; \n');
+http('  var format = query_obg.form.format;\n');
+http('\n');
+http('  if (query.match(/construct/i) && last_format == 1) {\n');
+http('    for(var i = format.options.length; i > 0; i--)\n');
+http('      format.options[i] = null;');
+http('    format.options[1] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
+http('    format.options[2] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
+http('    format.selectedIndex = 1;\n');
+http('    last_format = 2;\n');
+http('  }\n');
+http('\n');
+http('  if (!query.match(/construct/i) && last_format == 2) {\n');
+http('    for(var i = format.options.length; i > 0; i--)\n');
+http('      format.options[i] = null;\n');
+http('    format.options[1] = new Option(\'HTML\',\'text/html\');\n');
+http('    format.options[2] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
+http('    format.options[3] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
+http('    format.options[4] = new Option(\'Javascript\',\'application/javascript\');\n');
+http('    format.selectedIndex = 1;\n');
+http('    last_format = 1;\n');
+http('  }\n');
+http('}\n');
+http('		</script>\n');
+http('	</head>\n');
+http('	<body>\n');
+http('		<div id="header">\n');
+http('			<h1>OpenLink Virtuoso SPARQL Query</h1>\n');
+http('		</div>\n');
+http('		<div id="main">\n');
+http('			<p>This query page is designed to help you test Openlink Virtuoso SPARQL protocol endpoint. <br/>\n');
+http('			Consult the <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VOSSparqlProtocol">Virtuoso Wiki page</a> describing the service \n');
+http('			or the <a href="http://docs.openlinksw.com/virtuoso/">Online Virtuoso Documentation</a> section <a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">RDF Database and SPARQL</a>.</p>\n');
+http('			<p>There is also a rich Web based user interface with sample queries. \n');
 if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is null)
-  http('			In order to use it you must install the iSPARQL package (isparql_dav.vad).</p>');
+  http('			In order to use it you must install the iSPARQL package (isparql_dav.vad).</p>\n');
 else
-  http('			You can access it at: <a href="/isparql">/isparql</a>.</p>');
-http('			<form action="" method="GET">');
-http('			<fieldset>');
-http('			<legend>Query</legend>');
-http('			  <label for="default-graph-uri">Default Graph URI</label>');
-http('			  <br />');
-http('			  <input type="text" name="default-graph-uri" id="default-graph-uri"');
-http('				  	value="" size="80"/>');
-http('			  <br /><br />');
-http('			  <label for="query">Query text</label>');
-http('			  <br />');
-http('			  <textarea rows="10" cols="60" name="query" id="query">SELECT * WHERE {?s ?p ?o}</textarea>');
-http('			  <br /><br />');
---http('			  <label for="maxrows">Max Rows:</label>');
---http('			  <input type="text" name="maxrows" id="maxrows"');
+  http('			You can access it at: <a href="/isparql">/isparql</a>.</p>\n');
+http('			<form action="" method="GET">\n');
+http('			<fieldset>\n');
+http('			<legend>Query</legend>\n');
+http('			  <label for="default-graph-uri">Default Graph URI</label>\n');
+http('			  <br />\n');
+http('			  <input type="text" name="default-graph-uri" id="default-graph-uri"\n');
+http(sprintf ('				  	value="%s" size="80"/>\n', coalesce (ini_dflt_graph, '') ));
+http('			  <br /><br />\n');
+http('			  <label for="query">Query text</label>\n');
+http('			  <br />\n');
+http('			  <textarea rows="10" cols="60" name="query" id="query" onchange="format_select(this)" onkeyup="format_select(this)">SELECT * WHERE {?s ?p ?o}</textarea>\n');
+http('			  <br /><br />\n');
+--http('			  <label for="maxrows">Max Rows:</label>\n');
+--http('			  <input type="text" name="maxrows" id="maxrows"\n');
 --http(sprintf('				  	value="%d"/>',maxrows));
---http('			  <br />');
-http('			  <label for="format" class="n">Display Results As:</label>');
-http('			  <select name="format">');
-http('			    <option value="text/html" selected="selected">HTML</option>');
-http('			    <option value="application/sparql-results+xml">XML</option>');
-http('			    <option value="text/rdf+n3">TURTLE</option>');
-http('          <option value="application/rdf+xml">RDF</option>');
-http('			    <option value="application/sparql-results+json">JSON</option>');
-http('			    <option value="application/javascript">Javascript</option>');
-http('			  </select>');
-http('			  <input type="submit" value="Run Query"/>');
-http('			  <input type="reset" value="Reset"/>');
-http('			</fieldset>');
-http('			</form>');
-http('		</div>');
-http('	</body>');
-http('</html>');
+--http('			  <br />\n');
+http('			  <label for="format" class="n">Display Results As:</label>\n');
+http('			  <select name="format">\n');
+http('			    <option value="auto">Auto</option>\n');
+http('			    <option value="text/html" selected="selected">HTML</option>\n');
+http('			    <option value="application/sparql-results+xml">XML</option>\n');
+http('			    <option value="application/sparql-results+json">JSON</option>\n');
+http('			    <option value="application/javascript">Javascript</option>\n');
+http('			  </select>\n');
+http('			  <input type="submit" value="Run Query"/>\n');
+http('			  <input type="reset" value="Reset"/>\n');
+http('			</fieldset>\n');
+http('			</form>\n');
+http('		</div>\n');
+http('	</body>\n');
+http('</html>\n');
        return;
     }
   for (paramctr := 0; paramctr < paramcount; paramctr := paramctr + 2)
@@ -4349,6 +5580,10 @@ http('</html>');
   def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
   if (def_max > 0 and def_max < maxrows)
     maxrows := def_max;
+
+  --if (dflt_graph is null and length (ini_dflt_graph))
+  --  dflt_graph := ini_dflt_graph;
+
 
   -- SOAP 1.2 operation begins
   if (http_meth = 'POST' and content_type = 'application/soap+xml')
@@ -4576,6 +5811,371 @@ grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_W  to SPARQL_UPDATE
 grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_A  to SPARQL_UPDATE
 ;
 grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_L_A  to SPARQL_UPDATE
+;
+
+-----
+-- Resource sponge
+
+create table DB.DBA.SYS_HTTP_SPONGE (
+  HS_LOCAL_IRI varchar not null,
+  HS_PARSER varchar not null,
+  HS_ORIGIN_URI varchar not null,
+  HS_ORIGIN_LOGIN varchar,
+  HS_LAST_LOAD datetime,
+  HS_LAST_ETAG varchar,
+  HS_LAST_READ datetime,
+  HS_EXP_IS_TRUE integer,
+  HS_EXPIRATION datetime,
+  HS_LAST_MODIFIED datetime,
+  HS_DOWNLOAD_SIZE integer,
+  HS_DOWNLOAD_MSEC_TIME integer,
+  HS_READ_COUNT integer,
+  HS_SQL_STATE varchar,
+  HS_SQL_MESSAGE varchar,
+  HS_QUALITY double precision,
+  primary key (HS_LOCAL_IRI, HS_PARSER)
+)
+create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc)
+;
+
+create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in parser varchar, in eraser varchar, in options any)
+{
+  declare new_origin_uri, new_origin_login, new_last_etag varchar;
+  declare old_origin_uri, old_origin_login, old_last_etag varchar;
+  declare new_last_load, new_expiration datetime;
+  declare old_last_load, old_expiration, old_last_modified datetime;
+  declare load_begin_msec, load_end_msec, old_exp_is_true,
+    old_download_size, old_download_msec_time, old_read_count,
+    new_download_size, explicit_refresh integer;
+  declare get_method varchar;
+  declare ret_hdr any;
+  declare req_hdr varchar;
+  declare ret_body, ret_content_type, ret_etag, ret_last_modified, ret_date, ret_last_modif, ret_expires varchar;
+  declare get_proxy varchar;
+  declare ret_dt_date, ret_dt_last_modified, ret_dt_expires datetime;
+  declare ret_304_not_modified integer;
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', local_iri, options, ')');
+  new_origin_uri := cast (get_keyword_ucase ('get:uri', options, local_iri) as varchar);
+  new_origin_login := cast (get_keyword_ucase ('get:login', options) as varchar);
+  explicit_refresh := get_keyword_ucase ('get:refresh', options);
+  set isolation='serializable';
+  whenever not found goto add_new_origin;
+  select HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD, HS_LAST_ETAG,
+    HS_EXP_IS_TRUE, HS_EXPIRATION, HS_LAST_MODIFIED,
+    HS_DOWNLOAD_SIZE, HS_DOWNLOAD_MSEC_TIME, HS_READ_COUNT
+  into old_origin_uri, old_origin_login, old_last_load, old_last_etag,
+    old_exp_is_true, old_expiration, old_last_modified,
+    old_download_size, old_download_msec_time, old_read_count
+  from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+  if (new_origin_uri <> old_origin_uri)
+    signal ('RDFXX',
+      sprintf ('Can not get-and-cache RDF graph <%.500s> from <%.500s> because is has been loaded from <%.500s>',
+        local_iri, new_origin_uri, old_origin_uri) );
+  if (coalesce (new_origin_login, '') <> coalesce (old_origin_login, '') and
+    old_expiration is not null )
+    signal ('RDFXX',
+      sprintf ('Can not get-and-cache RDF graph <%.500s> from <%.500s> using %s because is has been loaded using %s',
+        local_iri, new_origin_uri,
+        case (isnull (new_origin_login)) when 0 then sprintf ('login "%.100s"', new_origin_login) else 'anonymous access' end,
+        case (isnull (old_origin_login)) when 0 then sprintf ('login "%.100s"', old_origin_login) else 'anonymous access' end ) );
+  -- dbg_obj_princ (' old_expiration=', old_expiration, ' old_exp_is_true=', old_exp_is_true, ' old_last_load=', old_last_load);
+  -- dbg_obj_princ ('now()=', now(), ' explicit_refresh=', explicit_refresh);
+  if (old_expiration is not null)
+    {
+      if ((old_expiration >= now()) and (
+          explicit_refresh is null or
+          old_exp_is_true or
+          (dateadd ('second', explicit_refresh, old_last_load) >= now()) ) )
+        {
+          -- dbg_obj_princ ('not expired, return');
+          update DB.DBA.SYS_HTTP_SPONGE
+          set HS_LAST_READ = now(), HS_READ_COUNT = old_read_count + 1
+          where HS_LOCAL_IRI = local_iri and HS_LAST_READ < now();
+          return local_iri;
+        }
+    }
+  else -- either other loading is in progress or an recorded error
+    {
+      if (old_last_load >= now() and old_expiration is null)
+        {
+          -- dbg_obj_princ ('collision in the air, return');
+          return local_iri; -- Nobody promised to resolve collisions in the air.
+        }
+    }
+
+update_old_origin:
+  -- dbg_obj_princ ('starting update old origin...');
+  update DB.DBA.SYS_HTTP_SPONGE
+  set HS_LAST_LOAD = now(), HS_LAST_ETAG = NULL, HS_LAST_READ = NULL,
+    HS_EXP_IS_TRUE = 0, HS_EXPIRATION = NULL, HS_LAST_MODIFIED = NULL,
+    HS_DOWNLOAD_SIZE = NULL, HS_DOWNLOAD_MSEC_TIME = NULL,
+    HS_READ_COUNT = 0,
+    HS_SQL_STATE = NULL, HS_SQL_MESSAGE = NULL
+  where
+    HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+  goto perform_actual_load;
+
+add_new_origin:
+  -- dbg_obj_princ ('adding new origin...');
+  old_origin_uri := NULL; old_origin_login := NULL; old_last_load := NULL; old_last_etag := NULL;
+  old_expiration := NULL; old_download_size := NULL; old_download_msec_time := NULL;
+  old_exp_is_true := 0; old_read_count := 0;
+  insert into DB.DBA.SYS_HTTP_SPONGE (HS_LOCAL_IRI, HS_PARSER, HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD)
+  values (local_iri, parser, new_origin_uri, new_origin_login, now());
+  goto perform_actual_load;
+
+perform_actual_load:
+  new_expiration := NULL;
+  new_last_etag := NULL;
+  ret_304_not_modified := 0;
+  load_begin_msec := msec_time();
+
+  get_method := cast (get_keyword_ucase ('get:method', options, 'GET') as varchar);
+  if (get_method in ('POST', 'GET'))
+    {
+      req_hdr := NULL;
+      get_proxy := get_keyword_ucase ('get:proxy', options);
+      --!!!TBD: proper supprt for POST
+      --!!!TBD: proper authentication if get:login / get:password is provided.
+      if (old_last_etag is not null)
+        req_hdr := 'If-None-Match: ' || old_last_etag;
+      -- dbg_obj_princ ('Calling http_get (', new_origin_uri, ',..., ', get_method, req_hdr, NULL, get_proxy, ')');
+      ret_body := http_get (new_origin_uri, ret_hdr, get_method, req_hdr, NULL, get_proxy);
+      -- dbg_obj_princ ('http_get returned header: ', ret_hdr);
+      if (ret_hdr[0] like 'HTTP%404%')
+        signal ('HT404', sprintf ('Resource "%.1000s" not found', new_origin_uri));
+      if (ret_hdr[0] like 'HTTP%304%')
+        {
+          ret_304_not_modified := 1;
+          goto resp_received;
+        }
+      goto resp_received;
+    }
+--!!!TBD: if (get_method = ('MGET')) { ... }
+  call (eraser) (local_iri, new_origin_uri, options);
+  signal ('RDFZZ', sprintf (
+      'Unable to get data from "%.1000s": This version of Virtuoso does not support OPTION (get:method "%.100s")',
+         new_origin_uri, get_method ) );
+
+resp_received:
+  ret_content_type := http_request_header (ret_hdr, 'Content-Type', null, null);
+  ret_etag := http_request_header (ret_hdr, 'ETag', null, null);
+  ret_date := http_request_header (ret_hdr, 'Date', null, null);
+  ret_expires := http_request_header (ret_hdr, 'Expires', null, null);
+  ret_last_modif := http_request_header (ret_hdr, 'Last-Modified', null, null);
+  ret_dt_date := case (isnull (ret_date)) when 0 then http_string_date (ret_date) else null end;
+  ret_dt_expires := case (isnull (ret_expires)) when 0 then http_string_date (ret_expires) else null end;
+  ret_dt_last_modified := case (isnull (ret_last_modif)) when 0 then http_string_date (ret_last_modif) else null end;
+  if (ret_304_not_modified and ret_dt_last_modified is null)
+    ret_dt_last_modified := old_last_modified;
+  if (ret_dt_date is not null)
+    {
+      if (ret_dt_expires is not null)
+        ret_dt_expires := dateadd ('second', datediff ('second', ret_dt_date, now()), ret_dt_expires);
+      if (ret_dt_last_modified is not null)
+        ret_dt_last_modified := dateadd ('second', datediff ('second', ret_dt_date, now()), ret_dt_last_modified);
+    }
+  if (ret_dt_expires is not null and
+    (ret_dt_expires < coalesce (ret_dt_date, ret_dt_last_modified, now ())) )
+    ret_dt_expires := NULL;
+  if (ret_dt_expires is not null)
+    new_expiration := ret_dt_expires;
+  else
+    {
+      if (ret_dt_date is not null and ret_dt_last_modified is not null and (ret_dt_date >= ret_dt_last_modified))
+        new_expiration := dateadd ('second', __min (3600 * 24 * 7, 0.7 * datediff ('second', ret_dt_last_modified, ret_dt_date)), now());
+    }
+  if (ret_304_not_modified)
+    {
+      if (new_expiration is null and explicit_refresh is not null)
+        new_expiration := dateadd ('second', 0.7 * explicit_refresh, now());
+      if (ret_dt_expires is null and new_expiration is not null and explicit_refresh is not null)
+        new_expiration := __min (new_expiration, dateadd ('second', explicit_refresh, now()));
+      update DB.DBA.SYS_HTTP_SPONGE
+      set HS_LAST_LOAD = now(), HS_LAST_ETAG = old_last_etag, HS_LAST_READ = now(),
+        HS_EXP_IS_TRUE = case (isnull (ret_dt_expires)) when 1 then 0 else 1 end,
+        HS_EXPIRATION = coalesce (ret_dt_expires, new_expiration, now()),
+        HS_LAST_MODIFIED = coalesce (old_last_modified, ret_dt_last_modified),
+        HS_DOWNLOAD_SIZE = old_download_size,
+        HS_DOWNLOAD_MSEC_TIME = old_download_msec_time,
+        HS_READ_COUNT = old_read_count + 1,
+        HS_SQL_STATE = NULL, HS_SQL_MESSAGE = NULL
+      where
+        HS_LOCAL_IRI = local_iri;
+      return local_iri;
+    }
+  if (ret_body is null)
+    signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+  --!!!TBD: proper character set handling in response
+  new_download_size := length (ret_body);
+
+  whenever sqlstate '*' goto error_during_load;
+  call (parser) (local_iri, new_origin_uri, ret_content_type, ret_hdr, ret_body, options);
+    new_last_etag := ret_etag;
+  load_end_msec := msec_time();
+  if (new_expiration is null)
+    new_expiration := dateadd ('second', load_end_msec - load_begin_msec, now()); -- assuming that expiration is at least 1000 times larger than load time.
+  if (ret_dt_expires is null and explicit_refresh is not null)
+    new_expiration := __min (new_expiration, dateadd ('second', 0.7 * explicit_refresh, now()));
+  update DB.DBA.SYS_HTTP_SPONGE
+  set HS_LAST_LOAD = now(), HS_LAST_ETAG = new_last_etag, HS_LAST_READ = now(),
+    HS_EXP_IS_TRUE = case (isnull (ret_dt_expires)) when 1 then 0 else 1 end,
+    HS_EXPIRATION = coalesce (ret_dt_expires, new_expiration, now()),
+    HS_LAST_MODIFIED = ret_dt_last_modified,
+    HS_DOWNLOAD_SIZE = new_download_size,
+    HS_DOWNLOAD_MSEC_TIME = load_end_msec - load_begin_msec,
+    HS_READ_COUNT = 1,
+    HS_SQL_STATE = NULL, HS_SQL_MESSAGE = NULL
+  where
+    HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+  return local_iri;
+
+error_during_load:
+  -- dbg_obj_princ ('error during load: ', __SQL_STATE, __SQL_MESSAGE);
+  update DB.DBA.SYS_HTTP_SPONGE
+  set HS_SQL_STATE = __SQL_STATE,
+    HS_SQL_MESSAGE = __SQL_MESSAGE
+  where
+    HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
+  return local_iri;
+}
+;
+
+create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in ret_content_type varchar, inout ret_body any) returns varchar
+{
+  if (ret_content_type is not null)
+    {
+      if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
+        return 'application/sparql-results+xml';
+      if (strstr (ret_content_type, 'application/rdf+xml') is not null)
+        return 'application/rdf+xml';
+      if (strstr (ret_content_type, 'text/rdf+n3') is not null)
+        return 'text/rdf+n3';
+    }
+  declare ret_begin, ret_html any;
+  ret_begin := "LEFT" (ret_body, 1024);
+  ret_html := xtree_doc (ret_begin, 2);
+  if (xpath_eval ('/html|/xhtml', ret_html) is not null)
+    return 'text/html';
+  if (xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql', ret_html) is not null
+    or xpath_eval ('[xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"] /rset2:sparql', ret_html) is not null)
+    return 'application/sparql-results+xml';
+  if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /rdf:rdf', ret_html) is not null)
+    return 'application/rdf+xml';
+  if (strstr (ret_begin, '<html>') is not null or
+    strstr (ret_begin, '<xhtml>') is not null )
+    return 'text/html';
+  if (ret_content_type is null or strstr (ret_content_type, 'text/plain') is not null)
+    {
+      declare ret_lines any;
+      declare ret_lcount, ret_lctr integer;
+      ret_lines := split_and_decode (ret_begin, 0, '\0\t\n');
+      ret_lcount := length (ret_lines);
+      for (ret_lctr := 0; ret_lctr < ret_lcount; ret_lctr := ret_lctr + 1)
+        {
+          declare l varchar;
+          l := rtrim (replace (ret_lines [ret_lctr], '\r', ''));
+          -- dbg_obj_princ ('l = ', l);
+          if (("LEFT" (l, 7) = '@prefix') or ("LEFT" (l, 5) = '@base') or ("LEFT" (l, 8) = '@keyword'))
+            return 'text/rdf+n3';
+          if (not ((l like '#%') or (l='')))
+            return 'text/plain';
+        }
+    }
+  return ret_content_type;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any)
+{
+  --!!!TBD: proper calculation of new_expiration, usingdata from HTTP header of the response
+  ret_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (ret_content_type, ret_body);
+  -- dbg_obj_princ ('ret_content_type is ', ret_content_type);
+  if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
+    signal ('RDFXX', sprintf ('Unable to load RDF graph <%.500s> from <%.500s>: the sparql-results XML answer does not contain triples', graph_iri, new_origin_uri));
+  if (strstr (ret_content_type, 'application/rdf+xml') is not null)
+    {
+      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+      DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, graph_iri);
+      return;
+    }
+  if (strstr (ret_content_type, 'text/rdf+n3') is not null)
+    {
+      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+      DB.DBA.TTLP (ret_body, new_origin_uri, graph_iri);
+      return;
+    }
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+  if (strstr (ret_content_type, 'text/plain') is not null)
+    {
+      signal ('RDFXX', sprintf (
+          'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.1000s',
+          graph_iri, new_origin_uri, ret_content_type, ret_hdr[0], "LEFT" (ret_body, 1024) ) );
+    }
+  if (strstr (ret_content_type, 'text/html') is not null)
+    {
+      signal ('RDFZZ', sprintf (
+          'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.1000s',
+          graph_iri, new_origin_uri, ret_content_type, ret_hdr[0],
+          cast (xtree_doc (ret_body, 2) as varchar) ) );
+    }
+  signal ('RDFZZ', sprintf (
+      'Unable to load RDF graph <%.500s> from <%.500s>: returned unsupported Content-Type ''%.300s''',
+      graph_iri, new_origin_uri, ret_content_type ) );
+}
+;
+
+create procedure DB.DBA.RDF_FORGET_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout options any)
+{
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+}
+;
+
+create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
+{
+  return DB.DBA.SYS_HTTP_SPONGE_UP (graph_iri, 'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
+}
+;
+
+-----
+-- Loading default set of quad map metadata.
+
+create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
+{
+  if (not exists (sparql define input:storage "" ask where {
+          graph <http://www.openlinksw.com/schemas/virtrdf#> {
+              <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
+                virtrdf:version '2006-09-21 0004'
+            } } ) )
+    {
+      TTLP (
+        cast ( XML_URI_GET (
+            'http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl', '' ) as varchar ),
+        '', 'http://www.openlinksw.com/schemas/virtrdf#' );
+      TTLP ('
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
+@prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#> .
+
+virtrdf:DefaultQuadStorage
+  rdf:type virtrdf:QuadStorage ;
+  virtrdf:qsUserMaps virtrdf:DefaultQuadStorage-UserMaps ;
+  virtrdf:qsDefaultMap virtrdf:DefaultQuadMap .
+virtrdf:DefaultQuadStorage-UserMaps
+      rdf:type virtrdf:array-of-QuadMap .
+      ', '', 'http://www.openlinksw.com/schemas/virtrdf#' );
+    commit work;
+  }
+JSO_LOAD_GRAPH (JSO_SYS_GRAPH (), 0);
+JSO_PIN_GRAPH (JSO_SYS_GRAPH ());
+}
+;
+
+--!AFTER __PROCEDURE__ DB.DBA.XML_URI_GET !
+DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 ;
 
 --!AFTER
