@@ -94,9 +94,11 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
   dp_addr_t up;
   int save_pos;
 
+  if (level < MAX_LEVELS)
+    {
   levels[level].lv_nodes++;
   /*  levels[level].lv_bytes += PAGE_SZ - (*buf_ret)->bd_content_map->pm_bytes_free; */
-
+    }
   if (func)
     (*func) (it, *buf_ret, ctx);
 
@@ -136,6 +138,7 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
       else
 	{
 	  it->itc_at_data_level = 1;
+	  if (level < MAX_LEVELS)
 	  levels[level].lv_leaves++;
 
 	  /* XXX PmN Should we modify the database here?
@@ -670,7 +673,7 @@ dbe_cols_are_valid (db_buf_t row, dbe_key_t * key, int throw_error)
   return 1;
 }
 
-static void
+void
 log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
 {
   db_buf_t page;
