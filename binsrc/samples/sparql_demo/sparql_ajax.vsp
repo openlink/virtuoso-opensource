@@ -299,15 +299,14 @@ WHERE {
           <input id="default-graph-uri" name="default-graph-uri" value="<?V default_dgu ?>" onchange="OAT.Dom.hide($('view_data_file'));"/>
           <br/>
           <label for="query">SPARQL Query</label><br/>
-          <textarea id="query" name="query">SELECT * WHERE {?s ?p ?o}</textarea>
+              <textarea id="query" name="query" onchange="format_select(this)" onkeyup="format_select(this)">SELECT * WHERE {?s ?p ?o}</textarea>
           <br/>
           <input type="button" id="explain" name="explain" value="Execution plan" onclick="rq_query('c')">
           <label for="format">Output format</label>
           <select id="format" onchange="format_change()">
-            <option value="">table</option>
+                <option value="auto">Auto</option>
+                <option value="" selected="selected">Table</option>
             <option value="application/sparql-results+xml">XML</option>
-            <option value="text/rdf+n3">TURTLE</option>
-                <option value="application/rdf+xml">RDF</option>
             <option value="application/sparql-results+json">JSON</option>
             <option value="application/javascript">Javascript</option>
             <option value="text/html">HTML</option>
@@ -321,8 +320,11 @@ WHERE {
             <option value="100">100</option>
             <option value="200">200</option>
           </select>
+              <br />
+              <input type="button" value="Store" onclick="store_click()" class="ctl_right">
+              <input type="button" value="Load" onclick="load_click()" class="ctl_right">
           <input type="button" value="Run Query" onclick="rq_query()">
-          <input type="reset" value="Reset">
+              <input type="reset" value="Reset" onclick="reset_click()">
           <br/><br/>
         </form>
         <div id="res_area"></div>

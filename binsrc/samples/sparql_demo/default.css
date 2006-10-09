@@ -376,6 +376,23 @@ ul#tabres {
   padding:5px;
 }
 
+/* ---------------- other -------------- */
+.ctl_right {
+  float:right;
+}
+
+
+/* ---------------- Warning -------------- */
+
+#warning
+{
+  border: 4px dashed red;
+  background-color: yellow;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+
 /* ---------------- dawg -------------- */
 .w3cdawglink{
   float:right;

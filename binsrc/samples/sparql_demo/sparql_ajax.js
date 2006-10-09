@@ -148,7 +148,7 @@ function open_dav()
 		imagePath:'images/',
 		imageExt:'gif',
 		toolbar:{new_folder:false},
-    onOpenClick:view_file
+    onConfirmClick:view_file
   };
 	OAT.WebDav.open(options);
 }
@@ -203,6 +203,13 @@ function load_dawg(list,item)
     $('dawg_content').innerHTML +='<h3>Results</h3>';
     $('dawg_content').innerHTML +='<p><a href="#" onclick="view_file(\'' + etalonuri + '\')">' + etalonuri + '</a></p>';
     $('dawg_content').innerHTML += '<div id="dawg_etalon">' + etalon + '</div>';
+    var table = find_child_element($('dawg_etalon'),'table');
+    if (table && table.rows[0] && table.rows[0].cells[0] && table.rows[0].cells[0].innerHTML == 'callret')
+    {
+      var res = table.rows[1].cells[0].firstChild.innerHTML;
+      table.parentNode.removeChild(table);
+      $('dawg_etalon').innerHTML = res.replace(/</g,'&lt;');
+    }
 
   };
   OAT.Ajax.command(OAT.Ajax.GET, "./load_dawg_usecase.vsp?list=" + list + "&case=" + item, function(){return '';}, callback, OAT.Ajax.TYPE_XML);
@@ -218,12 +225,13 @@ function load_dawg_query()
   tab.go(1);
   $('query').value = $('dawg_query').getAttribute('dawgdata');
   $('default-graph-uri').value = $('dawg_dgu').getAttribute('dawgdata');
-  $('etalon').innerHTML = '<hr/><b>Expected result:</b>' + $('dawg_etalon').innerHTML;
+  $('etalon').innerHTML = '<hr/><b>Expected result:</b><br/>' + $('dawg_etalon').innerHTML;
 
-  if($('query').value.match('CONSTRUCT'))
-    $('format').selectedIndex = 2; 
-  else 
-  $('format').selectedIndex = 0; 
+  format_select();
+  //if($('query').value.match('CONSTRUCT'))
+  //  $('format').selectedIndex = 1; 
+  //else 
+    $('format').selectedIndex = 1; 
     
   if ($('usesoap').checked)
   {
@@ -243,10 +251,10 @@ function load_dawg_query()
       table.parentNode.removeChild(table);
     grid2.ieFix();
     }
-    else
-    {
-    $('etalon').innerHTML += '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
-    }
+  //else
+  //{
+  //  $('etalon').innerHTML += '<pre>' + data.replace(/</g,'&lt;') + '</pre>';
+  //}
   //OAT.Dom.hide($('tree_container'));
 }
 
@@ -307,6 +315,12 @@ function is_r()
 
 function format_change()
 {
+  $('etalon').innerHTML = ''; 
+}
+
+function reset_click()
+{
+  $('res_area').innerHTML = ''; 
   $('etalon').innerHTML = ''; 
 }
 
@@ -457,6 +471,24 @@ function rq_query(param,dl)
 
     $('res_area').innerHTML = '';
     var tabres_html = '';
+    
+    if ($v('query').match(/construct/i) && $v('format') != 'text/rdf+n3' && $v('format') != 'application/rdf+xml' && $v('format') != 'auto')
+    {
+      tabres_html += '<div id="warning">';
+      tabres_html += 'Results from SPARQL CONSTRUCT statementes are returned either as RDF/XML or TURTLE format. ';
+      tabres_html += 'It is best to choose "Let server choose the best". When you execute CONSTRUCT statements';
+      tabres_html += '</div>';
+    }
+
+    if (!$v('query').match(/construct/i) && ($v('format') == 'text/rdf+n3' || $v('format') == 'application/rdf+xml'))
+    {
+      tabres_html += '<div id="warning">';
+      tabres_html += 'Only SPARQL CONSTRUCT statementes can be returned as RDF/XML or TURTLE format. ';
+      tabres_html += 'Please select another format.';
+      tabres_html += '</div>';
+    }
+    
+    
     tabres_html += '<ul id="tabres">';
     tabres_html += '<li id="tabres_result">result</li><li id="tabres_request">request</li><li id="tabres_response">response</li>';
     if (dl)
@@ -501,7 +533,7 @@ function rq_query(param,dl)
     tabres.go(0);
 
     var table = find_child_element($('result'),'table');
-    if (table && $('format').selectedIndex == 0 && param != 'c')
+    if (table && $v('format') == '' && param != 'c')
     {
       $('result').innerHTML += '<div id="grid"></div>'; 
       table = find_child_element($('result'),'table');
@@ -614,4 +646,99 @@ function usesoap_change(ch)
     $('format').disabled = false;
     $('maxrows').disabled = false;
   }
+}
+
+last_format = 1;
+
+function format_select(query_obg)
+{
+  if (query_obg == undefined) query_obg = $('query');
+  var query = query_obg.value;
+  var format = $('format')
+    
+  if (query.match(/construct/i) && last_format == 1)
+  {
+    for(var i = format.options.length; i > 0; i--)
+      format.options[i] = null;
+    format.options[1] = new Option('N3/Turtle','text/rdf+n3');
+    format.options[2] = new Option('RDF/XML','application/rdf+xml');
+    format.selectedIndex = 1;
+    last_format = 2;
+  }
+
+  if (!query.match(/construct/i) && last_format == 2)
+  {
+    for(var i = format.options.length; i > 0; i--)
+      format.options[i] = null;
+    format.options[1] = new Option('Table','');
+    format.options[2] = new Option('XML','application/sparql-results+xml');
+    format.options[3] = new Option('JSON','application/sparql-results+json');
+    format.options[4] = new Option('Javascript','application/javascript');
+    format.options[5] = new Option('HTML','text/html');
+    format.selectedIndex = 1;
+    last_format = 1;
+  }
+  
+}
+
+fileloadwin = null;
+
+function load_click(rid)
+{
+
+  var params = '';
+  if (fileloadwin == null)
+  {
+    fileloadwin = new OAT.Window({close:1,min:0,max:0,x:450,y:155,width:500,height:400,title:"Load Resource",imagePath:"images/"});
+    fileloadwin.div.style.zIndex = 1011;
+    document.body.appendChild(fileloadwin.div);
+    fileloadwin.onclose = function() { OAT.Dom.hide(fileloadwin.div); }
+  } else
+    OAT.Dom.show(fileloadwin.div);
+  fileloadwin.content.innerHTML = 'Loading...';
+    
+  if (rid > 0)
+    params = 'd_rid=' + rid;
+    
+
+  var callbacklq = function(data) {
+    fileloadwin.content.innerHTML = data;
+  }
+
+  OAT.Ajax.command(OAT.Ajax.GET, "./sparql_file.vsp?" + params, function(){return '';}, callbacklq, OAT.Ajax.TYPE_TEXT);
+  
+}
+
+function load_rq_click(rid)
+{
+  var callbacklrq = function(data) {
+    $('query').value = data;
+  }
+  OAT.Ajax.command(OAT.Ajax.GET, "./sparql_file.vsp?act=load&rid=" + rid, function(){return '';}, callbacklrq, OAT.Ajax.TYPE_TEXT);
+  OAT.Dom.hide(fileloadwin.div);
+}
+
+function store_click(){
+  var res_name = prompt("Resource Name",'');
+	if (!res_name) return;
+	
+	var pub = confirm("Make the resource public?");
+	if (pub) pub = '1';
+  else pub = '0';
+  
+  var callbacklsc = function(data) {
+    if (data == 'overwrite')
+    {
+      if (confirm("Resource already exists.\nDo you want to overwrite it?"))
+      {
+        OAT.Ajax.command(OAT.Ajax.POST, "./sparql_file.vsp?act=store&pub="+pub+"&res_name="+encodeURIComponent(res_name)+'&ovr=1', 
+            function(){ return '&query=' + encodeURIComponent($v('query')); }, callbacklsc, OAT.Ajax.TYPE_TEXT);
+      }
+    } else 
+      alert(data);
+  }
+	
+  OAT.Ajax.command(OAT.Ajax.POST, "./sparql_file.vsp?act=store&pub="+pub+"&res_name="+encodeURIComponent(res_name), 
+      function(){ return '&query=' + encodeURIComponent($v('query')); }, callbacklsc, OAT.Ajax.TYPE_TEXT);
+  
 }
