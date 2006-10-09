@@ -1015,12 +1015,24 @@ dk_set_t all_mtxs = NULL;
 #endif
 
 dk_mutex_t *
-mutex_allocate (void)
+mutex_allocate_typed (int type)
 {
+  void * handle;
   int rc;
   static int is_initialized = 0;
-  NEW_VAR (pthread_mutex_t, ptm);
   NEW_VARZ (dk_mutex_t, mtx);
+  mtx->mtx_type = type;
+#if HAVE_SPINLOCK
+  if (MUTEX_TYPE_SPIN == type)
+    {
+      NEW_VAR (pthread_spinlock_t, sl);
+      pthread_spin_init (sl, 0);
+      handle = (void*)sl;
+    }
+  else 
+#endif
+    {
+      NEW_VAR (pthread_mutex_t, ptm);
 
   memset ((void *) ptm, 0, sizeof (pthread_mutex_t));
 #ifndef OLD_PTHREADS
@@ -1033,8 +1045,9 @@ mutex_allocate (void)
   rc = pthread_mutex_init (ptm, _mutex_attr);
 #endif
   CKRET (rc);
-
-  mtx->mtx_handle = (void *) ptm;
+      handle = (void*) ptm;
+    }
+  mtx->mtx_handle = handle;
 #ifdef MTX_DEBUG
   mtx->mtx_owner = NULL;
 #endif
@@ -1048,17 +1061,40 @@ mutex_allocate (void)
   return mtx;
 
 failed:
-  dk_free ((void *) ptm, sizeof (pthread_mutex_t));
+#if HAVE_SPINLOCK
+  if (MUTEX_TYPE_SPIN == mtx->mtx_type)
+    dk_free ((void *) mtx->mtx_handle, sizeof (pthread_spinlock_t));
+  else
+#endif
+    dk_free ((void *) mtx->mtx_handle, sizeof (pthread_mutex_t));
+
   dk_free (mtx, sizeof (dk_mutex_t));
   return NULL;
+}
+
+
+dk_mutex_t *
+mutex_allocate ()
+{
+  return mutex_allocate_typed (MUTEX_TYPE_SHORT);
 }
 
 
 void
 mutex_free (dk_mutex_t *mtx)
 {
+#if HAVE_SPINLOCK
+  if (MUTEX_TYPE_SPIN == mtx->mtx_type)
+    {
+      pthread_spin_destroy (mtx->mtx_handle);
+      dk_free (mtx->mtx_handle, sizeof (pthread_spinlock_t));
+    }
+  else
+#endif
+    {
   pthread_mutex_destroy ((pthread_mutex_t*) mtx->mtx_handle);
   dk_free (mtx->mtx_handle, sizeof (pthread_mutex_t));
+    }
 #ifdef MTX_DEBUG
   dk_free_box (mtx->mtx_name);
 #endif
@@ -1071,14 +1107,17 @@ mutex_free (dk_mutex_t *mtx)
 }
 
 
-#ifdef MTX_DEBUG
+#if defined (MTX_DEBUG) || defined (MTX_METER)
 void
 mutex_option (dk_mutex_t * mtx, char * name, mtx_entry_check_t ck, void * cd)
 {
   dk_free_box (mtx->mtx_name);
   mtx->mtx_name = box_dv_short_string (name);
+#ifdef MTX_DEBUG
+
   mtx->mtx_entry_check = ck;
   mtx->mtx_entry_check_cd = cd;
+#endif
 }
 #endif
 
@@ -1111,9 +1150,19 @@ mutex_enter (dk_mutex_t *mtx)
     GPF_T1 ("Mtx entry check fail");
 #endif
 #ifdef MTX_METER
+#if HAVE_SPINLOCK
+  if (MUTEX_TYPE_SPIN == mtx->mtx_type)
+    rc = pthread_spin_trylock (mtx->mtx_handle);
+  else 
+#endif
   rc = pthread_mutex_trylock ((pthread_mutex_t*) mtx->mtx_handle);
   if (TRYLOCK_SUCCESS != rc)
     {
+#if HAVE_SPINLOCK
+      if (MUTEX_TYPE_SPIN == mtx->mtx_type)
+	rc = pthread_spin_lock (mt->mtx_handle);
+      else
+#endif
       rc = pthread_mutex_lock ((pthread_mutex_t*) mtx->mtx_handle);
       mtx->mtx_waits++;
       mtx->mtx_enters++;
@@ -1121,6 +1170,11 @@ mutex_enter (dk_mutex_t *mtx)
   else
     mtx->mtx_enters++;
 #else
+#if HAVE_SPINLOCK
+  if (MUTEX_TYPE_SPIN == mtx->mtx_type)
+    rc = pthread_spin_lock (mtx->mtx_handle);
+  else
+#endif
 	rc = pthread_mutex_lock ((pthread_mutex_t*) mtx->mtx_handle);
 #endif
   CKRET (rc);
@@ -1130,7 +1184,6 @@ mutex_enter (dk_mutex_t *mtx)
   mtx->mtx_entry_file = (char *) file;
   mtx->mtx_entry_line = line;
 #endif
-  _thread_num_wait--;
   return 0;
 
 failed:
@@ -1155,9 +1208,21 @@ int
 mutex_try_enter (dk_mutex_t *mtx)
 {
 #ifndef MTX_DEBUG
+#if HAVE_SPINLOCK
+  if (MUTEX_TYPE_SPIN == mtx->mtx_type)
+    return pthread_spin_trylock ((pthread_mutex_t *) mtx->mtx_handle) == TRYLOCK_SUCCESS ? 1 : 0;
+  else
+#endif
   return pthread_mutex_trylock ((pthread_mutex_t *) mtx->mtx_handle) == TRYLOCK_SUCCESS ? 1 : 0;
 #else
-  if (pthread_mutex_trylock ((pthread_mutex_t*) mtx->mtx_handle) == TRYLOCK_SUCCESS)
+
+  if (
+#if HAVE_SPINLOCK
+      MUTEX_TYPE_SPIN == mtx->mtx_type 
+      ? pthread_spin_trylock ((pthread_mutex_t*) mtx->mtx_handle) == TRYLOCK_SUCCESS
+      : 
+#endif
+      pthread_mutex_trylock ((pthread_mutex_t*) mtx->mtx_handle) == TRYLOCK_SUCCESS)
     {
       assert (mtx->mtx_owner == NULL);
       mtx->mtx_owner = thread_current ();
@@ -1174,6 +1239,11 @@ mutex_leave (dk_mutex_t *mtx)
 #ifdef MTX_DEBUG
   assert (mtx->mtx_owner == thread_current ());
   mtx->mtx_owner = NULL;
+#endif
+#if HAVE_SPINLOCK 
+  if (MUTEX_TYPE_SPIN == mtx->mtx_type)
+    pthread_spin_unlock ((pthread_spinlock_t*) mtx->mtx_handle);
+  else
 #endif
   pthread_mutex_unlock ((pthread_mutex_t*) mtx->mtx_handle);
 }

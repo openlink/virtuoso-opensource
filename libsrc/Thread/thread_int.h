@@ -182,14 +182,17 @@ struct semaphore_s
  */
 #define MUTEX_TYPE_SHORT 0
 #define MUTEX_TYPE_LONG	 1
-
+#define MUTEX_TYPE_SPIN 2
 
 struct mutex_s
   {
     /* os specific handle */
     void *		mtx_handle;
-#ifdef MTX_DEBUG
+#if defined (MTX_DEBUG) || defined (MTX_METER)
     caddr_t		mtx_name;
+#endif
+
+#ifdef MTX_DEBUG
     thread_t *		mtx_owner;
     char *	mtx_entry_file;
     int		mtx_entry_line;
@@ -200,9 +203,7 @@ struct mutex_s
     long		mtx_waits;
     long		mtx_enters;
 #endif
-#ifdef WIN32
     int			mtx_type;
-#endif
   };
 
 /* thread_queue.c */

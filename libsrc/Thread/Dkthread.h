@@ -181,11 +181,7 @@ void semaphore_leave (semaphore_t *sem);
 #endif
 
 EXE_EXPORT (dk_mutex_t *, mutex_allocate, (void));
-#ifdef WIN32
 dk_mutex_t *mutex_allocate_typed (int mutex_type);
-#else
-#define mutex_allocate_typed(value) mutex_allocate()
-#endif
 EXE_EXPORT (void, mutex_free, (dk_mutex_t *mtx));
 EXE_EXPORT (int, mutex_enter, (dk_mutex_t *mtx));
 #ifdef MTX_DEBUG
@@ -196,7 +192,7 @@ int mutex_enter_dbg (int ln, const char * file, dk_mutex_t *mtx);
 #endif
 #endif
 #endif
-#ifdef MTX_DEBUG
+#if defined (MTX_DEBUG) || defined (MTX_METER)
 void mutex_option (dk_mutex_t * mtx, char * name, mtx_entry_check_t ck, void * cd);
 #else
 #define mutex_option(mtx,name,ck,cd) do { ; } while (0)
