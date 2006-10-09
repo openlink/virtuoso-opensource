@@ -304,7 +304,7 @@ WS_SOAP_GET_KEYINFO (inout soap_xml any, inout lines any)
   declare sec, pos1, pos2 any;
 
   sec := xpath_eval
-	      ('[xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"] /S:Envelope/S:Header/Security',
+	      ('[xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"] /S:Envelope/S:Header/*:Security',
        soap_xml, 1);
 
 
@@ -1533,7 +1533,13 @@ create procedure
 XMLRPC2SOAP (INOUT BODY VARCHAR)
 {
   declare tmp, ret, ses any;
+  {
+    declare exit handler for sqlstate '*'
+      {
+	signal ('42000', 'Not well formed XMLRPC response.', 'SP036');
+      };
   tmp := xml_tree_doc (BODY);
+  }
   ret := xslt ('http://local.virt/xmlrpc_soap', tmp, vector ('call', '1'));
   ses := string_output ();
   http_value (ret, null, ses);
