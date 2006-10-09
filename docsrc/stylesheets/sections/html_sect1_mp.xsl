@@ -19,6 +19,7 @@
 	<xsl:param name="refentry">NULL</xsl:param>
 	<xsl:param name="pdflocation">../pdf/<xsl:value-of select="/book/@id" />.pdf</xsl:param>
 	<xsl:param name="rss">no</xsl:param>
+	<xsl:param name="serveraddr">http://localhost:8890/doc/html</xsl:param>
 	<xsl:param name="mode">static</xsl:param>
 
 <!-- ==================================================================== -->
@@ -465,7 +466,7 @@
       		href="{//self::*[@id = $chap]/ancestor-or-self::chapter/@id}.rdf"></link>
     </xsl:if>
     <link rel="alternate" type="application/opml+xml" title="OPML" href="{/book/@id}.opml"></link>
-    <link rel="meta" type="application/rdf+xml" title="SIOC" href="{/book/@id}.sioc.rdf" />
+    <link rel="meta" type="application/rdf+xml" title="SIOC" href="{concat($serveraddr,'/',/book/@id)}.sioc.rdf" />
   </xsl:if>
 </xsl:template>
 

@@ -212,6 +212,8 @@ It is divided into the following sections:
 			</listitem>
 			<listitem><para>[URIQA] Settings in this optional section control URIQA semantic web enabler.</para>
 			</listitem>
+			<listitem><para>[SPARQL] Settings in this optional section control SPARQL protocol endpoint default parameters and limits.</para>
+			</listitem>
 			<listitem><para>[Replication] The replication section sets the transactional replication parameters for the server. </para>
 			</listitem>
 			<listitem><para>[Mono] The Mono section contains settings pertenent to using the Virtuoso with Mono Runtime CLR support.  </para>
@@ -1238,6 +1240,42 @@ This section should stay commented out as long as URIQA is not in use.
 </listitem>
 			</itemizedlist>
 		</sect4>
+		
+		<sect4 id="ini_SPARQL">
+			<title>[SPARQL]</title>
+			<para>
+The SPARQL section sets parameters and limits for SPARQL query protocol web service service.
+This section should stay commented out as long as SPARQL is not in use.
+</para>
+Section <link linkend="rdfandsparql">RDF Database and SPARQL</link> contains detailed description of this functionality.
+			<itemizedlist mark="dash">
+<listitem id="ini_SPARQL_ExternalQuerySource">
+    <formalpara>
+	<title>ExternalQuerySource = 1 or 0</title>
+	<para>This controls processing of the "query-uri" parameter of the SPARQL query protocol webservice, means enable 1 or prohibited 0.</para>
+    </formalpara>
+</listitem>
+<listitem id="ini_SPARQL_ExternalXsltSource">
+    <formalpara>
+	<title>ExternalXsltSource = 1 or 0</title>
+	<para>This controls processing of the "xslt-uri" parameter of the SPARQL query protocol webservice, means enable 1 or prohibited 0.</para>
+    </formalpara>
+</listitem>
+<listitem id="ini_SPARQL_ResultSetMaxRows">
+    <formalpara>
+	<title>ResultSetMaxRows = number</title>
+	<para>This setting is used to limit the number of the rows in the result, if this is higher than "maxrows" parameter this setting takes precedence.</para>
+    </formalpara>
+</listitem>
+<listitem id="ini_SPARQL_DefaultGraph">
+    <formalpara>
+	<title>DefaultGraph = IRI</title>
+	<para>IRI of the default graph to be used if no "default-graph-uri" parameter is specified.</para>
+    </formalpara>
+</listitem>
+			</itemizedlist>
+		</sect4>
+		
 		<sect4 id="ini_Replication">
 			<title>[Replication]</title>
 			<para>
