@@ -3038,7 +3038,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 		      case 's':
 			    {
-			      caddr_t arg = bif_string_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
+			      caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
 			      caddr_t narrow_arg = NULL;
 			      if (DV_WIDESTRINGP (arg))
 				arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
@@ -3070,7 +3070,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 		      case 'S':
 			    {
-			      caddr_t arg = bif_string_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
+			      caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
 			      caddr_t narrow_arg = NULL;
 			      if (DV_WIDESTRINGP (arg))
 				arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
@@ -3102,7 +3102,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 		      case 'I':
 			    {
-			      caddr_t arg = bif_string_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
+			      caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
 			      caddr_t narrow_arg = NULL;
 			      if (DV_WIDESTRINGP (arg))
 				arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
@@ -3134,7 +3134,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 		      case 'U':
 			    {
-			      caddr_t arg = bif_string_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
+			      caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
 			      caddr_t narrow_arg = NULL;
 			      if (DV_WIDESTRINGP (arg))
 				arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
@@ -3160,7 +3160,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 		      case 'V':
 			    {
-			      caddr_t arg = bif_string_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
+			      caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx++, szMe);
 			      caddr_t narrow_arg = NULL;
 			      if (!arg)
 				arg = narrow_arg = box_dv_short_string ("(NULL)");
@@ -3344,6 +3344,7 @@ val_end_found:
       switch (field_end[-1])
         {
         case 'd':
+        case 'i':
           {
             int acc = 0;
             int is_neg = 0;
@@ -3373,14 +3374,76 @@ val_end_found:
             dk_set_push (&res, box_num (is_neg ? -acc : acc));
             break;
           }
-        case 'i':
         case 'o':
+          {
+            int acc = 0;
+            const char *val_tail = val_start;
+            if (val_tail == val_end)
+              goto POP_format_mismatch_mid_field;
+            while (val_tail < val_end)
+              {
+#ifdef isoctdigit /* Available not on all platforms */
+                if (!isoctdigit (val_tail[0]))
+#else
+                if (('0' > val_tail[0]) || ('7' < val_tail[0]))
+#endif
+                  goto POP_format_mismatch_mid_field;
+                acc = acc * 8 + (val_tail[0] - '0');
+                val_tail++;
+              }
+            dk_set_push (&res, box_num (acc));
+            break;
+          }
         case 'u':
+          {
+            int acc = 0;
+            const char *val_tail = val_start;
+            if (val_tail == val_end)
+              goto POP_format_mismatch_mid_field;
+            while (val_tail < val_end)
+              {
+                if (!isdigit (val_tail[0]))
+                  goto POP_format_mismatch_mid_field;
+                acc = acc * 10 + (val_tail[0] - '0');
+                val_tail++;
+              }
+            dk_set_push (&res, box_num (acc));
+            break;
+          }
         case 'x':
+          {
+            int acc = 0;
+            const char *val_tail = val_start;
+            if (val_tail == val_end)
+              goto POP_format_mismatch_mid_field;
+            while (val_tail < val_end)
+              {
+                if (!isxdigit (val_tail[0]) || isupper (val_tail[0]))
+                  goto POP_format_mismatch_mid_field;
+#define HEXDIGITVAL(n) \
+  (isdigit (n) ? ((n)-'0') : ((n) + 10 - (isupper (n) ? 'A' : 'a')))
+                acc = (acc << 4) + HEXDIGITVAL(val_tail[0]);
+                val_tail++;
+              }
+            dk_set_push (&res, box_num (acc));
+            break;
+          }
         case 'X':
-          goto sorry_unsupported;
+          {
+            int acc = 0;
+            const char *val_tail = val_start;
+            if (val_tail == val_end)
+              goto POP_format_mismatch_mid_field;
+            while (val_tail < val_end)
+              {
+                if (!isxdigit (val_tail[0]) || islower (val_tail[0]))
+                  goto POP_format_mismatch_mid_field;
+                acc = (acc << 4) + HEXDIGITVAL(val_tail[0]);
+                val_tail++;
+              }
+            dk_set_push (&res, box_num (acc));
           break;
-  
+          }
         case 'e':
         case 'E':
         case 'f':
@@ -3405,9 +3468,39 @@ val_end_found:
           goto sorry_unsupported;
           break;
   
-        case 'U': /* via http_value_esc (qst, ses, arg, NULL, DKS_ESC_URI); */
-          goto sorry_unsupported;
+        case 'U':
+          {
+            caddr_t buf = box_dv_short_nchars (val_start, val_end - val_start);
+            char *out = buf;
+            char *in;
+            for (in = buf; '\0' != in[0]; in++)
+              {
+                if ('%' == in[0])
+                  {
+                    if (isxdigit (in[1]) && isxdigit (in[2]))
+                      {
+                        int hi = HEXDIGITVAL(in[1]);
+                        int lo = HEXDIGITVAL(in[2]);
+                        (out++)[0] = ((hi << 4) | lo);
+                        in += 2;
+                      }
+                    else
+                      {
+                        dk_free_box (buf);
+                        goto POP_format_mismatch_mid_field;
+                      }
+                  }
+                else if ('+' == in[0])
+                  (out++)[0] = ' ';
+                else
+                  (out++)[0] = in[0];
+              }
+            val = box_dv_short_nchars (buf, out - buf);
+            dk_free_box (buf);
+            dk_set_push (&res, val);
           break;
+          }
+
         case 'V': /* via http_value_esc (qst, ses, arg, NULL, DKS_ESC_PTEXT); */
           goto sorry_unsupported;
           break;
