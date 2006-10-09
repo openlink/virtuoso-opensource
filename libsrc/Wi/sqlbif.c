@@ -10609,24 +10609,91 @@ bif_mutex_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_mutex_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  /* number of ietrations, flag = 0 for all on same, 2 all on different, 2 all on same with try enter */
   long inx;
   long n = (long) bif_long_arg (qst, args, 0, "mutex_meter");
   long fl = (long) bif_long_arg (qst, args, 1, "mutex_meter");
+  long type = (long) bif_long_arg (qst, args, 2, "mutex_meter");
+  long waits = 0;
   static dk_mutex_t * stmtx;
+  static dk_mutex_t * stmtx_long;
+  static dk_mutex_t * stmtx_spin;
   dk_mutex_t * mtx;
   if (!stmtx)
-  stmtx = mutex_allocate ();
-  if (fl)
-  mtx = mutex_allocate ();
+    {
+      stmtx = mutex_allocate_typed (MUTEX_TYPE_SHORT);
+      stmtx_long = mutex_allocate_typed (MUTEX_TYPE_LONG);
+      stmtx_spin = mutex_allocate_typed (MUTEX_TYPE_SPIN);
+    }
+  if (1 == fl)
+    mtx = mutex_allocate_typed (type);
   else
+    {
+      switch (type)
+	{
+	case MUTEX_TYPE_SPIN: mtx = stmtx_spin; break;
+	case MUTEX_TYPE_LONG: mtx = stmtx_long; break;
+	default:
   mtx = stmtx;
+	}
+    }
   for (inx = 0; inx < n; inx++)
   {
+    if (2 == fl)
+      {
+	if (mutex_try_enter (mtx))
+	  mutex_leave (mtx);
+	else 
+	  {
+	    waits++;
     mutex_enter (mtx);
     mutex_leave (mtx);
   }
-  if (fl)
+      }
+    else 
+      {
+      }
+  }
+  if (1 == fl)
   mutex_free (mtx);
+  return box_num (waits);
+}
+
+
+caddr_t
+bif_spin_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+#if HAVE_SPINLOCK
+  long inx;
+  long n = (long) bif_long_arg (qst, args, 0, "mutex_meter");
+  long fl = (long) bif_long_arg (qst, args, 1, "mutex_meter");
+  static pthread_spinlock_t sl_st;
+  pthread_spinlock_t * sl;
+  static int inited = 0;
+  if (!inited)
+    {
+      pthread_spin_init (&sl_st, 0);
+      inited = 1;
+    }
+
+  if (fl)
+    {
+      sl = malloc (sizeof (pthread_spinlock_t));
+      pthread_spin_init (sl, 0);
+    }
+  else
+    sl = &sl_st;
+  for (inx = 0; inx < n; inx++)
+  {
+    pthread_spin_lock (sl);
+    pthread_spin_unlock (sl);
+  }
+  if (fl)
+    {
+      pthread_spin_destroy (sl);
+      free (sl);
+    }
+#endif
   return 0;
 }
 
@@ -10757,6 +10824,62 @@ bif_copy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   }
   return 0;
 }
+
+
+caddr_t
+bif_busy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  long inx, n_busy = 0, n_samples = 0, n_key;
+  long n = (long) bif_long_arg (qst, args, 0, "mutex_meter");
+  caddr_t tb_name = BOX_ELEMENTS (args) > 1 ? bif_string_arg (qst, args, 1, "busy_meter") : NULL;
+  dbe_table_t * tb = NULL;
+  long * counts;
+  
+  if (tb_name)
+    {
+      tb = sch_name_to_table (wi_inst.wi_schema, tb_name);
+      if (tb)
+	{
+	  counts = dk_alloc_box_zero (dk_set_length (tb->tb_keys) * sizeof (long), DV_STRING);
+	}
+    }
+  for (inx = 0; inx < n; inx++)
+  {
+    if (mutex_try_enter (wi_inst.wi_txn_mtx))
+      mutex_leave (wi_inst.wi_txn_mtx);
+    else 
+      n_busy++;
+    if (tb)
+      {
+	n_key = 0;
+	DO_SET (dbe_key_t *, key, &tb->tb_keys)
+	  {
+	    if (mutex_try_enter (key->key_fragments[0]->kf_it->it_page_map_mtx))
+	      mutex_leave (key->key_fragments[0]->kf_it->it_page_map_mtx);
+	    else 
+	      counts[n_key]++;
+	    n_key++;
+	  }
+	END_DO_SET();
+      }
+    n_samples++;
+    virtuoso_sleep (0, 1000);
+  }
+  printf ("  %ld samples taken, %ld with txn mtx occupied\n", n_samples, n_busy);
+  if (tb)
+    {
+      n_key = 0;
+      DO_SET (dbe_key_t *, key, &tb->tb_keys)
+	{
+	  printf ("Key %s busy %ld\n", key->key_name, counts[n_key]);
+	  n_key++;
+	}
+      END_DO_SET();
+      dk_free_box ((caddr_t)counts);
+    }
+  return box_num (n_busy);
+}
+
 
 caddr_t
 bif_self_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -12204,12 +12327,14 @@ sql_bif_init (void)
   bif_define ("__set", bif_set);
   bif_define_typed ("vector_concat", bif_vector_concatenate, &bt_any);
   bif_define ("mutex_meter", bif_mutex_meter);
+  bif_define ("spin_meter", bif_spin_meter);
   bif_define ("mem_meter", bif_mem_meter);
   bif_define ("mutex_stat", bif_mutex_stat);
   bif_define ("self_meter", bif_self_meter);
   bif_define ("malloc_meter", bif_malloc_meter);
   bif_define ("copy_meter", bif_copy_meter);
   bif_define ("alloc_cache_status", bif_alloc_cache_status);
+  bif_define ("busy_meter", bif_busy_meter);
   bif_define_typed ("row_count", bif_row_count, &bt_integer);
   bif_define_typed ("set_row_count", bif_set_row_count, &bt_integer);
   bif_define ("__assert_found", bif_assert_found);
