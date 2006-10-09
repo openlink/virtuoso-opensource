@@ -250,6 +250,30 @@ insert soft DB.DBA.HTTP_PATH
 )
 ;
 
+create procedure HTTP_PATH_UPGRADE ()
+{
+  declare arr, new_vhost any;
+  if (registry_get ('__http_vd_upgrade') = 'done')
+    return;
+  for select HP_HOST vhost, HP_LISTEN_HOST lhost, HP_LPATH lpath from DB.DBA.HTTP_PATH where HP_HOST not in ('*ini*', '*sslini*') do
+    {
+      arr := split_and_decode (vhost, 0, ':=:');
+      if (length (arr) > 1)
+        {
+	  new_vhost := arr[0];
+	  if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = new_vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath))
+	    log_message (sprintf ('The virtual directory at host=[%s] path=[%s] conflict with an existing, and cannot be upgraded.', vhost, lpath));
+	  else
+	    update DB.DBA.HTTP_PATH set HP_HOST = new_vhost where HP_HOST = vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath;
+	}
+    }
+  registry_set ('__http_vd_upgrade', 'done');
+}
+;
+
+HTTP_PATH_UPGRADE ()
+;
+
 create procedure HTTP_SET_DBA_ADMIN (in realm varchar)
 {
   declare auth, _user varchar;
@@ -332,7 +356,7 @@ create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
 {
   declare ssl_port varchar;
   declare ssl_opts any;
-  declare varr, larr any;
+  declare varr, lport any;
   if (length (lpath) > 1 and aref (lpath, length (lpath) - 1) = ascii ('/') )
     lpath := substring (lpath, 1, length (lpath) - 1);
 --  if (aref (ppath, length (ppath) - 1) <> ascii ('/'))
@@ -358,7 +382,7 @@ create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
            else vhost
          end
        , 0, ':=:');
-      larr := split_and_decode (
+      lport := split_and_decode (
          case
            when lhost = '*ini*' then server_http_port ()
            when lhost = '*sslini*' then ssl_port
@@ -367,33 +391,26 @@ create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
        , 0, ':=:');
 
       if (__tag (varr) = 193 and length (varr) > 1)
-	varr := aref (varr, 1);
-      else if (vhost = '*ini*')
-	varr := server_http_port ();
-      else if (vhost = '*sslini*')
-	varr := ssl_port;
-      else
-	varr := '80';
+	vhost := varr[0];
 
-      if (__tag (larr) = 193 and length (larr) > 1)
-	larr := aref (larr, 1);
+      if (__tag (lport) = 193 and length (lport) > 1)
+	lport := aref (lport, 1);
       else if (lhost = '*ini*')
-	larr := server_http_port ();
+	lport := server_http_port ();
       else if (lhost = '*sslini*')
-	larr := ssl_port;
+	lport := ssl_port;
       else if (atoi (lhost))
-	larr := lhost;
+	lport := lhost;
       else
-	larr := '80';
-
-      if (larr <> varr)
-	signal ('22023', 'The port number of host and listen host must be the same.', 'HT045');
+	lport := '80';
     }
---  ssl_port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'SSLPort');
---  if (__tag (ssl_port) = 183)
---    ssl_port := cast (ssl_port as varchar);
---  if (isstring (sec) and upper (sec) = 'SSL' and larr <>  ssl_port)
---    signal ('22023', 'The listen host should be equal to SSLPort', 'HT046');
+  else
+    lport := null;
+
+  if (lport = server_http_port () and lhost <> '*ini*')
+    lhost := '*ini*';
+  else if (lport = ssl_port and lhost <> '*sslini*')
+    lhost := '*sslini*';
 
   ssl_opts := NULL;
   if (isstring (sec) and upper (sec) = 'SSL')
@@ -414,6 +431,17 @@ create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
   if (is_default_host = 1 and
       exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = lhost))
       signal ('22023', sprintf ('The default directory for interface %s conflicts with existing directory entry for host (%s) and interface (%s).', lhost, lhost, lhost), 'HT059');
+
+  if (lhost[0] <> ascii ('*') and lport is not null and
+      lhost not like ':%' and exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = ':'||lport))
+    {
+       signal ('22023', 'The specified port to listen is already occupied by another listener on all network interfaces', 'HT078');
+    }
+  if (lhost[0] <> ascii ('*') and lport is not null and
+      lhost = ':'||lport and exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST like '%_:'||lport))
+    {
+       signal ('22023', 'The specified port to listen on all interfaces is already occupied by another listener on a separate network interface', 'HT079');
+    }
 
   if (isstring (server_http_port()) and isstring (lhost) and lhost <> '*ini*' and
       lhost <> server_http_port() and lhost <> '*sslini*' and lhost <> ssl_port and
@@ -446,7 +474,7 @@ create procedure VHOST_REMOVE (in vhost varchar := '*ini*',
              in lpath varchar,
              in del_vsps integer := 0)
 {
-  declare ssl_port varchar;
+  declare ssl_port, varr varchar;
   declare ppath, vsp_user, stat, msg varchar;
   declare cr cursor for select HP_PPATH, HP_RUN_VSP_AS from DB.DBA.HTTP_PATH
       where HP_LISTEN_HOST = lhost and HP_HOST = vhost and HP_LPATH = lpath;
@@ -458,13 +486,25 @@ create procedure VHOST_REMOVE (in vhost varchar := '*ini*',
 
   lhost := replace (lhost, '0.0.0.0', '');
 
+  ssl_port := coalesce (server_https_port (), '');
+  if (isstring (server_http_port ()))
+    {
+      varr := split_and_decode (
+         case
+           when vhost = '*ini*' then server_http_port ()
+           when vhost = '*sslini*' then ssl_port
+           else vhost
+         end
+       , 0, ':=:');
+      if (__tag (varr) = 193 and length (varr) > 1)
+	vhost := varr[0];
+    }
+
   whenever not found goto err_exit;
   open cr (exclusive, prefetch 1);
   fetch cr into ppath, vsp_user;
   delete from DB.DBA.HTTP_PATH where current of cr;
   http_map_del (lpath, vhost, lhost);
-
-  ssl_port := coalesce (server_https_port (), '');
 
   if (lhost <> '*ini*' and lhost <> server_http_port() and
       lhost <> '*sslini*' and lhost <> ssl_port and
