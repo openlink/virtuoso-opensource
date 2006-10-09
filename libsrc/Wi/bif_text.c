@@ -791,6 +791,7 @@ vtb_hash_string_ins_callback(const utf8char *buf, size_t bufsize, void *userdata
   id_hash_t * hash = vtb->vtb_words;
   lenmem_t lm;
   word_batch_t *place;
+  ASSERT_NCHARS_UTF8(buf,bufsize);
   lm.lm_length = bufsize;
   lm.lm_memblock = (char *)(buf);
   if (0 && id_hash_get (lh_noise_words, (char *)&lm))

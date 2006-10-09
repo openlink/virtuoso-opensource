@@ -678,3 +678,194 @@ box_wide_string (const wchar_t *wstr)
     }
   return ret;
 }
+
+#ifdef UTF8_DEBUG
+
+#define GUESS_ENC_UNKNOWN	0
+#define GUESS_UTF8		1
+#define GUESS_8BIT		2
+#define GUESS_WCHAR		3
+#define GUESS_UTF8_OF_UTF8	4
+#define GUESS_UTF8_OF_8BIT	5
+#define GUESS_UTF8_OF_WCHAR	6
+#define GUESS_WCHAR_OF_UTF8	7
+#define GUESS_WCHAR_OF_8BIT	8
+#define GUESS_WCHAR_OF_WCHAR	9
+#define COUNTOF__GUESS_ENC	11
+
+static const char *guess_encoding_names [COUNTOF__GUESS_ENC] = {
+  "(unidentified encoding, maybe ASCII)"	, /* GUESS_ENC_UNKNOWN	*/
+  "UTF-8"					, /* GUESS_UTF8		*/
+  "8-bit"					, /* GUESS_8BIT		*/
+  "Wide"					, /* GUESS_WCHAR	*/
+  "Overencoded UTF-8 of UTF-8"			, /* GUESS_UTF8_OF_UTF8	*/
+  "Overencoded UTF-8 of 8-bit"			, /* GUESS_UTF8_OF_8BIT	*/
+  "Overencoded UTF-8 of wide"			, /* GUESS_UTF8_OF_WCHAR	*/
+  "Overencoded wide of UTF-8"			, /* GUESS_WCHAR_OF_UTF8	*/
+  "Overencoded wide of 8-bit"			, /* GUESS_WCHAR_OF_8BIT	*/
+  "Overencoded wide of wide"			/* GUESS_WCHAR_OF_WCHAR	*/
+};
+
+/* Important: the guess works fine only with Cyrillic, Make extra tests for other alphabets.
+
+Proper Cyrillic in UTF-8:
+P       r       i       v       e       t
+\320\237\321\200\320\270\320\262\320\265\321\202
+
+Overencoded Cyrillic in UTF-8 of UTF-8
+P               r                   i                   v                   e                   t
+\320\277\303\267\321\217\342\224\200\320\277\342\225\246\320\277\342\225\241\320\277\342\225\243\321\217\342\224\214
+
+*/
+
+int
+guess_nchars_enc (const unsigned char *buf, size_t buflen)
+{
+  const unsigned char *tail = buf;
+  const unsigned char *end = buf+buflen;
+  const unsigned char *lastwc = ((void *)(((wchar_t *)end) - 1));
+  wchar_t prev_wc = 0;
+  int curr_res = GUESS_ENC_UNKNOWN, curr_score = 0, ctr;
+  int scores [COUNTOF__GUESS_ENC];
+  memset (scores, 0, COUNTOF__GUESS_ENC * sizeof (int));
+  while (tail < end)
+    {
+      unsigned char c = tail[0];
+      wchar_t wc = ((wchar_t *)tail)[0];
+      if ((0xD0 == tail[-3]) && (0xBF == tail[-2]) && (0xC0 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail >= (buf+3)))
+        scores [GUESS_UTF8_OF_UTF8] += (8+8+6+2);
+      else if ((0xD0 == tail[-4]) && (0xBF == tail[-3]) && (0xE0 == (tail[-2] & ~0x03)) && (0x94 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail >= (buf+4)))
+        scores [GUESS_UTF8_OF_UTF8] += (8+8+6+6+2);
+      else if ((0xD1 == tail[-4]) && (0x8F == tail[-3]) && (0xE0 == (tail[-2] & ~0x03)) && (0x94 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail >= (buf+4)))
+        scores [GUESS_UTF8_OF_UTF8] += (8+8+6+6+2);
+      else if ((0 == tail[-3]) && (0 == tail[-2]) && (0xC0 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail >= (buf+3)))
+        scores [GUESS_UTF8_OF_WCHAR] += (8+8+6+2);
+      else if ((0xC0 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail > buf))
+        scores [GUESS_UTF8_OF_8BIT] += (6+2);
+      else if ((0xC0 != (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail >= buf))
+        scores [GUESS_UTF8] += (1+2);
+      else if (0x80 == (c & ~0x7F))
+        scores [GUESS_8BIT] += 1;
+      else if ((tail < lastwc) && (0 == (wc & ~0x7FF))) /* Probably wchars */
+        {
+          if ((0xC0 == (prev_wc & ~0x3F)) && (0x80 == (wc & ~0x3F)))
+            scores [GUESS_WCHAR_OF_UTF8] += (16 * sizeof (wchar_t) - (6+6));
+          else if ((0x80 == (prev_wc & ~0x7F)) && (0x80 == (wc & ~0x7F)))
+            scores [GUESS_WCHAR_OF_8BIT] += (16 * sizeof (wchar_t) - (7+7));
+          else if ((0 == prev_wc) && (0 == wc))
+            scores [GUESS_WCHAR_OF_WCHAR] += (16 * sizeof (wchar_t));
+          else
+            scores [GUESS_WCHAR] += (8 * sizeof (wchar_t) - 11);
+          tail += (sizeof (wchar_t) - 1);
+        }
+      tail++;
+    }
+  for (ctr = COUNTOF__GUESS_ENC; ctr--; /* no step */)
+    {
+      if (scores [ctr] >= curr_score)
+        {
+          curr_score = scores [ctr];
+          curr_res = ctr;
+        }
+    }
+  return curr_res;
+}
+
+void dbg_dump_encoded_nchars (const char *buf, size_t len, size_t max_len)
+{
+  const char *tail = buf;
+  const char *end = buf+len;
+  if (len > max_len)
+    end = buf+max_len;
+  putchar ('\"');
+  while (tail < end)
+    {
+      switch (tail[0])
+        {
+	case '\'': printf ("\\\'"); break;
+	case '\"': printf ("\\\""); break;
+	case '\r': printf ("\\r"); break;
+	case '\n': printf ("\\n"); break;
+	case '\t': printf ("\\t"); break;
+	case '\\': printf ("\\\\"); break;
+	default:
+          if (((unsigned char)(tail[0]) < ' ') || (0x80 & tail[0]))
+	    printf ("\\x%02x", (unsigned char)(tail[0]));
+	  else
+	    putchar (tail[0]);
+	}
+      tail++;
+    }
+  if (len > max_len)
+    printf ("...");
+  putchar ('\"');
+}
+
+void
+assert_box_utf8 (const char *file, int line, caddr_t box)
+{
+  int enc = guess_nchars_enc (box, box_length (box) - 1);
+  if ((GUESS_UTF8 != enc) && (GUESS_ENC_UNKNOWN != enc))
+    {
+      printf ("\n%s(%d): %s instead of UTF-8, box is ", file, line, guess_encoding_names[enc]);
+      dbg_dump_encoded_nchars (box, box_length (box) - 1, 100);
+    }
+}
+
+void
+assert_box_8bit (const char *file, int line, caddr_t box)
+{
+  int enc = guess_nchars_enc (box, box_length (box) - 1);
+  if ((GUESS_8BIT != enc) && (GUESS_ENC_UNKNOWN != enc))
+    {
+      printf ("\n%s(%d): %s instead of 8-bit, box is ", file, line, guess_encoding_names[enc]);
+      dbg_dump_encoded_nchars (box, box_length (box) - 1, 100);
+    }
+}
+
+void
+assert_box_wchar (const char *file, int line, caddr_t box)
+{
+  int enc = guess_nchars_enc (box, box_length (box) - 1);
+  if ((GUESS_WCHAR != enc) && (GUESS_ENC_UNKNOWN != enc))
+    {
+      printf ("\n%s(%d): %s instead of wide, box is ", file, line, guess_encoding_names[enc]);
+      dbg_dump_encoded_nchars (box, box_length (box) - 1, 100);
+    }
+}
+
+void
+assert_nchars_utf8 (const char *file, int line, const char *buf, size_t len)
+{
+  int enc = guess_nchars_enc (buf, len);
+  if ((GUESS_UTF8 != enc) && (GUESS_ENC_UNKNOWN != enc))
+    {
+      printf ("\n%s(%d): %s instead of UTF-8, box is ", file, line, guess_encoding_names[enc]);
+      dbg_dump_encoded_nchars (buf, len, 100);
+    }
+}
+
+
+void
+assert_nchars_8bit (const char *file, int line, const char *buf, size_t len)
+{
+  int enc = guess_nchars_enc (buf, len);
+  if ((GUESS_8BIT != enc) && (GUESS_ENC_UNKNOWN != enc))
+    {
+      printf ("\n%s(%d): %s instead of 8-bit, box is ", file, line, guess_encoding_names[enc]);
+      dbg_dump_encoded_nchars (buf, len, 100);
+    }
+}
+
+void
+assert_nchars_wchar (const char *file, int line, const char *buf, size_t len)
+{
+  int enc = guess_nchars_enc (buf, len);
+  if ((GUESS_WCHAR != enc) && (GUESS_ENC_UNKNOWN != enc))
+    {
+      printf ("\n%s(%d): %s instead of wide, box is ", file, line, guess_encoding_names[enc]);
+      dbg_dump_encoded_nchars (buf, len, 100);
+    }
+}
+
+#endif

@@ -780,6 +780,23 @@ bif_set_utf8_output (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 #endif
 
+static caddr_t
+bif_dbg_assert_encoding (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t box = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "dbg_assert_encoding");
+  caddr_t enctype = bif_string_arg (qst, args, 1, "dbg_assert_encoding");
+  if (!strcmp (enctype, "UTF-8"))
+    ASSERT_BOX_UTF8(box);
+  else if (!strcmp (enctype, "8-BIT"))
+    ASSERT_BOX_8BIT(box);
+  else if (!strcmp (enctype, "WCHAR"))
+    ASSERT_BOX_WCHAR(box);
+  else
+    sqlr_new_error ("22023", "SR533",
+      "Second argument of dbg_assert_encoding() must be one of 'UTF-8', '8-BIT', 'WCHAR', not '%.1000s'", enctype);
+  return box_copy_tree (box);
+}
+
 void
 bif_intl_init (void)
 {
@@ -797,5 +814,6 @@ bif_intl_init (void)
 #ifndef NDEBUG
   bif_define ("set_utf8_output", bif_set_utf8_output);
 #endif
+  bif_define ("dbg_assert_encoding", bif_dbg_assert_encoding);
 }
 

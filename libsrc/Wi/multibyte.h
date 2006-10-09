@@ -87,4 +87,25 @@ wcharset_t *sch_name_to_charset (char *name);
 size_t wide_as_utf8_len (caddr_t _wide);
 caddr_t box_wide_string (const wchar_t *wstr);
 
+#ifdef UTF8_DEBUG
+#define ASSERT_BOX_UTF8(box) assert_box_utf8 (__FILE__, __LINE__, (box))
+#define ASSERT_BOX_8BIT(box) assert_box_8bit (__FILE__, __LINE__, (box))
+#define ASSERT_BOX_WCHAR(box) assert_box_wchar (__FILE__, __LINE__, (box))
+#define ASSERT_NCHARS_UTF8(buf,len) assert_nchars_utf8 (__FILE__, __LINE__, (buf), (len))
+#define ASSERT_NCHARS_8BIT(buf,len) assert_nchars_8bit (__FILE__, __LINE__, (buf), (len))
+#define ASSERT_NCHARS_WCHAR(buf,len) assert_nchars_wchar (__FILE__, __LINE__, (buf), (len))
+extern void assert_box_utf8 (const char *file, int line, caddr_t box);
+extern void assert_box_8bit (const char *file, int line, caddr_t box);
+extern void assert_box_wchar (const char *file, int line, caddr_t box);
+extern void assert_nchars_utf8 (const char *file, int line, const char *buf, size_t len);
+extern void assert_nchars_8bit (const char *file, int line, const char *buf, size_t len);
+extern void assert_nchars_wchar (const char *file, int line, const char *buf, size_t len);
+#else
+#define ASSERT_BOX_UTF8(box)
+#define ASSERT_BOX_8BIT(box)
+#define ASSERT_BOX_WCHAR(box)
+#define ASSERT_NCHARS_UTF8(buf,size)
+#define ASSERT_NCHARS_8BIT(buf,size)
+#define ASSERT_NCHARS_WCHAR(buf,size)
+#endif
 #endif /* _MULTIBYTE_H */
