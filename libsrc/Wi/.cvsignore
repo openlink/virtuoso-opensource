@@ -48,3 +48,8 @@ xpathp.h
 xpscn.c
 xpscn_vsnet.c
 y.output
+rdf_mapping_jso.c
+rdf_mapping_jso.h
+rdf_mapping_jso.ttl
+rdf_mapping_jso.ttl-sample
+

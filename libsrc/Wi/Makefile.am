@@ -55,7 +55,7 @@ noinst_HEADERS = \
 	virtext.h virtpwd.h widd.h widisk.h widv.h wifn.h wi.h wirpce.h \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
-	xpf.h xqf.h xslt_impl.h aqueue.h
+	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h
 
 
 generated_code = \
@@ -72,6 +72,10 @@ generated_code = \
 	xpathp.c \
 	xpathp.h \
 	xpscn.c \
+	rdf_mapping_jso.h \
+	rdf_mapping_jso.c \
+	rdf_mapping_jso.ttl \
+	rdf_mapping_jso.ttl-sample \
 	sql_code.c \
 	sql_code_1.c \
 	sql_code_2pc.c \
@@ -93,15 +97,27 @@ CLEANFILES = \
 	sparql_p.output sql3.output turtle_p.output xpathp.output
 
 
+C_FILES_SPARQL	= \
+	jso.c \
+        rdf_core.c \
+        rdf_mapping_jso.c \
+        rdfxml_parser.c \
+        sparql2sql.c \
+        sparql2sqltext.c \
+        sparql_core.c \
+        sparql_l.c \
+        sparql_p.c \
+        sparql_qm.c \
+        sql_code_sparql.c \
+        turtle_l.c \
+        turtle_p.c
+
+
 libwi_la_SOURCES = \
         sql3.c \
         scn3.c \
         xpathp.c \
         xpscn.c \
-	sparql_l.c \
-	sparql_p.c \
-	turtle_l.c \
-	turtle_p.c \
 	schspace.c \
 	arith.c \
 	aqueue.c \
@@ -186,7 +202,6 @@ libwi_la_SOURCES = \
 	sql_code_cache.c \
 	sql_code_blog.c \
 	sql_code_vdb.c \
-	sql_code_sparql.c \
 	bif_uuencode.c \
 	map_schema.c \
 	uuencode.c \
@@ -197,18 +212,13 @@ libwi_la_SOURCES = \
 	sql_code_vad.c \
 	sql_code_dbp.c \
 	rendezvous.c \
-	rdf_core.c \
-	rdfxml_parser.c
+	$(C_FILES_SPARQL)
 	
 libwi_odbc_la_SOURCES = \
         sql3.c \
         scn3.c \
         xpathp.c \
         xpscn.c \
-	sparql_l.c \
-	sparql_p.c \
-	turtle_l.c \
-	turtle_p.c \
 	schspace.c \
 	arith.c \
 	aqueue.c \
@@ -293,7 +303,6 @@ libwi_odbc_la_SOURCES = \
 	sql_code_cache.c \
 	sql_code_blog.c \
 	sql_code_vdb.c \
-	sql_code_sparql.c \
 	bif_uuencode.c \
 	map_schema.c \
 	uuencode.c \
@@ -304,20 +313,8 @@ libwi_odbc_la_SOURCES = \
 	sql_code_vad.c \
 	sql_code_dbp.c \
 	rendezvous.c \
-	rdf_core.c \
-	rdfxml_parser.c
+	$(C_FILES_SPARQL)
 	
-# can make that conditional if need be SPARQL
-libwi_la_SOURCES += \
-	sparql2sql.c \
-	sparql2sqltext.c \
-	sparql_core.c
-
-libwi_odbc_la_SOURCES += \
-	sparql2sql.c \
-	sparql2sqltext.c \
-	sparql_core.c
-
 #KUBL_REPL_FILES
 libwi_la_SOURCES += \
 	repldb.c \
@@ -750,6 +747,29 @@ sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES)
 
 blog_pages.sql: FORCE
 	(cd $(top_srcdir)/binsrc/weblog ; gmake)
+
+#
+# JSON
+#
+rdf_mapping_jso.h: rdf_mapping.jso jso_reformat.awk
+	@${GEN} ${GAWK} -o rdf_mapping_jso.h -f jso_reformat.awk \
+		-v "output_mode=h" -v "h_wrapper=__RFD_MAPPING_JSO_H" \
+		rdf_mapping.jso
+
+rdf_mapping_jso.c: rdf_mapping.jso jso_reformat.awk
+	@${GEN} ${GAWK} -o rdf_mapping_jso.c -f jso_reformat.awk \
+		-v "output_mode=c" \
+		rdf_mapping.jso
+
+rdf_mapping_jso.ttl: rdf_mapping.jso jso_reformat.awk
+	@${GEN} ${GAWK} -o rdf_mapping_jso.ttl -f jso_reformat.awk \
+		-v "output_mode=ttl" \
+		rdf_mapping.jso
+
+rdf_mapping_jso.ttl-sample: rdf_mapping.jso jso_reformat.awk
+	@${GEN} ${GAWK} -o rdf_mapping_jso.ttl-sample -f jso_reformat.awk \
+		-v "output_mode=ttl-sample" \
+		rdf_mapping.jso
 
 .PHONY: generated
 generated: \
