@@ -4529,7 +4529,7 @@ SQLMoreResults (
 {
   STMT (stmt, hstmt);
   col_binding_t *saved_cols;
-
+  int rc;
   set_error (&stmt->stmt_error, NULL, NULL, NULL);
 
   if (stmt->stmt_opts->so_cursor_type != SQL_CURSOR_FORWARD_ONLY)
@@ -4561,13 +4561,16 @@ SQLMoreResults (
     return SQL_NO_DATA_FOUND;
 
   /* Bugzzila 1996 */
-  if (stmt->stmt_current_of == -1 && !saved_cols)
+  if (0 && stmt->stmt_current_of == -1 && !saved_cols)
     return SQL_NO_DATA_FOUND;
 
   stmt->stmt_at_end = 0;
   stmt->stmt_on_first_row = 1;
-
-  return stmt_process_result (stmt, 1);
+  rc = stmt_process_result (stmt, 1);
+  /* if we have an empty set in a series of sets, we still return success even though process results returns no data */
+  if (rc == SQL_ERROR)
+    return rc;
+  return SQL_SUCCESS;
 }
 
 
