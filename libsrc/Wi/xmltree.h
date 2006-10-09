@@ -199,7 +199,7 @@ Refer to fields \c xewr_attr_beg, \c xewr_attr_this_end and \c xewr_attr_tree_en
 /*! Returns a vector of xte_tree-s with all children of 'this' entity; generic references will be be extented. */
    caddr_t ** (* xe_copy_to_xte_forest) (xml_entity_t *xe);
 /*! Emulates an input of the current entity into \c parser */
-   void (* xe_emulate_input) (xml_entity_t *xe, struct xml_parser_s *parser);
+   void (* xe_emulate_input) (xml_entity_t *xe, struct vxml_parser_s *parser);
 /*! Composes a new (or returns a cached) entity that is a root of a document that will become a subdocument of \c from_doc.
 This is not always an external reference of the current entity, it can also be a document retrieved by xpf_document() */
    struct xml_entity_s * (* xe_reference) (query_instance_t * qi, caddr_t base, caddr_t ref, xml_doc_t * from_doc, caddr_t *err_ret);
@@ -745,7 +745,7 @@ typedef struct xparse_ctx_s
 #endif
   xslt_sheet_t *	xp_sheet;
   dk_set_t 		xp_checked_functions;
-  struct xml_parser_s *	xp_parser;
+  struct vxml_parser_s *	xp_parser;
   xslt_template_t *	xp_template;
   struct xml_doc_cache_s *	xp_doc_cache;
   xqi_binding_t *	xp_globals;
@@ -770,13 +770,13 @@ typedef struct xparse_ctx_s
 extern void xp_pop_rdf_locals (xparse_ctx_t *xp);
 extern xp_rdf_locals_t *xp_push_rdf_locals (xparse_ctx_t *xp);
 
-extern void xp_element (void *userdata, char * name, xml_parser_attrdata_t *attrdata);
+extern void xp_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata);
 extern void xp_element_end (void *userdata, const char * name);
 extern void xp_id (void *userdata, char * name);
-extern void xp_character (xml_parser_t * parser,  char * s, int len);
-extern void xp_entity (xml_parser_t * parser, const char * refname, int reflen, int isparam, const xml_def_4_entity_t *edef);
-extern void xp_pi (xml_parser_t * parser, const char *target, const char *data);
-extern void xp_comment (xml_parser_t * parser, const char *text);
+extern void xp_character (vxml_parser_t * parser,  char * s, int len);
+extern void xp_entity (vxml_parser_t * parser, const char * refname, int reflen, int isparam, const xml_def_4_entity_t *edef);
+extern void xp_pi (vxml_parser_t * parser, const char *target, const char *data);
+extern void xp_comment (vxml_parser_t * parser, const char *text);
 
 #define XP_CTX_POS(xp, sz, pos) xp->xp_position = pos, xp->xp_size = sz
 #define XP_CTX_POS_GET(xp, sz, pos) pos = xp->xp_position, sz = xp->xp_size
