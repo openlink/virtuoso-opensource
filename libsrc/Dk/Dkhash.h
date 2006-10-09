@@ -76,8 +76,8 @@ extern uint32 hash_nextprime (uint32 n);
 #ifdef MALLOC_DEBUG
 extern dk_hash_t *dbg_hash_table_allocate (const char *file, int line, uint32 size);
 extern void dbg_hash_table_free (const char *file, int line, dk_hash_t *table);
-extern void *dbg_sethash (const char *file, int line, void *key, dk_hash_t *ht, void *data);
-extern int dbg_remhash (const char *file, int line, void *key, dk_hash_t *ht);
+extern void *dbg_sethash (const char *file, int line, const void *key, dk_hash_t *ht, void *data);
+extern int dbg_remhash (const char *file, int line, const void *key, dk_hash_t *ht);
 extern void dbg_clrhash (const char *file, int line, dk_hash_t *table);
 extern void dbg_dk_rehash (const char *file, int line, dk_hash_t *ht, uint32 new_sz);
 #define hash_table_allocate(SIZE)	dbg_hash_table_allocate (__FILE__, __LINE__, (SIZE))
