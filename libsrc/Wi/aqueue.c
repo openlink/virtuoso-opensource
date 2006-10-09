@@ -54,7 +54,9 @@ aq_thread_func (aq_thread_t * aqt)
       CLI_SET_QUAL (aqt->aqt_cli, aq->aq_cli->cli_qualifier);
       aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
       aqr->aqr_args = NULL;
+      IN_TXN;
       lt_leave (aqt->aqt_cli->cli_trx);
+      LEAVE_TXN;
 
       mutex_enter (aq->aq_mtx);
       aqr->aqr_state = AQR_DONE;
