@@ -135,6 +135,7 @@ rl_add_pl_to_owners (it_cursor_t * itc, row_lock_t * rl, page_lock_t * pl)
   while (waiting)
     {
       lt_add_pl (waiting->itc_ltrx, pl, 0);
+      rdbg_printf (("   rl %p moved, waiting lt %p added to pl %p\n", rl, waiting->itc_ltrx, pl));
       waiting = waiting->itc_next_on_lock;
     }
 }
@@ -228,6 +229,7 @@ itc_split_lock_waits (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * e
 {
   page_lock_t *left_pl = IT_DP_PL (itc->itc_tree, left->bd_page);
   page_lock_t *extend_pl;
+  ASSERT_IN_MAP (itc->itc_tree);
   if (!left_pl)
     return;
   extend_pl = IT_DP_PL (itc->itc_tree, extend->bd_page);
@@ -246,7 +248,7 @@ itc_split_lock_waits (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * e
 	    last = &waiting->itc_next_on_lock;
 	    *prev = next;
 	    rdbg_printf (("LW PL move from PL %x to PL=%x waiting T=%d \n", left_pl, extend_pl, waiting->itc_ltrx->lt_trx_no));
-	    lt_add_pl (waiting->itc_ltrx, extend_pl, 1);
+	    lt_add_pl (waiting->itc_ltrx, extend_pl, 0);
 	    lt_clear_pl_wait_ref (waiting->itc_ltrx, (gen_lock_t *) left_pl);
 	    /* if had a wait ref to the left side of split and now to the right side, drop the wait ref. Add the new wait ref.
 	    * assumed that only one cr per txn on the lock but always so since single running thread per txn. */
@@ -337,6 +339,7 @@ itc_make_pl (it_cursor_t * itc, buffer_desc_t * buf)
 void
 itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl, int no_escalation)
 {
+  it_cursor_t * waiting;
   int not_own = 0;
   int new_pl = 0;
   page_lock_t *pl = itc->itc_pl;
@@ -374,6 +377,13 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
     }
   rl->rl_next = PL_RLS (pl, pos);
   PL_RLS (pl, pos) = rl;
+  /* if icts wait for the rl of a row that has grown and made a split, make sure the waiting lyt's get to be owners of the lock also if the itc ended up on the extend side of the split */
+  waiting = rl->pl_waiting;
+  while (waiting)
+    {
+      lt_add_pl (waiting->itc_ltrx, itc->itc_pl, 0);
+      waiting = waiting->itc_next_on_lock;
+    }
   if (itc->itc_ltrx->lt_status != LT_PENDING)
     rdbg_printf (("*** making posthumous ins lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
 
@@ -541,11 +551,15 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
 	  LEAVE_LT_LOCKS;
 	}
       else
+	{
+	  IN_LT_LOCKS;
 	dk_set_pushnew (&lt->lt_locks, (void *) pl);
+	  LEAVE_LT_LOCKS;
+	}
     }
   else
     {
-      /* for a row level ol, the pl_owners is the union of lt's
+      /* for a row level pl, the pl_owners is the union of lt's
        * which reference this pl wither because of rl ownership or past / present wait at rl */
       if (pl->pl_is_owner_list)
 	{
