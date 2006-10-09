@@ -131,11 +131,11 @@ values
 WS.WS.URIQA_LOAD_FROM_INI ()
 ;
 
-create function WS.WS.URIQA_FULL_URI (inout path varchar, inout params varchar, inout lines varchar, in parse_params integer) returns varchar
+create function WS.WS.URIQA_FULL_URI (inout path varchar, inout params varchar, inout lines varchar, in parse_params integer, in trim_prefix integer) returns varchar
 {
   declare explicit_uri, host, head_uri, res varchar;
   declare pairs any;
-  -- dbg_obj_princ ('WS.WS.URIQA_FULL_URI (', path, params, lines, ')');
+  -- dbg_obj_princ ('WS.WS.URIQA_FULL_URI (', path, params, lines, parse_params, trim_prefix, ')');
   explicit_uri := http_request_header (lines, 'URIQA-uri');
   if (isstring (explicit_uri))
     return explicit_uri;
@@ -154,6 +154,7 @@ create function WS.WS.URIQA_FULL_URI (inout path varchar, inout params varchar, 
       goto complete;
     }
   head_uri := split_and_decode (subseq (lines[0], pairs[6], pairs[7]), 0, '%+');
+  if (trim_prefix and upper (head_uri) like '/URIQA/%')
   head_uri := subseq (head_uri, 6); -- in order to trim leading '/URIQA'
   -- dbg_obj_princ ('WS.WS.URIQA_FULL_URI see User-Agent=', http_request_header (lines, 'User-Agent'));
   host := http_request_header (lines, 'Host');
@@ -619,7 +620,7 @@ create procedure WS.WS."MPUT" (inout path varchar, inout params varchar, inout l
   declare exit handler for sqlstate '*' {
     WS.WS.URIQA_STATUS (vector (__SQL_STATE, 0, '500', __SQL_MESSAGE), 0);
     };
-  s_uri := WS.WS.URIQA_FULL_URI (path, params, lines, 0);
+  s_uri := WS.WS.URIQA_FULL_URI (path, params, lines, 0, 0);
   err_ret := WS.WS.URIQA_APPLY_TRIGGERS ('MPUT', s_uri, b, params, lines);
   WS.WS.URIQA_STATUS (err_ret, 0);
 }
@@ -635,7 +636,7 @@ create procedure WS.WS."MGET" (inout path varchar, inout params any, inout lines
 --  declare exit handler for sqlstate '*' {
 --    WS.WS.URIQA_STATUS (vector (__SQL_STATE, 0, '500', __SQL_MESSAGE), 0);
 --    };
-  s_uri := WS.WS.URIQA_FULL_URI (path, params, lines, 0);
+  s_uri := WS.WS.URIQA_FULL_URI (path, params, lines, 0, 0);
 -- WS.WS.URIQA_APPLY_TRIGGERS ('MGET', ... ) gets null instead of body because body is ignored for NGET
   b := null;
   err_ret := WS.WS.URIQA_APPLY_TRIGGERS ('MGET', s_uri, b, params, lines);
@@ -653,7 +654,7 @@ create procedure WS.WS."MDELETE" (inout path varchar, inout params any, inout li
   declare exit handler for sqlstate '*' {
     WS.WS.URIQA_STATUS (vector (__SQL_STATE, 0, '500', __SQL_MESSAGE), 0);
     };
-  s_uri := WS.WS.URIQA_FULL_URI (path, params, lines, 0);
+  s_uri := WS.WS.URIQA_FULL_URI (path, params, lines, 0, 0);
   err_ret := WS.WS.URIQA_APPLY_TRIGGERS ('MDELETE', s_uri, b, params, lines);
   WS.WS.URIQA_STATUS (err_ret, 0);
 }
@@ -696,7 +697,7 @@ Enter URI of a resource to get metadata: <input name="uri" type="text"><br/>
   declare exit handler for sqlstate '*' {
     WS.WS.URIQA_STATUS (vector (__SQL_STATE, 0, '500', __SQL_MESSAGE), 0);
     };
-  s_uri := WS.WS.URIQA_FULL_URI (path, params, lines, 1);
+  s_uri := WS.WS.URIQA_FULL_URI (path, params, lines, 1, 1);
   err_ret := WS.WS.URIQA_APPLY_TRIGGERS (get_keyword ('method', params, 'MGET'), s_uri, b, params, lines);
   WS.WS.URIQA_STATUS (err_ret, 0);
 }
