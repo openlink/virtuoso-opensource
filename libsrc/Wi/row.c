@@ -1105,7 +1105,6 @@ row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int m
   int pos = cl->cl_pos, len;
   dtp_t dtp = DV_TYPE_OF (data);
   caddr_t wide_str = 0;
-  char* cl_name;
   if (DV_DB_NULL == dtp)
     {
       if (!cl->cl_null_mask)
@@ -1629,12 +1628,14 @@ xmltype_in_blob_ok: ;
       break;
     }
   return;
- IN009:
-  cl_name = __get_column_name (cl->cl_col_id, key);
+IN009:
+  {
+    char* cl_name = __get_column_name (cl->cl_col_id, key);
   *err_ret = srv_make_new_error ("22005", "IN009",
 				   "Max row length of column [%.*s] exceeded",
 				   MAX_NAME_LEN, cl_name);
   return;
+  }
 null_as_blob_from_client:
   if (!IS_BLOB_HANDLE_DTP (DV_TYPE_OF (data)))
     GPF_T;
