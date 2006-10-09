@@ -1142,13 +1142,13 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   return 'OK';
       }
   }
-  failure:
-  result ('42VAD', concat (registry_get ('VAD_errcount'), ' error message(s) were reported'));
+  failure:;
+  --result ('42VAD', concat (registry_get ('VAD_errcount'), ' error message(s) were reported'));
   if (registry_get ('VAD_wet_run') = '0')
   {
     "VAD"."DBA"."VAD_ATOMIC" (0);
-    result ('', 'VAD did not change the database in any way,');
-    result ('', 'so you do not have to restart the server from the checkpoint.');
+    --result ('', 'VAD did not change the database in any way,');
+    --result ('', 'so you do not have to restart the server from the checkpoint.');
     result ('00000', 'ERROR');
     result ('', '');
     registry_set ('VAD_is_run', '0');
@@ -1161,21 +1161,40 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     declare pos integer;
     trx := coalesce (cfg_item_value(virtuoso_ini_path(), 'Database','TransactionFile'), '');
     folder := server_root ();
-    trx := concat(folder, '/', trx);
-    result ('', 'The installation encountered an unhandled error:  ');
-    result (__SQL_STATE, __SQL_MESSAGE);
+    trx := concat(rtrim(folder, '/'), '/', trx);
+
+    --result ('', 'The installation encountered an unhandled error:  ');
+    --result (__SQL_STATE, __SQL_MESSAGE);
+    if (__SQL_MESSAGE <> 0)
+      {
     log_message(concat(cast(__SQL_STATE as varchar), ' ', cast(__SQL_MESSAGE as varchar)));
+      }
+    if (registry_get ('VAD_errcount') <> '0')
     log_message(concat(registry_get ('VAD_errcount'), ' error message(s) were reported'));
-    log_message('In order to reverse all effects of the partial installation, the server will ');
-    log_message('have to be restarted.  The server is now exiting.  Please restart the server ');
-    log_message('manually to return to the state immediately preceding the start of the installation.');
-    log_message(concat('Please remove the transaction log ', trx));
-    log_message('then restart Virtuoso');
-    result ('', 'In order to reverse all effects of the partial installation, the server will');
-    result ('', 'have to be restarted.  The server is now exiting.  Please restart the server');
-    result ('', 'manually to return to the state immediately preceding the start of the installation.');
-    result ('', concat('Please remove the transaction log ', trx));
-    result ('', 'then restart Virtuoso');
+
+
+    log_message('The installation of this VAD package has failed. Please delete the');
+    log_message('transaction file '||trx||' and then restart your database server.');
+    log_message('Note: Your database will be in its pre VAD installation state after you');
+    log_message('restart.');
+
+    result ('', 'The installation of this VAD package has failed. Please delete the');
+    result ('', 'transaction file '||trx||' and then restart your database server.');
+    result ('', 'Note: Your database will be in its pre VAD installation state after you');
+    result ('', 'restart.');
+
+
+    --log_message('In order to reverse all effects of the partial installation, the server will ');
+    --log_message('have to be restarted.  The server is now exiting.  Please restart the server ');
+    --log_message('manually to return to the state immediately preceding the start of the installation.');
+    --log_message(concat('Please remove the transaction log ', trx));
+    --log_message('then restart Virtuoso');
+    --result ('', 'In order to reverse all effects of the partial installation, the server will');
+    --result ('', 'have to be restarted.  The server is now exiting.  Please restart the server');
+    --result ('', 'manually to return to the state immediately preceding the start of the installation.');
+    --result ('', concat('Please remove the transaction log ', trx));
+    --result ('', 'then restart Virtuoso');
+
     result ('00000', 'FATAL');
     result ('', '');
     delay(3);
@@ -2040,14 +2059,14 @@ create procedure "DB"."DBA"."VAD_LOAD_SQL_FILE" (
         {
           if (registry_get ('VAD_wet_run') <> '0')
             log_message(concat (err_msg, '\nwhile executing the following statement:\n', parsed_text[i], '\nin file:\n', sql_file_name));
-          result (_sqlstate, concat (err_msg, '\nwhile executing the following statement:\n', parsed_text[i], '\nin file:\n', sql_file_name));
+          result (err_sqlstate, concat (err_msg, '\nwhile executing the following statement:\n', parsed_text[i], '\nin file:\n', sql_file_name));
           registry_set ('VAD_errcount', cast (1 + cast (registry_get ('VAD_errcount') as integer) as varchar));
         }
       }
       if (_report_errors = 'signal')
       {
         if (not (parsed_text[i] like 'drop %'))
-          signal (_sqlstate, concat (err_msg, '\nwhile executing the following statement:\n', parsed_text[i], '\nin file:\n', sql_file_name));
+          signal (err_sqlstate, concat (err_msg, '\nwhile executing the following statement:\n', parsed_text[i], '\nin file:\n', sql_file_name));
       }
     }
     i := i+1;
