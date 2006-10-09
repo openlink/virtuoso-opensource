@@ -1342,6 +1342,47 @@ lt_clear_non_acq_release_wait (it_cursor_t * waiting)
 }
 
 
+int
+pl_is_owner (page_lock_t *pl, lock_trx_t * lt)
+{
+  if (pl->pl_is_owner_list)
+    return NULL != dk_set_member ((dk_set_t)pl->pl_owner, (void*) lt);
+  else
+    return pl->pl_owner == lt;
+}
+
+
+void 
+pl_check_owners (page_lock_t * pl)
+{
+  DO_RLOCK (rl, pl)
+    {
+      it_cursor_t * waiting = rl->pl_waiting;
+      if (rl->pl_is_owner_list)
+	{
+	  dk_set_t owners = (dk_set_t)rl->pl_owner;
+	  DO_SET (lock_trx_t *, owner, &owners)
+	    {
+	      if (!pl_is_owner (pl, owner))
+		GPF_T1 ("owner of rl is not owner of containing pl");
+	    }
+	  END_DO_SET();
+	}
+      else 
+	{
+	  if (!pl_is_owner (pl, rl->pl_owner))
+	    GPF_T1 ("owner of rl is not owner of containing pl");
+	}
+      while (waiting)
+	{
+	  if (!pl_is_owner (pl, waiting->itc_ltrx))
+	    GPF_T1 ("txn waiting on rl is not owner of containing pl");
+	  waiting = waiting->itc_next_on_lock;
+	}
+    }
+  END_DO_RLOCK;
+}
+
 void
 lock_release (gen_lock_t * pl, lock_trx_t * lt)
 {
@@ -1543,6 +1584,9 @@ pl_release (page_lock_t * pl, lock_trx_t * lt, buffer_desc_t * buf)
   index_tree_t * it = pl->pl_it;
   ASSERT_OUTSIDE_MAP (it);
   mutex_enter (it->it_lock_release_mtx);
+#if defined (MTX_DEBUG) || defined (PAGE_TRACE)
+  pl_check_owners (pl);
+#endif
   if (PL_IS_PAGE (pl))
     lock_release ((gen_lock_t *) pl, lt);
   else
