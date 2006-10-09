@@ -44,6 +44,8 @@ LOGDIR=`pwd`
 ININAME=mkdemo.ini
 ISQL=${ISQL-isql}
 
+FEEDS_ADDRESS=$1
+
 #echo "log file is: $LOGFILE";
 
 STICKER_DAV="doc_vad_dav.xml"
@@ -326,6 +328,7 @@ LOG "Directory init..."
   $CP docsrc/html_virt/*.html vad/data/doc/html/.
   $CP docsrc/html_virt/*.css vad/data/doc/html/.
   $CP docsrc/html_virt/*.ico vad/data/doc/html/.
+  $CP docsrc/html_virt/*.rdf vad/data/doc/html/.
   $CP docsrc/html_virt/*.css vad/data/doc/.
 
   $CP docsrc/images/*.jpg vad/data/doc/images/.
@@ -414,6 +417,23 @@ sticker_init() {
 #  echo "        is_brws  => 0" >> $STICKER
 #  echo "      )" >> $STICKER
 #  echo "      ;" >> $STICKER
+  echo "" >> $STICKER
+  if [ "x$FEEDS_ADDRESS" != "x" ]
+  then
+
+    echo "  DELETE FROM DB.DBA.RDF_QUAD WHERE G = DB.DBA.RDF_MAKE_IID_OF_QNAME ('$FEEDS_ADDRESS');" >> $STICKER
+    for file in `find vad -type f -name "*.sioc.rdf" -print | LC_ALL=C sort`
+    do
+      name=`echo "$file" | cut -b10-`
+      if [ "$TYPE" = "dav" ]
+      then
+        echo "  DB.DBA.RDF_LOAD_RDFXML(DB.DBA.xml_uri_get('http://local.virt$BASE_PATH/$name',''),'$FEEDS_ADDRESS','$FEEDS_ADDRESS');" >> $STICKER
+      else
+        echo "  DB.DBA.RDF_LOAD_RDFXML(DB.DBA.xml_uri_get('file:/$BASE_PATH/$name',''),'$FEEDS_ADDRESS','$FEEDS_ADDRESS');" >> $STICKER
+      fi
+    done
+
+  fi
   echo "" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
@@ -508,6 +528,32 @@ then
   LOAD_SQL mkvspxdoc.sql dba dba
   ECHO "Producing html.."
   LOAD_SQL mkdoc_new.sql dba dba
+  
+  # Building routines - we make a temp sql and load it depending if we are making with/without feeds
+  TEMP_SQL=temp.sql
+  echo "" > $TEMP_SQL
+  if [ "x$FEEDS_ADDRESS" = "x" ]
+  then
+    echo "MKDOC_DO_ALL('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector());" >> $TEMP_SQL
+  else
+    # We are going to need xsl files from binsrc/vsp/doc
+    mkdir docsrc/doc
+    cp $HOME/binsrc/vsp/doc/*.xsl docsrc/doc
+    echo "MKDOC_DO_FEEDS('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector('serveraddr', '$FEEDS_ADDRESS'));" >> $TEMP_SQL
+    echo "ECHO BOTH \$IF \$EQU \$STATE OK  \"PASSED\" \"***FAILED\";" >> $TEMP_SQL
+    echo "ECHO BOTH \": Rendering FEEDS docs: STATE=\" \$STATE \" MESSAGE=\" \$MESSAGE \"\\n\";" >> $TEMP_SQL
+    echo "MKDOC_DO_ALL('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector('rss', 'yes','serveraddr', '$FEEDS_ADDRESS'));" >> $TEMP_SQL
+  fi
+  echo "ECHO BOTH \$IF \$EQU \$STATE OK  \"PASSED\" \"***FAILED\";" >> $TEMP_SQL
+  echo "ECHO BOTH \": Rendering HTML docs: STATE=\" \$STATE \" MESSAGE=\" \$MESSAGE \"\\n\";" >> $TEMP_SQL
+  
+  echo "MKDOC_PDF('docsrc/xmlsource/virtdocs.xml', 'docsrc/pdf', vector());" >> $TEMP_SQL
+  echo "ECHO BOTH \$IF \$EQU \$STATE OK  \"PASSED\" \"***FAILED\";" >> $TEMP_SQL
+  echo "ECHO BOTH \": Rendering PDF HTML source: STATE=\" \$STATE \" MESSAGE=\" \$MESSAGE \"\\n\";" >> $TEMP_SQL
+  LOAD_SQL $TEMP_SQL dba dba
+  rm -rf docsrc/doc
+  rm -f $TEMP_SQL
+
   # under cygwin html_virt is a copy (see above LN)
   if [ "x$HOST_OS" != "x" ]
   then

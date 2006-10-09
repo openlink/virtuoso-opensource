@@ -346,18 +346,19 @@ create procedure MKDOC_PDF (in _docsrc varchar, in _target varchar, in _options 
 
 MKDOC_STALE_STYLESHEETS();
 
---MKDOC_DEBUG('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt');
-
-  MKDOC_DO_ALL('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector());
-
---MKDOC_DO_ALL('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector('rss', 'yes'));  -- with rss feed links
-
---MKDOC_DO_FEEDS('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector('serveraddr', 'http://localhost:8890/doc/html'));
-
-ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
-ECHO BOTH ": Rendering HTML docs: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-
-MKDOC_PDF('docsrc/xmlsource/virtdocs.xml', 'docsrc/pdf', vector());
-
-ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
-ECHO BOTH ": Rendering PDF HTML source: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- Those get called from mkdoc.sh now.
+-- --MKDOC_DEBUG('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt');
+-- 
+--   MKDOC_DO_ALL('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector());
+-- 
+-- --MKDOC_DO_ALL('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector('rss', 'yes'));  -- with rss feed links
+-- 
+-- --MKDOC_DO_FEEDS('docsrc/xmlsource/virtdocs.xml', 'docsrc/html_virt', vector('serveraddr', 'http://localhost:8890/doc/html'));
+-- 
+-- ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
+-- ECHO BOTH ": Rendering HTML docs: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 
+-- MKDOC_PDF('docsrc/xmlsource/virtdocs.xml', 'docsrc/pdf', vector());
+-- 
+-- ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
+-- ECHO BOTH ": Rendering PDF HTML source: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
