@@ -63,9 +63,6 @@ extern "C" {
   ((NULL != (xn)->xn_xp->xp_parser) && \
    (DEAD_HTML & ((xn)->xn_xp->xp_parser->cfg.input_is_html)) )
 
-#ifdef WBXML2
-#include "wbxml.h"
-#endif
 void
 bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func,
     dk_set_t *ret_set, dk_set_t *head_set);
@@ -225,11 +222,11 @@ bx_elt_ins_qr (char * elt)
 void
 xn_error (xp_node_t * xn, const char * msg)
 {
-  xml_parser_t *xml_parser;
+  vxml_parser_t *vxml_parser;
   xn->xn_xp->xp_error_msg = box_dv_short_string (msg);
-  xml_parser = xn->xn_xp->xp_parser;
-  if (NULL != xml_parser)
-    xmlparser_logprintf (xml_parser, XCFG_ERROR, strlen (msg), "%s", msg);
+  vxml_parser = xn->xn_xp->xp_parser;
+  if (NULL != vxml_parser)
+    xmlparser_logprintf (vxml_parser, XCFG_ERROR, strlen (msg), "%s", msg);
   longjmp (xn->xn_xp->xp_error_ctx, 1);
 }
 
@@ -285,7 +282,7 @@ xn_ns_name (xp_node_t * xn, char * name, int use_default)
 
 
 int
-xn_box_attrs (xp_node_t * xn, caddr_t name, xml_parser_attrdata_t *attrdata, int reserve_attrs)
+xn_box_attrs (xp_node_t * xn, caddr_t name, vxml_parser_attrdata_t *attrdata, int reserve_attrs)
 {
   int namespaces_are_valid = 1;
   int fill, n_attrs = attrdata->local_attrs_count, n_ns = attrdata->local_nsdecls_count;
@@ -357,7 +354,7 @@ void *xmlap_xpath (void *userData, const char *elname, const char *attrname, con
 void *xmlap_qname (void *userData, const char *elname, const char *attrname, const char *attrvalue) { GPF_T; return NULL; }
 
 void
-xp_element (void *userdata, char * name, xml_parser_attrdata_t *attrdata)
+xp_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
 {
   xparse_ctx_t * xp = (xparse_ctx_t*) userdata;
   caddr_t boxed_name;
@@ -400,7 +397,7 @@ xp_element_end (void *userdata, const char * name)
 
 
 void
-xp_xslt_element (void *userdata,  char * name, xml_parser_attrdata_t *attrdata)
+xp_xslt_element (void *userdata,  char * name, vxml_parser_attrdata_t *attrdata)
 {
   xparse_ctx_t * xp = (xparse_ctx_t*) userdata;
 /* copy from xp_element - start */
@@ -425,7 +422,7 @@ xp_xslt_element (void *userdata,  char * name, xml_parser_attrdata_t *attrdata)
 }
 
 void
-xp_element_srcpos (void *userdata,  char * name, xml_parser_attrdata_t *attrdata)
+xp_element_srcpos (void *userdata,  char * name, vxml_parser_attrdata_t *attrdata)
 {
   xparse_ctx_t * xp = (xparse_ctx_t*) userdata;
   caddr_t *tail;
@@ -450,9 +447,9 @@ xp_element_srcpos (void *userdata,  char * name, xml_parser_attrdata_t *attrdata
 /* copy from xp_element - end */
   tail = xn->xn_attrs + BOX_ELEMENTS (xn->xn_attrs) - 4;
   (tail++)[0] = uname__srcfile;
-  (tail++)[0] = box_dv_short_string (XML_GetCurrentFileName (xp->xp_parser));
+  (tail++)[0] = box_dv_short_string (VXmlGetCurrentFileName (xp->xp_parser));
   (tail++)[0] = uname__srcline;
-  snprintf(buf, sizeof (buf), "%d", XML_GetCurrentLineNumber (xp->xp_parser));
+  snprintf(buf, sizeof (buf), "%d", VXmlGetCurrentLineNumber (xp->xp_parser));
   (tail++)[0] = box_dv_short_string (buf);
 }
 
@@ -548,7 +545,7 @@ xp_id (void *userdata, char * name)
 
 
 void
-xp_character (xml_parser_t * parser,  char * s, int len)
+xp_character (vxml_parser_t * parser,  char * s, int len)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
 #if 0
@@ -561,7 +558,7 @@ xp_character (xml_parser_t * parser,  char * s, int len)
 }
 
 void
-xp_entity (xml_parser_t * parser, const char * refname, int reflen, int isparam, const xml_def_4_entity_t *edef)
+xp_entity (vxml_parser_t * parser, const char * refname, int reflen, int isparam, const xml_def_4_entity_t *edef)
 {
   char *uri;
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
@@ -585,7 +582,7 @@ xp_entity (xml_parser_t * parser, const char * refname, int reflen, int isparam,
 }
 
 void
-xp_pi (xml_parser_t * parser, const char *target, const char *data)
+xp_pi (vxml_parser_t * parser, const char *target, const char *data)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
   caddr_t head = (caddr_t) list (3,
@@ -601,7 +598,7 @@ xp_pi (xml_parser_t * parser, const char *target, const char *data)
 }
 
 void
-xp_comment (xml_parser_t * parser, const char *text)
+xp_comment (vxml_parser_t * parser, const char *text)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
   XP_STRSES_FLUSH (xp);
@@ -717,8 +714,8 @@ xml_make_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, const char
   int text_strg_is_wide = 0;
   dk_set_t top;
   caddr_t tree;
-  xml_parser_config_t config;
-  xml_parser_t * parser;
+  vxml_parser_config_t config;
+  vxml_parser_t * parser;
   xparse_ctx_t context;
   volatile s_size_t text_len = 0;
   int rc;
@@ -783,35 +780,35 @@ make_tree:
   config.input_is_html = 0;
   config.user_encoding_handler = intl_find_user_charset;
   config.initial_src_enc_name = enc;
-  config.uri_resolver = (XML_UriResolver)(xml_uri_resolve_like_get);
-  config.uri_reader = (XML_UriReader)(xml_uri_get);
+  config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
+  config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
   config.uri = uname___empty;
   config.root_lang_handler = lh;
-  parser = XML_ParserCreate (&config);
+  parser = VXmlParserCreate (&config);
   context.xp_parser = parser;
-  XML_SetUserData (parser, &context);
+  VXmlSetUserData (parser, &context);
 
 /* !!! FixMe!!! Edit xslt.c in order to process attributes inside preparing the sheet! Not here! */
 #if 1
-  XML_SetElementHandler (parser, (XML_StartElementHandler) xp_xslt_element, xp_xslt_element_end);
+  VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_xslt_element, xp_xslt_element_end);
 #else
-  XML_SetElementHandler (parser, (XML_StartElementHandler) xp_element, xp_element_end);
+  VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_element, xp_element_end);
 #endif
-  XML_SetIdHandler (parser, (XML_IdHandler)xp_id);
-  XML_SetCharacterDataHandler (parser, (XML_CharacterDataHandler) xp_character);
-  XML_SetEntityRefHandler (parser, (XML_EntityRefHandler) xp_entity);
-  XML_SetProcessingInstructionHandler (parser, (XML_ProcessingInstructionHandler) xp_pi);
-  XML_SetCommentHandler (parser, (XML_CommentHandler) xp_comment);
+  VXmlSetIdHandler (parser, (VXmlIdHandler)xp_id);
+  VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) xp_character);
+  VXmlSetEntityRefHandler (parser, (VXmlEntityRefHandler) xp_entity);
+  VXmlSetProcessingInstructionHandler (parser, (VXmlProcessingInstructionHandler) xp_pi);
+  VXmlSetCommentHandler (parser, (VXmlCommentHandler) xp_comment);
   if (NULL != iter)
     {
-      XML_ParserInput (parser, iter, iter_data);
+      VXmlParserInput (parser, iter, iter_data);
     }
   QR_RESET_CTX
     {
       if (0 == setjmp (context.xp_error_ctx))
-        rc = XML_Parse (parser, text, text_len);
+        rc = VXmlParse (parser, text, text_len);
       else
 	rc = 0;
     }
@@ -821,7 +818,7 @@ make_tree:
       caddr_t err = thr_get_error_code (self);
       POP_QR_RESET;
       xp_free (&context);
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       if (NULL != iter_abend)
         iter_abend (iter_data);
       if (err_ret)
@@ -833,9 +830,9 @@ make_tree:
   END_QR_RESET;
   if (!rc)
     {
-      caddr_t rc_msg = XML_FullErrorMessage (parser);
+      caddr_t rc_msg = VXmlFullErrorMessage (parser);
       xp_free (&context);
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       if (NULL != iter_abend)
         iter_abend (iter_data);
       if (err_ret)
@@ -846,10 +843,10 @@ make_tree:
   XP_STRSES_FLUSH (&context);
   if (NULL != ret_dtd)
     {
-      ret_dtd[0] = XML_GetDtd(parser);
+      ret_dtd[0] = VXmlGetDtd(parser);
       dtd_addref (ret_dtd[0], 0);
     }
-  XML_ParserDestroy (parser);
+  VXmlParserDestroy (parser);
   top = dk_set_nreverse (xn->xn_children);
   dk_set_push (&top, (void*) list (1, uname__root));
   tree = (caddr_t) list_to_array (top);
@@ -867,8 +864,8 @@ xml_make_tree_with_ns (query_instance_t * qi, caddr_t text, caddr_t *err_ret, co
   dk_set_t top;
   caddr_t tree;
   struct dtd_s * dtd;
-  xml_parser_config_t config;
-  xml_parser_t * parser;
+  vxml_parser_config_t config;
+  vxml_parser_t * parser;
   xparse_ctx_t context;
   volatile s_size_t text_len = 0;
   int rc;
@@ -937,37 +934,37 @@ make_tree:
   config.input_is_html = 0;
   config.user_encoding_handler = intl_find_user_charset;
   config.initial_src_enc_name = enc;
-  config.uri_resolver = (XML_UriResolver)(xml_uri_resolve_like_get);
-  config.uri_reader = (XML_UriReader)(xml_uri_get);
+  config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
+  config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
   config.uri = uname___empty;
   config.root_lang_handler = lh;
-  parser = XML_ParserCreate (&config);
+  parser = VXmlParserCreate (&config);
   parser->fill_ns_2dict = 1;
   context.xp_parser = parser;
-  XML_SetUserData (parser, &context);
+  VXmlSetUserData (parser, &context);
 
 /* !!! FixMe!!! Edit xslt.c in order to process attributes inside preparing the sheet! Not here! */
 #if 1
-  XML_SetElementHandler (parser, (XML_StartElementHandler) xp_xslt_element, xp_xslt_element_end);
+  VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_xslt_element, xp_xslt_element_end);
 #else
-  XML_SetElementHandler (parser, (XML_StartElementHandler) xp_element, xp_element_end);
+  VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_element, xp_element_end);
 #endif
   if (id_cache)
-    XML_SetIdHandler (parser, (XML_IdHandler)xp_id);
-  XML_SetCharacterDataHandler (parser, (XML_CharacterDataHandler) xp_character);
-  XML_SetEntityRefHandler (parser, (XML_EntityRefHandler) xp_entity);
-  XML_SetProcessingInstructionHandler (parser, (XML_ProcessingInstructionHandler) xp_pi);
-  XML_SetCommentHandler (parser, (XML_CommentHandler) xp_comment);
+    VXmlSetIdHandler (parser, (VXmlIdHandler)xp_id);
+  VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) xp_character);
+  VXmlSetEntityRefHandler (parser, (VXmlEntityRefHandler) xp_entity);
+  VXmlSetProcessingInstructionHandler (parser, (VXmlProcessingInstructionHandler) xp_pi);
+  VXmlSetCommentHandler (parser, (VXmlCommentHandler) xp_comment);
   if (NULL != iter)
     {
-      XML_ParserInput (parser, iter, iter_data);
+      VXmlParserInput (parser, iter, iter_data);
     }
   QR_RESET_CTX
     {
       if (0 == setjmp (context.xp_error_ctx))
-        rc = XML_Parse (parser, text, text_len);
+        rc = VXmlParse (parser, text, text_len);
       else
 	rc = 0;
     }
@@ -977,7 +974,7 @@ make_tree:
       caddr_t err = thr_get_error_code (self);
       POP_QR_RESET;
       xp_free (&context);
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       if (NULL != iter_abend)
         iter_abend (iter_data);
       if (err_ret)
@@ -989,9 +986,9 @@ make_tree:
   END_QR_RESET;
   if (!rc)
     {
-      caddr_t rc_msg = XML_FullErrorMessage (parser);
+      caddr_t rc_msg = VXmlFullErrorMessage (parser);
       xp_free (&context);
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       if (NULL != iter_abend)
         iter_abend (iter_data);
       if (err_ret)
@@ -1010,7 +1007,7 @@ make_tree:
     }
   if (id_cache)
     id_cache[0] = context.xp_id_dict;
-  dtd = XML_GetDtd(parser);
+  dtd = VXmlGetDtd(parser);
   dtd_addref (dtd, 0);
   top = dk_set_nreverse (xn->xn_children);
   dk_set_push (&top, (void*) list (1, uname__root));
@@ -1023,8 +1020,8 @@ make_tree:
   xte->xe_doc.xd->xd_id_dict = NULL;
   xte->xe_doc.xd->xd_id_scan = XD_ID_SCAN_COMPLETED;
   xte->xe_doc.xd->xd_ns_2dict = parser->ns_2dict;
-  parser->ns_2dict.xn2_size = 0;	/* This prevents parser->ns_2dict from being freed by XML_ParserDestroy() */
-  XML_ParserDestroy (parser);
+  parser->ns_2dict.xn2_size = 0;	/* This prevents parser->ns_2dict from being freed by VXmlParserDestroy() */
+  VXmlParserDestroy (parser);
   /* test only : xte_word_range(xte,&l1,&l2); */
   return ((caddr_t) xte);
 }
@@ -1053,8 +1050,8 @@ xml_tree_ent_t *rst_xml_result (remote_stmt_t * rst, int inx, caddr_t * qst, int
 {
   dk_set_t top;
   caddr_t tree;
-  xml_parser_config_t config;
-  xml_parser_t * parser;
+  vxml_parser_config_t config;
+  vxml_parser_t * parser;
   xparse_ctx_t context;
   dtd_t *dtd = NULL;
   id_hash_t *id_cache = NULL;
@@ -1075,35 +1072,35 @@ xml_tree_ent_t *rst_xml_result (remote_stmt_t * rst, int inx, caddr_t * qst, int
   config.input_is_wide = (SQL_C_WCHAR == c_type);
   config.user_encoding_handler = intl_find_user_charset;
   config.initial_src_enc_name = config.input_is_wide ? "!identity" : "!WIDE identity";
-  config.uri_resolver = (XML_UriResolver)(xml_uri_resolve_like_get);
-  config.uri_reader = (XML_UriReader)(xml_uri_get);
+  config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
+  config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qst; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
   config.uri = uname___empty;
   config.root_lang_handler = server_default_lh;
-  parser = XML_ParserCreate (&config);
+  parser = VXmlParserCreate (&config);
   parser->fill_ns_2dict = 1;
   context.xp_parser = parser;
-  XML_SetUserData (parser, &context);
+  VXmlSetUserData (parser, &context);
 /* !!! FixMe!!! Edit xslt.c in order to process attributes inside preparing the sheet! Not here! */
 #if 1
-      XML_SetElementHandler (parser, (XML_StartElementHandler) xp_xslt_element, xp_xslt_element_end);
+      VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_xslt_element, xp_xslt_element_end);
 #else
-      XML_SetElementHandler (parser, (XML_StartElementHandler) xp_element, xp_element_end);
+      VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_element, xp_element_end);
 #endif
-  XML_SetIdHandler (parser, (XML_IdHandler)xp_id);
-  XML_SetCharacterDataHandler (parser, (XML_CharacterDataHandler) xp_character);
-  XML_SetEntityRefHandler (parser, (XML_EntityRefHandler) xp_entity);
-  XML_SetProcessingInstructionHandler (parser, (XML_ProcessingInstructionHandler) xp_pi);
-  XML_SetCommentHandler (parser, (XML_CommentHandler) xp_comment);
+  VXmlSetIdHandler (parser, (VXmlIdHandler)xp_id);
+  VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) xp_character);
+  VXmlSetEntityRefHandler (parser, (VXmlEntityRefHandler) xp_entity);
+  VXmlSetProcessingInstructionHandler (parser, (VXmlProcessingInstructionHandler) xp_pi);
+  VXmlSetCommentHandler (parser, (VXmlCommentHandler) xp_comment);
   sgdfi.sgdfi_hstmt = rst->rst_hstmt;
   sgdfi.sgdfi_inx = (SQLUSMALLINT) (inx + 1);
   sgdfi.sgdfi_c_type = (SQLSMALLINT) c_type;
-  XML_ParserInput (parser, sgdfi_read, &sgdfi);
+  VXmlParserInput (parser, sgdfi_read, &sgdfi);
   QR_RESET_CTX
     {
       if (0 == setjmp (context.xp_error_ctx))
-        rc = XML_Parse (parser, start, start_len);
+        rc = VXmlParse (parser, start, start_len);
       else
 	rc = 0;
     }
@@ -1113,7 +1110,7 @@ xml_tree_ent_t *rst_xml_result (remote_stmt_t * rst, int inx, caddr_t * qst, int
       caddr_t err = thr_get_error_code (self);
       POP_QR_RESET;
       xp_free (&context);
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       if (err_ret)
 	*err_ret = err;
       else
@@ -1123,9 +1120,9 @@ xml_tree_ent_t *rst_xml_result (remote_stmt_t * rst, int inx, caddr_t * qst, int
   END_QR_RESET;
   if (!rc)
     {
-      caddr_t rc_msg = XML_FullErrorMessage (parser);
+      caddr_t rc_msg = VXmlFullErrorMessage (parser);
       xp_free (&context);
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       if (err_ret)
 	*err_ret = srv_make_new_error ("22007", "XM003", "%.1500s", rc_msg);
       else
@@ -1134,13 +1131,13 @@ xml_tree_ent_t *rst_xml_result (remote_stmt_t * rst, int inx, caddr_t * qst, int
       return (NEW_DB_NULL);
     }
   XP_STRSES_FLUSH (&context);
-  dtd = XML_GetDtd(parser);
+  dtd = VXmlGetDtd(parser);
   dtd_addref (dtd, 0);
   id_cache = context.xp_id_dict;
   context.xp_id_dict = NULL;
   ns_2dict = parser->ns_2dict;
   parser->ns_2dict.xn2_size = 0;
-  XML_ParserDestroy (parser);
+  VXmlParserDestroy (parser);
   top = dk_set_nreverse (xn->xn_children);
   dk_set_push (&top, (void*) list (1, uname__root));
   tree = (caddr_t) list_to_array (top);
@@ -1470,7 +1467,7 @@ box_lcase (char *str)
 }
 
 void
-xn_box_attrs_change (xp_node_t * xn, caddr_t name, xml_parser_attrdata_t *attrdata)
+xn_box_attrs_change (xp_node_t * xn, caddr_t name, vxml_parser_attrdata_t *attrdata)
 {
   int fill, n_attrs = attrdata->local_attrs_count, n_ns = attrdata->local_nsdecls_count;
   caddr_t * box;
@@ -1581,7 +1578,7 @@ xn_box_attrs_change (xp_node_t * xn, caddr_t name, xml_parser_attrdata_t *attrda
 
 
 void
-xp_element_change (void *userdata, char * name, xml_parser_attrdata_t *attrdata)
+xp_element_change (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
 {
   xparse_ctx_t * xp = (xparse_ctx_t*) userdata;
   caddr_t boxed_name;
@@ -1659,8 +1656,8 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
   int dtp_of_text = box_tag (text);
   dk_set_t top;
   caddr_t tree;
-  xml_parser_config_t config;
-  xml_parser_t * parser;
+  vxml_parser_config_t config;
+  vxml_parser_t * parser;
   xparse_ctx_t context;
   int rc;
   xp_node_t *xn;
@@ -1708,53 +1705,53 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
   config.input_is_xslt = html_mode & FINE_XSLT;
   config.user_encoding_handler = intl_find_user_charset;
   config.initial_src_enc_name = enc;
-  config.uri_resolver = (XML_UriResolver)(xml_uri_resolve_like_get);
-  config.uri_reader = (XML_UriReader)(xml_uri_get);
+  config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
+  config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
   config.uri = ((NULL == uri) ? uname___empty : uri);
   config.dtd_config = dtd_config;
   config.root_lang_handler = lh;
-  parser = XML_ParserCreate (&config);
+  parser = VXmlParserCreate (&config);
   parser->fill_ns_2dict = (NULL != ret_ns_2dict);
   context.xp_parser = parser;
-  XML_SetUserData (parser, &context);
+  VXmlSetUserData (parser, &context);
   switch (html_mode & ~GE_XML)
     {
     case FINE_XML:
 /* !!! FixMe!!! Edit xslt.c in order to process attributes inside preparing the sheet! Not here! */
 #if 1
-      XML_SetElementHandler (parser, (XML_StartElementHandler) xp_xslt_element, xp_xslt_element_end);
+      VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_xslt_element, xp_xslt_element_end);
 #else
-      XML_SetElementHandler (parser, (XML_StartElementHandler) xp_element, xp_element_end);
+      VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_element, xp_element_end);
 #endif
       break;
     case FINE_HTML:
     case DEAD_HTML:
-      XML_SetElementHandler (parser, (XML_StartElementHandler) xp_element_change, xp_element_end);
+      VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_element_change, xp_element_end);
       break;
     case FINE_XSLT:
-      XML_SetElementHandler (parser, (XML_StartElementHandler) xp_xslt_element, xp_xslt_element_end);
+      VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_xslt_element, xp_xslt_element_end);
       break;
     case FINE_XML_SRCPOS:
-      XML_SetElementHandler (parser, (XML_StartElementHandler) xp_element_srcpos, xp_element_end);
+      VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_element_srcpos, xp_element_end);
       break;
     default:
       sqlr_new_error ("42000", "XM025", "Unsupported mode '%ld' specified for XML parser", (long)html_mode);
     }
-  XML_SetIdHandler (parser, (XML_IdHandler)xp_id);
-  XML_SetCharacterDataHandler (parser, (XML_CharacterDataHandler) xp_character);
-  XML_SetEntityRefHandler (parser, (XML_EntityRefHandler) xp_entity);
-  XML_SetProcessingInstructionHandler (parser, (XML_ProcessingInstructionHandler) xp_pi);
-  XML_SetCommentHandler (parser, (XML_CommentHandler) xp_comment);
+  VXmlSetIdHandler (parser, (VXmlIdHandler)xp_id);
+  VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) xp_character);
+  VXmlSetEntityRefHandler (parser, (VXmlEntityRefHandler) xp_entity);
+  VXmlSetProcessingInstructionHandler (parser, (VXmlProcessingInstructionHandler) xp_pi);
+  VXmlSetCommentHandler (parser, (VXmlCommentHandler) xp_comment);
   if (NULL != xrie.xrie_iter)
     {
-      XML_ParserInput (parser, xrie.xrie_iter, xrie.xrie_iter_data);
+      VXmlParserInput (parser, xrie.xrie_iter, xrie.xrie_iter_data);
     }
   QR_RESET_CTX
     {
       if (0 == setjmp (context.xp_error_ctx))
-        rc = XML_Parse (parser, text, xrie.xrie_text_len);
+        rc = VXmlParse (parser, text, xrie.xrie_text_len);
       else
 	rc = 0;
     }
@@ -1764,7 +1761,7 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
       caddr_t err = thr_get_error_code (self);
       POP_QR_RESET;
       xp_free (&context);
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       if (NULL != xrie.xrie_iter_abend)
         xrie.xrie_iter_abend (xrie.xrie_iter_data);
       if (err_ret)
@@ -1776,9 +1773,9 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
   END_QR_RESET;
   if (!rc)
     {
-      caddr_t rc_msg = XML_FullErrorMessage (parser);
+      caddr_t rc_msg = VXmlFullErrorMessage (parser);
       xp_free (&context);
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       if (NULL != xrie.xrie_iter_abend)
         xrie.xrie_iter_abend (xrie.xrie_iter_data);
       if (err_ret)
@@ -1789,7 +1786,7 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
   XP_STRSES_FLUSH (&context);
   if (NULL != ret_dtd)
     {
-      ret_dtd[0] = XML_GetDtd(parser);
+      ret_dtd[0] = VXmlGetDtd(parser);
       dtd_addref (ret_dtd[0], 0);
     }
   if (NULL != ret_id_cache)
@@ -1802,7 +1799,7 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
       ret_ns_2dict[0] = parser->ns_2dict;
       parser->ns_2dict.xn2_size = 0;
     }
-  XML_ParserDestroy (parser);
+  VXmlParserDestroy (parser);
   top = dk_set_nreverse (xn->xn_children);
   dk_set_push (&top, (void*) list (1, uname__root));
   tree = (caddr_t) list_to_array (top);
@@ -3299,25 +3296,25 @@ bif_xml_validate_dtd (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   QR_RESET_CTX
     {
-      xml_parser_config_t config;
-      xml_parser_t * parser;
+      vxml_parser_config_t config;
+      vxml_parser_t * parser;
       memset (&config, 0, sizeof(config));
       config.input_is_wide = arg_is_wide;
       config.input_is_html = parser_mode;
       config.user_encoding_handler = intl_find_user_charset;
-      config.uri_resolver = (XML_UriResolver) xml_uri_resolve_like_get;
-      config.uri_reader = (XML_UriReader) xml_uri_get;
+      config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
+      config.uri_reader = (VXmlUriReader) xml_uri_get;
       config.uri_appdata = (query_instance_t *)(qst); /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-      config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+      config.error_reporter = (VXmlErrorReporter)(sqlr_error);
       config.initial_src_enc_name = enc;
       config.dtd_config = dtd_config;
       config.uri = ((NULL == uri) ? uname___empty : uri);
       config.root_lang_handler = lh;
-      parser = XML_ParserCreate (&config);
-      XML_SetUserData (parser, NULL);
-      XML_Parse (parser, text, box_length(text) - (arg_is_wide ? sizeof (wchar_t) : sizeof (char)));
-      log = XML_ValidationLog (parser);
-      XML_ParserDestroy (parser);
+      parser = VXmlParserCreate (&config);
+      VXmlSetUserData (parser, NULL);
+      VXmlParse (parser, text, box_length(text) - (arg_is_wide ? sizeof (wchar_t) : sizeof (char)));
+      log = VXmlValidationLog (parser);
+      VXmlParserDestroy (parser);
       dk_free_tree (err);
     }
   QR_RESET_CODE
@@ -3361,23 +3358,23 @@ static caddr_t xmlschema_dflt_config = NULL;
 
 void shuric_parse_text__xmlschema (shuric_t *shuric, caddr_t uri_text_content, query_instance_t *qi, void *env, caddr_t *err_ret)
 {
-  xml_parser_t * parser = NULL;
+  vxml_parser_t * parser = NULL;
   QR_RESET_CTX
     {
-      xml_parser_config_t config;
-      xml_parser_config_t *config_ptr;
+      vxml_parser_config_t config;
+      vxml_parser_config_t *config_ptr;
       if (NULL != env)
-        config_ptr = (xml_parser_config_t *)env;
+        config_ptr = (vxml_parser_config_t *)env;
       else
         {
 	  memset (&config, 0, sizeof(config));
 	  config.input_is_wide = 0;
 	  config.input_is_html = 0;
 	  config.user_encoding_handler = intl_find_user_charset;
-	  config.uri_resolver = (XML_UriResolver) xml_uri_resolve_like_get;
-	  config.uri_reader = (XML_UriReader) xml_uri_get;
+	  config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
+	  config.uri_reader = (VXmlUriReader) xml_uri_get;
 	  config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-	  config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+	  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
 	  config.initial_src_enc_name = "UTF-8";
 	  config.dtd_config = xmlschema_dflt_config;
 	  config.uri = shuric->shuric_uri;
@@ -3386,12 +3383,12 @@ void shuric_parse_text__xmlschema (shuric_t *shuric, caddr_t uri_text_content, q
 	  /* no auto_load_xmlschema_dtd */
 	  config_ptr = &config;
 	}
-      parser = XML_ParserCreate (config_ptr);
-      XML_SetUserData (parser, parser);
-      XML_Parse (parser, uri_text_content, box_length (uri_text_content) - 1);
+      parser = VXmlParserCreate (config_ptr);
+      VXmlSetUserData (parser, parser);
+      VXmlParse (parser, uri_text_content, box_length (uri_text_content) - 1);
       if (!xmlparser_is_ok (parser))
         {
-	  caddr_t msg = XML_FullErrorMessage (parser);
+	  caddr_t msg = VXmlFullErrorMessage (parser);
           err_ret[0] = srv_make_new_error ("42000", "SQ199", "Unable to compile schema '%.300s'.\n%.1000s\nFunction xml_load_schema_decl() can return full list of these errors.", shuric->shuric_uri, msg);
 	  dk_free_box (msg);
 	}
@@ -3402,15 +3399,15 @@ void shuric_parse_text__xmlschema (shuric_t *shuric, caddr_t uri_text_content, q
 	  shuric->shuric_data = parser->processor.sp_schema;
 	}
       if (NULL != config_ptr->log_ret)
-        config_ptr->log_ret[0] = XML_ValidationLog (parser);
-      XML_ParserDestroy (parser);
+        config_ptr->log_ret[0] = VXmlValidationLog (parser);
+      VXmlParserDestroy (parser);
     }
   QR_RESET_CODE
     {
       du_thread_t * self = THREAD_CURRENT_THREAD;
       err_ret[0] = thr_get_error_code (self);
       POP_QR_RESET;
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
     }
   END_QR_RESET;
 }
@@ -3460,7 +3457,7 @@ bif_xml_load_schema_decl_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   caddr_t view_name = NULL;
   caddr_t raw_view_name = NULL;
 #if 0
-  xml_parser_t * parser = NULL;
+  vxml_parser_t * parser = NULL;
 #endif
   shuric_t *sch_shu = NULL;
   schema_parsed_t *sch;
@@ -3515,15 +3512,15 @@ bif_xml_load_schema_decl_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t **
 
   QR_RESET_CTX
     {
-      xml_parser_config_t config;
+      vxml_parser_config_t config;
       memset (&config, 0, sizeof(config));
       config.input_is_wide = 0;
       config.input_is_html = 0;
       config.user_encoding_handler = intl_find_user_charset;
-      config.uri_resolver = (XML_UriResolver) xml_uri_resolve_like_get;
-      config.uri_reader = (XML_UriReader) xml_uri_get;
+      config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
+      config.uri_reader = (VXmlUriReader) xml_uri_get;
       config.uri_appdata = (query_instance_t *)(qst); /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-      config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+      config.error_reporter = (VXmlErrorReporter)(sqlr_error);
       config.initial_src_enc_name = enc;
       if (NULL == dtd_config)
         dtd_config = xmlschema_dflt_config;
@@ -3560,19 +3557,19 @@ bif_xml_load_schema_decl_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t **
 	  sch_shu = NULL;
 	}
 #else
-      parser = XML_ParserCreate (&config);
-      XML_SetUserData (parser, parser);
-      XML_Parse (parser, schema_decl_text, box_length(schema_decl_text) - 1);
+      parser = VXmlParserCreate (&config);
+      VXmlSetUserData (parser, parser);
+      VXmlParse (parser, schema_decl_text, box_length(schema_decl_text) - 1);
       if ((LOAD_SCHEMA_DECL != mode) && (RELOAD_SCHEMA_DECL != mode) && !xmlparser_is_ok(parser))
 	sqlr_new_error ("42000", "SQ176", "Unable to compile mapping schema '%s'. Function xml_load_schema_decl() can return full list of these errors.", schema_decl_path);
       if (err)
 	sqlr_resignal (err);
-      log = XML_ValidationLog (parser);
+      log = VXmlValidationLog (parser);
       if ((LOAD_SCHEMA_DECL != mode) && (RELOAD_SCHEMA_DECL != mode) && (TABLES_FROM_MAPPING_SCHEMA_DECL != mode))
         xml_mapping_view = mapping_schema_to_xml_view (parser->processor.sp_schema);
       if (TABLES_FROM_MAPPING_SCHEMA_DECL == mode)
         tables_ms = tables_from_mapping_schema (parser->processor.sp_schema, ((query_instance_t *)(qst))->qi_client);
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
 #endif
     }
   QR_RESET_CODE
@@ -3586,7 +3583,7 @@ bif_xml_load_schema_decl_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       shuric_release (sch_shu);
       sch_shu = NULL;
 #if 0
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
 #endif
       sqlr_resignal (err);
     }
@@ -3756,7 +3753,7 @@ bif_xml_validate_schema (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int xsd_owns = 0;
   caddr_t xsd_uri = 0;
   shuric_t *xsd_shu = NULL;
-  xml_parser_t * parser = NULL;
+  vxml_parser_t * parser = NULL;
   dtp_of_text_arg = DV_TYPE_OF (text_arg);
   if (BOX_ELEMENTS(args) > 7)
     {
@@ -3832,17 +3829,17 @@ bif_xml_validate_schema (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   QR_RESET_CTX
     {
-      xml_parser_config_t config;
+      vxml_parser_config_t config;
       memset (&config, 0, sizeof(config));
       config.input_is_wide = arg_is_wide;
       config.input_is_html = parser_mode;
       if (NULL != ent)
         config.input_source_type = XML_SOURCE_TYPE_XTREE_DOC;
       config.user_encoding_handler = intl_find_user_charset;
-      config.uri_resolver = (XML_UriResolver) xml_uri_resolve_like_get;
-      config.uri_reader = (XML_UriReader) xml_uri_get;
+      config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
+      config.uri_reader = (VXmlUriReader) xml_uri_get;
       config.uri_appdata = (query_instance_t *)(qst); /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-      config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+      config.error_reporter = (VXmlErrorReporter)(sqlr_error);
       config.initial_src_enc_name = enc;
       config.dtd_config = dtd_config;
       config.uri = ((NULL == uri) ? uname___empty : uri);
@@ -3859,8 +3856,8 @@ bif_xml_validate_schema (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       config.auto_load_xmlschema_dtd_s = xsd_postfix;
       config.auto_load_xmlschema_uri = xsd_uri;
       config.dc_namespaces = XCFG_ENABLE;
-      parser = XML_ParserCreate (&config);
-      XML_SetUserData (parser, NULL);
+      parser = VXmlParserCreate (&config);
+      VXmlSetUserData (parser, NULL);
       if (NULL != xsd_shu)
         {
           parser->processor.sp_schema = ((schema_parsed_t *)(xsd_shu->shuric_data));
@@ -3873,9 +3870,9 @@ bif_xml_validate_schema (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  parser->attrdata.local_attrs_count = 0; /* Attributes should not be freed if input is emulated */
 	}
       else
-        XML_Parse (parser, text, box_length(text) - (arg_is_wide ? sizeof (wchar_t) : sizeof (char)));
-      log = XML_ValidationLog (parser);
-      XML_ParserDestroy (parser);
+        VXmlParse (parser, text, box_length(text) - (arg_is_wide ? sizeof (wchar_t) : sizeof (char)));
+      log = VXmlValidationLog (parser);
+      VXmlParserDestroy (parser);
       shuric_release (xsd_shu);
       dk_free_tree (err);
 
@@ -3895,7 +3892,7 @@ bif_xml_validate_schema (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if ((NULL != ent) && (NULL != parser)) /* Attributes should not be freed if input is emulated */
 	parser->attrdata.local_attrs_count = 0;
       POP_QR_RESET;
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       shuric_release (xsd_shu);
       sqlr_resignal (err);
     }
@@ -5981,54 +5978,6 @@ bif_xmlnss_xpath_pre (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res_str;
 }
 
-#ifdef WBXML2
-caddr_t
-bif_wbxml2xml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t in = bif_arg (qst, args, 0, "wbxml2xml");
-  caddr_t ret_xml = NULL;
-  WBXMLError ret = WBXML_OK;
-  WB_UTINY *wbxml = NULL, *xml = NULL;
-  WB_LONG wbxml_len = 0;
-  WBXMLGenXMLParams params;
-  long box_in_len = box_length (in);
-
-  /* Init Default Parameters */
-  params.lang = WBXML_LANG_UNKNOWN;
-  params.gen_type = WBXML_GEN_XML_INDENT;
-  params.indent = 1;
-  params.keep_ignorable_ws = FALSE;
-
-  wbxml_len =  box_in_len - 1;
-  wbxml = wbxml_realloc(wbxml, wbxml_len);
-  memcpy(wbxml, in, wbxml_len);
-
-  ret = wbxml_conv_wbxml2xml (wbxml, wbxml_len, &xml, &params);
-
-  if (ret != WBXML_OK)
-    {
-
-      *err_ret = srv_make_new_error ("23000", wbxml_errors_string(ret), "WBXML");
-      goto end;
-    }
-
-  ret_xml = box_dv_short_string (xml);
-
-end:
-  wbxml_free(wbxml);
-  wbxml_free(xml);
-  return ret_xml ? ret_xml : dk_alloc_box (0, DV_DB_NULL);
-}
-;
-
-caddr_t
-bif_xml2wbxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  int argcount = BOX_ELEMENTS (args);	/* number of arguments in the call */
-}
-;
-
-#endif
 
 void
 bif_xml_init (void)
@@ -6126,10 +6075,7 @@ bif_xml_init (void)
   bif_define_typed ("xte_expand_xmlns", bif_xte_expand_xmlns, &bt_any);
   bif_define_typed ("xmlnss_get", bif_xmlnss_get, &bt_xml_entity);
   bif_define_typed ("xmlnss_xpath_pre", bif_xmlnss_xpath_pre, &bt_varchar);
-#ifdef WBXML2
-  bif_define_typed ("wbxml2xml", bif_wbxml2xml, &bt_varchar);
-  bif_define_typed ("xml2wbxml", bif_xml2wbxml, &bt_any);
-#endif
+
   bif_text_init ();
   bif_ap_init ();
   xml_schema_init ();

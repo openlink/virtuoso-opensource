@@ -1292,7 +1292,7 @@ void appi_markup_ptext (ap_proc_inst_t *appi)
 
 typedef struct appi_html_ctx_s {
   ap_proc_inst_t *	ah_appi;
-  xml_parser_t *	ah_parser;
+  vxml_parser_t *	ah_parser;
   int			ah_depth;	/*!< Current number of unclosed tags */
   int			ah_prev_end;
   const utf8char *	ah_chars_begin;
@@ -1302,14 +1302,14 @@ typedef struct appi_html_ctx_s {
   dk_set_t		ah_free_list;
 } appi_html_ctx_t;
 
-void appi_element (void *userdata, const char * name, xml_parser_attrdata_t *attrdata)
+void appi_element (void *userdata, const char * name, vxml_parser_attrdata_t *attrdata)
 {
   appi_html_ctx_t * ah = (appi_html_ctx_t*) userdata;
   ap_proc_inst_t *appi = ah->ah_appi;
   html_tag_descr_t *htd = (html_tag_descr_t *)id_hash_get (html_tag_hash, (caddr_t)(&name));
   ap_arrow_t *curr_apa;
   int start = ah->ah_prev_end;
-  int end = ah->ah_prev_end = XML_GetCurrentByteNumber (ah->ah_parser);
+  int end = ah->ah_prev_end = VXmlGetCurrentByteNumber (ah->ah_parser);
   unsigned htmltm_bits = ah->ah_tags[ah->ah_depth - 1]->apa_htmltm_bits;
   if (NULL != htd)
     htmltm_bits |= htd->htmltd_mask_o;
@@ -1326,7 +1326,7 @@ void appi_element_end (void *userdata, const char * name)
   ap_proc_inst_t *appi = ah->ah_appi;
   ap_arrow_t *curr_apa;
   int start = ah->ah_prev_end;
-  int end = ah->ah_prev_end = XML_GetCurrentByteNumber (ah->ah_parser);
+  int end = ah->ah_prev_end = VXmlGetCurrentByteNumber (ah->ah_parser);
   unsigned htmltm_bits = ah->ah_tags[ah->ah_depth - 2]->apa_htmltm_bits;
   curr_apa = appi_add_arrow (
       APA_CLOSING_TAG, start, end, htmltm_bits, ah->ah_arrow_idx [ah->ah_depth - 1], appi);
@@ -1356,7 +1356,7 @@ void appi_character (void *userdata, const char * s, size_t len)
   dk_set_t place_iter;
   const char *orig_s, *orig_s_end, *orig_s_curr, *s_curr, *s_stop;
   orig_s = appi->appi_source_UTF8 + ah->ah_prev_end;
-  ah->ah_prev_end = XML_GetCurrentByteNumber (ah->ah_parser);
+  ah->ah_prev_end = VXmlGetCurrentByteNumber (ah->ah_parser);
   orig_s_end = appi->appi_source_UTF8 + ah->ah_prev_end;
   if (orig_s_end == orig_s) /* Recovery after errors such as an invalid entity ref */
     {
@@ -1471,7 +1471,7 @@ void appi_other (void *userdata)
   ap_proc_inst_t *appi = ah->ah_appi;
   ap_arrow_t *curr_apa;
   int start = ah->ah_prev_end;
-  int end = ah->ah_prev_end = XML_GetCurrentByteNumber (ah->ah_parser);
+  int end = ah->ah_prev_end = VXmlGetCurrentByteNumber (ah->ah_parser);
   unsigned htmltm_bits = ah->ah_tags[ah->ah_depth - 1]->apa_htmltm_bits;
   curr_apa = appi_add_arrow (
       APA_OTHER, start, end, htmltm_bits, ah->ah_arrow_idx [ah->ah_depth - 1], appi);
@@ -1497,8 +1497,8 @@ void appi_markup_html (ap_proc_inst_t *appi, caddr_t *err_ret)
   query_instance_t * qi = appi->appi_qi;
   caddr_t text = appi->appi_source_UTF8;
   s_size_t text_len = box_length (text) - 1;
-  xml_parser_config_t config;
-  xml_parser_t * parser;
+  vxml_parser_config_t config;
+  vxml_parser_t * parser;
   ap_arrow_t *fake_root;
   appi_html_ctx_t acontext;
   int rc;
@@ -1512,14 +1512,14 @@ void appi_markup_html (ap_proc_inst_t *appi, caddr_t *err_ret)
   config.input_is_xslt = 0;
   config.user_encoding_handler = intl_find_user_charset;
   config.initial_src_enc_name = "!UTF-8";
-  config.uri_resolver = (XML_UriResolver)(xml_uri_resolve_like_get);
-  config.uri_reader = (XML_UriReader)(xml_uri_get);
+  config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
+  config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
   config.uri = /*((NULL == uri) ?*/ uname___empty /*: uri)*/;
   config.dtd_config = mp_box_string (appi->appi_mp, "Validation=DISABLE ErrorContext=DISABLE BuildStandalone=DISABLE Include=DISABLE");
   config.root_lang_handler = appi->appi_lh;
-  parser = XML_ParserCreate (&config);
+  parser = VXmlParserCreate (&config);
   parser->fill_ns_2dict = 0;
   acontext.ah_appi = appi;
   acontext.ah_parser = parser;
@@ -1530,17 +1530,17 @@ void appi_markup_html (ap_proc_inst_t *appi, caddr_t *err_ret)
   fake_root->apa_innermost_tag = -1;
   acontext.ah_tags[0] = fake_root;
   acontext.ah_depth = 1;
-  XML_SetUserData (parser, &acontext);
-  XML_SetElementHandler (parser, (XML_StartElementHandler) appi_element, appi_element_end);
-  XML_SetIdHandler (parser, (XML_IdHandler)appi_id);
-  XML_SetCharacterDataHandler (parser, (XML_CharacterDataHandler) appi_character);
-  XML_SetEntityRefHandler (parser, (XML_EntityRefHandler) appi_entity);
-  XML_SetProcessingInstructionHandler (parser, (XML_ProcessingInstructionHandler) appi_pi);
-  XML_SetCommentHandler (parser, (XML_CommentHandler) appi_comment);
+  VXmlSetUserData (parser, &acontext);
+  VXmlSetElementHandler (parser, (VXmlStartElementHandler) appi_element, appi_element_end);
+  VXmlSetIdHandler (parser, (VXmlIdHandler)appi_id);
+  VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) appi_character);
+  VXmlSetEntityRefHandler (parser, (VXmlEntityRefHandler) appi_entity);
+  VXmlSetProcessingInstructionHandler (parser, (VXmlProcessingInstructionHandler) appi_pi);
+  VXmlSetCommentHandler (parser, (VXmlCommentHandler) appi_comment);
   QR_RESET_CTX
     {
 /*      if (0 == setjmp (context.xp_error_ctx))*/
-        rc = XML_Parse (parser, text, text_len);
+        rc = VXmlParse (parser, text, text_len);
 /*      else
 	rc = 0;*/
     }
@@ -1550,7 +1550,7 @@ void appi_markup_html (ap_proc_inst_t *appi, caddr_t *err_ret)
       caddr_t err = thr_get_error_code (self);
       POP_QR_RESET;
       /*xp_free (&context);*/
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       if (err_ret)
 	*err_ret = err;
       else
@@ -1560,16 +1560,16 @@ void appi_markup_html (ap_proc_inst_t *appi, caddr_t *err_ret)
   END_QR_RESET;
   if (!rc)
     {
-      caddr_t rc_msg = XML_FullErrorMessage (parser);
+      caddr_t rc_msg = VXmlFullErrorMessage (parser);
       /*xp_free (&context);*/
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       if (err_ret)
 	*err_ret = srv_make_new_error ("22007", "XM003", "%.1500s", rc_msg);
       dk_free_box (rc_msg);
       return;
     }
   /*XP_STRSES_FLUSH (&context);*/
-  XML_ParserDestroy (parser);
+  VXmlParserDestroy (parser);
   /*xp_free (&context);*/
 }
 

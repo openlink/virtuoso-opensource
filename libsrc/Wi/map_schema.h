@@ -58,7 +58,7 @@ extern caddr_t  tables_from_mapping_schema (schema_parsed_t * schema, client_con
 caddr_t get_view_name (utf8char * fullname, char sign);
 void xmlview_free (xml_view_t * xv);/*mapping schema*/
 int
-XML_Tree_Parse (xml_parser_t * parser, xml_entity_t * xml_ent, caddr_t schema_name, caddr_t type_name);
+VXmlTree_Parse (vxml_parser_t * parser, xml_entity_t * xml_ent, caddr_t schema_name, caddr_t type_name);
 
 #define _COMMA(text, len, fill, first) \
   if (!first) \

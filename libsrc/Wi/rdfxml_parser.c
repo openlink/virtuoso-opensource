@@ -222,7 +222,7 @@ xp_rdfxml_triple_l (xparse_ctx_t *xp, caddr_t s, caddr_t p, caddr_t o, caddr_t d
 
 
 void
-xp_rdfxml_element (void *userdata, char * name, xml_parser_attrdata_t *attrdata)
+xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
 {
   xparse_ctx_t * xp = (xparse_ctx_t*) userdata;
   xp_rdf_locals_t *outer = xp->xp_rdf_locals;
@@ -572,7 +572,7 @@ xp_rdfxml_id (void *userdata, char * name)
 
 
 void
-xp_rdfxml_character (xml_parser_t * parser,  char * s, int len)
+xp_rdfxml_character (vxml_parser_t * parser,  char * s, int len)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
   switch (xp->xp_rdf_locals->xrl_parsetype)
@@ -607,7 +607,7 @@ xp_rdfxml_character (xml_parser_t * parser,  char * s, int len)
 }
 
 void
-xp_rdfxml_entity (xml_parser_t * parser, const char * refname, int reflen, int isparam, const xml_def_4_entity_t *edef)
+xp_rdfxml_entity (vxml_parser_t * parser, const char * refname, int reflen, int isparam, const xml_def_4_entity_t *edef)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
   switch (xp->xp_rdf_locals->xrl_parsetype)
@@ -626,7 +626,7 @@ xp_rdfxml_entity (xml_parser_t * parser, const char * refname, int reflen, int i
 }
 
 void
-xp_rdfxml_pi (xml_parser_t * parser, const char *target, const char *data)
+xp_rdfxml_pi (vxml_parser_t * parser, const char *target, const char *data)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
   switch (xp->xp_rdf_locals->xrl_parsetype)
@@ -647,7 +647,7 @@ xp_rdfxml_pi (xml_parser_t * parser, const char *target, const char *data)
 }
 
 void
-xp_rdfxml_comment (xml_parser_t * parser, const char *text)
+xp_rdfxml_comment (vxml_parser_t * parser, const char *text)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
   switch (xp->xp_rdf_locals->xrl_parsetype)
@@ -668,8 +668,8 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
    id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict*/ )
 {
   int dtp_of_text = box_tag (text);
-  xml_parser_config_t config;
-  xml_parser_t * parser;
+  vxml_parser_config_t config;
+  vxml_parser_t * parser;
   xparse_ctx_t context;
   triple_feed_t *tf;
   int rc;
@@ -704,29 +704,29 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   config.input_is_xslt = 0;
   config.user_encoding_handler = intl_find_user_charset;
   config.initial_src_enc_name = enc;
-  config.uri_resolver = (XML_UriResolver)(xml_uri_resolve_like_get);
-  config.uri_reader = (XML_UriReader)(xml_uri_get);
+  config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
+  config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
   config.uri = ((NULL == base_uri) ? uname___empty : base_uri);
   if (NULL == default_dtd_config)
     default_dtd_config = box_dv_short_string ("Validation=RIGOROUS");
   config.dtd_config = default_dtd_config;
   config.root_lang_handler = lh;
-  parser = XML_ParserCreate (&config);
+  parser = VXmlParserCreate (&config);
   parser->fill_ns_2dict = 0;
   context.xp_parser = parser;
-  XML_SetUserData (parser, &context);
-  XML_SetElementHandler (parser, (XML_StartElementHandler) xp_rdfxml_element, xp_rdfxml_element_end);
-  XML_SetIdHandler (parser, (XML_IdHandler)xp_rdfxml_id);
-  XML_SetCharacterDataHandler (parser, (XML_CharacterDataHandler) xp_rdfxml_character);
-  XML_SetEntityRefHandler (parser, (XML_EntityRefHandler) xp_rdfxml_entity);
-  XML_SetProcessingInstructionHandler (parser, (XML_ProcessingInstructionHandler) xp_rdfxml_pi);
-  XML_SetCommentHandler (parser, (XML_CommentHandler) xp_rdfxml_comment);
+  VXmlSetUserData (parser, &context);
+  VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_rdfxml_element, xp_rdfxml_element_end);
+  VXmlSetIdHandler (parser, (VXmlIdHandler)xp_rdfxml_id);
+  VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) xp_rdfxml_character);
+  VXmlSetEntityRefHandler (parser, (VXmlEntityRefHandler) xp_rdfxml_entity);
+  VXmlSetProcessingInstructionHandler (parser, (VXmlProcessingInstructionHandler) xp_rdfxml_pi);
+  VXmlSetCommentHandler (parser, (VXmlCommentHandler) xp_rdfxml_comment);
   if (NULL != xrie.xrie_iter)
     {
       rdfxml_dbg_printf(("\n\n rdfxml_parse() will parse text input"));
-      XML_ParserInput (parser, xrie.xrie_iter, xrie.xrie_iter_data);
+      VXmlParserInput (parser, xrie.xrie_iter, xrie.xrie_iter_data);
     }
   else
     {
@@ -740,7 +740,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
     {
       tf_set_stmt_texts (tf, stmt_texts, NULL);
       if (0 == setjmp (context.xp_error_ctx))
-        rc = XML_Parse (parser, text, xrie.xrie_text_len);
+        rc = VXmlParse (parser, text, xrie.xrie_text_len);
       else
 	rc = 0;
     }
@@ -749,7 +749,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
       du_thread_t * self = THREAD_CURRENT_THREAD;
       caddr_t err = thr_get_error_code (self);
       POP_QR_RESET;
-      XML_ParserDestroy (parser);
+      VXmlParserDestroy (parser);
       xp_free (&context);
       if (NULL != xrie.xrie_iter_abend)
         xrie.xrie_iter_abend (xrie.xrie_iter_data);
@@ -763,8 +763,8 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   END_QR_RESET;
   if (!rc)
     {
-      caddr_t rc_msg = XML_FullErrorMessage (parser);
-      XML_ParserDestroy (parser);
+      caddr_t rc_msg = VXmlFullErrorMessage (parser);
+      VXmlParserDestroy (parser);
       xp_free (&context);
       if (NULL != xrie.xrie_iter_abend)
         xrie.xrie_iter_abend (xrie.xrie_iter_data);
@@ -778,7 +778,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
 /*
   if (NULL != ret_dtd)
     {
-      ret_dtd[0] = XML_GetDtd(parser);
+      ret_dtd[0] = VXmlGetDtd(parser);
       dtd_addref (ret_dtd[0], 0);
     }
   if (NULL != ret_id_cache)
@@ -792,7 +792,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
       parser->ns_2dict.xn2_size = 0;
     }
 */
-  XML_ParserDestroy (parser);
+  VXmlParserDestroy (parser);
   xp_free (&context);
   tf_free (tf);
   return;

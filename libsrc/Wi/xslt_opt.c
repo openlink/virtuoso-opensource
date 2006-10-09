@@ -327,7 +327,7 @@ xn_xslt_attributes (xp_node_t * xn)
     }
   if (is_xslns (XTE_HEAD_NAME (head)))
     {
-      xml_parser_t *parser = xn->xn_xp->xp_parser;
+      vxml_parser_t *parser = xn->xn_xp->xp_parser;
       int is_xslt = parser->cfg.input_is_xslt;
       if (is_xslt)
 	{
@@ -335,14 +335,14 @@ xn_xslt_attributes (xp_node_t * xn)
 	  caddr_t * head2 = dk_alloc_box ((headlen + 4) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
           elem_xdl = (xp_debug_location_t *) dk_alloc_box_zero (sizeof (xp_debug_location_t), DV_ARRAY_OF_LONG);
           elem_xdl->xdl_element = head[0];
-	  elem_xdl->xdl_line = XML_GetOuterLineNumber(parser);
+	  elem_xdl->xdl_line = VXmlGetOuterLineNumber(parser);
 #else
 	  caddr_t * head2 = (caddr_t *) dk_alloc_box ((headlen + 2) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
           elem_xdl = (xp_debug_location_t *) dk_alloc_box_zero (sizeof (xp_debug_location_t), DV_ARRAY_OF_POINTER);
           elem_xdl->xdl_element = box_copy (head[0]);
-	  elem_xdl->xdl_line = box_num (XML_GetOuterLineNumber(parser));
+	  elem_xdl->xdl_line = box_num (VXmlGetOuterLineNumber(parser));
 #endif
-          elem_xdl->xdl_file = box_dv_uname_string (XML_GetOuterFileName (parser));
+          elem_xdl->xdl_file = box_dv_uname_string (VXmlGetOuterFileName (parser));
 	  memcpy (head2, head, headlen * sizeof (caddr_t));
 	  head2[headlen++] = uname__bang_location;
 	  head2[headlen++] = (caddr_t) elem_xdl;

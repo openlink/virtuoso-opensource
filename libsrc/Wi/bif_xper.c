@@ -118,7 +118,7 @@ typedef struct xper_ctx_s
     int xpc_index_attrs;	/*!< Flags if attributes should be indexed */
     id_hash_t *xpc_id_dict;
     FILE *xpc_src_file;
-    xml_parser_t *xpc_parser;
+    vxml_parser_t *xpc_parser;
     dk_set_t xpc_cut_chain;	/* Chain of boxes, which will be written into the copy */
     dk_set_t xpc_cut_namespaces;	/* All namespaces, listed in the cut */
   }
@@ -145,7 +145,7 @@ struct xper_stag_s
     const char *name;
     const char **xmlns_atts;
     int xmlns_atts_count;
-    xml_parser_attrdata_t *attrdata;
+    vxml_parser_attrdata_t *attrdata;
     int main_atts_count;
     long parent;
     long left;
@@ -819,7 +819,7 @@ cb_trace_start_tag (xper_ctx_t * ctx, xper_stag_t * data)
 }
 
 void
-cb_element_start (void *userdata, const char * name, xml_parser_attrdata_t *attrdata)
+cb_element_start (void *userdata, const char * name, vxml_parser_attrdata_t *attrdata)
 {
   xper_ctx_t *ctx = (xper_ctx_t *) userdata;
   blob_handle_t *ctx_bh = ctx->xpc_doc->xpd_bh;
@@ -1055,7 +1055,7 @@ cb_entity (void *userdata, const char * refname, size_t reflen, int isparam, con
   xper_ctx_t *ctx = (xper_ctx_t *) userdata;
   blob_handle_t *ctx_bh = ctx->xpc_doc->xpd_bh;
   xper_stag_t data;
-  xml_parser_attrdata_t attrdata;
+  vxml_parser_attrdata_t attrdata;
   tag_attr_t ta;
   caddr_t tmp_box;
   char *uri;
@@ -1107,7 +1107,7 @@ cb_pi (void *userdata, const char * target, const char * pi_data)
   xper_ctx_t *ctx = (xper_ctx_t *) userdata;
   blob_handle_t *ctx_bh = ctx->xpc_doc->xpd_bh;
   xper_stag_t data;
-  xml_parser_attrdata_t attrdata;
+  vxml_parser_attrdata_t attrdata;
   tag_attr_t ta;
   caddr_t tmp_box;
   long my_pos;
@@ -1398,7 +1398,7 @@ xper_destroy_ctx (xper_ctx_t * ctx)
     }
   if (NULL != ctx->xpc_parser)
     {
-      XML_ParserDestroy (ctx->xpc_parser);
+      VXmlParserDestroy (ctx->xpc_parser);
       ctx->xpc_parser = NULL;
     }
 }
@@ -2395,13 +2395,13 @@ xper_entity_t *
   volatile int rc = 1;
   caddr_t rc_msg = NULL;
   volatile s_size_t source_length = 0;
-  xml_parser_config_t config;
+  vxml_parser_config_t config;
   xper_ctx_t context;
   volatile char source_type = '?';
   volatile int source_is_wide = 0;
   caddr_t tmp_box;
   xper_stag_t root_data;
-  xml_parser_attrdata_t root_attrdata;
+  vxml_parser_attrdata_t root_attrdata;
   long pos;
 
   xpd = (xper_doc_t *) DK_ALLOC (sizeof (xper_doc_t));
@@ -2679,24 +2679,24 @@ parse_source:
 	config.input_is_html = is_html & ~(FINE_XSLT | GE_XML | WEBIMPORT_HTML | FINE_XML_SRCPOS);
 	config.input_is_xslt = is_html & FINE_XSLT;
 	config.user_encoding_handler = intl_find_user_charset;
-	config.uri_resolver = (XML_UriResolver)xml_uri_resolve_like_get;
-	config.uri_reader = (XML_UriReader)xml_uri_get;
+	config.uri_resolver = (VXmlUriResolver)xml_uri_resolve_like_get;
+	config.uri_reader = (VXmlUriReader)xml_uri_get;
 	config.uri_appdata = qi;	/* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-        config.error_reporter = (XML_ErrorReporter)(sqlr_error);
+        config.error_reporter = (VXmlErrorReporter)(sqlr_error);
 	config.initial_src_enc_name = enc_name;
 	config.dtd_config = dtd_config;
 	config.uri = ((NULL == uri) ? uname___empty : uri);
 	config.root_lang_handler = lh;
-	context.xpc_parser = XML_ParserCreate (&config);
-	XML_SetUserData (context.xpc_parser, &context);
-	XML_SetElementHandler (context.xpc_parser, cb_element_start, cb_element_end);
-	XML_SetIdHandler (context.xpc_parser, (XML_IdHandler) cb_id);
-	XML_SetCharacterDataHandler (context.xpc_parser, cb_character);
-	XML_SetEntityRefHandler (context.xpc_parser, cb_entity);
-	XML_SetProcessingInstructionHandler (context.xpc_parser, cb_pi);
-	XML_SetCommentHandler (context.xpc_parser, cb_comment);
+	context.xpc_parser = VXmlParserCreate (&config);
+	VXmlSetUserData (context.xpc_parser, &context);
+	VXmlSetElementHandler (context.xpc_parser, cb_element_start, cb_element_end);
+	VXmlSetIdHandler (context.xpc_parser, (VXmlIdHandler) cb_id);
+	VXmlSetCharacterDataHandler (context.xpc_parser, cb_character);
+	VXmlSetEntityRefHandler (context.xpc_parser, cb_entity);
+	VXmlSetProcessingInstructionHandler (context.xpc_parser, cb_pi);
+	VXmlSetCommentHandler (context.xpc_parser, cb_comment);
  /*
-   XML_SetDtdHandler (context.xpc_parser, (XML_DtdHandler) cb_dtd);
+   VXmlSetDtdHandler (context.xpc_parser, (VXmlDtdHandler) cb_dtd);
  */
 	/* start root tag */
 	dk_set_push (&context.xpc_poss, (void *) xpd->xpd_bh->bh_length);
@@ -2706,8 +2706,8 @@ parse_source:
 /* IvAn/TextXperIndex/000815 Word counter added, "root" replaced with " root" */
 	context.xpc_tn_length1 = 7 /*DV_SHORT_STR " root" */ ;
 	if (iter)
-	  XML_ParserInput (context.xpc_parser, iter, iter_data);
-	rc = XML_Parse (context.xpc_parser, source_arg, source_length);
+	  VXmlParserInput (context.xpc_parser, iter, iter_data);
+	rc = VXmlParse (context.xpc_parser, source_arg, source_length);
 	if (!rc)
 	  {
 	    if (NULL != iter_abend)
@@ -2715,7 +2715,7 @@ parse_source:
 	        iter_abend (iter_data);
 	        iter_abend = NULL;
 	      }
-	    rc_msg = XML_FullErrorMessage (context.xpc_parser);
+	    rc_msg = VXmlFullErrorMessage (context.xpc_parser);
 	  }
 	pos = (long) (ptrlong) context.xpc_poss->data;
 	if (pos < 0)
@@ -3954,7 +3954,7 @@ caddr_t ** xp_copy_to_xte_forest (xml_entity_t *xe)
 }
 
 
-void xp_emulate_input (xml_entity_t *xe, struct xml_parser_s *parser)
+void xp_emulate_input (xml_entity_t *xe, struct vxml_parser_s *parser)
 {
   sqlr_error ("42000", "Unable to pass persistent XML data to the XML validator.");
 }
@@ -5976,7 +5976,7 @@ xper_entity_t *
   dbe_key_t* xper_key;
   unsigned char *tmp_tail;
   xper_stag_t root_data;
-  xml_parser_attrdata_t root_attrdata;
+  vxml_parser_attrdata_t root_attrdata;
   dtd_t **src_dtd_ptr;		/* Pointer to the pointer to DTD in source document */
   xper_dbg_print ("xper_cut_xper\n");
   /* If this function was called for this entity with the same value of \c xper_pos, then we may have

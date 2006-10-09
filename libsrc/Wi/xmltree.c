@@ -82,10 +82,14 @@ ptrlong xqi_set_odometer = -1;
 #endif
 #endif
 
+#ifdef MALLOC_DEBUG
+#define XP_EVAL_CACHE_SIZE 1
+#else
 #ifndef NDEBUG
 #define XP_EVAL_CACHE_SIZE 13
 #else
 #define XP_EVAL_CACHE_SIZE 1021
+#endif
 #endif
 
 #ifdef XPATH_DEBUG
@@ -6899,7 +6903,7 @@ caddr_t **xte_copy_to_xte_forest (xml_entity_t *xe)
 }
 
 
-void xte_emulate_input (xml_entity_t *xe, struct xml_parser_s *parser)
+void xte_emulate_input (xml_entity_t *xe, struct vxml_parser_s *parser)
 {
   caddr_t *current;
   caddr_t *head;
