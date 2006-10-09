@@ -78,7 +78,7 @@ ECHO BOTH ": INNER JOIN on procedure view and remote table " $rowcnt " rows\n";
 
 
 SELECT CAST('GUARANTEED' AS VARCHAR), S.STRING1, S.STRING2, S.FDATE, G.S_STATUS, G.S_NO FROM
-         R1..T1 S, DELIVERY_VIEW G WHERE  GD_TRACKING_NO(S.STRING1) = G.S_NO ;
+         R1..T1 S, DELIVERY_VIEW G WHERE  GD_TRACKING_NO(S.STRING1) = G.S_NO option (order);
 ECHO BOTH $IF $EQU $ROWCNT 80 "PASSED" "***FAILED";
 ECHO BOTH ": JOIN comma syntax on procedure view and remote table " $rowcnt " rows\n";
 

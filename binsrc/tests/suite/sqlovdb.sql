@@ -270,6 +270,9 @@ ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": local/remote eq join with remote where returned " $ROWCNT " rows\n";
 
+echo both "explain here \n";
+explain ('select A.ROW_NO, B.ROW_NO from T1 A left join R1..T1 B on A.ROW_NO - 1 = B.ROW_NO where A.ROW_NO < 111');
+
 select A.ROW_NO, B.ROW_NO from T1 A left join R1..T1 B on A.ROW_NO - 1 = B.ROW_NO where A.ROW_NO < 111;
 ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;

@@ -25,7 +25,7 @@
 --  
 --  
 
-ECHO BOTH "STARTED: Schema Evolution Test, part 1\n";
+ECHO BOTH "STARTED: Schema Evolution Test, part 2\n";
 
 
 insert into T2_1_1 (A, B, C2_1, D2_1_1) values (4, 1, 2, 3);
@@ -163,4 +163,4 @@ CREATE INDEX B4678_SK01 ON B4678(ID,NAME);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": BUG 4678_3: drop of a key from a table w/ subtable STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-ECHO BOTH "COMPLETED: Schema Evolution Test, part 1\n";
+ECHO BOTH "COMPLETED: Schema Evolution Test, part 2\n";

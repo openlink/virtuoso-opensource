@@ -116,12 +116,13 @@ then
     exit 1
 fi
 
-#RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rpjoin.sql
-#if test $STATUS -ne 0
-#then
-#    LOG "***ABORTED: rtest.sh: rpjoin"
-#    exit 1
-#fi
+
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rpjoin.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rtest.sh: rpjoin"
+    exit 1
+fi
 
 
 RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tnumt.sql

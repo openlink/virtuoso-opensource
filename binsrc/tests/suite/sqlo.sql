@@ -236,6 +236,12 @@ ECHO BOTH $IF $EQU $LAST[1] 999 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": count where ROW_NO = subq - 2 returned " $LAST[1] "\n";
 
+select count (*) from T1 b where b.ROW_NO = (select  a.ROW_NO + 1 from T1 a table option (loop) where a.ROW_NO = b.ROW_NO + 1) - 2;
+ECHO BOTH $IF $EQU $LAST[1] 999 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": count where ROW_NO = subq - 2 loop join returned " $LAST[1] "\n";
+
+
 select count (*) from t1 where ROW_NO < 100 or ROW_NO > 999;
 ECHO BOTH $IF $EQU $LAST[1] 100 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
