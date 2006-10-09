@@ -952,6 +952,10 @@ extern long client_trace_flag;
 int init_pctcp ();
 #endif
 
+#ifdef UNIX
+extern long init_brk;
+#endif
+
 void strses_mem_initalize (void);
 void strses_readtable_initialize (void);
 void dk_box_initialize(void);

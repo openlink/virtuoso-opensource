@@ -5229,6 +5229,9 @@ dk_alloc_set_reserve_mode (int new_mode)
       free ((/* non-volatile here */ void *)dk_alloc_reserve);
       dk_alloc_reserve = NULL;
       log_error ("Memory low! Using memory reserve to terminate current activities properly");
+#ifdef UNIX
+      log_error ("Current location of the program break %ld", (long)sbrk (0) - init_brk);
+#endif      
       break;
     case DK_ALLOC_RESERVE_DISABLED:
       break;
@@ -5310,7 +5313,12 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
   dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_IN_USE);
   thing = malloc (size);
   if (NULL == thing)
+    {
+#ifdef UNIX
+      log_error ("Current location of the program break %ld", (long)sbrk (0) - init_brk);
+#endif      
     GPF_T1 ("Out of memory");
+    }
   return thing;
 #endif
 }
@@ -5322,7 +5330,12 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
 {
   void *thing = malloc (size);
   if (!thing && gpf_if_not)
+    {
+#ifdef UNIX
+      log_error ("Current location of the program break %ld", (long)sbrk (0) - init_brk);
+#endif      
     GPF_T1 ("Out of memory");
+    }
   return thing;
 }
 #endif
