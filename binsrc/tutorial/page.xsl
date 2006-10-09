@@ -2,6 +2,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
   <xsl:output method="xhtml" indent="yes" doctype-public="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"/>
   <xsl:include href="page_common.xsl"/>
+  <xsl:include href="page_html_common.xsl"/>
   <xsl:template match="tutorial">
     <xsl:text disable-output-escaping="yes"><![CDATA[<?vsp
 --

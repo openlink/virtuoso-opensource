@@ -225,3 +225,29 @@ create procedure ensure_tutorial_demo_user ()
 
 ensure_tutorial_demo_user ();
 
+
+create procedure t_populate_sioc (in path varchar)
+{
+  declare graph varchar;
+  declare data varchar;
+  declare s,e integer;
+  
+  graph := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
+  if (graph is null)
+    return;
+  graph := 'http://' || ltrim(graph,'/') || '/tutorial';
+  
+  data := xml_uri_get(path,'');
+  
+  data := replace(blob_to_string(data),'<?V _path ?>',graph||'/');
+  
+  s := strstr(data,'<?vsp');
+  e := strstr(data,'<rdf:RDF');
+  
+  data := substring(data,1,s) || subseq(data,e);
+  
+  DELETE FROM DB.DBA.RDF_QUAD WHERE G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph);
+  
+  DB.DBA.RDF_LOAD_RDFXML(data,graph,graph);
+    
+};

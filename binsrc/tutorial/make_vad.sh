@@ -428,6 +428,8 @@ sticker_init() {
   echo "       return \\'$BASE_PATH\\';" >> $STICKER
   echo "    }');" >> $STICKER
   echo "" >> $STICKER
+  echo "    t_populate_sioc(TUTORIAL_XSL_DIR() || '/tutorial/sioc.vsp');" >> $STICKER
+  echo "" >> $STICKER
   echo "" >> $STICKER
 	echo "  </sql>" >> $STICKER
 	echo "</procedures>" >> $STICKER

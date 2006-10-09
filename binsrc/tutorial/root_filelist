@@ -4,6 +4,7 @@ example.js
 guide.vsp
 page.xsl
 page_common.xsl
+page_html_common.xsl
 page_rss_output.xsl
 page_opml_output.xsl
 page_ocs_output.xsl
