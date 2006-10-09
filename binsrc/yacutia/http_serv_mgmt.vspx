@@ -45,6 +45,13 @@
   <vm:header caption="Hosted Domains and Virtual Directories">
   </vm:header>
   <vm:pagebody>
+  <![CDATA[
+  <script type="text/javascript">
+  var toolkitPath="toolkit";
+  var featureList = ["combolist"];
+  </script>
+  <script type="text/javascript" src="toolkit/loader.js"></script>
+  ]]>
     <v:template name="mode_temp1" type="simple" enabled="-- equ(self.mode, 'del')">
       <v:before-data-bind>
         <v:script><![CDATA[
@@ -95,7 +102,7 @@
                   <![CDATA[
   for (select HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PERSIST_SES_VARS
          from DB.DBA.HTTP_PATH
-         where HP_HOST = self.chost) do
+         where HP_HOST = self.chost and HP_LISTEN_HOST = self.clhost) do
     VHOST_REMOVE (HP_HOST, HP_LISTEN_HOST, HP_LPATH, 0);
   self.mode := '';
   self.edit_host := '';
@@ -229,9 +236,11 @@
 		      vh := cast (xpath_eval ('@chost',xt) as varchar);
 
 		      if (xp in ('*ini*', '*sslini*'))
+		        control.vc_enabled := 0;
+
+		      if (vh in ('*ini*', '*sslini*'))
 		        {
 		          declare dlt vspx_control;
-			  control.vc_enabled := 0;
 			  dlt := control.vc_parent.vc_find_control ('item_delete1');
 			  if (dlt is not null)
 			    dlt.vc_enabled := 0;
@@ -251,7 +260,7 @@
 			  control.ufl_value := 'Start';
 		        }
 
-		      if (xp not in ('*ini*', '*sslini*'))
+		      if (vh not in ('*ini*', '*sslini*'))
 		        {
 		          declare dlt vspx_url;
 			  dlt := control.vc_parent.vc_find_control ('item_edit1');
@@ -460,7 +469,7 @@
 		};
 
 		httphost := trim(self.t_httphost.ufl_value);
-		host := trim(self.t_host.ufl_value);
+		host := trim(get_keyword ('t_host', e.ve_params, ''));
 		port := trim(self.t_port.ufl_value);
 		if (length (httphost) and regexp_match('^[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\$', cast(host as varchar)) is null)
 		  {
@@ -500,17 +509,34 @@
 		  }
 		  self.t1.vc_data_bind(e);
 		  self.t_httphost.ufl_value := '';
-		  self.t_host.ufl_value := '';
+		  --self.t_host.ufl_value := '';
 		  self.t_port.ufl_value := '';
 		}
 		]]></v:script>
 	    </v:on-post>
 	    <tr>
 	      <td/>
-	      <td nowrap="nowrap">
-		<v:text name="t_host" xhtml_size="10" error-glyph="*">
+	      <td nowrap="nowrap" id="if_opt">
+		  <![CDATA[
+		  <script type="text/javascript">
+	           window.onload = function () {
+		      var sr_cl = new Combolist([],"0.0.0.0");
+		      sr_cl.input.name = "t_host";
+		      sr_cl.input.id = "t_host";
+		      $("if_opt").appendChild(sr_cl.div);
+		      sr_cl.addOption("0.0.0.0");
+		      <?vsp
+		        declare arr any;
+			arr := tcpip_local_interfaces ();
+			foreach (any elm in arr) do
+			  http (sprintf ('sr_cl.addOption("%s");', elm));
+	  	      ?>
+		    }
+		  </script>
+		  ]]>
+		<!--v:text name="t_host" xhtml_size="10" error-glyph="*">
 		  <v:validator name="v_host" test="regexp" regexp="^[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?$" message="You should provide a valid IP address." empty-allowed="1"/>
-		</v:text>
+		</v:text-->
 	      </td>
 	      <td nowrap="nowrap">
 		<v:text name="t_port" xhtml_size="5" error-glyph="*">

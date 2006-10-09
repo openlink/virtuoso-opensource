@@ -214,7 +214,7 @@
                 self._host1 := '0.0.0.0';
               if (self._host = '*sslini*')
                 self._host1 := '0.0.0.0';
-              self._httphost := concat(self.edit_httphost, case when length(self.edit_port)>0 then ':' else '' end, self.edit_port);
+              self._httphost := self.edit_httphost;
               if( self.edit_httphost = '*ini*' )
                 self.caption := '{Default Web Site}';
               else if( self.edit_httphost = '*sslini*' )

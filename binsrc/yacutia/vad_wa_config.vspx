@@ -118,11 +118,11 @@
                             <v:after-data-bind>
                               <![CDATA[
                                 declare pos integer;
-                                pos := strchr(cast(self.vd.ds_current_row.te_rowset[0] as varchar), ':');
+                                pos := strchr(cast(self.vd.ds_current_row.te_rowset[2] as varchar), ':');
                                 if (pos is null)
                                   control.ufl_value := ':80';
                                 else
-                                  control.ufl_value := concat(':', trim(subseq(cast(self.vd.ds_current_row.te_rowset[0] as varchar), pos + 1)));
+                                  control.ufl_value := concat(':', trim(subseq(cast(self.vd.ds_current_row.te_rowset[2] as varchar), pos + 1)));
                               ]]>
                             </v:after-data-bind>
                           </v:label>
@@ -187,8 +187,8 @@
                                       rollback work;
                                       return;
                                     }
-                                    if (_port <> '80' and _port <> '')
-                                      host := concat(host, ':', _port);
+                                    --if (_port <> '80' and _port <> '')
+                                    --  host := concat(host, ':', _port);
                                   }
                                   -- Home URL
                                   VHOST_DEFINE(
@@ -221,7 +221,17 @@
                       http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
                     ?>
                     <td class="listing_col">
-                      <v:url format="%s/" value="--(concat('http://', cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar), rtrim(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar), '/') ))" url="--(concat('http://', cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar), rtrim(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar), '/'), '/'))"/>
+			<v:url format="%s" value="" url="">
+			    <v:after-data-bind>
+				declare host, lhost, lpath any;
+				host := (control.vc_parent as vspx_row_template).te_rowset[0];
+				lhost := (control.vc_parent as vspx_row_template).te_rowset[2];
+				lpath := (control.vc_parent as vspx_row_template).te_rowset[1];
+
+				control.ufl_value := y_make_url_from_vd (host, lhost, lpath);
+				control.vu_url := control.ufl_value;
+			    </v:after-data-bind>
+			</v:url>
                     </td>
 		    <td class="listing_col">
 		      <v:label name="model_t1" value="">
@@ -231,9 +241,9 @@
 		      </v:label>
                     </td>
                     <td class="listing_col_action">
-                      <b><v:button action="simple" style="image" name="vd_edit" value="images/icons/edit_16.png" xhtml_alt="Edit" xhtml_title="Edit"/>Edit</b>
+                      <b><v:button action="simple" style="image" name="vd_edit" value="images/icons/edit_16.png" xhtml_alt="Edit" xhtml_title="Edit" xhtml_hspace="3" text="Edit"/></b>
                       <b>
-                        <v:button action="simple" style="image" name="vd_delete" value="images/icons/trash_16.png" xhtml_alt="Delete" xhtml_title="Delete">
+                        <v:button action="simple" style="image" name="vd_delete" value="images/icons/trash_16.png" xhtml_alt="Delete" xhtml_title="Delete" xhtml_hspace="3" text="Remove">
                           <v:on-post>
                             <v:script>
                               <![CDATA[
@@ -245,7 +255,7 @@
                               ]]>
                             </v:script>
                           </v:on-post>
-                        </v:button>Remove
+                        </v:button>
                       </b>
                     </td>
                     <?vsp

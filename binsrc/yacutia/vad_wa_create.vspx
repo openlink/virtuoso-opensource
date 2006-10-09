@@ -193,6 +193,13 @@
                         rollback work;
                         return;
                       }
+		      if (exists(select 1 from DB.DBA.WA_DOMAINS where WD_DOMAIN = domain))
+                      {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := 'This domain already configured';
+                        rollback work;
+                        return;
+                      }
                       commit work;
                       declare exit handler for sqlstate '*' {
                         self.vc_is_valid := 0;
@@ -200,7 +207,7 @@
                         rollback work;
                         return;
                       };
-		      dbg_obj_print (domain,ip,path);
+		      --dbg_obj_print (domain,ip,path);
                       VHOST_DEFINE(
                         vhost=>domain,
                         lhost=>ip,

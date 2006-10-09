@@ -369,7 +369,7 @@ create procedure adm_menu_tree ()
       <node name="Delete Path" url="http_del_path.vspx" id="156" place="1" allowed="yacutia_http_server_management_page"/>
    </node>
  </node>
- <node name="XML Services" url="xml_sql.vspx"  id="106" tip="XML Services permit manipulation of XML data from stored and SQL sources" allowed="yacutia_xml">
+ <node name="XML" url="xml_sql.vspx"  id="106" tip="XML Services permit manipulation of XML data from stored and SQL sources" allowed="yacutia_xml">
    <node name="SQL-XML" url="xml_sql.vspx"  id="107" allowed="yacutia_sql_xml_page">
      <node name="SQL-XML" url="xml_sql2.vspx" id="108" place="1" allowed="yacutia_sql_xml_page">
      </node>
@@ -385,9 +385,6 @@ create procedure adm_menu_tree ()
      <node name="XQuery" url="xquery4.vspx" id="115" place="1" allowed="yacutia_xquery_page"/>
      <node name="XQuery" url="xquery_templates.vspx" id="173" place="1" allowed="yacutia_xquery_page"/>
      <node name="XQuery" url="xquery_adv.vspx" id="178" place="1" allowed="yacutia_xquery_page"/>
-   </node>',
-  '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
-     <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',
 --   <node name="XML Schema" url="xml_xsd.vspx"  id="116" allowed="yacutia_xml_schema_check_page">
 --      <node name="XML Schema" url="xml_xsd.vspx" id="117" place="1" allowed="yacutia_xml_schema_check_page"/>
@@ -425,7 +422,12 @@ create procedure adm_menu_tree ()
 --             </node>'
 --when 0 then '' end,
 '</node>
- <node name="NNTP Services" url="msg_news_conf.vspx"  id="157" tip="Mail and news messaging" allowed="yacutia_message">',
+ <node name="RDF" url="sparql_input.vspx"  id="189" tip="RDF " allowed="yacutia_message">',
+  '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
+     <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
+   </node>',
+'</node>
+ <node name="NNTP" url="msg_news_conf.vspx"  id="157" tip="Mail and news messaging" allowed="yacutia_message">',
    --<node name="Mail Configuration" url="msg_mail_conf.vspx"  id="158" yacutia_mail_config_page"">
    --</node>
    '<node name="News Servers" url="msg_news_conf.vspx"  id="159" allowed="yacutia_news_config_page">
@@ -4565,9 +4567,14 @@ create procedure www_tree (in path any)
   ss := string_output ();
   http ('<www>', ss);
   for select distinct HP_HOST as HOST, HP_LISTEN_HOST as LHOST,
+
+    (case HP_HOST when '*ini*' then 0 when '*sslini*' then 0
+    else 1 end) as HP_NO_EDIT,
+
     (case HP_LISTEN_HOST when '*ini*' then 0 when '*sslini*' then 0
-  when (':' || cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'SSLPort'))
-  then 0 else 1 end) as HP_NO_EDIT
+    when (':' || cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'SSLPort')) then 0
+    else 1 end) as HP_NO_CTRL
+
       from DB.DBA.HTTP_PATH order by HOST, LHOST do
      {
        declare vhost, intf, port, tmp any;
@@ -4595,11 +4602,18 @@ create procedure www_tree (in path any)
    {
      www_split_host (HOST, vhost, tmp);
      www_split_host (LHOST, intf, port);
-     if (intf = '')
+     if (intf = '' or intf = '*ini*' or intf = '*sslini*')
+       {
+	   if (intf = '*ini*')
+	     port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'ServerPort');
+	   else if (intf = '*sslini*')
+	     port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'SSLPort');
        intf := '0.0.0.0';
    }
+   }
 
-       http (sprintf ('<node host="%s" port="%s" lhost="%s" edit="%d" chost="%s" clhost="%s">\n', vhost, port, intf, HP_NO_EDIT, HOST, LHOST), ss);
+
+       http (sprintf ('<node host="%s" port="%s" lhost="%s" edit="%d" chost="%s" clhost="%s" control="%d">\n', vhost, port, intf, HP_NO_EDIT, HOST, LHOST, HP_NO_CTRL), ss);
        i := 0;
        for select HP_LPATH, HP_PPATH, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_SECURITY from DB.DBA.HTTP_PATH where HP_HOST = HOST and HP_LISTEN_HOST = LHOST do
    {
@@ -5002,11 +5016,27 @@ create procedure y_check_host (in host varchar, in listen varchar, in port varch
   if (not length (port))
     port := '80';
 
-  if (port = iport and (host = ihost or listen = ihost))
+  if (port = iport and host = ihost)
     signal ('22023', 'The default listener and host are configurable via INI file only');
 
 }
 ;
+
+create procedure y_make_url_from_vd (in host varchar, in lhost varchar, in path varchar)
+{
+  declare pos, port any;
+  pos := strrchr (host, ':');
+  if (pos is not null)
+    host := subseq (host, 0, pos);
+  pos := strrchr (lhost, ':');
+  if (pos is not null)
+    port := subseq (lhost, pos, length (lhost));
+  else if (lhost = '*ini*')
+    port := ':'||server_http_port ();
+  else
+    port := '';
+  return sprintf ('http://%s%s%s/', host, port, rtrim(path, '/'));
+};
 
 create procedure y_escape_local_name (in nam varchar)
 {

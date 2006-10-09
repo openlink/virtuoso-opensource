@@ -33,7 +33,7 @@
     <vm:menu>
       <vm:menuitem value="SPARQL Templates"/>
     </vm:menu>
-    <vm:header caption="Stored SPARQL Templates"/>
+    <vm:header caption="Saved Queries"/>
     <vm:pagebody>
       <vm:help id="xquery" sect=""/>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
@@ -53,9 +53,9 @@
                     </colgroup>
                     <tr>
 			<td class="page_tab" align="center">
-			  <v:url name="b_url32" value="SPARQL Query" url="sparql_input.vspx" xhtml_class="uddi"/>
+			  <v:url name="b_url32" value="Query" url="sparql_input.vspx" xhtml_class="uddi"/>
                         </td>
-			<td class="page_tab_selected" align="center">Stored SPARQL Templates</td>
+			<td class="page_tab_selected" align="center">Saved Queries</td>
                         <td class="page_tab_empty" align="center" width="100%">
                           <table cellpadding="0" cellspacing="0">
                             <tr>

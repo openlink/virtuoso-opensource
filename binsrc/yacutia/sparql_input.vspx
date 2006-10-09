@@ -118,9 +118,9 @@ function callSparql (graph_id, qry_id, res_id)
                       <col/>
                     </colgroup>
                     <tr>
-                        <td class="page_tab_selected" align="center">SPARQL Query</td>
+                        <td class="page_tab_selected" align="center">Query</td>
                         <td class="page_tab" align="center">
-			  <v:url name="b_url31" value="Stored SPARQL Templates" url="sparql_load.vspx" xhtml_class="uddi"/>
+			  <v:url name="b_url31" value="Saved Queries" url="sparql_load.vspx" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab_empty" align="center" width="100%">
                           <table cellpadding="0" cellspacing="0">
@@ -151,7 +151,7 @@ function callSparql (graph_id, qry_id, res_id)
 			    </tr>
 			    <tr>
 			      <td colspan="2">
-				  <label>SPARQL query</label><br/>
+				  <label>Query</label><br/>
 				    <v:textarea name="qr" value="" xhtml_cols="70" xhtml_rows="15" xhtml_id="qr"/>
 			      </td>
 			    </tr>

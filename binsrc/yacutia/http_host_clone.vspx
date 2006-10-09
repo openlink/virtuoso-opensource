@@ -37,16 +37,39 @@
     <vm:variables>
       <v:variable name="vhost" persist="0" type="varchar" default="null" param-name="vhost"/>
       <v:variable name="lhost" persist="0" type="varchar" default="null" param-name="lhost"/>
+      <v:variable name="vhosto" persist="0" type="varchar" default="null" param-name="vhost"/>
+      <v:variable name="lhosto" persist="0" type="varchar" default="null" param-name="lhost"/>
       <v:variable name="lhost1" persist="0" type="varchar" default="null"/>
       <v:variable name="vhost1" persist="0" type="varchar" default="null"/>
       <v:variable name="port1" persist="0" type="varchar" default="'80'"/>
     </vm:variables>
     <vm:header caption="Virtual Host Properties"/>
     <vm:pagebody>
+  <![CDATA[
+  <script type="text/javascript">
+  var toolkitPath="toolkit";
+  var featureList = ["combolist"];
+  </script>
+  <script type="text/javascript" src="toolkit/loader.js"></script>
+  ]]>
         <v:on-init>
 	  declare pos int;
 	  if (self.vhost is null or self.lhost is null)
 	    return;
+
+	  if (self.lhost = '*ini*')
+            {
+	      self.lhost := server_http_port ();
+              if (strrchr (self.lhost, ':') is null)
+	        self.lhost := ':' || self.lhost;
+	    }
+	  else if (self.lhost = '*ini*')
+            {
+              self.lhost := coalesce (server_https_port (), '');
+              if (strrchr (self.lhost, ':') is null)
+	        self.lhost := ':' || self.lhost;
+	    }
+
 	  pos := strrchr (self.lhost, ':');
 	  if (pos is not null)
 	    {
@@ -80,11 +103,28 @@
             </tr>
             <tr>
               <td>Listening Interface</td>
-              <td>
-		<v:text name="lhost_if" value="--self.lhost1" xhtml_size="20" error-glyph="*">
+              <td id="if_opt">
+		  <![CDATA[
+		  <script type="text/javascript">
+	           window.onload = function () {
+		      var sr_cl = new Combolist([],"<?V self.lhost1 ?>");
+		      sr_cl.input.name = "lhost_if";
+		      sr_cl.input.id = "lhost_if";
+		      $("if_opt").appendChild(sr_cl.div);
+		      sr_cl.addOption("0.0.0.0");
+		      <?vsp
+		        declare arr any;
+			arr := tcpip_local_interfaces ();
+			foreach (any elm in arr) do
+			  http (sprintf ('sr_cl.addOption("%s");', elm));
+		      ?>
+		     }
+		  </script>
+		  ]]>
+		<!--v:text name="lhost_if" value="-#-self.lhost1" xhtml_size="20" error-glyph="*">
 		  <v:validator test="regexp" regexp="^[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?$"
 		    message="You should provide a valid IP address" />
-		</v:text>
+		</v:text-->
               </td>
             </tr>
             <tr>
@@ -112,9 +152,9 @@
            if (not self.vc_is_valid)
              return;
 
-           declare vhost_o, lhost_o, vhost, lhost, st, msg, errors any;
-           vhost_o := self.vhost;
-	   lhost_o := self.lhost;
+           declare vhost_o, lhost_o, vhost, lhost, st, msg, errors, lhost_if any;
+           vhost_o := self.vhosto;
+	   lhost_o := self.lhosto;
 
 	   errors := vector ();
 
@@ -126,13 +166,15 @@
 	     return;
 	   };
 
-	   y_check_host (self.vhost_nam.ufl_value, self.lhost_if.ufl_value, self.lhost_port.ufl_value);
+           lhost_if := get_keyword ('lhost_if', e.ve_params, '');
 
-	   vhost := concat (self.vhost_nam.ufl_value, ':', self.lhost_port.ufl_value);
-	   lhost := concat (self.lhost_if.ufl_value, ':', self.lhost_port.ufl_value);
+	   y_check_host (self.vhost_nam.ufl_value, lhost_if, self.lhost_port.ufl_value);
 
+	   vhost := self.vhost_nam.ufl_value;
+	   lhost := concat (lhost_if, ':', self.lhost_port.ufl_value);
+	   lhost := replace (lhost, '0.0.0.0', '');
 
-	   if (vhost_o = vhost and lhost = lhost_o)
+	   if (self.vhost = vhost and lhost = self.lhost)
 	     goto same_host;
 
 	   for select
