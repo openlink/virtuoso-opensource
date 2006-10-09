@@ -247,6 +247,9 @@ create procedure TUT_generate_files(
 	  if (xml_output <> '') {
 	    _stream := replace(_stream,'dc:dc=""','');
 	    _stream := replace(_stream,'ocs:ocs=""','');
+	    _stream := replace(_stream,'rdf:rdf=""','');
+	    _stream := replace(_stream,'content:content=""','');
+	    _stream := replace(_stream,'sioc:sioc=""','');
 	  };
 	  string_to_file(http_root() ||path|| gen_path || _file,_stream,-2);
 	  
