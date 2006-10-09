@@ -11473,6 +11473,9 @@ typedef struct search_excerpt_s
 #define WORD_POINTS		(caddr_t)1
 #define WORD_POINT_1		(caddr_t)2
 
+#define PUSH_POINT(set) \
+      if ((set) && ((set)->data != WORD_POINT_1)) dk_set_push (&(set), WORD_POINT_1);
+
 #define SEARCH_EXCERPT_MODE_HTML 0
 #define SEARCH_EXCERPT_MODE_WIKI 1
 #define SEARCH_EXCERPT_MODE_TEXT 2
@@ -11727,7 +11730,7 @@ void search_excerpt_tokenize_doc (search_excerpt_t * se)
 	    }
 	  if (excerpt_counter +  wpoint - wstart >= se->se_excerpt_max)
 	    {
-	      wpoint = wstart;
+	      wstart = wpoint;
 	      goto excerpt_end;
 	    }
   	  if (!se->se_from_begin)
@@ -11745,9 +11748,11 @@ void search_excerpt_tokenize_doc (search_excerpt_t * se)
 		  hidx++;
 	         }
 	        else if (wpoint - wstart)
+	       {
 	         dk_set_push (&curr_sentence_set,
 			 box_dv_short_nchars (wstart, wpoint - wstart));
 	    }
+	  }
 	  else if (wpoint - wstart)
             dk_set_push (&curr_sentence_set,
 			 box_dv_short_nchars (wstart, wpoint - wstart));
@@ -11766,7 +11771,7 @@ void search_excerpt_tokenize_doc (search_excerpt_t * se)
       else
 	wpoint++;
     }
-  if ((wstart+1) != wpoint) /* "{ws}." */
+if ((wstart+1) != wpoint) /* "{ws}." */
     {
       if (total_counter + wpoint - wstart >= se->se_total)
 	{
@@ -11775,7 +11780,7 @@ void search_excerpt_tokenize_doc (search_excerpt_t * se)
 	}
       if (excerpt_counter +  wpoint - wstart >= se->se_excerpt_max)
 	{
-	  wpoint = wstart;
+	wstart = wpoint;
 	  goto excerpt_end;
 	}
       if (!se->se_from_begin && ((hidx < se->se_hits_len ) && (se->se_hits[hidx]->seh_hit_pointer == wstart)))
@@ -11789,14 +11794,19 @@ void search_excerpt_tokenize_doc (search_excerpt_t * se)
 	  hidx++;
 	}
       else if (wpoint-wstart)
+	{
 	dk_set_push (&curr_sentence_set,
 		     box_dv_short_nchars (wstart, wpoint - wstart));
-      dk_set_push (&curr_sentence_set, WORD_POINT_1);
+	  wstart = wpoint;
+	}
+      PUSH_POINT(curr_sentence_set);
       point_at_the_end = 1;
     }
  excerpt_end:
   if(!point_at_the_end)
     dk_set_push (&curr_sentence_set, WORD_POINTS);
+  if (wstart[0] == '.')
+    wstart++;
   if (wpoint[0] == '.')
     wpoint++;
 
