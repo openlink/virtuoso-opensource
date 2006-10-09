@@ -82,6 +82,7 @@ unsigned char dks_esc_char_props[0x100] = {
 typedef unsigned char dks_charclass_props_t[COUNTOF__DKS_ESC];
 
 dks_charclass_props_t dks_charclasses['Q'+1-'>'] = {
+/*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	*/
 /*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	*/
 /* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU},
 /* ? enc.miss*/ {BAD	,LATTICE,LATTICE,LATTICE,LATTICE,CDATA2	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU},
