@@ -44,7 +44,7 @@ xmlns_string_pair_t xmlns_sys[] =
 const int xmlns_sys_no = (sizeof(xmlns_sys)/sizeof(xmlns_sys[0]));
 
 encoding_handler_t *
-find_encoding (xml_parser_t *parser, char * enc_name)
+find_encoding (vxml_parser_t *parser, char * enc_name)
 {
   encoding_handler_t *eh = NULL;
 
@@ -152,13 +152,13 @@ int xml_ns_2dict_extend (xml_ns_2dict_t *dest, xml_ns_2dict_t *src)
 }
 
 
-xml_parser_t *
-XML_ParserCreate (xml_parser_config_t *config)
+vxml_parser_t *
+VXmlParserCreate (vxml_parser_config_t *config)
 {
   brick_t *buf;
-  NEW_VARZ(xml_parser_t, parser);
+  NEW_VARZ(vxml_parser_t, parser);
   xml_dbg_printf(("{XML Parser on '%s' ", (config->uri ? config->uri : "NULL URI")));
-  memcpy (&(parser->cfg), config, sizeof (xml_parser_config_t));
+  memcpy (&(parser->cfg), config, sizeof (vxml_parser_config_t));
   if (NULL != parser->cfg.initial_src_enc_name)
     {
       if ('!' == parser->cfg.initial_src_enc_name[0])
@@ -211,32 +211,32 @@ XML_ParserCreate (xml_parser_config_t *config)
   switch (config->validation_mode)
     {
     case XML_DTD:
-      XML_SetElementHandler (parser, NULL, NULL);
-      XML_SetCharacterDataHandler (parser, NULL); /* Set char data handler to stub */
+      VXmlSetElementHandler (parser, NULL, NULL);
+      VXmlSetCharacterDataHandler (parser, NULL); /* Set char data handler to stub */
       break;
     case XML_SCHEMA:
       parser->processor.sp_schema = xs_alloc_schema();
-      XML_SetElementSchemaHandler (parser, NULL, NULL);
-      XML_SetCharacterSchemaDataHandler (parser, NULL);
+      VXmlSetElementSchemaHandler (parser, NULL, NULL);
+      VXmlSetCharacterSchemaDataHandler (parser, NULL);
       memcpy (&(parser->processor.sp_schema->sp_curr_config), &(parser->validator.dv_curr_config),
 	  sizeof(dtd_config_t));
       break;
     default:
       GPF_T;
     }
-  XML_SetIdHandler (parser, (XML_IdHandler)NULL);
-  XML_SetEntityRefHandler (parser, NULL);
-  XML_SetProcessingInstructionHandler (parser, NULL);
-  XML_SetCommentHandler (parser, NULL);
+  VXmlSetIdHandler (parser, (VXmlIdHandler)NULL);
+  VXmlSetEntityRefHandler (parser, NULL);
+  VXmlSetProcessingInstructionHandler (parser, NULL);
+  VXmlSetCommentHandler (parser, NULL);
 
-/*  XML_SetDtdHandler (parser, NULL); */
+/*  VXmlSetDtdHandler (parser, NULL); */
   xml_pos_set (&(parser->bptr.buf->beg_pos), &(parser->last_main_pos));
   parser->inner_tag = parser->tag_stack_holder;
   return parser;
 }
 
 void
-XML_ParserDestroy (xml_parser_t * parser)
+VXmlParserDestroy (vxml_parser_t * parser)
 {
   id_hash_iterator_t dict_hit;		/*!< Iterator to zap dictionary */
   char **dict_key;			/*!< Current key to zap */
@@ -333,33 +333,33 @@ XML_ParserDestroy (xml_parser_t * parser)
 }
 
 void
-XML_ParserInput (xml_parser_t * parser, xml_read_func_t f, void * read_cd)
+VXmlParserInput (vxml_parser_t * parser, xml_read_func_t f, void * read_cd)
 {
   parser->feeder = f;
   parser->read_cd = read_cd;
 }
 
 void
-XML_SetUserData (xml_parser_t * parser, void * ptr)
+VXmlSetUserData (vxml_parser_t * parser, void * ptr)
 {
   INNER_HANDLERS->user_data = parser;
   OUTER_HANDLERS->user_data = ptr;
 }
 
 void
-XML_SetElementHandler (xml_parser_t * parser,
-		       XML_StartElementHandler sh,
-		       XML_EndElementHandler eh)
+VXmlSetElementHandler (vxml_parser_t * parser,
+		       VXmlStartElementHandler sh,
+		       VXmlEndElementHandler eh)
 {
-  INNER_HANDLERS->start_element_handler = (XML_StartElementHandler)dtd_start_element_handler;
-  INNER_HANDLERS->end_element_handler = (XML_EndElementHandler)dtd_end_element_handler;
+  INNER_HANDLERS->start_element_handler = (VXmlStartElementHandler)dtd_start_element_handler;
+  INNER_HANDLERS->end_element_handler = (VXmlEndElementHandler)dtd_end_element_handler;
   OUTER_HANDLERS->start_element_handler = sh;
   OUTER_HANDLERS->end_element_handler = eh;
 }
 
 void
-XML_SetIdHandler (xml_parser_t * parser,
-		       XML_IdHandler h)
+VXmlSetIdHandler (vxml_parser_t * parser,
+		       VXmlIdHandler h)
 {
 /* There's no inner handler for IDs */
   /* INNER_HANDLERS->id_handler = ...; */
@@ -367,18 +367,18 @@ XML_SetIdHandler (xml_parser_t * parser,
 }
 
 void
-XML_SetCommentHandler (xml_parser_t * parser,
-		       XML_CommentHandler h)
+VXmlSetCommentHandler (vxml_parser_t * parser,
+		       VXmlCommentHandler h)
 {
-  INNER_HANDLERS->comment_handler = (XML_CommentHandler)dtd_comment_handler;
+  INNER_HANDLERS->comment_handler = (VXmlCommentHandler)dtd_comment_handler;
   OUTER_HANDLERS->comment_handler = h;
 }
 
 void
-XML_SetProcessingInstructionHandler (xml_parser_t * parser,
-		       XML_ProcessingInstructionHandler h)
+VXmlSetProcessingInstructionHandler (vxml_parser_t * parser,
+		       VXmlProcessingInstructionHandler h)
 {
-  INNER_HANDLERS->pi_handler = (XML_ProcessingInstructionHandler)dtd_pi_handler;
+  INNER_HANDLERS->pi_handler = (VXmlProcessingInstructionHandler)dtd_pi_handler;
   OUTER_HANDLERS->pi_handler = h;
 }
 
@@ -389,43 +389,43 @@ Null_XML_CharacterDataHandler(void * userData, const char * s, size_t len)
 
 
 void
-XML_SetCharacterDataHandler (xml_parser_t * parser,
-			     XML_CharacterDataHandler h)
+VXmlSetCharacterDataHandler (vxml_parser_t * parser,
+			     VXmlCharacterDataHandler h)
 {
   if (NULL==h)
     h = Null_XML_CharacterDataHandler;
-  INNER_HANDLERS->char_data_handler = (XML_CharacterDataHandler)dtd_char_data_handler;
+  INNER_HANDLERS->char_data_handler = (VXmlCharacterDataHandler)dtd_char_data_handler;
   OUTER_HANDLERS->char_data_handler = h;
 }
 
 
 void
-XML_SetEntityRefHandler (xml_parser_t * parser,
-    XML_EntityRefHandler h)
+VXmlSetEntityRefHandler (vxml_parser_t * parser,
+    VXmlEntityRefHandler h)
 {
-  INNER_HANDLERS->entity_ref_handler = (XML_EntityRefHandler)dtd_entity_ref_handler;
+  INNER_HANDLERS->entity_ref_handler = (VXmlEntityRefHandler)dtd_entity_ref_handler;
   OUTER_HANDLERS->entity_ref_handler = h;
 }
 
 
 /*
 void
-XML_SetDtdHandler (xml_parser_t * parser,
-		       XML_DtdHandler h)
+VXmlSetDtdHandler (vxml_parser_t * parser,
+		       VXmlDtdHandler h)
 {
-  INNER_HANDLERS->dtd_handler = (XML_DtdHandler)dtd_dtd_handler;
+  INNER_HANDLERS->dtd_handler = (VXmlDtdHandler)dtd_dtd_handler;
   OUTER_HANDLERS->dtd_handler = h;
 }
 */
 void
-XML_SetFindUserEncoding (xml_parser_t * parser, XML_FindUserEncoding find)
+VXmlSetFindUserEncoding (vxml_parser_t * parser, VXmlFindUserEncoding find)
 {
   parser->cfg.user_encoding_handler = find;
 }
 
 
 int
-initialize_src_eh (xml_parser_t * parser)
+initialize_src_eh (vxml_parser_t * parser)
 {
   char *raw_text, *raw_text_end;
   int skip = 0;
@@ -576,7 +576,7 @@ static int xml_tok_stat (xml_tok_type_t tok)
 
 
 int
-XML_Parse (xml_parser_t * parser, char * data, s_size_t data_size)
+VXmlParse (vxml_parser_t * parser, char * data, s_size_t data_size)
 {
   xml_tok_type_t tok = XML_TOK_INVALID;
   int curr_st = 0;
@@ -597,7 +597,7 @@ XML_Parse (xml_parser_t * parser, char * data, s_size_t data_size)
     return 0;
 
   if (XCFG_ENABLE == parser->validator.dv_curr_config.dc_xs_decl)
-    XML_AddSchemaDeclarationCallbacks (parser);
+    VXmlAddSchemaDeclarationCallbacks (parser);
 
   for (;;)
     {
@@ -675,7 +675,7 @@ XML_Parse (xml_parser_t * parser, char * data, s_size_t data_size)
 }
 
 
-caddr_t xmlparser_log_place_context (struct xml_parser_s *parser)
+caddr_t xmlparser_log_place_context (struct vxml_parser_s *parser)
 {
   buf_ptr_t pptr_save, curr_pos_ptr_save;
   xml_pos_t curr_pos_save, last_main_pos_save;
@@ -700,10 +700,10 @@ caddr_t xmlparser_log_place_context (struct xml_parser_s *parser)
   parser->curr_pos_ptr = curr_pos_ptr_save;
   xml_pos_set (&(parser->curr_pos), &curr_pos_save);
   xml_pos_set (&(parser->last_main_pos), &last_main_pos_save);
-  return XML_ErrorContext(parser);
+  return VXmlErrorContext(parser);
 }
 
-int xmlparser_log_place (struct xml_parser_s *parser)
+int xmlparser_log_place (struct vxml_parser_s *parser)
 {
   const char *src;
   int res = 0;
@@ -733,7 +733,7 @@ int xmlparser_log_place (struct xml_parser_s *parser)
 
 /*
 void
-XML_ParsePosition (xml_parser_t * parser, size_t * start_pos, size_t * end_pos)
+VXmlParsePosition (vxml_parser_t * parser, size_t * start_pos, size_t * end_pos)
 {
   *start_pos = parser->e_pos.start;
   *end_pos = parser->e_pos.end;
@@ -741,13 +741,13 @@ XML_ParsePosition (xml_parser_t * parser, size_t * start_pos, size_t * end_pos)
 */
 
 int
-XML_GetCurrentLineNumber (xml_parser_t * parser)
+VXmlGetCurrentLineNumber (vxml_parser_t * parser)
 {
   return parser->curr_pos.line_num;
 }
 
 int
-XML_GetOuterLineNumber (xml_parser_t * parser)
+VXmlGetOuterLineNumber (vxml_parser_t * parser)
 {
   if (parser->eptr.buf != parser->pptr.buf)
     return parser->pptr.buf->next->beg_pos.line_num;
@@ -755,19 +755,19 @@ XML_GetOuterLineNumber (xml_parser_t * parser)
 }
 
 int
-XML_GetCurrentColumnNumber (xml_parser_t * parser)
+VXmlGetCurrentColumnNumber (vxml_parser_t * parser)
 {
   return parser->curr_pos.col_c_num;
 }
 
 int
-XML_GetCurrentByteNumber (xml_parser_t * parser)
+VXmlGetCurrentByteNumber (vxml_parser_t * parser)
 {
   return parser->curr_pos.col_b_num;
 }
 
 const char *
-XML_GetCurrentFileName (xml_parser_t * parser)
+VXmlGetCurrentFileName (vxml_parser_t * parser)
 {
   const char *res = parser->curr_pos.origin_uri;
   if (NULL != res)
@@ -780,7 +780,7 @@ XML_GetCurrentFileName (xml_parser_t * parser)
 
 
 const char *
-XML_GetOuterFileName (xml_parser_t * parser)
+VXmlGetOuterFileName (vxml_parser_t * parser)
 {
   const char *res;
   if (parser->eptr.buf != parser->pptr.buf)
@@ -796,7 +796,7 @@ XML_GetOuterFileName (xml_parser_t * parser)
 }
 
 
-static char relative_char(xml_parser_t * parser, buf_ptr_t pos, int offset)
+static char relative_char(vxml_parser_t * parser, buf_ptr_t pos, int offset)
 {
   char res;
   while (offset >= (int)(pos.buf->end-pos.ptr))
@@ -821,14 +821,14 @@ static char relative_char(xml_parser_t * parser, buf_ptr_t pos, int offset)
   return res ? res : 0xff;
 }
 
-caddr_t XML_ErrorContext (xml_parser_t * parser)
+caddr_t VXmlErrorContext (vxml_parser_t * parser)
 {
   char buf[CONTEXT_BUF_LENGTH];
-  XML_ErrorContext2 (buf, parser);
+  VXmlErrorContext2 (buf, parser);
   return box_dv_short_string (buf);
 }
 
-char *XML_ErrorContext2(char* buffer, xml_parser_t * parser)
+char *VXmlErrorContext2(char* buffer, vxml_parser_t * parser)
 {
   buf_ptr_t pos = parser->pptr;
   int err_col;
@@ -866,7 +866,7 @@ char *XML_ErrorContext2(char* buffer, xml_parser_t * parser)
 }
 
 
-caddr_t XML_FullErrorMessage (xml_parser_t * parser)
+caddr_t VXmlFullErrorMessage (vxml_parser_t * parser)
 {
 #if 1
   dk_set_t lastdetail;
@@ -929,7 +929,7 @@ again:
 	(uri[0] ? " of '" : ""),
 	(uri[0] ? uri : ""),
 	(uri[0] ? "'" : "") );
-      res_tail = XML_ErrorContext2 (res_tail, parser);
+      res_tail = VXmlErrorContext2 (res_tail, parser);
     }
   strcpy (res_tail, "\n");
   return res;
@@ -937,13 +937,13 @@ again:
 }
 
 
-caddr_t XML_ValidationLog (xml_parser_t * parser)
+caddr_t VXmlValidationLog (vxml_parser_t * parser)
 {
   return xmlparser_log_section_to_string (parser->msglog, NULL, "");
 }
 
 
-ccaddr_t XML_FindNamespaceUriByPrefix (xml_parser_t * parser, ccaddr_t prefix)
+ccaddr_t VXmlFindNamespaceUriByPrefix (vxml_parser_t * parser, ccaddr_t prefix)
 {
   int ctr = parser->attrdata.all_nsdecls_count;
   if (NULL != prefix)
@@ -972,7 +972,7 @@ ccaddr_t XML_FindNamespaceUriByPrefix (xml_parser_t * parser, ccaddr_t prefix)
 }
 
 
-ccaddr_t XML_FindNamespacePrefixByUri (xml_parser_t * parser, ccaddr_t uri)
+ccaddr_t VXmlFindNamespacePrefixByUri (vxml_parser_t * parser, ccaddr_t uri)
 {
   int ctr = parser->attrdata.all_nsdecls_count;
   size_t uri_sz = box_length (uri);
@@ -986,7 +986,7 @@ ccaddr_t XML_FindNamespacePrefixByUri (xml_parser_t * parser, ccaddr_t uri)
 }
 
 
-void XML_FindNamespaceUriByQName (xml_parser_t * parser, const char *qname, int is_attr, lenmem_t *uri_ret)
+void VXmlFindNamespaceUriByQName (vxml_parser_t * parser, const char *qname, int is_attr, lenmem_t *uri_ret)
 {
   char *colon = strrchr (qname, ':');
   int ctr;
@@ -1046,9 +1046,9 @@ void XML_FindNamespaceUriByQName (xml_parser_t * parser, const char *qname, int 
 
 
 #ifdef MALLOC_DEBUG
-#undef XML_FindExpandedNameByQName
+#undef VXmlFindExpandedNameByQName
 #endif
-caddr_t DBG_NAME(XML_FindExpandedNameByQName) (DBG_PARAMS xml_parser_t * parser, const char *qname, int is_attr)
+caddr_t DBG_NAME(VXmlFindExpandedNameByQName) (DBG_PARAMS vxml_parser_t * parser, const char *qname, int is_attr)
 {
   char *colon;
   int ctr;
@@ -1098,21 +1098,21 @@ caddr_t DBG_NAME(XML_FindExpandedNameByQName) (DBG_PARAMS xml_parser_t * parser,
   return DBG_NAME(box_dv_short_string) (DBG_ARGS qname);
 }
 #ifdef MALLOC_DEBUG
-#define XML_FindExpandedNameByQName(p,q,a) dbg_XML_FindExpandedNameByQName (__FILE__, __LINE__, (p), (q), (a))
+#define VXmlFindExpandedNameByQName(p,q,a) dbg_VXmlFindExpandedNameByQName (__FILE__, __LINE__, (p), (q), (a))
 #endif
 
 
-int XML_ExpandedNameEqualsQName (xml_parser_t * parser, const char * expanded_name,
+int VXmlExpandedNameEqualsQName (vxml_parser_t * parser, const char * expanded_name,
 				 const char * qname, int is_attr)
 {
-  caddr_t exp_qname = XML_FindExpandedNameByQName (parser, qname, is_attr);
+  caddr_t exp_qname = VXmlFindExpandedNameByQName (parser, qname, is_attr);
   int res = strcmp (exp_qname, expanded_name) ? 0 : 1;
   dk_free_box (exp_qname);
   return res;
 }
 
 
-const xml_def_4_notation_t *XML_GetNotation (xml_parser_t * parser, const char *refname)
+const xml_def_4_notation_t *VXmlGetNotation (vxml_parser_t * parser, const char *refname)
 {
   id_hash_t *dict;
   xml_def_4_notation_t *res;
@@ -1127,7 +1127,7 @@ const xml_def_4_notation_t *XML_GetNotation (xml_parser_t * parser, const char *
   return res;
 }
 
-const xml_def_4_entity_t *XML_GetParameterEntity (xml_parser_t * parser, const char *refname)
+const xml_def_4_entity_t *VXmlGetParameterEntity (vxml_parser_t * parser, const char *refname)
 {
   id_hash_t *dict;
   xml_def_4_entity_t *res;
@@ -1142,7 +1142,7 @@ const xml_def_4_entity_t *XML_GetParameterEntity (xml_parser_t * parser, const c
   return res;
 }
 
-const xml_def_4_entity_t *XML_GetGenericEntity (xml_parser_t * parser, const char *refname)
+const xml_def_4_entity_t *VXmlGetGenericEntity (vxml_parser_t * parser, const char *refname)
 {
   id_hash_t *dict;
   xml_def_4_entity_t *res;
@@ -1176,7 +1176,7 @@ const char *concat_full_name (const char *ns, const char *name)
 }
 
 
-void dtd_start_element_handler (xml_parser_t* parser, const char * name, xml_parser_attrdata_t *attrdata)
+void dtd_start_element_handler (vxml_parser_t* parser, const char * name, vxml_parser_attrdata_t *attrdata)
 {
   ptrlong fsa_cfg = parser->validator.dv_curr_config.dc_fsa;
   ptrlong attr_mode = parser->validator.dv_curr_config.dc_attr_unknown;
@@ -1306,7 +1306,7 @@ The correct version compares only reserved characters:
 }
 
 
-void dtd_end_element_handler (xml_parser_t* parser, const char * name)
+void dtd_end_element_handler (vxml_parser_t* parser, const char * name)
 {
   ptrlong fsa_cfg = parser->validator.dv_curr_config.dc_fsa;
   if ((XCFG_DISABLE != fsa_cfg) && (parser->validator.dv_depth < ECM_MAX_DEPTH))
@@ -1355,7 +1355,7 @@ void dtd_end_element_handler (xml_parser_t* parser, const char * name)
     (parser->slaves.end_element_handler)(parser->slaves.user_data,name);
 }
 
-void dtd_check_ids(xml_parser_t* parser)
+void dtd_check_ids(vxml_parser_t* parser)
 {
   char** id_name;
   ecm_id_t** idptr;
@@ -1398,7 +1398,7 @@ void dtd_check_ids(xml_parser_t* parser)
     }
 }
 
-void dtd_char_data_handler (xml_parser_t* parser, const char * s, int len )
+void dtd_char_data_handler (vxml_parser_t* parser, const char * s, int len )
 {
   ptrlong fsa_cfg = parser->validator.dv_curr_config.dc_fsa;
   ptrlong fsabadws_cfg = parser->validator.dv_curr_config.dc_fsa_bad_ws;
@@ -1491,7 +1491,7 @@ void dtd_char_data_handler (xml_parser_t* parser, const char * s, int len )
 }
 
 
-dtd_t *XML_GetDtd(xml_parser_t * parser)
+dtd_t *VXmlGetDtd(vxml_parser_t * parser)
 {
   return parser->validator.dv_dtd;
 }
@@ -1506,19 +1506,19 @@ dtd_t *XML_GetDtd(xml_parser_t * parser)
  }
 
 DTD_STUB(comment_handler,
-  (xml_parser_t* parser, const char * text),
+  (vxml_parser_t* parser, const char * text),
   (parser->slaves.user_data,text))
 
 DTD_STUB(entity_ref_handler,
-  (xml_parser_t* parser, const char *refname, int reflen, int isparam, const xml_def_4_entity_t *edef),
+  (vxml_parser_t* parser, const char *refname, int reflen, int isparam, const xml_def_4_entity_t *edef),
   (parser->slaves.user_data,refname,reflen,isparam,edef))
 
 DTD_STUB(pi_handler,
-  (xml_parser_t* parser, const char * target, const char * data),
+  (vxml_parser_t* parser, const char * target, const char * data),
   (parser->slaves.user_data,target,data))
 
 /*
 DTD_STUB(dtd_handler,
-  (xml_parser_t* parser, struct dtd_s *dtd),
+  (vxml_parser_t* parser, struct dtd_s *dtd),
   (parser->slaves.user_data,dtd));
 */

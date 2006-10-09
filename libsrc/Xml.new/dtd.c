@@ -91,14 +91,14 @@ extern unsigned char ecm_utf8props[0x100];
   dk_free((lenmem).lm_memblock,(lenmem).lm_length+1);
 
 
-int get_refentry (xml_parser_t* parser, char* refname);
+int get_refentry (vxml_parser_t* parser, char* refname);
 
-static int dtd_check_nmtokens (xml_parser_t * parser, const char * vals);
-static int dtd_check_nmtoken (xml_parser_t * parser, const char * nmtoken);
+static int dtd_check_nmtokens (vxml_parser_t * parser, const char * vals);
+static int dtd_check_nmtoken (vxml_parser_t * parser, const char * nmtoken);
 
 /* parser->tmp contains name of element */
 static int
-dtd_parse_attlist (xml_parser_t* parser, dtd_validator_t* validator)
+dtd_parse_attlist (vxml_parser_t* parser, dtd_validator_t* validator)
 {
   /* maximum 6 chars could be in encoded unichar */
   lenmem_t name_buffer;
@@ -220,7 +220,7 @@ failed:
   pointer-->--|
 */
 
-int dtd_add_attlist_decl(dtd_validator_t* validator,  xml_parser_t* parser)
+int dtd_add_attlist_decl(dtd_validator_t* validator,  vxml_parser_t* parser)
 {
   /*  if (test_string(parser, "<!ATTLIST"))
       { */
@@ -236,7 +236,7 @@ int dtd_add_attlist_decl(dtd_validator_t* validator,  xml_parser_t* parser)
 
 
 /* find string entry in enum_type_tokens array */
-int test_atttype_string (xml_parser_t* parser)
+int test_atttype_string (vxml_parser_t* parser)
 {
   size_t i;
   for (i=0; i<sizeof(enum_type_tokens)/sizeof(struct enum_type_tokens); i++)
@@ -251,7 +251,7 @@ int test_atttype_string (xml_parser_t* parser)
 }
 
 
-int dtd_get_att_type (xml_parser_t* parser,
+int dtd_get_att_type (vxml_parser_t* parser,
 		      ecm_el_t* elem, ptrlong attr_index,
 		      dtd_validator_t* validator)
 {
@@ -386,7 +386,7 @@ int dtd_get_att_type (xml_parser_t* parser,
 }
 
 int
-dtd_get_def_decl (xml_parser_t * parser, ecm_attr_t* attr, ecm_el_t* el)
+dtd_get_def_decl (vxml_parser_t * parser, ecm_attr_t* attr, ecm_el_t* el)
 {
   if (test_string (parser, "#REQUIRED"))
     {
@@ -425,7 +425,7 @@ dtd_get_def_decl (xml_parser_t * parser, ecm_attr_t* attr, ecm_el_t* el)
   return 0;
 }
 
-int dtd_constraint_check (xml_parser_t* parser, ecm_el_t* elem, ptrlong attr_index)
+int dtd_constraint_check (vxml_parser_t* parser, ecm_el_t* elem, ptrlong attr_index)
 {
   ecm_attr_t* attr = &elem->ee_attrs [attr_index];
   dtd_validator_t* validator = &parser->validator;
@@ -471,7 +471,7 @@ int dtd_constraint_check (xml_parser_t* parser, ecm_el_t* elem, ptrlong attr_ind
   name ends with '\0'
   if fails returns NULL;
 */
-char* get_encoded_name (xml_parser_t* parser, unichar* beg, unichar* end,
+char* get_encoded_name (vxml_parser_t* parser, unichar* beg, unichar* end,
 			   char** name, dtd_validator_t* validator)
 {
   char* name_end;
@@ -502,7 +502,7 @@ struct xhtml_ent_s { const char *entity; int encoded_symbol; const char *descr;}
 extern const struct xhtml_ent_s * xhtml_ent_gperf (register const char *str, register unsigned int len);
 
 unichar
-dtd_char_ref (xml_parser_t* parser, char* str, size_t sz)
+dtd_char_ref (vxml_parser_t* parser, char* str, size_t sz)
 {
   unichar res = 0;
   int flag = 1;
@@ -614,7 +614,7 @@ dtd_char_ref (xml_parser_t* parser, char* str, size_t sz)
 /* level=0	 do not remove leading and trailing wss,
 		do not replace sequence of wss to one ws */
 caddr_t
-dtd_normalize_attr_val (xml_parser_t* parser, const char* value, int level)
+dtd_normalize_attr_val (vxml_parser_t* parser, const char* value, int level)
 {
   lenmem_t tmp_buf;
   caddr_t buffer;
@@ -676,7 +676,7 @@ thus the length of output is no larger than the length if input. */
 }
 
 caddr_t
-dtd_normalize_attr_value (xml_parser_t* parser, buf_range_t* range, ptrlong attr_type)
+dtd_normalize_attr_value (vxml_parser_t* parser, buf_range_t* range, ptrlong attr_type)
 {
   /* this function is subject of change in the future for speeding up */
   lenmem_t tmp_buf;
@@ -696,7 +696,7 @@ dtd_normalize_attr_value (xml_parser_t* parser, buf_range_t* range, ptrlong attr
 }
 
 int
-dtd_get_content_def (xml_parser_t * parser, ecm_el_t* element)
+dtd_get_content_def (vxml_parser_t * parser, ecm_el_t* element)
 {
   buf_range_t gram;
   gram.beg = parser->pptr;
@@ -715,7 +715,7 @@ dtd_get_content_def (xml_parser_t * parser, ecm_el_t* element)
 
 
 int
-dtd_add_element_decl (dtd_validator_t* validator, xml_parser_t * parser)
+dtd_add_element_decl (dtd_validator_t* validator, vxml_parser_t * parser)
 {
   ptrlong el_index;
 
@@ -780,7 +780,7 @@ dtd_add_element_decl (dtd_validator_t* validator, xml_parser_t * parser)
 
 static char default_get_include[1] = "\0";
 
-int get_include (xml_parser_t *parser, const char *base, const char *ref, lenmem_t *res_text, xml_pos_t *res_pos)
+int get_include (vxml_parser_t *parser, const char *base, const char *ref, lenmem_t *res_text, xml_pos_t *res_pos)
 {
   ptrlong mode = parser->validator.dv_curr_config.dc_include;
   ptrlong trace = parser->validator.dv_curr_config.dc_trace_loading;
@@ -868,7 +868,7 @@ succ:
   return 1;
 }
 
-int entity_compile_repl (xml_parser_t *parser, xml_def_4_entity_t *newdef)
+int entity_compile_repl (vxml_parser_t *parser, xml_def_4_entity_t *newdef)
 {
   lenmem_t raw_text;
   lenmem_t recoded_text;
@@ -971,7 +971,7 @@ finished:
 }
 
 
-void insert_buffer (xml_parser_t* parser, buf_ptr_t* cut_begin, buf_ptr_t* cut_end, lenmem_t* ins, xml_pos_t *ins_beg_pos, xml_pos_t *end_pos)
+void insert_buffer (vxml_parser_t* parser, buf_ptr_t* cut_begin, buf_ptr_t* cut_end, lenmem_t* ins, xml_pos_t *ins_beg_pos, xml_pos_t *end_pos)
 {
   brick_t *orig = cut_begin->buf;
   brick_t *ins_brick = dk_alloc (sizeof (brick_t));
@@ -1012,7 +1012,7 @@ void insert_buffer (xml_parser_t* parser, buf_ptr_t* cut_begin, buf_ptr_t* cut_e
   cut_end[0] = cut_begin[0];
 }
 
-int insert_external_dtd(xml_parser_t* parser)
+int insert_external_dtd(vxml_parser_t* parser)
 {
   lenmem_t uri_repl;
   xml_pos_t repl_pos;
@@ -1069,7 +1069,7 @@ static char xmlschema_system_dtd [] =
 /* This string contains 2 '%%' and 3 '%s' -- 8 unprintable chars. */
 #define xmlschema_system_dtd_pure_strlen (strlen (xmlschema_system_dtd) - 8)
 
-int insert_external_xmlschema_dtd (xml_parser_t * parser)
+int insert_external_xmlschema_dtd (vxml_parser_t * parser)
 {
   lenmem_t text;
   const char * p = parser->cfg.auto_load_xmlschema_dtd_p;
@@ -1096,7 +1096,7 @@ int insert_external_xmlschema_dtd (xml_parser_t * parser)
   return 1;
 }
 
-int replace_entity (xml_parser_t* parser)
+int replace_entity (vxml_parser_t* parser)
 {
   int res = 0;
   buf_ptr_t rem = parser->pptr;
@@ -1115,7 +1115,7 @@ int replace_entity (xml_parser_t* parser)
 }
 
 #if 0
-int replace_entity_rec (xml_parser_t* parser)
+int replace_entity_rec (vxml_parser_t* parser)
 {
   buf_ptr_t rem=parser->pptr;
   if (!test_char(parser, '%'))
@@ -1155,7 +1155,7 @@ int replace_entity_rec (xml_parser_t* parser)
 }
 #endif
 
-int replace_entity_common (xml_parser_t* parser, int is_ge, xml_def_4_entity_t* repl, buf_ptr_t rem, int log_syntax_error)
+int replace_entity_common (vxml_parser_t* parser, int is_ge, xml_def_4_entity_t* repl, buf_ptr_t rem, int log_syntax_error)
 {
   id_hash_t* hash = (is_ge ?
     parser->validator.dv_dtd->ed_generics :
@@ -1224,7 +1224,7 @@ thus the length of output is no larger than the length if input. */
   return 0;
 }
 
-int dtd_add_include_section (struct xml_parser_s* parser)
+int dtd_add_include_section (struct vxml_parser_s* parser)
 {
   buf_ptr_t rem = parser->pptr;
   replace_entity (parser);
@@ -1239,7 +1239,7 @@ int dtd_add_include_section (struct xml_parser_s* parser)
   return 0;
 }
 
-int dtd_add_ignore_section (struct xml_parser_s* parser)
+int dtd_add_ignore_section (struct vxml_parser_s* parser)
 {
   buf_ptr_t rem = parser->pptr;
   replace_entity (parser);
@@ -1279,7 +1279,7 @@ int dtd_add_ignore_section (struct xml_parser_s* parser)
 }
 
 #ifdef UNIT_DEBUG
-void buffer_dump (FILE* fp, xml_parser_t* parser)
+void buffer_dump (FILE* fp, vxml_parser_t* parser)
 {
   brick_t* br = parser->bptr.buf ;
   fprintf (fp, "****************************begin dumping...:\n");
@@ -1347,7 +1347,7 @@ int dtd_check_id_value (char * val, char * val_end)
 
 /* rus 22/10/02 nmtoken production check */
 static
-int dtd_check_nmtokens (xml_parser_t * parser, const char *vals)
+int dtd_check_nmtokens (vxml_parser_t * parser, const char *vals)
 {
   int ret = 0;
   char* idrefs = box_string (vals);
@@ -1371,7 +1371,7 @@ int dtd_check_nmtokens (xml_parser_t * parser, const char *vals)
 
 
 static
-int dtd_check_nmtoken (xml_parser_t * parser, const char *nmtoken)
+int dtd_check_nmtoken (vxml_parser_t * parser, const char *nmtoken)
 {
   int c;
   const char * valptr = nmtoken;
@@ -1409,7 +1409,7 @@ int dtd_check_nmtoken (xml_parser_t * parser, const char *nmtoken)
 }
 
 int
-dtd_check_attribute (xml_parser_t* parser, const char* value, struct ecm_attr_s* attr)
+dtd_check_attribute (vxml_parser_t* parser, const char* value, struct ecm_attr_s* attr)
 {
   dtd_config_t* conf = &parser->validator.dv_curr_config;
   caddr_t norm_val;
@@ -1566,7 +1566,7 @@ dtd_check_attribute (xml_parser_t* parser, const char* value, struct ecm_attr_s*
 }
 
 
-int get_refentry (xml_parser_t* parser, char* refname)
+int get_refentry (vxml_parser_t* parser, char* refname)
 {
   ecm_id_t* id = (ecm_id_t*) ecm_try_add_name (refname, parser->ids, sizeof (ecm_id_t));
   /* ID could be defined later, add to idrefs log which will be processed later */
@@ -1590,7 +1590,7 @@ int get_refentry (xml_parser_t* parser, char* refname)
 #define DTD_ENT_NAME		1
 
 /* returns -1 if error exsits */
-int check_entity_recursiveness (xml_parser_t* parser, const char* entityname, int level, const char* currentname)
+int check_entity_recursiveness (vxml_parser_t* parser, const char* entityname, int level, const char* currentname)
 {
   if(!parser->validator.dv_dtd->ed_generics)
     return -1;

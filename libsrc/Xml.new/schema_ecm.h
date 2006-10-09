@@ -207,7 +207,7 @@ ptrlong xecm_add_element (struct xs_component_s *elem, void **objs,
 /* end of FSM declarations */
 
 /* must be called at point when whole document is read */
-int xecm_create_all_fsas (xml_parser_t * parser);
+int xecm_create_all_fsas (vxml_parser_t * parser);
 
 /* FSM arrays manipullation functions */
 struct xecm_nexts_array_s *xecm_nexts_allocate (ptrlong storage_type,
@@ -220,7 +220,7 @@ extern void xecm_set_nextidx (xecm_nexts_array_t * nexts, ptrlong idx, ecm_st_id
 struct xecm_nexts_array_s *xecm_copy_nexts (struct xecm_nexts_array_s *nexts);
 
 struct grp_tree_elem_s *
-xecm_advance_tree (xml_parser_t *parser, struct grp_tree_elem_s * node);
+xecm_advance_tree (vxml_parser_t *parser, struct grp_tree_elem_s * node);
 
 void xecm_nexts_free (xecm_nexts_array_t * nexts);
 

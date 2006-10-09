@@ -27,7 +27,7 @@
 #include "xmlparser_impl.h"
 
 void
-push_tag (xml_parser_t * parser)
+push_tag (vxml_parser_t * parser)
 {
   opened_tag_t *tag;
   tag = ++(parser->inner_tag);
@@ -39,7 +39,7 @@ push_tag (xml_parser_t * parser)
 }
 
 int
-pop_tag (xml_parser_t * parser)
+pop_tag (vxml_parser_t * parser)
 {
   int ns_ctr;
   opened_tag_t *tag = parser->inner_tag;
@@ -64,7 +64,7 @@ pop_tag (xml_parser_t * parser)
 
 
 void
-free_attr_array (xml_parser_t * parser)
+free_attr_array (vxml_parser_t * parser)
 {
   int ctr = parser->attrdata.local_attrs_count;
   while (ctr--)
@@ -82,7 +82,7 @@ free_attr_array (xml_parser_t * parser)
 /*! \brief Stores description of the reference in parser's internal dictionary
 \return zero if new entry, nonzero if re-definition detected. */
 int xml_set_ref_value(
-  xml_parser_t * parser,
+  vxml_parser_t * parser,
   char *refname,
   int reflen,
   char *uritext,
@@ -95,7 +95,7 @@ int xml_set_ref_value(
 /*! \brief Retrieves description of the reference from parser's internal dictionary
 \return previously stored URI or NULL if no such reference found. */
 char *xml_get_ref_value(
-  xml_parser_t * parser,
+  vxml_parser_t * parser,
   char *refname,
   int reflen
   )

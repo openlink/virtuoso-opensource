@@ -46,7 +46,7 @@
 
 /* The following line is a stub for an idiotic bug. */
 encoding_handler_t *intl_find_user_charset (const char *encname, int xml_input_is_wide);
-void xs_add_predefined_attributes (xml_parser_t * parser);
+void xs_add_predefined_attributes (vxml_parser_t * parser);
 
 xml_syspath_t *xml_sys_path_list;
 
@@ -154,13 +154,13 @@ int xs_builtin_type_info_dict_size = sizeof(xs_builtin_type_info_dict)/sizeof(xs
 #define YOUNGEST_COMPONENT(z) (((z)->tag_base && (z)->tag_base->tag_basetag) ? (z)->tag_base->tag_basetag->tag_component : 0 )
 
 #define DECLARE_TAG_HANDLERS(tagname)\
-extern void xs_tag_##tagname(struct xml_parser_s* parser, xs_tag_t* _this); \
-extern void xs_tag_pre_##tagname(struct xml_parser_s* parser, xs_tag_t* _this);
+extern void xs_tag_##tagname(struct vxml_parser_s* parser, xs_tag_t* _this); \
+extern void xs_tag_pre_##tagname(struct vxml_parser_s* parser, xs_tag_t* _this);
 
 #define DEFINE_TAG_HANDLERS(tagname)\
-void xs_tag_pre_##tagname(struct xml_parser_s* parser, xs_tag_t* _this)\
+void xs_tag_pre_##tagname(struct vxml_parser_s* parser, xs_tag_t* _this)\
 { schema_printf (("pre processing %s %d\n", __FILE__, __LINE__)); } \
-void xs_tag_##tagname(struct xml_parser_s* parser, xs_tag_t* _this)\
+void xs_tag_##tagname(struct vxml_parser_s* parser, xs_tag_t* _this)\
 { schema_printf (("processing %s %d\n", __FILE__, __LINE__)); }
 
 DECLARE_TAG_HANDLERS (element)
@@ -197,7 +197,7 @@ DECLARE_TAG_HANDLERS (union)
 DECLARE_TAG_HANDLERS (mssql_rship)
 
 /* stubs */
-extern void xs_unsupported_handler (struct xml_parser_s* parser, xs_tag_t* _this);
+extern void xs_unsupported_handler (struct vxml_parser_s* parser, xs_tag_t* _this);
 
 xs_tag_info_t	xs_xsd_tags_array[]={
 /* name			| tag id		| component category	| index of hash	| pre handler			| end handler		| facets	*/
@@ -263,7 +263,7 @@ xs_tags_dict_t *xs_dicts[2] = { &xs_xsd_tags_dict, &xs_mssql_tags_dict};
 
 /*! The function gets a raw name (value of "name" attribute or NULL) and builds fully qualified and maybe prefixed \c expname and human-readable \c qname
 \returns 1 if \c expname is identical to name that will actually appear in XML documents (i.e. either prefix_by_context is zero or there's no context) */
-extern int xs_generate_component_names (struct xml_parser_s *parser, const char *raw_name, int prefix_by_context, char **ret_longname, char **ret_qname, int qual_or_unqual);
+extern int xs_generate_component_names (struct vxml_parser_s *parser, const char *raw_name, int prefix_by_context, char **ret_longname, char **ret_qname, int qual_or_unqual);
 
 /* component methods declaration  */
 int xs_add_content_entry_def (struct xs_component_s *_this,
@@ -338,7 +338,7 @@ int xs_pool_allocs_tries = 0;
 int xs_pool_schemas = 0;
 #endif
 
-int xmlparser_log_cm_location (struct xml_parser_s *parser, xs_component_t *comp, int mode)
+int xmlparser_log_cm_location (struct vxml_parser_s *parser, xs_component_t *comp, int mode)
 {
   xml_pos_t *pos;
   const char *format, *src;
@@ -381,12 +381,12 @@ int xmlparser_log_cm_location (struct xml_parser_s *parser, xs_component_t *comp
 }
 
 void
-XML_AddSchemaDeclarationCallbacks (xml_parser_t * parser)
+VXmlAddSchemaDeclarationCallbacks (vxml_parser_t * parser)
 {
   INNER_HANDLERS->start_element_handler =
-      (XML_StartElementHandler) dtd_start_element_handler;
+      (VXmlStartElementHandler) dtd_start_element_handler;
   INNER_HANDLERS->end_element_handler =
-      (XML_EndElementHandler) dtd_end_element_handler;
+      (VXmlEndElementHandler) dtd_end_element_handler;
   OUTER_HANDLERS->start_element_handler = xsd_start_element_handler;
   OUTER_HANDLERS->end_element_handler = xsd_end_element_handler;
 
@@ -429,7 +429,7 @@ xs_strip_prefix (const char* name)
 
 
 void
-xs_names_of_surrounding_type (xml_parser_t * parser, int last_resort, char** ret_longname, char** ret_qname)
+xs_names_of_surrounding_type (vxml_parser_t * parser, int last_resort, char** ret_longname, char** ret_qname)
 {
   ptrlong depth = parser->validator.dv_depth;
   dtd_astate_t *state = parser->validator.dv_stack + depth;
@@ -452,7 +452,7 @@ xs_names_of_surrounding_type (xml_parser_t * parser, int last_resort, char** ret
 }
 
 int
-xs_generate_component_names (xml_parser_t * parser, const char* raw_name, int prefix_by_context, char** ret_longname, char** ret_qname, int qual_or_unqual)
+xs_generate_component_names (vxml_parser_t * parser, const char* raw_name, int prefix_by_context, char** ret_longname, char** ret_qname, int qual_or_unqual)
 {
   const char *longname_delim, *qname_delim;
   const char *colon;
@@ -483,7 +483,7 @@ xs_generate_component_names (xml_parser_t * parser, const char* raw_name, int pr
           goto parts_prepared;
         }
       qname_prefix = mp_box_dv_short_nchars (pool, raw_name, colon-raw_name);
-      longname_prefix = XML_FindNamespaceUriByPrefix (parser, qname_prefix);
+      longname_prefix = VXmlFindNamespaceUriByPrefix (parser, qname_prefix);
       if (NULL == longname_prefix)
         {
           xs_set_error (parser, XCFG_FATAL,
@@ -498,7 +498,7 @@ xs_generate_component_names (xml_parser_t * parser, const char* raw_name, int pr
   longname_prefix = parser->processor.sp_schema->sp_target_ns_uri;
   if ((NULL != longname_prefix) && (XS_QUAL == qual_or_unqual))
     {
-      qname_prefix = XML_FindNamespacePrefixByUri (parser, longname_prefix);
+      qname_prefix = VXmlFindNamespacePrefixByUri (parser, longname_prefix);
       if ((NULL == qname_prefix) || (uname___empty == qname_prefix))
         qname_prefix = longname_prefix;
       longname_delim = longname_prefix[0] ? ":" : "";
@@ -566,7 +566,7 @@ xs_get_major_id (char * comp_name, int tag_dict_id)
 
 #if 0
 /* XMLSchema Declaration */
-xs_tag_t * xs_get_tag (xml_parser_t* parser)
+xs_tag_t * xs_get_tag (vxml_parser_t* parser)
 {
   xs_tag_t * ret_tag;
   long len;
@@ -657,7 +657,7 @@ xs_sql_ann_info_t xs_sql_ann_array[] = {
 
 
 const char *
-xs_get_sql_attr (xml_parser_t *parser, const char * local_name, char ** attrs)
+xs_get_sql_attr (vxml_parser_t *parser, const char * local_name, char ** attrs)
 {
   while (*attrs)
     {
@@ -687,7 +687,7 @@ dk_set_t xs_attr_val_to_idrefs (const char *attr_val)
   return attr_idrefs;
 }
 
-void xsd_fill_mssql_ann (xml_parser_t *parser, xs_tag_t *curr_tag, xs_component_t *curr_comp)
+void xsd_fill_mssql_ann (vxml_parser_t *parser, xs_tag_t *curr_tag, xs_component_t *curr_comp)
 {
   xs_mssql_ann_t *ann = NULL;
   int ann_ctr;
@@ -758,7 +758,7 @@ void xsd_fill_mssql_ann (xml_parser_t *parser, xs_tag_t *curr_tag, xs_component_
 	    }
 	  case ANN_RELATION:
 	    {
-	      caddr_t expname = XML_FindExpandedNameByQName (parser, attr_val,
+	      caddr_t expname = VXmlFindExpandedNameByQName (parser, attr_val,
 		((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
 	      xs_component_t *rel = add_component_reference (
 		parser, expname, attr_val, parser->processor.sp_schema->sp_mssql_rships,
@@ -802,9 +802,9 @@ void xsd_destroy_mssql_ann (xs_mssql_ann_t *ann)
 
 void
 xsd_start_element_handler (void *parser_v,
-    const char * name, xml_parser_attrdata_t *attrdata)
+    const char * name, vxml_parser_attrdata_t *attrdata)
 {
-  xml_parser_t *parser = parser_v;
+  vxml_parser_t *parser = parser_v;
   schema_parsed_t *schema = parser->processor.sp_schema;
   dtd_astate_t *state =
       parser->validator.dv_stack + parser->validator.dv_depth;
@@ -860,7 +860,7 @@ xsd_start_element_handler (void *parser_v,
 	}
       else
 	  state[0].da_sstate = TAG_ST_NORMAL;
-      element_expname = XML_FindExpandedNameByQName (parser, name, 0);
+      element_expname = VXmlFindExpandedNameByQName (parser, name, 0);
       element_localname = xs_strip_prefix (element_expname);
       do {
 	if (
@@ -1035,7 +1035,7 @@ xsd_start_element_handler (void *parser_v,
 		  else
 		    {
 		      const char *cname = xs_get_attr ("ref", tag->tag_atts);
-		      caddr_t expname = XML_FindExpandedNameByQName (parser, cname,
+		      caddr_t expname = VXmlFindExpandedNameByQName (parser, cname,
 			    ((NULL == schema->sp_target_ns_uri) ? 1 : 0) );
 		      id_hash_t *array = schema->sp_hashtables[tag_info->info_sp_hashtable_idx];
 		      tag->tag_component_ref = add_component_reference (parser, expname, cname, array,
@@ -1136,7 +1136,7 @@ cleanup:
 void
 xsd_end_element_handler (void *parser_v, const char * name)
 {
-  xml_parser_t *parser = parser_v;
+  vxml_parser_t *parser = parser_v;
   dtd_astate_t *state = parser->validator.dv_stack + parser->validator.dv_depth;
   schema_printf (("schema: end_element_handler %s ", name));
 
@@ -1183,7 +1183,7 @@ ret:
 }
 
 
-int check_defvals (xml_parser_t* parser)
+int check_defvals (vxml_parser_t* parser)
 {
   char **name;
   id_hash_iterator_t dict_hit;
@@ -1205,7 +1205,7 @@ int check_defvals (xml_parser_t* parser)
   return 1;
 }
 
-int check_unresolved_components (xml_parser_t* parser, id_hash_t* hash, const char* metaname)
+int check_unresolved_components (vxml_parser_t* parser, id_hash_t* hash, const char* metaname)
 { /* checking for unresolved symbols */
   char **dict_key;
   id_hash_iterator_t dict_hit;	/* Iterator to zap dictionary */
@@ -1250,15 +1250,15 @@ int check_unresolved_components (xml_parser_t* parser, id_hash_t* hash, const ch
 
 void
 xsp_start_element_handler (void *parser_v,
-    const char * name, xml_parser_attrdata_t *attrdata)
+    const char * name, vxml_parser_attrdata_t *attrdata)
 {
-  /*  xml_parser_t* parser = parser_v; */
+  /*  vxml_parser_t* parser = parser_v; */
 }
 
 void
 xsp_end_element_handler (void *parser_v, const char * name)
 {
-  /*  xml_parser_t* parser = parser_v; */
+  /*  vxml_parser_t* parser = parser_v; */
 }
 
 
@@ -1279,7 +1279,7 @@ xs_get_attr (const char *name, /* yes, const */ char **attrs)
 
 /* Element component handlers ------------------------------------------------ */
 void
-xs_tag_pre_element (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_element (vxml_parser_t * parser, xs_tag_t * _this)
 {
   xs_tag_t *group_or_complext;
   static int pat[] = {XS_COM_GROUP , XS_COM_COMPLEXT, -1};
@@ -1298,7 +1298,7 @@ xs_tag_pre_element (xml_parser_t * parser, xs_tag_t * _this)
 	  const char* elname = xs_get_attr ("name", _this->tag_atts);
 	  if (NULL != elname)
 	    {
-	      /*caddr_t expname = XML_FindExpandedNameByQName (parser, elname,
+	      /*caddr_t expname = VXmlFindExpandedNameByQName (parser, elname,
 		((XS_UNQUAL == parser->processor.sp_schema->sp_el_qualified) ? 1 : 0) );*/
 	      parser->processor.sp_schema->sp_first_element = mp_box_string (parser->processor.sp_schema->pool, _this->tag_component->cm_longname);
 	      /*dk_free_box (expname);*/
@@ -1309,7 +1309,7 @@ xs_tag_pre_element (xml_parser_t * parser, xs_tag_t * _this)
 
 
 void
-xs_tag_element (struct xml_parser_s *parser, xs_tag_t * _this)
+xs_tag_element (struct vxml_parser_s *parser, xs_tag_t * _this)
 {
   schema_parsed_t *schema = parser->processor.sp_schema;
   mem_pool_t *pool = schema->pool;
@@ -1342,14 +1342,14 @@ xs_tag_element (struct xml_parser_s *parser, xs_tag_t * _this)
 	      SHOULD_BE_CHANGED;
 	      /* GPF_T1("call customer support"); */
 	    }
-	  expname = XML_FindExpandedNameByQName (parser, type,
+	  expname = VXmlFindExpandedNameByQName (parser, type,
 	    ((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
 	  element->cm_typename = xs_get_builtinidx (parser, expname, type, 1);
 	  dk_free_box (expname);
 	}
       if (sg_name)
         {
-	  caddr_t sg_expname = XML_FindExpandedNameByQName (parser, sg_name,
+	  caddr_t sg_expname = VXmlFindExpandedNameByQName (parser, sg_name,
 	    ((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
           xs_component_t* sg_comp = add_component_reference (parser, sg_expname, sg_name, schema->sp_elems, &parser->curr_pos, 0);
           mp_set_push (pool, &(sg_comp->cm_subst_group), element);
@@ -1376,7 +1376,7 @@ xs_tag_element (struct xml_parser_s *parser, xs_tag_t * _this)
 /* Type component handlers -------------------------------------------------------- */
 
 void
-xs_tag_pre_cstype (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_cstype (vxml_parser_t * parser, xs_tag_t * _this)
 {
   const char* base, *is_mixed, *final, *block;
   const derivation_types_t * der_types = (_this->tag_info->info_tagid == XS_TAG_COMPLEX_TYPE) ?
@@ -1392,7 +1392,7 @@ xs_tag_pre_cstype (xml_parser_t * parser, xs_tag_t * _this)
 
   if (base) /* base type reference */
     {
-      caddr_t expname = XML_FindExpandedNameByQName (parser, base,
+      caddr_t expname = VXmlFindExpandedNameByQName (parser, base,
 	((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
       _this->tag_component->cm_typename =
 	  xs_get_builtinidx (parser, expname, base, 1);
@@ -1440,7 +1440,7 @@ xs_tag_pre_cstype (xml_parser_t * parser, xs_tag_t * _this)
 }
 
 void
-xs_tag_cstype (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_cstype (vxml_parser_t * parser, xs_tag_t * _this)
 {
   xs_component_t *elem;
   xs_component_t *type = _this->tag_component;
@@ -1516,13 +1516,13 @@ set:
 
 
 void
-xs_tag_pre_restrict (struct xml_parser_s* parser, xs_tag_t* _this)
+xs_tag_pre_restrict (struct vxml_parser_s* parser, xs_tag_t* _this)
 {
   penetrate_grp_elems (_this);
 }
 
 void
-xs_tag_restrict (struct xml_parser_s *parser, xs_tag_t * _this)
+xs_tag_restrict (struct vxml_parser_s *parser, xs_tag_t * _this)
 {
   xs_component_t *sbase = YOUNGEST_COMPONENT (_this);
   const char *base;		/* base name */
@@ -1534,7 +1534,7 @@ xs_tag_restrict (struct xml_parser_s *parser, xs_tag_t * _this)
     {
       if (base)
 	{
-	  caddr_t expname = XML_FindExpandedNameByQName (parser, base,
+	  caddr_t expname = VXmlFindExpandedNameByQName (parser, base,
 	    ((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
 	  sbase->cm_typename = xs_get_builtinidx (parser, expname, base, 1);
 	  dk_free_box (expname);
@@ -1558,14 +1558,14 @@ ok:
 
 
 void
-xs_tag_pre_list (struct xml_parser_s* parser, xs_tag_t* _this)
+xs_tag_pre_list (struct vxml_parser_s* parser, xs_tag_t* _this)
 {
   penetrate_grp_elems (_this);
 }
 
 
 void
-xs_tag_list (struct xml_parser_s *parser, xs_tag_t * _this)
+xs_tag_list (struct vxml_parser_s *parser, xs_tag_t * _this)
 {
   xs_component_t *sbase = YOUNGEST_COMPONENT (_this);
   const char *itemtype;		/* base name */
@@ -1577,7 +1577,7 @@ xs_tag_list (struct xml_parser_s *parser, xs_tag_t * _this)
     {
       if (itemtype)
 	{
-	  caddr_t expname = XML_FindExpandedNameByQName (parser, itemtype,
+	  caddr_t expname = VXmlFindExpandedNameByQName (parser, itemtype,
 	    ((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
 	  sbase->cm_typename = xs_get_builtinidx (parser, expname, itemtype, 1);
 	  dk_free_box (expname);
@@ -1601,14 +1601,14 @@ ok:
 
 
 void
-xs_tag_pre_union (struct xml_parser_s* parser, xs_tag_t* _this)
+xs_tag_pre_union (struct vxml_parser_s* parser, xs_tag_t* _this)
 {
   penetrate_grp_elems (_this);
 }
 
 
 void
-xs_tag_union (struct xml_parser_s *parser, xs_tag_t * _this)
+xs_tag_union (struct vxml_parser_s *parser, xs_tag_t * _this)
 {
   xs_component_t *sbase = YOUNGEST_COMPONENT (_this);
   const char *itemtype;		/* base name */
@@ -1620,7 +1620,7 @@ xs_tag_union (struct xml_parser_s *parser, xs_tag_t * _this)
     {
       if (itemtype)
 	{
-	  caddr_t expname = XML_FindExpandedNameByQName (parser, itemtype,
+	  caddr_t expname = VXmlFindExpandedNameByQName (parser, itemtype,
 	    ((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
 	  sbase->cm_typename = xs_get_builtinidx (parser, expname, itemtype, 1);
 	  dk_free_box (expname);
@@ -1682,7 +1682,7 @@ int attr_attr_states[][ATTR_ATTR_STATES_NUM] =
 /* Attribute ---------------------------------------------------------*/
 
 /* \return value less than 0 if it is not OK */
-int xs_check_attr_attr_fsm (xml_parser_t * parser, ptrlong curr_attr_st, char ** atts)
+int xs_check_attr_attr_fsm (vxml_parser_t * parser, ptrlong curr_attr_st, char ** atts)
 {
   int idx = 0;
   const char* attr_str = atts ? atts[0] : 0;
@@ -1747,7 +1747,7 @@ int xs_check_attr_attr_fsm (xml_parser_t * parser, ptrlong curr_attr_st, char **
 }
 
 void
-xs_tag_attribute (struct xml_parser_s *parser, xs_tag_t * _this)
+xs_tag_attribute (struct vxml_parser_s *parser, xs_tag_t * _this)
 {
   xs_component_t* attrtype;
   const char *_typename = xs_get_attr ("type", _this->tag_atts);
@@ -1794,7 +1794,7 @@ xs_tag_attribute (struct xml_parser_s *parser, xs_tag_t * _this)
 	    "Double definition in attribute <%s> declaration", attr->cm_qname );
 	  return ;
 	}
-      expname = XML_FindExpandedNameByQName (parser, _typename,
+      expname = VXmlFindExpandedNameByQName (parser, _typename,
 	((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
       attrtype = xs_get_builtinidx (parser, expname, _typename, 1);
       dk_free_box (expname);
@@ -1864,7 +1864,7 @@ void xs_add_attribute(xs_tag_t* basetag, xs_component_t* attr)
 }
 
 void
-xs_tag_pre_attgroup (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_attgroup (vxml_parser_t * parser, xs_tag_t * _this)
 {
   xs_component_t* attgroup = _this->tag_component_ref;
   if (attgroup) /* reference */
@@ -1876,13 +1876,13 @@ xs_tag_pre_attgroup (xml_parser_t * parser, xs_tag_t * _this)
     }
 }
 void
-xs_tag_attgroup (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_attgroup (vxml_parser_t * parser, xs_tag_t * _this)
 {
 }
 
 /* AnyAttribute --------------------------------------------------------*/
 void
-xs_tag_anyattribute (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_anyattribute (vxml_parser_t * parser, xs_tag_t * _this)
 {
   const char* namespace_ = xs_get_attr ("namespace", _this->tag_atts);
   const char* processcontent = xs_get_attr ("processContent", _this->tag_atts);
@@ -1939,7 +1939,7 @@ xs_tag_anyattribute (xml_parser_t * parser, xs_tag_t * _this)
 
 /* Simple facets -------------------------------------------------------*/
 void
-xs_tag_pre_simplefacet (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_simplefacet (vxml_parser_t * parser, xs_tag_t * _this)
 {
 /* This is unused for a while
   ptrlong facet_id = _this->tag_info->info_facetid;
@@ -1951,7 +1951,7 @@ xs_tag_pre_simplefacet (xml_parser_t * parser, xs_tag_t * _this)
 
 /* Model Group handlers ------------------------------------------------*/
 void
-xs_tag_pre_group (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_group (vxml_parser_t * parser, xs_tag_t * _this)
 {
   if (_this->tag_component) /* Group definition */
     set_grp_root_element (parser, _this);
@@ -1959,7 +1959,7 @@ xs_tag_pre_group (xml_parser_t * parser, xs_tag_t * _this)
     set_grp_tree_elems (parser, _this);
 }
 void
-xs_tag_group (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_group (vxml_parser_t * parser, xs_tag_t * _this)
 {
   xs_component_t * group = _this->tag_component;
   if (group && _this->temp.grp_tree)
@@ -1967,58 +1967,58 @@ xs_tag_group (xml_parser_t * parser, xs_tag_t * _this)
 }
 
 void
-xs_tag_pre_all (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_all (vxml_parser_t * parser, xs_tag_t * _this)
 {
   set_grp_tree_elems (parser, _this);
 }
 void
-xs_tag_all (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_all (vxml_parser_t * parser, xs_tag_t * _this)
 {
 }
 
 void
-xs_tag_pre_choice (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_choice (vxml_parser_t * parser, xs_tag_t * _this)
 {
   set_grp_tree_elems (parser, _this);
 }
 void
-xs_tag_choice (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_choice (vxml_parser_t * parser, xs_tag_t * _this)
 {
 }
 void
-xs_tag_pre_sequence (xml_parser_t * parser, xs_tag_t * _this)
-{
-  set_grp_tree_elems (parser, _this);
-}
-void
-xs_tag_sequence (xml_parser_t * parser, xs_tag_t * _this)
-{
-}
-void
-xs_tag_pre_any (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_sequence (vxml_parser_t * parser, xs_tag_t * _this)
 {
   set_grp_tree_elems (parser, _this);
 }
 void
-xs_tag_any (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_sequence (vxml_parser_t * parser, xs_tag_t * _this)
+{
+}
+void
+xs_tag_pre_any (vxml_parser_t * parser, xs_tag_t * _this)
+{
+  set_grp_tree_elems (parser, _this);
+}
+void
+xs_tag_any (vxml_parser_t * parser, xs_tag_t * _this)
 {
 }
 
 /* Complex content handlers */
 void
-xs_tag_pre_complexcontent (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_complexcontent (vxml_parser_t * parser, xs_tag_t * _this)
 {
   penetrate_grp_elems (_this);
 }
 
 void
-xs_tag_pre_simplecontent (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_simplecontent (vxml_parser_t * parser, xs_tag_t * _this)
 {
   penetrate_grp_elems (_this);
 }
 
 void
-xs_tag_pre_extension (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_extension (vxml_parser_t * parser, xs_tag_t * _this)
 {
   static int pat[] = {XS_COM_COMPLEXT , XS_COM_SIMPLET, -1};
   xs_tag_t* basetag = xs_find_ancestor_by_component_type (_this, pat);
@@ -2026,7 +2026,7 @@ xs_tag_pre_extension (xml_parser_t * parser, xs_tag_t * _this)
   basetag->tag_component->cm_derivation = XS_DER_EXTENSION;
 }
 void
-xs_tag_extension (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_extension (vxml_parser_t * parser, xs_tag_t * _this)
 {
   xs_component_t *sbase = YOUNGEST_COMPONENT (_this);
   const char *base;		/* base name */
@@ -2038,7 +2038,7 @@ xs_tag_extension (xml_parser_t * parser, xs_tag_t * _this)
     {
       if (base)
 	{
-	  caddr_t expname = XML_FindExpandedNameByQName (parser, base,
+	  caddr_t expname = VXmlFindExpandedNameByQName (parser, base,
 	    ((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
 	  sbase->cm_typename = xs_get_builtinidx (parser, expname, base, 1);
 	  dk_free_box (expname);
@@ -2071,7 +2071,7 @@ ok:
 
 
 void /* including external document */
-xs_tag_include (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_include (vxml_parser_t * parser, xs_tag_t * _this)
 {
   const char* external_doc_name =
       xs_get_attr ("schemaLocation", _this->tag_atts);
@@ -2081,7 +2081,7 @@ xs_tag_include (xml_parser_t * parser, xs_tag_t * _this)
 
 
 void /* importing external namespaces */
-xs_tag_import (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_import (vxml_parser_t * parser, xs_tag_t * _this)
 {
   const char* external_doc_name =
       xs_get_attr ("schemaLocation", _this->tag_atts);
@@ -2095,7 +2095,7 @@ xs_tag_import (xml_parser_t * parser, xs_tag_t * _this)
 }
 
 void /* redefine mode, include the document and switch to redefine mode */
-xs_tag_pre_redefine (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_pre_redefine (vxml_parser_t * parser, xs_tag_t * _this)
 {
   const char* external_doc_name =
       xs_get_attr ("schemaLocation", _this->tag_atts);
@@ -2108,25 +2108,25 @@ xs_tag_pre_redefine (xml_parser_t * parser, xs_tag_t * _this)
 
 
 void /* switch off redefine mode */
-xs_tag_redefine (xml_parser_t * parser, xs_tag_t* _this)
+xs_tag_redefine (vxml_parser_t * parser, xs_tag_t* _this)
 {
   parser->processor.sp_schema->sp_redefine_mode = 0;
 }
 /* Uniqueness handlers ----------------------------------------------------*/
 
-void xs_tag_pre_key (xml_parser_t* parser, xs_tag_t* tag)
+void xs_tag_pre_key (vxml_parser_t* parser, xs_tag_t* tag)
 {
   INFO_KEY(tag->tag_component).keytype = XSK_KEY;
 }
 
 
-void xs_tag_pre_unique (xml_parser_t* parser, xs_tag_t* tag)
+void xs_tag_pre_unique (vxml_parser_t* parser, xs_tag_t* tag)
 {
   INFO_KEY(tag->tag_component).keytype = XSK_UNIQUE;
 }
 
 
-void xs_tag_selector (xml_parser_t* parser, xs_tag_t* tag)
+void xs_tag_selector (vxml_parser_t* parser, xs_tag_t* tag)
 {
   const char* xpath_text = xs_get_attr ("xpath", tag->tag_atts);
   if (xpath_text)
@@ -2154,7 +2154,7 @@ void xs_tag_selector (xml_parser_t* parser, xs_tag_t* tag)
 }
 
 
-void xs_tag_field (xml_parser_t* parser, xs_tag_t* tag)
+void xs_tag_field (vxml_parser_t* parser, xs_tag_t* tag)
 {
   const char* xpath_field = xs_get_attr ("xpath", tag->tag_atts);
   ptrlong idx = 0;
@@ -2200,14 +2200,14 @@ void xs_tag_field (xml_parser_t* parser, xs_tag_t* tag)
 }
 
 
-void xs_tag_pre_keyref (xml_parser_t* parser, xs_tag_t* tag)
+void xs_tag_pre_keyref (vxml_parser_t* parser, xs_tag_t* tag)
 {
   const char* refer = xs_get_attr ("refer", tag->tag_atts);
   tag->temp.elm_keyref = dk_alloc(sizeof(elm_keyref_t));
   memset(tag->temp.elm_keyref,0,sizeof(elm_keyref_t));
   if (refer)
     {
-      caddr_t expname = XML_FindExpandedNameByQName (parser, refer,
+      caddr_t expname = VXmlFindExpandedNameByQName (parser, refer,
 	((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
       xs_component_t * elem = add_component_reference (parser, expname, refer,
 	  parser->processor.sp_schema->sp_keys, &parser->curr_pos, 0);
@@ -2215,7 +2215,7 @@ void xs_tag_pre_keyref (xml_parser_t* parser, xs_tag_t* tag)
       tag->temp.elm_keyref->kr_refer = elem;
     }
 }
-void xs_tag_keyref(xml_parser_t* parser, xs_tag_t* tag)
+void xs_tag_keyref(vxml_parser_t* parser, xs_tag_t* tag)
 {
   elm_keyref_t* kr = tag->temp.elm_keyref;
   static int pat[] = {XS_COM_ELEMENT, -1};
@@ -2228,7 +2228,7 @@ void xs_tag_keyref(xml_parser_t* parser, xs_tag_t* tag)
 }
 
 
-void xs_tag_pre_notation (xml_parser_t* parser, xs_tag_t* tag)
+void xs_tag_pre_notation (vxml_parser_t* parser, xs_tag_t* tag)
 {
   INFO_NOTATION(tag->tag_component).pub_uri = box_copy ((caddr_t)xs_get_attr ("public", tag->tag_atts));
   INFO_NOTATION(tag->tag_component).sys_uri = box_copy ((caddr_t)xs_get_attr ("system", tag->tag_atts));
@@ -2238,7 +2238,7 @@ void xs_tag_pre_notation (xml_parser_t* parser, xs_tag_t* tag)
 /* stubs */
 
 #if 0 /* Now unused. */
-void xs_unsupported_handler (struct xml_parser_s* parser, xs_tag_t* _this)
+void xs_unsupported_handler (struct vxml_parser_s* parser, xs_tag_t* _this)
 {
   xs_set_error (parser, XCFG_ERROR, 100 + utf8len (_this->tag_info->info_name),
     "Tag %s is not supported", _this->tag_info->info_name);
@@ -2246,16 +2246,16 @@ void xs_unsupported_handler (struct xml_parser_s* parser, xs_tag_t* _this)
 }
 #endif
 
-void xs_tag_pre_annotation (xml_parser_t* parser, xs_tag_t* _this)
+void xs_tag_pre_annotation (vxml_parser_t* parser, xs_tag_t* _this)
 {
 }
 
 
-void xs_tag_pre_appinfo (xml_parser_t* parser, xs_tag_t* _this)
+void xs_tag_pre_appinfo (vxml_parser_t* parser, xs_tag_t* _this)
 {
 }
 
-void xs_tag_pre_documentation (xml_parser_t* parser, xs_tag_t* _this)
+void xs_tag_pre_documentation (vxml_parser_t* parser, xs_tag_t* _this)
 {
   dtd_astate_t *state = parser->validator.dv_stack + parser->validator.dv_depth;
   state->da_sstate = TAG_ST_ERROR; /* To prevent inner tags from processing */
@@ -2263,7 +2263,7 @@ void xs_tag_pre_documentation (xml_parser_t* parser, xs_tag_t* _this)
 
 /* MSSQL extensions */
 void
-xs_tag_mssql_rship (xml_parser_t * parser, xs_tag_t * _this)
+xs_tag_mssql_rship (vxml_parser_t * parser, xs_tag_t * _this)
 {
   const char *name = xs_get_attr ("name", _this->tag_atts);
   const char *parent = xs_get_attr ("parent", _this->tag_atts);
@@ -2272,7 +2272,7 @@ xs_tag_mssql_rship (xml_parser_t * parser, xs_tag_t * _this)
   const char *child_key = xs_get_attr ("child-key", _this->tag_atts);
   caddr_t expname;
   xs_component_t *rel;
-  expname = XML_FindExpandedNameByQName (parser, name,
+  expname = VXmlFindExpandedNameByQName (parser, name,
     ((NULL == parser->processor.sp_schema->sp_target_ns_uri) ? 1 : 0) );
   rel = add_component_reference (
     parser, expname, name, parser->processor.sp_schema->sp_mssql_rships,
@@ -2384,7 +2384,7 @@ xs_component_status (xs_tag_t * tag)
 
 xs_component_t *
 add_component_reference (
-  xml_parser_t* parser, const char * longname, const char *qname,
+  vxml_parser_t* parser, const char * longname, const char *qname,
   id_hash_t * array, xml_pos_t * pos, int is_definition)
 {
   schema_processor_t* proc = &parser->processor;
@@ -2467,7 +2467,7 @@ add_component_reference (
 
 
 xs_component_t *
-xs_get_builtinidx (xml_parser_t * parser, const char * expname_or_null, const char *qname, int auto_def)
+xs_get_builtinidx (vxml_parser_t * parser, const char * expname_or_null, const char *qname, int auto_def)
 {
   ptrlong binfo_idx;
   char* strippedname = (char *)qname;
@@ -2506,7 +2506,7 @@ xs_get_builtinidx (xml_parser_t * parser, const char * expname_or_null, const ch
 /* this code is not used actually, but it could be usefull in future */
 /* called at moment when all types are defined */
 xs_facet_t *
-xs_check_facet_constraint (xml_parser_t * parser,
+xs_check_facet_constraint (vxml_parser_t * parser,
     xs_component_t * c, xs_facet_t * f)
 {
   xs_component_t *root;
@@ -2532,7 +2532,7 @@ xs_check_facet_constraint (xml_parser_t * parser,
 #endif /*DEBUG*/
 
 xs_lg_item_t *
-xs_add_lg_item (xml_parser_t * parser, void *item)
+xs_add_lg_item (vxml_parser_t * parser, void *item)
 {
   mem_pool_t* pool = parser->processor.sp_schema->pool;
   xs_lg_item_t *lgi = (xs_lg_item_t*) mp_alloc_box (pool, sizeof (xs_lg_item_t), DV_CUSTOM);
@@ -2543,7 +2543,7 @@ xs_add_lg_item (xml_parser_t * parser, void *item)
 
 /* This is unused for a while
 void
-xs_add_facet (xml_parser_t * parser, xs_component_t * c, ptrlong fc_id,
+xs_add_facet (vxml_parser_t * parser, xs_component_t * c, ptrlong fc_id,
     const char * value)
 {
   mem_pool_t* pool=parser->processor.sp_schema->pool;
@@ -2562,7 +2562,7 @@ xs_add_facet (xml_parser_t * parser, xs_component_t * c, ptrlong fc_id,
 */
 
 void
-xs_add_en (xml_parser_t * parser, xs_component_t * c, ptrlong fc_id,
+xs_add_en (vxml_parser_t * parser, xs_component_t * c, ptrlong fc_id,
     char * value)
 {
   /* zzzz */
@@ -2571,7 +2571,7 @@ xs_add_en (xml_parser_t * parser, xs_component_t * c, ptrlong fc_id,
 
 
 xs_component_t *
-get_root_type (struct xml_parser_s * parser, xs_component_t * c)
+get_root_type (struct vxml_parser_s * parser, xs_component_t * c)
 {
   xs_component_t *type = c;
   xs_component_t *base;
@@ -2586,7 +2586,7 @@ again:
 
 
 int
-xs_set_error (xml_parser_t * parser, ptrlong errlevel, size_t buflen_eval,
+xs_set_error (vxml_parser_t * parser, ptrlong errlevel, size_t buflen_eval,
     const char *format, ...)
 {
   dtd_astate_t *state =
@@ -2629,7 +2629,7 @@ void xs_swap_global_vars (schema_parsed_t* target, schema_parsed_t* source)
 }
 
 
-int load_external_schemas (struct xml_parser_s* parser, int location_attr, const char* ref)
+int load_external_schemas (struct vxml_parser_s* parser, int location_attr, const char* ref)
 {
   int res = 0, parts_count;
   mem_pool_t *pool = parser->processor.sp_schema->pool;
@@ -2709,7 +2709,7 @@ int load_external_schemas (struct xml_parser_s* parser, int location_attr, const
 }
 
 int
-load_external_schema (struct xml_parser_s* parser, const char* ref, int is_internal)
+load_external_schema (struct vxml_parser_s* parser, const char* ref, int is_internal)
 {
   caddr_t err = NULL;
   const char * base = parser->cfg.uri;
@@ -2718,7 +2718,7 @@ load_external_schema (struct xml_parser_s* parser, const char* ref, int is_inter
   ptrlong mode = parser->validator.dv_curr_config.dc_include;
   ptrlong trace = parser->validator.dv_curr_config.dc_trace_loading;
   ptrlong errors = 0;
-  xml_parser_t * new_parser = NULL;
+  vxml_parser_t * new_parser = NULL;
   if (XCFG_DISABLE == mode)
     {
       if (XCFG_DISABLE != trace)
@@ -2769,7 +2769,7 @@ load_external_schema (struct xml_parser_s* parser, const char* ref, int is_inter
   QR_RESET_CTX
     {
       ptrlong maxval;
-      xml_parser_config_t config;
+      vxml_parser_config_t config;
 /*    schema_processor_t saved_new_parser_proc; */
       memset (&config, 0, sizeof (config));
       config.input_is_wide = 0;
@@ -2777,8 +2777,8 @@ load_external_schema (struct xml_parser_s* parser, const char* ref, int is_inter
       config.input_is_html = FINE_XML;
       config.input_is_xslt = 0;
       config.user_encoding_handler = intl_find_user_charset;
-      config.uri_resolver = (XML_UriResolver)xml_uri_resolve_like_get;
-      config.uri_reader = (XML_UriReader)xml_uri_get;
+      config.uri_resolver = (VXmlUriResolver)xml_uri_resolve_like_get;
+      config.uri_reader = (VXmlUriReader)xml_uri_get;
       config.uri_appdata = parser->cfg.uri_appdata;
       config.initial_src_enc_name = NULL;
       {
@@ -2794,14 +2794,14 @@ load_external_schema (struct xml_parser_s* parser, const char* ref, int is_inter
       else */
       config.uri = mp_box_string (parser->processor.sp_schema->pool, path);
       config.root_lang_handler = server_default_lh;
-      new_parser = XML_ParserCreate (&config);
+      new_parser = VXmlParserCreate (&config);
 #ifdef DEBUG
       if (NULL != new_parser->processor.sp_schema)
 	GPF_T;
 #endif
       new_parser->processor.sp_schema = xs_alloc_schema();
       new_parser->processor.sp_schema->sp_is_internal = is_internal;
-      XML_SetUserData (new_parser, new_parser);
+      VXmlSetUserData (new_parser, new_parser);
       xs_swap_global_vars (new_parser->processor.sp_schema, parser->processor.sp_schema);
       new_parser->processor.sp_schema->pool = parser->processor.sp_schema->pool;
       new_parser->validator.dv_curr_config.dc_xs_decl = XCFG_ENABLE;
@@ -2819,7 +2819,7 @@ load_external_schema (struct xml_parser_s* parser, const char* ref, int is_inter
 	  new_parser->cfg.auto_load_xmlschema_dtd = 1;
 	}
 
-      XML_Parse (new_parser, text, box_length(text) - (new_parser->cfg.input_is_wide ? sizeof (wchar_t) : sizeof (char)));
+      VXmlParse (new_parser, text, box_length(text) - (new_parser->cfg.input_is_wide ? sizeof (wchar_t) : sizeof (char)));
       errors = new_parser->msglog_ctrs[XCFG_FATAL] + new_parser->msglog_ctrs[XCFG_ERROR];
       xmlparser_log_nconcat (parser, new_parser);
       xs_swap_global_vars (parser->processor.sp_schema, new_parser->processor.sp_schema);
@@ -2830,7 +2830,7 @@ load_external_schema (struct xml_parser_s* parser, const char* ref, int is_inter
       parser->input_cost += new_parser->input_cost;
       if (XML_MAX_DOC_COST < parser->input_cost)
         parser->input_cost = XML_MAX_DOC_COST;
-      XML_ParserDestroy (new_parser);
+      VXmlParserDestroy (new_parser);
       dk_free_tree (err);
     }
   QR_RESET_CODE
@@ -2849,7 +2849,7 @@ load_external_schema (struct xml_parser_s* parser, const char* ref, int is_inter
 	  dk_free_box (new_parser->processor.sp_schema->sp_target_ns_uri);
 	  dk_free (new_parser->processor.sp_schema, sizeof (schema_parsed_t));
 	  new_parser->processor.sp_schema = NULL;
-	  XML_ParserDestroy (new_parser);
+	  VXmlParserDestroy (new_parser);
 	}
       POP_QR_RESET;
       sqlr_resignal (thr_err);
@@ -2862,10 +2862,10 @@ load_external_schema (struct xml_parser_s* parser, const char* ref, int is_inter
 
 extern caddr_t uname_xmlschema_ns_uri;
 
-xs_component_t* xs_new_predefined_component (xml_parser_t* parser, const char* _typename)
+xs_component_t* xs_new_predefined_component (vxml_parser_t* parser, const char* _typename)
 {
   id_hash_t* types = parser->processor.sp_schema->sp_types;
-  ccaddr_t prefix_or_null = XML_FindNamespacePrefixByUri (parser, uname_xmlschema_ns_uri);
+  ccaddr_t prefix_or_null = VXmlFindNamespacePrefixByUri (parser, uname_xmlschema_ns_uri);
   const char *prefix = ((prefix_or_null && (uname___empty != prefix_or_null)) ? prefix_or_null : "");
   mem_pool_t *pool = parser->processor.sp_schema->pool;
   xs_component_t* newtype = (xs_component_t*) mp_alloc_box(pool, sizeof (xs_component_t), DV_CUSTOM);
@@ -2893,7 +2893,7 @@ xs_component_t* xs_new_predefined_component (xml_parser_t* parser, const char* _
   return newtype;
 }
 
-xs_component_t* xs_new_predefined_attribute (xml_parser_t* parser, const char* attr, const char* tpname)
+xs_component_t* xs_new_predefined_attribute (vxml_parser_t* parser, const char* attr, const char* tpname)
 {
   id_hash_t* attrs = parser->processor.sp_schema->sp_attrs;
   mem_pool_t *pool = parser->processor.sp_schema->pool;
@@ -2917,7 +2917,7 @@ xs_component_t* xs_new_predefined_attribute (xml_parser_t* parser, const char* a
   return newtype;
 }
 
-void xs_add_predefined_compl_type (xml_parser_t* parser, const char* _typename, grp_tree_elem_t* content)
+void xs_add_predefined_compl_type (vxml_parser_t* parser, const char* _typename, grp_tree_elem_t* content)
 {
   xs_component_t* newtype = xs_new_predefined_component (parser, _typename);
   newtype->cm_type.t_major = XS_COM_COMPLEXT;
@@ -2925,19 +2925,19 @@ void xs_add_predefined_compl_type (xml_parser_t* parser, const char* _typename, 
 }
 
 
-void xs_add_predefined_simple_type (xml_parser_t* parser, const char* _typename)
+void xs_add_predefined_simple_type (vxml_parser_t* parser, const char* _typename)
 {
   xs_component_t* newtype = xs_new_predefined_component (parser, _typename);
   newtype->cm_type.t_major = XS_COM_SIMPLET;
 }
 
-void xs_add_predefined_types (xml_parser_t* parser)
+void xs_add_predefined_types (vxml_parser_t* parser)
 {
   xs_add_predefined_compl_type (parser, "anyType", XECM_ANY);
   xs_add_predefined_simple_type (parser, "anySimpleType");
 }
 
-void xs_add_predefined_attributes (xml_parser_t * parser)
+void xs_add_predefined_attributes (vxml_parser_t * parser)
 {
   xs_new_predefined_attribute (parser, "xml:lang", "language");
 }

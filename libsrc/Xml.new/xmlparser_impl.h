@@ -156,22 +156,22 @@ struct buf_range_s {
 
 typedef struct buf_range_s buf_range_t;
 
-struct xml_parser_handlers_s
+struct vxml_parser_handlers_s
 {
   void			* user_data;
-  XML_CharacterDataHandler		char_data_handler;
-  XML_StartElementHandler		start_element_handler;
-  XML_EndElementHandler			end_element_handler;
-  XML_IdHandler				id_handler;
-  XML_CommentHandler			comment_handler;
-  XML_ProcessingInstructionHandler	pi_handler;
-  XML_EntityRefHandler			entity_ref_handler;
+  VXmlCharacterDataHandler		char_data_handler;
+  VXmlStartElementHandler		start_element_handler;
+  VXmlEndElementHandler			end_element_handler;
+  VXmlIdHandler				id_handler;
+  VXmlCommentHandler			comment_handler;
+  VXmlProcessingInstructionHandler	pi_handler;
+  VXmlEntityRefHandler			entity_ref_handler;
 /*
-  XML_DtdHandler			dtd_handler;
+  VXmlDtdHandler			dtd_handler;
 */
 };
 
-typedef struct xml_parser_handlers_s xml_parser_handlers_t;
+typedef struct vxml_parser_handlers_s vxml_parser_handlers_t;
 
 
 typedef struct lenmem_list_elem_s {
@@ -185,11 +185,11 @@ typedef struct lenmem_list_elem_s {
 #define XML_XPER_DOC_WEIGHT 1000		/*!< Weight is in 16-bytes units */
 
 
-struct xml_parser_s {
+struct vxml_parser_s {
   char *		static_src;		/*!< The source text to be parsed, this is the whole text if there's no feed, otherwise, it's a begginning only */
   char *		static_src_tail;	/*!< Unparsed rest of source text to be parsed */
   char *		static_src_end;		/*!< End of source text to be parsed */
-  xml_parser_config_t	cfg;
+  vxml_parser_config_t	cfg;
   encoding_handler_t	* src_eh;		/*!< (currenlty known) encoding of the input text */
   struct
     {
@@ -240,14 +240,14 @@ struct xml_parser_s {
     html_tag_descr_t	* tag_descr;
     lenmem_t		flat_name;
   }			tmp;
-  xml_parser_attrdata_t attrdata;
+  vxml_parser_attrdata_t attrdata;
 
   xml_pos_t		curr_pos;	/*!< current position in source text of document (main or included) */
   buf_ptr_t		curr_pos_ptr;   /*!< Place in current buffer where curr_pos has measured */
   xml_pos_t		last_main_pos;	/*!< Last reached position in main source text */
 
-  xml_parser_handlers_t masters;	/*!< top level callbacks */
-  xml_parser_handlers_t slaves;		/*!< lower level of callbacks */
+  vxml_parser_handlers_t masters;	/*!< top level callbacks */
+  vxml_parser_handlers_t slaves;		/*!< lower level of callbacks */
 
   dtd_validator_t	validator;
   schema_processor_t	processor;
@@ -270,21 +270,21 @@ struct xml_parser_s {
   ptrlong		input_weight; /*!< Total weight of input in 16-byte units */
 };
 
-extern encoding_handler_t *find_encoding (xml_parser_t *parser, char * enc_name);
+extern encoding_handler_t *find_encoding (vxml_parser_t *parser, char * enc_name);
 
 #ifdef DEBUG
 extern int names_are_equal (lenmem_t * sname, char * name);
 #endif
-extern xml_tok_type_t get_token (xml_parser_t * parser);
-extern void advance_ptr (xml_parser_t * parser);
-extern unichar get_one_xml_char (xml_parser_t * parser);
-extern unichar get_tok_char (xml_parser_t * parser);
+extern xml_tok_type_t get_token (vxml_parser_t * parser);
+extern void advance_ptr (vxml_parser_t * parser);
+extern unichar get_one_xml_char (vxml_parser_t * parser);
+extern unichar get_tok_char (vxml_parser_t * parser);
 
-extern void push_tag (xml_parser_t * parser);
-extern int pop_tag (xml_parser_t * parser);
-extern void add_attribute (xml_parser_t * parser, buf_range_t * name, buf_range_t * value);
-extern void free_attr_array (xml_parser_t * parser);
-extern void convert_attr_array (xml_parser_t * parser);
+extern void push_tag (vxml_parser_t * parser);
+extern int pop_tag (vxml_parser_t * parser);
+extern void add_attribute (vxml_parser_t * parser, buf_range_t * name, buf_range_t * value);
+extern void free_attr_array (vxml_parser_t * parser);
+extern void convert_attr_array (vxml_parser_t * parser);
 
 extern void DBG_NAME(brcpy) (DBG_PARAMS lenmem_t * to, buf_range_t * from);
 extern caddr_t DBG_NAME(box_brcpy) (DBG_PARAMS buf_range_t * from);
@@ -295,48 +295,48 @@ extern caddr_t DBG_NAME(box_brcpy) (DBG_PARAMS buf_range_t * from);
 #endif
 
 /* Rus/ DTD Validation Functions  */
-extern void dtd_start_element_handler (struct xml_parser_s* parser,
+extern void dtd_start_element_handler (struct vxml_parser_s* parser,
 			   const char * name,
-			   xml_parser_attrdata_t *attrdata );
+			   vxml_parser_attrdata_t *attrdata );
 
-extern void dtd_end_element_handler (struct xml_parser_s* parser,
+extern void dtd_end_element_handler (struct vxml_parser_s* parser,
 			 const char * name);
-extern void dtd_char_data_handler (struct xml_parser_s* parser,
+extern void dtd_char_data_handler (struct vxml_parser_s* parser,
 			   const char * s,
 			   int len);
-extern void dtd_pi_handler (struct xml_parser_s* parser,
+extern void dtd_pi_handler (struct vxml_parser_s* parser,
 	     const char * target,
 	     const char * data);
-extern void dtd_comment_handler (struct xml_parser_s* parser,  const char * text);
-extern void dtd_start_cdata_section_handler (struct xml_parser_s* parser);
-extern void dtd_end_cdata_section_handler (struct xml_parser_s* parser);
-extern void dtd_unparsed_entity_decl_handler (struct xml_parser_s* parser,
+extern void dtd_comment_handler (struct vxml_parser_s* parser,  const char * text);
+extern void dtd_start_cdata_section_handler (struct vxml_parser_s* parser);
+extern void dtd_end_cdata_section_handler (struct vxml_parser_s* parser);
+extern void dtd_unparsed_entity_decl_handler (struct vxml_parser_s* parser,
 			  const char * entityName,
 			  const char * base,
 			  const char * systemId,
 			  const char * publicId,
 			  const char * notationName);
-extern void dtd_notation_decl_handler (struct xml_parser_s* parser,
+extern void dtd_notation_decl_handler (struct vxml_parser_s* parser,
 		   const char * notationName,
 		   const char * base,
 		   const char * systemId,
 		   const char * publicId);
-extern void dtd_start_namespace_decl_handler (struct xml_parser_s* parser,
+extern void dtd_start_namespace_decl_handler (struct vxml_parser_s* parser,
 			  const char * prefix,
 			  const char * uri);
-extern void dtd_end_namespace_decl_handler (struct xml_parser_s* parser,
+extern void dtd_end_namespace_decl_handler (struct vxml_parser_s* parser,
 			const char * prefix);
-extern void dtd_default_handler (struct xml_parser_s* parser,
+extern void dtd_default_handler (struct vxml_parser_s* parser,
 		  const char * s,
 		  int len);
 
-extern void dtd_entity_ref_handler (struct xml_parser_s* parser,
+extern void dtd_entity_ref_handler (struct vxml_parser_s* parser,
 		     const char *refname,
 		     int reflen,
 		     int isparam,
 		     const xml_def_4_entity_t *edef);
 /*
-extern void dtd_dtd_handler (struct xml_parser_s* parser,
+extern void dtd_dtd_handler (struct vxml_parser_s* parser,
 		     struct dtd_s *doc_dtd);
 */
 
@@ -344,73 +344,73 @@ void
 normalize_value (lenmem_t * lsp);
 
 /* Functions that in common use for dtd.c and xmlread.c */
-extern int test_ws (struct xml_parser_s * parser);
-extern int get_att_name (struct xml_parser_s * parser);
-extern int test_char (struct xml_parser_s * parser, unichar ch);
-extern char* get_encoded_name (struct xml_parser_s* parser, unichar* beg, unichar* end,
+extern int test_ws (struct vxml_parser_s * parser);
+extern int get_att_name (struct vxml_parser_s * parser);
+extern int test_char (struct vxml_parser_s * parser, unichar ch);
+extern char* get_encoded_name (struct vxml_parser_s* parser, unichar* beg, unichar* end,
 			   char** name, dtd_validator_t* validator);
-extern int dtd_get_att_type (struct xml_parser_s* parser,
+extern int dtd_get_att_type (struct vxml_parser_s* parser,
 			     ecm_el_t* elem, ptrlong attr_index,
 			     dtd_validator_t* validator);
-extern int dtd_get_def_decl (struct xml_parser_s * parser, ecm_attr_t* attr, ecm_el_t* el);
-extern int test_string (struct xml_parser_s * parser, const char * s);
-extern int test_class_str (struct xml_parser_s * parser, const xml_char_class_t _class);
-extern int get_name (struct xml_parser_s * parser);
-extern int get_value (struct xml_parser_s * parser, int dtd_body);
-extern int dtd_constraint_check (struct xml_parser_s *parser, ecm_el_t* elem, ptrlong attr_idx);
-extern int dtd_add_element_decl (dtd_validator_t* validator, struct xml_parser_s * parser);
-extern int get_content_def (struct xml_parser_s * parser);
+extern int dtd_get_def_decl (struct vxml_parser_s * parser, ecm_attr_t* attr, ecm_el_t* el);
+extern int test_string (struct vxml_parser_s * parser, const char * s);
+extern int test_class_str (struct vxml_parser_s * parser, const xml_char_class_t _class);
+extern int get_name (struct vxml_parser_s * parser);
+extern int get_value (struct vxml_parser_s * parser, int dtd_body);
+extern int dtd_constraint_check (struct vxml_parser_s *parser, ecm_el_t* elem, ptrlong attr_idx);
+extern int dtd_add_element_decl (dtd_validator_t* validator, struct vxml_parser_s * parser);
+extern int get_content_def (struct vxml_parser_s * parser);
 
-extern caddr_t dtd_normalize_attr_value (struct xml_parser_s* parser, struct buf_range_s* range, ptrlong attr_type);
-extern caddr_t dtd_normalize_attr_val (xml_parser_t *parser, const char* value, int level);
+extern caddr_t dtd_normalize_attr_value (struct vxml_parser_s* parser, struct buf_range_s* range, ptrlong attr_type);
+extern caddr_t dtd_normalize_attr_val (vxml_parser_t *parser, const char* value, int level);
 
 /* functions from dtd.c for reading DTD declarations and filling dtd_, ecm_ structures */
-extern int dtd_add_attlist_decl(dtd_validator_t* validator,  struct xml_parser_s* parser);
-extern int dtd_get_element_decl (dtd_validator_t* validator, struct xml_parser_s * parser);
-extern int dtd_add_include_section (struct xml_parser_s* parser);
-extern int dtd_add_ignore_section (struct xml_parser_s* parser);
+extern int dtd_add_attlist_decl(dtd_validator_t* validator,  struct vxml_parser_s* parser);
+extern int dtd_get_element_decl (dtd_validator_t* validator, struct vxml_parser_s * parser);
+extern int dtd_add_include_section (struct vxml_parser_s* parser);
+extern int dtd_add_ignore_section (struct vxml_parser_s* parser);
 
-extern int entity_compile_repl (xml_parser_t *parser, xml_def_4_entity_t *newdef);
+extern int entity_compile_repl (vxml_parser_t *parser, xml_def_4_entity_t *newdef);
 
-extern int get_att_type (xml_parser_t* parser);
-extern int get_def_decl (xml_parser_t* parser);
+extern int get_att_type (vxml_parser_t* parser);
+extern int get_def_decl (vxml_parser_t* parser);
 
 /*********************************************************************************************/
 
-extern int replace_entity (xml_parser_t* parser); /*replaces parameter entity */
-extern void dtd_check_ids(xml_parser_t* parser);
-extern int get_refentry (xml_parser_t* parser, char* refname);
+extern int replace_entity (vxml_parser_t* parser); /*replaces parameter entity */
+extern void dtd_check_ids(vxml_parser_t* parser);
+extern int get_refentry (vxml_parser_t* parser, char* refname);
 
-extern ptrlong xs_get_primitive_typeidx(xml_parser_t* parser, xs_component_t *type);
+extern ptrlong xs_get_primitive_typeidx(vxml_parser_t* parser, xs_component_t *type);
 
 
 
 /* if entity is not found already, than leave ent with NULL */
-extern int replace_entity_common (xml_parser_t* parsery, int is_ge, struct xml_def_4_entity_s* ent, buf_ptr_t rem, int log_syntax_error);
-extern void insert_buffer (xml_parser_t* parser, buf_ptr_t* cut_begin, buf_ptr_t* cut_end, lenmem_t* ins, xml_pos_t *ins_beg_pos, xml_pos_t *end_pos);
-extern int dtd_check_attribute (xml_parser_t* parser, const char* value, struct ecm_attr_s* attr);
+extern int replace_entity_common (vxml_parser_t* parsery, int is_ge, struct xml_def_4_entity_s* ent, buf_ptr_t rem, int log_syntax_error);
+extern void insert_buffer (vxml_parser_t* parser, buf_ptr_t* cut_begin, buf_ptr_t* cut_end, lenmem_t* ins, xml_pos_t *ins_beg_pos, xml_pos_t *end_pos);
+extern int dtd_check_attribute (vxml_parser_t* parser, const char* value, struct ecm_attr_s* attr);
 extern void free_refid_log (basket_t* refid_log);
-extern int get_include (xml_parser_t *parser, const char *base, const char *ref, lenmem_t *res_text, xml_pos_t *res_pos);
+extern int get_include (vxml_parser_t *parser, const char *base, const char *ref, lenmem_t *res_text, xml_pos_t *res_pos);
 
 #ifndef MALLOC_DEBUG
 #define NO_validate_parser_bricks
 #endif
 
 #ifndef NO_validate_parser_bricks
-extern int validate_parser_bricks (xml_parser_t * parser);
+extern int validate_parser_bricks (vxml_parser_t * parser);
 #else
 #define validate_parser_bricks(parser)
 #endif
 
-extern int insert_external_dtd(struct xml_parser_s* parser);
+extern int insert_external_dtd(struct vxml_parser_s* parser);
 
 extern const char *concat_full_name (const char *ns, const char *name);
 
-extern int check_entity_recursiveness (xml_parser_t* parser, const char* entityname, int level, const char* currentname);
+extern int check_entity_recursiveness (vxml_parser_t* parser, const char* entityname, int level, const char* currentname);
 
 void xs_clear_tag (ptrlong tag, int is_free);
 
-int insert_external_xmlschema_dtd (struct xml_parser_s * parser);
+int insert_external_xmlschema_dtd (struct vxml_parser_s * parser);
 
 #define LM_EQUAL(a,b) \
   ( \
@@ -436,25 +436,25 @@ extern int xml_ns_2dict_extend (xml_ns_2dict_t *dest, xml_ns_2dict_t *src);
 \c msg is out of caller's ownership after the call (it's either in parser->msglog or freed).
 \returns zero if message is not dumped e.g. due to limitation on number of messages.
  */
-extern int xmlparser_log_box (xml_parser_t *parser, int errlevel, caddr_t msg);
+extern int xmlparser_log_box (vxml_parser_t *parser, int errlevel, caddr_t msg);
 
 /* Adds a message of \errlevel importance into log of \c dv, allocating
 at least \c buflen_eval bytes for internal buffer.
 \returns zero if message is not dumped e.g. due to limitation on number of messages. */
-extern int xmlparser_logprintf (xml_parser_t *parser, ptrlong errlevel, size_t buflen_eval, const char *format, ...);
+extern int xmlparser_logprintf (vxml_parser_t *parser, ptrlong errlevel, size_t buflen_eval, const char *format, ...);
 
-extern int xmlparser_log_place (struct xml_parser_s *parser);
+extern int xmlparser_log_place (struct vxml_parser_s *parser);
 
 /* Adds a ECM_DETAILS message into log if grammar of element \c el is brief enough to be printed */
-extern int xmlparser_logprintf_grammar (xml_parser_t *parser, struct ecm_el_s *el);
+extern int xmlparser_logprintf_grammar (vxml_parser_t *parser, struct ecm_el_s *el);
 
-void xmlparser_log_nconcat (xml_parser_t *parser, xml_parser_t *sub_parser);
+void xmlparser_log_nconcat (vxml_parser_t *parser, vxml_parser_t *sub_parser);
 
 /* \returns 0 if the config is void or invalid */
-extern int xmlparser_configure (xml_parser_t *parser, caddr_t dtd_config, struct xml_parser_config_s *parser_config);
-extern void xmlparser_tighten_validator (xml_parser_t *parser);
-extern void xmlparser_loose_validator (xml_parser_t *parser);
-extern int xmlparser_is_ok (xml_parser_t *parser); /*!< returns if there were severe problems */
+extern int xmlparser_configure (vxml_parser_t *parser, caddr_t dtd_config, struct vxml_parser_config_s *parser_config);
+extern void xmlparser_tighten_validator (vxml_parser_t *parser);
+extern void xmlparser_loose_validator (vxml_parser_t *parser);
+extern int xmlparser_is_ok (vxml_parser_t *parser); /*!< returns if there were severe problems */
 extern char *xmlparser_log_section_to_string (dk_set_t top, dk_set_t pastbottom, const char *title);
 
 #define INNER_HANDLERS ((NULL != parser->cfg.dtd_config) ? &(parser->masters) : &(parser->slaves))

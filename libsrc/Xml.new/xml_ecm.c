@@ -733,7 +733,7 @@ void dc_attr_dict_free (dc_attr_dict_t *dict)
 }
 
 
-dc_attr_dict_t *xmlparser_compile_dc_attr_dict (xml_parser_t *parser, caddr_t src_vector)
+dc_attr_dict_t *xmlparser_compile_dc_attr_dict (vxml_parser_t *parser, caddr_t src_vector)
 {
   dc_attr_dict_t *res = NULL;
   int item_ctr;
@@ -781,7 +781,7 @@ dc_attr_dict_t *xmlparser_compile_dc_attr_dict (xml_parser_t *parser, caddr_t sr
         {
           if (!strcmp (hit[0], src_item[1]))
             {
-	      res_item->dcad_handler = (XML_AttrParser)(hit[1]);
+	      res_item->dcad_handler = (VXmlAttrParser)(hit[1]);
 	      break;
 	    }
 	}
@@ -891,7 +891,7 @@ static dtd_param_val_descr_t dtd_param_val_descrs[] =
     ((XCFG_WARNING == cfg->n) && (cfg->dc_max_warnings <= parser->msglog_ctrs[XCFG_WARNING])) ) \
     cfg->n = XCFG_DISABLE;
 
-void xmlparser_tighten_validator (xml_parser_t *parser)
+void xmlparser_tighten_validator (vxml_parser_t *parser)
 {
   dtd_validator_t *dv = &(parser->validator);
   dtd_config_t *cfg = &(dv->dv_curr_config);
@@ -915,7 +915,7 @@ provides some intermediate results needed for running A */
 #undef ENABLE_FOR_ADDON
 }
 
-void xmlparser_loose_validator (xml_parser_t *parser)
+void xmlparser_loose_validator (vxml_parser_t *parser)
 {
   dtd_validator_t *dv = &(parser->validator);
   dtd_config_t *cfg = &(dv->dv_curr_config);
@@ -939,7 +939,7 @@ operations above, written in reverse order. */
 }
 
 
-int xmlparser_configure (xml_parser_t *parser, caddr_t raw_args, struct xml_parser_config_s *parser_config)
+int xmlparser_configure (vxml_parser_t *parser, caddr_t raw_args, struct vxml_parser_config_s *parser_config)
 {
   dtd_validator_t *dv = &(parser->validator);
   int say_details = 0;
@@ -1147,7 +1147,7 @@ static void xmlparser_msglog_validate (dk_set_t msglog)
 
 
 
-int xmlparser_logprintf (xml_parser_t *parser, ptrlong errlevel, size_t buflen_eval, const char *format, ...)
+int xmlparser_logprintf (vxml_parser_t *parser, ptrlong errlevel, size_t buflen_eval, const char *format, ...)
 {
   dtd_config_t *cfg = &(parser->validator.dv_curr_config);
   va_list tail;
@@ -1190,11 +1190,11 @@ int xmlparser_logprintf (xml_parser_t *parser, ptrlong errlevel, size_t buflen_e
   if ((XCFG_ERROR >= errlevel) &&
     (XCFG_ENABLE == cfg->dc_signal_on_error) &&
     (DEAD_HTML != parser->cfg.input_is_html) )
-    parser->cfg.error_reporter ("42000", "%.1500s", XML_FullErrorMessage (parser));
+    parser->cfg.error_reporter ("42000", "%.1500s", VXmlFullErrorMessage (parser));
   return res;
 }
 
-int xmlparser_is_ok (xml_parser_t *parser)
+int xmlparser_is_ok (vxml_parser_t *parser)
 {
   if (0 != parser->msglog_ctrs[XCFG_FATAL])
     return 0;
@@ -1203,7 +1203,7 @@ int xmlparser_is_ok (xml_parser_t *parser)
   return 1;
 }
 
-int xmlparser_logprintf_grammar (xml_parser_t *parser, ecm_el_t *el)
+int xmlparser_logprintf_grammar (vxml_parser_t *parser, ecm_el_t *el)
 {
   char *grammar = el->ee_grammar;
   if ( strchr (grammar, '\n') || strchr (grammar, '\r'))
@@ -1214,7 +1214,7 @@ int xmlparser_logprintf_grammar (xml_parser_t *parser, ecm_el_t *el)
       "Grammar of <%s> was described in DTD as %s", el->ee_name, grammar ) );
 }
 
-void xmlparser_log_nconcat (xml_parser_t *parser, xml_parser_t *sub_parser)
+void xmlparser_log_nconcat (vxml_parser_t *parser, vxml_parser_t *sub_parser)
 {
   int i;
   for (i = XCFG_ERRLEVELS; i--; /* no step */)

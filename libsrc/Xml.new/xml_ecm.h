@@ -207,7 +207,7 @@ will be suspended temporary. */
 typedef struct dc_attr_dict_item_s
 {
   caddr_t dcad_attr_name;
-  XML_AttrParser dcad_handler;
+  VXmlAttrParser dcad_handler;
   caddr_t *dcad_elements;
   int dcad_elements_count;  
 }
@@ -323,7 +323,7 @@ typedef struct ecm_id_s
 
 /* Functions */
 
-struct xml_parser_config_s;
+struct vxml_parser_config_s;
 
 extern ecm_term_t *ecm_term_ctor (
   ecm_el_idx_t et_value_, ecm_term_t *et_subterm1_, ecm_term_t *et_subterm2_ );

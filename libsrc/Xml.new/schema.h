@@ -307,10 +307,10 @@ typedef struct xs_tag_s
 }
 xs_tag_t;
 
-struct xml_parser_s;
-typedef void (*SMTagPreProcessContent) (struct xml_parser_s * parser,
+struct vxml_parser_s;
+typedef void (*SMTagPreProcessContent) (struct vxml_parser_s * parser,
     xs_tag_t * _this);
-typedef void (*SMTagProcessContent) (struct xml_parser_s * parser,
+typedef void (*SMTagProcessContent) (struct vxml_parser_s * parser,
     xs_tag_t * _this);
 
 extern SMTagPreProcessContent xs_tag_preprocess_table[COUNTOF__XS_TAG];	/*!< pre processing of tag table , called at start tag */
@@ -654,7 +654,7 @@ extern xml_syspath_t *xml_sys_path_list;
 /* if tag related to component creates it, in other case change last
    component's content */
 extern void xsd_start_element_handler (void *parser,
-    const char * name, xml_parser_attrdata_t *attrdata);
+    const char * name, vxml_parser_attrdata_t *attrdata);
 /* compiles component content, erases internal tree */
 extern void xsd_end_element_handler (void *parser, const char * name);
 
@@ -670,7 +670,7 @@ extern void xsd_entity_ref_handler (void *parser,
 
 /* XML Schema Processin callbacks		*/
 extern void xsp_start_element_handler (void *parser,
-    const char * name, xml_parser_attrdata_t *attrdata);
+    const char * name, vxml_parser_attrdata_t *attrdata);
 extern void xsp_end_element_handler (void *parser, const char * name);
 extern void xsp_start_namespace_decl_handler (void *parser,
     const char * prefix, const char * uri);
@@ -711,26 +711,26 @@ builtin_props_t;
 extern builtin_props_t builtin_props[COUNTOF__xs_builtin_types];
 
 /*! searches root origin for simple or complex type component, call only when all types are resolved */
-xs_component_t *get_root_type (struct xml_parser_s *, xs_component_t * c);
-xs_facet_t *xs_check_facet_constraint (struct xml_parser_s *,
+xs_component_t *get_root_type (struct vxml_parser_s *, xs_component_t * c);
+xs_facet_t *xs_check_facet_constraint (struct vxml_parser_s *,
     xs_component_t * c, xs_facet_t * f);
-void xs_add_facet (struct xml_parser_s *, xs_component_t * c, ptrlong fc_id,
+void xs_add_facet (struct vxml_parser_s *, xs_component_t * c, ptrlong fc_id,
     const char * value);
 /*! the first argument is a tag of attribute declaration or att group reference,
     the second one is a either xs_component_t pointer or builtintype id */
 void xs_add_attribute (xs_tag_t* tag, xs_component_t* attribute);
 /*! subj. Argument is hash from processor */
-int check_unresolved_components(struct xml_parser_s* parser, struct id_hash_s* hash, const char* metaname);
-int check_defvals (struct xml_parser_s* parser);
+int check_unresolved_components(struct vxml_parser_s* parser, struct id_hash_s* hash, const char* metaname);
+int check_defvals (struct vxml_parser_s* parser);
 
-extern int dtd_log_cm_location (struct xml_parser_s *parser, xs_component_t *comp, int mode);
+extern int dtd_log_cm_location (struct vxml_parser_s *parser, xs_component_t *comp, int mode);
 
 /*! makes component specific actions, fills deferred structures */
-int xs_compile_component (struct xml_parser_s *parser, xs_component_t * c);
+int xs_compile_component (struct vxml_parser_s *parser, xs_component_t * c);
 /*! checks facets constraints for type component, fills set of facets */
-int xs_compile_facets (struct xml_parser_s *parser, xs_component_t * c);
+int xs_compile_facets (struct vxml_parser_s *parser, xs_component_t * c);
 /*! resolves attribute types */
-int xs_compile_attributes (struct xml_parser_s *parser, xs_component_t * c);
+int xs_compile_attributes (struct vxml_parser_s *parser, xs_component_t * c);
 
 
 extern const char *xs_get_attr (const char * name, /* yes, const */ char **attrs);
@@ -739,15 +739,15 @@ extern const char *xs_get_attr (const char * name, /* yes, const */ char **attrs
 void xs_tag_free (xs_tag_t * ptag);
 char **xs_copy_attlist (const char ** atts);
 #endif
-extern xs_component_t *xs_get_builtinidx (struct xml_parser_s *parser, const char * expname_or_null, const char *qname, int auto_def);
-extern xs_component_t *add_component_reference (xml_parser_t* parser,
+extern xs_component_t *xs_get_builtinidx (struct vxml_parser_s *parser, const char * expname_or_null, const char *qname, int auto_def);
+extern xs_component_t *add_component_reference (vxml_parser_t* parser,
   const char * expname, const char * qname,
   id_hash_t * array, xml_pos_t * pos, int is_definition);
 
-void set_grp_tree_elems (struct xml_parser_s *parser,
+void set_grp_tree_elems (struct vxml_parser_s *parser,
     struct xs_tag_s *_this);
 void penetrate_grp_elems (xs_tag_t * _this);
-void set_grp_root_element (struct xml_parser_s *parser, xs_tag_t * _this);
+void set_grp_root_element (struct vxml_parser_s *parser, xs_tag_t * _this);
 
 
 #define XSI_ATTR_SCHEMALOCATION			0x01
@@ -756,13 +756,13 @@ void set_grp_root_element (struct xml_parser_s *parser, xs_tag_t * _this);
 #define XSI_VERSION_2000			0x0100
 #define XSI_VERSION_2001			0x0200
 #define XSI_VERSION_MASK			0xff00
-extern int schema_attr_is_location (xml_parser_t *parser, char *attr);
+extern int schema_attr_is_location (vxml_parser_t *parser, char *attr);
 
 /*! load and parse all external schemas listed in \c ref value of \c location_attr returns zero if finished successfuly.
   Error logs are appended to the main log. */
-extern int load_external_schemas (struct xml_parser_s* parser, int location_attr, const char* ref);
+extern int load_external_schemas (struct vxml_parser_s* parser, int location_attr, const char* ref);
 /*! load and parse external schema document returns zero if finished successfuly */
-extern int load_external_schema (struct xml_parser_s* parser, const char* ref, int is_internal);
+extern int load_external_schema (struct vxml_parser_s* parser, const char* ref, int is_internal);
 
 /* support macros, implementation structures */
 #define MAJOR_ID(z)	    ((z)->cm_type.t_major)
@@ -822,13 +822,13 @@ extern void xs_release_schema (schema_parsed_t *schema);
 
 /*  returns 0 if succeeded,
     checks compliance of "value" string and allowed type's lex */
-extern int xs_check_type_compliance(xml_parser_t* parser, xs_component_t *type, const char* value, int err_options);
+extern int xs_check_type_compliance(vxml_parser_t* parser, xs_component_t *type, const char* value, int err_options);
 /*  internal usage function */
-extern int xs_set_error (xml_parser_t * parser, ptrlong errlevel, size_t buflen_eval,
+extern int xs_set_error (vxml_parser_t * parser, ptrlong errlevel, size_t buflen_eval,
     const char *format, ...);
-int xmlparser_log_cm_location (struct xml_parser_s *parser, xs_component_t *comp, int mode);
+int xmlparser_log_cm_location (struct vxml_parser_s *parser, xs_component_t *comp, int mode);
 extern caddr_t xml_add_system_path (caddr_t uri);
-extern void xs_add_predefined_types(xml_parser_t* parser);
+extern void xs_add_predefined_types(vxml_parser_t* parser);
 extern void xs_clear_tag(ptrlong tag, int is_free);
 extern void xs_clear_processor(schema_processor_t* processor);
 
@@ -836,8 +836,8 @@ extern void grp_print_tree(grp_tree_elem_t* tree, int level, const char* comment
 
 int is_attr_boolean (const char * attr_val, int is_true);
 
-extern void XML_SetElementSchemaHandler (xml_parser_t* parser, XML_StartElementHandler sh, XML_EndElementHandler eh);
-extern void XML_SetCharacterSchemaDataHandler (xml_parser_t* parser, XML_CharacterDataHandler h);
+extern void VXmlSetElementSchemaHandler (vxml_parser_t* parser, VXmlStartElementHandler sh, VXmlEndElementHandler eh);
+extern void VXmlSetCharacterSchemaDataHandler (vxml_parser_t* parser, VXmlCharacterDataHandler h);
 
 #endif	/* _XML_SCHEMA_H */
 

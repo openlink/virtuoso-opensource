@@ -116,7 +116,7 @@ get_tag_maxoccurs_number (xs_tag_t * this_)
 #define MP_GRP_TREE_ELEM ((grp_tree_elem_t *) mp_alloc (pool, sizeof (grp_tree_elem_t)))
 
 grp_tree_elem_t *
-xecm_grp_elem_ctor (xml_parser_t *parser, ptrlong id, grp_tree_elem_t * et_subterm1_,
+xecm_grp_elem_ctor (vxml_parser_t *parser, ptrlong id, grp_tree_elem_t * et_subterm1_,
     grp_tree_elem_t * et_subterm2_)
 {
   mem_pool_t * pool = parser->processor.sp_schema->pool;
@@ -171,7 +171,7 @@ create_new:
 
 
 grp_tree_elem_t *
-xecm_advance_tree (xml_parser_t *parser, grp_tree_elem_t * node)
+xecm_advance_tree (vxml_parser_t *parser, grp_tree_elem_t * node)
 {
   ptrlong maxoccurs = node->elem_attrs.ea_maxoccurs;
   ptrlong minoccurs = node->elem_attrs.ea_minoccurs;
@@ -190,7 +190,7 @@ xecm_advance_tree (xml_parser_t *parser, grp_tree_elem_t * node)
 
 
 void
-set_grp_tree_elems (xml_parser_t * parser, xs_tag_t * _this)
+set_grp_tree_elems (vxml_parser_t * parser, xs_tag_t * _this)
 {
   schema_parsed_t *schema = parser->processor.sp_schema;
   mem_pool_t * pool = schema->pool;
@@ -359,7 +359,7 @@ penetrate_grp_elems (xs_tag_t * _this)
 
 
 void
-set_grp_root_element (xml_parser_t *parser, xs_tag_t * _this)
+set_grp_root_element (vxml_parser_t *parser, xs_tag_t * _this)
 {
   schema_parsed_t *schema = parser->processor.sp_schema;
   mem_pool_t * pool = schema->pool;
@@ -1235,7 +1235,7 @@ search_marked_node (grp_tree_elem_t * tree)
 /* usual inserting in free leaf, if there are no free leafs,
 force it to be placed in right one */
 void
-insert_grp_tree (xml_parser_t * parser,
+insert_grp_tree (vxml_parser_t * parser,
     grp_tree_elem_t * marked_tree_elem, grp_tree_elem_t * base_tree)
 {
   schema_parsed_t *schema = parser->processor.sp_schema;
@@ -1281,7 +1281,7 @@ get_recent_component (xs_component_t * el_type)
 }
 
 /* \return TRUE (1) if derivation is allowed */
-int derivation_is_allowed (xml_parser_t * parser, derivation_t der,
+int derivation_is_allowed (vxml_parser_t * parser, derivation_t der,
 			   const char * der_str, xs_component_t * type, xs_component_t * base)
 {
   if (INFO_CSTYPE (base).final & der)
@@ -1298,7 +1298,7 @@ int derivation_is_allowed (xml_parser_t * parser, derivation_t der,
 }
 
 /* \return TRUE (1) if casting is allowed at validation stage */
-int check_is_cast_allowed (xml_parser_t * parser, xs_component_t * type,
+int check_is_cast_allowed (vxml_parser_t * parser, xs_component_t * type,
 			   xs_component_t * xsi_type)
 {
   xs_component_t * curr_type = xsi_type;
@@ -1342,7 +1342,7 @@ int check_is_cast_allowed (xml_parser_t * parser, xs_component_t * type,
 
 /* \return XS_COMPOSE_SUCC if no errors have occured, zero otherwise */
 int
-compose_all_groups (xml_parser_t * parser, xs_component_t * type)
+compose_all_groups (vxml_parser_t * parser, xs_component_t * type)
 {
   schema_parsed_t *schema = parser->processor.sp_schema;
   mem_pool_t *pool = schema->pool;
@@ -1608,7 +1608,7 @@ inherit:
 /*  inherit all attributes from all referenced attribute groups
     and base type */
 int
-compose_all_attributes (xml_parser_t * parser, xs_component_t * type,
+compose_all_attributes (vxml_parser_t * parser, xs_component_t * type,
     const char * el_qname)
 {
   dk_set_t *active_set = 0;
@@ -1810,7 +1810,7 @@ compose_all_attributes (xml_parser_t * parser, xs_component_t * type,
 }
 
 int
-xecm_create_all_fsas (xml_parser_t * parser)
+xecm_create_all_fsas (vxml_parser_t * parser)
 {
   schema_parsed_t *schema = parser->processor.sp_schema;
   id_hash_iterator_t hit;
@@ -2246,7 +2246,7 @@ xecm_add_element (xs_component_t * elem, void **objs, ptrlong * obj_no,
 
 /* \return NULL if failed */
 char *
-xs_get_entity (xml_parser_t * parser, const char * value)
+xs_get_entity (vxml_parser_t * parser, const char * value)
 {
   xml_def_4_entity_t **ent_repl;
   char *name = (char*)(value + 1);
@@ -2267,7 +2267,7 @@ xs_get_entity (xml_parser_t * parser, const char * value)
  ((xs_component_t*) ((attr)->attr_component))->cm_typename : NULL)
 
 int
-schema_check_attribute (xml_parser_t * parser, const char * value,
+schema_check_attribute (vxml_parser_t * parser, const char * value,
     struct xecm_attr_s *attr)
 {
   dtd_config_t *conf = &parser->processor.sp_schema->sp_curr_config;
@@ -2414,7 +2414,7 @@ schema_attr_t xsi_attrs[] =
   };
 const unsigned long xsi_attrs_no = sizeof (xsi_attrs) / sizeof (schema_attr_t);
 
-static int xsi_schema_attr_code (xml_parser_t *parser, char *attr)
+static int xsi_schema_attr_code (vxml_parser_t *parser, char *attr)
 {
   char * delim_offset = strrchr (attr, ':');
   char *locname;
@@ -2431,7 +2431,7 @@ static int xsi_schema_attr_code (xml_parser_t *parser, char *attr)
   if (idx == -1)
     return 0;
   res = xsi_attrs[idx].attr_res;
-  XML_FindNamespaceUriByQName (parser, attr, 1, &ns_uri);
+  VXmlFindNamespaceUriByQName (parser, attr, 1, &ns_uri);
   if (NULL == ns_uri.lm_memblock)
     return 0;
   if (!LM_EQUAL_TO_STR (&ns_uri, "http://www.w3.org/2001/XMLSchema-instance"))
@@ -2444,7 +2444,7 @@ static int xsi_schema_attr_code (xml_parser_t *parser, char *attr)
 }
 
 
-int schema_attr_is_location (xml_parser_t *parser, char *attr)
+int schema_attr_is_location (vxml_parser_t *parser, char *attr)
 {
   int res = xsi_schema_attr_code (parser, attr);
   if ((res & XSI_ATTR_SCHEMALOCATION) ||
@@ -2454,9 +2454,9 @@ int schema_attr_is_location (xml_parser_t *parser, char *attr)
 }
 
 
-xs_component_t * xs_get_type (xml_parser_t * parser, const char * val)
+xs_component_t * xs_get_type (vxml_parser_t * parser, const char * val)
 {
-  caddr_t type = XML_FindExpandedNameByQName (parser, val, 0);
+  caddr_t type = VXmlFindExpandedNameByQName (parser, val, 0);
   xs_component_t **dict_entry;
   xs_component_t *res;
   id_hash_t *types = parser->processor.sp_schema->sp_types;
@@ -2480,9 +2480,9 @@ int is_attr_boolean (const char * attr_val, int is_true)
 
 void
 xsv_start_element_handler (void *parser_v,
-    const char * name, xml_parser_attrdata_t * attrdata)
+    const char * name, vxml_parser_attrdata_t * attrdata)
 {
-  xml_parser_t *parser = (xml_parser_t *) parser_v;
+  vxml_parser_t *parser = (vxml_parser_t *) parser_v;
   schema_processor_t *proc = &parser->processor;
   schema_parsed_t *schema = proc->sp_schema;
   ptrlong fsa_cfg = schema->sp_curr_config.dc_fsa;
@@ -2613,7 +2613,7 @@ skip_schema_loading:
     }
 
 
-  fullname = XML_FindExpandedNameByQName (parser, name, 0);
+  fullname = VXmlFindExpandedNameByQName (parser, name, 0);
 
   if (NULL != schema->sp_elems)
     {
@@ -2853,7 +2853,7 @@ end_of_fsa_for_parent:
       ptrlong attridx = -1;
       if (parser->processor.sp_schema->sp_att_qualified == XS_QUAL)
 	{
-	  caddr_t exp_attrname = XML_FindExpandedNameByQName (parser, attrname, 0);
+	  caddr_t exp_attrname = VXmlFindExpandedNameByQName (parser, attrname, 0);
 	  attridx = ecm_find_name (exp_attrname,
 	    curr_type_attrs, curr_type_attrs_no, sizeof (xecm_attr_t) );
 	  dk_free_box (exp_attrname);
@@ -2885,7 +2885,7 @@ end_of_fsa_for_parent:
 	      lenmem_t curr_ns, *lm_equal_tmp1, *lm_equal_tmp2;
 	      char *target_ns = parser->processor.sp_schema->sp_target_ns_uri;
 	      xs_any_attr_ns select_ns = local_xecm_el->xee_any_attr_ns;
-	      XML_FindNamespaceUriByQName (parser, attrname, 1, &curr_ns);
+	      VXmlFindNamespaceUriByQName (parser, attrname, 1, &curr_ns);
 	      switch ((ptrlong)(select_ns))
 		{
 		      /* XS_ANY_ATTR_NS_ANY is handled before */
@@ -2998,7 +2998,7 @@ end:
 
 
 void
-xsv_end_element_handler (xml_parser_t * parser, const char * name)
+xsv_end_element_handler (vxml_parser_t * parser, const char * name)
 {
   schema_processor_t *proc = &parser->processor;
   schema_parsed_t *schema = proc->sp_schema;
@@ -3067,7 +3067,7 @@ xsv_end_element_handler (xml_parser_t * parser, const char * name)
 }
 
 void
-xsv_char_data_handler (xml_parser_t * parser, const char * s, int len)
+xsv_char_data_handler (vxml_parser_t * parser, const char * s, int len)
 {
   ptrlong fsa_cfg = parser->processor.sp_schema->sp_curr_config.dc_fsa;
   ptrlong fsabadws_cfg = parser->processor.sp_schema->sp_curr_config.dc_fsa_bad_ws;
@@ -3187,11 +3187,11 @@ xsv_char_data_handler (xml_parser_t * parser, const char * s, int len)
 }
 
 void
-XML_SetElementSchemaHandler (xml_parser_t * parser,
-    XML_StartElementHandler sh, XML_EndElementHandler eh)
+VXmlSetElementSchemaHandler (vxml_parser_t * parser,
+    VXmlStartElementHandler sh, VXmlEndElementHandler eh)
 {
   INNER_HANDLERS->start_element_handler = xsv_start_element_handler;
-  INNER_HANDLERS->end_element_handler = (XML_EndElementHandler) xsv_end_element_handler;
+  INNER_HANDLERS->end_element_handler = (VXmlEndElementHandler) xsv_end_element_handler;
   OUTER_HANDLERS->start_element_handler = sh;
   OUTER_HANDLERS->end_element_handler = eh;
 }
@@ -3202,12 +3202,12 @@ Null_XML_CharacterDataHandler (void *userData, const char * s, size_t len)
 }
 
 void
-XML_SetCharacterSchemaDataHandler (xml_parser_t * parser,
-    XML_CharacterDataHandler h)
+VXmlSetCharacterSchemaDataHandler (vxml_parser_t * parser,
+    VXmlCharacterDataHandler h)
 {
   if (NULL == h)
     h = Null_XML_CharacterDataHandler;
-  INNER_HANDLERS->char_data_handler = (XML_CharacterDataHandler) xsv_char_data_handler;
+  INNER_HANDLERS->char_data_handler = (VXmlCharacterDataHandler) xsv_char_data_handler;
   OUTER_HANDLERS->char_data_handler = h;
 }
 

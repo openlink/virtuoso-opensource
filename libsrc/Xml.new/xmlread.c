@@ -69,7 +69,7 @@ error:
   return err;
 }
 
-int validate_parser_bricks (xml_parser_t * parser)
+int validate_parser_bricks (vxml_parser_t * parser)
 {
   brick_t *curr = parser->eptr.buf;
   if (validate_buf_ptr (&(parser->bptr))) goto error;
@@ -93,7 +93,7 @@ error:
  * if it is available.
  */
 unichar
-get_one_xml_char (xml_parser_t * parser)
+get_one_xml_char (vxml_parser_t * parser)
 {
   unichar c;
 
@@ -190,7 +190,7 @@ fail:
 }
 
 void
-add_buf (xml_parser_t * parser)
+add_buf (vxml_parser_t * parser)
 {
   brick_t *buf = parser->eptr.buf;
 
@@ -417,7 +417,7 @@ names_are_equal (lenmem_t * sname, char * name)
 #endif
 
 void
-advance_ptr (xml_parser_t * parser)
+advance_ptr (vxml_parser_t * parser)
 {
   brick_t *ptr, *leftmost_saved;
   while ((parser->pptr.ptr == parser->pptr.buf->end) && (parser->eptr.buf != parser->pptr.buf))
@@ -491,7 +491,7 @@ normalize_name (buf_range_t * brp)
 
 
 unichar
-get_tok_char (xml_parser_t * parser)
+get_tok_char (vxml_parser_t * parser)
 {
   unichar c;
   char *put_tmp;
@@ -605,7 +605,7 @@ ok:
 #if 0
 /* like get_tok_char returns char
    + unfold entities */
-unichar get_tok_char2(xml_parser_t* parser)
+unichar get_tok_char2(vxml_parser_t* parser)
 {
   buf_ptr_t rem = parser->pptr;
   int ch = get_tok_char (parser);
@@ -621,7 +621,7 @@ unichar get_tok_char2(xml_parser_t* parser)
 #endif
 
 int
-test_string (xml_parser_t * parser, const char * s)
+test_string (vxml_parser_t * parser, const char * s)
 {
   unichar c;
   buf_ptr_t rem = parser->pptr;
@@ -639,7 +639,7 @@ test_string (xml_parser_t * parser, const char * s)
 }
 
 int
-test_case_string (xml_parser_t * parser, const char * s,
+test_case_string (vxml_parser_t * parser, const char * s,
 		  int case_insensitive)
 {
   unichar c;
@@ -666,7 +666,7 @@ test_case_string (xml_parser_t * parser, const char * s,
 }
 
 int
-test_char (xml_parser_t * parser, unichar ch)
+test_char (vxml_parser_t * parser, unichar ch)
 {
   unichar c;
   buf_ptr_t rem = parser->pptr;
@@ -690,7 +690,7 @@ test_char (xml_parser_t * parser, unichar ch)
 }
 
 int
-get_to_string (xml_parser_t * parser, const char * s)
+get_to_string (vxml_parser_t * parser, const char * s)
 {
   unichar c;
   buf_ptr_t rem = parser->pptr;
@@ -713,7 +713,7 @@ get_to_string (xml_parser_t * parser, const char * s)
 }
 
 int
-get_to_string2 (xml_parser_t * parser, const char * s1, const char * s2)
+get_to_string2 (vxml_parser_t * parser, const char * s1, const char * s2)
 {
   unichar c;
   buf_ptr_t rem = parser->pptr;
@@ -736,7 +736,7 @@ get_to_string2 (xml_parser_t * parser, const char * s1, const char * s2)
 }
 
 int
-test_ws (xml_parser_t * parser)
+test_ws (vxml_parser_t * parser)
 {
   unichar c;
   buf_ptr_t rem = parser->pptr;
@@ -770,7 +770,7 @@ test_ws (xml_parser_t * parser)
 
 /* for ENTITY */
 int
-test_ws2 (xml_parser_t * parser)
+test_ws2 (vxml_parser_t * parser)
 {
   unichar c;
   buf_ptr_t rem = parser->pptr;
@@ -804,7 +804,7 @@ test_ws2 (xml_parser_t * parser)
 /* temporary solution (entity replacment), which should be wiped from here out */
 /*** END RUS/FIXME Tue Mar 27 19:58:34 2001 ***/
 int
-test_class_str (xml_parser_t * parser, const xml_char_class_t cclass)
+test_class_str (vxml_parser_t * parser, const xml_char_class_t cclass)
 {
   unichar c;
   buf_ptr_t rem = parser->pptr;
@@ -861,7 +861,7 @@ c_is_in_char_class:
 }
 
 int
-test_xhtml_char_ref (xml_parser_t * parser)
+test_xhtml_char_ref (vxml_parser_t * parser)
 {
   const struct xhtml_ent_s *lookup_res;
   char buf[MAX_WORD_LENGTH + 1], *tail;
@@ -895,7 +895,7 @@ test_xhtml_char_ref (xml_parser_t * parser)
  * right after '&' - here should be a name of an entity.
  */
 unichar
-test_char_ref (xml_parser_t * parser)
+test_char_ref (vxml_parser_t * parser)
 {
   unichar c;
   unichar res = 0;
@@ -969,7 +969,7 @@ test_char_ref (xml_parser_t * parser)
 }
 
 int
-get_name (xml_parser_t * parser)
+get_name (vxml_parser_t * parser)
 {
   buf_ptr_t rem = parser->pptr;
 
@@ -987,7 +987,7 @@ get_name (xml_parser_t * parser)
 
 
 int
-get_att_name (xml_parser_t * parser)
+get_att_name (vxml_parser_t * parser)
 {
   buf_ptr_t rem = parser->pptr;
 
@@ -1005,7 +1005,7 @@ get_att_name (xml_parser_t * parser)
 
 
 int
-get_value (xml_parser_t * parser, int dtd_body)
+get_value (vxml_parser_t * parser, int dtd_body)
 {
   unichar delim, c;
   buf_ptr_t tmp, rem;
@@ -1047,7 +1047,7 @@ get_value (xml_parser_t * parser, int dtd_body)
 
 
 int
-get_attr_value (xml_parser_t * parser, int dtd_body)
+get_attr_value (vxml_parser_t * parser, int dtd_body)
 {
   unichar delim, c;
   buf_ptr_t tmp, rem;
@@ -1143,7 +1143,7 @@ html_value_ended:
 int
 /* Rus/20010724 XMLConf
    is_text_decl - see http://www.w3.org/TR/2000/REC-xml-20001006#NT-TextDecl */
-get_PI (xml_parser_t * parser, int is_text_decl)
+get_PI (vxml_parser_t * parser, int is_text_decl)
 {
   buf_ptr_t rem = parser->pptr;
 /*  buf_ptr_t old = parser->pptr; */
@@ -1395,7 +1395,7 @@ synterror_cleanup:
 }
 
 int
-get_comment (xml_parser_t * parser, int call_handler)
+get_comment (vxml_parser_t * parser, int call_handler)
 {
   lenmem_t text;
   /* rus 23/10/02 SGMLism comment must not contain "--" */
@@ -1426,7 +1426,7 @@ get_comment (xml_parser_t * parser, int call_handler)
 }
 
 int
-process_peref (xml_parser_t * parser)
+process_peref (vxml_parser_t * parser)
 {
   replace_entity (parser);
   return 0;
@@ -1434,7 +1434,7 @@ process_peref (xml_parser_t * parser)
 
 /* IvAn/ParseDTD/990721 Many patches added to add entity to proper dictionary */
 int
-get_entity_decl (xml_parser_t * parser)
+get_entity_decl (vxml_parser_t * parser)
 {
   int PE_f = 0; /* if entity definition is param-entity decl? */
   caddr_t name = NULL, litval = NULL, publit = NULL, syslit = NULL, notat = NULL; /* components of the definition */
@@ -1571,7 +1571,7 @@ synterror:
 /* IvAn/ParseDTD/990721 **/
 
 int
-get_content_def (xml_parser_t * parser)
+get_content_def (vxml_parser_t * parser)
 {
   unichar delim = 0;
 
@@ -1629,7 +1629,7 @@ get_content_def (xml_parser_t * parser)
 }
 
 int
-get_element_decl (xml_parser_t * parser)
+get_element_decl (vxml_parser_t * parser)
 {
   if (!get_name (parser) ||
       !test_ws (parser))
@@ -1653,7 +1653,7 @@ get_element_decl (xml_parser_t * parser)
 
 
 int
-get_att_type (xml_parser_t * parser)
+get_att_type (vxml_parser_t * parser)
 {
   if (test_char (parser, '('))
     {	/* enumeration */
@@ -1711,7 +1711,7 @@ get_att_type (xml_parser_t * parser)
 }
 
 int
-get_def_decl (xml_parser_t * parser)
+get_def_decl (vxml_parser_t * parser)
 {
   if (test_string (parser, "#REQUIRED") ||
       test_string (parser, "#IMPLIED"))
@@ -1727,7 +1727,7 @@ get_def_decl (xml_parser_t * parser)
 }
 
 int
-get_attlist_decl (xml_parser_t * parser)
+get_attlist_decl (vxml_parser_t * parser)
 {
   if (!get_name (parser))
     return 0;
@@ -1755,7 +1755,7 @@ get_attlist_decl (xml_parser_t * parser)
 
 /* IvAn/ParseDTD/000721 */
 int
-get_notation_decl (xml_parser_t * parser)
+get_notation_decl (vxml_parser_t * parser)
 {
   lenmem_t name, publit, syslit; /* components of the definition */
   xml_def_4_notation_t *newdef; /* definition of new entity */
@@ -1817,7 +1817,7 @@ synterror:
 
 
 static void
-handle_char_data (xml_parser_t * parser, buf_ptr_t begin, buf_ptr_t end)
+handle_char_data (vxml_parser_t * parser, buf_ptr_t begin, buf_ptr_t end)
 {
   buf_ptr_t iter;
   for (iter = begin; iter.buf != end.buf; iter.ptr = ((iter.buf = iter.buf->next) -> beg))
@@ -1829,7 +1829,7 @@ handle_char_data (xml_parser_t * parser, buf_ptr_t begin, buf_ptr_t end)
     parser->masters.char_data_handler (parser->masters.user_data, iter.ptr, end.ptr - iter.ptr);
 }
 
-static int dtd_compile (xml_parser_t *parser)
+static int dtd_compile (vxml_parser_t *parser)
 {
   ecm_el_idx_t ctr;
   dtd_t *dtd = parser->validator.dv_dtd;
@@ -1963,7 +1963,7 @@ static int dtd_compile (xml_parser_t *parser)
 
 
 xml_tok_type_t
-get_dtd_token (xml_parser_t *parser, int is_dtd_ge, char *recovery_flag_ret, unichar *c_ret)
+get_dtd_token (vxml_parser_t *parser, int is_dtd_ge, char *recovery_flag_ret, unichar *c_ret)
 {
   unichar c = c_ret[0];
 	      int is_external_id = 0 ;
@@ -2203,7 +2203,7 @@ character_data:
 
 
 xml_tok_type_t
-get_token (xml_parser_t * parser)
+get_token (vxml_parser_t * parser)
 {
   unichar c;
   buf_ptr_t rem, tmp;

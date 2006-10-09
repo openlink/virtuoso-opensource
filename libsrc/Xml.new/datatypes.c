@@ -29,7 +29,7 @@
 #include "pcre.h"
 
 ptrlong
-xs_get_primitive_typeidx (xml_parser_t * parser, xs_component_t *type)
+xs_get_primitive_typeidx (vxml_parser_t * parser, xs_component_t *type)
 {
   xs_component_t *base_type;
   if (!IS_BOX_POINTER (type))
@@ -52,7 +52,7 @@ xs_get_primitive_typeidx (xml_parser_t * parser, xs_component_t *type)
 extern caddr_t regexp_match_01 (const char* pattern, const char* str, int c_opts);
 
 int
-xs_check_type_compliance (xml_parser_t * parser, xs_component_t *type,
+xs_check_type_compliance (vxml_parser_t * parser, xs_component_t *type,
     const char * value, int err_options)
 {
   ptrlong base_type_idx;

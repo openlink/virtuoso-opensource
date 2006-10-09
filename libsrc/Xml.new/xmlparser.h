@@ -29,10 +29,10 @@
 
 #include <stddef.h>
 #include "Dk.h"
-#include <langfunc.h>
+#include "langfunc.h"
 
-struct xml_parser_s;
-typedef struct xml_parser_s xml_parser_t;
+struct vxml_parser_s;
+typedef struct vxml_parser_s vxml_parser_t;
 
 /*				 0         1         2         3   */
 /*				 012345678901234567890123456789012 */
@@ -170,60 +170,60 @@ do { \
     } \
  } while (0)
 
-typedef struct xml_parser_attrdata_s {
+typedef struct vxml_parser_attrdata_s {
   tag_attr_t *local_attrs;
   size_t local_attrs_count;
   nsdecl_t *local_nsdecls;
   size_t local_nsdecls_count;
   nsdecl_t *all_nsdecls;
   size_t all_nsdecls_count;
-} xml_parser_attrdata_t;
+} vxml_parser_attrdata_t;
 
-typedef void (*XML_StartElementHandler)
+typedef void (*VXmlStartElementHandler)
      (void *userData,
       const char * name,
-      xml_parser_attrdata_t *attrdata);
+      vxml_parser_attrdata_t *attrdata);
 
-typedef void (*XML_EndElementHandler)
+typedef void (*VXmlEndElementHandler)
      (void *userData,
       const char * name);
 
-typedef void (*XML_IdHandler)
+typedef void (*VXmlIdHandler)
      (void *userData,
       const char * name);
 
 /* s is not 0 terminated. */
-typedef void (*XML_CharacterDataHandler)
+typedef void (*VXmlCharacterDataHandler)
      (void *userData,
       const char * s,
       size_t len);
 
 /* target and data are 0 terminated */
-typedef void (*XML_ProcessingInstructionHandler)
+typedef void (*VXmlProcessingInstructionHandler)
      (void *userData,
       const char * target,
       const char * data);
 
 /* data is 0 terminated */
-  typedef void (*XML_CommentHandler) (void *userData, const char * text);
+  typedef void (*VXmlCommentHandler) (void *userData, const char * text);
 
 /* IvAn/ParseDTD/000721
-   Arg1 - e.g., xml_parser_t,
+   Arg1 - e.g., vxml_parser_t,
    Arg2,3 - reference name (pointer to and length of text),
    Arg4 - flag if reference is global
    Arg5 - definition of the reference */
-  typedef void (*XML_EntityRefHandler) (void *userData, const char *refname, size_t reflen, int isparam, const xml_def_4_entity_t *edef);
+  typedef void (*VXmlEntityRefHandler) (void *userData, const char *refname, size_t reflen, int isparam, const xml_def_4_entity_t *edef);
 /* IvAn/ParseDTD/000721 **/
 
-  typedef void (*XML_DtdHandler) (void *userData, dtd_t *doc_dtd);
+  typedef void (*VXmlDtdHandler) (void *userData, dtd_t *doc_dtd);
 
-  typedef encoding_handler_t * (*XML_FindUserEncoding) (const char *encname, int xml_input_is_wide);
+  typedef encoding_handler_t * (*VXmlFindUserEncoding) (const char *encname, int xml_input_is_wide);
 
-  typedef char *(*XML_UriResolver) (void *uri_appdata, char **err_ret, ccaddr_t base_uri, ccaddr_t rel_uri, const char *output_charset);
-  typedef char *(*XML_UriReader) (void *uri_appdata, char **err_ret, char **options, ccaddr_t base_uri, ccaddr_t rel_uri, int cast_blob_to_varchar);
-  typedef void (*XML_ErrorReporter) (const char *state, const char *format, ...);
+  typedef char *(*VXmlUriResolver) (void *uri_appdata, char **err_ret, ccaddr_t base_uri, ccaddr_t rel_uri, const char *output_charset);
+  typedef char *(*VXmlUriReader) (void *uri_appdata, char **err_ret, char **options, ccaddr_t base_uri, ccaddr_t rel_uri, int cast_blob_to_varchar);
+  typedef void (*VXmlErrorReporter) (const char *state, const char *format, ...);
 
-  typedef void *(*XML_AttrParser) (void *userData, const char *elname, const char *attrname, const char *attrvalue);
+  typedef void *(*VXmlAttrParser) (void *userData, const char *elname, const char *attrname, const char *attrvalue);
   
 extern void *xmlap_qname (void *userData, const char *elname, const char *attrname, const char *attrvalue);
 extern void *xmlap_xpath (void *userData, const char *elname, const char *attrname, const char *attrvalue);
@@ -251,8 +251,8 @@ typedef void (*xml_read_abend_func_t) (void * read_cd);
 #define XML_SOURCE_TYPE_XTREE_DOC	1	/*!< Special handling of attributes (they're expanded already) */
 
 /* Memory pointed by members of this structure is owned by caller of
-   XML_ParserCreate. This memory should not be freed until Xml_ParserDestroy */
-struct xml_parser_config_s
+   VXmlParserCreate. This memory should not be freed until Xml_ParserDestroy */
+struct vxml_parser_config_s
 {
   int				input_is_wide;		/*!< Flags if XML input (to be parsed) is wchar_t, not plain character data */
   int				input_is_ge;		/*!< Flags if input is Generic Entity, not a complete document. */
@@ -260,11 +260,11 @@ struct xml_parser_config_s
   int				input_is_xslt;		/*!< Flags if input is XSLT and should be handled in a special way */
   int				input_source_type;	/*!< Type of input (XML_SOURCE_TYPE_TEXT is default) */
   const char *			initial_src_enc_name;
-  XML_FindUserEncoding		user_encoding_handler;
+  VXmlFindUserEncoding		user_encoding_handler;
   const char *			uri;			/*!< URI of the document, and base for relative URIs */
-  XML_UriResolver		uri_resolver;
-  XML_UriReader			uri_reader;
-  XML_ErrorReporter		error_reporter;
+  VXmlUriResolver		uri_resolver;
+  VXmlUriReader			uri_reader;
+  VXmlErrorReporter		error_reporter;
   void *			uri_appdata;		/*!< Application-specific data for \c uri_resolver and \c uri_reader callbacks */
   caddr_t *			log_ret;		/*!< Application-specific data for \c error_reporter */
   caddr_t			dtd_config;
@@ -277,39 +277,39 @@ struct xml_parser_config_s
   int				dc_namespaces;		/*!< Enforced fixed value for parser's dc_namespaces, dtd config will not override */
 };
 
-typedef struct xml_parser_config_s xml_parser_config_t;
+typedef struct vxml_parser_config_s vxml_parser_config_t;
 
-xml_parser_t * XML_ParserCreate (xml_parser_config_t *config);
+vxml_parser_t * VXmlParserCreate (vxml_parser_config_t *config);
 
-void XML_ParserDestroy (xml_parser_t * parser);
-int XML_Parse (xml_parser_t * parser, char * data, s_size_t size);
-/*void XML_ParsePosition (xml_parser_t * parser, size_t * start_pos, size_t * end_pos);*/
+void VXmlParserDestroy (vxml_parser_t * parser);
+int VXmlParse (vxml_parser_t * parser, char * data, s_size_t size);
+/*void VXmlParsePosition (vxml_parser_t * parser, size_t * start_pos, size_t * end_pos);*/
 
-extern void XML_SetElementHandler (xml_parser_t * parser, XML_StartElementHandler sh, XML_EndElementHandler eh);
-extern void XML_SetIdHandler (xml_parser_t * parser, XML_IdHandler h);
-extern void XML_SetCommentHandler (xml_parser_t * parser, XML_CommentHandler h); /* IvAn/ParseDTD/999721 */
-extern void XML_SetProcessingInstructionHandler (xml_parser_t * parser, XML_ProcessingInstructionHandler h); /* IvAn/ParseDTD/999721 */
-extern void XML_SetCharacterDataHandler (xml_parser_t * parser, XML_CharacterDataHandler h);
+extern void VXmlSetElementHandler (vxml_parser_t * parser, VXmlStartElementHandler sh, VXmlEndElementHandler eh);
+extern void VXmlSetIdHandler (vxml_parser_t * parser, VXmlIdHandler h);
+extern void VXmlSetCommentHandler (vxml_parser_t * parser, VXmlCommentHandler h); /* IvAn/ParseDTD/999721 */
+extern void VXmlSetProcessingInstructionHandler (vxml_parser_t * parser, VXmlProcessingInstructionHandler h); /* IvAn/ParseDTD/999721 */
+extern void VXmlSetCharacterDataHandler (vxml_parser_t * parser, VXmlCharacterDataHandler h);
 
-int XML_GetCurrentLineNumber (xml_parser_t * parser);
-int XML_GetOuterLineNumber (xml_parser_t * parser);
-int XML_GetCurrentColumnNumber (xml_parser_t * parser);
-int XML_GetCurrentByteNumber (xml_parser_t * parser);
-const char *XML_GetCurrentFileName (xml_parser_t * parser);
-const char *XML_GetOuterFileName (xml_parser_t * parser);
-void XML_SetEntityRefHandler (xml_parser_t * parser, XML_EntityRefHandler h);
-caddr_t XML_ErrorContext(xml_parser_t * parser);
-char *XML_ErrorContext2(char* buffer, xml_parser_t * parser);
-caddr_t XML_ValidationLog (xml_parser_t * parser);
-caddr_t XML_FullErrorMessage (xml_parser_t * parser);
-extern ccaddr_t XML_FindNamespaceUriByPrefix (xml_parser_t * parser, ccaddr_t prefix);
-extern ccaddr_t XML_FindNamespacePrefixByUri (xml_parser_t * parser, ccaddr_t uri);
-extern void XML_FindNamespaceUriByQName (xml_parser_t * parser, const char *qname, int is_attr, lenmem_t *uri_ret);
-extern caddr_t DBG_NAME(XML_FindExpandedNameByQName) (DBG_PARAMS xml_parser_t * parser, const char *qname, int is_attr);
+int VXmlGetCurrentLineNumber (vxml_parser_t * parser);
+int VXmlGetOuterLineNumber (vxml_parser_t * parser);
+int VXmlGetCurrentColumnNumber (vxml_parser_t * parser);
+int VXmlGetCurrentByteNumber (vxml_parser_t * parser);
+const char *VXmlGetCurrentFileName (vxml_parser_t * parser);
+const char *VXmlGetOuterFileName (vxml_parser_t * parser);
+void VXmlSetEntityRefHandler (vxml_parser_t * parser, VXmlEntityRefHandler h);
+caddr_t VXmlErrorContext(vxml_parser_t * parser);
+char *VXmlErrorContext2(char* buffer, vxml_parser_t * parser);
+caddr_t VXmlValidationLog (vxml_parser_t * parser);
+caddr_t VXmlFullErrorMessage (vxml_parser_t * parser);
+extern ccaddr_t VXmlFindNamespaceUriByPrefix (vxml_parser_t * parser, ccaddr_t prefix);
+extern ccaddr_t VXmlFindNamespacePrefixByUri (vxml_parser_t * parser, ccaddr_t uri);
+extern void VXmlFindNamespaceUriByQName (vxml_parser_t * parser, const char *qname, int is_attr, lenmem_t *uri_ret);
+extern caddr_t DBG_NAME(VXmlFindExpandedNameByQName) (DBG_PARAMS vxml_parser_t * parser, const char *qname, int is_attr);
 #ifdef MALLOC_DEBUG
-#define XML_FindExpandedNameByQName(p,q,a) dbg_XML_FindExpandedNameByQName (__FILE__, __LINE__, (p), (q), (a))
+#define VXmlFindExpandedNameByQName(p,q,a) dbg_VXmlFindExpandedNameByQName (__FILE__, __LINE__, (p), (q), (a))
 #endif
-extern int XML_ExpandedNameEqualsQName (xml_parser_t * parser, const char * expanded_name,
+extern int VXmlExpandedNameEqualsQName (vxml_parser_t * parser, const char * expanded_name,
 				 const char * qname, int is_attr);
 
 
@@ -321,24 +321,24 @@ extern int XML_ExpandedNameEqualsQName (xml_parser_t * parser, const char * expa
  *		    declaration is unknown
  * XML_EF_FORCE - set encoding and ignore XML declaration
  */
-void XML_SetUserData (xml_parser_t * parser, void * ptr);
-void XML_ParserInput (xml_parser_t * parser, xml_read_func_t f, void * read_cd);
+void VXmlSetUserData (vxml_parser_t * parser, void * ptr);
+void VXmlParserInput (vxml_parser_t * parser, xml_read_func_t f, void * read_cd);
 
-const xml_def_4_notation_t *XML_GetNotation(xml_parser_t * parser, const char *refname);
-const xml_def_4_entity_t *XML_GetParameterEntity(xml_parser_t * parser, const char *refname);
-const xml_def_4_entity_t *XML_GetGenericEntity(xml_parser_t * parser, const char *refname);
+const xml_def_4_notation_t *VXmlGetNotation(vxml_parser_t * parser, const char *refname);
+const xml_def_4_entity_t *VXmlGetParameterEntity(vxml_parser_t * parser, const char *refname);
+const xml_def_4_entity_t *VXmlGetGenericEntity(vxml_parser_t * parser, const char *refname);
 
-void XML_SetFindUserEncoding (xml_parser_t * parser, XML_FindUserEncoding find);
+void VXmlSetFindUserEncoding (vxml_parser_t * parser, VXmlFindUserEncoding find);
 
 
 #define XML_DTD	    0	/* BTW zero value means 'default' */
 #define XML_SCHEMA  1
 
-extern dtd_t *XML_GetDtd (xml_parser_t * parser);
+extern dtd_t *VXmlGetDtd (vxml_parser_t * parser);
 
 /*** BEG RUS/Schema Thu Mar 22 19:00:19 2001 ***/
 extern void xml_schema_init (void);
-extern void XML_AddSchemaDeclarationCallbacks (xml_parser_t * parser);
+extern void VXmlAddSchemaDeclarationCallbacks (vxml_parser_t * parser);
 /*** END RUS/Schema Thu Mar 22 19:00:22 2001 ***/
 
 extern caddr_t xml_add_system_path (caddr_t path_uri);
