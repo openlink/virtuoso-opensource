@@ -1833,9 +1833,9 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
   if (pr_fill > 1) \
     {\
       compact_rc = it_try_compact (it, parent, pr, pr_fill, &pos); \
-      pr_free (pr, pr_fill); \
       if (CP_REENTER == compact_rc) \
 	IN_PAGE_MAP (it); \
+      pr_free (pr, pr_fill); \
       if (CP_CHANGED == compact_rc) \
         any_change = CP_CHANGED; \
     } \
