@@ -95,6 +95,7 @@ int http_n_keep_alives;
 caddr_t ws_default_charset_name = NULL;
 wcharset_t * ws_default_charset = NULL;
 static caddr_t *localhost_names;
+static caddr_t *local_interfaces;
 caddr_t dns_host_name;
 caddr_t temp_aspx_dir;
 
@@ -680,7 +681,6 @@ is_http_handler (char *name)
 
   return 0;
 }
-
 
 #ifdef WIN32
 #define DIR_SLASH	'\\'
@@ -6297,6 +6297,9 @@ static char *ws_get_ftext =
 "    return concat ('__http_handler_', substring (p1, dot + 2, length (p1)));\n"
 "}";
 
+#ifndef WIN32
+#define closesocket close
+#endif
 
 caddr_t *
 box_tcpip_localhost_names (void)
@@ -6343,6 +6346,7 @@ box_tcpip_localhost_names (void)
 
 id_hash_t * http_map;
 id_hash_t * http_listeners;
+id_hash_t * http_failed_listeners;
 dk_mutex_t * http_listeners_mutex;
 ws_http_map_t * http_default_map;
 #if 0 /* not used */
@@ -6387,6 +6391,56 @@ http_host_normalize (caddr_t host, int to_ip)
   return host1;
 }
 
+caddr_t
+http_virtual_host_normalize (caddr_t _host, caddr_t lhost)
+{
+  char * sep;
+  caddr_t host1, host2;
+  caddr_t host;
+
+  if (!_host || !lhost)
+    return NULL;
+
+  /* they are same, both are the default */
+  if (!strcmp (_host, lhost))
+    return http_host_normalize (_host, 0);
+
+  host = box_copy (_host);
+  sep = strchr (host, ':');
+  if (sep)
+    *sep = 0;
+
+  if (!strcmp (lhost, "*ini*") && http_port)
+    host2 = http_port;
+  else if (!strcmp (lhost, "*sslini*") && https_port)
+    host2 = https_port;
+  else
+    host2 = lhost;
+  if (!host2)
+    return NULL;
+
+  sep = strchr (host2, ':');
+
+  if (!sep && !alldigits (host2)) /* it listen on 80 on one of the NIC */
+    {
+      host1 = dk_alloc_box (strlen (host) + 4, DV_SHORT_STRING);
+      snprintf (host1, box_length (host1), "%s:80", host2);
+    }
+  else if (!sep && alldigits (host2)) /* it listen on all interfaces */
+    {
+      host1 = dk_alloc_box (strlen (host2) + strlen (host) + 2, DV_SHORT_STRING);
+      snprintf (host1, box_length (host1), "%s:%s", host, host2);
+    }
+  else /* it's non-default listener */
+    {
+      host1 = dk_alloc_box (strlen (sep) + strlen (host) + 1, DV_SHORT_STRING);
+      snprintf (host1, box_length (host1), "%s%s", host, sep);
+    }
+  dk_free_box (host);
+  return host1;
+}
+
+
 /*##********************************************************
 * Add entry in HTTP virtual directories map hash
 * takes 2 up to 12 parameters
@@ -6427,8 +6481,10 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     { /* virtual host or listen host */
       caddr_t virtual_host = bif_string_or_null_arg (qst, args, 2, "http_map_table");
       caddr_t listen_host  = bif_string_or_null_arg (qst, args, 3, "http_map_table");
-      caddr_t vh = http_host_normalize (virtual_host, 0);
+      caddr_t vh;
+
       lhost = http_host_normalize (listen_host, 1);
+      vh = http_virtual_host_normalize (virtual_host, listen_host);
       if (lhost && lhost[0] == ':' && vh && vh[0] == ':')
 	{
 	  host = box_dv_short_string ("*all*"); /*TODO: add all names for the host */
@@ -6546,8 +6602,10 @@ bif_http_map_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sec_check_dba ((query_instance_t *) qst, "http_map_del"); /* Virtual directory MUST be deleted only by DBA */
   if (BOX_ELEMENTS (args) > 2)
     { /* virtual host or listen host */
-      caddr_t vh = http_host_normalize (bif_string_or_null_arg (qst, args, 1, "http_map_table"), 0);
-      lhost = http_host_normalize (bif_string_or_null_arg (qst, args, 2, "http_map_table"), 1);
+      caddr_t vh, virtual_host = bif_string_or_null_arg (qst, args, 1, "http_map_del");
+      caddr_t listen_host = bif_string_or_null_arg (qst, args, 2, "http_map_del");
+      lhost = http_host_normalize (listen_host, 1);
+      vh = http_virtual_host_normalize (virtual_host, listen_host);
       if (lhost && lhost[0] == ':' && vh && vh[0] == ':')
 	{
 	  host = box_dv_short_string ("*all*"); /*TODO: add all names for the host */
@@ -7255,6 +7313,8 @@ http_vhosts_init (void)
   local_cursor_t *lc;
   query_t *qr = sql_compile (q_listen, bootstrap_cli, &err, SQLC_DEFAULT);
   dk_session_t *listening;
+  ptrlong one = 1;
+
   if (NULL == qr)
     {
       log_error("Unable to compile SQL statement: %s", q_listen);
@@ -7267,11 +7327,12 @@ http_vhosts_init (void)
       caddr_t * opts = (caddr_t *) lc_nth_col (lc, 1);
       char * sec = lc_nth_col (lc, 2);
       caddr_t host = http_host_normalize (hp, 0);
-      caddr_t has_it;
+      caddr_t has_it, tried;
       mutex_enter (http_listeners_mutex);
       has_it = id_hash_get (http_listeners, (caddr_t) & host);
+      tried = id_hash_get (http_failed_listeners, (caddr_t) & host);
       mutex_leave (http_listeners_mutex);
-      if (!has_it)
+      if (!has_it && !tried)
 	{
 	  caddr_t * ssl_opts = NULL;
 	  if (sec && 0 == stricmp (sec, "SSL") && opts && box_length (opts))
@@ -7283,6 +7344,12 @@ http_vhosts_init (void)
 	      id_hash_set (http_listeners, (caddr_t) & host, (caddr_t) &listening);
 	      mutex_leave (http_listeners_mutex);
 	      http_trace (("listen ses: %s %p\n", hp, listening));
+	    }
+	  else
+	    {
+	      mutex_enter (http_listeners_mutex);
+	      id_hash_set (http_failed_listeners, (caddr_t) & host, (caddr_t)&one);
+	      mutex_leave (http_listeners_mutex);
 	    }
 	}
     }
@@ -7885,6 +7952,12 @@ bif_tcpip_gethostbyaddr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 static caddr_t
+bif_tcpip_local_interfaces (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_copy_tree (local_interfaces);
+}
+
+static caddr_t
 bif_http_full_request (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong descructive = bif_long_arg (qst, args, 0, "http_full_request");
@@ -8249,6 +8322,84 @@ bif_http_current_charset (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   return box_dv_short_string (CHARSET_NAME (charset, "ISO-8859-1"));
 }
 
+caddr_t *
+box_tpcip_get_interfaces ()
+{
+  dk_set_t set = NULL;
+#ifdef SIOCGIFCONF
+#define MAX_IFS 32
+  struct ifreq ifreq, *ifrp;
+  struct ifconf ifc;
+  char buf[sizeof(struct ifreq)*MAX_IFS];
+#endif
+  int sockfd;
+  struct sockaddr_in addr;
+  int eno, len;
+  char message[255];
+
+  sockfd = socket(PF_INET,SOCK_DGRAM,0);
+  if (sockfd < 0 )
+    {
+      eno = errno;
+      tcpses_error_message (eno, message, sizeof (message));
+      log_error ("Failed create socket to obtain network interfaces : %s", message);
+    }
+
+#ifdef SIOCGIFCONF
+  memset (buf, 0, sizeof(buf));
+  ifc.ifc_len = sizeof( buf );
+  ifc.ifc_buf = (caddr_t)buf;
+
+  if (ioctl(sockfd, SIOCGIFCONF, (caddr_t)&ifc) < 0)
+    {
+      eno = errno;
+      tcpses_error_message (eno, message, sizeof (message));
+      log_error ("Failed to get network interfaces : %s", message);
+    }
+
+  ifrp = ifc.ifc_req;
+  for (len = ifc.ifc_len; len > 0; /* len -= sizeof (ifreq) calculated bellow */)
+    {
+      if (ifrp->ifr_addr.sa_family == AF_INET)
+	{
+	  memcpy (&addr, &(ifrp->ifr_addr), sizeof (struct sockaddr_in));
+	  snprintf (message, sizeof (message), "%s", inet_ntoa(addr.sin_addr));
+	  dk_set_push (&set, box_string (message));
+	}
+      /* The FreeBSD returns variable length */
+#ifdef __FreeBSD__      
+      ifrp = (struct ifreq *)((char *)&(ifrp->ifr_addr) + ifrp->ifr_addr.sa_len);
+      len -= ifrp->ifr_addr.sa_len;
+#else      
+      ifrp++;
+      len -= sizeof (ifreq);
+#endif      
+    }
+#elif defined (SIO_GET_INTERFACE_LIST)
+    {
+      INTERFACE_INFO buf[100];
+      int len;
+      DWORD cbBytesReturned;
+
+      if (WSAIoctl (sockfd, SIO_GET_INTERFACE_LIST, NULL, 0, buf, sizeof(buf), &cbBytesReturned, NULL, NULL) == 0)
+	{
+	  for (len = 0; len < (int) (cbBytesReturned / sizeof (INTERFACE_INFO)); len++)
+	    {
+	      if ((buf[len].iiFlags & IFF_UP) && (buf[len].iiFlags & IFF_BROADCAST))
+		{
+		  unsigned char *pNetMask, *pBroad;
+		  memcpy (&addr, &buf[len].iiAddress, sizeof (struct sockaddr_in));
+		  snprintf (message, sizeof (message), "%s", inet_ntoa(addr.sin_addr));
+		  dk_set_push (&set, box_string (message));
+		}
+	    }
+	}
+    }
+#endif
+  closesocket(sockfd);
+  return (caddr_t *) list_to_array (dk_set_nreverse (set));
+}
+
 int
 http_init_part_one ()
 {
@@ -8332,6 +8483,7 @@ http_init_part_one ()
 
   bif_define_typed ("tcpip_gethostbyname", bif_tcpip_gethostbyname, &bt_varchar);
   bif_define_typed ("tcpip_gethostbyaddr", bif_tcpip_gethostbyaddr, &bt_varchar);
+  bif_define_typed ("tcpip_local_interfaces", bif_tcpip_local_interfaces, &bt_any);
 
   bif_define ("http_full_request", bif_http_full_request);
   bif_define ("http_get_string_output", bif_http_get_string_output);
@@ -8350,6 +8502,7 @@ http_init_part_one ()
 #ifdef VIRTUAL_DIR
   http_map = id_str_hash_create (101);
   http_listeners = id_str_hash_create (101);
+  http_failed_listeners = id_str_hash_create (101);
   http_listeners_mutex = mutex_allocate ();
   mutex_option (http_listeners_mutex, "http_listeners_mutex", NULL, NULL);
 #endif
@@ -8416,6 +8569,9 @@ http_init_part_two ()
   if (!sch_proc_def (wi_inst.wi_schema, ws_def_2_name))
     ddl_std_proc (ws_def_2, 1);
   /* another license check */
+
+  if (!local_interfaces)
+    local_interfaces = box_tpcip_get_interfaces ();
 
   if (!localhost_names)
     localhost_names = box_tcpip_localhost_names ();
