@@ -1,0 +1,47 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2006 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+?>
+<HTML xmlns="http://www.w3.org/1999/xhtml">
+<HEAD><TITLE>RN_S_1</TITLE>
+ <META http-equiv=Content-Type content="text/html; charset=windows-1252">
+</HEAD>
+<BODY>
+<H1>RN_S_1 - An RDF Query Demo</H1>
+<P>Example queries </P>
+<HR>
+
+<FORM action=res.vsp>
+<P>CONSTRUCT - return a graph</P>
+<P>
+   <TEXTAREA name=query rows=5 cols=70>
+	sparql select * where {graph ?g { ?s ?p ?o }} limit 10
+   </TEXTAREA>
+<BR>
+<INPUT type=submit name="http" value="Get Results">
+<INPUT type=submit name="save" value="Save Results">
+</P></FORM>
+<HR>
+</BODY>
+</HTML>
