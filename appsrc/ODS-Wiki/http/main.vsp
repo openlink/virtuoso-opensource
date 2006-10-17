@@ -29,6 +29,17 @@
   declare _sid, _realm, _user varchar;
   declare cookie_vec any;
   cookie_vec := DB.DBA.vspx_get_cookie_vec(lines);
+
+  if ({?'sid'} is not null and {?'sid'} <> '')
+    {
+       http_header (http_header_get() || sprintf ('Set-Cookie: sid=%s; path=/\r\n', {?'sid'}));
+       http_request_status ('HTTP/1.1 302 Found');
+       http_header (http_header_get() || sprintf('Location: %s\r\n', http_path()));
+       return;
+    }
+    
+
+
   _sid := coalesce ( coalesce (get_keyword('sid', cookie_vec), {?'sid'}), '');
   if (_sid <> '')
     params := vector_concat (params, vector ('sid', _sid, 'realm', 'wa'));

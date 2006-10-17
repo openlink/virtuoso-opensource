@@ -796,7 +796,7 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 	
 
 	/* Tables */
-<INITIAL>^{WS}?/{THROW}		{ wlex_reset(~WLEX_RESET_LIST); BEGIN(TABLEHEADER); PRINT("\n<TABLE class=\"wikitable\">"); }
+<INITIAL>^{WS}?/{THROW}		{ wlex_reset(~WLEX_RESET_LIST); BEGIN(TABLEHEADER);  STATE(wlex_in_any_text) = 1; PRINT("\n<TABLE class=\"wikitable\">"); }
 <TABLEHEADER>^{WS}?"|"/{WS}*"*"		{ PRINT("\n<TR><TH"); wlex_id_print (STATEPTR); PRINT (">"); }
 <TABLEHEADER>"|"{WS_NL}/({WS}?{TABLEROW})	{ PRINT("</TH></TR>"); BEGIN(TABLELINE); }
 <TABLEHEADER>"|"{WS_NL}/({WS}?{THROW})	{ PRINT("</TH></TR>"); }
@@ -807,7 +807,7 @@ MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 <TABLEHEADER>.				{ PRINT(yytext); }
 
 
-<INITIAL>^{WS}?/{TABLEROW}		{ wlex_reset(~WLEX_RESET_LIST); BEGIN(TABLELINE); PRINT("\n<TABLE class=\"wikitable\">"); }
+<INITIAL>^{WS}?/{TABLEROW}		{ wlex_reset(~WLEX_RESET_LIST); BEGIN(TABLELINE); STATE(wlex_in_any_text) = 1; PRINT("\n<TABLE class=\"wikitable\">"); }
 <TABLELINE>^{WS}?"|"/"  "		{ PRINT("\n<TR><TD ALIGN=\"center\">"); }
 <TABLELINE>^{WS}?"|"			{ PRINT("\n<TR><TD>"); }
 <TABLELINE>"|"{WS_NL}/({WS}?{TABLEROW})	{ PRINT("</TD></TR>"); }

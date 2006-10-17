@@ -170,8 +170,8 @@
   <xsl:param name="realm"/>
   <xsl:param name="ti_cluster_name"/>
   <xsl:param name="ti_local_name"/>
-  <input type="hidden" name="sid" value="{$sid}"/>
-  <input type="hidden" name="realm" value="{$realm}"/>
+  <!-- <input type="hidden" name="sid" value="{$sid}"/>
+  <input type="hidden" name="realm" value="{$realm}"/> -->
 </xsl:template>
 <xsl:template name="e-mail">
   <xsl:param name="Name"/>

@@ -481,7 +481,7 @@ create method wa_addition_instance_urls (in _lpath varchar) for wa_wikiv
       WV.WIKI.SETCLUSTERPARAM (self.cluster_id, 'home', 'http://' || _vhost || WV.WIKI.CANONICAL_PATH(_lpath || '/main', 0));
       update DB.DBA.WA_MEMBER set WAM_HOME_PAGE = self.wa_home_url() 
       	where WAM_INST = self.wa_name
-	and WAM_USER = (select U_ID from DB.DBA.SYS_USERS where U_NAME = WV.WIKI.CLUSTERPARAM (self.cluster_id, 'owner', 'dav'));
+	and WAM_USER = (select U_ID from DB.DBA.SYS_USERS where U_NAME = WV.WIKI.CLUSTERPARAM (self.cluster_id, 'creator', 'dav'));
     }
   return vector ( 
       vector (
