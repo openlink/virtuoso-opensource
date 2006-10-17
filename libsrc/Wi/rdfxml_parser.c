@@ -735,6 +735,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   tf = tf_alloc ();
   tf->tf_qi = qi;
   tf->tf_graph_uri = graph_uri;
+  tf->tf_app_env = app_env;
   context.xp_tf = tf;
   QR_RESET_CTX
     {
