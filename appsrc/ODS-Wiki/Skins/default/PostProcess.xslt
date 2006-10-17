@@ -36,6 +36,7 @@
   <xsl:template match="/">
     <xsl:param name="ti_cluster_name"/>
     <xsl:param name="baseadjust"/>
+    <xsl:param name="ods-bar"/>
     <xsl:param name="sid"/>
     <xsl:param name="realm"/>
     <html>
@@ -54,37 +55,46 @@
       <body>
 	<div id="page">
 	  <div id="header">
-	    <xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute>
-	    <div class="login-area">
+            <xsl:copy-of select="$ods-bar"/>
+<!-- xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute-->
+<!--div class="login-area" style="display: none">
 	      <xsl:apply-templates select="//img[@id='login-image']"/>
 	      <xsl:apply-templates select="//a[@id='login-link']"/>
 	      <xsl:if test="not $sid">
 		User is not authenticated
 	      </xsl:if>
 	      <xsl:apply-templates select="//form[@id='login-form']"/>
-	    </div>
-	  </div>
-	  <ul class="menu">
-	    <li>
+</div-->
+	    <!--ul><li>
 	      <a href="{wv:registry_get ('wa_home_link', '/wa/')}/?sid={$sid}&realm={$realm}">
 		<xsl:value-of select="wv:registry_get('wa_home_title', 'OPS Home')"/>
 	      </a>
 	    </li>
 	    <li>
 	      <xsl:copy-of select="//a[@id='user-settings-link']"/>
-	    </li>
+</li></ul-->
+	  </div>
+	  <div id="main">
+	    <div id="wiki-path">You are here: <xsl:copy-of select="//div[@class='wiki-nav-container']"/></div>
+	    <div id="content">
+	      <xsl:copy-of select="//div[@id='content']/."/>
+              <xsl:if test="//span[@id='top-mod-by']">
+                <div id="node-footer">
+                  Modified by <xsl:copy-of select="//span[@id='top-mod-by']"/> at <xsl:copy-of select="//span[@id='top-mod-time']"/>
+                </div>
+              </xsl:if>
+	    </div> <!-- content -->
+	  </div> <!-- main -->
+	  <div id="sidebar">
+	    <div id="main-tab" class="portlet">
+              <ul class="sb-search">
 	    <li>
-	      <xsl:copy-of select="//a[@id='cluster-settings-link']"/>
+                  <xsl:copy-of select="//form[@id='search-form']"/>
 	    </li>
 	    <li>
 	      <xsl:copy-of select="//a[@id='advanced-search-link']"/>
 	    </li>
-	    <li>
-	      <xsl:copy-of select="//form[@id='search-form']"/>
-	    </li>
 	  </ul>
-	  <div id="sidebar">
-	    <div id="main-tab" class="portlet">
 	      <h3>View</h3>
 	      <ul>
 		<xsl:apply-templates select="//li[@id='wiki-nstab-main']"/>
@@ -95,6 +105,12 @@
 		  </xsl:element> 
 		</xsl:for-each>
 	      </ul>
+              <h3>Settings</h3>
+              <ul class="settings"> 
+                <li>
+                  <xsl:copy-of select="//a[@id='cluster-settings-link']"/>
+                </li>
+              </ul>
 	    </div>
 	    <div class="feed-container">
 	      <h3>Cluster changes</h3>
@@ -149,20 +165,9 @@
 		  </a>
 		</li>
 	      </ul>
-	    </div>
+	    </div> <!-- feed-container -->
 	    <!--xsl:apply-templates select="//div[@id='virtuoso-info']"/--> 
-	  </div>
-	  <div id="main">
-	    <div id="wiki-path">You are here: <xsl:copy-of select="//div[@class='wiki-nav-container']"/></div>
-	    <div id="content">
-	      <xsl:copy-of select="//div[@id='content']/."/>
-              <xsl:if test="//span[@id='top-mod-by']">
-	      <div id="node-footer">
-		Modified by <xsl:copy-of select="//span[@id='top-mod-by']"/> at <xsl:copy-of select="//span[@id='top-mod-time']"/>
-	      </div>
-              </xsl:if>
-	    </div>
-	  </div>
+	  </div> <!-- sidebar -->
 	  <div id="footer">
 	    <xsl:apply-templates select="//div[@id='wiki-toolbar-container']"/>
 	  </div>

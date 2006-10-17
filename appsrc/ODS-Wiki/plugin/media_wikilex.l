@@ -75,6 +75,7 @@ typedef struct wlex_state_s {
   int wlex_text_ofs;
   dk_session_t *wlex_out;
 #endif
+  int wlex_in_td;
   } wlex_state_t;
 
 #ifdef WLEX_TEST
@@ -98,9 +99,9 @@ wlex_state_t wlex_instance;
 #define WLEX_RESET_TABLE	0x04
 #define WLEX_RESET_LIST		0x08
 #define WLEX_RESET_PARA		0x10
-extern void wlex_reset(int what);
+static void wlex_reset(int what);
 
-extern int wlex_textbegin (void);
+static int wlex_textbegin (void);
 
 #define STARTPARA \
   do { \
@@ -136,11 +137,11 @@ extern int wlex_textbegin (void);
     PRINT(yytext); PRINT(" -->\n"); \
     } while(0);
 
-#define YY_FATAL_ERROR(msg) wikiyylexerror (msg)
+#define YY_FATAL_ERROR(msg) mediawikiyylexerror (msg)
 
-void wikiyylexerror (char * msg);
+static void mediawikiyylexerror (char * msg);
 
-void bm_alloc (bufmem_t *buf, size_t len)
+static void bm_alloc (bufmem_t *buf, size_t len)
 {
   if (len < buf->bm_length)
     return;
@@ -172,7 +173,44 @@ static char *strnonws (char *str)
   return NULL;
 }
 
-void wlex_font(int newfont)
+
+static struct xmlrepl_s {
+  char c;
+  const char* repl;
+} xmlrepl[] = {
+  {'\'', "&quot;"},
+  {'&', "&amp;"},
+  {'<', "&lt;"},
+  {'>', "&gt;"}
+};
+#define XMLREPL_SZ ((sizeof(xmlrepl)/sizeof(struct xmlrepl_s)))
+
+static void xml_encode (const char* str)
+{
+  const char* p = str;
+  int idx;
+  while (*p)
+    {
+      for(idx=0;idx<XMLREPL_SZ;++idx)
+	{
+	  if (xmlrepl[idx].c == p[0]) 
+	    { 
+	      PRINT(xmlrepl[idx].repl);
+	      break;
+	    }
+	 }
+      if (XMLREPL_SZ == idx)
+        session_buffered_write(STATE(wlex_out), p, 1);
+      ++p;
+    }
+}
+
+static void print_attr (char* text)
+{
+  session_buffered_write (STATE(wlex_out), (text), strlen(text)-1);
+}
+
+static void wlex_font(int newfont)
 {
   char *tags;
   if (newfont == STATE(wlex_font))
@@ -200,7 +238,7 @@ void wlex_font(int newfont)
   PRINTTEXT(tags);
 }
 
-void wlex_headerlevel(int newlevel)
+static void wlex_headerlevel(int newlevel)
 {
   wlex_reset (~WLEX_RESET_HEADER);
   if (newlevel >= MAXLISTDEPTH)
@@ -222,7 +260,7 @@ void wlex_headerlevel(int newlevel)
     }
 }
 
-void wlex_list (int newlevel, int newmode, char *text)
+static void wlex_list (int newlevel, int newmode, char *text)
 {
   int listmode;
   wlex_reset (~WLEX_RESET_LIST);
@@ -275,7 +313,7 @@ void wlex_list (int newlevel, int newmode, char *text)
     }
 }
 
-void wlex_para(int enable)
+static void wlex_para(int enable)
 {
   if (STATE(wlex_in_para) == enable)
     return;
@@ -288,7 +326,7 @@ void wlex_para(int enable)
   STATE(wlex_para_depressed) = 0;
 }
 
-void wlex_verbatim (int enable)
+static void wlex_verbatim (int enable)
 {
   if (enable)
     {
@@ -306,14 +344,14 @@ void wlex_verbatim (int enable)
     PRINT("<BR>");
 }
 
-void wlex_id_print (wlex_state_t * st)
+static void wlex_id_print (wlex_state_t * st)
 {
   char str[255];
   sprintf (str, " id=\"%d\"", st->wlex_id_num++);
   PRINT(str);
 }
 
-void wlex_reset(int what)
+static void wlex_reset(int what)
 {
   if ((what & WLEX_RESET_FONT) && (WLEX_FONT_DEFAULT != STATE(wlex_font)))
     wlex_font(WLEX_FONT_DEFAULT);
@@ -336,7 +374,7 @@ void wlex_reset(int what)
       STATE(wlex_in_table) );
 }
 
-int wlex_textbegin (void)
+static int wlex_textbegin (void)
 {
   if ((0 != STATE(wlex_headerlevel)) ||
     (0 != STATE(wlex_listlevel)) ||
@@ -350,7 +388,7 @@ int wlex_textbegin (void)
   return 1;
 }
 
-void wlex_ahref_2 (char *href, char *style, char *title, char* predicate)
+static void wlex_ahref_2 (char *href, char *style, char *title, char* predicate)
 {
   STARTPARA; PRINT("<A HREF=\""); PRINT(href); PRINT("\" ");
   if (predicate)
@@ -363,13 +401,13 @@ void wlex_ahref_2 (char *href, char *style, char *title, char* predicate)
   PRINT(title); PRINT ("</A>");
 }	
 
-void wlex_ahref (char *href, char *style, char *title)
+static void wlex_ahref (char *href, char *style, char *title)
 {
   wlex_ahref_2 (href, style, title, NULL);
 }
 
 
-char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
+static char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
 {
   char *src, *tgt;
   bufmem_t *buf = &(st->wikiwordbuf);
@@ -403,7 +441,7 @@ char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
   return buf->bm_memblock;
 }
 
-void wlex_split_forced_link (wlex_state_t *st, char *text, char *delim)
+static void wlex_split_forced_link (wlex_state_t *st, char *text, char *delim)
 {
   int offset = 1;
   bufmem_t *href = &(st->hrefbuf);
@@ -442,7 +480,7 @@ void wlex_split_forced_link (wlex_state_t *st, char *text, char *delim)
 }
 
 /* delim == NULL and delim_pred == NULL are not allowed */
-void wlex_split_forced_sem_link (wlex_state_t *st, char *text, char *delim_pred, char *delim)
+static void wlex_split_forced_sem_link (wlex_state_t *st, char *text, char *delim_pred, char *delim)
 {
   bufmem_t *href = &(st->hrefbuf);
   bufmem_t *title = &(st->titlebuf);
@@ -483,7 +521,7 @@ void wlex_split_forced_sem_link (wlex_state_t *st, char *text, char *delim_pred,
 }
 
 
-void wlex_forced_link (wlex_state_t *st, char *text, char *delim, int wordnorm, char *style)
+static void wlex_forced_link (wlex_state_t *st, char *text, char *delim, int wordnorm, char *style)
 {
    wlex_split_forced_link (st, text, delim);
    if (wordnorm)
@@ -492,13 +530,13 @@ void wlex_forced_link (wlex_state_t *st, char *text, char *delim, int wordnorm, 
      wlex_ahref (st->hrefbuf.bm_memblock, style, st->titlebuf.bm_memblock);
 }
 
-void wlex_forced_link_with_pred (wlex_state_t *st, char *text, char *delim_pred, char *delim, char *style)
+static void wlex_forced_link_with_pred (wlex_state_t *st, char *text, char *delim_pred, char *delim, char *style)
 {
   wlex_split_forced_sem_link (st, text, delim_pred, delim);
   wlex_ahref_2 (st->hrefbuf.bm_memblock, style, st->titlebuf.bm_memblock, st->predicatebuf.bm_memblock);
 }
 
-void wlex_div_with_pred (wlex_state_t *st, char *text, char *delim_pred, char *delim, char *style)
+static void wlex_div_with_pred (wlex_state_t *st, char *text, char *delim_pred, char *delim, char *style)
 {
   wlex_split_forced_sem_link (st, text, delim_pred, delim);
   PRINT("<SPAN PREDICATE=\"");
@@ -558,8 +596,8 @@ int strcount (char *line, char *symbols)
 }
 
 
-void
-wlex_mediawiki_list (char* line)
+static void
+mediawlex_wiki_list (char* line)
 {
   int cnt = strcount (line, "*#");
   /* assert (c > 0) */
@@ -567,6 +605,13 @@ wlex_mediawiki_list (char* line)
     wlex_list (cnt, WLEX_LIST_OL, NULL);
   else
     wlex_list (cnt, WLEX_LIST_UL, NULL);
+}
+
+static void 
+print_col(char* line)
+{
+  size_t sz = strlen(line);
+  NPRINT(line, sz ? sz - 1 : 0);
 }
 
 #ifndef WLEX_TEST
@@ -613,7 +658,7 @@ DEFTERM		([^ \t\r\n:]+)
 PROTOCOL	((("http")|("https")|("ftp")|("gopher")|("news")|("file")|("telnet"))"://")
 HOSTNAME	([A-Za-z](([A-Za-z0-9-]*[A-Za-z0-9])|([A-Za-z0-9]*)))
 DOMAINNAME	({HOSTNAME}(("."{HOSTNAME})*))
-LOCALRES	([A-Za-z0-9_.:|/?+%&-=]+)
+LOCALRES	([A-Za-z0-9_.:|/?+%&-=@]+)
 FRAG		("#"{LOCALRES})
 USERNAME	([A-Za-z]([A-Za-z0-9_-]*))
 ABSURI		({PROTOCOL}(({USERNAME}(("!"{LOCALRES})?)"@")?){DOMAINNAME}(((":"{LOCALRES})|("/"(({LOCALRES}?))))({FRAG}?))?)
@@ -625,7 +670,7 @@ MAILTO		("mailto:"{USERNAME}"@"{DOMAINNAME}(("?"{LOCALRES})?))
 TAGNAME		((([A-Z][A-Z0-9]*)|([a-z][a-z0-9]*))((":"{USERNAME})?))
 MACRONAME	([A-Z]+(":"[A-Z]+)?)
 MACROARGNAME	([a-z]+)
-MACROARGVALUE	("\""[A-Za-z0-9_.:;|\\/?+%&'` \t-\[\]]*"\"")
+MACROARGVALUE	("\""[A-Za-z0-9_.:;|\\/?+%&'` \t-\[\]$^]*"\"")
 MACROARG	({MACROARGNAME}"="{MACROARGVALUE})
 MACROARGS	({WS}?({MACROARG}({WS}{MACROARG})*{WS}?)?)
 CELLFRAG	([^|\r\n]*)
@@ -641,8 +686,19 @@ MFONTMOD	("\*"|"=="|"__")
 MFONTMODNEXT	([\*=_])
 MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 LISTMARK    ("*"|"#")
+LINE		([^\n\r]*){WS_NL}
+HTMLATTRNAME	([A-Za-z0-9_]+)
+HTMLATTRVALUE	([A-Za-z0-9_.:;\\/?+%&'`\[\]$^]*)
+HTMLATTRVALUE2	("\""[A-Za-z0-9_\.\:\;\|\\/?\+\%\&\'\` \t\-\[\]\$\^]*"\"")
+HTMLATTR	({HTMLATTRNAME}"="({HTMLATTRVALUE2}|{HTMLATTRVALUE}))
+HTMLATTRS	({WS}?({HTMLATTR}({WS}{HTMLATTR})*{WS}?)?)
+TABLETD		([^\n\r|]+)
+BAREND		([\|\n\r])
+NOTBAR		([^\|])
+SINGLEBAR	("|"[^\|])
+TABLECOLATTR ({WS}*{HTMLATTRS}{WS}*)
+TABLECOL    ({TABLETD})
 %%
-
 	/* Verbatim */
 <INITIAL>^({WS}?)"<verbatim>"{WS_NL}	{ BEGIN(VERBATIM); wlex_verbatim(1); }
 <VERBATIM>^({WS}?)"</verbatim>"{WS_NL}	{ BEGIN(INITIAL); wlex_verbatim(0); }
@@ -679,31 +735,31 @@ LISTMARK    ("*"|"#")
 <INITIAL,TABLELINE>^({WS}?)"</noautolink>"{WS_NL}		{ STATE(wlex_noautolink) = 0; }
 
 	/* Other links. Their priorities are higher than anything else except <verbatim> */
-<INITIAL,TABLELINE>{MAILTO}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "mailto", yytext+7); else COPYTEXT; }
-<INITIAL,TABLELINE>{EMAIL}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "mailto", yytext); else COPYTEXT; }
-<INITIAL,TABLELINE>{ABSURI}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "absuri", yytext); else COPYTEXT; }
-<INITIAL,TABLELINE>"[[["{LINKTITLE}"]]]"		{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword");  }
-<INITIAL,TABLELINE>"[["{PREDICATE}"::"{FORCEDWIKILINK}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", NULL, "forcedwikiword");  }
-<INITIAL,TABLELINE>"[["{MAILTO}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "mailto"); }
-<INITIAL,TABLELINE>"[["{MAILTO}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "mailto");  }
-<INITIAL,TABLELINE>"[["{WIKIWORD}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "wikiword"); }
-<INITIAL,TABLELINE>"[["{WIKIWORD}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "wikiword");  }
-<INITIAL,TABLELINE>"[["{QWIKIWORD}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "qwikiword");  }
-<INITIAL,TABLELINE>"[["{QWIKIWORD}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "qwikiword");  }
-<INITIAL,TABLELINE>"[["{INTERWIKI}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "interwiki");  }
-<INITIAL,TABLELINE>"[["{INTERWIKI}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "interwiki");  }
-<INITIAL,TABLELINE>"[["{DUMMYURI}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
-<INITIAL,TABLELINE>"[["{DUMMYURI}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "absuri"); }
-<INITIAL,TABLELINE>"[["{FRAG}" "{LINKTITLE}"]]"		{ wlex_forced_link (STATEPTR, yytext, " ", 0, "anchorhere"); }
-<INITIAL,TABLELINE>"[["{FRAG}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "anchorhere");  }
-<INITIAL,TABLELINE>"[["{LINKTITLE}"]]"			{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword"); }
-<INITIAL,TABLELINE>"[["{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 1, "forcedwikiword");  }
-<INITIAL,TABLELINE>"[["{LOCALRES}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "reluri");  }
-<INITIAL,TABLELINE>"[["{PREDICATE}"::"{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", "|", "forcedwikiword");  }
-<INITIAL,TABLELINE>"[["{PREDICATE}":="{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_div_with_pred (STATEPTR, yytext, ":=", "|", "semanticvalue");  }
-<INITIAL,TABLELINE>"["{ABSURI}"|"{LINKTITLE}"]"		{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
-<INITIAL,TABLELINE>"["{ABSURI}{WS}{LINKTITLE}"]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
-<INITIAL,TABLELINE>"[["{LINKTITLE}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 1, "forcedwikiword"); }
+<INITIAL,TABLELINE,TABLEHEADER>{MAILTO}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "mailto", yytext+7); else COPYTEXT; }
+<INITIAL,TABLELINE,TABLEHEADER>{EMAIL}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "mailto", yytext); else COPYTEXT; }
+<INITIAL,TABLELINE,TABLEHEADER>{ABSURI}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "absuri", yytext); else COPYTEXT; }
+<INITIAL,TABLELINE,TABLEHEADER>"[[["{LINKTITLE}"]]]"		{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{PREDICATE}"::"{FORCEDWIKILINK}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", NULL, "forcedwikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{MAILTO}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "mailto"); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{MAILTO}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "mailto");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{WIKIWORD}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "wikiword"); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{WIKIWORD}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "wikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{QWIKIWORD}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "qwikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{QWIKIWORD}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "qwikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{INTERWIKI}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "interwiki");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{INTERWIKI}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "interwiki");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{DUMMYURI}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{DUMMYURI}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "absuri"); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{FRAG}" "{LINKTITLE}"]]"		{ wlex_forced_link (STATEPTR, yytext, " ", 0, "anchorhere"); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{FRAG}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "anchorhere");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{LINKTITLE}"]]"			{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword"); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 1, "forcedwikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{LOCALRES}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "reluri");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{PREDICATE}"::"{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", "|", "forcedwikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{PREDICATE}":="{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_div_with_pred (STATEPTR, yytext, ":=", "|", "semanticvalue");  }
+<INITIAL,TABLELINE,TABLEHEADER>"["{ABSURI}"|"{LINKTITLE}"]"		{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
+<INITIAL,TABLELINE,TABLEHEADER>"["{ABSURI}{WS}{LINKTITLE}"]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{LINKTITLE}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 1, "forcedwikiword"); }
 
 
 	/* HTML tags */
@@ -750,7 +806,7 @@ LISTMARK    ("*"|"#")
 <INITIAL,TABLELINE>"!!"		{ if (STATE(wlex_headerlevel)) PRINT("<NOTOC />"); else PRINT(yytext); }
 
 	/* Lists */
-<INITIAL,TABLELINE>^{LISTMARK}+			{ BEGIN(INITIAL); wlex_mediawiki_list (yytext); }
+<INITIAL,TABLELINE>^{LISTMARK}+			{ BEGIN(INITIAL); mediawlex_wiki_list (yytext); }
 <INITIAL,TABLELINE>^("*:"){WS}+			{ PRINT (yytext + 2); } 
 
 
@@ -795,28 +851,33 @@ LISTMARK    ("*"|"#")
     }
 
 	/* Tables */
-<INITIAL>^{WS}?/{THROW}		{ wlex_reset(~WLEX_RESET_LIST); BEGIN(TABLEHEADER); PRINT("\n<TABLE class=\"wikitable\">"); }
-<TABLEHEADER>^{WS}?"|"/{WS}*"*"		{ PRINT("\n<TR><TH"); wlex_id_print (STATEPTR); PRINT (">"); }
-<TABLEHEADER>"|"{WS_NL}/({WS}?{TABLEROW})	{ PRINT("</TH></TR>"); BEGIN(TABLELINE); }
-<TABLEHEADER>"|"{WS_NL}/({WS}?{THROW})	{ PRINT("</TH></TR>"); }
-<TABLEHEADER>"|"/{WS_NL}		{ PRINT("</TH></TR>\n</TABLE>\n"); BEGIN(INITIAL); wlex_reset(~WLEX_RESET_LIST); }
-<TABLEHEADER>"|"			{ PRINT("</TH><TH"); wlex_id_print (STATEPTR); PRINT (">"); }
-<TABLEHEADER>"<"			{ PRINT("&lt;"); }
-<TABLEHEADER>"*"			{ ; }
+<INITIAL>^"{|"{LINE}					{ 
+										  wlex_reset(~WLEX_RESET_LIST); 
+										  BEGIN(TABLEHEADER);  
+										  STATE(wlex_in_any_text) = 1; 
+										  PRINT("\n<TABLE ");
+										  PRINT(yytext+2);
+										  PRINT(" >\n<TR>");
+										}
+<TABLEHEADER>^"|+"{LINE}				{ PRINT(yytext+2); }
+<TABLEHEADER>^"|-"{WS}*{S_NL}			{ PRINT("</TR><TR>"); }
+<TABLEHEADER>^"!"						{ PRINT("\n<TH"); wlex_id_print (STATEPTR); PRINT (">"); }
+<TABLEHEADER>^{WS}?/"|"						{ wlex_reset(~WLEX_RESET_LIST); BEGIN(TABLELINE); }
+<TABLEHEADER>{WS_NL}					{ PRINT(yytext); PRINT("</TH>"); }
+<TABLEHEADER>^"|}"						{ PRINT("</TR></table>"); BEGIN(INITIAL); }
 <TABLEHEADER>.				{ PRINT(yytext); }
 
-
-<INITIAL>^{WS}?/{TABLEROW}		{ wlex_reset(~WLEX_RESET_LIST); BEGIN(TABLELINE); PRINT("\n<TABLE class=\"wikitable\">"); }
-<TABLELINE>^{WS}?"|"/"  "		{ PRINT("\n<TR><TD ALIGN=\"center\">"); }
-<TABLELINE>^{WS}?"|"			{ PRINT("\n<TR><TD>"); }
-<TABLELINE>"|"{WS_NL}/({WS}?{TABLEROW})	{ PRINT("</TD></TR>"); }
-<TABLELINE>"|"/{WS_NL}			{ PRINT("</TD></TR>\n</TABLE>\n"); BEGIN(INITIAL); wlex_reset(~WLEX_RESET_LIST); }
-<TABLELINE>"|"/"  "			{ PRINT("</TD><TD ALIGN=\"center\">"); }
-<TABLELINE>"|"/"|"			{ PRINT("</TD><TD STYLE=\"colspanstub\">"); }
-<TABLELINE>"|"				{ PRINT("</TD><TD>"); }
-<TABLELINE>"|"				{ PRINT("</TD><TD>"); }
-<TABLELINE>"\\"{WS_NL}			{ ; }
+<INITIAL>^"|"{WS}"||"					{ wlex_reset(~WLEX_RESET_LIST); BEGIN(TABLELINE); PRINT("\n<TABLE class=\"wikitable\"><TR>"); }
+<TABLELINE>^"|}"{WS}*{WS_NL}			{ PRINT("</TR></table>"); BEGIN(INITIAL); }
+<TABLELINE>"|"/"|"{LINE}				{ PRINT("</TD>"); }
+<TABLELINE>"|"/{TABLECOLATTR}{SINGLEBAR} {   PRINT("<TD "); 
+										     STATE(wlex_in_any_text) = 1; 
+											 STATE(wlex_in_td) = 1; 
+										}
+<TABLELINE>"|"/{TABLECOL}{BAREND}		{ if (!STATE(wlex_in_td)) PRINT("<TD>"); else PRINT(">"); print_col(yytext+1); STATE(wlex_in_td) = 0; }
+<TABLELINE>{WS_NL}						{ PRINT("</TD>"); }
 <TABLELINE>"<"				{ PRINT("&lt;"); }
+<TABLELINE>^"|-"{WS}*{S_NL}				{ PRINT("</TR><TR>"); }
 <TABLELINE>.				{ PRINT(yytext); }
 
 
@@ -837,7 +898,7 @@ LISTMARK    ("*"|"#")
 /*<INITIAL>.([^ \t\r\n\[\]#*_=<A-Z1-9-]*)	{ COPYTEXT; }*/
 
 int
-wikiyywrap (void)
+mediawikiyywrap (void)
 {
   return (1);
 }
@@ -847,11 +908,11 @@ int main(int argc, char *argv[])
 {
   if (argc > 1)
     yyin = fopen (argv[1], "r");
-  wikiyylex();
+  mediawikiyylex();
   return 0;
 }
 #else
-void wikiyylex_prepare (char *text, dk_session_t *out)
+void mediawikiyylex_prepare (char *text, dk_session_t *out)
 {
   memset (&wlex_instance, 0, sizeof (wlex_instance));
   STATE (wlex_text) = text;
@@ -860,7 +921,7 @@ void wikiyylex_prepare (char *text, dk_session_t *out)
   BEGIN(INITIAL);
 }
 
-void wikiyylexerror (char * msg)
+void mediawikiyylexerror (char * msg)
 {
   du_thread_t * self = THREAD_CURRENT_THREAD;
   caddr_t * err = dk_alloc_box_zero (3 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);

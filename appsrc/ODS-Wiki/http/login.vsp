@@ -48,7 +48,10 @@ if ({?'user'} is not null and {?'err'} is null)
 		  serialize ( vector ( 'vspx_user', {?'user'} ) ),
 		  now());
 	http_request_status ('HTTP/1.1 302 Found');
+	if (strchr (page, '?') is null) 
 	http_header('Location: ../main/' || page || '?realm=wa&sid=' || sid || '\r\n');
+	else
+		http_header('Location: ../main/' || page || '&realm=wa&sid=' || sid || '\r\n');
       }
     else 
       {

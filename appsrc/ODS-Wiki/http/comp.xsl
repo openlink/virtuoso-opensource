@@ -23,8 +23,14 @@
  -  
 -->
 
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+		version="1.0" 
+		xmlns:v="http://www.openlinksw.com/vspx/" 
+		xmlns:ods="http://www.openlinksw.com/vspx/ods/"
+		xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <xsl:include href="../../wa/comp/ods_bar.xsl"/>
   <xsl:template match="vm:tab">
+    <v:form type="simple" name="tab_form" method="POST">
     <ul class="menu">
       <li>
 	<vm:item name="Preferences" control="settings.vspx"/>
@@ -32,7 +38,11 @@
       <li>
 	<vm:item name="Upstreams" control="upstream.vspx"/>
       </li>
+        <li>
+          <vm:item name="Security" control="security.vspx"/>
+        </li>
     </ul>
+    </v:form>
   </xsl:template>
   <xsl:template match="vm:item">
     <v:button name="{@name}_button" value="{@name}" action="simple" style="url">
@@ -40,6 +50,25 @@
 	self.vc_redirect(sprintf ('<xsl:value-of select="@control"/>?cluster=%U', (select CLUSTERNAME from WV..CLUSTERS where self.cluster = CLUSTERID)));
       </v:on-post>
     </v:button>
+  </xsl:template>
+      
+  <xsl:template match="vm:security-syscalls">
+    <vm:setting-section name="Content">
+      <vm:setting-parameter name="Inline macros">
+	<v:button name="syscalls_toggle" action="simple"
+		  value="--case when WV.WIKI.CLUSTERPARAM(self.cluster_name, 'syscalls', 2) = 1 then 'Turn Off' else 'Turn On' end">
+	  <v:on-post>
+	    <![CDATA[
+		     if (WV.WIKI.CLUSTERPARAM(self.cluster_name, 'creator', '--') = self.vspx_user)
+		       {
+		         WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'syscalls', 3 - WV.WIKI.CLUSTERPARAM(self.cluster_name, 'syscalls', 2));
+			 self.vc_data_bind(e);
+		       }
+	    ]]>
+	  </v:on-post>
+	</v:button>
+      </vm:setting-parameter>
+    </vm:setting-section>
   </xsl:template>
       
   <xsl:template match="vm:setting-section">
@@ -59,23 +88,27 @@
   <xsl:template match="vm:setting-parameter">
     <tr>
       <th width="50%"><xsl:value-of select="@name"/></th>
-      <td>
+      <td align="right">
 	<xsl:apply-templates/>
       </td>
     </tr>
   </xsl:template>
   <xsl:template match="vm:page">
+
     <v:variable name="cluster" type="int"/>
+    <v:variable name="cluster_name" type="varchar" default="'Main'" param-name="cluster"/>
     <v:on-init>
       <![CDATA[
-	       self.sid := get_keyword('sid', params);
-	       self.realm := get_keyword('realm', params, 'wiki');
+         declare cookie_vec any;
+         cookie_vec := DB.DBA.vsp_ua_get_cookie_vec(lines);
+         self.sid := coalesce ( coalesce (get_keyword('sid', cookie_vec), {?'sid'}), '');
+         self.realm := 'wa';
 	       set isolation='committed';
 	       if (get_keyword ('cluster', params) is not null)
 	         self.cluster := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME = get_keyword ('cluster', params));
       ]]>
     </v:on-init>
-    <v:variable name="vspx_user" type="varchar" default="'WikiGuest'"/>
+    <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
     <html>
       <head>
 	<title>oWiki | <xsl:value-of select="@title"/></title>
@@ -186,7 +219,7 @@
 	      <v:button name="add" action="submit" value="Add/Update Upstream">
 		<v:on-post>
 		  <![CDATA[
-			   dbg_obj_print (self.defval);
+--			   dbg_obj_print (self.defval);
 --			   dbg_obj_print (self.upstream_name.ufl_value);
 --			   dbg_obj_print (self.upstream_url.ufl_value);
 --			   dbg_obj_print (self.upstream_user.ufl_value);
@@ -202,7 +235,7 @@
 				self.upstream_url.ufl_value,
 				self.upstream_user.ufl_value,
 				self.upstream_password.ufl_value,
-				self.upstream_cluster.ufl_value);
+				null);
 			   self.message_text := 'upstream added';
 		       }
 		     else
@@ -212,7 +245,7 @@
 			       UP_URI = self.upstream_url.ufl_value,
 			       UP_USER = self.upstream_user.ufl_value,
 			       UP_PASSWD = self.upstream_password.ufl_value,
-			       UP_RCLUSTER = self.upstream_cluster.ufl_value
+			       UP_RCLUSTER = null
 			   where UP_ID = upid;
 			   self.message_text := 'upstream updated';
 			}
@@ -228,13 +261,15 @@
   </xsl:template>
   
   <xsl:template match="vm:main-topic">
+    <v:form name="main_topic_form" type="simple" method="POST">
     <v:button name="main_topic_redirect_btn" value="Back to the topic" xhtml_title="Cancel" xhtml_alt="Cancel" style="url" action="simple">
       <v:on-post>
 	<![CDATA[
-		 self.vc_redirect(sprintf('../main/%U/', (select CLUSTERNAME from WV..CLUSTERS where CLUSTERID = self.cluster)));
+            self.vc_redirect(sprintf('../main/%U/', self.cluster_name));
 		 return;
 	]]></v:on-post>
     </v:button>
+    </v:form>
   </xsl:template>
 	<xsl:template match="vm:wiki-login">
 		<v:template name="login" type="simple">
@@ -243,7 +278,7 @@
                  			VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
         ]]></v:before-data-bind>
 			<v:form name="login_form" method="POST" type="simple">
-				<div class="login">
+				<div class="login" style="display: none">
 					<?vsp if (not exists (select * from
                  			VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm))                 
             {
@@ -277,7 +312,7 @@
 						    where vs_sid = self.sid 
 						    and vs_realm = self.realm;
 						  http_request_status ('HTTP/1.1 302 Found');
-                                                  http_header (sprintf ('Location: ../main/%U/\r\n', self.cluster));
+                                                  http_header (sprintf ('Location: ../main/%U/\r\n', self.cluster_name));
 						]]></v:on-post>
 					</v:button>
 					<?vsp }
@@ -286,6 +321,32 @@
 			</v:form>
 		</v:template>
 	</xsl:template>
+  <xsl:template match="vm:wiki-emb-login">
+    <v:template name="login" type="simple">
+      <v:before-data-bind><![CDATA[
+        self.vspx_user := coalesce((select vs_uid from
+	VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
+      ]]></v:before-data-bind>
+      <div class="login">
+	<?vsp if (not exists (select * from
+	  VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm))                 
+	  {
+	?>
+	<img src="images/lock_16.png" alt="User is not authenticated" title="User is not authenticated"/>
+	  User is not authenticated
+	<?vsp 
+	    }
+	  else
+	    {
+	?>
+	<img src="images/user_16.png" alt="User logged in" title="User logged in"/>
+	<v:label name="user_home" value="--self.vspx_user"/>
+	<?vsp 
+	    }
+	?>
+      </div>
+    </v:template>
+  </xsl:template>
 	<xsl:template match="vm:virtuoso-info">
           <div id="virtuoso-info">
             <ul class="left_nav">
@@ -305,7 +366,7 @@
           <body>             
            <div id="page">
             <div class="login-area">
-              <vm:wiki-login/>
+              <vm:wiki-emb-login/>
             </div>
             <xsl:apply-templates/>
           </div>
@@ -313,6 +374,7 @@
         </xsl:template>
         <xsl:template match="vm:body">
           <body>            
+          <ods:ods-bar app_type='oWiki'/>
            <div id="page">
             <vm:logo/>
             <div class="login-area">
@@ -352,5 +414,9 @@
           </v:on-post>
         </v:button>
       </xsl:template>
-
+      <xsl:template match="vm:close-popup-link">
+	<div style="padding: 0 0 0.5em 0;">
+	  <a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="images/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+	</div>
+      </xsl:template>
 </xsl:stylesheet>

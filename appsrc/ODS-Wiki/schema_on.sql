@@ -535,6 +535,10 @@ wiki_exec_no_error (
 'alter table WV.WIKI.COMMENT add C_REFS varchar'
 )
 ;
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_HOME varchar'
+)
+;
 
 wiki_exec_no_error('
 create table WV.WIKI.EDIT_TEMP_STORAGE (

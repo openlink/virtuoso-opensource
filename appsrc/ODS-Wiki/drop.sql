@@ -86,9 +86,9 @@ WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_MEMBERSHIP')
 ;	  
 WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_SYS_USERS')
 ;	  
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_INSTANCE_U')
+WV.WIKI.SILENT_EXEC ('drop trigger DB.DBA.WIKI_WA_INSTANCE_U')
 ;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_INSTANCE_D')
+WV.WIKI.SILENT_EXEC ('drop trigger DB.DBA.WIKI_WA_INSTANCE_D')
 ;
 WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextInsertPerms"')
 ;
@@ -132,6 +132,15 @@ WV.WIKI.SILENT_EXEC ('drop trigger WV.Wiki.Wiki_ClusterDeleteContent')
 WV.WIKI.SILENT_EXEC ('drop trigger WV.DBA.WIKI_UPSTREAM_D')
 ;
 WV.WIKI.SILENT_EXEC ('drop trigger WV.Wiki.WIKI_UPSTREAM_D')
+;
+
+WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_TopicTextAttachment_D')
+;
+WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextAttachment_D"')
+;
+WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_TopicTextAttachment')
+;
+WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextAttachment"')
 ;
 
 WV.WIKI.SILENT_EXEC ('delete from DB.DBA.SYS_XPF_EXTENSIONS where XPE_PNAME like ''WV.WIKI.%'' ')
@@ -183,6 +192,10 @@ WV.WIKI.SILENT_EXEC ('drop table "WV"."Wiki"."Topic"')
 ;
 WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.TOPIC')
 ;
+WV.WIKI.SILENT_EXEC ('drop table WV..UPSTREAM_ENTRY')
+;
+WV.WIKI.SILENT_EXEC ('drop table WV..UPSTREAM')
+;
 WV.WIKI.SILENT_EXEC ('drop table "WV"."Wiki"."Cluster"')
 ;
 WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.CLUSTERS')
@@ -233,11 +246,6 @@ WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.Lock')
 WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.LOCK')
 ;
 
-WV.WIKI.SILENT_EXEC ('drop table WV..UPSTREAM_ENTRY')
-;
-
-WV.WIKI.SILENT_EXEC ('drop table WV..UPSTREAM')
-;
 
 
 
@@ -251,6 +259,10 @@ WV.WIKI.SILENT_EXEC ('drop type wa_wikiv');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiAdmin\')')
 ;
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiUser\')')
+;
+WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.WA_SEARCH_DAV_OR_WIKI_GET_EXCERPT_HTM')
+;
+WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.WA_SEARCH_WIKI_GET_EXCERPT_HTML')
 ;
 DB.DBA.VHOST_REMOVE(lpath=>'/wiki')
 ;

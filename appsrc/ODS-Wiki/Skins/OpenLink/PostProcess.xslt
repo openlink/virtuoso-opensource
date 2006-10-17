@@ -54,8 +54,9 @@
  <body>
 	<div id="page">
 	  <div id="header">
-	    <xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute>
-  <div class="login-area">
+            <xsl:copy-of select="$ods-bar"/>
+	    <!--xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute-->
+	    <div class="login-area" style="display: none">
     <xsl:apply-templates select="//img[@id='login-image']"/>
     <xsl:apply-templates select="//a[@id='login-link']"/>
     <xsl:if test="not $sid">

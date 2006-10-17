@@ -177,7 +177,7 @@ ins:
 	<body>' || serialize_to_UTF8_xml (_topic.ti_get_entity(null, 0)) || '</body>
    </html>';
 	  http_rewrite ();
-	  http_header ('Content-Type: text/xml\r\n');
+	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 	  http_value (WV.WIKI.VSPXSLT ('html2docbook.xsl', xtree_doc (_xhtml), _ext_params));
 
 	  return 0;
@@ -185,14 +185,32 @@ ins:
   declare _skin varchar;
   _skin := coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), 'default');
   http_rewrite ();
-  http_header ('Content-Type: text/html\r\n');
+  if (get_keyword  ('skin2', params) is not null)
+    ODS.BAR._EXEC('oWiki',vector_concat (params, vector ('explicit-host', 1)), lines);
+  else
+    ODS.BAR._EXEC('oWiki',params, lines);
+  declare _ods_bar any;
+  _ods_bar := http_get_string_output();
+  _ods_bar := xtree_doc(_ods_bar, 2);
+  _ext_params := vector_concat (_ext_params, vector ('ods-bar', _ods_bar));
+  http_rewrite ();
+  http_header ('Content-Type: text/html; charset=UTF-8\r\n');
 --  dbg_obj_princ ('> ', _base_adjust); 
   _xhtml :=
     WV.WIKI.VSPXSLT ( 'PostProcess.xslt', _xhtml,
-      _ext_params,
+      vector_concat (_ext_params),
       _skin );
-  http_header ('Content-Type: text/html\r\n');
+  http_header ('Content-Type: text/html; charset=UTF-8\r\n');
+  if (WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'email-obfuscate') is not null)
   http_value (_xhtml);
+  else
+    {
+       declare _content any;
+       _content := string_output ();
+       http_value (_xhtml, 0, _content);
+       _content := string_output_string (_content);
+       http (_content);
+    }
   return 0;
 }
 ;
@@ -215,7 +233,7 @@ create function WV.WIKI.VSPTOPICVIEW_TEMP (
   http_rewrite();
   if (cmd = 'temp-text')
     {
-      http_header ('Content-Type: text/plain\r\n');
+      http_header ('Content-Type: text/plain; charset=UTF-8\r\n');
       http_value (_text);
     }
   else if (cmd = 'temp-html')
@@ -223,7 +241,7 @@ create function WV.WIKI.VSPTOPICVIEW_TEMP (
       declare _xhtml any;
       _topic.ti_text := _text;
 
-      http_header ('Content-Type: text/html\r\n');
+      http_header ('Content-Type: text/html; charset=UTF-8\r\n');
       declare _content any;
       _xhtml := XMLELEMENT ('html', 
 		 XMLELEMENT ('body'));
@@ -265,7 +283,7 @@ create function WV.WIKI.VSPTOPICVIEW_PLAIN (
 		XMLELEMENT ('body', 
 		  xpath_eval ('//div[@class="topic-text"]', WV.WIKI.VSPXSLT ('VspTopicView.xslt', _topic.ti_get_entity (null,0),
 			      _ext_params))));
-  http_header ('Content-Type: text/html\r\n');
+  http_header ('Content-Type: text/html; charset=UTF-8\r\n');
   http_value (_xhtml);
 }
 ;
@@ -1154,6 +1172,8 @@ create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out 
   declare cluster_id int;
   declare full_path, pattern varchar;
   full_path := _host || '/' || WV.WIKI.STRJOIN ('/', path);
+  _base_adjust := 'main/';
+
 
 whenever not found goto nf;
   select DP_CLUSTER, DP_PATTERN into cluster_id, pattern  from WV.WIKI.DOMAIN_PATTERN_1 where domain like DP_PATTERN and _host like DP_HOST;
@@ -1617,6 +1637,7 @@ create function WV.WIKI.RSSMAKECONTENT (in cluster_name varchar,
 
 create function WV.WIKI.SIDURLPART (in sid varchar, in realm varchar)
 {
+  return '';
   if (sid is not null)
     return sprintf ('sid=%s&realm=%s', sid, realm);
   else
@@ -2503,7 +2524,8 @@ create function WV.WIKI.USER_DETAILS (in uid int, in field_name varchar)
 {
    return get_keyword (field_name, (select 
 	vector ('name', U_NAME, 
-		'e-mail', U_E_MAIL) from DB.DBA.SYS_USERS 
+		'e-mail', U_E_MAIL,
+		'homepage', sioc..get_graph() || '/' || U_NAME) from DB.DBA.SYS_USERS 
 	where U_ID = uid));
 }
 ;
@@ -2545,7 +2567,7 @@ create function WV.WIKI.EMAIL_OBFUSCATE_NONE (in mailto varchar)
 
 create function WV.WIKI.EMAIL_OBFUSCATE_HEX (in mailto varchar)
 {
-  return replace (mailto, '@', '[]');
+  return '<?replace ' || mailto || '?>';
 }
 ;
 
@@ -2584,3 +2606,25 @@ grant execute on WV.WIKI.EMAIL_OBFUSCATE to public
 
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:email_obfuscate', 'WV.WIKI.EMAIL_OBFUSCATE')
 ;
+
+create function WV.WIKI.LPATH_1(in _path varchar)
+{
+  declare parts any;
+  parts := split_and_decode (_path, 0, '\0\0/');
+  if (length (parts) < 1)
+    return '/';
+  else if (parts[length(parts) - 1] <> '')
+    return WV.WIKI.STRJOIN ('/', subseq (parts, 0, length(parts)-1)) || '/';
+  else
+    return WV.WIKI.STRJOIN ('/', parts);
+}
+;
+
+    
+create function WV.WIKI.LPATH()
+{
+  return WV.WIKI.LPATH_1 (http_path());
+}
+;
+
+    

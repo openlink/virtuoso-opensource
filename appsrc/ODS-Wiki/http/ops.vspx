@@ -33,7 +33,6 @@
 	  xmlns:vm="http://www.openlinksw.com/vspx/macro">
 	  
       <v:variable name="cluster_key" type="varchar" param-name="cluster"/>
-      <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
       <v:variable name="id" type="integer" default="NULL" param-name="id"/>
 
       <v:variable name="topic" type="WV.WIKI.TOPICINFO" default="NULL"/>
@@ -45,12 +44,11 @@
       <v:variable name="parent_topic" type="integer" default="0" param-name="parent_topic"/>
       <v:variable name="source_page" type="varchar"/>
       <v:on-init><![CDATA[
-        self.sid := get_keyword('sid', params);
-        self.realm := get_keyword('realm', params, 'wiki');
 	declare _topic WV.WIKI.TOPICINFO;
 	_topic := WV.WIKI.TOPICINFO();
 	_topic.ti_id := self.id;
 	_topic.ti_find_metadata_by_id();	
+	dbg_obj_print (self.sid, self.realm);
 	self.source_page := WV.WIKI.READONLYWIKIWORDLINK (_topic.ti_cluster_name,_topic.ti_local_name);
 	self.topic := _topic;
 	if (self.topic.ti_local_name = WV.WIKI.CLUSTERPARAM (self.topic.ti_cluster_id, 'index-page', 'WelcomeVisitors'))
@@ -84,6 +82,7 @@
 	self.message_tmpl.vc_data_bind(e);
 	]]>
       </v:method>
+     <vm:page title="Actions">
       <vm:body>
 	  <div class="wiki-error"><v:error-summary/></div>
 	    <v:label name="topic_name" value="--self.source_page"/>
@@ -216,6 +215,7 @@
 	  </v:template>
 	    </v:form>
        </vm:body>
+     </vm:page>
      </v:page>
 <?vsp WV.WIKI.VSPFOOTER (path,params,lines);
 

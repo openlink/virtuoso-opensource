@@ -22,9 +22,10 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<?vsp WV.WIKI.VSPHEADER (path,params,lines, 'Export');
+<!-- 
+  <?vsp WV.WIKI.VSPHEADER (path,params,lines, 'Export');?>
+-->
 
-?>
     <v:page 
 	  name="main" 
 	  style="comp.xsl"
@@ -33,7 +34,6 @@
 	  on-deadlock-retry="3"
 	  xmlns:vm="http://www.openlinksw.com/vspx/macro">
 	  
-      <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
       <v:variable name="id" type="integer" default="NULL" param-name="id"/>
       <v:variable name="type" type="varchar" default="'html'" param-name="type"/>
 	  <v:variable name="is_html" type="integer" default="0"/>
@@ -79,6 +79,7 @@
         self.login.vc_data_bind(e);
         self.topic_info.vc_data_bind(e);
     ]]></v:after-data-bind>
+     <vm:page title="Export">
       <vm:body>
 	  <div class="wiki-error"><v:error-summary/></div>
           <div class="wiki-settings">
@@ -144,7 +145,8 @@
 	  </v:form>
 	  </div>
        </vm:body>
+     </vm:page>
      </v:page>
-<?vsp WV.WIKI.VSPFOOTER (path,params,lines);
-
-?>
+<!--
+<?vsp WV.WIKI.VSPFOOTER (path,params,lines);?>
+-->

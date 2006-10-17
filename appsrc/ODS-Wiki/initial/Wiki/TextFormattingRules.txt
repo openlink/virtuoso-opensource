@@ -1,1 +1,109 @@
-Sorry, this part of the documenation is not yet written.
+---+ Text formatting tips 
+
+<table class="page_help">
+  <tr>
+    <td class="ex_text"><nowiki>*Bold*</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <span class="ex_bold">Bold Text</span>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>_Italic_</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <span class="ex_italic">Italic</span>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>__Bold Italic__</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <span class="ex_bold_ital">Bold Italic</span>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>=Fixed Font=</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <span class="ex_fixed">Fixed Font</span>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>==Bold Fixed Font==</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <span class="ex_bold_fixed">Bold Fixed Font</span>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>[[http://foo.com][link]]</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <a href="http://openlinksw.com">link</a>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>   * Bulleted
+   * List </nowiki>
+      <i>(begin line with 3 spaces)</i>
+    </td>
+    <td>⇒</td>
+    <td>
+      <ul>
+	<li>Bulleted</li>
+	<li>List</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>   1 Ordered
+   1 List 
+</nowiki>
+      <i>(begin line with 3 spaces)</i>
+    </td>
+    <td>⇒</td>
+    <td>
+      <ol>
+	<li>Ordered</li>
+	<li>List</li>
+      </ol>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text">Headings:
+<nowiki>
+---+ Lvl 1
+---++ Lvl 2
+---+++ Lvl 3
+---++++Lvl 4</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <span class="ex_head_1">Lvl 1</span>
+      <br>
+      <span class="ex_head_2">Lvl 2</span>
+      <br>
+      <span class="ex_head_3">Lvl 3</span>
+      <br>
+      <span class="ex_head_4">Lvl 4</span>
+      <br>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>|*hdr1*|*hdr2*|*hdr3*|
+|col1|col2|col3|</nowiki></td>
+    <td>⇒</td>
+    <td>Table</td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>&lt;nowiki>WikiWord&lt;/nowiki></nowiki></td>
+    <td>⇒</td>
+    <td><nowiki>WikiWord</nowiki></td>
+  </tr>
+</table>
+---++ Wiki Words and links
+Capitalized words written together are wikiwords, which will be automatically linked. Ex: <nop>WikiWord, <nop>PlanetTellus.
+
+You mayLink references within page (anchors) are defined by writing a wikiword starting with hash in beginning of line. Ex: <nowiki>#MyAnchor</nowiki>. Use square brackets to make links to them: <nowiki>[[#MyAnchor][Link]]</nowiki> or <nowiki>[[MyTopic#MyAnchor][Jump]]</nowiki>
+
+Please follow the [[Doc.GoodStyle][Good Style Guidelines]] when writing entries.

@@ -22,9 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<?vsp WV.WIKI.VSPHEADER (path,params,lines, 'Tags');
-
-?>
+<!-- $Id$ -->
     <v:page 
 	  name="main" 
 	  style="comp.xsl"
@@ -32,10 +30,8 @@
 	  xmlns:v="http://www.openlinksw.com/vspx/" 
 	  xmlns:vm="http://www.openlinksw.com/vspx/macro">
 	  
-      <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
       <v:variable name="id" type="integer" default="NULL" param-name="id"/>
       <v:variable name="cluster_key" type="varchar" param-name="cluster"/>
-      <v:variable name="cluster" type="varchar" default="'Main'" persist="1"/>
 
       <v:variable name="topic" type="WV.WIKI.TOPICINFO" default="NULL"/>
       <v:variable name="pubtags" type="any" default="NULL"/>
@@ -46,19 +42,12 @@
       <v:variable name="allow_change" type="int" default="0"/>
       <v:variable name="source_page" type="varchar"/>
       <v:on-init><![CDATA[
-        self.sid := get_keyword('sid', params);
-        self.realm := get_keyword('realm', params, 'wiki');
-	self.vspx_user := coalesce ((select VS_UID from DB.DBA.VSPX_SESSION where VS_SID = self.sid and VS_REALM = self.realm), 'WikiGuest');
 	declare _topic WV.WIKI.TOPICINFO;
 	_topic := WV.WIKI.TOPICINFO();
 	_topic.ti_id := self.id;
 	_topic.ti_find_metadata_by_id();	
 	self.source_page := WV.WIKI.READONLYWIKIWORDLINK (_topic.ti_cluster_name,_topic.ti_local_name);
 	self.topic := _topic;
-        declare pwd varchar;
-	pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = self.vspx_user);
-	if (DAV_HIDE_ERROR (DAV_AUTHENTICATE (self.topic.ti_res_id, 'R', '_1_', self.vspx_user, pwd)) is not null)
-	  self.allow_change := 1;
       ]]></v:on-init>
       <v:after-data-bind><![CDATA[
 	if (self.vspx_user = 'WikiGuest')
@@ -67,6 +56,14 @@
 	    self.allow_change_str := 'disabled';
 	  }
 	self.t1.vc_data_bind(e);
+
+        declare pwd varchar;
+	pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = self.vspx_user);
+	if (DAV_HIDE_ERROR (DAV_AUTHENTICATE (self.topic.ti_res_id, 'R', '_1_', self.vspx_user, pwd)) is not null)
+	  self.allow_change := 1;
+	self.ds.vc_data_bind(e);
+	self.ds2.vc_data_bind(e);
+        self.t1.vc_data_bind(e);
       ]]></v:after-data-bind>
       <v:before-data-bind><![CDATA[
 	self.uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vspx_user);
@@ -93,6 +90,7 @@
 	 self.vc_redirect(sprintf ('rename.vspx?topic=%ld', self.topic.ti_id));
       ]]>
       </v:method>
+      <vm:page title="Tags">
       <vm:body>
 	  <div class="wiki-error"><v:error-summary/></div>
 	    <v:label name="topic_name" value="--self.topic.ti_cluster_name || '.' || self.topic.ti_local_name"/>
@@ -111,6 +109,7 @@
 		       <v:template name="template2" type="browse" name-to-remove="table" set-to-remove="both">
 		         <v:button name="link" action="simple" style="url" value="--(control.vc_parent as vspx_row_template).te_rowset">
 			   <v:on-post><![CDATA[
+			dbg_obj_print ('test>>');
 			     self.vc_redirect (sprintf ('tag.vspx?id=%ld&tag=%s', self.id, 
 			       		(control.vc_parent as vspx_row_template).te_rowset));
 			   ]]></v:on-post>
@@ -213,7 +212,5 @@
 		</tr>
 	      </table>
 	</vm:body>
+	  </vm:page>
      </v:page>
-<?vsp WV.WIKI.VSPFOOTER (path,params,lines);
-
-?>

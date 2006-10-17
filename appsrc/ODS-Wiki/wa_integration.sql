@@ -87,6 +87,10 @@ wa_exec_no_error(
   'alter type wa_wikiv add overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar'
 )
 ;
+wa_exec_no_error(
+  'alter type wa_wikiv add overriding method wa_post_url (in vhost varchar, in lhost varchar, in inst_name varchar, in post any) returns varchar'
+)
+;
 
 insert soft WA_TYPES(WAT_NAME, WAT_DESCRIPTION, WAT_TYPE, WAT_REALM) values ('oWiki', 'oWiki', 'db.dba.wa_wikiv', 'wikiv')
 ;
@@ -246,8 +250,8 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
 	ppath=>'/DAV/VAD/wiki/Root/', 
 	vsp_user=>'Wiki', 
 	opts=>vector('executable','yes'));
-      insert soft WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER)
-	values ('%', _home || '/main', self.cluster_id);
+--      insert soft WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER)
+--	values ('%', _home || '/main', self.cluster_id);
     }
   
   WV..ATOM_PUB_VHOST_DEFINE (_cluster_name);
@@ -462,13 +466,23 @@ create method wa_addition_urls () for wa_wikiv {
 create method wa_addition_instance_urls (in _lpath varchar) for wa_wikiv
 {  
   --! dirty hack
-  declare _vhost varchar;
+  declare _vhost, port varchar;
   _vhost := connection_get ('vhost');
+  port := connection_get ('port');
 --  dbg_obj_princ ('>>>>>>', _vhost);
   if (_vhost is null or _vhost like '*ini*%')
     _vhost := '%';
+  else
+    _vhost := _vhost || ':' || port;
   insert replacing WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER) 
-	values (_vhost, _lpath || '/%', self.cluster_id);
+	values (_vhost, WV.WIKI.CANONICAL_PATH(_lpath || '/%'), self.cluster_id);
+  if (_vhost <> '%')
+    {
+      WV.WIKI.SETCLUSTERPARAM (self.cluster_id, 'home', 'http://' || _vhost || WV.WIKI.CANONICAL_PATH(_lpath || '/main', 0));
+      update DB.DBA.WA_MEMBER set WAM_HOME_PAGE = self.wa_home_url() 
+      	where WAM_INST = self.wa_name
+	and WAM_USER = (select U_ID from DB.DBA.SYS_USERS where U_NAME = WV.WIKI.CLUSTERPARAM (self.cluster_id, 'owner', 'dav'));
+    }
   return vector ( 
       vector (
 	null, null,
@@ -667,3 +681,13 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_wikiv
   return sprintf ('/wiki/resources/gems.vsp?type=rdf&cluster=%U', _cluster_name);
 }
 ;
+
+
+create method wa_post_url (in vhost varchar, in lhost varchar, in inst_name varchar, in post any) for wa_wikiv
+{
+  declare url varchar;
+  url := WV.WIKI.CLUSTERPARAM (self.cluster_id, 'home', '/wiki/main');
+  return url || '/' || post;
+}
+;
+

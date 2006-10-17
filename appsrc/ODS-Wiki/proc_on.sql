@@ -280,7 +280,7 @@ create method ti_full_name () returns varchar for WV.WIKI.TOPICINFO
 create method ti_run_lexer (in _env any) returns varchar for WV.WIKI.TOPICINFO
 {
   declare exit handler for sqlstate '*' {
-    dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    dbg_obj_print ('lexer:', __SQL_STATE, __SQL_MESSAGE);
     return '';
   }
   ;
@@ -344,10 +344,13 @@ create method ti_get_entity (in _env any, in _ext int) returns any for WV.WIKI.T
 }
 ;
 
+use WV
+;
+
 create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
 {
   declare exit handler for sqlstate '*' {
-    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    dbg_obj_print ('compile:', __SQL_STATE, __SQL_MESSAGE);
     resignal;
   }
   ;
@@ -355,6 +358,14 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
   declare _ent any;
   declare _abstract nvarchar;
   declare _diskdumpdir any; -- Name of directory to dump pages; for debugging purposes.
+  declare dosioc int;
+  
+  if (exists (select top 1 1 from DB.DBA.WA_INSTANCE
+     where WAI_TYPE_NAME = 'oWiki' and WAI_NAME = self.ti_cluster_name and WAI_IS_PUBLIC = 1))
+   dosioc := 1;
+  else
+   dosioc := 0;
+ 
   _diskdumpdir := registry_get ('WikiDiskDump');
   if (isstring (_diskdumpdir))
     {
@@ -368,7 +379,9 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
   --dbg_obj_print ('ti_compile_page 2');
 
   if (self.ti_author_id is null or 0 = self.ti_author_id)
-    self.ti_author_id := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME=connection_get ('vspx_user')), 0);
+    self.ti_author_id := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME=connection_get ('vspx_user')), http_dav_uid());
+  if (dosioc)
+    sioc..wiki_sioc_post (self);
 
   self.ti_local_name_2 := WV.WIKI.SINGULARPLURAL (self.ti_local_name);
   --dbg_obj_print ('ti_compile_page 3');
@@ -429,7 +442,9 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
 	if (_href like 'Category%' or
 	    _href like '%.Category%')
 	  {
-	    _categories := case when _categories = '' then cast (_href as varchar) else _categories || ' ' || cast (_href as varchar) end;
+	    declare _cat varchar;
+	    _cat := lcase (subseq ( cast (_href as varchar), 8));
+	    _categories := case when _categories = '' then _cat else _categories || ',' || _cat end;	
 	  }
 	_tgt := WV.WIKI.TOPICINFO ();
 	_tgt.ti_raw_title := _href;
@@ -454,12 +469,13 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
 	  {
 	    insert into WV.WIKI.LINK (LinkId, TypeId, OrigId, DestId, DestClusterName, DestLocalName, MadeByDest, LinkText)
 	    values (WV.WIKI.NEWPLAINLINKID(), 0, self.ti_id, _tgt.ti_id, _tgt.ti_cluster_name, _tgt.ti_local_name, 0, _linktext);
+	    if (dosioc)
+	      sioc..wiki_sioc_post_links_to (self, _tgt);
 	  }
 	declare _pred varchar;
 	_pred := xpath_eval ('@predicate', _a);
 	if (_pred is not null)
 	  {
-	    
 	    WV.WIKI.ADD_FACT (self, cast (_pred as varchar), _tgt.ti_local_name, ':TOPIC');
 	  }
         _ctr := _ctr + 1;
@@ -487,10 +503,103 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
       (DestLocalName = self.ti_local_name or DestLocalName = self.ti_local_name_2 );
     if (_categories <> '' and
 	(WV.WIKI.CLUSTERPARAM (self.ti_cluster_id, 'delicious_enabled', 2) = 1))
-      WV.WIKI.DELICIOUSPUBLISH (self.ti_id, split_and_decode (_categories, 0, '\0\0 '));
+      WV.WIKI.DELICIOUSPUBLISH (self.ti_id, split_and_decode (_categories, 0, '\0\0,'));
+    
+
+    WV.WIKI.DELETE_INLINE_MACRO_FUNCS_1 (self);
+    foreach (any _exec in xpath_eval ('//processing-instruction("inline")', _ent, 0)) do {
+      declare _name, _proc varchar;
+      _exec := cast (xpath_eval ('string(.)', _exec) as varchar);
+      _name := WV.WIKI.INLINE_MACRO_NAME (self.ti_cluster_name, self.ti_local_name, md5(_exec));
+      _proc := WV.WIKI.INLINE_MACRO_FUNCTION (_name, _exec);
+     exec (_proc);
+    }
+    foreach (any _abs_link in xpath_eval ('//a[@style = "absuri"][@href]/@href', _ent, 0)) do {
+      sioc..wiki_sioc_post_links_to_2 (self, _abs_link);
+    }      
+    foreach (any _att in xpath_eval ('//Attach/@Name', _ent, 0)) do {
+      sioc..wiki_sioc_attachment (self, _att);
   }
+    sioc..ods_sioc_tags (sioc..get_graph(), 
+	sioc..wiki_post_iri (self.ti_cluster_name, self.ti_cluster_id, self.ti_local_name),
+	_categories);
+}
 }
 ;
+
+use DB
+;
+
+create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in _RES_ID integer,
+	in words any, in _RES_CONTENT varchar, in _RES_FULL_PATH varchar, in _RES_OWNER integer) returns varchar
+{
+  declare _COL_PATH, _WIKI_PATH, _WIKI_INSTANCE_PATH varchar;
+  declare _COL_PATH_ARRAY varchar;
+  declare _TitleText nvarchar;
+  declare _ClusterName, _LocalName varchar;
+  declare res varchar;
+  declare _WAUI_FULL_NAME varchar;
+  declare _U_NAME, home_path varchar;
+  declare _content, _ClusterId any;
+
+  _COL_PATH := DB.DBA.DAV_CONCAT_PATH (WS.WS.PARENT_PATH (WS.WS.HREF_TO_PATH_ARRAY (_RES_FULL_PATH)), null);
+
+  _TitleText := null; _ClusterName := null; _LocalName := null;
+  select coalesce (TitleText, cast (LocalName as nvarchar)), ClusterName, LocalName, C.ClusterId
+    into _TitleText, _ClusterName, _LocalName, _ClusterId
+    from WV.WIKI.TOPIC T, WV.WIKI.CLUSTERS C
+    where
+      T.ClusterId = C.ClusterId
+      and ResId = _RES_ID;
+
+  _WAUI_FULL_NAME := null;
+  select WAUI_FULL_NAME
+    into _WAUI_FULL_NAME
+    from DB.DBA.WA_USER_INFO where WAUI_U_ID = _RES_OWNER;
+
+  _U_NAME := null;
+  select U_NAME into _U_NAME from DB.DBA.SYS_USERS where U_ID = _RES_OWNER;
+
+  home_path := WV.WIKI.CLUSTERPARAM (_ClusterId, 'home', '/wiki/main');
+
+  _WIKI_PATH := sprintf ('%s/%s/%s', home_path, _ClusterName, _LocalName);
+  _WIKI_INSTANCE_PATH := sprintf ('%s/%s', home_path, _ClusterName);
+  res := sprintf ('<span><img src="%s" />Wiki <a href="%s">%s</a> <a href="%s">%s</a> <a href="%s">%s</a>',
+           WA_SEARCH_ADD_APATH ('images/icons/wiki_16.png'),
+	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_PATH, '#'), _current_user_id)),
+		coalesce (_TitleText, N'#No Title#'),
+	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_INSTANCE_PATH, '#'), _current_user_id)),
+		coalesce (_ClusterName, '#No Title#'),
+           WA_SEARCH_ADD_APATH (
+             WA_SEARCH_ADD_SID_IF_AVAILABLE ( sprintf ('uhome.vspx?ufname=%U', _U_NAME), _current_user_id, '&')),
+           coalesce (_WAUI_FULL_NAME, '#No Name#'));
+
+  _content := WV.WIKI.DELETE_SYSINFO_FOR (coalesce (_RES_CONTENT, ''));
+  if (not isblob (_content))
+    _content := cast (_content as varchar);
+  _content := subseq (_content, 0, 200000);
+  res := res || '<br />' || left (search_excerpt (words, _content), 900) || '</span>';
+
+  return res;
+}
+;
+
+create procedure WA_SEARCH_DAV_OR_WIKI_GET_EXCERPT_HTML
+	(in current_user_id int,
+	 in RES_ID int,
+	 in _WORDS_VECTOR any,
+	 in RES_CONTENT any,
+	 in RES_FULL_PATH varchar,
+	 in RES_OWNER int,
+	 in RES_COL int)
+{
+  if (exists (select 1 from WV.WIKI.CLUSTERS where ColId = RES_COL))
+    return WA_SEARCH_WIKI_GET_EXCERPT_HTML (current_user_id, RES_ID, _WORDS_VECTOR, RES_CONTENT, RES_FULL_PATH, RES_OWNER);
+  else
+    return WA_SEARCH_DAV_GET_EXCERPT_HTML (current_user_id, RES_ID, _WORDS_VECTOR, RES_CONTENT, RES_FULL_PATH);
+}
+;
+
 
 create procedure WV.WIKI.UPDATE_LINKS (
 	in _topic WV.WIKI.TOPICINFO,
@@ -924,6 +1033,53 @@ create trigger "Wiki_TopicTextInsertPerms" after insert on WS.WS.SYS_DAV_RES ord
 }
 ;
 
+
+create trigger "Wiki_TopicTextAttachment" after insert on WS.WS.SYS_DAV_RES order 999 referencing new as N
+{
+  declare _id any;
+  _id :=  DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT(N.RES_COL, 'C', 'oWiki:topic-id', 0));
+  if (_id is not null)
+    {
+      _id := deserialize (_id);
+      WV.WIKI.SIOC_ADD_ATTACHMENT (_id, N.RES_NAME);
+    }
+}
+;
+
+create procedure WV.WIKI.SIOC_ADD_ATTACHMENT (in topicid int, in att varchar)
+{
+  declare _topic WV.WIKI.TOPICINFO;
+  _topic := WV.WIKI.TOPICINFO();
+  _topic.ti_id := topicid;
+  _topic.ti_find_metadata_by_id ();
+  if (_topic.ti_res_id)
+    {
+      sioc..wiki_sioc_attachment (_topic, att);
+    }
+}
+;
+
+create trigger "Wiki_TopicTextAttachment_D" before delete on WS.WS.SYS_DAV_RES order 10 referencing old as O
+{
+  declare _id any;
+  _id :=  DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT(O.RES_COL, 'C', 'oWiki:topic-id', 0));
+  if (_id is not null)
+    {
+      _id := deserialize (_id);
+      declare _topic WV.WIKI.TOPICINFO;
+      _topic := WV.WIKI.TOPICINFO();
+      _topic.ti_id := _id;
+      _topic.ti_find_metadata_by_id ();
+      if (_topic.ti_res_id)
+	{
+	  sioc..wiki_sioc_attachment_delete (_topic, O.RES_NAME);
+	}
+    }
+}
+;
+
+
+
 create trigger "Wiki_TopicTextUpdatePerms" after insert on WS.WS.SYS_DAV_RES order 999 referencing new as N
 {
   declare _cluster_name varchar;
@@ -1017,8 +1173,15 @@ create trigger "Wiki_TopicTextDelete" before delete on WS.WS.SYS_DAV_RES order 1
   _topic.ti_id := _id;
   _topic.ti_find_metadata_by_id ();
   _topic.ti_register_for_upstream ('D');
+  sioc..wiki_sioc_post_delete (_topic);
   delete from WV.WIKI.SEMANTIC_OBJ where SO_OBJECT_ID = _id;
   WV.WIKI.DELETETOPIC (_id);
+  WV.WIKI.DELETE_INLINE_MACRO_FUNCS_1 (_topic);
+  for select P_NAME from DB.DBA.SYS_PROCEDURES 
+    where P_NAME like WV.WIKI.INLINE_MACRO_NAME (_topic.ti_cluster_name, _topic.ti_local_name, null) do {
+    dbg_obj_print (P_NAME);
+    exec ('drop procedure ' || P_NAME);
+  }
   skip: ;
 }
 ;
@@ -1037,6 +1200,8 @@ create trigger "Wiki_TopicTextUpdate" after update on WS.WS.SYS_DAV_RES order 10
       if (_id <> 0)
         WV.WIKI.DELETETOPIC (_id);
     }
+  if (O.RES_CONTENT = N.RES_CONTENT)
+    return;
   declare _newtopic WV.WIKI.TOPICINFO;
   declare _cluster_name, _local_name varchar;
   --dbg_obj_princ (1);
@@ -1127,7 +1292,7 @@ create function WV.WIKI.READONLYWIKIWORDHREF (
   _topic.ti_parse_raw_name ();
   declare url_params varchar;
   if (isstring(_params))  
-    url_params :=  WV.WIKI.URL_PARAMS (WV.WIKI.COLLECT_PAIRS (_params, WV.WIKI.COLLECT_PAIRS (WV.WIKI.PAIR ('sid', _sid), WV.WIKI.PAIR('realm', _realm))));
+    url_params :=  WV.WIKI.URL_PARAMS (_params); --WV.WIKI.COLLECT_PAIRS (_params)); --, WV.WIKI.COLLECT_PAIRS (WV.WIKI.PAIR ('sid', _sid), WV.WIKI.PAIR('realm', _realm))));
   if (url_params <> '')
     return sprintf ('%s%U/%U?%s', _base_adjust, _topic.ti_cluster_name, _topic.ti_local_name, url_params);
   return sprintf ('%s%U/%U', _base_adjust, _topic.ti_cluster_name, _topic.ti_local_name);
@@ -1957,7 +2122,12 @@ create procedure WV.WIKI.ATTACH2 (in _uid int, in _filename varchar, in _type va
 
   _attachment_col_id := WV.WIKI.GETATTCOLID (_topic);
   if (_attachment_col_id < 0)
+    {
     _attachment_col_id := WV.WIKI.CREATEDAVCOLLECTION (_topic.ti_col_id, _topic.ti_local_name, _uid,  WV.WIKI.WIKIUSERGID());
+      DB.DBA.DAV_PROP_SET_INT(DB.DBA.DAV_SEARCH_PATH (_attachment_col_id, 'C'),
+			      'oWiki:topic-id', serialize (_topic.ti_id),
+			      null, null, 0, 1, 1);
+    }
   declare _full_path varchar;
   _full_path := WS.WS.COL_PATH (_attachment_col_id) || _filename;
   
@@ -3520,6 +3690,11 @@ create trigger "Wiki_TaggingUpdate" after update on WS.WS.SYS_DAV_TAG referencin
 
 create procedure WV.WIKI.UPDATE_TAG_SYSINFO (in _res_id int, in _tags varchar)
 {
+  declare vtb any;
+  vtb := vt_batch();
+  vt_batch_d_id (vtb, _res_id);
+  WS.WS.META_WIKI_HOOK (vtb, _res_id);
+  WS.WS.VT_BATCH_PROCESS_WS_WS_SYS_DAV_RES (vtb);
   return;
 
   --dbg_obj_princ ('WV.WIKI.UPDATE_TAG_SYSINFO: ', _res_id, _tags);
@@ -3785,6 +3960,7 @@ WS.WS.META_WIKI_HOOK (inout vtb any, inout r_id any)
        	from WS.WS.SYS_DAV_TAG where DT_RES_ID = r_id)) 
       do 
         {
+--	dbg_obj_princ ('adding tag: ', tag); 
           vt_batch_feed (vtb, WV.WIKI.SYSINFO_PRED () || ' tag ' || tag, 0);
         }
       vt_batch_feed (vtb, WV.WIKI.SYSINFO_PRED () || ' cluster ', 0);
@@ -3855,3 +4031,133 @@ create function WV.WIKI.CLUSTER_CANONICAL (in _clustername varchar)
 }
 ;
 
+create function WV.WIKI.DELETE_INLINE_MACRO_FUNCS_1 (inout _topic WV.WIKI.TOPICINFO)
+{
+  for select P_NAME from DB.DBA.SYS_PROCEDURES 
+    where P_NAME like WV.WIKI.INLINE_MACRO_NAME (_topic.ti_cluster_name, _topic.ti_local_name, null) do {
+    exec ('drop procedure ' || P_NAME);
+  }
+}
+;
+
+create function WV.WIKI.DELETE_INLINE_MACRO_FUNCS (in _topicid int)
+{
+  declare _topic WV.WIKI.TOPICINFO;
+  _topic := WV.WIKI.TOPICINFO();
+  _topic.ti_id := _topicid;
+  _topic.ti_find_metadata_by_id ();
+  WV.WIKI.DELETE_INLINE_MACRO_FUNCS_1 (_topic);
+}
+;
+
+create function WV.WIKI.INLINE_MACRO_FUNCTION (in _name varchar, in _exec varchar)
+{
+  return 'create function ' || _name || ' (in params any) {
+     declare ss123456789 any;
+     ss123456789 := string_output();
+     connection_set (''Wiki macro output'', ss123456789); ' ||
+     _exec || ' return string_output_string(ss123456789); } ';
+}
+;
+
+create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in _RES_ID integer,
+	in words any, in _RES_CONTENT varchar, in _RES_FULL_PATH varchar, in _RES_OWNER integer) returns varchar
+{
+  declare _COL_PATH, _WIKI_PATH, _WIKI_INSTANCE_PATH varchar;
+  declare _COL_PATH_ARRAY varchar;
+  declare _TitleText nvarchar;
+  declare _ClusterName, _LocalName varchar;
+  declare res varchar;
+  declare _WAUI_FULL_NAME varchar;
+  declare _U_NAME, home_path varchar;
+  declare _content, _ClusterId any;
+
+  _COL_PATH := DB.DBA.DAV_CONCAT_PATH (WS.WS.PARENT_PATH (WS.WS.HREF_TO_PATH_ARRAY (_RES_FULL_PATH)), null);
+
+  _TitleText := null; _ClusterName := null; _LocalName := null;
+  select coalesce (TitleText, cast (LocalName as nvarchar)), ClusterName, LocalName, C.ClusterId
+    into _TitleText, _ClusterName, _LocalName, _ClusterId
+    from WV.WIKI.TOPIC T, WV.WIKI.CLUSTERS C
+    where
+      T.ClusterId = C.ClusterId
+      and ResId = _RES_ID;
+
+  _WAUI_FULL_NAME := null;
+  select WAUI_FULL_NAME
+    into _WAUI_FULL_NAME
+    from DB.DBA.WA_USER_INFO where WAUI_U_ID = _RES_OWNER;
+
+  _U_NAME := null;
+  select U_NAME into _U_NAME from DB.DBA.SYS_USERS where U_ID = _RES_OWNER;
+
+  home_path := WV.WIKI.CLUSTERPARAM (_ClusterId, 'home', '/wiki/main');
+
+  _WIKI_PATH := sprintf ('%s/%s/%s', home_path, _ClusterName, _LocalName);
+  _WIKI_INSTANCE_PATH := sprintf ('%s/%s', home_path, _ClusterName);
+  res := sprintf ('<span><img src="%s" />Wiki <a href="%s">%s</a> <a href="%s">%s</a> <a href="%s">%s</a>',
+           WA_SEARCH_ADD_APATH ('images/icons/wiki_16.png'),
+	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_PATH, '#'), _current_user_id)),
+		coalesce (_TitleText, N'#No Title#'),
+	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_INSTANCE_PATH, '#'), _current_user_id)),
+		coalesce (_ClusterName, '#No Title#'),
+           WA_SEARCH_ADD_APATH (
+             WA_SEARCH_ADD_SID_IF_AVAILABLE ( sprintf ('uhome.vspx?ufname=%U', _U_NAME), _current_user_id, '&')),
+           coalesce (_WAUI_FULL_NAME, '#No Name#'));
+
+  _content := WV.WIKI.DELETE_SYSINFO_FOR (coalesce (_RES_CONTENT, ''));
+  if (not isblob (_content))
+    _content := cast (_content as varchar);
+  _content := subseq (_content, 0, 200000);
+  res := res || '<br />' || left (search_excerpt (words, _content), 900) || '</span>';
+
+  return res;
+}
+;
+
+create procedure WA_SEARCH_DAV_OR_WIKI_GET_EXCERPT_HTML
+	(in current_user_id int,
+	 in RES_ID int,
+	 in _WORDS_VECTOR any,
+	 in RES_CONTENT any,
+	 in RES_FULL_PATH varchar,
+	 in RES_OWNER int,
+	 in RES_COL int)
+{
+  if (exists (select 1 from WV.WIKI.CLUSTERS where ColId = RES_COL))
+    return WA_SEARCH_WIKI_GET_EXCERPT_HTML (current_user_id, RES_ID, _WORDS_VECTOR, RES_CONTENT, RES_FULL_PATH, RES_OWNER);
+  else
+    return WA_SEARCH_DAV_GET_EXCERPT_HTML (current_user_id, RES_ID, _WORDS_VECTOR, RES_CONTENT, RES_FULL_PATH);
+}
+;
+
+create procedure WV.WIKI.COMPILE_ALL ()
+{
+  for select TOPICID from WV.WIKI.TOPIC do {
+    declare _topic WV.WIKI.TOPICINFO;
+    _topic := WV.WIKI.TOPICINFO();
+    _topic.ti_id := TOPICID;
+    _topic.ti_find_metadata_by_id();
+    _topic.ti_compile_page();
+  }
+}
+;
+
+create procedure WV.WIKI.CANONICAL_PATH(in _path varchar, in _collectionp int := 0)
+{
+  declare _parts, _recon_path any;
+  _parts := split_and_decode (_path, 0, '\0\0/');
+  if (not length (_parts))
+    return _path;
+  vectorbld_init(_recon_path);
+  if (_path[0] = 47)
+    vectorbld_acc (_recon_path, '');
+  foreach (varchar part in _parts) do {
+    if (part <> '') { vectorbld_acc (_recon_path, part); };
+  }
+  vectorbld_final (_recon_path);
+  if (_collectionp)
+    return WV.WIKI.STRJOIN('/', _recon_path) || '/';
+  else
+    return WV.WIKI.STRJOIN('/', _recon_path);
+}
+;

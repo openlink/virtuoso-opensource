@@ -21,12 +21,18 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+-- ODS.BAR._EXEC('oWiki',params, lines);
+
 {
-  set http_charset='utf-8';
+  set http_charset='UTF-8';
   declare _uid integer;
   declare _sid, _realm, _user varchar;
-  _sid := coalesce ({?'sid'}, '');
-  _realm := coalesce ({?'realm'}, '');
+  declare cookie_vec any;
+  cookie_vec := DB.DBA.vspx_get_cookie_vec(lines);
+  _sid := coalesce ( coalesce (get_keyword('sid', cookie_vec), {?'sid'}), '');
+  if (_sid <> '')
+    params := vector_concat (params, vector ('sid', _sid, 'realm', 'wa'));
+  _realm := coalesce ({?'realm'}, 'wa');
   if ({?'submit'} = 'Logout')
     {
       delete from DB.DBA.VSPX_SESSION 
@@ -271,13 +277,15 @@ cont:
 
   if (_cmd = 'text')
     {
-	http_header ('Content-Type: text/plain\r\n');
+        http_rewrite();
+	http_header ('Content-Type: text/plain; charset=UTF-8\r\n');
 	http (_topic.ti_text);
 	return;
     }  
   if (_cmd = 'xml')
     {
-	http_header ('Content-Type: text/xml\r\n');
+        http_rewrite();
+	http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 	http ('<?xml version="1.0"?>');
 	http (serialize_to_UTF8_xml (
 	  XMLELEMENT ('topic',

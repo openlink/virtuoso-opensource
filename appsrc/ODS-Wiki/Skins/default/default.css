@@ -25,60 +25,73 @@
 
 body
 {
-    padding-right: 5px;
-    padding-bottom: 0px;
-    padding-left: 5px;
-    padding-top: 3px;
-    margin-right: 0px;
-    margin-bottom: 0px;
-    margin-left: 0px;
-    margin-top: 0px;
+  padding: 0;
+  margin: 0;
     background-color: #FFFFFF;
     font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-    font-size: 10pt;
-}
+  font-size: 9pt}
+
+table { font-size: 9pt}
 
 /* Main page elements */
 
-
 /* Wraps entire page */
-#page {
-  margin:0 auto;
-  width:750px;
-}
 
+#page {
+  float: left;
+  clear: both;
+  margin:0 auto;
+  padding: 0;
+  width: 100%}
 
 /* Contains the main menu, login, etc. */
+
 #header {
-  height: 57px;
-  background-repeat: no-repeat;
+  width: 100%;
   margin: 0;
   padding: 0;
-}
+  float: left;
+  clear: both}
+
+#main {
+  width: 65%;
+  float: left;
+  clear: left;
+  padding-left: 4px;
+  padding-right: 4px;
+  line-height: 1.2}
 
 #sidebar {
   font-size: 9pt;
   color: #444;
-  width: 140px;
-  float: right;
+  width: 29%;
+  float: left;
   padding-left: 4px;
-  border-left: 1px solid #aba;
-}
+  padding-top: 5px;
+  border-left: 1px solid #aba}
 
 #sidebar h3 {
   font-size: 10pt;
   color: #444;
-  margin-bottom: 0;
-}
+  margin-bottom: 0}
 
-#main {
-  width: 600px;
+ul.sb-search {}
+
+ul.sb-search li input {
+  font-size: 8pt;
+  width: 9em;}
+
+/* NOTE: make sure you don't remove the line-height
+   definition below or IE6 Peek-a-Boo bug will rear
+   its ugly head and ruin your day */
+
+#wiki-path {
   float: left;
-  padding-right: 4px;
-}
+  clear: left;
+  white-space: nowrap}
 
-#footer
-{
+#footer {
+  float: left;
   clear: both;
   padding-left: 5px;
   padding-top: 3px;
@@ -86,42 +99,36 @@ body
   width: 100%;
   color: #232;
   background-color: #fff;
-  border-top: 1px solid #aaa;
-}
+  border-top: 1px solid #aaa}
 
 #node-footer {
   color: #232;
   text-align: right;
   font-size: 9pt;
-  font-style: italic;
-}
+  font-style: italic}
 
 #node-footer a {
   font-style: normal;
-  color: #232;
-}
+  color: #232}
 
 #node-footer a:hover {
-	color: blue;
-}
+  color: blue}
+
 /* Contents layout */
 
 .login-area { 
   position: absolute;
   right: 10px;
-  height: 30px;
-}
+  height: 30px}
 
 .login-area form { display: inline }
 
 #login-image { 
-  margin-right: 4px; 
-}
+  margin-right: 4px}
 
 #login-link { 
   margin-left: 3px;
-  margin-right: 3px;
-}
+  margin-right: 3px}
 
 .login-area a {
   color: #232;
@@ -132,9 +139,10 @@ body
 }
 
 ul.menu {
-  font-size: 9pt;
+  font-size: 8pt;
   display: block;
   margin: 0;
+  margin-top: 3px;
   padding: 0;
 }
 
@@ -155,7 +163,7 @@ ul.menu li a:hover {
 
 ul.menu li input {
   width: 8em;
-  font-size: 9pt;
+  font-size: 8pt;
   color: #232;
 }
 
@@ -169,8 +177,7 @@ ul.menu form { display: inline };
 div.ul-search {
   margin: 0;
   padding: 0;
-  display: inline;
-}
+  display: inline}
 
 #content {
  background: white;
@@ -198,6 +205,12 @@ div.feed-container h3 {
 }
 
 a.wikiword:hover { background-color: #DFDFDF }
+
+a.absuri {
+  background: url(external.png) center right no-repeat;
+  padding-right: 13px;
+}
+
 
 div.box {
   background-color: white;

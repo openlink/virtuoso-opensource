@@ -22,9 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<?vsp WV.WIKI.VSPHEADER (path,params,lines, 'Tag');
 
-?>
     <v:page 
 	  name="main" 
 	  style="comp.xsl"
@@ -32,7 +30,6 @@
 	  xmlns:v="http://www.openlinksw.com/vspx/" 
 	  xmlns:vm="http://www.openlinksw.com/vspx/macro">
 	  
-      <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
       <v:variable name="tag" type="varchar" default="NULL" param-name="tag"/>
       <v:variable name="encoded_tag" type="varchar" default="NULL"/>
       <v:variable name="id" type="integer" default="NULL" param-name="id"/>
@@ -42,8 +39,6 @@
 
       <v:variable name="uid" type="int" default="NULL" persist="1"/>
       <v:on-init><![CDATA[
-        self.sid := get_keyword('sid', params);
-        self.realm := get_keyword('realm', params, 'wiki');
 	declare _topic WV.WIKI.TOPICINFO;
 	_topic := WV.WIKI.TOPICINFO();
 	_topic.ti_id := self.id;
@@ -77,7 +72,7 @@
 	  return '***no wiki resource***';
       ]]></v:method>
       
-
+      <vm:page title="Tag">
       <vm:body>
 	  <div class="wiki-error"><v:error-summary/></div>
 	  Documents labeled by tag [<v:label name="tag_name" value="--self.tag"/>]
@@ -131,7 +126,6 @@
 		</tr>
 	      </table>
        </vm:body>
+      </vm:page>
      </v:page>
-<?vsp WV.WIKI.VSPFOOTER (path,params,lines);
 
-?>

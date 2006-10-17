@@ -53,6 +53,9 @@
     <xsl:param name="ti_cluster_name"/>
     <xsl:copy-of select="wv:email_obfuscate($ti_cluster_name, @href)"/>
   </xsl:template>
+  <xsl:template match="a[@style='absuri']">    
+    <a href="{@href}" class="{@style}"><xsl:value-of select="."/></a>
+  </xsl:template>
   
   <xsl:template name="arg">
     <xsl:param name="argument"/>
@@ -61,9 +64,9 @@
     </xsl:if>
   </xsl:template>
   <xsl:template name="sid">
-    <xsl:param name="sid"/>
+    <!--    <xsl:param name="sid"/>
     <xsl:param name="realm"/>
-    <xsl:if test="$sid != ''">&amp;sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/></xsl:if>
+    <xsl:if test="$sid != ''">&amp;sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/></xsl:if> -->
   </xsl:template>
 
   <xsl:template name="wikihref">
@@ -193,7 +196,7 @@
     <table width="100%" class="wiki_nav_container">
       <tr>
         <th align="left">Attachment</th>
-        <th align="left">Time</th>
+        <th align="left">Type</th>
         <th align="left">Action</th>
         <th align="left">Size</th>
         <th align="left">Date</th>
@@ -269,10 +272,13 @@
        </xsl:when>
        <xsl:otherwise>
          <img id="login-image" src="{wv:ResourceHREF ('images/lock_16.png', $baseadjust)}" alt="User is not authenticated" title="User is not authenticated"></img>
-         <form id="login-form" action="{wv:funcall2('WV.WIKI.RESOURCEPATH', 'login.vsp', $baseadjust)}" method="post">
-           <input type="hidden" name="page" value="{wv:ReadOnlyWikiWordLink($ti_cluster_name, $ti_local_name)}"></input>
+
+         <form id="login-form" action="{wv:registry_get ('wa_home_link', '/wa/')}/login.vspx" 
+           method="GET">
            <input type="hidden" name="command" value="login"></input>
+           <input type="hidden" name="URL" value="{wv:funcall0('WV.WIKI.LPATH')}{$baseadjust}{$ti_cluster_name}/{$ti_local_name}"></input>
            <input name="submit" type="submit" value="Login"></input>
+           
          </form>
        </xsl:otherwise>
      </xsl:choose>
@@ -291,11 +297,17 @@
          </xsl:attribute>
        </input>
      </form>
-     <a id="advanced-search-link" href="{wv:ResourceHREF2 ('advanced_search.vspx', $baseadjust, wv:collect_pairs (wv:collect_pairs (wv:collect_pairs (wv:pair ('cluster', $ti_cluster_name), wv:pair ('page', wv:ReadOnlyWikiWordLink($ti_cluster_name, $ti_local_name))), wv:pair ('sid', $sid)), wv:pair ('realm', $realm)))}">Advanced Search</a>
+     <a id="advanced-search-link">
+       <xsl:variable name="link" select="wv:ReadOnlyWikiWordLink($ti_cluster_name, $ti_local_name)"/>
+       <xsl:attribute name="href">
+         <xsl:value-of select="wv:ResourceHREF2 ('advanced_search.vspx', $baseadjust, vector ('cluster', $ti_cluster_name, 'page', $link))"/>
+       </xsl:attribute>
+       Advanced Search
+     </a>
      <xsl:if test="$sid and ($sid != '')">
        <a id="user-settings-link" href="{wv:registry_get ('wa_home_link', '/wa/')}/uiedit.vspx?sid={$sid}&realm={$realm}">User Settings</a>
        <a id="cluster-settings-link">
-         <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('settings.vspx',$baseadjust,vector('cluster',$ti_cluster_name, 'name', $ti_local_name, 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
+         <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('settings.vspx',$baseadjust,vector('cluster',$ti_cluster_name, 'name', $ti_local_name))"/></xsl:attribute>		
          Cluster Settings
        </a>
      </xsl:if>

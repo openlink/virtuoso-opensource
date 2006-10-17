@@ -21,8 +21,15 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
-<v:page name="conversation" style="comp.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="conversation" 
+	style="comp.xsl"
+	xmlns:v="http://www.openlinksw.com/vspx/" 
+	xmlns:vm="http://www.openlinksw.com/vspx/macro" 
+	on-deadlock-retry="5" 
+	on-error-redirect="error.vspx" 
+	doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
+  <v:variable name="source_page1" type="varchar" default="NULL"/>
   <head>
     <link rel="stylesheet" href="common.css" type="text/css"/>
     <link rel="stylesheet" href="Skins/default/default.css" type="text/css"/>
@@ -81,9 +88,7 @@
         <v:form name="F1" type="simple" method="GET">
           <input type="hidden" name="sid" value="&lt;?V get_keyword('sid', self.vc_event.ve_params) ?>"/>
           <input type="hidden" name="realm" value="&lt;?V get_keyword('realm', self.vc_event.ve_params) ?>"/>
-          <div style="padding: 0 0 0.5em 0;">
-            <a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="images/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-          </div>
+	  <vm:close-popup-link/>
           <div class="new-form-header">
             Conversation
           </div>
@@ -108,15 +113,15 @@
 	                    <div class="<?V case when control.tn_level = 0 then 'cm_node_top' else 'cm_node' end ?>">
                     		<?vsp
                       		{
-                      		  declare id, comment, title, u_name, last_update any;
+                      		  declare id, comment, title, u_name, last_update, _home any;
 
                       		  id := cast (control.tn_value as integer);
 
                       		  declare exit handler for not found;
 				  if (id >= 0)
 				    {
-					select C_SUBJECT, cast (C_TEXT as varchar), C_AUTHOR, WV.WIKI.DATEFORMAT(C_DATE)
-	                      		    into title, comment, u_name, last_update
+					select C_SUBJECT, cast (C_TEXT as varchar), C_AUTHOR, WV.WIKI.DATEFORMAT(C_DATE), C_HOME
+	                      		    into title, comment, u_name, last_update, _home
 	                      		    from WV.WIKI.COMMENT
 		              		   where C_ID = id;
                       	?>
@@ -131,7 +136,7 @@
 	                  </div>
 			  <div class="comment-footer">
 		                        <span class="comment-user">
-		                          Posted by <?V WV.WIKI.UTF2WIDE (u_name) ?>
+		                          Posted by <a href="<?V coalesce(_home, sioc..get_graph()) ?>"><?V WV.WIKI.UTF2WIDE (u_name) ?></a>
 		                        </span>
 		                        <span class="comment-date"> on <?V cast(last_update as varchar) ?></span>
 	                  </div>
@@ -193,7 +198,7 @@
                   <td>
                     <table cellspacing="0">
                       <tr>
-                        <th>
+                        <th valign="top">
                           <v:label for="f_name" value="Name" />
                         </th>
                         <td>
@@ -201,7 +206,15 @@
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th valign="top">
+                          <v:label for="f_homepage" value="Homepage" />
+                        </th>
+                        <td>
+                          <v:text name="f_homepage" value="--WV.WIKI.USER_DETAILS (self.v_aid, 'homepage')" xhtml_class="textbox" xhtml_size="70" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th valign="top">
                           <v:label for="f_mail" value="E-Mail" />
                         </th>
                         <td>
@@ -209,11 +222,11 @@
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th valign="top">
                           Comment
                         </th>
                         <td>
-			  <v:textarea name="f_text" xhtml_size="70"/>
+			  <v:textarea name="f_text"  xhtml_rows="10" xhtml_cols="70"/>
 			</td>
                       </tr>
                       <tr>
@@ -230,8 +243,9 @@
                                 name := trim(self.f_name.ufl_value);
                                 mail := trim(self.f_mail.ufl_value);
 
-                                insert into WV.WIKI.COMMENT (C_TOPIC_ID, C_PARENT_ID, C_SUBJECT, C_TEXT, C_AUTHOR, C_EMAIL, C_DATE)
-                                  values (self.v_fid, self.v_pid, title, comment, name, mail, now ());
+                                insert into WV.WIKI.COMMENT (C_TOPIC_ID, C_PARENT_ID, C_SUBJECT, C_TEXT, C_AUTHOR, C_EMAIL, C_DATE, C_HOME)
+                                  values (self.v_fid, self.v_pid, title, comment, name, mail, now ()
+						, trim (self.f_homepage.ufl_value));
 				self.v_pid := identity_value();
 
                                 self.v_mode := 'show';

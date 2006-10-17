@@ -1226,12 +1226,110 @@ again:
 ;
   
 		      
+create function WV.WIKI.MACRO_TOPPAGES (inout _data varchar, inout _context any, inout _env any)
+{
+  declare _args, _res any;
+  _args := WV.WIKI.PARSEMACROARGS (_data);
+  declare _cluster_id int;
+  declare _regex varchar;
+  _cluster_id := atoi (get_keyword ('ti_cluster_id', _env));	
+  _regex := WV.WIKI.GETMACROPARAM (_args, 'param', '.*');
+  _res := (select XMLELEMENT ('nodes', XMLAGG (XMLELEMENT ('node', 
+       XMLELEMENT ('name', LOCALNAME),
+       XMLELEMENT ('mitem', WV.WIKI.DATEFORMAT(RES_MOD_TIME)),
+       XMLELEMENT ('title', coalesce (TITLETEXT, LOCALNAME)))))
+    from (select top (5) * from WV.WIKI.TOPIC, WS.WS.SYS_DAV_RES where
+    	     CLUSTERID = _cluster_id 
+	     and RES_ID = RESID
+	     and regexp_match (_regex, LOCALNAME) is not null
+	         order by RES_MOD_TIME desc) a);
+  return _res;
+}
+;
+
+create function WV.WIKI.MACRO_USERS (inout _data varchar, inout _context any, inout _env any)
+{
+  declare _args, _res any;
+  _args := WV.WIKI.PARSEMACROARGS (_data);
+
+  _res := (select XMLELEMENT ('ul', XMLAGG (
+	XMLELEMENT ('li', 
+	 WV.WIKI.A (UserName, UserName, 'wikiword'),
+	 case when length(SecurityCmt) > 0 then ' -- ' || cast (SecurityCmt as varchar) else '' end)))
+    from WV.WIKI.USERS order by UserName);
+
+  return _res;
+}
+;
 
 
 
+use WV
+;
+
+create function print (in x any)
+{
+  declare ss any;
+  ss := connection_get('Wiki macro output');
+  http ('<p>', ss);
+  http_value (x, null, ss);
+  http ('</p>', ss);
+}
+;
+
+create function puts (in x any)
+{
+  declare ss any;
+  ss := connection_get('Wiki macro output');
+  http (cast (x as varchar), ss);
+}  
+;
+
+
+create function WV.WIKI.INLINE_MACRO_NAME (in _cluster varchar, in _localname varchar, in _postfix varchar)
+{
+  declare _name varchar;
+  _name := sprintf ('WV.Wiki.EXEC_FUNC_%s_%s_', _cluster, _localname);
+  if (_postfix is null)
+    _name := _name || '%';
+  else
+    _name := _name || _postfix;
+  return _name;
+--  return fix_identifier_case (_name);
+}
+;
   
+create function WV.WIKI.MACRO_inline (inout _data varchar, inout _context any, inout _env any)
+{
+  if (WV.WIKI.CLUSTERPARAM (get_keyword ('ti_cluster_name', _env), 'syscalls', 2) = 2)
+    return '{{{disabled}}}';
+  declare _procname varchar; 
 		      
+  _procname := WV.WIKI.INLINE_MACRO_NAME (
+  	    get_keyword ('ti_cluster_name', _env), 
+     	    get_keyword ('ti_local_name', _env),
+	    md5 (_data));
+  if (get_keyword ('command', _env) = 'Preview')
+    {
+      declare _state, _message, _st1, _m1 varchar;
+      _state := '00000';
+      _message := '';
+      exec (WV.WIKI.INLINE_MACRO_FUNCTION (_procname, _data), _state, _message);
+      -- we do not need signals here
+      exec ('drop procedure ' || _procname, _st1, _m1);
+      if (_state = '00000')
+        return '{{{Compilation successfull}}}';
+      else
+        return '{{{Comilation error: '|| _state || ':' || _message || '}}}';
+    }
 
 
+  declare _res any;
+  _res := call (_procname) (_env);
+  return xtree_doc (_res, 2);
+}
+;
 
   
+use DB
+;

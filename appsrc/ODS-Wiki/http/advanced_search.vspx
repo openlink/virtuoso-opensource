@@ -55,8 +55,10 @@
 			<v:variable name="cluster" type="varchar" default="'Main'" persist="1"/>
 			<v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
 			<v:on-init><![CDATA[
-        self.sid := get_keyword('sid', params);
-        self.realm := get_keyword('realm', params, 'wiki');
+        declare cookie_vec any;
+        cookie_vec := DB.DBA.vsp_ua_get_cookie_vec(lines);
+        self.sid := coalesce(coalesce (get_keyword('sid', cookie_vec), get_keyword ('sid', params)), '');
+        self.realm := 'wa';
         self.ds_data := vector ();
         self.ds_meta := vector ();
         self.clusters := (select XMLELEMENT ('clusters',
@@ -524,6 +526,7 @@ endf:
 					</v:form>
 			</vm:body>
   &lt;?vsp<![CDATA[
+    set http_charset = 'UTF-8';
     if (self.output in ('atom', 'rss20', 'rdf'))
       {
 	declare author varchar;
@@ -540,7 +543,7 @@ endf:
         http ('Search result for [' || self.expr.ufl_value || ']');
         http ('</title>');
         http ('<link>');
-        http ('http://'); http(WV.WIKI.GET_HOST ()); http_value ('advanced_search.vspx?' || self.upar || '&output=atom');
+        http ('http://'); http(WV.WIKI.GET_HOST ()); http_value ('/advanced_search.vspx?' || self.upar || '&output=atom');
         http ('</link>');
         http ('<pubDate>');
 	http_value (WV.WIKI.DATEFORMAT (now (), 'rfc1123'));

@@ -39,26 +39,26 @@
 #define mlex_dbg_printf(x)
 #endif
 
-#define WIKIV_VERSION "0.1"
+#define MEDIAWIKI_VERSION "0.1"
 
-static dk_mutex_t *wikiv_lexer_mutex = NULL;
+static dk_mutex_t *mediawiki_lexer_mutex = NULL;
 
-static caddr_t wikiv_CLUSTER = NULL;
-static caddr_t wikiv_TOPIC = NULL;
-static caddr_t wikiv_WIKINAME = NULL;
-static caddr_t wikiv_WIKIVERSION = NULL;
-static caddr_t *wikiv_env = NULL;
+static caddr_t mediawiki_CLUSTER = NULL;
+static caddr_t mediawiki_TOPIC = NULL;
+static caddr_t mediawiki_WIKINAME = NULL;
+static caddr_t mediawiki_WIKIVERSION = NULL;
+static caddr_t *mediawiki_env = NULL;
 
-extern void macyyrestart (FILE *input_file);
-extern void macyylex_prepare (char *text, dk_session_t *out);
-extern int macyylex (void);
-extern void wikiyyrestart (FILE *input_file);
-extern void wikiyylex_prepare (char *text, dk_session_t *out);
-extern int wikiyylex (void);
+extern void mediamacyyrestart (FILE *input_file);
+extern void mediamacyylex_prepare (char *text, dk_session_t *out);
+extern int mediamacyylex (void);
+extern void mediawikiyyrestart (FILE *input_file);
+extern void mediawikiyylex_prepare (char *text, dk_session_t *out);
+extern int mediawikiyylex (void);
 
-char * mlex_macro_resolver (char *call)
+char * media_mlex_macro_resolver (char *call)
 {
-  int envlen = BOX_ELEMENTS ((caddr_t)wikiv_env);
+  int envlen = BOX_ELEMENTS ((caddr_t)mediawiki_env);
   int envidx;
   int call_len;
   static caddr_t last_macro_found = NULL;
@@ -73,26 +73,26 @@ char * mlex_macro_resolver (char *call)
   name_buf[call_len - 2] = '\0';
   for (envidx = 0; envidx < envlen; envidx += 2)
     {
-      if (strcmp (wikiv_env[envidx], name_buf))
+      if (strcmp (mediawiki_env[envidx], name_buf))
         continue;
-      last_macro_found = box_copy (wikiv_env[envidx+1]);
+      last_macro_found = box_copy (mediawiki_env[envidx+1]);
       mlex_dbg_printf (("'%s' via env}", last_macro_found));
       return last_macro_found;
     }
-  sprintf (name_buf, "WikiV (U=%.64s) %s", wikiv_WIKINAME, call);
+  sprintf (name_buf, "WikiV (U=%.64s) %s", mediawiki_WIKINAME, call);
   IN_TXN;
   last_macro_found = registry_get (name_buf);
   if (NULL != last_macro_found)
     {
-      mlex_dbg_printf (("'%s' via registry U=%s}", last_macro_found, wikiv_WIKINAME));
+      mlex_dbg_printf (("'%s' via registry U=%s}", last_macro_found, mediawiki_WIKINAME));
       LEAVE_TXN;
       return last_macro_found;
     }
-  sprintf (name_buf, "WikiV (C=%.64s) %s", wikiv_CLUSTER, call);
+  sprintf (name_buf, "WikiV (C=%.64s) %s", mediawiki_CLUSTER, call);
   last_macro_found = registry_get (name_buf);
   if (NULL != last_macro_found)
     {
-      mlex_dbg_printf (("'%s' via registry C=%s}", last_macro_found, wikiv_CLUSTER));
+      mlex_dbg_printf (("'%s' via registry C=%s}", last_macro_found, mediawiki_CLUSTER));
       LEAVE_TXN;
       return last_macro_found;
     }
@@ -110,7 +110,7 @@ failed:
   return NULL;
 }
 
-caddr_t bif_wikiv_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** args, char *bifname, int run_lexer)
+caddr_t bif_mediawiki_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** args, char *bifname, int run_lexer)
 {
   caddr_t rawtext = bif_string_arg (qst, args, 0, bifname);
   caddr_t CLUSTER = bif_string_arg (qst, args, 1, bifname);
@@ -136,34 +136,34 @@ caddr_t bif_wikiv_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** args
       sqlr_new_error ("22023", "WV001", "%s needs an array or NULL as argument 4", bifname);
     }
   pipe = strses_allocate ();
-  mutex_enter (wikiv_lexer_mutex);
-  wikiv_env = dk_alloc_box ((8 + envlen) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  wikiv_env[0] = "CLUSTER";	wikiv_env[1] = wikiv_CLUSTER	= CLUSTER;
-  wikiv_env[2] = "TOPIC";	wikiv_env[3] = wikiv_TOPIC	= TOPIC;
-  wikiv_env[4] = "WIKINAME";	wikiv_env[5] = wikiv_WIKINAME	= WIKINAME;
-  wikiv_env[6] = "WIKIVERSION";	wikiv_env[7] = wikiv_WIKIVERSION;
+  mutex_enter (mediawiki_lexer_mutex);
+  mediawiki_env = dk_alloc_box ((8 + envlen) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  mediawiki_env[0] = "CLUSTER";	mediawiki_env[1] = mediawiki_CLUSTER	= CLUSTER;
+  mediawiki_env[2] = "TOPIC";	mediawiki_env[3] = mediawiki_TOPIC	= TOPIC;
+  mediawiki_env[4] = "WIKINAME";	mediawiki_env[5] = mediawiki_WIKINAME	= WIKINAME;
+  mediawiki_env[6] = "WIKIVERSION";	mediawiki_env[7] = mediawiki_WIKIVERSION;
   for (envctr = 0; envctr < envlen; envctr++)
-    wikiv_env[8+envctr] = env[envctr];
+    mediawiki_env[8+envctr] = env[envctr];
   QR_RESET_CTX
     {
-      macyyrestart (NULL);
-      macyylex_prepare (rawtext, pipe);
-      macyylex ();
+      mediamacyyrestart (NULL);
+      mediamacyylex_prepare (rawtext, pipe);
+      mediamacyylex ();
       macroexpanded = strses_string (pipe);
       if (run_lexer)
         {
 	  out = strses_allocate ();
-	  wikiyyrestart (NULL);
-	  wikiyylex_prepare (macroexpanded, out);
-          wikiyylex ();
+	  mediawikiyyrestart (NULL);
+	  mediawikiyylex_prepare (macroexpanded, out);
+          mediawikiyylex ();
 	}
     }
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
       caddr_t err = thr_get_error_code (self);
-      dk_free_box (wikiv_env); /* not dk_free_tree */
-      mutex_leave (wikiv_lexer_mutex);
+      dk_free_box (mediawiki_env); /* not dk_free_tree */
+      mutex_leave (mediawiki_lexer_mutex);
       strses_free (pipe);
       dk_free_box (macroexpanded);
       if (run_lexer)
@@ -172,8 +172,8 @@ caddr_t bif_wikiv_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** args
       sqlr_resignal (err);
     }
   END_QR_RESET;
-  dk_free_box (wikiv_env); /* not dk_free_tree */
-  mutex_leave (wikiv_lexer_mutex);
+  dk_free_box (mediawiki_env); /* not dk_free_tree */
+  mutex_leave (mediawiki_lexer_mutex);
   if (run_lexer)
     {
       res = strses_string (out);
@@ -189,40 +189,40 @@ caddr_t bif_wikiv_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** args
     }
 }
 
-caddr_t bif_wikiv_macroexpander (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+caddr_t bif_mediawiki_macroexpander (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
-  return bif_wikiv_lexer_impl (qst, err, args, "WikiV macroexpander", 0);
+  return bif_mediawiki_lexer_impl (qst, err, args, "WikiV macroexpander", 0);
 }
 
-caddr_t bif_wikiv_lexer (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+caddr_t bif_mediawiki_lexer (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
-  return bif_wikiv_lexer_impl (qst, err, args, "WikiV lexer", 1);
+  return bif_mediawiki_lexer_impl (qst, err, args, "WikiV lexer", 1);
 }
 
-caddr_t bif_wikiv_name (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+caddr_t bif_mediawiki_name (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
   return box_dv_short_string  ("MediaWiki");
 }
 
-void wikiv_connect (void *appdata)
+void mediawiki_connect (void *appdata)
 {
-  wikiv_WIKIVERSION = box_dv_short_string (WIKIV_VERSION);
-  wikiv_lexer_mutex = mutex_allocate ();
-  bif_define ("WikiV macroexpander 1", bif_wikiv_macroexpander);
-  bif_define ("WikiV lexer 1", bif_wikiv_lexer);
-  bif_define ("WikiV name 1", bif_wikiv_name);
+  mediawiki_WIKIVERSION = box_dv_short_string (MEDIAWIKI_VERSION);
+  mediawiki_lexer_mutex = mutex_allocate ();
+  bif_define ("WikiV macroexpander 1", bif_mediawiki_macroexpander);
+  bif_define ("WikiV lexer 1", bif_mediawiki_lexer);
+  bif_define ("WikiV name 1", bif_mediawiki_name);
 }
 
 #ifdef _USRDLL
 static unit_version_t
-wikiv_version = {
+mediawiki_version = {
   "WikiV",				/*!< Title of unit, filled by unit */
-  WIKIV_VERSION,			/*!< Version number, filled by unit */
+  MEDIAWIKI_VERSION,			/*!< Version number, filled by unit */
   "OpenLink Software",			/*!< Plugin's developer, filled by unit */
   "Support functions for WikiV collaboration tool",	/*!< Any additional info, filled by unit */
   0,					/*!< Error message, filled by unit loader */
   0,					/*!< Name of file with unit's code, filled by unit loader */
-  wikiv_connect,			/*!< Pointer to connection function, cannot be 0 */
+  mediawiki_connect,			/*!< Pointer to connection function, cannot be 0 */
   0,					/*!< Pointer to disconnection function, or 0 */
   0,					/*!< Pointer to activation function, or 0 */
   0,					/*!< Pointer to deactivation function, or 0 */
@@ -232,6 +232,6 @@ wikiv_version = {
 unit_version_t *
 CALLBACK mediawiki_check (unit_version_t *in, void *appdata)
 {
-  return &wikiv_version;
+  return &mediawiki_version;
 }
 #endif

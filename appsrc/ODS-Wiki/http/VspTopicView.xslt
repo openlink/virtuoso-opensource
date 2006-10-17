@@ -565,22 +565,22 @@
         </xsl:call-template>
         <xsl:text> | </xsl:text>
         <a>
-          <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('ops.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
+	      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('ops.vspx',$baseadjust,vector('id',$ti_id))"/></xsl:attribute>		
           Maintenance
         </a>
         <xsl:text> | </xsl:text>
 	    Publish to (<a>
-          <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
+	      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id))"/></xsl:attribute>		
 	      Web
         </a>
 	    <xsl:text>|</xsl:text>
         <a>
-          <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'type', 'docbook', 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
+	      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'type', 'docbook'))"/></xsl:attribute>		
 	      Docbook
         </a><xsl:text>) | </xsl:text>
         <xsl:if test="$is_hist = 't'">
           <a>
-            <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('history.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
+		<xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('history.vspx',$baseadjust,vector('id',$ti_id))"/></xsl:attribute>		
             Revisions:
           </a>
         </xsl:if>
@@ -595,7 +595,7 @@
         </xsl:if>
           <br/>
           <a>
-            <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('tags.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
+	      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('tags.vspx',$baseadjust,vector('id',$ti_id))"/></xsl:attribute>		
             Tags:
           </a>
           <i>
@@ -619,7 +619,7 @@
  <xsl:param name="sid"/>
  <xsl:param name="realm"/>
  <a>
-   <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('tag.vspx',$baseadjust,vector('tag',string(@name),'id',$ti_id,'privatep', string($privatep), 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
+      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('tag.vspx',$baseadjust,vector('tag',string(@name),'id',$ti_id,'privatep', string($privatep)))"/></xsl:attribute>		
    <xsl:value-of select="@name"/>
  </a>
  <xsl:if test="position()!=last()">

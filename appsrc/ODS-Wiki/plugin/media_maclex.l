@@ -45,7 +45,7 @@ typedef struct mlex_state_s {
 #endif
   } mlex_state_t;
 
-extern char * mlex_macro_resolver (char *call);
+extern char * media_mlex_macro_resolver (char *call);
 
 #ifdef MLEX_TEST
 #define mlex_alloc(n) malloc(n)
@@ -115,7 +115,7 @@ MACROARGS	({WS}?({MACROARG}({WS}{MACROARG})*{WS}?)?)
 	/* Variables */
 <INITIAL>"%"{MACRONAME}"%"	{ do {
 	char *tail;
-	char *repl = mlex_macro_resolver (yytext);
+	char *repl = media_mlex_macro_resolver (yytext);
 	if (NULL == repl)
 	  {
 	    PRINT(yytext);
@@ -147,7 +147,7 @@ MACROARGS	({WS}?({MACROARG}({WS}{MACROARG})*{WS}?)?)
 %%
 
 int
-macyywrap (void)
+mediamacyywrap (void)
 {
   return (1);
 }
@@ -171,11 +171,11 @@ int main(int argc, char *argv[])
 {
   if (argc > 1)
     yyin = fopen (argv[1], "r");
-  macyylex();
+  mediamacyylex();
   return 0;
 }
 #else
-void macyylex_prepare (char *text, dk_session_t *out)
+void mediamacyylex_prepare (char *text, dk_session_t *out)
 {
   memset (&mlex_instance, 0, sizeof (mlex_instance));
   STATE (mlex_text) = text;

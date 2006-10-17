@@ -64,8 +64,10 @@
     <!-- Technorati integration -->
     <v:variable name="technorati_api_key" type="varchar" default="''"/>
     <v:on-init>
-      self.sid := get_keyword('sid', params);
-      self.realm := get_keyword('realm', params, 'wiki');
+      declare cookie_vec any;
+      cookie_vec := DB.DBA.vsp_ua_get_cookie_vec(lines);
+      self.sid := coalesce ( coalesce (get_keyword('sid', cookie_vec), {?'sid'}), '');
+      self.realm := 'wa';
       set isolation='committed';
       if ({?'name'} is not null)
           self.name.ufl_value := {?'name'};		  
@@ -265,15 +267,8 @@
               </div>
             </td>
           </tr>
-	  <tr>
-            <td>
-              <div class="wiki-settings-templates">
-                <h2>del.icio.us integration</h2>
-                <p>
-                  <table width="100%">
-                    <tr>
-                      <th width="50%">Toggle integration:</th>
-                      <td>
+	  <vm:setting-section name="del.icio.us integration">
+	    <vm:setting-parameter name="Toggle integration:">
                         <v:button name="delicious_toggle" action="simple" xhtml_disabled="--self.enabled" 
 				value="--case when self.delicious_enable = 1 then 'Turn Off' else 'Turn On' end" 
 				>
@@ -284,44 +279,33 @@
                               ]]>
                           </v:on-post>
                         </v:button>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>user name:</th>
-                      <td><v:text name="delicious_user" format="%s" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'delicious_user', '')" enabled="--case when self.delicious_enable = 1 then 1 else 0 end">
-			</v:text></td>
-                    </tr>
-                    <tr>
-                      <th>password (leave it empty to keep old password):</th>
-                      <td><v:text type="password" name="delicious_passwd" enabled="--case when self.delicious_enable = 1 then 1 else 0 end"/></td>
-                    </tr>
-                    <tr>
-                      <th>minimum of update interval (in minutes):</th>
-                      <td>
+	    </vm:setting-parameter>
+	    <vm:setting-parameter name="user name:">
+	      <v:text name="delicious_user" format="%s" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'delicious_user', '')" enabled="--case when self.delicious_enable = 1 then 1 else 0 end">
+	      </v:text>
+	    </vm:setting-parameter>
+	    <vm:setting-parameter name="password (leave it empty to keep old password):">
+	      <v:text type="password" name="delicious_passwd" enabled="--case when self.delicious_enable = 1 then 1 else 0 end"/>
+	    </vm:setting-parameter>
+	    <vm:setting-parameter name="minimum of update interval (in minutes):">
                         <v:text error-glyph="*" name="delicious_update_interval" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'delicious_update_interval', 600)/60" enabled="--case when self.delicious_enable = 1 then 1 else 0 end">
 			  <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat="client"/>
                           <v:validator test="value" min="10" max="999999" empty-allowed="0" message="number greater than 10 and less than 999999 is expected" runat="client"/>
                         </v:text>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>Import categories:</th>
+	    </vm:setting-parameter>
+	    <vm:setting-parameter name="Import categories:">
 		      <v:template name="sync_tmpl" type="simple" enabled="--case when self.delicious_enable = 1 then 1 else 0 end">
                        <td>
 			<v:check-box name="delicious_sync_now" value="1"/>Import <br/>
 			<v:label name="sync_l" value="--self.sync_message"/>
                        </td>
 		      </v:template>
-                    </tr>
-                  </table>
-                </p>
-              </div>
-            </td>
-          </tr>
+	    </vm:setting-parameter>
+	  </vm:setting-section>
           <tr>
             <td>
               <div class="wiki-setttings-omail">
-                <h2>oMail integration</h2>
+                <h2>Mail integration</h2>
                 <p>
                   <table width="100%">
                     <tr>
@@ -423,16 +407,9 @@
             </div>
            </td>
           </tr>
-	  <tr>
-	   <td>
-             <div class="wiki-settings-templates">
-               <h2>LDAP integration</h2>
-               <p>
+	<vm:setting-section name="LDAP integration">
 	        <v:template name="ldap_tmpl" type="simple">
-                 <table width="100%">
-                   <tr>
-                      <th width="50%">Toggle integration:</th>
-                      <td>
+	    <vm:setting-parameter name="Toggle integration:">
                         <v:button name="ldap_toggle" action="simple" xhtml_disabled="--self.enabled" 
 				value="--case when self.ldap_enable = 1 then 'Turn Off' else 'Turn On' end" 
 				>
@@ -443,45 +420,29 @@
                               ]]>
                           </v:on-post>
                         </v:button>
-                      </td>
-		   </tr>
-                   <tr>
-                     <th valign="top" align="left">Address:</th>
-                     <td>
+	    </vm:setting-parameter>
+	    <vm:setting-parameter name="Address:">
                        <v:text name="ldap_address_f" value="--self.ldap_address" 
 		        xhtml_size="40"
 		       	enabled="--case when self.ldap_enable = 1 then 1 else 0 end"/>
-                     </td>
-                   </tr>
-		   <tr>
-		     <th>Port:</th>
-		     <td>
+	    </vm:setting-parameter>
+	    <vm:setting-parameter name="Port:">
 		       <v:text error-glyph="*" name="ldap_port_f" format="%ld" value="--self.ldap_port"
 		       	 enabled="--case when self.ldap_enable = 1 then 1 else 0 end">
 			 <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat="client"/>
 		       </v:text>
-		     </td>
-		   </tr>
-                   <tr>
-                     <th valign="top" align="left">Base:</th>
-                     <td>
+	    </vm:setting-parameter>
+	    <vm:setting-parameter name="Base:">
                        <v:text name="ldap_base_f" value="--self.ldap_base"
 		        xhtml_size="40"
 		       	enabled="--case when self.ldap_enable = 1 then 1 else 0 end"/>
-		       
-                     </td>
-                   </tr>
-                   <tr>
-                     <th valign="top" align="left">Bind DN:</th>
-                     <td>
+	    </vm:setting-parameter>
+	    <vm:setting-parameter name="Bind DN:">
                        <v:text name="ldap_bind_f" value="--self.ldap_bind"
 		        xhtml_size="40"
 		       	enabled="--case when self.ldap_enable = 1 then 1 else 0 end"/>
-                     </td>
-                   </tr>
-                   <tr>
-                     <th valign="top" align="left">Version:</th>
-                     <td>
+	    </vm:setting-parameter>
+	    <vm:setting-parameter name="Version:">
 			<v:data-list name="ldap_version_f" 
 			  value="--self.ldap_version" 
 			  list-document="--xtree_doc ('<vers><v>1</v><v>2</v></vers>')" 
@@ -489,22 +450,14 @@
 			  list-key-path="." 
 			  list-value-path="number()" 
 		       	enabled="--case when self.ldap_enable = 1 then 1 else 0 end"/>
-                     </td>
-                   </tr>
-                   <tr>
-                     <th valign="top" align="left">UID field:</th>
-                     <td>
+            </vm:setting-parameter>
+	    <vm:setting-parameter name="UID field:">
                        <v:text name="ldap_uid_f" value="--self.ldap_uid"
 		        xhtml_size="40"
 		       	enabled="--case when self.ldap_enable = 1 then 1 else 0 end"/>
-                     </td>
-                   </tr>
-                 </table>
+	    </vm:setting-parameter>
 		</v:template>
-               </p>
-	     </div>
-	    </td>
-	  </tr>
+	</vm:setting-section>
 	  <tr>
 	   <td>
              <div class="wiki-settings-templates">
