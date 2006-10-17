@@ -27,7 +27,10 @@
   <head profile="http://internetalchemy.org/2003/02/profile">
     <?vsp
       http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', ENEWS.WA.host_url (), ENEWS.WA.account()));
-      http(sprintf('<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', replace(sprintf('%s/dataspace/%U/feeds/%U/sioc.rdf', ENEWS.WA.host_url (), ENEWS.WA.account(), ENEWS.WA.domain_name(self.domain_id)), '+', '%2B')));
+    ?>
+    <?vsp
+      if (ENEWS.WA.domain_is_public(self.domain_id))
+        http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', replace(sprintf('%s/dataspace/%U/feeds/%U/sioc.rdf', ENEWS.WA.host_url (), ENEWS.WA.account(), ENEWS.WA.domain_name(self.domain_id)), '+', '%2B')));
     ?>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />

@@ -22,12 +22,14 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro" xmlns:ods="http://www.openlinksw.com/vspx/ods/">
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
   <xsl:variable name="page_title" select="string (//vm:pagetitle)"/>
 
+  <xsl:include href="http://local.virt/DAV/VAD/wa/comp/ods_bar.xsl"/>
   <xsl:include href="dav_browser.xsl"/>
   <xsl:include href="file_browser.xsl"/>
+
   <!--=========================================================================-->
   <xsl:template match="head/title[string(.)='']" priority="100">
     <title>
@@ -115,12 +117,12 @@
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
-      <div style="height: 65px; background-color: #fff;">
-        <div style="float: left;  padding-top: 3px;">
-          <img src="image/enewsbanner_sml.jpg"/>
-        </div>
+      <div id="HD">
+        <ods:ods-bar app_type='eNews2'/>
+        <div class="enews_app_page_hdr app_page_hdr">
+          <img class="hdr_img" src="image/enewsbanner_sml.jpg" alt="ODS-Feed Manager"/>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
-          <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
+            <div class="app_hdr_cmds_ctr">
             <v:text name="keywords" value="" xhtml_onkeypress="return submitEnter(\'F1\', \'GO\', event)"/>
             <xsl:call-template name="nbsp"/>
             <v:button name="GO" action="simple" style="url" value="Search" xhtml_alt="Simple Search">
@@ -134,37 +136,28 @@
                 self.vc_redirect(sprintf('search.vspx?keywords=%s&amp;mode=advanced', self.keywords.ufl_value));
             	</v:on-post>
   	        </v:button>
-          </div>
-      	</v:template>
-        <br style="clear: left;"/>
-      </div>
-      <div style="padding: 0.5em 0 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
-        <div style="float: left; padding-left: 0.5em;">
-          <?vsp
-            if (self.account_id > -1)
-              http(sprintf('<a href="%Vmyhome.vspx?sid=%s&realm=%s" title="%V"><img src="image/home_16.png" border="0"/> %V</a>', ENEWS.WA.wa_home_link (), self.sid, self.realm, self.accountName, self.accountName));
-          ?>
-        </div>
-        <div style="float: right; text-align: right; padding-right: 0.5em;">
+              <div class="app_prefs_ctr">
           <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
             <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
             |
       	  </v:template>
           <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>
-          <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-            |
-            <a href="<?V ENEWS.WA.wa_home_link () ?>" title="Logout">Logout</a>
+              </div> <!-- app_prefs_ctr -->
+            </div> <!-- app_hdr_cmds_ctr -->
       	  </v:template>
-        </div>
         <br style="clear: left;"/>
-      </div>
       <v:include url="enews_login.vspx"/>
+        </div> <!-- app_page_hdr -->
+      </div> <!-- #HD -->
+      <div id="MD">
       <table id="MTB">
         <tr>
           <!-- Navigation left column -->
           <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
             <td id="LC">
+                <v:template type="simple" enabled="--case when (self.account_role in ('guest')) then 0 else 1 end">
               <xsl:call-template name="vm:others"/>
+                </v:template>
               <xsl:call-template name="vm:formats"/>
             </td>
       	  </v:template>
@@ -182,22 +175,27 @@
               	</td>
               </tr>
             </table>
-    </v:form>
-    <div class="footer">
-      <a href="<?V ENEWS.WA.wa_home_link () ?>aboutus.html" title="About Us">About Us</a> |
-      <a href="<?V ENEWS.WA.wa_home_link () ?>faq.html" title="FAQ">FAQ</a> |
-      <a href="<?V ENEWS.WA.wa_home_link () ?>privacy.html" title="Privacy">Privacy</a> |
-      <a href="<?V ENEWS.WA.wa_home_link () ?>rabuse.vspx" title="Report Abuse">Report Abuse</a> |
-      <a href="#" title="Advertise">Advertise</a> |
-      <a href="#" title="Contact Us">Contact Us</a>
+      </div> <!-- #MD -->
+      <div id="FT">
+        <div id="FT_L">
+          <a href="http://www.openlinksw.com/virtuoso">
+            <img alt="Powered by OpenLink Virtuoso Universal Server" 
+                 src="image/virt_power_no_border.png" 
+                 border="0" />
+          </a>
     </div>
-    <div class="copyright">
+        <div id="FT_R">
+          <a href="aboutus.html">About Us</a> |
+          <a href="faq.html">FAQ</a> |
+          <a href="privacy.html">Privacy</a> |
+          <a href="rabuse.vspx">Report Abuse</a> |
+          <a href="advertise.html">Advertise</a> |
+          <a href="contact.html">Contact Us</a>
 	    <div><vm:copyright /></div>
 	    <div><vm:disclaimer /></div>
-	    <a href="http://www.openlinksw.com/virtuoso">
-	      <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/PoweredByVirtuoso.gif" border="0" />
-	    </a>
     </div>
+      </div> <!-- FT -->
+    </v:form>
   </xsl:template>
 
   <!--=========================================================================-->
@@ -491,7 +489,7 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:tabCaption">
-    <div style="display: inline;">
+    <div class="tabLabel">
       <xsl:attribute name="id"><xsl:value-of select="concat('tabLabel_', @tab)"/></xsl:attribute>
       <xsl:element name="v:url">
         <xsl:attribute name="url">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>

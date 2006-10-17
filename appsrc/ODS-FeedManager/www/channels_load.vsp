@@ -128,15 +128,17 @@
         aset(data, 7, get_keyword ('$_format_' || N, params));
         aset(data, 9, get_keyword ('$_lang_'   || N, params));
 
-        -- dbg_obj_print(N, now(), rss);
           feed_id := ENEWS.WA.channel_create(data);
 
         folder_name := trim (get_keyword ('$_folder_name_' || N, params, ''));
         folder_id := cast (trim (get_keyword ('$_folder_id_'|| N, params, '')) as integer);
-        ENEWS.WA.channel_domain(domain_id, feed_id, ENEWS.WA.wide2utf(title), null, folder_name, folder_id);
+        ENEWS.WA.channel_domain (-1, domain_id, feed_id, ENEWS.WA.wide2utf(title), null, folder_name, folder_id);
+        if ((ENEWS.WA.channel_feeds(feed_id) <> 0) or (not R))
+          goto _next;
           {
-            declare exit handler for sqlstate '*' { goto _next; };
-          if ((ENEWS.WA.channel_feeds(feed_id) = 0) and R)
+          declare continue handler for sqlstate '*' {
+            goto _next;
+          };
               ENEWS.WA.feed_refresh(feed_id);
           }
         }

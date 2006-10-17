@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="error_page" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="feed_reader_page" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
     <![CDATA[
       declare altStr, directionStr, imageStr varchar;
@@ -281,8 +281,9 @@
         ]]>
       </v:on-post>
       <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
-        <div class="news_tab">
-          <v:button action="simple" style="url" value="Feeds" xhtml_class="--either(equ(self.fTab, 'feeds'), 'select', 'select unselect')" xhtml_alt="Feeds">
+        <div class="tabs">
+          <div class="tabLabel">
+            <v:button action="simple" style="url" value="Feeds" xhtml_class="--either(equ(self.fTab, 'feeds'), 'tab activeTab2', 'tab tab2')" xhtml_alt="Feeds">
             <v:on-post>
               <![CDATA[
                 if (self.fTab <> 'feeds') {
@@ -293,7 +294,9 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" style="url" value="Tags" xhtml_class="--either(equ(self.fTab, 'tags'), 'select', 'select unselect')" xhtml_alt="Tags">
+          </div>
+          <div class="tabLabel">
+            <v:button action="simple" style="url" value="Tags" xhtml_class="--either(equ(self.fTab, 'tags'), 'tab activeTab2', 'tab tab2')" xhtml_alt="Tags">
             <v:on-post>
               <![CDATA[
                 if (self.fTab <> 'tags') {
@@ -304,6 +307,7 @@
               ]]>
             </v:on-post>
           </v:button>
+        </div>
         </div>
       </v:template>
 
@@ -356,22 +360,19 @@
             ?>
             <div style="margin-left:3px; margin-top:3px;">
               <?vsp
-                declare ts_max, ts_size integer;
-                declare ts_class varchar;
+                declare tMin, tMax integer;
+                declare tClass, tStyle varchar;
 
                 if (is_empty_or_null(self.fTag))
                   self.fTag := ENEWS.WA.node_suffix(self.fNode);
-                ts_max := 1;
-                for (select TS_TAG, TS_COUNT from ENEWS..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id order by TS_TAG) do {
-                  if (TS_TAG = '') {
-                    ts_max := TS_COUNT;
-                  } else {
-              	    ts_size := ((150.00 * TS_COUNT) / ts_max) + 100;
-                    ts_class := 'nolink_b';
+                select max(TS_COUNT), min(TS_COUNT) into tMax, tMin from ENEWS..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id;
+
+                for (select TS_TAG, TS_COUNT from ENEWS..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id and TS_TAG <> '' order by TS_TAG) do {
+                  tStyle := ODS.WA.tag_style(TS_COUNT, tMin, tMax);
+                  tClass := '';
                     if (self.fTag = TS_TAG)
-                      ts_class := 'nolink_a';
-                    http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="btn_%s"><span class="%s" style="font-size: %d%s;">%s</span></a> ', TS_TAG, TS_TAG, ts_class, ts_size, '%', TS_TAG));
-                  }
+                    tClass := 'nolink_a';
+                  http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', TS_TAG, TS_TAG, tClass, tStyle, TS_TAG));
                 }
               ?>
             </div>
@@ -534,11 +535,13 @@
                       <th width="1%">
                         <input type="checkbox" name="cb_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')"/>
                       </th>
-                      <th width="1%">
+                      <th width="1%" class="image">
                         <img src="image/flag.gif" border="0"/>
                       </th>
                      </v:template>
-                    <th width="1%" class="last" />
+                    <th width="1%" class="last">
+                      <img src="image/c.gif" border="0"/>
+                    </th>
                     <th>
                       <?vsp self.sortColumn('Headline', 'EFI_TITLE'); ?>
                     </th>
@@ -583,8 +586,11 @@
                       <td align="center">
                         <?vsp
                           http(sprintf('<span id="image_%d">', ((control.vc_parent) as vspx_row_template).te_column_value('EFI_ID')));
-                          if (((control.vc_parent) as vspx_row_template).te_column_value('EFID_KEEP_FLAG') = 1)
+                          if (((control.vc_parent) as vspx_row_template).te_column_value('EFID_KEEP_FLAG') = 1) {
                             http('<img src="image/flag.gif" border="0"/>');
+                          } else {
+                            http('&nbsp;');
+                          }
                           http('</span>');
                         ?>
                       </td>
@@ -638,7 +644,7 @@
       <?vsp
         if (self.fBookmark is not null) {
           http ('\n<script type="text/javascript">\n');
-          http (sprintf ('location.hash = "%s";\n', self.fBookmark));
+          http (sprintf ('if (BrowserDetect.browser != \'Opera\') location.hash = "%s";\n', self.fBookmark));
           http ('</script>\n');
         }
       ?>

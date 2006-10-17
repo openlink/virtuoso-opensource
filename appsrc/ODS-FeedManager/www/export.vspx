@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/">
+<v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:variable name="domain_id" type="integer" param-name="did" default="-1"/>
   <v:variable name="account_id" type="integer" param-name="aid" default="-1"/>
 
@@ -42,6 +42,7 @@
 
   <![CDATA[
     <?vsp
+      set http_charset = 'UTF-8';
       http_rewrite ();
       http_request_status ('HTTP/1.1 200 OK');
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
@@ -73,78 +74,70 @@
           goto _error;
 
         if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
-          declare retValue any;
-
-          retValue := string_output ();
-
-          http('<?xml version ="1.0" encoding="UTF-8"?>\n', retValue);
-          http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n', retValue);
-          http ('<channel>\n', retValue);
+          http ('<?xml version="1.0" encoding="UTF-8"?>\n');
+          http ('<rss version="2.0">\n');
+          http ('<channel>\n');
           for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
-            http ('<title>', retValue);
-              http_value (ENEWS.WA.domain_name(self.domain_id), null, retValue);
-            http ('</title>\n', retValue);
-            http ('<description>', retValue);
-              http_value (ENEWS.WA.domain_description(self.domain_id), null, retValue);
-            http ('</description>\n', retValue);
-            http ('<managingEditor>', retValue);
-              http_value (U_E_MAIL, null, retValue);
-            http ('</managingEditor>\n', retValue);
-            http ('<pubDate>', retValue);
-              http_value (ENEWS.WA.dt_rfc1123(now()), null, retValue);
-            http ('</pubDate>\n', retValue);
-            http ('<generator>', retValue);
-              http_value ('Virtuoso Universal Server ' || sys_stat('st_dbms_ver'), null, retValue);
-            http ('</generator>\n', retValue);
-            http ('<webMaster>', retValue);
-              http_value (U_E_MAIL, null, retValue);
-            http ('</webMaster>\n', retValue);
-            http ('<link>', retValue);
-              http_value (ENEWS.WA.enews_url(self.domain_id), null, retValue);
-            http ('</link>\n', retValue);
+            http ('<title>');
+              http_value (ENEWS.WA.domain_name(self.domain_id));
+            http ('</title>\n');
+            http ('<description>');
+              http_value (ENEWS.WA.domain_description(self.domain_id));
+            http ('</description>\n');
+            http ('<managingEditor>');
+              http_value (U_E_MAIL);
+            http ('</managingEditor>\n');
+            http ('<pubDate>');
+              http_value (ENEWS.WA.dt_rfc1123(now()));
+            http ('</pubDate>\n');
+            http ('<generator>');
+              http_value ('Virtuoso Universal Server ' || sys_stat('st_dbms_ver'));
+            http ('</generator>\n');
+            http ('<webMaster>');
+              http_value (U_E_MAIL);
+            http ('</webMaster>\n');
+            http ('<link>');
+              http_value (ENEWS.WA.enews_url(self.domain_id));
+            http ('</link>\n');
           }
           foreach (any row in result) do {
-            http ('<item>\n', retValue);
-              http ('<title>', retValue);
-                http_value (row[1], null, retValue);
-              http ('</title>\n', retValue);
-              http ('<description>', retValue);
-                http_value (charset_recode(ENEWS.WA.xml2string(ENEWS.WA.feed_description(row[0])), null, 'UTF-8'), null, retValue);
-              http ('</description>\n', retValue);
-              http ('<link>', retValue);
-                http_value (row[4], null, retValue);
-              http ('</link>\n', retValue);
-              http ('<guid>', retValue);
-                http_value (row[4], null, retValue);
-              http ('</guid>\n', retValue);
-              http ('<pubDate>', retValue);
-                http_value (ENEWS.WA.dt_rfc1123 (row[3]), null, retValue);
-              http ('</pubDate>\n', retValue);
+            http ('<item>\n');
+              http ('<title>');
+                http_value (row[1]);
+              http ('</title>\n');
+              http ('<description>');
+                http_value (charset_recode(ENEWS.WA.xml2string(ENEWS.WA.feed_description(row[0])), null, 'UTF-8'));
+              http ('</description>\n');
+              http ('<link>');
+                http_value (row[4]);
+              http ('</link>\n');
+              http ('<guid>');
+                http_value (row[4]);
+              http ('</guid>\n');
+              http ('<pubDate>');
+                http_value (ENEWS.WA.dt_rfc1123 (row[3]));
+              http ('</pubDate>\n');
               if (self.v_output <> 'rss') {
-                http ('<vi:modified>', retValue);
-                  http_value (ENEWS.WA.dt_iso8601 (row[3]), null, retValue);
-                http ('</vi:modified>\n', retValue);
+                http ('<vi:modified xmlns:vi="http://www.openlinksw.com/weblog/">');
+                  http_value (ENEWS.WA.dt_iso8601 (row[3]));
+                http ('</vi:modified>\n');
               }
-            http ('</item>\n', retValue);
+            http ('</item>\n');
           }
-          http ('</channel>\n', retValue);
-          http ('</rss>', retValue);
+          http ('</channel>\n');
+          http ('</rss>');
 
-          retValue := string_output_string (retValue);
           if (self.v_output = 'atom03')
-    	      http_value(xslt (ENEWS.WA.xslt_full ('rss2atom03.xsl'), xtree_doc(retValue)));
+    	      http_xslt (ENEWS.WA.xslt_full ('rss2atom03.xsl'));
 
           else if (self.v_output = 'atom10')
-    	      http_value(xslt (ENEWS.WA.xslt_full ('rss2atom.xsl'), xtree_doc(retValue)));
+    	      http_xslt (ENEWS.WA.xslt_full ('rss2atom.xsl'));
 
           else if (self.v_output = 'rdf')
-     	      http_value(xslt (ENEWS.WA.xslt_full ('rss2rdf.xsl'), xtree_doc(retValue)));
+     	      http_xslt (ENEWS.WA.xslt_full ('rss2rdf.xsl'));
 
           else if (self.v_output = 'xbel')
-    	      http_value(xslt (ENEWS.WA.xslt_full ('rss2xbel.xsl'), xtree_doc(retValue)));
-
-    	    else
-            http(retValue);
+    	      http_xslt (ENEWS.WA.xslt_full ('rss2xbel.xsl'));
 
     	    goto _end;
         }
@@ -153,7 +146,7 @@
       http('<?xml version="1.0" ?><empty />');
 
     _end:
-      http_flush();
+      return;
     ?>
   ]]>
 </v:page>

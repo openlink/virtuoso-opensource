@@ -43,7 +43,8 @@
   <vm:pagewrapper>
     <vm:header/>
     <vm:variables>
-      <v:variable name="v_feed_id" param-name="id" type="varchar" persist="0"/>
+      <v:variable name="v_id" param-name="id" type="integer" persist="0"/>
+      <v:variable name="v_feed_id" param-name="id" type="integer" persist="0"/>
       <v:variable name="v_feed_uri" type="varchar" default="''" persist="0"/>
       <v:variable name="v_title" type="varchar" default="''"/>
       <v:variable name="v_home" type="varchar" default="''"/>
@@ -63,7 +64,8 @@
    		    declare exit handler for not found goto _end;
 
           if (isnull(get_keyword('f_title', self.vc_page.vc_event.ve_params))) {
-       			select b.EF_URI,
+             select b.EF_ID,
+                    b.EF_URI,
        			       b.EF_HOME_URI,
                    b.EF_UPDATE_PERIOD,
                    b.EF_UPDATE_FREQ,
@@ -72,7 +74,8 @@
                    a.EFD_TAGS,
                    a.EFD_FOLDER_ID,
                    c.EFD_DIRECTORY_ID
-       			  into self.v_feed_uri,
+               into self.v_feed_id,
+                    self.v_feed_uri,
        			       self.v_home,
        			       self.v_update_period,
        			       self.v_update_frequency,
@@ -84,8 +87,7 @@
               from ENEWS.WA.FEED_DOMAIN a
                      join ENEWS.WA.FEED b on b.EF_ID = a.EFD_FEED_ID
                         left join ENEWS.WA.FEED_DIRECTORY c on c.EFD_FEED_ID = a.EFD_FEED_ID
-        	 	 where a.EFD_FEED_ID = self.v_feed_id
-       			   and a.EFD_DOMAIN_ID = self.domain_id;
+              where a.EFD_ID = self.v_id;
 
        			self.v_title := ENEWS.WA.utf2wide(self.v_title);
   	    		return;
@@ -285,7 +287,7 @@
               }
 
               -- domain
-              ENEWS.WA.channel_domain(self.domain_id, self.v_feed_id, self.f_title.ufl_value, self.v_tags, self.v_folder_name, trim(self.f_folder_id.ufl_value));
+              ENEWS.WA.channel_domain (self.v_id, self.domain_id, self.v_feed_id, self.f_title.ufl_value, self.v_tags, self.v_folder_name, trim(self.f_folder_id.ufl_value));
 
               -- directory
               if (ENEWS.WA.check_admin(self.account_id)) {

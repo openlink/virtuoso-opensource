@@ -127,19 +127,6 @@
 		</dc:creator>
 </xsl:template>
 
-<!-- elements from 0.94 not converted:
-	webMaster
-	category
-	generator
-	docs
-	cloud
-	ttl
-	image
-	textInput
-	skipHours
-	skipDays
--->
-
 <!-- item content conversions -->
 <xsl:template match="item/description|r:item/r:description">
 		<dc:description>
@@ -170,14 +157,7 @@
 		</dc:creator>
 </xsl:template>
 
-<!-- elements from 0.94 not converted:
-	category
-	comments
-	enclosure
--->
-
 <!-- item templates -->
-
 <xsl:template match="item|r:item" mode="li">
   <xsl:choose>
     <xsl:when test="link|r:link">
@@ -206,13 +186,9 @@
   </item>
 </xsl:template>
 
-
 <!-- utility templates -->
-
-<!--xsl:template match="channel/link|r:channel/r:link" /-->
 <xsl:template match="channel/item|r:channel/r:item" />
 <xsl:template match="item/guid|r:item/r:guid" />
-	<!--xsl:template match="item/link|r:item/r:link" /-->
 <xsl:template match="channel/generator" />
 <xsl:template match="channel/webMaster" />
 <xsl:template match="channel/cloud" />

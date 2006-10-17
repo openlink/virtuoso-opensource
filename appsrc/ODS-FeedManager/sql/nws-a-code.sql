@@ -68,9 +68,12 @@ create procedure ENEWS.WA.validate_request(
     i := strstr(S,'.'); if (isnull(i)) ENEWS.WA.http_response(400);        -- Bad Request
     aset(aResult,2,vector(atoi(subseq(S,5,i)),atoi(subseq(S,i+1))));
   }
-  if (aResult[2][0] <> 1) ENEWS.WA.http_response(505);                     -- HTTP Version Not Supported
-  if (aResult[2][1] < pMinVersion) ENEWS.WA.http_response(505);            -- HTTP Version Not Supported
-  if ((pMinVersion > 0) and aResult[1] = '') ENEWS.WA.http_response(400);  -- Host field required for HTTP/1.1
+  if (aResult[2][0] <> 1)
+    ENEWS.WA.http_response(505);                                           -- HTTP Version Not Supported
+  if (aResult[2][1] < pMinVersion)
+    ENEWS.WA.http_response(505);                                           -- HTTP Version Not Supported
+  if ((pMinVersion > 0) and aResult[1] = '')
+    ENEWS.WA.http_response(400);                                           -- Host field required for HTTP/1.1
 
   --check "File or Directory";
   P := ENEWS.WA.mount_point();
@@ -162,7 +165,7 @@ create procedure ENEWS.WA.session_restore(
 {
   declare domain_id, user_id, user_name, user_role, sid, realm, options any;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*', not found {
     domain_id := -2;
     goto _end;
   };
@@ -417,7 +420,7 @@ create procedure ENEWS.WA.menu_tree (
 {
   declare S, T varchar;
 
-  S := sprintf (
+  S :=
 '<?xml version="1.0" ?>
 <menu_tree>
   <node name="Read" url="news.vspx?tab=feeds" id="1" allowed="public guest reader author owner admin">
@@ -442,8 +445,7 @@ create procedure ENEWS.WA.menu_tree (
     <node name="Weblogs"       url="weblog.vspx"          id="24"               allowed="author owner admin"/>
     <Directories/>
   </node>
-  <node name="%s" url="%s" id="5" allowed="public guest reader author owner admin"/>
-</menu_tree>', ENEWS.WA.wa_home_title (), ENEWS.WA.wa_home_link ());
+</menu_tree>';
 
   T := '';
   if (isnull(access_role) or (access_role = 'admin'))
@@ -728,6 +730,13 @@ create procedure ENEWS.WA.domain_description (
 }
 ;
 
+create procedure ENEWS.WA.domain_is_public (
+  in domain_id integer)
+{
+  return coalesce((select WAI_IS_PUBLIC from DB.DBA.WA_INSTANCE where WAI_ID = domain_id), 0);
+}
+;
+
 -------------------------------------------------------------------------------
 --
 -- Account Functions
@@ -954,7 +963,8 @@ create procedure ENEWS.WA.feeds_queue_agregator ()
       declare exit handler for sqlstate '*'
       {
         rollback work;
-        if (__SQL_STATE <> '40001') {
+        if (__SQL_STATE <> '40001')
+        {
           update ENEWS.WA.FEED
              set EF_ERROR_LOG = __SQL_STATE || ' ' || __SQL_MESSAGE,
                  EF_QUEUE_FLAG = 0
@@ -1023,10 +1033,10 @@ create procedure ENEWS.WA.feed_refresh_int(
     from ENEWS.WA.FEED_ITEM
    where EFI_FEED_ID = id
      and ((EFI_LAST_UPDATE is not null) and dateadd('day', days, EFI_LAST_UPDATE) < now());
-  commit work;
 
   newUri := uri;
 again:
+  commit work;
   oldUri := newUri;
   content := http_get(newUri, resHdr);
   if (resHdr[0] not like 'HTTP/1._ 200 %') {
@@ -1178,9 +1188,18 @@ create procedure ENEWS.WA.process_insert(
   inout author varchar,
   inout data any)
 {
-  declare item_id, enclosure integer;
+  declare errorCount, item_id, enclosure integer;
   declare item_tags varchar;
 
+  declare exit handler for SQLSTATE '40001' {
+    rollback work;
+    if (errorCount > 5)
+      resignal;
+    errorCount := errorCount + 1;
+    goto _start;
+  };
+
+_start:
   if (isnull(guid) and not isnull(link))
     guid := link;
   if (isnull(guid) and not isnull(pubdate))
@@ -1689,18 +1708,22 @@ create procedure ENEWS.WA.channel_select(
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.channel_delete(
-  inout domain_id integer,
-  inout feed_id varchar)
+  inout id integer)
 {
-  delete from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = domain_id and EFD_FEED_ID = feed_id;
+  declare feed_id integer;
+
+  feed_id := (select EFD_FEED_ID from ENEWS.WA.FEED_DOMAIN where EFD_ID = id);
+  delete from ENEWS.WA.FEED_DOMAIN where EFD_ID = id;
+
   ENEWS.WA.channel_reindex(feed_id);
   commit work;
-  if (not exists (select 1 from ENEWS.WA.FEED_DIRECTORY where EFD_FEED_ID = feed_id))
-    {
+
+  if (exists (select 1 from ENEWS.WA.FEED_DIRECTORY where EFD_FEED_ID = feed_id))
+    return;
+
       declare exit handler for SQLSTATE '*' { return; };
       delete from ENEWS.WA.FEED where EF_ID = feed_id;
     }
-}
 ;
 
 -------------------------------------------------------------------------------
@@ -1716,8 +1739,9 @@ create procedure ENEWS.WA.channel_feeds(
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.channel_domain(
-  inout domain_id varchar,
-  inout feed_id varchar,
+  in id integer,
+  in domain_id integer,
+  in feed_id integer,
   in title any,
   in tags any,
   in folder_name any,
@@ -1731,17 +1755,18 @@ create procedure ENEWS.WA.channel_domain(
   }
   if (folder_id = 0)
     folder_id := null;
-  if (exists(select 1 from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = domain_id and EFD_FEED_ID = feed_id and coalesce(EFD_FOLDER_ID, 0) = coalesce(folder_id, 0))) {
+  if (id = -1)
+    id := coalesce((select EFD_ID from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = domain_id and EFD_FEED_ID = feed_id and coalesce(EFD_FOLDER_ID, 0) = coalesce(folder_id, 0)), -1);
+  if (id = -1) {
+    insert replacing ENEWS.WA.FEED_DOMAIN (EFD_DOMAIN_ID, EFD_FEED_ID, EFD_TITLE, EFD_TAGS, EFD_FOLDER_ID)
+      values (domain_id, feed_id, title, tags, folder_id);
+    ENEWS.WA.channel_reindex(feed_id);
+  } else {
     update ENEWS.WA.FEED_DOMAIN
        set EFD_TITLE = title,
            EFD_TAGS = tags,
            EFD_FOLDER_ID = folder_id
-     where EFD_DOMAIN_ID = domain_id
-       and EFD_FEED_ID = feed_id;
-  } else {
-    insert replacing ENEWS.WA.FEED_DOMAIN(EFD_DOMAIN_ID, EFD_FEED_ID, EFD_TITLE, EFD_TAGS, EFD_FOLDER_ID)
-      values (domain_id, feed_id, title, tags, folder_id);
-    ENEWS.WA.channel_reindex(feed_id);
+     where EFD_ID = id;
   }
 }
 ;
@@ -5170,7 +5195,7 @@ create procedure ENEWS.WA.validate2 (
     if (isnull(regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
       goto _error;
   } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
-    if (isnull(regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_]*)?\$', propertyValue)))
+    if (isnull(regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
       goto _error;
   } else if (propertyType = 'email') {
     if (isnull(regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))

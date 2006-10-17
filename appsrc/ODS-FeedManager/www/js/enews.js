@@ -20,6 +20,111 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+var BrowserDetect = {
+  init: function () {
+    this.browser = this.searchString(this.dataBrowser) || "An unknown browser";
+    this.version = this.searchVersion(navigator.userAgent)
+      || this.searchVersion(navigator.appVersion)
+      || "an unknown version";
+    this.OS = this.searchString(this.dataOS) || "an unknown OS";
+  },
+  searchString: function (data) {
+    for (var i=0;i<data.length;i++)  {
+      var dataString = data[i].string;
+      var dataProp = data[i].prop;
+      this.versionSearchString = data[i].versionSearch || data[i].identity;
+      if (dataString) {
+        if (dataString.indexOf(data[i].subString) != -1)
+          return data[i].identity;
+      }
+      else if (dataProp)
+        return data[i].identity;
+    }
+  },
+  searchVersion: function (dataString) {
+    var index = dataString.indexOf(this.versionSearchString);
+    if (index == -1) return;
+    return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
+  },
+  dataBrowser: [
+    {   string: navigator.userAgent,
+      subString: "OmniWeb",
+      versionSearch: "OmniWeb/",
+      identity: "OmniWeb"
+    },
+    {
+      string: navigator.vendor,
+      subString: "Apple",
+      identity: "Safari"
+    },
+    {
+      prop: window.opera,
+      identity: "Opera"
+    },
+    {
+      string: navigator.vendor,
+      subString: "iCab",
+      identity: "iCab"
+    },
+    {
+      string: navigator.vendor,
+      subString: "KDE",
+      identity: "Konqueror"
+    },
+    {
+      string: navigator.userAgent,
+      subString: "Firefox",
+      identity: "Firefox"
+    },
+    {
+      string: navigator.vendor,
+      subString: "Camino",
+      identity: "Camino"
+    },
+    {    // for newer Netscapes (6+)
+      string: navigator.userAgent,
+      subString: "Netscape",
+      identity: "Netscape"
+    },
+    {
+      string: navigator.userAgent,
+      subString: "MSIE",
+      identity: "Explorer",
+      versionSearch: "MSIE"
+    },
+    {
+      string: navigator.userAgent,
+      subString: "Gecko",
+      identity: "Mozilla",
+      versionSearch: "rv"
+    },
+    {     // for older Netscapes (4-)
+      string: navigator.userAgent,
+      subString: "Mozilla",
+      identity: "Netscape",
+      versionSearch: "Mozilla"
+    }
+  ],
+  dataOS : [
+    {
+      string: navigator.platform,
+      subString: "Win",
+      identity: "Windows"
+    },
+    {
+      string: navigator.platform,
+      subString: "Mac",
+      identity: "Mac"
+    },
+    {
+      string: navigator.platform,
+      subString: "Linux",
+      identity: "Linux"
+    }
+  ]
+
+};
+BrowserDetect.init();
 
 // ---------------------------------------------------------------------------
 function myPost(frm_name, fld_name, fld_value) {
@@ -632,12 +737,13 @@ function resetState()
 //
 function stopState()
 {
+  timer = null;
+
 	var xmlhttp = initRequest();
 	xmlhttp.open("POST", URL+"?mode=stop&id="+progressID+urlParams("sid")+urlParams("realm"), false);
 	xmlhttp.setRequestHeader("Pragma", "no-cache");
   xmlhttp.send(null);
 
-	timer = null;
   doPost ('F1', 'btn_Background');
 }
 
@@ -666,6 +772,14 @@ function initState()
   createProgressBar();
 	if (timer == null)
 		timer = setTimeout("checkState()", 1000);
+
+  document.forms['F1'].action = 'channels.vspx';
+  var obj = document.getElementById("feeds");
+   if (obj)
+     obj.innerHTML = '';
+  obj = document.getElementById("feedsData");
+   if (obj)
+     obj.innerHTML = '';
 }
 
 // ---------------------------------------------------------------------------
@@ -683,11 +797,12 @@ function checkState()
         progressIndex = xmlhttp.responseXML.getElementsByTagName("index")[0].firstChild.nodeValue;
       } catch (e) { }
 
+      if (timer != null)
       showProgress(progressIndex);
      	document.getElementById("btn_Background").disabled = false;
      	document.getElementById("btn_Stop").disabled = false;
 			if ((progressIndex != null) && (progressIndex != progressMax)) {
-			  setTimeout("checkState()", 2000);
+        setTimeout("checkState()", 1000);
 			} else {
        	document.getElementById("btn_Stop").value = 'Finish';
        	document.getElementById("btn_Background").disabled = true;

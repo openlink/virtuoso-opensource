@@ -23,34 +23,51 @@
 use sioc;
 
 -- the same as feeds_iri (wai_name)
-create procedure feed_mgr_iri (in domain_id integer)
+create procedure feed_mgr_iri (
+  inout domain_id integer)
 {
-  declare inst varchar;
+  declare instance varchar;
   declare exit handler for not found { return null; };
-  select WAI_NAME into inst from DB.DBA.WA_INSTANCE where WAI_ID = domain_id;
-  return feeds_iri (inst);
-}
-;
-
-create procedure feed_post_url (in vhost varchar, in lhost varchar, in feed_id varchar, in post any)
-{
-  return concat('/enews2/news.vspx?link=', post);
-}
-;
-
--- this represents post in the given feed
-create procedure feeds_post_iri (in feed_id integer, in item_id integer)
-{
-  declare feed_title, item_title varchar;
-  declare exit handler for not found { return null; };
-  return sprintf ('http://%s%s/feed/%d/%d', get_cname(), get_base_path (), feed_id, item_id);
+  select WAI_NAME into instance from DB.DBA.WA_INSTANCE where WAI_ID = domain_id;
+  return feeds_iri (instance);
 }
 ;
 
 -- this represents a feed, not an instance
-create procedure feed_iri (in feed_id integer)
+create procedure feed_iri (
+  inout feed_id integer)
 {
   return sprintf ('http://%s%s/feed/%d', get_cname(), get_base_path (), feed_id);
+}
+;
+
+-- this represents item in the given feed
+create procedure feed_item_iri (
+  inout feed_id integer,
+  inout item_id integer)
+{
+  return sprintf ('http://%s%s/feed/%d/%d', get_cname(), get_base_path (), feed_id, item_id);
+}
+;
+
+-- this represents comment in the given feed item
+create procedure feed_comment_iri (
+  inout domain_id integer,
+  inout item_id integer,
+  inout comment_id integer)
+{
+  declare owner, instance varchar;
+  declare exit handler for not found { return null; };
+  select U_NAME, WAI_NAME into owner, instance from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_USER = U_ID and WAM_MEMBER_TYPE = 1 and WAM_INST = WAI_NAME and WAI_ID = domain_id;
+  return sprintf ('http://%s%s/%U/feeds/%U/%d/%d', get_cname(), get_base_path (), owner, instance, item_id, comment_id);
+}
+;
+
+create procedure feed_item_url (
+  inout domain_id integer,
+  inout item_id integer)
+{
+  return sprintf('http://%s/enews2/%d/news.vspx?link=%d', get_cname(), domain_id, item_id);
 }
 ;
 
@@ -78,26 +95,69 @@ create procedure author_iri (inout feed_id integer, inout author any, inout cont
     a_uri := f_uri || '#' || replace (sprintf ('%U', a_name), '+', '%2B');
   }
 _end:
-  --dbg_obj_print(a_uri);
   return a_uri;
 }
 ;
 
-create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar)
+create procedure feed_links_to (inout content any)
 {
-  declare iri, m_iri, f_iri varchar;
+  declare xt, retValue any;
+
+  if (content is null)
+    return null;
+  else if (isentity (content))
+    xt := content;
+  else
+    xt := xtree_doc (content, 2, '', 'UTF-8');
+  xt := xpath_eval ('//a[starts-with (@href,"http") and not(img)]', xt, 0);
+  retValue := vector ();
+  foreach (any x in xt) do
+    retValue := vector_concat (retValue, vector (vector (cast (xpath_eval ('string()', x) as varchar), cast (xpath_eval ('@href', x) as varchar))));
+
+  return retValue;
+}
+;
+
+create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
+{
+  declare iri, m_iri, f_iri, t_iri, c_iri varchar;
+  declare tags, linksTo any;
+
   for select EFD_ID, EFD_DOMAIN_ID, EFD_FEED_ID, EFD_TITLE, EF_ID, EF_URI, EF_HOME_URI, EF_SOURCE_URI, EF_TITLE, EF_DESCRIPTION
-        from ENEWS..FEED_DOMAIN, ENEWS..FEED
-       where EFD_FEED_ID = EF_ID do {
+        from ENEWS..FEED_DOMAIN,
+             ENEWS..FEED,
+             DB.DBA.WA_INSTANCE
+       where EFD_FEED_ID = EF_ID
+         and EFD_DOMAIN_ID = WAI_ID
+         and ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name) do
+  {
       iri := feed_iri (EF_ID);
       m_iri := feed_mgr_iri (EFD_DOMAIN_ID);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_parent', m_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, 'http://rdfs.org/sioc/ns#parent_of', iri);
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
+    DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
     }
-  for select EFI_FEED_ID, EFI_ID, EFI_TITLE, EFI_DESCRIPTION, EFI_LINK, EFI_AUTHOR, EFI_PUBLISH_DATE from ENEWS..FEED_ITEM do {
-      iri := feeds_post_iri (EFI_FEED_ID, EFI_ID);
+  for (select EFI_FEED_ID, EFI_ID, EFI_TITLE, EFI_DESCRIPTION, EFI_LINK, EFI_AUTHOR, EFI_PUBLISH_DATE from ENEWS..FEED_ITEM) do
+  {
+    iri := feed_item_iri (EFI_FEED_ID, EFI_ID);
       f_iri := feed_iri (EFI_FEED_ID);
-      ods_sioc_post (graph_iri, iri, f_iri, null, EFI_TITLE, EFI_PUBLISH_DATE, null, EFI_LINK);
+    linksTo := feed_links_to (EFI_DESCRIPTION);
+    ods_sioc_post (graph_iri, iri, f_iri, null, EFI_TITLE, EFI_PUBLISH_DATE, null, EFI_LINK, EFI_DESCRIPTION, null, linksTo);
+
+    -- tags
+    for (select EFID_DOMAIN_ID, EFID_TAGS from ENEWS.WA.FEED_ITEM_DATA where EFID_DOMAIN_ID is not null and EFID_ITEM_ID = EFI_ID) do
+    {
+      ods_sioc_tags (graph_iri, iri, EFID_TAGS);
+    }
+
+    -- comments
+    for (select EFIC_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_U_URL, EFIC_LAST_UPDATE from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ITEM_ID = EFI_FEED_ID and EFIC_PARENT_ID is not null) do
+    {
+      c_iri := feed_comment_iri (EFIC_DOMAIN_ID, cast(EFIC_ITEM_ID as integer), EFIC_ID);
+      foaf_maker (graph_iri, EFIC_U_URL, EFIC_U_NAME, EFIC_U_MAIL);
+      ods_sioc_post (graph_iri, c_iri, f_iri, null, EFIC_TITLE, EFIC_LAST_UPDATE, EFIC_LAST_UPDATE, feed_item_url (EFIC_DOMAIN_ID, cast(EFIC_ITEM_ID as integer)), EFIC_COMMENT, null, null, EFIC_U_NAME);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_reply'), c_iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('reply_of'), iri);
+    }
     }
 }
 ;
@@ -113,10 +173,10 @@ create trigger FEEDD_SIOC_I after insert on ENEWS..FEED_DOMAIN referencing new a
   graph_iri := get_graph ();
   iri := feed_iri (N.EFD_FEED_ID);
   m_iri := feed_mgr_iri (N.EFD_DOMAIN_ID);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_parent', m_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, 'http://rdfs.org/sioc/ns#parent_of', iri);
-  return;
-};
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
+}
+;
 
 create trigger FEEDD_SIOC_D before delete on ENEWS..FEED_DOMAIN referencing old as O
 {
@@ -128,102 +188,109 @@ create trigger FEEDD_SIOC_D before delete on ENEWS..FEED_DOMAIN referencing old 
   graph_iri := get_graph ();
   iri := feed_iri (O.EFD_FEED_ID);
   m_iri := feed_mgr_iri (O.EFD_DOMAIN_ID);
-  delete_quad_s_p_o (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_parent', m_iri);
-  delete_quad_s_p_o (graph_iri, m_iri, 'http://rdfs.org/sioc/ns#parent_of', iri);
-  return;
-};
-
+  delete_quad_s_p_o (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
+  delete_quad_s_p_o (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
+}
+;
 
 -- ENEWS..FEED_ITEM
-create trigger FEED_ITEM_SIOC_I after insert on ENEWS..FEED_ITEM referencing new as N
+create procedure feeds_item_insert (
+  inout feed_id integer,
+  inout id integer,
+  inout title varchar,
+  inout publish_date datetime,
+  inout author varchar,
+  inout link varchar,
+  inout description varchar,
+  inout data any)
 {
-  declare iri, graph_iri, f_iri, a_iri varchar;
+  declare iri, graph_iri, f_iri, a_iri, comment_iri varchar;
+  declare linksTo any;
+
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
+
   graph_iri := get_graph ();
-  f_iri := feed_iri (N.EFI_FEED_ID);
-  iri := feeds_post_iri (N.EFI_FEED_ID, N.EFI_ID);
-  a_iri := author_iri (N.EFI_FEED_ID, N.EFI_AUTHOR, N.EFI_DATA);
-  ods_sioc_post (graph_iri, iri, f_iri, a_iri, N.EFI_TITLE, N.EFI_PUBLISH_DATE, null, N.EFI_LINK);
+  f_iri := feed_iri (feed_id);
+  iri := feed_item_iri (feed_id, id);
+  a_iri := author_iri (feed_id, author, data);
+  linksTo := feed_links_to (description);
+  ods_sioc_post (graph_iri, iri, f_iri, a_iri, title, publish_date, null, link, description, null, linksTo);
+}
+;
+
+create procedure feeds_item_delete (
+  inout feed_id integer,
+  inout id integer)
+{
+  declare iri, graph_iri varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := feed_item_iri (feed_id, id);
+  delete_quad_s_or_o (graph_iri, iri, iri);
   return;
+}
+;
+
+create trigger FEED_ITEM_SIOC_I after insert on ENEWS..FEED_ITEM referencing new as N
+{
+  feeds_item_insert (N.EFI_FEED_ID, N.EFI_ID, N.EFI_TITLE, N.EFI_PUBLISH_DATE, N.EFI_AUTHOR, N.EFI_LINK, N.EFI_DESCRIPTION, N.EFI_DATA);
 }
 ;
 
 create trigger FEED_ITEM_SIOC_U after update on ENEWS..FEED_ITEM referencing old as O, new as N
 {
-  declare iri, graph_iri, f_iri, a_iri varchar;
-  declare exit handler for sqlstate '*' {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  graph_iri := get_graph ();
-  f_iri := feed_iri (N.EFI_FEED_ID);
-  iri := feeds_post_iri (N.EFI_FEED_ID, N.EFI_ID);
-  a_iri := author_iri (N.EFI_FEED_ID, N.EFI_AUTHOR, N.EFI_DATA);
-  delete_quad_s_or_o (graph_iri, iri, iri);
-  ods_sioc_post (graph_iri, iri, f_iri, a_iri, N.EFI_TITLE, N.EFI_PUBLISH_DATE, null, N.EFI_LINK);
-  return;
+  feeds_item_delete (O.EFI_FEED_ID, O.EFI_ID);
+  feeds_item_insert (N.EFI_FEED_ID, N.EFI_ID, N.EFI_TITLE, N.EFI_PUBLISH_DATE, N.EFI_AUTHOR, N.EFI_LINK, N.EFI_DESCRIPTION, N.EFI_DATA);
 }
 ;
 
 create trigger FEED_ITEM_SIOC_D before delete on ENEWS..FEED_ITEM referencing old as O
 {
-  declare iri, graph_iri, f_iri varchar;
-  declare exit handler for sqlstate '*' {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  graph_iri := get_graph ();
-  iri := feeds_post_iri (O.EFI_FEED_ID, O.EFI_ID);
-  delete_quad_s_or_o (graph_iri, iri, iri);
-  return;
-}
-;
-
-create procedure feeds_post_iri (in feed_id integer, in item_id integer)
-{
-  declare feed_title, item_title varchar;
-  declare exit handler for not found { return null; };
-  return sprintf ('http://%s%s/feed/%d/%d', get_cname(), get_base_path (), feed_id, item_id);
+  feeds_item_delete (O.EFI_FEED_ID, O.EFI_ID);
 }
 ;
 
 create procedure feeds_tags_insert (
-  in domain_id integer,
-  in item_id integer,
-  in tags varchar)
+  inout domain_id integer,
+  inout item_id integer,
+  inout tags varchar)
 {
+  if (isnull(domain_id))
+    return;
+
   declare feed_id integer;
-  declare graph_iri, iri, post_iri, tars, home varchar;
+  declare graph_iri, iri, post_iri, home varchar;
+
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  if (isnull(domain_id))
-    return;
+
   home := '/enews2/' || cast(domain_id as varchar);
   graph_iri := get_graph ();
   select EFI_FEED_ID into feed_id from ENEWS.WA.FEED_ITEM where EFI_ID = item_id;
   iri := feed_iri (feed_id);
-  post_iri := feeds_post_iri (feed_id, item_id);
-  tars := split_and_decode (tags, 0, '\0\0,');
-  foreach (any tag in tars) do {
-	  tag := replace (trim(tag), ' ', '_');
-	  if (length (tag)) {
-	    iri := sprintf ('http://%s%s?tag=%s', get_cname(), home, tag);
-	    DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, sioc_iri ('topic'), iri);
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), tag);
-	  }
-  }
+  post_iri := feed_item_iri (feed_id, item_id);
+
+  ods_sioc_tags (graph_iri, post_iri, tags);
 }
 ;
 
 create procedure feeds_tags_delete (
-  in domain_id integer,
-  in item_id integer)
+  inout domain_id integer,
+  inout item_id integer,
+  in tags any)
 {
+  if (isnull(domain_id))
+    return;
 
   declare feed_id integer;
   declare graph_iri, post_iri varchar;
@@ -231,12 +298,11 @@ create procedure feeds_tags_delete (
     sioc_log_message (__SQL_MESSAGE);
     return;
 };
-  if (isnull(domain_id))
-    return;
+
   graph_iri := get_graph ();
   select EFI_FEED_ID into feed_id from ENEWS.WA.FEED_ITEM where EFI_ID = item_id;
-  post_iri := feeds_post_iri (feed_id, item_id);
-  delete_quad_sp (graph_iri, post_iri, sioc_iri ('topic'));
+  post_iri := feed_item_iri (feed_id, item_id);
+  ods_sioc_tags_delete (graph_iri, post_iri, tags);
 }
 ;
 
@@ -248,15 +314,108 @@ create trigger FEED_ITEM_DATA_SIOC_I after insert on ENEWS.WA.FEED_ITEM_DATA ref
 
 create trigger FEED_ITEM_DATA_SIOC_U after update on ENEWS.WA.FEED_ITEM_DATA referencing old as O, new as N
 {
-  feeds_tags_delete (O.EFID_DOMAIN_ID, O.EFID_ITEM_ID);
+  feeds_tags_delete (O.EFID_DOMAIN_ID, O.EFID_ITEM_ID, O.EFID_TAGS);
   feeds_tags_insert (N.EFID_DOMAIN_ID, N.EFID_ITEM_ID, N.EFID_TAGS);
 }
 ;
 
-create trigger FEED_ITEM_DATA_SIOC_D after delete on ENEWS.WA.FEED_ITEM_DATA referencing old as O
+create trigger FEED_ITEM_DATA_SIOC_D before delete on ENEWS.WA.FEED_ITEM_DATA referencing old as O
 {
-  feeds_tags_delete (O.EFID_DOMAIN_ID, O.EFID_ITEM_ID);
+  feeds_tags_delete (O.EFID_DOMAIN_ID, O.EFID_ITEM_ID, O.EFID_TAGS);
 }
 ;
+
+create procedure feeds_comment_insert (
+  inout domain_id integer,
+  inout item_id integer,
+  inout id integer,
+  inout title varchar,
+  inout comment varchar,
+  inout last_update datetime,
+  inout u_name varchar,
+  inout u_mail varchar,
+  inout u_url varchar)
+{
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1))
+    return;
+
+  declare feed_id integer;
+  declare graph_iri, iri, feed_iri, item_iri varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  select EFI_FEED_ID into feed_id from ENEWS.WA.FEED_ITEM where EFI_ID = item_id;
+  feed_iri := feed_iri (feed_id);
+  item_iri := feed_item_iri (feed_id, item_id);
+  iri := feed_comment_iri (domain_id, item_id, id);
+  foaf_maker (graph_iri, u_url, u_name, u_mail);
+  ods_sioc_post (graph_iri, iri, feed_iri, null, title, last_update, last_update, feed_item_url (domain_id, item_id), comment, null, null, u_name);
+  DB.DBA.RDF_QUAD_URI (graph_iri, item_iri, sioc_iri ('has_reply'), iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), item_iri);
+}
+;
+
+create procedure feeds_comment_delete (
+  inout domain_id integer,
+  inout item_id integer,
+  inout id integer)
+{
+  declare iri, graph_iri varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := feed_comment_iri (domain_id, item_id, id);
+  delete_quad_s_or_o (graph_iri, iri, iri);
+  return;
+}
+;
+
+create trigger FEED_ITEM_COMMENT_SIOC_I after insert on ENEWS.WA.FEED_ITEM_COMMENT referencing new as N
+{
+  if (not isnull(N.EFIC_PARENT_ID))
+    feeds_comment_insert (N.EFIC_DOMAIN_ID, cast(N.EFIC_ITEM_ID as integer), N.EFIC_ID, N.EFIC_TITLE, N.EFIC_COMMENT, N.EFIC_LAST_UPDATE, N.EFIC_U_NAME, N.EFIC_U_MAIL, N.EFIC_U_URL);
+}
+;
+
+create trigger FEED_ITEM_COMMENT_SIOC_U after update on ENEWS.WA.FEED_ITEM_COMMENT referencing old as O, new as N
+{
+  if (not isnull(O.EFIC_PARENT_ID))
+    feeds_comment_delete (O.EFIC_DOMAIN_ID, cast(O.EFIC_ITEM_ID as integer), O.EFIC_ID);
+  if (not isnull(N.EFIC_PARENT_ID))
+    feeds_comment_insert (N.EFIC_DOMAIN_ID, cast(N.EFIC_ITEM_ID as integer), N.EFIC_ID, N.EFIC_TITLE, N.EFIC_COMMENT, N.EFIC_LAST_UPDATE, N.EFIC_U_NAME, N.EFIC_U_MAIL, N.EFIC_U_URL);
+}
+;
+
+create trigger FEED_ITEM_COMMENT_SIOC_D before delete on ENEWS.WA.FEED_ITEM_COMMENT referencing old as O
+{
+  if (not isnull(O.EFIC_PARENT_ID))
+    feeds_comment_delete (O.EFIC_DOMAIN_ID, cast(O.EFIC_ITEM_ID as integer), O.EFIC_ID);
+}
+;
+
+create procedure ods_feeds_sioc_init ()
+{
+  declare sioc_version any;
+
+  sioc_version := registry_get ('__ods_sioc_version');
+  if (registry_get ('__ods_sioc_init') <> sioc_version)
+    return;
+  if (registry_get ('__ods_feeds_sioc_init') = sioc_version)
+    return;
+  fill_ods_feeds_sioc (get_graph (), get_graph ());
+  registry_set ('__ods_feeds_sioc_init', sioc_version);
+  return;
+}
+;
+
+ENEWS.WA.exec_no_error('ods_feeds_sioc_init ()');
 
 use DB;

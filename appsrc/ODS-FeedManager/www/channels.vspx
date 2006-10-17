@@ -87,7 +87,7 @@
         <v:before-data-bind>
           <![CDATA[
             self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
-            control.ds_sql := sprintf('select EF_ID, EF_URI, coalesce(coalesce(EFD_TITLE, EF_TITLE), \'~no title~\') EF_TITLE, cast(ENEWS.WA.channel_feeds(EF_ID) as integer) EF_COUNT from ENEWS.WA.FEED join ENEWS.WA.FEED_DOMAIN on EFD_FEED_ID = EF_ID where EFD_DOMAIN_ID = %d', self.domain_id);
+            control.ds_sql := sprintf('select EFD_ID, EF_ID, EF_URI, coalesce(coalesce(EFD_TITLE, EF_TITLE), \'~no title~\') EF_TITLE, cast(ENEWS.WA.channel_feeds(EF_ID) as integer) EF_COUNT from ENEWS.WA.FEED join ENEWS.WA.FEED_DOMAIN on EFD_FEED_ID = EF_ID where EFD_DOMAIN_ID = %d', self.domain_id);
             control.ds_sql := concat(control.ds_sql, ' order by ', self.c_order, ' ', self.c_direction);
           ]]>
         </v:before-data-bind>
@@ -150,7 +150,7 @@
                         <![CDATA[
                           declare id integer;
 
-                          id := (control.vc_parent as vspx_row_template).te_column_value('EF_ID');
+                        id := (control.vc_parent as vspx_row_template).te_column_value('EFD_ID');
                           self.vc_redirect(sprintf('channels_update.vspx?id=%d', id));
                         ]]>
                       </v:on-post>
@@ -160,7 +160,7 @@
                     <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this feed?\');" xhtml_class="button" xhtml_alt="Delete feed">
                       <v:on-post>
                         <![CDATA[
-                          ENEWS.WA.channel_delete(self.domain_id, (control.vc_parent as vspx_row_template).te_column_value('EF_ID'));
+                        ENEWS.WA.channel_delete ((control.vc_parent as vspx_row_template).te_column_value('EFD_ID'));
                           ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
                 		      self.vc_data_bind(e);
                         ]]>
@@ -251,7 +251,7 @@
                     <v:button value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete all feeds?\');" xhtml_class="button" xhtml_alt="Delete all feeds">
                       <v:on-post>
                         <![CDATA[
-                          for (select EF_ID
+                        for (select EFD_ID
                                  from ENEWS.WA.FEED
                                    join ENEWS.WA.FEED_DOMAIN EC on EFD_FEED_ID = EF_ID
                                 where EFD_DOMAIN_ID = self.domain_id) do {
@@ -261,7 +261,7 @@
                             };
                             commit work;
 
-                            ENEWS.WA.channel_delete(self.domain_id, EF_ID);
+                          ENEWS.WA.channel_delete(EFD_ID);
                           _next:;
                           }
                           ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);

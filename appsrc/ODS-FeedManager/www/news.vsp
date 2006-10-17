@@ -21,6 +21,16 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+  declare errorCount integer;
+  declare exit handler for SQLSTATE '40001' {
+    rollback work;
+    if (errorCount > 5)
+      resignal;
+    errorCount := errorCount + 1;
+    goto _start;
+  };
+
+_start:
   declare N, domain_id, account_id integer;
   declare sid, realm varchar;
   declare settings, requests, aRequest, aSession any;

@@ -612,7 +612,7 @@
                         }
 
                       folder_id := get_keyword(sprintf ('folder_id_%d', N), self.vc_event.ve_params, '');
-                      ENEWS.WA.channel_domain(self.domain_id, feed_id, get_keyword('title', v_data, ''), null, folder_name, folder_id);
+                      ENEWS.WA.channel_domain (-1, self.domain_id, feed_id, get_keyword('title', v_data, ''), null, folder_name, folder_id);
                       {
                         declare exit handler for sqlstate '*' { goto _next; };
                         if (ENEWS.WA.channel_feeds(feed_id) = 0)
@@ -804,7 +804,7 @@
                     return;
                   }
                 }
-                ENEWS.WA.channel_domain(self.domain_id, feed_id, self.f_title.ufl_value, null, self.v_folder_name, trim(self.f_folder_id.ufl_value));
+                ENEWS.WA.channel_domain (-1, self.domain_id, feed_id, self.f_title.ufl_value, null, self.v_folder_name, trim(self.f_folder_id.ufl_value));
                 {
                   declare exit handler for sqlstate '*' { goto _next; };
                   if (ENEWS.WA.channel_feeds(feed_id) = 0)
@@ -930,6 +930,7 @@
       </v:template>
 
       <v:template type="simple" enabled="-- case when (self.v_step = '4') then 1 else 0 end">
+        <div class="feedsData">
         <?vsp
           declare i, j, n, k integer;
           declare data, selectFolder, S any;
@@ -952,6 +953,7 @@
             }
           }
         ?>
+        </div>
         <div class="new-form-header">
           <?vsp http(self.v_data[0]); ?> Feeds
         </div>

@@ -154,7 +154,7 @@
         self.ds_data := result;
 
         if (self.f_cloud.ufl_selected = 1) {
-          declare N, maxCnt integer;
+          declare N, minCnt, maxCnt integer;
           declare tag_object, tags, tags_dict any;
 
           tags_dict := dict_new();
@@ -167,18 +167,20 @@
               dict_put(tags_dict, lcase(tag), tag_object);
             }
           }
-          maxCnt := 0;
+          maxCnt := 1;
+          minCnt := 1000000;
           for (select p.* from ENEWS.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do {
             self.ds_tags := vector_concat(self.ds_tags, vector(vector(tag, cnt)));
             if (cnt > maxCnt)
               maxCnt := cnt;
+            if (cnt < minCnt)
+              minCnt := cnt;
           }
-          self.ds_tags := vector_concat(vector(vector('', maxCnt)), self.ds_tags);
+          self.ds_tags := vector_concat(vector(vector('__max', maxCnt)), self.ds_tags);
+          self.ds_tags := vector_concat(vector(vector('__min', minCnt)), self.ds_tags);
         }
       }
-
 	    self.ds.vc_data_bind (e);
-
     ]]>
   </v:method>
   <v:method name="do_url" arglist="in mode varchar, in prefix varchar">
@@ -343,13 +345,15 @@
             <td valign="top" style="border: solid #935000; border-width: 1px 1px 1px 1px;">
         	  	<v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="--ENEWS.WA.settings_rows(self.domain_id, self.account_id)" scrollable="1">
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="search" class="grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
+                  <table id="search" class="grid" style="border-width: 0px 0px 0px 0px;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
-                        <th width="1%">
+                        <th width="1%" class="image">
                           <img src="image/flag.gif" border="0"/>
                         </th>
-                        <th width="1%" class="last"/>
+                        <th width="1%" class="last">
+                          <img src="image/c.gif" border="0"/>
+                        </th>
                         <th>
                           <?vsp self.sortColumn('Headline', 'EFI_TITLE'); ?>
                         </th>
@@ -466,19 +470,20 @@
             <td width="20%" valign="top" style="border: solid #935000;  border-width: 1px 1px 1px 0px;">
               <div style="margin-left:3px; margin-top:3px;">
                 <?vsp
-                  declare N, ts_length, ts_max, ts_size integer;
+                  declare N, tLength, tMax, tMin integer;
+                  declare tStyle varchar;
 
-                  ts_length := length(self.ds_tags);
-                  for (N := 0; N < ts_length; N := N + 1) {
-                    if (N = 0) {
-                      ts_max := self.ds_tags[N][1];
-                    } else {
-                	    ts_size := ((150.00 * self.ds_tags[N][1]) / ts_max) + 100;
-                    http (sprintf ('<a href="#" onclick="javascript: myPost(\'F1\', \'tag\', \'%s\');" name="btn_%s"><span class="nolink_b" style="font-size: %d%s;">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], ts_size, '%', self.ds_tags[N][0]));
+                  tLength := length(self.ds_tags);
+                  if (tLength > 2) {
+                    tMin := self.ds_tags[0][1];
+                    tMax := self.ds_tags[1][1];
+                    for (N := 2; N < tLength; N := N + 1) {
+                      tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
+                      http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], tStyle, self.ds_tags[N][0]));
                   }
-                  }
-                  if (ts_length <= 1)
+                  } else {
                     http ('no tags');
+                  }
                 ?>
               </div>
             </td>
@@ -666,6 +671,14 @@
           </div>
         </div>
         <div class="form-footer">
+          <v:button action="simple" value="Search" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.do_search (e);
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
           <v:button action="simple" value="Save" enabled="--case when ((self.v_type = 'text') and not (self.account_role in ('public', 'guest'))) then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -674,14 +687,6 @@
                 self.update_params();
                 tmp := 'sfolders_update.vspx?return=yes' || self.do_url('save', 'f_');;
                 self.vc_redirect(tmp);
-              ]]>
-            </v:on-post>
-          </v:button>
-          <v:button action="simple" value="Search" xhtml_class="form-button">
-            <v:on-post>
-              <![CDATA[
-                self.do_search (e);
-                self.vc_data_bind(e);
               ]]>
             </v:on-post>
           </v:button>

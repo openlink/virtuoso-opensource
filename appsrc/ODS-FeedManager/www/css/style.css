@@ -21,23 +21,19 @@
  *  
  */
 
+html { padding: 0;margin: 0;}
+
 body
 {
-  padding-right: 0px;
-  padding-bottom: 0px;
-  padding-left: 0px;
-  padding-top: 3px;
-  margin-right: 0px;
-  margin-bottom: 0px;
-  margin-left: 0px;
-  margin-top: 0px;
+  padding: 0px;
+  margin: 0px;
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
   font-size: 75%;
 }
 
 a
 {
-  font-family: Verdana, Arial, Sans-Serif;
+  font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
   text-decoration: none;
 }
 
@@ -55,6 +51,86 @@ a:hover
 {
   text-decoration: underline;
 }
+
+/* Header */
+
+#HD {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  float: left;
+  clear: both;
+  background-color: #fff}
+
+div.app_page_hdr {
+  height: 60px;
+  width: 100%;
+  padding: 0 10px 0 0;
+  margin: 0;
+  float: left;
+  clear: both;
+  text-align: right}
+
+img.hdr_img { float: left;}
+
+div.app_hdr_cmds_ctr {
+  margin-top: 10px;
+  float: right;
+  clear: right;
+}
+
+/* Middle */
+
+#MD {
+  float: left;
+  clear: both;
+  width: 99%;
+  padding: 0;
+  margin: 0 0 4px 4px;
+  border: 0}
+
+h1.page_hd {
+  clear: both;
+  margin: 0;
+  height: 60px;
+  padding: 10px 20px 0 0;
+  color: #888;
+  background-image: url("images/ods_banner.jpg");
+  background-repeat: no-repeat;
+  background-position: top left;
+  text-align: right;
+}
+
+#LT {
+  float: left;
+  clear: left;
+  width: 450px;
+  margin: 0}
+
+#RT {
+  float: left;
+  clear: right;
+  margin: 0 5px 0 0}
+
+/* Footer */
+
+#FT {
+  width: 100%;
+  position: relative;
+  bottom: 0px;
+  font-size: 8pt;
+  float: left;
+  clear: both;
+  text-align: right;
+  border-top: 1px solid black;
+  padding-right: 10px;
+  background-color: #86b9d9}
+
+#FT_L { float: left;
+  clear: left}
+
+#FT_R { float: right;
+  clear: right}
 
 #MTB
 {
@@ -270,38 +346,6 @@ table.sub_page_area
   background-color: #b0cde4;
   line-height: 2.6em;
   color: #b0cde4;
-}
-
-/* The main navigation bar */
-.news_tab
-{
-  margin: 0 0 0 4px;
-}
-
-.news_tab a.select
-{
-  padding: 0 .3em 0 .3em;
-  font-size: .9em;
-	font-family: verdana, sans-serif;
-  color: #444;
-  font-weight: bold;
-  border: solid #7f94a5;
-  border-width: 1px 1px 0px 1px;
-  background: #EFEFEF;
-}
-
-.news_tab a.unselect
-{
-  border-width: 1px 1px 1px 1px;
-  background: #b0cde4;
-}
-
-.news_tab a:hover,
-.news_tab a:active,
-.news_tab a.sel:link,
-.news_tab a.sel:visited
-{
-  background: #b0cde4;
 }
 
 /*
@@ -764,6 +808,13 @@ thead.sortHeader th.last
   border-width: 0px 0px 1px 0px;
 }
 
+thead.sortHeader th.image
+{
+  padding: 0px;
+  text-align: center;
+  vertical-align: middle;
+}
+
 /* make the A elements pretty. makes for nice clickable headers                */
 thead.sortHeader a, thead.sortHeader a:link, thead.sortHeader a:visited
 {
@@ -876,9 +927,9 @@ div.contents {
  	background-color: #EFEFEF;
 }
 
-.tabLabel {
-  float: left;
+div.tabLabel {
   display: inline;
+  margin: 0px 2px 0px 0px;
 }
 
 div.tabContent {
@@ -896,13 +947,21 @@ a.tab {
   padding: 2px 10px 2px 10px;
   position: relative;
   text-decoration: none;
-  top: 3px;
+  top: 2px;
   z-index: 100;
+}
+
+a.tab.tab2 {
+  background-color: #EFEFEF;
 }
 
 a.tab.activeTab {
   background-color: #EFEFEF;
   border-color: #7f94a5 #7f94a5 #7f94a5 #7f94a5;
+}
+
+a.tab.activeTab2 {
+  background-color: #FFF;
 }
 
 /* Menus */
