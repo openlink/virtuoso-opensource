@@ -728,11 +728,12 @@ string_to_dt (char *str, char *dt, const char **str_err)
   char *syear = NULL, *smonth = "1", *sday = "1", *shour = NULL, *sminute = NULL,
    *ssecond = NULL, *sfraction = NULL;
   TIMESTAMP_STRUCT ts;
-  char tmp[30];
+  char tmp[31];
   int type = DT_TYPE_DATETIME;
 
   /* if(str==NULL || strlen(str)==0) return -1; */
-  strncpy (tmp, str, sizeof (tmp));
+  strncpy (tmp, str, sizeof (tmp)-1);
+  tmp[30] = 0;
 
   if ((syear = strtok_r (tmp, DT_SEP, &place)) == NULL)
     {
@@ -1063,36 +1064,41 @@ iso8601_to_dt (char *str, char *dt, dtp_t dtp)
 
 
 int
-http_date_to_dt (char *http_date, char *dt)
+http_date_to_dt (const char *http_date, char *dt)
 {
-  char wkday[4], month[4], weekday[10];
+  char month[4] /*, weekday[10] */;
   unsigned day, year, hour, minute, second;
-  int fmt, month_number;
+  int idx, fmt, month_number;
   TIMESTAMP_STRUCT ts_tmp, *ts = &ts_tmp;
+  const char *http_end_of_weekday = http_date;
 
-  day = 0, year = 0, hour = 0, minute = 0, second = 0;
-  fmt = 0;
-  wkday[0] = month[0] = weekday[0] = 0;
+  day = year = hour = minute = second = 0;
+  month[0] /* = weekday[0] = weekday[9] */ = 0;
   memset (ts, 0, sizeof (TIMESTAMP_STRUCT));
 
+  for (idx = 0; isalpha (http_end_of_weekday[0]) && (idx < 9); idx++)
+    http_end_of_weekday++;
+  /*weekday[idx] = '\0';*/
+
   /* rfc 1123 */
-  if (7 == sscanf (http_date, "%3s, %2u %3s %4u %2u:%2u:%u GMT",
-	&(wkday[0]), &day, &(month[0]), &year, &hour, &minute, &second))
-    fmt = 1;
+  if (6 == sscanf (http_end_of_weekday, ", %2u %3s %4u %2u:%2u:%u GMT",
+	&day, &(month[0]), &year, &hour, &minute, &second) &&
+    (3 == (http_end_of_weekday - http_date)) )
+    fmt = 1123;
   /* rfc 850 */
-  else if (7 == sscanf (http_date, "%9s, %2u-%3s-%2u %2u:%2u:%u GMT",
-	&(weekday[0]), &day, &(month[0]), &year, &hour, &minute, &second))
+  else if (6 == sscanf (http_end_of_weekday, ", %2u-%3s-%2u %2u:%2u:%u GMT",
+	&day, &(month[0]), &year, &hour, &minute, &second) &&
+    (6 <= (http_end_of_weekday - http_date)) )
     {
       if (year > 0 && year < 100)
 	year = year + 1900;
-      fmt = 2;
+      fmt = 850;
     }
   /* asctime */
-  else if (7 == sscanf (http_date, "%3s %3s %2u %2u:%2u:%u %4u",
-	&(wkday[0]), month, &day, &hour, &minute, &second, &year))
-    {
-      fmt = 3;
-    }
+  else if (6 == sscanf (http_end_of_weekday, " %3s %2u %2u:%2u:%u %4u",
+	 month, &day, &hour, &minute, &second, &year) &&
+    (3 == (http_end_of_weekday - http_date)) )
+    fmt = -1;
   else
     return 0;
 
@@ -1133,7 +1139,13 @@ http_date_to_dt (char *http_date, char *dt)
   ts->hour = hour;
   ts->minute = minute;
   ts->second = second;
-  if (1 == fmt || 2 == fmt) /* these formats are explicitly for GMT */
+#if 0 /* This 'if' is NOT valid. Citation from RFC 2616:
+All HTTP date/time stamps MUST be represented in Greenwich Mean Time (GMT), without exception.
+For the purposes of HTTP, GMT is exactly equal to UTC (Coordinated Universal Time).
+This is indicated in the first two formats by the inclusion of "GMT" as the three-letter abbreviation for time zone,
+and MUST be assumed when reading the asctime format. */
+  if (1123 == fmt || 850 == fmt) /* these formats are explicitly for GMT */
+#endif
     ts_add (ts, dt_local_tz, "minute");
   timestamp_struct_to_dt (ts, dt);
   return 1;
