@@ -95,7 +95,6 @@ gallery.init = function (path){
   var SlideShow_next = function(){
     reverse = function(){
       if(!gallery.rotator.running){
-      dd('spriah')
         gallery.rotator.options.type = OAT.RotatorData.TYPE_LEFT;
         //gallery.rotator.start();
         gallery.slideshow_status_update();
@@ -118,7 +117,6 @@ gallery.init = function (path){
 
   var slider = new OAT.Slider("slider_btn",{minPos:10,maxPos:140});
   slider.onchange = function(value) {
-    dd(value);
       gallery.rotator.options.pause = value * 100
       gallery.slideshow_status_update();
     }
@@ -541,7 +539,6 @@ gallery.delete_tag_click = function(e){
   var el = (e.target) ? e.target : e.srcElement
 
   if(confirm('Are you sure that you want to detele this tag?')){
-dd(el);
     var tag = el.parentNode.childNodes[1].innerHTML;
    gallery.ajax.image_remove_tags(ds_current_album.current.id,tag);
   }
@@ -884,7 +881,6 @@ gallery.link_delete_album_click = function(){
   if(!confirm('Are you sure that you want to delete current Album?')){
     return;
   }
-  dd(ds_albums.current);
   gallery.ajax.delete_album(ds_albums.current.id);
 }
 
@@ -1078,7 +1074,6 @@ feed_url = function(type){
 
 //------------------------------------------------------------------------------
 gallery.managePanels = function(action){
-  dd('vertical:'+action);
 
   if(action == 'showImages'){
       OAT.Dom.show('care_edit_album');
@@ -1368,8 +1363,6 @@ gallery.ajax.tag_images = function(p1,p2){
   finish = function(tag){
     for(var i=0;i<ds_current_album.list.length;i++){
       $('image_id_'+i).checked = false;
-dd(typeof ds_current_album.list[i].private_tags);
-dd(ds_current_album.list[i]);
       ds_current_album.list[i].private_tags[ds_current_album.list[i].private_tags.length] = tag;
     }
     alert('Done');
@@ -1412,7 +1405,6 @@ gallery.ajax.image_get_exif = function(id){
 
   call = proxies.SOAP.get_attributes;
   prepare = function() {
-dd(id);
     return Array(sid,gallery_id,id)
   };
   finish = function(out_data) {

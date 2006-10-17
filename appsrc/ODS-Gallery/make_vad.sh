@@ -22,7 +22,7 @@
 #
 
 LOGDIR=`pwd`
-VERSION="0.2.01"
+VERSION="0.3.05"
 LOGFILE="${LOGDIR}/make_vad.log"
 STICKER="${LOGDIR}/make_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
