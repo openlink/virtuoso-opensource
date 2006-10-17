@@ -111,13 +111,13 @@ a:hover
 .login_form_container
 {
   padding: 5pt;
-  border: 1px solid #7F94A5;
+  border: 1px solid #7f94a5;
   width: 100%;
 }
 
 .left_container
 {
-  border: 1px solid #7F94A5;
+  border: 1px solid #7f94a5;
 	margin: 0.5em;
   width: auto;
 }
@@ -182,9 +182,7 @@ ul.left_navigation li
 .main_page_area
 {
   background-color: white;
-  margin-left: 0.5em;
-  margin-right: 0.5em;
-  margin-bottom: 0.5em;
+  margin: 6px;
 }
 
 .page_section_head
@@ -305,7 +303,7 @@ table.sub_page_area
 table#list
 {
   width: 100%;
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   border-width: 1px 1px 2px 1px;
 }
 
@@ -313,7 +311,7 @@ table#list th
 {
   font-size: 1em;
   padding: 2px;
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   background-color: #b0cde4;
   border-width: 0px 1px 1px 0px;
   font-weight: normal;
@@ -322,7 +320,7 @@ table#list th
 /*====== rows ======*/
 .td_border
 {
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   border-width: 1px 0px 1px 0px;
 }
 
@@ -366,7 +364,7 @@ input:focus, select:focus
   margin: .8em 0 .8em 0;
   font-size: .8em;
 	font-family: verdana,sans-serif;
-	color: #7F94A5;
+  color: #7f94a5;
 	font-weight: bold;
 	text-decoration: none;
 }
@@ -378,7 +376,7 @@ input.button {
   color: #ffffff;
   font-weight: bold;
   border: solid 1px;
-  border-color: #7F94A5;
+  border-color: #7f94a5;
   background: #99b3c5;
 }
 
@@ -389,7 +387,7 @@ input.button {
   font-weight: bold;
   padding: 0.1em 1em 0.1em 1em ;
   border: solid 1px;
-  border-color: #7F94A5;
+  border-color: #7f94a5;
   background: #99b3c5;
 }
 
@@ -399,7 +397,7 @@ input.button {
   font-weight: bold;
   margin: 0 0 6px 0;
   padding: 0px 0px 3px 4px;
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   border-width: 1px 1px 1px 10px;
   background-color: #b0cde4;
 }
@@ -411,7 +409,7 @@ input.button {
   height: 20px;
   padding-top: 0px;
   padding-bottom: 2px;
-  border: solid 1px #7F94A5;
+  border: solid 1px #7f94a5;
   background-color: #b0cde4;
 }
 
@@ -464,7 +462,7 @@ input.button {
 .form-list
 {
   width: 100%;
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   border-width: 1px 1px 1px 1px;
   background-color: #fff;
 }
@@ -474,7 +472,7 @@ input.button {
   text-align: center;
   font-size: 1em;
   padding: 4px;
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   background-color: #b0cde4;
   border-width: 0px 1px 1px 0px;
   font-weight: bold;
@@ -486,7 +484,7 @@ th.last
 }
 .form-list td
 {
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   border-width: 0px 0px 0px 0px;
   padding: 2px 4px 2px 4px;
 }
@@ -494,10 +492,10 @@ th.last
 .tab_page
 {
   font-size: 10pt;
-  border-top: solid 1px #7F94A5;
-  border-left: solid 1px #7F94A5;
-  border-right: solid 1px #7F94A5;
-  border-bottom: solid 1px #7F94A5;
+  border-top: solid 1px #7f94a5;
+  border-left: solid 1px #7f94a5;
+  border-right: solid 1px #7f94a5;
+  border-bottom: solid 1px #7f94a5;
   background-color: white;
   padding-left: 1px;
   padding-right: 1px;
@@ -514,7 +512,7 @@ th.last
   font-weight: bold;
   text-align: center;
   line-height: 50px;
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   border-width: 1px 1px 2px 1px;
   background-color: #EFEFEF;
 }
@@ -537,18 +535,18 @@ div.c1 {
 div.tabs {
 	top: 0px;
   font-size: 100%;
-  padding: 0px 0px 4px 0px;
+  padding: 0px 0px 3px 0px;
 }
 
 div.contents {
- 	background-color: #EFEFEF;
  	padding: 0.5em;
- 	border: 1px solid #556B80;
+  border: 1px solid #7f94a5;
+  background-color: #EFEFEF;
 }
 
-.tabLabel {
-  float: left;
+div.tabLabel {
   display: inline;
+  margin: 0px 2px 0px 0px;
 }
 
 div.tabContent {
@@ -557,22 +555,30 @@ div.tabContent {
 }
 
 a.tab {
-  color: #000000;
+  color: #000;
   font-weight: bold;
   background-color: #b0cde4;
-  border: 1px solid #000000;
+  border: 1px solid #000;
   border-bottom-width: 0px;
-  border-color: #556B80 #556B80 #556B80 #556B80;
+  border-color: #7f94a5;
   padding: 2px 10px 2px 10px;
   position: relative;
   text-decoration: none;
-  top: 3px;
+  top: 2px;
   z-index: 100;
+}
+
+a.tab.tab2 {
+  background-color: #EFEFEF;
 }
 
 a.tab.activeTab {
   background-color: #EFEFEF;
-  border-color: #556B80 #556B80 #556B80 #556B80;
+  border-color: #7f94a5 #7f94a5 #7f94a5 #7f94a5;
+}
+
+a.tab.activeTab2 {
+  background-color: #FFF;
 }
 
 table.box {
@@ -588,7 +594,7 @@ div.boxHeader {
   background-color: #EFEFEF;
   margin: 0 0 0.5em 0;
   padding: 2px;
-  border: 1px solid #7F94A5;
+  border: 1px solid #7f94a5;
   vertical-align: middle;
 }
 
@@ -612,7 +618,7 @@ img.toolbar
 	display: block;
 	float: left;
   margin-top: 10px;
-  background-color: #7F94A5;
+  background-color: #7f94a5;
 }
 
 a.toolbar
@@ -648,7 +654,7 @@ span.toolbarLabel
 .grid
 {
   width: 100%;
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   border-width: 1px 1px 2px 1px;
 }
 
@@ -665,7 +671,7 @@ thead.sortHeader th
   font-weight: bold;
   text-align: left;
   padding: 3px 2px 3px 3px;
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   border-width: 0px 1px 1px 0px;
 }
 
@@ -706,17 +712,24 @@ table.grid td
   padding: 2px 4px 2px 4px;
 }
 
-td.td_image
+td.checkbox
 {
-  width: 20px;
+  text-align: center;
+  padding: 0;
 }
 
-td.td_number
+td.image
+{
+  text-align: center;
+  padding: 0;
+}
+
+td.number
 {
   text-align: right;
 }
 
-td.td_action
+td.action
 {
   white-space: nowrap;
 }
@@ -728,7 +741,7 @@ td.td_action
   font-weight: bold;
   margin: 0 0 6px 0;
   padding: 0px 0px 2px 4px;
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   border-width: 1px 1px 1px 10px;
   background-color: #b0cde4;
 }
@@ -739,7 +752,7 @@ td.td_action
   font-weight: bold;
   margin: 6px 0 0 0;
   text-align: center;
-  border: solid 1px #7F94A5;
+  border: solid 1px #7f94a5;
   background-color: #b0cde4;
 }
 
@@ -747,7 +760,7 @@ td.td_action
 {
   font-size: 1em;
   padding: 6px;
-  border: solid #7F94A5;
+  border: solid #7f94a5;
   border-width: 1px 1px 1px 1px;
   background-color: #EFEFEF;
 }

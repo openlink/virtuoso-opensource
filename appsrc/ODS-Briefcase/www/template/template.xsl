@@ -22,10 +22,11 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro" xmlns:ods="http://www.openlinksw.com/vspx/ods/">
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
 
   <!--=========================================================================-->
+  <xsl:include href="http://local.virt/DAV/VAD/wa/comp/ods_bar.xsl"/>
   <xsl:include href="dav_browser.xsl"/>
 
   <!--=========================================================================-->
@@ -138,8 +139,9 @@
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
-      <div style="height: 65px; background-color: #fff;">
-        <div style="float: left;  padding-top: 3px;">
+      <ods:ods-bar app_type='oDrive'/>
+      <div style="background-color: #fff;">
+        <div style="float: left;">
           <img src="image/drivebanner_sml.jpg" border="0"/>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
@@ -159,23 +161,10 @@
         </div>
         <br style="clear: left;"/>
       </div>
-      <div style="padding: 0.5em 0 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
-        <div style="float: left; padding-left: 0.5em;">
-          <?vsp
-            declare S varchar;
-
-            S := ODRIVE.WA.session_user_description(self.vc_page.vc_event.ve_params);
-            http(sprintf('<a href="%Vmyhome.vspx?sid=%s&realm=%s" title="%V"><img src="image/home_16.png" border="0"/> %V</a>', ODRIVE.WA.wa_home_link (), self.sid, self.realm, S, S));
-          ?>
-        </div>
-        <div style="float: right; text-align: right; padding-right: 0.5em;">
+      <div style="text-align: right; padding: 0em 0.5em 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
           <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
           |
           <v:button action="simple" style="url" value="Help" xhtml_title="Help"/>
-          |
-          <a href="<?V ODRIVE.WA.wa_home_link () ?>" title="Logout">Logout</a>
-        </div>
-        <br style="clear: left;"/>
       </div>
       <v:include url="odrive_login.vspx"/>
     <table id="RCT">
@@ -394,7 +383,6 @@
     &lt;?vsp } ?&gt;
   </xsl:template>
 
-  <!-- The rest is from page.xsl -->
   <!--=========================================================================-->
   <xsl:template match="vm:header">
     <xsl:if test="@caption">
@@ -414,6 +402,18 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <xsl:template match="vm:if">
+    <xsl:processing-instruction name="vsp">
+      if (<xsl:value-of select="@test"/>)
+      {
+    </xsl:processing-instruction>
+        <xsl:apply-templates />
+    <xsl:processing-instruction name="vsp">
+      }
+    </xsl:processing-instruction>
+  </xsl:template>
+
+  <!--=========================================================================-->
   <xsl:template match="vm:caption">
     <xsl:value-of select="@fixed"/>
     <xsl:apply-templates/>
@@ -429,7 +429,7 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:tabCaption">
-    <div style="display: inline;">
+    <div class="tabLabel">
       <xsl:attribute name="id"><xsl:value-of select="concat('tabLabel_', @tab)"/></xsl:attribute>
       <xsl:element name="v:url">
         <xsl:attribute name="url">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>

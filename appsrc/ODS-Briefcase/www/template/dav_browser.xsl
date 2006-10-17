@@ -399,7 +399,7 @@
             return 0;
           if (self.dir_path = ODRIVE.WA.shared_name())
             return 0;
-          if (not (((self.command = 0) and (self.command_mode <> 3)) or ((self.command = 0) and (self.command_mode = 3) and (not isnull(self.search_advanced)))))
+          if (not ((self.dir_select = 1) or ((self.command = 0) and (self.command_mode <> 3)) or ((self.command = 0) and (self.command_mode = 3) and (not isnull(self.search_advanced)))))
             return 0;
           if (cmd = 'new') {
             if (not (self.command_mode in (0,1)))
@@ -407,12 +407,21 @@
             if (not ODRIVE.WA.det_action_enable(ODRIVE.WA.odrive_real_path(self.dir_path), 'createContent'))
               return 0;
           }
+          if (cmd = 'up')
+            if ((self.dir_path = 'Home') or (trim(self.dir_path, '/') = trim(ODRIVE.WA.odrive_dav_home(), '/')))
+              return 0;
+
           if (cmd = 'upload') {
             if (not (self.command_mode in (0,1)))
               return 0;
             if (not ODRIVE.WA.det_action_enable(ODRIVE.WA.odrive_real_path(self.dir_path), 'createContent'))
               return 0;
+            if (not ODRIVE.WA.odrive_write_permission(ODRIVE.WA.odrive_real_path(self.dir_path)))
+              return 0;
           }
+          if (cmd = 'new')
+            if (not ODRIVE.WA.odrive_write_permission(ODRIVE.WA.odrive_real_path(self.dir_path)))
+              return 0;
           if (cmd = 'mail') {
             return 0;
           }
@@ -1624,7 +1633,7 @@
                           http('&nbsp;&nbsp;');
                           http(ODRIVE.WA.stringCut(self.item_array[i], self.chars)); ?>
                 </td>
-              <td class="td_number" nowrap="nowrap"><?vsp http(self.ui_size(ODRIVE.WA.DAV_GET(item, 'length'), ODRIVE.WA.DAV_GET(item, 'type'))); ?></td>
+              <td class="number" nowrap="nowrap"><?vsp http(self.ui_size(ODRIVE.WA.DAV_GET(item, 'length'), ODRIVE.WA.DAV_GET(item, 'type'))); ?></td>
               <td nowrap="nowrap"><?vsp http(self.ui_date(ODRIVE.WA.DAV_GET(item, 'modificationTime'))); ?></td>
                 <td><?vsp http(either(equ(ODRIVE.WA.DAV_GET(item, 'type'), 'R'), ODRIVE.WA.DAV_GET(item, 'mimeType'), '&nbsp;')); ?></td>
                 <td><?V ODRIVE.WA.DAV_GET(item, 'ownerName') ?></td>
@@ -2313,7 +2322,7 @@
                   state := '00000';
                   exec(control.ds_sql, state, msg, control.ds_parameters, 0, meta, result);
                   if (state = '00000') {
-                    declare I, N, maxCnt integer;
+                  declare I, N, minCnt, maxCnt integer;
                     declare tag_object, tags, tags_dict any;
 
                     tags_dict := dict_new();
@@ -2333,13 +2342,17 @@
                         dict_put(tags_dict, lcase(tag), tag_object);
                       }
                     }
-                    maxCnt := 0;
+                  maxCnt := 1;
+                  minCnt := 1000000;
                     for (select p.* from ODRIVE.WA.tagsDictionary2rs(p0)(c0 varchar, c1 integer, c2 varchar) p where p0 = tags_dict order by c0) do {
                       self.dir_tags := vector_concat(self.dir_tags, vector(vector(c0, c1, c2)));
+                    if (c1 < minCnt)
+                      minCnt := c1;
                       if (c1 > maxCnt)
                         maxCnt := c1;
                     }
-                    self.dir_tags := vector_concat(vector(vector('', maxCnt)), self.dir_tags);
+                  self.dir_tags := vector_concat (vector (vector ('__max', maxCnt)), self.dir_tags);
+                  self.dir_tags := vector_concat (vector( vector ('__min', minCnt)), self.dir_tags);
                   }
                 }
               ]]>
@@ -2398,18 +2411,16 @@
                     <v:template name="ds_items_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                       <table id="dir" class="grid no-border" cellspacing="0">
                         <thead class="sortHeader">
-
-                          <v:template type="simple" enabled="-- equ(self.dir_details, 0)">
                             <tr>
                               <?vsp
                                 if ((self.dir_select = 0) and (self.dir_path <> '')) {
-                                  http('<th style="text-align: left; padding-top: 0; padding-bottom: 0">');
-                                  if (self.command_mode in (2,3))
+                              http('<th class="checkbox" width="1%">');
                                     http('<input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)" title="Select All" />');
                                   http('</th>');
                                 }
                               ?>
                               <?vsp self.showColumnHeader('column_#1'); ?>
+                          <vm:if test="self.dir_details = 0">
                               <?vsp self.showColumnHeader('column_#2'); ?>
                               <?vsp self.showColumnHeader('column_#3'); ?>
                               <?vsp self.showColumnHeader('column_#4'); ?>
@@ -2418,48 +2429,12 @@
                               <?vsp self.showColumnHeader('column_#7'); ?>
                               <?vsp self.showColumnHeader('column_#8'); ?>
                               <?vsp self.showColumnHeader('column_#9'); ?>
-                              <th nowrap="nowrap">
+                          </vm:if>
+                          <th class="last" width="1%">
                                 Actions
                               </th>
                             </tr>
-                          </v:template>
                         </thead>
-
-                        <v:template type="simple" enabled="-- case when ((ODRIVE.WA.path_compare(self.dir_path, ODRIVE.WA.shared_name()) = 0) and (ODRIVE.WA.path_compare(self.dir_path, ODRIVE.WA.odrive_dav_home()) = 0) and (((self.command in (0)) and (self.command_mode in (0,1))) or (self.command in (20, 21)))) then 1 else 0 end">
-                          <tr>
-                            <v:template type="simple" enabled="-- equ(self.dir_select, 0)">
-                              <td class="td_image">
-                                <input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)" title="Select All" />
-                              </td>
-                            </v:template>
-                            <td>
-                              <v:button action="simple" style="image" value="image/dav/up_16.png" text="&nbsp;&nbsp;.." format="%s" xhtml_title="Up one level">
-                                <v:on-post>
-                                  <![CDATA[
-                                    if (trim(self.dir_path, '/') = trim(ODRIVE.WA.odrive_dav_home(), '/')) {
-                                      self.dir_path := '';
-                                    } else {
-                                      declare pos integer;
-
-                                      pos := strrchr(self.dir_path, '/');
-                                      if (isnull(pos))
-                                        pos := 0;
-                                      self.dir_path := left(self.dir_path, pos);
-                                    }
-                                    self.ds_items.vc_reset();
-                                    self.vc_data_bind(e);
-                                  ]]>
-                                </v:on-post>
-                              </v:button>
-                            </td>
-                            <v:template type="simple" enabled="-- equ(self.dir_details, 0)">
-                              <td colspan="8">&nbsp;</td>
-                            </v:template>
-                            <v:template type="simple" enabled="-- equ(self.dir_details, 1)">
-                              <td>&nbsp;</td>
-                            </v:template>
-                          </tr>
-                        </v:template>
                       </table>
                     </v:template>
 
@@ -2499,7 +2474,7 @@
                               rowset := (control as vspx_row_template).te_rowset;
 
                               if ((self.dir_select = 0) and (self.dir_path <> ''))
-                                http(sprintf('<td class="td_image"><input type="checkbox" name="CB_%s" /></td>', rowset[8]));
+                              http(sprintf('<td align="center"><input type="checkbox" name="CB_%s" /></td>', rowset[8]));
                             ?>
                             <td nowrap="nowrap">
                               <v:button action="simple" style="image" value="''" text="''" format="%s" xhtml_title="--ODRIVE.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[0])">
@@ -2568,7 +2543,7 @@
                               </td>
                             </v:template>
                             <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#3')) then 1 else 0 end;">
-                              <td class="td_number" nowrap="nowrap">
+                            <td class="number" nowrap="nowrap">
                                 <v:label>
                                   <v:before-data-bind>
                                     <![CDATA[
@@ -2611,7 +2586,7 @@
                                 <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[7]" />
                               </td>
                             </v:template>
-                            <td nowrap="nowrap">
+                          <td class="action">
                               <v:button style="image" action="simple" value="image/dav/item_prop.png" enabled="--ODRIVE.WA.odrive_read_permission((control.vc_parent as vspx_row_template).te_rowset[8])" xhtml_title="Properties">
                                 <v:on-post>
                                   <![CDATA[
@@ -2677,19 +2652,20 @@
                 <td width="20%" valign="top" style="border: solid #7F94A5;  border-width: 1px 1px 1px 0px;">
                   <div style="margin-left:3px; margin-top:3px; overflow: auto; height: 360px;">
                     <?vsp
-                      declare N, ts_length, ts_max, ts_size integer;
+                    declare N, tLength, tMax, tMin integer;
+                    declare tStyle varchar;
 
-                      ts_length := length(self.dir_tags);
-                      for (N := 0; N < ts_length; N := N + 1) {
-                        if (N = 0) {
-                          ts_max := self.dir_tags[N][1];
-                        } else {
-                    	    ts_size := ((150.00 * self.dir_tags[N][1]) / ts_max) + 100;
-                        http (sprintf ('<a href="#" onclick="javascript: document.forms[''F1''].tag_hidden.value = ''%s%s''; doPost (''F1'', ''tag_search''); return false;" name="btn_%s"><span class="nolink_b" style="font-size: %d%s;">%s</span></a> ', self.dir_tags[N][2], self.dir_tags[N][0], self.dir_tags[N][0], ts_size, '%', self.dir_tags[N][0]));
+                    tLength := length(self.dir_tags);
+                    if (tLength > 2) {
+                      tMin := self.dir_tags[0][1];
+                      tMax := self.dir_tags[1][1];
+                      for (N := 2; N < tLength; N := N + 1) {
+                        tStyle := ODS.WA.tag_style(self.dir_tags[N][1], tMin, tMax);
+                        http (sprintf ('<a href="#" onclick="javascript: document.forms[''F1''].tag_hidden.value = ''%s%s''; doPost (''F1'', ''tag_search''); " name="btn_%s"><span class="nolink_b" style="%s;">%s</span></a> ', self.dir_tags[N][2], self.dir_tags[N][0], self.dir_tags[N][0], tStyle, self.dir_tags[N][0]));
                       }
-                      }
-                      if (ts_length <= 1)
+                    } else {
                         http ('no tags');
+                    }
                     ?>
                     &nbsp;
                   </div>

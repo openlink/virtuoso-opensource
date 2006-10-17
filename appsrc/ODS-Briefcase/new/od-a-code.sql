@@ -192,7 +192,7 @@ create procedure ODRIVE.WA.odrive_get_page_name ()
 --
 create procedure ODRIVE.WA.odrive_menu_tree ()
 {
-  return sprintf (
+  return
 '<?xml version="1.0" ?>
 <odrive_menu_tree>
   <node name="Browse" url="home.vspx" id="1" tip="DAV Browser" allowed="owner">
@@ -209,8 +209,7 @@ create procedure ODRIVE.WA.odrive_menu_tree ()
       <node name="221" url="mimes_update.vspx" id="321" place="link" allowed="owner"/>
     </node>
   </node>
-  <node name="%s" url="%s" id="5" allowed="public guest member owner admin"/>
-</odrive_menu_tree>', ODRIVE.WA.wa_home_title (), ODRIVE.WA.wa_home_link ());
+</odrive_menu_tree>';
 }
 ;
 
@@ -1070,6 +1069,13 @@ create procedure ODRIVE.WA.domain_name ()
 }
 ;
 
+create procedure ODRIVE.WA.domain_is_public (
+  in domain_id integer)
+{
+  return coalesce((select WAI_IS_PUBLIC from DB.DBA.WA_INSTANCE where WAI_ID = domain_id), 0);
+}
+;
+
 -----------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.account() returns varchar
@@ -1127,26 +1133,32 @@ create procedure ODRIVE.WA.odrive_user_id(
 create procedure ODRIVE.WA.odrive_user_initialize(
   in user_name varchar) returns varchar
 {
-  declare user_home, user_category varchar;
+  declare user_home, new_folder varchar;
   declare uid, gid, cid integer;
   declare retCode any;
 
   user_home := ODRIVE.WA.dav_home_create(user_name);
   if (isinteger(user_home))
-    signal ('HOME', sprintf ('Home folder can not be created for user "%s".', user_name));
+    signal ('BRF01', sprintf ('Home folder can not be created for user "%s".', user_name));
 
   DB.DBA.DAV_OWNER_ID(user_name, null, uid, gid);
   cid := DB.DBA.DAV_SEARCH_ID(user_home, 'C');
   if (not ODRIVE.WA.DAV_ERROR(cid)) {
     if ((select count(*) from WS.WS.SYS_DAV_COL where COL_PARENT = cid and COL_DET = 'CatFilter') = 0) {
-      user_category := concat(user_home, 'Items/');
-      cid := DB.DBA.DAV_SEARCH_ID(user_category, 'C');
+      new_folder := concat(user_home, 'Items/');
+      cid := DB.DBA.DAV_SEARCH_ID(new_folder, 'C');
       if (ODRIVE.WA.DAV_ERROR(cid))
-        cid := ODRIVE.WA.DAV_COL_CREATE(user_category, '110100100R', uid, gid);
+        cid := DB.DBA.DAV_MAKE_DIR (new_folder, uid, gid, '110100100R');
       if (ODRIVE.WA.DAV_ERROR(cid))
-        signal ('CATS', concat('User''s category folder ''Items'' can not be created. ', ODRIVE.WA.DAV_PERROR(cid)));
-      retCode := ODRIVE.WA.CatFilter_CONFIGURE_INT(user_category, user_home, vector());
+        signal ('BRF02', concat('User''s category folder ''Items'' can not be created. ', ODRIVE.WA.DAV_PERROR(cid)));
+      retCode := ODRIVE.WA.CatFilter_CONFIGURE_INT(new_folder, user_home, vector());
     }
+    new_folder := concat(user_home, 'Public/');
+    cid := DB.DBA.DAV_SEARCH_ID(new_folder, 'C');
+    if (ODRIVE.WA.DAV_ERROR(cid))
+      cid := DB.DBA.DAV_MAKE_DIR (new_folder, uid, gid, '110100100R');
+    if (ODRIVE.WA.DAV_ERROR(cid))
+      signal ('BRF03', concat('User\'s folder \'Public\' can not be created.', ODRIVE.WA.DAV_PERROR(cid)));
   }
 }
 ;
@@ -2870,8 +2882,13 @@ create procedure ODRIVE.WA.test (
       signal ('TEST', valueMessage);
     if (__SQL_STATE = 'EMPTY')
       signal ('TEST', sprintf('Field ''%s'' cannot be empty!<>', valueName));
-    if (__SQL_STATE = 'CLASS')
+    if (__SQL_STATE = 'CLASS') {
+      if (valueType in ('free-text', 'tags')) {
+        signal ('TEST', sprintf('Field ''%s'' contains invalid characters or noise words!<>', valueName));
+      } else {
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters!<>', valueName));
+      }
+    }
     if (__SQL_STATE = 'TYPE')
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters for \'%s\'!<>', valueName, valueType));
     if (__SQL_STATE = 'MIN')
@@ -2990,7 +3007,7 @@ create procedure ODRIVE.WA.validate2 (
     if (isnull(regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
       goto _error;
   } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
-    if (isnull(regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_]*)?\$', propertyValue)))
+    if (isnull(regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
       goto _error;
   } else if (propertyType = 'email') {
     if (isnull(regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))
@@ -3069,12 +3086,19 @@ create procedure ODRIVE.WA.validate_tags (
 --
 create procedure ODRIVE.WA.version_update()
 {
-  declare home, source, target varchar;
+  declare uname, home, source, target varchar;
 
-  for (select WAI_ID, WAM_USER
-         from DB.DBA.WA_MEMBER join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST
-        where WAI_TYPE_NAME = 'oDrive' and WAM_MEMBER_TYPE = 1) do {
-    home := ODRIVE.WA.odrive_dav_home(ODRIVE.WA.odrive_user_name(WAM_USER));
+  for (select U_NAME
+         from DB.DBA.WA_MEMBER,
+              DB.DBA.WA_INSTANCE,
+              DB.DBA.SYS_USERS
+        where WAI_NAME = WAM_INST
+          and WAI_TYPE_NAME = 'oDrive'
+          and WAM_MEMBER_TYPE = 1
+          and WAM_USER = U_ID) do
+  {
+    ODRIVE.WA.odrive_user_initialize(U_NAME);
+    home := ODRIVE.WA.odrive_dav_home(U_NAME);
     if (not isnull(home)) {
       source := concat(home, 'My Items/');
       target := concat(home, 'Items/');

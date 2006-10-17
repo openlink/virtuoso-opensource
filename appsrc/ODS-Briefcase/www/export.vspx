@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/">
+<v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:variable name="account" type="varchar" default="''"/>
   <v:variable name="account_id" type="integer" default="-1"/>
 
@@ -37,13 +37,13 @@
     <?vsp
       declare N integer;
 
+      set http_charset = 'UTF-8';
       http_rewrite();
       http_request_status ('HTTP/1.1 200 OK');
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 
       if (self.v_output = 'about') {
         self.account_id := cast(get_keyword('aid', self.vc_page.vc_event.ve_params, '-1') as integer);
-        http ('<?xml version ="1.0" encoding="UTF-8"?>\n');
         http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
         http ('<channel>\n');
         for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
@@ -174,7 +174,7 @@
           goto _error;
 
         http ('<?xml version ="1.0" encoding="UTF-8"?>\n');
-        http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
+          http ('<rss version="2.0">\n');
         http ('<channel>\n');
         for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
           http ('<title>');
@@ -214,7 +214,7 @@
               http_value (ODRIVE.WA.dt_rfc1123 (stringdate(row[3])));
             http ('</pubDate>\n');
             if (self.v_output <> 'rss') {
-              http ('<vi:modified>');
+                http ('<vi:modified xmlns:vi="http://www.openlinksw.com/weblog/">');
                 http_value (ODRIVE.WA.dt_iso8601 (stringdate(row[3])));
               http ('</vi:modified>\n');
             }
@@ -242,7 +242,7 @@
       http('<?xml version="1.0" ?><empty />');
 
     _end:
-      http_flush();
+      return;
     ?>
   ]]>
 </v:page>
