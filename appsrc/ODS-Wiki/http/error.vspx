@@ -1,0 +1,39 @@
+<v:page name="error" 
+	style="comp.xsl"
+	xmlns:v="http://www.openlinksw.com/vspx/" 
+	xmlns:vm="http://www.openlinksw.com/vspx/macro" 
+	on-deadlock-retry="5" 
+	on-error-redirect="../main/" 
+	doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
+  <v:variable name="errpage" type="varchar" param-name="__PAGE"/>
+  <v:variable name="state" type="varchar" param-name="__SQL_STATE"/>
+  <v:variable name="message" type="varchar" param-name="__SQL_MESSAGE"/>
+  <head>
+    <link rel="stylesheet" href="common.css" type="text/css"/>
+    <link rel="stylesheet" href="Skins/default/default.css" type="text/css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+    <title>Error page</title>
+  </head>
+  <vm:empty-body>
+    <vm:close-popup-link/>
+    <table>
+      <tr>
+        <th align="left">Page:</th>
+	<td><v:label name="page_l" value="--self.errpage"/></td>
+      </tr>
+<!--      <tr>
+        <th align="left">State:</th>
+	<td><v:label name="state_l" value="--self.state"/></td>
+      </tr>
+      <tr>
+        <th align="left" valign="top">Message:</th>
+	<td><v:label name="message_l" value="--self.message"/></td>
+      </tr> -->
+      <tr>  
+        <th>Description</th>
+	<td>Unexpected error</td>
+      </tr>				   
+    </table>
+  </vm:empty-body>
+</v:page>

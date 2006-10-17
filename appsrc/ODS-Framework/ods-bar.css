@@ -1,0 +1,141 @@
+#ods-bar {
+  float: left;
+  clear: left;
+  font-size: 9pt;
+  padding: 0px 0px 0px 0px;
+  margin: 0px 0px 10px 0px;
+  background-color: #86b9d9}
+#ods-bar img {
+  float: left;
+  vertical-align: middle;
+  border: 0}
+#ods-bar img.tab_r {
+  vertical-align: top;
+  margin: 0;
+  padding: 0;
+  border: 0;}
+#ods-bar ul { 
+  float: left;
+  list-style-type: none;
+  padding: 0px 0px 0px 0px}
+#ods-bar ul li {
+  height: 21px;
+  padding: 0; 
+  float: left}
+#ods-bar ul li a {
+  display: block;
+  height: 15px;
+  float: left;
+  text-decoration: none;
+  padding: 3px 0px 3px 5px}
+#ods-bar-toggle {
+  float: left; clear: left}
+#ods-bar-mid { 
+  float: left;
+  margin: 0;
+  background-color: #86b9d9}
+
+/* 1st level tabs */
+
+#ods-bar-first-lvl {
+  vertical-align: middle;
+  padding: 0px;
+  margin: 0px;}
+#ods-bar-first-lvl li {
+  padding: 3px 3px 3px 3px}
+#ods-bar-first-lvl li a {
+  color: #86b9d9;
+  background-color: #426275}
+#ods-bar-first-lvl li a:hover {
+  color: #d5eefd}
+#ods-bar-first-lvl li.sel {
+  padding-right: 5px;}
+#ods-bar-first-lvl li.sel a { 
+  color: #426275;
+  background-color: #86b9d9}
+
+/* 2nd level tabs */
+
+#ods-bar-second-lvl {
+  margin: 0px 0px 0px 21px;
+  padding: 0px;
+  float: left;clear: left;}
+#ods-bar-second-lvl li {
+  padding: 3px 3px 3px 5px;}
+#ods-bar-second-lvl li a {
+  padding: 0px 5px 0px 5px;
+  color: #426275}
+
+#ods-bar-second-lvl li a:hover {
+  color: #d5eefd}
+
+/* Login, etc */
+
+#ods-bar-r {
+  clear: right;
+  margin: 0px 0px 0px 0px;
+  font-size: 8pt;
+  white-space: nowrap}
+
+#ods-bar-site-lnk {
+  white-space: nowrap}
+
+#ods-bar-bottom {
+  font-size: 9pt;
+  float: right;
+  clear: both;
+  padding: 2px 0px 0px 40px;
+  border-top: 1px solid #325265;
+  background-color: #527285;
+  color: #d5eefd}
+
+#ods-bar-home-path {
+  float: left}
+
+#ods-bar-data-space-indicator {
+  float: right;
+}
+
+#ods-bar-data-space-indicator a {
+  color: #86b9d9
+}
+
+#ods-bar-login {
+  margin:0; padding:0;
+  float:right;
+  clear:right}
+
+#ods-bar-site-lnk {
+  margin: 0;padding: 0;
+  float: right;clear: right}
+
+img.ods-bar-inline-icon {
+  margin: 0px 3px 0px 3px;
+  vertical-align: middle}
+
+h1 { float: left;
+  font-size: 14pt;
+  color: #456;
+  margin-top: 0;}
+
+/* widget */
+
+div.widget { 
+  padding: 5px;
+}
+
+div.widget-title-bar h2 {
+  color: #446;
+  margin: 0;
+}
+
+div.widget-title-bar img { border: 0}
+
+div.widget-title-bar a { text-decoration: none;}
+
+div.w-apps-list ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+a.pgm-link img { border: 0 }
