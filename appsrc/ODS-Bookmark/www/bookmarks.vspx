@@ -57,12 +57,6 @@
     ]]>
   </v:method>
 
-  <v:method name="linkClass" arglist="inout flag any">
-    <![CDATA[
-      return either (equ (flag, 1), 'read', 'unread');
-    ]]>
-  </v:method>
-
   <v:method name="mode_test" arglist="">
     <![CDATA[
       declare id, grant_id, user_id, folder_id, params any;
@@ -70,6 +64,7 @@
       params := self.vc_page.vc_event.ve_params;
       if (not is_empty_or_null (self.bTag)) {
         self.bTab := 'tags';
+        self.bMode := 'browse';
         self.bNode := BMK.WA.make_node('t', self.bTag);
       } else if (not is_empty_or_null (get_keyword('link', params, ''))) {
         self.bTab  := 'bookmarks';
@@ -94,6 +89,8 @@
         }
         self.bBookmark := 'pt_node_' || self.bPath;
         self.bLocation := BMK.WA.make_node ('b', get_keyword ('location', params));
+        if (self.bTab = 'shared')
+          self.bLocation := ucase(self.bLocation);
       } else if (not is_empty_or_null (get_keyword ('folder', params, ''))) {
         grant_id := cast (get_keyword ('grant', params, '-1') as integer);
         folder_id := cast (get_keyword ('folder', params, '-1') as integer);
@@ -126,7 +123,7 @@
 
   <v:method name="toolbarEnable" arglist="in cmd varchar">
     <![CDATA[
-      if ((cmd = 'shared') and ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
+      if ((cmd = 'shared') and (self.account_role in ('public', 'guest')))
         return 0;
       if ((cmd = 'Bookmark/Create') and ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
         return 0;
@@ -192,7 +189,10 @@
         image := 'plus.gif';
         image2 := 'folder_16.png';
         alt := 'Open Node';
-        if (BMK.WA.vector_contains(self.bState, nodes[N+2])) {
+        if (not BMK.WA.bmk_node_has_childs (domain_id, user_id, nodes[N+1], nodes[N+2])) {
+          image := 'c.gif';
+          image2 := 'folder_16.png';
+        } else if (BMK.WA.vector_contains(self.bState, nodes[N+2])) {
           image := 'minus.gif';
           image2 := 'folder_open_16.png';
           alt := 'Close Node';
@@ -207,8 +207,11 @@
           class := 'nolink_a';
           self.bName := nodes[N];
         }
-
+        if (image = 'c.gif') {
+          http (sprintf ('<img src="image/%s" border="0" width="11px" />', image));
+        } else {
         http(sprintf('<a href="#" name="pt_toggle_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_toggle\', \'%s\', \'pt_path\', \'%s\'); return false"><img src="image/%s" border="0" class="nolink" alt="%s" title="%s" /></a>', nodes[N+2], nodes[N+1], nodes[N+2], image, alt, alt));
+        }
         http(sprintf('<a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="image/%s" border="0" /> %s</a>', nodes[N+2], nodes[N+1], nodes[N+2], class, nodes[N], nodes[N], image2, nodes[N]));
         if (image = 'minus.gif')
           self.showTree(level+1, domain_id, user_id, nodes[N+1], nodes[N+2]);
@@ -243,6 +246,7 @@
       <v:variable name="v_id" type="any" default="-1"/>
       <v:variable name="v_parent_id" type="varchar" default="'0'"/>
       <v:variable name="v_uri" type="varchar" param-name="URI" default="'http://'"/>
+      <v:variable name="v_return" type="varchar" param-name="URI" default="''"/>
       <v:variable name="v_name" type="varchar" param-name="TITLE" default="''"/>
       <v:variable name="v_oldName" type="varchar" default="''"/>
       <v:variable name="v_description" type="varchar" default="''"/>
@@ -253,21 +257,23 @@
       <v:variable name="v_folder_name" type="varchar" default="''"/>
       <v:variable name="v_folder_id" type="varchar" default="'0'"/>
       <v:variable name="v_grants" type="any" default="null"/>
+      <v:variable name="v_source" type="any" default="0"/>
     </vm:variables>
     <vm:pagebody>
       <v:before-data-bind>
         <![CDATA[
-          declare settings any;
-
-          settings := BMK.WA.settings(self.account_id);
-          self.tbLabels := cast(get_keyword('tbLabels', settings, '1') as integer);
-          self.chars := cast(get_keyword('chars', settings, '60') as integer);
+          self.tbLabels := cast (get_keyword ('tbLabels', self.settings, '1') as integer);
+          self.chars := cast (get_keyword ('chars', self.settings, '60') as integer);
 
           if (get_keyword('URI', self.vc_page.vc_event.ve_params, '') <> '') {
             self.bMode := 'Bookmark/Create';
             self.v_id := -1;
           }
           self.bTab := lcase(get_keyword('tab', e.ve_params, self.bTab));
+          if (get_keyword ('tab', e.ve_params, '') = 'shared') {
+            self.bNode := BMK.WA.make_node ('u', -1);
+            self.bPath := '/' || self.bNode;
+          }
           self.bTag := lcase(get_keyword('tag', e.ve_params, ''));
           self.mode_test();
         ]]>
@@ -306,15 +312,6 @@
                       self.bPath := BMK.WA.make_path('', 'f', -1);
                     }
                     self.bTab := 'bookmarks';
-                    self.bMode := 'browse';
-                  }
-
-                  if (cmd = 'tags') {
-                    if (self.bTab <> 'tags') {
-                      self.bNode := 't';
-                      self.bPath := 't';
-                    }
-                    self.bTab := 'tags';
                     self.bMode := 'browse';
                   }
 
@@ -370,17 +367,6 @@
                         self.bNodes := vector_concat(self.bNodes, vector(e.ve_params[N+1]));
                     }
                   }
-                  if (cmd = 'rename') {
-                    declare N integer;
-
-                    for (N := 0; N < length(e.ve_params); N := N + 4) {
-                      if (e.ve_params[N] = 'cb_item') {
-                        self.bMode := 'rename';
-                        self.v_id := e.ve_params[N+1];
-                        goto _end;
-                      }
-                    }
-                  }
 
                   if (cmd = 'grants') {
                     declare N integer;
@@ -403,33 +389,13 @@
                     }
 
                     self.v_grants := '';
-                    for (select U_ID from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = U_ID and lcase(G_OBJECT_TYPE) = lcase(BMK.WA.node_type(self.v_id)) and G_OBJECT_ID = BMK.WA.node_id(self.v_id)) do
-                      self.v_grants := self.v_grants || cast(U_ID as varchar) || ',';
+                    for (select U_ID, U_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = U_ID and lcase(G_OBJECT_TYPE) = lcase(BMK.WA.node_type(self.v_id)) and G_OBJECT_ID = BMK.WA.node_id(self.v_id)) do
+                      self.v_grants := self.v_grants || cast (U_NAME as varchar) || ',';
+                    self.v_grants := trim(self.v_grants, ',');
 
                     goto _end;
                   }
 
-                  if (cmd = 'properties') {
-                    declare N integer;
-                    declare node any;
-
-                    for (N := 0; N < length(e.ve_params); N := N + 4) {
-                      if (e.ve_params[N] = 'cb_item') {
-                        node := e.ve_params[N+1];
-                        if (BMK.WA.node_type(node) = 'f') {
-                          self.bMode := 'Folder/Update';
-                          self.v_id := BMK.WA.node_id(node);
-                        } else if (BMK.WA.node_type(node) = 'b') {
-                          self.bMode := 'Bookmark/Properties';
-                          self.v_id := BMK.WA.node_id(node);
-                        } else if (BMK.WA.node_type(node) = 's') {
-                          self.bMode := 'Smart Folder/Update';
-                          self.v_id := BMK.WA.node_id(node);
-                        }
-                        goto _end;
-                      }
-                    }
-                  }
                   if (cmd = 'delete') {
                     declare N integer;
                     declare node any;
@@ -456,18 +422,10 @@
           }
         ?>
         <div class="toolbar">
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''bookmarks'');'" xhtml_title="Show Bookmarks" xhtml_class="toolbar">
+          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''bookmarks'');'" xhtml_title="My Bookmarks" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/bmk_32.png" border="0"/>' || self.toolbarLabel('Show Bookmarks');
-              ]]>
-            </v:before-render>
-          </v:url>
-
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''tags'');'" xhtml_title="Show Tags" xhtml_class="toolbar">
-            <v:before-render>
-              <![CDATA[
-                control.ufl_value := '<img src="image/tags_32.png" border="0"/>' || self.toolbarLabel('Tags');
+                control.ufl_value := '<img src="image/bmk_32.png" border="0"/>' || self.toolbarLabel('My Bookmarks');
               ]]>
             </v:before-render>
           </v:url>
@@ -584,19 +542,6 @@
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
 
-          <span id="tbRename" class="toolbar" style="display: none">
-            <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''rename'');'" enabled="--self.toolbarEnable('rename')" xhtml_title="Rename">
-              <v:before-render>
-                <![CDATA[
-                  control.ufl_value := '<img src="image/renm_32.png" border="0"/>' || self.toolbarLabel('Rename');
-                ]]>
-              </v:before-render>
-            </v:url>
-          </span>
-          <span id="tbRename_gray" class="toolbar" style="display: inline;">
-            <img src="image/grey_renm_32.png" border="0" alt="Rename"/><?vsp http(self.toolbarLabel('Rename'));?>
-          </span>
-
           <span id="tbSharing" class="toolbar" style="display: none">
             <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''grants'');'" enabled="--self.toolbarEnable('grants')" xhtml_title="Sharing">
               <v:before-render>
@@ -608,19 +553,6 @@
           </span>
           <span id="tbSharing_gray" class="toolbar" style="display: inline;">
             <img src="image/grey_grants_32.png" border="0" alt="Sharing"/><?vsp http(self.toolbarLabel('Sharing'));?>
-          </span>
-
-          <span id="tbProperties" class="toolbar" style="display: none">
-            <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''cb_'', ''No resources were selected for property changes.'')) toolbarPost(''properties'');'" enabled="--self.toolbarEnable('properties')" xhtml_title="Properties">
-              <v:before-render>
-                <![CDATA[
-                  control.ufl_value := '<img src="image/prop_32.png" border="0"/>' || self.toolbarLabel('Properties');
-                ]]>
-              </v:before-render>
-            </v:url>
-          </span>
-          <span id="tbProperties_gray" class="toolbar" style="display: inline;">
-            <img src="image/grey_prop_32.png" border="0" alt="Properties"/><?vsp http(self.toolbarLabel('Properties'));?>
           </span>
 
           <span id="tbDelete" class="toolbar" style="display: none">
@@ -641,20 +573,39 @@
       </v:template>
       <!--=========================================================================-->
 
-      <div class="feed_main" style="position: relative;">
-        <div style="width: 33.8%; height: 100%; float: left; overflow: auto;">
-              <?vsp
-            if (self.bTab = 'bookmarks') {
-              if (self.domain_id = -2) {
-                self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 0), '');
-                } else {
-                self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 1), '');
+      <vm:if test="(self.account_role <> 'public') and (self.bTab <> 'shared')">
+        <div class="tabs">
+          <div class="tabLabel">
+            <v:button action="simple" style="url" value="Folder Tree" xhtml_class="--either(equ(self.bTab, 'bookmarks'), 'tab activeTab2', 'tab tab2')" xhtml_alt="Folder Tree">
+              <v:on-post>
+                <![CDATA[
+                  if (self.bTab <> 'bookmarks') {
+                    self.bTab := 'bookmarks';
+                    self.bNode := '';
+                    self.vc_data_bind (e);
               }
-            } else if ((self.bTab = 'shared') and (self.domain_id <> -1)) {
-              self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 2), '');
+                ]]>
+              </v:on-post>
+            </v:button>
+          </div>
+          <div class="tabLabel">
+            <v:button action="simple" style="url" value="Tags" xhtml_class="--either(equ(self.bTab, 'tags'), 'tab activeTab2', 'tab tab2')" xhtml_alt="Tags">
+              <v:on-post>
+                <![CDATA[
+                  if (self.bTab <> 'tags') {
+                    self.bTab := 'tags';
+                    self.bNode := 't';
+                    self.bPath := 't';
+                    self.vc_data_bind (e);
                 }
-              ?>
-          <v:template type="simple" enabled="--either(equ(self.bTab, 'tags'), 1, 0)">
+                ]]>
+              </v:on-post>
+            </v:button>
+          </div>
+        </div>
+      </vm:if>
+
+      <div class="feed_main" style="position: relative;">
                 <?vsp
               if (0)
               {
@@ -663,12 +614,12 @@
                 <v:button name="pt_browse" action="simple" style="url" value="Submit">
                   <v:on-post>
                     <![CDATA[
-                      declare node, path any;
+                  declare action, node, path any;
 
                       path := get_keyword ('pt_path', e.ve_params, '');
 
                       -- touggle
-                      node := get_keyword('pt_toggle', e.ve_params, '');
+                  node := get_keyword ('pt_toggle', e.ve_params, get_keyword ('pt_node', e.ve_params, ''));
                       if (node <> '') {
                         if (BMK.WA.vector_contains(self.bState, path)) {
                           self.bState := BMK.WA.vector_cut(self.bState, path);
@@ -679,14 +630,44 @@
                         } else {
                           self.bState := vector_concat (self.bState, vector(path));
                         }
+                    self.bMode := 'browse';
                       }
 
                       -- node
                       node := get_keyword('pt_node', e.ve_params, '');
                       if (node <> '') {
+                    self.bMode := 'browse';
                         self.bNode := node;
                         self.bPath := path;
                       }
+
+                  -- action
+                  action := get_keyword ('pt_action', e.ve_params, '');
+                  if (action <> '') {
+                    node := get_keyword ('pt_value', e.ve_params, '');
+                    if (action = 'delete') {
+                      if (BMK.WA.node_type(node) = 'f') {
+                        BMK.WA.folder_delete(self.domain_id, BMK.WA.node_id(node));
+                      } else if (BMK.WA.node_type(node) = 'b') {
+                        BMK.WA.bookmark_delete(self.domain_id, BMK.WA.node_id(node));
+                      } else if (BMK.WA.node_type(node) = 's') {
+                        BMK.WA.sfolder_delete(self.domain_id, BMK.WA.node_id(node));
+                      }
+                    }
+                    if (action = 'edit') {
+                      if (BMK.WA.node_type(node) = 'f') {
+                        self.bMode := 'Folder/Update';
+                        self.v_id := BMK.WA.node_id(node);
+                      } else if (BMK.WA.node_type(node) = 'b') {
+                        self.bMode := 'Bookmark/Properties';
+                        self.v_id := BMK.WA.node_id(node);
+                      } else if (BMK.WA.node_type(node) = 's') {
+                        self.bMode := 'Smart Folder/Update';
+                        self.v_id := BMK.WA.node_id(node);
+                      }
+                    }
+                  }
+
 
                       self.vc_data_bind (e);
                    ]]>
@@ -695,28 +676,38 @@
             <?vsp
               }
             ?>
+        <div style="width: 33.8%; height: 100%; float: left; overflow: auto;">
+          <?vsp
+            if (self.bTab = 'bookmarks') {
+              if (self.domain_id = -2) {
+                self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 0), '');
+              } else {
+                self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 1), '');
+              }
+            } else if ((self.bTab = 'shared') and (self.domain_id <> -1)) {
+              self.showTree(1, self.domain_id, self.account_id, BMK.WA.make_node('r', 2), '');
+            }
+          ?>
+          <vm:if test="self.bTab = 'tags'">
             <div style="margin-left:3px; margin-top:3px;">
               <?vsp
-                declare ts_max, ts_size integer;
-                declare ts_class varchar;
+                declare tMin, tMax integer;
+                declare tClass, tStyle varchar;
 
                 if (is_empty_or_null (self.bTag))
                   self.bTag := BMK.WA.node_suffix (self.bNode);
-                ts_max := 1;
-                for (select TS_TAG, TS_COUNT from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id order by TS_TAG) do {
-                  if (TS_TAG = '') {
-                    ts_max := TS_COUNT;
-                  } else {
-              	    ts_size  := ((150.00 * TS_COUNT) / ts_max) + 100;
-                    ts_class := 'nolink_b';
+                select max(TS_COUNT), min(TS_COUNT) into tMax, tMin from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id;
+
+                for (select TS_TAG, TS_COUNT from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id and TS_TAG <> '' order by TS_TAG) do {
+                  tStyle := ODS.WA.tag_style(TS_COUNT, tMin, tMax);
+                  tClass := '';
                     if (self.bTag = TS_TAG)
-                      ts_class := 'nolink_a';
-                    http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="font-size: %d%s;">%s</span></a> ', TS_TAG, TS_TAG, ts_class, ts_size, '%', TS_TAG));
-                  }
+                    tClass := 'nolink_a';
+                  http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', TS_TAG, TS_TAG, tClass, tStyle, TS_TAG));
                 }
               ?>
             </div>
-          </v:template>
+          </vm:if>
         </div>
         <div style="width: 66%; height: 100%; float: right; overflow: auto; border: solid #7f94a5; border-width: 0px 0px 0px 1px;">
           <v:template type="simple" enabled="--case when (self.bMode = 'browse') then 1 else 0 end">
@@ -769,13 +760,15 @@
                                               _NODE,
                                               _NAME,
                                               _URI,
-                                              _LAST_UPDATE
+                                                _LAST_UPDATE,
+                                                _CREATED
                                          from (select 0                        _TYPE,
                                                       F_ID                     _ID,
                                                       BMK.WA.make_node(\'f\', F_ID)  _NODE,
                                               F_NAME                   _NAME,
                                               \'\'                     _URI,
-                                              null                    _LAST_UPDATE
+                                                        null                           _LAST_UPDATE,
+                                                        null                           _CREATED
                                          from BMK.WA.FOLDER
                                         where F_DOMAIN_ID = <DOMAIN_ID>
                                                   and coalesce(F_PARENT_ID, -1) = <ID>
@@ -785,7 +778,8 @@
                                                       BMK.WA.make_node(\'b\', BD_ID) _NODE,
                                               BD_NAME                  _NAME,
                                               B_URI                    _URI,
-                                              BD_LAST_UPDATE           _LAST_UPDATE
+                                                        BD_LAST_UPDATE                 _LAST_UPDATE,
+                                                        BD_CREATED                     _CREATED
                                          from BMK.WA.BOOKMARK_DOMAIN,
                                               BMK.WA.BOOKMARK
                                         where BD_DOMAIN_ID = <DOMAIN_ID>
@@ -799,16 +793,23 @@
                                                 _NODE,
                                                 _NAME,
                                                 _URI,
-                                                _LAST_UPDATE
+                                                _LAST_UPDATE,
+                                                _CREATED
                                            from (select TOP 100
                                                         1                              _TYPE,
-                                                        B_ID                           _ID,
-                                                        BMK.WA.make_node(\'b\', B_ID)  _NODE,
-                                                        B_NAME                         _NAME,
+                                                        BD_ID                           _ID,
+                                                        BMK.WA.make_node(\'b\', BD_ID) _NODE,
+                                                        BD_NAME                         _NAME,
                                                         B_URI                          _URI,
-                                                        B_CREATED                      _LAST_UPDATE
-                                                   from BMK.WA.BOOKMARK
-                                                  order by B_CREATED desc) x';
+                                                        BD_LAST_UPDATE                 _LAST_UPDATE,
+                                                        BD_CREATED                     _CREATED
+                                                   from BMK.WA.BOOKMARK_DOMAIN,
+                                                        BMK.WA.BOOKMARK,
+                                                        DB.DBA.WA_INSTANCE
+                                                  where BD_BOOKMARK_ID = B_ID
+                                                    and WAI_ID = BD_DOMAIN_ID
+                                                    and WAI_IS_PUBLIC = 1
+                                                  order by BD_LAST_UPDATE desc) x';
                     }
 
                   } else if ((BMK.WA.node_type(self.bNode) = 's') and (BMK.WA.node_id(self.bNode) = -1)) {
@@ -817,7 +818,8 @@
                                               BMK.WA.make_node(\'s\', SF_ID) _NODE,
                                               SF_NAME                  _NAME,
                                               \'\'                     _URI,
-                                              null                    _LAST_UPDATE
+                                              null                           _LAST_UPDATE,
+                                              null                           _CREATED
                                          from BMK.WA.SFOLDER
                                         where SF_DOMAIN_ID = <DOMAIN_ID>';
                     control.ds_sql := replace(control.ds_sql, '<DOMAIN_ID>', cast(self.domain_id as varchar));
@@ -840,7 +842,8 @@
                                               BMK.WA.make_node(\'u\', U_ID)  _NODE,
                                               U_NAME                   _NAME,
                                               \'\'                     _URI,
-                                              null                    _LAST_UPDATE
+                                              null                           _LAST_UPDATE,
+                                              null                           _CREATED
                                          from BMK.WA.GRANTS,
                                               DB.DBA.SYS_USERS
                                         where G_GRANTEE_ID = <USER_ID>
@@ -853,13 +856,15 @@
                                               _NODE,
                                               _NAME,
                                               _URI,
-                                              _LAST_UPDATE
+                                              _LAST_UPDATE,
+                                              _CREATED
                                          from (select 0                        _TYPE,
                                                       F_ID                     _ID,
                                                       BMK.WA.make_node(\'F\', F_ID)  _NODE,
                                                       F_NAME                   _NAME,
                                                       \'\'                     _URI,
-                                                      null                     _LAST_UPDATE
+                                                      null                           _LAST_UPDATE,
+                                                      null                           _CREATED
                                                  from BMK.WA.FOLDER,
                                                       BMK.WA.GRANTS
                                                 where G_OBJECT_TYPE = \'F\'
@@ -872,7 +877,8 @@
                                                       BMK.WA.make_node(\'B\', BD_ID) _NODE,
                                                       BD_NAME                  _NAME,
                                                       B_URI                    _URI,
-                                                      BD_LAST_UPDATE           _LAST_UPDATE
+                                                      BD_LAST_UPDATE                 _LAST_UPDATE,
+                                                      BD_CREATED                     _CREATED
                                                  from BMK.WA.BOOKMARK_DOMAIN,
                                                       BMK.WA.BOOKMARK,
                                                       BMK.WA.GRANTS
@@ -890,13 +896,15 @@
                                               _NODE,
                                               _NAME,
                                               _URI,
-                                              _LAST_UPDATE
+                                              _LAST_UPDATE,
+                                              _CREATED
                                          from (select 0                        _TYPE,
                                                       F_ID                     _ID,
                                                       BMK.WA.make_node(\'F\', F_ID)  _NODE,
                                                       F_NAME                   _NAME,
                                                       \'\'                     _URI,
-                                                      null                     _LAST_UPDATE
+                                                      null                           _LAST_UPDATE,
+                                                      null                           _CREATED
                                                  from BMK.WA.FOLDER
                                                 where coalesce(F_PARENT_ID, -1) = <ID>
                                                 union
@@ -905,7 +913,8 @@
                                                       BMK.WA.make_node(\'B\', BD_ID) _NODE,
                                                       BD_NAME                  _NAME,
                                                       B_URI                    _URI,
-                                                      BD_LAST_UPDATE           _LAST_UPDATE
+                                                      BD_LAST_UPDATE                 _LAST_UPDATE,
+                                                      BD_CREATED                     _CREATED
                                                  from BMK.WA.BOOKMARK_DOMAIN,
                                                       BMK.WA.BOOKMARK
                                                 where BD_BOOKMARK_ID = B_ID
@@ -932,10 +941,22 @@
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                         </th>
                        </v:template>
-                      <th width="1%" class="last">&nbsp;</th>
-                      <th>
+                      <th width="1%" class="last">
+                        <img src="image/c.gif" border="0"/>
+                      </th>
+                      <th width="80%">
                         <?vsp self.sortColumn('Name', '_NAME'); ?>
                       </th>
+                      <v:template type="simple" enabled="-- equ(cast(get_keyword('column_#2', self.settings, '0') as integer), 1)">
+                        <th nowrap="nowrap">
+                          <?vsp self.sortColumn('Date Created', '_CREATED'); ?>
+                        </th>
+                      </v:template>
+                      <v:template type="simple" enabled="-- equ(cast(get_keyword('column_#3', self.settings, '1') as integer), 1)">
+                        <th nowrap="nowrap">
+                          <?vsp self.sortColumn('Last Update', '_LAST_UPDATE'); ?>
+                        </th>
+                      </v:template>
                     </tr>
                   </thead>
                 </table>
@@ -945,9 +966,16 @@
 
                 <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                   <table>
-                    <tr>
+                    <?vsp
+                      declare S varchar;
+
+                      S := '';
+                      if (self.bLocation = ((control as vspx_row_template).te_column_value('_NODE')))
+                        S := 'class="td_sel"';
+                      http(sprintf('<tr %s>', S));
+                    ?>
                       <v:template type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')) then 0 else 1 end">
-                        <td align="center">
+                        <td align="center" valign="top">
                           <?vsp
                             declare S varchar;
 
@@ -959,7 +987,7 @@
                           ?>
                         </td>
                        </v:template>
-                      <td>
+                      <td valign="top">
                         <?vsp
                           declare node, image, alt any;
 
@@ -977,10 +1005,10 @@
                             image := 'image/user_16.png';
                             alt := 'User';
                           }
-                          http(sprintf('<img src="%s" border="0" alt="%s" width="16"/>', image, alt));
+                          http(sprintf('<img style="padding: 0 2px 0 0;" src="%s" border="0" alt="%s"/>', image, alt));
                         ?>
                       </td>
-                      <td>
+                      <td valign="top">
                         <v:button action="simple"
                                   style="url"
                                   value="--BMK.WA.stringCut((control.vc_parent as vspx_row_template).te_column_value('_NAME'), self.chars)"
@@ -1003,9 +1031,14 @@
                                xhtml_title="--BMK.WA.utf2wide((control.vc_parent as vspx_row_template).te_column_value('_NAME'))"/>
                         <?vsp
                           declare N integer;
-                          declare node, tags any;
+                          declare node, title, tags any;
 
                           node := (control as vspx_row_template).te_column_value('_NODE');
+                          title := '\'' || (control as vspx_row_template).te_column_value('_NAME') || '\'';
+                          if (not ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
+                            http(sprintf(' <a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%s\');" title="Edit %s" class="link_ed">edit</a> / <a href="javascript: if (confirm (\'Are you sure that you want to delete this item?\')) vspxPost (\'pt_browse\', \'pt_action\', \'delete\', \'pt_value\', \'%s\'); " title="Delete %s" class="link_ed">delete</a>', node, title, node, title));
+
+
                           if (BMK.WA.node_type(node) = 'b') {
                             tags := BMK.WA.tags_select2(self.domain_id, self.account_id, BMK.WA.node_id(node));
                             if (not is_empty_or_null(tags)) {
@@ -1021,7 +1054,19 @@
                           }
                         ?>
                       </td>
-                    </tr>
+                      <v:template type="simple" enabled="-- equ(cast(get_keyword('column_#2', self.settings, '0') as integer), 1)">
+                        <td align="right" nowrap="nowrap" valign="top">
+                          <v:label value="--BMK.WA.dt_value(((control.vc_parent).vc_parent as vspx_row_template).te_column_value('_CREATED'))" />
+                        </td>
+                      </v:template>
+                      <v:template type="simple" enabled="-- equ(cast(get_keyword('column_#3', self.settings, '1') as integer), 1)">
+                        <td align="right" nowrap="nowrap" valign="top">
+                          <v:label value="--BMK.WA.dt_value(((control.vc_parent).vc_parent as vspx_row_template).te_column_value('_LAST_UPDATE'))" />
+                        </td>
+                      </v:template>
+                    <?vsp
+                      http('</tr>');
+                    ?>
                   </table>
                 </v:template>
 
@@ -1049,6 +1094,15 @@
           </v:template>
 
           <v:template type="simple" enabled="--case when (self.bMode = 'import') then 1 else 0 end">
+            <v:before-data-bind>
+              <![CDATA[
+                self.v_folder_id := 0;
+                if (BMK.WA.node_type(self.bNode) = 'f')
+                  self.v_folder_id :=BMK.WA.node_id(self.bNode);
+                self.v_folder_id := get_keyword ('i_folder_id', self.vc_page.vc_event.ve_params, self.v_folder_id);
+                self.v_folder_name := get_keyword ('i_folder_name', self.vc_page.vc_event.ve_params, '');
+              ]]>
+            </v:before-data-bind>
             <div class="new-form-header">
               <v:label format="%s" value="Import bookmark(s)"/>
             </div>
@@ -1056,35 +1110,92 @@
               <table cellspacing="0">
                 <tr>
                   <th>
+                    <v:label for="i_folder_name" value="Folder"/>
+                  </th>
+                  <td colspan="2">
+                    <v:text name="i_folder_name" null-value="''" value="--self.v_folder_name" fmt-function="BMK.WA.utf2wide" xhtml_class="textbox" xhtml_size="40%"/>
+                    <v:data-list name="i_folder_id" value="--self.v_folder_id" sql="select 0 as F_ID, 'Select folder ...' as F_PATH2, '' as F_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH" key-column="F_ID" value-column="F_PATH2" xhtml_class="select"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th rowspan="3" valign="middle">
                     <v:label for="i_file" value="Source"/>
                   </th>
                   <td width="1%" nowrap="nowarap">
-                    <input type="radio" name="i_source" id="i_source_0" value="0" checked="checked" /><xsl:call-template name="nbsp"/><b><vm:label for="i_source_0" value="--'File'" /></b>
+                    <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0" xhtml_onchange="javascript: showCell(\'import_0\'); hideCell(\'import_1\'); hideCell(\'import_2\');">
+                      <v:before-render>
+                        <![CDATA[
+                          control.ufl_selected := either(equ(self.v_source, 0), 1, 0);
+                        ]]>
+                      </v:before-render>
+                    </v:radio-button>
+                    <xsl:call-template name="nbsp"/>
+                    <b><vm:label for="i_source_0" value="--'File'" /></b>
                   </td>
-                  <td>
+                  <td rowspan="3" valign="middle">
+                    <div id="import_0" style="display: none;">
                     <input type="file" name="i_file" onchange="javascript: F1.i_source[0].checked=true;" onfocus="javascript: F1.i_source[0].checked=true;" size="40"/>
+                    </div>
+                    <div id="import_1" style="display: none;">
+                      <v:text name="i_dav" value="--''" xhtml_onfocus="javascript: F1.i_source[1].checked=true;" xhtml_size="40"/>
+                      <v:browse-button value="Browse..." selector="popup_browser.vspx" child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"  browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=i_dav', BMK.WA.dav_home(self.account_id))">
+                        <v:field name="i_dav"/>
+                      </v:browse-button>
+                    </div>
+                    <div id="import_2" style="display: none;">
+                      <table cellspacing="0">
+                        <tr>
+                          <td width="1%" align="right">
+                            <v:label for="i_deliciousUser" value="User"/>
+                          </td>
+                          <td>
+                            <v:text name="i_deliciousUser" null-value="--''" value="--get_keyword('deliciousUser', self.settings, '')" />
                   </td>
                 </tr>
                 <tr>
-                  <th />
-                  <td nowrap="nowarap">
-                    <input type="radio" name="i_source" id="i_source_1" value="1" /><xsl:call-template name="nbsp"/><b><vm:label for="i_source_1" value="--'WebDAV'" /></b>
+                          <td align="right">
+                            <v:label for="i_deliciousPwd" value="Password"/>
                   </td>
                   <td>
-                    <v:text name="i_dav" value="--''" xhtml_onfocus="javascript: F1.i_source[1].checked=true;" xhtml_size="40"/><v:browse-button value="Browse..."
-                      selector="popup_browser.vspx"
-                      child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"
-                      browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=i_dav', BMK.WA.dav_home(self.account_id))">
-                      <v:field name="i_dav" />
-                    </v:browse-button>
+                            <v:text name="i_deliciousPwd" type="password" null-value="--''" value="--get_keyword('deliciousPwd', self.settings, '')" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td />
+                          <td>
+                            <v:check-box name="i_deliciousReminder" xhtml_id="i_deliciousReminder" is-boolean="1" true-value="1" false-value="0" value="1" />
+                            <vm:label for="i_deliciousReminder" value="Remember this login for future imports"/>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
                   </td>
                 </tr>
                 <tr>
-                  <th />
                   <td nowrap="nowarap">
-                    <input type="radio" name="i_source" id="i_source_2" value="2" /><xsl:call-template name="nbsp"/><b><vm:label for="i_source_2" value="--'del.icio.us'" /></b>
+                    <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1" xhtml_onchange="javascript: hideCell(\'import_0\'); showCell(\'import_1\'); hideCell(\'import_2\');" >
+                      <v:before-render>
+                        <![CDATA[
+                          control.ufl_selected := either(equ(self.v_source, 1), 1, 0);
+                        ]]>
+                      </v:before-render>
+                    </v:radio-button>
+                    <xsl:call-template name="nbsp"/>
+                    <b><vm:label for="i_source_1" value="--'WebDAV'" /></b>
                   </td>
-                  <td />
+                </tr>
+                <tr>
+                  <td nowrap="nowarap">
+                    <v:radio-button name="i_source_2" xhtml_id="i_source_2" group-name="i_source" value="2" xhtml_onchange="javascript: hideCell(\'import_0\'); hideCell(\'import_1\'); showCell(\'import_2\');" >
+                      <v:before-render>
+                        <![CDATA[
+                          control.ufl_selected := either(equ(self.v_source, 2), 1, 0);
+                        ]]>
+                      </v:before-render>
+                    </v:radio-button>
+                    <xsl:call-template name="nbsp"/>
+                    <b><vm:label for="i_source_2" value="--'del.icio.us'" /></b>
+                  </td>
                 </tr>
               </table>
             </div>
@@ -1095,9 +1206,16 @@
                     declare S, uri any;
 
                     S := '';
-                    if (get_keyword ('i_source', self.vc_page.vc_event.ve_params, '-1') = '0') {
+                    if (self.i_source_0.ufl_selected) {
+                      self.v_source := 0;
                     S := trim(get_keyword('i_file', self.vc_page.vc_event.ve_params, ''));
-                    } else if (get_keyword ('i_source', self.vc_page.vc_event.ve_params, '-1') = '1') {
+                      if (isnull(S)) {
+                        self.vc_error_message := 'Bad import source!';
+                        self.vc_is_valid := 0;
+                        return;
+                      }
+                    } else if (self.i_source_1.ufl_selected) {
+                      self.v_source := 1;
                       uri := trim(get_keyword('i_dav', self.vc_page.vc_event.ve_params, ''));
                       if (uri not like concat(BMK.WA.dav_home(self.account_id),'%')) {
                         self.vc_error_message := sprintf('Please select file from your home directory ''%s''', BMK.WA.dav_home(self.account_id));
@@ -1107,21 +1225,26 @@
                       uri := concat(BMK.WA.host_url(), uri);
                       S := BMK.WA.dav_content(uri);
                       if (isnull(S)) {
-                        self.vc_error_message := 'Bad import source';
+                        self.vc_error_message := 'Bad import source!';
                         self.vc_is_valid := 0;
                         return;
                       }
-                    } else if (get_keyword ('i_source', self.vc_page.vc_event.ve_params, '-1') = '2') {
+                    } else if (self.i_source_2.ufl_selected) {
+                      self.v_source := 2;
                       declare deliciousUser, deliciousPwd, errorMsg varchar;
-                      declare settings, hdr, V any;
+                      declare hdr, V any;
 
-                      settings := BMK.WA.settings(self.account_id);
-                      deliciousUser := get_keyword('deliciousUser', settings, '');
-                      deliciousPwd := get_keyword('deliciousPwd', settings, '');
+                      deliciousUser := trim (self.i_deliciousUser.ufl_value);
+                      deliciousPwd := trim (self.i_deliciousPwd.ufl_value);
+                      if (self.i_deliciousReminder.ufl_selected) {
+                        self.settings := BMK.WA.set_keyword ('deliciousUser', self.settings, deliciousUser);
+                        self.settings := BMK.WA.set_keyword ('deliciousPwd', self.settings, deliciousPwd);
+                        insert replacing BMK.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize (self.settings));
+                      }
 
                       declare exit handler for sqlstate '*'
                       {
-                        self.vc_error_message := 'Cannot connect to del.icio.us server';
+                        self.vc_error_message := 'Cannot connect to del.icio.us server!';
                         self.vc_is_valid := 0;
                         return;
                       };
@@ -1136,11 +1259,28 @@
                     }
                     }
 
-                    self.v_folder_id := null;
-                    if (BMK.WA.node_type(self.bNode) = 'f')
-                      self.v_folder_id := BMK.WA.node_id(self.bNode);
-                    BMK.WA.bookmark_import(self.domain_id, self.account_id, self.v_folder_id, S);
+                    -- check / create folder
+                    self.v_folder_id := self.i_folder_id.ufl_value;
+                    self.v_folder_name := trim(self.i_folder_name.ufl_value);
+                    if ((self.v_folder_name <> '') and (not BMK.WA.folder_check_name(self.v_folder_name, 1))) {
+                      self.vc_error_message := 'Please, enter other folder name. This name conatins bad characters.';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    self.v_folder_id := BMK.WA.folder_create(self.domain_id, self.v_folder_name, self.v_folder_id);
 
+                    -- import
+                    {
+                      declare exit handler for sqlstate '*'
+                      {
+                        self.vc_error_message := BMK.WA.test_clear(__SQL_MESSAGE);
+                        self.vc_is_valid := 0;
+                        return;
+                      };
+                    BMK.WA.bookmark_import(self.domain_id, self.account_id, self.v_folder_id, S);
+                    }
+
+                    self.v_source := 0;
                     self.bMode := 'browse';
                     self.vc_data_bind(e);
                   ]]>
@@ -1149,12 +1289,18 @@
               <v:button action="simple" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
+                    self.v_source := 0;
                     self.bMode := 'browse';
                     self.vc_data_bind(e);
                   ]]>
                 </v:on-post>
               </v:button>
             </div>
+            <?vsp
+              http ('\n<script type="text/javascript">\n');
+              http (sprintf ('showCell(\'import_%d\');', self.v_source));
+              http ('</script>\n');
+            ?>
           </v:template>
 
           <v:template type="simple" enabled="--case when (self.bMode = 'export') then 1 else 0 end">
@@ -1214,10 +1360,28 @@
               <table cellspacing="0">
                 <tr>
                   <th>
-                    <v:label for="t_tag" value="Tag"/>
+                    <v:label for="t_tag" value="Comma Delimited Tags"/>
                   </th>
                   <td>
-                    <v:text name="t_tag" null-value="--''" value="--self.v_tag" xhtml_size="60"/>
+                    <v:text name="t_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    My Tags
+                  </th>
+                  <td>
+                    <?vsp
+                      declare _done integer;
+
+                      _done := 0;
+                      for (select TS_TAG from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id and TS_TAG <> '' order by TS_TAG) do {
+                        http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'t_tag\');">%s</a> ', TS_TAG, TS_TAG));
+                        _done := 1;
+                      }
+                      if (not _done)
+                        http ('no tags');
+                    ?>
                   </td>
                 </tr>
               </table>
@@ -1229,7 +1393,7 @@
                     self.v_tag := BMK.WA.tag_prepare(self.t_tag.ufl_value);
             			  if (not BMK.WA.validate_tags(self.v_tag)) {
             			    self.vc_is_valid := 0;
-            			    self.vc_error_message := 'The expression is not valid tag.';
+                      self.vc_error_message := 'The expression is not valid tag(s).';
             			    return;
             			  }
                     declare N integer;
@@ -1277,7 +1441,7 @@
                     <v:label for="m_folder_name" value="Move to folder"/>
                   </th>
                   <td>
-                    <v:text name="m_folder_name" null-value="''" value="--self.v_folder_name" xhtml_class="textbox" xhtml_size="40"/>
+                    <v:text name="m_folder_name" null-value="''" value="--self.v_folder_name" fmt-function="BMK.WA.utf2wide" xhtml_class="textbox" xhtml_size="40"/>
                     <v:select-list name="m_folder_id">
                       <v:before-data-bind>
                         <![CDATA[
@@ -1287,7 +1451,7 @@
                           (control as vspx_select_list).vsl_item_values:= vector ();
                           (control as vspx_select_list).vsl_selected_inx := 0;
                           (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items, vector ('Select folder ...'));
-                          (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector ('0'));
+                          (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector ('-1'));
                           for (select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH) do {
                             for (N := 0; N < length(self.bNodes); N := N + 1) {
                               if ((BMK.WA.node_type(self.bNodes[N]) = 'f') and (F_PATH like concat(BMK.WA.folder_path (BMK.WA.node_id(self.bNodes[N])), '%')))
@@ -1358,226 +1522,58 @@
             </div>
           </v:template>
 
-          <v:template type="simple" enabled="--case when (self.bMode = 'rename') then 1 else 0 end">
+          <v:template type="simple" enabled="--case when (self.bMode = 'grants') then 1 else 0 end">
             <v:before-data-bind>
               <![CDATA[
-                declare exit handler for not found goto _end;
-
-                if (isnull(get_keyword('r_name', self.vc_page.vc_event.ve_params))) {
-                  if (BMK.WA.node_type(self.v_id) = 'b') {
-                    self.v_name := (select BD_NAME from BMK.WA.BOOKMARK_DOMAIN where BD_ID = BMK.WA.node_id(self.v_id));
-                  } else if (BMK.WA.node_type(self.v_id) = 'f') {
-                    self.v_name := (select F_NAME from BMK.WA.FOLDER where F_ID = BMK.WA.node_id(self.v_id));
-                  } else if (BMK.WA.node_type(self.v_id) = 's') {
-                    self.v_name := (select SF_NAME from BMK.WA.SFOLDER where SF_ID = BMK.WA.node_id(self.v_id));
-                  }
-                  self.v_oldName := self.v_name;
-                  return;
-                }
-
-              _end:
-                self.v_name := get_keyword('r_name', self.vc_page.vc_event.ve_params, '');
+                self.v_grants := get_keyword ('grants', self.vc_page.vc_event.ve_params, self.v_grants);
               ]]>
             </v:before-data-bind>
             <div class="new-form-header">
-              <v:label format="%s" value="Rename"/>
+              <v:label value="--concat('Sharings for ''', BMK.WA.utf2wide(self.v_name), '''')"/>
             </div>
             <div class="new-form-body">
               <table cellspacing="0">
                 <tr>
                   <th>
-                    <v:label value="Old Name"/>
+                    <v:label for="ace_user" value="User(s)" />
                   </th>
                   <td>
-                    <v:label value="--self.v_oldName"/>
-                  </td>
-                </tr>
-                <tr>
-                  <th>
-                    <v:label for="r_name" value="New Name"/>
-                  </th>
-                  <td>
-                    <v:text name="r_name" null-value="--''" value="--self.v_name" xhtml_size="60"/>
+                    <v:text name="s_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
+                    <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=s_grants:s1;',520)" class="button" />
+                    <input type="button" value="Clear" onClick="javascript: document.F1.elements['s_grants'].value = ''" class="button" />
                   </td>
                 </tr>
               </table>
             </div>
             <div class="new-form-footer">
-              <v:button action="simple" value="Rename" xhtml_class="form-button">
-                <v:on-post>
-                  <![CDATA[
-                    declare tmp any;
-
-                    declare exit handler for SQLSTATE '*' {
-                      if (__SQL_STATE = 'TEST') {
-                        self.vc_error_message := BMK.WA.test_clear(__SQL_MESSAGE);
-                        self.vc_is_valid := 0;
-                        return;
-                      }
-                      resignal;
-                    };
-
-                    self.v_name := trim(self.r_name.ufl_value);
-                    if (BMK.WA.node_type(self.v_id) = 'b') {
-                      BMK.WA.test(self.v_name, vector('name', 'Bookmark', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
-                      update BMK.WA.BOOKMARK_DOMAIN set BD_NAME = self.v_name where BD_ID = BMK.WA.node_id(self.v_id);
-
-                    } else if (BMK.WA.node_type(self.v_id) = 'f') {
-                      BMK.WA.test(self.v_name, vector('name', 'Folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
-                      self.v_parent_id := (select F_PARENT_ID from BMK.WA.FOLDER where F_ID = BMK.WA.node_id(self.v_id));
-                      if (BMK.WA.folder_check_unique(self.domain_id, self.v_parent_id, self.v_name, BMK.WA.node_id(self.v_id)))
-                        signal('TEST', 'Folder name already exists. Please, enter new name!<>');
-                      update BMK.WA.FOLDER set F_NAME = self.v_name where F_ID = BMK.WA.node_id(self.v_id);
-
-                    } else if (BMK.WA.node_type(self.v_id) = 's') {
-                      BMK.WA.test(self.v_name, vector('name', 'Smart folder name', 'class', 'folder', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
-                      tmp := coalesce((select SF_ID from BMK.WA.SFOLDER where SF_DOMAIN_ID = self.domain_id and SF_NAME = self.v_name), -1);
-                      if ((tmp <> BMK.WA.node_id(self.v_id)) and (tmp <> -1))
-                        signal('TEST', 'Smart folder name already exists. Please, enter new name!<>');
-                      update BMK.WA.SFOLDER set SF_NAME = self.v_name where SF_ID = BMK.WA.node_id(self.v_id);
-                    }
-
-                    self.bMode := 'browse';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
-                <v:on-post>
-                  <![CDATA[
-                    self.bMode := 'browse';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-            </div>
-          </v:template>
-
-          <v:template type="simple" enabled="--case when (self.bMode = 'grants') then 1 else 0 end">
-            <v:before-data-bind>
-              <![CDATA[
-                self.v_grants := get_keyword('grants', self.vc_page.vc_event.ve_params, self.v_grants);
-              ]]>
-            </v:before-data-bind>
-            <?vsp http(sprintf('<input type="hidden" name="grants" id="grants" value="%s"/>', get_keyword('grants', self.vc_page.vc_event.ve_params, self.v_grants))); ?>
-            <div class="new-form-header">
-              <v:label value="--concat('Sharings for ', self.v_Name)"/>
-            </div>
-            <v:data-source name="gr_src" expression-type="sql" nrows="10" initial-offset="0">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ds_sql := 'select U_ID,
-                                            U_NAME,
-                                            coalesce(U_FULL_NAME, \'\') U_FULL_NAME
-                                       from WS.WS.SYS_DAV_USER,
-                                            DB.DBA.WA_MEMBER,
-                                            DB.DBA.WA_INSTANCE
-                                      where U_ID <> 5
-                                        and U_ID <> 6
-                                        and U_ID <> <USER_ID>
-                                        and WAM_USER = U_ID
-                                        and WAI_NAME = WAM_INST
-                                        and WAI_TYPE_NAME = \'Bookmark\'
-                                      order by 2';
-                  control.ds_sql := replace(control.ds_sql, '<USER_ID>', cast(self.account_id as varchar));
-                ]]>
-              </v:before-data-bind>
-            </v:data-source>
-            <v:data-set name="gr" data-source="self.gr_src" scrollable="1">
-              <v:template name="gr_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                <table id="grants" class="grid" cellspacing="0">
-                  <thead class="sortHeader">
-                    <tr>
-                      <th class="checkbox" width="1%">
-                        <?vsp
-                          http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, \'cb_item\'); updateGrants(\'cb_item\'); "/>');
-                        ?>
-                      </th>
-                      <th>
-                        Name
-                      </th>
-                      <th>
-                        Description
-                      </th>
-                    </tr>
-                  </thead>
-                </table>
-              </v:template>
-
-              <v:template name="gr_repeat" type="repeat" name-to-remove="" set-to-remove="">
-
-                <v:template name="gr_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-                  <table>
-                    <tr align="center">
-                      <td colspan="3">No Bookmark users</td>
-                    </tr>
-                  </table>
-                </v:template>
-
-                <v:template name="gr_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                  <table>
-                    <tr>
-                      <td  align="center">
-                        <?vsp
-                          declare pos integer;
-                          declare id, S any;
-
-                          id := cast((control as vspx_row_template).te_column_value('U_ID') as varchar);
-                          S := '';
-                          pos := strstr(self.v_grants, id || ',');
-                          if (not isnull(pos))
-                            S := 'checked="checked"';
-                          http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateGrants(\'cb_item\');" />', id, S));
-                        ?>
-                      </td>
-                      <td nowrap="nowrap">
-                        <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_NAME')" format="%s"/>
-                      </td>
-                      <td nowrap="nowrap">
-                        <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_FULL_NAME')" format="%s"/>
-                      </td>
-                    </tr>
-                  </table>
-                </v:template>
-
-              </v:template>
-
-              <v:template type="simple" name-to-remove="table" set-to-remove="top">
-                <table>
-                  <tr align="center">
-                    <td colspan="3">
-                      <vm:ds-navigation data-set="gr"/>
-                    </td>
-                  </tr>
-                </table>
-              </v:template>
-
-            </v:data-set>
-            <script>
-              <![CDATA[
-                coloriseTable('grants');
-              ]]>
-            </script>
-            <div class="new-form-footer">
-              <v:button action="simple" value="Execute" xhtml_class="form-button">
+              <v:button action="simple" value="Save" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     declare pos, N, id integer;
-                    declare V any;
+                    declare name, V any;
 
-                    for (select U_ID from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = U_ID and lcase(G_OBJECT_TYPE) = lcase(BMK.WA.node_type(self.v_id)) and G_OBJECT_ID = BMK.WA.node_id(self.v_id)) do {
+                    self.v_grants := trim(self.s_grants.ufl_value);
+                    self.v_grants := replace(self.v_grants, ' ', '');
+                    self.v_grants := replace(self.v_grants, ',,', ',');
+                    self.v_grants := trim(self.v_grants, ',', '');
+                    self.v_grants := self.v_grants || ',';
+                    for (select U_ID, U_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = U_ID and lcase(G_OBJECT_TYPE) = lcase(BMK.WA.node_type(self.v_id)) and G_OBJECT_ID = BMK.WA.node_id(self.v_id)) do {
+                      name := U_NAME;
                       id := U_ID;
-                      pos := strstr(self.v_grants, cast(id as varchar) || ',');
+                      pos := strstr(self.v_grants, name || ',');
                       if (isnull(pos)) {
                         delete from BMK.WA.GRANTS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = id and lcase(G_OBJECT_TYPE) = lcase(BMK.WA.node_type(self.v_id)) and G_OBJECT_ID = BMK.WA.node_id(self.v_id);
                       } else {
-                        self.v_grants := replace(self.v_grants, cast(id as varchar) || ',', '');
+                        self.v_grants := replace(self.v_grants, name || ',', '');
                       }
                     }
                     V := split_and_decode(trim(self.v_grants, ','), 0, '\0\0,');
-                    for (N := 0; N < length(V); N := N + 1)
+                    for (N := 0; N < length(V); N := N + 1) {
+                      id := (select U_ID from SYS_USERS where U_NAME = V[N]);
+                      if (not isnull(id))
                       insert into BMK.WA.GRANTS (G_GRANTER_ID, G_GRANTEE_ID, G_TYPE, G_OBJECT_TYPE, G_OBJECT_ID)
-                        values(self.account_id, V[N], 'G', ucase(BMK.WA.node_type(self.v_id)), BMK.WA.node_id(self.v_id));
+                          values(self.account_id, id, 'G', ucase(BMK.WA.node_type(self.v_id)), BMK.WA.node_id(self.v_id));
+                    }
 
                     self.bMode := 'browse';
                     self.vc_data_bind(e);
@@ -1651,7 +1647,7 @@
                     <v:label for="b_name" value="Name"/>
                   </th>
                   <td>
-                    <v:text name="b_name" null-value="--''" value="--BMK.WA.utf2wide(self.v_name)" xhtml_size="60"/>
+                    <v:text name="b_name" null-value="--''" value="--BMK.WA.utf2wide(self.v_name)" fmt-function="BMK.WA.utf2wide" xhtml_size="60"/>
                   </td>
                 </tr>
                 <tr>
@@ -1664,45 +1660,10 @@
                 </tr>
                 <tr>
                   <th>
-                    <v:label for="b_tag" value="Tags"/>
-                  </th>
-                  <td>
-                    <v:text name="b_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="20%"/>
-                    <v:button action="simple" style="image" value="image/add_16.png" xhtml_alt="Add Tag">
-                      <v:on-post>
-                        <![CDATA[
-                          declare tag_id integer;
-
-                          self.v_tag := BMK.WA.tag_prepare(self.b_tag.ufl_value);
-            			        if (not BMK.WA.validate_tags(self.v_tag)) {
-            			          self.vc_is_valid := 0;
-            			          self.vc_error_message := 'The expression is not valid tag.';
-            			          return;
-            			        }
-                          self.v_tags := BMK.WA.tags_join(self.v_tags, self.v_tag);
-                          self.vc_data_bind(e);
-                          self.b_tag.ufl_value := '';
-               		      ]]>
-               		    </v:on-post>
-                    </v:button>
-                    <?vsp
-                      declare i integer;
-                      declare tags any;
-
-                      tags := BMK.WA.tags2vector(self.v_tags);
-                      for (i := 0; i < length(tags); i := i + 1) {
-                        http(sprintf(', %s ', tags[i]));
-                        http(sprintf('<a href="#" onclick="javascript: myPost(\'F1\', \'dtag\', \'%d\'); return false"><img src="image/del_16.png" border="0" alt="Delete Tag" title="Delete Tag" /></a>', i));
-                      }
-                    ?>
-                  </td>
-                </tr>
-                <tr>
-                  <th>
                     <v:label for="b_description" value="Description"/>
                   </th>
                   <td>
-                    <v:textarea name="b_description" null-value="--''" value="--BMK.WA.utf2wide(self.v_description)" xhtml_cols="50" xhtml_rows="8"/>
+                    <v:textarea name="b_description" null-value="--''" value="--BMK.WA.utf2wide(self.v_description)" fmt-function="BMK.WA.utf2wide" xhtml_cols="45" xhtml_rows="6"/>
                   </td>
                 </tr>
                 <tr>
@@ -1710,14 +1671,54 @@
                     <v:label for="b_folder_name" value="Folder"/>
                   </th>
                   <td>
-                    <v:text name="b_folder_name" null-value="''" value="--self.v_folder_name" xhtml_class="textbox" xhtml_size="40%"/>
+                    <v:text name="b_folder_name" null-value="''" value="--self.v_folder_name" fmt-function="BMK.WA.utf2wide" xhtml_class="textbox" xhtml_size="40%"/>
                     <v:data-list name="b_folder_id" value="--self.v_folder_id" sql="select 0 as F_ID, 'Select folder ...' as F_PATH2, '' as F_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH" key-column="F_ID" value-column="F_PATH2" xhtml_class="select"/>
+                  </td>
+                </tr>
+                <tr>
+                  <script type="text/javascript">
+                    function suggestTags ()
+                    {
+                      window.open ('tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;txt=' + escape (document.F1.elements['b_name'].value) + '&amp;txt2=' + escape (document.F1.elements['b_description'].value) + '&amp;fld=b_tags', 'bookmarks_suggest_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500');
+                    }
+                  </script>
+                  <th>
+                    <v:label for="b_tags" value="Comma Delimited Tags"/>
+                  </th>
+                  <td>
+                    <v:text name="b_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
+                    <input type="button" value="Suggest" onClick="javascript: suggestTags();" class="button" />
+                    <input type="button" value="Clear" onClick="javascript: document.F1.elements['b_tags'].value = ''" class="button" />
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    My Tags
+                  </th>
+                  <td>
+                    <?vsp
+                      declare _done integer;
+
+                      _done := 0;
+                      for (select TS_TAG from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id  and TS_TAG <> '' order by TS_TAG) do {
+                        http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'b_tags\');">%s</a> ', TS_TAG, TS_TAG));
+                        _done := 1;
+                      }
+                      if (not _done)
+                        http ('no tags');
+                    ?>
                   </td>
                 </tr>
               </table>
             </div>
             <div class="new-form-footer">
               <v:button action="simple" value="Save" xhtml_class="form-button">
+                <v:after-data-bind>
+                  <![CDATA[
+                    if (self.v_return <> '')
+                      control.ufl_value := 'Save & Back';
+                  ]]>
+                </v:after-data-bind>
                 <v:on-post>
                   <![CDATA[
                     if (not ((self.bMode = 'Bookmark/Create') or (self.bMode = 'Bookmark/Properties')))
@@ -1743,20 +1744,35 @@
                      	self.vc_is_valid := 0;
                   		return;
                     }
+                    self.v_tags := trim(self.b_tags.ufl_value);
+                    BMK.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
+                    tmp := BMK.WA.tags2vector(self.v_tags);
+                    tmp := BMK.WA.vector_unique(tmp);
+                    self.v_tags := BMK.WA.vector2tags(tmp);
 
                     self.v_folder_id := BMK.WA.folder_create(self.domain_id, self.v_folder_name, self.v_folder_id);
                     tmp := BMK.WA.bookmark_update(self.v_id, self.domain_id, self.v_uri, self.v_name, self.v_description, self.v_folder_id);
                     tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = tmp);
                     BMK.WA.bookmark_tags(self.domain_id, self.account_id, tmp, self.v_tags);
 
+                    if (self.v_return <> '')
+                      self.vc_redirect(self.v_return);
                     self.bMode := 'browse';
                     self.vc_data_bind(e);
                   ]]>
                 </v:on-post>
               </v:button>
               <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                <v:after-data-bind>
+                  <![CDATA[
+                    if (self.v_return <> '')
+                      control.ufl_value := 'Back';
+                  ]]>
+                </v:after-data-bind>
                 <v:on-post>
                   <![CDATA[
+                    if (self.v_return <> '')
+                      self.vc_redirect(self.v_return);
                     self.bMode := 'browse';
                     self.vc_data_bind(e);
                   ]]>
@@ -1807,13 +1823,13 @@
                           declare S integer;
 
                           S := '!@#';
-                          if (self.v_id <> 0)
+                          if (self.v_id >= 0)
                             S := BMK.WA.folder_path (self.v_id);
                           (control as vspx_select_list).vsl_items:= vector ();
                           (control as vspx_select_list).vsl_item_values:= vector ();
                           (control as vspx_select_list).vsl_selected_inx := 0;
                           (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items, vector ('Select folder ...'));
-                          (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector ('0'));
+                          (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector ('-1'));
                           for (select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH) do {
                             if (F_PATH like concat (S, '%'))
                               goto _skip;
@@ -1843,7 +1859,7 @@
                     <v:label for="f_name" value="Folder name"/>
                   </th>
                   <td>
-                    <v:text name="f_name" null-value="--''" value="--BMK.WA.utf2wide (self.v_name)" xhtml_size="60"/>
+                    <v:text name="f_name" null-value="--''" value="--BMK.WA.utf2wide (self.v_name)" fmt-function="BMK.WA.utf2wide" xhtml_size="60"/>
                   </td>
                 </tr>
               </table>
@@ -1941,7 +1957,7 @@
                     <v:label for="s_name" value="Smart folder name" />
                   </th>
                   <td>
-                    <v:text name="s_name" null-value="--''" value="--self.v_name" xhtml_class="textbox" xhtml_size="60" />
+                    <v:text name="s_name" null-value="--''" value="--self.v_name" fmt-function="BMK.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
                   </td>
                 </tr>
                 <tr>
@@ -1962,7 +1978,7 @@
                 </tr>
                 <tr>
                   <th>
-                    <v:label for="s_tags" value="Comma delimited tags" />
+                    <v:label for="s_tags" value="Comma Delimited Tags" />
                   </th>
                   <td>
                     <v:text name="s_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
@@ -2053,7 +2069,7 @@
       <?vsp
         if (self.bBookmark is not null) {
           http ('\n<script type="text/javascript">\n');
-          http (sprintf ('location.hash = "%s";\n', self.bBookmark));
+          http (sprintf ('if (BrowserDetect.browser != \'Opera\') location.hash = "%s";\n', self.bBookmark));
           http ('</script>\n');
         }
       ?>

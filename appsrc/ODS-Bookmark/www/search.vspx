@@ -131,7 +131,7 @@
       sql := '';
       sqlParams := vector();
       if (self.v_shared = 1) {
-        sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql(rs0, rs1, rs2, rs3, rs4, rs5)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _ACCOUNT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
+        sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql(rs0, rs1, rs2, rs3, rs4, rs5)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _CREATED datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
         maxRows := self.v_max;
         if (maxRows <> '')
           maxRows := 'TOP ' || maxRows;
@@ -147,7 +147,7 @@
         self.ds_meta := meta;
 
         if (self.f_cloud.ufl_selected = 1) {
-          declare N, maxCnt integer;
+          declare N, minCnt, maxCnt integer;
           declare tag_object, tags, tags_dict any;
 
           tags_dict := dict_new();
@@ -162,13 +162,17 @@
             }
           }
 
-          maxCnt := 0;
+          maxCnt := 1;
+          minCnt := 1000000;
           for (select p.* from BMK.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do {
             self.ds_tags := vector_concat(self.ds_tags, vector(vector(tag, cnt)));
             if (cnt > maxCnt)
               maxCnt := cnt;
+            if (cnt < minCnt)
+              minCnt := cnt;
           }
-          self.ds_tags := vector_concat(vector(vector('', maxCnt)), self.ds_tags);
+          self.ds_tags := vector_concat(vector(vector('__max', maxCnt)), self.ds_tags);
+          self.ds_tags := vector_concat(vector(vector('__min', minCnt)), self.ds_tags);
         }
       }
 
@@ -187,18 +191,18 @@
         tmp := concat(tmp, sprintf('&%sexpression=%U', prefix, self.v_expression));
       if (not is_empty_or_null(self.v_tags))
         tmp := concat(tmp, sprintf('&%stags=%U', prefix, self.v_tags));
-      if (not is_empty_or_null(self.v_folder_id))
+      if (cast(self.v_folder_id as integer) <> 0)
         tmp := concat(tmp, sprintf('&%sfolder=%U', prefix, self.v_folder_id));
       if (mode = 'export') {
-        if (not is_empty_or_null(self.v_own))
+        if (cast(self.v_own as integer) <> 1)
           tmp := concat(tmp, sprintf('&%sown=%s', prefix, cast(self.v_own as varchar)));
-        if (not is_empty_or_null(self.v_shared))
+        if (cast(self.v_shared as integer) <> 1)
           tmp := concat(tmp, sprintf('&%sshared=%s', prefix, cast(self.v_shared as varchar)));
         if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
           tmp := concat(tmp, sprintf('&%smax=%U', prefix, self.v_max));
         if (not is_empty_or_null(self.v_order) and self.v_order <> '_NAME')
           tmp := concat(tmp, sprintf('&%sorder=%U', prefix, self.v_order));
-        if (not is_empty_or_null(self.v_direction) and self.v_direction <> 'desc')
+        if (not is_empty_or_null(self.v_direction) and self.v_direction <> 'asc')
           tmp := concat(tmp, sprintf('&%sdirection=%U', prefix, self.v_direction));
       }
 
@@ -334,12 +338,11 @@
                   <table id="search" class="grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
-                        <th width="1%" class="last"/>
-                        <th>
-                          <?vsp self.sortColumn('Name', '_NAME'); ?>
+                        <th width="1%" class="last">
+                          <img src="image/c.gif" border="0"/>
                         </th>
                         <th>
-                          <?vsp self.sortColumn('Link', '_URI'); ?>
+                          <?vsp self.sortColumn('Name', '_NAME'); ?>
                         </th>
                         <v:template type="simple" enabled="-- case when (self.v_shared = 1) then 1 else 0 end;">
                           <th>
@@ -370,12 +373,12 @@
                   <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
-                        <td>
+                        <td valign="top">
                           <?vsp
-                            http('<img src="image/web_16.png" border="0" alt="Bookmark" width="16"/>');
+                            http('<img src="image/web_16.png" style="padding: 0 2px 0 0;" border="0" alt="Bookmark" width="16"/>');
                           ?>
                         </td>
-                        <td>
+                        <td valign="top">
                           <v:url value="--BMK.WA.stringCut((control.vc_parent as vspx_row_template).te_rowset[3], self.chars)"
                                  url="--(control.vc_parent as vspx_row_template).te_rowset[4]"
                                  format="%s"
@@ -398,30 +401,24 @@
                             }
                           ?>
                         </td>
-                        <td>
-                          <v:url value="--(control.vc_parent as vspx_row_template).te_rowset[4]"
-                                 url="--(control.vc_parent as vspx_row_template).te_rowset[4]"
-                                 format="%s"
-                                 xhtml_title="--(control.vc_parent as vspx_row_template).te_rowset[3]"/>
-                        </td>
                         <v:template type="simple" enabled="-- case when (self.v_shared = 1) then 1 else 0 end;">
-                        <td>
+                          <td valign="top">
                             <?vsp
-                              http(coalesce((SELECT U_NAME FROM WS.WS.SYS_DAV_USER, BMK.WA.GRANTS WHERE U_ID = G_GRANTER_ID and G_ID = (control.vc_parent as vspx_row_template).te_rowset[8]), ''));
+                              http(coalesce((SELECT U_NAME FROM WS.WS.SYS_DAV_USER, BMK.WA.GRANTS WHERE U_ID = G_GRANTER_ID and G_ID = (control.vc_parent as vspx_row_template).te_rowset[9]), ''));
                             ?>
                           </td>
                         </v:template>
-                        <td>
-                          <v:url value="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[7], (control.vc_parent as vspx_row_template).te_rowset[8])"
-                                 url="--sprintf('bookmarks.vspx?folder=%d&grant=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[6], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[8], -1))"
+                        <td valign="top">
+                          <v:url value="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[8], (control.vc_parent as vspx_row_template).te_rowset[9])"
+                                 url="--sprintf('bookmarks.vspx?folder=%d&grant=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[7], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[9], -1))"
                                  format="%s"
-                                 xhtml_title="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[7], (control.vc_parent as vspx_row_template).te_rowset[8])"/>
+                                 xhtml_title="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[8], (control.vc_parent as vspx_row_template).te_rowset[9])"/>
                         </td>
-                        <td>
-                          <v:url value="--BMK.WA.folder_path3 ((control.vc_parent as vspx_row_template).te_rowset[6], (control.vc_parent as vspx_row_template).te_rowset[8])"
-                                 url="--sprintf('bookmarks.vspx?location=%d&folder=%d&grant=%d', (control.vc_parent as vspx_row_template).te_rowset[1], coalesce((control.vc_parent as vspx_row_template).te_rowset[6], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[8], -1))"
+                        <td valign="top">
+                          <v:url value="--BMK.WA.folder_path3 ((control.vc_parent as vspx_row_template).te_rowset[7], (control.vc_parent as vspx_row_template).te_rowset[9])"
+                                 url="--sprintf('bookmarks.vspx?location=%d&folder=%d&grant=%d', (control.vc_parent as vspx_row_template).te_rowset[1], coalesce((control.vc_parent as vspx_row_template).te_rowset[7], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[9], -1))"
                                  format="%s"
-                                 xhtml_title="--BMK.WA.folder_path3 ((control.vc_parent as vspx_row_template).te_rowset[6], (control.vc_parent as vspx_row_template).te_rowset[8])"/>
+                                 xhtml_title="--BMK.WA.folder_path3 ((control.vc_parent as vspx_row_template).te_rowset[7], (control.vc_parent as vspx_row_template).te_rowset[9])"/>
                         </td>
                       </tr>
                     </table>
@@ -451,19 +448,20 @@
             <td width="20%" valign="top" style="border: solid #935000;  border-width: 1px 1px 1px 0px;">
               <div style="margin-left:3px; margin-top:3px;">
                 <?vsp
-                  declare N, ts_length, ts_max, ts_size integer;
+                  declare N, tLength, tMax, tMin integer;
+                  declare tStyle varchar;
 
-                  ts_length := length(self.ds_tags);
-                  for (N := 0; N < ts_length; N := N + 1) {
-                    if (N = 0) {
-                      ts_max := self.ds_tags[N][1];
-                    } else {
-                	    ts_size := ((150.00 * self.ds_tags[N][1]) / ts_max) + 100;
-                    http (sprintf ('<a href="#" onclick="javascript: myPost(\'F1\', \'tag\', \'%s\');" name="btn_%s"><span class="nolink_b" style="font-size: %d%s;">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], ts_size, '%', self.ds_tags[N][0]));
+                  tLength := length(self.ds_tags);
+                  if (tLength > 2) {
+                    tMin := self.ds_tags[0][1];
+                    tMax := self.ds_tags[1][1];
+                    for (N := 2; N < tLength; N := N + 1) {
+                      tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
+                      http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], tStyle, self.ds_tags[N][0]));
                   }
-                  }
-                  if (ts_length <= 1)
+                  } else {
                     http ('no tags');
+                  }
                 ?>
               </div>
             </td>
@@ -510,7 +508,7 @@
                     <vm:label for="f_folder" value="Search in folder"/>
                   </th>
                   <td>
-                    <v:data-list name="f_folder" xhtml_id="f_folder" value="--self.v_folder_id" sql="select 0 as F_ID, 'Select folder ...' as F_PATH2, '' as F_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH" key-column="F_ID" value-column="F_PATH2" xhtml_class="select"/>
+                    <v:data-list name="f_folder" xhtml_id="f_folder" value="--self.v_folder_id" sql="select -1 as F_ID, 'Select folder ...' as F_PATH2, '' as F_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH" key-column="F_ID" value-column="F_PATH2" xhtml_class="select"/>
                   </td>
                 </tr>
                 <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">

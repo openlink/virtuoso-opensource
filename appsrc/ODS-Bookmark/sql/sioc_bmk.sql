@@ -27,62 +27,218 @@ create procedure bmk_post_iri (in domain_id varchar, in bmk_id int)
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
 
-  select U_NAME, WAI_NAME into _member, _inst from
-      DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
+  select U_NAME, WAI_NAME into _member, _inst
+    from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
       where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
 
   return sprintf ('http://%s%s/%U/bookmark/%U/%d', get_cname(), get_base_path (), _member, _inst, bmk_id);
-};
+}
+;
 
-create procedure fill_ods_bmk_sioc (in graph_iri varchar, in site_iri varchar)
+create procedure bmk_links_to (inout content any)
 {
-  declare iri, firi, criri varchar;
+  declare xt, retValue any;
+
+  if (content is null)
+    return null;
+  else if (isentity (content))
+    xt := content;
+  else
+    xt := xtree_doc (content, 2, '', 'UTF-8');
+  xt := xpath_eval ('//a[starts-with (@href,"http") and not(img)]', xt, 0);
+  retValue := vector ();
+  foreach (any x in xt) do
+    retValue := vector_concat (retValue, vector (vector (cast (xpath_eval ('string()', x) as varchar), cast (xpath_eval ('@href', x) as varchar))));
+
+  return retValue;
+}
+;
+
+create procedure fill_ods_bookmark_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
+{
+  declare bookmark_id integer;
+  declare iri, c_iri, creator_iri, t_iri varchar;
+  declare tags, linksTo any;
+
   for select WAI_NAME, BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, BD_CREATED, B_URI, WAM_USER
-    from DB.DBA.WA_INSTANCE, BMK..BOOKMARK_DOMAIN, BMK..BOOKMARK, DB.DBA.WA_MEMBER
-    where BD_DOMAIN_ID = WAI_ID and BD_BOOKMARK_ID = B_ID and WAM_INST = WAI_NAME do
+        from DB.DBA.WA_INSTANCE,
+             BMK..BOOKMARK_DOMAIN,
+             BMK..BOOKMARK,
+             DB.DBA.WA_MEMBER
+       where BD_DOMAIN_ID = WAI_ID
+         and BD_BOOKMARK_ID = B_ID
+         and WAM_INST = WAI_NAME
+         and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+  do
       {
-	firi := bmk_iri (WAI_NAME);
+      c_iri := bmk_iri (WAI_NAME);
 	iri := bmk_post_iri (BD_DOMAIN_ID, BD_BOOKMARK_ID);
-	criri := user_iri (WAM_USER);
-        ods_sioc_post (graph_iri, iri, firi, criri, BD_NAME, BD_CREATED, BD_LAST_UPDATE, B_URI);
+      creator_iri := user_iri (WAM_USER);
+      linksTo := bmk_links_to (BD_DESCRIPTION);
+      ods_sioc_post (graph_iri, iri, c_iri, creator_iri, BD_NAME, BD_CREATED, BD_LAST_UPDATE, B_URI, BD_DESCRIPTION, null, linksTo);
+
+      -- tags
+      bookmark_id := BD_BOOKMARK_ID;
+      for select BD_TAGS from BMK.WA.BOOKMARK_DATA where BD_OBJECT_ID = BD_DOMAIN_ID and BD_MODE = 0 and BD_BOOKMARK_ID = bookmark_id
+      do
+        {
+	  ods_sioc_tags (graph_iri, iri, BD_TAGS);
+        }
+    }
       }
+;
+
+create procedure bookmark_domain_insert (
+  inout domain_id integer,
+  inout bookmark_id integer,
+  inout name varchar,
+  inout created datetime,
+  inout updated datetime,
+  inout description varchar)
+{
+  declare graph_iri, iri, c_iri, creator_iri varchar;
+  declare linksTo any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
 };
+  graph_iri := get_graph ();
+  iri := bmk_post_iri (domain_id, bookmark_id);
+  for (select B_URI, WAM_USER, WAI_NAME
+         from DB.DBA.WA_INSTANCE,
+              BMK..BOOKMARK,
+              DB.DBA.WA_MEMBER
+        where WAI_ID = domain_id
+          and B_ID = bookmark_id
+          and WAM_INST = WAI_NAME
+          and WAI_IS_PUBLIC = 1) do
+  {
+    c_iri := bmk_iri (WAI_NAME);
+    creator_iri := user_iri (WAM_USER);
+    linksTo := bmk_links_to (description);
+    ods_sioc_post (graph_iri, iri, c_iri, creator_iri, name, created, updated, B_URI, description, null, linksTo);
+  }
+  return;
+}
+;
+
+create procedure bookmark_domain_delete (
+  inout domain_id integer,
+  inout bookmark_id integer)
+{
+  declare graph_iri, iri varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := bmk_post_iri (domain_id, bookmark_id);
+  delete_quad_s_or_o (graph_iri, iri, iri);
+}
+;
 
 create trigger BOOKMARK_DOMAIN_SIOC_I after insert on BMK.WA.BOOKMARK_DOMAIN referencing new as N
 {
-  declare iri, firi, criri varchar;
-  declare graph_iri varchar;
-  declare exit handler for sqlstate '*' {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  graph_iri := get_graph ();
-  iri := bmk_post_iri (N.BD_DOMAIN_ID, N.BD_BOOKMARK_ID);
-  for select B_URI, WAM_USER, WAI_NAME from  DB.DBA.WA_INSTANCE, BMK..BOOKMARK, DB.DBA.WA_MEMBER
-  where WAI_ID = N.BD_DOMAIN_ID and B_ID = N.BD_BOOKMARK_ID and WAM_INST = WAI_NAME
-  do
-    {
-      firi := bmk_iri (WAI_NAME);
-      criri := user_iri (WAM_USER);
-      ods_sioc_post (graph_iri, iri, firi, criri, N.BD_NAME, N.BD_CREATED, N.BD_LAST_UPDATE, B_URI);
-    }
-  return;
-};
+  bookmark_domain_insert (N.BD_DOMAIN_ID, N.BD_BOOKMARK_ID, N.BD_NAME, N.BD_CREATED, N.BD_LAST_UPDATE, N.BD_DESCRIPTION);
+}
+;
 
-create trigger BOOKMARK_DOMAIN_SIOC_D after delete on BMK.WA.BOOKMARK_DOMAIN referencing old as O
+create trigger BOOKMARK_DOMAIN_SIOC_U after update on BMK.WA.BOOKMARK_DOMAIN referencing old as O, new as N
 {
-  declare iri, c_iri varchar;
-  declare graph_iri varchar;
+  bookmark_domain_delete (O.BD_DOMAIN_ID, O.BD_BOOKMARK_ID);
+  bookmark_domain_insert (N.BD_DOMAIN_ID, N.BD_BOOKMARK_ID, N.BD_NAME, N.BD_CREATED, N.BD_LAST_UPDATE, N.BD_DESCRIPTION);
+}
+;
+
+create trigger BOOKMARK_DOMAIN_SIOC_D before delete on BMK.WA.BOOKMARK_DOMAIN referencing old as O
+    {
+  bookmark_domain_delete (O.BD_DOMAIN_ID, O.BD_BOOKMARK_ID);
+    }
+;
+
+create procedure bookmark_tags_insert (
+  in domain_id integer,
+  in bookmark_id integer,
+  in tags varchar)
+{
+  if (isnull(domain_id))
+    return;
+
+  declare graph_iri, iri, post_iri, home varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+  return;
+};
+
+  home := '/bookmarks/' || cast(domain_id as varchar);
+  graph_iri := get_graph ();
+  post_iri := bmk_post_iri (domain_id, bookmark_id);
+  ods_sioc_tags (graph_iri, post_iri, tags);
+}
+;
+
+create procedure bookmark_tags_delete (
+  in domain_id integer,
+  in bookmark_id integer,
+  in tags any)
+{
+  if (isnull(domain_id))
+    return;
+
+  declare graph_iri, post_iri varchar;
+
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  graph_iri := get_graph ();
-  iri := bmk_post_iri (O.BD_DOMAIN_ID, O.BD_BOOKMARK_ID);
-  delete_quad_s_or_o (graph_iri, iri, iri);
-  return;
-};
 
+  graph_iri := get_graph ();
+  post_iri := bmk_post_iri (domain_id, bookmark_id);
+  ods_sioc_tags_delete (graph_iri, post_iri, tags);
+}
+;
+
+create trigger BOOKMARK_DATA_SIOC_I after insert on BMK.WA.BOOKMARK_DATA referencing new as N
+{
+  if (N.BD_MODE = 0)
+    bookmark_tags_insert (N.BD_OBJECT_ID, N.BD_BOOKMARK_ID, N.BD_TAGS);
+}
+;
+
+create trigger BOOKMARK_DATA_SIOC_U after update on BMK.WA.BOOKMARK_DATA referencing old as O, new as N
+{
+  if (O.BD_MODE = 0)
+    bookmark_tags_delete (O.BD_OBJECT_ID, O.BD_BOOKMARK_ID, O.BD_TAGS);
+  if (N.BD_MODE = 0)
+    bookmark_tags_insert (N.BD_OBJECT_ID, N.BD_BOOKMARK_ID, N.BD_TAGS);
+}
+;
+
+create trigger BOOKMARK_DATA_SIOC_D before delete on BMK.WA.BOOKMARK_DATA referencing old as O
+{
+  if (O.BD_MODE = 0)
+    bookmark_tags_delete (O.BD_OBJECT_ID, O.BD_BOOKMARK_ID, O.BD_TAGS);
+}
+;
+
+create procedure ods_bookmark_sioc_init ()
+{
+  declare sioc_version any;
+
+  sioc_version := registry_get ('__ods_sioc_version');
+  if (registry_get ('__ods_sioc_init') <> sioc_version)
+  return;
+  if (registry_get ('__ods_bookmark_sioc_init') = sioc_version)
+    return;
+  fill_ods_bookmark_sioc (get_graph (), get_graph ());
+  registry_set ('__ods_bookmark_sioc_init', sioc_version);
+  return;
+}
+;
+
+BMK.WA.exec_no_error('ods_bookmark_sioc_init ()');
 
 use DB;
-

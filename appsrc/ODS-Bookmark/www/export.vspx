@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="export" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/">
+<v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:variable name="domain_id" type="integer" param-name="did" default="-1"/>
   <v:variable name="account_id" type="integer" param-name="aid" default="-1"/>
 
@@ -32,14 +32,15 @@
   <v:variable name="v_tags" type="varchar" default="''" param-name="tags"/>
   <v:variable name="v_folder_id" type="varchar" default="'0'" param-name="folder"/>
 
-  <v:variable name="v_own" type="integer" default="0" param-name="own"/>
-  <v:variable name="v_shared" type="integer" default="0" param-name="shared"/>
+  <v:variable name="v_own" type="integer" default="1" param-name="own"/>
+  <v:variable name="v_shared" type="integer" default="1" param-name="shared"/>
   <v:variable name="v_max" type="varchar" default="'100'" param-name="max"/>
   <v:variable name="v_order" type="varchar" default="'_NAME'" param-name="order"/>
-  <v:variable name="v_direction" type="varchar" default="'desc'" param-name="direction"/>
+  <v:variable name="v_direction" type="varchar" default="'asc'" param-name="direction"/>
 
   <![CDATA[
     <?vsp
+      set http_charset = 'UTF-8';
       http_rewrite ();
       http_request_status ('HTTP/1.1 200 OK');
       if (self.v_output = 'BMK') {
@@ -72,7 +73,7 @@
           sql := '';
           sqlParams := vector();
           if (self.v_shared = 1) {
-            sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql(rs0, rs1, rs2, rs3, rs4, rs5)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _ACCOUNT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
+            sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql(rs0, rs1, rs2, rs3, rs4, rs5)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _CREATED datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
             maxRows := self.v_max;
             if (maxRows <> '')
               maxRows := 'TOP ' || maxRows;
@@ -87,78 +88,76 @@
             goto _error;
 
           if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
-            declare retValue any;
-
-            retValue := string_output ();
-
-            http('<?xml version ="1.0" encoding="UTF-8"?>\n', retValue);
-            http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n', retValue);
-            http ('<channel>\n', retValue);
+            http ('<?xml version="1.0" encoding="UTF-8"?>\n');
+            http ('<rss version="2.0">\n');
+            http ('<channel>\n');
             for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
-              http ('<title>', retValue);
-                http_value (BMK.WA.utf2wide(BMK.WA.domain_name(self.domain_id)), null, retValue);
-              http ('</title>\n', retValue);
-              http ('<description>', retValue);
-                http_value (BMK.WA.utf2wide(BMK.WA.domain_description(self.domain_id)), null, retValue);
-              http ('</description>\n', retValue);
-              http ('<managingEditor>', retValue);
-                http_value (U_E_MAIL, null, retValue);
-              http ('</managingEditor>\n', retValue);
-              http ('<pubDate>', retValue);
-                http_value (BMK.WA.dt_rfc1123(now()), null, retValue);
-              http ('</pubDate>\n', retValue);
-              http ('<generator>', retValue);
-                http_value ('Virtuoso Universal Server ' || sys_stat('st_dbms_ver'), null, retValue);
-              http ('</generator>\n', retValue);
-              http ('<webMaster>', retValue);
-                http_value (U_E_MAIL, null, retValue);
-              http ('</webMaster>\n', retValue);
-              http ('<link>', retValue);
-                http_value (BMK.WA.bookmark_url(self.domain_id), null, retValue);
-              http ('</link>\n', retValue);
+              http ('<title>');
+                http_value (BMK.WA.utf2wide(BMK.WA.domain_name (self.domain_id)));
+              http ('</title>\n');
+              http ('<description>');
+                http_value (BMK.WA.utf2wide(BMK.WA.domain_description (self.domain_id)));
+              http ('</description>\n');
+              http ('<managingEditor>');
+                http_value (U_E_MAIL);
+              http ('</managingEditor>\n');
+              http ('<pubDate>');
+                http_value (BMK.WA.dt_rfc1123 (now()));
+              http ('</pubDate>\n');
+              http ('<generator>');
+                http_value ('Virtuoso Universal Server ' || sys_stat('st_dbms_ver'));
+              http ('</generator>\n');
+              http ('<webMaster>');
+                http_value (U_E_MAIL);
+              http ('</webMaster>\n');
+              http ('<link>');
+                http_value (BMK.WA.bookmark_url (self.domain_id));
+              http ('</link>\n');
             }
             foreach (any row in rows) do {
-              http ('<item>\n', retValue);
-                http ('<title>', retValue);
-                  http_value (BMK.WA.utf2wide(row[3]), null, retValue);
-                http ('</title>\n', retValue);
-                http ('<description>', retValue);
-                  http_value (BMK.WA.xml2string(BMK.WA.bookmark_description(row[1])), null, retValue);
-                http ('</description>\n', retValue);
-                http ('<link>', retValue);
-                  http_value (row[4], null, retValue);
-                http ('</link>\n', retValue);
-                http ('<guid>', retValue);
-                  http_value (row[2], null, retValue);
-                http ('</guid>\n', retValue);
-                http ('<pubDate>', retValue);
-                  http_value (BMK.WA.dt_rfc1123 (row[5]), null, retValue);
-                http ('</pubDate>\n', retValue);
-                if (self.v_output <> 'rss') {
-                  http ('<vi:modified>', retValue);
-                    http_value (BMK.WA.dt_iso8601 (row[5]), null, retValue);
-                  http ('</vi:modified>\n', retValue);
+              http ('<item>\n');
+                http ('<title>');
+                  http_value (BMK.WA.utf2wide (row[3]));
+                http ('</title>\n');
+                http ('<description>');
+                  http_value (BMK.WA.utf2wide (BMK.WA.bookmark_description (row[1])));
+                http ('</description>\n');
+                http ('<link>');
+                  http_value (row[4]);
+                http ('</link>\n');
+                http ('<guid>');
+                  http_value (row[2]);
+                http ('</guid>\n');
+                http ('<pubDate>');
+                  http_value (BMK.WA.dt_rfc1123 (row[5]));
+                http ('</pubDate>\n');
+                for (select BTV_TAG from BMK..TAGS_VIEW, BMK.WA.BOOKMARK_DOMAIN where domain_id = self.domain_id and account_id = self.account_id and item_id = BD_BOOKMARK_ID and BD_ID = row[1]) do {
+                  http ('<category>');
+                    http_value (BTV_TAG);
+                  http ('</category>\n');
                 }
-              http ('</item>\n', retValue);
+                if (self.v_output <> 'rss') {
+                  http ('<vi:modified xmlns:vi="http://www.openlinksw.com/weblog/">');
+                    http_value (BMK.WA.dt_iso8601 (row[5]));
+                  http ('</vi:modified>\n');
+                }
+              http ('</item>\n');
             }
-            http ('</channel>\n', retValue);
-            http ('</rss>', retValue);
+           _xx:
+            http ('</channel>\n');
+            http ('</rss>');
 
-            retValue := string_output_string (retValue);
             if (self.v_output = 'atom03')
-      	      http_value(xslt (BMK.WA.xslt_full ('rss2atom03.xsl'), xtree_doc(retValue)));
+              http_xslt (BMK.WA.xslt_full ('rss2atom03.xsl'));
 
             else if (self.v_output = 'atom10')
-      	      http_value(xslt (BMK.WA.xslt_full ('rss2atom.xsl'), xtree_doc(retValue)));
+              http_xslt (BMK.WA.xslt_full ('rss2atom.xsl'));
 
             else if (self.v_output = 'rdf')
-       	      http_value(xslt (BMK.WA.xslt_full ('rss2rdf.xsl'), xtree_doc(retValue)));
+              http_xslt (BMK.WA.xslt_full ('rss2rdf.xsl'));
 
             else if (self.v_output = 'xbel')
-      	      http_value(xslt (BMK.WA.xslt_full ('rss2xbel.xsl'), xtree_doc(retValue)));
-
-      	    else
-              http(retValue);
+              http_xslt (BMK.WA.xslt_full ('rss2xbel.xsl'));
 
       	    goto _end;
           }
@@ -167,7 +166,7 @@
         http('<?xml version="1.0" ?><empty />');
       }
     _end:
-      http_flush();
+      return;
     ?>
   ]]>
 </v:page>

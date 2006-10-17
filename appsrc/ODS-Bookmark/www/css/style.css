@@ -271,38 +271,6 @@ table.sub_page_area
   color: #b0cde4;
 }
 
-/* The main navigation bar */
-.news_tab
-{
-  margin: 0 0 0 4px;
-}
-
-.news_tab a.select
-{
-  padding: 0 .3em 0 .3em;
-  font-size: .9em;
-	font-family: verdana, sans-serif;
-  color: #444;
-  font-weight: bold;
-  border: solid #7f94a5;
-  border-width: 1px 1px 0px 1px;
-  background: #EFEFEF;
-}
-
-.news_tab a.unselect
-{
-  border-width: 1px 1px 1px 1px;
-  background: #b0cde4;
-}
-
-.news_tab a:hover,
-.news_tab a:active,
-.news_tab a.sel:link,
-.news_tab a.sel:visited
-{
-  background: #b0cde4;
-}
-
 /*
   Fields
 */
@@ -412,15 +380,6 @@ table#list thead input {
   padding: 3px 0px 0px 3px;
 }
 
-.read
-{
-}
-
-.unread
-{
-  font-weight: bold;
-}
-
 #channel_header
 {
   font-size: 1em;
@@ -439,21 +398,6 @@ table#list thead input {
   border-width: 0px 0px 2px 0px;
 }
 
-table#feed
-{
-  font-size: 0.9em;
-}
-
-table#feed th
-{
-  font-size: 1em;
-  font-weight: bold;
-  padding: 1px;
-  background-color: #b0cde4;
-  border: solid #7f94a5;
-  border-width: 0px 0px 1px 0px;
-}
-
 /*====== rows ======   background-color: #EFEFEF; */
 .td_border
 {
@@ -461,16 +405,20 @@ table#feed th
   border-width: 1px 0px 1px 0px;
 }
 
-.td_row0
+.tr_0
 {
+  border: solid #7f94a5;
+  border-width: 0px 0px 1px 0px;
   background-color: #F5F5EE;
 }
 
-.td_row1
+.tr_1
 {
+  border: solid #7f94a5;
+  border-width: 0px 0px 1px 0px;
 }
 
-.td_sel
+.tr_select
 {
   background-color: #FFFFCC;
 }
@@ -550,6 +498,12 @@ input.nolink4 {
 
 .nolink_b {
   color: #000;
+}
+
+.link_ed {
+  font-size: 0.9em;
+  font-style: italic;
+  color: #4F6C7F;
 }
 
 .navbar {
@@ -731,6 +685,10 @@ div.boxHeader {
   border-width: 1px 1px 2px 1px;
 }
 
+.grid tr td {
+  border-bottom: 1px solid #CCC;
+}
+
 thead.sortHeader tr
 {
   background-image: url(../image/stl_blu1_grad.gif);
@@ -778,11 +736,6 @@ thead.sortHeader a:hover
 	display: block;
 	text-decoration: underline;
 	width: 100%
-}
-
-table.grid td
-{
-  padding: 2px 4px 2px 4px;
 }
 
 /*====== New forms ======*/
@@ -871,9 +824,9 @@ div.contents {
  	background-color: #EFEFEF;
 }
 
-.tabLabel {
-  float: left;
+div.tabLabel {
   display: inline;
+  margin: 0px 2px 0px 0px;
 }
 
 div.tabContent {
@@ -891,8 +844,12 @@ a.tab {
   padding: 2px 10px 2px 10px;
   position: relative;
   text-decoration: none;
-  top: 3px;
+  top: 2px;
   z-index: 100;
+}
+
+a.tab.tab2 {
+  background-color: #EFEFEF;
 }
 
 a.tab.activeTab {
@@ -900,62 +857,8 @@ a.tab.activeTab {
   border-color: #7f94a5 #7f94a5 #7f94a5 #7f94a5;
 }
 
-/* Menus */
-div.menuBar {
-  display: inline;
-}
-
-a.menuItem {
-  font-family: verdana,sans-serif;
-  text-align: left;
-  font-size: 11px;
-}
-
-a.menuButton {
-  position: relative;
-  top: 0px;
-  text-decoration: none;
-  z-index: 100;
-}
-
-div.menuBar a.menuButtonActive:hover {
-  color: #ffffff;
-  left: 1px;
-  top: 1px;
-}
-
-div.menu {
-  background-color: #EFEFEF;
-  border: 1px solid;
-  border-color: #f0f0f0 #7f94a5 #7f94a5 #f0f0f0;
-  margin:0px 0px 0px 9px;
-  padding: 0px 1px 1px 0px;
-  position: absolute;
-  vertical-align:bottom;
-  visibility: hidden;
-  z-index: 101;
-}
-
-div.menu a.menuItem {
-  cursor: default;
-  display: block;
-  font-size: .8em;
-	font-family: verdana, sans-serif;
-  font-weight: bold;
-  padding: 3px 1em;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-div.menu a.menuItem:hover, div.menu a.menuItemHighlight {
-  background-color: #FFB400;
-  color: #ffffff;
-}
-
-div.menu div.menuItemSep {
-  border-top: 1px solid #7f94a5;
-  border-bottom: 1px solid #f0f0f0;
-  margin: 4px 2px;
+a.tab.activeTab2 {
+  background-color: #FFF;
 }
 
 /*====== Toolbars ======*/

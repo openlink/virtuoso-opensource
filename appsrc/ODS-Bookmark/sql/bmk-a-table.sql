@@ -192,6 +192,29 @@ BMK.WA.exec_no_error('
   create index SK_BOOKMARK_DOMAIN_01 on BMK.WA.BOOKMARK_DOMAIN(BD_DOMAIN_ID, BD_BOOKMARK_ID)
 ');
 
+BMK.WA.exec_no_error ('
+  create trigger BOOKMARK_DOMAIN_WA_AI after insert on BMK.WA.BOOKMARK_DOMAIN referencing new as N {
+    if (__proc_exists (\'DB.DBA.WA_NEW_BOOKMARKS_IN\'))
+      if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = N.BD_DOMAIN_ID and WAI_IS_PUBLIC = 1))
+        DB.DBA.WA_NEW_BOOKMARKS_IN (N.BD_NAME, sprintf(\'/bookmark/bookmarks.vspx?location=%d\', N.BD_ID), N.BD_ID);
+  }
+');
+
+BMK.WA.exec_no_error ('
+  create trigger BOOKMARK_DOMAIN_WA_AU after update on BMK.WA.BOOKMARK_DOMAIN referencing new as N {
+    if (__proc_exists (\'DB.DBA.WA_NEW_BOOKMARKS_IN\'))
+      if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = N.BD_DOMAIN_ID and WAI_IS_PUBLIC = 1))
+        DB.DBA.WA_NEW_BOOKMARKS_IN (N.BD_NAME, sprintf(\'/bookmark/bookmarks.vspx?location=%d\', N.BD_ID), N.BD_ID);
+  }
+');
+
+BMK.WA.exec_no_error ('
+  create trigger BOOKMARK_DOMAIN_WA_AD after delete on BMK.WA.BOOKMARK_DOMAIN referencing old as O {
+    if (__proc_exists (\'DB.DBA.WA_NEW_BOOKMARKS_RM\'))
+      DB.DBA.WA_NEW_BOOKMARKS_RM (O.BD_ID);
+  }
+');
+
 -------------------------------------------------------------------------------
 --
 -- Conatins specific data for feed items and domain/user - flags, tags and etc.
@@ -421,14 +444,39 @@ BMK.WA.exec_no_error('
 ')
 ;
 
+create procedure BMK.WA.tags_procedure (
+  in domain_id any,
+  in account_id any,
+  in item_id any)
+{
+  declare tag varchar;
+  declare tags any;
+
+  result_names (tag);
+  tags := BMK.WA.tags_select (domain_id, account_id, item_id);
+  tags := split_and_decode (tags, 0, '\0\0,');
+  foreach (any tag in tags) do
+    result (trim (tag));
+}
+;
+
+BMK.WA.exec_no_error ('
+  create procedure view BMK..TAGS_VIEW as BMK.WA.tags_procedure (domain_id, account_id, item_id) (BTV_TAG varchar)
+')
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.path_update()
 {
+  update BMK.WA.FOLDER
+     set F_PARENT_ID = -1
+   where F_PARENT_ID = 0;
   if (registry_get ('bmk_path_update') <> '1')
     update BMK.WA.FOLDER
        set F_NAME = F_NAME
-     where coalesce(F_PARENT_ID, 0) = 0;
+     where coalesce(F_PARENT_ID, -1) = -1;
+
 }
 ;
 BMK.WA.path_update()

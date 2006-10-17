@@ -22,10 +22,11 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro" xmlns:ods="http://www.openlinksw.com/vspx/ods/">
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
   <xsl:variable name="page_title" select="string (//vm:pagetitle)"/>
 
+  <xsl:include href="http://local.virt/DAV/VAD/wa/comp/ods_bar.xsl"/>
   <xsl:include href="dav_browser.xsl"/>
 
   <!--=========================================================================-->
@@ -101,7 +102,21 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:popup_page_wrapper">
-    <xsl:apply-templates select="node()|processing-instruction()"/>
+    <v:variable name="nav_pos_fixed" type="integer" default="0"/>
+    <v:variable name="nav_top" type="integer" default="0"/>
+    <v:variable name="nav_tip" type="varchar" default="''"/>
+    <xsl:for-each select="//v:variable">
+      <xsl:copy-of select="."/>
+    </xsl:for-each>
+    <div style="padding: 0.5em;">
+      <div style="padding: 0 0 0.5em 0;">
+        &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+        <hr />
+      </div>
+      <v:form name="F1" type="simple" method="POST">
+        <xsl:apply-templates select="vm:pagebody" />
+      </v:form>
+    </div>
     <div class="copyright"><vm:copyright /></div>
   </xsl:template>
 
@@ -115,8 +130,9 @@
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
-      <div style="height: 65px; background-color: #fff;">
-        <div style="float: left;  padding-top: 3px;">
+      <ods:ods-bar app_type='Bookmark'/>
+      <div style="background-color: #fff;">
+        <div style="float: left;">
           <img src="image/bmkbanner_sml.jpg"/>
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
@@ -138,27 +154,12 @@
       	</v:template>
         <br style="clear: left;"/>
       </div>
-      <div style="padding: 0.5em 0 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
-        <div style="float: left; padding-left: 0.5em;">
-          <?vsp
-            if (self.account_id > -1)
-              http(sprintf('<a href="%Vmyhome.vspx?sid=%s&realm=%s" title="%V"><img src="image/home_16.png" border="0"/> %V</a>', BMK.WA.wa_home_link (), self.sid, self.realm, self.accountName, self.accountName));
-          ?>
-        </div>
-        <div style="float: right; text-align: right; padding-right: 0.5em;">
+      <div style="text-align: right; padding: 0em 0.5em 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
           <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
             <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
             |
       	  </v:template>
           <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>
-            |
-          <v:url value="--BMK.WA.wa_home_title ()" url="--BMK.WA.wa_home_link ()"/>
-          <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-            |
-            <a href="<?V BMK.WA.wa_home_link () ?>" title="Logout">Logout</a>
-      	  </v:template>
-        </div>
-        <br style="clear: left;"/>
       </div>
       <v:include url="bmk_login.vspx"/>
       <table id="MTB">
@@ -166,13 +167,11 @@
           <!-- Navigation left column -->
           <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
             <td id="LC">
-              <xsl:call-template name="vm:others"/>
               <xsl:call-template name="vm:formats"/>
             </td>
       	  </v:template>
           <!-- Navigation right column -->
           <td id="RC">
-            <v:vscx name="navbar" url="bmk_navigation.vspx" />
         	  <v:template type="simple" condition="not self.vc_is_valid">
         	    <div class="error">
         		    <p><v:error-summary/></p>
@@ -403,6 +402,18 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <xsl:template match="vm:if">
+    <xsl:processing-instruction name="vsp">
+      if (<xsl:value-of select="@test"/>)
+      {
+    </xsl:processing-instruction>
+        <xsl:apply-templates />
+    <xsl:processing-instruction name="vsp">
+      }
+    </xsl:processing-instruction>
+  </xsl:template>
+
+  <!--=========================================================================-->
   <xsl:template match="vm:caption">
     <xsl:value-of select="@fixed"/>
     <xsl:apply-templates/>
@@ -418,7 +429,7 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:tabCaption">
-    <div style="display: inline;">
+    <div class="tabLabel">
       <xsl:attribute name="id"><xsl:value-of select="concat('tabLabel_', @tab)"/></xsl:attribute>
       <xsl:element name="v:url">
         <xsl:attribute name="url">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>

@@ -23,26 +23,16 @@
  -
 -->
 <v:page name="preferences" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <v:before-data-bind>
+  <v:after-data-bind>
     <![CDATA[
-	    declare exit handler for not found { goto _end; };
-
-      if (isnull(get_keyword('f_rows', self.vc_page.vc_event.ve_params))) {
-        self.v_settings := BMK.WA.settings(self.account_id);
-  			return;
-  		}
-
-		_end:
-		  if (isnull(self.v_settings))
-        self.v_settings := vector();
-      return;
+      self.url := sprintf('<a onClick="alert(''To drag the button to your toolbar, left click the link and while holding the mouse button down, drag it to the browser toolbar and release the button.''); return false;" href="javascript:location.href=''%s/bookmark/%d/bookmarks.vspx?URL=''+location.href+''&amp;TITLE=''+document.title">Bookmark with BM</a>', BMK.WA.host_url(), self.domain_id);
     ]]>
-  </v:before-data-bind>
+  </v:after-data-bind>
   <vm:pagetitle>Preferences</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header/>
     <vm:variables>
-      <v:variable name="v_settings" persist="0" type="varchar" default="null"/>
+      <v:variable name="url" type="varchar" default="''" />
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
     </vm:variables>
     <vm:pagebody>
@@ -52,18 +42,50 @@
       </div>
       <div id="c1">
         <div class="tabs">
-          <vm:tabCaption tab="1" tabs="2" caption="Main"/>&nbsp;
-          <vm:tabCaption tab="2" tabs="2" caption="Links"/>&nbsp;
+          <vm:tabCaption tab="1" tabs="3" caption="Main"/>&nbsp;
+          <vm:tabCaption tab="2" tabs="3" caption="Links"/>&nbsp;
+          <vm:tabCaption tab="3" tabs="3" caption="Bookmarklet"/>
         </div>
         <div class="contents">
           <div id="1" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
           <tr>
             <th width="30%">
-              <v:label for="f_chars" value="Limit of the names to"/>
+                  <v:label for="f_chars" value="Bookmark name display"/>
             </th>
             <td>
-              <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.v_settings, '60')" /> (0 = no limit)
+                  <?vsp
+                    declare S varchar;
+
+                    S := '';
+                    if (cast(get_keyword('chars', self.settings, '0') as integer) = 0)
+                      S := 'checked="checked"';
+                    http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', S));
+                  ?>
+                  <xsl:call-template name="nbsp"/><vm:label for="r_chars_0" value="--'show everything'" />
+                </td>
+              </tr>
+              <tr>
+                <th />
+                <td>
+                  <?vsp
+                    declare S varchar;
+
+                    S := '';
+                    if (cast(get_keyword('chars', self.settings, '0') as integer) <> 0)
+                      S := 'checked="checked"';
+                    http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', S));
+                  ?>
+                  <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
+                  <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
+                  <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
+                </td>
+              </tr>
+              <tr>
+                <th width="30%"/>
+                <td>
+                  <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.settings, '1') as integer)" />
+                  <vm:label for="f_tbLabels" value="Show toolbar labels"/>
             </td>
           </tr>
           <tr>
@@ -71,14 +93,23 @@
               <v:label for="f_rows" value="Rows per page"/>
             </th>
             <td>
-              <v:text name="f_rows" value="--get_keyword('rows', self.v_settings, '10')" xhtml_class="field-text"/>
+                  <v:text name="f_rows" value="--get_keyword('rows', self.settings, '10')" xhtml_size="3"/>
             </td>
           </tr>
           <tr>
-            <th width="30%"/>
+                <th>
+                  Show bookmark columns
+                </th>
             <td>
-              <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.v_settings, '1') as integer)" />
-              <vm:label for="f_tbLabels" value="Show toolbar labels"/>
+                  <v:check-box name="f_column_2" xhtml_id="f_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#2', self.settings, '0') as integer)" />
+                  <vm:label for="f_column_2" value="Date Created"/>
+                </td>
+              </tr>
+              <tr>
+                <th />
+                <td>
+                  <v:check-box name="f_column_3" xhtml_id="f_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#3', self.settings, '1') as integer)" />
+                  <vm:label for="f_column_3" value="Last Updated"/>
             </td>
           </tr>
           <tr>
@@ -91,7 +122,7 @@
                 <v:item value="1.0" name="1.0"/>
                 <v:before-data-bind>
                   <![CDATA[
-                    control.ufl_value := get_keyword('atomVersion', self.v_settings, '1.0');
+                        control.ufl_value := get_keyword('atomVersion', self.settings, '1.0');
                   ]]>
                 </v:before-data-bind>
               </v:select-list>
@@ -109,7 +140,7 @@
                   <v:label for="f_deliciousUser" value="- user name"/>
                 </th>
                 <td>
-                  <v:text name="f_deliciousUser" null-value="--''" value="--get_keyword('deliciousUser', self.v_settings, '')" />
+                  <v:text name="f_deliciousUser" null-value="--''" value="--get_keyword('deliciousUser', self.settings, '')" />
                 </td>
               </tr>
               <tr>
@@ -118,7 +149,43 @@
                   <v:label for="f_deliciousPwd" value="- password"/>
                 </th>
                 <td>
-                  <v:text name="f_deliciousPwd" type="password" null-value="--''" value="--get_keyword('deliciousPwd', self.v_settings, '')" />
+                  <v:text name="f_deliciousPwd" type="password" null-value="--''" value="--get_keyword('deliciousPwd', self.settings, '')" />
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div id="3" class="tabContent" style="display: none;">
+            <table class="form-body" cellspacing="0">
+              <tr>
+                <td>
+                   <br />
+                   You can bookmark URL from anywhere with the BM Bookmark button.
+                   <h3>Internet Explorer Users</h3>
+                   <ol>
+                     <li>To install the button, right click on this url <?vsp http(self.url); ?> and select the 'Add to Favorites' link. You may see a warning dialog -- click 'OK' to continue.</li>
+                     <li>To subscribe to the site you're currently viewing in your browser, just click the 'Bookmark with BM' button from within your Favorites menu.</li>
+                   </ol>
+                   <h3>Firefox Users</h3>
+                   <ol>
+                     <li>To install the button on your browser, first make sure that the 'Bookmarks Toolbar' toolbar is visible in your browser. Click 'View'->'Toolbars' and verify that the 'Bookmarks Toolbar' item is checked.</li>
+                     <li>Drag this url <?vsp http(self.url); ?> to the 'Bookmarks Toolbar' toolbar.</li>
+                     <li>A 'Bookmark with BM' button should now appear in your 'Bookmarks Toolbar'.</li>
+                     <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                  </ol>
+                  <h3>Mozilla/Netscape Users</h3>
+                  <ol>
+                    <li>To install the button on your browser, first make sure that the 'Personal Toolbar' toolbar is visible in your browser. Click 'View'->'Show/Hide' and verify that the 'Personal Toolbar' item is checked.</li>
+                    <li>Drag this url <?vsp http(self.url); ?> to the 'Personal Toolbar' toolbar.</li>
+                    <li>A 'Bookmark with BM' button should now appear in your 'Personal Toolbar'.</li>
+                    <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                  </ol>
+                  <h3>Safari Users</h3>
+                  <ol>
+                    <li>To install the button on your browser, first make sure that the 'Bookmark Bar' toolbar is visible in your browser. Click 'View'->'Menu' and verify that the 'Bookmark Bar' item is checked.</li>
+                    <li>Drag this url <?vsp http(self.url); ?> to the 'Bookmark Bar' toolbar.</li>
+                    <li>A 'Bookmark with BM' button should now appear in your 'Bookmark Bar'. </li>
+                    <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                  </ol>
                 </td>
               </tr>
             </table>
@@ -133,18 +200,22 @@
 
               rows := trim(self.f_rows.ufl_value);
               chars := trim(self.f_chars.ufl_value);
+              if (get_keyword ('r_chars', self.vc_page.vc_event.ve_params, '-1') = '0')
+                chars := '0';
 
               BMK.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
               BMK.WA.test(chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
 
-              self.v_settings := BMK.WA.set_keyword('chars', self.v_settings, cast(cast(chars as integer) as varchar));
-              self.v_settings := BMK.WA.set_keyword('rows', self.v_settings, cast(cast(rows as integer) as varchar));
-              self.v_settings := BMK.WA.set_keyword('tbLabels', self.v_settings, self.f_tbLabels.ufl_selected);
-              self.v_settings := BMK.WA.set_keyword('atomVersion', self.v_settings, self.f_atomVersion.ufl_value);
-              self.v_settings := BMK.WA.set_keyword('deliciousUser', self.v_settings, self.f_deliciousUser.ufl_value);
-              self.v_settings := BMK.WA.set_keyword('deliciousPwd', self.v_settings, self.f_deliciousPwd.ufl_value);
+              self.settings := BMK.WA.set_keyword('chars', self.settings, cast(cast(chars as integer) as varchar));
+              self.settings := BMK.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
+              self.settings := BMK.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
+              self.settings := BMK.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
+              self.settings := BMK.WA.set_keyword('column_#2', self.settings, self.f_column_2.ufl_selected);
+              self.settings := BMK.WA.set_keyword('column_#3', self.settings, self.f_column_3.ufl_selected);
+              self.settings := BMK.WA.set_keyword('deliciousUser', self.settings, self.f_deliciousUser.ufl_value);
+              self.settings := BMK.WA.set_keyword('deliciousPwd', self.settings, self.f_deliciousPwd.ufl_value);
 
-              insert replacing BMK.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.v_settings));
+              insert replacing BMK.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.settings));
               commit work;
 
               BMK.WA.domain_gems_create(self.domain_id, self.account_id);
@@ -152,6 +223,15 @@
               self.vc_redirect('bookmarks.vspx');
       	    ]]>
       	  </v:on-post>
+        </v:button>
+        <v:button action="simple" value="Clear" xhtml_class="form-button">
+          <v:on-post>
+            <![CDATA[
+              delete from BMK.WA.SETTINGS where S_ACCOUNT_ID = self.account_id;
+
+              self.vc_redirect('settings.vspx');
+            ]]>
+          </v:on-post>
         </v:button>
         <v:button action="simple" value="Cancel" xhtml_class="form-button">
           <v:on-post>
@@ -163,7 +243,7 @@
       </div>
       <script>
         <![CDATA[
-          initTab(2, 1);
+          initTab(3, 1);
         ]]>
       </script>
     </vm:pagebody>

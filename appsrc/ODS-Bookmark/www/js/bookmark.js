@@ -20,9 +20,115 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+var BrowserDetect = {
+  init: function () {
+    this.browser = this.searchString(this.dataBrowser) || "An unknown browser";
+    this.version = this.searchVersion(navigator.userAgent)
+      || this.searchVersion(navigator.appVersion)
+      || "an unknown version";
+    this.OS = this.searchString(this.dataOS) || "an unknown OS";
+  },
+  searchString: function (data) {
+    for (var i=0;i<data.length;i++)  {
+      var dataString = data[i].string;
+      var dataProp = data[i].prop;
+      this.versionSearchString = data[i].versionSearch || data[i].identity;
+      if (dataString) {
+        if (dataString.indexOf(data[i].subString) != -1)
+          return data[i].identity;
+      }
+      else if (dataProp)
+        return data[i].identity;
+    }
+  },
+  searchVersion: function (dataString) {
+    var index = dataString.indexOf(this.versionSearchString);
+    if (index == -1) return;
+    return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
+  },
+  dataBrowser: [
+    {   string: navigator.userAgent,
+      subString: "OmniWeb",
+      versionSearch: "OmniWeb/",
+      identity: "OmniWeb"
+    },
+    {
+      string: navigator.vendor,
+      subString: "Apple",
+      identity: "Safari"
+    },
+    {
+      prop: window.opera,
+      identity: "Opera"
+    },
+    {
+      string: navigator.vendor,
+      subString: "iCab",
+      identity: "iCab"
+    },
+    {
+      string: navigator.vendor,
+      subString: "KDE",
+      identity: "Konqueror"
+    },
+    {
+      string: navigator.userAgent,
+      subString: "Firefox",
+      identity: "Firefox"
+    },
+    {
+      string: navigator.vendor,
+      subString: "Camino",
+      identity: "Camino"
+    },
+    {    // for newer Netscapes (6+)
+      string: navigator.userAgent,
+      subString: "Netscape",
+      identity: "Netscape"
+    },
+    {
+      string: navigator.userAgent,
+      subString: "MSIE",
+      identity: "Explorer",
+      versionSearch: "MSIE"
+    },
+    {
+      string: navigator.userAgent,
+      subString: "Gecko",
+      identity: "Mozilla",
+      versionSearch: "rv"
+    },
+    {     // for older Netscapes (4-)
+      string: navigator.userAgent,
+      subString: "Mozilla",
+      identity: "Netscape",
+      versionSearch: "Mozilla"
+    }
+  ],
+  dataOS : [
+    {
+      string: navigator.platform,
+      subString: "Win",
+      identity: "Windows"
+    },
+    {
+      string: navigator.platform,
+      subString: "Mac",
+      identity: "Mac"
+    },
+    {
+      string: navigator.platform,
+      subString: "Linux",
+      identity: "Linux"
+    }
+  ]
+
+};
+BrowserDetect.init();
 
 // ---------------------------------------------------------------------------
-function myPost(frm_name, fld_name, fld_value) {
+function myPost(frm_name, fld_name, fld_value)
+{
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
 }
@@ -71,29 +177,31 @@ function submitEnter(myForm, myButton, e) {
 }
 
 // ---------------------------------------------------------------------------
-function getObject(id, doc) {
-  if (doc == null)
-    doc = document;
-  if (doc.all)
-    return doc.all[id];
-  return doc.getElementById(id);
+function getObject(id)
+{
+  if (document.all)
+    return document.all[id];
+  return document.getElementById(id);
 }
 
 // ---------------------------------------------------------------------------
-function confirmAction(confirmMsq, form, txt, selectionMsq) {
+function confirmAction(confirmMsq, form, txt, selectionMsq)
+{
   if (anySelected (form, txt, selectionMsq))
     return confirm(confirmMsq);
   return false;
 }
 
 // ---------------------------------------------------------------------------
-function selectCheck (obj, prefix) {
+function selectCheck (obj, prefix)
+{
   coloriseRow(getParent(obj, 'tr'), obj.checked);
   enableToolbars(obj.form, prefix);
 }
 
 // ---------------------------------------------------------------------------
-function enableToolbars (objForm, prefix) {
+function enableToolbars (objForm, prefix)
+{
   var oCount = 0;
   var tCount = 0;
   var mCount = 0;
@@ -124,7 +232,8 @@ function enableToolbars (objForm, prefix) {
 }
 
 // ---------------------------------------------------------------------------
-function getParent (obj, tag) {
+function getParent (obj, tag)
+{
   var obj = obj.parentNode;
   if (obj.tagName.toLowerCase() == tag)
     return obj;
@@ -132,7 +241,8 @@ function getParent (obj, tag) {
 }
 
 // ---------------------------------------------------------------------------
-function enableElement(id, enableFlag) {
+function enableElement (id, enableFlag)
+{
   var element = document.getElementById(id);
   if (element != null) {
     if (enableFlag) {
@@ -141,6 +251,22 @@ function enableElement(id, enableFlag) {
      element.style.display = 'none';
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+function showCell (cell)
+{
+  var c = getObject (cell);
+  if ((c) && (c.style.display == "none"))
+    c.style.display = "";
+}
+
+// ---------------------------------------------------------------------------
+function hideCell(cell)
+{
+  var c = getObject(cell);
+  if ((c) && (c.style.display != "none"))
+    c.style.display = "none";
 }
 
 // ---------------------------------------------------------------------------
@@ -217,7 +343,7 @@ function coloriseTable(id) {
     if (table != null) {
       var rows = table.getElementsByTagName("tr");
       for (i = 0; i < rows.length; i++) {
-        rows[i].className = "td_row" + (i % 2);;
+        rows[i].className = rows[i].className + " tr_" + (i % 2);;
       }
     }
   }
@@ -225,17 +351,20 @@ function coloriseTable(id) {
 
 // ---------------------------------------------------------------------------
 function coloriseRow(obj, checked) {
-  obj.className = (obj.className).replace('td_sel', '');
+  obj.className = (obj.className).replace('tr_select', '');
   if (checked)
-    obj.className = obj.className + ' ' + 'td_sel';
+    obj.className = obj.className + ' ' + 'tr_select';
 }
 
 // ---------------------------------------------------------------------------
-function trim(sString) {
-  while (sString.substring(0,1) == ' ')
+function trim(sString, sChar) {
+  if (sChar == null)
+    sChar = ' ';
+
+  while (sString.substring(0,1) == sChar)
     sString = sString.substring(1, sString.length);
 
-  while (sString.substring(sString.length-1, sString.length) == ' ')
+  while (sString.substring(sString.length-1, sString.length) == sChar)
     sString = sString.substring(0,sString.length-1);
 
   return sString;
@@ -391,7 +520,7 @@ function windowShow(sPage, width, height)
   if (height == null)
     height = 420;
   sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
-  win = window.open(sPage, null, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=yes,menubar=yes,scrollbars=yes,resizable=yes");
+  win = window.open(sPage, null, "width="+width+",height="+height+", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
   win.window.focus();
 }
 
@@ -455,6 +584,9 @@ function rowSelectValue(dstField, srcField, singleMode)
   if (singleMode) {
     dstField.value = srcField.value;
   } else {
+    dstField.value = trim(dstField.value);
+    dstField.value = trim(dstField.value, ',');
+    dstField.value = trim(dstField.value);
     if (dstField.value.indexOf(srcField.value) == -1) {
       if (dstField.value == '') {
         dstField.value = srcField.value;
@@ -470,6 +602,7 @@ function rowSelectValue(dstField, srcField, singleMode)
 // Hiddens functions
 //
 // ---------------------------------------------------------------------------
+//
 function createHidden(frm_name, fld_name, fld_value) {
   var hidden;
 
@@ -477,6 +610,7 @@ function createHidden(frm_name, fld_name, fld_value) {
 }
 
 // ---------------------------------------------------------------------------
+//
 function createHidden2(doc, frm_name, fld_name, fld_value) {
   var hidden;
 
@@ -494,8 +628,129 @@ function createHidden2(doc, frm_name, fld_name, fld_value) {
 }
 
 // ---------------------------------------------------------------------------
+//
 function changeExportName(fld_name, from, to) {
   var obj = document.forms['F1'].elements[fld_name];
   if (obj)
     obj.value = (obj.value).replace(from, to);
+}
+
+// ---------------------------------------------------------------------------
+//
+function updateChecked (obj, objName)
+{
+  var objForm = obj.form;
+  coloriseRow(getParent(obj, 'tr'), obj.checked);
+  objForm.s1.value = trim(objForm.s1.value);
+  objForm.s1.value = trim(objForm.s1.value, ',');
+  objForm.s1.value = trim(objForm.s1.value);
+  objForm.s1.value = objForm.s1.value + ',';
+  for (var i = 0; i < objForm.elements.length; i = i + 1) {
+    var obj = objForm.elements[i];
+    if (obj != null && obj.type == "checkbox" && obj.name == objName) {
+      if (obj.checked) {
+        if (objForm.s1.value.indexOf(obj.value+',') == -1)
+          objForm.s1.value = objForm.s1.value + obj.value+',';
+      } else {
+        objForm.s1.value = (objForm.s1.value).replace(obj.value+',', '');
+      }
+    }
+  }
+  objForm.s1.value = trim(objForm.s1.value, ',');
+}
+
+// ---------------------------------------------------------------------------
+//
+function addChecked (form, txt, selectionMsq)
+{
+  if (!anySelected (form, txt, selectionMsq, 'confirm'))
+    return;
+
+  var submitMode = false;
+  if (window.document.F1.elements['src'])
+    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
+      submitMode = true;
+  if (submitMode)
+    if (window.opener.document.F1)
+      if (window.opener.document.F1.elements['submitting'])
+        return false;
+  var singleMode = true;
+  if (window.document.F1.elements['dst'])
+    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
+      singleMode = false;
+
+  var s1 = 's1';
+  var s2 = 's2';
+
+  var myRe = /^(\w+):(\w+);(.*)?/;
+  var params = window.document.forms['F1'].elements['params'].value;
+  var myArray;
+  while(true) {
+    myArray = myRe.exec(params);
+    if (myArray == undefined)
+      break;
+    if (myArray.length > 2)
+      if (window.opener.document.F1)
+        if (window.opener.document.F1.elements[myArray[1]]) {
+          if (myArray[2] == 's1')
+            if (window.opener.document.F1.elements[myArray[1]])
+              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
+          if (myArray[2] == 's2')
+            if (window.opener.document.F1.elements[myArray[1]])
+              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s2], singleMode, submitMode);
+        }
+    if (myArray.length < 4)
+      break;
+    params = '' + myArray[3];
+  }
+  if (submitMode)
+    window.opener.document.F1.submit();
+  window.close();
+}
+
+// ---------------------------------------------------------------------------
+//
+function addTag(tag, objName)
+{
+  var obj = document.F1.elements[objName];
+  obj.value = trim(obj.value);
+  obj.value = trim(obj.value, ',');
+  obj.value = trim(obj.value);
+  obj.value = (obj.value).replace('  ', ' ');
+  obj.value = (obj.value).replace(' ,', ',');
+  obj.value = obj.value + ',';
+  if (obj.value.indexOf(tag+',') == -1) {
+    obj.value = obj.value + tag + ',';
+  } else {
+    obj.value = (obj.value).replace(tag+',', '');
+  }
+  obj.value = trim(obj.value, ',');
+}
+
+// ---------------------------------------------------------------------------
+//
+function addCheckedTags (openerName, checkName)
+{
+  if (window.opener.document.F1.elements[document.F1.elements[openerName].value]) {
+    var objForm = document.F1;
+    var objOpener = window.opener.document.F1.elements[document.F1.elements[openerName].value];
+
+    objOpener.value = trim(objOpener.value);
+    objOpener.value = trim(objOpener.value, ',');
+    objOpener.value = trim(objOpener.value);
+    objOpener.value = objOpener.value + ',';
+    for (var i = 0; i < objForm.elements.length; i = i + 1) {
+      var obj = objForm.elements[i];
+      if (obj != null && obj.type == "checkbox" && obj.name == checkName) {
+        if (obj.checked) {
+          if (objOpener.value.indexOf(obj.value+',') == -1)
+            objOpener.value = objOpener.value + obj.value+',';
+        } else {
+          objOpener.value = (objOpener.value).replace(obj.value+',', '');
+        }
+      }
+    }
+    objOpener.value = trim(objOpener.value, ',');
+  }
+  window.close();
 }
