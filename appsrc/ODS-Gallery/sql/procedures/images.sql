@@ -188,6 +188,7 @@ create procedure PHOTO.WA.image_ration(
 --
 create procedure PHOTO.WA.get_attributes(
   in sid varchar,
+  in p_gallery_id integer,
   in image_id varchar)
 returns photo_exif array
 {

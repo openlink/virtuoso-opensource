@@ -28,38 +28,18 @@ var dataSet = new Object();
 
 
 //------------------------------------------------------------------------------
-dataSet = function(obj,filter){
+dataSet = function(){
   this.list = new Array();
   this.current = new Object();
   this.current.name = null;
   this.current.list = new Array();
   this.current.list.current = new Object();
   this.current.list.id;
-  this.object = obj;
-  this.filter = filter;
-
 }
 
 //------------------------------------------------------------------------------
 dataSet.prototype.loadList = function(dav_lines){
   this.list = dav_lines;
-return;
-
-  this.list = new Array();
-
-  if(dav_lines == null){
-    return
-  }
-
-  dav_lines = dav_lines
-
-
-  for(var r=0;r<dav_lines.length;r++){
-
-    if(dav_lines[r].type == this.filter){
-      this.list[this.list.length] = dav_lines[r];
-    }
-  }
 }
 
 //------------------------------------------------------------------------------
@@ -149,7 +129,9 @@ dataSet.prototype.checkNameExist = function (name){
 }
 //------------------------------------------------------------------------------
 dataSet.prototype.setCurrent = function(current_id){
-
+  this.current = this.list[current_id];
+  this.current.index = current_id;
+  return;
   this.current.fullpath  = this.list[current_id].fullpath;
   this.current.name  = this.list[current_id].name;
   this.current.index = current_id;
@@ -158,3 +140,4 @@ dataSet.prototype.setCurrent = function(current_id){
   this.current.description = this.list[current_id].description;
   this.current.visibility = this.list[current_id].visibility;
 }
+

@@ -410,6 +410,105 @@ create procedure PHOTO.WA.fix_old_versions(){
 ;
 
 -------------------------------------------------------------------------------
+create procedure PHOTO.WA.get_geo_info(in user_id integer){
+  declare e_lat, e_lng any;
+  if(user_id = -1){
+    return vector(0, 0);
+  }
+  select WAUI_LAT, WAUI_LNG
+    into e_lat, e_lng
+    from DB.DBA.WA_USER_INFO
+   where WAUI_U_ID = user_id;
+   return vector(e_lat, e_lng);
+}
+;
+
+-------------------------------------------------------------------------------
+create procedure PHOTO.WA.tags2vector(
+  inout tags varchar)
+{
+  return split_and_decode(trim(tags, ','), 0, '\0\0,');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.vector2tags(
+  inout aVector any)
+{
+  declare N integer;
+  declare aResult any;
+
+  aResult := '';
+  for (N := 0; N < length(aVector); N := N + 1)
+    if (N = 0) {
+      aResult := trim(aVector[N]);
+    } else {
+      aResult := concat(aResult, ',', trim(aVector[N]));
+    }
+  return aResult;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.tags2unique(
+  inout aVector any)
+{
+  declare aResult any;
+  declare N, M integer;
+
+  aResult := vector();
+  for (N := 0; N < length(aVector); N := N + 1) {
+    for (M := 0; M < length(aResult); M := M + 1)
+      if (trim(lcase(aResult[M])) = trim(lcase(aVector[N])))
+        goto _next;
+    aResult := vector_concat(aResult, vector(trim(aVector[N])));
+  _next:;
+  }
+  return aResult;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.tag_delete(
+  inout tags varchar,
+  inout T any)
+{
+  declare N integer;
+  declare new_tags any;
+
+  new_tags := PHOTO.WA.tags2vector (tags);
+  tags := '';
+  N := 0;
+  foreach (any new_tag in new_tags) do {
+    if (isstring(T) and (new_tag <> T))
+      tags := concat(tags, ',', new_tag);
+    if (isinteger(T) and (N <> T))
+      tags := concat(tags, ',', new_tag);
+    N := N + 1;
+  }
+  return trim(tags, ',');
+}
+;
+
+--
+create procedure PHOTO.WA.GET_ODS_BAR (
+  inout _params any,
+  inout _lines any)
+{
+  --dbg_obj_print('params: ', deserialize(_params));
+  --dbg_obj_print(deserialize(_lines));
+  return ODS.BAR._EXEC('Gallery', deserialize(_params), deserialize(_lines));
+}
+;
+
+grant execute on PHOTO.WA.GET_ODS_BAR to public;
+xpf_extension ('http://www.openlinksw.com/photos/:getODSBar', 'PHOTO.WA.GET_ODS_BAR');
+
+
+-------------------------------------------------------------------------------
 PHOTO.WA._exec_no_error(
   'PHOTO.WA.fix_old_versions()'
 )

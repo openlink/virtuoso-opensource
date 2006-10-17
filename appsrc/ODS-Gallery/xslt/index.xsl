@@ -23,48 +23,60 @@
  -
 -->
 <xsl:stylesheet version='1.0' xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/weblog/"  xmlns:xsl='http://www.w3.org/1999/XSL/Transform' xmlns:msxsl="urn:schemas-microsoft-com:xslt" xmlns:fmt="urn:p2plusfmt-xsltformats" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" >
-
-  <xsl:output method="html" indent="yes"/>
+  <xsl:output method="html" indent="yes" encoding="windows-1251" doctype-public="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"/>
 
   <xsl:template match="/">
     <html>
-      <head>
+      <head profile="http://internetalchemy.org/2003/02/profile">
         <title>Photo Gallery</title>
         <link rel="meta" type="application/rdf+xml" title="SIOC" href="root/host" >
-          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/dataspace/<xsl:value-of select="root/user/user_name"/>/<xsl:value-of select="root/app_type"/>/<xsl:value-of select="root/instance"/>/sioc.rdf</xsl:attribute>
+          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/dataspace/<xsl:value-of select="root/instance_owner"/>/<xsl:value-of select="root/app_type"/>/<xsl:value-of select="root/instance"/>/sioc.rdf</xsl:attribute>
         </link>
 
         <link rel="alternate" type="application/atom+xml">
-          <xsl:attribute name="title"><xsl:value-of select="user/user_name"/>&#39;s Photos Atom</xsl:attribute>
-          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/><xsl:value-of select="root/instance"/>atom.xml</xsl:attribute>
+          <xsl:attribute name="title"><xsl:value-of select="root/instance_owner"/>&#39;s Photos Atom</xsl:attribute>
+          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/<xsl:value-of select="root/instance"/>/atom.xml</xsl:attribute>
         </link>
 
 
         <link rel="alternate" type="application/rss+xml">
-          <xsl:attribute name="title"><xsl:value-of select="user/user_name"/>&#39;s Photos RSS</xsl:attribute>
-          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/><xsl:value-of select="root/instance"/>rss.xml</xsl:attribute>
+          <xsl:attribute name="title"><xsl:value-of select="root/instance_owner"/>&#39;s Photos RSS</xsl:attribute>
+          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/<xsl:value-of select="root/instance"/>/rss.xml</xsl:attribute>
         </link>
 
       <link rel="pingback" href="http://localhost:84/mt-tb" >
         </link>
 
-
-      <link rel="meta" type="application/rdf+xml" title="FOAF" href="http://localhost:84/weblog/darco/gems/foaf.xml" >
+      <xsl:if test="/root/user/@lat != ''">
+        <meta name="geo.position" >
+          <xsl:attribute name="content"><xsl:value-of select="/root/user/@lat"/>;<xsl:value-of select="/root/user/@lng"/></xsl:attribute>
+        </meta>
+        <meta name="ICBM">
+          <xsl:attribute name="content"><xsl:value-of select="/root/user/@lat"/>;<xsl:value-of select="/root/user/@lng"/></xsl:attribute>
+        </meta>
+        <meta name="dc.title">
+          <xsl:attribute name="content"><xsl:value-of select="/root/instance_description"/></xsl:attribute>
+        </meta>
+        <meta name="dc.description">
+          <xsl:attribute name="content"><xsl:value-of select="/root/instance_description"/></xsl:attribute>
+        </meta>
+      </xsl:if>
+      <link rel="foaf" type="application/rdf+xml" title="FOAF">
+        <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/dataspace/<xsl:value-of select="root/instance_owner"/>/about.rdf</xsl:attribute>
         </link>
+        <script type="text/javascript">
+      		var toolkitPath = "/photos/res/toolkit";
+      		var featureList = ["dom","rotator","slider","xml","ajax"];
+      	</script>
 
-      <link rel="EditURI" type="application/rsd+xml" title="RSD" href="http://localhost:84/weblog/darco/gems/rsd.xml" >
-        </link>
-
-        <script language="JavaScript" src="/photos/res/js/ajax.js"></script>
-        <script language="JavaScript" src="/photos/res/js/dataset.js"></script>
-        <script language="JavaScript" src="/photos/res/js/ui.js"></script>
-
-        <script language="JavaScript" src="/photos/res/js/gallery.js"></script>
-        <script language="JavaScript" src="/photos/res/proxy.vsp"></script>
-        <script language="JavaScript" src="/photos/res/js/slideshow.js"></script>
-        <script type="text/javascript" src="/photos/res/js/range.js"></script>
-        <script type="text/javascript" src="/photos/res/js/timer.js"></script>
-        <script language="JavaScript" src="/photos/res/js/slider.js"></script>
+      	<script type="text/javascript" src="/photos/res/toolkit/loader.js"></script>
+<!--
+-->
+        <script type="text/javascript" language="JavaScript" src="/photos/res/js/ajax.js"></script>
+        <script type="text/javascript" language="JavaScript" src="/photos/res/js/dataset.js"></script>
+        <script type="text/javascript" language="JavaScript" src="/photos/res/js/ui.js"></script>
+        <script type="text/javascript" language="JavaScript" src="/photos/res/js/gallery.js"></script>
+        <script type="text/javascript" language="JavaScript" src="/photos/res/proxy.vsp"></script>
         <link rel="stylesheet" href="/photos/res/css/gallery.css" type="text/css"/>
         <link rel="stylesheet" href="/photos/res/css/winclassic.css" type="text/css"/>
       </head>
@@ -76,6 +88,7 @@
 <!-- ======================================================================= -->
   <xsl:template match="root">
     <body>
+      <xsl:apply-templates select="bar"/>
       <div id="wrapper">
       <div id="head">
         <h1>
@@ -104,6 +117,7 @@
   <xsl:template match="root[@sid != '' or gallery]">
    <body>
       <xsl:attribute name="onLoad">gallery.init('<xsl:value-of select="gallery"/>')</xsl:attribute>
+      <xsl:apply-templates select="bar"/>
        <div id="wrapper">
       <form name="f1" style="display:inline;">
       <div id="head">
@@ -158,50 +172,85 @@
         <tr>
           <td id="left_col" valign="top">
 
-            <div id="albums_list" class="toolbar">
+            <div id="care_my_albums" class="toolbar">
               <h3>My Albums</h3>
-            </div>
-
-            <div id="albums_man" class="toolbar">
-              <h3>Manage</h3>
-              <ul>
+              <ul id="my_albums_list"/>
+              <ul id="my_albums_man" >
                 <li id="new_album_tab">
                   Create new album
                 </li>
               </ul>
             </div>
-
-            <div id="toolbar" class="toolbar">
+            <div id="care_edit_album" class="toolbar" style="display:none">
+              <h3>Edit album</h3>
               <ul>
-                <li/>
+                <li id="link_image_upload">Add images</li>
+                <li id="tag_images_tab">Tag images</li>
+                <li id="btn_edit_album">Edit album</li>
+                <li id="link_delete_album">Delete album</li>
+                <li id="link_delete_images">Delete images</li>
               </ul>
             </div>
+            <div id="care_edit_image" class="toolbar" style="display:none">
+              <h3>Edit image</h3>
+              <ul>
+                <li id="link_show_images">All images</li>
+                <li id="tag_image_tab">Tag image</li>
+                <li id="link_show_exif">EXIF information</li>
+                <li id="link_image_edit">Edit caption</li>
+                <li id="link_delete_image">Delete image</li>
+              </ul>
+            </div>
+            <div id="care_view_mode" class="toolbar" style="display:none">
+              <h3>View mode</h3>
+              <ul>
+                <li id="btn_slideshow">Slideshow</li>
+              </ul>
+            </div>
+            <div id="care_slideshow" class="toolbar" style="display:none">
+              <h3>Slideshow</h3>
+              <div id="buttons">
+                  <img src="/photos/res/i/skipb_24.gif" width="24" height="24" id="SlideShow_back" alt="Previus Picture"/>
+                  <img src="/photos/res/i/pause_24.gif" width="24" height="24" id="SlideShow_stop" alt="Start/Pause"/>
+                  <img src="/photos/res/i/skipf_24.gif" width="24" height="24" id="SlideShow_next" alt="Next picture"/>
+              </div>
+          		<div id="sliderbg">
+          			<div id="slider_btn"></div>
+          		</div>
+              <div id="label_slideshow_status">
+              </div>
+            </div>
+
             <div id="feeds" class="toolbar">
               <h3>Feeds</h3>
               <ul>
-                <li id="feed_atom">
-                  Atom
-                </li>
-                <li id="feed_rss">
-                  RSS 2.0
-                </li>
-                <li id="feed_rdf">
-                  RDF
-                </li>
-                <li id="feed_xbel">
-                  XBEL
-                </li>
-                <li id="feed_mrss">
-                  mRSS
-                </li>
+                <li id="feed_atom">Atom</li>
+                <li id="feed_rss">RSS 2.0</li>
+                <li id="feed_rdf">RDF</li>
+                <li id="feed_xbel">XBEL</li>
+                <li id="feed_mrss">mRSS</li>
               </ul>
             </div>
-
           </td>
           <td id="right_col" valign="top">
 
-            <div id="info" style="display:none;">
-              <xsl:call-template name="nbsp"/>
+            <div id="info">
+              <div id="title">
+                <div id="path">
+                  <span id="path_my_albums"></span>
+                  <span id="path_pub_date"></span>
+                  <span id="path_album_name"></span>
+                  <span id="path_image_name"></span>
+                </div>
+                <div id="info_discription">
+                </div>
+                <h3 id="caption"></h3>
+              </div>
+              <div id="preview_nav">
+                <div id="preview_left"/>
+                <div id="preview_right">
+                </div>
+              </div>
             </div>
 
             <div id="albums">
@@ -211,12 +260,14 @@
             <xsl:call-template name="new_album"/>
             <xsl:call-template name="edit_album"/>
 
+            <div id="group_images">
             <div id="upload_image" style="display:none;">
               <iframe width="100%" height="750" src="" border="0" frameborder="0" ></iframe>
             </div>
 
             <div id="images" style="display:none;">
               <xsl:call-template name="nbsp"/>
+            </div>
             </div>
 
             <div id="group_image">
@@ -237,6 +288,8 @@
     </form>
     </div>
     <xsl:call-template name="ajax_action"/>
+    <div id="ddd">
+    </div>
   </body>
   </xsl:template>
 
@@ -244,6 +297,25 @@
 <!-- ========================================================================= -->
 <xsl:template name="comments">
   <div id="comments" style="display:none;">
+    <table class="ramka" cellpadding="10">
+      <tr>
+        <td valign="top" class="left">
+          <h2 class="l">Tags</h2>
+          <div id="tags_list">
+            Loading ...
+          </div>
+        </td>
+        <td valign="top" class="right">
+          <h2>Add new tag</h2>
+          Tag:<br/>
+          <textarea name="new_tag" id="new_tag"></textarea>
+          <br/>
+          <button type="button" name="bnt_new_tag" id="">Cancel</button>
+          <button type="button" name="bnt_new_tag" id="bnt_new_tag">Save</button>
+        </td>
+      </tr>
+    </table>
+
     <table class="ramka" cellpadding="10">
       <tr>
         <td valign="top" class="left">
@@ -267,164 +339,26 @@
 
 <!-- ========================================================================= -->
 <xsl:template name="slideshow">
-  <div style="position:relative;visibility: hidden;border:1px solid #000;" id="slideshow">
-    <div id="canvas0" style="position:absolute;top:0;left:12px;filter:alpha(opacity=10);-moz-opacity:10;">
-      <xsl:call-template name="nbsp"/>
-    </div>
-    <div id="canvas1" style="position:absolute;top:0;left:12px;filter:alpha(opacity=10);-moz-opacity:10;visibility: hidden;">
-      <xsl:call-template name="nbsp"/>
+  <div id="slideshow">
+  	<div id="rotator">
+  		<div id="rotator_content">
+  			<div id="rotator_viewport"></div>
+  			<div id="rotator_filter"></div>
     </div>
   </div>
-  <div style="position:relative;">
 </div>
-
   </xsl:template>
 
 <!-- ========================================================================= -->
 <xsl:template name="ajax_action">
-
-        <script defer="defer" type="text/javascript">
+ <script type="text/javascript">
       var sid = '<xsl:value-of select="@sid"/>';
       var realm = '<xsl:value-of select="@realm"/>';
       var home_path = '<xsl:value-of select="gallery"/>';
-
-      var gallery_load_albums = {
-        delay: 200,
-        prepare: function(path) { return Array(sid,path); },
-        call: proxies.SOAP.dav_browse,
-        finish: gallery.showCollections,
-        onException: gallery.showError
-      }
-
-      var gallery_load_images = {
-        delay: 200,
-        prepare: function(current_id) {ds_albums.setCurrent(current_id); return Array(sid,ds_albums.list[current_id].fullpath); },
-        call: proxies.SOAP.dav_browse,
-        finish: function (p) {ds_current_album.loadList(p.albums); gallery.showImages()},
-        onException: gallery.showError
-      }
-
-      var gallery_new_album = {
-        delay: 200,
-        prepare:function() {
-                  if(document.f1.visibility[0].checked){
-                    v=1
-                  }else{
-                    v=0
-                  };
-
-                  return Array(sid,
-                               home_path,
-                               document.getElementById('new_album_name').value,
-                               v,
-                               document.getElementById('new_album_pub_date_year').value + '-' + document.getElementById('new_album_pub_date_month').value + '-' + document.getElementById('new_album_pub_date_day').value + 'T00:00:00',
-                               document.getElementById('new_album_description').value);
-                },
-
-        call: proxies.SOAP.create_new_album,
-        finish: gallery.addCollections,
-        onException: gallery.showError
-      }
-
-      var gallery_edit_album = {
-        delay: 200,
-        prepare: function(current_id) {
-                  if(document.f1.album_visibility[0].checked){
-                    v=1
-                  }else{
-                    v=0
-                  };
-                  return Array(sid,
-                               home_path,
-                               document.getElementById('edit_album_name_old').value,
-                               document.getElementById('edit_album_name').value,
-                               v,
-                               document.getElementById('edit_album_pub_date_year').value + '-' + document.getElementById('edit_album_pub_date_month').value + '-' + document.getElementById('edit_album_pub_date_day').value + 'T00:00:00',
-                               document.getElementById('edit_album_description').value);
-                 },
-        call: proxies.SOAP.edit_album,
-        finish: gallery.editCollections,
-        onException: gallery.showError
-      }
-
-      var gallery_delete_images = {
-        delay: 200,
-        prepare: function(ids) { return Array(sid,'r',ids)},
-        call: proxies.SOAP.dav_delete,
-        finish: function(p) {ds_current_album.removeImageFromList(p)},
-        onException: gallery.showError
-      }
-
-      var gallery_delete_album = {
-        delay: 200,
-        prepare: function(ids) { return Array(sid,'c',ids)},
-        call: proxies.SOAP.dav_delete,
-        finish: gallery.removeCollection,
-        onException: gallery.showError
-      }
-
-      var gallery_image_get_comments = {
-        delay: 200,
-        prepare: function(id) { return Array(sid,id)},
-        call: proxies.SOAP.get_comments,
-        finish: function(p) {gallery.showComments(p)},
-        onException: gallery.showError
-      }
-
-      var gallery_image_add_comments = {
-        delay: 200,
-        prepare: function(comment) {  return Array(sid,comment)},
-        call: proxies.SOAP.add_comment,
-        finish: function(p) {gallery.addComment(p)},
-        onException: gallery.showError
-      }
-
-      var gallery_image_get_exif = {
-        delay: 200,
-        prepare: function(id) { return Array(sid,id)},
-        call: proxies.SOAP.get_attributes,
-        finish: function(p) {gallery.addExif(p)},
-        onException: gallery.showError
-      }
-
-      var gallery_image_get_image = {
-        delay: 200,
-        prepare: function(id) { return Array(sid,id)},
-        call: proxies.SOAP.get_image,
-        finish: function(p) {
-                  ds_current_album.addImageToList(p);
-                  gallery.showImagesInside();
-                },
-        onException: gallery.showError
-      }
-
-      var gallery_image_edit = {
-        delay: 200,
-        prepare: function(id) {
-                  if(document.f1.image_visibility[0].checked){
-                    v=1
-                  }else{
-                    v=0
-                  };
-
-                  return Array(sid,
-                               document.f1.edit_image_path.value,
-                               document.f1.edit_image_name_old.value,
-                               document.f1.edit_image_name.value,
-                               document.f1.edit_image_description.value,
-                               v)
-                 },
-        call: proxies.SOAP.edit_image,
-        finish: function(p) {gallery.image_edit_finish(p)},
-        onException: gallery.showError
-      }
-
+    var home_url = '<xsl:value-of select="home_url"/>';
+    var gallery_id = '<xsl:value-of select="gallery_id"/>'
     </script>
-
   </xsl:template>
-
-
-
 
 <!-- ======================================================================= -->
   <xsl:template name="new_album">
@@ -675,8 +609,8 @@
                   </tr>
                 </table>
               </div>
-
 </xsl:template>
+
 <!-- ======================================================================= -->
   <xsl:template match="newest_user">
     <li>
@@ -688,6 +622,11 @@
   </xsl:template>
 
 <!-- ======================================================================= -->
+  <xsl:template match="bar">
+    <xsl:value-of select="." disable-output-escaping="yes" />
+  </xsl:template>
+
+<!-- ======================================================================= -->
   <xsl:template name="nbsp"><xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text></xsl:template>
 
 <!-- ======================================================================= -->
@@ -695,3 +634,4 @@
     <xsl:if test="/root/@sid != ''">?sid=<xsl:value-of select="/root/@sid"/>&amp;realm=wa</xsl:if>
   </xsl:template>
 </xsl:stylesheet>
+

@@ -27,6 +27,7 @@
   declare user_gallery,_home_path,_xsl,my_file varchar;
   declare _owner_id integer;
   declare current_instance photo_instance;
+  declare geo_data any;
 
   user_gallery := '';
 
@@ -104,24 +105,29 @@
     }
   }
 
-
   user_gallery := sprintf('<gallery><![CDATA[%s]]></gallery>',current_instance.home_path);
-
-
+  geo_data := PHOTO.WA.get_geo_info(current_user.user_id);
   _xsl_path := sprintf('%sxslt/index.xsl',PHOTO.WA.base_path());
   _xml := string_output();
+--dbg_obj_print(current_instance);
   http(sprintf('<root sid="%s" realm="%s">',_sid,either(current_user.realm,'')),_xml);
-  http('<user>',_xml);
+  http(sprintf('<user lat="%.06f" lng="%.06f">',coalesce(geo_data[0],0),coalesce(geo_data[1],0)),_xml);
   http(sprintf('<full_name>%s</full_name>',current_user.full_name),_xml);
   http(sprintf('<first_name>%s</first_name>',current_user.first_name),_xml);
   http(sprintf('<last_name>%s</last_name>',current_user.last_name),_xml);
-  http(sprintf('<user_name>%s</user_name>',current_user.auth_uid),_xml);
+  http(sprintf('<user_name>%s</user_name>',coalesce(current_user.auth_uid,'')),_xml);
   http('</user>',_xml);     --&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/%s/sioc.rdf', self.st_host, self.fname, wa_type_to_app (self.app_type)), '+', '%2B')); ?>
   http(sprintf('<host>%s</host>',WA_GET_HOST ()),_xml);
   http(sprintf('<app_type>photos</app_type>'),_xml);
   http(sprintf('<instance>%s</instance>',replace(current_instance.name, ' ', '%2B')),_xml);
+  http(sprintf('<home_url>%s</home_url>',current_instance.home_url),_xml);
   http(sprintf('<wa_home_title>%s</wa_home_title>',wa_home_title),_xml);
   http(sprintf('<wa_home_link>%s</wa_home_link>',wa_home_link),_xml);
+  http(sprintf('<gallery_id>%d</gallery_id>',current_instance.gallery_id),_xml);
+  http(sprintf('<instance_owner>%s</instance_owner>',current_instance.owner_name),_xml);
+  http(sprintf('<instance_description>%s</instance_description>',current_instance.description),_xml);
+  --http(sprintf('<bar><![CDATA[%s]]></bar>',ODS.BAR._EXEC('oMail', params, lines)),_xml);
+
 
   http(user_gallery,_xml);
   http(PHOTO.WA.get_lastest_users(current_user),_xml);

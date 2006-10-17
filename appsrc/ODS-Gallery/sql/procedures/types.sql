@@ -151,6 +151,8 @@ create type SOAP_album as (
   name varchar,
   pub_date datetime,
   description varchar,
+  private_tags varchar array,
+  public_tags varchar array,
   thumb_id integer
 ) __soap_type 'services.wsdl:dav_album'
 
@@ -267,6 +269,7 @@ create type photo_comment as (
   comment_id integer,
   res_id integer,
   create_date datetime,
+  modify_date datetime,
   user_id integer,
   text varchar,
   user_name varchar
@@ -325,12 +328,34 @@ create type photo_instance as (
   name      varchar,
   home_path varchar,
   home_url  varchar,
-  owner_id  integer
+  owner_id    integer,
+  gallery_id  integer,
+  owner_name  varchar,
+  description varchar
 )
-  constructor method photo_instance();
+  constructor method photo_instance(),
+  constructor method photo_instance(home_url varchar),
+  method photo_instance_create(home_url varchar) returns any
+ ;
+
 
 --------------------------------------------------------------------------------
 create constructor method photo_instance()
+for photo_instance
+{
+  self.photo_instance_create(http_path());
+}
+;
+
+--------------------------------------------------------------------------------
+create constructor method photo_instance(in home_url varchar)
+for photo_instance
+{
+  self.photo_instance_create(home_url);
+}
+;
+--------------------------------------------------------------------------------
+create method photo_instance_create(in home_url varchar)
 for photo_instance
 {
 
@@ -338,11 +363,11 @@ for photo_instance
     return null;
   };
 
-  declare _home_path,_name,_home_url varchar;
-  declare _owner_id,_i integer;
+  declare _home_path,_name,_home_url,_owner_name,_description varchar;
+  declare _owner_id,_i,_gallery_id integer;
   declare path any;
 
-  path := PHOTO.WA.utl_parse_url(http_path());
+  path := PHOTO.WA.utl_parse_url(home_url);
 
   _home_url := '/';
   while(_i < length(path)){
@@ -356,15 +381,20 @@ for photo_instance
       _home_url := substring(_home_url,1,strstr(_home_url,'index.vspx'));
   };
 
-  SELECT OWNER_ID,HOME_PATH,WAI_NAME
-    INTO _owner_id,_home_path,_name
+  SELECT OWNER_ID,HOME_PATH,PHOTO.WA.SYS_INFO.WAI_NAME,GALLERY_ID,U_NAME,WAI_DESCRIPTION
+    INTO _owner_id,_home_path,_name,_gallery_id,_owner_name,_description
     FROM PHOTO.WA.SYS_INFO
+    JOIN DB.DBA.SYS_USERS ON U_ID = OWNER_ID
+    JOIN WA_INSTANCE WAI ON WAI.WAI_NAME = PHOTO.WA.SYS_INFO.WAI_NAME
    WHERE CONCAT(HOME_URL,'/') = _home_url;
 
   self.name      := _name;
   self.home_path := _home_path;
   self.home_url  := _home_url;
   self.owner_id  := _owner_id;
+  self.gallery_id   := _gallery_id;
+  self.owner_name   := _owner_name;
+  self.description  := _description;
 }
 ;
 

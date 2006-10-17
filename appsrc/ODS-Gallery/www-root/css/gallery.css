@@ -208,14 +208,14 @@ li:hover{
   text-align:center;
 }
 
-#images #preview {
+#images div {
   border:1px solid #ADC9E0;
   float:left;
-  text-align:left;
+  text-align:center;
   padding:2px;
   margin:6px;
   font-size:12px;
-  width:120px;
+  width:100px;
   height:90px;
   overflow:hidden;
 }
@@ -230,17 +230,22 @@ li:hover{
 
 #info{
   margin:0px 10px;;
-  height:90px;
+  height:100px;
   border-bottom:1px solid #CCCCCC;
 }
 
-#info span{
+#info #path{
   font-size:12px;
+}
+
+#info #info_discription{
+  font-size:12px;
+  height:40px;
 }
 
 #title{
   float:left;
-  width:365px;
+  width:305px;
   color:#525252;
 }
 
@@ -265,14 +270,16 @@ li:hover{
 
 #preview_nav{
   float:right;
-  width:170px;
+  width:220px;
   text-align:center;
   font-size:10px;
   margin:5px;
 }
 
-#preview_nav #preview{
-  width:80px;
+#preview_nav #preview_left,
+#preview_nav #preview_right
+{
+  width:100px;
   float:left;
   border-left:1px solid #AAAAAA;
 }
@@ -299,17 +306,9 @@ li:hover{
   vertical-align:middle;
 }
 
-#slideshow{
-  height:400px;
-}
 
-#slideshow div{
-  text-align:center;
-  border:8px solid #fff;
-}
-
-#btn_slideshow_status{
-  padding-top:30px;
+#label_slideshow_status{
+  padding-top:10px;
   text-decoration:none;
   color:#000000;
   font-size:12px;
@@ -409,6 +408,16 @@ li:hover{
 }
 
 
+#new_tag{
+  width:200px;
+  height:34px;
+}
+
+#tags_list span span
+{
+  color:#0000EE;
+  font-size:10px;
+}
 
 #new_comment{
   width:200px;
@@ -468,12 +477,10 @@ padding:0;
   margin-left:5px;
 }
 
-#manageSlideShow{
-  margin-left:40px;
-}
 
-#manageSlideShowNext{
-  margin-left:40px;
+#SlideShow_next,
+#SlideShow_stop{
+  margin-left:30px;
 }
 
 #feeds li{
@@ -491,3 +498,69 @@ padding:0;
 #feed_rdf{
   background-image:url('../i/rdf-icon-16.gif') !important;
 }
+
+
+#buttons{
+  width:160px;
+  text-align:center;  
+}
+/*------------------ rotator ----------------- */
+
+#rotator { /* tab content */
+	height: 800px;
+	position: relative;
+	
+}
+
+#rotator_content { /* main rectangle */
+	position: absolute;
+	left: 0px;
+	width: 500px;
+	height: 400px;
+	overflow: hidden;
+}
+
+#rotator_viewport { /* anchor to rotator */
+	position: absolute;
+	left: 0px;
+	width: 500px;
+	height: 400px;
+}
+
+#rotator_filter { /* gradient */
+	position: absolute;
+	background-image: url(images/filter.png);
+	width: 500px;
+	height: 400px;
+}
+
+.rotator { /* long div with images */
+	position: absolute;
+	leftZ: -100px; /* set for 2nd image */
+	width: 5000px;
+	text-align:left;
+}
+
+/* slider */
+#sliderbg {
+	position: relative;
+	width: 160px;
+	height: 20px;
+	background:#e1e1e1;
+	border:1px solid #ccc;
+	backgroundZ-image: url("../i/sliderbg.gif");
+}
+
+#slider_btn {
+	position: absolute;
+	width: 10px;
+	height: 15px;
+	top: 2px;
+	background:#bbb;
+	border-left:1px solid #999;
+	border-right:1px solid #999;
+	backgroundZ-image: url("../i/slider.gif");
+	cursor: w-resize;
+}
+
+

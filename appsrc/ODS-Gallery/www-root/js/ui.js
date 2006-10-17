@@ -25,6 +25,7 @@
 // Visualization
 //------------------------------------------------------------------------------
 
+
 var ui = new Object();
 
 ui = function(){
@@ -97,7 +98,7 @@ function panel(name){
   if(document.getElementById(name)){
     var obj = document.getElementById(name);
   }else{
-    alert('Грешка: несъществуващ обект->'+name);
+    alert('Error: nonexisting object ->'+name);
     return;
   }
     obj.show = function(){
@@ -183,11 +184,11 @@ function dispach(e){
             el.setAttribute(t_at[i].nodeName,t_at[i].value);
           }
         }
-
+        dd('action:'+action);
         res = eval(action+'(el)')
 
         ok = 1;
-        window.status = action;
+
         //document.getElementById("debug").innerHTML = 'action: ' + action;
         break;
       }else{
@@ -209,13 +210,6 @@ function dispach(e){
     }
     i++;
   }
-
-  if(!ok){
-    //window.status = 'nema action:'+dbg_list;
-    //document.getElementById("debug").innerHTML = '<b>nema action:</b> ' + dbg_list + '<br>';
-    //document.getElementById("debug").innerHTML += 'barsy.screens.active = '+ barsy.screens.active
-  }
-  //return false;
 
   return res;
 
@@ -395,4 +389,59 @@ var timerID = null;
       stopclock();
       showtime();
     }
+
 //------------------------------------------------------------------------------
+function getId(str){
+  if(str.lastIndexOf('_') != -1){
+    return Number(str.substr(str.lastIndexOf('_')+1));
+  }else{
+    return false;
+  }
+}
+
+function dd(txt){
+  if(OAT.Dom.isGecko()){
+    console.debug(txt);
+  }
+}
+//------------------------------------------------------------------------------
+function strip_spaces(mystr) {
+  var newstring = "";
+  if (mystr.indexOf(' ') != -1) {
+    var string = mystr.split(' ');
+    for (var i=0;i<string.length;i++){
+      if(string[i] != ''){
+        newstring += ' ' + string[i];
+      }
+    }
+    newstring = newstring.substring(1);
+    return newstring;
+  } else {
+    return mystr;
+  }
+}
+
+//------------------------------------------------------------------------------
+function makeTable(id,caption){
+  t = document.createElement('table')
+  if(id && id != ''){
+    t.setAttribute('id',id);
+  }
+  if(caption && caption != ''){
+    c = document.createElement('caption')
+    c.appendChild(document.createTextNode(caption))
+    t.appendChild(c)
+  }
+  return t;
+}
+
+
+//------------------------------------------------------------------------------
+function setSid(){
+  if(sid != ''){
+    return 'sid='+sid+'&';
+  }
+  return '';
+}
+//------------------------------------------------------------------------------
+

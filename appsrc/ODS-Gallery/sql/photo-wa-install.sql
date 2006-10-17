@@ -111,8 +111,10 @@ create procedure PHOTO.WA.photo_install()
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.dav_delete TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_image TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_image TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.tag_images TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.tag_image TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on SOAP_gallery TO SOAPGallery');
-
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.remove_tag_image TO SOAPGallery');
 }
 ;
 -------------------------------------------------------------------------------
@@ -137,6 +139,7 @@ PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_class_deta
 PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_vhost_options () returns any');
 PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_front_page_as_user(inout stream any, in user_name varchar) returns any');
 PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_dashboard() returns any');
+PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_dashboard_last_item() returns any');
 
 -------------------------------------------------------------------------------
 create constructor method wa_photo (inout stream any) for wa_photo
@@ -298,7 +301,7 @@ create method wa_dashboard () for wa_photo {
           XMLAGG(XMLELEMENT('dash-row',
                      XMLATTRIBUTES('normal' as "class",  PHOTO.WA.date_2_humans(RES_MOD_TIME) as "time", self.wa_name as "application"),
                      XMLELEMENT('dash-data',
-                                XMLATTRIBUTES(sprintf('<a href=\"%s%s/%s\">%s</a>',_home_path,C.COL_NAME,RES_NAME,RES_NAME) "content")
+                                XMLATTRIBUTES(sprintf('<a href=\"%s%s/%s\">%s123</a>',_home_path,C.COL_NAME,RES_NAME,RES_NAME) "content")
                      )
                 )
           )
@@ -308,7 +311,62 @@ create method wa_dashboard () for wa_photo {
      AND P.COL_ID = C.COL_PARENT
      AND P.COL_ID = _col_id
      ORDER BY RES_MOD_TIME desc
-  )
-;
+  );
 }
 ;
+
+-------------------------------------------------------------------------------
+create method wa_dashboard_last_item () for wa_photo {
+
+  declare iUser integer;
+  declare UserName,Names,_home_path,_home_url varchar;
+  declare _xml,_xml_temp,ses any;
+  declare _col_id integer;
+
+  select WAM_USER into iUser from WA_MEMBER where WAM_INST = self.wa_name;
+  select U_NAME,IFNULL(U_FULL_NAME,U_NAME) into UserName,Names from WS.WS.SYS_DAV_USER WHERE U_ID = iUser;
+  select HOME_PATH,HOME_URL into _home_path,_home_url from PHOTO.WA.SYS_INFO WHERE WAI_NAME = self.wa_name;
+
+  _col_id := DAV_SEARCH_ID(_home_path,'C');
+
+  ses := string_output ();
+
+  http('<gallery>',ses);
+  for(SELECT RES_ID,RES_NAME,C.COL_NAME,RES_NAME,RES_NAME,RES_MOD_TIME
+     FROM WS.WS.SYS_DAV_COL P,WS.WS.SYS_DAV_COL C, WS.WS.SYS_DAV_RES R
+     WHERE RES_OWNER = iUser
+     AND RES_COL = C.COL_ID
+     AND P.COL_ID = C.COL_PARENT
+     AND P.COL_ID = _col_id
+     ORDER BY RES_MOD_TIME desc
+  )do{
+    http(sprintf('<image id="%d">',RES_ID),ses);
+    http(sprintf('<title><![CDATA[%s]]></title>',RES_NAME),ses);
+    http(sprintf('<dt>%s</dt>', date_iso8601(RES_MOD_TIME)),ses);
+    http(sprintf('<link>%s#/%s/%s</link>',_home_url,COL_NAME,RES_NAME,RES_NAME),ses);
+    http(sprintf('<from>%s</from>',Names),ses);
+    http(sprintf('<uid>%s</uid>',UserName),ses);
+    http('</image>',ses);
+  }
+  http('</gallery>',ses);
+
+  return string_output_string (ses);
+}
+;
+
+create procedure ods_gallery_sioc_init ()
+{
+  if (registry_get ('__ods_sioc_init') <> 'done2')
+    return;
+
+  if (registry_get ('__ods_bookmark_sioc_init') = 'done2')
+    return;
+
+  fill_ods_photo_sioc(get_graph (), get_graph ());
+
+  registry_set ('__ods_gallery_sioc_init', 'done2');
+  return;
+};
+
+PHOTO.WA._exec_no_error('ods_gallery_sioc_init()');
+

@@ -22,10 +22,11 @@
 
 create procedure PHOTO.WA.add_comment(
   in sid varchar,
+  in p_gallery_id integer,
   in comment photo_comment)
   returns photo_comment
 {
-
+dbg_obj_print('zzzzzzzzzzzzzzz');
   declare auth_uid,auth_pwd,current_gallery varchar;
   declare current_user photo_user;
 
@@ -35,14 +36,14 @@ create procedure PHOTO.WA.add_comment(
   --  return vector();
   --}
 
-
+dbg_obj_print(comment);
   comment.comment_id := sequence_next('PHOTO.WA.comments');
   comment.user_name := current_user.first_name;
   comment.user_id := current_user.user_id;
   comment.create_date := NOW();
+  comment.modify_date := NOW();
 
-
-  INSERT INTO PHOTO.WA.comments(COMMENT_ID,RES_ID,CREATE_DATE,USER_ID,TEXT) VALUES (comment.comment_id,comment.res_id,comment.create_date,comment.user_id,comment.text);
+  INSERT INTO PHOTO.WA.comments(COMMENT_ID,GALLERY_ID,RES_ID,CREATE_DATE,MODIFY_DATE,USER_ID,TEXT) VALUES (comment.comment_id,p_gallery_id,comment.res_id,comment.create_date,comment.modify_date,comment.user_id,comment.text);
 
   return comment;
 }
@@ -51,6 +52,7 @@ create procedure PHOTO.WA.add_comment(
 
 create procedure PHOTO.WA.get_comments(
   in sid varchar,
+  in p_gallery_id integer,
   in resource_id integer)
   returns photo_comment array
 {
@@ -69,6 +71,7 @@ create procedure PHOTO.WA.get_comments(
              WA_USER_INFO
        WHERE RES_ID = resource_id
          AND WAUI_U_ID = U_ID
+         AND GALLERY_ID = p_gallery_id
          AND SYS_USERS.U_ID = PHOTO.WA.comments.USER_ID)
   do{
       if(WAUI_FIRST_NAME is null or WAUI_FIRST_NAME = ''){
