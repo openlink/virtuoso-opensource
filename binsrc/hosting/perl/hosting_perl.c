@@ -41,6 +41,7 @@
 	  } \
       }
 
+#ifdef DEBUG
 static int
 log_debug (char *format, ...)
 {
@@ -54,6 +55,13 @@ log_debug (char *format, ...)
   va_end (ap);
   return rc;
 }
+#else
+static int
+log_debug (char *format, ...)
+{
+  return 0;
+}
+#endif
 
 #include "virt_handler.c"
 
