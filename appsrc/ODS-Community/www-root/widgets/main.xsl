@@ -22,13 +22,22 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" exclude-result-prefixes="v" xmlns:vm="http://www.openlinksw.com/vspx/community/">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
+ xmlns:v="http://www.openlinksw.com/vspx/" exclude-result-prefixes="v"
+ xmlns:vm="http://www.openlinksw.com/vspx/community/"
+ xmlns:ods="http://www.openlinksw.com/vspx/ods/">
 
   <xsl:output method="xml" indent="yes" cdata-section-elements="style" encoding="UTF-8"/>
 
   <xsl:include href="map_control.xsl"/>
   <xsl:include href="app_inst_menu.xsl"/>
   <xsl:include href="dashboard.xsl"/>
+<!-- FS include
+  <xsl:include href="../../../samples/wa/comp/ods_bar.xsl"/>
+-->    
+<!-- DAV include
+-->    
+  <xsl:include href="../../../wa/comp/ods_bar.xsl"/>
     
   <xsl:template match="vm:page">
 
@@ -602,6 +611,15 @@ window.onload = function (e)
           self.return_url := self.return_url || sprintf ('?page=%U', self.page);
        ]]></v:after-data-bind>
       </v:login>
+       <ods:ods-bar app_type='Community'/>
+      <script type="text/javascript">
+       <![CDATA[
+//        document.getElementById('ods-bar-sep').style.display='none';
+        ]]>
+      </script>
+
+
+
         <xsl:apply-templates/>
       </v:form>
     </body>
@@ -805,7 +823,7 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:copyright">
-      2006 OpenLink Software
+      2005 OpenLink Software
     <xsl:value-of select="."/>
   </xsl:template>
 
@@ -1366,6 +1384,7 @@ window.onload = function (e)
 
 
   <xsl:template match="vm:login-info">
+<!--
     <div id="login-info-ctr">
       <?vsp
         if(self.user_name is null)
@@ -1438,7 +1457,7 @@ window.onload = function (e)
       }
     ?>
     </div>
-
+-->
   </xsl:template>
 
   <xsl:template match="vm:app-sys-info">
@@ -1832,7 +1851,7 @@ window.onload = function (e)
      <?vsp
       }
   ?>
-           <td class="navprefs"><vm:search-commusers-link /><vm:separator-whenownerlogedin /><vm:settings-link/> <vm:separator-whenownerlogedin /> <vm:help-link/></td>
+           <td class="navprefs"><vm:search-commusers-link /> <vm:separator-whenownerlogedin /> <vm:settings-link/><!-- <vm:separator-whenownerlogedin /> <vm:help-link/> --></td>
          </tr>
      </table>
 </xsl:template>

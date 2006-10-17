@@ -568,15 +568,19 @@ create procedure COMMUNITY.COMM_GET_WA_URL ()
             domain_str := vhost_str;
           }
             
+          if(locate(':',domain_str)){
           port_str := subseq(domain_str,locate(':',domain_str));
-          
           domain_str := subseq(domain_str,0,locate(':',domain_str)-1);
+          }
 
           whenever not found goto nf;
           {
-            select top 1 WD_HOST, WD_LPATH into wa_host, wa_lpath from DB.DBA.WA_DOMAINS where WD_DOMAIN=domain_str;
+            select top 1 WD_HOST, WD_LPATH, WD_LISTEN_HOST into wa_host, wa_lpath,port_str from DB.DBA.WA_DOMAINS where WD_DOMAIN=domain_str;
           }
           
+          if (locate(':',wa_host))
+              wa_host:=subseq(wa_host,0,locate(':',wa_host)-1);
+
           wa_url:=sprintf('http://%s%s',wa_host,wa_lpath);
           
           nf:
