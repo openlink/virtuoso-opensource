@@ -26,6 +26,11 @@
 --
 --
 ?>]]></xsl:text>
+    <?vsp
+      declare _path,_domain varchar;
+      _domain := 'http://' || regexp_replace(HTTP_GET_HOST(),':80$','');
+      _path := _domain || http_map_get('domain') || '/'; 
+    ?>
     <html>
       <head>
         <meta name="DESCRIPTION" content="Virtuoso Developer Tutorial"/>
@@ -53,7 +58,7 @@
         <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
         <link href="{concat($mount_point,'/tutorial3.css')}" rel="stylesheet" type="text/css"/>
         <link href="{concat($mount_point,'/syntax/SyntaxHighlighter.css')}" rel="stylesheet" type="text/css"/>
-        <link rel="meta" type="application/rdf+xml" title="SIOC" href="{concat($mount_point,'/sioc.vsp')}" />
+        <link rel="meta" type="application/rdf+xml" title="SIOC" href="{concat('<?V _path ?>','sioc.vsp')}" />
       </head>
       <body>
         <table border="0" cellpadding="0" cellspacing="0" id="top">
