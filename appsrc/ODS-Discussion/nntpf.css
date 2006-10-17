@@ -234,7 +234,7 @@ h2 {
 
 div.menu
 {
-  height: 3ex;
+  float:none;
 }
 
 table.menubar

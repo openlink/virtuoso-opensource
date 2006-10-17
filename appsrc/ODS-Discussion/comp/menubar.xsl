@@ -24,11 +24,21 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
                 xmlns:v="http://www.openlinksw.com/vspx/"
-                xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+                xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+                xmlns:ods="http://www.openlinksw.com/vspx/ods/">
   <xsl:template match="vm:menu-bar">
+<!--
+    <ods:ods-bar app_type='nntpf'/>
+ -->
     <table class="menubar">
       <tr>
+<!--        
         <td>
+        <vm:wa-link/>
+        </td>
+-->
+        <td>
+
           <v:url value="Home"
                  format="%s"
                  url="nntpf_main.vspx" />
@@ -76,6 +86,7 @@
         </td>
       </tr>
     </table>
+    
   </xsl:template>
   <xsl:template match="vm:menu-bar-no-search">
     <table class="menubar">
@@ -118,4 +129,15 @@
       </tr>
     </table>
   </xsl:template>
+  <xsl:template match="vm:wa-link">
+      <?vsp
+        if (registry_get ('wa_home_link') = 0){
+             http(sprintf('<a href="%s/?sid=%s&realm=%s">%s</a>',self.wa_home, coalesce(self.sid,''), coalesce(self.realm,'wa') ,case when registry_get ('wa_home_title') = 0 then 'OPS Home' else registry_get ('wa_home_title') end));
+        }else{
+             http(sprintf('<a href="%s?sid=%s&realm=%s">%s</a>',registry_get ('wa_home_link'), coalesce(self.sid,''), coalesce(self.realm,'wa') ,case when registry_get ('wa_home_title') = 0 then 'OPS Home' else registry_get ('wa_home_title') end));
+        }
+        
+      ?>
+  </xsl:template>
+
 </xsl:stylesheet>

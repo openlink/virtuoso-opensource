@@ -792,7 +792,10 @@ nntpf_compose_post_from (in _u_name varchar, inout _from varchar)
    select U_FULL_NAME, U_E_MAIL into name, email from SYS_USERS where U_NAME = _u_name;
    if (not (nntpf_email_addr_looks_valid (email)))
      return 0;
+   if (name is not null)
    _from := sprintf ('"%s" <%s>', name, email);
+   else
+     _from := sprintf ('<%s>', email);
    return 1;
 }
 ;
@@ -953,7 +956,7 @@ nntpf_display_article_multi_part (in parsed_message any,
 	  }
 	else
 	  nntpf_display_message_text (substring (in_body, body[0] + 1,  body[1] - body[0]),
-	      get_keyword_ucase ('content-type', attr));
+	      get_keyword_ucase ('content-type', attr, 'text/plain'));
      }
 
    nntpf_display_message_reply (sid, id);
@@ -1028,7 +1031,7 @@ nntpf_display_article (in id varchar,
    parsed_message := nntpf_get_mess_attachments (_print_body, 0);
 
    _print_body := parsed_message[0];
-   nntpf_display_message_text (_print_body, get_keyword_ucase ('Content-Type', _head));
+   nntpf_display_message_text (_print_body, get_keyword_ucase ('Content-Type', _head, 'text/plain'));
 
    http ('<br/>');
    idx := 1;

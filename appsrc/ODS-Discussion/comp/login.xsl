@@ -31,7 +31,8 @@
              realm="wa" 
              mode="url" 
              user-password-check="nntpf_user_password_check">
-      <v:template type="if-no-login">
+      <v:template type="if-no-login" />
+      <!--v:template type="if-no-login">
         <table width="100%" cellspacing="0" cellpadding="0">
           <tr>
             <td width="30%" align="left">
@@ -78,7 +79,7 @@
             <td width="70%">&nbsp;</td>
           </tr>
         </table>
-      </v:template>
+      </v:template-->
       <v:template type="if-login">
         <?vsp
 	  self.external_home_url := sprintf ('../nntpf/nntpf_main.vspx?sid=%s&realm=%s', self.sid, self.realm);

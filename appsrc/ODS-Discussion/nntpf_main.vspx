@@ -57,6 +57,7 @@
               </div>
               <v:template type="simple" condition="nntpf_groups_defined_p()">
                 <div class="group_list">
+		  <vm:geo-link><img src="http://i.geourl.org/geourl.png" border="0"/></vm:geo-link>
                   <vm:group-list/>
                 </div>
               </v:template>

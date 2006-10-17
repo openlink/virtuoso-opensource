@@ -25,13 +25,33 @@
 <!-- simple page widgets -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:v="http://www.openlinksw.com/vspx/"
-    xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+    xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+    xmlns:ods="http://www.openlinksw.com/vspx/ods/">
     <xsl:template match="vm:page">
       <xsl:call-template name="vars" />
 	  <v:on-init><![CDATA[
 	   set http_charset='UTF-8';
+	{
+	  declare exit handler for not found;
+	  --select U_FULL_NAME into self.e_title from SYS_USERS where U_ID = http_dav_uid ();
+	  --self.e_title := self.e_title || '\'s Discussions';
+	  self.e_title := (select top 1 WS_WEB_TITLE from WA_SETTINGS);
+	  if (0 = length (self.e_title))
+	    self.e_title := sys_stat ('st_host_name');
+	  self.e_title := self.e_title || ' Discussions';
+	  select WAUI_LAT, WAUI_LNG into self.e_lat, self.e_lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = http_dav_uid ();
+	}
+        self.host := http_request_header (lines, 'Host');
 	   ]]></v:on-init>
+     <ods:ods-bar app_type='nntpf'/>
+      <script type="text/javascript">
+       <![CDATA[
+//        document.getElementById('ods-bar-sep').style.display='none';
+        ]]>
+      </script>
+
       <!--html-->
+
 	<xsl:apply-templates />
         <vm:nntpf-copyright/>
       <!--/html-->
@@ -48,6 +68,15 @@
       <header>
         <v:include url="virtuoso_app_links.xhtml"/>
 	<link rel="stylesheet" type="text/css" href="nntpf.css" />
+	<link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />
+	<link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />
+	<meta name="dc.title" content="<?V db.dba.wa_utf8_to_wide (self.e_title) ?>" />
+      <?vsp
+        if (self.e_lat is not null and self.e_lng is not null) {
+      ?>
+	<meta name="geo.position" content="<?V sprintf ('%.06f', self.e_lat) ?>;<?V sprintf ('%.06f', self.e_lng) ?>" />
+	<meta name="ICBM" content="<?V sprintf ('%.06f', self.e_lat) ?>, <?V sprintf ('%.06f', self.e_lng) ?>" />
+      <?vsp } ?>
 	<xsl:apply-templates />
       </header>
     </xsl:template>
@@ -102,6 +131,27 @@
     </noscript>
 
     </xsl:template>
+
+    <xsl:template match="head[not (link[@rel='schema.dc'])]">
+	<head>
+	    <xsl:apply-templates />
+	    <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />
+	    <xsl:text>&#10;</xsl:text>
+	    <link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />
+	    <xsl:text>&#10;</xsl:text>
+	    <meta name="dc.title" content="<?V db.dba.wa_utf8_to_wide (self.e_title) ?>" />
+	    <xsl:text>&#10;</xsl:text>
+	    <?vsp
+	    if (self.e_lat is not null and self.e_lng is not null) {
+	    ?>
+	    <meta name="geo.position" content="<?V sprintf ('%.06f', self.e_lat) ?>;<?V sprintf ('%.06f', self.e_lng) ?>" />
+	    <xsl:text>&#10;</xsl:text>
+	    <meta name="ICBM" content="<?V sprintf ('%.06f', self.e_lat) ?>, <?V sprintf ('%.06f', self.e_lng) ?>" />
+	    <xsl:text>&#10;</xsl:text>
+	    <?vsp } ?>
+	</head>
+    </xsl:template>
+
     <xsl:template match="vm:title">
       <title>
 	<xsl:apply-templates />
@@ -144,6 +194,16 @@
       <v:variable name="grp_list" persist="0" type="any" default="NULL"/>
       <v:variable name="cur_art" persist="0" type="integer" default="NULL"/>
 
+      <v:variable name="host" type="varchar" default="null" persist="temp" />
+      <!-- eRDF data -->
+
+      <v:variable name="e_title" type="varchar" default="null" persist="temp" />
+      <v:variable name="e_author" type="varchar" default="null" persist="temp" />
+      <v:variable name="e_lat" type="real" default="null" persist="temp" />
+      <v:variable name="e_lng" type="real" default="null" persist="temp" />
+
+      <!-- end -->
+
       <xsl:for-each select="//vm:variable">
 	<v:variable>
 	  <xsl:copy-of select="@*"/>
@@ -179,6 +239,7 @@
     <xsl:template match="vm:nntpf-title">
       <xsl:call-template name="title"/>
       <v:template type="simple" condition="self.vc_authenticated">
+<!--
         <table class="user_id">
           <tr class="user_id">
             <td class="user_id">
@@ -189,6 +250,7 @@
             </td>
           </tr>
         </table>
+ -->
       </v:template>
     </xsl:template>
 
@@ -205,6 +267,19 @@
          Articles belong to their respective posters.
          Application <vm:opl-copyright-str from="2004"/>
       </div>
+    </xsl:template>
+    <xsl:template match="vm:geo-link">
+      <?vsp
+        if (self.e_lat is not null and self.e_lng is not null) {
+      ?>
+	<div>
+	    <a href="http://geourl.org/near?p=<?U sprintf ('http://%s/nntpf', self.host) ?>" class="{local-name()}">
+		<xsl:apply-templates />
+	    </a>
+	</div>
+      <?vsp
+        }
+      ?>
     </xsl:template>
 
     <xsl:template match="vm:*">
