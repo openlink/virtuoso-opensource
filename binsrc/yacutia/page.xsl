@@ -46,7 +46,7 @@
           <tr>
             <td id="LT" align="center" valign="middle">
               <!--Here is the Virtuoso logo image-->
-              <img src="images/virtuosologo.jpg" width="120" height="32"/>              
+              <img src="images/virtuosologo.png" width="120" height="32"/>
             </td>
             <td id="RT" valign="top">
               <!-- Here is the top menu component (it seems that name of the  file in URL attribute  mislead us, but this is actually TOP menu component )-->

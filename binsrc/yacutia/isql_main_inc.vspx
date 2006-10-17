@@ -525,7 +525,7 @@
               <![CDATA[
   declare exit handler for sqlstate '*'
     {
-      self.vc_error_message := 'Execute error occured.';
+      self.vc_error_message := 'Execute error occurred.';
       self.vc_error_message := self.vc_error_message || ' SQL State: ' || __SQL_STATE || '. Message: ' || __SQL_MESSAGE;
       self.vc_is_valid := 0;
 --dbg_obj_print( 'Error_exec:', __SQL_STATE, __SQL_MESSAGE );

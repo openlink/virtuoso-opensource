@@ -52,7 +52,7 @@
 <v:template name="error_temp12" type="simple" enabled="-- neq(self.sql_stt, '')">
   <table class="Warning" width="100%" border="0" cellspacing="0" cellpadding="3">
   <v:form name="error_form12" type="simple" method="POST" action="--self.return_path">
-      <tr><td><?V get_keyword('message', self.vc_page.vc_event.ve_params, 'Error occured') ?></td></tr>
+      <tr><td><?V get_keyword('message', self.vc_page.vc_event.ve_params, 'Error occurred') ?></td></tr>
       <tr><td>
         <table width="100%" border="0" cellspacing="0" cellpadding="3">
           <tr><td>SQL_STATE:</td><td><?V self.sql_stt ?></td></tr>

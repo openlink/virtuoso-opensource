@@ -175,6 +175,7 @@ conductor/images/icons/home_16.png
 conductor/images/icons/lock_16.png
 conductor/images/icons/open_16.png
 conductor/images/icons/script_16.png
+conductor/images/icons/security_16.png
 conductor/images/icons/smarrblk.gif
 conductor/images/icons/stop_16.png
 conductor/images/icons/stop_32.png
@@ -187,7 +188,7 @@ conductor/images/icons/ref_16.png
 conductor/images/open_folder.gif
 conductor/images/service.gif
 conductor/images/vert-line.gif
-conductor/images/virtuosologo.jpg
+conductor/images/virtuosologo.png
 conductor/images/yac_banner.jpg
 conductor/images/yac_splash.jpg
 conductor/images/slvnav.jpg

@@ -59,7 +59,7 @@
         ?>
         <tr>
           <td>
-            <v:button action="simple" value="Back to VAD main page">
+            <v:button action="simple" value="Back to Packages">
               <v:on-post>
                 <![CDATA[
                   http_request_status('HTTP/1.1 302 Found');

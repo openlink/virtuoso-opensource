@@ -265,10 +265,13 @@
 
 declare n, len, obj, objects, i, n integer;
 declare lname, rname, _data, ds_name, _param varchar;
-declare l_objects, ul_tables , ul_views, ul_procs any;
+declare l_objects, ul_tables , ul_views, ul_procs, all_tbs any;
 declare linked_objects, to_unlink_objects any;
+declare tb_cnt, v_cnt, p_cnt int;
 
 to_unlink_objects := vector ();
+all_tbs := vector ();
+tb_cnt := v_cnt := p_cnt := 0;
 linked_objects := self.linked_objects;
 obj :=  0;
 objects := length (linked_objects);
@@ -292,6 +295,8 @@ while (obj < objects)
               {
                 _data := decode_base64(_param);
                 ul_tables := vector_concat (ul_tables, vector (_data, aref (l_objects, i + 1)));
+		all_tbs := vector_concat (all_tbs, vector (_data));
+		tb_cnt := tb_cnt + 1;
               }
             i := i + 2;
           }
@@ -309,6 +314,7 @@ while (obj < objects)
             {
               _data := decode_base64 (_param);
               ul_views := vector_concat (ul_views, vector (_data, aref (l_objects, i + 1)));
+	      v_cnt := v_cnt + 1;
             }
             i := i + 2;
           }
@@ -325,6 +331,7 @@ while (obj < objects)
               {
                 _data := decode_base64 (_param);
                 ul_procs := vector_concat (ul_procs, vector (_data, aref (l_objects, i + 1)));
+		p_cnt := p_cnt + 1;
               }
             i := i + 2;
           }
@@ -332,11 +339,27 @@ while (obj < objects)
     to_unlink_objects := vector_concat (to_unlink_objects, vector (ds_name, ul_tables, ul_views, ul_procs));
     obj := obj + 4;
   }
-if (length (ul_tables) or length (ul_views) or length (ul_procs))
+if ((tb_cnt  or v_cnt or p_cnt) and e.ve_button.vc_name like 'res_unlink_apply_')
   {
     self.to_unlink_objects := to_unlink_objects;
     self.vc_redirect ('vdb_unlink_obj.vspx');
   }
+else if ((p_cnt or v_cnt) and e.ve_button.vc_name like 'refr_btn_')
+  {
+    self.vc_is_valid := 0;
+    self.vc_error_message := 'Refreshing statistics is supported for tables only.';
+  }
+else if (tb_cnt and e.ve_button.vc_name like 'refr_btn_')
+  {
+    declare i, l int;
+    l := length (all_tbs);
+    for (i := 0; i < l; i := i + 1)
+      {
+        SYS_STAT_ANALYZE (all_tbs[i], 5, 0);
+        commit work;
+      }
+  }
+
 return;
 
                 ]]>
@@ -348,6 +371,20 @@ return;
       		      xhtml_title="Link objects"
       		      text="&#160;Link objects"
       		      url="vdb_conn_dsn.vspx"/>
+              <v:button action="simple" style="image" name="refr_btn1"
+      		      value="images/icons/ref_16.png"
+      		      xhtml_alt="Refresh selected"
+		      xhtml_title="Refresh selected"
+		      xhtml_hspace="3"
+      		      text="Refresh selected"
+              >
+                <v:before-render>
+                 if (length (self.linked_objects))
+                   control.vc_enabled := 1;
+                 else
+                   control.vc_enabled := 0;
+                </v:before-render>
+              </v:button>
               <v:button action="simple" style="image" name="res_unlink_apply1"
       		      value="images/icons/link_16.png"
       		      xhtml_alt="Unlink selected"
@@ -493,6 +530,20 @@ if (objects > 0)
       		      xhtml_title="Link objects"
       		      text="&#160;Link objects"
       		      url="vdb_conn_dsn.vspx"/>
+              <v:button action="simple" style="image" name="refr_btn2"
+      		      value="images/icons/ref_16.png"
+      		      xhtml_alt="Refresh selected"
+		      xhtml_title="Refresh selected"
+		      xhtml_hspace="3"
+      		      text="Refresh selected"
+              >
+                <v:before-render>
+                 if (length (self.linked_objects))
+                   control.vc_enabled := 1;
+                 else
+                   control.vc_enabled := 0;
+                </v:before-render>
+              </v:button>
               <v:button action="simple" style="image" name="res_unlink_apply2"
       		      value="images/icons/link_16.png"
       		      xhtml_alt="Unlink selected"

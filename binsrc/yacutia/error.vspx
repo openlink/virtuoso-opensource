@@ -44,7 +44,7 @@
           <div class="confirm_dialog">
             <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">
-	      <h4>An error has occured when processing <b>"<?V self.page_name ?>"</b> page.</h4>
+	      <h4>An error has occurred when processing <b>"<?V self.page_name ?>"</b> page.</h4>
 	      <table>
 		<tr>
 		  <td>SQL State </td> <td> <?V self.code ?> </td> </tr>
