@@ -24,6 +24,8 @@
   declare _sid, _realm, _output varchar;
   declare _params any;
 
+  set http_charset = 'UTF-8';
+
   _realm     := 'wa';
   _sid       := '';
   _output    := get_keyword('output', params, '');
@@ -43,7 +45,6 @@
 
     http_rewrite ();
     http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
-    http ('<?xml version ="1.0" encoding="UTF-8"?>\n');
     http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
     http ('<channel>\n');
     for (select U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = _user_id) do {

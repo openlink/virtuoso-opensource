@@ -22,19 +22,19 @@
 --
 
   declare errorCount, N integer;
-  declare waID, user_id integer;
+  declare waID, waPublic, user_id integer;
   declare wa_home_title, wa_home_link, user_name, user_fullName, procName, procID, S varchar;
-  declare vOptions, geoParams any;
+  declare hParams, hLines, vOptions, geoParams any;
 
   declare exit handler for sqlstate '90001' { OMAIL.WA.utl_doredirect(__sql_message); return;};
   declare exit handler for sqlstate '90005' { return; }; --download
   declare exit handler for sqlstate '42001' { http('404'); return;}; --not found
   declare exit handler for sqlstate 'TEST'  {
-    OMAIL.WA.utl_doredirect(sprintf('err.vsp?sid=%s&realm=wa&err=%s&msg=%U', get_keyword('sid', params, ''), __SQL_STATE, OMAIL.WA.test_clear(__SQL_MESSAGE)));
+    OMAIL.WA.utl_doredirect(sprintf('err.vsp?sid=%s&realm=%s&err=%s&msg=%U', get_keyword('sid', params, ''), get_keyword('realm', params, ''), __SQL_STATE, OMAIL.WA.test_clear(__SQL_MESSAGE)));
     return;
   };
   declare exit handler for SQLSTATE '40001' {
-    ROLLBACK WORK;
+    rollback work;
     if (errorCount > 5)
       resignal;
     errorCount := errorCount + 1;
@@ -45,6 +45,8 @@
 
 exec_start:;
 
+  hParams := params;
+  hLines := lines;
 	wa_home_title := case when registry_get ('wa_home_title') = 0 then 'ODS Home' else registry_get ('wa_home_title') end;
 	wa_home_link := case when registry_get ('wa_home_link') = 0 then '/ods/' else registry_get ('wa_home_link') end;
 
@@ -61,7 +63,7 @@ exec_start:;
     declare continue handler for NOT FOUND goto system_error;
 
     N  := length(path)-1;
-    waName := (select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = waID);
+    select WAI_NAME, WAI_IS_PUBLIC into waName, waPublic from DB.DBA.WA_INSTANCE where WAI_ID = waID;
 
     procName := split_and_decode(path[N],0,'\0\0.');
     procID   := procName[0];
@@ -97,13 +99,15 @@ exec_start:;
            SYS_USERS
      WHERE VS_SID   = get_keyword('sid', params, '')
        AND VS_UID   = U_NAME
-       AND VS_REALM = 'wa';
+       AND VS_REALM = get_keyword('realm', params, '');
 
     geoParams := vector();
     for (select WAUI_LAT, WAUI_LNG from WA_USER_INFO where WAUI_U_ID = user_id) do
       if ((not isnull(WAUI_LNG)) and (not isnull(WAUI_LAT)))
         geoParams := vector('latitude', sprintf('%.2f', WAUI_LAT), 'longitude', sprintf('%.2f', WAUI_LNG));
-    params := vector_concat(params, vector('user_info', vector('user_id', user_id, 'user_name', user_name, 'user_fullname', user_fullName, 'domain_id', waID, 'email', waName, 'foaf', sprintf('%s/dataspace/%U/about.rdf', OMAIL.WA.host_url (), user_name),  'sioc', replace(sprintf('%s/dataspace/%U/mail/%U/sioc.rdf', OMAIL.WA.host_url (), user_name, waName), '+', '%2B'), 'geo', geoParams)));
+    params := vector_concat(params, vector('user_info', vector('user_id', user_id, 'user_name', user_name, 'user_fullname', user_fullName, 'domain_id', waID, 'email', waName, 'foaf', sprintf('%s/dataspace/%U/about.rdf', OMAIL.WA.host_url (), user_name),  'geo', geoParams)));
+    if (waPublic)
+      params := vector_concat(params, vector('sioc', replace(sprintf('%s/dataspace/%U/mail/%U/sioc.rdf', OMAIL.WA.host_url (), user_name, waName), '+', '%2B')));
   } else {
     OMAIL.WA.utl_redirect(wa_home_link || 'index.wspx');
     return;
@@ -116,10 +120,10 @@ exec_start:;
     _page_mode := concat(' mode="popup"');
 
   _xml := call (procName)(path, lines, params);
-  _xml := sprintf('<page id="%s"%s><ods><name>%s</name><link>%s</link></ods>%s</page>', procID, _page_mode, wa_home_title, wa_home_link, _xml);
+  _xml := sprintf('<page id="%s"%s><ods><name>%s</name><link>%s</link><bar><![CDATA[%s]]></bar></ods>%s</page>', procID, _page_mode, wa_home_title, wa_home_link, ODS.BAR._EXEC('oMail', params, lines), _xml);
 
   -- XSL Transformation--------------------------------------------------------------
-  OMAIL.WA.utl_myhttp(_xml,null,get_keyword('vv',params),lines,path);
+  OMAIL.WA.utl_myhttp (_xml, null, get_keyword ('vv', params), hParams, hLines, path);
   return;
 
 bad_session:

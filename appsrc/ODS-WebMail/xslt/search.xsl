@@ -104,7 +104,7 @@
               <td width="20%" valign="top" style="border: solid #935000;  border-width: 1px 1px 1px 1px;">
                 <div style="margin-left:3px; margin-top:3px;">
                   <xsl:choose>
-                    <xsl:when test="//ctags/@count = 0">
+                    <xsl:when test="count(//ctags/ctag) = 0">
                       no tags
                     </xsl:when>
                     <xsl:otherwise>
@@ -127,7 +127,7 @@
     <a href="#">
       <xsl:attribute name="onclick">javascript: formSubmit('c_tag', '<xsl:value-of select="."/>');</xsl:attribute>
       <span class="nolink_b">
-        <xsl:attribute name="style">font-size: <xsl:value-of select="((150 * number(./@count)) div number(//ctags/@count)) + 100"/>%</xsl:attribute>
+        <xsl:attribute name="style"><xsl:value-of select="./@style"/></xsl:attribute>
         <xsl:value-of select="."/>
       </span>
     </a>

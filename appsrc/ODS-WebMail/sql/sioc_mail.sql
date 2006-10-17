@@ -30,22 +30,32 @@ create procedure mail_post_iri (in domain_id int, in user_id int, in msg_id int)
   return sprintf ('http://%s%s/%U/mail/%d', get_cname(), get_base_path (), owner, msg_id);
 };
 
-create procedure fill_ods_mail_sioc (in graph_iri varchar, in site_iri varchar)
+create procedure fill_ods_mail_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare iri, c_iri varchar;
+  declare do_post int;
+
   for select DOMAIN_ID, USER_ID, MSG_ID, SUBJECT, SND_DATE, UNIQ_MSG_ID from OMAIL..MESSAGES do
     {
-      iri := mail_post_iri (DOMAIN_ID, USER_ID, MSG_ID);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://rdfs.org/sioc/ns#Post');
-      for select WAM_INST from DB.DBA.WA_MEMBER where WAM_USER = USER_ID and WAM_MEMBER_TYPE = 1 and  WAM_APP_TYPE = 'oMail'
+      do_post := 1;
+      for select WAM_INST
+           from DB.DBA.WA_MEMBER
+          where WAM_USER = USER_ID and WAM_MEMBER_TYPE = 1 and  WAM_APP_TYPE = 'oMail'
+	  and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAM_INST = _wai_name)
 	do
 	  {
+          if (do_post = 1)
+            {
+              iri := mail_post_iri (DOMAIN_ID, USER_ID, MSG_ID);
+              DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+              DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), SUBJECT);
+              DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), DB.DBA.date_iso8601 (SND_DATE));
+              do_post := 0;
+            }
 	    c_iri := mail_iri (WAM_INST);
-	    DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_container', c_iri);
-	    DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, 'http://rdfs.org/sioc/ns#container_of', iri);
+          DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
+          DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
 	  }
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#title', SUBJECT);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, 'http://rdfs.org/sioc/ns#created_at', DB.DBA.date_iso8601 (SND_DATE));
     }
 };
 
@@ -54,20 +64,26 @@ create trigger MESSAGES_SIOC_I after insert on OMAIL..MESSAGES referencing new a
 {
   declare iri, c_iri varchar;
   declare graph_iri varchar;
+  declare do_post int;
+
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
   graph_iri := get_graph ();
   iri := mail_post_iri (N.DOMAIN_ID, N.USER_ID, N.MSG_ID);
-  ods_sioc_post (graph_iri, iri, null, null, N.SUBJECT, N.SND_DATE, null);
-  for select WAM_INST from DB.DBA.WA_MEMBER
-    where WAM_USER = N.USER_ID and WAM_MEMBER_TYPE = 1 and  WAM_APP_TYPE = 'oMail'
-    do
+
+  do_post := 1;
+  for select WAM_INST from DB.DBA.WA_MEMBER where WAM_USER = N.USER_ID and WAM_MEMBER_TYPE = 1 and  WAM_APP_TYPE = 'oMail' and WAM_IS_PUBLIC = 1 do
     {
+      if (do_post = 1)
+    {
+          ods_sioc_post (graph_iri, iri, null, null, N.SUBJECT, N.SND_DATE, null);
+          do_post := 0;
+        }
       c_iri := mail_iri (WAM_INST);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, 'http://rdfs.org/sioc/ns#has_container', c_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, 'http://rdfs.org/sioc/ns#container_of', iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
     }
   return;
 };
@@ -90,16 +106,46 @@ create trigger MESSAGES_SIOC_U after update on OMAIL..MESSAGES referencing old a
 {
   declare iri, c_iri varchar;
   declare graph_iri varchar;
+  declare do_post int;
+
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
   graph_iri := get_graph ();
   iri := mail_post_iri (N.DOMAIN_ID, N.USER_ID, N.MSG_ID);
+
   delete_quad_s_or_o (graph_iri, iri, iri);
+
+  do_post := 1;
+  for select WAM_INST from DB.DBA.WA_MEMBER where WAM_USER = N.USER_ID and WAM_MEMBER_TYPE = 1 and  WAM_APP_TYPE = 'oMail' and WAM_IS_PUBLIC = 1 do
+    {
+      if (do_post = 1)
+        {
   ods_sioc_post (graph_iri, iri, null, null, N.SUBJECT, N.SND_DATE, null);
+          do_post := 0;
+        }
+      c_iri := mail_iri (WAM_INST);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
+    }
   return;
 };
 
+create procedure ods_mail_sioc_init ()
+{
+  declare sioc_version any;
+
+  sioc_version := registry_get ('__ods_sioc_version');
+  if (registry_get ('__ods_sioc_init') <> sioc_version)
+    return;
+  if (registry_get ('__ods_mail_sioc_init') = sioc_version)
+    return;
+  fill_ods_mail_sioc (get_graph (), get_graph ());
+  registry_set ('__ods_mail_sioc_init', sioc_version);
+  return;
+};
+
+OMAIL.WA.exec_no_error ('ods_mail_sioc_init ()');
 
 use DB;

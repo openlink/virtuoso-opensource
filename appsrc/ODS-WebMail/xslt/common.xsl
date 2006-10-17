@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:mail="http://www.openlinksw.com/mail/">
   <xsl:output method="xhtml" indent="yes" omit-xml-declaration="no" encoding="windows-1251" doctype-public="-//W3C//DTD XHTML 1.0 Strict //EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"/>
   <xsl:include href="base.xsl"/>
   <xsl:variable name="sid" select="/page/sid"/>
@@ -47,7 +47,7 @@
   <!-- ========================================================================== -->
   <xsl:template name="root_normal">
     <html>
-      <head profile="http://internetalchemy.org/2003/02/profile">
+      <head>
         <title>OpenLink Software - Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
@@ -55,6 +55,7 @@
         <script language="JavaScript" src="/oMail/i/js/script.js"/>
       </head>
       <body>
+        <xsl:value-of select="//ods/bar" disable-output-escaping="yes" />
         <xsl:call-template name="header"/>
         <xsl:call-template name="nav_2"/>
         <table width="100%" cellpadding="0" cellspacing="0" id="ramka">
@@ -133,7 +134,7 @@
   <xsl:template name="root_popup">
     <html>
       <head>
-        <title>OpenLink Mail</title>
+        <title>OpenLink Software - Mail</title>
         <xsl:call-template name="css"/>
         <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
         <script language="JavaScript" src="/oMail/i/js/script.js"/>
@@ -152,8 +153,8 @@
   <!-- ========================================================================== -->
   <xsl:template name="root_popup_box">
     <html>
-      <head profile="http://internetalchemy.org/2003/02/profile">
-        <title>OpenLink Mail</title>
+      <head>
+        <title>OpenLink Software - Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
         <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
@@ -189,9 +190,11 @@
     <link rel="foaf" type="application/rdf+xml" title="FOAF">
       <xsl:attribute name="href"><xsl:value-of select="/page/user_info/foaf" /></xsl:attribute>
     </link>
+    <xsl:if test="string(/page/user_info/sioc) != ''">
     <link rel="meta" type="application/rdf+xml" title="SIOC">
       <xsl:attribute name="href"><xsl:value-of select="/page/user_info/sioc" /></xsl:attribute>
     </link>
+    </xsl:if>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
@@ -227,8 +230,8 @@
   <xsl:template name="header">
     <form name="FS" action="search.vsp" method="get">
       <xsl:call-template name="hid_sid"/>
-      <div style="height: 65px; background-color: #fff;">
-        <div style="float: left;  padding-top: 3px;">
+      <div style="background-color: #fff;">
+        <div style="float: left;">
           <img src="/oMail/i/omailbanner_sml.jpg"/>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
@@ -250,15 +253,7 @@
         </div>
         <br style="clear: left;"/>
       </div>
-      <div style="padding: 0.5em 0 0.25em 0;">
-        <div style="float: left; padding-left: 0.5em;">
-          <xsl:call-template name="make_href">
-            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>myhome.vspx</xsl:with-param>
-            <xsl:with-param name="img_label"><xsl:value-of select="concat(' ', /page/user_info/user_fullname)"/> (<xsl:value-of select="/page/user_info/email"/>)</xsl:with-param>
-            <xsl:with-param name="img">/oMail/i/home_16.png</xsl:with-param>
-          </xsl:call-template>
-        </div>
-        <div style="float: right; text-align: right; padding-right: 0.5em;">
+      <div style="text-align: right; padding: 0em 0.5em 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
           <xsl:call-template name="make_href">
             <xsl:with-param name="url">set_mail.vsp</xsl:with-param>
             <xsl:with-param name="label">Preferences</xsl:with-param>
@@ -268,21 +263,7 @@
             <xsl:with-param name="url">box.vsp</xsl:with-param>
             <xsl:with-param name="label">Help</xsl:with-param>
           </xsl:call-template>
-          |
-          <xsl:call-template name="make_href">
-            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/></xsl:with-param>
-            <xsl:with-param name="label"><xsl:value-of select="/page/ods/name"/></xsl:with-param>
-          </xsl:call-template>
-          |
-          <xsl:call-template name="make_href">
-            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/></xsl:with-param>
-            <xsl:with-param name="label">Logout</xsl:with-param>
-            <xsl:with-param name="no_sid">1</xsl:with-param>
-          </xsl:call-template>
-        </div>
-        <br style="clear: left;"/>
       </div>
-      <div style="border: solid #935000; border-width: 0px 0px 1px 0px;"/>
     </form>
   </xsl:template>
 

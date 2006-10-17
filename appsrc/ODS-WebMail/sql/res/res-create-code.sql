@@ -44,9 +44,9 @@ create procedure OMAIL.WA.res_get_mime_ext_id(
 --
 --
 create procedure OMAIL.WA.res_image(
-  INOUT path ANY,
-  INOUT params ANY,
-  INOUT lines ANY)
+  inout path ANY,
+  inout params ANY,
+  inout lines ANY)
 {
   DECLARE
     v_id,
@@ -62,7 +62,7 @@ create procedure OMAIL.WA.res_image(
   if (S = '')
     S := coalesce((SELECT ICON16 FROM OMAIL.WA.RES_MIME_TYPES WHERE ID = 30100), '');
 
-  OMAIL.WA.utl_myhttp(S, NULL, 'image/gif', NULL, NULL);
+  OMAIL.WA.utl_myhttp(S, null, 'image/gif', null, null, null);
   return;
 }
 ;

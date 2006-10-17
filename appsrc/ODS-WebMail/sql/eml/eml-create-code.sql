@@ -1059,7 +1059,7 @@ create procedure OMAIL.WA.omail_construct_mail(
 
   declare _view varchar;
   _view := get_keyword('vv',params,'h');
-  OMAIL.WA.utl_myhttp(_view,_rs,_xslt_url);
+  OMAIL.WA.utl_myhttp (_view, _rs, _xslt_url, null, null, null);
   return;
 }
 ;
@@ -4678,7 +4678,7 @@ create procedure OMAIL.WA.omail_sql_exec(
   in _sortby varchar,
   in _cloud integer := 0)
 {
-  declare _ind, _len, _max integer;
+  declare _ind, _len, _min, _max integer;
   declare _state,_rs, _msg varchar;
   declare _descr, _rows, _object, _tags, _dict any;
 
@@ -4698,7 +4698,8 @@ create procedure OMAIL.WA.omail_sql_exec(
     if (_skipped < 0)
       _skipped := 0;
   }
-  _max := 0;
+  _max := 1;
+  _min := 1000000;
   _dict := dict_new();
   for (_ind := 0; _ind < _len; _ind := _ind + 1) {
     if (_ind + 1 = _skipped)
@@ -4717,6 +4718,8 @@ create procedure OMAIL.WA.omail_sql_exec(
         foreach (any _tag in _tags) do {
           _object := dict_get(_dict, lcase(_tag), vector(lcase(_tag), 0));
           _object[1] := _object[1] + 1;
+          if (_object[1] < _min)
+            _min := _object[1];
           if (_object[1] > _max)
             _max := _object[1];
           dict_put(_dict, lcase(_tag), _object);
@@ -4725,9 +4728,9 @@ create procedure OMAIL.WA.omail_sql_exec(
     }
   }
   if (_cloud) {
-    _rs := _rs || sprintf('<ctags count="%d">', _max);
+    _rs := _rs || '<ctags>';
     for (select p.* from OMAIL.WA.tagsDictionary2rs(p0)(_tag varchar, _cnt integer) p where p0 = _dict order by _tag) do
-      _rs := _rs || sprintf('<ctag count="%d">%s</ctag>', _cnt, _tag);
+      _rs := _rs || sprintf('<ctag style="%V">%s</ctag>', ODS.WA.tag_style(_cnt, _min, _max), _tag);
     _rs := _rs || '</ctags>';
   }
   return sprintf('%s<order>%s</order><direction>%s</direction><skiped>%d</skiped><show_res>%d</show_res><all_res>%d</all_res>', _rs, substring (_sortby,1,1), substring (_sortby,2,1), _skipped, _pageSize, _len);
@@ -4916,10 +4919,10 @@ create procedure OMAIL.WA.omail_export(
     if (state <> '00000')
       goto _error;
 
+    set http_charset = 'UTF-8';
     http_rewrite ();
     http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
-    http ('<?xml version ="1.0" encoding="UTF-8"?>\n');
-    http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
+    http ('<rss version="2.0">\n');
     http ('<channel>\n');
     for (select U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = _user_id) do {
       http ('<title>');
@@ -4956,7 +4959,7 @@ create procedure OMAIL.WA.omail_export(
           http_value (OMAIL.WA.dt_rfc1123 (row[7]));
         http ('</pubDate>\n');
         if (_output <> 'rss') {
-          http ('<vi:modified>');
+          http ('<vi:modified xmlns:vi="http://www.openlinksw.com/weblog/">');
             http_value (OMAIL.WA.dt_iso8601 (row[7]));
           http ('</vi:modified>\n');
         }
@@ -4986,8 +4989,8 @@ _error:
   http('<?xml version="1.0" ?><empty />');
 
 _end:
-  http_flush();
   signal('90005','Make export');
+  return;
 }
 ;
 
@@ -5900,7 +5903,7 @@ create procedure OMAIL.WA.test (
     if (__SQL_STATE = 'EMPTY')
       signal ('TEST', sprintf('Field ''%s'' cannot be empty!<>', valueName));
     if (__SQL_STATE = 'CLASS') {
-      if (valueType = 'free-text') {
+      if (valueType in ('free-text', 'tags')) {
         signal ('TEST', sprintf('Field ''%s'' contains invalid characters or noise words!<>', valueName));
       } else {
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters!<>', valueName));
@@ -6023,7 +6026,7 @@ create procedure OMAIL.WA.validate2 (
     if (isnull(regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
       goto _error;
   } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
-    if (isnull(regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_]*)?\$', propertyValue)))
+    if (isnull(regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
       goto _error;
   } else if (propertyType = 'email') {
     if (isnull(regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))
@@ -7255,3 +7258,18 @@ create procedure DB.DBA.MAIL_NEWS_MSG_D (
   signal ('CONV3', 'Delete of a mail comment is not allowed');
 }
 ;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.GET_ODS_BAR (
+  inout _params any,
+  inout _lines any)
+{
+  --dbg_obj_print('params: ', deserialize(_params));
+  --dbg_obj_print(deserialize(_lines));
+  return ODS.BAR._EXEC('oMail', deserialize(_params), deserialize(_lines));
+}
+;
+
+grant execute on OMAIL.WA.GET_ODS_BAR to public;
+xpf_extension ('http://www.openlinksw.com/mail/:getODSBar', 'OMAIL.WA.GET_ODS_BAR');
