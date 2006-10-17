@@ -70,15 +70,20 @@
       ]]>
     </v:before-data-bind>
       <v:after-data-bind>
+        <![CDATA[
+
 	declare id any;
 	if (self.isowner)
 	  id := self.u_name;
 	else
 	  id := self.fname;
 	self.friends_name := (select coalesce (u_full_name, u_name) from sys_users where u_name = id);
+
 	if (not length (self.friends_name))
 	  self.friends_name := id;
+
         select sne_id into self.sne_id from sn_entity where sne_name = id;
+        ]]>
       </v:after-data-bind>
     </v:local-variable>
   </xsl:template>
@@ -103,7 +108,7 @@
     </v:template>
   </xsl:template>
 
-  <xsl:template match="vm:page_hd">
+  <xsl:template match="vm:page-hd">
     <h1 class="page_hd">
       <xsl:apply-templates/>
     </h1>
@@ -125,7 +130,7 @@
   </xsl:template>
 
   <xsl:template match="vm:sioc-link">
-      <v:url name="u1" value='<img src="images/sioc_button.gif" border="0" alt="SIOC" />' format="%s"
+      <v:url name="u1" value='<img src="images/sioc_button.png" border="0" alt="SIOC" />' format="%s"
 	  url="--WA_LINK (1, sprintf ('/dataspace/%s/sioc.rdf', self.fname))" xhtml_target="_blank"/>
   </xsl:template>
 

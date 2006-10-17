@@ -1,9 +1,32 @@
+/*
+ *  $Id$
+ *  
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *  
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *  
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  
+ */
 #ods-bar {
   float: left;
   clear: left;
+  width: 100%;
   font-size: 9pt;
   padding: 0px 0px 0px 0px;
-  margin: 0px 0px 10px 0px;
+  margin: 0px 0px 0px 0px;
   background-color: #86b9d9}
 #ods-bar img {
   float: left;
@@ -13,7 +36,7 @@
   vertical-align: top;
   margin: 0;
   padding: 0;
-  border: 0;}
+  border: 0}
 #ods-bar ul { 
   float: left;
   list-style-type: none;
@@ -28,6 +51,10 @@
   float: left;
   text-decoration: none;
   padding: 3px 0px 3px 5px}
+#ods-bar ul li.home-lnk {
+ border-right: 1px solid #86b9d9}
+#ods-bar ul li.home-lnk a {
+ padding-right: 4px} 
 #ods-bar-toggle {
   float: left; clear: left}
 #ods-bar-mid { 
@@ -35,15 +62,31 @@
   margin: 0;
   background-color: #86b9d9}
 
+img.tab_r {
+  border: 0;
+}
+
+/* Search */
+
+#ods-bar-mid input.textbox {
+  color: #555;
+  font-size: 8pt;
+  padding: 0;
+  vertical-align: middle}
+
 /* 1st level tabs */
 
 #ods-bar-first-lvl {
   vertical-align: middle;
   padding: 0px;
-  margin: 0px;}
+  margin: 0px}
 #ods-bar-first-lvl li {
+  float: left;
+  margin: 0;
   padding: 3px 3px 3px 3px}
 #ods-bar-first-lvl li a {
+  float: left;
+  display: block;
   color: #86b9d9;
   background-color: #426275}
 #ods-bar-first-lvl li a:hover {
@@ -53,6 +96,8 @@
 #ods-bar-first-lvl li.sel a { 
   color: #426275;
   background-color: #86b9d9}
+#ods-bar-first-lvl ul li img {
+  float: left}
 
 /* 2nd level tabs */
 
@@ -61,8 +106,12 @@
   padding: 0px;
   float: left;clear: left;}
 #ods-bar-second-lvl li {
-  padding: 3px 3px 3px 5px;}
+  float: left;
+  display: block;
+  margin: 0;
+  padding: 3px 3px 3px 5px}
 #ods-bar-second-lvl li a {
+  width: 100%;
   padding: 0px 5px 0px 5px;
   color: #426275}
 
@@ -73,7 +122,7 @@
 
 #ods-bar-r {
   clear: right;
-  margin: 0px 0px 0px 0px;
+  margin: 0px 3px 0px 0px;
   font-size: 8pt;
   white-space: nowrap}
 
@@ -81,6 +130,7 @@
   white-space: nowrap}
 
 #ods-bar-bottom {
+  width: 100%;
   font-size: 9pt;
   float: right;
   clear: both;
@@ -89,53 +139,28 @@
   background-color: #527285;
   color: #d5eefd}
 
+#ods-bar-bottom a {
+  color: #a6d9f9;
+  text-decoration: none}
+
 #ods-bar-home-path {
   float: left}
 
 #ods-bar-data-space-indicator {
-  float: right;
-}
+  float: right}
 
 #ods-bar-data-space-indicator a {
-  color: #86b9d9
-}
+  color: #86b9d9}
 
 #ods-bar-login {
   margin:0; padding:0;
-  float:right;
-  clear:right}
+  float: right; clear: right;
+  white-space: nowrap}
 
 #ods-bar-site-lnk {
   margin: 0;padding: 0;
   float: right;clear: right}
 
-img.ods-bar-inline-icon {
+#ods-bar-login img,img.ods-bar-inline-icon {
   margin: 0px 3px 0px 3px;
   vertical-align: middle}
-
-h1 { float: left;
-  font-size: 14pt;
-  color: #456;
-  margin-top: 0;}
-
-/* widget */
-
-div.widget { 
-  padding: 5px;
-}
-
-div.widget-title-bar h2 {
-  color: #446;
-  margin: 0;
-}
-
-div.widget-title-bar img { border: 0}
-
-div.widget-title-bar a { text-decoration: none;}
-
-div.w-apps-list ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-a.pgm-link img { border: 0 }

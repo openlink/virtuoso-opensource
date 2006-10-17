@@ -677,6 +677,8 @@ create method wa_https_supported () for web_app
 ;
 
 create method wa_drop_instance () for web_app {
+
+/* XXX: old query
   for (
 select
     HP_HOST as _host, HP_LISTEN_HOST as _lhost, HP_LPATH as _path, WAI_INST as _inst
@@ -688,32 +690,23 @@ select
     HP_PPATH = (select HP_PPATH from HTTP_PATH where HP_LPATH=rtrim(WA_INSTANCE.WAI_INST.wa_home_url(), '/') and HP_HOST='*ini*' and HP_LISTEN_HOST='*ini*') and
     HP_HOST not like '%ini%'and HP_HOST not like '*sslini*')
   do
+*/
+for select VH_HOST as _host, VH_LISTEN_HOST as _lhost, VH_LPATH as _path, WAI_INST as _inst
+  from WA_INSTANCE, WA_VIRTUAL_HOSTS where WAI_NAME = self.wa_name and WAI_ID = VH_INST and VH_HOST not like '%ini%'
+  do
   {
     declare inst web_app;
     inst := _inst;
-    declare _port varchar;
-    declare pos integer;
-    pos := strchr(_host, ':');
-    if (pos is null)
-      _port := '80';
-    else
-    {
-      _port := subseq(_host, pos + 1);
-      _port := trim(_port);
-      if (atoi(_port) = 80 or _port = '')
-      {
-        _port := '80';
-        _host := subseq(_host, 0, pos);
-      }
-    }
     -- Application additional URL
     declare len, i, ssl_port integer;
-    declare cur_add_url any;
-    len := length(inst.wa_addition_urls());
+    declare cur_add_url, addons any;
+
+    addons := inst.wa_addition_urls();
+    len := length(addons);
     i := 0;
     while (i < len)
     {
-      cur_add_url := aref(inst.wa_addition_urls(), i);
+      cur_add_url := addons [i];
       VHOST_REMOVE(
         vhost=>_host,
         lhost=>_lhost,
@@ -721,11 +714,12 @@ select
       i := i + 1;
     }
     -- Instance additional URL
-    len := length(inst.wa_addition_instance_urls(_path));
+    addons := inst.wa_addition_instance_urls(_path);
+    len := length(addons);
     i := 0;
     while (i < len)
     {
-      cur_add_url := aref(inst.wa_addition_instance_urls(_path), i);
+      cur_add_url := addons[i];
       VHOST_REMOVE(
         vhost=>_host,
         lhost=>_lhost,
@@ -5137,5 +5131,8 @@ create procedure wa_make_url_from_vd (in host varchar, in lhost varchar, in path
     port := ':'||server_http_port ();
   else
     port := '';
+  if (path like 'http://%')
+    return rtrim(path, '/');
+  else
   return sprintf ('http://%s%s%s/', host, port, rtrim(path, '/'));
 };
