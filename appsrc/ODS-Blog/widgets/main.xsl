@@ -22,7 +22,11 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" exclude-result-prefixes="v" xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
+    xmlns:v="http://www.openlinksw.com/vspx/" exclude-result-prefixes="v"
+    xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+    xmlns:ods="http://www.openlinksw.com/vspx/ods/"
+    >
 
   <xsl:output method="xml" indent="yes" cdata-section-elements="style" encoding="UTF-8"/>
   <!-- the 'chk' is used to designate what kind of code is supposed to be generated, when is true it's for vspx
@@ -188,6 +192,7 @@
     <v:variable name="official_host" type="varchar" default="null" persist="temp" />
     <v:variable name="official_host_label" type="varchar" default="null" persist="temp" />
     <v:variable name="openid_sig" type="varchar" default="null" persist="temp" param-name="oid_sig"/>
+    <v:variable name="openid_key" type="varchar" default="null" persist="temp" param-name="oid_key"/>
 
     <!-- eRDF data -->
 
@@ -197,6 +202,16 @@
     <v:variable name="e_lng" type="real" default="null" persist="temp" />
 
     <!-- end -->
+
+    <xsl:choose>
+	<xsl:when test="//vm:keep-variable">
+	    <v:variable name="to_restore" type="any" default="''" param-name="rtr" persist="temp"/>
+	    <v:variable name="rtr_vars" type="any" default="null"  persist="temp" />
+	</xsl:when>
+	<xsl:otherwise>
+	    <v:variable name="to_restore" type="any" default="''" param-name="rtr"/>
+	</xsl:otherwise>
+    </xsl:choose>
 
     <v:variable name="welcome_msg_flag" type="int" default="0" persist="session"/>
     <v:before-render>
@@ -273,7 +288,8 @@
         http_header(concat(http_header_get (), 'Content-Type: text/html; charset=utf-8\r\n'));
         -- check current user access rights
         declare _minutes any;
-        _minutes := 30;
+        _minutes := 120;
+        -- 0 in no access, 1 if owner, 2 if author, 3 if can read (reader or blog is public)
         self.blog_access := BLOG2_GET_ACCESS (self.blogid, self.sid, self.realm, _minutes);
         self._new_sid := self.sid;
         -- update sid value in 'params'
@@ -316,29 +332,27 @@
             http_header(sprintf('%s%s', _header, _header_line));
           }
         }
-        if (self.page not in ('errors', 'login', 'about', 'linkblog', 'summary'))
+        if (self.blog_access = 0 and self.page not in ('errors', 'login', 'about'))
         {
-          if (self.blog_access = 0)
-          {
-            -- redirect to 'Login'
-            http_request_status ('HTTP/1.1 302 Found');
-            http_header(sprintf('Location: index.vspx?page=login&requested_page=%s&reason=exp\r\n\r\n', self.page));
-          }
+	  declare rst any;
+	  rst := self.save_vars (params);
+	  self.vc_redirect (sprintf('index.vspx?page=login&requested_page=%s&reason=exp&rtr=%s', self.page, rst));
+	  return;
         }
         -- get current user
         self.user_name := DB.DBA.BLOG2_GET_USER_BY_SESSION(self.sid, self.realm, _minutes);
-        if (self.user_name is null or self.blog_access = 0)
+        if ((self.user_name is null or self.blog_access = 0) and
+ 	    self.page not in ('register', 'index', 'login', '', 'about', 'linkblog', 'summary', 'archive'))
         {
- 	  if (self.page <> 'register' and self.page <> 'index' and self.page <> 'login' and self.page <> '' and self.page <> 'about' and self.page <> 'linkblog' and self.page <> 'summary' and self.page <> 'archive')
-          {
-            http_request_status ('HTTP/1.1 302 Found');
+	    declare rst any;
+	    rst := self.save_vars (params);
             if (self.blog_access = 3)
-              http_header(sprintf('Location: index.vspx?page=login&requested_page=%s&reason=exp\r\n\r\n', self.page));
+              self.vc_redirect (sprintf('index.vspx?page=login&requested_page=%s&reason=exp&rtr=%s', self.page, rst));
             else
-              http_header(sprintf('Location: index.vspx?page=login&requested_page=%s&reason=exp2\r\n\r\n', self.page));
+              self.vc_redirect (sprintf('index.vspx?page=login&requested_page=%s&reason=exp2&rtr=%s', self.page, rst));
             return;
           }
-        }
+
 	{
 	  declare exit handler for not found;
 	  select U_ID, pwd_magic_calc (U_NAME, U_PASSWORD, 1) into self.user_id, self.user_pwd
@@ -519,14 +533,6 @@
           connection_set('DAVQuota', quota);
           connection_set('DAVUserID', self.user_id);
         }
-        declare p any;
-        p := vector ();
-        for select WH_ID from BLOG.DBA.SYS_BLOG_WEBLOG_PING, BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS
-    where WH_ID  = WP_HOSTS_ID and WP_BLOG_ID = self.blogid do
-        {
-          p := vector_concat (p, vector (cast(WH_ID as varchar)));
-        }
-        self.pings := p;
   self.have_comunity_blog := (select 1 from BLOG.DBA.SYS_BLOG_INFO
           where BI_HAVE_COMUNITY_BLOG = 1 and BI_BLOG_ID = self.blogid);
 
@@ -616,7 +622,50 @@ else if (length (self.catid))
    self.official_host_label := sys_stat ('st_host_name') || ':' || server_http_port ();
 
       ]]>
+      <xsl:if test="//vm:keep-variable">
+      self.restore_vars ();
+      </xsl:if>
     </v:on-init>
+	<v:method name="save_vars" arglist="inout pars any">
+	  declare var_list any;
+	  declare rst_sid varchar;
+
+          var_list := vector (
+	    <xsl:for-each select="//vm:keep-variable">
+            '<xsl:value-of select="@name"/>', get_keyword ('<xsl:value-of select="@name"/>', pars),
+	    </xsl:for-each>
+	    null, null
+	    );
+	 if (length (var_list) &gt; 2)
+           {
+	     rst_sid := vspx_sid_generate ();
+	     insert into VSPX_SESSION (VS_SID, VS_REALM, VS_STATE, VS_EXPIRY)
+	     values (rst_sid, 'wa-rst', serialize (var_list),  now ());
+	     commit work;
+	     return rst_sid;
+	   }
+	 else
+           return '';
+	</v:method>
+    <xsl:if test="//vm:keep-variable">
+    <v:method name="restore_vars" arglist="">
+         declare state, val any;
+	 if (self.to_restore is null)
+	   {
+	     self.rtr_vars := vector ();
+	     return;
+	   }
+
+	 state := (select deserialize (blob_to_string (VS_STATE)) from VSPX_SESSION
+	 where VS_REALM = 'wa-rst' and VS_SID = self.to_restore);
+	 if (state is null)
+	   self.rtr_vars := vector ();
+	 else
+	   self.rtr_vars := state;
+
+	 delete from VSPX_SESSION where VS_REALM = 'wa-rst' and VS_SID = self.to_restore;
+    </v:method>
+    </xsl:if>
     <?vsp
       BLOG.DBA.BLOG_REFFERAL_REGISTER (self.blogid, lines, params);
     ?>
@@ -764,11 +813,7 @@ else if (length (self.catid))
 
 
   <xsl:template match="vm:header">
-   <?vsp
-   declare e_profile varchar;
-   e_profile := get_keyword('MetaDataProfile', self.opts, 'http://purl.org/NET/erdf/profile http://internetalchemy.org/2003/02/profile');
-   ?>
-   <head profile="<?V e_profile ?>">
+   <head profile="http://gmpg.org/xfn/11 http://purl.org/NET/erdf/profile http://internetalchemy.org/2003/02/profile">
       <xsl:text>&#10;</xsl:text>
       <?vsp
         declare icon varchar;
@@ -942,6 +987,9 @@ window.onload = function (e)
             </font>
           </div>
         </v:template-->
+        <xsl:if test="not (//ods:ods-bar)">
+	    <ods:ods-bar app_type="WEBLOG2" show_signin="false"/>
+	</xsl:if>
         <xsl:apply-templates/>
       </v:form>
     </body>
@@ -1106,7 +1154,10 @@ window.onload = function (e)
         Widget vm:disco-foaf-link should be placed inside vm:header only
       </xsl:message>
     </xsl:if>
+    <link rel="meta" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/about.rdf', self.chost, self.owner_name)); ?>" />
+    <xsl:text>&#10;</xsl:text>
     <link rel="meta" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (sprintf ('http://%s%sgems/foaf%s.xml', self.host, self.base, case when self.have_comunity_blog then '-members' else '' end)); ?>" />
+
       <xsl:text>&#10;</xsl:text>
   </xsl:template>
 
@@ -1117,8 +1168,6 @@ window.onload = function (e)
       </xsl:message>
     </xsl:if>
     <link rel="EditURI" type="application/rsd+xml" title="RSD" href="&lt;?vsp http (sprintf ('http://%s%sgems/rsd.xml', self.host, self.base)); ?>" />
-      <xsl:text>&#10;</xsl:text>
-	    <link rel="foaf" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/about.rdf', self.chost, self.owner_name)); ?>" />
       <xsl:text>&#10;</xsl:text>
   </xsl:template>
 
@@ -1176,6 +1225,30 @@ window.onload = function (e)
       </a>
     </div>
   </xsl:template>
+
+  <xsl:template match="vm:sioc-link">
+    <div>
+    <?vsp
+    {
+    declare id_part varchar;
+    id_part := '';
+    if (self.postid is not null)
+      id_part := self.postid || '/';
+    ?>
+	<a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/weblog/%U/%ssioc.rdf', self.chost, self.owner_name, self.inst_name, id_part)); ?>" class="{local-name()}">
+	  <img border="0" alt="SIOC" title="SIOC" >
+	      <xsl:call-template name="feed-image">
+		  <xsl:with-param name="default">'rdf-icon-16.gif'</xsl:with-param>
+	      </xsl:call-template>
+	  </img>
+	  <xsl:apply-templates />
+      </a>
+      <?vsp
+      }
+      ?>
+    </div>
+  </xsl:template>
+
 
   <xsl:template match="vm:rss-link">
     <div>
@@ -1294,6 +1367,14 @@ window.onload = function (e)
 		<xsl:with-param name="default">'atom-icon-16.gif'</xsl:with-param>
 	    </xsl:call-template>
         </img>
+	<xsl:apply-templates />
+      </a>
+    </div>
+  </xsl:template>
+
+  <xsl:template match="vm:geo-link">
+    <div>
+	<a href="http://geourl.org/near?p=<?U sprintf ('http://%s%s', self.host, self.base) ?>" class="{local-name()}">
 	<xsl:apply-templates />
       </a>
     </div>
@@ -2758,6 +2839,11 @@ window.onload = function (e)
       <vm:audio/>
     </div>
     <vm:ods-foaf-link>FOAF</vm:ods-foaf-link>
+    <?vsp
+        if (self.e_lat is not null and self.e_lng is not null and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.inst_id)) {
+    ?>
+    <vm:geo-link><img src="http://i.geourl.org/geourl.png" border="0"/></vm:geo-link>
+    <?vsp } ?>
     <div>
 	<v:url xhtml_class="button" name="full_profile" value="Full profile"
 	  url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link (1),  self.owner_name)"
@@ -3249,7 +3335,10 @@ window.onload = function (e)
           <a href="<?V sprintf('index.vspx?page=routing_queue&sid=%s&realm=wa', self.sid) ?>">Upstreaming Log</a>
         </li>
         <li>
-          <a href="<?V sprintf('index.vspx?page=ping_queue&sid=%s&realm=wa', self.sid) ?>">Ping Log</a>
+	  <a href="<?V sprintf('%s/inst_ping.vspx?sid=%s&realm=wa&RETURL=%U', wa_link (1), self.sid, self.return_url_1) ?>">Ping Services</a>
+        </li>
+        <li>
+	  <a href="<?V sprintf('%s/ping_log.vspx?sid=%s&realm=wa&RETURL=%U', wa_link (1), self.sid, self.return_url_1) ?>">Ping Log</a>
         </li>
         <li>
           <a href="<?V sprintf('index.vspx?page=ping&sid=%s&realm=wa', self.sid) ?>">Preferences</a>
@@ -3299,6 +3388,7 @@ window.onload = function (e)
   <xsl:include href="calendar.xsl"/>
   <xsl:include href="compat.xsl"/>
   <xsl:include href="dav_browser.xsl"/>
+  <xsl:include href="../../wa/comp/ods_bar.xsl"/>
 
   <xsl:template match="vm:comments-view">
       <xsl:call-template name="comments-view"/>
@@ -6507,6 +6597,10 @@ window.onload = function (e)
         </tr>
         <tr>
           <td/>
+          <td><v:check-box name="oid1" xhtml_id="oid1" value="1" initial-checked="--get_keyword ('OpenID', self.opts, 0)"/><label for="oid1">Comments verification via OpenID URL</label></td>
+        </tr>
+        <tr>
+          <td/>
           <td><v:check-box name="mb1" xhtml_id="mb1" value="1" initial-checked="--get_keyword ('CommentApproval', self.opts, 0)"/><label for="mb1">Comments are moderated</label></td>
         </tr>
         <tr>
@@ -6559,6 +6653,7 @@ window.onload = function (e)
                   opts := BLOG.DBA.BLOG2_SET_OPTION('EnableReferral', opts, self.pb1.ufl_selected);
                   opts := BLOG.DBA.BLOG2_SET_OPTION('EnableTrackback', opts, self.tb1.ufl_selected);
                   opts := BLOG.DBA.BLOG2_SET_OPTION('CommentApproval', opts, self.mb1.ufl_selected);
+                  opts := BLOG.DBA.BLOG2_SET_OPTION('OpenID', opts, self.oid1.ufl_selected);
                   opts := BLOG.DBA.BLOG2_SET_OPTION('CommentQuestion', opts, self.cc1.ufl_selected);
                   opts := BLOG.DBA.BLOG2_SET_OPTION('CommentReg', opts, self.reg1.ufl_selected);
       opts := BLOG.DBA.BLOG2_SET_OPTION('SpamRateLimit', opts, self.sr1.ufl_value);
@@ -6627,19 +6722,6 @@ window.onload = function (e)
           <td><v:check-box name="show_tags_ckbx" xhtml_id="show_tags_ckbx" value="1" initial-checked="--get_keyword('TagGem', self.opts, 1)"/><label for="show_tags_ckbx">Show Tags</label></td>
         </tr>
 
-        <tr><th colspan="2"><h2>Meta Data Profile</h2></th></tr>
-        <tr>
-          <td><label for="e_profile"></label></td>
-	  <td>
-            <v:select-list xhtml_class="select" name="e_profile" xhtml_id="e_profile">
-		<v:item value="http://purl.org/NET/erdf/profile" name="eRDF"/>
-		<v:item value="http://gmpg.org/xfn/11" name="XFN"/>
-              <v:before-data-bind>
-		  control.ufl_value := get_keyword('MetaDataProfile', self.opts, 'http://purl.org/NET/erdf/profile');
-              </v:before-data-bind>
-            </v:select-list>
-	  </td>
-        </tr>
 
         <tr><th colspan="2"><h2>Filters</h2></th></tr>
         <tr>
@@ -6653,17 +6735,6 @@ window.onload = function (e)
         <tr>
           <td><label for="rss_xsl_filter">XSL-T Filter for RSS</label></td>
           <td><v:text xhtml_class="textbox" xhtml_style="width: 220px" name="rss_xsl_filter" xhtml_id="rss_xsl_filter" value="--get_keyword('RSSFilter', self.opts, '*wml-default*')"/></td>
-        </tr>
-        <tr><th colspan="2"><h2>Weblog Ping Settings</h2></th></tr>
-        <tr>
-          <td><label for="sel">Ping Method</label></td>
-          <td>
-            <v:data-list xhtml_class="select" name="sel" xhtml_id="sel" multiple="1" xhtml_size="5" key-column="WH_ID" value-column="WH_NAME" sql="select WH_ID, concat (WH_NAME,' ',upper(WH_PROTO)) as WH_NAME from BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS">
-              <v:before-data-bind>
-                control.ufl_value := self.pings;
-              </v:before-data-bind>
-            </v:data-list>
-          </td>
         </tr>
         <tr><th colspan="2"><h2>Community and Contact Settings</h2></th></tr>
         <tr>
@@ -6701,7 +6772,6 @@ window.onload = function (e)
                 opts := BLOG.DBA.BLOG2_SET_OPTION('ShowXBEL', opts, self.show_xbel_ckbx.ufl_selected);
                 opts := BLOG.DBA.BLOG2_SET_OPTION('TagGem', opts, self.show_tags_ckbx.ufl_selected);
                 opts := BLOG.DBA.BLOG2_SET_OPTION('Adblock', opts, self.adds_filter.ufl_value);
-                opts := BLOG.DBA.BLOG2_SET_OPTION('MetaDataProfile', opts, self.e_profile.ufl_value);
                 declare _photo, match varchar;
                 _photo := trim(self.icon1.ufl_value);
                 if (length(_photo) > 0)
@@ -6751,37 +6821,6 @@ window.onload = function (e)
                   BI_FILTER = self.xsl_filter.ufl_value,
                   BI_INCLUSION = self.inclusion_ckbx.ufl_selected
                   where BI_BLOG_ID = self.blogid;
-                declare p any;
-                declare i, l int;
-                p := self.sel.ufl_value;
-                i := 0;
-                l := length(p);
-                delete from BLOG.DBA.SYS_BLOG_WEBLOG_PING where WP_BLOG_ID = self.blogid;
-                while (i < l)
-                {
-                  if (p[i] <> '')
-                  {
-		    declare pu, pn varchar;
-		    declare pjob int;
-		    pu := '';
-		    for select WH_URL, WH_NAME from BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS where WH_ID = p[i] do
-		    {
-		      pu := WH_URL;
-		      pn := WH_NAME;
-		    }
-		    if (pu <> '')
-                    insert into BLOG.DBA.SYS_BLOG_WEBLOG_PING(WP_HOSTS_ID, WP_BLOG_ID, WP_URL) values(p[i], self.blogid, pu);
-		    if (pn = 'GeoURL')
-		      {
-		        -- insert one record
-			pjob := (select top 1 R_JOB_ID from BLOG..SYS_ROUTING
-				where R_DESTINATION_ID = p[i] and R_ITEM_ID = self.blogid);
-			insert into BLOG.DBA.BLOG_WEBLOG_PING_LOG (WPL_JOB_ID,WPL_HOSTS_ID,WPL_STAT)
-			values (pjob, p[i], 0);
-		      }
-                  }
-                  i := i + 1;
-                }
                 endu:;
               ]]>
             </v:on-post>
@@ -6791,147 +6830,6 @@ window.onload = function (e)
     </v:form>
   </xsl:template>
 
-  <xsl:template match="vm:blog-pinghosts-widget">
-      <input type="hidden" name="ping_tab" value="<?V get_keyword('ping_tab', control.vc_page.vc_event.ve_params) ?>"/>
-      <input type="hidden" name="blog_tab" value="<?V get_keyword('blog_tab', control.vc_page.vc_event.ve_params) ?>"/>
-      <h2>Configured Weblog ping hosts</h2>
-      <div class="scroll_area">
-            <v:data-set name="ds_pings" nrows="1000" scrollable="1" cursor-type="keyset" edit="0" >
-              <v:sql>
-                <![CDATA[
-                  select WH_NAME, WH_PROTO, WH_URL, WH_ID from BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS
-      where WH_NAME <> 'disabled' and WH_PROTO is not null
-                ]]>
-              </v:sql>
-              <v:column name="WH_NAME" />
-              <v:column name="WH_PROTO" />
-              <v:column name="WH_URL" />
-              <v:column name="WH_ID" />
-              <v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
-                <table id="members" class="listing">
-                  <tr class="listing_header_row">
-                    <th>Description</th>
-                    <th>Protocol</th>
-                    <th>URL</th>
-                  </tr>
-                </table>
-              </v:template>
-              <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
-                <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-                  <table id="members_empty">
-                    <tr>
-                      <td align="center" colspan="5">
-                        <b>No configured hosts</b>
-                      </td>
-                    </tr>
-                  </table>
-                </v:template>
-                <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
-                  <table id="members_browse">
-		      <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-                      <td align="left" nowrap="1">
-                        <v:label name="ds_pings_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" />
-                      </td>
-                      <td align="left" nowrap="1">
-                        <v:label name="ds_pings_type" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" />
-                      </td>
-                      <td align="left" nowrap="1">
-                        <v:label name="ds_pings_url" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s" />
-                      </td>
-                    </tr>
-                  </table>
-                </v:template>
-              </v:template>
-              <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
-                <table id="members_nav">
-                  <tr>
-                    <td colspan="3" align="center">
-                      <vm:ds-navigation data-set="ds_pings"/>
-                    </td>
-                  </tr>
-                </table>
-              </v:template>
-            </v:data-set>
-	</div>
-      <table>
-        <tr><th colspan="2"><h2>Add your own ping host</h2></th></tr>
-        <tr>
-          <td colspan="2">Weblog ping host</td>
-        </tr>
-        <tr>
-          <td><label for="desc1">Description</label></td>
-          <td>
-	      <v:text xhtml_class="textbox" name="desc1" xhtml_style="width: 220px" xhtml_id="desc1" value="--self.ping_desc" error-glyph="*">
-		  <v:validator test="length" min="1" max="1024" message="Description cannot be empty" />
-	      </v:text>
-          </td>
-        </tr>
-        <tr>
-          <td><label for="endp">Endpoint</label></td>
-          <td>
-            <v:text xhtml_class="textbox" name="endp" xhtml_style="width: 220px" xhtml_id="endp" value="--self.ping_end">
-		<v:validator name="v_ping_site1" test="regexp" regexp="^http://[A-Za-z0-9_.-]+/?([A-Za-z0-9_.-?]+)?$" message="You should provide a valid URL."/>
-	    </v:text>
-          </td>
-        </tr>
-        <tr>
-          <td><label for="proto">Protocol</label></td>
-          <td>
-            <v:select-list xhtml_class="select" name="proto" xhtml_id="proto">
-              <v:item value="xml-rpc" name="XML-RPC"/>
-              <v:item value="soap" name="SOAP"/>
-              <v:before-data-bind>
-                control.ufl_value := self.ping_proto;
-              </v:before-data-bind>
-            </v:select-list>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2">
-            <v:button xhtml_class="real_button" action="simple" name="ping_save" value="Save" xhtml_title="Save" xhtml_alt="Save">
-              <v:on-post>
-                <![CDATA[
-		  if (not self.vc_is_valid)
-		    return;
-                  if (self.ping_id = -1)
-                  {
-                    insert soft BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS (WH_URL, WH_PROTO, WH_NAME)
-      values (self.endp.ufl_value, self.proto.ufl_value, self.desc1.ufl_value);
-                    if (row_count () < 1)
-                    {
-                      control.vc_parent.vc_error_message := 'Non-unique endpoint URL';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
-                  }
-                  else
-                    update BLOG..SYS_BLOG_WEBLOG_HOSTS set WH_URL = self.endp.ufl_value,
-		    WH_PROTO = self.proto.ufl_value, WH_NAME = self.desc1.ufl_value where WH_ID = self.ping_id;
-		  self.ping_desc := '';
-		  self.ping_end := '';
-		  self.desc1.ufl_value := '';
-		  self.endp.ufl_value := '';
-                  self.ds_pings.vc_data_bind(e);
-                ]]>
-              </v:on-post>
-            </v:button>
-            <v:button xhtml_class="real_button" action="simple" name="ping_back" value="Reset" xhtml_title="Reset" xhtml_alt="Reset">
-              <v:on-post>
-                <![CDATA[
-                  self.ping_id := -1;
-                  self.ping_desc := '';
-                  self.ping_end := '';
-                  self.ping_proto := 'xml-rpc';
-                  self.desc1.vc_data_bind(e);
-                  self.endp.vc_data_bind(e);
-                  self.proto.vc_data_bind(e);
-                ]]>
-              </v:on-post>
-            </v:button>
-          </td>
-        </tr>
-      </table>
-  </xsl:template>
 
   <xsl:template match="vm:blog-gem-widget">
     <v:form name="blog_gem_widget_form" type="simple" method="POST" xhtml_enctype="multipart/form-data">
@@ -7509,9 +7407,6 @@ window.onload = function (e)
 		      <td class="<?V self.tab_2_lev ('4') ?>" align="center" nowrap="1">
                         <v:url name="b_url144" value="Blog GEM Display" format="%s" url="--'index.vspx?page=ping&ping_tab=4&blog_tab=4'" xhtml_class="button"/>
                       </td>
-		      <td class="<?V self.tab_2_lev ('5') ?>" align="center" nowrap="1">
-                        <v:url name="b_url124" value="Ping Hosts" format="%s" url="--'index.vspx?page=ping&ping_tab=4&blog_tab=5'" xhtml_class="button"/>
-                      </td>
                       <td class="page_tab_empty" align="center" width="100%">
                         <table cellpadding="0" cellspacing="0">
                           <tr>
@@ -7536,9 +7431,6 @@ window.onload = function (e)
                       </v:template>
                       <v:template name="template_page424" type="simple" instantiate="-- equ(get_keyword('blog_tab', control.vc_page.vc_event.ve_params), '4')">
                         <vm:blog-gem-widget/>
-                      </v:template>
-                      <v:template name="template_page524" type="simple" instantiate="-- equ(get_keyword('blog_tab', control.vc_page.vc_event.ve_params), '5')">
-                        <vm:blog-pinghosts-widget/>
                       </v:template>
                     </td>
                   </tr>
@@ -8939,7 +8831,13 @@ window.onload = function (e)
 			    declare file varchar;
 			    declare e vspx_event;
                             e := self.vc_event;
-			    if ((not e.ve_is_post or e.ve_initiator = self.tmpl_tab)
+			    if (length (self.rtr_vars))
+			      {
+			        control.ufl_value := get_keyword (control.vc_name, self.rtr_vars);
+                                self.tmpl_tab.ufl_value := get_keyword ('tmpl_tab', self.rtr_vars);
+				self.tmpl_tab.vs_set_selected ();
+			      }
+			    else if ((not e.ve_is_post or e.ve_initiator = self.tmpl_tab)
 			    	and get_keyword ('tmpl_tab', e.ve_params, '1') <> '2')
 			      {
 			        file := case get_keyword ('tmpl_tab', e.ve_params, '1') when '1' then 'index.vspx' when '3' then 'linkblog.vspx' when '4' then 'summary.vspx' when '5' then 'default.css' when '6' then 'archive.vspx' else signal ('22023', 'Internal error: Incorrect template item') end;
@@ -9200,7 +9098,7 @@ window.onload = function (e)
             <?vsp
               if (get_keyword('reason', self.vc_event.ve_params) = 'exp')
               {
-                http('The session has expired. For security reasons the session expires after 30 minutes of inactivity.<br/>Please enter a valid user id and password to log on.');
+                http('The session has expired. For security reasons the session expires after 2 hours of inactivity.<br/>Please enter a valid user id and password to log on.');
               }
               else
               {
@@ -9310,11 +9208,11 @@ window.onload = function (e)
                       _exp_date := dateadd('month', 3, now());
 		      _exp_string := sprintf('%s, %02d-%s-%04d 00:00:01 GMT', dayname(_exp_date), dayofmonth(_exp_date), monthname(_exp_date), year(_exp_date));
 		      if (self.req_url is null)
-                         http_header(sprintf('Set-Cookie: sid=%s; expires=%s\r\nLocation: index.vspx?page=%s&sid=%s&realm=wa\r\n\r\n', _sid, _exp_string, _page, _sid));
+                         http_header(sprintf('Set-Cookie: sid=%s; expires=%s\r\nLocation: index.vspx?page=%s&sid=%s&realm=wa&rtr=%s\r\n', _sid, _exp_string, _page, _sid, self.to_restore));
 		      else
 	                {
-			  http_header(sprintf('Set-Cookie: sid=%s; expires=%s\r\nLocation: %s&sid=%s&realm=wa\r\n\r\n',
-			   _sid, _exp_string, self.req_url, _sid));
+			  http_header(sprintf('Set-Cookie: sid=%s; expires=%s\r\nLocation: %s&sid=%s&realm=wa&rtr=%s\r\n',
+			   _sid, _exp_string, self.req_url, _sid, self.to_restore));
 	                }
                     }
                     else {
@@ -9343,12 +9241,11 @@ window.onload = function (e)
                       -- redirect to front page or requested page
 		      if (self.req_url is null)
 		        {
-			  http_request_status ('HTTP/1.1 302 Found');
-			  http_header(sprintf('Location: index.vspx?page=%s&sid=%s&realm=wa\r\n', _page, _sid));
+			  self.vc_redirect (sprintf('index.vspx?page=%s&sid=%s&realm=wa&rtr=%s', _page, _sid, self.to_restore));
 		        }
 		      else
 	                {
-			  self.vc_redirect (self.req_url||sprintf ('&sid=%s&realm=wa', _sid));
+			  self.vc_redirect (self.req_url||sprintf ('&sid=%s&realm=wa&rtr=%s', _sid, self.to_restore));
 	                }
                     }
                     goto finish;
@@ -9367,6 +9264,7 @@ window.onload = function (e)
 
   <xsl:template match="vm:login-info">
    <v:template type="simple" name="login_info" enabled="1">
+    <?vsp if (self.odsbar_show_signin = 'false' and length (self.sid) = 0) { ?>
     <div id="login-info-ctr">
       <?vsp
         if(self.user_name is null)
@@ -9449,6 +9347,7 @@ window.onload = function (e)
         </v:after-data-bind>
       </v:url>
      </div>
+     <?vsp } ?>
    </v:template>
   </xsl:template>
 
@@ -10650,13 +10549,15 @@ window.onload = function (e)
      if (length (self.sid))
        login_pars := sprintf ('&sid=%s&realm=%s', self.sid, self.realm);
      set isolation='committed';
-     for select RL_JOB_ID, RL_F_POST_ID, RL_POST_ID, RL_TYPE, RL_COMMENT_ID, RL_PROCESSED, RL_ERROR, B_TITLE, RT_NAME, RL_TS
-         from BLOG..SYS_BLOGS_ROUTING_LOG, BLOG..SYS_BLOGS, BLOG..SYS_ROUTING, BLOG..SYS_ROUTING_TYPE
+     for select RL_JOB_ID, RL_F_POST_ID, RL_POST_ID, RL_TYPE, RL_COMMENT_ID, RL_PROCESSED, RL_ERROR, RT_NAME, RL_TS
+         from BLOG..SYS_BLOGS_ROUTING_LOG, BLOG..SYS_ROUTING, BLOG..SYS_ROUTING_TYPE
          where R_JOB_ID = RL_JOB_ID and RT_ID = R_TYPE_ID and
-	 RL_POST_ID = B_POST_ID and B_BLOG_ID = self.blogid
+	 R_ITEM_ID = self.blogid
 	 do
       {
-    declare err, url any;
+    declare err, url, _b_title any;
+    _b_title := coalesce ((select B_TITLE from BLOG..SYS_BLOGS where B_POST_ID = RL_POST_ID and  B_BLOG_ID = self.blogid),
+    	'~deleted~');
     err := coalesce (RL_ERROR, '');
     err := regexp_match ('[^\r\n]*', err);
     if (RL_PROCESSED = 0 or RL_PROCESSED is null)
@@ -10672,7 +10573,7 @@ window.onload = function (e)
     ?>
       <tr class="<?V case when mod(i, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
     <td><?V RL_POST_ID ?></td>
-    <td><?V BLOG..blog_utf2wide(B_TITLE) ?></td>
+    <td><?V BLOG..blog_utf2wide(_b_title) ?></td>
     <td><?V RT_NAME ?></td>
     <td><?V case RL_TYPE when 'I' then 'add' when 'U' then 'update' when 'D' then 'remove' else '' end ?></td>
     <td><?V case when RL_TS is not null then BLOG..blog_date_fmt (RL_TS) else '' end ?></td>
@@ -11083,19 +10984,29 @@ window.onload = function (e)
 		  tagstr := self.tag2str (tags);
 		  if (self.cb_app_tags.ufl_selected)
 		    {
+		      declare comp_tags any;
 		      --dbg_obj_print ('>>>add tags');
 		      existing_tags := coalesce (
 		        (select BT_TAGS from BLOG..BLOG_TAG where BT_BLOG_ID = self.blogid and BT_POST_ID = B_POST_ID), '');
 		      existing_tags := split_and_decode (existing_tags, 0, '\0\0,');
 		      if (existing_tags is null)
 		        existing_tags := vector ();
+
+	              comp_tags := vector ();
 		      foreach (any t in existing_tags) do
 		        {
-		          t := lower (cast (t as varchar));
-			  if (not position (t, tags))
+		          t := trim(lower (cast (t as varchar)));
+			  if (length(t) and not position (t, comp_tags))
+			    comp_tags := vector_concat (comp_tags, vector (t));
+  			}
+
+		      foreach (any t in comp_tags) do
+		        {
+		          t := trim(lower (cast (t as varchar)));
+			  if (length (t) and not position (t, tags))
 			    tagstr := tagstr || ', ' || t;
 			}
-		      tags := vector_concat (tags, existing_tags);
+		      tags := vector_concat (tags, comp_tags);
 	            }
 		  --dbg_obj_print ('existing_tags', existing_tags);
 		  --dbg_obj_print ('tags', tags);
@@ -11106,8 +11017,8 @@ window.onload = function (e)
 		    --dbg_obj_print  ('embeeded', xp);
                     foreach (any t in xp) do
 		      {
-		        t := lower (cast (t as varchar));
-		        if (not position (t, tags))
+		        t := trim(lower (cast (t as varchar)));
+		        if (length (t) and not position (t, tags))
                           tagstr := tagstr || ', ' || t;
                       }
                   }
@@ -11500,16 +11411,18 @@ window.onload = function (e)
       </xsl:processing-instruction>
       <?vsp
       {
-        declare cntf, mx, inx int;
-	declare style, perc any;
+        declare mx, mx2, inx int;
+	declare style any;
 	declare h, pars, sql, dta, mdta any;
 
 	inx := 0;
 
-	mx := (select top 1 cnt from (select distinct bt_tag, count (*) cnt from BLOG..BLOG_TAGS_STAT_EXT where blogid = self.blogid and community = self.have_comunity_blog group by 1 order by 2 desc) sub);
-
+	mx := (select top 1 cnt from (select distinct bt_tag, count (*) cnt from BLOG..BLOG_TAGS_STAT_EXT where blogid = self.blogid and community = self.have_comunity_blog group by 1 order by 2 asc) sub);
 	if (mx is null)
 	  mx := 1;
+	mx2 := (select top 1 cnt from (select distinct bt_tag, count (*) cnt from BLOG..BLOG_TAGS_STAT_EXT where blogid = self.blogid and community = self.have_comunity_blog group by 1 order by 2 desc) sub);
+	if (mx is null)
+	  mx2 := 1;
 
         sql := sprintf ('select BT_TAG, cnt from (select top %d BT_TAG, count(*) as cnt from BLOG..BLOG_TAGS_STAT_EXT where blogid = ? and community = ? group by BT_TAG order by 2 desc) sub order by 1', nmax);
 	pars := vector (self.blogid, self.have_comunity_blog);
@@ -11518,24 +11431,8 @@ window.onload = function (e)
 
 	while (0 = exec_next (h, null, null, dta))
 	  {
-	    declare BT_TAG, cnt any;
-	    BT_TAG := dta[0];
-	    cnt := dta[1];
-	    cntf := ((150.00*cnt)/mx) + 100;
-	    perc := (100.00 * cnt) / mx;
-	    style := '';
-	    if (perc > 60)
-	      style := style || ' font-weight: bold;';
-
-	    if (perc > 80)
-	      style := style || ' color: #9900CC;';
-	    else if (perc > 60)
-	      style := style || ' color: #339933;';
-	    else if (perc > 40)
-	      style := style || ' color: #CC3333;';
-	    else if (perc > 30)
-	      style := style || ' color: #66CC99;';
-	    http (sprintf ('<a href="index.vspx?page=%s&amp;tag=%s%s"><span style="font-size: %d%%; %s">%s</span></a> ', self.page, BT_TAG, self.login_pars, cntf, style, BT_TAG));
+	    style := ODS.WA.tag_style (dta[1], mx, mx2);
+	    http (sprintf ('<a href="index.vspx?page=%s&amp;tag=%s%s"><span style="%s">%s</span></a> ', self.page, dta[0], self.login_pars, style, dta[0]));
 	    inx := inx + 1;
 	  }
 	exec_close (h);
@@ -12090,103 +11987,6 @@ window.onload = function (e)
     ?>
   </xsl:template>
 
-  <xsl:template match="vm:ping-queue">
-      <h3>Ping log</h3>
-      <div>
-	  <label for="log_filt">Show </label>
-	  <v:select-list name="log_filt" xhtml_id="log_filt" auto-submit="1">
-	      <v:item name="all" value="all"/>
-	      <v:item name="pending" value="pending"/>
-	      <v:item name="sent" value="sent"/>
-	      <v:item name="error" value="error"/>
-	  </v:select-list>
-      </div>
-      <div class="scroll_area">
-      <table class="listing">
-    <tr class="listing_header_row">
-        <th>Target</th>
-        <th>Last change</th>
-        <th>Date sent</th>
-        <th>State</th>
-        <th>Action</th>
-    </tr>
-    <?vsp
-    {
-     declare params, j, p, c, h, ts any;
-     params := self.vc_event.ve_params;
-
-     j := atoi (get_keyword ('j', params, '0'));
-     p := get_keyword ('p', params, '0');
-     h := get_keyword ('h', params, '0');
-     c := atoi (get_keyword ('c', params, '0'));
-     ts := get_keyword ('ts', params, now ());
-
-     if ({?'reset'} is not null)
-       {
-         update BLOG..BLOG_WEBLOG_PING_LOG set WPL_STAT = 0 where WPL_JOB_ID = j and WPL_HOSTS_ID = h and WPL_TS = ts;
-	 commit work;
-       }
-     else if ({?'delete'} is not null)
-       {
-         delete from BLOG..BLOG_WEBLOG_PING_LOG where WPL_JOB_ID = j and WPL_HOSTS_ID = h and WPL_TS = ts;
-	 commit work;
-       }
-
-     declare i int;
-     declare login_pars any;
-     login_pars := '';
-     i := 0;
-     if (length (self.sid))
-       login_pars := sprintf ('&sid=%s&realm=%s', self.sid, self.realm);
-     set isolation='committed';
-     for select WPL_JOB_ID, WPL_STAT, WPL_ERROR, WPL_TS, WPL_SENT, WH_NAME, RT_NAME, WPL_HOSTS_ID
-       from BLOG..BLOG_WEBLOG_PING_LOG, BLOG..SYS_ROUTING, BLOG..SYS_ROUTING_TYPE,
-	    BLOG..SYS_BLOG_WEBLOG_PING, BLOG..SYS_BLOG_WEBLOG_HOSTS
-         where R_JOB_ID = WPL_JOB_ID and RT_ID = R_TYPE_ID and
-	 WPL_HOSTS_ID = WP_HOSTS_ID and WH_ID = WP_HOSTS_ID and
-	 R_ITEM_ID = WP_BLOG_ID and
-	 WP_BLOG_ID = self.blogid
-	 do
-      {
-	declare err, url any;
-	err := coalesce (WPL_ERROR, '');
-	err := regexp_match ('[^\r\n]*', err);
-
-	if (WPL_STAT = 0 or WPL_STAT is null)
-	  err := 'pending';
-	else if (WPL_STAT = 1)
-	  err := 'sent';
-	if (self.log_filt.ufl_value = 'error' and WPL_ERROR is null)
-	  goto skipentry;
-	else if (self.log_filt.ufl_value not in ('all', 'error') and self.log_filt.ufl_value <> err)
-	  goto skipentry;
-    ?>
-      <tr class="<?V case when mod(i, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-    <td><?V WH_NAME ?></td>
-    <td><?V case when WPL_TS is not null then BLOG..blog_date_fmt (WPL_TS) else '' end ?></td>
-    <td><?V case when WPL_SENT is not null then BLOG..blog_date_fmt (WPL_SENT) else '' end ?></td>
-    <td><?V err ?></td>
-    <td><![CDATA[
-           <?vsp url := sprintf ('index.vspx?page=ping_queue&j=%d&h=%d&ts=%U%s',
-        WPL_JOB_ID, WPL_HOSTS_ID, datestring(WPL_TS), login_pars); ?>
-     <a href="<?vsp http (url); ?>&reset">Reset</a>
-     <a href="<?vsp http (url); ?>&delete">Delete</a>
-     ]]></td>
-      </tr>
-    <?vsp
-          i := i + 1;
-	  skipentry:;
-      }
-      if (i = 0)
-        {
-	   http ('<tr><td colspan="7">No ping entries</td></tr>');
-        }
-    }
-    ?>
-      </table>
-  </div>
-  </xsl:template>
-
   <xsl:template match="vm:atom-version">
       <?V self.atomver ?>
   </xsl:template>
@@ -12222,6 +12022,8 @@ window.onload = function (e)
       <xsl:text>&#10;</xsl:text>
       <?vsp } ?>
   </xsl:template>
+
+  <xsl:template match="vm:keep-variable"/>
 
   <xsl:template match="vm:*">
       Unknown Weblog component "<xsl:value-of select="local-name()" />"

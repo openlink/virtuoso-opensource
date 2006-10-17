@@ -152,6 +152,7 @@ form
   border: 0px;
   background: inherit;
   color: black;
+  float:left;
 }
 
 div.box { width: 200px;
@@ -1028,4 +1029,14 @@ a.summary-xbel-link
 #tags_cloud a:hover
 {
     text-decoration: underline;
+}
+
+#HD-ODS-BAR
+{
+  padding-bottom:0px;
+}
+
+#ods-bar-sep
+{
+   display: none;
 }

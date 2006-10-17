@@ -23,7 +23,7 @@
 --  
 
  declare url, ret, cnt, oi_srv, oi_delegate, oi_ident, this_page, xt, hdr, host, oi_mode any;
- declare setup_url, oi_handle, trust_root, oi_sig, oi_signed varchar;
+ declare setup_url, oi_handle, trust_root, oi_sig, oi_signed, oi_key varchar;
  declare ses, flds, check_immediate any;
 
 -- dbg_printf ('==========================================================');
@@ -81,22 +81,30 @@
      if (oi_delegate is not null)
        oi_ident := oi_delegate;
 
+     oi_handle := null;
+     oi_key := '';
      check_immediate := sprintf ('%s?openid.mode=associate', oi_srv);
      cnt := http_client (url=>check_immediate);
---     dbg_printf ('associate:\n%s',cnt);
      cnt := split_and_decode (cnt, 0, '\0\0\x0A:');
      oi_handle := get_keyword ('assoc_handle', cnt, null);
+     oi_key := get_keyword ('mac_key', cnt, '');
 
      check_immediate := 
-     sprintf ('%s?openid.mode=checkid_immediate&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U', 
+     sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U', 
     	oi_srv, oi_ident, this_page, trust_root);
      if (length (oi_handle))
        check_immediate := check_immediate || sprintf ('&openid.assoc_handle=%U', oi_handle);
-     http (sprintf ('{checkid_immediate_url: "%s", id_server: "%s", clean_identity_url: "%s" }', 
-		    check_immediate, oi_srv, oi_ident));  
+
+     check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U', 'email,fullname');
+
+     http (sprintf ('{checkid_immediate_url: "%s", id_server: "%s", clean_identity_url: "%s", openid_key: "%s" }', 
+		    check_immediate, oi_srv, oi_ident, oi_key));  
    }
  else if (oi_mode = 'id_res')
    {
+     declare qry_str, nam, mail varchar;
+--     dbg_obj_print (params);
+     qry_str := http_request_get ('QUERY_STRING');
      setup_url := {?'openid.user_setup_url'};  
      oi_handle := {?'openid.assoc_handle'};  
      oi_ident := {?'openid.identity'};
@@ -105,8 +113,10 @@
      oi_sig := {?'openid.sig'};
      oi_signed := {?'openid.signed'};
 
---     dbg_obj_print (oi_handle,oi_ident,oi_sig,oi_signed, {?'openid.return_to'});
+     nam := {?'openid.sreg.fullname'};
+     mail := {?'openid.sreg.email'}; 
 
+     --dbg_obj_print (oi_handle,oi_ident,oi_sig,oi_signed, {?'openid.return_to'});
      if (oi_sig is null)
        {
          --dbg_obj_print ('setup_url=', setup_url);
@@ -124,14 +134,14 @@ if (parent.location.host == location.host)
 if (window.opener) {
     var pwin = window.opener;
     if (pwin.OpenID_callback_pass) {
-	    pwin.OpenID_callback_pass("<?V oi_ident ?>", "<?V oi_sig ?>", "");
+	    pwin.OpenID_callback_pass("<?V oi_ident ?>", "<?V oi_sig ?>", "<?vsp http(qry_str); ?>", "<?V nam ?>", "<?V mail ?>");
 	    window.close();
     }  else {
           alert("Error: browser weirdness.  Please report this.");
     }
 } else if (parent.location.host == location.host) {
     if (parent.OpenID_callback_pass) {
-	    parent.OpenID_callback_pass("<?V oi_ident ?>", "<?V oi_sig ?>", "");
+	    parent.OpenID_callback_pass("<?V oi_ident ?>", "<?V oi_sig ?>", "<?vsp http(qry_str); ?>", "<?V nam ?>", "<?V mail ?>");
     } else {
           alert("Error: browser weirdness.  parent location = " + parent.location);
 	  document.write("Please report your browser so we can fix this.");

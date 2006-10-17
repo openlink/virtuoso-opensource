@@ -403,15 +403,36 @@ blog2_exec_no_error ('create table SYS_BLOGS (
       primary key (B_BLOG_ID, B_TS, B_POST_ID)
 )');
 
+blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_STATE', 'integer');
+blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_TITLE', 'varchar');
+blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_IS_ACTIVE', 'integer default 0');
+blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_HAVE_ENCLOSURE', 'integer default 0');
+blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_ENCLOSURE_TYPE', 'varchar default null');
+blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_RFC_ID', 'varchar');
+blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_RFC_HEADER', 'long varchar');
+blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_VER', 'int default 1');
+
+
+
 blog2_exec_no_error ('create index SYS_BLOGS_CONTENT_ID on SYS_BLOGS (B_CONTENT_ID)');
 
 blog2_exec_no_error ('create unique index SYS_BLOGS_POST_ID on SYS_BLOGS (B_POST_ID)');
 
 blog2_exec_no_error ('create unique index SYS_BLOGS_B_BLOG_ID_B_POST_ID on SYS_BLOGS (B_BLOG_ID, B_POST_ID)');
 
+blog2_exec_no_error ('create index SYS_BLOGS_RFC_ID on SYS_BLOGS (B_RFC_ID)');
 
+--blog2_exec_no_error ('create index SYS_BLOGS_HAVE_ENCLOSURE on BLOG.DBA.SYS_BLOGS (B_HAVE_ENCLOSURE)')
+--;
 
-
+blog2_exec_no_error ('create table BLOG_POST_LINKS (
+      PL_BLOG_ID varchar,
+      PL_POST_ID varchar,
+      PL_LINK varchar,
+      PL_TITLE varchar,
+      foreign key (PL_BLOG_ID, PL_POST_ID) references SYS_BLOGS (B_BLOG_ID, B_POST_ID) on delete cascade,
+      primary key (PL_BLOG_ID, PL_POST_ID, PL_LINK)
+      )');
 
 blog2_exec_no_error ('create table SYS_BLOG_INFO
       (
@@ -447,20 +468,39 @@ blog2_exec_no_error ('create table SYS_BLOG_INFO
       BI_BLOG_SEQ integer identity,
       BI_DASHBOARD long varchar,
       BI_SHOW_AS_NEWS int default 0,
+      BI_ICON varchar,
+      BI_TEMPLATE varchar,
+      BI_AUDIO varchar,
+      BI_CSS varchar,
+      BI_INCLUSION integer,
+      BI_DEL_USER varchar,
+      BI_DEL_PASS varchar,
+      BI_WAI_NAME varchar,
+      BI_HAVE_COMUNITY_BLOG int,
       primary key (BI_BLOG_ID)
 )')
 ;
 
 
 blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_WAI_MEMBER_MODEL', 'int');
-
 blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_ICON', 'varchar');
-
 blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_BLOG_SEQ', 'integer identity');
-
 blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_DASHBOARD', 'long varchar');
-
 blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_SHOW_AS_NEWS', 'int default 0');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_TEMPLATE', 'varchar');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_AUDIO', 'varchar');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_CSS', 'varchar');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_INCLUSION', 'integer');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_DEL_USER', 'varchar');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_DEL_PASS', 'varchar');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_WAI_NAME', 'varchar');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_HAVE_COMUNITY_BLOG', 'int');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_TB_NOTIFY', 'int');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_LAST_UPDATE', 'datetime');
+
+blog2_exec_no_error ('create unique index SYS_BLOG_INFO_WAI on BLOG.DBA.SYS_BLOG_INFO (BI_WAI_NAME)');
+
+
 
 blog2_exec_no_error ('create table SYS_BLOG_REFFERALS
       (
@@ -556,66 +596,6 @@ blog2_exec_no_error ('create table SYS_BLOG_CHANNEL_INFO
 ;
 
 
-blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_TEMPLATE', 'varchar')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_AUDIO', 'varchar')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_CSS', 'varchar')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_INCLUSION', 'integer')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_STATE', 'integer')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_DEL_USER', 'varchar')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_DEL_PASS', 'varchar')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_WAI_NAME', 'varchar')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_HAVE_COMUNITY_BLOG', 'int')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_TB_NOTIFY', 'int')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_LAST_UPDATE', 'datetime')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_TITLE', 'varchar')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_IS_ACTIVE', 'integer default 0')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_HAVE_ENCLOSURE', 'integer default 0')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_RFC_ID', 'varchar')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_RFC_HEADER', 'long varchar')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_VER', 'int default 1')
-;
-
-blog2_add_col('BLOG.DBA.SYS_BLOGS', 'B_ENCLOSURE_TYPE', 'varchar default null')
-;
-
-
-blog2_exec_no_error ('create index SYS_BLOGS_RFC_ID on SYS_BLOGS (B_RFC_ID)');
-
---blog2_exec_no_error ('create index SYS_BLOGS_HAVE_ENCLOSURE on BLOG.DBA.SYS_BLOGS (B_HAVE_ENCLOSURE)')
---;
-
 --blog2_add_col('BLOG.DBA.SYS_BLOG_CHANNEL_INFO', 'BCD_XFN_KEYWORDS', 'varchar')
 --;
 
@@ -691,6 +671,8 @@ blog2_exec_no_error ('create table BLOG_COMMENTS
   BM_RFC_HEADER long varchar,
   BM_REF_ID int default null,
   BM_RFC_REFERENCES varchar default null,
+  BM_OPENID_SIG long varbinary default null,
+  BM_OWN_COMMENT int default 0,
   primary key (BM_BLOG_ID, BM_POST_ID, BM_ID)
   )')
 ;
@@ -725,6 +707,12 @@ blog2_add_col('BLOG.DBA.BLOG_COMMENTS', 'BM_REF_ID', 'int default null')
 ;
 
 blog2_add_col('BLOG.DBA.BLOG_COMMENTS', 'BM_RFC_REFERENCES', 'varchar default null')
+;
+
+blog2_add_col('BLOG.DBA.BLOG_COMMENTS', 'BM_OPENID_SIG', 'long varbinary default null')
+;
+
+blog2_add_col('BLOG.DBA.BLOG_COMMENTS', 'BM_OWN_COMMENT', 'int default 0')
 ;
 
 blog2_exec_no_error ('create index BLOG_COMMENTS_PUB on BLOG_COMMENTS (BM_BLOG_ID, BM_POST_ID, BM_IS_PUB)')
@@ -963,47 +951,6 @@ blog2_exec_no_error ('create table SYS_BLOG_WEBLOG_PING
 blog2_add_col('BLOG.DBA.SYS_BLOG_WEBLOG_PING', 'WP_HOSTS_ID', 'int');
 
 
-create procedure SYS_BLOG_WEBLOG_HOSTS_UPGRADE ()
-{
-  declare fk_needed int;
-
-  if (exists (select 1 from BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS where WH_METHOD is null))
-    update BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS set WH_METHOD = 'weblogUpdates.ping' where WH_METHOD is null;
-  -- update the FK column with old FK relation
-  if (exists (select 1 from BLOG.DBA.SYS_BLOG_WEBLOG_PING where WP_HOSTS_ID is null))
-    {
-      for select WH_ID, WH_URL from BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS do
-	{
-	  --dbg_obj_print ('url=', WH_URL, ' id=', WH_ID);
-	  update BLOG.DBA.SYS_BLOG_WEBLOG_PING set WP_HOSTS_ID = WH_ID where WP_URL = WH_URL;
-	  --dbg_obj_print (row_count ());
-	}
-    }
-  fk_needed := 0;
-  -- 1-st remove the FK to allow PK modification
-  if (exists (select 1 from DB.DBA.SYS_FOREIGN_KEYS where FK_TABLE = 'BLOG.DBA.SYS_BLOG_WEBLOG_PING' and PKCOLUMN_NAME = 'WH_URL'))
-    {
-      --dbg_obj_print ('DROPPING THE FK');
-      exec ('alter table BLOG.DBA.SYS_BLOG_WEBLOG_PING drop foreign key (WP_URL) references BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS (WH_URL)');
-      fk_needed := 1;
-    }
-  -- make the new PK of FK table
-  blog2_modify_pk_safe ('BLOG.DBA.SYS_BLOG_WEBLOG_PING', vector ('WP_BLOG_ID','WP_HOSTS_ID'), null);
-  -- modify PK
-  blog2_modify_pk_safe ('BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS', vector ('WH_URL', 'WH_PROTO', 'WH_METHOD'), 'WH_ID');
-  if (fk_needed)
-    {
-      -- add new FK
-      --dbg_obj_print ('CREATING THE FK');
-      exec ('alter table BLOG.DBA.SYS_BLOG_WEBLOG_PING add
-	  	foreign key (WP_HOSTS_ID) references BLOG.DBA.SYS_BLOG_WEBLOG_HOSTS (WH_ID)
-	  	on update cascade on delete cascade');
-    }
-}
-;
-
-SYS_BLOG_WEBLOG_HOSTS_UPGRADE ();
-
 blog2_exec_no_error ('
 create table BLOG_WEBLOG_PING_LOG
   (
@@ -1019,55 +966,45 @@ create table BLOG_WEBLOG_PING_LOG
 
 blog2_exec_no_error ('create index BLOG_WEBLOG_PING_LOG_STAT on BLOG_WEBLOG_PING_LOG (WPL_JOB_ID, WPL_HOSTS_ID, WPL_STAT)');
 
-create trigger SYS_BLOG_WEBLOG_PING_I after insert on SYS_BLOG_WEBLOG_PING referencing new as N
-{
-  declare jid, proto_id int;
-  declare url, proto varchar;
-
-  declare exit handler for not found {
-    return;
-  };
-  select WH_URL, WH_PROTO into url, proto from SYS_BLOG_WEBLOG_HOSTS where WH_ID = N.WP_HOSTS_ID;
-  if (length (url) and not exists (select 1 from SYS_ROUTING where R_ITEM_ID = N.WP_BLOG_ID and R_DESTINATION_ID = N.WP_HOSTS_ID and R_TYPE_ID = 4))
-    {
-      if (proto = 'REST')
-	proto_id := 6;
-      else
-        proto_id := 7;
-      jid := coalesce((select top 1 R_JOB_ID from BLOG..SYS_ROUTING order by R_JOB_ID desc), 0)+1;
-      insert into SYS_ROUTING (R_JOB_ID, R_TYPE_ID, R_PROTOCOL_ID, R_DESTINATION_ID, R_FREQUENCY, R_ITEM_ID)
-	  values (jid, 4, proto_id, N.WP_HOSTS_ID, 5, N.WP_BLOG_ID);
-    }
-}
-;
-
-create trigger SYS_BLOG_WEBLOG_PING_D after delete on SYS_BLOG_WEBLOG_PING referencing old as O
-{
-  delete from SYS_ROUTING where R_ITEM_ID = O.WP_BLOG_ID and R_DESTINATION_ID = O.WP_HOSTS_ID and R_TYPE_ID = 4;
-}
-;
 
 create procedure BLOG_WEBLOG_PING_UPGRADE ()
 {
   declare jid int;
   declare last datetime;
-  if (registry_get ('__BLOG_WEBLOG_PING_UPGRADE_done') = 'done')
+  if (registry_get ('__BLOG_WEBLOG_PING_UPGRADE_done') = 'done2')
     return;
   last := registry_get ('blogger.last.ping');
   set triggers off;
-  for select WP_HOSTS_ID, WH_URL, WP_BLOG_ID from SYS_BLOG_WEBLOG_PING, SYS_BLOG_WEBLOG_HOSTS where WP_HOSTS_ID = WH_ID do
-    {
-      if (length (WH_URL))
+
+  for select  WH_URL, WH_PROTO, WH_METHOD, WAI_ID, WAI_NAME
+    from SYS_BLOG_WEBLOG_PING, SYS_BLOG_WEBLOG_HOSTS, SYS_BLOG_INFO, DB.DBA.WA_INSTANCE
+    where WP_HOSTS_ID = WH_ID and WP_BLOG_ID = BI_BLOG_ID and WAI_NAME = BI_WAI_NAME do
 	{
-	  jid := coalesce((select top 1 R_JOB_ID from BLOG..SYS_ROUTING order by R_JOB_ID desc), 0)+1;
-	  insert into SYS_ROUTING (R_JOB_ID, R_TYPE_ID, R_PROTOCOL_ID, R_DESTINATION_ID, R_FREQUENCY, R_ITEM_ID)
-	      values (jid, 4, 7, WP_HOSTS_ID, 5, WP_BLOG_ID);
-	  if (exists (select 1 from SYS_BLOG_INFO where BI_BLOG_ID = WP_BLOG_ID and BI_LAST_UPDATE > last))
-	    insert into BLOG_WEBLOG_PING_LOG (WPL_JOB_ID, WPL_HOSTS_ID) values (jid, WP_HOSTS_ID);
+      declare s_id int;
+      s_id := (select SH_ID from ODS..SVC_HOST where SH_URL = WH_URL and SH_PROTO = WH_PROTO and SH_METHOD = WH_METHOD);
+      if (s_id is not null)
+        insert soft ODS..APP_PING_REG (AP_HOST_ID, AP_WAI_ID) values (s_id, WAI_ID);
+      else
+	log_message (sprintf ('Can''t upgrade reference of %s to %s %s', WAI_NAME, WH_URL, WH_PROTO));
 	}
+
+  for select distinct BI_WAI_NAME from BLOG_WEBLOG_PING_LOG, SYS_BLOG_INFO, SYS_ROUTING, SYS_BLOG_WEBLOG_PING
+    where WPL_STAT = 0 and WP_BLOG_ID = BI_BLOG_ID and WPL_JOB_ID = R_JOB_ID
+	and WPL_HOSTS_ID = WP_HOSTS_ID and R_ITEM_ID = WP_BLOG_ID and R_TYPE_ID = 4
+    do
+      {
+	ODS..APP_PING (BI_WAI_NAME);
     }
+
+  delete from SYS_ROUTING where R_TYPE_ID = 4;
+  delete from SYS_BLOG_WEBLOG_PING;
+  delete from BLOG_WEBLOG_PING_LOG;
+
+  blog2_exec_no_error ('drop trigger SYS_BLOG_WEBLOG_PING_I');
+  blog2_exec_no_error ('drop trigger SYS_BLOG_WEBLOG_PING_D');
+
   set triggers on;
-  registry_set ('__BLOG_WEBLOG_PING_UPGRADE_done', 'done');
+  registry_set ('__BLOG_WEBLOG_PING_UPGRADE_done', 'done2');
 }
 ;
 
@@ -1496,6 +1433,38 @@ create procedure BLOG_VER_UPGRADE ()
 
 BLOG_VER_UPGRADE ();
 
+create procedure BLOG_ADD_LINKS (in blogid varchar, in postid varchar, inout content any)
+{
+  declare xt, xp any;
+  delete from BLOG_POST_LINKS where PL_BLOG_ID = blogid and PL_POST_ID = postid;
+  if (content is null)
+    return;
+  else if (isentity (content))
+    xt := content;
+  else
+    xt := xtree_doc (content, 2, '', 'UTF-8');
+  xp := xpath_eval ('//a[starts-with (@href,"http") and not(img)]', xt, 0);
+  foreach (any elm in xp) do
+    {
+      declare tit, href any;
+      tit := cast (xpath_eval ('string()', elm) as varchar);
+      href := cast (xpath_eval ('@href', elm) as varchar);
+      insert soft BLOG_POST_LINKS (PL_BLOG_ID,PL_POST_ID,PL_LINK,PL_TITLE) values (blogid,postid,href,tit);
+    }
+};
+
+create procedure BLOG_LINKS_UPGRADE ()
+{
+  if (registry_get ('__BLOG_LINK_UPGRADE_done') = 'done')
+    return;
+  for select B_BLOG_ID, B_POST_ID, B_CONTENT from BLOG..SYS_BLOGS do
+    {
+      BLOG_ADD_LINKS (B_BLOG_ID, B_POST_ID, B_CONTENT);
+    }
+  registry_set ('__BLOG_LINK_UPGRADE_done', 'done');
+};
+
+BLOG_LINKS_UPGRADE ();
 
 -- TRIGGERS
 
@@ -1558,10 +1527,13 @@ create trigger BLOG_COMMENTS_NO_I after insert on BLOG_COMMENTS referencing new 
   declare opts, appr, ratelim, rate, owner, id, postid, blogid, domain, home, title, orgblogid any;
   declare is_spam, published int;
   declare mid, rfc, refs, comment_title varchar;
+  declare oid_sig, oid_is_valid int;
 
   blogid := N.BM_BLOG_ID;
   postid := N.BM_POST_ID;
   id := N.BM_ID;
+
+  oid_is_valid := 0;
 
   if (N.BM_RFC_ID is null)
     mid := BLOG..MAKE_RFC_ID (N.BM_POST_ID, N.BM_ID);
@@ -1610,11 +1582,25 @@ create trigger BLOG_COMMENTS_NO_I after insert on BLOG_COMMENTS referencing new 
     opts := vector ();
 
   appr := get_keyword ('CommentApproval', opts, 0);
+  oid_sig := get_keyword ('OpenID', opts, 0);
   ratelim := get_keyword ('SpamRateLimit', opts, '1.00');
 
+  if (oid_sig and length (N.BM_OPENID_SIG))
+    oid_is_valid := OPENID..check_signature (N.BM_OPENID_SIG);
+
+  if (not oid_is_valid)
+    {
   rate := DB.DBA.spam_filter_message (N.BM_COMMENT, owner);
   is_spam := gte (rate,ratelim);
   published := equ (appr, 0);
+    }
+  else
+    {
+      is_spam := 0;
+      published := 1;
+      appr := 0;
+    }
+
 
   if (is_spam or appr = 1)
     {
@@ -1768,32 +1754,19 @@ create trigger SYS_BLOGS_U_Q after update on SYS_BLOGS order 1 referencing old a
 create trigger SYS_BLOGS_I_L after insert on SYS_BLOGS order 10
 {
   for select R_JOB_ID, R_TYPE_ID as tid, R_DESTINATION_ID from SYS_ROUTING
-    where R_ITEM_ID = B_BLOG_ID and R_TYPE_ID in (1, 2, 3, 4) do
-  {
-    if (tid in (1, 2, 3))
+    where R_ITEM_ID = B_BLOG_ID and R_TYPE_ID in (1, 2, 3) do
       {
 	-- insert a record in log
 	insert soft SYS_BLOGS_ROUTING_LOG (RL_JOB_ID, RL_POST_ID, RL_TYPE)
 	  values (R_JOB_ID, B_POST_ID, 'I');
       }
-    else -- 4 = ping
-      {
-	if (not exists (select 1 from BLOG_WEBLOG_PING_LOG
-	      where WPL_JOB_ID = R_JOB_ID and WPL_HOSTS_ID = R_DESTINATION_ID and WPL_STAT = 0))
-	  {
-	    insert into BLOG_WEBLOG_PING_LOG (WPL_JOB_ID, WPL_HOSTS_ID) values (R_JOB_ID, R_DESTINATION_ID);
-	  }
-      }
-  }
 }
 ;
 
 create trigger SYS_BLOGS_U_L after update on SYS_BLOGS order 10 referencing old as O, new as N
 {
   for select R_JOB_ID, R_TYPE_ID as tid, R_DESTINATION_ID from SYS_ROUTING
-    where R_ITEM_ID = N.B_BLOG_ID and R_TYPE_ID in (1, 3, 4) do
-  {
-    if (tid in (1, 3))
+    where R_ITEM_ID = N.B_BLOG_ID and R_TYPE_ID in (1, 3) do
       {
 	-- mark for update if it's already sent to target
 	update SYS_BLOGS_ROUTING_LOG set RL_TYPE = 'U', RL_PROCESSED = 0
@@ -1805,15 +1778,6 @@ create trigger SYS_BLOGS_U_L after update on SYS_BLOGS order 10 referencing old 
 		  values (R_JOB_ID, N.B_POST_ID, 'I');
 	    }
       }
-    else -- 4 = ping
-      {
-	if (not exists (select 1 from BLOG_WEBLOG_PING_LOG
-	      where WPL_JOB_ID = R_JOB_ID and WPL_HOSTS_ID = R_DESTINATION_ID and WPL_STAT = 0))
-	  {
-	    insert into BLOG_WEBLOG_PING_LOG (WPL_JOB_ID, WPL_HOSTS_ID) values (R_JOB_ID, R_DESTINATION_ID);
-	  }
-      }
-  }
 }
 ;
 
@@ -1993,25 +1957,33 @@ SYS_BLOGS_UPGRADE_1 ();
 
 create procedure BLOG.DBA.SYS_BLOGS_B_CONTENT_INDEX_HOOK (inout vtb any, inout d_id integer)
 {
-  declare title varchar;
-  select B_TITLE into title from SYS_BLOGS where B_CONTENT_ID = d_id;
+  declare title, blogid varchar;
+  declare wai_id int;
+  select B_TITLE, B_BLOG_ID into title, blogid from SYS_BLOGS where B_CONTENT_ID = d_id;
+  wai_id := (select WAI_ID from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO where BI_WAI_NAME = WAI_NAME and BI_BLOG_ID = blogid);
   --dbg_obj_print ('BLOG.DBA.SYS_BLOGS_B_CONTENT_INDEX_HOOK', title);
   if (length (title))
     vt_batch_feed (vtb, title, 0);
+  if (wai_id is not null)
+    vt_batch_feed (vtb, sprintf ('^B%d', wai_id), 0);
   return 0;
 };
 
 create procedure BLOG.DBA.SYS_BLOGS_B_CONTENT_UNINDEX_HOOK (inout vtb any, inout d_id integer)
 {
-  declare title varchar;
-  select B_TITLE into title from SYS_BLOGS where B_CONTENT_ID = d_id;
+  declare title, blogid varchar;
+  declare wai_id int;
+  select B_TITLE, B_BLOG_ID into title, blogid from SYS_BLOGS where B_CONTENT_ID = d_id;
+  wai_id := (select WAI_ID from DB.DBA.WA_INSTANCE, BLOG.DBA.SYS_BLOG_INFO where BI_WAI_NAME = WAI_NAME and BI_BLOG_ID = blogid);
   --dbg_obj_print ('BLOG.DBA.SYS_BLOGS_B_CONTENT_UNINDEX_HOOK', title);
   if (length (title))
     vt_batch_feed (vtb, title, 1);
+  if (wai_id is not null)
+    vt_batch_feed (vtb, sprintf ('^B%d', wai_id), 1);
   return 0;
 };
 
-DB.DBA.vt_create_text_index ('BLOG.DBA.SYS_BLOGS', 'B_CONTENT', 'B_CONTENT_ID', 2, 0, null, 1, '*ini*', 'UTF-8')
+DB.DBA.vt_create_text_index ('BLOG.DBA.SYS_BLOGS', 'B_CONTENT', 'B_CONTENT_ID', 2, 0, vector ('B_BLOG_ID','B_POST_ID','B_TS'), 1, '*ini*', 'UTF-8')
 ;
 
 DB.DBA.vt_create_ftt ('BLOG.DBA.SYS_BLOGS', 'B_CONTENT_ID', 'B_CONTENT', 2)
@@ -4534,6 +4506,7 @@ create procedure BLOG_SEND_EMAIL_NOTIFICATIONS (in last any, in wmast varchar, i
   declare def_host varchar;
   declare BI_E_MAIL, BI_HOME, U_FULL_NAME, BM_E_MAIL, BM_POST_ID, BM_COMMENT, BM_POSTED_VIA, BM_NAME,
 	  B_CONTENT, B_META, BI_OPTIONS, B_BLOG_ID, BI_COMMENTS_NOTIFY, BM_IS_SPAM, BM_IS_PUB, BM_ID, BI_BLOG_ID, BM_TS any;
+  declare own_comment int;
 
   set isolation='committed';
 
@@ -4545,10 +4518,11 @@ create procedure BLOG_SEND_EMAIL_NOTIFICATIONS (in last any, in wmast varchar, i
   {
     select top 1 bi.BI_E_MAIL, bi.BI_HOME, u.U_FULL_NAME, bc.BM_E_MAIL, bc.BM_POST_ID, bc.BM_COMMENT, bc.BM_POSTED_VIA, bc.BM_NAME,
 	   b.B_CONTENT, b.B_META, bi.BI_OPTIONS, b.B_BLOG_ID, bi.BI_COMMENTS_NOTIFY, bc.BM_IS_SPAM, bc.BM_IS_PUB, bc.BM_ID,
-	   bi.BI_BLOG_ID, bc.BM_TS
+	   bi.BI_BLOG_ID, bc.BM_TS, bc.BM_OWN_COMMENT
 	       into
 	       BI_E_MAIL, BI_HOME, U_FULL_NAME, BM_E_MAIL, BM_POST_ID, BM_COMMENT, BM_POSTED_VIA, BM_NAME, B_CONTENT,
-	       B_META, BI_OPTIONS, B_BLOG_ID, BI_COMMENTS_NOTIFY, BM_IS_SPAM, BM_IS_PUB, BM_ID, BI_BLOG_ID, BM_TS
+	       B_META, BI_OPTIONS, B_BLOG_ID, BI_COMMENTS_NOTIFY, BM_IS_SPAM, BM_IS_PUB, BM_ID, BI_BLOG_ID, BM_TS,
+	       own_comment
 	       from
 	       BLOG_COMMENTS bc, SYS_BLOG_INFO bi, SYS_BLOGS b, "DB"."DBA"."SYS_USERS" u where
 	       bi.BI_COMMENTS_NOTIFY > 0 and bc.BM_BLOG_ID = bi.BI_BLOG_ID and bi.BI_OWNER = u.U_ID
@@ -4556,6 +4530,11 @@ create procedure BLOG_SEND_EMAIL_NOTIFICATIONS (in last any, in wmast varchar, i
 	       and bc.BM_TS > last order by bc.BM_TS option (order) with (prefetch 1);
 
     last := BM_TS;
+
+    if (own_comment = 1)
+      {
+        goto next2;
+      }
 
     --dbg_obj_print ('sending comment mail:', BI_BLOG_ID, BM_ID, BM_E_MAIL, BI_E_MAIL);
 
@@ -5114,10 +5093,6 @@ create procedure ROUTING_PROCESS_JOBS()
         }
         ROUTING_PROCESS_BLOGS (job_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete);
       }
-      if (type_id = 4)
-	{
-	  ROUTING_PROCESS_PINGS (job_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id);
-	}
     }
     update SYS_ROUTING set R_LAST_ROUND = now () where R_JOB_ID = job_id;
     commit work;
@@ -5163,10 +5138,10 @@ create procedure BLOG_DELICIOUS_ADD (in post_id varchar, in base any, in uid any
 
   tim := dt_set_tz(tim, 0);
 
-  d_url := sprintf('http://del.icio.us/api/posts/add?url=%U&description=%U&extended=%U&tags=%U&dt=%U',
+  d_url := sprintf('https://api.del.icio.us/v1/posts/add?url=%U&description=%U&extended=%U&tags=%U&dt=%U',
     t_url, t_desc, '', t_tags, date_iso8601 (tim));
 
-  http_get (d_url, hdr, 'POST', sprintf ('Authorization: Basic %s', encode_base64 (uid||':'||pwd)));
+  DB.DBA.HTTP_CLIENT_EXT (url=>d_url, uid=>uid, pwd=>pwd, http_method=>'POST', headers=>hdr);
 
   if (isarray (hdr) and length (hdr))
     {
@@ -5189,8 +5164,8 @@ create procedure BLOG_DELICIOUS_DEL (in url any, in uid any, in pwd any)
   declare d_url, hdr, tmp any;
   if (url is null)
     return;
-  d_url := sprintf('http://del.icio.us/api/posts/delete?url=%U', url);
-  http_get (d_url, hdr, 'POST', sprintf ('Content-Type: text/xml\r\nAuthorization: Basic %s', encode_base64 (uid||':'||pwd)));
+  d_url := sprintf('https://api.del.icio.us/v1/posts/delete?url=%U', url);
+  DB.DBA.HTTP_CLIENT_EXT (url=>d_url, uid=>uid, pwd=>pwd, http_method=>'POST', headers=>hdr);
   if (isarray (hdr) and length (hdr))
     {
       tmp := trim (hdr[0], '\r\n ');
@@ -7208,101 +7183,6 @@ as BLOG.DBA.BLOG_GET_ATOM_URL_P (URL) (post_uri varchar, blogname varchar, blog_
 ;
 
 
-create procedure
-ROUTING_PROCESS_PINGS (in job_id int, in proto_id int, in dst varchar, in dst_id any,
-    		       in a_usr varchar, in a_pwd varchar, in  item_id any)
-{
-  declare _BI_BLOG_ID, _BI_HOME, nam, use_pings varchar;
-  declare dummy any;
-
-  whenever not found goto endf;
-
-  select 1 into dummy from BLOG_WEBLOG_PING_LOG where WPL_JOB_ID = job_id and WPL_STAT = 0;
-  select BI_TITLE, BI_HOME, BI_PINGS into nam, _BI_HOME, use_pings from SYS_BLOG_INFO where BI_BLOG_ID = item_id;
-
-  _BI_BLOG_ID := item_id;
-
-  for select WH_URL, WH_PROTO, WH_METHOD from SYS_BLOG_WEBLOG_PING, SYS_BLOG_WEBLOG_HOSTS where WP_BLOG_ID = _BI_BLOG_ID
-      and WP_HOSTS_ID = dst_id and WP_HOSTS_ID = WH_ID do
-    {
-
-      if (isstring (WH_PROTO) and WH_PROTO <> '')
-	{
-	  declare url, rc varchar;
-	  rc := null;
-
-	    url := 'http://'||BLOG_GET_HOST ()||_BI_HOME;
-
-	    {
-	      declare exit handler for sqlstate '*' {
-		rollback work;
-		update BLOG_WEBLOG_PING_LOG set WPL_ERROR = __SQL_MESSAGE, WPL_STAT = 2,
-		       WPL_SENT = now ()
-		    where WPL_JOB_ID = job_id and WPL_STAT = 0;
-		commit work;
-		return;
-	      };
-
-	      commit work;
-	      --dbg_printf ('[%s] [%s] [%s]', WH_PROTO, WH_URL, WH_METHOD);
-	      if (WH_PROTO = 'soap')
-		{
-		  rc := DB.DBA.SOAP_CLIENT (url=>WH_URL,
-		  operation=>'ping',
-		  parameters=>vector ('weblogname',nam,'weblogurl',url),
-		  soap_action=>'/weblogUpdates'
-		  );
-		}
-	      else if (WH_PROTO = 'xmlrpc' or WH_PROTO = 'xml-rpc')
-		{
-		  if (WH_METHOD = 'weblogUpdates.ping')
-		    {
-		      rc := DB.DBA.XMLRPC_CALL (WH_URL, 'weblogUpdates.ping', vector (nam, url));
-		    }
-		  else
-		    {
-		      rc := DB.DBA.XMLRPC_CALL (WH_URL, 'weblogUpdates.extendedPing',
-			    vector (nam, url, url, url || 'gems/rss.xml'));
-		    }
-		}
-	      else if (lower (WH_URL) like 'xml-rpc:http://%')
-		{
-		    rc := DB.DBA.XMLRPC_CALL (subseq (use_pings, length ('xml-rpc:'), length (use_pings)),
-		    'weblogUpdates.ping', vector (nam, url));
-		}
-	      else if (WH_PROTO = 'REST')
-		{
-		  declare hf, ping_url any;
-		  ping_url := sprintf ('%s%U', WH_URL, url);
-		  http_get (ping_url, hf);
-		  if (isarray (hf) and length (hf) and hf[0] not like 'HTTP/1._ 200 %')
-		    {
-		      rc := xml_tree (sprintf ('<response><flerror>1</flerror><message>%V</message></response>', hf[0]));
-		    }
-		}
-	    }
-
-	  if (isarray(rc))
-	    {
-	      declare xt any;
-	      declare err, msg any;
-	      xt := xml_tree_doc (rc);
-	      err := cast (xpath_eval ('//flerror/text()', xml_cut(xt), 1) as varchar);
-	      msg := cast (xpath_eval ('//message/text()', xml_cut(xt), 1) as varchar);
-	      if (err <> '0')
-		{
-		  update BLOG_WEBLOG_PING_LOG set WPL_STAT = 2, WPL_ERROR = msg, WPL_SENT = now ()
-		      where WPL_JOB_ID = job_id and WPL_STAT = 0;
-		  --log_message ('BLOG PING: ' || msg);
-		}
-	    }
-	}
-    }
-  update BLOG_WEBLOG_PING_LOG set WPL_STAT = 1, WPL_SENT = now () where WPL_JOB_ID = job_id and WPL_STAT = 0;
-  commit work;
-  endf:
-  return;
-};
 
 create procedure
 ROUTING_PROCESS_BLOGS (in job_id int, in proto_id int, in dst varchar, in dst_id any,
@@ -7519,6 +7399,9 @@ ROUTING_PROCESS_BLOGS (in job_id int, in proto_id int, in dst varchar, in dst_id
              and (BV_POST_ID = _RL_POST_ID or length (BV_POST_ID) = 0)
         do
           {
+	    if (BV_E_MAIL = _BM_E_MAIL)
+	      goto next_mail;
+
       host := BLOG_GET_HOST ();
 
       mime_parts[0] := DB.DBA.MIME_PART ('text/plain; charset=UTF-8', null, null,
@@ -7531,6 +7414,7 @@ ROUTING_PROCESS_BLOGS (in job_id int, in proto_id int, in dst varchar, in dst_id
             host,
             BV_E_MAIL, item_id, BV_POST_ID));
             smtp_send (dst, oemail, BV_E_MAIL, concat (hdrs, DB.DBA.MIME_BODY (mime_parts)));
+	    next_mail:;
           }
 
       update SYS_BLOGS_ROUTING_LOG set RL_TYPE = 'D'

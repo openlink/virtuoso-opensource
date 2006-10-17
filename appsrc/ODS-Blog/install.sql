@@ -1973,7 +1973,8 @@ create procedure DB.DBA.BLOG2_MAKE_RESOURCES(in path varchar)
   declare bapi, i, l any;
   declare grant_stmt, gst, gmsg varchar;
   declare def_host, def_port varchar;
-  declare ini_host, ini_port, tmp, listen varchar;
+  declare ini_host, ini_port, tmp, listen, ext_inet varchar;
+  declare cnt_inet int;
 
   def_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
   ini_host := server_http_port ();
@@ -2007,6 +2008,15 @@ create procedure DB.DBA.BLOG2_MAKE_RESOURCES(in path varchar)
 	{
 	  listen := ':'||def_port;
 
+	  cnt_inet := (select count(distinct HP_LISTEN_HOST) from DB.DBA.HTTP_PATH where HP_LISTEN_HOST like '%'||listen);
+	  if (cnt_inet = 1)
+	    {
+	      ext_inet := (select distinct HP_LISTEN_HOST from DB.DBA.HTTP_PATH where HP_LISTEN_HOST like '%'||listen);
+	      listen := ext_inet;
+	    }
+
+	  if (cnt_inet < 2)
+	    {
 	  DB.DBA.VHOST_REMOVE (lhost=>listen, vhost=>def_host, lpath=>'/weblog/public');
 	  DB.DBA.VHOST_REMOVE (lhost=>listen, vhost=>def_host, lpath=>'/weblog/templates');
 	  DB.DBA.VHOST_REMOVE (lhost=>listen, vhost=>def_host, lpath=>'/RPC2');
@@ -2026,6 +2036,11 @@ create procedure DB.DBA.BLOG2_MAKE_RESOURCES(in path varchar)
 	      lpath=>'/Atom', ppath=>'/SOAP/Http/gdata', soap_user=>'ATOM', opts=>vector ('atom-pub', 1));
 	  DB.DBA.VHOST_DEFINE (lhost=>listen, vhost=>def_host,
 	      lpath=>'/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'ATOM', opts=>vector ('atom-pub', 0));
+	}
+	  else
+	    {
+	      log_message ('The DefaultHost has defined two or more listeners, please configure the default blog virtual directories.');
+	    }
 	}
     }
 
@@ -2093,6 +2108,7 @@ create procedure BLOG2_CREATE_DEFAULT_SITE(in folder varchar, in uid int, in blo
   declare path, vd_tags any;
   declare def_host, def_port varchar;
   declare ini_host, ini_port, tmp, listen, vhost varchar;
+  declare cnt_inet, ext_inet any;
 
   def_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
   ini_host := server_http_port ();
@@ -2100,7 +2116,8 @@ create procedure BLOG2_CREATE_DEFAULT_SITE(in folder varchar, in uid int, in blo
   listen := '*ini*';
   vhost := '*ini*';
 
-  if (def_host is not null)
+  -- contradict with logic in the ODS
+  if (0 and def_host is not null)
     {
       if (strchr (def_host, ':') is null)
 	{
@@ -2127,6 +2144,18 @@ create procedure BLOG2_CREATE_DEFAULT_SITE(in folder varchar, in uid int, in blo
 	{
 	  listen := ':'||def_port;
 	  vhost := def_host;
+
+	  cnt_inet := (select count(distinct HP_LISTEN_HOST) from DB.DBA.HTTP_PATH where HP_LISTEN_HOST like '%'||listen);
+	  if (cnt_inet = 1)
+	    {
+	      ext_inet := (select distinct HP_LISTEN_HOST from DB.DBA.HTTP_PATH where HP_LISTEN_HOST like '%'||listen);
+	      listen := ext_inet;
+	    }
+	  else
+	    {
+	      listen := '*ini*';
+	      vhost := '*ini*';
+	    }
 	}
     }
 
@@ -2209,6 +2238,7 @@ create procedure BLOG2_CREATE_DEFAULT_SITE(in folder varchar, in uid int, in blo
   content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path || 'index.vspx');
   DB.DBA.DAV_RES_UPLOAD(fpath, content, 'text/html', '111101101N', 'dav', 'administrators', 'dav', dav_pwd);
 
+  -- This should be really in thye ODS
   DB.DBA.VHOST_REMOVE(vhost=>vhost, lhost=>listen, lpath=>home);
   DB.DBA.VHOST_DEFINE(
                vhost=>vhost,
@@ -3378,7 +3408,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
 {
   declare xt, ss, tags, tagstr, is_act, have_encl any;
   declare title, author, authorid, home varchar;
-  declare mid, rfc, author_mail, enc_type varchar;
+  declare mid, rfc, author_mail, enc_type, _wai_name varchar;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID
   where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
@@ -3400,6 +3430,8 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   tagstr := rtrim (tagstr, ', ');
   if (length (tagstr))
     insert soft BLOG..BLOG_TAG (BT_BLOG_ID, BT_POST_ID, BT_TAGS) values (N.B_BLOG_ID, N.B_POST_ID, tagstr);
+
+  BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xt);
 
   xt := xslt (BLOG2_GET_PPATH_URL ('widgets/store_post.xsl'), xt);
   xml_tree_doc_set_output (xt, 'xhtml');
@@ -3430,7 +3462,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
     have_encl := 0;
 
   whenever not found goto nf;
-  select BI_HOME into home from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.B_BLOG_ID;
+  select BI_HOME, BI_WAI_NAME into home, _wai_name from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.B_BLOG_ID;
   select coalesce (U_FULL_NAME, U_NAME), U_NAME, U_E_MAIL into author, authorid, author_mail
       from DB.DBA.SYS_USERS where U_ID = N.B_USER_ID;
   nf:
@@ -3458,6 +3490,8 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
 	      'insert', authorid, null)
   where BI_BLOG_ID = N.B_BLOG_ID;
 
+  ODS..APP_PING (_wai_name, title, home);
+
   -- WA widgets
   if (__proc_exists ('DB.DBA.WA_NEW_BLOG_IN') and N.B_STATE = 2)
     {
@@ -3468,7 +3502,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
 
 create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_BLOGS order 1 referencing old as O, new as N
 {
-  declare xt, ss, tags, tagstr, is_act, home, author, authorid, title, have_encl, enc_type any;
+  declare xt, ss, tags, tagstr, is_act, home, author, authorid, title, have_encl, enc_type, _wai_name any;
   declare ver int;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
@@ -3486,6 +3520,8 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
       tagstr := rtrim (tagstr, ', ');
       if (length (tagstr))
 	insert replacing BLOG..BLOG_TAG (BT_BLOG_ID, BT_POST_ID, BT_TAGS) values (N.B_BLOG_ID, N.B_POST_ID, tagstr);
+
+      BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xt);
 
       xt := xslt (BLOG2_GET_PPATH_URL ('widgets/store_post.xsl'), xt);
       xml_tree_doc_set_output (xt, 'xhtml');
@@ -3534,7 +3570,7 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
     }
 
   whenever not found goto nf;
-  select BI_HOME into home from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.B_BLOG_ID;
+  select BI_HOME, BI_WAI_NAME into home, _wai_name from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.B_BLOG_ID;
   select coalesce (U_FULL_NAME, U_NAME), U_NAME into author, authorid from DB.DBA.SYS_USERS where U_ID = N.B_USER_ID;
   nf:
 
@@ -3543,6 +3579,8 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
       	BI_DASHBOARD =
 	    make_dasboard_item ('post', N.B_TS, N.B_TITLE, author, home||'?id='||N.B_POST_ID, '', BI_DASHBOARD, N.B_POST_ID, 'update', authorid, null)
   where BI_BLOG_ID = N.B_BLOG_ID;
+
+  ODS..APP_PING (_wai_name, title, home);
 
   if (__proc_exists ('DB.DBA.WA_NEW_BLOG_IN') and N.B_STATE = 2)
     {
@@ -4457,7 +4495,10 @@ create procedure BLOG.DBA.EXPAND_URL (in url varchar)
   --dbg_obj_print ('url:',url);
   base := soap_current_url ();
   if (base is not null)
+    {
+      base := WS.WS.EXPAND_URL (base, http_path ());
     ret := WS.WS.EXPAND_URL (base, url);
+    }
   else
     ret := url;
   return ret;

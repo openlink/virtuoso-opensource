@@ -461,6 +461,11 @@
               self.text2 := _msg;
               self.mtit1.ufl_value := _subj;
             }
+	    else if (length (self.rtr_vars))
+	    {
+	      self.text2 := get_keyword ('text2', self.rtr_vars);
+	      self.mtit1.ufl_value := get_keyword ('mtit1', self.rtr_vars);
+	    }
           ]]>
         </v:before-data-bind>
         <table cellpadding="0" cellspacing="0" border="0" width="100%">
@@ -471,7 +476,7 @@
           </tr>
           <tr>
             <td>
-              <v:text name="mtit1" value="" xhtml_style="width: 99%" xhtml_class="textbox"/>
+              <v:text name="mtit1" value="" xhtml_style="width: 99%" xhtml_class="textbox" xhtml_id="mtit1"/>
             </td>
           </tr>
           <tr>
@@ -591,7 +596,7 @@
 		?>
                 <tr>
 		    <td><b>Trackback ping URLs</b><br/>
-			<small>You can specify multiple URLs, each on sigle line</small>
+			<small>You can specify multiple URLs, each on single line</small>
 		    </td>
 		    <td><b>Tags</b></td>
 		    <td><b>Category</b></td>
@@ -619,7 +624,7 @@
                       <br/>
 		      <a href="#" onclick="getTags()">Suggest</a>
 		      <![CDATA[&#160;]]>
-		      <v:url name="new_tag_rule_url" value="New Tag Rule" url="--sprintf ('%s/tags.vspx?RETURL=%U', wa_link(1), self.return_url_1)" render-only="1"/>
+		      <v:url name="new_tag_rule_url" value="New Tag Rule" url="--sprintf ('%s/tags.vspx?RETURL=%U', wa_link(1), self.return_url_1)" render-only="1" is-local="1"/>
                     </div>
                   </td>
                   <td width="19%">
@@ -689,14 +694,16 @@
 	          msg := regexp_replace (msg, '<script[^<]+playEnclosure[^<]+</script>', '', 1, null);
 		  encl := self.encl1.ufl_value;
 		  rep_encl := encl;
+                  self.text2 := msg;
 
 
 		  if (length (encl) and encl[0] = ascii ('/'))
 		    {
 		      vh := http_map_get ('vhost');
 		      lh := http_map_get ('lhost');
+		      local_lp := null;
 		      for select top 1 HP_LPATH, HP_PPATH from HTTP_PATH where HP_LISTEN_HOST = lh and HP_HOST = vh
-		        and encl like concat (HP_PPATH, '%') order by HP_LPATH desc do
+		        and encl like concat (HP_PPATH, '%') and HP_STORE_AS_DAV = 1 order by HP_LPATH desc do
 		       {
 		         local_lp := HP_LPATH;
 		         local_pp := HP_PPATH;
@@ -711,11 +718,14 @@
 		      encl := 'http://' || self.host || local_lp || substring (encl, length (local_pp), length (encl));
 		      self.encl1.ufl_value := encl;
 		    }
-
+                  set isolation='repeatable';
 		  declare exit handler for sqlstate '*'
 		  {
 		    rollback work;
 		    self.vc_is_valid := 0;
+		    if (__SQL_MESSAGE like 'BLOG2:%')
+		      self.vc_error_message := 'The enclosure is not accessible. Please check the URL.';
+		    else
 		    self.vc_error_message := __SQL_MESSAGE;
 		    return;
 		  };
@@ -776,6 +786,39 @@
 		  if (_post_state = 0)
 		    return 1;
 
+		  tagstr := trim (self.post_tags.ufl_value, ', ');
+		  tagarr := split_and_decode (tagstr, 0, '\0\0,');
+		  alltags := vector ();
+		  foreach (any t in tagarr) do
+		  {
+		    t := trim (t);
+		    if (length (t) and not position (t, alltags))
+		      alltags := vector_concat (alltags, vector (t));
+		  }
+                  {
+                    declare xt, xp any;
+                    xt := xtree_doc (self.text2, 2, '', 'UTF-8');
+                    xp := xpath_eval ('//a[@rel="tag"]/text()', xt, 0);
+                    foreach (any t in xp) do
+                      {
+		        t := charset_recode (xpath_eval('string()', t), '_WIDE_', 'UTF-8');
+		        if (length (t) and not position (t, alltags))
+		          alltags := vector_concat (alltags, vector (t));
+                      }
+                  }
+
+		  tagstr := '';
+		  foreach (any t in alltags) do
+		    {
+		      if (vt_is_noise (t,'UTF-8', 'x-ViDoc'))
+		        {
+                          signal ('22023', sprintf ('The tag "%s" is noise word, please enter a valid tag words', t));
+			}
+		      tagstr := tagstr || t || ', ';
+		    }
+
+		  tagstr := trim (tagstr, ', ');
+
                   if (self.editpost is null)
                   {
                     declare dat datetime;
@@ -833,7 +876,7 @@
                     res.title := post_title;
 		    res.enclosure := encl_obj;
 
-		    bdate := coalesce (bdate, odate);
+		    bdate := coalesce (bdate, now ());
 
                     update BLOG.DBA.SYS_BLOGS set
                       B_CONTENT = msg,
@@ -861,34 +904,6 @@
                       }
                     }
                   }
-		  tagstr := trim (self.post_tags.ufl_value, ', ');
-		  tagarr := split_and_decode (tagstr, 0, '\0\0,');
-		  alltags := vector ();
-		  foreach (any t in tagarr) do
-		  {
-		    t := trim (t);
-		    if (length (t) and not position (t, alltags))
-		      alltags := vector_concat (alltags, vector (t));
-		  }
-                  {
-                    declare xt, xp any;
-                    xt := xtree_doc (self.text2, 2, '', 'UTF-8');
-                    xp := xpath_eval ('//a[@rel="tag"]/text()', xt, 0);
-                    foreach (any t in xp) do
-                      {
-		        t := charset_recode (xpath_eval('string()', t), '_WIDE_', 'UTF-8');
-		        if (length (t) and not position (t, alltags))
-		          alltags := vector_concat (alltags, vector (t));
-                      }
-                  }
-
-		  tagstr := '';
-		  foreach (any t in alltags) do
-		    {
-		      tagstr := tagstr || t || ', ';
-		    }
-
-		  tagstr := trim (tagstr, ', ');
 
                   if (length (tagstr))
                   {
@@ -1084,6 +1099,9 @@
     whenever not found goto nfusr;
     select U_FULL_NAME, U_E_MAIL into
       self.name1.ufl_value, self.email1.ufl_value from SYS_USERS where U_ID = self.user_id;
+	  if (length (self.name1.ufl_value) = 0)
+	    self.name1.ufl_value := self.user_name;
+	  self.openid_url.ufl_value := wa_link (1, '/dataspace/'||self.user_name);
     nfusr:;
         }
           ]]>
@@ -1127,7 +1145,7 @@
             <tr>
               <th>Name</th>
               <td>
-                <v:text xhtml_class="textbox" name="name1" value="" xhtml_size="50" error-glyph="*">
+                <v:text xhtml_class="textbox" name="name1" value="" xhtml_size="50" error-glyph="*" xhtml_id="name1">
 		    <v:validator test="length" min="2" max="120" message="No name entered" />
 		    <v:before-render>
 			control.ufl_value := BLOG..blog_utf2wide (control.ufl_value);
@@ -1139,7 +1157,7 @@
             <tr>
               <th>Email</th>
               <td>
-                <v:text xhtml_class="textbox" name="email1" value="" xhtml_size="50" error-glyph="*">
+                <v:text xhtml_class="textbox" name="email1" value="" xhtml_size="50" error-glyph="*" xhtml_id="email1">
                   <v:validator test="regexp" regexp="[^@]+@([^\.]+.)*[^\.]+" message="Invalid e-mail address" />
                 </v:text>
               </td>
@@ -1149,6 +1167,7 @@
             <tr>
               <th>Web Site</th>
 	      <td id='outerbox' style='padding: 0.4em; margin-left: 100px; margin-right: 100px; width: auto;' nowrap="true">
+		  <v:text name="oid_key" value="--self.openid_key" type="hidden" xhtml_id="oid_key" />
 		  <v:text name="oid_sig" value="--self.openid_sig" type="hidden" xhtml_id="oid_sig" />
 		  <span id='img'>
 		      <img src="<?V case when length (self.openid_sig) then '/weblog/public/images/login-bg.gif' else '' end ?>"
@@ -1315,9 +1334,13 @@
            declare comm_id int;
            declare cook_str varchar;
            insert into BLOG.DBA.BLOG_COMMENTS
-            (BM_BLOG_ID, BM_POST_ID, BM_COMMENT, BM_NAME, BM_E_MAIL, BM_HOME_PAGE, BM_ADDRESS, BM_TS, BM_REF_ID)
+	    (BM_BLOG_ID, BM_POST_ID, BM_COMMENT, BM_NAME, BM_E_MAIL, BM_HOME_PAGE,
+	    BM_ADDRESS, BM_TS, BM_REF_ID, BM_OPENID_SIG, BM_OWN_COMMENT)
             values
-            (self.blogid, self.postid, self.comment2, self.name1.ufl_value, self.email1.ufl_value, self.openid_url.ufl_value, http_client_ip (), now (), self.comm_ref);
+	    (self.blogid, self.postid, self.comment2, self.name1.ufl_value, self.email1.ufl_value, self.openid_url.ufl_value,
+	     http_client_ip (), now (), self.comm_ref, self.oid_sig.ufl_value||'&mac_key='||self.oid_key.ufl_value,
+	     case when self.blog_access = 1 then 1 else 0 end);
+
            comm_id := identity_value ();
 
 	   declare cu vspx_field;
@@ -1333,7 +1356,7 @@
              }
 
                        self.comment2 := '';
-                       if (self.cook1.ufl_selected)
+	  if (self.cook1.ufl_selected and self.blog_access <> 1)
                        {
                         if (self.vid is not null)
                           {

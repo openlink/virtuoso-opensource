@@ -30,6 +30,8 @@
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
         on-deadlock-retry="5">
   <vm:page id="">
+    <vm:keep-variable name="text2"/>
+    <vm:keep-variable name="mtit1"/>
     <vm:header>
       <vm:meta-owner/>
       <vm:meta-authors/>
@@ -63,9 +65,6 @@
 			    | <vm:archive-url />
 			    <vm:settings-link title="| Settings "/>
 			    <vm:new-post-link title="| New Post" />
-			    <vm:if test="login">
-		 	    | <vm:wa-link />
-			    </vm:if>
 			    | <vm:advanced-search-link title="Search"/>
 			    <vm:search/>
 			</td>

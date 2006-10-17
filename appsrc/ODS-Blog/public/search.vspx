@@ -27,7 +27,12 @@
     <title>Weblogs Advanced Search</title>
     <link rel="stylesheet" type="text/css" href="/weblog/public/css/default.css"/>
   </head>
-  <v:page name="main" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" style="/DAV/VAD/blog2/widgets/main.xsl" xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+  <v:page name="main"
+      xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+      style="/DAV/VAD/blog2/widgets/main.xsl"
+      xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+      xmlns:ods="http://www.openlinksw.com/vspx/ods/"
+      >
     <v:variable name="blogid" type="varchar" default="null" param-name="blogid"/>
     <v:variable name="title" type="varchar" default="''"/>
     <v:variable name="copy" type="varchar" default="''"/>
@@ -604,17 +609,31 @@
             }
           ]]>
         </v:on-post>
+	<ods:ods-bar app_type="WEBLOG2"/>
         <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
           <tr>
             <td colspan="3">
-              <div id="header">
+		<table id="header" cellpadding="0" cellspacing="0">
+		    <tr>
+			<td>
                 <h1>
 		  <v:url name="tit1" value="--self.title" url="--self.home" xhtml_class="title_link"/>
                 </h1>
+			</td>
+			<td class="right">
+			</td>
+		    </tr>
+		    <tr>
+			<td>
                 <h2>
                   <v:label name="tit2" value="Advanced Search (XQuery, XPath, Free Text)"/>
                 </h2>
-              </div>
+
+			</td>
+			<td class="right">
+			</td>
+		    </tr>
+		</table>
               <div id="navbartop">
                 <div>&#160;</div>
               </div>

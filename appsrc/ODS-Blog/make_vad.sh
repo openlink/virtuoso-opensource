@@ -33,7 +33,7 @@ PORT=${PORT-1940}
 ISQL=${ISQL-isql}
 DSN="$HOST:$PORT"
 HOST_OS=`uname -s | grep WIN`
-NEED_VERSION=04.50.2905
+NEED_VERSION=04.50.2914
 if [ "x$HOST_OS" != "x" ]
 then
 TEMPFILE="`cygpath -m $TMP/isql.$$`"
@@ -143,7 +143,7 @@ do_command_safe () {
   shift
   shift
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if [ "x$HOST_OS" != "x"  -a "z$BUILD" != "z" ]
+  if [ "x$HOST_OS" != "x" ]
   then
     $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
   else
@@ -272,7 +272,7 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.21.16\"/>" >> $STICKER
+  echo "    <versions_later package=\"1.26.59\"/>" >> $STICKER
   echo "  </require>" >> $STICKER
   echo "</dependencies>" >> $STICKER
   echo "<procedures uninstallation=\"supported\">" >> $STICKER

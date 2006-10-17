@@ -70,9 +70,6 @@
 			    | <vm:archive-url />
 			    <vm:settings-link title="| Settings "/>
 			    <vm:new-post-link title="| New Post" />
-			    <vm:if test="login">
-		 	    | <vm:wa-link />
-			    </vm:if>
 			    | <vm:advanced-search-link title="Search"/>
 			    <vm:search/>
 			</td>

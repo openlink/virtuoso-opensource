@@ -24,12 +24,17 @@
 var setupWin;
 
 
-function cbSuccess (url, idserver, timestamp, sig) {
+function cbSuccess (url, idserver, oid_ret, sig, nam, mail) {
     setImage ('login-bg.gif');
     setNote ('', '#FFFFFF');
-    var ex;
+    var ex, elm;
     var oid_sig = document.getElementById('oid_sig');
-    oid_sig.value = sig;
+    oid_sig.value = oid_ret;
+
+    elm = document.getElementById('email1');
+    elm.value = mail;
+    elm = document.getElementById('name1');
+    elm.value = nam;
 
     // find the setup window, if they clicked the regular link
     if (! setupWin) {
@@ -81,9 +86,12 @@ function cbNeedPermissions (url) {
 function cbDebug (txt) {
 }
 
-function cbPostHelper (id, url) {
+function cbPostHelper (id, url, macKey) {
+    var oid_key = document.getElementById('oid_key');
     setImage ('wait_16.gif');
     prepareWipeOnType();
+    if (oid_key != null)
+      oid_key.value = macKey;
 }
 
 function setImage (img)
@@ -180,15 +188,16 @@ function removeWipeOnType () {
 
 function _OpenID_iframe_include (uri) {
 
-    var se = document.createElement("iframe");
-    se.width = 1;
-    se.height = 1;
-    se.style.display = 'inline';
-    se.style.border = '0';
+    //var se = document.createElement("iframe");
+    //se.width = 1;
+    //se.height = 1;
+    //se.style.display = 'inline';
+    //se.style.border = '0';
 
-    var be = document.getElementsByTagName('body').item(0);
-    be.appendChild(se);
-    se.contentWindow.location = uri;
+    //var be = document.getElementsByTagName('body').item(0);
+    //be.appendChild(se);
+    //se.contentWindow.location = uri;
+    window.open (uri, "OpenID_window", "");
 }
  
 
@@ -202,7 +211,7 @@ function OpenID_capable () {
 //       client_url:   the HTML URL the client provided. is just 
 //                     sent as-is to the helper URL on the server.
 //       helper_url:   the URL of the helper on the server
-//       on_success:   (canonical_identity_url, id_server, timestamp, sig)
+//       on_success:   (canonical_identity_url, id_server, oid_ret, sig)
 //       on_error       (errtxt) general error callback
 //       on_need_permissions   (url) URL to send user
 
@@ -215,8 +224,8 @@ function OpenID_verify (arg_hargs) {
     var hargs = arg_hargs;
 
     // make a top-level function that captures some internal variables
-    window.OpenID_callback_pass = function (identityURL, sig, timestamp) {
-	(hargs.on_success||nf)(identityURL, hargs.id_server, timestamp, sig);
+    window.OpenID_callback_pass = function (identityURL, sig, oid_ret, nam, mail) {
+	(hargs.on_success||nf)(identityURL, hargs.id_server, oid_ret, sig, nam, mail);
     };
     window.OpenID_callback_fail = function (url) {
 	(hargs.on_need_permissions||nf)(url);
@@ -249,8 +258,9 @@ function OpenID_verify (arg_hargs) {
 		}
 
 		var cleanIdentityURL = helperRes.clean_identity_url;
+	        var macKey = helperRes.openid_key;
 
-		(hargs.on_post_helper||nf)(helperRes.id_server, cleanIdentityURL);
+		(hargs.on_post_helper||nf)(helperRes.id_server, cleanIdentityURL, macKey);
 
 	        hargs.id_server = helperRes.id_server;
 

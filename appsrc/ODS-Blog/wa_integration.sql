@@ -219,7 +219,15 @@ create method wa_new_inst (in login varchar) for wa_blog2 {
   uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
 
   num := (select count(*) from BLOG.DBA.SYS_BLOG_INFO where BI_OWNER = uid);
+
+again:
   blogid := sprintf ('%s-blog-%d', login, num);
+  if (exists (select 1 from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID = blogid))
+    {
+      num := num + 1;
+      goto again;
+    }
+
   folder := sprintf ('/DAV/home/%s/%s/', login, blogid);
 
   path := sprintf ('/DAV/home/%s/Blogs/', login);
@@ -1716,7 +1724,7 @@ create procedure BLOG_MAKE_ALL_BLOGS_IN_ONE ()
 
   ndone := BLOG2_UPGRADE_FROM_BLOG();
 
-  -- One initial blog is needed, sute otherwise will fail
+  -- One initial blog is needed, the test suite otherwise will fail
   --if (ndone = 0)
   --  return;
 
@@ -1728,6 +1736,9 @@ create procedure BLOG_MAKE_ALL_BLOGS_IN_ONE ()
     return;
 
   if (exists (select 1 from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID = 'dav-blog-0'))
+    return;
+
+  if (registry_get ('__BLOG_MAKE_ALL_BLOGS_IN_ONE') = 'done')
     return;
 
   DAV_MAKE_DIR ('/DAV/home/dav/', http_dav_uid (), null, '110100100R');
@@ -1785,18 +1796,15 @@ create procedure BLOG_MAKE_ALL_BLOGS_IN_ONE ()
       for (select BI_HOME, BI_BLOG_ID from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID <> 'dav-blog-1') do
 	BLOG..BLOG2_BLOG_ATTACH ('dav-blog-1', BI_BLOG_ID);
     }
-
+  registry_set ('__BLOG_MAKE_ALL_BLOGS_IN_ONE', 'done');
 }
 ;
 
 create trigger WA_USER_INFO_GEO_U after update (WAUI_LAT) on WA_USER_INFO referencing new as N
 {
-  declare host_id, job_id int;
-  host_id := cast ((select WH_ID from BLOG..SYS_BLOG_WEBLOG_HOSTS where WH_URL = 'http://geourl.org/ping/?p=') as varchar);
-  for select BI_BLOG_ID from BLOG.DBA.SYS_BLOG_INFO where BI_OWNER = N.WAUI_U_ID do
+  for select BI_WAI_NAME from BLOG.DBA.SYS_BLOG_INFO where BI_OWNER = N.WAUI_U_ID do
     {
-      job_id := (select top 1 R_JOB_ID from BLOG..SYS_ROUTING where R_DESTINATION_ID = host_id and R_ITEM_ID = BI_BLOG_ID);
-      update BLOG.DBA.BLOG_WEBLOG_PING_LOG set WPL_STAT = 0 where WPL_HOSTS_ID = host_id and WPL_JOB_ID = job_id;
+      ODS..APP_PING (BI_WAI_NAME, null, null, 'GeoURL');
     }
   return;
 };
@@ -1804,3 +1812,10 @@ create trigger WA_USER_INFO_GEO_U after update (WAUI_LAT) on WA_USER_INFO refere
 BLOG..blog2_exec_no_error ('DB.DBA.BLOG_MAKE_ALL_BLOGS_IN_ONE ()')
 ;
 
+
+create procedure wa_collect_blog_tags (in id int)
+{
+   for (select BT_TAGS from BLOG..BLOG_TAG) do
+	wa_add_tag_to_count (BT_TAGS, id);
+}
+;
