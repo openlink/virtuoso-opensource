@@ -2157,8 +2157,14 @@ void ctx_clear_backup_files (ol_backup_context_t* ctx)
 long
 dbs_count_pageset_items_2 (dbe_storage_t * dbs, buffer_desc_t* pset)
 {
+  dk_hash_t * remaps = hash_table_allocate (dk_set_length (dbs->dbs_cp_remap_pages));
   int i_count = 0;
   dp_addr_t p_count = 0; /*pages*/
+  DO_SET (void*, remap, &dbs->dbs_cp_remap_pages)
+    {
+      sethash (remap, remaps, (void*) 1);
+    }
+  END_DO_SET();
   while (pset)
     {
       size_t sz = PAGE_DATA_SZ;
@@ -2173,7 +2179,7 @@ dbs_count_pageset_items_2 (dbe_storage_t * dbs, buffer_desc_t* pset)
 	      if (!p_count++)
 		continue;
 	      /* cpt_remap pages does not go to backup */
-	      if (is_cp_remap_page (p_count - 1, dbs))
+	      if (gethash ((void*)((ptrlong)p_count - 1), remaps))
 		continue;
 	      if (p_count - 1 >= dbs->dbs_n_pages)
 		goto fin;
@@ -2188,6 +2194,7 @@ dbs_count_pageset_items_2 (dbe_storage_t * dbs, buffer_desc_t* pset)
       pset = pset->bd_next;
     }
  fin:
+  hash_table_free (remaps);
   return i_count;
 }
 
