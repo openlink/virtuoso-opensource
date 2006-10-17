@@ -8015,10 +8015,16 @@ bif_http_strses_memory_size (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 static caddr_t
 bif_http_string_date (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t rfc_date = bif_string_arg (qst, args, 0, "http_string_date");
+  caddr_t rfc_date = bif_string_or_null_arg (qst, args, 0, "http_string_date");
   char temp[DT_LENGTH];
   caddr_t res;
 
+  if (NULL == rfc_date)
+    {
+      if (2 > BOX_ELEMENTS (args))
+        sqlr_new_error ("22007", "DT012", "HTTP string date is NULL and no default specified");
+      return box_copy_tree (bif_arg (qst, args, 1, "http_string_date"));
+    }
   memset (temp, 0, sizeof (temp));
   if (http_date_to_dt (rfc_date, temp))
     {
@@ -8026,8 +8032,9 @@ bif_http_string_date (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       memcpy (res, temp, DT_LENGTH);
       return (res);
     }
-  sqlr_new_error ("22007", "DT006", "Cannot convert %s to datetime", rfc_date);
-  return NULL; /*dummy */
+  if (3 > BOX_ELEMENTS (args))
+    sqlr_new_error ("22007", "DT006", "Invalid HTTP string date: cannot convert '%.1000s' to datetime", rfc_date);
+  return box_copy_tree (bif_arg (qst, args, 2, "http_string_date"));
 }
 
 #ifdef _IMSG
