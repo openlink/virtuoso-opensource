@@ -114,6 +114,7 @@ create procedure SQL_PROCEDURE_COLUMNS (
 }
 ;
 
+--!AWK PUBLIC
 create procedure XML_URI_RESOLVE_LIKE_GET (in base_uri varchar, in rel_uri varchar, in output_charset varchar := null) returns any
 {
   declare s_uri any;
@@ -163,6 +164,7 @@ try_http_get:
 ;
 
 
+--!AWK PUBLIC
 create procedure XML_URI_PARSE_VIRT (in base_uri varchar, inout table_name varchar, inout datacol_name varchar, inout pathcol_name varchar, inout path varchar)
 {
   declare table_start, col_start, path_start integer;
@@ -2993,7 +2995,7 @@ TD.service
  declare inx, len, _u_id integer;
  this_page := 'services.vsmx';
  set http_charset='UTF-8';
- http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: -1\r\n');
+ http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: Thu, 01 Dec 1994 01:02:03 GMT\r\n');
 
 ?>
 <DIV class="soappage">
@@ -3886,9 +3888,9 @@ DB.DBA.__XML_TEMPLATE (in path any, in params any, in lines any, in enc any := n
     }
 
   if ({?'contenttype'} is not null)
-    http_header (sprintf ('Content-type: %s; charset="%s"\r\nCache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: -1;\r\n', {?'contenttype'}, enc));
+    http_header (sprintf ('Content-type: %s; charset="%s"\r\nCache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: Thu, 01 Dec 1994 01:02:03 GMT\r\n', {?'contenttype'}, enc));
   else if (xslt is null)
-    http_header (sprintf ('Content-type: text/xml; charset="%s"\r\nCache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: -1;\r\n', enc));
+    http_header (sprintf ('Content-type: text/xml; charset="%s"\r\nCache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: Thu, 01 Dec 1994 01:02:03 GMT\r\n', enc));
   if ({?'content-filename'} is not null)
     {
       http_header (concat (http_header_get (), sprintf ('Content-Disposition: inline; filename="%s"\r\n', {?'content-filename'})));
