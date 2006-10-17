@@ -86,6 +86,14 @@ RUN_DIFF words.esp words.out worddiff.out
 RUN date
 
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbitmap.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tbitmap.sql"
+    exit 1
+fi
+
+
 RUN $INS $DSN 10000  100
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tinxint.sql
 if test $STATUS -ne 0
@@ -93,6 +101,15 @@ then
     LOG "***ABORTED: tinxint.sql"
     exit 1
 fi
+
+RUN $INS $DSN 10000  100
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tinxintbm.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tinxintbm.sql"
+    exit 1
+fi
+
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcast.sql
 if test $STATUS -ne 0
