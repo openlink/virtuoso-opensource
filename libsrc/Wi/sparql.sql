@@ -203,7 +203,7 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME (in qname varchar) returns IRI_ID
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
         return res;
-      set isolation='serializable';
+      set isolation='repeatable';
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
         return res;
@@ -241,7 +241,7 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
         return res;
-      set isolation='serializable';
+      set isolation='repeatable';
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
         return res;
@@ -281,7 +281,7 @@ create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
         return res;
-      set isolation='serializable';
+      set isolation='repeatable';
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
         return res;
@@ -386,7 +386,7 @@ create function DB.DBA.RDF_TWOBYTE_OF_DATATYPE (in iid IRI_ID) returns integer
 
 mknew:
   whenever not found goto mknew_ser;
-  set isolation='serializable';
+  set isolation='repeatable';
   select RDT_TWOBYTE into res from DB.DBA.RDF_DATATYPE where RDT_IID = iid;
   return res;
 
@@ -416,7 +416,7 @@ create function DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (in id varchar) returns integer
 
 mknew:
   whenever not found goto mknew_ser;
-  set isolation='serializable';
+  set isolation='repeatable';
   select RL_TWOBYTE into res from DB.DBA.RDF_LANGUAGE where RL_ID = id;
 
 mknew_ser:
@@ -605,7 +605,7 @@ create function DB.DBA.RDF_MAKE_RO_ID_OF_STRING (in v varchar) returns integer
       id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = tridgell and blob_to_string (RO_LONG) = v);
       if (id is null)
         {
-          set isolation='serializable';
+          set isolation='repeatable';
           id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = tridgell and blob_to_string (RO_LONG) = v);
           if (id is null)
             {
@@ -620,7 +620,7 @@ create function DB.DBA.RDF_MAKE_RO_ID_OF_STRING (in v varchar) returns integer
       id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
       if (id is null)
         {
-          set isolation='serializable';
+          set isolation='repeatable';
           id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
           if (id is null)
             {
@@ -5379,7 +5379,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 {
   declare query, dflt_graph, full_query, format varchar;
   declare named_graphs any;
-  declare paramctr, paramcount, maxrows integer;
+  declare paramctr, paramcount, maxrows, can_sponge, should_sponge integer;
   declare ses, content any;
   declare def_max, add_http_headers int;
   declare http_meth, content_type, ini_dflt_graph varchar;
@@ -5395,7 +5395,11 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   ini_dflt_graph := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultGraph');
   content_type := http_request_header (lines, 'Content-Type', null, '');
   content := null;
-
+  can_sponge := coalesce ((select top 1 1
+      from DB.DBA.SYS_USERS as sup
+        join DB.DBA.SYS_ROLE_GRANTS as g on (sup.U_ID = g.GI_SUPER)
+        join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
+      where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_UPDATE' ), 0);
   declare exit handler for sqlstate '*' {
     DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
       '500', 'SPARQL Request Failed',
@@ -5485,6 +5489,20 @@ http('			  <br />\n');
 http('			  <input type="text" name="default-graph-uri" id="default-graph-uri"\n');
 http(sprintf ('				  	value="%s" size="80"/>\n', coalesce (ini_dflt_graph, '') ));
 http('			  <br /><br />\n');
+if (can_sponge)
+  {
+http('			  <input type="checkbox"' ||
+  case (isnull (get_keyword ('should-sponge', params))) when 0 then ' checked="checked"' else '' end ||
+  ' name="should-sponge" id="should-sponge" value="soft"/>\n');
+http('			  <label for="should-sponge">Retrieve remote RDF data for all missing source graphs</label>\n');
+http('			  <br /><br />\n');
+  }
+else
+  {
+http('			  <i>Security restrictions of this server does not allow you to retrieve remote RDF data.
+DBA may wish to grant "SPARQL_UDPATE" privilege to "SPARQL" account to remove the restriction.</i>\n');
+http('			  <br /><br />\n');
+  }
 http('			  <label for="query">Query text</label>\n');
 http('			  <br />\n');
 http('			  <textarea rows="10" cols="60" name="query" id="query" onchange="format_select(this)" onkeyup="format_select(this)">SELECT * WHERE {?s ?p ?o}</textarea>\n');
@@ -5527,6 +5545,11 @@ http('</html>\n');
       else if ('maxrows' = pname)
         {
 	  maxrows := cast (pvalue as integer);
+	}
+      else if ('should-sponge' = pname)
+        {
+          if (can_sponge)
+            should_sponge := 1;
 	}
       else if ('format' = pname)
         {
@@ -5642,14 +5665,15 @@ http('</html>\n');
     {
       full_query := concat ('define input:default-graph-uri "', dflt_graph, '" ', query);
     }
+  if (can_sponge and should_sponge)
+    full_query := concat ('define get:soft "soft" ', full_query);
   full_query := concat ('define output:valmode "LONG" ', full_query);
-  declare sqltext, state, msg varchar;
+  declare state, msg varchar;
   declare metas, rset any;
---  sqltext := string_output_string (sparql_to_sql_text (query));
   state := '00000';
   metas := null;
   rset := null;
-  exec ('string_output_string (sparql_to_sql_text (?))', state, msg, vector (full_query));
+  exec ('isnull (sparql_to_sql_text (?))', state, msg, vector (full_query));
   if (state <> '00000')
     {
       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
@@ -5657,7 +5681,6 @@ http('</html>\n');
 	query, state, msg, format);
       return;
     }
-  sqltext := string_output_string (sparql_to_sql_text (full_query));
   state := '00000';
   metas := null;
   rset := null;
@@ -5667,7 +5690,7 @@ http('</html>\n');
 --  http (sprintf ('<!-- X-SPARQL-default-graph: %U\r\n -->\n', dflt_graph));
 --  http ('<!-- Query:\n' || query || '\n-->\n', 0);
   set_user_id ('SPARQL');
-  exec (sqltext, state, msg, vector(), maxrows, metas, rset);
+  exec ( concat ('sparql ', full_query), state, msg, vector(), maxrows, metas, rset);
   -- dbg_obj_princ ('exec metas=', metas);
   if (state <> '00000')
     {
@@ -5766,15 +5789,17 @@ create procedure DB.DBA.TTLP_EXEC_TRIPLE_L_A (
         o_type := null;
       if (not isstring (o_lang))
         o_lang := null;
-      insert soft  DB.DBA.RDF_QUAD (G,S,P,O)
-      values (g_iid, s_iid, p_iid,
+
+      app_env[1] := aq_request (app_env[0], 'DB.DBA.TTLP_EXEC_TRIPLE_W', 
+				vector (g_iid, s_iid, p_iid,
         DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
           o_val,
           DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type),
-          o_lang ) );
-      return;
+									    o_lang )));
+      goto end_check;
     }
   app_env[1] := aq_request (app_env[0], 'DB.DBA.TTLP_EXEC_TRIPLE_W', vector  (g_iid, s_iid, p_iid, DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (o_val)));
+end_check:
   if (mod (app_env[1], 4000) = 0)
     {
       commit work;
@@ -5812,6 +5837,35 @@ grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_A  to SPARQL_UPDATE
 ;
 grant execute on  DB.DBA.TTLP_EXEC_TRIPLE_L_A  to SPARQL_UPDATE
 ;
+
+
+
+create procedure DB.DBA.RDF_LOAD_RDFXML_mt (in strg varchar, in base varchar, in graph varchar)
+{
+  declare app_env, err any;
+  app_env := vector (async_queue (3), 0);
+  rdf_load_rdfxml (strg, 0,
+    graph,
+    vector (
+      'DB.DBA.TTLP_EXEC_NEW_GRAPH(?,?)',
+      'select DB.DBA.TTLP_EXEC_NEW_BLANK(?,?)',
+      'select DB.DBA.TTLP_EXEC_GET_IID(?,?,?)',
+      'DB.DBA.TTLP_EXEC_TRIPLE_A(?,?, ?,?, ?,?, ?,?, ?)',
+      'DB.DBA.TTLP_EXEC_TRIPLE_L_A(?,?, ?,?, ?,?, ?,?,?, ?)',
+      'commit work' ),
+    app_env,
+    base );
+  commit work;
+  aq_wait (app_env[0], app_env[1], err, 1);
+  aq_wait_all (app_env[0]);
+
+  return graph;
+}
+;
+
+grant execute on DB.DBA.RDF_LOAD_RDFXML_mt to SPARQL_UPDATE
+;
+
 
 -----
 -- Resource sponge
@@ -5858,7 +5912,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in parser varch
   new_origin_uri := cast (get_keyword_ucase ('get:uri', options, local_iri) as varchar);
   new_origin_login := cast (get_keyword_ucase ('get:login', options) as varchar);
   explicit_refresh := get_keyword_ucase ('get:refresh', options);
-  set isolation='serializable';
+  set isolation='repeatable';
   whenever not found goto add_new_origin;
   select HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD, HS_LAST_ETAG,
     HS_EXP_IS_TRUE, HS_EXPIRATION, HS_LAST_MODIFIED,
@@ -5963,9 +6017,12 @@ resp_received:
   ret_date := http_request_header (ret_hdr, 'Date', null, null);
   ret_expires := http_request_header (ret_hdr, 'Expires', null, null);
   ret_last_modif := http_request_header (ret_hdr, 'Last-Modified', null, null);
-  ret_dt_date := case (isnull (ret_date)) when 0 then http_string_date (ret_date) else null end;
-  ret_dt_expires := case (isnull (ret_expires)) when 0 then http_string_date (ret_expires) else null end;
-  ret_dt_last_modified := case (isnull (ret_last_modif)) when 0 then http_string_date (ret_last_modif) else null end;
+  ret_dt_date := http_string_date (ret_date, NULL, NULL);
+  ret_dt_expires := http_string_date (ret_expires, NULL, now());
+  ret_dt_last_modified := http_string_date (ret_last_modif, NULL, now());
+  if (http_request_header (ret_hdr, 'Pragma', null, null) = 'no-cache' or
+    http_request_header (ret_hdr, 'Cache-Control', null, null) like 'no-cache%' )
+    ret_dt_expires := now ();
   if (ret_304_not_modified and ret_dt_last_modified is null)
     ret_dt_last_modified := old_last_modified;
   if (ret_dt_date is not null)
@@ -6125,16 +6182,36 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
 }
 ;
 
+grant execute on DB.DBA.RDF_LOAD_HTTP_RESPONSE to SPARQL_UPDATE
+;
+
 create procedure DB.DBA.RDF_FORGET_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout options any)
 {
   delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
 }
 ;
 
+grant execute on DB.DBA.RDF_FORGET_HTTP_RESPONSE to SPARQL_UPDATE
+;
+
 create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
 {
+  declare get_soft varchar;
+  get_soft := get_keyword ('get:soft', options);
+  if ('soft' = get_soft)
+    {
+      if (
+        exists (select top 1 1 from DB.DBA.RDF_QUAD
+          where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri) ) and
+        not exists (select top 1 1 from DB.DBA.SYS_HTTP_SPONGE
+          where HS_LOCAL_IRI = graph_iri and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE' ) )
+        return graph_iri;
+    }
   return DB.DBA.SYS_HTTP_SPONGE_UP (graph_iri, 'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
 }
+;
+
+grant execute on DB.DBA.RDF_SPONGE_UP to SPARQL_UPDATE
 ;
 
 -----
