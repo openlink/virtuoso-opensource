@@ -196,7 +196,7 @@ create procedure wa_ensure_widgets (in template varchar, in force int := 0)
   dummy := 0;
   src := db.dba.vspx_src_get (template, dummy, 0);
   xt := xtree_doc (src);
-  xp := xpath_eval ('[ xmlns:vm="http://www.openlinksw.com/vspx/weblog/" ] //vm:*[local-name() != "page" and local-name () != "header" and local-name () != "body" and local-name () != "pagewrapper" and local-name () != "condition" ]', xt, 0);
+  xp := xpath_eval ('[ xmlns:vm="http://www.openlinksw.com/vspx/ods/" ] //vm:*[local-name() != "page" and local-name () != "header" and local-name () != "body" and local-name () != "pagewrapper" and local-name () != "condition" ]', xt, 0);
 
   ss := string_output ();
   tses := string_output ();

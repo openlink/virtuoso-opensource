@@ -25,7 +25,7 @@
 <!-- Registering -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:v="http://www.openlinksw.com/vspx/"
-    xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+    xmlns:vm="http://www.openlinksw.com/vspx/ods/">
   <xsl:template match="vm:register-form">
     <v:variable name="wa_nameR" type="varchar" default="null" persist="0" param-name="wa_name"/>
     <xsl:if test="@managed_by_admin = 1">
@@ -35,10 +35,55 @@
       <v:variable name="managed_by_admin" type="int" default="0" persist="page" />
     </xsl:if>
       <v:variable name="ret_page" type="varchar" persist="page" />
+      <v:variable name="reg_tip" type="int" default="0" persist="temp" />
+      <v:variable name="reg_number" type="varchar" default="null" persist="0" />
+      <v:variable name="reg_number_img" type="varchar" default="null" persist="temp" />
+      <v:variable name="reg_number_txt" type="varchar" default="null" persist="0" />
     <div>
       <v:label name="regl1" value="--''" />
     </div>
     <v:form name="regf1" method="POST" type="simple">
+	<v:on-init>
+
+	 self.reg_tip := coalesce ((select top 1 WS_VERIFY_TIP from WA_SETTINGS), 0);
+         if (__proc_exists ('IM AnnotateImageBlob', 2) is not null)
+	   self.im_enabled := 1;
+
+	 if (self.reg_tip)
+	   {
+	     if (self.im_enabled)
+	       {
+		 if (not self.vc_event.ve_is_post)
+		   {
+		     self.reg_number := rand (999999);
+		     self.reg_number := cast (self.reg_number as varchar);
+		   }
+		 self.reg_number_img := "IM AnnotateImageBlob" (
+		  "IM CreateImageBlob" (60, 25, 'white', 'jpg'),
+		  10, 15, self.reg_number);
+		 self.reg_number_img := encode_base64 (cast (self.reg_number_img as varchar));
+	       }
+	     else if (not self.vc_event.ve_is_post)
+	      {
+		  declare a,b,op,res any;
+
+		  randomize (msec_time ());
+		  a := rand(9);
+		  b := rand(9);
+		  op := rand (3);
+		  if (op = 0)
+		    res := a + b;
+		  else if (op = 1)
+		    res := a - b;
+		  else
+		    res := a * b;
+
+		  self.reg_number_txt :=
+		  sprintf ('%d %s %d = ', a, case op when 0 then '+' when 1 then '-' else '*' end, b);
+		  self.reg_number := cast (res as varchar);
+	      }
+	  }
+	</v:on-init>
       <table>
         <script type="text/javascript">
           <![CDATA[
@@ -94,45 +139,6 @@
 	    </a>
 	  </td>
         </tr>
-        <!--tr>
-          <th><label for="regfirstname">First Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
-          <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_id="regfirstname" name="regfirstname" value="-#-get_keyword('regfirstname', params)" xhtml_onBlur="javascript: getFirstName();">
-              <v:validator test="length" min="1" max="50" message="First name cannot be empty or longer then 50 chars"/>
-              <v:validator test="sql" expression="length(trim(self.regfirstname.ufl_value)) < 1 or length(trim(self.regfirstname.ufl_value)) > 50"
-                message="First name cannot be empty or longer then 50 chars" />
-            </v:text>
-          </td>
-          <td>
-            <div style="display:inline; color:red;"><vm:field-error field="regfirstname"/></div>
-          </td>
-        </tr>
-        <tr>
-          <th><label for="reglastname">Last Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
-          <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_id="reglastname" name="reglastname" value="-#-get_keyword('reglastname', params)" xhtml_onBlur="javascript: getLastName();">
-              <v:validator test="length" min="1" max="50" message="Last name cannot be empty or longer then 50 chars"/>
-              <v:validator test="sql" expression="length(trim(self.reglastname.ufl_value)) < 1 or length(trim(self.reglastname.ufl_value)) > 50"
-                message="Last name cannot be empty or longer then 50 chars" />
-            </v:text>
-          </td>
-          <td>
-            <div style="display:inline; color:red;"><vm:field-error field="reglastname"/></div>
-          </td>
-        </tr>
-        <tr>
-          <th><label for="regname">Full (Display) Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
-          <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_id="regname" name="regname" value="-#-get_keyword ('regname', params)">
-              <v:validator test="length" min="1" max="100" message="Full name cannot be empty or longer then 100 chars"/>
-              <v:validator test="sql" expression="length(trim(self.regname.ufl_value)) < 1 or length(trim(self.regname.ufl_value)) > 100"
-                message="Full name cannot be empty or longer then 100 chars" />
-            </v:text>
-          </td>
-          <td>
-            <div style="display:inline; color:red;"><vm:field-error field="regname"/></div>
-          </td>
-        </tr-->
         <tr>
           <th><label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
@@ -165,50 +171,30 @@
           <td>
           </td>
         </tr>
-        <!--tr>
-          <th><label for="sec_question">Secret question<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
+	<?vsp if (self.reg_tip) { ?>
+        <tr>
+	    <th><label for="regimg1">Enter the <?V case when self.im_enabled then 'number' else 'answer for the question' end ?> bellow<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_id="sec_question" name="sec_question" value="-#-get_keyword('sec_question', params)">
-              <v:validator test="length" min="1" max="800" message="Security question cannot be empty or longer then 800 chars"/>
-              <v:validator test="sql" expression="length(trim(self.sec_question.ufl_value)) < 1 or length(trim(self.sec_question.ufl_value)) > 800"
-                message="Security question cannot be empty or longer then 800 chars" />
+            <v:text error-glyph="?" xhtml_id="regimg1" name="regimg1" value="">
+              <v:validator test="sql" expression="self.reg_number is not null and self.reg_number <> self.regimg1.ufl_value"
+                message="The number verification does not match" />
             </v:text>
-            <script type="text/javascript">
-              <![CDATA[
-                function setSecQuestion()
-                {
-                  var S = document.getElementById('dummy_1233211_dummy');
-                  var V = S[S.selectedIndex].value;
-
-                  document.getElementById('sec_question').value = V;
-                }
-              ]]>
-            </script>
-            <select name="dummy_1233211_dummy" id="dummy_1233211_dummy" onchange="setSecQuestion()">
-              <option value="">~pick predefined~</option>
-              <option VALUE="First Car">First Car</option>
-              <option VALUE="Mothers Maiden Name">Mothers Maiden Name</option>
-              <option VALUE="Favorite Pet">Favorite Pet</option>
-              <option VALUE="Favorite Sports Team">Favorite Sports Team</option>
-            </select>
           </td>
           <td>
-            <div style="display:inline; color:red;"><vm:field-error field="sec_question"/></div>
           </td>
         </tr>
         <tr>
-          <th><label for="sec_answer">Secret answer<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
-          <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_id="sec_answer" name="sec_answer" value="-#-get_keyword('sec_answer', params)">
-              <v:validator test="length" min="1" max="800" message="Security answer cannot be empty or longer then 800 chars"/>
-              <v:validator test="sql" expression="length(trim(self.sec_answer.ufl_value)) < 1 or length(trim(self.sec_answer.ufl_value)) > 800"
-                message="Security answer cannot be empty or longer then 800 chars" />
-            </v:text>
-          </td>
+          <td></td>
           <td>
-            <div style="display:inline; color:red;"><vm:field-error field="sec_answer"/></div>
+	      <?vsp if (self.im_enabled) { ?>
+	      <img src="data:image/jpeg;base64,<?V self.reg_number_img ?>" border="1"/>
+	      <?vsp } else {
+	        http (self.reg_number_txt);
+	      } ?>
           </td>
-        </tr-->
+	  <td></td>
+        </tr>
+        <?vsp } ?>
         <tr>
           <td></td>
           <td><v:check-box name="is_agreed" value="1" initial-checked="0" xhtml_id="is_agreed"/>
@@ -304,6 +290,7 @@
 
          --WA_USER_SET_INFO(u_name1,trim(self.regfirstname.ufl_value),trim(self.reglastname.ufl_value) );
 	 WA_USER_SET_INFO(u_name1, '', '');
+	 WA_USER_TEXT_SET(uid, u_name1||' '||self.regmail.ufl_value);
 	 wa_reg_register (uid, u_name1);
 
 	 {
@@ -417,7 +404,7 @@
              };
              smtp_send(_smtp_server, aadr, self.regmail.ufl_value, msg);
            }
-           self.regl1.ufl_value := 'An E-mail has been sent to you to confirm your details. Follow the instructions within to complete the registration';
+	   self.regl1.ufl_value := 'Thank you for registering. You will receive an email soon with a link to activate your account, please follow the instructions to complete the registration.';
            control.vc_enabled := 0;
          }
          else
@@ -439,6 +426,8 @@
                http_header (sprintf ('Location: %s%ssid=%s&realm=wa&wa_name=%s\r\n', self.ret_page, delim, sid, self.wa_nameR));
              else
                http_header (sprintf ('Location: %s%ssid=%s&realm=wa&ufname=%s\r\n', self.ret_page, delim, sid, u_name1));
+             if (strstr (http_header_get (), 'Set-Cookie: sid=') is null)
+               http_header (http_header_get () || sprintf ('Set-Cookie: sid=%s; path=/\r\n', sid));
              return 0;
            }
          }

@@ -27,7 +27,7 @@
   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
   style="index.xsl"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
     <v:variable persist="0" name="utitle" type="varchar" default="''"/>
@@ -251,10 +251,10 @@
                 </td>
               </tr>
               <tr>
-                <th><label for="regbday">Birthday (mm/dd/yyyy)</label></th>
+                <th><label for="regbday">Birthday</label></th>
                 <td class="listing_col" nowrap="1">
-                  <v:select-list xhtml_id="regbday" name="regbmonth" value="">
-                    <v:before-data-bind>
+                  <v:select-list xhtml_id="regbmonth" name="regbday" value="">
+                    <v:after-data-bind>
                       <![CDATA[
                         declare m, arr varchar;
 			declare ddd datetime;
@@ -263,33 +263,8 @@
                         ddd := self.bdate;
                         m := '';
                         if (ddd is not null and ddd <> 0)
-                          m := month(ddd);
-			control.ufl_value := m;
-			arr := make_array (13, 'any');
-			arr[0] := '';
-			for (i := 1; i <= 12; i := i + 1)
-		          {
-			    arr[i] := cast(i as varchar);
-			  }
-			control.vsl_items := arr;
-			control.vsl_item_values := arr;
-			control.vs_set_selected ();
-                      ]]>
-                    </v:before-data-bind>
-                  </v:select-list>
-                 /
-                  <v:select-list xhtml_id="regbmonth" name="regbday" value="">
-                    <v:after-data-bind>
-                      <![CDATA[
-                        declare m, arr varchar;
-                        declare ddd datetime;
-			declare i int;
-
-                        ddd := self.bdate;
-                        m := '';
-                        if (ddd is not null and ddd <> 0)
                           m := dayofmonth(ddd);
-                        control.ufl_value := m;
+			control.ufl_value := m;
 			arr := make_array (32, 'any');
 			arr[0] := '';
 			for (i := 1; i <= 31; i := i + 1)
@@ -302,7 +277,33 @@
                       ]]>
                     </v:after-data-bind>
                   </v:select-list>
-                  /
+		  -
+                  <v:select-list xhtml_id="regbday" name="regbmonth" value="">
+                    <v:before-data-bind>
+                      <![CDATA[
+                        declare m, arr, marr varchar;
+                        declare ddd datetime;
+			declare i int;
+
+                        ddd := self.bdate;
+                        m := '';
+                        if (ddd is not null and ddd <> 0)
+                          m := month(ddd);
+                        control.ufl_value := m;
+			arr := make_array (13, 'any');
+			marr := vector ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+			arr[0] := '';
+			for (i := 1; i <= 12; i := i + 1)
+		          {
+			    arr[i] := cast(i as varchar);
+			  }
+			control.vsl_items := marr;
+			control.vsl_item_values := arr;
+			control.vs_set_selected ();
+                      ]]>
+                    </v:before-data-bind>
+                  </v:select-list>
+                  -
                   <v:select-list xhtml_id="regbyear" name="regbyear" value="">
                     <v:after-data-bind>
                       <![CDATA[
@@ -378,7 +379,7 @@
                                             xhtml_rows="5"
 			/>
 		      <v:button action="browse" name="tagsbt" value="Import Tags..." selector="get_tags_popup.vspx"
-			  child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=600"
+			  child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800"
 			>
 			  <v:field name="s_tag"/>
 			</v:button>
@@ -386,20 +387,20 @@
 	      </tr>
 
 	      <tr>
-		<th><label for="e_fbook">Favorite Books</label></th>
+		<th><label for="e_fbook" title="Free text">Favorite Books</label></th>
 		<td class="listing_col" nowrap="1">
 		  <v:text name="e_fbook" value="--self.books" xhtml_size="80" xhtml_tabindex="13"/>
 		  <vm:u-prop-select name="sel_44" value="self.sav44" />
 		</td>
 	      </tr>
 	      <tr>
-		<th><label for="e_fmusic">Favorite Music</label></th>
+		<th><label for="e_fmusic" title="Free text">Favorite Music</label></th>
 		<td class="listing_col" nowrap="1">
 		  <v:text name="e_fmusic" value="--self.music" xhtml_size="80" xhtml_tabindex="14"/>
 		</td>
 	      </tr>
 	      <tr>
-		<th><label for="e_fmovie">Favorite Movies</label></th>
+		<th><label for="e_fmovie" title="Free text">Favorite Movies</label></th>
 		<td class="listing_col" nowrap="1">
 		  <v:text name="e_fmovie" value="--self.movie" xhtml_size="80" xhtml_tabindex="15"/>
 		</td>
@@ -460,7 +461,11 @@
               <tr>
                 <td colspan="2" class="ctrl">
 		      <span class="fm_ctl_btn">
-		  <input type="reset" name="reset_btn" value="Cancel" />
+			<v:button name="bt_cncl_1" value="Cancel" action="simple">
+			  <v:on-post>
+			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+			  </v:on-post>
+			</v:button>
                   <v:button name="user_sset_personal" value="Save" action="simple" xhtml_tabindex="20">
                     <v:on-post>
                       <![CDATA[

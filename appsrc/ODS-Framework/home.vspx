@@ -22,8 +22,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="blog-home-page"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+<v:page name="ods-user-home"
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/"
   style="home.xsl"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -32,186 +32,84 @@
 <vm:page>
   <!-- HEADER -->
   <vm:header>
-    <title>User Home</title>
+    <vm:condition test="owner">
+      <title>Your Profile</title>
+    </vm:condition>
+    <vm:condition test="not-owner">
+      <title>User Profile for <vm:friends-name/></title>
+    </vm:condition>
     <vm:user-home-map />
     <vm:disco-ods-sioc-link />
+    <vm:disco-ods-foaf-link />
     <vm:erdf-data />
   </vm:header>
   <!-- END HEADER -->
   <!-- BODY -->
   <vm:body>
-    <table id="MTB" cellspacing="0" cellpadding="0" width="100%">
-      <tr id="MB">
-	<td colspan="2">
-	  <table width="100%" border="0">
-	    <tr>
-	      <td>
-		<vm:banner />
-	      </td>
-	      <td>
-		<table width="100%">
-		  <tr>
-		    <td class="right">
-		      <vm:welcome-message /> <vm:settings-link/> <vm:condition test="login">|</vm:condition> <vm:site-settings-link/> <vm:help-link /> | <vm:login-top-button/>
-		    </td>
-		  </tr>
-		  <tr>
-		    <td class="right">
-		      <vm:search/>
-		    </td>
-		  </tr>
-		</table>
-	      </td>
-	    </tr>
-	    <tr>
-	      <td class="left" colspan="2">
-<!--
-		<b>
-		  <vm:greetings />
-		</b>
--->
-	      </td>
-	    </tr>
-	  </table>
-	</td>
-      </tr>
-      <tr id="MT">
-	<td id="RC">
-	  <table id="RTB">
-	    <tr>
-	      <td id="RT">
-		<table id="nav_bar" cellspacing="0" cellpadding="0">
-		  <tr>
-		    <vm:navigation-new on="home"/>
-		  </tr>
-		</table>
-		<div id="submenu_block">
-		  <table id="nav_bar" cellspacing="0" cellpadding="0">
-		    <tr>
-		      <vm:subnavigation/>
-		    </tr>
-		  </table>
-		</div>
-	      </td>
-	    </tr>
-	    <tr>
-	      <td id="RB">
-		<div class="subpage_header_area">
-		  <h1 class="page_title"><vm:friends-name/>'s Home</h1>
-		</div>
-		<div class="main_page_area">
-		  <vm:notification />
-		  <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-		    <tr>
-		      <td valign="top" width="50%">
-			<table cellpadding='10' cellspacing='0' border='0' width='100%'>
-			  <tr>
-			    <td>
+    <div id="HD">
+      <vm:ods-bar/>
+      <vm:page-hd>
 			      <vm:condition test="owner">
-				<div class="invite_link">
-				  <img src="images/contact.gif" alt="Invite" hspace="1" />
-				  <vm:contacts-link title="Your contacts" />
-				</div>
-				<div class="invite_link">
-				  <img src="images/mail_16.gif" alt="Invite" hspace="1" />
-				  <vm:invite-link title="Invite your friends" />
-				</div>
+          Your Profile
 			      </vm:condition>
-			      <div class="invite_link">
-				<vm:foaf-link />
-				&amp;nbsp;
-				<vm:vcard-link />
-			      </div>
-			    </td>
-			  </tr>
+        <vm:condition test="not-owner">
+          User Profile: <vm:friends-name/>
+        </vm:condition>
+      </vm:page-hd>
+    </div> <!-- HD -->
+    <div id="MD">
+      <div id="LT">
+        <vm:notification />
+        <vm:user-details />
+        <vm:user-friends />
+      </div> <!-- LT -->
 			  <vm:condition test="login">
 			    <vm:condition test="not-owner">
-			      <tr>
-				<td>
-				  <vm:add-to-friends />
-				</td>
-			      </tr>
+          <vm:add-to-friends /><br/>
 			    </vm:condition>
 			  </vm:condition>
 			  <vm:condition test="exists-map-key">
-			    <tr valign="top">
-			      <td>
 				<div id="user_map" class="user_map">
 				</div>
-			      </td>
-			    </tr>
 			  </vm:condition>
-			  <tr valign="top">
-			    <td>
+      <div id="RT">
+        <ul class="button_bar">
+          <li><vm:foaf-link /></li>
+          <li><vm:vcard-link /></li>
+          <li><vm:sioc-link /></li>
+          <li><vm:geo-link /></li>
 			      <vm:condition test="owner">
-			      <div class="invite_link">
-				<img src="images/icons/edit_16.png" alt="Edit" hspace="1" />
-				<vm:user-info-edit-link title="Edit Profile"/>
-			      </div>
+            <li><img src="images/icons/edit_16.png" alt="Edit" />
+              <vm:user-info-edit-link title="Edit your profile"/></li>
 			      </vm:condition>
-			      <vm:user-details />
-			    </td>
-			  </tr>
-			</table>
-		      </td>
-		      <td width="50%" valign="top">
-			<!--vm:condition test="owner">
-			  <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-			    <tr>
-			      <td width="50%" align="left" valign="top">
-				<vm:dash-blog-summary />
-			      </td>
-			    </tr>
-			    <tr>
-			      <td width="50%" valign="top">
-				<vm:dash-enews-summary/>
-			      </td>
-			    </tr>
-			    <tr>
-			      <td width="50%" align="left" valign="top">
-				<vm:dash-wiki-summary />
-			      </td>
-			    </tr>
-			    <tr>
-			      <td width="50%" valign="top">
-				<vm:dash-omail-summary/>
-			      </td>
-			    </tr>
-			  </table>
-			</vm:condition-->
-			<vm:user-friends />
-		      </td>
-		    </tr>
-		  </table>
+          <vm:condition test="owner">
+            <li>
+              <img src="images/icons/contact.gif" alt="Contacts" />
+              <vm:contacts-link title="Your Contacts" />
+            </li>
+            <li><img src="images/icons/mail_new.png" alt="Invite" />
+              <vm:invite-link title="Invite People" /></li>
+          </vm:condition>
+        </ul> <!-- button_bar -->
+      </div><!-- RT -->
+    </div> <!-- MD -->
+    <div id="FT">
+      <div id="FT_L">
+        <a href="http://www.openlinksw.com/virtuoso">
+          <img alt="Powered by OpenLink Virtuoso Universal Server" src="images/virt_power.gif" border="0" />
+        </a>
 		</div>
-	      </td>
-	    </tr>
-	  </table>
-	</td>
-      </tr>
-      <tr>
-	<td id="footer" colspan="2">
+      <div id="FT_R">
 	  <a href="aboutus.html">About Us</a> |
 	  <a href="faq.html">FAQ</a> |
 	  <a href="#">Privacy</a> |
 	  <a href="rabuse.vspx">Report Abuse</a> |
 	  <a href="#">Advertise</a> |
 	  <a href="#">Contact Us</a>
-	</td>
-      </tr>
-      <tr>
-	<td id="copyright_ctr" colspan="2">
-	  <div>
 	    <div><vm:copyright /></div>
 	    <div><vm:disclaimer /></div>
-	    <a href="http://www.openlinksw.com/virtuoso">
-	      <img alt="Powered by OpenLink Virtuoso Universal Server" src="images/PoweredByVirtuoso.gif" border="0" />
-	    </a>
-	    <br/>
-	  </div>
-	</td>
-      </tr>
-    </table>
+      </div> <!-- FT_R -->
+    </div> <!-- FT -->
   </vm:body>
   <!-- END BODY -->
 </vm:page>

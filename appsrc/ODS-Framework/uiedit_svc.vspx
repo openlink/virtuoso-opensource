@@ -27,7 +27,7 @@
   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
   style="index.xsl"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
   <v:variable name="opts" type="any" default="null" persist="temp" />
@@ -100,7 +100,13 @@
           </td>
         </tr>
         <tr>
-          <td colspan="2">
+          <td colspan="2" class="ctrl">
+		      <span class="fm_ctl_btn">
+			<v:button name="bt_cncl_6" value="Cancel" action="simple">
+			  <v:on-post>
+			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+			  </v:on-post>
+			</v:button>
             <v:button xhtml_class="real_button" action="simple" name="web_services_set_button" value="Save" xhtml_title="Save" xhtml_alt="Save">
               <v:on-post>
                 <![CDATA[
@@ -114,6 +120,7 @@
                 ]]>
               </v:on-post>
             </v:button>
+	  </span>
           </td>
         </tr>
     </table>

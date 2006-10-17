@@ -22,8 +22,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="blog-home-page"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+<v:page name="ods-app-instances-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/"
   style="index.xsl"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -36,15 +36,13 @@
   <vm:pagewrapper>
     <v:variable name="ufid" type="integer" default="-1"/>
     <vm:rawheader caption="<?V wa_utf8_to_wide (coalesce (self.f_full_name, self.u_full_name)) ?><?V case when length (self.fname) or length (self.sid) then '\'s' else '' end ?> <?V WA_GET_APP_NAME (self.app_type) ?>"/>
-    <vm:navigation-new on=""/>
-    <vm:subnavigation-new on="site"/>
     <vm:body>
       <v:local-variable name="lvsn">
       <v:before-data-bind>
   <![CDATA[
     declare exit handler for not found
     {
-      signal ('22023', sprintf ('The user "%s" does not exists.', self.fname));
+      signal ('22023', sprintf ('The user "%s" does not exist.', self.fname));
     };
 
    if (not length (self.fname) and length (self.sid))

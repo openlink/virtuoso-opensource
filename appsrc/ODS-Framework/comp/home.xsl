@@ -25,7 +25,7 @@
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
   xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
   <xsl:template match="vm:body[not vm:login]">
     <vm:home-init />
@@ -83,7 +83,6 @@
     </v:local-variable>
   </xsl:template>
 
-  <!-- deprecated -->
   <xsl:template match="vm:user-dashboard">
     <v:template name="userdashboard" type="simple" condition="self.isowner">
       <tr><th><v:label name="uown" value="--self.friends_name"/>'s Dashboard</th></tr>
@@ -104,6 +103,12 @@
     </v:template>
   </xsl:template>
 
+  <xsl:template match="vm:page_hd">
+    <h1 class="page_hd">
+      <xsl:apply-templates/>
+    </h1>
+  </xsl:template>
+
   <xsl:template match="vm:friends-name">
     <v:label name="uown" value="--self.friends_name" render-only="1" format="%s" />
   </xsl:template>
@@ -115,18 +120,38 @@
 
   <xsl:template match="vm:vcard-link">
       <v:url name="u1" value='<img src="images/vcard.gif" border="0" alt="vCard" />' format="%s"
-      url="--sprintf ('/INLINEFILE/%s.vcf?VSP=%s/sn_user_export.vspx&amp;ufid=%d&amp;ufname=%s',
-      		self.fname, wa_link (), self.ufid, self.fname)" />
+      url="--sprintf ('sn_user_export.vspx?ufid=%d&amp;ufname=%s',
+      		self.ufid, self.fname)" />
+  </xsl:template>
+
+  <xsl:template match="vm:sioc-link">
+      <v:url name="u1" value='<img src="images/sioc_button.gif" border="0" alt="SIOC" />' format="%s"
+	  url="--WA_LINK (1, sprintf ('/dataspace/%s/sioc.rdf', self.fname))" xhtml_target="_blank"/>
+  </xsl:template>
+
+  <xsl:template match="vm:geo-link">
+    <?vsp
+    if (self.e_lat is not null and self.e_lng is not null) {
+    ?>
+      <v:url name="u1" value='<img src="http://i.geourl.org/80x15/simple.png" border="0" alt="GeoURL" />' format="%s"
+	  url="--sprintf ('http://geourl.org/near?p=%U', WA_LINK (1, sprintf ('/dataspace/%s', self.fname)))" xhtml_target="_blank"/>
+    <?vsp } ?>
   </xsl:template>
 
   <xsl:template match="vm:add-to-friends">
       <?vsp if (not (self.isowner = 1) and
-      not exists (select 1 from SN_FRENDS where FROM_U_NAME = self.u_name and TO_U_NAME = self.fname) and not exists (select 1 from SN_FRENDS where FROM_U_NAME = self.fname and TO_U_NAME = self.u_name)) {
+                not exists (select 1 
+                              from SN_FRENDS 
+                              where FROM_U_NAME = self.u_name and 
+                                    TO_U_NAME = self.fname) and 
+                not exists (select 1 from SN_FRENDS 
+                              where FROM_U_NAME = self.fname and 
+                                    TO_U_NAME = self.u_name)) {
       ?>
 	<v:label name="laddtof" value="Do you know this person?" render-only="1"/>
 	&amp;nbsp;
 	<v:url name="addtof" value="--'Add to friends.'" format="%s"
-	  url="--sprintf('sn_make_inv.vspx?fmail=%s',coalesce(self.arr[4],''))" xhtml_class="uddi"/>
+	  url="--sprintf('sn_make_inv.vspx?fmail=%s',coalesce(self.arr[4],''))" xhtml_class="profile_tab"/>
       <?vsp
         }
       else
@@ -138,6 +163,12 @@
       ?>
   </xsl:template>
 
+  <xsl:template match="vm:user-apps">
+    <div class="widget w_user_apps">
+      User applications
+    </div>
+  </xsl:template>
+
   <xsl:template match="vm:user-details">
    <v:template name="user_details" type="simple" enabled="1">
     <?vsp
@@ -145,29 +176,43 @@
       declare pg any;
       pg := atoi(get_keyword('page', control.vc_page.vc_event.ve_params, '1'));
     ?>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%' id="user_details">
+            <table cellpadding='10' cellspacing='0' border='0' width='100%' id="user_details" class="tab_deck">
               <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
+                <td class="tab_deck">
+                  <table cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
                     <colgroup>
                       <col/>
                       <col/>
                       <col/>
                       <col/>
                     </colgroup>
-                    <tr>
-			<a name="uinavtab"> </a>
-			<td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-                          <v:url name="b_url21" value="Personal" format="%s" url="--sprintf('uhome.vspx?page=1&ufname=%s#uinavtab',self.fname)" xhtml_class="uddi"/>
-                        </td>
-			<td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-                          <v:url name="b_url12" value="Contact" format="%s" url="--sprintf('uhome.vspx?page=2&ufname=%s#uinavtab',self.fname)" xhtml_class="uddi"/>
-                        </td>
-			<td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-                          <v:url name="b_url13" value="Home" format="%s" url="--sprintf('uhome.vspx?page=3&ufname=%s#uinavtab',self.fname)" xhtml_class="uddi"/>
-                        </td>
-			<td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-                          <v:url name="b_url14" value="Business" format="%s" url="--sprintf('uhome.vspx?page=4&ufname=%s#uinavtab',self.fname)" xhtml_class="uddi"/>
+                    <tr class="navtab_row">
+                      <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                        <v:url name="b_url21" value="Personal" 
+                               format="%s" 
+                               url="--sprintf('uhome.vspx?page=1&ufname=%s#uinavtab',self.fname)" 
+                               xhtml_class="tab"/>
+                      </td>
+                      <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                        <v:url name="b_url12" 
+                               value="Contact" 
+                               format="%s" 
+                               url="--sprintf('uhome.vspx?page=2&ufname=%s#uinavtab',self.fname)" 
+                               xhtml_class="tab"/>
+                      </td>
+                      <td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                        <v:url name="b_url13" 
+                               value="Home" 
+                               format="%s" 
+                               url="--sprintf('uhome.vspx?page=3&ufname=%s#uinavtab',self.fname)" 
+                               xhtml_class="tab"/>
+                      </td>
+                      <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                        <v:url name="b_url14" 
+                               value="Business" 
+                               format="%s" 
+                               url="--sprintf('uhome.vspx?page=4&ufname=%s#uinavtab',self.fname)" 
+                               xhtml_class="tab"/>
                         </td>
                         <td class="page_tab_empty" align="center" width="100%">
                           <table cellpadding="0" cellspacing="0">
@@ -181,7 +226,7 @@
                   </table>
                   <table class="tab_page">
                     <tr>
-                      <td valign="top">
+                      <td valign="top" class="tab_page">
                         <v:template name="template1" type="simple" condition="pg = 1">
                           <table>
                             <tr>
@@ -404,7 +449,7 @@
 				  ?>
                                   <tr>
                                     <td>
-                                      <v:url name="viewall" value="--sprintf('View All of %s''s friends ', coalesce(self.fname,'') )" format="%s" url="--sprintf('sn_connections.vspx?ufname=%U', self.fname)" xhtml_class="uddi"/>
+                                      <v:url name="viewall" value="--sprintf('View All of %s''s friends ', coalesce(self.fname,'') )" format="%s" url="--sprintf('sn_connections.vspx?ufname=%U', self.fname)" xhtml_class="profile_tab"/>
                                     </td>
 				  </tr>
 				  <?vsp
@@ -568,7 +613,7 @@
                               <td><v:label name="lvendor1" value="--coalesce(self.arr[29],'')"/></td>
                             </tr>
                             <tr>
-                              <th><v:label name="lprovider" value="If so, what technology service do you provider:" enabled="--case when coalesce(self.arr[30],'') <> '' then 1 else 0 end"/></th>
+                              <th><v:label name="lprovider" value="If so, what technology service do you provide:" enabled="--case when coalesce(self.arr[30],'') <> '' then 1 else 0 end"/></th>
                               <td><v:label name="lprovider1" value="--coalesce(self.arr[30],'')"/></td>
                             </tr>
                             <tr>
@@ -602,6 +647,9 @@
     <xsl:choose>
       <xsl:when test="@test='owner'">
           <xsl:variable name="condition" select="'self.isowner'"/>
+      </xsl:when>
+      <xsl:when test="@test='not-owner'">
+          <xsl:variable name="condition" select="'not self.isowner'"/>
       </xsl:when>
       <xsl:when test="@test='login'">
           <xsl:variable name="condition" select="'length (self.sid)'"/>
@@ -660,8 +708,8 @@
   </xsl:template>
 
   <xsl:template match="vm:user-friends">
-      <div class="info_container_gen">
-	  <h2>Friends</h2>
+      <div class="contacts_ctrr">
+	  <h2>Contacts</h2>
 	<ul>
 	  <?vsp
 	  {
@@ -707,14 +755,14 @@
 	       if (self.isowner)
 	         {
 		   ?>
-		   You have no connections. <br />
-		   <v:url name="search_users_fr" value="Search for Friends" url="search.vspx?page=2&amp;l=1" render-only="1"/>
+		   You have no connections yet. <br />
+		   <v:url name="search_users_fr" value="Search for Contacts" url="search.vspx?page=2&amp;l=1" render-only="1"/>
 		   <?vsp
 		 }
 	       else
                  {
 	       ?>
-	       <li>Friends are not added yet.</li>
+	       <li>This user has no contacts.</li>
 	       <?vsp
 	         }
 	     }

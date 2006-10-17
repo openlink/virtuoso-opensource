@@ -27,7 +27,7 @@
       doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
       xmlns:v="http://www.openlinksw.com/vspx/"
       xmlns:xhtml="http://www.w3.org/1999/xhtml"
-      xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+      xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 <?vsp
   declare path, file, sid, realm, command, title varchar;
   path := get_keyword ('path', params, '');

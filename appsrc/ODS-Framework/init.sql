@@ -37,5 +37,5 @@ vhost_remove (lpath=>'/wa');
 vhost_remove (lpath=>'/ods');
 vhost_remove (lpath=>'/wa/images/icons');
 vhost_remove (lpath=>'/ods/images/icons');
-vhost_define (lpath=>'/ods', ppath=>'/wa/', is_dav=>0, vsp_user=>'dba', def_page=>'sfront.vspx', opts=>vector('xml_templates', 'yes'));
+vhost_define (lpath=>'/ods', ppath=>'/wa/', is_dav=>0, vsp_user=>'dba', def_page=>'sfront.vspx', opts=>vector('xml_templates', 'yes',  '404_page','not_found.vspx'));
 vhost_define (lpath=>'/ods/images/icons', ppath=>'/wa/icons', is_dav=>0);

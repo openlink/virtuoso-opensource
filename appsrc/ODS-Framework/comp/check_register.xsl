@@ -24,7 +24,7 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:v="http://www.openlinksw.com/vspx/"
-    xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+    xmlns:vm="http://www.openlinksw.com/vspx/ods/">
   <xsl:template match="vm:check-register">
     <xsl:if test="not parent::vm:page">
       <xsl:message terminate="yes">check-register is only allowed as a direct child of v:page</xsl:message>

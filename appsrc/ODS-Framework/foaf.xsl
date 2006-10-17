@@ -32,6 +32,7 @@
   xmlns:ods="http://openlinksw.com/ods/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
+  xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#"
   xmlns:xml="xml"
   version="1.0">
 
@@ -46,7 +47,7 @@
   <xsl:template match="rdf:RDF">
       <xsl:copy>
 	  <xsl:copy-of select="@*"/>
-	  <xsl:attribute name="xml:base">http://<xsl:value-of select="$httpHost"/>/dataspace/<xsl:value-of select="foaf:Person/foaf:nick"/></xsl:attribute>
+	  <xsl:attribute name="xml:base">http://<xsl:value-of select="$httpHost"/>/dataspace/<xsl:value-of select="foaf:Person/foaf:nick"/>#person</xsl:attribute>
 	  <xsl:apply-templates />
       </xsl:copy>
   </xsl:template>
@@ -59,7 +60,7 @@
       <xsl:copy>
 	  <xsl:copy-of select="@*[local-name()!='about']"/>
 	  <xsl:if test="local-name() = 'Person' and @rdf:about = ''">
-	      <xsl:attribute name="rdf:about">http://<xsl:value-of select="$httpHost"/>/dataspace/<xsl:value-of select="foaf:nick"/></xsl:attribute>
+	      <xsl:attribute name="rdf:about">http://<xsl:value-of select="$httpHost"/>/dataspace/<xsl:value-of select="foaf:nick"/>#person</xsl:attribute>
 	  </xsl:if>
 	  <xsl:if test="@rdf:about and @rdf:about != ''">
 	      <xsl:attribute name="rdf:about"><xsl:value-of select="translate (@rdf:about, ' ', '+')"/></xsl:attribute>

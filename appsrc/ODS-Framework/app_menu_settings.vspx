@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog-home-page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -68,8 +68,7 @@
 			  ?>
 			  <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
 			      <td>
-				  <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
-
+				<v:label name="la1" value="--wa_type_to_appg((control.vc_parent as vspx_row_template).te_rowset[0])"/>
 			      </td>
 			      <td>
 				  <v:text name="txt2"

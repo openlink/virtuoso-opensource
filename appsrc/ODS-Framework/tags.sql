@@ -297,6 +297,9 @@ create procedure wa_collect_all_tags ()   -- TOP PROCEDURE
    if (wa_check_package ('blog2'))
      wa_collect_blog_tags (_id);
 
+   if (wa_check_package ('Bookmarks'))
+     wa_collect_bmk_tags (_id);
+
 --  delete from TF_REPORT where TF_COUNT = 0;
   update TF_REPORT set TF_COUNT_INX = TF_COUNT where TF_ID = _id;
   insert into TF_REPORT_SET (TFS_USER, TFS_TIME, TFS_ID) values (0, now (), _id);
@@ -372,6 +375,15 @@ create procedure wa_collect_enews_tags (in id int)
   return;
 }
 ');
+
+wa_exec_no_error('
+create procedure wa_collect_bmk_tags (in id int)
+{
+   for (select BD_TAGS from BMK.WA.BOOKMARK_DATA) do
+	wa_add_tag_to_count (BD_TAGS, id);
+}
+');
+
 
 create procedure  wa_tag_frecuency ()
 {
@@ -549,6 +561,40 @@ create procedure collect_blog_rel_tags ()
 }
 ');
 
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.WA.tag_style (
+  inout tagCount integer,
+  inout tagMinCount integer,
+  inout tagMaxCount integer,
+  in fontMinSize integer := 12,
+  in fontMaxSize integer := 30)
+{
+  declare fontSize, fontPercent float;
+  declare tagStyle any;
+
+  if (tagMaxCount = tagMinCount) {
+    fontPercent := 0;
+  } else {
+    fontPercent := (1.0 * tagCount - tagMinCount) / (tagMaxCount - tagMinCount);
+  }
+  fontSize := fontMinSize + ((fontMaxSize - fontMinSize) * fontPercent);
+  tagStyle := sprintf ('font-size: %dpx;', fontSize);
+  if (fontPercent > 0.6)
+    tagStyle := tagStyle || ' font-weight: bold;';
+
+  if (fontPercent > 0.8)
+    tagStyle := tagStyle || ' color: #9900CC;';
+  else if (fontPercent > 0.6)
+    tagStyle := tagStyle || ' color: #339933;';
+  else if (fontPercent > 0.4)
+    tagStyle := tagStyle || ' color: #CC3333;';
+  else if (fontPercent > 0.2)
+    tagStyle := tagStyle || ' color: #66CC99;';
+  return tagStyle;
+}
+;
 
 --insert soft DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
 --   values ('WA_COLLECT_SITE_REL_TAGS', stringtime ('1:0'), concat ('wa_collect_all_rel_tags ()'), 60*24)

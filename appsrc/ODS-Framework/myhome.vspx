@@ -22,8 +22,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="blog-my-home-page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+<v:page name="ods-user-home"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
 	fast-render="1"
@@ -32,51 +32,35 @@
   <vm:page>
     <vm:header>
       <vm:title>
-	<v:label value="--self.banner" render-only="1"/></vm:title>
+        <v:label value="--self.banner" render-only="1"/>
+      </vm:title>
     </vm:header>
     <vm:pagewrapper>
      <vm:navigation-new on="site"/>
      <vm:subnavigation-new on="site"/>
       <vm:body>
        <vm:login redirect="myhome.vspx"/>
-    <table border="0" cellpadding="0" cellspacing="0" id="main">
-      <tr>
-       <td id="mainarea" style="width:50%">
-           <vm:dash-my-wahts-new />
-           <vm:dash-my-profile />
+        <vm:dash-my-whats-new />
            <vm:if test="wa_vad_check ('blog2') is not null">
                <vm:dash-my-blog />
            </vm:if>
-           <vm:if test="wa_vad_check ('oMail') is not null">
-               <vm:dash-my-mail />
+        <vm:if test="wa_vad_check ('enews2') is not null">
+          <vm:dash-my-news />
            </vm:if>
-
            <vm:if test="wa_vad_check ('wiki') is not null">
                <vm:dash-my-wiki />
            </vm:if>
-       </td>
-       <td id="mainarea">
+        <vm:dash-my-profile />
            <vm:dash-my-friends />
            <vm:if test="wa_vad_check ('Community') is not null">
                <vm:dash-my-community />
            </vm:if>
-           <vm:if test="wa_vad_check ('enews2') is not null">
-               <vm:dash-my-news />
-           </vm:if>
            <vm:if test="wa_vad_check ('oGallery') is not null">
                <vm:dash-my-photos />
            </vm:if>
-       </td>
-     </tr>
-  <tr>
-    <td colspan="2">
       <vm:if test="wa_vad_check ('oMail') is not null and 1=0">
           <vm:dash-my-guestbook />
      </vm:if>
-
-    </td>
-  </tr>
-         </table>
       </vm:body>
     </vm:pagewrapper>
   </vm:page>

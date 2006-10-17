@@ -684,11 +684,8 @@ create function WA_SEARCH_DAV (in max_rows integer, in current_user_id integer,
 
   if (search_dav and search_wiki)
     sel_col :=  sprintf (
-         '  case \n' ||
-         '    when (RES_COL in (select ColId from WV.WIKI.CLUSTERS)) \n' ||
-         '      then WA_SEARCH_WIKI_GET_EXCERPT_HTML (%d, RES_ID, _WORDS_VECTOR, RES_CONTENT, RES_FULL_PATH, RES_OWNER) \n' ||
-         '    else WA_SEARCH_DAV_GET_EXCERPT_HTML (%d, RES_ID, _WORDS_VECTOR, RES_CONTENT, RES_FULL_PATH) \n' ||
-         '  end', current_user_id, current_user_id);
+         '  WA_SEARCH_DAV_OR_WIKI_GET_EXCERPT_HTML (%d, RES_ID, _WORDS_VECTOR, RES_CONTENT, RES_FULL_PATH, RES_OWNER, RES_COL) \n',
+          current_user_id);
   else if (search_dav)
     sel_col :=  sprintf (
          '  WA_SEARCH_DAV_GET_EXCERPT_HTML (%d, RES_ID, _WORDS_VECTOR, RES_CONTENT, RES_FULL_PATH)',
@@ -722,6 +719,21 @@ create function WA_SEARCH_DAV (in max_rows integer, in current_user_id integer,
   return ret;
 }
 ;
+
+wa_exec_no_error('create procedure WA_SEARCH_DAV_OR_WIKI_GET_EXCERPT_HTML
+	(in current_user_id int,
+	 in RES_ID int,
+	 in _WORDS_VECTOR any,
+	 in RES_CONTENT any,
+	 in RES_FULL_PATH varchar,
+	 in RES_OWNER int,
+	 in RES_COL int)
+{
+  if (exists (select 1 from WV.WIKI.CLUSTERS where ColId = RES_COL))
+    return WA_SEARCH_WIKI_GET_EXCERPT_HTML (current_user_id, RES_ID, _WORDS_VECTOR, RES_CONTENT, RES_FULL_PATH, RES_OWNER);
+  else
+    return WA_SEARCH_DAV_GET_EXCERPT_HTML (current_user_id, RES_ID, _WORDS_VECTOR, RES_CONTENT, RES_FULL_PATH);
+}');
 
 -- creates a search excerpt for a enews.
 -- see http://wiki.usnet.private:8791/twiki/bin/view/Main/VirtWASpecsRevisions#Advanced_Search for description
@@ -1071,9 +1083,97 @@ create function WA_SEARCH_OMAIL (in max_rows integer, in current_user_id integer
 }
 ;
 
+wa_exec_no_error('
+create function WA_SEARCH_BMK_GET_EXCERPT_HTML (
+    			in _current_user_id integer,
+    			in _BD_BOOKMARK_ID int,
+			in _BD_DOMAIN_ID int,
+			in _BD_NAME varchar,
+			in _BD_DESCRIPTION varchar,
+			in words any) returns varchar
+{
+  declare url varchar;
+  declare res varchar;
+
+  select B_URI into url from BMK.WA.BOOKMARK where B_ID = _BD_BOOKMARK_ID;
+
+      res := sprintf (''<span><img src="%s" /> <a href="%s" target="_blank">%s</a> %s '',
+      WA_SEARCH_ADD_APATH (''images/icons/web_16.png''), url, _BD_NAME, _BD_NAME);
+
+      res := res || ''<br />'' ||
+      left (
+	  search_excerpt (
+	    words,
+	    subseq (coalesce (_BD_DESCRIPTION, ''''), 0, 200000)
+	    ),
+	  900) || ''</span>'';
+
+   return res;
+}')
+;
+
+
+create function WA_SEARCH_BMK (in max_rows integer, in current_user_id integer,
+   in str varchar, in tags_str varchar, in _words_vector varchar) returns varchar
+{
+  declare ret, qstr, tret  varchar;
+
+  qstr := '';
+
+  if (str is not null)
+    {
+      qstr := sprintf (
+      'select BD_BOOKMARK_ID, BD_DOMAIN_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, SCORE as _SCORE'
+      || ' from BMK.WA.BOOKMARK_DOMAIN where contains (BD_DESCRIPTION, ''[__lang "x-any" __enc "UTF-8"] %S '') ', str);
+    }
+  else if (str is null)
+    {
+      qstr := sprintf (
+      'select BD_BOOKMARK_ID, BD_DOMAIN_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, 0 as _SCORE \n'
+      || ' from BMK.WA.BOOKMARK_DOMAIN \n', str );
+    }
+
+  tret := '';
+
+  if (tags_str is not null)
+    tret := sprintf (
+      '\n %s exists ( \n' ||
+      '  select 1 from BMK.WA.BOOKMARK_DATA \n' ||
+      '    where \n' ||
+      '      contains (BD_TAGS, \n' ||
+      '        sprintf (''[__lang "x-ViDoc" __enc "UTF-8"] (%S) AND (("^UID%d") OR ("^public"))'' \n' ||
+      '          ))) \n',
+      case when str is not null then 'and' else 'where' end,
+      tags_str,
+      current_user_id);
+
+  ret := sprintf (
+    ' select EXCERPT, TAG_TABLE_FK, _SCORE, _DATE from ( select  top %d \n'
+    || '	DB.DBA.WA_SEARCH_BMK_GET_EXCERPT_HTML \n'
+    || '		(%d, BD_BOOKMARK_ID, BD_DOMAIN_ID, BD_NAME, BD_DESCRIPTION, %s)  AS EXCERPT, \n'
+    || '		encode_base64 (serialize (vector (''BMK'', vector (BD_BOOKMARK_ID, BD_DOMAIN_ID)))) as TAG_TABLE_FK, \n'
+    || '		_SCORE, \n'
+    || '		BD_LAST_UPDATE as _DATE \n'
+    || '     	from'
+    || '	(%s %s) bmk1, \n'
+    || '	DB.DBA.WA_INSTANCE WAI \n'
+    || '	where BD_DOMAIN_ID = WAI.WAI_ID and \n'
+    || '		(WAI.WAI_IS_PUBLIC > 0 OR \n'
+    || '		 	exists ( select 1 from DB.DBA.WA_MEMBER where \n'
+    || '			  	WAM_INST = WAI_NAME and WAM_USER = %d and \n'
+    || '				WAM_MEMBER_TYPE >= 1 and (WAM_EXPIRES < now () or WAM_EXPIRES is null))) \n'
+    || 'option (order)) bmk2 \n',
+    max_rows, current_user_id, _words_vector, qstr, tret, current_user_id);
+
+  return ret;
+}
+;
+
+
 create procedure WA_SEARCH_CONSTRUCT_QUERY (in current_user_id integer, in qry nvarchar, in q_tags nvarchar,
 	in search_people integer, in search_news integer, in search_blogs integer, in search_wikis integer,
-        in search_dav integer, in search_apps integer, in search_omail integer, in sort_by_score integer,
+        in search_dav integer, in search_apps integer, in search_omail integer, in search_bmk int,
+	in sort_by_score integer,
         in max_rows integer, in tag_is_qry int, out tags_vector any)
 returns varchar
 {
@@ -1134,11 +1234,17 @@ returns varchar
         ret := ret || '\n\nUNION ALL\n\n';
       ret := ret || WA_SEARCH_OMAIL (max_rows, current_user_id, str, _words_vector);
     }
+  if (search_bmk)
+    {
+      if (ret <> '')
+        ret := ret || '\n\nUNION ALL\n\n';
+      ret := ret || WA_SEARCH_BMK (max_rows, current_user_id, str, tags_str, _words_vector);
+    }
   if (ret <> '')
     ret := sprintf ('select top %d EXCERPT, TAG_TABLE_FK, _SCORE, _DATE from \n(\n%s ORDER BY %s desc\n) q',
        max_rows, ret, case when sort_by_score <> 0 then  '_SCORE' else '_DATE' end);
 
---  dbg_obj_print (ret);
+  -- dbg_obj_print ('1', ret);
   return ret;
 }
 ;
@@ -1160,6 +1266,8 @@ create procedure WA_SEARCH_ADD_TAG (
     WA_SEARCH_ADD_DAV_TAG (current_user_id, pk_array, new_tag_expr);
   else if (upd_type = 'ENEWS')
     WA_SEARCH_ADD_ENEWS_TAG (current_user_id, pk_array, new_tag_expr);
+  else if (upd_type = 'BMK')
+    WA_SEARCH_ADD_BMK_TAG (current_user_id, pk_array, new_tag_expr);
   else
     signal ('22023', sprintf ('Unknown type tag %s in WA_SEARCH_ADD_TAG', upd_type));
 }
@@ -1250,6 +1358,24 @@ create procedure WA_SEARCH_ADD_DAV_TAG (
   DAV_TAG_SET (_res_id, 'R', current_user_id, _tags);
 }
 ;
+
+create procedure WA_SEARCH_ADD_BMK_TAG (
+	in current_user_id integer,
+	inout pk_array any,
+	in new_tag_expr nvarchar)
+{
+  declare domain_id, bookmark_id int;
+  declare _tags any;
+
+  domain_id := pk_array [1];
+  bookmark_id := pk_array [0];
+  _tags := BMK.WA.tags_select (domain_id, current_user_id, bookmark_id);
+  if (length (_tags))
+     _tags := _tags || ',' || charset_recode (new_tag_expr, '_WIDE_', 'UTF-8');
+  else
+     _tags := charset_recode (new_tag_expr, '_WIDE_', 'UTF-8');
+  BMK.WA.bookmark_tags (domain_id, current_user_id, bookmark_id, _tags);
+};
 
 create procedure WA_SEARCH_ADD_ENEWS_TAG (
 	in current_user_id integer,

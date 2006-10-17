@@ -25,7 +25,7 @@
 <!-- login control; two states in main page and on the other pages -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
   xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
 <xsl:template match="vm:login">
   <v:variable name="login_blocked" type="varchar" default="null" persist="0"/>
@@ -36,6 +36,9 @@
   <v:variable name="_identity" type="varchar" default="null" persist="0" param-name="identity" />
   <v:variable name="_assoc_handle" type="varchar" default="null" persist="0" param-name="assoc_handle" />
   <v:variable name="_trust_root" type="varchar" default="null" persist="0" param-name="trust_root" />
+  <v:variable name="_sreg_required" type="varchar" default="null" persist="0" param-name="sreg_required" />
+  <v:variable name="_sreg_optional" type="varchar" default="null" persist="0" param-name="sreg_optional" />
+  <v:variable name="_policy_url" type="varchar" default="null" persist="0" param-name="policy_url" />
 
   <table cellpadding="0" cellspacing="0" border="0" width="90%">
     <tr>
@@ -76,7 +79,7 @@
               <tr>
                 <th/>
                 <td nowrap="nowrap" align="left">
-                  <v:check-box name="cb_remember_me" xhtml_id="cb_remember_me" value="1"/>
+                  <v:check-box name="cb_remember_me" xhtml_id="cb_remember_me" value="1" xhtml_checked="1"/>
                   <label for="cb_remember_me"><small>Remember me</small></label>
                 </td>
               </tr>
@@ -178,7 +181,8 @@
 		  {
                     --dbg_obj_print ('----------------------------------------------');
 		    --dbg_obj_print (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid);
-                    OPENID..checkid_immediate (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid);
+		    OPENID..checkid_immediate (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid, 0,
+		    self._sreg_required, self._sreg_optional, self._policy_url);
 		  }
 		else
 		  {
@@ -192,11 +196,14 @@
           <v:on-post>
              <![CDATA[
              declare cook_str, expire varchar;
-	     if (self.vc_authenticated and length (self.sid) and
-	     	get_keyword('cb_remember_me', self.vc_event.ve_params) is not null)
+	     if (self.vc_authenticated and length (self.sid))
              {
-               expire := date_rfc1123 (dateadd ('hour', 1, now()));
-               cook_str := sprintf ('Set-Cookie: sid=%s; expires=%s;\r\n', self.sid, expire);
+                 declare expire varchar;
+                 if (get_keyword('cb_remember_me', self.vc_event.ve_params) is not null)
+                   expire := sprintf (' expires=%s;', date_rfc1123 (dateadd ('hour', 1, now())));
+                 else
+                   expire := '';
+                 cook_str := sprintf ('Set-Cookie: sid=%s;%s path=/\r\n', self.sid, expire);
 	       if (strstr (http_header_get (), 'Set-Cookie: sid=') is null)
 	         {
 		   cook_str := concat (http_header_get (), cook_str);

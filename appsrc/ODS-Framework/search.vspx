@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog_home_page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -38,6 +38,7 @@
  <vm:variable name="page" type="int" default="1" param-name="page"/>
  <vm:variable name="uids" type="any" default="null" persist="temp"/>
  <vm:variable name="gurl" type="any" default="null" persist="pagestate"/>
+ <vm:variable name="q_sel" type="any" default="null" persist="temp"/>
  <vm:variable name="s_tag_is_qry" type="int" defaut="0" param-name="tag-is-qry"/>
  <vm:variable name="sapps" type="varchar" defaut="null" param-name="apps"/>
  <vm:variable name="author" type="varchar" defaut="null" param-name="author"/>
@@ -195,6 +196,8 @@
         self.srch_wikis.ufl_selected := 1;
       else if (self.newest = 'news' and DB.DBA.wa_vad_check ('enews2') is not null)
         self.srch_news.ufl_selected := 1;
+      else if (self.newest = 'bookmarks' and DB.DBA.wa_vad_check ('bookmark') is not null)
+        self.srch_bookmark.ufl_selected := 1;
     }
 
   _max_rows := cast (self.max_rows.ufl_value as integer);
@@ -227,6 +230,8 @@
 	     self.srch_omail.ufl_selected := 1;
 	   else if (lower (app) = 'apps')
              self.srch_apps.ufl_selected := 1;
+	   else if (lower (app) = 'bookmark')
+             self.srch_bookmark.ufl_selected := 1;
 
 	}
     }
@@ -245,6 +250,7 @@
 	      self.srch_omail.ufl_selected
 	      and is_empty_or_null (self.q_tags_expr.ufl_value)
 	    )
+           or self.srch_bookmark.ufl_selected
 	 )
 	{
 	  query := WA_SEARCH_CONSTRUCT_QUERY (
@@ -258,6 +264,7 @@
 		self.srch_dav.ufl_selected,
 		self.srch_apps.ufl_selected,
 		self.srch_omail.ufl_selected,
+		self.srch_bookmark.ufl_selected,
 		self.sort_by_score.ufl_selected,
 		_max_rows,
 		self.s_tag_is_qry,
@@ -277,15 +284,11 @@
       else
 	 connection_set ('WA_SEARCH_PATH', '');
       exec (query, NULL, NULL, vector (), 0, meta, res);
-      self.page_url := sprintf ('search.vspx?q=%U&q_tags=%U&r=%d&s=%d',
-		  trim (coalesce (self.expr.ufl_value, '')),
-		  trim (coalesce (self.q_tags_expr.ufl_value, '')),
-		  case when _max_rows <= 0 then 100 else _max_rows end,
-		  case when is_empty_or_null (self.sort_by_score.ufl_selected) then 0 else 1 end);
 
       if (WA_IS_REGULAR_FEED ())
       {
-	self.gurl := '/dataspace/GData/';
+        self.gurl := '';
+        self.q_sel := '';
 
 	if (self.srch_people.ufl_selected)
 	  self.gurl := self.gurl || 'people,';
@@ -301,13 +304,35 @@
 	  self.gurl := self.gurl || 'apps,';
 	if (self.srch_omail.ufl_selected)
 	  self.gurl := self.gurl || 'mail,';
+	if (self.srch_bookmark.ufl_selected)
+	  self.gurl := self.gurl || 'bookmark,';
 
 	self.gurl := rtrim (self.gurl, ',');
+        self.q_sel := self.gurl;
+
         if (self.gurl not like '%/')
 	  self.gurl := self.gurl || '/';
 
-	if (self.srch_people.ufl_selected and self.srch_news.ufl_selected and self.srch_blogs.ufl_selected and self.srch_wikis.ufl_selected and  self.srch_dav.ufl_selected and self.srch_apps.ufl_selected and self.srch_omail.ufl_selected)
+        self.gurl := '/dataspace/GData/' || self.gurl;
+
+	if (self.srch_people.ufl_selected and
+	    self.srch_news.ufl_selected and
+	    self.srch_blogs.ufl_selected and
+	    self.srch_wikis.ufl_selected and
+	    self.srch_dav.ufl_selected and
+	    self.srch_apps.ufl_selected and
+	    self.srch_omail.ufl_selected and
+	    self.srch_bookmark.ufl_selected)
+	 {
 	  self.gurl := '/dataspace/GData/';
+	 }
+
+      self.page_url := sprintf ('search.vspx?q=%U&q_tags=%U&r=%d&s=%d&apps=%s',
+		  trim (coalesce (self.expr.ufl_value, '')),
+		  trim (coalesce (self.q_tags_expr.ufl_value, '')),
+		  case when _max_rows <= 0 then 100 else _max_rows end,
+		  case when is_empty_or_null (self.sort_by_score.ufl_selected) then 0 else 1 end,
+		  self.q_sel);
 
        if (length (self.q_tags_expr.ufl_value))
 	  {
@@ -333,6 +358,12 @@
 	  self.search_results_plate.vc_data_bind (e);
 	  self.search_rss_plate.vc_data_bind (e);
         }
+      else
+        {
+	  self.plate_enabled := 0;
+	  self.search_results_plate.vc_data_bind (e);
+	  self.search_rss_plate.vc_data_bind (e);
+	}
 
       self.ds_data := res;
       self.ds_meta := meta;
@@ -342,6 +373,8 @@
   else
     {
       self.plate_enabled := 0;
+      self.search_results_plate.vc_data_bind (e);
+      self.search_rss_plate.vc_data_bind (e);
       res := vector ();
       meta := vector ();
     }
@@ -492,6 +525,8 @@
   else
     {
       self.plate_enabled := 0;
+      self.search_results_plate.vc_data_bind (e);
+      self.search_rss_plate.vc_data_bind (e);
       res := vector ();
       meta := vector ();
     }
@@ -624,29 +659,29 @@
      <tr valign='top'>
       <td>
        <v:template name="tabTemplate" type="simple">
-       <table cellpadding="0" cellspacing="0" border="0">
+       <table cellpadding="0" cellspacing="0" border="0" class="tabdeck">
 	<colgroup>
 	 <col/>
 	 <col/>
 	 <col/>
 	</colgroup>
-	<tr>
+	<tr class="navtab_row">
 	<?vsp
 	{
 	   declare pg int;
 	   pg := self.page;
 	?>
- 	  <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-	   <v:url name="b_url21" value="Keyword" format="%s" url="--sprintf('search.vspx?page=1&amp;l=1')" xhtml_class="uddi"/>
+ 	  <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>" align="center" nowrap="1">
+	   <v:url name="b_url21" value="Free Text" format="%s" url="--sprintf('search.vspx?page=1&amp;l=1')"/>
 	  </td>
-	  <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-	   <v:url name="b_url12" value="Users" format="%s" url="--sprintf('search.vspx?page=2&amp;l=1')" xhtml_class="uddi"/>
+	  <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>" align="center">
+	   <v:url name="b_url12" value="Members" format="%s" url="--sprintf('search.vspx?page=2&amp;l=1')"/>
 	  </td>
-	  <!--td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-	   <v:url name="b_url13" value="Network Affiliation" format="%s" url="-#-sprintf('search.vspx?page=3')" xhtml_class="uddi"/>
+	  <!--td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>" align="center">
+	   <v:url name="b_url13" value="Network Affiliation" format="%s" url="-#-sprintf('search.vspx?page=3')"/>
 	  </td-->
-	  <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-	   <v:url name="b_url14" value="RDF" format="%s" url="--sprintf('search.vspx?page=4&amp;l=1')" xhtml_class="uddi"/>
+	  <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>" align="center">
+	   <v:url name="b_url14" value="SPARQL" format="%s" url="--sprintf('search.vspx?page=4&amp;l=1')"/>
 	  </td>
 	  <td class="page_tab_empty" align="center" width="100%">
 	    <table cellpadding="0" cellspacing="0">
@@ -705,13 +740,14 @@
 	       xhtml_id="sort_by_score" />
 	     <label for="sort_by_score">Score</label>
 	     <v:radio-button name="sort_by_date" group-name="sort_by" value="date" xhtml_id="sort_by_date"/>
-	     <label for="sort_by_date">Change Date</label>
+	     <label for="sort_by_date">Date Modified</label>
 	   </td>
 	  </tr>
 	  <tr>
 	   <td colspan="2" align="left">
 	    <table>
 	     <tr>
+               <th>Search in:</th>
 	       <td>
 		 <v:check-box name="srch_people" initial-checked="1" xhtml_tabindex="4" xhtml_id="srch_people"/>
 		 <label for="srch_people">People</label>
@@ -769,6 +805,10 @@
 		   self.sort_by_date.ufl_selected := 0;
 		   self.sort_by_score.ufl_selected := 1;
 		   self.plate_enabled := 0;
+		   self.total := 0;
+		   self.search_results_plate.vc_data_bind (e);
+		   self.search_rss_plate.vc_data_bind (e);
+		   self.tag_with_expr_plate.vc_data_bind (e);
 		 }
 	       else
 		 {
@@ -1195,6 +1235,8 @@
          	      initial-checked="1"
          	      enabled="--case when (deserialize (decode_base64 ((control.vc_parent as vspx_row_template).te_rowset[1]))[0] in  ('APP', 'OMAIL')) then 0 else 1 end"/>
               <v:label name="excerpt_lbl" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" />
+		    <br/>
+		    <small><i>Last change: <v:label name="dtim" value="--wa_abs_date ((control.vc_parent as vspx_row_template).te_rowset[3])" /></i></small>
              </td>
             </tr>
            </v:template>
@@ -1230,13 +1272,6 @@
 	 </v:on-post>
 	</v:button>
        </v:template>
-      </td>
-     </tr>
-     <tr>
-      <td>
-       <div class="roll">
-	<?vsp http(sprintf('<a href="javascript:history.go(-1);">Back</a>'));?>
-       </div>
       </td>
      </tr>
     </table>
@@ -1370,16 +1405,16 @@
 	qry :=
 	 WA_SEARCH_ADD_APATH (
 	  WA_SEARCH_ADD_SID_IF_AVAILABLE (
-	   sprintf ('search.vspx?q={searchTerms}&r={count}&o=xml'), self.u_id, '&'));
+	   sprintf ('search.vspx?q={searchTerms}&r={count}&apps=%s&o=xml', self.q_sel), self.u_id, '&'));
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
       http_rewrite ();
       http ('<?xml version="1.0" ?>');  ]]>
 ?&gt;&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearchdescription/1.0/"&gt;
   <Url><?V qry ?></Url>
   <Format>http://a9.com/-/spec/opensearchrss/1.0/</Format>
-  <ShortName>WA Search</ShortName>
-  <LongName>WA Search in various items</LongName>
-  <Description>Searches various items in the Virtuoso Applications space</Description>
+  <ShortName>ODS Search</ShortName>
+  <LongName>ODS Search in <?V self.q_sel ?></LongName>
+  <Description>Searches <?V self.q_sel ?> in the Dataspace</Description>
   <Tags><?V trim (case self.page
 		when 2 then coalesce (self.us_tags.ufl_value, '')
                 else coalesce (self.qry_tags, self.q_tags_expr.ufl_value)

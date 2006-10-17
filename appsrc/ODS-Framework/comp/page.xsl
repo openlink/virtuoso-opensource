@@ -25,7 +25,7 @@
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
   xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
 <xsl:template match="v:page[not @style and not @on-error-redirect][@name != 'error_page']">
   <xsl:copy>
@@ -53,19 +53,34 @@
     
     self.maps_key := WA_MAPS_GET_KEY ();
 
+    if (__proc_exists ('IM AnnotateImageBlob', 2) is not null)
+      self.im_enabled := 1;
+
     if (not length(self.banner))
       self.banner := sys_stat ('st_host_name');
 
     if (0 = length (self.web_banner) or self.web_banner = 'default')
-      self.web_banner := 'ods_banner.jpg';
+      self.web_banner := 'ods_banner_32.jpg';
 
     if (length (self.fname))
       {
+        declare visib varchar;
         self.f_full_name := coalesce ((select U_FULL_NAME from SYS_USERS where U_NAME = self.fname), self.fname);
         self.fname_or_empty := self.fname;
 	declare exit handler for not found;
-	select WAUI_LAT, WAUI_LNG into self.e_lat, self.e_lng from WA_USER_INFO, DB.DBA.SYS_USERS where
+	select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY
+	into visib, self.e_lat, self.e_lng, self.u_country, self.u_state, self.u_city
+	from WA_USER_INFO, DB.DBA.SYS_USERS where
 		WAUI_U_ID = U_ID and U_NAME =  self.fname;
+	if (length (visib) < 16 or visib[16] <> ascii ('1'))
+	  {
+            self.u_country := null;
+	    self.u_state := null;
+	    self.u_city := null;
+	  }
+
+	if (length (self.u_country))
+          self.u_country_code := (select WC_CODE from WA_COUNTRY where WC_NAME = self.u_country);
       }
 
     cookie_vec := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
@@ -103,7 +118,14 @@
 --         self.topmenu_level:=get_keyword('l',self.vc_event.ve_params,'0');
       self.st_host := WA_GET_HOST ();
 
+
+      if ( (get_keyword('devaccess_code',self.vc_event.ve_params)) is not null ){
+        self.devaccess_code:=get_keyword('devaccess_code',self.vc_event.ve_params,'');
+        registry_set('devaccess_code',self.devaccess_code);
+      };
+
       ]]></v:on-init>
+
   <v:method name="set_page_error" arglist="in err any">
       self.vc_is_valid := 0;
       if (err like 'XM028:%')
@@ -125,7 +147,7 @@
 
 <xsl:template match="vm:popup_page_wrapper">
   <xsl:apply-templates select="node()|processing-instruction()" />
-  <div id="copyright_ctr">Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>aaaa
+  <div id="copyright_ctr">Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
 </xsl:template>
 
 <xsl:template match="vm:login-top-button">
@@ -159,9 +181,22 @@
 
 
 <xsl:template match="vm:banner">
-    <a href="sfront.vspx<?V concat ('?', trim(self.login_pars, '&')) ?>" class="site_link">
-	<img src="images/<?V self.web_banner ?>" alt="Web Applications" border="0" />
+  <div class="site_front_banner">
+    <div class="site_front_banner_lt">
+      <a href="sfront.vspx&lt;?V concat ('?', trim (self.login_pars, '&amp;')) ?&gt;" 
+         class="site_link">
+        <img src="images/&lt;?V self.web_banner ?&gt;" 
+             alt="OpenLink Data Spaces Framework" 
+             border="0" />
     </a>
+    </div>
+    <div class="site_front_banner_rt">
+      <vm:app-ad/>
+    </div>
+  </div> <!-- site-banner -->
+</xsl:template>
+
+<xsl:template match="vm:app-ad">
 </xsl:template>
 
 <xsl:template match="vm:welcome-message">
@@ -241,122 +276,83 @@
 </xsl:template>
 
 <!--
-  THIS FOLLOWS THE DEFAULT USER HOME TEMPLATE,
-  IF THE DEFAULT USER HOME IS CHANGED THIS SHOULD BE CHANGED TOO
+  DEFAULT USER HOME TEMPLATE,
+  IF DEFAULT USER HOME IS CHANGED THIS SHOULD BE CHANGED TOO
+
+  XXX the view XHTML markup should be part of individual page templates sfront.vspx and 
+  myhome.vspx to make them properly templateable.
 -->
+
 <xsl:template match="vm:pagewrapper[vm:body]">
  <body>
   <xsl:if test="@vm_onload">
-   <xsl:attribute name="onload"><xsl:value-of select="@vm_onload" /></xsl:attribute>
+      <xsl:attribute name="onload">
+        <xsl:value-of select="@vm_onload" />
+      </xsl:attribute>
   </xsl:if>
   <xsl:if test="@vm_onunload">
    <xsl:attribute name="onunload"><xsl:value-of select="@vm_onunload" /></xsl:attribute>
   </xsl:if>
   <![CDATA[<script type="text/javascript" src="common.js"></script>]]>
-  <v:form name="page_form" type="simple" method="POST" xhtml_enctype="multipart/form-data" xhtml_onsubmit="sflag=true;">
-  <!-- user-defined area -->
-  <table id="MTB" cellspacing="0" cellpadding="0" width="100%">
-    <tr id="MB">
-      <td colspan="2">
-        <table width="100%" border="0">
-          <tr>
-	      <td>
+    <v:form name="page_form" 
+            type="simple" 
+            method="POST" 
+            xhtml_enctype="multipart/form-data" 
+            xhtml_onsubmit="sflag=true;">
+      <div id="HD"><?V ' ' ?>
+        <vm:ods-bar/>
+        <xsl:if test="not (@banner) or @banner != 'no'">
 		  <vm:banner />
-            </td>
-            <td>
-              <table width="100%" border="0">
-                <tr>
-                  <td class="right">
-		    <vm:welcome-message /> <?V ' ' ?> <vm:settings-link/> <?V case when length (self.sid) then ' | ' else ' ' end ?> <vm:site-settings-link/> <vm:help-link /> | <vm:login-top-button/>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="right">
-                    <vm:search/>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-	      <td class="left" colspan="2">
-<!--
-           <b><vm:greetings /></b>
---> 
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-    <tr id="MT">
-      <td id="RC">
-        <table id="RTB">
-          <tr>
-            <td id="RT">
-		<table id="nav_bar" cellspacing="0" cellpadding="0">
-		    <tr>
-			<xsl:apply-templates select="vm:navigation-new|vm:navigation"/>
-		    </tr>
-		</table>
-		<div id="submenu_block"
-		  style="<?V case when self.topmenu_level='1' then 'display:block' else 'display:none' end ?>;">
-		<table id="nav_bar" cellspacing="0" cellpadding="0">
-		    <tr>
-			<vm:subnavigation />
-		    </tr>
-		</table>
-		</div>
-
-            </td>
-          </tr>
-          <tr>
-            <td id="RB">
-              <div class="subpage_header_area">
-                <xsl:apply-templates select="vm:rawheader"/>
-              </div>
-	      <div class="main_page_area">
+        </xsl:if>
+      </div> <!-- HD -->
+      <div id="MD">
 		  <vm:notification />
 		  <xsl:apply-templates select="vm:body|vm:body-wrapper"/>
+      </div> <!-- MD -->
+      <div id="FT">
+        <div id="FT_L">
+          <a href="http://www.openlinksw.com/virtuoso">
+            <img alt="Powered by OpenLink Virtuoso Universal Server" 
+                 src="images/virt_power_no_border.png" 
+                 border="0" />
+          </a>
               </div>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-    <tr>
-      <td id="footer" colspan="2">
+        <div id="FT_R">
         <a href="aboutus.html">About Us</a> |
         <a href="faq.html">FAQ</a> |
         <a href="privacy.html">Privacy</a> |
         <a href="rabuse.vspx">Report Abuse</a> |
-        <a href="#">Advertise</a> |
-        <a href="#">Contact Us</a>
-      </td>
-    </tr>
-    <tr>
-      <td id="copyright_ctr" colspan="2">
-        <div>
+          <a href="advertise.html">Advertise</a> |
+          <a href="contact.html">Contact Us</a>
 	    <div><vm:copyright /></div>
 	    <div><vm:disclaimer /></div>
-	    <a href="http://www.openlinksw.com/virtuoso">
-		<img alt="Powered by OpenLink Virtuoso Universal Server" src="images/PoweredByVirtuoso.gif" border="0" />
-	    </a>
-        <br/>
         </div>
-      </td>
-    </tr>
-  </table>
-  <!-- end of user-defined area -->
+      </div> <!-- FT -->
   </v:form>
   </body>
 </xsl:template>
 
+
+
 <xsl:template match="vm:header">
   <head>
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp"/>
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp"/>
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
-    <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
+    <base href="http://<?V self.st_host ?>/ods/"/>
+    <link rel="alternate" 
+          type="application/rss+xml" 
+          title="Virtuoso Screencast Demos" 
+          href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp"/>
+    <link rel="alternate" 
+          type="application/rss+xml" 
+          title="Virtuoso Tutorials" 
+          href="http://demo.openlinksw.com/tutorial/rss.vsp"/>
+    <link rel="alternate" 
+          type="application/rss+xml" 
+          title="Virtuoso Product Blog (RSS 2.0)" 
+          href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
+    <link rel="alternate" 
+          type="application/atom+xml" 
+          title="Virtuoso Product Blog (Atom)" 
+          href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
     <?vsp
       {
         declare style varchar;
@@ -374,6 +370,12 @@
 
 <xsl:template match="vm:body[parent::vm:pagewrapper]">
     <xsl:apply-templates />
+    <xsl:if test="@default-input">
+      <script type="text/javascript">
+         if (document.page_form.<xsl:value-of select="@default-input"/> != null)
+           document.page_form.<xsl:value-of select="@default-input"/>.focus();
+      </script>
+    </xsl:if>
 </xsl:template>
 
 <xsl:template match="vm:body[parent::vm:page and not (//vm:pagewrapper)]">
@@ -390,6 +392,12 @@
   <xsl:apply-templates />
   <!-- end of user-defined area -->
   </v:form>
+  <xsl:if test="@default-input">
+    <script type="text/javascript">
+       if (document.page_form.<xsl:value-of select="@default-input"/> != null)
+         document.page_form.<xsl:value-of select="@default-input"/>.focus();
+    </script>
+  </xsl:if>
   </body>
 </xsl:template>
 
@@ -854,8 +862,14 @@
     <v:variable name="return_url" type="varchar" persist="session" default="null" param-name="RETURL" />
     <v:variable name="fname" type="varchar" default="null" persist="pagestate" param-name="ufname" />
     <v:variable name="f_full_name" type="varchar" default="null" persist="pagestate" />
-    <v:variable name="e_lat" type="float" default="0" persist="pagestate" />
-    <v:variable name="e_lng" type="float" default="0" persist="pagestate" />
+
+    <v:variable name="e_lat" type="float" default="0" persist="temp" />
+    <v:variable name="e_lng" type="float" default="0" persist="temp" />
+    <v:variable name="u_country" type="varchar" default="null" persist="temp" />
+    <v:variable name="u_country_code" type="varchar" default="null" persist="temp" />
+    <v:variable name="u_city" type="varchar" default="null" persist="temp" />
+    <v:variable name="u_state" type="varchar" default="null" persist="temp" />
+
     <v:variable name="fname_or_empty" type="varchar" default="''" persist="temp" />
     <v:variable name="login_pars" type="varchar" default="''" persist="temp" />
     <v:variable name="u_group" type="int" default="null" persist="session" />
@@ -881,6 +895,8 @@
     <v:variable name="maps_key" type="any" default="null" persist="temp" />
     <v:variable name="tab_pref" type="varchar" default="''" persist="temp" />
     <v:variable name="topmenu_level" type="varchar" default="'0'" persist="pagestate" param-name="l"/>
+    <v:variable name="devaccess_code" type="varchar" default="''" persist="session"/>
+    <v:variable name="im_enabled" type="int" default="0" persist="temp"/>
 
     <xsl:for-each select="//vm:variable">
 	<v:variable>
@@ -1440,6 +1456,12 @@ if (i > 0)
       </td>
     </tr>
     <tr>
+      <th>Verify registration with <?V case when self.im_enabled then 'image' else 'formula' end ?></th>
+      <td>
+        <v:check-box name="ssetc3" value="1" initial-checked="--(select top 1 WS_VERIFY_TIP from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
       <th>Registration expiry time</th>
       <td>
         <v:text name="t_reg_expiry" xhtml_size="10" error-glyph="*" value="--(select top 1 WS_REGISTRATION_EMAIL_EXPIRY from WA_SETTINGS)">
@@ -1489,13 +1511,15 @@ if (i > 0)
                 update WA_SETTINGS set
                   WS_REGISTER = self.ssetc1.ufl_selected,
                   WS_MAIL_VERIFY = self.ssetc2.ufl_selected,
+                  WS_VERIFY_TIP = self.ssetc3.ufl_selected,
                   WS_REGISTRATION_EMAIL_EXPIRY = _reg,
                   WS_JOIN_EXPIRY = _join;
                 if (row_count() = 0)
                 {
                   insert into WA_SETTINGS
-                    (WS_REGISTER, WS_MAIL_VERIFY, WS_REGISTRATION_EMAIL_EXPIRY, WS_JOIN_EXPIRY)
-                    values (self.ssetc1.ufl_selected, self.ssetc2.ufl_selected, self.t_reg_expiry.ufl_value, self.t_join_expiry.ufl_value);
+                    (WS_REGISTER, WS_MAIL_VERIFY, WS_REGISTRATION_EMAIL_EXPIRY, WS_JOIN_EXPIRY, WS_VERIFY_TIP)
+		    values (self.ssetc1.ufl_selected, self.ssetc2.ufl_selected,
+		    self.t_reg_expiry.ufl_value, self.t_join_expiry.ufl_value, self.ssetc3.ufl_selected);
                 }
               ]]>
             </v:script>
@@ -1694,7 +1718,7 @@ if (i > 0)
     <tr>
      <th><a href="http://www.google.com/apis/maps/signup.html">Google maps key</a></th>
       <td>
-	<v:text name="t_google_site_key" error-glyph="*" value="--registry_get ('GOOGLE_MAPS_SITE_KEY')" xhtml_size="110">
+	<v:text name="t_google_site_key" error-glyph="*" value="--case when isstring (registry_get ('GOOGLE_MAPS_SITE_KEY')) then registry_get ('GOOGLE_MAPS_SITE_KEY') else '' end" xhtml_size="110">
         </v:text>
       </td>
     </tr>
@@ -1966,7 +1990,7 @@ if (i > 0)
     <table class="ctl_grp">
       <tr>
         <th>
-          <h3>Existing Hosted Domains</h3>
+          <h3>Existing Hosted Mail Domains</h3>
         </th>
       </tr>
       <tr>
@@ -1981,7 +2005,7 @@ if (i > 0)
           <table class="listing">
             <tr class="listing_header_row">
               <th>Domain</th>
-              <th>Network Interface</th>
+              <!--th>Network Interface</th-->
               <th>Action</th>
             </tr>
             <v:data-set name="vd" scrollable="1" edit="1" data-source="self.domains_source">
@@ -1994,6 +2018,9 @@ if (i > 0)
                     <td>
                       <v:label format="%s" value="--coalesce (cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar), '')"/>
                     </td>
+                    <!--td>
+                      <v:label format="%s" value="-#-coalesce (cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar), '')"/>
+                    </td-->
                     <td>
                       <v:button action="simple" value="Remove" style="url">
                         <v:before-render>
@@ -2033,10 +2060,10 @@ if (i > 0)
                 <v:text name="t_hp_host" error-glyph="*" value="">
                 </v:text>
               </td>
-              <td>
+              <!--td>
                 <v:text name="t_hp_listen_host" error-glyph="*" value="">
                 </v:text>
-              </td>
+              </td-->
               <td>
                 <v:button name="chhptn1" action="simple" value="Add" style="url">
                   <v:on-post>
@@ -2056,7 +2083,7 @@ if (i > 0)
                         {
                           declare _host, _lhost, _lhost2 varchar;
                           _host := trim(self.t_hp_host.ufl_value);
-                          _lhost := trim(self.t_hp_listen_host.ufl_value);
+                          _lhost := ''; --trim(self.t_hp_listen_host.ufl_value);
                           if (_host = '')
                           {
                             self.vc_error_message := 'Domain name cannot be empty';
@@ -2602,7 +2629,7 @@ if (i > 0)
       if(e.ve_button.vc_name <> 'GO') {
           return;
         }
-      self.vc_redirect (sprintf ('search.vspx?q=%U&l=%s', self.txt.ufl_value, self.topmenu_level));
+      self.vc_redirect (sprintf ('search.vspx?q=%U&l=%s', coalesce (self.txt.ufl_value, ''), self.topmenu_level));
       return;
       ]]>
     </v:on-post>
@@ -2649,8 +2676,13 @@ if (i > 0)
   <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/sioc.rdf', self.st_host, self.fname), '+', '%2B')); ?>" />
 </xsl:template>
 
+<xsl:template match="vm:disco-ods-foaf-link">
+    <link rel="meta" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/about.rdf', self.st_host, self.fname), '+', '%2B')); ?>" />
+    <xsl:text>&#10;</xsl:text>
+</xsl:template>
+
 <xsl:template match="vm:disco-sioc-app-link">
-  <?vsp if (length (self.fname)) {  ?>
+  <?vsp if (length (self.fname) and exists (select 1 from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = self.app_type and WAI_IS_PUBLIC = 1)) {  ?>
   <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/%s/sioc.rdf', self.st_host, self.fname, wa_type_to_app (self.app_type)), '+', '%2B')); ?>" />
   <?vsp } ?>
 </xsl:template>
@@ -2658,14 +2690,30 @@ if (i > 0)
 <xsl:template match="vm:erdf-data">
     <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />
     <link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />
-    <meta name="dc.title" content="<?V wa_utf8_to_wide (self.f_full_name) ?>" />
+    <meta name="dc.title" content="<?V wa_utf8_to_wide (self.f_full_name) ?>'s home" />
+    <meta name="dc.creator" content="<?V wa_utf8_to_wide (self.f_full_name) ?>" />
+    <meta name="dc.description" content="<?V wa_utf8_to_wide (self.f_full_name) ?>'s Dataspace"/>
     <?vsp
     if (self.e_lat is not null and self.e_lng is not null) {
     ?>
     <meta name="geo.position" content="<?V sprintf ('%.06f', self.e_lat) ?>;<?V sprintf ('%.06f', self.e_lng) ?>" />
     <meta name="ICBM" content="<?V sprintf ('%.06f', self.e_lat) ?>, <?V sprintf ('%.06f', self.e_lng) ?>" />
+    <?vsp }
+    if (self.u_country is not null) {
+    ?>
+    <meta name="geo.placename" content="<?V self.u_country ?>, <?V self.u_state ?>, <?V self.u_city ?>" />
+    <?vsp }
+    if (self.u_country_code is not null) {
+    ?>
+    <meta name="geo.region" content="<?V self.u_country_code ?>" scheme="iso-3166-1" />
     <?vsp } ?>
+    <meta name="dc.language" content="en" scheme="rfc1766" />
+
     <link rel="openid.server" title="OpenID Server" href="<?V wa_link (1, '/openid') ?>" />
+
+    <meta http-equiv="X-XRDS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
+    <meta http-equiv="X-YADIS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
+
 </xsl:template>
 
 </xsl:stylesheet>

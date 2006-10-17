@@ -26,7 +26,7 @@
                 version="1.0"
                 xmlns:v="http://www.openlinksw.com/vspx/"
                 xmlns:xhtml="http://www.w3.org/1999/xhtml"
-                xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+                xmlns:vm="http://www.openlinksw.com/vspx/ods/">
   <xsl:output method="xml"
               version="1.0"
               encoding="UTF-8"

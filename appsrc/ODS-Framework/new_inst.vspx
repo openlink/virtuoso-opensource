@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog-home-page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -35,10 +35,7 @@
     <v:on-init>
       <![CDATA[
         if (self.instance_descr is null)
-          self.instance_descr := coalesce(
-            (select WAT_DESCRIPTION from WA_TYPES where WAT_NAME = get_keyword('wa_name', self.vc_event.ve_params)),
-	    (select WAT_DESCRIPTION from WA_TYPES, WA_INSTANCE
-	    	where WAT_NAME = WAI_TYPE_NAME and WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), '');
+          self.instance_descr := WA_GET_APP_NAME (coalesce(get_keyword('wa_name', self.vc_event.ve_params), (select WAI_TYPE_NAME from WA_INSTANCE where WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), ''));
         self.wa_type := self.wa_name;
         if (self.wa_type in ('oDrive', 'oMail'))
         {
@@ -138,7 +135,7 @@
         _instance_name := coalesce(self.iname1.ufl_value, '');
         if (regexp_match ('[A-Za-z0-9_]+', _instance_name) <> _instance_name)
           {
-            self.vc_error_message := 'oWiki instance must be single word without special characters';
+            self.vc_error_message := 'Wiki instance must be single word without special characters';
             self.vc_is_valid := 0;
             self.iname1.ufl_failed := 1;
             return;

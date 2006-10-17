@@ -22,8 +22,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="blog-home-page"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+<v:page name="ods-app-my-insts-page"
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/"
   style="index.xsl"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -36,15 +36,13 @@
   <vm:pagewrapper>
     <v:variable name="ufid" type="integer" default="-1"/>
     <vm:rawheader caption="<?V wa_utf8_to_wide (coalesce (self.f_full_name, self.u_full_name)) ?><?V case when length (self.fname) or length (self.sid) then '\'s' else '' end ?> <?V WA_GET_APP_NAME (self.app_type) ?>"/>
-    <vm:navigation-new on=""/>
-    <vm:subnavigation-new on="site"/>
     <vm:body>
       <v:local-variable name="lvsn">
       <v:before-data-bind>
 	<![CDATA[
 	  declare exit handler for not found
 	  {
-	    signal ('22023', sprintf ('The user "%s" does not exists.', self.fname));
+	    signal ('22023', sprintf ('User "%s" does not exist.', self.fname));
 	  };
 
 	 if (not length (self.fname) and length (self.sid))
@@ -58,65 +56,52 @@
       </v:before-data-bind>
       </v:local-variable>
       <vm:login redirect="app_my_inst.vspx"/>
-      <table border="0" class="listing">
-	<tr>
-	
-	 <td width="20%" valign="top">
-      <table border="0" width="100%" height="100%" class="settings">
-	<?vsp
-	  declare i int;
-	  for select * from WA_USER_APP_INSTANCES sub where
-	    user_id = self.u_id and app_type = self.app_type and fname = self.fname do
-	  {
-	?>
-	<tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-	  <td nowrap="nowrap">
-	    <a href="<?V wa_expand_url (INST_URL, self.login_pars) ?>"><img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?></a>
-	  </td>
-	</tr>
-	<?vsp
-	    i := i + 1;
-	  }
-	?>
+      <div id="LT_SB">
+	<ul class="sb app_insts_sb">
+          <vm:if test="length (self.sid)">
+            <li>
+              <v:url xhtml_class="ods_side_button" 
+                     url="services.vspx" 
+                     name="my_app" value='<img src="images/icons/apps_16.png" border="0" /> Manage Applications' />
+            </li>
+          </vm:if>
 	<?vsp
 	  if (
-	       (length (self.sid) and (self.u_name = self.fname or 0 = length (self.fname)))
+	       (length (self.sid) and (self.u_name = self.fname or 
+                                       0 = length (self.fname)))
 	       or
-	       (length (self.sid) = 0 and i = 0 and 0 = length (self.fname))
+	       (length (self.sid) = 0 and 0 = length (self.fname))
 	     )
 	    {
         ?>
-	     <tr>
-	       <td>
-		 <a href="<?V 'index_inst.vspx?wa_name=' || self.app_type || self.login_pars || case when self.topmenu_level='1' then '&l=1' else '' end ?>">
+              <li>
+                <a class="ods_side_button" href="<?V 'index_inst.vspx?wa_name=' || self.app_type || self.login_pars || case when self.topmenu_level='1' then '&l=1' else '' end ?>">
 		   <img src="images/icons/new_16.png" border="0" />
-		   Create New
+		  New <?V WA_GET_APP_NAME (self.app_type) ?> App
 		 </a>
-	      </td>
-	     </tr>
+              </li>
 	<?vsp
 	    }
-	    else if (i = 0 and length (self.fname))
+	  declare i int;
+	  for select * 
+                from WA_USER_APP_INSTANCES sub 
+                where user_id = self.u_id and 
+                      app_type = self.app_type and 
+                      fname = self.fname do
 	    {
 	?>
-	     <tr>
-	       <td>
-		 No Instances
-	      </td>
-	     </tr>
+	      <li>
+                <a class="ods_side_button" href="<?V wa_expand_url (INST_URL, self.login_pars) ?>">
+                  <img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?>
+                </a>
+              </li>
 	<?vsp
+	    i := i + 1;
 	    }
 	?>
-	<vm:if test="length (self.sid)">
-	  <tr>
-	    <td>
-	      <v:url url="services.vspx" name="my_app" value='<img src="images/icons/apps_16.png" border="0" /> My Applications' />
-	    </td>
-	  </tr>
-        </vm:if>
-      </table>
-    </td>
-    <td width="80%">
+        </ul>
+      </div> <!-- LT_SB -->
+      <div id="RT">
       <?vsp
       if (self.u_id = self.ufid)
         {
@@ -165,9 +150,7 @@
 
 	}
       ?>
-	</td>
-      </tr>
-    </table>
+      </div> <!-- RT -->
     </vm:body>
   </vm:pagewrapper>
 </vm:page>

@@ -346,6 +346,7 @@ sticker_init() {
   #echo "      vhost_define (lpath=>'/wa',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'index.vspx');" >> $STICKER
   echo "      vhost_define (lpath=>'/ods',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'sfront.vspx');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/web_svc.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER

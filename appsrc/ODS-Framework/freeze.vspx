@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog-home-page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -44,7 +44,7 @@
           <tr>
             <td>
               <div class="box">
-                <h3>Freeze options for <?V get_keyword('app', self.vc_event.ve_params, 'Unknown') ?></h3>
+                <h3>Freeze options for <?V get_keyword('app', self.vc_event.ve_params, '') ?></h3>
                 <div>
                   <vm:freeze-options/>
                 </div>

@@ -25,7 +25,7 @@
 <!-- Content Tagging management -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:v="http://www.openlinksw.com/vspx/"
-    xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+    xmlns:vm="http://www.openlinksw.com/vspx/ods/">
     <xsl:template match="vm:tag-settings">
 	<h3>Rule sets enabled for content tagging <?V self.u_full_name ?>'s applications</h3>
 	<table class="listing">
@@ -782,7 +782,7 @@ function selectAllCheckboxes (form, btn, txt)
 				]]></v:on-post>
 			</v:button>
 			<v:button action="simple" name="trs_btn3" value="Export"
-			    xhtml_onclick="--sprintf ('javascript: window.open (\'/INLINEFILE/%U.xml?VSP=%s/trs_export.xml&amp;:r=%d&amp;contenttype=application/octet-stream\', \'export\', \'\'); return false', self.trs_name.ufl_value, wa_link (), self.trs_id)"
+			    xhtml_onclick="--sprintf ('javascript: window.open (\'trs_export.xml?:r=%d&amp;contenttype=application/octet-stream&amp;content-filename=%U.xml\', \'export\', \'\'); return false', self.trs_id, self.trs_name.ufl_value)"
 			    enabled="--gte (self.trs_id, 0)">
 			</v:button>
 			<v:form action="POST" name="impform" type="simple" xhtml_enctype="multipart/form-data">

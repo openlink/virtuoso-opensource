@@ -24,7 +24,7 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
     xmlns:v="http://www.openlinksw.com/vspx/"
-    xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+    xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
   <xsl:template match="vm:instance-settings">
 
@@ -70,7 +70,7 @@
         </td>
       </tr>
   
-       <xsl:if test="not @edit">
+       <xsl:if test="not (@edit = 'yes') and not (@readonly = 'yes')">
  
       <tr  style="vertical-align : baseline;">
        <th>
@@ -94,7 +94,7 @@
        http://<?V domain||self.ihome?>
        </td>
        <td align="right">
-      <xsl:if test="not (@edit = 'yes')">
+      <xsl:if test="not (@edit = 'yes') and not (@readonly = 'yes')">
        <?vsp
          if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community','oGallery'))
          {

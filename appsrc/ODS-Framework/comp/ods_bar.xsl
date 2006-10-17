@@ -27,11 +27,6 @@
   xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
-<xsl:template match="vm:ods-bar-tmp">
-  <v:template name="ods_bar" type="simple" enabled="1">
-	  <v:url name="ods_barregister_button" value="Register" url="register.vspx"/>
- </v:template>
-</xsl:template>
 
 <xsl:template match="vm:ods-bar">
   <v:template name="ods_bar" type="simple" enabled="1">
@@ -47,15 +42,45 @@
     <v:variable name="odsbar_u_group" type="int" default="null" persist="session" />
     <v:variable name="odsbar_u_home" type="varchar" default="''" />
     <v:variable name="odsbar_loginparams" type="varchar" default="''" />
+    <v:variable name="odsbar_show_signin" type="varchar" default="'true'"/>
 
     <v:variable name="odsbar_ods_gpath" type="varchar" default="''" />
 
     <v:variable name="odsbar_inout_arr" type="any" default="''" />
       <xsl:processing-instruction name="vsp">
+
+          self.odsbar_show_signin:='<xsl:value-of select="@show_signin"/>';
+          if (length(self.odsbar_show_signin)=0) self.odsbar_show_signin:='true';
+
+
           self.odsbar_inout_arr:=vector('app_type','<xsl:value-of select="@app_type"/>');
           if (get_keyword('app_type',self.odsbar_inout_arr) is NULL or length(get_keyword('app_type',self.odsbar_inout_arr))=0 ){
            self.odsbar_inout_arr:=vector('app_type',get_keyword('app_type',self.vc_event.ve_params));
           };
+
+
+         if(get_keyword('logout',self.vc_event.ve_params)='true' and length(self.sid)>0)
+         {
+                     delete from VSPX_SESSION where VS_REALM = self.realm and VS_SID = self.sid;
+                     self.sid := null;
+
+                     declare _params any;
+                     _params:=self.vc_event.ve_params;
+                     _params:=vector_concat(subseq(_params,0,position('sid',_params)-1),subseq(_params,position('sid',_params)+1));
+                     self.vc_event.ve_params:=_params;
+
+                     connection_set ('vspx_user','');
+
+                     declare redirect_url varchar;
+                     redirect_url:=self.odsbar_ods_gpath||'sfront.vspx';
+                     http_rewrite ();
+                     http_request_status ('HTTP/1.1 302 Found');
+                     http_header (concat (http_header_get (), 'Location: ',redirect_url,'\r\n'));
+                     self.vc_redirect (redirect_url);
+
+         };
+
+
 
 
       </xsl:processing-instruction>
@@ -63,14 +88,47 @@
     <v:on-init>
      <![CDATA[
       if(registry_get('devaccess_code')<>0) self.odsbar_devaccess_code:=registry_get('devaccess_code');
+
+         declare vsp2vspx_user varchar;
+         vsp2vspx_user:='';
+
+     	   whenever not found goto nf_uid;
+         select VS_UID into vsp2vspx_user from VSPX_SESSION where VS_REALM = get_keyword('realm',self.vc_event.ve_params) and VS_SID = get_keyword('sid',self.vc_event.ve_params);
+
+    	   nf_uid:;
+
+         if ( length(self.sid)=0
+             and
+              length(get_keyword('sid',self.vc_event.ve_params))>0
+             and
+              length(vsp2vspx_user)>0
+            )
+         {
+
+           self.sid:=get_keyword('sid',self.vc_event.ve_params);
+           self.realm:=get_keyword('realm',self.vc_event.ve_params);
+           connection_set ('vspx_user',vsp2vspx_user);
+
+         };
+
+
+	 declare vh, lh, hf any;
+	 vh := http_map_get ('vhost');
+	 lh := http_map_get ('lhost');
+	 hf := http_request_header (self.vc_event.ve_lines, 'Host');
+
+	 if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
+	   self.odsbar_ods_gpath := 'http://' || hf || '/ods/';
+	 else
+           self.odsbar_ods_gpath := WA_LINK(1, '/ods/');
      ]]>
     </v:on-init>
     <v:before-data-bind>
 
      <![CDATA[
 
-          if (registry_get ('wa_home_link')<>0)
-              self.odsbar_ods_gpath:=registry_get ('wa_home_link');
+--          if (registry_get ('wa_home_link')<>0)
+--              self.odsbar_ods_gpath:=registry_get ('wa_home_link');
 
          if(length(self.sid))
          {
@@ -121,13 +179,27 @@ function submitenter(fld, btn, e)
 <script type="text/javascript" src="<?V self.odsbar_ods_gpath ?>oat/loader.js"></script>
 ]]>
     <link rel="stylesheet" type="text/css" href="<?V self.odsbar_ods_gpath ?>ods-bar.css" />
-    <div id="HD-ODS-BAR">
+     <div id="ods-bar-odslogin" style="display:none;text-align:right">
+      <v:url name="odsbar_odslogin_button" value="Sign In" url="--self.odsbar_ods_gpath||'login.vspx?URL='||http_path() " is-local="1"/>
+     </div>
+     <vm:if test="( length (self.sid) <> 0
+      or (locate('/samples/wa/',http_physical_path ()) 
+      or locate('/DAV/VAD/wa/',http_physical_path ())
+      or locate('/DAV/VAD/wiki/',http_physical_path ())
+      ) ) ">
+    <div id="HD-ODS-BAR" style="display:none;">
+
+
     <div id="ods-bar">
 
      <div id="ods-bar-toggle">
-       <img id="ods-bar-toggle-min" style="display: none;"/>
-       <img id="ods-bar-toggle-half" style="display: none;"/>
+       <a href="javascript:void(0);" onclick="change_odsbar_state();return false;">
+       <img id="ods-bar-toggle-min" src="<?V self.odsbar_ods_gpath ?>images/ods_bar_handle_c.png" style="display: none;"/>
+       <img id="ods-bar-toggle-half" src="<?V self.odsbar_ods_gpath ?>images/ods_bar_handle_m.png" style="display: none;"/>
        <img id="ods-bar-toggle-full" src="<?V self.odsbar_ods_gpath ?>images/ods_bar_handle_l.png"/>
+       </a>
+       <img id="ods-bar-toggle-min-spacer" src="<?V self.odsbar_ods_gpath ?>images/odsbar_spacer.png" style="display: none;width:0px;height:1px;"/>
+
      </div>
      <div id="ods-bar-mid">
         <vm:odsbar_navigation_level1/>
@@ -138,12 +210,12 @@ function submitenter(fld, btn, e)
         <div id="ods-bar-login">
 
          <vm:if test=" length (self.sid) >0 ">
-          <v:url name="site_settings_btn" url="--self.odsbar_ods_gpath||'app_settings.vspx'" value="Settings"/>
+          <v:url name="site_settings_btn" url="--self.odsbar_ods_gpath||'app_settings.vspx'" value="Settings" is-local="1"/>
          </vm:if>
 
          <vm:if test=" length (self.sid) and wa_user_is_dba (self.odsbar_u_name, self.odsbar_u_group) ">
          |
-         <v:url name="app_settings_link" value="Site Settings" url="site_settings.vspx" render-only="1"/>
+         <v:url name="app_settings_link" value="Site Settings" url="site_settings.vspx" render-only="1" is-local="1"/>
          </vm:if>
 
 
@@ -151,32 +223,46 @@ function submitenter(fld, btn, e)
          |
          </vm:if>
 
-         <v:url name="odsbar_help_button" value="Help" url="--self.odsbar_ods_gpath||'help.vspx'" xhtml_target="_blank" />
+         <v:url name="odsbar_help_button" value="Help" url="--self.odsbar_ods_gpath||'help.vspx'" xhtml_target="_blank" is-local="1"/>
 
          <vm:if test=" length (self.sid) = 0 ">
           |
-          <v:url name="odsbar_login_button" value="Login" url="--self.odsbar_ods_gpath||'login.vspx'" />
+          <v:url name="odsbar_login_button" value="Sign In" url="--self.odsbar_ods_gpath||'login.vspx'" is-local="1"/>
           |
-          <v:url name="ods_barregister_button" value="Register" url="--self.odsbar_ods_gpath||'register.vspx'"/>
+          <v:url name="ods_barregister_button" value="Sign Up" url="--self.odsbar_ods_gpath||'register.vspx'" is-local="1"/>
          </vm:if>
 
          <vm:if test=" length (self.sid) > 0 ">
 
          <img class="ods-bar-inline-icon"  style="float:none" src="<?V self.odsbar_ods_gpath ?>images/lock.png"/>
-          <v:button name="odsbar_userinfo_button" value="--wa_wide_to_utf8(self.odsbar_u_full_name)" action="simple" style="url" url="--self.odsbar_ods_gpath||'uhome.vspx?ufname='||self.odsbar_u_name" render-only="1"/>
-          Not <?V wa_utf8_to_wide(self.odsbar_u_full_name) ?>?
-          <v:button name="odsbar_logout_button" value="logout" action="simple" style="url" xhtml_title="logout" xhtml_alt="logout">
+          <v:url name="odsbar_userinfo_button" value="--self.odsbar_u_full_name" url="--self.odsbar_ods_gpath||'uhome.vspx?ufname='||self.odsbar_u_name" render-only="1" is-local="1" format="%s"/>
+          Not <?vsp http(self.odsbar_u_full_name); ?>?
+          <v:url name="odsbar_logout_url"
+                    value="logout"
+                    url="?logout=true"
+                    xhtml_title="logout"
+                    xhtml_alt="logout"
+                    xhtml_class="logout-lnk"
+                    is-local="1">
+          </v:url>
+          <!--v:button name="odsbar_logout_button_2"
+                    value="--'images/exit.png'"
+                    action="simple"
+                    style="image"
+                    xhtml_title="logout"
+                    xhtml_alt="logout"
+                    xhtml_class="logout-btn">
                <v:on-post><![CDATA[
                   delete from VSPX_SESSION where VS_REALM = self.realm and VS_SID = self.sid;
                   self.sid := null;
                   self.vc_redirect (self.odsbar_ods_gpath||'sfront.vspx');
                ]]></v:on-post>
-          </v:button>
+          </v:button-->
          </vm:if>
-        </div><br/>
+        </div>
 
 <!--  <vm:if test=" length (self.sid) > 0">
-        <div id="ods-bar-site-lnk"><img class="ods-bar-inline-icon" src="<?V self.odsbar_ods_gpath ?>images/gohome.png"/><v:url name="odsbar_myhome_btn" url="sfront.vspx" value="ODS Home" /></div>
+        <div id="ods-bar-site-lnk"><img class="ods-bar-inline-icon" src="<?V self.odsbar_ods_gpath ?>images/gohome.png"/><v:url name="odsbar_myhome_btn" url="sfront.vspx" value="ODS Home" is-local="1"/></div>
       </vm:if> -->
      </div>
      <div id="ods-bar-bottom">
@@ -218,6 +304,14 @@ function submitenter(fld, btn, e)
 
         if(locate('/services.vspx',_http_path))
             curr_location:=curr_location||settings_url||'Applications > ';
+        if(locate('/delete_inst.vspx',_http_path))
+            curr_location:=curr_location||settings_url||'Applications > Delete> ';
+        if(locate('/edit_inst.vspx',_http_path))
+            curr_location:=curr_location||settings_url||'Applications > Edit> ';
+        if(locate('/members.vspx',_http_path))
+            curr_location:=curr_location||settings_url||'Applications > Members> ';
+
+
 
         if(locate('/stat.vspx',_http_path))
             curr_location:=curr_location||settings_url||'Log and Statistics > ';
@@ -230,8 +324,12 @@ function submitenter(fld, btn, e)
             curr_location:=curr_location||settings_url||'Application Notification Log > ';
         if(locate('/vhost.vspx',_http_path))
             curr_location:=curr_location||settings_url||'Endpoints > ';
+
         if(locate('/tags.vspx',_http_path))
             curr_location:=curr_location||settings_url||'Content Tagging Settings > ';
+        if(locate('/add_rule.vspx',_http_path))
+            curr_location:=curr_location||settings_url||'Content Tagging Settings > New Rule> ';
+
         if(locate('/user_template.vspx',_http_path))
             curr_location:=curr_location||settings_url||'Home Page Template Selection > ';
         if(locate('/uiedit.vspx',_http_path))
@@ -248,25 +346,58 @@ function submitenter(fld, btn, e)
         if(locate('/login.vspx',_http_path))
             curr_location:=curr_location||'Login > ';
 
+        if(locate('/site_settings.vspx',_http_path))
+            curr_location:=curr_location||'Site Settings > ';
+
+        declare site_settings_url varchar;
+        site_settings_url:='<a href="'||self.odsbar_ods_gpath||'site_settings.vspx?'||self.odsbar_loginparams||'">Site Settings</a> > ';
+
+        if(locate('/web_header.vspx',_http_path))
+            curr_location:=curr_location||site_settings_url||'Web Application Configuration > ';
+
+
+
+        if(locate('/member.vspx',_http_path))
+            curr_location:=curr_location||site_settings_url||'Member Registration > ';
+
+        if(locate('/app.vspx',_http_path))
+            curr_location:=curr_location||site_settings_url||'Application Agreements > ';
+
+        if(locate('/map_svc.vspx',_http_path))
+            curr_location:=curr_location||site_settings_url||'Mapping Services > ';
+
+        if(locate('/accounts.vspx',_http_path))
+            curr_location:=curr_location||site_settings_url||'Users Administration > ';
+
+        if(locate('/mail.vspx',_http_path))
+            curr_location:=curr_location||site_settings_url||'Mail > ';
+
+        if(locate('/server.vspx',_http_path))
+            curr_location:=curr_location||site_settings_url||'Server Settings > ';
+
+        if(locate('/app_menu_settings.vspx',_http_path))
+            curr_location:=curr_location||site_settings_url||'Application Menu > ';
+
+        if(locate('/ping_svc.vspx',_http_path))
+            curr_location:=curr_location||site_settings_url||'Notification Services > ';
 
 
          http(rtrim(curr_location,' > '));
        ?>
        </div>
        <div id="ods-bar-data-space-indicator">
-      <vm:if test=" length (self.sid) > 0 and self.odsbar_u_name<>self.odsbar_fname">
+      <vm:if test=" length (self.sid) > 0 and self.odsbar_u_name<>self.odsbar_fname and length(self.odsbar_fname)">
         <img class="ods-bar-inline-icon" src="<?V self.odsbar_ods_gpath ?>images/info.png"/> Data space:<a href="#"><?Vself.odsbar_fname?>'s</a>
       </vm:if>
        </div>
      </div>
   </div><!-- HD-ODS-BAR -->
  </div>
-<![CDATA[<font size="-3" id="ods-bar-sep">&nbsp;</font>
+ </vm:if>
+<![CDATA[<p style="font-size: 1pt;margin: 0;padding: 0;" id="ods-bar-sep">&nbsp;</p>
 <script  type="text/javascript">
-
-function appllyTransperantImg(parent_elm)
+function applyTransparentImg(parent_elm)
 {
-       typeof(OAT);
 
       if (OAT.Dom.isIE()==false) return;
 
@@ -292,11 +423,140 @@ function appllyTransperantImg(parent_elm)
         }
       }
 
- return
+ return;
 }
 
-appllyTransperantImg(document.getElementById('ods-bar'));
-</script>]]>
+applyTransparentImg(document.getElementById('ods-bar'));
+
+
+function create_cookie (name, value, days)
+{
+  if (days)
+    {
+      var date = new Date ();
+      date.setTime (date.getTime () + (days*24*60*60*1000));
+      var expires = "; expires=" + date.toGMTString ();
+    }
+  else var expires = "";
+
+  document.cookie = name + "=" + value + expires + "; path=/";
+}
+
+function read_cookie (name)
+{
+  var name_eq = name + "=";
+  var ca = document.cookie.split (';');
+  for (var i=0; i < ca.length; i++)
+    {
+      var c = ca[i];
+      while (c.charAt (0)==' ') c = c.substring (1, c.length);
+      if (c.indexOf (name_eq) == 0) return c.substring (name_eq.length, c.length);
+    }
+  return null;
+}
+function set_odsbar_state(state)
+{
+//  alert(']'+state+'[');
+  if(state=='half')
+  {
+    OAT.Dom.show('ods-bar-toggle-half');
+    OAT.Dom.hide('ods-bar-toggle-min');
+    OAT.Dom.hide('ods-bar-toggle-full');
+    OAT.Dom.hide('ods-bar-second-lvl');
+    OAT.Dom.hide('ods-bar-toggle-min-spacer');
+    OAT.Dom.show('ods-bar-mid');
+    OAT.Dom.show('ods-bar-r');
+    create_cookie ('odsbar_state', 'half', 7);
+    return;
+
+  }
+  if(state=='full')
+  {
+    OAT.Dom.show('ods-bar-toggle-full');
+    OAT.Dom.hide('ods-bar-toggle-min');
+    OAT.Dom.hide('ods-bar-toggle-half');
+    OAT.Dom.hide('ods-bar-toggle-min-spacer');
+    OAT.Dom.show('ods-bar-second-lvl');
+    OAT.Dom.show('ods-bar-mid');
+    OAT.Dom.show('ods-bar-r');
+    OAT.Dom.show('ods-bar-bottom');
+    create_cookie ('odsbar_state', 'full', 7);
+
+    return;
+  }
+  if(state=='min')
+  {
+    var dx;
+    if(OAT.Dom.isIE)
+    {
+      dx=document.body.offsetWidth - 16 - OAT.Dom.getWH('ods-bar-toggle-min-spacer')[0];
+    }else
+    {
+      dx=window.innerWidth - 26 - OAT.Dom.getWH('ods-bar-toggle-min-spacer')[0];
+    }
+    
+    OAT.Dom.resizeBy('ods-bar-toggle-min-spacer', dx , 0);
+    OAT.Dom.show('ods-bar-toggle-min-spacer');
+
+    OAT.Dom.show('ods-bar-toggle-min');
+    OAT.Dom.hide('ods-bar-toggle-half');
+    OAT.Dom.hide('ods-bar-toggle-full');
+    OAT.Dom.hide('ods-bar-second-lvl');
+   
+    OAT.Dom.hide('ods-bar-mid');
+    OAT.Dom.hide('ods-bar-r');
+    OAT.Dom.hide('ods-bar-bottom');
+    create_cookie ('odsbar_state', 'min', 7);
+   
+    return;
+  }
+
+}
+function change_odsbar_state()
+{
+  if($('ods-bar-toggle-min').style.display!='none')
+  {
+    set_odsbar_state('half')
+    return;
+  }
+  if($('ods-bar-toggle-half').style.display!='none')
+  {
+    set_odsbar_state('full')
+    return;
+  }
+  if($('ods-bar-toggle-full').style.display!='none')
+  {
+    set_odsbar_state('min')
+    return;
+  }
+}
+
+set_odsbar_state(read_cookie ('odsbar_state'));
+
+OAT.Dom.show('HD-ODS-BAR');
+]]>
+      <!--vm:if test=" length (self.sid) = 0
+                    and not (locate('/samples/wa/',http_physical_path ()) or locate('/DAV/VAD/wa/',http_physical_path ()))
+                    ">
+        <![CDATA[
+        document.getElementById('HD-ODS-BAR').style.display='none';
+        ]]>
+      </vm:if-->
+      <vm:if test=" length (self.sid) = 0
+                    and not (
+				locate('/samples/wa/',http_physical_path ()) 
+				or locate('/DAV/VAD/wa/',http_physical_path ())
+				or locate('/DAV/VAD/wiki/',http_physical_path ())
+			)
+                    and self.odsbar_show_signin='true'">
+      <![CDATA[
+        document.getElementById('ods-bar-odslogin').style.display='block';
+        ]]>
+      </vm:if>
+<![CDATA[
+</script>
+]]>
+
  </v:template>
 
 </xsl:template>
@@ -306,11 +566,11 @@ appllyTransperantImg(document.getElementById('ods-bar'));
 
 
         <v:template name="ods_bar_my_home" type="simple" condition="length(self.odsbar_u_name)>0">
-           <li class="home-lnk"><v:button name="odsbar_myhome_navbtn" value="--self.odsbar_ods_gpath||'images/bookmark.png'" action="simple" style="image" xhtml_title="home" xhtml_alt="home" url="--self.odsbar_ods_gpath||'myhome.vspx?l=1'" /></li>
+           <li class="home-lnk"><v:button name="odsbar_myhome_navbtn" value="--self.odsbar_ods_gpath||'images/gohome.png'" action="simple" style="image" xhtml_title="home" xhtml_alt="home" url="--self.odsbar_ods_gpath||'myhome.vspx?l=1'" /></li>
         </v:template>
 
         <v:template name="odsbar_ops_home" type="simple" condition="length(self.odsbar_u_name)=0">
-          <li class="home-lnk"><v:button name="odsbar_opshome_navbtn" value="--self.odsbar_ods_gpath||'images/bookmark.png'" action="simple" style="image" xhtml_title="ODS Home" xhtml_alt="ODS Home" url="--self.odsbar_ods_gpath||'sfront.vspx'" /></li>
+          <li class="home-lnk"><v:button name="odsbar_opshome_navbtn" value="--self.odsbar_ods_gpath||'images/gohome.png'" action="simple" style="image" xhtml_title="ODS Home" xhtml_alt="ODS Home" url="--self.odsbar_ods_gpath||'sfront.vspx'" /></li>
         </v:template>
 
          <vm:odsbar_applications_menu/>
@@ -321,8 +581,7 @@ appllyTransperantImg(document.getElementById('ods-bar'));
             <img class="tab_r" src="<?V self.odsbar_ods_gpath ?>images/tab_r_bg.png"/>
            </vm:if>
          </li>
-
-        </ul>
+         <li>
            <v:text xhtml_size="10" name="odsbar_search_text" value="" xhtml_class="textbox" xhtml_onkeypress="return submitenter(this, \'ods_GO\', event)">
              <v:on-post>
                <![CDATA[
@@ -335,8 +594,10 @@ appllyTransperantImg(document.getElementById('ods-bar'));
                ]]>
              </v:on-post>
            </v:text>
-
+         </li>
+        </ul>
            <v:button xhtml_id="odsbar_search_button" action="simple" style="image" name="ods_GO" value="--self.odsbar_ods_gpath||'images/odsbar_spacer.png'"/>
+
 
 <!--
           <v:form type="simple" method="POST" name="odsbar_search">
@@ -377,7 +638,7 @@ appllyTransperantImg(document.getElementById('ods-bar'));
                         );
 
        declare arr_url any;
-       arr_url := vector ('nntpf','/nntpf/'
+       arr_url := vector ('nntpf',rtrim(self.odsbar_ods_gpath,'/ods/')||'/nntpf/'
                           --packagename, fullurl - uses iven url of type key1,kye1value,
                           --                                             key2,key2value
                          );
@@ -407,11 +668,12 @@ appllyTransperantImg(document.getElementById('ods-bar'));
           declare url_class varchar;
           url_class:='';
 
-          if(self.odsbar_app_type = app[0]){
+          if(self.odsbar_app_type = app[0] and get_keyword('app_type',self.odsbar_inout_arr) is null){
              url_class:='sel';
           }else if ( get_keyword('app_type',self.odsbar_inout_arr) is not null
                      and
-                     get_keyword('app_type',self.odsbar_inout_arr) = app[0] )
+                     get_keyword('app_type',self.odsbar_inout_arr) = app[0]
+                   )
           {
              url_class:='sel';
           }
@@ -420,6 +682,7 @@ appllyTransperantImg(document.getElementById('ods-bar'));
            <v:url name="slice1" url="--url_value"
               value="--WA_GET_APP_NAME (app[0])"
               render-only="1"
+              is-local="1"
            />
              <vm:if test="url_class<>'sel'">
               <img class="tab_r" src="<?V self.odsbar_ods_gpath ?>images/tab_r_bg.png" />
@@ -438,10 +701,10 @@ appllyTransperantImg(document.getElementById('ods-bar'));
       {
       declare arr,arr_notlogged any;
       arr := vector (
-                     vector ('Tags','/ods/gtags.vspx')
+                     vector ('Tags',self.odsbar_ods_gpath||'gtags.vspx')
                     );
       arr_notlogged := vector (
-                                vector ('Tags','/ods/gtags.vspx')
+                                vector ('Tags',self.odsbar_ods_gpath||'gtags.vspx')
                                );
 
       if (length(self.sid)=0) arr :=arr_notlogged;
@@ -454,7 +717,7 @@ appllyTransperantImg(document.getElementById('ods-bar'));
 
 
           url_value:=menu_link[1];
-          if(locate(url_value,http_path ()))
+          if(locate(url_value,rtrim(self.odsbar_ods_gpath,'/ods/')||http_path ()))
           class_value:='sel';
 
 
@@ -463,6 +726,7 @@ appllyTransperantImg(document.getElementById('ods-bar'));
            <v:url name="nonapp_link" url="--url_value"
               value="--WA_GET_APP_NAME (menu_link[0])"
               render-only="1"
+              is-local="1"
            />
              <vm:if test="class_value<>'sel'">
               <img class="tab_r" src="<?V self.odsbar_ods_gpath ?>images/tab_r_bg.png" />
@@ -490,8 +754,8 @@ appllyTransperantImg(document.getElementById('ods-bar'));
 if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
 {
 ?>
-      <li><v:url name="odsbar_userinfoedit_link" url="--self.odsbar_ods_gpath||'uiedit.vspx?l=1'" render-only="1" value="Edit My Profile"/></li>
-      <li><v:url name="odsbar_myapplications_link" url="--self.odsbar_ods_gpath||'services.vspx?l=1'" render-only="1" value="My Applications"/></li>
+      <li><v:url name="odsbar_userinfoedit_link" url="--self.odsbar_ods_gpath||'uiedit.vspx?l=1'" render-only="1" value="Edit My Profile" is-local="1"/></li>
+      <li><v:url name="odsbar_myapplications_link" url="--self.odsbar_ods_gpath||'services.vspx?l=1'" render-only="1" value="My Applications" is-local="1"/></li>
 <?vsp
 }else if ( ((self.odsbar_app_type is not NULL) and (locate('app_inst.vspx',http_path ()) or locate('app_my_inst.vspx',http_path ())))
             or
@@ -506,6 +770,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
        <v:url name="slice_all" url="--sprintf ('%sapp_inst.vspx?app=%s&ufname=%V',self.odsbar_ods_gpath, self.odsbar_app_type, coalesce(self.odsbar_fname,''))"
           value="--'All '||WA_GET_MFORM_APP_NAME(self.odsbar_app_type)"
           render-only="1"
+          is-local="1"
        />
        </li>
        </vm:if>

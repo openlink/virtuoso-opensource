@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog-home-page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"

@@ -24,7 +24,7 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
   xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/">
 
   <xsl:template match="vm:services">
     <v:data-source name="dss" expression-type="sql" nrows="-1" initial-offset="0">
@@ -242,6 +242,33 @@
   </xsl:template>
 
   <xsl:template match="vm:security-list">
+      <script type="text/javascript">
+  <![CDATA[
+function selectAllCheckboxes (form, btn, txt)
+{
+  var i;
+  for (i =0; i < form.elements.length; i++)
+    {
+      var contr = form.elements[i];
+      if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt) != -1)
+        {
+    contr.focus();
+    if (btn.value == 'Select All')
+      contr.checked = true;
+    else
+            contr.checked = false;
+  }
+    }
+  if (btn.value == 'Select All')
+    btn.value = 'Unselect All';
+  else
+    btn.value = 'Select All';
+  btn.focus();
+}
+
+
+]]>
+</script>
     <?vsp
       if (wa_user_is_dba (self.u_name, self.u_group))
       {
@@ -262,16 +289,20 @@
     <div class="scroll_area">
     <table class="listing">
       <tr class="listing_header_row">
-        <th>Application Name</th>
+	  <th>
+	       <input type="checkbox" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'inst_cb')"/>
+	      Application Name
+	  </th>
         <th>Application Type</th>
         <th>Owner User</th>
         <th>Action</th>
       </tr>
       <v:data-set name="serv2" scrollable="1" edit="1" data-source="self.dss1">
-        <vm:template type="repeat">
-          <vm:template type="browse">
+        <vm:template type="repeat" name="sec_rpt">
+          <vm:template type="browse" name="sec_brws">
 	      <tr class="<?V case when mod(control.te_ctr,2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
-              <td>
+              <td nowrap="1">
+		  <input type="checkbox" name="inst_cb" value="<?V control.te_rowset[0] ?>" />
                 <v:label name="instance_name" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" format="%s"/>
               </td>
               <td>
@@ -358,8 +389,8 @@
                   <v:on-post>
                     <v:script>
                     <![CDATA[
-                      http_request_status ('HTTP/1.1 302 Found');
-                      http_header(sprintf('Location: freeze.vspx?sid=%s&realm=%s&app=%s\r\n', self.sid, self.realm, (control.vc_parent as vspx_row_template).te_rowset[3]));
+		    self.vc_redirect (sprintf('freeze.vspx?app=%s',
+		    	(control.vc_parent as vspx_row_template).te_rowset[3]));
                     ]]>
                     </v:script>
                   </v:on-post>
@@ -386,8 +417,7 @@
                     <v:script>
                     <![CDATA[
                       update WA_INSTANCE set WAI_IS_FROZEN = 0 where WAI_NAME = (control.vc_parent as vspx_row_template).te_rowset[3];
-                      http_request_status ('HTTP/1.1 302 Found');
-                      http_header(sprintf('Location: security.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                      self.vc_redirect ('security.vspx');
                     ]]>
                     </v:script>
                   </v:on-post>
@@ -416,6 +446,38 @@
         </vm:template>
     </v:data-set>
     </table>
+   <div class="fm_ctl_btn">
+       <v:button name="freeze_btn" value="Freeze Selected" action="simple">
+	   <v:on-post><![CDATA[
+	       declare i, v, pars any;
+	       pars := e.ve_params;
+               v := '';
+	       for (i := 0; i < length (pars); i := i + 2)
+	         {
+		   if (pars[i] = 'inst_cb')
+                     v := v || pars[i+1] || ',' ;
+	         }
+	       v := rtrim (v, ',');
+	       if (length (v))
+	         self.vc_redirect ('freeze.vspx?apps='||v);
+	       ]]></v:on-post>
+       </v:button>
+       <v:button name="remove_btn" value="Delete Selected" action="simple" >
+	   <v:on-post><![CDATA[
+	       declare i, v, pars any;
+	       pars := e.ve_params;
+               v := '';
+	       for (i := 0; i < length (pars); i := i + 2)
+	         {
+		   if (pars[i] = 'inst_cb')
+                     v := v || pars[i+1] || ',' ;
+	         }
+	       v := rtrim (v, ',');
+	       if (length (v))
+	         self.vc_redirect ('delete_inst.vspx?apps='||v||'&redir=security');
+	       ]]></v:on-post>
+       </v:button>
+   </div>
 </div>
     <?vsp
       }
@@ -423,17 +485,42 @@
   </xsl:template>
 
   <xsl:template match="vm:freeze-options">
+    <v:variable name="apps_ids" type="varchar" default="null" param-name="apps"/>
+    <v:variable name="apps" type="any" default="null" />
     <v:after-data-bind>
-      <v:script>
         <![CDATA[
+	  declare apps, v, i any;
+	  v := null;
+	  if (self.apps_ids is not null)
+	    {
+	      apps := split_and_decode (self.apps_ids, 0, '\0\0,');
+	      v := make_array (length (apps), 'any');
+	      i := 0;
+              foreach (any id in apps) do
+	        {
+                  v[i] := atoi (id);
+		  i := i + 1;
+		}
+	    }
           self.inst_name := get_keyword('app', e.ve_params, self.inst_name);
-          if (self.inst_name = '' or self.inst_name is null)
+          if (length (self.inst_name) = 0 and self.apps_ids is null)
             control.vc_enabled := 0;
           else
             control.vc_enabled := 1;
+          self.apps := v;
         ]]>
-      </v:script>
     </v:after-data-bind>
+    <?vsp
+    if (self.apps is not null)
+      {
+        declare wai_nam varchar;
+	foreach (any v in self.apps) do
+	  {
+	    wai_nam := (select WAI_NAME from WA_INSTANCE where WAI_ID = v);
+	    http (wai_nam); http ('<br />');
+	  }
+      }
+    ?>
     <table>
       <tr>
         <th valign="top">Freeze redirect page</th>
@@ -506,6 +593,7 @@
             <v:on-post>
               <v:script>
                 <![CDATA[
+		  declare wai_ids any;
                   if (not wa_user_is_dba (self.u_name, self.u_group))
                   {
                     self.vc_is_valid := 0;
@@ -527,10 +615,21 @@
                   }
                   else
                     banner := 'default';
+
+		  if (length (self.inst_name))
+                    {
                   update DB.DBA.WA_INSTANCE set
                     WAI_IS_FROZEN = 1,
                     WAI_FREEZE_REDIRECT = banner
                     where WAI_NAME = self.inst_name;
+		    }
+		  else if (length (self.apps))
+		    {
+			foreach (any v in self.apps) do
+			  {
+                            update DB.DBA.WA_INSTANCE set WAI_IS_FROZEN = 1, WAI_FREEZE_REDIRECT = banner where WAI_ID = v;
+			  }
+		    }
                   http_request_status ('HTTP/1.1 302 Found');
                   http_header(sprintf('Location: security.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
                 ]]>

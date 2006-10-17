@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="error_page"
+<v:page name="error-page"
         style="index.xsl"
         fast-render="1"
         xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
@@ -30,7 +30,7 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:page>
     <vm:header>
-      <vm:title>Error</vm:title>
+      <vm:title>Unexpected Error</vm:title>
     </vm:header>
     <vm:pagewrapper>
       <vm:variables>
@@ -49,22 +49,36 @@
             }
           ]]>
         </v:on-init-->
-        <v:form name="drop_obj" method="POST" type="simple" enabled="--case when length (self.code) > 0 then 1 else 0 end">
-          <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
-            <div class="confirm_text">
-              <h4>An error has occured when processing <b>"<?V self.page_name ?>"</b> page.</h4>
-              <table>
-                <tr>
-                  <td>SQL State </td> <td> <?V self.code ?> </td>
-                </tr>
-                <tr>
-                  <td>SQL Message </td> <td> <pre><?V self.mesg ?></pre> </td>
-                </tr>
+        <v:form name="drop_obj"
+                method="POST"
+                type="simple"
+                enabled="--case when length (self.code) > 0 then 1 else 0 end">
+          <div class="error_dialog">
+            <h1><img class="dialog_icon"
+                     src="images/icons/messagebox_warning.png"
+                     alt="warning icon"
+                     title="unexpected error"/>Unexpected Error</h1>
+            <div class="dialog_body">
+              <p>The action could not be performed because of an unexpected error.<br/>
+                 Please try again. The problem has been logged and the system
+                 administrators notified.</p>
+              <table class="error_tech_info">
+                <caption>Technical data</caption>
+                <tr><th>Page</th><td></td></tr>
+                <tr><th>SQL State</th><td><?V self.code ?></td></tr>
+		<tr><th>SQL Message</th><td><?V self.mesg ?></td></tr>
               </table>
             </div>
+	        <?vsp
+                declare msg any;
+		msg := regexp_match ('[^\r\n]*', self.mesg);
+                log_message (sprintf ('ODS [%s] %s', self.code, msg));
+		?>
             <div class="dialog_buttons">
-              <v:button action="simple" name="cancel" value="Go back" xhtml_onclick="javascript:history.back();return false;"/>
+              <v:button action="simple"
+                        name="cancel"
+                        value="Go back"
+                        xhtml_onclick="javascript:history.back();return false;"/>
             </div>
           </div>
         </v:form>

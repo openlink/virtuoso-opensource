@@ -40,12 +40,13 @@ WA_GDATA_INIT ();
 create procedure ODS_INIT_VHOST ()
 {
   declare http_port, default_host, default_port, cname, inet, vhost varchar;
-  declare arr any;
+  declare arr, cnt_inet, ext_inet any;
 
   cname := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
   http_port := server_http_port ();
 
   arr := split_and_decode (cname, 0, '\0\0:');
+  cnt_inet := 0;
   if (length (arr) > 1)
     {
       default_host := arr[0];
@@ -60,6 +61,14 @@ create procedure ODS_INIT_VHOST ()
       vhost := cname || ':80';
       inet := ':'||default_port;
     }
+  else -- only happens in the testsuite with M2
+    inet := ':';
+  cnt_inet := (select count(distinct HP_LISTEN_HOST) from HTTP_PATH where HP_LISTEN_HOST like '%'||inet);
+  if (cnt_inet = 1)
+    {
+      ext_inet := (select distinct HP_LISTEN_HOST from HTTP_PATH where HP_LISTEN_HOST like '%'||inet);
+      inet := ext_inet;
+    }
 
 DB.DBA.VHOST_REMOVE (lpath=>'/dataspace');
 DB.DBA.VHOST_DEFINE (lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
@@ -67,25 +76,146 @@ DB.DBA.VHOST_DEFINE (lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_use
 DB.DBA.VHOST_REMOVE (lpath=>'/dataspace/GData');
 DB.DBA.VHOST_DEFINE (lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
 
-  if (cname is not null and default_port <> http_port)
+  DB.DBA.VHOST_REMOVE (lpath=>'/openid');
+  DB.DBA.VHOST_DEFINE (lpath=>'/openid', ppath=>'/SOAP/Http/server', soap_user=>'OpenID');
+
+  if (cname is not null and default_port <> http_port and cnt_inet < 2)
     {
 --      dbg_obj_print (default_port, http_port, vhost, inet);
       DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/ods');
       DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace');
       DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace/GData');
+      DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/openid');
 
       DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/ods',ppath=>'/DAV/VAD/wa/', is_dav=>1,
 	  vsp_user=>'dba', def_page=>'sfront.vspx');
       DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
       DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
+      DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/openid', ppath=>'/SOAP/Http/server', soap_user=>'OpenID');
       insert replacing WA_DOMAINS (WD_DOMAIN,WD_HOST,WD_LISTEN_HOST,WD_LPATH,WD_MODEL)
 	  values (default_host, vhost, inet, '/ods', 0);
+    }
+  else if (cname is not null and default_port <> http_port and cnt_inet >= 2)
+    {
+      log_message ('The DefaultHost has defined two or more listeners, please define the default dataspace virtual directories.');
     }
 };
 
 ODS_INIT_VHOST ();
 
 drop procedure ODS_INIT_VHOST;
+
+create procedure WA_SET_HOME_URLS (in do_res int := 0)
+{
+  declare _WAI_NAME, _HP_HOST, _HP_LPATH, _HP_LISTEN_HOST varchar;
+  declare lpath, ppath, DEF_PAGE varchar;
+  declare pos, IS_DEFAULT, _WAI_ID int;
+  declare http_port, default_host, default_port, cname, inet, vhost varchar;
+  declare arr, cnt_inet, ext_inet, h any;
+  declare i db.dba.web_app;
+  declare vd_pars any;
+  declare vd_is_dav, vd_is_browse int;
+  declare vd_opts any;
+  declare vd_user, vd_pp, vd_auth, phys_path varchar;
+
+  if (registry_get ('__wa_vd_upgrade') = 'done')
+    return;
+
+  cname := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  http_port := server_http_port ();
+
+  arr := split_and_decode (cname, 0, '\0\0:');
+  cnt_inet := 0;
+  if (length (arr) > 1)
+    {
+      default_host := arr[0];
+      default_port := arr[1];
+      vhost := arr[0];
+      inet := ':'||default_port;
+    }
+  else if (length (arr) = 1)
+    {
+      default_host := cname;
+      default_port := '80';
+      vhost := cname;
+      inet := ':'||default_port;
+    }
+  else -- only happens in the testsuite with M2
+    inet := ':';
+  cnt_inet := (select count(distinct HP_LISTEN_HOST) from HTTP_PATH where HP_LISTEN_HOST like '%'||inet);
+  if (cnt_inet = 1)
+    {
+      ext_inet := (select distinct HP_LISTEN_HOST from HTTP_PATH where HP_LISTEN_HOST like '%'||inet);
+      inet := ext_inet;
+    }
+
+
+  if (do_res)
+    result_names (_WAI_NAME, _HP_LPATH);
+
+  if (cname is not null and default_port <> http_port and cnt_inet = 1)
+    ;
+  else
+    {
+      if (cname is not null and default_port <> http_port and cnt_inet > 1)
+        log_message ('There is more than one listener defined for defaulthost, the upgrdade can not be done');
+      return;
+    }
+
+  for select WAM_HOME_PAGE, WAI_INST, WAM_INST, WAI_ID, WAM_APP_TYPE from WA_MEMBER, WA_INSTANCE
+    where WAM_INST = WAI_NAME and WAM_MEMBER_TYPE = 1 and WAM_APP_TYPE <> 'oWiki' do
+    {
+      pos := strrchr (WAM_HOME_PAGE, '/');
+      if (pos is not null)
+	{
+          lpath := subseq (WAM_HOME_PAGE, 0, pos);
+	}
+      else
+        lpath := WAM_HOME_PAGE;
+
+      if (length (lpath) > 1)
+        lpath := rtrim (lpath, '/');
+
+      i := WAI_INST;
+      h := udt_implements_method (i, fix_identifier_case ('wa_vhost_options'));
+      vd_pars := null;
+      if (h)
+        vd_pars := call (h) (i);
+      if (vd_pars is not null)
+        {
+          phys_path := vd_pars[0];
+          def_page :=  vd_pars[1];
+          vd_user :=   vd_pars[2];
+          vd_is_browse :=vd_pars[3];
+          vd_is_dav := vd_pars[4];
+          vd_opts :=   vd_pars[5];
+          vd_pp :=     vd_pars[6];
+          vd_auth :=   vd_pars[7];
+        }
+
+      if (vd_pars is not null and lpath[0] = ascii ('/') and
+	  not exists (select 1 from HTTP_PATH where HP_HOST = vhost and HP_LISTEN_HOST = inet and HP_LPATH = lpath))
+	{
+	  VHOST_DEFINE (
+	      vhost=>vhost,
+	      lhost=>inet,
+	      lpath=>lpath,
+	      ppath=>phys_path,
+	      def_page=>def_page,
+	      vsp_user=>vd_user,
+	      is_brws=>vd_is_browse,
+	      is_dav=>vd_is_dav,
+	      opts=>vd_opts,
+	      ppr_fn=>vd_pp,
+	      auth_fn=>vd_auth);
+	  if (do_res)
+	    result (WAM_INST, lpath);
+	}
+    }
+  registry_set ('__wa_vd_upgrade', 'done');
+};
+
+WA_SET_HOME_URLS ();
 
 create procedure wa_app_to_type (in app varchar)
 {
@@ -135,7 +265,7 @@ create procedure wa_type_to_appg (in app varchar)
 
 use ODS;
 
-create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
+create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 {
   declare ppath varchar;
   declare path, pars, lines any;
@@ -165,6 +295,15 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
       goto redir;
     }
 
+  if (uname = 'about.rdf')
+    {
+      declare ses any;
+      ses := sioc..sioc_compose_xml (null, null, null, null, p);
+      http (ses);
+      http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+      return '';
+    }
+
   if (length (path) > 5)
     app := path [5];
 
@@ -174,6 +313,13 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
   if (length (path) > 7 and path[5] = 'data' and path[6] = 'public' and path[7] = 'about.rdf')
     app := 'users';
 
+  if (app = 'yadis.xrds' and inst is null)
+    {
+      http_header ('Content-Type: application/xrds+xml; charset=UTF-8\r\n');
+      OPENID..yadis (uname);
+      return '';
+    }
+
   if (app = 'about.rdf' or app = 'sioc.rdf')
     {
       if (app = 'sioc.rdf')
@@ -181,10 +327,16 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
     app := 'users';
     }
 
-  if (uname = 'feed')
+  if (uname = 'feed' or uname = 'discussion')
     {
-      app := 'feed';
       post := inst;
+      inst := app;
+      app := uname;
+      if (post = 'sioc.rdf')
+	{
+	  do_sioc := 1;
+	  post := null;
+	}
       uname := 'nobody';
     }
 
@@ -211,9 +363,17 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 	  post := path[7];
 	  do_sioc := 1;
 	}
+      else if (length (path) > 9 and path[9] = 'sioc.rdf')
+	{
+	  post := path[7]||'/'||path[8];
+	  do_sioc := 1;
+	}
       else
 	 post := path[7];
     }
+  if (not (do_rdf or do_sioc)
+      and app = 'wiki' and length(path) > 7)
+    post := path[6] || '/' || path[7];
 
   if (app = 'users' or (app is not null and (inst = 'about.rdf' or inst = 'sioc.rdf')))
    {
@@ -231,7 +391,7 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
       else if (do_sioc or (app is not null and inst = 'sioc.rdf'))
 	{
 	  declare ses any;
-	  ses := sioc..sioc_compose_xml (uname, null, app);
+	  ses := sioc..sioc_compose_xml (uname, null, app, null, p);
           http (ses);
 	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 	  return '';
@@ -262,10 +422,28 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 
   appn := DB.DBA.wa_app_to_type (app);
 
-
   if (length (app) = 0)
     {
-      url := DB.DBA.wa_link (0,  sprintf ('uhome.vspx?page=1&ufname=%U', uname));
+      -- old behaviour
+      --url := DB.DBA.wa_link (1,  sprintf ('uhome.vspx?page=1&ufname=%U', uname));
+
+      p_path_str := '/DAV/VAD/wa/';
+      l_path_str := (select top 1 HP_LPATH from DB.DBA.HTTP_PATH where HP_PPATH = p_path_str
+      and HP_HOST = vhost and HP_LISTEN_HOST = lhost);
+
+      if (l_path_str is not null)
+	full_path := concat (l_path_str, '/uhome.vspx');
+      else
+	full_path := '/DAV/VAD/wa/uhome.vspx';
+
+      p_full_path := http_physical_path_resolve (full_path, 1);
+      http_internal_redirect (full_path, p_full_path);
+      set_user_id ('dba');
+      set http_charset='utf-8';
+      pars := vector_concat (http_param (), vector ('page', '1', 'ufname', uname));
+      WS.WS.GET (path, pars, lines);
+      http_header (http_header_get ()||sprintf ('X-XRDS-Location: %s\r\n', DB.DBA.wa_link (1, '/dataspace/'||uname||'/yadis.xrds')));
+      return null;
     }
   else if (length (inst) = 0)
     {
@@ -283,9 +461,12 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
       _inst := null;
       url := null;
 
-      if (app = 'discussion' and do_sioc)
+      if (app in ('discussion', 'feed') and do_sioc)
+	{
+	  inst_type := app;
 	goto nntpf;
-      if (app = 'feed' and post is not null)
+	}
+      if (app in ('discussion', 'feed') and post is not null)
 	goto do_post;
       -- the stored SPARQL queries
       if (app = 'sparql')
@@ -334,14 +515,17 @@ create procedure ODS.ODS.redirect ()  __SOAP_HTTP 'text/html'
 	  set_user_id ('dba');
 	  set http_charset='utf-8';
 	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+	  if (p_full_path like '/DAV/%')
 	  WS.WS.GET (path, pars, lines);
+	  else
+	    WS.WS."DEFAULT" (path, pars, lines);
 	  return null;
 	}
       else if (do_sioc)
         {
 	  nntpf:
 	  declare ses any;
-	  ses := sioc..sioc_compose_xml (uname, inst, inst_type, post);
+	  ses := sioc..sioc_compose_xml (uname, inst, inst_type, post, p);
           http (ses);
 	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 	  return '';

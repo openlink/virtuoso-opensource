@@ -27,7 +27,7 @@
   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
   style="index.xsl"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
     <v:variable persist="0" name="secretq" type="varchar" default="''"/>
@@ -185,7 +185,6 @@
               <tr>
                 <td colspan="2" class="ctrl">
 		      <span class="fm_ctl_btn">
-		  <input type="reset" name="reset_btn" value="Cancel" />
                   <v:button name="user_sset" value="Save" action="simple">
                     <v:on-post>
                       <![CDATA[
@@ -219,7 +218,11 @@
               <tr>
                 <td colspan="2" class="ctrl">
 		      <span class="fm_ctl_btn">
-		  <input type="reset" name="reset_btn2" value="Cancel" />
+			<v:button name="bt_cncl_5" value="Cancel" action="simple">
+			  <v:on-post>
+			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+			  </v:on-post>
+			</v:button>
                   <v:button name="bt_set1" value="Save Restrictions" action="simple">
                     <v:on-post>
                       <![CDATA[

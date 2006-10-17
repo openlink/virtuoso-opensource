@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog-home-page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -160,6 +160,41 @@
        <tr>
 	 <td>
 	   <div class="scroll_area">
+	       <v:on-post><![CDATA[
+		 if (control = e.ve_button and e.ve_initiator is not null and e.ve_initiator.vc_name = 'cbc')
+		   {
+		     declare cb vspx_check_box;
+                     declare flag int;
+		     declare uname varchar;
+		     declare rows any;
+
+		     cb := e.ve_initiator;
+		     uname := cb.ufl_value;
+		     if (get_keyword (cb.vc_get_name(), e.ve_params) is null)
+		       {
+		         flag := 1;
+			 cb.ufl_selected := 0;
+		       }
+		     else
+                       {
+			 cb.ufl_selected := 1;
+		         flag := 0;
+		       }
+
+		     USER_SET_OPTION (uname, 'DISABLED', flag);
+		     delete from VSPX_SESSION where VS_UID = uname;
+
+		     update DB.DBA.WA_INSTANCE set WAI_IS_FROZEN = flag
+		       where WAI_NAME in
+		       (select WAM_INST from WA_MEMBER, SYS_USERS where WAM_USER = U_ID and U_NAME = uname
+		       and WAM_MEMBER_TYPE = 1);
+
+		     rows := (cb.vc_parent as vspx_row_template).te_rowset;
+		     rows[2] := flag;
+		     (cb.vc_parent as vspx_row_template).te_rowset := rows;
+
+		   }
+	   ]]></v:on-post>
            <v:data-set name="ds"
 	     sql="select U_NAME, U_FULL_NAME, U_ACCOUNT_DISABLED, U_ID from WA_SYS_USERS where mask = :self.search_mask
 	     and ord = :self.ord and seq = :self.ordseq and what = :self.filt_state and U_NAME not in ('dav', 'dba', 'nobody')"
@@ -186,6 +221,8 @@
 				      ]]></v:on-post>
 			      </v:button>
 		   </th>
+                   <th>Status
+                   </th>
 		   <th>
 			      <v:button action="simple" name="name_ord2" value="Full Name" style="url">
 				  <v:on-post><![CDATA[
@@ -193,8 +230,8 @@
 				      ]]></v:on-post>
 			      </v:button>
 		   </th>
-                   <th>Actions
-                   </th>
+                   <!--th>Actions
+                   </th-->
                  </tr>
                </table>
              </v:template>
@@ -236,17 +273,26 @@
                                 value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
                                 format="%s"/>
                       </td>
+			    <td>
+		       <label for="<?V control.vc_find_control ('cbc').vc_get_name () ?>">
+			   <?V case when control.te_rowset[2] = 0 then 'Disable' else 'Enable' end ?>
+		       </label>
+		       <v:check-box auto-submit="1" name="cbc" xhtml_id="--control.vc_get_name ()"
+			       initial-checked="--equ ((control.vc_parent as vspx_row_template).te_rowset[2], 0)"
+			       value="--(control.vc_parent as vspx_row_template).te_rowset[0]">
+ 		       </v:check-box>
+                      </td>
                       <td class="listing_col" nowrap="1">
                         <v:label name="label5"
                                  value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
                                  format="%s"
                                  width="80"/>
                       </td>
-                      <td class="listing_col_action">
+                      <!--td class="listing_col_action">
                         <v:button action="simple" style="url" name="modf"
-			  value="--case when (control.vc_parent as vspx_row_template).te_rowset[2] = 0
+			  value="-#-case when (control.vc_parent as vspx_row_template).te_rowset[2] = 0
 			           then 'Disable' else 'Enable' end"
-			       enabled="--case when (control.vc_parent as vspx_row_template).te_rowset[0]
+			       enabled="-#-case when (control.vc_parent as vspx_row_template).te_rowset[0]
 			                  in ('dba', 'dav') then 0 else 1 end"
 			       >
 			       <v:on-post>
@@ -266,7 +312,7 @@
 				 self.ds.vc_data_bind (e);
 			       </v:on-post>
 			</v:button>
-                      </td>
+                      </td-->
 <?vsp
               http('</tr>');
 ?>

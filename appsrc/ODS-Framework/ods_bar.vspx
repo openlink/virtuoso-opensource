@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -  
 -->
-<v:page name="ods-dumy-page"
+<v:page name="ods-dummy-page"
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="comp/ods_bar.xsl"

@@ -27,7 +27,7 @@
   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
   style="index.xsl"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
     <v:variable persist="0" name="bindustr" type="varchar" default="''"/>
@@ -311,7 +311,7 @@
                     </td>
                     <td rowspan="2" valing="center">
                      <vm:u-prop-select name="sel_47" value="self.sav47" />
-                     <v:button name="set_blat_blong" action="simple" value="Lookup for geographical coordinates by address">
+                     <v:button name="set_blat_blong" action="simple" value="Set from address">
                        <v:on-post>
                        <![CDATA[
                          declare blat, blng double precision;
@@ -338,7 +338,7 @@
                              control.ufl_selected := self.blatlng_def;
                        </v:after-data-bind>
                      </v:check-box>
-                     <label for="set_blatlng_def">Set business coordinates as my default map location</label>
+                     <label for="set_blatlng_def">Default map location</label>
 
                     
                     </td>
@@ -511,7 +511,11 @@
               <tr>
 		  <td colspan="2" class="ctrl">
 		      <span class="fm_ctl_btn">
-		  <input type="reset" name="reset_btn" value="Cancel" />
+			<v:button name="bt_cncl_4" value="Cancel" action="simple">
+			  <v:on-post>
+			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+			  </v:on-post>
+			</v:button>
                   <v:button name="user_sset_buss" value="Save" action="simple" xhtml_tabindex="21">
                     <v:on-post>
                       <![CDATA[

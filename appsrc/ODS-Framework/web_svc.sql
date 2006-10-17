@@ -70,7 +70,7 @@ insert soft SVC_HOST (SH_ID, SH_URL, SH_NAME, SH_PROTO) values (3, 'http://ping.
 
 insert soft SVC_HOST (SH_ID, SH_URL, SH_NAME, SH_PROTO) values (4, 'http://rpc.technorati.com/rpc/ping', 'Technorati', 'xml-rpc');
 
-insert soft SVC_HOST (SH_ID, SH_URL, SH_NAME, SH_PROTO) values (5, 'http://ping.rootblog.com/rpc.php', 'RootBlog', 'xml-rpc');
+--insert soft SVC_HOST (SH_ID, SH_URL, SH_NAME, SH_PROTO) values (5, 'http://ping.rootblog.com/rpc.php', 'RootBlog', 'xml-rpc');
 
 insert soft SVC_HOST (SH_ID, SH_URL, SH_NAME, SH_PROTO) values (6, 'http://rpc.blogrolling.com/pinger/', 'Blogrolling', 'xml-rpc');
 

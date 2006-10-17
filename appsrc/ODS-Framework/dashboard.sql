@@ -95,6 +95,18 @@ wa_add_col ('DB.DBA.wa_new_news', 'wnn_efi_id', 'int');
 
 EXEC_STMT ('create index wa_new_news_id on wa_new_news (wnn_efi_id)', 0);
 
+EXEC_STMT (
+'create table wa_new_bookmarks (
+    wnb_row_id int identity,
+    wnb_id integer,
+    wnb_title varchar,
+    wnb_link varchar,
+    wnb_dt datetime,
+    primary key (wnb_row_id))', 0)
+;
+
+EXEC_STMT ('create index wa_new_bookmarks_id on wa_new_bookmarks (wnb_id)', 0);
+
 create procedure wa_clear_stats ()
 {
   delete from wa_n_login;
@@ -268,6 +280,24 @@ create procedure WA_NEW_WIKI_RM (in id varchar)
 };
 
 
+create procedure WA_NEW_BOOKMARKS_IN (in title varchar, in link varchar, in id integer)
+{
+  declare rc, row_id int;
+
+  delete from wa_new_bookmarks where wnb_id = id;
+  rc := row_count ();
+  insert into wa_new_bookmarks (wnb_title, wnb_link, wnb_dt, wnb_id) values (title, link, now(), id);
+  row_id := identity_value ();
+  if (not rc)
+    delete from wa_new_bookmarks where wnb_row_id < (row_id - 10);
+};
+
+create procedure WA_NEW_BOOKMARKS_RM (in id integer)
+{
+  delete from wa_new_bookmarks where wnb_id = id;
+};
+
+
 create procedure WA_USER_DASHBOARD_SP (in uid int, in inst_type varchar)
 {
   declare inst_name, title, author, url nvarchar;
@@ -355,6 +385,9 @@ create procedure wa_abs_date (in  dt datetime)
 {
   declare diff, ddiff int;
   declare ret any;
+
+  if (dt is null)
+    return 'never';
 
   diff := datediff ('minute', dt, now ());
   ddiff := datediff ('day', dt, now ());

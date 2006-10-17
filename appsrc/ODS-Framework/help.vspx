@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="help" on-deadlock-retry="3" style="index.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+<v:page name="help" on-deadlock-retry="3" style="index.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/ods/">
     <vm:page>
 	<vm:header>
 	    <vm:title>Help</vm:title>

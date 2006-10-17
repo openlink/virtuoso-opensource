@@ -27,7 +27,7 @@
   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
   style="index.xsl"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
     <v:variable persist="0" name="haddress1" type="varchar" default="''"/>
@@ -217,7 +217,7 @@
 		      </td>
 		      <td rowspan="2" valing="center">
 			<vm:u-prop-select name="sel_39" value="self.sav39" />
-			<v:button name="set_lat_long" action="simple" value="Lookup for geographical coordinates by address">
+			<v:button name="set_lat_long" action="simple" value="Set from address">
 			  <v:on-post>
 			 <![CDATA[
 			  declare lat, lng double precision;
@@ -247,8 +247,9 @@
                       }
                     }
                 </v:after-data-bind>
+              <br/>
               </v:check-box>
-              <label for="set_hlatlng_def">Set home coordinates as my default map location</label>
+              <label for="set_hlatlng_def">Default map location</label>
 			
 		      </td>
 		    </tr>
@@ -303,7 +304,11 @@
               <tr>
                 <td colspan="2" class="ctrl">
 		      <span class="fm_ctl_btn">
-		  <input type="reset" name="reset_btn" value="Cancel" />
+			<v:button name="bt_cncl_2" value="Cancel" action="simple">
+			  <v:on-post>
+			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+			  </v:on-post>
+			</v:button>
 		  <v:button name="user_sset_home" value="Save" action="simple"  xhtml_tabindex="12">
                     <v:on-post>
                       <![CDATA[

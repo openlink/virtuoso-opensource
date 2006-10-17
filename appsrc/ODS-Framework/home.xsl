@@ -24,7 +24,7 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
   xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/">
   <xsl:output method="xml" indent="yes" cdata-section-elements="style"/>
   <xsl:include href="comp/page.xsl"/>
   <xsl:include href="comp/login.xsl"/>
@@ -32,4 +32,8 @@
   <xsl:include href="comp/app_inst_menu.xsl"/>
   <xsl:include href="comp/home.xsl"/>
   <xsl:include href="comp/map_control.xsl"/>
+  <xsl:include href="comp/ods_bar.xsl"/>
+
+
+
 </xsl:stylesheet>

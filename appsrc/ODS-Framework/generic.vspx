@@ -25,7 +25,7 @@
 <!-- Generic WA user homepage, all home pages are interpreted using this markup -->
 <v:page style="home.xsl"
         name="home"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
 	doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
@@ -51,13 +51,13 @@
 
       children := self.page_form.vc_children;
       -- keep length in sync with IN values bellow
-      widgets := make_array (4, 'any');
+      widgets := make_array (5, 'any');
       l := length (children);
       for (i := 0; i < l; i := i + 1)
         {
 	  declare chil vspx_control;
 	  chil := children[i];
-	  if (chil is not null and chil.vc_name in ('search','login_top_button','user_details', 'user_home_map'))
+	  if (chil is not null and chil.vc_name in ('search','login_top_button','user_details', 'user_home_map','ods_bar'))
 	    {
 	      widgets [inx] := chil;
 	      children[i] := null;
@@ -76,6 +76,7 @@
 	<vm:home-init />
 	<vm:login redirect="uhome.vspx"/>
 	<!-- all possible widgets for user home -->
+	<vm:ods-bar/>
 	<vm:user-home-map/>
 	<vm:search />
 	<vm:login-top-button/>

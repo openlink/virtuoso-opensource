@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog-home-page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -60,8 +60,8 @@ function getFileName(form, from, to)
           <td>
             <table cellpadding='10' cellspacing='0' border='0' width='100%'>
               <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
+                <td class="tab_deck">
+                  <table cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
                     <colgroup>
                       <col/>
                       <col/>
@@ -70,7 +70,7 @@ function getFileName(form, from, to)
                       <col/>
                       <col/>
                     </colgroup>
-		    <tr>
+		    <tr class="navtab_row">
 		      <?vsp
 		      {
 		         declare pg int;
@@ -89,23 +89,49 @@ function getFileName(form, from, to)
 			def_btn = '<?V btn ?>';
 		      </script>
 
-			<td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-                          <v:url name="b_url21" value="Personal" format="%s" url="--sprintf('uiedit.vspx?page=1')" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                          <v:url name="b_url21" 
+                                 value="Personal" 
+                                 format="%s" 
+                                 url="--sprintf('uiedit.vspx?page=1')" 
+                                 xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-                          <v:url name="b_url12" value="Contact" format="%s" url="--sprintf('uiedit.vspx?page=2')" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab_non_sel' end ?>" 
+                            align="center">
+                          <v:url name="b_url12" 
+                                 value="Contact" 
+                                 format="%s" 
+                                 url="--sprintf('uiedit.vspx?page=2')" 
+                                 xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-                          <v:url name="b_url13" value="Home" format="%s" url="--sprintf('uiedit.vspx?page=3')" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab_non_sel' end ?>" 
+                            align="center">
+                          <v:url name="b_url13" 
+                                 value="Home" 
+                                 format="%s" 
+                                 url="--sprintf('uiedit.vspx?page=3')" 
+                                 xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-                          <v:url name="b_url14" value="Business" format="%s" url="--sprintf('uiedit.vspx?page=4')" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                          <v:url name="b_url14" 
+                                 value="Business" 
+                                 format="%s" 
+                                 url="--sprintf('uiedit.vspx?page=4')" 
+                                 xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
-                          <v:url name="b_url15" value="Password" format="%s" url="--sprintf('uiedit.vspx?page=5')" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                          <v:url name="b_url15" 
+                                 value="Security" 
+                                 format="%s" 
+                                 url="--sprintf('uiedit.vspx?page=5')" 
+                                 xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 6 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url16" value="Associations &amp; Web Services" format="%s" url="--sprintf('uiedit.vspx?page=6')" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 6 then 'navtab_sel' else 'navtab_non_sel' end ?>" nowrap="1">
+                          <v:url name="b_url16" 
+                                 value="Associations &amp; Web Services" 
+                                 format="%s" 
+                                 url="--sprintf('uiedit.vspx?page=6')" 
+                                 xhtml_class="tab"/>
                         </td>
                         <td class="page_tab_empty" align="center" width="100%">
                           <table cellpadding="0" cellspacing="0">
@@ -122,24 +148,36 @@ function getFileName(form, from, to)
                   </table>
                  <table class="tab_page">
                     <tr>
-                      <td valign="top">
-                        <v:template name="template1" type="simple" enabled="-- equ (get_keyword('page', self.vc_event.ve_params, '1'), '1')">
+                      <td valign="top" class="tab_page">
+                        <v:template name="template1" 
+                                    type="simple" 
+                                    enabled="-- equ (get_keyword('page', self.vc_event.ve_params, '1'), '1')">
                           <v:include url="uiedit_personal.vspx"/>
                         </v:template>
-                        <v:template name="template2" type="simple" enabled="-- equ (get_keyword('page', self.vc_event.ve_params),'2')">
+                        <v:template name="template2" 
+                                    type="simple" 
+                                    enabled="-- equ (get_keyword('page', self.vc_event.ve_params),'2')">
                           <v:include url="uiedit_contact.vspx"/>
                         </v:template>
-                        <v:template name="template3" type="simple" enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '3')">
+                        <v:template name="template3" 
+                                    type="simple" 
+                                    enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '3')">
                           <v:include url="uiedit_home.vspx"/>
                         </v:template>
-                         <v:template name="template4" type="simple" enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '4')">
+                         <v:template name="template4" 
+                                     type="simple" 
+                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '4')">
                           <v:include url="uiedit_buss.vspx"/>
                         </v:template>
-                         <v:template name="template5" type="simple" enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '5')">
+                         <v:template name="template5" 
+                                     type="simple" 
+                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '5')">
                           <v:include url="uiedit_pwd.vspx"/>
 
                         </v:template>
-                         <v:template name="template6" type="simple" enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '6')">
+                         <v:template name="template6" 
+                                     type="simple" 
+                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '6')">
                           <v:include url="uiedit_svc.vspx"/>
 
                         </v:template>

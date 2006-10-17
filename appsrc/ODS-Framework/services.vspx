@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog-home-page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
 	style="index.xsl"
 	fast-render="1"
@@ -48,12 +48,15 @@
         <vm:login redirect="index.vspx"/>
         <div class="box">
           <p>
-            Your applications and community can be controlled from this area. To modify
-            content or membership for your applications, click on the following links under
-            the headings below.
+            This page lets you control the properties of your applications and community - modify membership settings and content, add and delete applications, etc.
           </p>
           <div>
-  <v:button style="url" value="New Web Application" action="simple" name="new_instance_button" url="admin.vspx">
+  <v:button style="url" 
+            value="New Web Application" 
+            action="simple" 
+            name="new_instance_button" 
+            url="admin.vspx"
+            xhtml_class="img_button">
     <v:after-data-bind>
       <![CDATA[
         control.ufl_value := '<img src="images/icons/go_16.png" border="0" alt="New Web Application" title="New Web Application"/>&#160;New Web Application';
@@ -61,7 +64,12 @@
     </v:after-data-bind>
   </v:button>
   <![CDATA[&nbsp;]]>
-  <v:button style="url" value="Content Tagging Settings" action="simple" name="cnt_tagging_button" url="tags.vspx">
+  <v:button style="url" 
+            value="Content Tagging Settings" 
+            action="simple" 
+            name="cnt_tagging_button" 
+            url="tags.vspx"
+            xhtml_class="img_button">
     <v:after-data-bind>
       <![CDATA[
         control.ufl_value := '<img src="images/icons/go_16.png" border="0" alt="Content Tagging Settings" title="Content Tagging Settings"/>&#160;Content Tagging Settings';
@@ -182,7 +190,7 @@
 
 
 	control.ds_sql := 'select WAI_ID, WAI_DESCRIPTION, WAI_NAME, WAM_STATUS, WAI_INST, WAM_MEMBER_TYPE, WAI_TYPE_NAME, WAI_IS_FROZEN,
-        WA_GET_APP_NAME (WAI_TYPE_NAME) as WAI_APP_NAME
+        WA_GET_APP_NAME (WAI_TYPE_NAME) as WAI_APP_NAME, WAI_IS_PUBLIC
         from WA_INSTANCE, WA_MEMBER where ' || cond ||
 	' order by ' || ord;
 
@@ -197,6 +205,7 @@
     <v:column name="WAI_TYPE_NAME" label="DType" />
     <v:column name="WAI_IS_FROZEN" label="isFrozen" />
     <v:column name="WAI_APP_NAME" label="isFrozen" />
+    <v:column name="WAI_IS_PUBLIC" label="isPublic" />
   </v:data-source>
   <vm:template type="simple" condition="(self.mdss.ds_rows_fetched = 0)">
     <div>
@@ -205,7 +214,7 @@
     </div>
   </vm:template>
   <vm:template type="simple" condition="self.mdss.ds_rows_fetched">
-    <table class="listing">
+    <table class="listing services_listing">
       <tr class="listing_header_row">
 	<th><v:url value="Name" url="services.vspx?sort-by=3" name="s1l" xhtml_class="listing_header_row" /></th>
 	<th><v:url value="Type" url="services.vspx?sort-by=9" name="s2l" xhtml_class="listing_header_row" /></th>
@@ -229,7 +238,7 @@
             ?>
             <tr class="ctl_grp_title">
               <td colspan="5">
-                My own:
+                Applications I own:
               </td>
             </tr>
             <?vsp
@@ -243,7 +252,7 @@
             ?>
             <tr class="ctl_grp_title">
               <td colspan="5">
-               You are member of:
+               Applications I am member of:
               </td>
             </tr>
             <?vsp
@@ -253,6 +262,28 @@
 	    <tr class="<?V case when mod(control.te_ctr,2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
               <td>
 		<img src="images/icons/<?V wa_inst_type_icon (control.te_rowset[6]) ?>_16.png" border="0" alt="<?V WA_GET_APP_NAME (control.te_rowset[6]) ?>" title="<?V WA_GET_APP_NAME (control.te_rowset[6]) ?>" />
+		<?vsp
+		  if (control.te_rowset[9] = 0)
+		    {
+		?>
+ 		   <img class="private" 
+                        src="images/icons/lock_16.png" 
+                        border="0" 
+                        alt="Private Content" 
+                        title="Private Content" />
+		<?vsp
+		    }
+		  else
+                    {
+		?>
+ 		   <img class="public" 
+                        src="images/icons/unlock_16.png" 
+                        border="0" 
+                        alt="Public Content" 
+                        title="Public Content" />
+		<?vsp
+		    }
+		?>
                 <v:button style="url" value="--coalesce((control.vc_parent as vspx_row_template).te_rowset[2], 'owner')" action="simple" name="membership_enter">
                   <v:on-post>
                     <v:script>
@@ -302,7 +333,11 @@
                 </vm:label>
               </td>
               <td>
-                <v:button style="url" value="Terminate Membership" action="simple" name="membership_terminate">
+                <v:button style="url" 
+                          value="Terminate Membership" 
+                          action="simple" 
+                          name="membership_terminate"
+                          xhtml_class="img_button">
                   <v:after-data-bind>
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/close_16.png" border="0" alt="Terminate Membership" title="Terminate Membership"/>&#160;Terminate Membership';
@@ -349,7 +384,7 @@
                 <vm:url value="Delete"
                         url="--sprintf('delete_inst.vspx?wai_id=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
 			active="--(case when (control.vc_parent as vspx_row_template).te_rowset[5] in (1,2) then 1 else 0 end)"
-			>
+			xhtml_class="img_button">
                   <v:after-data-bind>
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete the application" title="Delete the application"/>&#160;Delete';
@@ -371,7 +406,11 @@
                     </v:script>
                   </v:before-data-bind>
                 </vm:url>
-                <v:button value="Properties" style="url" action="simple" name="properties_app">
+                <v:button value="Properties" 
+                          style="url" 
+                          action="simple" 
+                          name="properties_app"
+                          xhtml_class="img_button">
                   <v:after-data-bind>
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit" title="Edit"/>&#160;Edit';
@@ -421,7 +460,11 @@
                     </v:script>
                   </v:on-post>
                 </v:button>
-                <v:button style="url" value="Members" action="simple" name="membership_app_membership" >
+                <v:button style="url" 
+                          value="Members" 
+                          action="simple" 
+                          name="membership_app_membership" 
+                          xhtml_class="img_button">
                   <v:after-data-bind>
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/group_16.png" border="0" alt="Members (application)" title="Members (application)"/>&#160;Members';
@@ -478,7 +521,11 @@
                   else
                   {
                 ?>
-                <v:button style="url" value="Properties" action="simple" name="membership_app_prop">
+                <v:button style="url" 
+                          value="Properties" 
+                          action="simple" 
+                          name="membership_app_prop" 
+                          xhtml_class="img_button">
                   <v:after-data-bind>
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/prefs_16.png" border="0" alt="Properties (application)" title="Properties (application)"/>&#160;Properties';

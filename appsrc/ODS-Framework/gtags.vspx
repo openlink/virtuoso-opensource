@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog-home-page"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/"
   style="index.xsl"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -36,32 +36,21 @@
     <vm:navigation-new on="gtags"/>
     <vm:subnavigation-new on="site"/>
     <vm:body>
-      <v:method name="print_tag" arglist="in cmax any, in tag any, in cnt any"><![CDATA[
-	declare perc, ts_size, style any;
+      <v:method name="print_tag"
+                arglist="inout tag varchar, inout tagCount integer, inout tagMinCount integer, inout tagMaxCount integer">
+        <![CDATA[
+          declare fontMinSize, fontMaxSize, fontSize, fontPercent float;
+          declare tagStyle any;
 
 	tag := trim (tag, ' \r\n');
 	if (tag <> '')
 	{
-	        perc := (100.00 * cnt) / cmax;
-	        ts_size := (1.5 * perc) + 90;
-
-	        style := '';
-		if (perc > 60)
-		  style := style || ' font-weight: bold;';
-
-		if (perc > 80)
-	          style := style || ' color: #9900CC;';
-		else if (perc > 60)
-	          style := style || ' color: #339933;';
-		else if (perc > 40)
-	          style := style || ' color: #CC3333;';
-		else if (perc > 30)
-	          style := style || ' color: #66CC99;';
-
-		http (sprintf ('<a href="#" onclick="javascript: doPostValueToSearch(\'%s\');" name="btn_%s" class="tag_link" style="font-size: %d%s; %s">%s</a>', tag, tag, ts_size, '%', style, tag));
+              tagStyle := ODS.WA.tag_style (tagCount, tagMinCount, tagMaxCount);
+ 	      http (sprintf ('<a href="javascript: doPostValueToSearch(\'%s\');" name="btn_%s" class="tag_link" style="%s">%s</a>', replace (tag, ' ', '_'), tag, tagStyle, tag));
 		http ('&nbsp; \n');
 	}
-	]]></v:method>
+	]]>
+      </v:method>
       <vm:login redirect="gtags.vspx"/>
       <script type="text/javascript">
 	function doPostValueToSearch (value)
@@ -83,7 +72,8 @@
 	<input type="hidden" name="q" value=""/>
 	<input type="hidden" name="q_tags" value=""/>
 	<input type="hidden" name="sel_tfs_id" value=""/>
-	<tr><td>
+	<tr>
+	  <td>
 	    <?vsp
 		declare idx int;
 		declare TFS_TIME1, TFS_ID1 any;
@@ -99,7 +89,7 @@
 		    else if (idx = 1)
 		      {
 		      ?>
-		      <a href="#" onclick="javascript: doPostValueToMe('<?V TFS_ID1 ?>');" name="btn_<?V TFS_ID1 ?>">
+		      <a href="javascript: doPostValueToMe('<?V TFS_ID1 ?>');" name="btn_<?V TFS_ID1 ?>">
 			<h2>Changes between <?V substring (datestring (TFS_TIME), 1, 16) ?>
 		      and <?V substring (datestring (TFS_TIME1), 1, 16) ?></h2></a>
 		    <?vsp
@@ -107,10 +97,11 @@
 		    idx := idx + 1;
 		  }
 	    ?>
-	</td></tr>
-	<tr><td>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
 	     <div class="tag_cloud">
-
 	<?vsp
 	   declare ts_max, ts_size, latest_tag_id, style integer;
 	   declare cmax, cmin, delta int;
@@ -121,30 +112,30 @@
 	     {
 	       latest_tag_id := wa_get_last_tf_id ();
 
-	       select max(TF_COUNT) into cmax from TF_REPORT;
+                    select max(TF_COUNT), min(TF_COUNT) into cmax, cmin from TF_REPORT;
 
+                    declare i int;
+                    i:=0;
 	       for (select top 100 TF_TAG, TF_COUNT from TF_REPORT where TF_ID = latest_tag_id order by TF_COUNT desc) do
 		 {
-		    self.print_tag (cmax, TF_TAG, TF_COUNT);
+                       self.print_tag (TF_TAG, TF_COUNT, cmin, cmax);
+                       i:=i+1;
 		 }
+                     if(i<1)
+                     http('There are currently no global tags defined in the system.');
 	     }
 	   else
 	     {
-	       select max(TFD_DELTA) into cmax from TF_REPORT_DELTA;
-	       select min(TFD_DELTA) into cmin from TF_REPORT_DELTA;
-	       cmax := cmax + abs (cmin);
-	       if (not cmax)
-	         cmax := 1;
-	       for (select top 100 TFD_TAG, TFD_DELTA from TF_REPORT_DELTA where TFD_ID = atoi (delta)
-	       	   								order by TFD_DELTA desc) do
+                    select max(TFD_DELTA), min(TFD_DELTA) into cmax, cmin from TF_REPORT_DELTA;
+                    for (select top 100 TFD_TAG, TFD_DELTA from TF_REPORT_DELTA where TFD_ID = atoi (delta) order by TFD_DELTA desc) do
 	         {
-		    self.print_tag (cmax, TFD_TAG, TFD_DELTA);
+                        self.print_tag (TFD_TAG, TFD_DELTA, cmin, cmax);
 		 }
-
 	     }
 	?>
             </div>
-	</td></tr>
+	  </td>
+	</tr>
       </table>
     </vm:body>
   </vm:pagewrapper>

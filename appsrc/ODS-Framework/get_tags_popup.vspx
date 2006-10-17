@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog-home-page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -32,7 +32,7 @@
     <vm:header>
       <vm:title>Suggest Tags</vm:title>
     </vm:header>
-    <vm:pagewrapper>
+    <vm:pagewrapper banner="no">
       <vm:rawheader caption="Import Tags"/>
       <v:variable name="res" type="any" default="null"/>
       <vm:body>
@@ -81,6 +81,10 @@ function retSelected (form, txt)
   if (ret.length > 0)
     opener.s_tag.value = opener.s_tag.value + ret;
 
+  var res = opener.s_tag.value;
+  var rex = /,[, \t]*,/g;
+
+  opener.s_tag.value = res.replace (rex, ',');
   opener.focus ();
   close ();
 }

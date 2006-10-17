@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/ods/">
     <xsl:template match="v:page">
 	<xsl:if test="@style and @style != '/DAV/VAD/wa/home.xsl'">
 	    <xsl:message terminate="yes">The template MUST not contain custom widgets set</xsl:message>

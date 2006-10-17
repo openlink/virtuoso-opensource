@@ -23,21 +23,39 @@
  -
 -->
 <v:page name="blog_home_page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <vm:page>
     <vm:header>
-      <vm:title>Application Deletion</vm:title>
+      <vm:title>Deleting Application</vm:title>
     </vm:header>
     <v:on-init>
       <![CDATA[
+        declare apps, v, i any;
+        if (self.iid is not null)
+          {
         select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_DESCRIPTION, WAI_TYPE_NAME into
         self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.idesc, self.wa_type from
         DB.DBA.WA_INSTANCE where WAI_ID = self.iid;
         self.instance_descr := self.idesc;
+	    self.ihome := self.inst.wa_home_url();
+	  }
+	v := null;
+	if (self.apps_ids is not null)
+	  {
+	    apps := split_and_decode (self.apps_ids, 0, '\0\0,');
+	    v := make_array (length (apps), 'any');
+	    i := 0;
+            foreach (any id in apps) do
+	      {
+                v[i] := atoi (id);
+	        i := i + 1;
+	      }
+	  }
+	self.apps := v;
       ]]>
     </v:on-init>
     <v:after-data-bind>
@@ -58,7 +76,7 @@
     <vm:pagewrapper>
       <vm:navigation on="settings"/>
       <vm:navigation1 on="services"/>
-      <vm:rawheader caption="Application Deletion"/>
+      <vm:rawheader caption="Deleting Application"/>
       <vm:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
       <vm:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
       <vm:variable name="wa_type" type="varchar" default="null" persist="0"/>
@@ -72,26 +90,38 @@
       <vm:variable name="ihome" type="varchar" default="null" persist="0"/>
       <vm:variable name="switch_adv" type="int" default="0" persist="0"/>
       <vm:variable name="page_type" type="varchar" default="'del'" persist="0"/>
+      <vm:variable name="apps_ids" type="varchar" default="null" persist="0" param-name="apps"/>
+      <vm:variable name="apps" type="any" default="null" persist="0" />
       <v:variable name="instance_descr" type="varchar" default="null" persist="page" />
       <vm:body>
         <vm:login redirect="index.vspx"/>
         <div class="box">
           <v:form type="simple" method="POST" name="eform1">
-            <h3>You are about to delete application. This operation cannot be undone. Please confirm.</h3>
-	    <h2>Application Settings</h2>
+            <h3>You are about to delete following application(s). This operation cannot be undone. Please confirm.</h3>
+	       <?vsp if (self.iid is not null) { ?>
+	    <h2>Application Details</h2>
+	    <?vsp } else {
+	    declare wai_nam varchar;
+	    foreach (any v in self.apps) do
+	       {
+	         wai_nam := (select WAI_NAME from WA_INSTANCE where WAI_ID = v);
+	         http (wai_nam); http ('<br />');
+	       }
+	     } ?>
 	     <table  class="ctl_grp">
+	       <?vsp if (self.iid is not null) { ?>
 	       <vm:instance-settings readonly="yes"/>
+	       <?vsp } ?>
 	       <tr>
 		 <td colspan="2">
 	    <span class="fm_ctl_btn">
                   <v:button action="simple" name="cancel1" value="Cancel">
                     <v:on-post>
                       <![CDATA[
-                        http_request_status('HTTP/1.1 302 Found');
                         if (self.redir = 'security')
-                          http_header(sprintf('Location: security.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                          self.vc_redirect ('security.vspx');
                         else
-                          http_header(sprintf('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                          self.vc_redirect ('services.vspx');
                       ]]>
                     </v:on-post>
                   </v:button>
@@ -99,15 +129,25 @@
                     <v:on-post>
                       <![CDATA[
                         declare inst web_app;
-                        inst := self.inst;
                         declare h, id any;
                         declare freeze varchar;
-                        freeze := (select WAI_IS_FROZEN from DB.DBA.WA_INSTANCE where WAI_ID = self.iid);
+
+			if (self.apps is null)
+			  self.apps := vector (self.iid);
+
+			foreach (any iid in self.apps) do
+			  {
+			    declare exit handler for not found {
+                              rollback work;
+                              signal ('22023', 'No such application');
+			    };
+                            select WAI_IS_FROZEN, WAI_INST into freeze, inst from DB.DBA.WA_INSTANCE where WAI_ID = iid;
+
                         if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
                         {
                           self.vc_error_message := 'Application is frozen';
                           self.vc_is_valid := 0;
-                          goto aaa;
+			      goto done;
                         }
                         h := udt_implements_method(inst, 'wa_drop_instance');
                         declare exit handler for sqlstate '*'
@@ -119,12 +159,12 @@
                         };
                         commit work;
                         id := call (h) (inst);
-                        aaa:;
-                        http_request_status('HTTP/1.1 302 Found');
+			  }
+                        done:;
                         if (self.redir = 'security')
-                          http_header(sprintf('Location: security.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                          self.vc_redirect ('security.vspx');
                         else
-                          http_header(sprintf('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                          self.vc_redirect ('services.vspx');
                       ]]>
                     </v:on-post>
                   </v:button>

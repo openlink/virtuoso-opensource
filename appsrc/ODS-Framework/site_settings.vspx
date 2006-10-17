@@ -23,7 +23,7 @@
  -
 -->
 <v:page name="blog-home-page"
-  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/"
   style="index.xsl"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -111,6 +111,11 @@
 	    </div>
 	  </td>
 	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl5" value="Notification Services" url="ping_svc.vspx" render-only="1" />
+	    <div>
+	      Notification services providers.
+	    </div>
 	  </td>
 	</tr>
       </table>

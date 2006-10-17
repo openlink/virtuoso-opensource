@@ -22,8 +22,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="blog-home-page"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+<v:page name="ods-site-front-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -31,100 +31,23 @@
   <vm:page>
     <vm:header>
       <vm:title>
-	<v:label value="--self.banner" render-only="1"/></vm:title>
+      <v:label value="--self.banner" render-only="1"/>
+    </vm:title>
     </vm:header>
     <vm:pagewrapper>
-     <vm:navigation-new on="site"/>
-     <vm:subnavigation-new on="site"/>
       <vm:body>
        <vm:login redirect="sfront.vspx"/>
-    <table border="0" cellpadding="0" cellspacing="0" id="main">
-      <tr>
-    <td rowspan="3" valign="top">
-     <div class="lftmenu">
-      <table width="175" border="0" cellpadding="0" cellspacing="0">
-        <tr>
-          <td class="lftmenu_title"><img src="images/icons/user_16.png" width="16" height="16" /> Users</td>
-        </tr>
-        <tr>
-	  <td class="lftmenu1">
 	    <vm:dash-user-activity range="5"/>
-          </td>
-          <td> </td>
-        </tr>
-        <tr>
-          <td class="lftmenu_footer"><img src="images/nav_arrrow1.gif" width="8" height="8" /><a href="search.vspx?newest=users<?V self.login_pars ?>"> More ...</a></td>
-          <td class="lftmenu_footer_img"><img src="images/eaeaeecorner.gif" width="15" height="15" align="absbottom" /></td>
-        </tr>
-      </table>
-     </div>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <div class="sf_welcome">
-     Welcome to OpenLink Data Spaces. <br/>
-     With OpenLink Data Spaces, you find the people and services you need through the people you know and trust, while you strengthen and extend your existing network.<br/>
-     You also can manage your own blogs or to read blogs of other users, read news and post feeds, check you daily mail and send messages.
-     </div>
+        <vm:dash-welcome />
      <vm:if test="wa_vad_check ('blog2') is not null">
-       <div class="sf_blurb">
-	 <vm:url value="Start blogging now!" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo" />
-       </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('enews2') is not null">
-       <div class="sf_blurb">
-	 <vm:url value="Start your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo" />
-       </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('oDrive') is not null">
-       <div class="sf_blurb">
-	 <vm:url
-	   value="--sprintf ('Did you know that %s allows you to share you documents ideas, goal, ideas with your colleagues?',
-	   self.banner)"
-	   url="index_inst.vspx?wa_name=oDrive&amp;fr=promo" />
-       </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('wiki') is not null">
-       <div class="sf_blurb">
-	 <vm:url value="Create your wiki article now!" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" />
-       </div>
-     </vm:if>
-     <vm:if test="wa_vad_check ('oMail') is not null">
-       <div class="sf_blurb">
-	 <vm:url value="Write your message now!" url="index_inst.vspx?wa_name=oMail&amp;fr=promo" />
-       </div>
-     </vm:if>
-    </td>
-  </tr>
-  <tr>
-    <td id="mainarea">
-      <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="infoarea1">
-	<tr>
-	  <vm:if test="wa_vad_check ('blog2') is not null">
-	    <td valign="top" nowrap="nowrap">
 	      <vm:dash-new-blogs />
-	    </td>
 	  </vm:if>
 	  <vm:if test="wa_vad_check ('enews2') is not null">
-	    <td valign="top" nowrap="nowrap">
 	      <vm:dash-new-news />
-	    </td>
 	  </vm:if>
-	</tr>
-	<tr>
 	  <vm:if test="wa_vad_check ('wiki') is not null">
-	    <td valign="top" nowrap="nowrap">
 	      <vm:dash-new-wiki />
-	    </td>
 	  </vm:if>
-	  <td>
-	  </td>
-	</tr>
-      </table>
-    </td>
-  </tr>
-         </table>
       </vm:body>
     </vm:pagewrapper>
   </vm:page>

@@ -44,12 +44,28 @@ create procedure OPENID_INIT ()
   if (exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'OpenID'))
     return;
   DB.DBA.USER_CREATE ('OpenID', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'OPENID'));
-  DB.DBA.VHOST_REMOVE (lpath=>'/openid');
-  DB.DBA.VHOST_DEFINE (lpath=>'/openid', ppath=>'/SOAP/Http/server', soap_user=>'OpenID');
 }
 ;
 
 OPENID_INIT ();
+
+create procedure yadis (in uname varchar)
+{
+  http ('<?xml version="1.0" encoding="UTF-8"?>\n');
+  http ('<xrds:XRDS \n');
+  http ('  xmlns:xrds="xri://\044xrds" \n');
+  http ('  xmlns:openid="http://openid.net/xmlns/1.0"   \n');
+  http ('  xmlns="xri://\044xrd*(\044v*2.0)">\n');
+  http ('  <XRD>\n');
+  http ('    <Service priority="1">\n');
+  http ('      <Type>http://openid.net/signon/1.0</Type>\n');
+  http ('      <Type>http://openid.net/sreg/1.0</Type>\n');
+  http (sprintf ('      <URI>%s</URI>\n', db.dba.wa_link (1, '/openid')));
+  http ('      <openid:Delegate>'|| db.dba.wa_link (1, '/dataspace/'||uname)||'</openid:Delegate>\n');
+  http ('    </Service>\n');
+  http ('  </XRD>\n');
+  http ('</xrds:XRDS>\n');
+};
 
 create procedure server
 	(
@@ -79,7 +95,11 @@ create procedure server
     	get_keyword ('openid.assoc_handle', params),
     	get_keyword ('openid.return_to', params),
     	get_keyword ('openid.trust_root', params),
-	oid_sid
+	oid_sid,
+	0,
+	get_keyword ('openid.sreg.required', params),
+	get_keyword ('openid.sreg.optional', params),
+	get_keyword ('openid.sreg.policy_url', params)
 	);
   else if ("openid.mode" = 'checkid_setup')
     ret := checkid_setup (
@@ -87,7 +107,10 @@ create procedure server
     	get_keyword ('openid.assoc_handle', params),
     	get_keyword ('openid.return_to', params),
     	get_keyword ('openid.trust_root', params),
-	oid_sid
+	oid_sid,
+	get_keyword ('openid.sreg.required', params),
+	get_keyword ('openid.sreg.optional', params),
+	get_keyword ('openid.sreg.policy_url', params)
 	);
   else if ("openid.mode" = 'check_authentication')
     ret := check_authentication (
@@ -140,11 +163,14 @@ create procedure checkid_immediate
 	 in return_to varchar,
 	 in trust_root varchar := null,
 	 in sid varchar,
-	 in flag int := 0 -- called via checkid_setup
+	 in flag int := 0, -- called via checkid_setup
+	 in sreg_required varchar := null,
+	 in sreg_optional varchar := null,
+	 in policy_url varchar := null
     	)
 {
-  declare signature any;
-  declare login varchar;
+  declare signature, rhf, delim any;
+  declare login, hdr, usr varchar;
 
   if (trust_root is null)
     trust_root := _identity;
@@ -159,30 +185,98 @@ create procedure checkid_immediate
   http_request_status ('HTTP/1.1 302 Found');
   if (not exists (select 1 from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = 'wa'))
     {
-      login := sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U',
-	    DB.DBA.wa_link(1, 'login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root);
+      auth:
+      rhf := WS.WS.PARSE_URI (return_to);
+      if (rhf[4] <> '')
+	delim := '&';
+      else
+        delim := '?';
+      login := sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U&sreg_required=%U&sreg_optional=%U&policy_url=%U',
+	    DB.DBA.wa_link(1, 'login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
+	    coalesce (sreg_required, ''), coalesce (sreg_optional, ''), coalesce (policy_url, ''));
       --dbg_obj_print (sprintf ('Location: %s?openid.mode=id_res&openid.user_setup_url=%U\r\n', return_to, login));
-      http_header (http_header_get () || sprintf ('Location: %s?openid.mode=id_res&openid.user_setup_url=%U\r\n', return_to, login));
+      http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=id_res&openid.user_setup_url=%U\r\n', return_to, delim, login));
     }
   else
     {
-      declare ses, ss_key, ss_key_data any;
+      declare ses, ss_key, ss_key_data, inv, sreg, sarr, svec, sregf any;
+      declare nickname, email, fullname, dob, gender, postcode, country, lang, timezone any;
 
+      whenever not found goto auth;
+      select U_NAME, U_E_MAIL, U_FULL_NAME, WAUI_BIRTHDAY, WAUI_GENDER, WAUI_HCODE, WAUI_HCOUNTRY, WAUI_HTZONE
+	 into nickname, email, fullname, dob, gender, postcode, country, timezone
+	 from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO, DB.DBA.VSPX_SESSION where
+	 WAUI_U_ID = U_ID and U_NAME = VS_UID and VS_SID = sid and VS_REALM = 'wa';
+
+      if (dob is not null)
+	dob := substring (datestring (dob), 1, 10);
+
+      if (gender = 'male')
+        gender := 'M';
+      else if (gender = 'female')
+        gender := 'F';
+      else
+        gender := null;
+
+      if (length (country))
+        country := (select WC_CODE from DB.DBA.WA_COUNTRY where WC_NAME = country);
+
+      svec := vector (
+      			'nickname', nickname,
+			'email', email,
+			'fullname', fullname,
+			'dob', dob,
+			'gender', gender,
+			'postcode', postcode,
+			'country', country,
+			'language', 'en',
+			'timezone', null -- until fix the format
+		    );
 
       -- XXX should check is assoc_handle is valid !!!
+      inv := '';
       if (length (assoc_handle) and exists (select 1 from SERVER_SESSIONS where SS_HANDLE = assoc_handle))
 	{
 	  select SS_KEY_NAME into ss_key from SERVER_SESSIONS where SS_HANDLE = assoc_handle;
 	}
       else
 	{
-	  assoc_handle := sid;
-	  ss_key := 'OpenID_' || sid;
+	  if (0 and length (assoc_handle))
+	    {
+	      inv := sprintf ('&openid.invalidate_handle=%U', assoc_handle);
+	    }
+	  assoc_handle := sid; --md5 (http_client_ip () || cast (msec_time () as varchar));
+	  ss_key := 'OpenID_' || assoc_handle;
+	  if (user <> 'OpenID')
+  	    set_user_id ('OpenID');
+	  --if (xenc_key_exists (ss_key))
+	  --xenc_key_remove (ss_key);
+
+	  if (not xenc_key_exists (ss_key))
+	    {
 	  xenc_key_3DES_rand_create (ss_key);
+	    }
 	  ss_key_data := xenc_key_serialize (ss_key);
+	  --set_user_id ('dba');
+	  if (not exists (select 1 from SERVER_SESSIONS where SS_HANDLE = assoc_handle))
+	    {
 	  insert into SERVER_SESSIONS (SS_HANDLE, SS_KEY_NAME, SS_KEY, SS_KEY_TYPE, SS_EXPIRY)
 	      values (assoc_handle, ss_key, ss_key_data, '3DES', dateadd ('hour', 1, now()));
 	}
+	}
+
+      rhf := WS.WS.PARSE_URI (return_to);
+      if (rhf[4] <> '')
+	delim := '&';
+      else
+        delim := '?';
+
+--      dbg_obj_print ('sreg_required',sreg_required);
+--      dbg_obj_print ('sreg_optional',sreg_optional);
+
+      sarr := split_and_decode (sreg_required||','||sreg_optional, 0, '\0\0,');
+      sreg := '';
+      sregf := '';
 
       ses := string_output ();
 
@@ -190,14 +284,34 @@ create procedure checkid_immediate
       http (sprintf ('identity:%s\x0A', _identity), ses);
       http (sprintf ('return_to:%s\x0A', return_to), ses);
 
+      foreach (any elm in sarr) do
+	{
+	  elm := trim(elm);
+	  if (length (elm))
+	    {
+	      declare val any;
+	      val := get_keyword (elm, svec, '');
+	      if (length (val))
+		{
+		  sregf := sregf || ',sreg.' || elm;
+		  sreg := sreg || '&openid.sreg.'||elm||'='||sprintf ('%U', val);
+		  http (sprintf ('sreg.%s:%s\x0A', elm, val), ses);
+		}
+	    }
+	}
+
+
+      if (user <> 'OpenID')
       set_user_id ('OpenID');
 
       signature := xenc_hmac_sha1_digest (string_output_string (ses), ss_key);
       if (length (assoc_handle) = 0)
 	assoc_handle := '';
-      http_header (http_header_get () || sprintf ('Location: %s?openid.mode=id_res&openid.identity=%U&openid.return_to=%U&openid.assoc_handle=%U&openid.signed=mode,identity,return_to&openid.sig=%U\r\n',
-	    return_to, _identity, return_to, coalesce (assoc_handle, ''), signature));
-      ;
+      hdr :=  sprintf ('Location: %s%sopenid.mode=id_res&openid.identity=%U&openid.return_to=%U'||
+      			'&openid.assoc_handle=%U&openid.signed=%U&openid.sig=%U%s%s\r\n',
+	    		return_to, delim, _identity, return_to, coalesce (assoc_handle, ''),
+			'mode,identity,return_to'||sregf, signature, inv, sreg);
+      http_header (http_header_get () || hdr);
     }
   return '';
 };
@@ -209,16 +323,30 @@ create procedure checkid_setup
 	 in assoc_handle varchar := null,
 	 in return_to varchar,
 	 in trust_root varchar := null,
-	 in sid varchar
+	 in sid varchar,
+	 in sreg_required varchar := null,
+	 in sreg_optional varchar := null,
+	 in policy_url varchar := null
 	 )
 {
+  declare rhf, delim, login, ss_key any;
   if (not exists (select 1 from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = 'wa'))
     {
+      rhf := WS.WS.PARSE_URI (return_to);
+      if (rhf[4] <> '')
+	delim := '&';
+      else
+        delim := '?';
       http_request_status ('HTTP/1.1 302 Found');
-      http_header (http_header_get () || sprintf ('Location: %s?openid.mode=cancel\r\n', return_to));
-      return;
+
+      login := sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U&sreg_required=%U&sreg_optional=%U&policy_url=%U',
+	    DB.DBA.wa_link(1, 'login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
+	    coalesce (sreg_required, ''), coalesce (sreg_optional, ''), coalesce (policy_url, ''));
+      http_header (http_header_get () || sprintf ('Location: %s\r\n', login));
+      --http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=cancel\r\n', return_to, delim));
+      return '';
     }
-  return checkid_immediate (_identity, assoc_handle, return_to, trust_root, sid, 1);
+  return checkid_immediate (_identity, assoc_handle, return_to, trust_root, sid, 1, sreg_required, sreg_optional, policy_url);
 };
 
 
@@ -251,10 +379,14 @@ create procedure check_authentication
     {
       key_val := 'openid.'||item;
       val := get_keyword (key_val, params, '');
-      http (sprintf ('%s:%s\x0A',key_val,val), ses);
+      if (key_val = 'openid.mode')
+	val := 'id_res';
+      http (sprintf ('%s:%s\x0A',item,val), ses);
     }
-
+  if (user <> 'OpenID')
+    set_user_id ('OpenID');
   signature := xenc_hmac_sha1_digest (string_output_string (ses), ss_key);
+
   if (signature = sig)
     http ('mode:id_res\x0Ais_valid:true\x0A');
   else
@@ -262,6 +394,40 @@ create procedure check_authentication
 
 
   return '';
+};
+
+create procedure check_signature (in params varchar)
+{
+  declare nsig, arr, sig, pars, lst, ses, mkey, kname any;
+
+  declare exit handler for sqlstate '*'
+    {
+      return 0;
+    };
+
+  pars := split_and_decode (blob_to_string (params), 0);
+  lst := get_keyword ('openid.signed', pars, null);
+  mkey := get_keyword ('mac_key', pars, null);
+  sig := get_keyword ('openid.sig', pars, null);
+
+  if (lst is null or mkey is null or sig is null)
+    return 0;
+
+  ses := string_output ();
+  arr := split_and_decode (lst, 0, '\0\0,');
+  foreach (any item in arr) do
+    {
+       declare key_val, val any;
+       key_val := 'openid.'||item;
+       val := get_keyword (key_val, pars, '');
+       http (sprintf ('%s:%s\x0A',item,val), ses);
+    }
+  kname := xenc_key_RAW_read (null, mkey);
+  nsig := xenc_hmac_sha1_digest (string_output_string (ses), kname);
+  xenc_key_remove (kname);
+  if (nsig = sig)
+    return 1;
+  return 0;
 };
 
 use DB;
