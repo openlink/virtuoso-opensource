@@ -31,7 +31,7 @@ create function WA_SEARCH_ENEWS_GET_EXCERPT_HTML (in _current_user_id integer, i
 	in words any) returns varchar
 {
   declare _EFI_TITLE, _EF_TITLE, _EFI_DESCRIPTION varchar;
-  declare res varchar;
+  declare res, exc varchar;
 
   select
     ENEWS.WA.show_title (EFI_TITLE), EF_TITLE, ENEWS.WA.xml2string (ENEWS.WA.show_description(EFI_DESCRIPTION))
@@ -44,13 +44,17 @@ create function WA_SEARCH_ENEWS_GET_EXCERPT_HTML (in _current_user_id integer, i
 	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/enews2/news.vspx?link=%d', _EFI_ID), _current_user_id, '&')), _EFI_TITLE,
 	   _EF_TITLE);
 
-  res := res || '<br />' ||
-     left (
+  if (length (words))
+    exc :=
        search_excerpt (
          words,
          subseq (coalesce (_EFI_DESCRIPTION, ''), 0, 200000)
-       ),
-       900)
+       );
+  else
+    exc := subseq (coalesce (_EFI_DESCRIPTION, ''), 0, 200000);
+
+  res := res || '<br />' ||
+     left (exc, 900)
      || '</span>';
 
   return res;
@@ -80,12 +84,11 @@ create function WA_SEARCH_ENEWS (in max_rows integer, in current_user_id integer
         ' from ENEWS.WA.FEED_ITEM_DATA, ENEWS.WA.FEED_ITEM, ENEWS.WA.FEED_DOMAIN \n' ||
 	' WHERE \n' ||
 	'   contains (EFID_TAGS, \n' ||
-	'    ''[__lang "x-ViDoc" __enc "UTF-8"] (%S) AND (("%da") OR ("%da"))'') \n' ||
+	'    ''[__lang "x-ViDoc" __enc "UTF-8"] (%S) AND (("^UID%d") OR ("^public"))'') \n' ||
 	'   and EFI_FEED_ID = EFD_FEED_ID \n' ||
 	'   and EFID_ITEM_ID = EFI_ID',
         tags_str,
-        current_user_id,
-        http_nobody_uid());
+        current_user_id);
 
     }
   else
@@ -97,7 +100,7 @@ create function WA_SEARCH_ENEWS (in max_rows integer, in current_user_id integer
 	'   contains (EFI_DESCRIPTION, ''[__lang "x-any" __enc "UTF-8"] %S'',descending \n' ||
 	'--,OFFBAND,EFI_ID,OFFBAND,EFI_FEED_ID\n' ||
 	'   ) \n' ||
-	'   and EFI_FEED_ID = EFD.EFD_FEED_ID option (order)',
+	'   and EFI_FEED_ID = EFD.EFD_FEED_ID ',
 	str);
 
       if (tags_str is not null)
@@ -106,12 +109,12 @@ create function WA_SEARCH_ENEWS (in max_rows integer, in current_user_id integer
 	  '  SELECT 1 FROM ENEWS.WA.FEED_ITEM_DATA \n' ||
 	  '    WHERE \n' ||
 	  '      contains (EFID_TAGS, \n' ||
-	  '        sprintf (''[__lang "x-ViDoc" __enc "UTF-8"] (%S) AND (("%da") OR ("%da")) AND ("%%di")'', \n' ||
+	  '        sprintf (''[__lang "x-ViDoc" __enc "UTF-8"] (%S) AND (("^UID%d") OR ("^public"))'', \n' ||
 	  '          EFI_ID))) \n',
 	  ret,
 	  tags_str,
-	  current_user_id,
-          http_nobody_uid());
+	  current_user_id);
+      ret := ret || ' option (order) ';
     }
 
   ret := sprintf (
