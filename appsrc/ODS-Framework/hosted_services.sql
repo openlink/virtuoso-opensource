@@ -4968,7 +4968,7 @@ create procedure WA_MAIL_VALIDATE (in login any)
   return 0;
 };
 
-create procedure WA_NEW_MAIL (in _uid varchar, in _msg any)
+create procedure WA_NEW_MAIL (in _uid varchar, in _msg any, in _domain varchar := null)
 {
   declare rc, pkgs any;
   pkgs := WA_APPS_INSTALLED ();
@@ -4981,6 +4981,9 @@ create procedure WA_NEW_MAIL (in _uid varchar, in _msg any)
 
       if (__proc_exists (p_name))
 	{
+	  if (length (procedure_cols (p_name)) = 3)
+	    rc := call (p_name) (_uid, _msg, _domain);
+	  else
 	  rc := call (p_name) (_uid, _msg);
 	  --dbg_printf ('Storing %s = %d', p_name, rc);
 	  if (rc = 1)
