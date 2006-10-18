@@ -50,7 +50,7 @@ tf_alloc (void)
 {
   NEW_VARZ (triple_feed_t, tf);
   tf->tf_blank_node_ids = id_hash_allocate (1021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
-  tf->tf_cached_iids = id_hash_allocate (21021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
+  tf->tf_cached_iids = id_hash_allocate (410210, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
   return tf;
 }
 

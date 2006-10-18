@@ -167,6 +167,210 @@ inx_op_set_params (inx_op_t * iop, it_cursor_t * itc)
 }
 
 
+typedef struct inxop_bm_s
+{
+  bitno_t	iob_start;
+  bitno_t	iob_end;
+  short		iob_bm_len;
+  char		iob_is_inited;
+  dtp_t		iob_bm[CE_MAX_LENGTH];
+} inxop_bm_t;
+
+
+
+void 
+inxop_set_iob (inx_op_t * iop, it_cursor_t *itc, buffer_desc_t * buf, caddr_t * qst)
+{
+  int off, len, is_single;
+  dbe_key_t * key = itc->itc_insert_key;
+  inxop_bm_t * iob = (inxop_bm_t *) QST_GET (qst, iop->iop_bitmap);
+  ITC_COL (itc, (*key->key_bm_cl), off, len);
+  if (!iob)
+    {
+      iob = (inxop_bm_t *) dk_alloc_box (sizeof (inxop_bm_t), DV_STRING);
+      qst_set (qst, iop->iop_bitmap, (caddr_t) iob);
+    }
+  if (len > CE_MAX_LENGTH)
+    GPF_T1 ("bad bm len in inxop bm");
+  iob->iob_is_inited = 1;
+  iob->iob_bm_len = len;
+  itc_bm_ends (itc, buf, &iob->iob_start, &iob->iob_end, &is_single);
+  memcpy (&iob->iob_bm[0], itc->itc_row_data + off, len);
+}
+
+
+void
+inxop_set_bm_ssl (inx_op_t * iop, it_cursor_t *itc, caddr_t * qst)
+{
+  dbe_key_t * key = itc->itc_insert_key;
+  DO_SET (state_slot_t *, ssl, &itc->itc_ks->ks_out_slots)
+    {
+      if (ssl->ssl_column && ssl->ssl_column->col_id == key->key_bit_cl->cl_col_id)
+	{
+	  if (DV_IRI_ID == key->key_bit_cl->cl_sqt.sqt_dtp || DV_IRI_ID_8 == key->key_bit_cl->cl_sqt.sqt_dtp)
+	    qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) &itc->itc_bp.bp_value, sizeof (iri_id_t), DV_IRI_ID);
+	  else 
+	    qst_set_long (itc->itc_out_state, ssl, (int32) itc->itc_bp.bp_value);
+	}
+    }
+  END_DO_SET();
+}
+
+
+int
+inxop_iob_next (inx_op_t * iop, it_cursor_t * itc, inxop_bm_t * iob, int op, caddr_t * qst)
+{
+  bitno_t target;
+  if (!iob->iob_is_inited || 0 == iob->iob_bm_len)
+    return IOP_READ_INDEX;
+  switch (op)
+    {
+    case IOP_TARGET:
+      target = unbox_iri_int64 (itc->itc_search_params[itc->itc_search_par_fill - 1]);
+      if (target < iob->iob_start || target >=  iob->iob_end + CE_N_VALUES)
+	return IOP_READ_INDEX;
+      pl_set_at_bit ((placeholder_t *) itc, iob->iob_bm, iob->iob_bm_len, iob->iob_start, target, 0);
+      if (itc->itc_bp.bp_at_end)
+	return IOP_READ_INDEX;
+      inxop_set_bm_ssl (iop, itc, qst);
+      if (itc->itc_bp.bp_value == target)
+	return IOP_ON_ROW;
+      return IOP_NEW_VAL;
+    case IOP_NEXT:
+      pl_next_bit ((placeholder_t *)itc, iob->iob_bm, iob->iob_bm_len, iob->iob_start, 0);
+      if (itc->itc_bp.bp_at_end)
+	return IOP_READ_INDEX;
+      inxop_set_bm_ssl (iop, itc, qst);
+      return IOP_NEW_VAL;
+    }
+  return IOP_READ_INDEX;
+}
+
+
+int
+inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
+	       table_source_t * ts, it_cursor_t * itc)
+{
+  caddr_t *qst = (caddr_t*)qi;
+  int rc;
+  buffer_desc_t * buf = NULL;
+  int is_random = 0;
+  inxop_bm_t * iob = (inxop_bm_t *) QST_GET (qst, iop->iop_bitmap);
+  if (iob &&  iob->iob_is_inited)
+    {
+      rc = inxop_iob_next (iop, itc, iob, op, qst);
+      if (rc != IOP_READ_INDEX)
+	return rc;
+    }				   
+  ITC_FAIL (itc)
+    {
+      switch (op)
+	{
+	case IOP_START:
+	  is_random = 1;
+	  itc->itc_search_mode = SM_READ;
+	  buf = itc_reset (itc);
+	  rc = itc_next (itc, &buf);
+	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
+	    {
+	      itc_page_leave (itc, buf);
+	      return IOP_AT_END;
+	    }
+	  inxop_set_iob (iop, itc, buf, qst);
+	  break;
+	case IOP_TARGET:
+	  is_random = 1;
+	  itc->itc_search_mode = SM_READ_EXACT;
+	  buf = itc_reset (itc);
+	  rc = itc_search (itc, &buf);
+	  if (!itc->itc_bp.bp_is_pos_valid)
+	    {
+	      /* the bm was not even checked, failed to find a match of leading parts.  */
+	      itc_page_leave (itc, buf);
+	      return IOP_AT_END;
+	    }
+	  inxop_set_iob (iop, itc, buf, qst);
+	  if (itc->itc_bp.bp_below_start)
+	    itc->itc_bp.bp_at_end = 0; /* use the value it is at, since bp)value will be set to 1st of ce evenif value sought was lt that */
+	  if (itc->itc_bp.bp_at_end)
+	    {
+	      /* now it could be landed past the last bit of the bitmap whose range corresponds to the spec.  Can be one after that.  If still no next then really at end of range. */
+	      int rc2;
+	      itc->itc_is_on_row = 1; /*force one step fwd */
+	      itc->itc_specs = itc->itc_insert_key->key_bm_ins_leading;
+	      itc->itc_bm_col_spec = NULL;
+	      rc2 = itc_next (itc, &buf);
+	      if (DVC_INDEX_END == rc2 || (DVC_GREATER == rc2 && itc->itc_bp.bp_at_end))
+		{
+	      itc_page_leave (itc, buf);
+	      return IOP_AT_END;
+	    }
+	    }
+	  break;
+	case IOP_NEXT:
+	  is_random = 0;
+	  buf = page_reenter_excl (itc);
+	  itc->itc_bm_col_spec = NULL;
+	  rc = itc_next (itc, &buf);
+	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
+	    {
+	      itc_page_leave (itc, buf);
+	      return IOP_AT_END;
+	    }
+	  inxop_set_iob (iop, itc, buf, qst);
+	  break;
+	}
+      FAILCK (itc);
+      if (DVC_MATCH == rc)
+	{
+	  ITC_IN_MAP (itc);
+	  itc_register_cursor (itc, INSIDE_MAP);
+	  itc_page_leave (itc, buf);
+	  return IOP_ON_ROW;
+	}
+
+      switch (op)
+	{
+	case IOP_TARGET:
+	  if (is_random)
+	    {
+	      if (DVC_GREATER == rc)
+		{
+		  /* the bp_value is the next higher.  Set the ssl by it. */
+		  itc->itc_is_on_row = 1; /* set this so that next operation, should the other itc match, will advance and not repeat this same row */
+		  inxop_set_bm_ssl (iop, itc, qst);
+		  ITC_IN_MAP (itc);
+		  itc_register_cursor (itc, INSIDE_MAP);
+		  itc_page_leave (itc, buf);
+		  return IOP_NEW_VAL;
+		}
+	      else
+		{
+		  /* returned dvc_less on target seek.  Possible, if next not in range, will land at the end of the previous */
+		  itc->itc_bm_col_spec = NULL;
+		  itc->itc_is_on_row = 1;
+		  rc = itc_next (itc, &buf);
+		  if (DVC_MATCH == rc)
+		    return IOP_NEW_VAL;
+		  else
+		    return IOP_AT_END;
+		}
+	    }
+	  break;
+	case IOP_NEXT:
+	case IOP_START:
+	  itc_page_leave (itc, buf);
+	  return IOP_AT_END;
+	}
+    }
+  ITC_FAILED
+    {
+    }
+  END_FAIL (itc);
+  return 0;			/* never executed */
+}
+
+
 int
 inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	    table_source_t * ts)
@@ -242,6 +446,9 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
       qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
     }
   END_DO_SET();
+
+  if (itc->itc_insert_key->key_is_bitmap)
+    return inxop_bm_next (iop, qi, op, ts, itc);
 
   ITC_FAIL (itc)
     {
@@ -365,12 +572,25 @@ inx_op_and_next (inx_op_t * iop, query_instance_t * qi,
   int n_terms = BOX_ELEMENTS (iop->iop_terms);
   caddr_t * qst = (caddr_t *) qi;
   int rc, n_hits = 0;
+  if (IOP_START == op)
+    {
+      DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
+	{
+	  if (term->iop_bitmap)
+	    {
+	      inxop_bm_t * iob = (inxop_bm_t *) QST_GET (qst, term->iop_bitmap);
+	      if (iob)
+		iob->iob_is_inited = 0;
+	    }
+	}
+      END_DO_BOX;
+    }
   for (;;)
     {
       DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
 	{
 	  rc = inxop_next (term, qi,  op, ts);
-	  QST_SET (qst, term->iop_state, rc);
+	  QST_SET (qst, term->iop_state, (ptrlong) rc);
 	  switch (rc)
 	    {
 	    case IOP_AT_END:

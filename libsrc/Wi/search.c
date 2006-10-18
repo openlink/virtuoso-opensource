@@ -158,11 +158,8 @@ db_buf_length (unsigned char *buf, long *head_ret, long *len_ret)
       *len_ret = DT_LENGTH;
       break;
     default:
-      /* Locate buffer with bad page */
-      for (bd = wi_inst.wi_bps[0]->bp_first_buffer; bd; bd = bd->bd_prev)
-	if (bd->bd_buffer < buf && bd->bd_buffer + PAGE_SZ > buf)
-	  break;
       /* Report */
+      bd = NULL;
       dbg_page_structure_error (bd, buf);
 #if 0 /*obsoleted */
       if (null_bad_dtp)
@@ -520,6 +517,9 @@ itc_col_check (it_cursor_t * itc, search_spec_t * spec, int param_inx)
 }
 
 
+extern int atomic_dive;
+
+
 buffer_desc_t *
 itc_reset (it_cursor_t * it)
 {
@@ -535,8 +535,11 @@ itc_reset (it_cursor_t * it)
   it->itc_n_reads = 0;
   it->itc_at_data_level = 0;
 
+  if (it->itc_space_registered)
+    {
   ITC_IN_MAP (it);
   itc_unregister (it, INSIDE_MAP);
+    }
 
   it->itc_to_reset = 0;
   it->itc_page = 0;
@@ -551,9 +554,11 @@ itc_reset (it_cursor_t * it)
 	return buf;
     }
 
+#if 0
   buf = itc_dive_cache_check (it);
   if (buf)
     return buf;
+#endif
   for (;;)
     {
       dp_addr_t dp, back_link;
@@ -562,6 +567,8 @@ itc_reset (it_cursor_t * it)
       page_wait_access (it, dp, NULL, NULL, &buf, PA_READ, RWG_WAIT_KEY);
       if (it->itc_to_reset > RWG_WAIT_KEY)
 	continue;
+      if (!atomic_dive)
+	ITC_LEAVE_MAP(it);
       back_link = LONG_REF (buf->bd_buffer + DP_PARENT);
       if (back_link)
 	{
@@ -575,7 +582,8 @@ itc_reset (it_cursor_t * it)
 #ifdef NEW_HASH
   itc_hi_source_page_used (it, it->itc_page);
 #endif
-  ITC_LEAVE_MAP(it);
+  if (!it->itc_no_bitmap && it->itc_insert_key && it->itc_insert_key->key_is_bitmap)
+    itc_init_bm_search (it);
   return buf;
 }
 
@@ -707,7 +715,6 @@ itc_set_by_placeholder (it_cursor_t * itc, placeholder_t * pl)
 	break;
       TC (tc_set_by_pl_wait);
     }
-  ITC_IN_MAP (itc);
   ITC_FIND_PL (itc, buf);
   itc->itc_position = pl->itc_position;
   /* Set now when in, if it moved while waiting. */
@@ -1446,8 +1453,11 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
   dbe_key_t *row_key = NULL;
 
   ITC_LEAVE_MAP (itc);
+  if (itc->itc_insert_key && itc->itc_insert_key->key_is_bitmap && !itc->itc_no_bitmap)
+    return itc_bm_row_check (itc, buf);
   if (RANDOM_SEARCH_ON == itc->itc_random_search)
     itc->itc_st.n_sample_rows++;
+  
   if (key != itc->itc_key_id)
     {
 	{
@@ -1461,8 +1471,6 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
   sp = itc->itc_row_specs;
   if (sp)
     {
-      if (SPEC_NOT_APPLICABLE == sp)
-	return DVC_LESS;
       do
 	{
 	  int op = sp->sp_min_op;
@@ -1492,7 +1500,7 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	    {
 	      if (DVC_MATCH != itc_like_compare (itc, itc->itc_search_params[sp->sp_min], sp))
 		return DVC_LESS;
-	      goto next_sp;;
+	      goto next_sp;
 	    }
 	  if (sp->sp_max_op != CMP_NONE
 	      && (0 == (sp->sp_max_op & itc_col_check (itc, sp, sp->sp_max))))
@@ -1582,6 +1590,7 @@ start:
 #endif
   it->itc_is_on_row = 0;
 
+  if (!atomic_dive || it->itc_landed)
   ITC_LEAVE_MAP (it);
   if (!it->itc_landed)
     {
@@ -1594,6 +1603,11 @@ start:
     }
   else
     {
+      if (it->itc_bp.bp_just_landed && RWG_WAIT_SPLIT == itc_bm_land_lock (it, buf_ret))
+	{
+	  *buf_ret = itc_reset (it);
+	  goto start;
+	}
       res = itc_page_search (it, buf_ret, &leaf);
     }
 
@@ -1607,22 +1621,19 @@ start:
 	}
       if (!(*buf_ret)->bd_is_write)
 	GPF_T1 ("Buffer not on write access after cursor landed");
-      if (it->itc_to_reset > RWG_NO_WAIT
-	  && (res == DVC_MATCH_COMPLETE || res == DVC_NO_MATCH_COMPLETE))
-	/* a rollback while landing could have caused a dirty read by accelerator */
-	goto start;
 
       if (it->itc_search_mode == SM_INSERT)
 	return res;
       /* A read cursor landed on a leaf */
-      if (ISO_SERIALIZABLE == it->itc_isolation
-	  && res == DVC_LESS)
+      if (!it->itc_no_bitmap && it->itc_insert_key && it->itc_insert_key->key_is_bitmap)
+	it->itc_bp.bp_just_landed = 1;
+      if (ISO_SERIALIZABLE == it->itc_isolation)
 	{
 	  if (NO_WAIT != itc_serializable_land (it, buf_ret))
 	    goto start;
 	}
       if ((ISO_SERIALIZABLE == it->itc_isolation || ISO_COMMITTED == it->itc_isolation)
-	  && (DVC_MATCH == res || DVC_MATCH_COMPLETE == res || DVC_NO_MATCH_COMPLETE == res))
+	  && DVC_MATCH == res)
 	{
 	  goto start; /* pass through itc_page_search to check for lock */
 	}
@@ -1630,7 +1641,7 @@ start:
 	{
 	  if (res == DVC_LESS)
 	    {
-
+	      it->itc_bp.bp_at_end = 1;
 	      itc_skip_entry (it, (*buf_ret)->bd_buffer);
 	      if (it->itc_position)
 		goto start;
@@ -1649,8 +1660,7 @@ start:
       else
 	{
 	  /* SM_READ_EXACT */
-	  if (res != DVC_MATCH && res != DVC_MATCH_COMPLETE
-	      && res != DVC_NO_MATCH_COMPLETE)
+	  if (res != DVC_MATCH)
 	    return res;
 	}
     }
@@ -1660,6 +1670,15 @@ search_switch:
     {
     case DVC_INDEX_END:
       {
+	if (it->itc_desc_serial_reset)
+	  {
+	    /* for convenience, put the reset condition together with index end so as not to check upon every return of itc_page_search */
+	    it->itc_desc_serial_landed = 0;
+	    it->itc_desc_serial_reset = 0;
+	    itc_page_leave (it, *buf_ret);
+	    *buf_ret = itc_reset (it);
+	    goto start;
+	  }
 	/* This leaf is DONE. Go up if can't go down. */
 	if (leaf)
 	  GPF_T1 ("no leaf at index end");
@@ -1671,6 +1690,8 @@ search_switch:
 	    return DVC_INDEX_END;
 	  }
       up_again:
+	if (it->itc_is_vacuum)
+	  itc_vacuum_compact (it, *buf_ret);
 	ITC_IN_MAP (it);
 	up = LONG_REF (((*buf_ret)->bd_buffer) + DP_PARENT);
 	leaf_from = (*buf_ret)->bd_page;
@@ -1833,6 +1854,10 @@ search_switch:
 }
 
 
+#define ITC_CK_POS(itc)\
+  {if (itc->itc_position && (itc->itc_position < DP_DATA || itc->itc_position > PAGE_SZ - 8)) \
+    GPF_T1("itc_position out of range after itc_search"); }
+
 int
 itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret)
 {
@@ -1840,11 +1865,29 @@ itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret)
   if (it->itc_is_on_row)
     {
       it->itc_is_on_row = 0;
+      if (it->itc_insert_key && it->itc_insert_key->key_is_bitmap)
+	{
+	  itc_next_bit (it, *buf_ret);
+	  if (!it->itc_bp.bp_is_pos_valid)
+	    goto skip_bitmap; /* If pos still not valid We are on a non-eaf and must get to a leaf before setting the bitmap stiff, sp dp as if no bm */ 
+	  if (it->itc_bp.bp_at_end)
+	    {
+	      it->itc_bp.bp_new_on_row = 1;
       if (it->itc_desc_order)
 	itc_prev_entry (it, *buf_ret);
       else
 	itc_skip_entry (it, (*buf_ret)->bd_buffer);
     }
+	}
+      else 
+	{
+	  if (it->itc_desc_order)
+	    itc_prev_entry (it, *buf_ret);
+	  else
+	    itc_skip_entry (it, (*buf_ret)->bd_buffer);
+	}
+    }
+ skip_bitmap:
   ks = it->itc_ks;
   if (ks && (ks->ks_local_test || ks->ks_local_code || ks->ks_setp))
     {
@@ -1855,6 +1898,7 @@ itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret)
 	  ITC_FAIL (it)
 	    {
 	      rc  = itc_search (it, buf_ret);
+	      ITC_CK_POS (it);
 	    }
 	  ITC_FAILED
 	    {
@@ -1874,11 +1918,19 @@ itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret)
 	  longjmp_splice (qi->qi_thread->thr_reset_ctx, reset_code);
 	}
       END_QR_RESET;
+      it->itc_desc_serial_landed = 0;
       return rc;
     }
   else
-    return (itc_search (it, buf_ret));
+    {
+      int rc = itc_search (it, buf_ret);
+      it->itc_desc_serial_landed = 0;
+            ITC_CK_POS (it);
+      return rc;
+    }
 }
+
+long  tc_desc_serial_reset;
 
 
 int
@@ -1888,7 +1940,7 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
   dp_addr_t leaf = 0;
   key_id_t key_id;
   search_spec_t *sp;
-  int res = DVC_LESS;
+  int res = DVC_LESS, row_check;
   int pos;
   char txn_clear = PS_LOCKS;
 
@@ -1933,6 +1985,12 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 		    {
 		      int wrc = ITC_IS_LTRX (it) ?
 			  itc_landed_lock_check (it, buf_ret) : NO_WAIT;
+		      if (it->itc_desc_serial_landed && NO_WAIT != wrc)
+			{
+			  TC (tc_desc_serial_reset);
+			  it->itc_desc_serial_reset = 1;
+			  return DVC_INDEX_END;
+			}
 		      if (ISO_SERIALIZABLE == it->itc_isolation
 			  || NO_WAIT == wrc)
 			break;
@@ -2044,7 +2102,10 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	  *leaf_ret = leaf;
 	  if (!leaf && !sp)
 	    {
-	      if (DVC_MATCH == itc_row_check (it, *buf_ret))
+	      row_check = itc_row_check (it, *buf_ret);
+	      if (DVC_GREATER == row_check)
+		return DVC_GREATER;
+	      if (DVC_MATCH == row_check)
 		{
 		  if (it->itc_ks && it->itc_ks->ks_is_last
 		      && (PS_OWNED == txn_clear
@@ -2134,6 +2195,8 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t * buf,
   int guess;
   int at_or_above_res = -100;
   key_id_t key_id;
+  if (buf->bd_is_write)
+    GPF_T1 ("split search supposed to be in read mode");
   if (map->pm_count == 0)
     {
       it->itc_position = 0;
@@ -2561,12 +2624,18 @@ itc_read_ahead_blob (it_cursor_t * itc, ra_req_t *ra )
       if (!DBS_PAGE_IN_RANGE (itc->itc_tree->it_storage, ra->ra_dp[inx]) 
 	  ||dbs_is_free_page (itc->itc_tree->it_storage, ra->ra_dp[inx]) || 0 == ra->ra_dp[inx])
 	{
-	  log_error ("*** read-ahead of a free or out of range page dp L=%ld",
+	  log_error ("*** read-ahead of a free or out of range page dp L=%ld, database not necessarily corrupted.",
 	       ra->ra_dp[inx]);
 	  continue;
 	}
       btmp = isp_locate_page (itc->itc_space, ra->ra_dp[inx],
 			      &bisp, &phys);
+      if (DP_DELETED == phys)
+	{
+	  /* between finding the page and here, the page may have been deleted.  OIr reused for sth else. Latter is not dangerous, it will just not be found and will move out with cache replacement */
+	  log_error ("Read ahead of page deleted in commit space, LL=%d not dangerous.\n", ra->ra_dp[inx]);
+	  continue;
+	}
       if (!btmp)
 	{
 	  memset (&decoy, 0, sizeof (decoy));
@@ -2801,6 +2870,7 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
   db_buf_t page = buf->bd_buffer;
   int have_left_leaf = 0;
   int pos = itc->itc_position; /* itc is at leftost match. Nothing at left of the itc */
+  int save_pos = itc->itc_position;
   int ctr = 0, leaf_ctr = 0;
   while (pos)
 		{
@@ -2830,7 +2900,17 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 	  if (DVC_MATCH == res)
 	    {
 	      if (r_k_id)
+		{
+		  if (itc->itc_insert_key->key_is_bitmap)
+		    {
+		      save_pos = itc->itc_position;
+		      itc->itc_position = pos;
+		      ctr += itc_bm_count (itc, buf);
+		      itc->itc_position = save_pos;
+		    }
+		  else 
 		ctr++;
+		}
 	      else 
 		{
 		  if (have_left_leaf)

@@ -107,6 +107,7 @@ long  tc_blob_ra_size;
 long  tc_get_buf_failed;
 long  tc_read_wait_decoy;
 long  tc_read_wait_while_ra_finding_buf;
+long  tc_pg_write_compact;
 
 long  tft_random_seek;
 long  tft_seq_seek;
@@ -127,6 +128,9 @@ unsigned long vdb_n_fetch;
 unsigned long vdb_n_transact;
 unsigned long vdb_n_error;
 
+long ac_pages_in;
+long ac_pages_out;
+long ac_n_busy;
 
 
 long tws_connections;
@@ -167,7 +171,7 @@ long st_proc_served;
 long st_proc_active;
 long st_proc_running;
 long st_proc_queued_req;
-long st_proc_brk;
+unsigned ptrlong st_proc_brk;
 
 char st_db_file_size_buffer[50];
 char *st_db_file_size = st_db_file_size_buffer;
@@ -259,9 +263,9 @@ process_status_report (void)
 	n++;
 	token = token->next;
       }
-    st_proc_brk  = (long) sbrk (0) - initbrk;
-    rep_printf ("	    %d requests queued.  brk = %d\n", n,
-	st_proc_brk);
+    st_proc_brk  = (unsigned ptrlong) sbrk (0) - initbrk;
+    rep_printf ("	    %d requests queued.  brk = %Ld\n", n,
+	(unsigned int64) st_proc_brk);
     st_proc_queued_req = n;
   }
 #endif
@@ -334,7 +338,6 @@ list_wired_buffers (char *file, int line, char *format, ...)
 	{
 	  buffer_desc_t * buf;
 	  mutex_enter (bp->bp_mtx);
-	  buf = bp->bp_first_buffer;
 	  for (inx = 0; inx < bp->bp_n_bufs; inx++)
 	    {
 	      buf = &bp->bp_bufs[inx];
@@ -348,7 +351,6 @@ list_wired_buffers (char *file, int line, char *format, ...)
 		  log_error ("Wired buffer detected (%s:%d) ", file, line);
 		  wired_ctr++;
 		}
-	      buf = buf->bd_next;
 	    }
 	  mutex_leave (bp->bp_mtx);
 	}
@@ -387,7 +389,6 @@ dbms_status_report (void)
 	{
 	  buffer_desc_t * buf;
 	  mutex_enter (bp->bp_mtx);
-	  buf = bp->bp_first_buffer;
 	  for (inx = 0; inx < bp->bp_n_bufs; inx++)
 	    {
 	      buf = &bp->bp_bufs[inx];
@@ -398,7 +399,6 @@ dbms_status_report (void)
 		n_wired++;
 	      if (buf->bd_is_dirty)
 		n_dirty++;
-	      buf = buf->bd_next;
 	    }
 	  mutex_leave (bp->bp_mtx);
 	}
@@ -420,9 +420,9 @@ dbms_status_report (void)
       st_db_dirty_buffers = n_dirty;
       st_db_wired_buffers = n_wired;
 
-      rep_printf ("  Disk Usage: %ld reads avg %ld msec, %d%% read last  %ld s, %ld writes,\n    %ld read ahead, batch = %ld.\n",
+      rep_printf ("  Disk Usage: %ld reads avg %ld msec, %d%% read last  %ld s, %ld writes,\n    %ld read ahead, batch = %ld.  Autocompact %ld in %ld out, %ld%% saved.\n",
 	  disk_reads, read_cum_time / (disk_reads ? disk_reads : 1),
-	  read_percent, interval_msec / 1000, disk_writes, ra_count, ra_pages / (ra_count + 1));
+		  read_percent, interval_msec / 1000, disk_writes, ra_count, ra_pages / (ra_count + 1), ac_pages_in, ac_pages_out, 100 * (ac_pages_in - ac_pages_out) / (1 + ac_pages_in));
 
       st_db_disk_read_avg = read_cum_time / (disk_reads ? disk_reads : 1);
       st_db_disk_read_pct = read_percent;
@@ -1100,6 +1100,7 @@ stat_desc_t stat_descs [] =
     {"tc_no_thread_kill_vdb", &tc_no_thread_kill_vdb, NULL},
     {"tc_no_thread_kill_running", &tc_no_thread_kill_running, NULL},
     {"tc_deld_row_rl_rb", &tc_deld_row_rl_rb, NULL},
+    {"tc_pg_write_compact", &tc_pg_write_compact, NULL},
     {"tft_random_seek", &tft_random_seek, NULL},
     {"tft_seq_seek", &tft_seq_seek, NULL},
 

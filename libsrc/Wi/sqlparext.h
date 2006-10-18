@@ -309,6 +309,7 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_SUBQ_LOOP (ptrlong) 910
 #define SUBQ_NO_LOOP 2
 #define SUBQ_LOOP 1
+#define OPT_VACUUM (ptrlong)913
 
 /* GROUPING SETS */
 #define GROUPING_FUNC	"__grouping"

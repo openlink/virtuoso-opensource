@@ -490,7 +490,8 @@ typedef struct bh_get_layout_s {
 } bh_get_layout_t;
 
 
-int page_wait_blob_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t ** buf_ret, int mode, blob_handle_t *bh, int itc_in_map_wrap)
+int 
+page_wait_blob_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t ** buf_ret, int mode, blob_handle_t *bh, int itc_in_map_wrap)
 {
   short flag;
   if (itc_in_map_wrap)
@@ -513,10 +514,10 @@ int page_wait_blob_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_desc_t ** 
       if (PA_WRITE == mode)
         GPF_T1 ("page_wait_blob_access with PA_WRITE and non-BLOB buffer");
       log_info ("Attempt to read (deleted?) blob dp = %lu start = %lu: non-blob page found", (unsigned long)dp_to, (unsigned long)((NULL != bh) ? bh->bh_page : 0));
-      page_leave_inner (buf_ret[0]);
       remhash (DP_ADDR2VOID (dp_to), itc->itc_space->isp_dp_to_buf);
       buf_ret[0]->bd_space = 0;
       buf_set_last (buf_ret[0]);
+      page_leave_inner (buf_ret[0]);
       goto errexit;
     }
 
@@ -2498,6 +2499,8 @@ blob_write_crash_log (lock_trx_t * lt /* unused */, dk_session_t * log, blob_log
 }
 
 
+extern dk_mutex_t * log_write_mtx;
+
 int
 blob_write_log (lock_trx_t * lt, dk_session_t * log, blob_log_t * bl)
 {
@@ -2507,7 +2510,7 @@ blob_write_log (lock_trx_t * lt, dk_session_t * log, blob_log_t * bl)
       dtp_t blob_dtp = bl->bl_blob_dtp;
       buffer_desc_t *buf;
       it_cursor_t *tmp_itc;
-      ASSERT_IN_TXN;
+      ASSERT_IN_MTX (log_write_mtx);
       if (!bl->bl_it)
 	{ /* only if crash dump */
 	  return blob_write_crash_log (lt, log, bl);
@@ -2562,7 +2565,7 @@ blob_write_log (lock_trx_t * lt, dk_session_t * log, blob_log_t * bl)
       session_buffered_write_char (0, log);
     }
   END_WRITE_FAIL (log);
-  ASSERT_IN_TXN;
+  ASSERT_IN_MTX (log_write_mtx);
   return 0;
 }
 

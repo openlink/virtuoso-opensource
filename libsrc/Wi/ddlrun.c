@@ -646,6 +646,26 @@ ddl_key_opt (query_instance_t * qi, char * tb_name, key_id_t key_id)
 }
 
 
+ddl_key_bitmap (query_instance_t * qi, char * tb_name, key_id_t key_id)
+{
+  caddr_t err;
+  static query_t * key_bitmap_qr;
+  if (!ddl_std_procs_inited)
+    return;
+  if (! key_bitmap_qr)
+    key_bitmap_qr = sql_compile ("DB.DBA.ddl_bitmap_inx (?, ?)",
+			      bootstrap_cli, &err, SQLC_DEFAULT);
+  AS_DBA (qi, err = qr_rec_exec (key_bitmap_qr, qi->qi_client, NULL, qi, NULL, 2,
+		     ":0", tb_name, QRP_STR,
+		     ":1", (ptrlong) key_id, QRP_INT));
+  if (err != (caddr_t) SQL_SUCCESS)
+    {
+      QI_POISON_TRX (qi);
+      sqlr_resignal (err);
+    }
+}
+
+
 void
 ddl_create_table (query_instance_t * qi, const char *name, caddr_t * cols)
 {
@@ -1212,7 +1232,7 @@ ddl_ensure_constraint_name_unique (const char *name, client_connection_t *cli, q
 void
 ddl_create_key (query_instance_t * qi,
     char *name, char *table, caddr_t * parts,
-    int cluster_on_id, int is_object_id, int is_unique)
+    int cluster_on_id, int is_object_id, int is_unique, int is_bitmap)
 {
   client_connection_t *cli = qi->qi_client;
   caddr_t parts_tmp[K_MAX_PARTS];
@@ -1277,7 +1297,9 @@ ddl_create_key (query_instance_t * qi,
   dk_free_tree (list_to_array (to_free));
   dk_free_box (parts_box);
 
-  if (is_unique)
+  if (is_bitmap)
+    ddl_key_bitmap (qi, szTheTableName, key_id);
+  else if (is_unique)
     ddl_key_opt (qi, szTheTableName, key_id);
   ddl_table_changed (qi, szTheTableName);
   {
@@ -2570,6 +2592,9 @@ inx_opt_flag (caddr_t * opts, char *name)
 #define KO_OID(opt)   \
   inx_opt_flag (opt, "object_id")	/* corrected by AK 1-FEB-1997. */
 
+#define KO_BITMAP(opt)   \
+  inx_opt_flag (opt, "bitmap")	/* corrected by AK 1-FEB-1997. */
+
 
 static void
 ddl_index_def_write_schema (query_instance_t * qi, caddr_t name, caddr_t table,
@@ -2601,7 +2626,7 @@ ddl_index_def_write_schema (query_instance_t * qi, caddr_t name, caddr_t table,
       if (ret)
 	sqlr_resignal (ret);
       ddl_create_key (qi, name, tb->tb_name,
-	  cols, KO_CLUSTER (opts), KO_OID (opts), KO_UNQ (opts));
+	  cols, KO_CLUSTER (opts), KO_OID (opts), KO_UNQ (opts), KO_BITMAP (opts));
     }
   QR_RESET_CODE
     {
@@ -5811,6 +5836,23 @@ const char * wsst =
 "}\n";
 
 
+const char * bm_proc_1 = 
+"create procedure ddl_bitmap_inx (in tb varchar, in bm_id integer)\n"
+"{\n"
+"  declare last_col, last_col_dtp int;\n"
+"  whenever not found goto err;\n"
+"  select kp_col into last_col from sys_key_parts where kp_key_id = bm_id and kp_nth = (select max (kp_nth) from sys_key_parts where kp_key_id = bm_id);\n"
+"  select col_dtp into last_col_dtp from sys_cols where col_id = last_col;\n"
+"  if (last_col_dtp in (189, 243, 244))\n"
+"    update sys_keys set key_options = vector ('bitmap') where key_id = bm_id;\n"
+"  else \n"
+"    signal ('42000', 'BM001: The last effective part of a bitmap index must be an int or iri_id');\n"
+"  return;\n"
+" err:\n"
+"  signal ('42000', 'Inconsistent bitmap key layout.');\n"
+"}\n";
+
+
 
 const char * pk1 =
 "create procedure ddl_reorg_pk (in tb varchar, in unq_id integer)\n"
@@ -6112,6 +6154,7 @@ ddl_standard_procs (void)
   ddl_std_proc (pk1, 0);
   ddl_std_proc (pk2, 0);
   ddl_std_proc (pk3, 0);
+  ddl_std_proc (bm_proc_1, 0);
   ddl_std_proc (collation_define_text, 0);
   ddl_std_proc (charset_define_text, 0);
   ddl_std_procs_inited = 1;

@@ -715,7 +715,15 @@ int
 itc_serializable_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   if (NO_WAIT == itc_set_lock_on_row (itc, buf_ret))
+    {
+      if (itc->itc_desc_order)
+	{
+	  /* for desc serializable, must lock the row above the range.  So the reset test for getting the first lock is not here but later */
+	  itc->itc_desc_serial_landed = 1;
     return NO_WAIT;
+	}
+      return NO_WAIT;
+    }
   TC (tc_serializable_land_reset);
   ITC_IN_MAP (itc);
   rdbg_printf (("  serializable landing reset T=%d L=%d pos=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page, itc->itc_position));

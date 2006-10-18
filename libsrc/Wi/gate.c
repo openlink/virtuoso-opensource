@@ -184,9 +184,7 @@ page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_in_map)
 	}
       else
 	{
-	  buf->bd_timestamp = buf->bd_pool->bp_ts;
-	  if (bp_hit_ctr++ % 30 == 0)
-	    buf->bd_pool->bp_ts++;
+	  BUF_TOUCH (buf);
 	  if (is_read_pending)
 	    in_while_read++;
 	}
@@ -271,8 +269,6 @@ page_leave_inner (buffer_desc_t * buf)
 {
   if (!is_crash_dump && buf->bd_space)
     ASSERT_IN_MAP (buf->bd_space->isp_tree);
-  if (!buf->bd_page)
-    buf->bd_space = NULL; /* if leaving del'd buffer, reset the space so reuse will not try to take the buffer out of the space's cache */
   if (buf->bd_readers)
     {
       buf->bd_readers--;
@@ -292,6 +288,9 @@ page_leave_inner (buffer_desc_t * buf)
       if (W_NOT_RELEASED == page_release_writes (buf))
 	page_release_busted (buf);
     }
+  /* set the space to nnull for deld buffer after all else.  This is so that buffer replacement will wait for the page map so it does not do dirty reads on intermiediate states of releasing the buffer */
+  if (!buf->bd_page)
+    buf->bd_space = NULL; /* if leaving del'd buffer, reset the space so reuse will not try to take the buffer out of the space's cache */
 }
 
 
@@ -319,6 +318,8 @@ page_mark_change (buffer_desc_t * buf, int change)
     itc->itc_to_reset = MAX (itc->itc_to_reset, change);
 }
 
+extern int atomic_dive;
+
 
 buffer_desc_t *
 page_transit_if_can (it_cursor_t * itc, dp_addr_t dp, buffer_desc_t ** dest_ret,
@@ -326,8 +327,50 @@ page_transit_if_can (it_cursor_t * itc, dp_addr_t dp, buffer_desc_t ** dest_ret,
 {
   buffer_desc_t *from = *buf_ret;
   buffer_desc_t *dest;
-  ASSERT_IN_MAP (itc->itc_tree);
   itc->itc_to_reset = RWG_NO_WAIT;
+  /* the idea is to first test for the common case of destination buffer present and free, no special leave actions needed 
+   * Note that if target is not present, this is expected to read it.  transits will fail if 2nd in read condition is not handled here by the reading.  
+   * If the page_wait_access in the general transit case is liable to get a 2nd in read it will be confused. */
+  ITC_IN_MAP (itc);
+  if (from->bd_to_bust || from->bd_write_waiting)
+    goto read_dest;
+  dest = (buffer_desc_t *) gethash (DP_ADDR2VOID (dp), itc->itc_space->isp_dp_to_buf);
+  if (!dest)
+    goto read_dest;
+  if (dest->bd_being_read)
+    goto read_dest;
+  *dest_ret = dest;
+  if (PA_READ == mode)
+    {
+      if (!dest->bd_is_write
+	  && !dest->bd_write_waiting)
+	{
+	  dest->bd_readers++;
+	  from->bd_readers--;
+	  if (!atomic_dive)
+	    ITC_LEAVE_MAP (itc);
+	  BUF_TOUCH (dest);
+	  *buf_ret = dest;
+	  return dest;
+	}
+      return NULL;
+    }
+  else
+    {
+      if (!dest->bd_is_write
+	  && 0 == dest->bd_readers)
+	{
+	  if (dest->bd_write_waiting || dest->bd_to_bust)
+	    GPF_T1 ("nobody in yet there are cursor waiting at the gate");
+	  BD_SET_IS_WRITE (dest, 1);
+	  BD_SET_IS_WRITE (from, 0);
+	  *buf_ret = dest;
+	  return dest;
+	}
+      return NULL;
+    }
+
+ read_dest:
   dest = page_fault_map_sem (itc, dp, 0);
   *dest_ret = dest;
   if (itc->itc_to_reset > RWG_NO_WAIT)
@@ -485,11 +528,12 @@ int
 itc_try_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   buffer_desc_t *buf = *buf_ret;
-  ITC_IN_MAP (itc);
   if (buf->bd_is_write)
     GPF_T1 ("Can't land while buffer being written");
 
   itc->itc_to_reset = RWG_NO_WAIT;
+  ITC_IN_MAP (itc);
+
   if (buf->bd_readers > 1)
     {
       TC (tc_try_land_write);
@@ -500,18 +544,21 @@ itc_try_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
       if (itc->itc_to_reset <= RWG_WAIT_DATA)
 	{
 	  itc->itc_landed = 1;
+	  ITC_FIND_PL (itc, buf);
+	  ITC_LEAVE_MAP (itc);
 	}
     }
   else
     {
       buf->bd_readers = 0;
       BD_SET_IS_WRITE (buf, 1);
+      ITC_FIND_PL (itc, buf);
+      ITC_LEAVE_MAP (itc);
       itc->itc_landed = 1;
     }
   if (itc->itc_landed)
     {
       dbe_key_t *key = itc->itc_insert_key;
-      ITC_FIND_PL (itc, buf);
       if (key)
 	{
 	  key->key_n_landings++;
@@ -549,6 +596,9 @@ retry:
     }
   ITC_IN_MAP (itc);
   itc_unregister (itc, INSIDE_MAP);
+  ITC_FIND_PL (itc, buf);
+  ITC_LEAVE_MAP (itc);
+
 #if 1
   if (!itc->itc_tree->it_hi
       && itc->itc_position)
@@ -567,7 +617,6 @@ retry:
 #endif
 
 
-  ITC_FIND_PL (itc, buf);
   ITC_LEAVE_MAP (itc);
   /* the itc_page, itc_position are correct since it was registered */
   return buf;
@@ -616,12 +665,10 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
   itc->itc_parent_page = itc->itc_page;
   itc->itc_pos_on_parent = itc->itc_position;
   /* cache place, use when looking for next sibling */
-
-  ITC_IN_MAP (itc);
   tmp = page_transit_if_can (itc, to, &dest_buf, buf_ret, PA_READ);
-  ASSERT_IN_MAP (itc->itc_tree);
   if (!tmp)
     {
+      ASSERT_IN_MAP (itc->itc_tree);
       if (itc->itc_to_reset >= RWG_WAIT_SPLIT)
 	{
 	  TC (tc_split_2nd_read);
@@ -644,6 +691,7 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
   else
     *buf_ret = tmp;
   back_link = LONG_REF ((*buf_ret)->bd_buffer + DP_PARENT);
+  if (!atomic_dive)
   ITC_LEAVE_MAP (itc);
   itc->itc_page = (*buf_ret)->bd_page;
   if (back_link != dp_from)
@@ -667,7 +715,6 @@ itc_landed_down_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t 
   itc->itc_pos_on_parent = itc->itc_position;
   /* cache place, use when looking for next sibling */
 
-  ITC_IN_MAP (itc);
   tmp = page_transit_if_can (itc, to, &dest_buf, buf_ret, PA_WRITE);
   if (!tmp)
     {
@@ -700,11 +747,12 @@ itc_landed_down_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t 
 #endif
 
   ITC_FIND_PL (itc, *buf_ret);
-  itc->itc_nth_seq_page++;
   back_link = LONG_REF ((*buf_ret)->bd_buffer + DP_PARENT);
   if (back_link != dp_from)
     itc_fix_back_link (itc, buf_ret, dp_from, old_buf, back_link, tmp == NULL);
   ITC_LEAVE_MAP (itc);
+  itc->itc_nth_seq_page++;
+  BUF_TOUCH (*buf_ret);
   if (itc->itc_desc_order)
     {
       page_map_t *pm = (*buf_ret)->bd_content_map;

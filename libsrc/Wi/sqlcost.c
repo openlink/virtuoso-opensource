@@ -107,6 +107,8 @@ dbe_key_row_cost (dbe_key_t * key, float * rpp)
       row_len += col_len;
     }
   END_DO_SET ();
+  if (key->key_is_bitmap)
+    row_len = row_len / 3; /* assume three bits on the average, makes this less costly than regular */
   if (rpp)
     *rpp = 6000.0 / row_len ;
   return (float) row_len * ROW_COST_PER_BYTE;
@@ -957,7 +959,8 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
     no_sample: ;
     }
   dfe->_.table.is_unique = unique;
-	
+  if (key->key_is_bitmap)
+    inx_cost *= 0.9; /* tree usually a bit less deep and anyway better working set. */
   total_cost = inx_cost + (col_cost + ROW_SKIP_COST) * inx_arity 
     + dbe_key_row_cost (dfe->_.table.key, &rows_per_page) * inx_arity;
   total_cost += NEXT_PAGE_COST * inx_arity / rows_per_page;
@@ -1190,6 +1193,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
       break;
     case DFE_DT:
     case DFE_EXISTS:
+      /* does not work - breaks ods load case DFE_VALUE_SUBQ: */
       if (dfe->_.sub.generated_dfe)
 	dfe_unit_cost (dfe->_.sub.generated_dfe, 1, u1, a1, overhead_ret);
       else
@@ -1223,7 +1227,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 		  *a1 *= 0.9;
 		}
 	    }
-	  if (dfe->dfe_type == DFE_EXISTS)
+	  if (dfe->dfe_type == DFE_EXISTS || dfe->dfe_type == DFE_VALUE_SUBQ)
 	    { /* accesses never more than 1 */
 	      if (*a1 > 1)
 		*u1 /= *a1;

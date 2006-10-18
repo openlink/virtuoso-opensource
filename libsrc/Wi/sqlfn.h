@@ -246,7 +246,7 @@ void ddl_create_primary_key (query_instance_t * cli, char * table, char * key,
     caddr_t * parts, int cluster_on_id, int is_object_id);
 
 void ddl_create_key (query_instance_t * cli, char * table, char * key,
-    caddr_t * parts, int cluster_on_id, int is_object_id, int is_unique);
+    caddr_t * parts, int cluster_on_id, int is_object_id, int is_unique, int is_bitmap);
 
 void ddl_add_col (query_instance_t * cli, const char * table, caddr_t * col);
 
@@ -1082,4 +1082,29 @@ int qr_proc_repl_check_valid (query_t *qr, caddr_t *err);
 		"Either use substring to access it in parts or place less data in it.", (place))
 
 void ddl_commit_trx (query_instance_t *qi);
+
+/* bitmap.c */
+
+void key_bm_insert (it_cursor_t * itc,
+	       db_buf_t key_image);
+
+void key_make_bm_specs (dbe_key_t * key);
+int itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf);
+void itc_bm_land (it_cursor_t * itc, buffer_desc_t * buf);
+void itc_next_bit (it_cursor_t * itc, buffer_desc_t *buf);
+void itc_invalidate_bm_crs (it_cursor_t * itc);
+int64  unbox_iri_int64 (caddr_t x);
+int itc_bm_land_lock (it_cursor_t * itc, buffer_desc_t ** buf_ret);
+void itc_init_bm_search (it_cursor_t * itc);
+void bm_init ();
+int itc_bm_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret);
+#define BM_DEL_DONE 1
+#define BM_DEL_ROW 2
+caddr_t box_iri_int64 (int64 n, dtp_t dtp);
+int itc_bm_count (it_cursor_t * itc, buffer_desc_t * buf);
+void itc_bm_ends (it_cursor_t * itc, buffer_desc_t * buf, bitno_t * start, bitno_t * end, int * is_single);
+int pl_next_bit (placeholder_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start, int is_desc);
+void pl_set_at_bit (placeholder_t * pl, db_buf_t bm, short bm_len, bitno_t bm_start, bitno_t value, int is_desc);
+
+
 #endif /* _SQLFN_H */

@@ -882,6 +882,8 @@ key_count_nullable (dk_set_t keys)
 }
 
 
+dbe_column_t * bitmap_col_desc;  /* same col added at the end of all bitmap inx leaf row layouts */
+
 void
 dbe_key_layout (dbe_key_t * key)
 {
@@ -894,6 +896,9 @@ dbe_key_layout (dbe_key_t * key)
 #ifdef DEBUG
   int n_placed = 0;
 #endif
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (key->key_options)
+				   && inx_opt_flag (key->key_options, "bitmap"))
+    key->key_is_bitmap = 1;
 
   DO_SET (dbe_column_t *, col, &key->key_parts)
     {
@@ -932,6 +937,12 @@ dbe_key_layout (dbe_key_t * key)
     {
       null_fill = 0;
       key_nullables = key_count_nullable (keys);
+    }
+  if (key->key_is_bitmap)
+    {
+      if (deps)
+	log_error ("Bitmap inx should not have dependent parts in schema");
+      deps = dk_set_cons ((void*) bitmap_col_desc, NULL);
     }
   key_place_fixed (key, &kf_fill, &null_fill, &key_fixed, keys);
 #ifdef DEBUG
@@ -992,6 +1003,16 @@ dbe_key_layout (dbe_key_t * key)
   else
     key->key_row_len = IE_FIRST_KEY + rf_fill + null_bytes; /* incl. key id etc. */
   dk_set_free (keys);
+  dbe_key_insert_spec (key);
+  if (key->key_is_bitmap)
+    {
+      key_make_bm_specs (key);
+      dk_set_free (deps);
+      key->key_bm_cl = key_find_cl (key, CI_BITMAP);
+      key->key_bit_cl = key_find_cl (key, 
+				    ((dbe_column_t *)dk_set_nth (key->key_parts, key->key_n_significant - 1))->col_id);
+      /* one is the col where the bits are, the other the last key part, i.e. the beginning offset of the nbitmap */
+    }
 }
 
 
@@ -1480,6 +1501,14 @@ sch_create_meta_seed (dbe_schema_t * sc, dbe_schema_t * prev_sc)
   dbe_key_open_ap (key_sub, prev_sc);
   dbe_key_open_ap (key_frags, prev_sc);
   dbe_key_open_ap (key_udt, prev_sc);
+  if (!bitmap_col_desc)
+    {
+      bitmap_col_desc = (dbe_column_t *) dk_alloc (sizeof (dbe_column_t));
+      memset (bitmap_col_desc, 0, sizeof (dbe_column_t));
+      bitmap_col_desc->col_id = CI_BITMAP;
+      bitmap_col_desc->col_sqt.sqt_dtp = DV_STRING;
+      bitmap_col_desc->col_sqt.sqt_non_null = 1;
+    }
 }
 
 

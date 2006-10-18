@@ -69,7 +69,7 @@ walk_page_transit (it_cursor_t * itc, dp_addr_t dp, buffer_desc_t ** buf_ret)
     {
       ITC_IN_MAP (itc);
       page_wait_access (itc, dp, NULL, *buf_ret, buf_ret,
-	  bkp_check_and_recover_blobs ? PA_WRITE : PA_READ, RWG_WAIT_SPLIT);
+			PA_WRITE , RWG_WAIT_SPLIT);
       if (itc->itc_to_reset != RWG_WAIT_DECOY)
 	break;
     }
@@ -141,13 +141,6 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
 	  if (level < MAX_LEVELS)
 	  levels[level].lv_leaves++;
 
-	  /* XXX PmN Should we modify the database here?
-	   * Also called during backups
-	   */
-	  /*	  db_buf_length (page + pos, &hl, &l);
-	  it->itc_position = pos;
-	  if (0 != SHORT_REF ((*buf_ret)->bd_buffer + pos + hl + IE_KEY_ID))
-	  itc_make_row_map (it, (*buf_ret)->bd_buffer); */
 
 	}
 
@@ -176,6 +169,8 @@ walk_db (lock_trx_t * lt, page_func_t func)
 	      {
 		ITC_IN_MAP (itc);
 		buf = itc_reset (itc);
+		itc_try_land (itc, &buf);
+		/* the whole traversal is in landed (PA_WRITE() mode. page_transit_if_can will not allow mode change in transit */
 		ITC_IN_MAP (itc);
 		if (!buf->bd_content_map)
 		  {
@@ -457,12 +452,13 @@ bkp_check_and_recover_blob_cols (it_cursor_t * itc, db_buf_t row)
   return updated;
 }
 
+extern dk_mutex_t * log_write_mtx;
 
 int
 lt_backup_flush (lock_trx_t * lt, int do_commit)
 {
   int rc;
-  IN_TXN;
+  mutex_enter (log_write_mtx);
   lt->lt_replicate = REPL_LOG;
   if (do_commit)
     rc = log_commit (lt);
@@ -474,10 +470,10 @@ lt_backup_flush (lock_trx_t * lt, int do_commit)
     {
       LT_ERROR_DETAIL_SET (lt, box_dv_short_string ("Error writing the blobs to the transaction log"));
       lt->lt_error = LTE_LOG_FAILED;
-      LEAVE_TXN;
+      mutex_leave (log_write_mtx);
       return rc;
     }
-  LEAVE_TXN;
+  mutex_leave (log_write_mtx);
 
   lt->lt_blob_log = NULL;
   /* not in -d mode, only with backup () function */

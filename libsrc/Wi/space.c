@@ -434,6 +434,7 @@ isp_free_page (index_space_t * isp, buffer_desc_t * buf)
   page_mark_change (buf, RWG_WAIT_SPLIT);
   buf_set_last (buf);
   page_leave_inner (buf);
+  buf_recommend_reuse (buf);
 }
 
 

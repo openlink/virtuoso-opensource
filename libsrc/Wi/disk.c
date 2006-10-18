@@ -216,7 +216,7 @@ wd_storage (wi_db_t * wd, caddr_t name)
 void
 it_not_in_any (du_thread_t * self, index_tree_t * except)
 {
-#ifdef MTX_DEBUG
+#ifdef NNMTX_DEBUG
 #ifdef FAST_MTX_DEBUG
   return;
 #endif
@@ -283,7 +283,7 @@ it_allocate (dbe_storage_t * dbs)
 {
   NEW_VARZ (index_tree_t, tree);
 
-  tree->it_page_map_mtx = mutex_allocate ();
+  tree->it_page_map_mtx = mutex_allocate_typed (MUTEX_TYPE_SHORT);
   tree->it_lock_release_mtx = mutex_allocate ();
 
   tree->it_commit_space = isp_allocate (tree, COMMIT_REMAP_SIZE);
@@ -530,6 +530,7 @@ int32 bp_replace_count;
 
 long tc_bp_get_buffer;
 long tc_bp_get_buffer_loop;
+long tc_first_free_replace;
 #define B_N_SAMPLE (BP_N_BUCKETS * 4)
 
 dp_addr_t
@@ -590,10 +591,18 @@ bp_stats (buffer_pool_t * bp)
 
 
 int
-bp_found (buffer_desc_t * buf)
+bp_found (buffer_desc_t * buf, int from_free_list)
 {
   buffer_pool_t * bp = buf->bd_pool;
   index_space_t * last_isp = buf->bd_space;
+  /* the buffer is considered for reuse.  If so, even if not getting the buf from the deleted list,
+   * pop it out of the deleted list.  If the list breaks in the middle, no harm done.  Seldom occurrence due to it being drity written outside of bp_mtx */
+  if (!from_free_list && buf->bd_next)
+    {
+      buf->bd_pool->bp_first_free = buf->bd_next;
+      buf->bd_next = NULL;
+    }
+
   if (!last_isp)
     {
       /* when taking a non-used buffer, the serialization is on the
@@ -602,6 +611,7 @@ bp_found (buffer_desc_t * buf)
       if (!BUF_AVAIL (buf))
 	return 0;
       buf->bd_readers = 1;
+      if (!from_free_list)
       bp->bp_next_replace = (int) ((buf - bp->bp_bufs) + 1);
       bp_replace_count--; /* reuse of abandoned not counted as a replace */
       LEAVE_BP (bp);
@@ -626,6 +636,7 @@ bp_found (buffer_desc_t * buf)
 	    GPF_T1 ("buffer not in the hash of the would be space of residence");
       buf->bd_page = 0;
       buf->bd_space = NULL;
+      if (!from_free_list)
       bp->bp_next_replace = (int) ((buf - bp->bp_bufs) + 1);
       bp_replace_age += bp->bp_ts - buf->bd_timestamp;
       LEAVE_PAGE_MAP (last_isp->isp_tree);
@@ -709,12 +720,22 @@ buffer_desc_t *
 bp_get_buffer (buffer_pool_t * bp, int mode)
 {
   /* buffer returned with bd_readers = 1 so that it won't be allocated twice. Disconnected from any tree/page on return */
-  buffer_desc_t * buf;
+  buffer_desc_t * buf, * first_free;
   int age_limit;
   if (!bp)
     bp = wi_inst.wi_bps[wi_inst.wi_bp_ctr ++ % wi_inst.wi_n_bps];
   tc_bp_get_buffer++;
   mutex_enter  (bp->bp_mtx);
+  if ((first_free = bp->bp_first_free))
+    {
+      bp->bp_first_free = first_free->bd_next;
+      first_free->bd_next = NULL;
+      if (bp_found (first_free, 1))
+	{
+	  TC (tc_first_free_replace);
+	  return first_free;
+	}
+    }
   bp_replace_count++;
   bp->bp_ts++;
  again:
@@ -730,7 +751,7 @@ bp_get_buffer (buffer_pool_t * bp, int mode)
       if (!buf->bd_is_dirty
 	  && ((int) (bp->bp_ts - buf->bd_timestamp)) >= age_limit)
 	{
-	  if (bp_found (buf))
+	  if (bp_found (buf, 0))
 	    return buf;
 	}
       tc_bp_get_buffer_loop++;
@@ -741,7 +762,7 @@ bp_get_buffer (buffer_pool_t * bp, int mode)
       if (!buf->bd_is_dirty
 	  && ((int) (bp->bp_ts - buf->bd_timestamp)) >= age_limit)
 	{
-	  if (bp_found (buf))
+	  if (bp_found (buf, 0))
 	    return buf;
 	}
       tc_bp_get_buffer_loop++;
@@ -850,17 +871,33 @@ buf_set_last (buffer_desc_t * buf)
       if (buf->bd_page && gethash ((void*)(ptrlong)buf->bd_page, isp->isp_dp_to_buf))
 	GPF_T1 ("buf_set_last called while buffer still in isp's cache.");
     }
+  if (!buf->bd_is_write && !buf->bd_readers)
+    GPF_T1 ("Must have write on a buffer to set it last"); /* we also accept read cause blob structure errors sometimes have read access when they scrap the buffer */
   buf->bd_pl = NULL;
   buf->bd_page = 0;
   buf->bd_physical_page = 0;
-  buf->bd_space = NULL;
-
+  /* set the bp_space null only later, in the final page_leave_inner.  This prevents buffer replacement from taking the buffer until it is all clered because it will wat on the space's map. */
   if (buf->bd_is_dirty)
     {
       wi_inst.wi_n_dirty--;
       buf->bd_is_dirty = 0;
     }
   buf->bd_timestamp = bp->bp_ts - bp->bp_n_bufs;
+}
+
+void 
+buf_recommend_reuse (buffer_desc_t * buf)
+{
+  /* Dirty write.  Should be inside the bp_mtx of the pool.
+   * Not dangerous since bp__first_free is always some buffer of the bp or NULL and likewise with bd_next.  The list can get screwed up, it is always poppoed a single unit at a time and if a member of the list gets reallocated by normal eans the list just breaks because the  bd_next of the allocated one will be reset.
+   * Pops from the list are serialized anyway and normal checks apply to the buffers, so even if they actually are not reusable no harm is done. */
+
+  /* this does not work.  Turned off until fixed. */
+  return;
+  if (!BUF_AVAIL (buf))
+    return;
+  buf->bd_next = buf->bd_pool->bp_first_free;
+  buf->bd_pool->bp_first_free = buf;
 }
 
 
@@ -896,15 +933,6 @@ bp_make_buffer_list (int n)
       buf_ptr += ALIGN_VOIDP (PAGE_SZ);
       buf->bd_pool = bp;
       buf->bd_timestamp = bp->bp_ts - bp->bp_n_bufs;
-      buf->bd_next = bp->bp_first_buffer;
-      if (!bp->bp_last_buffer)
-	bp->bp_last_buffer = buf;
-      buf->bd_next = bp->bp_first_buffer;
-      if (bp->bp_first_buffer)
-	{
-	  bp->bp_first_buffer->bd_prev = buf;
-	}
-      bp->bp_first_buffer = buf;
     }
 
 #if HAVE_SYS_MMAN_H && !defined(__FreeBSD__)
@@ -2897,15 +2925,18 @@ wi_open_dbs ()
 }
 
 
+extern dk_mutex_t * log_write_mtx;
+
 void
 wi_open (char *mode)
 {
   int inx;
   const_length_init ();
-
-  wi_inst.wi_txn_mtx = mutex_allocate ();
+  bm_init ();
+  wi_inst.wi_txn_mtx = mutex_allocate_typed (MUTEX_TYPE_SHORT);
   mutex_option (wi_inst.wi_txn_mtx, "TXN", txn_mtx_entry_check, NULL);
-
+  log_write_mtx = mutex_allocate ();
+  mutex_option (log_write_mtx, "Log write", NULL, NULL);
   db_read_cfg (NULL, mode);
 
   wi_inst.wi_bps = (buffer_pool_t **) dk_alloc_box (bp_n_bps * sizeof (caddr_t), DV_CUSTOM);
@@ -3006,7 +3037,7 @@ wi_init_globals (void)
   hash_index_cache.hic_hashes = id_hash_allocate (101, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   hash_index_cache.hic_col_to_it = hash_table_allocate (201);
   hash_index_cache.hic_pk_to_it = hash_table_allocate (201);
-  dp_compact_mtx = mutex_allocate ();
+  dp_compact_mtx = mutex_allocate_typed (MUTEX_TYPE_SPIN);
   dp_compact_checked = hash_table_allocate (1000);
   dk_hash_set_rehash (dp_compact_checked, 3);
 }

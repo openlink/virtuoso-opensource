@@ -364,7 +364,15 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
     }
   ins_itc->itc_specs = NULL;
   itc_from (ins_itc, key);
+  ins_itc->itc_no_bitmap = 1;
   itc_insert_row_params (ins_itc, key_image);
+  if (key->key_is_bitmap)
+    {
+      ITC_SAVE_FAIL (ins_itc);
+    key_bm_insert (ins_itc, key_image);
+      ITC_RESTORE_FAIL (ins_itc);
+    }
+  else
   itc_insert_unq_ck (ins_itc, &key_image[0], NULL);
 }
 #undef key_image
@@ -378,10 +386,15 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
   int ol, nl;
   db_buf_t page;
   dbe_key_t * new_key = sch_id_to_key (wi_inst.wi_schema, SHORT_REF (new_image + IE_KEY_ID));
-  ITC_IN_MAP (itc);
   if (!(*buf)->bd_is_write)
     GPF_T1 ("update w/o write access");
+  pg_check_map (*buf);
+  if (!(*buf)->bd_is_dirty)
+    {
+      ITC_IN_MAP (itc);
   itc_delta_this_buffer (itc, *buf, DELTA_MAY_LEAVE);
+      ITC_LEAVE_MAP (itc);
+    }
   if (ITC_IS_LTRX (itc)
       && (itc->itc_ltrx && ((*buf)->bd_page != itc->itc_page || itc->itc_page != itc->itc_pl->pl_page)))
     GPF_T1 ("inconsistent pl_page, bd_page and itc_page in upd_refit_row");
@@ -409,12 +422,40 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
 	  row_write_reserved (page + pos + nl, ROW_ALIGN (ol) - nl);
 	}
       IE_SET_NEXT (&page[pos], old_next);
+      pg_check_map (*buf);
+      if (new_key->key_is_bitmap)
+	{
+	  ITC_IN_MAP (itc);
+	  itc_invalidate_bm_crs (itc);
+	}
       itc_page_leave (itc, *buf);
     }
   else
     {
       int prev_pos, insert_pos;
       int pos = itc->itc_position;
+      if ((*buf)->bd_content_map->pm_bytes_free >= nl - ol)
+	{
+	  /* if the page will not split, there could be space enough between this row and the start of the physically next one. */ 
+	  int after = map_entry_after ((*buf)->bd_content_map, pos);
+	  int old_next = IE_NEXT (&page[pos + IE_NEXT_IE]);
+	  if (after - pos >= nl)
+	    {
+	      memcpy (page + pos, new_image, nl);
+	      IE_SET_NEXT (&page[pos], old_next);
+	      (*buf)->bd_content_map->pm_bytes_free -= ROW_ALIGN (nl) - ROW_ALIGN (ol);
+	      if (PAGE_SZ == after)
+		(*buf)->bd_content_map->pm_filled_to = pos + ROW_ALIGN (nl);
+	      pg_check_map (*buf);
+	      if (new_key->key_is_bitmap)
+		{
+		  ITC_IN_MAP (itc);
+		  itc_invalidate_bm_crs (itc);
+		}
+	      itc_page_leave (itc, *buf);
+	      return;
+	    }
+	}
       prev_pos = map_delete (&(*buf)->bd_content_map, pos);
       insert_pos = IE_NEXT (page + pos);
       if (prev_pos)
@@ -441,6 +482,7 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
       itc->itc_insert_key = new_key;
       itc->itc_row_key = new_key;
       itc->itc_row_key_id = new_key ? new_key->key_id : 0;
+      pg_check_map (*buf);
       itc_insert_dv (itc, buf, new_image, 0, rl);
       ITC_LEAVE_MAP (itc);
     }
@@ -455,16 +497,22 @@ update_quick (update_node_t * upd, caddr_t * qst, it_cursor_t * cr_itc, buffer_d
 {
   int inx;
   lt_rb_update (cr_itc->itc_ltrx, cr_buf->bd_buffer + cr_itc->itc_position);
+  if (!cr_buf->bd_is_dirty)
+    {
   ITC_FAIL (cr_itc)
     {
       ITC_IN_MAP (cr_itc);
       itc_delta_this_buffer (cr_itc, cr_buf, DELTA_MAY_LEAVE);
+	  ITC_LEAVE_MAP (cr_itc);
     }
   ITC_FAILED
     {
       itc_free (cr_itc);
     }
   END_FAIL (cr_itc);
+    }
+
+
   DO_BOX (dbe_col_loc_t *, cl, inx, upd->upd_fixed_cl)
     {
       caddr_t data = QST_GET (qst, upd->upd_values[inx]);
@@ -637,6 +685,11 @@ update_node_run (update_node_t * upd, caddr_t * inst,
  because conversion may read blob by blob_to_string() and its itc will enter map.
   */
     ITC_LEAVE_MAP (main_itc);
+#ifdef MTX_DEBUG
+  if (main_buf->bd_writer != THREAD_CURRENT_THREAD)
+    GPF_T1 ("Must have write on buffer to check it");
+#endif
+
     keys = upd_recompose_row (state, upd, tb, new_tb, new_image, &image[main_itc->itc_position + IE_FIRST_KEY],
 			      main_itc, &row_err, &any_blob, cr_key);
     if (row_err)

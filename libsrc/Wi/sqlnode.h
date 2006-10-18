@@ -378,6 +378,7 @@ typedef struct key_source_s
     int			ks_descending;	/* if reading from end to start */
     code_vec_t		ks_local_test;
     code_vec_t		ks_local_code;
+    char		ks_is_vacuum;
     char		ks_is_last;	/* if last ks in join and no select or
 					   postprocess follows.
 					   True if fun ref query */
@@ -427,6 +428,7 @@ typedef struct inx_locality_s
 #define IOP_ON_ROW 1
 #define IOP_AT_END 2
 #define IOP_NEW_VAL 4
+#define IOP_READ_INDEX 5 /*for a bitmap iop, means must read inx because the cached bm does nothave the range */
 
 typedef struct inx_op_s 
 {
@@ -435,7 +437,6 @@ typedef struct inx_op_s
   struct inx_op_s *	iop_parent;
   struct inx_op_s ** 	iop_terms;
   state_slot_t **	iop_max;
-  state_slot_t * 	iop_bm_last_res;  /* if bitmap has ones, this is the number of the last one that was given as output. */
   state_slot_t *	iop_state; /* pre-init, on row, at end */ 
   dk_set_t	iop_extra_copies; /* if operands from different tables, fill copies of equal cols for all ssl's. ((org1 cp1-1 cp1-2...)(org2 cp2-1 cp2-2...)...)  */
 
@@ -448,8 +449,7 @@ typedef struct inx_op_s
   state_slot_t * 	iop_itc;
 
   /* bitmap index */
-  state_slot_t *	iop_bm_start_no;
-  state_slot_t * 	iop_bm_bitmap;
+  state_slot_t * 	iop_bitmap;
   inx_locality_t	iop_il;
 } inx_op_t;
 
@@ -464,7 +464,7 @@ typedef struct table_source_s
     state_slot_t *	ts_current_of;
     char		ts_is_unique;	/* Only one hit expected, don't look for more */
     char		ts_is_outer;
-    char		ts_is_random; /* random search */
+    char		ts_is_random:1; /* random search */
     caddr_t		ts_rnd_pcnt;
     char		ts_no_blobs;
     char		 ts_ancestor_refd;

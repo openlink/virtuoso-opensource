@@ -272,6 +272,7 @@ typedef struct lock_trx_s
 #define ITC_FIND_PL(itc, buf) \
   if (ITC_IS_LTRX (itc)) \
     { \
+      ITC_IN_MAP (itc); \
       itc->itc_pl = (page_lock_t*) gethash (DP_ADDR2VOID (itc->itc_page), itc->itc_tree->it_locks); \
       if ((buf)->bd_pl != itc->itc_pl) GPF_T1 ("bd_pl and itc_pl not in sync"); \
     }

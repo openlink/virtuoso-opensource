@@ -705,6 +705,8 @@ sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * paren
       iop->iop_ks = sqlg_key_source_create (so, dio->dio_table, dio->dio_key);
       sqlg_inx_op_ks_out_cols (so, iop->iop_ks, dio->dio_table, tb_dfe);
       iop->iop_itc = ssl_new_itc (so->so_sc->sc_cc);
+      if (iop->iop_ks->ks_key->key_is_bitmap)
+	iop->iop_bitmap = ssl_new_variable  (so->so_sc->sc_cc, "inxop f", DV_STRING);
       break;
     }
     return iop;
@@ -812,6 +814,11 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
       caddr_t res = sqlo_opt_value (ot->ot_opts, OPT_RANDOM_FETCH);
       ts->ts_is_random = 1;
       ts->ts_rnd_pcnt = res;
+    }
+  if (ts->ts_order_ks && ot->ot_opts && sqlo_opt_value (ot->ot_opts, OPT_VACUUM))
+    {
+      caddr_t res = sqlo_opt_value (ot->ot_opts, OPT_VACUUM);
+      ts->ts_order_ks->ks_is_vacuum = 1;
     }
   return (data_source_t *) ts;
 }

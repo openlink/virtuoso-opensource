@@ -36,12 +36,13 @@
 #undef O12
 #endif
 #define O12 GPF_T1 ("Not in Omega 12");
-
 /*#define PAGE_TRACE 1*/
 /* #define DBG_BLOB_PAGES_ACCOUNT */
 #if !defined (OLD_HASH) && !defined (NEW_HASH)
 #define NEW_HASH
 #endif
+
+#define AUTO_COMPACT
 
 #ifndef bitf_t
 #define bitf_t unsigned
@@ -87,6 +88,7 @@ typedef struct hash_index_s hash_index_t;
 #include "widd.h"
 #include "blobio.h"
 #include "wifn.h"
+#include "bitmap.h"
 
 struct index_space_s
   {
@@ -112,7 +114,7 @@ struct free_set_cache_s
     int			fc_replace_next;
   };
 
-typedef unsigned long bp_ts_t; /* timestamp of buffer, use in  cache replacement to distinguish old buffers.  Faster than double linked list for LRU.  Wraparound does not matter since only differences of values are considered.  */
+typedef unsigned int32 bp_ts_t; /* timestamp of buffer, use in  cache replacement to distinguish old buffers.  Faster than double linked list for LRU.  Wraparound does not matter since only differences of values are considered.  */
 
 #define BP_N_BUCKETS 5
 
@@ -122,8 +124,7 @@ struct buffer_pool_s
   buffer_desc_t *	bp_bufs;
   int			bp_n_bufs;
   int			bp_next_replace; /*index into bp_bufs, points where the previous cache replacement took place */
-  buffer_desc_t *	bp_first_buffer; /* head of double linked list of buffers in bp_bufs*/
-  buffer_desc_t *	bp_last_buffer;
+  buffer_desc_t *	bp_first_free; /* when bufs become available through delete, they are pushed here and linked via bd_next */
   dk_mutex_t *	bp_mtx; /* serialize free buffer lookup in this pool */
   bp_ts_t	bp_ts; /* ts to assign to next touched buffer */
   bp_ts_t	bp_stat_ts; /* bp_ts as of when the pool age stats were last computed */
@@ -427,8 +428,6 @@ struct search_spec_s
   };
 
 
-#define SPEC_NOT_APPLICABLE ((search_spec_t *) -1)
-
 typedef struct out_map_s
 {
   dbe_col_loc_t	om_cl;
@@ -438,7 +437,7 @@ typedef struct out_map_s
 
 #define OM_NULL 1
 #define OM_ROW 2
-
+#define OM_BM_COL 3
     /* flags for page_wait_access */
 #define PA_READ 0
 #define PA_WRITE 1
@@ -458,7 +457,8 @@ typedef struct out_map_s
   index_space_t *	itc_space_registered; \
   it_cursor_t *		itc_next_on_page; \
   index_space_t *	itc_space; \
-  dp_addr_t		itc_owns_page  /* cache last owned lock */
+  dp_addr_t		itc_owns_page;  /* cache last owned lock */ \
+  bitmap_pos_t		itc_bp
 
 #define ITC_PLACEHOLDER_BYTES \
 	((int)(ptrlong)(&((it_cursor_t *)0x0)->itc_is_allocated))
@@ -472,7 +472,8 @@ typedef struct out_map_s
 #define SM_READ		0
 #define SM_READ_EXACT	2
 #define SM_TEXT 4
-
+#define SM_INSERT_BEFORE 5
+#define SM_INSERT_AFTER 6
 
 struct placeholder_s
   {
@@ -516,18 +517,22 @@ struct it_cursor_s
 
     int			itc_n_pages_on_hold; /* if inserting, amount provisionally reserved for delatas made by tree split */
     lock_trx_t *	itc_ltrx;
-    char *		itc_debug;
     it_cursor_t *	itc_next_on_lock; /* next itc waiting on same lock */
     char		itc_acquire_lock; /*when wait over want to own it? */
 
     /* Search state */
 
     char		itc_search_mode; /* unique match or not */
-    char		itc_desc_order; /* true if reading index from end to start */
     char		it_lock_mode; /*   PL_SHARED, PL_EXCLUSIVE */
-    char		itc_landed; /* true if found position on or between leaves, false if in initial descent through the tree */
     char		itc_isolation;
     char		itc_has_blob_logged; /*if blob to log, can't drop blob when inlining it until commit */
+    char		itc_landed:1; /* true if found position on or between leaves, false if in initial descent through the tree */
+    char		itc_desc_order:1; /* true if reading index from end to start */
+    char		itc_no_bitmap:1;  /* ignore bitmap logic if on bitmap inx */
+    char		itc_desc_serial_landed:1; /* if set, failure to get first lock (right above the selected range) resets search */
+    char		itc_desc_serial_reset:1;
+    char		itc_is_vacuum;
+    char	        itc_random_search;
     int			itc_nth_seq_page; /* in sequential read, nth consecutive page entered.  Use for starting read ahead.  */
     int			itc_n_lock_escalations; /* no of times row locks escalated to page locks on this read.  Used for claiming page lock as first choice after history of escalating */
     struct page_lock_s * itc_pl; /*page_lock_t  of the current page */
@@ -539,6 +544,8 @@ struct it_cursor_s
     search_spec_t *	itc_specs; /* search specs used for indexed lookup */
     search_spec_t *	itc_row_specs; /* earch specs for checking  rows where itc_specs match */
     out_map_t *		itc_out_map;  /* one for each out ssl of the itc_ks->ks_out_slots */
+    search_spec_t *	itc_bm_inx_spec; /* replaces itc_specs after itc on bm inx has landed. */
+    search_spec_t *	itc_bm_col_spec; /* if set, this is the indexable condition on the bitmapped col */
 
     key_id_t		itc_row_key_id; /* the key_id of teh actual row on which the itc is */
     db_buf_t		itc_row_data; /* pointer in mid page buffer , where the itc's rows data starts */
@@ -560,16 +567,14 @@ struct it_cursor_s
 						* cursors at the pre-image shall be moved to the location of the after image in
 						* order to logically stay on the updated row */
     int			itc_keep_together_pos;
-
+    placeholder_t *		itc_bm_split_left_side; /* when splitting bm inx entry, use this to locate itcs to move to the right side */
 
     struct word_stream_s *	itc_wst; /* for SM_TEXT search mode */
-    int			itc_out_fill;
     short			itc_search_par_fill;
     short		itc_owned_search_par_fill;
     caddr_t *		itc_out_state;  /* place out cols here. If null copy from itc_in_state */
     struct key_source_s *	itc_ks;
 
-    char	        itc_random_search;
       struct {
       int	sample_size;  /* stop random search after this many rows */
       int	n_sample_rows; /* count of rows retrieved in random traversal */
@@ -865,6 +870,7 @@ struct buffer_desc_s
       bitf_t	is_dirty:1; /* Content changed since last written to disk */
     } r;
   } bdf;
+  bp_ts_t		bd_timestamp; /* Timestamp for estimating age for buffer reuse */
 
   it_cursor_t *	bd_to_bust;  /* list of cursors to be reset after this buffer is no longer occupied.  Linked through itc_next_waiting */
   it_cursor_t *	bd_write_waiting; /* itc waiting for write access */
@@ -874,20 +880,20 @@ struct buffer_desc_s
   dp_addr_t		bd_page; /* The logical page number */
   dp_addr_t		bd_physical_page; /* The physical page number, can be different from bd_page if remapped */
 
-  buffer_desc_t *	bd_next; /* double linked list of buffers, used for buffers of the free bitmap and backup bitmaps */
-  buffer_desc_t *	bd_prev;
+  buffer_desc_t *	bd_next; /* Link to next if this is in free set or inc backup set.  If regular buffer, this is a link to the next unused if this buffer is unused, else null */
   buffer_pool_t *	bd_pool;
   page_map_t *	bd_content_map; /* only if content is an index page */
   index_space_t *	bd_space; /* when caching a page, this is  the index space to which the page belongs */
   dbe_storage_t * 	bd_storage; /* the storage unit for reading/writing the page */
-  bp_ts_t		bd_timestamp; /* Timestamp for estimating age for buffer reuse */
-  int			bd_age;
   page_lock_t *	bd_pl; /* if lock associated, it's cached here in addition to the tree's hash */
   io_queue_t *	 bd_iq; /* iq, if buffer in queue for read(write */
   buffer_desc_t *	bd_iq_prev; /* next and prev in double linked list of io queue */
   buffer_desc_t *	bd_iq_next;
   int			bd_in_write_queue; /* true if queued for write or on the way to rite queue, thus set before db_iq et al are set */
+  int			bd_age;
+#ifdef MTX_DEBUG
   du_thread_t *	bd_writer; /* for debugging, the thread which has write access, if any */
+#endif
 #ifdef PAGE_TRACE
   long		bd_trx_no;
 #endif
@@ -901,7 +907,12 @@ struct buffer_desc_s
 
 /* mark as recently used */
 #define BUF_TOUCH(buf) \
-  buf->bd_timestamp = buf->bd_pool->bp_ts;
+{ \
+  (buf)->bd_timestamp = (buf)->bd_pool->bp_ts;		\
+  if ((bp_hit_ctr++ & 0x1f) == 0)			\
+    (buf)->bd_pool->bp_ts++;				\
+}
+
 
 #define BUF_TICK(buf) buf->bd_pool->bp_ts++;
 
@@ -1136,6 +1147,19 @@ typedef struct ra_req_s
 
 #define ITC_ABORT_FAIL_CTX(itc) \
   itc->itc_fail_context = NULL
+
+#define ITC_SAVE_FAIL(itc) \
+{						    \
+  jmp_buf_splice * _s = itc->itc_fail_context;   \
+  void * _s_cd = itc->itc_fail_cleanup_cd;	    \
+  itc_clup_func_t _s_cf = itc->itc_fail_cleanup;
+
+#define ITC_RESTORE_FAIL(itc) \
+  itc->itc_fail_context = _s;	 \
+  itc->itc_fail_cleanup = _s_cf;  \
+  itc->itc_fail_cleanup_cd = _s_cd; \
+  }
+
 
 #define ITC_CHECK_FAIL(it) \
 if (it->itc_ltrx && \

@@ -149,6 +149,7 @@ stssl_ks (comp_context_t * cc, key_source_t * ks)
 void
 stssl_inx_op (comp_context_t * cc, inx_op_t * iop)
 {
+  STSSL (iop->iop_bitmap);
   if (iop->iop_ks)
     stssl_ks (cc, iop->iop_ks);
   stssl_arr (iop->iop_max);

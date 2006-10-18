@@ -45,6 +45,9 @@ int  dv_composite_cmp (db_buf_t dv1, db_buf_t dv2, collation_t * coll);
 int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation);
 int dv_compare_box (db_buf_t dv1, caddr_t box, collation_t *collation);
 int pg_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it);
+int itc_col_check (it_cursor_t * itc, search_spec_t * spec, int param_inx);
+int itc_like_compare (it_cursor_t * itc, caddr_t pattern, search_spec_t * spec);
+
 
 #ifdef MALLOC_DEBUG
 it_cursor_t * dbg_itc_create (const char *file, int line, void *, lock_trx_t *);
@@ -228,6 +231,7 @@ void buf_touch (buffer_desc_t * buf, int in_bp);
 void buf_untouch (buffer_desc_t * buf);
 #define BUF_BACKDATE(buf) (buf->bd_timestamp = buf->bd_pool->bp_ts - 2 * buf->bd_pool->bp_n_bufs)
 void buf_set_last (buffer_desc_t * buf);
+void buf_recommend_reuse (buffer_desc_t * buf);
 
 int buf_disk_read (buffer_desc_t * buf);
 void buf_disk_write (buffer_desc_t * buf, dp_addr_t phy_dp_to);
@@ -311,10 +315,16 @@ int  row_reserved_length (db_buf_t row, dbe_key_t * key);
 void dbg_page_map (buffer_desc_t * buf);
 void pg_map_clear (buffer_desc_t * buf);
 int pg_make_map (buffer_desc_t *);
+#if defined (MTX_DEBUG) | defined (PAGE_TRACE)
+
+void pg_check_map (buffer_desc_t * buf);
+#else
+#define pg_check_map(buf)
+#endif
 int pg_room (db_buf_t page);
 
 void pg_write_gap (db_buf_t place, int len);
-
+int map_entry_after (page_map_t * pm, int at);
 int itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf, db_buf_t dv,
 		   int is_recursive, row_lock_t * new_rl);
 #define INS_NEW_RL ((row_lock_t *) 1L)
@@ -337,6 +347,8 @@ void pg_delete_move_cursors (it_cursor_t * itc, dp_addr_t dp_from,
 			     buffer_desc_t * buf_to);
 void dp_may_compact (dbe_storage_t *dbs, dp_addr_t);
 void wi_check_all_compact (int age_limit);
+void  itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t * buf);
+
 
 /* tree.c */
 
@@ -898,7 +910,7 @@ extern long vsp_in_dav_enabled;
 
 extern int disk_no_mt_write;
 
-extern long initbrk;
+extern unsigned ptrlong initbrk;
 
 extern long srv_pid;
 
@@ -927,4 +939,7 @@ int http_init_part_two (void);
 extern long server_port;
 extern unsigned blob_page_dir_threshold;
 extern int virtuoso_server_initialized;
+extern int dive_pa_mode;
+extern unsigned int bp_hit_ctr;
+
 #endif /* _WIFN_H */

@@ -574,7 +574,7 @@
 %token ARRAY
 
 /* Extensions */
-%token CONTIGUOUS OBJECT_ID UNDER CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID QUIETCAST_L SPARQL_L
+%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID QUIETCAST_L SPARQL_L
 
 /* Admin statements */
 %token SHUTDOWN CHECKPOINT BACKUP REPLICATION
@@ -952,6 +952,7 @@ index_option
 	: CLUSTERED	{ $$ = t_box_string ("clustered"); }
 	| UNIQUE	{ $$ = t_box_string ("unique"); }
 	| OBJECT_ID	{ $$ = t_box_string ("object_id"); }
+	| BITMAPPED 	{ $$ = t_box_string ("bitmap"); }
 	;
 
 index_option_list
@@ -1636,7 +1637,9 @@ sql_option
 	| INDEX PRIMARY KEY { $$ = CONS (OPT_INDEX, CONS (t_box_string ("PRIMARY KEY"), NULL)); }
 	| INDEX TEXT_L KEY { $$ = CONS (OPT_INDEX, CONS (t_box_string ("TEXT KEY"), NULL)); }
 	| NAME INTNUM {
-	  if (!stricmp ($1, "RANDOM"))
+	  if (!stricmp ($1, "vacuum"))
+	    $$ = CONS (OPT_VACUUM, CONS ($2, NULL));
+	  else if (!stricmp ($1, "RANDOM"))
 	    $$ = CONS (OPT_RANDOM_FETCH, CONS ($2, NULL));
 	  else
 	    $$ = NULL;

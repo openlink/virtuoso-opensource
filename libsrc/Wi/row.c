@@ -282,6 +282,14 @@ itc_box_column (it_cursor_t * it, db_buf_t page, oid_t col, dbe_col_loc_t * cl)
   if (ITC_NULL_CK (it, (*cl)))
     return (dk_alloc_box (0, DV_DB_NULL));
 
+  if (cl == it->itc_row_key->key_bit_cl && !it->itc_no_bitmap)
+    {
+      /* the current bm inx col value is in the itc */
+      if (DV_LONG_INT == it->itc_row_key->key_bit_cl->cl_sqt.sqt_dtp)
+	return box_num (it->itc_bp.bp_value);
+      else 
+	return box_iri_id (it->itc_bp.bp_value);
+    }
   ITC_COL (it, (*cl), off, len);
   xx = page + it->itc_position + IE_FIRST_KEY + off;
   switch (cl->cl_sqt.sqt_dtp)
@@ -1802,7 +1810,10 @@ in database migration (US demo database for Virtuoso 2.7 migrated to 3.0). */
   itc_from_keep_params (it, key);  /* fragment needs to be known before setting blobs */
   for (inx = 0; key->key_row_var[inx].cl_col_id; inx++)
     {
-      caddr_t data = QST_GET (qst, ik->ik_slots[col_ctr + inx]);
+      caddr_t data;
+      if (CI_BITMAP == key->key_row_var[inx].cl_col_id)
+	break; /* the bitmap string of a bm inx row is always the last */
+      data = QST_GET (qst, ik->ik_slots[col_ctr + inx]);
       row_set_col (&image[IE_FIRST_KEY], &key->key_row_var[inx], data, &v_fill,
 	  ROW_MAX_DATA, key, &err, it, NULL, qst);
       if (err)
@@ -1825,6 +1836,12 @@ in database migration (US demo database for Virtuoso 2.7 migrated to 3.0). */
     }
   it->itc_insert_key = key;
   /*row_map_print (image, key);*/
+  if (key->key_is_bitmap)
+    {
+      key_bm_insert (it, image);
+      itc_free_owned_params (it);
+      return DVC_LESS;
+    }
   rc = itc_insert_unq_ck (it, &image[0], unq_buf_ptr);
   itc_free_owned_params (it);
   if (DVC_MATCH == rc)
@@ -1979,6 +1996,7 @@ itc_drop_index (it_cursor_t * it, dbe_key_t * key)
   it->itc_lock_mode = PL_EXCLUSIVE;
   it->itc_isolation = ISO_SERIALIZABLE;
   it->itc_n_lock_escalations = 100; /* lock pages from the start */
+  it->itc_no_bitmap = 1;
   ITC_FAIL (it)
   {
     del_buf = itc_reset (it);

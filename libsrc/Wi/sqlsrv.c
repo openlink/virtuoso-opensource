@@ -3058,7 +3058,7 @@ sf_no_threads (future_request_t * frq)
 
 
 #ifdef UNIX
-long initbrk;
+unsigned ptrlong initbrk;
 #endif
 
 
@@ -3462,7 +3462,7 @@ srv_global_init (char *mode)
 
   srv_pid = getpid ();
 #ifdef UNIX
-  initbrk = (long) sbrk (9);
+  initbrk = (unsigned ptrlong) sbrk (9);
 #endif
 
 #ifdef WIN32

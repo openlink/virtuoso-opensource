@@ -1470,7 +1470,10 @@ ins_key (comp_context_t * cc, insert_node_t * ins, dbe_key_t * key)
   if (key->key_row_var)
     {
       for (inx = 0; key->key_row_var[inx].cl_col_id; inx++)
+	{
+	  if (CI_BITMAP != key->key_row_var[inx].cl_col_id)
 	dk_set_push (&slots, (void*) ins_col_slot (cc, ins, key->key_row_var[inx].cl_col_id));
+    }
     }
   ik->ik_slots = (state_slot_t **) list_to_array (dk_set_nreverse (slots));
   return ik;
@@ -1571,7 +1574,9 @@ key_source_om (comp_context_t * cc, key_source_t * ks)
   memset (om, 0, n_out * sizeof (out_map_t));
   DO_SET (dbe_column_t *, col, &ks->ks_out_cols)
     {
-      if (CI_ROW == (ptrlong) col)
+      if (ks->ks_key->key_bit_cl && col->col_id == ks->ks_key->key_bit_cl->cl_col_id)
+	om[inx++].om_is_null = OM_BM_COL;
+      else if (CI_ROW == (ptrlong) col)
 	om[inx++].om_is_null = OM_ROW;
       else
 	om[inx++].om_cl = *key_find_cl (ks->ks_key, col->col_id);

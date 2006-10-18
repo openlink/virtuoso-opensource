@@ -423,6 +423,8 @@ lt_done (lock_trx_t * lt)
 #endif
 }
 
+dk_mutex_t * log_write_mtx;
+
 
 void lt_rollback_1 (lock_trx_t * lt, int free_trx);
 
@@ -463,13 +465,19 @@ lt_commit (lock_trx_t * lt, int free_trx)
       return LTE_LOG_FAILED;
     }
 
+  LEAVE_TXN;
+  mutex_enter (log_write_mtx);
   if (LTE_OK != log_commit (lt))
     {
+      mutex_leave (log_write_mtx);
+      IN_TXN;
       lt_rollback_1 (lt, free_trx);
       LT_ERROR_DETAIL_SET (lt, box_dv_short_string (
 	    "Problem writing to the transaction log"));
       return LTE_LOG_FAILED;
     }
+  mutex_leave (log_write_mtx);
+  IN_TXN;
   lt_send_repl_cast (lt);
   DBG_PT_COMMIT (lt);
   if (lt->lt_mode == TM_SNAPSHOT)

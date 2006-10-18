@@ -80,10 +80,9 @@ int t_server_sz = 0;
 int t_main_sz = 0;
 int t_future_sz = 0;
 int n_oldest_flushable;
-#if 0/*obsoleted*/
 int null_bad_dtp;
-int atomic_dive = 1;
-#endif
+int atomic_dive = 0;
+int dive_pa_mode = PA_READ;
 int prefix_in_result_col_names;
 int disk_no_mt_write;
 char *db_name;
@@ -472,7 +471,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
 
   main_bufs = (int) (ptrlong) cfg_get_parm (wholefile, "\nnumber_of_buffers:", 0);
   cf_lock_in_mem = (int) (ptrlong) cfg_get_parm (wholefile, "\nlock_in_mem:", 0);
-
+  atomic_dive = (int) (ptrlong) cfg_get_parm (wholefile, "\natomic_dive:", 0);
   max_dirty = (int) (ptrlong) cfg_get_parm (wholefile, "\nmax_dirty_buffers:", 0);
   wi_inst.wi_max_dirty = max_dirty;
   if (cfg_get_parm (wholefile, "\nautocorrect_links:", 0))

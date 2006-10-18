@@ -899,7 +899,7 @@ ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
       itc->itc_search_mode = search_mode;
       itc->itc_insert_key = ks->ks_key;
       itc->itc_desc_order = ks->ks_descending;
-
+      itc->itc_is_vacuum = ks->ks_is_vacuum;
       itc_free_owned_params (itc);
       ITC_START_SEARCH_PARS (itc);
       is_nulls = ks_make_spec_list (itc, ks->ks_spec, state);
@@ -1575,6 +1575,7 @@ delete_node_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 	     so logging is safe */
 	  log_delete (cr_itc->itc_ltrx, cr_itc, cr_buf->bd_buffer, pos_before);
 	}
+      cr_itc->itc_insert_key = cr_key;
       itc_delete_this (cr_itc, &cr_buf, DVC_MATCH, MAYBE_BLOBS);
     }
     ITC_FAILED
@@ -1598,7 +1599,7 @@ delete_node_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 	      tb->tb_primary_key, image);
 	  if (res == DVC_MATCH)
 	    {
-	      main_itc->itc_row_key = itc_get_row_key (main_itc, main_buf);
+	      main_itc->itc_insert_key = main_itc->itc_row_key = itc_get_row_key (main_itc, main_buf);
 	      main_itc->itc_row_key_id = main_itc->itc_row_key ? main_itc->itc_row_key->key_id : 0;
 	      tb = main_itc->itc_row_key->key_table;
 	      /* the table could be different (subtable) from
@@ -2371,7 +2372,7 @@ ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 	  (char **) stmt[4],
 	  box_is_string (stmt, "contiguous", 5, stmt_len),
 	  box_is_string (stmt, "object_id", 5, stmt_len),
-	  box_is_string (stmt, "unique", 5, stmt_len));
+	  box_is_string (stmt, "unique", 5, stmt_len), 0);
     }
   else if (0 == strcmp (stmt[0], "add_col"))
     ddl_add_col (qi, stmt[1], (caddr_t *) stmt[2]);

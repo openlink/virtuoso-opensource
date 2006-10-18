@@ -376,7 +376,6 @@ cpt_neodisk_page (void *key, void *value)
 	  remhash (DP_ADDR2VOID (logical), isp_to_g->isp_dp_to_buf);
 	  before_image->bd_space = NULL;
 	  log_info ("before image not expected during chekpoint.");
-	  buf_set_last (before_image);
 	}
       return;
     }
@@ -412,7 +411,6 @@ cpt_neodisk_page (void *key, void *value)
     {
       GPF_T1 ("before image in cpt not expected. No buffers in cpt space");
       remhash (DP_ADDR2VOID (logical), isp_to_g->isp_dp_to_buf);
-      buf_set_last (before_image);
     }
   if (after_image)
     {
@@ -575,7 +573,10 @@ cpt_place_buffers ()
       else
 	{
 	  buf->bd_space = NULL;
+	  /* set the write to fool the assert in page_set_last. This is atomic time, normal precautions do not apply &*/
+	  buf->bd_is_write = 1;
 	  buf_set_last (buf);
+	  buf->bd_is_write = 0;
 	  buf->bd_storage = NULL;
 	}
     }
@@ -689,7 +690,7 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
   mcp_remap_ptrs = (remap_t **) dk_alloc (mcp_batch * sizeof (caddr_t));
 
   mcp_delta_count = 0;
-
+  LEAVE_TXN;
   wi_check_all_compact (0);
   DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
     {
@@ -708,6 +709,7 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
     }
   END_DO_BOX;
 
+  IN_TXN;
   cpt_rollback (LT_KILL_FREEZE);
   iq_shutdown (IQ_STOP);
   wi_check_all_compact (0);

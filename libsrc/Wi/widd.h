@@ -233,11 +233,13 @@ struct dbe_key_s
   char			key_is_primary;
   char			key_is_unique;
   char			key_is_temp;
+  char			key_is_bitmap;
   key_id_t		key_migrate_to;
   key_id_t		key_super_id;
   dk_set_t		key_supers;
-
-  /* access stats */
+  dbe_col_loc_t *	key_bm_cl; /* the var length string where the bits are, dependent part of a bitmap inx */
+  dbe_col_loc_t *	key_bit_cl; /* for a bitmap inx, the last key part, the int or int64 that is the bit bitmap start */
+  /* access inx */
     long		key_touch;
   long		key_read;
   long		key_lock_wait;
@@ -256,6 +258,8 @@ struct dbe_key_s
   long		key_n_new;
 
   struct search_spec_s *	key_insert_spec;
+  struct search_spec_s *	key_bm_ins_spec;
+  struct search_spec_s *	key_bm_ins_leading;
   dk_set_t		key_visible_parts; /* parts in create table order, only if primary key */
   struct index_space_s *	key_isp;	/* if temp key, the temp isp */
 
@@ -289,7 +293,7 @@ fragment instead of searching for the the fragment actually needed. */
 
 
 #define KEY_INSERT_SPEC(key) \
-  key->key_insert_spec ? key->key_insert_spec : dbe_key_insert_spec (key)
+  key->key_insert_spec
 
 #define KEY_TOUCH(k)	k->key_touch ++;
 
@@ -463,6 +467,8 @@ create_unique_index SYS_KEY_PARTS on SYS_KEY_PARTS (KP_KEY_ID KP_NTH)
 #define CI_UDT_PARSE_TREE	45
 #define CI_UDT_ID		46
 #define CI_UDT_MIGRATE_TO	47
+
+#define CI_BITMAP 48 /*invisible string col at the end of a bitmap inx leaf.  One shared among all. &*/
 
 #define CN_COLS_TBL		"TABLE"
 #define CN_COLS_COL		"COLUMN"
