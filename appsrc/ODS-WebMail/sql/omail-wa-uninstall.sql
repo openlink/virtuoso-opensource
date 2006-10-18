@@ -69,5 +69,13 @@ OMAIL.WA.exec_no_error('DROP procedure DB.DBA.MAIL_NEWS_MSG_U');
 OMAIL.WA.exec_no_error('DROP procedure DB.DBA.MAIL_NEWS_MSG_D');
 DB.DBA.NNTP_NEWS_MSG_DEL ('MAIL');
 
+-- ODS search procedures
+OMAIL.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_OMAIL_GET_EXCERPT_HTML');
+OMAIL.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_OMAIL_AGG_init');
+OMAIL.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_OMAIL_AGG_acc');
+OMAIL.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_OMAIL_AGG_final');
+OMAIL.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_OMAIL');
+
+-- final proc
 OMAIL.WA.exec_no_error('DROP procedure OMAIL.WA.exec_no_error');
 
