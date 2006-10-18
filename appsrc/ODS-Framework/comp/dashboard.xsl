@@ -155,7 +155,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-blogs">
-    <div class="widget w_blog_activity">
+    <div class="widget w_db_summary w_blog_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -183,11 +183,11 @@
       <div class="w_footer">
         <a href="search.vspx?newest=blogs&lt;?V self.login_pars ?&gt;">More&amp;#133;</a>
       </div>
-    </div> <!-- widget w_blog_activity -->
+    </div> <!-- widget w_blog_summary -->
   </xsl:template>
 
   <xsl:template match="vm:dash-new-news">
-    <div class="widget w_news_activity">
+    <div class="widget w_db_summary w_news_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -220,7 +220,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-wiki">
-    <div class="widget w_wiki_activity">
+    <div class="widget w_app_summary w_wiki_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon" 
@@ -257,12 +257,16 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-blog-summary">
-    <div class="widget w_db_summary w_blog_summary">
+    <div class="widget w_app_summary w_blog_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img src="images/edit_16.gif" width="16" height="16"/><?V WA_GET_APP_NAME ('WEBLOG2') ?> Summary
+          <img class="w_title_icon"
+               src="images/icons/blog_16.png"
+               alt="ODS-Weblog icon"/>
+          <span class="w_title_text"><?V WA_GET_APP_NAME ('WEBLOG2') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
+          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png"/></a>
           <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
           <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
         </div>
@@ -585,7 +589,7 @@
 
 
   <xsl:template match="vm:dash-enews-summary">
-    <div class="widget w_db_summary w_news_activity">
+    <div class="widget w_app_summary w_news_activity">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -651,13 +655,13 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-omail-summary">
-    <div class="widget w_db_summary w_mail_summary">
+    <div class="widget w_app_summary w_mail_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon" 
                src="images/mail_16.png"
                alt="ODS-Mail icon" />
-          <span class="w_title_text"><?V WA_GET_APP_NAME ('oMail') ?></span>
+          <span class="w_title_text"><?V WA_GET_APP_NAME ('oMail') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
           <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
@@ -707,10 +711,13 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-wiki-summary">
-    <div class="widget w_db_summary w_feeds_summary">
+    <div class="widget w_app_summary w_feeds_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img src="images/edit_16.gif" width="16" height="16"/><?V WA_GET_APP_NAME ('oWiki') ?>
+          <img class="w_title_icon"
+               src="images/icons/wiki_16.png"
+               alt="ODS-Wiki icon"/>
+          <span class="w_title_text"><?V WA_GET_APP_NAME ('oWiki') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
           <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
@@ -769,10 +776,14 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-odrive-summary">
-    <div class="widget w_db_summary w_briefcase_summary">
+    <div class="widget w_app_summary w_briefcase_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
-          <img src="images/edit_16.gif" width="16" height="16"/><?V WA_GET_APP_NAME ('oDrive') ?> Summary</div>
+          <img class="w_title_icon" 
+               src="images/icons/odrive_16.png" 
+               alt="ODS-Briefcase icon"/>
+          <span class="w_title_text"><?V WA_GET_APP_NAME ('oDrive') ?> Summary</span>
+        </div>
         <div class="w_title_btns_ctr">
           <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
           <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
@@ -821,51 +832,89 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-bookmark-summary">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing dash_app_summary_listing">
-                      <tr><th class="info" colspan="3"><H2><?V WA_GET_APP_NAME ('Bookmark') ?></H2></th></tr>
+    <div class="widget w_app_summary w_bookmark_summary">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="images/icons/edit_16.png" 
+               alt="ODS-Bookmark icon" />
+          <span class="w_title_text"><?V WA_GET_APP_NAME ('Bookmark') ?> summary</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+        </div>
+      </div> <!-- w_title_bar -->
+      <div class="w_pane content_pane">
+        <table class="app_summary_listing">
                       <tr>
-                        <th><v:url name="bmk_orderby_instance"
+            <th>
+              <v:url name="bmk_orderby_instance"
                                    value="Instance"
                                    url="--'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
                                            '&amp;'||http_request_get('QUERY_STRING')"
-                             /></th>
-                        <th><v:url name="bmk_orderby_link"
+              />
+            </th>
+            <th>
+              <v:url name="bmk_orderby_link"
                                    value="Bookmark"
                                    url="--'?order_by=link&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
                                            '&amp;'||http_request_get('QUERY_STRING')"
-                             /></th>
-                        <th><v:url name="bmk_orderby_creator"
+              />
+            </th>
+            <th>
+              <v:url name="bmk_orderby_creator"
                                    value="Creator"
                                    url="--'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
                                            '&amp;'||http_request_get('QUERY_STRING')"
-                            /></th>
-                        <th><v:url name="bmk_orderby_date"
+              />
+            </th>
+            <th>
+              <v:url name="bmk_orderby_date"
                                    value="Date"
                                    url="--'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
                                            '&amp;'||http_request_get('QUERY_STRING')"
-                            /></th>
+              />
+            </th>
                       </tr>
       <xsl:call-template name="user-dashboard-item-extended">
         <xsl:with-param name="app">Bookmark</xsl:with-param>
 		    </xsl:call-template>
                     </table>
+      </div> <!-- content_pane --> 
+    </div>
   </xsl:template>
 
   <xsl:template match="vm:dash-community-summary">
-                    <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="info_container3">
-		      <tr><th class="info" colspan="3"><H2><?V WA_GET_APP_NAME ('Community') ?></H2></th></tr>
+    <div class="widget w_app_summary w_bookmark_summary">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="images/icons/.png" 
+               alt="ODS-Community icon" />
+          <span class="w_title_text"><?V WA_GET_APP_NAME ('Community') ?> Summary</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+        </div>
+      </div> <!-- w_title_bar -->
+      <div class="w_pane content_pane">
+        <table class="app_summary_listing">
                       <tr>
                         <th>Community name</th><th>Creator</th><th>Date</th>
                       </tr>
@@ -873,10 +922,12 @@
 			<xsl:with-param name="app">Community</xsl:with-param>
 		    </xsl:call-template>
                     </table>
+      </div>
+    </div>
   </xsl:template>
 
   <xsl:template match="vm:dash-ogallery-summary">
-    <div class="widget w_db_summary w_news_activity">
+    <div class="widget w_app_summary w_ogallery_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
@@ -1301,7 +1352,7 @@
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon" 
-                 src="images/icons/bookmarks_16.png" 
+                 src="images/icons/edit_16.png" 
                  alt="ODS-Bookmarks icon"/>
             <span class="w_title_text">My Bookmarks</span>
           </div>
@@ -1629,7 +1680,8 @@
                       order by RES_MOD_TIME desc,CM.CREATE_DATE desc';
 
               rc := exec (q_str, null, null, vector (), 0, null, null, h);
-              while (0 = exec_next (h, null, null, dta) and ii<5 )
+
+              while (0 = exec_next (h, null, null, dta) and ii<4 )
               {
                 exec_result (dta);
 
