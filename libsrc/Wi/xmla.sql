@@ -817,7 +817,7 @@ create method xmla_dbschema_columns () for xmla_discover
 		 || ' NULL as COLUMN_PROPID INTEGER,'
 		 || ' (select count(*) from DB.DBA.SYS_COLS where "TABLE" = KEY_TABLE and COL_ID <= c.COL_ID and "COLUMN" <> ''_IDN'') as ORDINAL_POSITION INTEGER,'
 		 || ' case when deserialize(COL_DEFAULT) is null then 0 else -1 end as COLUMN_HASDEFAULT SMALLINT,'
-		 || ' deserialize(COL_DEFAULT) as COLUMN_DEFAULT NVARCHAR(254),'
+		 || ' cast (deserialize(COL_DEFAULT) as NVARCHAR) as COLUMN_DEFAULT NVARCHAR(254),'
 		 || ' cast (DB.DBA.oledb_dbflags(COL_DTP, COL_NULLABLE) as integer) as COLUMN_FLAGS INTEGER,'
 		 || ' case COL_NULLABLE when 1 then -1 else 0 end as IS_NULLABLE SMALLINT,'
 		 || ' cast (DB.DBA.oledb_dbtype(COL_DTP) as integer) as DATA_TYPE SMALLINT,'
@@ -1123,8 +1123,9 @@ xmla_get_schs ()
 	 soap_box_structure ('TABLE_CATALOG', '', 'TABLE_SCHEMA', '', 'TABLE_NAME', '', 'TABLE_TYPE', '', 'COLUMN_NAME', '')
 	,''),
       vector ('DBSCHEMA_FOREIGN_KEYS',
-	 soap_box_structure ('TABLE_CATALOG', 'TABLE_SCHEMA', 'TABLE_NAME', 'COLUMN_NAME',
-			     'TABLE_CATALOG', 'TABLE_SCHEMA', 'TABLE_NAME', 'COLUMN_NAME', '', '', '', '', '')
+	 soap_box_structure ('PK_TABLE_SCHEMA', '', 'PK_TABLE_NAME', '', 'PK_COLUMN_NAME', '',
+	   		     'FK_TABLE_SCHEMA', '', 'FK_TABLE_NAME', '', 'FK_COLUMN_NAME', '',
+			     'KEY_SEQ', '', 'UPDATE_RULE', '', 'DELETE_RULE', '', 'FK_NAME', '')
 	,''),
       vector ('DBSCHEMA_PROVIDER_TYPES',
 	 soap_box_structure ('DATA_TYPE', '', 'BEST_MATCH', '')
