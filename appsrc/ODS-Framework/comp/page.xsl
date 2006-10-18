@@ -2682,9 +2682,11 @@ if (i > 0)
 </xsl:template>
 
 <xsl:template match="vm:disco-sioc-app-link">
+  <!--
   <?vsp if (length (self.fname) and exists (select 1 from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = self.app_type and WAI_IS_PUBLIC = 1)) {  ?>
   <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/%s/sioc.rdf', self.st_host, self.fname, wa_type_to_app (self.app_type)), '+', '%2B')); ?>" />
   <?vsp } ?>
+  -->
 </xsl:template>
 
 <xsl:template match="vm:erdf-data">
