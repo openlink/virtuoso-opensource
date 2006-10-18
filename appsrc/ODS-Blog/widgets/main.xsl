@@ -9118,7 +9118,7 @@ window.onload = function (e)
         <tr>
           <td/>
           <td>
-            <v:url xhtml_class="button" name="register_page2" url="index.vspx?page=register" value="Register">
+	    <v:url xhtml_class="button" name="register_page2" url="--wa_link (1, '/ods/register.vspx')" value="Register">
               <v:before-render>
                   <![CDATA[
                     declare _model any;
@@ -9336,7 +9336,7 @@ window.onload = function (e)
       }
     ?>
      <div id="login_btn">
-       <v:url xhtml_class="button" name="login_info_register_page" url="index.vspx?page=register" value="Register">
+	 <v:url xhtml_class="button" name="login_info_register_page" url="--wa_link (1, '/ods/register.vspx')" value="Register">
         <v:after-data-bind>
             <![CDATA[
               declare _model any;
