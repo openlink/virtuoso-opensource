@@ -91,11 +91,10 @@ VERSION_INIT()
 	fi
     else
 	rm -f version.tmp
-	for i in `find . -name 'Entries' | grep -v "vad/"`
-	do
+      for i in `find . -name 'Entries' | grep -v "vad/" | grep -v "toolkit/"`; do
 	    cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
 	done
-	VERSION=`cat version.tmp | awk ' BEGIN { cnt=0 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=160 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
 	rm -f version.tmp
 	echo "$VERSION" > vad_version
     fi
@@ -148,7 +147,12 @@ do_command_safe () {
     shift
     shift
     echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
+  if [ "x$HOST_OS" != "x" ]
+  then
+    $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
+  else
     $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
+  fi
     if test $? -ne 0
     then
 	LOG "***FAILED: starting $command"
@@ -207,12 +211,15 @@ directory_init() {
     mkdir vad/data
     mkdir vad/data/iSPARQL
 
-    for dir in `find . -type d -print | LC_ALL=C sort | grep -v "^\.$" | grep -v CVS | grep -v vad`
+  for dir in `find . -type d -print | LC_ALL=C sort | grep -v "^\.$" | grep -v CVS | grep -v vad | grep -v toolkit`
     do
 	mkdir vad/data/iSPARQL/$dir
     done
 
-    for dir in `find . -type d | grep "\\./[^/]*$"  | grep -v CVS | grep -v vad`
+  mkdir vad/data/iSPARQL/toolkit
+  cp $HOME/binsrc/oat/toolkit/*.js vad/data/iSPARQL/toolkit/
+
+  for dir in `find . -type d | grep "\\./[^/]*$"  | grep -v CVS | grep -v vad | grep -v toolkit`
     do
 	for file in `find $dir -type f -print | LC_ALL=C sort | grep -v CVS`
 	do

@@ -1,0 +1,146 @@
+<?vsp 
+--  
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?><?include sparql_auth.vsp ?><?vsp
+
+  declare pwd varchar;
+  declare act varchar;
+  declare rc int;
+  pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = _u_name);
+  
+  act := coalesce({?'act'});
+
+  if (act = 'load')
+  {
+    declare rid int;
+    rid := cast({?'rid'} as int);
+    if (DB.DBA.DAV_AUTHENTICATE (rid, 'R', '1__', _u_name, pwd) >= 0)
+    {
+      http((SELECT RES_CONTENT from WS.WS.SYS_DAV_RES WHERE RES_ID = rid));
+    }
+    else
+      http(DB.DBA.DAV_PERROR (rc));
+    return;
+  }
+
+  declare col, ctr int;
+  col := DB.DBA.DAV_SEARCH_ID ('/DAV/home/'||_u_name||'/SPARQL/', 'C');
+  if (col < 0)
+  {
+    col := DB.DBA.DAV_MAKE_DIR('/DAV/home/'||_u_name||'/SPARQL/',
+      _u_id, http_nogroup_gid(), '110110100N');
+    if (col < 0)
+    {
+      http('There was a problem with the home collection: ' || '/DAV/home/'||_u_name);
+      return;
+    }
+  }
+
+  if (act = 'store')
+  {
+    declare res_name,perms,path varchar;
+    res_name := {?'res_name'};
+    if (length (res_name) = 0 or res_name is null)
+    {
+      http('The name of the resourse cannot be empty');
+      return;
+    }
+    
+    path := '/DAV/home/'||_u_name||'/SPARQL/' || res_name;
+    if (path not like '%.rq')
+      path := path || '.rq';
+
+    if (DB.DBA.DAV_SEARCH_ID (path, 'R') > 0 and coalesce({?'ovr'},'') <> '1')
+    {
+      http('overwrite');
+      return;
+    }
+
+		if (coalesce({?'pub'},'') = '1') 
+		  perms := '110100100NN';
+		else
+      perms := '110100000NN';
+    
+		rc := DB.DBA.DAV_RES_UPLOAD (path, {?'query'}, 'application/sparql-query', perms,
+			        _u_name, 'nogroup', _u_name, pwd);
+    if (rc < 0)
+		{
+				http(DAV_PERROR (rc));
+		} else {
+      http('Resource Stored.');
+		}
+    
+    return;
+  }
+
+?>
+<table class="tab_page">
+  <tr>
+		<td valign="top">
+		  <h2>Available stored SPARQL queries</h2>
+		  <table border="0" class="listing">
+		    <tr class="listing_header_row">
+		      <th>Resource Name</th>
+		      <th>Action</th>
+		    </tr>
+			  <?vsp
+			    ctr := 0;
+			    if ({?'d_rid'} is not null)
+		      {
+		        declare res_path varchar;
+    				res_path := (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_ID = cast({?'d_rid'} as int));
+		    		rc := DB.DBA.DAV_DELETE (res_path, 0, _u_name, pwd);
+				    if (rc < 0)
+		        {
+		          http(DB.DBA.DAV_PERROR (rc));
+  	  			  return;
+    				}
+		      }
+			    for select RES_NAME, RES_ID from WS.WS.SYS_DAV_RES where RES_COL = col and RES_NAME like '%.rq' do
+		      {
+			      rc := DB.DBA.DAV_AUTHENTICATE (RES_ID, 'R', '1__', _u_name, pwd);
+				    if (rc >= 0)
+				    {
+			    ?>
+			    <tr>
+			      <td><?V RES_NAME ?></td>
+			      <td>
+			        <a href="#" onClick="load_rq_click(<?V RES_ID ?>)">Load</a>
+			        <a href="#" onClick="load_click(<?V RES_ID ?>)">Delete</a>
+			      </td>
+			    </tr>
+			    <?vsp
+			        ctr := ctr + 1;
+				    }
+			    }
+			    if (ctr = 0)
+			    {
+			    ?>
+			      <tr><td colspan="2">Stored queries not found</td></tr>
+			  <?vsp
+			    }
+			  ?>
+			</table>
+		</td>
+  </tr>
+</table>
