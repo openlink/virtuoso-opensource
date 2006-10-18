@@ -716,6 +716,26 @@ bp_wait_flush (buffer_pool_t * bp)
 }
 
 
+#define BD_REPLACE_CHECK_BATCH 20
+
+#define BD_REPLACE_CHECK(n) \
+{ \
+  if (!buf[n].bd_space) \
+    { \
+      best = &buf[n]; \
+      best_age = 0; \
+      goto found; \
+    } \
+  if (0 == buf[n].bdf.flags  \
+      && (age = ts - buf[n].bd_timestamp) > best_age) \
+    { \
+      best_age = age; \
+      best = &buf[n]; \
+    } \
+}
+
+
+
 buffer_desc_t *
 bp_get_buffer (buffer_pool_t * bp, int mode)
 {
@@ -748,6 +768,44 @@ bp_get_buffer (buffer_pool_t * bp, int mode)
     age_limit = bp->bp_bucket_limit[0];
   for (buf = &bp->bp_bufs[bp->bp_next_replace]; buf < &bp->bp_bufs[bp->bp_n_bufs]; buf++)
     {
+      if (buf < &bp->bp_bufs[bp->bp_n_bufs - BD_REPLACE_CHECK_BATCH])
+	{
+	  bp_ts_t ts = bp->bp_ts;
+	  bp_ts_t age, best_age = age_limit;
+	  buffer_desc_t * best = NULL;
+
+	  BD_REPLACE_CHECK (0);
+	  BD_REPLACE_CHECK (1);
+	  BD_REPLACE_CHECK (2);
+	  BD_REPLACE_CHECK (3);
+	  BD_REPLACE_CHECK (4);
+	  BD_REPLACE_CHECK (5);
+	  BD_REPLACE_CHECK (6);
+	  BD_REPLACE_CHECK (7);
+	  BD_REPLACE_CHECK (8);
+	  BD_REPLACE_CHECK (9);
+	  BD_REPLACE_CHECK (10);
+	  BD_REPLACE_CHECK (11);
+	  BD_REPLACE_CHECK (12);
+	  BD_REPLACE_CHECK (13);
+	  BD_REPLACE_CHECK (14);
+	  BD_REPLACE_CHECK (15);
+	  BD_REPLACE_CHECK (16);
+	  BD_REPLACE_CHECK (17);
+	  BD_REPLACE_CHECK (18);
+	  BD_REPLACE_CHECK (19);
+
+	found:
+	  if (best && bp_found (best, 0))
+	    {
+	      if (best_age)
+		bp->bp_next_replace = (buf - bp->bp_bufs)  + BD_REPLACE_CHECK_BATCH;
+	      return best;
+	    }
+	  buf += BD_REPLACE_CHECK_BATCH - 1;
+	  age_limit -= 10; /* not in the last checked.  Be less picky for the next batch. */
+	}
+
       if (!buf->bd_is_dirty
 	  && ((int) (bp->bp_ts - buf->bd_timestamp)) >= age_limit)
 	{
