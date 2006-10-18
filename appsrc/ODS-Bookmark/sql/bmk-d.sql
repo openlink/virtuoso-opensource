@@ -35,6 +35,7 @@ BMK.WA.exec_no_error('DROP TDRIGGER WA_MEMBER_AU_BMK');
 BMK.WA.exec_no_error('DROP VIEW  BMK.DBA.TAGS_STATISTICS');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.SETTINGS');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.TAGS');
+BMK.WA.exec_no_error('DROP TABLE BMK.WA.GRANTS');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.BOOKMARK_DATA');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.BOOKMARK_DOMAIN');
 BMK.WA.exec_no_error('DROP TABLE BMK.WA.SFOLDER');
@@ -57,6 +58,21 @@ create procedure BMK.WA.drop_procedures()
 
 -- dropping procedures for BMK
 BMK.WA.drop_procedures();
-
 BMK.WA.exec_no_error('DROP procedure BMK.WA.drop_procedures');
+
+-- dropping SIOC procs
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_post_iri');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bmk_links_to');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_bookmark_sioc');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_domain_insert');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_domain_delete');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_tags_insert');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.bookmark_tags_delete');
+BMK.WA.exec_no_error('DROP procedure SIOC.DBA.ods_bookmark_sioc_init');
+
+-- dropping ODS procs
+BMK.WA.exec_no_error('DROP procedure DB.DBA.wa_search_bmk_get_excerpt_html');
+BMK.WA.exec_no_error('DROP procedure DB.DBA.wa_collect_bmk_tags');
+
+-- final proc
 BMK.WA.exec_no_error('DROP procedure BMK.WA.exec_no_error');
