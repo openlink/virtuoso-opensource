@@ -221,10 +221,6 @@ div.w_title_btns_ctr {
 div.w_title_btns_ctr img {
   border:0}
 
-div.w_db_summary { width: 600px}
-div.w_db_summary div.w_title_bar {
-  width: 595px}
-
 div.w_pane {
   float: left;
   clear: both;
@@ -286,15 +282,6 @@ div.w_activity .w_act_lst li {
   display: inline;
   margin-right: 0.4em}
 
-div.w_blog_activity ul {
-  font-size: 8pt;
-  list-style-type: none;
-  padding: 0;
-  margin: 3px}
-
-div.w_blog_activity ul li a {
-  color: #444}
-
 /* welcome */
 div.w_welcome p { margin: 4px}
 div.w_welcome h3 {
@@ -303,25 +290,43 @@ div.w_welcome h3 {
 div.w_welcome a {
   color: #224}
 
-div.w_wiki_activity {}
-div.w_wiki_activity ul {
+/* Application summary on app tab page */
+
+/* Generic sizing overriding widget size */
+
+div.w_app_summary { width: 600px}
+div.w_app_summary div.w_title_bar {
+  width: 595px}
+
+/* ODS-Weblog */
+
+div.w_blog_summary ul {
+  font-size: 8pt;
+  list-style-type: none;
+  padding: 0;
+  margin: 3px}
+div.w_blog_summary ul li a {
+  color: #444}
+
+/* ODS-Wiki */
+
+div.w_wiki_summary {}
+div.w_wiki_summary ul {
   font-size: 8pt;
   list-style-type: none;
   padding: 3px}
-
-div.w_wiki_activity ul li a {
+div.w_wiki_summary ul li a {
   color: #444}
 
-/* Latest News */
-div.w_news_activity ul {
+/* ODS-Feed Reader */
+
+div.w_news_summary ul {
   font-size: 8pt;
   list-style-type: none;
   margin: 0;
   padding: 0 4px 0 4px}
-
-div.w_news_activity ul li a {
-  color: #444;
-}
+div.w_news_summary ul li a {
+  color: #444}
 
 /* User home page (myhome.vspx) */
 
@@ -330,8 +335,7 @@ div.w_whats_new .content_pane {
   width: 100%;
   background-color: #fe6}
 div.w_whats_new h3 {
-  margin: 4px 4px 4px 4px;
-}
+  margin: 4px 4px 4px 4px}
 div.w_whats_new .content_pane p {
   margin: 4px 0 4px 0; 
   padding: 0 3px 0 3px}
@@ -343,6 +347,15 @@ div.w_my_blog ul {
   font-size: 8pt;
   list-style-type: none;
   padding: 0 0 0 4px;}
+
+/* My Bookmarks */
+
+div.w_my_bookmarks {}
+div.w_my_bookmarks ul {
+  font-size: 8pt;
+  list-style-type: none;
+  padding: 0 0 0 4px;}
+
 
 /* App ads */
 
@@ -500,7 +513,7 @@ td.navtab_sel {
   background-color: #fff}
 td.navtab_sel a {}
 td.navtab_non_sel:hover {
-  background-color: #afa;
+  background-color: #adf;
 }
 
 table.tab_page {width: 100%}

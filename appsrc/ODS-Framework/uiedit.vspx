@@ -89,14 +89,14 @@ function getFileName(form, from, to)
 			def_btn = '<?V btn ?>';
 		      </script>
 
-			<td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+			<td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>">
                           <v:url name="b_url21" 
                                  value="Personal" 
                                  format="%s" 
                                  url="--sprintf('uiedit.vspx?page=1')" 
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab_non_sel' end ?>" 
+			<td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>" 
                             align="center">
                           <v:url name="b_url12" 
                                  value="Contact" 
@@ -104,7 +104,7 @@ function getFileName(form, from, to)
                                  url="--sprintf('uiedit.vspx?page=2')" 
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab_non_sel' end ?>" 
+			<td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>" 
                             align="center">
                           <v:url name="b_url13" 
                                  value="Home" 
@@ -112,21 +112,21 @@ function getFileName(form, from, to)
                                  url="--sprintf('uiedit.vspx?page=3')" 
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+			<td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>">
                           <v:url name="b_url14" 
                                  value="Business" 
                                  format="%s" 
                                  url="--sprintf('uiedit.vspx?page=4')" 
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+			<td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>">
                           <v:url name="b_url15" 
                                  value="Security" 
                                  format="%s" 
                                  url="--sprintf('uiedit.vspx?page=5')" 
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 6 then 'navtab_sel' else 'navtab_non_sel' end ?>" nowrap="1">
+			<td class="<?V case when pg = 6 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url name="b_url16" 
                                  value="Associations &amp; Web Services" 
                                  format="%s" 

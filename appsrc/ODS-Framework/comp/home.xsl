@@ -192,27 +192,27 @@
                       <col/>
                     </colgroup>
                     <tr class="navtab_row">
-                      <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                      <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>">
                         <v:url name="b_url21" value="Personal" 
                                format="%s" 
                                url="--sprintf('uhome.vspx?page=1&ufname=%s#uinavtab',self.fname)" 
                                xhtml_class="tab"/>
                       </td>
-                      <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                      <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>">
                         <v:url name="b_url12" 
                                value="Contact" 
                                format="%s" 
                                url="--sprintf('uhome.vspx?page=2&ufname=%s#uinavtab',self.fname)" 
                                xhtml_class="tab"/>
                       </td>
-                      <td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                      <td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>">
                         <v:url name="b_url13" 
                                value="Home" 
                                format="%s" 
                                url="--sprintf('uhome.vspx?page=3&ufname=%s#uinavtab',self.fname)" 
                                xhtml_class="tab"/>
                       </td>
-                      <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab_non_sel' end ?>">
+                      <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>">
                         <v:url name="b_url14" 
                                value="Business" 
                                format="%s" 
@@ -713,7 +713,7 @@
   </xsl:template>
 
   <xsl:template match="vm:user-friends">
-      <div class="contacts_ctrr">
+    <div class="contacts_ctr">
 	  <h2>Contacts</h2>
 	<ul>
 	  <?vsp

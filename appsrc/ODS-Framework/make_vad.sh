@@ -223,6 +223,7 @@ directory_init() {
   mkdir vad/data
   mkdir vad/data/wa
   mkdir vad/data/wa/comp
+  mkdir vad/data/wa/oat
   mkdir vad/data/wa/images
   mkdir vad/data/wa/images/dav_browser
   mkdir vad/data/wa/images/icons
@@ -242,14 +243,21 @@ directory_init() {
   cp *.html vad/data/wa
   cp *.sql vad/data/wa
   cp *.js vad/data/wa
+#  cp $HOME/binsrc/tags/phrasematch.sql vad/data/wa
   cp comp/*.xsl vad/data/wa/comp
   cp comp/*.js vad/data/wa/comp
+  cp $HOME/binsrc/oat/toolkit/*.js vad/data/wa/oat/.
+#  cp $HOME/binsrc/oat/toolkit/ajax.js vad/data/wa/oat/.
+#  cp $HOME/binsrc/oat/toolkit/dom.js vad/data/wa/oat/.
+#  cp $HOME/binsrc/oat/toolkit/loader.js vad/data/wa/oat/.
+#  cp $HOME/binsrc/oat/toolkit/xml.js vad/data/wa/oat/.
   #cp images/dav_browser/*.gif vad/data/wa/images/dav_browser
   #cp images/dav_browser/*.jpg vad/data/wa/images/dav_browser
   cp images/dav_browser/*.png vad/data/wa/images/dav_browser
   cp images/*.gif vad/data/wa/images
   cp images/*.jpg vad/data/wa/images
   cp images/*.png vad/data/wa/images
+#  cp $HOME/binsrc/weblog2/public/images/foaf.gif vad/data/wa/images
   cp icons/*.gif vad/data/wa/images/icons
   #cp icons/*.jpg vad/data/wa/images/icons
   cp icons/*.png vad/data/wa/images/icons

@@ -62,16 +62,16 @@
 			    declare pg int;
 			    pg := 4;
 			    ?>
-			    <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
+			    <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>" align="center">
 			      <v:url name="b_url21" value="Keyword" format="%s" url="--sprintf('search.vspx?page=1&amp;l=1')" xhtml_class="uddi"/>
 			    </td>
-			    <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
+			    <td class="<?V case when pg = 2 then 'navtab_sel' else 'navtab' end ?>" align="center">
 			      <v:url name="b_url12" value="Users" format="%s" url="--sprintf('search.vspx?page=2&amp;l=1')" xhtml_class="uddi"/>
 			    </td>
-			    <!--td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
+			    <!--td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>" align="center">
 			    <v:url name="b_url13" value="Network Affiliation" format="%s" url="-#-sprintf('search.vspx?page=3')" xhtml_class="uddi"/>
 			  </td-->
-			  <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab_non_sel' end ?>" align="center">
+			  <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>" align="center">
 			    <v:url name="b_url14" value="RDF" format="%s" url="--sprintf('search.vspx?page=4&amp;l=1')" xhtml_class="uddi"/>
 			  </td>
 			  <td class="page_tab_empty" align="center" width="100%">

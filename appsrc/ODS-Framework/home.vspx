@@ -62,16 +62,11 @@
         <vm:notification />
         <vm:user-details />
         <vm:user-friends />
-      </div> <!-- LT -->
-			  <vm:condition test="login">
-			    <vm:condition test="not-owner">
-          <vm:add-to-friends /><br/>
-			    </vm:condition>
-			  </vm:condition>
 			  <vm:condition test="exists-map-key">
 				<div id="user_map" class="user_map">
 				</div>
 			  </vm:condition>
+      </div> <!-- LT -->
       <div id="RT">
         <ul class="button_bar">
           <li><vm:foaf-link /></li>
@@ -89,6 +84,11 @@
             </li>
             <li><img src="images/icons/mail_new.png" alt="Invite" />
               <vm:invite-link title="Invite People" /></li>
+          </vm:condition>
+          <vm:condition test="login">
+            <vm:condition test="not-owner">
+              <li><vm:add-to-friends /></li>
+            </vm:condition>
           </vm:condition>
         </ul> <!-- button_bar -->
       </div><!-- RT -->

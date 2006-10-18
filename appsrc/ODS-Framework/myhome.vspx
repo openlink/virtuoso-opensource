@@ -50,6 +50,9 @@
            <vm:if test="wa_vad_check ('wiki') is not null">
                <vm:dash-my-wiki />
            </vm:if>
+        <vm:if test="wa_vad_check ('bookmark') is not null">
+          <vm:dash-my-bookmarks />
+        </vm:if>
         <vm:dash-my-profile />
            <vm:dash-my-friends />
            <vm:if test="wa_vad_check ('Community') is not null">
