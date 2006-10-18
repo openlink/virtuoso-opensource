@@ -50,8 +50,8 @@ EXTRA_DIST = \
 	*.sql \
 	*.vsp \
 	images/*.gif \
+	images/*.jpg \
 	images/*.png \
 	make_vad.sh \
 	syntax/*.js \
-	toolkit/*.js \
 	vad_version
