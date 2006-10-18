@@ -182,12 +182,15 @@ directory_init() {
   mkdir vad/data
   mkdir vad/data/oGallery
 
-  for dir in `find sql www-root xslt -type d -print | LC_ALL=C sort | grep -v CVS`
+  for dir in `find sql www-root xslt -type d -print | LC_ALL=C sort | grep -v CVS | grep -v oat`
   do
     mkdir vad/data/oGallery/$dir
   done
 
-  for file in `find sql www-root xslt -type f -print | LC_ALL=C sort | grep -v CVS`
+  mkdir vad/data/oGallery/www-root/toolkit
+  cp $HOME/binsrc/oat/toolkit/*.js vad/data/oGallery/www-root/toolkit/
+
+  for file in `find sql www-root xslt -type f -print | LC_ALL=C sort | grep -v CVS | grep -v oat`
   do
     cp $file vad/data/oGallery/$file
   done
