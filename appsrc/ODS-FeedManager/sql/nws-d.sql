@@ -36,8 +36,10 @@ ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.SFOLDER');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FOLDER');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FEED_DIRECTORY');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.DIRECTORY');
+ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FEED_ITEM_COMMENT');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FEED_ITEM');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FEED');
+ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.TAGS');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.BLOG_POST_DATA');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.BLOG_POST');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.BLOG');
@@ -74,5 +76,28 @@ ENEWS.WA.exec_no_error('DROP procedure DB.DBA.OFM_NEWS_MSG_U');
 ENEWS.WA.exec_no_error('DROP procedure DB.DBA.OFM_NEWS_MSG_D');
 DB.DBA.NNTP_NEWS_MSG_DEL ('OFM');
 
-ENEWS.WA.exec_no_error('DROP procedure ENEWS.WA.exec_no_error');
+-- dropping SIOC procs
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_mgr_iri');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_iri');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_item_iri');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_comment_iri');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_item_url');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.author_iri');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_links_to');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_feeds_sioc');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_item_insert');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_item_delete');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_tags_insert');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_tags_delete');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_comment_insert');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_comment_delete');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.ods_feeds_sioc_init');
 
+-- dropping ODS procs
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_ENEWS_GET_EXCERPT_HTML');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_ENEWS');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA.WA_SEARCH_ADD_ENEWS_TAG');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA.wa_collect_enews_tags');
+
+-- final proc
+ENEWS.WA.exec_no_error('DROP procedure ENEWS.WA.exec_no_error');

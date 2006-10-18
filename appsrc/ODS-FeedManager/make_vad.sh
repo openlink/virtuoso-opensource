@@ -22,7 +22,7 @@
 #
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.6.112"
+VERSION="1.6.113"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -260,7 +260,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/enews2/sql/nws-a-table.sql', 1, 'report',  $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/enews2/sql/nws-a-code.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/enews2/sql/DET_News3.sql', 1, 'report', $ISDAV);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/enews2/sql/wa_search_news.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/enews2/sql/nws-a-ods.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/enews2/sql/sioc_feeds.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
