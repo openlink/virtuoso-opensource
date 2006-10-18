@@ -34,7 +34,7 @@ function init()
   
   pr_inx = 1;
 
-  var mt_cl = new Combolist([],"");
+  var mt_cl = new OAT.Combolist([],"");
   mt_cl.input.name = "mime_type";
   $("mime_cl").appendChild(mt_cl.div);
   for (var i = 0; i < mime_types.length; i++)
@@ -42,7 +42,7 @@ function init()
     mt_cl.addOption(mime_types[i]);
   }
 
-  pr_name_cl = new Combolist(['xml-sql','xml-sql-root','xml-sql-dtd','xml-sql-schema','xml-stylesheet','xper'],"");
+  pr_name_cl = new OAT.Combolist(['xml-sql','xml-sql-root','xml-sql-dtd','xml-sql-schema','xml-stylesheet','xper'],"");
   //pr_name_cl.input.name = "pr_name";
   $("pr_name_div").appendChild(pr_name_cl.div);
 
@@ -67,7 +67,7 @@ function init()
 
 function init_prop_edit() 
 {
-  var mt_cl = new Combolist([],cur_mime_type);
+  var mt_cl = new OAT.Combolist([],cur_mime_type);
   mt_cl.input.name = "mime_type1";
   $("mime_cl").appendChild(mt_cl.div);
   for (var i = 0; i < mime_types.length; i++)
@@ -78,7 +78,7 @@ function init_prop_edit()
 
 function init_upload() 
 {
-  var mt_cl = new Combolist([],cur_mime_type);
+  var mt_cl = new OAT.Combolist([],cur_mime_type);
   mt_cl.input.name = "mime_type";
   $("mime_cl").appendChild(mt_cl.div);
   for (var i = 0; i < mime_types.length; i++)

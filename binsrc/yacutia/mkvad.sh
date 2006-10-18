@@ -350,6 +350,12 @@ do
 echo "    <file type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner='dav' dav_grp='administrators' dav_perm='111101101NN' makepath=\"yes\"/>" >> $STICKER
 done
 
+for file in `find vad/vsp/conductor/toolkit -type f -print | grep -v CVS | sort | cut -b9- `
+do
+    name=$file
+echo "    <file type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath=\"yes\"/>" >> $STICKER
+done
+
 echo "  </resources>" >> $STICKER
 echo "  <registry>" >> $STICKER
 echo "  </registry>" >> $STICKER
@@ -402,8 +408,8 @@ mkdir vad/vsp/conductor/images/dav_browser
 mkdir vad/vsp/conductor/images/icons
 mkdir vad/vsp/conductor/syntax
 mkdir vad/vsp/conductor/toolkit
-mkdir vad/vsp/conductor/toolkit/images
-mkdir vad/vsp/conductor/toolkit/docs
+#mkdir vad/vsp/conductor/toolkit/images
+#mkdir vad/vsp/conductor/toolkit/docs
 cp -f $HOME/binsrc/xddl/xddl.xsd .
 cp -f $HOME/binsrc/xddl/xddl_diff.xsl .
 cp -f $HOME/binsrc/xddl/xddl_exec.xsl .
@@ -422,7 +428,7 @@ cp -f ie7/* vad/vsp/conductor/ie7
 cp -f ie7/src/* vad/vsp/conductor/ie7/src
 cp -f * vad/vsp/conductor
 cp -f syntax/* vad/vsp/conductor/syntax
-cp -f toolkit/* vad/vsp/conductor/toolkit
+cp -f $HOME/binsrc/oat/toolkit/*.js vad/vsp/conductor/toolkit/.
 cp -f toolkit/images/* vad/vsp/conductor/toolkit/images
 cp -f toolkit/docs/* vad/vsp/conductor/toolkit/docs
 cp -f yacutia.sql vad/vsp/conductor

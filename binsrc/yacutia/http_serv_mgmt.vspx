@@ -520,7 +520,7 @@
 		  <![CDATA[
 		  <script type="text/javascript">
 	           window.onload = function () {
-		      var sr_cl = new Combolist([],"0.0.0.0");
+		      var sr_cl = new OAT.Combolist([],"0.0.0.0");
 		      sr_cl.input.name = "t_host";
 		      sr_cl.input.id = "t_host";
 		      $("if_opt").appendChild(sr_cl.div);

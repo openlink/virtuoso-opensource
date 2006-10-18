@@ -106,7 +106,7 @@
 		  <![CDATA[
 		  <script type="text/javascript">
 	           window.onload = function () {
-		      var sr_cl = new Combolist([],"<?V self.lhost1 ?>");
+		      var sr_cl = new OAT.Combolist([],"<?V self.lhost1 ?>");
 		      sr_cl.input.name = "lhost_if";
 		      sr_cl.input.id = "lhost_if";
 		      $("if_opt").appendChild(sr_cl.div);

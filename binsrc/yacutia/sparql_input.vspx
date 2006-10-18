@@ -68,11 +68,11 @@ function callSparql (graph_id, qry_id, res_id)
           '&default-graph-uri='+encodeURIComponent (graph);
        return body;
      }
-  Ajax.errorRef = function(status,response,xmlhttp)
+  OAT.Ajax.errorRef = function(status,response,xmlhttp)
   {
     div.innerHTML = '<div class="error_msg"><pre>' + response + '</pre></div>';
   }
-  Ajax.command(Ajax.POST, endpoint, body, callback, Ajax.TYPE_TEXT,{'Accept':format});
+  OAT.Ajax.command(OAT.Ajax.POST, endpoint, body, callback, OAT.Ajax.TYPE_TEXT,{'Accept':format});
 }
   </script>
 
