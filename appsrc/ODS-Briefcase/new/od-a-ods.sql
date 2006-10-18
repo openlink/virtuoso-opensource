@@ -20,25 +20,11 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
------------------------------------------------------------------------------
---
-ODRIVE.WA.exec_no_error('
-  create table ODRIVE.WA.GROUPS (
-    USER_ID  integer references DB.DBA.SYS_USERS(U_ID) on delete cascade,
-    GROUP_ID integer references DB.DBA.SYS_USERS(U_ID) on delete cascade,
+create procedure DB.DBA.wa_collect_odrive_tags (in id integer)
+{
+  for (select DT_TAGS from WS.WS.SYS_DAV_TAG) do
+    wa_add_tag_to_count (DT_TAGS, id);
+}
+;
 
-    primary key (GROUP_ID)
-  )
-');
-
------------------------------------------------------------------------------
---
-ODRIVE.WA.exec_no_error('
-  create table ODRIVE.WA.SETTINGS (
-    USER_ID   integer references DB.DBA.SYS_USERS(U_ID) on delete cascade,
-    USER_SETTINGS long varchar,
-
-    PRIMARY KEY (USER_ID)
-  )
-');
 

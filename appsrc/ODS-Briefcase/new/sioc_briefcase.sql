@@ -197,6 +197,6 @@ create procedure ods_briefcase_sioc_init ()
 }
 ;
 
-ODRIVE.WA.odrive_exec_no_error ('ods_briefcase_sioc_init ()');
+ODRIVE.WA.exec_no_error ('ods_briefcase_sioc_init ()');
 
 use DB;

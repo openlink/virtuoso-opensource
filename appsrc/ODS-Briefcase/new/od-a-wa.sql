@@ -22,7 +22,7 @@
 
 ------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.odrive_exec_no_error(in expr varchar, in execType varchar := '', in execTable varchar := '', in execColumn varchar := '')
+create procedure ODRIVE.WA.exec_no_error(in expr varchar, in execType varchar := '', in execTable varchar := '', in execColumn varchar := '')
 {
   declare
     state,
@@ -99,11 +99,11 @@ ODRIVE.WA.odrive_vhost();
 -- Insert data
 --
 -------------------------------------------------------------------------------
-ODRIVE.WA.odrive_exec_no_error('insert replacing WA_TYPES(WAT_NAME, WAT_TYPE, WAT_REALM, WAT_DESCRIPTION) values (\'oDrive\', \'db.dba.wa_oDrive\', \'wa\', \'Briefcase Application\')')
+ODRIVE.WA.exec_no_error ('insert replacing WA_TYPES(WAT_NAME, WAT_TYPE, WAT_REALM, WAT_DESCRIPTION) values (\'oDrive\', \'db.dba.wa_oDrive\', \'wa\', \'Briefcase Application\')')
 ;
-ODRIVE.WA.odrive_exec_no_error('insert soft WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'oDrive\', \'owner\', 1, 0)')
+ODRIVE.WA.exec_no_error ('insert soft WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'oDrive\', \'owner\', 1, 0)')
 ;
-ODRIVE.WA.odrive_exec_no_error('insert soft WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'oDrive\', \'user\', 2, 0)')
+ODRIVE.WA.exec_no_error ('insert soft WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'oDrive\', \'user\', 2, 0)')
 ;
 
 -------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ ODRIVE.WA.odrive_exec_no_error('insert soft WA_MEMBER_TYPE (WMT_APP, WMT_NAME, W
 --
 -- oDrive class
 --
-ODRIVE.WA.odrive_exec_no_error('
+ODRIVE.WA.exec_no_error('
   create type db.dba.wa_oDrive under web_app
     constructor method wa_oDrive(stream any),
     overriding method wa_new_inst(login varchar) returns any,
@@ -124,32 +124,32 @@ ODRIVE.WA.odrive_exec_no_error('
 )
 ;
 
-ODRIVE.WA.odrive_exec_no_error(
+ODRIVE.WA.exec_no_error (
   'alter type wa_oDrive add overriding method wa_front_page_as_user(inout stream any, in user_name varchar) returns any'
 )
 ;
 
-ODRIVE.WA.odrive_exec_no_error(
+ODRIVE.WA.exec_no_error (
   'alter type wa_oDrive add overriding method wa_size() returns int'
 )
 ;
 
-ODRIVE.WA.odrive_exec_no_error(
+ODRIVE.WA.exec_no_error (
   'alter type wa_oDrive add method wa_vhost_options () returns any'
 )
 ;
 
-ODRIVE.WA.odrive_exec_no_error(
+ODRIVE.WA.exec_no_error (
   'alter type wa_oDrive add method get_param (in param varchar) returns any'
 )
 ;
 
-ODRIVE.WA.odrive_exec_no_error(
+ODRIVE.WA.exec_no_error (
   'alter type wa_oDrive add method wa_dashboard_last_item () returns any'
 )
 ;
 
-ODRIVE.WA.odrive_exec_no_error (
+ODRIVE.WA.exec_no_error (
   'alter type wa_oDrive add overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar'
 )
 ;
