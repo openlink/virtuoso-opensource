@@ -26,9 +26,6 @@
   host:=   http_request_header(lines, 'Host', null, '*ini*');
   _cluster := coalesce ((select ClusterName from WV.WIKI.DOMAIN_PATTERN_1, WV.WIKI.CLUSTERS where ClusterId = DP_CLUSTER and domain like DP_PATTERN and host like DP_HOST), 'Main');
   
-  dbg_obj_print (domain, host, lines, params);
-  dbg_obj_print (sprintf ('Location: %s/main/?%s\r\n', domain, WV.WIKI.BUILD_URL_PART (params)));
-
   if (domain = '/')
     domain := '';
 
