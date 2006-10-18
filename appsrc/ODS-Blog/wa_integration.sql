@@ -1253,11 +1253,43 @@ create procedure BLOG2_MAKE_THUMB (in _image_body any, in mime_type any, in widt
 }
 ;
 
+create procedure BLOG_GET_MEDIA_URL (in _path varchar)
+{
+  declare _host, _intf, suff, chost varchar;
+  declare _pos int;
+
+  chost := BLOG.DBA.BLOG_GET_HOST ();
+  _host := chost;
+  _pos := strchr (_host, ':');
+
+  if (_pos is not null)
+    {
+      _intf := subseq (_host, _pos, length (_host));
+      _host := subseq (_host, 0, _pos);
+    }
+  else
+    _intf := ':80';
+
+  for select max (HP_LPATH) as lpath, max (HP_PPATH) as ppath
+    from HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST like '%'||_intf and
+	_path like HP_PPATH||'%' do
+  {
+    if (lpath is not null and ppath is not null)
+      {
+	suff := substring (_path, length (ppath), length (_path));
+	return sprintf ('http://%s%s%s%s', _host, _intf, lpath, suff);
+      }
+  }
+  return sprintf ('http://%s%s', chost, _path);
+};
+
+
 create procedure BLOG2_INSERT_MEDIA_MESSAGE (in _caller_name varchar, in _params any, in _blog_id varchar, in _path varchar, in _mime any, in thumb_path varchar, in _bi_owner int, in _bi_home varchar)
 {
   -- determine next post_id number from sequence
   declare _post_id any;
   declare _content any;
+  declare  iurl, turl varchar;
 
   _post_id := cast(sequence_next ('blogger.postid') as varchar);
   if (_post_id = '0')
@@ -1273,15 +1305,20 @@ create procedure BLOG2_INSERT_MEDIA_MESSAGE (in _caller_name varchar, in _params
   _res.dateCreated := now ();
 
   -- create message body
+  iurl := BLOG_GET_MEDIA_URL (_path);
+  if (thumb_path is not null)
+    turl := BLOG_GET_MEDIA_URL (thumb_path);
+  else
+    turl := iurl;
 
   if(_mime like 'image/%') {
-    _content := '<div><a href="http://' || BLOG.DBA.BLOG_GET_HOST () || _path || '">' ||
-                '<img src="http://' || BLOG.DBA.BLOG_GET_HOST () || case when thumb_path is not null then thumb_path else _path end ||
+    _content := '<div><a href="' || iurl || '">' ||
+                '<img src="' || turl ||
                 '" width="200" border="0" /></a></div><div><pre>' ||
                 get_keyword ('changed_name', _params, '') || ' </pre></div>';
   }
   else {
-    _content := '<div><a href="http://' ||BLOG.DBA.BLOG_GET_HOST ()|| _path || '">' ||
+    _content := '<div><a href="' || iurl || '">' ||
                 _res.title || '</a></div><div><pre>' ||
                 get_keyword ('changed_name', _params, '') || ' </pre></div>';
   }
@@ -1817,5 +1854,19 @@ create procedure wa_collect_blog_tags (in id int)
 {
    for (select BT_TAGS from BLOG..BLOG_TAG) do
 	wa_add_tag_to_count (BT_TAGS, id);
+}
+;
+
+create procedure collect_blog_rel_tags ()
+{
+  declare tags any;
+
+  for (select BT_TAGS from BLOG..BLOG_TAG) do
+     {
+	tags := split_and_decode (BT_TAGS, 0, '\0\0,');
+	add_tag_to_rel_count (__vector_sort (tags));
+     }
+
+  return;
 }
 ;
