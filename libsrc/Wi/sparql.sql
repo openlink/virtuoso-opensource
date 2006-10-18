@@ -5500,7 +5500,7 @@ http('			  <br /><br />\n');
 else
   {
 http('			  <i>Security restrictions of this server does not allow you to retrieve remote RDF data.
-DBA may wish to grant "SPARQL_UDPATE" privilege to "SPARQL" account to remove the restriction.</i>\n');
+DBA may wish to grant "SPARQL_UPDATE" privilege to "SPARQL" account to remove the restriction.</i>\n');
 http('			  <br /><br />\n');
   }
 http('			  <label for="query">Query text</label>\n');
