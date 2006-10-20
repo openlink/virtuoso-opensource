@@ -58,12 +58,12 @@ exec_start:;
   if (isnull(waID) and (length(path) = 3))
     waID := atoi(path[1]);
   if (not isnull(waID)) {
-    declare waName varchar;
+    declare waName, waDescription varchar;
 
     declare continue handler for NOT FOUND goto system_error;
 
     N  := length(path)-1;
-    select WAI_NAME, WAI_IS_PUBLIC into waName, waPublic from DB.DBA.WA_INSTANCE where WAI_ID = waID;
+    select WAI_NAME, coalesce(WAI_DESCRIPTION, WAI_NAME), WAI_IS_PUBLIC into waName, waDescription, waPublic from DB.DBA.WA_INSTANCE where WAI_ID = waID;
 
     procName := split_and_decode(path[N],0,'\0\0.');
     procID   := procName[0];
@@ -105,7 +105,7 @@ exec_start:;
     for (select WAUI_LAT, WAUI_LNG from WA_USER_INFO where WAUI_U_ID = user_id) do
       if ((not isnull(WAUI_LNG)) and (not isnull(WAUI_LAT)))
         geoParams := vector('latitude', sprintf('%.2f', WAUI_LAT), 'longitude', sprintf('%.2f', WAUI_LNG));
-    params := vector_concat(params, vector('user_info', vector('user_id', user_id, 'user_name', user_name, 'user_fullname', user_fullName, 'domain_id', waID, 'email', waName, 'foaf', sprintf('%s/dataspace/%U/about.rdf', OMAIL.WA.host_url (), user_name),  'geo', geoParams)));
+    params := vector_concat(params, vector('user_info', vector('user_id', user_id, 'user_name', user_name, 'user_fullname', user_fullName, 'domain_id', waID, 'description', waDescription, 'email', waName, 'foaf', sprintf('%s/dataspace/%U/about.rdf', OMAIL.WA.host_url (), user_name),  'geo', geoParams)));
     if (waPublic)
       params := vector_concat(params, vector('sioc', replace(sprintf('%s/dataspace/%U/mail/%U/sioc.rdf', OMAIL.WA.host_url (), user_name, waName), '+', '%2B')));
   } else {

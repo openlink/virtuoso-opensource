@@ -205,8 +205,11 @@
     <meta name="ICBM">
       <xsl:attribute name="content"><xsl:value-of select="/page/user_info/geo/longitude" />, <xsl:value-of select="/page/user_info/geo/latitude" /></xsl:attribute>
     </meta>
-    <meta name="DC.title">
-      <xsl:attribute name="content"><xsl:value-of select="/page/user_info/email" /></xsl:attribute>
+    <meta name="dc.description">
+      <xsl:attribute name="content"><xsl:value-of select="/page/user_info/description" /></xsl:attribute>
+    </meta>
+    <meta name="dc.title">
+      <xsl:attribute name="content"><xsl:value-of select="/page/user_info/description" /></xsl:attribute>
     </meta>
   </xsl:template>
 
