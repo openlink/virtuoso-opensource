@@ -85,15 +85,18 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
       c_iri := wiki_cluster_iri (CLUSTERNAME);
       if (iri is not null)
 	{
+	  declare cr_iri varchar;
+	  cr_iri := user_iri_by_uname(U_NAME);
 	  ods_sioc_post (graph_iri, 
 			 iri, 
 			 c_iri, 
-			 user_iri_by_uname(U_NAME), 
+			 cr_iri,
 			 coalesce (TITLETEXT, LOCALNAME), 
 			 T_CREATE_TIME, 
 			 RES_MOD_TIME, 
 			 null, 
-			 RES_CONTENT
+			 RES_CONTENT, null, null,
+			 person_iri (cr_iri)
 			 );
         }
     }
@@ -122,7 +125,10 @@ create procedure wiki_sioc_post (inout _topic WV.WIKI.TOPICINFO)
 	cr_time, 
 	mod_time, 
 	null, 
-	_topic.ti_text);
+	_topic.ti_text,
+	null,
+	null,
+	person_iri(uname));
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('topic'), c_iri);
 }
 ;
@@ -216,8 +222,12 @@ create trigger WV_COMMENT_SIOC_I after insert on WV..COMMENT referencing new as 
   c_iri := wiki_post_iri_2 (N.C_TOPIC_ID);
   cluster_iri := wiki_cluster_iri ( (select c.CLUSTERNAME from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c where t.CLUSTERID = c.CLUSTERID and t.TOPICID = N.C_TOPIC_ID) );
 
-  if (N.C_HOME is not null)
-     foaf_maker (graph_iri, N.C_HOME, N.C_AUTHOR, N.C_EMAIL);
+  declare user_i varchar;
+  user_i := user_iri_by_uname(N.C_AUTHOR);
+  if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = N.C_AUTHOR))
+     foaf_maker (graph_iri, person_iri(user_i), N.C_AUTHOR, N.C_EMAIL);
+
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri(user_i));
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('reply_of'), c_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc..sioc_iri ('has_reply'), iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, cluster_iri, sioc..sioc_iri ('container_of'), iri);
@@ -246,8 +256,13 @@ create procedure fill_comments ()
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('reply_of'), c_iri);
     DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc..sioc_iri ('has_reply'), iri);
     DB.DBA.RDF_QUAD_URI (graph_iri, cluster_iri, sioc..sioc_iri ('container_of'), iri);
-    if (C_HOME is not null)
-       foaf_maker (graph_iri, C_HOME, C_AUTHOR, C_EMAIL);
+  
+    declare user_i varchar;
+    user_i := user_iri_by_uname(C_AUTHOR);
+    if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = C_AUTHOR))
+       foaf_maker (graph_iri, user_i, C_AUTHOR, C_EMAIL);
+
+    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri(user_i));
   }
 
   for select TOPICID, U_NAME from WV.WIKI.TOPIC, DB.DBA.SYS_USERS where U_ID = T_OWNER_ID do 

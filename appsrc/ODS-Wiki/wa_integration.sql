@@ -472,8 +472,9 @@ create method wa_addition_instance_urls (in _lpath varchar) for wa_wikiv
 --  dbg_obj_princ ('>>>>>>', _vhost);
   if (_vhost is null or _vhost like '*ini*%')
     _vhost := '%';
-  else
+  else if (port <> '80')
     _vhost := _vhost || ':' || port;
+
   insert replacing WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER) 
 	values (_vhost, WV.WIKI.CANONICAL_PATH(_lpath || '/%'), self.cluster_id);
   if (_vhost <> '%')
