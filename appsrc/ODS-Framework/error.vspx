@@ -25,7 +25,7 @@
 <v:page name="error-page"
         style="index.xsl"
         fast-render="1"
-        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:page>

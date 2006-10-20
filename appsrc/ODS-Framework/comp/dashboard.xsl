@@ -174,7 +174,7 @@
 	for select top 10 wnb_title, wnb_link from wa_new_blog order by wnb_row_id desc do
 	{
 	?>
-          <li><a href="&lt;?V wa_expand_url (wnb_link, self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnb_title, 1, 80) ?></a></li>
+          <li><a href="&lt;?V wa_expand_url (wnb_link, self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnb_title, 1, 55) ?></a></li>
 	<?vsp
 	}
 	?>
@@ -207,7 +207,9 @@
 	for select top 10 wnn_title, wnn_link from wa_new_news order by wnn_row_id desc do
 	{
 	?>
-	      <li><a href="&lt;?V wa_expand_url (wnn_link, self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnn_title, 1, 80) ?></a></li>
+	  <li>
+            <a href="&lt;?V wa_expand_url (wnn_link, self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnn_title, 1, 55) ?></a>
+          </li>
 	<?vsp
 	}
 	?>
@@ -220,7 +222,7 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-new-wiki">
-    <div class="widget w_app_summary w_wiki_summary">
+    <div class="widget w_db_summary w_wiki_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon" 
@@ -242,7 +244,7 @@
 	?>
 	  <li>
             <a href="&lt;?V wa_expand_url (wnw_link, self.login_pars) ?&gt;">
-              <?V wa_utf8_to_wide (wnw_title, 1, 80) ?>
+              <?V wa_utf8_to_wide (wnw_title, 1, 55) ?>
             </a>
           </li>
 	<?vsp
@@ -396,7 +398,7 @@
 
 		     </xsl:processing-instruction>
                       <tr align="left">
-			  <td nowrap="nowrap"><a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;"><?V substring (coalesce (title, '*no title*'), 1, 80) ?></a></td>
+			  <td nowrap="nowrap"><a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;"><?V substring (coalesce (title, '*no title*'), 1, 55) ?></a></td>
 			  <td nowrap="nowrap">
 			      <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;"><?V coalesce (author, '~unknown~') ?></a>
 			  </td>
@@ -488,14 +490,40 @@
          {
                inst_name:=rows[i][0];
 
+               if (length(rows[i][0])>20)
+               {
+                  inst_name := substring (rows[i][0], 1, 17)||'...';
+               }else
+               {
                inst_name := rows[i][0];
+               }
+                
+               if (length(rows[i][1])>40)
+               {
+                   title := substring (rows[i][1], 1, 37)||'...';
+               }else
+               {
                title     := rows[i][1];
+               }
+
+
                ts        := rows[i][2];
+
+
+               if (length(rows[i][3])>20)
+               {
+                  author := substring (rows[i][3], 1, 17)||'...';
+               }else
+               {
                author    := rows[i][3];
+               }
+               
                url       := rows[i][4];
                uname     := rows[i][5];
                email     := rows[i][6];
          
+         
+
          
          declare aurl, mboxid, clk any;
          aurl := '';
@@ -554,7 +582,9 @@
        <?vsp
             }     
        ?>
-        <td nowrap="nowrap"><a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;"><?V substring (coalesce (title, '*no title*'), 1, 80) ?></a></td>
+        <td nowrap="nowrap">
+          <a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;"><?V coalesce (title, '*no title*') ?></a>
+        </td>
         <td nowrap="nowrap">
         <?vsp
             if (clk<>'')
@@ -1601,7 +1631,6 @@
         </div>
       </div>
       <div class="w_pane content_pane">
-      <ul>
       <?vsp
         if (wa_check_package('Community'))
         {
@@ -1613,22 +1642,22 @@
                               where WAM_APP_TYPE=''Community''
                               and WAM_MEMBER_TYPE=1
                               and WAM_USER=%d',self.u_id);
-
               rc := exec (q_str, null, null, vector (), 0, null, null, h);
+          http ('<ul>');
               while (0 = exec_next (h, null, null, dta))
               {
                 exec_result (dta);
                 http('<li><a href="'||dta[1]||'?'||subseq(self.login_pars,1)||'" >'||dta[0]||'</a></li>');
               }
               exec_close (h);
+          http('</ul>');
           }else{
-          http('<li>You have joined no community.</li>');
+          http('<p>You are not part of any community. Why not start one yourself?</p>');
           }
         }
 	    ?>
-      </ul>
       </div> <!-- content-pane -->
-      <div class="w_footer">&nbsp;</div> <!-- w_footer -->
+      <div class="w_footer"> </div> <!-- w_footer -->
     </div> <!-- widget -->
   </xsl:template>
 
@@ -1701,9 +1730,9 @@
                   <td>
                     <br/>
                     <p>
-                      <?V dta[4] ?>
+                      <?V case when length(dta[4])>12 then substring (dta[4],1,9)||'...' else dta[4] end ?>
                       <br />
-                      <a href="uhome.vspx?page=1&amp;ufname=&lt;?V coalesce(dta[3],dta[2]) ?&gt;"><?V coalesce(dta[2],dta[3]) ?></a>
+                      <a href="uhome.vspx?page=1&amp;ufname=&lt;?V coalesce(dta[3],dta[2]) ?&gt;"><?V wa_utf8_to_wide(coalesce(dta[2],dta[3])) ?></a>
                       <br />
                       <?V wa_abs_date(dta[1])?>
                     </p>
@@ -1858,7 +1887,7 @@
          </xsl:processing-instruction>
     <li>
       <a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;">
-        <?V substring (coalesce (title, '*no title*'), 1, 80) ?></a>
+        <?V substring (coalesce (title, '*no title*'), 1, 55) ?></a>
 <!--
                  <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;">&lt;?V coalesce (author, '~unknown~') ?></a>
 -->

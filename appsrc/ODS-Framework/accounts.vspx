@@ -221,8 +221,7 @@
 				      ]]></v:on-post>
 			      </v:button>
 		   </th>
-                   <th>Status
-                   </th>
+                   <th>Enabled</th>
 		   <th>
 			      <v:button action="simple" name="name_ord2" value="Full Name" style="url">
 				  <v:on-post><![CDATA[
@@ -274,9 +273,6 @@
                                 format="%s"/>
                       </td>
 			    <td>
-		       <label for="<?V control.vc_find_control ('cbc').vc_get_name () ?>">
-			   <?V case when control.te_rowset[2] = 0 then 'Disable' else 'Enable' end ?>
-		       </label>
 		       <v:check-box auto-submit="1" name="cbc" xhtml_id="--control.vc_get_name ()"
 			       initial-checked="--equ ((control.vc_parent as vspx_row_template).te_rowset[2], 0)"
 			       value="--(control.vc_parent as vspx_row_template).te_rowset[0]">

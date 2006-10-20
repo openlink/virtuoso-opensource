@@ -52,7 +52,7 @@
       </script>
 
   <script
-       src="<?V WS.WS.EXPAND_URL (]]><xsl:value-of select="@base_url" /><![CDATA[, 'comp/map_control.js') ?>"
+      src="<?V WA_LINK (1, '/ods/comp/map_control.js') ?>"
        type="text/javascript" >
       </script>
       ]]>
@@ -84,8 +84,8 @@
       zoom_level=]]><xsl:value-of select="@zoom" /><![CDATA[;
       initMap (
 	"]]><xsl:value-of select="@div_id"/><![CDATA[",
-	"<?V WS.WS.EXPAND_URL (]]><xsl:value-of select="@base_url" /><![CDATA[, 'search_ajax.vsp') ?>",
-	"<?V WS.WS.EXPAND_URL (]]><xsl:value-of select="@base_url" /><![CDATA[, 'images/icons') ?>",
+	"<?V WA_LINK (0, '/ods/search_ajax.vsp') ?>",
+	"<?V WA_LINK (1, '/ods/images/icons') ?>",
 	"<?V _inst_id ?>", zoom_level );
   }
   window.onload=onLoad;

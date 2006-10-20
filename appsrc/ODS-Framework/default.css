@@ -357,33 +357,6 @@ div.w_my_bookmarks ul {
   padding: 0 0 0 4px;}
 
 
-/* App ads */
-
-div.app_ad {
-  width: 465px;
-  margin: 3px 3px 3px 3px;
-  float: left;
-  font-size: 8pt;
-  background-color: #333;}
-div.app_ad a {
-  color: #ddd;
-  padding: 0;
-  margin: 0 0 0 0;}
-div.app_ad a img {}
-
-/* XXX app-ad dismiss functionality not 
-   implemented so footer is not displayed. */
-
-div.app_ad_ft {
-  display: none;
-  width: 100%;
-  font-size: 8pt;
-  color: #aaa;
-  text-align: right;
-  padding: 0 4px 0px 0;}
-div.app_ad_ft label {
-  margin-right: 4px;}
-
 /* Feed reader */
 
 div.w_feed_reader {}
@@ -410,12 +383,11 @@ div.w_my_news ul li img {
   border: 0}
 div.w_my_news div.footer {
   background-color: #77d}
-table.feed_table {
-}
+table.feed_table {}
 
 table.feed_table img { vertical-align: middle; 
   border: 0;
-  padding: 0 3px 0 0;}
+  padding: 0 3px 0 0}
 
 table.feed_table td.time {
   color: #8d9696}
@@ -429,8 +401,18 @@ div.w_my_wiki ul {
   font-size: 8pt;
   clear: both;
   list-style-type: none;
-  padding: 3px;
-}
+  padding: 3px}
+
+/* My Mail */
+div.w_my_mail {}
+div.w_my_mail ul {
+  font-size: 8pt;
+  clear: both;
+  list-style-type: none;
+  padding: 3px}
+div.w_my_mail p {
+  font-size: 8pt;
+  padding-left: 3px}
 
 /* My Profile */
 div.w_my_profile {}
@@ -466,6 +448,33 @@ div.w_message .content_pane {
   margin: 3px}
 div.w_message .content_pane h2 {
   font-size: 12pt}
+
+/* App ads */
+
+div.app_ad {
+  width: 465px;
+  margin: 3px 3px 3px 3px;
+  float: left;
+  font-size: 8pt;
+  background-color: #333;}
+div.app_ad a {
+  color: #ddd;
+  padding: 0;
+  margin: 0 0 0 0;}
+div.app_ad a img {}
+
+/* XXX app-ad dismiss functionality not 
+   implemented so footer is not displayed. */
+
+div.app_ad_ft {
+  display: none;
+  width: 100%;
+  font-size: 8pt;
+  color: #aaa;
+  text-align: right;
+  padding: 0 4px 0px 0;}
+div.app_ad_ft label {
+  margin-right: 4px;}
 
 /* error dialog */
 
@@ -512,9 +521,8 @@ td.navtab_sel {
   padding: 0;
   background-color: #fff}
 td.navtab_sel a {}
-td.navtab_non_sel:hover {
-  background-color: #adf;
-}
+td.navtab:hover {
+  background-color: #adf}
 
 table.tab_page {width: 100%}
 td.tab_page {margin: 0;padding: 0;}

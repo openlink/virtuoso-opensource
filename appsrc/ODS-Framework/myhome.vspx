@@ -44,6 +44,9 @@
            <vm:if test="wa_vad_check ('blog2') is not null">
                <vm:dash-my-blog />
            </vm:if>
+        <vm:if test="wa_vad_check ('oMail') is not null">
+          <vm:dash-my-mail />
+        </vm:if>
         <vm:if test="wa_vad_check ('enews2') is not null">
           <vm:dash-my-news />
            </vm:if>

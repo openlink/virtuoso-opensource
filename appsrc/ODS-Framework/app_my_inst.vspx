@@ -77,7 +77,7 @@
               <li>
                 <a class="ods_side_button" href="<?V 'index_inst.vspx?wa_name=' || self.app_type || self.login_pars || case when self.topmenu_level='1' then '&l=1' else '' end ?>">
 		   <img src="images/icons/new_16.png" border="0" />
-		  Create New <?V WA_GET_APP_NAME (self.app_type) ?> App
+		  Create New
 		 </a>
               </li>
 	<?vsp

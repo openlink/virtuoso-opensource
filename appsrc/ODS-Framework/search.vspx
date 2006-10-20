@@ -345,9 +345,10 @@
 	    self.gurl := self.gurl || '-' || tag_str;
 	  }
 
-	if (length (self.expr.ufl_value))
+    if (length (self.expr.ufl_value)){
 	  self.gurl := self.gurl || '?q=' || sprintf ('%U', self.expr.ufl_value);
 	}
+  }
        else
          {
 	   self.gurl := connection_get ('GData_URI');
@@ -551,6 +552,8 @@
          {
 	   self.gurl := connection_get ('GData_URI');
 	 }
+  self.search_rss_plate.vc_data_bind (e);
+
   self.total := length (res);
   self.tag_with_expr_plate.vc_data_bind (e);
   self.ct1.vc_data_bind (e);
@@ -1158,14 +1161,8 @@
 	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''xbel'' title=''xbel''/> XBEL"/>
 	<v:url name="opensearch_url" value="search.vspx" url="--self.page_url || '&o=opensearch'"
 	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''rss'' title=''opensearch''/> OpenSearch"/>
-	<?vsp
-	   {
-	   ?>
 	<v:url name="gdata_url" value="search.vspx" url="--self.gurl"
 	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''GData'' title=''GData''/> GData"/>
-	<?vsp
-	   }
-	?>
 	<?vsp
 	  if (self.u_id is not null and self.page = 2)
 	    {
