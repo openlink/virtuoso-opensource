@@ -223,6 +223,7 @@ function load_dawg_query()
     return;
     }
   tab.go(1);
+  $('should-sponge').checked = false;
   $('query').value = $('dawg_query').getAttribute('dawgdata');
   $('default-graph-uri').value = $('dawg_dgu').getAttribute('dawgdata');
   $('etalon').innerHTML = '<hr/><b>Expected result:</b><br/>' + $('dawg_etalon').innerHTML;
@@ -298,6 +299,7 @@ function load_sq_query()
     return;
   }
   tab.go(1);
+  $('should-sponge').checked = true;
   $('query').value = $('sq_query').getAttribute('sqdata');
   $('default-graph-uri').value = $('sq_dgu').getAttribute('sqdata');
 
@@ -374,11 +376,13 @@ function load_grid(grid,table){
 function rq_query(param,dl)
 {
   if (!dl) dl = 0; // init data loading
-  if (!is_r() && !param && !dl) //if data is not loaded we try to load it first.
+  if (!is_r() && !param && !dl && dl != 'ndl') //if data is not loaded we try to load it first.
   {
     load_data(param);
     return;
   };
+  if (dl == 'ndl')
+    dl = 0;
     
   if (is_r() && $v('service') == '')
   {
@@ -427,13 +431,15 @@ function rq_query(param,dl)
     if (is_r())
       params.push('service');
     else
-      ;
+      params.push('should-sponge');
+      
     for(var i = 0; i < params.length; i++)
     {
+      if (!(params[i] == 'default-graph-uri' && $v('default-graph-uri') == '') && // Patch ot skip default graph if it is empty;
+          !($(params[i]).type == 'checkbox' && !$(params[i]).checked)) // Skip unchecked checkboxes
+      {
       if (body != '') 
         body += '&'; 
-      if (!(params[i] == 'default-graph-uri' && $v('default-graph-uri') == '')) // Patch ot skip default graph if it is empty;
-      {
         body += params[i] + '=';
         if ($(params[i]).type == 'radio')
         {
@@ -741,4 +747,209 @@ function store_click(){
   OAT.Ajax.command(OAT.Ajax.POST, "./sparql_file.vsp?act=store&pub="+pub+"&res_name="+encodeURIComponent(res_name), 
       function(){ return '&query=' + encodeURIComponent($v('query')); }, callbacklsc, OAT.Ajax.TYPE_TEXT);
   
+}
+
+function prefix_insert()
+{
+  prefix = $v('prefix');
+  if ($v('query').indexOf(prefix) == -1)
+    $('query').value = prefix + '\n' + $v('query');
+}
+
+function template_insert()
+{
+  template = $v('template');
+  insert_text($('query'),template);
+  $('template').selectedIndex = 0;
+}
+
+function tool_invoke()
+{
+  tool = $v('tool');
+  eval(tool);
+  $('tool').selectedIndex = 0;
+}
+
+function tool_put(txt)
+{
+  insert_text($('query'),txt);
+}
+
+function tool_put_line_start(txt)
+{
+  var query = $('query');
+  var query_value = $v('query').replace("\r",'');
+  var lines = query_value.split("\n");
+
+  var pos = getPos(query);
+  start = pos[0];
+  end   = pos[1];
+  var nl = 0;
+  if (start < end)
+    nl = 1;
+  var from  = strCountLines(query_value.substring(0,start));
+  var to    = strCountLines(query_value.substring(start,end - nl)) + from;
+  
+  var res = '';
+  var cnt = 0;
+  for(var i=0;i<lines.length;i++)
+  {
+    if ( from <= i && i <= to )
+    {
+      res += txt + lines[i];
+      cnt++;
+    }
+    else
+      res += lines[i];
+    if (i < lines.length - 1)
+      res += "\n";
+  }
+  query.value = res;
+  //alert(res.charAt(start - 1 - OAT.Dom.isIE()));
+  if (!((res.charAt(start - 1 - OAT.Dom.isIE()) == "\n" || start == 0) && start != end))
+    start = start + txt.length;
+  if (cnt > 1)
+    end = end + (cnt * txt.length) - (OAT.Dom.isIE() * (cnt - 1));
+  else 
+    end = end + txt.length;
+  
+  setPos(query, start, end);
+  query.focus();
+}
+
+function tool_rem_line_start(txt)
+{
+  var query = $('query');
+  var query_value = $v('query').replace("\r",'');
+  var lines = query_value.split("\n");
+
+  var pos = getPos(query);
+  var start = pos[0];
+  var end   = pos[1];
+  var nl = 0;
+  if (start < end)
+    nl = 1;
+  var from  = strCountLines(query_value.substring(0,start));
+  var to    = strCountLines(query_value.substring(start,end - nl)) + from;
+  
+  var res = '';
+  var cnt = 0;
+  for(var i=0;i<lines.length;i++)
+  {
+    if ( from <= i && i <= to && lines[i].substring(0,txt.length) == txt)
+    {
+      res += lines[i].substring(txt.length);
+      cnt++;
+    }
+    else
+      res += lines[i];
+    if (i < lines.length - 1)
+      res += "\n";
+  }
+  query.value = res;
+  
+  if (cnt > 0)
+  {
+    if (!((res.charAt(start - 1 - OAT.Dom.isIE()) == "\n" || start == 0) && start != end))
+      start = start - txt.length;
+    if (cnt > 1)
+      end = end - (cnt * txt.length) - (OAT.Dom.isIE() * (cnt - 1));
+    else 
+      end = end - txt.length;
+  }
+  setPos(query, start, end);
+  query.focus();
+}
+
+function tool_put_around(btxt,atxt)
+{
+  var elm = $('query');
+  var start = 0;
+  var end = 0;
+  
+  var pos = getPos(elm);
+  start = pos[0];
+  end   = pos[1];
+
+  var txt = elm.value.substring(start,end);
+  
+  insert_text(elm,btxt + txt + atxt);
+}
+
+
+function insert_text(elm,txt)
+{
+  var start = 0;
+  var end = 0;
+  
+  var pos = getPos(elm);
+  start = pos[0];
+  end   = pos[1];
+
+  elm.value = elm.value.substring(0,start) + txt + elm.value.substring(end,elm.value.length);
+  
+  end = start + txt.length;
+  setPos(elm, start, end);
+  elm.focus();
+
+}
+
+function setPos(elm, start, end) {
+  if (typeof elm.selectionStart != "undefined" && typeof elm.selectionEnd != "undefined") {
+      elm.setSelectionRange(start, end);
+  } else if (document.selection && document.selection.createRange) {
+      var range_new = elm.createTextRange ();
+      range_new.move ("character", start - strCountLines(elm.value.substring(0,start)));
+      range_new.moveEnd ("character", end - start);
+      range_new.select ();
+  }
+}
+
+function getPos(elm) {
+	if (typeof elm.selectionStart != "undefined" && typeof elm.selectionEnd != "undefined")
+		return [elm.selectionStart,elm.selectionEnd];
+  
+  elm.focus();
+  var range = document.selection.createRange();
+  var stored_range = range.duplicate();
+  stored_range.moveToElementText( elm );
+  stored_range.setEndPoint( 'EndToEnd', range );
+  return [stored_range.text.length - range.text.length,stored_range.text.length];
+};
+
+function strCountLines(txt){
+  var cnt = 0;
+  if (txt.length < 1)
+    return 0;
+  for(var i=1;i<=txt.length;i++)
+  {
+    if(txt.substring(i-1, i) == "\n") 
+    {
+      cnt++;
+    }
+  }
+  return cnt;
+};
+
+toolswin = null;
+
+function tools_popup()
+{
+  if (toolswin == null)
+  {
+    toolswin = new OAT.Window({close:1,min:0,max:0,x:850,y:300,width:200,height:420,title:"Tools",imagePath:"images/"});
+    toolswin.div.style.zIndex = 1013;
+    document.body.appendChild(toolswin.div);
+    toolswin.onclose = function() { OAT.Dom.hide(toolswin.div); }
+    
+    var tools = $('tool').options;
+    toolswin.content.innerHTML = '';
+    for(i = 0;i<tools.length;i++)
+    {
+      if (tools[i].value)
+        toolswin.content.innerHTML += '<button class="tools_but" onclick="' + tools[i].value.replace(/"/g,'&quot;') + '">' + tools[i].text + '</button>';
+    }
+  }
+  OAT.Dom.show(toolswin.div);
+
 }

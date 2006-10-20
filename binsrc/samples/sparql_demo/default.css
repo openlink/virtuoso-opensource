@@ -204,7 +204,7 @@ img.corner {
 
 #import_data_frame {
   border:0px;
-  width: 550px;
+  width: 580px;
   height: 500px;
 }
 
@@ -227,12 +227,12 @@ label.load { font-size: 8pt; font-weight: normal;}
 
 #r_query,
 #query {
-  height: 20ex;
-  width: 550px}
+  height: 30ex;
+  width: 580px}
 
 #r_default-graph-uri,
 #default-graph-uri {
-  width: 550px}
+  width: 580px}
 
 .combo_list_list {
   background-color: white;
@@ -245,7 +245,7 @@ label.load { font-size: 8pt; font-weight: normal;}
   color: white}
 
 .combo_list_input {
-  width: 550px}
+  width: 580px}
 
 #r_explain,
 #explain {
@@ -454,3 +454,14 @@ ul#tabres {
 #sq_content   h5 { font: italic 100% sans-serif }
 #dawg_content h6,
 #sq_content   h6 { font: small-caps 100% sans-serif }
+
+/* ---------------- tools -------------- */
+
+.tools_but {
+  width:190px;
+  font: Icon;
+  border: 1px Solid ThreeDShadow;
+  background: Window;
+  color: WindowText;
+  margin: 2px;
+}

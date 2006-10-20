@@ -208,6 +208,18 @@ WHERE {
               <a href="http://asg.web.cmu.edu/rfc/rfc2518.html" target="_blank">WebDAV</a> 
               repository, making all the test-suite graphs URL accessible.</p>
         
+            <h3> What else is there?</h3>
+            <p>This demo can be also used as reach AJAX interface for Virtuoso SPARQL endpoing
+               <a target="_new" href="/sparql">/sparql</a>. The endpoint supports and 
+               SOAP requests, you can use the WSDL definition - 
+               <a target="_new" href="/sparql/services.wsdl">/sparql/services.wsdl</a> for details.
+               For more information refer to <a href="http://docs.openlinksw.com/virtuoso">Virtuoso Documentation</a>,
+               <a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">Query Service Documentation</a>, 
+               <a href="http://virtuoso.openlinksw.com/wiki/main/">Virtuoso Wiki</a> or 
+               <a href="http://virtuoso.openlinksw.com/blog/">Virtuoso Blog</a>
+            </p>
+
+          
         <h3>Limitations and differences in the demo</h3>
             <p>Virtuoso&#39;s SPARQL compiler is still a work-in-progress (beta quality). 
         Therefore, expect a degree of flux in this demo as the compiler evolves (rapidly).</p>
@@ -254,6 +266,35 @@ WHERE {
           <br/>
           <br/>
           <div id="local_panel">
+<?vsp
+              if (gt (sys_stat ('st_dbms_ver'), '04.50.2918')) 
+              {
+                declare can_sponge integer;
+                can_sponge := coalesce ((select top 1 1
+                             from DB.DBA.SYS_USERS as sup
+                             join DB.DBA.SYS_ROLE_GRANTS as g on (sup.U_ID = g.GI_SUPER)
+                             join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
+                            where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_UPDATE' ), 0);
+?>
+                <div>
+                  <input type="checkbox" value="soft" name="should-sponge" id="should-sponge" checked="checked"<?V either(can_sponge,'',' disabled="disabled"') ?>/>
+                  <label for="should-sponge" class="should-sponge">Retrieve remote RDF data for all missing source graphs</label>
+                  <br/>
+<?vsp
+              if (not(can_sponge))
+              {
+?>
+                  <i>Security restrictions of this server does not allow you to retrieve remote RDF data.
+                  DBA may wish to grant "SPARQL_UPDATE" privilege to "SPARQL" account to remove the restriction.</i>
+                  <br/>
+<?vsp
+              }
+?>
+                </div>
+
+<?vsp
+              } else {
+?>
                 <label for="load">RDF Data Set Processing Options:</label>
                 <div>
                   <input type="radio" value="ifnodata" name="load" id="load" checked="checked"/>
@@ -267,16 +308,19 @@ WHERE {
             </div>
             <br/>
 <?vsp
+              }
+?>
+<!--<?vsp
               if (gt (sys_stat ('st_dbms_ver'), '04.50.2915')) 
               {
 ?>
                 <input type="checkbox" value="yes" name="usesoap" id="usesoap" onchange="usesoap_change(this)" onclick="usesoap_change(this)"/>
                 <label for="usesoap">Send SOAP Request</label>
                 <br/>
-                <br/>
 <?vsp
               }
-?>
+?>-->
+                <br/>
           </div>
           <div id="remote_panel">
             <label for="service">Query Service Endpoint</label>
@@ -297,9 +341,77 @@ WHERE {
               default_dgu := 'http://' || default_dgu || '/dataspace';
 ?>
           <input id="default-graph-uri" name="default-graph-uri" value="<?V default_dgu ?>" onchange="OAT.Dom.hide($('view_data_file'));"/>
+
           <br/>
+              <br/>
+              <div id="topbox_ctl" class="ctl_right">
+                <select name="prefix" id="prefix" onchange="prefix_insert()">
+    			        <option value="">-- Prefixes --</option>
+    			        <option value="PREFIX cc: &lt;http://web.resource.org/cc/&gt;">CC</option>
+    			        <option value="PREFIX dataview: &lt;http://www.w3.org/2003/g/data-view#&gt;">DATAVIEW</option>
+    			        <option value="PREFIX dc: &lt;http://purl.org/dc/elements/1.1/&gt;">DC</option>
+    			        <option value="PREFIX dcterms: &lt;http://purl.org/dc/elements/1.1/&gt;">DCTERMS</option>
+    			        <option value="PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;">FOAF</option>
+    			        <option value="PREFIX owl: &lt;http://www.w3.org/2002/07/owl#&gt;">OWL</option>
+    			        <option value="PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;">RDF</option>
+    			        <option value="PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;">RDFS</option>
+    			        <option value="PREFIX rss: &lt;http://purl.org/rss/1.0/&gt;">RSS</option>
+    			        <option value="PREFIX sioc: &lt;http://rdfs.org/sioc/ns#&gt;">SIOC</option>
+    			        <option value="PREFIX sioct: &lt;http://rdfs.org/sioc/types#&gt;">SIOCT</option>
+    			        <option value="PREFIX skos: &lt;http://www.w3.org/2004/02/skos/core#&gt;">SKOS</option>
+    			        <option value="PREFIX vs: &lt;http://www.w3.org/2003/06/sw-vocab-status/ns#&gt;">VS</option>
+    			        <option value="PREFIX wot: &lt;http://xmlns.com/wot/0.1/&gt;">WOT</option>
+    			        <option value="PREFIX xhtml: &lt;http://www.w3.org/1999/xhtml&gt;">XHTML</option>
+    			        <option value="PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;">XSD</option>
+    			      </select>
+    	          <select name="template" id="template" onchange="template_insert()">
+				          <option value="">-- Template --</option>
+				          <option value="SELECT DISTINCT ?s ?p ?o
+WHERE
+{
+   ?s ?p ?o .
+}">Select</option>
+
+		              <option value="CONSTRUCT
+{
+   ?s ?p ?o .
+}
+WHERE
+{
+   ?s ?p ?o .
+}">Construct</option>
+		              <option value="ASK
+WHERE
+{
+   ?s ?p ?o .
+}">Ask</option>
+				        </select>
+    	          <select name="tool" id="tool" onchange="tool_invoke()">
+				          <option value="">-- Tools --</option>
+				          <option value="tool_put_line_start('#')">Comment Selection</option>
+				          <option value="tool_rem_line_start('#')">Uncomment Selection</option>
+				          <option value="tool_put_line_start('    ')">Indent Selection</option>
+				          <option value="tool_rem_line_start('    ')">Remove Indent Selection</option>
+				          <option value="tool_put_around('OPTIONAL\n{\n','\n}\n')">Make Optional </option>
+				          <option value="tool_put('BASE <http://example.org/base>')">put BASE</option>
+				          <option value="tool_put('FROM <http://example.org/from>')">put FROM</option>
+				          <option value="tool_put('FROM NAMED <http://example.org/named>')">put FROM NAMED</option>
+				          <option value="tool_put('UNION\n')">put UNION</option>
+				          <option value="tool_put('GRAPH')">put GRAPH</option>
+				          <option value="tool_put('ORDER BY')">put ORDER BY</option>
+				          <option value="tool_put('ORDER BY ASC(?x)')">put ORDER BY ASC()</option>
+				          <option value="tool_put('ORDER BY DESC(?x)')">put ORDER BY DESC()</option>
+				          <option value="tool_put('LIMIT 10')">put LIMIT</option>
+				          <option value="tool_put('OFFSET 10')">put OFFSET</option>
+				          <option value="tool_put('FILTER ( ?x < 3 ) .')">put Simple Filter</option>
+				          <option value="tool_put('FILTER regex( str(?name), &quot;Jane&quot;, &quot;i&quot; ) .')">put Regexp Filter</option>
+				          <option value="tool_put('FILTER ( bound(?x) ) .')">put Bound Filter</option>
+				          <option value="tool_put('FILTER ( ?date > &quot;2005-01-01T00:00:00Z&quot;^^xsd:dateTime ) .')">put Date Filter</option>
+				        </select>
+				        <a href="#" onclick="tools_popup()"><img src="images/cr16-action-window_new.png" alt="Tools popup" title="Tools popup" border="0"/></a>
+				      </div>
           <label for="query">SPARQL Query</label><br/>
-              <textarea id="query" name="query" onchange="format_select(this)" onkeyup="format_select(this)">SELECT * WHERE {?s ?p ?o}</textarea>
+              <textarea id="query" name="query" onchange="format_select(this)" onkeyup="format_select(this)" wrap="off">SELECT * WHERE {?s ?p ?o}</textarea>
           <br/>
           <input type="button" id="explain" name="explain" value="Execution plan" onclick="rq_query('c')">
           <label for="format">Output format</label>
@@ -320,10 +432,11 @@ WHERE {
             <option value="100">100</option>
             <option value="200">200</option>
           </select>
-              <br />
+              <br/>
+              <div style="height:1px;"></div> <!-- IE hack -->
               <input type="button" value="Store" onclick="store_click()" class="ctl_right">
               <input type="button" value="Load" onclick="load_click()" class="ctl_right">
-          <input type="button" value="Run Query" onclick="rq_query()">
+              <input type="button" value="Run Query" onclick="rq_query(false,'ndl')">
               <input type="reset" value="Reset" onclick="reset_click()">
           <br/><br/>
         </form>
