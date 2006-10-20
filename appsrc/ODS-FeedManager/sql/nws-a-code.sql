@@ -177,21 +177,21 @@ create procedure ENEWS.WA.session_restore(
   if (not is_empty_or_null(options))
     domain_id := get_keyword('domain', options);
   if (is_empty_or_null(domain_id))
-    domain_id := atoi(request[5]);
+    domain_id := cast(request[5] as integer);
   if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
     domain_id := -1;
 
 _end:
   domain_id := cast(domain_id as integer);
   user_id := -1;
-  for (select U.U_ID,
-              U.U_NAME,
-              U.U_FULL_NAME
-         from DB.DBA.VSPX_SESSION S,
-              WS.WS.SYS_DAV_USER U
-        where S.VS_REALM = realm
-          and S.VS_SID   = sid
-          and S.VS_UID   = U.U_NAME) do
+  for (select U_ID,
+              U_NAME,
+              U_FULL_NAME
+         from DB.DBA.VSPX_SESSION,
+              WS.WS.SYS_DAV_USER
+        where VS_REALM = realm
+          and VS_SID   = sid
+          and VS_UID   = U_NAME) do
   {
     user_id   := U_ID;
     user_name := ENEWS.WA.user_name(U_NAME, U_FULL_NAME);
@@ -697,10 +697,12 @@ create procedure ENEWS.WA.domain_name (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.domain_description (
   in domain_id integer)
 {
-  return coalesce((select WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id), 'OFM Instance');
+  return coalesce((select coalesce(WAI_DESCRIPTION, WAI_NAME) from DB.DBA.WA_INSTANCE where WAI_ID = domain_id), 'OFM Instance');
 }
 ;
 
@@ -718,15 +720,6 @@ create procedure ENEWS.WA.domain_gems_name (
   in domain_id integer)
 {
   return concat(ENEWS.WA.domain_name(domain_id), '_Gems');
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ENEWS.WA.domain_description (
-  in domain_id integer)
-{
-  return coalesce((select coalesce(WAI_DESCRIPTION, WAI_NAME) from DB.DBA.WA_INSTANCE where WAI_ID = domain_id), 'OFM Instance');
 }
 ;
 
