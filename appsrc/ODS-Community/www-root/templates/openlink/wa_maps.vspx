@@ -68,7 +68,7 @@
          <td>
           <table border="0" cellpadding="0" cellspacing="0" id="main">
             <tr>
-              <td colspan="2" id="topnav"><vm:xd-logo image="community_blank_thin550.jpg"/></td>
+              <td colspan="2" id="topnav"><vm:xd-logo image="comm_banner_sml.jpg"/></td>
               <td style="text-align:right;background:#86B9D9;padding-right:10px">
                    <span class="lftmenu1"><vm:login-info format_string="%s"/><br/>&nbsp;</span>
               </td>
