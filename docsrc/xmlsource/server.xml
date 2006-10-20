@@ -1908,6 +1908,75 @@ Segment1	= 100M, db-seg1-1.db, db-seg1-2.db
 Segment2	= 100M, db-seg2-1.db
 </programlisting>
 </sect3>
+               <sect3 id="indexdefragm">
+               <title>Index Defragmentation</title>
+               <para>
+When data is inserted into tables, database pages are split and typically pages end up not being fully utilized.
+If data is inserted in ascending order of key value, which is often the case, space utilization is more efficient.
+Still, gaps can be left by updates, deletions and page splitting.
+Virtuoso has an autocompact feature which will take groups of adjacent dirty pages and see if it can fit
+the same content on a smaller number of pages. It will rewrite the pages to save space before
+writing these to disk. This operates automatically. Statistics on autocompaction are shown beside
+the Read ahead status line of the result set of status ('');. The number of pages affected by
+autocompaction and the number of resulting pages are shown. The numbers are cumulative since the start of the instance.
+</para>
+               <para>
+Autocompact is non-locking and if pages are busy, they will not be touched. Only relatively old dirty pages,
+about to be written to disk are considered for compaction, not interfering with the hottest part of the working set.
+</para>
+               <para>
+The automatic compaction is not however effective if pages are updated singly, never making stretches of
+consecutive dirty pages. Therefore a manual compaction function called DB.DBA.VACUUM () is also offered.
+</para>
+               <para>
+The vacuum stored procedure gets an optional table and index name and will read the index from beginning to end.
+If neither argument is given, all indices of all tables will be compacted. If only the table is given, all
+indices of this table will be compacted.
+</para>
+               <para>
+If consecutive leaves can be fit on fewer pages than they now occupy, this will rewrite them and free the pages left over.
+This does however require transient space since the pages are not really replaced until the next checkpoint, hence a
+vacuum operation can run out of disk. Using the checkpoint statement to force a checkpoint will free the space.
+</para>
+               <para>
+The effects and need for explicitly vacuuming a database can be assessed with the DB.DBA.SYS_INDEX_SPACE_STATS view.
+</para>
+               <para>Running:
+</para>
+<programlisting>
+select * from DB..SYS_INDEX_SPACE_STATS order by ISS_PAGES desc;
+</programlisting>
+               <para>
+produces a result set with the most space consuming index on top. ISS_PAGES is the total count of pages.
+ISS_ROW_BYTES is the byte count of the rows. If dividing the total count of bytes by the count of pages is much
+below 8172, (8K - 20), chances are that vacuuming the index may save space. Note that blobs are not affected by vacuuming.
+If the blobs are small enough to fit on the row as normal strings they are already there.
+Otherwise they occupy the needed number of pages and cannot be made more compact.
+</para>
+               <para>
+Note that querying the SYS_INDEX_SPACE_STATS view will always read through all the allocated pages of the database
+and may take a while. The operation is not locking. Only the state as of the last checkpoint will be shown, hence
+it is a good idea to run the checkpoint statement before querying this view.
+</para>
+               <para>
+Examples:
+</para>
+<programlisting>
+DB..VACUUM ();
+-- Compact all tables and indices of the Virtuoso instance
+</programlisting>
+<programlisting>
+Db..VACUUM ('WS.%');
+-- compact all tables of the WS. qualifier
+</programlisting>
+<programlisting>
+DB..VACUUM ('DB.DBA.RDF_QUAD', 'RDF_QUAD_PGOS');
+-- compact the rdf_quad_phgos index of the rdf_quad table.
+</programlisting>
+               <para>
+Virtuoso has an autocompact feature.
+</para>
+</sect3>
 </sect2>
 
 	<sect2 id="COMMANDLINE">

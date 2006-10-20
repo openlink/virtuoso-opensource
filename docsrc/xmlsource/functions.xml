@@ -97,7 +97,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &concat; &concatenate; &connection_get; &connection_id; &connection_is_dirty;
 &connection_set; &connection_vars; &connection_vars_set; &contains;
 &cov_load; &cov_report; &cov_store; &createXML; &curdate;
-&current_charset;
+&current_charset; &vacuum;
 
 &dateadd; &datediff; &datestring; &datestring_gmt;
 &dav_api_add; &dav_api_change; &dav_api_lock; &dav_api_search; &dav_api_user;
