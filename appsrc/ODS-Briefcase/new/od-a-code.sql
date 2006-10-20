@@ -632,9 +632,9 @@ create procedure ODRIVE.WA.str2vector(
 create procedure ODRIVE.WA.utf2wide (
   inout S any)
 {
-  declare exit handler for sqlstate '*' { return S; };
-
+  if (isstring (S))
   return charset_recode (S, 'UTF-8', '_WIDE_');
+  return S;
 }
 ;
 
@@ -643,9 +643,9 @@ create procedure ODRIVE.WA.utf2wide (
 create procedure ODRIVE.WA.wide2utf (
   inout S any)
 {
-  declare exit handler for sqlstate '*' { return S; };
-
+  if (iswidestring (S))
   return charset_recode (S, '_WIDE_', 'UTF-8' );
+  return S;
 }
 ;
 
@@ -1069,10 +1069,23 @@ create procedure ODRIVE.WA.domain_name ()
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.domain_is_public (
   in domain_id integer)
 {
   return coalesce((select WAI_IS_PUBLIC from DB.DBA.WA_INSTANCE where WAI_ID = domain_id), 0);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.domain_description ()
+{
+  declare account_id integer;
+
+  account_id := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = ODRIVE.WA.account());
+  return coalesce((select TOP 1 coalesce(WAI_DESCRIPTION, WAI_NAME) from DB.DBA.WA_MEMBER join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST where WAI_TYPE_NAME = 'oDrive' and WAM_USER = account_id and WAM_MEMBER_TYPE = 1), 'Briefcase Instance');
 }
 ;
 

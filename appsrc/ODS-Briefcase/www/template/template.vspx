@@ -38,6 +38,8 @@
       http(ODRIVE.WA.geo_url());
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css" />
+    <meta name="dc.description" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description ()) ?>" />
+    <meta name="dc.title" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description ()) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <script language="JavaScript" type="text/javascript" src="js/odrive.js" />
     <?vsp http('</script>'); ?>
