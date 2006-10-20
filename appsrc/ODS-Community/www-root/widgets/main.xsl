@@ -360,6 +360,8 @@
       <xsl:text>&#10;</xsl:text>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
       <xsl:text>&#10;</xsl:text>
+      
+      
       <xsl:apply-templates/>
     </head>
   </xsl:template>
@@ -611,6 +613,7 @@ window.onload = function (e)
           self.return_url := self.return_url || sprintf ('?page=%U', self.page);
        ]]></v:after-data-bind>
       </v:login>
+      <div id="HD">
        <ods:ods-bar app_type='Community'/>
       <script type="text/javascript">
        <![CDATA[
@@ -619,8 +622,10 @@ window.onload = function (e)
       </script>
 
 
-
+      </div>
+      <div id="MD">
         <xsl:apply-templates/>
+      </div>
       </v:form>
     </body>
   </xsl:template>
@@ -1482,7 +1487,7 @@ window.onload = function (e)
               <div class="lftmenu">
                 <table width="175" border="0" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td colspan="2" class="lftmenu_title"><img src="/community/public/images/user_16.gif" width="16" height="16" /> New Members</td>
+                    <td class="lftmenu_title"><img src="/community/public/images/user_16.gif" width="16" height="16" /> New Members</td>
                   </tr>
                   <tr>
                     <td class="lftmenu1">
@@ -1511,10 +1516,9 @@ window.onload = function (e)
                      </ul>
 
                     </td>
-                    <td>&nbsp;</td>
                   </tr>
                   <tr>
-                    <td class="lftmenu_footer"><img src="/community/public/images/nav_arrrow1.gif" width="8" height="8" />
+                    <td class="lftmenu_footer">
                       <v:url name="invite2" url="--''">
                        <xsl:attribute name="value"> More...</xsl:attribute>
                         <v:before-render><![CDATA[
@@ -1522,7 +1526,6 @@ window.onload = function (e)
                         ]]></v:before-render>
                       </v:url>
                     </td>
-                    <td class="lftmenu_footer_img"><img src="/community/public/images/eaeaeecorner.gif" width="15" height="15" align="absbottom" /></td>
                   </tr>
                 </table>
                 </div>
@@ -1537,7 +1540,7 @@ window.onload = function (e)
   
       <table width="175" border="0" cellpadding="0" cellspacing="0">
         <tr>
-          <td colspan="2" class="lftmenu_title"><img src="/community/public/images/edit_16.gif" width="16" height="16" /> New Blogs </td>
+          <td class="lftmenu_title"><img src="/community/public/images/edit_16.gif" width="16" height="16" /> New Blogs </td>
         </tr>
         <tr>
           <td class="lftmenu1"><ul>
@@ -1560,11 +1563,9 @@ window.onload = function (e)
                           }
                       ?>
           </ul></td>
-          <td nowrap="nowrap"><p>&nbsp;</p></td>
         </tr>
         <tr>
-          <td class="lftmenu_footer"><img src="/community/public/images/nav_arrrow1.gif" width="8" height="8" /><a href="<?V wa_expand_url (self.wa_home||'/app_inst.vspx?app=WEBLOG2', self.login_pars)?>"> More...</a></td>
-          <td class="lftmenu_footer_img"><img src="/community/public/images/eaeaeecorner.gif" width="15" height="15" align="absbottom" /></td>
+          <td class="lftmenu_footer"><a href="<?V wa_expand_url (self.wa_home||'/app_inst.vspx?app=WEBLOG2', self.login_pars)?>"> More...</a></td>
         </tr>
       </table>
       </div>
@@ -1581,7 +1582,7 @@ window.onload = function (e)
       <div class="lftmenu">
       <table width="175" border="0" cellpadding="0" cellspacing="0">
         <tr>
-          <td colspan="2" class="lftmenu_title"><img src="/community/public/images/group_16.gif" width="16" height="16" /> New Communities </td>
+          <td class="lftmenu_title"><img src="/community/public/images/group_16.gif" width="16" height="16" /> New Communities </td>
         </tr>
         <tr>
           <td class="lftmenu1">
@@ -1610,11 +1611,9 @@ window.onload = function (e)
          </ul>
           
           </td>
-          <td nowrap="nowrap"><p>&nbsp;</p></td>
         </tr>
         <tr>
-          <td class="lftmenu_footer"><img src="/community/public/images/nav_arrrow1.gif" width="8" height="8" /><a href="<?V wa_expand_url ('?page=app_inst&app=Community', self.login_pars) ?>"> More...</a></td>
-          <td class="lftmenu_footer_img"><img src="/community/public/images/eaeaeecorner.gif" width="15" height="15" align="absbottom" /></td>
+          <td class="lftmenu_footer"><a href="<?V wa_expand_url ('?page=app_inst&app=Community', self.login_pars) ?>"> More...</a></td>
         </tr>
       </table>
       </div>
@@ -1762,7 +1761,7 @@ window.onload = function (e)
            ?>
          </ul>
          </td></tr>
-         <tr><td valign="bottom"><img src="/community/public/images/nav_arrrow1.gif" width="8" height="8" /><span style="font-size: 70%"> <a href="<?V wa_expand_url ('?page=app_inst&app=eNews2', self.login_pars) ?>"><strong>See All Today's News...</strong></a></span>
+         <tr><td valign="bottom"><span style="font-size: 70%"> <a href="<?V wa_expand_url ('?page=app_inst&app=eNews2', self.login_pars) ?>"><strong>See All Today's News...</strong></a></span>
          </td></tr>
         </table>
         <br/>
@@ -1907,12 +1906,10 @@ window.onload = function (e)
               </td>
             </tr>
             <tr>
-              <td id="mainarea" ><br/>
-              <p><img src="/community/public/images/nav_arrrow1.gif" width="8" height="8" />
+              <td class="map_ctr">
                <v:url name="_map"
-                    value="--'<strong>Community geo-location</strong>'" format="%s"
+                        value="--'Community geo-location'" format="%s"
                       url="--sprintf ('index.vspx?page=wa_maps', self.user_name)" />
-             </p>
             </td>
             </tr>
           </table>   
@@ -2585,9 +2582,25 @@ window.onload = function (e)
          
              if(_lat is not NULL and _lng is not NULL)
              {
+              
+              declare _inst_title,_inst_desc varchar;
+              
+              _inst_title:=replace (sprintf ('%U',self.comm_wainame),'+', '%2B');
+              
+              select WAI_DESCRIPTION into _inst_desc from wa_instance where WAI_NAME=self.comm_wainame;
+              
+              if (length(_inst_desc)<1){
+                _inst_desc:=_inst_title;
+              }else 
+              {
+                _inst_desc:=replace (sprintf ('%U',_inst_desc),'+', '%2B');
+                _inst_title:=_inst_desc;
+              }
 ?>
       <meta name="ICBM" content="<?V sprintf( '%.06f' , _lat)?>, <?V sprintf( '%.06f' , _lng)?>" />
-      <meta name="DC.title" content="'<?Vreplace (sprintf ('%U',self.comm_wainame),'+', '%2B')?>" />
+      <meta name="DC.title" content="'<?V _inst_title?>" />
+      <meta name="DC.description" content="<?V _inst_desc ?>" />
+
 <?vsp
              }
         self.has_geolatlng:=1;
@@ -2604,7 +2617,7 @@ window.onload = function (e)
  <table> 
   <tr>
    <td>
-    <vm:if test="self.has_geolatlng">
+    <vm:if test="self.has_geolatlng and exists(select 1 from ODS..APP_PING_REG,ODS..SVC_HOST where SH_ID=AP_HOST_ID and SH_URL like 'http://geourl.org%' and AP_WAI_ID=self.comm_id)">
 
     <a href="http://geourl.org/near/?p=<?Vself.ur||self.comm_home?>" target="_blank">
       <img alt="GeoURL" border="0">
