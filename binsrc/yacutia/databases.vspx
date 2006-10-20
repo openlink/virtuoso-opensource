@@ -462,7 +462,7 @@ ORDER BY sch_name"
 		      xhtml_alt="Privileges On Selected"
 		      xhtml_title="Privileges On Selected"
 		      text="&#160;Privileges On Selected"
-		      value="images/icons/security_16.png">
+		      value="images/icons/key_16.png">
 		      <v:on-post>
 			self.grant_sel (self."ds_tables", 'table', e);
 		      </v:on-post>
@@ -590,7 +590,7 @@ ORDER BY sch_name"
 		      xhtml_alt="Privileges On Selected"
 		      xhtml_title="Privileges On Selected"
 		      text="&#160;Privileges On Selected"
-		      value="images/icons/security_16.png">
+		      value="images/icons/key_16.png">
 		      <v:on-post>
 			self.grant_sel (self."ds_views", 'view', e);
 		      </v:on-post>
@@ -728,7 +728,7 @@ ORDER BY sch_name"
 		      xhtml_alt="Privileges On Selected"
 		      xhtml_title="Privileges On Selected"
 		      text="&#160;Privileges On Selected"
-		      value="images/icons/security_16.png">
+		      value="images/icons/key_16.png">
 		      <v:on-post>
 			self.grant_sel (self."ds_procs", 'procedure', e);
 		      </v:on-post>
@@ -851,7 +851,7 @@ ORDER BY sch_name"
 		      xhtml_alt="Privileges On Selected"
 		      xhtml_title="Privileges On Selected"
 		      text="&#160;Privileges On Selected"
-		      value="images/icons/security_16.png">
+		      value="images/icons/key_16.png">
 		      <v:on-post>
 			self.grant_sel (self."ds_udt", 'type', e);
 		      </v:on-post>
