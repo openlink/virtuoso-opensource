@@ -46,6 +46,7 @@ create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar
         dir := subseq (RES_FULL_PATH, 0, pos+1);
         album := subseq (RES_FULL_PATH, pos);
         
+        user_pwd := pwd_magic_calc(U_NAME,U_PWD, 1);
         -- Predictes --
         post_iri    := gallery_post_iri(RES_FULL_PATH);
         forum_iri   := photo_iri (WAI_NAME);
@@ -75,7 +76,6 @@ create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar
 	        DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
 	        DB.DBA.RDF_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
 	  }
-        user_pwd := pwd_magic_calc(U_NAME,U_PWD, 1);
 
         private_tags := DB.DBA.DAV_PROP_GET(RES_FULL_PATH,':virtprivatetags',U_NAME,user_pwd);
 
