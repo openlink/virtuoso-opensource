@@ -832,6 +832,7 @@ extern unsigned long main_continuation_reason;
 #define MAIN_CONTINUE_ON_CHECKPOINT	0
 #define MAIN_CONTINUE_ON_SCHEDULER	1
 void sched_do_round (void);
+void sched_run_at_start (void);
 void sched_set_thread_count (void);
 
 caddr_t box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,

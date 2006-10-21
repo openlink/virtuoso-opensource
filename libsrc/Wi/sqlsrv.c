@@ -3255,6 +3255,9 @@ sql_code_arfw_global_init ()
   sqls_arfw_define_uddi ();
   sqls_arfw_define_imsg ();
   sqls_arfw_define_auto ();
+#if UNIVERSE  
+  sqls_arfw_define_vdb ();
+#endif  
 }
 
 

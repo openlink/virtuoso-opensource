@@ -2254,12 +2254,32 @@ create procedure DB.DBA.__INFORMIX_SYS_COL_STAT (in DSN varchar, in RT_NAME varc
 ;
 
 
+create procedure SYS_STAT_VDB_SYNC ()
+{
+  declare _ds_conn_str any;
+  for select RT_DSN, RT_REMOTE_NAME, DS_CONN_STR, RT_NAME
+    from DB.DBA.SYS_REMOTE_TABLE, DB.DBA.SYS_DATA_SOURCE where RT_DSN = DS_DSN do
+      {
+	declare rc int;
+        _ds_conn_str := deserialize (DS_CONN_STR);
+	rc := SYS_STAT_ANALYZE_VDB (RT_DSN, RT_REMOTE_NAME, _ds_conn_str, RT_NAME, 10, 1);
+	if (rc = 1)
+	  {
+	    commit work;
+	  }
+      }
+}
+;
+
+
 --!AWK PUBLIC
 create procedure SYS_STAT_ANALYZE_VDB (
 	in _ds_dsn varchar,
 	in _rt_remote_name varchar,
 	in _ds_conn_str any,
-	in tb_name varchar
+	in tb_name varchar,
+	in perc_trsh int := 0,
+	in logerr int := 0
 	)
 {
       declare vdb_stats_mapper varchar;
@@ -2279,6 +2299,7 @@ create procedure SYS_STAT_ANALYZE_VDB (
 	goto map_done;
 
       declare res, _stat, _meta, _err any;
+  _stat := '00000';
       if (0 <> exec (sprintf ('"%I" (?, ? ,?)', vdb_stats_mapper),
 	_stat, _err, vector (_ds_dsn, tb_name, _rt_remote_name), 10000, _meta, res))
 	goto map_done;
@@ -2295,6 +2316,50 @@ create procedure SYS_STAT_ANALYZE_VDB (
       if (length (res[0]) < 7)
 	goto map_done;
 
+  if (perc_trsh > 0)
+    {
+      foreach (any elm in res) do
+	{
+	  declare col_name varchar;
+	  declare nrows, n_distinct int;
+	  declare onrows, on_distinct int;
+	  declare _percent, _base int;
+
+
+	  col_name := elm[0];
+	  n_distinct := elm[1];
+	  nrows := elm[6];
+
+	  whenever not found goto update_stats;
+	  select CS_N_DISTINCT, CS_N_ROWS into on_distinct, onrows
+	      from DB.DBA.SYS_COL_STAT where CS_TABLE = tb_name and CS_COL = col_name;
+
+	  if (nrows <> onrows)
+	    {
+	      _base := __min (onrows, nrows);
+	      if (_base > 0)
+		_percent := ((abs (nrows - onrows)*100)/_base);
+ 	      else
+		_percent := 100;
+	      if (_percent >= perc_trsh)
+		goto update_stats;
+	    }
+
+	  if (n_distinct <> on_distinct)
+	    {
+	      _base := __min (n_distinct, on_distinct);
+	      if (_base > 0)
+	        _percent := ((abs (n_distinct - on_distinct)*100)/_base);
+	      else
+	        _percent := 100;
+	      if (_percent >= perc_trsh)
+		goto update_stats;
+	    }
+
+	}
+      return 0;
+    }
+update_stats:;
       declare res_len, res_inx integer;
       res_len := length (res);
       res_inx := 0;
@@ -2318,8 +2383,14 @@ create procedure SYS_STAT_ANALYZE_VDB (
 	 }
       __ddl_changed (tb_name);
   -- stats are done
+  if (logerr)
+    {
+      log_message (sprintf ('The statistics for table %s has been changed', tb_name));
+    }
   return 1;
 map_done:;
+  if (logerr and _stat <> '00000')
+    log_message (sprintf ('Can\'t contact to the DSN "%s" to refresh statistics on table "%s"', _ds_dsn, tb_name));
   -- stats are not done
   return 0;
 }
@@ -5707,5 +5778,29 @@ finish:;
 
   string_to_file ('../vad/install.res', out_message, -2);
   return;
+}
+;
+
+create procedure DB.DBA.VACUUM (in table_name varchar := '%', in index_name varchar := '%')
+{
+  declare stmt, stat, msg varchar;
+  set isolation='uncommitted';
+  for select distinct KEY_TABLE as _table_name, KEY_NAME as _index_name from SYS_KEYS where
+    KEY_TABLE like table_name and KEY_NAME like index_name and KEY_MIGRATE_TO is null do
+    {
+      if (not exists (select 1 from SYS_VIEWS where V_NAME = _table_name) and
+	  not exists (select 1 from SYS_REMOTE_TABLE where RT_NAME = _table_name))
+         {
+	   stmt := sprintf ('select count(*) from "%I"."%I"."%I" table option (index %I, vacuum 0)',
+	     	 name_part (_table_name,0),
+	     	 name_part (_table_name,1),
+	     	 name_part (_table_name,2),
+	     	 name_part (_index_name,2)
+	     	 );
+	   stat := '00000';
+	   exec (stmt, stat, msg, vector (), 0);
+	   dbg_printf ('%s %s', stat, stmt);
+         }
+    }
 }
 ;

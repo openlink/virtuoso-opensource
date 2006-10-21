@@ -807,6 +807,7 @@ main (int argc, char **argv)
   /* Now we are ready to block on the semaphore */
   sigh_action (SIGH_SHUTDOWN);
   virtuoso_server_initialized = 1;
+  sched_run_at_start ();
 
   for (;;)
     {

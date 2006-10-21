@@ -48,7 +48,7 @@ sched_set_thread_count (void)
 }
 
 void
-sched_do_round (void)
+sched_do_round_1 (const char * text)
 {
   caddr_t err = NULL;
   query_t *qr;
@@ -61,7 +61,7 @@ sched_do_round (void)
   sched_cli->cli_qualifier = box_string (org_qual);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, sched_cli);
   local_start_trx (sched_cli);
-  qr = sql_compile ("scheduler_do_round(0)", sched_cli, &err, SQLC_DEFAULT);
+  qr = sql_compile (text, sched_cli, &err, SQLC_DEFAULT);
   if (!err)
     err = qr_quick_exec (qr, sched_cli, "", NULL, 0);
   qr_free (qr);
@@ -79,6 +79,21 @@ sched_do_round (void)
 }
 
 void
+sched_run_at_start (void)
+{
+#if UNIVERSE 
+  sched_do_round_1 ("DB.DBA.SYS_STAT_VDB_SYNC ()");
+#endif  
+}
+
+void
+sched_do_round (void)
+{
+  sched_do_round_1 ("scheduler_do_round(0)");
+}
+
+
+void
 ddl_repl_init (void)
 {
 }
@@ -86,8 +101,5 @@ ddl_repl_init (void)
 void
 bif_repl_init (void)
 {
-  if (cfg_scheduler_period)
-    {
       sched_cli = client_connection_create ();
-    }
 }
