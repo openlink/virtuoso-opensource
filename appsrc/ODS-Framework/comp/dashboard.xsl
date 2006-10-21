@@ -1657,7 +1657,7 @@
         }
 	    ?>
       </div> <!-- content-pane -->
-      <div class="w_footer"> </div> <!-- w_footer -->
+      <div class="w_footer">&amp;nbsp;</div> <!-- w_footer -->
     </div> <!-- widget -->
   </xsl:template>
 
@@ -1959,7 +1959,14 @@
               from WA_USER_APP_INSTANCES
               where user_id = self.u_id and app_type = 'oMail';
               
-              http(sprintf('<a href="%s"> You have (%d) new message%s. </a>',wa_expand_url (_inst_url, self.login_pars),dta[1],case when dta[1]<> 1 then 's' else '' end));
+              if (dta[1] is null or dta[1] = 0) 
+                http (sprintf ('<a href="%s">You have no new messages</a>',
+                               wa_expand_url (_inst_url, self.login_pars)));
+              else
+                http (sprintf ('<a href="%s"> You have %d new message%s. </a>',
+                             wa_expand_url (_inst_url, self.login_pars),
+                             dta[1],
+                             case when dta[1]<> 1 then 's' else '' end));
          ?>
          </vm:if>
          <vm:if test="has_no_appoftype=1">
