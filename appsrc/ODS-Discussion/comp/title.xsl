@@ -27,11 +27,8 @@
                 xmlns:v="http://www.openlinksw.com/vspx/"
                 xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
   <xsl:template name="title">
-    <table width="100%"  border="0" cellpadding="0" cellspacing="0">
-      <tr>
-        <td class="header_img"><img src="images/nntpserverhome400.jpg" alt="" name=""/></td>
-        <td class="header_top">ODS Discussion</td>
-      </tr>
-    </table>
+    <div class="page_head">
+      <img src="images/disc_banner_sml.jpg" alt="ODS-Discussion" name=""/>
+    </div>
   </xsl:template>
 </xsl:stylesheet>

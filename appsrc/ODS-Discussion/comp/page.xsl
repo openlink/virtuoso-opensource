@@ -43,13 +43,15 @@
 	}
         self.host := http_request_header (lines, 'Host');
 	   ]]></v:on-init>
+      <div id="HD">
      <ods:ods-bar app_type='nntpf'/>
       <script type="text/javascript">
        <![CDATA[
 //        document.getElementById('ods-bar-sep').style.display='none';
         ]]>
       </script>
-
+      </div>
+      <div id="MD">
       <!--html-->
 
 	<xsl:apply-templates />
@@ -63,6 +65,7 @@
 	    http_rewrite ();
 	  }
       ?>
+      </div> <!-- MD -->
     </xsl:template>
     <xsl:template match="vm:header">
       <header>

@@ -29,13 +29,22 @@ body
 {
   font-size: 0.7em;
   color: #202020;
-#	background-color: rgb(204,204,204);
   background-color: #99B3C5;
   font-family: Verdana, Arial, Helvetica, sans-serif;
   border: 0;
   margin: 0;
   padding: 0;
 }
+
+#HD { float: left; clear: left; width: 100%}
+#MD { float: left; clear: left; width: 100%}
+
+div.page_head {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #fff;
+  vertical-align: middle}
 
 a 
 {
