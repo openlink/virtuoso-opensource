@@ -937,7 +937,7 @@ function tools_popup()
 {
   if (toolswin == null)
   {
-    toolswin = new OAT.Window({close:1,min:0,max:0,x:850,y:300,width:200,height:420,title:"Tools",imagePath:"images/"});
+    toolswin = new OAT.Window({close:1,min:0,max:0,x:850,y:300,width:200,height:440,title:"Statement Help",imagePath:"images/"});
     toolswin.div.style.zIndex = 1013;
     document.body.appendChild(toolswin.div);
     toolswin.onclose = function() { OAT.Dom.hide(toolswin.div); }
