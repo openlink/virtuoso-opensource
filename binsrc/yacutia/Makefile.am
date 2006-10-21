@@ -93,14 +93,4 @@ EXTRA_DIST = \
 	README \
 	syntax/*.css \
 	syntax/*.js \
-	toolkit/*.js \
-	toolkit/AUTHORS \
-	toolkit/COPYING \
-	toolkit/docs/*.css \
-	toolkit/docs/*.html \
-	toolkit/docs/*.js \
-	toolkit/HOWTO \
-	toolkit/images/*.gif \
-	toolkit/images/*.png \
-	toolkit/LICENSE \
 	vad_version
