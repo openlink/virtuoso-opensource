@@ -244,6 +244,7 @@ create procedure t_populate_sioc (in path varchar)
   s := strstr(data,'<?vsp');
   e := strstr(data,'<rdf:RDF');
   
+  if (s is not null)
   data := substring(data,1,s) || subseq(data,e);
   
   DELETE FROM DB.DBA.RDF_QUAD WHERE G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph);

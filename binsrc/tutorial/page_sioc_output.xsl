@@ -76,6 +76,7 @@
 	      <xsl:text> - </xsl:text>
 	      <xsl:value-of select="@Title" disable-output-escaping="yes"/>
     	</sioc:name>
+    	<sioc:type>Tutorial</sioc:type>
       	<xsl:text disable-output-escaping="yes"><![CDATA[
 <sioc:has_host rdf:resource="<?V _path ?>"/>]]></xsl:text>
         <xsl:for-each select=".//example">
