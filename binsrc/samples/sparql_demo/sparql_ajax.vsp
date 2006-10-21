@@ -95,7 +95,7 @@ WHERE {
               }
             goto skip_failed_group;
             there_is_passed_test:
-        http(sprintf('\n                <li class="lvl1"><a href="#" onclick="folder_click(this)">%s</a>',m));
+        http(sprintf('\n                <li class="lvl1"><a href="#">%s</a>',m));
 ?>
 	            <ul class="lvl2">
 <?vsp
@@ -144,8 +144,7 @@ WHERE {
           for (SELECT DISTINCT SQ_GROUP AS _SQ_GROUP FROM RQ.RQ.SAMPLE_QUERIES)do
           {
 ?>
-                  <li class="lvl1"> 
-                    <a href="#" onclick="folder_click(this)"><?V _SQ_GROUP ?></a>
+                  <li class="lvl1"><a href="#"><?V _SQ_GROUP ?></a>
 	            <ul class="lvl2">
 <?vsp
 	          for (SELECT SQ_NAME AS _SQ_NAME FROM RQ.RQ.SAMPLE_QUERIES WHERE SQ_GROUP = _SQ_GROUP ORDER BY SQ_ORDER)do

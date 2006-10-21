@@ -54,8 +54,8 @@ function init()
   sr_cl.addOption("http://my.opera.com/community/sparql/sparql");
   sr_cl.addOption("http://www.wasab.dk/morten/2005/04/sparqlette/");
 
-  OAT.Tree.assign("dawg_tree_container", "images", "gif", true,"dawg_tree");
-  OAT.Tree.assign("samples_tree_container", "images", "gif", true, "samples_tree");
+  OAT.Tree.assign("dawg_tree_container", {imagePath:"images/",ext:"gif"});
+  OAT.Tree.assign("samples_tree_container", {imagePath:"images/",ext:"gif"});
 
   filewin = new OAT.Window({close:1,min:0,max:0,x:450,y:155,width:500,height:400,title:"View File",imagePath:"images/"});
   filewin.content.appendChild($("file_window_content"));
@@ -630,16 +630,6 @@ function load_data(param)
   else
     rq_query(param,'Skipped.');
     
-}
-
-function folder_click(t)
-{
-  var Childs = t.parentNode.childNodes;
-  for(var i = 0;i < Childs.length;i++)
-  {
-    if (Childs[i]._Tree_toggle)
-      Childs[i]._Tree_toggle();
-  }
 }
 
 function usesoap_change(ch)
