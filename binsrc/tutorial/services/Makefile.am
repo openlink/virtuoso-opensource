@@ -37,6 +37,8 @@ EXTRA_DIST = \
 	rm_s_1/*.sql \
 	rm_s_1/*.vsp \
 	rm_s_1/*.xml \
+ 	rn_s_1/*.vsp \
+ 	rn_s_1/*.xml \
 	rp_s_1/*.sql \
 	rp_s_1/*.vsp \
 	rp_s_1/*.xml \
