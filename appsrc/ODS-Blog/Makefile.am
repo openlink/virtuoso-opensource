@@ -45,8 +45,9 @@ EXTRA_DIST = \
 	*.sql \
 	*.vsp \
 	*.vspx \
+	doc/*.png \
 	make_vad.sh \
-	vad_version \
+	public/*.vsp \
 	public/*.vspx \
 	public/css/*.css \
 	public/images/*.gif \
@@ -89,4 +90,5 @@ EXTRA_DIST = \
 	templates/thin_clean/*.vspx \
 	templates/thin_pastel/*.css \
 	templates/thin_pastel/*.vspx \
+	vad_version \
 	widgets/*.xsl

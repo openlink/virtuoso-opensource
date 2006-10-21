@@ -57,10 +57,11 @@ EXTRA_DIST = \
 	icons/*.png \
 	images/*.gif \
 	images/*.htm \
+	images/*.jfif \
 	images/*.jpg \
 	images/*.png \
+	images/app_ads/*.jpg \
 	images/dav_browser/*.png \
-	images/*.jfif \
 	make_vad.sh \
 	tmpl/SN_INV_TEMPLATE \
 	tmpl/WS_APPROVE_BY_USER_TEMPLATE \
