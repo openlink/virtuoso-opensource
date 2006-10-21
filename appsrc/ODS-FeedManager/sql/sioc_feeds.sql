@@ -145,9 +145,7 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
 
     -- tags
     for (select EFID_DOMAIN_ID, EFID_TAGS from ENEWS.WA.FEED_ITEM_DATA where EFID_DOMAIN_ID is not null and EFID_ITEM_ID = EFI_ID) do
-    {
       ods_sioc_tags (graph_iri, iri, EFID_TAGS);
-    }
 
     -- comments
     for (select EFIC_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_U_URL, EFIC_LAST_UPDATE from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ITEM_ID = EFI_FEED_ID and EFIC_PARENT_ID is not null) do

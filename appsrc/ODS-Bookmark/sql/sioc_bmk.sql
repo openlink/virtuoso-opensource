@@ -60,7 +60,7 @@ create procedure fill_ods_bookmark_sioc (in graph_iri varchar, in site_iri varch
   declare iri, c_iri, creator_iri, t_iri varchar;
   declare tags, linksTo any;
 
-  for select WAI_NAME, BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, BD_CREATED, B_URI, WAM_USER
+  for (select WAI_NAME, BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, BD_CREATED, B_URI, WAM_USER
         from DB.DBA.WA_INSTANCE,
              BMK..BOOKMARK_DOMAIN,
              BMK..BOOKMARK,
@@ -68,24 +68,25 @@ create procedure fill_ods_bookmark_sioc (in graph_iri varchar, in site_iri varch
        where BD_DOMAIN_ID = WAI_ID
          and BD_BOOKMARK_ID = B_ID
          and WAM_INST = WAI_NAME
-         and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
-  do
+          and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)) do
       {
       c_iri := bmk_iri (WAI_NAME);
 	iri := bmk_post_iri (BD_DOMAIN_ID, BD_BOOKMARK_ID);
       creator_iri := user_iri (WAM_USER);
+
+    -- maker
+    for (select coalesce(U_FULL_NAME, U_NAME) full_name, U_E_MAIL e_mail from DB.DBA.SYS_USERS where U_ID = WAM_USER) do
+      foaf_maker (graph_iri, person_iri (creator_iri), full_name, e_mail);
+
       linksTo := bmk_links_to (BD_DESCRIPTION);
       ods_sioc_post (graph_iri, iri, c_iri, creator_iri, BD_NAME, BD_CREATED, BD_LAST_UPDATE, B_URI, BD_DESCRIPTION, null, linksTo);
 
       -- tags
       bookmark_id := BD_BOOKMARK_ID;
-      for select BD_TAGS from BMK.WA.BOOKMARK_DATA where BD_OBJECT_ID = BD_DOMAIN_ID and BD_MODE = 0 and BD_BOOKMARK_ID = bookmark_id
-      do
-        {
+    for (select BD_TAGS from BMK.WA.BOOKMARK_DATA where BD_OBJECT_ID = BD_DOMAIN_ID and BD_MODE = 0 and BD_BOOKMARK_ID = bookmark_id) do
 	  ods_sioc_tags (graph_iri, iri, BD_TAGS);
         }
     }
-      }
 ;
 
 create procedure bookmark_domain_insert (
@@ -115,6 +116,11 @@ create procedure bookmark_domain_insert (
   {
     c_iri := bmk_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
+
+    -- maker
+    for (select coalesce(U_FULL_NAME, U_NAME) full_name, U_E_MAIL e_mail from DB.DBA.SYS_USERS where U_ID = WAM_USER) do
+      foaf_maker (graph_iri, person_iri (creator_iri), full_name, e_mail);
+
     linksTo := bmk_links_to (description);
     ods_sioc_post (graph_iri, iri, c_iri, creator_iri, name, created, updated, B_URI, description, null, linksTo);
   }

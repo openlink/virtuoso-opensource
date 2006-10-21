@@ -201,74 +201,106 @@
   <!--=========================================================================-->
   <xsl:template name="vm:others">
     <div class="left_container">
-      <ul class="left_navigation">
-        <li><v:url value="--'OFM Bookmarklet'" format="%s" url="--'bookmark.vspx'"/></li>
-      </ul>
+      <div>
+        <v:url value="--'OFM Bookmarklet'" format="%s" url="--'bookmark.vspx'"/>
+      </div>
     </div>
   </xsl:template>
 
   <!--=========================================================================-->
   <xsl:template name="vm:formats">
     <div class="left_container">
-      <ul class="left_navigation">
-        <li><xsl:call-template name="vm:atom-link"/></li>
-        <li><xsl:call-template name="vm:rss-link"/></li>
-        <li><xsl:call-template name="vm:rdf-link"/></li>
-        <li><xsl:call-template name="vm:podcast-link"/></li>
-        <li><xsl:call-template name="vm:ocs-link"/></li>
-        <li><xsl:call-template name="vm:opml-link"/></li>
-        <li><xsl:call-template name="vm:foaf-link"/></li>
-      </ul>
+      <xsl:call-template name="vm:geoUrl-link" />
+      <xsl:call-template name="vm:atom-link" />
+      <xsl:call-template name="vm:rss-link" />
+      <xsl:call-template name="vm:rdf-link" />
+      <xsl:call-template name="vm:podcast-link" />
+      <xsl:call-template name="vm:ocs-link" />
+      <xsl:call-template name="vm:opml-link" />
+      <xsl:call-template name="vm:foaf-link" />
     </div>
   </xsl:template>
 
   <!--=========================================================================-->
+  <xsl:template name="vm:geoUrl-link">
+    <?vsp
+      declare exit handler for not found;
+      declare lat, lng any;
+
+      select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.account_id;
+      if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id)) {
+    ?>
+      <div style="border-bottom: 1px solid #7f94a5;">
+        <?vsp
+          http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" alt="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', ENEWS.WA.enews_url (self.domain_id)));
+        ?>
+    </div>
+    <?vsp
+      }
+    ?>
+  </xsl:template>
+
+  <!--=========================================================================-->
   <xsl:template name="vm:atom-link">
+    <div>
     <?vsp
       http(sprintf('<a href="%sOFM.atom" target="_blank" title="ATOM export" alt="ATOM export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> Atom</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
     ?>
+    </div>
   </xsl:template>
 
   <!--=========================================================================-->
   <xsl:template name="vm:rss-link">
+    <div>
     <?vsp
       http(sprintf('<a href="%sOFM.rss" target="_blank" title="RSS export" alt="RSS export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> RSS</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
     ?>
+    </div>
   </xsl:template>
 
   <!--=========================================================================-->
   <xsl:template name="vm:rdf-link">
+    <div>
     <?vsp
       http(sprintf('<a href="%sOFM.rdf" target="_blank" title="RDF export" alt="RDF export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> RDF</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
     ?>
+    </div>
   </xsl:template>
 
   <!--=========================================================================-->
   <xsl:template name="vm:ocs-link">
+    <div>
     <?vsp
       http(sprintf('<a href="%sOFM.ocs" target="_blank" title="OCS export" alt="OCS export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OCS</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
     ?>
+    </div>
   </xsl:template>
 
   <!--=========================================================================-->
   <xsl:template name="vm:opml-link">
+    <div>
     <?vsp
       http(sprintf('<a href="%sOFM.opml" target="_blank" title="OPML export" alt="OPML export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OPML</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
     ?>
+    </div>
   </xsl:template>
 
   <!--=========================================================================-->
   <xsl:template name="vm:foaf-link">
+    <div>
     <?vsp
       http(sprintf('<a href="%sOFM.foaf" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
     ?>
+    </div>
   </xsl:template>
 
   <!--=========================================================================-->
   <xsl:template name="vm:podcast-link">
+    <div>
     <?vsp
       http(sprintf('<a href="%sOFM.podcast" target="_blank" title="PODCAST export" alt="PODCAST export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> Podcast</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
     ?>
+    </div>
   </xsl:template>
 
   <!--=========================================================================-->

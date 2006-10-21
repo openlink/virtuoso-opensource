@@ -94,18 +94,10 @@ a:hover
   width: auto;
 }
 
-ul.left_navigation
+.left_container div
 {
-  font-size: 0.9em;
-	padding: 5px;
+  padding: 3px;
 	margin: 3px;
-	list-style-type: none;
-}
-
-ul.left_navigation li
-{
-  margin: 0;
-  padding: 2px;
 }
 
 .navigator_info
