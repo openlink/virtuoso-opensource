@@ -225,6 +225,7 @@ directory_init() {
   mkdir vad/data/wa/comp
   mkdir vad/data/wa/oat
   mkdir vad/data/wa/images
+  mkdir vad/data/wa/images/app_ads
   mkdir vad/data/wa/images/dav_browser
   mkdir vad/data/wa/images/icons
   mkdir vad/data/wa/images/buttons
@@ -258,6 +259,7 @@ directory_init() {
   cp images/*.jpg vad/data/wa/images
   cp images/*.png vad/data/wa/images
 #  cp $HOME/binsrc/weblog2/public/images/foaf.gif vad/data/wa/images
+  cp images/app_ads/*.jpg vad/data/wa/images/app_ads
   cp icons/*.gif vad/data/wa/images/icons
   #cp icons/*.jpg vad/data/wa/images/icons
   cp icons/*.png vad/data/wa/images/icons
