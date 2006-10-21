@@ -118,50 +118,74 @@ create procedure DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD (in enable integer)
 
 create procedure DB.DBA.RDF_CBD_DELETE (inout triple_list any, in graph_id any, in local_dav_uri any)
 {
-  declare candidates any;
+  declare not_deleteable, candidates any;
+  declare cand_ctr, cand_first_unconfirmed, cand_count integer;
   -- dbg_obj_princ ('DB.DBA.RDF_CBD_DELETE (', triple_list, graph_id, local_dav_uri, ')');
+  set isolation = 'committed';
+  not_deleteable := dict_new ();
   candidates := dict_new ();
   again:
   foreach (any triple in triple_list) do
     {
       declare obj any;
       obj := triple[2]; -- i.e. object of the triple
-      delete from DB.DBA.RDF_QUAD where G = graph_id and S = triple[0] and P = triple[1] and O = triple[2];
-      if (not isiri_id (obj))
-        goto skip;        
-      if (exists ( select top 1 1 from DB.DBA.RDF_QUAD where O = obj or S = obj and G <> graph_id))
-        goto skip;
+      delete from DB.DBA.RDF_QUAD where G = graph_id and S = triple[0] and P = triple[1] and equ (O, obj);
+      if (isiri_id (obj) and not dict_get (not_deleteable, obj, 0))
+        dict_put (candidates, obj, 1);
+    }
+  candidates := dict_list_keys (candidates, 1);
+  gvector_sort (candidates, 1, 0, 1);
+  cand_count := length (candidates);
+  cand_first_unconfirmed := 0;
+  for (cand_ctr := 0; cand_ctr < cand_count; cand_ctr := cand_ctr + 1)
+    {
+      declare obj any;
+      obj := candidates [cand_ctr];
+      if (not exists (select top 1 1 from DB.DBA.RDF_QUAD where G = graph_id and S = obj))
+        goto non_del; -- not deleteable because there's nothing to delete. Like Elusive Joe who is so elusive because nobody wants to catch him.
       if (obj < #i1000000000) -- the object is a URI, not a blank node
         {
           declare qname varchar;
+          if (exists (select top 1 1 from DB.DBA.RDF_QUAD where P = obj))
+            goto non_del; -- the object appears as predicate in any graph
+          if (exists (select top 1 1 from DB.DBA.RDF_DATATYPE where RDT_IID = obj))
+            goto non_del; -- the object is a datatype listed in DB.DBA.RDF_DATATYPE
           qname := (select RU_QNAME from DB.DBA.RDF_URL where RU_IID = obj);
           if (qname is null)
-            signal ('OBLOM', 'Base is corrupted!');
-          if (qname between local_dav_uri and concat (local_dav_uri, '\377\377\377\377'))  --  the object URI starts with local DAV URI
-            goto skip;
-          if (exists (select top 1 1 from DB.DBA.RDF_QUAD where P = obj)) -- /* the object appears as predicate in any graph */
-            goto skip;
-          if (exists (select top 1 1 from DB.DBA.RDF_DATATYPE where RDT_IID = obj)) --/* the object is a datatype listed in DB.DBA.RDF_DATATYPE */
-            goto skip;
-          dict_put (candidates, obj, 1);
+            goto non_del; -- this is possible in case of database corruption; we can't fix it here and we should not interrupt the DAV operation. Show must go on.
+          if (qname >= local_dav_uri and qname < concat (local_dav_uri, '\377\377\377\377'))
+            goto non_del; -- the object URI starts with local DAV URI
         }
-      else -- /* The object is a blank node */
-        {
-          dict_put (candidates, obj, 1);
-        }
-      skip: ;
+        
+-- if we're here then the candidate object is 'confirmed' as a good candidate
+      candidates [cand_first_unconfirmed] := obj;
+      cand_first_unconfirmed := cand_first_unconfirmed + 1;
+      goto next_cand;
+
+non_del:      
+      dict_put (not_deleteable, obj, 1);
+
+next_cand: ;          
     }
-  candidates := dict_list_keys (candidates, 1);
+
+  if (0 = cand_first_unconfirmed) -- no real candidate on future deletion, we've done.
+    return;    
+
   vectorbld_init (triple_list);
-  foreach (any obj in candidates) do
+  for (cand_ctr := 0; cand_ctr < cand_first_unconfirmed; cand_ctr := cand_ctr + 1)
     {
-      if (not exists (select top 1 1 from DB.DBA.RDF_QUAD where O = obj and G = graph_id)) --  /* obj is not an object of any triple in DAV graph */
+      declare obj any;
+      obj := candidates [cand_ctr];
+      if (not exists (select top 1 1 from DB.DBA.RDF_QUAD table option (index RDF_QUAD_PGOS)
+          where G = graph_id and O = obj option (quietcast) ) )
+    {
         for (select P,O from DB.DBA.RDF_QUAD where G = graph_id and S=obj) do
           vectorbld_acc (triple_list, vector (obj,P,O));
     }
+    }
   vectorbld_final (triple_list);
   if (0 <> length (triple_list))
-    goto again; -- /* Do the next level of recursion of CBD-delete */
+    goto again; -- Do the next level of recursion of CBD-delete
 }
 ;
 
