@@ -1,5 +1,6 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
@@ -18,8 +19,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
- *  
-*/
+ */
+
 #include "libutil.h"
 #include "sqlnode.h"
 #include "sqlbif.h"
@@ -58,6 +59,7 @@ tf_alloc (void)
 void
 tf_free (triple_feed_t *tf)
 {
+  int ctr;
   id_hash_t *dict;			/*!< Current dictionary to be zapped */
   id_hash_iterator_t dict_hit;		/*!< Iterator to zap dictionary */
   char **dict_key, **dict_val;		/*!< Current key to zap */
@@ -79,6 +81,11 @@ tf_free (triple_feed_t *tf)
     }
   id_hash_free (tf->tf_blank_node_ids);
   id_hash_free (tf->tf_cached_iids);
+  for (ctr = 0; ctr < COUNTOF__TRIPLE_FEED; ctr++)
+    {
+      if (tf->tf_queries[ctr])
+	qr_free (tf->tf_queries[ctr]);
+    }
   dk_free (tf, sizeof (triple_feed_t));
 }
 
