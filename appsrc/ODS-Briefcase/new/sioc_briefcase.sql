@@ -69,6 +69,11 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
     {
       iri := dav_res_iri (RES_FULL_PATH);
       creator_iri := user_iri (RES_OWNER);
+
+      -- maker
+      for (select coalesce(U_FULL_NAME, U_NAME) full_name, U_E_MAIL e_mail from DB.DBA.SYS_USERS where U_ID = RES_OWNER) do
+        foaf_maker (graph_iri, person_iri (creator_iri), full_name, e_mail);
+
       link := sprintf ('http://%s%s', get_cname(), RES_FULL_PATH);
       content := null;
       if (RES_TYPE like 'text/%')
@@ -129,6 +134,11 @@ create procedure briefcase_sioc_insert (
     graph_iri := get_graph ();
     iri := dav_res_iri (r_full_path);
     creator_iri := user_iri (r_owner);
+
+    -- maker
+    for (select coalesce(U_FULL_NAME, U_NAME) full_name, U_E_MAIL e_mail from DB.DBA.SYS_USERS where U_ID = r_owner) do
+      foaf_maker (graph_iri, person_iri (creator_iri), full_name, e_mail);
+
     c_iri := briefcase_iri (WAI_NAME);
     link := sprintf ('http://%s%s', get_cname(), r_full_path);
     linksTo := null;
