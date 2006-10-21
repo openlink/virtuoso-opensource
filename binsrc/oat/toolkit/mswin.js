@@ -67,7 +67,7 @@ OAT.MsWin = function(optObj) {
 	}
 
 	if (options.resize) {
-		this.resize = OAT.Dom.create("div",{width:"10px",height:"10px",fontSize:"1px",position:"absolute",right:"-8px",bottom:"0px",cursor:"nw-resize",backgroundImage:"url("+options.imagePath+"MsWin_resize.gif)"});
+		this.resize = OAT.Dom.create("div",{width:"10px",height:"10px",fontSize:"1px",position:"absolute",right:"0px",bottom:"0px",cursor:"nw-resize",backgroundImage:"url("+options.imagePath+"MsWin_resize.gif)"});
  		this.div.appendChild(this.resize);
  		OAT.Resize.create(this.resize,this.content,OAT.Resize.TYPE_XY);
 	}

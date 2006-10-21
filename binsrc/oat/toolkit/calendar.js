@@ -93,7 +93,7 @@ OAT.Calendar = {
 		tmpdate.setFullYear(OAT.Calendar.date[0]);
 		tmpdate.setMonth(OAT.Calendar.date[1]-1);
 		tmpdate.setDate(1);
-		day = 1;
+		var day = 1;
 		var tr = OAT.Dom.create("tr");
 		/* blank cells at the beginning... */
 		var cellIndex = 0;
@@ -218,5 +218,5 @@ OAT.Calendar = {
 		OAT.Drag.create(divMonth,OAT.Calendar.div);
 	}
 }
-OAT.Loader.loadAttacher(OAT.Calendar.init);
+OAT.Loader.preInit(OAT.Calendar.init);
 OAT.Loader.pendingCount--;

@@ -20,11 +20,6 @@
 OAT.GhostDragData = {
 	lock:false,
 
-	init:function() { 
-		OAT.Dom.attach(document,"mousemove",OAT.GhostDragData.move);
-		OAT.Dom.attach(document,"mouseup",OAT.GhostDragData.up);
-	},
-	
 	up:function(event) {
 		if (!OAT.GhostDragData.lock) return;
 		var elm = OAT.GhostDragData.lock; /* moving ghost */
@@ -187,5 +182,6 @@ OAT.GhostDrag = function() {
 	}
 }
 
-OAT.Loader.loadAttacher(OAT.GhostDragData.init);
+OAT.Dom.attach(document,"mousemove",OAT.GhostDragData.move);
+OAT.Dom.attach(document,"mouseup",OAT.GhostDragData.up);
 OAT.Loader.pendingCount--;

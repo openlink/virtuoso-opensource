@@ -9,43 +9,45 @@
  */
 /*
 
-	OAT.Layers.addLayer(something,activationEvent)
-	OAT.Layers.removeLayer(someting)
+	var l = new OAT.Layers(baseOffset);
+	l.addLayer(something,activationEvent)
+	l.removeLayer(someting)
 */
 
-OAT.Layers = {
-	baseOffset:100,
-	layers:[],
-	currentIndex:0,
+OAT.Layers = function(baseOffset) {
+	var self = this;
+	this.baseOffset = baseOffset;
+	this.layers = [];
+	this.currentIndex = 0;
 	
-	raise:function(elm) {
-		var index = OAT.Layers.layers.find(elm);
+	this.raise = function(elm) {
+		var index = self.layers.find(elm);
 		if (index == -1) { return; }
 		var curr = elm.style.zIndex;
-		for (var i=0;i<OAT.Layers.layers.length;i++) {
-			var e = OAT.Layers.layers[i];
+		for (var i=0;i<self.layers.length;i++) {
+			var e = self.layers[i];
 			if (e.style.zIndex > curr) { e.style.zIndex--; }
 		}
-		elm.style.zIndex = OAT.Layers.currentIndex;
-	},
+		elm.style.zIndex = self.currentIndex;
+	}
 
-	addLayer:function(something,activationEvent) {
+	this.addLayer = function(something,activationEvent) {
 		var elm = $(something);
 		if (!elm) { return; }
-		OAT.Layers.currentIndex++;
-		elm.style.zIndex = OAT.Layers.currentIndex;
-		OAT.Layers.layers.push(elm);
+		self.currentIndex++;
+		elm.style.zIndex = self.currentIndex;
+		self.layers.push(elm);
 		var event = (activationEvent ? activationEvent : "mousedown");
-		OAT.Dom.attach(elm,event,function(){OAT.Layers.raise(elm);});
-	},
-	
-	removeLayer:function(something) {
-		var elm = $(something);
-		var index = OAT.Layers.layers.find(elm);
-		if (index == -1) { return; }
-		OAT.Layers.layers.splice(index,1);
+		OAT.Dom.attach(elm,event,function(){self.raise(elm);});
 	}
 	
+	this.removeLayer = function(something) {
+		var elm = $(something);
+		var index = self.layers.find(elm);
+		if (index == -1) { return; }
+		self.layers.splice(index,1);
+	}
+	
+	self.currentIndex = self.baseOffset;
 }
-OAT.Layers.currentIndex = OAT.Layers.baseOffset;
 OAT.Loader.pendingCount--;

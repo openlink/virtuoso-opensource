@@ -36,16 +36,16 @@ function _ywjs(inc) {
 }
 _ywjs('http://us.js2.yimg.com/us.js.yimg.com/lib/common/utils/2/dom_2.0.1-b2.js');
 _ywjs('http://us.js2.yimg.com/us.js.yimg.com/lib/common/utils/2/event_2.0.0-b2.js');
-_ywjs('http://us.js2.yimg.com/us.js.yimg.com/lib/common/utils/2/dragdrop_2.0.0-b3.js?f=1');
+_ywjs('http://us.js2.yimg.com/us.js.yimg.com/lib/common/utils/2/dragdrop_2.0.1-b4.js');
 _ywjs('http://us.js2.yimg.com/us.js.yimg.com/lib/common/utils/2/animation_2.0.1-b2.js');
-_ywjs('http://api.maps.yahoo.com/v3.0/aj/allcontrols.js');
+//		_ywjs('http://us.js2.yimg.com/us.js.yimg.com/lib/map/js/api/ymapapi_3_0_3_17.js');
 function last_include() {
 	if (window.YAHOO.util.Event) {
+		/* include main library only after event is loaded */
 		OAT.Loader.include("ymapapi.js");
-//		_ywjs('http://api.maps.yahoo.com/v3.0/aj/ymapapi.js');
 	} else {
 		setTimeout(last_include,100);
 	}
 }
 setTimeout(last_include,1000);
-OAT.Loader.pendingCount--;
+/* no pending count here - decrease after ymapapi.js was included */

@@ -58,11 +58,16 @@ OAT.Ajax = {
 				OAT.Ajax.number--;
 				if (OAT.Ajax.endRef && !OAT.Ajax.number) { OAT.Ajax.endRef(); }
 				if (xmlhttp.getStatus().toString().charAt(0) == "2" || xmlhttp.getStatus() == 0) {
-//					alert(xmlhttp.getResponseText());
 					if (return_type == OAT.Ajax.TYPE_TEXT) {
 		  				return_func(xmlhttp.getResponseText(),headers);
 		  			} else {
-						return_func(xmlhttp.getResponseXML(),headers);
+						if (OAT.Dom.isIE()) {
+							xmlStr = xmlhttp.getResponseText(); 
+							var xmlDoc = OAT.Xml.createXmlDoc(xmlStr);
+						} else { 
+							var xmlDoc = xmlhttp.getResponseXML(); 
+						}
+						return_func(xmlDoc,headers);
 		  			}
 				} else {
 					if (OAT.Ajax.errorRef){
@@ -96,6 +101,7 @@ OAT.Ajax = {
 				xmlhttp.setRequestHeader(p,customHeaders[p]);
 			}
 		}
+		/* xmlhttp.obj.overrideMimeType("text/xml"); */
 		xmlhttp.send(data);
 
 //		alert("SENDING\n\n"+data+"\n\nto: "+target);

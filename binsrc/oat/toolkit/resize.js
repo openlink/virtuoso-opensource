@@ -24,11 +24,6 @@ OAT.Resize = {
 	mouse_x:0,
 	mouse_y:0,
 	
-	init:function() {
-		OAT.Dom.attach(document,"mousemove",OAT.Resize.move);
-		OAT.Dom.attach(document,"mouseup",OAT.Resize.up);
-	},
-	
 	move:function(event) {
 		if (!OAT.Resize.element.length) return;
 		var dx = event.clientX - OAT.Resize.mouse_x;
@@ -71,14 +66,19 @@ OAT.Resize = {
 	},
 	
 	up:function(event) {
+		for (var i=0;i<OAT.Resize.element.length;i++) {
+			OAT.Resize.element[i][3](); /* endFunction() */
+		}
 		OAT.Resize.element = [];
 	},
 
-	create:function(clicker,mover,type,restrictionFunction) {
+	create:function(clicker,mover,type,restrictionFunction,endFunction) {
 		var elm = $(clicker);
 		var win = $(mover);
 		var rf = function() { return false; }
+		var ef = function() { return false; }
 		if (restrictionFunction) { rf = restrictionFunction; }
+		if (endFunction) { ef = endFunction; }
 		switch (type) {
 			case OAT.Resize.TYPE_XY: elm.style.cursor = "nw-resize"; break;
 			case OAT.Resize.TYPE_X: elm.style.cursor = "w-resize"; break;
@@ -94,7 +94,7 @@ OAT.Resize = {
 			OAT.Dom.attach(elm,"mousedown",ref);		
 			elm._Resize_movers = [];
 		}
-		elm._Resize_movers.push([win,type,rf]);
+		elm._Resize_movers.push([win,type,rf,ef]);
 	},
 	
 	remove:function(clicker,mover) {
@@ -138,5 +138,6 @@ OAT.Resize = {
 	}
 
 }
-OAT.Loader.loadAttacher(OAT.Resize.init);
+OAT.Dom.attach(document,"mousemove",OAT.Resize.move);
+OAT.Dom.attach(document,"mouseup",OAT.Resize.up);
 OAT.Loader.pendingCount--;

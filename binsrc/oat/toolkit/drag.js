@@ -21,11 +21,6 @@ OAT.Drag = {
 	mouse_x:0,
 	mouse_y:0,
 	
-	init:function() {
-		OAT.Dom.attach(document,"mousemove",OAT.Drag.move);
-		OAT.Dom.attach(document,"mouseup",OAT.Drag.up);
-	},
-	
 	move:function(event) {
 		if (!OAT.Drag.elm.length) return;
 		var dx = event.clientX - OAT.Drag.mouse_x;
@@ -47,13 +42,19 @@ OAT.Drag = {
 	},
 	
 	up:function(event) {
+		for (var i=0;i<OAT.Drag.elm.length;i++) {
+			var element = OAT.Drag.elm[i][0];
+			var options = OAT.Drag.elm[i][1];
+			options.endFunction(element);
+		}
 		OAT.Drag.elm = [];
 	},
 
 	create:function(clicker,mover,optObj) {
 		var options = {
 			type:OAT.Drag.TYPE_XY,
-			restrictionFunction:function(){return false;}
+			restrictionFunction:function(){return false;},
+			endFunction:function(){}
 		}
 		if (optObj) for (p in optObj) { options[p] = optObj[p]; }
 		var elm = $(clicker);
@@ -126,5 +127,6 @@ OAT.Drag = {
 		OAT.Dom.attach(parent,"mouseout",hide);
 	}
 }
-OAT.Loader.loadAttacher(OAT.Drag.init);
+OAT.Dom.attach(document,"mousemove",OAT.Drag.move);
+OAT.Dom.attach(document,"mouseup",OAT.Drag.up);
 OAT.Loader.pendingCount--;

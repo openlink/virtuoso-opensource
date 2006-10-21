@@ -8,17 +8,16 @@
  *  See LICENSE file for details.
  */
 /*
-	var d = new OAT.Dock(numColumns)
-	document.body.appendChild(d.div)
+	var d = new OAT.Dock(div,numColumns)
 	d.addObject(colIndex, grabber, mover)
 
 	CSS: .dock, .dock_column_0 .. .dock_column_n-1, .dock_blank
 */
 
-OAT.Dock = function(numColumns) {
+OAT.Dock = function(div,numColumns) {
 	var obj = this;
-	this.div = OAT.Dom.create("div");
-	this.div.className = "dock";
+	this.div = $(div);
+	OAT.Dom.addClass(this.div,"dock");
 	this.columns = [];
 	this.movers = [];
 	this.dummies = [];

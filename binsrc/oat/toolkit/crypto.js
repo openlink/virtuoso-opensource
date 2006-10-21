@@ -54,6 +54,7 @@ OAT.Crypto = {
 	},
 	
 	base64d:function(input) {
+		if (!input) { return ""; }
 		var keyStr = "ABCDEFGHIJKLMNOP" +
                 "QRSTUVWXYZabcdef" +
                 "ghijklmnopqrstuv" +

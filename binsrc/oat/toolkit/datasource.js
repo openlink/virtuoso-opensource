@@ -10,11 +10,13 @@
 /*
 	var simpleCallback = function(dataRow, currentIndex) { alert(currentIndex); }
 	var multiCallback = function(dataRows, currentPageIndex) { alert(currentPageIndex); }
+	var fileCallback = function(xmlDoc) { alert(xmlDoc.documentElement.tagName); }
 
 	d = new OAT.DataSource(limit);
 	
 	d.bindRecord(simpleCallback);
 	d.bindPage(multiCallback);
+	d.bindFile(fileCallback);
 	
 	d.advancePage(something);   something: "-1","+1",number
 	d.advanceRecord(something);   something: "-1","+1",number
@@ -28,6 +30,7 @@ OAT.DataSource = function(pageSize) {
 	var self = this;
 	self.boundRecords = [];
 	self.boundPages = [];
+	self.boundFiles = [];
 	self.boundEmpties = [];
 	self.boundHeaders = [];
 	self.dataRows = [];
@@ -53,6 +56,12 @@ OAT.DataSource = function(pageSize) {
 		return index;
 	}
 	
+	this.bindFile = function(callback) {
+		var index = self.boundFiles.length;
+		self.boundFiles.push(callback);
+		return index;
+	}
+
 	this.bindRecord = function(callback) {
 		var index = self.boundRecords.length;
 		self.boundRecords.push(callback);
@@ -76,6 +85,10 @@ OAT.DataSource = function(pageSize) {
 		self.boundEmpties.splice(index,1);
 	}
 	
+	this.unBindFile = function(index) {
+		self.boundFiles.splice(index,1);
+	}
+
 	this.unBindRecord = function(index) {
 		self.boundRecords.splice(index,1);
 	}
@@ -123,7 +136,6 @@ OAT.DataSource = function(pageSize) {
 	this.ws2table = function(obj,xmlDoc,nsObj) { /* converts wsdl's output object into two-dimensional structure */
 		var allValues = {};
 		var data = [];
-		
 		/* analyze maximum count */
 		var max = 0;
 		for (var i=0;i<self.outputFields.length;i++) {
@@ -210,7 +222,7 @@ OAT.DataSource = function(pageSize) {
 						var ns = text.match(/xmlns="([^"]*)"/);
 						if (ns) { nsObj[" "] = ns[1]; }
 						var ns = text.match(/xmlns:[^=]+="[^"]*"/g);
-						for (var i=0;i<ns.length;i++) {
+						if (ns) for (var i=0;i<ns.length;i++) {
 							var tmp = ns[i];
 							var r = tmp.match(/xmlns:([^=]+)="([^"]*)"/);
 							nsObj[r[1]] = r[2];
@@ -219,6 +231,9 @@ OAT.DataSource = function(pageSize) {
 						var t = text.replace(/xmlns="[^"]*"/g,"");
 						/***/
 						xmlDoc = OAT.Xml.createXmlDoc(t);
+						for (var i=0;i<self.boundFiles.length;i++) {
+							self.boundFiles[i](xmlDoc);
+						}
 						obj = OAT.JSObj.createFromXmlNode(xmlDoc.documentElement);
 					} 
 					if (self.format == 1) { /* json */
@@ -270,8 +285,7 @@ OAT.DataSource = function(pageSize) {
 	this.advanceRecord = function(something) {
 		/* get the record number we want */
 		var newIndex = self.getNewIndex(something,self.recordIndex,1); /* this is new requested index */
-		if (newIndex == -1 || newIndex == self.index) { return; } /* do nothing if is not correct */
-		
+		if (newIndex == -1 || newIndex == self.recordIndex) { return false; } /* do nothing if is not correct */
 		var newPageIndex = (self.pageSize ? Math.floor(newIndex / self.pageSize) : 0) * self.pageSize;
 		/* sometimes we also have to change page */
 		var callback = function() {
@@ -287,6 +301,7 @@ OAT.DataSource = function(pageSize) {
 		if (newPageIndex == self.pageIndex) { command(); } else {
 			self.advancePage(newPageIndex,command);
 		}
+		return true;
 	}
 	
 	/* go to page #, not to be directly called! */

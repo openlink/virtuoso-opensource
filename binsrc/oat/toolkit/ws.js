@@ -48,9 +48,9 @@ OAT.WS = {
 		var ref = function(xmlDoc) {
 			var result = [];
 			var root = xmlDoc.documentElement;
-			var service = OAT.Xml.getElementsByTagName(root,"service")[0];
-			var port = OAT.Xml.getElementsByTagName(service,"port")[0];
-			var addr = OAT.Xml.getElementsByTagName(port,"address")[0];
+			var service = OAT.Xml.getElementsByLocalName(root,"service")[0];
+			var port = OAT.Xml.getElementsByLocalName(service,"port")[0];
+			var addr = OAT.Xml.getElementsByLocalName(port,"address")[0];
 			var result = addr.getAttribute("location");
 			callback(result);
 		}
@@ -61,8 +61,8 @@ OAT.WS = {
 		var ref = function(xmlDoc) {
 			var result = [];
 			var root = xmlDoc.documentElement;
-			var port = OAT.Xml.getElementsByTagName(root,"portType");
-			var ops = OAT.Xml.getElementsByTagName(port[0],"operation");
+			var port = OAT.Xml.getElementsByLocalName(root,"portType");
+			var ops = OAT.Xml.getElementsByLocalName(port[0],"operation");
 			for (var i=0;i<ops.length;i++) { result.push(ops[i].getAttribute("name")); }
 			callback(result);
 		}
@@ -79,20 +79,20 @@ OAT.WS = {
 			
 			/* find proper port */
 			var root = xmlDoc.documentElement;
-			var port = OAT.Xml.getElementsByTagName(root,"portType");
-			var ops = OAT.Xml.getElementsByTagName(port[0],"operation");
+			var port = OAT.Xml.getElementsByLocalName(root,"portType");
+			var ops = OAT.Xml.getElementsByLocalName(port[0],"operation");
 			for (var i=0;i<ops.length;i++) { opnames.push(ops[i].getAttribute("name")); }
 			var index = opnames.find(service);
 			if (index == -1) { return; } /* service does not exist */
 			
 			/* get input & output message names */
-			var input = OAT.Xml.getElementsByTagName(ops[index],"input")[0];
-			var output = OAT.Xml.getElementsByTagName(ops[index],"output")[0];
+			var input = OAT.Xml.getElementsByLocalName(ops[index],"input")[0];
+			var output = OAT.Xml.getElementsByLocalName(ops[index],"output")[0];
 			var inmsg = input.getAttribute("message").split(":").pop(); /* last part after colon */
 			var outmsg = output.getAttribute("message").split(":").pop(); /* last part after colon */
 			
 			/* approproate message nodes */
-			var messages = OAT.Xml.getElementsByTagName(root,"message");
+			var messages = OAT.Xml.getElementsByLocalName(root,"message");
 			for (var i=0;i<messages.length;i++) { msgnames.push(messages[i].getAttribute("name")); }
 			index = msgnames.find(inmsg);
 			var inmessage = messages[index];
@@ -129,7 +129,7 @@ OAT.WS = {
 				} else {
 					var o = {};
 					for (var p in obj) {
-						var elm = OAT.Xml.getElementsByTagName(node,p)[0];
+						var elm = OAT.Xml.getElementsByLocalName(node,p)[0];
 						if (elm) { o[p] = parseObject(obj[p],elm); }
 					}
 					return o;
@@ -144,7 +144,7 @@ OAT.WS = {
 		var ref = function(inp,outp) {
 			/* parse response xml according to appropriate output parameters definition */
 			for (var p in outp) {
-				var elm = OAT.Xml.getElementsByTagName(root,p)[0];
+				var elm = OAT.Xml.getElementsByLocalName(root,p)[0];
 				obj[p] = parseObject(outp[p],elm);
 			} /* for all expected returned nodes */
 			
@@ -154,10 +154,10 @@ OAT.WS = {
 	},
 
 	analyzeType:function(root,messageNode) {
-		var schemas = OAT.Xml.getElementsByTagName(root,"schema");
+		var schemas = OAT.Xml.getElementsByLocalName(root,"schema");
 		var result = {};
 		var tmp = {};
-		var parts = OAT.Xml.getElementsByTagName(messageNode,"part");
+		var parts = OAT.Xml.getElementsByLocalName(messageNode,"part");
 		var numElems = 0;
 		for (var i=0;i<parts.length;i++) {
 			var elm = parts[i];

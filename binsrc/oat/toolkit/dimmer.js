@@ -29,7 +29,10 @@ OAT.Dimmer = {
 		OAT.Dimmer.elm = elm;
 		elm.oldZindex = elm.style.zIndex;
 		elm.style.zIndex = 1000;
-		OAT.Dimmer.root = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",width:"100%",height:"100%",zIndex:999});
+		var scroll = OAT.Dom.getScroll();
+		var x = scroll[0];
+		var y = scroll[1];
+		OAT.Dimmer.root = OAT.Dom.create("div",{position:"absolute",left:x+"px",top:y+"px",width:"100%",height:"100%",zIndex:999});
 		OAT.Dimmer.root.style.backgroundColor = options.color;
 		OAT.Dimmer.root.style.opacity = options.opacity;
 		OAT.Dimmer.root.style.filter = "alpha(opacity="+Math.round(100*options.opacity)+")";

@@ -19,13 +19,13 @@ OAT.JSON = {
 	parse:function(jsonString) {
 		return eval('('+jsonString+')');
 	},
-	stringify:function(something, maxDepth, cache) {
-		if (typeof(maxDepth) == "undefined") {
+	stringify:function(something, mD, c) {
 			var maxDepth = 2;
-		}
+		if (typeof(maxDepth) != "undefined") { maxDepth = mD; }
 		if (maxDepth == 0) { return "[maximum depth achieved]"; }
 		var result = "";
-		if (!cache) { var cache = []; }
+		var cache = [];
+		if (c) { cache = c; }
 		for (var i=0;i<cache.length;i++) {
 			if (cache[i] == something) { return "[recursion]"; }
 		}

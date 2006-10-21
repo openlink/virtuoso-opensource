@@ -13,14 +13,14 @@ OAT.Schema = {
 	getType:function(schemaElements,name) {
 		var schemas = schemaElements;
 		if (!(schemas instanceof Array)) { schemas = [schemaElements]; }
-		var availTypeNodes = OAT.Xml.getElementsByTagName(schemas,"complexType");
+		var availTypeNodes = OAT.Xml.getElementsByLocalName(schemas,"complexType");
 		for (var i=0;i<availTypeNodes.length;i++) {
 			var node = availTypeNodes[i];
 			
 			if (node.getAttribute("name") == name) {
 				/* correct type node */
 				var result = {};
-				var elems = OAT.Xml.getElementsByTagName(node,"element");
+				var elems = OAT.Xml.getElementsByLocalName(node,"element");
 				for (var i=0;i<elems.length;i++) {
 					var n = elems[i].getAttribute("name");
 					var t = elems[i].getAttribute("type");
@@ -38,11 +38,11 @@ OAT.Schema = {
 				}
 				/* also try arrays */
 				if (elems.length) { return result; }
-				var res = OAT.Xml.getElementsByTagName(node,"restriction");
+				var res = OAT.Xml.getElementsByLocalName(node,"restriction");
 				if (res.length && res[0].getAttribute("base").split(":").pop() == "Array") {
 					/* is array! */
 					result = [];
-					var a = OAT.Xml.getElementsByTagName(res[0],"attribute")[0];
+					var a = OAT.Xml.getElementsByLocalName(res[0],"attribute")[0];
 					var t = a.getAttribute("wsdl:arrayType").split(":").pop().match(/(.*)\[\]/)[1];					
 					result.push(OAT.Schema.getType(schemas,t));
 				}
@@ -56,13 +56,13 @@ OAT.Schema = {
 	getElement:function(schemaElements,name) {
 		var schemas = schemaElements;
 		if (!(schemas instanceof Array)) { schemas = [schemaElements]; }
-		var availElementNodes = OAT.Xml.getElementsByTagName(schemas,"element");
+		var availElementNodes = OAT.Xml.getElementsByLocalName(schemas,"element");
 		for (var i=0;i<availElementNodes.length;i++) {
 			var node = availElementNodes[i];
 			if (node.getAttribute("name") == name) {
 				/* correct type node */
 				var result = {};
-				var elems = OAT.Xml.getElementsByTagName(node,"element");
+				var elems = OAT.Xml.getElementsByLocalName(node,"element");
 				for (var i=0;i<elems.length;i++) {
 					var n = elems[i].getAttribute("name");
 					var t = elems[i].getAttribute("type");
@@ -79,11 +79,11 @@ OAT.Schema = {
 				}
 				/* also try arrays */
 				if (elems.length) { return result; }
-				var res = OAT.Xml.getElementsByTagName(node,"restriction");
+				var res = OAT.Xml.getElementsByLocalName(node,"restriction");
 				if (res.length && res[0].getAttribute("base").split(":").pop() == "Array") {
 					/* is array! */
 					result = [];
-					var a = OAT.Xml.getElementsByTagName(res[0],"attribute")[0];
+					var a = OAT.Xml.getElementsByLocalName(res[0],"attribute")[0];
 					var t = a.getAttribute("wsdl:arrayType").split(":").pop().match(/(.*)\[\]/)[1];
 					result.push(OAT.Schema.getType(schemas,t));
 				}

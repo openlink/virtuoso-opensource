@@ -8,8 +8,7 @@
  *  See LICENSE file for details.
  */
 /*
-	t = new OAT.Toolbar();
-	document.body.appendChild(t.div);
+	t = new OAT.Toolbar(div);
 	
 	var i = t.addIcon(twoStates,imagePath,tooltip,callback)  ---  callback(state)
 	var s = t.addSeparator()
@@ -22,11 +21,10 @@
 	CSS: .toolbar .toolbar_icon .toolbar_icon_down .toolbar_separator
 */
 
-OAT.Toolbar = function() {
-
+OAT.Toolbar = function(div) {
 	var obj = this;
-	this.div = OAT.Dom.create("div");
-	this.div.className = "toolbar";
+	this.div = $(div);
+	OAT.Dom.addClass(this.div,"toolbar");
 	this.icons = [];
 	this.separators = [];
 	

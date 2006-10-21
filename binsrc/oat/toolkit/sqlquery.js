@@ -27,6 +27,8 @@
 	
 	sq.tables
 	
+	sq.joins = [];
+
 	sq.conditions.count
 	sq.conditions.items[index].column
 	sq.conditions.items[index].operator
@@ -238,6 +240,8 @@ OAT.SqlQuery = function() {
 		}
 	}
 	
+	this.joins = []; /* {table1:"",table2:"",row1:"",row2:""} */
+	
 	this.toString = function(type) {
 		var q = "";
 		q += "SELECT ";
@@ -361,6 +365,29 @@ OAT.SqlQuery = function() {
 					NAMES[dq] = 1;
 				}
 				for (p in NAMES) { self.tables.push(p); }
+				
+				/* also relations */
+				var cat_tablecol = q[0]+"[^"+q[1]+"]+"+q[1]+"\."+q[0]+"[^"+q[1]+"]+"+q[1]+"\."+q[0]+"[^"+q[1]+"]+"+q[1]+"\."+q[0]+"[^"+q[1]+"]+"+q[1];
+				var noncat_tablecol = q[0]+"[^"+q[1]+"]+"+q[1]+"\."+q[0]+"[^"+q[1]+"]+"+q[1];
+				var cat_pattern = new RegExp(" "+cat_tablecol +" *= *"+cat_tablecol,"g");
+				var noncat_pattern = new RegExp(" "+noncat_tablecol +" *= *"+noncat_tablecol,"g");
+				var on1 = corr.match(cat_pattern);
+				var on2 = corr.match(noncat_pattern);
+				var patts1 = (on1 ? on1 : []);
+				var patts2 = (on2 ? on2 : []);
+				var patts = patts1.concat(patts2);
+				for (var i=0;i<patts.length;i++) {
+					var patt = patts[i];
+					var restr = " *(.*)\."+q[0]+"([^"+q[1]+"]+)"+q[1]+" *= *(.*)\."+q[0]+"([^"+q[1]+"]+)"+q[1]+" *$";
+					var re = new RegExp(restr);
+					var r = patt.match(re);
+					var o = {};
+					o.table1 = r[1];
+					o.table2 = r[3];
+					o.row1 = r[2];
+					o.row2 = r[4];
+					self.joins.push(o);
+				}
 			break;
 			
 			case "WHERE":

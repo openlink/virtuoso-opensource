@@ -21,7 +21,8 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 		onhide:function(){},
 		zIndex:1000,
 		buttons:1,
-		resize:1
+		resize:1,
+		autoEnter:1
 	}
 	if (optObj) for (var p in optObj) { options[p] = optObj[p]; }
 	var win = new OAT.Window({close:1, max:0, min:0, width:options.width, height:options.height, x:0, y:0, title:title,resize:options.resize});
@@ -68,6 +69,6 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 		if (event.keyCode == 13) { self.ok(); }
 		if (event.keyCode == 27) { self.cancel(); }
 	}
-	OAT.Dom.attach(win.div,"keypress",keyPress);
+	if (options.autoEnter) { OAT.Dom.attach(win.div,"keypress",keyPress); }
 }
 OAT.Loader.pendingCount--;

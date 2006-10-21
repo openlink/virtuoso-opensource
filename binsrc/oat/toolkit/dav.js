@@ -245,7 +245,7 @@ OAT.WebDav = {
   init:function(options){
     OAT.WebDav.options = OAT.WebDav.overwrite(OAT.WebDav.options,options);
     var defaultModes = ['browser','open_dialog','save_dialog'];
-		if (defaultModes.find(options.mode) == -1) {
+		if (!("mode" in options) || defaultModes.find(options.mode) == -1) {
 			options.mode = defaultModes[0];
 		}
   },
@@ -323,8 +323,9 @@ OAT.WebDav = {
     win.div.id = "dav_browser";
     win.onclose = OAT.WebDav.close;
     document.body.appendChild(win.div);
-
-    var toolbar = new OAT.Toolbar();
+	var toolbarDiv = OAT.Dom.create("div");
+	win.content.appendChild(toolbarDiv);
+    var toolbar = new OAT.Toolbar(toolbarDiv);
   	if(OAT.WebDav.toptions.toolbar.new_folder){
     	toolbar.addIcon(0,OAT.WebDav.toptions.imagePath+"icon_new.gif","Create New Folder",function(){
   	      OAT.WebDav.new_col_name = prompt('Create new folder','New Folder');
@@ -363,9 +364,6 @@ OAT.WebDav = {
     	  OAT.WebDav.show_resources(OAT.WebDav.activeNode.id);
     	  return;
     	});
-    }
-  	if(OAT.WebDav.toptions.toolbar){
-	    win.content.appendChild(toolbar.div);
     }
     OAT.WebDav.path = OAT.Dom.create('div',{padding:"5px",borderBottom:"1px solid #cccccc"});
     OAT.WebDav.path.id = 'dav_path_div';
@@ -481,7 +479,7 @@ OAT.WebDav = {
 
   button_save_click:function(){
     if(!OAT.WebDav.toptions.dontDisplayWarning && OAT.WebDav.fileExist($v('dav_filename'))){
-      res_confirm  = confirm('Do You Want to Replace File?')
+      res_confirm  = confirm('Do you want to replace existing file?')
     }else{
       res_confirm = true;
     }
@@ -824,6 +822,7 @@ OAT.WebDav = {
         return OAT.WebDav.resources[i];
       }
     }
+  return false;
   },
 
   //---------------------------------

@@ -8,11 +8,21 @@
  *  See LICENSE file for details.
  */
 
+/*
+	tl = new OAT.Timeline(portDiv, sliderDiv, paramsObj)
+	paramsObj = {
+		portWidth:800,
+		lineHeight:16,
+		bandHeight:20,
+		bandColor:"#fff",
+		margins:200
+	}
+	tl.addBand(name,color,label)
+	tl.addEvent(bandName,startTime,endTime,content,color)
+	tl.draw()
+*/
+
 OAT.TimelineData = {
-	init:function() {
-		OAT.Dom.attach(document,"mouseup",OAT.TimelineData.up);
-		OAT.Dom.attach(document,"mousemove",OAT.TimelineData.move);
-	},
 	up:function() {
 		OAT.TimelineData.obj = false;
 	},
@@ -54,6 +64,7 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	var self = this;
 	this.events = [];
 	this.bands = {};
+	this.dateLabels = [];
 	this.width = 0;
 	this.position = 0;
 	this.options = {
@@ -65,6 +76,8 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	}
 
 	for (var p in paramsObj) { self.options[p] = paramsObj[p]; }
+	
+	this.formatSelect = OAT.Dom.create("select",{font:"menu"});
 	
 	this.elm = OAT.Dom.create("div",{position:"absolute",top:"0px",left:"0px",height:"100%"}); /* main axis */
 	this.elm.style.backgroundColor = self.options.bandColor;
@@ -99,6 +112,7 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	this.clear = function() {
 		self.events = [];
 		self.bands = {};
+		self.dateLabels = [];
 		OAT.Dom.clear(this.elm);
 	}
 	
@@ -126,6 +140,18 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 			d.setMilliseconds(0);
 			return d;
 		}
+		if ((r = str.match(/(.{1,2})\.(.{1,2})\.(....)/))) {
+			var d = new Date();
+			d.setFullYear(r[3]);
+			d.setMonth(parseInt(r[2])-1);
+			d.setDate(r[1]);
+			d.setHours(0);
+			d.setMinutes(0);
+			d.setSeconds(0);
+			d.setMilliseconds(0);
+			return d;
+		}
+		
 		return new Date(str);
 	}
 	
@@ -150,6 +176,38 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 		return e.elm;
 	}
 	
+	this.drawResizer = function() {
+		self.resize = OAT.Dom.create("div",{position:"absolute",width:"10px",height:"10px",right:"0px",fontSize:"1px",bottom:"0px",backgroundImage:"url(/DAV/JS/images/resize.gif)"});
+		self.port.appendChild(self.resize);
+		OAT.Resize.create(self.resize,self.sliderElm,OAT.Resize.TYPE_X,function(){self.sync();});
+		OAT.Resize.create(self.resize,self.port,OAT.Resize.TYPE_XY);
+	}
+	this.drawFormatSelect = function() {
+		var div = OAT.Dom.create("div",{position:"absolute",top:"1px",right:"1px",zIndex:5,font:"menu"});
+		this.port.appendChild(div);
+		div.appendChild(OAT.Dom.text("Date format: "));
+		div.appendChild(self.formatSelect);
+		OAT.Dom.option("[automatic]","",self.formatSelect);
+		OAT.Dom.option("[none]"," ",self.formatSelect);
+		OAT.Dom.option("Year","Y",self.formatSelect);
+		OAT.Dom.option("Month","m.",self.formatSelect);
+		OAT.Dom.option("Month / Year","m/Y",self.formatSelect);
+		OAT.Dom.option("Date","j.n.Y",self.formatSelect);
+		OAT.Dom.option("Date & Time","j.n.Y H:i:s",self.formatSelect);
+	}
+	
+	
+	this.drawDateLabels = function() {
+		var val = $v(self.formatSelect);
+		for (var i=0;i<self.dateLabels.length;i++) {
+			var elm = self.dateLabels[i];
+			var f = (val == "" ? elm._format : val);
+			elm.txt.innerHTML = elm._date.format(f);
+			elm.txt.title = elm._date.toHumanString();
+		}
+	}
+	OAT.Dom.attach(self.formatSelect,"change",self.drawDateLabels);
+	
 	this.draw = function() {
 		/* preparation */
 		OAT.Dom.clear(self.elm);
@@ -171,16 +229,18 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 		if (index == self.events.length) { index--; } /* if all events at the same time */
 		var scale = OAT.TlScale.findScale(first.startTime,self.events[index].startTime);
 		var line = scale.initBefore(self.events[0].startTime);
+		self.dateLabels.push(line);
 		line.style.left = self.width + "px";
 		self.elm.appendChild(line);
 		/* main loop */
 		do {
 			/* create lineset */
 			var lines = scale.generateSet(); 
-			window.debug.push(lines);
 			/* append them to timeline and plot suitable events */
 			for (var i=0;i<lines.length;i++) { /* for all time intervals */
+				debug.push(lines[i]);
 				var elm = lines[i].elm;
+				self.dateLabels.push(elm);
 				var startTime = lines[i].startTime;
 				var endTime = lines[i].endTime;
 				var width = lines[i].width;
@@ -236,19 +296,14 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 				newscale = OAT.TlScale.findScale(endTime,pendingEnds[0].endTime,scale.currentTime);
 			}
 			
-			if (newscale.name != scale.name && 0) {
-				/* add zigzag */
-				self.width += 60;
-				var z = OAT.Dom.create("div",{position:"absolute",width:"14px",top:"0px",height:"100%",backgroundImage:"url(images/Timeline_zigzag.gif)"});
-				z.style.left = self.width;
-				self.elm.appendChild(z);
-			}
-			
 			scale = newscale;
 			
 		} while (lastPlottedIndex < self.events.length-1 || self.width + self.options.margins < self.options.portWidth || pendingEnds.length);
 		self.width += self.options.margins;
 		self.elm.style.width = self.width + "px";
+		
+		/* actualize date labels */
+		self.drawDateLabels();
 		
 		/* compute lines */
 		for (var i=0;i<self.events.length;i++) {
@@ -294,6 +349,9 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 		/* slide to center */
 		self.slider.options.initValue = Math.round(self.slider.options.maxValue / 2);
 		self.slider.init();
+		
+		self.drawFormatSelect();
+		self.drawResizer();
 	}
 	
 	this.computeLine = function(event) {
@@ -333,5 +391,6 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	this.slider.onchange = self.scrollTo;
 
 }
-OAT.Loader.loadAttacher(OAT.TimelineData.init);
+OAT.Dom.attach(document,"mouseup",OAT.TimelineData.up);
+OAT.Dom.attach(document,"mousemove",OAT.TimelineData.move);
 OAT.Loader.pendingCount--;

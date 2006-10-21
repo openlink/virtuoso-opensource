@@ -52,7 +52,7 @@ OAT.MacWin = function(optObj) {
 	this.div.appendChild(this.content);
 	
 	opt.ieElm = this.content;
-	OAT.SimpleFX.round(this.div,opt);
+	OAT.SimpleFX.roundImg(this.div,opt);
 	OAT.SimpleFX.shadow(this.div,{offsetX:8,ieElm:this.content,imagePath:options.imagePath});
 
 	this.move = this.div.edgeElms[0];

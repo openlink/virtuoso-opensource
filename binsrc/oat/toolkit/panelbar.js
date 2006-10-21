@@ -8,19 +8,17 @@
  *  See LICENSE file for details.
  */
 /*
-	var pb = new OAT.Panelbar(fadeDelay) ( 0 == no fade )
-	document.body.appendChild(pb.div);
-	
+	var pb = new OAT.Panelbar(div,fadeDelay) ( 0 == no fade )
 	pb.addPanel(clickerDiv,contentDiv)
 	pb.go(0);
 	
 	CSS: .panelbar, .panelbar_option, .panelbar_option_selected, .panelbar_option_upper, .panelbar_option_lower, .panelbar_content
 */
 
-OAT.Panelbar = function(delay) {
+OAT.Panelbar = function(div,delay) {
 	var obj = this;
-	this.div = OAT.Dom.create("div");
-	this.div.className = "panelbar";
+	this.div = $(div);
+	OAT.Dom.addClass(this.div,"panelbar");
 	this.selectedIndex = -1;
 	this.panels = [];
 	this.delay = delay;

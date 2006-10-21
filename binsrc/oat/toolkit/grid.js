@@ -117,11 +117,6 @@ OAT.GridData = {
 		}
 	}, /* OAT.GridData.up() */
 	
-	init:function() {
-		OAT.Dom.attach(document.body,"mouseup",OAT.GridData.up);
-		OAT.Dom.attach(document.body,"mousemove",OAT.GridData.move);
-	},
-	
 	move:function(event) {
 		if (OAT.GridData.resizing) {
 			/* selection removal... */
@@ -187,21 +182,72 @@ OAT.GridData = {
 	} /* OAT.GridData.move() */
 } /* GridData */
 
-OAT.Grid = function(something,autoNumber) {
+OAT.Grid = function(something,autoNumber,allowHiding) {
 	var self = this;
 
 	this.reorderNotifier = false; /* notify app of reordering */
 	this.sortFunc = false;        /* custom sorting routine */
 	this.imagesPath = "../images";
 	this.rowOffset = 0;
+	this.allowHiding = allowHiding;
+	this.autoNumber = (autoNumber ? 1 : 0);
 	
 	this.div = $(something);
 	OAT.Dom.clear(this.div);
+	if (this.allowHiding) { /* column hiding */
+		var hide = OAT.Dom.create("a");
+		hide.href = "#";
+		hide.innerHTML = "visible columns";
+		this.div.appendChild(hide);
+		this.propPage = OAT.Dom.create("div",{position:"absolute",border:"2px solid #000",padding:"2px",backgroundColor:"#fff"});
+		this.propPage.style.paddingRight = "16px";
+		document.body.appendChild(this.propPage);
+		OAT.Instant.assign(this.propPage);
+		var refresh = function() {
+			self.propPage._Instant_hide();
+		}
+		var generatePair = function(index) {
+			var state = (self.header.cells[index].html.style.display != "none");
+			var pair = OAT.Dom.create("div");
+			var ch = OAT.Dom.create("input");
+			ch.type = "checkbox";
+			ch.checked = (state ? true : false);
+			ch.__checked = (state ? "1" : "0");
+			pair.appendChild(ch);
+			var val = self.header.cells[index].value.innerHTML;
+			pair.appendChild(OAT.Dom.text(" "+val));
+			OAT.Dom.attach(ch,"change",function(){
+				var newdisp = (self.header.cells[index].html.style.display == "none" ? "" : "none");
+				self.header.cells[index].html.style.display = newdisp;
+				for (var i=0;i<self.rows.length;i++) {
+					self.rows[i].cells[index].html.style.display = newdisp;
+				}
+			});
+			return pair;
+		}
+		var clickRef =  function(event) {
+			var coords = OAT.Dom.eventPos(event);
+			self.propPage.style.left = coords[0] + "px";
+			self.propPage.style.top = coords[1] + "px";
+			OAT.Dom.clear(self.propPage);
+			/* contents */
+			var close = OAT.Dom.create("div",{position:"absolute",top:"3px",right:"3px",cursor:"pointer"});
+			close.innerHTML = "X";
+			OAT.Dom.attach(close,"click",refresh);
+			self.propPage.appendChild(close);
+			var start = (self.autoNumber ? 1 : 0);
+			for (var i=start;i<self.header.cells.length;i++) {
+				var pair = generatePair(i);
+				self.propPage.appendChild(pair);
+			}
+			self.propPage._Instant_show();
+		} /* clickref */
+		OAT.Dom.attach(hide,"click",clickRef);
+	} /* if allowHiding */
 	this.div.style.position = "relative";
 	this.html = OAT.Dom.create("table");
 	OAT.Dom.addClass(this.html,"grid");
 	this.div.appendChild(this.html);
-	this.autoNumber = (autoNumber ? 1 : 0);
 
 	this.header = new OAT.GridHeader(this);
 	this.html.appendChild(this.header.html);
@@ -671,5 +717,6 @@ OAT.GridRowCell = function(obj,number,params) {
 	
 } /* GridRowCell */
 
-OAT.Loader.loadAttacher(OAT.GridData.init);
+OAT.Dom.attach(document,"mouseup",OAT.GridData.up);
+OAT.Dom.attach(document,"mousemove",OAT.GridData.move);
 OAT.Loader.pendingCount--;

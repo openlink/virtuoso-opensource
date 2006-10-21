@@ -8,21 +8,32 @@
  *  See LICENSE file for details.
  */
 /*
-	var xml = OAT.Xml.getTreeString(string);
-	var xml = OAT.Xml.createXmlDoc(string); (create xmlDoc from string)
- 	var xml = OAT.Xml.transformXSLT(xmlDoc,xslDoc);
-	var txt = OAT.Xml.textValue(elem);
-	var list = OAT.Xml.getElementsByTagName(elem,tagName);
+	var txt = OAT.Xml.textValue(elem)
+	var txt = OAT.Xml.localName(elem)
+	var arr = OAT.Xml.childElements(elm)
+
+ 	var xml = OAT.Xml.transformXSLT(xmlDoc,xslDoc)
+	var xml = OAT.Xml.createXmlDoc(string) (create xmlDoc from string)
+	
+	var arr = OAT.Xml.getElementsByLocalName(elm,localName)
+	var list = OAT.Xml.getLocalAttribute(elem,localName)
+	
+	var xpath = OAT.Xml.xpath(xmlDoc,xpath,nsObject)
 */
 
 OAT.Xml = {
 	textValue:function(elem) {
+		/*
+			gecko: textContent
+			ie: text
+			safari: .nodeValue of first child
+		*/
 		if (document.implementation && document.implementation.createDocument) {				
 			var result = elem.textContent;
 			/* safari hack */
 			if (typeof(result) == "undefined") { 
 				result = elem.firstChild; 
-				return (result ? result.data : "");
+				return (result ? result.nodeValue : "");
 			}
 			return result;
 		} else if (window.ActiveXObject) {
@@ -33,35 +44,11 @@ OAT.Xml = {
 		}
 	},
 	
-	getTreeString:function(string) {
-		if (document.implementation && document.implementation.createDocument) {				
-			var parser = new DOMParser();
-			var xml = parser.parseFromString(string, "text/xml");
-			return xml;
-		} else if (window.ActiveXObject) {
-			var xml = new ActiveXObject("Microsoft.XMLDOM");
-			xml.async = false;
-			xml.loadXML(string);
-			return xml;
+	localName:function(elem) {
+		if (OAT.Dom.isIE()) {
+			return elme.baseName;
 		} else {
-			alert("Ooops - no XML parser available");
-			return false;
-		}
-	},
-	
-	transformXSLT:function(xmlDoc,xslDoc) {
-		if (document.implementation && document.implementation.createDocument) {				
-			var xslProc = new XSLTProcessor();
-			xslProc.importStylesheet(xslDoc);
-			var result = xslProc.transformToDocument(xmlDoc);
-			return result;
-		} else if (window.ActiveXObject) {
-			var result = xmlDoc.transformNode(xslDoc);
-			var rDoc = OAT.Xml.createXmlDoc(result);
-			return rDoc;
-		} else {
-			alert("Ooops - no XSL parser available");
-			return false;
+			return elem.localName;
 		}
 	},
 	
@@ -85,7 +72,23 @@ OAT.Xml = {
 		return false;
 	},
 	
-	getElementsByTagName:function(elem,tagName) {
+	transformXSLT:function(xmlDoc,xslDoc) {
+		if (document.implementation && document.implementation.createDocument) {				
+			var xslProc = new XSLTProcessor();
+			xslProc.importStylesheet(xslDoc);
+			var result = xslProc.transformToDocument(xmlDoc);
+			return result;
+		} else if (window.ActiveXObject) {
+			var result = xmlDoc.transformNode(xslDoc);
+			var rDoc = OAT.Xml.createXmlDoc(result);
+			return rDoc;
+		} else {
+			alert("Ooops - no XSL parser available");
+			return false;
+		}
+	},
+	
+	getElementsByLocalName:function(elem,tagName) {
 		var result = [];
 		var elems = elem;
 		if (!(elems instanceof Array)) { elems = [elem]; }
@@ -104,6 +107,14 @@ OAT.Xml = {
 			if (all[i].parentNode == elem) { result.push(all[i]); }
 		}
 		return result;
+	},
+	
+	getLocalAttribute:function(elm,localName) {
+		var all = elm.attributes;
+		for (var i=0;i<elm.attributes.length;i++) {
+			if (elm.attributes[i].localName == localName || elm.attributes[i].baseName == localName) { return elm.attributes[i].nodeValue; }
+		}
+		return false;
 	},
 	
 	xpath:function(xmlDoc,xpath,nsObject) {

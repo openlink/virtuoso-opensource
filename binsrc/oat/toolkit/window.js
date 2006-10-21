@@ -12,7 +12,8 @@
 
 OAT.WindowData = {
 	TYPE_WIN:1,
-	TYPE_MAC:2
+	TYPE_MAC:2,
+	TYPE_ROUND:3
 }
 
 OAT.Window = function(optObj,type) {
@@ -29,6 +30,9 @@ OAT.Window = function(optObj,type) {
 		break;
 		case OAT.WindowData.TYPE_MAC:
 			var obj = new OAT.MacWin(optObj);
+		break;
+		case OAT.WindowData.TYPE_ROUND:
+			var obj = new OAT.RoundWin(optObj);
 		break;
 	}
 	if (!obj) { return; }

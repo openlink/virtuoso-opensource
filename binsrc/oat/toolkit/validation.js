@@ -9,8 +9,7 @@
  */
 /*
 	OAT.Validation.create(something, type, params)
-	OAT.Validation.TYPE_NUMERIC
-	OAT.Validation.TYPE_LETTERS
+	OAT.Validation.TYPE_REGEXP
 	OAT.Validation.TYPE_DATE
 	
 	params = {
@@ -19,7 +18,8 @@
 		def:"_",
 		defDate:[today.getFullYear(),today.getMonth()+1,today.getDate()],
 		minDate:[1900,1,1],
-		maxDate:[2010,12,31]
+		maxDate:[2010,12,31],
+		regexp:""
 	}
 */
 
@@ -116,7 +116,8 @@ OAT.Validation = {
 			def:"_",
 			defDate:[today.getFullYear(),today.getMonth()+1,today.getDate()],
 			minDate:[1900,1,1],
-			maxDate:[2010,12,31]
+			maxDate:[2010,12,31],
+			regexp:""
 		}
 		if (params) for (p in params) paramsObj[p] = params[p];
 		switch (type) {
