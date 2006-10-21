@@ -45,7 +45,6 @@ EXTRA_DIST = \
 	*.sql \
 	*.vsp \
 	*.vspx \
-	doc/*.png \
 	make_vad.sh \
 	public/*.vsp \
 	public/*.vspx \
