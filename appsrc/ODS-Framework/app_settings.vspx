@@ -50,7 +50,7 @@
 	  </td>
 	  <td>
 	    <img src="images/icons/go_16.png" border="0" alt="" />
-	    <v:url name="appl2" value="Endpoints" url="--sprintf ('vhost.vspx?l=%s', self.topmenu_level)" render-only="1" />
+	    <v:url name="appl2" value="Application Instance Access Points" url="--sprintf ('vhost.vspx?l=%s', self.topmenu_level)" render-only="1" />
 	    <div>
 	      Add or remove URLs for accessing your applications.
 	    </div>
