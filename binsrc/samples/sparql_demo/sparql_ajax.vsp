@@ -387,7 +387,7 @@ WHERE
 }">Ask</option>
 				        </select>
     	          <select name="tool" id="tool" onchange="tool_invoke()">
-				          <option value="">-- Tools --</option>
+				          <option value="">-- Statement Help --</option>
 				          <option value="tool_put_line_start('#')">Comment Selection</option>
 				          <option value="tool_rem_line_start('#')">Uncomment Selection</option>
 				          <option value="tool_put_line_start('    ')">Indent Selection</option>
@@ -408,7 +408,7 @@ WHERE
 				          <option value="tool_put('FILTER ( bound(?x) ) .')">put Bound Filter</option>
 				          <option value="tool_put('FILTER ( ?date > &quot;2005-01-01T00:00:00Z&quot;^^xsd:dateTime ) .')">put Date Filter</option>
 				        </select>
-				        <a href="#" onclick="tools_popup()"><img src="images/cr16-action-window_new.png" alt="Tools popup" title="Tools popup" border="0"/></a>
+				        <a href="#" onclick="tools_popup()"><img src="images/cr16-action-window_new.png" alt="Statement Help" title="Statement Help" border="0"/></a>
 				      </div>
           <label for="query">SPARQL Query</label><br/>
               <textarea id="query" name="query" onchange="format_select(this)" onkeyup="format_select(this)" wrap="off">SELECT * WHERE {?s ?p ?o}</textarea>
