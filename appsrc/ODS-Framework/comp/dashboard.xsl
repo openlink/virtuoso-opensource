@@ -61,7 +61,7 @@
         <li>Communicate with others using emails and blogs</li>
         <li>Collaborate with authoring information on Wikis, and much more!</li>
       </ul>
-      <a href="ods_tutorial.html">Learn more about Openlink Data Spaces</a>
+      <!--a href="ods_tutorial.html">Learn more about Openlink Data Spaces</a-->
     </div>
   </xsl:template>
  
@@ -1269,7 +1269,7 @@
       ?>
     <vm:if test="not has_wiki_app">
       <div class="app_ad">
-        <a href="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+        <a href="index_inst.vspx?wa_name=oWiki&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
           <img border="0" src="images/app_ads/ods_bann_wiki.jpg" alt="Share Information, Collaborate With ODS-Wiki!" />
         </a>
         <div class="app_ad_ft">
@@ -1321,7 +1321,7 @@
 ?>
     <vm:if test="not has_news_app">
       <div class="app_ad">
-        <a href="index_inst.vspx?wa_name=eNews&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+        <a href="index_inst.vspx?wa_name=eNews2&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
           <img border="0" src="images/app_ads/ods_bann_newsdesk.jpg" alt="Create Your Own Personalized News Desk!" />
         </a>
         <div class="app_ad_ft">
@@ -1444,7 +1444,7 @@
          </vm:if>
     <vm:if test="not has_bookmarks">
       <div class="app_ad">
-        <a href="index_inst.vspx?wa_name=eNews&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+        <a href="index_inst.vspx?wa_name=Bookmark&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
           <img border="0" src="images/app_ads/ods_bann_bookmarks.jpg" alt="Let us help you organize and share your bookmarks!" />
         </a>
         <div class="app_ad_ft">
