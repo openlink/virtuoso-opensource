@@ -84,6 +84,7 @@ EXTRA_DIST =  \
 	Skins/Clean/*.css \
 	Skins/Clean/*.xslt \
 	Skins/default/*.css \
+	Skins/default/*.png \
 	Skins/default/*.xslt \
 	Skins/OpenLink/*.css \
 	Skins/OpenLink/*.xslt \
