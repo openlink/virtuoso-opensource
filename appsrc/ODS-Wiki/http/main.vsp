@@ -28,6 +28,12 @@
   declare _uid integer;
   declare _sid, _realm, _user varchar;
   declare cookie_vec any;
+  if (length(lines) and strstr (coalesce (lines[0], ''), '//'))
+    {
+       http_request_status ('HTTP/1.1 302 Found');
+       http_header (http_header_get() || sprintf('Location: %s\r\n', http_path()));
+       return;
+    }
   cookie_vec := DB.DBA.vspx_get_cookie_vec(lines);
 
   if ({?'sid'} is not null and {?'sid'} <> '')
