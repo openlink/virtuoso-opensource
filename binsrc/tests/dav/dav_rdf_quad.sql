@@ -123,8 +123,8 @@ create procedure DB.DBA.RDF_CBD_DELETE (inout triple_list any, in graph_id any, 
   -- dbg_obj_princ ('DB.DBA.RDF_CBD_DELETE (', triple_list, graph_id, local_dav_uri, ')');
   set isolation = 'committed';
   not_deleteable := dict_new ();
-  candidates := dict_new ();
   again:
+  candidates := dict_new ();
   foreach (any triple in triple_list) do
     {
       declare obj any;
