@@ -65,11 +65,11 @@
         <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/dataspace/<xsl:value-of select="root/instance_owner"/>/about.rdf</xsl:attribute>
         </link>
         <script type="text/javascript">
-      		var toolkitPath = "/photos/res/toolkit";
+      		var toolkitPath = "/ods/oat";
       		var featureList = ["dom","rotator","slider","xml","ajax"];
       	</script>
 
-      	<script type="text/javascript" src="/photos/res/toolkit/loader.js"></script>
+      	<script type="text/javascript" src="/ods/oat/loader.js"></script>
 <!--
 -->
         <script type="text/javascript" language="JavaScript" src="/photos/res/js/ajax.js"></script>

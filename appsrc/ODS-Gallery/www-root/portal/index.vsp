@@ -109,7 +109,7 @@
   geo_data := PHOTO.WA.get_geo_info(current_user.user_id);
   _xsl_path := sprintf('%sxslt/index.xsl',PHOTO.WA.base_path());
   _xml := string_output();
---dbg_obj_print(current_instance);
+
   http(sprintf('<root sid="%s" realm="%s">',_sid,either(current_user.realm,'')),_xml);
   http(sprintf('<user lat="%.06f" lng="%.06f">',coalesce(geo_data[0],0),coalesce(geo_data[1],0)),_xml);
   http(sprintf('<full_name>%s</full_name>',current_user.full_name),_xml);
@@ -126,7 +126,7 @@
   http(sprintf('<gallery_id>%d</gallery_id>',current_instance.gallery_id),_xml);
   http(sprintf('<instance_owner>%s</instance_owner>',current_instance.owner_name),_xml);
   http(sprintf('<instance_description>%s</instance_description>',current_instance.description),_xml);
-  --http(sprintf('<bar><![CDATA[%s]]></bar>',ODS.BAR._EXEC('oMail', params, lines)),_xml);
+  http(sprintf('<bar><![CDATA[%s]]></bar>',ODS.BAR._EXEC('oMail', params, lines)),_xml);
 
 
   http(user_gallery,_xml);
