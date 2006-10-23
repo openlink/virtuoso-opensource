@@ -2888,6 +2888,8 @@ character_data:
 		  handle_char_data(parser, parser->bptr, parser->pptr);
 		  return XML_TOK_CHAR_DATA;
 		}
+              if ((UNICHAR_EOD == c) && xmlparser_is_ok (parser))
+	        return XML_TOK_FINISH;
 	      return XML_TOK_ERROR;
 	    }
 
