@@ -196,7 +196,7 @@
 						CommandLine="
 cd $(InputDir)
 rm -f media_maclex.c
-flex -8 -Pmacyy -omedia_maclex.c $(InputPath)
+flex -8 -Pmediamacyy -omedia_maclex.c $(InputPath)
 cd $(ProjectDir)
 "
 						Outputs="media_maclex.c"/>
@@ -208,7 +208,7 @@ cd $(ProjectDir)
 						CommandLine="
 cd $(InputDir)
 rm -f media_maclex.c
-flex -8 -Pmacyy -omedia_maclex.c $(InputPath)
+flex -8 -Pmediamacyy -omedia_maclex.c $(InputPath)
 cd $(ProjectDir)
 "
 						Outputs="media_maclex.c"/>
@@ -223,7 +223,7 @@ cd $(ProjectDir)
 						CommandLine="
 cd $(InputDir)
 rm -f media_wikilex.c
-flex -8 -Pwikiyy -omedia_wikilex.c $(InputPath)
+flex -8 -Pmediawikiyy -omedia_wikilex.c $(InputPath)
 cd $(ProjectDir)
 "
 						Outputs="media_wikilex.c"/>
@@ -235,7 +235,7 @@ cd $(ProjectDir)
 						CommandLine="
 cd $(InputDir)
 rm -f media_wikilex.c
-flex -8 -Pwikiyy -omedia_wikilex.c $(InputPath)
+flex -8 -Pmediawikiyy -omedia_wikilex.c $(InputPath)
 cd $(ProjectDir)
 "
 						Outputs="media_wikilex.c"/>

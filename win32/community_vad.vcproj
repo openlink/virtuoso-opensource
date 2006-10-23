@@ -95,7 +95,8 @@ set SERVER=virtuoso-t.exe
 bash make_vad.sh
 cd $(ProjectDir)
 "
-					Outputs="$(InputDir)\ods_community_dav.vad;$(InputDir)\ods_community_filesystem.vad"/>
+					AdditionalDependencies="$(TargetDir)\..\isql.exe;$(TargetDir)\..\virtuoso-t.exe"
+					Outputs="$(InputDir)\ods_community_dav.vad"/>
 			</FileConfiguration>
 			<FileConfiguration
 				Name="Release|Win32">
@@ -110,8 +111,8 @@ set SERVER=virtuoso-t.exe
 bash make_vad.sh
 cd $(ProjectDir)
 "
-					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe"
-					Outputs="$(InputDir)\ods_community_dav.vad;$(InputDir)\ods_community_filesystem.vad"/>
+					AdditionalDependencies="$(TargetDir)\..\isql.exe;$(TargetDir)\..\virtuoso-t.exe"
+					Outputs="$(InputDir)\ods_community_dav.vad"/>
 			</FileConfiguration>
 		</File>
 	</Files>

@@ -96,6 +96,7 @@ set SERVER=virtuoso-t.exe
 bash mkvad.sh
 cd $(ProjectDir)
 "
+					AdditionalDependencies="$(TargetDir)\..\isql.exe;$(TargetDir)\..\virtuoso-t.exe"
 					Outputs="$(InputDir)\conductor_dav.vad;$(InputDir)\conductor_filesystem.vad"/>
 			</FileConfiguration>
 			<FileConfiguration
@@ -111,7 +112,7 @@ set SERVER=virtuoso-t.exe
 bash mkvad.sh
 cd $(ProjectDir)
 "
-					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe"
+					AdditionalDependencies="$(TargetDir)\..\isql.exe;$(TargetDir)\..\virtuoso-t.exe"
 					Outputs="$(InputDir)\conductor_dav.vad;$(InputDir)\conductor_filesystem.vad"/>
 			</FileConfiguration>
 		</File>

@@ -39,6 +39,14 @@ gawk -f sql_to_c.awk -v init_name=_vdb -v pl_stats=PLDBG %SQL_FILES_VDB% > sql_c
 set SQL_FILES_SPARQL=sparql.sql 
 gawk -f sql_to_c.awk -v init_name=_sparql -v pl_stats=PLDBG %SQL_FILES_SPARQL% > sql_code_sparql.c
 
+gawk -f "jso_reformat.awk" -v "output_mode=h" -v "h_wrapper=__RDF_MAPPING_JSO_H" rdf_mapping.jso > rdf_mapping_jso.h
+
+gawk -f "jso_reformat.awk" -v "output_mode=c" rdf_mapping.jso > rdf_mapping_jso.c
+
+gawk -f "jso_reformat.awk" -v "output_mode=ttl" rdf_mapping.jso > rdf_mapping_jso.ttl
+
+gawk -f "jso_reformat.awk" -v "output_mode=ttl-sample" rdf_mapping.jso > rdf_mapping_jso.ttl-sample
+
 @echo #include "sql_code_cache_impl.c" > sql_code_cache.c
 @echo #include "../../binsrc/cached_resources/cached_resources.c" >> sql_code_cache.c
 
