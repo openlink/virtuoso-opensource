@@ -120,6 +120,7 @@ OAT.Rotator = function(panelX,panelY,paramsObj,callback) {
 				break;
 			}
 			obj.callback();
+			if (!obj.running) { return;}
 			delay = obj.options.pause;
 		} /* if moving elements */
 		setTimeout(obj.tick,delay);
