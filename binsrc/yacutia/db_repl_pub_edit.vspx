@@ -739,7 +739,7 @@
                 To create a backup of this Publication as an image file,<br/>
                 enter the directory and File name and file Split size.<br/>
                 Then press Create image to export content. The Image file<br/>
-                will be created as splices with Spilt size designating<br/>
+                will be created as splices with Split size designating<br/>
                 the splice cutoff in bytes.
               </td>
             </tr>

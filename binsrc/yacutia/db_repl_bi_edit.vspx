@@ -186,7 +186,7 @@
    Notes:
    <ul>
      <li>To add new subscriber server, press the "New Subscriber" button.</li>
-     <li>To initialize the subscription select some subsriber(s) and press "Initial copy" button.</li>
+     <li>To initialize the subscription select some subscriber(s) and press "Initial copy" button.</li>
      <li>To remove some subscriber server (stops replication on it)
        from this publication, select some subscriber(s) and press
        "Delete" button.</li>

@@ -209,7 +209,7 @@
   <p>To create stored PL procedure for conflict resolving:</p>
   <ol>
     <li>Enter a unique suffix (string literal) which will be appended to the
-      procedure name. <br/>The conflict resolver stored procdure name begins with published item name.</li>
+      procedure name. <br/>The conflict resolver stored procedure name begins with published item name.</li>
     <li>Enter the order for execution, less number will make so the resolver to be
       invoked earlier.</li>
     <li>Select default rule from "Class" drop-down list.</li>

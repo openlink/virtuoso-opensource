@@ -7,12 +7,12 @@ in order  to install yacutia pages:
 In order to install inifile properties editor, you need:
 1. copy inifile.xml file into the same directory, where .ini file is.
 2. Be sure the directory binsrc/yacutia is linked on top of the http server directory under the 'yacutia' name.
-   In case you link it under anotehr name, do modify yacutia/yacutia.isql script (second argument of create_inifile_page
+   In case you link it under another name, do modify yacutia/yacutia.isql script (second argument of create_inifile_page
    function).
 3. In .ini file do define the full path on inifile.xml file location for DirAllowed parameter.
 4. Pages are ready to be used;
 
-Note - at present time the initialazing  data are being   stored  into  the same directory, where .ini file is.
+Note - at present time the initializing  data are being   stored  into  the same directory, where .ini file is.
 but since the editor is not using yet,  the data are being stored into file *.ini__
 
 Start page name is main_tabs.vspx.
@@ -20,13 +20,13 @@ The pages access restriction mechanism.
 There is few ways to manage the pages access.
 
 First and most important is the checking of the user id.
-Any yacutia page, built with yacutia_style.xsl, using VM macroses allows to check user's  permition to access
+Any yacutia page, built with yacutia_style.xsl, using VM macros allows to check user's  permission to access
 given page.
-For the element vm:pagewrapper can be specifyed attribute @owner.
-in case this attribute is ommited, only DBA can access for given page.
+For the element vm:pagewrapper can be specified attribute @owner.
+in case this attribute is omitted, only DBA can access for given page.
 Rest users can access to this page, if and only if the value of this attribute
 holds the role name, which is granted to given user. The stored procedure check_grants( in user_name, in role_name)
-performs the checking of access permition and returns 1 if access is permitted.
+performs the checking of access permission and returns 1 if access is permitted.
 The code  for mentioned feature is implemented into <v:after-data-bind> event handler for <v:login> component.
 If given user has no permission to access any page, the main_tabs.vspx page will be redirected.
 Therefore any yacutia page has the access checking mechanism embedded into page code.
@@ -54,10 +54,10 @@ that components will be active, otherwise - won't.
 Yacutia pages
 
 At present time the following pages are done :
-By Vladmimir Kaluzhny:
+By Vladimir Kaluzhny:
 1. Accounts Management pages.
 2. Roles management pages.
-3. Preveledges management.
+3. Privileges management.
 4. XSLT page.
 5. XQuery execution pages.
 6. Systems parameters editor
@@ -79,8 +79,8 @@ Filter consist from:
 1.List of the possible rules for filter applying
 2. text of the filter value
 3. Button "Filter" to perform the filtering
-4. Button Reset to reset filter into initail state.
-The list of accounts consist from the name of the account, description of it and "Edit" & "Delete" refferences for each
+4. Button Reset to reset filter into initial state.
+The list of accounts consist from the name of the account, description of it and "Edit" & "Delete" references for each
 record of the accounts list.
 
 Account Create/Modify Dialog.
@@ -108,29 +108,29 @@ start page- roles.vspx
 Description of the roles page.
 On the right  of dialog title "Group" there is reference "Create New Group"
 Then below there exist list of the roles.
-The list of roles consist from the name of the role, description of it and "Edit" & "Delete" refferences for each
+The list of roles consist from the name of the role, description of it and "Edit" & "Delete" references for each
 record of the roles list.
 
 Create/Modify role.
 This dialog appears on the top of the roles list and allows to specify
-1. the name of the role.
-2. Description o fthe role
+1. The name of the role.
+2. Description of the role
 3. Grant the new role to the existing ones.
 User must specify:
 1. role name.
 2. Role description
-then user can specify the users/roles to whioch this new will be granted.
+then user can specify the users/roles to which this new will be granted.
 For this user have to:
 1. Select the desired items form list of intended members.
-   (in order to lower the list lenght, user can specify -
+   (in order to lower the list length, user can specify -
     if the user or/and group names have to be  included into list.
-    "Reload" button allows to realod the intended members list)
+    "Reload" button allows to reload the intended members list)
 2. Press button "Grant" in order to move the previously selected items into
    the  "Granted to" list.
 3. if user wish, it can Revoke the items. it should select  the items into
    the  "Granted to" list.
 
-Preveledges management.
+Privileges management.
 
 XSLT perform page.
 
@@ -141,23 +141,23 @@ the possible contexts are: DAV repository, DB table, URL (on HTTP or FTP resourc
 Second screen depends for kind of context.
 1. if the context is DAV repository, this screen is to specify the DAV located file.
 2. if the context is Table, this screen has three parts
-   2.1 to specify  the table. there is posibility to specify desired qualifier and after this specify the table name
+   2.1 to specify  the table. there is possibility to specify desired qualifier and after this specify the table name
    2.2 to specify the desired Key column and Value column
    2.3 to specify the desired value of key column
 3. if the context is Internet resource URL, this screen is to specify URL value
 Third Screen is to specify:
 1. xquery expression text
 2. Apply XSLT on taken result or not.
-3. XSLT file refference
+3. XSLT file reference
 4. Output to: Screen  or DAV Repository.
 5. Root document node
 
 Fourth screen is to specify the DAV storage parameters, in case "Output to" designated to DAV Repository.
 1. Store into - the path to store file in.
-2. Permitions
+2. Permission
 3. The ways to create the xml file:
   3.1 just   persist the xml file
-  3.2 Create XML in Real time. the updating interval should be specifyed. default is 10 min.
+  3.2 Create XML in Real time. the updating interval should be specified. default is 10 min.
   3.3 Create the XML Template on given xquery.
 
 Fifth screen is the result of xquery execution. from this page user can go onto first screen again.

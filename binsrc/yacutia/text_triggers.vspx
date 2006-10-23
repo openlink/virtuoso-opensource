@@ -141,7 +141,7 @@
             </td>
           </tr>
 	  <?vsp
-	    -- this shouldnot be shown here
+	    -- this should not be shown here
             if (0 and self.c_text is not null and self.c_text <> '')
             {
           ?>

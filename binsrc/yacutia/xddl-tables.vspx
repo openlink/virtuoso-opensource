@@ -2492,7 +2492,7 @@
           <vm:row>
           <vm:raw>
       <td colspan="6">
-        <?vsp http(sprintf('You are about to execute the following statements against current database. This may damage database structure and destoy data. Are you sure?' ));
+        <?vsp http(sprintf('You are about to execute the following statements against current database. This may damage database structure and destroy data. Are you sure?' ));
         ?>
       </td>
     </vm:raw>

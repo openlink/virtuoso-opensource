@@ -133,7 +133,7 @@
   else if ( mode  ='xddl_chooser')
               http('Current Database Objects Chooser.');
   else if ( mode  ='xddl_constraint_error')
-	         http('Check constraint Validation resuls.');
+	         http('Check Constraint Validation results.');
 
         } ?>
 	 </td>
@@ -277,7 +277,7 @@
             i := 0;
             while (i < len) {
               if ( aref(self.foreign_key_columns,i+1) is null or aref(self.foreign_key_columns,i+2) is null ) {
-                self.wrong_entry := sprintf ('Column %s has no valid refference specified.', aref(self.foreign_key_columns,i));
+                self.wrong_entry := sprintf ('Column %s has no valid reference specified.', aref(self.foreign_key_columns,i));
 								self.vc_data_bind(e);
                 return;
               }
@@ -382,7 +382,7 @@
 			}
 
 
---dbg_obj_print('CHECKPONT-1',vector(vector('callret',182,0,256,1,0,1,0,0,0,0,0 )));
+--dbg_obj_print('CHECKPOINT-1',vector(vector('callret',182,0,256,1,0,1,0,0,0,0,0 )));
 
 		     ]]></script>
 		 </v:before-data-bind>
@@ -1216,7 +1216,7 @@
 		 <v:before-data-bind>
 			<script><![CDATA[
 				declare table_name, column_name, path  varchar;
-									dbg_obj_print('CHECKPONT-2');
+									dbg_obj_print('CHECKPOINT-2');
 
 		     if ( ( self.mode = 'table_edit') and ( get_keyword('entry', params)  is not null)  ) {
 		         if ( self.kind = 'edit') {
@@ -1352,7 +1352,7 @@ Here is the tabs
 						<v:text name="edit_table_name" >
 						 <v:before-data-bind>
 							<script><![CDATA[
-							  dbg_obj_print('CHECKPONT-3');
+							  dbg_obj_print('CHECKPOINT-3');
 
 				        if (self.mode = 'table_edit'  and self.kind = 'edit') {
 							control.ufl_value := 	cast ( xpath_eval('/table/@name',self.current_table) as varchar);
@@ -1629,7 +1629,7 @@ Here is the tabs
 		<v:before-data-bind>
 		 <script><![CDATA[
 			 declare name varchar;
-			 dbg_obj_print('CHECKPONT-4');
+			 dbg_obj_print('CHECKPOINT-4');
 
 			 name := cast ( xpath_eval('./@name',  (control.vc_parent.vc_parent.vc_parent as vspx_data_set).ds_current_row.te_rowset) as varchar );
 			 control.ufl_value := name;
@@ -2101,7 +2101,7 @@ Here is the tabs
 								 </v:on-post>
 								 <v:before-data-bind>
 									<script><![CDATA[
-		  dbg_obj_print('CHECKPONT-5');
+		  dbg_obj_print('CHECKPOINT-5');
 												      if ( self.mode = 'table_edit' ) {
 													    declare i, len integer;
 													    declare id varchar;
@@ -2909,7 +2909,7 @@ Here is the tabs
 		<vm:events>
 		 <v:before-data-bind>
 			<script><![CDATA[
-			    dbg_obj_print('CHECKPONT-Primary Key template', self.table_editor_page );
+			    dbg_obj_print('CHECKPOINT-Primary Key template', self.table_editor_page );
 		      if (self.mode = 'table_edit' and self.table_editor_page = '3') {
 		         declare path, table_name, column_name  varchar;
 			       declare tmp_arr any;
@@ -5254,7 +5254,7 @@ Here is the tabs
 		 <vm:row>
 			<vm:raw>
 			 <td colspan="6">
-				<?vsp http(sprintf('You are about to execute the following statements against current database. This may damage database structure and destoy data. Are you sure?' ));
+				<?vsp http(sprintf('You are about to execute the following statements against current database. This may damage database structure and destroy data. Are you sure?' ));
         ?>
 			 </td>
 			</vm:raw>
@@ -5315,7 +5315,7 @@ Here is the tabs
           http('Text of statement');
           http('</b></td>');
           http('<td align="center"><b>');
-          http('Error recieved');
+          http('Error received');
           http('</b></td>');
           http('</tr>');
         while (i < len) {
@@ -5369,7 +5369,7 @@ Here is the tabs
           http('Text of constraint condition');
           http('</b></td>');
           http('<td align="center"><b>');
-          http('Error recieved');
+          http('Error received');
           http('</b></td>');
           http('</tr>');
         while (i < len) {
@@ -5431,7 +5431,7 @@ Here is the tabs
 			<vm:raw>
 			 <td colspan="6">
 				<?vsp http(sprintf('Table <b>%s</b> may not be modified, because it has already been modified by other parties since you loaded the current xddl file.', self.table_name ) );
-        http('<br/>You may:<br/>- Remove this table from tables edit buffer, or <br/>- Update description if ther given table, or <br/>- Do nothing.<br/>In any case you will be forwarded back to the list of db objects and execution will be  canceled.');
+        http('<br/>You may:<br/>- Remove this table from tables edit buffer, or <br/>- Update description of the given table, or <br/>- Do nothing.<br/>In any case you will be forwarded back to the list of db objects and execution will be  canceled.');
         ?>
 			 </td>
 			</vm:raw>
@@ -5502,7 +5502,7 @@ Here is the tabs
               if (self.xddl_source_type =  1)
               http(sprintf('You are about to revert edit buffer, loaded from current database.  Are you sure?' ));
         else if (self.xddl_source_type = 2)
-              http(sprintf('You are about to revert edit buffer, loadded from file <b>%s</b>.  Are you sure?', self.xddl_source_name ));
+              http(sprintf('You are about to revert edit buffer, loaded from file <b>%s</b>.  Are you sure?', self.xddl_source_name ));
         ?>
 			 </td>
 			</vm:raw>
@@ -5796,7 +5796,7 @@ Show Procedures
 						}
 				 		i := i + 1;
 					}
-					dbg_obj_print('Existing ibjects --', self.chosen_existing_objects);
+					dbg_obj_print('Existing objects --', self.chosen_existing_objects);
 					if (length(self.chosen_existing_objects) > 0) {
 		      self.mode := 'xddl_chooser_exists';
 		      self.vc_data_bind(e);
@@ -5828,7 +5828,7 @@ Show Procedures
 							union select V_NAME  as obj_name, 'V' as t_key from sys_views where upper(name_part (V_NAME, 0)) like upper(self.chooser_catalog) and upper(name_part (V_NAME, 1)) like upper(self.chooser_schema) and upper(name_part (V_NAME, 2)) like upper(self.chooser_mask) and self.chooser_browse_views = 1
 							union select SP_NAME  as obj_name, 'P' as t_key from xddl_procedures where upper(name_part (SP_NAME, 0)) like upper(self.chooser_catalog) and upper(name_part (SP_NAME, 1)) like upper(self.chooser_schema) and upper(name_part (SP_NAME, 2)) like upper(self.chooser_mask) and self.chooser_browse_procedures = 1
 						do {
-						 if (cnt = 20) { -- do syncronize this value with nROWS;
+						 if (cnt = 20) { -- do synchronize this value with nROWS;
 							self.pages_data := vector_concat(self.pages_data,  vector (self.page_data) );
 							self.page_data := vector();
 							cnt := 0;

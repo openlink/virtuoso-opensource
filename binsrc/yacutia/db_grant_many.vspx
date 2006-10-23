@@ -58,7 +58,7 @@
       	<v:form name="grant_obj" method="POST" type="simple">
       	  <table class="ctl_grp">
       	    <tr class="ctl_grp_title">
-      	      <td colspan="6">Choose Priviliges to alter for user:
+      	      <td colspan="6">Choose Privileges to alter for user:
                 <v:data-list xhtml_id="dl_user" name="dl_user" sql="select U_NAME UNAME, U_NAME UFNAME from DB.DBA.SYS_USERS where U_SQL_ENABLE = 1 order by U_NAME"
                              key-column="UNAME" value-column="UFNAME"/>
       	      </td>

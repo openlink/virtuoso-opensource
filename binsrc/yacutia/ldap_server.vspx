@@ -174,7 +174,7 @@
 		    sprintf('%s=%s, %s', self.uidf.ufl_value, self.uid.ufl_value, self.bind.ufl_value),
 		    self.pwd.ufl_value);
 
-		    self.mm.ufl_value := 'Connection successfull.';
+		    self.mm.ufl_value := 'Connection successful.';
 		  </v:on-post>
 		</v:button>
 		<v:button action="simple" name="get" value="-- case when self.mode = 'edit' then 'Save' else 'Add' end">

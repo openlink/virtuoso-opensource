@@ -80,7 +80,7 @@
       if (  get_keyword('page', control.vc_page.vc_event.ve_params) ='service')     
         http('Specify the Service parameters');
       if (  get_keyword('page', control.vc_page.vc_event.ve_params) ='tmodel')
-        http('Specify the Tecnical Model parameters');
+        http('Specify the Technical Model parameters');
       if (  get_keyword('page', control.vc_page.vc_event.ve_params) ='contact')
         http('Specify the Contacts parameters');
       if (  get_keyword('page', control.vc_page.vc_event.ve_params) ='email')
@@ -102,7 +102,7 @@
       if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='discovery' )
         http('Specify the Discovery URL parameters');
       if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='identify' )
-        http('Specify the Indentification parameters');
+        http('Specify the Identification parameters');
       if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='category' ) {
         http('Specify the Category parameters');
         if ( get_keyword('owner', params) = 'businessEntity' )
@@ -832,7 +832,7 @@
     <table border="0"  width="100%" cellpadding='10' cellspacing='0' >
      <tr>
       <td class="SubInfo">
-                  Specify the Address of  the person or techical recource ( for example store ) and its type.
+                  Specify the Address of the person or technical resource ( for example store ) and its type.
        <br/>
                   Address may consist from few lines. You should indicate the type of each address line - building, street, city, country etc.
       </td>
@@ -1134,7 +1134,7 @@
      </vm:row>
     </vm:form>
    </v:template>
-   <!--Indetify Create -->
+   <!--Identify Create -->
    <v:template name="identify_create_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='identify' ) then 1 else 0 end">
     <vm:form name="identify_create_form" type="simple" method="POST" action="">
      <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>

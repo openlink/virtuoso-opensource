@@ -778,7 +778,7 @@
 
     </v:form>
   </v:template>
-<!-- Result Mesage dialog-->
+<!-- Result message dialog-->
    <v:template name="result_message_template" type="simple" condition="(get_keyword('mode', control.vc_page.vc_event.ve_params) ='result'  )">
     <v:form name="inifile_result_form" type="simple"  method="POST" action="">
     <input type="hidden" name="section" value="<?= get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
@@ -807,7 +807,7 @@
     </v:form>
   </v:template>
 
-<!-- Error Mesage dialog-->
+<!-- Error message dialog-->
    <v:template name="error_message_template" type="simple" condition="(get_keyword('mode', control.vc_page.vc_event.ve_params) ='error'  )">
     <v:form name="inifile_error_form" type="simple"  method="POST" action="">
     <input type="hidden" name="section" value="<?= get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>

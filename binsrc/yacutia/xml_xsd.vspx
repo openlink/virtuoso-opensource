@@ -374,7 +374,7 @@
            </td>
           </vm:raw>
              <vm:raw>
-                <td class="SubInfo">Report redundand definitions of generic entities</td>
+                <td class="SubInfo">Report redundant definitions of generic entities</td>
              <td>
             <v:select-list name="GeRedef" xhtml_style="width:160px;">
                  <v:item name="DISABLE" value="DISABLE" />
@@ -398,7 +398,7 @@
            </td>
           </vm:raw>
              <vm:raw>
-                <td class="SubInfo">Report redundand definitions of parameter entities</td>
+                <td class="SubInfo">Report redundant definitions of parameter entities</td>
              <td>
             <v:select-list name="PeRedef" xhtml_style="width:160px;">
                  <v:item name="DISABLE" value="DISABLE" />
@@ -468,7 +468,7 @@
           <vm:row>
 
              <vm:raw>
-                <td class="SubInfo">Check for redundand whitespace</td>
+                <td class="SubInfo">Check for redundant whitespace</td>
              <td>
             <v:select-list name="FsaBadWs" xhtml_style="width:160px;">
                  <v:item name="DISABLE" value="DISABLE" />
@@ -496,7 +496,7 @@
 
           <vm:row>
              <vm:raw>
-                <td class="SubInfo">Whether all DTD rules are SGML-compartible</td>
+                <td class="SubInfo">Whether all DTD rules are SGML-compatible</td>
              <td>
             <v:select-list name="FsaSgml" xhtml_style="width:160px;">
                  <v:item name="DISABLE" value="DISABLE" />

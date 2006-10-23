@@ -1234,7 +1234,7 @@ dbg_printf ('in schema-list before-data-bind');
                                     </table> <!-- flt -->
                                   </td>
                                   <td valign="top">
-                                    <table> <!-- checkboxen -->
+                                    <table> <!-- checkboxes -->
                                       <tr>
                                         <td>
                                           <v:check-box name="user_tables_en"
@@ -1268,7 +1268,7 @@ dbg_printf ('in schema-list before-data-bind');
                                           <label for="procedures_en">Stored Procedures</label>
                                         </td>
                                       </tr>
-                                    </table> <!-- checkboxen -->
+                                    </table> <!-- checkboxes -->
                                   </td>
                                   <td valign="top">
                                     <table> <!-- btns -->

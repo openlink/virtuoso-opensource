@@ -44,7 +44,7 @@ function mmLoadMenus() {
   if (window.mm_menu_0428155127_0) return;
    window.mm_menu_0428155127_0 = new Menu("root",194,23,"Verdana, Arial, Helvetica, sans-serif",11,"#000000","#000000","#FFFFFF","#A4BFD5","center","middle",6,0,1000,-5,7,true,true,true,0,true,true);
   mm_menu_0428155127_0.addMenuItem("SQL&nbsp;Data&nbsp;Management","window.open('databases.vspx?sid='+vsid+'&realm='+vrealm, '_self');");
-  mm_menu_0428155127_0.addMenuItem("XML&nbsp;Data&nbsp;Managent","window.open('xquery.vspx?sid='+vsid+'&realm='+vrealm, '_self');");
+  mm_menu_0428155127_0.addMenuItem("XML&nbsp;Data&nbsp;Management","window.open('xquery.vspx?sid='+vsid+'&realm='+vrealm, '_self');");
   mm_menu_0428155127_0.addMenuItem("Web&nbsp;Content&nbsp;Management","window.open('cont_page.vspx?sid='+vsid+'&realm='+vrealm, '_self');");
    mm_menu_0428155127_0.hideOnMouseOut=true;
    mm_menu_0428155127_0.bgColor='#999999';

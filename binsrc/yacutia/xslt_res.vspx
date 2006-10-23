@@ -27,7 +27,7 @@
  <head>
 	<link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
 	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
-	<title>XSLT Trasformation Tool</title>
+	<title>XSLT Transformation Tool</title>
  </head>
  <body class="MainSubData">
    <v:page name="trans_sql" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro">

@@ -123,10 +123,10 @@
             _tbl := complete_table_name(_tbl, 1);
             _fq_tbl := sprintf ('"%I"."%I"."%I"', name_part (_tbl, 0), name_part (_tbl, 1), name_part (_tbl, 2));
 
-            --dbg_obj_print('Conductor Basic Repliation: Check table:' || _tbl);
+            --dbg_obj_print('Conductor Basic Replication: Check table:' || _tbl);
             if (exists(SELECT 1 FROM DB.DBA.SYS_KEYS WHERE KEY_TABLE = _tbl))
             {
-              --dbg_obj_print('Conductor Basic Repliation: Query is for hole table:' || _tbl);
+              --dbg_obj_print('Conductor Basic Replication: Query is for hole table:' || _tbl);
 
               declare _cols, _col any;
               declare _ix, _len integer;

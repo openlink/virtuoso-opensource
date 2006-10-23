@@ -61,7 +61,7 @@ select
     when NG_STAT = 3 then 'OK*'
     when NG_STAT = 7 then 'Pending'
     when NG_STAT = 9 then 'Updating'
-    else 'Unsuccessfull' end) as STATUS,
+    else 'Unsuccessful' end) as STATUS,
   NG_AUTO
 from
   DB.DBA.NEWS_GROUPS

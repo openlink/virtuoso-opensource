@@ -584,7 +584,7 @@
                 <v:browse-button name="br_authook" value="Browse..."
                         selector="vdir_browser.vspx"
                         child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
-                        browser-options="caption=Choose+authentification+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
+                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
                   <v:field name="t_auth_func" />
                 </v:browse-button>
               </td>

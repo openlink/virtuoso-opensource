@@ -18,7 +18,7 @@ Mostly installation is complete.
 In order to install inifile properties editor, you need:
 1. copy inifile.xml file into the same directory, where .ini file is.
 2. Be sure the directory binsrc/yacutia is linked on top of the http server directory under the 'yacutia' name.
-   In case you link it under anotehr name, do modify yacutia/yacutia.isql script (second argument of create_inifile_page
+   In case you link it under another name, do modify yacutia/yacutia.isql script (second argument of create_inifile_page
    function).
 3. In .ini file do define the full path on inifile.xml file location for DirsAllowed parameter.
 4. Pages are ready to be used;

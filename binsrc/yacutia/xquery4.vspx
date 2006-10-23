@@ -79,7 +79,7 @@
               if ( get_keyword('result', control.vc_page.vc_event.ve_params) = 'ok' )
                   http('executed successfully');
               else
-                  http(' <span style="{color:red}">executed unsuccessfully</span>. Error mesage is:');
+                  http(' <span style="{color:red}">executed unsuccessfully</span>. Error message is:');
             ?>
             </p>
             <?vsp if (get_keyword('result', control.vc_page.vc_event.ve_params) = 'error' )

@@ -413,7 +413,7 @@ done:
     else {
       left = j.left_column.table.name;
     }
-    var rigth = "";
+    var right = "";
     if(j.right_join) {
       right = format_recursively_join_expression(j.right_join);
     }
