@@ -22,7 +22,7 @@
 #
 
 LOGDIR=`pwd`
-VERSION="0.3.05"
+VERSION="0.3.10"
 LOGFILE="${LOGDIR}/make_vad.log"
 STICKER="${LOGDIR}/make_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
@@ -182,15 +182,12 @@ directory_init() {
   mkdir vad/data
   mkdir vad/data/oGallery
 
-  for dir in `find sql www-root xslt -type d -print | LC_ALL=C sort | grep -v CVS | grep -v oat`
+  for dir in `find sql www-root xslt -type d -print | LC_ALL=C sort | grep -v CVS`
   do
     mkdir vad/data/oGallery/$dir
   done
 
-  mkdir vad/data/oGallery/www-root/toolkit
-  cp $HOME/binsrc/oat/toolkit/*.js vad/data/oGallery/www-root/toolkit/
-
-  for file in `find sql www-root xslt -type f -print | LC_ALL=C sort | grep -v CVS | grep -v oat`
+  for file in `find sql www-root xslt -type f -print | LC_ALL=C sort | grep -v CVS`
   do
     cp $file vad/data/oGallery/$file
   done
@@ -224,7 +221,7 @@ sticker_init() {
   echo "  <require>" >> $STICKER
   echo "   <name package=\"Framework\">" >> $STICKER
   echo "   </name>" >> $STICKER
-  echo "   <versions_later package=\"1.22.75\">" >> $STICKER
+  echo "   <versions_later package=\"1.30.49\">" >> $STICKER
   echo "    <prop name=\"Date\" value=\"2005-04-28\" />" >> $STICKER
   echo "    <prop name=\"Comment\"" >> $STICKER
   echo "	  value=\"An incompatible version of WA\" />" >> $STICKER
