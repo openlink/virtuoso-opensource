@@ -28,6 +28,19 @@
   declare _uid integer;
   declare _sid, _realm, _user varchar;
   declare cookie_vec any;
+
+  -- handle logout
+  if ({?'logout'} = 'true')
+    {
+      delete from DB.DBA.VSPX_SESSION 
+        where vs_sid = {?'sid'}
+	  and vs_realm = coalesce({?'realm'}, 'wa');
+      commit work;
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header (sprintf('Location: %s?lastop=Logout\r\n', http_path()));
+      return;
+    }
+  -- Google sometimes generates URL with multiply '/' 
   if (length(lines) and strstr (coalesce (lines[0], ''), '//'))
     {
        http_request_status ('HTTP/1.1 302 Found');
@@ -36,6 +49,7 @@
     }
   cookie_vec := DB.DBA.vspx_get_cookie_vec(lines);
 
+  -- Set cookie when user came from different domain
   if ({?'sid'} is not null and {?'sid'} <> '')
     {
        http_header (http_header_get() || sprintf ('Set-Cookie: sid=%s; path=/\r\n', {?'sid'}));
@@ -50,16 +64,6 @@
   if (_sid <> '')
     params := vector_concat (params, vector ('sid', _sid, 'realm', 'wa'));
   _realm := coalesce ({?'realm'}, 'wa');
-  if ({?'submit'} = 'Logout')
-    {
-      delete from DB.DBA.VSPX_SESSION 
-        where vs_sid = _sid
-	  and vs_realm = _realm;
-      commit work;
-      http_request_status ('HTTP/1.1 302 Found');
-      http_header (sprintf('Location: %s?lastop=Logout\r\n', http_path()));
-      return;
-    }
   connection_set ('WIKI params', params);
 
   

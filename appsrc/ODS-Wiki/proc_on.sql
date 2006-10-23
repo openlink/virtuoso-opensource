@@ -4151,13 +4151,42 @@ create procedure WV.WIKI.CANONICAL_PATH(in _path varchar, in _collectionp int :=
   vectorbld_init(_recon_path);
   if (_path[0] = 47)
     vectorbld_acc (_recon_path, '');
+  declare _st int;
   foreach (varchar part in _parts) do {
-    if (part <> '') { vectorbld_acc (_recon_path, part); };
+    if (part <> '') 
+      { 
+        vectorbld_acc (_recon_path, part); 
+      }
   }
   vectorbld_final (_recon_path);
-  if (_collectionp)
-    return WV.WIKI.STRJOIN('/', _recon_path) || '/';
+  declare _last_part varchar;
+  if (length(_parts) and _parts[length(_parts)-1] = '')
+    _last_part := '/';
   else
-    return WV.WIKI.STRJOIN('/', _recon_path);
+    _last_part := '';
+  
+  if (_collectionp = 2)
+    {
+      if (_last_part <> '/')
+	return WV.WIKI.STRJOIN ('/', subseq (_recon_path, 0, length (_recon_path)-1)) || '/';
+      else
+        return WV.WIKI.STRJOIN('/', _recon_path) || '/'; 
+    }
+  else if (_collectionp = 1)
+    {
+      return WV.WIKI.STRJOIN('/', _recon_path) || '/'; 
+    } 
+  return WV.WIKI.STRJOIN('/', _recon_path) || _last_part;
+}
+;
+
+create procedure WV.WIKI.MERGE_PATH(in resource varchar, in _path varchar)
+{
+  return WV.WIKI.CANONICAL_PATH (_path, 2) || resource;
+}
+;
+create procedure WV.WIKI.MERGE_HTTP_PATH(in resource varchar, in _path varchar)
+{
+  return replace (WV.WIKI.MERGE_PATH (resource, _path), 'http:/', 'http://');
 }
 ;

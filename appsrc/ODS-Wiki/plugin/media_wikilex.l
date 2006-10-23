@@ -635,6 +635,7 @@ print_col(char* line)
 %x PLAINHTML
 %x TABLELINE
 %x TABLEHEADER
+%x MACRO
 
 WS		([ \t]+)
 WSNLS		([ \t\n\r]*)
@@ -658,12 +659,13 @@ DEFTERM		([^ \t\r\n:]+)
 PROTOCOL	((("http")|("https")|("ftp")|("gopher")|("news")|("file")|("telnet"))"://")
 HOSTNAME	([A-Za-z](([A-Za-z0-9-]*[A-Za-z0-9])|([A-Za-z0-9]*)))
 DOMAINNAME	({HOSTNAME}(("."{HOSTNAME})*))
-LOCALRES	([A-Za-z0-9_.:|/?+%&-=@]+)
+LOCALRES	([A-Za-z0-9_.:|/?+%&-=@~]+)
 FRAG		("#"{LOCALRES})
 USERNAME	([A-Za-z]([A-Za-z0-9_-]*))
 ABSURI		({PROTOCOL}(({USERNAME}(("!"{LOCALRES})?)"@")?){DOMAINNAME}(((":"{LOCALRES})|("/"(({LOCALRES}?))))({FRAG}?))?)
 DUMMYURI	({PROTOCOL}([A-Za-z0-9_.:|/?+%&-=~#]+))
 LINKTITLE	([^[\]\|]+)
+LINKTITLE2	([^[\]\| :]+)
 FORCEDWIKILINK	([^\r\n\[\]~@:\\/{}<>\|]+)
 EMAIL		({USERNAME}"@"{DOMAINNAME}(("?"{LOCALRES})?))
 MAILTO		("mailto:"{USERNAME}"@"{DOMAINNAME}(("?"{LOCALRES})?))
@@ -698,6 +700,9 @@ NOTBAR		([^\|])
 SINGLEBAR	("|"[^\|])
 TABLECOLATTR ({WS}*{HTMLATTRS}{WS}*)
 TABLECOL    ({TABLETD})
+
+STARTMACRO	("{{")
+ENDMACRO	("}}")
 %%
 	/* Verbatim */
 <INITIAL>^({WS}?)"<verbatim>"{WS_NL}	{ BEGIN(VERBATIM); wlex_verbatim(1); }
@@ -759,6 +764,7 @@ TABLECOL    ({TABLETD})
 <INITIAL,TABLELINE,TABLEHEADER>"[["{PREDICATE}":="{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_div_with_pred (STATEPTR, yytext, ":=", "|", "semanticvalue");  }
 <INITIAL,TABLELINE,TABLEHEADER>"["{ABSURI}"|"{LINKTITLE}"]"		{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
 <INITIAL,TABLELINE,TABLEHEADER>"["{ABSURI}{WS}{LINKTITLE}"]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
+<INITIAL,TABLELINE,TABLEHEADER>"["{ABSURI}"]"			{ wlex_forced_link (STATEPTR, yytext, NULL, 0, "absuri"); }
 <INITIAL,TABLELINE,TABLEHEADER>"[["{LINKTITLE}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 1, "forcedwikiword"); }
 
 
@@ -886,6 +892,11 @@ TABLECOL    ({TABLETD})
 	<INITIAL>"<CODE>"({NOTENDOFCODE}*)({S_NL}({NOTENDOFCODE}+))*{WS_NL}{WS_NL}			{ COPYTEXT; }
 	<INITIAL>"</CODE>"						{ LEXERROR("</CODE> is found but no <CODE> before it"); }
 	*/
+
+	/* Macros */
+<INITIAL>^{STARTMACRO}{LINE}		{ BEGIN(MACRO); }
+<MACRO>^{ENDMACRO}{LINE}		{ BEGIN(INITIAL); }
+<MACRO>{LINE}				{ ; }
 
 	/* Others */
 <*>{SIMPLEWORD}			{ COPYTEXT; }

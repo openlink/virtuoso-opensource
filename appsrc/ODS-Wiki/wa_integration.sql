@@ -125,10 +125,14 @@ create method wa_member_data_edit_form (in u_id int, inout stream any) for wa_wi
 ;
 
 create method wa_state_edit_form (inout stream any) for wa_wikiv {
+  declare _home varchar;
+  _home := WV.WIKI.CLUSTERPARAM (self.cluster_id, 'home', '/wiki/main');
+  _home := WV.WIKI.MERGE_HTTP_PATH ('resources', _home);
+
   declare  sid varchar;
   sid := connection_get ('wa_sid');
   http_request_status ('HTTP/1.1 302 Found');
-  http_header(sprintf('Location: /wiki/resources/settings.vspx?sid=%s&realm=wa&cluster=%s\r\n', sid, WV.WIKI.GETCLUSTERNAME (self.cluster_id)));
+  http_header(sprintf('Location: %s/settings.vspx?sid=%s&realm=wa&cluster=%s\r\n', _home, sid, WV.WIKI.GETCLUSTERNAME (self.cluster_id)));
   return;
 }
 ;
