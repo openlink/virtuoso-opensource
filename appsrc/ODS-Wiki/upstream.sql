@@ -172,8 +172,9 @@ create function HDR_TERM (in _user varchar, in _pwd varchar)
 create procedure PROCESS_ATOM_INSERT (in streamid int, inout _topic WV.WIKI.TOPICINFO)
 {
    declare exit handler for sqlstate '*' {
-	dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
 	rollback work;
+	ADD_LOG_ENTRY (streamid, sprintf ('[%s] %s',__SQL_STATE, __SQL_MESSAGE));
+	commit work;
 	return 0;
    };
    declare res varchar;
@@ -199,6 +200,8 @@ create procedure PROCESS_ATOM_UPDATE (in streamid int, inout _topic WV.WIKI.TOPI
 {
    declare exit handler for sqlstate '*' {
 	rollback work;
+	ADD_LOG_ENTRY (streamid, sprintf ('[%s] %s',__SQL_STATE, __SQL_MESSAGE));
+	commit work;
 	return 0;
    };
    for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
@@ -225,8 +228,9 @@ create procedure PROCESS_ATOM_UPDATE (in streamid int, inout _topic WV.WIKI.TOPI
 create procedure PROCESS_ATOM_DELETE (in streamid int, in clustername varchar, in localname varchar)
 {
    declare exit handler for sqlstate '*' {
-	dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
 	rollback work;
+	ADD_LOG_ENTRY (streamid, sprintf ('[%s] %s',__SQL_STATE, __SQL_MESSAGE));
+	commit work;
 	return 0;
    };
    for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
@@ -247,6 +251,31 @@ create procedure PROCESS_ATOM_DELETE (in streamid int, in clustername varchar, i
   return 0;
 }
 ;
+
+create procedure MAX_LOG_COUNT ()
+{
+  return 7;
+}
+;
+
+create procedure ADD_LOG_ENTRY (in streamid int, in message varchar)
+{
+  declare _cnt int;
+  _cnt := (select count(*) from UPSTREAM_LOG where UL_UPSTREAM_ID = streamid);
+  insert into UPSTREAM_LOG (UL_UPSTREAM_ID, UL_ID, UL_DT, UL_MESSAGE) 
+	values (streamid, _cnt + 1, now(), message);
+  if (_cnt + 1 > MAX_LOG_COUNT())
+    TRUNCATE_LOG(streamid, _cnt + 1);
+}
+;
+
+create procedure TRUNCATE_LOG (in streamid int, in _cnt int)
+{
+  delete from UPSTREAM_LOG where UL_UPSTREAM_ID = streamid and UL_ID <= (_cnt - MAX_LOG_COUNT());
+  update UPSTREAM_LOG set UL_ID = UL_ID - (_cnt - MAX_LOG_COUNT());
+}
+;
+
 
 insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL) values ('wiki upstream', now(), 'WV..UPSTREAM_SCHEDULED_JOB()', 5)
 ;

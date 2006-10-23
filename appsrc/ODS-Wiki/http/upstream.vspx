@@ -33,7 +33,7 @@
     <vm:body>
       <table>
 	<tr>
-	  <td>
+	  <td colspan="3">
 	    <vm:tab/>
 	  </td>
 	</tr>
@@ -44,9 +44,12 @@
 	  <td>
 	    <vm:upstream-edit/>
 	  </td>
+	  <td valign="top">
+	    <vm:upstream-log/>
+	  </td>
 	</tr>
 	<tr>
-	  <td>
+	  <td colspan="3">
 	    <vm:main-topic/>
 	  </td>
 	</tr>

@@ -132,22 +132,19 @@
 	</table>
       </v:template>
       <v:template name="temp_ds_tables_repeat" type="repeat" name-to-remove="" set-to-remove="">
-	<v:template name="temp_ds_tables_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-	  <table>
+	<v:template name="temp_ds_tables_empty" type="if-not-exists">
 	    <tr>
 	      <td colspan="10" class="Attention">No upstream configured</td>
 	    </tr>
-	  </table>
 	</v:template>
 	<v:template name="temp_ds_tables_browse" type="browse" set-to-remove="both">
-	  <table>
 	    <tr>
 	      <td>
 		<v:label name="l_upstream_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
-		<v:button name="edit_btn" value="Edit" action="simple">
+              <v:button name="edit_btn" value="Preferences" action="simple">
 		  <v:on-post>
 		    <![CDATA[
-			     self.vc_redirect(sprintf ('upstream.vspx?cluster=%U&upstream=%U', (select CLUSTERNAME from WV..CLUSTERS where self.cluster = CLUSTERID), (control.vc_parent as vspx_row_template).te_rowset[0]));
+                    self.vc_redirect(sprintf ('upstream.vspx?cluster=%U&upstream=%U&streamid=%d', (select CLUSTERNAME from WV..CLUSTERS where self.cluster = CLUSTERID), (control.vc_parent as vspx_row_template).te_rowset[0], (control.vc_parent as vspx_row_template).te_rowset[1]));
 		    ]]>
 		  </v:on-post>
 		</v:button>
@@ -162,9 +159,12 @@
 		</v:button>
 	      </td>
 	    </tr>
-	  </table>
 	</v:template>
       </v:template>
+        <v:template name="temp_ds_tables_footer" type="simple" name-to-remove="table" set-to-remove="top">
+          <table>
+          </table>
+        </v:template>
     </v:data-set>
   </xsl:template>
     
@@ -260,6 +260,53 @@
     </v:form>
   </xsl:template>
   
+
+  <xsl:template match="vm:upstream-log">
+    <v:variable name="streamid" type="int"/>
+    <v:on-init>
+      <![CDATA[
+        self.streamid := atoi (coalesce (get_keyword ('streamid', params), '0'));
+        ]]>
+    </v:on-init>
+    <v:data-set
+	name="ds_upstream_log"
+	sql="select UL_DT, UL_MESSAGE from WV..UPSTREAM_LOG where UL_UPSTREAM_ID = :self.streamid"
+              nrows="10"
+              scrollable="1"
+              cursor-type="keyset"
+              edit="0"
+              width="80"
+              initial-enable="1">
+      <v:template name="temp_ds_upstream_log_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+	<table>
+	</table>
+      </v:template> 
+      <v:template name="temp_ds_upstream_log_repeat" type="repeat" name-to-remove="" set-to-remove="">
+	<v:template name="temp_ds_upstream_log_empty" type="if-not-exists">
+	    <tr>
+	      <td colspan="2" class="Attention">No log entries</td>
+	    </tr>
+	</v:template>
+	<v:template name="temp_ds_upstream_log_browse" type="browse">
+          <tr>
+            <td>
+              <v:label name="l_upstream_log_dt" value="--WV..DATEFORMAT((control.vc_parent as vspx_row_template).te_rowset[0])" format="%s"/>
+            </td>
+            <td>
+              <v:label name="l_upstream_log_message" value="--regexp_match ('.*', (control.vc_parent as vspx_row_template).te_rowset[1])" format="%s"/>
+            </td>
+          </tr>
+	</v:template>
+      </v:template>
+      <v:template name="temp_ds_upstream_log_footer" type="simple" name-to-remove="table" set-to-remove="top">
+	<table>
+	</table>
+      </v:template> 
+
+    </v:data-set>
+  </xsl:template>
+
+
   <xsl:template match="vm:main-topic">
     <v:form name="main_topic_form" type="simple" method="POST">
     <v:button name="main_topic_redirect_btn" value="Back to the topic" xhtml_title="Cancel" xhtml_alt="Cancel" style="url" action="simple">

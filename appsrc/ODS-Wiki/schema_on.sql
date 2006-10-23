@@ -674,3 +674,18 @@ create table WV..UPSTREAM_ENTRY (
        primary key (UE_ID)
 )')
 ;
+
+wiki_exec_no_error ('
+create table WV..UPSTREAM_LOG (
+	UL_UPSTREAM_ID	int,
+	UL_ID int,
+	UL_DT datetime not null,
+	UL_MESSAGE varchar not null,
+	constraint UPSTREAM_LOG_UPSTREAM foreign key (UL_UPSTREAM_ID) references WV..UPSTREAM (UP_ID) on update set null on delete cascade
+)')
+;
+
+wiki_exec_no_error('
+create index UPSTREAM_LOG_UPSTREAM on WV..UPSTREAM_LOG (UL_UPSTREAM_ID)')
+;
+
