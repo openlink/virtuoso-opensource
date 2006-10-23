@@ -478,6 +478,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\bitmap.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\blob.c"
 				>
 			</File>
@@ -542,6 +546,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\jso.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\lisprdr.c"
 				>
 			</File>
@@ -599,6 +607,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\rdf_core.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\rdf_mapping_jso.c"
 				>
 			</File>
 			<File
@@ -687,6 +699,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sparql_p.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sparql_qm.c"
 				>
 			</File>
 			<File
@@ -2044,7 +2060,7 @@
 						Name="VCCustomBuildTool"
 						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;$(ProjectDir)\sqlcode.bat&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)\..\..\binsrc\vspx\vspx.xsl"
-						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c"
+						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2054,7 +2070,7 @@
 						Name="VCCustomBuildTool"
 						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;$(ProjectDir)\sqlcode.bat&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)\..\..\binsrc\vspx\vspx.xsl"
-						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c"
+						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2064,7 +2080,7 @@
 						Name="VCCustomBuildTool"
 						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;$(ProjectDir)\sqlcode.bat&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)\..\..\binsrc\vspx\vspx.xsl"
-						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c"
+						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2074,7 +2090,7 @@
 						Name="VCCustomBuildTool"
 						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;$(ProjectDir)\sqlcode.bat&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)\..\..\binsrc\vspx\vspx.xsl"
-						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c"
+						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"
 					/>
 				</FileConfiguration>
 			</File>

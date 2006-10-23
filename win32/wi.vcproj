@@ -1152,7 +1152,7 @@ $(ProjectDir)\sqlcode.bat
 cd $(ProjectDir)
 "
 						AdditionalDependencies="$(InputDir)\..\..\binsrc\vspx\vspx.xsl"
-						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c"/>
+						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -1164,7 +1164,7 @@ $(ProjectDir)\sqlcode.bat
 cd $(ProjectDir)
 "
 						AdditionalDependencies="$(InputDir)\..\..\binsrc\vspx\vspx.xsl"
-						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c"/>
+						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"/>
 				</FileConfiguration>
 			</File>
 			<File
