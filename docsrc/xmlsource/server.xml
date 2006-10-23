@@ -456,6 +456,19 @@ the thread queue after thread clean-up interval has expired.</para>
             This parameter allows some control over the temp db file size.</para>
 					</formalpara>
 				</listitem>
+                                <listitem id="ini_Parameters_ODIRECT">
+          <formalpara>
+						<title>O_DIRECT</title>
+						<para>If this is non-zero, the database file(s) will be opened with the
+O_DIRECT option on platforms where this is supported. This has the effect of doing file system IO
+from application buffers directly, bypassing caching by the operating system. This may be useful
+if a large fraction of RAM is configured as database buffers. If this is on, the file system cache
+will not grow at the expense of the database process, for example it is less likely to swap out
+memory that Virtuoso uses for its own database buffers. Mileage will vary according to operating
+system and version. For large databases where most of system memory is used for database buffers it is advisable to try this.
+</para>
+					</formalpara>
+				</listitem>
 				<listitem id="ini_Parameters_CheckpointInterval">
           <formalpara>
 						<title>CheckpointInterval=60</title>
