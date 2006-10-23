@@ -111,6 +111,15 @@ then
 fi
 
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < taq.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: taq.sql"
+    exit 1
+fi
+
+
+
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcast.sql
 if test $STATUS -ne 0
 then
