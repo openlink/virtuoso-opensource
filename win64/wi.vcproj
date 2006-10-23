@@ -474,6 +474,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\bitmap.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\blob.c"
 				>
 			</File>
@@ -534,6 +538,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\jso.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\lisprdr.c"
 				>
 			</File>
@@ -591,6 +599,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\rdf_core.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\rdf_mapping_jso.c"
 				>
 			</File>
 			<File
@@ -675,6 +687,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sparql_p.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sparql_qm.c"
 				>
 			</File>
 			<File
