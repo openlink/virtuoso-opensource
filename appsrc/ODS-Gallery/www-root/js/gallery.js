@@ -323,13 +323,11 @@ gallery.link_image_upload_click = function(){
 gallery.upload_image_cancel = function (){
   this.upload_image.hide();
   this.images.show();
-  //ajax.Start(gallery_load_images, ds_albums.current.index);
   gallery.ajax.load_images(ds_albums.current.index);
 }
 
 //------------------------------------------------------------------------------
 gallery.upload_image_finish = function(id){
-  //ajax.Start(gallery_load_images, ds_albums.current.index);
   gallery.ajax.load_images(ds_albums.current.index);
 }
 
@@ -600,12 +598,11 @@ gallery.bnt_new_tag_click = function(){
 
 //------------------------------------------------------------------------------
 gallery.showAlbumsInfo = function(i){
-
-  if(ds_albums.current.is_own == 1){
+  //if(ds_albums.current.is_own == 1){
     $('path_my_albums').innerHTML = 'My Albums';
-  }else{
-    $('path_my_albums').innerHTML = ds_albums.current.owner_name +'\'s albums';
-  }
+  //}else{
+  //  $('path_my_albums').innerHTML = ds_albums.current.owner_name +'\'s albums';
+  //}
   $('path_pub_date').innerHTML = "";
   $('path_album_name').innerHTML = "";
   $('path_image_name').innerHTML = "";
@@ -1137,6 +1134,7 @@ gallery.ajax.load_albums = function(path){
     ds_albums.loadList(p.albums);
     ds_albums.current.is_own = p.is_own;
     ds_albums.current.owner_name = p.owner_name;
+
     if(!jump_to()){
        gallery.hideAlbums();
     }

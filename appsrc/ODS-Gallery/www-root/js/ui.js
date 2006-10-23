@@ -184,7 +184,7 @@ function dispach(e){
             el.setAttribute(t_at[i].nodeName,t_at[i].value);
           }
         }
-        dd('action:'+action);
+        //dd('action:'+action);
         res = eval(action+'(el)')
 
         ok = 1;
