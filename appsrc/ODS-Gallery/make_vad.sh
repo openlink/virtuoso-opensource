@@ -221,7 +221,7 @@ sticker_init() {
   echo "  <require>" >> $STICKER
   echo "   <name package=\"Framework\">" >> $STICKER
   echo "   </name>" >> $STICKER
-  echo "   <versions_later package=\"1.30.46\">" >> $STICKER
+  echo "   <versions_later package=\"1.30.45\">" >> $STICKER
   echo "    <prop name=\"Date\" value=\"2005-04-28\" />" >> $STICKER
   echo "    <prop name=\"Comment\"" >> $STICKER
   echo "	  value=\"An incompatible version of WA\" />" >> $STICKER
