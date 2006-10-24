@@ -1,3 +1,1347 @@
+2006-10-24 12:12  source
+
+	* Version check is greater, not greater or equal
+
+2006-10-24 12:08  source
+
+	* Updated version to 4.5.5 final release
+
+2006-10-24 11:47  source
+
+	* Fixed version check for Framework vad
+
+2006-10-24 11:21  source
+
+	* Added mediawiki plugin
+
+2006-10-24 09:49  source
+
+	* Updated vad package number
+
+2006-10-24 09:46  source
+
+	* Fixed OpenLink zip code
+
+2006-10-23 22:27  source
+
+	* Fixed spelling
+
+2006-10-23 22:18  source
+
+	* Small bugfix
+
+2006-10-23 20:36  source
+
+	* Added upstream log
+
+2006-10-23 20:27  source
+
+	* Fixed javascrip error in view album
+	* Fixed showing "Undefined albums"
+
+2006-10-23 20:26  source
+
+	* Added ODS bar
+
+2006-10-23 20:25  source
+
+	* Removed duplicate copy of OAT toolkit in vad package
+
+2006-10-23 20:08  source
+
+	* Updated documentation
+
+2006-10-23 20:06  source
+
+	* Added test for async_queue functions
+
+2006-10-23 20:03  source
+
+	* Fix for weird UNICHAR_EOD bug in LUBM load
+
+2006-10-23 18:37  source
+
+	* Additional build rules
+
+2006-10-23 15:57  source
+
+	* Fixed ODS-Framework version
+	* Fixed dependency on rdf_mapping_jso.[ch]
+
+2006-10-23 15:39  source
+
+	* Fixed win64 build
+
+2006-10-23 13:13  source
+
+	* Fixed win32 build
+
+2006-10-23 13:12  source
+
+	* Fixed win32 build scripts
+
+2006-10-23 06:06  source
+
+	* Added Mediawiki plugin macro support
+	* Fixed interdomain problem
+	* Fixed properties page url
+	* Fixed logout page
+
+2006-10-22 08:40  source
+
+	* Additional fix for inefficient CBD delete
+
+2006-10-21 22:40  source
+
+	* Speed improvements for CBD deletion
+
+2006-10-21 21:22  source
+
+	* Updated version to 4.5.5-rc3
+
+2006-10-21 21:12  source
+
+	* Changed version number
+
+2006-10-21 20:58  source
+
+	* Removed doc directory
+
+2006-10-21 20:24  source
+
+	* Added missing files to distribution
+
+2006-10-21 20:21  source
+
+	* Removed old OAT toolkit
+
+2006-10-21 18:21  source
+
+	* Updated version to 4.5.5-rc2
+
+2006-10-21 18:21  source
+
+	* Fixed My Mail dashboard error when there are no messages
+	* Added workaround for bug in XSL
+
+2006-10-21 17:59  source
+
+	* Fixes for new OAT toolkit
+
+2006-10-21 14:44  source
+
+	* Added missing graphics
+
+2006-10-21 13:52  source
+
+	* Fixed memory leak in tf_free
+
+2006-10-21 10:38  source
+
+	* Merged latest OAT toolkit changes
+
+2006-10-21 10:26  source
+
+	* Fixed header check
+
+2006-10-21 10:25  source
+
+	* Added app ads to the vad package generation
+
+2006-10-21 10:24  source
+
+	* Added missing warning icon for error messages
+
+2006-10-21 10:23  source
+
+	* Changed link label "Endpoints" to "Application Instance Access Points"
+
+2006-10-21 10:23  source
+
+	* Added default font-family for ods-bar
+
+2006-10-21 10:22  source
+
+	* Commented out no-op link in welcome widget
+	* Fixed app ad click targets for Wiki and eNews2
+	* Fixed invalid app type in bookmark app ad (error when clicked)
+
+2006-10-21 10:20  source
+
+	* Put new banner in for discussion
+	* Fixed (some) page formatting issues derived from ods-bar inclusion
+
+2006-10-21 10:19  source
+
+	* Fixed foaf:maker shows NULL for fname
+
+2006-10-21 10:19  source
+
+	* Fixed GeoURL tags support
+
+2006-10-21 10:08  source
+
+	* VDB stat refresh and vacuum ()
+
+2006-10-21 10:03  source
+
+	* Added sioc:type Tutorial
+
+2006-10-21 10:01  source
+
+	* Change "Tools" label to "Statement Help"
+
+2006-10-21 10:00  source
+
+	* Fixed window width for Mac Firefox
+
+2006-10-20 16:47  source
+
+	* Latest documentation changes
+
+2006-10-20 16:42  source
+
+	* Replaced icon
+
+2006-10-20 16:27  source
+
+	* Updated version to 4.5.5-rc1
+
+2006-10-20 16:04  source
+
+	* Port 80 does not need a :80 postfix
+	* Create foaf card when new user adds comment
+
+2006-10-20 16:02  source
+
+	* Compute pw earlier in block
+
+2006-10-20 16:01  source
+
+	* Removed completely confusing label of the enabled checkbox.
+	* Changed the column label in list to reflect the checkbox function
+	* Fixed problem with gdata link on first search
+	* Added char limits for instance name, entry name and author name in
+	  all application dashboards
+	* Limit titles of dashboards to 40 characters
+	* Fixed colors of navtabs
+	* Fixed relative links
+	* Fixed wrong Virtuoso power logo image reference
+	* Added mail dashboard item on user home
+	* Added CSS rules for my_mail user home dashboard item
+	* Fixed markup of Wiki activity on site front
+	* Limited width of most dashboard list item titles to 55 characters.
+	* Fixed ODS Gallery dashboard
+	* Limited bookmarks to 65 characters
+	* Fixed vm: namespace
+	* Fixed application title
+
+2006-10-20 15:51  source
+
+	* Added dc.description support
+
+2006-10-20 15:50  source
+
+	* New image
+
+2006-10-20 15:47  source
+
+	* Modified main page layout templates to properly accomodate ODS-BAR
+	  in community module.
+	* Added missing default font family settings
+	* Removed corners that looked like resize handles from non-resizable blocks
+	* Removed ugly arrows from links in boxes
+	* Replaced community module banner
+	* Fixed XHTML markup of mapbox
+
+2006-10-20 15:45  source
+
+	* Fixed GeoURL and show icon issue
+	* Added dc.description support
+
+2006-10-20 15:43  source
+
+	* Fixed dc.description support
+
+2006-10-20 15:42  source
+
+	* Fixed dc.description Support
+
+2006-10-20 15:08  source
+
+	* Added SPARQL editor gadgets
+	* Turn should-sponge on by default for sample queries, but off for dawg
+
+2006-10-18 21:26  source
+
+	* Removed debugging code
+
+2006-10-18 21:25  source
+
+	* Fixed uninstall bugs
+
+2006-10-18 21:25  source
+
+	* Use central OAT toolkit
+
+2006-10-18 21:24  source
+
+	* Changed color of user profile tab desk tags when hovered to "blue"
+	* Made table-based navtab rendering consistent
+	* Fixed hover color
+	* Added bookmark dashboard vm:dash-bookmarks to user home page
+	* Added CSS rules for bookmark dashboard
+	* Fixed ODS-Bookmarks and ODS-Community summary widget XHTML renderning
+	* Made w_app_summary widgets XHTML and CSS classes more consistent
+	* Use central OAT toolkit
+
+2006-10-18 21:21  source
+
+	* No SIOC for app class
+
+2006-10-18 21:20  source
+
+	* Renamed "New [app name] App" to "Create New [app name] App"
+
+2006-10-18 21:19  source
+
+	* Limit number of oGallery images in userhome dashboard to 4
+
+2006-10-18 21:18  source
+
+	* Added support for 3 param domain in order to hook omail
+
+2006-10-18 21:18  source
+
+	* Added missing images for ods-bar
+
+2006-10-18 21:16  source
+
+	* Fixed uninstall and ODS tag scheduler bugs
+	* Joins with nws-a-ods.sql
+
+2006-10-18 21:15  source
+
+	* Fixed uninstall and ODS tag scheduler bugs
+
+2006-10-18 21:15  source
+
+	* Fixed uninstall and ODS tag scheduler bugs
+	* Joins with bmk-a-ods.sql
+
+2006-10-18 21:14  source
+
+	* Added moblogging URL
+	* Fixed rel tags
+
+2006-10-18 21:13  source
+
+	* Register should go into ODS, not self maintained page
+
+2006-10-18 21:02  source
+
+	* New buffer replacement. Prefer a free one if in the the next 20 buffers
+	  in the pool, else take the oldest if it is older than minimum reuse age
+
+2006-10-18 15:43  source
+
+	* Use central OAT repository
+	* Use OAT namespace
+
+2006-10-18 15:40  source
+
+	* Fixed error in db schema rowset
+
+2006-10-18 15:40  source
+
+	* Fixed typo
+
+2006-10-18 12:21  source
+
+	* Use central OAT toolkit instead of local copy
+
+2006-10-18 07:54  source
+
+	* Added new bitmap index
+	* Prefer buffers of deleted pages for reuse before using clean old
+	* Shorter buffer_desc_t struct
+	* Adjusted buf_touch and other macros
+	* Do not call buf_set_last frivolously
+	* Sequence of leaving deleted butter set to reset bd_space_last
+	* Do not forget final cost of value subq in cost model
+	* Pre-cpt buffer flush need not be in txn mtx
+	* Read ahead to tolerate deletes of ra batch pages between assembling ra set
+	  and schedulting the read
+	* Fix to serializable desc order
+	* Fixes to mtx_debug
+	* Hold mutex in compact leave
+	* Leave evenly divided space after rows in pg_write_compace for growth of rows
+	  in upd_refit_row
+	* Vacuum table option for compacting read of inx
+	* Shorter sections with page map mtx in transits and land
+	* Re-enabled atomic_dive
+	* Use log_write_mtx to serialize log write to reduce in_txn contention
+
+2006-10-18 07:45  source
+
+	* Scheduler must always start in DB qualifier
+
+2006-10-17 23:25  source
+
+	* Fixed compiler warning
+
+2006-10-17 23:25  source
+
+	* Fixed GPF in date string
+	* Fixed bug in http_string_date bif
+
+2006-10-17 23:23  source
+
+	* Added missing app env for rdfxml load callbacks
+
+2006-10-17 23:22  source
+
+	* Faster count of inc backup set pages
+
+2006-10-17 23:21  source
+
+	* Fixed isolation level
+	* Better security on /sparql/ endpoint in HTTP sponge
+	* More comments
+	* Fixed typo in function name in grant
+	* Added rdf_load_rdfxml_mt
+
+2006-10-17 23:17  source
+
+	* Fixed proper HTTP dates in 'Expire: ...' dates
+	* Grant execute on safe procedures to public
+
+2006-10-17 23:16  source
+
+	* Added optional argument to bif http_string_date()
+	* Added check for NULL and bad values of a source date string
+
+2006-10-17 23:13  source
+
+	* Added new bitmap index code
+
+2006-10-17 23:03  source
+
+	* Added tsuite checks for new bitmap index
+
+2006-10-17 22:59  source
+
+	* Fixed SIOC link path
+
+2006-10-17 22:58  source
+
+	* Debug log should only be written in debug mode
+
+2006-10-17 22:56  source
+
+	* Added new virtuoso logo image
+	* Added security_16.png to file list
+	* Fixed spelling errors
+	* Fixed button text to not use an acronym unnecessarily
+	* Updated version number
+
+2006-10-17 22:05  source
+
+	* Cookie interdomain transfer support
+	* Small plugin fix
+	* Fixed home URL
+	* Added proper home page for VD
+
+2006-10-17 22:03  source
+
+	* Removed debugging
+	* Updated version number
+
+2006-10-17 22:03  source
+
+	* New SIOC button for user profile page
+	* Fixed home url
+	* Google maps depends on CSS
+	* Fixed search problem
+	* Fixed banner display on user profile page
+
+2006-10-17 21:53  source
+
+	* Fixed search by tags
+
+2006-10-17 16:23  source
+
+	* Updated images
+
+2006-10-17 16:23  source
+
+	* Adding new images
+
+2006-10-17 14:38  source
+
+	* Added images
+
+2006-10-17 14:37  source
+
+	* Added new images
+
+2006-10-17 14:16  source
+
+	* Added proper home page for VD
+	* Fixed IE and Safari problems in default template
+	* Removed redundant links and moved search form and links to sidebar
+	* Added SKOS support
+	* Added FOAF support
+	* Added SIOC support
+	* Fixed cookie parsing
+	* Fixed font selection problems
+	* Added Wiki users list
+	* Added ODS bar
+	* Extended text formatting rules
+	* Fixed unicode support
+	* Added <nowiki> tag
+	* Enhanced mediawiki support
+	* Added wiki search excerpt functions
+	* Small bugfixes
+
+2006-10-17 14:11  source
+
+	* Added ODS bar
+	* Enabled logout redirect using http_header
+	* Use sioc_iri instead of full URL
+	* Updated SIOC support
+	* Removed sioc.rdf link
+	* Fixed SIOC validation error
+	* Added new tag cloud
+	* Small bugfixes and enhancements
+
+2006-10-17 14:09  source
+
+	* Small bugfixes and enhancements
+
+2006-10-17 14:07  source
+
+	* Fixed briefcase post IRI case
+	* Smaller banner for aux pages
+	* ODS-Framework page templates grand update. Page layout changed to
+	  floating. Removed most of old CSS classes
+	* Fixed VD for wiki
+	* Added mini, half full mode to ODS bar
+	* Added GeoURL
+	* Upgraded SIOC support
+	* Added Yadis discovery for OpenID
+	* Fixed VD issues
+	* Fixed rendering about.rdf when package is installed on filesystem
+	* Added SKOS support
+	* Fixed bug in SIOC for Briefcase instances
+	* Fixed bug in tag links
+	* Fixed bad SQL expression for bookmarks
+	* Fixed blog problem re duplicated URIs ion the ODS VD UI
+	* Added registration verification
+	* Fixed bug with data session broken error
+	* Associate SIOC site to user's dataspace
+	* As /ods is widely used, we use this for all ODS pages, so we can present
+	  /dataspace/<user> as the URL in the browser's address bar.
+	* Small bugfixes
+
+2006-10-17 13:58  source
+
+	* Added SKOS support
+	* Layout changes
+	* Added template for popups
+	* Fixed Opera 8.5x bug
+	* Fixed CSS on read and search pages
+	* Added SIOC:has_reply, SIOC:links_to, SIOC:reply_to, SIOC:contents
+	* Added new tags cloud
+	* Added ODS bar
+	* Fixed background subscriptions
+	* Fixed SIOC validation
+	* Small bugfixes
+
+2006-10-17 13:55  source
+
+	* Added GeoURL
+	* Added ODS bar
+	* Added SIOC:links_to
+	* Added SIOC:content
+	* Changed namespace to /ods/
+	* Small bugfixes
+
+2006-10-17 13:54  source
+
+	* Upgraded COMMUNITY.COMM_GET_WA_URL
+	* Added ODS bar
+	* Changed namespace to /ods/
+	* Changed SIOC interface
+	* Small bugfixes
+
+2006-10-17 13:53  source
+
+	* Added SKOS tags
+	* Added template for popups
+	* Added SIOC
+	* Fixed CSS
+	* Added new tag cloud
+	* Added ODS bar
+	* Removed sioc.rdf link
+	* Fixed SIOC valiadation errors
+	* Small bug fixes
+
+2006-10-17 13:51  source
+
+	* Fixed Opera 8.x bug
+	* Added new tags cloud
+	* Added SIOC:links_to predicate
+	* Added ODS bar
+	* Added SIOC:content
+	* Removed sioc.rdf link
+	* Removed private data from rdf
+	* Fixed SIOC validation errors
+	* Fixed small bugs
+
+2006-10-17 13:46  source
+
+	* Added new GeoURL link
+	* Added ODS bar
+	* Added FOAF:maker and seeAlso
+	* Added OpenID sig
+	* Added SIOC button
+	* New instance make duplicates when a blog is erased
+	* New Tag cloud
+	* Fixed blog problem re duplicated URI in the ODS VD UI
+	* Enhanced SIOC support
+	* Added ping services in the blog integration from ODS
+	* Fixed delicious support
+	* Do not send mail to owner of the blog
+	* Small bugfixes
+
+2006-10-17 11:18  source
+
+	* Added new files
+
+2006-10-11 07:52  source
+
+	* Populate SIOC data to RDF database if URIQA/DefaultHost is set
+
+2006-10-11 07:52  source
+
+	* Added new RDF NET tutorial
+
+2006-10-11 07:40  source
+
+	* Added managing grants via databases view
+
+2006-10-10 13:39  source
+
+	* Fixed detection of multiple interfaces
+
+2006-10-10 11:52  source
+
+	* Lock pagemap before calling pr_free
+
+2006-10-09 21:36  source
+
+	* Merged QUAD-MAP work into tree
+
+2006-10-09 14:11  source
+
+	* Added automatic format selection
+	* Added auto output format
+	* Added load/store functionality
+	* Added limit for syntax highlight and data size
+	* Added new format output type rtf+xml
+	* Added warning for improper type use
+	* Changed default selection for output format
+	* Changed format label
+	* Changed label for data loading feature
+	* Changed labels for autoloading feature
+	* Expand right panel to show reset on the same row
+	* Added SOAP support
+	* Changed RDF label to RDF/XML
+	* Fixed auth bug
+	* Fixed homedir problem
+	* Fixed Safari problem
+	* Fixed layout of import data page
+	* Fixed autoloader to recognize graph keyword
+	* Removed alert
+
+2006-10-09 14:05  source
+
+	* Fix for MPUT/MGET
+
+2006-10-09 14:03  source
+
+	* Fix for 'SPARQL define input:default-graph-uri ...' when an IRI was
+	  treated as a literal, not as an IRI, resulting check that G is a
+	  loteral (of DV_UNAME type)
+	* Default graph in the ini, docs about SPARQL INI
+	* Merged QUAD-MAP work into tree
+
+2006-10-09 14:00  source
+
+	* When itcs wait for rl and row at rl expands and causes split and ends
+	  up extend side of split, set the waiting llt's as owners of the pl on
+	  the extended side
+
+2006-10-09 13:59  source
+
+	* Added optional check of correct pl_owners of lock release, so matches
+	  owner/waiting set of all rl's
+
+2006-10-09 13:58  source
+
+	* Make sure not to write past end if tree too deep
+
+2006-10-09 13:57  source
+
+	* Make sure lt_leave is in trx scope
+
+2006-10-09 12:37  source
+
+	* Copy RDF files from html_virt when made with SIOC
+	* New style of generating files and feeds according to parameter
+
+2006-10-09 12:35  source
+
+	* Fixed error messages
+
+2006-10-09 12:34  source
+
+	* Populate SIOC data to RDF database if URIQA/DefaultHost is set
+
+2006-10-09 12:32  source
+
+	* Added more tests
+
+2006-10-09 12:30  source
+
+	* Added RDF tab
+	* Added check if listener already exists
+	* Added check if domain is configured
+	* Added OAT combo
+	* Fixed problem with IE and Safari
+	* Changed tab labels
+
+2006-10-09 12:25  source
+
+	* Merged latest documentation fixes
+
+2006-10-09 12:23  source
+
+	* Fixed argument check
+
+2006-10-09 12:22  source
+
+	* Added test for response and return reasonable error message
+
+2006-10-09 12:21  source
+
+	* Fixed problem when no http port is defined
+
+2006-10-09 12:20  source
+
+	* Almost final version of HTTP sponge
+
+2006-10-09 12:19  source
+
+	* Added new formats to sprintf
+	* Fixed possible infinite loop problem
+
+2006-10-09 12:18  source
+
+	* Updated search excerpt
+
+2006-10-09 12:16  source
+
+	* Added busy_meter, spinlock_meter and flags for mutex_meter
+
+2006-10-09 12:13  source
+
+	* Added #define UTF8_DEBUG and ASSERT_BOX_UTF8 ... ASSERT_NCHARS_WCHAR
+	  macro definitions
+
+2006-10-09 12:11  source
+
+	* Fixed compiler 'variable redefinition' warning
+
+2006-10-09 12:10  source
+
+	* Namespace change XML_* to VXml_*
+	* Namespace change xml_parser_* to vxml_parser_*
+
+2006-10-09 12:09  source
+
+	* Fixed SQLMoreResults to return success on empty dataset
+
+2006-10-09 09:17  source
+
+	* Added spinlock as subtype of mutex
+	* Allos MTX_METER without MTX_DEBUG
+
+2006-10-09 09:14  source
+
+	* Namespace change XML_* to VXml_*
+	* Namespace change xml_parser_* to vxml_parser_*
+	* Fixed problem compiling with MALLOX_DEBUG
+
+2006-10-09 09:12  source
+
+	* Print memory break value when running out of memory
+
+2006-10-09 09:10  source
+
+	* Fixed compilation problem with mallocdebug
+
+2006-09-25 15:14  source
+
+	* Partial merge with QUAD-MAP-EXP branch
+
+2006-09-25 15:13  source
+
+	* Remember all ssls assigned before the rts with array params in vdb select
+	* In union, for use in except and intersect, make sure each term is
+	  exhausted before starting next. Must do so to flush unprocessed array
+	  parameters from terms
+
+2006-09-25 15:07  source
+
+	* Added mem_meter
+
+2006-09-25 15:01  source
+
+	* Fixed prototypes
+
+2006-09-25 14:59  source
+
+	* Dependency tracking between QM JS objects and compiled query_t
+
+2006-09-25 14:58  source
+
+	* Fixed possible GPF in inc intersection if seek to target gave index end
+	  or dvc_greater
+
+2006-09-25 14:57  source
+
+	* Fixed function prototypes
+
+2006-09-25 14:55  source
+
+	* Fixed typo
+
+2006-09-25 14:55  source
+
+	* Added more ini settings
+
+2006-09-25 14:54  source
+
+	* Added bif_wbxml2xml
+
+2006-09-25 14:53  source
+
+	* Using special names like 'callretRDF/XML-O' for column of result-set
+	  with formatted output of CONSTRUCT
+
+2006-09-25 14:52  source
+
+	* Fixed SPARQL web service endpoint, re. 'define output:format ...' and
+	  'auto' format.
+	* Fixed SPARQL_RESULTS_XML_WRITE_ROW when the result-set contains string
+	  output that is returned by a formatter (say, due to define output:format
+	  'TTL')
+	* Added new format output type RDF+XML
+	* Fixed blob handle
+	* Fix for nulls to have empty cell
+	* Removed redundant 'commit work' statements
+
+2006-09-25 14:48  source
+
+	* Change row count in dd and count estimate code to int64 to avoid overflow
+	* Recover from bad blob reads in converting blob to string or copying blob
+	  between rows
+
+2006-09-25 14:45  source
+
+	* Fixed replication to always do a cpt after log replay
+
+2006-09-25 14:38  source
+
+	* Added SIOC support
+	* Cleared old call to setup_sparql_demo.sql
+	* Removed port from domain when it is 80
+	* Fixed some tab labels
+	* Added sample
+
+2006-09-25 14:35  source
+
+	* Added new format output type rdf+xml
+
+2006-09-25 14:34  source
+
+	* Added limit for syntax highlight and data size
+
+2006-09-25 14:34  source
+
+	* Added SIOC support
+
+2006-09-25 14:33  source
+
+	* Create an annotated image if FT is available
+
+2006-09-25 14:32  source
+
+	* Added managing grants via databases view
+
+2006-09-25 14:32  source
+
+	* Fixed problem with SIOC:content and other issues
+
+2006-09-25 14:30  source
+
+	* Fixed UI layout for roles
+
+2006-09-25 14:29  source
+
+	* Added ODS bar for Wiki
+
+2006-09-25 14:28  source
+
+	* Regenerated
+
+2006-09-25 14:27  source
+
+	* Fixed GPF when casemode is not a number
+
+2006-09-25 14:26  source
+
+	* Added test for reading free lobs
+
+2006-09-25 14:25  source
+
+	* Test proc view cost declaration
+
+2006-09-25 14:23  source
+
+	* Cached resources may be upgraded when the server is upgraded
+
+2006-09-25 14:23  source
+
+	* Fix to append missing trainling slashes in IRIs
+	* Fixed retrieval of local URIAL data on queries like Get /URIQA/DAV/PUB
+	  without additional data in header
+
+2006-09-25 14:20  source
+
+	* Merged latest documentation fixes
+
+2006-09-25 14:18  source
+
+	* Added 'const' modifiers to function arguments
+
+2006-09-11 19:44  source
+
+	* Added syntax directory
+
+2006-09-11 11:18  source
+
+	* Array params for dml only
+	* Fixed sending stmt options so often
+	* Cache the hash no on the remote stmt text
+
+2006-09-11 11:17  source
+
+	* Added new vdb functionality for SYS_STAT_ANALYZE
+
+2006-09-11 11:15  source
+
+	* Added bif_string_or_uname_or_wide_or_null_arg
+	* Added get_keyword_ucase_int
+	* Fix for returning from sprintf_inverse without POP_QR_RESET
+
+2006-09-11 11:13  source
+
+	* Make table name uppercase to compile query in case mode 0, otherwise GPF
+
+2006-09-11 11:12  source
+
+	* If CPT pending noticed at vdb_enter, freeze if no delta. Was wrong,
+	  cancelling txn even if no delta
+
+2006-09-11 11:10  source
+
+	* Add vdb exec etc counters in status report
+
+2006-09-11 11:07  source
+
+	* Added SOAP support
+	* Added syntax highlight for results
+	* Changed labels for autoloading feature
+	* Expanded right panel to show reset on the same row
+	* Fixed autoloader to recognize graph keyword
+	* Fixed layout of import data page
+
+2006-09-11 11:05  source
+
+	* Added syntax highlight for results
+
+2006-09-11 11:00  source
+
+	* Regenerated
+
+2006-09-11 10:57  source
+
+	* Added openlinksw-sparql/virtrdf-data-formats.ttl
+
+2006-09-11 10:51  source
+
+	* Allow passing hash no to id_hash_get if known
+	* Do not calculate hash no twice in id_hash_set
+	* Do not call strlen for hash of null terminated
+
+2006-08-31 11:24  source
+
+	* Updated version to 04.50.2916
+
+2006-08-31 11:23  source
+
+	* INX intersect fixes
+	* Fixed bad extraction of result cols for non-first term
+	* Fixed missing dependent preds for non-first term
+	* Fixed printing of inx int dfe's in debug output
+
+2006-08-31 11:21  source
+
+	* Added autocompact of adjacent dirty pages, off by default.
+	* Added SQL opt for in pred to loop join
+	* Fixes and adjustments for cost model
+
+2006-08-31 11:18  source
+
+	* Fixed Lexer, parser and C code for SPARQL metadata description language
+
+2006-08-31 11:17  source
+
+	* Changed function name to box_md5
+
+2006-08-31 11:16  source
+
+	* Do not try to schedule activity when atomic mode is on
+
+2006-08-31 11:15  source
+
+	* Added support for SPARQL INSERT and SPARQL DELETE
+
+2006-08-31 11:15  source
+
+	* Added bif functions __and, __or and __not
+	* Added support for UNAMES in get_keyword
+
+2006-08-31 11:01  source
+
+	* Added style for stat_table
+
+2006-08-31 11:00  source
+
+	* Use vad_pkg_fullname in messages
+
+2006-08-31 10:57  source
+
+	* Added test for fixes of pred on inx int giving columns
+
+2006-08-31 10:53  source
+
+	* Added test for inlining exists pred into loop join with dt
+
+2006-08-22 21:52  source
+
+	* Added sparql query in ODS
+
+2006-08-22 20:12  source
+
+	* Updated documentation
+
+2006-08-22 20:11  source
+
+	* Make sure column is visible
+
+2006-08-22 20:09  source
+
+	* Added draft and incomplete (but usefull) small storage of tripples
+	  that are not preset properties of objects
+
+2006-08-22 20:08  source
+
+	* Fix for LIKE operator when nested inside filters
+
+2006-08-22 20:07  source
+
+	* Added support for IRI classes (non-hierarchical for now)
+
+2006-08-22 20:06  source
+
+	* Fixed linking tables with no qualifiers and no owner i.e. MySQL
+
+2006-08-22 20:00  source
+
+	* Added SIOC uri in skins
+	* Added %SYNTAX% macro which shows name of syntax plugin currently in use
+	* Updated WelcomeVisitors page
+
+2006-08-22 19:59  source
+
+	* Additional meta information in skin header
+
+2006-08-22 19:58  source
+
+	* Syntax cleanup
+	* If font was set, uri was not shown as uri
+
+2006-08-22 19:57  source
+
+	* Syntax cleanup
+	* If font was set, uri was not shown as uri
+	* Improved mediawiki compatibility
+
+2006-08-22 19:54  source
+
+	* Added OpenID server
+	* Common ODS dashboards created/added.
+	* Updated view user page logic for Logged/not logged/ in dashboard
+	* Added dashboard for ODS-Gallery
+
+2006-08-22 19:50  source
+
+	* Fixed ordering of latest news
+	* Added SIOC:forum predicate "has_creator"
+
+2006-08-22 19:48  source
+
+	* Fixed incomplete tag cloud when impored from del.icio.us
+	* Added SIOC:forum predicate "has_creator"
+
+2006-08-22 19:46  source
+
+	* Added OpenID client in comments
+
+2006-08-17 23:01  source
+
+	* Added missing file
+
+2006-08-17 18:39  source
+
+	* New mail daskboard added to "myhome" page
+
+2006-08-17 18:39  source
+
+	* Fixed problem related to GeoURL when no business or home lat,lng where
+	  specified
+
+2006-08-17 18:38  source
+
+	* Fixed bug in image path
+
+2006-08-17 18:38  source
+
+	* Fixed bug saving tags when new bookmark is entered
+	* Fixed del.icio.us integration
+	* Added tags in bookmarks list
+
+2006-08-17 18:29  source
+
+	* Only get columns from first unique index
+
+2006-08-17 18:27  source
+
+	* Small cleanups
+
+2006-08-17 13:37  source
+
+	* Added DAV_COPY for locked-checkout
+
+2006-08-17 13:36  source
+
+	* Updated version to 2913
+
+2006-08-17 13:36  source
+
+	* Added HMAC SHA1 functions
+
+2006-08-17 13:35  source
+
+	* If we know nothing about the remote table, assume it has 10K rows
+
+2006-08-17 10:45  source
+
+	* Additional fixes for specific SQLRowCount issues
+
+2006-08-17 10:34  source
+
+	* Added central copy of OpenLink Ajax Toolkit (OAT) version 1.0
+
+2006-08-16 11:03  source
+
+	* Fixed bug in SQLRowCount when using dynamic cursor
+
+2006-08-16 11:00  source
+
+	* Do not generate exists subqueries as pass-through in VDB queries, so
+	  that virt side hash joins etc will get tried for these
+
+2006-08-16 10:49  source
+
+	* Added bookmarks to first row of navigation
+	* Upgraded dav upload mechanism
+	* Fixed rights for uploaded COmmunity logo and changed welcome image
+	* Fixed gdata for SPARQL
+
+2006-08-16 10:45  source
+
+	* Added SIOC:forum predicate "topic"
+
+2006-08-16 10:44  source
+
+	* Added URI element in SOAP result
+
+2006-08-16 08:25  source
+
+	* Fixed dos crlf
+
+2006-08-16 08:20  source
+
+	* Fixed headers
+	* Fixed dos crlf
+
+2006-08-16 07:58  source
+
+	* Fixed headers in sql files
+
+2006-08-16 00:04  source
+
+	* Fixed headers in vspx pages
+
+2006-08-15 22:15  source
+
+	* Fixed headers in css pages
+
+2006-08-15 22:09  source
+
+	* Fixed headers in xsl pages
+
+2006-08-15 19:30  source
+
+	* Fixed headers in vsp pages
+	* Merged consecutive vsp blocks
+
+2006-08-14 21:35  source
+
+	* Fixed dependency generating *_code.c using sql_to_c.awk
+
+2006-08-14 21:28  source
+
+	* Additional sparql params to the service
+	* Added support for soap 1.2 for sparql service
+	* Added support for wsdl 2.0 for sparql service
+	* Do not set default graph if it's empty
+	* Disabled obsolete url to sparql service
+
+2006-08-14 21:22  source
+
+	* Fixed bad size to snprintf
+
+2006-08-14 21:20  source
+
+	* Default graph attr in template
+
+2006-08-14 21:20  source
+
+	* Fixed bug in join of two unions with an equality on calculated columns
+
+2006-08-14 21:19  source
+
+	* Fixed diagnostics
+	* Remove access to freed memory in jso_set of ANY field
+
+2006-08-14 21:18  source
+
+	* Remove leading spaces from generated stored procedure text
+
+2006-08-14 21:16  source
+
+	* Added labels to the gem icons
+
+2006-08-14 21:15  source
+
+	* Added sparql templates
+	* Some DSNs do not like qualifiers, so do not use qualifiers in remote name
+
+2006-08-14 21:02  source
+
+	* Minimalistic support for mediawiki
+	* Updated lexer to allow newline in wiki title link
+	* Fixed URI support
+
+2006-08-14 20:58  source
+
+	* Tags link did not show correct search result
+	* Search for string "from" did not work correctly
+
+2006-08-14 20:57  source
+
+	* Added feed_xbel_click and feed_mrss_click functions
+
+2006-08-14 20:55  source
+
+	* Fixed public access
+
+2006-08-14 20:55  source
+
+	* Customize community instance at creation time
+	* Added xslt mechanism to apply customization
+
+2006-08-14 20:53  source
+
+	* Fixed Public access
+
+2006-08-14 14:33  source
+
+	* Fixed comments and headers
+
+2006-08-10 22:31  source
+
+	* SImplified code generation rules for gawk and gperf
+
+2006-08-10 22:30  source
+
+	* Regenerated using gperf 3.0.1
+
+2006-08-10 21:42  source
+
+	* Fixed small bug in usage handling
+
+2006-08-10 21:39  source
+
+	* Renamed keyword to keiiyword in struct rather then doing this with
+	  sed command
+
+2006-08-10 21:31  source
+
+	* Added more files to clean
+
+2006-08-10 14:28  source
+
+	* Fixed locale problem when using gawk
+
+2006-08-10 10:32  source
+
+	* Fixed typo in tool detection
+
+2006-08-10 08:32  source
+
+	* Fixed GPF when using php interpreter outside of the http context
+
+2006-08-10 07:58  source
+
+	* Register key hosting variables in PHP
+
 2006-08-08 16:53  source
 
 	* Updated version to 4.5.4 for final release
@@ -434,10 +1778,6 @@
 
 	* Added text for Opera problem with HTTP status code 400
 
-2006-07-27 15:26  source
-
-	* New files from upstream OAT project
-
 2006-07-27 14:38  source
 
 	* Fixed column lengths for SQLGetTypeInfo
@@ -465,11 +1805,6 @@
 2006-07-26 15:57  source
 
 	* Added blog comment in SIOC
-
-2006-07-26 15:54  source
-
-	* Fixed visualization problem when loading page
-	* Fixed CRLF
 
 2006-07-26 15:51  source
 
@@ -666,10 +2001,6 @@
 
 	* Fixed BIF function name changed from DB.DBA.RDF_EXP_LOAD_RDFXML to
 	  DB.DBA.RDF_LOAD_RDFXML
-
-2006-07-24 07:57  source
-
-	* Merged newer version of OAT
 
 2006-07-24 07:56  source
 
@@ -998,10 +2329,6 @@
 2006-07-14 17:30  source
 
 	* New Dawg behaviour
-
-2006-07-14 17:30  source
-
-	* Merged patches from upstream OAT archive
 
 2006-07-14 17:27  source
 
