@@ -1,3 +1,38 @@
+October 24 2005, V4.5.5:
+  * Added SPARQL editor gadgets
+  * Added QUAD-MAP support
+  * Added RDS database with SIOC data if UQIQA/Defaulthost is set
+  * Added additional SIOC tags to ODS application
+  * Added new format output type RDF+XML
+  * Added support for SPARQL INSERT and SPARQL DELETE
+  * Added new bitmap index
+  * Added VACUUM table support
+  * Added speedup to buffer replacement algorithm
+  * Added Yadis discovery for OpenID
+  * Added moblogging url
+  * Added HTTP sponge
+  * Added SKOS support
+  * Added OpenID server
+  * Added support for SOAP 1.2 and WSDL 2.0 for SPARQL service
+  * Fixed 'SPARQL define input:default-graph-uri ...'
+  * Fixed SPARQL web service endpoint, re 'define output:format ...'
+  * Fixed SPARQL_RESULT_XML_WRITE_ROW when using formatter
+  * Fixed some multi cpu contention by making critical sections shorter
+  * Fixed SIOC link path and validation errors
+  * Fixed algoritm for deleting CDB data
+  * Fixed memory leak in tf_free
+  * Fixed ODS toolbar
+  * Fixed GeoURL support
+  * Fixed tags cloud support
+  * Fixed possible deadlock when pages are split
+  * Fixed SQLMoreResults on empty datasets
+  * Fixed SQLRowCount when using dynamic cursor
+  * Fixed INX intersect
+  * Updated OAT toolkit to V1.1
+  * Updated Mediawiki plugin to include macro support and other enhancements
+  * Small changes and bugfixes to virtuoso server
+  * Small changes and bugfixes to ODS applications
+
 August 8 2006, V4.5.4:
   * Added support for CREATE VIEW ... AS SPARQL SELECT
   * Added support for SPARQL IN and LIKE operators
