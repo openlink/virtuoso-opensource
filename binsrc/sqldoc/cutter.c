@@ -489,12 +489,12 @@ int main (int argc, const char *argv[])
 
   if (NULL == env->ce_src.cb_name)
     {
-      fprintf (stderr, "No source file specified\n");
+      fprintf (stderr, "No source file specified, add -s option\n");
       goto usage;
     }
   if (NULL == env->ce_tgt.cb_name)
     {
-      fprintf (stderr, "No destination file specified\n");
+      fprintf (stderr, "No destination file specified, add -o option\n");
       goto usage;
     }
 
@@ -532,6 +532,66 @@ int main (int argc, const char *argv[])
     { fprintf (stderr, "%s", err); exit (1); }
   exit (0);
 usage:
-  fprintf(stderr, "Usage... !!!");
+  fprintf(stderr,
+"\n"
+"cutter -- a tool to extract selected fragments of text\n"
+"\n"
+"  Usage: cutter option1 option2 ...\n"
+"-BS<flags>  <pattern>\tAdd <pattern> with <flags> to scoring as block start\n"
+"-BH<flags>  <pattern>\tAdd <pattern> with <flags> to scoring as block hit\n"
+"-BT<flags>  <pattern>\tAdd <pattern> with <flags> to scoring as block end\n"
+"-I\tEvery tag listed after this option will increment score by 1\n"
+"-N  <integer>\tMinimal score of tags that makes the line valid\n"
+"-NBS  <integer>\tMinimal score of block starts that makes the block valid\n"
+"-NBH  <integer>\tMinimal score of block hits that makes the block valid\n"
+"-P  <tag>\tAdd <tag> to scoring rule set\n"
+"-X\tEvery tag listed after this option will decrement score by 1\n"
+"-s  <sourcefile>\tFile to read\n"
+"-o  <targetfile>\tFile to write extracts\n"
+"\n"
+"<flags> specifies how <pattern> is searched in the lines of <sourcefile>:\n"
+"0 means that the matching line should contain the <pattern> as a substring\n"
+"1 means that the matching line should begin with <pattern> substring\n"
+"2 means that the matching line should end with <pattern> substring\n"
+"3 means that the matching line should be equal to <pattern>\n"
+"\n"
+"\n"
+"The program reads the source file into an array of lines.\n"
+"It writes to the target file every line that matches some logical condition.\n"
+"There are two sorts of conditions:\n"
+"\n"
+"Lines may be tagged, and every line with sufficient number of appropriate tags\n"
+"will pass the 'tagging test'. This let you extract subchapters of the text.\n"
+"\n"
+"Groups of lines may start with lines that match 'begin' patterns and end with\n"
+"lines that match 'end' patterns; all lines of a group pass the 'block test' if\n"
+"the group contains sufficient number of likes that match 'hit' patterns.\n"
+"This let you extract blocks of program code.\n"
+"\n"
+"Lines with substrings like '#pragma begin <tag1>, <tag2>,... ,<tagN>'\n"
+"or '#pragma end <tag1>, <tag2>,... ,<tagN>' assign tags to lines between them,\n"
+"so lines between '#pragma begin foo' and #pragma end foo' are tagged by\n"
+"'foo' tag keyword. Every '-P foo' option will add 1 to score of every line\n"
+"that is tagged by 'foo' (or subtract 1 if -X option is used)'. Lines with\n"
+"score not less than specified in '-N' option will pass the 'tagging test'.\n"
+"\n"
+"\n"
+"Examples:\n"
+"\n"
+"cutter -P control -P validator -X -P bad -X -P base -N 1 -s vspx.sql -o cv.tmp\n"
+"\n"
+" - Write to cv.tmp all subchapters of vspx.sql that are tagged by\n"
+"tags 'control' and/or 'validator', but neither 'bad' nor 'base':\n"
+"\n"
+"\n"
+"cutter -BH1 'create function DB.DBA.SAMPLE' -BT3 ';' -s long.sql -o sample.sql\n"
+"\n"
+" - Write to sample.sql block(s) of code from long.sql. Selected block should\n"
+"contain a 'hit' line that begins with 'create function DB.DBA.SAMPLE'\n"
+"substring. End of every block is indicated by a single-character line ';'.\n"
+"No patterns specified for block begin, so ';' at the end of one block also\n"
+"indicates that the next block begins at next line.\n"
+"\n"
+   );
   exit (2);
 }
