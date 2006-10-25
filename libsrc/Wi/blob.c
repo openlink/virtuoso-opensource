@@ -2922,7 +2922,7 @@ blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_
   int n;
   dk_set_t pages_list = NULL;
   if (*is_complete)
-    return;
+    return BLOB_OK;
   while (start)
     {
       long next;
@@ -2966,7 +2966,7 @@ blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_
 	}
       dk_set_free (pages_list);
     }
-  return;
+  return BLOB_OK;
 }
 
 
