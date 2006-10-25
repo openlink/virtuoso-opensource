@@ -79,7 +79,7 @@ create procedure ENEWS.WA.vhost()
     iIsDav := 0;
   VHOST_REMOVE(lpath    => '/enews2');
   VHOST_DEFINE(lpath    => '/enews2',
-               ppath    => concat(sHost, 'www'),
+               ppath    => concat(sHost, 'www/'),
                is_dav   => iIsDav,
                is_brws  => 0,
                vsp_user => 'dba',
@@ -189,6 +189,7 @@ create method wa_id_string() for wa_eNews2
 create method wa_drop_instance () for wa_eNews2
 {
   ENEWS.WA.domain_delete(self.eNewsID);
+  VHOST_REMOVE(lpath => concat('/enews2/', self.eNewsID));
   (self as web_app).wa_drop_instance();
 }
 ;
@@ -232,7 +233,8 @@ create method wa_new_inst (in login varchar) for wa_eNews2
   -- Add a virtual directory for eNews - public www -------------------------
   VHOST_REMOVE(lpath    => concat('/enews2/', self.eNewsID));
   VHOST_DEFINE(lpath    => concat('/enews2/', self.eNewsID),
-               ppath    => concat(self.get_param('host'), 'www'),
+               ppath    => concat(self.get_param('host'), 'www/'),
+               ses_vars => 1,
                is_dav   => self.get_param('isDAV'),
                vsp_user => 'dba',
                realm    => 'wa',
@@ -329,7 +331,7 @@ create method wa_size () for wa_eNews2
 create method wa_vhost_options () for wa_eNews2
 {
   return vector (
-           self.get_param('host') || 'www',  -- physical home
+           self.get_param('host') || 'www/', -- physical home
            'news.vsp',                       -- default page
            'dba',                            -- user for execution
            0,                                -- directory browsing enabled (flag 0/1)

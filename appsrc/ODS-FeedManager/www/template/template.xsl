@@ -103,7 +103,21 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:popup_page_wrapper">
-    <xsl:apply-templates select="node()|processing-instruction()"/>
+    <v:variable name="nav_pos_fixed" type="integer" default="1"/>
+    <v:variable name="nav_top" type="integer" default="0"/>
+    <v:variable name="nav_tip" type="varchar" default="''"/>
+    <xsl:for-each select="//v:variable">
+      <xsl:copy-of select="."/>
+    </xsl:for-each>
+    <div style="padding: 0.5em;">
+      <div style="padding: 0 0 0.5em 0;">
+        &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+        <hr />
+      </div>
+      <v:form name="F1" type="simple" method="POST">
+        <xsl:apply-templates select="vm:pagebody" />
+      </v:form>
+    </div>
     <div class="copyright"><vm:copyright /></div>
   </xsl:template>
 

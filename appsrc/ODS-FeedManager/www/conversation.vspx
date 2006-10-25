@@ -22,14 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<html>
-  <head>
-    <link rel="stylesheet" href="css/style.css" type="text/css"/>
-    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
-    <title>Conversation page</title>
-  </head>
-  <body style="padding: 5px;">
-    <v:page name="conversation" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="conversation" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
       <v:method name="getTitle" arglist="">
         <![CDATA[
           declare title any;
@@ -56,17 +49,7 @@
         ]]>
       </v:method>
 
-  	  <v:template type="simple" condition="not self.vc_is_valid">
-  	    <div class="error">
-  		    <p><v:error-summary/></p>
-  	    </div>
-  	  </v:template>
-      <v:on-init>
-        <![CDATA[
-          self.sid := get_keyword('sid', self.vc_event.ve_params);
-          self.realm := get_keyword('realm', self.vc_event.ve_params);
-        ]]>
-      </v:on-init>
+  <vm:pagetitle>Conversation page</vm:pagetitle>
       <vm:popup_page_wrapper>
         <vm:variables>
           <v:variable persist="0" name="v_mode" type="varchar" default="'show'"/>
@@ -75,12 +58,7 @@
           <v:variable persist="0" name="v_aid" param-name="aid" type="integer"/>
           <v:variable persist="0" name="v_pid" type="integer"/>
         </vm:variables>
-        <v:form name="F1" type="simple" method="GET">
-          <input type="hidden" name="sid" value="&lt;?V get_keyword('sid', self.vc_event.ve_params) ?>"/>
-          <input type="hidden" name="realm" value="&lt;?V get_keyword('realm', self.vc_event.ve_params) ?>"/>
-          <div style="padding: 0 0 0.5em 0;">
-            <a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-          </div>
+    <vm:pagebody>
           <div class="new-form-header">
             Conversation
           </div>
@@ -88,7 +66,7 @@
             <table cellspacing="0">
               <tr>
                 <td>
-                  <b>Item Title</b> <hr />
+              <div class="comment-section">Item</div>
                   <v:label value="">
                     <v:after-data-bind>
                       <![CDATA[
@@ -96,11 +74,22 @@
                       ]]>
                     </v:after-data-bind>
                   </v:label>
+              <div class="comment-button">
+                <v:button action="simple" value="Reply" xhtml_title="Reply" xhtml_class="button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.v_pid := null;
+                      self.v_mode := 'reply';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
                 </td>
               </tr>
               <tr>
                 <td>
-                  <br /><b>Comments</b><hr />
+              <div class="comment-section">Comments</div>
                   <v:tree name="comments_list" multi-branch="1" orientation="vertical" start-path="--self.v_fid" open-at="--'//*'" root="ENEWS.WA.cm_root_node"	child-function="ENEWS.WA.cm_child_node">
 	                  <v:node-template name="node_tmpl">
 	                    <div class="<?V case when control.tn_level = 0 then 'cm_node_top' else 'cm_node' end ?>">
@@ -128,10 +117,19 @@
 		                        <span class="comment-user">
 		                          Posted by <?V ENEWS.WA.utf2wide (u_name) ?>
 		                        </span>
-		                        <span class="comment-date"> on <?V cast(last_update as varchar) ?></span>
+                        <span class="comment-date"> on <?V ENEWS.WA.dt_value (last_update) ?></span>
 	                        </div>
-                          <div class="comment-actions">
-	                          <v:button action="simple" style="url" value="Delete" xhtml_title="Delete" xhtml_class="button2">
+                      <div class="comment-button">
+                        <v:button action="simple" value="Reply" xhtml_title="Reply" xhtml_class="button">
+                          <v:on-post>
+                            <![CDATA[
+                              self.v_pid := cast ((control.vc_parent as vspx_tree_node).tn_value as integer);;
+                              self.v_mode := 'reply';
+                              self.vc_data_bind(e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                        <v:button action="simple" value="Delete" xhtml_title="Delete" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this comment?\');" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
                         		      declare id int;
@@ -143,15 +141,6 @@
                                     EFIC_ID = id;
 
                                   self.v_mode := 'show';
-                                  self.vc_data_bind(e);
-                                ]]>
-                              </v:on-post>
-                            </v:button>
-	                          <v:button action="simple" style="url" value="Reply" xhtml_title="Reply" xhtml_class="button2">
-                              <v:on-post>
-                                <![CDATA[
-                                  self.v_pid := cast ((control.vc_parent as vspx_tree_node).tn_value as integer);;
-                                  self.v_mode := 'reply';
                                   self.vc_data_bind(e);
                                 ]]>
                               </v:on-post>
@@ -169,17 +158,7 @@
               </tr>
               <tr>
                 <td>
-                  <hr />
-                  <v:button action="simple" style="url" value="Reply" xhtml_title="Reply" xhtml_class="button2">
-                    <v:on-post>
-                      <![CDATA[
-                        self.v_pid := null;
-                        self.v_mode := 'reply';
-                        self.vc_data_bind(e);
-                      ]]>
-                    </v:on-post>
-                  </v:button>
-                  <hr />
+              <div class="comment-button"></div>
                 </td>
               </tr>
               <v:template type="simple" enabled="--case when (self.v_mode = 'reply') then 1 else 0 end">
@@ -187,6 +166,11 @@
                   <td>
                     <table cellspacing="0">
                       <tr>
+                    <td colspan="2">
+                      <div class="comment-section">Reply</div>
+                    </td>
+                  </tr>
+                  <tr>
                         <th>
                           <v:label for="f_name" value="Name" />
                         </th>
@@ -204,6 +188,14 @@
                       </tr>
                       <tr>
                         <th>
+                      <v:label for="f_url" value="Web Site" />
+                    </th>
+                    <td>
+                      <v:text name="f_url" value="--''" xhtml_class="textbox" xhtml_size="70" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
                           Comment
                         </th>
                         <td>
@@ -230,17 +222,18 @@
                       </tr>
                       <tr>
                         <td colspan="2" align="center">
-                          <hr />
-                          <v:button action="simple" value="Post" xhtml_onclick="javascript:updateRTE(\'f_message\')" xhtml_title="Post" xhtml_class="button2">
+                      <div class="comment-button">
+                      <v:button action="simple" value="Post" xhtml_onclick="javascript:updateRTE(\'f_message\')" xhtml_title="Post" xhtml_class="button">
                             <v:on-post>
                               <![CDATA[
-                                declare name, mail, title, comment any;
+                            declare name, mail, url, title, comment any;
                                 declare rName, rMail, rTitle, rComment any;
 
                                 title := self.getTitle();
                                 comment := trim(get_keyword('f_message', self.vc_event.ve_params, ''));
                                 name := trim(self.f_name.ufl_value);
                                 mail := trim(self.f_mail.ufl_value);
+                            url := trim(self.f_url.ufl_value);
 
                                 if (isnull(self.v_pid)) {
                                   -- get root comment;
@@ -250,15 +243,15 @@
                                 }
 
                                 ENEWS.WA.nntp_update_item (self.v_did, self.v_fid);
-                                insert into ENEWS.WA.FEED_ITEM_COMMENT (EFIC_PARENT_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_LAST_UPDATE)
-                                  values (self.v_pid, self.v_did, self.v_fid, title, comment, name, mail, now ());
+                            insert into ENEWS.WA.FEED_ITEM_COMMENT (EFIC_PARENT_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_U_URL, EFIC_LAST_UPDATE)
+                              values (self.v_pid, self.v_did, self.v_fid, title, comment, name, mail, url, now ());
 
                                 self.v_mode := 'show';
                                 self.vc_data_bind(e);
                               ]]>
                             </v:on-post>
                           </v:button>
-                          <v:button action="simple" value="Cancel" xhtml_title="Cancel" xhtml_class="button2">
+                      <v:button action="simple" value="Cancel" xhtml_title="Cancel" xhtml_class="button">
                             <v:on-post>
                               <![CDATA[
                                 self.v_mode := 'show';
@@ -266,16 +259,24 @@
                               ]]>
                             </v:on-post>
                           </v:button>
+                      </div>
+                      <div class="comment-button" />
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
               </v:template>
+          <tr>
+            <td>
+              Subscribe to an RSS feed of this comment thread:
+              <?vsp
+                http(sprintf('<a href="%sOFM.comment?:id=%d" target="_blank" title="RSS conversation" alt="RSS conversation" class="gems"><img src="image/rss-icon-16.gif" border="0"/></a>', ENEWS.WA.dav_url(self.domain_id, self.account_id), self.v_fid));
+              ?>
+            </td>
+          </tr>
             </table>
           </div>
-        </v:form>
+    </vm:pagebody>
       </vm:popup_page_wrapper>
     </v:page>
-  </body>
-</html>
