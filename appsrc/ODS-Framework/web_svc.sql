@@ -267,4 +267,4 @@ create aggregate WA_APP_PING_TGT_AGG (in _val varchar) returns varchar
   from WA_APP_PING_TGT_AGG_init, WA_APP_PING_TGT_AGG_acc, WA_APP_PING_TGT_AGG_final;
 
 insert soft "DB"."DBA"."SYS_SCHEDULED_EVENT" (SE_INTERVAL, SE_LAST_COMPLETED, SE_NAME, SE_SQL, SE_START)
-  values (10, NULL, 'ODS NOFIFICATIONS', 'ODS.DBA.SVC_PROCESS_PINGS()', now());
+  values (10, NULL, 'ODS NOTIFICATIONS', 'ODS.DBA.SVC_PROCESS_PINGS()', now());

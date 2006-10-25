@@ -168,7 +168,7 @@
         self.idesc1.ufl_failed := 1;;
         return;
       }
-      -- check if instanse with the same name already exists
+      -- check if instance with the same name already exists
       if (self.wa_type = 'oMail')
       {
         declare tmp any;

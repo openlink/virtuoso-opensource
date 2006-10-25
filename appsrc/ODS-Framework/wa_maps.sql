@@ -634,7 +634,7 @@ create procedure WA_MAPS_INITIAL_POINTS (
    -- send out the up left point;
    if (_min_lng is not null and _min_lat is not null)
      result (cast (_min_lng as double precision), cast (_min_lat as double precision), serialize (NULL), '', 1);
-   -- send out the bootom right point;
+   -- send out the bottom right point;
    if (_max_lng is not null and _max_lat is not null)
      result (cast (_max_lng as double precision), cast (_max_lat as double precision), serialize (NULL), '', 1);
    -- send the center point if any

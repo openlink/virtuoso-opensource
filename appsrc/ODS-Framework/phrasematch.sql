@@ -47,7 +47,7 @@ AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_PHRASE_CLASS
 (
   APC_ID integer not null primary key,
   APC_NAME varchar(255) unique,		-- unique name for use in API/UI
-  APC_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writeable for any reader
+  APC_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writable for any reader
   APC_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
   APC_CALLBACK varchar,
   APC_APP_ENV any
@@ -58,7 +58,7 @@ AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_PHRASE_SET
 (
   APS_ID integer not null primary key,
   APS_NAME varchar(255) unique,		-- unique name for use in API/UI
-  APS_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writeable for any reader
+  APS_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writable for any reader
   APS_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
   APS_APC_ID integer not null,		-- references SYS_ANN_PHRASE_CLASS (APC_ID)
   APS_LANG_NAME varchar not null,	-- name of language handler that is used to split texts of phrases
@@ -74,7 +74,7 @@ AP_ADD_COL ('DB.DBA.SYS_ANN_PHRASE_SET', 'APS_LOAD_AT_BOOT', 'integer not null')
 AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_PHRASE
 (
   AP_APS_ID integer not null,		-- references SYS_ANN_PHRASE_SET (APS_ID),
-  AP_CHKSUM integer,			-- prased phrase checksum
+  AP_CHKSUM integer,			-- phrase checksum
   AP_TEXT varchar,			-- original text
   AP_LINK_DATA any,			-- Associated data about links etc.
   primary key (AP_APS_ID, AP_CHKSUM, AP_TEXT)
@@ -84,7 +84,7 @@ AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_PHRASE
 AP_EXEC_NO_ERROR('create table DB.DBA.SYS_ANN_AD_ACCOUNT (
   AAA_ID integer not null primary key,
   AAA_NAME varchar(255) unique,		-- unique name for use in API/UI
-  AAA_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writeable for any reader
+  AAA_OWNER_UID integer,		-- references SYS_USERS (U_ID), NULL if the record writable for any reader
   AAA_READER_GID integer,		-- references SYS_USERS (U_ID), NULL if the record is readable for public
   AAA_DETAILS long xml,			-- any details, e.g., in RDF
   AAA_APP_ENV any
@@ -93,7 +93,7 @@ AP_EXEC_NO_ERROR('create table DB.DBA.SYS_ANN_AD_ACCOUNT (
 
 AP_EXEC_NO_ERROR ('create table DB.DBA.SYS_ANN_LINK (
   AL_ID integer primary key,
-  AL_OWNER_UID integer,			-- references SYS_USERS (U_ID), NULL if the record writeable for any reader; always readable for public
+  AL_OWNER_UID integer,			-- references SYS_USERS (U_ID), NULL if the record writable for any reader; always readable for public
   AL_URI varchar,			-- URI template for A HREF
   AL_TEXT varchar,			-- text template for body of <A>
   AL_NOTE varchar,			-- taxt after the link (or around it)

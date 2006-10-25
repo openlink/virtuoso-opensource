@@ -33,7 +33,7 @@
       return;
   };
   commit work;
-  set isolation='uncommited';
+  set isolation='uncommitted';
 
   _wmd_inst := cast (get_keyword ('inst', params, NULL) as integer);
   _lat_min := cast (get_keyword ('al', params, NULL) as double precision);

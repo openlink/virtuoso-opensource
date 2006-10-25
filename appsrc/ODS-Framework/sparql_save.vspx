@@ -135,7 +135,7 @@
 		              if (length (self.rq_name.ufl_value) = 0)
 	                        {
 				  self.vc_is_valid := 0;
-				  self.vc_error_message := 'The name of the resourse cannot be empty';
+				  self.vc_error_message := 'The name of the resource cannot be empty';
 				  return;
 				}
 		              if (self.cb_public.ufl_selected)

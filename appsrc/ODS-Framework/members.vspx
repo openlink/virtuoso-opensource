@@ -717,7 +717,7 @@
         if (length(self.str_alreadyinlist)>0)
         {
       ?>     
-        <div style="color:red;">You have selecte users that were already in the list:<?Vself.str_alreadyinlist?></div>
+        <div style="color:red;">You have selected users that were already in the list:<?Vself.str_alreadyinlist?></div>
       <?vsp
         }
       ?>     
@@ -747,7 +747,7 @@
               
               if( model_type < 1) {
                 self.vc_is_valid := 0;
-                self.vc_error_message := 'Incorect Mebership type';
+                self.vc_error_message := 'Incorrect Membership type';
                 goto nextcycle;
               }
               

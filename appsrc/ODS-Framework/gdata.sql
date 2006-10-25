@@ -158,7 +158,7 @@ create procedure WA_SET_HOME_URLS (in do_res int := 0)
   else
     {
       if (cname is not null and default_port <> http_port and cnt_inet > 1)
-        log_message ('There is more than one listener defined for defaulthost, the upgrdade can not be done');
+        log_message ('There is more than one listener defined for defaulthost, the upgrade can not be done');
       return;
     }
 
@@ -483,7 +483,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	  if (rc < 0)
 	    {
 	      http_request_status ('HTTP/1.1 403 Prohibited');
-	      signal ('22023', 'Access is not permited');
+	      signal ('22023', 'Access is not permitted');
 	    }
 	  select RES_CONTENT, RES_TYPE into content, mime from WS.WS.SYS_DAV_RES where RES_ID = rid;
 	  http_header (sprintf ('Content-Type: %s\r\n', mime));

@@ -211,7 +211,7 @@
 		       ]]></v:after-data-bind>
                   </v:data-list>
 		    <vm:u-prop-select name="sel_23" value="self.sav23" />
-                  <!--v:label name ="lb32" format="%s" value="'* Refferes to State/Province, City/Town, Country'"/-->
+                  <!--v:label name ="lb32" format="%s" value="'* Refers to State/Province, City/Town, Country'"/-->
                 </td>
               </tr>
               <tr>
@@ -245,7 +245,7 @@
                           xhtml_style="width:216px"
                           xhtml_tabindex="7"/>
 		    <vm:u-prop-select name="sel_22" value="self.sav22" />
-                  <!--v:label name ="lb31" format="%s" value="'* Refferes to Address1, Address2, Zip/Postal Code'"/-->
+                  <!--v:label name ="lb31" format="%s" value="'* Refers to Address1, Address2, Zip/Postal Code'"/-->
                 </td>
               </tr>
               <tr>
@@ -368,7 +368,7 @@
                           xhtml_style="width:216px"
                           xhtml_tabindex="11"/>
                   <vm:u-prop-select name="sel_25" value="self.sav25" />
-                  <!--v:label name ="lb33" format="%s" value="'* Refferes to Phone, Mobile'"/-->
+                  <!--v:label name ="lb33" format="%s" value="'* Refers to Phone, Mobile'"/-->
                 </td>
               </tr>
               <tr>

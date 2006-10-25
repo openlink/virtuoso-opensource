@@ -35,7 +35,7 @@
       <vm:navigation1 on="sn"/>-->
       <vm:navigation-new on="home"/>
       <vm:navigation2 on="sn_sent_inv"/>
-      <vm:rawheader caption="Invite your Friends, Collegues and Family to <?V self.banner ?>"/>
+      <vm:rawheader caption="Invite your Friends, Colleagues and Family to <?V self.banner ?>"/>
       <vm:body>
         <vm:login redirect="index.vspx"/>
         <div id="container">

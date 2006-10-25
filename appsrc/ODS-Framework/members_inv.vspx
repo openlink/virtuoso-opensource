@@ -117,7 +117,7 @@
           }
       }
       ?>
-      <img src="images/icons/go_16.png" border="0" alt="Mmebers" /> <v:url name="app_inv1_url" url="--sprintf ('members.vspx?wai_id=%d', self.iid)" value="Members" render-only="1"/>
+      <img src="images/icons/go_16.png" border="0" alt="Members" /> <v:url name="app_inv1_url" url="--sprintf ('members.vspx?wai_id=%d', self.iid)" value="Members" render-only="1"/>
       </div>
       <v:form type="simple" method="POST" name="inv_form">
       <table class="ctl_grp">
