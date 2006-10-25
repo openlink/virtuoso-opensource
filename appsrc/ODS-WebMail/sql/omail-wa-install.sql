@@ -87,6 +87,7 @@ create procedure OMAIL.WA.omail_install()
                ppath      => concat(sHost, 'www-root/portal.vsp'),
                opts       => vector('noinherit', 1),
                vsp_user   => 'dba',
+               realm      => 'wa',
                def_page   => 'index.vsp',
                is_dav     => iIsDav,
                ses_vars   => 1
@@ -94,8 +95,9 @@ create procedure OMAIL.WA.omail_install()
 
   VHOST_REMOVE(lpath      => '/oMail/i');
   VHOST_DEFINE(lpath      => '/oMail/i',
-               ppath      => concat(sHost, 'www-root/mail/i'),
+               ppath      => concat(sHost, 'www-root/mail/i/'),
                vsp_user   => 'dba',
+               realm      => 'wa',
                def_page   => 'index.html',
                is_dav     => iIsDav,
                ses_vars   => 1
@@ -103,8 +105,9 @@ create procedure OMAIL.WA.omail_install()
 
   VHOST_REMOVE(lpath      => '/oMail/res');
   VHOST_DEFINE(lpath      => '/oMail/res',
-               ppath      => concat(sHost, 'www-root/res'),
+               ppath      => concat(sHost, 'www-root/res/'),
                vsp_user   => 'dba',
+               realm      => 'wa',
                def_page   => 'index.html',
                is_dav     => iIsDav,
                ses_vars   => 1
@@ -362,8 +365,8 @@ create method wa_vhost_options () for wa_mail
 --
 create method wa_addition_urls () for wa_mail {
   return vector(
-    vector(null, null, '/oMail/i',     self.get_param('host') || 'www-root/mail/i', self.get_param('isDAV'), 0, null, null, null, null, 'dba', null, null, 1, null, null, null, 0),
-    vector(null, null, '/oMail/i/res', self.get_param('host') || 'www-root/res',    self.get_param('isDAV'), 0, null, null, null, null, 'dba', null, null, 1, null, null, null, 0)
+    vector(null, null, '/oMail/i',     self.get_param('host') || 'www-root/mail/i/', self.get_param('isDAV'), 0, null, null, null, null, 'dba', null, null, 1, null, null, null, 0),
+    vector(null, null, '/oMail/i/res', self.get_param('host') || 'www-root/res/',    self.get_param('isDAV'), 0, null, null, null, null, 'dba', null, null, 1, null, null, null, 0)
   );
 }
 ;

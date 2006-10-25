@@ -79,7 +79,7 @@ create procedure BMK.WA.vhost()
     iIsDav := 0;
   VHOST_REMOVE(lpath    => '/bookmark');
   VHOST_DEFINE(lpath    => '/bookmark',
-               ppath    => concat(sHost, 'www'),
+               ppath    => concat(sHost, 'www/'),
                is_dav   => iIsDav,
                is_brws  => 0,
                vsp_user => 'dba',
@@ -167,6 +167,7 @@ create method wa_id_string() for wa_bookmark
 create method wa_drop_instance () for wa_bookmark
 {
   BMK.WA.domain_delete(self.BookmarkID);
+  VHOST_REMOVE(lpath => concat('/bookmark/', self.BookmarkID));
   (self as web_app).wa_drop_instance();
 }
 ;
@@ -215,8 +216,10 @@ create method wa_new_inst (in login varchar) for wa_bookmark
   -- Add a virtual directory for BM - public www -------------------------
   VHOST_REMOVE(lpath    => concat('/bookmark/', self.BookmarkID));
   VHOST_DEFINE(lpath    => concat('/bookmark/', self.BookmarkID),
-               ppath    => concat(self.get_param('host'), 'www'),
+               ppath    => concat(self.get_param('host'), 'www/'),
+               ses_vars => 1,
                is_dav   => self.get_param('isDAV'),
+               is_brws  => 0,
                vsp_user => 'dba',
                realm    => 'wa',
                def_page => 'bookmarks.vspx',
@@ -303,7 +306,7 @@ create method wa_front_page_as_user (inout stream any, in user_name varchar) for
 create method wa_vhost_options () for wa_bookmark
 {
   return vector (
-           self.get_param('host') || 'www',  -- physical home
+           self.get_param('host') || 'www/', -- physical home
            'bookmarks.vspx',                 -- default page
            'dba',                            -- user for execution
            0,                                -- directory browsing enabled (flag 0/1)

@@ -32,13 +32,26 @@
       page_name := BMK.WA.page_name ();
       if (page_name = 'error.vspx')
         return;
+
+      declare vh, lh, hf, ods_path any;
+
+      vh := http_map_get ('vhost');
+      lh := http_map_get ('lhost');
+      hf := http_request_header (lines, 'Host');
+
+      if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
+        ods_path := 'http://' || hf || '/ods/';
+      else
+        ods_path := DB.DBA.WA_LINK (1, '/ods/');
+
       if ((page_name = 'bookmarks.vspx') and (get_keyword('URL', self.vc_page.vc_event.ve_params, '') <> '')) {
-        self.vc_redirect(sprintf('%slogin.vspx?URL=%U', BMK.WA.wa_home_link (), sprintf('%s?URI=%s&TITLE=%V', HTTP_REQUESTED_URL(), get_keyword('URL', self.vc_page.vc_event.ve_params, ''), get_keyword('TITLE', self.vc_page.vc_event.ve_params, ''))));
+        self.vc_redirect(sprintf('%slogin.vspx?URL=%U', ods_path, sprintf('%s?URI=%s&TITLE=%V', HTTP_REQUESTED_URL(), get_keyword('URL', self.vc_page.vc_event.ve_params, ''), get_keyword('TITLE', self.vc_page.vc_event.ve_params, ''))));
         return;
       }
       if (self.account_role = 'expire') {
+
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', BMK.WA.wa_home_link (), HTTP_REQUESTED_URL()));;
+        http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));;
         return;
       }
         return;

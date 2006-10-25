@@ -132,24 +132,17 @@ create procedure ODRIVE.WA.odrive_check_grants(
   in user_name varchar,
   in role_name varchar)
 {
-  declare
-    user_id,
-    group_id,
-    role_id integer;
+  declare user_id, group_id integer;
 
   whenever not found goto nf;
 
   if (user_name='')
     return 0;
   select U_ID, U_GROUP into user_id, group_id from DB.DBA.SYS_USERS where U_NAME=user_name;
-  if (user_id = 0 OR group_id = 0)
+  if (user_id = 0 or group_id = 0)
     return 1;
   return 1;
-  if (role_name is null or role_name = '')
-    return 0;
-  select U_ID into role_id from DB.DBA.SYS_USERS where U_NAME=role_name;
-  if (exists(select 1 from DB.DBA.SYS_ROLE_GRANTS where GI_SUPER=user_id and GI_SUB=role_id))
-    return 1;
+
 nf:
   return 0;
 }

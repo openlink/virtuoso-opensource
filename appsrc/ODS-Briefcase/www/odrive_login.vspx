@@ -23,18 +23,35 @@
  -
 -->
 <v:login name="odrive_login" realm="wa" mode="url" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  <v:template name='inl' type='if-no-login' redirect="--concat(ODRIVE.WA.wa_home_link (), 'index.vspx')"/>
+  <v:template name='inl' type='if-no-login'/>
   <v:after-data-bind>
     <![CDATA[
-      if (self.vc_authenticated) {
         set_qualifier ('DB');
+
+      if (not self.vc_authenticated) {
+        declare vh, lh, hf, ods_path any;
+
+        vh := http_map_get ('vhost');
+        lh := http_map_get ('lhost');
+        hf := http_request_header (lines, 'Host');
+
+        if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
+          ods_path := 'http://' || hf || '/ods/';
+        else
+          ods_path := DB.DBA.WA_LINK (1, '/ods/');
+
+        http_request_status ('HTTP/1.1 302 Found');
+        http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));
+        return;
+      }
+
         if ((self.page_owner is null and ODRIVE.WA.odrive_check_grants(ODRIVE.WA.account(), self.page_owner) <> 1) or
-            (self.page_owner <> '' and ODRIVE.WA.odrive_check_grants(ODRIVE.WA.account(), self.page_owner) <> 1))
-				{
+          (self.page_owner <> '' and ODRIVE.WA.odrive_check_grants(ODRIVE.WA.account(), self.page_owner) <> 1)) {
           self.vc_redirect('home.vspx');
           return;
         }
-      }
+
+      return;
     ]]>
   </v:after-data-bind>
 </v:login>

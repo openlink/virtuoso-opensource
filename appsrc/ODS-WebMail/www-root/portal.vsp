@@ -65,6 +65,8 @@ exec_start:;
     N  := length(path)-1;
     select WAI_NAME, coalesce(WAI_DESCRIPTION, WAI_NAME), WAI_IS_PUBLIC into waName, waDescription, waPublic from DB.DBA.WA_INSTANCE where WAI_ID = waID;
 
+    if (is_empty_or_null(path[N]))
+      aset(path, N, 'box.vsp');
     procName := split_and_decode(path[N],0,'\0\0.');
     procID   := procName[0];
     procName := concat('OMAIL.WA.omail_',procID);
@@ -127,12 +129,23 @@ exec_start:;
   return;
 
 bad_session:
+  declare vh, lh, hf, ods_path any;
+
+  vh := http_map_get ('vhost');
+  lh := http_map_get ('lhost');
+  hf := http_request_header (lines, 'Host');
+
+  if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
+    ods_path := 'http://' || hf || '/ods/';
+  else
+    ods_path := DB.DBA.WA_LINK (1, '/ods/');
+
   S := HTTP_REQUESTED_URL() || '?';
   for (N := 0; N < length(params); N := N + 2)
-    if ((params[N] <> 'sid') and (params[N] <> 'realm') and (params[N] <> 'Content'))
+    if ((params[N] <> 'sid') and (params[N] <> 'realm') and (params[N] <> 'Content') and (params[N] <> 'logout'))
       S := S || params[N] || '=' || cast(params[N+1] as varchar) || '&';
   http_request_status ('HTTP/1.1 302 Found');
-  http_header (sprintf ('Location: %slogin.vspx?URL=%U\r\n', wa_home_link, rtrim(S, '&')));
+  http_header (sprintf ('Location: %slogin.vspx?URL=%U\r\n', ods_path, rtrim(S, '&')));
 
 system_error:
   http('The user doesn\'t have any mail box defined');

@@ -35,14 +35,13 @@ create procedure fill_ods_mail_sioc (in graph_iri varchar, in site_iri varchar, 
   declare iri, c_iri varchar;
   declare do_post int;
 
-  for select DOMAIN_ID, USER_ID, MSG_ID, SUBJECT, SND_DATE, UNIQ_MSG_ID from OMAIL..MESSAGES do
+  for (select DOMAIN_ID, USER_ID, MSG_ID, SUBJECT, SND_DATE, UNIQ_MSG_ID from OMAIL..MESSAGES) do
     {
       do_post := 1;
-      for select WAM_INST
+    for (select WAM_INST
            from DB.DBA.WA_MEMBER
           where WAM_USER = USER_ID and WAM_MEMBER_TYPE = 1 and  WAM_APP_TYPE = 'oMail'
-	  and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAM_INST = _wai_name)
-	do
+ 	   and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAM_INST = _wai_name)) do
 	  {
           if (do_post = 1)
             {
@@ -59,77 +58,74 @@ create procedure fill_ods_mail_sioc (in graph_iri varchar, in site_iri varchar, 
     }
 };
 
+create procedure message_insert (
+  inout domain_id integer,
+  inout user_id integer,
+  inout message_id integer,
+  inout subject varchar,
+  inout send_date datetime)
+{
+  declare graph_iri, iri, c_iri, creator_iri varchar;
+  declare do_post integer;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := mail_post_iri (domain_id, user_id, message_id);
+  creator_iri := user_iri (user_id);
+
+  do_post := 1;
+  for (select WAM_INST from DB.DBA.WA_MEMBER where WAM_USER = user_id and WAM_MEMBER_TYPE = 1 and  WAM_APP_TYPE = 'oMail' and WAM_IS_PUBLIC = 1) do
+    {
+      if (do_post = 1)
+    {
+      for (select coalesce(U_FULL_NAME, U_NAME) full_name, U_E_MAIL e_mail from DB.DBA.SYS_USERS where U_ID = user_id) do
+        foaf_maker (graph_iri, person_iri (creator_iri), full_name, e_mail);
+      ods_sioc_post (graph_iri, iri, null, creator_iri, subject, send_date, null);
+          do_post := 0;
+        }
+      c_iri := mail_iri (WAM_INST);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
+    }
+  return;
+};
+
+create procedure message_delete (
+  in domain_id integer,
+  in user_id integer,
+  in message_id integer)
+{
+  declare graph_iri, iri varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := mail_post_iri (domain_id, user, message_id);
+  delete_quad_s_or_o (graph_iri, iri, iri);
+};
+
 -- OMAIL..MESSAGES
 create trigger MESSAGES_SIOC_I after insert on OMAIL..MESSAGES referencing new as N
 {
-  declare iri, c_iri varchar;
-  declare graph_iri varchar;
-  declare do_post int;
-
-  declare exit handler for sqlstate '*' {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
+  message_insert (N.DOMAIN_ID, N.USER_ID, N.MSG_ID, N.SUBJECT, N.SND_DATE);
   };
-  graph_iri := get_graph ();
-  iri := mail_post_iri (N.DOMAIN_ID, N.USER_ID, N.MSG_ID);
 
-  do_post := 1;
-  for select WAM_INST from DB.DBA.WA_MEMBER where WAM_USER = N.USER_ID and WAM_MEMBER_TYPE = 1 and  WAM_APP_TYPE = 'oMail' and WAM_IS_PUBLIC = 1 do
+create trigger MESSAGES_SIOC_U after update on OMAIL..MESSAGES referencing old as O, new as N
     {
-      if (do_post = 1)
-    {
-          ods_sioc_post (graph_iri, iri, null, null, N.SUBJECT, N.SND_DATE, null);
-          do_post := 0;
-        }
-      c_iri := mail_iri (WAM_INST);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
-    }
-  return;
+  message_delete (O.DOMAIN_ID, O.USER_ID, O.MSG_ID);
+  message_insert (N.DOMAIN_ID, N.USER_ID, N.MSG_ID, N.SUBJECT, N.SND_DATE);
 };
 
 create trigger MESSAGES_SIOC_D before delete on OMAIL..MESSAGES referencing old as O
-{
-  declare iri, c_iri varchar;
-  declare graph_iri varchar;
-  declare exit handler for sqlstate '*' {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  graph_iri := get_graph ();
-  iri := mail_post_iri (O.DOMAIN_ID, O.USER_ID, O.MSG_ID);
-  delete_quad_s_or_o (graph_iri, iri, iri);
-  return;
-};
-
-create trigger MESSAGES_SIOC_U after update on OMAIL..MESSAGES referencing old as O, new as N
-{
-  declare iri, c_iri varchar;
-  declare graph_iri varchar;
-  declare do_post int;
-
-  declare exit handler for sqlstate '*' {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  graph_iri := get_graph ();
-  iri := mail_post_iri (N.DOMAIN_ID, N.USER_ID, N.MSG_ID);
-
-  delete_quad_s_or_o (graph_iri, iri, iri);
-
-  do_post := 1;
-  for select WAM_INST from DB.DBA.WA_MEMBER where WAM_USER = N.USER_ID and WAM_MEMBER_TYPE = 1 and  WAM_APP_TYPE = 'oMail' and WAM_IS_PUBLIC = 1 do
-    {
-      if (do_post = 1)
         {
-  ods_sioc_post (graph_iri, iri, null, null, N.SUBJECT, N.SND_DATE, null);
-          do_post := 0;
-        }
-      c_iri := mail_iri (WAM_INST);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
-    }
-  return;
+  message_delete (O.DOMAIN_ID, O.USER_ID, O.MSG_ID);
 };
 
 create procedure ods_mail_sioc_init ()

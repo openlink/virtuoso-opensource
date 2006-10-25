@@ -72,7 +72,7 @@ create procedure ODRIVE.WA.odrive_vhost()
     iIsDav := 0;
   VHOST_REMOVE(lpath    => '/odrive');
   VHOST_DEFINE(lpath    => '/odrive',
-               ppath    => concat(sHost, 'www'),
+               ppath    => concat(sHost, 'www/'),
                ses_vars => 1,
                is_dav   => iIsDav,
                is_brws  => 0,
@@ -274,7 +274,7 @@ create method wa_size () for wa_oDrive
 create method wa_vhost_options () for wa_oDrive
 {
   return vector (
-           self.get_param('host') || 'www',  -- physical home
+           self.get_param('host') || 'www/', -- physical home
            'home.vspx',                      -- default page
            'dba',                            -- user for execution
            0,                                -- directory browsing enabled (flag 0/1)
