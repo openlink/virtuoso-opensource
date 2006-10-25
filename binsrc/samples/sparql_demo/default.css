@@ -363,7 +363,7 @@ ul#tabres {
   border-left: 1px solid #000;
   border-right: 1px solid #000;
   width:100%;
-  overflow:auto;
+/*  overflow:auto; */
 }
 
 #result {
@@ -374,6 +374,7 @@ ul#tabres {
 #response,
 #autoload {
   padding:5px;
+  overflow:auto; 
 }
 
 /* ---------------- other -------------- */

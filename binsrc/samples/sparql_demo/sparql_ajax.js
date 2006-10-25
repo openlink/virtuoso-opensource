@@ -23,7 +23,7 @@
 
 function init()
 {
-  OAT.Preferences.windowTypeOverride = 1;
+  OAT.Preferences.windowTypeOverride = 0;
   
   tab = new OAT.Tab ("main_col");
   tab.add ("tab_home","page_home");
