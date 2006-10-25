@@ -10986,6 +10986,31 @@ bif_self_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
+#ifdef HAVE_GETRUSAGE 
+#include <sys/resource.h>
+#endif
+
+caddr_t
+bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+#ifdef HAVE_GETRUSAGE
+  caddr_t * res = dk_alloc_box_zero (sizeof (caddr_t) * 8, DV_ARRAY_OF_POINTER);
+  struct rusage ru;
+  getrusage (RUSAGE_SELF, &ru);
+  res[0] = box_num (ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000);
+  res[1] = box_num (ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000);
+  res[2] = box_num (ru.ru_maxrss);
+  res[3] = box_num (ru.ru_minflt);
+  res[4] = box_num (ru.ru_majflt);
+  res[5] = box_num (ru.ru_nswap);
+  res[6] = box_num (ru.ru_inblock);
+  res[7] = box_num (ru.ru_oublock);
+  return res;
+#else
+  return box_num (0);
+#endif
+}
+
 void dk_alloc_cache_status (resource_t ** cache);
 
 caddr_t
@@ -12438,6 +12463,7 @@ sql_bif_init (void)
   bif_define ("copy_meter", bif_copy_meter);
   bif_define ("alloc_cache_status", bif_alloc_cache_status);
   bif_define ("busy_meter", bif_busy_meter);
+  bif_define ("getrusage", bif_getrusage);
   bif_define_typed ("row_count", bif_row_count, &bt_integer);
   bif_define_typed ("set_row_count", bif_set_row_count, &bt_integer);
   bif_define ("__assert_found", bif_assert_found);
