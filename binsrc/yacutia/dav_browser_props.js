@@ -27,7 +27,7 @@ Cookies:
 
 function init() 
 {
-  var tab = new Tab ("tab_viewport");
+  var tab = new OAT.Tab ("tab_viewport");
   tab.add ("tab_owner_perms","owner_perms");
   tab.add ("tab_props","props");
   tab.go (0); /* is 0-based index... */

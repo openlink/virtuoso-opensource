@@ -2093,7 +2093,10 @@ else
                 <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>
                 <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
                 <script type="text/javascript">
+                  if (OAT.Dom.isIE())
                     window.onload = init;
+                  else
+                    window.onload = 'init()';
                 </script>
                 <div>
                   <!-- div class="presets_sel">
@@ -2106,6 +2109,112 @@ else
                     </ul>
                     <div id="tab_viewport">
                       <xsl:text> </xsl:text>
+                    </div>
+                    <div style="display: block;" id="owner_perms">
+                      <br/><h4>Ownership</h4>
+                      <input id="cm_owner" name="cm_owner" type="checkbox"/>
+                      <label for="cm_owner">Set Owner</label>
+                      <div class="wg_complete_combo">
+                        <v:data-list name="own_name" sql="select -1 as U_ID, 'none' as U_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select U_ID, U_NAME from WS.WS.SYS_DAV_USER" key-column="U_ID" value-column="U_NAME" />
+                        <!--<button>V</button>-->
+                      </div>
+                      <!--<a href="#" class="inline_hlp">?</a>-->
+                      <br/>
+                      <input id="cm_group" name="cm_group" type="checkbox"/>
+                      <label for="cm_group">Set Group</label>
+                      <div class="wg_complete_combo">
+                        <v:data-list name="grp_name" sql="select -1 as G_ID, 'none' as G_NAME from WS.WS.SYS_DAV_GROUP where G_NAME = 'administrators' union all select G_ID, G_NAME from WS.WS.SYS_DAV_GROUP" key-column="G_ID" value-column="G_NAME" />
+                        <!--<button>V</button>-->
+                      </div>
+                      <!--<a href="#" class="inline_hlp">?</a>-->
+                      <br/>
+                      <table class="wg_perms" summary="DAV object permissions marked for addition">
+                        <caption>Add these</caption>
+                        <tbody>
+                          <tr>
+                            <td class="subj" colspan="3">Owner</td>
+                            <td class="subj" colspan="3">Group</td>
+                            <td class="subj" colspan="3">Others</td>
+                          </tr>
+                          <tr>
+                            <td class="attr"><label for="perm_ur">read</label></td>
+                            <td class="attr"><label for="perm_uw">write</label></td>
+                            <td class="attr"><label for="perm_ux">exec</label></td>
+                            <td class="attr"><label for="perm_gr">read</label></td>
+                            <td class="attr"><label for="perm_gw">write</label></td>
+                            <td class="attr"><label for="perm_gx">exec</label></td>
+                            <td class="attr"><label for="perm_or">read</label></td>
+                            <td class="attr"><label for="perm_ow">write</label></td>
+                            <td class="attr"><label for="perm_ox">exec</label></td>
+                          </tr>
+                          <tr>
+                            <td><input type="checkbox" onclick="chkbx(this,rperm_ur);" id="perm_ur" name="perm_ur"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,rperm_uw);" id="perm_uw" name="perm_uw"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,rperm_ux);" id="perm_ux" name="perm_ux"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,rperm_gr);" id="perm_gr" name="perm_gr"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,rperm_gw);" id="perm_gw" name="perm_gw"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,rperm_gx);" id="perm_gx" name="perm_gx"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,rperm_or);" id="perm_or" name="perm_or"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,rperm_ow);" id="perm_ow" name="perm_ow"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,rperm_ox);" id="perm_ox" name="perm_ox"/></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <table class="wg_perms" summary="DAV object permissions marked for removal">
+                        <caption>Remove these</caption>
+                        <tbody>
+                          <tr>
+                            <td class="subj" colspan="3">Owner</td>
+                            <td class="subj" colspan="3">Group</td>
+                            <td class="subj" colspan="3">Others</td>
+                          </tr>
+                          <tr>
+                            <td class="attr"><label for="rperm_ur">read</label></td>
+                            <td class="attr"><label for="rperm_uw">write</label></td>
+                            <td class="attr"><label for="rperm_ux">exec</label></td>
+                            <td class="attr"><label for="rperm_gr">read</label></td>
+                            <td class="attr"><label for="rperm_gw">write</label></td>
+                            <td class="attr"><label for="rperm_gx">exec</label></td>
+                            <td class="attr"><label for="rperm_or">read</label></td>
+                            <td class="attr"><label for="rperm_ow">write</label></td>
+                            <td class="attr"><label for="rperm_ox">exec</label></td>
+                          </tr>
+                          <tr>
+                            <td><input type="checkbox" onclick="chkbx(this,perm_ur);" id="rperm_ur" name="rperm_ur"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,perm_uw);" id="rperm_uw" name="rperm_uw"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,perm_ux);" id="rperm_ux" name="rperm_ux"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,perm_gr);" id="rperm_gr" name="rperm_gr"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,perm_gw);" id="rperm_gw" name="rperm_gw"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,perm_gx);" id="rperm_gx" name="rperm_gx"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,perm_or);" id="rperm_or" name="rperm_or"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,perm_ow);" id="rperm_ow" name="rperm_ow"/></td>
+                            <td><input type="checkbox" onclick="chkbx(this,perm_ox);" id="rperm_ox" name="rperm_ox"/></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <label for="mime_type">Mime Type</label>
+                      <div class="wg_complete_combo">
+                        <!--<input id="cm_mime" type="text"/>-->
+                        <!--<input type="text" name="mime_type"/>
+                        <select name="mime_types_select" onchange="if (this[this.selectedIndex].value != '') this.form.mime_type.value = this[this.selectedIndex].value">
+                          <option value=""></option>
+                          <?vsp
+                            for(select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE)do
+                              http(sprintf('<option value="%s">%s</option>',T_TYPE,T_TYPE));
+                          ?>
+                        </select>-->
+                        <div id="mime_cl" style="height:1em"></div>
+                        <script language="javascript">
+                          var mime_types = new Array();
+                          <?vsp
+                            for(select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE)do
+                              http(sprintf('mime_types.push("%s");',T_TYPE));
+                          ?>
+                        </script>
+                        <!--<button>V</button>-->
+                      </div>
+                      <!--<a href="#" class="inline_hlp">?</a>-->
+                      <br/>
                     </div>
                     <div style="display: none;" id="props">
                       <div class="wg_view_switch">
@@ -2161,8 +2270,8 @@ else
                       <input type="checkbox" name="ckb_xper" id="ckb_xper"/>
                       <label for="ckb_xper">Set folders as persistent XML stores (xper)</label>
                       <!--<a href="#" class="inline_hlp">?</a>-->
-                    </div> <!-- tab_vport -->
-                  </div> <!-- tab_deck -->
+                    </div> <!-- props -->
+                  </div> <!-- t_tabs -->
                   <div class="wg_cmd_button_row">
                     <br/>
                         <input type="checkbox" name="recurse" id="recurse"/>
@@ -2504,112 +2613,6 @@ else
                           </v:on-post>
                         </v:button>
                   </div>
-                </div>
-                <div style="display: block;" id="owner_perms">
-                  <br/><h4>Ownership</h4>
-                  <input id="cm_owner" name="cm_owner" type="checkbox"/>
-                  <label for="cm_owner">Set User</label>
-                  <div class="wg_complete_combo">
-                    <v:data-list name="own_name" sql="select -1 as U_ID, 'none' as U_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select U_ID, U_NAME from WS.WS.SYS_DAV_USER" key-column="U_ID" value-column="U_NAME" />
-                    <!--<button>V</button>-->
-                  </div>
-                  <!--<a href="#" class="inline_hlp">?</a>-->
-                  <br/>
-                  <input id="cm_group" name="cm_group" type="checkbox"/>
-                  <label for="cm_group">Set Group</label>
-                  <div class="wg_complete_combo">
-                    <v:data-list name="grp_name" sql="select -1 as G_ID, 'none' as G_NAME from WS.WS.SYS_DAV_GROUP where G_NAME = 'administrators' union all select G_ID, G_NAME from WS.WS.SYS_DAV_GROUP" key-column="G_ID" value-column="G_NAME" />
-                    <!--<button>V</button>-->
-                  </div>
-                  <!--<a href="#" class="inline_hlp">?</a>-->
-                  <br/>
-                  <table class="wg_perms" summary="DAV object permissions marked for addition">
-                    <caption>Add these</caption>
-                    <tbody>
-                      <tr>
-                        <td class="subj" colspan="3">Owner</td>
-                        <td class="subj" colspan="3">Group</td>
-                        <td class="subj" colspan="3">Others</td>
-                      </tr>
-                      <tr>
-                        <td class="attr"><label for="perm_ur">read</label></td>
-                        <td class="attr"><label for="perm_uw">write</label></td>
-                        <td class="attr"><label for="perm_ux">exec</label></td>
-                        <td class="attr"><label for="perm_gr">read</label></td>
-                        <td class="attr"><label for="perm_gw">write</label></td>
-                        <td class="attr"><label for="perm_gx">exec</label></td>
-                        <td class="attr"><label for="perm_or">read</label></td>
-                        <td class="attr"><label for="perm_ow">write</label></td>
-                        <td class="attr"><label for="perm_ox">exec</label></td>
-                      </tr>
-                      <tr>
-                        <td><input type="checkbox" onclick="chkbx(this,rperm_ur);" id="perm_ur" name="perm_ur"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,rperm_uw);" id="perm_uw" name="perm_uw"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,rperm_ux);" id="perm_ux" name="perm_ux"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,rperm_gr);" id="perm_gr" name="perm_gr"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,rperm_gw);" id="perm_gw" name="perm_gw"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,rperm_gx);" id="perm_gx" name="perm_gx"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,rperm_or);" id="perm_or" name="perm_or"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,rperm_ow);" id="perm_ow" name="perm_ow"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,rperm_ox);" id="perm_ox" name="perm_ox"/></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <table class="wg_perms" summary="DAV object permissions marked for removal">
-                    <caption>Remove these</caption>
-                    <tbody>
-                      <tr>
-                        <td class="subj" colspan="3">Owner</td>
-                        <td class="subj" colspan="3">Group</td>
-                        <td class="subj" colspan="3">Others</td>
-                      </tr>
-                      <tr>
-                        <td class="attr"><label for="rperm_ur">read</label></td>
-                        <td class="attr"><label for="rperm_uw">write</label></td>
-                        <td class="attr"><label for="rperm_ux">exec</label></td>
-                        <td class="attr"><label for="rperm_gr">read</label></td>
-                        <td class="attr"><label for="rperm_gw">write</label></td>
-                        <td class="attr"><label for="rperm_gx">exec</label></td>
-                        <td class="attr"><label for="rperm_or">read</label></td>
-                        <td class="attr"><label for="rperm_ow">write</label></td>
-                        <td class="attr"><label for="rperm_ox">exec</label></td>
-                      </tr>
-                      <tr>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_ur);" id="rperm_ur" name="rperm_ur"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_uw);" id="rperm_uw" name="rperm_uw"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_ux);" id="rperm_ux" name="rperm_ux"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_gr);" id="rperm_gr" name="rperm_gr"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_gw);" id="rperm_gw" name="rperm_gw"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_gx);" id="rperm_gx" name="rperm_gx"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_or);" id="rperm_or" name="rperm_or"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_ow);" id="rperm_ow" name="rperm_ow"/></td>
-                        <td><input type="checkbox" onclick="chkbx(this,perm_ox);" id="rperm_ox" name="rperm_ox"/></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <label for="mime_type">Mime Type</label>
-                  <div class="wg_complete_combo">
-                    <!--<input id="cm_mime" type="text"/>-->
-                    <!--<input type="text" name="mime_type"/>
-                    <select name="mime_types_select" onchange="if (this[this.selectedIndex].value != '') this.form.mime_type.value = this[this.selectedIndex].value">
-                      <option value=""></option>
-                      <?vsp
-                        for(select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE)do
-                          http(sprintf('<option value="%s">%s</option>',T_TYPE,T_TYPE));
-                      ?>
-                    </select>-->
-                    <div id="mime_cl"></div>
-                    <script language="javascript">
-                      var mime_types = new Array();
-                      <?vsp
-                        for(select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE)do
-                          http(sprintf('mime_types.push("%s");',T_TYPE));
-                      ?>
-                    </script>
-                    <!--<button>V</button>-->
-                  </div>
-                  <!--<a href="#" class="inline_hlp">?</a>-->
-                  <br/>
                 </div>
                 </v:template>
                 <v:template name="copy_move_overwrite"
