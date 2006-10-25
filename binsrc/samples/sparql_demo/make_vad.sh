@@ -147,7 +147,7 @@ do_command_safe () {
     shift
     shift
     echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if [ "x$HOST_OS" != "x" ]
+  if [ "x$HOST_OS" != "x" -a "z$BUILD" != "z" ]
   then
     $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
   else
