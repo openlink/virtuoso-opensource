@@ -106,6 +106,7 @@ struct dk_session_s
 
     /* burst mode */
     dks_thread_state_t  dks_thread_state;
+    du_thread_t *	dks_waiting_http_recall_session;
   };
 
 #define SESSION_DK_SESSION(session) \

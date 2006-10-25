@@ -3432,6 +3432,14 @@ ws_serve_connection (ws_connection_t * ws)
       {
 	/* the connection is cached, disconnect & free will be in other thread */
 	mutex_leave (ws_queue_mtx);
+	mutex_enter (thread_mtx);
+	ses->dks_n_threads--;
+	if (ses->dks_waiting_http_recall_session)
+	  {
+	    semaphore_leave (ses->dks_waiting_http_recall_session->thr_sem);
+	    ses->dks_waiting_http_recall_session = NULL;
+	  }
+	mutex_leave (thread_mtx);
 	ws->ws_session = NULL;
 	break;
       }
@@ -8276,8 +8284,11 @@ bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (ws->ws_flushed)
 	sqlr_new_error ("42000", "HT000", "The client session is alredy flushed");
       ses = qi->qi_client->cli_ws->ws_session;
+      mutex_enter (thread_mtx);
       ws->ws_session->dks_ws_status = DKS_WS_CACHED;
+      ws->ws_session->dks_n_threads++;
       ws->ws_flushed = 1;
+      mutex_leave (thread_mtx);
     }
 
   if (ses == NULL)
@@ -8301,6 +8312,7 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t * ses = NULL;
   caddr_t * ret = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_CONNECTION);
   ws_connection_t * ws = qi->qi_client->cli_ws;
+  semaphore_t * volatile sem = NULL;
 
   mutex_enter (ws_cli_mtx);
   ses = (dk_session_t *) gethash ((void *) (ptrlong) id, ws_cli_sessions);
@@ -8312,9 +8324,25 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (ws && ses == ws->ws_session)
     {
-      ws->ws_flushed = 0;
+      mutex_enter (thread_mtx);
+      ses->dks_n_threads--;
       ws->ws_session->dks_ws_status = DKS_WS_ACCEPTED;
+      ws->ws_flushed = 0;
+      mutex_leave (thread_mtx);
       ret[1] = 0;
+    }
+
+  mutex_enter (thread_mtx);
+  if (ses && ses->dks_n_threads > 0)
+    {
+      ses->dks_waiting_http_recall_session = THREAD_CURRENT_THREAD; 
+      sem = ses->dks_waiting_http_recall_session->thr_sem;
+    }
+  mutex_leave (thread_mtx);
+
+  if (sem)
+    {
+      semaphore_enter (sem);
     }
 
   return (caddr_t)ret;
