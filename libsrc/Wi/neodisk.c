@@ -708,6 +708,7 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
       LEAVE_BP (bp);
     }
   END_DO_BOX;
+  iq_shutdown (IQ_SYNC);
 
   IN_TXN;
   cpt_rollback (LT_KILL_FREEZE);
