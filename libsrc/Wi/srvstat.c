@@ -367,10 +367,10 @@ dbms_status_report (void)
   int binx, inx;
   char mem[100];
   char rpc[200];
-  long read_percent = 0, interval_msec = 0;
+  long read_percent = 0, write_percent = 0, interval_msec = 0;
   static long last_time;
-  static long last_read_cum_time;
-  int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0;
+  static long last_read_cum_time, last_write_cum_time;
+  int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0;
   char * bp_curr_ts;
   dk_mem_stat (mem, sizeof (mem));
   PrpcStatus (rpc, sizeof (rpc));
@@ -382,8 +382,10 @@ dbms_status_report (void)
 	  if (!interval_msec)
 	    interval_msec = 1;
 	  read_percent = ((read_cum_time - last_read_cum_time) * 100) / interval_msec;
+	  write_percent = ((write_cum_time - last_write_cum_time) * 100) / interval_msec;
 	}
       last_read_cum_time = read_cum_time;
+      last_write_cum_time = write_cum_time;
       last_time = get_msec_real_time ();
       DO_BOX (buffer_pool_t *, bp, binx, wi_inst.wi_bps)
 	{
@@ -399,6 +401,8 @@ dbms_status_report (void)
 		n_wired++;
 	      if (buf->bd_is_dirty)
 		n_dirty++;
+	      if (buf->bd_iq)
+		n_io++;
 	    }
 	  mutex_leave (bp->bp_mtx);
 	}
@@ -407,11 +411,11 @@ dbms_status_report (void)
       st_db_free_pages = dbs_count_free_pages (dbs);
       rep_printf ("\nDatabase Status:\n"
 	  "  File size " OFF_T_PRINTF_FMT ", %ld pages, %ld free.\n"
-	  "  %d buffers, %d used, %d dirty %d wired down, repl age %d .\n",
+	  "  %d buffers, %d used, %d dirty %d wired down, repl age %d %d w. io.\n",
 	  (OFF_T_PRINTF_DTP) dbs->dbs_file_length, dbs->dbs_n_pages,
 	  st_db_free_pages,
 	  n_buffers, n_used, n_dirty, n_wired,
-		  bp_replace_count ? (int) (bp_replace_age / bp_replace_count) : 0 );
+		  bp_replace_count ? (int) (bp_replace_age / bp_replace_count) : 0, n_io );
       snprintf (st_db_file_size, sizeof (st_db_file_size_buffer), OFF_T_PRINTF_FMT,
 	  (OFF_T_PRINTF_DTP) dbs->dbs_file_length);
       st_db_pages = dbs->dbs_n_pages;
@@ -420,9 +424,9 @@ dbms_status_report (void)
       st_db_dirty_buffers = n_dirty;
       st_db_wired_buffers = n_wired;
 
-      rep_printf ("  Disk Usage: %ld reads avg %ld msec, %d%% read last  %ld s, %ld writes,\n    %ld read ahead, batch = %ld.  Autocompact %ld in %ld out, %ld%% saved.\n",
+      rep_printf ("  Disk Usage: %ld reads avg %ld msec, %d%% r %d%% w last  %ld s, %ld writes,\n    %ld read ahead, batch = %ld.  Autocompact %ld in %ld out, %ld%% saved.\n",
 	  disk_reads, read_cum_time / (disk_reads ? disk_reads : 1),
-		  read_percent, interval_msec / 1000, disk_writes, ra_count, ra_pages / (ra_count + 1), ac_pages_in, ac_pages_out, 100 * (ac_pages_in - ac_pages_out) / (1 + ac_pages_in));
+		  read_percent, write_percent, interval_msec / 1000, disk_writes, ra_count, ra_pages / (ra_count + 1), ac_pages_in, ac_pages_out, 100 * (ac_pages_in - ac_pages_out) / (1 + ac_pages_in));
 
       st_db_disk_read_avg = read_cum_time / (disk_reads ? disk_reads : 1);
       st_db_disk_read_pct = read_percent;
