@@ -150,7 +150,6 @@ create procedure PHOTO.WA.DAV_COL_CREATE(in current_user photo_user, in path var
   declare result any;
 
   result := DAV_COL_CREATE(path,rights,current_user.auth_uid,null,current_user.auth_uid,current_user.auth_pwd);
-  --dbg_obj_print('Create album:',path,' > ',result);
   return result;
 }
 ;
@@ -161,7 +160,6 @@ create procedure PHOTO.WA.DAV_SUBCOL_CREATE(in current_user photo_user, in path 
   --path := concat(current_user.home_dir,path,'/');
   path := concat(path,'/');
   result := DAV_COL_CREATE(path,'110100100R',current_user.auth_uid,null,current_user.auth_uid,current_user.auth_pwd);
-  --dbg_obj_print('Create album:',path,' > ',result);
   return result;
 }
 ;
@@ -169,7 +167,6 @@ create procedure PHOTO.WA.DAV_SUBCOL_CREATE(in current_user photo_user, in path 
 create procedure PHOTO.WA.DAV_MOVE(in current_user photo_user, in old_path varchar,in new_path varchar){
   declare result any;
   result := DAV_MOVE(old_path,new_path,0,current_user.auth_uid,current_user.auth_pwd);
-  --dbg_obj_print('Edit album:',new_path,' > ',result);
   return result;
 }
 ;
@@ -374,9 +371,8 @@ create procedure PHOTO.WA._fix1(in _COL_ID integer,in current_user photo_user){
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA.fix_old_versions(){
   declare _user_name,_user_id,_gallery_id,_wai_name,_home_path,_home_url any;
-  --dbg_obj_print(registry_get('_oGallery_old_version_'),':',registry_get('_oGallery_version_'));
+
   if(registry_get('_oGallery_old_version_') > '0.1.82'){
-    --dbg_obj_print('nova versia');
     return;
   }
 
@@ -399,11 +395,9 @@ create procedure PHOTO.WA.fix_old_versions(){
        AND WAM_USER = _user_id;
 
     if(NOT((SELECT COUNT(GALLERY_ID) FROM PHOTO.WA.SYS_INFO WHERE WAI_NAME = _wai_name))){
-      --dbg_obj_print('INSERT');
       INSERT INTO PHOTO.WA.SYS_INFO(GALLERY_ID,OWNER_ID,WAI_NAME,HOME_URL,HOME_PATH)
           VALUES(_gallery_id,_user_id,_wai_name,_home_url,_home_path);
     }
-    --dbg_obj_print(_user_name,_user_id,_wai_name);
   }
 
 }
@@ -498,8 +492,6 @@ create procedure PHOTO.WA.GET_ODS_BAR (
   inout _params any,
   inout _lines any)
 {
-  --dbg_obj_print('params: ', deserialize(_params));
-  --dbg_obj_print(deserialize(_lines));
   return ODS.BAR._EXEC('Gallery', deserialize(_params), deserialize(_lines));
 }
 ;

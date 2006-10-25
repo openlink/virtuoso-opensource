@@ -26,7 +26,6 @@ create procedure PHOTO.WA.add_comment(
   in comment photo_comment)
   returns photo_comment
 {
-dbg_obj_print('zzzzzzzzzzzzzzz');
   declare auth_uid,auth_pwd,current_gallery varchar;
   declare current_user photo_user;
 
@@ -36,7 +35,6 @@ dbg_obj_print('zzzzzzzzzzzzzzz');
   --  return vector();
   --}
 
-dbg_obj_print(comment);
   comment.comment_id := sequence_next('PHOTO.WA.comments');
   comment.user_name := current_user.first_name;
   comment.user_id := current_user.user_id;

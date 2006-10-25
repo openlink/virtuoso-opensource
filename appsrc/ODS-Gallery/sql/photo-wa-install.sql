@@ -144,7 +144,6 @@ PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_dashboard_
 -------------------------------------------------------------------------------
 create constructor method wa_photo (inout stream any) for wa_photo
 {
-  --dbg_obj_print('wa_photo');
   return;
 }
 ;
@@ -155,8 +154,6 @@ create method wa_new_inst (in login varchar) for wa_photo
   declare
     iUserID,
     iWaiID int;
-
-  --dbg_obj_print('wa_new_inst');
 
   if (self.wa_member_model is null)
     self.wa_member_model := 0;
@@ -177,8 +174,6 @@ create method wa_new_inst (in login varchar) for wa_photo
 -------------------------------------------------------------------------------
 create method wa_drop_instance () for wa_photo
 {
-  --dbg_obj_print('wa_drop_instance');
-
   declare iUser, iCount any;
 
   select WAM_USER into iUser from WA_MEMBER where WAM_INST = self.wa_name;

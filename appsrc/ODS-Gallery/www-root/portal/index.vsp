@@ -125,8 +125,8 @@
   http(sprintf('<wa_home_link>%s</wa_home_link>',wa_home_link),_xml);
   http(sprintf('<gallery_id>%d</gallery_id>',current_instance.gallery_id),_xml);
   http(sprintf('<instance_owner>%s</instance_owner>',current_instance.owner_name),_xml);
-  http(sprintf('<instance_description>%s</instance_description>',current_instance.description),_xml);
-  http(sprintf('<bar><![CDATA[%s]]></bar>',ODS.BAR._EXEC('oMail', params, lines)),_xml);
+  http(sprintf('<instance_description>%s</instance_description>',replace(current_instance.description,'\'','&#39;')),_xml);
+  --http(sprintf('<bar><![CDATA[%s]]></bar>',ODS.BAR._EXEC('oMail', params, lines)),_xml);
 
 
   http(user_gallery,_xml);

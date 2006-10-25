@@ -47,6 +47,7 @@ create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar
         album := subseq (RES_FULL_PATH, pos);
         
         user_pwd := pwd_magic_calc(U_NAME,U_PWD, 1);
+
         -- Predictes --
         post_iri    := gallery_post_iri(RES_FULL_PATH);
         forum_iri   := photo_iri (WAI_NAME);

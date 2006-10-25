@@ -45,7 +45,6 @@ create procedure PHOTO.WA.get_thumbnail(
     select RES_COL,RES_NAME,RES_OWNER,RES_PERMS into _parent_id,image_name,owner_id,rights from WS.WS.SYS_DAV_RES where RES_ID= image_id;
 
     if(not(owner_id = current_user.user_id or substring(rights,7,1) = '1')){
-      --dbg_obj_print('no permission');
       return '';
     }
 
@@ -55,20 +54,17 @@ create procedure PHOTO.WA.get_thumbnail(
 
     if(thumb_id > 0 and live = 0){
       -- we have a cache image and will use it
-  --dbg_obj_print('cache');
 
       select blob_to_string (RES_CONTENT), RES_TYPE into _content, _mime from WS.WS.SYS_DAV_RES where RES_ID= thumb_id;
       return _content;
 
     }else{
       -- we don't have cache image and will create it
-  --dbg_obj_print('live');
 
       return PHOTO.WA.make_thumbnail(current_user,image_id,0);
     }
   }else{
     -- Get big image 500x370
-    --dbg_obj_print('big');
   declare sizes_org,sizes_new,sizes,new_id any;
   declare   ratio,max_width,max_height,org_width,org_height,new_width,new_height any;
 
@@ -131,7 +127,6 @@ create procedure PHOTO.WA.make_thumbnail(
   if(result = -1){
     -- check for existing thumbnails folder
     result := PHOTO.WA.DAV_SUBCOL_CREATE(current_user,concat(path,'.thumbnails'));
-    --dbg_obj_print('make dir for thumb:',result);
   }
   -- params: content, length of content, number of columns, number of rows
   image := "IM ThumbnailImageBlob" (_content, length(_content), sizes[0], sizes[1],1);
@@ -147,7 +142,6 @@ create procedure PHOTO.WA.make_thumbnail(
                           current_user.user_id,
                           current_user.auth_uid,
                           current_user.auth_pwd);
-  --dbg_obj_print('thumb OK:',new_id);
   return image;
 
 }
@@ -213,7 +207,6 @@ returns photo_exif array
     exif := photo_exif(attributes[ind],res);
 
     result := vector_concat(result,vector(exif));
-    --dbg_obj_print(attributes[ind],':',res);
 
     ind := ind + 1;
   }
