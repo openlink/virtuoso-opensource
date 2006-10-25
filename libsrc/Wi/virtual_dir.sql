@@ -615,14 +615,18 @@ create trigger SYS_CACHEABLE_D after delete on WS.WS.SYS_CACHEABLE
 
 create procedure WS.WS.HTTP_CACHE_CHECK (inout path any, inout lines any, inout check_fn any)
 {
-  declare inv, rc, cnt, tag, charset any;
+  declare inv, rc, cnt, tag, charset, url, qstr any;
   inv := null;
-  rc := call (check_fn) (path, lines, inv);
+  qstr := http_request_get ('QUERY_STRING');
+  url := path;
+  if (length (qstr))
+    url := url || '?' || qstr;
+  rc := call (check_fn) (url, lines, inv);
   --dbg_obj_print (path, lines, check_fn, inv, rc);
   if (rc)
     {
       whenever not found goto nf;
-      select RC_DATA, RC_TAG, RC_CHARSET into cnt, tag, charset from WS.WS.SYS_RC_CACHE where RC_URI = path;
+      select RC_DATA, RC_TAG, RC_CHARSET into cnt, tag, charset from WS.WS.SYS_RC_CACHE where RC_URI = url;
       if (cnt is not null)
 	{
 	  declare ses, ctag any;
@@ -655,7 +659,7 @@ create procedure WS.WS.HTTP_CACHE_CHECK (inout path any, inout lines any, inout 
 	}
       return 1;
       nf:
-      insert into WS.WS.SYS_RC_CACHE (RC_URI, RC_INVALIDATE, RC_DT) values (path, inv, now ());
+      insert into WS.WS.SYS_RC_CACHE (RC_URI, RC_INVALIDATE, RC_DT) values (url, inv, now ());
       --dbg_obj_print ('new entry is done');
       return 2;
     }
@@ -668,12 +672,18 @@ create procedure WS.WS.HTTP_CACHE_STORE (inout path any, inout store int)
   --dbg_obj_print ('to store', path, store);
   declare tag, cnt any;
 
+  declare url, qstr any;
+  qstr := http_request_get ('QUERY_STRING');
+  url := path;
+  if (length (qstr))
+    url := url || '?' || qstr;
+
   --
   -- There is an error or stream is flushed or chunked state is set
   --
   if (not store)
     {
-      delete from WS.WS.SYS_RC_CACHE where RC_URI = path;
+      delete from WS.WS.SYS_RC_CACHE where RC_URI = url;
       return;
     }
 
@@ -681,7 +691,7 @@ create procedure WS.WS.HTTP_CACHE_STORE (inout path any, inout store int)
   update WS.WS.SYS_RC_CACHE set RC_DATA = http_get_string_output (1000000),
       RC_TAG = tag,
       RC_CHARSET = http_current_charset ()
-      where RC_URI = path;
+      where RC_URI = url;
   if (row_count ())
     {
       http_header (concat (http_header_get (), 'ETag: "', tag, '"\r\n'));
