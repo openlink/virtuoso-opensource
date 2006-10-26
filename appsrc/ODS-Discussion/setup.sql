@@ -1839,7 +1839,7 @@ nntpf_top_messages (in parameters any)
        have_date := 1;
      }
 
-   -- XXX This is dublicate. On performace state will get result from data set. For now im still un changed.
+   -- XXX This is duplicate. On performance state will get result from data set. For now im still un changed.
 
    if (_len = 500)
      exec (sprintf ('select top %i, 10

@@ -148,7 +148,7 @@
            return;
          };
 
-         -- check if this login allready exists
+         -- check if this login already exists
          if (exists (select 1 from SYS_USERS where U_NAME = self.reguid.ufl_value)) {
            self.regf1.vc_error_message := 'User already exists';
            self.vc_is_valid := 0;
@@ -193,7 +193,7 @@
 	    }
 
          if(_mail_verify_on) {
-           -- determine existings default mail server
+           -- determine existance default mail server
            declare _smtp_server any;
            _smtp_server := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'DefaultMailServer');
            if(_smtp_server = 0) {
