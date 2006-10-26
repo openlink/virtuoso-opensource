@@ -460,7 +460,7 @@ function rq_query(param,dl)
     if (!response)
     {
       response = 'There was a problem with your request! The server returned status code: ' + status + '<br/>\n';
-      response += 'Unfortunatelly your browser does not allow us to show the error. ';
+      response += 'Unfortunately your browser does not allow us to show the error. ';
       response += 'This is a known bug in the Opera Browser.<br/>\n';
       response += 'However you can click this link which will open a new window with the error: <br/>\n';
       response += '<a target="_blank" href="/sparql/?' + body() + '">/sparql/?' + body() + '</a>';
@@ -481,7 +481,7 @@ function rq_query(param,dl)
     if ($v('query').match(/construct/i) && $v('format') != 'text/rdf+n3' && $v('format') != 'application/rdf+xml' && $v('format') != 'auto')
     {
       tabres_html += '<div id="warning">';
-      tabres_html += 'Results from SPARQL CONSTRUCT statementes are returned either as RDF/XML or TURTLE format. ';
+      tabres_html += 'Results from SPARQL CONSTRUCT statements are returned either as RDF/XML or TURTLE format. ';
       tabres_html += 'It is best to choose "Let server choose the best". When you execute CONSTRUCT statements';
       tabres_html += '</div>';
     }
@@ -489,7 +489,7 @@ function rq_query(param,dl)
     if (!$v('query').match(/construct/i) && ($v('format') == 'text/rdf+n3' || $v('format') == 'application/rdf+xml'))
     {
       tabres_html += '<div id="warning">';
-      tabres_html += 'Only SPARQL CONSTRUCT statementes can be returned as RDF/XML or TURTLE format. ';
+      tabres_html += 'Only SPARQL CONSTRUCT statements can be returned as RDF/XML or TURTLE format. ';
       tabres_html += 'Please select another format.';
       tabres_html += '</div>';
     }

@@ -208,7 +208,7 @@ WHERE {
               repository, making all the test-suite graphs URL accessible.</p>
         
             <h3> What else is there?</h3>
-            <p>This demo can be also used as reach AJAX interface for Virtuoso SPARQL endpoing
+            <p>This demo can be also used as reach AJAX interface for Virtuoso SPARQL endpoint
                <a target="_new" href="/sparql">/sparql</a>. The endpoint supports and 
                SOAP requests, you can use the WSDL definition - 
                <a target="_new" href="/sparql/services.wsdl">/sparql/services.wsdl</a> for details.

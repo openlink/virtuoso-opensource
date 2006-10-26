@@ -62,7 +62,7 @@
     res_name := {?'res_name'};
     if (length (res_name) = 0 or res_name is null)
     {
-      http('The name of the resourse cannot be empty');
+      http('The name of the resource cannot be empty');
       return;
     }
     
