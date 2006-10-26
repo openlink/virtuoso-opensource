@@ -90,14 +90,14 @@ ajax.Start = function (action, options) {
 ///<remarks>for private use only.<remarks>
 ajax.Next = function (forceStart) {
   var ca = null // current action
-  var co = null // current opptions
+  var co = null // current options
   var data = null;
 
   if (ajax.current != null)
     return; // a call is active: wait more time
 
   if (ajax.timer != null)
-    return; // a call is pendig: wait more time
+    return; // a call is pending: wait more time
 
   if (ajax.queue.length == 0)
     return; // nothing to do.

@@ -70,7 +70,7 @@ create procedure PHOTO.WA.photo_init_user_data(
   gallery_id := sequence_next('PHOTO.WA.gallery_id');
   home_url   := connection_get('ogallery_customendpoint');
 
-  -- TODO - to check for bakslash
+  -- TODO - to check for backslash
 
   --if(strrchr(home_url,'/') <> length(home_url)){
   --  home_url   := home_url || '/';

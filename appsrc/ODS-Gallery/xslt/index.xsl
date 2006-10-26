@@ -210,7 +210,7 @@
             <div id="care_slideshow" class="toolbar" style="display:none">
               <h3>Slideshow</h3>
               <div id="buttons">
-                  <img src="/photos/res/i/skipb_24.gif" width="24" height="24" id="SlideShow_back" alt="Previus Picture"/>
+                  <img src="/photos/res/i/skipb_24.gif" width="24" height="24" id="SlideShow_back" alt="Previous Picture"/>
                   <img src="/photos/res/i/pause_24.gif" width="24" height="24" id="SlideShow_stop" alt="Start/Pause"/>
                   <img src="/photos/res/i/skipf_24.gif" width="24" height="24" id="SlideShow_next" alt="Next picture"/>
               </div>

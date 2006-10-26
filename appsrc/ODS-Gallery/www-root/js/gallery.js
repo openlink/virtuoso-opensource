@@ -536,7 +536,7 @@ gallery.delete_tag_click = function(e){
   if (!e) var e = window.event
   var el = (e.target) ? e.target : e.srcElement
 
-  if(confirm('Are you sure that you want to detele this tag?')){
+  if(confirm('Are you sure that you want to delete this tag?')){
     var tag = el.parentNode.childNodes[1].innerHTML;
    gallery.ajax.image_remove_tags(ds_current_album.current.id,tag);
   }
@@ -589,7 +589,7 @@ gallery.bnt_new_tag_click = function(){
     return;
   }
   if(!gallery.tags_is_unique(ds_current_album.current.private_tags, new_tag)){
-    alert('This tag allready exists. Please, change it');
+    alert('This tag already exists. Please, change it');
     return;
   }
   gallery.ajax.image_add_tags(ds_current_album.current.id,new_tag);
@@ -651,7 +651,7 @@ gallery.showSlideshowToolbarZZ = function(){
 
   var manage = document.createElement('div');
   manage.setAttribute('id','buttons')
-  //manage.appendChild(makeImg('res/i/skipb_24.gif',24,24,'manageSlideShowPrev','','Previus Picture'));
+  //manage.appendChild(makeImg('res/i/skipb_24.gif',24,24,'manageSlideShowPrev','','Previous Picture'));
   manage.appendChild(makeImg('/photos/res/i/pause_24.gif',24,24,'manageSlideShow','','Start/Pause'));
   manage.appendChild(makeImg('/photos/res/i/skipf_24.gif',24,24,'manageSlideShowNext','','Next picture'));
 
@@ -1286,7 +1286,7 @@ gallery.ajax.image_edit = function(id){
   finish = function(res) {
     if(res != 0){
       ds_current_album.editImageInList(res);
-      alert('Succesfull')
+      alert('Succesful')
       gallery.showImage(ds_current_album.current.index);
 
     }else{
