@@ -71,7 +71,7 @@
           declare aRequest, aSessInfo any;
           declare sCharset, sBrwCharset varchar;
 
-          SET ISOLATION = 'Commited';
+          SET ISOLATION = 'Committed';
 
           -- Initialize variables
           aRequest := BMK.WA.validate_request(lines,0);

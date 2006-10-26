@@ -236,7 +236,7 @@ create method wa_new_inst (in login varchar) for wa_bookmark
 --
 create method wa_class_details() for wa_bookmark
 {
-	return 'The Virtuoso Bookmark Application allows you to create and maintanance bookmarks.';
+	return 'The Virtuoso Bookmark Application allows you to create and maintain bookmarks.';
 }
 ;
 

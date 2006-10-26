@@ -28,8 +28,8 @@
          xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
 	 xmlns:rss="http://www.openlinksw.com/schemas/xbrl#">
   <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/xbrl#">
-    <rdfs:label>Extesible Business Reporting Language (XBRL)</rdfs:label>
-    <rdfs:comment>Extesible Business Reporting Language is a language for the electronic communication of business and financial data which is set to revolutionise business reporting around the world.</rdfs:comment>
+    <rdfs:label>Extensible Business Reporting Language (XBRL)</rdfs:label>
+    <rdfs:comment>Extensible Business Reporting Language is a language for the electronic communication of business and financial data which is set to revolutionize business reporting around the world.</rdfs:comment>
     <virtrdf:catName>Business Reports (XBRL)</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>

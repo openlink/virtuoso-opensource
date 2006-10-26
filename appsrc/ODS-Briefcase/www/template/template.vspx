@@ -51,7 +51,7 @@
         <![CDATA[
           declare sCharset, sBrwCharset varchar;
 
-          SET ISOLATION = 'Commited';
+          SET ISOLATION = 'Committed';
 
           -- Charset
           sBrwCharset := http_request_header(lines, 'Accept-Charset', null);

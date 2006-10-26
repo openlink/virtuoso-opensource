@@ -22,7 +22,7 @@
 
 -------------------------------------------------------------------------------
 --
--- Conatins all subscribed feeds
+-- Contains all subscribed feeds
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
@@ -48,7 +48,7 @@ BMK.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins folders structure. Structure is domain specific.
+-- Contains folders structure. Structure is domain specific.
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
@@ -139,7 +139,7 @@ create procedure BMK.WA.folder_paths(
 
 -------------------------------------------------------------------------------
 --
--- Conatins smart folders structure. Structure is domain specific.
+-- Contains smart folders structure. Structure is domain specific.
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
@@ -159,7 +159,7 @@ BMK.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins domain feeds.
+-- Contains domain feeds.
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
@@ -217,7 +217,7 @@ BMK.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
--- Conatins specific data for feed items and domain/user - flags, tags and etc.
+-- Contains specific data for feed items and domain/user - flags, tags and etc.
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
@@ -274,7 +274,7 @@ BMK.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins settings.
+-- Contains settings.
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
@@ -288,7 +288,7 @@ BMK.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins sharings
+-- Contains sharings
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error ('
