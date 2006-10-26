@@ -419,7 +419,7 @@ cp -f $HOME/binsrc/xddl/xddl_tables.xsd .
 cp -f $HOME/binsrc/xddl/xddl.sql vad/vsp/conductor
 cp -f $HOME/binsrc/xddl/xddl_dav.sql vad/vsp/conductor
 cp -f $HOME/binsrc/xddl/xddl_filesystem.sql vad/vsp/conductor
-cp -f $HOME/binsrc/samples/demo/virtuoso.lic .
+cp -f $HOME/binsrc/samples/demo/virtuoso.lic . 2>/dev/null
 cp -f images/* vad/vsp/conductor/images
 cp -f images/dav_browser/* vad/vsp/conductor/images/dav_browser
 #cp -f images/buttons/* vad/vsp/conductor/images/buttons
