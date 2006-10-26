@@ -90,7 +90,7 @@ VERSION_INIT()
   else  
       rm -f version.tmp
       for i in `find . -name 'Entries' | grep -v "vad/" | grep -v "/tests/"`; do
-	  cat "$i" | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
+	  cat "$i" | grep -v "version\."| grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
       done
       LANG=POSIX
       export LANG

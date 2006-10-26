@@ -1,4 +1,5 @@
 #!/bin/sh
+set -x
 #
 #  $Id$
 #
@@ -82,11 +83,10 @@ version_init() {
   rm -f version.tmp
   file_list=`find ./ -name Entries`
   for i in $file_list; do
-      cat $i | grep '^/' | cut -d '/' -f 3 | sed -e 's/1\.//g' >> version.tmp
+      cat $i | grep -v "version\." | grep '^/' | cut -d '/' -f 3 | sed -e 's/1\.//g' >> version.tmp
 	echo $i
   done
   BASE="0"
-  echo $BASE
   if [ -f version.base ] ; then
       BASE=`cat version.base`
   fi
