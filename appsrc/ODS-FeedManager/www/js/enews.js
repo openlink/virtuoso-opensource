@@ -562,7 +562,7 @@ function rowSelectValue(dstField, srcField, singleMode)
 
 // ---------------------------------------------------------------------------
 //
-// Hiddens functions
+// Hidden functions
 //
 // ---------------------------------------------------------------------------
 function createHidden(frm_name, fld_name, fld_value) {

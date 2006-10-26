@@ -97,7 +97,7 @@ create function "News3_DAV_AUTHENTICATE" (in id any, in what char(1), in req var
 --| This exactly matches DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 --| The function should fully check access because DAV_AUTHENTICATE_HTTP do nothing with auth data either before or after calling this DET function.
 --| Unlike DAV_AUTHENTICATE, user name passed to DAV_AUTHENTICATE_HTTP header may not match real DAV user.
---| If DET call is successfull, DAV_AUTHENTICATE_HTTP checks whether the user have read permission on mount point collection.
+--| If DET call is successful, DAV_AUTHENTICATE_HTTP checks whether the user have read permission on mount point collection.
 --| Thus even if DET function allows anonymous access, the whole request may fail if mountpoint is not readable by public.
 create function "News3_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 {
@@ -162,7 +162,7 @@ create function "News3_DAV_COL_CREATE" (in detcol_id any, in path_parts any, in 
 }
 ;
 
---| It looks like that this is redundand and should be removed at all.
+--| It looks like that this is redundant and should be removed at all.
 create function "News3_DAV_COL_MOUNT" (in detcol_id any, in path_parts any, in full_mount_path varchar, in mount_det varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('News3_DAV_COL_MOUNT (', detcol_id, path_parts, full_mount_path, mount_det, permissions, uid, gid, auth_uid, ')');
@@ -170,7 +170,7 @@ create function "News3_DAV_COL_MOUNT" (in detcol_id any, in path_parts any, in f
 }
 ;
 
---| It looks like that this is redundand and should be removed at all.
+--| It looks like that this is redundant and should be removed at all.
 create function "News3_DAV_COL_MOUNT_HERE" (in parent_id any, in full_mount_path varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('News3_DAV_COL_MOUNT_HERE (', parent_id, full_mount_path, permissions, uid, gid, auth_uid, ')');

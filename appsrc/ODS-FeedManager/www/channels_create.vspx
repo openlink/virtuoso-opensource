@@ -33,7 +33,7 @@
       self.v_data := null;
       url := trim(url);
       if (is_empty_or_null(url)) {
-        retValue := sprintf('Please enter corect %s', msg);
+        retValue := sprintf('Please enter correct %s', msg);
         goto _error;
       }
 
@@ -606,7 +606,7 @@
                       folder_name := trim(get_keyword(sprintf ('folder_name_%d', N), self.vc_event.ve_params, ''));
                       if (folder_name <> '')
                         if (not ENEWS.WA.folder_check_name(folder_name, 1)) {
-                          self.vc_error_message := 'Please, enter other category name. This name conatins bad characters.';
+                          self.vc_error_message := 'Please, enter other category name. This name contains bad characters.';
                            self.vc_is_valid := 0;
                           return;
                         }
@@ -799,7 +799,7 @@
                 self.f_folder_name.ufl_value := trim(self.f_folder_name.ufl_value);
                 if (self.f_folder_name.ufl_value <> '') {
                   if (not ENEWS.WA.folder_check_name(self.f_folder_name.ufl_value, 1)) {
-                    self.vc_error_message := 'Please, enter other folder name. This name conatins bad characters.';
+                    self.vc_error_message := 'Please, enter other folder name. This name contains bad characters.';
                      self.vc_is_valid := 0;
                     return;
                   }

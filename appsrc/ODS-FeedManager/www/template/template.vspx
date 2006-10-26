@@ -70,7 +70,7 @@
           declare aRequest, aSessInfo any;
           declare sCharset, sBrwCharset varchar;
 
-          SET ISOLATION = 'Commited';
+          SET ISOLATION = 'Committed';
 
           -- Initialize variables
           aRequest := ENEWS.WA.validate_request(lines,0);

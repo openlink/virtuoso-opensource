@@ -334,7 +334,7 @@
                       <![CDATA[
                       declare node any;
 
-                      -- touggle
+                      -- toggle
                       self.state_init();
                       node := get_keyword('pt_toggle', e.ve_params, '');
                       if (node <> '')

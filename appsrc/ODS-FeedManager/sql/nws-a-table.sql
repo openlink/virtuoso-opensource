@@ -22,7 +22,7 @@
 
 -------------------------------------------------------------------------------
 --
--- Conatins all subscribed feeds
+-- Contains all subscribed feeds
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -104,7 +104,7 @@ create procedure ENEWS.WA.channel_trigger (
 
 -------------------------------------------------------------------------------
 --
--- Conatins all items from all subscribed feeds
+-- Contains all items from all subscribed feeds
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -160,7 +160,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins directory structure
+-- Contains directory structure
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -179,7 +179,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins feeds directories
+-- Contains feeds directories
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -196,7 +196,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins folders structure. Structure is domain specific.
+-- Contains folders structure. Structure is domain specific.
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -216,7 +216,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins smart folders structure. Structure is domain specific.
+-- Contains smart folders structure. Structure is domain specific.
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -236,7 +236,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins domain feeds.
+-- Contains domain feeds.
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -267,7 +267,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins specific data for feed items and domain/user - flags, tags and etc.
+-- Contains specific data for feed items and domain/user - flags, tags and etc.
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -455,7 +455,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins settings.
+-- Contains settings.
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -470,7 +470,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins domain weblogs
+-- Contains domain weblogs
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -497,7 +497,7 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
--- Conatins weblog blogs
+-- Contains weblog blogs
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
