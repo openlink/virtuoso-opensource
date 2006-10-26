@@ -865,6 +865,87 @@ create procedure dav_res_iri (in path varchar)
   return sprintf ('http://%s%s', get_cname(), path);
 };
 
+create procedure all_predicates ()
+{
+ return vector (
+ atom_iri ('LinkHref'),
+ atom_iri ('author'),
+ atom_iri ('containingFeed'),
+ atom_iri ('link'),
+ atom_iri ('linkRel'),
+ atom_iri ('personEmail'),
+ atom_iri ('personName'),
+ atom_iri ('published'),
+ atom_iri ('title'),
+ atom_iri ('updated'),
+ dc_iri ('title'),
+ dcterms_iri ('created'),
+ dcterms_iri ('modified'),
+ dcterms_iri ('modified'),
+ foaf_iri ('aimChatID'),
+ foaf_iri ('based_near'),
+ foaf_iri ('birthday'),
+ foaf_iri ('family_name'),
+ foaf_iri ('firstName'),
+ foaf_iri ('gender'),
+ foaf_iri ('holdsAccount'),
+ foaf_iri ('icqChatID'),
+ foaf_iri ('knows'),
+ foaf_iri ('maker'),
+ foaf_iri ('mbox'),
+ foaf_iri ('mbox_sha1sum'),
+ foaf_iri ('msnChatID'),
+ foaf_iri ('name'),
+ foaf_iri ('nick'),
+ foaf_iri ('organization'),
+ foaf_iri ('phone'),
+ foaf_iri ('yahooChatID'),
+ geo_iri ('lat'),
+ geo_iri ('long'),
+ rdf_iri ('type'),
+ rdfs_iri ('label'),
+ rdfs_iri ('seeAlso'),
+ sioc..sioc_iri ('attachment'),
+ sioc..sioc_iri ('container_of'),
+ sioc..sioc_iri ('has_reply'),
+ sioc..sioc_iri ('links_to'),
+ sioc..sioc_iri ('reply_of'),
+ sioc..sioc_iri ('topic'),
+ sioc_iri ('account_of'),
+ sioc_iri ('attachment'),
+ sioc_iri ('container_of'),
+ sioc_iri ('content'),
+ sioc_iri ('creator_of'),
+ sioc_iri ('description'),
+ sioc_iri ('email'),
+ sioc_iri ('email_sha1'),
+ sioc_iri ('first_name'),
+ sioc_iri ('has_container'),
+ sioc_iri ('has_creator'),
+ sioc_iri ('has_function'),
+ sioc_iri ('has_host'),
+ sioc_iri ('has_member'),
+ sioc_iri ('has_parent'),
+ sioc_iri ('has_reply'),
+ sioc_iri ('has_scope'),
+ sioc_iri ('host_of'),
+ sioc_iri ('id'),
+ sioc_iri ('knows'),
+ sioc_iri ('last_name'),
+ sioc_iri ('link'),
+ sioc_iri ('links_to'),
+ sioc_iri ('member_of'),
+ sioc_iri ('name'),
+ sioc_iri ('parent_of'),
+ sioc_iri ('reply_of'),
+ sioc_iri ('topic'),
+ sioc_iri ('type'),
+ skos_iri ('isSubjectOf'),
+ skos_iri ('prefLabel')
+ );
+}
+;
+
 create procedure delete_quad_so (in _g any, in _s any, in _o any)
 {
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
@@ -898,13 +979,20 @@ create procedure delete_quad_s_p_o (in _g any, in _s any, in _p any, in _o any)
 
 create procedure delete_quad_s_or_o (in _g any, in _s any, in _o any)
 {
+  declare preds any;
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _s := DB.DBA.RDF_IID_OF_QNAME (_s);
   _o := DB.DBA.RDF_IID_OF_QNAME (_o);
   if (_g is null or _s is null or _o is null)
     return;
   delete from DB.DBA.RDF_QUAD where G = _g and S = _s;
-  delete from DB.DBA.RDF_QUAD where G = _g and O = _o;
+  preds := all_predicates ();
+  foreach (any pred in preds) do
+    {
+      pred := DB.DBA.RDF_IID_OF_QNAME (pred);
+      if (pred is not null)
+        delete from DB.DBA.RDF_QUAD where P = pred and G = _g and O = _o;
+    }
 };
 
 create procedure update_quad_s_o (in _g any, in _o any, in _n any)
@@ -1626,5 +1714,4 @@ delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'ODS_SIOC_RDF';
 --load sioc_mail.sql;
 --load sioc_wiki.sql;
 --load sioc_photo.sql;
-
 
