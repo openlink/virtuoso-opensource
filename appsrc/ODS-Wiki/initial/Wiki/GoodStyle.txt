@@ -4,7 +4,7 @@
 
    * You can produce better hypertext by using WikiWords (concatenated capitalized words):
       * WikiWords will be shown as hyperlinks
-      * WikiWords are especially usefull if they are meaningful and used uniformly across the whole site
+      * WikiWords are especially useful if they are meaningful and used uniformly across the whole site
       * The 'WikiWord' is WikiWord hyperlink by itself. Follow it to learn more :)
 
    * For *external site links*, you can type URLs directly into the text - =http://etcete.ra/...= - it'll clear to anyone where they're headed on click. 
@@ -26,5 +26,5 @@
       * if you merge or delete comments, group credit =Contributors:= at the end of the page
 
    * *Please*, avoid typing dates in national formats. Please use either an *standard date format* like 01 Sep 2001 or ISO (2001-09-01 or 2001-Sep-01).
-   * *Please*, avoid words like 'next version' or 'year ago' whenever possible, even if it seemes to you that the reader will know the context.
+   * *Please*, avoid words like 'next version' or 'year ago' whenever possible, even if it seems to you that the reader will know the context.
 'Absolute' references are much better than 'relative'.

@@ -24,7 +24,7 @@ update DB.DBA.SYS_USERS set U_HOME = '/DAV/home/dav/' where U_ID = http_dav_uid(
 WV.WIKI.CREATEGROUP('WikiAdmin', 'WikiAdmin', 'A group of WikiV managers', 0);
 WV.WIKI.CREATEGROUP('WikiUser', 'WikiUser', 'A group of all WikiV users', 0);
 WV.WIKI.CREATEUSER('Wiki', 'WikiEngineAdmin', 'WikiAdmin', 'Main administrator of WikiV', 0);
-WV.WIKI.CREATEUSER('WikiGuest', 'WikiAnonymouseUser', 'WikiUser', 'Anonymouse user of WikiV', 0);
+WV.WIKI.CREATEUSER('WikiGuest', 'WikiAnonymousUser', 'WikiUser', 'Anonymous user of WikiV', 0);
 WV.WIKI.CREATEUSER('dav', 'DAVWikiAdmin', 'WikiAdmin', 'DAV administrator of WikiV', 0);
 WV.WIKI.CREATEINSTANCE('Main', http_dav_uid(), WV.Wiki.WikiAdminGId(), 0);
 WV.WIKI.CREATEINSTANCE('Doc', http_dav_uid(), WV.Wiki.WikiAdminGId(), 0);

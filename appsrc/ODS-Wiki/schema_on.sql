@@ -267,7 +267,7 @@ create text index on WV.WIKI.LINK (LinkText) with key LinkId')
 wiki_exec_no_error (
 'create table WV.WIKI.TMP (
   TmpId	integer not null,	-- Id to be passed from page to page.
-  TmpData	varchar,		-- The state value to convirm the validity of the post.
+  TmpData	varchar,		-- The state value to confirm the validity of the post.
   TmpExp	datetime,		-- Expiration time to collect obsolete garbage.
   primary key (TmpId)
 )')
@@ -631,8 +631,8 @@ as (
   method ti_compile_page () returns any, -- Compiles the page, updates Topic, Link etc., makes the debugging dump of the page if needed.
   method ti_report_attachments () returns any, -- Composes an XML that lists directory of attachments of the page.
   method ti_revisions (_res_is_vect int, _total int) returns any, -- Composes an XML that lists directory of attachments of the page.
-  method ti_wiki_path () returns any, -- Returns XML doc representing parent->child hierarhy.
-  method ti_report_mails () returns any, -- Returns XML doc representing parent->child hierarhy.
+  method ti_wiki_path () returns any, -- Returns XML doc representing parent->child hierarchy.
+  method ti_report_mails () returns any, -- Returns XML doc representing parent->child hierarchy.
   method ti_fill_url() returns any, -- fills URL for topic
   method ti_update_text(in _new_text varchar, in _auth varchar) returns any, -- update the text
   method ti_res_name () returns varchar, -- return resource name RES_NAME

@@ -29,7 +29,7 @@
    xmlns:v="http://www.openlinksw.com/vspx/" 
    xmlns:vm="http://www.openlinksw.com/vspx/macro"> 
 
-  <vm:page title="Secrity configuration">
+  <vm:page title="Security configuration">
     <vm:body>
       <table  width="100%">
 	<tr>

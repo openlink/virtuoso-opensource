@@ -269,7 +269,7 @@ create trigger WV_WIKI_TOPIC_NEWS_I after insert on TOPIC referencing new as N
 	T_CREATE_TIME = _res_cr_time,
 	T_NEWS_ID = _news_id,
 	T_RFC_HEADER = POST_RFC_HEADER (_rfc_id, NULL, _news_id,
-    				       LocalName, _res_cr_time, coalesce (_email, 'sombody@somewhere'))
+    				       LocalName, _res_cr_time, coalesce (_email, 'somebody@somewhere'))
      where TopicId = N.TopicId;
     set triggers on;
     if (_enabled)
@@ -321,7 +321,7 @@ create trigger WV_WIKI_COMMENT_NEWS_I after insert on COMMENT referencing new as
 	C_CREATE_TIME = now(),
 	C_NEWS_ID = _news_id,
 	C_RFC_HEADER = POST_RFC_HEADER (_rfc_id, coalesce (N.C_REFS,_refs), _news_id,
-    				       coalesce (C_SUBJECT, ''), _res_cr_time, coalesce (_email, 'sombody@somewhere'))
+    				       coalesce (C_SUBJECT, ''), _res_cr_time, coalesce (_email, 'somebody@somewhere'))
      where C_ID = N.C_ID;
     
     set triggers on;

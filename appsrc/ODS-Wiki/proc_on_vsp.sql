@@ -593,7 +593,7 @@ create procedure WV.WIKI.VSPCHECKWEBAUTH (
       _reason := '. PLLH_INVALID';
       goto auth_get;
     }
-  if (rc = 1) /* PLLH_VALID, authentication is alredy done */
+  if (rc = 1) /* PLLH_VALID, authentication is already done */
     {
       return _u_id;
     }
@@ -1252,7 +1252,7 @@ next:
 create procedure WV.WIKI.VSPDECODEWIKIPATH2 (
 	inout params any, 
 	out _cluster varchar, --| default cluster if not specified
-	out _local_name varchar, --| default topic name if not specifid
+	out _local_name varchar, --| default topic name if not specified
 	out _attach varchar, --| name of attachment if specified
 	in lines any)
 {
@@ -1933,7 +1933,7 @@ create function WV.WIKI.FROZEN (in _topic WV.WIKI.TOPICINFO)
 ;
 
 
--- remove spaces in the very begining and at the end
+-- remove spaces in the very beginning and at the end
 -- replace all cons. spaces to one space
 -- if argument is array apply itself to each element
 create procedure WV.WIKI.TRIM_EX (in str_or_array any, in delim_expr varchar := '\\s', in repl varchar:=' ')

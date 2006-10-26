@@ -685,7 +685,7 @@ create function WV.WIKI.POSTPROCESS_LINKS (in _cluster_id int)
 
 
 -- _res_is_vect means result in vector
--- _total - number of version in report, 0 means not such contraint
+-- _total - number of version in report, 0 means not such constraint
 create method ti_revisions(in _res_is_vect int, in _total int) returns any for WV.WIKI.TOPICINFO
 {
   declare exit handler for sqlstate '*' {
@@ -1243,7 +1243,7 @@ create trigger "Wiki_AttachmentDelete" before delete on WS.WS.SYS_DAV_RES order 
 }
 ;
 
--- Renreding routines
+-- Rendering routines
 
 create function WV.WIKI.NORMALIZEWIKIWORDLINK (
   inout _default_cluster varchar, inout _href varchar) returns varchar
@@ -1515,11 +1515,11 @@ create procedure WV.WIKI.CREATEUSER (in _sysname varchar, in _name varchar, in _
   declare _oldname varchar;
   _uid := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = _sysname and U_IS_ROLE = 0 and U_ACCOUNT_DISABLED=0 and U_DAV_ENABLE=1), NULL);
   if (_uid is null)
-    WV.WIKI.APPSIGNAL (11001, 'System user accout "&UName;" does not exist or can not be used for Wiki purposes; can not regsiter Wiki user "&UserName;"',
+    WV.WIKI.APPSIGNAL (11001, 'System user account "&UName;" does not exist or can not be used for Wiki purposes; can not regsiter Wiki user "&UserName;"',
       vector ('UName', _sysname, 'UserName', _name) );
   if (not exists (select 1 from DB.DBA.SYS_USER_GROUP where UG_UID = _uid and UG_GID = WV.WIKI.WIKIUSERGID())
     and not exists (select 1 from DB.DBA.SYS_USERS where U_ID = _uid and U_GROUP = WV.WIKI.WIKIUSERGID()) )
-    WV.WIKI.APPSIGNAL (11001, 'System user accout "&UName;" is not a member of WikiUser group and can not be used for Wiki purposes',
+    WV.WIKI.APPSIGNAL (11001, 'System user account "&UName;" is not a member of WikiUser group and can not be used for Wiki purposes',
       vector ('UName', _sysname) );
   if (exists (select 1 from WV.WIKI.USERS where UserId = _uid))
     return;
@@ -2360,7 +2360,7 @@ create function WV.WIKI.GETCLUSTERID (in _cluster any) returns int
   else
     _cl_id := _cluster;
   if (_cl_id is null)
-    signal ('XXXX', 'Unkown cluster' || _cluster);
+    signal ('XXXX', 'Unknown cluster' || _cluster);
   return _cl_id;
 }
 ;
@@ -2478,7 +2478,7 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:DIUCategoryLink', 'WV.
 
 -- should syncs all posts with del.icio.us in the category _category
 -- but del.icio.us does not allow more frequent updates than 1 time per
--- second... so the implementatiion is still uncertan
+-- second... so the implementation is still uncertain
 create procedure WV.WIKI.DELICIOUSSYNCCATEGORY (in _category varchar)
 {
   update WV.WIKI.CATEGORY set IsDelIcioUsPub = 1 where CategoryName = _category;
@@ -3573,7 +3573,7 @@ create function WV.WIKI.AUTH_BY_LDAP (in _cluster any, in _user varchar, in _pwd
 	sprintf ('(%s=%s)', _uid_field, _user),
 	sprintf('%s=%s, %s', _uid_field, _user, _bind),
 	_pwd);
-   --dbg_obj_print ('sucess');
+   --dbg_obj_print ('success');
   return 1;
 auth_validation_fail:
   return 0;

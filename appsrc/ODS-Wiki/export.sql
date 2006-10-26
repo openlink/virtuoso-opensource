@@ -88,7 +88,7 @@ create procedure WV.WIKI.EXPORT_ATTACHMENT (
 create procedure WV.WIKI.EXPORT_TOPIC (
 	in topic_id int, --* id of topic in WV.WIKI.TOPIC
  	in base_uri varchar, --* base uri for wiki references
-	in stylesheet varchar, --* uri of stylesheet which must be applyed after rendering topic	
+	in stylesheet varchar, --* uri of stylesheet which must be applied after rendering topic	
 	in directory varchar, --* DAV path where to store result file.
 	in header varchar, --* header added to topic text
 	in footer varchar, --* footer added to topic text
@@ -156,7 +156,7 @@ create procedure WV.WIKI.EXPORT_TOPIC (
 
 create function WV.WIKI.EXPORT_CLUSTER (
 	in cluster_name varchar, 
-	in stylesheet varchar, --* uri of stylesheet which must be applyed after rendering topic, can be NULL
+	in stylesheet varchar, --* uri of stylesheet which must be applied after rendering topic, can be NULL
 	in directory varchar, --* DAV path where to store result files.
 	in header varchar, --* header added to topic text
 	in footer varchar, --* footer added to topic text

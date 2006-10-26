@@ -1318,9 +1318,9 @@ create function WV.WIKI.MACRO_inline (inout _data varchar, inout _context any, i
       -- we do not need signals here
       exec ('drop procedure ' || _procname, _st1, _m1);
       if (_state = '00000')
-        return '{{{Compilation successfull}}}';
+        return '{{{Compilation successful}}}';
       else
-        return '{{{Comilation error: '|| _state || ':' || _message || '}}}';
+        return '{{{Compilation error: '|| _state || ':' || _message || '}}}';
     }
 
 

@@ -560,7 +560,7 @@ int wlex_count_header_level (char * line)
   return cnt;
 }
 
-/*! counts number of conseq symbol appearence */
+/*! counts number of conseq symbol appearance */
 int char_count (char * line, char symbol)
 {
   int counter = 0;
@@ -580,7 +580,7 @@ int strcount_int (char * line, char* symbols)
   return 0;
 }
 
-/*! counts number of conseq symbols appearence  */
+/*! counts number of conseq symbols appearance  */
 int strcount (char *line, char *symbols)
 {
   int counter = 0;

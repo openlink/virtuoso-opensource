@@ -216,7 +216,7 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
   -- determine cluster id;
   select Clusterid, ColId into self.cluster_id, _col_id from WV.WIKI.CLUSTERS where ClusterName = _cluster_name;
 
-  -- determine intance name
+  -- determine instance name
   declare inst_name varchar;
   if(self.wa_name is null) {
     inst_name := sprintf ('Wiki_%s' , _cluster_name);
