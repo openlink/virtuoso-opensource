@@ -77,7 +77,7 @@
     </xsl:if>
     <xsl:if test="count(@title)=0">
       <xsl:message terminate="yes">
-        Widget vm:page-title should contain mantadory attribute - TITLE
+        Widget vm:page-title should contain mandatory attribute - TITLE
       </xsl:message>
     </xsl:if>
     <title>

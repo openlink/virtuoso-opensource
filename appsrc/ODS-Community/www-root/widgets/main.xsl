@@ -132,7 +132,7 @@
 
 
         set http_charset='utf-8';
-        -- fill in mantadory variables
+        -- fill in mandatory variables
         self.comm_wainame := get_keyword('comm_wainame', params);
         self.comm_home := get_keyword('comm_home', params);
 
@@ -638,7 +638,7 @@ window.onload = function (e)
     </xsl:if>
     <xsl:if test="count(@title)=0">
       <xsl:message terminate="yes">
-        Widget vm:page-title should contain mantadory attribute - TITLE
+        Widget vm:page-title should contain mandatory attribute - TITLE
       </xsl:message>
     </xsl:if>
     <title>
@@ -1775,7 +1775,7 @@ window.onload = function (e)
      <table cellspacing="0" cellpadiing="3">
        <tr>
            <td>
-              <img alt="baner" border="0">
+              <img alt="banner" border="0">
                 <xsl:if test="@image">
                   <xsl:attribute name="src">&lt;?vsp
                     if (self.custom_img_loc)
@@ -1850,7 +1850,7 @@ window.onload = function (e)
      <?vsp
       }
   ?>
-           <td class="navprefs"><vm:search-commusers-link /> <vm:separator-whenownerlogedin /> <vm:settings-link/><!-- <vm:separator-whenownerlogedin /> <vm:help-link/> --></td>
+           <td class="navprefs"><vm:search-commusers-link /> <vm:separator-whenownerloggedin /> <vm:settings-link/><!-- <vm:separator-whenownerloggedin /> <vm:help-link/> --></td>
          </tr>
      </table>
 </xsl:template>
@@ -1892,7 +1892,7 @@ window.onload = function (e)
 	                                  'from  DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS \n' ||
 	                                  'where WAUI_LAT is not null and WAUI_LNG is not null and WAUI_U_ID = U_ID \n' ||
 	                                  '      and U_ID in (select WAM_USER from WA_MEMBER where WAM_INST = ''%s'' and WAM_STATUS<3 )', coalesce (self.user_id, http_nobody_uid ()),self.wa_home||'/',replace(self.comm_wainame,'''',''''''))"
-	                    baloon-inx="4"
+	                    balloon-inx="4"
 	                    lat-inx="1"
 	                    lng-inx="2"
 	                    key-name-inx="3"
@@ -2313,7 +2313,7 @@ window.onload = function (e)
            
            
            set http_charset='utf-8';
-           -- fill in mantadory variables
+           -- fill in mandatory variables
            self.comm_wainame := get_keyword('comm_wainame', params);
            self.comm_home := get_keyword('comm_home', params);
            
@@ -2507,7 +2507,7 @@ window.onload = function (e)
         ]]></v:before-render>
       </v:url>
 </xsl:template>
-<xsl:template match="vm:separator-whenownerlogedin">
+<xsl:template match="vm:separator-whenownerloggedin">
   <?vsp
     if ( self.comm_access=1 ){
   ?> | <?vsp

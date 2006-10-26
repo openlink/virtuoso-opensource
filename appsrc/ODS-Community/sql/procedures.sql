@@ -181,7 +181,7 @@ session_not_found:
   params := vector_concat(params, vector('css_name', css_path));
 
 
-  -- directly invoke necessary resourse
+  -- directly invoke necessary resource
 
   declare error_message any;
   error_message := NULL;
@@ -202,7 +202,7 @@ session_not_found:
         params := vector_concat(vector('css_name', css_path), params);
       }
    }else{
---        Here should be placed the Filesistem check for templates !!!
+--        Here should be placed the Filesystem check for templates !!!
 --        error_message := sprintf('Page: \'%s\' doesn\'t exists even in default template.', page_name);
         ;
    }
@@ -343,7 +343,7 @@ create procedure COMMUNITY.COMM_GET_USER_ACCESS(in comm_home varchar, in usr var
         _real_pwd := (select pwd_magic_calc(U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_ID = _user_id);
         if(pwd <> _real_pwd) return 0;
       }
-      -- if it's registered user - check his role agains current community
+      -- if it's registered user - check his role against current community
       -- if several roles assigned to one user - use the best one (minimum value)
       _role := (select min(WAM_MEMBER_TYPE) from DB.DBA.WA_MEMBER
                 where WAM_STATUS <= 2 and WAM_USER = _user_id and WAM_INST = _wai_name
