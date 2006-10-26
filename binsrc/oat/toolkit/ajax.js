@@ -61,7 +61,7 @@ OAT.Ajax = {
 					if (return_type == OAT.Ajax.TYPE_TEXT) {
 		  				return_func(xmlhttp.getResponseText(),headers);
 		  			} else {
-						if (OAT.Dom.isIE()) {
+						if (OAT.Dom.isIE() || OAT.Dom.isWebKit()) {
 							xmlStr = xmlhttp.getResponseText(); 
 							var xmlDoc = OAT.Xml.createXmlDoc(xmlStr);
 						} else { 

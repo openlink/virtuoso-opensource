@@ -15,6 +15,7 @@ OAT.Anchor = {
 	callForData:function(win,options,anchor) {
 		options.status = 1; /* loading */
 		var ds = new OAT.DataSource(50);
+		ds.init();
 		var link = anchor.innerHTML;
 		var unlinkRef = function() {
 			win.caption.innerHTML = anchor.innerHTML;
@@ -27,8 +28,6 @@ OAT.Anchor = {
 				g.showAll = true;
 				win.content.appendChild(g.elm);
 				g.elm.style.position = "relative";
-				
-//				g.elm.style.width = "300px";
 				g.init();
 				ds.bindRecord(g.bindRecordCallback);
 				ds.bindPage(g.bindPageCallback);
@@ -39,13 +38,12 @@ OAT.Anchor = {
 		switch (options.type) {
 			case "sql":
 				var query = options.q.replace(/\$link_name/g,link);
-				OAT.Xmla.user = options.user;
-				OAT.Xmla.password = options.pass;
-				OAT.Xmla.dsn = options.dsn;
-				OAT.Xmla.endpoint = options.href;
+				debug.push(options);
+				options.connection.options.endpoint = options.href;
 				ds.setQuery(query);
 			break;
 		}
+		ds.setConnection(options.connection);
 		ds.advanceRecord(0);
 	},
 
@@ -53,8 +51,7 @@ OAT.Anchor = {
 		var elm = $(element);
 		if (elm.tagName.toLowerCase() != "a") { return; }
 		var options = {
-			user:"demo",
-			pass:"demo",
+			connection:false,
 			dsn:"DSN=Local_Instance",
 			type:"sql",
 			imagePath:"/DAV/JS/images/",

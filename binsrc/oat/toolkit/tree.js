@@ -16,7 +16,7 @@ OAT.Tree = {
 		var options = {
 			imagePath:"/DAV/JS/images",
 			imagePrefix:"",
-			ext:"gif",
+			ext:"png",
 			reformat:1,
 			labelOpens:1,
 			onlyOneOpened:0

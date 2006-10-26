@@ -235,7 +235,7 @@ OAT.WebDav = {
       x:120,
       y:120,
       imagePath:'/DAV/JS/images/',
-      imageExt:'gif',
+      imageExt:'png',
       onConfirmClick:function(){},
       afterSave:function(){},
       file_list_views:['detailed','icons'],
@@ -295,6 +295,9 @@ OAT.WebDav = {
     }
     OAT.WebDav.is_open=1;
 
+	if ("pathDefault" in options) {
+		options.pathDefault = options.pathDefault.replace(/\/\//g,"/");
+	}
 
     OAT.WebDav.toptions = OAT.WebDav.overwrite(OAT.WebDav.options,options);
 

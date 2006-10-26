@@ -13,10 +13,19 @@
 	var fileCallback = function(xmlDoc) { alert(xmlDoc.documentElement.tagName); }
 
 	d = new OAT.DataSource(limit);
+	d.init();
+	
+	d.setConnection(connectionObject);
+	
+	d.setQuery(query);
+	d.setREST(format,xpath,queryString,outputFields);
+	d.setWSDL(service,inputObj,outputFields);
 	
 	d.bindRecord(simpleCallback);
 	d.bindPage(multiCallback);
 	d.bindFile(fileCallback);
+	d.bindEmpty(emptyCallback);
+	d.bindHeader(headerCallback);
 	
 	d.advancePage(something);   something: "-1","+1",number
 	d.advanceRecord(something);   something: "-1","+1",number
@@ -41,12 +50,12 @@ OAT.DataSource = function(pageSize) {
 	
 	self.type = 0; /* 1 - sql, 2 - wsdl, 3 - rest */
 	self.query = "";
-	self.url = "";
 	self.format = 0; /* xml / json */
 	self.xpath = 0;
 	self.service = "";
 	self.inputObj = {};
 	self.outputFields = [];
+	self.connection = false;
 	
 	/* ------------------------------ binding -------------------------------*/
 	
@@ -109,6 +118,7 @@ OAT.DataSource = function(pageSize) {
 		self.pageIndex = -1;
 		self.dataRows = [];
 		self.type = 0;
+		self.connection = false;
 	}
 	
 	this.setQuery = function(query) {
@@ -116,8 +126,11 @@ OAT.DataSource = function(pageSize) {
 		self.type = 1;
 	}
 	
-	this.setREST = function(url,format,xpath,queryString,outputFields) {
-		self.url = url;
+	this.setConnection = function(connObj) {
+		self.connection = connObj;
+	}
+	
+	this.setREST = function(format,xpath,queryString,outputFields) {
 		self.query = queryString;
 		self.outputFields = outputFields;
 		self.type = 3;
@@ -125,8 +138,7 @@ OAT.DataSource = function(pageSize) {
 		self.xpath = xpath;
 	}
 
-	this.setWSDL = function(wsdl,service,inputObj,outputFields) {
-		self.url = wsdl;
+	this.setWSDL = function(service,inputObj,outputFields) {
 		self.service = service;
 		self.inputObj = inputObj;
 		self.outputFields = outputFields;
@@ -199,6 +211,11 @@ OAT.DataSource = function(pageSize) {
 					self.processData(data,index);
 					if (self.checkAvailability(index,false)) { callback(); }
 				}
+				var co = self.connection.options;
+				OAT.Xmla.user = co.user;
+				OAT.Xmla.password = co.password;
+				OAT.Xmla.dsn = co.dsn;
+				OAT.Xmla.endpoint = co.endpoint;
 				OAT.Xmla.query = self.query;
 				OAT.Xmla.execute(ref,{limit:self.limit,offset:index});
 			break;
@@ -209,7 +226,7 @@ OAT.DataSource = function(pageSize) {
 					self.processData(data,index);
 					if (self.checkAvailability(index,false)) { callback(); }
 				}
-				OAT.WS.invoke(self.url,self.service,ref,self.inputObj);
+				OAT.WS.invoke(self.connection.options.url,self.service,ref,self.inputObj);
 			break;
 			
 			case 3: /* rest */
@@ -243,7 +260,7 @@ OAT.DataSource = function(pageSize) {
 					self.processData(data,index);
 					if (self.checkAvailability(index,false)) { callback(); }
 				}
-				OAT.Ajax.command(OAT.Ajax.GET,self.url,function(){return self.query;},ref,OAT.Ajax.TYPE_TEXT,{});
+				OAT.Ajax.command(OAT.Ajax.GET,self.connection.options.url,function(){return self.query;},ref,OAT.Ajax.TYPE_TEXT,{});
 			break;
 		}
 		

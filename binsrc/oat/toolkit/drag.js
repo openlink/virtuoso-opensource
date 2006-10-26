@@ -93,21 +93,16 @@ OAT.Drag = {
 		}
 	},
 	
-	createDefault:function(parent,window) {
-
-	
+	createDefault:function(element) {
 		if (!OAT.Preferences.allowDefaultDrag) { return; }
-		var drag = OAT.Dom.create("div",{position:"absolute",width:"21px",height:"21px",left:"-21px",top:"-21px",backgroundImage:"url(/DAV/JS/images/drag.png)"});
-		parent.appendChild(drag);
-		OAT.Drag.create(drag,parent);
-		
-		if (window) {
-			drag._Drag_movers[0][1].restrictionFunction = function(l,t) {
-				var dims = OAT.Dom.getWH(parent);
-				var wdims = OAT.Dom.getWH(window);
-				return l < 0 || t < 0 || l+dims[0]>wdims[0] || t+dims[1]>wdims[1];
-			}
-		}
+		var elm = $(element);
+		var drag = OAT.Dom.create("div",{position:"absolute",width:"21px",height:"21px",backgroundImage:"url(/DAV/JS/images/drag.png)"});
+		var pos = OAT.Dom.getLT(elm);
+		drag.style.left = (pos[0]-21) + "px";
+		drag.style.top = (pos[1]-21) + "px";
+		elm.parentNode.appendChild(drag);
+		OAT.Drag.create(drag,drag);
+		OAT.Drag.create(drag,elm);
 	
 		OAT.Dom.hide(drag);
 		var show = function(event) {
@@ -123,8 +118,9 @@ OAT.Drag = {
 			drag._Drag_pending = 1;
 			setTimeout(check,2000);
 		}
-		OAT.Dom.attach(parent,"mouseover",show);
-		OAT.Dom.attach(parent,"mouseout",hide);
+		OAT.Dom.attach(elm,"mouseover",show);
+		OAT.Dom.attach(elm,"mouseout",hide);
+		debug.push(elm);
 	}
 }
 OAT.Dom.attach(document,"mousemove",OAT.Drag.move);

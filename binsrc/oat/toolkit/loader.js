@@ -162,6 +162,14 @@ OAT.Dom = {
 	},
 	
 	hide:function(element) {
+		if (arguments.length > 1) {
+			for (var i=0;i<arguments.length;i++) { OAT.Dom.hide(arguments[i]); }
+			return;
+		}
+		if (element instanceof Array) {
+			for (var i=0;i<element.length;i++) { OAT.Dom.hide(element[i]); }
+			return;
+		}
 		var elm = $(element);
 		/* ie input hack */
 		var inputs = elm.getElementsByTagName("input");
@@ -177,6 +185,14 @@ OAT.Dom = {
 	},
 	
 	show:function(element) {
+		if (arguments.length > 1) {
+			for (var i=0;i<arguments.length;i++) { OAT.Dom.show(arguments[i]); }
+			return;
+		}
+		if (element instanceof Array) {
+			for (var i=0;i<element.length;i++) { OAT.Dom.show(element[i]); }
+			return;
+		}
 		var elm = $(element);
 		elm.style.display = "";
 		/* ie input hack */
@@ -675,6 +691,7 @@ OAT.Loader = {
 			if (OAT.Loader.pendingCount < 1 && OAT.Loader.loadOccured) { 
 				OAT.Dom.attach(window,"unload",OAT.Loader.clearEvents); /* attach leak preventor */
 				for (var i=0;i<OAT.Loader.preInitList.length;i++) { OAT.Loader.preInitList[i](); } /* execute preInit functions */
+				if (typeof(window._init) == "function" && typeof(document.body.getAttribute("onload")) == "object") { window._init(); } /* if _init is specified, execute */
 				if (OAT.Declarative) { OAT.Declarative.execute(); } /* declarative markup */
 				if (typeof(window.init) == "function" && typeof(document.body.getAttribute("onload")) == "object") { window.init(); } /* pass control to userspace */
 				
