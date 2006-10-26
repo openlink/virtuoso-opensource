@@ -118,7 +118,7 @@ WEBLOG_DAV_PROP_SET(in path varchar,
 
 
 -- 0 - Preview (visible one time only in POST preview mode)
--- 1 - Draf (visible for author only 'with remarks - < not published >')
+-- 1 - Draft (visible for author only 'with remarks - < not published >')
 -- 2 - Published (visible for all)
 
 create procedure SYS_BLOGS_B_STATE_UPDATE ()
@@ -519,7 +519,7 @@ create procedure BLOG2_RSS2WML_PP() {
     http_value (xp, null, ss);
     stag := md5(ss);
 
-    -- prepare standart header
+    -- prepare standard header
     ohdr := http_header_get ();
     if (strcasestr (ohdr, 'Content-Type:') is not null)
       {
@@ -1752,7 +1752,7 @@ session_not_found:
   -- add css_name and blog_id as additional parameters
   params := vector_concat(params, vector('css_name', css_path, 'blog_id', blog_id));
 
-  -- directly invoke necessary resourse
+  -- directly invoke necessary resource
   declare error_message any;
   error_message := NULL;
   if(not exists(select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = template_path)) {
@@ -2238,7 +2238,7 @@ create procedure BLOG2_CREATE_DEFAULT_SITE(in folder varchar, in uid int, in blo
   content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path || 'index.vspx');
   DB.DBA.DAV_RES_UPLOAD(fpath, content, 'text/html', '111101101N', 'dav', 'administrators', 'dav', dav_pwd);
 
-  -- This should be really in thye ODS
+  -- This should be really in ODS
   DB.DBA.VHOST_REMOVE(vhost=>vhost, lhost=>listen, lpath=>home);
   DB.DBA.VHOST_DEFINE(
                vhost=>vhost,

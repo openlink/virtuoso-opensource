@@ -712,7 +712,7 @@
 	              if (local_lp is null)
                         {
 			  self.vc_is_valid := 0;
-			  self.vc_error_message := 'The phisycal location of the enclosure cannot be seen via current virtual host, please either select new resource or enter the full URL containing host and port information.';
+			  self.vc_error_message := 'The physical location of the enclosure cannot be seen via current virtual host, please either select new resource or enter the full URL containing host and port information.';
 			  return;
                         }
 		      encl := 'http://' || self.host || local_lp || substring (encl, length (local_pp), length (encl));
@@ -1305,7 +1305,7 @@
 
 	  if (length (self.openid_url.ufl_value) and lower (self.openid_url.ufl_value) not like 'http://%' and lower (self.openid_url.ufl_value) not like 'https://%')
            {
-	     self.vc_error_message := 'Invalid Web Site URL, pleasee enter correct value';
+	     self.vc_error_message := 'Invalid Web Site URL, please enter correct value';
 	     self.vc_is_valid := 0;
 	     return;
            }

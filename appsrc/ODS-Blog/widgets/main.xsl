@@ -30,11 +30,11 @@
 
   <xsl:output method="xml" indent="yes" cdata-section-elements="style" encoding="UTF-8"/>
   <!-- the 'chk' is used to designate what kind of code is supposed to be generated, when is true it's for vspx
-  when is false it's for templates interprtator
+  when is false it's for templates interpreter
   -->
   <xsl:param name="chk" select="true ()"/>
   <xsl:template match="vm:page">
-    <!-- mantadory variables -->
+    <!-- mandatory variables -->
     <v:variable name="preview_post_id" type="int" default="0" persist="temp"/>
     <v:variable name="post_to_remove" type="varchar" default="null" param-name="delete_post"/>
     <v:variable name="preview_post_mode" type="int" default="0" />
@@ -238,7 +238,7 @@
     <v:on-init>
       <![CDATA[
         set http_charset='UTF-8';
-        -- fill in mantadory variables
+        -- fill in mandatory variables
         self.blogid := get_keyword('blog_id', params);
         declare _cookie_vec, nposts, page, visb any;
         _cookie_vec := vsp_ua_get_cookie_vec(lines);
@@ -1003,7 +1003,7 @@ window.onload = function (e)
     </xsl:if>
     <xsl:if test="count(@title)=0">
       <xsl:message terminate="yes">
-        Widget vm:page-title should contain mantadory attribute - TITLE
+        Widget vm:page-title should contain mandatory attribute - TITLE
       </xsl:message>
     </xsl:if>
     <title>
@@ -5260,7 +5260,7 @@ window.onload = function (e)
                         if (url is null or url = '')
                         {
                           self.vc_is_valid := 0;
-                          self.vc_error_message := 'Please enter corect Blogspot User';
+                          self.vc_error_message := 'Please enter correct Blogspot User';
                           return;
                         }
                         url := sprintf('http://%s.blogspot.com/atom.xml', url);
@@ -5355,7 +5355,7 @@ window.onload = function (e)
                         if (url is null or url = '')
                         {
                           self.vc_is_valid := 0;
-                          self.vc_error_message := 'Please enter corect LiveJournal User';
+                          self.vc_error_message := 'Please enter correct LiveJournal User';
                           return;
                         }
                         url := sprintf('http://www.livejournal.com/users/%s/data/rss', url);
@@ -5454,7 +5454,7 @@ window.onload = function (e)
                         if (url is null or url = '')
                         {
                           self.vc_is_valid := 0;
-                          self.vc_error_message := 'Please enter corect Xanga User';
+                          self.vc_error_message := 'Please enter correct Xanga User';
                           return;
                         }
                         url := sprintf('http://www.xanga.com/rss.aspx?user=%s', url);
@@ -6618,7 +6618,7 @@ window.onload = function (e)
     <td>
         This means spam probability rate, a float number between 0 and 1.
         The comments having spam probability rate bellow that number
-        will be published automatically, otherwsie they will be queued for manual approval.
+        will be published automatically, otherwise they will be queued for manual approval.
     </td>
         </tr>
         <tr>
@@ -6962,7 +6962,7 @@ window.onload = function (e)
       <input type="hidden" name="ping_tab" value="<?V get_keyword('ping_tab', control.vc_page.vc_event.ve_params) ?>"/>
       <input type="hidden" name="blog_tab" value="<?V get_keyword('blog_tab', control.vc_page.vc_event.ve_params) ?>"/>
       <script type="text/javascript">
-	  function chageArchiveControls (f, flag)
+	  function changeArchiveControls (f, flag)
 	  {
 	    var x, y;
 	    x = document.getElementById ('archfreq1');
@@ -6974,7 +6974,7 @@ window.onload = function (e)
       <table>
         <!--tr><th colspan="2"><h2>Archive Settings</h2></th></tr>
         <tr>
-          <td><v:check-box name="arch1" xhtml_id="arch1" value="1" initial-checked="-#-get_keyword('EnableAutoArchive', self.opts, 1)" xhtml_onclick="javascript: chageArchiveControls(this.form,this.checked)"/><label for="arch1">Archive old posts</label>
+          <td><v:check-box name="arch1" xhtml_id="arch1" value="1" initial-checked="-#-get_keyword('EnableAutoArchive', self.opts, 1)" xhtml_onclick="javascript: changeArchiveControls(this.form,this.checked)"/><label for="arch1">Archive old posts</label>
           </td>
           <td>
             <v:select-list xhtml_class="select" name="archfreq1" xhtml_id="archfreq1">
@@ -8712,7 +8712,7 @@ window.onload = function (e)
 
   <xsl:template match="vm:templates">
       <script type="text/javascript">
-	  def_btn = 'save_tmpl_chages';
+	  def_btn = 'save_tmpl_changes';
       </script>
               <input type="hidden" name="page" >
               <xsl:attribute name="value"><xsl:apply-templates select="@page" mode="static_value"/></xsl:attribute>
@@ -8926,7 +8926,7 @@ window.onload = function (e)
 		  ]]></v:on-post>
 	  </v:button>
 	  <br />
-							  <v:button xhtml_class="real_button" value="Save Changes" action="simple" name="save_tmpl_chages">
+							  <v:button xhtml_class="real_button" value="Save Changes" action="simple" name="save_tmpl_changes">
 							      <v:on-post><![CDATA[
 	          declare custom varchar;
                   declare file varchar;
@@ -9154,7 +9154,7 @@ window.onload = function (e)
             <v:button xhtml_class="real_button" action="simple" name="login_button" value="Login" xhtml_title="Login" xhtml_alt="Login" xhtml_tabindex="3">
               <v:on-post>
                   <![CDATA[
-                    -- check if logger is registerd user
+                    -- check if logger is registered user
                     declare _role, _status, _user_name, _user_pwd, _user_id any;
                     _user_name := self.login_username.ufl_value;
                     _user_pwd := self.login_password.ufl_value;
@@ -9903,7 +9903,7 @@ window.onload = function (e)
                                   _blog_name := (select BI_TITLE from BLOG.DBA.SYS_BLOG_INFO
           where BI_BLOG_ID = _blog_id);
                                   _blog_name := replace(_blog_name, '&#39;', '''');
-                                  self.blogs_attach_form2.vc_error_message := 'Attach operation with "' || _blog_name || '" cancelled to avoid circular reference.';
+                                  self.blogs_attach_form2.vc_error_message := 'Attach operation with "' || _blog_name || '" canceled to avoid circular reference.';
                                   self.vc_is_valid := 0;
                                   rollback work;
                                   return;
@@ -11014,7 +11014,7 @@ window.onload = function (e)
                     declare xt, xp any;
                     xt := xtree_doc (B_CONTENT, 2, '', 'UTF-8');
                     xp := xpath_eval ('//a[@rel="tag"]/text()', xt, 0);
-		    --dbg_obj_print  ('embeeded', xp);
+		    --dbg_obj_print  ('embedded', xp);
                     foreach (any t in xp) do
 		      {
 		        t := trim(lower (cast (t as varchar)));
