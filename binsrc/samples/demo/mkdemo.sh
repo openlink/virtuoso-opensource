@@ -386,7 +386,8 @@ cat >> virtuoso.ini <<END_CFG
 [Plugins]
 LoadPath = ./plugin
 Load1    = plain, wikiv
-Load2    = plain, im
+Load2    = plain, mediawiki
+Load3    = plain, im
 END_CFG
 
 if [ ! -d plugin ] 
@@ -398,9 +399,11 @@ if [ "x$HOST_OS" != "x" ]
 then
     cp -f $BINDIR/im.dll plugin
     cp -f $BINDIR/wikiv.dll plugin
+    cp -f $BINDIR/mediawiki.dll plugin
 else
     cp -f $HOME/binsrc/samples/image_magick/.libs/im.so plugin
     cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/wikiv.so plugin
+    cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/mediawiki.so plugin
 fi
 
 HOSTNAME=`uname -n`
