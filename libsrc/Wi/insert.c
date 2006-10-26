@@ -1014,7 +1014,7 @@ ins_leaves_check (buffer_desc_t * buf)
       key_id_t ki = SHORT_REF (buf->bd_buffer + map->pm_entries[inx] + IE_KEY_ID);
       if (!ki || (KI_LEFT_DUMMY == ki && LONG_REF (buf->bd_buffer + map->pm_entries[inx] +IE_LEAF)))
 	{
-	  printf ("non lea\N");
+	  printf ("non leaf\n");
 	  break;
 	}
     }
