@@ -41,7 +41,7 @@
     goto exec_start;
   };
 
-  SET ISOLATION = 'Commited';
+  SET ISOLATION = 'Committed';
 
 exec_start:;
 

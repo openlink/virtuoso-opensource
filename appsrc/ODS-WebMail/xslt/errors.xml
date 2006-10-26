@@ -23,7 +23,7 @@
 -->
 <errors>
   <error id="0">
-    <title>Unknow system error</title>
+    <title>Unknown system error</title>
     <descr>Due to a transient problem, the system could not
           perform the operation you requested. The system administrators have been
           notified.</descr>
@@ -108,7 +108,7 @@
     <button/>
   </error>
   <error id="3002">
-    <title>The choosen file is too big</title>
+    <title>The chosen file is too big</title>
     <descr>The file that you try to attach is more then 10 MB. It must be at most <b>10</b> MB.</descr>
     <decision>Please, go <back/> and try again with other file. </decision>
     <button/>

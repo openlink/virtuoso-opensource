@@ -47,7 +47,7 @@
     <table width="100%" cellpadding="0" cellspacing="0" border="0" class="content">
       <thead>
         <tr>
-          <th>Accouns</th>
+          <th>Accounts</th>
           <th>Options</th>
           <th nowrap="nowrap" width="25%">Action</th>
         </tr>

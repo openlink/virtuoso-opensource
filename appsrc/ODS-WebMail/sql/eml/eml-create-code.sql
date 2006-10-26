@@ -125,7 +125,7 @@ create procedure OMAIL.WA.omail_addr(
   _user_id   := get_keyword('user_id',_user_info);
   _domain_id := 1;
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
 
   -- Set Params --------------------------------------------------------------------
@@ -328,7 +328,7 @@ create procedure OMAIL.WA.omail_attach(
   _user_id   := get_keyword('user_id',_user_info);
   _domain_id := 1;
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
   _sql_result1 := '';
 
@@ -481,7 +481,7 @@ create procedure OMAIL.WA.omail_box(
   -- GET SETTINGS ------------------------------
   _settings := OMAIL.WA.omail_get_settings(_domain_id, _user_id, 'base_settings');
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
 
   -- Set Variable--------------------------------------------------------------------
@@ -623,7 +623,7 @@ create procedure OMAIL.WA.omail_ch_pop3(
   -- GET SETTINGS ------------------------------
   _settings := OMAIL.WA.omail_get_settings(_domain_id, _user_id, 'base_settings');
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
 
   -- Set Arrays----------------------------------------------------------------------
@@ -1568,7 +1568,7 @@ create procedure OMAIL.WA.omail_folders(
   _user_id   := get_keyword('user_id',_user_info);
   _domain_id := 1;
 
-  -- Set constans -------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------
   _sql_params  := vector(0,0,0,0,0,0);
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
 
@@ -2596,7 +2596,7 @@ create procedure OMAIL.WA.omail_message(
   -- GET SETTINGS ------------------------------
   _settings := OMAIL.WA.omail_get_settings(_domain_id, _user_id, 'base_settings');
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
 
   -- Set Variable--------------------------------------------------------------------
@@ -3465,7 +3465,7 @@ create procedure OMAIL.WA.omail_preview(
   _user_id   := get_keyword('user_id',_user_info);
   _domain_id := 1;
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _xslt_url := vector('EML','write.xsl','common.xsl');
   _sql_params  := vector(0,0,0,0,0,0);
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
@@ -3524,7 +3524,7 @@ create procedure OMAIL.WA.omail_print(
   -- GET SETTINGS ------------------------------
   _settings := OMAIL.WA.omail_get_settings(_domain_id,_user_id,'base_settings');
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
 
   -- Set Params --------------------------------------------------------------------
@@ -3931,7 +3931,7 @@ create procedure OMAIL.WA.omail_search(
   -- GET SETTINGS ------------------------------
   _settings := OMAIL.WA.omail_get_settings(_domain_id, _user_id, 'base_settings');
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
   _sql_result1 := '';
 
@@ -4407,7 +4407,7 @@ create procedure OMAIL.WA.omail_sendok(
 
   _to        := get_keyword('to',params, '');
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
 
   -- Set Arrays----------------------------------------------------------------------
@@ -4452,7 +4452,7 @@ create procedure OMAIL.WA.omail_set_mail(
   -- GET SETTINGS ------------------------------
   _settings := OMAIL.WA.omail_get_settings(_domain_id, _user_id, 'base_settings');
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
 
   -- Form Action---------------------------------------------------------------------
@@ -4793,7 +4793,7 @@ create procedure OMAIL.WA.omail_tools(
   _user_id   := get_keyword('user_id',_user_info);
   _domain_id := 1;
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
   _error       := 0;
 
@@ -5199,7 +5199,7 @@ create procedure OMAIL.WA.omail_write(
   -- GET SETTINGS ------------------------------
   _settings := OMAIL.WA.omail_get_settings(_domain_id, _user_id, 'base_settings');
 
-  -- Set constans -------------------------------------------------------------------
+  -- Set constants  -------------------------------------------------------------------
   _sql_params  := vector(0,0,0,0,0,0);
   _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
   _sql_result1 := '';
@@ -5670,11 +5670,11 @@ create procedure OMAIL.WA.omail_api_share_check(
   if (exists(SELECT 1 FROM OMAIL.WA.SHARES  where   APP_ID = pApp_id and USER_ID = pUser_id and OBJ_ID = pObj_id and OBJ_TYPE = pObj_type and GRANTED_UID = pGranted_uid and G_TYPE = pG_type))
     return 1;
 
-  -- check for all GRANTED_UID and curent OBJ_ID);
+  -- check for all GRANTED_UID and current OBJ_ID);
   if (exists(SELECT 1 FROM OMAIL.WA.SHARES  where   APP_ID = pApp_id and USER_ID = pUser_id and OBJ_ID = pObj_id and OBJ_TYPE = pObj_type and GRANTED_UID IS NULL  and G_TYPE = pG_type))
     return 2;
 
-  -- check for curent GRANTED_UID and all OBJ_ID);
+  -- check for current GRANTED_UID and all OBJ_ID);
   if (exists(SELECT 1 FROM OMAIL.WA.SHARES  where   APP_ID = pApp_id and USER_ID = pUser_id and OBJ_ID IS NULL and OBJ_TYPE = pObj_type and GRANTED_UID = pGranted_uid and G_TYPE = pG_type))
     return 3;
 
@@ -5765,9 +5765,9 @@ create procedure OMAIL.WA.omail_api_message_send(
   --                                                     'email','vmalezanov@openlinksw.bg'),
   --                                       'to',  vector('name', 'vesko',
   --                                                     'email','vmalezanov@openlinksw.bg'),
-  --                                       'to',  vector('name', 'bomba',
-  --                                                     'email','bomba@bomba.com')),
-  --                   'message_body',vector('body',Hellooo test test',
+  --                                       'to',  vector('name', 'tester',
+  --                                                     'email','tester@example.com')),
+  --                   'message_body',vector('body',Hello test test',
   --                                         'attachment',vector('name', 'filename.doc',
   --                                                         'mime-type','image/gif',
   --                                                         'content_id','43556yhgrhge456yve56y56yb56y5v6@pesho',
@@ -5782,7 +5782,7 @@ create procedure OMAIL.WA.omail_api_message_send(
   sBoundary  := sprintf('------_NextPart_%s',md5(cast(now() as varchar)));
   pXMLMsg    := OMAIL.WA.omail_api_message_create_recu(pParams, 0);
 
-  -- Consruct body
+  -- Construct body
   sBody := '<message>';
   sBody := sprintf('%s<boundary>%s</boundary>',sBody,sBoundary);
   sBody := sprintf('%s<charset_default>%s</charset_default>',sBody,'windows-1251');

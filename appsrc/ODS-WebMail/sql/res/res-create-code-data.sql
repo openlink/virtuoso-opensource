@@ -125,7 +125,7 @@ OMAIL.WA.res_mime_create(20240,'image/psd', 'Photoshop')
 OMAIL.WA.res_mime_create(20250,'image/x-cmu-raster','')
 ;
 
--- appication - ID 30xxx -------------------------------------------------------
+-- application - ID 30xxx ------------------------------------------------------
 OMAIL.WA.res_mime_create(30100,'application/octet-stream', '')
 ;
 OMAIL.WA.res_mime_create(30110,'application/andrew-inset','')

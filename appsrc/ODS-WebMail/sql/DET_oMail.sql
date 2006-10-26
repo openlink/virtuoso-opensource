@@ -136,7 +136,7 @@ create function "oMail_FIXNAME" (in mailname any) returns varchar
 ;
 
 
-create function "oMail_COMPOSE_NAME" (in mnamefmt varchar, in rcv_date datetime, in snd_date datetime, in proirity integer, in address any, in subject varchar) returns varchar
+create function "oMail_COMPOSE_NAME" (in mnamefmt varchar, in rcv_date datetime, in snd_date datetime, in priority integer, in address any, in subject varchar) returns varchar
 {
   --declare fmtlist any;
   declare ctr, len integer;
@@ -553,7 +553,7 @@ create function "oMail_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in de
       else if (orig_name = prev_raw_name)
         {
           merged := "oMail_FNMERGE" (orig_name, 'F', f_id);
-          if (not prev_is_patched) -- The first record in a sequence of namesakes is writen w/o merging, go fix it
+          if (not prev_is_patched) -- The first record in a sequence of namesakes is written w/o merging, go fix it
             {
               declare prev_id integer;
 	      declare prev_merged varchar;
@@ -619,7 +619,7 @@ create function "oMail_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in de
       else if (orig_mname = prev_raw_name)
         {
           merged := "oMail_FNMERGE" (orig_mname, 'M', m_id);
-          if (not prev_is_patched) -- The first record in a sequence of namesakes is writen w/o merging, go fix it
+          if (not prev_is_patched) -- The first record in a sequence of namesakes is written w/o merging, go fix it
             {
               declare prev_id integer;
 	      declare prev_merged varchar;
