@@ -363,7 +363,7 @@
                               </tr>
                               <tr>
 				  <th nowrap="nowrap"><v:label name="uatag3" value="--sprintf('My tags for %s', self.fname)"/>
-				      <span class="explain"> (comma seperated list of keywords)</span>
+				      <span class="explain"> (comma separated list of keywords)</span>
 				</th>
                                 <td>
                                   <v:button value="Tag" action="simple" name="bt_tag1" enabled="--case when( WA_USER_IS_TAGGED(self.u_id, self.ufid) = 1 or self.notags = 1) then 0 else 1 end">

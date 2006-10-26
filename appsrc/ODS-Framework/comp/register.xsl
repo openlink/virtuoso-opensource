@@ -362,7 +362,7 @@
            self.ret_page := 'uhome.vspx';
          if (_mail_verify_on)
          {
-           -- determine existings default mail server
+           -- determine existing default mail server
            declare _smtp_server any;
            if((select max(WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1)
              _smtp_server := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'DefaultMailServer');

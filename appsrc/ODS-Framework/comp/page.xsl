@@ -455,7 +455,7 @@
                 self.vc_is_valid := 0;
                 return;
               };
-              -- determine existings default mail server
+              -- determine existing default mail server
               declare _smtp_server any;
               if((select max(WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1)
                 _smtp_server := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'DefaultMailServer');
@@ -959,7 +959,7 @@
       _content := 'comp/help';
       </xsl:if>
 
-      -- create absolute path to recources
+      -- create absolute path to resources
       declare _request_path, _request_dir, _real_dir, _is_dav any;
       declare _is_dav, _dav_path, _dav_fullpath any;
       _request_path := http_physical_path();
@@ -1002,7 +1002,7 @@
         select blob_to_string(RES_CONTENT) into _xsl_string from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _dav_fullpath;
         _xsl_uri := concat('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _dav_fullpath);
       }
-      -- make xsl transormation
+      -- make xsl transformation
       declare _result, _params any;
       _params := vector('fragment', _fragment);
       xslt_sheet(_xsl_uri, xtree_doc(_xsl_string, 0, _xsl_uri));

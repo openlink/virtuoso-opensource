@@ -788,7 +788,7 @@ else
                         declare _fidx, idx any;
                         declare i integer;
                         idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
-                        _fidx := vector('N', 'Off', 'T', 'Direct memebers', 'R', 'Recursively');
+                        _fidx := vector('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
                         i := 0;
                         while (i < length(_fidx))
                         {
@@ -1153,7 +1153,7 @@ else
                         declare _idx, c varchar;
                         declare i integer;
                         _idx := ucase (subseq (perms, 9, 10));
-                        _fidx := vector ('N', 'Off', 'T', 'Direct memebers', 'R', 'Recursively');
+                        _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
                         i := 0;
                         while (i < length (_fidx))
                         {
@@ -2040,7 +2040,7 @@ else
                             http('<option value="*" selected>Do not change</option>');
                             http('<option value="N">Off</option>');
                             http('<option value="T">Direct members</option>');
-                            http('<option value="R">Recurcively</option>');
+                            http('<option value="R">Recursively</option>');
                           ?>
                         </select>
                       </td>

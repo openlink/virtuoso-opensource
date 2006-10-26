@@ -602,7 +602,7 @@ create procedure WA_MAPS_INITIAL_POINTS (
   _center_lng := null;
   _center_lat := null;
 
-  -- project out the excert column in hope for the best
+  -- project out the excerpt column in hope for the best
   _sql := 'select _LNG, _LAT, _KEY_VAL from (' || _sql || ') pq';
 
   -- browse through the data

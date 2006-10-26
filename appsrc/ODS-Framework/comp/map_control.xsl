@@ -33,7 +33,7 @@
      sql
        This is the SQL query to return the following columns for each point in the map:
          _LNG REAL : the longitude as a real value
-         _LAT REAL : the lattitude as a real value
+         _LAT REAL : the latitude as a real value
 	 _KEY_VAL ANY : The column whose value is compared to the 'key-val' value to find the center of the map
 	 EXCERPT : the text to go into the bubble window
      baloon-inx : the index (1 based) of the EXCERPT column in the result set

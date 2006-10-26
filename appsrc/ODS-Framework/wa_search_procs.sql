@@ -624,7 +624,7 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
 -- makes a SQL query for WA search over the DAV resources
 -- Params :
 --  search_dav : include the DAV resources in the mix
---  search_wiki : include the Wiki resouces in the mix
+--  search_wiki : include the Wiki resources in the mix
 create function WA_SEARCH_DAV (in max_rows integer, in current_user_id integer,
    in str varchar, in tags_str varchar, in _words_vector varchar,
    in search_dav integer, in search_wiki integer) returns any

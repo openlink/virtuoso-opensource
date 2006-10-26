@@ -978,7 +978,7 @@
 		     }
 		  ]]>
 		 </v:before-data-bind>
-		 <v:validator name="us_dist_pt_lat_validator" test="sql" message="Invalid value for Lattitude">
+		 <v:validator name="us_dist_pt_lat_validator" test="sql" message="Invalid value for Latitude">
                    <![CDATA[
                      if (length (self.us_dist_pt_lat.ufl_value))
                        {

@@ -377,8 +377,8 @@ wa_exec_no_error(
      WAM_MEMBER_TYPE int, -- 1= owner 2= admin 3=regular, -1=waiting approval etc.
      WAM_MEMBER_SINCE datetime,
      WAM_EXPIRES datetime,
-     WAM_IS_PUBLIC int default 1,  -- zdravko -- Dublicate WAI_IS_PUBLIC
-     WAM_MEMBERS_VISIBLE int default 1,  -- Dublicate WAI_MEMBERS_VISIBLE
+     WAM_IS_PUBLIC int default 1,  -- zdravko -- Duplicate WAI_IS_PUBLIC
+     WAM_MEMBERS_VISIBLE int default 1,  -- Duplicate WAI_MEMBERS_VISIBLE
      WAM_HOME_PAGE varchar,
      WAM_APP_TYPE varchar,-- zdravko
      WAM_DATA any, -- app dependent, e.g. last payment info, other.
@@ -769,7 +769,7 @@ create method wa_notify_member_changed (in accounter int, in otype int, in ntype
     -- do nothing
     return;
   }
-  -- get memeber model
+  -- get member model
   declare _member_model integer;
   _member_model := (select WAI_MEMBER_MODEL from WA_INSTANCE where WAI_NAME = self.wa_name);
   -- 0 Open
@@ -786,7 +786,7 @@ create method wa_notify_member_changed (in accounter int, in otype int, in ntype
      _smtp_server := (select max(WS_SMTP) from WA_SETTINGS);
    }
   dat := sprintf ('Date: %s\r\n', date_rfc1123 (now ()));
-  -- get user's and owner's e-mail addreses
+  -- get user's and owner's e-mail addresses
   declare _owner_id, _owner_name, _owner_full_name, _owner_e_mail any;
   declare _user_id, _user_name, _user_full_name, _user_e_mail any;
   select
@@ -1015,7 +1015,7 @@ closed:
   }
 
   if(otype is null and ostatus is null and nstatus = 2) {
-    -- became member immediately without notificalion
+    -- became member immediately without notification
     -- may be done by owner only
     return;
   }
@@ -1239,7 +1239,7 @@ create trigger WA_MEMBER_D after delete on WA_MEMBER
 ;
 
 -- zdravko
-create procedure wa_check_package (in pname varchar) -- dublicate conductor procedure
+create procedure wa_check_package (in pname varchar) -- Duplicate conductor procedure
 {
 
   if (wa_vad_check (pname) is null)
@@ -3952,7 +3952,7 @@ create procedure wa_app_menu_fill_names (in asid varchar, in arealm varchar, in 
   else
   {
     --dbg_obj_print ('--case4');
-    -- XXX: when no user nor login just say New, list otherwise can be exaustive
+    -- XXX: when no user nor login just say New, list otherwise can be exhaustive
     ret := ret || ' "Create New", "' || wa_get_new_url (app_type, asid, arealm) || '",';
     --for (select distinct WAM_INST, WAM_HOME_PAGE from WA_MEMBER where WAM_IS_PUBLIC = 1 and WAM_APP_TYPE = app_type order by WAM_INST) do
     --{
@@ -4070,7 +4070,7 @@ create procedure wa_set_url ()
 
 	if (s.wa_name <> WAI_NAME)
 	  {
-	    log_message (sprintf ('The application instance "%s" have different name in the type represantation, it should be deleted.', WAI_NAME));
+	    log_message (sprintf ('The application instance "%s" have different name in the type representation, it should be deleted.', WAI_NAME));
 	  }
 	else
 	  {
@@ -4773,7 +4773,7 @@ create procedure WA_GET_MFORM_APP_NAME (in app varchar)
   else if (app = 'eNews2')
     return 'Feeds';
   else if (app = 'oWiki')
-    return 'Wikies';
+    return 'Wikis';
   else if (app = 'oDrive')
     return 'Briefcases';
   else if (app = 'oMail')

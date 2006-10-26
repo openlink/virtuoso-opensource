@@ -371,7 +371,7 @@
               </tr>
               <tr>
 		  <th><label for="s_tags">Tags</label>
-		      <span class="explain"> (comma seperated list of keywords)</span>
+		      <span class="explain"> (comma separated list of keywords)</span>
 		  </th>
                 <td class="listing_col" nowrap="1">
 		    <v:textarea name="s_tag" value="--WA_USER_TAG_GET(self.u_name)" xhtml_tabindex="12"

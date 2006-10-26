@@ -211,7 +211,7 @@
           select blob_to_string(RES_CONTENT) into _xsl_string from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _dav_fullpath;
           _xsl_uri := concat('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _dav_fullpath);
         }
-        -- make xsl transormation
+        -- make xsl transformation
         declare _result, _params any;
         _params := vector('nrows', _nrows);
         xslt_sheet(_xsl_uri, xtree_doc(_xsl_string, 0, _xsl_uri));

@@ -35,7 +35,7 @@ var ICON_HEIGHT = 16;
 // Place where the pointing point is inside the marker icon
 var ICON_ANCHOR_OFS_X = 7;
 var ICON_ANCHOR_OFS_Y = 14;
-// Place where to stick the ballon's tip inside the marker icon
+// Place where to stick the balloon's tip inside the marker icon
 var ICON_INFO_ANCHOR_X = 8;
 var ICON_INFO_ANCHOR_Y = 5;
 // Add that many zoom levels to the autocalculated one (so the gmaps won't drop the corner markers)
@@ -52,7 +52,7 @@ FUNCTIONS
 
 /* 
  * Util function
- * Puts a marker and adds the event handler to print the baloon on click.
+ * Puts a marker and adds the event handler to print the balloon on click.
 */
 function createMarker(point, icon, excerpt) 
 {
@@ -178,7 +178,7 @@ function ProcessMarkerXML (map, icons, request, do_center, custom_zoom_level)
 
 /* 
  * Util function
- * Calcluates lat/lng out of screen pixels
+ * Calculates lat/lng out of screen pixels
  * Returns a GPoint
 */
 function getLatLongFromBitmapSize ( map, x, y )
@@ -217,7 +217,7 @@ function FillIconList(map, ajax_server_url, icons, inst, is_initial, custom_zoom
       var lng_step = 0;
       if (is_initial == false)
         {
-	  // calclucate the width and height of the icon in geo coordinates 
+	  // calculates the width and height of the icon in geo coordinates 
 	  // and use that as a step for binding the points together server side
           var size = getLatLongFromBitmapSize (map, ICON_WIDTH, ICON_HEIGHT);
 	  lat_step = size.y;
@@ -299,13 +299,13 @@ function initMap (div_id,ajax_server_url,icon_base_url,inst_id, custom_zoom_leve
   icons[1].iconAnchor = new GPoint(ICON_ANCHOR_OFS_X, ICON_ANCHOR_OFS_Y);
   icons[1].infoWindowAnchor = new GPoint(ICON_INFO_ANCHOR_X, ICON_INFO_ANCHOR_Y);
 
-  // stop the redrawing when a ballon is to be shown
+  // stop the redrawing when a balloon is to be shown
   var onInfoWindowOpen = function ()
     {
       infoOpened = true;
     };	
 
-  // if no ballon redraw on move.
+  // if no balloon redraw on move.
   // note that we dont need the onZoom handler since the 
   // gmaps will issue onMove even on zoom.
   var onMapMoved = function ()
