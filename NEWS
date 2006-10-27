@@ -1,4 +1,22 @@
-October 24 2005, V4.5.5:
+October 27 2006, V4.5.6:
+  * Added 'dataspace' SPARQL storage with an example for users/groups
+  * Added bookmark gems
+  * Added w% and measure of number of buffers in io queue
+  * Added getrusage bif
+  * Merged latest OAT toolkit fixes
+  * Fixed GPF on nesting calls to bif_exec
+  * Fixed undefined return value in bh_read_dir
+  * Fixed delete of triple so it does not degrade to tablescan
+  * Fixed http session handling across threads
+  * Fixed VAD_INSTALL to properly report syntax errors during installation
+  * Fixed problem in virtual directory and private instances
+  * Fixed building vad packages on windows
+  * Fixed building php5 hosting 
+  * Small changes, bugfixes and new icons for Conductor
+  * Small changes and bugfixes to ODS applications
+
+
+October 24 2006, V4.5.5:
   * Added SPARQL editor gadgets
   * Added QUAD-MAP support
   * Added RDS database with SIOC data if UQIQA/Defaulthost is set
@@ -33,6 +51,7 @@ October 24 2005, V4.5.5:
   * Small changes and bugfixes to virtuoso server
   * Small changes and bugfixes to ODS applications
 
+
 August 8 2006, V4.5.4:
   * Added support for CREATE VIEW ... AS SPARQL SELECT
   * Added support for SPARQL IN and LIKE operators
@@ -48,6 +67,7 @@ August 8 2006, V4.5.4:
   * Fixed FOAF support
   * Small changes and bugfixes to virtuoso server
   * Small changes and bugfixes to ODS applications
+
 
 June 8 2006, V4.5.3:
   * Added OpenLink Data Spaces (ODS) application framework
@@ -70,6 +90,7 @@ June 8 2006, V4.5.3:
   * Enhanced RFD/XML parser
   * Enhanced Countries table in demo database
 	
+
 April 26 2006, V4.5.2:
   * Added project files and instructions to build on Windows
   * Added patched libtool.macosx for Mac OS X Universal builds
@@ -82,6 +103,7 @@ April 26 2006, V4.5.2:
   * Replace old ODBC 2.x types with ODBC 3.x types
   * Fixed compiler warnings
   * Reduced size of demo database
+
 
 April 11 2006, V4.5.1:
   * Initial release of OpenLink Virtuoso Open Source Edition
