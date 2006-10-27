@@ -453,15 +453,25 @@ table#list thead input {
   width: auto;
   font-size: 0.9em;
   padding: 2px 0 2px 0;
-  background-color: #b0cde4;
+  background-color: #EFEFEF;
   border: solid #7f94a5;
-  border-width: 0px 0px 2px 0px;
+  border-width: 0px 0px 1px 0px;
 }
 
 #feed_body
 {
   width: auto;
   padding: 3px 0px 0px 3px;
+}
+
+#feed_gems
+{
+  width: auto;
+  font-size: 0.9em;
+  padding: 3px 0px 0px 3px;
+  background-color: #EFEFEF;
+  border: solid #7f94a5;
+  border-width: 0px 0px 1px 0px;
 }
 
 .read

@@ -51,6 +51,8 @@ EXTRA_DIST = \
 	www/image/*.jpg \
 	www/image/*.png \
 	www/image/dav_browser/*.png \
+	www/image/gems/*.gif \
+	www/image/gems/*.png \
 	www/js/*.js \
 	www/rte/css/*.css \
 	www/rte/images/*.gif \
