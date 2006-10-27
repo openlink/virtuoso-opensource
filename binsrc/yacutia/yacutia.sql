@@ -509,7 +509,7 @@ adm_db_tree_1 ()
        res := concat (res,
                       '<node name="',
                       TABLE_QUAL,
-                      '" not-selected-image="images/icons/folder_16.png" selected-image="images/icons/open_16.png" url="" id="',
+                      '" not-selected-image="images/icons/folder_16.png" selected-image="images/icons/folder_open_16.png" url="" id="',
                       cast (i as varchar),
                       '">\n');
        for select distinct name_part (KEY_TABLE, 1) as TABLE_OWNER
@@ -533,7 +533,7 @@ adm_db_tree_1 ()
            res := concat (res,
                           '\t<node name="',
                           TABLE_OWNER,
-                          '"  not-selected-image="images/icons/folder_16.png" selected-image="images/icons/open_16.png" url="" id="',
+                          '"  not-selected-image="images/icons/folder_16.png" selected-image="images/icons/folder_open_16.png" url="" id="',
                           cast (i as varchar),
                           sprintf ('" procs="%d" tables="%d">\n', pcnt, tcnt));
 

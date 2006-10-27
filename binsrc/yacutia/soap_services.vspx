@@ -73,7 +73,7 @@
 	      <tr>
 		<td style="width:17px;">
 		  <v:button name="t1_toggle" action="simple" style="image"
-		    value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'images/icons/folder_16.png' else 'images/icons/open_16.png' end"
+		    value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'images/icons/folder_16.png' else 'images/icons/folder_open_16.png' end"
 		    xhtml_id="t1_toggle"
 		    xhtml_alt="Toggle" xhtml_title="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'Click to open' else 'Click to close' end">
 		  </v:button>

@@ -461,6 +461,7 @@
       </v:template>
       <v:template name="vm_pagebody_no_vdb_template" type="simple" enabled="--equ(sys_stat('st_has_vdb'),0)">
         <div class="attention_box">
+          <img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Info icon" title="Info"/>
           <p>This Virtual Database feature is available only in the commercial release of Virtuoso Universal Server.   
           For more information on the commercial release of the Virtuoso Universal Server, 
           click on the following links to learn more:</p>
