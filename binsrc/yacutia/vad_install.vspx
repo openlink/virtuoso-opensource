@@ -73,7 +73,7 @@
       </v:on-init>
       <v:template type="simple" enabled= "--case when (self.pack_ready = 1) then 1 else 0 end">
       <div>
-	<img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+	<img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Stop" title="Stop"/>
             Installing a VAD package will put the database in atomic mode, halting other client threads<br/>
             for duration of the installation. If the installation encounters a fatal error such as running<br/>
 	    out of disk, you will get an error message and the server will exit. If this happens:<br/>

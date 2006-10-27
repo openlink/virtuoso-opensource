@@ -135,7 +135,7 @@
                         <tr class="subpage_header_area">
 			  <td>
 			    <div>
-                            <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+                            <img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Stop" title="Stop"/>
 			    Linking objects from data source <b><?V self.current_dsn ?></b>.
 			    <!-- move into thehelp
 			    <br/>

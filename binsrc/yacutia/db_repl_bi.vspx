@@ -130,7 +130,7 @@
                   <img src="images/icons/table_16.png" alt="Table" title="Table"/>
                 </v:template>
                 <v:template type="simple" name="data_set1_col_icon" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[1],1)">
-                  <img src="images/icons/foldr_16.png" alt="Collection" title="Collection"/>
+                  <img src="images/icons/folder_16.png" alt="Collection" title="Collection"/>
                 </v:template>
               </td>
               <td class="listing_col">

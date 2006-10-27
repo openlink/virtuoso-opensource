@@ -283,7 +283,7 @@
                         http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
                   ?>
                     <td class="listing_col">
-                      <img src="images/dav_browser/foldr_16.png" alt="folder"/>
+                      <img src="images/dav_browser/folder_16.png" alt="folder"/>
                     </td>
                     <td class="listing_col">
                       <v:label name="l_db_dir_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>

@@ -39,7 +39,7 @@
     <vm:pagebody vdb_check="1">
         <v:form name="frm_confirm" action="" method="POST" type="simple">
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="stop"/>
             <div class="confirm_text">
 	      <p>You have requested disconnection of the connected Data Source <b><?V self.dsn ?></b>.</p>
 	    </div>

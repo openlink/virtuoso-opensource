@@ -42,7 +42,7 @@
   <vm:pagebody>
     <v:form name="drop_obj" method="POST" type="simple" enabled="--case when length (self.code) &gt; 0 then 1 else 0 end">
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">
 	      <h4>An error has occurred when processing <b>"<?V self.page_name ?>"</b> page.</h4>
 	      <table>

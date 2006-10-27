@@ -309,7 +309,7 @@ ORDER BY sch_name"
 	    <td colspan="2"><div style="margin-left: <?V control.tn_level*16 ?>px;">
 	    <v:button name="tr1_toggle" action="simple" style="image"
 	      value="--concat('images/icons/', case (control.vc_parent as vspx_tree_node).tn_open
-	      when 0 then 'foldr_16.png' else 'open_16.png' end)"
+	      when 0 then 'folder_16.png' else 'folder_open_16.png' end)"
 	      xhtml_alt="Toggle" xhtml_title="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'Click to open' else 'Click to close' end">
 	      <v:on-post>
 		if ((control.vc_parent as vspx_tree_node).tn_level = 0)

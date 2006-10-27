@@ -118,7 +118,7 @@
               <td class="listing_col">
                 <?vsp
                   if (TI_TYPE = 1)
-                    http('<img src="images/icons/foldr_16.png" alt="Collection" title="Collection"/>');
+                    http('<img src="images/icons/folder_16.png" alt="Collection" title="Collection"/>');
                   else if (TI_TYPE = 2)
                     http('<img src="images/icons/table_16.png" alt="Table" title="Table"/>');
                   else if (TI_TYPE = 3)
@@ -844,7 +844,7 @@
               <td class="listing_col">
                 <?vsp
                   if (TI_TYPE = 1)
-                    http('<img src="images/icons/foldr_16.png" alt="Collection" title="Collection"/>');
+                    http('<img src="images/icons/folder_16.png" alt="Collection" title="Collection"/>');
                   else if (TI_TYPE = 2)
                     http('<img src="images/icons/table_16.png" alt="Table" title="Table"/>');
                   else if (TI_TYPE = 3)

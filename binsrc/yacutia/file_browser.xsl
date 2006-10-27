@@ -286,7 +286,7 @@
                 </v:button>
               </td>
               <td class="vdir_headertd">
-		  <v:button name="b_create2" style="image" value="images/dav_browser/foldr_new_16.png" xhtml_alt="Create new folder" action="simple">
+		  <v:button name="b_create2" style="image" value="images/dav_browser/folder_new_16.png" xhtml_alt="Create new folder" action="simple">
                   <v:before-render>
                     <v:script>
                       <![CDATA[
@@ -459,9 +459,9 @@
                       if( length(rowset) > 2 and not isnull(rowset[2]) )
                         imgname := rowset[2];
                       else if( rowset[0] <> 0 )
-		        imgname := 'images/dav_browser/foldr_16.png';
+		        imgname := 'images/dav_browser/folder_16.png';
                       else
-		        imgname := 'images/dav_browser/file_gen_16.png';
+		        imgname := 'images/dav_browser/mime_16.png';
                     ?>
                     <td>
                       <img src="<?V imgname ?>"/>

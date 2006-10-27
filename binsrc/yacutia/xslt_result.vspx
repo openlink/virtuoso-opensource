@@ -33,7 +33,7 @@
     <vm:pagebody>
       <div class="">
 	<div class="confirm_text">
-	    <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+	    <img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Stop" title="Stop"/>
             XSLT transformation
               <?vsp
                 if ( get_keyword('result', control.vc_page.vc_event.ve_params) = 'ok' )

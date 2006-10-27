@@ -80,7 +80,7 @@
 		      <td valign="top">
 			<!-- MAIN AREA -->
 			<div class="confirm_dialog">
-			  <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+			  <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
 			  <div class="confirm_text">
 			    Do you want to delete <v:label name="dsn_l1" value="--self.driver"/>
 			    Data Source: "<v:label name="dsn_l1" value="--self.dsn"/>"

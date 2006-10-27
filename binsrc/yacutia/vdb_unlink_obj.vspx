@@ -80,7 +80,7 @@
 		      <td valign="top">
 			<!-- MAIN AREA -->
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">
         You have requested unlinking of external resources listed below.
         This means that they will no longer be available for virtual database

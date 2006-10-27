@@ -1869,7 +1869,7 @@ if (self.page = 1)
       </v:template>
       <v:template name="vdb_unlink_confirmation" type="simple" enabled="--case when ( self.page = 3  ) then 1 else 0 end">
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">
         You have requested unlinking of external resources listed below.
         This means that they will no longer be available for virtual database
@@ -2039,7 +2039,7 @@ if (self.page = 1)
                         <tr class="subpage_header_area">
 			  <td>
 			    <div>
-                            <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+                            <img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Stop" title="Stop"/>
 			    Linking objects from data source <b><?V self.current_dsn ?></b>.<br/>
 			    If you wish to make modifications to local names and other properties of the objects being linked, you may do so now.<br/>Hit 'Link' to proceed.
 			  </div>

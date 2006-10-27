@@ -509,7 +509,7 @@ adm_db_tree_1 ()
        res := concat (res,
                       '<node name="',
                       TABLE_QUAL,
-                      '" not-selected-image="images/icons/foldr_16.png" selected-image="images/icons/open_16.png" url="" id="',
+                      '" not-selected-image="images/icons/folder_16.png" selected-image="images/icons/open_16.png" url="" id="',
                       cast (i as varchar),
                       '">\n');
        for select distinct name_part (KEY_TABLE, 1) as TABLE_OWNER
@@ -533,7 +533,7 @@ adm_db_tree_1 ()
            res := concat (res,
                           '\t<node name="',
                           TABLE_OWNER,
-                          '"  not-selected-image="images/icons/foldr_16.png" selected-image="images/icons/open_16.png" url="" id="',
+                          '"  not-selected-image="images/icons/folder_16.png" selected-image="images/icons/open_16.png" url="" id="',
                           cast (i as varchar),
                           sprintf ('" procs="%d" tables="%d">\n', pcnt, tcnt));
 
@@ -2251,7 +2251,7 @@ create procedure
 db.dba.dav_br_map_icon (in type varchar)
 {
   if ('folder' = type)
-    return ('foldr_16.png');
+    return ('folder_16.png');
   if ('application/pdf' = type)
     return ('pdf_16.png');
   if ('application/ms-word' = type or 'application/msword' = type)
@@ -2268,10 +2268,9 @@ db.dba.dav_br_map_icon (in type varchar)
     return ('music_16.png');
   if ('video' = "LEFT" (type, 5))
     return ('video_16.png');
-  return ('gen_file_16.png');
+  return ('mime_16.png');
 }
 ;
-
 
 --
 -- XXX add weeks, months, years.

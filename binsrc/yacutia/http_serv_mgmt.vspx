@@ -62,7 +62,7 @@
       </v:before-data-bind>
       <v:form name="frm_confirm" action="http_serv_mgmt.vspx" method="POST" type="simple">
         <div class="confirm_dialog">
-          <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+          <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
           <div class="confirm_text">
              <p>You are requesting of deletion of listener at interface <b><?V self.edit_host ?></b>, listening at port <b><?V self.edit_port ?></b>, for connections to <b><?V self.edit_httphost ?></b>.<br/>
               Additionally, these Virtual directories shall be deleted:<br/>
@@ -153,7 +153,7 @@
 	      <tr>
 		<td style="width:17px;">
 		  <v:button name="t1_toggle" action="simple" style="image"
-		    value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'images/icons/foldr_16.png' else 'images/icons/open_16.png' end"
+		    value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'images/icons/folder_16.png' else 'images/icons/open_16.png' end"
 		    xhtml_id="t1_toggle"
 		    xhtml_alt="Toggle" xhtml_title="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'Click to open' else 'Click to close' end">
 		  </v:button>

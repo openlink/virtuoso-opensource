@@ -38,7 +38,7 @@
     <vm:pagebody>
         <v:form name="frm_confirm" action="" method="POST" type="simple">
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="stop"/>
             <div class="confirm_text">
 	      <p>This will reset the backup flag on all pages and delete the files in backup directories. <br />
 		Are you sure you want to continue ?</p>

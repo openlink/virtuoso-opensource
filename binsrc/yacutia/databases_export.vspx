@@ -42,7 +42,7 @@
 	    <v:template type="simple" name="sc_1" enabled="0">
       <tr>
 	<td colspan="3">
-	  <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+	  <img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Stop" title="Stop"/>
 	  The Schema was exported successfully.<br />
 	  <v:url name="back1" value="Back to Schema Objects" url="databases.vspx"/>
 	</td>

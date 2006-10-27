@@ -73,7 +73,7 @@
 			<v:template name="for_xml_query_remove_template"
 			  type="simple" enabled="--equ (isnull (self.res_to_delete), 0)">
 			  <div class="confirm_dialog">
-			    <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+			    <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
 			    <div class="confirm_text">
 			      The XML Query template
 			      <?vsp

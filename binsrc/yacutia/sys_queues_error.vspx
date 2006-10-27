@@ -40,7 +40,7 @@
   <vm:pagebody>
     <v:form name="drop_obj" method="POST" type="simple" enabled="1">
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">
 	      <h4>An error has occurred when processing task <b>"<?V self.evname ?>"</b>.</h4>
 	      <table>

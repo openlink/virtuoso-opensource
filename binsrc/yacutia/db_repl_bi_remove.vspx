@@ -38,7 +38,7 @@
         <input type="hidden" name="item" value="<?V get_keyword('item', self.vc_page.vc_event.ve_params) ?>"/>
         <input type="hidden" name="item_type" value="<?V get_keyword('item_type', self.vc_page.vc_event.ve_params) ?>"/>
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">Are you sure you want to remove Bidirectional Snapshot Item
               <?vsp
                 http(cast(deserialize(decode_base64(get_keyword('item', self.vc_page.vc_event.ve_params))) as varchar));

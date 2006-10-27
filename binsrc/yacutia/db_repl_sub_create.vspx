@@ -583,7 +583,7 @@
               <td class="listing_col">
                 <?vsp
                   if (_itp = 1)
-                    http('<img src="images/icons/foldr_16.png" alt="Collection" title="Collection"/>');
+                    http('<img src="images/icons/folder_16.png" alt="Collection" title="Collection"/>');
                   else if (_itp = 2)
                     http('<img src="images/icons/table_16.png" alt="Table" title="Table"/>');
                   else if (_itp = 3)

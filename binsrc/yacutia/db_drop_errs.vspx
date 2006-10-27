@@ -42,7 +42,7 @@
     <vm:pagebody>
       	<v:form name="drop_obj" method="POST" type="simple">
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">
 	      The listed database objects can not be dropped.
 	    </div>

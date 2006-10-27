@@ -38,7 +38,7 @@
       if (self.template2.vc_enabled = 0) {
       ?>
           <div class="">
-            <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">
 	      <h4>No PL Modules are defined</h4>
 	    </div>

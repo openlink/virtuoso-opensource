@@ -55,7 +55,7 @@
         <tr>
           <td >
             <div>
-	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+	      <img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Stop" title="Stop"/>
               <?vsp
                 http('The');
 		if (self.qtype = 2)
@@ -99,7 +99,7 @@
                 type="simple" enabled="--case when (get_keyword ('mode', control.vc_page.vc_event.ve_params) = 'delete' and
                                                     get_keyword ('page', control.vc_page.vc_event.ve_params) = '0') then 1 else 0 end">
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">
             The FOR XML query
               <?vsp

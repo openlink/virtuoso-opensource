@@ -246,7 +246,7 @@
                   self.to_rem := get_keyword('to_go', control.vc_page.vc_event.ve_params, '');
                 ?>
 	       <div class="confirm_dialog">
-		 <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+		 <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
 		 <div class="confirm_text">
 		   You are about to remove the parameter "<?V self.to_rem ?>", are you sure? <br />
                    This removal cannot be undone. Do you wish to continue?

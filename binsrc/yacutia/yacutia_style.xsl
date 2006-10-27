@@ -155,7 +155,7 @@
     {
         ?>
         <li>
-          <img src="images/icons/foldr_16.png"
+          <img src="images/icons/folder_16.png"
                alt="WebDAV browser"
                title="WebDAV browser"/>
           <vm:dav_browser ses_type="yacutia"

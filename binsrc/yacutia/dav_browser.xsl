@@ -307,9 +307,6 @@
           <v:template name="title_template"
                       type="simple"
                       enabled="--case when (aref (self.vc_page.vc_event.ve_path, length (self.vc_page.vc_event.ve_path) - 1) <> 'cont_page.vspx') then 1 else 0 end">
-            <div id="dav_br_popup_banner_ico">
-		<a href="#" style="text-decoration:none;" onclick="javascript: if (opener != null) opener.focus(); window.close()"><img src="images/dav_browser/close_16.png" border="0" hspace="2" alt="Close"/>Close</a>
-            </div>
             <div id="dav_br_popup_banner">
               <h3>
                   <v:label name="title_label" value="--self.title" format="%s"/>
@@ -481,12 +478,12 @@ if (length(rowset) > 2 and not isnull(rowset[2]))
 else
   if (rowset[0] <> 0)
     {
-      imgname := 'images/dav_browser/foldr_16.png';
+      imgname := 'images/dav_browser/mime_16.png';
       http(sprintf('<td><input type="checkbox" name="CBC_%s"/></td>', rowset[1]));
     }
   else
     {
-      imgname := 'images/dav_browser/file_gen_16.png';
+      imgname := 'images/dav_browser/mime_16.png';
       http(sprintf('<td><input type="checkbox" name="CBR_%s"/></td>', rowset[1]));
     }
                         ?>
@@ -1986,7 +1983,7 @@ else
                     }
                 ?>
                     <tr class="<?V case when mod (row, 2) = 0 then 'even' end ?>">
-                  <td><img src="images/dav_browser/foldr_16.png"/></td>
+                  <td><img src="images/dav_browser/folder_16.png"/></td>
                   <td><?V full_path ?></td>
                   <td>N/A</td>
                   <td><?V modtime ?></td>
@@ -2062,7 +2059,7 @@ else
 
                 ?>
                     <tr class="<?V case when mod (row, 2) = 0 then 'even' end ?>">
-                  <td><img src="images/dav_browser/file_gen_16.png"/></td>
+                  <td><img src="images/dav_browser/mime_16.png"/></td>
                   <td><?V full_path ?></td>
                   <td><?V ressize ?></td>
                   <td><?V modtime ?></td>
@@ -2251,7 +2248,7 @@ else
                             <button type="button" onclick="directive_add()"><img src="images/icons/add_16.png" alt="Add directive"/>&nbsp;Add Directive</button> 
                             Selected:
                             <button type="button" onclick="directive_rm_sel()"><img src="images/icons/trash_16.png" alt="Delete instructions"/>&nbsp;Delete Directive</button>
-                            <button type="button" onclick="directive_rm_all()"><img src="images/icons/trash_16.png" alt="Delete All"/>&nbsp;Delete All</button>
+                            <button type="button" onclick="directive_rm_all()"><img src="images/icons/trash_16.png" alt="Delete All"/>&amp;nbsp;Delete All</button>
                             <!--<a href="#" class="inline_hlp">?</a>-->
                           </div> <!-- wg_cmd_button_row -->
                         </div> <!-- wg_view_switch_vport -->
@@ -2834,7 +2831,7 @@ else
                 </v:button>
                 <v:button name="b_create" 
                           style="image" 
-                          value="images/dav_browser/foldr_new_16.png" 
+                          value="images/dav_browser/folder_new_16.png" 
                           xhtml_alt="New folder" 
                           xhtml_title="New folder" 
                           action="simple">
@@ -3053,14 +3050,14 @@ else
                                    concat('/', self.curpath, '/', (control as vspx_row_template).te_rowset[1], '/')));
                             else
                               http('<td/>');
-                            imgname := 'images/dav_browser/foldr_16.png';
+                            imgname := 'images/dav_browser/folder_16.png';
                           }
                           else
                           {
                             if (self.command <> 5 and self.command <> 6)
                               http(sprintf('<td><input type="checkbox" name="CBR_%s"/></td>', 
                                    concat('/', self.curpath, '/', (control as vspx_row_template).te_rowset[1])));
-                            imgname := 'images/dav_browser/file_gen_16.png';
+                            imgname := 'images/dav_browser/mime_16.png';
                           }
                         ?>
                         <td>

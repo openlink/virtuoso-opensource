@@ -61,7 +61,7 @@
       <v:template name="err_tmp2" type="simple" enabled="-- equ(self.err_msg, '')" >
         <v:form name="account_form" type="simple" method="POST" action="databases_drop.vspx">
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">
               <?V self.object_type ?> <?vsp
               if (get_keyword ('stype', self.vc_event.ve_params) = '4')

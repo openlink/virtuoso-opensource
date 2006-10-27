@@ -47,7 +47,7 @@
       ]]></v:script></v:before-data-bind>
       	<v:form name="drop_obj" method="POST" type="simple">
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="Stop"/>
             <div class="confirm_text">
       	      The listed database objects will be removed permanently and there is no way to restore it.<br/>
               How do we proceed from here?

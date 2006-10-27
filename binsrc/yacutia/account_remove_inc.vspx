@@ -25,7 +25,7 @@
 -->
 <v:form name="account_form" type="simple" method="POST" xmlns:v="http://www.openlinksw.com/vspx/">
 <div class="confirm_dialog">
-  <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
+  <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="stop"/>
   <div class="confirm_text">
     <div>
       The account "<?V get_keyword ('user_name', self.vc_event.ve_params, '') ?>" may have a home directory associated, do you wish to remove it ?
