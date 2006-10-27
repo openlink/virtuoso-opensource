@@ -167,11 +167,7 @@ create procedure "VAD"."DBA"."VAD_MD5_FILE" (
   if (is_dav = 0)
     _len := cast (file_stat (fname, 1) as integer);
   else
-  {
-    declare _temp_content varchar;
-    select length (RES_CONTENT) into _temp_content from ws.ws.sys_dav_res where RES_FULL_PATH=fname;
-    _len := _temp_content;
-  }
+    _len := (select length (RES_CONTENT) from ws.ws.sys_dav_res where RES_FULL_PATH=fname);
   declare data varchar;
   i := 0;
   while (i < _len)
@@ -1012,32 +1008,33 @@ create procedure "VAD"."DBA"."VAD_TEST_READ" (
   declare ctx varchar;
   ctx := md5_init();
   declare flen, pos, i, n, statusid integer;
+  declare fstat integer;
   declare s varchar;
   declare data any;
   pos := 0;
   if (is_dav = 0)
   {
-    s := file_stat (fname, 1);
-    if (s is null or s = 0)
+    fstat := file_stat (fname, 1);
+    if (fstat is null or fstat = 0)
       "VAD"."DBA"."VAD_FAIL_CHECK" (concat ('Could not open filesystem resource ', fname, ' Reason: File not found'));
   }
   else
   {
     declare _i integer;
     _i := 0;
-    s := 0;
+    fstat := 0;
     for select length (RES_CONTENT) as _temp_content from ws.ws.sys_dav_res where RES_FULL_PATH=fname do
     {
       _i := _i + 1;
-      s := cast(_temp_content as varchar);
+      fstat := _temp_content;
     }
     if (_i = 0)
     {
-      if (s is null or s = 0)
+      if (fstat is null or fstat = 0)
         "VAD"."DBA"."VAD_FAIL_CHECK" (concat ('Could not open DAV resource ', fname, ' Reason: File not found'));
     }
   }
-  flen := cast (s as integer) - 45;
+  flen := cast (fstat as integer) - 45;
   n := 1;
   if (flen > 10000000)
   {
@@ -1115,13 +1112,17 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   registry_set ('VAD_wet_run', '0');
   registry_set ('VAD_is_run', '1');
   connection_set ('vad_pkg_fullname', null);
+  SQL_STATE := '00000';
+  SQL_MESSAGE := '';
   result_names (SQL_STATE, SQL_MESSAGE);
   {
     declare exit handler for sqlstate '*'
     {
+      SQL_STATE := __SQL_STATE;
+      SQL_MESSAGE := __SQL_MESSAGE;
       if ('' <> registry_get ('VAD_msg'))
       {
-        result (__SQL_STATE, __SQL_MESSAGE);
+        result (SQL_STATE, SQL_MESSAGE);
         registry_set ('VAD_errcount', cast (cast (registry_get ('VAD_errcount') as integer) as varchar));
       }
       goto failure;
@@ -1165,9 +1166,9 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
 
     --result ('', 'The installation encountered an unhandled error:  ');
     --result (__SQL_STATE, __SQL_MESSAGE);
-    if (__SQL_MESSAGE <> 0)
+    if (SQL_STATE <> '00000')
       {
-    log_message(concat(cast(__SQL_STATE as varchar), ' ', cast(__SQL_MESSAGE as varchar)));
+	log_message(concat(cast(SQL_STATE as varchar), ' ', cast(SQL_MESSAGE as varchar)));
       }
     if (registry_get ('VAD_errcount') <> '0')
     log_message(concat(registry_get ('VAD_errcount'), ' error message(s) were reported'));
@@ -2035,17 +2036,34 @@ create procedure "DB"."DBA"."VAD_LOAD_SQL_FILE" (
 
   commit work;
   declare parsed_text any;
-  declare err_sqlstate, commit_err_sqlstate, err_msg, commit_err_msg varchar;
+  declare err_sqlstate, commit_err_sqlstate, err_msg, commit_err_msg, err_rep varchar;
   declare m_dta, result any;
   declare stmt_text varchar;
   declare _maxres integer;
   _maxres := 100;
   commit_err_sqlstate := '00000';
-  parsed_text := sql_split_text(string_output_string(_file_ses));
+  parsed_text := sql_split_text (
+    sprintf ('#pragma line 1 "%s"\n', sql_file_name) ||
+    string_output_string(_file_ses)
+    );
   declare i int;
   i := 0;
   while( i < length(parsed_text) )
   {
+    if (193 = __tag (parsed_text[i]))
+      {
+        rollback work;
+	err_rep := parsed_text[i][1];
+        if (_report_errors = 'report')
+          {
+            if (registry_get ('VAD_wet_run') <> '0')
+              log_message (err_rep);
+            result ('37000', err_rep);
+            registry_set ('VAD_errcount', cast (1 + cast (registry_get ('VAD_errcount') as integer) as varchar));
+          }
+        if (_report_errors = 'signal')
+          signal ('37000', err_rep);
+      }
     aset(parsed_text, i, concat ('--no_c_escapes-\r\n', trim(parsed_text[i], '\r\n ')));
     err_sqlstate := '00000';
     err_msg := '';
@@ -2053,24 +2071,26 @@ create procedure "DB"."DBA"."VAD_LOAD_SQL_FILE" (
     if( err_sqlstate <> '00000' )
     {
       rollback work;
+      err_rep := concat (err_msg, '\nwhile executing the following statement:\n', parsed_text[i], '\nin file:\n', sql_file_name);
       if (_report_errors = 'report')
       {
         if (not (parsed_text[i] like 'drop %'))
         {
           if (registry_get ('VAD_wet_run') <> '0')
-            log_message(concat (err_msg, '\nwhile executing the following statement:\n', parsed_text[i], '\nin file:\n', sql_file_name));
-          result (err_sqlstate, concat (err_msg, '\nwhile executing the following statement:\n', parsed_text[i], '\nin file:\n', sql_file_name));
+            log_message();
+          result (err_sqlstate, err_rep);
           registry_set ('VAD_errcount', cast (1 + cast (registry_get ('VAD_errcount') as integer) as varchar));
         }
       }
       if (_report_errors = 'signal')
       {
         if (not (parsed_text[i] like 'drop %'))
-          signal (err_sqlstate, concat (err_msg, '\nwhile executing the following statement:\n', parsed_text[i], '\nin file:\n', sql_file_name));
+          signal (err_sqlstate, err_rep);
       }
     }
     i := i+1;
   }
+end_of_file:  
   exec ('commit work', commit_err_sqlstate, commit_err_msg);
 }
 ;
