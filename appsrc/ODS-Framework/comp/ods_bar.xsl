@@ -607,8 +607,8 @@ OAT.Dom.show('HD-ODS-BAR');
 
 
 <xsl:template match="vm:odsbar_applications_menu">
-    <?vsp
-      {
+  <?vsp
+    {
 
 
 
@@ -624,8 +624,8 @@ OAT.Dom.show('HD-ODS-BAR');
                      vector ('eCRM', 'eCRM'),
                      vector ('Bookmark', 'bookmark'),
                      vector ('nntpf','Discussion')
-
                     );
+
       arr_notlogged := vector (
                                vector ('Community', 'Community'),
                                vector ('WEBLOG2', 'blog2'),
@@ -635,15 +635,16 @@ OAT.Dom.show('HD-ODS-BAR');
                                vector ('eCRM', 'eCRM'),
                                vector ('Bookmark', 'bookmark'),
                                vector ('nntpf','Discussion')
-                        );
+                              );
 
-       declare arr_url any;
-       arr_url := vector ('nntpf',rtrim(self.odsbar_ods_gpath,'/ods/')||'/nntpf/'
-                          --packagename, fullurl - uses iven url of type key1,kye1value,
+      declare arr_url any;
+      arr_url := vector ('nntpf',rtrim(self.odsbar_ods_gpath,'/ods/')||'/nntpf/'
+                          --packagename, fullurl - uses given url of type key1,kye1value,
                           --                                             key2,key2value
                          );
 
-      if (length(self.sid)=0) arr :=arr_notlogged;
+      if (length (self.sid) = 0) 
+        arr := arr_notlogged;
 
       foreach (any app in arr) do
         {
@@ -662,21 +663,24 @@ OAT.Dom.show('HD-ODS-BAR');
 
           }else
           {
-           url_value:=sprintf ('%sapp_inst.vspx?app=%s&ufname=%V&l=1',self.odsbar_ods_gpath, app[0],  coalesce(self.odsbar_fname,self.odsbar_u_name) );
+           url_value := sprintf ('%sapp_inst.vspx?app=%s&ufname=%V&l=1',
+                                 self.odsbar_ods_gpath, 
+                                 app[0],
+                                 coalesce(self.odsbar_fname, self.odsbar_u_name));
           }
 
           declare url_class varchar;
           url_class:='';
 
-          if(self.odsbar_app_type = app[0] and get_keyword('app_type',self.odsbar_inout_arr) is null){
-             url_class:='sel';
-          }else if ( get_keyword('app_type',self.odsbar_inout_arr) is not null
-                     and
-                     get_keyword('app_type',self.odsbar_inout_arr) = app[0]
-                   )
-          {
-             url_class:='sel';
-          }
+          if (self.odsbar_app_type = app[0] and get_keyword ('app_type', self.odsbar_inout_arr) is null) 
+            {
+              url_class := 'sel';
+            } 
+          else if (get_keyword ('app_type',self.odsbar_inout_arr) is not null and
+                   get_keyword ('app_type',self.odsbar_inout_arr) = app[0])
+            {
+              url_class := 'sel';
+            }
     ?>
         <li class="<?V url_class ?>">
            <v:url name="slice1" url="--url_value"
