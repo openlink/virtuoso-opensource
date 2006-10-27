@@ -38,6 +38,7 @@
   <xsl:param name="baseadjust"/>
   <xsl:param name="sid"/>
   <xsl:param name="realm"/>
+    <xsl:param name="ods-bar"/>
     <html>
  <header>	
   <title><xsl:value-of select="$ti_cluster_name"/>.<xsl:value-of select="$ti_local_name"/></title>
@@ -55,6 +56,10 @@
 	<div id="page">
 	  <div id="header">
             <xsl:copy-of select="$ods-bar"/>
+            <img>
+              <xsl:attribute name="src"><xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/></xsl:attribute>
+            </img>
+
 	    <!--xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute-->
 	    <div class="login-area" style="display: none">
     <xsl:apply-templates select="//img[@id='login-image']"/>

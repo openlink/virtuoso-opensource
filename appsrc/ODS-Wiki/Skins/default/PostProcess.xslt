@@ -53,10 +53,14 @@
 	      href="{wv:atom_pub_uri($ti_cluster_name)}"/>
       </header>
       <body>
+        <!-- <xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute> -->
 	<div id="page">
 	  <div id="header">
             <xsl:copy-of select="$ods-bar"/>
-<!-- xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute-->
+            <img>
+              <xsl:attribute name="src"><xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/></xsl:attribute>
+            </img>
+
 <!--div class="login-area" style="display: none">
 	      <xsl:apply-templates select="//img[@id='login-image']"/>
 	      <xsl:apply-templates select="//a[@id='login-link']"/>
