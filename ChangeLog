@@ -1,3 +1,11 @@
+2006-10-27 18:52  source
+
+	* Added missing icon
+
+2006-10-27 18:45  source
+
+	* Set version to 4.5.6 for final release
+
 2006-10-27 16:43  source
 
 	* Fixed library ordering for PHP5 build
