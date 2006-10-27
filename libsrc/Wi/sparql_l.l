@@ -439,6 +439,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{L}{A}{N}{G}{M}{A}{T}{C}{H}{E}{S}	{ return LANGMATCHES_L	; }
 <SPARQL>{L}{I}{K}{E}			{ return LIKE_L		; }
 <SPARQL>{L}{I}{M}{I}{T}			{ return LIMIT_L	; }
+<SPARQL>{M}{A}{K}{E}			{ return MAKE_L	; }
 <SPARQL>{N}{A}{M}{E}{D}			{ return NAMED_L	; }
 <SPARQL>{N}{I}{L}			{ return NIL_L		; }
 <SPARQL>{N}{O}{T}			{ return NOT_L		; }
@@ -517,7 +518,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
     return QUEST_COLON_PARAMNUM;
   }
 
-<SPARQL>[$]"?"{SPAR_PARAMNAME}	{
+<SPARQL>[$]"?"	{
     char buf[20]; sprintf (buf, ":%ld", sparp->sparp_sparqre->sparqre_param_ctr[0]);
     sparp->sparp_sparqre->sparqre_param_ctr[0] += 1;
     sparyylval.box = t_box_dv_uname_string (buf);
