@@ -43,8 +43,8 @@ virtuoso_php5_t_CFLAGS  += -D_PHP -DZTS -DPTHREADS
 virtuoso_php5_t_LDFLAGS  = $(VIRT_AM_LDFLAGS) 
 
 virtuoso_php5_t_LDADD = \
+	$(php5_LDFLAGS) -lxml2 \
         ../../virtuoso/libvirtuoso-t.la \
-	$(php5_LDFLAGS) \
 	@LIBS@ \
 	-lm
 
@@ -63,9 +63,9 @@ virtuoso_iodbc_php5_t_CFLAGS  += -D_PHP -DZTS -DPTHREADS
 virtuoso_iodbc_php5_t_LDFLAGS  = $(VIRT_AM_LDFLAGS)
 
 virtuoso_iodbc_php5_t_LDADD = \
+	$(php5_LDFLAGS) -lxml2 \
 	$(iodbc_LDFLAGS) \
         ../../virtuoso/libvirtuoso-t.la \
-	$(php5_LDFLAGS) \
 	@LIBS@ \
 	-lm
 
