@@ -360,9 +360,9 @@ create trigger WIKI_WA_MEMBERSHIP after update  on DB.DBA.WA_MEMBER order 100 re
   if (_cluster_name is null)
     return;
   declare _role varchar;
-  if (N.WAM_MEMBER_TYPE = 1) -- author
+  if (N.WAM_MEMBER_TYPE in (1,2)) -- author
     _role := _cluster_name || 'Writers';
-  else if (N.WAM_MEMBER_TYPE = 2) -- reader
+  else if (N.WAM_MEMBER_TYPE = 3) -- reader
     _role := _cluster_name || 'Readers';
   else
     signal ('WK001', 'Such membership is not supported ' || cast (N.WAM_MEMBER_TYPE as varchar));
@@ -403,12 +403,12 @@ create trigger WIKI_WA_MEMBERSHIP_OPEN after insert on DB.DBA.WA_MEMBER order 10
   declare _cluster_name varchar;
   _cluster_name := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = _cluster_id);
   declare _role varchar;
-  if (N.WAM_MEMBER_TYPE = '1') -- owner
+  if (N.WAM_MEMBER_TYPE in (1,2)) -- owner
     _role := _cluster_name || 'Writers';
-  else if (N.WAM_MEMBER_TYPE = '2') -- member
+  else if (N.WAM_MEMBER_TYPE = 3) -- member
     _role := _cluster_name || 'Readers';
   else
-    signal ('WK001', 'Such membership is not supported');
+    signal ('WK001', 'Such membership is not supported ' || cast (N.WAM_MEMBER_TYPE as varchar) );
   DB.DBA.USER_GRANT_ROLE (_user, _role);
 }
 ;
