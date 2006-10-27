@@ -141,3 +141,120 @@ WHERE
   http ('</TABLE>');
 }
 ;
+
+select case (isstring (registry_get ('URIQADefaultHost'))) when 0 then
+  signal ('URIQA', 'Default host name is not set in [URIQA] section of virtuoso configuration file')
+  else 'OK' end
+;
+
+TTLP ('
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
+@prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#> .
+
+virtrdf:DefaultQuadStorage
+  rdf:type virtrdf:QuadStorage ;
+  virtrdf:qsUserMaps virtrdf:DefaultQuadStorage-UserMaps ;
+  virtrdf:qsDefaultMap virtrdf:DefaultQuadMap .
+virtrdf:DefaultQuadStorage-UserMaps
+      rdf:type virtrdf:array-of-QuadMap .
+  ', '', 'http://www.openlinksw.com/schemas/virtrdf#' )
+;
+
+create procedure DB.DBA.SPARQL_QM_RUN (in txt varchar)
+{
+  declare REPORT, STUB, stat, msg, sqltext varchar;
+  declare metas, rowset any;
+  result_names (REPORT/*, STUB*/);
+  sqltext := string_output_string (sparql_to_sql_text (txt));
+--  dump_large_text_impl (sqltext);
+  stat := '00000';
+  msg := '';
+  rowset := null;
+  exec (sqltext, stat, msg, vector (), 1000, metas, rowset);
+  result ('STATE=' || stat || ': ' || msg/*, ''*/);
+  if (rowset is not null)
+    {
+      foreach (any r in rowset) do
+        result (r[0] || ': ' || r[1]/*, ''*/);
+    }
+}
+;
+
+
+
+DB.DBA.SPARQL_QM_RUN ('
+drop graph iri("http://^{URIQADefaultHost}^/dataspace") .
+create quad storage virtrdf:dataspace
+  {
+  } .
+drop quad storage virtrdf:dataspace .
+'
+);
+
+DB.DBA.RDF_QM_END_ALTER_QUAD_STORAGE ( UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage' )
+;
+
+DB.DBA.SPARQL_QM_RUN ('
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+drop graph iri("http://^{URIQADefaultHost}^/dataspace") .
+create iri class oplsioc:user_iri  "http://^{URIQADefaultHost}^/sys/user?id=%d" (in uid integer not null) .
+create iri class oplsioc:group_iri "http://^{URIQADefaultHost}^/sys/group?id=%d" (in gid integer not null) .
+create iri class oplsioc:membership_iri "http://^{URIQADefaultHost}^/sys/membersip?super=%d&sub=%d" (in super integer not null, in sub integer not null) .
+create iri class oplsioc:dav_iri "http://^{URIQADefaultHost}^%s" (in path varchar) .
+create iri class oplsioc:grantee_iri using
+  function DB.DBA.RDF_DF_GRANTEE_ID_URI (in id integer) returns varchar ,
+  function DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE (in id_iri varchar) returns integer .
+make oplsioc:user_iri subclass of oplsioc:grantee_iri .
+make oplsioc:group_iri subclass of oplsioc:grantee_iri .
+')
+;
+
+DB.DBA.SPARQL_QM_RUN ('
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+alter quad storage virtrdf:DefaultQuadStorage
+  {
+#    create virtrdf:DefaultQuadMap using storage virtrdf:DefaultQuadStorage .
+    create virtrdf:SysUsers as graph iri ("http://^{URIQADefaultHost}^/dataspace") option (exclusive)
+      {
+        oplsioc:user_iri (DB.DBA.SYS_USERS.U_ID)
+            a sioc:user where (^{alias}^.U_IS_ROLE = 0)
+                    as virtrdf:SysUserTypeUser ;
+            sioc:email DB.DBA.SYS_USERS.U_E_MAIL
+                    as virtrdf:SysUsersEMail ;
+            sioc:login DB.DBA.SYS_USERS.U_NAME
+                    as virtrdf:SysUsersName ;
+            oplsioc:home oplsioc:dav_iri (DB.DBA.SYS_USERS.U_HOME) where (^{alias}^.U_DAV_ENABLE = 1)
+                    as virtrdf:SysUsersHome ;
+            oplsioc:name DB.DBA.SYS_USERS.U_FULL_NAME where (^{alias}^.U_IS_ROLE = 0)
+                    as virtrdf:SysUsersFullName .
+        oplsioc:group_iri (DB.DBA.SYS_USERS.U_ID)
+            a sioc:role where (^{alias}^.U_IS_ROLE = 1)
+                    as virtrdf:SysUserTypeRole .
+        oplsioc:group_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER)
+            sioc:has_member oplsioc:grantee_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUB)
+                    as virtrdf:SysRoleGrantsHasMember ;
+            oplsioc:group_of_membership
+                oplsioc:membership_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER, DB.DBA.SYS_ROLE_GRANTS.GI_SUB)
+                    as virtrdf:SysRoleGrantsGroupOfMembership .
+        oplsioc:grantee_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUB)
+            sioc:has_function oplsioc:group_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER)
+                    as virtrdf:SysRoleGrantsHasFunction ;
+            oplsioc:member_of
+                oplsioc:membership_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER, DB.DBA.SYS_ROLE_GRANTS.GI_SUB)
+                    as virtrdf:SysRoleGrantsMemberOfMembership .
+        oplsioc:membership_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER, GI_SUB)
+            oplsioc:is_direct GI_DIRECT
+                    as virtrdf:SysRoleGrantsMembershipIsDirect ;
+            rdf:type oplsioc:grant
+                    as virtrdf:SysRoleGrantsTypeMembership .
+      }
+  }
+')
+;
+
