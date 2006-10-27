@@ -5557,7 +5557,7 @@ window.onload = function (e)
           </th>
           <td>
             <label for="friendship-contact"><input class="valinp" type="radio" name="friendship" value="contact" id="friendship-contact" />contact </label>
-            <label for="friendship-aquaintance"><input class="valinp" type="radio" name="friendship" value="acquaintance" id="friendship-aquaintance" />acquaintance </label>
+            <label for="friendship-acquaintance"><input class="valinp" type="radio" name="friendship" value="acquaintance" id="friendship-acquaintance" />acquaintance </label>
             <label for="friendship-friend"><input class="valinp" type="radio" name="friendship" value="friend" id="friendship-friend" />friend </label>
             <label for="friendship-none"><input class="valinp" type="radio" name="friendship" value="" id="friendship-none" />none</label>
           </td>
