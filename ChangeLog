@@ -1,3 +1,173 @@
+2006-10-27 16:43  source
+
+	* Fixed library ordering for PHP5 build
+
+2006-10-27 16:10  source
+
+	* Small typo and cleanup
+
+2006-10-27 16:09  source
+
+	* Fixed settings screen
+
+2006-10-27 16:07  source
+
+	* Added banner to both skins
+
+2006-10-27 15:41  source
+
+	* More icon related fixes
+
+2006-10-27 14:30  source
+
+	* Set version to 4.5.6-rc2
+
+2006-10-27 13:44  source
+
+	* Removed debugging line from script
+
+2006-10-27 13:30  source
+
+	* Fixed membership check
+
+2006-10-27 13:29  source
+
+	* Fixed problem with Briefcase instance
+
+2006-10-27 13:27  source
+
+	* Added bookmark gems
+
+2006-10-27 13:19  source
+
+	* Fixed spelling
+
+2006-10-27 11:40  source
+
+	* Set version to 4.5.6-rc1
+
+2006-10-27 11:36  source
+
+	* Fixed whitespace
+
+2006-10-27 11:35  source
+
+	* Fixed bugs that prevented VAD_INSTALL from properly reporting syntax
+	  errors in sql files that are executed during installation
+
+2006-10-27 11:28  source
+
+	* Changed images
+
+2006-10-27 10:52  source
+
+	* Added 'dataspace' SPARQL storage with an example for users/groups
+
+2006-10-27 10:51  source
+
+	* Added option to trim trailing spaces in CHAR(N) col from a remote table
+
+2006-10-27 10:51  source
+
+	* Changed syntax for subclass declaration
+
+2006-10-27 10:50  source
+
+	* Fixed GPF on nesting calls of bif_exec
+
+2006-10-26 12:25  source
+
+	* Make sure mediawiki plugin is available
+
+2006-10-26 12:22  source
+
+	* Merged changes from upstream OAT tree
+
+2006-10-26 12:03  source
+
+	* Ignore error message
+
+2006-10-26 10:42  source
+
+	* Fixed speed issue on large db
+
+2006-10-26 10:41  source
+
+	* Fixed typo
+
+2006-10-26 09:03  source
+
+	* Fixed version number calculation
+
+2006-10-25 23:52  source
+
+	* Fix for grid expand
+	* Change windows style to auto
+
+2006-10-25 23:16  source
+
+	* Removed debugging code
+
+2006-10-25 23:15  source
+
+	* Fixed bug with virtual directory and private instances
+	* Fixed RSS support
+
+2006-10-25 23:14  source
+
+	* Fixed bug with virtual directory and private instances
+
+2006-10-25 20:55  source
+
+	* Fixed spelling
+
+2006-10-25 20:53  source
+
+	* Use OAT global namespace
+	* Changed label "Set User" to "Set Owner"
+
+2006-10-25 20:52  source
+
+	* Fix for building vad package on windows
+
+2006-10-25 20:27  source
+
+	* When session is kept in the hash and another thread gets to re-use it,
+	  it must wait until the initial thread finishes
+
+2006-10-25 20:26  source
+
+	* Added w% and measure of how many bufs in io queue
+
+2006-10-25 20:25  source
+
+	* Added sync with flush before going atomic, resulting in shorter
+	  atomic time
+
+2006-10-25 20:24  source
+
+	* Added getrusage bif
+
+2006-10-25 20:20  source
+
+	* Updated caching
+
+2006-10-25 20:19  source
+
+	* Fixed undefined return value in bh_read_dir
+
+2006-10-25 20:18  source
+
+	* Synchronized documentation
+
+2006-10-25 20:18  source
+
+	* Added short Usage description
+
+2006-10-25 10:26  source
+
+	* Regenerated
+
 2006-10-24 12:12  source
 
 	* Version check is greater, not greater or equal
