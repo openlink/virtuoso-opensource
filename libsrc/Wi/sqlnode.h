@@ -1062,32 +1062,38 @@ typedef struct client_connection_s
 #define PROC_SAVE_VARS \
     dk_set_t		 *saved_proc_resultset = NULL; \
     caddr_t		 *saved_proc_comp = NULL; \
-    long		 saved_max = 0; \
-query_instance_t *	 saved_result_qi = NULL; \
-    table_source_t *	saved_result_ts = NULL
+    long		saved_proc_max = 0; \
+    query_instance_t *	saved_proc_result_qi = NULL; \
+    table_source_t *	saved_proc_result_ts = NULL; \
+    ptrlong             saved_proc_resultset_cols = 0
 
 
 #define PROC_RESTORE_SAVED \
-{ \
+do { \
       cli->cli_resultset_comp_ptr = saved_proc_comp; \
       cli->cli_resultset_data_ptr = saved_proc_resultset; \
-      cli->cli_resultset_max_rows = saved_max; \
-      cli->cli_result_qi = saved_result_qi; \
-      cli->cli_result_ts = saved_result_ts;\
-}
+      cli->cli_resultset_max_rows = saved_proc_max; \
+      cli->cli_result_qi = saved_proc_result_qi; \
+      cli->cli_result_ts = saved_proc_result_ts; \
+      cli->cli_resultset_cols = saved_proc_resultset_cols; \
+} while (0)
 
 
 #define PROC_SAVE_PARENT \
+do { \
   saved_proc_comp = cli->cli_resultset_comp_ptr; \
   saved_proc_resultset = cli->cli_resultset_data_ptr; \
-  saved_max = cli->cli_resultset_max_rows; \
-  saved_result_qi = cli->cli_result_qi; \
-  saved_result_ts = cli->cli_result_ts; \
+  saved_proc_max = cli->cli_resultset_max_rows; \
+  saved_proc_result_qi = cli->cli_result_qi; \
+  saved_proc_result_ts = cli->cli_result_ts; \
+  saved_proc_resultset_cols = cli->cli_resultset_cols; \
   cli->cli_resultset_comp_ptr = NULL; \
   cli->cli_resultset_data_ptr = NULL; \
   cli->cli_resultset_max_rows = -1; \
   cli->cli_result_qi = NULL; \
-  cli->cli_result_ts = NULL
+  cli->cli_result_ts = NULL; \
+  cli->cli_resultset_cols = 0; \
+} while (0)
 
 #define CLI_QUAL_ZERO(cli)       (cli)->cli_qualifier = NULL;
 #define CLI_SET_QUAL(cli,q)      { dk_free_box ((cli)->cli_qualifier); (cli)->cli_qualifier = box_string((q)); }

@@ -1034,10 +1034,14 @@ bif_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       else
   {
     long len;
+          long n_args = BOX_ELEMENTS ((caddr_t)args);
     long n_cols = cli->cli_resultset_cols;
     int inx;
     caddr_t * out;
-    len = MAX ((n_cols * sizeof (caddr_t)), (box_length ((caddr_t) args)));
+          if (n_args < n_cols)
+            sqlr_new_error ("22023", "SR534",
+	      "Function resunt() is called with %d arguments, but the declared result-set contains %d columns", n_args, n_cols);
+          len = sizeof (caddr_t) * MAX (n_args, n_cols);
     if (!cli->cli_resultset_data_ptr)
       {
         caddr_t anil = NEW_DB_NULL;
@@ -10514,7 +10518,17 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	dk_free_tree ((caddr_t) proc_comp);
 
       if (n_args > 6 && ssl_is_settable (args[6]) && proc_resultset)
-	qst_set (qst, args[6], list_to_array (dk_set_nreverse (proc_resultset)));
+        {
+          caddr_t ** rset = ((caddr_t **)list_to_array (dk_set_nreverse (proc_resultset)));
+#ifdef MALLOC_DEBUG
+          dk_check_tree (qst_get (qst, args[6]));
+          dk_check_tree (rset);
+#endif
+	  qst_set (qst, args[6], rset);
+#ifdef MALLOC_DEBUG
+          dk_check_tree (qst_get (qst, args[6]));
+#endif
+        }
       else if (n_args > 6 && ssl_is_settable (args[6]) && lc)
 	qst_set (qst, args[6], box_num (lc->lc_row_count));
       else
