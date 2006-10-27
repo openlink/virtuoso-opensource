@@ -67,6 +67,7 @@ th { text-align: left;}
 /* Middle */
 
 #MD {
+  width: 100%;
   float: left;
   clear: both;
   padding: 0;
