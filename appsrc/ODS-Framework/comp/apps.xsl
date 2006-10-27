@@ -32,10 +32,16 @@
     <v:expression>
       <![CDATA[
         select WAT_NAME, WAT_DESCRIPTION, WAT_TYPE
-        from WA_TYPES where WAT_NAME <> \'WA\'
+          from WA_TYPES
+         where WAT_NAME <> \'WA\'
+           and ((WAT_NAME <> \'oDrive\')
+                 or
+                (not exists (select 1 from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = \'oDrive\' and WAI_NAME = WAM_INST and WAM_USER = ?))
+               )
         order by 1
       ]]>
     </v:expression>
+    <v:param name="P1" value="self.u_id"/>
     <v:column name="WAT_NAME" label="Name" />
     <v:column name="WAT_DESCRIPTION" label="Description" />
   </v:data-source>
