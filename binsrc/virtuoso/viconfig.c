@@ -115,6 +115,8 @@ extern char *temp_ses_dir;
 extern char *server_default_language_name;
 extern long vdb_no_stmt_cache; /* from sqlrrun.c */
 extern char *vdb_odbc_error_file; /* from sqlrrun.c */
+extern char *vdb_trim_trailing_spaces; /* from sqlrrun.c */
+extern long cfg_disable_vdb_stat_refresh;
 #ifdef _SSL
 extern char *https_port;
 extern char *https_cert;
@@ -251,9 +253,11 @@ int32 c_server_thread_sz = 50000;
 int32 c_main_thread_sz = 140000;
 int32 c_future_thread_sz = 140000;
 int32 c_vdb_no_stmt_cache = 0;
+int32 c_cfg_disable_vdb_stat_refresh = 0;
 int32 c_skip_dml_primary_key = 0;
 int32 c_remote_pk_not_unique = 0;
 char *c_vdb_odbc_error_file = NULL;
+char *c_vdb_trim_trailing_spaces = NULL;
 extern int sqlc_no_remote_pk;
 extern int remote_pk_not_unique;
 
@@ -1249,6 +1253,10 @@ cfg_setup (void)
     c_remote_pk_not_unique = 0;
   if (cfg_getlong (pconfig, "VDB", "UseGlobalPool", &c_vdb_use_global_pool) == -1)
     c_vdb_use_global_pool = 0;
+  if (cfg_getstring (pconfig, "VDB", "TrimTrailingSpacesForDSN", &c_vdb_trim_trailing_spaces))
+    c_vdb_trim_trailing_spaces = NULL;
+  if (cfg_getlong (pconfig, "VDB", "DisableVDBStatisticsRefresh", &c_cfg_disable_vdb_stat_refresh) == -1)
+    c_cfg_disable_vdb_stat_refresh = 0;
 
   if (c_vdb_use_global_pool < 0 || c_vdb_use_global_pool > 1)
     c_vdb_use_global_pool = 0;
@@ -1458,7 +1466,9 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
 
   vdb_serialize_connect = c_vdb_serialize_connect;
   vdb_no_stmt_cache = c_vdb_no_stmt_cache;
+  cfg_disable_vdb_stat_refresh = c_cfg_disable_vdb_stat_refresh;
   vdb_odbc_error_file = c_vdb_odbc_error_file;
+  vdb_trim_trailing_spaces = c_vdb_trim_trailing_spaces;
   sqlc_no_remote_pk = c_skip_dml_primary_key;
   remote_pk_not_unique = c_remote_pk_not_unique;
   default_collation_name = c_default_collation_name;

@@ -900,6 +900,7 @@ extern int dive_cache_enable;
 extern long dbev_enable; /* from sqlsrv.c */
 extern int in_srv_global_init;
 extern long vd_param_batch;
+extern long cfg_disable_vdb_stat_refresh;
 
 #define VD_ARRAY_PARAMS_NONE 0
 #define VD_ARRAY_PARAMS_DML  1

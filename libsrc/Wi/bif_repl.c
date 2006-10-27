@@ -41,6 +41,7 @@
 
 static client_connection_t *sched_cli;
 unsigned long cfg_scheduler_period = 0;
+long cfg_disable_vdb_stat_refresh = 0;
 
 void
 sched_set_thread_count (void)
@@ -82,6 +83,7 @@ void
 sched_run_at_start (void)
 {
 #if UNIVERSE 
+  if (!cfg_disable_vdb_stat_refresh)
   sched_do_round_1 ("DB.DBA.SYS_STAT_VDB_SYNC ()");
 #endif  
 }
