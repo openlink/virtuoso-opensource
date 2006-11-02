@@ -655,7 +655,15 @@ ws_auth_get (ws_connection_t * ws)
 	    res = box_string ("- -");
 	}
     }
+
   dk_free_box (auth);
+
+  /*
+   * Make sure we return something
+   */
+  if (!res)
+    res = box_string ("- -");
+
   return res;
 }
 
