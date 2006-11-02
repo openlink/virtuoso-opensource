@@ -38,6 +38,10 @@
 #include "multibyte.h"
 
 #ifndef WIN32
+#include <pwd.h>
+#endif
+
+#ifndef WIN32
 #if defined (__APPLE__)
 #undef _T
 #endif
@@ -318,7 +322,8 @@ ParseOptions (TCHAR *s, int clean_up)
       if (*cp)
 	{
 	  *cp++ = 0;
-	  if (_tcsicmp (s, attrs[oDATABASE].shortName) || _tcsicmp (cp, DEFAULT_DATABASE_PER_USER))
+	  if (_tcsicmp (s, attrs[oDATABASE].shortName)
+	      || _tcsicmp (cp, DEFAULT_DATABASE_PER_USER))
 	    for (i = 0; i < sizeof (attrs) / sizeof (attrs[0]); i++)
 	      {
 		if (attrs[i].shortName && !_tcsicmp (attrs[i].shortName, s))
@@ -349,25 +354,79 @@ ParseOptions (TCHAR *s, int clean_up)
 
 #if defined (DSN_TRANSLATION) && !defined (WIN32)
   {
-    PCONFIG pConfig;
-    char iniFile[1024];
-    char *value, *long_name, *section_narrow;
+    PCONFIG pConfig, cfg_odbc_sys, cfg_odbc_usr;
+    char *odbcini_sys, *odbcini_usr, *ptr;
+    char path[1024];
+    char *long_name, *section_narrow;
     TCHAR *valueW;
 
-    if ((value = getenv ("ODBCINI")) != NULL)
-      snprintf (iniFile, sizeof (iniFile), value);
-    else
+    /*
+     *  1a. Find out where system odbc.ini resides
+     */
+    if ((odbcini_sys = getenv ("ODBCINI")) == NULL
+	|| access (odbcini_sys, R_OK))
+      odbcini_sys = "/etc/odbc.ini";
+
+    /* 
+     *  1b. The default system odbc.ini on Mac OS X is located in 
+     *      /Library/ODBC/odbc.ini 
+     */
+#ifdef __APPLE__
+    if (access (odbcini_sys, R_OK) != 0)
+      odbcini_sys = "/Library/ODBC/odbc.ini";
+#endif
+
+    /*
+     *  1c. Open system odbc.ini
+     */
+    cfg_init (&cfg_odbc_sys, odbcini_sys);
+
+
+    /*
+     *  2a. Find out where user odbc.ini resides
+     */
+    if ((ptr = getenv ("HOME")) == NULL)
       {
-	if ((value = getenv ("HOME")) != NULL)
-	  snprintf (iniFile, sizeof (iniFile), "%s/.odbc.ini", value);
-	else
-	  strcpy_ck (iniFile, "odbc.ini");
+	ptr = (char *) getpwuid (getuid ());
+
+	if (ptr != NULL)
+	  ptr = ((struct passwd *) ptr)->pw_dir;
       }
+
+    if (ptr != NULL)
+      snprintf (path, sizeof (path), "%.200s/.odbc.ini", ptr);
+    else
+      snprintf (path, sizeof (path), ".odbc.ini");
+
+    /* 
+     *  2b. The default user odbc.ini on Mac OS X is located in 
+     *      ~/Library/ODBC/odbc.ini 
+     */
+#ifdef __APPLE__
+    if (access (path, R_OK) != 0)
+      {
+	snprintf (path, sizeof (path), "%.200s/Library/ODBC/odbc.ini",
+	    ptr ? ptr : "");
+      }
+#endif
+
+    /*
+     *  2c. Open user odbc.ini
+     */
+    odbcini_usr = path;
+    cfg_init (&cfg_odbc_usr, odbcini_usr);
 
     cli_dbg_printf (("USING %s\n", iniFile));
 
-    cfg_init (&pConfig, iniFile);
     section_narrow = virt_wide_to_ansi (section);
+
+    /*
+     *  Check where DSN is registered
+     */
+    if (cfg_find (cfg_odbc_usr, section_narrow, NULL) == 0)
+      pConfig = cfg_odbc_usr;
+    else
+      pConfig = cfg_odbc_sys;
 #endif
 
     for (i = 0; i < sizeof (attrs) / sizeof (attrs[0]); i++)
@@ -381,10 +440,12 @@ ParseOptions (TCHAR *s, int clean_up)
 # else
 	  valueW = NULL;
 	  long_name = virt_wide_to_ansi (attrs[i].longName);
+
 	  if (cfg_find (pConfig, section_narrow, long_name) == -1)
 	    valueW = attrs[i].defVal;
 	  else
 	    valueW = virt_ansi_to_wide (pConfig->value);
+
 	  free_wide_buffer (long_name);
 	  _tcsncpy (attrs[i].data, valueW, attrs[i].maxLength);
 	  attrs[i].data[attrs[i].maxLength] = 0;
@@ -397,7 +458,8 @@ ParseOptions (TCHAR *s, int clean_up)
 	}
 
 #if defined (DSN_TRANSLATION) && !defined (WIN32)
-    cfg_done (pConfig);
+    cfg_done (cfg_odbc_usr);
+    cfg_done (cfg_odbc_sys);
     free_wide_buffer (section_narrow);
   }
 #endif
