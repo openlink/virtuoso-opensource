@@ -64,7 +64,7 @@
 #include "crsr.h"
 #include "sqltype.h"
 #include "sqlbif.h"
-#include "soap.h" /* a SOAP related contants */
+#include "soap.h" /* a SOAP related constants */
 #include "subseq.h"
 #include "sqlcmps.h"
 #include "sqlcstate.h"
@@ -2905,7 +2905,7 @@ base_data_type
 		{ $$ = t_listst (2, (long) DV_ANY, (long) 0); }
 	| ANY '(' INTNUM ')'
 		{
-		  assert_ms_compat("Columns of type ANY (length) may be created only in MS-compartibility mode");
+		  assert_ms_compat("Columns of type ANY (length) may be created only in MS-compatibility mode");
 		  $$ = t_listst (2, (long) DV_ANY, (long) 0);
 		}
 	| IRI_ID '(' INTNUM ')'
@@ -2997,7 +2997,7 @@ column
 
 	| identifier '.' identifier '.' identifier '.' identifier
 		{
-		  assert_ms_compat("Qualified column names are allowed only in MS-compartibility mode.");
+		  assert_ms_compat("Qualified column names are allowed only in MS-compatibility mode.");
 		  $$ = $7;
 		}
 	;
@@ -3849,7 +3849,7 @@ user_defined_type_drop
 	;
 
 opt_external_and_language_clause
-	: /* enpty */ { $$ = NULL; }
+	: /* empty */ { $$ = NULL; }
 	| LANGUAGE language_name EXTERNAL NAME_L STRING
 	     {
 	       $$ = t_listst (3, UDT_EXT,

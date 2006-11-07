@@ -82,7 +82,7 @@ void
 buf_cancel_write (buffer_desc_t * buf)
 {
   /* remove from write queue, mostly as a result of a dirty buffer going empty.
-   * Note that the buf may simultaneously be cancelled on one thread and rem'd from write queue by the writer thread.
+   * Note that the buf may simultaneously be canceled on one thread and rem'd from write queue by the writer thread.
    * this is if the bufffer is occupied when the write turn comes, the write will be skipped and the buffer rem'd from the queue.
    * Thus the bd_iq of an occupied buffer can be async reset by another thread. */
   io_queue_t * iq = buf->bd_iq;

@@ -148,11 +148,11 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 		 left_col->col_collation, left_col->col_collation) ||
 	       DVC_GREATER == cmp_boxes ((caddr_t) lower->_.bin.right->dfe_tree, left_col->col_max,
 		 left_col->col_collation, left_col->col_collation)))
-	    { /* the boundry is constant and its outside min/max */
+	    { /* the boundary is constant and its outside min/max */
 	      *a1 = 0.0001; /* out of range.  Because unsure, do not make  it exact 0 */
 	    }
 	  else if (DFE_IS_CONST (lower->_.bin.right) && left_col->col_hist)
-	    { /* the boundry is constant and there is a column histogram */
+	    { /* the boundary is constant and there is a column histogram */
 	      int inx, n_level_buckets = 0;
 
 	      DO_BOX (caddr_t *, bucket, inx, ((caddr_t **)left_col->col_hist))
@@ -197,11 +197,11 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 	      left_col->col_max && DV_TYPE_OF (left_col->col_max) != DV_DB_NULL &&
 	      DVC_GREATER == cmp_boxes ((caddr_t) lower->_.bin.right->dfe_tree, left_col->col_max,
 		left_col->col_collation, left_col->col_collation))
-	    { /* lower boundry is a constant and it's above the max */
+	    { /* lower boundary is a constant and it's above the max */
 	      *a1 = 0.001;
 	    }
 	  else if (DFE_IS_CONST (lower->_.bin.right) && left_col->col_hist)
-	    { /* lower bondry is a constant and there's a col histogram */
+	    { /* lower boundary is a constant and there's a col histogram */
 	      int inx;
 
 	      DO_BOX (caddr_t *, bucket, inx, ((caddr_t **)left_col->col_hist))
@@ -222,11 +222,11 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 	      left_col->col_min && DV_TYPE_OF (left_col->col_min) != DV_DB_NULL &&
 	      DVC_LESS == cmp_boxes ((caddr_t) lower->_.bin.right->dfe_tree, left_col->col_min,
 		left_col->col_collation, left_col->col_collation))
-	    { /* upper boundry is a constant and it's below the min */
+	    { /* upper boundary is a constant and it's below the min */
 	      *a1 = 0.001;
 	    }
 	  else if (DFE_IS_CONST (lower->_.bin.right) && left_col->col_hist)
-	    { /* upper bondry is a constant and there's a col histogram */
+	    { /* upper boundary is a constant and there's a col histogram */
 	      int inx;
 
 	      DO_BOX (caddr_t *, bucket, inx, ((caddr_t **)left_col->col_hist))
@@ -916,7 +916,7 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
 		{
 		  is_inx_const = 0;
 		  if (inx_const_fill && nth_part == inx_const_fill)
-		    inx_arity_guess_for_const_parts = inx_arity / p_arity; /* inx_arity before being multiplied by the p_arity of the non-const part.  Set exactly once, after seeingthe first non-constant key part. */
+		    inx_arity_guess_for_const_parts = inx_arity / p_arity; /* inx_arity before being multiplied by the p_arity of the non-const part.  Set exactly once, after seeing the first non-constant key part. */
 		}
 		      
 	      if (!lower || BOP_EQ != lower->_.bin.op)
@@ -954,7 +954,7 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
 	inx_arity = 0.01;
       else 
 	inx_arity = inx_sample * inx_arity / (inx_arity_guess_for_const_parts != -1 ? inx_arity_guess_for_const_parts : inx_arity);
-      /* Consider if 2 first key parts are const and third is var.  Getthe real arity for the const but do not forget the guess  for  the 3rd*/
+      /* Consider if 2 first key parts are const and third is var.  Get the real arity for the const but do not forget the guess  for  the 3rd*/
       dfe->_.table.is_arity_sure = 1;
     no_sample: ;
     }
@@ -1222,7 +1222,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 		}
 	      if (is_distinct)
 		{
-		  /* assume 10% are droped, 1.2 * hash ref cost per incoming */
+		  /* assume 10% are dropped, 1.2 * hash ref cost per incoming */
 		  *u1 += *a1 * HASH_LOOKUP_COST * 1.3;
 		  *a1 *= 0.9;
 		}

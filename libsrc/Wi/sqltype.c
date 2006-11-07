@@ -3327,7 +3327,7 @@ sqlp_udt_identifier_chain_to_member_handler (dk_set_t idents, caddr_t args, int 
   caddr_t member_name = NULL, obj_name = NULL;
 
   if (set_len < 3)
-    SQL_GPF_T1 (top_sc->sc_cc, "Invalid member observer indetifier chain");
+    SQL_GPF_T1 (top_sc->sc_cc, "Invalid member observer identifier chain");
   for (iter = idents, inx = 0; iter != NULL && inx < set_len - 2; iter = iter->next, inx++)
     {
       pref_len += (int) strlen ((char *) iter->data);
@@ -3884,7 +3884,7 @@ bif_ddl_udt_get_udt_list_by_user (caddr_t * qst, caddr_t * err_ret, state_slot_t
 
   if (!sec_name_to_user (uid))
     {
-      *err_ret = srv_make_new_error ("22023", "UD104", "Non-existant user %.128s", uid);
+      *err_ret = srv_make_new_error ("22023", "UD104", "Non-existent user %.128s", uid);
       goto finish;
     }
 
@@ -4797,7 +4797,7 @@ udt_alter_class_def (query_instance_t *qi, ST *_tree)
 
       default:
 	  err = srv_make_new_error ("42000", "UD093",
-	      "ALTER TYPE acction not implemented");
+	      "ALTER TYPE action not implemented");
 	  break;
     }
   if (err)

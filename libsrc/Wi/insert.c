@@ -132,7 +132,7 @@ row_reserved_length (db_buf_t row, dbe_key_t * key)
     {
       dtp_t gap = row[len];
       if (!SHORT_REF (row + IE_KEY_ID))
-	GPF_T1 ("a leaf pointer is not suppposed to have the updated flag on");
+	GPF_T1 ("a leaf pointer is not supposed to have the updated flag on");
       if (gap)
 	len += gap;
       else
@@ -158,7 +158,7 @@ pg_make_map (buffer_desc_t * buf)
     {
       log_error (
 	  "Trying to access the database schema data before the schema has been initialized. "
-	  "This is usually caused by an unrecovarable corrupted database file. ");
+	  "This is usually caused by an unrecoverable corrupted database file. ");
       call_exit (-1);
     }
 
@@ -537,9 +537,9 @@ pg_write_compact (it_cursor_t * it, buffer_desc_t * buf_from,
     {
       int space = buf_from->bd_content_map->pm_bytes_free - ROW_ALIGN (insert_len);
       int count = buf_from->bd_content_map->pm_count + (insert ? 1 : 0);
-      if (space < 0) GPF_T1 ("negfateive space left in pg_write_compact");
+      if (space < 0) GPF_T1 ("negative space left in pg_write_compact");
       TC (tc_pg_write_compact);
-      tail = (space / count) & ~3;  /* round to lowrr multiple of 4 */
+      tail = (space / count) & ~3;  /* round to lower multiple of 4 */
       ins_tail = space - count * tail; /* ins tail is in addition to regular tail for the inserted row */
     }
   else if (WRITE_NO_GAP == buf_ext)
@@ -756,7 +756,7 @@ itc_make_leaf_entry (it_cursor_t * itc, db_buf_t row, dp_addr_t to)
     {
       int len = row_length (row, itc->itc_insert_key);
       if (len - IE_LP_FIRST_KEY > MAX_RULING_PART_BYTES)
-	GPF_T1 ("leaf pointer too long in copying a leaf pointer in spliting");
+	GPF_T1 ("leaf pointer too long in copying a leaf pointer in splitting");
       res = (db_buf_t) box_n_bin ((dtp_t *) row, len);
       LONG_SET (res + IE_LEAF, to);
       return res;
@@ -1044,7 +1044,7 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
     ins_leaves_check (buf);
 #endif
   if (len > MAX_ROW_BYTES
-      + 2 /* GK: this is needed bacuse there may be upgrade rows in rfwd */)
+      + 2 /* GK: this is needed bacause there may be upgrade rows in rfwd */)
 
     GPF_T1 ("max row length exceeded in itc_insert_dv");
 
@@ -1919,7 +1919,7 @@ int
 it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int pr_fill, int * pos_ret, int mode)
 {
   /* look at the pr's and see if can rearrange so as to save one or more pages.
-   * if so, verify therearrange and update the pr array. */
+   * if so, verify the rearrange and update the pr array. */
   it_cursor_t itc_auto;
   it_cursor_t * itc = NULL;
   page_rel_t * target_pr;
@@ -2196,7 +2196,7 @@ wi_check_all_compact (int age_limit)
   return;
 #endif 
   if (!dbs)
-    return; /* atthe very start of init*/
+    return; /* at the very start of init */
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
       it_check_compact (it, age_limit);

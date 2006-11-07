@@ -330,7 +330,7 @@ int xpyylex_from_xpp_bufs (caddr_t *yylval, xpp_t *xpp)
 %token <box> XQCNAME			/*:: LITERAL("%s"), XQ, NULL ::*/
 %token <box> XQCNAME_LPAR		/*:: LITERAL("%s ("), XQ, NULL ::*/
 %token <box> XQDQ_NAME_DQ		/*:: LITERAL("\"%s\""), XQ, NULL ::*/
-%token <box> XQDQ_NDQSTRING_DQ		/*:: LITERAL("\"%s\""), XQ, LAST("<Q xmlns:ns=\"http://www.example.com/uri\""), MISS("<Q xmlns:ns=\"some{calculateable}text\""), NULL ::*/
+%token <box> XQDQ_NDQSTRING_DQ		/*:: LITERAL("\"%s\""), XQ, LAST("<Q xmlns:ns=\"http://www.example.com/uri\""), MISS("<Q xmlns:ns=\"some{calculable}text\""), NULL ::*/
 %token <box> XQDQ_NDQSTRING_LBRA	/*:: LITERAL("\"%s{"), XQ, NULL ::*/
 %token <box> XQ_ECSTRING		/*:: LITERAL("%s"), XQ, NULL ::*/
 %token <box> XQNCNAME			/*:: LITERAL("%s"), XQ, NULL ::*/

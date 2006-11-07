@@ -65,7 +65,7 @@ sqlg_ks_out_cols (sqlo_t * so, df_elt_t * tb_dfe, key_source_t * ks)
 	  if (dk_set_member (ks->ks_key->key_parts, (void *) out->_.col.col)
 	      && 0 == strcmp (out->dfe_tree->_.col_ref.prefix, tb_dfe->_.table.ot->ot_new_prefix))
 	    {
-	      /* test also thet the out col is actually from this table since out cols can be overlapped in case of inxop between tables, all mentioned on the top table */
+	      /* test also that the out col is actually from this table since out cols can be overlapped in case of inxop between tables, all mentioned on the top table */
 	      out->dfe_is_placed = DFE_GEN;
 	      sqlg_dfe_ssl (so, out);
 	    dk_set_push (&ks->ks_out_slots, (void *) out->dfe_ssl);
@@ -1428,8 +1428,7 @@ sqlg_dfe_code (sqlo_t * so, df_elt_t * dfe, dk_set_t * code, int succ, int fail,
       }
     case DFE_VALUE_SUBQ:
       {
-	query_t * qr = sqlg_dt_query (so, dfe, NULL, (ST **) t_list (1, dfe->dfe_tree)); /* this is to prevent
-									  assigment of NULL to constant ssl*/
+	query_t * qr = sqlg_dt_query (so, dfe, NULL, (ST **) t_list (1, dfe->dfe_tree)); /* this is to prevent assignment of NULL to constant ssl*/
 	state_slot_t * ssl = qr->qr_select_node->sel_out_slots[0];
 	df_elt_t * org_dfe = sqlo_df (so, dfe->dfe_tree); /* the org one, not a layout copy is used to associate the ssl to the code */
 	org_dfe->dfe_ssl = ssl;

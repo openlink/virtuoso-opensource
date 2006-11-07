@@ -676,7 +676,7 @@ END 	{
 	   print "  sql_class_t *udt = sch_name_to_type (isp_schema (NULL), udt_name);"
 	   print "  if (udt &&  UDT_IS_INSTANTIABLE(udt))"
 	   print "    {"
-	   #print "      log_error (\"Built-in User Defined Type alredy exists: %s\\n\", udt_name);"
+	   #print "      log_error (\"Built-in User Defined Type already exists: %s\\n\", udt_name);"
 	   print "      return 1;"
 	   print "    }"
 	   print "  return 0;"

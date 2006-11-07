@@ -396,7 +396,7 @@ void xenc_nss_add_namespace_prefix (id_hash_t * namespaces, caddr_t * tag,
 }
 
 /*
-   when do a canonzation, make sure that
+   when do a canonization, make sure that
    namespace with same prefix is not occur in ancestor link
  */
 static int ns_is_in_ancestor (dk_set_t nss1, caddr_t pref, caddr_t uri)
@@ -815,7 +815,7 @@ caddr_t xml_doc_subst (xml_doc_subst_t * xs)
     caddr_t * nss = xenc_get_namespaces (xte->xte_current, xs->xs_namespaces);
     /* when at top of parent link we have same namespaces,
        then it's already there; no need to put it twise
-       furthemore that will screw-up detection of repeating NS declaration
+       furthermore that will screw-up detection of repeating NS declaration
        from ancestors.
      */
     if (xs->xs_parent_link && xs->xs_parent_link->data == nss)

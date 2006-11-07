@@ -83,7 +83,7 @@ repl_set_synced (repl_acct_t *ra, int synced, int disconnect_parent)
   if (disconnect_parent)
     {
       /* queue [publisher -> subscriber] disconnect */
-      dbg_printf_1 (("repl_set_synced: queueing parent disconnect: account '%s' (server '%s')",
+      dbg_printf_1 (("repl_set_synced: queuing parent disconnect: account '%s' (server '%s')",
           ra->ra_account, ra->ra_server));
       ra->ra_parent->ra_synced = RA_TO_DISCONNECT;
     }
@@ -120,20 +120,20 @@ repl_sync_updateable_acct (repl_acct_t *ra, char * _usr, char * _pwd)
   ra2 = ra_find_pushback (ra->ra_server, ra->ra_account);
   if (ra2 == NULL)
     {
-      log_info ("repl_sync_updateable_acct: Can't find pushback account for updateable replication account '%s' (server '%s')",
+      log_info ("repl_sync_updatable_acct: Can't find pushback account for updatable replication account '%s' (server '%s')",
               ra->ra_account, ra->ra_server);
       return -1;
     }
   ra = ra2;
   if (ra->ra_parent == NULL)
     {
-      log_info ("repl_sync_updateable_acct: NULL parent for account '%s' (server '%s')",
+      log_info ("repl_sync_updatable_acct: NULL parent for account '%s' (server '%s')",
               ra->ra_account, ra->ra_server);
       return -1;
     }
   if (!ra->ra_rt)
     {
-      log_info ("repl_sync_updateable_acct: No replication trail found for account '%s' (server '%s')\n",
+      log_info ("repl_sync_updatable_acct: No replication trail found for account '%s' (server '%s')\n",
           ra->ra_account, ra->ra_server);
       return -1;
     }
@@ -168,12 +168,12 @@ repl_sync_updateable_acct (repl_acct_t *ra, char * _usr, char * _pwd)
 	ses->dks_read_block_timeout = dks_fibers_blocking_read_default_to;
       dk_free_box (ses->dks_peer_name);
       ses->dks_peer_name = repl_peer_name (ra);
-      log_info ("repl_sync_updateable_acct: Connected to replication server '%s'.\n", addr);
+      log_info ("repl_sync_updatable_acct: Connected to replication server '%s'.\n", addr);
     }
 
   pub_level = ra_pub_trx_no (ra);
   level_at = ra_trx_no (ra);
-  log_info ("repl_sync_updateable_acct: Initiating sync for '%s' (server '%s') level %ld.",
+  log_info ("repl_sync_updatable_acct: Initiating sync for '%s' (server '%s') level %ld.",
       ra->ra_account, ra->ra_server, pub_level);
 
   hashed_pwd = dk_alloc_box (17, DV_SHORT_STRING);

@@ -2791,7 +2791,7 @@ xpf_processXSLT (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   if (DV_ARRAY_OF_XQVAL == DV_TYPE_OF (raw_xe))
     raw_xe = ((BOX_ELEMENTS (raw_xe)) ? (((caddr_t *)raw_xe)[0]) : NULL);
   if (DV_XML_ENTITY != DV_TYPE_OF (raw_xe))
-    sqlr_new_error_xqi_xdl ("XP001", "XP???", xqi, "The argument 2 of XPATH function processXSLT() must be an XML entitity");
+    sqlr_new_error_xqi_xdl ("XP001", "XP???", xqi, "The argument 2 of XPATH function processXSLT() must be an XML entity");
   xe = (xml_entity_t *)raw_xe;
   xsh = xslt_sheet (xqi->xqi_qi, xslt_base_uri, xslt_rel_uri, &err, NULL /* not xqi->xqi_xqr->xqr_shuric because it's run-time loading, not compile-time */);
   if (xslt_measure_uses)

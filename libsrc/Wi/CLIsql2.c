@@ -4560,7 +4560,7 @@ SQLMoreResults (
   if (!stmt->stmt_parm_rows_to_go)
     return SQL_NO_DATA_FOUND;
 
-  /* Bugzzila 1996 */
+  /* Bugzilla 1996 */
   if (0 && stmt->stmt_current_of == -1 && !saved_cols)
     return SQL_NO_DATA_FOUND;
 

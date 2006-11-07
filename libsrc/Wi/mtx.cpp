@@ -649,7 +649,7 @@ int
 export_mts_recover (box_t recov_data)
 {
   XACTSTAT xact;
-  dbg_printf (("MTS transaction reoover... "));
+  dbg_printf (("MTS transaction recover... "));
   if (local_rm && local_rm->rm)
     {
       HRESULT hr = local_rm->rm->Reenlist ((UCHAR *) recov_data,

@@ -63,7 +63,7 @@ function c_type_name (hjs_name)
 {
   if (c_type_names[hjs_name])
     return c_type_names[hjs_name]
-  report_error("Unknown type name '" hjs_name "', supported sclalar types are ANY, BOOLEAN, BITMASK, DOUBLE, INTEGER, STRING and names declared in the file")
+  report_error("Unknown type name '" hjs_name "', supported scalar types are ANY, BOOLEAN, BITMASK, DOUBLE, INTEGER, STRING and names declared in the file")
   return hjs_name
 }
 
@@ -71,7 +71,7 @@ function ttl_type_iri (hjs_name)
 {
   if (ttl_type_iris[hjs_name])
     return ttl_type_iris[hjs_name]
-  report_error("Unknown type name '" hjs_name "', supported sclalar types are ANY, BOOLEAN, BITMASK, DOUBLE, INTEGER, STRING and names declared in the file")
+  report_error("Unknown type name '" hjs_name "', supported scalar types are ANY, BOOLEAN, BITMASK, DOUBLE, INTEGER, STRING and names declared in the file")
 }
 
 

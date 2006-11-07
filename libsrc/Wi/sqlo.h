@@ -60,7 +60,7 @@ typedef struct op_table_s
   int	ot_is_outer;
   oid_t	ot_u_id;
   oid_t	ot_g_id;
-  dk_set_t		ot_table_refd_cols; /* ifthe ot is a table, which cols are refd. Use for knowing if index only is possible in costing */
+  dk_set_t		ot_table_refd_cols; /* if the ot is a table, which cols are refd. Use for knowing if index only is possible in costing */
   dk_set_t 	ot_fun_refs;
   dk_set_t	ot_exps;
   dk_set_t	ot_preds;
@@ -233,7 +233,7 @@ struct df_elt_s
       dk_set_t	dt_preds;
       df_elt_t *	generated_dfe;
       df_elt_t **	after_join_test;
-      df_elt_t **	vdb_join_test; /* wwhen join preds are not imported into the dt in vdb */
+      df_elt_t **	vdb_join_test; /* when join preds are not imported into the dt in vdb */
       df_elt_t **	invariant_test;
       float 		in_arity;  /* estimate evaluation count of the dt's head node  */
       dk_set_t	locus_content; /* in a scenario copy, the state of loci at time of copy in subtree rooted here */

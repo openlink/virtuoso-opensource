@@ -58,7 +58,7 @@
    used by the user.
 
    16.JAN.1997 AK  Corrected few bugs I created yesterday.
-   Remodified aset to return back the element
+   Modified aset to return back the element
    it gets, not the modified array or string
    (See the note above to see why.)
    Corrected few bugs in date conversion functions.
@@ -120,7 +120,7 @@
    as well as aliases   d   and   ts   for stringdate.
    For the needs of lazy implementation of ODBC brace
    escaped date/time literals like {d '2038-01-18'}
-   etc. See sql2.y for the kludgeous way how they have
+   etc. See sql2.y for the kludgy way how they have
    been implemented.
 
    Mar 28 97  oui   lvector, fvector, dvector, make_array, bif_float_arg, bif_double_arg
@@ -1040,7 +1040,7 @@ bif_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     caddr_t * out;
           if (n_args < n_cols)
             sqlr_new_error ("22023", "SR534",
-	      "Function resunt() is called with %d arguments, but the declared result-set contains %d columns", n_args, n_cols);
+	      "Function result() is called with %d arguments, but the declared result-set contains %d columns", n_args, n_cols);
           len = sizeof (caddr_t) * MAX (n_args, n_cols);
     if (!cli->cli_resultset_data_ptr)
       {
@@ -1794,7 +1794,7 @@ bs:
   if (1 == idxcount)
     sqlr_new_error ("22003", "SR020", "Bad array subscript %ld in aset.", (long)inx);
   else
-    sqlr_new_error ("22003", "SR020", "Argument %d of aset is a bad array subscript (value %ld exceedes array size).", idxcount+1, (long)inx);
+    sqlr_new_error ("22003", "SR020", "Argument %d of aset is a bad array subscript (value %ld exceeds array size).", idxcount+1, (long)inx);
   NO_CADDR_T;
 }
 
@@ -4386,7 +4386,7 @@ static id_hash_t *id_hash_system_tables = NULL;
 #define SYSTEM_TABLE(_name) \
   name = box_dv_short_string (_name); \
   if (id_hash_get (id_hash_system_tables, (char *)&name)) \
-    GPF_T1 ("table allready defined as system table"); \
+    GPF_T1 ("table already defined as system table"); \
   id_hash_set (id_hash_system_tables, (char *)&name, (char *)&system_table)
 
 static void
@@ -6367,7 +6367,7 @@ hexno (char c)
    'X-MOZILLA-STATUS:' '0011')
 
    Of course this approach doesn't work with multiline headers, except
-   somewhat kludgeously.
+   somewhat kludgy.
    If the lines are separated by CR+LF, there is left one trailing
    CR at the end of each valuepart string.
 
@@ -6715,7 +6715,7 @@ bif_dvector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 /* Generic function for finding item item (which can be of any type)
-   from vector vec (which can be an ordinary heterogenous vector
+   from vector vec (which can be an ordinary heterogeneous vector
    or lvector, fvector or dvector, or even string), starting from start:th
    element (zero-based), and skipping skip_value elements at times.
    Returns an one-based index where the first occurrence of item
@@ -12517,7 +12517,7 @@ sql_bif_init (void)
   /* for system use only ruslan@openlinksw.com */
   bif_define ("raw_length", bif_raw_length);
 
-  /* check byteoreder in the log */
+  /* check byteorder in the log */
   bif_define ("byte_order_check", bif_byte_order_check);
 
   /* bit operations for BPEL */

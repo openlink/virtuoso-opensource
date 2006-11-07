@@ -279,7 +279,7 @@ sqlo_init_eqs (sqlo_t * so, op_table_t * ot)
 df_elt_t *
 dfe_col_placed_eq (sqlo_t *so, op_table_t * ot, df_elt_t * col_dfe)
 {
-  /* ifthis is a col and this is eq to a constant or an equal col exists that is placed, return it */
+  /* if this is a col and this is eq to a constant or an equal col exists that is placed, return it */
   dk_set_t * eqs_place;
   if (DFE_COLUMN != col_dfe->dfe_type)
     return col_dfe;

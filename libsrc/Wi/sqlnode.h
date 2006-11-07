@@ -343,8 +343,8 @@ typedef struct hash_area_s
   state_slot_t * 	ha_bp_ref_itc;
 #endif
   dbe_key_t *		ha_key;
-  dbe_col_loc_t *	ha_key_cols; /* the col locs of the hash tenmp, key fix, key var, dep fix, dep var */
-  dbe_col_loc_t *	ha_cols;	/* cols of feeding table, corrrespond to ha_key_cols */
+  dbe_col_loc_t *	ha_key_cols; /* the col locs of the hash temp, key fix, key var, dep fix, dep var */
+  dbe_col_loc_t *	ha_cols;	/* cols of feeding table, correspond to ha_key_cols */
   state_slot_t **	ha_slots;	/* slots where values to feed come from if they don't come from columns direct */
   int			ha_n_keys;
   int			ha_n_deps;
@@ -910,7 +910,7 @@ typedef struct pldbg_s
     query_instance_t *  pd_frame;   /* some instance */
     caddr_t 		pd_id;	    /* debug session id */
     long 		pd_step;    /* step mode */
-    int 		pd_is_step; /* whtin a break */
+    int 		pd_is_step; /* within a break */
   } pldbg_t;
 
 #define PLDS_INT	4 /* stop at next breakpoint */
@@ -998,7 +998,7 @@ typedef struct client_connection_s
     int			cli_support_row_count;
     int			cli_version;
     char		cli_no_triggers;
-    caddr_t		cli_identity_value; /* last assigned idenity col */
+    caddr_t		cli_identity_value; /* last assigned identity col */
 
     dk_mutex_t *		cli_test_mtx;
     dk_session_t *		cli_http_ses;
@@ -1022,7 +1022,7 @@ typedef struct client_connection_s
     struct tp_data_s*	  cli_tp_data;
 #endif
     void *		cli_ra; /* the replication account to be reconnected */
-    int			cli_sqlo_options; /* Currently unused, it's here insead of cli_sqlo_enable for binary compartibility. */
+    int			cli_sqlo_options; /* Currently unused, it's here instead of cli_sqlo_enable for binary compatibility. */
     int		        cli_utf8_execs;
     int		        cli_no_system_tables;
 #ifdef PLDBG

@@ -117,7 +117,7 @@ typedef unsigned char * db_buf_t;
  * Reference to disk page data
  */
 #define DPF_BACKUP_DELTA_MAP 8
-/* Like the free set but has a buit set for each page checkpointed since last full backup */
+/* Like the free set but has a built set for each page checkpointed since last full backup */
 #define DPF_HASH 9
 /* Like a page with rows but temporary hash index */
 

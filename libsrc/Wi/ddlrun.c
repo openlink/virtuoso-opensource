@@ -703,7 +703,7 @@ ddl_create_table (query_instance_t * qi, const char *name, caddr_t * cols)
     }
 
   if (!strncmp (name, "DB.DBA.", 7))
-    { /* check for the presence of unqalified when it's DB.DBA */
+    { /* check for the presence of unqualified when it's DB.DBA */
       qr_rec_exec (table_cols_qr, cli, &lc, qi, NULL, 1,
 	  ":0", name + 7, QRP_STR);
       if (lc_next (lc))
@@ -845,7 +845,7 @@ qi_new_key_id (query_instance_t * qi)
   lc_free (lc);
   if (prev_id >= KI_TEMP - 1)
     {
-      SQL_DDL_ERROR (qi, ("42000", "SQ173", "Maximum number of keys (%ld) allready created.", prev_id));
+      SQL_DDL_ERROR (qi, ("42000", "SQ173", "Maximum number of keys (%ld) already created.", prev_id));
     }
   return ((key_id_t) prev_id + 1);
 }
@@ -2064,7 +2064,7 @@ const char *constraint_check_text =
 "    return; \n"
 " \n"
 "name_found: \n"
-"    signal ('22023', concat ('There is allready a ', _type, ' named ', constraint_name), 'SR473'); \n"
+"    signal ('22023', concat ('There is already a ', _type, ' named ', constraint_name), 'SR473'); \n"
 "  } \n";
 
 void
@@ -4619,8 +4619,8 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
   if (proc_name && !qr->qr_trig_table)
     {
       /* it's possible when procedure is going to be re-compiled to be
-	 alredy re-compiled from other thread, so
-	 we are about to check if it's alredy re-compiled, otherwise
+	 already re-compiled from other thread, so
+	 we are about to check if it's already re-compiled, otherwise
 	 a GPF may occur in the other thread */
       new_qr = sch_proc_def (sc, proc_name);
       if (NULL != new_qr && new_qr != qr)
@@ -4674,7 +4674,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 		   *
 		   * We will NOT remove the procedure's qr from hash now;
 		   * will do this later if error on module.
-		   * On this place may lie a concurent task that procedure is not exists.
+		   * On this place may lie a concurrent task that procedure is not exists.
 		   * So just make it to recompile and recompile semaphore
 		   * will serialize operation */
 		  (*pproc)->qr_to_recompile = 1;
@@ -4715,7 +4715,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	    }
 	  else
 	    {
-	      /* remove all procedures from hash; to ensure consitency of the module */
+	      /* remove all procedures from hash; to ensure consistency of the module */
 	      sch_set_proc_def (sc, old_mod_qr->qr_proc_name, NULL);
 	    }
 	}

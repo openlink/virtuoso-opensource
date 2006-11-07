@@ -617,7 +617,7 @@ client_connection_free (client_connection_t * cli)
 
   if (cli->cli_tp_data)
     {
-      lt_log_debug (("client_connection_free cli=%p type=%d, enlisted=%d lt=%p: defered",
+      lt_log_debug (("client_connection_free cli=%p type=%d, enlisted=%d lt=%p: deferred",
 	  cli, cli->cli_tp_data->cli_trx_type, cli->cli_tp_data->cli_tp_enlisted, cli->cli_trx));
 #ifndef NDEBUG
       if (cli->cli_tp_data->cli_tp_enlisted)
@@ -649,7 +649,7 @@ client_connection_free (client_connection_t * cli)
   cli_clear_globals (cli);
   mutex_free (cli->cli_mtx);
 #ifdef PLDBG
-  if (cli->cli_pldbg) /* if it's debbuged session */
+  if (cli->cli_pldbg) /* if it's debugged session */
     {
       if (cli->cli_pldbg->pd_session)
 	DKS_DB_DATA (cli->cli_pldbg->pd_session) = NULL;
@@ -897,7 +897,7 @@ srv_client_connection_died (client_connection_t *cli)
       if (cli->cli_tp_data->cli_trx_type == TP_XA_TYPE ||
 	  (cli->cli_tp_data->cli_trx_type == TP_MTS_TYPE && cli->cli_tp_data->cli_tp_enlisted == CONNECTION_PREPARED))
 	{
-	  lt_log_debug (("srv_client_connection_died %p enlisted=%d : defered", cli, cli->cli_tp_data->cli_tp_enlisted));
+	  lt_log_debug (("srv_client_connection_died %p enlisted=%d : deferred", cli, cli->cli_tp_data->cli_tp_enlisted));
 	  if (!cli->cli_tp_data->cli_free_after_unenlist)
 	    cli->cli_tp_data->cli_free_after_unenlist = CFAU_DIED;
 	  cli->cli_session = NULL;
@@ -1195,7 +1195,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
       cli->cli_support_row_count = 1;
       dk_free_box (cli_ver);
 
-      /* meaning the version of the client as received by ther server */
+      /* meaning the version of the client as received by the server */
       cdef_add_param (&client->dks_caller_id_opts, "__SQL_CLIENT_VERSION", cli->cli_version);
     }
   cli_set_default_qual (cli);
@@ -3821,7 +3821,7 @@ srv_make_trx_error (int code, caddr_t detail)
       case LTE_REMOTE_DISCONNECT:
 	  err = srv_make_new_error ("08U01", "SR324",
 	      "Remote server has disconnected making the transaction "
-	      "uncommitable. Transaction has been rolled back%s%s",
+	      "uncomittable. Transaction has been rolled back%s%s",
 	      detail ? " : " : "", detail ? detail : "");
 	  break;
       case LTE_CHECKPOINT:

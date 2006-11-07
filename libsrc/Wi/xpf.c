@@ -52,7 +52,7 @@ xqi_atomize_one (xp_instance_t * xqi, caddr_t value)
       if (0 == els)
         return NULL;
       if (1 < els)
-	sqlr_new_error_xqi_xdl ("XP001", "XPF??", xqi, "Type error: automization can not produce a single atom from a sequence of length %d", els);
+	sqlr_new_error_xqi_xdl ("XP001", "XPF??", xqi, "Type error: atomization can not produce a single atom from a sequence of length %d", els);
       value = ((caddr_t *)value)[0];
       value_dtp = DV_TYPE_OF (value);
     }
@@ -938,7 +938,7 @@ xpf_let (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   caddr_t *res_ptr = XQI_ADDRESS(xqi,tree->_.xp_func.res);
   argno = (int) tree->_.xp_func.argcount;
   if (!(argno & 0x1))
-    sqlr_new_error_xqi_xdl ("42000", "XPF02", xqi, "Wrong number of arguments for XPATH function let(), maybe inernal XQuery error");
+    sqlr_new_error_xqi_xdl ("42000", "XPF02", xqi, "Wrong number of arguments for XPATH function let(), maybe internal XQuery error");
   varno = (argno - 1) / 2;
   XQI_SET (xqi, tree->_.xp_func.res, NULL);
   for (argctr = varctr = 0; varctr < varno; varctr++)
@@ -1770,7 +1770,7 @@ common_case:
 /* The most popular cases are upper/lowercase, with alphabet as 2-nd arg.
    and recollation, with charset interval as 2-nd arg. For them, the first guess will be right */
       int search_pos = text_curchr - uniorg[0];
-      if (search_pos < 0)	/* If negative, text_curchr is less than the smallest translateable */
+      if (search_pos < 0)	/* If negative, text_curchr is less than the smallest translatable */
 	goto search_complete;
       if (search_pos >= org_items)
         search_pos = org_items - 1;
@@ -2859,7 +2859,7 @@ xpf_create_element (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
       if (attrc <1)
 	sqlr_new_error_xqi_xdl ("XP001", "XPFC1", xqi, "No name of element in the first argument of XPATH function create-element()");
       if (!(attrc & 0x1))
-	sqlr_new_error_xqi_xdl ("XP001", "XPFC2", xqi, "Last atttribute has no value specified in the first argument of XPATH function create-element()");
+	sqlr_new_error_xqi_xdl ("XP001", "XPFC2", xqi, "Last attribute has no value specified in the first argument of XPATH function create-element()");
       for (i = attrc; i--; /*no step*/)
 	{
 	  caddr_t item_i = ((caddr_t *)(el_head_val))[i];
@@ -3053,7 +3053,7 @@ attr_subvalue_ready: ;
 		sqlr_new_error_xqi_xdl ("XP001", "XPFC7", xqi, "Invalid special entity found in argument of XPATH function create-element()");
 	      newattr_name = ((caddr_t *)subvalue)[1];
 	      newattr_value = ((caddr_t *)subvalue)[2];
-	      /* First we try to find attribute with same name in array of explicitely specified */
+	      /* First we try to find attribute with same name in array of explicitly specified */
 	      for (attrctr = 1; attrctr < attrcount; attrctr += 2)
 		{
 		  caddr_t *tail = ((caddr_t *)(tmp_res[0])) + attrctr;
@@ -4902,7 +4902,7 @@ void xpf_create_filter_sequence (xp_instance_t * xqi, XT * tree, xml_entity_t * 
   caddr_t * node_subtree;	/*new box for last node in document*/
   xml_entity_t *xe;
   int cmp_res;
-  stack = (xp_addr_ent_t **)dk_alloc_box_zero (ae_count * sizeof (xp_addr_ent_t *), DV_ARRAY_OF_LONG); /* not DV_ARRAY_OF_POINTER to avoid duoble free. */
+  stack = (xp_addr_ent_t **)dk_alloc_box_zero (ae_count * sizeof (xp_addr_ent_t *), DV_ARRAY_OF_LONG); /* not DV_ARRAY_OF_POINTER to avoid double free. */
   func_tmp[1] = stack;
   stack_len = 0;
 
@@ -5317,7 +5317,7 @@ xpf_processXQuery (xp_instance_t * outer_xqi, XT * tree, xml_entity_t * ctx_xe)
   if (DV_ARRAY_OF_XQVAL == DV_TYPE_OF (raw_xe))
     raw_xe = ((BOX_ELEMENTS (raw_xe)) ? (((caddr_t *)raw_xe)[0]) : NULL);
   if (DV_XML_ENTITY != DV_TYPE_OF (raw_xe))
-    sqlr_new_error_xqi_xdl ("XP001", "XP???", outer_xqi, "The argument 2 of XPATH function processXQuery() must be an XML entitity");
+    sqlr_new_error_xqi_xdl ("XP001", "XP???", outer_xqi, "The argument 2 of XPATH function processXQuery() must be an XML entity");
   xe = (xml_entity_t *)raw_xe;
   QR_RESET_CTX
     {

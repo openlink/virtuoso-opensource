@@ -288,7 +288,7 @@ page_leave_inner (buffer_desc_t * buf)
       if (W_NOT_RELEASED == page_release_writes (buf))
 	page_release_busted (buf);
     }
-  /* set the space to nnull for deld buffer after all else.  This is so that buffer replacement will wait for the page map so it does not do dirty reads on intermiediate states of releasing the buffer */
+  /* set the space to nnull for deld buffer after all else.  This is so that buffer replacement will wait for the page map so it does not do dirty reads on intermediate states of releasing the buffer */
   if (!buf->bd_page)
     buf->bd_space = NULL; /* if leaving del'd buffer, reset the space so reuse will not try to take the buffer out of the space's cache */
 }

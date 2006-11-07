@@ -407,9 +407,9 @@ it_temp_free (index_tree_t * it)
  
   /*Note the following problem scenario:  A  buffer becomes available in it_temp_free, space and pages set to 0. 
    * This buffer then gets used in  another tree, no need to sync because the buffer in question is free. [B
-   * Another buffer in the same temp tree must be cancelled from the write queue. This leaves the mutexes and restarts the scan of the hash.  The hash will however still reference buffers that have been set free.   
+   * Another buffer in the same temp tree must be canceled from the write queue. This leaves the mutexes and restarts the scan of the hash.  The hash will however still reference buffers that have been set free.   
    * It may be that a buffer is then encountered which legitimately  belongs to another tree by this time.  
-   * An inadvertant write cancellation and page_wait_access with the wrong page map mtx may be attempted, which is objectionable. Worst case is an erronous mark as free and losing non-serialization of the buffer's rw gate. 
+   * An inadvertent write cancellation and page_wait_access with the wrong page map mtx may be attempted, which is objectionable. Worst case is an errnoeous mark as free and losing non-serialization of the buffer's rw gate. 
    * Therefore  all cancellations get done first and then all buffers that remain are detached from the it being deleted. */
   
   it_cursor_t itc_auto;
@@ -596,7 +596,7 @@ bp_found (buffer_desc_t * buf, int from_free_list)
   buffer_pool_t * bp = buf->bd_pool;
   index_space_t * last_isp = buf->bd_space;
   /* the buffer is considered for reuse.  If so, even if not getting the buf from the deleted list,
-   * pop it out of the deleted list.  If the list breaks in the middle, no harm done.  Seldom occurrence due to it being drity written outside of bp_mtx */
+   * pop it out of the deleted list.  If the list breaks in the middle, no harm done.  Seldom occurrence due to it being dirty written outside of bp_mtx */
   if (!from_free_list && buf->bd_next)
     {
       buf->bd_pool->bp_first_free = buf->bd_next;
@@ -652,7 +652,7 @@ bp_found (buffer_desc_t * buf, int from_free_list)
 int
 bp_stat_action (buffer_pool_t * bp)
 {
-  /* schedule writes if appropriate.  If nothing free write synchroneously */
+  /* schedule writes if appropriate.  If nothing free write synchronously */
   static int action_ctr;
   int n_dirty = 0, n_clean = 0;
   int bucket, age_limit;
@@ -934,7 +934,7 @@ buf_set_last (buffer_desc_t * buf)
   buf->bd_pl = NULL;
   buf->bd_page = 0;
   buf->bd_physical_page = 0;
-  /* set the bp_space null only later, in the final page_leave_inner.  This prevents buffer replacement from taking the buffer until it is all clered because it will wat on the space's map. */
+  /* set the bp_space null only later, in the final page_leave_inner.  This prevents buffer replacement from taking the buffer until it is all cleared because it will wat on the space's map. */
   if (buf->bd_is_dirty)
     {
       wi_inst.wi_n_dirty--;
@@ -947,7 +947,7 @@ void
 buf_recommend_reuse (buffer_desc_t * buf)
 {
   /* Dirty write.  Should be inside the bp_mtx of the pool.
-   * Not dangerous since bp__first_free is always some buffer of the bp or NULL and likewise with bd_next.  The list can get screwed up, it is always poppoed a single unit at a time and if a member of the list gets reallocated by normal eans the list just breaks because the  bd_next of the allocated one will be reset.
+   * Not dangerous since bp__first_free is always some buffer of the bp or NULL and likewise with bd_next.  The list can get screwed up, it is always popped a single unit at a time and if a member of the list gets reallocated by normal eans the list just breaks because the  bd_next of the allocated one will be reset.
    * Pops from the list are serialized anyway and normal checks apply to the buffers, so even if they actually are not reusable no harm is done. */
 
   /* this does not work.  Turned off until fixed. */
@@ -2432,7 +2432,7 @@ dbs_reverse_whole_database (dbe_storage_t * dbs, wi_database_t * cfg_page)
       if (off < 0) { _e = 1; off = 0; SHORT_SET (row_data + len, 0); }\
       len = SHORT_REF (row_data + len + 2) - off; \
       if ((len < 0) || ((off+len) > ROW_MAX_DATA + 2 )) {_e=1; len = 0; SHORT_SET (row_data - cl.cl_fixed_len + 2, off); }\
-      /* GK: the +2 part in ROW_MAX_DATA is nessesary to allow reverse of oversized rows */ \
+      /* GK: the +2 part in ROW_MAX_DATA is necessary to allow reverse of oversized rows */ \
     } \
 }
 

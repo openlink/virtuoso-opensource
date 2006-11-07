@@ -68,7 +68,7 @@ typedef struct xpp_s {
   dk_set_t xpp_global_vars_external;
   dk_set_t xpp_global_vars_preset;
   dk_set_t *xpp_sql_columns;
-  int xpp_dry_run;		/*!< This indicates that the result of the compilation is invalid, and an error is not signalled solely in order to collect all sql:column */
+  int xpp_dry_run;		/*!< This indicates that the result of the compilation is invalid, and an error is not signaled solely in order to collect all sql:column */
   int xpp_lax_nsuri_test;	/*!< Nonzero value means that if name test is an non-qualified name X then the compiled test is 'local name X or *:X', not 'local X' */
   int xpp_save_pragmas;		/*!< This instructs the lexer to preserve pragmas for future use. This is not in use right now but may be used pretty soon */
   int xpp_key_gen;		/*!< 0 = do not fill xqr_key, 1 = save source text only, 2 = save source text and custom namespace decls */

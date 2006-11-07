@@ -323,7 +323,7 @@ static void shuric_sentence_tree_to_shot (shuric_t *shu, dk_set_t *shot_list)
     {
       dk_set_delete (&(subshu->shuric_imported_by), shu);
       subshu->shuric_ref_count--;
-      dbg_printf (("shuric_sentence... \"%s\" \"%s\" @ %p, refs=%d\n  no longer imporder by \"%s\" \"%s\" @ %p\n",
+      dbg_printf (("shuric_sentence... \"%s\" \"%s\" @ %p, refs=%d\n  no longer imported by \"%s\" \"%s\" @ %p\n",
         subshu->_->shuric_type_title, subshu->shuric_uri, subshu, subshu->shuric_ref_count,
 	shu->_->shuric_type_title, shu->shuric_uri, shu ));
       if (0 >= subshu->shuric_ref_count)

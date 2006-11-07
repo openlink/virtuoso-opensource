@@ -30,7 +30,7 @@
 
 #define MTS_BUFSIZ 1024
 
-/* completly stolen from hosting.h. thanks, George :) */
+/* completely stolen from hosting.h. thanks, George :) */
 
 typedef void (*typeof__mts_get_trx_cookie) (void * con, void *i_trx, void **cookie,
     unsigned long *cookie_len ) ;

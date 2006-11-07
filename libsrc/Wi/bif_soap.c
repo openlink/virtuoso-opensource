@@ -106,7 +106,7 @@ typedef struct soap_ctx_s
     int    	soap_version;  	/* use the SOAP version  1.0 eq. 10 */
     int    	add_schema;    	/* add schema namespace to the elements */
     int    	add_type;      	/* add the schema dt to the elements */
-    const char 	*req_resp_namespace;    /* request/responce namespace */
+    const char 	*req_resp_namespace;    /* request/response namespace */
     int    	dks_esc_compat;	/* 0 or DKS_ESC_COMPAT_SOAP flag for dks_esc_write */
     int    	literal;       	/* encoding type */
     int    	wrapped;	/* doc/lit style */
@@ -1843,7 +1843,7 @@ soap_wsdl_schema_push (dk_set_t * ns_set, dk_set_t * types_set, char * name, int
       if (!strcmp (elm->ns_uri, ns))
 	{
 	  tns = elm;
-	  if (!import && tns->ns_imported) /* if it's alredy but imported, unmark it */
+	  if (!import && tns->ns_imported) /* if it's already but imported, unmark it */
 	    tns->ns_imported = import;
 	  break;
 	}
@@ -1897,7 +1897,7 @@ soap_wsdl_schema_push (dk_set_t * ns_set, dk_set_t * types_set, char * name, int
       if (sqt)
         memcpy (&(type->type_sqt), sqt, sizeof (sql_type_t));
       dk_set_push (types_set, (void *) type);
-      if (place && *place) /* let's scan for dependancies from other types */
+      if (place && *place) /* let's scan for dependencies from other types */
 	{
 	  caddr_t * tree1 = (caddr_t *) (element ? ((caddr_t *)(*place))[1] : ((caddr_t *)(*place))[0]);
 /*
@@ -4080,7 +4080,7 @@ bif_soap_server (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!opts && qi->qi_client->cli_ws)
     opts = SOAP_OPTIONS (qi->qi_client->cli_ws);
 
-  if (BOX_ELEMENTS (args) > 6) /* attachements if avalable */
+  if (BOX_ELEMENTS (args) > 6) /* attachments if available */
     {
       attachs = (caddr_t *) box_copy_tree (bif_array_or_null_arg (qst, args, 6, "soap_server"));
       if (NULL != attachs)
@@ -5406,7 +5406,7 @@ soap_call_parse_reply (soap_call_ctx_t * ctx, caddr_t * qst, caddr_t * err, cadd
 	    }
 	  if (ctx->sc_dl_mode)
 	    {
-	      ctx->sc_dl_mode[4] = (caddr_t) dm; /* add attachements if any */
+	      ctx->sc_dl_mode[4] = (caddr_t) dm; /* add attachments if any */
 	    }
 	  else
 	    dk_free_tree ((box_t) dm);
@@ -5794,7 +5794,7 @@ bif_soap_call_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	     1 - outgoing message
 	     2 - incoming message
 	     3 - error if exists
-	     4 - attachements if any
+	     4 - attachments if any
        */
 
       if (ctx.sc_dl_val & 1) /* encoding style doc/lit */
@@ -7735,7 +7735,7 @@ output_message_end:
 	  if (!bt)
 	    SES_PRINT (out, "\" encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/");
 	  SES_PRINT (out, "\" />\n");
-	  /* the input header meassages */
+	  /* the input header messages */
 	  soap_wsdl_print_extensions (proc, operation_name, out, header_ns, bt,
 	      SOAP_MSG_HEADER, SSL_PARAMETER);
 
@@ -7772,7 +7772,7 @@ output_message_end:
 		SES_PRINT (out, "\" encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/");
 	      SES_PRINT (out, "\" />\n");
 
-	      /* the output extension meassages */
+	      /* the output extension messages */
 	      soap_wsdl_print_extensions (proc, operation_name, out, header_ns, bt,
 		  SOAP_MSG_HEADER, SSL_REF_PARAMETER_OUT);
 
@@ -7858,7 +7858,7 @@ output_message_end:
       SES_PRINT (out, "\t<plt:partnerLinkType name='"); SES_PRINT (out, service_name);  SES_PRINT (out, "'>\n");
       SES_PRINT (out, "\t\t<plt:role name='"); SES_PRINT (out, service_name); SES_PRINT (out, "Provider'>\n");
       if (rpcs && docs)
-	SES_PRINT (out, "\t\t\t<!-- Warining : the WSDL contains more than one port type -->\n");
+	SES_PRINT (out, "\t\t\t<!-- Warning : the WSDL contains more than one port type -->\n");
       SES_PRINT (out, "\t\t\t<plt:portType name='tns:");
       SES_PRINT (out, service_name);
       if (docs && !rpcs)
@@ -8227,7 +8227,7 @@ soap_multi_arr_cmp_offset (const char * offs, dk_set_t *lev)
 	    }
 	  offs++;
 	}
-      /*TODO: add error if end of offsest reached w/o matching char*/
+      /*TODO: add error if end of offsets reached w/o matching char*/
       if (1 != sscanf (offs, "%ld", &i))
 	i = 0;
       if (i != *elm)
@@ -8432,7 +8432,7 @@ soap_box_next_ext_type (caddr_t * type_ref, caddr_t * err_ret, soap_ctx_t * ctx)
     return NULL;
   soap_box_xev_get_type (*type_ref, &proposed_type, (caddr_t *) &schema_tree, 0, 0, 0);
   if (!schema_tree)
-    SOAP_VALIDATE_ERROR (("22023", "SV076", "Can't find shema definition for type '%s'", *type_ref));
+    SOAP_VALIDATE_ERROR (("22023", "SV076", "Can't find schema definition for type '%s'", *type_ref));
   if (NULL != (e_ptr = xml_find_schema_child (schema_tree, "complexContent", 0)))
     {
       caddr_t *extension;
@@ -8501,7 +8501,7 @@ soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t typ
 
    soap_box_xev_get_type (type_ref, &proposed_type, (caddr_t *) &schema_tree, elem, 0, 0);
    if (!proposed_type && !schema_tree && !udt && !IS_ARRAY_SQTP (sqt))
-     SOAP_VALIDATE_ERROR (("22023", "SV001", "Can't find shema definition for type '%s'", type_ref));
+     SOAP_VALIDATE_ERROR (("22023", "SV001", "Can't find schema definition for type '%s'", type_ref));
 
    type_name = xml_find_schema_attribute (schema_tree, "name");
 
@@ -8562,7 +8562,7 @@ soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t typ
 	       e_seq = xml_find_schema_child (e_ptr, "sequence", 0);
 	       e_ptr = xml_find_schema_child (e_seq, "element", inx1 ++);
 
-	       /* it's a struct with at least one member, but no imcoming data (like <a />) */
+	       /* it's a struct with at least one member, but no incoming data (like <a />) */
 	       if (e_ptr && BOX_ELEMENTS (entity) == 1)
 		 return NEW_DB_NULL;
 
@@ -8701,7 +8701,7 @@ soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t typ
 		       if (offset && 1 != sscanf (offset, "[%ld]", &off))
 			 off = -1;
 		       if (ix >= n_max)
-			 SOAP_VALIDATE_ERROR (("22023", "SV007", "Maxumum number (%ld) of elements of array '%s' is reached, but there is more data", n_max, type_ref));
+			 SOAP_VALIDATE_ERROR (("22023", "SV007", "Maximum number (%ld) of elements of array '%s' is reached, but there is more data", n_max, type_ref));
 		       if ((!elem_entity && max_items > ix) || (off >= 0 && ix != off))
 			 ret_elem = dk_alloc_box (0, DV_DB_NULL);
 		       else if (elem_entity)
@@ -8893,7 +8893,7 @@ soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t typ
 	   if (offset && 1 != sscanf (offset, "[%ld]", &off))
 	     off = -1;
 	   if (ix >= n_max)
-	     SOAP_VALIDATE_ERROR (("22023", "SV070", "Maxumum number (%ld) of elements of array is reached, but there is more data", n_max));
+	     SOAP_VALIDATE_ERROR (("22023", "SV070", "Maximum number (%ld) of elements of array is reached, but there is more data", n_max));
 	   if ((!elem_entity && max_items > ix) || (off >= 0 && ix != off))
 	     ret_elem = dk_alloc_box (0, DV_DB_NULL);
 	   else if (elem_entity)
@@ -8985,7 +8985,7 @@ convert_value:
 	   caddr_t wide = box_utf8_as_wide_char (value, NULL, box_length (value) - 1, 0, DV_WIDE);
 	   /* Special cases for datatypes:
 	      float is mapped to double to increase the precision,
-	      string is mpped to the nvarchar for wide characters support */
+	      string is mapped to the nvarchar for wide characters support */
 	   if (proposed_type == DV_SINGLE_FLOAT)
 	     proposed_type = DV_DOUBLE_FLOAT;
 	   else if (DV_SHORT_STRING == proposed_type)
@@ -9897,7 +9897,7 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
 
    /* binary and blobs cannot be produced by encode_base64, hence if result 
       is expected to be b64 then we allow to set proposed type to DV_BIN 
-      which makes the exncoding as b64 explicit */
+      which makes the encoding as b64 explicit */
    if (DV_TYPE_OF (box) == DV_BIN || IS_BLOB_HANDLE_DTP (DV_TYPE_OF (box)))
      allow_b64 = 1;
 
@@ -9905,7 +9905,7 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
      soap_box_xev_get_type (type_ref, &proposed_type, (caddr_t *) &schema_tree, elem, 0, allow_b64);
 
    if ((!proposed_type && !schema_tree && !check_udt && !udt && !IS_ARRAY_SQTP(check_sqt)) || *err_ret)
-     SOAP_VALIDATE_ERROR (("22023", "SV026", "Can't find shema definition for type '%s'", type_ref));
+     SOAP_VALIDATE_ERROR (("22023", "SV026", "Can't find schema definition for type '%s'", type_ref));
 
    type_name = xml_find_schema_attribute (schema_tree, "name");
 
@@ -10031,7 +10031,7 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
 		       caddr_t a_nil, a_min, a_ref, a_max;
 		       long n_nil, n_min, n_max, elem_qual;
 
-		       /* occurence indicators and nillable are to local declaration,
+		       /* occurrence indicators and nillable are to local declaration,
 			not in the reference */
 		       a_min = xml_find_schema_attribute (e_ptr, "minOccurs");
 		       a_max = xml_find_schema_attribute (e_ptr, "maxOccurs");
@@ -10216,7 +10216,7 @@ next_loop:
 	       return;
 	     }
 
-	   /* occurence indicators are to the element */
+	   /* occurrence indicators are to the element */
 	   a_min = xml_find_schema_attribute (e_ptr, "minOccurs");
 	   a_max = xml_find_schema_attribute (e_ptr, "maxOccurs");
 
@@ -10336,7 +10336,7 @@ next_loop:
 		 { /* XXX: add support for offsets here */
 		   soap_ctx_t ctxn;
 		   if ((inx - 1) > n_max)
-	             SOAP_VALIDATE_ERROR (("22023", "SV077", "Upper limit (%ld) of %s exceded", n_max, type_ref));
+	             SOAP_VALIDATE_ERROR (("22023", "SV077", "Upper limit (%ld) of %s exceeded", n_max, type_ref));
 		   if (DV_TYPE_OF (elem_entity) == DV_COMPOSITE)
 	             SOAP_VALIDATE_ERROR (("22023", "SV079", "Can't map soap_struct to array of type %s", type_ref));
 
@@ -10406,7 +10406,7 @@ next_loop:
 	 }
        else if (media_type && ARRAYP (box))
 	 {
-	   /*it's attachement */
+	   /*it's attachment */
 	   caddr_t id = ((caddr_t *)box)[0];
 	   SES_PRINT (ses, ctx->literal ? " ref:location='" : " href='");
 	   SES_PRINT (ses, id);
@@ -10610,7 +10610,7 @@ next_loop:
 	 {
 	   soap_ctx_t ctxn;
 	   if ((inx - 1) > n_max)
-	     SOAP_VALIDATE_ERROR (("22023", "SV040", "Upper limit (%ld) of %s exceded", n_max, type_ref));
+	     SOAP_VALIDATE_ERROR (("22023", "SV040", "Upper limit (%ld) of %s exceeded", n_max, type_ref));
 	   if (DV_TYPE_OF (elem_entity) == DV_COMPOSITE)
 	     SOAP_VALIDATE_ERROR (("22023", "SV041", "Can't map soap_struct to array of type %s", type_ref));
 
@@ -10649,7 +10649,7 @@ next_loop:
 	   if (proposed_type == DV_LONG_STRING
 	       && ARRAYP (value) && BOX_ELEMENTS (value) == 3 && DV_STRINGP (((caddr_t *)value)[0]))
 	     {
-	       /*it's attachement */
+	       /*it's attachment */
 	       caddr_t id = ((caddr_t *)value)[0];
 	       SES_PRINT (ses, ctx->literal ? " ref:location='" : " href='");
 	       SES_PRINT (ses, id);

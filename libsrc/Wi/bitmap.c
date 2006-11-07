@@ -638,7 +638,7 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t image)
     LONG_SET (image + IE_FIRST_KEY + value_cl->cl_pos, r_start);
   old_sp = itc->itc_search_params[itc->itc_search_par_fill - 1];
   itc->itc_search_params[itc->itc_search_par_fill - 1] = box_iri_int64 (r_start, key->key_bit_cl->cl_sqt.sqt_dtp);
-  /* now the right side has a different start bit, so upodate the offsets of the ce's to the right of the split. */
+  /* now the right side has a different start bit, so update the offsets of the ce's to the right of the split. */
   loop_ce = ext;
   while (loop_ce < ext + ext_len)
     {
@@ -1071,7 +1071,7 @@ int
 ce_bitmap_value (db_buf_t bits, short value, int is_fwd)
 {
   /* returns the bit number at value or if value is not set, the next before or after, according to is_forward.  If no one bit is found in the direction given, return CE_N_VALUES
-   * the bitmap is alwys CE_N_VALUES long. */
+   * the bitmap is always CE_N_VALUES long. */
   int byte = value >> 3;
   int bit = value & 7;
   if (value < 0 || value >= CE_N_VALUES)
@@ -1531,7 +1531,7 @@ itc_bp_col_check (it_cursor_t * itc, search_spec_t * spec)
   if (op != CMP_NONE)
     {
       short sp_min = spec->sp_min;
-      /* trick here.  When reading range in desc order, the lower limit is set to minint of the appropriate type so that the lowest row whose bit col is likely below the lower limit will not be excluded.  So here use another value for the actual lower limit.  The last search paream, an extra one is added by init search */
+      /* trick here.  When reading range in desc order, the lower limit is set to minint of the appropriate type so that the lowest row whose bit col is likely below the lower limit will not be excluded.  So here use another value for the actual lower limit.  The last search param, an extra one is added by init search */
       if (itc->itc_desc_order && CMP_NONE != spec->sp_max_op)
 	sp_min = itc->itc_search_par_fill - 1;
       res = itc_bp_cmp (itc, sp_min);
@@ -1596,7 +1596,7 @@ itc_bm_land_seek (it_cursor_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start
    * if no lower limit and asc, go to start
    * if upper limit and desc, go to highest match, at end if none, ret dvc_less if none to go to prev row.
    * if no upper limit and desc, go to highest bit.
-   * ret dvc_greater to mean end of search, dvc_match to comntinue checking, dvc_less to get the next row
+   * ret dvc_greater to mean end of search, dvc_match to continue checking, dvc_less to get the next row
    */
   int64 min, max;
   search_spec_t * sp = itc->itc_bm_col_spec;
@@ -1629,7 +1629,7 @@ itc_bm_land_seek (it_cursor_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start
 	  pl_set_at_bit ((placeholder_t *) itc, bm, bm_len, bm_start, min, 0);
 	  return DVC_MATCH;
 	}
-      GPF_T; /* should not havethis min op */
+      GPF_T; /* should not have this min op */
     }
   if (CMP_NONE != sp->sp_max_op)
     max = dv_to_int64 (itc->itc_search_params[sp->sp_max]);
@@ -1643,7 +1643,7 @@ itc_bm_land_seek (it_cursor_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start
     max--;
   pl_set_at_bit ((placeholder_t *)itc, bm, bm_len, bm_start, max, 1);
   if (itc->itc_bp.bp_value > max)
-    return DVC_LESS; /* if the max wasbelow the first bit in bm, the bp_value is set to the first bit and at_end is set.  Return DVC_LESS to cause caller to get the next row in desc order */
+    return DVC_LESS; /* if the max was below the first bit in bm, the bp_value is set to the first bit and at_end is set.  Return DVC_LESS to cause caller to get the next row in desc order */
   itc->itc_bp.bp_at_end = 0;
   /* we can be at a value or above the highest of the bm.  They match lt/lte */
   return DVC_MATCH;

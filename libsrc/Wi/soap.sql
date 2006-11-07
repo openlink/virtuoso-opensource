@@ -563,7 +563,7 @@ WS_SOAP (in path any, in params any, in lines any)
       }
 
     -- rp_act is flag for WS-routing protocol
-    -- 1 - intermidiary
+    -- 1 - intermediary
     -- 2 - ultimate
 
     rp_act := 0; wssec := 0; wsrpe := 0;
@@ -662,7 +662,7 @@ WS_SOAP (in path any, in params any, in lines any)
       _fwd := xpath_eval ('fwd', rp, 1);
       _rev := xpath_eval ('rev', rp, 1);
       --this_host := http_request_header (lines, 'Host', null, 'localhost');
-      --this_host := 'imitko:6666'; -- findout how to get port if not supllied
+      --this_host := 'imitko:6666'; -- findout how to get port if not supplied
       --this_path := http_path();
       --this_point := sprintf ('http://%s%s', this_host, this_path);
       this_point := soap_current_url ();

@@ -43,7 +43,7 @@
 /*
  *  Backward compatible types for Windows
  */
-#if !defined (UNIX_ODBC) /* allready in sqltypes.h */
+#if !defined (UNIX_ODBC) /* already in sqltypes.h */
 #if !defined (WIN32) && !defined (__SQLUNX)
 typedef const char *LPCSTR;
 typedef char *LPSTR;

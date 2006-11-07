@@ -426,7 +426,7 @@ sqlc_mark_pred_deps (sql_comp_t * sc, predicate_t * pred, sql_tree_t * tree)
     }
   else if (ST_P (tree, SCALAR_SUBQ))
     {
-      /* this is to prevent assigment of value NULL to ssl constant when sql data not found */
+      /* this is to prevent assignment of value NULL to ssl constant when sql data not found */
       sqlc_union_constants (tree->_.bin_exp.left);
       sqlc_subquery (sc, pred, &(tree->_.bin_exp.left));
     }

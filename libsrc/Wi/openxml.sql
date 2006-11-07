@@ -27,7 +27,7 @@
 -- tablename - name of source table containing the XML documents
 --             (if null the datacolumns should be valid XML document)
 -- datacolumn - column which contains the XML document or valid XML document if tablename is null
--- xpath_expression - expression to exctract the XML
+-- xpath_expression - expression to extract the XML
 --
 
 create procedure
@@ -52,7 +52,7 @@ DB.DBA.OPENXML_DEFINE (in vname varchar, in tb varchar, in data varchar, in xp v
     }
 
   if (exists (select 1 from DB.DBA.SYS_VIEWS where V_NAME = vname))
-    signal ('42S01', 'The XML procedure view aready exists', 'XV004');
+    signal ('42S01', 'The XML procedure view already exists', 'XV004');
 
 
   if (not mod and xml_tree (data, 0) is null)

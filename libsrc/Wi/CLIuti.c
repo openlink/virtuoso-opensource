@@ -3341,7 +3341,7 @@ skip_blankos (char *str)
 
    For example, the query
    SELECT NAME FROM IDENTIFIERS WHERE ID LIKE ‘\_%’ {escape ‘\’}
-   finds identifier names that begin with an underbar.
+   finds identifier names that begin with an underline.
 
    11.6 Outer Joins
 

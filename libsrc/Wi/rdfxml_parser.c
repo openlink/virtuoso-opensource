@@ -113,7 +113,7 @@ xp_rdfxml_get_name_parts (xp_node_t * xn, char * name, int use_default, caddr_t 
 	}
       ctx_xn = ctx_xn->xn_parent;
     }
-  xmlparser_logprintf (xn->xn_xp->xp_parser, XCFG_FATAL, 100+strlen (name), "Name '%.1000s' contains udefined namespace prefix");
+  xmlparser_logprintf (xn->xn_xp->xp_parser, XCFG_FATAL, 100+strlen (name), "Name '%.1000s' contains undefined namespace prefix");
 }
 
 

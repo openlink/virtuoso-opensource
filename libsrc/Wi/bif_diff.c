@@ -3,7 +3,7 @@
  *
  *  $Id$
  *
- *  Diff functionatlty
+ *  Diff functionality
  *  
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
@@ -392,7 +392,7 @@ caddr_t path_to_text (caddr_t* path, caddr_t * line_array, ptrlong mode)
 	      delins_ops = 1 + (forward_inx - inx + 1)/2;
 	      if (DIFF_MODE_GNU == mode)
 		{
-		  if(1 == delins_ops) /* deleted, insterted one line */
+		  if(1 == delins_ops) /* deleted, inserted one line */
 		    sprintf (tmp, "%ld%s%ld\n", line_A_counter, op == DIFF_INSERT_VAL ? "a" : "d", line_B_counter);
 		  else if (op == DIFF_DELETE_VAL)
 		    sprintf (tmp, "%ld,%ldd%ld\n", line_A_counter, line_A_counter + delins_ops - 1, line_B_counter);
@@ -405,7 +405,7 @@ caddr_t path_to_text (caddr_t* path, caddr_t * line_array, ptrlong mode)
 		}
 	      else
 		{
-		  if(1 == delins_ops) /* deleted, insterted one line */
+		  if(1 == delins_ops) /* deleted, inserted one line */
 		    sprintf (tmp, "%ld%s\n", line_A_counter, op == DIFF_INSERT_VAL ? "a" : "d");
 		  else if (op == DIFF_DELETE_VAL)
 		    sprintf (tmp, "%ld,%ldd\n", line_A_counter, line_A_counter + delins_ops - 1);

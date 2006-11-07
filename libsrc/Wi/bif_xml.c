@@ -2374,7 +2374,7 @@ bx_out_q_name (xte_serialize_state_t *xsst, dk_session_t * out, caddr_t name, in
   for (ns_list = ct->ct_all_explicit_ns; NULL != ns_list; ns_list = ns_list->next->next)
     {
       caddr_t ns = (caddr_t) ns_list->data;
-      n_ns += 2; /* ++ would be enough but is used for compartibility with an old error */
+      n_ns += 2; /* ++ would be enough but is used for compatibility with an old error */
       if (strlen (ns) != (size_t) ns_len || memcmp (ns, name, ns_len))
         continue;
       pref = (caddr_t) ns_list->next->data;
@@ -2915,7 +2915,7 @@ xte_serialize_1 (caddr_t * current, dk_session_t * ses, xte_serialize_state_t *x
 	      if (xsst->xsst_in_block == WSP_EXPLICIT ||
 		  (curr_tag.htmltd_is_block && xsst->xsst_in_block == WSP_COND))
 		/* if it's a block element then tag must be indented,
-		   or if we alredy closed non-block then indent it
+		   or if we already closed non-block then indent it
 		 */
 		{
 		  SES_PRINT (ses, "\n");
@@ -4196,7 +4196,7 @@ bif_xte_nodebld_acc_impl (caddr_t * qst, state_slot_t ** args, int preserve_args
   new_filled_count = filled_count + argcount - 1; /* This is an estimate for the most common case. It can be adjusted in the future */
   for (new_acc_length = acc_length; (new_filled_count) >= new_acc_length; new_acc_length += (new_acc_length + 1)); /* do nothing */;
   if (new_acc_length > MAX_BOX_ELEMENTS)
-    sqlr_new_error ("22003", "SR346", "Out of memory allocation limits: the composed XML contains a node that have too many chindlren");
+    sqlr_new_error ("22003", "SR346", "Out of memory allocation limits: the composed XML contains a node that have too many children");
   if (acc_length != new_acc_length)
     {
       caddr_t new_acc;
@@ -4265,7 +4265,7 @@ bif_xte_nodebld_acc_impl (caddr_t * qst, state_slot_t ** args, int preserve_args
 		        {
 		          while (elt_set != NULL)
 		            dk_free_tree ((box_t) dk_set_pop (&elt_set));
-			  sqlr_new_error ("22003", "SR346", "Out of memory allocation limits: the composed XML contains a node that have too many chindlren");
+			  sqlr_new_error ("22003", "SR346", "Out of memory allocation limits: the composed XML contains a node that have too many children");
 			}
 		      if (NULL == (new_acc = dk_try_alloc_box (sizeof (caddr_t) * new_acc_length, DV_ARRAY_OF_POINTER)))
 		        {

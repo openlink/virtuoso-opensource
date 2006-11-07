@@ -229,7 +229,7 @@ odbc_cat_init (void)
   bif_define_typed ("_sql_procedure_columns", bif_sql_procedure_columns, &bt_any);
   bif_define ("sql_gettypeinfo", bif_sql_gettypeinfo);
   bif_define ("sql_get_type_info", bif_sql_gettypeinfo); /*the convention mismash fixed,
-							  so we w'll leave the old one for comaptibility*/
+							  so we w'll leave the old one for compatibility*/
   bif_define ("vd_autocommit", bif_vd_autocommit);
 #ifdef HAVE_ODBCINST_H
   bif_define_typed ("sql_remove_dsn_from_ini", bif_sql_remove_dsn_from_ini, &bt_any);

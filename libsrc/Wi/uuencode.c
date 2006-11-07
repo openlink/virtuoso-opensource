@@ -865,7 +865,7 @@ _t_UU:
 
   /*
    * some encoders are broken with respect to encoding the last input_line of
-   * a file and produce extraoneous characters beyond the expected EOL
+   * a file and produce extraneous characters beyond the expected EOL
    * So were not too picky here about the last input_line, as long as it's longer
    * than necessary and shorter than the maximum
    * this tolerance broke the xxdecoding, because xxencoded data was
@@ -970,7 +970,7 @@ uu_decode_mime_qp (uu_ctx_t *ctx, caddr_t *out, caddr_t input)
   int boundary_len = ((NULL == ctx->uuc_boundary) ? 0 : box_length (ctx->uuc_boundary)-1);
   unsigned char *input_end = (unsigned char *)(input+input_len);
   unsigned char *input_tail = (unsigned char *)(input);
-  unsigned char *decode_tail = (unsigned char *)(input); /* Decoded data are shorter than qp-ed, so we may decode in-place */
+  unsigned char *decode_tail = (unsigned char *)(input); /* Decoded data is shorter than qp-ed, so we may decode in-place */
   unsigned char *first_cr, *first_lf;
   int append_lf = 1;
   FIND_DELIM (first_cr, input, input_end, ASCII_CR);
@@ -1050,7 +1050,7 @@ uu_decode_plaintext (uu_ctx_t *ctx, caddr_t *out, caddr_t input)
   int boundary_len = ((NULL == ctx->uuc_boundary) ? 0 : box_length (ctx->uuc_boundary)-1);
   unsigned char *input_end = (unsigned char *)(input+input_len);
   unsigned char *input_tail = (unsigned char *)(input);
-  unsigned char *decode_tail = (unsigned char *)(input); /* Decoded data are shorter than plaintexted, so we may decode in-place */
+  unsigned char *decode_tail = (unsigned char *)(input); /* Decoded data is shorter than plaintext, so we may decode in-place */
   unsigned char *first_cr, *first_lf;
   FIND_DELIM (first_cr, input, input_end, ASCII_CR);
   FIND_DELIM (first_lf, input, input_end, ASCII_LF);
@@ -1109,7 +1109,7 @@ uu_decode_part (uu_ctx_t *ctx, caddr_t *out, caddr_t input)
   int check_res;
   unsigned char *input_end = (unsigned char *)(input+input_len);
   unsigned char *input_tail = (unsigned char *)(input);
-  unsigned char *decode_tail = (unsigned char *)(input); /* Decoded data are shorter than plaintexted, so we may decode in-place */
+  unsigned char *decode_tail = (unsigned char *)(input); /* Decoded data is shorter than plaintext, so we may decode in-place */
   unsigned char *first_cr, *first_lf;
 
   switch (ctx->uuc_enctype)

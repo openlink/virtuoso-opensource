@@ -359,7 +359,7 @@ int asn1_parse_to_xml(BIO *bp, const unsigned char **pp, long length, int offset
 				}
 			else if (tag == V_ASN1_BMPSTRING)
 				{
-				/* do the BMP thang */
+				/* do the BMP thing */
 				}
 			else if (tag == V_ASN1_OCTET_STRING)
 				{
@@ -1126,8 +1126,7 @@ bif_get_certificate_info (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	  char * pass = bif_string_or_null_arg (qst, args, 3, "get_certificate_info");
 
 	  pk12 = d2i_PKCS12_bio (mem_bio, NULL);
-	  PKCS12_parse (pk12, pass, &pkey, &cert, &ca_list); /*TODO: check whether pkey & broters needs
-							       to be freed */
+	  PKCS12_parse (pk12, pass, &pkey, &cert, &ca_list); /*TODO: check whether pkey & brothers needs to be freed */
 	}
       else if (input_type == 3)
 	{

@@ -852,7 +852,7 @@ sqlc_check_mpu_name (caddr_t name, mpu_name_type_t type)
       (type != MPU_UDT || udt->scl_defined))
     {
       snprintf (err_str, sizeof (err_str),
-	  "An user defined type with name %.200s allready exists", udt->scl_name);
+	  "An user defined type with name %.200s already exists", udt->scl_name);
     }
   else if (NULL != (module_qr = sch_module_def (top_sc->sc_cc->cc_schema, name)))
     {
@@ -863,7 +863,7 @@ sqlc_check_mpu_name (caddr_t name, mpu_name_type_t type)
       type != MPU_PROC)
     {
       snprintf (err_str, sizeof (err_str),
-	  "An SQL stored procedure with name %.200s allready exists", proc_qr->qr_proc_name);
+	  "An SQL stored procedure with name %.200s already exists", proc_qr->qr_proc_name);
     }
   if (err_str[0])
     sqlc_new_error (top_sc->sc_cc, "42000", "SQ171", "%s", err_str);

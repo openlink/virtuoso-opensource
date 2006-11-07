@@ -714,7 +714,7 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
 	      if (!dbe_row_is_valid_key (row_key, k_id, page_key))
 		{
 		  dbe_key_t *page_key = sch_id_to_key (wi_inst.wi_schema, k_id);
-		  log_error ("Possible corruption : Page %lu contans rows with key id %d (%s) whereas it should contain only rows of key id %d (%s)",
+		  log_error ("Possible corruption : Page %lu contains rows with key id %d (%s) whereas it should contain only rows of key id %d (%s)",
 		      (unsigned long) buf->bd_page, (int) key_id, row_key->key_name, (int) k_id, page_key ? page_key->key_name : "<Unknown>");
 		  n_rows++;
 		  n_bad_rows++;

@@ -1324,7 +1324,7 @@ create procedure ddl_check_modify (in tb varchar, in op integer, in decl any)
       if (isstring (constr_name))
 	{
 	  if (exists (select 1 from DB.DBA.SYS_CONSTRAINTS WHERE C_TABLE = tb and C_TEXT = constr_name))
-	    signal ('22023', concat ('CHECK constraint ', constr_name, ' for table ', tb, ' allready exists'),
+	    signal ('22023', concat ('CHECK constraint ', constr_name, ' for table ', tb, ' already exists'),
 	            'SR3634');
         }
 

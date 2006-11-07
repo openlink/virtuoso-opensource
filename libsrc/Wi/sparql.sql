@@ -2665,7 +2665,7 @@ create procedure DB.DBA.SPARQL_DESCRIBE_FIN (inout _env any)
       subj := subjects[subj_ctr];
       DB.DBA.RDF_DESCRIBE_PUT (res, subj, options);
     }
--- The commented-out code below is to debug DESCRIBE functionaly using server's console.
+-- The commented-out code below is to debug DESCRIBE functionality using server's console.
 -- A DESCRIBE statement returns dictionary that can not be transmitted to the client via SQL connection,
 -- so the client will loose connection to server instead of printing the result-set.
 -- Debugging version will print to the console and return zero.
@@ -5989,7 +5989,7 @@ perform_actual_load:
     {
       req_hdr := NULL;
       get_proxy := get_keyword_ucase ('get:proxy', options);
-      --!!!TBD: proper supprt for POST
+      --!!!TBD: proper support for POST
       --!!!TBD: proper authentication if get:login / get:password is provided.
       if (old_last_etag is not null)
         req_hdr := 'If-None-Match: ' || old_last_etag;

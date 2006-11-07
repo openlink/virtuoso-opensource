@@ -194,7 +194,7 @@ bif_sys_lockdown (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       lockdown_mode = 1;
 #ifndef NDEBUG
       if (listeners)
-        GPF_T1 ("listeners allredy there on locking the system down");
+        GPF_T1 ("listeners already there on locking the system down");
 #endif
       PrpcSelfSignal ((self_signal_func) collect_listeners, (caddr_t) &req);
       semaphore_enter (req.sem);

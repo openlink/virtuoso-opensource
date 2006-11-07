@@ -741,9 +741,9 @@ ccaddr_t xml_sql_type [] = {
 "VARCHAR", /*"normalizedString"*/
 "DECIMAL", /*"number"*/
 "INTEGER", /*"positiveInteger"*/
-"VARCHAR", /*"reccuringDate"*/
-"VARCHAR", /*"reccuringDay"*/
-"VARCHAR", /*"reccuringDuration"*/
+"VARCHAR", /*"recurringDate"*/
+"VARCHAR", /*"recurringDay"*/
+"VARCHAR", /*"recurringDuration"*/
 "SMALLINT",/*"short"*/
 "VARCHAR", /*"string"*/
 "TIME",    /*"time"*/

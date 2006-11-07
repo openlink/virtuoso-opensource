@@ -240,7 +240,7 @@ typedef struct lock_trx_s
 #endif
   } lock_trx_t;
 
-/* use the below macro to partably set the lt_error_detail member of the LT */
+/* use the below macro to portably set the lt_error_detail member of the LT */
 #define LT_ERROR_DETAIL_SET(lt, det) \
   do \
     { \
@@ -250,7 +250,7 @@ typedef struct lock_trx_s
     } \
   while (0)
 
-/* use the below macro to partably get the lt_error_detail member of the LT */
+/* use the below macro to portably get the lt_error_detail member of the LT */
 #define LT_ERROR_DETAIL(lt) \
     (lt)->lt_error_detail
 

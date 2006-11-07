@@ -728,7 +728,7 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
       t_set_push (&group_dfe->_.setp.fun_refs, fref);
     }
   END_DO_SET();
-  /* all the predicates not done so far are from the HAVNIG clause, even if not mentioned in the texp since they could hav been added to the ot from an enclosing context */
+  /* all the predicates not done so far are from the HAVING clause, even if not mentioned in the texp since they could hav been added to the ot from an enclosing context */
   so->so_gen_pt = from_ot->ot_group_dfe;
   DO_SET (df_elt_t *, pred, &from_ot->ot_preds)
     {

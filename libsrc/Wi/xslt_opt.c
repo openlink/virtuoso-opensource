@@ -673,7 +673,7 @@ xslt_includes (xslt_sheet_t *xsh, caddr_t * top, query_instance_t * qi)
 	  if (xte_is_xsl_elt (elt, "stylesheet") || xte_is_xsl_elt (elt, "transform"))
 	    {
 	      if (0 != sheet_inx)
-		sqlr_new_error_xsltree_xdl ("XS370", "XS054", elt, "redundand 'XSLT stylesheet' element");
+		sqlr_new_error_xsltree_xdl ("XS370", "XS054", elt, "redundant 'XSLT stylesheet' element");
 	      sheet_tree = elt;
 	      sheet_inx = inx;
 	      continue;
@@ -682,7 +682,7 @@ xslt_includes (xslt_sheet_t *xsh, caddr_t * top, query_instance_t * qi)
 	    {
 	      int inx1;
 	      if (0 != sheet_inx)
-		sqlr_new_error_xsltree_xdl ("XS370", "XS055", elt, "redundand element with 'XSLT version' attribute");
+		sqlr_new_error_xsltree_xdl ("XS370", "XS055", elt, "redundant element with 'XSLT version' attribute");
 	      for (inx1 = 1; inx1 < (int) BOX_ELEMENTS (head); inx1 += 2)
 		{
 		  if (is_xslns (head[inx1]))

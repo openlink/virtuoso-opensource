@@ -1270,7 +1270,7 @@ caddr_t* bif_backup_dirs_arg (caddr_t* qst, state_slot_t** args, int num, const 
   return ba;
  err:
   sqlr_new_error ("42001", BACKUP_DIR_ARG_ERR_CODE, "The argument %d of %s must be array of strings", num+1, func_name);
-  return 0; /* keeps compller happy */
+  return 0; /* keeps compiler happy */
 }
 
 caddr_t
@@ -2198,7 +2198,7 @@ dbs_count_pageset_items_2 (dbe_storage_t * dbs, buffer_desc_t* pset)
   return i_count;
 }
 
-/* we make (I & B) to recieve real page set ready to backup */
+/* we make (I & B) to receive real page set ready to backup */
 long dbs_count_incbackup_pages (dbe_storage_t * dbs)
 {
   buffer_desc_t * incbps = incset_make_copy (dbs->dbs_incbackup_set);

@@ -2665,7 +2665,7 @@ parse_source:
     else if (('S' == source_type) && (XE_XPACK_SERIALIZATION == source_sort))
       {				/* packed XML blob content as a DV_X_STRING */
 	dk_free_box (uri);
-	sqlr_new_error ("42000", "XE023", "Can not compose an XPER entity by deserializaton of a packed XML");
+	sqlr_new_error ("42000", "XE023", "Can not compose an XPER entity by deserialization of a packed XML");
       }
     else
       {				/* string is an XML document to parse */
@@ -4342,7 +4342,7 @@ DBG_NAME(xp_string_value) (DBG_PARAMS xml_entity_t * xe, caddr_t * ret, dtp_t dt
 		    }
 		  break;
 #if 0
-/* TBD: references should be extended and converted to string, but probably with disabled signalling of errors. */
+/* TBD: references should be extended and converted to string, but probably with disabled signaling of errors. */
 		case XML_MKUP_REF:
 		  {
 		    xper_entity_t *ref_xpe = (xper_entity_t *)xe->_->xe_copy (xe);

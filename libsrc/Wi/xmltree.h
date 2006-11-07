@@ -144,7 +144,7 @@ When some child is a reference then xe_down is used and the number of child of t
     caddr_t (* xe_attrvalue) (xml_entity_t * xe, caddr_t qname);
 /*! Returns string value of current attribute of attribute entity, can't return NULL, can GPF on non-attribute entity */
     caddr_t (* xe_currattrvalue) (xml_entity_t * xe);
-/*! Returns number of atrributes with user data, (i.e. excluding xmlns:... attributes) */
+/*! Returns number of attributes with user data, (i.e. excluding xmlns:... attributes) */
     size_t (* xe_data_attribute_count) (xml_entity_t * xe);
 /*! Returns name of element if attribute or element node; special name if texts etc. */
     caddr_t (* xe_element_name) (xml_entity_t * xe);
@@ -196,7 +196,7 @@ Refer to fields \c xewr_attr_beg, \c xewr_attr_this_end and \c xewr_attr_tree_en
    caddr_t * (* xe_copy_to_xte_head) (xml_entity_t *xe);
 /*! Returns an xte_tree with all children and attributes and element name cloned from 'this' entity */
    caddr_t * (* xe_copy_to_xte_subtree) (xml_entity_t *xe);
-/*! Returns a vector of xte_tree-s with all children of 'this' entity; generic references will be be extented. */
+/*! Returns a vector of xte_tree-s with all children of 'this' entity; generic references will be be extended. */
    caddr_t ** (* xe_copy_to_xte_forest) (xml_entity_t *xe);
 /*! Emulates an input of the current entity into \c parser */
    void (* xe_emulate_input) (xml_entity_t *xe, struct vxml_parser_s *parser);
@@ -284,7 +284,7 @@ See where the document is created and put an appropriate breakpoint */
 
 /* 'Base class' members that are common for all sorts of XML documents:
 'xd_type' is unused and I have no idea what was the initial intention, will kill it;
-'xd_qi' is the creator of the document: neither XML document nor XML entity can survive the end of query or be passed from one query instsnce to other;
+'xd_qi' is the creator of the document: neither XML document nor XML entity can survive the end of query or be passed from one query instance to other;
 'xd_xqi' is the creator of the document if it is composed or loaded to memory by XPath or XQuery expression;
 'xd_ref_count' is the reference counter of the document to freee it when the last user disappears, users are entities in the document and members of 'xd_referenced_entities' or 'xd_cached_docs';
 'xd_cost' is the cost of the reloading of the document; the more it costs the later it should be removed from cache;
@@ -628,7 +628,7 @@ On nesting decrement, all fields not equal to fields of parent are freed. Equal 
 typedef struct xp_rdf_locals_s
 {
   caddr_t	xrl_subject;		/*!< Subject (IRI of named node or blank node IRI_ID); subject is used for nested predicates */
-  caddr_t	xrl_predicate;		/*!< Preducate (IRI of named node or blank node IRI_ID) */
+  caddr_t	xrl_predicate;		/*!< Predicate (IRI of named node or blank node IRI_ID) */
   caddr_t	xrl_base;		/*!< Base to resolve relative URIs, inheritable */
   caddr_t	xrl_language;		/*!< Language tag as string or NULL, inheritable */
   caddr_t	xrl_datatype;		/*!< Object data type (named node IRI_ID), not inheritable */

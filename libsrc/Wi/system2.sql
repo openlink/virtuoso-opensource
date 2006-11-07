@@ -233,7 +233,7 @@ create procedure DB.DBA.TABLE_SET_POLICY (in _tb varchar, in _proc varchar, in _
 
       if (exists (select 1 from DB.DBA.SYS_RLS_POLICY where RLSP_TABLE = tb_name and RLSP_OP = proc_name))
 	signal ('22023',
-         sprintf ('Procedure for option %s for table %s allready defined in TABLE_SET_POLICY. Drop it first',
+         sprintf ('Procedure for option %s for table %s already defined in TABLE_SET_POLICY. Drop it first',
 	 opt, _tb), 'SR387');
 
       insert into DB.DBA.SYS_RLS_POLICY (RLSP_TABLE, RLSP_FUNC, RLSP_OP)
@@ -317,7 +317,7 @@ create procedure SINV_CREATE_INVERSE (in _SINVM_NAME_IN varchar, in _SINV_INVERS
       _SINVM_NAME := __proc_exists (_SINVM_NAME_IN, 1);
       if (not isstring (_SINVM_NAME))
 	signal ('22023', sprintf (
-          'Non-existant function %s passed as argument 1 to SINV_CREATE_INVERSE', _SINVM_NAME_IN),
+          'Non-existent function %s passed as argument 1 to SINV_CREATE_INVERSE', _SINVM_NAME_IN),
 	  'SR456');
     }
 
@@ -332,7 +332,7 @@ create procedure SINV_CREATE_INVERSE (in _SINVM_NAME_IN varchar, in _SINV_INVERS
 	  _inverse := __proc_exists (_inverse, 1);
 	  if (not isstring (_inverse))
 	    signal ('22023', sprintf (
-	      'Non-existant function %s passed as %dth value in argument 2 to SINV_CREATE_INVERSE',
+	      'Non-existent function %s passed as %dth value in argument 2 to SINV_CREATE_INVERSE',
 	      _SINVM_NAME_IN, inx + 1),
 	      'SR457');
 	}
@@ -361,7 +361,7 @@ create procedure SINV_DROP_INVERSE (in _SINVM_NAME_IN varchar)
       _SINVM_NAME := __proc_exists (_SINVM_NAME_IN, 1);
       if (not isstring (_SINVM_NAME))
 	signal ('22023', sprintf (
-          'Non-existant function %s passed as argument 1 to SINV_DROP_INVERSE', _SINVM_NAME_IN),
+          'Non-existent function %s passed as argument 1 to SINV_DROP_INVERSE', _SINVM_NAME_IN),
 	  'SR458');
     }
   delete from SYS_SQL_INVERSE where SINV_FUNCTION = _SINVM_NAME;

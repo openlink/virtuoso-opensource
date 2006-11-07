@@ -799,7 +799,7 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	  query_instance_t * qi = (query_instance_t *) itc->itc_out_state;
 	  if (qi->qi_no_cast_error)
 	    {
-	      /* cast failure and not signalled.  In rdf inx merge, cmp of any and iri 
+	      /* cast failure and not signaled.  In rdf inx merge, cmp of any and iri 
 	       * with non-iri param.  Return flag to show whether the ANY in any sort order is below, in which case continue, or above, in which case stop */
 	      dk_free_tree (err);
 	      if (IS_NUM_DTP (dtp))
@@ -1856,7 +1856,7 @@ deref_node_input (deref_node_t * dn, caddr_t * inst, caddr_t * state)
       if (!key)
 	{
 	  itc_free (ref_itc);
-	  sqlr_new_error ("42000", "SR474", "Unknown key id %d. Skiping the row", (int) key_id);
+	  sqlr_new_error ("42000", "SR474", "Unknown key id %d. Skipping the row", (int) key_id);
 	}
     }
   ref_itc->itc_lock_mode = qi->qi_lock_mode;

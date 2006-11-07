@@ -3254,7 +3254,7 @@ int xe_have_equal_heads (xml_entity_t *this_xe, xml_entity_t *that_xe)
 	  return res;
 	}
       attrs = (id_hash_t *) box_dv_dict_hashtable(31);
-/* First we should pupulate the hashtable by attributes from this_xe */
+/* First we should populate the hashtable by attributes from this_xe */
       for (rc = -1; /* no check*/; /*no step*/)
 	{
 	  this_name = this_value = NULL;
@@ -5829,7 +5829,7 @@ This is the layout of the first byte of the encoded sequence:
      /
     / __ 0x00 - one more byte, 0x20 - two more bytes, 0x40 - three more, 0x60 - four.
    / / /
-  / / / __________ These are bits of the most signifincant nonzero byte of the value.
+  / / / __________ These are bits of the most significant nonzero byte of the value.
  / / / /   / / / /
 8 4 2 1 : 8 4 2 0
 
@@ -7523,7 +7523,7 @@ xe_strses_serialize_utf8 (xml_entity_t * xe, dk_session_t * strses, int set_enco
   volatile int retval = 1;
 
   if (1 || set_encoding) /* GK: all the clients - even the old ones && cli->cli_version > 2723*/
-    { /* if it's outputing data to the client of a supporting version */
+    { /* if it's outputting data to the client of a supporting version */
       BOX_AUTO (bptr, buffer, sizeof ("UTF-8") + 1, DV_SHORT_STRING);
       strcpy_box_ck (bptr, "UTF-8");
 

@@ -40,7 +40,7 @@
 #define JSO_DEPRECATED	15	/*!< The property is never loaded. It's used only in C code */
 
 #define JSO_ANY		"http://www.w3.org/2001/XMLSchema#any"			/*!< Arbitrary boxed SQL value */
-#define JSO_ANY_array	"http://www.w3.org/2001/XMLSchema#any"			/*!< A vector of abitrary boxed SQL values */
+#define JSO_ANY_array	"http://www.w3.org/2001/XMLSchema#any"			/*!< A vector of arbitrary boxed SQL values */
 #define JSO_ANY_URI	"http://www.w3.org/2001/XMLSchema#anyURI"		/*!< boxed DV_UNAME in UTF-8 encoding */
 #define JSO_BOOLEAN	"http://www.w3.org/2001/XMLSchema#boolean"		/*!< Bool as ptrlong 1 or 0 */
 #define JSO_BITMASK	"http://www.openlinksw.com/schemas/virtrdf#bitmask"	/*!< Bitmask as ptrlong, can be loaded as OR of a list of values */
@@ -62,7 +62,7 @@ typedef struct jso_field_descr_s {
   struct jso_class_descr_s *	jsofd_class;	/*!< The backlink to the class where the field is declared */
 } jso_field_descr_t;
 
-/* Category of JSO class. This implememntation supports only structures with fixed list of named fields and arrays with nonnegative integer indexes */
+/* Category of JSO class. This implementation supports only structures with fixed list of named fields and arrays with nonnegative integer indexes */
 #define JSO_CAT_STRUCT	21	/*!< Class instances are strtuctures with fixed list of named fields */
 #define JSO_CAT_ARRAY	22	/*!< Class instances are arrays with nonnegative integer indexes */
 /*#define JSO_CAT_MAP	23	*!< Class instances are sets of key-value pairs with keys and values of any types */
@@ -104,7 +104,7 @@ typedef struct jso_class_descr_s {
 
 /*! Run-time type info about JSO instance */
 typedef struct jso_rtti_s {
-  void *	jrtti_self;		/*!< Pointer to the actual C structure that cotnain instance data */
+  void *	jrtti_self;		/*!< Pointer to the actual C structure that contain instance data */
   caddr_t	jrtti_inst_iri;		/*!< Instance IRI */
   jso_class_descr_t *	jrtti_class;	/*!< Pointer to description of the class of the instance */
   int		jrtti_status;		/*!< Status as one of JSO_STATUS_xxx values */
@@ -125,7 +125,7 @@ extern void jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_
 extern dk_hash_t *jso_consts;		/*!< All known named constants, e.g., made by jso_define_const() */
 extern dk_hash_t *jso_classes;		/*!< All known JSO classes, e.g., made by jso_define_class() */
 extern dk_hash_t *jso_properties;	/*!< All known property names of all JSO classes, to cross-check classes for duplicate names */
-extern dk_hash_t *jso_rttis_of_names;	/*!< All JSO class instances of all classes, to distinguish between missing insntances and type mismatches */
+extern dk_hash_t *jso_rttis_of_names;	/*!< All JSO class instances of all classes, to distinguish between missing instances and type mismatches */
 extern dk_hash_t *jso_rttis_of_structs;	/*!< Similar to jso_rttis_of_names but keys are 'jrtti_self' structures, not instance IRIs */
 
 

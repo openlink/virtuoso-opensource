@@ -92,7 +92,7 @@ extern scn3_paren_t scn3_parens[MAXLEXDEPTH];
 
 /*! Logical line location as it is set by #pragma line statements.
 See the body of scn3_sprint_curr_line_loc() to find out how to use such data
-to get a logical filename and line number for the currect position
+to get a logical filename and line number for the correct position
 in the source text. */
 typedef struct scn3_line_loc_s {
 /*! The value of scn3_lineno at the beginning of #pragma line. */
@@ -281,7 +281,7 @@ void table_source_input_unique (table_source_t * ts, caddr_t * inst,
 void table_source_free (table_source_t * ts);
 
 int ks_make_spec_list (it_cursor_t * it, search_spec_t * ks_spec, caddr_t * state);
-/* when cast fails and cast errors supppressed, ks_cast_dtp_lt when value below the col dtp in ANY order, else ks_cast_dtp_gt */
+/* when cast fails and cast errors suppressed, ks_cast_dtp_lt when value below the col dtp in ANY order, else ks_cast_dtp_gt */
 #define KS_CAST_OK 0
 #define KS_CAST_NULL 1
 #define KS_CAST_DTP_LT 2

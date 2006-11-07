@@ -608,7 +608,7 @@ create procedure FTP_FILE_PERM (in perm varchar, in _type varchar)
         {
             perms [_ix + 1] := allset [_ix];
             if (isdir and (_ix = 0 or _ix = 3 or _ix = 6)) -- readable directory
-              perms [_ix + 3] := allset [_ix + 2]; -- readable directiry is also executable
+              perms [_ix + 3] := allset [_ix + 2]; -- readable directory is also executable
         }
       _ix := _ix + 1;
     }
@@ -1034,7 +1034,7 @@ create procedure FTP_GET (in _server varchar, in _user varchar, in _pass varchar
 -- Parameter check
 
   if (length (_local) >= 7 and "LEFT" (_local, 7) = 'virt://' and (dav_user is NULL or dav_pass is NULL))
-    signal ('22023', 'Incorect DAV path / user parameters.');
+    signal ('22023', 'Incorrect DAV path / user parameters.');
 
   data_ses := NULL;
   all_at := string_output (http_strses_memory_size ());
@@ -1075,7 +1075,7 @@ create procedure FTP_PUT (in _server varchar, in _user varchar, in _pass varchar
 -- Parameter check
 
   if (length (_file) >= 7 and "LEFT" (_file, 7) = 'virt://' and (dav_user is NULL or dav_pass is NULL))
-    signal ('22023', 'Incorect DAV path / user parameters.');
+    signal ('22023', 'Incorrect DAV path / user parameters.');
 
   data_ses := NULL;
   data_addr := FTP_CONNECT (_server, _user, _pass, ses, is_pasv);

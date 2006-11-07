@@ -213,7 +213,7 @@ pop_init (in _user varchar)
       fetch all_mess into temp_id, temp_body2, temp_is_read;
       temp_body := blob_to_string(coalesce (temp_body2, ' '));
 --
---    Creat UIDL
+--    Create UIDL
 --
       uidl := vector (temp_id, length (temp_body), temp_is_read,
 	  concat (MD5 (concat (temp_body, sprintf ('%i',temp_id))), 'v_pop'));

@@ -25,7 +25,7 @@
 --  
 --  
 
--- XXX: nolonger needed, obsoleted
+-- XXX: no longer needed, obsoleted
 --create table SYS_HTTP_MAP
 --(
 --  HM_LPATH       varchar,  -- Logical path
@@ -83,7 +83,7 @@ alter table HTTP_ACL add HA_ORDER integer not null
 alter table HTTP_ACL add HA_RATE double precision	   -- Rate (hits/second).
 ;
 
--- triggers to keep in sync in-memory represantation
+-- triggers to keep in sync in-memory representation
 --!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
 create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 {
@@ -91,7 +91,7 @@ create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 }
 ;
 
--- triggers to keep in sync in-memory represantation
+-- triggers to keep in sync in-memory representation
 --!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
 create trigger HTTP_ACL_U after update on DB.DBA.HTTP_ACL referencing old as O, new as N
 {
@@ -546,7 +546,7 @@ returns integer
   -- Deny by default
   rc := 0;
 
-  -- Requestor address
+  -- Requester address
   client := http_client_ip ();
   host := split_and_decode (dst, 0, '\0\0:');
   -- Remove the port number if exists

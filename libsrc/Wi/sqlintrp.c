@@ -147,7 +147,7 @@ repl_proc_call (instruction_t * ins, caddr_t * qst, query_t *proc, caddr_t *pars
 	      ssl->ssl_type == SSL_REF_PARAMETER)
 	    {
 		sqlr_new_error ("42000", "SQ206",
-		    "Procedure %s cannot be transactionaly replicated "
+		    "Procedure %s cannot be transactionally replicated "
 		    "(in publication %s) because it has out/inout parameter %s (parameter number %d). "
 		    "Publishing the calls to the procedure is disabled. "
 		    "Please remove the procedure from the transactional publication.",
@@ -344,7 +344,7 @@ ins_call (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
       mtd_inx = unbox (proc_mtd_call[1]);
       if (!udt)
 	{
-	  err = srv_make_new_error ("22023", "UD005", "Non-existant user defined type %.200s",
+	  err = srv_make_new_error ("22023", "UD005", "Non-existent user defined type %.200s",
 	      proc_mtd_call[0]);
 	  goto report_error;
 	}

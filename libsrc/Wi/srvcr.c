@@ -81,7 +81,7 @@ box_md5_1 (caddr_t box, MD5_CTX * ctx)
     case DV_BLOB_HANDLE:
     case DV_BLOB_WIDE_HANDLE:
       return;
-#if 0 /* It's redundand now, because DV_SHORT_STRING == DV_LONG_STRING */
+#if 0 /* It's redundant now, because DV_SHORT_STRING == DV_LONG_STRING */
     case DV_STRING:
       box_tag_modify (box, DV_STRING);
       MD5Update (ctx, (unsigned char *) box - 1, len + 1);
@@ -2222,7 +2222,7 @@ bif_burst_mode_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     {
       thrs_printf ((thrs_fo,
-	    "bif_burst_mode_set on allready burst ses %p thr:%p\n",
+	    "bif_burst_mode_set on already burst ses %p thr:%p\n",
 	    dks, THREAD_CURRENT_THREAD));
       mutex_leave (thread_mtx);
       return box_num (0);
@@ -2273,7 +2273,7 @@ bif_is_relocatable (bif_t bif)
       /* UDTs */
       || udt_is_udt_bif (bif)
 
-      /* cast (let the VDB layer deside) */
+      /* cast (let the VDB layer decide) */
       || bif_convert == bif
       )
     return 0;

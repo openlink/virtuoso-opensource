@@ -511,7 +511,7 @@ regexp_make_opts (const char* mode)
 }
 
 /* initialize vector of offsets, returns double number of offsets.
-   -1 if failes
+   -1 if failed
    signals the error if pattern is invalid.
 
    example:

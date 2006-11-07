@@ -88,8 +88,8 @@ extern P_SHA1_CTX *P_SHA1_init(const char *secret, int secret_len, const char *s
 extern void P_SHA1_block(P_SHA1_CTX *ctx, char *dst);
 extern void P_SHA1_free(P_SHA1_CTX *ctx);
 
-/* utilites */
-/* convert nonegative integer to octet stream buf with length len
+/* utilities */
+/* convert nonnegative integer to octet stream buf with length len
    returns zero if success
  */
 int xenc_I2OSP (long x, long octet_len, unsigned char* buf);

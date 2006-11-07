@@ -1617,9 +1617,9 @@ bif_file_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 /*##
-  Generates a system-dependant temprorary file name,
+  Generates a system-dependent temporary file name,
   usually on UNIXes it's in $TMPDIR, /tmp or /var/tmp directory in that order.
-  On Windows platforms almost depends of %TMP% enviroment variable.
+  On Windows platforms almost depends of %TMP% environment variable.
   Note that this function does not open the file to check access!
 */
 static caddr_t
@@ -2794,7 +2794,7 @@ mime_get_line (char *szMessage, long message_size, long offset, char *_szDest,
 	  line_len = szSrc - szMessage - offset;
 	  szSrc++;
 	  /* This was while, but it will unfold a CRLF 0xOA0XFF to 0xFF
-	     and binary attachements will be brocken */
+	     and binary attachment will be broken */
 	  if (szSrc - szMessage - offset < message_size && *(szSrc) == LF)
 	    szSrc++;
 	  if (!iswhite (szSrc) || !line_len)
@@ -2805,7 +2805,7 @@ mime_get_line (char *szMessage, long message_size, long offset, char *_szDest,
 	  line_len = szSrc - szMessage - offset;
 	  szSrc++;
 	  /* This was while, but it will unfold a LFCR 0xOD0XFF to 0xFF
-	     and binary attachements will be brocken */
+	     and binary attachment will be broken */
 	  if (szSrc - szMessage - offset < message_size && *(szSrc) == CR)
 	    szSrc++;
 	  if (!iswhite (szSrc) || !line_len)
@@ -3177,7 +3177,7 @@ get_mime_part (int *rfc822, caddr_t szMessage, long message_size, long offset,
 		      else
 			{
 			  dk_set_push (&multiparts, (void *) part_result);
-			  /* When embeeded multipart finish, we
+			  /* When embedded multipart finish, we
 			     have to check whether current multipart is also finished.
 			     Otherwise last boundry end never get's readed properly
 			   */
@@ -3222,7 +3222,7 @@ get_mime_part (int *rfc822, caddr_t szMessage, long message_size, long offset,
 }
 
 /* the "Stream mime parser".
-   It currently isn't recusive.
+   It currently isn't recursive.
    Suites well for multipart/form-data
 */
 #define s_iswhite(x) ((x) == SPACE || (x) == HTAB)

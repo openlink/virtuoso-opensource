@@ -280,7 +280,7 @@ tp_free_cli_after_unenlist (client_connection_t * client,
 #ifndef NDEBUG
       tc_initial_while_closing_died++;
 #endif
-      _2pc_printf (("defered client_died of the client connection %p",
+      _2pc_printf (("deferred client_died of the client connection %p",
 	      client));
       srv_client_connection_died (client);
     }
@@ -820,7 +820,7 @@ bif_2pc_enlist_001 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   tpd->cli_trx_type = cli->cli_trx->lt_2pc._2pc_type = TP_VIRT_TYPE;
 
   _2pc_printf ((" done\n"));
-  _2pc_printf (("	recieved branch cookie %s\n", branch_cookie));
+  _2pc_printf (("	received branch cookie %s\n", branch_cookie));
   return NEW_DB_NULL;
 }
 
@@ -1860,7 +1860,7 @@ bif_heuristic_transact (caddr_t * qst, caddr_t * err_ret,
       {
 	mutex_leave (global_xa_map->xm_mtx);
 	dk_free_box ((box_t) xid);
-	sqlr_error ("XAXXX", "Uknown XA transaction [%s]", tr_xid);
+	sqlr_error ("XAXXX", "Unknown XA transaction [%s]", tr_xid);
       }
     result = replay_transact (trlog, is_commit);
     dk_free_box (trlog);

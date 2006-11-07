@@ -262,7 +262,7 @@
 #define XML_COL__SCHEMA	(ptrlong) 0xF0
 #define XML_COL_DEFAULT	XML_COL_ATTR
 
-/* Bitmasks for xolumns of XML views
+/* Bitmasks for columns of XML views
 Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTER */
 
 #define XV_XC_SUBELEMENT	(ptrlong) 0x010
@@ -376,7 +376,7 @@ typedef struct sql_tree_s
 	    ST *	left;
 	    ST *	right;
 	    caddr_t	more;	/* used by BETWEEN, ANY/ALL etc. */
-	    caddr_t	serial; /* for dist identical constant pred trees in order to avoid inparopriate common predicate elimination in sqlo_df */
+	    caddr_t	serial; /* for dist identical constant pred trees in order to avoid inappropriate common predicate elimination in sqlo_df */
 	  } bin_exp;
 	struct
 	  {

@@ -1437,7 +1437,7 @@ log_replay_search_next_log_rec (dk_session_t *file_in)
   f = fdopen (dup (fd), "r");
   if (!f)
     {
-      log_error ("Failed duplicating the file descriptior : %m");
+      log_error ("Failed duplicating the file descriptor : %m");
       return 0;
     }
 
@@ -1543,7 +1543,7 @@ read_again:
 	}
       if (!log_check_header (header))
 	{
-	  log_error ("Invalid log entry in replay. Delete tranasction log %.500s or truncate at point of error."
+	  log_error ("Invalid log entry in replay. Delete transaction log %.500s or truncate at point of error."
 		     " Valid data may exist after this record. A log record begins with bytes 193 188 5 188 0."
                      " Error at offset " OFF_T_PRINTF_FMT,
 	      wi_inst.wi_master->dbs_log_name ? wi_inst.wi_master->dbs_log_name : "",

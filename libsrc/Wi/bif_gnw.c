@@ -164,7 +164,7 @@ bif_datestringGMT (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
  *  The alphabet is usually something like static char *bif_aux_base64chars
  *  presented in this module
  *  (i.e. 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./')
- *  that is appropriate for decoding uuencoded and crypted strings,
+ *  that is appropriate for decoding uuencoded and encrypted strings,
  *  where each encoded character presents six bits. (log2(64) = 6)
  *
  */

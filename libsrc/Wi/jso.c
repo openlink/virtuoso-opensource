@@ -285,7 +285,7 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
             if (NULL == sub)
                 {
                   SET_STATUS_FAILED;
-                  sqlr_new_error ("22023", "SR527", "JSO array instance <%.500s> of type <%.500s> contains unitialized element %ld",
+                  sqlr_new_error ("22023", "SR527", "JSO array instance <%.500s> of type <%.500s> contains uninitialized element %ld",
                     inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, (long)ctr );
                 }
             if (NULL != fld_type_cd)

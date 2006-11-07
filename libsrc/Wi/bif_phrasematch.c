@@ -172,7 +172,7 @@ typedef struct ap_proc_inst_s {
   ap_arrow_t **	appi_places;		/*!< All places found (both words and markup) */
   int		appi_word_count;	/*!< Accumulated(?) length of appi_words */
   ap_arrow_t **	appi_words;		/*!< All words found */
-  ap_phrase_t **	appi_phrases;	/*!< All phrase found, in the order of occurence of their beginnings in the text, then in the order of their ends, then in order of set IDs */
+  ap_phrase_t **	appi_phrases;	/*!< All phrase found, in the order of occurrence of their beginnings in the text, then in the order of their ends, then in order of set IDs */
 /* Temporary data, memory-pooled, used when the source is parsed */
   wchar_t *	appi_source_wide;	/*!< The same source in wide encoding if this is required for word splitting and normalization */
   dk_set_t	appi_places_revlist;	/*!< Temporary revlist of all found places */
@@ -1768,7 +1768,7 @@ bif_ap_add_phrases (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL == aps)
     sqlr_new_error ("42000", "APS04", "Can not add phrases to an unregistered annotation phrase set #%ld", (long)aps_id);
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (descrs))
-    sqlr_new_error ("42000", "APS05", "Argument 2 of ap_add_phrases() shold be a vector of descriptions of phrases");
+    sqlr_new_error ("42000", "APS05", "Argument 2 of ap_add_phrases() should be a vector of descriptions of phrases");
   if (!aps->aps_bitarrays.apb_arrays_ok || aps->aps_bitarrays.apb_scale < aps_calc_scale (aps->aps_size))
     aps_load_phrases ((query_instance_t *)qst, aps);
   aps_add_phrases ((query_instance_t *)qst, aps, (caddr_t **)(descrs));

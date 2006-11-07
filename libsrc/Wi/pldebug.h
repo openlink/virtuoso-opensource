@@ -68,7 +68,7 @@ typedef struct pldbg_cmd_s
   const char * pld_descr;
 } pldbg_cmd_t;
 
-/* avaiable commands */
+/* available commands */
 pldbg_cmd_t
 pld_cmds [] = {
  {"BREAK", 	PD_BREAK, "procedure_name [line number]",
@@ -102,7 +102,7 @@ pld_cmds [] = {
  {NULL, 	0, 		NULL, NULL}
 };
 
-/* avalable infos */
+/* available infos */
 pldbg_cmd_t
 pld_infos [] = {
  {"THREADS", 	PDI_THRE,	NULL, "Running threads"},

@@ -99,7 +99,7 @@ static const char *sparyyerror_msg_tooshallow = "Too many closing parentheses";
 /* macro to save the text and return a token */
 #define TOK(name) { /*SV;*/ return name; }
 
-/* macroes to save the text of opening parenthesis and return a token */
+/* macros to save the text of opening parenthesis and return a token */
 #define TOKPAR_FAKE_OPEN(closing_char, state_i) \
     /*SV;*/ \
     SET_INNER_BEGIN (state_i); \
@@ -120,7 +120,7 @@ static const char *sparyyerror_msg_tooshallow = "Too many closing parentheses";
     return name; \
   }
 
-/* macroes to save the text of closing parenthesis and return a token */
+/* macros to save the text of closing parenthesis and return a token */
 #define TOKPAR_FAKE_CLOSE(closing_char) \
     /*SV;*/ BEGIN_OUTER; \
     if (closing_char != sparp->sparp_lexpars[sparp->sparp_lexdepth]) \

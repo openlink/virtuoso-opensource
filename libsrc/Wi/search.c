@@ -2869,7 +2869,7 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 {
   db_buf_t page = buf->bd_buffer;
   int have_left_leaf = 0;
-  int pos = itc->itc_position; /* itc is at leftost match. Nothing at left of the itc */
+  int pos = itc->itc_position; /* itc is at leftmost match. Nothing at left of the itc */
   int save_pos = itc->itc_position;
   int ctr = 0, leaf_ctr = 0;
   while (pos)

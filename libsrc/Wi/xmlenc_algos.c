@@ -1496,7 +1496,7 @@ int xenc_aes_encryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_o
       EVP_EncryptInit_ex(&ctx, EVP_aes_256_cbc(), NULL, key->ki.aes.k, ivec);
       break;
     default:
-      GPF_T1 ("unsupoprted key size");
+      GPF_T1 ("Unsupported key size");
     }
   if(!EVP_EncryptUpdate(&ctx, (unsigned char *)outbuf, &outlen, (unsigned char *)text, box_length (text)))
     {
@@ -2707,7 +2707,7 @@ void algo_stores_init ()
   dsig_transform_algo_create (DSIG_ENVELOPED_SIGNATURE_ALGO, dsig_tr_enveloped_signature);
   dsig_transform_algo_create (DSIG_FAKE_URI_TRANSFORM_ALGO, dsig_tr_fake_uri);
 
-  /* Canonicalization algorthms MUST be transforms also */
+  /* Canonicalization algorithms MUST be transforms also */
   dsig_transform_algo_create (XML_CANON_EXC_ALGO, dsig_tr_canon_exc_algo);
 #endif
 }

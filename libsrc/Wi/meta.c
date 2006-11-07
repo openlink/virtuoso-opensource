@@ -1709,7 +1709,7 @@ isp_read_schema (lock_trx_t * lt)
 	    if (err)
 	      {
 		log_error (
-		    "Error reading charset %s defintion: %s: %s."
+		    "Error reading charset %s definition: %s: %s."
 		    "It will not be defined. Drop the charset and recreate it.", cs_name,
 		    ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
 		dk_free_tree (err);

@@ -834,7 +834,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
 	| _PLUS	spar_expn	%prec UPLUS	{ SPAR_BIN_OP ($$, BOP_PLUS, box_num_nonull (0), $2); }
 	| _MINUS spar_expn	%prec UMINUS	{ SPAR_BIN_OP ($$, BOP_MINUS, box_num_nonull (0), $2); }
-        | _LPAR spar_expn _RPAR	{ $$ = $2; }	/* [58]	PrimaryExpn	 ::=  BrackettedExpn | BuiltInCall | IRIrefOrFunction | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/
+        | _LPAR spar_expn _RPAR	{ $$ = $2; }	/* [58]	PrimaryExpn	 ::=  BracketedExpn | BuiltInCall | IRIrefOrFunction | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/
 	| spar_built_in_call
 	| spar_iriref spar_arg_list_opt {	/* [55]  	IRIrefOrFunction	  ::=  	IRIref ArgList? */
                   if (NULL == $2)

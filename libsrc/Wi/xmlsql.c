@@ -1199,7 +1199,7 @@ xmlg_join_attribute (xv_context_t * xvc, xj_col_t * xc, int nth, dk_set_t map,
   xmlg_printf (xvc, " from ");
   xmlg_quote_dotted (xvc, xj->xj_table);
   xmlg_printf (xvc, " \"%s\" ", xj->xj_prefix);
-/* it's necesary to adopt it for attribute
+/* it's necessary to adopt it for attribute
         if (pk_args) / *if creation of the procedure to fetch attribute's value* /
           {
             inx = 0;
@@ -1924,7 +1924,7 @@ if (xj->xj_children || following_join)
   xmlg_printf (xvc, " varchar;\n  whenever not found goto done_%d;"
       "\n  open cr_%d;"
       "\n  while (1) {", nth, nth);
-  if (make_xte)/*xquiry*/
+  if (make_xte)/*xquery*/
     {
       xmlg_printf (xvc, "\n  declare node_%d, head_%d any;", nth+1, nth+1);
       xmlg_printf (xvc, "\n declare acc_%d any; xte_nodebld_init(acc_%d);", nth+1, nth+1);
@@ -2469,7 +2469,7 @@ xmls_proc (query_instance_t * qi, caddr_t name)
       du_thread_t *self = THREAD_CURRENT_THREAD;
       caddr_t err = thr_get_error_code (self);
       POP_QR_RESET;
-      /* It is possible that sqlr_error is signalled when memory pool is allocated. */
+      /* It is possible that sqlr_error is signaled when memory pool is allocated. */
       if (THR_TMP_POOL)
         MP_DONE();
       dk_free (xvc.xvc_text, XMLS_MAX_PROC_SIZE);
@@ -4648,7 +4648,7 @@ xs_fill (caddr_t * current, xmlsql_ugram_t ** xs, int where, caddr_t * err_ret, 
 				    }
 				  dbg_xmlsql (("\t\tVAL: %s (%s) %s\n", ename, sct, evalue));
 				  /* the top rule is > 0 ; also rule for evalue is > 1
-				   * then only == 1 is alocated; just in this case free it */
+				   * then only == 1 is allocated; just in this case free it */
 				  if (lem == 1)
 				    dk_free_box (evalue);
 				}

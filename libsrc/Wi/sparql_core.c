@@ -1835,7 +1835,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
     {
 #ifdef SPARP_DEBUG
-      printf ("\nsparp_compile_subselect() catched parse error: %s", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
+      printf ("\nsparp_compile_subselect() caught parse error: %s", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
 #endif
     return;
     }
@@ -1868,7 +1868,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
       sparp->sparp_sparqre->sparqre_catched_error = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
 #ifdef SPARP_DEBUG
-      printf ("\nsparp_compile_subselect() catched composing error: %s", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
+      printf ("\nsparp_compile_subselect() caught composing error: %s", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
 #endif
       POP_QR_RESET;
       /* ssg_free (ssg); */

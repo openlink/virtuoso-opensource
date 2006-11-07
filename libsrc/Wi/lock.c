@@ -729,7 +729,7 @@ void
 itc_bust_this_trx (it_cursor_t * it, buffer_desc_t ** buf, int may_ret)
 {
   /* if ITC_BUST_CONTINUABLE, and there is no delta, this function may just freeze over checkpoint.
-     * Otherwise this function must rollback the transactin and throw to the itc reset context */
+     * Otherwise this function must rollback the transaction and throw to the itc reset context */
   lock_trx_t *lt = it->itc_ltrx;
   int is_rb = LT_HAS_DELTA (lt) ? 1 : may_ret == ITC_BUST_THROW;
   if (LT_FREEZE != lt->lt_status)
@@ -853,7 +853,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
 	  else
 	    {
 	      if (lt->lt_threads)
-		lt->lt_status = LT_FREEZE; /* acted on by resume of lock wait or vdb_leave (), waiting for cpt over.  If client txn with no delta and no threadsm do nothing. */
+		lt->lt_status = LT_FREEZE; /* acted on by resume of lock wait or vdb_leave (), waiting for cpt over.  If client txn with no delta and no threads do nothing. */
 	    }
         }
       break;

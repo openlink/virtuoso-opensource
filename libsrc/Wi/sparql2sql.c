@@ -280,7 +280,7 @@ sparp_expand_top_retvals (sparp_t *sparp)
   sparp->sparp_expr->_.req_top.retvals = new_retvals;
 }
 
-/* Removal of redundand unions in GPs and top-level ANDs in FILTERs.
+/* Removal of redundant unions in GPs and top-level ANDs in FILTERs.
 \c trav_env_this is not used.
 \c common_env is not used. */
 
@@ -1659,7 +1659,7 @@ sparp_equiv_remove_var (sparp_t *sparp, sparp_equiv_t *eq, SPART *var)
         {
 #ifdef DEBUG
           if (0 <= hit_idx)
-            spar_internal_error (sparp, "sparp_equiv_remove_var(): duplicate occurence of var in equiv ?");
+            spar_internal_error (sparp, "sparp_equiv_remove_var(): duplicate occurrence of var in equiv ?");
 #endif
           hit_idx = varctr;
     }
@@ -2009,7 +2009,7 @@ next_ctr:
           caddr_t old = rvr->rvrIriClasses [ctr];
           for (cmpctr = 0; cmpctr < cmpcount; cmpctr++)
             {
-              if (old == addon_subclasses [cmpctr]) /* old is redundand because addon superclass will be added */
+              if (old == addon_subclasses [cmpctr]) /* old is redundant because addon superclass will be added */
                 {
                   if (ctr < (len-1))
                     rvr->rvrIriClasses [ctr] = rvr->rvrIriClasses [len - 1];
@@ -2446,7 +2446,7 @@ ptrdiff_t qm_field_constants_offsets[4] = {
 #define SSG_QM_NO_MATCH			0	/*!< Triple matching triple pattern can not match the qm restriction, disjoint */
 #define SSG_QM_PARTIAL_MATCH		1	/*!< Triple matching triple pattern may match the qm restriction, but no warranty, common case */
 #define SSG_QM_FULL_MATCH		2	/*!< Triple matching triple pattern will also match the qm restriction, but no warranty, triple pattern is more strict than qm */
-#define SSG_QM_FULL_EXCLUSIVE_MATCH	3	/*!< SSG_QM_FULL_MATCH plus qm is exclsive so red cut and no more search for possible quad maps of lower priority */
+#define SSG_QM_FULL_EXCLUSIVE_MATCH	3	/*!< SSG_QM_FULL_MATCH plus qm is exclusive so red cut and no more search for possible quad maps of lower priority */
 
 int
 sparp_check_field_mapping_g (sparp_t *sparp, SPART *triple, SPART *field, SPART **sources, int ignore_named_sources,
@@ -3397,7 +3397,7 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple)
   int qm_idx;
 #ifdef DEBUG
   if (1 >= BOX_ELEMENTS (triple->_.triple.qm_list))
-    spar_internal_error (sparp, "sparp_make_qm_cases(): redundand call");
+    spar_internal_error (sparp, "sparp_make_qm_cases(): redundant call");
 #endif
   res = (SPART **)t_alloc_box (box_length (qm_list), DV_ARRAY_OF_POINTER);
   DO_BOX_FAST (quad_map_t *, qm, qm_idx, qm_list)

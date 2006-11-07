@@ -196,7 +196,7 @@ zeroconfig_reparse_dsn (zeroconfig_t *zc)
 	dsn[len] = 0;
     }
 
-  /* disect */
+  /* dissect */
   tag = tags;
   tag->key = dsn;
   tag->value = NULL;

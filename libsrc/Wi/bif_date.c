@@ -129,12 +129,12 @@ dayofweek (caddr_t arg)
     }
 }
 
-/* since we keep time internally in GMT the local time shuld not be used
-   after dt_to_timestampstruct, because it alredy uses the locales eq. timezone and daylight savings .
+/* since we keep time internally in GMT the local time should not be used
+   after dt_to_timestampstruct, because it already uses the locales eq. timezone and daylight savings .
  */
 
 
-/*XXX: on windows platform we need to setup the tm struct manualy as before 1970 gmtime returns NULL */
+/*XXX: on windows platform we need to setup the tm struct manually as before 1970 gmtime returns NULL */
 #define bif_x_name(x, format) \
 caddr_t \
 bif_##x##name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args) \

@@ -1536,7 +1536,7 @@ run1_no_user_aggregates: ;
   if (!setp->setp_any_distinct_gos)
 	return;
       /* for the distinct gb cols.
-	 that should (?) be futher optimized
+	 that should (?) be further optimized
 	 as not to do two hash lookups (1 for
 	 the distinct fnref arg and 2 for the
 	 group by)

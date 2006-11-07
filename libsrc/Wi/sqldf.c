@@ -412,7 +412,7 @@ sqlo_df (sqlo_t * so, ST * tree)
 	      }
 	    END_DO_SET();
 	  }
-	/* GK: the vc takes precendece over the real col
+	/* GK: the vc takes precedence over the real col
 	   this is because of the OFFBAND contains columns */
 	if (ot->ot_table && !dfe->_.col.vc)
 	  {
@@ -785,7 +785,7 @@ sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_e
 	  df_elt_t * exp = sqlo_df (so, (ST*) dt_dfe->_.sub.ot->ot_dt->_.select_stmt.selection[inx]);
 	  so->so_gen_pt = dt_dfe->_.sub.last;
 	  dt_dfe->_.sub.dt_out[inx] = exp;
-	  /* GK: done because the dts are allready unplaced, but may be in the deps part of the exp */
+	  /* GK: done because the dts are already unplaced, but may be in the deps part of the exp */
 	  sqlo_dfe_set_dt_exps_is_placed (so, dt_dfe->_.sub.ot, 1);
 	  sqlo_place_exp (so, dt_dfe, exp);
 	  sqlo_dfe_set_dt_exps_is_placed (so, dt_dfe->_.sub.ot, 0);
@@ -895,7 +895,7 @@ sqlo_place_col (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 		DV_ARRAY_OF_POINTER);
 	  sqlo_dt_nth_col (so, super, tb_dfe, inx, dfe, 0);
 	  dfe->dfe_is_placed = DFE_PLACED;
-	  /* XXX: this confuses the allready set correct value from sqlo_dt_nth_col
+	  /* XXX: this confuses the already set correct value from sqlo_dt_nth_col
 	     tb_dfe->_.sub.dt_out[inx] = dfe;*/
 	  return tb_dfe;
 	}
@@ -1498,7 +1498,7 @@ sqlo_pred_body (sqlo_t * so, locus_t * loc, df_elt_t * tb_dfe, df_elt_t * pred)
 	df_elt_t * old_pt = so->so_gen_pt;
 	df_elt_t * body = dfe_container (so, DFE_PRED_BODY, tb_dfe);
 	char prev = so->so_place_code_forr_cond;
-	/* so->so_place_code_forr_cond = 1; -- Commented out as recomended by Orri */
+	/* so->so_place_code_forr_cond = 1; -- Commented out as recommended by Orri */
 	so->so_gen_pt = body->_.sub.first;
 	pred->dfe_locus = loc;
 	l = sqlo_place_exp (so, pred, pred->_.bin.left);
@@ -1641,7 +1641,7 @@ sqlo_import_preds (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t p
       ST * all_new_tree;
       dk_set_t and_set = NULL;
 
-      pred_type = pred->dfe_type; /* in existence pred, not inferrable from dfe_tree */
+      pred_type = pred->dfe_type; /* in existence pred, not inferable from dfe_tree */
       all_new_tree = sqlo_import (pred->dfe_tree, tb_dfe, dt_dfe);
       so->so_is_rescope = 1;
       old_sco = so->so_scope;
@@ -2352,7 +2352,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
   DO_SET (df_elt_t *, pred, &preds)
     {
       if (text_pred && dk_set_member (text_pred->_.text.after_preds, pred))
-	{ /*GK : this is allready placed */
+	{ /*GK : this is already placed */
 	  continue;
 	}
       else if (DFE_TEXT_PRED == pred->dfe_type)
@@ -2429,7 +2429,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
   sqlo_table_locus (so, tb_dfe, col_preds, &after_preds, nj_preds, &vdb_preds);
 
   tb_dfe->_.table.col_preds = col_preds;
-  /* save and reset the cond exp flag.  If you do col preds withthis flag on, you get the expression calculated AFTER the col is fetched, not before */
+  /* save and reset the cond exp flag.  If you do col preds with this flag on, you get the expression calculated AFTER the col is fetched, not before */
   old_cond = so->so_place_code_forr_cond;
   so->so_place_code_forr_cond = 0;
   DO_SET (df_elt_t *, col_pred, &col_preds)
@@ -3393,7 +3393,7 @@ dfe_arity_with_supers (df_elt_t * dfe)
 	{
 	  if (0 == dfe->dfe_unit)
 	    {
-	      /* not costed yet */
+	      /* not scored yet */
 	      sqlo_score (dfe->dfe_super, dfe->dfe_super->_.sub.in_arity);
 	    }
 	  sub_arity = dfe->dfe_arity;
@@ -3664,7 +3664,7 @@ sqlo_try_in_loop (sqlo_t *so, op_table_t * ot, df_elt_t * tb_dfe, df_elt_t ** su
     return;
   if (DFE_TABLE != tb_dfe->dfe_type
       || IS_BOX_POINTER (tb_dfe->dfe_super->dfe_locus))
-    return; /* if not a table or a table in a pss through dt.  For pass through ,let theremote decide */
+    return; /* if not a table or a table in a pss through dt.  For pass through ,let the remote decide */
   DO_SET (df_elt_t *, pred, &tb_dfe->_.table.all_preds)
     {
       if (DFE_EXISTS == pred->dfe_type 

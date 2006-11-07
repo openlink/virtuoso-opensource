@@ -76,7 +76,7 @@ create trigger SYS_ROLE_GRANTS_GRANT after insert on SYS_ROLE_GRANTS referencing
 }
 ;
 
--- TODO: update memory represantation
+-- TODO: update memory representation
 create trigger SYS_PRIMARY_GROUP_NULLIFY after delete on SYS_USERS referencing old as O
 {
   declare gid integer;
@@ -293,7 +293,7 @@ USER_ROLE_CREATE (in _name varchar, in is_dav integer := 0)
   if (length (_name) < 1)
     signal ('22023', concat ('The role name cannot be empty'), 'U0005');
   if (exists (select 1 from SYS_USERS where U_NAME = _name))
-    signal ('37000', concat ('The object ''', _name, ''' alredy exists'), 'U0006');
+    signal ('37000', concat ('The object ''', _name, ''' already exists'), 'U0006');
   _g_id := (select max(U_ID) from SYS_USERS) + 1;
   if (_g_id < 100)
     _g_id := 100;
@@ -415,7 +415,7 @@ GET_INHERITED_GRANTS (in g_id integer, in prim integer, inout inh any)
 }
 ;
 
--- check if alredy assigned and the role is role, not user
+-- check if already assigned and the role is role, not user
 create procedure
 USER_GRANT_ROLE (in _name varchar, in _role varchar, in grant_opt integer := 0)
 {
@@ -445,7 +445,7 @@ USER_GRANT_ROLE (in _name varchar, in _role varchar, in grant_opt integer := 0)
     {
       declare i, l integer;
       declare exit handler for sqlstate '23000' {
-	signal ('42000', sprintf ('The object "%s" alredy have role "%s" assigned', _name, _role), 'U0013');
+	signal ('42000', sprintf ('The object "%s" already have role "%s" assigned', _name, _role), 'U0013');
       };
       inh := vector ();
       GET_INHERITED_GRANTS (_g_id, _g_id, inh);

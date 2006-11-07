@@ -33,7 +33,7 @@ Shuric may have non-NULL URI. There may not be two shurics with same non-NULL UR
 This URI is a key in the global hashtable of shared resources so it's easy
 to retrieve shuric by its URI.
 
-Shurics may have NULL URI, indicating that they are anunymous objects not cached
+Shurics may have NULL URI, indicating that they are anonymous objects not cached
 in the global hashtable of shared resources.
 
 Anonymous shuric may be stored in some cache, solely for speed optimization.
@@ -59,7 +59,7 @@ cache optimization. When reference count is zero, shuric is being destroyed.
 The destroying of the shuric decreases reference counters of shurics that are
 imported from or inserted into it, so they may, in turn, be destroyed.
 The shuric may be declared staled and removed from global hashtable or caches
-to prevent its use in future processings,
+to prevent its use in future processing,
 but it can remain in memory for a while if it's in use and/or is referenced by temporary shurics.
 
 When the shuric stales, all shurics that includes it will stale too.
@@ -147,7 +147,7 @@ extern shuric_t *shuric_load (shuric_vtable_t *vt, caddr_t uri, caddr_t loading_
 
 /*! Returns locked shuric for given URI, if it exists, otherwise returns NULL.
 There's no function to find if some shuric exists, because it's useless:
-other thread may stale shurick before it is locked for actual use. */
+other thread may stale shuric before it is locked for actual use. */
 extern shuric_t *shuric_get (caddr_t uri);
 
 /*! Returns locked shuric for given URI, if it exists, and of type vt otherwise returns NULL.

@@ -565,7 +565,7 @@ log_repl_text_array (lock_trx_t * lt, char * srv, char * acct, caddr_t box)
   if (0 != strcmp(srv, db_name) && lt->lt_repl_is_raw)
     {
       /*
-       * do not log raw txn on updateable subscriber
+       * do not log raw txn on updatable subscriber
        */
       return;
     }

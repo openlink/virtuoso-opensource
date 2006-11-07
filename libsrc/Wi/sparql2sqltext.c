@@ -545,7 +545,7 @@ void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tm
       loop_begin += 13;
       loop_end = strstr (loop_begin, "^{end}^");
       if (NULL == loop_begin)
-        spar_sqlprint_error ("ssg_print_tmpl(): list-begin}^ withont ^{end}^");
+        spar_sqlprint_error ("ssg_print_tmpl(): list-begin}^ without ^{end}^");
       ssg_print_tmpl_phrase (ssg, qm_fmt, loop_begin, loop_end, alias, qm_val, tree, asname - COL_IDX_ASNAME, NULL_ASNAME);
   return;
     }
@@ -625,7 +625,7 @@ ssg_equiv_native_valmode (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq)
       int tr_idx;
       ssg_valmode_t tr_valmode;
       if (NULL == tabid)
-        continue; /* because next loop will do complex cases with care, and OPTIONs are not good candiates if there are SPART_VARR_NOT_NULL items */
+        continue; /* because next loop will do complex cases with care, and OPTIONs are not good candidates if there are SPART_VARR_NOT_NULL items */
       triple = sparp_find_triple_of_var (ssg->ssg_sparp, gp, var);
 #ifdef DEBUG
       if (SPAR_TRIPLE != SPART_TYPE (triple))
@@ -937,7 +937,7 @@ ssg_print_equiv (spar_sqlgen_t *ssg, caddr_t selectid, sparp_equiv_t *eq, ccaddr
     }
 }
 
-/*static const char *field_names[] = {"G", "S", "P", "O"}; -- unuseable when mapping is implemented, cols may have any names */
+/*static const char *field_names[] = {"G", "S", "P", "O"}; -- unusable when mapping is implemented, cols may have any names */
 
 void
 ssg_print_tr_field_expn (spar_sqlgen_t *ssg, qm_value_t *field, caddr_t tabid, ssg_valmode_t needed, const char *asname)
@@ -1172,7 +1172,7 @@ ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
   if (m2 == m1)
     {
       if (!IS_BOX_POINTER (m1))
-        return m1; /* !!!TBD: SSG_VALMODE_AUTO may be bad for LONG and LONG due to an error when native valmdoe is LONG but the printed expn is short */;
+        return m1; /* !!!TBD: SSG_VALMODE_AUTO may be bad for LONG and LONG due to an error when native valmode is LONG but the printed expn is short */;
       return SSG_VALMODE_AUTO;
     }
   if (m2 < m1)
@@ -1357,7 +1357,7 @@ ssg_print_bop_cmp_expn (spar_sqlgen_t *ssg, SPART *tree, const char *bool_op, co
     IS_BOX_POINTER (smallest_union) &&
     ((SPAR_VARIABLE == SPART_TYPE (left)) || (SPAR_BLANK_NODE_LABEL == SPART_TYPE (left)) ||
       (SPAR_VARIABLE == SPART_TYPE (right)) || (SPAR_BLANK_NODE_LABEL == SPART_TYPE (right)) ) )
-    { /* Comparison taht is partially optimizeable for indexing */
+    { /* Comparison that is partially optimizable for indexing */
       const char *typemin, *typemax;
       ssg_puts ("((");
       ssg->ssg_indent += 2;
@@ -2255,7 +2255,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
                   {
                     int col_idx = asname - COL_IDX_ASNAME;
                     char buf[210];
-#if 0 /* old variant, seemes to be redundand */
+#if 0 /* old variant, seemes to be redundant */
                     ccaddr_t col_name;
                     quad_map_t *qm = tree->_.retval.triple->_.triple.qm_list[0];
                     qm_value_t *qm_val = SPARP_FIELD_QMV_OF_QM (qm,tree->_.retval.tr_idx);

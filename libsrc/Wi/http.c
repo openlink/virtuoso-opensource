@@ -2390,7 +2390,7 @@ ws_connection_vars_clear (client_connection_t * cli)
 }
 
 /*
-When a VSP have an includes the dependancy registry-setting will be a serialized array.
+When a VSP have an includes the dependency registry-setting will be a serialized array.
 This serialized string must be an array with file names and time stamps,
 if the includes removed the array will be empty.
 */
@@ -2753,7 +2753,7 @@ end_hack_block:
 	{
 	  deflt = 1;
 	  strcpy_ck (p_name, "DB.DBA.WS_SOAP"); /* the SOAP PL wrapper,
-						 this it to extend with WS-Routing, WS-Reffereal & WS-Security */
+						 this it to extend with WS-Routing, WS-Referral & WS-Security */
 	  dk_free_box (soap_method);
 	  soap_method = NULL;
 	  goto vsmx_start;
@@ -3899,7 +3899,7 @@ bif_http_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (!err_ret)
         session_buffered_write (out, res, box_length (res) - 1);
       else
-	sqlr_new_error ("22023", "HT007", "Incorrent wide string passed to http");
+	sqlr_new_error ("22023", "HT007", "Incorrect wide string passed to http");
       dk_free_box (res);
     }
   else
@@ -4493,7 +4493,7 @@ http_write_req (dk_session_t * ses, char * host, caddr_t * head, caddr_t * body,
       DO_BOX (char *, line, inx, head)
 	{
 
-	  if (inx == 0 && url_enc && post_strses && body) /* we have alredy sent the HTTP request method */
+	  if (inx == 0 && url_enc && post_strses && body) /* we have already sent the HTTP request method */
 	    continue;
 
 	  if (0 == strnicmp (line, "Connection:", 11) || 0 == strnicmp (line, "Host:", 5))
@@ -5798,14 +5798,14 @@ static void
 ws_make_chunked (query_instance_t *qi, ws_connection_t *ws)
 {
   if (ws->ws_xslt_url)
-    sqlr_new_error ("42000", "HT063", "Chunked responce and http_xslt not compatible");
+    sqlr_new_error ("42000", "HT063", "Chunked response and http_xslt not compatible");
   if (ws->ws_header &&
       NULL != nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:"))
-    sqlr_new_error ("42000", "HT064", "Chunked responce and Content-Length specified by http_header()");
+    sqlr_new_error ("42000", "HT064", "Chunked response and Content-Length specified by http_header()");
 
   if (ws->ws_header &&
       NULL != nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Encoding:"))
-    sqlr_new_error ("42000", "HT065", "Chunked responce and Content-Encoding specified by http_header()");
+    sqlr_new_error ("42000", "HT065", "Chunked response and Content-Encoding specified by http_header()");
 
   CHUNKED_STATE_SET (ws);
 }
@@ -6516,7 +6516,7 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     { /*if we have a host the key is //host/lhost/logical_path */
       l_copy = dk_alloc_box (box_length (lpath) + box_length (host) + box_length (lhost) + 1, DV_SHORT_STRING);
       snprintf (l_copy, box_length (l_copy), "//%s|%s%s", host, lhost, lpath);
-      if (nargs > 17) /* we have is_deafult_host specified */
+      if (nargs > 17) /* we have is_default_host specified */
 	{
 	  caddr_t def_host = bif_arg (qst, args, 17, "http_map_table");
 	  ptrlong is_default_host = 0;
@@ -6597,7 +6597,7 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   map->hm_htkey = box_copy_tree (l_copy);
   http_trace (("adding map for: %s %p\n", l_copy, map));
   id_hash_set (http_map, (caddr_t) & l_copy, (caddr_t) & map);
-  if (l_host_default) /* if the current mapping is a deafult one */
+  if (l_host_default) /* if the current mapping is a default one */
     id_hash_set (http_map, (caddr_t) & l_host_default, (caddr_t) & map);
   return (box_num (0));
 }
@@ -7808,7 +7808,7 @@ bif_http_acl_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 /*
-   Caaching of the dynamic resources
+   Caching of the dynamic resources
 */
 
 #define NO_CADDR_T NULL
@@ -8290,7 +8290,7 @@ bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       /* We should mark the session so it will not be disconnected nor freed */
       if (ws->ws_flushed)
-	sqlr_new_error ("42000", "HT000", "The client session is alredy flushed");
+	sqlr_new_error ("42000", "HT000", "The client session is already flushed");
       ses = qi->qi_client->cli_ws->ws_session;
       mutex_enter (thread_mtx);
       ws->ws_session->dks_ws_status = DKS_WS_CACHED;

@@ -109,7 +109,7 @@ static const char *xpyyerror_msg_tooshallow = "Too many closing parentheses";
 /* macro to save the text and return a token */
 #define TOK(name) { /*SV;*/ return name; }
 
-/* macroes to save the text of opening parenthesis and return a token */
+/* macros to save the text of opening parenthesis and return a token */
 #define TOKPAR_FAKE_OPEN(closing_char, state_i) \
     /*SV;*/ \
     SET_INNER_BEGIN (state_i); \
@@ -130,7 +130,7 @@ static const char *xpyyerror_msg_tooshallow = "Too many closing parentheses";
     return name; \
   }
 
-/* macroes to save the text of closing parenthesis and return a token */
+/* macros to save the text of closing parenthesis and return a token */
 #define TOKPAR_FAKE_CLOSE(closing_char) \
     /*SV;*/ BEGIN_OUTER; \
     if (closing_char != xpp->xpp_lexpars[xpp->xpp_lexdepth]) \
@@ -367,33 +367,33 @@ static int xpscn_XQDQ_NDQSTRING_DQ (void *yylval, xpp_t *xpp)
 %x XQ_ITEM_TYPE
 
 	/* XQuery 1.0 KINDTEST is divided into
-	XQ_KT that ends with no OCCURENCEINDICATOR and
-	XQ_KT_OI that ends with an optional OCCURENCEINDICATOR
+	XQ_KT that ends with no OCCURRENCEINDICATOR and
+	XQ_KT_OI that ends with an optional OCCURRENCEINDICATOR
 	(when entered from ITEMTYPE). */
 %x XQ_KT
 %x XQ_KT_OI
 
-	/* XQuery 1.0 KINDTESTFORPI (newer ends with OCCURENCEINDICATOR) */
+	/* XQuery 1.0 KINDTESTFORPI (newer ends with OCCURRENCEINDICATOR) */
 %x XQ_KT_FOR_PI
 
 	/* XQuery 1.0 CLOSEKINDTEST is divided into
-	XQ_CLOSE_KT that ends with no OCCURENCEINDICATOR and
-	XQ_CLOSE_KT_OI that ends with an optional OCCURENCEINDICATOR
+	XQ_CLOSE_KT that ends with no OCCURRENCEINDICATOR and
+	XQ_CLOSE_KT_OI that ends with an optional OCCURRENCEINDICATOR
 	(when entered from XQ_KT_OI). */
 %x XQ_CLOSE_KT
 %x XQ_CLOSE_KT_OI
 
-	/* XQuery 1.0 OCCURENCEINDICATOR is made implicit.
+	/* XQuery 1.0 OCCURRENCEINDICATOR is made implicit.
 	It can occur in ITEMTYPE after QName and in
 	ITEMTYPE, KINDTEST, KINDTESTFORPI, CLOSEKINDTEST after ')'.
 	It's much easier to put 6 extra lexems for '?'/'*'/'+' after
-	QName/')' than to getprotability pain in the [beep] with yyunput()
+	QName/')' than to get portability pain in the [beep] with yyunput()
 	that is required for input_stream.backup(1) in one step with state
 	change. */
 	
 	/* XQuery 1.0 SCHEMACONTEXTSTEP is divided into
-	XQ_SCS that ends with no OCCURENCEINDICATOR and
-	XQ_SCS_OI that ends with an optional OCCURENCEINDICATOR
+	XQ_SCS that ends with no OCCURRENCEINDICATOR and
+	XQ_SCS_OI that ends with an optional OCCURRENCEINDICATOR
 	(when entered from XQ_KT_OI). */
 %x XQ_SCS
 %x XQ_SCS_OI

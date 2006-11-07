@@ -193,8 +193,8 @@ User-level object is of type DV_XML_ENTITY. */
 #define DV_PL_CURSOR 234  /* A PL Scrollable cursor type */
 
 #define DV_XML_PARSER 235	/* XML parser (now unused) */
-#define DV_XML_DTD 236		/* Storeable XML DTD */
-#define DV_XML_SCHEMA 237	/* Storeable XML Schema */
+#define DV_XML_DTD 236		/* Storable XML DTD */
+#define DV_XML_SCHEMA 237	/* Storable XML Schema */
 
 #define DV_FIXED_STRING 240
 #define DV_TINY_INT 241

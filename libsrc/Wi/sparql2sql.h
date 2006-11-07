@@ -63,7 +63,7 @@ typedef struct sparp_equiv_s
     ptrlong e_own_idx;		/*!< Index of this instance (in spare_equivs) */
     SPART *e_gp;		/*!< Graph pattern where these variable resides */
     caddr_t *e_varnames;	/*!< Array of distinct names of equivalent variables. Usually one element, if there's no ?x=?y in FILTER */
-    SPART **e_vars;		/*!< Array of all equivalent variables, including different occurencies of same name in different triples */
+    SPART **e_vars;		/*!< Array of all equivalent variables, including different occurences of same name in different triples */
     ptrlong e_var_count;	/*!< Number of used items in e_vars. This can be zero if equiv passes top-level var from alias to alias without local uses */
     ptrlong e_gspo_uses;	/*!< Number of all local uses in members (+1 for each in G, P, S or O in triples */
     ptrlong e_const_reads;	/*!< Number of constant-read uses in filters and in 'graph' of members */
@@ -72,7 +72,7 @@ typedef struct sparp_equiv_s
     ptrlong *e_receiver_idxs;	/*!< Aliases of surrounding query where values of variables from this equiv are used */
     ptrlong e_clone_idx;	/*!< Index of the current clone of the equiv */
     ptrlong e_cloning_serial;	/*!< The serial used when e_clone_idx is set, should be equal to sparp_cloning_serial */
-    ptrlong e_deprecated;	/*!< The equivalence class belongs to a gp that is no longer useable */
+    ptrlong e_deprecated;	/*!< The equivalence class belongs to a gp that is no longer usable */
 #ifdef DEBUG
     SPART **e_dbg_saved_gp;	/*!< e_gp that is boxed as ptrlong, to same the pointer after e_gp is set to NULL */
 #endif
@@ -86,7 +86,7 @@ typedef struct sparp_equiv_s
 #define SPARP_EQUIV_ADD_CONST_READ	0x20	/*!< sparp_equiv_get will increment e_const_reads if variable is added */
 /*! Finds or create an equiv class for a needle_var in haystack_gp.
 The core behaviour is specified by (flags & (SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE)):
-   when 0 then only existing equiv with existing occurence is returned;
+   when 0 then only existing equiv with existing occurrence is returned;
    when SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE then new equiv with 1 new variable can be added;
    when SPARP_EQUIV_INS_CLASS then new equiv with no variables can be added, for passing from alias to alias.
 If (flags & SPARP_EQUIV_GET_NAMESAKES) then \c needle_var can be a boxed string with name of variable.
@@ -103,12 +103,12 @@ extern int sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equi
 /*! Returns 1 if connection existed and removed. */
 extern int sparp_equiv_disconnect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner);
 
-/*! Removes a variable from equiv class. The \c var must belong to \c eq, internal error signalled otherwise.
+/*! Removes a variable from equiv class. The \c var must belong to \c eq, internal error signaled otherwise.
 The call does not decrement eq_gspo_uses or eq_const_reads, do it by a separate operation. */
 extern void sparp_equiv_remove_var (sparp_t *sparp, sparp_equiv_t *eq, SPART *var);
 
 /*! Creates a clone of \c orig equiv. Variable names are copied, variables, receivers and senders are not.
-An error is signalled if the \c orig has been cloned during current cloning on gp.
+An error is signaled if the \c orig has been cloned during current cloning on gp.
 Using the function outside gp cloning may need fake increment of sparp_gp_cloning_serial to avoid the signal. */
 extern sparp_equiv_t *sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SPART *cloned_gp);
 
@@ -126,7 +126,7 @@ The debug version GPFs if the \c garbage is somehow used. */
 extern void sparp_equiv_remove (sparp_t *sparp, sparp_equiv_t *garbage);
 
 /*! Merges the content of \c secondary into \c primary (when a variable from \c secondary is proven to be equal to one from \c primary.
-At the end of operation, varnames, vars, restrinctions, counters subvalues and receivers from \c secondary are added to \c primary
+At the end of operation, varnames, vars, restrictions, counters subvalues and receivers from \c secondary are added to \c primary
 and \c secondary is replaced with \c primary (or removed as dupe) from lists of uses in gp, receivers of senders and senders of receivers.
 Conflict in datatypes or fixed values results in SPART_VARR_CONFLICT to eliminate never-happen graph pattern later.
 Returns appropriate SPARP_EQUIV_MERGE_xxx */
@@ -207,7 +207,7 @@ extern int sparp_check_triple_mapping (sparp_t *sparp, SPART *triple, SPART **so
   quad_map_t *qm /*, SPART **remaining_triple_ptr, SPART **intersect_triple_ptr */ );
 
 /*! The function fills in the \c qm_set_ret[0] with all matching quad mappings (\c qm, submaps of \c qm and al subsubmaps recursively
-that match and not empty and not after the first (enpty or nonempty) full match. */
+that match and not empty and not after the first (empty or nonempty) full match. */
 extern int sparp_qm_find_triple_mappings (sparp_t *sparp, SPART *triple, SPART **sources, int ignore_named_sources,
   quad_map_t *qm, dk_set_t *qm_set_ret /*, SPART **remaining_triple_ptr, SPART **intersect_triple_ptr */ );
 
@@ -356,7 +356,7 @@ typedef struct rdf_ds_usage_s
 {
   quad_map_t *rdfdu_ds;	/*!< Datasource */
   qm_value_t *tr_fields[SPART_TRIPLE_FIELDS_COUNT];	/*!< Description of fields to be used */
-  caddr_t rdfdu_alias;	/*!< Table alias used for the occurence */
+  caddr_t rdfdu_alias;	/*!< Table alias used for the occurrence */
 } rdf_ds_usage_t;
 
 #define NULL_ASNAME ((const char *)NULL)

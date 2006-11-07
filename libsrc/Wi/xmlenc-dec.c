@@ -83,7 +83,7 @@
 #define WSSE_NO_TAG_ERR				"desired tag %s is not presented"
 
 #define WSSE_ALGO_CODE				"111"
-#define WSSE_ALGO_ERR				"algorith %s internal error (key is not private?)"
+#define WSSE_ALGO_ERR				"algorithm %s internal error (key is not private?)"
 
 #define WSSE_WRONG_SIGNVAL_CODE			"112"
 #define WSSE_WRONG_SIGNVAL_ERR			"signature has wrong SignValue"
@@ -145,7 +145,7 @@ struct wsse_error_templ_s
     { WSSE_UNKNOWN_KEY_CODE, "key %s is unknown"},
     { WSSE_WRONG_KEY_CODE, "key %s could not be used by method %s"},
     { WSSE_UNENCRYPTED_KEY_CODE, "Unencrypted key declaration is not allowed"},
-    { WSSE_ALGO_EMPTY_KEY_CODE, "algorith %s internal error (no key provided?)"},
+    { WSSE_ALGO_EMPTY_KEY_CODE, "algorithm %s internal error (no key provided?)"},
     { WSSE_UNRESOLVED_REF_URIS_CODE, "document contains unresolved references to encrypted data"},
     { WSSE_UNRESOLVED_REF_URI_CODE, "reference %s to encrypted data is unresolved"},
     { WSSE_ENCKEY_REF_URI_NO_KEYINFO_CODE, "EncryptedData does not contain key info [%s]"},
@@ -880,7 +880,7 @@ void wss_keyidentifier_c (char* uri, char * name, caddr_t * curr, wsse_ctx_t * c
   caddr_t keyident;
 
   if (!value_type)
-    wsse_report_error (ctx, WSSE_BINARYSECTOKEN_CODE, 100, "Unknwon type of key identifier");
+    wsse_report_error (ctx, WSSE_BINARYSECTOKEN_CODE, 100, "Unknown type of key identifier");
 
   if (strcmp (value_type, WSSE_X509_VALUE_TYPE) && strcmp (value_type, WSSE_OASIS_X509_SUBJECT_KEYIDENTIFIER))
     wsse_report_error (ctx, WSSE_BINARYSECTOKENVALTYPE_CODE, strlen (value_type), value_type);
@@ -1542,7 +1542,7 @@ caddr_t bif_dsig_validate (caddr_t *qst, caddr_t *err, state_slot_t ** args)
     {
       char buf[1024];
       xenc_make_error (buf, 1024, c, errm);
-      sqlr_new_error ("42000", "XENC28", "error occured when xml document was checked: %s", buf);
+      sqlr_new_error ("42000", "XENC28", "error occurred when xml document was checked: %s", buf);
     }
 
   return NEW_DB_NULL;
@@ -1924,7 +1924,7 @@ error_end:
   return key;
 }
 
-/* builds uninitialized signanture from xml template */
+/* builds uninitialized signature from xml template */
 dsig_signature_t * dsig_template_ (query_instance_t * qi, caddr_t signature_xml_text, xenc_try_block_t * t, caddr_t * opts)
 {
   id_hash_t * nss = 0;

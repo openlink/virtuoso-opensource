@@ -95,7 +95,7 @@ struct index_space_s
     /* represents a level of delta pages in an index tree. */
     index_tree_t *	isp_tree;
     index_space_t *	isp_prev; /* next older space*/
-    dk_hash_t *		isp_remap; /* map from logical page no to physical page no for version corresponding to this space.  If page does not exist in older space, physicl and logical dp's are equal */
+    dk_hash_t *		isp_remap; /* map from logical page no to physical page no for version corresponding to this space.  If page does not exist in older space, physical and logical dp's are equal */
     dk_hash_t *		isp_dp_to_buf; /* logical dp to buffer_desc_t of cache buffer, if in cache */
     int			isp_hash_size;
     dp_addr_t		isp_root;  /* toot of the tree as it is in this space */
@@ -131,7 +131,7 @@ struct buffer_pool_s
 
   /* Each pool is divided into BP_N_BUCKETS, each holding a approx
    * * equal no f buffers.  They are divided by bp_ts, with the 1st bucket
-   * holding the oldest 1/BP_N_BUCKETS and so on.  Used for scheduing
+   * holding the oldest 1/BP_N_BUCKETS and so on.  Used for scheduling
    * relatively old dirty buffers for flush to disk.  Each */
 
   int32		bp_bucket_limit[BP_N_BUCKETS];
@@ -247,7 +247,7 @@ struct dbe_storage_s
 #define LEAVE_DBS(dbs) \
 { \
   if (THREAD_CURRENT_THREAD != dbs->dbs_owner_thr)  \
-    GPF_T1 ("Leveing dbs without owning it"); \
+    GPF_T1 ("Leaving dbs without owning it"); \
   dbs->dbs_owner_thr = NULL; \
   mutex_leave (dbs->dbs_page_mtx); \
 }
@@ -261,7 +261,7 @@ typedef struct hi_signature_s
   caddr_t	hsi_n_keys; /* n first of hsi_col_ids relevant for lookup */
   oid_t *	hsi_col_ids; /* columns of the source key in the hash inx */
 #ifdef NEW_HASH
-  caddr_t	hsi_isolation;  /* record isolation because if made with read committed cannot be reused with repeateble read */
+  caddr_t	hsi_isolation;  /* record isolation because if made with read committed cannot be reused with repeatable read */
 #endif
 } hi_signature_t;
 
@@ -341,11 +341,11 @@ struct index_tree_s
     index_space_t *	it_commit_space; /* index space for current committed and uncommitted state */
     index_space_t *	it_checkpoint_space; /* read only pre-checkpoint state, only for indices, not in use */
     dk_hash_t *		it_locks; /* logical page no  to page_lock_t */
-    int		it_fragment_no; /* always 0. I If horiz. fragmentation were supported, woul be frg no. */
+    int		it_fragment_no; /* always 0. I If horiz. fragmentation were supported, would be frg no. */
     hash_index_t * 	it_hi; /* Ifhash index */
     dp_addr_t	it_hash_first;
     char		it_shared;
-    char		it_hi_isolation; /* if hash index, isoltion used for filling this */
+    char		it_hi_isolation; /* if hash index, isolation used for filling this */
     int		it_ref_count; /* if hash inx, count of qi's using this */
     hi_signature_t *	it_hi_signature;
     dk_set_t 		it_waiting_hi_fill; /* if thi is a hash inx being filled, list of threads waiting for the fill to finish */
@@ -413,14 +413,14 @@ struct search_spec_s
   {
 
     char		sp_is_boxed; /* always 1, not used */
-    char		sp_min_op; /* cmpare operator for lower bound */
+    char		sp_min_op; /* compare operator for lower bound */
     char		sp_max_op; /* if this is a range match, compare op for upper bound */
     char		sp_is_reverse; /* true if inserting a DESC sorted item */
     short			sp_min;  /* index into itc_search_params */
     short			sp_max; /* ibid */
     search_spec_t *	sp_next;
     dbe_col_loc_t	sp_cl;  /* column on key, if key on page matches key in compilation */
-    dbe_column_t *	sp_col; /* col descriptir, use for finding the col if key on page is obsolete */
+    dbe_column_t *	sp_col; /* col descriptor, use for finding the col if key on page is obsolete */
     struct state_slot_s *sp_min_ssl;  /* state slot for initing   the cursor's  itc_search_params[sp_min] */
     struct state_slot_s *sp_max_ssl;
     collation_t	 *sp_collation;
@@ -512,10 +512,10 @@ struct it_cursor_s
     char		itc_to_reset; /* what level of change took place while itc waited for page buffer */
     char		itc_is_in_map_sem; /* does this itc_thread own the itc_tree's page map mtx */
     char		itc_skipped_leaves;
-    char		itc_max_transit_change; /* quit wating and do not enter the buffer if itc_transit_change >= this */
+    char		itc_max_transit_change; /* quit waiting and do not enter the buffer if itc_transit_change >= this */
 
 
-    int			itc_n_pages_on_hold; /* if inserting, amount provisionally reserved for delatas made by tree split */
+    int			itc_n_pages_on_hold; /* if inserting, amount provisionally reserved for deltas made by tree split */
     lock_trx_t *	itc_ltrx;
     it_cursor_t *	itc_next_on_lock; /* next itc waiting on same lock */
     char		itc_acquire_lock; /*when wait over want to own it? */
@@ -552,7 +552,7 @@ struct it_cursor_s
     dbe_key_t *		itc_row_key;
 
     /* hash index */
-    buffer_desc_t *	itc_buf; /* cache the buffer when keeping buffer wired down between rows.  Can be done bcause always read only.  */
+    buffer_desc_t *	itc_buf; /* cache the buffer when keeping buffer wired down between rows.  Can be done because always read only.  */
     buffer_desc_t * 	itc_hash_buf; /* when filling a hash, the last buffer, constantly wired down, can be because always oen writer */
     short		itc_hash_buf_fill;
     short		itc_hash_buf_prev;
@@ -693,7 +693,7 @@ len = -len; \
 /* when calling pae_wait_access, the itc_max_transit_change is one of these.
  * If the change during wait is greater than indicated here, the itc does not enter the buffer.
  * For example if the page of the buffer  splits, the itc will not know whether it still wants to enter the buffer and must restart the search.
- * When the wait is over, itc_to_reset is set to reflact what happened duiring the wait, again one of the below */
+ * When the wait is over, itc_to_reset is set to reflect what happened during the wait, again one of the below */
 
 #define RWG_WAIT_NO_ENTRY 0 /* Just check if buffer available, wait until is but do not go in */
 #define RWG_NO_WAIT	1 /* Only go in if immediately available */

@@ -2215,7 +2215,7 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	}
       END_DO_BOX;
       sqlo_scope_array  (so, (ST**) tree->_.select_stmt.selection);
-      /* if a sungle row is to be returned the order by really doesn't matter */
+      /* if a single row is to be returned the order by really doesn't matter */
       if (ot->ot_fun_refs && !texp->_.table_exp.group_by)
 	texp->_.table_exp.order_by = NULL;
       sqlo_replace_as_exps (&(texp->_.table_exp.having), so->so_scope);

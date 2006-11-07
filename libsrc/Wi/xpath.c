@@ -4212,7 +4212,7 @@ xp_make_variable_ref (xpp_t *xpp, caddr_t name)
       dk_set_t * params = &(xpp->xpp_xp2sql_params);
       int parm_inx=1;
       if (xp_env ()->xe_for_interp)
-	GPF_T1 ("Must not be XPath interpretator");
+	GPF_T1 ("Must not be XPath interpreter");
       while (params[0])
         {
          if (!strcmp((char *) params[0]->data, name))

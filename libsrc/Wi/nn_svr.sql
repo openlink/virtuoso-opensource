@@ -318,7 +318,7 @@ create table NEWS_GROUPS (
 	NG_LAST		integer,		-- Last article number in the group
 	NG_LAST_OUT	integer,		-- Last article number in the group
 	NG_NEXT_NUM	integer,		-- Next message group num.
-	NG_METHOD	integer,		-- Method to replecate messages
+	NG_METHOD	integer,		-- Method to replicate messages
 	NG_TYPE 	varchar default 'NNTP',
 	PRIMARY KEY (NG_GROUP))
 ;

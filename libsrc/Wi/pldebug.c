@@ -755,7 +755,7 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 		msg = box_dv_short_string ("There is no active statements to step");
 	    }
 	  break;
-      case PD_INFO: /* misselanious info */
+      case PD_INFO: /* miscellaneous info */
 	    {
 	      int infoi = BOX_ELEMENTS (args) > 1 ? (int) unbox(args[1]) : -1; /* what info requested */
 	      switch (infoi)
@@ -975,7 +975,7 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 		      cur_qi = cur_qi->qi_caller;
 		    }
 		  semaphore_leave (cli->cli_pldbg->pd_sem);
-		  msg = box_dv_short_string ("Exection resumed");
+		  msg = box_dv_short_string ("Execution resumed");
 		}
 	      else
 		msg = box_dv_short_string ("There is no active statements to resume");
@@ -1033,7 +1033,7 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 		  int is_in_step;
 	          cli->cli_pldbg->pd_session = (dk_session_t *) ses;
 		  is_in_step = cli->cli_pldbg->pd_is_step;
-		  pldbg_session_cleanup (ses); /* detach if alredy attached */
+		  pldbg_session_cleanup (ses); /* detach if already attached */
 	          DKS_DB_DATA (ses) = cli;
 		  if (!is_in_step)
 		    cli->cli_pldbg->pd_step = PLDS_INT;

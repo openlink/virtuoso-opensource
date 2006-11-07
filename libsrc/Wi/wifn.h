@@ -451,7 +451,7 @@ void itc_row_key_insert (it_cursor_t * it, db_buf_t row, dbe_key_t * ins_key);
 void dbe_key_free (dbe_key_t * key);
 void dbe_key_layout (dbe_key_t * key);
 
-/* redundand and incorrect: long strhash (char * strp); */
+/* redundant and incorrect: long strhash (char * strp); */
 
 #if 0
 void dd_print_key_id (dk_session_t * ses, key_id_t id);
