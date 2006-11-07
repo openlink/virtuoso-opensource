@@ -30,7 +30,7 @@
 /* the functions used from the old cursors */
 query_t *sqlc_cr_method (sql_comp_t * sc, ST ** ptree, int pass_state);
 void qc_make_continues (sql_comp_t * sc, query_cursor_t * qc);
-int sqlc_is_updateable (sql_comp_t * sc, ST * tree);
+int sqlc_is_updatable (sql_comp_t * sc, ST * tree);
 ST *qc_make_insert (sql_comp_t * sc, query_cursor_t * qc);
 
 /* the new cursor functions entry point */

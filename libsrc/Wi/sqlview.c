@@ -41,7 +41,7 @@
 
 
 int
-sqlc_view_is_updateable (ST * exp)
+sqlc_view_is_updatable (ST * exp)
 {
   if (!ST_P (exp, SELECT_STMT) || !exp->_.select_stmt.table_exp)
     return 0;
@@ -354,7 +354,7 @@ sqlc_insert_view (sql_comp_t * sc, ST * view, ST * tree, dbe_table_t * tb)
   dk_set_t aliases = NULL;
   dk_set_t new_cols = NULL, new_vals = NULL;
 
-  if (!sqlc_view_is_updateable (view))
+  if (!sqlc_view_is_updatable (view))
     sqlc_new_error (sc->sc_cc, "37000", "SQ114",
 	"View %s is not updatable in insert.", tb->tb_name);
 
@@ -431,7 +431,7 @@ sqlc_update_view (sql_comp_t * sc, ST * view, ST * tree, dbe_table_t * tb)
   dk_set_t aliases = NULL;
   dk_set_t new_cols = NULL, new_vals = NULL;
 
-  if (!sqlc_view_is_updateable (view))
+  if (!sqlc_view_is_updatable (view))
     sqlc_new_error (sc->sc_cc, "37000", "SQ116",
 	"View %s is not updatable.", tb->tb_name);
 
@@ -512,7 +512,7 @@ sqlc_delete_view (sql_comp_t * sc, ST * view, ST * tree)
   ST *texp = tree->_.delete_src.table_exp;
   dk_set_t aliases = NULL;
 
-  if (!sqlc_view_is_updateable (view))
+  if (!sqlc_view_is_updatable (view))
     sqlc_new_error (sc->sc_cc, "37000", "SQ119", "View %s is not updatable.",
 	texp && texp->_.table_exp.from[0] && texp->_.table_exp.from[0]->_.table_ref.table ?
 	(char *) texp->_.table_exp.from[0]->_.table_ref.table : "<unknown>");

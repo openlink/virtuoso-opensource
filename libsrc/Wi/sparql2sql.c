@@ -815,7 +815,7 @@ sparp_make_aliases (sparp_t *sparp)
 }
 
 void
-sparp_remove_redundand_connections (sparp_t *sparp)
+sparp_remove_redundant_connections (sparp_t *sparp)
 {
   SPART *top_pattern = sparp->sparp_expr->_.req_top.pattern;
   sparp_equiv_t **equivs = sparp->sparp_env->spare_equivs;
@@ -2254,7 +2254,7 @@ sparp_rewrite_basic (sparp_t *sparp)
   sparp_make_aliases (sparp);
   sparp_eq_restr_from_connected (sparp);
   sparp_eq_restr_to_vars (sparp);
-  sparp_remove_redundand_connections (sparp);
+  sparp_remove_redundant_connections (sparp);
   root->_.req_top.equivs = sparp->sparp_env->spare_equivs;
   root->_.req_top.equiv_count = sparp->sparp_env->spare_equiv_count;
   sparp_audit_mem (sparp);

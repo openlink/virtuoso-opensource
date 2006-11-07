@@ -8280,7 +8280,7 @@ xu_bsort (xmlupdate_item_t *items, int size)
 }
 
 
-int xu_remove_redundand (xmlupdate_item_t *xu_list, int old_size, ptrlong doc, dk_set_t *garbage)
+int xu_remove_redundant (xmlupdate_item_t *xu_list, int old_size, ptrlong doc, dk_set_t *garbage)
 {
   int res_size = 0;
   int xu_ctr;
@@ -8744,7 +8744,7 @@ caddr_t xmlupdate_impl (caddr_t * qst, xml_tree_ent_t * src, xml_tree_ent_t * tg
       xu_ctr = xu_ctr2;
     }
   xu_bsort (xu_list, xu_count);
-  xu_count = xu_remove_redundand (xu_list, xu_count, (ptrlong)(src->xe_doc.xtd), &garbage);
+  xu_count = xu_remove_redundant (xu_list, xu_count, (ptrlong)(src->xe_doc.xtd), &garbage);
   res = xu_replace (xu_list, xu_count, tgt, ((tgt == src) ? tgt->xe_doc.xtd : NULL));
   if ((res != (caddr_t)tgt) && (tgt != src))
     dk_free_box ((box_t) tgt);
@@ -9555,7 +9555,7 @@ xml_tree_init (void)
   UNAME_IT(uname__bang_name			, " !name"			);
   UNAME_IT(uname__bang_ns			, " !ns"			);
   UNAME_IT(uname__bang_uri			, " !uri"			);
-  UNAME_IT(uname__bang_use_attribute_sets	, " !use-atribute-sets"		);
+  UNAME_IT(uname__bang_use_attribute_sets	, " !use-attribute-sets"		);
   UNAME_IT(uname__bang_xmlns			, " !xmlns"			);
   UNAME_IT(uname__attr				, " attr"			);
   UNAME_IT(uname__comment			, " comment"			);

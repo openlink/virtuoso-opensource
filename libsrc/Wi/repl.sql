@@ -27,8 +27,8 @@
 
 create procedure REPL_PUB_REMOVE (in __pub varchar, in _item varchar, in _type integer, in _not_all varchar)
 {
-  declare _is_updateable integer;
-  _is_updateable := REPL_IS_UPDATEABLE(repl_this_server(), __pub);
+  declare _is_updatable integer;
+  _is_updatable := REPL_IS_UPDATABLE(repl_this_server(), __pub);
   declare _stat, _msg, _pub varchar;
   _pub := SYS_ALFANUM_NAME (__pub);
   _stat := '00000'; _msg := '';
@@ -51,7 +51,7 @@ create procedure REPL_PUB_REMOVE (in __pub varchar, in _item varchar, in _type i
 	    replace (_item, '.', '_')), _stat, _msg);
       exec (sprintf ('drop trigger "%I"."%I"."repl_%I_U"', name_part (_item, 0), name_part (_item, 1),
 	    replace (_item, '.', '_')), _stat, _msg);
-      if (_is_updateable <> 0)
+      if (_is_updatable <> 0)
         {
           -- drop conflict resolvers
           exec (sprintf ('drop procedure "%I"."%I"."replcr_%I_I"',
@@ -131,7 +131,7 @@ create procedure REPL_SYNC_USER (
 }
 ;
 
-create procedure REPL_PUBLISH (in _acct varchar, in log_path varchar, in _is_updateable integer := 0, in _sync_user varchar := null)
+create procedure REPL_PUBLISH (in _acct varchar, in log_path varchar, in _is_updatable integer := 0, in _sync_user varchar := null)
 {
   declare _nth integer;
   declare acct varchar;
@@ -152,7 +152,7 @@ create procedure REPL_PUBLISH (in _acct varchar, in log_path varchar, in _is_upd
     _sync_user := null;
   _nth := coalesce ((select max (NTH) from DB.DBA.SYS_REPL_ACCOUNTS), 0);
   insert into DB.DBA.SYS_REPL_ACCOUNTS (SERVER, ACCOUNT, NTH, IS_UPDATEABLE, SYNC_USER)
-    values (repl_this_server (), acct, _nth + 1, _is_updateable, _sync_user);
+    values (repl_this_server (), acct, _nth + 1, _is_updatable, _sync_user);
   repl_changed ();
   log_text ('repl_changed ()');
   sequence_set (concat ('repl_', repl_this_server(), '_', acct), 0, 0);
@@ -192,8 +192,8 @@ create procedure REPL_UNSUBSCRIBE (in serv varchar, in _pub varchar, in _item va
   declare _path any;
   declare _id, _tp integer;
   declare _stat, _msg, pub varchar;
-  declare _is_updateable integer;
-  _is_updateable := REPL_IS_UPDATEABLE(serv, _pub);
+  declare _is_updatable integer;
+  _is_updatable := REPL_IS_UPDATABLE(serv, _pub);
   pub := SYS_ALFANUM_NAME (_pub);
 
   _stat := '00000'; _msg := '';
@@ -251,7 +251,7 @@ create procedure REPL_UNSUBSCRIBE (in serv varchar, in _pub varchar, in _item va
 		    exec (sprintf ('drop table %s', REPL_FQNAME (it)),
                       _stat, _msg);
                   }
-                if (_is_updateable <> 0)
+                if (_is_updatable <> 0)
                   {
 		    commit work;
                     repl_set_raw(1);
@@ -285,7 +285,7 @@ create procedure REPL_UNSUBSCRIBE (in serv varchar, in _pub varchar, in _item va
     {
       delete from DB.DBA.SYS_TP_ITEM where TI_SERVER = serv and TI_ACCT = pub;
       delete from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = serv and ACCOUNT = pub;
-      if (_is_updateable <> 0)
+      if (_is_updatable <> 0)
         {
           delete from DB.DBA.SYS_REPL_ACCOUNTS
               where SERVER = serv and ACCOUNT = concat ('!', pub);
@@ -355,10 +355,10 @@ create procedure REPL_SUBSCRIBE (in srv varchar, in _acct varchar,
       resignal;
     };
 
-  declare _is_updateable integer;
-  _is_updateable := REPL_IS_UPDATEABLE(srv, acct);
+  declare _is_updatable integer;
+  _is_updatable := REPL_IS_UPDATABLE(srv, acct);
 
-  if (_is_updateable <> 0)
+  if (_is_updatable <> 0)
     {
       _stat := '00000';
       _msg := '';
@@ -399,7 +399,7 @@ create procedure REPL_SUBSCRIBE (in srv varchar, in _acct varchar,
 	      txn_error (6);
 	      signal ('37000', concat ('The table ''' , i, ''' already exists'), 'TR010');
 	    }
-	  REPL_SUBSCR_TBL (srv, acct, i, _is_updateable);
+	  REPL_SUBSCR_TBL (srv, acct, i, _is_updatable);
 	}
       else if (t = 3)
 	{
@@ -422,7 +422,7 @@ create procedure REPL_SUBSCRIBE (in srv varchar, in _acct varchar,
   repl_changed ();
   log_text ('repl_changed ()');
 
-  if (_is_updateable <> 0)
+  if (_is_updatable <> 0)
     {
       sequence_set (concat ('replback_', srv, '_', acct), 0, 0);
       sequence_set (concat ('replbackpub_', srv, '_', acct), 0, 0);
@@ -1020,8 +1020,8 @@ create procedure REPL_PUB_ADD (in __pub varchar, in _item varchar, in _type inte
   declare _pub varchar;
   _pub := SYS_ALFANUM_NAME (__pub);
 
-  declare _is_updateable integer;
-  _is_updateable := REPL_IS_UPDATEABLE (repl_this_server (), __pub);
+  declare _is_updatable integer;
+  _is_updatable := REPL_IS_UPDATABLE (repl_this_server (), __pub);
 
   if (exists (select 1 from DB.DBA.SYS_TP_ITEM where TI_SERVER = repl_this_server () and TI_ACCT = _pub
 	and TI_ITEM = _item and TI_TYPE = _type))
@@ -1036,7 +1036,7 @@ create procedure REPL_PUB_ADD (in __pub varchar, in _item varchar, in _type inte
     {
       if (not exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = _item))
 	signal ('37000', concat ('The table ''' , _item, ''' doesn''t exist'), 'TR040');
-      REPL_PUB_TBL (__pub, _item, _is_updateable);
+      REPL_PUB_TBL (__pub, _item, _is_updatable);
     }
   else if (_type = 3)
     {
@@ -1123,7 +1123,7 @@ create procedure REPL_PROC_MODE (in __acct varchar, in _item varchar, in _mode i
 ;
 
 
-create procedure REPL_PUB_TBL (in _pub varchar, in tbl varchar, in _is_updateable integer)
+create procedure REPL_PUB_TBL (in _pub varchar, in tbl varchar, in _is_updatable integer)
 {
   declare state, message, stmt  varchar;
   declare src_table varchar;
@@ -1135,7 +1135,7 @@ create procedure REPL_PUB_TBL (in _pub varchar, in tbl varchar, in _is_updateabl
   pub := SYS_ALFANUM_NAME (_pub);
   src_table := complete_table_name(tbl, 1);
 
-  if (_is_updateable <> 0)
+  if (_is_updatable <> 0)
     REPL_ENSURE_ROWGUID (src_table, 255, 0);
 
   declare _pk_cols any;
@@ -1152,7 +1152,7 @@ create procedure REPL_PUB_TBL (in _pub varchar, in tbl varchar, in _is_updateabl
 
   if (_len = 0)
     {
-      if (_is_updateable <> 0)
+      if (_is_updatable <> 0)
         {
           signal ('22023',
               sprintf ('The table ''%s'' does not have primary key', src_table),
@@ -1166,7 +1166,7 @@ create procedure REPL_PUB_TBL (in _pub varchar, in tbl varchar, in _is_updateabl
       _col := aref (_pk_cols, _ix);
       _col_name := aref (_col, 0);
       _col_dtp := aref (_col, 1);
-      if (_col_dtp = 128 and _is_updateable <> 0)
+      if (_col_dtp = 128 and _is_updatable <> 0)
         {
           signal ('22023',
               sprintf ('The table ''%s'' can not be added to updatable publication because primary key column ''%s'' has ''timestamp'' datatype',
@@ -1258,7 +1258,7 @@ create procedure REPL_PUB_TBL (in _pub varchar, in tbl varchar, in _is_updateabl
   declare _trg varchar;
   _trg := sprintf ('create trigger "repl_%I_I" after insert on %s order 199 referencing new as _N\n{\n',
 	      replace (src_table, '.', '_'), REPL_FQNAME (tbl));
-  if (_is_updateable <> 0)
+  if (_is_updatable <> 0)
     {
 _trg := concat (_trg, sprintf ('if (repl_is_raw() = 0) { _N.ROWGUID := uuid(); set triggers off; update %s set ROWGUID = _N.ROWGUID where %s; }\n', REPL_FQNAME (tbl), _npk_cond));
     }
@@ -1273,7 +1273,7 @@ _trg := concat (_trg, sprintf ('if (repl_is_raw() = 0) { _N.ROWGUID := uuid(); s
 -- update trigger
   _trg := sprintf ('create trigger "repl_%I_U" after update on %s\n order 199 referencing old as _O, new as _N\n{\n',
 	      replace (src_table, '.', '_'), REPL_FQNAME (tbl));
-  if (_is_updateable <> 0)
+  if (_is_updatable <> 0)
     {
 _trg := concat (_trg, sprintf ('if (repl_is_raw() = 0) { _N.ROWGUID := uuid(); set triggers off; update %s set ROWGUID = _N.ROWGUID where %s; }\n', REPL_FQNAME (tbl), _npk_cond));
     }
@@ -1296,8 +1296,8 @@ _trg := concat (_trg, sprintf ('if (repl_is_raw() = 0) { _N.ROWGUID := uuid(); s
   message := '';
   exec (_trg, state, message);
 
--- create conflict resolvers if subscription is updateable
-  if (_is_updateable <> 0)
+-- create conflict resolvers if subscription is updatable
+  if (_is_updatable <> 0)
     {
       declare _cmds any;
       _cmds := vector (
@@ -1586,17 +1586,17 @@ create procedure __INT_REPL_ALTER_REDO_TRIGGERS (in tb varchar)
      declare _stmt varchar;
      declare _col any;
 
-     declare _is_updateable integer;
-     _is_updateable := REPL_IS_UPDATEABLE (repl_this_server (), _ti_acct);
+     declare _is_updatable integer;
+     _is_updatable := REPL_IS_UPDATABLE (repl_this_server (), _ti_acct);
 
-     REPL_PUB_TBL (_ti_acct, tb, _is_updateable);
+     REPL_PUB_TBL (_ti_acct, tb, _is_updatable);
 
      -- send notifications to subscribers to redo their triggers as well.
      repl_text (_ti_acct, 'DB.DBA.__REPL_SUBSCR_TBL_TRIGGERS (?, ?, ?, ?)',
      		repl_this_server (),
 		_ti_acct,
 		tb,
-		_is_updateable);
+		_is_updatable);
    }
 }
 ;
@@ -1638,7 +1638,7 @@ _next:;
 }
 ;
 
-create procedure REPL_SUBSCR_TBL (in serv varchar, in _pub varchar, in tbl varchar, in _is_updateable integer)
+create procedure REPL_SUBSCR_TBL (in serv varchar, in _pub varchar, in tbl varchar, in _is_updatable integer)
 {
   declare state, message, stmt, stmtidx  varchar;
   declare src_comp, rdata varchar;
@@ -1875,8 +1875,8 @@ create procedure REPL_SUBSCR_TBL (in serv varchar, in _pub varchar, in tbl varch
       inx := inx + 1;
     }
 
--- add replication triggers if subscription is updateable
-  if (_is_updateable <> 0)
+-- add replication triggers if subscription is updatable
+  if (_is_updatable <> 0)
     {
       declare _trg varchar;
       declare backpub varchar;
@@ -1936,9 +1936,9 @@ create procedure REPL_SUBSCR_TBL (in serv varchar, in _pub varchar, in tbl varch
 
   commit work;
 
--- do not drop table if subscription is updateable
+-- do not drop table if subscription is updatable
 -- it will be used for subscriber resync
-  if (_is_updateable = 0)
+  if (_is_updatable = 0)
     {
       if (0 <> exec (sprintf ('drop table %s', REPL_FQNAME (src_tbl)), state, message))
         signal (state, message);
@@ -1951,9 +1951,9 @@ create procedure __REPL_SUBSCR_TBL_TRIGGERS (
 	in serv varchar,
 	in _pub varchar,
 	in tbl varchar,
-	in _is_updateable integer)
+	in _is_updatable integer)
 {
--- add replication triggers if subscription is updateable
+-- add replication triggers if subscription is updatable
   declare state, message varchar;
   declare n_cols, inx integer;
   declare _col any;
@@ -1971,7 +1971,7 @@ create procedure __REPL_SUBSCR_TBL_TRIGGERS (
   declare _trg varchar;
   declare backpub varchar;
 
-  if (_is_updateable = 0)
+  if (_is_updatable = 0)
     return;
 
   pub := SYS_ALFANUM_NAME (_pub);
@@ -2283,11 +2283,11 @@ create procedure REPL_INIT_COPY (in srv varchar, in _acct varchar, in ret_err in
   declare txt, sel, src_cols, src_table, _stat, _msg, server, acct varchar;
   declare _rrc, _ret_err any;
   declare dav_ui, dav_gi integer;
-  declare _is_updateable, idx integer;
+  declare _is_updatable, idx integer;
   declare reg_stat varchar;
 
   acct := SYS_ALFANUM_NAME (_acct);
-  _is_updateable := REPL_IS_UPDATEABLE(srv, acct);
+  _is_updatable := REPL_IS_UPDATABLE(srv, acct);
 
   _ret_err := vector ();
   server := REPL_DSN (srv);
@@ -2340,7 +2340,7 @@ create procedure REPL_INIT_COPY (in srv varchar, in _acct varchar, in ret_err in
 	  _stat := '00000'; _msg := '';
           commit work;
           repl_set_raw(1);
-          if (_is_updateable = 0)
+          if (_is_updatable = 0)
             {
               exec ('vd_int_attach_table (?,?,NULL,NULL,NULL,NULL,1)', _stat, _msg, vector (server, i));
               if ('00000' <> _stat)
@@ -2366,7 +2366,7 @@ create procedure REPL_INIT_COPY (in srv varchar, in _acct varchar, in ret_err in
             {
 	      set triggers on;
 	      rollback work;
-              if (_is_updateable = 0)
+              if (_is_updatable = 0)
                 {
                   declare _stat2, _msg2 varchar;
 	          _stat2 := '00000'; _msg2 := '';
@@ -2393,7 +2393,7 @@ create procedure REPL_INIT_COPY (in srv varchar, in _acct varchar, in ret_err in
 	    }
 
 	  --dbg_obj_print ('STATUS: ', _stat, _msg);
-          if (_is_updateable = 0)
+          if (_is_updatable = 0)
             {
 	      _stat := '00000'; _msg := '';
 	      if (0 <> exec (sprintf ('drop table %s', REPL_FQNAME (src_table)),
@@ -2535,8 +2535,8 @@ create procedure REPL_SUB_ITEM (in srv varchar, in _acct varchar,
   declare upc cursor for select distinct TI_DAV_USER, TI_DAV_GROUP from DB.DBA.SYS_TP_ITEM
       where TI_SERVER = srv and TI_ACCT = _acct and TI_TYPE = 1 and (TI_DAV_USER is not null or TI_DAV_GROUP is not null);
 
-  declare _is_updateable integer;
-  _is_updateable := REPL_IS_UPDATEABLE(srv, _acct);
+  declare _is_updatable integer;
+  _is_updatable := REPL_IS_UPDATABLE(srv, _acct);
 
   dav_u := null; dav_g := null;
 
@@ -2574,14 +2574,14 @@ create procedure REPL_SUB_ITEM (in srv varchar, in _acct varchar,
     }
   else if (t = 2)
     {
-      REPL_SUBSCR_TBL (srv, _acct, i, _is_updateable);
+      REPL_SUBSCR_TBL (srv, _acct, i, _is_updatable);
       for select TI_ITEM as tbl, DB_ADDRESS as dsn from DB.DBA.SYS_TP_ITEM, DB.DBA.SYS_SERVERS
       where TI_SERVER = srv and TI_ACCT = _acct and TI_TYPE = 2 and SERVER = srv do
 	{
 	  REPL_SUBSCR_TBL_FKS (srv, _acct, dsn, tbl);
 	}
 
-      if (_is_updateable = 0)
+      if (_is_updatable = 0)
         {
           _stat := '00000';
           _msg := '';
@@ -2600,7 +2600,7 @@ create procedure REPL_SUB_ITEM (in srv varchar, in _acct varchar,
       if (0 <> exec (sel, _stat, _msg))
 	{
 	  set triggers on;
-          if (_is_updateable = 0)
+          if (_is_updatable = 0)
 	    {
 	      exec (sprintf ('drop table %s', REPL_FQNAME (src_table)));
 	      --dbg_obj_print ('STATUS: ', _stat, _msg);
@@ -2619,7 +2619,7 @@ create procedure REPL_SUB_ITEM (in srv varchar, in _acct varchar,
       --dbg_obj_print ('STATUS: ', _stat, _msg);
       commit work;
       repl_set_raw(1);
-      if (_is_updateable = 0)
+      if (_is_updatable = 0)
         {
           _stat := '00000';
           _msg := '';
@@ -2962,26 +2962,26 @@ create procedure REPL_ADD_CR (
 }
 ;
 
-create procedure REPL_IS_UPDATEABLE (in _server varchar, in _account varchar)
+create procedure REPL_IS_UPDATABLE (in _server varchar, in _account varchar)
 {
-  declare _is_updateable integer;
+  declare _is_updatable integer;
 
   if (_server = repl_this_server())
     {
       declare exit handler for not found
         signal ('37000', concat ('The publication ''', _account, ''' doesn''t exist'), 'TR079');
-      select IS_UPDATEABLE into _is_updateable from DB.DBA.SYS_REPL_ACCOUNTS
+      select IS_UPDATEABLE into _is_updatable from DB.DBA.SYS_REPL_ACCOUNTS
         where SERVER = _server and ACCOUNT = _account;
     }
   else
     {
       declare exit handler for not found
         signal ('37000', concat ('The subscription ''', _account, ''' from ''', _server, ''' doesn''t exist'), 'TR004');
-      select IS_UPDATEABLE into _is_updateable from DB.DBA.SYS_REPL_ACCOUNTS
+      select IS_UPDATEABLE into _is_updatable from DB.DBA.SYS_REPL_ACCOUNTS
         where SERVER = _server and ACCOUNT = _account;
     }
 
-  return _is_updateable;
+  return _is_updatable;
 }
 ;
 

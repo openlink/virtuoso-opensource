@@ -102,7 +102,7 @@ repl_disconnect_publisher (subscription_t *sub, int synced, int disconnect_paren
 }
 
 int
-repl_sync_updateable_acct (repl_acct_t *ra, char * _usr, char * _pwd)
+repl_sync_updatable_acct (repl_acct_t *ra, char * _usr, char * _pwd)
 {
   subscription_t *sub;
 

@@ -149,23 +149,23 @@ xid_bin_encode (void* _xid)
   unsigned char* str_ptr;
   unsigned char* encoded_str = str_ptr = (unsigned char *) dk_alloc_box (sizeof(virtXID)*2 + 1 ,DV_STRING);
   virtXID * xid = (virtXID *) _xid;
-  int lenght;
+  int length;
   long tmp_l;
 
   /* log_info (">> %d %d %d", xid->formatID, xid->gtrid_length, xid->bqual_length); */
 
   LONG_SET_NA (&tmp_l, xid->formatID);
-  lenght = encode_ptr ((unsigned char *) &tmp_l, sizeof (tmp_l), encoded_str);
+  length = encode_ptr ((unsigned char *) &tmp_l, sizeof (tmp_l), encoded_str);
 
   LONG_SET_NA (&tmp_l, xid->gtrid_length);
-  lenght += encode_ptr ((unsigned char *) &tmp_l, sizeof (tmp_l), encoded_str + lenght);
+  length += encode_ptr ((unsigned char *) &tmp_l, sizeof (tmp_l), encoded_str + length);
 
   LONG_SET_NA (&tmp_l, xid->bqual_length);
-  lenght += encode_ptr ((unsigned char *) &tmp_l, sizeof (tmp_l), encoded_str + lenght);
+  length += encode_ptr ((unsigned char *) &tmp_l, sizeof (tmp_l), encoded_str + length);
 
-  lenght += encode_ptr ((unsigned char *) xid->data, XIDDATASIZE, encoded_str + lenght);
+  length += encode_ptr ((unsigned char *) xid->data, XIDDATASIZE, encoded_str + length);
 
-  encoded_str[lenght] = 0;
+  encoded_str[length] = 0;
 
   /* log_info (">> %s", encoded_str); */
   return (char *) encoded_str;

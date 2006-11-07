@@ -298,8 +298,8 @@ typedef struct xp_env_s
     caddr_t		xe_dflt_fn_namespace;	/*!< Default namespace URI for functions */
     dk_set_t		xe_collation_uris;	/*!< Pairs of collation URIs and descriptions */
     dk_set_t		xe_collation_uris_outer;	/*!< Bookmark in xe_collation_uris that points to the first inherited (not local) collation */
-    caddr_t		xe_dflt_collation;	/*!< Ddescription of the default collation */
-    ptrlong		xe_validation_mode;	/*!< Validation mode for element constructors and validate... experssions */
+    caddr_t		xe_dflt_collation;	/*!< Description of the default collation */
+    ptrlong		xe_validation_mode;	/*!< Validation mode for element constructors and validate... expressions */
     ptrlong		xe_xmlspace_mode;	/*!< processing of whitespaces in element constructors */
     ptrlong		xe_construction_mode;	/*!< processing of types in element constructors */
     ptrlong		xe_ordering_mode;	/*!< ordered/unordered default behaviour of path expressions and loops */
@@ -455,7 +455,7 @@ typedef struct xp_tree_s
       caddr_t   name;
       struct xs_component_s **type;
       ptrlong	is_nillable;
-      ptrlong	occurences;
+      ptrlong	occurrences;
     } seqtype;
     struct {
       dk_mem_wrapper_t * qr_mem_wrapper;

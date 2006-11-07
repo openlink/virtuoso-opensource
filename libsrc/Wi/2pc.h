@@ -267,7 +267,7 @@ typedef struct virt_rcon_s
   } vtr_branch_handle;
 
 
-  int vtr_is_finilized;
+  int vtr_is_finalized;
 }
 virt_rcon_t;
 

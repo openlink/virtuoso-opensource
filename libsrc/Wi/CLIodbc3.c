@@ -2334,7 +2334,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 		  sc_columns[RecNumber - 1];
 	      if (ValuePtr)
 		*((SQLSMALLINT *) ValuePtr) =
-		    (SQLSMALLINT) unbox (cd->cd_updateable);
+		    (SQLSMALLINT) unbox (cd->cd_updatable);
 	    }
 	}
       else

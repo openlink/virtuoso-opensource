@@ -330,7 +330,7 @@ caddr_t spar_strliteral (sparp_t *sparp, const char *strg, int strg_is_long, cha
           {
 	    const char *bs_src		= "abfnrtv\\\'\"uU";
 	    const char *bs_trans	= "\a\b\f\n\r\t\v\\\'\"\0\0";
-            const char *bs_lenghts	= "\2\2\2\2\2\2\2\2\2\2\6\012";
+            const char *bs_lengths	= "\2\2\2\2\2\2\2\2\2\2\6\012";
 	    const char *hit = strchr (bs_src, src_tail[1]);
 	    char bs_len, bs_tran;
 	    const char *nextchr;
@@ -339,7 +339,7 @@ caddr_t spar_strliteral (sparp_t *sparp, const char *strg, int strg_is_long, cha
 		err_msg = "Unsupported escape sequence after '\'";
 		goto err;
 	      }
-            bs_len = bs_lenghts [hit - bs_src];
+            bs_len = bs_lengths [hit - bs_src];
             bs_tran = bs_trans [hit - bs_src];
 	    nextchr = src_tail + bs_len;
 	    if ((src_tail + bs_len) > src_end)
@@ -1190,7 +1190,7 @@ const char *spart_dump_opname (ptrlong opname, int is_op)
     case _LBRA: return "quad mapping parent group name";
     case ASC_L: return "ascending order";
     case ASK_L: return "ASK result-mode";
-    case BOUND_L: return "BOUND buitin";
+    case BOUND_L: return "BOUND builtin";
     case CONSTRUCT_L: return "CONSTRUCT result-mode";
     case CREATE_L: return "quad mapping name";
     case DATATYPE_L: return "DATATYPE builtin";

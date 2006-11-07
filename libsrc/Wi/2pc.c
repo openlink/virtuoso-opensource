@@ -1191,9 +1191,9 @@ tp_trx_commit_1 (lock_trx_t * lt, int is_commit)
 			SQL_NULL_HENV,  (SQLHDBC) dbc, SQL_NULL_HSTMT,  NULL));
 		_2pc_printf (("lost connection to branch at stage 1"));
 	      }
-	    vbranch->vtr_is_finilized = 1;
+	    vbranch->vtr_is_finalized = 1;
 	    op = SQL_TP_ABORT;
-	    goto finilize;
+	    goto finalize;
 	  }
 	tp_trx_exclude (0, vbranch->vtr_branch_handle.l_rmt);
 	_2pc_printf ((" done\n"));
@@ -1206,7 +1206,7 @@ tp_trx_commit_1 (lock_trx_t * lt, int is_commit)
 	  return LTE_OK;
 	}
     }
-finilize:
+finalize:
   virt_trx_set_state (_2pc_dtp->vtp_cli, vtrx->vtx_id,
       virt_tp_rollback_pending);
   return LTE_DEADLOCK;
@@ -1221,7 +1221,7 @@ tp_trx_commit_2 (caddr_t distr_trx, int is_commit)
   SQLUSMALLINT op = is_commit ? SQL_TP_COMMIT : SQL_TP_ABORT;
   DO_SET (virt_rcon_t *, vbranch, &vtrx->vtx_cons)
   {
-    if (!vbranch->vtr_is_finilized)
+    if (!vbranch->vtr_is_finalized)
       {
 	CON (dbc, vbranch->vtr_branch_handle.l_rmt->rc_hdbc);
 	caddr_t *res;

@@ -417,7 +417,7 @@ ra_find_pushback (char * server, char * account)
 }
 
 repl_acct_t *
-ra_add (char *server, char *account, repl_level_t level, int mand, int is_updateable)
+ra_add (char *server, char *account, repl_level_t level, int mand, int is_updatable)
 {
   char tmp[2000];
   NEW_VARZ (repl_acct_t, ra);
@@ -427,7 +427,7 @@ ra_add (char *server, char *account, repl_level_t level, int mand, int is_update
   ra->ra_account = box_dv_short_string (account);
   ra->ra_level = level;
   ra->ra_is_mandatory = mand;
-  ra->ra_is_updateable = is_updateable;
+  ra->ra_is_updatable = is_updatable;
   ra->ra_synced = RA_OFF;
   snprintf (tmp, sizeof (tmp), "%s_%s_%s",
           RA_IS_PUSHBACK(ra->ra_account) ? "replback" : "repl",
@@ -444,9 +444,9 @@ ra_add (char *server, char *account, repl_level_t level, int mand, int is_update
   repl_accounts = dk_set_conc (repl_accounts, dk_set_cons ((caddr_t) ra, NULL));
 
 #if 0
-  dbg_printf_1 (("ra_server: '%s', ra_account: '%s', ra_sequence: '%s', ra_is_mandatory: %d, ra_is_updateable: %d",
+  dbg_printf_1 (("ra_server: '%s', ra_account: '%s', ra_sequence: '%s', ra_is_mandatory: %d, ra_is_updatable: %d",
           ra->ra_server, ra->ra_account, ra->ra_sequence, ra->ra_is_mandatory,
-          ra->ra_is_updateable));
+          ra->ra_is_updatable));
 #endif
 
   return ra;
@@ -845,13 +845,13 @@ ra_read_db (client_connection_t * cli, query_instance_t * qi, int read_levels)
        */
       DO_SET (repl_acct_t *, ra, &repl_accounts)
         {
-          if (ra->ra_is_updateable &&
+          if (ra->ra_is_updatable &&
               !RA_IS_PUSHBACK(ra->ra_account) &&
               !!strcmp (ra->ra_server, db_name))
             {
               DO_SET (repl_acct_t *, ra2, &repl_accounts)
                 {
-                  if (ra2->ra_is_updateable &&
+                  if (ra2->ra_is_updatable &&
                       RA_IS_PUSHBACK(ra2->ra_account) &&
                       !strcmp(ra->ra_server, ra2->ra_server) &&
                       !strcmp(ra->ra_account, ra2->ra_account + 1))
@@ -1032,7 +1032,7 @@ bif_repl_disconnect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static void
 repl_sync (repl_acct_t * ra, char * usr, char * pwd)
 {
-  if (ra->ra_is_updateable && repl_sync_updateable_acct (ra, usr, pwd) < 0)
+  if (ra->ra_is_updatable && repl_sync_updatable_acct (ra, usr, pwd) < 0)
     return;
 
   repl_sync_acct (ra, usr, pwd);

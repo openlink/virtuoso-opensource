@@ -753,7 +753,7 @@ XP_EXEC_SQL_XPATH {E}{X}{E}{C}{WS}{S}{Q}{L}{WS}{X}{P}{A}{T}{H}
 	/* XQ OPERATOR row 13
 	    ']', IntegerLiteral, DecimalLiteral, DoubleLiteral, ')', StringLiteral,
 	    QName, <NCName ":" "*">, <"*" ":" NCName">, '.', '..' are in XQ DEFAULT row 1 */
-<XQ_OP>"colaltion"				{ return COLLATION_L; }
+<XQ_OP>"collation"				{ return COLLATION_L; }
 <XQ_OP>"ascending"				{ return ASCENDING_L; }
 <XQ_OP>"descending"				{ return DESCENDING_L; }
 <XQ_OP>"empty"{WS}"greatest"			{ return EMPTY_GREATEST_L; }

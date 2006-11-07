@@ -145,7 +145,7 @@ sqlc_cr_method (sql_comp_t * sc, ST ** ptree, int pass_state)
 }
 
 int
-sqlc_is_updateable (sql_comp_t * sc, ST * tree)
+sqlc_is_updatable (sql_comp_t * sc, ST * tree)
 {
   ST * tb;
   if (sc->sc_scroll_super)
@@ -571,7 +571,7 @@ qc_make_stmts (sql_comp_t * sc, query_cursor_t * qc)
 
   qc_make_refresh (sc, qc);
   qc_make_continues (sc, qc);
-  if (sqlc_is_updateable (sc, text))
+  if (sqlc_is_updatable (sc, text))
     {
       if (qc_make_update (sc, qc))
 	qc_make_insert (sc, qc);

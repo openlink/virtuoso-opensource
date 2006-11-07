@@ -199,7 +199,7 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME (in qname varchar) returns IRI_ID
             signal ('RDFXX', sprintf ('Cannot make IID for IRI <%.100s> in DB.DBA.RDF_MAKE_IID_OF_QNAME()', qname));
           return iri_id_from_num (bniid);
         }
-      set isolation='commited';
+      set isolation='committed';
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
         return res;
@@ -237,7 +237,7 @@ create function DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (in qname any) returns IRI_ID
         return null;
           return iri_id_from_num (bniid);
         }
-      set isolation='commited';
+      set isolation='committed';
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
         return res;
@@ -277,7 +277,7 @@ create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID
         return null;
           return iri_id_from_num (bniid);
         }
-      set isolation='commited';
+      set isolation='committed';
       res := coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
       if (res is not null)
         return res;
@@ -319,7 +319,7 @@ grant execute on DB.DBA.RDF_QNAME_OF_IID to SPARQL_SELECT
 
 create function DB.DBA.RDF_IID_OF_QNAME_SAFE (in qname varchar) returns IRI_ID
 {
-  set isolation='commited';
+  set isolation='committed';
   if (__tag (qname) in (182, 217, 225, 230))
     return coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
   if (isiri_id (qname))
@@ -333,7 +333,7 @@ grant execute on DB.DBA.RDF_IID_OF_QNAME_SAFE to SPARQL_SELECT
 
 create function DB.DBA.RDF_IID_OF_QNAME (in qname varchar) returns IRI_ID
 {
-  set isolation='commited';
+  set isolation='committed';
   if (__tag (qname) in (182, 217, 225, 230))
     return coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));
   if (isiri_id (qname))
@@ -380,7 +380,7 @@ create function DB.DBA.RDF_TWOBYTE_OF_DATATYPE (in iid IRI_ID) returns integer
   if (iid is null)
     return 257;
   whenever not found goto mknew;
-  set isolation='commited';
+  set isolation='committed';
   select RDT_TWOBYTE into res from DB.DBA.RDF_DATATYPE where RDT_IID = iid;
   return res;
 
@@ -410,7 +410,7 @@ create function DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (in id varchar) returns integer
   if (id is null)
     return 257;
   whenever not found goto mknew;
-  set isolation='commited';
+  set isolation='committed';
   select RL_TWOBYTE into res from DB.DBA.RDF_LANGUAGE where RL_ID = id;
   return res;
 
@@ -601,7 +601,7 @@ create function DB.DBA.RDF_MAKE_RO_ID_OF_STRING (in v varchar) returns integer
   if (length (v) > llong)
     {
       tridgell := tridgell32 (v, 1);
-      set isolation='commited';
+      set isolation='committed';
       id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = tridgell and blob_to_string (RO_LONG) = v);
       if (id is null)
         {
@@ -616,7 +616,7 @@ create function DB.DBA.RDF_MAKE_RO_ID_OF_STRING (in v varchar) returns integer
     }
   else
     {
-      set isolation='commited';
+      set isolation='committed';
       id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
       if (id is null)
         {
@@ -4103,7 +4103,7 @@ create procedure DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (in storage varchar, in qm
                         bif:concat (str (rdf:_), "%d"),
                         2),
                       0 ) ) ) .
-                optional {?id virtrdf:qmProirityOrder ?ord} } } ) as sp
+                optional {?id virtrdf:qmPriorityOrder ?ord} } } ) as sp
       order by 2, 1 ) as sub );
   -- dbg_obj_princ ('DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE: found ', iris_and_orders);
   foreach (any itm in iris_and_orders) do
@@ -4196,7 +4196,7 @@ create procedure DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (in storage varchar, 
                         bif:concat (str (rdf:_), "%d"),
                         2),
                       0 ) ) ) .
-                optional {?id virtrdf:qmProirityOrder ?ord} } } ) as sp
+                optional {?id virtrdf:qmPriorityOrder ?ord} } } ) as sp
       order by 2, 1 ) as sub );
   -- dbg_obj_princ ('DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE: found ', iris_and_orders);
   foreach (any itm in iris_and_orders) do

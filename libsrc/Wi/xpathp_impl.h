@@ -155,7 +155,7 @@ extern void xp_unregister_local_namespaces (xpp_t *xpp, dk_set_t start_state);
 extern void xp_var_decl (xpp_t *xpp, caddr_t var_name, XT *var_type, XT *init_expn);
 extern XT *xp_make_typeswitch (xpp_t *xpp, XT *src, dk_set_t typecases, XT **dflt);
 extern XT *xp_make_name_test_from_qname (xpp_t *xpp, caddr_t qname, int qname_is_expanded);
-extern XT *xp_make_seq_type (xpp_t *xpp, ptrlong mode, caddr_t top_name, XT *type, ptrlong is_nilable, ptrlong n_occurences);
+extern XT *xp_make_seq_type (xpp_t *xpp, ptrlong mode, caddr_t top_name, XT *type, ptrlong is_nilable, ptrlong n_occurrences);
 
 extern XT *xp_make_module (xpp_t *xpp, caddr_t ns_prefix, caddr_t ns_uri, XT * expn);
 extern void xp_import_schema (xpp_t *xpp, caddr_t ns_prefix, caddr_t ns_uri, caddr_t *at_hints);

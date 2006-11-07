@@ -51,7 +51,7 @@ typedef struct repl_acct_s
     repl_level_t	ra_level;
     int			ra_synced;
     int			ra_is_mandatory;
-    int                 ra_is_updateable;
+    int                 ra_is_updatable;
     struct timeval	ra_last_txn;
     caddr_t		ra_sequence;
     caddr_t             ra_pub_sequence;  /* publisher sequence */
@@ -93,7 +93,7 @@ repl_level_t ra_new_trx_no (lock_trx_t * lt, repl_acct_t * ra);
 repl_acct_t * ra_find (char * server, char * name);
 repl_acct_t * ra_find_pushback (char * server, char * name);
 repl_acct_t *ra_add (char * server, char * account, repl_level_t level,
-        int mand, int is_updateable);
+        int mand, int is_updatable);
 repl_level_t ra_trx_no (repl_acct_t * ra);
 repl_level_t ra_pub_trx_no (repl_acct_t * ra);
 void ra_set_pub_trx_no (repl_acct_t *ra, repl_level_t level);

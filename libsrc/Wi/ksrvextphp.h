@@ -90,7 +90,7 @@ typedef struct
   dk_session_t *r_head;
   dk_session_t *s_head;
   caddr_t *in_lines;
-  char *coockie;
+  char *cookie;
   zend_file_handle *fh;
   query_instance_t * qi;
   char *org_file_name;

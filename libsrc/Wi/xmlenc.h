@@ -178,7 +178,7 @@ typedef enum {
 #define XENC_WRONG_XML_DOC	303
 #define XENC_DIFF_KEYS_ALGO_ERR	304
 #define XENC_UNKNOWN_SUPER_KEY_ERR	305
-#define XENC_UKNOWN_ID_ERR	306
+#define XENC_UNKNOWN_ID_ERR	306
 #define XENC_ENCKEY_ERR		307
 #define XENC_PURE_KEY_ERR	308
 #define XENC_ID_ERR		309
@@ -577,7 +577,7 @@ void xenc_build_ids_hash (caddr_t * curr, id_hash_t ** id_hash, int only_encrypt
 caddr_t xmlenc_decrypt_soap (caddr_t * qst, char * xml_text, long soap_version, long validate_sign,
                      const char * enc, lang_handler_t *lh, caddr_t * err_ret, caddr_t * opts, caddr_t *rkeys);
 
-xenc_key_t *ceritificate_decode (caddr_t encoded_cert, const char * value_type,
+xenc_key_t *certificate_decode (caddr_t encoded_cert, const char * value_type,
 				 const char * encoding_type);
 caddr_t xenc_x509_get_key_identifier (X509 * cert);
 caddr_t xenc_x509_KI_base64 (X509 * cert);

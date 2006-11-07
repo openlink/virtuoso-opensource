@@ -2288,7 +2288,7 @@ retry_dupe_check:
 		  if (col->col_sqt.sqt_is_xml)
 		    flags |= CDF_XMLTYPE;
 		}
-	      desc->cd_updateable = 1;
+	      desc->cd_updatable = 1;
 	      desc->cd_flags = flags;
 	    }
 	  /* not always, but still this is the best way */

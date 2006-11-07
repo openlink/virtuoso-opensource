@@ -115,8 +115,8 @@ typedef struct soap_ctx_s
     dk_set_t 	ns;          	/* namespaces used */
     dk_set_t 	types_set;   	/* used in RPC encoding to keep the namespaces */
     dk_set_t 	ns_set;      	/* namespaces declarations for response  */
-    caddr_t * 	attachments; 	/* input attachements */
-    dk_set_t 	o_attachments; 	/* output attachemets */
+    caddr_t * 	attachments; 	/* input attachments */
+    dk_set_t 	o_attachments; 	/* output attachments */
     int    	attr;	  	/* true if printing an attribute */
     caddr_t *	opts;
     int 	faults;
@@ -2779,7 +2779,7 @@ soap_find_doc_literal (caddr_t *body, caddr_t *header, dk_set_t * qrs, const cha
       if ((proc->qr_proc_place & SOAP_MSG_LITERAL) != SOAP_MSG_LITERAL)
 	continue;
 
-      is_def_oper = (int) unbox ((box_t) SOAP_OPT (DEAFULT_OPER, proc, -1, 0));
+      is_def_oper = (int) unbox ((box_t) SOAP_OPT (DEFAULT_OPER, proc, -1, 0));
       ix = 0; inx = 0; found = 0; in_body = 0, in_header = 0;
       DO_SET (state_slot_t *, ssl, &proc->qr_parms)
 	{
@@ -8782,13 +8782,13 @@ soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t typ
        if (ARRAYP (entity) && BOX_ELEMENTS (entity) == 1 && media_type)
 	 {
 	   int try_convert;
-	   caddr_t attachement = soap_find_attachment (entity, ctx, &try_convert);
-	   if (attachement)
+	   caddr_t attachment = soap_find_attachment (entity, ctx, &try_convert);
+	   if (attachment)
 	     {
 	       if (!try_convert)
-		 return box_copy (attachement);
+		 return box_copy (attachment);
 
-	       ret_elem = soap_box_xml_entity_validating ((caddr_t *) attachement, err_ret, type_base, 0, ctx);
+	       ret_elem = soap_box_xml_entity_validating ((caddr_t *) attachment, err_ret, type_base, 0, ctx);
 
 	       if (*err_ret)
 		 goto error;
@@ -8919,13 +8919,13 @@ soap_box_xml_entity_validating_1 (caddr_t *entity, caddr_t *err_ret, caddr_t typ
 	   if (BOX_ELEMENTS (entity) == 1)
 	     {
 	       int try_convert;
-	       caddr_t attachement = soap_find_attachment (entity, ctx, &try_convert);
+	       caddr_t attachment = soap_find_attachment (entity, ctx, &try_convert);
 	       /* we'll return what we found */
-	       if (attachement)
+	       if (attachment)
 		 {
 		   if (!try_convert)
-		     return box_copy (attachement);
-		   value = attachement;
+		     return box_copy (attachment);
+		   value = attachment;
 		   goto convert_value;
 		 }
 

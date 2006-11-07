@@ -1853,11 +1853,11 @@ xpf_replace (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
     { /* If length changes, we should know the number of replacements in order to calculate the length of result */
       for (src_ptr = str; src_ptr <= src_search_stop; /* no step */)
 	{
-	  char *next_occurence = strstr (src_ptr, org);
-	  if (NULL == next_occurence)
+	  char *next_occurrence = strstr (src_ptr, org);
+	  if (NULL == next_occurrence)
 	    break;
 	  repl_ctr++;
-	  src_ptr = next_occurence + org_l;
+	  src_ptr = next_occurrence + org_l;
 	}
       if (0 == repl_ctr)
 	{ /* Plain copying in case of 0 replacements */
@@ -1869,11 +1869,11 @@ xpf_replace (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
       res[res_l] = '\0';
       for (src_ptr = str; src_ptr <= src_search_stop; /* no step */)
 	{
-	  char *next_occurence = strstr (src_ptr, org);
+	  char *next_occurrence = strstr (src_ptr, org);
 	  size_t shift;
-	  if (NULL == next_occurence)
+	  if (NULL == next_occurrence)
 	    break;
-	  shift = next_occurence - src_ptr;
+	  shift = next_occurrence - src_ptr;
 	  memcpy (tail, src_ptr, shift);
 	  tail += shift;
 	  memcpy (tail, repl, repl_l);
@@ -1881,7 +1881,7 @@ xpf_replace (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 #ifdef DEBUG
 	  repl_ctr--;
 #endif
-	  src_ptr = next_occurence + org_l;
+	  src_ptr = next_occurrence + org_l;
 	}
       memcpy (tail, src_ptr, str_l - (src_ptr-str));
 #ifdef DEBUG
@@ -1898,11 +1898,11 @@ xpf_replace (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   res =	box_dv_short_nchars (str, str_l);
   for (src_ptr = str; src_ptr <= src_search_stop; /* no step */)
     {
-      char *next_occurence = strstr (src_ptr, org);
-      if (NULL == next_occurence)
+      char *next_occurrence = strstr (src_ptr, org);
+      if (NULL == next_occurrence)
 	break;
-      memcpy (res + (next_occurence - str), repl, org_l);
-      src_ptr = next_occurence + org_l;
+      memcpy (res + (next_occurrence - str), repl, org_l);
+      src_ptr = next_occurrence + org_l;
     }
   XQI_SET (xqi, tree->_.xp_func.res, res);
 }

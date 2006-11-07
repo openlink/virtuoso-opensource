@@ -2185,7 +2185,7 @@ numeric_add (numeric_t z, numeric_t x, numeric_t y)
  *  Calculates z = x - y
  */
 int
-numeric_substract (numeric_t z, numeric_t x, numeric_t y)
+numeric_subtract (numeric_t z, numeric_t x, numeric_t y)
 {
   if (num_is_invalid (x))
     {

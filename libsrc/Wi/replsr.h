@@ -148,7 +148,7 @@ void rpm_clear (replay_message_t * rpm);
 caddr_t sf_resync_replay (char * account, char * subscriber_name,
         caddr_t name, caddr_t digest);
 int repl_sync_acct (repl_acct_t * ra, char * usr, char * pwd);
-int repl_sync_updateable_acct (repl_acct_t *ra, char * usr, char * pwd);
+int repl_sync_updatable_acct (repl_acct_t *ra, char * usr, char * pwd);
 void repl_replay_loop (void);
 void repl_push_loop (void);
 void repl_purge_run (repl_acct_t *ra);

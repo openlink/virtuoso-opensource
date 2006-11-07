@@ -790,7 +790,7 @@ box_mod (caddr_t box1, caddr_t box2, caddr_t * qst, state_slot_t * target)
 }
 
 ARTM_BIN_FUNC (box_add, +, numeric_add, 0)
-ARTM_BIN_FUNC (box_sub, -, numeric_substract, 0)
+ARTM_BIN_FUNC (box_sub, -, numeric_subtract, 0)
 ARTM_BIN_FUNC (box_mpy, *, numeric_multiply, 0)
 ARTM_BIN_FUNC (box_div, /, numeric_divide, 1)
 

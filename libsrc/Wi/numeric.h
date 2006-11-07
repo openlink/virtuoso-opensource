@@ -113,7 +113,7 @@ int numeric_rescale (numeric_t y, numeric_t x, int prec, int scale);
 /* arithmetic & comparison */
 int numeric_compare (numeric_t x, numeric_t y);
 int numeric_add (numeric_t z, numeric_t x, numeric_t y);
-int numeric_substract (numeric_t z, numeric_t x, numeric_t y);
+int numeric_subtract (numeric_t z, numeric_t x, numeric_t y);
 int numeric_multiply (numeric_t z, numeric_t x, numeric_t y);
 int numeric_divide (numeric_t z, numeric_t x, numeric_t y);
 int numeric_negate (numeric_t y, numeric_t x);

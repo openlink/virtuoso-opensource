@@ -118,7 +118,7 @@ typedef struct col_desc_s
     caddr_t		cd_scale;
     caddr_t		cd_precision;
     ptrlong		cd_nullable;
-    ptrlong		cd_updateable;
+    ptrlong		cd_updatable;
     ptrlong		cd_searchable;
     /* Access the fileds below only if COL_DESC_IS_EXTENDED() is true. */
     char *		cd_base_catalog_name;

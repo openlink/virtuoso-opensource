@@ -78,7 +78,7 @@ static int uu_xlat_binhex[0x100];	/*!< Invert of uu_enctab_binhex */
 static int uu_qp_enc_1st[0x100];	/*!< Right of two hexdigits of QP's encoding of the byte, '\0' if no need to encode */
 static int uu_qp_enc_2nd[0x100];	/*!< Left of two hexdigits of QP's encoding of the byte, '\0' if no need to encode */
 static int uu_hexval[0x100];		/*!< Value of hex digit */
-static int uu_linelenghts[0x40];	/*!< Translation of source length to encoded length */
+static int uu_linelengths[0x40];	/*!< Translation of source length to encoded length */
 
 #define UUNTABLES 6
 /*______________________________________________________________________________________*/
@@ -127,9 +127,9 @@ uu_initialize_tables(void)
   uu_xlat_native['`'] = uu_xlat_native[' '];
   uu_xlat_native['~'] = uu_xlat_native['^'];
 
-  uu_linelenghts[0] = 1;
+  uu_linelengths[0] = 1;
   for (i = 1, j = 5; i <= 60; i += 3, j += 4)
-    uu_linelenghts[i] = uu_linelenghts[i + 1] = uu_linelenghts[i + 2] = j;
+    uu_linelengths[i] = uu_linelengths[i + 1] = uu_linelengths[i + 2] = j;
 
   for (i = 0; i < 0x40; i++)
     {
@@ -590,7 +590,7 @@ unsigned char *uu_decode_line (uu_ctx_t *ctx, unsigned char *target, unsigned ch
     case UUENCTYPE_NATIVE:
     case UUENCTYPE_XX:
       i = xlat[(source++)[0]];
-      j = uu_linelenghts[i] - 1;
+      j = uu_linelengths[i] - 1;
 
       while (j > 0)
 	{
@@ -844,7 +844,7 @@ _t_UU:
       goto _t_XX;
     }
 
-  j = uu_linelenghts[uu_xlat_native[ACAST (*s)]];
+  j = uu_linelengths[uu_xlat_native[ACAST (*s)]];
 
   if (len - 1 == j)		/* remove trailing character */
     len--;
@@ -878,7 +878,7 @@ _t_UU:
    * be in uuencoded text.
    */
   if (len != j &&
-      !(*ptr != 'M' && *ptr != 'h' && len > j && len <= uu_linelenghts[uu_xlat_native['M']]))
+      !(*ptr != 'M' && *ptr != 'h' && len > j && len <= uu_linelengths[uu_xlat_native['M']]))
     {
       if (encoding == UUENCTYPE_NATIVE)
 	return 0;
@@ -924,7 +924,7 @@ _t_XX:				/* XX Test */
   if (uu_xlat_xx[ACAST (*s)] == -1)
     return 0;
 
-  j = uu_linelenghts[uu_xlat_xx[ACAST (*s)]];	/* Same input_line length table as UUencoding */
+  j = uu_linelengths[uu_xlat_xx[ACAST (*s)]];	/* Same input_line length table as UUencoding */
 
   if (len - 1 == j)		/* remove trailing character */
     len--;
@@ -942,11 +942,11 @@ _t_XX:				/* XX Test */
       }
   /*
    * some encoders are broken with respect to encoding the last input_line of
-   * a file and produce extraoneous characters beyond the expected EOL
+   * a file and produce extraneous characters beyond the expected EOL
    * So were not too picky here about the last input_line, as long as it's longer
    * than necessary and shorter than the maximum
    */
-  if (len != j && !(*ptr != 'h' && len > j && len <= uu_linelenghts[uu_xlat_native['h']]))
+  if (len != j && !(*ptr != 'h' && len > j && len <= uu_linelengths[uu_xlat_native['h']]))
     return 0;			/* bad length */
 
   while (len--)

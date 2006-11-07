@@ -3701,7 +3701,7 @@ caddr_t decode_box (caddr_t encoded_cert, const char * encoding_type)
 }
 
 xenc_key_t *
-ceritificate_decode (caddr_t encoded_cert, const char * value_type,
+certificate_decode (caddr_t encoded_cert, const char * value_type,
 		     const char * encoding_type)
 {
   if (!strcmp (value_type, WSSE_X509_VALUE_TYPE) || !strcmp (value_type, WSSE_OASIS_X509_VALUE_TYPE))
@@ -4352,7 +4352,7 @@ xenc_err_code_t xenc_decrypt_xml (query_instance_t * qi, xenc_dec_t * enc,
 	  repl->xr_sel_tag = xenc_sel_tree_get (doc->xte_current, ref, id_cache);
 	  if (!repl->xr_sel_tag)
 	    {
-	      cc = XENC_UKNOWN_ID_ERR;
+	      cc = XENC_UNKNOWN_ID_ERR;
 	      if (c) c[0] = cc;
 	      if (err) err[0] = box_dv_short_string (ref);
 	      goto failed;
@@ -4771,7 +4771,7 @@ int base64_strcmp (char * _s1, char * _s2)
   return res;
 }
 
-/* pre: d1 & d2 are valid initialized objects whith equal algos
+/* pre: d1 & d2 are valid initialized objects with equal algos
    post: cmp will be initialized by static string for object name and reference
 	to string in d1.
    returns: 0 if eq.

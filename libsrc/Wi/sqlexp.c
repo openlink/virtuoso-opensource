@@ -769,8 +769,8 @@ cv_artm (dk_set_t * code, ao_func_t f, state_slot_t * res,
   else if (f == (ao_func_t) box_sub)
     {
       NEW_INSTR (ins, IN_ARTM_MINUS, code);
-      CHECK_ARTM_SSL(l, "substraction (-)");
-      CHECK_ARTM_SSL(r, "substraction (-)");
+      CHECK_ARTM_SSL(l, "subtraction (-)");
+      CHECK_ARTM_SSL(r, "subtraction (-)");
       ins->_.artm.left = l;
       ins->_.artm.right = r;
       ins->_.artm.result = res;

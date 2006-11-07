@@ -4057,7 +4057,7 @@ XT *xp_make_name_test_from_qname (xpp_t *xpp, caddr_t qname, int qname_is_expand
 }
 
 
-XT *xp_make_seq_type (xpp_t *xpp, ptrlong first_token, caddr_t top_name, XT *type, ptrlong is_nilable, ptrlong n_occurences)
+XT *xp_make_seq_type (xpp_t *xpp, ptrlong first_token, caddr_t top_name, XT *type, ptrlong is_nilable, ptrlong n_occurrences)
 {
   ptrlong mode = -1; /* Fake value */
   caddr_t type_ns_uri = NULL;
@@ -4072,7 +4072,7 @@ XT *xp_make_seq_type (xpp_t *xpp, ptrlong first_token, caddr_t top_name, XT *typ
       caddr_t   name;
       xs_component_t **type;
       ptrlong	is_nillable;
-      ptrlong	occurences;
+      ptrlong	occurrences;
 */
   switch (first_token)
     {
@@ -4157,7 +4157,7 @@ XT *xp_make_seq_type (xpp_t *xpp, ptrlong first_token, caddr_t top_name, XT *typ
     }
 
 component_name_resolved:
-  if ((XQ_SEQTYPE_REQ_ONE == n_occurences) && (NULL == comp))
+  if ((XQ_SEQTYPE_REQ_ONE == n_occurrences) && (NULL == comp))
     { /* Special optimized representations for simple cases */
       if (XQ_SEQTYPE_PI == mode)
         {
@@ -4173,7 +4173,7 @@ component_name_resolved:
           return (XT *)XP_ELT;
         return xp_make_name_test_from_qname (xpp, top_name, 1);
     }
-  res = xtlist (xpp, 6, XQ_SEQTYPE, mode, box_copy (top_name), box_num ((ptrlong)comp), is_nilable, n_occurences);
+  res = xtlist (xpp, 6, XQ_SEQTYPE, mode, box_copy (top_name), box_num ((ptrlong)comp), is_nilable, n_occurrences);
   return res;
 }
 

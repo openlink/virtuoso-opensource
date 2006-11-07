@@ -842,10 +842,10 @@ void wss_binarysectoken_c (char* uri, char * name, caddr_t * curr, wsse_ctx_t * 
   if (!content)
     wsse_report_error (ctx, WSSE_BINARYSECTOKEN_CODE, 100, "tag is empty");
 
-  key = ceritificate_decode (content, value_type, encoding_type);
+  key = certificate_decode (content, value_type, encoding_type);
   dk_free_box (content);
   if (!key)
-    wsse_report_error (ctx, WSSE_BINARYSECTOKEN_CODE, 100, "could not decode ceritificate");
+    wsse_report_error (ctx, WSSE_BINARYSECTOKEN_CODE, 100, "could not decode certificate");
   if (id[0])
     {
       char * id_1 = dk_alloc_box (box_length (id) + 1, DV_STRING);

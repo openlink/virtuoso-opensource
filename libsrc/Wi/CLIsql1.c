@@ -410,7 +410,7 @@ virtodbc__SQLColAttributes (
 
     case SQL_COLUMN_UPDATABLE:
       if (pfDesc)
-	*pfDesc = cd->cd_updateable;
+	*pfDesc = cd->cd_updatable;
       break;
 
     case SQL_COLUMN_AUTO_INCREMENT:

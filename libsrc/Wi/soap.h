@@ -120,7 +120,7 @@ int is_in_urls (char **szURIs, const char *uri, int *idx);
 #define SOAP_OPT_BINDING    	"Binding"
 #define SOAP_OPT_ONEWAY		"OneWay"
 #define SOAP_OPT_OPERATION	"Operation"
-#define SOAP_OPT_DEAFULT_OPER	"DefaultOperation"
+#define SOAP_OPT_DEFAULT_OPER	"DefaultOperation"
 /* to be extended */
 
 #define SOAP_USE(enc, flag, deflt) flag = deflt; \

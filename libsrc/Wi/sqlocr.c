@@ -305,7 +305,7 @@ sqlo_qc_make_stmts (sqlo_t * so, query_cursor_t * qc)
 
   sqlo_qc_make_refresh (so, qc);
   qc_make_continues (so->so_sc, qc);
-  if (sqlc_is_updateable (so->so_sc, text))
+  if (sqlc_is_updatable (so->so_sc, text))
     {
       if (sqlo_qc_make_update (so, qc))
 	qc_make_insert (so->so_sc, qc);

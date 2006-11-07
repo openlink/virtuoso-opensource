@@ -1254,7 +1254,7 @@ bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      desc->cd_precision = box_num (sl->ssl_prec);
 	      desc->cd_searchable = 0;
 	      desc->cd_nullable = 1;
-	      desc->cd_updateable = 0;
+	      desc->cd_updatable = 0;
 	    }
 	  sc->sc_columns = (caddr_t *) cols;
 	  sc->sc_is_select = QT_PROC_CALL;
@@ -1343,7 +1343,7 @@ bif_exec_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       desc->cd_scale = box_num (unbox (value[2]));
       desc->cd_precision = box_num (unbox (value[3]));
       desc->cd_nullable = value[4] ? 1 : 0;
-      desc->cd_updateable = value[5] ? 1 : 0;
+      desc->cd_updatable = value[5] ? 1 : 0;
       desc->cd_searchable = value[6] ? 1 : 0;
     }
         else

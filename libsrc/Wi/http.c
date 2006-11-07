@@ -7976,11 +7976,11 @@ bif_tcpip_local_interfaces (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 static caddr_t
 bif_http_full_request (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  ptrlong descructive = bif_long_arg (qst, args, 0, "http_full_request");
+  ptrlong destructive = bif_long_arg (qst, args, 0, "http_full_request");
   query_instance_t *qi = (query_instance_t *)qst;
   if (!qi->qi_client->cli_ws || !qi->qi_client->cli_ws->ws_ses_trap)
     return NEW_DB_NULL;
-  if (descructive)
+  if (destructive)
     {
       dk_session_t *res = qi->qi_client->cli_ws->ws_req_log;
       qi->qi_client->cli_ws->ws_req_log = NULL;

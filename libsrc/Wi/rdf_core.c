@@ -392,7 +392,7 @@ caddr_t ttlp_strliteral (TTLP_PARAM const char *strg, int strg_is_long, char del
           {
 	    const char *bs_src		= "abfnrtv\\\'\">uU";
 	    const char *bs_trans	= "\a\b\f\n\r\t\v\\\'\">\0\0";
-            const char *bs_lenghts	= "\2\2\2\2\2\2\2\2\2\2\2\6\012";
+            const char *bs_lengths	= "\2\2\2\2\2\2\2\2\2\2\2\6\012";
 	    const char *hit = strchr (bs_src, src_tail[1]);
 	    char bs_len, bs_tran;
 	    const char *nextchr;
@@ -401,7 +401,7 @@ caddr_t ttlp_strliteral (TTLP_PARAM const char *strg, int strg_is_long, char del
 		err_msg = "Unsupported escape sequence after '\'";
 		goto err;
 	      }
-            bs_len = bs_lenghts [hit - bs_src];
+            bs_len = bs_lengths [hit - bs_src];
             bs_tran = bs_trans [hit - bs_src];
 	    nextchr = src_tail + bs_len;
 	    if ((src_tail + bs_len) > src_end)
