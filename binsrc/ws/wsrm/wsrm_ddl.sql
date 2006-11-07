@@ -28,7 +28,7 @@ CREATE TYPE SOAP_CLIENT_REQ AS
 	parameters any default null,
 	headers any default null,
 	soap_action varchar default '',
-	attachements any default null,
+	attachments any default null,
 	ticket any default null,
 	passwd varchar default null,
 	user_name varchar default null,

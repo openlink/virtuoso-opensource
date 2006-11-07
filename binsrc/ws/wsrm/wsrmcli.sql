@@ -386,7 +386,7 @@ create procedure WSRM_CLIENT (in state wsrm_cli, in is_last integer, in req SOAP
 		       parameters=>req.parameters, direction=>(1),
 		       target_namespace=>req.target_namespace,
 		       soap_action=>req.soap_action,
-		       attachements=>req.attachements,
+		       attachments=>req.attachments,
 		       ticket=>req.ticket,
 		       passwd=>req.passwd,
 		       user_name=>req.user_name,
