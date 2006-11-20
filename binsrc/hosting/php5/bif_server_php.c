@@ -514,7 +514,7 @@ sapi_virtuoso_handle_headers (sapi_header_struct * sapi_header,
 	    }
 	  while (*header_content == ' ');
 
-	  t1->coockie = header_content;
+	  t1->cookie = header_content;
 	}
     }
 
@@ -987,7 +987,7 @@ http_handler_php (char *file, caddr_t * params, caddr_t * lines,
   thr_atrp_php.rm_name = NULL;
   thr_atrp_php.post_position = 0;
   thr_atrp_php.in_lines = lines;
-  thr_atrp_php.coockie = NULL;
+  thr_atrp_php.cookie = NULL;
 
   SET_THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT, &thr_atrp_php);
 
