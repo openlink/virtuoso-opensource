@@ -12,43 +12,191 @@
 The OpenLink Software Virtuoso Open-Source (VOS) project wishes to
 acknowledge incorporation of code from the following projects:
 
-* OpenSSL
-    This product includes software developed by the OpenSSL Project
-    for use in the OpenSSL Toolkit (http://www.openssl.org/).
-    This product includes cryptographic software written by Eric Young
-    (eay@cryptsoft.com).  This product includes software written by Tim
-    Hudson (tjh@cryptsoft.com)
+* OpenSSL 
 
-* GD
-    This product includes the "graphics draw" library by Boutell.Com, Inc
-    and others (http://www.boutell.com/gd/).
+    <http://www.openlssl.org/>
+
+    This product includes software developed by the OpenSSL Project for
+    use in the OpenSSL Toolkit. This product includes cryptographic
+    software written by Eric Young (eay@cryptsoft.com).  This product
+    includes software written by Tim Hudson (tjh@cryptsoft.com)
+
+
+* GD 
+
+    <http://www.boutell.com/gd/>
+
+    This product includes the "graphics draw" library by Boutell.Com,
+    Inc and others.
+
 
 * Tidy - HTML parser and pretty printer
-    This product includes Tidy (http://www.w3.org/People/Raggett/tidy/),
-    developed by the World Wide Web Consortium.
+
+    <http://www.w3.org/People/Raggett/tidy/>
+
+    This product includes Tidy developed by the World Wide Web Consortium.
 
 * Zlib - compression library
-    This product includes the Zlib library (http://www.zlib.net/) developed
-    by Jean-loup Gailly and Mark Adler.
+
+    <http://www.zlib.net/>
+
+    This product includes the Zlib library developed by Jean-loup Gailly
+    and Mark Adler.
+
 
 * Kupu and Sarissa
-    This product includes the Kupu web-based editor and related Sarissa XML
-    library (http://kupu.oscom.org/ and http://sarissa.sourceforge.net/).
+
+    <http://kupu.oscom.org/>
+    <http://sarissa.sourceforge.net/>
+
+    This product includes the Kupu web-based editor and related Sarissa
+    XML library.
+
 
 * Rendezvous
-    This product includes the Rendezvous network-discovery library
-    (http://www.opensource.apple.com/projects/rendezvous) by Apple
-    Computer, Inc.
+
+    <http://www.opensource.apple.com/projects/rendezvous/>
+
+    This product includes the Rendezvous network-discovery library by
+    Apple Computer, Inc.
+
 
 * PCRE
+
+    <http://www.pcre.org/>
+
     This product includes the Perl-Compatible Regular-Expression Library
-    (PCRE, http://www.pcre.org/) by Phillip Hazel.
+    (PCRE) by Phillip Hazel.
+
 
 * IE7
-    This product uses the IE7 JavaScript library
-    (http://dean.edwards.name/IE7) by Dean Edwards to make IE behave
-    (almost) like a standards-compliant browser.
+
+    <http://dean.edwards.name/IE7/>
+
+    This product uses the IE7 JavaScript library by Dean Edwards to make
+    IE behave (almost) like a standards-compliant browser.
+
 
 * RTE
+
+    <http://www.kevinroth.com/rte/>
+
     This product uses the Cross-Browser Rich Text Editor written by
-    Kevin Roth (http://www.kevinroth.com/rte/)
+    Kevin Roth.
+
+
+* OAT
+
+    <http://sourceforge.net/projects/oat/>
+
+    Virtuoso uses the OpenLink AJAX Toolkit (OAT) in the Data Space
+    application suite.
+
+    OAT is distributed  under the terms of the GNU Public License v2:
+    <http://www.gnu.org/copyleft/gpl.html>
+
+
+OpenLink Software Virtuoso Open-Source Edition contains optional
+functionality that requires libraries from some of the following projects:
+
+* Perl 
+
+    <http://www.perl.com/>
+
+    Virtuoso may be linked against libperl.so to provide a Perl hosting
+    environment.
+
+    Perl is distributed under the terms of the Artistic License:
+    <http://www.perl.com/language/misc/Artistic.html>
+
+
+* Python
+
+    <http://www.python.org>
+
+    Virtuoso may be linked against libpython.so to provide a Python
+    hosting environment.
+
+    Python is distributed under the terms of the Python License:
+    <http://www.python.org/psf/license/>
+
+
+* Ruby
+
+    <http://www.ruby-lang.org/>
+
+    Virtuoso may be linked against libruby.so to provide a Ruby hosting
+    environment.
+
+    Ruby is distributed under the terms of the Ruby License:
+    <http://www.ruby-lang.org/en/about/license.txt>
+
+
+* PHP
+
+    <http://www.php.net/>
+
+    Virtuoso may be linked against libphp4.so or libphp5.so to provide
+    a PHP hosting environment.
+
+    PHP is distributed under the terms of the PHP License:
+    <http://php.net/license/>
+
+
+* Java
+
+    <http://www.java.com/>
+
+    Virtuoso may be linked against libjvm.so to provide a Java hosting
+    environment.
+
+    Use of this module requires a JVM to be installed such as one from
+    <http://www.java.com/>
+
+
+* Readline
+
+    <http://directory.fsf.org/readline.html>
+
+    Virtuoso Open-Source Edition may be compiled against the readline
+    library
+
+    Readline is distributed under the terms of the GNU Public License 
+    version 2 or later:
+    <http://www.gnu.org/licenses/info/GPLv2orLater.html>
+
+    This library is not present in OpenLink Virtuoso (commercial edition).
+
+
+* OpenLDAP
+
+    <http://www.openldap.org/>
+
+    Virtuoso may be linked against OpenLdap to provide dynamic
+    authentication lookups against existing LDAP servers.
+
+    OpenLDAP is distributed under the terms of the OpenLDAP Public
+    License: <http://www.openldap.org/software/release/license.html>
+
+
+* GTK+
+
+    <http://www.gtk.org/>
+
+    Parts of Virtuoso may be linked against the Gimp Toolkit
+    graphical library (GTK+).
+
+    GTK+ is distributed under the terms of the GNU Lesser General Public
+    License (LGPL): <http://www.gnu.org/licenses/lgpl.html>.
+
+
+* iODBC
+
+    <http://www.iodbc.org/>
+
+    Virtuoso may be linked against the iODBC driver manager library.
+
+    iODBC is distributed under the terms of either the LGPL or BSD
+    license: <http://www.iodbc.org/index.php?page=docs/license>
+
+
