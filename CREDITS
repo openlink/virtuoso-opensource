@@ -9,99 +9,141 @@
 #  Copyright (C) 1998-2006 OpenLink Software
 #
 
-The OpenLink Software Virtuoso Open-Source (VOS) project wishes to
+Included Functionality
+======================
+
+The OpenLink Software Virtuoso Open-Source Edition (VOS) project wishes to
 acknowledge incorporation of code from the following projects:
 
-* OpenSSL 
+OpenSSL
+<http://www.openssl.org/>
 
-    <http://www.openlssl.org/>
+    This product includes software developed by the OpenSSL Project for use
+    in the OpenSSL Toolkit.
 
-    This product includes software developed by the OpenSSL Project for
-    use in the OpenSSL Toolkit. This product includes cryptographic
-    software written by Eric Young (eay@cryptsoft.com).  This product
-    includes software written by Tim Hudson (tjh@cryptsoft.com)
+    This product includes cryptographic software written by Eric Young
+    (eay@cryptsoft.com).
+
+    This product includes software written by Tim Hudson
+    (tjh@cryptsoft.com)
+
+    OpenSSL is distributed under the terms of the OpenSSL License:
+    <http://www.openssl.org/source/license.html>
+
+    As cryptographic softawre, OpenSSL may be subject to export
+    restrictions: <http://www.openssl.org/support/faq.html#LEGAL1>
 
 
-* GD 
+GD
+<http://www.boutell.com/gd/>
 
-    <http://www.boutell.com/gd/>
+    This product includes the "graphics draw" library by Boutell.Com, Inc
+    and others.
 
-    This product includes the "graphics draw" library by Boutell.Com,
-    Inc and others.
+    GD is distributed under the terms of the GD license:
+    <http://www.boutell.com/gd/manual2.0.33.html#notice>
 
 
-* Tidy - HTML parser and pretty printer
-
-    <http://www.w3.org/People/Raggett/tidy/>
+Tidy - HTML parser and pretty printer
+<http://www.w3.org/People/Raggett/tidy/>
 
     This product includes Tidy developed by the World Wide Web Consortium.
 
-* Zlib - compression library
+    Tidy is distributed under the terms of the W3C License:
+    <http://tidy.sourceforge.net/license.html>
 
-    <http://www.zlib.net/>
+
+Zlib - compression library
+<http://www.zlib.net/>
 
     This product includes the Zlib library developed by Jean-loup Gailly
     and Mark Adler.
 
-
-* Kupu and Sarissa
-
-    <http://kupu.oscom.org/>
-    <http://sarissa.sourceforge.net/>
-
-    This product includes the Kupu web-based editor and related Sarissa
-    XML library.
+    Zlib is distributed under the terms of the Zlib/PNG license:
+    <http://opensource.org/licenses/zlib-license.php>
 
 
-* Rendezvous
+Kupu
+<http://kupu.oscom.org/>
 
-    <http://www.opensource.apple.com/projects/rendezvous/>
+    This product includes the Kupu web-based editor.
 
-    This product includes the Rendezvous network-discovery library by
-    Apple Computer, Inc.
+    Kupu is distributed under the terms of the Kupu (BSD-style) license:
+    <http://codespeak.net/svn/kupu/trunk/kupu/doc/LICENSE.txt>
 
 
-* PCRE
+Sarissa
+<http://sarissa.sourceforge.net/>
 
-    <http://www.pcre.org/>
+    This product includes the Sarissa XML library.
+
+    Sarissa is distributed under the terms of the
+    GNU General Public License version 2 or higher
+    <http://sarissa.sourceforge.net/doc/gpl.txt>, 
+    the GNU Lesser General Public License version 2.1 or higher
+    <http://sarissa.sourceforge.net/doc/lgpl.txt> 
+    or the Apache Software License 2.0 or higher 
+    <http://sarissa.sourceforge.net/doc/asl.txt>.
+
+
+Rendezvous
+<http://www.opensource.apple.com/projects/rendezvous/>
+
+    This product includes the Rendezvous network-discovery library by Apple
+    Computer, Inc.
+
+    Rendezvous is distributed under the terms of the Apple Public Source
+    License: <http://www.opensource.apple.com/apsl/>
+
+
+PCRE
+<http://www.pcre.org/>
 
     This product includes the Perl-Compatible Regular-Expression Library
     (PCRE) by Phillip Hazel.
 
-
-* IE7
-
-    <http://dean.edwards.name/IE7/>
-
-    This product uses the IE7 JavaScript library by Dean Edwards to make
-    IE behave (almost) like a standards-compliant browser.
+    PCRE is distributed under the terms of the BSD license:
+    <http://www.pcre.org/license.txt>
 
 
-* RTE
+IE7
+<http://dean.edwards.name/IE7>
 
-    <http://www.kevinroth.com/rte/>
+    This product uses the IE7 JavaScript library by Dean Edwards to improve
+    standards-compliance in the Internet Explorer browser.
 
-    This product uses the Cross-Browser Rich Text Editor written by
-    Kevin Roth.
+    IE7 is distributed under the terms of the GNU Lesser General Public
+    License version 2.1: <http://creativecommons.org/licenses/LGPL/2.1/>
 
 
-* OAT
+RTE
+<http://www.kevinroth.com/rte/>
 
-    <http://sourceforge.net/projects/oat/>
+    This product uses the Cross-Browser Rich Text Editor written by Kevin
+    Roth.
+
+    RTE is distributed under the terms of the Creative Commons "by
+    Attribution" license: <http://creativecommons.org/licenses/by/2.5/>
+
+
+OAT
+<http://sourceforge.net/projects/oat/>
 
     Virtuoso uses the OpenLink AJAX Toolkit (OAT) in the Data Space
-    application suite.
+    application suite, distributable under the terms of the GNU Public
+    License v2: <http://www.gnu.org/copyleft/gpl.html>
 
-    OAT is distributed  under the terms of the GNU Public License v2:
-    <http://www.gnu.org/copyleft/gpl.html>
 
+Optional functionality
+======================
 
 OpenLink Software Virtuoso Open-Source Edition contains optional
-functionality that requires libraries from some of the following projects:
+functionality that may require libraries from some of the following
+projects:
 
-* Perl 
 
-    <http://www.perl.com/>
+Perl
+<http://www.perl.com/>
 
     Virtuoso may be linked against libperl.so to provide a Perl hosting
     environment.
@@ -110,20 +152,18 @@ functionality that requires libraries from some of the following projects:
     <http://www.perl.com/language/misc/Artistic.html>
 
 
-* Python
+Python
+<http://www.python.org>
 
-    <http://www.python.org>
-
-    Virtuoso may be linked against libpython.so to provide a Python
-    hosting environment.
+    Virtuoso may be linked against libpython.so to provide a Python hosting
+    environment.
 
     Python is distributed under the terms of the Python License:
     <http://www.python.org/psf/license/>
 
 
-* Ruby
-
-    <http://www.ruby-lang.org/>
+Ruby
+<http://www.ruby-lang.org/>
 
     Virtuoso may be linked against libruby.so to provide a Ruby hosting
     environment.
@@ -132,20 +172,18 @@ functionality that requires libraries from some of the following projects:
     <http://www.ruby-lang.org/en/about/license.txt>
 
 
-* PHP
+PHP
+<http://www.php.net/>
 
-    <http://www.php.net/>
-
-    Virtuoso may be linked against libphp4.so or libphp5.so to provide
-    a PHP hosting environment.
+    Virtuoso may be linked against libphp4.so or libphp5.so to provide a
+    PHP hosting environment.
 
     PHP is distributed under the terms of the PHP License:
     <http://php.net/license/>
 
 
-* Java
-
-    <http://www.java.com/>
+Java
+<http://www.java.com/>
 
     Virtuoso may be linked against libjvm.so to provide a Java hosting
     environment.
@@ -154,49 +192,43 @@ functionality that requires libraries from some of the following projects:
     <http://www.java.com/>
 
 
-* Readline
-
-    <http://directory.fsf.org/readline.html>
+Readline
+<http://directory.fsf.org/readline.html>
 
     Virtuoso Open-Source Edition may be compiled against the readline
-    library
+    library.
 
-    Readline is distributed under the terms of the GNU Public License 
+    Readline is distributed under the terms of the GNU Public License
     version 2 or later:
     <http://www.gnu.org/licenses/info/GPLv2orLater.html>
 
     This library is not present in OpenLink Virtuoso (commercial edition).
 
 
-* OpenLDAP
-
-    <http://www.openldap.org/>
+OpenLDAP
+<http://www.openldap.org/>
 
     Virtuoso may be linked against OpenLdap to provide dynamic
     authentication lookups against existing LDAP servers.
 
-    OpenLDAP is distributed under the terms of the OpenLDAP Public
-    License: <http://www.openldap.org/software/release/license.html>
+    OpenLDAP is distributed under the terms of the OpenLDAP Public License:
+    <http://www.openldap.org/software/release/license.html>
 
 
-* GTK+
+GTK+
+<http://www.gtk.org/>
 
-    <http://www.gtk.org/>
-
-    Parts of Virtuoso may be linked against the Gimp Toolkit
-    graphical library (GTK+).
+    Parts of Virtuoso may be linked against the Gimp Toolkit graphical
+    library (GTK+).
 
     GTK+ is distributed under the terms of the GNU Lesser General Public
     License (LGPL): <http://www.gnu.org/licenses/lgpl.html>.
 
 
-* iODBC
-
-    <http://www.iodbc.org/>
+iODBC
+<http://www.iodbc.org/>
 
     Virtuoso may be linked against the iODBC driver manager library.
 
-    iODBC is distributed under the terms of either the LGPL or BSD
-    license: <http://www.iodbc.org/index.php?page=docs/license>
-
-
+    iODBC is distributed under the terms of either the LGPL or BSD license:
+    <http://www.iodbc.org/index.php?page=docs/license>
