@@ -71,14 +71,14 @@ wikilex.c: wikilex.l
 	mv lex.wikiyy.c wikilex.c
 
 media_maclex.c: media_maclex.l
-	echo "$(LEX) -8 -Pmacyy $(srcdir)/media_maclex.l failed" > lex.macyy.c
-	$(LEX) -8 -Pmacyy $(srcdir)/media_maclex.l
-	mv lex.macyy.c media_maclex.c
+	echo "$(LEX) -8 -Pmediamacyy $(srcdir)/media_maclex.l failed" > lex.macyy.c
+	$(LEX) -8 -Pmediamacyy $(srcdir)/media_maclex.l
+	mv lex.mediamacyy.c media_maclex.c
 
 media_wikilex.c: media_wikilex.l
-	echo "$(LEX) -8 -Pwikiyy $(srcdir)/wikilex.l failed" > lex.wikiyy.c
-	$(LEX)  -8 -Pwikiyy $(srcdir)/media_wikilex.l
-	mv lex.wikiyy.c media_wikilex.c
+	echo "$(LEX) -8 -Pmediawikiyy $(srcdir)/wikilex.l failed" > lex.wikiyy.c
+	$(LEX)  -8 -Pmediawikiyy $(srcdir)/media_wikilex.l
+	mv lex.mediawikiyy.c media_wikilex.c
 
 # ----------------------------------------------------------------------
 #
