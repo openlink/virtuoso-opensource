@@ -818,6 +818,75 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
   return KS_CAST_OK;
 }
 
+static int
+ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_val, caddr_t val)
+{
+  short sav_par_fill = itc->itc_search_par_fill;
+  short inx, sav_own_par_fill = -1;
+  int res = KS_CAST_OK;
+
+  if (itc_val == val)
+    return res; 
+
+  /* If the values are different, save the itc_search_par_fill & itc_owned_search_par_fill, 
+     free the owned one if such and set to NULL 
+     call  the ks_search_param_cast & restore the fill.
+   */
+  for (inx = 0 ; inx < itc->itc_owned_search_par_fill; inx ++)
+    {
+      caddr_t own_par = itc->itc_owned_search_params[inx];
+      if (own_par == itc_val)
+	{
+	  /*fprintf (stderr, "own param=%p, pos=%d, curr_own_fill=%d\n", own_par, inx, itc->itc_owned_search_par_fill);*/
+	  itc->itc_owned_search_params[inx] = NULL;
+	  dk_free_tree (own_par);
+	  sav_own_par_fill = itc->itc_owned_search_par_fill;
+	  itc->itc_owned_search_par_fill = inx;
+	  break; 
+	}
+      else if (!own_par && sav_own_par_fill < 0)
+	{
+	  sav_own_par_fill = itc->itc_owned_search_par_fill;
+	  itc->itc_owned_search_par_fill = inx;
+	}
+    }
+  itc->itc_search_par_fill = ks_spec->sp_min;
+  res = ks_search_param_cast (itc, ks_spec, val);
+
+  /*fprintf (stderr, "itc_val != val rc=%d owned_fill=%d old_own_fill=%d fill=%d old_fill=%d\n", 
+      res, itc->itc_owned_search_par_fill, sav_own_par_fill, itc->itc_search_par_fill, sav_par_fill); */
+
+  itc->itc_search_par_fill = sav_par_fill;
+  if (sav_own_par_fill >= 0 && itc->itc_owned_search_par_fill < sav_own_par_fill)
+    itc->itc_owned_search_par_fill = sav_own_par_fill;
+
+  return res;
+}
+
+void 
+ks_check_params_changed (it_cursor_t * itc, key_source_t * ks, caddr_t * state)
+{
+  search_spec_t * ks_spec = ks->ks_spec;
+  while (ks_spec)
+    {
+      caddr_t val;
+      caddr_t itc_val;
+
+      if (ks_spec->sp_min_ssl)
+	{
+	  itc_val = itc->itc_search_params[ks_spec->sp_min];
+	  val = QST_GET (state, ks_spec->sp_min_ssl);
+	  ks_search_param_update (itc, ks_spec, itc_val, val);
+	}
+      if (ks_spec->sp_max_ssl)
+	{
+	  itc_val = itc->itc_search_params[ks_spec->sp_max];
+	  val = QST_GET (state, ks_spec->sp_max_ssl);
+	  ks_search_param_update (itc, ks_spec, itc_val, val);
+	}
+      ks_spec = ks_spec->sp_next;
+    }
+}
 
 int
 ks_make_spec_list (it_cursor_t * it, search_spec_t * ks_spec, caddr_t * state)
