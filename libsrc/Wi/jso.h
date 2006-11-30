@@ -40,13 +40,14 @@
 #define JSO_DEPRECATED	15	/*!< The property is never loaded. It's used only in C code */
 
 #define JSO_ANY		"http://www.w3.org/2001/XMLSchema#any"			/*!< Arbitrary boxed SQL value */
-#define JSO_ANY_array	"http://www.w3.org/2001/XMLSchema#any"			/*!< A vector of arbitrary boxed SQL values */
+#define JSO_ANY_array	"http://www.openlinksw.com/schemas/virtrdf#array-of-any"	/*!< A vector of abitrary boxed SQL values */
 #define JSO_ANY_URI	"http://www.w3.org/2001/XMLSchema#anyURI"		/*!< boxed DV_UNAME in UTF-8 encoding */
 #define JSO_BOOLEAN	"http://www.w3.org/2001/XMLSchema#boolean"		/*!< Bool as ptrlong 1 or 0 */
 #define JSO_BITMASK	"http://www.openlinksw.com/schemas/virtrdf#bitmask"	/*!< Bitmask as ptrlong, can be loaded as OR of a list of values */
 #define JSO_DOUBLE	"http://www.w3.org/2001/XMLSchema#double"		/*!< Double float as unboxed double */
 #define JSO_INTEGER	"http://www.w3.org/2001/XMLSchema#integer"		/*!< Integer as ptrlong */
 #define JSO_STRING	"http://www.w3.org/2001/XMLSchema#string"		/*!< String, boxed DV_STRING */
+#define JSO_STRING_array	"http://www.openlinksw.com/schemas/virtrdf#array-of-string"	/*!< A vector of DV_STRING-s */
 
 #define JSO_FIELD_OFFSET(dt,f) (((char *)(&(((dt *)NULL)->f)))-((char *)NULL))
 #define JSO_FIELD_ACCESS(dt,inst,ofs) ((dt *)(((char *)(inst)) + (ofs)))
@@ -96,6 +97,9 @@ typedef struct jso_class_descr_s {
     } _;
 } jso_class_descr_t;
 
+extern jso_class_descr_t jso_cd_array_of_any;		/*!< JSO class 'array of any number of values' */
+extern jso_class_descr_t jso_cd_array_of_string;	/*!< JSO class 'array of any number of strings' */
+
 /* State of a JSO class instance. An instance is NEW when created, FAILED if filled incorrectly, LOADED if filled correctly, DELETED when it become a memory leak */
 #define JSO_STATUS_NEW		31	/*!< The instance is created but jso_pin() is not called for it */
 #define JSO_STATUS_LOADED	32	/*!< jso_pin() has found no errors in the content of the instance and all referred instances and has unboxed values that should be unboxed. The result is a valid C structure */
@@ -104,10 +108,13 @@ typedef struct jso_class_descr_s {
 
 /*! Run-time type info about JSO instance */
 typedef struct jso_rtti_s {
-  void *	jrtti_self;		/*!< Pointer to the actual C structure that contain instance data */
+  void *	jrtti_self;		/*!< Pointer to the actual C structure that contains instance data */
   caddr_t	jrtti_inst_iri;		/*!< Instance IRI */
   jso_class_descr_t *	jrtti_class;	/*!< Pointer to description of the class of the instance */
   int		jrtti_status;		/*!< Status as one of JSO_STATUS_xxx values */
+#ifdef DEBUG
+  struct jso_rtti_s *	jrtti_loop;		/*!< Loop pointer to the RTTI itself: when debug code copies DV_OBJECT box, the pointer remains unchanged and points to the original rtti */
+#endif
 } jso_rtti_t;
 
 /*! Initialization of JSO unit */

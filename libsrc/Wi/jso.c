@@ -21,11 +21,11 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
- *  
  */
 
 #include "jso.h"
 #include "sqlbif.h"
+#include "security.h"
 
 dk_hash_t *jso_consts = NULL;
 dk_hash_t *jso_classes = NULL;
@@ -133,9 +133,7 @@ bif_jso_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jclass = box_cast_to_UTF8_uname (qst, jclass);
   cd = gethash (jclass, jso_classes);
   if (NULL == cd)
-    {
       sqlr_new_error ("22023", "SR491", "Undefined JSO class IRI <%.500s>", jclass);
-    }
   jinstance = box_cast_to_UTF8_uname (qst, jinstance);
   inst_rtti = gethash (jinstance, jso_rttis_of_names);
   if ((NULL != inst_rtti) && (JSO_STATUS_DELETED != inst_rtti->jrtti_status))
@@ -145,7 +143,10 @@ bif_jso_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (NULL == inst_rtti)
     {
-      inst_rtti = dk_alloc_box_zero (sizeof (jso_rtti_t), DV_ARRAY_OF_POINTER);
+      inst_rtti = dk_alloc_box_zero (sizeof (jso_rtti_t), DV_CUSTOM);
+      if (NULL == cd)
+        inst = dk_alloc_box_zero (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      else
       switch (cd->jsocd_cat)
         {
         case JSO_CAT_STRUCT: inst = dk_alloc_box_zero (cd->_.sd.jsosd_sizeof, DV_ARRAY_OF_POINTER); break;
@@ -161,7 +162,11 @@ bif_jso_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       inst_rtti->jrtti_self = inst;
       inst_rtti->jrtti_inst_iri = jinstance;
       inst_rtti->jrtti_class = cd;
+#ifdef DEBUG
+      inst_rtti->jrtti_loop = inst_rtti;
+#endif
       sethash (jinstance, jso_rttis_of_names, inst_rtti);
+      if (NULL != cd)
       sethash (jinstance, cd->jsocd_rttis, inst_rtti);
       sethash (inst, jso_rttis_of_structs, inst_rtti);
     }
@@ -175,12 +180,12 @@ jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd
 {
   cd_ptr[0] = gethash (jclass, jso_classes);
   if (NULL == cd_ptr[0])
-    {
       sqlr_new_error ("22023", "SR500", "Undefined JSO class IRI <%.500s>", jclass);
-    }
   inst_rtti_ptr[0] = gethash (jinstance, jso_rttis_of_names);
   if (NULL == inst_rtti_ptr[0])
     {
+      if (NULL == cd_ptr[0])
+        return;
       if (!quiet_if_deleted)
         sqlr_new_error ("22023", "SR501", "JSO instance IRI <%.500s> does not exists",
           jinstance );
@@ -193,7 +198,7 @@ jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd
           jinstance, inst_rtti_ptr[0]->jrtti_class->jsocd_class_iri );
       return;
     }
-  if (cd_ptr[0] != inst_rtti_ptr[0]->jrtti_class)
+  if ((NULL != cd_ptr[0]) && (cd_ptr[0] != inst_rtti_ptr[0]->jrtti_class))
     {
       sqlr_new_error ("22023", "SR502", "JSO instance IRI <%.500s> is of type <%.500s>, required type is <%.500s>",
         jinstance, inst_rtti_ptr[0]->jrtti_class->jsocd_class_iri, jclass );
@@ -214,12 +219,10 @@ bif_jso_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jso_get_cd_and_rtti (jclass, jinstance, &cd, &inst_rtti, quiet);
   if (NULL == inst_rtti)
     return jinstance;
-  switch (cd->jsocd_cat)
-    {
-    case JSO_CAT_STRUCT: memset (inst_rtti->jrtti_self, 0, cd->_.sd.jsosd_sizeof); break;
-    case JSO_CAT_ARRAY: memset (inst_rtti->jrtti_self, 0, box_length (inst_rtti->jrtti_self)); break;
-    default: GPF_T1("jso_delete (): unknown value of jsocd_cat");
-    }
+  if ((NULL != cd) && (JSO_CAT_STRUCT == cd->jsocd_cat))
+    memset (inst_rtti->jrtti_self, 0, cd->_.sd.jsosd_sizeof);
+  else
+    memset (inst_rtti->jrtti_self, 0, box_length (inst_rtti->jrtti_self));
   inst_rtti->jrtti_status = JSO_STATUS_DELETED;
   return jinstance;
 }
@@ -287,7 +290,11 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
                   SET_STATUS_FAILED;
                   sqlr_new_error ("22023", "SR527", "JSO array instance <%.500s> of type <%.500s> contains uninitialized element %ld",
                     inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, (long)ctr );
+                continue;
                 }
+            switch (DV_TYPE_OF (sub))
+              {
+              case DV_CUSTOM:
             if (NULL != fld_type_cd)
               {
                 if (sub->jrtti_class->jsocd_class_iri != cd->_.ad.jsoad_member_type)
@@ -297,6 +304,28 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
                       ctr, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri,
                       sub->jrtti_class->jsocd_class_iri, cd->_.ad.jsoad_member_type );
                   }
+              }
+                break;
+              case DV_LONG_INT:
+                if (&jso_cd_array_of_any != cd)
+                  {
+                    SET_STATUS_FAILED;
+                    sqlr_new_error ("22023", "SR538", "The value of rdf:_%d in JSO instance <%.500s> of type <%.500s> is an integer, not an object of type <%.500s>",
+                      ctr, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, cd->_.ad.jsoad_member_type );
+                  }
+                break;
+              case DV_STRING:
+                if (&jso_cd_array_of_string != cd)
+                  {
+                    SET_STATUS_FAILED;
+                    sqlr_new_error ("22023", "SR539", "The value of rdf:_%d in JSO instance <%.500s> of type <%.500s> is a string, not an object of type <%.500s>",
+                      ctr, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, cd->_.ad.jsoad_member_type );
+                  }
+                break;
+              default:
+                SET_STATUS_FAILED;
+                sqlr_new_error ("22023", "SR539", "The value of rdf:_%d in JSO instance <%.500s> of type <%.500s> is not an object of type <%.500s>",
+                  ctr, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri, cd->_.ad.jsoad_member_type );
               }
           }
         break;
@@ -323,7 +352,7 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
                     sqlr_new_error ("22023", "SR529", "Deprecated property %.500s is set in JSO instance <%.500s> of type <%.500s>",
                       fldd->jsofd_local_name, inst_rtti->jrtti_inst_iri, inst_rtti->jrtti_class->jsocd_class_iri );
                   }
-                if (NULL != fld_type_cd)
+                if ((NULL != fld_type_cd) && (DV_CUSTOM == DV_TYPE_OF (sub)))
                   {
                     if (sub->jrtti_class->jsocd_class_iri != fldd->jsofd_type)
                       {
@@ -350,7 +379,7 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
   sethash (inst, known, inst_rtti);
   DO_BOX_FAST (jso_rtti_t *, sub, ctr, inst)
     {
-      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF(sub))
+      if (DV_CUSTOM == DV_TYPE_OF(sub))
         jso_validate (sub, root_rtti, known, change_status);
     }
   END_DO_BOX_FAST;
@@ -360,7 +389,7 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
       {
         DO_BOX_FAST (jso_rtti_t *, sub, ctr, inst)
           {
-            if (NULL != sub)
+            if (DV_CUSTOM == DV_TYPE_OF (sub))
               jso_validate (sub, root_rtti, known, change_status);
           }
         END_DO_BOX_FAST;
@@ -464,7 +493,7 @@ jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
   sethash (inst, known, inst_rtti);
   DO_BOX_FAST (jso_rtti_t *, sub, ctr, inst)
     {
-      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF(sub))
+      if (DV_CUSTOM == DV_TYPE_OF(sub))
         jso_pin (sub, root_rtti, known);
     }
   END_DO_BOX_FAST;
@@ -473,8 +502,7 @@ jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
       sub = inst[ctr];
       switch (DV_TYPE_OF(sub))
         {
-        case DV_ARRAY_OF_POINTER:
-          if (NULL != sub)
+        case DV_CUSTOM:
             inst[ctr] = ((jso_rtti_t *)sub)->jrtti_self;
           break;
         case DV_LONG_INT:
@@ -667,7 +695,10 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
           return NEW_DB_NULL;
         }
     }
+  if (uname_xmlschema_ns_uri_hash_any != dt)
   fld_type_cd = gethash (dt, jso_classes);
+  else
+    fld_type_cd = NULL;
   if (do_set)
     {
       caddr_t arg = bif_arg (qst, args, 3, func_name);
@@ -700,7 +731,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
             }
           if (JSO_STATUS_DELETED == value_rtti->jrtti_status)
             {
-              sqlr_new_error ("22023", "SR512", "JSO instance IRI <%.500s> has been deleted before, type <%.500s>",
+              sqlr_new_error ("22023", "SR537", "JSO instance IRI <%.500s> has been deleted before, type <%.500s>",
                 value_iri, value_rtti->jrtti_class->jsocd_class_iri );
             }
           if (fld_type_cd != value_rtti->jrtti_class)
@@ -816,8 +847,10 @@ make_retval:
         {
           if (NULL == el)
             retval[ctr] = NEW_DB_NULL;
-          else if (DV_TYPE_OF (el) == DV_ARRAY_OF_POINTER)
+          else if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (el))
             retval[ctr] = box_dv_uname_string ("vector");
+          else if (DV_CUSTOM == DV_TYPE_OF (el))
+            retval[ctr] = box_dv_uname_string ("instance");
           else
             retval[ctr] = box_copy_tree (el);
         }
@@ -851,8 +884,6 @@ jso_get_field_value_as_o (caddr_t val, ccaddr_t fld_type, int fld_req, ptrlong s
     }
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (val))
     {
-      if (JSO_STATUS_LOADED == status)
-        {
           jso_rtti_t *sub = gethash (val, jso_rttis_of_structs);
           if (NULL == sub)
             return box_dv_uname_string (VIRTRDF_NS_URI "PointerToCorrupted");
@@ -861,24 +892,44 @@ jso_get_field_value_as_o (caddr_t val, ccaddr_t fld_type, int fld_req, ptrlong s
           else
             return box_copy (((jso_rtti_t *)(sub))->jrtti_inst_iri);
         }
-      else
-        return box_copy (((jso_rtti_t *)(val))->jrtti_inst_iri);
+  if (DV_CUSTOM == DV_TYPE_OF (val))
+    {
+      jso_rtti_t *val_as_rtti = (jso_rtti_t *)val;
+      return box_copy (val_as_rtti->jrtti_inst_iri);      
     }
   return box_copy_tree (val);
+}
+
+static const char *
+jso_status_string (int status)
+{
+  switch (status)
+    {
+    case JSO_STATUS_NEW: return "new";
+    case JSO_STATUS_LOADED: return "loaded";
+    case JSO_STATUS_FAILED: return "failed";
+    case JSO_STATUS_DELETED: return "deleted";
+    default: return "invalid status ?";
+    }
 }
 
 void
 jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *env)
 {
   jso_class_descr_t *cd = rtti->jrtti_class;
+  const char *status_strg = jso_status_string (rtti->jrtti_status);
+  jso_rtti_t *rtti_of_name = gethash (rtti->jrtti_inst_iri, jso_rttis_of_names);
+  jso_rtti_t *rtti_of_self = gethash (rtti->jrtti_self, jso_rttis_of_structs);
+  dk_set_push (env, list (3, box_copy (iri),
+      box_dv_uname_string (VIRTRDF_NS_URI "status"),
+      box_sprintf (100, "%s%s", status_strg,
+        ((rtti_of_name == rtti) ? "" : ", not key of jso_rttis_of_names"),
+        ((rtti_of_self == rtti) ? "" : ", not key of jso_rttis_of_structs") ) ) );
   if (JSO_STATUS_DELETED == rtti->jrtti_status)
     {
       dk_set_push (env, list (3, box_copy (iri), box_dv_uname_string (VIRTRDF_NS_URI "jso-type"), box_copy_tree (cd->jsocd_class_iri)));
-      dk_set_push (env, list (3, box_copy (iri), box_dv_uname_string (VIRTRDF_NS_URI "status"), box_dv_short_string ("deleted")));
     return;
     }
-  if (JSO_STATUS_LOADED == rtti->jrtti_status)
-    dk_set_push (env, list (3, box_copy (iri), box_dv_uname_string (VIRTRDF_NS_URI "status"), box_dv_short_string ("loaded")));
   dk_set_push (env, list (3, box_copy (iri), uname_rdf_ns_uri_type, box_copy_tree (cd->jsocd_class_iri)));
   switch (cd->jsocd_cat)
     {
@@ -955,6 +1006,30 @@ bif_jso_proplist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         }
     }
   return list_to_array (acc_set);
+}
+
+caddr_t
+bif_jso_dbg_dump_rtti (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  jso_rtti_t *rtti;
+  jso_rtti_t *rtti_of_name;
+  jso_rtti_t *rtti_of_self;
+  caddr_t res;
+  sec_check_dba ((query_instance_t *)qst, "jso_dbg_dump_rtti");
+#ifdef DEBUG
+  rtti = ((jso_rtti_t *)((void *)bif_arg (qst, args, 0, "jso_dbg_dump_rtti")))->jrtti_loop;
+  rtti_of_name = gethash (rtti->jrtti_inst_iri, jso_rttis_of_names);
+  rtti_of_self = gethash (rtti->jrtti_self, jso_rttis_of_structs);
+  res = box_sprintf (1000,
+    "DV_CUSTOM (rtti STATUS=%s(%d), %s, self %s, IRI=%.300s, CLASS=%.300s)",
+    jso_status_string (rtti->jrtti_status), rtti->jrtti_status,
+    ((rtti_of_name == rtti) ? "rtti of name matches" : "not key of jso_rttis_of_names"),
+    ((rtti_of_self == rtti) ? "rtti of self matches" : "not key of jso_rttis_of_structs"),
+    rtti->jrtti_inst_iri, rtti->jrtti_class->jsocd_class_iri );
+#else
+  res = box_dv_short_string ("DV_CUSTOM (sorry, function jso_dbg_dump_rtti () works well only in debug build of Virtuoso)");
+#endif
+  return res;
 }
 
 caddr_t
@@ -1101,6 +1176,9 @@ bif_jso_mark_affected (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return inst;
 }
 
+jso_class_descr_t jso_cd_array_of_any;
+jso_class_descr_t jso_cd_array_of_string;
+
 void jso_init ()
 {
   jso_consts = hash_table_allocate (61);
@@ -1111,6 +1189,22 @@ void jso_init ()
   jso_triple_subjs = hash_table_allocate (1021);
   jso_triple_preds = hash_table_allocate (251);
   jso_triple_objs = hash_table_allocate (1021);
+  jso_cd_array_of_any.jsocd_c_typedef = "caddr_t *";
+  jso_cd_array_of_any.jsocd_cat = JSO_CAT_ARRAY;
+  jso_cd_array_of_any.jsocd_class_iri = uname_virtrdf_ns_uri_array_of_any;
+  jso_cd_array_of_any.jsocd_ns_uri = uname_virtrdf_ns_uri;
+  jso_cd_array_of_any.jsocd_local_name = "array-of-any";
+  jso_cd_array_of_any._.ad.jsoad_member_type = uname_xmlschema_ns_uri_hash_any;
+  jso_cd_array_of_any._.ad.jsoad_max_length = MAX_BOX_ELEMENTS;
+  jso_define_class (&jso_cd_array_of_any);
+  jso_cd_array_of_string.jsocd_c_typedef = "caddr_t *";
+  jso_cd_array_of_string.jsocd_cat = JSO_CAT_ARRAY;
+  jso_cd_array_of_string.jsocd_class_iri = uname_virtrdf_ns_uri_array_of_string;
+  jso_cd_array_of_string.jsocd_ns_uri = uname_virtrdf_ns_uri;
+  jso_cd_array_of_string.jsocd_local_name = "array-of-string";
+  jso_cd_array_of_string._.ad.jsoad_member_type = uname_xmlschema_ns_uri_hash_string;
+  jso_cd_array_of_string._.ad.jsoad_max_length = MAX_BOX_ELEMENTS;
+  jso_define_class (&jso_cd_array_of_string);
   bif_define ("jso_new", bif_jso_new);
   bif_define ("jso_delete", bif_jso_delete);
   bif_define ("jso_validate", bif_jso_validate);
@@ -1118,6 +1212,7 @@ void jso_init ()
   bif_define ("jso_set", bif_jso_set);
   bif_define ("jso_get", bif_jso_get);
   bif_define ("jso_proplist", bif_jso_proplist);
+  bif_define ("jso_dbg_dump_rtti", bif_jso_dbg_dump_rtti);
   bif_define ("jso_triple_add", bif_jso_triple_add);
   bif_define ("jso_triple_get_objs", bif_jso_triple_get_objs);
   bif_define ("jso_triple_get_subjs", bif_jso_triple_get_subjs);
