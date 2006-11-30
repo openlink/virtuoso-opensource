@@ -479,6 +479,7 @@ void lt_blob_transact (it_cursor_t * itc, int op);
 rb_entry_t * lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_ret);
 
 void lt_rb_insert (lock_trx_t * lt, db_buf_t key);
+void lt_no_rb_insert (lock_trx_t * lt, db_buf_t row);
 void lt_rb_update (lock_trx_t * lt, db_buf_t  row);
 int pg_key_len (db_buf_t key1);
 void lt_free_rb (lock_trx_t * lt);

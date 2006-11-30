@@ -1606,6 +1606,43 @@ lt_rb_insert (lock_trx_t * lt, db_buf_t row)
 
 
 void
+lt_no_rb_insert (lock_trx_t * lt, db_buf_t row)
+{
+  /* remove the rb entry to make aninsert irreversible in mid transaction */
+  rb_entry_t * prev;
+  long rb_code, key_len;
+  rb_entry_t *rbe;
+  if (lt->lt_is_excl)
+    return;
+  rbe = lt_rb_entry (lt, row, &rb_code, &prev);
+  if (!rbe)
+    GPF_T1 ("no rb entry when removing insert rb entry");
+  prev = (rb_entry_t *)gethash ((void*)(ptrlong)rb_code, lt->lt_rb_hash);
+  if (prev == rbe)
+    sethash ((void*)(ptrlong)rb_code, lt->lt_rb_hash, (void*)rbe->rbe_next);
+  else
+    {
+      rb_entry_t *prev_in_list = prev;
+      prev = prev->rbe_next;
+      while (prev)
+	{
+	  if (rbe == prev)
+	    {
+	      prev_in_list->rbe_next = rbe->rbe_next;
+	      goto end;
+	    }
+	  prev_in_list =prev;
+	  prev = prev->rbe_next;
+	}
+      GPF_T1("rbe ent not found in rem rb entry");
+    }
+ end:
+  dk_free ((caddr_t) rbe, sizeof (rb_entry_t));
+}
+
+
+
+void
 lt_rb_update (lock_trx_t * lt, db_buf_t row)
 {
   int row_len;
