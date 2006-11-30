@@ -12,7 +12,7 @@ virtrdf:version virtrdf:loadAs virtrdf:jsoTriple .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2006-09-21 0004' ;
+  virtrdf:version '2006-11-12 0001' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -64,6 +64,7 @@ rdfdf:default-iid
   virtrdf:qmfTypeminTmpl "NULL";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl "NULL";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_NOT_NULL;
@@ -164,6 +165,7 @@ rdfdf:default
   virtrdf:qmfTypeminTmpl " DB.DBA.RDF_TYPEMIN_OF_OBJ (^{tree}^)";		# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " DB.DBA.RDF_TYPEMAX_OF_OBJ (^{tree}^)";		# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 1;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_NOT_NULL;
@@ -226,6 +228,7 @@ rdfdf:sql-varchar
   virtrdf:qmfTypeminTmpl " ''";							# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " '\\xFF\\xFF\\xFF\\xFF\\xFF\\xFF'";			# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
@@ -314,6 +317,7 @@ rdfdf:sql-longvarbinary
   virtrdf:qmfTypeminTmpl " ''";							# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " '\\xFF\\xFF\\xFF\\xFF\\xFF\\xFF'";			# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
@@ -376,6 +380,7 @@ rdfdf:sql-varchar-uri
   virtrdf:qmfTypeminTmpl " ''";							# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " '\\xFF\\xFF\\xFF\\xFF\\xFF\\xFF'";			# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_IRI_CALC;
@@ -396,13 +401,13 @@ rdfdf:sql-varchar-uri-nullable
   rdf:type virtrdf:QuadMapFormat;
   virtrdf:inheritFrom rdfdf:sql-varchar-uri;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
-  virtrdf:qmfLongTmpl " case (isnull (^{alias-dot}^^{column}^)) when 0 then DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{alias-dot}^^{column}^)) else NULL end";	# STRING REQUIRED "long" value template, can be NULL
-  virtrdf:qmfSqlvalTmpl " case (isnull (^{alias-dot}^^{column}^)) when 0 then sprintf (^{custom-string-1}^, ^{alias-dot}^^{column}^) else NULL end";		# STRING REQUIRED "sqlval" value template, can be NULL
-  virtrdf:qmfLongOfShortTmpl " case (isnull (^{tree}^)) when 0 then DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{tree}^)) else NULL end";		# STRING REQUIRED ... long from short
-  virtrdf:qmfSqlvalOfShortTmpl " case (isnull (^{tree}^)) when 0 then sprintf (^{custom-string-1}^, ^{tree}^) else NULL end";	# STRING REQUIRED ... SQL value from short
-  virtrdf:qmfIidOfShortTmpl " case (isnull (^{tree}^)) when 0 then DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{tree}^)) else NULL end";
-  virtrdf:qmfUriOfShortTmpl " case (isnull (^{tree}^)) when 0 then sprintf (^{custom-string-1}^, ^{tree}^) else NULL end";		# STRING REQUIRED ... URI STRING from short
-  virtrdf:qmfStrsqlvalOfShortTmpl " case (isnull (^{tree}^)) when 0 then sprintf (^{custom-string-1}^, ^{tree}^) else NULL end";	# STRING REQUIRED ... SQL representation of the STRING value of short
+  virtrdf:qmfLongTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{alias-dot}^^{column}^))";	# STRING REQUIRED "long" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " sprintf_or_null (^{custom-string-1}^, ^{alias-dot}^^{column}^)";				# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";		# STRING REQUIRED ... long from short
+  virtrdf:qmfSqlvalOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{tree}^)";	# STRING REQUIRED ... SQL value from short
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";
+  virtrdf:qmfUriOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{tree}^)";		# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfStrsqlvalOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{tree}^)";	# STRING REQUIRED ... SQL representation of the STRING value of short
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI;
   virtrdf:qmfName "sql-varchar-uri-nullable";
@@ -431,7 +436,7 @@ rdfdf:sql-integer
   virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#integer'";	# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " (case (^{tree}^) when 0 then 0 else 1 end)";	# STRING REQUIRED ... boolean value from short
-  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_LONG (sprintf (^{custom-string-1}^, ^{tree}^))";
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfUriOfShortTmpl " NULL";						# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " cast (^{tree}^ as varchar)";		# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
@@ -446,6 +451,7 @@ rdfdf:sql-integer
   virtrdf:qmfTypeminTmpl " -2147483648";					# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " 2147483647";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
@@ -470,6 +476,7 @@ rdfdf:sql-integer-nullable
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT;
   virtrdf:qmfName "sql-integer-nullable";
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-integer-nullable-SuperFormats
 .
 
@@ -507,6 +514,7 @@ rdfdf:sql-integer-uri-nullable
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI;
   virtrdf:qmfName "sql-integer-uri-nullable";
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-integer-uri-nullable-SuperFormats
 .
 
@@ -532,7 +540,7 @@ rdfdf:sql-doubleprecision
   virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#double'";	# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " (case (^{tree}^) when 0 then 0 else 1 end)";	# STRING REQUIRED ... boolean value from short
-  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_LONG (sprintf (^{custom-string-1}^, ^{tree}^))";
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfUriOfShortTmpl " NULL";						# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " cast (^{tree}^ as varchar)";		# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
@@ -547,6 +555,7 @@ rdfdf:sql-doubleprecision
   virtrdf:qmfTypeminTmpl " -1.797e308";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " 1.797e308";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
@@ -571,6 +580,7 @@ rdfdf:sql-doubleprecision-nullable
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT;
   virtrdf:qmfName "sql-doubleprecision-nullable";
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-doubleprecision-nullable-SuperFormats
 .
 
@@ -597,7 +607,7 @@ rdfdf:sql-date
   virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#date'";	# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " (case (^{tree}^) when 0 then 0 else 1 end)";	# STRING REQUIRED ... boolean value from short
-  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_LONG (sprintf (^{custom-string-1}^, ^{tree}^))";
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfUriOfShortTmpl " NULL";						# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " cast (^{tree}^ as varchar)";		# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
@@ -612,6 +622,7 @@ rdfdf:sql-date
   virtrdf:qmfTypeminTmpl " 0001-01-01";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " 3000-12-31";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
@@ -638,6 +649,7 @@ rdfdf:sql-date-nullable
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT;
   virtrdf:qmfName "sql-date-nullable";
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-date-nullable-SuperFormats
 .
 
@@ -665,7 +677,7 @@ rdfdf:sql-datetime
   virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#datetime'";	# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " (case (^{tree}^) when 0 then 0 else 1 end)";	# STRING REQUIRED ... boolean value from short
-  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_LONG (sprintf (^{custom-string-1}^, ^{tree}^))";
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfUriOfShortTmpl " NULL";						# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " cast (^{tree}^ as varchar)";		# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
@@ -680,6 +692,7 @@ rdfdf:sql-datetime
   virtrdf:qmfTypeminTmpl " 0001-01-01";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " 3000-12-31";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
@@ -704,6 +717,7 @@ rdfdf:sql-datetime-nullable
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT;
   virtrdf:qmfName "sql-datetime-nullable";
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-datetime-nullable-SuperFormats
 .
 
@@ -715,9 +729,9 @@ rdfdf:sql-datetime-nullable-SuperFormats
 rdfdf:multipart-uri
   rdf:type virtrdf:QuadMapFormat;
   virtrdf:qmfName "multipart-uri";
-  virtrdf:qmfShortTmpl "^{comma-list-begin}^ ^{alias-dot}^^{column-N}^^{as-name-N}^^{end}^";	# STRING REQUIRED "short" value template, can be NULL
-  virtrdf:qmfLongTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{comma-list-begin}^ ^{alias-dot}^^{column-N}^^{end}^))";	# STRING REQUIRED "long" value template, can be NULL
-  virtrdf:qmfSqlvalTmpl " sprintf (^{custom-string-1}^, ^{comma-list-begin}^ ^{alias-dot}^^{column-N}^^{end}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfShortTmpl "^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{as-name-N}^^{end}^";	# STRING REQUIRED "short" value template, can be NULL
+  virtrdf:qmfLongTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{end}^))";	# STRING REQUIRED "long" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " sprintf (^{custom-string-1}^, ^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{end}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
   virtrdf:qmfIsrefOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is ref
@@ -745,6 +759,7 @@ rdfdf:multipart-uri
   virtrdf:qmfTypeminTmpl " NULL";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " NULL";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 0;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_NOT_NULL;
@@ -767,6 +782,13 @@ rdfdf:multipart-uri-nullable
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI;
   virtrdf:qmfName "multipart-uri-nullable";
+  virtrdf:qmfLongTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{end}^))";	# STRING REQUIRED "long" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " sprintf_or_null (^{custom-string-1}^, ^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{end}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{comma-list-begin}^ ^{tree-N}^^{end}^))";	# STRING REQUIRED ... long from short
+  virtrdf:qmfSqlvalOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{comma-list-begin}^ ^{tree-N}^^{end}^)";		# STRING REQUIRED ... SQL value from short
+  virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{comma-list-begin}^ ^{tree-N}^^{end}^))";
+  virtrdf:qmfUriOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{comma-list-begin}^ ^{tree-N}^^{end}^)";		# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfStrsqlvalOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{comma-list-begin}^ ^{tree-N}^^{end}^)";	# STRING REQUIRED ... SQL representation of the STRING value of short
   virtrdf:qmfSuperFormats rdfdf:multipart-uri-nullable-SuperFormats
 .
 
@@ -807,6 +829,7 @@ rdfdf:sql-varchar-uri-fn
   virtrdf:qmfTypeminTmpl " ''";							# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " '\\xFF\\xFF\\xFF\\xFF\\xFF\\xFF'";			# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
+  virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_IRI_CALC;
