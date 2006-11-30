@@ -122,6 +122,7 @@ typedef unsigned char utf8char;			/*!< 8-bit chars of UTF-8 strings */
 #define UNICHAR_NO_DATA		((unichar)(-3))	/*!< Source buffer is too short, but nonempty (contains part of a char) */
 #define UNICHAR_NO_ROOM		((unichar)(-4))	/*!< Target buffer is too short */
 #define UNICHAR_BAD_ENCODING	((unichar)(-5))	/*!< Invalid character decoded from invalid string */
+#define UNICHAR_OUT_OF_WCHAR	((unichar)(-6))	/*!< The encoded data are valid but the encoded character is out of 16-bit range and will not fit 2-byte wchar_t. */
 
 /*! \brief Maximum length of a word
 
@@ -283,6 +284,11 @@ Some functions of this type may expect to receive not only a pointer to encoding
 but a pointer to the encoding state of type int *. When in trouble, be careful and pass it. */
 typedef int eh_decode_buffer_t (unichar *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...);
 
+/*! \brief Type for function to get encoded string from \c char_begin_ptr[0] as \c wchar_t string
+
+The type is almost identical to eh_decode_buffer_t, the only difference is wchar_t vs unichar */
+typedef int eh_decode_buffer_to_wchar_t (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...);
+
 /*! \brief Type for function to encode given unichar and put the result under \c tgt_buf_begin
 
 Some functions of this type may expect to receive pointer to encoding_handler_t as
@@ -301,6 +307,11 @@ but a pointer to the encoding state of type int *. When in trouble, be careful a
 \return past-the end pointer in target buffer, or NULL if there's no room for encoded value */
 typedef char *eh_encode_buffer_t (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...);
 
+/*! \brief Type for function to encode given wchar_t buffer and put the result under \c tgt_buf_begin
+
+The type is almost identical to eh_encode_buffer_t, the only difference is wchar_t vs unichar */
+typedef char *eh_encode_wchar_buffer_t (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...);
+
 struct encoding_handler_s {
   char ** eh_names;		/*!< list of names of the encoding, terminated by NULL member */
   size_t eh_minsize;		/*!< minimum length of one unichar's encoded value */
@@ -309,9 +320,11 @@ struct encoding_handler_s {
   void *eh_encodedlangs;	/*!< Data for finding language handlers, filled by application, should be NULL initially */
   void *eh_appdata;		/*!< Application-specific data for this encoding, should be NULL initially */
   eh_decode_char_t *eh_decode_char;	/*!< Char-by-char decoder */
-  eh_decode_buffer_t *eh_decode_buffer;	/*!< Buffer decoder */
+  eh_decode_buffer_t *eh_decode_buffer;			/*!< Buffer decoder, unichar */
+  eh_decode_buffer_to_wchar_t *eh_decode_buffer_to_wchar;	/*!< Buffer decoder, wchar_t */
   eh_encode_char_t *eh_encode_char;	/*!< Char-by-char encoder */
-  eh_encode_buffer_t *eh_encode_buffer;	/*!< Buffer encoder */
+  eh_encode_buffer_t *eh_encode_buffer;			/*!< Buffer encoder, unichar */
+  eh_encode_wchar_buffer_t *eh_encode_wchar_buffer;	/*!< Buffer encoder, wchar_t */
 };
 
 typedef struct encoding_handler_s encoding_handler_t;
@@ -587,6 +600,27 @@ EXE_EXPORT_TYPED (eh_encode_buffer_t, eh_encode_buffer__UTF7);
 EXE_EXPORT_TYPED (eh_encode_buffer_t, eh_encode_buffer__ASCII);
 EXE_EXPORT_TYPED (eh_encode_buffer_t, eh_encode_buffer__ISO8859_1);
 EXE_EXPORT_TYPED (eh_encode_buffer_t, eh_encode_buffer__WIDE_121);
+
+EXE_EXPORT_TYPED (eh_decode_buffer_to_wchar_t, eh_decode_buffer_to_wchar__UCS4BE);
+EXE_EXPORT_TYPED (eh_decode_buffer_to_wchar_t, eh_decode_buffer_to_wchar__UCS4LE);
+EXE_EXPORT_TYPED (eh_decode_buffer_to_wchar_t, eh_decode_buffer_to_wchar__UTF16BE);
+EXE_EXPORT_TYPED (eh_decode_buffer_to_wchar_t, eh_decode_buffer_to_wchar__UTF16LE);
+EXE_EXPORT_TYPED (eh_decode_buffer_to_wchar_t, eh_decode_buffer_to_wchar__UTF8_QR);
+EXE_EXPORT_TYPED (eh_decode_buffer_to_wchar_t, eh_decode_buffer_to_wchar__UTF8);
+EXE_EXPORT_TYPED (eh_decode_buffer_to_wchar_t, eh_decode_buffer_to_wchar__UTF7);
+EXE_EXPORT_TYPED (eh_decode_buffer_to_wchar_t, eh_decode_buffer_to_wchar__ASCII);
+EXE_EXPORT_TYPED (eh_decode_buffer_to_wchar_t, eh_decode_buffer_to_wchar__ISO8859_1);
+EXE_EXPORT_TYPED (eh_decode_buffer_to_wchar_t, eh_decode_buffer_to_wchar__WIDE_121);
+
+EXE_EXPORT_TYPED (eh_encode_wchar_buffer_t, eh_encode_wchar_buffer__UCS4BE);
+EXE_EXPORT_TYPED (eh_encode_wchar_buffer_t, eh_encode_wchar_buffer__UCS4LE);
+EXE_EXPORT_TYPED (eh_encode_wchar_buffer_t, eh_encode_wchar_buffer__UTF16BE);
+EXE_EXPORT_TYPED (eh_encode_wchar_buffer_t, eh_encode_wchar_buffer__UTF16LE);
+EXE_EXPORT_TYPED (eh_encode_wchar_buffer_t, eh_encode_wchar_buffer__UTF8);
+EXE_EXPORT_TYPED (eh_encode_wchar_buffer_t, eh_encode_wchar_buffer__UTF7);
+EXE_EXPORT_TYPED (eh_encode_wchar_buffer_t, eh_encode_wchar_buffer__ASCII);
+EXE_EXPORT_TYPED (eh_encode_wchar_buffer_t, eh_encode_wchar_buffer__ISO8859_1);
+EXE_EXPORT_TYPED (eh_encode_wchar_buffer_t, eh_encode_wchar_buffer__WIDE_121);
 
 /*! \brief Handler of "UCS-4" encoding that is actually eh__UCS4LE without endian in name */
 extern encoding_handler_t eh__UCS4;

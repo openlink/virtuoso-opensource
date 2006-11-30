@@ -204,7 +204,66 @@ int eh_decode_buffer__charset (unichar *tgt_buf, int tgt_buf_len, __constcharptr
 }
 
 
+int eh_decode_buffer_to_wchar__charset (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  va_list tail;
+  encoding_handler_t *my_eh;
+  eh_charset_t *my_ecs;
+  va_start(tail, src_buf_end);
+  my_eh = va_arg (tail, encoding_handler_t *);
+  my_ecs = (eh_charset_t *)(my_eh->eh_appdata);
+  while((tgt_buf_len>0) && (src_buf_end > src_begin_ptr[0]))
+    {
+      unsigned char cursrc = src_begin_ptr[0][0];
+      unichar curtgt = my_ecs->ecs_chars[cursrc];
+      if (curtgt & ~0xffffl)
+        return UNICHAR_OUT_OF_WCHAR;
+      src_begin_ptr[0] += 1;
+      (tgt_buf++)[0] = curtgt;
+      tgt_buf_len--;
+      res++;
+    }
+  return res;
+}
+
+
 char *eh_encode_buffer__charset (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  va_list tail;
+  encoding_handler_t *my_eh;
+  eh_charset_t *my_ecs;
+  va_start(tail, tgt_buf_end);
+  my_eh = va_arg (tail, encoding_handler_t *);
+  my_ecs = (eh_charset_t *)(my_eh->eh_appdata);
+  if ((tgt_buf_end-tgt_buf) < (src_buf_end-src_buf))
+    return (char *)UNICHAR_NO_ROOM;
+  while (src_buf < src_buf_end)
+    {
+      unichar char_to_put = (src_buf++)[0];
+      if (char_to_put & ~0xFF)
+        {
+          unsigned *rc = my_ecs->ecs_revhash[(unsigned)(char_to_put) & 0xFF];
+          if ((unsigned)(char_to_put) == rc[0])
+            tgt_buf[0] = (char)(rc[1]);
+          else if (rc[2] && (unsigned)(char_to_put) == rc[2])
+            tgt_buf[0] = (char)(rc[3]);
+          else if ((unsigned)(char_to_put) == rc[4])
+            tgt_buf[0] = (char)(rc[5]);
+          else 
+            tgt_buf[0] = '?';
+        }
+      else
+        {
+          tgt_buf[0] = (char)(my_ecs->ecs_revbytes[(unsigned)char_to_put]);
+        }
+      tgt_buf++;
+    }
+  return tgt_buf;
+}
+
+
+char *eh_encode_wchar_buffer__charset (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   va_list tail;
   encoding_handler_t *my_eh;
@@ -273,8 +332,10 @@ encoding_handler_t eh__charset_pattern = {
   1, 1, 0x0000, NULL, NULL,
   eh_decode_char__charset,
   eh_decode_buffer__charset,
+  eh_decode_buffer_to_wchar__charset,
   eh_encode_char__charset,
-  eh_encode_buffer__charset
+  eh_encode_buffer__charset,
+  eh_encode_wchar_buffer__charset
 };
 
 

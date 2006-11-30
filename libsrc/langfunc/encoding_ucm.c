@@ -120,7 +120,55 @@ int eh_decode_buffer__ucm_dbcs (unichar *tgt_buf, int tgt_buf_len, __constcharpt
 }
 
 
+int eh_decode_buffer_to_wchar__ucm_dbcs (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  va_list tail;
+  encoding_handler_t *my_eh;
+  va_start(tail, src_buf_end);
+  my_eh = va_arg (tail, encoding_handler_t *);
+  while(tgt_buf_len>0)
+    {
+      unichar curr = eh_decode_char__ucm_dbcs(src_begin_ptr, src_buf_end, my_eh);
+      switch(curr)
+	{
+	case UNICHAR_EOD:
+	  return res;
+	case UNICHAR_NO_DATA:
+	case UNICHAR_BAD_ENCODING:
+	  return res ? res : UNICHAR_BAD_ENCODING;
+	default:
+          if (curr & ~0xffffl)
+            return UNICHAR_OUT_OF_WCHAR;
+	  (tgt_buf++)[0] = curr;
+	  tgt_buf_len--;
+	  res++;
+	}
+
+    }
+  return res;
+}
+
+
 char *eh_encode_buffer__ucm_dbcs (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  va_list tail;
+  encoding_handler_t *my_eh;
+  va_start(tail, tgt_buf_end);
+  my_eh = va_arg (tail, encoding_handler_t *);
+  while (src_buf < src_buf_end)
+    {
+      char *put_res = eh_encode_char__ucm_dbcs (src_buf[0], tgt_buf, tgt_buf_end, my_eh);
+      if ((char *)UNICHAR_NO_ROOM == put_res)
+	return (char *)UNICHAR_NO_ROOM;
+      tgt_buf = put_res;
+      src_buf++;
+    }
+  return tgt_buf;
+}
+
+
+char *eh_encode_wchar_buffer__ucm_dbcs (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   va_list tail;
   encoding_handler_t *my_eh;
@@ -143,8 +191,10 @@ encoding_handler_t eh__ucm_dbcs_pattern = {
   1, MAX_ENCLEN, 0x0000, NULL, NULL,
   eh_decode_char__ucm_dbcs,
   eh_decode_buffer__ucm_dbcs,
+  eh_decode_buffer_to_wchar__ucm_dbcs,
   eh_encode_char__ucm_dbcs,
-  eh_encode_buffer__ucm_dbcs
+  eh_encode_buffer__ucm_dbcs,
+  eh_encode_wchar_buffer__ucm_dbcs
 };
 
 
@@ -282,7 +332,60 @@ int eh_decode_buffer__ucm_ebcdic (unichar *tgt_buf, int tgt_buf_len, __constchar
 }
 
 
-char *eh_encode_buffer__ucm_ebcdic (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+int eh_decode_buffer_to_wchar__ucm_ebcdic (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  va_list tail;
+  encoding_handler_t *my_eh;
+  int *state_ptr;
+  va_start(tail, src_buf_end);
+  my_eh = va_arg (tail, encoding_handler_t *);
+  state_ptr =  va_arg (tail, int *);
+  while(tgt_buf_len>0)
+    {
+      unichar curr = eh_decode_char__ucm_ebcdic(src_begin_ptr, src_buf_end, my_eh, state_ptr);
+      switch(curr)
+	{
+	case UNICHAR_EOD:
+	  return res;
+	case UNICHAR_NO_DATA:
+	case UNICHAR_BAD_ENCODING:
+	  return res ? res : UNICHAR_BAD_ENCODING;
+	default:
+          if (curr & ~0xffffl)
+            return UNICHAR_OUT_OF_WCHAR;
+	  (tgt_buf++)[0] = curr;
+	  tgt_buf_len--;
+	  res++;
+	}
+    }
+  return res;
+}
+
+
+char *
+eh_encode_buffer__ucm_ebcdic (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  va_list tail;
+  encoding_handler_t *my_eh;
+  int *state_ptr;
+  va_start(tail, tgt_buf_end);
+  my_eh = va_arg (tail, encoding_handler_t *);
+  state_ptr = va_arg (tail, int *);
+  while (src_buf < src_buf_end)
+    {
+      char *put_res = eh_encode_char__ucm_ebcdic (src_buf[0], tgt_buf, tgt_buf_end, my_eh, state_ptr);
+      if ((char *)UNICHAR_NO_ROOM == put_res)
+	return (char *)UNICHAR_NO_ROOM;
+      tgt_buf = put_res;
+      src_buf++;
+    }
+  return tgt_buf;
+}
+
+
+char *
+eh_encode_wchar_buffer__ucm_ebcdic (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   va_list tail;
   encoding_handler_t *my_eh;
@@ -307,8 +410,10 @@ encoding_handler_t eh__ucm_ebcdic_pattern = {
   1, MAX_ENCLEN, 0x0000, NULL, NULL,
   eh_decode_char__ucm_ebcdic,
   eh_decode_buffer__ucm_ebcdic,
+  eh_decode_buffer_to_wchar__ucm_ebcdic,
   eh_encode_char__ucm_ebcdic,
-  eh_encode_buffer__ucm_ebcdic
+  eh_encode_buffer__ucm_ebcdic,
+  eh_encode_wchar_buffer__ucm_ebcdic
 };
 
 

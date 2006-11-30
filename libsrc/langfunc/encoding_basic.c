@@ -206,6 +206,66 @@ int eh_decode_buffer__UTF8 (unichar *tgt_buf, int tgt_buf_len, __constcharptr *s
 }
 
 
+int eh_decode_buffer_to_wchar__UTF8_QR (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  while(tgt_buf_len>0)
+    {
+      unichar curr = eh_decode_char__UTF8_QR (src_begin_ptr, src_buf_end);
+      switch(curr)
+	{
+	case UNICHAR_EOD:
+	  return res;
+	case UNICHAR_NO_DATA:
+	case UNICHAR_BAD_ENCODING:
+	  if (res)
+	    return res;
+	  return UNICHAR_BAD_ENCODING;
+	default:
+          if (curr & ~0xffffl)
+            {
+	      if (res)
+	        return res;
+              return UNICHAR_OUT_OF_WCHAR;
+            }
+	  (tgt_buf++)[0] = curr;
+	  tgt_buf_len--;
+	  res++;
+	}
+
+    }
+  return res;
+}
+
+
+int eh_decode_buffer_to_wchar__UTF8 (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  while(tgt_buf_len>0)
+    {
+      unichar curr = eh_decode_char__UTF8 (src_begin_ptr, src_buf_end);
+      switch(curr)
+	{
+	case UNICHAR_EOD:
+	  return res;
+	case UNICHAR_NO_DATA:
+	case UNICHAR_BAD_ENCODING:
+	  if (res)
+	    return res;
+	  return UNICHAR_BAD_ENCODING;
+	default:
+          if (curr & ~0xffffl)
+            return UNICHAR_OUT_OF_WCHAR;
+	  (tgt_buf++)[0] = curr;
+	  tgt_buf_len--;
+	  res++;
+	}
+
+    }
+  return res;
+}
+
+
 char *eh_encode_buffer__UTF8 (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   int n;
@@ -252,6 +312,51 @@ encode_next_char:
 }
 
 
+char *eh_encode_wchar_buffer__UTF8 (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  int n;
+  unsigned int mask;
+  unichar char_to_put, tmp;
+  char * ret;
+encode_next_char:
+  if (src_buf >= src_buf_end)
+    return tgt_buf;
+  tmp = char_to_put = src_buf[0];
+  if (! (char_to_put & ~0x7F))
+    {
+      if (tgt_buf >= tgt_buf_end)
+	return (char *)UNICHAR_NO_ROOM;
+      *tgt_buf++ = (char) char_to_put;
+      src_buf++;
+      goto encode_next_char;
+    }
+  if (char_to_put < 0)
+    return tgt_buf;
+  n = 0;
+  while (tmp)
+    {
+      tmp >>= 1;
+      ++n;
+    }
+  n = (n - 2) / 5;	/* number of additional octets */
+  if (tgt_buf_end - tgt_buf < n + 1)
+    return (char *)UNICHAR_NO_ROOM;
+  ret = tgt_buf + n + 1;
+  mask = 0x80;
+  for (; n > 0; --n)
+    {
+      tgt_buf[n] = (char)((char_to_put & 0x3f) | 0x80);
+      char_to_put >>= 6;
+      mask = (mask >> 1) | 0x80;
+    }
+  *tgt_buf = (unsigned char)mask;
+  mask = (~mask) >> 1;
+  *tgt_buf |= (char)char_to_put & (unsigned char)mask;
+  tgt_buf = ret;
+  src_buf++;
+  goto encode_next_char;
+}
+
 
 char * eh_names__UTF8_QR[] = {"UTF-8-QR", NULL};
 
@@ -260,8 +365,10 @@ encoding_handler_t eh__UTF8_QR = {
   1, MAX_UTF8_CHAR, 0x0000, NULL, NULL,
   eh_decode_char__UTF8_QR,
   eh_decode_buffer__UTF8_QR,
+  eh_decode_buffer_to_wchar__UTF8_QR,
   eh_encode_char__UTF8,
-  eh_encode_buffer__UTF8
+  eh_encode_buffer__UTF8,
+  eh_encode_wchar_buffer__UTF8
 };
 
 char * eh_names__UTF8[] = {"UTF-8", "UTF8", NULL};
@@ -271,8 +378,10 @@ encoding_handler_t eh__UTF8 = {
   1, MAX_UTF8_CHAR, 0x0000, NULL, NULL,
   eh_decode_char__UTF8,
   eh_decode_buffer__UTF8,
+  eh_decode_buffer_to_wchar__UTF8,
   eh_encode_char__UTF8,
-  eh_encode_buffer__UTF8
+  eh_encode_buffer__UTF8,
+  eh_encode_wchar_buffer__UTF8
 };
 
 
@@ -371,7 +480,49 @@ int eh_decode_buffer__UTF16BE (unichar *tgt_buf, int tgt_buf_len, __constcharptr
 }
 
 
+int eh_decode_buffer_to_wchar__UTF16BE (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  while(tgt_buf_len>0)
+    {
+      unichar curr = eh_decode_char__UTF16BE(src_begin_ptr, src_buf_end);
+      switch(curr)
+	{
+	case UNICHAR_EOD:
+	  return res;
+	case UNICHAR_NO_DATA:
+	case UNICHAR_BAD_ENCODING:
+	  if (res)
+	    return res;
+	  return UNICHAR_BAD_ENCODING;
+	default:
+          if (curr & ~0xffffl)
+            return UNICHAR_OUT_OF_WCHAR;
+	  (tgt_buf++)[0] = curr;
+	  tgt_buf_len--;
+	  res++;
+	}
+
+    }
+  return res;
+}
+
+
 char *eh_encode_buffer__UTF16BE (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  while (src_buf < src_buf_end)
+    {
+      char *put_res = eh_encode_char__UTF16BE (src_buf[0], tgt_buf, tgt_buf_end);
+      if ((char *)UNICHAR_NO_ROOM == put_res)
+	return (char *)UNICHAR_NO_ROOM;
+      tgt_buf = put_res;
+      src_buf++;
+    }
+  return tgt_buf;
+}
+
+
+char *eh_encode_wchar_buffer__UTF16BE (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   while (src_buf < src_buf_end)
     {
@@ -392,8 +543,10 @@ encoding_handler_t eh__UTF16BE = {
   MIN_UTF16_CHAR, MAX_UTF16_CHAR, 0x1234, NULL, NULL,
   eh_decode_char__UTF16BE,
   eh_decode_buffer__UTF16BE,
+  eh_decode_buffer_to_wchar__UTF16BE,
   eh_encode_char__UTF16BE,
-  eh_encode_buffer__UTF16BE
+  eh_encode_buffer__UTF16BE,
+  eh_encode_wchar_buffer__UTF16BE
 };
 
 
@@ -492,7 +645,48 @@ int eh_decode_buffer__UTF16LE (unichar *tgt_buf, int tgt_buf_len, __constcharptr
 }
 
 
+int eh_decode_buffer_to_wchar__UTF16LE (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  while(tgt_buf_len>0)
+    {
+      unichar curr = eh_decode_char__UTF16LE(src_begin_ptr, src_buf_end);
+      switch(curr)
+	{
+	case UNICHAR_EOD:
+	  return res;
+	case UNICHAR_NO_DATA:
+	case UNICHAR_BAD_ENCODING:
+	  if (res)
+	    return res;
+	  return UNICHAR_BAD_ENCODING;
+	default:
+          if (curr & ~0xffffl)
+            return UNICHAR_OUT_OF_WCHAR;
+	  (tgt_buf++)[0] = curr;
+	  tgt_buf_len--;
+	  res++;
+	}
+    }
+  return res;
+}
+
+
 char *eh_encode_buffer__UTF16LE (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  while (src_buf < src_buf_end)
+    {
+      char *put_res = eh_encode_char__UTF16LE (src_buf[0], tgt_buf, tgt_buf_end);
+      if ((char *)UNICHAR_NO_ROOM == put_res)
+	return (char *)UNICHAR_NO_ROOM;
+      tgt_buf = put_res;
+      src_buf++;
+    }
+  return tgt_buf;
+}
+
+
+char *eh_encode_wchar_buffer__UTF16LE (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   while (src_buf < src_buf_end)
     {
@@ -513,8 +707,10 @@ encoding_handler_t eh__UTF16LE = {
   MIN_UTF16_CHAR, MAX_UTF16_CHAR, 0x4321, NULL, NULL,
   eh_decode_char__UTF16LE,
   eh_decode_buffer__UTF16LE,
+  eh_decode_buffer_to_wchar__UTF16LE,
   eh_encode_char__UTF16LE,
-  eh_encode_buffer__UTF16LE
+  eh_encode_buffer__UTF16LE,
+  eh_encode_wchar_buffer__UTF16LE
 };
 
 
@@ -525,8 +721,10 @@ encoding_handler_t eh__UTF16 = {
   MIN_UTF16_CHAR, MAX_UTF16_CHAR, 0x0000, NULL, NULL,
   eh_decode_char__UTF16LE,
   eh_decode_buffer__UTF16LE,
+  eh_decode_buffer_to_wchar__UTF16LE,
   eh_encode_char__UTF16LE,
-  eh_encode_buffer__UTF16LE
+  eh_encode_buffer__UTF16LE,
+  eh_encode_wchar_buffer__UTF16LE
 };
 
 
@@ -572,7 +770,40 @@ int eh_decode_buffer__ASCII (unichar *tgt_buf, int tgt_buf_len, __constcharptr *
 }
 
 
+int eh_decode_buffer_to_wchar__ASCII (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  while((tgt_buf_len>0) && (src_buf_end > src_begin_ptr[0]))
+    {
+      if (**src_begin_ptr & ~0x7F)
+	{
+	  if (res)
+	    return res;
+	  return UNICHAR_BAD_ENCODING;
+	}
+      (tgt_buf++)[0] = ((src_begin_ptr[0])++)[0];
+      tgt_buf_len--;
+      res++;
+    }
+  return res;
+}
+
+
 char *eh_encode_buffer__ASCII (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  unichar char_to_put;
+  if ((tgt_buf_end-tgt_buf) < (src_buf_end-src_buf))
+    return (char *)UNICHAR_NO_ROOM;
+  while (src_buf < src_buf_end)
+    {
+      char_to_put = (src_buf++)[0];
+      (tgt_buf++)[0] = (unsigned char)((char_to_put & ~0x7F) ? '?' : char_to_put);
+    }
+  return tgt_buf;
+}
+
+
+char *eh_encode_wchar_buffer__ASCII (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   unichar char_to_put;
   if ((tgt_buf_end-tgt_buf) < (src_buf_end-src_buf))
@@ -593,8 +824,10 @@ encoding_handler_t eh__ASCII = {
   1, 1, 0x0000, NULL, NULL,
   eh_decode_char__ASCII,
   eh_decode_buffer__ASCII,
+  eh_decode_buffer_to_wchar__ASCII,
   eh_encode_char__ASCII,
-  eh_encode_buffer__ASCII
+  eh_encode_buffer__ASCII,
+  eh_encode_wchar_buffer__ASCII
 };
 
 
@@ -634,7 +867,34 @@ int eh_decode_buffer__ISO8859_1 (unichar *tgt_buf, int tgt_buf_len, __constcharp
 }
 
 
+int eh_decode_buffer_to_wchar__ISO8859_1 (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  while((tgt_buf_len>0) && (src_buf_end > src_begin_ptr[0]))
+    {
+      (tgt_buf++)[0] = (unsigned char)(((src_begin_ptr[0])++)[0]);
+      tgt_buf_len--;
+      res++;
+    }
+  return res;
+}
+
+
 char *eh_encode_buffer__ISO8859_1 (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  unichar char_to_put;
+  if ((tgt_buf_end-tgt_buf) < (src_buf_end-src_buf))
+    return (char *)UNICHAR_NO_ROOM;
+  while (src_buf < src_buf_end)
+    {
+      char_to_put = (src_buf++)[0];
+      (tgt_buf++)[0] = (unsigned char)((char_to_put & ~0xFF) ? '?' : char_to_put);
+    }
+  return tgt_buf;
+}
+
+
+char *eh_encode_wchar_buffer__ISO8859_1 (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   unichar char_to_put;
   if ((tgt_buf_end-tgt_buf) < (src_buf_end-src_buf))
@@ -656,8 +916,10 @@ encoding_handler_t eh__ISO8859_1 = {
   1, 1, 0x0000, NULL, NULL,
   eh_decode_char__ISO8859_1,
   eh_decode_buffer__ISO8859_1,
+  eh_decode_buffer_to_wchar__ISO8859_1,
   eh_encode_char__ISO8859_1,
-  eh_encode_buffer__ISO8859_1
+  eh_encode_buffer__ISO8859_1,
+  eh_encode_wchar_buffer__ISO8859_1
 };
 
 
@@ -705,7 +967,37 @@ int eh_decode_buffer__WIDE_121 (unichar *tgt_buf, int tgt_buf_len, __constcharpt
 }
 
 
+int eh_decode_buffer_to_wchar__WIDE_121 (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  while((tgt_buf_len>0) && (next_wchar_begin(src_begin_ptr[0]) <= src_buf_end))
+    {
+      (tgt_buf++)[0] = (unichar)(((((wchar_t **)(src_begin_ptr))[0])++)[0]);
+      tgt_buf_len--;
+      res++;
+    }
+  if (src_begin_ptr[0] > src_buf_end)
+    return UNICHAR_EOD;
+  return res;
+}
+
+
 char *eh_encode_buffer__WIDE_121 (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  unichar char_to_put;
+  if ((((wchar_t *)tgt_buf_end) - ((wchar_t *)tgt_buf)) < (src_buf_end-src_buf))
+    return (char *)UNICHAR_NO_ROOM;
+  while (src_buf < src_buf_end)
+    {
+      char_to_put = (src_buf++)[0];
+      ((wchar_t *)(tgt_buf))[0] = (wchar_t)((char_to_put & ~0xFFFF) ? (wchar_t)('?') : char_to_put);
+      tgt_buf = next_wchar_begin(tgt_buf);
+    }
+  return tgt_buf;
+}
+
+
+char *eh_encode_wchar_buffer__WIDE_121 (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   unichar char_to_put;
   if ((((wchar_t *)tgt_buf_end) - ((wchar_t *)tgt_buf)) < (src_buf_end-src_buf))
@@ -728,8 +1020,10 @@ encoding_handler_t eh__WIDE_121 = {
   sizeof (wchar_t), sizeof (wchar_t), 0x0000, NULL, NULL,
   eh_decode_char__WIDE_121,
   eh_decode_buffer__WIDE_121,
+  eh_decode_buffer_to_wchar__WIDE_121,
   eh_encode_char__WIDE_121,
-  eh_encode_buffer__WIDE_121
+  eh_encode_buffer__WIDE_121,
+  eh_encode_wchar_buffer__WIDE_121
 };
 
 
@@ -787,7 +1081,41 @@ int eh_decode_buffer__UCS4BE (unichar *tgt_buf, int tgt_buf_len, __constcharptr 
 }
 
 
+int eh_decode_buffer_to_wchar__UCS4BE (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  while((tgt_buf_len>0) && ((src_begin_ptr[0] + 4) <= src_buf_end))
+    {
+      unichar curr = UCS4BE_to_unichar (src_begin_ptr[0]);
+      if (curr & ~0xffffL)
+        return UNICHAR_OUT_OF_WCHAR;
+      (tgt_buf++)[0] = curr;
+      src_begin_ptr[0] += 4;
+      tgt_buf_len--;
+      res++;
+    }
+  if (src_begin_ptr[0] > src_buf_end)
+    return UNICHAR_EOD;
+  return res;
+}
+
+
 char *eh_encode_buffer__UCS4BE (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  unichar char_to_put;
+  if ((tgt_buf_end - tgt_buf) < ((src_buf_end - src_buf) * 4))
+    return (char *)UNICHAR_NO_ROOM;
+  while (src_buf < src_buf_end)
+    {
+      char_to_put = (src_buf++)[0];
+      unichar_to_UCS4BE (tgt_buf, char_to_put);
+      tgt_buf += 4;
+    }
+  return tgt_buf;
+}
+
+
+char *eh_encode_wchar_buffer__UCS4BE (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   unichar char_to_put;
   if ((tgt_buf_end - tgt_buf) < ((src_buf_end - src_buf) * 4))
@@ -810,8 +1138,10 @@ encoding_handler_t eh__UCS4BE = {
   4, 4, 0x1234, NULL, NULL,
   eh_decode_char__UCS4BE,
   eh_decode_buffer__UCS4BE,
+  eh_decode_buffer_to_wchar__UCS4BE,
   eh_encode_char__UCS4BE,
-  eh_encode_buffer__UCS4BE
+  eh_encode_buffer__UCS4BE,
+  eh_encode_wchar_buffer__UCS4BE
 };
 
 
@@ -869,7 +1199,41 @@ int eh_decode_buffer__UCS4LE (unichar *tgt_buf, int tgt_buf_len, __constcharptr 
 }
 
 
+int eh_decode_buffer_to_wchar__UCS4LE (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{
+  int res = 0;
+  while((tgt_buf_len>0) && ((src_begin_ptr[0] + 4) <= src_buf_end))
+    {
+      unichar curr = UCS4LE_to_unichar (src_begin_ptr[0]);
+      if (curr & ~0xffffL)
+        return UNICHAR_OUT_OF_WCHAR;
+      (tgt_buf++)[0] = curr;
+      src_begin_ptr[0] += 4;
+      tgt_buf_len--;
+      res++;
+    }
+  if (src_begin_ptr[0] > src_buf_end)
+    return UNICHAR_EOD;
+  return res;
+}
+
+
 char *eh_encode_buffer__UCS4LE (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{
+  unichar char_to_put;
+  if ((tgt_buf_end - tgt_buf) < ((src_buf_end - src_buf) * 4))
+    return (char *)UNICHAR_NO_ROOM;
+  while (src_buf < src_buf_end)
+    {
+      char_to_put = (src_buf++)[0];
+      unichar_to_UCS4LE (tgt_buf, char_to_put);
+      tgt_buf += 4;
+    }
+  return tgt_buf;
+}
+
+
+char *eh_encode_wchar_buffer__UCS4LE (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 {
   unichar char_to_put;
   if ((tgt_buf_end - tgt_buf) < ((src_buf_end - src_buf) * 4))
@@ -892,8 +1256,10 @@ encoding_handler_t eh__UCS4LE = {
   4, 4, 0x4321, NULL, NULL,
   eh_decode_char__UCS4LE,
   eh_decode_buffer__UCS4LE,
+  eh_decode_buffer_to_wchar__UCS4LE,
   eh_encode_char__UCS4LE,
-  eh_encode_buffer__UCS4LE
+  eh_encode_buffer__UCS4LE,
+  eh_encode_wchar_buffer__UCS4LE
 };
 
 char * eh_names__UCS4[] = {
@@ -904,7 +1270,9 @@ encoding_handler_t eh__UCS4 = {
   4, 4, 0x0000, NULL, NULL,
   eh_decode_char__UCS4LE,
   eh_decode_buffer__UCS4LE,
+  eh_decode_buffer_to_wchar__UCS4LE,
   eh_encode_char__UCS4LE,
-  eh_encode_buffer__UCS4LE
+  eh_encode_buffer__UCS4LE,
+  eh_encode_wchar_buffer__UCS4LE
 };
 
