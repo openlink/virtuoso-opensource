@@ -39,6 +39,7 @@
 #include "http.h"
 #include "libutil.h"
 #include "sqloinv.h"
+#include "sqlver.h"
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -801,6 +802,14 @@ bif_current_proc_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NEW_DB_NULL;
 }
 
+static caddr_t
+bif_host_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+	if (build_host_id)
+		return box_string (build_host_id);
+	return NEW_DB_NULL;
+}
+
 void
 sqlbif2_init (void)
 {
@@ -810,6 +819,7 @@ sqlbif2_init (void)
   bif_define_typed ("sys_lockdown", bif_sys_lockdown, &bt_integer);
   bif_define_typed ("__blob_handle_from_session", bif_blob_handle_from_session, &bt_blob_handle);
   bif_define_typed ("os_chmod", bif_os_chmod, &bt_varchar);
+  bif_define_typed ("host_id", bif_host_id, &bt_varchar);
   bif_define_typed ("os_chown", bif_os_chown, &bt_varchar);
   bif_define_typed ("user_has_role", bif_user_has_role, &bt_integer);
   bif_define_typed ("client_attr", bif_client_attr, &bt_integer);
