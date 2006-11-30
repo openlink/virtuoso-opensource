@@ -3935,6 +3935,157 @@ bif_gz_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+static caddr_t
+bif_gz_compress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static char *szMe = "gz_compress_file";
+  caddr_t fname = bif_string_arg (qst, args, 0, szMe);
+  caddr_t dname = bif_string_arg (qst, args, 1, szMe);
+  gzFile gz_fd = NULL;
+  int fd = 0;
+  int f_is_allocated = 0, d_is_allocated = 0;
+  char *fname_cvt, *dname_cvt;
+  int readed = 0;
+  char buffer [0x8000];
+
+  sec_check_dba ((query_instance_t *) qst, szMe);
+
+  fname_cvt = file_canonical_name (fname, &f_is_allocated);
+  if (!is_allowed (fname_cvt))
+    {
+      if (f_is_allocated)
+	dk_free (fname_cvt, -1);
+      sqlr_new_error ("42000", "FA047",
+	  "Access to %s is denied due to access control in ini file", fname);
+    }
+  dname_cvt = file_canonical_name (dname, &d_is_allocated);
+  if (!is_allowed (dname_cvt))
+    {
+      if (d_is_allocated)
+	dk_free (dname_cvt, -1);
+      if (f_is_allocated)
+	dk_free (fname_cvt, -1);
+      sqlr_new_error ("42000", "FA048",
+	  "Access to %s is denied due to access control in ini file", dname);
+    }
+
+  fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
+  if (fd == -1)
+    {
+      int errn = errno;
+      if (d_is_allocated)
+	dk_free (dname_cvt, -1);
+      if (f_is_allocated)
+	dk_free (fname_cvt, -1);
+      sqlr_new_error ("39000", "FA049", "Can't open file %s, error : %s",
+	  fname, virt_strerror (errn));
+    }
+  LSEEK (fd, 0, SEEK_SET);
+  gz_fd = gzopen (dname_cvt, "w");
+  if (!gz_fd)
+    {
+      if (d_is_allocated)
+	dk_free (dname_cvt, -1);
+      if (f_is_allocated)
+	dk_free (fname_cvt, -1);
+      sqlr_new_error ("39000", "FA050", "Can't open compressed file %s", dname);
+    }
+
+  for (;;)
+    {
+      readed = read (fd, buffer, sizeof (buffer));
+      if (readed > 0)
+	gzwrite (gz_fd, buffer, readed);
+      else
+	break;
+    }
+
+  gzclose (gz_fd);
+  close(fd);
+
+  if (d_is_allocated)
+    dk_free (dname_cvt, -1);
+  if (f_is_allocated)
+    dk_free (fname_cvt, -1);
+
+  return NULL;
+}
+
+static caddr_t
+bif_gz_uncompress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static char *szMe = "gz_uncompress_file";
+  caddr_t dname = bif_string_arg (qst, args, 0, szMe);
+  caddr_t fname = bif_string_arg (qst, args, 1, szMe);
+  gzFile gz_fd = NULL;
+  int fd = 0;
+  int f_is_allocated = 0, d_is_allocated = 0;
+  char *fname_cvt, *dname_cvt;
+  int readed = 0;
+  char buffer [0x8000];
+
+  sec_check_dba ((query_instance_t *) qst, szMe);
+
+  fname_cvt = file_canonical_name (fname, &f_is_allocated);
+  if (!is_allowed (fname_cvt))
+    {
+      if (f_is_allocated)
+	dk_free (fname_cvt, -1);
+      sqlr_new_error ("42000", "FA051",
+	  "Access to %s is denied due to access control in ini file", fname);
+    }
+  dname_cvt = file_canonical_name (dname, &d_is_allocated);
+  if (!is_allowed (dname_cvt))
+    {
+      if (d_is_allocated)
+	dk_free (dname_cvt, -1);
+      if (f_is_allocated)
+	dk_free (fname_cvt, -1);
+      sqlr_new_error ("42000", "FA052",
+	  "Access to %s is denied due to access control in ini file", dname);
+    }
+
+  fd = fd_open (fname_cvt, OPEN_FLAGS | O_TRUNC);
+  if (fd == -1)
+    {
+      int errn = errno;
+      if (d_is_allocated)
+	dk_free (dname_cvt, -1);
+      if (f_is_allocated)
+	dk_free (fname_cvt, -1);
+      sqlr_new_error ("39000", "FA053", "Can't open file %s, error : %s",
+	  fname, virt_strerror (errn));
+    }
+  gz_fd = gzopen (dname_cvt, "r");
+  if (!gz_fd)
+    {
+      if (d_is_allocated)
+	dk_free (dname_cvt, -1);
+      if (f_is_allocated)
+	dk_free (fname_cvt, -1);
+      sqlr_new_error ("39000", "FA054", "Can't open compressed file %s", dname);
+    }
+
+  for (;;)
+    {
+      readed = gzread (gz_fd, buffer, sizeof (buffer));
+      if (readed > 0)
+        write (fd, buffer, readed);
+      else
+	break;
+    }
+
+  gzclose (gz_fd);
+  close(fd);
+
+  if (d_is_allocated)
+    dk_free (dname_cvt, -1);
+  if (f_is_allocated)
+    dk_free (fname_cvt, -1);
+
+  return NULL;
+}
+
 caddr_t
 get_message_header_field (char *szMessage, long message_size,
     caddr_t szHeaderFld)
@@ -5347,6 +5498,8 @@ bif_file_init (void)
   bif_define_typed ("string_output_gz_compress",
       bif_string_output_gz_compress, &bt_integer);
   bif_define ("gz_uncompress", bif_gz_uncompress);
+  bif_define_typed ("gz_compress_file", bif_gz_compress_file, &bt_integer);
+  bif_define_typed ("gz_uncompress_file", bif_gz_uncompress_file, &bt_integer);
   bif_define_typed ("sys_unlink", bif_sys_unlink, &bt_integer);
   bif_define_typed ("sys_mkdir", bif_sys_mkdir, &bt_integer);
   bif_define_typed ("sys_mkpath", bif_sys_mkpath, &bt_integer);
