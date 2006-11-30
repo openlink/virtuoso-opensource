@@ -43,12 +43,29 @@ struct s_node_s
 #define DO_SET(type, var, set) \
 	{ \
 	  type var; \
-	  s_node_t *iter = *set; \
+	  s_node_t *iter = *(set); \
 	  s_node_t *nxt; \
 	  for ( ; (NULL != iter); iter = nxt) \
 	    { \
 	      var = (type) (iter->data); \
 	      nxt = iter->next;
+
+#define DO_SET_WRITABLE(type, var, iter, set) \
+	{ \
+	  type var; \
+	  s_node_t *nxt; \
+	  for ((iter) = *(set) ; (NULL != (iter)); (iter) = nxt) \
+	    { \
+	      var = (type) ((iter)->data); \
+	      nxt = (iter)->next;
+
+#define DO_SET_WRITABLE2(type, var, iter, nxt, set) \
+	{ \
+	  type var; \
+	  for ((iter) = *(set) ; (NULL != (iter)); (iter) = (nxt)) \
+	    { \
+	      var = (type) ((iter)->data); \
+	      (nxt) = (iter)->next;
 
 #define END_DO_SET()   \
 	    } \
