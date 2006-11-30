@@ -619,6 +619,9 @@ void dk_alloc_assert (void *ptr)
 void
 dk_memory_initialize (int do_malloc_cache)
 {
+#ifdef UNIX
+  init_brk = (long) sbrk (0);
+#endif
   dk_box_initialize();
   strses_mem_initalize ();
 }
