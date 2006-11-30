@@ -75,12 +75,12 @@ sort -u < tmp/export_names_raw.txt > tmp/export_names.txt
 
 
 sed 's/^\(.*\)$/#define \1 (_gate._\1._ptr)/g' < tmp/export_names.txt > tmp/gate_use.txt
-sed 's/^\(.*\)$/  struct { typeof__\1 *_ptr; char *_name; } _\1;/g' < tmp/export_names.txt > tmp/gate_decl.txt
+sed 's/^\(.*\)$/  struct { typeof__\1 *_ptr; const char *_name; } _\1;/g' < tmp/export_names.txt > tmp/gate_decl.txt
 sed 's/^\(.*\)$/  { NULL, "\1" },/g' < tmp/export_names.txt > tmp/gate_idef.txt
 sed 's/^\(.*\)$/  { \&\1, "\1" },/g' < tmp/export_names.txt > tmp/gate_edef.txt
 
 sed 's/^\([^@]*\)@\(.*\)$/#define \1 (_gate._\1._ptr)/g' < tmp/export_names.txt > tmp/gate_use.txt
-sed 's/^\([^@]*\)@\(.*\)$/  struct { \2 *_ptr; char *_name; } _\1;/g' < tmp/export_names.txt > tmp/gate_decl.txt
+sed 's/^\([^@]*\)@\(.*\)$/  struct { \2 *_ptr; const char *_name; } _\1;/g' < tmp/export_names.txt > tmp/gate_decl.txt
 sed 's/^\([^@]*\)@\(.*\)$/  { NULL, "\1" },/g' < tmp/export_names.txt > tmp/gate_idef.txt
 sed 's/^\([^@]*\)@\(.*\)$/  { \&\1, "\1" },/g' < tmp/export_names.txt > tmp/gate_edef.txt
 
@@ -107,7 +107,7 @@ EOD
 cat < tmp/gate_decl.txt >> $importh
 
 cat << "EOD" >> $importh
-  struct { void *_ptr; char *_name; } _gate_end;
+  struct { void *_ptr; const char *_name; } _gate_end;
   };
 
 /* Only one instance of _gate_s will exist, and macro definitions will be used
@@ -150,7 +150,7 @@ cat << "EOD" >> $exportc
    function. At connection time, executable will fill _gate structures
    of plugins with data from this table. */
 
-struct _gate_export_item_s { void *_ptr; char *_name; };
+struct _gate_export_item_s { void *_ptr; const char *_name; };
 typedef struct _gate_export_item_s _gate_export_item_t;
 
 extern _gate_export_item_t _gate_export_data[];
