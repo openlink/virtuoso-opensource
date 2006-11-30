@@ -172,6 +172,8 @@ extern caddr_t *t_list_insert_before_nth (caddr_t list, caddr_t new_item, int po
 extern caddr_t *t_list_insert_many_before_nth (caddr_t list, caddr_t *new_items, int ins_count, int pos);
 caddr_t * t_sc_list (long n, ...);
 
+#define t_NEW_DB_NULL t_alloc_box (0, DV_DB_NULL)
+
 #ifdef MALLOC_DEBUG
 caddr_t dbg_t_box_num (const char *file, int line, ptrlong box);
 caddr_t dbg_t_box_num_and_zero (const char *file, int line, ptrlong box);
