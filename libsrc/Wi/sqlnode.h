@@ -173,19 +173,19 @@ struct query_s
 
     caddr_t		qr_proc_name;	/*!< If SQL procedure, this is the name */
     caddr_t		qr_trig_table;	/*!< If trigger, name of table */
-    char		qr_is_ddl:1;
-    char		qr_is_complete:1; /* false while trig being compiled */
-    char		qr_trig_time;	/*!< If trigger, time of launch: before/after/instead */
-    char		qr_trig_event;	/*!< If trigger, type of event: insert/delete/update */
+    bitf_t		qr_is_ddl:1;
+    bitf_t		qr_is_complete:1; /* false while trig being compiled */
+    bitf_t		qr_trig_time;	/*!< If trigger, time of launch: before/after/instead */
+    bitf_t		qr_trig_event;	/*!< If trigger, type of event: insert/delete/update */
     user_aggregate_t *  qr_aggregate;	/*!< If user-defined aggregate, this points to the implementation */
     oid_t *		qr_trig_upd_cols;
     int			qr_trig_order;
     dbe_table_t *	qr_trig_dbe_table;
     caddr_t *		qr_trig_old_cols;
     state_slot_t **	qr_trig_old_ssl;
-    char		qr_lock_mode;
-    char		qr_is_call; /* true if this is top level proc call */
-    char		qr_no_cast_error:1;
+    bitf_t 		qr_lock_mode;
+    bitf_t		qr_is_call; /* true if this is top level proc call */
+    bitf_t		qr_no_cast_error:1;
     oid_t		qr_proc_owner;
     dk_hash_t *		qr_proc_grants;
     caddr_t		qr_proc_ret_type;
@@ -200,12 +200,12 @@ struct query_s
     dk_set_t		qr_used_tables;  /* ref'd tables' qualified names */
     dk_set_t		qr_used_udts;  /* ref'd udts' qualified names */
     dk_set_t		qr_used_jsos;  /* ref'd JSO IRIs (for SPARQL queries with quad maps) */
-    char		qr_to_recompile:1;
-    char		qr_no_co_if_no_cr_name:1;	/* if select stmt exec'd from client */
-    char  		qr_text_is_constant:1;
-    char		qr_is_bunion_term:1;
-    char		qr_is_remote_proc:1;
-    char 			qr_unique_rows:1;
+    bitf_t		qr_to_recompile:1;
+    bitf_t		qr_no_co_if_no_cr_name:1;	/* if select stmt exec'd from client */
+    bitf_t  		qr_text_is_constant:1;
+    bitf_t		qr_is_bunion_term:1;
+    bitf_t		qr_is_remote_proc:1;
+    bitf_t		qr_unique_rows:1;
     char		qr_remote_mode;
     caddr_t		qr_qualifier; /* qualifier current when this was compiled */
     caddr_t		qr_owner;
@@ -462,12 +462,12 @@ typedef struct table_source_s
     key_source_t *	ts_main_ks;
     state_slot_t *	ts_order_cursor;
     state_slot_t *	ts_current_of;
-    char		ts_is_unique;	/* Only one hit expected, don't look for more */
-    char		ts_is_outer;
-    char		ts_is_random:1; /* random search */
+    bitf_t		ts_is_unique;	/* Only one hit expected, don't look for more */
+    bitf_t		ts_is_outer;
+    bitf_t		ts_is_random:1; /* random search */
     caddr_t		ts_rnd_pcnt;
-    char		ts_no_blobs;
-    char		 ts_ancestor_refd;
+    bitf_t 		ts_no_blobs;
+    bitf_t		 ts_ancestor_refd;
     code_vec_t		ts_after_join_test;
     struct inx_op_s *	ts_inx_op;
     inx_locality_t	ts_il;

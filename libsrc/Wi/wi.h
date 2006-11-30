@@ -449,8 +449,8 @@ typedef struct out_map_s
     /* placeholder_t i the common superclass of a placeholder, a bookmark whose position survives index updates, and of the index tree cursor */
 
 #define PLACEHOLDER_MEMBERS \
-  char			itc_type:3;  \
-  char			itc_is_on_row:1; \
+  bitf_t		itc_type:3;  \
+  bitf_t		itc_is_on_row:1; \
   char			itc_lock_mode; \
   short			itc_position; \
   dp_addr_t		itc_page; \
@@ -522,17 +522,17 @@ struct it_cursor_s
 
     /* Search state */
 
-    char		itc_search_mode; /* unique match or not */
-    char		it_lock_mode; /*   PL_SHARED, PL_EXCLUSIVE */
-    char		itc_isolation;
-    char		itc_has_blob_logged; /*if blob to log, can't drop blob when inlining it until commit */
-    char		itc_landed:1; /* true if found position on or between leaves, false if in initial descent through the tree */
-    char		itc_desc_order:1; /* true if reading index from end to start */
-    char		itc_no_bitmap:1;  /* ignore bitmap logic if on bitmap inx */
-    char		itc_desc_serial_landed:1; /* if set, failure to get first lock (right above the selected range) resets search */
-    char		itc_desc_serial_reset:1;
-    char		itc_is_vacuum;
-    char	        itc_random_search;
+    bitf_t 		itc_search_mode; /* unique match or not */
+    bitf_t 		it_lock_mode; /*   PL_SHARED, PL_EXCLUSIVE */
+    bitf_t		itc_isolation;
+    bitf_t		itc_has_blob_logged; /*if blob to log, can't drop blob when inlining it until commit */
+    bitf_t		itc_landed:1; /* true if found position on or between leaves, false if in initial descent through the tree */
+    bitf_t		itc_desc_order:1; /* true if reading index from end to start */
+    bitf_t		itc_no_bitmap:1;  /* ignore bitmap logic if on bitmap inx */
+    bitf_t		itc_desc_serial_landed:1; /* if set, failure to get first lock (right above the selected range) resets search */
+    bitf_t		itc_desc_serial_reset:1;
+    bitf_t		itc_is_vacuum;
+    bitf_t		itc_random_search;
     int			itc_nth_seq_page; /* in sequential read, nth consecutive page entered.  Use for starting read ahead.  */
     int			itc_n_lock_escalations; /* no of times row locks escalated to page locks on this read.  Used for claiming page lock as first choice after history of escalating */
     struct page_lock_s * itc_pl; /*page_lock_t  of the current page */

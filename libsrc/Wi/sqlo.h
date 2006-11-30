@@ -172,7 +172,7 @@ struct df_elt_s
 {
   short	dfe_type;
   char	dfe_is_placed;
-  char	dfe_unit_includes_vdb:1;
+  bitf_t	dfe_unit_includes_vdb:1;
   locus_t *	dfe_locus;
   dk_set_t	dfe_remote_locus_refs;
   ST *	dfe_tree;
@@ -200,16 +200,16 @@ struct df_elt_s
       df_elt_t **	vdb_join_test; /* the part of a remote table's join test that must be done on the vdb */
       dk_set (df_elt_t*)	out_cols;
 
-      char	is_unique:1;
-      char 	is_arity_sure:1;  /* if unique or comes from inx sample or n distinct */
-      char	is_oby_order:1;
-      char	single_locus:1;
-      char		is_text_order:1;
-      char		text_only:1;
-      char 		is_xcontains:1;
-      char 	is_locus_first:1;
-      char	gb_status;
-      char	hash_role;
+      bitf_t is_unique:1;
+      bitf_t is_arity_sure:1;  /* if unique or comes from inx sample or n distinct */
+      bitf_t is_oby_order:1;
+      bitf_t single_locus:1;
+      bitf_t is_text_order:1;
+      bitf_t text_only:1;
+      bitf_t is_xcontains:1;
+      bitf_t is_locus_first:1;
+      bitf_t gb_status;
+      bitf_t hash_role;
       /* XPATH & FT members */
       df_elt_t         *text_pred;
       df_elt_t         *xpath_pred;
