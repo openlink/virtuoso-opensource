@@ -51,6 +51,7 @@ char *f_new_dav_pass = NULL;
 
 char *java_classpath = NULL;
 int32 http_threads;
+int32 ini_http_threads;
 int32 http_thread_sz;
 int32 http_keep_alive_timeout = 15;
 long http_max_keep_alives = 200;
@@ -115,6 +116,7 @@ char *run_as_os_uname = NULL;
  */
 
 int32 c_checkpoint_sync = 2;
+int c_use_o_direct = 0;
 
 void _db_read_cfg (dbe_storage_t * dbs, char *mode);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);
@@ -582,6 +584,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   crashdump_start_dp = (dp_addr_t) (ptrlong) cfg_get_parm (wholefile, "\ncrashdump_start_dp:", 0);
   crashdump_end_dp = (dp_addr_t) (ptrlong) cfg_get_parm (wholefile, "\ncrashdump_end_dp:", 0);
   c_checkpoint_sync = (int) (ptrlong) cfg_get_parm (wholefile, "\ncheckpoint_sync_mode:", 0);
+  c_use_o_direct = (int) (ptrlong) cfg_get_parm (wholefile, "\nuse_o_direct:", 0);
   null_unspecified_params = (long) (ptrlong) cfg_get_parm(wholefile, "\nnull_unspecified_params:", 0);
   COND_PARAM("\ncase_mode:", case_mode);
   COND_PARAM("\ndo_os_calls:", do_os_calls);
