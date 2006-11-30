@@ -1756,7 +1756,7 @@ typedef struct page_rel_s
 #endif
 
 int
-it_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int pr_fill, int target_fill, int *pos_ret)
+it_compact (index_tree_t *it, buffer_desc_t * parent2, page_rel_t * pr, int pr_fill, int target_fill, int *pos_ret)
 {
   /* the pr's are filled, move the data */
   it_cursor_t itc_auto;
@@ -1764,6 +1764,7 @@ it_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int pr_fi
   it_cursor_t * itc = NULL;
   page_rel_t * target_pr;
   db_buf_t page_to;
+  buffer_desc_t * volatile parent = parent2;
   int n_target_pages, pg_fill, n_del = 0, n_ins = 0, n_leaves = 0;
   int prev_ent = 0, org_count = parent->bd_content_map->pm_count;
   int inx, first_after, first_lp_inx;
