@@ -320,7 +320,11 @@ itc_col_check (it_cursor_t * itc, search_spec_t * spec, int param_inx)
 	    numeric_from_int32 ((numeric_t) &n, n1);
 	    return (numeric_compare_dvc ((numeric_t) &n, (numeric_t) param));
 	  }
-	default: GPF_T;
+	default: 
+	  {
+	    log_error ("Unexpected param dtp=[%d]", DV_TYPE_OF (param));
+	    GPF_T;
+	  }
 	}
 
     case DV_SHORT_INT:
