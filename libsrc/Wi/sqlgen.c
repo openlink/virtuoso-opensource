@@ -2308,8 +2308,9 @@ bitmap_index_box);
       setp->setp_ties = (int) top->_.top.ties;
       if (!top->_.top.ties)
 	{
+	  s_node_t *iter;
 	  setp->setp_sorted = sqlc_new_temp (sc, "sorted", DV_UNKNOWN);
-	  DO_SET (state_slot_t *, setp_ssl, &setp->setp_keys)
+	  DO_SET_WRITABLE (state_slot_t *, setp_ssl, iter, &setp->setp_keys)
 	    {
 	      if (SSL_CONSTANT == setp_ssl->ssl_type)
 		{
@@ -2319,7 +2320,7 @@ bitmap_index_box);
 		}
 	    }
 	  END_DO_SET ();
-	  DO_SET (state_slot_t *, setp_ssl, &setp->setp_dependent)
+	  DO_SET_WRITABLE (state_slot_t *, setp_ssl, iter, &setp->setp_dependent)
 	    {
 	      if (SSL_CONSTANT == setp_ssl->ssl_type)
 		{

@@ -1244,13 +1244,14 @@ xml_expand_refs_recurse (caddr_t *tree, dk_set_t *ids, caddr_t *err_ret)
 	      END_DO_BOX;
 	      if (href_inx + 1 < (int) BOX_ELEMENTS (attrs))
 		{
+		  s_node_t *iter, *nxt;
 		  char * value = (char *)((caddr_t *)attrs)[href_inx + 1];
 		  int val_inx, found = 0;
 		  if (value[0] == '#')
 		    value++;
 
 		  val_inx = 0;
-		  DO_SET (char *, id, ids)
+		  DO_SET_WRITABLE2 (char *, id, iter, nxt, ids)
 		    {
 		      if (val_inx % 2 == 0 && nxt && nxt->data && !strcmp (value, id))
 			{

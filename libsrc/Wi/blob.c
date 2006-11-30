@@ -1367,9 +1367,10 @@ void
 blob_log_replace (it_cursor_t * it, blob_layout_t * bl)
 {
   dp_addr_t start = bl->bl_start;
+  s_node_t *iter;
   if (REPL_NO_LOG == it->itc_ltrx->lt_replicate)
     return;
-  DO_SET (blob_log_t *, blob_log, &(it->itc_ltrx->lt_blob_log))
+  DO_SET_WRITABLE (blob_log_t *, blob_log, iter, &(it->itc_ltrx->lt_blob_log))
   {
     if (blob_log && blob_log->bl_start == start)
       {

@@ -2799,12 +2799,13 @@ sqlo_tb_check_contradiction (sqlo_t *so, df_elt_t *tb_dfe, dk_set_t preds)
 {
   if (!so->so_this_dt->ot_is_contradiction && !tb_dfe->_.table.ot->ot_is_outer)
     {
-      DO_SET (df_elt_t *, pred, &preds)
+      s_node_t *iter;
+      DO_SET_WRITABLE (df_elt_t *, pred, iter, &preds)
 	{
 	  if (sqlo_pred_contradiction (so, pred, 0))
 	    {
 	      so->so_this_dt->ot_is_contradiction = 1;
-	      nxt = NULL;
+	      break;
 	    }
 	  else
 	    {
@@ -2814,12 +2815,12 @@ sqlo_tb_check_contradiction (sqlo_t *so, df_elt_t *tb_dfe, dk_set_t preds)
 		  if (sqlo_preds_contradiction (so, tb_dfe, pred, pred2))
 		    {
 		      so->so_this_dt->ot_is_contradiction = 1;
-		      nxt = NULL;
+		      break;
 		    }
 		}
 	      END_DO_SET ();
 	      if (so->so_this_dt->ot_is_contradiction == 1)
-		nxt = NULL;
+		break;
 	    }
 	}
       END_DO_SET ();
@@ -3116,7 +3117,8 @@ sqlo_parse_tree_count_node (ST *tree, long *nodes, int n_nodes)
 void
 sqlo_tb_check_invariant_preds (sqlo_t *so, df_elt_t *tb_dfe, dk_set_t preds)
 {
-  DO_SET (df_elt_t *, pred, &preds)
+  s_node_t *iter;
+  DO_SET_WRITABLE (df_elt_t *, pred, iter, &preds)
     {
       if (DFE_IS_INVARIANT (pred) &&
 	  (DFE_BOP_PRED == pred->dfe_type || DFE_BOP == pred->dfe_type) &&
@@ -3565,11 +3567,12 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   fill_dfe->dfe_unit = fill_unit;
   {
     int old_mode = so->so_place_code_forr_cond;
+    s_node_t *iter;
     df_elt_t * old_pt = so->so_gen_pt;
     df_elt_t * fill_container = dfe_container (so, DFE_PRED_BODY, dfe);
     so->so_gen_pt = fill_container->_.sub.first;
     so->so_place_code_forr_cond = 1;
-    DO_SET (df_elt_t *, h_key, &hash_keys)
+    DO_SET_WRITABLE (df_elt_t *, h_key, iter, &hash_keys)
       {
 	/* expression hash temp keys must be copied.  The same can be placed elsewhere. Unplacing an exp placed in many places is a consistency problem */
 	if (DFE_COLUMN != h_key->dfe_type && DFE_CONST != h_key->dfe_type)
@@ -4572,8 +4575,9 @@ inx_op_copy (sqlo_t * so, df_inx_op_t * dio,
     }
   else if (dio->dio_terms)
     {
+      s_node_t *iter;
       copy->dio_terms = t_set_copy (dio->dio_terms);
-      DO_SET (df_inx_op_t *, term, &copy->dio_terms)
+      DO_SET_WRITABLE (df_inx_op_t *, term, iter, &copy->dio_terms)
 	{
 	  iter->data = (void*) inx_op_copy (so, term, org_tb_dfe, tb_dfe);
 	}

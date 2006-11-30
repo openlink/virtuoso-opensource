@@ -1620,8 +1620,9 @@ udt_try_instantiable (dbe_schema_t * sc, sql_class_t * udt, caddr_t * err_ret)
     }
   for (inx = 0; inx < UDT_N_METHODS (udt); inx++)
     {
+      s_node_t *iter;
       int check_depth = 0;
-      DO_SET (sql_method_t *, mtd, &set)
+      DO_SET_WRITABLE (sql_method_t *, mtd, iter, &set)
       {
 	if (!strcmp (mtd->scm_name, udt->scl_methods[inx].scm_name) &&
 	    0 == udt_method_sig_distance (mtd->scm_signature,

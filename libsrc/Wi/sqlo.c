@@ -1960,8 +1960,9 @@ sqlo_bop_expand_or (sqlo_t * so, ST * tree)
 	    }
 	  DO_SET (dk_set_t, and_list, &and_lists)
 	    {
+	      s_node_t *iter;
 	      int have_it_here = 0;
-	      DO_SET (ST *, and_elt, &and_list)
+	      DO_SET_WRITABLE (ST *, and_elt, iter, &and_list)
 		{
 		  if (BIN_EXP_P (first_and_elt) && BIN_EXP_P (and_elt) &&
 		      first_and_elt->type != and_elt->type &&
@@ -1991,9 +1992,10 @@ next_or:;
 next_and:
 	  if (have_it_everywhere)
 	    {
+	      s_node_t *iter;
 	      t_st_and (&additional_ands, first_and_elt);
 	      t_set_delete (&first_and_list, first_and_elt);
-	      DO_SET (dk_set_t, and_list, &and_lists)
+	      DO_SET_WRITABLE (dk_set_t, and_list, iter, &and_lists)
 		{
 		  t_set_delete (&and_list, first_and_elt);
 		  iter->data = and_list;
