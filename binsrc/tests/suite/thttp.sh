@@ -49,6 +49,9 @@ LOGFILE=`pwd`/thttp.output
 export LOGFILE
 . ./test_fn.sh
 
+PLUGINDIR=${PLUGINDIR-$HOME/lib/}
+export PLUGINDIR
+
 SSL=`cat $HOME/Makeconfig | grep BUILD_OPTS | grep ssl`
 
 DSN=$PORT
@@ -718,6 +721,10 @@ KeepAliveTimeout = 15
 MaxCachedProxyConnections = 10
 ProxyConnectionCacheTimeout = 15
 
+[Plugins]
+LoadPath = $PLUGINDIR
+Load1 = plain, wbxml2
+
 [URIQA]
 DefaultHost = localhost:$HTTPPORT
 END_HTTP1
@@ -976,12 +983,18 @@ case $1 in
        fi
    fi
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tsyncml.sql 
-   if test $STATUS -ne 0
-   then
-      LOG "***ABORTED: tsyncml.sql"
-      exit 1
-   fi
+
+#if [ -f $PLUGINDIR/wbxml2.so ]
+#then
+#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tsyncml.sql 
+#   if test $STATUS -ne 0
+#   then
+#      LOG "***ABORTED: tsyncml.sql"
+#      exit 1
+#   fi
+#   else
+#      LOG "SKIP      : tsyncml.sql"
+#fi
 
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoapcpl.sql 
    if test $STATUS -ne 0
