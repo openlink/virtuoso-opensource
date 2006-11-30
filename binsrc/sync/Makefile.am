@@ -24,4 +24,4 @@
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = drop.sql syncml.sql sync.sql sync.vsp wbxml.sql
+EXTRA_DIST = drop.sql syncml.sql sync.sql sync.vsp wbxml.sql make_vad.sh
