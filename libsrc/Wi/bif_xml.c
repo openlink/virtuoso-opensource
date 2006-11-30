@@ -251,7 +251,7 @@ xn_ns_name (xp_node_t * xn, char * name, int use_default)
   ctx_xn = xn;
   while (ctx_xn)
     {
-      size_t n_ns = ctx_xn->xn_namespaces ? BOX_ELEMENTS (ctx_xn->xn_namespaces) : 0;
+      size_t n_ns = BOX_ELEMENTS_0 (ctx_xn->xn_namespaces);
       for (nsinx = 0; nsinx < n_ns; nsinx += 2)
 	{
 	  char *ctxname = ctx_xn->xn_namespaces[nsinx];
