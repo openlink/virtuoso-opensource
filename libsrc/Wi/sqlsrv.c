@@ -683,6 +683,7 @@ client_connection_free (client_connection_t * cli)
     }
   LEAVE_TXN;
 #endif
+  dk_free_tree (cli->cli_info);
   dk_free ((caddr_t) cli, sizeof (client_connection_t));
 }
 
@@ -1093,7 +1094,10 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 
   cli = client_connection_create ();
   if (info)
+    {
     cli->cli_user_info = box_dv_short_string (info[LGID_APP_NAME]);
+      cli->cli_info = box_copy_tree (info);
+    }
   DKS_DB_DATA (client) = cli;
   cli->cli_session = client;
 
@@ -3208,8 +3212,8 @@ cov_load (void)
 void
 sql_code_global_init ()
 {
-  sqls_define_ddk ();
   sqls_define_sparql ();
+  sqls_define_ddk ();
   sqls_define_dav ();
   cache_resources();
   sqls_define_2pc ();
@@ -3240,11 +3244,11 @@ sql_code_arfw_global_init ()
 {
   ddl_scheduler_arfw_init ();
 
+  sqls_arfw_define_sparql ();
   sqls_arfw_define ();
   sqls_arfw_define_blog ();
   sqls_arfw_define_1 ();
   sqls_arfw_define_ddk ();
-  sqls_arfw_define_sparql ();
   sqls_arfw_define_dav ();
 
   sqls_arfw_define_adm ();

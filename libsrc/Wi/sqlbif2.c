@@ -721,6 +721,13 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         is_on = 0;
       return box_num (is_on);
     }
+  else if (!stricmp ("connect_attrs", mode))
+    {
+      if (qi->qi_client->cli_info)
+	return box_copy_tree (qi->qi_client->cli_info);
+      else
+	return NEW_DB_NULL;
+    }
   else
     {
       *err_ret = srv_make_new_error ("22005", "SR403", " %s is not valid client_attr option", mode);

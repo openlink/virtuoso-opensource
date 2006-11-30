@@ -610,6 +610,7 @@ cli_status_report (dk_session_t * ses)
 {
   client_connection_t *cli = DKS_DB_DATA (ses);
   user_t * user;
+  char from[16] = "";
   if (!cli)
     return;
   user = cli->cli_user;
@@ -619,6 +620,16 @@ cli_status_report (dk_session_t * ses)
       user && user->usr_name ? user->usr_name : "unknown", (OFF_T_PRINTF_DTP) ses->dks_bytes_received,
       (OFF_T_PRINTF_DTP) ses->dks_bytes_sent,
       cli->cli_statements->ht_inserts - cli->cli_statements->ht_deletes);
+  if (ARRAYP(cli->cli_info) && BOX_ELEMENTS (cli->cli_info) > 5)
+    {
+      caddr_t app_name = cli->cli_info[0];
+      tcpses_print_client_ip (ses->dks_session, from, sizeof (from));
+      rep_printf ("PID: %ld, OS: %s, Application: %s, IP#: %s\n", 
+	  	(long) (cli->cli_info[1]), 
+		cli->cli_info[3], 
+		app_name[0] ? app_name : "unknown",
+		from);
+    }
   if (!cli->cli_trx)
     return;
   trx_status_report (cli->cli_trx);
@@ -946,6 +957,10 @@ status_report (const char * mode)
       st_started_since_hour = ts.hour;
       st_started_since_minute = ts.minute;
     }
+
+  rep_printf ("Started on: %04d/%02d/%02d %02d:%02d GMT%+03d\n", 
+      st_started_since_year, st_started_since_month, st_started_since_day, 
+      st_started_since_hour, st_started_since_minute, dt_local_tz);
 
   process_status_report ();
   dbms_status_report ();
@@ -2605,9 +2620,7 @@ srv_collect_inx_space_stats (caddr_t *err_ret, query_instance_t *qi)
       err = srv_make_new_error ("42000", "SR467", "Error collecting the stats");
     }
   END_FAIL (it);
-
-  dk_free ((void*) buf->bd_buffer, -1);
-  dk_free ((void*)buf, -1);
+  buffer_free (buf);
   dbg_printf_1 (("after pages collection\n"));
 
   itc_free (it);

@@ -1039,6 +1039,7 @@ typedef struct client_connection_s
     int			cli_inprocess;
 #endif
     long		cli_start_time;
+    caddr_t *		cli_info;
   } client_connection_t;
 
 #ifdef INPROCESS_CLIENT
