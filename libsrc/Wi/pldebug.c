@@ -540,6 +540,32 @@ pldbg_get_qr (char * name)
     return NULL;
 
   qr = sch_proc_def (wi_inst.wi_schema, name);
+  if (!qr) /* triggers */
+    {
+      dbe_table_t *tb;
+      char * tb_name = strchr (name, '@'), *trig_name = name;
+
+      if (!tb_name)
+	goto try_udt;
+
+      *tb_name = 0;
+      tb_name ++;
+      tb = sch_name_to_table (isp_schema (NULL), tb_name);
+
+      if (!tb) 
+	goto try_udt;
+
+      DO_SET (query_t *, trig_qr, &tb->tb_triggers->trig_list)
+	{
+	  if (!CASEMODESTRCMP (trig_name, trig_qr->qr_proc_name))
+	    {
+	      qr = trig_qr;
+	      break;
+	    }
+	}
+      END_DO_SET ();
+    }
+try_udt:
   if (!qr)
     {
       sql_class_t *udt;
