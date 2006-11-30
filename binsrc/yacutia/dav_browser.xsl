@@ -307,6 +307,9 @@
           <v:template name="title_template"
                       type="simple"
                       enabled="--case when (aref (self.vc_page.vc_event.ve_path, length (self.vc_page.vc_event.ve_path) - 1) <> 'cont_page.vspx') then 1 else 0 end">
+        <div id="dav_br_popup_banner_ico">
+		      <a href="#" style="text-decoration:none;" onclick="javascript: if (opener != null) opener.focus(); window.close()"><img src="images/dav_browser/close_16.png" border="0" hspace="2" alt="Close"/>Close</a>
+        </div>
             <div id="dav_br_popup_banner">
               <h3>
                   <v:label name="title_label" value="--self.title" format="%s"/>
@@ -2248,7 +2251,7 @@ else
                             <button type="button" onclick="directive_add()"><img src="images/icons/add_16.png" alt="Add directive"/>&nbsp;Add Directive</button> 
                             Selected:
                             <button type="button" onclick="directive_rm_sel()"><img src="images/icons/trash_16.png" alt="Delete instructions"/>&nbsp;Delete Directive</button>
-                            <button type="button" onclick="directive_rm_all()"><img src="images/icons/trash_16.png" alt="Delete All"/>&amp;nbsp;Delete All</button>
+                            <button type="button" onclick="directive_rm_all()"><img src="images/icons/trash_16.png" alt="Delete All"/>&nbsp;Delete All</button>
                             <!--<a href="#" class="inline_hlp">?</a>-->
                           </div> <!-- wg_cmd_button_row -->
                         </div> <!-- wg_view_switch_vport -->
