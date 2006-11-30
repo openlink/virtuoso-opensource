@@ -85,14 +85,6 @@ public class TestExecuteFetch
                      else
                         System.out.print(s + "\t");
                   }
-                  else
-                  {
-                     short s = stmt.getResultSet().getShort(i);
-                     if(stmt.getResultSet().wasNull())
-                        System.out.print("NULL\t");
-                     else
-                        System.out.print(s + "\t");
-                  }
                }
             System.out.println();
             more = stmt.getMoreResults();
