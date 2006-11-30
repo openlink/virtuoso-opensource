@@ -37,6 +37,7 @@
 #include "sqlcmps.h"
 #include "sqlfn.h"
 #include "security.h"
+#include "sqlo.h"
 #include "sqlofn.h"
 
 
@@ -134,13 +135,15 @@ key_cl_count (dbe_col_loc_t * cls)
 void
 setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
 {
+  int quietcast = DFE_DT == sc->sc_so->so_dfe->dfe_type ?
+    NULL != sqlo_opt_value (sc->sc_so->so_dfe->_.sub.ot->ot_opts, OPT_SPARQL) : 0;
   int inx;
   int n_keys = dk_set_length (setp->setp_keys);
   int n_deps = dk_set_length (setp->setp_dependent);
   NEW_VARZ (hash_area_t, ha);
   DO_SET (state_slot_t *, ssl, &setp->setp_keys)
     {
-      if (IS_BLOB_DTP (ssl->ssl_sqt.sqt_dtp))
+      if (!quietcast && IS_BLOB_DTP (ssl->ssl_sqt.sqt_dtp))
 	sqlc_new_error (sc->sc_cc, "42000", "SQ186",
 	    "Long data types not allowed for distinct, order, "
 	    "group or join condition columns (%s)", ssl->ssl_name);

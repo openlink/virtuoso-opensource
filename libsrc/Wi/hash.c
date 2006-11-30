@@ -715,7 +715,7 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
   caddr_t err = NULL;
   db_buf_t hash_row;
   dbe_key_t * key = ha->ha_key;
-  int v_fill = key->key_row_var_start;
+  volatile int v_fill = key->key_row_var_start;
   int row_len, key_len;
   int inx;
   int hmk_data_els = ((NULL != hmk_data) ? BOX_ELEMENTS (hmk_data) : 0);
@@ -834,6 +834,8 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
 	}
     }
   row_len = ROW_ALIGN (row_len);
+  if (qi->qi_no_cast_error && HA_DISTINCT == ha->ha_op && row_len > MAX_ROW_BYTES)
+    return; /* if it is too long, it is considered distinct and not remembered */
   if (!hash_buf
 #ifdef OLD_HASH
       || hb_fill + row_len > PAGE_SZ
@@ -935,7 +937,36 @@ check_err:
 	sqlr_resignal (err);
     }
   if (row_len - IE_FIRST_KEY != ROW_ALIGN (v_fill))
+    {
+#if 1 /* debug dump of the values */     
+      FILE *dfile = fopen ("hvars_dump.txt", "w");
+      if (dfile)
+	{
+	  fprintf (dfile, "=== variables dump ===\n");
+	  for (inx = 0; ha->ha_key_cols[inx].cl_col_id; inx++)
+	    {
+	      state_slot_t * ssl  = ha->ha_slots[inx];
+	      caddr_t value;
+	      if (ssl && NULL == hmk_data)
+		{
+		  value = QST_GET (qst, ssl);
+		  fprintf (dfile, "inx=%d\n", inx);
+		  dbg_print_box (value, dfile);
+		  fprintf (dfile, "\n");
+		}
+	      else
+		{
+		  fprintf (dfile, "inx=%d, ssl==NULL or hmk_data != NULL\n", inx);
+		}
+	    }
+	  fprintf (dfile, "=== end dump ===\n");
+	  fflush (dfile);
+	  fclose (dfile);
+	}
+#endif      
+      log_error ("Incorrect row length in hash space fill : row_len=%d, v_fill=%d", row_len, v_fill);
     GPF_T1 ("Incorrect row length calculation in hash space fill");
+    }
 #ifdef OLD_HASH
   hi_add (tree->it_hi, code, hash_buf->bd_page, hb_fill);
 #endif
@@ -1306,6 +1337,8 @@ int itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsign
 	{
 	  caddr_t value = QST_GET (qst, ssl);
 	  dtp_t dtp = DV_TYPE_OF (value);
+	  if (qi->qi_no_cast_error && HA_DISTINCT == ha->ha_op && IS_BLOB_HANDLE_DTP (dtp))
+	    return DVC_LESS;
 	  if (!ha->ha_allow_nulls && DV_DB_NULL == dtp)
 	    return DVC_MATCH;
 	  if (dtp != ha->ha_key_cols[inx].cl_sqt.sqt_dtp)
@@ -1378,7 +1411,7 @@ int itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsign
 	deps[inx] = box_copy_tree (QST_GET (qst, ha->ha_slots[n_keys+inx]));
       id_hash_set (hi->hi_memcache, (caddr_t)(&hmk), (caddr_t)(&deps));
       /* Now we have the data stored so we can check for overflow */
-      if ((!ha->ha_memcache_only) && /* hi->hi_memcache->ht_inserts > (3 * hi->hi_memcache->ht_buckets)*/
+      if ((!ha->ha_memcache_only) && 
 	  ((long) hi->hi_memcache->ht_count) > hi_end_memcache_size
 	  )
         do_flush = 1;
@@ -1396,35 +1429,12 @@ int itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsign
   ret->ihfr_memcached = 0;
 
   itc = (it_cursor_t *) QST_GET_V (qst, ha->ha_insert_itc);
-#if 0
-  row = /*itc ? itc->itc_row_data :*/ NULL;
-#endif
   if (do_flush)
     {
       itc_ha_flush_memcache (ha, qst);
-#ifdef OLD_HASH
-      he = HI_BUCKET (hi, code);
-#endif
-#ifdef NEW_HASH
-      HI_BUCKET_PTR (hi, code, bp_ref_itc, &hibp, PA_WRITE);
-#endif
-#ifdef DEBUG
+      /* if it is quietcast and len overflows, then maybe the hash is even empty */
       if (HA_FILL == ha->ha_op)
         GPF_T;
-#ifdef USE_OLD_HASH
-      if (HI_EMPTY == he->he_next)
-#else
-      if (!hibp.hibp_page)
-#endif
-	GPF_T;
-#endif
-#ifdef USE_OLD_HASH
-      if (DVC_MATCH != itc_ha_disk_find (itc, &(ret->ihfr_disk_buf), &(ret->ihfr_disk_pos), ha, qst, &he, code))
-#else
-      if (DVC_MATCH != itc_ha_disk_find_new (itc, &(ret->ihfr_disk_buf), &(ret->ihfr_disk_pos), ha, qst, code,
-	hibp.hibp_page, hibp.hibp_pos))
-#endif
-        GPF_T1("internal error in flushing memory-resident temporary hashtable to disk");
       return DVC_LESS;
     }
 #ifdef OLD_HASH
