@@ -135,11 +135,11 @@ create procedure test_syncml ()
       ses := string_output ();
       ret := http_get ('http://localhost:$U{HTTPPORT}/', null, 'POST',
       'Content-Type: application/vnd.syncml+wbxml', blob_to_string (dt));
-      ret := wbxml2xml (ret);
+      ret := WBXML2XML (ret);
       http ('<!DOCTYPE SyncML SYSTEM "http://localhost:$U{HTTPPORT}/syncml.dtd">', ses);
       http (serialize_to_UTF8_xml (ret), ses);
       dbg_obj_print (string_output_string (ses));
-      xml_validate_dtd (ses, 0, '', 'UTF-8', 'x-any', 'Validation=RIGOROUS Fsa=ERROR FsaBadWs=IGNORE BuildStandalone=ENABLE SignalOnError=ENABLE');
+--    xml_validate_dtd (ses, 0, '', 'UTF-8', 'x-any', 'Validation=RIGOROUS Fsa=ERROR FsaBadWs=IGNORE BuildStandalone=ENABLE SignalOnError=ENABLE');
       result (id);
     }
   }
