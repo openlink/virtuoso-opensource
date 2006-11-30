@@ -1053,6 +1053,33 @@ ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": bug 10188 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 
+create procedure test_cursor_pars ()
+{
+  declare rw, tmp, inx int;
+  declare cr cursor for select ROW_NO from T1 where ROW_NO > rw;
+  rw := '';
+  inx := 0;
+  whenever not found goto _end;
+  open cr (prefetch 1);
+  while (1)
+    {
+      fetch cr into tmp;
+      rw := tmp;
+      if (mod (inx, 2) = 0)
+	rw := cast (tmp as varchar);
+      inx := inx + 1;
+      --if (inx > 10)
+	--goto _end;
+    }
+ _end:
+  close cr;
+  return inx;
+};
+
+
+select test_cursor_pars ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": search param changed on oppened cursor STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 
 
