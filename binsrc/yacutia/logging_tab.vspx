@@ -58,6 +58,9 @@
       <v:template name="template9" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '9')">
         <v:include url="logging_view.vspx"/>
       </v:template>
+      <v:template name="template10" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '10')">
+        <v:include url="logging_cli.vspx"/>
+      </v:template>
 </v:page>
 <?vsp 
   declare _xslt, _ppath varchar;

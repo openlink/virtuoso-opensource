@@ -62,267 +62,40 @@
                       <col/>
                     </colgroup>
                     <tr>
-                      <v:template name="tabTemplate1" type="simple" instantiate="-- case when(get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Version &amp; License Information
+		      <?vsp
+                      declare pg int;
+		      pg := atoi (get_keyword('page', self.vc_event.ve_params, '1'));
+	              ?>
+			<td class="<?V case when pg = 1 then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                          <v:url name="b_url21" value="Version &amp; License Information" format="%s" url="logging_page.vspx?page=1" xhtml_class="uddi"/>
                         </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url12" value="--'DB Server'" format="%s" url="--'logging_page.vspx?page=2'" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 2 then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                          <v:url name="b_url12" value="DB Server" format="%s" url="logging_page.vspx?page=2" xhtml_class="uddi"/>
                         </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url13" value="--'Disk'" format="%s" url="--'logging_page.vspx?page=3'" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 3 then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                          <v:url name="b_url13" value="Disk" format="%s" url="logging_page.vspx?page=3" xhtml_class="uddi"/>
                         </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url14" value="--'Index'" format="%s" url="--'logging_page.vspx?page=4'" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 4 then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                          <v:url name="b_url14" value="Index" format="%s" url="logging_page.vspx?page=4" xhtml_class="uddi"/>
                         </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url15" value="--'Locks'" format="%s" url="--'logging_page.vspx?page=5'" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 5 then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                          <v:url name="b_url15" value="Locks" format="%s" url="logging_page.vspx?page=5" xhtml_class="uddi"/>
                         </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url16" value="--'Space'" format="%s" url="--'logging_page.vspx?page=6'" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 6 then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                          <v:url name="b_url16" value="Space" format="%s" url="logging_page.vspx?page=6" xhtml_class="uddi"/>
                         </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url17" value="--'HTTP Server'" format="%s" url="--'logging_page.vspx?page=7'" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 7 then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                          <v:url name="b_url17" value="HTTP Server" format="%s" url="logging_page.vspx?page=7" xhtml_class="uddi"/>
                         </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url18" value="--'Profiling'" format="%s" url="--'logging_page.vspx?page=8'" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 8 then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                          <v:url name="b_url18" value="Profiling" format="%s" url="logging_page.vspx?page=8" xhtml_class="uddi"/>
                         </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url19" value="--'Log Viewer'" format="%s" url="--'logging_page.vspx?page=9'" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 9 then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                          <v:url name="b_url19" value="Log Viewer" format="%s" url="logging_page.vspx?page=9" xhtml_class="uddi"/>
                         </td>
-                      </v:template>
-                      <v:template name="tabTemplate2" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url21" value="--'Version & License Information'" format="%s" url="--'logging_page.vspx?page=1'" xhtml_class="uddi"/>
+			<td class="<?V case when pg = 10 then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                          <v:url name="b_url20" value="Client Sessions" format="%s" url="logging_page.vspx?page=10" xhtml_class="uddi"/>
                         </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          DB Server
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url23" value="--'Disk'" format="%s" url="--'logging_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url24" value="--'Index'" format="%s" url="--'logging_page.vspx?page=4'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url25" value="--'Locks'" format="%s" url="--'logging_page.vspx?page=5'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url26" value="--'Space'" format="%s" url="--'logging_page.vspx?page=6'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url27" value="--'HTTP Server'" format="%s" url="--'logging_page.vspx?page=7'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url28" value="--'Profiling'" format="%s" url="--'logging_page.vspx?page=8'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url29" value="--'Log Viewer'" format="%s" url="--'logging_page.vspx?page=9'" xhtml_class="uddi"/>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate3" type="simple" instantiate="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '3')">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url31" value="--'Version & License Information'" format="%s" url="--'logging_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url32" value="--'DB Server'" format="%s" url="--'logging_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Disk
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url34" value="--'Index'" format="%s" url="--'logging_page.vspx?page=4'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url35" value="--'Locks'" format="%s" url="--'logging_page.vspx?page=5'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url36" value="--'Space'" format="%s" url="--'logging_page.vspx?page=6'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url37" value="--'HTTP Server'" format="%s" url="--'logging_page.vspx?page=7'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url38" value="--'Profiling'" format="%s" url="--'logging_page.vspx?page=8'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url39" value="--'Log Viewer'" format="%s" url="--'logging_page.vspx?page=9'" xhtml_class="uddi"/>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate4" type="simple" instantiate="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '4')">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url41" value="--'Version & License Information'" format="%s" url="--'logging_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url42" value="--'DB Server'" format="%s" url="--'logging_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url43" value="--'Disk'" format="%s" url="--'logging_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Index
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url45" value="--'Locks'" format="%s" url="--'logging_page.vspx?page=5'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url46" value="--'Space'" format="%s" url="--'logging_page.vspx?page=6'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url47" value="--'HTTP Server'" format="%s" url="--'logging_page.vspx?page=7'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url48" value="--'Profiling'" format="%s" url="--'logging_page.vspx?page=8'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url49" value="--'Log Viewer'" format="%s" url="--'logging_page.vspx?page=9'" xhtml_class="uddi"/>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate5" type="simple" instantiate="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '5')">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url51" value="--'Version & License Information'" format="%s" url="--'logging_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url52" value="--'DB Server'" format="%s" url="--'logging_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url53" value="--'Disk'" format="%s" url="--'logging_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url54" value="--'Index'" format="%s" url="--'logging_page.vspx?page=4'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Locks
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url56" value="--'Space'" format="%s" url="--'logging_page.vspx?page=6'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url57" value="--'HTTP Server'" format="%s" url="--'logging_page.vspx?page=7'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url58" value="--'Profiling'" format="%s" url="--'logging_page.vspx?page=8'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url59" value="--'Log Viewer'" format="%s" url="--'logging_page.vspx?page=9'" xhtml_class="uddi"/>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate6" type="simple" instantiate="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '6')">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url61" value="--'Version & License Information'" format="%s" url="--'logging_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url62" value="--'DB Server'" format="%s" url="--'logging_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url63" value="--'Disk'" format="%s" url="--'logging_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url64" value="--'Index'" format="%s" url="--'logging_page.vspx?page=4'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url65" value="--'Locks'" format="%s" url="--'logging_page.vspx?page=5'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Space
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url67" value="--'HTTP Server'" format="%s" url="--'logging_page.vspx?page=7'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url68" value="--'Profiling'" format="%s" url="--'logging_page.vspx?page=8'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url69" value="--'Log Viewer'" format="%s" url="--'logging_page.vspx?page=9'" xhtml_class="uddi"/>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate7" type="simple" instantiate="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '7')">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url71" value="--'Version & License Information'" format="%s" url="--'logging_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url72" value="--'DB Server'" format="%s" url="--'logging_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url73" value="--'Disk'" format="%s" url="--'logging_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url74" value="--'Index'" format="%s" url="--'logging_page.vspx?page=4'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url75" value="--'Locks'" format="%s" url="--'logging_page.vspx?page=5'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url76" value="--'Space'" format="%s" url="--'logging_page.vspx?page=6'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          HTTP Server
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url78" value="--'Profiling'" format="%s" url="--'logging_page.vspx?page=8'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url79" value="--'Log Viewer'" format="%s" url="--'logging_page.vspx?page=9'" xhtml_class="uddi"/>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate8" type="simple" instantiate="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '8')">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url81" value="--'Version & License Information'" format="%s" url="--'logging_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url82" value="--'DB Server'" format="%s" url="--'logging_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url83" value="--'Disk'" format="%s" url="--'logging_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url84" value="--'Index'" format="%s" url="--'logging_page.vspx?page=4'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url85" value="--'Locks'" format="%s" url="--'logging_page.vspx?page=5'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url86" value="--'Space'" format="%s" url="--'logging_page.vspx?page=6'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url87" value="--'HTTP Server'" format="%s" url="--'logging_page.vspx?page=7'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Profiling
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url89" value="--'Log Viewer'" format="%s" url="--'logging_page.vspx?page=9'" xhtml_class="uddi"/>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate9" type="simple" instantiate="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '9')">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url91" value="--'Version & License Information'" format="%s" url="--'logging_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url92" value="--'DB Server'" format="%s" url="--'logging_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url93" value="--'Disk'" format="%s" url="--'logging_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url94" value="--'Index'" format="%s" url="--'logging_page.vspx?page=4'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url95" value="--'Locks'" format="%s" url="--'logging_page.vspx?page=5'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url96" value="--'Space'" format="%s" url="--'logging_page.vspx?page=6'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url97" value="--'HTTP Server'" format="%s" url="--'logging_page.vspx?page=7'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url98" value="--'Profiling'" format="%s" url="--'logging_page.vspx?page=8'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Log Viewer
-                        </td>
-                      </v:template>
                       <td class="page_tab_empty" align="center" width="100%">
                         <table cellpadding="0" cellspacing="0">
                           <tr>
@@ -443,6 +216,9 @@
                           <v:template name="template9" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '9')">
                             <v:include url="logging_view.vspx"/>
                           </v:template>
+			<v:template name="template10" type="simple" instantiate="-- equ(get_keyword('page', self.vc_event.ve_params), '10')">
+                          <v:include url="logging_cli.vspx"/>
+                        </v:template>
                       </td>
                     </tr>
                   </table>

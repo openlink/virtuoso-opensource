@@ -218,6 +218,7 @@ conductor/logging_space.vspx
 conductor/logging_view.vspx
 conductor/logging_tab.vspx
 conductor/logging_tab.xsl
+conductor/logging_cli.vspx
 conductor/main_tabs.vspx
 conductor/make.xsl
 conductor/mapped_schema_xml.vspx
