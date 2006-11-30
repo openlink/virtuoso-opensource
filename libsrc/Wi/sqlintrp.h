@@ -336,4 +336,5 @@ caddr_t subq_next (query_t * subq, caddr_t * inst, int cr_state);
 void subq_init (query_t * subq, caddr_t * inst);
 
 void ins_call (instruction_t * ins, caddr_t * qst, code_vec_t code_vec);
+void ks_check_params_changed (it_cursor_t * itc, key_source_t * ks, caddr_t * state);
 #endif /* _SQLINTRP_H */

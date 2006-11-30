@@ -919,6 +919,25 @@ ins_fetch (instruction_t * ins, caddr_t * qst)
       sqlr_new_error ("24000", "SR190", "Fetch of unopened cursor.");
     }
 
+  /* 
+     On open cursor, chech the params and if they changed , re-bind them
+   */
+  if (cr_state == CR_OPEN)
+    {
+      query_t * qr = ins->_.fetch.query;
+      dk_set_t nodes = qr->qr_bunion_reset_nodes ? qr->qr_bunion_reset_nodes : qr->qr_nodes;
+      DO_SET (table_source_t *, ts, &nodes)
+	{
+	  if (ts->src_gen.src_input == (qn_input_fn) table_source_input && ts->ts_order_ks)
+	    {
+	      it_cursor_t *volatile order_itc = TS_ORDER_ITC (ts, qst);
+	      if (order_itc && order_itc->itc_type == ITC_CURSOR)
+		ks_check_params_changed (order_itc, ts->ts_order_ks, qst);
+	    }
+	}
+      END_DO_SET();
+    }
+
   err = subq_next (ins->_.fetch.query, qst, cr_state);
   if (err != SQL_SUCCESS)
     {
@@ -1276,7 +1295,13 @@ void err_append_callstack_param (caddr_t err, caddr_t param_name, caddr_t param_
       switch (DV_TYPE_OF (param_value))
 	{
 	case DV_STRING:
-	  param_print = box_sprintf (200, "\"%.100s\"%s", param_value,
+	  param_print = box_sprintf (200, "'%.100s'%s", param_value,
+	    ( ((box_length (param_value) > 100) ||
+	      (box_length (param_value) != (strlen (param_value) + 1))) ?
+	      " (truncated)" : "") );
+	  break;
+        case DV_UNAME:
+	  param_print = box_sprintf (200, "UNAME'%.100s'%s", param_value,
 	    ( ((box_length (param_value) > 100) ||
 	      (box_length (param_value) != (strlen (param_value) + 1))) ?
 	      " (truncated)" : "") );
