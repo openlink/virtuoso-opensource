@@ -2077,7 +2077,7 @@ create procedure "DB"."DBA"."VAD_LOAD_SQL_FILE" (
         if (not (parsed_text[i] like 'drop %'))
         {
           if (registry_get ('VAD_wet_run') <> '0')
-            log_message();
+            log_message(err_rep);
           result (err_sqlstate, err_rep);
           registry_set ('VAD_errcount', cast (1 + cast (registry_get ('VAD_errcount') as integer) as varchar));
         }
