@@ -27,6 +27,19 @@
 --vhost_define (lpath => '/', ppath => '/sync/', vsp_user => 'dba',
 --    is_brws => 0, def_page => 'sync.vsp');
 
+create procedure syncml_exec_no_error (in text varchar)
+{
+  log_enable(1);
+  declare exit handler for sqlstate  '*' {
+        rollback work;
+        return;
+  };
+  exec (text);
+  commit work;
+}
+;
+
+syncml_exec_no_error ('
 create table SYNC_DEVICES (
   DEV_ID integer identity,
   DEV_USER_ID integer,   -- references WS.WS.SYS_DAV_USER(U_ID)
@@ -47,28 +60,30 @@ create table SYNC_DEVICES (
   DEV_INF long varchar,
   DEV_MAXSIZE integer,
   primary key (DEV_URI)   -- constraint foobar unique(DEV_USER_ID, DEV_URI)
-)
+)')
+;
+
+syncml_exec_no_error ('
 create unique index SYNC_DEVICES_ID on SYNC_DEVICES (DEV_ID)
+')
 ;
 
---!AFTER
-alter table SYNC_DEVICES add DEV_INF long varchar
-;
-
---!AFTER
-alter table SYNC_DEVICES add DEV_MAXSIZE integer
-;
-
+syncml_exec_no_error ('
 create table SYNC_MAPS (
   MAP_DEV_ID integer, -- references SYNC_DEVICES(DEV_ID)
   MAP_COL_ID int,
   MAP_LUID varchar,   -- local id
   MAP_GUID varchar,   -- references WS.WS.SYS_DAV_RES(RES_ID)
   primary key (MAP_DEV_ID, MAP_LUID, MAP_GUID)
-)
-create index SYNC_MAPS_COL on SYNC_MAPS (MAP_COL_ID)
+)')
 ;
 
+syncml_exec_no_error ('
+create index SYNC_MAPS_COL on SYNC_MAPS (MAP_COL_ID)
+')
+;
+
+syncml_exec_no_error ('
 create table SYNC_ANCHORS (
   A_COL_ID integer,   -- references WS.WS.SYS_DAV_COL(COL_ID)
   A_DEV_ID integer,   -- references SYNC_DEVICES(DEV_ID)
@@ -77,46 +92,70 @@ create table SYNC_ANCHORS (
   A_NEXT_LOCAL datetime,    -- last local anchor
   A_NEXT_REMOTE varchar,    -- last remote anchor
   primary key (A_COL_ID, A_DEV_ID)
-)
+)')
 ;
 
+syncml_exec_no_error ('
+create table SYNC_COLS_TYPES (
+  CT_COL_ID integer,   -- references WS.WS.SYS_DAV_COL(COL_ID)
+  CT_PATH varchar,     -- col. name
+  CT_NAME varchar,     -- col. name
+  CT_TYPE varchar,     -- calendar, notes,  etc.
+  CT_VER  varchar,     --
+  CT_DEV_INFO long varbinary, -- device def info
+  primary key (CT_COL_ID, CT_TYPE)
+)')
+;
+
+syncml_exec_no_error ('
 create table SYNC_RPLOG (
   RLOG_RES_ID int,
   RLOG_RES_COL int,
   DMLTYPE varchar,
   SNAPTIME datetime,
   primary key (RLOG_RES_ID)
-)
-create index SYNC_RPLOG_COL on SYNC_RPLOG (RLOG_RES_COL)
+)')
 ;
 
+syncml_exec_no_error ('
+create index SYNC_RPLOG_COL on SYNC_RPLOG (RLOG_RES_COL)
+')
+;
+
+syncml_exec_no_error ('
 create trigger SRLOG_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES
   {
     declare local_time datetime;
-    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+    local_time := coalesce (connection_get (''A_LAST_LOCAL''), now ());
     insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
-    	values (RES_ID, RES_COL, 'I', local_time);
+    	values (RES_ID, RES_COL, ''I'', local_time);
   }
+')
 ;
 
+syncml_exec_no_error ('
 create trigger SRLOG_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referencing old as O, new as N
   {
     declare local_time datetime;
-    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
-    update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = 'U', SNAPTIME = local_time
+    local_time := coalesce (connection_get (''A_LAST_LOCAL''), now ());
+    update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = ''U'', SNAPTIME = local_time
     	where RLOG_RES_ID = O.RES_ID;
   }
+')
 ;
 
+syncml_exec_no_error ('
 create trigger SRLOG_SYS_DAV_RES_D after delete on WS.WS.SYS_DAV_RES
   {
     declare local_time datetime;
-    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
-    update SYNC_RPLOG set RLOG_RES_COL = RES_COL, DMLTYPE = 'D', SNAPTIME = local_time
+    local_time := coalesce (connection_get (''A_LAST_LOCAL''), now ());
+    update SYNC_RPLOG set RLOG_RES_COL = RES_COL, DMLTYPE = ''D'', SNAPTIME = local_time
     	where RLOG_RES_ID = RES_ID;
   }
+')
 ;
 
+syncml_exec_no_error ('
 create table SYNC_SESSION
 	(
 	S_ID varchar,
@@ -128,20 +167,30 @@ create table SYNC_SESSION
 	S_DATA long varbinary,
 	S_TS timestamp,
 	S_AUTH int default 0,
-	S_NONCE varchar default '',
+	S_NONCE varchar default '''',
 	S_INIT int default 1,
 	primary key (S_ID, S_DEV)
 	)
+')
 ;
 
+syncml_exec_no_error ('
 create trigger DAV_COL_SYNC_D after delete on WS.WS.SYS_DAV_COL
   {
     delete from SYNC_ANCHORS where A_COL_ID = COL_ID;
   }
+')
 ;
 
---drop type sync_cmd;
---drop type sync_batch;
+syncml_exec_no_error ('
+drop type sync_cmd
+')
+;
+
+syncml_exec_no_error ('
+drop type sync_batch
+')
+;
 
 create type sync_batch as (
 			    in_msgid int default 1,
@@ -149,6 +198,8 @@ create type sync_batch as (
 			    last_cmd int default 0,
 			    sid varchar,
 			    nonce varchar,
+			    sourceref varchar,
+			    targetref varchar,
 			    auth int default 0,
 			    init int default 1,
 			    tgt varchar,
@@ -183,6 +234,8 @@ create constructor method sync_batch (in hdr any) for sync_batch
     self.max_size :=  cast(xpath_eval ('/SyncHdr/Meta/MaxMsgSize/text()', hdr, 1) as integer);
     self.hdr := hdr;
     self.ver := coalesce (connection_get ('SyncML-ver'), '1.1');
+    self.ver := cast(xpath_eval ('/SyncHdr/VerDTD/text()', hdr, 1) as varchar);
+--  dbg_obj_print ('VERSION self.ver ', self.ver);
     return;
   }
 ;
@@ -206,8 +259,6 @@ create method sync_check_cred (in cred any, in tp any, in name any, in nonce any
 	arr := split_and_decode (arr, 0, '\0\0:');
 	uname := arr[0];
 	upwd := arr[1];
-
-	--dbg_obj_print ('Basic', cred, tp, uname, upwd);
 
 	select pwd_magic_calc (U_NAME, U_PASSWORD), U_ID into upwd1, uid
 	from SYS_USERS where U_NAME = uname and U_ACCOUNT_DISABLED = 0
@@ -236,10 +287,9 @@ create method sync_check_cred (in cred any, in tp any, in name any, in nonce any
 	    dec3 := dec3 || sprintf ('%02x', dec2[i]);
 	    i := i + 1;
 	  }
-	--dbg_obj_print (cred, tp, name, dec1, dec3);
 	if (trim(dec3) = trim(dec1))
 	  {
-	    --dbg_obj_print ('Authorized');
+--	    dbg_obj_print ('Authorized');
 	    self.uid := uid;
 	    return 1;
 	  }
@@ -324,7 +374,7 @@ nf:
 	      xte_node (xte_head ('MsgID'), cast (self.out_msgid as varchar)),
 	      xte_node (xte_head ('Target'), xte_node (xte_head ('LocURI'), self.src)),
 	      xte_node (xte_head ('Source'), xte_node (xte_head ('LocURI'), self.tgt))
-	      --, xte_node (xte_head ('RespURI'), self.tgt)
+	      , xte_node (xte_head ('RespURI'), self.tgt)
 	  );
      }
 
@@ -370,6 +420,7 @@ nf:
 	 xte_node (xte_head ('TargetRef'), self.tgt),
 	 xte_node (xte_head ('SourceRef'), self.src),
 	 xte_node (xte_head ('Data'), '212')
+--	 xte_node (xte_head ('Data'), '200')
 	 ));
        }
      else
@@ -419,6 +470,8 @@ create method final () for sync_batch
       {
 	self.init := 0;
       }
+
+-- dbg_obj_print ('sync_batch - final');
 
     update SYNC_SESSION set S_LAST_MSG = self.out_msgid,
     	   S_LAST_CMD = self.last_cmd,
@@ -573,6 +626,8 @@ create method deserialize (inout xt any) for sync_cmd
     self.meta := xpath_eval ('./Meta', xt, 1);
     self.tgt := cast (xpath_eval ('./Target/LocURI/text()', xt, 1) as varchar);
     self.src := cast (xpath_eval ('./Source/LocURI/text()', xt, 1) as varchar);
+--  dbg_obj_print ('/deserialize/ self.tgt = ', self.tgt);
+--  dbg_obj_print ('/deserialize/ self.src = ', self.src);
     if (xpath_eval ('./NoResp', xt) is not null)
       self.noresp := 1;
     self.xt := xml_cut (xt);
@@ -617,7 +672,6 @@ create method process (inout resp any) for sync_cmd
       {
 	declare i, l int;
 	l := length (self.items); i := 0;
-	--dbg_obj_print (self.tp);
 	while (i < l)
 	  {
 	    rc := call (h) (self, self.items[i], resp);
@@ -719,7 +773,6 @@ create method resolve_target () for sync_cmd
 
 create method sync_handle_put (inout xt any, inout resp any)  for sync_cmd
 {
-  --dbg_printf ('sync_handle_put');
   declare loc varchar;
   declare data any;
 
@@ -778,7 +831,12 @@ create method sync_handle_delete (inout xt any, inout resp any)  for sync_cmd
     delete from SYNC_MAPS where
     MAP_DEV_ID = self.batch.devid and MAP_LUID = loc and MAP_COL_ID = col_id;
 
+    if (row_count())
     self.state := 200;
+    else
+      self.state := 404;
+
+    --self.state := 200;
   }
 ;
 
@@ -795,7 +853,6 @@ create method sync_handle_map (inout xt any, inout resp any)  for sync_cmd
   xt := xml_cut (xt);
   loc := cast (xpath_eval ('/MapItem/Source/LocURI/text()', xt, 1) as varchar);
   guid := cast (xpath_eval ('/MapItem/Target/LocURI/text()', xt, 1) as int);
-  --dbg_obj_print (self.tgt, self.src, self.parent);
   path := self.resolve_uri (null);
   col_id := DAV_SEARCH_ID (path, 'c');
 
@@ -886,7 +943,7 @@ _continue:;
 		A_DEV_ID = self.batch.devid
 		and A_LAST_LOCAL < SNAPTIME))
     {
-      --dbg_obj_print ('conflict', res_path);
+      dbg_obj_print ('conflict', res_path);
       state := 208;
     }
 
@@ -912,8 +969,7 @@ _continue:;
 
 create method sync_handle_get (inout xt any, inout resp any)  for sync_cmd
 {
-  --dbg_printf ('sync_handle_get');
-  declare loc varchar;
+  declare loc, devinf_ns, ver varchar;
   declare data any;
   declare item any;
 
@@ -936,11 +992,11 @@ create method sync_handle_get (inout xt any, inout resp any)  for sync_cmd
   if (loc like './devinf1%')
     {
       declare id, uri, man, model, oem, fwv, swv, hwv, devid, devty, utc, slob, snoc, uid any;
-      declare media any;
+      declare media, _add, idx, _collection any;
       man := 'OpenLink Software Ltd';
       model := 'Virtuoso';
       oem := 'OpenLink';
-      fwv := '3.5';
+      fwv := '4.0';
       swv := '2602';
       hwv := '0';
       devid := sys_stat ('st_host_name');
@@ -951,86 +1007,47 @@ create method sync_handle_get (inout xt any, inout resp any)  for sync_cmd
 
       media := coalesce (connection_get ('SyncML-media'), 'xml');
 
+      ver := coalesce (connection_get ('SyncML-ver'), '1.0');
+
+
+      devinf_ns := 'http://www.syncml.org/docs/syncml_devinf_v10_20001207.dtd';
+      if (ver = '1.1')
+	devinf_ns := 'http://www.syncml.org/docs/devinf_v11_20020215.dtd';
+      else if (ver = '1.2')
+	devinf_ns := 'http://www.openmobilealliance.org/tech/DTD/OMA-SyncML-Device_Information-DTD-1.2.dtd';
+
       -- xml/wbxml; depending of request
       xte_nodebld_acc (data, xte_node (xte_head ('Meta'),
       			xte_node (xte_head ('Type', 'xmlns', 'syncml:metinf'),
 			'application/vnd.syncml-devinf+'||media)));
 
-      xte_nodebld_acc (item, xte_node (xte_head ('DevInf', 'xmlns', 'syncml:devinf'),
-      		xte_node (xte_head ('VerDTD'), self.batch.ver),
-      		xte_node (xte_head ('Man'), man),
-      		xte_node (xte_head ('Mod'), model),
-       		--xte_node (xte_head ('OEM'), oem),
-      		xte_node (xte_head ('FwV'), fwv),
-       		xte_node (xte_head ('SwV'), swv),
-       		--xte_node (xte_head ('HwV'), hwv),
-     		xte_node (xte_head ('DevID'), devid),
-      		xte_node (xte_head ('DevTyp'), devty)
-      		--xte_node (xte_head ('SyncCap'), xte_node (xte_head ('SyncType'), '1'),
-		--				xte_node (xte_head ('SyncType'), '2')),
-      		--xte_node (xte_head ('UTC'), utc),
-      		--xte_node (xte_head ('SupportLargeObjs'), slob),
-      		--xte_node (xte_head ('SupportNumberOfChanges'), snoc),
+        declare devinf_node any;
 
-		--xte_node (xte_head ('DataStore'),
-		--	xte_node (xte_head ('SourceRef'), './Contacts'),
+      xte_nodebld_init (devinf_node);
 
-		--	xte_node (xte_head ('Rx-Pref'),
-		--	      xte_node (xte_head ('CTType'), 'text/vcard'),
-		--	      xte_node (xte_head ('VerCT'), '3.0')),
+      		xte_nodebld_acc (devinf_node, xte_node (xte_head ('VerDTD'), self.batch.ver));
+      		xte_nodebld_acc (devinf_node, xte_node (xte_head ('Man'), man));
+  	    	xte_nodebld_acc (devinf_node, xte_node (xte_head ('Mod'), model));
+       		xte_nodebld_acc (devinf_node, xte_node (xte_head ('OEM'), oem));
+      		xte_nodebld_acc (devinf_node, xte_node (xte_head ('FwV'), fwv));
+       		xte_nodebld_acc (devinf_node, xte_node (xte_head ('SwV'), swv));
+     		xte_nodebld_acc (devinf_node, xte_node (xte_head ('DevID'), devid));
+      		xte_nodebld_acc (devinf_node, xte_node (xte_head ('DevTyp'), devty));
+--      	xte_nodebld_acc (devinf_node, xte_node (xte_head ('SupportLargeObjs'), slob));
+--      	xte_nodebld_acc (devinf_node, xte_node (xte_head ('SupportNumberOfChanges'), snoc));
 
-		--	xte_node (xte_head ('Tx-Pref'), xte_node (
-		--	      xte_head ('CTType'), 'text/vcard'),
-		--	      xte_node (xte_head ('VerCT'), '3.0')),
 
-		--	xte_node (xte_head ('SyncCap'),
-		--		xte_node (xte_head ('SyncType'), '1'),
-		--		xte_node (xte_head ('SyncType'), '2'))
-		--	)
+      for (select CT_NAME, CT_TYPE from SYNC_COLS_TYPES where CT_VER = ver) do
+	{
+	    declare p_name varchar;
+      	    p_name := sync_xml_to_node (CT_TYPE, CT_NAME);
+   	    call (p_name) (devinf_node, CT_NAME);
+	}
 
-		--xte_node (xte_head ('CTCap'),
-		--     xte_node (xte_head ('CTType'), 'text/x-vcard'),
-		--     xte_node (xte_head ('PropName'), 'BEGIN'),
-		--     xte_node (xte_head ('PropName'), 'END'),
-		--     xte_node (xte_head ('PropName'), 'ADR'),
-		--     xte_node (xte_head ('PropName'), 'BDAY'),
-		--     xte_node (xte_head ('PropName'), 'EMAIL'),
-		--     xte_node (xte_head ('PropName'), 'LABEL'),
-		--     xte_node (xte_head ('PropName'), 'LOGO'),
-		--     xte_node (xte_head ('PropName'), 'N'),
-		--     xte_node (xte_head ('PropName'), 'NOTE'),
-		--     xte_node (xte_head ('PropName'), 'ORG'),
-		--     xte_node (xte_head ('PropName'), 'PHOTO'),
-		--     xte_node (xte_head ('PropName'), 'REV'),
-		--     xte_node (xte_head ('PropName'), 'SOUND'),
-		--     xte_node (xte_head ('PropName'), 'TEL'),
-		--     xte_node (xte_head ('PropName'), 'TITLE'),
-		--     xte_node (xte_head ('PropName'), 'UID'),
-		--     xte_node (xte_head ('PropName'), 'URL'),
-		--     xte_node (xte_head ('PropName'), 'VERSION')
-		--   ),
-		--xte_node (xte_head ('CTCap'),
-		--     xte_node (xte_head ('CTType'), 'text/x-vcalendar'),
-		--     xte_node (xte_head ('PropName'), 'BEGIN'),
-		--     xte_node (xte_head ('PropName'), 'END'),
-		--     xte_node (xte_head ('PropName'), 'AALARM'),
-		--     xte_node (xte_head ('PropName'), 'ATTACH'),
-		--     xte_node (xte_head ('PropName'), 'CLASS'),
-		--     xte_node (xte_head ('PropName'), 'DCREATED'),
-		--     xte_node (xte_head ('PropName'), 'DESCRIPTION'),
-		--     xte_node (xte_head ('PropName'), 'DTEND'),
-		--     xte_node (xte_head ('PropName'), 'DTSTART'),
-		--     xte_node (xte_head ('PropName'), 'DUE'),
-		--     xte_node (xte_head ('PropName'), 'EXDATE'),
-		--     xte_node (xte_head ('PropName'), 'LAST-MODIFIED'),
-		--     xte_node (xte_head ('PropName'), 'LOCATION'),
-		--     xte_node (xte_head ('PropName'), 'PRIORITY'),
-		--     xte_node (xte_head ('PropName'), 'RRULE'),
-		--     xte_node (xte_head ('PropName'), 'SUMMARY'),
-		--     xte_node (xte_head ('PropName'), 'UID'),
-		--     xte_node (xte_head ('PropName'), 'VERSION')
-		--   )
-		));
+       xte_nodebld_final (devinf_node, xte_head ('DevInf', 'xmlns', devinf_ns));
+
+       xte_nodebld_acc (item, devinf_node);
+
     }
   else
     {
@@ -1093,8 +1110,8 @@ create method sync_handle_status (inout xt any, inout resp any)  for sync_cmd
                    declare nlocal any;
                    whenever not found goto aupdate;
                    select A_NEXT_LOCAL into nlocal from SYNC_ANCHORS
-			where A_COL_ID = stat[2] and A_DEV_ID = self.batch.devid and A_LAST_LOCAL = '1970-1-1';
-		   update SYNC_RPLOG set SNAPTIME = nlocal where RLOG_RES_COL = stat[2] and SNAPTIME = '1970-1-1';
+			where A_COL_ID = stat[2] and A_DEV_ID = self.batch.devid and A_LAST_LOCAL = '1981-1-1';
+		   update SYNC_RPLOG set SNAPTIME = nlocal where RLOG_RES_COL = stat[2] and SNAPTIME = '1981-1-1';
 		   aupdate:
 	           update SYNC_ANCHORS set A_LAST_LOCAL = A_NEXT_LOCAL where
 		       A_COL_ID = stat[2] and A_DEV_ID = self.batch.devid;
@@ -1158,7 +1175,7 @@ create method sync_issue_sync (inout xt any, inout resp any) for sync_cmd
       {
 	declare repl, data, meta, cmdname any;
 
---      dbg_obj_print ('IN LOOP RLOG_RES_ID = ', RLOG_RES_ID, ' DMLTYPE = ', DMLTYPE);
+        -- dbg_obj_print ('IN LOOP RLOG_RES_ID = ', RLOG_RES_ID, ' DMLTYPE = ', DMLTYPE);
 
 	cmdname := 'Replace';
 	data := 0;
@@ -1170,7 +1187,8 @@ create method sync_issue_sync (inout xt any, inout resp any) for sync_cmd
 	    skipit:;
 	  }
 
-	if (isinteger (data)) goto end_loop;
+	if (isinteger (data) and (DMLTYPE = 'I' or DMLTYPE = 'U'))
+	  goto end_loop;
 
 	repl := null;
 	xte_nodebld_init (repl);
@@ -1179,19 +1197,24 @@ create method sync_issue_sync (inout xt any, inout resp any) for sync_cmd
 
 	declare exit handler for sqlstate '*'
 	  {
+	    -- dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
 	    goto _continue;
 	  };
 
---	dbg_obj_print ('in data = ', data);
+	--dbg_obj_print ('in data = ', data);
 
+	if (not isinteger (data))
+	  {
 	data := cast (xslt ('http://local.virt/sync_out_xsl', xml_tree_doc (blob_to_string (data)),
 		vector ('devinf', dev_info, 'mime', meta)) as varchar);
+	  }
 
 _continue:;
   whenever SQLSTATE '*' default;
 
 --	dbg_obj_print ('data out = ', data);
 --	dbg_obj_print ('data out = ', length (data));
+	if (not isinteger (data))
 	message_size := message_size + length (data);
 
 	if (DMLTYPE = 'U' or DMLTYPE = 'I')
@@ -1313,8 +1336,8 @@ create method sync_handle_sync (inout xt any, inout resp any)  for sync_cmd
   declare col_id int;
   declare path varchar;
 
-  if (not self.authenticated (401))
-    return;
+  if (self.authenticated (401))
+    self.state := 200;
 
   path := self.resolve_uri (null);
   col_id := DAV_SEARCH_ID (path, 'c');
@@ -1322,6 +1345,8 @@ create method sync_handle_sync (inout xt any, inout resp any)  for sync_cmd
   local_time := (select A_NEXT_LOCAL from SYNC_ANCHORS
   	where A_COL_ID = col_id and A_DEV_ID = self.batch.devid);
   connection_set ('A_LAST_LOCAL', local_time);
+
+  self.serialize_resp (self.state, resp);
 
   cmds := xpath_eval ('/Sync/*[CmdID]', self.xt, 0);
   i := 0; l := length (cmds);
@@ -1336,6 +1361,8 @@ create method sync_handle_sync (inout xt any, inout resp any)  for sync_cmd
   --- REC STATUS ---
   -- all members of SELF that sync_issue_sync depends
 
+  -- dbg_obj_print (self.batch.cmdstate, self.state);
+
   declare temp any;
   temp := NULL;
   if (self.batch.cmdstate is not NULL)
@@ -1348,18 +1375,15 @@ create method sync_handle_sync (inout xt any, inout resp any)  for sync_cmd
 	    self.replace_state ('__self.tgt', vector_concat (temp, vector (self.tgt)));
 	 }
     }
-  else
+  else if (self.state = 200)
     {
---dbg_obj_print ('self.src = ', self.src);
---dbg_obj_print ('self.tgt = ', self.tgt);
---dbg_obj_print ('self.batch.cmdstate = ', self.batch.cmdstate);
        self.add_state ('__self.src', vector (self.src));
        self.add_state ('__self.tgt', vector (self.tgt));
     }
 
 --  self.sync_issue_sync (xt, resp);
 
-  self.state := 200;
+  self.state := null;
 }
 ;
 
@@ -1372,6 +1396,7 @@ create method sync_handle_alert (inout xt any, inout resp any)  for sync_cmd
   if (not self.authenticated (401))
     return;
 
+  self.state := null;
   sync_code := 200;
   xt := xml_cut (xt);
 
@@ -1415,10 +1440,12 @@ create method sync_handle_alert (inout xt any, inout resp any)  for sync_cmd
       --dbg_obj_print ('slow sync');
       insert replacing SYNC_ANCHORS (A_COL_ID, A_DEV_ID,
       A_LAST_LOCAL, A_NEXT_LOCAL, A_LAST_REMOTE, A_NEXT_REMOTE)
-      values (col_id, self.batch.devid, stringdate ('1970-01-01'), now(), arlast, arnext);
+      values (col_id, self.batch.devid, stringdate ('1981-01-01'), now(), arlast, arnext);
       -- remove maps; slow sync will be performed
       delete from SYNC_MAPS where MAP_DEV_ID = self.batch.devid and MAP_COL_ID = col_id;
       sync_code := 201;
+      if (alert_code = '200')
+        self.state := 508;
     }
 
   declare necho any;
@@ -1446,10 +1473,20 @@ create method sync_handle_alert (inout xt any, inout resp any)  for sync_cmd
       xte_nodebld_init (item);
       xte_nodebld_init (anch);
 
+      if (sync_date_nokia (tlas) = '19810101T000000Z')
+	{
       xte_nodebld_acc (anch,
-      xte_node (xte_head ('Last'), tlas),
-      xte_node (xte_head ('Next'), tnex)
+	  --xte_node (xte_head ('Last')),
+	  xte_node (xte_head ('Next'), sync_date_nokia (tnex))
       );
+	}
+      else
+	{
+	  xte_nodebld_acc (anch,
+	  xte_node (xte_head ('Last'), sync_date_nokia (tlas)),
+	  xte_node (xte_head ('Next'), sync_date_nokia (tnex))
+	  );
+        }
 
       xte_nodebld_final (anch, xte_head('Anchor', 'xmlns', 'syncml:metinf'));
 
@@ -1471,9 +1508,14 @@ create method sync_handle_alert (inout xt any, inout resp any)  for sync_cmd
       self.add_final (aler);
     }
 
+  if (self.state is null)
   self.state := 200;
 }
 ;
+
+/*
+--
+*/
 
 create procedure sync_handle_request (in _xdoc any, in path any) returns any
 {
@@ -1481,6 +1523,7 @@ create procedure sync_handle_request (in _xdoc any, in path any) returns any
   declare _ix, _len integer;
   declare batch sync_batch;
   declare out_cmd sync_cmd;
+  declare sourceref, targetref any;
   declare i, l int;
 
   _hdr := xpath_eval ('/SyncML/SyncHdr', _xdoc);
@@ -1498,7 +1541,16 @@ create procedure sync_handle_request (in _xdoc any, in path any) returns any
   _ix := 0;
   _len := length (_cmds);
 
-  -- collect commands into a batch
+
+
+  sourceref := cast (xpath_eval ('/SyncML/SyncBody/Alert/Item/Source/LocURI/text()', _xdoc, 1) as varchar);
+  targetref := xpath_eval ('/SyncML/SyncBody/Alert/Item/Target/LocURI/text()', _xdoc, 0);
+
+  if (sourceref is not NULL)
+     batch.sourceref := sourceref;
+
+  if (targetref is not NULL)
+     batch.sourceref := targetref;
 
   commands := make_array (_len+1, 'any');
   while (_ix < _len)
@@ -1512,11 +1564,12 @@ create procedure sync_handle_request (in _xdoc any, in path any) returns any
       _ix := _ix + 1;
     }
 
+--dbg_obj_print ('commands = ', commands);
   batch.commands := commands;
 
   declare exit handler for sqlstate '*'
     {
-      dbg_obj_print ('error at cmd:', _ix, __SQL_MESSAGE);
+      -- dbg_obj_print ('error at cmd:', _ix, __SQL_MESSAGE);
       resignal;
       goto exit_at;
     };
@@ -1570,8 +1623,8 @@ create procedure sync_handle_request (in _xdoc any, in path any) returns any
   xte_nodebld_final (_rsphdr, xte_head ('SyncHdr'));
   xte_nodebld_final (_rspbody, xte_head ('SyncBody'));
 
-  --dbg_printf ('rsphdr: [%s]', serialize_to_UTF8_xml (xml_tree_doc (_rsphdr)));
-  --dbg_printf ('rspbody: [%s]', serialize_to_UTF8_xml (xml_tree_doc (_rspbody)));
+  -- dbg_printf ('rsphdr: [%s]', serialize_to_UTF8_xml (xml_tree_doc (_rsphdr)));
+  -- dbg_printf ('rspbody: [%s]', serialize_to_UTF8_xml (xml_tree_doc (_rspbody)));
   ret := xte_node (xte_head ('SyncML', 'xmlns', sprintf ('SYNCML:SYNCML%s', batch.ver)), _rsphdr, _rspbody);
   --if (connection_get ('SyncML-media') = 'wbxml')
   ret := xte_expand_xmlns (ret);
@@ -1645,11 +1698,16 @@ next:;
 }
 ;
 
+/*
+   MAIN PROC
+*/
+
 create procedure DB.DBA.SYNCML (in path any, in params any, in lines any)
 {
 declare _accept varchar;
 declare _req varchar;
 declare _content_type, user_agent varchar;
+declare ver any;
 
 _accept := http_request_header (lines, 'Accept', null, '');
 --dbg_printf ('Accept: [%s]', _accept);
@@ -1665,32 +1723,47 @@ _accept := http_request_header (lines, 'Accept', null, '');
 _content_type := http_request_header (lines, 'Content-Type', null, '');
 user_agent := http_request_header (lines, 'User-Agent', null, '');
 connection_set ('ua_id', user_agent);
---dbg_printf ('Content-Type: [%s]', _content_type);
+--  dbg_obj_print ('Content-Type: ', _content_type);
 
 _req := string_output_string (http_body_read());
---dbg_printf ('Request: [%s]', _req);
+--  dbg_obj_print ('Request: [%s]', _req);
 
 declare _xdoc any;
 if (_content_type = 'application/vnd.syncml+wbxml')
   {
-    _xdoc := wbxml2xml (_req);
+--  dbg_obj_print ('I', _req);
+-----------------------------------------------
+    declare temp, sid, mid any;
+    temp := WBXML2XML (_req);
+    _xdoc := xml_tree_doc (temp);
+
+    sid := cast(xpath_eval ('/SyncML/SyncHdr/SessionID/text()', _xdoc, 1) as varchar);
+    mid := cast(xpath_eval ('/SyncML/SyncHdr/MsgID/text()', _xdoc, 1) as varchar);
+---  DEBUG CODE XXX
+    registry_set ('__sync_self_sid', sid);
+    registry_set ('__sync_self_in_msgid', mid);
+---
+--  dbg_obj_print ('II', _xdoc);
     connection_set ('SyncML-media', 'wbxml');
+    if (registry_get ('__sync_xml_debug') = '1')
+      {
+	string_to_file ('in_' || registry_get ('__sync_self_sid') || '_' || registry_get ('__sync_self_in_msgid') || '.xml', temp, -1);
+	string_to_file ('in_' || registry_get ('__sync_self_sid') || '_' || registry_get ('__sync_self_in_msgid') || '.sml', _req, -1);
+      }
   }
 else if (_content_type = 'application/vnd.syncml+xml')
   {
-    declare ver any;
-    if (registry_get ('__sync_xml_debug') = '1')
-      string_to_file ('synclog.xml', replace (_req, '<?xml version="1.0" encoding="UTF-8"?>', ''), -1);
     _xdoc := xtree_doc (_req);
-    ver := cast (xpath_eval ('/SyncML/SyncHdr/VerDTD/text()', _xdoc) as varchar);
-    if (ver like '_._')
-      connection_set ('SyncML-ver', ver);
     connection_set ('SyncML-media', 'xml');
   }
 else
   {
     signal ('22023', 'Not supported media');-- XXX signal error here
   }
+
+  ver := cast (xpath_eval ('/SyncML/SyncHdr/VerDTD/text()', _xdoc) as varchar);
+  if (ver like '_._')
+    connection_set ('SyncML-ver', ver);
 
 declare _reply any;
 _reply := sync_handle_request (_xdoc, path);
@@ -1703,16 +1776,50 @@ http_header (http_header_get () || 'Accept-Charset: UTF-8\r\n');
 http_header (http_header_get () || 'Cache-Control: private\r\n');
 if (_content_type = 'application/vnd.syncml+wbxml')
   {
-    _reply := xml2wbxml (_reply);
+        declare _xt any;
+	declare ver, xml_str any;
+	ver := coalesce (connection_get ('SyncML-ver'), '1.0');
+
+
+	_xt := xml_tree_doc (_reply);
+	xml_tree_doc_set_ns_output (_xt, 1);
+	xml_str := serialize_to_UTF8_xml (_xt);
+
+	if (ver='1.2')
+	   xml_str := '<?xml version="1.0"?>'||
+	   '<!DOCTYPE SyncML PUBLIC "-//SYNCML//DTD SyncML 1.2//EN"'||
+	   ' "http://www.openmobilealliance.org/tech/DTD/OMA-TS-SyncML_RepPro_DTD-V1_2.dtd">'
+	   || xml_str;
+	else if (ver='1.1')
+	   xml_str := '<?xml version="1.0"?>'||
+	   '<!DOCTYPE SyncML PUBLIC "-//SYNCML//DTD SyncML 1.1//EN" "http://www.syncml.org/docs/syncml_represent_v11_20020213.dtd">'
+	   || xml_str;
+	else if (ver='1.0')
+	   xml_str := '<?xml version="1.0"?>'||
+	   '<!DOCTYPE SyncML PUBLIC "-//SYNCML//DTD SyncML 1.0//EN" "http://www.syncml.org/docs/syncml_represent_v10_20001207.dtd">'
+	   || xml_str;
+
+--	dbg_printf ('%s', xml_str);
+
+	_reply := XML2WBXML (xml_str);
+
+	if (registry_get ('__sync_xml_debug') = '1')
+	  {
+	    string_to_file ('out_' || registry_get ('__sync_self_sid') || '_' || registry_get ('__sync_self_in_msgid') || '.xml', xml_str, -1);
+	    string_to_file ('out_' || registry_get ('__sync_self_sid') || '_' || registry_get ('__sync_self_in_msgid') || '.sml', _reply, -1);
+	  }
+
 --  dbg_obj_print (' length (_reply) = ', length (_reply));
+	http_rewrite ();
     http (_reply);
     return;
+
   }
 else
   {
     http ('<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n');
     if (registry_get ('__sync_xml_debug') = '1')
-      string_to_file ('synclog.xml', serialize_to_UTF8_xml(xml_tree_doc (_reply)), -1);
+      string_to_file ('out_' || registry_get ('__sync_self_sid') || '_' || registry_get ('__sync_self_in_msgid') || '.xml', serialize_to_UTF8_xml(xml_tree_doc (_reply)), -1);
     _reply := xml_tree_doc (_reply);
     xml_tree_doc_set_ns_output (_reply, 1);
 --  dbg_obj_print ('END:', _reply);
@@ -1833,3 +1940,437 @@ sync_define_xsl ()
 ;
 
 
+create procedure sync_define_xml_to_pl ()
+{
+  declare ses any;
+  ses := string_output ();
+ http ('  <?xml version="1.0"?>', ses);
+ http ('  <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">', ses);
+ http ('      <xsl:output method="text" omit-xml-declaration="yes"/>', ses);
+ http ('      <xsl:param name="id"/>', ses);
+ http ('      <xsl:template match="/">', ses);
+ http ('	  create procedure <xsl:value-of select="$id"/> (inout _node any, in store varchar) {', ses);
+ http ('	  xte_nodebld_acc (_node,', ses);
+ http ('	  		<xsl:apply-templates />', ses);
+ http ('			   );', ses);
+ http ('	  }', ses);
+ http ('      </xsl:template>', ses);
+ http ('      <xsl:template match="*">', ses);
+ http ('  	    <xsl:text>xte_node (xte_head (''</xsl:text>', ses);
+ http ('  	    <xsl:value-of select="local-name ()"/>', ses);
+ http ('	    <xsl:text>''), </xsl:text>', ses);
+ http ('	    <xsl:apply-templates />)', ses);
+ http ('	  <xsl:if test=" following-sibling::* ">', ses);
+ http ('	    ,', ses);
+ http ('	</xsl:if>', ses);
+ http ('      </xsl:template>', ses);
+ http ('      <xsl:template match="DataStore/SourceRef">', ses);
+ http ('  	    <xsl:text>xte_node (xte_head (''</xsl:text>', ses);
+ http ('  	    <xsl:value-of select="local-name ()"/>', ses);
+ http ('	    <xsl:text>''), </xsl:text>', ses);
+ http ('	    store)', ses);
+ http ('	  <xsl:if test="following-sibling::*">', ses);
+ http ('	    ,', ses);
+ http ('	</xsl:if>', ses);
+ http ('      </xsl:template>', ses);
+ http ('      <xsl:template match="text ()">', ses);
+ http ('	  <xsl:if test="normalize-space (.) != ''''">', ses);
+ http ('  	    ''<xsl:value-of select="."/>''', ses);
+ http ('	</xsl:if>', ses);
+ http ('      </xsl:template>', ses);
+ http ('  </xsl:stylesheet>', ses);
+ xslt_sheet ('http://local.virt/sync_xml_to_pl', xml_tree_doc (string_output_string (ses)));
+}
+;
+
+sync_define_xml_to_pl ()
+;
+
+
+
+
+create procedure
+sync_date_nokia (in _date any)
+{
+   _date := replace (_date, '-', '', 3);
+   _date := replace (_date, ':', '', 2);
+   _date := "LEFT" (_date, 15) || 'Z';
+   return _date;
+}
+;
+
+
+create procedure
+sync_create_col (in col_name varchar, in col_type varchar, in sync_ver varchar, in _user varchar,
+		 in _pass varchar, in custom_def_inf any := null)
+{
+   declare res, _name any;
+   declare _col_id any;
+
+   res := DAV_COL_CREATE (col_name, auth_uid=>_user, auth_pwd=>_pass, uid=>_user, permissions=>'110110000N');
+
+   if (res < 0 and res <> -3)
+      return res;
+
+   _col_id := DAV_SEARCH_ID (col_name, 'C');
+
+   select COL_NAME into _name from WS.WS.SYS_DAV_COL where COL_ID = _col_id;
+
+   if (res = -3)
+     {
+
+	insert soft SYNC_COLS_TYPES (CT_COL_ID, CT_NAME, CT_PATH, CT_TYPE, CT_VER, CT_DEV_INFO) values
+		(_col_id, _name, col_name, col_type, sync_ver, custom_def_inf);
+     }
+	else
+
+    insert soft SYNC_COLS_TYPES (CT_COL_ID, CT_NAME, CT_PATH, CT_TYPE, CT_VER, CT_DEV_INFO) values
+		(res, _name, col_name, col_type, sync_ver, custom_def_inf);
+
+   return 1;
+}
+;
+
+
+create procedure
+sync_datastore_vcard_12 (in _sourceref varchar)
+{
+
+return sprintf ('
+<DataStore>
+  <SourceRef>%s</SourceRef>
+  <DisplayName>Contacts</DisplayName>
+  <MaxGUIDSize>8</MaxGUIDSize>
+  <Rx-Pref>
+    <CTType>text/x-vcard</CTType>
+    <VerCT>2.1</VerCT>
+  </Rx-Pref>
+  <Tx-Pref>
+    <CTType>text/x-vcard</CTType>
+    <VerCT>2.1</VerCT>
+  </Tx-Pref>
+  <CTCap>
+    <CTType>text/x-vcard</CTType>
+    <VerCT>2.1</VerCT>
+    <Property>
+      <PropName>BEGIN</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <ValEnum>VCARD</ValEnum>
+      <DisplayName>Begin</DisplayName>
+    </Property>
+    <Property>
+      <PropName>END</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <ValEnum>VCARD</ValEnum>
+      <DisplayName>End</DisplayName>
+    </Property>
+    <Property>
+      <PropName>VERSION</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <ValEnum>2.1</ValEnum>
+      <DisplayName>Version</DisplayName>
+    </Property>
+    <Property>
+      <PropName>REV</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Revision</DisplayName>
+    </Property>
+    <Property>
+      <PropName>N</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Name</DisplayName>
+    </Property>
+    <Property>
+      <PropName>ADR</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Address</DisplayName>
+      <PropParam>
+        <ParamName>TYPE</ParamName>
+        <DataType/>
+        <ValEnum>HOME</ValEnum>
+        <ValEnum>WORK</ValEnum>
+        <DisplayName>Type</DisplayName>
+      </PropParam>
+    </Property>
+    <Property>
+      <PropName>TEL</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Telephone number</DisplayName>
+      <PropParam>
+        <ParamName>TYPE</ParamName>
+        <DataType/>
+        <ValEnum>HOME</ValEnum>
+        <ValEnum>WORK</ValEnum>
+        <ValEnum>CELL</ValEnum>
+        <ValEnum>PAGER</ValEnum>
+        <ValEnum>FAX</ValEnum>
+        <ValEnum>VIDEO</ValEnum>
+        <ValEnum>PREF</ValEnum>
+        <DisplayName>Type</DisplayName>
+      </PropParam>
+    </Property>
+    <Property>
+      <PropName>FN</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>FullName</DisplayName>
+    </Property>
+    <Property>
+      <PropName>EMAIL</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Email address</DisplayName>
+      <PropParam>
+        <ParamName>TYPE</ParamName>
+        <DataType/>
+        <ValEnum>HOME</ValEnum>
+        <ValEnum>WORK</ValEnum>
+        <DisplayName>Type</DisplayName>
+      </PropParam>
+    </Property>
+    <Property>
+      <PropName>URL</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>URL address</DisplayName>
+      <PropParam>
+        <ParamName>TYPE</ParamName>
+        <DataType/>
+        <ValEnum>HOME</ValEnum>
+        <ValEnum>WORK</ValEnum>
+        <DisplayName>Type</DisplayName>
+      </PropParam>
+    </Property>
+    <Property>
+      <PropName>NOTE</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Note</DisplayName>
+    </Property>
+    <Property>
+      <PropName>TITLE</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Title</DisplayName>
+    </Property>
+    <Property>
+      <PropName>ORG</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Organisation</DisplayName>
+    </Property>
+    <Property>
+      <PropName>PHOTO</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Photo</DisplayName>
+    </Property>
+    <Property>
+      <PropName>BDAY</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Birthday</DisplayName>
+    </Property>
+    <Property>
+      <PropName>SOUND</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Sound</DisplayName>
+    </Property>
+    <Property>
+      <PropName>X-WV-ID</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Wireless Village Id</DisplayName>
+    </Property>
+    <Property>
+      <PropName>X-EPOCSECONDNAME</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>Nickname</DisplayName>
+    </Property>
+    <Property>
+      <PropName>X-SIP</PropName>
+      <DataType/>
+      <Size>256</Size>
+      <DisplayName>SIP protocol</DisplayName>
+      <PropParam>
+        <ParamName>TYPE</ParamName>
+        <DataType/>
+        <ValEnum>POC</ValEnum>
+        <ValEnum>SWIS</ValEnum>
+        <ValEnum>VOIP</ValEnum>
+        <DisplayName>Type</DisplayName>
+      </PropParam>
+    </Property>
+  </CTCap>
+  <SyncCap>
+    <SyncType>1</SyncType>
+    <SyncType>2</SyncType>
+  </SyncCap>
+</DataStore>', _sourceref);
+
+}
+;
+
+create procedure
+sync_datastore_vcard_11 (in _sourceref varchar)
+{
+
+return sprintf ('
+            <DataStore>
+              <SourceRef/>
+              <Rx-Pref>
+                <CTType>text/x-vcard</CTType>
+                <VerCT>2.1</VerCT>
+              </Rx-Pref>
+              <Rx>
+                <CTType>text/vcard</CTType>
+                <VerCT>3.0</VerCT>
+              </Rx>
+              <Tx-Pref>
+                <CTType>text/x-vcard</CTType>
+                <VerCT>2.1</VerCT>
+              </Tx-Pref>
+              <Tx>
+                <CTType>text/vcard</CTType>
+                <VerCT>3.0</VerCT>
+              </Tx>
+              <SyncCap>
+                <SyncType>1</SyncType>
+                <SyncType>2</SyncType>
+              </SyncCap>
+            </DataStore>
+            <CTCap>
+              <CTType>text/x-vcard</CTType>
+              <PropName>BEGIN</PropName>
+              <ValEnum>VCARD</ValEnum>
+              <PropName>END</PropName>
+              <ValEnum>VCARD</ValEnum>
+              <PropName>VERSION</PropName>
+              <ValEnum>2.1</ValEnum>
+              <PropName>N</PropName>
+              <PropName>TITLE</PropName>
+              <PropName>CATEGORIES</PropName>
+              <PropName>CLASS</PropName>
+              <PropName>ORG</PropName>
+              <PropName>EMAIL</PropName>
+              <PropName>URL</PropName>
+              <PropName>TEL</PropName>
+              <ParamName>CELL</ParamName>
+              <ParamName>HOME</ParamName>
+              <ParamName>WORK</ParamName>
+              <ParamName>FAX</ParamName>
+              <ParamName>MODEM</ParamName>
+              <ParamName>VOICE</ParamName>
+              <PropName>ADR</PropName>
+              <PropName>BDAY</PropName>
+              <PropName>LABEL</PropName>
+              <PropName>LOGO</PropName>
+              <PropName>NOTE</PropName>
+              <PropName>PHOTO</PropName>
+              <PropName>REV</PropName>
+              <PropName>SOUND</PropName>
+              <PropName>UID</PropName>
+              <PropName>VERSION</PropName>
+            </CTCap>
+            <CTCap>
+              <CTType>text/x-vcalendar</CTType>
+              <PropName>BEGIN</PropName>
+              <PropName>END</PropName>
+              <PropName>AALARM</PropName>
+              <PropName>ATTACH</PropName>
+              <PropName>CLASS</PropName>
+              <PropName>DCREATED</PropName>
+              <PropName>DESCRIPTION</PropName>
+              <PropName>DTEND</PropName>
+              <PropName>DTSTART</PropName>
+              <PropName>DUE</PropName>
+              <PropName>EXDATE</PropName>
+              <PropName>LAST-MODIFIED</PropName>
+              <PropName>LOCATION</PropName>
+              <PropName>PRIORITY</PropName>
+              <PropName>RRULE</PropName>
+              <PropName>SUMMARY</PropName>
+              <PropName>UID</PropName>
+              <PropName>VERSION</PropName>
+            </CTCap>
+');
+
+}
+;
+
+
+create procedure
+sync_datastore_vcard_11_test (in _sourceref varchar)
+{
+
+return sprintf ('
+            <DataStore>
+              <SourceRef/>
+              <Rx-Pref>
+                <CTType>text/x-vcard</CTType>
+                <VerCT>2.1</VerCT>
+              </Rx-Pref>
+              <Rx>
+                <CTType>text/vcard</CTType>
+                <VerCT>3.0</VerCT>
+              </Rx>
+              <Tx-Pref>
+                <CTType>text/x-vcard</CTType>
+                <VerCT>2.1</VerCT>
+              </Tx-Pref>
+              <Tx>
+                <CTType>text/vcard</CTType>
+                <VerCT>3.0</VerCT>
+              </Tx>
+              <SyncCap>
+                <SyncType>1</SyncType>
+                <SyncType>2</SyncType>
+              </SyncCap>
+            </DataStore>
+');
+
+}
+;
+
+
+create procedure
+sync_xml_to_node (in _mode any, in _col_name any)
+{
+   declare _xml, _xml_text, pl, id any;
+   declare res, mdta, dta, state, msg any;
+
+   _xml_text := 'select sync_datastore_' || _mode || '(?)';
+
+   res := exec (_xml_text, state, msg, vector (_col_name), 0, mdta, dta);
+
+   _xml := dta[0][0];
+
+   id := 'syncml_' || _col_name || '_' || _mode;
+
+   pl := cast (xslt ('http://local.virt/sync_xml_to_pl', xml_tree_doc (_xml), vector ('id', id)) as varchar);
+
+   pl := replace (pl, '), )', '))');
+
+   exec (pl);
+
+   return id;
+}
+;
+
+--DAV_MAKE_DIR ('/DAV/sync/', http_dav_uid (), null, '110110110N')
+--;
+
+--sync_create_col ('/DAV/sync/contacts/', 'vcard_11', '1.1', 'dav', 'dav')
+--;
+
+create procedure DB.DBA.SYNC_GET_AUTH_TYPE (in devid any) { return 1; }
+;
