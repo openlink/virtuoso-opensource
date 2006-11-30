@@ -931,6 +931,7 @@ itc_bm_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   bitno_t bm_start;
   int rc;
   dbe_key_t * key = itc->itc_insert_key;
+  itc->itc_row_data = (*buf_ret)->bd_buffer + itc->itc_position + IE_FIRST_KEY;
   itc->itc_is_on_row = 0;
     ITC_COL (itc, (*key->key_bm_cl), off, bm_len);
   if (0 == bm_len)
@@ -1860,7 +1861,8 @@ itc_bm_land_lock (it_cursor_t * itc, buffer_desc_t ** buf_ret)
    * the itc_to_reset is set by itc_keep_together when inserting the right hand half of the split. */
   int rc;
   itc->itc_to_reset = RWG_NO_WAIT;
-  rc = itc_landed_lock_check (itc, buf_ret);
+  if (ITC_IS_LTRX (itc))
+    itc_landed_lock_check (itc, buf_ret);
   return itc->itc_to_reset;
 }
 
