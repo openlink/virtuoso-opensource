@@ -1877,7 +1877,7 @@ again:
       -- XXX: temporary to avoid test noise
       set isolation='repeatable';
       whenever not found goto err_end;
-      content := string_output ();
+      content := string_output (http_strses_memory_size ());
       rc := DAV_RES_CONTENT_INT (_res_id, content, cont_type, 1, 0);
       -- dbg_obj_princ ('DAV_RES_CONTENT_INT (', _res_id, ', [content], ', cont_type, 1, 0, ' returns ', rc);
       if (DAV_HIDE_ERROR (rc) is null)
@@ -2172,7 +2172,10 @@ create procedure WS.WS.POST (in path varchar, inout params varchar, in lines var
   if (_content_type = 'application/vnd.syncml+wbxml' or
       _content_type = 'application/vnd.syncml+xml')
    {
+     if (__proc_exists ('DB.DBA.SYNCML'))
      DB.DBA.SYNCML (path, params, lines);
+     else
+       signal ('37000', 'The SyncML isn''t install');
    }
   else
    {
