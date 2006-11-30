@@ -33,10 +33,16 @@ unichar eh_decode_char__UTF7 (__constcharptr *src_begin_ptr, const char *src_buf
 int eh_decode_buffer__UTF7 (unichar *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
 { return ((long *)-1)[0] += 1; }
 
+int eh_decode_buffer_to_wchar__UTF7 (wchar_t *tgt_buf, int tgt_buf_len, __constcharptr *src_begin_ptr, const char *src_buf_end, ...)
+{ return ((long *)-1)[0] += 1; }
+
 char *eh_encode_char__UTF7 (unichar char_to_put, char *tgt_buf, char *tgt_buf_end, ...)
 { ((long *)-1)[0] += 1; return NULL; }
 
 char *eh_encode_buffer__UTF7 (const unichar *src_buf, const unichar *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
+{ ((long *)-1)[0] += 1; return NULL; }
+
+char *eh_encode_wchar_buffer__UTF7 (const wchar_t *src_buf, const wchar_t *src_buf_end, char *tgt_buf, char *tgt_buf_end, ...)
 { ((long *)-1)[0] += 1; return NULL; }
 
 #if 0
