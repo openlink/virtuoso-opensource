@@ -3228,6 +3228,21 @@ get_next:
   return ((caddr_t) ptr);
 }
 
+
+caddr_t
+bif_sprintf_or_null (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int argctr, argcount = BOX_ELEMENTS (args);
+  for (argctr = 0; argctr < argcount; argctr++)
+    {
+      caddr_t arg = bif_arg_nochecks (qst, args, argctr);
+      if (DV_DB_NULL == DV_TYPE_OF (arg))
+        return NEW_DB_NULL;
+    }
+  return bif_sprintf (qst, err_ret, args);
+}
+
+
 caddr_t
 bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -12256,6 +12271,7 @@ sql_bif_init (void)
   bif_define_typed ("concat", bif_concatenate, &bt_string); /* This is more to standard */
   bif_define_typed ("replace", bif_replace, &bt_string);
   bif_define_typed ("sprintf", bif_sprintf, &bt_varchar);
+  bif_define_typed ("sprintf_or_null", bif_sprintf_or_null, &bt_varchar);
   bif_define ("sprintf_inverse", bif_sprintf_inverse);
 
 /* Finding occurrences of characters and substrings in strings: */
