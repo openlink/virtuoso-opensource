@@ -1358,6 +1358,7 @@ virtodbc__SQLSetConnectOption (
     case SQL_VIRTTP_COMMIT:
       if (CON_CONNECTED (con))
 	{
+	  s_node_t *iter, *nxt;
 	  tp_dtrx_t *tpd = (tp_dtrx_t *) vParam;
 	  d_trx_info_t *trx_i = 0;
 	  int fail_pos = -1;
@@ -1384,7 +1385,7 @@ virtodbc__SQLSetConnectOption (
 	again:
 	  i = 0;
 
-	  DO_SET (cli_connection_t *, cli_con, &trx_i->d_trx_hdbcs)
+	  DO_SET_WRITABLE2 (cli_connection_t *, cli_con, iter, nxt, &trx_i->d_trx_hdbcs)
 	  {
 	    if (i != fail_pos)
 	      {
