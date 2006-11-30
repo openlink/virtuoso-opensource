@@ -1718,6 +1718,13 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       http_cli_ssl_cert (ctx, (caddr_t)"1");
     }
 #endif
+  if (BOX_ELEMENTS (args) > 9)
+    {
+      int isnull = 0;
+      uint32 time_out = (uint32) bif_long_or_null_arg (qst, args, 9, me, &isnull);
+      if (!isnull)
+        ctx->hcctx_timeout = time_out;
+    }
 
 
 #ifdef DEBUG

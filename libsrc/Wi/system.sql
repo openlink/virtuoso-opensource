@@ -2389,7 +2389,7 @@ update_stats:;
     }
   return 1;
 map_done:;
-  if (logerr and _stat <> '00000')
+  if (logerr and isstring (_stat) and  _stat <> '00000')
     log_message (sprintf ('Can\'t contact to the DSN "%s" to refresh statistics on table "%s"', _ds_dsn, tb_name));
   -- stats are not done
   return 0;
@@ -2848,13 +2848,14 @@ create procedure DB.DBA.HTTP_CLIENT (
     in http_headers varchar := null,
     in body varchar := null,
     in cert_file varchar := null,
-    in cert_pwd varchar := null
+    in cert_pwd varchar := null,
+    in timeout int := null
   )
 {
 
   if (cert_file is null and url like 'https://%')
     cert_file := '1';
-  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd);
+  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, null, timeout);
 }
 ;
 
@@ -2868,13 +2869,14 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
     in body varchar := null,
     in cert_file varchar := null,
     in cert_pwd varchar := null,
-    inout headers any
+    inout headers any,
+    in timeout int := null
   )
 {
 
   if (cert_file is null and url like 'https://%')
     cert_file := '1';
-  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, headers);
+  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, headers, timeout);
 }
 ;
 
