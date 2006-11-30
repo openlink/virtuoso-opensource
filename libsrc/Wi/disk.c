@@ -512,15 +512,125 @@ map_free (page_map_t * map)
   dk_free ((void*) map, bytes);
 }
 
+#define BUFFER_GROUP_SIZE 14
+
+typedef db_buf_t db_page_buf_t[PAGE_SZ];
+
+typedef struct buffer_group_s {
+  buffer_desc_t bg_items[BUFFER_GROUP_SIZE];
+  int bg_used;
+  struct buffer_group_s *bg_prev, *bg_next;
+  db_page_buf_t *bg_buffer0;
+  db_buf_t bg_space [PAGE_SZ * (BUFFER_GROUP_SIZE+1)];
+} buffer_group_t;
+
+static dk_hash_t *bg_of_bd = NULL;
+static buffer_group_t *bg_first = NULL;
+static int bg_free_buffers = 0;
+static dk_mutex_t *bg_mutex = NULL;
+
+buffer_group_t *
+buffer_group_allocate ()
+{
+  NEW_VARZ (buffer_group_t, bg);
+  bg->bg_buffer0 = ALIGN_8K (bg->bg_space);
+  if (NULL != bg_first)
+    {
+      bg->bg_next = bg_first;
+      bg->bg_prev = bg_first->bg_prev;
+      bg->bg_prev->bg_next = bg;
+      bg_first->bg_prev = bg;
+    }
+  bg_free_buffers += BUFFER_GROUP_SIZE;
+  return bg;
+}
 
 buffer_desc_t *
 buffer_allocate (int type)
 {
-  NEW_VARZ (buffer_desc_t, buf);
-  buf->bd_buffer = (db_buf_t) dk_alloc (PAGE_SZ);
+  int b_ctr;
+  buffer_group_t *iter;
+  if (NULL == bg_mutex)
+    {
+      bg_mutex = mutex_allocate ();
+      mutex_enter (bg_mutex);
+      bg_of_bd = hash_table_allocate (200);
+      bg_first = buffer_group_allocate ();
+      bg_first->bg_next = bg_first->bg_prev = bg_first;
+    }
+  else
+    mutex_enter (bg_mutex);
+  if (bg_free_buffers < (1 + (bg_of_bd->ht_count / BUFFER_GROUP_SIZE)))
+    bg_first = buffer_group_allocate ();
+  iter = bg_first;
+  for (;;)
+    {
+      if (iter->bg_used < BUFFER_GROUP_SIZE)
+        {
+          bg_first = iter;
+          break;
+        }
+      iter = iter->bg_next;
+      if (iter == bg_first)
+        GPF_T1 ("buffer_allocate(): can't find a non-full buffer group");
+    }
+  for (b_ctr = BUFFER_GROUP_SIZE; b_ctr--; /* no step */)
+    {
+      buffer_desc_t *buf = bg_first->bg_items + b_ctr;
+      if (NULL != buf->bd_buffer)
+        continue;
+      memset (buf, 0, sizeof (buffer_desc_t));
+      buf->bd_buffer = (void *)(bg_first->bg_buffer0 + b_ctr);
   memset (buf->bd_buffer, 0, PAGE_SZ);
   SHORT_SET (buf->bd_buffer + DP_FLAGS, type);
+      sethash (buf, bg_of_bd, bg_first);
+      bg_first->bg_used++;
+      bg_free_buffers--;
+      mutex_leave (bg_mutex);
   return buf;
+    }
+  GPF_T1 ("buffer_allocate(): can't find a free buffer in a group");
+  return NULL; /* never happen */
+}
+
+void
+buffer_free (buffer_desc_t * buf)
+{
+  buffer_group_t *bg;
+  if (NULL == buf)
+    return;
+  if (NULL == buf->bd_buffer)
+    GPF_T1 ("buffer_free(): double free ?");
+  mutex_enter (bg_mutex);
+  bg = gethash (buf, bg_of_bd);
+  if (NULL == bg)
+    GPF_T1 ("buffer_free(): can't find a group of the buffer, was the buffer allocated by buffer_allocate() ?");
+  if (0 >= bg->bg_used)
+    GPF_T1 ("buffer_free(): the group is empty");
+  buf->bd_buffer = NULL;
+  remhash (buf, bg_of_bd);
+  bg_free_buffers++;
+  bg->bg_used--;
+  if ((0 == bg->bg_used) && (bg != bg_first) && (bg->bg_next != bg) &&
+    (bg_free_buffers > (2 * BUFFER_GROUP_SIZE + (bg_of_bd->ht_count / (BUFFER_GROUP_SIZE - 2)))) )
+    {
+      bg->bg_next->bg_prev = bg->bg_prev;
+      bg->bg_prev->bg_next = bg->bg_next;
+      bg_free_buffers -= BUFFER_GROUP_SIZE;
+      dk_free (bg, sizeof (buffer_group_t));
+    }
+  mutex_leave (bg_mutex);
+}
+
+void
+buffer_set_free (buffer_desc_t* ps)
+{
+  while (ps)
+    {
+      buffer_desc_t * next_buf = ps->bd_next;
+      buffer_free (ps);
+      ps = next_buf;
+    }
 }
 
 
@@ -981,7 +1091,8 @@ bp_make_buffer_list (int n)
   memset (bp->bp_bufs, 0, sizeof (buffer_desc_t) * n);
   bp->bp_sort_tmp = (buffer_desc_t **) dk_alloc (sizeof (caddr_t) * n);
 
-  buffers_space = (unsigned char *) malloc (ALIGN_VOIDP (PAGE_SZ) * n);
+  buffers_space = (unsigned char *) malloc (PAGE_SZ * (n + 1));
+  buffers_space = (db_buf_t) ALIGN_8K (buffers_space);
   memset (buffers_space, 0, ALIGN_VOIDP (PAGE_SZ) * n);
   buf_ptr = buffers_space;
   for (c = 0; c < n; c++)
@@ -1126,11 +1237,39 @@ dst_fd_done (disk_stripe_t * dst, int fd)
 }
 
 
+
+#define ALIGNED_PAGE_COPY(copy, source) \
+  ALIGNED_PAGE_BUFFER (copy##_temp); \
+  db_buf_t copy = IS_8K (source) ? source : (memcpy (copy##_temp, source, 8192), copy##_temp);
+
+
 long disk_reads = 0;
 long disk_writes = 0;
 long read_cum_time = 0;
 long write_cum_time = 0;
 int assertion_on_read_fail = 1;
+
+#if 0
+int
+buf_disk_read_impl (buffer_desc_t * buf)
+{
+  if (!IS_IO_ALIGN (buf->bd_buffer))
+    {
+      return buf_disk_read_not_aligned (buf);
+    }
+  return buf_disk_read_impl (buf, buf->bd_buffer);
+}
+
+int
+buf_disk_read_not_aligned (buffer_desc_t * buf)
+{
+  ALIGNED_PAGE_BUFFER (copy);
+  db_buf_t target = IS_IO_ALIGN (buf->bd_buffer) ? buf->bd_buffer : copy;
+}
+
+int
+buf_disk_read_impl (buffer_desc_t * buf, db_buf_t target)
+#endif
 
 int
 buf_disk_read (buffer_desc_t * buf)
@@ -1140,8 +1279,9 @@ buf_disk_read (buffer_desc_t * buf)
   dbe_storage_t * dbs = buf->bd_storage;
   short flags;
   OFF_T off;
-
   disk_reads++;
+  if (!IS_IO_ALIGN (buf->bd_buffer))
+    GPF_T1 ("buf_disk_read (): The buffer is not io-aligned");
   if (dbs->dbs_disks)
     {
       disk_stripe_t *dst = dp_disk_locate (dbs, buf->bd_physical_page, &off);
@@ -1182,7 +1322,7 @@ buf_disk_read (buffer_desc_t * buf)
 	  mutex_leave (dbs->dbs_file_mtx);
 	  return WI_ERROR;
 	}
-      rc = read (dbs->dbs_fd, (char *) buf->bd_buffer, PAGE_SZ);
+      rc = read (dbs->dbs_fd, (char *)(buf->bd_buffer), PAGE_SZ);
       if (rc != PAGE_SZ)
 	{
 	  if (assertion_on_read_fail)
@@ -1234,7 +1374,8 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
   OFF_T rc;
   OFF_T off;
   dp_addr_t dest = (phys_dp_to ? phys_dp_to : buf->bd_physical_page);
-
+  if (!IS_IO_ALIGN (buf->bd_buffer))
+    GPF_T1 ("buf_disk_write (): The buffer is not io-aligned");
   /* dbg_sleep (2); */
   flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
   DBG_PT_WRITE (buf, phys_dp_to);
@@ -1243,6 +1384,8 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
     buf_check_deleted_refs (buf, checkpoint_in_progress ? 0 : 1);
 #endif
 
+  if (0 == dest)
+    GPF_T1 ("cannot write buffer to 0 page.");
   if (flags == DPF_INDEX)
     if (KI_TEMP != (key_id_t)SHORT_REF (buf->bd_buffer + DP_KEY_ID)
 	&& !sch_id_to_key (wi_inst.wi_schema, SHORT_REF (buf->bd_buffer + DP_KEY_ID)))
@@ -1296,7 +1439,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 	  LSEEK (dbs->dbs_fd, 0, SEEK_END);
 	  while (dbs->dbs_file_length <= off_dest)
 	    {
-	      if (PAGE_SZ != write (dbs->dbs_fd, (char *) buf->bd_buffer,
+	      if (PAGE_SZ != write (dbs->dbs_fd, (char *)(buf->bd_buffer),
 		      PAGE_SZ))
 		{
 		  log_error ("Write failure on database %s", dbs->dbs_file);
@@ -1315,7 +1458,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 	    }
 	  if (off_dest == dbs->dbs_file_length)
 	    bytes = PAGE_SZ;
-	  rc = write (dbs->dbs_fd, (char *) buf->bd_buffer, bytes);
+	  rc = write (dbs->dbs_fd, (char *)(buf->bd_buffer), bytes);
 	  if (rc != bytes)
 	    {
 	      log_error ("Write failure on database %s", dbs->dbs_file);
@@ -1701,9 +1844,9 @@ dbs_extend_pagesets (dbe_storage_t * dbs)
 OFF_T
 dbs_extend_file (dbe_storage_t * dbs)
 {
-  static char blank[PAGE_SZ];
   OFF_T n;
   OFF_T new_file_length;
+  static ALIGNED_PAGE_ZERO (zero);
   if (dbs->dbs_disks)
     return dbs_extend_stripes (dbs);
 
@@ -1719,7 +1862,7 @@ Some ramdrive-like drivers and ncache-like disk-caches may die on shorter
 length, NFS may die with 1.8Gb files on some obsolete VPNs.
 For safety, integer overflow check added. */
       if (
-        (PAGE_SZ != write (dbs->dbs_fd, (char *) blank, PAGE_SZ)) ||
+        (PAGE_SZ != write (dbs->dbs_fd, (char *) zero, PAGE_SZ)) ||
 #if 0
 #ifdef WIN32
         ( !(new_file_length & 0x0FFFFFFFL) &&
@@ -1772,16 +1915,11 @@ dbs_extend_stripes (dbe_storage_t * dbs)
   OFF_T stripe_next_size = dbs_next_size(dbs,ds,&n);
   long inx;
   long new_pages = 0;
-  static char* zero = 0;
+  ALIGNED_PAGE_ZERO (zero);
   if (!stripe_growth_ratio)
     {
       log_error ("Cannot extend stripe with ratio %ld", stripe_growth_ratio);
       return -1;
-    }
-  if (!zero)
-    {
-      zero = (char *) dk_alloc (PAGE_SZ);
-      memset (zero, 0, PAGE_SZ);
     }
   DO_BOX (disk_stripe_t *, dst, inx, ds->ds_stripes)
     {
@@ -2177,12 +2315,11 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
 int
 dbs_open_disks (dbe_storage_t * dbs)
 {
-  dtp_t zero[PAGE_SZ];
   int inx;
   dp_addr_t pages = 0;
   int first_exists = 0;
   int is_first = 1;
-  memset (zero, 0, sizeof (zero));
+  ALIGNED_PAGE_ZERO (zero);
   DO_SET (disk_segment_t *, ds, &dbs->dbs_disks)
   {
     OFF_T stripe_size = ( (OFF_T) ds->ds_size / ds->ds_n_stripes) * PAGE_SZ;
@@ -2205,7 +2342,7 @@ dbs_open_disks (dbe_storage_t * dbs)
 	  dst->dst_fd_fill = 0;
 	  for (inx = 0; inx < n_fds_per_file; inx++)
 	    {
-	      int fd = fd_open (dst->dst_file, OPEN_FLAGS);
+	      int fd = fd_open (dst->dst_file, DB_OPEN_FLAGS);
 	      if (-1 == fd)
 		{
 		  log_error ("Cannot open stripe on %s (%d)",
@@ -2329,7 +2466,8 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
 {
   disk_stripe_t *dst = NULL;
   wi_database_t db;
-  int fd;
+  int fd, rc;
+  ALIGNED_PAGE_ZERO (zero);
   if (dbs->dbs_disks)
     {
       OFF_T off;
@@ -2360,10 +2498,18 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
   LSEEK (fd, 0, SEEK_SET);
 #ifdef BYTE_ORDER_REV_SUPPORT
   if (dbs_reverse_db == 1)
-    write (fd, (char *) &rev_cfg, sizeof (db));
+    {
+      memcpy (zero, &rev_cfg, sizeof (rev_cfg));
+      write (fd, (char *) zero, sizeof (db));
+    }
   else
 #endif
-    write (fd, (char *) &db, sizeof (db));
+    {
+      memcpy (zero, &db, sizeof (db));
+      rc = write (fd, zero, PAGE_SZ);
+      if (PAGE_SZ != rc)
+	printf  ("failed write of 0 page errno %d\n", errno);
+    }
   if (dst)
     dst_fd_done (dst, fd);
 }
@@ -2736,6 +2882,7 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
   disk_stripe_t *dst = NULL;
   int storage_ver;
   int fd;
+  ALIGNED_PAGE_ZERO (zero);
   if (dbs->dbs_disks)
     {
       OFF_T off;
@@ -2745,8 +2892,8 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
   else
     fd = dbs->dbs_fd;
   LSEEK (fd, 0, SEEK_SET);
-  read (fd, (char *) cfg_page, sizeof (wi_database_t));
-
+  read (fd, (char *) zero, PAGE_SZ);
+  memcpy (cfg_page, zero, sizeof (*cfg_page));
   storage_ver = atoi (cfg_page->db_generic);
   if (storage_ver > atoi (DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR))
     {
@@ -2826,6 +2973,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
     }
   else
     {
+      int of = DB_OPEN_FLAGS;
       file_set_rw (dbs->dbs_file);
       if (DBS_TEMP == type)
 	{
@@ -2844,8 +2992,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 	    }
 	  dk_free_box (sz);
 	}
-
-      fd = fd_open (dbs->dbs_file, OPEN_FLAGS);
+      fd = fd_open (dbs->dbs_file, of);
       if (-1 == fd)
 	{
 	  log_error ("Cannot open database in %s (%d)", dbs->dbs_file, errno);

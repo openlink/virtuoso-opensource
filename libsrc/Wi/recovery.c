@@ -847,7 +847,7 @@ db_to_log (void)
   log_info ("Database dump started");
   sqlc_hook_enable = 0;
 
-  log_checkpoint (wi_inst.wi_master, NULL);
+  log_checkpoint (wi_inst.wi_master, NULL, CPT_DB_TO_LOG);
   bootstrap_cli->cli_replicate = REPL_LOG;
   IN_TXN;
   cli_set_new_trx (bootstrap_cli);
@@ -962,7 +962,7 @@ backup_prepare (query_instance_t * qi, char * file)
 
 	  /* try to open file */
 	  file_set_rw(fname);
-	  if ((fd = fd_open(fname, OPEN_FLAGS)) < 0)
+	  if ((fd = fd_open(fname, LOG_OPEN_FLAGS)) < 0)
             {
 	      errmsg = strerror(errno);
 	      log_warning ("backup_prepare: %s: %s",
@@ -994,7 +994,7 @@ backup_prepare (query_instance_t * qi, char * file)
        */
 
       file_set_rw (fname);
-      if ((fd = fd_open (fname, OPEN_FLAGS)) == -1)
+      if ((fd = fd_open (fname, LOG_OPEN_FLAGS)) == -1)
 	{
 	  char *errmsg = strerror(errno);
 
@@ -1301,7 +1301,7 @@ db_crash_to_log (char *mode)
   sqlc_hook_enable = 0;
 
   log_enable_segmented (1);
-  log_checkpoint (wi_inst.wi_master, NULL);
+  log_checkpoint (wi_inst.wi_master, NULL, CPT_DB_TO_LOG);
 
   if (!bootstrap_cli)
     bootstrap_cli = client_connection_create ();

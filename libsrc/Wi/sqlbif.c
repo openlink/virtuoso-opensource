@@ -169,6 +169,7 @@
  */
 
 #include "sqlnode.h"
+#include "sqlver.h"
 #include "sqlfn.h"
 #include "eqlcomp.h"
 #include "lisprdr.h"
@@ -11189,7 +11190,27 @@ bif_byte_order_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return 0;
   if (order != DB_ORDER_UNKNOWN && order != DB_SYS_BYTE_ORDER)
     {
-      log_error ("The transaction file has been produced with wrong byte order. Please, delete it and start the server again");
+      log_error ("The transaction log file has been produced with wrong byte order. You can not replay it on this machine. "
+"If the transaction log is empty or you don't want to replay it then delete it and start the server again.");
+      call_exit(0);
+    }
+  return NEW_DB_NULL;
+}
+
+caddr_t
+bif_server_version_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t version = bif_string_arg (qst, args, 0, "server_version_check");
+  caddr_t *qi = QST_INSTANCE (qst);
+  if (!QI_IS_DBA (qi))
+    return 0;
+  if (strcmp (version, DBMS_SRV_VER))
+    {
+      log_error ("The transaction log file has been produced by server version '%s'. "
+"The version of this server is '%s'. "
+"If the transaction log is empty or you don't want to replay it then delete it and start the server again. "
+"Otherwise replay the log using the server of version '%s' and make checkpoint and shutdown to ensure that the log is empty, then delete it and start using new version.",
+        version, DBMS_SRV_VER, version );
       call_exit(0);
     }
   return NEW_DB_NULL;
@@ -12517,8 +12538,9 @@ sql_bif_init (void)
   /* for system use only ruslan@openlinksw.com */
   bif_define ("raw_length", bif_raw_length);
 
-  /* check byteorder in the log */
+  /* check byteorder/version in the log */
   bif_define ("byte_order_check", bif_byte_order_check);
+  bif_define ("server_version_check", bif_server_version_check);
 
   /* bit operations for BPEL */
   bif_define ("bit_set", bif_bit_set);

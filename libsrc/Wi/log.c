@@ -28,6 +28,7 @@
 
 #include "sqlnode.h"
 #include "sqlfn.h"
+#include "sqlver.h"
 #include "log.h"
 #include "repl.h"
 /* IvAn/XperUpdate/000904 Xper support added. */
@@ -80,19 +81,14 @@ err_log_error (caddr_t err)
 }
 
 void
-log_set_byte_order_check(int in_txn)
+log_set_compatibility_check (int in_txn, char *strg)
 {
-  char tmp[255];
   caddr_t * cbox;
   dk_session_t * ses;
   caddr_t box;
   dbe_storage_t * dbs = wi_inst.wi_master;
   caddr_t trx_string;
 
-  if (!dbs->dbs_log_session)
-    return;
-
-  sprintf (tmp, "byte_order_check (%d)", DB_SYS_BYTE_ORDER);
   cbox = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * LOG_HEADER_LENGTH,
 				   DV_ARRAY_OF_POINTER);
   ses = strses_allocate();
@@ -100,7 +96,7 @@ log_set_byte_order_check(int in_txn)
     {
 
       session_buffered_write_char (LOG_TEXT, ses);
-      box = box_string (tmp);
+      box = box_string (strg);
       print_object (box, ses, NULL, NULL);
       dk_free_box (box);
 
@@ -121,6 +117,33 @@ log_set_byte_order_check(int in_txn)
   END_WRITE_FAIL (dbs->dbs_log_session);
 }
 
+
+void
+log_set_byte_order_check (int in_txn)
+{
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  char tmp[255];
+  if (!dbs->dbs_log_session)
+    return;
+
+  sprintf (tmp, "byte_order_check (%d)", DB_SYS_BYTE_ORDER);
+  log_set_compatibility_check (in_txn, tmp);
+}
+
+
+void
+log_set_server_version_check (int in_txn)
+{
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  char tmp[255];
+  if (!dbs->dbs_log_session)
+    return;
+
+  sprintf (tmp, "server_version_check ('%s')", DBMS_SRV_VER);
+  log_set_compatibility_check (in_txn, tmp);
+}
+
+
 int
 log_enable_segmented (int rewrite)
 {
@@ -131,7 +154,7 @@ log_enable_segmented (int rewrite)
     return LTE_OK;
   dbs->dbs_current_log_segment = ls;
   dbs->dbs_log_name = box_string (ls->ls_file);
-  fd = fd_open (ls->ls_file, OPEN_FLAGS);
+  fd = fd_open (ls->ls_file, LOG_OPEN_FLAGS);
   if (fd < 0)
     return LTE_LOG_FAILED;
   if (!dbs->dbs_log_session)
@@ -146,7 +169,8 @@ log_enable_segmented (int rewrite)
   if (rewrite)
     {
     FTRUNCATE (fd, 0);
-      log_set_byte_order_check(1);
+      log_set_byte_order_check (1);
+      log_set_server_version_check (1);
     }
   return LTE_OK;
 }
@@ -182,7 +206,7 @@ log_change_if_needed (lock_trx_t * lt, int rewrite)
 	  return LTE_LOG_FAILED;
 	}
       dbs->dbs_current_log_segment = ls;
-      new_fd = fd_open (ls->ls_file, OPEN_FLAGS);
+      new_fd = fd_open (ls->ls_file, LOG_OPEN_FLAGS);
       if (new_fd < 0)
 	{
 	  srv_report_errno_trx_error (lt, "Error opening the log segment file",
@@ -196,7 +220,8 @@ log_change_if_needed (lock_trx_t * lt, int rewrite)
       if (rewrite)
 	{
 	FTRUNCATE (new_fd, 0);
-	  log_set_byte_order_check(1);
+	  log_set_byte_order_check (1);
+	  log_set_server_version_check (1);
 	}
     }
   return LTE_OK;
@@ -221,7 +246,7 @@ log_commit (lock_trx_t * lt)
       OFF_T off;
       int fd;
       file_set_rw (dbs->dbs_log_name);
-      fd = fd_open (dbs->dbs_log_name, OPEN_FLAGS);
+      fd = fd_open (dbs->dbs_log_name, LOG_OPEN_FLAGS);
       off = LSEEK (fd, 0, SEEK_END);
       if (strchr (wi_inst.wi_open_mode, 'D') && off)
 	{
@@ -351,6 +376,35 @@ log_commit (lock_trx_t * lt)
 #endif
     }
 }
+
+
+int
+log_text_array_sync (lock_trx_t * lt, caddr_t box)
+{
+  int rc;
+  static dk_session_t * sync_log =  NULL;
+  dk_session_t * lt_log;
+  dk_set_t blob_log;
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return LTE_OK;
+  ASSERT_IN_MTX (log_write_mtx);
+  lt_log = lt->lt_log;
+  blob_log = lt->lt_blob_log;
+  lt->lt_blob_log = NULL;
+  if(!sync_log)
+    sync_log = strses_allocate ();
+  lt->lt_log =sync_log;
+  session_buffered_write_char (LOG_TEXT, lt->lt_log);
+  print_object (box, lt->lt_log, NULL, NULL);
+  rc = log_commit (lt);
+  strses_flush (sync_log);
+  sync_log->dks_bytes_sent = 0;
+
+  lt->lt_log = lt_log;
+  lt->lt_blob_log = blob_log;
+  return rc;
+}
+
 
 #ifdef VIRTTP
 int
@@ -1606,7 +1660,7 @@ read_again:
 
 
 void
-log_checkpoint (dbe_storage_t * dbs, char *new_log)
+log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 {
   if (!new_log)
     {
@@ -1614,7 +1668,9 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log)
 	{
 	  LSEEK (tcpses_get_fd (dbs->dbs_log_session->dks_session), 0, SEEK_SET);
 	  FTRUNCATE (tcpses_get_fd (dbs->dbs_log_session->dks_session), (OFF_T) (0));
-	  log_set_byte_order_check(1);
+	  log_set_byte_order_check (1);
+          if (CPT_SHUTDOWN != shutdown)
+	    log_set_server_version_check (1);
 	  log_info ("Checkpoint made, log reused");
 	}
       else
@@ -1628,7 +1684,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log)
 	{
 	  int new_fd;
 	  file_set_rw (new_log);
-	  new_fd = fd_open (new_log, OPEN_FLAGS);
+	  new_fd = fd_open (new_log, LOG_OPEN_FLAGS);
 	  if (-1 == new_fd)
 	    {
 	      log_error ("Cannot change to log file %s", new_log);
@@ -1646,7 +1702,9 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log)
 	  dbs->dbs_log_name = box_string (new_log);
 	}
       cfg_replace_log (new_log);
-      log_set_byte_order_check(1);
+      log_set_byte_order_check (1);
+      if (CPT_SHUTDOWN != shutdown)
+        log_set_server_version_check (1);
       log_info ("Checkpoint made, new log is %s", new_log);
     }
   dbs->dbs_log_length = 0;
@@ -1663,7 +1721,7 @@ log_init (dbe_storage_t * dbs)
     {
       int log_fd;
       file_set_rw (dbs->dbs_log_name);
-      log_fd = fd_open (dbs->dbs_log_name, OPEN_FLAGS);
+      log_fd = fd_open (dbs->dbs_log_name, LOG_OPEN_FLAGS);
       if (log_fd == -1)
 	{
 	  log_error ("Can't open log : %m");
@@ -1676,7 +1734,10 @@ log_init (dbe_storage_t * dbs)
       tcpses_set_fd (dbs->dbs_log_session->dks_session, log_fd);
       dbs->dbs_log_length = LSEEK (log_fd, 0, SEEK_END);
       if (!dbs->dbs_log_length)
+        {
 	log_set_byte_order_check(0);
+	  log_set_server_version_check (1);
+        }
     }
   if (f_read_from_rebuilt_database)
     {
@@ -1689,7 +1750,7 @@ log_init (dbe_storage_t * dbs)
 	  dbs->dbs_current_log_segment = ls;
 	  log_info ("Processing log segment %s", ls->ls_file);
 	  file_set_rw (ls->ls_file);
-	  log_fd = fd_open (ls->ls_file, OPEN_FLAGS);
+	  log_fd = fd_open (ls->ls_file, LOG_OPEN_FLAGS);
 	  if (log_fd == -1)
 	    {
 	      log_error ("Can't open log segment : %m");

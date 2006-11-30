@@ -360,7 +360,9 @@ void it_temp_tree (index_tree_t * it);
 #if !defined (__APPLE__)
 void it_not_in_any (du_thread_t * self, index_tree_t * except);
 #endif
-buffer_desc_t * buffer_allocate (int type);
+extern buffer_desc_t * buffer_allocate (int type);
+extern void buffer_free (buffer_desc_t * buf);
+extern void buffer_set_free (buffer_desc_t* ps);
 int buf_set_dirty (buffer_desc_t * buf);
 int buf_set_dirty_inside (buffer_desc_t * buf);
 void wi_new_dirty (buffer_desc_t * buf);
@@ -619,7 +621,7 @@ void sqlc_quote_dotted_quote (char *text, size_t tlen, int *fill, char *name, co
 /* log.c */
 
 void log_replay_file (int fd);
-void log_checkpoint (dbe_storage_t * dbs, char * new_file);
+void log_checkpoint (dbe_storage_t * dbs, char * new_file, int shutdown);
 void log_delete (lock_trx_t * lt, it_cursor_t * it, db_buf_t page, int pos);
 
 void sf_fastdown (lock_trx_t * trx);
@@ -727,6 +729,7 @@ void dbs_checkpoint (dbe_storage_t * dbs, char * log_name, int shutdown);
 #define CPT_NORMAL 0
 #define CPT_SHUTDOWN 1
 #define CPT_INC_RESET 2
+#define CPT_DB_TO_LOG 3
 void dbs_read_checkpoint_remap (dbe_storage_t * dbs, dp_addr_t from);
 int isp_can_reuse_logical (index_space_t * isp, dp_addr_t dp);
 

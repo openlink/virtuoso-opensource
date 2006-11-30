@@ -801,7 +801,7 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
 	IN_DBS (dbs);
 	LEAVE_DBS (dbs);
 	if (DBS_PRIMARY == dbs->dbs_type)
-	  log_checkpoint (dbs, log_name);
+	  log_checkpoint (dbs, log_name, shutdown);
       }
     END_DO_SET();
     mcp_itc->itc_is_in_map_sem = 0;

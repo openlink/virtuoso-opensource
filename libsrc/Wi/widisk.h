@@ -414,6 +414,9 @@ struct log_segment_s
 # define file_set_rw(name) \
     SetFileAttributes (name, FILE_ATTRIBUTE_ARCHIVE); \
 
+# define DB_OPEN_FLAGS	OPEN_FLAGS
+# define LOG_OPEN_FLAGS OPEN_FLAGS
+
 #else
 
 # ifndef O_BINARY
@@ -424,19 +427,47 @@ struct log_segment_s
 #define O_LARGEFILE	0
 #endif
 
+#ifndef O_DIRECT
+#define O_MAYBE_DIRECT 0
+#else
+extern int c_use_o_direct;
+#define O_MAYBE_DIRECT (c_use_o_direct ? O_DIRECT : 0)
+#endif
+
 #if defined (FILE64)
+# define DB_OPEN_FLAGS	O_RDWR | O_CREAT | O_BINARY | O_LARGEFILE | O_MAYBE_DIRECT
 # define OPEN_FLAGS	O_RDWR | O_CREAT | O_BINARY | O_LARGEFILE
 # define OPEN_FLAGS_RO	O_RDONLY | O_BINARY | O_LARGEFILE
 #else
+# define DB_OPEN_FLAGS	O_RDWR | O_CREAT | O_BINARY | O_MAYBE_DIRECT
 # define OPEN_FLAGS	O_RDWR | O_CREAT | O_BINARY
 # define OPEN_FLAGS_RO	O_RDONLY | O_BINARY
 #endif /* FILE64 */
+#define LOG_OPEN_FLAGS OPEN_FLAGS
 
 # define fd_open(N,M)	open (N, M, 0600)
 # define fd_close(f,n)	close (f)
 # define file_set_rw(N)
 
 #endif
+
+
+/* aligned temp buffers in case )_DIRECT wants aligned buffers */
+
+#define ALIGN_8K(p) ((void*) _RNDUP_PWR2 (((ptrlong)p), 8192))
+
+#define ALIGNED_PAGE_ZERO(n) \
+  dtp_t n##a[2 * PAGE_SZ]; \
+  db_buf_t n= (db_buf_t) ALIGN_8K(&n##a[0]); \
+  memset (n, 0, PAGE_SZ)
+
+#define ALIGNED_PAGE_BUFFER(n) \
+  dtp_t n##a[2 * 8192]; \
+  db_buf_t n= (db_buf_t) ALIGN_8K(&n##a[0])
+
+#define IS_IO_ALIGN(x) \
+  (0 == (((unsigned ptrlong) (x)) & (PAGE_SZ - 1)))
+
 
 #define DB_ORDER_UNKNOWN		0
 #define DB_ORDER_BIG_ENDIAN		1

@@ -122,7 +122,6 @@ static void backup_path_init ();
 static int ob_check_file (caddr_t elt, caddr_t ctx, caddr_t dir);
 static int ob_foreach_dir (caddr_t * dirs, caddr_t ctx, ob_err_ctx_t* e_ctx, file_check_f func);
 static int ob_get_num_from_file (caddr_t file, caddr_t prefix);
-static void page_set_free (buffer_desc_t* ps);
 static buffer_desc_t* read_free_set_from_disk ();
 static int try_to_change_dir (ol_backup_context_t * ctx);
 static void backup_context_flush (ol_backup_context_t * ctx);
@@ -356,7 +355,8 @@ int ol_buf_disk_read (buffer_desc_t* buf)
   dbe_storage_t* dbs = buf->bd_storage;
   OFF_T off;
   OFF_T rc;
-
+  if (!IS_IO_ALIGN (buf->bd_buffer))
+    GPF_T1 ("ol_buf_disk_read (): The buffer is not io-aligned");
   if (dbs->dbs_disks)
     {
       disk_stripe_t *dst = dp_disk_locate (dbs, buf->bd_physical_page, &off);
@@ -399,12 +399,6 @@ int ol_buf_disk_read (buffer_desc_t* buf)
   return WI_OK;
 }
 
-void buffer_free (buffer_desc_t * buf)
-{
-  dk_free (buf->bd_buffer, PAGE_SZ);
-  dk_free (buf, sizeof (buffer_desc_t));
-}
-
 
 int
 ol_write_cfg_page (ol_backup_context_t * ctx)
@@ -440,19 +434,6 @@ ol_write_cfg_page (ol_backup_context_t * ctx)
     }
   buffer_free (buf);
   return res;
-}
-
-static
-void delete_page_set (buffer_desc_t * page_set)
-{
-  buffer_desc_t * buf = page_set;
-  while (buf)
-    {
-      buffer_desc_t * next_buf = buf->bd_next;
-      dk_free (buf->bd_buffer, PAGE_SZ);
-      dk_free (buf, sizeof (buffer_desc_t));
-      buf = next_buf;
-    }
 }
 
 int
@@ -538,7 +519,7 @@ ol_write_free_set (ol_backup_context_t * backup_ctx, dbe_storage_t * storage)
     }
 
   res = ol_write_page_set (backup_ctx, free_set_copy, 0);
-  delete_page_set (free_set_copy);
+  buffer_set_free (free_set_copy);
   return res;
 }
 
@@ -711,7 +692,7 @@ is_in_backup_set  (ol_backup_context_t * octx, dp_addr_t page)
 dp_addr_t
 db_backup_pages (ol_backup_context_t * backup_ctx, dp_addr_t start_dp, dp_addr_t end_dp)
 {
-  unsigned char bd_buffer[PAGE_SZ];
+  ALIGNED_PAGE_BUFFER (bd_buffer);
   buffer_desc_t stack_buf;
   buffer_desc_t *buf = &stack_buf;
   dp_addr_t end_page;
@@ -789,18 +770,9 @@ backup_context_free (ol_backup_context_t * ctx)
 
   dk_free_box (ctx->octx_error_code);
   dk_free_box (ctx->octx_error_string);
-
-  while (incset)
-    {
-      buffer_desc_t * buf = incset->bd_next;
-      dk_free (incset->bd_buffer, PAGE_SZ);
-      dk_free (incset, sizeof (buffer_desc_t));
-
-      incset = buf;
-    }
+  buffer_set_free (incset);
   dk_free_tree (list_to_array (ctx->octx_backup_files));
-
-  page_set_free (ctx->octx_free_set);
+  buffer_set_free (ctx->octx_free_set);
   if (ctx->octx_cpt_remap_r)
     hash_table_free (ctx->octx_cpt_remap_r);
   dk_free (ctx, sizeof (ol_backup_context_t));
@@ -1131,17 +1103,6 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   return 0; /* keeps compiler happy */
 }
 
-void page_set_free (buffer_desc_t* ps)
-{
-  while (ps)
-    {
-      buffer_desc_t * buf = ps->bd_next;
-      dk_free (ps->bd_buffer, PAGE_SZ);
-      dk_free (ps, sizeof (buffer_desc_t));
-      ps = buf;
-    }
-}
-
 buffer_desc_t * read_free_set_from_disk ()
 {
   buffer_desc_t *cfg_buf = buffer_allocate (DPF_CP_REMAP);
@@ -1168,8 +1129,8 @@ buffer_desc_t * read_free_set_from_disk ()
 		free_set_ps->bd_next = 0;
 	      else
 		{
-		  page_set_free (free_set_ps);
-		  page_set_free (cfg_buf);
+		  buffer_set_free (free_set_ps);
+		  buffer_set_free (cfg_buf);
 		  log_error ("could not read free set");
 		  return 0;
 		}
@@ -1180,8 +1141,8 @@ buffer_desc_t * read_free_set_from_disk ()
 	      free_set_curr->bd_next = new_free_set_buf;
 	      if (WI_ERROR == ol_buf_disk_read (new_free_set_buf))
 		{
-		  page_set_free (free_set_ps);
-		  page_set_free (cfg_buf);
+		  buffer_set_free (free_set_ps);
+		  buffer_set_free (cfg_buf);
 
 		  log_error ("could not read free set");
 		  return 0;
@@ -1190,12 +1151,12 @@ buffer_desc_t * read_free_set_from_disk ()
 	      free_set_start = LONG_REF (new_free_set_buf->bd_buffer + DP_OVERFLOW);
 	    }
 	}
-      page_set_free (cfg_buf);
+      buffer_set_free (cfg_buf);
       return free_set_ps;
     }
   else
     log_error ("could not read config page");
-  page_set_free (cfg_buf);
+  buffer_set_free (cfg_buf);
   return 0;
 }
 
@@ -1284,8 +1245,7 @@ bif_backup_online (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t * backup_path_arr = backup_patha;
   ob_err_ctx_t e_ctx;
   memset (&e_ctx, 0, sizeof (ob_err_ctx_t));
-
-
+  QI_CHECK_STACK (qi, &qi, OL_BACKUP_STACK_MARGIN);
   QR_RESET_CTX
     {
       file_prefix = bif_string_arg (qst, args, 0, "backup_online");
@@ -1577,7 +1537,8 @@ buf_disk_raw_write (buffer_desc_t* buf)
   dp_addr_t dest = buf->bd_physical_page;
   OFF_T off;
   OFF_T rc;
-
+  if (!IS_IO_ALIGN (buf->bd_buffer))
+    GPF_T1 ("buf_disk_raw_write (): The buffer is not io-aligned");
   if (dbs->dbs_disks)
     {
       disk_stripe_t *dst = dp_disk_locate (dbs, dest, &off);
@@ -1605,7 +1566,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
 	  LSEEK (dbs->dbs_fd, 0, SEEK_END);
 	  while (dbs->dbs_file_length <= off_dest)
 	    {
-	      if (PAGE_SZ != write (dbs->dbs_fd, (char *) buf->bd_buffer,
+	      if (PAGE_SZ != write (dbs->dbs_fd, (char *)(buf->bd_buffer),
 		      PAGE_SZ))
 		{
 		  log_error ("Write failure on database %s", dbs->dbs_file);
@@ -1622,7 +1583,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
 	      log_error ("Seek failure on database %s", dbs->dbs_file);
 	      GPF_T;
 	    }
-	  rc = write (dbs->dbs_fd, (char *) buf->bd_buffer, PAGE_SZ);
+	  rc = write (dbs->dbs_fd, (char *)(buf->bd_buffer), PAGE_SZ);
 	  if (rc != PAGE_SZ)
 	    {
 	      log_error ("Write failure on database %s", dbs->dbs_file);
@@ -1737,7 +1698,7 @@ check_configuration (caddr_t page_buf)
 static int
 insert_page (ol_backup_context_t* ctx, dp_addr_t page_dp)
 {
-  unsigned char page_buf[PAGE_SZ];
+  ALIGNED_PAGE_BUFFER (page_buf);
   buffer_desc_t buf;
   caddr_t compr_buf;
 
@@ -2105,23 +2066,18 @@ uncompress_buffer (caddr_t compr, unsigned char* page_buf)
 static
 buffer_desc_t * incset_make_copy (buffer_desc_t * incset_orig_buf)
 {
-  buffer_desc_t * incset_buf = (buffer_desc_t *) dk_alloc (sizeof (buffer_desc_t));
+  buffer_desc_t * incset_buf = buffer_allocate (~0);
   buffer_desc_t * incset_copy = incset_buf;
   buffer_desc_t * incset_prev_buf = incset_buf;
-
-  incset_buf->bd_buffer = (db_buf_t) dk_alloc (PAGE_SZ);
   memcpy (incset_buf->bd_buffer, incset_orig_buf->bd_buffer, PAGE_SZ);
-
   incset_orig_buf = incset_orig_buf->bd_next;
 
   while (incset_orig_buf)
     {
-      incset_buf = (buffer_desc_t *) dk_alloc (sizeof (buffer_desc_t));
-      incset_buf->bd_buffer = (db_buf_t) dk_alloc (PAGE_SZ);
+      incset_buf = buffer_allocate (~0);
       memcpy (incset_buf->bd_buffer, incset_orig_buf->bd_buffer, PAGE_SZ);
       incset_prev_buf->bd_next = incset_buf;
-      incset_prev_buf = incset_prev_buf->bd_next;
-
+      incset_prev_buf = incset_buf;
       incset_orig_buf = incset_orig_buf->bd_next;
     }
   incset_buf->bd_next = 0;
@@ -2238,15 +2194,7 @@ long dbs_count_incbackup_pages (dbe_storage_t * dbs)
     }
 
   c = dbs_count_pageset_items_2 (dbs, incbps);
-
-  while (incbps)
-    {
-      buffer_desc_t * buf = incbps->bd_next;
-      dk_free (incbps->bd_buffer, PAGE_SZ);
-      dk_free (incbps, sizeof (buffer_desc_t));
-
-      incbps = buf;
-    }
+  buffer_set_free (incbps);
   return c;
 }
 

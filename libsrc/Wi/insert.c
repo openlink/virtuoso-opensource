@@ -1898,11 +1898,7 @@ pr_free (page_rel_t * pr, int pr_fill)
   for (inx = 0; inx < pr_fill; inx++)
     {
       dk_free_box (pr[inx].pr_leaf_ptr);
-      if (pr[inx].pr_new_buf)
-	{
-	  dk_free (pr[inx].pr_new_buf->bd_buffer, -1);
-	  dk_free ((caddr_t) pr[inx].pr_new_buf, sizeof (buffer_desc_t));
-	}
+      buffer_free (pr[inx].pr_new_buf);
       if (leave && pr[inx].pr_buf->bd_is_write)
 	page_leave_inner (pr[inx].pr_buf);
     }
