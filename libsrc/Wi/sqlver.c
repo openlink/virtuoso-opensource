@@ -33,10 +33,11 @@ char *build_date = __DATE__;			/* eg. Jul 16 1996 */
 
 /* IvAn/VC6port/000725 VC6 has a bug: you can't use /D NAME="\"string\"" cmd-line arg sometimes */
 #ifdef _MSC_VER
-char *build_host_id = "Windows";
 #ifdef _WIN64
+char *build_host_id = "x86_64-generic-win-64";
 char *build_opsys_id = "Win64";
 #else
+char *build_host_id = "i686-generic-win-32";
 char *build_opsys_id = "Win32";
 #endif
 #else
