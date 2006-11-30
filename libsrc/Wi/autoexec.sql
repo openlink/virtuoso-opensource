@@ -22,57 +22,24 @@
 --  
 create procedure DB.DBA.ddl_load_script (in _filename varchar)
 {
-  declare _text varchar;	-- Content of file to load
-  declare _cmd varchar;		-- One command from \c _text to execute
-  declare _line varchar;	-- Last line
-  declare _row_no integer;	-- Number of current line in the file
-  declare _first_row integer;	-- Number of first line of group of commands
-  declare _errctr integer;	-- Number of errors
-  declare _pos integer;		-- Position of the next CR in _text
-  declare _status, _message varchar;
-  _text := file_to_string (_filename);
---  dbg_printf('\n-- Loading file \'%s\'', _filename);
-  _row_no := 0;
-  _first_row := 1;
-  _errctr := 0;
-  _cmd := '';
-next_line:
-  if(_text = '')
-    goto eof;
-  _row_no := _row_no+1;
-  _pos := strchr (_text, '\n');
-  if (_pos is null or _pos = length(_text)-1)
+  declare cnt, parts, errors any;
+  cnt := file_to_string (_filename);
+  parts := sql_split_text (cnt);
+  foreach (varchar s in parts) do
     {
-      _cmd := concat(_cmd, '\n', _text);
-      _text := '';
-      goto cmd_found;
-    }
-  _line := subseq (_text, 0, _pos);
-  _text := subseq (_text, _pos+1);
-  if (ltrim (_line, ' \t\r') = '')
-    goto cmd_found;
-  _cmd := concat(_cmd, '\n', _line);
-  goto next_line;
-cmd_found:
-  _status := '';
-  _message := 'OK';
-  _cmd := rtrim (_cmd, ' \t\n\r;');
-  _cmd := ltrim (_cmd, ' \t\n\r');
-  if (_cmd = '')
-    goto next_line;
-  exec (_cmd, _status, _message);
-  if (_message<>'OK')
+      declare stat, msg any;
+      stat := '00000';
+      exec (s, stat, msg);
+      if (stat <> '00000')
     {
-      dbg_printf ('\nError on loading file \'%s\', lines %d-%d:\n%s',
-       _filename, _first_row, _row_no, _cmd );
-      dbg_printf ('Status returned: %s %s', _status, _message);
-      _errctr := _errctr+1;
+	  log_message (sprintf ('Error in autoexec.isql: [%s] %s', stat, msg));
+	  rollback work;
     }
-  _cmd := '';
-  _first_row := _row_no+1;
-  goto next_line;
-eof:;
---  dbg_printf('\n-- File \'%s\' loaded with %d errors', _filename, _errctr);
+      else
+    {
+	  commit work;
+	}
+    }
 }
 ;
 
