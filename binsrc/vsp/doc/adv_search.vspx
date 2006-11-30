@@ -776,16 +776,27 @@ while (i < t/n)
         http_rewrite ();
         http_header ('Content-Type: text/xml\r\n');
 
+        declare _is_dav integer;
+        declare _path varchar;
+        _is_dav := http_map_get ('is_dav');
+        
+        if (_is_dav) 
+          _path := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:';
+        else 
+          _path := 'file:/';
+          
+        _path := _path || substring(http_physical_path(),1,strrchr(http_physical_path(),'/'));
+        
         if (self.output = 'atom'){
-      	  http_value(xslt ('file://doc/rss2atom.xsl', xtree_doc(retValue)));
+      	  http_value(xslt (_path || '/rss2atom.xsl', xtree_doc(retValue)));
           http_flush();
         }
         else if (self.output = 'rdf'){
-     	  http_value(xslt ('file://doc/rss2rdf.xsl', xtree_doc(retValue)));
+     	  http_value(xslt (_path || '/rss2rdf.xsl', xtree_doc(retValue)));
           http_flush();
         }
         else if (self.output = 'xbel')
-    	  http_value(xslt ('file://doc/rss2xbel.xsl', xtree_doc(retValue)));
+    	  http_value(xslt (_path || '/rss2xbel.xsl', xtree_doc(retValue)));
 
         else
             http(retValue);
