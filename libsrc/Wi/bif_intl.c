@@ -150,6 +150,28 @@ bif_charset_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_wide_char_string ((caddr_t) (&wcharset->chrs_table[1]), 255 * sizeof (wchar_t), DV_WIDE);
 }
 
+static caddr_t
+bif_charset_canonical_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "charset_canonical_name");
+  wcharset_t *wcharset;
+  if (!strcasecmp (name, "UTF-8"))
+    return box_copy (name);
+  wcharset = sch_name_to_charset (name);
+  if (NULL == wcharset)
+    {
+      int ctr;
+      caddr_t ucname = box_copy (name);
+      for (ctr = box_length (ucname) - 1; ctr--; /*no step*/)
+        ucname[ctr] = toupper (ucname[ctr]);
+      wcharset = sch_name_to_charset (ucname);
+      dk_free_box (ucname);
+    }
+  if (NULL != wcharset)
+    return box_dv_short_string (wcharset->chrs_name);
+  return NEW_DB_NULL;
+}
+
 #define DEFAULT_EXISTING 1
 
 /* completes the collation name the same way as a non-fully qualified table name is
@@ -802,6 +824,7 @@ bif_intl_init (void)
 {
   bif_define_typed ("collation__define", bif_collation__define, &bt_integer);
   bif_define_typed ("charset__define", bif_charset_define, &bt_integer);
+  bif_define_typed ("charset_canonical_name", bif_charset_canonical_name, &bt_integer);
   bif_define_typed ("complete_collation_name", bif_complete_collation_name, &bt_varchar);
   bif_define_typed ("collation_order_string", bif_collation_order_string, &bt_varchar);
   bif_define_typed ("current_charset", bif_current_charset, &bt_varchar);
