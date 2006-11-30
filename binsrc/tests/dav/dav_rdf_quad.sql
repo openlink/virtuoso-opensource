@@ -150,7 +150,8 @@ create procedure DB.DBA.RDF_CBD_DELETE (inout triple_list any, in graph_id any, 
             goto non_del; -- the object appears as predicate in any graph
           if (exists (select top 1 1 from DB.DBA.RDF_DATATYPE where RDT_IID = obj))
             goto non_del; -- the object is a datatype listed in DB.DBA.RDF_DATATYPE
-          qname := (select RU_QNAME from DB.DBA.RDF_URL where RU_IID = obj);
+          qname := id_to_iri (obj);
+--          qname := (select RU_QNAME from DB.DBA.RDF_URL where RU_IID = obj);
           if (qname is null)
             goto non_del; -- this is possible in case of database corruption; we can't fix it here and we should not interrupt the DAV operation. Show must go on.
           if (qname >= local_dav_uri and qname < concat (local_dav_uri, '\377\377\377\377'))
