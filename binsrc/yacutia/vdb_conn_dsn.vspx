@@ -84,11 +84,34 @@
 	        return;
 
         declare dsn_list, connected_dsn_list, u_dsn, s_dsn, f_dsn any;
+	      declare i int;
 
 	      u_dsn := sql_data_sources (1, 'user');
 	      s_dsn := sql_data_sources (1, 'system');
 	      f_dsn := y_get_file_dsns ();
-	      dsn_list := vector_concat(s_dsn,u_dsn,f_dsn);
+
+	      dsn_list := make_array (length(u_dsn) + length(s_dsn) + length(f_dsn), 'any');
+
+	      i := 0;
+	      foreach (any elm in u_dsn) do
+	        {
+		  elm := vector_concat (elm, vector('user'));
+		  dsn_list[i] := elm;
+		  i := i + 1;
+		}
+	      foreach (any elm in s_dsn) do
+	        {
+		  elm := vector_concat (elm, vector('system'));
+		  dsn_list[i] := elm;
+		  i := i + 1;
+		}
+	      foreach (any elm in f_dsn) do
+	        {
+		  elm := vector_concat (elm, vector('file'));
+		  dsn_list[i] := elm;
+		  i := i + 1;
+		}
+
 	      connected_dsn_list := vector ();
 	      for select DS_DSN from DB.DBA.SYS_DATA_SOURCE order by 1 do
 	        {
@@ -118,7 +141,8 @@
 			      url="vdb_conn_dsn.vspx">
 		    </v:button>
                     <th>DSN</th>
-                    <th>Description</th>
+                    <th>Type</th>
+                    <th>Driver</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -142,6 +166,12 @@
                   <td>
                     <v:label name="dsn_l"
                              value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
+                             format="%s"
+                             />
+                  </td>
+                  <td>
+                    <v:label name="type_l"
+                             value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
                              format="%s"
                              />
                   </td>
