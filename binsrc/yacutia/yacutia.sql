@@ -574,6 +574,7 @@ adm_db_tree ()
   http ('<db_tree>\n', ses); i := 0;
   for select distinct name_part (KEY_TABLE, 0) as TABLE_QUAL from SYS_KEYS
     union select distinct name_part (P_NAME, 0) from SYS_PROCEDURES
+    order by TABLE_QUAL
     do
     {
        i := i + 1;
@@ -4912,11 +4913,11 @@ create procedure y_execute_xq (in q any, in root any, in base any, in url any, i
 create procedure y_cli_status_proc ()
 {
   declare stat, msg, dta, mta any;
-  declare name varchar;
-  declare bin, bout, threads, st int;
+  declare name, trx, cli_id, os, app, ip varchar;
+  declare bin, bout, threads, st, lck, pid int;
 
   commit work;
-  result_names (name, bin, bout, threads);
+  result_names (name, bin, bout, threads, lck, trx, cli_id, pid, os, app, ip);
   stat := '00000';
   exec ('status (\'c\')', stat, msg, vector (), 1000, mta, dta);
 
@@ -4926,15 +4927,22 @@ create procedure y_cli_status_proc ()
       return;
     }
   st := 0;
+  trx := '';
   foreach (any elm in dta) do
     {
-      declare tmp1, tmp2, tmp3, tmp4, line any;
+      declare tmp1, tmp2, tmp3, tmp4, ctmp, line any;
       line := elm[0];
       if (st = 0)
         {
+	  ctmp := null;
+	  ctmp := regexp_match ('Client [[:alnum:]:]+', line);
 	  tmp1 := regexp_match ('Account: [[:alnum:]_]+', line);
 	  tmp2 := regexp_match ('[0-9]+ bytes in', line);
 	  tmp3 := regexp_match ('[0-9]+ bytes out', line);
+	  if (ctmp is not null)
+	    {
+	      cli_id := trim (substring (ctmp, 7, length (ctmp)), ' :');
+	    }
 	  if (tmp1 is not null and tmp2 is not null and tmp3 is not null)
 	    {
 	      name := substring (tmp1, 9, length (tmp1));
@@ -4945,11 +4953,38 @@ create procedure y_cli_status_proc ()
 	}
       else if (st = 1)
 	{
+         tmp1 := sprintf_inverse (line, 'PID: %d, OS: %s, Application: %s, IP#: %s', 0);
+	 pid := null; os := null; app := null; ip := null;
+	 if (length (tmp1) > 3)
+	   {
+	     pid := tmp1[0];
+	     os := tmp1[1];
+	     app := tmp1[2];
+	     ip := tmp1[3];
+	   }
+         st := 2;
+       }
+      else if (st = 2)
+	{
 	  tmp4 := regexp_match ('[0-9]+ threads\.', line);
+          tmp1 := regexp_match ('Transaction status: [A-Z]+,', line);
 	  if (tmp4 is not null)
 	    {
 	      threads := atoi (tmp4);
-	      result (name, bin, bout, threads);
+	    }
+	  if (tmp1 is not null)
+            {
+	      trx := rtrim (substring (tmp1, 20, length (tmp1)), ',');
+            }
+	  st := 3;
+	}
+      else if (st = 3)
+        {
+	  tmp1 := regexp_match ('Locks:.*', line);
+	  if (tmp1 is not null)
+	    {
+	      lck := length (split_and_decode (tmp1, 0, '\0\0,')) - 1;
+	      result (name, bin, bout, threads, lck, trx, cli_id, pid, os, app, ip);
 	    }
 	  st := 0;
 	}
@@ -4959,7 +4994,7 @@ create procedure y_cli_status_proc ()
 
 yacutia_exec_no_error('drop view DB.DBA.CLI_STATUS_REPORT');
 
-create procedure view CLI_STATUS_REPORT as y_cli_status_proc () (name varchar, bin int, bout int, threads int);
+create procedure view CLI_STATUS_REPORT as y_cli_status_proc () (name varchar, bin int, bout int, threads int, locks int, trx_status varchar, cli_id varchar, pid int, os varchar, app varchar, ip varchar);
 
 
 
