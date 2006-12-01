@@ -2496,20 +2496,10 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
   db.db_byte_order = DB_SYS_BYTE_ORDER;
 
   LSEEK (fd, 0, SEEK_SET);
-#ifdef BYTE_ORDER_REV_SUPPORT
-  if (dbs_reverse_db == 1)
-    {
-      memcpy (zero, &rev_cfg, sizeof (rev_cfg));
-      write (fd, (char *) zero, sizeof (db));
-    }
-  else
-#endif
-    {
-      memcpy (zero, &db, sizeof (db));
-      rc = write (fd, zero, PAGE_SZ);
-      if (PAGE_SZ != rc)
-	printf  ("failed write of 0 page errno %d\n", errno);
-    }
+  memcpy (zero, &db, sizeof (db));
+  rc = write (fd, zero, PAGE_SZ);
+  if (PAGE_SZ != rc)
+    printf  ("failed write of 0 page errno %d\n", errno);
   if (dst)
     dst_fd_done (dst, fd);
 }
@@ -2613,7 +2603,8 @@ void row_na_length(db_buf_t row, dbe_key_t *key, db_buf_t * off)
 }
 
 
-int dbs_reset_row_na (db_buf_t row, dbe_key_t * page_key)
+int 
+dbs_reset_row_na (db_buf_t row, dbe_key_t * page_key)
 {
   db_buf_t orig_row = row;
   key_id_t key_id = DBS_REV_SHORT_REF (orig_row + IE_KEY_ID);
@@ -2697,6 +2688,7 @@ int dbs_reset_row_na (db_buf_t row, dbe_key_t * page_key)
 	  DBS_REVERSE_SHORT (row + off);
 	  break;
 	case DV_LONG_INT:
+	case DV_IRI_ID:
 	  DBS_REVERSE_LONG (row + off);
 	  break;
 	case DV_ARRAY_OF_LONG:
@@ -2716,8 +2708,16 @@ int dbs_reset_row_na (db_buf_t row, dbe_key_t * page_key)
     {
       DBS_REVERSE_LONG (orig_row + IE_LEAF);
     }
+  if (key_id && row_key && row_key->key_is_bitmap)
+    {
+      int off, len, _e =0;
+      KEY_COL_RESET_NA (row_key, row, (*row_key->key_bm_cl), off, len);
+    }
+
   return IE_NEXT (orig_row);
 }
+
+
 void dbs_rev_h_index  (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   if (buf->bd_physical_page && dbs_is_free_page (dbs, buf->bd_physical_page))
