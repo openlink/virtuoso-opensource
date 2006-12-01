@@ -28,6 +28,10 @@
 
 #include "Dk.h"
 
+#ifdef UNIX
+long init_brk;
+#endif
+
 #ifndef MALLOC_DEBUG
 
 #ifdef dk_alloc
@@ -279,10 +283,6 @@ uint32 malloc_hits;
 uint32 malloc_misses;
 uint32 thread_malloc_hits;
 uint32 thread_malloc_misses;
-#ifdef UNIX
-long init_brk;
-#endif
-
 
 /*##**********************************************************************
  *
