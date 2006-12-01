@@ -905,7 +905,9 @@ bif_proc_table_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
 {
   state_slot_t vals[TB_MAX_COLS];
   state_slot_t *pvals_buf[TB_MAX_COLS + 20], **saved_slots;
-  hash_area_t *ha = (hash_area_t *) cli->cli_result_ts;
+  hash_area_t *ha_orig = (hash_area_t *) cli->cli_result_ts;
+  hash_area_t ha_copy = *ha_orig;
+  hash_area_t *ha = &ha_copy;
   itc_ha_feed_ret_t ihfr;
   caddr_t * result_qst = (caddr_t *) cli->cli_result_qi;
   state_slot_t *proc_ctr = ha->ha_slots[0];
