@@ -163,6 +163,121 @@ spar_make_iri_from_template (sparp_t *sparp, caddr_t tmpl)
 }
 
 SPART *
+sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name)
+{
+  char *right_dot = strrchr (name, '.');
+  caddr_t prefix = ((NULL == right_dot) ? NULL : t_box_dv_short_nchars (name, right_dot - name));
+  caddr_t aliased_table;
+  switch (type)
+    {
+    case SPARQL_PLAIN_ID:
+      if (NULL == sparp->sparp_env->spare_qm_default_table)
+        {
+          if (NULL != sparp->sparp_env->spare_qm_aliased_tables)
+            spar_error (sparp, "Table alias name is not specified for column %.100s", name);
+          else
+            spar_error (sparp, "Table name is not specified for column %.100s", name);
+        }
+      return spartlist (sparp, 4, SPAR_SQLCOL, sparp->sparp_env->spare_qm_default_table, NULL, name);
+    case SPARQL_SQL_ALIASCOLNAME:
+      {
+        if (NULL == right_dot)
+          spar_internal_error (sparp, "sparp_" "make_qm_sqlcol(): no dot in SPARQL_SQL_ALIASCOLNAME");
+        aliased_table = dk_set_get_keyword (sparp->sparp_env->spare_qm_aliased_tables, prefix, NULL);
+        if (NULL == aliased_table)
+          spar_error (sparp, "Undefined table alias %.100s in SQL column name %.100s", prefix, name);
+        return spartlist (sparp, 4, SPAR_SQLCOL, aliased_table, prefix, t_box_dv_short_string (right_dot+1));
+      }
+    case SPARQL_SQL_QTABLECOLNAME:
+      {
+        if (NULL == right_dot)
+          spar_internal_error (sparp, "sparp_" "make_qm_sqlcol(): no dot in SPARQL_SQL_QTABLECOLNAME");
+        if (NULL != sparp->sparp_env->spare_qm_aliased_tables)
+          spar_error (sparp, "Column name %.100s can not start with table name if some table aliases are defined", name);
+        if (NULL == sparp->sparp_env->spare_qm_default_table)
+          sparp->sparp_env->spare_qm_default_table = prefix;
+        else if (strcmp (sparp->sparp_env->spare_qm_default_table, prefix))
+          spar_error (sparp, "Table name %.100s of column %.100s does not match previously set default table name %.100s; consider using aliases",
+            prefix, name, sparp->sparp_env->spare_qm_default_table );
+        return spartlist (sparp, 4, SPAR_SQLCOL,
+          sparp->sparp_env->spare_qm_default_table, NULL, t_box_dv_short_string (right_dot+1) );
+      }
+    default: spar_internal_error (sparp, "sparp_" "make_qm_sqlcol(): Unsupported argument type");
+    }
+  return NULL; /* never reached */
+}
+
+SPART *
+spar_make_qm_value (sparp_t *sparp, caddr_t format_name, SPART **cols)
+{
+  dk_set_t aliases = NULL;
+  dk_set_t atables = NULL;
+  dk_set_t cond_tmpls = NULL;
+  dk_set_t col_descs = NULL;
+  int colctr;
+  DO_BOX_FAST (SPART *, col, colctr, cols)
+    {
+      caddr_t a = col->_.qm_sqlcol.alias;
+      caddr_t tbl = col->_.qm_sqlcol.qtable;
+      if (NULL == tbl)
+        tbl = sparp->sparp_env->spare_qm_default_table;
+      t_set_push (&col_descs, spar_make_vector_qm_sql (sparp,
+          (SPART **)t_list (3, tbl, a, col->_.qm_sqlcol.col) ) );
+      if (NULL == a)
+        a = t_box_dv_short_string ("");
+      if (0 > dk_set_position_of_string (aliases, a))
+        {
+          t_set_push (&aliases, a);
+          t_set_push (&atables,
+            spar_make_vector_qm_sql (sparp,
+              (SPART **)t_list (2, a, col->_.qm_sqlcol.qtable) ) );
+        }
+    }
+  END_DO_BOX_FAST;
+  DO_SET (sparp_qm_table_condition_t *, cond, &(sparp->sparp_env->spare_qm_where_conditions))
+    {
+      int alias_ctr;
+      DO_BOX_FAST (caddr_t, a, alias_ctr, cond->sparqtc_aliases)
+        {
+          if (0 > dk_set_position_of_string (aliases, a))
+            goto cond_is_redundand; /* see below */
+        }
+      END_DO_BOX_FAST;
+      if (0 > dk_set_position_of_string (cond_tmpls, cond->sparqtc_tmpl))
+        t_set_push (&cond_tmpls, cond->sparqtc_tmpl);
+
+cond_is_redundand: ;
+    }
+  END_DO_SET()
+  return spar_make_vector_qm_sql (sparp,
+    (SPART **)t_list (4, format_name,
+      spar_make_vector_qm_sql (sparp, (SPART **)t_list_to_array (atables)),
+      spar_make_vector_qm_sql (sparp, (SPART **)t_revlist_to_array (col_descs)),
+      spar_make_vector_qm_sql (sparp, (SPART **)t_list_to_array (cond_tmpls)) ) );
+}
+
+void
+spar_qm_add_aliased_table (sparp_t *sparp, caddr_t qtable, caddr_t alias)
+{
+  dk_set_t *atables_ptr = &(sparp->sparp_env->spare_qm_aliased_tables);
+  caddr_t prev_use = dk_set_get_keyword (atables_ptr[0], alias, NULL);
+  if (NULL != prev_use)
+    spar_error (sparp, "Alias %.100s is in use already (table %.200s above)", alias, prev_use, qtable);
+  t_set_push (atables_ptr, qtable);
+  t_set_push (atables_ptr, alias);
+}
+
+void
+spar_qm_add_table_filter (sparp_t *sparp, caddr_t tmpl)
+{
+  dk_set_t used_aliases = NULL;
+  caddr_t *descr;
+  sparp_check_tmpl (sparp, tmpl, 0, sparp->sparp_env->spare_qm_aliased_tables, &used_aliases);
+  descr = t_list (2, tmpl, t_list_to_array (used_aliases));
+  t_set_push (&(sparp->sparp_env->spare_qm_where_conditions), descr);
+}
+
+SPART *
 spar_make_qm_sql (sparp_t *sparp, const char *fname, SPART **fixed, SPART **named)
 {
   if (NULL != named)
@@ -182,7 +297,7 @@ spar_make_qm_sql (sparp_t *sparp, const char *fname, SPART **fixed, SPART **name
       if (NULL != named)
         spar_internal_error (sparp, "Attempt to pass a list of named parameters to BIF in quad map SQL statement");
     }
-  return spartlist (sparp, 4, SPAR_QM_SQL, t_box_dv_uname_string (fname), fixed, named);
+  return spartlist (sparp, 4, SPAR_QM_SQL_FUNCALL, t_box_dv_uname_string (fname), fixed, named);
 }
 
 SPART *
@@ -220,9 +335,11 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, caddr_t o
   SPART * subject = spar_qm_get_local (sparp, SUBJECT_L, is_real);
   SPART * predicate = spar_qm_get_local (sparp, PREDICATE_L, is_real);
   SPART * object = spar_qm_get_local (sparp, OBJECT_L, is_real);
-  SPART * where_cond = spar_qm_get_local (sparp, WHERE_L, 0);
+  caddr_t *cond_tmpls = (caddr_t *)spar_qm_get_local (sparp, WHERE_L, 0);
+  caddr_t first_cond;
   SPART * exclusive = (SPART *)get_keyword_int ((caddr_t *)options, t_box_dv_uname_string ("EXCLUSIVE"), "(SPARQL compiler)");
   SPART * order = (SPART *)get_keyword_int ((caddr_t *)options, t_box_dv_uname_string ("ORDER"), "(SPARQL compiler)");
+  int ctr;
   if (NULL != qm_id)
     {
       if ((NULL != raw_id) && strcmp (qm_id, raw_id))
@@ -256,13 +373,22 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, caddr_t o
     }
   else
     qm_id = raw_id;
-  if ((NULL != where_cond) && (!is_real))
+  if ((NULL != cond_tmpls) && (!is_real))
     spar_internal_error (sparp, "spar_qm_make_mapping_impl(): where cond in empty qm");
+  DO_BOX_FAST (caddr_t, tmpl, ctr, cond_tmpls)
+    {
+      dk_set_t used_aliases = NULL;
+      sparp_check_tmpl (sparp, tmpl, 0, sparp->sparp_env->spare_qm_aliased_tables, &used_aliases);
+    }
+  END_DO_BOX_FAST;
+  if (BOX_ELEMENTS_0 (cond_tmpls) > 1)
+    spar_error (sparp, "Current version of Virtuoso does not support more than one row filter per quad map");
+  first_cond = BOX_ELEMENTS_0 (cond_tmpls) ? cond_tmpls[0] : NULL;
   return spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_DEFINE_MAPPING",
       (SPART **)t_list (10, 
 	storage_name	, raw_id	, qm_id		, parent_id	,
 	graph		, subject	, predicate	, object	,
-	box_num_nonull (is_real), where_cond ),
+	box_num_nonull (is_real), first_cond),
       (SPART **)options );
 }
 

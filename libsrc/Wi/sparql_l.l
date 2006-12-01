@@ -304,6 +304,9 @@ static int sparscn_NUMBER_double (void *yylval, sparp_t *sparp)
 	/* Whitespace between 'WHERE' keyword and '(' or '{' after it */
 %x SPARQL_AFTER_WHERE
 
+	/* Whitespace between 'IDENTIFIED' keyword and 'BY' keyword */
+%x SPARQL_AFTER_IDENTIFIED
+
 	/* A fragment of SQL text between 'WHERE (' and matching ')' */
 %x SPARQL_SQL_FRAGMENT
 
@@ -463,6 +466,8 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{T}{R}{U}{E}			{ return true_L		; }
 <SPARQL>{U}{N}{I}{O}{N}			{ return UNION_L	; }
 <SPARQL>{U}{S}{I}{N}{G}			{ return USING_L	; }
+
+<SPARQL>{I}{D}{E}{N}{T}{I}{F}{I}{E}{D}	{ BEGIN SPARQL_AFTER_IDENTIFIED; return IDENTIFIED_L	; }
 <SPARQL>{W}{H}{E}{R}{E}			{ BEGIN SPARQL_AFTER_WHERE; return WHERE_L	; }
 
 	/* Keyword punctuators of the SPARQL described in first drafts of W3C spec */
@@ -531,7 +536,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
   }
 
 <SPARQL>{SPAR_PLAIN_SQLNAME}		{ sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_PLAIN_ID; }
-<SPARQL>{SPAR_SQLNAME}"."{SPAR_SQLNAME}("."{SPAR_SQLNAME})?("."{SPAR_SQLNAME})? { sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_SQL_DOTTEDNAME; }
+<SPARQL>{SPAR_SQLNAME}"."{SPAR_SQLNAME} { sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_SQL_ALIASCOLNAME; }
+<SPARQL>{SPAR_SQLNAME}"."{SPAR_SQLNAME}?"."{SPAR_SQLNAME} { sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_SQL_QTABLENAME; }
+<SPARQL>{SPAR_SQLNAME}"."{SPAR_SQLNAME}?"."{SPAR_SQLNAME}"."{SPAR_SQLNAME} { sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return SPARQL_SQL_QTABLECOLNAME; }
 
 	/* Numeric lexems */
 
@@ -574,6 +581,12 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL_DQ>[\\]		{ sparyyerror ("Bad escape sequence in a short double-quoted string"); }
 <SPARQL_SQ><<EOF>>		{ sparyyerror ("Unterminated short single-quoted string"); }
 <SPARQL_DQ><<EOF>>		{ sparyyerror ("Unterminated short double-quoted string"); }
+
+
+	/* Whitespace after IDENTIFIED keyword */
+
+<SPARQL_AFTER_IDENTIFIED>{B}{Y}		{ BEGIN SPARQL; return BY_L; }
+<SPARQL_AFTER_IDENTIFIED><<EOF>>	{ sparyyerror ("Unexpected end of SPARQL expression after IDENTIFIED keyword"); }
 
 	/* SQL fragments */
 
@@ -618,9 +631,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 
 	/* Whitespace and comments */
 
-<SPARQL,SPARQL_AFTER_WHERE>("#"(.*))?{S_NL}		{ sparp->sparp_lexlineno++; }
-<SPARQL,SPARQL_AFTER_WHERE>"#"(.*)				{ }
-<SPARQL,SPARQL_AFTER_WHERE>[ \t]+				{ }
+<SPARQL,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>("#"(.*))?{S_NL}		{ sparp->sparp_lexlineno++; }
+<SPARQL,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>"#"(.*)				{ }
+<SPARQL,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>[ \t]+				{ }
 
 <SPARQL_SQL_FRAGMENT>"/\*"	{ BEGIN (SPARQL_SQL_COMMENT); yymore(); }
 <SPARQL_SQL_FRAGMENT><<EOF>>	{ sparyyerror ("Unterminated SQL fragment after WHERE keyword"); }
@@ -631,6 +644,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 
 	/* Traps; these rules should be latest rules in the file. */
 
+<SPARQL_AFTER_IDENTIFIED>.	{ sparyyerror ("Ill formed IDENTIFIED BY term"); }
 <SPARQL_AFTER_WHERE>.	{ sparyyerror ("Only '{', '(' and a string literal are allowed after WHERE keyword in SPARQL expression"); }
 <SPARQL>.		{ sparyyerror ("Invalid character in SPARQL expression"); }
 

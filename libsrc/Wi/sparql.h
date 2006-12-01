@@ -41,8 +41,8 @@ extern "C" {
 #define SPARYYDEBUG
 #endif
 
-#ifdef SPARQL_DEBUG_XXX /*!!!TBD fix */
-#define spar_dbg_printf(x) printf(x)
+#ifdef SPARQL_DEBUG
+#define spar_dbg_printf(x) printf x
 #else
 #define spar_dbg_printf(x)
 #endif
@@ -60,10 +60,11 @@ extern "C" {
 #define SPAR_RETVAL		(ptrlong)1008	/*!< temporary use in SQL printer; this is similar to variable but does not search for field via equiv */
 #define SPAR_LIT		(ptrlong)1009
 #define SPAR_QNAME		(ptrlong)1011
-/*#define SPAR_QNAME_NS		(ptrlong)1012*/
+#define SPAR_SQLCOL		(ptrlong)1012
 #define SPAR_VARIABLE		(ptrlong)1013
 #define SPAR_TRIPLE		(ptrlong)1014
-#define SPAR_QM_SQL		(ptrlong)1015
+#define SPAR_QM_SQL_FUNCALL	(ptrlong)1015
+#define SPAR_CODEGEN		(ptrlong)1016
 /* Don't forget to update  sparp_tree_full_clone_int() */
 
 #define SPAR_VARNAME_DEFAULT_GRAPH ":default_graph"	/*!< Parameter name to specify default graph URI in SPARQL runtime */
@@ -73,6 +74,9 @@ extern "C" {
 #define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEXDEPTH+10
 
 #define SPARP_MAXLIMIT 0x7Fffffff /* Default value for LIMIT clause of SELECT */
+
+struct spar_sqlgen_s;
+struct spar_tree_s;
 
 typedef struct spar_tree_s SPART;
 
@@ -104,6 +108,11 @@ typedef struct spar_query_s
   } spar_query_t;
 #endif
 
+typedef struct sparp_qm_table_condition_s {
+  caddr_t	sparqtc_tmpl;		/*!< The original template text of the condition */
+  caddr_t *	sparqtc_aliases;	/*!< Vector of all distinct aliases used in the template */
+} sparp_qm_table_condition_t;
+
 typedef struct sparp_env_s
   {
     /*spar_query_t *	spare_sparqr;*/
@@ -115,12 +124,19 @@ typedef struct sparp_env_s
     caddr_t             spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
     caddr_t             spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping */
-    struct sparp_env_s *spare_parent_env;		/*!< Pointer to parent env, this will be used when libraries of inference rules are introduced. */
+#if 0 /* These will be used when libraries of inference rules are introduced. Don't forget to patch sparp_clone_for_variant()! */
+    struct sparp_env_s *spare_parent_env;		/*!< Pointer to parent env */
     id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */
     id_hash_t *		spare_vars;			/*!< Known variables as keys, equivs as values */
     id_hash_t *		spare_global_bindings;		/*!< Dictionary of global bindings, varnames as keys, default value expns as values. DV_DB_NULL box for no expn! */
+#endif
     struct sparp_equiv_s **spare_equivs;		/*!< All variable equivalences made for the tree, in growing buffer */
     int			spare_equiv_count;		/*!< Count of used items in the beginning of spare_equivs */
+    dk_set_t		spare_grab_vars;		/*!< Names of variables whose values are used as names of additional graphs */
+    caddr_t		spare_grab_depth;		/*!< Number of iterations that can be made to find additional graphs */
+    caddr_t		spare_grab_limit;		/*!< Limit on number of grabbed remote documents */
+    caddr_t		spare_grab_base_iri;		/*!< Base IRI to use as a first argument to the grab IRI resolver */
+    caddr_t		spare_grab_iri_resolver;	/*!< Name of function of the graph IRI resolver */
     dk_set_t		spare_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
     SPART *		spare_default_graph_precode;	/*!< Default graph as set by protocol or FROM graph-uri-precode */
     int			spare_default_graph_locked;	/*!< Default graph is set by protocol and can not be overwritten */
@@ -138,7 +154,10 @@ typedef struct sparp_env_s
     dk_set_t		spare_good_graph_varname_sets;	/*!< Pointers to the spare_known_gspo_varnames stack, to pop */
     dk_set_t		spare_good_graph_bmk;		/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
     dk_set_t		spare_selids;			/*!< Select IDs of GPs */
-    dk_set_t		spare_acc_qm_sqls;		/*!< Backstack of first-level function calls that change quad maps, items are SPART * with SPAR_QM_SQL type */
+    dk_set_t		spare_acc_qm_sqls;		/*!< Backstack of first-level function calls that change quad maps, items are SPART * with SPAR_QM_SQL_FUNCALL type */
+    caddr_t		spare_qm_default_table;		/*!< The name of default table (when a single table name is used without an alias for everything. */
+    dk_set_t		spare_qm_aliased_tables;	/*!< get_keyword - style list of aliases of tables used in mapping. */
+    dk_set_t		spare_qm_where_conditions;	/*!< Set of 'where' conditions for tables represented by sparp_qm_table_condition_t structures. */
     dk_set_t		spare_qm_locals;		/*!< Parameters in not-yet-closed '{...}' blocks. Names (as keyword ids) and values, with NULLs as bookmarks. */
     dk_set_t		spare_qm_affected_jso_iris;	/*!< Backstack of affected JS objects */
     dk_set_t		spare_qm_deleted;		/*!< Backstack of deleted JS objects, class IRI pushed first, instance IRI pushed after so it's above) */
@@ -239,6 +258,12 @@ extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short
 
 typedef struct qm_format_s *ssg_valmode_t;
 
+/*! Type of callback that can generate an unusual SQL text from a tree of SPAR_CODEGEN type */
+typedef void ssg_codegen_callback_t (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
+/*! Callback to generate the top of an SPARQL query with 'graph-grab' feature */
+void ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
+
+/*! A node of tree representation of a SPARQL query. Tree format is common for both syntax parser and optimizer. */
 typedef struct spar_tree_s
 {
   ptrlong	type;
@@ -327,7 +352,16 @@ typedef struct spar_tree_s
         caddr_t fname;	/*!< Function to call (bif or Virtuoso/PL) */
         SPART **fixed;	/*!< Array of 'positional' arguments */
 	SPART **named;	/*!< Array of 'named' arguments that are passed as get-keyword style vector as a last arg */
-      } qm_sql;
+      } qm_sql_funcall;
+    struct {
+        caddr_t qtable;	/*!< Qualified table name */
+        caddr_t alias;  /*!< Table alias */
+        caddr_t col;	/*!< Column name */
+      } qm_sqlcol;
+    struct {
+        ssg_codegen_callback_t **cgen_cbk;	/*!< Pointer to the code generation function as a boxed number */
+        SPART *args[1];				/*!< Data for the callback, maybe more then one SPART *, depending on structure size */
+      } codegen;
   } _;
 } sparp_tree_t;
 
@@ -424,6 +458,8 @@ extern void spar_copy_lexem_bufs (sparp_t *tgt_sparp, spar_lexbmk_t *begin, spar
 extern id_hashed_key_t spar_var_hash (caddr_t p_data);
 extern int spar_var_cmp (caddr_t p_data1, caddr_t p_data2);
 
+extern sparp_t *sparp_clone_for_variant (sparp_t *sparp);
+
 /*extern shuric_vtable_t shuric_vtable__sparqr;*/
 
 extern void sparp_jso_push_affected (sparp_t *sparp, ccaddr_t inst_iri);
@@ -439,6 +475,10 @@ extern void spar_qm_pop_key (sparp_t *sparp, int key_to_pop);
 
 extern caddr_t spar_make_iri_from_template (sparp_t *sparp, caddr_t tmpl);
 
+extern void spar_qm_add_aliased_table (sparp_t *sparp, caddr_t qtable, caddr_t alias);
+extern void spar_qm_add_table_filter (sparp_t *sparp, caddr_t tmpl);
+extern SPART *sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name);
+extern SPART *spar_make_qm_value (sparp_t *sparp, caddr_t format_name, SPART **cols);
 extern SPART *spar_make_qm_sql (sparp_t *sparp, const char *fname, SPART **fixed, SPART **named);
 extern SPART *spar_make_vector_qm_sql (sparp_t *sparp, SPART **fixed);
 extern SPART *spar_make_topmost_qm_sql (sparp_t *sparp);

@@ -139,8 +139,7 @@
 %type <strval> new_proc_or_bif_name
 %type <strval> new_table_name
 
-%type <tree> select_statement
-%type <tree> sqlonly_select_statement
+%type <tree> selectinto_statement
 %type <tree> query_spec
 %type <tree> query_no_from_spec
 %type <tree> query_exp
@@ -1693,7 +1692,7 @@ with_opt_cursor_options_list
 	| WITH opt_cursor_options_list	{ $$ = $2; }
 	;
 
-sqlonly_select_statement
+selectinto_statement
 	: SELECT opt_top selection
 		INTO target_commalist table_exp with_opt_cursor_options_list
 		{ char *tmp_cr = "temp_cr";
@@ -1717,11 +1716,6 @@ sqlonly_select_statement
                     t_box_num (scn3_get_lineno()),
                     t_box_string (scn3_get_file_name()));
 		}
-	;
-
-select_statement
-        : sqlonly_select_statement { $$ = $1; }
-        | SPARQL_L sqlonly_select_statement { $$ = $2; }
 	;
 
 opt_all_distinct
@@ -3234,7 +3228,7 @@ cost_decl
 
 
 routine_statement
-	: select_statement
+	: selectinto_statement
 	| update_statement_positioned
 	| update_statement_searched
 	| insert_statement
@@ -3291,6 +3285,10 @@ statement_in_cs_oper
               t_box_num (scn3_get_lineno ()),
               t_box_string (scn3_get_file_name ())
               ); }
+        | SPARQL_L sqlonly_query_exp ';' {
+          ST *qry = $2;
+          ST *scalar_qry = $$ = (ST *) t_list (2, SCALAR_SUBQ, sqlp_add_top_1 (qry));
+          $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("isnull"), t_list (1, scalar_qry)); }
 	;
 
 statement
@@ -3445,7 +3443,8 @@ opt_else
 call_statement
 	: CALL function_name '(' opt_arg_commalist ')'
 		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array ($4)); }
-	| function_call
+	| SPARQL_L function_call	{ $$ = $2; }
+	| function_call			{ $$ = $1; }
 	;
 
 txn_isolation_level

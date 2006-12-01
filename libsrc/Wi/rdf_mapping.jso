@@ -74,14 +74,22 @@ JSO_SCALAR rvrFixedValue ANY OPTIONAL
 JSO_GROUP_END
 JSO_STRUCT_END
 
+JSO_STRUCT_BEGIN qm_atable virtrdf QuadMapATable	--!< Description of single source RDBMS table alias.
+JSO_SCALAR qmvaAlias STRING REQUIRED			--!< Table alias where the column comes from
+JSO_SCALAR qmvaTableName STRING REQUIRED		--!< Column name
+JSO_STRUCT_END
+
 JSO_STRUCT_BEGIN qm_column virtrdf QuadMapColumn	--!< Description of single source RDBMS column.
-JSO_SCALAR qmvcColumnName STRING REQUIRED
+JSO_SCALAR qmvcAlias STRING OPTIONAL			--!< Table alias where the column comes from
+JSO_SCALAR qmvcColumnName STRING REQUIRED		--!< Column name
 JSO_SCALAR qmvcColumnFromIRI STRING OPTIONAL
 JSO_STRUCT_END
 
 JSO_STRUCT_BEGIN qm_value virtrdf QuadMapValue		--!< Description of one of four column patterns of a mapping pattern.
-JSO_SCALAR qmvTableName STRING REQUIRED
+JSO_SCALAR qmvTableName STRING REQUIRED			--!< Table name that is used if no alias is used.
+JSO_POINTER qmvATables qm_atable_array OPTIONAL		--!< Aliased tables whose aliases are used in columns.
 JSO_POINTER qmvColumns qm_column_array REQUIRED
+JSO_SCALAR qmvConds STRING_array OPTIONAL
 JSO_POINTER qmvFormat qm_format REQUIRED
 JSO_SCALAR qmvColumnsFormKey BOOLEAN REQUIRED
 JSO_SCALAR qmvColumnsToIRI STRING OPTIONAL
@@ -123,7 +131,7 @@ JSO_POINTER qmGraphMap qm_value OPTIONAL		--!< Graph map if triple has a variabl
 JSO_POINTER qmSubjectMap qm_value OPTIONAL		--!< Subject map if triple has a variable in subject position
 JSO_POINTER qmPredicateMap qm_value OPTIONAL		--!< Predicate map if triple has a variable in predicate position
 JSO_POINTER qmObjectMap qm_value OPTIONAL		--!< Object map if triple has a variable in object position
-JSO_SCALAR qmTableName STRING REQUIRED			--!< Table name where mapped rows are from
+JSO_SCALAR qmTableName STRING OPTIONAL			--!< Table name where mapped rows are from, if this is the only table. Use only if there's no alias and hence no qmvATable.
 JSO_SCALAR qmTableRowFilter STRING OPTIONAL		--!< Filter expression that is true for rows that should be mapped, will appear in WHERE clauses
 JSO_POINTER qmUserSubMaps quad_map_array OPTIONAL	--!< Array of user-defined submaps, should never appear in MJVs or default storage
 JSO_SCALAR qmMatchingFlags BITMASK OPTIONAL		--!< What should be done in case of match of triple pattern to conditions of the quad map.

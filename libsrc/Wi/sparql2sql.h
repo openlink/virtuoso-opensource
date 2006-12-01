@@ -313,6 +313,12 @@ extern SPART *sparp_new_empty_gp (sparp_t *sparp, ptrlong subtype, ptrlong srcli
 extern void sparp_gp_produce_nothing (sparp_t *sparp, SPART *gp);
 
 
+/*! Perform all rewritings according to the type of the tree, grab logc etc. */
+extern void sparp_rewrite_all (sparp_t *sparp);
+
+/*! Convert a query with grab vars into a select with procedure view with seed/iter/final sub-SQLs as arguments. */
+extern void sparp_rewrite_grab (sparp_t *sparp);
+
 /*! Finds all mappings of all triples, then performs all graph pattern term rewritings of the query tree */
 extern void sparp_rewrite_qm (sparp_t *sparp);
 
@@ -363,6 +369,7 @@ typedef struct rdf_ds_usage_s
 #define COL_IDX_ASNAME (((const char *)NULL) + 0x100)
 
 extern void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tmpl, caddr_t alias, qm_value_t *qm_val, SPART *tree, const char *asname);
+extern void sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t atables, dk_set_t *used_aliases);
 
 /*! This searches for declaration of type by its name. NULL name result in NULL output, unknown name is an error */
 extern ssg_valmode_t ssg_find_valmode_by_name (ccaddr_t name);
@@ -416,6 +423,11 @@ typedef struct spar_sqlgen_s
 extern void ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name);
 extern void ssg_qr_uses_table (spar_sqlgen_t *ssg, const char *tbl);
 
+extern qm_value_t * ssg_equiv_native_qmv (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq);
+extern ssg_valmode_t ssg_equiv_native_valmode (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq);
+extern qm_value_t *ssg_expn_native_qmv (spar_sqlgen_t *ssg, SPART *tree);
+extern ssg_valmode_t ssg_expn_native_valmode (spar_sqlgen_t *ssg, SPART *tree);
+
 /*! Prints an SQL identifier. 'prin' instead of 'print' because it does not print whitespace or delim before the text */
 extern void ssg_prin_id (spar_sqlgen_t *ssg, const char *name);
 extern void ssg_print_literal (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
@@ -460,5 +472,7 @@ extern void ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_it
 extern void ssg_make_sql_query_text (spar_sqlgen_t *ssg);
 /*! Fills in ssg->ssg_out with an SQL text of quad map manipulation statement */
 extern void ssg_make_qm_sql_text (spar_sqlgen_t *ssg);
+/*! Fills in ssg->ssg_out with an SQL text of arbitrary statement, by calling ssg_make_sql_query_text(), ssg_make_qm_sql_text(), or some special codegen callback */
+extern void ssg_make_whole_sql_text (spar_sqlgen_t *ssg);
 
 #endif

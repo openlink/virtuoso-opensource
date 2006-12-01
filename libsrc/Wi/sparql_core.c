@@ -430,11 +430,26 @@ void spar_change_sign (caddr_t *lit_ptr)
 static const char *sparp_known_get_params[] = {
     "get:login", "get:method", "get:proxy", "get:query", "get:refresh", "get:soft", "get:uri", NULL };
 
+static const char *sparp_integer_defines[] = {
+    "input:grab-depth", "input:grab-limit", NULL };
+
 void
 sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t value)
 {
-  if (QNAME == value_lexem_type)
+  switch (value_lexem_type)
+    {
+    case QNAME:
     value = sparp_expand_qname_prefix (sparp, value);
+      break;
+    case SPARQL_INTEGER:
+      {
+        const char **chk;
+        for (chk = sparp_integer_defines; (NULL != chk[0]) && strcmp (chk[0], param); chk++) ;
+        if (NULL == chk[0])
+          spar_error (sparp, "Integer value %ld is specified for define %s");
+        break;
+      }
+    }
   if (!strcmp (param, "output:valmode"))
     {
       sparp->sparp_env->spare_output_valmode_name = t_box_dv_uname_string (value);
@@ -449,6 +464,8 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
     {
       if (0 != sparp->sparp_env->spare_default_graph_locked)
         spar_error (sparp, "'define %.30s' is used more than once", param);
+      if (NULL != sparp->sparp_env->spare_grab_vars)
+        spar_error (sparp, "define input:grab-var and define input:default-graph-uri specify conflicting security rules");
       sparp->sparp_env->spare_default_graph_precode =
         sparp_make_graph_precode ( sparp,
         spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
@@ -458,6 +475,8 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
     }
   if (!strcmp (param, "input:named-graph-uri"))
     {
+      if (NULL != sparp->sparp_env->spare_grab_vars)
+        spar_error (sparp, "define input:grab-var and define input:named-graph-uri specify conflicting security rules");
       t_set_push (&(sparp->sparp_env->spare_named_graph_precodes),
         sparp_make_graph_precode (sparp,
           spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
@@ -470,6 +489,46 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       if (NULL != sparp->sparp_env->spare_storage_name)
         spar_error (sparp, "'define %.30s' is used more than once", param);
       sparp->sparp_env->spare_storage_name = t_box_dv_uname_string (value);
+      return;
+    }
+  if (!strcmp (param, "input:grab-var"))
+    {
+      caddr_t varname;
+      if (sparp->sparp_env->spare_default_graph_locked)
+        spar_error (sparp, "define input:default-graph-uri and define input:grab-var specify conflicting security rules");
+      if (sparp->sparp_env->spare_named_graphs_locked)
+        spar_error (sparp, "define input:named-graph-uri and define input:grab-var specify conflicting security rules");
+      if (('?' == value[0]) || ('$' == value[0]))
+        varname = t_box_dv_uname_string (value+1);
+      else
+        varname = t_box_dv_uname_string (value);
+      t_set_push (&(sparp->sparp_env->spare_grab_vars), varname);
+      return;
+    }
+  if (!strcmp (param, "input:grab-depth"))
+    {
+      ptrlong val = unbox (value);
+      if (0 >= val)
+        spar_error (sparp, "define input:grab-depth should have positive integer value");
+      sparp->sparp_env->spare_grab_depth = t_box_num_nonull (val);
+      return;
+    }
+  if (!strcmp (param, "input:grab-limit"))
+    {
+      ptrlong val = unbox (value);
+      if (0 >= val)
+        spar_error (sparp, "define input:grab-limit should have positive integer value");
+      sparp->sparp_env->spare_grab_limit = t_box_num_nonull (val);
+      return;
+    }
+  if (!strcmp (param, "input:grab-base-iri"))
+    {
+      sparp->sparp_env->spare_grab_base_iri = t_box_dv_uname_string (value);
+      return;
+    }
+  if (!strcmp (param, "input:grab-iri-resolver"))
+    {
+      sparp->sparp_env->spare_grab_iri_resolver = t_box_dv_uname_string (value);
       return;
     }
   if ((4 < strlen (param)) && !memcmp (param, "get:", 4))
@@ -1796,7 +1855,7 @@ sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre)
     {
       /* Bug 4566: sparpyyrestart (NULL); */
       sparyyparse (sparp);
-      sparp_rewrite_qm (sparp);
+      sparp_rewrite_all (sparp);
     }
   QR_RESET_CODE
     {
@@ -1813,6 +1872,52 @@ sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre)
 #endif
   return sparp;
 }
+
+extern sparp_t *
+sparp_clone_for_variant (sparp_t *sparp)
+{
+#define ENV_COPY(field) env_copy->field = env->field
+#define ENV_BOX_COPY(field) env_copy->field = t_box_copy (env->field)
+#define ENV_SPART_COPY(field) env_copy->field = (SPART *)t_box_copy_tree ((caddr_t)(env->field))
+  s_node_t *iter;
+  sparp_env_t *env = sparp->sparp_env;
+  t_NEW_VAR (sparp_t, sparp_copy);
+  t_NEW_VARZ (sparp_env_t, env_copy);
+  memcpy (sparp_copy, sparp, sizeof (sparp_t));
+  sparp_copy->sparp_env = env_copy;
+  ENV_BOX_COPY (spare_output_valmode_name);
+  ENV_BOX_COPY (spare_output_format_name);
+  ENV_BOX_COPY (spare_storage_name);
+#if 0 /* These will be used when libraries of inference rules are introduced. */
+    struct sparp_env_s *spare_parent_env;		/*!< Pointer to parent env */
+    id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */
+    id_hash_t *		spare_vars;			/*!< Known variables as keys, equivs as values */
+    id_hash_t *		spare_global_bindings;		/*!< Dictionary of global bindings, varnames as keys, default value expns as values. DV_DB_NULL box for no expn! */
+#endif
+  if (0 != env->spare_equiv_count)
+    spar_internal_error (sparp, "sparp_" "clone_for_variant(): can't clone when equivs are built");
+  /*... thus no copy for spare_equivs and spare_equiv_count */
+  /* No copy for spare_grab_vars */
+  env_copy->spare_common_sponge_options = t_set_copy (env->spare_common_sponge_options);
+  DO_SET_WRITABLE (SPART *, opt, iter, &(env_copy->spare_common_sponge_options))
+    {
+      iter->data = t_box_copy_tree ((caddr_t)opt);
+    }
+  END_DO_SET()
+  ENV_SPART_COPY (spare_default_graph_precode);
+  ENV_COPY (spare_default_graph_locked);
+  env_copy->spare_named_graph_precodes = t_set_copy (env->spare_named_graph_precodes);
+  DO_SET_WRITABLE (SPART *, precode, iter, &(env_copy->spare_named_graph_precodes))
+    {
+      iter->data = t_box_copy_tree ((caddr_t)precode);
+    }
+  END_DO_SET()
+  ENV_COPY (spare_named_graphs_locked);
+  return sparp_copy;
+}
+
+extern void sparp_delete_clone (sparp_t *sparp);
+
 
 void
 sparp_compile_subselect (spar_query_env_t *sparqre)
@@ -1852,29 +1957,12 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   ssg.ssg_sc = &sc;
   ssg.ssg_sparp = sparp;
   ssg.ssg_tree = sparp->sparp_expr;
-  QR_RESET_CTX
-    {
-      if (SPAR_REQ_TOP == SPART_TYPE (ssg.ssg_tree))
+  ssg_make_whole_sql_text (&ssg);
+  if (NULL != sparqre->sparqre_catched_error)
         {
-          ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
-  ssg_make_sql_query_text (&ssg);
-    }
-      else
-        ssg_make_qm_sql_text (&ssg);
-    }
-  QR_RESET_CODE
-    {
-      du_thread_t *self = THREAD_CURRENT_THREAD;
-      sparp->sparp_sparqre->sparqre_catched_error = thr_get_error_code (self);
-      thr_set_error_code (self, NULL);
-#ifdef SPARP_DEBUG
-      printf ("\nsparp_compile_subselect() caught composing error: %s", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
-#endif
-      POP_QR_RESET;
       /* ssg_free (ssg); */
       return;
     }
-  END_QR_RESET
   /* ssg_free (ssg); */
   session_buffered_write (ssg.ssg_out, sparqre->sparqre_tail_sql_text, strlen (sparqre->sparqre_tail_sql_text));
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* First terminator */
@@ -1944,27 +2032,13 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg.ssg_sc = &sc;
   ssg.ssg_sparp = sparp;
   ssg.ssg_tree = sparp->sparp_expr;
-  QR_RESET_CTX
+  ssg_make_whole_sql_text (&ssg);
+  if (NULL != sparqre.sparqre_catched_error)
     {
-      if (SPAR_REQ_TOP == SPART_TYPE (ssg.ssg_tree))
-        {
-          ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
-      ssg_make_sql_query_text (&ssg);
-    }
-      else
-        ssg_make_qm_sql_text (&ssg);
-    }
-  QR_RESET_CODE
-    {
-      du_thread_t *self = THREAD_CURRENT_THREAD;
-      caddr_t err = thr_get_error_code (self);
-      thr_set_error_code (self, NULL);
-      POP_QR_RESET;
       /* ssg_free (ssg); */
       MP_DONE ();
-      sqlr_resignal (err);
+      sqlr_resignal (sparqre.sparqre_catched_error);
     }
-  END_QR_RESET
   /* ssg_free (ssg); */
   MP_DONE ();
   return (caddr_t)(ssg.ssg_out);

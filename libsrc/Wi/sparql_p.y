@@ -122,7 +122,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token ASK_L		/*:: PUNCT_SPAR_LAST("ASK") ::*/
 %token BASE_L		/*:: PUNCT_SPAR_LAST("BASE") ::*/
 %token BOUND_L		/*:: PUNCT_SPAR_LAST("BOUND") ::*/
-%token BY_L		/*:: PUNCT_SPAR_LAST("BY") ::*/
+%token BY_L		/*:: PUNCT("BY"), SPAR, LAST("BY"), LAST("IDENTIFIED BY") ::*/
 %token CLASS_L		/*:: PUNCT_SPAR_LAST("CLASS") ::*/
 %token CREATE_L		/*:: PUNCT_SPAR_LAST("CREATE") ::*/
 %token CONSTRUCT_L	/*:: PUNCT_SPAR_LAST("CONSTRUCT") ::*/
@@ -139,6 +139,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token FROM_L		/*:: PUNCT_SPAR_LAST("FROM") ::*/
 %token FUNCTION_L	/*:: PUNCT_SPAR_LAST("FUNCTION") ::*/
 %token GRAPH_L		/*:: PUNCT_SPAR_LAST("GRAPH") ::*/
+%token IDENTIFIED_L	/*:: PUNCT("WHERE"), SPAR, LAST1("IDENTIFIED BY"), LAST1("IDENTIFIED\r\nBY"), LAST1("IDENTIFIED #qq\r\nBY"), ERR("IDENTIFIED"), ERR("IDENTIFIED bad") ::*/
 %token IRI_L		/*:: PUNCT_SPAR_LAST("IRI") ::*/
 %token IN_L		/*:: PUNCT_SPAR_LAST("IN") ::*/
 %token INSERT_L		/*:: PUNCT_SPAR_LAST("INSERT") ::*/
@@ -203,7 +204,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token <box> DOLLAR_COLON_PARAMNUM	/*:: LITERAL("$?"), SPAR, LAST("$?") ::*/
 
 %token <box> SPARQL_PLAIN_ID	/*:: LITERAL("%s"), SPAR, LAST("q"), LAST("a1"), LAST("_ABYZabyz0189") ::*/
-%token <box> SPARQL_SQL_DOTTEDNAME	/*:: LITERAL("%s"), SPAR, LAST("TAB.COL"), LAST("DB.DBA.SYS_USERS.U_NAME"), LAST("\"Demo\".\"demo\".\"Customers\".\"CustomerID\"") ::*/
+%token <box> SPARQL_SQL_ALIASCOLNAME	/*:: LITERAL("%s"), SPAR, LAST("ALIAS.COL") ::*/
+%token <box> SPARQL_SQL_QTABLENAME	/*:: LITERAL("%s"), SPAR, LAST("DB.DBA.SYS_USERS"), LAST("\"Demo\".\"demo\".\"Customers\""), LAST("DB..SYS_USERS"), LAST("\"Demo\"..\"Customers\"") ::*/
+%token <box> SPARQL_SQL_QTABLECOLNAME	/*:: LITERAL("%s"), SPAR, LAST("DB.DBA.SYS_USERS.U_NAME"), LAST("\"Demo\".\"demo\".\"Customers\".\"CustomerID\""), LAST("DB..SYS_USERS.U_NAME"), LAST("\"Demo\"..\"Customers\".\"CustomerID\"") ::*/
 
 %token __SPAR_NONPUNCT_END	/* Delimiting value for syntax highlighting */
 
@@ -293,6 +296,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_qm_alter_quad_storage
 %type <tree> spar_qm_drop_quad_storage
 %type <tree> spar_qm_drop_mapping
+%type <nothing> spar_qm_from_where_list_opt
 %type <nothing> spar_qm_map_top_group
 %type <nothing> spar_qm_map_top_dotlist
 %type <nothing> spar_qm_map_top_op
@@ -312,7 +316,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_qm_verb
 %type <tree> spar_qm_field_or_blank
 %type <tree> spar_qm_field
-%type <box> spar_qm_where_opt
+%type <backstack> spar_qm_where_list_opt
+%type <backstack> spar_qm_where_list
+%type <box> spar_qm_where
 %type <box> spar_qm_options_opt
 %type <backstack> spar_qm_option_commalist
 %type <box> spar_qm_option
@@ -322,10 +328,11 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_qm_sqlfunc_arg_commalist
 %type <tree> spar_qm_sqlfunc_arg
 %type <tree> spar_qm_sql_in_out_inout
-%type <tree> spar_qm_sqltype
-%type <box> spar_qm_sql_name
+%type <box> spar_qm_sqltype
+%type <tree> spar_qm_sqlcol
 %type <box> spar_qm_sql_id
 %type <box> spar_qm_iriref_const_expn
+%type <nothing> spar_graph_identified_by
 %type <nothing> spar_opt_dot_and_end
 
 %left _SEMI
@@ -378,6 +385,7 @@ spar_define		/* [Virt]	Define		 ::=  'DEFINE' QNAME (QNAME | Q_IRI_REF | String 
         : DEFINE_L QNAME QNAME { sparp_define (sparp_arg, $2, QNAME, $3); }
         | DEFINE_L QNAME Q_IRI_REF { sparp_define (sparp_arg, $2, Q_IRI_REF, $3); }
 	| DEFINE_L QNAME SPARQL_STRING { sparp_define (sparp_arg, $2, SPARQL_STRING, $3); }
+	| DEFINE_L QNAME SPARQL_INTEGER { sparp_define (sparp_arg, $2, SPARQL_INTEGER, $3); }
 	;
 
 spar_base_decl_opt	/* [3]  	BaseDecl	  ::=  	'BASE' Q_IRI_REF	*/
@@ -433,7 +441,7 @@ spar_construct_query	/* [6]  	ConstructQuery	  ::=  	'CONSTRUCT' ConstructTempla
 	;
 
 spar_insert_query	/* [Virt]	InsertQuery	 ::=  'INSERT' 'IN' 'GRAPH' PrecodeExpn ConstructTemplate DatasetClause* WhereClause SolutionModifier	*/
-	: INSERT_L IN_L GRAPH_L spar_precode_expn { spar_selid_push (sparp_arg); }
+	: INSERT_L IN_L spar_graph_identified_by spar_precode_expn { spar_selid_push (sparp_arg); }
             spar_ctor_template spar_dataset_clauses_opt { spar_gp_init (sparp_arg, WHERE_L); }
 	    spar_where_clause spar_solution_modifier {
 		$$ = spar_make_top (sparp_arg, INSERT_L,
@@ -443,7 +451,7 @@ spar_insert_query	/* [Virt]	InsertQuery	 ::=  'INSERT' 'IN' 'GRAPH' PrecodeExpn 
 	;
 
 spar_delete_query	/* [Virt]	DeleteQuery	 ::=  'DELETE' 'FROM' 'GRAPH' PrecodeExpn ConstructTemplate DatasetClause* WhereClause SolutionModifier	*/
-	: DELETE_L FROM_L GRAPH_L spar_precode_expn { spar_selid_push (sparp_arg); }
+	: DELETE_L FROM_L spar_graph_identified_by spar_precode_expn { spar_selid_push (sparp_arg); }
             spar_ctor_template spar_dataset_clauses_opt { spar_gp_init (sparp_arg, WHERE_L); }
 	    spar_where_clause spar_solution_modifier {
 		$$ = spar_make_top (sparp_arg, DELETE_L,
@@ -689,8 +697,8 @@ spar_triples_node	/* [34]  	TriplesNode	  ::=  	Collection | BlankNodePropertyLi
 		spar_gp_add_member (sparp_arg,
 		  spar_make_triple (sparp_arg,
 		    NULL, NULL,
-		    spartlist (sparp_arg, 2, SPAR_QNAME, t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest")),
-		    spartlist (sparp_arg, 2, SPAR_QNAME, t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"))
+		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
+		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_nil)
 		    ) );
 		t_set_pop (&(sparp_env()->spare_context_subjects));
 		$$ = t_set_pop (&(sparp_env()->spare_context_subjects)); }
@@ -705,19 +713,19 @@ spar_cons_collection	/* [32]  	ObjectList	  ::=  	GraphNode ( ',' ObjectList )?	
 	: spar_graph_node {
 		spar_gp_add_member (sparp_arg,
 		  spar_make_triple (sparp_arg, NULL, NULL,
-		    spartlist (sparp_arg, 2, SPAR_QNAME, t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#first")),
+		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
 		    $1 ) ); }
 	| spar_cons_collection spar_graph_node {
 		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:cons"), 1); 
 		spar_gp_add_member (sparp_arg,
 		  spar_make_triple (sparp_arg,
 		    NULL, NULL,
-		    spartlist (sparp_arg, 2, SPAR_QNAME, t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest")),
+		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
 		    bn ) );
 		sparp_env()->spare_context_subjects->data = bn;
 		spar_gp_add_member (sparp_arg,
 		  spar_make_triple (sparp_arg, NULL, NULL,
-		    spartlist (sparp_arg, 2, SPAR_QNAME, t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#first")),
+		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
 		    $2 ) ); }
 	;
 
@@ -941,7 +949,9 @@ spar_blank_node		/* [65]*	BlankNode	 ::=  BLANK_NODE_LABEL | ( '[' ']' )	*/
 
 spar_qm_stmts		/* ::=  QmStmt ('.' QmStmt)* */
 	: spar_qm_stmt
-	| spar_qm_stmts _DOT spar_qm_stmt
+	| spar_qm_stmts _DOT {
+		sparp_env()->spare_qm_default_table = NULL; }
+	    spar_qm_stmt
 	;
 
 spar_qm_stmt		/* [Virt]	QmStmt		 ::=  QmSimpleStmt | QmCreateStorage | QmAlterStorage	*/
@@ -998,6 +1008,7 @@ spar_qm_create_quad_storage	/* [Virt]	QmCreateStorage	 ::=  'CREATE' 'QUAD' 'STO
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_BEGIN_ALTER_QUAD_STORAGE",
                     (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)), NULL ) );
                 sparp_jso_push_affected (sparp_arg, $4); }
+            spar_qm_from_where_list_opt
 	    _LBRA {
 		spar_qm_push_bookmark (sparp_arg); }
             spar_qm_map_top_group {
@@ -1015,6 +1026,7 @@ spar_qm_alter_quad_storage	/* [Virt]	QmAlterStorage	 ::=  'ALTER' 'QUAD' 'STORAG
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_BEGIN_ALTER_QUAD_STORAGE",
                     (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)), NULL ) );
                 sparp_jso_push_affected (sparp_arg, $4); }
+            spar_qm_from_where_list_opt
 	    _LBRA {
 		spar_qm_push_bookmark (sparp_arg); }
             spar_qm_map_top_group {
@@ -1041,12 +1053,20 @@ spar_qm_drop_mapping		/* [Virt]	QmDropMap	 ::=  'DROP' 'GRAPH'? QmIRIrefConst	*/
                   (SPART **)t_list (2, t_box_dv_uname_string ("ID"), $2) );
 		if (NULL == sparp_env()->spare_storage_name)
                   sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
-	| DROP_L GRAPH_L spar_qm_iriref_const_expn	{
+	| DROP_L spar_graph_identified_by spar_qm_iriref_const_expn	{
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
                     (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
                     (SPART **)t_list (2, t_box_dv_uname_string ("GRAPH"), $3) );
 		if (NULL == sparp_env()->spare_storage_name)
                   sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+        ;
+
+spar_qm_from_where_list_opt
+	: /* empty */ {}
+	| spar_qm_from_where_list_opt FROM_L SPARQL_SQL_QTABLENAME AS_L SPARQL_PLAIN_ID {
+		spar_qm_add_aliased_table (sparp_arg, $3, $5); }
+	| spar_qm_from_where_list_opt spar_qm_where {
+		spar_qm_add_table_filter (sparp_arg, $2); }
         ;
 
 spar_qm_map_top_group	/* [Virt]	QmMapTopGroup	 ::=  '{' QmMapTopOp ( '.' QmMapTopOp )* '.'? '}'	*/
@@ -1056,8 +1076,11 @@ spar_qm_map_top_group	/* [Virt]	QmMapTopGroup	 ::=  '{' QmMapTopOp ( '.' QmMapTo
 	;
 
 spar_qm_map_top_dotlist	/* ::=  QmMapTopOp ( '.' QmMapTopOp )*	*/
-	: spar_qm_map_top_op
-	| spar_qm_map_top_dotlist _DOT { spar_qm_clean_locals (sparp_arg); } spar_qm_map_top_op
+	: spar_qm_map_top_op {}
+	| spar_qm_map_top_dotlist _DOT {
+		spar_qm_clean_locals (sparp_arg);
+		sparp_env()->spare_qm_default_table = NULL; }
+	    spar_qm_map_top_op {}
 	;
 
 spar_qm_map_top_op		/* [Virt]	QmMapTopOp	 ::=  QmMapOp | QmDropMap	*/
@@ -1074,7 +1097,10 @@ spar_qm_map_group		/* [Virt]	QmMapGroup	 ::=  '{' QmMapOp ( '.' QmMapOp )* '.'? 
 
 spar_qm_map_dotlist		/* ::=  QmMapOp ( '.' QmMapOp )*	*/
 	: spar_qm_map_op
-	| spar_qm_map_dotlist _DOT { spar_qm_clean_locals (sparp_arg); } spar_qm_map_op
+	| spar_qm_map_dotlist _DOT {
+		spar_qm_clean_locals (sparp_arg);
+		sparp_env()->spare_qm_default_table = NULL; }
+	    spar_qm_map_op
 	;
 
 spar_qm_map_op			/* [Virt]	QmMapOp		 ::=  */
@@ -1087,14 +1113,14 @@ spar_qm_map_op			/* [Virt]	QmMapOp		 ::=  */
 		t_set_push (&(sparp_env()->spare_acc_qm_sqls), 
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_ATTACH_MAPPING",
                     (SPART **)t_list (2, t_box_copy (sparp_env()->spare_storage_name), $5),
-		    (SPART **)t_list_concat ($6, t_list (2, t_box_dv_uname_string ("ID"), $2)) ) ); }
-	| CREATE_L GRAPH_L spar_qm_iriref_const_expn	/* note optional 'GRAPH' in previous case */
+		    (SPART **)t_list_concat ($6, (caddr_t)t_list (2, t_box_dv_uname_string ("ID"), $2)) ) ); }
+	| CREATE_L spar_graph_identified_by spar_qm_iriref_const_expn	/* note optional 'GRAPH' in previous case */
 	    USING_L STORAGE_L spar_qm_iriref_const_expn spar_qm_options_opt	{
 		spar_qm_push_local (sparp_arg, GRAPH_L, (SPART *)($3), 1);
 		t_set_push (&(sparp_env()->spare_acc_qm_sqls), 
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_ATTACH_MAPPING",
                     (SPART **)t_list (2, t_box_copy (sparp_env()->spare_storage_name), $6),
-		    (SPART **)t_list_concat ($7, t_list (2, t_box_dv_uname_string ("GRAPH"), $3)) ) ); }
+		    (SPART **)t_list_concat ($7, (caddr_t)t_list (2, t_box_dv_uname_string ("GRAPH"), $3)) ) ); }
 	| spar_qm_named_fields spar_qm_options_opt	/*... | ( QmNamedField+ QmOptions? QmMapGroup )	*/
 	    _LBRA {
 		t_set_push (&(sparp_env()->spare_acc_qm_sqls),
@@ -1117,7 +1143,7 @@ spar_qm_map_iddef	/* [Virt]	QmMapIdDef	 ::=  QmMapTriple | ( QmNamedField+ QmOpt
 	            spar_qm_get_local (sparp_arg, CREATE_L, 1),
 	            $2 ) );
 		spar_qm_push_local (sparp_arg, _LBRA,
-		  spar_qm_get_local (sparp_arg, CREATE_L, 1), 1 );
+		  (caddr_t)spar_qm_get_local (sparp_arg, CREATE_L, 1), 1 );
 		spar_qm_push_local (sparp_arg, CREATE_L, NULL, 1);
 		spar_qm_push_bookmark (sparp_arg); }
 	    spar_qm_map_group {
@@ -1168,6 +1194,7 @@ spar_qm_prop		/* [Virt]	QmProp		 ::=  QmVerb QmObjField ( ',' QmObjField )*	*/
 		  ((NULL != $1) ? ((SPART *)($1)) : spar_qm_get_local (sparp_arg, PREDICATE_L, 1)),
 		  0 ); }
 	    spar_qm_obj_field_commalist {}
+        | error { sparyyerror ("Description of predicate field is expected here"); }
 	;
 
 spar_qm_obj_field_commalist	/* ::=  QmObjField QmIdSuffix? ( ',' QmObjField QmIdSuffix? )* */
@@ -1181,14 +1208,15 @@ spar_qm_obj_field_commalist	/* ::=  QmObjField QmIdSuffix? ( ',' QmObjField QmId
 		  spar_qm_make_real_mapping (sparp_arg, $5, $4) ); }
 	;
 
-spar_qm_obj_field	/* [Virt]	QmObjField	 ::=  QmFieldOrBlank QmCondition? QmOptions?	*/
+spar_qm_obj_field	/* [Virt]	QmObjField	 ::=  QmFieldOrBlank QmCondition* QmOptions?	*/
 	: spar_qm_field_or_blank {
 		spar_qm_push_local (sparp_arg, OBJECT_L,
 		  ((NULL != $1) ? ((SPART *)($1)) : spar_qm_get_local (sparp_arg, OBJECT_L, 1)),
 		  0 ); }
-	    spar_qm_where_opt {
-		spar_qm_push_local (sparp_arg, WHERE_L, (SPART *)$3, 0); }
+	    spar_qm_where_list_opt {
+		spar_qm_push_local (sparp_arg, WHERE_L, (SPART **)t_revlist_to_array ($3), 0); }
 	    spar_qm_options_opt { $$ = $5; }
+        | error { sparyyerror ("Description of object field is expected here"); }
 	;
 
 spar_qm_as_id_opt	/* [Virt]	QmIdSuffix	 ::=  'AS' QmIRIrefConst	*/
@@ -1199,7 +1227,7 @@ spar_qm_as_id_opt	/* [Virt]	QmIdSuffix	 ::=  'AS' QmIRIrefConst	*/
 spar_qm_verb		/* [Virt]	QmVerb		 ::=  QmField | ( '[' ']' ) | 'a'	*/
 	: spar_qm_field	{ $$ = $1; }
 	| _LSQBRA _RSQBRA	{ $$ = NULL; }
-	| a_L			{ $$ = uname_rdf_ns_uri_type; }
+	| a_L			{ $$ = (SPART *)uname_rdf_ns_uri_type; }
 	;
 
 spar_qm_field_or_blank	/* [Virt]	QmFieldOrBlank	 ::=  QmField | ( '[' ']' )	*/
@@ -1208,23 +1236,29 @@ spar_qm_field_or_blank	/* [Virt]	QmFieldOrBlank	 ::=  QmField | ( '[' ']' )	*/
 	;
 
 spar_qm_field		/* [Virt]	QmField		 ::=  */
-	: spar_qm_iriref_const_expn { $$ = $1; }	/* see case below */
+	: spar_qm_iriref_const_expn { $$ = (SPART *)$1; }	/* see case below */
 	| spar_numeric_literal { $$ = $1; }	/*... NumericLiteral	*/
 	| spar_rdf_literal { $$ = $1; }		/*... | RdfLiteral	*/
 	| spar_qm_iriref_const_expn		/*... | ( QmIRIrefConst ( '(' QmSqlCol ( ',' QmSqlCol )* ')' )? )	*/
 	    _LPAR spar_qm_sqlcol_commalist _RPAR {
-		$$ = spar_make_vector_qm_sql (sparp_arg,
-		  (SPART **)t_list (2, $1,
-		   spar_make_vector_qm_sql (sparp_arg,
-		     (SPART **)t_revlist_to_array ($3) ) ) ); }
-	| spar_qm_sql_name {			/*... | QmSqlName	*/
+		$$ = spar_make_qm_value (sparp_arg, $1, (SPART **)t_revlist_to_array ($3)); }
+	| spar_qm_sqlcol {			/*... | QmSqlCol	*/
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_AUTO_LITERAL_FIELD",
-                    (SPART **)t_list (1, $1), NULL ); }
+                    (SPART **)t_list (3, $1->_.qm_sqlcol.qtable, $1->_.qm_sqlcol.alias, $1->_.qm_sqlcol.col), NULL ); }
 	;
 
-spar_qm_where_opt	/* [Virt]	QmCondition	 ::=  'WHERE' ( ( '(' SQLTEXT ')' ) | String )	*/
+spar_qm_where_list_opt
 	: /* empty */ { $$ = NULL; }
-	| WHERE_L _LPAR SPARQL_CONDITION_AFTER_WHERE_LPAR { $$ = $3; }
+        | spar_qm_where_list { $$ = $1; }
+	;
+
+spar_qm_where_list
+	: spar_qm_where { $$ = NULL; t_set_push (&($$), $1); }
+        | spar_qm_where_list spar_qm_where { $$ = $1; t_set_push (&($$), $2); }
+	;
+
+spar_qm_where	/* [Virt]	QmCondition	 ::=  'WHERE' ( ( '(' SQLTEXT ')' ) | String )	*/
+	: WHERE_L _LPAR SPARQL_CONDITION_AFTER_WHERE_LPAR { $$ = $3; }
 	| WHERE_L SPARQL_STRING { $$ = $2; }
 	;
 
@@ -1250,12 +1284,12 @@ spar_qm_option		/* [Virt]	QmOption	 ::=  'EXCLUSIVE' | ( 'ORDER' INTEGER )	*/
 	;
 
 spar_qm_sqlcol_commalist	/* ::=  QmSqlCol ( ',' QmSqlCol )*	*/
-	: spar_qm_sql_name					{ $$ = NULL; t_set_push (&($$), $1); }
-	| spar_qm_sqlcol_commalist _COMMA spar_qm_sql_name	{ $$ = $1; t_set_push (&($$), $3); }
+	: spar_qm_sqlcol					{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_qm_sqlcol_commalist _COMMA spar_qm_sqlcol	{ $$ = $1; t_set_push (&($$), $3); }
 	;
 
-spar_qm_sqlfunc_header	/* [Virt]	QmSqlfuncHeader	 ::=  'FUNCTION' QmSqlName QmSqlfuncArglist 'RETURNS' QmSqltype */
-	: FUNCTION_L spar_qm_sql_name spar_qm_sqlfunc_arglist RETURNS_L spar_qm_sqltype {
+spar_qm_sqlfunc_header	/* [Virt]	QmSqlfuncHeader	 ::=  'FUNCTION' SQL_QTABLECOLNAME QmSqlfuncArglist 'RETURNS' QmSqltype */
+	: FUNCTION_L SPARQL_SQL_QTABLENAME spar_qm_sqlfunc_arglist RETURNS_L spar_qm_sqltype {
 		$$ = spar_make_vector_qm_sql (sparp_arg,
 		  (SPART **)t_list (4, $2, $3, ((caddr_t *)$5)[0], ((caddr_t *)$5)[1]) ); }
 	;
@@ -1285,13 +1319,14 @@ spar_qm_sql_in_out_inout	/* ::=  ('IN' | QmSqlId)	*/
 	| spar_qm_sql_id	{ $$ = t_box_dv_uname_string ($1); }
 	;
 
-spar_qm_sql_name	/* [Virt]	QmSqlName	 ::=  QmSqlId | SQL_DOTTEDNAME	*/
-	: spar_qm_sql_id
-	| SPARQL_SQL_DOTTEDNAME
+spar_qm_sqlcol		/* [Virt]	QmSqlCol	 ::=  QmSqlId | spar_qm_sql_id	*/
+	: spar_qm_sql_id		{ $$ = sparp_make_qm_sqlcol (sparp_arg, SPARQL_PLAIN_ID, $1); }
+	| SPARQL_SQL_ALIASCOLNAME	{ $$ = sparp_make_qm_sqlcol (sparp_arg, SPARQL_SQL_ALIASCOLNAME, $1); }
+	| SPARQL_SQL_QTABLECOLNAME	{ $$ = sparp_make_qm_sqlcol (sparp_arg, SPARQL_SQL_QTABLECOLNAME, $1); }
 	;
 
 spar_qm_sql_id		/* [Virt]	QmSqlId		 ::=  PLAIN_ID	*/
-	: SPARQL_PLAIN_ID
+	: SPARQL_PLAIN_ID		{ $$ = $1; }
 	/*| a_L { $$ = t_box_dv_short_string ("a"); }*/
 	;
 
@@ -1299,6 +1334,11 @@ spar_qm_iriref_const_expn	/* [Virt]	QmIRIrefConst	 ::=  IRIref | ( 'IRI' '(' Str
 	: spar_iriref { $$ = $1->_.lit.val; }
 	| IRI_L _LPAR SPARQL_STRING _RPAR {
 		$$ = spar_make_iri_from_template (sparp_arg, $3); }
+	;
+
+spar_graph_identified_by
+	: GRAPH_L			{}
+	| GRAPH_L IDENTIFIED_L BY_L	{}
 	;
 
 spar_opt_dot_and_end

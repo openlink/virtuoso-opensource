@@ -528,6 +528,9 @@ err_exit:
 WS.WS.URIQA_VHOST_RESET()
 ;
 
+--!AFTER
+WS.WS.SPARQL_VHOST_RESET()
+;
 
 -- This is called internally via WS..DEFAULT, to check ACL on proxy service
 create procedure

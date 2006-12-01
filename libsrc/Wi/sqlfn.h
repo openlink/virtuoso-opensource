@@ -529,6 +529,7 @@ void log_sc_change_2 (lock_trx_t * lt);
 void log_text (lock_trx_t * lt, char * text);
 
 void log_text_array (lock_trx_t * lt, caddr_t box);
+int log_text_array_sync (lock_trx_t * lt, caddr_t box);
 
 void log_sequence (lock_trx_t * lt, char * text, long count);
 void log_sequence_remove (lock_trx_t * lt, char *text);
@@ -864,6 +865,7 @@ void buf_bsort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key);
 #define SPLIT_STACK_MARGIN (1000 * sizeof (caddr_t) + PM_MAX_ENTRIES * sizeof (caddr_t) + PAGE_SZ)
 #define INS_STACK_MARGIN (SPLIT_STACK_MARGIN + PAGE_SZ + 1200 * sizeof (caddr_t))
 #define CALL_STACK_MARGIN (AUTO_QI_DEFAULT_SZ + (3000 * sizeof (caddr_t)))
+#define OL_BACKUP_STACK_MARGIN (4*PAGE_SZ + 1000 * sizeof (caddr_t))
 
 
 /* row.c */
@@ -947,8 +949,8 @@ const char *dv_type_title (int type);
 void connection_set (client_connection_t *cli, caddr_t name, caddr_t val);
 void sprintf_escaped_table_name (char *out, char *name);
 void sprintf_escaped_str_literal (caddr_t str, char *out, dk_session_t *ses);
-caddr_t get_keyword_int (caddr_t * arr, char * item, char * me);
-caddr_t get_keyword_ucase_int (caddr_t * arr, const char * item, caddr_t dflt);
+extern caddr_t get_keyword_int (caddr_t * arr, char * item, const char * me);
+extern caddr_t get_keyword_ucase_int (caddr_t * arr, const char * item, caddr_t dflt);
 extern char *find_repl_account_in_src_text (char **src_text_ptr);
 
 
@@ -1096,7 +1098,7 @@ void itc_invalidate_bm_crs (it_cursor_t * itc);
 int64  unbox_iri_int64 (caddr_t x);
 int itc_bm_land_lock (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void itc_init_bm_search (it_cursor_t * itc);
-void bm_init ();
+extern void bm_init (void);
 int itc_bm_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 #define BM_DEL_DONE 1
 #define BM_DEL_ROW 2
