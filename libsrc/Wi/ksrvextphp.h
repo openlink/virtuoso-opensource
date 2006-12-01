@@ -27,7 +27,6 @@ static int sapi_virtuoso_read_post(char *buffer, uint count_bytes TSRMLS_DC);
 static char *sapi_virtuoso_read_cookies(TSRMLS_D);
 static void sapi_virtuoso_register_variables(zval *track_vars_array TSRMLS_DC);
 
-caddr_t  blob_to_string (caddr_t * lt, caddr_t bhp);
 long strses_get_part (dk_session_t *ses, void *buf2, long starting_ofs, long nbytes);
 void php_register_variable(char *var, char *strval, zval *track_vars_array TSRMLS_DC);
 
@@ -97,4 +96,12 @@ typedef struct
   char *rm_name;
   int post_position;
 } thr_atrp;
+
+int virtuoso_cfg_getstring (char *section, char *key, char **pret);
+void build_set_special_server_model (const char *new_model);
+
+typedef void (*exit_hook_t) (void);
+void VirtuosoServerSetInitHook (void (*hook) (void));
+exit_hook_t VirtuosoServerSetExitHook (exit_hook_t exitf);
+int VirtuosoServerMain (int argc, char **argv);
 
