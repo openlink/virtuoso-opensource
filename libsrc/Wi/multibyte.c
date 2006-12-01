@@ -804,7 +804,7 @@ void dbg_dump_encoded_nchars (const char *buf, size_t len, size_t max_len)
 void
 assert_box_utf8 (const char *file, int line, caddr_t box)
 {
-  int enc = guess_nchars_enc (box, box_length (box) - 1);
+  int enc = guess_nchars_enc ((const unsigned char *)box, box_length (box) - 1);
   if ((GUESS_UTF8 != enc) && (GUESS_ENC_UNKNOWN != enc))
     {
       printf ("\n%s(%d): %s instead of UTF-8, box is ", file, line, guess_encoding_names[enc]);
@@ -815,7 +815,7 @@ assert_box_utf8 (const char *file, int line, caddr_t box)
 void
 assert_box_8bit (const char *file, int line, caddr_t box)
 {
-  int enc = guess_nchars_enc (box, box_length (box) - 1);
+  int enc = guess_nchars_enc ((const unsigned char *)box, box_length (box) - 1);
   if ((GUESS_8BIT != enc) && (GUESS_ENC_UNKNOWN != enc))
     {
       printf ("\n%s(%d): %s instead of 8-bit, box is ", file, line, guess_encoding_names[enc]);
@@ -826,7 +826,7 @@ assert_box_8bit (const char *file, int line, caddr_t box)
 void
 assert_box_wchar (const char *file, int line, caddr_t box)
 {
-  int enc = guess_nchars_enc (box, box_length (box) - 1);
+  int enc = guess_nchars_enc ((const unsigned char *)box, box_length (box) - 1);
   if ((GUESS_WCHAR != enc) && (GUESS_ENC_UNKNOWN != enc))
     {
       printf ("\n%s(%d): %s instead of wide, box is ", file, line, guess_encoding_names[enc]);
@@ -837,7 +837,7 @@ assert_box_wchar (const char *file, int line, caddr_t box)
 void
 assert_nchars_utf8 (const char *file, int line, const char *buf, size_t len)
 {
-  int enc = guess_nchars_enc (buf, len);
+  int enc = guess_nchars_enc ((const unsigned char *)buf, len);
   if ((GUESS_UTF8 != enc) && (GUESS_ENC_UNKNOWN != enc))
     {
       printf ("\n%s(%d): %s instead of UTF-8, box is ", file, line, guess_encoding_names[enc]);
@@ -849,7 +849,7 @@ assert_nchars_utf8 (const char *file, int line, const char *buf, size_t len)
 void
 assert_nchars_8bit (const char *file, int line, const char *buf, size_t len)
 {
-  int enc = guess_nchars_enc (buf, len);
+  int enc = guess_nchars_enc ((const unsigned char *)buf, len);
   if ((GUESS_8BIT != enc) && (GUESS_ENC_UNKNOWN != enc))
     {
       printf ("\n%s(%d): %s instead of 8-bit, box is ", file, line, guess_encoding_names[enc]);
@@ -860,7 +860,7 @@ assert_nchars_8bit (const char *file, int line, const char *buf, size_t len)
 void
 assert_nchars_wchar (const char *file, int line, const char *buf, size_t len)
 {
-  int enc = guess_nchars_enc (buf, len);
+  int enc = guess_nchars_enc ((const unsigned char *)buf, len);
   if ((GUESS_WCHAR != enc) && (GUESS_ENC_UNKNOWN != enc))
     {
       printf ("\n%s(%d): %s instead of wide, box is ", file, line, guess_encoding_names[enc]);
