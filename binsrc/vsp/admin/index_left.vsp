@@ -24,10 +24,10 @@
 ?>
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <?vsp
-  declare have_cond, have_wa, have_demo, deadl int;
+  declare have_cond, have_wa, deadl int;
 
   deadl := 0;
-  have_cond := 0; have_wa := 0; have_demo := 0;
+  have_cond := 0; have_wa := 0;
   declare exit handler for sqlstate '40001'
   {
     rollback work;
@@ -46,9 +46,6 @@ again:
   if (VAD_CHECK_VERSION ('Framework') is not null)  
     have_wa := 1;
 
-  if (exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE like 'Demo.demo.%'))
-    have_demo := 1;
-  
 ?><html>
   <head>
     <link rel="stylesheet" type="text/css" href="/default.css">
@@ -66,16 +63,10 @@ again:
       </ul>
       <?vsp } ?>
 
-      <?vsp if (sys_stat ('st_has_vdb')) { ?>
-      <ul class="left_nav">
-	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/admin/" target="_top">Classic Admin UI</a></li>
-      </ul>
-      <?vsp } ?>
-
       <ul class="left_nav">
 	<!--li><img src="/images/tour_16.png" width="16" height="16" /><a href="http://support.openlinksw.com/support/tutorials.vsp">Take A Tour</a></li-->
       <li><img src="/images/wnew_16.png" width="16" height="16" /><a href="/newfeatures.html" target="_top">What's New</a></li>
-      <?vsp if (have_demo) { ?>
+      <?vsp if (VAD_CHECK_VERSION ('tutorial') is not null) { ?>
       <li><img src="/images/opts_16.png" width="16" height="16" /><a href="/tutorial/" target="_top">Demos&nbsp;and&nbsp;Tutorials<small> (local)</small></a></li>
       <?vsp } else { ?>
       <li><img src="/images/opts_16.png" width="16" height="16" /><a href="http://demo.openlinksw.com/tutorial/" target="_top">Demos&nbsp;and&nbsp;Tutorials<small> (web)</small></a></li>
