@@ -7565,6 +7565,25 @@ bif_is_http_ctx (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 }
 
 static caddr_t
+bif_is_https_ctx (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  int is_https = 0;
+  ws_connection_t *ws = qi->qi_client->cli_ws;
+#ifdef _SSL
+  SSL *ssl = NULL;
+#endif
+
+  if (!ws)
+    return box_num(0);
+#ifdef _SSL
+  ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
+  is_https = (NULL != ssl);
+#endif
+  return box_num(is_https ? 1 : 0);
+}
+
+static caddr_t
 bif_http_is_flushed (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
@@ -7821,10 +7840,17 @@ int
 ws_cache_check (ws_connection_t * ws)
 {
   int rc = 0;
-  caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (caddr_t) &(ws->ws_path_string));
+  caddr_t *place = NULL;
   static query_t * check_qr = NULL;
   caddr_t err = NULL;
   local_cursor_t * lc = NULL;
+  caddr_t url;
+
+  if (!ws->ws_path)
+    return WS_NO_CACHE;
+
+  url = ws_soap_get_url (ws, 1);
+  place = (caddr_t *)id_hash_get (http_url_cache, (caddr_t) &url);
 
   if (place)
     {
@@ -7835,6 +7861,7 @@ ws_cache_check (ws_connection_t * ws)
       if (!check_qr)
 	{
 	  log_error ("No WS.WS.HTTP_CACHE_CHECK defined");
+	  dk_free_box (url);
 	  return WS_NO_CACHE;
 	}
       if (check_qr->qr_to_recompile)
@@ -7860,6 +7887,7 @@ ws_cache_check (ws_connection_t * ws)
       if (err)
 	dk_free_tree (err);
     }
+  dk_free_box (url);
   return (rc == WS_CACHE_HIT);
 }
 
@@ -8499,6 +8527,7 @@ http_init_part_one ()
   bif_define_typed ("http_body_read", bif_http_body_read, &bt_any);
   bif_define_typed ("__http_stream_params", bif_http_stream_params, &bt_any);
   bif_define_typed ("is_http_ctx", bif_is_http_ctx, &bt_any);
+  bif_define_typed ("is_https_ctx", bif_is_https_ctx, &bt_any);
   bif_define_typed ("http_is_flushed", bif_http_is_flushed, &bt_any);
   bif_define_typed ("http_debug_log", bif_http_debug_log, &bt_any);
   bif_define("http_login_failed", bif_http_login_failed);

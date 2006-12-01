@@ -626,14 +626,20 @@ create trigger SYS_CACHEABLE_D after delete on WS.WS.SYS_CACHEABLE
 
 create procedure WS.WS.HTTP_CACHE_CHECK (inout path any, inout lines any, inout check_fn any)
 {
-  declare inv, rc, cnt, tag, charset, url, qstr any;
+  declare inv, rc, cnt, tag, charset, url, qstr, sch any;
   inv := null;
+
+  if (is_https_ctx ())
+    sch := 'https://';
+  else
+    sch := 'http://';
+
   qstr := http_request_get ('QUERY_STRING');
-  url := path;
+  url := sch || http_request_header(lines, 'Host', null, '') || path;
   if (length (qstr))
     url := url || '?' || qstr;
   rc := call (check_fn) (url, lines, inv);
-  --dbg_obj_print (path, lines, check_fn, inv, rc);
+  --dbg_obj_print ('HTTP_CACHE_CHECK: ', url, check_fn, inv, rc);
   if (rc)
     {
       whenever not found goto nf;
@@ -680,15 +686,20 @@ create procedure WS.WS.HTTP_CACHE_CHECK (inout path any, inout lines any, inout 
 
 create procedure WS.WS.HTTP_CACHE_STORE (inout path any, inout store int)
 {
-  --dbg_obj_print ('to store', path, store);
   declare tag, cnt any;
+  declare url, qstr, sch any;
 
-  declare url, qstr any;
+  if (is_https_ctx ())
+    sch := 'https://';
+  else
+    sch := 'http://';
+
   qstr := http_request_get ('QUERY_STRING');
-  url := path;
+  url := sch || http_request_header(http_request_header (), 'Host', null, '') || path;
   if (length (qstr))
     url := url || '?' || qstr;
 
+  --dbg_obj_print ('to store', path, url, store);
   --
   -- There is an error or stream is flushed or chunked state is set
   --

@@ -6180,7 +6180,7 @@ bif_soap_receive (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-static caddr_t
+caddr_t
 ws_soap_get_url (ws_connection_t *ws, int full_path)
 {
   char szHostBuffer[512], *szHost = NULL;
