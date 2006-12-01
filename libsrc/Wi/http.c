@@ -8630,6 +8630,27 @@ http_init_part_one ()
   return 1;
 }
 
+void
+http_threads_allocate (int n_threads)
+{
+  int inx;
+  for (inx = 0; inx < n_threads; inx++)
+    {
+      ws_connection_t * ws = ws_new_connection ();
+      dk_thread_t *thr;
+
+      thr = PrpcThreadAllocate ((init_func) ws_init_func, http_thread_sz,  ws);
+      if (!thr)
+	{
+	  log_error ("Unable to create HTTP thread because of an OS system error. ");
+	  sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), NULL);
+	}
+
+      ws->ws_thread = thr->dkt_process;
+      resource_store (ws_dbcs, (void*) ws);
+    }
+}
+
 int
 http_init_part_two ()
 {
@@ -8919,21 +8940,8 @@ http_init_part_two ()
     }
 #endif
 
-  for (inx = 0; inx < http_threads; inx++)
-    {
-      ws_connection_t * ws = ws_new_connection ();
-      dk_thread_t *thr;
+  http_threads_allocate (http_threads);
 
-      thr = PrpcThreadAllocate ((init_func) ws_init_func, http_thread_sz,  ws);
-      if (!thr)
-        {
-	  log_error ("Unable to create HTTP thread because of an OS system error. ");
-	  sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), NULL);
-	}
-
-      ws->ws_thread = thr->dkt_process;
-      resource_store (ws_dbcs, (void*) ws);
-    }
   PrpcCheckIn (listening);
   dks_housekeeping_session_count_change (1);
   /* SSL support */

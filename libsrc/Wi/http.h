@@ -200,6 +200,7 @@ extern long https_client_verify_depth;
 extern char * https_client_verify_file;
 extern char * https_client_verify_crl_file;
 extern int32 http_threads;
+extern int32 ini_http_threads;
 extern int32 http_keep_alive_timeout;
 extern int32 http_max_keep_alives;
 extern int32 http_max_cached_proxy_connections;
@@ -346,5 +347,7 @@ extern dk_mutex_t * ws_http_log_mtx;
 
 extern int http_ses_size;
 extern caddr_t dns_host_name;
+void http_threads_allocate (int http_threads);
+caddr_t ws_soap_get_url (ws_connection_t *ws, int full_path);
 
 #endif /* _HTTP_H */
