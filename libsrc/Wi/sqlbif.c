@@ -962,11 +962,12 @@ bif_proc_table_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
 	    target_dtp = DV_BLOB_INLINE_DTP (target_dtp);
 	}
       if (dtp != DV_DB_NULL && !ha_dtp_check_done && dtp != target_dtp
+          && (DV_ANY != target_dtp)
 	  && !(dtp == DV_LONG_INT && target_dtp == DV_SHORT_INT)
 	  && !(ha->ha_key_cols[inx + 1].cl_sqt.sqt_is_xml && XE_IS_VALID_VALUE_FOR_XML_COL (v)))
 	{
-	  *err_ret = srv_make_new_error ("22023", "SR342",
-	      "procedure view's procedure returned value of type %.50s(dtp %d) instead of %.50s(dtp %d)"
+	  *err_ret = srv_make_new_error ("22023", "SR540",
+	      "procedure view's procedure returned value of type %.50s (dtp %d) instead of %.50s (dtp %d)"
 	      " for column %.128s (inx: %d)",
 	      dv_type_title (dtp), dtp,
 	      dv_type_title (target_dtp),
@@ -1043,7 +1044,7 @@ bif_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     caddr_t * out;
           if (n_args < n_cols)
             sqlr_new_error ("22023", "SR534",
-	      "Function result() is called with %d arguments, but the declared result-set contains %d columns", n_args, n_cols);
+	      "Function result() is called with %ld arguments, but the declared result-set contains %ld columns", n_args, n_cols);
           len = sizeof (caddr_t) * MAX (n_args, n_cols);
     if (!cli->cli_resultset_data_ptr)
       {
@@ -3264,8 +3265,12 @@ bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t val;
   if ((DV_STRING != str_dtp) && (DV_UNAME != str_dtp))
     {
-      if (0 == hide_errors)
-        bif_string_arg (qst, args, 0, "sprintf_inverse");
+      if ((0 == hide_errors) && (DV_DB_NULL != str_dtp))
+        {
+          sqlr_new_error ("22023", "SR536",
+            "Function sprintf_inverse needs a string as argument 0 if argument 2 is zero, not an arg of type %s (%d)",
+            dv_type_title (str_dtp), str_dtp );
+        }
       goto format_mismatch;
     }
   QR_RESET_CTX
@@ -5055,7 +5060,7 @@ bif_and (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    return 0;
         }
     }
-  return 1;
+  return (caddr_t)((ptrlong)(1));
 }
 
 caddr_t
@@ -5077,7 +5082,7 @@ bif_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           if (0 == unbox (arg))
             continue;
         /* no break */
-        default: return 1;
+        default: return (caddr_t)((ptrlong)(1));
         }
     }
   return 0;
@@ -5098,7 +5103,7 @@ bif_not (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case DV_CHARACTER:
     case DV_C_SHORT:    /* These are  */
     case DV_C_INT:    /*  not needed? */
-      return (0 == unbox (arg1)) ? 1 : 0;
+      return (caddr_t)((ptrlong)((0 == unbox (arg1)) ? 1 : 0));
     default:
       return 0;
   }
@@ -5619,20 +5624,17 @@ bif_pwd_magic_calc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     DO_SET (caddr_t, un, &pwd_magic_users)
       {
         if (!strcmp (un, uname))
-    {
-      permit = 1;
-      nxt = NULL;
-    }
+                goto permit; /* see below */
       }
     END_DO_SET();
   }
-      if (!permit)
   sqlr_new_error ("42000", "SR343",
       "Access to pwd_magic_calc not permitted."
       "If you are getting this message in the Admin interface and you are a DBA,"
       "then you need to enable the function from the INI file in order to use it.");
     }
 
+permit:
   name = bif_string_or_null_arg (qst, args, 0, "pwd_magic_calc");
   password = bif_string_or_null_arg (qst, args, 1, "pwd_magic_calc");
   if (BOX_ELEMENTS (args) > 2)
@@ -6747,7 +6749,7 @@ bif_dvector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
  */
 int
 find_index_to_vector (caddr_t item, caddr_t vec, int veclen,
-  dtp_t vectype, int start, int skip_value, char *calling_fun)
+  dtp_t vectype, int start, int skip_value, const char *calling_fun)
 {
   int item_type = DV_TYPE_OF (item);
   int elem_size = 1;
@@ -6910,7 +6912,7 @@ bif_get_keyword (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
-get_keyword_int (caddr_t * arr, char * item1, char * me)
+get_keyword_int (caddr_t * arr, char * item1, const char * me)
 {
   int inx;
   dtp_t vectype = DV_TYPE_OF (arr);

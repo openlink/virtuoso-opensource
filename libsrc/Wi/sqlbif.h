@@ -86,6 +86,7 @@ EXE_EXPORT (caddr_t, bif_array_arg, (caddr_t * qst, state_slot_t ** args, int nt
 EXE_EXPORT (caddr_t, bif_array_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (caddr_t, bif_strict_array_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (caddr_t *, bif_strict_type_array_arg, (dtp_t element_dtp, caddr_t * qst, state_slot_t ** args, int nth, const char *func));
+EXE_EXPORT (iri_id_t, bif_iri_id_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 
 
 EXE_EXPORT (int, bif_uses_index, (bif_t bif));
@@ -159,7 +160,7 @@ long get_mime_part (int *rfc822, caddr_t szMessage, long message_size, long offs
 caddr_t mime_stream_get_part (int rfc822, dk_session_t *ses, long max_size,
     dk_session_t *header_ses, long header_size);
 int find_index_to_vector (caddr_t item, caddr_t vec, int veclen, dtp_t vectype,
-    int start, int skip_value, char *calling_fun);
+    int start, int skip_value, const char *calling_fun);
 
 char * ws_file_ctype (char * name);
 void sprintf_escaped_id (caddr_t str, char *out, dk_session_t *ses);
