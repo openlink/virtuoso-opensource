@@ -34,16 +34,7 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <setjmp.h>
-#ifdef __BORLANDC__
-# include "Dkconfig.bc"
-#else
-#ifdef WIN32
-#  include "Dkconfig.w32"
-# else
-#  include "Dkconfig.h"
-# endif
-#endif
-/* #include "Dksystem.h" */
+#include "Dksystem.h"
 #include "Dktypes.h"
 #include "Dkbox.h"
 #include "widv.h"
