@@ -29,8 +29,6 @@
 #endif
 
 
-#ifdef _SSL
-
 #include "sqlnode.h"
 #include "sqlbif.h"
 
@@ -43,6 +41,7 @@
 #include "soap.h"
 #include "xmlenc.h"
 
+#ifdef _SSL
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
 #include <openssl/rand.h>
@@ -118,7 +117,7 @@ static algo_store_t algo_stores[] = {
   {"trans", NULL},
   {"verify", NULL}
 };
-
+#endif
 
 static char base64_vec[] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
@@ -252,6 +251,7 @@ xenc_decode_base64(char * src, char * end)
 }
 
 
+#ifdef _SSL
 static ptrlong algo_stores_len = sizeof (algo_stores) / sizeof (algo_store_t);
 
 /* pre: name is name of algo store
