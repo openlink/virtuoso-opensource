@@ -1359,6 +1359,13 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
     {
       dk_free_tree ((box_t) ws->ws_lines);
       ws->ws_lines = NULL;
+
+      if (ws->ws_cli && ws->ws_cli->cli_trx && ws->ws_cli->cli_trx->lt_is_excl)
+	{
+	  while (srv_have_global_lock (THREAD_CURRENT_THREAD))
+	    srv_global_unlock (ws->ws_cli, ws->ws_cli->cli_trx);
+	}
+
       client_connection_reset (ws->ws_cli);
       dk_free_box (ws->ws_client_ip);
       ws->ws_client_ip = NULL;
