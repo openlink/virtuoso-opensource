@@ -3034,48 +3034,6 @@ key_count_estimate  (dbe_key_t * key, int n_samples, int upd_col_stats)
 }
 
 
-caddr_t 
-key_iri_from_name (caddr_t name)
-{
-  int res;
-  caddr_t iri = NULL;
-  dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, "DB.DBA.RDF_URL");
-  dbe_key_t * key = tb ? tb_name_to_key (tb, "RU_QNAME", 1) : NULL;
-  dbe_column_t * iri_col = key && key->key_parts && key->key_parts->next ? key->key_parts->next->data : NULL;
-  it_cursor_t itc_auto;
-  it_cursor_t * itc = &itc_auto;
-  buffer_desc_t * buf;
-  search_spec_t sp;
-  if (!iri_col)
-    return NULL;
-  ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
-  itc_from (itc, key);
-  ITC_SEARCH_PARAM (itc, name);
-  itc->itc_isolation = ISO_UNCOMMITTED;
-  itc->itc_specs = &sp;
-  memset (&sp, 0, sizeof (sp));
-  sp.sp_min_op = CMP_EQ;
-  sp.sp_cl = *key_find_cl (key, ((dbe_column_t *) key->key_parts->data)->col_id);
-  ITC_FAIL (itc)
-    {
-      buf = itc_reset (itc);
-      res = itc_search (itc, &buf);
-      if (DVC_MATCH == res)
-	{
-	  iri = itc_box_column (itc, buf->bd_buffer, iri_col->col_id, NULL);
-	}
-      itc_page_leave (itc, buf);
-    }
-	ITC_FAILED
-      {
-	return NULL;
-      }
-  END_FAIL (itc);
-  itc_free (itc);
-  return iri;
-}
-
-
 int 
 key_rdf_lang_id (caddr_t name)
 {

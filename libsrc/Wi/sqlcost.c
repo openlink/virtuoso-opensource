@@ -528,7 +528,7 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
   caddr_t name, vtype, lang;
   if ((name = sqlo_iri_constant_name ((ST*) data)))
     {
-      data = key_iri_from_name (name);
+      data = key_name_to_iri_id (NULL, name, 0);
       if (!data)
 	return KS_CAST_NULL;
       if (sp->sp_col->col_sqt.sqt_dtp == DV_IRI_ID)
