@@ -619,12 +619,11 @@ typedef struct xp_node_s
 #define XRL_PARSETYPE_RES_OR_LIT	0x06	/*!< Either resource description or a literal */
 #define XRL_PARSETYPE_PROPLIST		0x08	/*!< Sequence of properties of a resource */
 #define XRL_PARSETYPE_EMPTYPROP		0x10	/*!< Nothing but ending tag of property */
-#define XRL_PARSETYPE_COLLECTION	0x20	/*!< Collection */
+#define XRL_PARSETYPE_COLLECTION	0x22	/*!< First resource inside collection, other resources are recognized by */
 
 /*! Stack part of RDF/XML-specific context of XML parser.
 These are fields of quad to be created.
-On nesting increment, all fields (except incremented xrlc_level) are propagated from the parent. (Pointers are copied, strings are not copied)
-On nesting decrement, all fields not equal to fields of parent are freed. Equal fields are propagated before, not allocated */
+"Inheritable" fields are propagated from the parent. Pointers are copied, strings are not copied. */
 typedef struct xp_rdf_locals_s
 {
   caddr_t	xrl_subject;		/*!< Subject (IRI of named node or blank node IRI_ID); subject is used for nested predicates */
@@ -632,14 +631,14 @@ typedef struct xp_rdf_locals_s
   caddr_t	xrl_base;		/*!< Base to resolve relative URIs, inheritable */
   caddr_t	xrl_language;		/*!< Language tag as string or NULL, inheritable */
   caddr_t	xrl_datatype;		/*!< Object data type (named node IRI_ID), not inheritable */
-  int		xrl_parsetype;		/*!< Parse type (one of XRL_DATATYPE_NNN), not inheritable */
-  int		xrl_li_count;		/*!< Counter of used Parse type (one of XRL_DATATYPE_NNN), not inheritable */
+  caddr_t	xrl_reification_id;	/*!< ID used to reify a statement as four quads for S,P,O and rdf:type rdfs:Statement. */
+  int		xrl_li_count;		/*!< Counter of used LI, not inheritable */
+  dk_set_t	xrl_seq_items;		/*!< Backstack of "Sequence" parseType subjects */
   xp_node_t *	xrl_xn;			/*!< Node whose not-yet-closed element corresponds to the given context */
   struct xp_rdf_locals_s *xrl_parent;	/*!< Pointer to parent context */
-  char		xrl_subject_set:8;
+  int		xrl_parsetype:8;	/*!< Parse type (one of XRL_DATATYPE_NNN), not inheritable */
   char		xrl_base_set:8;
   char		xrl_language_set:8;
-  char		xrl_datatype_set:8;
 } xp_rdf_locals_t;
 
 typedef struct xslt_template_uses_s
@@ -917,10 +916,17 @@ extern caddr_t uname_rdf_ns_uri_Description;
 extern caddr_t uname_rdf_ns_uri_ID;
 extern caddr_t uname_rdf_ns_uri_RDF;
 extern caddr_t uname_rdf_ns_uri_Seq;
+extern caddr_t uname_rdf_ns_uri_Statement;
 extern caddr_t uname_rdf_ns_uri_about;
+extern caddr_t uname_rdf_ns_uri_first;
 extern caddr_t uname_rdf_ns_uri_li;
+extern caddr_t uname_rdf_ns_uri_nil;
 extern caddr_t uname_rdf_ns_uri_nodeID;
+extern caddr_t uname_rdf_ns_uri_object;
+extern caddr_t uname_rdf_ns_uri_predicate;
 extern caddr_t uname_rdf_ns_uri_resource;
+extern caddr_t uname_rdf_ns_uri_rest;
+extern caddr_t uname_rdf_ns_uri_subject;
 extern caddr_t uname_rdf_ns_uri_type;
 extern caddr_t uname_rdf_ns_uri_datatype;
 extern caddr_t uname_rdf_ns_uri_parseType;
@@ -929,6 +935,8 @@ extern caddr_t uname_virtrdf_ns_uri;
 extern caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
 extern caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
 extern caddr_t uname_virtrdf_ns_uri_QuadStorage;
+extern caddr_t uname_virtrdf_ns_uri_array_of_any;
+extern caddr_t uname_virtrdf_ns_uri_array_of_string;
 extern caddr_t uname_virtrdf_ns_uri_bitmask;
 extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 extern caddr_t uname_virtrdf_ns_uri_loadAs;
@@ -1046,9 +1054,9 @@ extern caddr_t box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name);
 
 #define BOX_DV_UNAME_CONCAT4(qname,nsuri,local,local_len) \
   do { \
-    caddr_t _nsuri = (nsuri); \
+    ccaddr_t _nsuri = (nsuri); \
     int _nsuri_len = box_length_inline (_nsuri) - 1; \
-    caddr_t _local = (local); \
+    ccaddr_t _local = (local); \
     int _local_len = (local_len); \
     int _qname_len = _nsuri_len + _local_len; \
     caddr_t _qname = box_dv_ubuf (_qname_len); \
@@ -1060,16 +1068,16 @@ extern caddr_t box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name);
 
 #define BOX_DV_UNAME_CONCAT(qname,nsuri,local) \
   do { \
-    caddr_t _local1 = (local); \
+    ccaddr_t _local1 = (local); \
     int _local1_len = box_length_inline (_local1) - 1; \
     BOX_DV_UNAME_CONCAT4(qname,nsuri,_local1,_local1_len); \
   } while (0)
 
 #define BOX_DV_UNAME_COLONCONCAT4(qname,nsuri,local,local_len) \
   do { \
-    caddr_t _nsuri = (nsuri); \
+    ccaddr_t _nsuri = (nsuri); \
     int _nsuri_len = box_length_inline (_nsuri) - 1; \
-    caddr_t _local = (local); \
+    ccaddr_t _local = (local); \
     int _local_len = (local_len); \
     int _qname_len = _nsuri_len + _local_len + 1; \
     caddr_t _qname = box_dv_ubuf (_qname_len); \
@@ -1082,7 +1090,7 @@ extern caddr_t box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name);
 
 #define BOX_DV_UNAME_COLONCONCAT(qname,nsuri,local) \
   do { \
-    caddr_t _local1 = (local); \
+    ccaddr_t _local1 = (local); \
     int _local1_len = box_length_inline (_local1) - 1; \
     BOX_DV_UNAME_COLONCONCAT4(qname,nsuri,_local1,_local1_len); \
   } while (0)
