@@ -646,6 +646,7 @@ ddl_key_opt (query_instance_t * qi, char * tb_name, key_id_t key_id)
 }
 
 
+void
 ddl_key_bitmap (query_instance_t * qi, char * tb_name, key_id_t key_id)
 {
   caddr_t err;
@@ -6366,7 +6367,7 @@ static const char * scheduler_do_round_text =
 "    order by SE_LAST_COMPLETED \n"
 "    do \n"
 "      {\n"
-"	if (inx > n_events) \n"
+"	if (inx >= n_events) \n"
 "	  goto execs;\n"
 "	aset (arr, inx, vector (SE_NAME, SE_SQL, SE_NOTIFICATION_SENT));\n"
 "	inx := inx + 1;\n"
