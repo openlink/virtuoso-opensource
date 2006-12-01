@@ -715,6 +715,7 @@ xp_rdfxml_comment (vxml_parser_t * parser, const char *text)
     }
 }
 
+caddr_t default_rdf_dtd_config = NULL;
 
 void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
@@ -766,8 +767,8 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
   config.error_reporter = (VXmlErrorReporter)(sqlr_error);
   config.uri = ((NULL == base_uri) ? uname___empty : base_uri);
-  if (NULL == default_dtd_config)
-    default_dtd_config = box_dv_short_string ("Validation=RIGOROUS");
+  if (NULL == default_rdf_dtd_config)
+    default_rdf_dtd_config = box_dv_short_string ("Validation=DISABLE SchemaDecl=DISABLE IdCache=DISABLE");
   config.dtd_config = default_dtd_config;
   config.root_lang_handler = lh;
   parser = VXmlParserCreate (&config);
