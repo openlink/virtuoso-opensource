@@ -170,6 +170,14 @@ insert soft DB.DBA.HTTP_PATH
 (
     HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
     HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
+    values ( '*ini*', '*ini*', '/install', '/install/', 0, 0, 'install.vspx', NULL, NULL, NULL, NULL, 'dba', NULL, 0
+)
+;
+
+insert soft DB.DBA.HTTP_PATH
+(
+    HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT,
+    HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS)
     values ( '*sslini*', '*sslini*', '/admin', '/admin/', 0, 0, 'admin_main.vsp', NULL, NULL, NULL, NULL, 'dba', NULL, 0
 )
 ;
