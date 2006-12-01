@@ -6655,7 +6655,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   char * https_cvfile = NULL;
   char *cert = NULL;
   char *skey = NULL;
-  long https_cvdepth = 0;
+  long https_cvdepth = -1;
   int i, len;
   ssl_meth = SSLv23_server_method();
   ssl_ctx = SSL_CTX_new (ssl_meth);
@@ -6687,11 +6687,14 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       goto err_exit;
     }
 
-  if (https_cvfile && !SSL_CTX_load_verify_locations (ssl_ctx, https_cvfile, NULL))
+  if (https_cvfile)
+    {
+      if (!SSL_CTX_load_verify_locations (ssl_ctx, https_cvfile, NULL))
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
       log_error ("HTTPS: Invalid X509 client CA file %s : %s", https_cvfile, err_buf);
       goto err_exit;
+    }
     }
 
   if (SSL_CTX_use_certificate_file(ssl_ctx, cert, SSL_FILETYPE_PEM) <= 0)
@@ -6715,7 +6718,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       goto err_exit;
     }
 
-  if (https_cvfile)
+  if (https_cvfile && https_cvdepth >= 0)
     {
       int i = 0, session_id_context = 2;
       ssl_ctx_info_t * https_callback_info = (ssl_ctx_info_t *) dk_alloc (sizeof(ssl_ctx_info_t));
