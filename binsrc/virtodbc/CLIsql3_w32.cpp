@@ -412,6 +412,7 @@ virtodbc_connect (
 
   /* hmm- this should probably be somewhere else */
   dk_free_box (con->con_charset_name);
+  con->con_charset_name = NULL;
 
   mutex_leave (con->con_environment->env_mtx);
 
