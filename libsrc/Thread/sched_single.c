@@ -254,7 +254,7 @@ mutex_allocate (void)
   return (dk_mutex_t *) 1L;
 }
 
-#ifdef MTX_DEBUG
+#if defined (MTX_DEBUG) || defined (MTX_METER)
 void
 mutex_option (dk_mutex_t * mtx, char * name, mtx_entry_check_t ck, void * cd)
 {

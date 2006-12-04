@@ -187,7 +187,6 @@ thread_initial (unsigned long stack_size)
   rc = pthread_setspecific (_key_current, NULL);
   CKRET (rc);
 
-
   /*
    *  Initialize default thread/mutex attributes
    */
@@ -207,11 +206,9 @@ thread_initial (unsigned long stack_size)
   CKRET (rc);
 #endif
 
-#ifdef PTHREAD_PROCESS_PRIVATE
-#if !defined(linux) && !defined(__FreeBSD__)
+#if defined (PTHREAD_PROCESS_PRIVATE) && !defined (__FreeBSD__)
   rc = pthread_mutexattr_setpshared (&_mutex_attr, PTHREAD_PROCESS_PRIVATE);
   CKRET (rc);
-#endif
 #endif
 
 #if defined (MUTEX_FAST_NP) && !defined (_AIX)
@@ -219,6 +216,10 @@ thread_initial (unsigned long stack_size)
   CKRET (rc);
 #endif
 
+#if defined (PTHREAD_MUTEX_ADAPTIVE_NP)
+  rc = pthread_mutexattr_settype (&_mutex_attr, PTHREAD_MUTEX_ADAPTIVE_NP);
+  CKRET (rc);
+#endif
 
   /*
    *  Allocate a thread structure
@@ -241,7 +242,6 @@ thread_initial (unsigned long stack_size)
   /*GK: the LDAP on that platform requires that */
   stack_size *= 2;
 #endif
-
 
   thr->thr_stack_size = stack_size;
   thr->thr_status = RUNNING;
@@ -1017,7 +1017,7 @@ dk_set_t all_mtxs = NULL;
 dk_mutex_t *
 mutex_allocate_typed (int type)
 {
-  void * handle;
+  void *handle;
   int rc;
   static int is_initialized = 0;
   NEW_VARZ (dk_mutex_t, mtx);
@@ -1027,25 +1027,35 @@ mutex_allocate_typed (int type)
     {
       NEW_VAR (pthread_spinlock_t, sl);
       pthread_spin_init (sl, 0);
-      handle = (void*)sl;
+      handle = (void *) sl;
     }
-  else 
+  else
 #endif
     {
       NEW_VAR (pthread_mutex_t, ptm);
 
-  memset ((void *) ptm, 0, sizeof (pthread_mutex_t));
+      memset ((void *) ptm, 0, sizeof (pthread_mutex_t));
 #ifndef OLD_PTHREADS
-  if (!is_initialized) {
-    pthread_mutexattr_init (&_mutex_attr);
-	is_initialized = 1;
-  }
-  rc = pthread_mutex_init (ptm, &_mutex_attr);
-#else
-  rc = pthread_mutex_init (ptm, _mutex_attr);
+      if (!is_initialized)
+	{
+#if defined (PTHREAD_PROCESS_PRIVATE) && !defined (__FreeBSD__)
+	  pthread_mutexattr_init (&_mutex_attr);
+	  rc = pthread_mutexattr_setpshared (&_mutex_attr, PTHREAD_PROCESS_PRIVATE);
+	  CKRET (rc);
 #endif
-  CKRET (rc);
-      handle = (void*) ptm;
+
+#ifdef PTHREAD_MUTEX_ADAPTIVE_NP
+	  rc = pthread_mutexattr_settype (&_mutex_attr, PTHREAD_MUTEX_ADAPTIVE_NP);
+	  CKRET (rc);
+#endif
+	  is_initialized = 1;
+	}
+      rc = pthread_mutex_init (ptm, &_mutex_attr);
+#else
+      rc = pthread_mutex_init (ptm, _mutex_attr);
+#endif
+      CKRET (rc);
+      handle = (void *) ptm;
     }
   mtx->mtx_handle = handle;
 #ifdef MTX_DEBUG
@@ -1054,7 +1064,7 @@ mutex_allocate_typed (int type)
 #ifdef MTX_METER
   if (all_mtxs_mtx)
     mutex_enter (all_mtxs_mtx);
-  dk_set_push (&all_mtxs, (void*)mtx);
+  dk_set_push (&all_mtxs, (void *) mtx);
   if (all_mtxs_mtx)
     mutex_leave (all_mtxs_mtx);
 #endif
@@ -1142,7 +1152,6 @@ mutex_enter (dk_mutex_t *mtx)
 #endif
   int rc;
 
-  _thread_num_wait++;
 #ifdef MTX_DEBUG
   assert (mtx->mtx_owner !=  self || !self);
   if (mtx->mtx_entry_check
