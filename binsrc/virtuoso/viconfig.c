@@ -131,9 +131,9 @@ extern char *c_ssl_server_cert;
 extern char *c_ssl_server_key;
 extern long ssl_server_verify;
 extern long ssl_server_verify_depth;
-extern int spotlight_integration;
 extern char *ssl_server_verify_file;
 #endif
+extern int spotlight_integration;
 #ifdef BIF_XML
 #ifdef _IMSG
 extern int pop3_port;
