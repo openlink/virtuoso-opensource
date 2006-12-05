@@ -1,3 +1,38 @@
+December 5, 2006, V4.5.7:
+  * Added SPAR_CODEGEN type of SPARQL trees
+  * Added SPARQL syntax for IDENTIFIED BY
+  * Added new mutex attribute for Linux and other OSes for faster switching
+  * Added several enhancements to quad map
+  * Added new iri-to-id translation in C
+  * Added code to pldebug to allow tracing triggers
+  * Added support for 'array of any' and 'array of strings' field types
+  * Added new aligned IO buffers for database
+  * Added extra information to server status
+  * Added additional charset encode/decode functions in hosting gates
+  * Added support for system and user DSNs in conductor
+  * Added several new bif functions
+  * Fixed invocation of SPARQL schema manipulation statements from SQL
+  * Fixed RDF parsing errors
+  * Fixed JSON result format for value type bnode
+  * Fixed parsing error on finding ns URI and local part of qname without ':'
+  * Fixed SPARQL_RELOAD_QM_GRAPH() initialization on server startup
+  * Fixed proper prefix and removed extra cosing brace
+  * Fixed database byte order conversion
+  * Fixed GPF when parameters are changed on an open cursor by doing a rebind
+  * Fixed some locking problems in atomic mode
+  * Fixed SSL certificate when ssl_virtual host is not the default_ssl_host
+  * Fixed HTTP cache to match against full URL, not only the path
+  * Fixed empty rules for old bison parsers
+  * Fixed building without SSL support
+  * Fixed problem with ODBC driver on Windows
+  * Fixed compiler warnings
+  * Fixed checking for cpp during configure
+  * Fixed parsing of autoexec.isql file
+  * Fixed HTTP logfile formatting
+  * Removed XML validation for RDFXML files.
+  * Removed link to Classic admin UI
+
+
 October 27 2006, V4.5.6:
   * Added 'dataspace' SPARQL storage with an example for users/groups
   * Added bookmark gems

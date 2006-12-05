@@ -1,3 +1,379 @@
+2006-12-05 10:14  source
+
+	* Updated version to 4.5.7 final
+
+2006-12-04 14:13  source
+
+	* Set variable to NULL after free
+
+2006-12-04 12:16  source
+
+	* Set version to 4.5.7-rc2
+
+2006-12-04 11:55  source
+
+	* Fixed for building without _SSL
+
+2006-12-04 11:49  source
+
+	* Set mutex to ADAPTIVE if this is supported on this system
+	* Fixed ifdef for mutex_meter
+
+2006-12-01 18:17  source
+
+	* Use Dksystem.h to fix problems with Mac OS X universal build
+
+2006-12-01 17:55  source
+
+	* Fixed core dump rewriting database when byte order changes
+
+2006-12-01 15:55  source
+
+	* Updated version to 4.5.7-rc1
+
+2006-12-01 15:52  source
+
+	* Removed duplicate typedef
+
+2006-12-01 15:51  source
+
+	* Fixed building when _SSL is not defined
+
+2006-12-01 15:50  source
+
+	* Disable XML validation for RDFXML files. Since callbacks check every
+	  element and attribute anyway and at the same time the file almost never
+	  contains DTD.
+
+2006-12-01 15:01  source
+
+	* Simplified allocating http threads
+
+2006-12-01 15:00  source
+
+	* When atomic is inside ws, release the lock after all
+
+2006-12-01 14:58  source
+
+	* Fixed CA file when ssl_virtual_host != default_ssl_host
+
+2006-12-01 14:57  source
+
+	* http cache needs url to be matched against full url not only path
+
+2006-12-01 14:50  source
+
+	* Added virtual dir for installer
+
+2006-12-01 14:48  source
+
+	* Moved code block
+
+2006-12-01 14:48  source
+
+	* Removed link to Classic UI
+	* Fixed link to tutorials
+
+2006-12-01 01:46  source
+
+	* Added SPAR_CODEGEN type of SPARQL trees
+	* Fixed SPARQL syntax (IDENTIFIED BY)
+	* Fixed invocation of SPARQL schema manipulation statements from SQL
+	* Fixed RDF parsing errors
+	* Fixed empty rules for old bison parsers
+	* Changes to quad map
+	* Fixed JSON result format for value type bnode
+	* Fixed proper prefix and removed extra cosing brace
+
+2006-12-01 01:39  source
+
+	* Fixed RDF parsing errors
+	* Added extra UNAMEs
+	* Fixed compiler warnings
+
+2006-12-01 01:37  source
+
+	* Implement iri-to-id translation in C
+
+2006-12-01 01:32  source
+
+	* Fixed accessing uninitialized pointer on finding ns URI and local part
+	  of qname without ':' with allowed default and no default namespace
+	  decl in the context.
+	* Fixed RDF parsing errors
+
+2006-12-01 01:29  source
+
+	* Fixed RDF parsing errors
+	* Fixed bug on server startup when SPARQL_RELOAD_QM_GRAPH() leaves garbage
+	  in sy graph
+	* Fixed compiler warnings
+	* Small fixes from quad map
+
+2006-12-01 01:27  source
+
+	* Use an automatic var for hash table, as the one from the compiler is
+	  not reentrant to change
+
+2006-12-01 01:24  source
+
+	* Extended functionality of iri_to_id
+
+2006-12-01 01:19  source
+
+	* Fixed spelling
+
+2006-12-01 01:17  source
+
+	* Fixed prototypes
+
+2006-12-01 01:16  source
+
+	* Fixed compiler warning
+	* Fixed bounds check
+
+2006-12-01 00:52  source
+
+	* Check for cpp in /usr/bin:/lib:$PATH
+
+2006-11-30 18:07  source
+
+	* Added sprintf_or_null function
+
+2006-11-30 18:05  source
+
+	* Added log message for the bad dtp
+
+2006-11-30 17:55  source
+
+	* Fixed GPF when params are changed on open cursor, by doing a rebind
+
+2006-11-30 17:51  source
+
+	* Added lt_no_rb_insert function
+
+2006-11-30 15:34  source
+
+	* Fixed check to stop in trigger; format is <trig>@<table>
+
+2006-11-30 15:30  source
+
+	* Added host_id function
+
+2006-11-30 15:29  source
+
+	* Added new aligned IO buffers
+
+2006-11-30 15:23  source
+
+	* Added workaround for Solaris AMD64 compiler bug
+
+2006-11-30 15:19  source
+
+	* Fixed atomic mode and deletion
+
+2006-11-30 15:16  source
+
+	* Simplified argument check
+
+2006-11-30 15:15  source
+
+	* Added bif_charset_canonical_name function
+
+2006-11-30 15:14  source
+
+	* Fixed host_id for Windows 32 & 64
+
+2006-11-30 15:12  source
+
+	* Use DO_SET_WRITABLE and DO_SET_WRITABLE2 macros
+
+2006-11-30 15:04  source
+
+	* Added support for 'array of any' and 'array of strings' field types
+
+2006-11-30 15:01  source
+
+	* Added more globals
+
+2006-11-30 15:00  source
+
+	* Use DO_SET_WRITABLE2 macro
+
+2006-11-30 14:58  source
+
+	* Added extra info on client
+	* Added info when server was started
+
+2006-11-30 14:52  source
+
+	* Added gz_compress_file and gz_uncompress_file
+
+2006-11-30 14:51  source
+
+	* In quietcast mode, if a distinct hash gets a row that is a blog or
+	  will not fit, then such a row is not remembered and is considered ipso
+	  facto distinct. Good for sparql
+	* Added debug info when gpf in hash space fill
+
+2006-11-30 14:44  source
+
+	* Added timeout in client
+
+2006-11-30 14:43  source
+
+	* Removed obsolete code, use sql_split_text instead
+
+2006-11-30 14:41  source
+
+	* Changed type of flags to bitf_t
+
+2006-11-30 14:20  source
+
+	* Added DO_SET_WRITABLE and DO_SET_WRITABLE2 macros
+
+2006-11-30 14:19  source
+
+	* Added t_NEW_DB_NULL macro
+
+2006-11-30 14:18  source
+
+	* Fix for compiling with MALLOC_DEBUG on Unix
+
+2006-11-30 14:16  source
+
+	* Added decode and encode of wide buffers
+	* More export declarations
+
+2006-11-30 14:15  source
+
+	* Added more charset encode/decode functions in gates
+
+2006-11-30 14:14  source
+
+	* Fixed compiler warnings
+
+2006-11-30 14:07  source
+
+	* Updated version
+
+2006-11-30 14:06  source
+
+	* Added sorting in Database|Schema Object UI
+	* Added clients info
+
+2006-11-30 14:05  source
+
+	* Added clients info
+
+2006-11-30 14:01  source
+
+	* Fix for OAT in global place
+	* Fixed label
+
+2006-11-30 13:57  source
+
+	* Added Type column to show System/User/File DSN
+
+2006-11-30 13:52  source
+
+	* Fixed error reporting
+
+2006-11-30 13:50  source
+
+	* Fixed path for xsl files when showing results in other formats
+
+2006-11-30 13:49  source
+
+	* Removed duplicate Id: lines in comment
+
+2006-11-30 13:47  source
+
+	* Regenerated
+
+2006-11-30 13:46  source
+
+	* Merged in latest information from quad-map
+
+2006-11-30 13:44  source
+
+	* SyncML moved to VAD package
+
+2006-11-30 13:42  source
+
+	* Added Devinfo
+	* Moved to VAD pack
+	* Delete failed
+	* Return 508 if normal sync, but local storage was reset
+
+2006-11-30 13:37  source
+
+	* Temporarily disabled SyncML test suite
+
+2006-11-30 13:36  source
+
+	* Added test to check re-bind of cursor params
+
+2006-11-30 13:36  source
+
+	* Changed bif name to upper case
+
+2006-11-30 13:34  source
+
+	* Added check for DB.DBA.SYNCML
+	* Use disk when handling large dav files
+
+2006-11-30 13:32  source
+
+	* Changed qname-to-iid translation
+
+2006-11-30 13:29  source
+
+	* Fixed text for sys_keys table
+
+2006-11-24 22:59  source
+
+	* Fixed building mediawiki plugin
+
+2006-11-23 19:15  source
+
+	* Fixed spelling
+
+2006-11-23 19:06  source
+
+	* Added extra license information
+
+2006-11-22 14:06  source
+
+	* Added information on optional components/libraries
+	* Fixed layout
+
+2006-11-20 21:23  source
+
+	* Fixed spelling
+
+2006-11-07 20:49  source
+
+	* Fixed spelling
+
+2006-11-07 20:25  source
+
+	* Fixed spelling in function names, variables and identifiers
+
+2006-11-07 20:19  source
+
+	* Fixed spelling in comments and messages
+
+2006-11-02 23:06  source
+
+	* Added support for reading both system and user DSNs on Unix and Mac OS X
+
+2006-11-02 22:09  source
+
+	* If we fail parsing the Authorization: key, we return "- -" otherwise
+	  the log_info_http function either GPFs or produces unparsable log line
+	  (pvk)
+
 2006-10-27 18:52  source
 
 	* Added missing icon
@@ -1161,6 +1537,10 @@
 
 	* Added syntax highlight for results
 
+2006-09-11 11:01  source
+
+	* Merged from upstream project
+
 2006-09-11 11:00  source
 
 	* Regenerated
@@ -1956,6 +2336,10 @@
 
 	* Added text for Opera problem with HTTP status code 400
 
+2006-07-27 15:26  source
+
+	* New files from upstream OAT project
+
 2006-07-27 14:38  source
 
 	* Fixed column lengths for SQLGetTypeInfo
@@ -2179,6 +2563,10 @@
 
 	* Fixed BIF function name changed from DB.DBA.RDF_EXP_LOAD_RDFXML to
 	  DB.DBA.RDF_LOAD_RDFXML
+
+2006-07-24 07:57  source
+
+	* Merged newer version of OAT
 
 2006-07-24 07:56  source
 
@@ -2507,6 +2895,10 @@
 2006-07-14 17:30  source
 
 	* New Dawg behaviour
+
+2006-07-14 17:30  source
+
+	* Merged patches from upstream OAT archive
 
 2006-07-14 17:27  source
 
