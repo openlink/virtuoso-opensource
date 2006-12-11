@@ -786,8 +786,8 @@ then
 	   openldap_LDFLAGS="-lldap -llber"
 	   LDFLAGS="$LDFLAGS $openldap_LDFLAGS" ;;
 	*) 
-	   openssl_CFLAGS="-I$with_ldap/include"
-	   openssl_LDFLAGS="-L$with_ldap/lib -lldap -llber"
+	   openldap="-I$with_ldap/include"
+	   openldap_LDFLAGS="-L$with_ldap/lib -lldap -llber"
 	   CPPFLAGS="$CPPFLAGS $openldap_CFLAGS" 
 	   LDFLAGS="$LDFLAGS $openldap_LDFLAGS"
 	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_ldap/lib" ;;
