@@ -1817,6 +1817,87 @@ READ_KEYS ('%');
 ]]></programlisting>
 </example>
 </sect2>
+<sect2 id="PLFORWARDONLYCR">
+<title>FORWARD-ONLY (traditional cursor statement) Example</title>
+<example>
+<title>Procedure using forward only cursor</title>
+<programlisting><![CDATA[
+create procedure TEST_FW()
+{
+  declare cr cursor for select KEY_ID from DB.DBA.SYS_KEYS;
+  declare inx, data integer;
+  inx := 0;
+
+  whenever not found goto done;
+  open cr;
+  while (1)
+    {
+      fetch cr into data;
+      inx := inx + 1;
+    }
+done:
+  close cr;
+  result_names (data);
+  result (inx);
+};
+TEST_FW();
+]]></programlisting>
+</example>
+</sect2>
+<sect2 id="PLDYNAMICCR">
+<title>DYNAMIC (traditional cursor statement) Example</title>
+<example>
+<title>Procedure using dynamic cursor</title>
+<programlisting><![CDATA[
+create procedure TEST_DYNAMIC ()
+{
+  declare cr dynamic cursor for select KEY_ID from DB.DBA.SYS_KEYS;
+  declare inx, data integer;
+  inx := 0;
+
+  whenever not found goto done;
+  open cr;
+  while (1)
+    {
+      fetch cr into data;
+      inx := inx + 1;
+    }
+done:
+  close cr;
+  result_names (data);
+  result (inx);
+};
+TEST_DYNAMIC ();
+]]></programlisting>
+</example>
+</sect2>
+<sect2 id="PLKEYSETCR">
+<title>KEYSET (traditional cursor statement) Example</title>
+<example>
+<title>Procedure using keyset cursor</title>
+<programlisting><![CDATA[
+create procedure TEST_KEYSET ()
+{
+  declare cr keyset cursor for select KEY_ID from DB.DBA.SYS_KEYS;
+  declare inx, data integer;
+  inx := 0;
+
+  whenever not found goto done;
+  open cr;
+  while (1)
+    {
+      fetch cr into data;
+      inx := inx + 1;
+    }
+done:
+  close cr;
+  result_names (data);
+  result (inx);
+};
+TEST_KEYSET ();
+]]></programlisting>
+</example>
+</sect2>
 </sect1>
 
 <sect1 id="plmodules"><title>Virtuoso PL Modules</title>

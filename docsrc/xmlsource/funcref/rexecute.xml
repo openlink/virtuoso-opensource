@@ -341,6 +341,58 @@ Bottom-Dollar Markets     Elizabeth Lincoln
 ]]>
 </screen>
     </example>
+    <example id="ex_rexecute_4"><title>Remote execute example 3</title>
+      <para>Remote DBMS native SQL execution</para>
+      <screen><![CDATA[
+create procedure test_rexecute_3 (in remote_dsn varchar, in max_results integer)
+{
+    declare res_vec_out, param_vec, mdta_out, cursor_out any;
+    declare url, stmt, sql_state, err_msg varchar;
+    declare num_cols_out, inx, _id integer;
+
+    result_names(_id,url);
+
+    stmt := 'select id from mysql_pk';
+
+    sql_state := '00000';
+    param_vec := vector ('');
+
+    rexecute (remote_dsn, stmt, sql_state, err_msg, param_vec, num_cols_out, mdta_out, NULL, cursor_out);
+
+    _id := '';
+
+    if (sql_state <> '00000')  -- See if we got an error
+    {
+      signal ('ZILCH',concat ('Remote execution returned ', sql_state, ' ', err_msg));
+    }
+
+    -- now iterate through result set stored in cursor_out
+    inx := 0;
+    while (0 = rnext (cursor_out, res_vec_out) and inx < max_results)
+    {
+      _id := aref (res_vec_out, 0);
+      {
+        whenever not found goto znext;
+        select url into url from rdfstore_mysql where id = _id;
+      }
+
+       result(_id, url);
+
+       if (0 = mod (inx, 5000))
+       {
+         log_message(sprintf ('%d rows copied, stay patient (id: %d)', inx, _id));
+       }
+
+        znext:;
+        inx := inx + 1;
+    }
+
+  rclose (cursor_out);
+  end_result ();
+};
+]]></screen>
+    </example>
+
     <example id="ex_rexecute_2"><title>Remote procedures with OUT params.</title>
       <para>The following example demonstrates the use of OUT params using a
       sample remote procedure stored in another Virtuoso server, although this

@@ -2673,6 +2673,25 @@ to commit before the SHUTDOWN statement of the previous example.
 <tip><title>See Also</title>
 <para>The <link linkend="backup">Backup section</link> for more backup and
 recovery information.</para></tip>
+                <example>
+			<title>Example for control the transaction logging:</title>
+			<programlisting><![CDATA[
+create procedure log_test ()
+{
+  -- disable the transaction logging
+  log_enable (0);
+
+  -- action code, for ex.:
+  delete from TAG_REL_INX;
+  insert into TAG_REL_INX (TR_T1, TR_T2, TR_COUNT) select TR_T1, TR_T2, TR_COUNT from TAG_REL;
+
+  exec('checkpoint');
+
+  -- enable the transaction logging
+  log_enable (1);
+};
+]]></programlisting>
+		</example>
 
 		<sect2 id="checkpointparams">
 			<title>Checkpoint &amp; Page Remapping</title>
@@ -3076,7 +3095,7 @@ grant execute on &quot;SalesReport&quot; to &quot;Accounting&quot;;
     user on a table so that this user can create new tables referencing such tables
     in foreign keys where he/she would otherwise be restricted.</para>
 
-  <formalpara><title>Remote Data Sources</title>
+  <formalpara><title>Remote SQL Data Sources</title>
   <para>To provide further consistent security to remote data, only the DBA
   group is permitted to use the <function>rexecute()</function>, unless
   explicitly granted.  Caution is required here since any user granted use of

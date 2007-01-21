@@ -732,7 +732,7 @@ String getVariableData (String var_name, String part, String query)
     <bpelv:exec binding="JAVA" name="sendMail"><![CDATA[
 	String  to, subject = null, from = null;
 	String mailhost = (String) getVariableData ("request", "req_payload", "/jsm:destRequest/jsm:mailhost");
-	String mailer = "Openlink Virtuoso[BPEL script]";
+	String mailer = "OpenLink Virtuoso[BPEL script]";
 	try {
         	to = (String) getVariableData ("request", "req_payload", "/jsm:destRequest/jsm:to");
 	        subject = (String) getVariableData ("request", "req_payload", "/jsm:destRequest/jsm:subject");

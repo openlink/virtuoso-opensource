@@ -368,10 +368,21 @@
 </xsl:template>
 
 <xsl:template name="rssfeednavlinks">
+  <xsl:param name="chapnodenav" select="parent::chapter/@id|self::chapter/@id" />
   <xsl:if test="$rss='yes'">
     <a class="feedlnk" href="{/book/@id}.opml" title="The OPML Feed of this book allows you to monitor
 changes in the documentation.  This could also help keep you informed of new
 features and fixes to the product."><img src="/doc/opml.gif" alt="OPML" /></a><xsl:text> </xsl:text>
+<xsl:choose>
+  <xsl:when test="not($chapnodenav)">
+    <a class="feedlnk" href="{/book/@id}.sioc.rdf" title="SIOC(RDF/XML)"><img hspace="3" src="/doc/rdf_flyer-16.gif" alt="SIOC(RDF/XML)" title="SIOC(RDF/XML)"/></a>
+    <a class="feedlnk" href="{/book/@id}.ttl" title="SIOC(N3/Turtle)"><img  hspace="3" src="/doc/rdf_flyer-16.gif" alt="SIOC(N3/Turtle)" title="SIOC(N3/Turtle)"/></a>
+  </xsl:when>
+  <xsl:otherwise>
+    <a class="feedlnk" href="{parent::chapter/@id|self::chapter/@id}.sioc.rdf" title="SIOC(RDF/XML)"><img hspace="3" src="/doc/rdf_flyer-16.gif" alt="SIOC(RDF/XML)" title="SIOC(RDF/XML)"/></a>
+    <a class="feedlnk" href="{parent::chapter/@id|self::chapter/@id}.ttl" title="SIOC(N3/Turtle)"><img hspace="3" src="/doc/rdf_flyer-16.gif" alt="SIOC(N3/Turtle)" title="SIOC(N3/Turtle)"/></a>
+  </xsl:otherwise>
+</xsl:choose>
     <xsl:if test="parent::chapter|self::chapter">
       <a class="feedlnk" href="{parent::chapter/@id|self::chapter/@id}.rss" title="Stay up-to-date with this chapter.  Chapter RSS Feed for {parent::chapter/title|self::chapter/title}"><img src="/doc/feed-icon-16x16.gif" alt="RSS" /></a>
       <a class="feedlnk" href="{parent::chapter/@id|self::chapter/@id}.rdf" title="Stay up-to-date with this chapter using RDF">

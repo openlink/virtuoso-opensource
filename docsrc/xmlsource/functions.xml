@@ -61,7 +61,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
     <keyword id="number">Number</keyword>
 <!--    <keyword id="object">Object</keyword>-->
     <keyword id="repl">Replication</keyword>
-    <keyword id="rmt">Remote Data Source</keyword>
+    <keyword id="rmt">Remote SQL Data Source</keyword>
     <keyword id="soap">SOAP</keyword>
     <keyword id="sql">SQL</keyword>
 <!--    <keyword id="stream">Stream</keyword>-->

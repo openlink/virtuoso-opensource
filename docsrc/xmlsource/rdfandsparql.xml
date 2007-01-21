@@ -1,20 +1,19 @@
 <chapter label="rdfandsparql.xml" id="rdfandsparql"><title>RDF Database and SPARQL</title>
 <abstract>
 <para>
-Starting with version4.5, Virtuoso provides built-in support for SPARQL, the standard query language for RDF and the semantic web.   
+Starting with version 4.5, Virtuoso provides built-in support for SPARQL, the standard query language for RDF and the semantic web.
 
 Adoption of SPARQL with Virtuoso is effortless, as any  existing SQL client applications and stored procedures can take advantage of SPARQL simply by using it in the place of or inside SQL queries.  Additionally, Virtuoso offers the standard SPARQL protocol to HTTP clients.
 </para>
 
 <para>
-This chapter discusses Virtuoso's RDF triple storage and query capabilities. This is divided into a discussion of the RDF data representation, the SPARQL and
- SQL API's, protocol support and standard compliance notes.
+This chapter discusses Virtuoso's RDF triple storage and query capabilities. This is divided into a discussion of the RDF data representation, the SPARQL and SQL API's, protocol support and standard compliance notes.
 </para>
 </abstract>
 <sect1 id="rdfdatarepresentation"><title>Data Representation</title>
 <para>This section covers how Virtuoso stores RDF triples. The IRI_ID built-in data type is introduced, along with the default table structures used for triple persistency.</para>
 <sect2 id="rdfiriidtype"><title>IRI_ID Type</title>
-<para>The central notion of RDF is the IRI, or URI , which serves as the globally unique label of named nodes. The subject and predicate of a triple are always IRI's and the object may be an IRI or any other XML Schema scalar data type. In any case, an IRI is always distinct from any instance of any other data type.</para>
+<para>The central notion of RDF is the IRI, or URI, which serves as the globally unique label of named nodes. The subject and predicate of a triple are always IRI's and the object may be an IRI or any other XML Schema scalar data type. In any case, an IRI is always distinct from any instance of any other data type.</para>
 <para>Virtuoso supports a native IRI_ID data type, internally an unsigned 32 bit integer value. When compared with other IRI's, the collation is as with unsigned 32 bit integers. An IRI_ID is never equal to any instance of any other type.</para>
 <para>Thus, the object column of a table storing triples can be declared as ANY and IRI values will be distinguishable without recourse to any extra flag and IRI's will naturally occupy their own contiguous segment in the ANY type collation sequence. Indices can be defined over such columns. An IRI_ID is never automatically cast into any other type nor any other type into IRI_ID.</para>
 <para>The functions iri_id_num (in i IRI_ID) and iri_id_from_num (in n INT) convert between signed 32 bit integers and IRI_ID's. The function isiri_id (in i any) returns nonzero if the argument is of type IRI_ID, zero otherwise.</para>
@@ -43,21 +42,27 @@ create table DB.DBA.RDF_QUAD (
   P IRI_ID,
   O any,
   primary key (G,S,P,O) );
-create unique index RDF_QUAD_PGOS on DB.DBA.RDF_QUAD (P, G, O, S);
+create bitmap index RDF_QUAD_PGOS on DB.DBA.RDF_QUAD (P, G, O, S);
 </programlisting>
 <para>Each triple is represented by one row in RDF_QUAD. The columns represent the graph, subject, predicate and object. The IRI_ID type columns reference RDF_URL, which translates the internal id to the external name of the IRI. The O column is of type ANY. If the O value is a non-string scalar, such as a number or date or IRI, it is stored in its native binary representation. If it is a string, it will be stored in a 'short' form, meaning a packed binary string with fixed fields for the data type, language, the content and a possible reference to RDF_OBJ if the string is too long to be held in-line in this table.</para>
 <programlisting>
-create table DB.DBA.RDF_URL (
-    RU_IID IRI_ID not null primary key,
-    RU_QNAME varchar );
-create unique index RU_QNAME on DB.DBA.RDF_URL (RU_QNAME);
+create table DB.DBA.RDF_PREFIX (
+  RP_NAME varchar primary key,
+  RP_ID int not null unique );
+create table DB.DBA.RDF_IRI (
+  RI_NAME varchar primary key,
+  RI_ID IRI_ID not null unique );
 </programlisting>
-<para>This is simply a mapping between internal IRI id's and their external form.</para>
+<para>These two tables store a mapping between internal IRI id's and their external string form.
+A memory-resident cache contains recently used IRIs to reduce access to this table</para>
 <programlisting>
 create table DB.DBA.RDF_OBJ (
-    RO_ID integer primary key,
+  RO_ID integeR primary key,
     RO_VAL varchar,
-    RO_LONG long varchar );
+  RO_LONG long varchar
+)
+create index RO_VAL on DB.DBA.RDF_OBJ (RO_VAL)
+;
 </programlisting>
 <para>When an O value of RDF_QUAD is longer than a certain limit, the string is stored in this table. Depending on the length of the value, it goes into the varchar or the long varchar column. The RO_ID is contained in a fixed position in the string that is stored in the O column. Still, the truncated value of O can be used for determining equality and range matching, even even if &lt; and &gt; of closely matching values need to look at the real string in RDF_OBJ.</para>
 <programlisting>
@@ -107,7 +112,7 @@ constsnt.</para>
 <para>We note that since we store numbers as the equivalent SQL binary type, we do not preserve the distinction of byte, boolean etc. These all become integer. If preserving such detail is for some reason important, then storage as a typed string is possible but is not done at present for reasons of compactness and performance.</para>
 </sect2>
 <sect2 id="rdfquietcast"><title>SQL Compiler Support - QUIETCAST option</title>
-<para>The type cast behaviors of SQL and SPARQL are different. SQL will generally signal an error when an automatic cast fails. For example, a string can be compared to a date column if the string can be parsed as a date but otherwise the comparison should signal an error. In SPARQL , such situations are supposed to silently fail. Generally, SPARQL is much more relaxed with respect to data types.</para>
+<para>The type cast behaviors of SQL and SPARQL are different. SQL will generally signal an error when an automatic cast fails. For example, a string can be compared to a date column if the string can be parsed as a date but otherwise the comparison should signal an error. In SPARQL, such situations are supposed to silently fail. Generally, SPARQL is much more relaxed with respect to data types.</para>
 <para>These differences will be specially noticed if actual SQL data is processed with SPARQL via some sort of schema mapping translating references to triples into native tables and columns.</para>
 <para>Also, even when dealing with the triple-oriented RDF_QUAD table, there are cases of joining between S and O such that the O can be a heterogenous set of IRI's and other data whereas the S is always an IRI. The non-IRI to IRI comparison should not give cast errors but should silently fail. Also, in order to keep queries simple and easily optimizable, it should not be necessary to introduce extra predicates for testing if the O is n IRI before comparing with the S.</para>
 <para>Due to these considerations, Virtuoso introduces a SQL statement option called QUIETCAST. When given in the OPTION clause of a SELECT, it switches to silent fail mode for automatic type casting.</para>
@@ -131,16 +136,16 @@ Stored procedures can have SPARQL expressions inline and can declare cursors ove
 Value conversions between SQL and SPARQL are most often automatic and
 invisible.  In some cases one needs to be aware of the different
 SPARQL value representations (valmodes).  SPARQL offers delcrations
-for determining if graphs to be returned are to be representaed as XML
+for determining if graphs to be returned are to be represented as XML
 or Turtle text serialization or whether these will be hash tables of
-triples.  See dict_new and related functions for a description of the hash table SQL data type.  The use of doct's is convenient for further programmatic processing of graphs.
+triples. See <link linkend="fn_dict_new"><function>dict_new()</function></link> and related functions for a description of the hash table SQL data type. The use of doct's is convenient for further programmatic processing of graphs.
 </para>
 
 <para>RDF-related procedures use Virtuoso/PL vectors
 and dictionaries to represent RDF triples and sets of triples.</para>
 <para>'Valmode' means the 'format of values returned by an
-expression', i.e. 'short', 'long' or 'sql value'.</para> <para>'Triple
-vector' is a vector (array) of S, P and O, where all values are in
+expression', i.e. 'short', 'long' or 'SQL value'.</para>
+<para>'Triple vector' is a vector (array) of S, P and O, where all values are in
 'long' formats, i.e. IRI_ID's for IRI values, vector of 5 items if O
 is a string, SQL scalar value if O is neither string nor IRI.</para>
 <para>'Dictionary of triples' or 'Hash table of triples' is an
@@ -159,7 +164,7 @@ as keys and IRI_ID's assigned to that strings as dependant data. As
 soon as all readers of an application share the same dictionary of
 nodes created before, no blank node is created twice;</para>
 
-<sect2 id="rdfsparqlinline"><title>SPARQL Inline in SQL </title>
+<sect2 id="rdfsparqlinline"><title>SPARQL Inline in SQL</title>
 <para>Virtuoso extends the SQL 92 syntax with SPARQL queries and subqueries. Instead of writing a SQL SELECT query or subquery, one can write the SPARQL keyword and a SPARQL query after the keyword.</para>
 <programlisting>
 SQL>sparql select distinct ?p where { graph ?g { ?s ?p ?o } };
@@ -193,6 +198,8 @@ It is possible to pass parameters to a  SPARQL query via a Virtuoso-specific syn
 '??' or '$?' indicates a positional parameter similar to '?' in plain SQL. '??' can be used in graph patterns or anywhere in the place of a SPARQL variable.
 The value of a parameter should be passed in SQL form, i.e. this should be a number or a untyped string.
 An IRI ID can not be passed, but an absolute IRI can.
+If the parameter is used in 'graph', 'subject' or 'object' position of the sparql pattern, the string parameter is converted into IRI automatically.
+In other cases, IRI string is undistinguishable from string literal, so the is a need in call of iri() buil-tin SPARL function, like iri (??).
 Using this notation, any dynamic SQL client, whether ODBC, JDBC or other can execute parametrized SPARQL queries, binding parametres just as with  dynamic SQL. 
 </para>
 <programlisting><![CDATA[
@@ -475,62 +482,74 @@ _______________________________________________________________________________
 
 <sect3
 id="rdfapidataimport"><title>Data Import</title>
+<para>DB.DBA.TTLP() parses TTL (TURTLE or N3 resource) and places its triples into DB.DBA.RDF_QUAD.</para>
 <programlisting>
--- This parses TTL (TURTLE or N3 resource and places its triples into DB.DBA.RDF_QUAD.
 create procedure DB.DBA.TTLP (
     in strg any,       -- text of the resource
     in base varchar,  -- base IRI to resolve relative IRIs to absolute
-    in graph varchar , -- target graph IRI, parsed triples will appear in that graph.
+    in graph varchar, -- target graph IRI, parsed triples will appear in that graph.
     in flags int)   -- flags, use 0
-
-For loading a file of any greater length, it is most practical to use the file_to_string_output function with this, as follows:
-
+</programlisting>
+<para>For loading a file of any greater length, it is most practical to use the file_to_string_output function with this, as follows:</para>
+<programlisting>
 SQL> ttlp (file_to_string_output ('data.ttl'), '', 'http://my_graph', 0);
-
-
--- This parses TTL (TURTLE or N3 resource and places its triples into DB.DBA.RDF_QUAD.
-create procedure DB.DBA.TTLP_mt (
+</programlisting>
+<para>The DB.DBA.TTLP_MT() procedure is like DB.DBA.TTLP() but loads the file on multiple threads, using parallel IO and multiprocessing if available. The functions does not leave a transaction log. Hence, after successful load, one should execute the checkpoint statement to make sure that a server restart does not wipe out the results.</para>
+<programlisting>
+create procedure DB.DBA.TTLP_MT (
     in strg any,       -- text of the resource
     in base varchar,   -- base IRI to resolve relative IRIs to absolute
     in graph varchar,  -- target graph IRI, parsed triples will appear in that graph.
     in flags int) -- flags, use 0
-
-
--- The ttlp_mt procedure is like ttlp but loads the file on multiple threads, using parallel IO and multiprocessing if available.  The functions does not leave a transaction log.  Hence, after successful load, one should execute the checkpoint statement to make sure that a server restart does not wipe outthe results.
-
--- This does not load TTL content, instead it returns a dict of triples in 'long valmode'
+</programlisting>
+<para>The DB.DBA.RDF_TTL2HASH() does not load TTL content, instead it returns a dict of triples in 'long valmode'.</para>
+<programlisting>
 create function DB.DBA.RDF_TTL2HASH (
     in strg any,
     in base varchar,
     in graph varchar ) returns any
-
--- This parses RDF XML   and places its triples into DB.DBA.RDF_QUAD.
+</programlisting>
+<para>The DB.DBA.RDF_LOAD_RDFXML() procedure parses RDF/XML and places its triples into DB.DBA.RDF_QUAD.</para>
+<programlisting>
 create procedure DB.DBA.RDF_LOAD_RDFXML (
     in strg any,           -- text of and XML document
     in base_iri varchar,   -- base IRI to resolve relative IRIs
     in graph_iri varchar ) -- the IRI of destination graph
 </programlisting>
+<para>To insert a single quad into DB.DBA.RDF_QUAD() table, use one of these procedures:</para>
 <programlisting>
 -- Simple insertion of a quad where object is a node
-create procedure DB.DBA.RDF_QUAD_URI (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_uri varchar)
+create procedure DB.DBA.RDF_QUAD_URI (
+  in g_uri varchar, in s_uri varchar, in p_uri varchar,
+  in o_uri varchar ) -- IRI string or IRI_ID
 
 -- Simple insertion of a quad where object is a literal value in 'SQL valmode'
-create procedure DB.DBA.RDF_QUAD_URI_L (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_lit any)
+create procedure DB.DBA.RDF_QUAD_URI_L (
+  in g_uri varchar, in s_uri varchar, in p_uri varchar,
+  in o_lit any ) -- string, number or datetime, NULL is not allowed
+
+create procedure DB.DBA.RDF_QUAD_URI_L_TYPED (
+  in g_uri varchar, in s_uri varchar, in p_uri varchar,
+  in o_lit any,     -- string value of the literal
+  in dt any,        -- datatype as IRI string or IRI_ID, can be NULL
+  in lang varchar ) -- language as string or NULL
 </programlisting>
+<para>Arguments g_uri, s_uri and p_uri of these three functions should be IRI strings or IRI_IDs.
+All string arguments should be in UTF-8 encoding, otherwise they will be stored but are not queriable via SPARQL.</para>
 </sect3>
 <sect3 id="rdfapidataexport"><title>Data Export</title>
+<para>These two procedures serializes vector of triples into a session, in TURTLE or RDF/XML syntax.
+In current version, every triple is printed in separate top-level record (say, in rdf:Description tag), without any pretty-print or nesting optimization.
+</para>
 <programlisting>
--- Serializes vector of triples into a session, in TURTLE syntax
 create procedure DB.DBA.RDF_TRIPLES_TO_TTL (
     inout triples any, -- vector of triples in 'long valmode'.
     inout ses any )    -- an output stream in server default encoding
 
--- Serializes vector of triples into a session, in RDF/XML syntax.
--- In current version, every triple is printed in separate rdf:Description tag, no nesting.
 create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (
     inout triples any,          -- vector of triples in 'long valmode'.
-    in print_top_level integer, -- zero if only rdf:Description tags should be written, non-zero if the rdf:RDF top-lev
-el element should also be written
+    in print_top_level integer, -- zero if only rdf:Description tags should be written,
+      -- non-zero if the rdf:RDF top-level element should also be written
     inout ses any )             -- an output stream in server default encoding
 </programlisting>
 </sect3>
@@ -689,7 +708,663 @@ create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
 DELETE_PERSONAL_DATA (
   'http://local.virt/DAV/sparql_demo/data/data-xml/source-simple2/source-data-01.rdf' );
 ]]></programlisting>
-<para>As soon as the Virtuoso SPARQL implementation is extended to provide fine grained   access rights the , SPARQL syntax will be extended with 'INSERT INTO ... CONSTRUCT ...', 'INSERT INTO ... DESCRIBE ...', and 'DELETE FROM ... CONSTRUCT ...' statements.
+<para>
+The most typical case is insert or delete operation on quads that belong to one graph and the IRI of the graph can be calculated before composing these quads.
+Virtuoso extends SPARQL syntax by 'INSERT IN GRAPH iri-expn construct-pattern WHERE pattern', and 'DELETE FROM GRAPH iri-expn construct-pattern WHERE pattern' statements. They works like the procedure listed above: all triples are composed before the first change of the data. So the procedure can be simplified as follows:
+</para>
+<programlisting><![CDATA[
+create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
+{
+  delete from graph ?:foaf_graph { ?s ?p ?o }
+      where { graph ?:foaf_graph {
+              ?s ?p ?o . ?s rdf:type <http://xmlns.com/foaf/0.1/Person>
+            } };
+};]]>
+</programlisting>
+</sect2>
+</sect1>
+<sect1 id="rdfiridereferencing"><title>IRI Dereferencing</title>
+<para>There are many cases when RDF data should be retrieved from remote sources only when really needed.
+E.g., a scheduling application may read personal calendars from personal sites of its users.
+Calendar data expire quickly, so there's no reason to frequently re-load them in hope that they are queried before expired.
+</para>
+<para>
+Virtuoso extends SPARQL so it is possible to download RDF resource from a given IRI, parse them and store the resulting triples in a graph, all three operations will be performed during the SPARQL query execution.
+The IRI of graph to store triples is usually equal to the IRI where the resource is download from, so the feature is named &quot;IRI dereferencing&quot;
+There are two different use cases for this feature.
+In simple case, a SPARQL query contains <emphasis>from</emphasis> clauses that enumerate graphs to process, but there are no triples in <emphasis>DB.DBA.RDF_QUAD</emphasis> taht correspond to some of these graphs.
+The query execution starts with dereferencing of these graphs and the rest runs as usual.
+In more sophisticated case, the query is executed many times in a loop.
+Every execution produces a partial result.
+SPARQL processor checks for IRIs in the result such that resources with that IRIs may contain relevant data but not yet loaded into the <emphasis>DB.DBA.RDF_QUAD</emphasis>.
+After some iteration, the partial result is identical to the result of the previous iteration, because there's no more data to retrieve.
+As the last step, SPARQL processor builds the final result set.
+</para>
+<sect2 id="rdfinputgrab"><title>IRI Dereferencing For FROM Clauses, &quot;define get:...&quot; Pragmas</title>
+<para>Virtuoso extends SPARQL syntax of <emphasis>from</emphasis> and <emphasis>from named</emphasis> clauses.
+It allows additional list of options at end of clause: <emphasis>option ( param1 value1, param2 value2, ... )</emphasis>
+where parameter names are QNames that start with <emphasis>get:</emphasis> prefix and values are &quot;precode&quot; expressions, i.e. expressions that does not contain variables other than external parameters.
+Names of allowed parameters are listed below.
+</para>
+<itemizedlist>
+  <listitem><emphasis>get:soft</emphasis> is the retrieval mode, supported values are &quot;soft&quot; and &quot;replacing&quot;.
+If the value is &quot;soft&quot; then the SPARQL processor will not even try to retrieve triples if the destination graph is non-empty.
+Other <emphasis>get:...</emphasis> parameters are useless without this one.</listitem>
+  <listitem><emphasis>get:uri</emphasis> is the IRI to retrieve if it is not equal to the IRI of the <emphasis>from</emphasis> clause.
+Thes can be used if data should be retrieved from a mirror, not from original resource location or in any other case when the destination graph IRI differs from the location of the resource.</listitem>
+  <listitem><emphasis>get:method</emphasis> is the HGTTP method that should be used to retrieve the resource, supported methods are &quot;GET&quot; for plain HTTP and &quot;MGET&quot; for URIQA web service endpoint.
+By default, &quot;MGET&quot; is used for IRIs that end with &quot;/&quot; and &quot;GET&quot; for everything else.</listitem>
+  <listitem><emphasis>get:refresh</emphasis> is the maximum allowed age of the cached resource, no matter what is specified by the server where the resource resides.
+The value is an positive integer (number of seconds). Virtuoso reads HTTP headers and uses &quot;Date&quot;, &quot;ETag&quot;, &quot;Expires&quot;, &quot;Last-Modified&quot;, &quot;Cache-Control&quot; and &quot;Pragma: no-cache&quot; fields to calculate when the resource should be reloaded, this value can become smaller due to <emphasis>get:refresh</emphasis> but can not be incremented.</listitem>
+  <listitem><emphasis>get:proxy</emphasis> address of the proxy server, as &quot;host:port&quot; string, if direct download is impossible; the default is to not use proxy.</listitem>
+<!--
+  <listitem><emphasis>get:login</emphasis></listitem>
+  <listitem><emphasis>get:password</emphasis></listitem>
+  <listitem><emphasis>get:query</emphasis></listitem> -->
+<para>If a value of some <emphasis>get:...</emphasis> parameter repeats for every <emphasis>from</emphasis> clause then it can be written as a global
+pragma like <emphasis>define get:soft "soft"</emphasis>.
+The following two queries will work identically:
+</para>
+<programlisting><![CDATA[
+sparql
+select ?id
+from named <http://myhost/user1.ttl>
+  option (get:soft "soft", get:method "GET")
+from named <http://myhost/user2.ttl>
+  option (get:soft "soft", get:method "GET")
+where { graph ?g { ?id a ?o } };
+
+sparql
+define get:method "GET"
+define get:soft "soft"
+select ?id
+from named <http://myhost/user1.ttl>
+from named <http://myhost/user2.ttl>
+where { graph ?g { ?id a ?o } };
+]]></programlisting>
+<para>
+It can make text shorter and it is especially useful when the query text comes from client but the parameter should have a fixed value due to security reasons:
+the values set by <emphasis>define get:...</emphasis> can not be redefined inside the query and the applciation may prepend the text with desired pragmas before the execution.
+</para>
+<para>
+Note that the user should have <emphasis>SPARQL_UPDATE</emphasis> role in order to execute such a query.
+By default SPARQL web service endpoint is owned by <emphasis>SPARQL</emphasis> user that have <emphasis>SPARQL_SELECT</emphasis> but not
+<emphasis>SPARQL_UPDATE</emphasis>.
+It is possible in principle to grant <emphasis>SPARQL_UPDATE</emphasis> to <emphasis>SPARQL</emphasis> but this breaches the whole security of the RDF storage.
+</para>
+</itemizedlist>
+</sect2>
+<sect2 id="rdfinputgrab"><title>IRI Dereferencing For Variables, &quot;define input:grab-...&quot; Pragmas</title>
+<para>
+Consider a set of personal data such that one resource can list many persons and point to resources where that persons are described in more details.
+E.g. resource about <emphasis>user1</emphasis> describes the user and also contain statements that <emphasis>user2</emphasis> and <emphasis>user3</emphasis> are persons and more data can be found in <emphasis>user2.ttl</emphasis> and <emphasis>user3.ttl</emphasis>,
+<emphasis>user3.ttl</emphasis> can contain statements that <emphasis>user4</emphasis> is also person and more data can be found in <emphasis>user4.ttl</emphasis> and so on.
+The query should find as many users as it is possible and return their names and e-mails.
+</para>
+<para>
+If all data about all users were loaded into the database, the query could be quite simple:
+</para>
+<programlisting><![CDATA[
+sparql select ?id ?fullname ?email
+where {
+    graph ?g {
+        ?id a <Person> ;
+          <FullName> ?fullname ;
+          <EMail> ?email .
+      } };
+]]></programlisting>
+<para>
+It is possible to enable IRI dereferencing in such a way that all appropriate resources are loaded during the query execution even if names of some of them are not known a priori.
+</para>
+<programlisting><![CDATA[
+sparql
+  define input:grab-var "?more"
+  define input:grab-depth 10
+  define input:grab-limit 100
+  define input:grab-base-iri "http://myhost/"
+select ?id ?fullname ?email
+where {
+    graph ?g {
+        ?id a <Person> ;
+          <FullName> ?fullname ;
+          <EMail> ?email .
+	optional { ?id <SeeAlso> ?more } } };
+]]></programlisting>
+<para>
+The IRI dereferencing is controlled by the following pragmas:
+</para>
+<itemizedlist>
+  <listitem><emphasis>input:grab-var</emphasis> specifies a name of variable whose values should be used as IRIs of resources that should be downloaded.
+It is not an error if the variable is sometimes unbound or gets values that can not be converted to IRIs (e.g., integers) -- bad values are silently ignored.
+It is also not an error if the IRI can not be retrieved, this makes IRI retrieval somewhat similar to &quot;best effort union&quot; in SQL.
+This pragma can be used more than once to specify many variable names.
+It is not an error if values of different variables result in same IRI or a variable gets same value many times -- no one IRI is retrieved more than once.</listitem>
+  <listitem><emphasis>input:grab-iri</emphasis> specifies an IRI that should be retrieved before executing the rest of the query, if it is not in the <emphasis>DB.DBA.RDF_QUAD</emphasis> already.
+This pragma can be used more than once to specify many IRIs.
+The typical use of this pragma is querying a set of related resources when only one &quot;root&quot; resource IRI is known but even that resource is not loaded.</listitem>
+  <listitem><emphasis>input:grab-all</emphasis> is the simplest possible way to enable the feature but the resulting performance can be very bad.
+It turns all variables and IRI constants in all graph, subject and object fields of all triple patterns of the query into values for
+<emphasis>input:grab-var</emphasis> and <emphasis>input:grab-iri</emphasis>,
+so the SPARQL processor will dereference everything what might be related to the text of the query.</listitem>
+  <listitem><emphasis>input:grab-limit</emphasis> should be an integer that is a maximum allowed number of resource retrievals.
+The default value is pretty big (few millions of documents) so it is strongly recommended to set smaller value.
+Set it even if you're absolutely sure that the set of resources is small, because program errors are always possible.
+All resource downloads are counted, both successfull and failed, both forced by <emphasis>input:grab-iri</emphasis> and forced by <emphasis>input:grab-var</emphasis>.
+Nevertheless, all constant IRIs specified by <emphasis>input:grab-iri</emphasis> (or <emphasis>input:grab-all</emphasis>) are downloaded before the first check of the <emphasis>input:grab-limit</emphasis> counter,
+so this limit will never prevent from downloading &quot;root&quot; resources.
+</listitem>
+  <listitem><emphasis>input:grab-depth</emphasis> should be an integer that is a maximum allowed number of query iterations.
+Every iteration may find new IRIs to retrieve, because resources loaded on previous iteration may add these IRIs to <emphasis>DB.DBA.RDF_QUAD</emphasis> and make result set longer.
+The default value is 1, so the SPARQL processor will retrieve only resources explicitely named in &quot;root&quot; resources or in quad that are in the database before the query execution.
+</listitem>
+  <listitem><emphasis>input:grab-base</emphasis> specifies a base IRI used to convert relative IRIs into absolute. The default is an empty string.</listitem>
+  <listitem><emphasis>input:grab-resolver</emphasis> is a name of procedure that resolve IRIs and determines the HTTP method of retrieval.
+The default is name of <emphasis>DB.DBA.RDF_GRAB_RESOLVER_DEFAULT()</emphasis> procedure that is described below.
+If other procedure is specified, the signature should match to the default one.</listitem>
+  <listitem><emphasis>input:grab-destination</emphasis> is to override the default behaviour of the IRI dereferencing and store all retrieved triples in a single graph.
+This is convenient when there's no logical difference where any given triple comes from, and changes in remote resources will only add triples but not make cached triples obsolete.
+A SPARQL query is usually faster when all graph IRIs are fixed and there are no graph group patterns with an unbound graph variable, so storing everything in one single graph is worth considering.
+</listitem>
+  <listitem><emphasis>input:grab-loader</emphasis> is a name of procedure that retrieve the resource via HTTP, parce it and store it.
+The default is name of <emphasis>DB.DBA.RDF_SPONGE_UP()</emphasis> procedure; this procedure also used by IRI dereferencing for FROM clauses.
+You will probably never need to write your own procedure of this sort but some Virtuoso plugins will provide ready-to-use functions that will retrieve non-RDF resources and extract their metadata as triples or
+will implement protocols other than HTTP.
+</listitem>
+</itemizedlist>
+<para>Default resolver procedure is <emphasis>DB.DBA.RDF_GRAB_RESOLVER_DEFAULT()</emphasis>. Note that the function produce two absolute URIs,
+<emphasis>abs_uri</emphasis> and <emphasis>dest_uri</emphasis>. Default procedure returns two equal strings, but other may return different values,
+e.g., return primary and permanent location of the resource as <emphasis>dest_uri</emphasis> and the fastest known mirror location as
+<emphasis>abs_uri</emphasis> thus saving HTTP retrieval time. It can even signal an error to block the downloading of some unwanted resource.</para>
+<programlisting><![CDATA[
+DB.DBA.RDF_GRAB_RESOLVER_DEFAULT (
+  in base varchar,         -- base IRI as specified by input:grab-base pragma
+  in rel_uri varchar,      -- IRI of the resource as it is specified by input:grab-iri or a value of a variable
+  out abs_uri varchar,     -- the absolute IRI that should be downloaded
+  out dest_uri varchar,    -- the graph IRI where triples should be stored after download
+  out get_method varchar ) -- the HTTP method to use, should be "GET" or "MGET".
+]]></programlisting>
+</sect2>
+</sect1>
+<sect1 id="rdfviews"><title>RDF Views -- Mapping Relational Data to RDF</title>
+<para>
+RDF Views map relational data into RDF and allow customizing RDF representation of locally stored RDF data.
+To let SPARQL clients access relational data as well as physical RDF graphs in a single query, we introduce a declarative Meta Schema Language for mapping SQL Data to RDF Ontologies.
+As a result, all types of clients can efficiently access all data stored on the server.
+The mapping functionality dynamically generates RDF Data Sets for popular ontologies such as SIOC, SKOS, FOAF, and ATOM/OWL without disruption to the existing database infrastructure of Web 1.0 or Web 2.0 solutions.
+RDF views are also suitable for declaring custom representation for RDF triples, e.g. property tables, where one row holds many single-valued properties.
+</para>
+<sect2 id="rdfviewsintro"><title>Introduction</title>
+<para>
+The Virtuoso RDF Views meta schema is a built-in feature of Virtuoso's SPARQL to SQL translator.
+It recognizes triple patterns that refer to graphs for which an alternate representation is declared and translates these into SQL accordingly.
+The main purpose of this is evaluating SPARQL queries against existing relational databases.
+There exists previous work from many parties for rendering relational data as RDF and opening it to SPARQL access.
+We can mention D2RQ, SPASQL, Squirrel RDF, DBLP and others.
+The Virtuoso effort differs from these mainly in the following:
+</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem>Integration with a triple store.
+Virtuoso can process a query for which some triple patterns will go to local or remote relational data and some to local physical RDF triples.
+</listitem><listitem>SPARQL query can be used in any place where SQL can.
+Database connectivity protocols are neutral to the syntax of queries they transmit, thus any SQL client, e.g. JDBC, ODBC or XMLA application, can send SPARQL queries and fetch result sets.
+Moreover, a SQL query may contain SPARQL subqueries and SPARQL expressions may use SQL built-in functions and stored procedures.
+</listitem><listitem>Integration with SQL.
+Since SPARQL and SQL share the same run time and query optimizer, the query compilation decisions are always made with the best knowledge of the data and its location.
+This is especially important when mixing triples and relational data or when dealing with relational data distributed across many outside databases.
+</listitem><listitem>No limits on SPARQL.
+It remains possible to make queries with unspecified graph or predicate against mapped relational data, even though these may sometimes be inefficient.
+</listitem><listitem>Coverage of the whole relational model.
+Multi-part keys etc. are supported in all places.
+</listitem>
+</itemizedlist>
+</sect2>
+<sect2 id="rdfviewrationale"><title>Rationale</title>
+<para>
+Since most of the data that is of likely use for the emerging semantic web is stored in relational databases, the argument for exposing this to SPARQL access is clear.
+We note that historically, SQL access to relational data has essentially never been given to the public outside of the organization.
+If programmatic access to corporate IS has been available to partners or the public, it has been through dynamic web pages or more recently web services.
+There are reasons of performance, security, maintainability and so forth for this.
+</para><para>
+The culture of the emerging semantic web is however taking a different turn.
+Since RDF and OWL offer a mergeable and queriable model for heterogeneous data, it is more meaningful and maintainable to expose selected data for outside query than it would be with SQL.
+Advances in hardware make this also less of a performance issue than it would have been in the client-server database era.
+</para><para>
+In the context of Virtuoso, since Virtuoso is originally a virtual/federated database, incorporating SPARQL to relational mapping is an evident extension of the product's mission as a multi-protocol, multi-platform connector between information systems.
+</para>
+</sect2>
+<sect2 id="rdfviewquadmapatternsvalueandiriclasses"><title>Quad Map Patterns, Value and IRI Classes</title>
+<para>
+In the simplest sense, any relational schema can be rendered into RDF by converting all primary keys and foreign keys into IRI's, assigning a predicate IRI to each column, and an rdf:type predicate for each row linking it to a RDF class IRI corresponding to the table.
+Then a triple with the primary key IRI as subject, the column IRI as predicate and the column's value as object is considered to exist for each column that is neither part of a primary or foreign key.
+</para><para>
+Strictly equating a subject value to a row and each column to a predicate is often good but is too restrictive for the general case.
+</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem>Multiple triples with the same subject and predicate can exist.
+</listitem><listitem>A single subject can get single-valued properties from multiple tables or in some cases stored procedures.
+</listitem><listitem>An IRI value of a subject or other field of a triple can be composed from more than one SQL value, these values may reside in different columns, maybe in different joined tables.
+</listitem><listitem>Some table rows should be excluded from mapping.
+</listitem></itemizedlist>
+<para>
+Thus in the most common case the RDF meta schema should consist of independent transformations; the domain of each transformation is a result-set of some SQL <emphasis>SELECT</emphasis> statement and range is a set of triples.
+The <emphasis>SELECT</emphasis> that produce the domain is quite simple: it does not use aggregate functions, joins and sorting, only inner joins and <emphasis>WHERE</emphasis> conditions.
+There is no need to support outer joins in the RDF meta schema because NULLs are usually bad inputs for functions that produce IRIs.
+In the rare cases when NULLs are OK for functions, outer joins can be encapsulated in SQL views.
+The range of mapping can be described by a SPARQL triple pattern: a pattern field is a variable if it depends on table columns, otherwise it is a constant.
+Values of variables in the pattern may have additional restrictions on datatypes, when datatypes of columns are known.
+</para><para>
+This common case of an RDF meta schema is implemented in Virtuoso, with one adjustment.
+Virtuoso stores quads, not triples, using the graph field (G) to indicate that a triple belongs to some particular application or resource.
+A SPARQL query may use quads from different graphs without large difference between G and the other three fields of a quad.
+E.g., variable <emphasis>?g</emphasis> in expression <emphasis>GRAPH ?g {...}</emphasis> can be unbound.
+SPARQL has special syntax for &quot;graph group patterns&quot; that is convenient for sets of triple patterns with a common graph, but it also has shorthands for common subject and predicate, so the difference is no more than in syntax.
+There is only one feature that is specific for graphs but not for other fields: the SPARQL compiler can create restrictions on graphs according to <emphasis>FROM</emphasis> and <emphasis>FROM NAMED</emphasis> clauses.
+</para><para>
+Virtuoso RDF Views should offer the same flexibility with the graphs as SPARQL addressing physical triples.
+A transformation cannot always be identified by the graph used for ranges because graph may be composed from SQL data. The key element of the meta schema is a &quot;<emphasis>quad map pattern</emphasis>&quot;.
+A simple quad map pattern fully defines one particular transformation from one set of relational columns into triples that match one SPARQL graph pattern.
+The main part of quad map pattern is four declarations of &quot;<emphasis>quad map values</emphasis>&quot;, each declaration specifies how to calculate the value of the corresponding triple field from the SQL data.
+The pattern also lists boolean SQL expressions that should be used to filter out unwanted rows of source data (and to join multiple tables if source columns belong to different tables).
+There are also quad map patterns that group together similar quad patterns but do not specify any real transformation or even prevent unwanted transformations from being used, they are described in &quot;Grouping Map Patterns&quot; below.
+</para><para>
+Quad map values refer to schema elements of two further types: &quot;IRI classes&quot; and &quot;literal classes&quot;.
+</para>
+<sect3 id="rdfviewiriclasses"><title>IRI Classes</title>
+<para>
+An IRI class declares that a column or set of columns gets converted into a IRI in a certain way.
+Every conversion of this sort should be revertible so an IRI can be parsed into original SQL values.
+In addition, the SPARQL optimizer will assume that any given IRI can not belong to more than one IRI class, unless one IRI class is explicitly declared as a subclass of another.
+The most flexible declaration for conversion consists of specifying functions that assemble and disassemble from IRI into its constituent parts.
+This is overkill for typical conversions so it is possible to specify only one sprintf-style format string such that <emphasis>sprintf()</emphasis> SQL function will print an IRI using this format and <emphasis>sprintf_inverse()</emphasis> will be able to parse it back.
+</para><para>The use of <emphasis>sprintf_inverse()</emphasis> assumes that the format does not contain fragments like <emphasis>'%s%s'</emphasis> that make it impossible to separate parts of IRI from each other.
+</para><para>
+In the following, we shall map the Virtuoso users and user roles system tables into the SIOC ontology.
+</para>
+<programlisting><![CDATA[
+create iri class oplsioc:user_iri "http://myhost/sys/user?id=%d"
+  (in uid integer not null) .
+create iri class oplsioc:group_iri "http://myhost/sys/group?id=%d"
+  (in gid integer not null) .
+create iri class oplsioc:membership_iri
+  "http://myhost/sys/membersip?super=%d&sub=%d"
+  (in super integer not null, in sub integer not null) .
+create iri class oplsioc:dav_iri "http://myhost%s"
+  (in path varchar) .
+]]></programlisting>
+<para>
+These IRI classes are used for mapping data from the <emphasis>DB.DBA.SYS_USERS</emphasis> and <emphasis>DB.DBA.SYS_ROLE_GRANTS</emphasis> system tables that are defined in Virtuoso as follows:
+</para>
+<programlisting><![CDATA[
+create table DB.DBA.SYS_USERS (
+  U_ID                integer not null unique,
+  U_NAME              char (128) not null primary key,
+  U_IS_ROLE           integer default 0,
+  U_FULL_NAME         char (128),
+  U_E_MAIL            char (128) default &quot;,
+  U_ACCOUNT_DISABLED  integer default 1,
+  U_DAV_ENABLE        integer default 0,
+  U_SQL_ENABLE        integer default 1,
+  U_HOME              varchar (128),
+. . .
+ );
+]]></programlisting>
+<para>
+Single record in <emphasis>DB.DBA.SYS_USERS</emphasis> corresponds to a plain user or a group (role).
+Users and roles are collectively named &quot;grantees&quot;. Thus a role may be granted to another role or to a user account.
+A role grant may be direct (explicit) or assigned by recursion.
+</para>
+<programlisting><![CDATA[
+create table SYS_ROLE_GRANTS (
+  GI_SUPER   integer,
+  GI_SUB     integer,
+  GI_DIRECT  integer default 1,
+. . .
+  primary key (GI_SUPER, GI_SUB, GI_DIRECT));
+]]></programlisting>
+<para>
+The following example demonstrates two things: function-based IRI class and the idea of IRI subclasses.
+Classes <emphasis>oplsioc:user_iri</emphasis> and <emphasis>oplsioc:group_iri</emphasis> work fine for quad maps of <emphasis>U_ID</emphasis> if and only if the value of <emphasis>U_IS_ROLE</emphasis> is accordingly restricted to FALSE or TRUE, otherwise one may occasionally generate, say, user IRI for a group.
+To create and parse IRIs that correspond to any U_IDs, two functions should be created:
+</para>
+<programlisting><![CDATA[
+create function DB.DBA.GRANTEE_URI (in id integer)
+returns varchar
+{
+  declare isrole integer;
+  isrole := coalesce ((select top 1 U_IS_ROLE
+      from DB.DBA.SYS_USERS where U_ID = id ) );
+  if (isrole is null)
+    return NULL;
+  else if (isrole)
+    return sprintf ('http://%s/sys/group?id=%d', id);
+  else
+    return sprintf ('http://%s/sys/user?id=%d', id);
+};
+]]></programlisting>
+<programlisting><![CDATA[
+create function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
+returns integer
+{
+  declare parts any;
+  parts := sprintf_inverse (id_iri,
+      'http://myhost/sys/user?id=%d', 1 );
+  if (parts is not null)
+    {
+      if (exists (select top 1 1 from DB.DBA.SYS_USERS
+          where U_ID = parts[0] and not U_IS_ROLE ) )
+        return parts[0];
+    }
+  parts := sprintf_inverse (id_iri,
+      'http://myhost/sys/group?id=%d', 1 );
+  if (parts is not null)
+    {
+      if (exists (select top 1 1 from DB.DBA.SYS_USERS
+          where U_ID = parts[0] and U_IS_ROLE ) )
+        return parts[0];
+    }
+</para><para>  return NULL;
+};
+]]></programlisting>
+<para>
+The next declaration creates an IRI class based on these two functions:
+</para>
+<programlisting><![CDATA[
+create iri class oplsioc:grantee_iri using
+  function DB.DBA.GRANTEE_URI (in id integer)
+    returns varchar,
+</para><para>  function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
+    returns integer .
+]]></programlisting>
+<para>
+In common case, IRI class declaration contains an $N$-ary function that composes IRIs and $N$ inverse functions that gets an IRI as an argument and extracts the $N$th SQL value.
+IRI composing function should silently return NULL on incorrect arguments instead of error signal.
+Inverse functions should return NULL if the argument has an incorrect type or value.
+</para>
+</sect3>
+<sect3 id="rdfviewliteralclasses"><title>Literal Classes</title>
+<para>
+A &quot;literal class&quot; declares that a column or set of columns gets converted into a literal instead of an IRI.
+More precisely, the result of conversion can be <emphasis>IRI_ID</emphasis> so it represents an IRI, but in current version of Virtuoso this is supported only for some internal built-in literal classes, not for classes declared by the user.
+So for user-defined literal class the result of the conversion is an RDF literal even if it is a string representation of a valid IRI.
+</para><para>
+In any case, a literal class can be used only in quad map values of O fields, because Virtuoso does not support literal values as subjects.
+</para><para>
+A special case of literal class is the identity class that converts a value from <emphasis>varchar</emphasis> column into an untyped literal and value from column of any other SQL datatype into a typed literal with type from XMLSchema set, i.e. <emphasis>xsd:integer</emphasis>, <emphasis>xsd:dateTime</emphasis> and so on.
+Columns of types <emphasis>ANY</emphasis> and <emphasis>IRI_ID</emphasis> are not supported.
+</para><para>
+The SPARQL optimizer knows that RDF literal types are pairwise disjoint so literal classes that produce literals of different types are known to be pairwise disjoint.
+The optimizer will replace a join on two disjoint literal classes with an empty statement, to simplify the resulting query.
+</para>
+</sect3>
+<sect3 id="rdfviewsubclasses"><title>Subclasses</title>
+<para>
+There is one subtle problem with IRI class declarations.
+To get benefit from a relational index, SPARQL optimizer should compose equality between table column and some known SQL value, not between return value of IRI class and a known composed IRI.
+In addition, redundant calculations of IRIs takes time.
+The optimizer knows that the sprintf transformation is bijection, so an equality between two IRIs composed by same format string can be replaced with conjunction of equalities of corresponding field values.
+To enable this optimization for user-defined functions, an IRI class declaration should end with <emphasis> option (bijection)</emphasis> clause.
+</para><para>
+Additional problem appears when the equality is between two IRIs of two different IRI classes.
+Even if both of them are bijections, the compiler does not know if these IRI classes behave identically on the intersection of their domains.
+To let the optimizer know this fact, one IRI class can be explicitly declared as a subclass of another:
+</para>
+<programlisting><![CDATA[
+make oplsioc:user_iri subclass of oplsioc:grantee_iri .
+make oplsioc:group_iri subclass of oplsioc:grantee_iri .
+]]></programlisting>
+<para>
+The SPARQL compiler can not check the validity of a subclass declaration.
+The developer should carefully test functions to ensure that transformations are really subclasses, as well as to ensure that functions of an IRI class declarations are really inverse to each other.
+</para><para>
+When declaring that a table's primary key is converted into a IRI according to one IRI class, one usually declares that all foreign keys referring to this class also get converted into an IRI as per this same class, or subclass of same class.
+</para><para>
+Subclasses can be declared for literal classes as well as for IRI classes, but this case is rare. The reason is that most of literals are made by identity literal classes that are disjoint to each other even if values may be equal in SQL sense, such as <emphasis>"2"</emphasis> of type <emphasis>xsd:integer</emphasis> and <emphasis>"2.0"</emphasis> of type <emphasis>xsd:double</emphasis>.
+</para>
+</sect3>
+<sect3 id="rdfviewsimplequadmappatterns"><title>Simple Quad Map Patterns</title>
+<para>
+The following declaration of quad map pattern is self-explanatory. The line for <emphasis>object</emphasis> uses identity literal class so there's no need to specify its name.
+</para>
+<programlisting><![CDATA[
+graph      <http://myhost/sys>
+subject    oplsioc:user_iri (DB.DBA.SYS_USERS.U_ID)
+predicate  rdf:type
+object     DB.DBA.SYS_USERS.U_E_MAIL
+]]></programlisting>
+<para>
+The description language also supports SPARQL-style notation that contains less keywords and eliminates duplicate graphs, subjects and predicates.
+The following add two patterns with constant graph IRI <emphasis>&lt;http://myhost/sys&gt;</emphasis> and subjects are made from column <emphasis>DB.DBA.SYS_USERS.U_ID</emphasis> by <emphasis>oplsioc:user_iri</emphasis>.
+</para>
+<programlisting><![CDATA[
+graph <http://myhost/sys>
+  {
+    oplsioc:user_iri (DB.DBA.SYS_USERS.U_ID)
+      a sioc:user ;
+      oplsioc:name DB.DBA.SYS_USERS.U_FULL_NAME .
+  }
+]]></programlisting>
+</sect3>
+<sect3 id="rdfviewassigningnamestoquadmappatterns"><title>Assigning Names To Quad Map Patterns</title>
+<para>
+In real applications, quad map patterns should be named, for schema manipulation and keeping debug info readable.
+Thus it is much better to rewrite the previous example as
+</para>
+<programlisting><![CDATA[
+create virtrdf:SysUsers as graph <http://myhost/sys>
+  {
+    oplsioc:user_iri (DB.DBA.SYS_USERS.U_ID)
+      a sioc:user
+          as virtrdf:SysUserType-User;
+      oplsioc:name DB.DBA.SYS_USERS.U_FULL_NAME
+          as virtrdf:SysUsersFullName .
+  }
+]]></programlisting>
+<para>
+Using these names, one may later write, say, <emphasis>drop virtrdf:SysUserType-User</emphasis>.
+</para><para>
+One name, <emphasis>virtrdf:DefaultQuadMap</emphasis> is reserved.
+It is an internal quad map pattern used to access &quot;native-form&quot; quads from <emphasis>DB.DBA.RDF_QUAD</emphasis>:
+</para>
+<programlisting><![CDATA[
+create virtrdf:DefaultQuadMap as
+graph rdfdf:default-iid-nonblank (DB.DBA.RDF_QUAD.G)
+subject rdfdf:default-iid (DB.DBA.RDF_QUAD.S)
+predicate rdfdf:default-iid-nonblank (DB.DBA.RDF_QUAD.P)
+object rdfdf:default (DB.DBA.RDF_QUAD.O)
+]]></programlisting>
+<para>
+IRI classes from <emphasis>rdfdf:...</emphasis> namespace are also reserved.
+</para>
+</sect3>
+<sect3 id="rdfviewgroupingmappatterns"><title>Grouping Map Patterns</title>
+<para>
+The previous example actually contains three map patterns, not two.
+The name <emphasis>virtrdf:SysUsers</emphasis> refers to a &quot;<emphasis>group map pattern</emphasis>&quot; that does not define any real transformation of relational data into RDF but helps organize quad map patterns into a tree.
+Group may contain both quad map patterns and other groups.
+A group can be manipulated as a whole, e.g. <emphasis>drop virtrdf:SysUsers</emphasis> will remove all three map patterns.
+</para>
+</sect3>
+</sect2>
+<sect2 id="rdfviewconfiguringrdfstorages"><title>Configuring RDF Storages</title><para>
+&quot;<emphasis>Quad Storage</emphasis>&quot; is a named set of quad patterns.
+Virtuoso extends SPARQL by &quot;pragma&quot; <emphasis>define input:storage storage-name</emphasis> that allows specifying that a SPARQL query will be executed using only quad patterns of the given quad storage.
+Declarations of IRI classes, literal classes and quad patterns are shared between all quad storages of an RDF meta schema but every quad storage contains only a subset of all available quad patterns.
+Two quad storages are always defined:
+</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem>A <emphasis>'virtrdf:default'</emphasis> one usually consists of everything (all user-relational mappings plus <emphasis>virtrdf:DefaultQuadMap</emphasis> for &quot;native-form&quot; quads from <emphasis>DB.DBA.RDF_QUAD</emphasis>)
+</listitem><listitem>A <emphasis>'virtrdf:empty'</emphasis> storage refers solely to <emphasis>DB.DBA.RDF_QUAD</emphasis> and can not be altered.
+</listitem></itemizedlist>
+<para>
+Three statements for manipulating storages are
+</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem><emphasis>create quad storage storage-name { quad-map-decls } .</emphasis> 
+</listitem><listitem><emphasis>alter quad storage storage-name { quad-map-decls-or-drops } .</emphasis> 
+</listitem><listitem><emphasis>drop quad storage storage-name . </emphasis>
+</listitem></itemizedlist>
+<para>
+A map pattern can be created only as a part of <emphasis>create quad storage</emphasis> or <emphasis>alter quad storage</emphasis> statement, so initially it is used by exactly one storage.
+It can be imported to some other storage using directive <emphasis>create map-id using storage source-storage</emphasis>. E.g., declarations of many storages create <emphasis>virtrdf:DefaultQuadMap</emphasis> using storage <emphasis>virtrdf:DefaultQuadStorage</emphasis>.
+</para><para>
+Only a &quot;top-level&quot; quad map pattern (standalone or a whole group with descendants) can be imported, member of a group can not.
+The import directive also can not be a part of some group declaration.
+</para><para>
+The directive <emphasis>drop map-name</emphasis> removes a map from one storage when it appears inside <emphasis>alter quad storage</emphasis> statement.
+Otherwise it removes the map from all storages.
+There exists garbage collection for quad map patterns, so any unused map is immediately deleted.
+A group is deleted with all its descendants.
+</para>
+</sect2>
+<sect2 id="rdfviewtranslationofpatterns"><title>Translation Of SPARQL Triple Patterns To Quad Map Patterns</title>
+<para>
+When a SPARQL query is compiled into SQL using a quad storage, every triple pattern should become a subquery that retrieves data from relational tables.
+This subquery is an <emphasis>UNION ALL</emphasis> of joins generated from appropriate quad map patterns.
+The complete SQL query is composed from these basic subqueries.
+Thus the first operation of the SQL generation for a triple pattern is searching for quad map patterns that may in principle produce triples that match the triple pattern.
+</para><para>
+The more restrictions contained in the triple pattern the fewer quad map patterns will be used.
+A triple pattern <emphasis>graph ?g { ?s ?p ?o }</emphasis> is common enough to invoke all data transformations of the storage.
+A triple pattern <emphasis>graph &lt;g&gt; { ?s &lt;p&gt; &lt;o&gt; }</emphasis> will usually intersect with the range of only one quad map.
+Sometimes it is possible to prove that the storage can not contain any data that, matches the given triple pattern, hence zero number of members of <emphasis>UNION ALL</emphasis> will result in constantly empty result-set.
+</para><para>
+</para><para>The search for quad maps for a given pair of triple pattern and quad map storage is quite simple. The storage is treated as a tree of map patterns where quad map patterns are leafs, grouping patterns are inner nodes and the whole storage is also treated as a grouping pattern that specify no fields and contains all top-level map patterns of the storage.
+</para><para>
+The tree is traversed from the root, left to right, non-leaf vertex are checked before their children.
+The check of a vertex consists of up to four field checks, for G, S, P and O.
+Every field check compares the field definition in the vertex and the corresponding field in the triple pattern, G and G, S and S and so on.
+Note that a non-leaf vertex defines less than four of its fields, e.g., the root vertex does not define any of its fields and top-level <emphasis>graph map { ... }</emphasis> defines only graph.
+Checks are performed only for defined fields and return one of three values: &quot;failed&quot;, &quot;passed&quot;, &quot;full match&quot;, according to the following rules:
+</para>
+<table><title>Matching Triple Field and Vertex Field</title>
+<tgroup cols="3">
+<thead><row>
+<entry>Field of vertex</entry><entry>Field in triple pattern</entry><entry>Result</entry>
+</row></thead>
+<tbody>
+<row><entry>constant</entry><entry>same constant</entry><entry>full match</entry></row>
+<row><entry>constant</entry><entry>different constant</entry><entry>failed</entry></row>
+<row><entry>constant</entry><entry>variable of same type</entry><entry>passed</entry></row>
+<row><entry>constant</entry><entry>variable of different type</entry><entry>failed</entry></row>
+<row><entry>quad map value</entry><entry>constant of same type</entry><entry>full match</entry></row>
+<row><entry>quad map value</entry><entry>constant of different type</entry><entry>failed</entry></row>
+<row><entry>quad map value of type X</entry><entry>variable, X or subtype of X</entry><entry>full match</entry></row>
+<row><entry>quad map value of type X</entry><entry>variable, supertype of X</entry><entry>passed</entry></row>
+<row><entry>quad map value of type X</entry><entry>variable, type does not intersect with X</entry><entry>failed</entry></row>
+</tbody>
+</tgroup>
+</table>
+<para>
+If any of the checks fails, the vertex and all its children are excluded from the rest of processing.
+Otherwise, if all four fields are defined for the quad map pattern, the map is added to the list of matching map patterns.
+The difference between &quot;passed&quot; and &quot;full match&quot; is significant only if the map is declared with <emphasis>option (exclusive)</emphasis>
+If all performed checks return &quot;full match&quot; and <emphasis>option (exclusive)</emphasis> is set then the traverse of the tree is stopped as soon as all children of the vertex are traversed.
+The most typical use of this option is when the application developer is sure that all triples of a graph belong to his application and they come from his own quad map patterns, not from <emphasis>DB.DBA.RDF_QUAD</emphasis>. This is to prevent the SPARQL compiler from generating redundant subqueries accessing <emphasis>DB.DBA.RDF_QUAD</emphasis>.
+The declaration may look like
+</para>
+<programlisting><![CDATA[
+create quad storage <mystorage>
+  {
+    graph <mygraph> option (exclusive) { . . . }
+    create virtrdf:DefaultQuadMap
+      using storage virtrdf:DefaultQuadStorage .
+  }
+]]></programlisting>
+<para>
+Exclusive patterns make the order of declarations important, because an exclusive declaration may &quot;throw a shadow&quot; on declarations after it.
+Consider a database that have a special table RDF_TYPE that caches all RDF types of all subjects in all graphs.
+Consider two declarations: all triples from graph <emphasis>&lt;http://myhost/sys&gt;</emphasis> and all triples with <emphasis>rdf:type</emphasis> predicate, both exclusive:
+</para>
+<programlisting><![CDATA[
+graph <http://myhost/sys> option (exclusive)
+  {
+    . . . # mapping of DB.DBA.SYS_USERS as in previous examples.
+  }
+graph rdfdf:default-iid-nonblank (DB.DBA.RDF_TYPE.G)
+subject rdfdf:default-iid (DB.DBA.RDF_TYPE.S)
+predicate rdf:type
+object rdfdf:default (DB.DBA.RDF_TYPE.O)
+option (exclusive)
+]]></programlisting>
+<para>
+The order of these declarations dictates that triple pattern
+</para>
+<programlisting><![CDATA[
+graph <http://myhost/sys> {?s rdf:type ?o}
+]]></programlisting>
+<para>
+is compiled using only quad map patterns of the graph declaration, ignoring second declaration (and of course ignoring default mapping rule, if any).
+An explicit <emphasis>option (order N)</emphasis> at the end of quad map pattern will tweak the priority.
+By default, order will grow from 1000 for the first declaration in the statement to 1999 for the last, explicit configuration is especially useful to make order persistent to <emphasis>alter storage</emphasis> statements.
+</para><para>
+The <emphasis>option (exclusive)</emphasis> trick is ugly, low-level and prone to cause compilation errors after altering storage declarations.
+When misused, it is as bad as &quot;red cut&quot; in PROLOG, but one must use this trick to build scalable storages.
+</para>
+</sect2>
+<sect2 id="rdfviewdescribingsourcerelationaltables"><title>Describing Source Relational Tables</title><para>
+Quad map patterns of an application usually share a common set of source tables and quad map values of one pattern usually share either a single table or very small number of joined tables.
+Join and filtering conditions are also usually repeated in different patterns.
+It is not necessary to type table descriptions multiple times, they are declare once in the beginning of storage declaration statement and shared between all quad map declarations inside the statement.
+Names of aliases can be used instead of table names in quad map values.
+</para>
+<programlisting><![CDATA[
+from DB.DBA.SYS_USERS as user where (^{user.}^.U_IS_ROLE = 0)
+from DB.DBA.SYS_USERS as group where (^{group.}^.U_IS_ROLE = 1)
+from DB.DBA.SYS_USERS as account
+from user as active_user
+  where (^{active_user.}^.U_ACCOUNT_DISABLED = 0)
+from DB.DBA.SYS_ROLE_GRANTS as grant
+  where (^{grant.}^.GI_SUPER = ^{account.}^.U_ID)
+  where (^{grant.}^.GI_SUB = ^{group.}^.U_ID)
+  where (^{grant.}^.GI_SUPER = ^{user.}^.U_ID)
+]]></programlisting>
+<para>
+This declares five distinct aliases for two distinct tables, and six filtering conditions.
+Every condition is an SQL expression with placeholders where a reference to the table should be printed.
+The SPARQL compiler will not try to parse texts of these expressions (except dummy search for placeholders), so any logical expressions are acceptable.
+When a quad map pattern declaration refers to some aliases, the <emphasis>WHERE</emphasis> clause of the generated SQL code will contain a conjunction of all distinct texts of &quot;relevant&quot; conditions.
+A condition is relevant if every alias inside the condition is used in some quad map value of the map pattern, either directly or via clause like <emphasis>from user as active_user</emphasis>.
+(<emphasis>user</emphasis> is a &quot;<emphasis>base alias</emphasis>&quot; for <emphasis>active_user</emphasis>).
+</para><para>
+Consider a group of four declarations.
+</para>
+<programlisting><![CDATA[
+graph <http://myhost/sys>
+  {
+    oplsioc:user_iri (active_user.U_ID)
+        a oplsioc:active-user .
+    oplsioc:membership_iri (grant.GI_SUPER, grant.GI_SUB).
+        oplsioc:is_direct
+            grant.GI_DIRECT ;
+        oplsioc:member-e-mail
+            active_user.U_E_MAIL
+               where (^{active_user.}^.U_E_MAIL like 'mailto:%').
+    ldap:account-ref (account.U_NAME)
+        ldap:belongs-to
+            ldap:account-ref (group.U_NAME) option (using grant).
+  }
+]]></programlisting>
+<para>
+The first declaration will extend <emphasis>&lt;http://myhost/sys&gt;</emphasis> graph with one imaginary triples <emphasis>{ user a oplsioc:active-user }</emphasis> for every account record that is not a role and not disabled.
+The second declaration deals with membership records.
+A membership is a pair of a grantee (&quot;super&quot;) and a granted role (&quot;sub&quot;) stored as a row in <emphasis>DB.DBA.SYS_ROLE_GRANTS</emphasis>).
+</para><para>
+The second declaration states that every membership has <emphasis>oplsioc:is_direct</emphasis> property with value from <emphasis>GI_DIRECT</emphasis> column of that table (roles may be granted to other roles and users, so permissions are &quot;direct&quot; or &quot;recursive&quot;).
+</para><para>
+The third declaration declares <emphasis>oplsioc:member-e-mail</emphasis> property of memberships.
+The value is a literal string from <emphasis>DB.DBA.SYS_USERS.U_E_MAIL</emphasis>, if the grantee is active (not disabled) and is not a role and its e-mail address starts with <emphasis>'mailto:'</emphasis>.
+The join between <emphasis>DB.DBA.SYS_ROLE_GRANTS</emphasis> and <emphasis>DB.DBA.SYS_USERS</emphasis> is made by equality <emphasis>(GI_SUPER = U_ID)</emphasis> because the alias <emphasis>active_user</emphasis> in the declaration &quot;inherits&quot; all conditions specified for <emphasis>user</emphasis>.
+In addition, the SPARQL compiler will add one more condition to check if the <emphasis>U_E_MAIL</emphasis> is not null because the NULL value is not a valid object and it knows that <emphasis>U_E_MAIL</emphasis> is not declared as <emphasis>NOT NULL</emphasis>.
+</para><para>
+The last declaration contains an <emphasis>option</emphasis> clause.
+As usual, this indicates that the basic functionality is good for many tasks but not for all.
+In this declaration, the <emphasis>ldap:belongs-to</emphasis> property establishes a relation between grantee (subject) and a granted role (object).
+Both subject and object IRIs are based on account name, <emphasis>DB.DBA.SYS_USERS.U_NAME</emphasis>, so the quad map pattern contains two references to different aliases of <emphasis>DB.DBA.SYS_USERS</emphasis> but no alias for <emphasis>DB.DBA.SYS_ROLE_GRANTS</emphasis>.
+Hence the declaration could produce a triple for every row of the Cartesian product of the <emphasis>DB.DBA.SYS_USERS</emphasis>.
+To fix the problem, <emphasis>option (using alias-name)</emphasis> tells the compiler to process the alias-name as if it's used in some quad map value of the pattern.
+</para><para>
+It is an error to use an alias only in <emphasis>where</emphasis> clause of the quad map pattern but neither in values or in <emphasis>option (using alias-name)</emphasis>.
+To detect more typos, an alias used in quad map values can not appear in <emphasis>option (using alias-name)</emphasis> clause.
 </para>
 </sect2>
 </sect1>
@@ -700,16 +1375,15 @@ DELETE_PERSONAL_DATA (
 <para>Also, the triple store has no specific security model. Thus access rights of the tables and stored procedures involved in the process dictate who can access these features.</para>
 <para>All triples of all graphs are stored in a single default system table called
 <emphasis>DB.DBA.RDF_QUAD</emphasis>. This will change in the next release, where a complex meta-schema system will be introduced for allowing graphs to be stored in different tables, potentially having different index structures, optionally also full text index on long object values. The meta-schema support will also make it possible to map native
- SQL tables into the RDF SPARQL -queriable space, as well as introduce finer-grained security.</para>
+ SQL tables into the RDF SPARQL-queriable space, as well as introduce finer-grained security.</para>
 <para>Hence the RDF subsystem is offered for  review but is not a productized whole. Benchmark results obtained with it are tentative and reflect a non-optimized state.</para>
-
 
 <para>The current implementation does not support some SPARQL features.</para>
 <itemizedlist mark="bullet" spacing="compact">
 <listitem>Unicode characters in names are not supported.</listitem>
 <listitem>Comments inside SPARQL query are not supported when   the query is inlined in SQL code.</listitem>
 </itemizedlist>
-<para>On the other hand, Virtuoso implements some extensions to SPARQL . One extension, 'DEFINE ...' clause, e.g., 'define output:valmode "LONG"' is described above.</para>
+<para>On the other hand, Virtuoso implements some extensions to SPARQL. One extension, <emphasis>DEFINE ...</emphasis> clause, e.g., <emphasis>define output:valmode "LONG"</emphasis> is described above.</para>
 
 <para>Virtuoso also allows use of expressions in some places where
 SPARQL only allows constant expressions or variables. For example,
@@ -720,7 +1394,7 @@ of constant or variable name for subject, predicate or object. In this
 case, an expression is surrounded by backquotes.</para>
 
 <para>The following return all distinct 'fragment' parts of all subjects in all graphs that have some predicate whose value is equal to 2+2.</para>
-<programlisting>
+<programlisting><![CDATA[
 SQL>sparql select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
    where {
      graph ?g {
@@ -732,7 +1406,148 @@ callret
 VARCHAR
 ----------
 #four
-</programlisting>
+]]></programlisting>
+<para>
+This is BNF grammar of SPARQL with all Virtuoso extensions, but without rules for syntax of lexems.
+Rule numbers in square brackets are from W3C normative SPARQL grammar,
+asterick means that the rule differs from W3C grammar due to Virtuoso extensions,
+<emphasis>[Virt]</emphasis> means that the rule is Virtuoso-specific.
+</para>
+<programlisting><![CDATA[
+[1]*	Query		 ::=  Prolog ( QueryBody | ( QmStmt ('.' QmStmt)* '.'? ) )
+[1]*	QueryBody	 ::=  SelectQuery | ConstructQuery | InsertQuery | DeleteQuery | DescribeQuery | AskQuery
+[2]*	Prolog		 ::=  Define* BaseDecl? PrefixDecl*
+[Virt]	Define		 ::=  'DEFINE' QNAME (QNAME | Q_IRI_REF | String )
+[3]	BaseDecl	 ::=  'BASE' Q_IRI_REF
+[4]	PrefixDecl	 ::=  'PREFIX' QNAME_NS Q_IRI_REF
+[5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ','? Retcol )* ) | '*' ) DatasetClause* WhereClause SolutionModifier
+[6]	ConstructQuery	 ::=  'CONSTRUCT' ConstructTemplate DatasetClause* WhereClause SolutionModifier
+[Virt]	InsertQuery	 ::=  'INSERT' 'IN' 'GRAPH' PrecodeExpn ConstructTemplate DatasetClause* WhereClause SolutionModifier
+[Virt]	DeleteQuery	 ::=  'DELETE' 'FROM' 'GRAPH' PrecodeExpn ConstructTemplate DatasetClause* WhereClause SolutionModifier
+[7]*	DescribeQuery	 ::=  'DESCRIBE' ( VarOrIRIrefOrBackquoted+ | '*' ) DatasetClause* WhereClause? SolutionModifier
+[8]	AskQuery	 ::=  'ASK' DatasetClause* WhereClause
+[9]	DatasetClause	 ::=  'FROM' ( DefaultGraphClause | NamedGraphClause )
+[10]*	DefaultGraphClause	 ::=  SourceSelector SpongeOptionList?
+[11]*	NamedGraphClause	 ::=  'NAMED' SourceSelector SpongeOptionList?
+[Virt]	SpongeOptionList	 ::=  'OPTION' '(' ( SpongeOption ( ',' SpongeOption )* )? ')'
+[Virt]	SpongeOption	 ::=  QNAME PrecodeExpn
+[Virt]	PrecodeExpn	 ::=  Expn	(* Only global variables can occur in Expn, local can not *)
+[13]	WhereClause	 ::=  'WHERE'? GroupGraphPattern
+[14]	SolutionModifier	 ::=  OrderClause? LimitClause? OffsetClause?
+[15]	OrderClause	 ::=  'ORDER' 'BY' OrderCondition+
+[16]*	OrderCondition	 ::=  ( 'ASC' | 'DESC' )? ( FunctionCall | Var | ( '(' Expn ')' ) | ( '[' Expn ']' ) )
+[17]	LimitClause	 ::=  'LIMIT' INTEGER
+[18]	OffsetClause	 ::=  'OFFSET' INTEGER
+[19]	GroupGraphPattern	 ::=  '{' GraphPattern '}'
+[20]	GraphPattern	 ::=  Triples? ( GraphPatternNotTriples '.'? GraphPattern )?
+[21]	GraphPatternNotTriples	 ::=  OptionalGraphPattern | GroupOrUnionGraphPattern | GraphGraphPattern | Constraint
+[22]	OptionalGraphPattern	 ::=  'OPTIONAL' GroupGraphPattern
+[23]	GraphGraphPattern	 ::=  'GRAPH' VarOrBlankNodeOrIRIref GroupGraphPattern
+[24]	GroupOrUnionGraphPattern	 ::=  GroupGraphPattern ( 'UNION' GroupGraphPattern )*
+[25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltInCall | FunctionCall )
+[26]*	ConstructTemplate	 ::=  '{' ConstructTriples '}'
+[27]	ConstructTriples	 ::=  ( Triples1 ( '.' ConstructTriples )? )?
+[28]	Triples		 ::=  Triples1 ( '.' Triples? )?
+[29]	Triples1	 ::=  VarOrTerm PropertyListNotEmpty | TriplesNode PropertyList
+[30]	PropertyList	 ::=  PropertyListNotEmpty?
+[31]	PropertyListNotEmpty	 ::=  Verb ObjectList ( ';' PropertyList )?
+[32]	ObjectList	 ::=  GraphNode ( ',' ObjectList )?
+[33]	Verb		 ::=  VarOrBlankNodeOrIRIref | 'a'
+[34]	TriplesNode	 ::=  Collection | BlankNodePropertyList
+[35]	BlankNodePropertyList	 ::=  '[' PropertyListNotEmpty ']'
+[36]	Collection	 ::=  '(' GraphNode+ ')'
+[32]	ObjectList	 ::=  GraphNode ( ',' ObjectList )?
+[37]	GraphNode	 ::=  VarOrTerm | TriplesNode
+[38]	VarOrTerm	 ::=  Var | GraphTerm
+[39]*	VarOrIRIrefOrBackquoted	 ::=  Var | IRIref | Backquoted
+[40]*	VarOrBlankNodeOrIRIrefOrBackquoted	 ::=  Var | BlankNode | IRIref | Backquoted
+[Virt]	Retcol	 ::=  ( Var | ( '(' Expn ')' ) ) ( 'AS' ( VAR1 | VAR2 ) )?
+[41]*	Var	 ::=  VAR1 | VAR2 | GlobalVar
+[Virt]	GlobalVar	 ::=  QUEST_COLON_PARAMNAME | DOLLAR_COLON_PARAMNAME | QUEST_COLON_PARAMNUM | DOLLAR_COLON_PARAMNUM
+[42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? NumericLiteral | BooleanLiteral | BlankNode | NIL | Backquoted
+[Virt]	Backquoted	 ::=  '`' Expn '`'
+[43]	Expn		 ::=  ConditionalOrExpn
+[44]	ConditionalOrExpn	 ::=  ConditionalAndExpn ( '||' ConditionalAndExpn )*
+[45]	ConditionalAndExpn	 ::=  ValueLogical ( '&&' ValueLogical )*	[46]	ValueLogical	 ::=  RelationalExpn
+[47]*	RelationalExpn	 ::=  NumericExpn ( ( ('='|'!='|'<'|'>'|'<='|'>='|'LIKE') NumericExpn ) | ( 'IN' '(' Expns ')' ) )?
+[49]	AdditiveExpn	 ::=  MultiplicativeExpn ( ('+'|'-') MultiplicativeExpn )*
+[50]	MultiplicativeExpn	 ::=  UnaryExpn ( ('*'|'/') UnaryExpn )*
+[51]	UnaryExpn	 ::=   ('!'|'+'|'-')? PrimaryExpn
+[58]	PrimaryExpn	 ::=  BracketedExpn | BuiltInCall | IRIrefOrFunction | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var
+[55]	IRIrefOrFunction	 ::=  IRIref ArgList?
+[52]*	BuiltInCall	 ::=
+			( 'STR' '(' Expn ')' )
+			| ( 'IRI' '(' Expn ')' )
+			| ( 'LANG' '(' Expn ')' )
+			| ( 'LANGMATCHES' '(' Expn ',' Expn ')' )
+			| ( 'DATATYPE' '(' Expn ')' )
+			| ( 'BOUND' '(' Var ')' )
+			| ( 'isIRI' '(' Expn ')' )
+			| ( 'isURI' '(' Expn ')' )
+			| ( 'isBLANK' '(' Expn ')' )
+			| ( 'isLITERAL' '(' Expn ')' )
+			| RegexExpn
+[53]	RegexExpn	 ::=  'REGEX' '(' Expn ',' Expn ( ',' Expn )? ')'
+[54]	FunctionCall	 ::=  IRIref ArgList
+[56]*	ArgList	 ::=  ( NIL | '(' Expns ')' )
+[Virt]	Expns	 ::=  Expn ( ',' Expn )*
+[59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE
+[60]	RDFLiteral	 ::=  String ( LANGTAG | ( '^^' IRIref ) )?
+[61]	BooleanLiteral	 ::=  'true' | 'false'
+[63]	IRIref		 ::=  Q_IRI_REF | QName
+[64]	QName		 ::=  QNAME | QNAME_NS
+[65]*	BlankNode	 ::=  BLANK_NODE_LABEL | ( '[' ']' )
+[Virt]	QmStmt		 ::=  QmSimpleStmt | QmCreateStorage | QmAlterStorage
+[Virt]	QmSimpleStmt	 ::=  QmCreateIRIClass | QmCreateLiteralClass | QmDropIRIClass | QmDropLiteralClass | QmCreateIRISubclass | QmDropQuadStorage | QmDropMap
+[Virt]	QmCreateIRIClass	 ::=  'CREATE' 'IRI' 'CLASS' QmIRIrefConst ( ( String QmSqlfuncArglist ) | ( 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader ) )
+[Virt]	QmCreateLiteralClass	 ::=  'CREATE' 'LITERAL' 'CLASS' QmIRIrefConst 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader QmLiteralClassOptions?
+[Virt]	QmDropIRIClass	 ::=  'DROP' 'IRI' 'CLASS' QmIRIrefConst
+[Virt]	QmDropLiteralClass	 ::=  'DROP' 'LITERAL' 'CLASS' QmIRIrefConst
+[Virt]	QmCreateIRISubclass	 ::=  'IRI' 'CLASS' QmIRIrefConst 'SUBCLASS' 'OF' QmIRIrefConst
+[Virt]	QmLiteralClassOptions	 ::=  'OPTION' '(' QmLiteralClassOption (',' QmLiteralClassOption)* ')'
+[Virt]	QmLiteralClassOption	 ::=
+			( 'DATATYPE' QmIRIrefConst )
+			| ( 'LANG' STRING )
+			| ( 'LANG' STRING )
+			| 'BIJECTION'
+[Virt]	QmCreateStorage	 ::=  'CREATE' 'QUAD' 'STORAGE' QmIRIrefConst QmMapTopGroup
+[Virt]	QmAlterStorage	 ::=  'ALTER' 'QUAD' 'STORAGE' QmIRIrefConst QmMapTopGroup
+[Virt]	QmDropStorage	 ::=  'DROP' 'QUAD' 'STORAGE' QmIRIrefConst
+[Virt]	QmDropMap	 ::=  'DROP' 'GRAPH'? QmIRIrefConst
+[Virt]	QmMapTopGroup	 ::=  '{' QmMapTopOp ( '.' QmMapTopOp )* '.'? '}'
+[Virt]	QmMapTopOp	 ::=  QmMapOp | QmDropMap
+[Virt]	QmMapGroup	 ::=  '{' QmMapOp ( '.' QmMapOp )* '.'? '}'
+[Virt]	QmMapOp		 ::=
+			( 'CREATE' QmIRIrefConst 'AS' QmMapIdDef )
+			| ( 'CREATE' 'GRAPH'? QmIRIrefConst 'USING' 'STORAGE' QmIRIrefConst QmOptions? )
+			| ( QmNamedField+ QmOptions? QmMapGroup )
+			| QmTriples1
+[Virt]	QmMapIdDef	 ::=  QmMapTriple | ( QmNamedField+ QmOptions? QmMapGroup )
+[Virt]	QmMapTriple	 ::=  QmFieldOrBlank QmVerb QmObjField
+[Virt]	QmTriples1	 ::=  QmFieldOrBlank QmProps
+[Virt]	QmNamedField	 ::=  ('GRAPH'|'SUBJECT'|'PREDICATE'|'OBJECT') QmField
+[Virt]	QmProps		 ::=  QmProp ( ';' QmProp )?
+[Virt]	QmProp		 ::=  QmVerb QmObjField ( ',' QmObjField )*
+[Virt]	QmObjField	 ::=  QmFieldOrBlank QmCondition* QmOptions?
+[Virt]	QmIdSuffix	 ::=  'AS' QmIRIrefConst
+[Virt]	QmVerb		 ::=  QmField | ( '[' ']' ) | 'a'
+[Virt]	QmFieldOrBlank	 ::=  QmField | ( '[' ']' )
+[Virt]	QmField		 ::=
+			NumericLiteral
+			| RdfLiteral
+			| ( QmIRIrefConst ( '(' QmSqlCol ( ',' QmSqlCol )* ')' )? )
+			| QmSqlCol
+[Virt]	QmCondition	 ::=  'WHERE' ( ( '(' SQLTEXT ')' ) | String )
+[Virt]	QmOptions	 ::=  'OPTION' '(' QmOption ( ',' QmOption )* ')'
+[Virt]	QmOption	 ::=  'EXCLUSIVE' | ( 'ORDER' INTEGER )
+[Virt]	QmSqlfuncHeader	 ::=  'FUNCTION' SQL_QTABLECOLNAME QmSqlfuncArglist 'RETURNS' QmSqltype
+[Virt]	QmSqlfuncArglist	 ::=  '(' QmSqlfuncArg ( ',' QmSqlfuncArg )* ')'
+[Virt]	QmSqlfuncArg	 ::=  ('IN' | QmSqlId) QmSqlId QmSqltype
+[Virt]	QmSqltype	 ::=  QmSqlId ( 'NOT' 'NULL' )?
+[Virt]	QmSqlCol	 ::=  QmSqlId | spar_qm_sql_id
+[Virt]	QmSqlId		 ::=  PLAIN_ID
+[Virt]	QmIRIrefConst	 ::=  IRIref | ( 'IRI' '(' String ')' )
+]]></programlisting>
 <sect2 id="rdfsparqlandxquery"><title>SPARQL and XQuery</title>
 <para>In the current implementation, the XQuery Function Library is not available from SPARQL .</para>
 <para>As a temporary workaround, string parsing functions are made available, because they are widely used in W3C DAWG examples and the like. They are:</para>
