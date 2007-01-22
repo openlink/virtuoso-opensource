@@ -859,8 +859,8 @@ sr_report_future_error (dk_session_t *ses, const char *service_name, const char 
 
 #ifndef NO_THREAD
 
-long future_n_calls;
-long future_n_returns;
+volatile long future_n_calls;
+volatile long future_n_returns;
 long future_max_conc;
 
 #define F_CALLED future_n_calls++;
@@ -1329,6 +1329,7 @@ free_the_future:
 			  dummy_rq.rq_client = client;
 			  session_is_dead (client);
 			  future = NULL;
+			  c_thread->dkt_request_count = 0;
 			  client_freed = 1;
 			}
 		      else
@@ -1393,6 +1394,9 @@ state_check_done:
 
       if (!future)
 	{
+	  if (c_thread->dkt_request_count)
+	    log_error ("c_thread->dkt_request_count != 0.  Leak but not dangerous");
+	  c_thread->dkt_request_count = 0;
 	  resource_store (free_threads, (void *) c_thread);
 	  mutex_leave (thread_mtx);
 	  dbg_printf_2 (("No future in basket on thread %p", this_thread));
@@ -2757,7 +2761,7 @@ dk_thread_free (void *data)
 {
   dk_thread_t *dkt = (dk_thread_t *)data;
   ASSERT_IN_MTX (thread_mtx);
-  if (dkt && dkt->dkt_requests[0])
+  if (dkt && dkt->dkt_requests[0] && dkt->dkt_request_count)
     dk_free (dkt->dkt_requests[0], sizeof (future_request_t));
   dk_free (dkt, sizeof (dk_thread_t));
   --future_thread_count;
@@ -5229,7 +5233,7 @@ dk_alloc_set_reserve_mode (int new_mode)
       free ((/* non-volatile here */ void *)dk_alloc_reserve);
       dk_alloc_reserve = NULL;
       log_error ("Memory low! Using memory reserve to terminate current activities properly");
-#ifdef UNIX
+#if defined (UNIX) && !defined (MALLOC_DEBUG)
       log_error ("Current location of the program break %ld", (long)sbrk (0) - init_brk);
 #endif      
       break;
@@ -5314,7 +5318,7 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
   thing = malloc (size);
   if (NULL == thing)
     {
-#ifdef UNIX
+#if defined (UNIX) && !defined (MALLOC_DEBUG)
       log_error ("Current location of the program break %ld", (long)sbrk (0) - init_brk);
 #endif      
     GPF_T1 ("Out of memory");
@@ -5331,7 +5335,7 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
   void *thing = malloc (size);
   if (!thing && gpf_if_not)
     {
-#ifdef UNIX
+#if defined (UNIX) && !defined (MALLOC_DEBUG)
       log_error ("Current location of the program break %ld", (long)sbrk (0) - init_brk);
 #endif      
     GPF_T1 ("Out of memory");
