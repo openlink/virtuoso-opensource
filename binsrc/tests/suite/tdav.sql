@@ -337,7 +337,7 @@ create procedure c_test (in n integer, in n1 integer)
 {
   declare stat, msg varchar;
 rep:
-  stat := '00000';
+  stat := '00000'; msg := '';
   exec ('c_test_h (?)', stat, msg, vector (n));
   dbg_obj_princ (sprintf ('c_test_h (%d, %d) status: %s %s', n, n1, stat, msg));
   if (stat <> '00000')
@@ -578,7 +578,7 @@ create procedure c_itest (in n integer, in n1 integer)
 {
   declare stat, msg varchar;
 rep:
-  stat := '00000';
+  stat := '00000'; msg := '';
   exec ('c_itest_h (?, ?)', stat, msg, vector (n, n1));
   dbg_obj_princ (sprintf ('c_itest_h (%d, %d) status: %s %s', n, n1, stat, msg));
   if (stat not like '00000')

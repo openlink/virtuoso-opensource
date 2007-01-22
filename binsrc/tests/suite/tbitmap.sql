@@ -1,28 +1,6 @@
---  
---  $Id$
---  
---  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
---  project.
---  
---  Copyright (C) 1998-2006 OpenLink Software
---  
---  This project is free software; you can redistribute it and/or modify it
---  under the terms of the GNU General Public License as published by the
---  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
---  This program is distributed in the hope that it will be useful, but
---  WITHOUT ANY WARRANTY; without even the implied warranty of
---  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
---  General Public License for more details.
---  
---  You should have received a copy of the GNU General Public License along
---  with this program; if not, write to the Free Software Foundation, Inc.,
---  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
-
 echo both "Bitmap index tests\n";
 
+drop table tb;
 create table tb (id int primary key, k1 int, k2 int);
 
 create bitmap index k1 on tb (k1);
@@ -204,3 +182,16 @@ echo both $if $equ  $sqlstate OK "PASSED" "***FAILED";
 echo both ": bm inx cursor maint over bm row split\n";
 
 
+
+bins (100,1024000, 511, 2);
+bins (100,1024000 + 9000, 1, 2);
+echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
+echo both ": ins at end of one less than full array\n";
+
+bins (100,1024000 + 8000, 1, 2);
+echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
+echo both ": ins at end of one less than full array 2\n";
+
+select count (*) from tb where k1 = 100;
+echo both $if $equ $last[1] 513 "PASSED" "***FAILED";
+echo both ": rows w k1 100\n";

@@ -90,29 +90,29 @@ then
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxml3a.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: nwxml.sh: XPER and LONG XML log check init"
-    exit 3
-fi
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxml3a.sql
+#if test $STATUS -ne 0
+#then
+#    LOG "***ABORTED: nwxml.sh: XPER and LONG XML log check init"
+#    exit 3
+#fi
 
 STOP_SERVER
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxml3b.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: nwxml.sh: XPER and LONG XML log check tests"
-    exit 3
-fi
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxml3b.sql
+#if test $STATUS -ne 0
+#then
+#    LOG "***ABORTED: nwxml.sh: XPER and LONG XML log check tests"
+#    exit 3
+#fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxml3c.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: nwxml.sh: XPER text search on attributes"
-    exit 3
-fi
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxml3c.sql
+#if test $STATUS -ne 0
+#then
+#    LOG "***ABORTED: nwxml.sh: XPER text search on attributes"
+#    exit 3
+#fi
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxml4.sql
 if test $STATUS -ne 0
@@ -136,7 +136,7 @@ then
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxmltype3a.sql
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxmltype3a.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: nwxml.sh: XMLType log check init"
@@ -146,19 +146,19 @@ fi
 STOP_SERVER
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxmltype3b.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: nwxml.sh: XMLType log check tests"
-    exit 3
-fi
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxmltype3b.sql
+#if test $STATUS -ne 0
+#then
+#    LOG "***ABORTED: nwxml.sh: XMLType log check tests"
+#    exit 3
+#fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxmltype3c.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: nwxml.sh: XMLType text search on attributes"
-    exit 3
-fi
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxmltype3c.sql
+#if test $STATUS -ne 0
+#then
+#    LOG "***ABORTED: nwxml.sh: XMLType text search on attributes"
+#    exit 3
+#fi
 
 
 SHUTDOWN_SERVER
