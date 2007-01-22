@@ -75,10 +75,11 @@
 #define IDC_USEDEFAULTIL                1027
 #define IDC_DEFAULTIL                   1028
 #define IDC_NOSYSTEMTABLES              1029
-#define IDS_ISOLATIONLEVEL1             1030
-#define IDS_ISOLATIONLEVEL2             1031
-#define IDS_ISOLATIONLEVEL3             1032
-#define IDS_ISOLATIONLEVEL4             1033
+#define IDC_TREATVIEWSASTABLES		1030
+#define IDS_ISOLATIONLEVEL1             1031
+#define IDS_ISOLATIONLEVEL2             1032
+#define IDS_ISOLATIONLEVEL3             1033
+#define IDS_ISOLATIONLEVEL4             1034
 
 // Next default values for new objects
 //

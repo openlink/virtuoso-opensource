@@ -114,6 +114,9 @@ BEGIN
     CONTROL         "Treat system tables as user tables",
                     IDC_NOSYSTEMTABLES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
                     0,109,169,10
+    CONTROL         "Treat views as user tables",
+                    IDC_TREATVIEWSASTABLES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    0,121,169,10
 END
 
 IDD_ODBCERROR DIALOG DISCARDABLE  0, 0, 201, 113

@@ -109,6 +109,7 @@ struct TSetupDlg : public TWizard
     TComboCtl m_DEFAULTIL;
     TCheckCtl m_USEDSTCORRECT;
     TCheckCtl m_NOSYSTEMTABLES;
+    TCheckCtl m_TREATVIEWSASTABLES;
 
     BOOL m_bFileDSN;
     TKVList& m_props;
@@ -173,6 +174,7 @@ PTSTR _virtuoso_tags =
   _T("ForceDBMSName\0")
   _T("IsolationLevel\0")
   _T("NoSystemTables\0")
+  _T("TreatViewsAsTables\0")
   ;
 
 static HINSTANCE g_hInstance;
@@ -697,6 +699,9 @@ TSetupDlg::LoadFromProps (void)
   m_props.Get (_T("NoSystemTables"), szValue, NUMCHARS (szValue));
   m_NOSYSTEMTABLES.Check (OPTION_TRUE (szValue[0]));
 
+  m_props.Get (_T("TreatViewsAsTables"), szValue, NUMCHARS (szValue));
+  m_TREATVIEWSASTABLES.Check (OPTION_TRUE (szValue[0]));
+
   SetFocus (hFocusWnd);
 }
 
@@ -794,6 +799,12 @@ TSetupDlg::SaveToProps (void)
     m_props.Define (_T("NoSystemTables"), _T("Yes"));
   else
     m_props.Undefine (_T("NoSystemTables"));
+
+  if (m_TREATVIEWSASTABLES.Checked ())
+    m_props.Define (_T("TreatViewsAsTables"), _T("Yes"));
+  else
+    m_props.Define (_T("TreatViewsAsTables"), _T("No"));
+
 }
 
 void
@@ -855,6 +866,7 @@ TSetupDlg::OnInitDialog (void)
   m_DEFAULTCS.Attach (hWnd, IDC_DEFAULTCS, MAX_CS_LEN);
   m_USEDSTCORRECT.Attach (hWnd, IDC_USEDSTCORRECT);
   m_NOSYSTEMTABLES.Attach (hWnd, IDC_NOSYSTEMTABLES);
+  m_TREATVIEWSASTABLES.Attach (hWnd, IDC_TREATVIEWSASTABLES);
 
   LoadFromProps ();
 

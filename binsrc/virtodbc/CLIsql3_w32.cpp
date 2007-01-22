@@ -380,6 +380,9 @@ virtodbc_connect (
   if (props.Get (_T("NoSystemTables"), szValue, NUMCHARS (szValue)))
     con->con_no_system_tables = OPTION_TRUE (szValue[0]) ? 1 : 0;
 
+  if (props.Get (_T("TreatViewsAsTables"), szValue, NUMCHARS (szValue)))
+    con->con_treat_views_as_tables = OPTION_TRUE (szValue[0]) ? 1 : 0;
+
   rc = internal_sql_connect (hdbc,
       szHosta, SQL_NTS, szUIDa, SQL_NTS, szPWDa, SQL_NTS);
 
