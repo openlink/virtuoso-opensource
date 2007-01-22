@@ -35,15 +35,20 @@
 	
   <xsl:template match="tutorial">
     <?vsp
-		  http_header ('Content-Type: text/xml\r\n');
       declare _path,_domain varchar;
-      _domain := 'http://' || regexp_replace(HTTP_GET_HOST(),':80$','');
-      _path := _domain || http_map_get('domain') || '/'; 
+      _domain := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
+      if (_domain is null)
+      {
+        http_request_status (sprintf ('HTTP/1.1 500 %s', 'SIOC RDF output cannot be constructed without URIQA DefaultHost set. Please contact the site administrator and report the problem.'));
+        return;
+      }
+		  http_header ('Content-Type: text/xml\r\n');
+      _path := 'http://' || ltrim(_domain,'/') || '/tutorial/';
     ?>
 		<rdf:RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-		  <xsl:attribute name="dc" namespace="http://purl.org/dc/elements/1.1/"/>
 		  <xsl:attribute name="rdf" namespace="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
-		  <xsl:attribute name="content" namespace="http://purl.org/rss/1.0/modules/content/"/>
+<!--		  <xsl:attribute name="dc" namespace="http://purl.org/dc/elements/1.1/"/>
+		  <xsl:attribute name="content" namespace="http://purl.org/rss/1.0/modules/content/"/>-->
 		  <xsl:attribute name="sioc" namespace="http://rdfs.org/sioc/ns#"/>
 
       <xsl:text disable-output-escaping="yes"><![CDATA[
@@ -106,7 +111,7 @@
           <xsl:apply-templates mode="strip"/>
         </xsl:for-each>
       </sioc:content>
-      <content:encoded>
+      <content:encoded xmlns:content="http://purl.org/rss/1.0/modules/content/">
         <xsl:text disable-output-escaping="yes">&lt;![CDATA[</xsl:text>
         <xsl:for-each select="refentry/refsect1">
           <xsl:apply-templates />
