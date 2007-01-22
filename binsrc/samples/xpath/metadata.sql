@@ -86,7 +86,7 @@ create procedure "XP"."XP"."LIST_MENU_ITEMS"() returns any
     vector (10, 'Use Case REF'		, '1.9.4.%'	, '1.9.%'	),
     vector (1),
     vector (0, 'About...'),
-    vector (5, 'Openlink Software', 'http://www.openlinksw.com'),
+    vector (5, 'OpenLink Software', 'http://www.openlinksw.com'),
     vector (5, 'Virtuoso Server', 'http://www.openlinksw.com/virtuoso'),
     vector (1)
  );

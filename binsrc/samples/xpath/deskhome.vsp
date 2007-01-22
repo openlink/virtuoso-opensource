@@ -32,7 +32,7 @@ provides basic facilities for manipulation of strings, numbers and booleans.</P>
 
 <P>The standard XPATH 1.0 is developmented, and the functionality
 is documented, so we have added a first version of XPATH support into
-our Openlink Virtuoso Server. Links to the standard are on the left.</P>
+our OpenLink Virtuoso Server. Links to the standard are on the left.</P>
 
 <P>In this demo, the XML documents and associated DTDs are stored
 within the Virtuoso server's database.  This server provides documents
