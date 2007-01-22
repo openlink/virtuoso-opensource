@@ -540,7 +540,7 @@ void aps_load_phrases (query_instance_t *qst, ap_set_t *aps)
     sqlr_resignal (err);
   while (lc_next (lc))
     {
-      uptrlong chksum, chk2, idxX, idxY, idxY2;
+      unsigned int32 chksum, chk2, idxX, idxY, idxY2;
       chksum = (uptrlong)(unbox (lc_nth_col (lc, 0)));
       chk2 = chksum * APB_ARRAYY_MULT1;
       idxX = AP_CHKSUM_TO_X (aps->aps_bitarrays, chksum);
