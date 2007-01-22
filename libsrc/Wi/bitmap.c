@@ -21,7 +21,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- */
+ *
+*/
 
 #include "sqlnode.h"
 #include "sqlfn.h"
@@ -37,9 +38,9 @@
 void
 bm_ends (bitno_t bm_start, db_buf_t bm, int bm_len, bitno_t * start, bitno_t * end)
 {
-  /* get the start offsets of the first and last ce of the bm.  The end is the start of the last, not its end.  */
+  /* Get the range of bits that can be covered by this bm.  The start is the bit no on the containing row.  The end is the start bitno of the last ce.  The values are rounded to ce boundaries.  */
   int inx = 0;
-  * start = bm_start + CE_OFFSET (bm);
+  * start = bm_start;
   inx = CE_LENGTH (bm);
   if (inx == bm_len)
     {
@@ -64,7 +65,9 @@ itc_bm_ends (it_cursor_t * itc, buffer_desc_t * buf, bitno_t * start, bitno_t * 
 {
   dbe_key_t * key = itc->itc_insert_key;
   int off, len;
-  bitno_t bm_start = BIT_COL (itc->itc_row_data, key);
+  bitno_t bm_start;
+  itc->itc_row_data = buf->bd_buffer + itc->itc_position + IE_FIRST_KEY;
+  bm_start= BIT_COL (itc->itc_row_data, key);
   ITC_COL (itc, (*itc->itc_insert_key->key_bm_cl), off, len);
   if (0 == len)
     {
@@ -291,8 +294,11 @@ bm_insert (bitno_t bm_start, db_buf_t bm, short * bm_len_ret, bitno_t value, int
       db_buf_t split_ce = bm;
       db_buf_t loop_ce = bm;
       db_buf_t ins_ce = ce;
-      if (ins_at_end && ce_len == CE_MAX_LENGTH)
+      if (ins_at_end && ce_len > CE_MAX_LENGTH - 4)
+	{
+	  /* Full array or array one less than full first. 0 or 2 bytes left at end.  No room.  Gotta split the array on one side and the single on the other */
 	split_ce = ce;
+	}
       else if (ce == bm && CE_LENGTH (ce) == CE_MAX_LENGTH)
 	split_ce = bm;
       else
@@ -1746,7 +1752,10 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		  if (DVC_CMP_MASK & op)
 		    {
 		      if (0 == (op & itc_col_check (itc, sp, sp->sp_min)))
+			{
+			  itc->itc_bp.bp_at_end = 1;
 			return DVC_LESS;
+		    }
 		    }
 		  else if (op == CMP_LIKE)
 		    {
