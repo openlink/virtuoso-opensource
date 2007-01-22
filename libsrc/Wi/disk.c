@@ -2998,6 +2998,33 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 	  log_error ("Cannot open database in %s (%d)", dbs->dbs_file, errno);
 	  call_exit (1);
 	}
+
+#if defined (F_SETLK)
+     if (DBS_TEMP != type)
+      {
+	struct flock fl;
+
+#ifdef DEBUG
+        log_info ("Setting write lock on %s", dbs->dbs_file);
+#endif
+
+	/* Get an advisory WRITE lock */
+	fl.l_type = F_WRLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = 0;
+	fl.l_len = 0;
+
+	if (fcntl (fd, F_SETLK, &fl) < 0)
+	  {
+  	    /* we could not get a lock, so who owns it? */
+	    fcntl (fd, F_GETLK, &fl);
+
+	    log_error ("Virtuoso is already runnning (pid %ld)", fl.l_pid);
+ 	    call_exit(1);
+	  }
+      }
+#endif
+
       dbs->dbs_fd = fd;
       size = LSEEK (fd, 0L, SEEK_END);
       dbs->dbs_file_length = size;
