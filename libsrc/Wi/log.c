@@ -377,6 +377,7 @@ log_commit (lock_trx_t * lt)
     }
 }
 
+extern dk_mutex_t * log_write_mtx;
 
 int
 log_text_array_sync (lock_trx_t * lt, caddr_t box)
