@@ -153,6 +153,12 @@
           self.vc_is_valid := 0;
           return;
         }
+	if (length (exp) > 1024)
+        {
+          self.expr.vc_error_message := 'The expression entered is too long, no more than 1000 chars are expected.';
+          self.vc_is_valid := 0;
+          return;
+        }
         declare res_name, excerpt any;
         declare i, p integer;
         declare excerpt_samples varchar;
