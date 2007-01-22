@@ -253,6 +253,8 @@ login (HENV * henv, HDBC * hdbc, char *argv_, char *dbms, int dbms_sz,
                         (ub4) strlen((char *) sttext), \
                         (ub4) OCI_NTV_SYNTAX,(ub4) OCI_DEFAULT));
 
+#define FREE_STMT(stmt) checkerr(errhp, OCIHandleFree ((dvoid *) stmt, OCI_HTYPE_STMT));
+
 #define IF_DEADLOCK_OR_ERR_GO(rc, err_tag, deadlock_tag) \
   if (rc == DEADLOCK_1 || rc == DEADLOCK_2 || rc == DEADLOCK_3 ) \
     goto deadlock_tag; \
@@ -676,6 +678,7 @@ LoadItems ()
 #endif
 
   FLUSH_BATCH (item_stmt, fill);
+  FREE_STMT (item_stmt);
   /* printf ("ITEM loaded.\n"); */
 
   return;
@@ -902,6 +905,7 @@ Stock (long w_id_from, long w_id_to)
   progress_done ();
 #endif
   FLUSH_BATCH (stock_stmt, fill);
+  FREE_STMT (stock_stmt);
 
   /* printf ("STOCK loaded.\n"); */
   return;
@@ -1255,6 +1259,8 @@ Orders (long d_id, long w_id)
   FLUSH_BATCH (o_stmt, fill);
   FLUSH_BATCH (ol_stmt, ol_fill);
 
+  FREE_STMT (o_stmt);
+  FREE_STMT (ol_stmt);
   /* printf ("ORDERS loaded.\n"); */
 
   return;
