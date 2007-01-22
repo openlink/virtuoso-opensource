@@ -601,6 +601,20 @@ bif_iri_id_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
   return (unbox_iri_id (arg));
 }
 
+iri_id_t
+bif_iri_id_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_DB_NULL == dtp)
+    return 0;
+  if (dtp != DV_IRI_ID)
+    sqlr_new_error ("22023", "SR008",
+		    "Function %s needs an IRI_ID or NULL as argument %d, "
+		    "not an arg of type %s (%d)",
+		    func, nth + 1, dv_type_title (dtp), dtp);
+  return (unbox_iri_id (arg));
+}
 
 ptrlong
 bif_long_range_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, ptrlong low, ptrlong hi)
@@ -10663,6 +10677,60 @@ bif_exec_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (box_num (0));
 }
 
+caddr_t
+bif_exec_score (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* in text, out sqlstate, out message, * out result_desc */
+  int n_args = BOX_ELEMENTS (args);
+  query_instance_t *qi = (query_instance_t *) qst;
+  stmt_compilation_t *comp = NULL, *proc_comp = NULL;
+  caddr_t _text = bif_string_or_wide_or_null_arg (qst, args, 0, "exec_metadata");
+  caddr_t text = NULL;
+  caddr_t err = NULL;
+  caddr_t score_box = NULL;
+  float score;
+  client_connection_t *cli = qi->qi_client;
+  PROC_SAVE_VARS;
+
+  if (DV_STRINGP (_text))
+    text = _text;
+  else if (DV_WIDESTRINGP (_text))
+    {
+      unsigned out_len, wide_len = box_length (_text) / sizeof (wchar_t) - 1;
+      text = dk_alloc_box (wide_len * 9 + 1, DV_LONG_STRING);
+      out_len = (unsigned) cli_wide_to_escaped (QST_CHARSET (qst), 0, (wchar_t *) _text, wide_len,
+	  (unsigned char *) text, wide_len * 9, NULL, NULL);
+      text[out_len] = 0;
+    }
+  else
+    sqlr_new_error ("22023", "SR308", "exec_metadata() called with an invalid text to execute");
+
+  PROC_SAVE_PARENT;
+
+  cli->cli_resultset_max_rows = -1;
+  score_box = (caddr_t) sql_compile (text, qi->qi_client, &err, SQLC_SQLO_SCORE);
+  if (score_box)
+    {
+      score = unbox_float (score_box);
+      dk_free_tree (score_box);
+    }
+  else
+    score = 0;
+
+  score = compiler_unit_msecs * score;
+
+  PROC_RESTORE_SAVED;
+
+  if (text != _text)
+    dk_free_box (text);
+
+  if (err)
+    {
+      return (bif_exec_error (qst, args, err));
+    }
+  return (box_float (score));
+}
+
 
 caddr_t
 bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -10794,6 +10862,8 @@ bif_mutex_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       }
     else 
       {
+	mutex_enter (mtx);
+	mutex_leave (mtx);
       }
   }
   if (1 == fl)
@@ -12528,6 +12598,7 @@ sql_bif_init (void)
   bif_define_typed ("__copy", bif_copy, &bt_copy);
   bif_define_typed ("exec", bif_exec, &bt_integer);
   bif_define_typed ("exec_metadata", bif_exec_metadata, &bt_integer);
+  bif_define ("exec_score", bif_exec_score);
   bif_set_uses_index (bif_exec);
   bif_define_typed ("exec_next", bif_exec_next, &bt_integer);
   bif_define ("exec_close", bif_exec_close);
