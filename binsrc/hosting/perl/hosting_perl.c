@@ -404,17 +404,18 @@ virtm_http_handler (void *cli, char *err, int max_len,
 	      {
 		      char * ptr;
 
-		      ptr = POPpx;
+#define virtPOPpx (SvPVx(POPs, n_a))
+		      ptr = virtPOPpx;
 		      *diag_ret = malloc (n_a + 1);
 		      strncpy (*diag_ret, ptr, n_a);
 		      (*diag_ret)[n_a] = 0;
 
-		      ptr = POPpx;
+		      ptr = virtPOPpx;
 		      *head_ret = malloc (n_a + 1);
 		      strncpy (*head_ret, ptr, n_a);
 		      (*head_ret)[n_a] = 0;
 
-		      ptr = POPpx;
+		      ptr = virtPOPpx;
 		      retval = malloc (n_a + 1);
 		      strncpy (retval, ptr, n_a);
 		      retval[n_a] = 0;
