@@ -129,7 +129,7 @@ create procedure "DB"."DBA"."VAD_RSAVE" (in _key varchar, in _type varchar, in _
       select R_TYPE into _oldtype from "DB"."DBA"."VAD_REGISTRY" where R_KEY=_key;
       if (_type <> _oldtype)
 	signal ('42VAD',
-	  concat ('Attempt to owerwrite VAD Registry key ',
+	  concat ('Attempt to overwrite VAD Registry key ',
 	    "WS"."WS"."STR_SQL_APOS"(_key), ' of type ', _oldtype,
 	    ' by value of type ', _type, '.' ) );
       update "DB"."DBA"."VAD_REGISTRY" set R_VALUE = cast (_value as varchar)
@@ -263,7 +263,7 @@ done:
 
 
 "DB"."DBA"."VAD_RSAVE" ('/DOCS?help=doc'	, 'STRING'	, 'Virtuoso Application Deployment - Administrator''s Guide#vad_registry_DOCS');
-"DB"."DBA"."VAD_RSAVE" ('/DOCS?help=hint'	, 'STRING'	, 'Directory of all available documents about your Virtuoso Server and Virtuoso-based appications');
+"DB"."DBA"."VAD_RSAVE" ('/DOCS?help=hint'	, 'STRING'	, 'Directory of all available documents about your Virtuoso Server and Virtuoso-based applications');
 "DB"."DBA"."VAD_RSAVE" ('/FILES?help=doc'	, 'STRING'	, 'Virtuoso Application Deployment - Administrator''s Guide#vad_registry_FILES');
 "DB"."DBA"."VAD_RSAVE" ('/FILES?help=hint'	, 'STRING'	, 'Information about various files in working directories of Virtuoso');
 "DB"."DBA"."VAD_RSAVE" ('/SCHEMA?help=doc'	, 'STRING'	, 'Virtuoso Application Deployment - Administrator''s Guide#vad_registry_SCHEMA');

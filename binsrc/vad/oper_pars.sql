@@ -37,16 +37,16 @@ insert replacing "VAD"."DBA"."VAD_HELP" ("name","dflt","short_help","full_help")
 'new_folder_name','new_folder','Name of new folder','Name of new folder to be created at current path')
 ;
 insert replacing "VAD"."DBA"."VAD_HELP" ("name","dflt","short_help","full_help") values (
-'new_item_name','new_item','Name of new Item','Name of new intem to be created at current path')
+'new_item_name','new_item','Name of new Item','Name of new item to be created at current path')
 ;
 insert replacing "VAD"."DBA"."VAD_HELP" ("name","dflt","short_help","full_help") values (
-'new_item_value','','Value of new Item','Value of new intem to be created at current path')
+'new_item_value','','Value of new Item','Value of new item to be created at current path')
 ;
 insert replacing "VAD"."DBA"."VAD_HELP" ("name","dflt","short_help","full_help") values (
-'old_item_value','','Old value of new Item','Old value of new intem to be created at current path')
+'old_item_value','','Old value of new Item','Old value of new item to be created at current path')
 ;
 insert replacing "VAD"."DBA"."VAD_HELP" ("name","dflt","short_help","full_help") values (
-'new_item_type','STRING','Type of new Item','Type of new intem to be created at current path')
+'new_item_type','STRING','Type of new Item','Type of new item to be created at current path')
 ;
 insert replacing "VAD"."DBA"."VAD_HELP" ("name","dflt","short_help","full_help") values (
 'del_item_id','','Handle of been deleting item','Handle of been deleting item')
@@ -61,7 +61,7 @@ insert replacing "VAD"."DBA"."VAD_HELP" ("name","dflt","short_help","full_help")
 'packages_list','','The list of existing packages','The list of existing packages')
 ;
 insert replacing "VAD"."DBA"."VAD_HELP" ("name","dflt","short_help","full_help") values (
-'new_pkg_name','./tmp/new_package.vad','Path of new Package','Path of new intem to be installed at current path')
+'new_pkg_name','./tmp/new_package.vad','Path of new Package','Path of new item to be installed at current path')
 ;
 insert replacing "VAD"."DBA"."VAD_HELP" ("name","dflt","short_help","full_help") values (
 'tmp','','','')

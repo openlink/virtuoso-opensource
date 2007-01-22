@@ -78,8 +78,7 @@ create procedure "VAD"."DBA"."BLOB_2_STRING_OUTPUT" (
 {
   declare _temp_content any;
   declare flen integer;
-  select RES_CONTENT into _temp_content from ws.ws.sys_dav_res where RES_FULL_PATH=fname;
-  _temp_content := subseq (_temp_content, f1, f2);
+  select subseq(RES_CONTENT, f1, f2) into _temp_content from ws.ws.sys_dav_res where RES_FULL_PATH=fname;
   ses := string_output ();
   http (_temp_content, ses);
   return 1;
@@ -179,9 +178,7 @@ create procedure "VAD"."DBA"."VAD_MD5_FILE" (
       data := cast (file_to_string_output (fname, i, j) as varchar);
     else
     {
-      declare tmp any;
-      select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = fname;
-      data := subseq (tmp,  i, j);
+      select subseq (RES_CONTENT, i, j) into data from WS.WS.SYS_DAV_RES where RES_FULL_PATH = fname;
     }
       ctx := md5_update (ctx, data);
     i := i + 4096;
@@ -236,25 +233,17 @@ create procedure "VAD"."DBA"."VAD_OUT_CHAR" (
 ;
 
 create procedure "VAD"."DBA"."VAD_GET_CHAR" (
-  in fname varchar,
-  inout pos integer,
-  inout ctx varchar,
-  in is_dav any )
+  inout ses any,
+  inout pos integer)
 {
-  pos := pos + 1;
   declare s varchar;
-  s := ' ';
   declare c integer;
-  if (is_dav = 0)
-    s := cast (file_to_string_output (fname, pos-1, pos) as varchar);
-  else
-  {
-    declare tmp any;
-    select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = fname;
-    s := subseq (tmp,  pos-1, pos);
-  }
+
+  s := ses_read (ses, 1);
+  pos := pos + 1;
+
   c := aref (s, 0);
-  ctx := md5_update (ctx, s);
+
   return c;
 }
 ;
@@ -274,11 +263,14 @@ create procedure "VAD"."DBA"."VAD_OUT_LONG" (
   if (v2 < 0)
     v2 := -v2;
   v2 := v2 / 256;
+
   v3 := mod (val, 256 * 256 * 256);
   if (v3 < 0)
-    v2 := -v2;
+    v3 := -v3;
   v3 := v3 / (256 * 256);
+
   v4 := (((val) / 256) / 256) / 256;
+
   "VAD"."DBA"."VAD_OUT_CHAR" (ses, pos, v4, ctx);
   "VAD"."DBA"."VAD_OUT_CHAR" (ses, pos, v3, ctx);
   "VAD"."DBA"."VAD_OUT_CHAR" (ses, pos, v2, ctx);
@@ -286,41 +278,22 @@ create procedure "VAD"."DBA"."VAD_OUT_LONG" (
 }
 ;
 
+
 create procedure "VAD"."DBA"."VAD_GET_LONG" (
-  in fname varchar,
-  inout pos integer,
-  inout ctx varchar,
-  in is_dav any )
+  inout ses any,
+  inout pos integer)
 {
   declare v1, v2, v3, v4 integer;
   declare tmp, str varchar;
 
-  if (is_dav = 0)
-    {
-      str := cast (file_to_string_output (fname, pos, pos+4) as varchar);
-    }
-  else
-    {
-      select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = fname;
-      str := subseq (tmp,  pos, pos + 4);
-    }
+  str := cast (ses_read (ses, 4) as varchar);
+  pos := pos + 4;
 
   v4 := str[0];
   v3 := str[1];
   v2 := str[2];
   v1 := str[3];
 
-  ctx := md5_update (ctx, chr (v4));
-  ctx := md5_update (ctx, chr (v3));
-  ctx := md5_update (ctx, chr (v2));
-  ctx := md5_update (ctx, chr (v1));
-
-  pos := pos + 4;
-
-  --v4 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
-  --v3 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
-  --v2 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
-  --v1 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
   return v1 + 256 * ( v2 + 256 * ( v3 + 256 * ( v4 )));
 }
 ;
@@ -427,84 +400,81 @@ create procedure "VAD"."DBA"."VAD_OUT_ROW_DAV" (
 }
 ;
 
+
 create procedure "VAD"."DBA"."VAD_GET_ROW" (
-  in ses varchar,
+  inout ses any,
   inout pos integer,
   inout name varchar,
-  inout data any,
-  inout ctx varchar,
-  in is_dav any )
+  inout data any)
 {
   declare val integer;
-  val := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
-  if (val <> 182)
-    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupted (pos=%d)', pos));
   declare _len integer;
-  _len := "VAD"."DBA"."VAD_GET_LONG" (ses, pos, ctx, is_dav);
-  if (is_dav = 0)
-    name := cast (file_to_string_output (ses, pos, pos + _len) as varchar );
-  else
-  {
-    declare tmp any;
-    select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
-    name := subseq (tmp, pos, pos + _len);
-  }
+
+  val := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos);
+  if (val <> 182)
+    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupt (pos=%d)', pos));
+  _len := "VAD"."DBA"."VAD_GET_LONG" (ses, pos);
+  name := cast (ses_read (ses, _len) as varchar);
   pos := pos + _len;
-  val := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
+
+  val := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos);
   if (val <> 223)
-    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupted (pos=%d)', pos));
-  _len := "VAD"."DBA"."VAD_GET_LONG" (ses, pos, ctx, is_dav);
-  if (is_dav = 0)
-    data := file_to_string_output(ses, pos, pos + _len);
+    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupt (pos=%d)', pos));
+  _len := "VAD"."DBA"."VAD_GET_LONG" (ses, pos);
+  if (0 <> _len) 
+    data := ses_read (ses, _len);
   else
-  {
-    declare tmp any;
-    select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
-    data := subseq (tmp, pos, pos + _len);
-  }
+    data := '';
   pos := pos + _len;
+
   if (equ (name, 'MD5'))
     return 0;
+
   return 1;
 }
 ;
 
+
 create procedure "VAD"."DBA"."VAD_GET_ROW_FILE" (
-  in ses varchar,
+  inout ses any,
   inout pos integer,
   inout name varchar,
   inout resources any,
   inout iniarr any,
-  inout ctx varchar,
   in is_dav integer )
 {
   declare val integer;
-  val := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
-  if (val <> 182)
-    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupted (pos=%d)', pos));
   declare _len integer;
-  _len := "VAD"."DBA"."VAD_GET_LONG" (ses, pos, ctx, is_dav);
-  if (is_dav = 0)
-    name := cast (file_to_string_output (ses, pos, pos + _len) as varchar );
-  else
-  {
-    declare tmp any;
-    select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
-    name := subseq (tmp, pos, pos + _len);
-  }
+  declare data any;
+
+  val := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos);
+  if (val <> 182)
+    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupt (pos=%d)', pos));
+  _len := "VAD"."DBA"."VAD_GET_LONG" (ses, pos);
+  name := cast (ses_read (ses, _len) as varchar);
   pos := pos + _len;
-  val := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
+
+  val := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos);
   if (val <> 223)
-    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupted (pos=%d)', pos));
-  _len := "VAD"."DBA"."VAD_GET_LONG" (ses, pos, ctx, is_dav);
+    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf('VAD file corrupt (pos=%d)', pos));
+  _len := "VAD"."DBA"."VAD_GET_LONG" (ses, pos);
+  if (0 <> _len) 
+    data := ses_read (ses, _len);
+  else
+    data := '';
   pos := pos + _len;
+
   if (equ (name, 'MD5'))
     return 0;
+
   declare s, s2, s3, s4, s5, s6, s7, s8, s9 varchar;
   declare tarr any;
+
   tarr := get_keyword (name, resources);
+
   if (tarr is null or length (tarr) = 0)
     "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Illegal item(%s) in package ', name));
+
   s4 := aref (tarr, 0);
   s5 := aref (tarr, 1);
   s6 := aref (tarr, 2);
@@ -512,10 +482,12 @@ create procedure "VAD"."DBA"."VAD_GET_ROW_FILE" (
   s7 := aref (tarr, 3);
   s8 := aref (tarr, 4);
   s9 := aref (tarr, 5);
+
   if (s3 is null or not length (s3))
     "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Item(%s) has illegal type', s4));
+
   declare i, j, k integer;
-  declare data any;
+
   if (s4 <> 'dav')
   {
     s4 := sprintf ('%s/%s', s3, name);
@@ -552,24 +524,7 @@ create procedure "VAD"."DBA"."VAD_GET_ROW_FILE" (
         goto do_it;
       declare md5_txt, nctx varchar;
       nctx := md5_init();
-      i := pos - _len;
-      k := pos;
-      while (i<k)
-      {
-        j := i + 4096;
-        if (j > k)
-          j := k;
-        if (is_dav = 0)
-          data := cast (file_to_string_output (ses, i, j) as varchar);
-        else
-        {
-          declare tmp any;
-	  select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
-	  data := subseq (tmp,  i, j);
-        }
         nctx := md5_update (nctx, data);
-        i := i + 4096;
-      }
       if (neq ("VAD"."DBA"."VAD_MD5_FILE" (s4, is_dav), md5_final (nctx)))
         goto do_it;
     }
@@ -597,31 +552,13 @@ create procedure "VAD"."DBA"."VAD_GET_ROW_FILE" (
     else if (equ (s6, 'abort') or equ (s6, 'no'))
     {
       if (s2 is not null or length(s2))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('mkpath forbiden (%s)', s2));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('mkpath forbidden (%s)', s2));
     }
     do_it_again:;
     -- sys_mkpath (s2);
     "DB"."DBA"."VAD_CREATE_PATH"(s2);
-    i := pos - _len;
-    k := pos;
     string_to_file (s4, '', -2);
-    while (i<k)
-    {
-      j := i + 4096;
-      if (j > k)
-        j := k;
-      if (is_dav = 0)
-        data := cast (file_to_string_output (ses, i, j) as varchar);
-      else
-      {
-      declare tmp any;
-	select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
-	data := subseq (tmp, i, j);
-      }
-      ctx := md5_update (ctx, data);
       string_to_file (s4, data, -1);
-      i := i + 4096;
-    }
     return 1;
   }
   else
@@ -677,21 +614,12 @@ create procedure "VAD"."DBA"."VAD_GET_ROW_FILE" (
     else if (equ (s6, 'abort') or equ (s6, 'no'))
     {
       if (s2 is not null or length(s2))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('mkpath forbiden (%s)', s2));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('mkpath forbidden (%s)', s2));
     }
     do_it_againII:;
     k := "VAD"."DBA"."VAD_MKDAV" (id, gd, s2, iniarr);
     if (k < 1)
       "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Can\'t create collection (%s)', s2));
-    if (is_dav = 0)
-      data := cast (file_to_string_output (ses, pos - _len, pos) as varchar);
-    else
-    {
-      declare tmp any;
-      select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
-      data := subseq (tmp, pos - _len, pos);
-    }
-    ctx := md5_update (ctx, data);
     if (val is not null and val > 0)
       "VAD"."DBA"."VAD_DAV_UPLOAD_RES" (iniarr, s4, data, s7, s8, s9);
     return 1;
@@ -1005,8 +933,6 @@ create procedure "VAD"."DBA"."VAD_TEST_READ" (
   inout pkg_fullname varchar,
   in is_dav integer )
 {
-  declare ctx varchar;
-  ctx := md5_init();
   declare flen, pos, i, n, statusid integer;
   declare fstat integer;
   declare s varchar;
@@ -1034,38 +960,33 @@ create procedure "VAD"."DBA"."VAD_TEST_READ" (
         "VAD"."DBA"."VAD_FAIL_CHECK" (concat ('Could not open DAV resource ', fname, ' Reason: File not found'));
     }
   }
-  flen := cast (fstat as integer) - 45;
-  n := 1;
-  if (flen > 10000000)
-  {
-    flen := 9999999;
-    n := 0;
-  }
+  flen := cast (fstat as integer);
   declare v1, v2, parr any;
   parr := null;
   declare continue handler for sqlstate '39000' { goto error_nofile; };
   declare continue handler for sqlstate '42000' { goto error_nofile; };
+
   if (is_dav = 0)
+  {
     v1 := file_to_string_output (fname, 0, flen);
+  }
   else
   {
     v1 := string_output();
     "VAD"."DBA"."BLOB_2_STRING_OUTPUT"(fname, 0, flen, v1);
   }
-  if (n)
-  {
-    if (is_dav = 0)
-      v2 := file_to_string_output (fname, flen+13, flen+45);
-    else
-    {
-      v2 := string_output();
-      "VAD"."DBA"."BLOB_2_STRING_OUTPUT" (fname, flen+13, flen+45, v2);
-    }
-    if (not equ (md5(v1),cast (v2 as varchar)))
-      "VAD"."DBA"."VAD_FAIL_CHECK" ('VAD file corrupted!');
-  }
+
+  --  Get md5 checksum from package
+  v2 := cast (subseq (v1, flen-32, flen) as varchar);
+
+  -- Check MD5 sum before trying to install package
+  declare md5package varchar;
+  md5package := md5(subseq (v1, 0, flen-45));
+  if (neq (md5package, v2))
+    "VAD"."DBA"."VAD_FAIL_CHECK" ('VAD file checksum mismatch');
+
   i := 0;
-  while ("VAD"."DBA"."VAD_GET_ROW" (fname, pos, s, data, ctx, is_dav) <> 0)
+  while ("VAD"."DBA"."VAD_GET_ROW" (v1, pos, s, data) <> 0)
   {
     if (i = 0)
     {
@@ -1099,31 +1020,37 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   in is_dav integer := 0,
   in no_exit integer := 0) returns varchar
 {
-  commit work;
-  exec ('checkpoint');
   declare parr any;
   declare qual varchar;
-  qual := dbname ();
   declare SQL_STATE, SQL_MESSAGE varchar;
+
+  commit work;
+  exec ('checkpoint');
+
+  qual := dbname ();
   parr := null;
+  SQL_STATE := '00000';
+  SQL_MESSAGE := '';
+
   "VAD"."DBA"."VAD_ATOMIC" (1);
+
   registry_set ('VAD_msg', '');
   registry_set ('VAD_errcount', '0');
   registry_set ('VAD_wet_run', '0');
   registry_set ('VAD_is_run', '1');
   connection_set ('vad_pkg_fullname', null);
-  SQL_STATE := '00000';
-  SQL_MESSAGE := '';
+
+
   result_names (SQL_STATE, SQL_MESSAGE);
   {
     declare exit handler for sqlstate '*'
     {
       SQL_STATE := __SQL_STATE;
       SQL_MESSAGE := __SQL_MESSAGE;
-      if ('' <> registry_get ('VAD_msg'))
+      if ('' <> SQL_MESSAGE);
       {
+        log_message (sprintf ('VAD_INSTALL: %s (%s)', SQL_MESSAGE, SQL_STATE));
         result (SQL_STATE, SQL_MESSAGE);
-        registry_set ('VAD_errcount', cast (cast (registry_get ('VAD_errcount') as integer) as varchar));
       }
       goto failure;
     };
@@ -1131,10 +1058,14 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     if ('0' = registry_get ('VAD_errcount'))
       {
   "VAD"."DBA"."VAD_ATOMIC" (0);
-  result ('00000', sprintf ('No errors detected, installation of the "%s" is complete.',
-	coalesce (connection_get ('vad_pkg_fullname'), fname)));
+
+      result ('00000', 'No errors detected');
+      result ('00000', sprintf ('Installation of "%s" is complete.', coalesce (connection_get ('vad_pkg_fullname'), fname)));
+
   result ('00000', 'Now making a final checkpoint.');
+
   exec ('checkpoint');
+
   result ('00000', 'Final checkpoint is made.');
   result ('00000', 'SUCCESS');
   result ('', '');
@@ -1143,58 +1074,48 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   return 'OK';
       }
   }
-  failure:;
-  --result ('42VAD', concat (registry_get ('VAD_errcount'), ' error message(s) were reported'));
+
+failure:;
+  result ('00000', 'Errors detected');
+  result ('00000', sprintf ('Installation of "%s" was unsuccessful.', coalesce (connection_get ('vad_pkg_fullname'), fname)));
+
+  log_message (sprintf ('Errors where detected during installation of "%s".',
+      coalesce (connection_get ('vad_pkg_fullname'), fname)));
+
   if (registry_get ('VAD_wet_run') = '0')
   {
+    -- Since the database was not changed, we do not need to restart the server
+    -- from the checkpoint 
+
     "VAD"."DBA"."VAD_ATOMIC" (0);
-    --result ('', 'VAD did not change the database in any way,');
-    --result ('', 'so you do not have to restart the server from the checkpoint.');
+
     result ('00000', 'ERROR');
     result ('', '');
+
     registry_set ('VAD_is_run', '0');
     set_qualifier (qual);
     return 'ERROR';
   }
   else
   {
+    -- Since the database was changed, we need to restart the server
+    -- from the checkpoint 
     declare trx, folder varchar;
     declare pos integer;
     trx := coalesce (cfg_item_value(virtuoso_ini_path(), 'Database','TransactionFile'), '');
     folder := server_root ();
     trx := concat(rtrim(folder, '/'), '/', trx);
 
-    --result ('', 'The installation encountered an unhandled error:  ');
-    --result (__SQL_STATE, __SQL_MESSAGE);
-    if (SQL_STATE <> '00000')
-      {
-	log_message(concat(cast(SQL_STATE as varchar), ' ', cast(SQL_MESSAGE as varchar)));
-      }
-    if (registry_get ('VAD_errcount') <> '0')
-    log_message(concat(registry_get ('VAD_errcount'), ' error message(s) were reported'));
+    log_message('The installation of this VAD package has failed.');
+    log_message('Please delete the transaction file');
+    log_message(trx);
+    log_message('and then restart your database server.');
+    log_message('Note: Your database will be in its pre VAD installation');
+    log_message('state after you restart.');
 
-
-    log_message('The installation of this VAD package has failed. Please delete the');
-    log_message('transaction file '||trx||' and then restart your database server.');
-    log_message('Note: Your database will be in its pre VAD installation state after you');
-    log_message('restart.');
-
-    result ('', 'The installation of this VAD package has failed. Please delete the');
-    result ('', 'transaction file '||trx||' and then restart your database server.');
-    result ('', 'Note: Your database will be in its pre VAD installation state after you');
-    result ('', 'restart.');
-
-
-    --log_message('In order to reverse all effects of the partial installation, the server will ');
-    --log_message('have to be restarted.  The server is now exiting.  Please restart the server ');
-    --log_message('manually to return to the state immediately preceding the start of the installation.');
-    --log_message(concat('Please remove the transaction log ', trx));
-    --log_message('then restart Virtuoso');
-    --result ('', 'In order to reverse all effects of the partial installation, the server will');
-    --result ('', 'have to be restarted.  The server is now exiting.  Please restart the server');
-    --result ('', 'manually to return to the state immediately preceding the start of the installation.');
-    --result ('', concat('Please remove the transaction log ', trx));
-    --result ('', 'then restart Virtuoso');
+    result ('', 'The installation of this VAD package has failed.');
+    result ('', 'Please delete the transaction file'||trx||'and then restart your database server.');
+    result ('', 'Note: Your database will be in its pre VAD installation state after you restart.');
 
     result ('00000', 'FATAL');
     result ('', '');
@@ -1207,7 +1128,10 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     set_qualifier (qual);
     return 'FATAL';
   }
+
+  --  Not reached
   registry_set ('VAD_is_run', '0');
+  return 'ERROR';
 }
 ;
 
@@ -1217,8 +1141,6 @@ create procedure "VAD"."DBA"."VAD_READ" (
   in is_dav integer,
   in iniarr any := null)
 {
-  declare ctx varchar;
-  ctx := md5_init();
   declare flen, pos, i, statusid integer;
   declare s any;
   declare data, resources any;
@@ -1265,25 +1187,36 @@ create procedure "VAD"."DBA"."VAD_READ" (
         "VAD"."DBA"."VAD_FAIL_CHECK" (concat ('Could not open DAV resource ', fname, ' Reason: File not found'));
     }
   }
-  flen := cast (s as integer) - 45;
+  flen := cast (s as integer);
   declare v1,v2 any;
+
   if (is_dav = 0)
   {
-    v2 := file_to_string_output (fname, flen+13, flen+45);
+    v1 := file_to_string_output (fname, 0, flen);
   }
   else
   {
-    v2 := string_output();
-    "VAD"."DBA"."BLOB_2_STRING_OUTPUT" (fname, flen+13, flen+45, v2);
+    v1 := string_output();
+    "VAD"."DBA"."BLOB_2_STRING_OUTPUT"(fname, 0, flen, v1);
   }
+
+  --  Get md5 checksum from package
+  v2 := cast (subseq (v1, flen-32, flen) as varchar);
+
+  -- Check MD5 sum before trying to install package
+  declare md5package varchar;
+  md5package := md5(subseq (v1, 0, flen-45));
+  if (neq (md5package, v2))
+    "VAD"."DBA"."VAD_FAIL_CHECK" ('VAD file checksum mismatch');
+
   i := 0;
   declare flag integer;
   while (1)
   {
     if (i < 2)
-      flag := "VAD"."DBA"."VAD_GET_ROW"(fname, pos, s, data, ctx, is_dav);
+      flag := "VAD"."DBA"."VAD_GET_ROW"(v1, pos, s, data);
     else
-      flag := "VAD"."DBA"."VAD_GET_ROW_FILE"(fname, pos, s, resources, iniarr, ctx, is_dav);
+      flag := "VAD"."DBA"."VAD_GET_ROW_FILE"(v1, pos, s, resources, iniarr, is_dav);
     if (not flag)
       goto fin;
     if (i = 0)
@@ -1460,7 +1393,7 @@ create procedure "VAD"."DBA"."VAD_READ" (
         "VAD"."DBA"."VAD_SPLIT_PATH" (s2, tpath, tname);
         tid := "VAD"."DBA"."VAD_CHDIR" (parr, tid2, tpath);
         if (not tid)
-          "VAD"."DBA"."VAD_FAIL_CHECK" ( sprintf ('package registry item (%s) refers to inexisting path', s2));
+          "VAD"."DBA"."VAD_FAIL_CHECK" ( sprintf ('package registry item (%s) refers to non-existing path', s2));
         tid2 := "VAD"."DBA"."VAD_NODE_INFO_BY_NAME" (tid, tname, iname, itype, ival, 0);
         s2 := cast (xpath_eval ('@overwrite', aref (items, j)) as varchar);
         if (s2 is null or length(s2)=0)
@@ -1507,17 +1440,16 @@ create procedure "VAD"."DBA"."VAD_READ" (
     }
     i := i + 1;
   }
-  if (neq (md5_final(ctx), string_output_string(v2)))
-    "VAD"."DBA"."VAD_FAIL_CHECK" ('VAD file corrupted');
-  fin:
---  dbg_obj_print (md5_final(ctx), string_output_string(v2));
+
+fin:
   "VAD"."DBA"."VAD_EXEC" (ddl_post_install_code);
   "VAD"."DBA"."VAD_EXEC" (proc_post_install_code);
   "VAD"."DBA"."VAD_UPDATE_NODE" (statusid, 'Installed', 'Broken');
   "DB"."DBA"."VAD_CLEAN_OLD_VERSIONS" (pkg_name);
   return 1;
-  error_nofile:
-  "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('VAD file1 (%s) problems:\n%s', fname, __SQL_MESSAGE));
+
+error_nofile:
+  "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('VAD file (%s) problems:\n%s', fname, __SQL_MESSAGE));
 }
 ;
 
@@ -1773,7 +1705,6 @@ create procedure "DB"."DBA"."VAD_CLEAN_OLD_VERSIONS" (in name varchar)
   for select R_SHKEY as old_ver from VAD.DBA.VAD_REGISTRY
     where R_TYPE = 'FOLDER' and R_KEY = '/VAD/'||name||'/' || R_SHKEY and R_SHKEY <> lval do
     {
-      --dbg_printf ('removing old version %s', old_ver);
       delete from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/'||name||'/'||old_ver||'/%';
       delete from VAD.DBA.VAD_REGISTRY where R_KEY = '/VAD/'||name||'/'||old_ver;
       --curdir := "VAD"."DBA"."VAD_CHDIR" (parr, tid, old_ver);
@@ -1837,8 +1768,6 @@ create procedure "DB"."DBA"."VAD_RENAME" (in name varchar, in new_name varchar)
 		 new_key := '/SCHEMA/'||new_name||substring (rkey, length (ddls)+1, length (rkey));
 	       }
 
-	     --dbg_obj_print (tp, new_key, val);
-
              if (tp = 'FOLDER')
 	       {
 		 update VAD.DBA.VAD_REGISTRY set R_KEY = new_key, R_SHKEY = new_name where R_ID = rid;
@@ -1847,7 +1776,6 @@ create procedure "DB"."DBA"."VAD_RENAME" (in name varchar, in new_name varchar)
                {
 		 declare new_value varchar;
 		 new_value := '/VAD/'||new_name||substring (val, length (old_pkey)+1, length (val));
-		 --dbg_obj_print (new_value);
 		 update VAD.DBA.VAD_REGISTRY set R_KEY = new_key, R_VALUE = new_value where R_ID = rid;
 	       }
 	   }

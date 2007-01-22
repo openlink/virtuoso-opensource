@@ -173,7 +173,7 @@ create procedure "VAD"."DBA"."VAD_ATOMIC" ( in mode integer )
   if (mode)
     {
       if (registry_get ('VAD_atomic') = '1')
-        "VAD"."DBA"."VAD_FAIL_CHECK" ('Redundand attempt of entering atomic mode');
+      "VAD"."DBA"."VAD_FAIL_CHECK" ('Redundant attempt to enter atomic mode');
       __atomic(1);
       registry_set ('VAD_atomic', '1');
     }
@@ -193,13 +193,12 @@ create procedure "VAD"."DBA"."VAD_ATOMIC" ( in mode integer )
 create procedure "VAD"."DBA"."VAD_FAIL_CHECK" ( in msg varchar ) returns integer
 {
   rollback work;
--- dbg_obj_print(msg);
-  "VAD"."DBA"."VAD_ATOMIC"(0);
---  commit work;
 
-  --raw_exit(-1);
+  "VAD"."DBA"."VAD_ATOMIC"(0);
+
   registry_set ('VAD_msg', msg);
   registry_set ('VAD_errcount', cast (1 + cast (registry_get ('VAD_errcount') as integer) as varchar));
+
   signal ('42VAD', msg);
 }
 ;
@@ -521,7 +520,7 @@ create procedure "VAD"."DBA"."VAD_TEST_VALUE" ( in type varchar, inout val varch
   else if (equ (type, 'KEY'))
     {
       if (not exists (select "R_ID" from "VAD"."DBA"."VAD_REGISTRY" where "R_KEY" = val))
-    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Attempt to create key on inexisting item:%s', cast (val as varchar)));
+    "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Attempt to create key on non-existing item:%s', cast (val as varchar)));
     return 1;
   }
   else if (equ (type, 'XML'))

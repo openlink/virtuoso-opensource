@@ -572,6 +572,8 @@ create procedure "VAD"."DBA"."VAD_EXEC" (in prog varchar) returns integer
     return 0;
   declare pname varchar;
   pname := sprintf ('vad.dba.vad_%d_code', sequence_next('vad_tmp'));
+-- dbg_obj_print (pname);
+-- dbg_obj_print (cast(blob_to_string(prog) as varchar));
   exec (sprintf ('create procedure %s () { set_qualifier (\'DB\'); %s }', pname, cast(blob_to_string(prog) as varchar)));
   exec (sprintf ('%s ()', pname));
   exec (sprintf ('drop procedure %s', pname));
