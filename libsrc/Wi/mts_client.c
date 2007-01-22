@@ -26,7 +26,7 @@
 #include "Dk.h"
 #include "mts_client.h"
 #include "odbcinc.h"
-#include "Dk\Dkhashext.h"
+#include "Dk/Dkhashext.h"
 #include "CLI.h"
 #include "sql.h"
 #include <plugin/dlf.h>
