@@ -11074,7 +11074,18 @@ caddr_t
 bif_row_count (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
-  return (box_num (qi->qi_n_affected));
+  long what = 0;
+  long ret = 0;
+  if (BOX_ELEMENTS (args) > 0)
+    what = bif_long_arg (qst, args, 0, "row_count");
+  if (what) 
+    {
+      if (qi->qi_caller && IS_BOX_POINTER (qi->qi_caller))
+        ret = qi->qi_caller->qi_n_affected;
+    }
+  else
+    ret = qi->qi_n_affected;
+  return (box_num (ret));
 }
 
 
