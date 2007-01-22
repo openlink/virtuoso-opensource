@@ -137,6 +137,12 @@
                 <li class="lftmenu1">
                   <a target="_blank" href="{concat($mount_point,'/xbel.vsp')}"><img src="{concat($mount_point,'/images/blue-icon-16.gif')}" border="0" alt="XBEL" title="XBEL" hspace="3"/>XBEL</a>
                 </li>
+                <li class="lftmenu1">
+                  <a target="_blank" href="{concat($mount_point,'/sioc.vsp')}"><img src="{concat($mount_point,'/images/rdf-icon-16.gif')}" border="0" alt="SIOC(RDF/XML)" title="SIOC(RDF/XML)" hspace="3"/>SIOC(RDF/XML)</a>
+                </li>
+                <li class="lftmenu1">
+                  <a target="_blank" href="{concat($mount_point,'/sioc_ttl.vsp')}"><img src="{concat($mount_point,'/images/rdf-icon-16.gif')}" border="0" alt="SIOC(N3/Turtle)" title="SIOC(N3/Turtle)" hspace="3"/>SIOC(N3/Turtle)</a>
+                </li>
               </ul>
               <div class="lftmenu">
                 <div class="lftmenu_info">Version: <?V sys_stat ('st_dbms_ver') ?></div>
@@ -182,8 +188,8 @@
             </a>
           </div>
           <a target="_blank" href="http://www.openlinksw.com">
-            <img src="{concat($mount_point,'/images/web_24.png')}" border="0" alt="Openlink Home" title="Openlink Home"/>
-            <xsl:text> Openlink Home</xsl:text>
+            <img src="{concat($mount_point,'/images/web_24.png')}" border="0" alt="OpenLink Home" title="OpenLink Home"/>
+            <xsl:text> OpenLink Home</xsl:text>
           </a>
           <xsl:text> | </xsl:text>
           <a target="_blank" href="http://www.openlinksw.com/virtuoso">
