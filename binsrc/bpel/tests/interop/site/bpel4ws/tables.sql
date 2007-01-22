@@ -47,7 +47,7 @@ create table BPWSI..products
 	 primary key (pr_name,pr_version)
 )
 ;
-insert into BPWSI..products (pr_name, pr_version, pr_manifactor) values ('Virtuoso', '3.5', 'Openlink');
+insert into BPWSI..products (pr_name, pr_version, pr_manifactor) values ('Virtuoso', '3.5', 'OpenLink');
 
 -- Tests
 create table BPWSI..tests

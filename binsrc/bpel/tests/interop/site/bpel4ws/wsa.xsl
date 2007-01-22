@@ -34,7 +34,7 @@
 <xsl:template name="Interop">
   <tr>
     <td>
-      <b><xsl:text>Openlink Software, Inc.</xsl:text></b>
+      <b><xsl:text>OpenLink Software, Inc.</xsl:text></b>
       <xsl:text>
         is proud to be an Advocate of the Web Services Interoperability Organization (WS-I).
         WS-I is an open industry consortium chartered to facilitate Web services interoperability

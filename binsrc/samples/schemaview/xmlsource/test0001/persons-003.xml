@@ -54,7 +54,7 @@
 	<r:lastName> Abdulkhalikov </r:lastName>
 	<r:birthDate value="1978-02-14"/>
 </r:person>
-<r:manager employer="Openlink">
+<r:manager employer="OpenLink">
 	<r:firstName> Ruslan </r:firstName>
 	<r:lastName> Abdulkhalikov </r:lastName>
 	<r:age value="23"/>

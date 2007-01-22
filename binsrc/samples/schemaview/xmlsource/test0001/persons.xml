@@ -39,7 +39,7 @@
 -->
 
 
-<r:manager employer="Openlink">
+<r:manager employer="OpenLink">
 	<r:firstName> Ruslan </r:firstName>
 	<r:lastName> Abdulkhalikov </r:lastName>
 	<r:age value="23"/>
