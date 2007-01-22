@@ -157,7 +157,7 @@ create procedure MKDOC_DO_GROUP_FEED (
 )
 {
   declare _ctr, _len integer;
-  declare _html, _params, _ses, _strg any;
+  declare _html, _params, _ses, _strg, dict, ttl any;
   declare _name, _fname varchar;
   _len := length (_ids);
   _ctr := 0;
@@ -194,6 +194,17 @@ create procedure MKDOC_DO_GROUP_FEED (
       _fname := concat(_target, '/', _name, _ext);
       _strg := string_output_string(_ses);
       string_to_file (_fname, _strg, -2);
+
+
+      if  (_ext = '.sioc.rdf') -- generated .ttl files
+      {
+          dict := DB.DBA.RDF_RDFXML_TO_DICT (_strg,'','tmp/');
+          ttl := string_output();
+          DB.DBA.RDF_TRIPLES_TO_TTL (dict_list_keys (dict, 1), ttl);
+          _fname := concat(_target, '/', _name, '.ttl');
+          string_to_file (_fname, ttl, -2);
+
+      };
 
       _save_retval := sprintf ('%d bytes were written to file ''%s''.', length (_strg), _fname);
 
@@ -292,11 +303,11 @@ create procedure MKDOC_DO_FEEDS (in _docsrc varchar, in _target varchar, in _opt
     vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options),
     'chap', 'Sect1 RSS', '.rss' );
 
---  MKDOC_DO_GROUP_FEED (_docfull, _target,
---    _chapters,
---    'file://docsrc/stylesheets/sections/sioc_chap.xsl',
---    vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options), 
---    'chap', 'Chap SIOC', '.sioc.rdf' );
+  MKDOC_DO_GROUP_FEED (_docfull, _target,
+    _chapters,
+    'file://docsrc/stylesheets/sections/sioc_chap.xsl',
+    vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options),
+    'chap', 'Chap SIOC', '.sioc.rdf' );
 
   _sect1s := xpath_eval ('/book/chapter/sect1/@id', _docfull, 0);
   result ('Building list of sect1s', 'done');
