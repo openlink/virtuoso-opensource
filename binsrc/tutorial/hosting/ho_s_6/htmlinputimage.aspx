@@ -27,7 +27,7 @@
 <form id="myForm" name="myform" action="htmlinputimage.aspx" runat="server">
 <input type=image ID="myImageAgain" 
 src="http://virtuoso.openlinksw.com/images/openlink150.gif"
-runat="server" alt="Openlink Software logo" align="middle">
+runat="server" alt="OpenLink Software logo" align="middle">
 </form>
 </body>
 </html>

@@ -28,7 +28,7 @@
 <body>
 <form runat="server">
 <asp:Image id="im" runat="server"
-	AlternateText="Yes, again the Openlink Software logo"
+	AlternateText="Yes, again the OpenLink Software logo"
 	ImageAlign="left"
 	ImageUrl="http://virtuoso.openlinksw.com/images/openlink150.gif"/>
 </form>

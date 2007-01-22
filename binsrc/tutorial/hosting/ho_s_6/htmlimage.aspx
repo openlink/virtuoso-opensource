@@ -26,7 +26,7 @@
 </head>
 <body>
 <img ID="myImage" src="http://virtuoso.openlinksw.com/images/openlink150.gif"
-runat="server" alt="Openlink Software logo" align="middle"/>
+runat="server" alt="OpenLink Software logo" align="middle"/>
 </body>
 </html>
 

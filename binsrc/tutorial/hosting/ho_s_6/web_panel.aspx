@@ -27,7 +27,7 @@
 <form runat="server">
 <asp:Panel id="pan" runat="server" ForeColor="green" Height="100px" Width="150px">
 <asp:HyperLink id="hyper" NavigateUrl="http://www.openlinksw.com"
-Text="Openlink site" Target="_top" runat="server"/>
+Text="OpenLink site" Target="_top" runat="server"/>
 <p>
 </asp:Panel>
 </form>
