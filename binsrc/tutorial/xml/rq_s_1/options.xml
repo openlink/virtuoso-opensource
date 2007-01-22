@@ -23,5 +23,5 @@
 <init standalone="/sparql_demo/">
 <src load_at_start="" load_to_clean=""/>
 <run name="goto /sparql_demo/" link="/sparql_demo/"/>
-<deps item="iSPARQL" example="isparql_dav.vad package" type="package" />
+<deps item="SPARQL Demo" example="sparql_demo_dav.vad package" type="package" />
 </init>
