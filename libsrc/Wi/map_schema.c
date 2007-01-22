@@ -81,8 +81,8 @@ xmlview_free (xml_view_t * xv)
 void *
 dk_alloc_zero (size_t c)
 {
-  void * thing = dk_alloc(sizeof(c));
-  memset (thing, 0, sizeof(thing));
+  void * thing = dk_alloc (c);
+  memset (thing, 0, c);
   return thing;
 }
 
