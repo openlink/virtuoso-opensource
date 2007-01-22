@@ -486,7 +486,7 @@ create procedure VHOST_REMOVE (in vhost varchar := '*ini*',
   declare ppath, vsp_user, stat, msg varchar;
   declare cr cursor for select HP_PPATH, HP_RUN_VSP_AS from DB.DBA.HTTP_PATH
       where HP_LISTEN_HOST = lhost and HP_HOST = vhost and HP_LPATH = lpath;
-  if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (vhost) or DB.DBA.IS_EMPTY_OR_NULL (vhost))
+  if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (lhost))
     return NULL;
 
   if (length (lpath) > 1 and aref (lpath, length (lpath) - 1) = ascii ('/') )
@@ -644,6 +644,7 @@ create procedure WS.WS.HTTP_CACHE_CHECK (inout path any, inout lines any, inout 
     {
       whenever not found goto nf;
       select RC_DATA, RC_TAG, RC_CHARSET into cnt, tag, charset from WS.WS.SYS_RC_CACHE where RC_URI = url;
+      commit work;
       if (cnt is not null)
 	{
 	  declare ses, ctag any;
@@ -677,6 +678,7 @@ create procedure WS.WS.HTTP_CACHE_CHECK (inout path any, inout lines any, inout 
       return 1;
       nf:
       insert into WS.WS.SYS_RC_CACHE (RC_URI, RC_INVALIDATE, RC_DT) values (url, inv, now ());
+      commit work;
       --dbg_obj_print ('new entry is done');
       return 2;
     }
