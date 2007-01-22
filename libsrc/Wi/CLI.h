@@ -135,6 +135,7 @@ typedef struct cli_connection_s
 #endif
     int			con_in_transaction;
     int			con_no_system_tables;
+    int 		con_treat_views_as_tables;
   } cli_connection_t;
 
 #define IN_CON(c) mutex_enter (c->con_mtx)

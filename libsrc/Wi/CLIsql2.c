@@ -577,6 +577,7 @@ virtodbc__SQLTables (
   SQLLEN odbc_ver_len = 4;
   SDWORD no_sys_tbs = stmt->stmt_connection->con_no_system_tables ? 1 : 0;
   SQLLEN no_sys_tbs_len = 4;
+  SDWORD views_as_tables = stmt->stmt_connection->con_treat_views_as_tables ? 1 : 0;
   char type_buffer[60], *type_ptr;
 
   /*  SQLCHAR *nada = (SQLCHAR *) ""; *//* KEY_TABLE not like nada should match with all */
@@ -805,16 +806,12 @@ virtodbc__SQLTables (
 		do_views = 1;
 	      else if (!stricmp ((const char *) token_buffer, "SYSTEM TABLE"))
 		do_system = 1;
-
 	      szTypes = szEnd;
 	    }
-
 	  if (do_tables)
 	    strcat_ck (type_buffer, "GTABLE");
-
-	  if (do_views)
+	  if (do_views || (do_tables && views_as_tables))
 	    strcat_ck (type_buffer, "GVIEW");
-
 	  if (do_system)
 	    strcat_ck (type_buffer, "GSYSTEM TABLE");
 #endif
@@ -4818,8 +4815,9 @@ SQLParamData (
   dk_session_t *ses = stmt->stmt_connection->con_session;
   SDWORD last = stmt->stmt_last_asked_param;
 
-  set_error (&stmt->stmt_error, NULL, NULL, NULL);
 
+
+  set_error (&stmt->stmt_error, NULL, NULL, NULL);
   if (STS_LOCAL_DAE == stmt->stmt_status)
     {
       if (stmt->stmt_current_dae)

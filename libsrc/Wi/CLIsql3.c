@@ -156,7 +156,7 @@ typedef enum
 #ifdef _SSL
 	, oENCRYPT, oPWDCLEAR, oSERVERCERT
 #endif
-    , oFORCE_DBMS_NAME, oIsolationLevel, oNoSystemTables
+    , oFORCE_DBMS_NAME, oIsolationLevel, oNoSystemTables, oTreatViewsAsTables
   } CfgOptions;
 
 /*
@@ -187,6 +187,7 @@ static CfgRecord attrs[] = {
   ,{ _T ("FORCE_DBMS_NAME"),	_T ("ForceDBMSName"),	511,	_T ("") }
   ,{ _T ("IsolationLevel"),	_T ("IsolationLevel"),	32,	_T ("") }
   ,{ _T ("NoSystemTables"),	_T ("NoSystemTables"),	32,	_T ("") }
+  ,{ _T ("TreatViewsAsTables"),	_T ("TreatViewsAsTables"),	32,	_T ("") }
   };
 
 #ifdef UNICODE
@@ -322,8 +323,7 @@ ParseOptions (TCHAR *s, int clean_up)
       if (*cp)
 	{
 	  *cp++ = 0;
-	  if (_tcsicmp (s, attrs[oDATABASE].shortName)
-	      || _tcsicmp (cp, DEFAULT_DATABASE_PER_USER))
+	  if (_tcsicmp (s, attrs[oDATABASE].shortName) || _tcsicmp (cp, DEFAULT_DATABASE_PER_USER))
 	    for (i = 0; i < sizeof (attrs) / sizeof (attrs[0]); i++)
 	      {
 		if (attrs[i].shortName && !_tcsicmp (attrs[i].shortName, s))
@@ -1047,6 +1047,16 @@ virtodbc__SQLDriverConnect (
       free_wide_buffer (nst);
     }
 
+  if (attrs[oTreatViewsAsTables].data && _tcslen (attrs[oTreatViewsAsTables].data))
+    {
+      char *nst, nst1;
+
+      nst = virt_wide_to_ansi (attrs[oTreatViewsAsTables].data);
+      nst1 = toupper (*nst);
+      con->con_treat_views_as_tables = OPTION_TRUE (nst1) ? 1 : 0;
+      free_wide_buffer (nst);
+    }
+
 #ifdef DEBUG
   DumpOpts (connStr);
 
@@ -1158,8 +1168,8 @@ virtodbc__SQLDriverConnect (
   free_wide_buffer (CHARSET);
   free_wide_buffer (DATABASE);
 
-  ParseOptions (NULL, 1);
 
+  ParseOptions (NULL, 1);
   if (connStr)
     free (connStr);
 
