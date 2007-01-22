@@ -336,6 +336,17 @@ dk_set_get_keyword (dk_set_t set, const char *key_strg, void *dflt_val)
   return dflt_val;
 }
 
+void **
+dk_set_getptr_keyword (dk_set_t set, const char *key_strg)
+{
+  while (set)
+    {
+      if (!strcmp ((const char *) set->data, key_strg))
+	return &(set->next->data);
+      set = set->next->next;
+    }
+  return NULL;
+}
 
 void *
 dk_set_nth (dk_set_t set, int nth)

@@ -128,6 +128,8 @@ extern void dk_set_check_straight (dk_set_t set);
 extern int dk_set_position (dk_set_t set, void * elt);
 extern int dk_set_position_of_string (dk_set_t set, const char *strg);
 extern void *dk_set_get_keyword (dk_set_t set, const char *key_strg, void *dflt_val);
+extern void **dk_set_getptr_keyword (dk_set_t set, const char *key_strg);
+
 extern void *dk_set_nth (dk_set_t set, int nth);
 extern int dk_set_is_subset (dk_set_t super, dk_set_t sub);
 
