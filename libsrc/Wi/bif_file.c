@@ -2418,7 +2418,7 @@ static caddr_t
 bif_tridgell32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   unsigned char *data = (unsigned char *) bif_string_arg (qst, args, 0, "tridgell32");
-  long make_varchar = (unsigned char *) bif_string_arg (qst, args, 0, "tridgell32");
+  long make_num = ((1 < BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "tridgell32") : 0);
   size_t len = box_length (data) - 1;
   unsigned lo = 0, hi = 0, res;
   unsigned char *tail = data + len - 1;
@@ -2428,7 +2428,7 @@ bif_tridgell32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
      hi += lo;
    }
   res = (hi << 16) | lo;
-  if (make_varchar)
+  if (!make_num)
     {
       unsigned char *buf = (unsigned char *)dk_alloc_box (7, DV_STRING);
       buf[6] = '\0';
@@ -2438,7 +2438,7 @@ bif_tridgell32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       buf[2] = 64 + ((res >> 14) & 0x3F);
       buf[1] = 64 + ((res >> 20) & 0x3F);
       buf[0] = 64 + ((res >> 26) & 0x3F);
-      return buf;
+      return (void *)buf;
     }
   return box_num (res);
 }
