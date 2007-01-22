@@ -45,6 +45,9 @@ typedef struct virt_xid_t virtXID;
 
 #endif
 
+char* uuid_bin_encode (void* uuid);
+void* uuid_bin_decode (const char* uuid_str);
+
 char* xid_bin_encode (void* xid);
 void* xid_bin_decode (const char* xid_str);
 
