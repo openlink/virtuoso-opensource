@@ -24,10 +24,11 @@
 ?>
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <?vsp
-  declare have_cond, have_wa, deadl int;
+  declare have_cond, have_wa, have_doc, have_tut, deadl int;
 
   deadl := 0;
-  have_cond := 0; have_wa := 0;
+  have_cond := 0; have_wa := 0; have_doc := 0; have_tut := 0;
+  
   declare exit handler for sqlstate '40001'
   {
     rollback work;
@@ -45,6 +46,10 @@ again:
         have_cond := 1; 
   if (VAD_CHECK_VERSION ('Framework') is not null)  
     have_wa := 1;
+  if (VAD_CHECK_VERSION ('doc') is not null)
+    have_doc := 1;
+  if (VAD_CHECK_VERSION ('tutorial') is not null)
+    have_tut := 1;
 
 ?><html>
   <head>
@@ -53,32 +58,37 @@ again:
     <body id="LCB">
       <?vsp if (have_cond) { ?>
       <ul class="left_nav">
-	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/conductor/" target="_top">Conductor UI</a></li>
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/conductor/" target="_top">Conductor</a></li>
       </ul>
       <?vsp } ?>
 
       <?vsp if (have_wa) { ?>
       <ul class="left_nav">
-	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="<?V wa_link () ?>" target="_top">Data Space Applications</a></li>
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="<?V wa_link () ?>" target="_top">OpenLink Data Spaces</a></li>
       </ul>
       <?vsp } ?>
 
       <ul class="left_nav">
 	<!--li><img src="/images/tour_16.png" width="16" height="16" /><a href="http://support.openlinksw.com/support/tutorials.vsp">Take A Tour</a></li-->
-      <li><img src="/images/wnew_16.png" width="16" height="16" /><a href="/newfeatures.html" target="_top">What's New</a></li>
-      <?vsp if (VAD_CHECK_VERSION ('tutorial') is not null) { ?>
-      <li><img src="/images/opts_16.png" width="16" height="16" /><a href="/tutorial/" target="_top">Demos&nbsp;and&nbsp;Tutorials<small> (local)</small></a></li>
+      <!--li><img src="/images/wnew_16.png" width="16" height="16" /><a href="/newfeatures.html" target="_top">What's New</a></li-->
+      <?vsp if (have_doc) { ?>
+      <li><img src="/images/docs_16.png" width="16" height="16" /><a href="/doc/html/" target="_top">Documentation<small> (local)</small></a></li>
       <?vsp } else { ?>
-      <li><img src="/images/opts_16.png" width="16" height="16" /><a href="http://demo.openlinksw.com/tutorial/" target="_top">Demos&nbsp;and&nbsp;Tutorials<small> (web)</small></a></li>
+      <li><img src="/images/docs_16.png" width="16" height="16" /><a href="http://docs.openlinksw.com/virtuoso/" target="_top">Documentation<small> (web)</small></a></li>
+      <?vsp } ?>
+      <?vsp if (have_tut) { ?>
+      <li><img src="/images/tour_16.png" width="16" height="16" /><a href="/tutorial/" target="_top">Tutorials<small> (local)</small></a></li>
+      <?vsp } else { ?>
+      <li><img src="/images/tour_16.png" width="16" height="16" /><a href="http://demo.openlinksw.com/tutorial/" target="_top">Tutorials<small> (web)</small></a></li>
       <?vsp } ?>
       <!--li><img src="/images/docs_16.png" width="16" height="16" /><a href="releasenotes.html">Release Notes</a> </li-->
     <li class="xtern"></li>
   </ul>
 
   <ul class="left_nav">
-    <li class="xtern"><img src="/images/web_16.png" width="16" height="16" /><a href="http://www.openlinksw.com" target="_top">OpenLink Software Web</a>
+    <li class="xtern"><img src="/images/web_16.png" width="16" height="16" /><a href="http://virtuoso.openlinksw.com/" target="_top">Virtuoso Web Site</a>
     </li>
-    <li class="xtern"><img src="/images/web_16.png" width="16" height="16" /><a href="http://www.openlinksw.com/virtuoso" target="_top">Virtuoso Web</a>
+    <li class="xtern"><img src="/images/web_16.png" width="16" height="16" /><a href="http://www.openlinksw.com" target="_top">OpenLink Software</a>
     </li>
   </ul>
       <ul class="left_id">
