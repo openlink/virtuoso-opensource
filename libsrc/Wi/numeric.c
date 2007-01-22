@@ -249,7 +249,7 @@ _num_normalize (numeric_t num)
 	  bytes--;
 	}
       num->n_len = bytes;
-      memcpy (num->n_value, src, bytes + num->n_scale);
+      memmove (num->n_value, src, bytes + num->n_scale);
     }
 }
 
