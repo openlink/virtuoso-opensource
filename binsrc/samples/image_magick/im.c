@@ -1143,6 +1143,83 @@ bif_im_CreateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   return res;
 }
 
+caddr_t bif_im_ConvertImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  size_t length = 0;
+  caddr_t res, image_blob;
+  caddr_t blob = (caddr_t)bif_arg (qst, args, 0, "IM ConvertImageBlob");
+  long blob_size = bif_long_arg (qst, args, 1, "IM ConvertImageBlob");
+  caddr_t format = bif_string_arg (qst, args, 2, "IM ConvertImageBlob");
+  mutex_enter (im_mutex);
+  MagickWandGenesis();
+  magick_wand=NewMagickWand();
+  status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
+  if (status == MagickFalse)
+  {
+    WandExitMacro(magick_wand);
+    sqlr_new_error ("22023", "IM001", "bif_im_ConvertImageBlob cannot open file");
+  }
+  MagickResetIterator(magick_wand);
+  while (MagickNextImage(magick_wand) != MagickFalse)
+  {
+    status = MagickSetImageFormat(magick_wand,format);
+    if (status == MagickFalse)
+    {
+        WandExitMacro(magick_wand);
+        sqlr_new_error ("22023", "IM001", "bif_im_ConvertImageBlob cannot convert image");
+        return;
+    }
+  }
+  image_blob = MagickGetImagesBlob(magick_wand, &length);
+  if (length != 0)
+  {
+    res = dk_alloc_box (length, DV_BIN);
+    memcpy (res, image_blob, length);
+    MagickRelinquishMemory(image_blob);
+  }
+  else
+    res = NEW_DB_NULL;
+  magick_wand=DestroyMagickWand(magick_wand);
+  MagickWandTerminus();
+  mutex_leave (im_mutex);
+  return res;
+}
+
+
+caddr_t bif_im_ConvertImageFile (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  caddr_t new_file_name;
+  caddr_t file_name = bif_string_arg (qst, args, 0, "IM ConvertImageFile");
+  int n_args = BOX_ELEMENTS(args);
+  if (n_args > 1)
+    new_file_name = bif_string_arg (qst, args, 1, "IM ConvertImageFile");
+  else
+  {
+    sqlr_new_error ("22023", "IM001", "bif_im_ConvertImageFile cannot find the new file name");
+    return 0;
+  }
+  mutex_enter (im_mutex);
+  MagickWandGenesis();
+  magick_wand=NewMagickWand();
+  status=MagickReadImage(magick_wand, file_name);
+  if (status == MagickFalse)
+  {
+    WandExitMacro(magick_wand);
+    sqlr_new_error ("22023", "IM001", "bif_im_ConvertImageFile cannot open file");
+  }
+  if (new_file_name)
+    status=MagickWriteImages(magick_wand, new_file_name, MagickTrue);
+  if (status == MagickFalse)
+  {
+    WandExitMacro(magick_wand);
+    sqlr_new_error ("22023", "IM001", "bif_im_ConvertImageFile cannot write image into file");
+  }
+  magick_wand=DestroyMagickWand(magick_wand);
+  MagickWandTerminus();
+  mutex_leave (im_mutex);
+  return(0);
+}
+
 void im_connect (void *appdata)
 {
   im_IMVERSION = box_dv_short_string (IM_VERSION);
@@ -1150,6 +1227,7 @@ void im_connect (void *appdata)
 
   bif_define ("IM ResizeImageFile", bif_im_ResizeImageFile);
   bif_define ("IM ThumbnailImageFile", bif_im_ThumbnailImageFile);
+  bif_define ("IM ConvertImageFile", bif_im_ConvertImageFile);
   bif_define ("IM ResampleImageFile", bif_im_ResampleImageFile);
   bif_define ("IM RotateImageFile", bif_im_RotateImageFile);
   bif_define ("IM CropImageFile", bif_im_CropImageFile);
@@ -1170,6 +1248,7 @@ void im_connect (void *appdata)
   bif_define ("IM GetImageBlobHeight", bif_im_GetImageBlobHeight);
   bif_define ("IM GetImageBlobDepth", bif_im_GetImageBlobDepth);
 
+  bif_define ("IM ConvertImageBlob", bif_im_ConvertImageBlob);
   bif_define ("IM ResizeImageBlob", bif_im_ResizeImageBlob);
   bif_define ("IM ThumbnailImageBlob", bif_im_ThumbnailImageBlob);
   bif_define ("IM ResampleImageBlob", bif_im_ResampleImageBlob);
