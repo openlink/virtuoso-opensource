@@ -185,7 +185,6 @@
 	  </li>
       </ul>
       <ul class="left_nav">
-        <li>Related Content</li>
 	<li>
           <img src="images/icons/docs_16.png"
                alt="Documentation"
@@ -195,28 +194,45 @@
 	  if (vad_check_version ('doc') is not null)
 	  {
           ?>
-	  <a href="/doc/html/" target="_empty">Documentation</a>
+	  <a href="/doc/html/" target="_top">Documentation<small> (local)</small></a>
 	  <?vsp
 	  }
           else
           {
           ?>
-          <a href="http://docs.openlinksw.com/virtuoso/" target="_empty">Documentation</a>
+          <a href="http://docs.openlinksw.com/virtuoso/" target="_top">Documentation<small> (web)</small></a>
           <?vsp
 	  }
           ?>
         </li>
-        <!--<a href="/doc/docs.vsp" target="_empty">Documentation</a>-->
+        <!--<a href="/doc/docs.vsp" target="_top">Documentation</a>-->
 	<li>
           <img src="images/icons/tour_16.png"
                alt="Tutorials"
                title="Tutorials" hspace="2"/>
-	    <a href="/tutorial/index.vsp" target="_empty">Tutorials</a></li>
+	  <!--<a href="/tutorial/index.vsp" target="_top">Tutorials</a></li>-->
+          <?vsp
+	  if (vad_check_version ('tutorial') is not null)
+	  {
+          ?>
+	  <a href="/tutorial/" target="_top">Tutorials<small> (local)</small></a>
+	  <?vsp
+	  }
+          else
+          {
+          ?>
+          <a href="http://demo.openlinksw.com/tutorial/" target="_top">Tutorials<small> (web)</small></a>
+          <?vsp
+	  }
+          ?>
+	</li>
+      </ul>
+      <ul class="left_nav">
 	<li class="xtern">
           <img src="images/icons/web_16.png"
                alt="Virtuoso Web Site"
                title="Virtuoso Web Site" hspace="2"/>
-	    <a href="http://www.openlinksw.com/virtuoso">Virtuoso Web Site</a></li>
+	    <a href="http://virtuoso.openlinksw.com/">Virtuoso Web Site</a></li>
 	<li class="xtern">
           <img src="images/icons/web_16.png"
                alt="OpenLink Software"
@@ -461,7 +477,6 @@
       </v:template>
       <v:template name="vm_pagebody_no_vdb_template" type="simple" enabled="--equ(sys_stat('st_has_vdb'),0)">
         <div class="attention_box">
-          <img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Info icon" title="Info"/>
           <p>This Virtual Database feature is available only in the commercial release of Virtuoso Universal Server.   
           For more information on the commercial release of the Virtuoso Universal Server, 
           click on the following links to learn more:</p>
