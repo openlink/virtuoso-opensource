@@ -380,7 +380,7 @@ _grp := 0;
 <html>
 <head>
     <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
-    <meta name="author" content="Openlink Software">
+    <meta name="author" content="OpenLink Software">
     <meta name="description" content="WebDAV resource edit">
 <title>WebDAV Resource Edit <?=_res?></title>
 </head>
