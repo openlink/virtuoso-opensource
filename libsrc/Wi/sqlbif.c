@@ -10212,15 +10212,22 @@ caddr_t
 bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int32 old_cp_interval;
+  int must_lock = 1;
 
   c_checkpoint_interval = (int32) bif_long_arg (qst, args, 0, "checkpoint_interval");
   old_cp_interval = cfg_autocheckpoint / 60000L;
 
+  /* don't try locking the cpt mutex if current is in atomic mode */
+  if (srv_have_global_lock (THREAD_CURRENT_THREAD))
+    must_lock = 0;
+
+  if (must_lock)
   IN_CPT (((query_instance_t *) qst)->qi_trx);
   if (-1 > c_checkpoint_interval)
   c_checkpoint_interval = -1;
   cfg_autocheckpoint = 60000L * c_checkpoint_interval;
   cfg_set_checkpoint_interval (c_checkpoint_interval);
+  if (must_lock)
   LEAVE_CPT(((query_instance_t *) qst)->qi_trx);
   return box_num (old_cp_interval);
 }
