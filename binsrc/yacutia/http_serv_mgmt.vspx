@@ -300,6 +300,20 @@
 		    control.vc_data_bind(e);
 		    ]]>
 		    </v:on-post>
+		    <v:before-render><![CDATA[
+		      declare xt, lh, vh any;
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      lh := cast (xpath_eval ('@clhost',xt) as varchar);
+		      vh := cast (xpath_eval ('@chost',xt) as varchar);
+
+	              if (vh not in ('*ini*', '*sslini*'))
+		        {
+			  if (http_listen_host (lh, 2))
+			    control.ufl_value := 'Stop';
+			  else
+			    control.ufl_value := 'Start';
+			}
+ 		    ]]></v:before-render>
 		  </v:button>
 		  <v:url name="item_edit1" value="Edit" url="http_host_edit.vspx" enabled="1">
 		  </v:url>
