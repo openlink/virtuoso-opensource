@@ -1059,6 +1059,9 @@ dbe_key_free (dbe_key_t * key)
   dk_free ((caddr_t) key->key_row_var, -1);
   dk_free_box (key->key_name);
   dk_free_tree ((box_t) key->key_options);
+  key_free_trail_specs (key->key_insert_spec);
+  key_free_trail_specs (key->key_bm_ins_spec);
+  key_free_trail_specs (key->key_bm_ins_leading);
   dk_free ((caddr_t) key, sizeof (dbe_key_t));
 }
 

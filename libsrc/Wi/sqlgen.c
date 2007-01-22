@@ -1195,6 +1195,7 @@ sqlg_generate_proc_ts (sqlo_t * so, df_elt_t * dt_dfe, dk_set_t *precompute)
       ssl_with_info (so->so_sc->sc_cc, ssl);
     }
   END_DO_BOX;
+  ts->ts_proc_ha = setp.setp_ha;
   setp.setp_reserve_ha = NULL;
   setp_node_free (&setp);
 

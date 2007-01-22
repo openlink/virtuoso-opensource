@@ -203,7 +203,7 @@ create procedure XML_URI_PARSE_VIRT (in base_uri varchar, inout table_name varch
 create procedure XML_URI_GET (in base_uri varchar, in rel_uri varchar)
 {
   declare head, str, proto varchar;
-  declare inx integer;
+  declare inx, timeout integer;
   declare s_uri any;
   -- dbg_obj_princ ('XML_URI_GET (', base_uri, rel_uri, ')');
   base_uri := XML_URI_RESOLVE_LIKE_GET (base_uri, rel_uri);
@@ -235,6 +235,7 @@ try_http_get:
       -- If http client credentials are specified
       hcli_uid := connection_get ('HTTP_CLI_UID');
       hcli_pwd := connection_get ('HTTP_CLI_PWD');
+      timeout := connection_get ('HTTP_CLI_TIMEOUT');
       declare _auth_get varchar;
       if ( (hcli_pwd is null) and (hcli_uid is null) )
 	{
@@ -251,9 +252,9 @@ try_http_get:
 	  base_uri := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || subseq (base_uri, 17);
 	  goto try_all;
 	}
-      else if (proto = 'https' or (length (hcli_uid) and length (hcli_pwd)))
+      else if (proto = 'https' or (length (hcli_uid) and length (hcli_pwd)) or (timeout is not null and timeout > 0))
         {
-	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head);
+	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout);
  	}
       else
         str := http_get (base_uri, head);
@@ -4229,6 +4230,7 @@ DB.DBA.SQLX_OR_SPARQL_TEMPLATE (inout q varchar, inout params any, inout ses any
 	}
     }
   exec_close (h);
+  params := 0;
   return;
 }
 ;

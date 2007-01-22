@@ -5440,7 +5440,7 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
       else if (0 == strcmp (name, XMLSQL_NS ":sqlx") || 0 == strcmp (name, XMLSQL_NS ":sparql"))
 	{
 	  client_connection_t *cli = qi->qi_client;
-	  caddr_t params = NULL;
+	  caddr_t *params = NULL;
 	  ptrlong flag = (0 == strcmp (name, XMLSQL_NS ":sparql") ? 1 : 0);
 	  caddr_t q_type = box_num (flag);
 
@@ -5470,7 +5470,7 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 		    snprintf (sqlx_query, q_len, "SPARQL %s", _text);
 		}
 
-	      params = (caddr_t) xml_template_get_sqlx_parms (cli, sqlx_query, pars, &err);
+	      params = xml_template_get_sqlx_parms (cli, sqlx_query, pars, &err);
 
 	      if (!err)
 		{

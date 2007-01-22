@@ -471,6 +471,7 @@ typedef struct table_source_s
     code_vec_t		ts_after_join_test;
     struct inx_op_s *	ts_inx_op;
     inx_locality_t	ts_il;
+    hash_area_t *	ts_proc_ha; /* ha for temp of prov view res.  Keep here to free later */
   } table_source_t;
 
 

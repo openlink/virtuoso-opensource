@@ -2363,6 +2363,7 @@ it_hi_set_page_lock (query_instance_t * qi, it_cursor_t *itc, dp_addr_t dp)
       itc_make_pl (itc, buf);
       PL_SET_FLAG (itc->itc_pl, PL_PAGE_LOCK);
       itc->itc_pl->pl_owner = qi->qi_trx;
+      ITC_IN_MAP (itc);
       page_leave_inner (buf);
     }
   else if (pl)

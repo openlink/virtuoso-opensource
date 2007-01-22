@@ -1238,6 +1238,8 @@ ts_free (table_source_t * ts)
       ks_free (ts->ts_main_ks);
       ts->ts_main_ks = NULL;
     }
+  if (ts->ts_proc_ha)
+    ha_free (ts->ts_proc_ha);
 }
 
 

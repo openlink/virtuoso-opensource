@@ -1430,7 +1430,7 @@ ST *sqlp_make_user_aggregate_fun_ref (caddr_t function_name, ST **arglist, int a
   memset (acc, 0, sizeof (ST));
   acc->type = FUN_REF;
   acc->_.fn_ref.fn_code = AMMSC_USER;
-  acc->_.fn_ref.user_aggr_addr = box_num ((ptrlong)(aggr->qr_aggregate));
+  acc->_.fn_ref.user_aggr_addr = t_box_num ((ptrlong)(aggr->qr_aggregate));
   acc->_.fn_ref.all_distinct = 0;
   acc->_.fn_ref.fn_arglist = arglist;
   return t_listst (3, CALL_STMT, t_sym_string (aggr->qr_aggregate->ua_final.uaf_name), t_list (1, acc));
@@ -1901,13 +1901,13 @@ sqlp_sqlxml (ST * tree)
 	  if (ST_P (arg, BOP_AS))
 	    {
 	      new_params[inx*2] = (ST *) t_box_string ((caddr_t) arg->_.as_exp.name);
-	      new_params[inx*2+1] = (ST *) box_copy_tree ((caddr_t)arg->_.as_exp.left);
+	      new_params[inx*2+1] = (ST *) t_box_copy_tree ((caddr_t)arg->_.as_exp.left);
 	      continue;
 	    }
 	  if (ST_P (arg, COL_DOTTED))
 	    {
 	      new_params[inx*2] = (ST *) t_box_string((caddr_t) arg->_.col_ref.name);
-	      new_params[inx*2+1] = (ST *) box_copy_tree((box_t) arg);
+	      new_params[inx*2+1] = (ST *) t_box_copy_tree((box_t) arg);
 	      continue;
 	    }
 	  yyerror ("Named argument expected (i.e. variable name or column name or an 'expression AS name' alias");
