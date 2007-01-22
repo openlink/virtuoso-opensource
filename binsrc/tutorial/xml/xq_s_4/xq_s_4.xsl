@@ -23,7 +23,8 @@
  -  
  -  
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
+    xmlns:demo="http://www.openlinksw.com/demo/">
     <xsl:output method="xhtml"  indent="yes" encoding="utf-8" omit-xml-declaration="yes" media-type="text/html" />
 
     <xsl:param name="ord" />
@@ -85,9 +86,21 @@
 
     <xsl:template name="row">
 	<tr>
-	    <td><xsl:value-of select="@text"/></td>
+	    <td>
+		<xsl:variable name="ip" select="demo:getIP (@htmlUrl, @xmlUrl)"/>
+		<xsl:if test="$ip != ''">
+		    <xsl:variable name="alt" select="demo:getCountry (@htmlUrl, @xmlUrl)"/>
+		    <img src="http://api.hostip.info/flag.php?ip={$ip}" alt="{$alt}" title="{$alt}" height="12" hspace="3"/>
+  	        </xsl:if>
+		<xsl:value-of select="@text"/>
+	    </td>
 	    <td><a href="{@htmlUrl}"><xsl:value-of select="@title"/></a></td>
-	    <td nowrap="1"><xsl:if test="string (@xmlUrl) != ''"><a href="atom.vsp?URL={urlify (@xmlUrl)}"><img src="atom.gif" border="0" hspace="3" />Atom</a></xsl:if>&#160;
+	    <td nowrap="1">
+		<xsl:if test="string (@xmlUrl) != ''">
+		  <a href="atom.vsp?URL={urlify (@xmlUrl)}"><img src="atom.gif" border="0" hspace="3" />Atom</a>&#160;
+		  <a href="sioc.vsp?URL={urlify (@xmlUrl)}"><img src="rdf.gif" alt="SIOC" border="0" hspace="3" />SIOC (RDF/XML)</a>&#160;
+		  <a href="sioc.vsp?URL={urlify (@xmlUrl)}&amp;fmt=ttl"><img src="rdf.gif" alt="SIOC" border="0" hspace="3" />SIOC (N3/Turtle)</a>&#160;
+	        </xsl:if>
 		<a href="{@xmlUrl}"><xsl:if test="string (@xmlUrl) != ''"><img src="mxml.gif" border="0" hspace="3"/></xsl:if><xsl:value-of select="@xmlUrl"/></a></td>
 	</tr>
     </xsl:template>

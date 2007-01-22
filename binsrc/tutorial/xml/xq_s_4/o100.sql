@@ -33,6 +33,21 @@ create procedure init_xq_s_4 ()
   exec ('alter table O100_CACHED_PAGES add O_HOME varchar', stat, msg);
   if (stat <> '00000')
     rollback work;
+  exec ('alter table O100_CACHED_PAGES add O_IP varchar', stat, msg);
+  if (stat <> '00000')
+    rollback work;
+  exec ('alter table O100_CACHED_PAGES add O_COUNTRY varchar', stat, msg);
+  if (stat <> '00000')
+    rollback work;
+  exec ('alter table O100_CACHED_PAGES add O_CITY varchar', stat, msg);
+  if (stat <> '00000')
+    rollback work;
+  exec ('alter table O100_CACHED_PAGES add O_LAT float', stat, msg);
+  if (stat <> '00000')
+    rollback work;
+  exec ('alter table O100_CACHED_PAGES add O_LNG float', stat, msg);
+  if (stat <> '00000')
+    rollback work;
   exec ('create table attendees_sources (name varchar primary key, title varchar, query long varchar)', stat, msg);
   DAV_COL_CREATE_INT ('/DAV/home/tutorial_demo/feeds/', '110100100R', 'tutorial_demo', 'administrators', null, null, 0, 0, 0, null, null);
   DAV_COL_CREATE_INT ('/DAV/home/tutorial_demo/feeds/opml/', '110100100R', 'tutorial_demo', 'administrators', null, null, 0, 0, 0, null, null);
@@ -210,16 +225,94 @@ create procedure getExpandedUrl (in base varchar, in url varchar)
   return WS.WS.EXPAND_URL (base, url);
 };
 
+create procedure xq_s_4_get_country (in url varchar, in url2 varchar)
+{
+  return coalesce (
+      (select O_COUNTRY from O100_CACHED_PAGES where O_URL = url),
+      (select O_COUNTRY from O100_CACHED_PAGES where O_URL = url2),
+      NULL);
+};
+
+create procedure xq_s_4_get_city (in url varchar, in url2 varchar)
+{
+  return coalesce (
+      (select O_CITY from O100_CACHED_PAGES where O_URL = url),
+      (select O_CITY from O100_CACHED_PAGES where O_URL = url2),
+      NULL);
+};
+
+create procedure xq_s_4_get_ip (in url varchar, in url2 varchar)
+{
+  return coalesce (
+      (select O_IP from O100_CACHED_PAGES where O_URL = url),
+      (select O_IP from O100_CACHED_PAGES where O_URL = url2),
+      NULL);
+};
+
+create procedure xq_s_4_get_lat (in url varchar, in url2 varchar)
+{
+  declare ret any;
+  ret := (select O_LAT from O100_CACHED_PAGES where O_URL = url);
+  if (ret is null)
+    ret := (select O_LAT from O100_CACHED_PAGES where O_URL = url2);
+  if (ret is not null)
+    ret := sprintf ('%.06f', ret);
+  return ret;
+};
+
+create procedure xq_s_4_get_lng (in url varchar, in url2 varchar)
+{
+  declare ret any;
+  ret := (select O_LNG from O100_CACHED_PAGES where O_URL = url);
+  if (ret is null)
+    ret := (select O_LNG from O100_CACHED_PAGES where O_URL = url2);
+  if (ret is not null)
+    ret := sprintf ('%.06f', ret);
+  return ret;
+};
+
+create procedure xq_s_4_get_blog (in url varchar, in cache int)
+{
+  declare qry, stat, msg, dta, mdta any;
+  dbg_obj_print (url);
+  qry := sprintf ('sparql
+  	define get:soft "soft" define input:default-graph-uri "%s"
+  	prefix foaf: <http://xmlns.com/foaf/0.1/>
+  	prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?blog WHERE { ?p rdf:type foaf:Person ; foaf:weblog ?blog }
+	limit 1', url);
+  stat := '00000';
+  exec (qry, stat, msg, vector (), 0, mdta, dta);
+  if (stat = '00000' and isarray (dta) and length (dta))
+    {
+      declare blog any;
+      blog := dta[0][0];
+      return getFeed (blog, cache);
+    }
+  return '';
+};
 
 grant execute on DB.DBA.getExpandedUrl to public;
 grant execute on DB.DBA.getFeed to public;
 grant execute on DB.DBA.getTitle to public;
 grant execute on DB.DBA.getHome to public;
+grant execute on DB.DBA.xq_s_4_get_country to public;
+grant execute on DB.DBA.xq_s_4_get_city to public;
+grant execute on DB.DBA.xq_s_4_get_ip to public;
+grant execute on DB.DBA.xq_s_4_get_lat to public;
+grant execute on DB.DBA.xq_s_4_get_lng to public;
+grant execute on DB.DBA.xq_s_4_get_blog to public;
 
-xpf_extension ('http://www.openlinksw.com/demo/:getFeed', 'DB.DBA.getFeed', 0);
-xpf_extension ('http://www.openlinksw.com/demo/:getTitle', 'DB.DBA.getTitle', 0);
-xpf_extension ('http://www.openlinksw.com/demo/:getHome', 'DB.DBA.getHome', 0);
-xpf_extension ('http://www.openlinksw.com/demo/:getExpandedUrl', 'DB.DBA.getExpandedUrl', 0);
+xpf_extension ('http://www.openlinksw.com/demo/:getFeed', 'DB.DBA.getFeed');
+xpf_extension ('http://www.openlinksw.com/demo/:getTitle', 'DB.DBA.getTitle');
+xpf_extension ('http://www.openlinksw.com/demo/:getHome', 'DB.DBA.getHome');
+xpf_extension ('http://www.openlinksw.com/demo/:getExpandedUrl', 'DB.DBA.getExpandedUrl');
+xpf_extension ('http://www.openlinksw.com/demo/:getBlog', 'DB.DBA.xq_s_4_get_blog');
+
+xpf_extension ('http://www.openlinksw.com/demo/:getCountry', 'DB.DBA.xq_s_4_get_country');
+xpf_extension ('http://www.openlinksw.com/demo/:getCity', 'DB.DBA.xq_s_4_get_city');
+xpf_extension ('http://www.openlinksw.com/demo/:getIP', 'DB.DBA.xq_s_4_get_ip');
+xpf_extension ('http://www.openlinksw.com/demo/:getLat', 'DB.DBA.xq_s_4_get_lat');
+xpf_extension ('http://www.openlinksw.com/demo/:getLng', 'DB.DBA.xq_s_4_get_lng');
 
 
 create procedure GET_OPML_RES (in id any)
@@ -402,6 +495,123 @@ declare namespace n0="http://www.w3.org/1999/xhtml";
 }
 </body></opml>');
 
+insert replacing attendees_sources values
+(
+  'sem_blogs', 'Semantic Weblogs',
+'declare namespace n0="http://www.w3.org/1999/xhtml";
+ declare namespace ns="http://www.openlinksw.com/demo/";
+<opml version="1.1"><head><title>Semantic Weblogs</title></head><body>{
+  for $nod in document("http://journal.dajobe.org/journal/2003/07/semblogs/", "", 2)//n0:ul[1]/n0:li
+  let $nfo := $nod/n0:a[1]/@title
+  let $html := $nod/n0:a[1]/@href
+  let $rss := $nod/n0:a[2]/@href
+
+  return <outline title="{string($nfo)}" htmlUrl="{string($html)}"
+  xmlUrl="{ns:getFeed ($rss, <CACHE>)}" text="{string ($nfo)}"/>
+}</body></opml>');
+
+
+insert replacing attendees_sources values
+(
+  'mapufacture', 'Mapufacture',
+'declare namespace ns="http://www.openlinksw.com/demo/";
+declare namespace n0="http://www.w3.org/1999/xhtml";
+<opml version="1.1"><head><title>Semantic Weblogs</title></head><body>{
+  for $nod in document("http://mapufacture.com/georss/feed/list", "", 2)//n0:ul[1]/n0:li[n0:span[@class="FeedTitle"]]
+  let $nfo := $nod/n0:span[@class="FeedTitle"]/n0:a
+  let $html := $nod/n0:span[@class="FeedTitle"]/n0:a/@href
+  let $rss := $nod/n0:span[@class="FeedUrl"]
+
+  return <outline title="{string($nfo)}" htmlUrl="{string($html)}"
+  xmlUrl="{ns:getFeed (string($rss), <CACHE>)}" text="{string ($nfo)}"/>
+}</body></opml>');
+
+
+insert replacing attendees_sources values
+(
+'foafmap', 'foafmap.net',
+'declare namespace ns="http://www.openlinksw.com/demo/";
+declare namespace rss="http://purl.org/rss/1.0/";
+declare namespace rdfs="http://www.w3.org/2000/01/rdf-schema#";
+declare namespace rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+<opml version="1.1"><head><title>foafmap.net</title></head><body>{
+  for $nod in document("http://foafmap.net/rss.php", "", 0)//rss:item
+  let $nfo := $nod/rss:title
+  let $html := $nod/rss:link
+  let $foaf := $nod/rdfs:seeAlso/@rdf:resource
+
+  return <outline title="{string($nfo)}" htmlUrl="{string($html)}"
+    xmlUrl="{ns:getBlog(string($foaf), <CACHE>)}" text="{string ($nfo)}"/>
+}</body></opml>');
+
+insert replacing attendees_sources values
+(
+'technologyvoices', 'Meet The Bloggers',
+'declare namespace ns="http://www.openlinksw.com/demo/";
+declare namespace rss="http://purl.org/rss/1.0/";
+declare namespace rdfs="http://www.w3.org/2000/01/rdf-schema#";
+declare namespace rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+declare namespace x="http://www.w3.org/1999/xhtml";
+<opml version="1.1"><head><title>Meet The Bloggers</title></head><body>{
+  for $nod in document("http://www.technologyvoices.com/bloggers", "", 2)//x:div[@id = "newblogs"]/x:div[@class="picture"]
+  let $nfo := $nod/following-sibling::x:dl/x:dd[1]
+  let $html := $nod/x:a/@href
+
+
+  return <outline title="{string($nfo)}" htmlUrl="http://www.technologyvoices.com/{string($html)}"
+  xmlUrl="" text="{string ($nfo)}"/>
+}</body></opml>');
+
+
+
+insert replacing attendees_sources values
+(
+'technorati_pop', 'Technorati, Most popular',
+'declare namespace ns="http://www.openlinksw.com/demo/";
+declare namespace rss="http://purl.org/rss/1.0/";
+declare namespace rdfs="http://www.w3.org/2000/01/rdf-schema#";
+declare namespace rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+declare namespace x="http://www.w3.org/1999/xhtml";
+<opml version="1.1"><head><title></title></head><body>{
+  for $nod in document("http://www.technorati.com/pop/blogs/", "", 2)//x:ol[@class="whatsup latest"]/x:li
+  let $nfo := $nod//x:h3
+  let $html := $nod//x:a[@class = "url"]/@href
+  return <outline title="{string($nfo)}" htmlUrl="{string($html)}"
+  xmlUrl="{ns:getFeed ($html, <CACHE>)}" text="{string ($nfo)}"/>
+}</body></opml>');
+
+insert replacing attendees_sources values
+(
+'technorati_fav', 'Technorati, Most Favorited',
+'declare namespace ns="http://www.openlinksw.com/demo/";
+declare namespace rss="http://purl.org/rss/1.0/";
+declare namespace rdfs="http://www.w3.org/2000/01/rdf-schema#";
+declare namespace rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+declare namespace x="http://www.w3.org/1999/xhtml";
+<opml version="1.1"><head><title></title></head><body>{
+  for $nod in document("http://www.technorati.com/pop/blogs/?faves=1", "", 2)//x:ol[@class="whatsup latest"]/x:li
+  let $nfo := $nod//x:h3
+  let $html := $nod//x:a[@class = "url"]/@href
+  return <outline title="{string($nfo)}" htmlUrl="{string($html)}"
+  xmlUrl="{ns:getFeed ($html, <CACHE>)}" text="{string ($nfo)}"/>
+}</body></opml>');
+
+insert replacing attendees_sources values
+(
+'planetrdf', 'Planet RDF',
+'declare namespace ns="http://www.openlinksw.com/demo/";
+declare namespace rss="http://purl.org/rss/1.0/";
+declare namespace rdfs="http://www.w3.org/2000/01/rdf-schema#";
+declare namespace rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+declare namespace x="http://www.w3.org/1999/xhtml";
+<opml version="1.1"><head><title>Planet RDF</title></head><body>{
+  for $nod in document("http://planetrdf.com/", "", 2)//x:h2[. = "Bloggers"]/following-sibling::x:ul/x:li
+  let $nfo := $nod/x:a[1]
+  let $html := $nod/x:a[1]/@href
+  let $rss := $nod/x:a[2]/@href
+  return <outline title="{string($nfo)}" htmlUrl="{string($html)}"
+  xmlUrl="{ns:getFeed ($rss, <CACHE>)}" text="{string ($nfo)}"/>
+}</body></opml>');
 
 create procedure gen_opml (in attendee_list varchar, in cache int := 1)
 {
@@ -433,6 +643,47 @@ create procedure gen_opml (in attendee_list varchar, in cache int := 1)
   STORE_OPML_RES (attendee_list, serialize_to_UTF8_xml (xp));
 
   return (xp);
+};
+
+create procedure xq_s_4_get_location (in url varchar)
+{
+  declare ret, ip, cnt, hf any;
+
+  hf := WS.WS.PARSE_URI (url);
+  ip := tcpip_gethostbyname (hf[1]);
+  cnt := http_get ('http://api.hostip.info/get_html.php?ip='||ip||'&position=true');
+  ret := sprintf_inverse (cnt, 'Country:%s\nCity:%s\nLatitude:%s\nLongitude:%s', 0);
+  return vector_concat (vector (ip), ret);
+};
+
+create trigger O100_CACHED_PAGES_I after insert on O100_CACHED_PAGES referencing new as N
+{
+  declare info any;
+  declare lat, lng any;
+
+  declare exit handler for sqlstate '*'
+    {
+      return;
+    };
+
+ info := xq_s_4_get_location (N.O_URL);
+
+ lat := trim(info[3]);
+ lng := trim(info[4]);
+
+ if (length (lat))
+   lat := atof (lat);
+ else
+   lat := null;
+
+ if (length (lng))
+   lng := atof (lng);
+ else
+   lng := null;
+
+ update O100_CACHED_PAGES set O_IP = info[0], O_COUNTRY = trim(info[1]), O_CITY = trim (info[2]), O_LAT = lat, O_LNG = lng
+     where O_URL = N.O_URL;
+
 };
 
 create procedure gen_foaf (in cache int := 1)
@@ -485,6 +736,12 @@ create procedure gen_foaf_one (in which varchar, in cache int := 1)
   declare src any;
   declare xt, xp, res any;
 
+  declare exit handler for sqlstate '*'
+    {
+      rollback work;
+      return xtree_doc ('<rdf:RDF rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>');
+    };
+
   if (cache)
     {
       res := GET_FOAF_RES (which||'_foaf');
@@ -498,6 +755,8 @@ create procedure gen_foaf_one (in which varchar, in cache int := 1)
       	      declare namespace rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#";
       	      declare namespace rdfs="http://www.w3.org/2000/01/rdf-schema#";
       	      declare namespace foaf="http://xmlns.com/foaf/0.1/";
+	      declare namespace geo="http://www.w3.org/2003/01/geo/wgs84_pos#";
+	      declare namespace vcard="http://www.w3.org/2001/vcard-rdf/3.0#";
       	      <rdf:RDF>{
                for $doc in document ("http://local.virt/DAV/home/tutorial_demo/feeds/opml/%s.opml")//opml
 	       return
@@ -511,6 +770,13 @@ create procedure gen_foaf_one (in which varchar, in cache int := 1)
 		        <foaf:name>{ normalize-space($att) }</foaf:name>
 			<foaf:homepage rdf:resource="{$url}"/>
 			<rdfs:seeAlso rdf:resource="{$nod/@xmlUrl}"/>
+			<foaf:based_near>
+			  <geo:Point geo:lat="{ns:getLat($url, $nod/@xmlUrl)}" geo:long="{ns:getLng($url, $nod/@xmlUrl)}" />
+			</foaf:based_near>
+			<vcard:ADR rdf:parseType="Resource">
+			  <vcard:Country>{ns:getCountry($url, $nod/@xmlUrl)}</vcard:Country>
+			  <vcard:Locality>{ns:getCity($url, $nod/@xmlUrl)}</vcard:Locality>
+			</vcard:ADR>
   		     </foaf:Person>
 	           </foaf:member>
 
@@ -659,6 +925,7 @@ grant execute on "GetAttendees" to "xq_s_4";
 
 create procedure init_xq_s_4_feeds ()
 {
+  connection_set ('HTTP_CLI_TIMEOUT', 5);
   commit work;
   dbg_obj_print ('init_feeds', is_http_ctx ());
   if (is_http_ctx ())
@@ -687,7 +954,9 @@ create procedure init_xq_s_4_feeds ()
   declare ex, src any;
   declare i, l, dedl int;
 
-  ex := vector ('o100', 'vloggercon', 'gnomedexers', 'web2005', 'ceo', 'nigerian_bloggers', 'african_blogs', 'blogafrica', 'techcrunch', 'blog100', 'osc2003', 'osc2005');
+  ex := vector ('o100', 'vloggercon', 'gnomedexers', 'web2005', 'ceo', 'nigerian_bloggers', 'african_blogs', 'blogafrica', 'techcrunch', 'blog100', 'osc2003', 'osc2005', 'sem_blogs', 'mapufacture', 'foafmap', 'technologyvoices', 'technorati_pop', 'technorati_fav', 'planetrdf');
+
+  --ex := vector ('planetrdf');
 
   commit work;
   dedl := 5;
@@ -712,6 +981,7 @@ create procedure init_xq_s_4_feeds ()
       commit work;
       i := i + 1;
     }
+  if (l > 0)
   gen_foaf (0);
   registry_set ('xq_s_4_stat', 'done');
 };
