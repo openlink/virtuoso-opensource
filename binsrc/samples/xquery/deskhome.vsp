@@ -36,7 +36,7 @@ use cases are on the left.</P>
 
 <P>The standard is still in development, but the basic functionality
 is documented, so we have added a first version of XQuery support into
-our Openlink Virtuoso Server.  This demo is powered by a Virtuoso
+our OpenLink Virtuoso Server.  This demo is powered by a Virtuoso
 installation and allows you to enter XQuery expressions and view the
 results.  Information about OpenLink and the Virtuoso server are also
 available from the links on the left.</P>
