@@ -196,9 +196,9 @@ sticker_init() {
   do
      if echo "$file" | grep -v ".vspx" >/dev/null  
      then
-	perms="110100100N"	 
+	perms="110100100NN"	 
      else
-	perms="111101101N"	 
+	perms="111101101NN"	 
      fi
      name=`echo "$file" | cut -b10-`
      echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER

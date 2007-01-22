@@ -5481,7 +5481,7 @@ create procedure vspx_src_store (in resource_name varchar, inout ses any)
   else
     {
       declare rc int;
-      rc := DAV_RES_UPLOAD_STRSES_INT (resource_name, ses, '', '110100000N',
+      rc := DAV_RES_UPLOAD_STRSES_INT (resource_name, ses, '', '110100000NN',
         coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = connection_get ('DAVUserID'))),
         coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = connection_get ('DAVGroupID'))),
 	null, null, 0);

@@ -438,7 +438,7 @@ sticker_init() {
   for file in `find vad_files -type f -print | LC_ALL=C sort`
   do
      name=`echo "$file" | cut -b15-`
-     echo "  <file overwrite=\"yes\" type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101N\" makepath=\"yes\"/>" >> $STICKER
+     echo "  <file overwrite=\"yes\" type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
 
   echo "</resources>" >> $STICKER
