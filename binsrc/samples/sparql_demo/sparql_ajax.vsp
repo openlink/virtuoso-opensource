@@ -42,7 +42,7 @@
     <script type="text/javascript" src="syntax/shBrushXml.js"></script>  
     <script type="text/javascript" src="syntax/shBrushJScript.js"></script>  
   </head>
-  <body onload="init()">
+  <body>
     <div id="page">
       <div id="head"><img src="images/sparqlheader1.gif" alt="Virtuoso SPARQL Query Demo"/></div>
     <div id="file_window_content"></div>
@@ -53,9 +53,26 @@
           <li id="tab_query">Query Processor</li>
         </ul>
         <ul class="test_cases_list">
-          <li id="tab_dawg"><a href="#" id="tab_dawg_toggle">DAWG Test Cases</a>
-            <div id="dawg_tree_container" style="display: none">
-              <ul class="tree" id="dawg_tree">
+<?vsp
+foreach (varchar grp in vector ('dawg', 'virt_ext')) do
+  {
+    declare dirmasks any;
+    declare top_title varchar;
+    if (grp = 'dawg')
+      {
+        dirmasks := vector ('%data-xml%', '%patched%');
+        top_title := 'DAWG Test Cases';
+      }
+    else if (grp = 'virt_ext')
+      {
+        dirmasks := vector ('%extensions%');
+        top_title := 'Language Extensions';
+      }
+    else signal ('SDEMO', 'Internal error in demo application: unknown value of grp');
+?>
+          <li id="tab_<?= grp ?>"><a href="#" id="tab_<?= grp ?>_toggle"><?= top_title ?></a>
+            <div id="<?= grp ?>_tree_container" style="display: none">
+              <ul class="tree" id="<?= grp ?>_tree">
 <?vsp
           declare manifests any;
           declare ctr integer;
@@ -63,8 +80,15 @@
           manifests := "DB"."DBA".SPARQL_DAWG_MANIFEST_RDF_LIST();
           manifests := subseq (manifests, 0, length (manifests) - 1);
 
-          for (ctr := 0; ctr <= length (manifests) - (1+6); ctr := ctr + 1)
+    for (ctr := 0; ctr < length (manifests) /* - 6 */; ctr := ctr + 1)
           {
+        foreach (varchar dirmask in dirmasks) do
+          {
+            if (manifests[ctr] like dirmask)
+              goto check_status;
+          }
+        goto skip_failed_group;
+check_status:
             declare m any;
             m := "DB"."DBA".SPARQL_DAV_DATA_URI() || manifests[ctr];
             m := subseq (m, 0, strrchr (m, '/'));
@@ -83,18 +107,16 @@ WHERE {
     ?bn tm:result ?etalonuri 
     }
   }', DB.DBA.SPARQL_DAV_DATA_URI () || manifests[ctr], 10000); -- SPARQL_EVAL_TO_ARRAY
-
-      foreach (any __itm in _tcases) do
               foreach (any _tcase in _tcases) do
               {
             if (exists (select top 1 1 
                           from DB.DBA.SPARQL_DAWG_STATUS 
                           where TEST_URI = _tcase[1] and 
-                                TEST_STATUS = 'PASSED'))
+                                TEST_STATUS = 'PASSED' or TEST_STATUS = 'PASSED/may-vary'))
                   goto there_is_passed_test;
               }
             goto skip_failed_group;
-            there_is_passed_test:
+there_is_passed_test:
         http(sprintf('\n                <li class="lvl1"><a href="#">%s</a>',m));
 ?>
 	            <ul class="lvl2">
@@ -106,7 +128,7 @@ WHERE {
             if (not exists (select top 1 1 
                               from DB.DBA.SPARQL_DAWG_STATUS 
                               where TEST_URI = _rquri and 
-                                    TEST_STATUS = 'PASSED'))
+                                    TEST_STATUS = 'PASSED' or TEST_STATUS = 'PASSED/may-vary'))
                 goto skip_failed_test;
               _origin := 'W3C DAWG';
 		          _descr := cast (_descr as varchar);
@@ -117,26 +139,29 @@ WHERE {
 ?>
                       <li class="lvl2">
                         <div style="padding-left:34px;">
-                          <a href="#" onclick="load_dawg('<?V manifests[ctr] ?>','<?vsp http_url(_name); ?>')">
+                          <a href="#" onclick="load_dawg('<?V manifests[ctr] ?>','<?vsp http_url(_name); ?>','<?V grp ?>')">
 <?vsp 
-  http(replace (_descr,'-','-<wbr/>')); 
+  http(replace (_descr,'-','-<wbr></wbr>')); 
 ?>    
                           </a>
                         </div>
                       </li> <!-- lvl2 -->
 <?vsp
-              skip_failed_test: ;
+skip_failed_test: ;
 		        }
 ?>
                     </ul> <!-- lvl2 -->
 <?vsp
             http('</li> <!-- lvl1 -->');
-            skip_failed_group: ;
+skip_failed_group: ;
           }
 ?>
               </ul> <!-- dawg_tree -->
             </div> <!-- dawg_tree_container -->
           </li> <!-- dawq_sq -->
+<?vsp
+  }
+?>
           <li id="tab_sq"><a href="#" id="tab_sq_toggle">Other Sample Queries</a>
             <div id="samples_tree_container" style="display: none">
               <ul class="tree" id="samples_tree">
@@ -154,7 +179,7 @@ WHERE {
                         <div style="padding-left:34px;">
                           <a href="#" onclick="load_sq('<?V _SQ_GROUP ?>','<?vsp http_url(_SQ_NAME); ?>')">
 <?vsp 
-      http(replace(_SQ_NAME,'-','-<wbr/>')); 
+      http(replace(_SQ_NAME,'-','-<wbr></wbr>')); 
 ?>
                           </a>
                         </div>
@@ -233,7 +258,7 @@ WHERE {
       </div><!-- page_home -->
           <div class="main_col_page" id="page_dawg" style="display:none;">
             <a target="_blank" href="http://www.w3.org/2001/sw/DataAccess/tests/" class="w3cdawglink">W3C DAWG Testcases site</a>
-        <h2>Dawg Use Case</h2>
+            <h2>W3C DAWG Test Cases</h2>
         <div id="dawg_content">
               <p>The folder tree on the side bar contains 
               <a href="http://www.w3.org/2001/sw/DataAccess/tests/">DAWG test cases</a> 
@@ -242,6 +267,17 @@ WHERE {
              load it in the query processor interface for editing and execution.</p>
         </div><!-- dawg_content -->
       </div><!-- page_dawg -->
+          <div class="main_col_page" id="page_virt_ext" style="display:none;">
+            <!--<a target="_blank" href="http://www.w3.org/2001/sw/DataAccess/tests/" class="w3cdawglink">W3C DAWG Testcases site</a> -->
+            <h2>Virtuoso-Specific SPARQL Language Extensions</h2>
+            <div id="virt_ext_content">
+              <p>The folder tree on the side bar contains sample queries that
+                demonstrate non-standard features of the
+                <a target="_blank" href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">SPARQL compiler of OpenLink Virtuoso</a>.
+                Selecting an individual test in the tree lets you view its query text and associated data and
+                load it in the query processor interface for editing and execution.</p>
+            </div><!-- virt_ext_content -->
+          </div><!-- page_virt_ext -->
       <div id="page_sq" style="display:none;">
         <h2>Other Sample Queries</h2>
         <div id="sq_content">
@@ -309,16 +345,6 @@ WHERE {
 <?vsp
               }
 ?>
-<!--<?vsp
-              if (gt (sys_stat ('st_dbms_ver'), '04.50.2915')) 
-              {
-?>
-                <input type="checkbox" value="yes" name="usesoap" id="usesoap" onchange="usesoap_change(this)" onclick="usesoap_change(this)"/>
-                <label for="usesoap">Send SOAP Request</label>
-                <br/>
-<?vsp
-              }
-?>-->
                 <br/>
           </div>
           <div id="remote_panel">
@@ -330,18 +356,49 @@ WHERE {
               <div id="view_data_file" style="display:none;">
             <a href="#" onclick="view_file()">view data file</a>
           </div>
+              <ul id="tabgrph">
+                <li id="tabgrph_default" class="tab tab_selected">
           <label for="default-graph-uri">Graph</label>
-          <br/>
+                </li>
+                <li id="tabgrph_named" class="tab">
+                  <label for="named-graphs">Named Graphs (<span id="named_graphs_cnt">0</span>)</label>
+                </li>
+              </ul>
 <?vsp
 
             declare default_dgu varchar;
             default_dgu := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
             if (default_dgu is not null)
-              default_dgu := 'http://' || default_dgu || '/dataspace';
+              default_dgu := 'http://' || default_dgu || '/sys';
 ?>
+              <div id="tabgrph_content"></div>
+              <div id="tabgrph_default_content">
           <input id="default-graph-uri" name="default-graph-uri" value="<?V default_dgu ?>" onchange="OAT.Dom.hide($('view_data_file'));"/>
-
-          <br/>
+              </div>
+              <div id="tabgrph_named_content">
+                <div id="graphs_grid_div">
+                  <table class="grid" id="named_graph_list">
+                    <thead>
+                      <tr>
+                        <td><div style="width: 20px;" class="header_value"/></td>
+                        <td style="text-align: center;">
+                           <div style="overflow: hidden; width: 440px;" class="header_value">Named Graph</div>
+                        </td>
+                        <td><div style="overflow: hidden; width: 100px;" class="header_value"/></td>
+                      </tr>
+                    </thead>
+                    <tfoot>
+                      <tr class="even">
+                        <td></td>
+                        <td><input style="width: 440px;" type="input" id="named_graph_add" name="named_graph_add"/></td>
+                        <td style="text-align: center;">
+                          <button onclick="add_named_graph();return false;"><img alt="add" title="add" src="images/edit_add.png"/> add</button>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
               <br/>
               <div id="topbox_ctl" class="ctl_right">
                 <select name="prefix" id="prefix" onchange="prefix_insert()">
@@ -349,7 +406,7 @@ WHERE {
     			        <option value="PREFIX cc: &lt;http://web.resource.org/cc/&gt;">CC</option>
     			        <option value="PREFIX dataview: &lt;http://www.w3.org/2003/g/data-view#&gt;">DATAVIEW</option>
     			        <option value="PREFIX dc: &lt;http://purl.org/dc/elements/1.1/&gt;">DC</option>
-    			        <option value="PREFIX dcterms: &lt;http://purl.org/dc/elements/1.1/&gt;">DCTERMS</option>
+    			        <option value="PREFIX dcterms: &lt;http://purl.org/dc/terms/&gt;">DCTERMS</option>
     			        <option value="PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;">FOAF</option>
     			        <option value="PREFIX owl: &lt;http://www.w3.org/2002/07/owl#&gt;">OWL</option>
     			        <option value="PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;">RDF</option>
@@ -412,22 +469,21 @@ WHERE
           <label for="query">SPARQL Query</label><br/>
               <textarea id="query" name="query" onchange="format_select(this)" onkeyup="format_select(this)" wrap="off">SELECT * WHERE {?s ?p ?o}</textarea>
           <br/>
-          <input type="button" id="explain" name="explain" value="Execution plan" onclick="rq_query('c')">
+              <input type="button" id="explain" name="explain" value="Execution plan" onclick="QueryExec('c')">
           <label for="format">Output format</label>
           <select id="format" onchange="format_change()">
                 <option value="auto">Auto</option>
-                <option value="" selected="selected">Table</option>
+                <option value="application/isparql+table" selected="selected">Table</option>
             <option value="application/sparql-results+xml">XML</option>
             <option value="application/sparql-results+json">JSON</option>
             <option value="application/javascript">Javascript</option>
             <option value="text/html">HTML</option>
-                <!--<option value="application/soap+xml">SOAP</option>-->
           </select>
           <label for="maxrows">Max Rows</label>
           <select id="maxrows">
             <option value="10">10</option>
             <option value="20">20</option>
-            <option value="50">50</option>
+                <option value="50" selected="selected">50</option>
             <option value="100">100</option>
             <option value="200">200</option>
           </select>
@@ -435,7 +491,7 @@ WHERE
               <div style="height:1px;"></div> <!-- IE hack -->
               <input type="button" value="Store" onclick="store_click()" class="ctl_right">
               <input type="button" value="Load" onclick="load_click()" class="ctl_right">
-              <input type="button" value="Run Query" onclick="rq_query(false,'ndl')">
+              <input type="button" value="Run Query" onclick="QueryExec()">
               <input type="reset" value="Reset" onclick="reset_click()">
           <br/><br/>
         </form>

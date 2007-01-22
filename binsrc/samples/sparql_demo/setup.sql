@@ -32,13 +32,14 @@ grant all privileges to RQ
 
 DB.DBA.VHOST_REMOVE (lpath=>'/sparql_demo/')
 ;
-DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'RQ', is_dav=>1, def_page => 'sparql_ajax.vsp')
+DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/DAV/VAD/sparql_demo/', vsp_user=>'RQ', is_dav=>1, def_page => 'sparql_ajax.vsp')
 ;
 
-DB.DBA.VHOST_REMOVE (lpath=>'/isparql/')
-;
-DB.DBA.VHOST_DEFINE (lpath=>'/isparql/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'RQ', is_dav=>1, def_page => 'sparql_ajax.vsp')
-;
+-- The isparql endpoing is handeled by the new iSPARQL package
+--DB.DBA.VHOST_REMOVE (lpath=>'/isparql/')
+--;
+--DB.DBA.VHOST_DEFINE (lpath=>'/isparql/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'RQ', is_dav=>1, def_page => 'sparql_ajax.vsp')
+--;
 
 select case (isstring (registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT')))
 when equ(registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT'),'/sparql_demo/demo.vsp?case=custom_sparql')
@@ -147,6 +148,9 @@ select case (isstring (registry_get ('URIQADefaultHost'))) when 0 then
   else 'OK' end
 ;
 
+grant select on SYS_USERS to "SPARQL"; 
+grant select on SYS_ROLE_GRANTS to "SPARQL"; 
+
 TTLP ('
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -184,14 +188,50 @@ create procedure DB.DBA.SPARQL_QM_RUN (in txt varchar)
 }
 ;
 
+create function DB.DBA.RDF_DF_GRANTEE_ID_URI (in id integer)
+{
+  declare isrole integer;
+  isrole := coalesce ((select top 1 U_IS_ROLE from DB.DBA.SYS_USERS where U_ID = id));
+  if (isrole is null)
+    return NULL;
+  else if (isrole)
+    return sprintf ('http://%s/sys/group?id=%d', registry_get ('URIQADefaultHost'), id);
+  else
+    return sprintf ('http://%s/sys/user?id=%d', registry_get ('URIQADefaultHost'), id);
+}
+;
 
+grant execute on DB.DBA.RDF_DF_GRANTEE_ID_URI to SPARQL_SELECT
+;
+
+create function DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE (in id_iri varchar)
+{
+  declare parts any;
+  parts := sprintf_inverse (id_iri, sprintf ('http://%s/sys/user?id=%%d', registry_get ('URIQADefaultHost')), 1);
+  if (parts is not null)
+    {
+      if (exists (select top 1 1 from DB.DBA.SYS_USERS where U_ID = parts[0] and not U_IS_ROLE))
+        return parts[0];
+    }
+  parts := sprintf_inverse (id_iri, sprintf ('http://%s/sys/group?id=%%d', registry_get ('URIQADefaultHost')), 1);
+  if (parts is not null)
+    {
+      if (exists (select top 1 1 from DB.DBA.SYS_USERS where U_ID = parts[0] and U_IS_ROLE))
+        return parts[0];
+    }
+  return NULL;
+}
+;
+
+grant execute on DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE to SPARQL_SELECT
+;
 
 DB.DBA.SPARQL_QM_RUN ('
-drop graph iri("http://^{URIQADefaultHost}^/dataspace") .
-create quad storage virtrdf:dataspace
+drop graph iri("http://^{URIQADefaultHost}^/sys") .
+create quad storage virtrdf:sys
   {
   } .
-drop quad storage virtrdf:dataspace .
+drop quad storage virtrdf:sys .
 '
 );
 
@@ -201,7 +241,7 @@ DB.DBA.RDF_QM_END_ALTER_QUAD_STORAGE ( UNAME'http://www.openlinksw.com/schemas/v
 DB.DBA.SPARQL_QM_RUN ('
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
-drop graph iri("http://^{URIQADefaultHost}^/dataspace") .
+drop graph iri("http://^{URIQADefaultHost}^/sys") .
 create iri class oplsioc:user_iri  "http://^{URIQADefaultHost}^/sys/user?id=%d" (in uid integer not null) .
 create iri class oplsioc:group_iri "http://^{URIQADefaultHost}^/sys/group?id=%d" (in gid integer not null) .
 create iri class oplsioc:membership_iri "http://^{URIQADefaultHost}^/sys/membersip?super=%d&sub=%d" (in super integer not null, in sub integer not null) .
@@ -220,30 +260,36 @@ prefix sioc: <http://rdfs.org/sioc/ns#>
 alter quad storage virtrdf:DefaultQuadStorage
   {
 #    create virtrdf:DefaultQuadMap using storage virtrdf:DefaultQuadStorage .
-    create virtrdf:SysUsers as graph iri ("http://^{URIQADefaultHost}^/dataspace") option (exclusive)
+    create virtrdf:SysUsers as graph iri ("http://^{URIQADefaultHost}^/sys") option (exclusive)
       {
         oplsioc:user_iri (DB.DBA.SYS_USERS.U_ID)
             a sioc:user where (^{alias}^.U_IS_ROLE = 0)
-                    as virtrdf:SysUserTypeUser ;
-            sioc:email DB.DBA.SYS_USERS.U_E_MAIL
-                    as virtrdf:SysUsersEMail ;
-            sioc:login DB.DBA.SYS_USERS.U_NAME
-                    as virtrdf:SysUsersName ;
-            oplsioc:home oplsioc:dav_iri (DB.DBA.SYS_USERS.U_HOME) where (^{alias}^.U_DAV_ENABLE = 1)
+                    as virtrdf:SysUserType-User ;
+            sioc:email DB.DBA.SYS_USERS.U_E_MAIL where (^{alias}^.U_IS_ROLE = 0)
+                    as virtrdf:SysUsersEMail-User ;
+            sioc:login DB.DBA.SYS_USERS.U_NAME where (^{alias}^.U_IS_ROLE = 0)
+                    as virtrdf:SysUsersName-User ;
+            oplsioc:login DB.DBA.SYS_USERS.U_NAME where (^{alias}^.U_IS_ROLE = 0)
+                    as virtrdf:SysUsersName-User1 ;
+            oplsioc:home oplsioc:dav_iri (DB.DBA.SYS_USERS.U_HOME) where ((^{alias}^.U_IS_ROLE = 0) and (^{alias}^.U_DAV_ENABLE = 1))
                     as virtrdf:SysUsersHome ;
-            oplsioc:name DB.DBA.SYS_USERS.U_FULL_NAME where (^{alias}^.U_IS_ROLE = 0)
+            oplsioc:name DB.DBA.SYS_USERS.U_FULL_NAME where ((^{alias}^.U_IS_ROLE = 0) and (^{alias}^.U_NAME is not null))
                     as virtrdf:SysUsersFullName .
         oplsioc:group_iri (DB.DBA.SYS_USERS.U_ID)
             a sioc:role where (^{alias}^.U_IS_ROLE = 1)
-                    as virtrdf:SysUserTypeRole .
-        oplsioc:group_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER)
-            sioc:has_member oplsioc:grantee_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUB)
+                    as virtrdf:SysUserType-Role ;
+            oplsioc:login DB.DBA.SYS_USERS.U_NAME where (^{alias}^.U_IS_ROLE = 1)
+                    as virtrdf:SysUsersName-Role ;
+            oplsioc:name DB.DBA.SYS_USERS.U_FULL_NAME where ((^{alias}^.U_IS_ROLE = 1) and (^{alias}^.U_NAME is not null))
+                    as virtrdf:SysUsersFullName-Role .
+        oplsioc:group_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUB)
+            sioc:has_member oplsioc:grantee_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER)
                     as virtrdf:SysRoleGrantsHasMember ;
             oplsioc:group_of_membership
                 oplsioc:membership_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER, DB.DBA.SYS_ROLE_GRANTS.GI_SUB)
                     as virtrdf:SysRoleGrantsGroupOfMembership .
-        oplsioc:grantee_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUB)
-            sioc:has_function oplsioc:group_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER)
+        oplsioc:grantee_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER)
+            sioc:has_function oplsioc:group_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUB)
                     as virtrdf:SysRoleGrantsHasFunction ;
             oplsioc:member_of
                 oplsioc:membership_iri (DB.DBA.SYS_ROLE_GRANTS.GI_SUPER, DB.DBA.SYS_ROLE_GRANTS.GI_SUB)

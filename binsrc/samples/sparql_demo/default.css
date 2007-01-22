@@ -117,7 +117,7 @@ h3 { font-weight: normal}
   color: #006699;
   margin: 0;
   padding: 4px 0px 4px 0px;
-  width: 95%}
+  width: 220px}
 
 #nav_bar ul { 
   list-style-type: none; 
@@ -136,7 +136,7 @@ h3 { font-weight: normal}
 #nav_bar .tab:hover {
   background-color: #34B3D1}
 
-#navbar li a { color: #006699}
+#nav_bar li a { color: #006699}
 
 #nav_bar a {
   color: #006699; text-decoration: none;}
@@ -165,17 +165,20 @@ ul.docs_list li:hover {
 
 
 #dawg_tree, 
+#virt_ext_tree, 
 #samples_tree {
   clear: both;
   margin: 0;
   padding: 0}
 
 #dawg_tree    li.lvl1,
+#virt_ext_tree li.lvl1,
 #samples_tree li.lvl1 {
   margin-top: 5px;
   clear: both}
 
 #dawg_tree    li.lvl2,
+#virt_ext_tree li.lvl2,
 #samples_tree li.lvl2 {
   width:203px;
   margin-top: 10px;
@@ -183,11 +186,18 @@ ul.docs_list li:hover {
   font-weight: normal;}
 
 #dawg_tree    li.lvl2:hover,
+#virt_ext_tree li.lvl2:hover,
 #samples_tree li.lvl2:hover {
   background-color: #d9f1f7}
 
 #page_sq {
   margin: 0px 5px 0px 5px}
+
+#tab_virt_ext {
+  clear: both;
+  padding: 0px 0 0 0;
+  margin: 0;
+} /* to please the IE demon again */
 
 #tab_sq {
   clear: both;
@@ -254,6 +264,7 @@ label.load { font-size: 8pt; font-weight: normal;}
 
 /* ---------------- grid -------------- */
 
+#graphs_grid_div table,
 #grid_etalon table,
 #grid table {
 	border-collapse: collapse;
@@ -262,22 +273,26 @@ label.load { font-size: 8pt; font-weight: normal;}
 
 /* ---------------- rows -------------- */
 
+#graphs_grid_div tr,
 #grid_etalon tr,
 #grid tr {
 	border-left: 1px solid #000;
 	border-right: 1px solid #000;
 }
 
+#graphs_grid_div tr.even,
 #grid_etalon tr.even,
 #grid tr.even {
 	background-color: #f0f0ff;
 }
 
+#graphs_grid_div tr.odd,
 #grid_etalon tr.odd,
 #grid tr.odd {
 	background-color: #f8f8ff;
 }
 
+#graphs_grid_div tr.hover,
 #grid_etalon tr.hover,
 #grid tr.hover {
 	background-color: #feb;
@@ -285,7 +300,7 @@ label.load { font-size: 8pt; font-weight: normal;}
 }
 
 /* ---------------- cols -------------- */
-
+#graphs_grid_div thead td,
 #grid_etalon thead td,
 #grid thead td {
 	background-color: #ebeadb;
@@ -297,11 +312,13 @@ label.load { font-size: 8pt; font-weight: normal;}
 	border-right: 1px solid #ccc;
 }
 
+#graphs_grid_div thead td.hover,
 #grid_etalon thead td.hover,
 #grid thead td.hover {
 	background-image: url(images/Grid_header_hover.gif);
 }
 
+#graphs_grid_div td,
 #grid_etalon td,
 #grid td {
 	border-bottom: 1px solid #888;
@@ -309,16 +326,19 @@ label.load { font-size: 8pt; font-weight: normal;}
 	border-right: 1px solid #888;
 }
 
+#graphs_grid_div td.index,
 #grid_etalon td.index,
 #grid td.index {
 	background-color: #aaa;
 }
 
+#graphs_grid_div .header_value,
 #grid_etalon .header_value,
 #grid .header_value {
 	padding: 2px 3px;
 }
 
+#graphs_grid_div .row_value,
 #grid_etalon .row_value,
 #grid .row_value {
 	padding: 2px 3px;
@@ -377,6 +397,41 @@ ul#tabres {
   overflow:auto; 
 }
 
+/* ---------------- tabres -------------- */
+
+ul#tabgrph {
+  margin-top: 5px;
+  list-style-type: none;
+  text-align: left;
+  /* border-bottom: 1px solid #0066A3; */
+  margin: 0px;
+  padding: 0px;
+}
+
+#tabgrph li.tab {
+  margin: 0px;
+  margin-right: 6px;
+  padding: 0px 3px;
+  display: inline;
+  border: 1px solid #0066A3;
+  background-color: #A0D0E4;
+  cursor: pointer;
+}
+
+#tabgrph li.tab_selected {
+  border-bottom: 1px solid #E8F3F6;
+  background-color: #E8F3F6;
+}
+
+#tabgrph li.tab:hover {
+  background-color: #ddd;
+}
+
+#tabgrph li.tab_selected:hover {
+  background-color: #E8F3F6;
+}
+
+
 /* ---------------- other -------------- */
 .ctl_right {
   float:right;
@@ -399,7 +454,8 @@ ul#tabres {
   float:right;
 }
 
-#dawg_content table {
+#dawg_content table,
+#virt_ext_content table {
   border: 1px solid black;
   border-collapse: collapse;
   border-padding: 1ex;
@@ -407,13 +463,15 @@ ul#tabres {
   margin-right: 2.5em;
 }
 
-#dawg_content table > tbody th {
+#dawg_content table > tbody th,
+#virt_ext_content table > tbody th {
   border: 1px solid #8888aa; 
   text-align: center;
   font-weight: bold;
 }
 
-#dawg_content table > tbody td {
+#dawg_content table > tbody td,
+#virt_ext_content table > tbody td {
   border: 1px solid #8888aa; 
   background-color: #f7f8ff;
   padding: 0.5ex;
@@ -421,6 +479,7 @@ ul#tabres {
 }
 
 #dawg_content div.query,
+#virt_ext_content div.query,
 #sq_content   div.query {
   white-space: pre;
   border: 1px solid #8888aa; 
@@ -432,28 +491,39 @@ ul#tabres {
   color: black;
 } 
 
-#dawg_content div.approval {
+#dawg_content div.approval,
+#virt_ext_content div.approval {
   font-weight: bold;
 }
 #page_dawg h2,
+#page_virt_ext h2,
 #page_sq h2,
 #dawg_content h1,
+#virt_ext_content h1,
 #sq_content   h1,
 #dawg_content h2,
+#virt_ext_content h2,
 #sq_content   h2,
 #dawg_content h3,
+#virt_ext_content h3,
 #sq_content   h3 { color: #005A9C; background: white }
 #dawg_content h1,
+#virt_ext_content h1,
 #sq_content   h1 { font: 170% sans-serif }
 #dawg_content h2,
+#virt_ext_content h2,
 #sq_content   h2 { font: 140% sans-serif }
 #dawg_content h3,
+#virt_ext_content h3,
 #sq_content   h3 { font: 120% sans-serif }
 #dawg_content h4,
+#virt_ext_content h4,
 #sq_content   h4 { font: bold 100% sans-serif }
 #dawg_content h5,
+#virt_ext_content h5,
 #sq_content   h5 { font: italic 100% sans-serif }
 #dawg_content h6,
+#virt_ext_content h6,
 #sq_content   h6 { font: small-caps 100% sans-serif }
 
 /* ---------------- tools -------------- */

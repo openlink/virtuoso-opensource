@@ -22,7 +22,7 @@
 --
 --
 
-  declare _list, _case varchar;
+  declare _list, _case, _query, _dgu varchar;
   declare _metas any;
 
   _list := {?'list'};
@@ -38,12 +38,12 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?queryuri ?datauri ?etalonuri ?comment
 WHERE {
   GRAPH ?g {
-    ?bn tm:name ''' || (replace(_case,'''','\\''')) || ''' ;
-      tm:result ?etalonuri ;
+    ?bn tm:name "' || (replace(_case,'"','\\"')) || '" ;
       tm:action
         [ tq:query ?queryuri ;
           tq:data ?datauri ] .
-      OPTIONAL { ?bn rdfs:comment ?comment }
+      OPTIONAL { ?bn rdfs:comment ?comment } .
+      OPTIONAL { ?bn tm:result ?etalonuri }
     }
   }';
 
@@ -53,8 +53,14 @@ WHERE {
     {
       http('<responce>');
       http_value(_metas[0][0],'queryuri');
-      http_value(cast ("RQ"."RQ"."URI_GET" (_metas[0][0]) as varchar),'query');
-      http_value(_metas[0][1],'default-graph-uri');
+      _query := cast ("RQ"."RQ"."URI_GET" (_metas[0][0]) as varchar);
+      if (isstring (registry_get ('URIQADefaultHost')))
+        _query := replace (_query, '^{URIQADefaultHost}^', '' || registry_get ('URIQADefaultHost'));
+      http_value(_query,'query');
+      _dgu := _metas[0][1];
+      if (_dgu like '%disable')
+        _dgu := '';
+      http_value(_dgu,'default-graph-uri');
       http_value(_metas[0][3],'comment');
       http_value(_metas[0][2],'etalonuri');
       http('<etalon><![CDATA[');

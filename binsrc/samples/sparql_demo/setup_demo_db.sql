@@ -35,7 +35,7 @@
 
 create function SPARQL_DAV_DATA_PATH() returns varchar
 {
-  return '/DAV/VAD/iSPARQL/data/';
+  return '/DAV/VAD/sparql_demo/data/';
 }
 ;
 
@@ -91,6 +91,9 @@ create procedure SPARQL_DAWG_COMPILE (in rquri varchar, in in_result integer := 
   SPARQL_REPORT ('');
   SPARQL_REPORT ('SPARQL_DAWG_COMPILE on ' || rquri);
   rqtext := replace (cast (XML_URI_GET ('', rquri) as varchar), '# \044Id:', '# Id:');
+  if (isstring (registry_get ('URIQADefaultHost')))
+    rqtext := replace (rqtext, '^{URIQADefaultHost}^', registry_get ('URIQADefaultHost'));
+  rqtext := 'define input:storage ""\n' || rqtext;
   lexems := sparql_lex_analyze (rqtext);
   --dbg_obj_princ (lexems);
   prev_line := lexems[1][0]; ses := string_output ();
@@ -269,6 +272,8 @@ create procedure SPARQL_DAWG_LOAD_DATFILE (in rel_path varchar, in in_resultset 
   declare graph_uri, dattext,content_type varchar;
   declare app_env any;
   app_env := null;
+  if (rel_path like '%disable')
+    return;
   whenever sqlstate '*' goto err_rep;
   if (not in_resultset)
     result_names (REPORT);
@@ -351,7 +356,6 @@ WHERE {
 create procedure SPARQL_DAWG_EVAL_ONE (in rquri varchar, in daturi varchar, in resuri varchar, in in_result integer := 0)
 {
   declare REPORT varchar;
-  declare ses any;
   declare rqtext, dattext, sqltext varchar;
   declare graph_uri varchar;
   declare app_env any;
@@ -382,12 +386,19 @@ create procedure SPARQL_DAWG_EVAL_ONE (in rquri varchar, in daturi varchar, in r
   SPARQL_REPORT ('SPARQL_DAWG_EVAL_ONE of ' || rquri);
   SPARQL_REPORT ('  with data ' || daturi);
   rqtext := replace (cast (XML_URI_GET ('', rquri) as varchar), '# \044Id:', '# Id:');
+  if (isstring (registry_get ('URIQADefaultHost')))
+    rqtext := replace (rqtext, '^{URIQADefaultHost}^', registry_get ('URIQADefaultHost'));
 --!  dump_large_text_impl (replace (rqtext, '\r\n', '\n'));
+  if (daturi like '%disable')
+    graph_uri := NULL;
+  else
+    {
   dattext := replace (cast (XML_URI_GET ('', daturi) as varchar), '# \044Id:', '# Id:');
   SPARQL_REPORT ('Raw Data (' || daturi || '):');
 --!  dump_large_text_impl (replace (dattext, '\r\n', '\n'));
 --  graph_uri := subseq (daturi, strrchr (daturi, '/') + 1);
   graph_uri := daturi;
+    }
   app_env := null;
   rset := DB.DBA.SPARQL_EVAL_TO_ARRAY (rqtext, graph_uri, 50);
   SPARQL_REPORT ('Results of ' || rquri);
@@ -411,6 +422,15 @@ create procedure SPARQL_DAWG_EVAL_ONE (in rquri varchar, in daturi varchar, in r
 	  else
             SPARQL_REPORT ('    ' || cast (col as varchar));
 	}
+    }
+  if (daturi like '%disable')
+    {
+      insert replacing SPARQL_DAWG_STATUS (
+        TEST_URI, TEST_STATUS, TEST_STATE, TEST_MESSAGE)
+      values (
+        rquri, 'PASSED/may-vary', '00000', sprintf ('%d rows', rcount));
+      SPARQL_REPORT ('PASSED/may-vary');
+      return;
     }
   if (resuri is null)
     {
@@ -489,29 +509,32 @@ WHERE {
 
 create procedure SPARQL_DAWG_EVAL_ALL ()
 {
+#pragma prefix tq: <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
+#pragma prefix tm: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>
   declare REPORT varchar;
-  declare test_list any;
-  test_list := DB.DBA.SPARQL_EVAL_TO_ARRAY ('
-PREFIX tq: <http://www.w3.org/2001/sw/DataAccess/tests/test-query#>
-PREFIX tm: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>
+  result_names (REPORT);
+  for (sparql
 SELECT ?queryuri ?datauri ?etalonuri
 WHERE {
   GRAPH ?g {
-    [ tm:result ?etalonuri ;
-      tm:action
-        [ tq:data ?datauri ;
-          tq:query ?queryuri ]
-      ]
-#     ?t tm:action
+#    [ tm:result ?etalonuri ;
+#      tm:action
 #        [ tq:data ?datauri ;
-#          tq:query ?queryuri ] .
-#     OPTIONAL { ?t tm:result ?etalonuri }
+#          tq:query ?queryuri ]
+#      ]
+     ?t tm:action
+        [ tq:data ?datauri ;
+          tq:query ?queryuri ] .
+     OPTIONAL { ?t tm:result ?etalonuri }
     }
-  }', '', 10000);
-  result_names (REPORT);
-  foreach (any test in test_list) do
+  }
+ORDER BY
+  ASC [ bif:lower ( ?queryuri ) ]
+  ASC [ bif:lower ( ?datauri ) ]
+  ASC [ bif:lower ( ?etalonuri ) ]
+  ) do
     {
-      SPARQL_DAWG_EVAL_ONE (test[0], test[1], test[2], 1);
+    SPARQL_DAWG_EVAL_ONE ("queryuri", "datauri", "etalonuri", 1);
     }
 }
 ;
