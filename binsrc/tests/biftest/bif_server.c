@@ -35,6 +35,7 @@
 
 #if defined (PHP)
 extern void init_func_php ();
+extern char *phplib_version_string ();
 #endif
 
 #if defined (JAVAVM)
@@ -80,31 +81,31 @@ main (int argc, char *argv[])
 #endif
 
 #if defined (MONO) && defined (PHP) && defined (JAVAVM)
-  sprintf (brand_buffer, "%s%s %s, Java VM %s and PHP4", _MONO_NAME_, mono_outp_virt_init (),
-      _MONO_VERSION_, javavm_version_string ());
+  sprintf (brand_buffer, "%s%s %s, Java VM %s and PHP%s", _MONO_NAME_, mono_outp_virt_init (),
+      _MONO_VERSION_, javavm_version_string (), phplib_version_string ());
 #elif defined (MONO) && defined (JAVAVM)
   sprintf (brand_buffer, "%s%s %s and Java VM %s", _MONO_NAME_, mono_outp_virt_init (),
       _MONO_VERSION_, javavm_version_string ());
 #elif defined (MONO) && defined (PHP)
-  sprintf (brand_buffer, "%s%s %s and PHP4", _MONO_NAME_, mono_outp_virt_init (), _MONO_VERSION_);
+  sprintf (brand_buffer, "%s%s %s and PHP%s", _MONO_NAME_, mono_outp_virt_init (), _MONO_VERSION_, phplib_version_string ());
 #elif defined (PHP) && defined (JAVAVM)
-  sprintf (brand_buffer, "Java VM %s and PHP4", javavm_version_string ());
+  sprintf (brand_buffer, "Java VM %s and PHP%s", javavm_version_string (), phplib_version_string ());
 #elif defined (MONO)
   sprintf (brand_buffer, "%s%s %s", _MONO_NAME_, mono_outp_virt_init (), _MONO_VERSION_);
 #elif defined (CLR) && defined (PHP) && defined (JAVAVM)
-  sprintf (brand_buffer, ".NET CLR %s, Java VM %s and PHP4", clr_version_string (), javavm_version_string ());
+  sprintf (brand_buffer, ".NET CLR %s, Java VM %s and PHP%s", clr_version_string (), javavm_version_string (), phplib_version_string ());
 #elif defined (CLR) && defined (JAVAVM)
   sprintf (brand_buffer, ".NET CLR %s and Java VM %s", clr_version_string (), javavm_version_string ());
 #elif defined (CLR) && defined (PHP)
-  sprintf (brand_buffer, ".NET CLR %s and PHP4", clr_version_string ());
+  sprintf (brand_buffer, ".NET CLR %s and PHP%s", clr_version_string (), phplib_version_string ());
 #elif defined (PHP) && defined (JAVAVM)
-  sprintf (brand_buffer, "Java VM %s and PHP4", javavm_version_string ());
+  sprintf (brand_buffer, "Java VM %s and PHP%s", javavm_version_string (), phplib_version_string ());
 #elif defined (MONO)
   sprintf (brand_buffer, "%s%s %s", _MONO_NAME_, mono_outp_virt_init (), _MONO_VERSION_);
 #elif defined (JAVAVM)
   sprintf (brand_buffer, "Java VM %s", javavm_version_string ());
 #elif defined (PHP)
-  sprintf (brand_buffer, "PHP4");
+  sprintf (brand_buffer, "PHP%s", phplib_version_string ());
 #elif defined (CLR)
   sprintf (brand_buffer, ".NET CLR %s", clr_version_string ());
 #endif
