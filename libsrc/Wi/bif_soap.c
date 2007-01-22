@@ -65,7 +65,7 @@
 
 #define UDDI_NS "urn:uddi-org:api"
 #define UDDI_OPERATOR_ID "UDDI_operator"
-#define UDDI_DEFAULT_OPERATOR "Openlink Virtuoso"
+#define UDDI_DEFAULT_OPERATOR "OpenLink Virtuoso"
 
 #define ADD_CUSTOM_SCH 2
 #define ADD_ALL_SCH    1
@@ -5274,7 +5274,10 @@ soap_xmlrpc2soap (soap_call_ctx_t * ctx, caddr_t * err_ret)
   if (!*err_ret)
     ctx->sc_http_client->hcctx_resp_body = body;
   else
+    {
+      dk_free_tree (body);
     ctx->sc_http_client->hcctx_resp_body = NULL;
+    }
 
   dk_free_box ((box_t) pars);
   return (HC_RET_OK);
