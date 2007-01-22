@@ -105,7 +105,7 @@
               declare _len integer;
               declare _is_updateable integer;
               _len := 0;
-              _is_updateable := REPL_IS_UPDATEABLE(repl_this_server(), self.acct);
+              _is_updateable := REPL_IS_UPDATABLE(repl_this_server(), self.acct);
               for select TI_ITEM, TI_TYPE, TI_IS_COPY, TI_OPTIONS from SYS_TP_ITEM where TI_SERVER = repl_this_server() and TI_ACCT = self.acct do
               {
                 _len := _len + 1;
@@ -269,7 +269,7 @@
           </div>
         </v:form>
       </v:template>
-      <v:template name="sync_user_template" type="simple" enabled="-- case when (self.db_pub_stage = 0 and REPL_IS_UPDATEABLE(repl_this_server(), self.acct) <> 0) then 1 else 0 end">
+      <v:template name="sync_user_template" type="simple" enabled="-- case when (self.db_pub_stage = 0 and REPL_IS_UPDATABLE(repl_this_server(), self.acct) <> 0) then 1 else 0 end">
         <v:form name="sync_user_pub_frm" action="db_repl_pub_edit.vspx" method="POST" type="simple">
           <table class="ctl_grp">
             <tr>

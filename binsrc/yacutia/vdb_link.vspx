@@ -931,7 +931,7 @@ next_j:;
       <v:form name="pk_form" type="simple" method="POST" action="--self.return_path">
         <?vsp
           declare i, n integer;
-          declare num interger;
+          declare num integer;
           declare tables, all_pks, pks, fields, col_s any;
           self.tbl_no := atof(get_keyword( 'idx', self.vc_page.vc_event.ve_params, '' ));
           self.tbl_type := get_keyword( 'class', self.vc_page.vc_event.ve_params, '' );

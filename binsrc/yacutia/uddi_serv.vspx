@@ -260,17 +260,17 @@
 </v:page>
 
 <!--
-'businessEntity - this  reffer onto BUSINESS_ENTITY table
-'contacts'        - - this  reffer onto UDDI..CONTACTS  table
-'businessService' - - this  reffer onto BUSINESS_SERVICE  table
-'tModelInstanceInfo' -- I cannot figure out onto which table this reffer
-'instanceDetails'  - - this  reffer onto   INSTANCE_DETAIL table
-'bindingTemplate  - - this  reffer onto  BINDING_TEMPLATE table
-'overviewDoc' - - this  reffer onto BUSINESS_SERVICE  table
-'tModel' - - - this  reffer onto TMODEL table
+'businessEntity - this  refers to BUSINESS_ENTITY table
+'contacts'        - - this  refers to UDDI..CONTACTS  table
+'businessService' - - this  refers to BUSINESS_SERVICE  table
+'tModelInstanceInfo' -- I cannot figure out to which table this refers
+'instanceDetails'  - - this  refers to INSTANCE_DETAIL table
+'bindingTemplate  - - this  refers to  BINDING_TEMPLATE table
+'overviewDoc' - - this  refers to BUSINESS_SERVICE  table
+'tModel' - - - this  refers to TMODEL table
 
    imitko: yep.
 Vlad: thanks, but  what about this:
-'tModelInstanceInfo' -- I cannot figure out onto which table this reffer
+'tModelInstanceInfo' -- I cannot figure out onto which table this refers
    imitko: INSTANCE_DETAIL
 -->

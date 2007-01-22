@@ -107,7 +107,7 @@ order by
 	    <v:check-box name="cb_ng_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
 	  </td>
           <td align="left" nowrap="1">
-            <v:url value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" format="%s" width="80" active="--(1)" name="data_set_browse_mesages_url" url="--(concat('msg_news_group_messages.vspx','?','NG_ID=', cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'&','NS_ID=',cast(self.ns_id as varchar)))" />
+            <v:url value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" format="%s" width="80" active="--(1)" name="data_set_browse_messages_url" url="--(concat('msg_news_group_messages.vspx','?','NG_ID=', cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'&','NS_ID=',cast(self.ns_id as varchar)))" />
 <!--
             <v:label width="80" format="%s" name="news_groups_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
 -->

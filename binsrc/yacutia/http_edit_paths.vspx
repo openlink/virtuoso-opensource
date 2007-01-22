@@ -61,7 +61,7 @@
       <v:template name="mode_temp1" type="simple" enabled="-- equ(self.mode, 'del')">
         <v:form name="frm_confirm" action="http_edit_paths.vspx" method="POST" type="simple">
           <div class="confirm_dialog">
-            <img class="dialog_icon" src="images/icons/messagebox_warning.png" alt="Stop" title="stop"/>
+            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
             <div class="confirm_text">
               <p>You have requested deletion of virtual directory <?V self.edit_lpath ?>.<br/>
               This operation cannot be undone. Choose Delete to proceed or Cancel to go back.</p>

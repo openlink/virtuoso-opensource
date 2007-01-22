@@ -25,7 +25,7 @@ Cookies:
   dav_show_scr_adv (exp 7 days) controls initial display of blocks vp_1/vp_2 and status of checkbox wg_vs_adv
 */
 
-function init() 
+function init_properties_mod() 
 {
   var tab = new OAT.Tab ("tab_viewport");
   tab.add ("tab_owner_perms","owner_perms");

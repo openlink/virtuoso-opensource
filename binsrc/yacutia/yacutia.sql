@@ -5171,3 +5171,9 @@ create procedure y_make_tb_from_query (in tb any, in q any)
 }
 ;
 
+create procedure yac_syncml_detect (in _name any)
+{
+   return 0;
+}
+;
+

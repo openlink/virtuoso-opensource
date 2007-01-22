@@ -152,7 +152,7 @@
 			      <td>Key Column</td>
 			      <td>
 				<v:data-list name="tbkey" key-column="COL" value-column="COL"
-				  sql="select distinct get_keyword ('U', split_and_decode (trim(COL_CHECK), 0, '\0\0 '), '** NO AVALABLE *') as COL from SYS_COLS where \TABLE = self.tbln and COL_CHECK like '% U %'">
+				  sql="select distinct get_keyword ('U', split_and_decode (trim(COL_CHECK), 0, '\0\0 '), '** NOT AVAILABLE **') as COL from SYS_COLS where \TABLE = self.tbln and COL_CHECK like '% U %'">
 				  <v:before-render>
 				    if (self.tbln in ('Use the URI', 'No context'))
 				      control.vc_add_attribute ('disabled', '1');

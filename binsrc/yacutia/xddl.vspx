@@ -1726,7 +1726,7 @@ Here is the tabs
 								 </v:check-box>
 								</td>
 								<v:template name="showAdvancedUpdateTemplate" type="simple" enabled="--case when (self.full_advanced_mode = 0) then 1 else 0 end">
-								<td><!--Advaned option --></td>
+								<td><!--Advanced option --></td>
 								</v:template>
 								<td nowrap="nowrap">
 								 <v:button name="upd_button" action="submit" value="Update"/>
@@ -1903,7 +1903,7 @@ Here is the tabs
 							<v:label name="brws_identity" value="--case when ( xpath_eval('@identity',(control.vc_parent as vspx_row_template).te_rowset) = '1' ) then '*' else '&nbsp'  end" format="%s" width="80"/>
 						 </td>
 						 <v:template name="showAdvancedBrowseTemplate" type="simple" enabled="--case when (self.full_advanced_mode = 0) then 1 else 0 end">
-						 <td><!--Advaned option --></td>
+						 <td><!--Advanced option --></td>
 						 </v:template>
 						 <td nowrap="1">
 							<v:button name="ds_edit" action="simple" value="Edit">
@@ -5742,7 +5742,7 @@ Show Procedures
 		 <v:on-post>
 			<script><![CDATA[
 					declare i,len, n , cnt, o_state integer;
-					declare o_name, o_type  varcahr;
+					declare o_name, o_type  varchar;
 					declare obj xml_tree;
 					declare t_vec any;
 

@@ -80,7 +80,7 @@
             <td>
               <select name="l_domains" xhtml_id="l_domains">
                 <?vsp
-                  declare domains_string, cur varhcar;
+                  declare domains_string, cur varchar;
                   declare i, len integer;
                   declare dom_vec any;
                   i := 0;

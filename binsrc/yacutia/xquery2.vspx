@@ -384,7 +384,7 @@
 			do {
 			     declare kcol any;
 		             kcol := get_keyword ('U', split_and_decode (trim(COL_CHECK), 0, '\0\0 '),
-			     '** NO AVALABLE *');
+			     '** NOT AVAILABLE **');
 			     if (not position (kcol, control.vsl_items))
 			       {
                                  control.vsl_items := vector_concat (control.vsl_items, vector(kcol));

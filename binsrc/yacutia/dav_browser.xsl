@@ -653,7 +653,9 @@ else
                   <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>
                   <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
                   <script type="text/javascript">
-                      window.onload = init_upload;
+                    function init(){
+                      init_upload();
+                    }
                   </script>
                   <tr>
                     <td>Path to File<span class="redstar">*</span></td>
@@ -829,6 +831,46 @@ else
                     </select>
                   </td>
                 </tr>
+                <v:template name="dav_template003" type="simple" enabled="-- equ(isstring (vad_check_version ('SyncML')), 1)">
+                  <tr>
+                    <td>SyncML version</td>
+                    <td>
+                    <select name="s_v">
+                      <?vsp
+                        declare _fidx, idx any;
+                        declare i integer;
+                        idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
+                        _fidx := yac_syncml_version ();
+                        i := 0;
+                        while (i < length(_fidx))
+                        {
+                          http(sprintf('<option value="%s" %s>%s</option>', aref(_fidx, i), select_if(idx, aref(_fidx, i)), aref(_fidx, i + 1)));
+                          i := i + 2;
+                        }
+                      ?>
+                    </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>SyncML type</td>
+                    <td>
+                    <select name="s_t">
+                      <?vsp
+                        declare _fidx, idx any;
+                        declare i integer;
+                        idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
+                        _fidx := yac_syncml_type ();
+                        i := 0;
+                        while (i < length(_fidx))
+                        {
+                          http(sprintf('<option value="%s" %s>%s</option>', aref(_fidx, i), select_if(idx, aref(_fidx, i)), aref(_fidx, i + 1)));
+                          i := i + 2;
+                        }
+                      ?>
+                    </select>
+                    </td>
+                  </tr>
+                </v:template>
                 <tr align="center">
                   <td colspan="2">
                     <v:button action="simple" name="create_folder" value="Create">
@@ -920,6 +962,13 @@ else
                                 self.vc_is_valid := 0;
                                 return;
                               }
+			      if (__proc_exists ('DB.DBA.SYNC_MAKE_DAV_DIR'))
+			        {
+				   declare sync_ver any;
+				   sync_ver := get_keyword ('s_v', self.vc_page.vc_event.ve_params, 'N');
+				   call ('DB.DBA.SYNC_MAKE_DAV_DIR') (get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N'),
+				   ret, cname, full_path, sync_ver);
+				}
                             }
                           }
                           if (self.crfolder_mode = 2)
@@ -1111,9 +1160,6 @@ else
                 </script>
                 <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>
                 <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
-                <script type="text/javascript">
-                    window.onload = init_prop_edit;
-                </script>
               <table>
                 <?vsp
                   declare _name, perms, cur_user, _res_type varchar;
@@ -1165,6 +1211,11 @@ else
                         
                         http(sprintf('var cur_mime_type = "%s"',_res_type));
                       ?>
+                    </script>
+                    <script type="text/javascript">
+                      function init(){
+                        init_prop_edit();
+                      }
                     </script>
                     <!--
                     <?vsp
@@ -1290,6 +1341,47 @@ else
                     </select>
                   </td>
                 </tr>
+                <v:template name="dav_template011" type="simple" enabled="-- equ(yac_syncml_detect (self.source_dir), 1)">
+                  <tr>
+                    <th>SyncML version</th>
+                    <td>
+                    <select name="s_v">
+                      <?vsp
+                        declare _fidx, idx any;
+                        declare i integer;
+--                      idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
+                        idx := yac_syncml_version_get (self.source_dir);
+                        _fidx := yac_syncml_version ();
+                        i := 0;
+                        while (i < length(_fidx))
+                        {
+                          http(sprintf('<option value="%s" %s>%s</option>', aref(_fidx, i), select_if(idx, aref(_fidx, i)), aref(_fidx, i + 1)));
+                          i := i + 2;
+                        }
+                      ?>
+                    </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>SyncML type</th>
+                    <td>
+                    <select name="s_t">
+                      <?vsp
+                        declare _fidx, idx any;
+                        declare i integer;
+                        idx := yac_syncml_type_get (self.source_dir);
+                        _fidx := yac_syncml_type ();
+                        i := 0;
+                        while (i < length(_fidx))
+                        {
+                          http(sprintf('<option value="%s" %s>%s</option>', aref(_fidx, i), select_if(idx, aref(_fidx, i)), aref(_fidx, i + 1)));
+                          i := i + 2;
+                        }
+                      ?>
+                    </select>
+                    </td>
+                  </tr>
+                </v:template>
                 <?vsp
                   if (is_dir = 1)
                   {
@@ -1618,6 +1710,16 @@ else
 
   if (own_grp < 0)
     own_grp := NULL;
+
+  if (__proc_exists ('DB.DBA.SYNC_MAKE_DAV_DIR'))
+    {
+       declare sync_ver, sync_type any;
+       sync_ver := get_keyword ('s_v', self.vc_page.vc_event.ve_params, 'N');
+       sync_type := get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N');
+
+       yac_syncml_update_type (sync_ver, sync_type, self.source_dir);
+
+    }
 
   i := 0;
   _perms := '';
@@ -2093,10 +2195,9 @@ else
                 <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>
                 <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
                 <script type="text/javascript">
-                  if (OAT.Dom.isIE())
-                    window.onload = init;
-                  else
-                    window.onload = 'init()';
+                  function init(){
+                    init_properties_mod();
+                  }
                 </script>
                 <div>
                   <!-- div class="presets_sel">
