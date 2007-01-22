@@ -78,6 +78,15 @@
 		      tbl := '';
 		      if (lower (self.object_type) = 'index')
 		        tbl := ' '||self.object_table;
+                      if (lower (self.object_type) = 'trigger')
+		        {
+                          declare nam, q, o any;
+			  nam := name_part (self.object_name, 2);
+			  q := name_part (self.object_table, 0);
+			  o := name_part (self.object_table, 1);
+			  self.object_name := sprintf ('"%I"."%I"."%I"', q, o, nam);
+
+			}
                       __set_user_id (connection_get ('vspx_user'), 1);
                       exec( 'drop ' || self.object_type || ' ' || self.object_name || tbl, st, msg );
                       __set_user_id (user);
@@ -87,7 +96,8 @@
                         }
                       else
                         {
-                          self.err_msg := 'State:' || st || ' Message:' || msg;
+			  self.vc_error_message := 'State:' || st || ' Message:' || msg;
+                          self.vc_is_valid := 0;
                         }
                     ]]>
                 </v:on-post>
