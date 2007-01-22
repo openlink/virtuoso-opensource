@@ -72,6 +72,7 @@ create procedure fill_search_table (in _path varchar)
    declare FULL_PATH varchar;
    result_names (FULL_PATH);
    delete from document_search;
+   DB.DBA.vt_batch_update ('document_search', 'ON', 100);
    for select res_name, res_id, res_full_path, res_content from ws.ws.sys_dav_res
      where res_full_path like concat(_path, '%.html') -- This is for testing: and res_full_path like '%collection%'
      do
@@ -85,6 +86,7 @@ create procedure fill_search_table (in _path varchar)
 	 make_search_entry (res_id, res_content);
          result (res_full_path);
        }
+   DB.DBA.vt_batch_update ('document_search', 'OFF', 100);
 };
 
 
