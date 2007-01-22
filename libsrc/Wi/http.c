@@ -98,6 +98,7 @@ static caddr_t *localhost_names;
 static caddr_t *local_interfaces;
 caddr_t dns_host_name;
 caddr_t temp_aspx_dir;
+char *www_maintenance_page = NULL;
 
 static id_hash_t * http_acls = NULL; /* ACL lists */
 static id_hash_t * http_url_cache = NULL; /* WS cached URLs */
@@ -1697,29 +1698,25 @@ static char *fmt1 =
   "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n"
   "<html>\n"
   "  <head>\n"
-  "    <title>Error %.5s</title>\n"
+  "    <title>Error %.100s</title>\n"
   "  </head>\n"
   "  <body>\n"
-  "    <h3>Error %.5s</h3><pre>\n";
-static char *fmt2 = "\n"
-  "    URI  = '%s'\n"
-#ifdef DEBUG
-  "    PATH = '%s'\n"
-#endif
-  "  </pre></body>\n"
-  "</html>\n";
+  "    <h3>Error %.100s</h3><pre>\n";
   caddr_t tmp = box_sprintf (1000, fmt1, code, code);
   strses_flush (ws->ws_strses);
-  session_buffered_write (ws->ws_strses, tmp, strlen (tmp));
+  SES_PRINT (ws->ws_strses, tmp);
   dk_free_box (tmp);
   dks_esc_write (ws->ws_strses, message, strlen (message), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
+  
+  SES_PRINT (ws->ws_strses, "    URI  = '");
+  dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
+  SES_PRINT (ws->ws_strses, "'\n");
 #ifdef DEBUG
-  tmp = box_sprintf (1000 + strlen (uri) + strlen (path), fmt2, uri, path);
-#else
-  tmp = box_sprintf (1000 + strlen (uri) + strlen (path), fmt2, uri);
+  SES_PRINT (ws->ws_strses, "    PATH = '");
+  dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
+  SES_PRINT (ws->ws_strses, "'\n");
 #endif
-  session_buffered_write (ws->ws_strses, tmp, strlen (tmp));
-  dk_free_box (tmp);
+  SES_PRINT (ws->ws_strses, "  </pre></body></html>\n");
 }
 
 #define REPLY_SENT "reply sent"
@@ -2626,6 +2623,26 @@ request_do_again:
   ws->ws_flushed = 0;
   ws->ws_ignore_disconnect = 0;
   CHUNKED_STATE_CLEAR (ws);
+
+  if (NULL != www_maintenance_page && cpt_is_global_lock ())
+    {
+      int print_slash;
+      size_t alen;
+      caddr_t apage;
+#ifdef _IMSG
+      if (ws->ws_port > 0) /* if POP3, NNTP or FTP just return */
+	goto do_file;
+#endif
+      print_slash = (www_maintenance_page[0] != '/');
+      alen = strlen (www_maintenance_page) + print_slash + 1;
+      apage = dk_alloc_box (alen, DV_STRING);
+
+      snprintf (apage, alen, "%s%s", (print_slash ? "/" : ""), www_maintenance_page);
+      apage[alen-1] = '\0';
+      ws->ws_file = apage;
+      goto do_file;
+    }
+
   /* all are set to NULL at the end of request;
    * connection_set (cli, con_dav_v_name, NULL);*/
   if (!http_call)
@@ -3077,7 +3094,7 @@ error_in_procedure:
       ws->ws_try_pipeline = 0;
     }
 #endif
-
+do_file:
   if (!ws->ws_flushed && ws->ws_file)
     ws_file (ws);
 
@@ -5739,6 +5756,42 @@ bif_ses_read_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   return box_dv_short_string (buff);
 }
+
+
+static caddr_t
+bif_ses_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int n_read = 0;
+  caddr_t volatile res;
+  dk_session_t * volatile ses;
+  int volatile error = 0;
+  query_instance_t *qi = (query_instance_t *) qst;
+  long n;
+
+  ses = http_session_arg (qst, args, 0, "ses_read");
+  n = bif_long_arg (qst, args, 1, "ses_read");
+
+  if (n > 10000000)
+    sqlr_new_error ("22023", ".....", "string too long in ses_read");
+
+  IO_SECT (qst);
+  CATCH_READ_FAIL (ses)
+    {
+      res = dk_alloc_box_zero (n + 1, DV_STRING);
+      session_buffered_read_n (ses, res, n, &n_read);
+    }
+  FAILED
+    {
+      dk_free_box (res);
+      error = 1;
+    }
+  END_READ_FAIL (ses);
+  END_IO_SECT (err_ret);
+  if (error)
+    return dk_alloc_box (0, DV_DB_NULL);
+  return res;
+}
+
 
 static caddr_t
 bif_ses_can_read_char (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -8528,6 +8581,7 @@ http_init_part_one ()
   bif_define_typed ("server_https_port", bif_server_https_port, &bt_varchar);
   bif_define ("http_xslt", bif_http_xslt);
   bif_define_typed ("ses_read_line", bif_ses_read_line, &bt_varchar);
+  bif_define_typed ("ses_read", bif_ses_read, &bt_varchar);
   bif_define_typed ("ses_can_read_char", bif_ses_can_read_char, &bt_integer);
   bif_define("http_flush", bif_http_flush);
   bif_define ("http_pending_req", bif_http_pending_req);
