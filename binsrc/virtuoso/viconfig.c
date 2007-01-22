@@ -117,6 +117,7 @@ extern long vdb_no_stmt_cache; /* from sqlrrun.c */
 extern char *vdb_odbc_error_file; /* from sqlrrun.c */
 extern char *vdb_trim_trailing_spaces; /* from sqlrrun.c */
 extern long cfg_disable_vdb_stat_refresh;
+extern char *www_maintenance_page;
 #ifdef _SSL
 extern char *https_port;
 extern char *https_cert;
@@ -976,7 +977,7 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "SOAPClientIdString",
          &http_soap_client_id_string) == -1)
-    http_soap_client_id_string = "Openlink Virtuoso SOAP";
+    http_soap_client_id_string = "OpenLink Virtuoso SOAP";
 
   if (strlen (http_soap_client_id_string) > 64)
     http_soap_client_id_string = "OpenLink Virtuoso SOAP";
@@ -1103,6 +1104,9 @@ cfg_setup (void)
     c_http_print_warnings_in_output = 0;
   if (c_http_print_warnings_in_output < 0 || c_http_print_warnings_in_output > 1)
     c_http_print_warnings_in_output = 0;
+
+  if (cfg_getstring (pconfig, section, "MaintenancePage", &www_maintenance_page) == -1)
+    www_maintenance_page = NULL;
 
   /*
    * FIXME: set meaningful default for c_http_proxy_connection_cache_timeout
