@@ -211,7 +211,7 @@ properties of any given unichar from that range.
 Any language plugin may assign its own functions for any block. Before such
 assignment, it's good safety measure to check if block's boundaries match those
 you expect, and to ensure that there's no function set for this block by some
-other plugin. Openlink Virtuoso will never de-initialize language plugins, but
+other plugin. OpenLink Virtuoso will never de-initialize language plugins, but
 other products may, so it's good idea to reset affected blocks in plugin's
 "deinit" function. */
 struct unicode_block_s
