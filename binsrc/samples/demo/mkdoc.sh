@@ -308,7 +308,7 @@ LOG "Directory init..."
   mkdir vad
   mkdir vad/data
   mkdir vad/data/doc
-  mkdir vad/data/doc/html
+#  mkdir vad/data/doc/html
   mkdir vad/data/doc/code
   mkdir vad/data/doc/images
   mkdir vad/data/doc/images/inst
@@ -325,10 +325,11 @@ LOG "Directory init..."
   $CP -f $HOME/docsrc/vsp/doc/* vad/data/doc/.
   # the later has latest stuff in and should be used.
 
-  $CP docsrc/html_virt/*.html vad/data/doc/html/.
-  $CP docsrc/html_virt/*.css vad/data/doc/html/.
-  $CP docsrc/html_virt/*.ico vad/data/doc/html/.
-  $CP docsrc/html_virt/*.rdf vad/data/doc/html/.
+#  $CP docsrc/html_virt/*.html vad/data/doc/html/.
+#  $CP docsrc/html_virt/*.css vad/data/doc/html/.
+#  $CP docsrc/html_virt/*.ico vad/data/doc/html/.
+#  $CP docsrc/html_virt/*.rdf vad/data/doc/html/.
+  $CP -R docsrc/html_virt vad/data/doc/html
   $CP docsrc/html_virt/*.css vad/data/doc/.
 
   $CP docsrc/images/*.jpg vad/data/doc/images/.
@@ -445,9 +446,9 @@ sticker_init() {
   for file in `find vad -type f -print | LC_ALL=C sort`
   do
     name=`echo "$file" | cut -b10-`
-    perms='110100100N'
-    echo "$name" | egrep -e '.vspx$' > /dev/null && perms='111101101N'
-    echo "$name" | egrep -e '.vsp$' > /dev/null && perms='111101101N'
+    perms='110100100NN'
+    echo "$name" | egrep -e '.vspx$' > /dev/null && perms='111101101NN'
+    echo "$name" | egrep -e '.vsp$' > /dev/null && perms='111101101NN'
     
     echo "  <file type=\"$TYPE\" overwrite=\"yes\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
@@ -512,8 +513,16 @@ $LN $HOME/binsrc/vspx vspx
 
 if [ "x$HOST_OS" != "x" ]
 then
-  rm -rf docsrc/html_virt/*.html
+    if [ -d docsrc/html_virt ]
+    then 
+      # too long arg list error under Cygwin, therefore go to the dir and erase with mask.  
+      # rm -rf docsrc/html_virt/*.html
+      cd docsrc/html_virt
+      rm -f *.html
+      cd "$curpwd"       
+    else   
   mkdir docsrc/html_virt
+    fi	
   cp $HOME/docsrc/stylesheets/sections/*.css docsrc/html_virt
 else
   rm -rf $HOME/docsrc/html_virt/*html
