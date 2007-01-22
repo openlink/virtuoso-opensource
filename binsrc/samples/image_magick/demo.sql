@@ -163,3 +163,10 @@ create procedure test35 ()
   return "IM ThumbnailImageFileToBlob" ('aziz.jpg', 100, 100, 13);
 }
 ;
+
+create procedure test44 ()
+{
+  -- params: filename, new file name with new format
+  return "IM ConvertImageFile" ('aziz.jpg', 'aziz.gif');
+}
+;
