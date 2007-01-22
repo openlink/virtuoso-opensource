@@ -772,7 +772,7 @@ bif_array_or_strses_arg (caddr_t * qst, state_slot_t ** args, int nth, const cha
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
-  if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING
+  if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_UNAME
     || IS_NONLEAF_DTP(dtp)
     || dtp == DV_ARRAY_OF_LONG || dtp == DV_ARRAY_OF_FLOAT
     || dtp == DV_ARRAY_OF_DOUBLE || IS_WIDE_STRING_DTP (dtp)
@@ -1526,6 +1526,7 @@ bif_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   {
   case DV_STRING:
   case DV_C_STRING:
+  case DV_UNAME:
     return (box_num (len - 1));
   case DV_BIN:
   case DV_LONG_BIN:
@@ -1693,7 +1694,7 @@ again:
     {
       arr = ((caddr_t *)arr)[inx];
       dtp = DV_TYPE_OF (arr);
-      if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING
+      if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_UNAME
 		|| IS_NONLEAF_DTP(dtp)
 		|| dtp == DV_ARRAY_OF_LONG || dtp == DV_ARRAY_OF_FLOAT
 		|| dtp == DV_ARRAY_OF_DOUBLE || IS_WIDE_STRING_DTP (dtp)
@@ -1960,13 +1961,14 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   /* Return NULL if the first argument is NULL: */
   if (DV_DB_NULL == dtp1)
-  {
     return (NEW_DB_NULL);
-  }
 
-  if (!is_some_sort_of_a_string (dtp1) && !IS_WIDE_STRING_DTP (dtp1) && !IS_BLOB_HANDLE_DTP (dtp1) && (DV_STRING_SESSION != dtp1) &&
-    dtp1 != DV_ARRAY_OF_POINTER)
+  switch (dtp1)
   {
+    case DV_STRING: case DV_UNAME: case DV_WIDE: case DV_LONG_WIDE:
+    case DV_BLOB_HANDLE: case DV_BLOB_WIDE_HANDLE: case DV_BLOB_XPER_HANDLE:
+    case DV_STRING_SESSION: case DV_ARRAY_OF_POINTER:
+      break;
     sqlr_new_error ("22023", "SR023",
     "Function subseq needs a string, array or object id as its first argument, "
     "not an arg of type %s (%d)",
@@ -2044,10 +2046,16 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return res;
   }
   if (DV_STRING_SESSION == dtp1)
-  {
     return (caddr_t) strses_subseq ((dk_session_t *)str, from, to);
-  }
 
+  if (DV_UNAME == dtp1)
+    {
+      if ((0x80 == (str[from] & 0xC0)) || (0x80 == (str[to] & 0xC0)))
+        sqlr_new_error ("22011", "SR541",
+          "subseq: subrange from=%ld, to=%ld crosses UTF-8 character in the middle",
+             (long)from, (long)to );
+      return box_dv_uname_nchars (str + from, to - from);
+    }
   res = dk_alloc_box (((to - from) + 1) * sizeof_char,
     (dtp_t)(IS_WIDE_STRING_DTP (dtp1) ? DV_WIDE : DV_LONG_STRING));
   memcpy (res, str + from * sizeof_char, (to - from) * sizeof_char);
@@ -10551,7 +10559,7 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           dk_check_tree (qst_get (qst, args[6]));
           dk_check_tree (rset);
 #endif
-	  qst_set (qst, args[6], rset);
+	  qst_set (qst, args[6], (caddr_t) rset);
 #ifdef MALLOC_DEBUG
           dk_check_tree (qst_get (qst, args[6]));
 #endif
