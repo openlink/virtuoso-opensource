@@ -55,19 +55,20 @@ extern void dk_box_initialize(void);
 
 #ifdef CACHE_MALLOC
 
-#ifdef MTX_DEBUG
+#if defined (MTX_DEBUG) || defined (MTX_METER)
 #define MALLOC_CACHE_ENTRY_MTX(sz) \
-  { char name[20]; snprintf (name, sizeof (name), "MEM %d", sz); \
-  mutex_option (memblocks[sz]->rc_mtx, name, NULL, NULL); }
+  { char name[20]; snprintf (name, sizeof (name), "MEM:%ld", (long)sz);	\
+  mutex_option (memblock_set[way][sz]->rc_mtx, name, NULL, NULL); }
 #else
 #define MALLOC_CACHE_ENTRY_MTX(sz)
 #endif
 
 # define MALLOC_CACHE_ENTRY(sz,rcsz) \
-if (NULL == memblocks[sz]) \
+if (NULL == memblock_set[way][sz]) \
   { \
-    memblocks[sz] = resource_allocate ((uint32)rcsz, (rc_constr_t) 0L, \
+    memblock_set[way][sz] = resource_allocate ((uint32)rcsz, (rc_constr_t) 0L, \
 		    (rc_destr_t) free, (rc_destr_t) 0L, (void *) (ptrlong) sz); \
+    memblock_set[way][sz]->rc_max_size = 10 * rcsz; \
     MALLOC_CACHE_ENTRY_MTX(sz); \
   }
 #endif
@@ -121,12 +122,16 @@ const unsigned long __taso_mode = 0;
 
 
 #ifdef CACHE_MALLOC
-static resource_t * memblocks[MAX_CACHED_MALLOC_SIZE];
+#define MEMBLOCKS_N_WAYS 16
+#define MEMBLOCKS_MASK 15
+resource_t * memblock_set[MEMBLOCKS_N_WAYS][MAX_CACHED_MALLOC_SIZE];
+int nth_memblock;
+#define NTH_MEMB ((++nth_memblock) & MEMBLOCKS_MASK)
 
 void
 malloc_cache_clear (void)
 {
-  int inx;
+  int inx, way;
   thread_t *thr = THREAD_CURRENT_THREAD;
   if (thr->thr_alloc_cache)
     {
@@ -135,9 +140,14 @@ malloc_cache_clear (void)
 	if (blocks[inx])
 	  resource_clear (blocks[inx], free);
     }
+  for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
+    {
   for (inx = 0; inx < MAX_CACHED_MALLOC_SIZE; inx++)
-    if (memblocks[inx])
-      resource_clear (memblocks[inx], NULL);
+	{
+	  if (memblock_set[way][inx])
+	    resource_clear (memblock_set[way][inx], NULL);
+	}
+    }
 }
 
 resource_t **
@@ -148,8 +158,8 @@ thr_init_alloc_cache (thread_t * thr)
   memset (res, 0, sizeof (caddr_t) * MAX_CACHED_MALLOC_SIZE);
   thr->thr_alloc_cache = res;
   for (inx = 0; inx < MAX_CACHED_MALLOC_SIZE; inx += 4)
-    if (memblocks[inx])
-      res[inx] = resource_allocate_primitive (memblocks[inx]->rc_size / 3, 20000 / inx);
+    if (memblock_set[0][inx])
+      res[inx] = resource_allocate_primitive (memblock_set[0][inx]->rc_size / 3, 20000 / inx);
   return res;
 }
 
@@ -188,7 +198,7 @@ thr_free_alloc_cache (thread_t * thr)
       if (!blocks) \
 	blocks = thr_init_alloc_cache (thr); \
       if (! (rc = blocks[align_sz])) \
-	rc = blocks[align_sz] = resource_allocate_primitive (memblocks[align_sz]->rc_size / 3, (int) (20000 / align_sz)); \
+	rc = blocks[align_sz] = resource_allocate_primitive (memblock_set[0][align_sz]->rc_size / 3, (int) (20000 / align_sz)); \
       ++rc->rc_gets; \
       if (rc->rc_fill) \
 	{ \
@@ -325,15 +335,33 @@ dk_memory_initialize (int do_malloc_cache)
 #ifdef CACHE_MALLOC
   if (do_malloc_cache)
     { /* GK: it's not a good idea to cache things on a thread from a library */
+      int way;
+      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
+	{
+	  if (4 == sizeof (caddr_t))
+	    {
       MALLOC_CACHE_ENTRY (8, 1000);
-      MALLOC_CACHE_ENTRY (12, 500);
-      MALLOC_CACHE_ENTRY (16, 200);
-      MALLOC_CACHE_ENTRY (20, 100);
-      MALLOC_CACHE_ENTRY (24, 100);
-      MALLOC_CACHE_ENTRY (28, 100);
-      MALLOC_CACHE_ENTRY (32, 100);
+	      MALLOC_CACHE_ENTRY (12, 1000);
+	      MALLOC_CACHE_ENTRY (16, 1000);
+	      MALLOC_CACHE_ENTRY (20, 1000);
+	      MALLOC_CACHE_ENTRY (24, 1000);
+	      MALLOC_CACHE_ENTRY (28, 1000);
+	      MALLOC_CACHE_ENTRY (32, 1000);
+	    }
+	  else
+	    {
+	      MALLOC_CACHE_ENTRY (8, 1000);
+	      MALLOC_CACHE_ENTRY (16, 2000);
+	      MALLOC_CACHE_ENTRY (24, 2000);
+	      MALLOC_CACHE_ENTRY (32, 2000);
+	      MALLOC_CACHE_ENTRY (40, 2000);
+	      MALLOC_CACHE_ENTRY (48, 2000);
+	      MALLOC_CACHE_ENTRY (56, 2000);
+	      MALLOC_CACHE_ENTRY (64, 2000);
+	    }
       MALLOC_CACHE_ENTRY (sizeof (future_request_t), 100);
       MALLOC_CACHE_ENTRY (sizeof (future_t), 100);
+    }
     }
 #endif
   dk_box_initialize();
@@ -365,7 +393,7 @@ int
 dk_is_alloc_cache (size_t sz)
 {
 #ifdef CACHE_MALLOC
-  if (memblocks[sz])
+  if (memblock_set[0][sz])
     return 1;
 #endif
   return 0;
@@ -376,9 +404,13 @@ void
 dk_cache_allocs (size_t sz, size_t cache_sz)
 {
 #ifdef CACHE_MALLOC
+  int way;
   if (sz < MAX_CACHED_MALLOC_SIZE)
     {
+      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
+	{
       MALLOC_CACHE_ENTRY (sz, cache_sz);
+    }
     }
 #endif
 }
@@ -414,13 +446,13 @@ dk_alloc (size_t c)
 #ifndef CACHE_MALLOC
   thing = dk_alloc_reserve_malloc (ADD_END_MARK (c_align), 1);
 #else
-  if (c_align < MAX_CACHED_MALLOC_SIZE && memblocks[c_align])
+  if (c_align < MAX_CACHED_MALLOC_SIZE && memblock_set[MEMBLOCKS_N_WAYS - 1][c_align])
     {
       thread_t * thr = NULL;
       THREAD_ALLOC_LOOKUP (thr, thing, c_align);
 
       if (!thing)
-	thing = resource_get (memblocks[c_align]);
+	thing = resource_get_1 (memblock_set[NTH_MEMB][c_align], 1);
       if (thing)
 	malloc_hits++;
       else
@@ -475,13 +507,13 @@ dk_try_alloc (size_t c)
   if ((thing = dk_alloc_reserve_malloc (ADD_END_MARK (c_align), 0)) == NULL)
     return thing;
 #else
-  if (c_align < MAX_CACHED_MALLOC_SIZE && memblocks[c_align])
+  if (c_align < MAX_CACHED_MALLOC_SIZE && memblock_set[0][c_align])
     {
       thread_t * thr = NULL;
       THREAD_ALLOC_LOOKUP (thr, thing, c_align);
 
       if (!thing)
-	thing = resource_get (memblocks[c_align]);
+	thing = resource_get_1 (memblock_set[NTH_MEMB][c_align], 1);
       if (thing)
 	malloc_hits++;
       else
@@ -578,11 +610,11 @@ dk_free (void *ptr, size_t sz)
   if (sz != NO_SIZE)
     {
       size_t align_sz = ALIGN_4 (sz);
-      if (align_sz < MAX_CACHED_MALLOC_SIZE && memblocks[align_sz])
+      if (align_sz < MAX_CACHED_MALLOC_SIZE && memblock_set[0][align_sz])
 	{
 	  thread_t * thr = NULL;
 	  THREAD_ALLOC_FREE (thr, ptr, align_sz);
-	  resource_store (memblocks[align_sz], ptr);
+	  resource_store (memblock_set[NTH_MEMB][align_sz], ptr);
 	  return;
 	}
     }

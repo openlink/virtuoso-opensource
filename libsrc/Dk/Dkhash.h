@@ -55,6 +55,9 @@ typedef struct
     uint32		ht_count;
     uint32		ht_actual_size;
     uint32		ht_rehash_threshold;
+#ifdef MTX_DEBUG
+    dk_mutex_t *	ht_required_mtx;
+#endif
 #ifdef HT_STATS
     uint32		ht_max_colls;
     uint32		ht_stats[30];
@@ -69,6 +72,53 @@ typedef struct
     hash_elt_t *	hit_elt;
     uint32		hit_inx;
   } dk_hash_iterator_t;
+
+
+#define HASH_EMPTY		((hash_elt_t *) -1L)
+#define HASH_INX(ht,key)	(uint32)((uptrlong)key % ht->ht_actual_size)
+
+
+
+#define GETHASH(key_value, ht, result, not_found) \
+{ \
+  uint32 inx = HASH_INX (ht, (key_value)); \
+  hash_elt_t *elt = &ht->ht_elements[inx]; \
+  hash_elt_t *next = elt->next; \
+  if (next == HASH_EMPTY)\
+    goto not_found;\
+  if (elt->key == (key_value))	  \
+    *(void**)&result = elt->data; \
+  else \
+    { \
+      elt = next; \
+      if (!elt) \
+	goto not_found; \
+      for (;;) \
+	{ \
+	  if (elt->key == (key_value))		\
+	    { \
+	      *(void**) &result = elt->data; \
+	      break; \
+	    } \
+	  elt = elt->next; \
+	  if (!elt) \
+	    goto not_found; \
+	} \
+    } \
+}
+
+
+#define DO_HT(kt, k, dt, d, ht) \
+{ \
+  dk_hash_iterator_t hit; \
+  kt k; dt d; \
+  dk_hash_iterator (&hit, ht); \
+  while (dk_hit_next (&hit, (void**)&k, (void**)&d)) { \
+
+
+
+#define END_DO_HT }}
+
 
 /* Dkhash.c */
 extern uint32 hash_nextprime (uint32 n);
@@ -94,6 +144,8 @@ extern int remhash (const void *key, dk_hash_t *ht);
 extern void clrhash (dk_hash_t *table);
 extern void dk_rehash (dk_hash_t *ht, uint32 new_sz);
 #endif
+void hash_table_init (dk_hash_t * ht, int size);
+void hash_table_destroy (dk_hash_t * ht);
 
 extern void *gethash (const void *key, dk_hash_t *ht);
 extern void maphash (maphash_func func, dk_hash_t *table);

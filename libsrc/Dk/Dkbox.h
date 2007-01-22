@@ -436,6 +436,7 @@ typedef struct dk_mem_wrapper_s
 
 
 #define unbox_num(n) unbox(n)
+#define unbox_inline(n) (IS_BOX_POINTER (n) ? *(int32*)(n) : (int32) (ptrlong)(n))
 #define unbox_float(f) (*((float *)f))
 #define unbox_double(f) (*((double *)f))
 #define unbox_string(s) ((char *)s)
@@ -600,8 +601,10 @@ The function returns zero if the memory can be reused or freed, nonzero if the b
 */
 typedef int (*box_destr_f) (caddr_t box);
 typedef caddr_t (*box_copy_f) (caddr_t box);
+typedef caddr_t (*box_tmp_copy_f) (mem_pool_t * mp, caddr_t box);
 caddr_t box_non_copiable (caddr_t b);
 void dk_mem_hooks (dtp_t dtp, box_copy_f cpoier, box_destr_f destr, int can_appear_twice_in_tree);
+void dk_mem_hooks_2 (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit, box_tmp_copy_f t_c);
 
 void box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp);
 

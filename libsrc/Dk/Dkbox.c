@@ -338,6 +338,7 @@ dbg_dk_alloc_box_zero (DBG_PARAMS size_t bytes, dtp_t tag)
 
 box_destr_f box_destr[256];
 box_copy_f box_copier[256];
+box_tmp_copy_f box_tmp_copier[256];
 char box_can_appear_twice_in_tree[256];
 
 
@@ -353,9 +354,19 @@ dk_mem_hooks (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit)
 {
   box_destr[tag] = d;
   box_copier[tag] = c;
+  box_tmp_copier[tag] = NULL;
   box_can_appear_twice_in_tree[tag] = bcatit;
 }
 
+
+void
+dk_mem_hooks_2 (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit, box_tmp_copy_f t_c)
+{
+  box_destr[tag] = d;
+  box_copier[tag] = c;
+  box_can_appear_twice_in_tree[tag] = bcatit;
+  box_tmp_copier[tag] = t_c;
+}
 
 int
 dk_free_box (box_t box)
@@ -737,6 +748,19 @@ unbox (ccaddr_t box)
   if (box_tag (box) == DV_LONG_INT)
     return *(ptrlong *) box;
 
+  return (ptrlong) box;
+}
+
+
+int64
+unbox_int64 (ccaddr_t box)
+{
+  if (!IS_BOX_POINTER (box))
+    return (int64) box;
+
+  if (box_tag (box) == DV_LONG_INT)
+    return *(ptrlong*) box;
+  /* the box contains a ptrlong. But this returns int64 regardless of what ptrlong is */
   return (ptrlong) box;
 }
 

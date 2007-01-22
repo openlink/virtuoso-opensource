@@ -195,12 +195,11 @@ resource_get_1 (resource_t * rc, int construct_new)
 	  void *data;
 	  if (++rc->rc_n_empty % 1000 == 0)
 	    _resource_adjust (rc);
+	  mutex_leave (rc_mtx);
 	  if (rc->rc_constructor && construct_new)
 	    data = (*rc->rc_constructor) (rc->rc_client_data);
 	  else
 	    data = NULL;
-
-	  mutex_leave (rc_mtx);
 	  return data;
 	}
     }
@@ -291,11 +290,10 @@ resource_store (resource_t * rc, void *item)
   else
     {
       rc->rc_n_full++;
-      if (rc->rc_destructor)
-	(*rc->rc_destructor) (item);
-
       if (rc_mtx)
 	mutex_leave (rc_mtx);
+      if (rc->rc_destructor)
+	(*rc->rc_destructor) (item);
       return 0;
     }
 }

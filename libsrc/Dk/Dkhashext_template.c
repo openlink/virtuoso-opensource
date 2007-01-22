@@ -40,6 +40,8 @@
   if (ht->ht_rehash_threshold && ((uint32) ht->ht_rehash_threshold) < (uint32)((ht->ht_count * 100) / ht->ht_buckets)) \
     DBG_HASHEXT_NAME(id_hash_rehash) (DBG_ARGS ht, ht->ht_buckets << 1)
 
+uint32 hash_nextprime (uint32 n);
+
 #define id_ht_max_sz 1048573
 
 id_hash_t *
@@ -47,6 +49,9 @@ DBG_HASHEXT_NAME(id_hash_allocate) (DBG_PARAMS id_hashed_key_t buckets, int keyb
     hash_func_t hf, cmp_func_t cf)
 {
   id_hash_t *ht = (id_hash_t *)DBG_HASHEXT_ALLOC(sizeof(id_hash_t));
+  buckets = hash_nextprime (buckets);
+  if (buckets > id_ht_max_sz)
+    buckets = id_ht_max_sz;
   ID_HASH_ALLOCATE_INTERNALS(ht,buckets,keybytes,databytes,hf,cf);
   return ht;
 }
@@ -293,6 +298,7 @@ DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t *ht, id_hashed_key_t new
   fprintf (stderr, "*** ID HASH TABLE %p REHASH TO %lu\n", ht, new_sz);
 #endif
 
+  new_sz = hash_nextprime (new_sz);
   ID_HASH_ALLOCATE_INTERNALS((&ht_buffer),new_sz,ht->ht_key_length,ht->ht_data_length,
       ht->ht_hash_func, ht->ht_cmp);
   ht_buffer.ht_rehash_threshold = ht->ht_rehash_threshold;

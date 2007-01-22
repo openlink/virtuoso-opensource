@@ -31,8 +31,6 @@
 
 #include <stdio.h>
 
-struct mem_pool_s;
-typedef struct mem_pool_s mem_pool_t;
 
 void mp_free (mem_pool_t * mp);
 
@@ -87,8 +85,8 @@ void mp_alloc_box_assert (mem_pool_t * mp, caddr_t box);
 caddr_t * mp_list (mem_pool_t * mp, long n, ...);
 #define mp_alloc(mp, n) mp_alloc_box (mp, n, DV_CUSTOM)
 
-#define TA_MEM_POOL 12L
-#define THR_TMP_POOL  ((mem_pool_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_MEM_POOL))
+#define THR_TMP_POOL  ((mem_pool_t *) THREAD_CURRENT_THREAD->thr_tmp_pool)
+#define SET_THR_TMP_POOL(v)  (THREAD_CURRENT_THREAD->thr_tmp_pool = (void*) v) 
 
 #ifdef DEBUG /* Not MALLOC_DEBUG */
 #define MP_START() \
@@ -96,21 +94,21 @@ caddr_t * mp_list (mem_pool_t * mp, long n, ...);
     mem_pool_t *thread_mem_pool = THR_TMP_POOL; \
     if (thread_mem_pool != NULL) \
       GPF_T1 ("MP reallocated"); \
-    SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_MEM_POOL, dbg_mem_pool_alloc (__FILE__, __LINE__)); \
+    SET_THR_TMP_POOL (dbg_mem_pool_alloc (__FILE__, __LINE__)); \
   } while (0)
 #else
 #define MP_START() \
   do { \
     if (THR_TMP_POOL != NULL) \
       GPF_T1 ("MP reallocated"); \
-    SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_MEM_POOL, mem_pool_alloc ()); \
+    SET_THR_TMP_POOL (mem_pool_alloc ()); \
   } while (0)
 #endif
 
 #define MP_DONE() \
   do { \
     mp_free (THR_TMP_POOL); \
-    SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_MEM_POOL, NULL); \
+  SET_THR_TMP_POOL (NULL);	\
     } while (0)
 
 #ifdef _DEBUG

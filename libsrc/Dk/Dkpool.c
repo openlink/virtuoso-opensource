@@ -275,6 +275,11 @@ caddr_t DBG_NAME(mp_box_substr) (DBG_PARAMS mem_pool_t * mp, ccaddr_t str, int n
   return res;
 }
 
+
+extern box_copy_f box_copier[256];
+extern box_tmp_copy_f box_tmp_copier[256];
+
+
 caddr_t DBG_NAME(mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
 {
   dtp_t dtp;
@@ -292,7 +297,15 @@ caddr_t DBG_NAME(mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
       return box;
     default:
       {
-        caddr_t cp = DBG_MP_ALLOC_BOX (mp, box_length (box), box_tag (box));
+        caddr_t cp;
+	if (box_copier[dtp])
+	  {
+	    if (box_tmp_copier[dtp])
+	      return box_tmp_copier[dtp] (mp, box);
+	    GPF_T1 ("not supposed to make a tmp pool copy of this copiable dtp");
+	    return NULL;
+	  }
+	cp = DBG_MP_ALLOC_BOX (mp, box_length (box), box_tag (box));
         memcpy (cp, box, box_length (box));
         return cp;
       }

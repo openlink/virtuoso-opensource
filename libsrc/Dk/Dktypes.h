@@ -167,4 +167,7 @@ typedef long long int64;
 #endif
 #endif
 
+struct mem_pool_s;
+typedef struct mem_pool_s mem_pool_t;
+
 #endif

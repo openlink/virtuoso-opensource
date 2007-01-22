@@ -57,6 +57,7 @@ resource_t *resource_allocate (uint32 sz, rc_constr_t constructor, rc_destr_t de
 resource_t * resource_allocate_primitive (uint32 sz, int max_sz);
 void resource_no_sem (resource_t *rc);
 void *resource_get (resource_t *rc);
+void *resource_get_1 (resource_t *rc, int make_new);
 int resource_store (resource_t *rc, void *item);
 unsigned long resource_clear (resource_t * rc, rc_destr_t destruct);
 void _resource_adjust (resource_t * rc);

@@ -41,9 +41,7 @@
 #define DK_REHASH dk_rehash
 #endif
 
-#define HASH_INX(ht,key)	(uint32)((uptrlong)key % ht->ht_actual_size)
 
-#define HASH_EMPTY		((hash_elt_t *) -1L)
 
 /* rehash on load factor above .8 */
 #define CHECK_REHASH(ht) \
@@ -227,6 +225,7 @@ DBG_NAME(hash_table_allocate) (DBG_PARAMS uint32 size)
   if (!table)
     GPF_T;
 #endif
+  memset (table, 0, sizeof (dk_hash_t));
   size = hash_nextprime (size);
   table->ht_elements = (hash_elt_t *) DK_ALLOC (sizeof (hash_elt_t) * size);
 #ifdef MEMDBG
@@ -247,11 +246,43 @@ DBG_NAME(hash_table_allocate) (DBG_PARAMS uint32 size)
 
 
 void
+hash_table_init (dk_hash_t * table, int size)
+{
+  memset (table, 0, sizeof (dk_hash_t));
+  size = hash_nextprime (size);
+  table->ht_elements = (hash_elt_t *) dk_alloc (sizeof (hash_elt_t) * size);
+#ifdef MEMDBG
+  if (!table->ht_elements)
+    GPF_T;
+#endif
+  memset (table->ht_elements, 0xff, sizeof (hash_elt_t) * size);
+  table->ht_actual_size = size;
+  table->ht_count = 0;
+  table->ht_rehash_threshold = 10;
+#ifdef HT_STATS
+  table->ht_max_colls = 0;
+  table->ht_ngets = table->ht_nsets = 0;
+  memset (table->ht_stats, 0, sizeof (table->ht_stats));
+#endif
+}
+
+
+
+void
 DBG_NAME(hash_table_free) (DBG_PARAMS dk_hash_t *ht)
 {
   clrhash (ht);
   DK_FREE (ht->ht_elements, sizeof (hash_elt_t) * ht->ht_actual_size);
   DK_FREE (ht, sizeof (dk_hash_t));
+}
+
+
+void
+hash_table_destroy (dk_hash_t * ht)
+{
+  clrhash (ht);
+  dk_free (ht->ht_elements, sizeof (hash_elt_t) * ht->ht_actual_size);
+  memset (ht, 0xdd, sizeof (dk_hash_t));
 }
 
 
@@ -277,6 +308,10 @@ gethash (const void *key, dk_hash_t *ht)
   hash_elt_t *elt = &ht->ht_elements[inx];
   hash_elt_t *next = elt->next;
 
+#ifdef MTX_DEBUG
+  if (ht->ht_required_mtx)
+    ASSERT_IN_MTX (ht->ht_required_mtx);
+#endif
   if (next == HASH_EMPTY)
     return NULL;
 #ifdef HT_STATS
@@ -304,6 +339,11 @@ DBG_NAME(sethash) (DBG_PARAMS const void *key, dk_hash_t *ht, void *data)
 #ifdef HT_STATS
   uint32 cols;
   ht->ht_nsets++;
+#endif
+
+#ifdef MTX_DEBUG
+  if (ht->ht_required_mtx)
+    ASSERT_IN_MTX (ht->ht_required_mtx);
 #endif
 
   if (HASH_EMPTY == next)
@@ -382,6 +422,10 @@ DBG_NAME(remhash) (DBG_PARAMS const void *key, dk_hash_t *ht)
   hash_elt_t *elt = &ht->ht_elements[inx];
   hash_elt_t *prev = NULL;
   hash_elt_t *next = elt->next;
+#ifdef MTX_DEBUG
+  if (ht->ht_required_mtx)
+    ASSERT_IN_MTX (ht->ht_required_mtx);
+#endif
   if (HASH_EMPTY == next)
     return 0;
   if (elt->key == key)
@@ -429,7 +473,10 @@ DBG_NAME(clrhash) (DBG_PARAMS dk_hash_t *table)
 {
   uint32 len;
   uint32 inx;
-
+#ifdef MTX_DEBUG
+  if (table->ht_required_mtx)
+    ASSERT_IN_MTX (table->ht_required_mtx);
+#endif
   if (!table->ht_count)
     return;
 
@@ -592,6 +639,11 @@ dk_hit_next (dk_hash_iterator_t *hit, void **key, void **data)
 {
   hash_elt_t *elt = hit->hit_elt;
 
+#ifdef MTX_DEBUG
+  if (hit->hit_ht->ht_required_mtx)
+    ASSERT_IN_MTX (hit->hit_ht->ht_required_mtx);
+#endif
+
 start:
   if (elt)
     {
@@ -640,6 +692,9 @@ DBG_NAME(dk_rehash) (DBG_PARAMS dk_hash_t *ht, uint32 new_sz)
   new_ht.ht_actual_size = new_sz;
   new_ht.ht_elements = (hash_elt_t *) DK_ALLOC (sizeof (hash_elt_t) * new_sz);
   memset (new_ht.ht_elements, 0xff, sizeof (hash_elt_t) * new_sz);
+#ifdef MTX_DEBUG
+  new_ht.ht_required_mtx = ht->ht_required_mtx;
+#endif
 #ifdef HT_STATS
   memcpy (new_ht.ht_stats, ht->ht_stats, sizeof (ht->ht_stats));
   new_ht.ht_max_colls = 0;
