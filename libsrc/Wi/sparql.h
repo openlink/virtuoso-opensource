@@ -1,29 +1,28 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
+
 #ifndef __SPARQL_H
 #define __SPARQL_H
-
-/* $Id$ */
 
 #include "libutil.h"
 #ifdef __cplusplus
@@ -48,7 +47,7 @@ extern "C" {
 #endif
 
 /*! Number of NULLs should match number of fields in rdf_val_range_t */
-#define SPART_RVR_LIST_OF_NULLS NULL, NULL, NULL, NULL, NULL, NULL
+#define SPART_RVR_LIST_OF_NULLS NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 
 #define SPAR_ALIAS		(ptrlong)1001
 #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002
@@ -65,7 +64,7 @@ extern "C" {
 #define SPAR_TRIPLE		(ptrlong)1014
 #define SPAR_QM_SQL_FUNCALL	(ptrlong)1015
 #define SPAR_CODEGEN		(ptrlong)1016
-/* Don't forget to update  sparp_tree_full_clone_int() */
+/* Don't forget to update sparp_tree_full_clone_int() and sparp_tree_full_copy() */
 
 #define SPAR_VARNAME_DEFAULT_GRAPH ":default_graph"	/*!< Parameter name to specify default graph URI in SPARQL runtime */
 #define SPAR_VARNAME_NAMED_GRAPHS ":named_graphs"	/*!< Parameter name to specify array of named graph URIs in SPARQL runtime */	
@@ -113,6 +112,19 @@ typedef struct sparp_qm_table_condition_s {
   caddr_t *	sparqtc_aliases;	/*!< Vector of all distinct aliases used in the template */
 } sparp_qm_table_condition_t;
 
+/*! Configuration of RDF grabber, A.K.A. 'IRI resolver'. */
+typedef struct rdf_grab_config_s {
+    dk_set_t		rgc_consts;		/*!< Constants to be used as names of additional graphs */
+    int			rgc_all;		/*!< Automatically add all IRI constants/vars (except P) to spare_grab_consts */
+    dk_set_t		rgc_vars;		/*!< Names of variables whose values should be used as names of additional graphs */
+    caddr_t		rgc_depth;		/*!< Number of iterations that can be made to find additional graphs */
+    caddr_t		rgc_limit;		/*!< Limit on number of grabbed remote documents */
+    caddr_t		rgc_base;		/*!< Base IRI to use as a first argument to the grab IRI resolver */
+    caddr_t		rgc_destination;	/*!< IRI of the graph to be extended */
+    caddr_t		rgc_resolver_name;	/*!< Name of function of the graph IRI resolver */
+    caddr_t		rgc_loader_name;	/*!< Name of function that actually load the resource */
+} rdf_grab_config_t;
+
 typedef struct sparp_env_s
   {
     /*spar_query_t *	spare_sparqr;*/
@@ -132,11 +144,7 @@ typedef struct sparp_env_s
 #endif
     struct sparp_equiv_s **spare_equivs;		/*!< All variable equivalences made for the tree, in growing buffer */
     int			spare_equiv_count;		/*!< Count of used items in the beginning of spare_equivs */
-    dk_set_t		spare_grab_vars;		/*!< Names of variables whose values are used as names of additional graphs */
-    caddr_t		spare_grab_depth;		/*!< Number of iterations that can be made to find additional graphs */
-    caddr_t		spare_grab_limit;		/*!< Limit on number of grabbed remote documents */
-    caddr_t		spare_grab_base_iri;		/*!< Base IRI to use as a first argument to the grab IRI resolver */
-    caddr_t		spare_grab_iri_resolver;	/*!< Name of function of the graph IRI resolver */
+    rdf_grab_config_t	spare_grab;			/*!< Grabber configuration */
     dk_set_t		spare_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
     SPART *		spare_default_graph_precode;	/*!< Default graph as set by protocol or FROM graph-uri-precode */
     int			spare_default_graph_locked;	/*!< Default graph is set by protocol and can not be overwritten */
@@ -156,7 +164,9 @@ typedef struct sparp_env_s
     dk_set_t		spare_selids;			/*!< Select IDs of GPs */
     dk_set_t		spare_acc_qm_sqls;		/*!< Backstack of first-level function calls that change quad maps, items are SPART * with SPAR_QM_SQL_FUNCALL type */
     caddr_t		spare_qm_default_table;		/*!< The name of default table (when a single table name is used without an alias for everything. */
-    dk_set_t		spare_qm_aliased_tables;	/*!< get_keyword - style list of aliases of tables used in mapping. */
+    dk_set_t		spare_qm_parent_tables_of_aliases;	/*!< get_keyword-style list of aliases of relational tables, aliases are keys, tables are values. */
+    dk_set_t		spare_qm_parent_aliases_of_aliases;	/*!< get_keyword-style list of aliases of other aliases, parent aliases are values. */
+    dk_set_t		spare_qm_descendants_of_aliases;	/*!< get_keyword-style list of aliases of other aliases, bases are keys, sets of descendants are values. */
     dk_set_t		spare_qm_where_conditions;	/*!< Set of 'where' conditions for tables represented by sparp_qm_table_condition_t structures. */
     dk_set_t		spare_qm_locals;		/*!< Parameters in not-yet-closed '{...}' blocks. Names (as keyword ids) and values, with NULLs as bookmarks. */
     dk_set_t		spare_qm_affected_jso_iris;	/*!< Backstack of affected JS objects */
@@ -206,6 +216,7 @@ typedef struct sparp_s {
 #ifdef DEBUG
   int sparp_trav_running;		/*!< Flags that some traverse is in progress, in order to GPF if traverse procedure re-enters */
 #endif
+  caddr_t *sparp_sprintff_isect_buf;	/*!< Temporary buffer to calculate intersections of value ranges; solely for sparp_rvr_intersect_sprintffs() */
 } sparp_t;
 
 
@@ -262,6 +273,13 @@ typedef struct qm_format_s *ssg_valmode_t;
 typedef void ssg_codegen_callback_t (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
 /*! Callback to generate the top of an SPARQL query with 'graph-grab' feature */
 void ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
+
+/*! A possible use of quad map as data source for a given triple */
+typedef struct triple_case_s
+{
+  struct quad_map_s *tc_qm;	/*!< Quad map that can generate data that match the triple */
+  caddr_t *tc_red_cuts[SPART_TRIPLE_FIELDS_COUNT];	/*!< Red cuts for values bound by the triple when they are generated by \c tc_qm */
+} triple_case_t;
 
 /*! A node of tree representation of a SPARQL query. Tree format is common for both syntax parser and optimizer. */
 typedef struct spar_tree_s
@@ -323,7 +341,7 @@ typedef struct spar_tree_s
       SPART *tr_fields[SPART_TRIPLE_FIELDS_COUNT];
       caddr_t selid;
       caddr_t tabid;
-        struct quad_map_s **qm_list;
+        triple_case_t **tc_list;
         struct qm_format_s *native_formats[SPART_TRIPLE_FIELDS_COUNT];
       } triple;
     struct { /* Note that all first members of \c retval case should match to \c var case */
@@ -475,10 +493,16 @@ extern void spar_qm_pop_key (sparp_t *sparp, int key_to_pop);
 
 extern caddr_t spar_make_iri_from_template (sparp_t *sparp, caddr_t tmpl);
 
-extern void spar_qm_add_aliased_table (sparp_t *sparp, caddr_t qtable, caddr_t alias);
+extern caddr_t spar_qm_find_base_alias (sparp_t *sparp, caddr_t descendant_alias);
+extern caddr_t spar_qm_find_base_table (sparp_t *sparp, caddr_t descendant_alias);
+extern dk_set_t spar_qm_find_descendants_of_alias (sparp_t *sparp, caddr_t base_alias);
+extern void spar_qm_add_aliased_table (sparp_t *sparp, caddr_t parent_qtable, caddr_t new_alias);
+extern void spar_qm_add_aliased_alias (sparp_t *sparp, caddr_t parent_alias, caddr_t new_alias);
 extern void spar_qm_add_table_filter (sparp_t *sparp, caddr_t tmpl);
+extern void spar_qm_check_filter_aliases (sparp_t *sparp, dk_set_t used_aliases);
 extern SPART *sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name);
 extern SPART *spar_make_qm_value (sparp_t *sparp, caddr_t format_name, SPART **cols);
+extern void spar_qm_find_all_conditions (sparp_t *sparp, dk_set_t map_aliases, dk_set_t *cond_tmpls_ptr);
 extern SPART *spar_make_qm_sql (sparp_t *sparp, const char *fname, SPART **fixed, SPART **named);
 extern SPART *spar_make_vector_qm_sql (sparp_t *sparp, SPART **fixed);
 extern SPART *spar_make_topmost_qm_sql (sparp_t *sparp);

@@ -2,28 +2,28 @@
 %option case-sensitive
 %option never-interactive
 %{
-/* 
- *  
+/*
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
 
 #include "Dk.h"
 #include "xmltree.h"
@@ -413,6 +413,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{A}{S}{C}			{ return ASC_L		; }
 <SPARQL>{A}{S}{K}			{ return ASK_L		; }
 <SPARQL>{B}{A}{S}{E}			{ return BASE_L		; }
+<SPARQL>{B}{I}{J}{E}{C}{T}{I}{O}{N}	{ return BIJECTION_L	; }
 <SPARQL>{B}{O}{U}{N}{D}			{ return BOUND_L	; }
 <SPARQL>{B}{Y}				{ return BY_L		; }
 <SPARQL>{C}{L}{A}{S}{S}			{ return CLASS_L	; }
@@ -442,6 +443,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{L}{A}{N}{G}{M}{A}{T}{C}{H}{E}{S}	{ return LANGMATCHES_L	; }
 <SPARQL>{L}{I}{K}{E}			{ return LIKE_L		; }
 <SPARQL>{L}{I}{M}{I}{T}			{ return LIMIT_L	; }
+<SPARQL>{L}{I}{T}{E}{R}{A}{L}		{ return LITERAL_L	; }
 <SPARQL>{M}{A}{K}{E}			{ return MAKE_L	; }
 <SPARQL>{N}{A}{M}{E}{D}			{ return NAMED_L	; }
 <SPARQL>{N}{I}{L}			{ return NIL_L		; }

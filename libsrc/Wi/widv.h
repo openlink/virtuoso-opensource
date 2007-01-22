@@ -334,7 +334,7 @@ i.e. (DV_ARRAY_OF_POINTER==(vectype)) || (DV_LIST_OF_POINTER==(vectype)))
   in it might not be transferred from Kubl implicitly.
  */
 #define get_itemsize_of_vector(vectype)\
-	 ((is_string_type(vectype)) ? sizeof(char)\
+	 ((is_string_type((vectype)) || (DV_UNAME == (vectype))) ? sizeof(char)\
    : ((DV_ARRAY_OF_LONG == (vectype)) ? sizeof(ptrlong)\
    : ((DV_ARRAY_OF_DOUBLE == (vectype)) ? sizeof(double)\
    : ((DV_ARRAY_OF_FLOAT == (vectype)) ? sizeof(float)\
@@ -390,7 +390,7 @@ sqlr_new_error is void, and should never return.
 	(box_double (((double*)(vec)) [(inx)]))\
  : ((DV_ARRAY_OF_FLOAT == (vtype)) ? \
 	(box_float (((float*)(vec)) [(inx)]))\
- : (( (DV_LONG_STRING == (vtype))) ?\
+ : (((DV_LONG_STRING == (vtype)) || (DV_UNAME == (vtype))) ?\
 	(box_num ( (((unsigned char *) (vec)) [(inx)])))\
  : ((DV_WIDE == (vtype) || DV_LONG_WIDE == (vtype)) ? \
 	(box_num (((wchar_t*)(vec)) [(inx)]))\

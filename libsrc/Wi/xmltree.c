@@ -7483,7 +7483,7 @@ bif_xml_tree_doc_encoding (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 	  !sch_name_to_charset (enc))
 	sqlr_new_error ("22023", "SR361", "Invalid encoding name '%.300s' in xml_tree_doc_encoding", enc);
       ret = box_dv_short_string (xd->xout_encoding);
-      B_SET (xd->xout_encoding, box_dv_short_string (enc));
+      B_SET (xd->xout_encoding, enc);
     }
 
   if (xd->xout_encoding)
@@ -9519,6 +9519,8 @@ caddr_t uname_rdf_ns_uri_type;
 caddr_t uname_rdf_ns_uri_datatype;
 caddr_t uname_rdf_ns_uri_parseType;
 caddr_t uname_space;
+caddr_t uname_swap_reify_ns_uri;
+caddr_t uname_swap_reify_ns_uri_statement;
 caddr_t uname_virtrdf_ns_uri;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
 caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
@@ -9598,6 +9600,8 @@ xml_tree_init (void)
   UNAME_IT(uname_rdf_ns_uri_datatype		, RDF_NS_URI "datatype"		);
   UNAME_IT(uname_rdf_ns_uri_parseType		, RDF_NS_URI "parseType"	);
   UNAME_IT(uname_space				, "space"			);
+  UNAME_IT(uname_swap_reify_ns_uri		, SWAP_REIFY_NS_URI		);
+  UNAME_IT(uname_swap_reify_ns_uri_statement	, SWAP_REIFY_NS_URI "#statement"	);
   UNAME_IT(uname_virtrdf_ns_uri			, VIRTRDF_NS_URI		);
   UNAME_IT(uname_virtrdf_ns_uri_DefaultQuadStorage	, VIRTRDF_NS_URI "DefaultQuadStorage"	);
   UNAME_IT(uname_virtrdf_ns_uri_QuadMapFormat	, VIRTRDF_NS_URI "QuadMapFormat"	);

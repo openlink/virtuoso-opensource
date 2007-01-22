@@ -55,6 +55,15 @@ extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t 
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
 
 #define TTLP_STRING_MAY_CONTAIN_CRLF	0x01
+#define TTLP_VERB_MAY_BE_BLANK		0x02
+#define TTLP_ACCEPT_VARIABLES		0x04
+#define TTLP_SKIP_LITERAL_SUBJECTS	0x08
+
+#define TTLP_ALLOW_QNAME_A		0x01
+#define TTLP_ALLOW_QNAME_HAS		0x02
+#define TTLP_ALLOW_QNAME_IS		0x04
+#define TTLP_ALLOW_QNAME_OF		0x08
+#define TTLP_ALLOW_QNAME_THIS		0x10
 
 typedef struct ttlp_s
 {
@@ -72,15 +81,18 @@ typedef struct ttlp_s
   int ttlp_lexlineno;		/*!< Current line number */
   int ttlp_lexdepth;		/*!< Current number of not-yet-closed parenthesis */
   const char *ttlp_raw_text;	/*!< Raw text of the lexem */
+  ptrlong ttlp_special_qnames;	/*!< Bitmask where every bit means that the identifier in qname, not a keyword */
   /* parser */
-  const char *ttlp_err_hdr;
-  caddr_t ttlp_catched_error;
-  caddr_t ttlp_default_ns_uri;
-  dk_set_t ttlp_namespaces;
-  dk_set_t ttlp_saved_uris;
-  caddr_t ttlp_base_uri;
-  caddr_t ttlp_subj_uri;
-  caddr_t ttlp_pred_uri;
+  const char *ttlp_err_hdr;	/*!< Human-readable phrase that gives a name to the parsing routine, e.g. "Turtle parser of web crawer" */
+  caddr_t ttlp_catched_error;	/*!< The error that stopped the processing, as a three-element vector made by srv_make_new_error () */
+  caddr_t ttlp_default_ns_uri;	/*!< IRI associated with ':' prefix */
+  dk_set_t ttlp_namespaces;	/*!< get_keyword style list of namespace prefixes (keys) and IRIs (values) */
+  dk_set_t ttlp_saved_uris;	/*!< Stack that keeps URIs. YACC stack is not used to let us free memory on error */
+  caddr_t ttlp_base_uri;	/*!< Base URI to resolve relative URIs */
+  caddr_t ttlp_subj_uri;	/*!< Current subject URI, but it become object URI if ttlp_pred_is_reverse */
+  caddr_t ttlp_pred_uri;	/*!< Current predicate URI */
+  int ttlp_pred_is_reverse;	/*!< Flag if ttlp_pred_uri is used as reverse, e.g. in 'O is P of S' syntax */
+  caddr_t ttlp_formula_iid;	/*!< IRI ID of the blank node of the formula ( '{ ... }' notation of N3 */
   /* feeder */
   triple_feed_t *ttlp_tf;
 } ttlp_t;
@@ -114,18 +126,25 @@ extern int ttlyyparse (void);
 extern void ttlyyerror_impl (TTLP_PARAM const char *raw_text, const char *strg);
 extern void ttlyyerror_impl_1 (TTLP_PARAM const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg);
 
+extern ptrlong ttlp_bit_of_special_qname (caddr_t qname);
 extern caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname);
 extern caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, const char *sparyytext);
+extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS TTLP_PARAM const char *sparyytext);
 #ifdef MALLOC_DEBUG
 #define ttlp_expand_qname_prefix(qname) DBG_NAME (ttlp_expand_qname_prefix) (__FILE__, __LINE__, (qname))
 #define tf_bnode_iid(tf, sparyytext) DBG_NAME (tf_bnode_iid) (__FILE__, __LINE__, (tf), (sparyytext))
+#ifdef RE_ENTRANT_TTLYY
+#define tf_formula_bnode_iid(ttlp, sparyytext) DBG_NAME (tf_formula_bnode_iid) (__FILE__, __LINE__, (ttlp), (sparyytext))
+#else
+#define tf_formula_bnode_iid(sparyytext) DBG_NAME (tf_formula_bnode_iid) (__FILE__, __LINE__, (sparyytext))
 #endif
-
+#endif
+extern caddr_t ttlp_uri_resolve (TTLP_PARAM caddr_t qname);
 extern caddr_t ttlp_strliteral (TTLP_PARAM const char *sparyytext, int strg_is_long, char delimiter);
 extern caddr_t ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset);
 
-#define ttlp_triple(o_uri) tf_triple (ttlp_inst.ttlp_tf, box_copy (ttlp_inst.ttlp_subj_uri), box_copy (ttlp_inst.ttlp_pred_uri), (o_uri))
-#define ttlp_triple_l(o_sqlval,o_dt,o_lang) tf_triple_l (ttlp_inst.ttlp_tf, box_copy (ttlp_inst.ttlp_subj_uri), box_copy (ttlp_inst.ttlp_pred_uri), (o_sqlval), (o_dt), (o_lang));
+extern void ttlp_triple_and_inf (TTLP_PARAM caddr_t o_uri);
+extern void ttlp_triple_l_and_inf (TTLP_PARAM caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
 
 extern void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,

@@ -46,23 +46,21 @@ extern "C" {
 #define rdfxml_dbg_printf(x)
 #endif
 
-#define XRL_SET_INHERITABLE(xrl,name,value) do { \
+#define XRL_SET_INHERITABLE(xrl,name,value,errmsg) do { \
     if (xrl->name##_set) \
     { \
       dk_free_tree ((value)); \
-      xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, \
-        "Contradictory attributes in the same RDF/XML element" ); \
+        xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, errmsg); \
     } \
   xrl->name = (value); \
   xrl->name##_set = 1; \
   } while (0)
 
-#define XRL_SET_NONINHERITABLE(xrl,name,value) do { \
+#define XRL_SET_NONINHERITABLE(xrl,name,value,errmsg) do { \
     if (NULL != xrl->name) \
       { \
         dk_free_tree ((value)); \
-          xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, \
-            "Contradictory attributes in the same RDF/XML element" ); \
+        xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, errmsg); \
       } \
     xrl->name = (value); \
   } while (0)
@@ -370,7 +368,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   return;
                 }
               inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 0);
-              XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj);
+              XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:about' conflicts with other attribute that set the subject");
               inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
             }
           else if (!strcmp (tmp_local, "resource"))
@@ -382,13 +380,13 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   return;
                 }
               inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 0);
-              XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj);
+              XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:resource' conflicts with other attribute that set the subject");
               inner->xrl_parsetype = XRL_PARSETYPE_EMPTYPROP;
             }
           else if (!strcmp (tmp_local, "nodeID"))
             {
               caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, avalue);
-              XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj);
+              XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:nodeID' conflicts with other attribute that set the subject");
               if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
                 {
                   inner->xrl_parsetype = XRL_PARSETYPE_EMPTYPROP;
@@ -403,12 +401,12 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
               if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
                 {
                   caddr_t reif_subj = xp_rdfxml_resolved_iid (xp, avalue, 1);
-                  XRL_SET_NONINHERITABLE (inner, xrl_reification_id, reif_subj);
+                  XRL_SET_NONINHERITABLE (inner, xrl_reification_id, reif_subj, "Reification ID of the statement is set twice by 'rdf:ID' attribute of a property element");
                 }
               else
                 {
                   caddr_t inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 1);
-                  XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj);
+                  XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:ID' conflicts with other attribute that set node ID");
                   inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
                 }
             }
@@ -419,7 +417,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                 xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:datatype' can appear only in property elements");
                   return;
                 }
-              XRL_SET_NONINHERITABLE (inner, xrl_datatype, xp_rdfxml_resolved_iid (xp, avalue, 0));
+              XRL_SET_NONINHERITABLE (inner, xrl_datatype, xp_rdfxml_resolved_iid (xp, avalue, 0),  "Attribute 'rdf:datatype' us used twice");
               inner->xrl_parsetype = XRL_PARSETYPE_LITERAL;
             }
           else if (!strcmp (tmp_local, "parseType"))
@@ -432,7 +430,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
               if (!strcmp (avalue, "Resource"))
                 {
                   caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, NULL);
-                  XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj);
+                  XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute parseType='Resource' can not be used if object is set by other attribute");
                   inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
                 }
               else if (!strcmp (avalue, "Literal"))
@@ -457,9 +455,9 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
       else if (!stricmp (tmp_nsuri, "xml"))
         {
           if (!strcmp (tmp_local, "lang"))
-            XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue));
+            XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
           else if (!strcmp (tmp_local, "base"))
-            XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue));
+            XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue), "Attribute 'xml:base' is used twice");
           else if (0 != strcmp (tmp_local, "space"))
             xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
               "Unsupported 'xml:...' attribute, only 'xml:lang', 'xml:base' and 'xml:space' are supported" );
@@ -489,12 +487,12 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
       if ((NULL != inner_attr_props) || (NULL != subj_type) || (XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype))
         {
           caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, NULL);
-          XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj);
+          XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Blank node object can not be defined here");
           inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
         }
     }
   if ((XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) && (NULL != outer->xrl_predicate))
-    XRL_SET_NONINHERITABLE (outer, xrl_subject, box_copy_tree (inner->xrl_subject));
+    XRL_SET_NONINHERITABLE (outer, xrl_subject, box_copy_tree (inner->xrl_subject), "A property can not have two object values");
   if (NULL != subj_type)
     xp_rdfxml_triple (xp, inner->xrl_subject, uname_rdf_ns_uri_type, subj_type);
   if (NULL != xp->xp_boxed_name)

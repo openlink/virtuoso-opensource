@@ -3093,13 +3093,17 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_remove", 0);
   id_hash_t *ht = hit->hit_hash;
   caddr_t key = bif_arg (qst, args, 1, "dict_remove");
-  caddr_t *old_val = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
-  caddr_t *old_key;
-  if (NULL == old_val)
+  caddr_t *old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
+  caddr_t *old_key_ptr;
+  caddr_t old_key, old_val;
+  if (NULL == old_val_ptr)
     return box_num (0);
-  old_key = (caddr_t *)id_hash_get_key_by_place (ht, (caddr_t)old_val);
+  old_key_ptr = (caddr_t *)id_hash_get_key_by_place (ht, (caddr_t)old_val_ptr);
+  old_key = old_key_ptr[0];
+  old_val = old_val_ptr[0];
   id_hash_remove (ht, (caddr_t)(&key));
   dk_free_tree (old_key);
+  dk_free_tree (old_val);
   id_hash_iterator (hit, ht);
   ht->ht_dict_version++;
   hit->hit_dict_version = ht->ht_dict_version;

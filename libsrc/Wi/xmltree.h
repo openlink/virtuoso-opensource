@@ -43,6 +43,12 @@ extern "C" {
 #endif
 */
 
+/*				 0         1         2         3        */
+/*				 01234567890123456789012345678901234567 */
+
+#define SWAP_REIFY_NS_URI	"http://www.w3.org/2000/10/swap/reify#"
+#define SWAP_REIFY_NS_URI_LEN	37
+
 /*				 0         1         2         3         4 */
 /*				 0123456789012345678901234567890123456789012 */
 #define VIRTRDF_NS_URI		"http://www.openlinksw.com/schemas/virtrdf#"
@@ -931,6 +937,8 @@ extern caddr_t uname_rdf_ns_uri_type;
 extern caddr_t uname_rdf_ns_uri_datatype;
 extern caddr_t uname_rdf_ns_uri_parseType;
 extern caddr_t uname_space;
+extern caddr_t uname_swap_reify_ns_uri;
+extern caddr_t uname_swap_reify_ns_uri_statement;
 extern caddr_t uname_virtrdf_ns_uri;
 extern caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
 extern caddr_t uname_virtrdf_ns_uri_QuadMapFormat;

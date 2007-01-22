@@ -107,6 +107,12 @@ static void ttlyyerror_if_long_qname (TTLP_PARAM caddr_t box, const char *lex_ty
     ttlyylval.box = box_dv_short_string (ttlyytext+(n)); \
     TTL_TOKBOX_Q_FINAL(name,lex_type_descr) }
 
+#define TTL_SPECIAL_QNAME(bit,id) \
+ if (!(ttlp_inst.ttlp_special_qnames & bit)) \
+   return id; \
+ ttlyylval.box = box_dv_short_string (ttlyytext); \
+ return QNAME;
+
 static int ttlp_NUMBER_int (TTLP_PARAM void *yylval)
 {
   if (strlen (ttlyytext) < 10)
@@ -168,6 +174,9 @@ static int ttlp_NUMBER_double (TTLP_PARAM void *yylval)
 	/* Internals of triple-double-quoted INITIAL string lit */
 %x TURTLE_DDDQ
 
+	/* State after '@' right after quoted string */
+%x AT_AFTER_QUOTED
+
 	/* Special unreacheable state to fill the first item of ttlp_inst.ttlp_lexstates */
 %x UNREACHEABLE
 
@@ -215,20 +224,28 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
 <INITIAL>"."		{ return _DOT_NOWS; }
 <INITIAL>":"		{ return _COLON; }
 <INITIAL>";"		{ return _SEMI; }
+<INITIAL>"="		{ return _EQ; }
+<INITIAL>"=>"		{ return _EQ_GT; }
+<INITIAL>"<="		{ return _LT_EQ; }
+<INITIAL>"!"		{ return _BANG; }
 
-<INITIAL>"@a"				{ return a_L; }
-<INITIAL>"@is"				{ return is_L; }
-<INITIAL>"@of"				{ return of_L; }
-<INITIAL>"@this"				{ return this_L; }
-<INITIAL>"@keywords"			{ return keywords_L; }
-<INITIAL>"@prefix"			{ return prefix_L; }
+<INITIAL>"@a"				{ return _AT_a_L; }
+<INITIAL>"@has"				{ return _AT_has_L; }
+<INITIAL>"@is"				{ return _AT_is_L; }
+<INITIAL>"@of"				{ return _AT_of_L; }
+<INITIAL>"@this"			{ return _AT_this_L; }
+<INITIAL>"@keywords"			{ return _AT_keywords_L; }
+<INITIAL>"@prefix"			{ return _AT_prefix_L; }
+<INITIAL>"@forAll"			{ ttlyyerror ("Current version of Virtuoso does not support @forAll keyword"); }
+<INITIAL>"@forSome"			{ ttlyyerror ("Current version of Virtuoso does not support @forSome keyword"); }
 <INITIAL>"false"				{ return false_L; }
 <INITIAL>"true"				{ return true_L; }
 
-<INITIAL>"a"				{ /*TBF if*/ return a_L; }
-<INITIAL>"is"				{ /*TBF if*/ return is_L; }
-<INITIAL>"of"				{ /*TBF if*/ return of_L; }
-<INITIAL>"this"				{ /*TBF if*/ return this_L; }
+<INITIAL>"a"				{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_A, _AT_a_L) }
+<INITIAL>"has"				{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_HAS, _AT_has_L) }
+<INITIAL>"is"				{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_IS, _AT_is_L) }
+<INITIAL>"of"				{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_OF, _AT_of_L) }
+<INITIAL>"this"				{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_THIS, _AT_this_L) }
 
 
 <INITIAL>"("				{ ttlp_inst.ttlp_lexdepth++; return _LPAR; }
@@ -236,6 +253,8 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
 <INITIAL>"["				{ ttlp_inst.ttlp_lexdepth++; return _LSQBRA; }
 <INITIAL>"[]"				{ return _LSQBRA_RSQBRA; }
 <INITIAL>"]"				{ ttlp_inst.ttlp_lexdepth--; return _RSQBRA; }
+<INITIAL>"{"				{ ttlp_inst.ttlp_lexdepth++; return _LBRA; }
+<INITIAL>"}"				{ ttlp_inst.ttlp_lexdepth--; return _RBRA; }
 
 <INITIAL>"<"([^\\>`\001-\040])*">"	{
     ttlyylval.box = box_dv_short_nchars (ttlyytext + 1, ttlyyleng - 2);
@@ -251,14 +270,35 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"		{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
 <INITIAL>{SPAR_NCNAME}				{ TTL_TOKBOX_Q(0,QNAME,"name without prefix"); }
 <INITIAL>"_:"{SPAR_NCNAME}			{ TTL_TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
+<INITIAL>"?"{SPAR_NCNAME}	{
+    if (!(ttlp_inst.ttlp_flags & TTLP_ACCEPT_VARIABLES))
+      ttlyyerror ("Full N3 syntax allow variables, TURTLE does not!");
+    TTL_TOKBOX_Q(0,VARIABLE,"variable name"); }
 
 <INITIAL>"@"([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)	{
     ttlyylval.box = box_dv_short_nchars (ttlyytext + 1, ttlyyleng - 1);
+    return KEYWORD;
+  }
+
+<AT_AFTER_QUOTED>([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)	{
+    ttlyylval.box = box_dv_short_nchars (ttlyytext, ttlyyleng);
+    BEGIN INITIAL;
     return LANGTAG;
   }
 
+<AT_AFTER_QUOTED>([a-zA-Z0-9-]+)	{ ttlyyerror ("The identifier after '@' at the end of quoted literal is not a valid language id"); }
+<AT_AFTER_QUOTED><<EOF>>		{ ttlyyerror ("Missing language id after '@' at the end of quoted literal"); }
+<AT_AFTER_QUOTED>.			{ ttlyyerror ("Bad character instead of language id after '@' at the end of quoted literal"); }
+
+
 <INITIAL>([""][^""\\\n]*[""])|([''][^''\\\n]*['']) {
     ttlyylval.box = box_dv_short_nchars (ttlyytext+1, ttlyyleng - 2);
+    return TURTLE_STRING;
+  }
+
+<INITIAL>(([""][^""\\\n]*[""])|([''][^''\\\n]*['']))"@" {
+    ttlyylval.box = box_dv_short_nchars (ttlyytext+1, ttlyyleng - 3);
+    BEGIN AT_AFTER_QUOTED;
     return TURTLE_STRING;
   }
 
@@ -266,6 +306,8 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
 <INITIAL>[""][""][""]		{ yymore(); BEGIN TURTLE_DDDQ; }
 <TURTLE_SSSQ>['']['']['']	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 1, '\''); BEGIN INITIAL; return TURTLE_STRING; }
 <TURTLE_DDDQ>[""][""][""]	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 1, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_SSSQ>['']['']['']"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 1, '\''); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""][""]"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 1, '\"'); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ ttlp_inst.ttlp_lexlineno++; yymore(); }
 <TURTLE_DDDQ>(([""]([""]?))?{S_NL})		{ ttlp_inst.ttlp_lexlineno++; yymore(); }
 <TURTLE_SSSQ>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
@@ -282,6 +324,8 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
 <INITIAL>[""]		{ yymore(); BEGIN TURTLE_DQ; }
 <TURTLE_SQ>['']		{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '\''); BEGIN INITIAL; return TURTLE_STRING; }
 <TURTLE_DQ>[""]		{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_SQ>['']"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '\''); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_DQ>[""]"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '\"'); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_SQ>{S_NL}	{ if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_inst.ttlp_flags)) ttlyyerror ("End-of-line in a short single-quoted string"); ttlp_inst.ttlp_lexlineno++; yymore(); }
 <TURTLE_DQ>{S_NL}	{ if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_inst.ttlp_flags)) ttlyyerror ("End-of-line in a short double-quoted string"); ttlp_inst.ttlp_lexlineno++; yymore(); }
 <TURTLE_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }

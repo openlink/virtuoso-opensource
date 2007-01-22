@@ -302,7 +302,7 @@ literal_as_utf8 (encoding_handler_t * enc, caddr_t literal, int len)
 caddr_t
 bif_charset_recode (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
 {
-  caddr_t narrow = bif_string_or_wide_or_null_arg (qst, args, 0, "charset_recode");
+  caddr_t narrow = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "charset_recode");
   caddr_t cs1_name = bif_string_or_null_arg (qst, args, 1, "charset_recode");
   caddr_t cs2_name = bif_string_or_null_arg (qst, args, 2, "charset_recode");
   caddr_t cs1_uname, cs2_uname;
@@ -361,7 +361,8 @@ bif_charset_recode (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
     cs1 = default_charset;
   if (!cs2)
     cs2 = default_charset;
-
+  if ((DV_UNAME == dtp) && (cs1 != CHARSET_UTF8))
+    sqlr_new_error ("2C000", "IN016", "Function charset_recode() got a UNAME argument and the source encoding is not UTF-8; this is illegal because UNAMEs are always UTF-8");
   if (IS_WIDE_STRING_DTP (dtp) && cs1 != CHARSET_WIDE)
     sqlr_new_error ("2C000", "IN012", "Narrow source charset specified, but the supplied string is wide");
   if (IS_STRING_DTP (dtp) && cs1 == CHARSET_WIDE)
@@ -411,6 +412,99 @@ bif_charset_recode (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
   if (to_free)
     dk_free_box (narrow);
   return ret;
+}
+
+caddr_t
+bif_uname (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
+{
+  caddr_t narrow = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "uname");
+  caddr_t cs1_name = NULL;
+  int allow_long = 0;
+  caddr_t cs1_uname;
+  wcharset_t *cs1;
+  int offset = 0;
+  encoding_handler_t *eh_cs1 = NULL;
+  dtp_t dtp = DV_TYPE_OF (narrow);
+  if (!narrow)
+    return NEW_DB_NULL;
+  switch (BOX_ELEMENTS (args))
+    {
+    default:
+    case 3: allow_long = bif_long_arg (qst, args, 2, "uname");
+    case 2: cs1_name = bif_string_or_null_arg (qst, args, 1, "uname");
+    case 1: break;
+    }
+  cs1_uname = cs1_name ? sqlp_box_upcase (cs1_name) : NULL;
+
+  cs1 = (cs1_name && box_length (cs1_name) > 1 ? sch_name_to_charset (cs1_uname) : (wcharset_t *)NULL);
+  if (cs1_uname && !cs1 && !strcmp (cs1_uname, "UTF-8"))
+    cs1 = CHARSET_UTF8;
+  if (cs1_uname && !cs1 && !strcmp (cs1_uname, "_WIDE_"))
+    cs1 = CHARSET_WIDE;
+  dk_free_box (cs1_uname);
+  if (!narrow)
+    return narrow;
+
+  if (!cs1 && cs1_name && box_length (cs1_name) > 1)
+    {
+      if (!stricmp (cs1_name, "UTF-16") && box_length (narrow) > 2
+	  && (unsigned char)(narrow[0]) == 0xFF && (unsigned char)(narrow[1]) == 0xFE)
+	{
+          offset = 2;
+	  eh_cs1 = eh_get_handler ("UTF-16LE");
+	}
+      else if (!stricmp (cs1_name, "UTF-16") && box_length (narrow) > 2
+	  && (unsigned char)(narrow[0]) == 0xFE && (unsigned char)(narrow[1]) == 0xFF)
+	{
+	  offset = 2;
+	  eh_cs1 = eh_get_handler ("UTF-16BE");
+	}
+      else if (!stricmp (cs1_name, "UTF-16"))
+	sqlr_new_error ("2C000", "IN000", "UTF-16 specified, but no byte-order-mask is given");
+      else
+	eh_cs1 = eh_get_handler (cs1_name);
+      if (!eh_cs1)
+        sqlr_new_error ("2C000", "IN007", "Charset %s not defined", cs1_name);
+    }
+
+  if (!cs1)
+    cs1 = default_charset;
+  if (DV_UNAME == dtp)
+    {
+      if (cs1 != CHARSET_UTF8)
+        sqlr_new_error ("2C000", "IN016", "Function uname() got a UNAME argument and the source encoding is not UTF-8; this is illegal because UNAMEs are always UTF-8");
+      return box_copy (narrow);
+    }
+  if (IS_WIDE_STRING_DTP (dtp) && cs1 != CHARSET_WIDE)
+    sqlr_new_error ("2C000", "IN012", "Narrow source charset specified, but the supplied string is wide");
+  if (IS_STRING_DTP (dtp) && cs1 == CHARSET_WIDE)
+    sqlr_new_error ("2C000", "IN013", "Wide source charset specified, but the supplied string not wide");
+
+  if (eh_cs1)
+    {
+      caddr_t strg = literal_as_utf8 (eh_cs1, narrow+offset, box_length (narrow) - (1+offset)); /* this alloc a box */
+      caddr_t res = box_dv_uname_nchars (strg, box_length (strg) - 1);
+      dk_free_box (strg);
+      return res;
+    }
+
+  if (IS_WIDE_STRING_DTP (dtp))
+    {
+      caddr_t strg = box_wide_as_utf8_char (narrow, box_length (narrow) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
+      caddr_t res = box_dv_uname_nchars (strg, box_length (strg) - 1);
+      dk_free_box (strg);
+      return res;
+    }
+  else if (!DV_STRINGP (narrow))
+    sqlr_new_error ("2C000", "IN017", "First argument of uname() function shuld be a narrow or wide string, or NULL or a UNAME");
+  else if (cs1 != CHARSET_UTF8)
+    {
+      caddr_t strg = box_narrow_string_as_utf8 (NULL, narrow, 0, cs1);
+      caddr_t res = box_dv_uname_nchars (strg, box_length (strg) - 1);
+      dk_free_box (strg);
+      return res;
+    }
+  return box_dv_uname_nchars (narrow, box_length (narrow) - 1);
 }
 
 static int
@@ -829,6 +923,7 @@ bif_intl_init (void)
   bif_define_typed ("collation_order_string", bif_collation_order_string, &bt_varchar);
   bif_define_typed ("current_charset", bif_current_charset, &bt_varchar);
   bif_define_typed ("charset_recode", bif_charset_recode, &bt_varchar);
+  bif_define ("uname", bif_uname);
   bif_define ("charsets_list", bif_charsets_list);
   bif_define_typed ("unicode_toupper", bif_unicode_toupper, &bt_integer);
   bif_define_typed ("unicode_tolower", bif_unicode_tolower, &bt_integer);

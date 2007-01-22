@@ -1,25 +1,26 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
+
 #include "libutil.h"
 #include "sqlnode.h"
 #include "sqlbif.h"
@@ -460,12 +461,22 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       sparp->sparp_env->spare_output_format_name = t_box_dv_uname_string (value);
       return;
     }
+  if (!strcmp (param, "input:default-graph-uri") || !strcmp (param, "input:named-graph-uri"))
+    {
+#if 0
+      rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_grab);
+      const char *grab = NULL;
+      if (rgc->rgc_all)
+        grab = "input:grab-all";
+      else if ((NULL != rgc->rgc_consts) || (NULL != rgc->rgc_vars))
+        grab = "input:grab-iri";
+      if (NULL != grab)
+        spar_error (sparp, "define %s and define %s specify conflicting security rules", grab, param);
+#endif
   if (!strcmp (param, "input:default-graph-uri"))
     {
       if (0 != sparp->sparp_env->spare_default_graph_locked)
         spar_error (sparp, "'define %.30s' is used more than once", param);
-      if (NULL != sparp->sparp_env->spare_grab_vars)
-        spar_error (sparp, "define input:grab-var and define input:default-graph-uri specify conflicting security rules");
       sparp->sparp_env->spare_default_graph_precode =
         sparp_make_graph_precode ( sparp,
         spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
@@ -475,14 +486,13 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
     }
   if (!strcmp (param, "input:named-graph-uri"))
     {
-      if (NULL != sparp->sparp_env->spare_grab_vars)
-        spar_error (sparp, "define input:grab-var and define input:named-graph-uri specify conflicting security rules");
       t_set_push (&(sparp->sparp_env->spare_named_graph_precodes),
         sparp_make_graph_precode (sparp,
           spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
           NULL ) );
       sparp->sparp_env->spare_named_graphs_locked = 1;
       return;
+    }
     }
   if (!strcmp (param, "input:storage"))
     {
@@ -491,18 +501,48 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       sparp->sparp_env->spare_storage_name = t_box_dv_uname_string (value);
       return;
     }
+  if (!strcmp (param, "input:grab-all") || !strcmp (param, "input:grab-iri") || !strcmp (param, "input:grab-var") ||
+    !strcmp (param, "input:grab-depth") || !strcmp (param, "input:grab-limit") ||
+    !strcmp (param, "input:grab-base") || !strcmp (param, "input:grab-destination") ||
+    !strcmp (param, "input:grab-resolver") || !strcmp (param, "input:grab-loader") )
+    {
+      rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_grab);
+      const char *lock_pragma = NULL;
+      if (sparp->sparp_env->spare_default_graph_locked)
+        lock_pragma = "input:default-graph-uri";
+      else if (sparp->sparp_env->spare_named_graphs_locked)
+        lock_pragma = "input:named-graph-uri";
+      if (NULL != lock_pragma)
+        spar_error (sparp, "define %s should not appear after define %s", param, lock_pragma);
+      if (!strcmp (param, "input:grab-all"))
+        {
+          rgc->rgc_all = 1;
+          return;
+        }
+      if (!strcmp (param, "input:grab-iri"))
+        {
+          switch (value_lexem_type)
+            {
+            case QNAME:
+            case Q_IRI_REF:
+              t_set_push (&(rgc->rgc_consts), value);
+              break;
+            default:
+              if (('?' == value[0]) || ('$' == value[0]))
+                t_set_push (&(rgc->rgc_vars), t_box_dv_uname_string (value+1));
+              else
+                t_set_push (&(rgc->rgc_consts), value);
+            }
+          return;
+        }
   if (!strcmp (param, "input:grab-var"))
     {
       caddr_t varname;
-      if (sparp->sparp_env->spare_default_graph_locked)
-        spar_error (sparp, "define input:default-graph-uri and define input:grab-var specify conflicting security rules");
-      if (sparp->sparp_env->spare_named_graphs_locked)
-        spar_error (sparp, "define input:named-graph-uri and define input:grab-var specify conflicting security rules");
       if (('?' == value[0]) || ('$' == value[0]))
         varname = t_box_dv_uname_string (value+1);
       else
         varname = t_box_dv_uname_string (value);
-      t_set_push (&(sparp->sparp_env->spare_grab_vars), varname);
+          t_set_push (&(rgc->rgc_vars), varname);
       return;
     }
   if (!strcmp (param, "input:grab-depth"))
@@ -510,7 +550,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       ptrlong val = unbox (value);
       if (0 >= val)
         spar_error (sparp, "define input:grab-depth should have positive integer value");
-      sparp->sparp_env->spare_grab_depth = t_box_num_nonull (val);
+          rgc->rgc_depth = t_box_num_nonull (val);
       return;
     }
   if (!strcmp (param, "input:grab-limit"))
@@ -518,18 +558,29 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       ptrlong val = unbox (value);
       if (0 >= val)
         spar_error (sparp, "define input:grab-limit should have positive integer value");
-      sparp->sparp_env->spare_grab_limit = t_box_num_nonull (val);
+          rgc->rgc_limit = t_box_num_nonull (val);
+          return;
+        }
+      if (!strcmp (param, "input:grab-base"))
+        {
+          rgc->rgc_base = t_box_dv_uname_string (value);
       return;
     }
-  if (!strcmp (param, "input:grab-base-iri"))
+      if (!strcmp (param, "input:grab-destination"))
     {
-      sparp->sparp_env->spare_grab_base_iri = t_box_dv_uname_string (value);
+          rgc->rgc_destination = t_box_dv_uname_string (value);
       return;
     }
-  if (!strcmp (param, "input:grab-iri-resolver"))
+      if (!strcmp (param, "input:grab-resolver"))
     {
-      sparp->sparp_env->spare_grab_iri_resolver = t_box_dv_uname_string (value);
+          rgc->rgc_resolver_name = t_box_dv_uname_string (value);
       return;
+    }
+      if (!strcmp (param, "input:grab-loader"))
+        {
+          rgc->rgc_loader_name = t_box_dv_uname_string (value);
+          return;
+        }
     }
   if ((4 < strlen (param)) && !memcmp (param, "get:", 4))
     {
@@ -867,10 +918,10 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   SPART **sources;
   if (NULL != sparp->sparp_env->spare_default_graph_precode)
     t_set_push (&src, spartlist (sparp, 2, FROM_L,
-        t_full_box_copy_tree ((caddr_t)(sparp->sparp_env->spare_default_graph_precode)) ) );
+        sparp_tree_full_copy (sparp, sparp->sparp_env->spare_default_graph_precode, NULL) ) );
   DO_SET(caddr_t, precode, &(sparp->sparp_env->spare_named_graph_precodes))
     {
-      t_set_push (&src, spartlist (sparp, 2, NAMED_L, t_full_box_copy_tree (precode)));
+      t_set_push (&src, spartlist (sparp, 2, NAMED_L, sparp_tree_full_copy (sparp, precode, NULL)));
     }
   END_DO_SET()
   sources = (SPART **)t_revlist_to_array (src);
@@ -914,27 +965,27 @@ SPART *spar_make_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pr
 #if 0	/* !!!TBD: this code looks shorter but the optimizer fails to calculate the function only once */
               SPART *eq;
               graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_:graph"), 1);
-              spar_gp_add_filter (sparp, t_full_box_copy_tree (dflt));
-              eq = spartlist (sparp, 3, BOP_EQ, graph, t_full_box_copy_tree ((caddr_t)(dflt->_.funcall.argtrees[0])));
+              spar_gp_add_filter (sparp, sparp_tree_full_copy (sparp, dflt, NULL));
+              eq = spartlist (sparp, 3, BOP_EQ, graph, sparp_tree_full_copy (sparp, dflt->_.funcall.argtrees[0], 0));
               spar_gp_add_filter (sparp, eq);
 #elseif 0
               SPART *eq1, *eq2;
               graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_:graph"), 1);
-              eq1 = spartlist (sparp, 3, BOP_EQ, t_full_box_copy_tree ((caddr_t)graph), t_full_box_copy_tree ((caddr_t)dflt));
+              eq1 = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, dflt, NULL));
               spar_gp_add_filter (sparp, eq1);
-              eq2 = spartlist (sparp, 3, BOP_EQ, graph, t_full_box_copy_tree ((caddr_t)(dflt->_.funcall.argtrees[0])));
+              eq2 = spartlist (sparp, 3, BOP_EQ, graph, sparp_tree_full_copy (sparp, dflt->_.funcall.argtrees[0], NULL));
               spar_gp_add_filter (sparp, eq2);
 #else
               SPART *eq;
               graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_:graph"), 1);
-              eq = spartlist (sparp, 3, BOP_EQ, t_full_box_copy_tree ((caddr_t)graph), t_full_box_copy_tree ((caddr_t)dflt));
+              eq = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, dflt, NULL));
               spar_gp_add_filter (sparp, eq);
 	      graph->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
-              graph->_.var.rvr.rvrFixedValue = t_full_box_copy_tree ((caddr_t)(dflt->_.funcall.argtrees[0]));
+              graph->_.var.rvr.rvrFixedValue = sparp_tree_full_copy (sparp, dflt->_.funcall.argtrees[0], NULL);
 #endif
             }
           else						/* FROM iriref case */
-            graph = (SPART *)t_full_box_copy_tree ((caddr_t)(env->spare_default_graph_precode));
+            graph = sparp_tree_full_copy (sparp, env->spare_default_graph_precode, NULL);
           break;
 	}
         graph = spar_make_variable (sparp, t_box_dv_uname_string (SPAR_VARNAME_DEFAULT_GRAPH));
@@ -969,6 +1020,13 @@ SPART *spar_make_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pr
                 t_set_push (&(env->spare_good_graph_varnames), fld->_.var.vname);
             }
         }
+      if ((env->spare_grab.rgc_all) && (SPART_TRIPLE_PREDICATE_IDX != fctr))
+        {
+          if ((SPAR_VARIABLE == ft) && !(SPART_VARR_GLOBAL & fld->_.var.rvr.rvrRestrictions))
+            t_set_push (&(env->spare_grab.rgc_vars), t_box_dv_uname_string (fld->_.var.vname));
+          else if (SPAR_QNAME == ft)
+            t_set_push (&(env->spare_grab.rgc_consts), fld->_.lit.val);
+        }
     }
   return triple;
 }
@@ -979,6 +1037,11 @@ SPART *spar_make_variable (sparp_t *sparp, caddr_t name)
   SPART *res;
   int is_global = SPART_VARNAME_IS_GLOB(name);
   caddr_t selid;
+#ifdef DEBUG
+  caddr_t rvr_list_test[] = {SPART_RVR_LIST_OF_NULLS};
+  if (sizeof (rvr_list_test) != sizeof (rdf_val_range_t))
+    GPF_T; /* Don't forget to add NULLS to SPART_RVR_LIST_OF_NULLS when adding fields to rdf_val_range_t */
+#endif
   if (sparp->sparp_in_precode_expn && !is_global)
     spar_error (sparp, "non-global variable '%.100s' can not be used outside any group pattern or result-set list");
   if (NULL != env->spare_selids)
@@ -1419,6 +1482,27 @@ void spart_dump_rvr (dk_session_t *ses, rdf_val_range_t *rvr)
         {
           SES_PRINT (ses, " ");
           SES_PRINT (ses, rvr->rvrIriClasses[iricctr]);
+        }
+    }
+  if (rvr->rvrRedCutCount)
+    {
+      int rcctr;
+      SES_PRINT (ses, "; Not one of");
+      for (rcctr = 0; rcctr < rvr->rvrRedCutCount; rcctr++)
+        {
+          SES_PRINT (ses, " ");
+          SES_PRINT (ses, rvr->rvrRedCuts[rcctr]);
+        }
+    }
+  if (rvr->rvrSprintffs)
+    {
+      int sffctr;
+      SES_PRINT (ses, "; Formats ");
+      for (sffctr = 0; sffctr < rvr->rvrSprintffCount; sffctr++)
+        {
+          SES_PRINT (ses, " |");
+          SES_PRINT (ses, rvr->rvrSprintffs[sffctr]);
+          SES_PRINT (ses, "|");
         }
     }
 }
@@ -1929,7 +2013,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   sql_comp_t sc;
   caddr_t str = strses_string (sparqre->sparqre_src->sif_skipped_part);
   caddr_t res;
-#ifdef SPARP_DEBUG
+#ifdef SPARQL_DEBUG
   printf ("\nsparp_compile_subselect() input:\n%s", str);
 #endif
   strses_free (sparqre->sparqre_src->sif_skipped_part);
@@ -1939,7 +2023,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   dk_free_box (str);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
     {
-#ifdef SPARP_DEBUG
+#ifdef SPARQL_DEBUG
       printf ("\nsparp_compile_subselect() caught parse error: %s", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
 #endif
     return;
@@ -1968,7 +2052,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* First terminator */
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* Second terminator. Most of Lex-es need two! */
   res = strses_string (ssg.ssg_out);
-#ifdef SPARP_DEBUG
+#ifdef SPARQL_DEBUG
   printf ("\nsparp_compile_subselect() done: %s", res);
 #endif
   strses_free (ssg.ssg_out);
@@ -2052,6 +2136,19 @@ bif_sparql_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return spar_query_lex_analyze (str, QST_CHARSET(qst));
 }
 
+caddr_t
+bif_sprintff_intersect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t f1 = bif_string_or_uname_arg (qst, args, 0, "__sprintff_intersect");
+  caddr_t f2 = bif_string_or_uname_arg (qst, args, 1, "__sprintff_intersect");
+  long ignore_cache = bif_long_arg (qst, args, 2, "__sprintff_intersect");
+  caddr_t res;
+  sec_check_dba ((query_instance_t *)qst, "__sprintff_intersect"); /* To prevent attack by intersecting garbage in order to run out of memory. */
+  res = sprintff_intersect (f1, f2, ignore_cache);
+  if (NULL == res)
+    return NEW_DB_NULL;
+  return (ignore_cache ? res : box_copy (res));
+}
 
 #ifdef DEBUG
 
@@ -2252,6 +2349,7 @@ sparql_init (void)
   bif_define ("sparql_to_sql_text", bif_sparql_to_sql_text);
   bif_define ("sparql_explain", bif_sparql_explain);
   bif_define ("sparql_lex_analyze", bif_sparql_lex_analyze);
+  bif_define ("__sprintff_intersect", bif_sprintff_intersect);
 #ifdef DEBUG
   bif_define ("sparql_lex_test", bif_sparql_lex_test);
 #endif

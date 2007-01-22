@@ -1,16 +1,17 @@
 -- Flags that describe restrictions on possible values of the variable or the use of the var
-JSO_CONST virtrdf SPART_VARR_EXPORTED		0x001	--!< The variable is exported to the final result-set
-JSO_CONST virtrdf SPART_VARR_IS_REF		0x002	--!< The value is a node reference, IRI or blank
-JSO_CONST virtrdf SPART_VARR_IS_IRI		0x004	--!< The value is an IRI node reference
-JSO_CONST virtrdf SPART_VARR_IS_BLANK		0x008	--!< The value is a blank node reference
-JSO_CONST virtrdf SPART_VARR_IRI_CALC		0x010	--!< The variable an IRI calculated by other data, e_iri_classes of equiv class will contain known formats of possible values of the variable
-JSO_CONST virtrdf SPART_VARR_IS_LIT		0x020	--!< The value is a literal
-JSO_CONST virtrdf SPART_VARR_TYPED		0x040	--!< The value is a literal of a known type and the type is saved as e_datatype of equiv class
-JSO_CONST virtrdf SPART_VARR_FIXED		0x080	--!< The value is known and e_fixedvalue contains either SQL representation of the literal or IRI string of the IRI node reference
-JSO_CONST virtrdf SPART_VARR_NOT_NULL		0x100	--!< The variable is always bound, can't be NULL
-JSO_CONST virtrdf SPART_VARR_ALWAYS_NULL	0x200	--!< The variable is never bound, can't have value other than NULL
-JSO_CONST virtrdf SPART_VARR_GLOBAL		0x400	--!< The variable is a global parameter
-JSO_CONST virtrdf SPART_VARR_CONFLICT		0x800	--!< The variable should match conflicting requirements or should appear in the result set of an empty union, so it is never bound
+JSO_CONST virtrdf SPART_VARR_SPRINTFF		0x0001	--!< The values of a variable is always made according to one of specified formats
+JSO_CONST virtrdf SPART_VARR_IS_REF		0x0002	--!< The value is a node reference, IRI or blank
+JSO_CONST virtrdf SPART_VARR_IS_IRI		0x0004	--!< The value is an IRI node reference
+JSO_CONST virtrdf SPART_VARR_IS_BLANK		0x0008	--!< The value is a blank node reference
+JSO_CONST virtrdf SPART_VARR_IRI_CALC		0x0010	--!< The variable an IRI calculated by other data, e_iri_classes of equiv class will contain known formats of possible values of the variable
+JSO_CONST virtrdf SPART_VARR_IS_LIT		0x0020	--!< The value is a literal
+JSO_CONST virtrdf SPART_VARR_TYPED		0x0040	--!< The value is a literal of a known type and the type is saved as e_datatype of equiv class
+JSO_CONST virtrdf SPART_VARR_FIXED		0x0080	--!< The value is known and e_fixedvalue contains either SQL representation of the literal or IRI string of the IRI node reference
+JSO_CONST virtrdf SPART_VARR_NOT_NULL		0x0100	--!< The variable is always bound, can't be NULL
+JSO_CONST virtrdf SPART_VARR_ALWAYS_NULL	0x0200	--!< The variable is never bound, can't have value other than NULL
+JSO_CONST virtrdf SPART_VARR_GLOBAL		0x0400	--!< The variable is a global parameter
+JSO_CONST virtrdf SPART_VARR_EXPORTED		0x1000	--!< The variable is exported to the final result-set
+JSO_CONST virtrdf SPART_VARR_CONFLICT		0x2000	--!< The variable should match conflicting requirements or should appear in the result set of an empty union, so it is never bound
 
 -- Flags of actions to be done in case of match of triple pattern to conditions of the quad map
 JSO_CONST virtrdf SPART_QM_EMPTY		0x002	--!< The quad map does not contain real mapping but it's a root of tree of submaps and it can set a common 'exclusive'
@@ -23,8 +24,12 @@ JSO_SCALAR rvrRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values
 JSO_SCALAR rvrDatatype STRING OPTIONAL			--!< Datatype of stored values, if fixed
 JSO_SCALAR rvrLanguage STRING OPTIONAL			--!< Language, if fixed
 JSO_SCALAR rvrFixedValue ANY OPTIONAL			--!< Value of stored values, if fixed
+JSO_SCALAR rvrSprintffs STRING_array OPTIONAL		--!< Sprintf formats that cover possible IRI values
+JSO_SCALAR rvrSprintffCount INTEGER OPTIONAL		--!< Number of used items of rvrSprintffs
 JSO_SCALAR rvrIriClasses ANY_array PRIVATE		--!< Possible types of the IRI, if the IRI is calculable
 JSO_SCALAR rvrIriClassCount INTEGER PRIVATE		--!< Number of used items of rvrIRIClasses
+JSO_SCALAR rvrRedCuts ANY_array PRIVATE			--!< Impossible values, blocked by option (EXCLUSIVE) of earlier quad maps
+JSO_SCALAR rvrRedCutCount INTEGER PRIVATE		--!< Number of used items of rvrRedCuts
 -- Don't forget to add NULLS to SPART_RVR_LIST_OF_NULLS when adding fields here
 JSO_STRUCT_END
 
@@ -57,6 +62,8 @@ JSO_SCALAR qmfShortOfUriTmpl STRING REQUIRED		--!< ... makes short by uri
 -- Misc
 JSO_SCALAR qmfIsBijection BOOLEAN REQUIRED		--!< Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
 JSO_SCALAR qmfIsStable BOOLEAN REQUIRED			--!< Nonzero if sql values are in order IFF of short values are in order
+JSO_SCALAR qmfIsSubformatOfLong BOOLEAN OPTIONAL	--!< Nonzero if the format is subformat of LONG valmode
+
 JSO_SCALAR qmfCmpFuncName STRING REQUIRED		--!< Name of comparison function that acts like strcmp but args are of this type
 JSO_SCALAR qmfTypeminTmpl STRING REQUIRED		--!< Template of expn that returns the smallest value of the type of value of arg
 JSO_SCALAR qmfTypemaxTmpl STRING REQUIRED		--!< Template of expn that returns the biggest possible value of the type of value of arg
@@ -71,6 +78,8 @@ JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
 JSO_SCALAR rvrDatatype STRING OPTIONAL
 JSO_SCALAR rvrLanguage STRING OPTIONAL
 JSO_SCALAR rvrFixedValue ANY OPTIONAL
+JSO_SCALAR rvrSprintffs STRING_array OPTIONAL
+JSO_SCALAR rvrSprintffCount INTEGER OPTIONAL
 JSO_GROUP_END
 JSO_STRUCT_END
 
@@ -89,7 +98,7 @@ JSO_STRUCT_BEGIN qm_value virtrdf QuadMapValue		--!< Description of one of four 
 JSO_SCALAR qmvTableName STRING REQUIRED			--!< Table name that is used if no alias is used.
 JSO_POINTER qmvATables qm_atable_array OPTIONAL		--!< Aliased tables whose aliases are used in columns.
 JSO_POINTER qmvColumns qm_column_array REQUIRED
-JSO_SCALAR qmvConds STRING_array OPTIONAL
+JSO_SCALAR qmvConds STRING_array OPTIONAL		--!< Templates of filters and join conditions related to the value.
 JSO_POINTER qmvFormat qm_format REQUIRED
 JSO_SCALAR qmvColumnsFormKey BOOLEAN REQUIRED
 JSO_SCALAR qmvColumnsToIRI STRING OPTIONAL
@@ -132,7 +141,9 @@ JSO_POINTER qmSubjectMap qm_value OPTIONAL		--!< Subject map if triple has a var
 JSO_POINTER qmPredicateMap qm_value OPTIONAL		--!< Predicate map if triple has a variable in predicate position
 JSO_POINTER qmObjectMap qm_value OPTIONAL		--!< Object map if triple has a variable in object position
 JSO_SCALAR qmTableName STRING OPTIONAL			--!< Table name where mapped rows are from, if this is the only table. Use only if there's no alias and hence no qmvATable.
-JSO_SCALAR qmTableRowFilter STRING OPTIONAL		--!< Filter expression that is true for rows that should be mapped, will appear in WHERE clauses
+JSO_POINTER qmATables qm_atable_array OPTIONAL		--!< Aliased tables whose aliases are used in qmConds but not in qmvConds.
+JSO_SCALAR qmConds STRING_array OPTIONAL		--!< Join conditions and filters not included into qmvConds of columns.
+JSO_SCALAR qmTableRowFilter STRING OPTIONAL		--!< DEPRECATED Filter expression that is true for rows that should be mapped, will appear in WHERE clauses
 JSO_POINTER qmUserSubMaps quad_map_array OPTIONAL	--!< Array of user-defined submaps, should never appear in MJVs or default storage
 JSO_SCALAR qmMatchingFlags BITMASK OPTIONAL		--!< What should be done in case of match of triple pattern to conditions of the quad map.
 JSO_SCALAR qmPriorityOrder INTEGER OPTIONAL		--!< Integer to specify default order in parent's qmUserSubMaps.

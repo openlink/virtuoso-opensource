@@ -1096,7 +1096,7 @@ jso_triple_add (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj)
   return 0;
 }
 
-caddr_t
+caddr_t *
 jso_triple_get_objs_impl (caddr_t * qst, caddr_t jsubj, caddr_t jpred, dk_hash_t *top_hash)
 {
   dk_hash_t *jso_single_subj;
@@ -1108,7 +1108,7 @@ jso_triple_get_objs_impl (caddr_t * qst, caddr_t jsubj, caddr_t jpred, dk_hash_t
   if (NULL == jso_single_subj)
     {
       dk_free_box (jsubj);
-      return list (0);
+      return (caddr_t *)list (0);
     }
   jpred = box_cast_to_UTF8_uname (qst, jpred);
   jso_objs = gethash (jpred, jso_single_subj);
@@ -1116,7 +1116,7 @@ jso_triple_get_objs_impl (caddr_t * qst, caddr_t jsubj, caddr_t jpred, dk_hash_t
     {
       dk_free_box (jsubj);
       dk_free_box (jpred);
-      return list (0);
+      return (caddr_t *)list (0);
     }
   len = dk_set_length (jso_objs);
   res = (caddr_t *)dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -1126,16 +1126,16 @@ jso_triple_get_objs_impl (caddr_t * qst, caddr_t jsubj, caddr_t jpred, dk_hash_t
       res[ctr++] = box_copy (jso_objs->data);
       jso_objs = jso_objs->next;
     }
-  return (caddr_t)res;
+  return res;
 }
 
-caddr_t
+caddr_t *
 jso_triple_get_objs (caddr_t * qst, caddr_t jsubj, caddr_t jpred)
 {
   return jso_triple_get_objs_impl (qst, jsubj, jpred, jso_triple_subjs);
 }
 
-caddr_t
+caddr_t *
 jso_triple_get_subjs (caddr_t * qst, caddr_t jpred, caddr_t jobj)
 {
   return jso_triple_get_objs_impl (qst, jobj, jpred, jso_triple_objs); /* Trick: we swap subj and obj and pass 'wrong' hashtable */

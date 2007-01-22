@@ -1,32 +1,33 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
+
 #ifndef __SPARQL2SQL_H
 #define __SPARQL2SQL_H
 #include "sparql.h"
 #include "rdf_mapping_jso.h"
 
-extern ptrdiff_t qm_field_map_offsets[4];
-extern ptrdiff_t qm_field_constants_offsets[4];
+extern ptrdiff_t qm_field_map_offsets[SPART_TRIPLE_FIELDS_COUNT];
+extern ptrdiff_t qm_field_constants_offsets[SPART_TRIPLE_FIELDS_COUNT];
 
 #define SPARP_FIELD_QMV_OF_QM(qm,field_ctr) (JSO_FIELD_ACCESS(qm_value_t *, (qm), qm_field_map_offsets[(field_ctr)])[0])
 #define SPARP_FIELD_CONST_OF_QM(qm,field_ctr) (JSO_FIELD_ACCESS(caddr_t, (qm), qm_field_constants_offsets[(field_ctr)])[0])
@@ -141,19 +142,37 @@ extern int sparp_equivs_have_same_fixedvalue (sparp_t *sparp, sparp_equiv_t *fir
 
 /*! Returns a datatype that may contain any value from both dt_iri1 and dt_iri2 datatypes, NULL if the result is 'any'.
 The function is not 100% accurate so its result may be a supertype of the actual smallest union datatype. */
-extern caddr_t sparp_smallest_union_superdatatype (sparp_t *sparp, caddr_t dt_iri1, caddr_t dt_iri2);
+extern ccaddr_t sparp_smallest_union_superdatatype (sparp_t *sparp, ccaddr_t dt_iri1, ccaddr_t dt_iri2);
 
 /*! Returns a datatype that may contain any value from intersection of dt_iri1 and dt_iri2 datatypes, NULL if the result is 'any'.
 The function is not 100% accurate so its result may be a supertype of the actual largest intersect datatype. */
-extern caddr_t sparp_largest_intersect_superdatatype (sparp_t *sparp, caddr_t iri1, caddr_t iri2);
+extern ccaddr_t sparp_largest_intersect_superdatatype (sparp_t *sparp, ccaddr_t iri1, ccaddr_t iri2);
+
+/*! Returns an sprintf format string such that any string that can be printed by both \c sprintf_fmt1 and \c sprintf_fmt2 can
+also be printed by the returned format.
+The returned value can be NULL if it's proven that no one string can be printed by both given formats.
+The function returns pointer ot DV_STRING that resides in a global hashtable; it shoud not be changed or deleted.
+The exception is that values returned by function when \c ignore_cache is set; these values are temporarily and should be deleted. */
+extern ccaddr_t sprintff_intersect (ccaddr_t sprintf_fmt1, ccaddr_t sprintf_fmt2, int ignore_cache);
+
+extern void sparp_rvr_add_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *add_sffs, ptrlong add_count);
+extern void sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *isect_sffs, ptrlong isect_count);
 
 /*! Adds IRIs classes from \c add_classes into rvr->rvrIriClasses. \c add_count is the length of \c add_classes.
 Duplicates are not added, of course. */
-extern void sparp_rvr_add_iri_classes (sparp_t *sparp, rdf_val_range_t *rvr, caddr_t *add_classes, ptrlong add_count);
+extern void sparp_rvr_add_iri_classes (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *add_classes, ptrlong add_count);
 
-/*! Removes from rvr->rvrIriClasses all IRIs classes that are missing in \c isect_classes. \c add_count is the length of \c add_classes.
+/*! Removes from rvr->rvrIriClasses all IRIs classes that are missing in \c isect_classes. \c isect_count is the length of \c isect_classes.
 Duplicates are not added, of course. */
-extern void sparp_rvr_intersect_iri_classes (sparp_t *sparp, rdf_val_range_t *rvr, caddr_t *isect_classes, ptrlong isect_count);
+extern void sparp_rvr_intersect_iri_classes (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *isect_classes, ptrlong isect_count);
+
+/*! Adds impossible values from \c add_cuts into rvr->rvrIriRedCuts. \c add_count is the length of \c add_cuts.
+Duplicates are not added, of course. */
+extern void sparp_rvr_add_red_cuts (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *add_cuts, ptrlong add_count);
+
+/*! Removes from rvr->rvrIriRedCuts all IRIs classes that are missing in \c isect_cuts. \c isect_count is the length of \c isect_cuts.
+Duplicates are not added, of course. */
+extern void sparp_rvr_intersect_red_cuts (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *isect_cuts, ptrlong isect_count);
 
 #define SPARP_RVR_CREATE ((rdf_val_range_t *)1L)
 
@@ -175,6 +194,8 @@ extern void sparp_equiv_tighten (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_rang
 The function can not be used if \c addon has SPART_VARR_CONFLICT set */
 extern void sparp_equiv_loose (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_t *addon, int changeable_flags);
 
+/*! Returns 1 if the \c tree is an expression that is free from non-global variables */
+extern int sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree);
 
 /*! Performs all basic term rewritings of the query tree. */
 extern void sparp_rewrite_basic (sparp_t *sparp);
@@ -201,26 +222,31 @@ extern SPART *sparp_find_gp_by_eq_idx (sparp_t *sparp, ptrlong eq_idx);
 /*! This searches for storage by its name. NULL arg means default (or no storage if there's no default loaded), empty UNAME means no storage */
 extern quad_storage_t *sparp_find_storage_by_name (ccaddr_t name);
 
+typedef struct tc_context_s {
+  SPART *tcc_triple;		/*!< Triple pattern in question */
+  SPART **tcc_sources;		/*!< Source graphs that can be used */
+  int tcc_ignore_named_sources;	/*!< Flag whether names sources should be ignored even if listed in tcc_sources */
+  dk_set_t tcc_cuts [SPART_TRIPLE_FIELDS_COUNT];	/*!< Accumulated red cuts for possible values of fields */
+  dk_set_t tcc_found_cases;		/*!< Accumulated triple cases */
+} tc_context_t;
+
 /*! This checks if the given \c qm may contain data that matches \c triple by itself,
 without its submaps and without the check of qmEmpty. */
-extern int sparp_check_triple_mapping (sparp_t *sparp, SPART *triple, SPART **sources, int ignore_named_sources,
-  quad_map_t *qm /*, SPART **remaining_triple_ptr, SPART **intersect_triple_ptr */ );
+extern int sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm);
 
-/*! The function fills in the \c qm_set_ret[0] with all matching quad mappings (\c qm, submaps of \c qm and al subsubmaps recursively
+/*! The function fills in the \c tc_set_ret[0] with triple cases of all matching quad mappings (\c qm, submaps of \c qm and al subsubmaps recursively
 that match and not empty and not after the first (empty or nonempty) full match. */
-extern int sparp_qm_find_triple_mappings (sparp_t *sparp, SPART *triple, SPART **sources, int ignore_named_sources,
-  quad_map_t *qm, dk_set_t *qm_set_ret /*, SPART **remaining_triple_ptr, SPART **intersect_triple_ptr */ );
+extern int sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm);
 
 /*! This returns a mempool-allocated vector of quad maps
 that describe an union of all elementary datasources that can store triples that match a pattern. */
-extern quad_map_t **sparp_find_triple_mappings (sparp_t *sparp, SPART *triple, SPART **sources, int ignore_named_sources);
+extern triple_case_t **sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int ignore_named_sources);
 
-/*! This calls sparp_find_triple_mappings() and fills in qm_list and native_formats of triple->_.triple */
-extern void sparp_refresh_triple_mappings (sparp_t *sparp, SPART *triple);
+/*! This calls sparp_find_triple_cases() and fills in tc_list and native_formats of triple->_.triple */
+extern void sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple);
 
 /*! This replaces selid and tabid in a triple (assuming that ids in field variables match ids of a triple) */
-void
-sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_selid, caddr_t new_tabid);
+extern void sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_selid, caddr_t new_tabid);
 
 /*! This replaces selids of all variables in retvals and soring expressions with current selid of the topmost gp */
 extern void sparp_set_retval_and_order_selid (sparp_t *sparp);
@@ -234,6 +260,13 @@ extern void sparp_set_filter_selid (sparp_t *sparp, SPART *filter, caddr_t new_s
 The function will substitute all selids and tabids of all graph patterns and triples in the tree and
 substitute equiv indexes with indexes of cloned equivs (except SPART_BAD_EQUIV_IDX index that persists). */
 extern SPART *sparp_gp_full_clone (sparp_t *sparp, SPART *gp);
+
+/*! This creates a full copy of \c orig subtree without cloning equivs.
+Variables inside copy have unidirectional pointers to equivs until attached to other tree or same place in same tree. */
+extern SPART *sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp);
+
+/*! This creates a copy of \c origs array and fills it with sparp_tree_full_copy of each member of the array. */
+extern SPART **sparp_treelist_full_copy (sparp_t *sparp, SPART **origs, SPART *parent_gp);
 
 /*! This removes the member with specified index from \c parent_gp and removes its variables from equivs.
 If \c touched_equivs_ptr is not NULL then the list of edited equivs is composed.
@@ -348,11 +381,12 @@ extern ssg_valmode_t ssg_largest_intersect_valmode (ssg_valmode_t m1, ssg_valmod
 extern ssg_valmode_t ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
 extern int ssg_valmode_is_subformat_of (ssg_valmode_t m1, ssg_valmode_t m2);
 
-
-extern qm_format_t *qm_format_default_iri;
+extern qm_format_t *qm_format_default_iri_ref;
+extern qm_format_t *qm_format_default_ref;
 extern qm_format_t *qm_format_default;
 extern qm_value_t *qm_default_values[SPART_TRIPLE_FIELDS_COUNT];
 extern quad_map_t *qm_default;
+extern triple_case_t *tc_default;
 extern quad_storage_t *rdf_sys_storage;
 
 /*! Loads all known definitions of datasources */
@@ -368,8 +402,10 @@ typedef struct rdf_ds_usage_s
 #define NULL_ASNAME ((const char *)NULL)
 #define COL_IDX_ASNAME (((const char *)NULL) + 0x100)
 
+/*! Prints the SQL expression based on \c tmpl template of \c qm_fmt valmode. \c asname is name used for AS xxx clauses, other arguments form context */
 extern void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tmpl, caddr_t alias, qm_value_t *qm_val, SPART *tree, const char *asname);
-extern void sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t atables, dk_set_t *used_aliases);
+extern void sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t *used_aliases);
+extern caddr_t sparp_patch_tmpl (sparp_t *sparp, ccaddr_t tmpl, dk_set_t alias_replacements);
 
 /*! This searches for declaration of type by its name. NULL name result in NULL output, unknown name is an error */
 extern ssg_valmode_t ssg_find_valmode_by_name (ccaddr_t name);
@@ -418,6 +454,13 @@ typedef struct spar_sqlgen_s
     session_buffered_write (ssg->ssg_out, "\n                              ", (ind > 31) ? 31 : ind); \
     } while (0)
 
+#ifdef DEBUG
+#define spar_sqlprint_error(x) do { ssg_putchar ('!'); ssg_puts ((x)); ssg_putchar ('!'); return; } while (0)
+#define spar_sqlprint_error2(x,v) do { ssg_putchar ('!'); ssg_puts ((x)); ssg_putchar ('!'); return (v); } while (0)
+#else
+#define spar_sqlprint_error(x) spar_internal_error (NULL, (x))
+#define spar_sqlprint_error2(x,v) spar_internal_error (NULL, (x))
+#endif
 
 /*! Adds either iri of \c jso_inst or \c jso_name into dependencies of the generated query. \c jso_inst is used only if \c jso_name is NULL */
 extern void ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name);
@@ -427,6 +470,9 @@ extern qm_value_t * ssg_equiv_native_qmv (spar_sqlgen_t *ssg, SPART *gp, sparp_e
 extern ssg_valmode_t ssg_equiv_native_valmode (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq);
 extern qm_value_t *ssg_expn_native_qmv (spar_sqlgen_t *ssg, SPART *tree);
 extern ssg_valmode_t ssg_expn_native_valmode (spar_sqlgen_t *ssg, SPART *tree);
+
+extern void sparp_jso_validate_format (sparp_t *sparp, ssg_valmode_t fmt);
+extern void ssg_jso_validate_format (spar_sqlgen_t *ssg, ssg_valmode_t fmt);
 
 /*! Prints an SQL identifier. 'prin' instead of 'print' because it does not print whitespace or delim before the text */
 extern void ssg_prin_id (spar_sqlgen_t *ssg, const char *name);
@@ -441,6 +487,7 @@ extern void ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name);
 extern void ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, ssg_valmode_t native, const char *asname);
 extern void ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, const char *asname);
 extern void ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree);
+extern void ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree);
 
 #define SSG_RETVAL_USES_ALIAS			0x01	/*!< Return value can be printed in form 'expn AS alias' if alias name is not NULL */
 #define SSG_RETVAL_SUPPRESSED_ALIAS		0x02	/*!< Return value is not printed in form 'expn AS alias', only 'expn' but alias is known to subtree and let generate names like 'alias~0' */

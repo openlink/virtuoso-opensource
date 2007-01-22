@@ -318,15 +318,16 @@ ttlp_alloc (void)
 void
 ttlp_free (ttlp_t *ttlp)
 {
-  dk_free_box (ttlp->ttlp_tf->tf_graph_uri);
+  dk_free_tree (ttlp->ttlp_tf->tf_graph_uri);
   tf_free (ttlp->ttlp_tf);
   while (NULL != ttlp->ttlp_namespaces)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_namespaces)));
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
-  dk_free_box (ttlp->ttlp_base_uri);
-  dk_free_box (ttlp->ttlp_subj_uri);
-  dk_free_box (ttlp->ttlp_pred_uri);
+  dk_free_tree (ttlp->ttlp_base_uri);
+  dk_free_tree (ttlp->ttlp_subj_uri);
+  dk_free_tree (ttlp->ttlp_pred_uri);
+  dk_free_tree (ttlp->ttlp_formula_iid);
 #ifdef RE_ENTRANT_TTLYY
   dk_free (ttlp, sizeof (ttlp_t));
 #endif
@@ -453,6 +454,17 @@ err:
   return NULL;
 }
 
+ptrlong
+ttlp_bit_of_special_qname (caddr_t qname)
+{
+  if (!strcmp (qname, "a"))	return TTLP_ALLOW_QNAME_A;
+  if (!strcmp (qname, "has"))	return TTLP_ALLOW_QNAME_HAS;
+  if (!strcmp (qname, "is"))	return TTLP_ALLOW_QNAME_IS;
+  if (!strcmp (qname, "of"))	return TTLP_ALLOW_QNAME_OF;
+  if (!strcmp (qname, "this"))	return TTLP_ALLOW_QNAME_THIS;
+  return 0;
+}
+
 #undef ttlp_expand_qname_prefix
 caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname)
 {
@@ -462,7 +474,44 @@ caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname
   int ns_uri_len, local_len, res_len;
   if (NULL == lname)
     {
+      lname = qname;
+      ns_uri = ttlp_inst.ttlp_default_ns_uri;
+      if (NULL == ns_uri)
+        {
+          ns_uri = "#";
+          ns_uri_len = 1;
+          goto ns_uri_found; /* see below */
+        }
+      ns_uri_len = box_length (ns_uri) - 1;
+      goto ns_uri_found; /* see below */
+    }
+  if (qname == lname)
+    {
+      lname = qname + 1;
+      ns_uri = ttlp_inst.ttlp_default_ns_uri;
+      if (NULL == ns_uri)
+        {
+/* TimBL's sample:
+The empty prefix "" is by default , bound to the empty URI "". 
+this means that <#foo> can be written :foo and using @keywords one can reduce that to foo
+*/
+#if 0
+          res = box_dv_short_nchars (qname + 1, box_length (qname) - 2);
+          dk_free_box (qname);
+          return res;
+#else
+          if (DV_STRING == DV_TYPE_OF (qname))
+            {
+	      qname[0] = '#';
       return qname;
+    }
+          ns_uri = "#";
+          ns_uri_len = 1;
+          goto ns_uri_found; /* see below */
+#endif
+        }
+      ns_uri_len = box_length (ns_uri) - 1;
+      goto ns_uri_found; /* see below */
     }
   lname++;
   ns_dict = ttlp_inst.ttlp_namespaces;
@@ -478,10 +527,12 @@ caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname
           ttlyyerror_impl (TTLP_ARG ns_pref, "Undefined namespace prefix");
         }
     }
+  dk_free_box (ns_pref);
   ns_uri_len = box_length (ns_uri) - 1;
+
+ns_uri_found:
   local_len = strlen (lname);
   res_len = ns_uri_len + local_len;
-  dk_free_box (ns_pref);
 #if 1
   res = DBG_NAME (dk_alloc_box) (DBG_ARGS res_len+1, DV_STRING);
   memcpy (res, ns_uri, ns_uri_len);
@@ -497,6 +548,83 @@ caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname
   dk_free_box (qname);
   return box_dv_uname_from_ubuf (res);
 #endif
+}
+
+caddr_t
+ttlp_uri_resolve (TTLP_PARAM caddr_t qname)
+{
+  query_instance_t *qi = ttlp_inst.ttlp_tf->tf_qi;
+  caddr_t res, err = NULL;
+  res = xml_uri_resolve_like_get (qi, &err, ttlp_inst.ttlp_base_uri, qname, "UTF-8");
+  dk_free_box (qname);
+  if (NULL != err)
+    sqlr_resignal (err);
+  return res;
+}
+
+void
+ttlp_triple_and_inf (TTLP_PARAM caddr_t o_uri)
+{
+  triple_feed_t *tf = ttlp_inst.ttlp_tf;
+  caddr_t s = ttlp_inst.ttlp_subj_uri;
+  caddr_t p = ttlp_inst.ttlp_pred_uri;
+  caddr_t o = o_uri;
+  if (NULL == s)
+    return;
+  if (ttlp_inst.ttlp_pred_is_reverse)
+    {
+      caddr_t swap = o;
+      o = s;
+      s = swap;
+    }
+  if (ttlp_inst.ttlp_formula_iid)
+    {
+      caddr_t stmt = tf_bnode_iid (tf, NULL);
+      tf_triple (tf, box_copy (stmt), uname_rdf_ns_uri_subject, box_copy (s));
+      tf_triple (tf, box_copy (stmt), uname_rdf_ns_uri_predicate, box_copy (p));
+      tf_triple (tf, box_copy (stmt), uname_rdf_ns_uri_object, box_copy (o));
+      tf_triple (tf, box_copy (stmt), uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+      tf_triple (tf, box_copy (ttlp_inst.ttlp_formula_iid), uname_swap_reify_ns_uri_statement, stmt);
+    }
+  if (ttlp_inst.ttlp_pred_is_reverse)
+    o = box_copy (o);
+  else
+    s = box_copy (s);
+  tf_triple (tf, s, box_copy (p), o);
+}
+
+extern void ttlp_triple_l_and_inf (TTLP_PARAM caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
+{
+  triple_feed_t *tf = ttlp_inst.ttlp_tf;
+  caddr_t s = ttlp_inst.ttlp_subj_uri;
+  caddr_t p = ttlp_inst.ttlp_pred_uri;
+  if (NULL == s)
+    return;
+  if (ttlp_inst.ttlp_pred_is_reverse)
+    {
+      if (!(ttlp_inst.ttlp_flags & TTLP_SKIP_LITERAL_SUBJECTS))
+        ttlyyerror_impl (TTLP_ARG "", "Virtuoso does not support literal subjects");
+      if (ttlp_inst.ttlp_formula_iid)
+        {
+          caddr_t stmt = tf_bnode_iid (tf, NULL);
+          tf_triple_l (tf, box_copy (stmt), uname_rdf_ns_uri_subject, o_sqlval, o_dt, o_lang);
+          tf_triple (tf, box_copy (stmt), uname_rdf_ns_uri_predicate, box_copy (p));
+          tf_triple (tf, box_copy (stmt), uname_rdf_ns_uri_object, box_copy (s));
+          tf_triple (tf, box_copy (stmt), uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+          tf_triple (tf, box_copy (ttlp_inst.ttlp_formula_iid), uname_swap_reify_ns_uri_statement, stmt);
+        }
+      return;
+    }
+  if (ttlp_inst.ttlp_formula_iid)
+    {
+      caddr_t stmt = tf_bnode_iid (tf, NULL);
+      tf_triple (tf, box_copy (stmt), uname_rdf_ns_uri_subject, box_copy (s));
+      tf_triple (tf, box_copy (stmt), uname_rdf_ns_uri_predicate, box_copy (p));
+      tf_triple_l (tf, box_copy (stmt), uname_rdf_ns_uri_object, box_copy (o_sqlval), box_copy (o_dt), box_copy (o_lang));
+      tf_triple (tf, box_copy (stmt), uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+      tf_triple (tf, box_copy (ttlp_inst.ttlp_formula_iid), uname_swap_reify_ns_uri_statement, stmt);
+    }
+  tf_triple_l (ttlp_inst.ttlp_tf, box_copy (s), box_copy (p), o_sqlval, o_dt, o_lang);
 }
 
 
@@ -660,6 +788,7 @@ iter_is_set:
       if (NULL == ttlp->ttlp_enc)
         ttlp->ttlp_enc = &eh__ISO8859_1;
     }
+  if (box_length (base_uri) > 1)
   ttlp->ttlp_base_uri = box_copy (base_uri);
   QR_RESET_CTX
     {
@@ -693,7 +822,7 @@ caddr_t
 bif_rdf_load_turtle (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t str = bif_string_or_wide_or_null_or_strses_arg (qst, args, 0, "rdf_load_turtle");
-  caddr_t base_uri = bif_string_or_wide_or_uname_arg (qst, args, 1, "rdf_load_turtle");
+  caddr_t base_uri = bif_string_or_uname_arg (qst, args, 1, "rdf_load_turtle");
   caddr_t graph_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 2, "rdf_load_turtle");
   long flags = bif_long_arg (qst, args, 3, "rdf_load_turtle");
   caddr_t *stmt_texts = bif_strict_type_array_arg (DV_STRING, qst, args, 4, "rdf_load_turtle");
@@ -1436,10 +1565,13 @@ caddr_t
 bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
-  iri_id_t id = bif_iri_id_arg (qst, args, 0, "id_to_iri");
-  caddr_t iri = key_id_to_iri (qi, id);
+  iri_id_t id = bif_iri_id_or_null_arg (qst, args, 0, "id_to_iri");
+  caddr_t iri;
+  if (0L == id)
+    return NEW_DB_NULL;
+  iri = key_id_to_iri (qi, id);
   if (!iri)
-    return dk_alloc_box (0, DV_DB_NULL);
+    return NEW_DB_NULL;
   return iri;
 }
 
@@ -1507,6 +1639,17 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, const char *txt)
     "RDF loader has failed to create ID for blank node '%.100s' by '%.100s'",
     ((NULL == txt) ? "[]" : txt), tf->tf_stmt_texts[TRIPLE_FEED_NEW_BLANK] );
   return NULL;
+}
+
+#undef tf_formula_bnode_iid
+caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS TTLP_PARAM const char *sparyytext)
+{
+  caddr_t btext = box_sprintf (10+strlen (sparyytext), "%ld%s", (long)(unbox_iri_id(ttlp_inst.ttlp_formula_iid)), sparyytext);
+  caddr_t res;
+  dk_set_push (&(ttlp_inst.ttlp_saved_uris), btext);
+  res = DBG_NAME (tf_bnode_iid) (DBG_ARGS ttlp_inst.ttlp_tf, btext);
+  dk_free_box (dk_set_pop (&(ttlp_inst.ttlp_saved_uris)));
+  return res;
 }
 
 char * iri_replay =

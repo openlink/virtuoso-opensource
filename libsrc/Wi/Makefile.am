@@ -108,6 +108,7 @@ C_FILES_SPARQL	= \
         sparql_l.c \
         sparql_p.c \
         sparql_qm.c \
+        sparql_sff.c \
         sql_code_sparql.c \
         turtle_l.c \
         turtle_p.c
