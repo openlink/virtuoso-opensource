@@ -245,6 +245,39 @@ dbs_read_checkpoint_remap (dbe_storage_t * dbs, dp_addr_t from)
     }
 }
 
+int 
+cpt_check_remap (dbe_storage_t * dbs)
+{
+  dp_addr_t from = dbs->dbs_cp_remap_pages ? (dp_addr_t) (uptrlong) dbs->dbs_cp_remap_pages->data : 0;
+
+  cp_buf->bd_storage = dbs;
+  while (from)
+    {
+      int inx;
+      short flags;
+      cp_buf->bd_page = from;
+      cp_buf->bd_physical_page = from;
+      buf_disk_read (cp_buf);
+      flags = SHORT_REF (cp_buf->bd_buffer + DP_FLAGS);
+      if (flags != DPF_CP_REMAP)
+	{
+	  log_error ("A bad page flags=[%d] has been detected in place of remap page in cpt.", flags);
+	  return 0;
+	}
+      for (inx = DP_DATA; inx <= PAGE_SZ - 8; inx += 8)
+	{
+	  dp_addr_t logical = LONG_REF (cp_buf->bd_buffer + inx);
+	  dp_addr_t physical = LONG_REF (cp_buf->bd_buffer + inx + 4);
+	  if (logical && !physical)
+	    {
+	      log_error ("A bad remap has been detected in cpt.");
+	      return 0;
+	    }
+	}
+      from = LONG_REF (cp_buf->bd_buffer + DP_OVERFLOW);
+    }
+  return 1;
+}
 
 int
 cpt_write_remap (dbe_storage_t * dbs)
@@ -255,6 +288,16 @@ cpt_write_remap (dbe_storage_t * dbs)
   dk_set_t cp_remap_pages;
   long n_remaps;
   int n_pages;
+  int rc;
+
+  rc = cpt_check_remap (dbs);
+
+  /* there is something broken with remap pages, therefore we start with new set of pages */
+  if (0 == rc)
+    {
+      log_error ("The remap pages has a corruption, writing the remap in a new page set.");
+      dbs->dbs_cp_remap_pages = NULL;
+    }
 
   /* Initialization */
   cp_buf->bd_storage = dbs;
