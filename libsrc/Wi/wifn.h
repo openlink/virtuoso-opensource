@@ -704,7 +704,7 @@ dk_session_t *blob_to_string_output (lock_trx_t * lt, caddr_t bhp);
 #if 0
 caddr_t bloblike_pages_to_string (dbe_storage_t * dbs, lock_trx_t * lt, dp_addr_t start);
 #endif
-dk_session_t *bloblike_pages_to_string_output (dbe_storage_t * dbs, lock_trx_t * lt, dp_addr_t start);
+dk_session_t *bloblike_pages_to_string_output (dbe_storage_t * dbs, lock_trx_t * lt, dp_addr_t start, int *error);
 caddr_t blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to );
 long bh_write_out (lock_trx_t * lt, blob_handle_t * bh, dk_session_t *ses);
 void blob_log_write (it_cursor_t * it, dp_addr_t start, dtp_t blob_handle_dtp, dp_addr_t dir_start, long diskbytes,

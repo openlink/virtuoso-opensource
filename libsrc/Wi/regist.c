@@ -36,11 +36,22 @@ buffer_desc_t *reg_buf;
 int
 cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
 {
+  int err;
   long copy_bytes;
   long bytes_left = strses_length (ses);
   long byte_from = 0;
   dp_addr_t first = dbs->dbs_registry;
   dp_addr_t any_page = first;
+  if (first)
+    {
+      dk_session_t * strses = bloblike_pages_to_string_output (dbs, bootstrap_cli->cli_trx, dbs->dbs_registry, &err);
+      dk_free_box (strses);
+      if (err)
+	{
+	  log_error ("A bad registry has been detected in cpt.  Making new registry.");
+	  first = any_page = 0;
+	}
+    }
 
   if (!reg_buf)
     {
@@ -125,7 +136,8 @@ dbs_read_registry (dbe_storage_t * dbs)
     }
   if (dbs->dbs_registry)
     {
-      dk_session_t *str = bloblike_pages_to_string_output (dbs, bootstrap_cli->cli_trx, dbs->dbs_registry);
+      int err;
+      dk_session_t *str = bloblike_pages_to_string_output (dbs, bootstrap_cli->cli_trx, dbs->dbs_registry, &err);
       local_commit (bootstrap_cli);
       return str;
     }

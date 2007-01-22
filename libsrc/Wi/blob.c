@@ -2604,7 +2604,7 @@ lt_write_blob_log (lock_trx_t * lt, dk_session_t * log)
 #define bh_string_output(lt, bh, omit) \
 ((box_tag (bh) == DV_BLOB_WIDE_HANDLE) ? \
     bh_string_output_w (lt, bh, omit) : \
-    bh_string_output_n (lt, bh, omit, 0))
+    bh_string_output_n (lt, bh, omit, 0, NULL))
 #endif
 
 #ifdef DBG_BLOB_PAGES_ACCOUNT
@@ -2612,7 +2612,7 @@ int is_reg;
 #endif
 
 dk_session_t *
-bh_string_output_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * lt, blob_handle_t * bh, int omit, int free_buffs)
+bh_string_output_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * lt, blob_handle_t * bh, int omit, int free_buffs, int *error)
 {
   /* take current page at current place and make string of
      n bytes from the place and write to client */
@@ -2626,6 +2626,8 @@ bh_string_output_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t *
   it_cursor_t *tmp_itc = itc_create (isp, lt);
 #else
   it_cursor_t *tmp_itc = itc_create (bh->bh_it->it_commit_space, lt);
+  if (error)
+    *error = 0;
   itc_from_it (tmp_itc, bh->bh_it);
 #endif
   while (start)
@@ -2642,6 +2644,8 @@ bh_string_output_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t *
       if (!page_wait_blob_access (tmp_itc, start, &buf, PA_READ, bh, 0))
 	{
 	  ITC_LEAVE_MAP (tmp_itc);
+	  if (error)
+	    *error = 1;
 	  break;
 	}
       len = LONG_REF (buf->bd_buffer + DP_BLOB_LEN);
@@ -3472,55 +3476,13 @@ return_empty_string:
 }
 
 
-#if 0
-/*kgeorge: obsolete - now reading done as string session*/
-caddr_t
-bloblike_pages_to_string (dbe_storage_t * dbs, lock_trx_t * lt, dp_addr_t start)
-{
-  blob_handle_t bh;
-  caddr_t out;
-  long fill = 0, bytes = 0;
-  dk_set_t string_list;
-  memset (&bh, 0, sizeof (blob_handle_t));
-  bh.bh_current_page = bh.bh_page = start;
-  bh.bh_position = 0;
-  bh.bh_it = dbs->dbs_cpt_tree;
-  bh.bh_timestamp = BH_ANY;
-  string_list = bh_string_list_n (/* NULL, */ lt, &bh,
-      10000000, 0);		/* up to 10MB as varchar */
-  bh.bh_current_page = bh.bh_page;
-  bh.bh_position = 0;
-
-  DO_SET (caddr_t, str, &string_list)
-  {
-    bytes += box_length (str) - 1;
-  }
-  END_DO_SET ();
-
-  out = dk_alloc_box (bytes + 1, DV_LONG_STRING);
-
-  DO_SET (caddr_t, str, &string_list)
-  {
-    long len = box_length (str) - 1;
-    memcpy (out + fill, str, len);
-    fill += len;
-    dk_free_box (str);
-  }
-  END_DO_SET ();
-  dk_set_free (string_list);
-
-  out[bytes] = 0;
-  return out;
-}
-#endif
-
-
 dk_session_t *
-bloblike_pages_to_string_output (dbe_storage_t * dbs, lock_trx_t * lt, dp_addr_t start)
+bloblike_pages_to_string_output (dbe_storage_t * dbs, lock_trx_t * lt, dp_addr_t start, int *error)
 {
   blob_handle_t bh;
   dk_session_t *out;
 
+  *error = 0;
   memset (&bh, 0, sizeof (blob_handle_t));
   bh.bh_current_page = bh.bh_page = start;
   bh.bh_position = 0;
@@ -3528,16 +3490,16 @@ bloblike_pages_to_string_output (dbe_storage_t * dbs, lock_trx_t * lt, dp_addr_t
   bh.bh_timestamp = BH_ANY;
 
   /*bh_fetch_dir (isp, lt, &bh);
-  bh_read_ahead (isp, lt, &bh, 0, bh->bh_length);*/
+  bh_read_ahead (lt, &bh, 0, bh->bh_length);*/
 
 #ifdef DBG_BLOB_PAGES_ACCOUNT
   is_reg = 1;
 #endif
-  out = bh_string_output_n (lt, &bh, 0, 1);
+  out = bh_string_output_n (lt, &bh, 0, 1, error);
 #ifdef DBG_BLOB_PAGES_ACCOUNT
   is_reg = 0;
 #endif
-  if (NULL == out)
+  if (*error || NULL == out)
     goto stub_for_corrupted_blob;	/* see below */
 
   return out;
@@ -3546,7 +3508,7 @@ stub_for_corrupted_blob:
   if (NULL != out)
     strses_free (out);
   log_info ("Attempt to convert invalid blob to string_output at page %d", start);
-
+  *error = 1;
   return strses_allocate ();
 }
 
