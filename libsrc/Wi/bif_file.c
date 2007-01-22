@@ -2380,7 +2380,7 @@ bif_md5 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
-      caddr_t str = bif_string_arg (qst, args, 0, "md5");
+      caddr_t str = bif_string_or_uname_arg (qst, args, 0, "md5");
       return md5 (str);
     }
 }
@@ -5453,7 +5453,7 @@ bif_vector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       if (dtp != DV_SHORT_STRING)
 	sqlr_new_error ("22023", "SR482",
-	    "Function vector_sort needs a strings as arguments, not an arg of type %s (%d)", dv_type_title (dtp), dtp);
+	    "Function vector_sort() needs a vector of strings as the first argument, but the vector contains %s (%d)", dv_type_title (dtp), dtp);
     }
   END_DO_BOX;
   out_vector = box_copy_tree (in_vector);
