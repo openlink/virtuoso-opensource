@@ -11124,7 +11124,7 @@ bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   res[5] = box_num (ru.ru_nswap);
   res[6] = box_num (ru.ru_inblock);
   res[7] = box_num (ru.ru_oublock);
-  return res;
+  return (caddr_t) res;
 #else
   return box_num (0);
 #endif
