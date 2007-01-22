@@ -112,7 +112,10 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
     return 'application/iso';
   if (position (orig_res_ext_upper,
     vector ('.TTL') ) )
-    return 'application/text+ttl';
+    return 'text/rdf+ttl';
+  if (position (orig_res_ext_upper,
+    vector ('.N3') ) )
+    return 'text/rdf+n3';
   return coalesce ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = lower (subseq (orig_res_ext, 1))));
 }
 ;
@@ -165,7 +168,7 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
               for (frag_len := max_frag_len; (frag_len >= min_frag_len) and (html_start is null); frag_len := frag_len - 1000)
                 {
                   -- dbg_obj_princ ('Will try to parse\n', subseq (content, 0, frag_len));
-          	  html_start := xtree_doc (subseq (content, 0, frag_len), 18, 'http://localdav.virt' || orig_res_name, 'LATIN-1', 'x-any',
+          	  html_start := xtree_doc (subseq (content, 0, frag_len), 18, 'http://localdav.virt/' || orig_res_name, 'LATIN-1', 'x-any',
             			'Validation=DISABLE Include=DISABLE BuildStandalone=DISABLE SchemaDecl=DISABLE' );
                   -- dbg_obj_princ ('The result is\n', html_start);
                 }
@@ -312,6 +315,7 @@ create function "DAV_EXTRACT_RDF_application/x-openlink-image" (in orig_res_name
     UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#size'), file_space_fmt(image_size)));
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
     UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#dimensions'), sprintf('%dx%d', xsize, ysize)));
+  if (xres is not null and yres is not null)
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
     UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#resolutions'), sprintf('%s:%s', xres, yres)));
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
@@ -822,20 +826,27 @@ errexit:
 }
 ;
 
-create function "DAV_EXTRACT_RDF_application/text+ttl" (in orig_res_name varchar, inout content any, inout html_start any)
+create function "DAV_EXTRACT_RDF_text/rdf+ttl" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   declare doc, metas, extras any;
-  --dbg_obj_princ ('DAV_EXTRACT_RDF_application/text+ttl (', orig_res_name, content, html_start, ')');
-  whenever sqlstate '*' goto errexit;
-  doc := xtree_doc (content, 0);
-  metas := vector (
-        'http://www.openlinksw.com/schemas/RDF#format', '"TURTLE"', 'TURTLE'
-        );
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_text/rdf+ttl (', orig_res_name, content, html_start, ')');
+  doc := null;
+  metas := null;
   extras := vector (
-        'http://www.openlinksw.com/virtdav#dynRdfExtractor', 'application/text+ttl' );
+        'http://www.openlinksw.com/schemas/RDF#format', 'TURTLE' );
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
-errexit:
-  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
+create function "DAV_EXTRACT_RDF_text/rdf+n3" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas, extras any;
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_text/rdf+ttl (', orig_res_name, content, html_start, ')');
+  doc := null;
+  metas := null;
+  extras := vector (
+        'http://www.openlinksw.com/schemas/RDF#format', 'N3' );
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
 }
 ;
 
@@ -976,7 +987,7 @@ create function "DAV_EXTRACT_RDF_text/html" (in orig_res_name varchar, inout con
   declare metas, extras any;
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_text/html (', orig_res_name, content, html_start, ')');
   if (html_start is null)
-    html_start := xtree_doc (content, 18, 'http://localdav.virt' || orig_res_name, 'LATIN-1', 'x-any',
+    html_start := xtree_doc (content, 18, 'http://localdav.virt/' || orig_res_name, 'LATIN-1', 'x-any',
       'Validation=DISABLE Include=DISABLE BuildStandalone=DISABLE SchemaDecl=DISABLE' );
   if (html_start is null)
     goto errexit;
@@ -1004,7 +1015,7 @@ create function "DAV_EXTRACT_RDF_application/x-openlinksw-vsp" (in orig_res_name
   declare metas, extras any;
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlinksw-vsp (', orig_res_name, content, html_start, ')');
   if (html_start is null)
-    html_start := xtree_doc (content, 18, 'http://localdav.virt' || orig_res_name, 'LATIN-1', 'x-any',
+    html_start := xtree_doc (content, 18, 'http://localdav.virt/' || orig_res_name, 'LATIN-1', 'x-any',
       'Validation=DISABLE Include=DISABLE BuildStandalone=DISABLE SchemaDecl=DISABLE' );
   if (html_start is null)
     goto errexit;
