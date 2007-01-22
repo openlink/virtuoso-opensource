@@ -79,4 +79,23 @@ EXTRA_DIST = \
 	jdk1.4/ScrollDemo2/*.html \
 	jdk1.4/ScrollDemo2/*.java \
 	jdk1.4/ScrollDemo2/ScrollDemo2.bat \
-	jdk1.4/ScrollDemo2/ScrollDemo2.sh
+	jdk1.4/ScrollDemo2/ScrollDemo2.sh \
+	jdk1.5/CachedRowSet/CachedRowSet.bat \
+	jdk1.5/CachedRowSet/CachedRowSet.sh \
+	jdk1.5/CachedRowSet/*.class \
+	jdk1.5/CachedRowSet/*.gif \
+	jdk1.5/CachedRowSet/*.html \
+	jdk1.5/CachedRowSet/*.java \
+	jdk1.5/*.htm \
+	jdk1.5/JDBCDemo/*.class \
+	jdk1.5/JDBCDemo/*.gif \
+	jdk1.5/JDBCDemo/*.html \
+	jdk1.5/JDBCDemo/*.java \
+	jdk1.5/JDBCDemo/JDBCDemo.bat \
+	jdk1.5/JDBCDemo/JDBCDemo.sh \
+	jdk1.5/ScrollDemo2/*.class \
+	jdk1.5/ScrollDemo2/*.gif \
+	jdk1.5/ScrollDemo2/*.html \
+	jdk1.5/ScrollDemo2/*.java \
+	jdk1.5/ScrollDemo2/ScrollDemo2.bat \
+	jdk1.5/ScrollDemo2/ScrollDemo2.sh
