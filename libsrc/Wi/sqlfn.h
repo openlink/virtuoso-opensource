@@ -259,6 +259,8 @@ void ddl_store_method (caddr_t * state, op_node_t * op);
 
 void ddl_build_index (query_instance_t * qi, char * table, char * name);
 
+int inx_opt_flag (caddr_t * opts, char *name);
+
 dtp_t ddl_type_to_dtp (caddr_t * type);
 int dtp_parse_options (char *ck, sql_type_t *psqt, caddr_t *opts);
 

@@ -1663,7 +1663,7 @@ int srv_add_background_task (srv_background_task_t task, void *appdata)
     {
       if (iter->data != appdata)
         continue;
-      if (iter->next->data != task)
+      if (iter->next->data != (void *) task)
         GPF_T1 ("requests for different background tasks with same data");
       res = 0;
       goto leave;

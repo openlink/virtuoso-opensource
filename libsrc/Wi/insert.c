@@ -443,7 +443,7 @@ itc_keep_together (it_cursor_t * itc, buffer_desc_t * buf, it_cursor_t ** cursor
 	  cr_tmp[inx]->itc_bp.bp_is_pos_valid = 0;
 	  itc_register_cursor (cr_tmp[inx], INSIDE_MAP);
 	}
-      itc_unregister (left, INSIDE_MAP);
+      itc_unregister ((it_cursor_t *) left, INSIDE_MAP);
       itc->itc_bm_split_left_side = NULL;
     }
 
