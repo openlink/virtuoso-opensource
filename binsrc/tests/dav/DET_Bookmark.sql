@@ -239,11 +239,11 @@ create function "bookmark_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 	tag_id := id[7];
 	fullpath := '';
 	rightcol := '';
-	if (folder_id <> 0)
+        if (folder_id > 0)
 	{
 		if (sub_id = 1)
 		{
-			while (folder_id <> 0)
+                        while (folder_id > 0)
 			{
 				colname := (select "bookmark_FIXNAME" (F_NAME)
 					from BMK.WA.FOLDER
@@ -509,11 +509,15 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 				'100000000NN', ownergid, owner_uid, now(), 'dav/unix-directory', orig_name) ) );
 			}
 		}
-		if (top_id[3] = 1 and top_id[4] <> 0 and top_id[5] = 0) -- level of bookmaark instance, list of bookmark folders
+                if (top_id[3] = 1 and top_id[4] <> 0) -- and top_id[5] = 0) -- level of bookmaark instance, list of bookmark folders
 		{
+                        declare tmp int;
+                        tmp := top_id[5];
+                        if (tmp = 0)
+                                tmp := -1;
 			for select F_ID, "bookmark_FIXNAME" (F_NAME) as orig_name
 				from BMK.WA.FOLDER
-				where F_DOMAIN_ID = top_id[4] and F_PARENT_ID = coalesce(top_id[5], 0)
+                                where F_DOMAIN_ID = top_id[4] and F_PARENT_ID = coalesce(tmp, -1)
 				order by 1, 2
 			do
 			{
@@ -527,10 +531,15 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 	res := vector();
 	if (top_id[3] = 1)
 	{
+                declare tmp int;
+                tmp := top_id[5];
+                if (tmp = 0)
+                        tmp := -1;
+
 		for select "bookmark_COMPOSE_XBEL_NAME"(BD_NAME, BD_ID) as orig_mname, BD_ID as m_id, BD_LAST_UPDATE
 		from BMK.WA.BOOKMARK_DOMAIN
 		where BD_DOMAIN_ID = top_id[4] and
-			((BD_FOLDER_ID  = top_id[5] and top_id[5] <> 0) or (BD_FOLDER_ID is null and top_id[5] = 0))
+                        ((BD_FOLDER_ID  = top_id[5] and top_id[5] > 0) or (BD_FOLDER_ID is null and tmp = -1))
 		order by 1, 2
 		do
 		{
@@ -854,7 +863,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 						from BMK.WA.FOLDER
 						where "bookmark_FIXNAME"(F_NAME) = path_parts[ctr] and
 						F_DOMAIN_ID = domain_id and
-						((F_PARENT_ID = folder_id and folder_id <> 0) or (F_PARENT_ID = 0 and folder_id = 0))
+                                                ((F_PARENT_ID = folder_id and folder_id > 0) or (F_PARENT_ID = -1 and (folder_id = 0 or folder_id = -1)))
 					do 
 					{
 						hitlist := vector_concat (hitlist, vector (F_ID));
@@ -895,7 +904,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 	{
 		for select distinct BD_ID
 			from BMK.WA.BOOKMARK_DOMAIN
-			where ((BD_FOLDER_ID = folder_id and folder_id <> 0) or (folder_id = 0 and BD_FOLDER_ID is null))and
+                        where ((BD_FOLDER_ID = folder_id and folder_id > 0) or ((folder_id = 0 or folder_id = -1) and BD_FOLDER_ID is null))and
 			"bookmark_COMPOSE_XBEL_NAME" (BD_NAME, BD_ID) = path_parts[ctr] and
 			BD_DOMAIN_ID = domain_id
 		do 

@@ -1274,8 +1274,7 @@ error_ret:
 --        goto deadlock_retry;
     }
 
---  if (29 <> rc)
---    http_body_read ();
+  http_body_read ();
   DAV_SET_HTTP_REQUEST_STATUS (rc);
 }
 ;
@@ -1570,9 +1569,7 @@ create procedure WS.WS.GET_DAV_CHUNKED_QUOTA () returns integer
 }
 ;
 
-/*
-   GET METHOD
-*/
+-- GET METHOD
 
 create procedure WS.WS.GET (in path any, inout params any, in lines any)
 {
@@ -1736,6 +1733,7 @@ again:
   client_etag := WS.WS.FINDPARAM (lines, 'If-None-Match:');
   if (_col_id is not null)
     {
+      declare dir_ret any;
       if (0 = http_map_get ('browseable'))
 	{
 	  http_rewrite (0);
@@ -1748,7 +1746,19 @@ again:
 		http_path (path), '.</BODY></HTML>'));
 	  return;
 	}
-       WS.WS.DAV_DIR_LIST (full_path, http_path(), _col_id, uname, upwd, uid);
+       dir_ret := WS.WS.DAV_DIR_LIST (full_path, http_path(), _col_id, uname, upwd, uid);
+       if (DAV_HIDE_ERROR (dir_ret))
+	{
+	  http_rewrite (0);
+	  http_request_status ('HTTP/1.1 500 Internal Server Error or Misconfiguration');
+	  http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+		'<HTML><HEAD>',
+		'<TITLE>500 Internal Server Error or Misconfiguration</TITLE>',
+		'</HEAD><BODY>', '<H1>Internal Server Error or Misconfiguration</H1> ',
+	        'Failed to return the directory index in this location: ',
+		http_path (path), '<BR>', DAV_PERROR (dir_ret), '</BODY></HTML>'));
+	  return;
+	}
        return;
     }
 -- if def VIRTUAL_DIR
@@ -4199,7 +4209,7 @@ nfp:
 ;
 
 
-create procedure WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path varchar, in col integer, in auth_uname varchar, in auth_pwd varchar, in auth_uid integer)
+create function WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path varchar, in col integer, in auth_uname varchar, in auth_pwd varchar, in auth_uid integer) returns integer
 {
   declare _dir, _xml, _modify, fsize, _html, _b_opt, _xml_sheet any;
   declare _name varchar;
@@ -4213,6 +4223,8 @@ create procedure WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path 
 --  _dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (col, 'C'), 0, '%', auth_uname, auth_pwd, auth_uid);
   _dir := DAV_DIR_LIST_INT (full_path, 0, '%', auth_uname, auth_pwd, auth_uid);
   -- dbg_obj_princ (full_path, ' contains ', _dir);
+  if (isinteger (_dir))
+    return _dir;
   _dir_len := length (_dir);
   http ('<?xml version="1.0" encoding="UTF-8" ?>', _xml);
   http (sprintf ('<PATH dir_name="%V" physical_dir_name="%V">', cast (logical_root_path as varchar), cast (full_path as varchar)), _xml);
@@ -4299,7 +4311,7 @@ create procedure WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path 
 
   http (_html);
 
-  return;
+  return 0;
 }
 ;
 
