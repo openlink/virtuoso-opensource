@@ -46,8 +46,8 @@ int _thread_num_dead;		/* # threads on free list */
 
 #define thr_event_pipe		thr_nfds
 
-#define Q_LOCK()		pthread_mutex_lock ((pthread_mutex_t*) _q_lock->mtx_handle)
-#define Q_UNLOCK()		pthread_mutex_unlock ((pthread_mutex_t*) _q_lock->mtx_handle)
+#define Q_LOCK()		pthread_mutex_lock ((pthread_mutex_t*) &_q_lock->mtx_mtx)
+#define Q_UNLOCK()		pthread_mutex_unlock ((pthread_mutex_t*) &_q_lock->mtx_mtx)
 
 #define CKRET(X) \
 	if (X) \
@@ -206,7 +206,7 @@ thread_initial (unsigned long stack_size)
   CKRET (rc);
 #endif
 
-#if defined (PTHREAD_PROCESS_PRIVATE) && !defined (__FreeBSD__)
+#if defined (PTHREAD_PROCESS_PRIVATE) && !defined(oldlinux) && !defined(__FreeBSD__)
   rc = pthread_mutexattr_setpshared (&_mutex_attr, PTHREAD_PROCESS_PRIVATE);
   CKRET (rc);
 #endif
@@ -216,7 +216,7 @@ thread_initial (unsigned long stack_size)
   CKRET (rc);
 #endif
 
-#if defined (PTHREAD_MUTEX_ADAPTIVE_NP)
+#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
   rc = pthread_mutexattr_settype (&_mutex_attr, PTHREAD_MUTEX_ADAPTIVE_NP);
   CKRET (rc);
 #endif
@@ -540,7 +540,7 @@ thread_exit (int n)
 
   do
     {
-      int rc = pthread_cond_wait ((pthread_cond_t *) thr->thr_cv, (pthread_mutex_t*) _q_lock->mtx_handle);
+      int rc = pthread_cond_wait ((pthread_cond_t *) thr->thr_cv, (pthread_mutex_t*) &_q_lock->mtx_mtx);
       CKRET (rc);
     } while (thr->thr_status == DEAD);
   Q_UNLOCK ();
@@ -708,7 +708,7 @@ thread_wait_cond (void *event, dk_mutex_t *holds, TVAL timeout)
 	Q_UNLOCK ();
 
       if (timeout == TV_INFINITE)
-	ok = pthread_cond_wait (thr->thr_cv, mtx->mtx_handle);
+	ok = pthread_cond_wait (thr->thr_cv, &mtx->mtx_mtx);
       else
 	{
 	  struct timespec to;
@@ -721,7 +721,7 @@ thread_wait_cond (void *event, dk_mutex_t *holds, TVAL timeout)
 	      to.tv_nsec -= 1000000;
 	      to.tv_sec++;
 	    }
-	  ok = pthread_cond_timedwait (thr->thr_cv, mtx->mtx_handle, &to);
+	  ok = pthread_cond_timedwait (thr->thr_cv, &mtx->mtx_mtx, &to);
 	}
       if (holds)
 	Q_LOCK ();
@@ -1017,7 +1017,6 @@ dk_set_t all_mtxs = NULL;
 dk_mutex_t *
 mutex_allocate_typed (int type)
 {
-  void *handle;
   int rc;
   static int is_initialized = 0;
   NEW_VARZ (dk_mutex_t, mtx);
@@ -1025,61 +1024,102 @@ mutex_allocate_typed (int type)
 #if HAVE_SPINLOCK
   if (MUTEX_TYPE_SPIN == type)
     {
-      NEW_VAR (pthread_spinlock_t, sl);
-      pthread_spin_init (sl, 0);
-      handle = (void *) sl;
+      pthread_spin_init (&mtx->l.spinl, 0);
     }
   else
 #endif
     {
-      NEW_VAR (pthread_mutex_t, ptm);
-
-      memset ((void *) ptm, 0, sizeof (pthread_mutex_t));
+      memset ((void *) &mtx->mtx_mtx, 0, sizeof (pthread_mutex_t));
 #ifndef OLD_PTHREADS
       if (!is_initialized)
 	{
-#if defined (PTHREAD_PROCESS_PRIVATE) && !defined (__FreeBSD__)
 	  pthread_mutexattr_init (&_mutex_attr);
+#if defined (PTHREAD_PROCESS_PRIVATE) && !defined(oldlinux) && !defined (__FreeBSD__)	  
 	  rc = pthread_mutexattr_setpshared (&_mutex_attr, PTHREAD_PROCESS_PRIVATE);
 	  CKRET (rc);
 #endif
 
-#ifdef PTHREAD_MUTEX_ADAPTIVE_NP
+#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
 	  rc = pthread_mutexattr_settype (&_mutex_attr, PTHREAD_MUTEX_ADAPTIVE_NP);
 	  CKRET (rc);
 #endif
 	  is_initialized = 1;
 	}
-      rc = pthread_mutex_init (ptm, &_mutex_attr);
+      rc = pthread_mutex_init (&mtx->mtx_mtx, &_mutex_attr);
 #else
-      rc = pthread_mutex_init (ptm, _mutex_attr);
+      rc = pthread_mutex_init (&mtx->mtx_mtx, _mutex_attr);
 #endif
       CKRET (rc);
-      handle = (void *) ptm;
     }
-  mtx->mtx_handle = handle;
 #ifdef MTX_DEBUG
   mtx->mtx_owner = NULL;
 #endif
 #ifdef MTX_METER
   if (all_mtxs_mtx)
     mutex_enter (all_mtxs_mtx);
-  dk_set_push (&all_mtxs, (void *) mtx);
+  dk_set_push (&all_mtxs, (void*)mtx);
   if (all_mtxs_mtx)
     mutex_leave (all_mtxs_mtx);
 #endif
   return mtx;
 
 failed:
-#if HAVE_SPINLOCK
-  if (MUTEX_TYPE_SPIN == mtx->mtx_type)
-    dk_free ((void *) mtx->mtx_handle, sizeof (pthread_spinlock_t));
-  else
-#endif
-    dk_free ((void *) mtx->mtx_handle, sizeof (pthread_mutex_t));
-
   dk_free (mtx, sizeof (dk_mutex_t));
   return NULL;
+}
+
+
+void
+dk_mutex_init (dk_mutex_t * mtx, int type)
+{
+  int rc;
+  static int is_initialized = 0;
+  static pthread_mutexattr_t _attr;
+  memset (mtx, 0, sizeof (dk_mutex_t));
+
+  mtx->mtx_type = type;
+#if HAVE_SPINLOCK
+  if (MUTEX_TYPE_SPIN == type)
+    {
+      pthread_spin_init (&mtx->l.spinl, 0);
+    }
+  else
+#endif
+    {
+            memset ((void *) &mtx->mtx_mtx, 0, sizeof (pthread_mutex_t));
+#ifndef OLD_PTHREADS
+      if (!is_initialized) 
+	{
+	  pthread_mutexattr_init (&_attr);
+#if defined (PTHREAD_PROCESS_PRIVATE) && !defined (__FreeBSD__) && !defined(oldlinux)
+	  rc = pthread_mutexattr_setpshared (&_attr, PTHREAD_PROCESS_PRIVATE);
+	  CKRET (rc);
+#endif	  
+
+#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
+	  rc = pthread_mutexattr_settype (&_attr, PTHREAD_MUTEX_ADAPTIVE_NP);
+	  CKRET (rc);
+#endif
+	  is_initialized = 1;
+	}
+      rc = pthread_mutex_init (&mtx->mtx_mtx, &_attr);
+#else
+      rc = pthread_mutex_init (&mtx->mtx_mtx, _mutex_attr);
+#endif
+      CKRET (rc);
+    }
+#ifdef MTX_DEBUG
+  mtx->mtx_owner = NULL;
+#endif
+#ifdef MTX_METER
+  if (all_mtxs_mtx)
+    mutex_enter (all_mtxs_mtx);
+  dk_set_push (&all_mtxs, (void*)mtx);
+  if (all_mtxs_mtx)
+    mutex_leave (all_mtxs_mtx);
+#endif
+  return;
+ failed: ;
 }
 
 
@@ -1096,14 +1136,12 @@ mutex_free (dk_mutex_t *mtx)
 #if HAVE_SPINLOCK
   if (MUTEX_TYPE_SPIN == mtx->mtx_type)
     {
-      pthread_spin_destroy (mtx->mtx_handle);
-      dk_free (mtx->mtx_handle, sizeof (pthread_spinlock_t));
+      pthread_spin_destroy (&mtx->l.spinl);
     }
   else
 #endif
     {
-  pthread_mutex_destroy ((pthread_mutex_t*) mtx->mtx_handle);
-  dk_free (mtx->mtx_handle, sizeof (pthread_mutex_t));
+      pthread_mutex_destroy ((pthread_mutex_t*) &mtx->mtx_mtx);
     }
 #ifdef MTX_DEBUG
   dk_free_box (mtx->mtx_name);
@@ -1116,6 +1154,29 @@ mutex_free (dk_mutex_t *mtx)
   dk_free (mtx, sizeof (dk_mutex_t));
 }
 
+
+void
+dk_mutex_destroy (dk_mutex_t *mtx)
+{
+#if HAVE_SPINLOCK
+  if (MUTEX_TYPE_SPIN == mtx->mtx_type)
+    {
+      pthread_spin_destroy (&mtx->l.spinl);
+    }
+  else
+#endif
+    {
+      pthread_mutex_destroy ((pthread_mutex_t*) &mtx->mtx_mtx);
+    }
+#ifdef MTX_DEBUG
+  dk_free_box (mtx->mtx_name);
+#endif
+#ifdef MTX_METER
+  mutex_enter (all_mtxs_mtx);
+  dk_set_delete (&all_mtxs, (void*) mtx);
+  mutex_leave (all_mtxs_mtx);
+#endif
+}
 
 #if defined (MTX_DEBUG) || defined (MTX_METER)
 void
@@ -1137,8 +1198,75 @@ mutex_option (dk_mutex_t * mtx, char * name, mtx_entry_check_t ck, void * cd)
 #define TRYLOCK_SUCCESS 0
 #endif
 
+#define MTX_MAX_SPINS 200 
+#undef mutex_enter
+#undef mutex_leave 
 
+#ifdef APP_SPIN 
+#ifdef MTX_DEBUG
+int
+mutex_enter_dbg (int line, const char * file, dk_mutex_t *mtx)
+#else
+int
+mutex_enter (dk_mutex_t *mtx)
+#endif
+{
+#ifdef MTX_DEBUG
+  du_thread_t * self = thread_current ();
+#endif
+  int rc;
 
+#ifdef MTX_DEBUG
+  assert (mtx->mtx_owner !=  self || !self);
+  if (mtx->mtx_entry_check
+      && !mtx->mtx_entry_check (mtx, self, mtx->mtx_entry_check_cd))
+    GPF_T1 ("Mtx entry check fail");
+#endif
+  if (mtx->mtx_spins < MTX_MAX_SPINS)
+    {
+      int ctr;
+      for (ctr = 0; ctr < MTX_MAX_SPINS; ctr++)
+	{
+	  if (TRYLOCK_SUCCESS == pthread_mutex_trylock (&mtx->mtx_mtx))
+	    {
+#ifdef MTX_METER 
+	      if (ctr > 0)
+		mtx->mtx_spin_waits++;
+#endif 
+	      mtx->mtx_spins += (ctr - mtx->mtx_spins) / 8;
+	      goto got_it;
+	    }
+	}
+      mtx->mtx_spins = MTX_MAX_SPINS;
+    }
+  else 
+    {
+      if (++mtx->mtx_spins > 10 +  MTX_MAX_SPINS)
+	mtx->mtx_spins = 0;
+    }
+  pthread_mutex_lock (&mtx->mtx_mtx);
+#ifdef MTX_METER 
+  mtx->mtx_waits++;
+#endif
+ got_it:
+#ifdef MTX_METER
+      mtx->mtx_enters++;
+#endif
+
+#ifdef MTX_DEBUG
+  assert (mtx->mtx_owner == NULL);
+  mtx->mtx_owner = self;
+  mtx->mtx_entry_file = (char *) file;
+  mtx->mtx_entry_line = line;
+#endif
+  return 0;
+
+failed:
+  GPF_T1 ("mutex_enter() failed");
+  return -1;
+}
+
+#else
 #ifdef MTX_DEBUG
 int
 mutex_enter_dbg (int line, const char * file, dk_mutex_t *mtx)
@@ -1161,19 +1289,22 @@ mutex_enter (dk_mutex_t *mtx)
 #ifdef MTX_METER
 #if HAVE_SPINLOCK
   if (MUTEX_TYPE_SPIN == mtx->mtx_type)
-    rc = pthread_spin_trylock (mtx->mtx_handle);
+    rc = pthread_spin_trylock (&mtx->l.spinl);
   else 
 #endif
-  rc = pthread_mutex_trylock ((pthread_mutex_t*) mtx->mtx_handle);
+    rc = pthread_mutex_trylock ((pthread_mutex_t*) &mtx->mtx_mtx);
   if (TRYLOCK_SUCCESS != rc)
     {
+      static int unnamed_waits;
 #if HAVE_SPINLOCK
       if (MUTEX_TYPE_SPIN == mtx->mtx_type)
-	rc = pthread_spin_lock (mt->mtx_handle);
+	rc = pthread_spin_lock (&mtx->l.spinl);
       else
 #endif
-      rc = pthread_mutex_lock ((pthread_mutex_t*) mtx->mtx_handle);
+	rc = pthread_mutex_lock ((pthread_mutex_t*) &mtx->mtx_mtx);
       mtx->mtx_waits++;
+      if (!mtx->mtx_name)
+	unnamed_waits++; /*for dbg breakpoint */
       mtx->mtx_enters++;
     }
   else
@@ -1181,10 +1312,10 @@ mutex_enter (dk_mutex_t *mtx)
 #else
 #if HAVE_SPINLOCK
   if (MUTEX_TYPE_SPIN == mtx->mtx_type)
-    rc = pthread_spin_lock (mtx->mtx_handle);
+    rc = pthread_spin_lock (&mtx->l.spinl);
   else
 #endif
-	rc = pthread_mutex_lock ((pthread_mutex_t*) mtx->mtx_handle);
+    rc = pthread_mutex_lock ((pthread_mutex_t*) &mtx->mtx_mtx);
 #endif
   CKRET (rc);
 #ifdef MTX_DEBUG
@@ -1199,6 +1330,8 @@ failed:
   GPF_T1 ("mutex_enter() failed");
   return -1;
 }
+#endif /* APP_SPIN */
+
 
 
 #ifdef MTX_DEBUG
@@ -1219,19 +1352,19 @@ mutex_try_enter (dk_mutex_t *mtx)
 #ifndef MTX_DEBUG
 #if HAVE_SPINLOCK
   if (MUTEX_TYPE_SPIN == mtx->mtx_type)
-    return pthread_spin_trylock ((pthread_mutex_t *) mtx->mtx_handle) == TRYLOCK_SUCCESS ? 1 : 0;
+    return pthread_spin_trylock (&mtx->l.spinl) == TRYLOCK_SUCCESS ? 1 : 0;
   else
 #endif
-  return pthread_mutex_trylock ((pthread_mutex_t *) mtx->mtx_handle) == TRYLOCK_SUCCESS ? 1 : 0;
+    return pthread_mutex_trylock ((pthread_mutex_t *) &mtx->mtx_mtx) == TRYLOCK_SUCCESS ? 1 : 0;
 #else
 
   if (
 #if HAVE_SPINLOCK
       MUTEX_TYPE_SPIN == mtx->mtx_type 
-      ? pthread_spin_trylock ((pthread_mutex_t*) mtx->mtx_handle) == TRYLOCK_SUCCESS
+      ? pthread_spin_trylock (&mtx->l.spinl) == TRYLOCK_SUCCESS
       : 
 #endif
-      pthread_mutex_trylock ((pthread_mutex_t*) mtx->mtx_handle) == TRYLOCK_SUCCESS)
+      pthread_mutex_trylock ((pthread_mutex_t*) &mtx->mtx_mtx) == TRYLOCK_SUCCESS)
     {
       assert (mtx->mtx_owner == NULL);
       mtx->mtx_owner = thread_current ();
@@ -1251,10 +1384,10 @@ mutex_leave (dk_mutex_t *mtx)
 #endif
 #if HAVE_SPINLOCK 
   if (MUTEX_TYPE_SPIN == mtx->mtx_type)
-    pthread_spin_unlock ((pthread_spinlock_t*) mtx->mtx_handle);
+    pthread_spin_unlock (&mtx->l.spinl);
   else
 #endif
-  pthread_mutex_unlock ((pthread_mutex_t*) mtx->mtx_handle);
+    pthread_mutex_unlock ((pthread_mutex_t*) &mtx->mtx_mtx);
 }
 
 
@@ -1264,8 +1397,13 @@ mutex_stat ()
   #ifdef MTX_METER
   DO_SET (dk_mutex_t *, mtx, &all_mtxs)
     {
+#ifdef APP_SPIN
+      printf ("%s %lx E: %ld W %ld  spinw: %ld spin: %d\n", mtx->mtx_name ? mtx->mtx_name : "<?>", (unsigned long) mtx,
+	      mtx->mtx_enters, mtx->mtx_waits, mtx->mtx_spin_waits, mtx->mtx_spins);
+#else
       printf ("%s %lx E: %ld W %ld \n", mtx->mtx_name ? mtx->mtx_name : "<?>", (unsigned long) mtx,
 	      mtx->mtx_enters, mtx->mtx_waits);
+#endif
     }
   END_DO_SET();
   #else
@@ -1298,14 +1436,14 @@ spinlock_free (spinlock_t *self)
 void
 spinlock_enter (spinlock_t *self)
 {
-  pthread_mutex_lock ((pthread_mutex_t*) ((dk_mutex_t *)self)->mtx_handle);
+  pthread_mutex_lock ((pthread_mutex_t*) &(((dk_mutex_t *)&self)->mtx_mtx));
 }
 
 
 void
 spinlock_leave (spinlock_t *self)
 {
-  pthread_mutex_unlock ((pthread_mutex_t*) ((dk_mutex_t *) self)->mtx_handle);
+  pthread_mutex_unlock ((pthread_mutex_t*) &(((dk_mutex_t *) &self)->mtx_mtx));
 }
 
 

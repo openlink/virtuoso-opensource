@@ -128,6 +128,7 @@ struct thread_s
   jmp_buf_splice *	thr_reset_ctx;
   caddr_t		thr_reset_code;
   caddr_t		thr_func_value;
+  void *		thr_tmp_pool;
   int                   thr_attached;
 };
 
@@ -187,7 +188,21 @@ struct semaphore_s
 struct mutex_s
   {
     /* os specific handle */
+#ifdef WITH_PTHREADS
+#ifdef HAVE_SPINLOCK
+#define mtx_mtx l.mtx
+    union {
+      pthread_mutex_t	mtx;
+      pthread_spinlock_t 	spinl;
+    } l;
+#else
+    pthread_mutex_t	mtx_mtx;
+#endif
+#endif
     void *		mtx_handle;
+#ifdef APP_SPIN
+    int			mtx_spins;
+#endif
 #if defined (MTX_DEBUG) || defined (MTX_METER)
     caddr_t		mtx_name;
 #endif
@@ -200,6 +215,7 @@ struct mutex_s
     void *		mtx_entry_check_cd;
 #endif
 #ifdef MTX_METER
+    long		mtx_spin_waits;
     long		mtx_waits;
     long		mtx_enters;
 #endif

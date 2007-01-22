@@ -107,10 +107,10 @@ typedef int32 TVAL;
 
 #ifdef MTX_DEBUG
 # define ASSERT_IN_MTX(mtx)  \
-  if (THREAD_CURRENT_THREAD != mtx->mtx_owner) GPF_T1 ("Not inside mutex.");
+  if (THREAD_CURRENT_THREAD != (mtx)->mtx_owner) GPF_T1 ("Not inside mutex.");
 
 # define ASSERT_OUTSIDE_MTX(mtx)  \
-  if (THREAD_CURRENT_THREAD == mtx->mtx_owner) GPF_T1 ("Not outside mutex.");
+  if (THREAD_CURRENT_THREAD == (mtx)->mtx_owner) GPF_T1 ("Not outside mutex.");
 
 #else
 # define ASSERT_IN_MTX(mtx)
@@ -182,6 +182,8 @@ void semaphore_leave (semaphore_t *sem);
 
 EXE_EXPORT (dk_mutex_t *, mutex_allocate, (void));
 dk_mutex_t *mutex_allocate_typed (int mutex_type);
+void dk_mutex_init (dk_mutex_t * mtx, int type);
+void dk_mutex_destroy (dk_mutex_t * mtx);
 EXE_EXPORT (void, mutex_free, (dk_mutex_t *mtx));
 EXE_EXPORT (int, mutex_enter, (dk_mutex_t *mtx));
 #ifdef MTX_DEBUG
