@@ -23,10 +23,10 @@
 
 VERSION="1.0.0"
 LOGDIR=`pwd`
-LOGFILE="${LOGDIR}/make_isparql_vad.log"
-STICKER="${LOGDIR}/make_isparql_vad.xml"
+LOGFILE="${LOGDIR}/make_sparql_demo_vad.log"
+STICKER="${LOGDIR}/make_sparql_demo_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
-SERVER=${SERVER-}
+SERVER=${SERVER-virtuoso}
 THOST=${THOST-localhost}
 TPORT=${TPORT-8440}
 PORT=${PORT-1940}
@@ -94,7 +94,7 @@ VERSION_INIT()
       for i in `find . -name 'Entries' | grep -v "vad/" | grep -v "toolkit/"`; do
 	    cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
 	done
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=160 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=210 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
 	rm -f version.tmp
 	echo "$VERSION" > vad_version
     fi
@@ -147,7 +147,7 @@ do_command_safe () {
     shift
     shift
     echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if [ "x$HOST_OS" != "x" -a "z$BUILD" != "z" ]
+  if [ "x$HOST_OS" != "x" ]
   then
     $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
   else
@@ -209,41 +209,41 @@ directory_init() {
     LOG "Creating the vad directory"
     mkdir vad
     mkdir vad/data
-    mkdir vad/data/iSPARQL
+    mkdir vad/data/sparql_demo
 
   for dir in `find . -type d -print | LC_ALL=C sort | grep -v "^\.$" | grep -v CVS | grep -v vad | grep -v toolkit`
     do
-	mkdir vad/data/iSPARQL/$dir
+    mkdir vad/data/sparql_demo/$dir
     done
 
-  mkdir vad/data/iSPARQL/toolkit
-  cp $HOME/binsrc/oat/toolkit/*.js vad/data/iSPARQL/toolkit/
+  mkdir vad/data/sparql_demo/toolkit
+  mkdir vad/data/sparql_demo/toolkit/images
+  cp -p $HOME/binsrc/oat/toolkit/*.js vad/data/sparql_demo/toolkit/
+  cp -p $HOME/binsrc/oat/images/*.png vad/data/sparql_demo/toolkit/images/
+  cp -p $HOME/binsrc/oat/images/*.gif vad/data/sparql_demo/toolkit/images/
 
   for dir in `find . -type d | grep "\\./[^/]*$"  | grep -v CVS | grep -v vad | grep -v toolkit`
     do
 	for file in `find $dir -type f -print | LC_ALL=C sort | grep -v CVS`
 	do
-	    cp $file vad/data/iSPARQL/$file
+	    cp -p $file vad/data/sparql_demo/$file
 	done
     done
 
-    cp *.vsp vad/data/iSPARQL
-    cp *.sql vad/data/iSPARQL
-    cp *.js vad/data/iSPARQL
-    cp *.css vad/data/iSPARQL
+    cp *.vsp vad/data/sparql_demo
+    cp *.sql vad/data/sparql_demo
+    cp *.js vad/data/sparql_demo
+    cp *.css vad/data/sparql_demo
 
     cat $HOME/binsrc/tests/rdf/demo_data/sparql_dawg.tar.gz | gunzip - > sparql_dawg.tar
     tar -xf sparql_dawg.tar
     rm  sparql_dawg/*.sql
-    rm sparql_dawg.tar
-
     cat $HOME/binsrc/tests/rdf/demo_data/sparql_extensions.tar.gz | gunzip - > sparql_extensions.tar
     tar -xf sparql_extensions.tar
     rm sparql_extensions.tar
 
-    mv sparql_dawg vad/data/iSPARQL/data
+    mv sparql_dawg vad/data/sparql_demo/data
 }
-
 
 virtuoso_shutdown() {
     LOG "Shutdown $DSN ..."
@@ -251,15 +251,14 @@ virtuoso_shutdown() {
     sleep 10
 }
 
-
 sticker_init() {
-    LOG "iSPARQL VAD sticker creation..."
+    LOG "SPARQL_DEMO VAD sticker creation..."
     echo "<?xml version=\"1.0\" encoding=\"ASCII\"?>" > $STICKER
     echo "<!DOCTYPE sticker SYSTEM \"vad_sticker.dtd\">" >> $STICKER
     echo "<sticker version=\"1.0.010505A\" xml:lang=\"en-UK\">" >> $STICKER
     echo "<caption>" >> $STICKER
-    echo "  <name package=\"iSPARQL\">" >> $STICKER
-    echo "    <prop name=\"Title\" value=\"iSPARQL\"/>" >> $STICKER
+    echo "  <name package=\"SPARQL Demo\">" >> $STICKER
+    echo "    <prop name=\"Title\" value=\"SPARQL Demo\"/>" >> $STICKER
     echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
     echo "    <prop name=\"Copyright\" value=\"(C) 1999-2006 OpenLink Software\"/>" >> $STICKER
     echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
@@ -280,20 +279,20 @@ sticker_init() {
     echo "    <sql purpose=\"pre-install\"><![CDATA[ " >> $STICKER
     echo "    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) " >> $STICKER
     echo "      { " >> $STICKER
-    echo "         result ('ERROR', 'The iSPARQL package requires server version $NEED_VERSION or greater'); " >> $STICKER
-    echo "	 signal ('FATAL', 'The iSPARQL package requires server version $NEED_VERSION or greater'); " >> $STICKER
+    echo "         result ('ERROR', 'The SPARQL Demo package requires server version $NEED_VERSION or greater'); " >> $STICKER
+    echo "	 signal ('FATAL', 'The SPARQL Demo package requires server version $NEED_VERSION or greater'); " >> $STICKER
     echo "      } " >> $STICKER
     echo "  ]]></sql>" >> $STICKER
     echo "  <sql purpose=\"post-install\">" >> $STICKER
     echo "    <![CDATA[" >> $STICKER
-    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/iSPARQL/data/manifest-rdf-list.sql', 1, 'report', 1);" >> $STICKER
-    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/iSPARQL/data/rdf-list.sql', 1, 'report', 1);" >> $STICKER
-    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/iSPARQL/data/rq-list.sql', 1, 'report', 1);" >> $STICKER
-    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/iSPARQL/data/ttl-list.sql', 1, 'report', 1);" >> $STICKER
+    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/sparql_demo/data/manifest-rdf-list.sql', 1, 'report', 1);" >> $STICKER
+    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/sparql_demo/data/rdf-list.sql', 1, 'report', 1);" >> $STICKER
+    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/sparql_demo/data/rq-list.sql', 1, 'report', 1);" >> $STICKER
+    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/sparql_demo/data/ttl-list.sql', 1, 'report', 1);" >> $STICKER
     echo "" >> $STICKER
-    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/iSPARQL/setup.sql', 1, 'report', 1);" >> $STICKER
-    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/iSPARQL/setup_demo_db.sql', 1, 'report', 1);" >> $STICKER
-    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/iSPARQL/setup_queries.sql', 1, 'report', 1);" >> $STICKER
+    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/sparql_demo/setup.sql', 1, 'report', 1);" >> $STICKER
+    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/sparql_demo/setup_demo_db.sql', 1, 'report', 1);" >> $STICKER
+    echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('/DAV/VAD/sparql_demo/setup_queries.sql', 1, 'report', 1);" >> $STICKER
     echo "" >> $STICKER
     echo "    ]]>" >> $STICKER
     echo "  </sql>" >> $STICKER
@@ -308,8 +307,8 @@ sticker_init() {
 '
     for file in `find vad -type f | grep -v '/CVS'`
     do
-	name=`echo "$file" | cut -b18-`
-	echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"iSPARQL/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+    name=`echo "$file" | cut -b22-`
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"sparql_demo/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
     done
     IFS="$oldIFS"
     echo "</resources>" >> $STICKER
@@ -392,16 +391,13 @@ VIRT_EOF
     virtuoso_start
 }
 
-
 vad_create() {
-    do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER', '.', 'isparql_dav.vad')"
+    do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER', '.', 'sparql_demo_dav.vad')"
     do_command_safe $DSN "commit work"
     do_command_safe $DSN "checkpoint"
 }
 
-
-BANNER "STARTED PACKAGING iSPARQL VAD"
-
+BANNER "STARTED PACKAGING SPARQL_DEMO VAD"
 STOP_SERVER
 $myrm $LOGFILE 2>/dev/null
 directory_clean
@@ -411,7 +407,7 @@ virtuoso_init
 sticker_init
 vad_create
 virtuoso_shutdown
-chmod 644 isparql_dav.vad
+chmod 644 sparql_demo_dav.vad
+chmod 644 virtuoso.trx
 directory_clean
-
-BANNER "FINISHED PACKAGING iSPARQL VAD"
+BANNER "FINISHED PACKAGING SPARQL_DEMO VAD"
