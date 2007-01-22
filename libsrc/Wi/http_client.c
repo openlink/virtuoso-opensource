@@ -257,6 +257,7 @@ http_cli_ctx_free (http_cli_ctx * ctx)
   dk_free_tree ((box_t) ctx->hcctx_pub_req_hdrs);
   dk_free_tree ((box_t) ctx->hcctx_req_body);
   dk_free_tree (ctx->hcctx_resp_body);
+  dk_free_tree ((box_t) ctx->hcctx_ua_id);
 
   dk_free (ctx, sizeof (http_cli_ctx));
   return 0;
@@ -444,8 +445,8 @@ http_cli_set_ua_id (http_cli_ctx * ctx, caddr_t ua_id)
       if (ctx->hcctx_ua_id)
 	{
 	  dk_free_box (ctx->hcctx_ua_id);
-	  ctx->hcctx_ua_id = ua_id;
 	}
+      ctx->hcctx_ua_id = box_dv_short_string (ua_id);
     }
   return (HC_RET_OK);
 }
