@@ -3150,6 +3150,13 @@ qr_more (caddr_t * inst)
     {
       qi_enter (qi);
     }
+  if (caller == CALLER_CLIENT || caller == CALLER_LOCAL)
+    {
+      if (NULL == THR_ATTR (THREAD_CURRENT_THREAD, TA_OBJECT_SPACE_OWNER))
+        {
+	  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_OBJECT_SPACE_OWNER, qi);
+	}
+    }
   qi->qi_thread = self = THREAD_CURRENT_THREAD;
   qi->qi_bytes_selected = 0;
   qi_clear_out_box (inst);

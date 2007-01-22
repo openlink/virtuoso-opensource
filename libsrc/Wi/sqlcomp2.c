@@ -1213,7 +1213,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
   err = qr_exec (cli, proc, CALLER_LOCAL, NULL,
 		 NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
-  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_MEM_POOL, saved_thr_mem_pool);
+ SET_THR_TMP_POOL (saved_thr_mem_pool);
   semaphore_enter (parse_sem);
   sqlc_set_client (cli);
   if (err_ret)

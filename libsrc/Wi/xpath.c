@@ -3240,7 +3240,7 @@ xp_sql_xp_tree (xpp_t * caller_xpp, xp_lexbmk_t *begin, sql_comp_t * sc, caddr_t
   if (THR_TMP_POOL == NULL)
     {
       mp_is_local = 1;
-      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_MEM_POOL, mem_pool_alloc ());
+      SET_THR_TMP_POOL (mem_pool_alloc ());
     }
   else
     mp_is_local = 0;
