@@ -391,7 +391,7 @@ For simplicity we will stick with the default of Use SQL Statements.  Press Next
       <graphic fileref="rth/vs008.jpg" width="" depth=""/></figure>
   </listitem>
 
-  <listitem><formalpara><title>Adanced Options</title>
+  <listitem><formalpara><title>Advanced Options</title>
     <para>Click on the Advanced Options button.  Unselect the top checkbox.
     This will also unselect the other two automatically.  We will not be performing
     any updates in this example.  OK the advanced options, upon return to the
@@ -410,7 +410,7 @@ For simplicity we will stick with the default of Use SQL Statements.  Press Next
   <listitem><formalpara><title>Back to the main window...</title>
     <para>When the wizard finishes and returns you to the main Visual Studio
     window you will see that two controls have been added to the Web Form.
-    The connection control has been automatcally generated to support
+    The connection control has been automatically generated to support
     the Data Adapter.</para></formalpara>
     <figure id="rthvs011"><title>Databound Examples using MS Visual Studio</title>
       <graphic fileref="rth/vs011.jpg" width="" depth=""/></figure>
@@ -591,7 +591,7 @@ DataGrid1.DataBind()
     web browser and go to the Virtuoso server, which would be
     <computeroutput>http://localhost/</computeroutput> for this example, and
     select Administration.  You will be prompted for the DBA user name and password
-    to administor Virtuoso.  These will be whatever you entered during the installation,
+    to administer Virtuoso.  These will be whatever you entered during the installation,
     possibly both dba.  When the menu appears select
     <menuchoice><guimenu>Web Services</guimenu></menuchoice> followed by
     <menuchoice><guimenu>HTTP Virtual Directories</guimenu></menuchoice>.

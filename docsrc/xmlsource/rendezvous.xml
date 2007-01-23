@@ -58,7 +58,7 @@ the IP address/port of a host of the chosen service during DSN configuration.
 This is used when existing DSN using a ZeroConfig name is used to connect,
 it will map name with IP address and port before making a connection.</para>
 
- <sect3 id="rendezvousserverside"><title>Setting-up the Server for Service Advertizing</title>
+ <sect3 id="rendezvousserverside"><title>Setting-up the Server for Service Advertising</title>
 
   <para>The Virtuoso server is configured to advertise itself based on the 
   details specified in the <computeroutput>[Zero Config]</computeroutput> 
@@ -91,7 +91,7 @@ SSLServerDSN  = UID=dba;PWD=;ENCRYPT=1
   You cannot specify the server hostname, IP address or port number, these 
   are supplied by Virtuoso automatically.</para>
 
-  <para>ZeroConfig service advertizing is multicast, hence it is advertized 
+  <para>ZeroConfig service advertising is multicast, hence it is advertised 
   on all available network interfaces.</para>
 
   </sect3>

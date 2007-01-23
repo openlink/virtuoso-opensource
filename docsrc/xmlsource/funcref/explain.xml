@@ -66,7 +66,7 @@
       statements used by the cursor implementation are shown.</para>
 
 <para>
-Specifying a cursor type of -5 produces a diagnostic dump to the server's standard output.  This contains the costs associted with different join orders tried duringthe compilation.
+Specifying a cursor type of -5 produces a diagnostic dump to the server's standard output.  This contains the costs associated with different join orders tried during the compilation.
 </para>
   </refsect1>
   <refsect1 id="seealso_explain"><title>See Also</title>

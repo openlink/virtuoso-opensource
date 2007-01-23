@@ -47,7 +47,7 @@
     <para>This function corresponds to the ODBC catalog call of similar name.
     It and related functions are used by the virtual database to query
     remote data dictionaries.</para>
-    <para>First argument of the ODBC SQLSpecialColumns is allways SQL_BEST_ROWID.</para>
+    <para>First argument of the ODBC SQLSpecialColumns is always SQL_BEST_ROWID.</para>
     <para>The dsn argument must refer to a dsn previously defined by
     <function>vd_remote_data_source()</function> or ATTACH TABLE.</para>
     <para>For instance, the qualifier argument corresponds to the

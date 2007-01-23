@@ -65,8 +65,8 @@ before any distributed operations are undertaken.
   }
   SET MTS_2PC=1; --  transaction of this procedure is now in distributed
   MTS_SET_TIMEOUT (1000); -- 1sec timeout on distributed transactions
-  UPDATE linked_account1 SET ammount=ammount+100 WHERE id=person_id;
-  UPDATE linked_account2 SET ammount=ammount-100 WHERE id=person_id;
+  UPDATE linked_account1 SET amount=amount+100 WHERE id=person_id;
+  UPDATE linked_account2 SET amount=amount-100 WHERE id=person_id;
   commit work;
 }</programlisting>
 <para>This money transfer is under 2PC control of MTS. If one of the two

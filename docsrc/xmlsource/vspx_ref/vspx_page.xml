@@ -107,7 +107,7 @@
     <function>vspx_page</function>The container for the rest of the vspx code.
 The page or a subclass of it will be the outermost element  on any VSPX page.
 Each .vspx file defines explicitly one custom page class derived from vspx_page.
-This element can enclose all HTML elements or can be incorporated in it&#39;s children on place apropriate for
+This element can enclose all HTML elements or can be incorporated in it&#39;s children on place appropriate for
 rendering the VSPX controls, but one VSPX page must contain only one vspx:page element. and no one VSPX-specific tag may appear outside the vspx:page. It can be placed in other HTML stuff or around it, doesnt&#39; matter, but VSP &amp; VSPX code must be inside it (the same applies to customized HTML attributes, i.e. containing &lt;?V &amp; &lt;?U shortcuts).
 </para>
 </refsect1>

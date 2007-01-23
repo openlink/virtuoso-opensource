@@ -62,7 +62,7 @@ the function signals an error if an attribute already exists.
 Mode 1 is similar to &quot;insert soft&quot;:
 the function do nothing if an attribute already exists and not signalling an error.
 Mode 2 is similar to &quot;insert replacing&quot;:
-the function either adds a new atribute or replacing the value of existing attribute.
+the function either adds a new attribute or replacing the value of existing attribute.
 </para>
   </refsect1>
   <refsect1 id="params_XMLAddAttribute">

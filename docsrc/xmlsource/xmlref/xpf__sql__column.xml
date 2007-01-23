@@ -63,7 +63,7 @@ It can be a name of a Virtuoso/PL variable.
   <refsect1 id="xpf_ret__sql__column"><title>Return Types</title>
 <para>The value of the sql:column() invocation is the value of some
 SQL column or variable. If the type of the value is not supported by XQuery
-interpreter then it will be converted accodring to geenric rules for
+interpreter then it will be converted according to generic rules for
 XQuery parameters.</para>
   </refsect1>
   <refsect1 id="xpf_examples__sql__column"><title>Examples</title>

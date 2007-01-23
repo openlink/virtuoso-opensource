@@ -57,7 +57,7 @@
       <para>This function does not return a value</para></refsect1>
   <refsect1 id="desc_script_source_update">
     <title>Description</title>
-    <para><function>BPEL.BPEL.script_source_update</function>   is used to update the script source of an alredy uploaded script. The script must be in edit mode in order to do that. The URL and content parameters works as in script_upload.</para>
+    <para><function>BPEL.BPEL.script_source_update</function>   is used to update the script source of an already uploaded script. The script must be in edit mode in order to do that. The URL and content parameters works as in script_upload.</para>
   </refsect1>
   <refsect1 id="examples_script_source_update"><title>Examples</title>
     <example id="ex_script_source_update"><title>Simple example</title>

@@ -92,7 +92,7 @@ of their cration (if image is splitted on to a several files).</para>
 SQL> DB.DBA.REPL_PUB_INIT_IMAGE ('table_publication', 'tbl_pub.log', 1000000);
       </screen>
 
-      <para>Furthermore the image can be loaded on a subscriber. Note that this comman MUST be issued on the subscriber side. Note that REPL_PUB_INIT_IMAGE() will make more files when size of the initial file is greater than 1Mb, so in that case the additional files will be named tbl_pub.log.N where N is a sequence beggining from 1 and they also need to be loaded.</para>
+      <para>Furthermore the image can be loaded on a subscriber. Note that this comman MUST be issued on the subscriber side. Note that REPL_PUB_INIT_IMAGE() will make more files when size of the initial file is greater than 1Mb, so in that case the additional files will be named tbl_pub.log.N where N is a sequence beginning from 1 and they also need to be loaded.</para>
 
       <screen>
 SQL> replay 'tbl_pub.log';

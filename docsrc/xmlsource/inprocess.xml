@@ -35,7 +35,7 @@ calls.</para>
 
 <para>The in-process call mechanism by itself is not exposed to the applications. 
 It is hidden behind the same APIs as the RPC one: ODBC, JDBC, ADO.NET. So in both
-cases applicatiolns deal with the same APIs and the application logic does not
+cases applications deal with the same APIs and the application logic does not
 change. The application chooses which mechanism to use when it opens a
 database connection.</para>
 

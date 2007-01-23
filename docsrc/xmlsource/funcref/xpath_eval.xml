@@ -74,7 +74,7 @@ Obviously, names should be strings that are valid XPath variable names.
   <refsect1 id="params_xpath_eval">
     <title>Parameters</title>
     <refsect2><title>xpath_expression</title>
-      <para>A valid XPATH expression. In almost all aplications this is a string.
+      <para>A valid XPATH expression. In almost all application this is a string.
 There is a tricky extension that is used by BPEL-like applications: <parameter>xpath_expression</parameter> can be an XML entity
 whost string-value is a valid XPATH expression. An example of such an entity is &quot;select&quot; or &quot;test&quot;
 attribute in XSLT stylesheet. This trick lets XPATH processor to resolve namespace prefixes by looking at namespace declarations

@@ -84,7 +84,7 @@
     <title>Description</title>
     <important>
 <para>
-These functions  are deprecated.  The use of backup_online () is preferred for database bacups.
+These functions  are deprecated.  The use of backup_online () is preferred for database backups.
 Performing a backup with the destination file /dev/null is a good way of verifying a database's physical integrity.
 </para>
 <para>All backup files, whether complete (created with
@@ -98,7 +98,7 @@ Performing a backup with the destination file /dev/null is a good way of verifyi
     unpredictable results.  Thus a log or backup may only be replayed on
     the same database, an empty database or a copy of the database which
     has had no schema changed since it was made.
-Also, when replaying a bacup file  onto an empty database, the +replay-crash-dump switch should be given on the executable command line.  
+Also, when replaying a backup file  onto an empty database, the +replay-crash-dump switch should be given on the executable command line.  
 </para></important>
     <para>This function requires dba privileges.</para>
 

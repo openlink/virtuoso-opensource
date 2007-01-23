@@ -63,7 +63,7 @@ request is being processed by the SOAP server.
       <member>If <parameter>entity</parameter> is not a vector() then its
       value will be cast to the <parameter>try_typed_as</parameter> type, if possible.</member>
       <member>If <parameter>entity</parameter> is a vector() containing XML 
-      tree then it will be converted to an apropriate SQL type (vector(), 
+      tree then it will be converted to an appropriate SQL type (vector(), 
       varchar, integer etc.) depending on the SOAP RPC encoding rules 
       (XMLSchema-datatypes and SOAP-RPC encoding schema) for in/out SOAP messages.  
       i.e. it depends on the

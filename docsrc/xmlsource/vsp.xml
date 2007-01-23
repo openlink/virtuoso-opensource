@@ -567,7 +567,7 @@ is this vsp?? cookies
   in order to provide feedback and avoid timeouts. Also the long running task should not be
   interrupted by the user agent disconnecting. The <function>http_flush()</function> function will
   send the reply accumulated thus far to the user agent and then disconnect it.
-  In effect, this is a generic mechanism for starting an asynchroneous thread.</para>
+  In effect, this is a generic mechanism for starting an asynchronous thread.</para>
 
   <para>Starting long running tasks may lead to denial of service.
   To prevent this we can use status and stop functions to check processes and

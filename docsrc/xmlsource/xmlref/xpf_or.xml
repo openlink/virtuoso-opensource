@@ -33,7 +33,7 @@
   <refsynopsisdiv>
     <funcsynopsis id="xpf_syn_or">
       <funcprototype id="xpf_proto_or">
-        <funcdef>boolen <function>or</function></funcdef>
+        <funcdef>boolean <function>or</function></funcdef>
 	<paramdef><parameter>val1</parameter> boolean</paramdef>
 	<paramdef><parameter>val2</parameter> boolean</paramdef>
 	<paramdef><parameter>...</parameter></paramdef>

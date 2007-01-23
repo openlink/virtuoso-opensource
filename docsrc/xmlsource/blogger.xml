@@ -1118,7 +1118,7 @@ The XML Schema for RSS v2.0 file (rss.xml)
   following blog client applications:</para>
 
   <simplelist>
-      <member><ulink url="http://radio.userland.com/download">Radio Userland</ulink> (Manila Blogger Bridge tool and Upstreaming), avalable for MS Windows and MacOS X
+      <member><ulink url="http://radio.userland.com/download">Radio Userland</ulink> (Manila Blogger Bridge tool and Upstreaming), available for MS Windows and MacOS X
       </member>
       <member><ulink url="http://www.newzcrawler.com/downloads.shtml">NewzCrawler</ulink>, available for MS Windows
       </member>
@@ -2041,7 +2041,7 @@ uses the array of URLs returned to set it's local list of channels.
     or it will be posted automatically if &#39;&#39;Automatic post&#39;&#39; option is checked. </para>
 
     <para>Note: feeding a mail box can also be done via &quot;Mail&quot;, &quot;Get Mail with
-    POP3&quot; Admin UI utility. In this case blogger authenicates in this utility, and feeds
+    POP3&quot; Admin UI utility. In this case blogger authenticates in this utility, and feeds
     it&#39;&#39;s local mailbox from some POP3 server. The consecuential actions to put a message
     as blog message are same as described above. </para>
 
@@ -2101,7 +2101,7 @@ uses the array of URLs returned to set it's local list of channels.
       <para>
 	  This UI is used to define a mail routing job.
 	  So it is used for notification of blog visitors
-	  for post updates. If administratior define a mail
+	  for post updates. If administrator define a mail
 	  target and refresh interval; visitors to the
 	  given blog can subscribe to the 'mailing list' for
 	  blog updates.

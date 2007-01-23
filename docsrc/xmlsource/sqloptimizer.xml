@@ -515,7 +515,7 @@ SQLGetInfo() returned string (in uppercase)</member>
 will use the first matching row in the order of the primary key.</para>
 
 <para>The procedure that collects the remote DBMS statistics (usually by doing
-rexecute() agains the remote) has the following signature:</para>
+rexecute() against the remote) has the following signature:</para>
 <programlisting>
 create procedure DB.DBA.__VIRTUOSO_SYS_COL_STAT (
     in DSN varchar,

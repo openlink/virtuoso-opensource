@@ -464,7 +464,7 @@ is 	           specified, the contained scopes will be compensated and
 	      <para>This is a container for events, thus  it can contain onMessage or/and onAlarm
 		  events. Semantic of the onMessage and onAlarm is same
 		  as defined in <ulink url="#bpelact_pick">pick</ulink> activity, the
-	          difference is that here these can be executed asynchroneously while the events of the defining scope are running.  The events in an event handler section may thus interrupt the execution of the body of the scope.  This feature can be used for supporting asynchroneous cancel messages or timeouts imposed on a whole sequence of operations..</para>
+	          difference is that here these can be executed asynchronously while the events of the defining scope are running.  The events in an event handler section may thus interrupt the execution of the body of the scope.  This feature can be used for supporting asynchronous cancel messages or timeouts imposed on a whole sequence of operations..</para>
 	      <programlisting><![CDATA[
 <eventHandlers>?
     <onMessage partnerLink="ncname" portType="qname"
@@ -2335,7 +2335,7 @@ partner">
         VARCHAR  VARCHAR
         _______________________________________________________________________________
 
-        00000    GUI is accesible via http://host:port/BPELGUI
+        00000    GUI is accessible via http://host:port/BPELGUI
         00000    Quick Start is available from http://host:port/BPELGUI/start.vsp
         00000    No errors detected, installation complete.
         00000    Now making a final checkpoint.

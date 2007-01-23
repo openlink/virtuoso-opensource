@@ -85,7 +85,7 @@
 
   Errors:
   TR037   37000           The publication account <name> does't exist
-  TR038   37000           The dav publication <name> alredy exist
+  TR038   37000           The dav publication <name> already exist
   TR039   37000           The WebDAV collection <name> doesn't exist
   TR040   37000           The table <name> doesn't exist
   TR041   37000           The procedure name doesn't exist
@@ -94,7 +94,7 @@
   -->
   <refsect1 id="examples_repl_pub_add"><title>Example</title>
     <example id="ex_repl_pub_add_1"><title>Adding a table to the publication</title>
-     <para>This is to add a table Demo.demo.Orders (avalable in the demo DataBase) to the an existing publication named table_publication. The default flag for removal when publication is dropped is set to off. The parameter mode is NULL as it has effect only for procedures.</para>
+     <para>This is to add a table Demo.demo.Orders (available in the demo DataBase) to the an existing publication named table_publication. The default flag for removal when publication is dropped is set to off. The parameter mode is NULL as it has effect only for procedures.</para>
       <screen>
 SQL> DB.DBA.REPL_PUB_ADD ('table_publication', 'Demo.demo.Orders', 2, 0, NULL);
       </screen>

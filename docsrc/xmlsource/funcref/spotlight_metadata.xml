@@ -44,7 +44,7 @@
     </refsect2>
   </refsect1>
   <refsect1 id="desc"><title>Description</title>
-    <para>This function retrieves a file's metadata using the Apple Mac OSX 10.4 Spotlight feature.  The path must be within the paths allowed by the DirsAloowed ini setting and the calling user must have dba privileges.  This function is only available on executables built on Mac OS systems supporting Spotlight.
+    <para>This function retrieves a file's metadata using the Apple Mac OSX 10.4 Spotlight feature.  The path must be within the paths allowed by the DirsAllowed ini setting and the calling user must have dba privileges.  This function is only available on executables built on Mac OS systems supporting Spotlight.
 
 </para>
     <para><function>spotlight_metadata</function>The return value is a vector of name-value pairs. 

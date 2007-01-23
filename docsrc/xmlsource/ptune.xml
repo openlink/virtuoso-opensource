@@ -942,7 +942,7 @@ select s_quantity from stock where s_i_id = 111 for update;
     See Profiling and prof_enable ().</para>
 
     <para>For PL applications, Virtuoso provides a profiler and test
-    coverage facility. This is actibated by setting PLDebug = 2 in
+    coverage facility. This is activated by setting PLDebug = 2 in
     the Parameters section of the ini file and starting the server.
     The functions cov_store () and cov_report are used for
     obtaining a report of the code execution profile thus far. See

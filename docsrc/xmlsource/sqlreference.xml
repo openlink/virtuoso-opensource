@@ -647,7 +647,7 @@ to <computeroutput>0x&lt;value&gt;</computeroutput></para>
 
   <para>Binary strings can be specified as literals prefixed with 'B' and
   enclosed with single quotes.  The string should not be empty and should
-  contain only 1's or 0's.  Binary strings are read from the end to begining
+  contain only 1's or 0's.  Binary strings are read from the end to beginning
   forming bytes on each 8-th bit:</para>
 
 <programlisting>
@@ -1476,7 +1476,7 @@ external DTDs or external generic entities. It is also strongly advised to avoid
 xs:import directives. The only sort of external references that does not affect performance is
 xs:include or xs:import of a registered "sibling" schema. They say that a schema X is a "sibling" of schema Y
 if their target namespace URIs have identical protocol names and host names and differs only in local path,
-and schema X imports Y using relative (not aboslute!) URI that contain only relative path,
+and schema X imports Y using relative (not absolute!) URI that contain only relative path,
 (no protocol and no host).
 </para>
 <example id="ex_CREATEXMLSCHEMA"><title>Registering Sibling Schemas</title>
@@ -2420,7 +2420,7 @@ will return the third and fourth rows only, instead.</para>
   the data returned by a SQL query based on a few rules.  For example, you may
   want to display Customers gender as 'Male' or 'Female' based on whether their
   title is 'Mr' or one of 'Miss', 'Mrs' or 'Ms'.  The CASE expression can
-  easily accomodate this.</para>
+  easily accommodate this.</para>
   <para>The Syntax of CASE is:</para>
   <programlisting><![CDATA[
 CASE

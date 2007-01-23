@@ -116,7 +116,7 @@ The database storage is divided into a checkpoint space that is a read
 only image from the time of the last checkpoint and thus can be safely
 backed up anytime between checkpoints and the commit space where
 updates subsequent to the last checkpoint data are stored.
-Additionlly, the database records what pages have changed since the
+Additionally, the database records what pages have changed since the
 last checkpoint every time new checkpoint is made.  This change
 tracking makes it possible to make incremental backups.  The first
 time the backup_online function is called, it saves a compressed copy

@@ -108,7 +108,7 @@ This is the generic multi-row database view control.
   <title>Examples</title>
   <example id="ex_vspx_data_grid">
     <title>Simple example</title>
-    <para>A simple table of select statement, displays customers beggining with &#39;L&#39;.
+    <para>A simple table of select statement, displays customers beginning with &#39;L&#39;.
 			    </para>
     <screen><![CDATA[
 				

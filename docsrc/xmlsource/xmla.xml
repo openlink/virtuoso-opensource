@@ -218,7 +218,7 @@ and "urn:schemas-microsoft-com:xml-analysis:Execute" for Discover and Execute op
 
 <title>Virtuoso extensions</title>
 <para>
-    The following settable properties are availible to the execute request: </para>
+    The following settable properties are available to the execute request: </para>
 
 <para>direction - one of forward, backward</para>
 <para>skip - integer</para>

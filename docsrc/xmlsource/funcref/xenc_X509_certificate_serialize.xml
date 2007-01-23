@@ -68,7 +68,7 @@
   <refsect1 id="examples_xenc_X509_certificate_serialize">
     <title>Examples</title>
     <example id="ex_xenc_X509_certificate_serialize"><title>Exporting a X.509 certificate</title>
-	<para>The example exports a X.509 certificate assocoated with 'dsa-test' key from user's space.</para>
+	<para>The example exports a X.509 certificate associated with 'dsa-test' key from user's space.</para>
       <screen><![CDATA[
 	  ...
 	  declare x509 varchar;

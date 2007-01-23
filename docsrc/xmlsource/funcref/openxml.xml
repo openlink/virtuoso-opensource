@@ -237,7 +237,7 @@ The node types are:
 	  </row>
 	  <row>
 	    <entry><errorcode>42S01</errorcode></entry>
-	    <entry>The XML procedure view aready exists</entry>
+	    <entry>The XML procedure view already exists</entry>
 	    <entry>XV004</entry>
 	  </row>
 	  <row>

@@ -171,7 +171,7 @@
 <para>Database involved: Virtuoso 1939</para><para>Add new stored procs to old DB</para><para></para></formalpara></listitem>
 <listitem><formalpara>
 <title>PTR: 84 - ATTACH table syntax extension to support linking remote views</title>
-<para>Database involved: Virtuoso </para><para></para><para>new ATTACH TABLE syntax: ATTACH TABLE q_table_name [PRIMARY KEY (fld1, ...)] [AS local_name] FROM 'dsn' [USER 'username' PASSWORD 'pwd']  Note the optional PRIMARY KEY. If this is supplied it overrides the primary key from the metadata for tables and defines one for views. In order to attach  a view this should allways be supplied ! </para></formalpara></listitem>
+<para>Database involved: Virtuoso </para><para></para><para>new ATTACH TABLE syntax: ATTACH TABLE q_table_name [PRIMARY KEY (fld1, ...)] [AS local_name] FROM 'dsn' [USER 'username' PASSWORD 'pwd']  Note the optional PRIMARY KEY. If this is supplied it overrides the primary key from the metadata for tables and defines one for views. In order to attach  a view this should always be supplied ! </para></formalpara></listitem>
 <listitem><formalpara>
 <title>PTR: 85 - SQLTables not handling TableType correctly</title>
 <para>Database involved: Virtuoso 1921</para><para>SQLTables inplementation in the virtuoso CLI library was not handling TableType parameter correctly.</para><para></para></formalpara></listitem>
@@ -191,7 +191,7 @@
 <title>PTR: 96 - WEB Robot crashes</title>
 <para>Database involved: Virtuoso </para><para></para><para>caused by unhandled broken connection state</para></formalpara></listitem>
 <listitem><formalpara>
-<title>PTR: 97 - Virtuoso build 1923  crashes when 'use ws' command is executed via the VSP Admin Assitant interactive SQL</title>
+<title>PTR: 97 - Virtuoso build 1923  crashes when 'use ws' command is executed via the VSP Admin Assistant interactive SQL</title>
 <para>Database involved: Virtuoso </para><para></para><para></para></formalpara></listitem>
 <listitem><formalpara>
 <title>PTR: 98 - Virtuoso build 1923 Web Bot &amp; HTML Pages problem</title>
@@ -228,7 +228,7 @@
 <para>Database involved: Virtuoso 1939</para><para>SQL Server 7 Type OpenLink ODBC Type Comments  char SQL_VARCHAR mapping not according to ODBC spec.  varchar SQL_VARCHAR    bit SQL_SMALLINT mapping not according to ODBC spec.  binary SQL_VARCHAR mapping not according to ODBC spec.  varbinary SQL_VARCHAR mapping not according to ODBC spec.  tinyint SQL_SMALLINT mapping not according to ODBC spec.  smallint SQL_SMALLINT    integer SQL_INTEGER    decimal SQL_DOUBLE mapping not according to ODBC spec., lose precision  numeric SQL_DOUBLE mapping not according to ODBC spec., lose precision  float SQL_DOUBLE mapping not according to ODBC spec.  real SQL_REAL    double SQL_DOUBLE    datetime SQL_TIMESTAMP</para><para></para></formalpara></listitem>
 <listitem><formalpara>
 <title>PTR: 119 - Virtuoso uses '\' as universal escape character for strings</title>
-<para>Database involved: Virtuoso 1939</para><para>Asumption that the '\' character is an escape character for all strings. This means that if you want to insert a '\' into a text field, you would have to escape it ('\\').</para><para></para></formalpara></listitem>
+<para>Database involved: Virtuoso 1939</para><para>Assumption that the '\' character is an escape character for all strings. This means that if you want to insert a '\' into a text field, you would have to escape it ('\\').</para><para></para></formalpara></listitem>
 <listitem><formalpara>
 <title>PTR: 120 - Remote database passwords not encrypted when stored in Virtuoso</title>
 <para>Database involved: Virtuoso 1939</para><para>The user passwords for remote sources are not encrypted.</para><para>passwords to be encrypted</para></formalpara></listitem>

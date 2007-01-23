@@ -100,7 +100,7 @@ passed, the server creates an array with values of types inferred from
 the XML Schema of its elements.
 It is possible to declare that a user defined SQL type be used to represent a
 specific XML element in a SOAP request.  Thus SQL objects can be constructed
-and serialized automaticlly.  Note that this also means that the implementation
+and serialized automatically.  Note that this also means that the implementation
 of the user defined type instance may be in a hosted language, thus Java or
 CLR code may be transparently involved.
     </para>
@@ -1377,7 +1377,7 @@ create procedure
   SOAP datatype can be specified for any input or output parameter after
   normal datatype declarations.  This will expose parameters as input or
   output messages separately.  Header binding will also be added to an
-  apropriate section of the WSDL description file for the SOAP message.</para>
+  appropriate section of the WSDL description file for the SOAP message.</para>
 
 
   <example id="procsoapheader"><title>Processing of the SOAP Header element</title>
@@ -1447,7 +1447,7 @@ Interop.INTEROP.echoVoid
   parameter via a SOAP Header with datatype string.  Also, the condition in
   the procedure is needed to return the value in SOAP header only if it is
   supplied.  In some other cases it can be returned always, but in this
-  particular example it will be echoed only if the apropriate header is sent.</para>
+  particular example it will be echoed only if the appropriate header is sent.</para>
   </note>
   </example>
   </sect2>
@@ -2022,7 +2022,7 @@ This is done by using special keywords on procedure declaration:
    The '__SOAP_DIME_ENC IN' indicate that the procedure expects a DIME attachments on input.
    This can also be used with OUT and INOUT.
    This will also be indicated in WSDL file (services.wsdl) as DIME extension in
-   apropriate place of 'soap:operation' element.
+   appropriate place of 'soap:operation' element.
    </para>
 
    <para>

@@ -45,7 +45,7 @@
       <para>
 	  The vsp_calculate_digest() function is used to calculate on server-side a digest
 	  to perform a HTTP digest authentication. 
-	  When the authtication type is 'digest' the function will return a md5 checksum based on 
+	  When the authentication type is 'digest' the function will return a md5 checksum based on 
 	  credentials , user name and password. The checksum calculation will be made as
 	  required for HTTP Digest authentication to compare against 'response' element of
 	  credentials.  If the authentication is basic a NULL will be returned. 
@@ -70,13 +70,13 @@
 	  <thead><row><entry>Name</entry><entry>Description</entry></row></thead>
 	<tbody>
 	  <row> <entry>authtype</entry>	<entry>'digest' or 'basic'</entry> </row>
-	  <row> <entry>realm</entry> 	<entry>from HTTP Athorization request header</entry> </row>
+	  <row> <entry>realm</entry> 	<entry>from HTTP Authorization request header</entry> </row>
 	  <row> <entry>method</entry> 	<entry>from HTTP request line</entry> </row>
-	  <row> <entry>uri</entry> 	<entry>from HTTP Athorization request header</entry> </row>
-	  <row> <entry>nonce</entry> 	<entry>from HTTP Athorization request header</entry> </row>
-	  <row> <entry>nc</entry> 	<entry>from HTTP Athorization request header</entry> </row>
-	  <row> <entry>cnonce</entry> 	<entry>from HTTP Athorization request header</entry> </row>
-	  <row> <entry>qop</entry> 	<entry>from HTTP Athorization request header</entry> </row>
+	  <row> <entry>uri</entry> 	<entry>from HTTP Authorization request header</entry> </row>
+	  <row> <entry>nonce</entry> 	<entry>from HTTP Authorization request header</entry> </row>
+	  <row> <entry>nc</entry> 	<entry>from HTTP Authorization request header</entry> </row>
+	  <row> <entry>cnonce</entry> 	<entry>from HTTP Authorization request header</entry> </row>
+	  <row> <entry>qop</entry> 	<entry>from HTTP Authorization request header</entry> </row>
 	  <row> <entry>response</entry> <entry>the client-side calculated digest</entry> </row>
 	</tbody>
       </tgroup>

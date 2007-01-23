@@ -196,7 +196,7 @@ See Virtual Directories below.</para>
   <para><link linkend="davhttppath">HTTP_PATH system table</link></para>
   </tip>
 
-  <para>Virtuoso matches user-agent requests againts a logical path using
+  <para>Virtuoso matches user-agent requests against a logical path using
   the longest entry that matches the path extracted  from the URI.  Suppose
   we have two entries  '<computeroutput>/a/b</computeroutput>' and
   '<computeroutput>/a</computeroutput>' and a request is made of:

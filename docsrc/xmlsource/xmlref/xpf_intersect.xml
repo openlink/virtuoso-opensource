@@ -47,7 +47,7 @@
   </refsynopsisdiv>
   <refsect1 id="xpf_desc_intersect"><title>Description</title><para>The function returns an unordered sequence that consits of all distinct items such that every of source sequences contains every of the resulting items.</para>
   <para>Duplicates are removed, including duplicate occurences of same value in one sequence,
-the decision whether two values duplicate each other is made accurding rules used by
+the decision whether two values duplicate each other is made according rules used by
 <link linkend="xpf_distinct"><function>distinct()</function></link> function.</para>
   </refsect1>
   <refsect1 id="xpf_params_intersect"><title>Parameters</title>

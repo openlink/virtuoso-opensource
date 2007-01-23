@@ -63,7 +63,7 @@ completed on the publisher.
         This function doesn't return value
 	
         Errors:	
-        TR055   37000           The WebDAV collection <name> alredy exist
+        TR055   37000           The WebDAV collection <name> already exist
         errors on attach table
         errors on rexecute
 	-->

@@ -53,7 +53,7 @@
       <map_name>_<part_name>]]></para></refsect2>
     <refsect2><title>do_drops</title>
       <para>integer (0, 1, 2 : default value 1)</para>
-      <para>this controls how the function will go about dropping the allready existing
+      <para>this controls how the function will go about dropping the already existing
       objects:</para>
       <simplelist>
       <member>0 - don't issue any DROP TABLE/PROCEDURE/INVERSE calls, just the CREATE statements</member>

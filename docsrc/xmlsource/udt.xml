@@ -240,7 +240,7 @@ opposed to returning the instance itself.  The references are explained in
 more detail in the <computeroutput>NEW</computeroutput> operator.</para>
 
 <note><title>Note:</title>
-<para>The CREATE TYPE is an autocommiting statement.</para></note>
+<para>The CREATE TYPE is an autocommitting statement.</para></note>
 
 <example id="ex_createtype"><title>Creating User Defined Types</title>
 <para>This example creates a SQL implemented user defined type UDT_TEST with
@@ -395,7 +395,7 @@ language_name : SQL | CLR | JAVA
 
 
 <note><title>Note:</title>
-<para>The ALTER TYPE is an autocommiting statement.</para></note>
+<para>The ALTER TYPE is an autocommitting statement.</para></note>
 
 <example id="ex_altertype"><title>Altering User Defined Types</title>
 <para>This example uses a SQL implemented user defined type UDT_ALTER_TYPE with
@@ -1219,7 +1219,7 @@ static method observe_stat_m ()
   <para>However when it deserializes an serialized CLR instance it calls the
   CLR deserialization class BinaryFormatter.  The BinaryFormatter.Deserialize
   calls internally Assembly.Load to find the serialized class description.
-  So althrough the classes defined with EXTERNAL name as in c) above are otherwise
+  So although the classes defined with EXTERNAL name as in c) above are otherwise
   accessible (and serializable) they will possibly not deserialize correctly
   (as the assembly binary may not be findable through the Assembly.Load).  To
   avoid that CLR limitation it is advisable to use the EXTERNAL NAME forms

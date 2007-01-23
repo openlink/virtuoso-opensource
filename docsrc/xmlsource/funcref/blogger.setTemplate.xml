@@ -69,7 +69,7 @@ to the blog.</para></refsect2>
       Currently, either "main" or "archiveIndex".</para></refsect2>
   </refsect1>
   <refsect1 id="ret_blogger.setTemplate"><title>Return Types</title>
-    <para>Upon success this will return the bollean true value.  
+    <para>Upon success this will return the boolean true value.  
 	Upon failure, the fault will be returned.</para>
   </refsect1>
 <!--

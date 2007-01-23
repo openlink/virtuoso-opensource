@@ -59,7 +59,7 @@ of DAV resources:</para>
 such as author of MS Office document or musical genre of MP3 audio file or resolution of an image.</member>
 <member>VSP/VSPX pages - DAV resources can be dynamic web pages written in VSP
   or VSPX. Requesting such a page with GET or POST will execute the logic on
-  the page. This is very convenient way of building web allications.
+  the page. This is very convenient way of building web applications.
   </member>
 </simplelist>
 <para>DAV resources are stored in an ordinary relational table.  The text and

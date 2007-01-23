@@ -393,7 +393,7 @@ data and pass this to the wsrm_cli methods (see below).</para>
 <listitem><para><emphasis>client addressing UDT:</emphasis></para>
 
 <para>To facilitate two-way transport the receiver must know the
-address of the sender's responder (endpoint for asynchronous acknowledgement or
+address of the sender's responder (endpoint for asynchronous Acknowledgment or
 response). To pass such addresses to the WS-RM client (wsrm_cli)
 the following UDT is used.</para>
 
@@ -423,7 +423,7 @@ create type wsa_cli as
 <note><title>Important Note:</title>
   <para>A special "to" equal to
   '<computeroutput>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</computeroutput>'
-  is used to designate an 'anonymous' sender. Further acknowledgement
+  is used to designate an 'anonymous' sender. Further Acknowledgment
   can be made as a synchronous reply only.  There is no way to return a response
   in asynchronous manner.</para></note>
 
@@ -476,7 +476,7 @@ create type wsrm_cli as
   <member><emphasis>address</emphasis> - a UDT of type <computeroutput>wsa_cli</computeroutput>;
   identifying sender and receiver URLs</member>
   <member><emphasis>i_timeout</emphasis> - inactivity timeout</member>
-  <member><emphasis>ack_intl</emphasis> - acknowledgement interval</member>
+  <member><emphasis>ack_intl</emphasis> - Acknowledgment interval</member>
   <member><emphasis>dirty</emphasis> - (internal use)</member>
   <member><emphasis>is_last</emphasis> - the current message is a last in sequence</member>
   <member><emphasis>is_finish</emphasis> - transfer is finished; no more
@@ -562,18 +562,18 @@ situation properly. </para>
     <member><emphasis>Expiry</emphasis> - date of expiration</member>
     <member><emphasis>Timeout</emphasis> - inactivity timeout in milliseconds</member>
     <member><emphasis>RetryInterval</emphasis> - retry on every n milliseconds if message is not sent</member>
-    <member><emphasis>AckInterval</emphasis> - acknowledgement interval in milliseconds</member>
+    <member><emphasis>AckInterval</emphasis> - Acknowledgment interval in milliseconds</member>
   </simplelist>
 </listitem>
 </itemizedlist>
 
 <formalpara><title>Sender's responder (endpoint)</title>
 
-<para>To receive an asynchronous acknowledgement the sender must
+<para>To receive an asynchronous Acknowledgment the sender must
 have an endpoint to handle them.
-The <computeroutput>WSRMSequenceAcknowledgement()</computeroutput>
+The <computeroutput>WSRMSequenceAcknowledgment()</computeroutput>
 procedure must be exposed at that endpoint.  This accepts and processes asynchronous
-acknowledgements.  This is used to accept a SequenceAcknowledgement response
+Acknowledgment.  This is used to accept a SequenceAcknowledgment response
 from a remote party so it will process the response and will set the state
 of messages that are acknowledged.</para>
 </formalpara>
@@ -603,9 +603,9 @@ answers to the sender.</para>
     <member>depending of a addressing headers will reply in synchronous or
 	asynchronous manner. This depends on the value of "From" and "ReplyTo" headers.
 	If these contains non-anonymous URL (see above); an asynchronous
-	acknowledgement will be sent in a separate TCP connection. Thus in this mode
-	the sender must have defined a listener with WSRMSequenceAcknowledgement
-	exposed to accept such responses.  Otherwise synchronous acknowledgement
+	Acknowledgment will be sent in a separate TCP connection. Thus in this mode
+	the sender must have defined a listener with WSRMSequenceAcknowledgment
+	exposed to accept such responses.  Otherwise synchronous Acknowledgment
 	will be sent in the same TCP connection.</member>
     <member>If an error occurred a Fault will be generated </member>
   </simplelist>
@@ -620,7 +620,7 @@ answers to the sender.</para>
   <listitem>
   <formalpara><title>WSRMAckRequested</title>
   <para>accept and process AckRequested requests.  This is used to process
-  AckRequested WS-RM messages and will produce a SequenceAcknowledgement
+  AckRequested WS-RM messages and will produce a SequenceAcknowledgment
   containing info about messages been accepted. Used from sender's side to
   check the message sequence state.</para></formalpara>
   </listitem>
@@ -642,7 +642,7 @@ rights to the procedures for sender and receiver endpoints.</para>
 <listitem><para><emphasis>Sender</emphasis></para>
 <programlisting><![CDATA[
 create user WSRMS;
-grant execute on WSRMSequenceAcknowledgement to WSRMS;
+grant execute on WSRMSequenceAcknowledgment to WSRMS;
 vhost_define (lpath=>'/replyto', ppath=>'/SOAP/', soap_user=>'WSRMS');
 ]]></programlisting>
 </listitem>
@@ -778,7 +778,7 @@ HTTP/1.1 202 Accepted
 Content-Length: 0
 ]]></programlisting>
 
-<para>Sequence Acknowledgement response; sent via another channel</para>
+<para>Sequence Acknowledgment response; sent via another channel</para>
 
 <programlisting><![CDATA[
 <SOAP:Envelope>
@@ -788,11 +788,11 @@ Content-Length: 0
     <wsa:From>
       <wsa:Address>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</wsa:Address>
     </wsa:From>
-    <wsa:Action>http://schemas.xmlsoap.org/ws/2004/08/rm#SequenceAcknowledgement</wsa:Action>
-    <wsrm:SequenceAcknowledgement>
+    <wsa:Action>http://schemas.xmlsoap.org/ws/2004/08/rm#SequenceAcknowledgment</wsa:Action>
+    <wsrm:SequenceAcknowledgment>
       <wsu:Identifier>uuid:aa8bfa74-110b-11d8-8344-8cfad4a25a87</wsu:Identifier>
-      <wsrm:AcknowledgementRange Upper="2" Lower="1"/>
-    </wsrm:SequenceAcknowledgement>
+      <wsrm:AcknowledgmentRange Upper="2" Lower="1"/>
+    </wsrm:SequenceAcknowledgment>
   </SOAP:Header>
   <SOAP:Body/>
 </SOAP:Envelope>
@@ -841,10 +841,10 @@ Content-Length: 0
 	<xsd:attribute name="Lower" type="xsd:unsignedLong" use="required"/>
     </xsd:complexType>
 
-    <xsd:complexType name="SequenceAcknowledgement_t">
+    <xsd:complexType name="SequenceAcknowledgment_t">
 	<xsd:sequence>
 	    <xsd:element ref="wsu:Identifier"/>
-	    <xsd:element name="AcknowledgementRange" type="wsrm:AcknowledgmentRange_t" maxOccurs="unbounded">
+	    <xsd:element name="AcknowledgmentRange" type="wsrm:AcknowledgmentRange_t" maxOccurs="unbounded">
 	    </xsd:element>
 	</xsd:sequence>
     </xsd:complexType>
@@ -858,7 +858,7 @@ Content-Length: 0
 
     <xsd:element name="Sequence" type="wsrm:SequenceType"/>
     <xsd:element name="SequenceTerminate" type="wsrm:SequenceTerminate_t"/>
-    <xsd:element name="SequenceAcknowledgement" type="wsrm:SequenceAcknowledgement_t" />
+    <xsd:element name="SequenceAcknowledgment" type="wsrm:SequenceAcknowledgment_t" />
     <xsd:element name="AckRequested" type="wsrm:AckRequestedType"/>
 
     <!-- *** FAULTS *** -->
@@ -867,7 +867,7 @@ Content-Length: 0
 	<xsd:restriction base="xsd:QName">
 	    <xsd:enumeration value="wsrm:UnknownSequence"/>
 	    <xsd:enumeration value="wsrm:SequenceTerminated"/>
-	    <xsd:enumeration value="wsrm:InvalidAcknowledgement"/>
+	    <xsd:enumeration value="wsrm:InvalidAcknowledgment"/>
 	    <xsd:enumeration value="wsrm:MessageNumberRollover"/>
 	</xsd:restriction>
     </xsd:simpleType>
@@ -892,7 +892,7 @@ Content-Length: 0
 	<xsd:attribute name="Milliseconds" type="xsd:unsignedLong" use="required"/>
     </xsd:complexType>
 
-    <xsd:complexType name="AcknowledgementInterval_t">
+    <xsd:complexType name="AcknowledgmentInterval_t">
 	<xsd:sequence/>
 	<xsd:attribute name="Milliseconds" type="xsd:unsignedLong" use="required"/>
     </xsd:complexType>
@@ -921,7 +921,7 @@ Content-Length: 0
     <xsd:element name="InactivityTimeout" type="wsrm:InactivityTimeout_t" />
     <xsd:element name="BaseRetransmissionInterval" type="wsrm:BaseRetransmissionInterval_t" />
     <xsd:element name="ExponentialBackoff" type="wsrm:PolicyAssertionType"/>
-    <xsd:element name="AcknowledgementInterval" type="wsrm:AcknowledgementInterval_t"/>
+    <xsd:element name="AcknowledgmentInterval" type="wsrm:AcknowledgmentInterval_t"/>
     <xsd:element name="DeliveryAssurance" type="wsrm:DeliveryAssurance_t"/>
 
     <!-- *** Sequence Reference *** -->

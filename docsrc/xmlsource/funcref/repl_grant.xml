@@ -42,7 +42,7 @@
   <refsect1 id="desc_repl_grant"><title>Description</title>
     <para>This function is used to grant privilege for subscription to a SQL 
 	account for particular publication.  The DBA accounts always have right 
-	for subscription to all avalable publications.</para>
+	for subscription to all available publications.</para>
 	</refsect1>
   <refsect1 id="params_repl_grant"><title>Parameters</title>
     <refsect2><title>publication</title>

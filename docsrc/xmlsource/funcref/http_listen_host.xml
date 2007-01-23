@@ -47,7 +47,7 @@
 </para>
 
   <refsect1 id="params_http_listen_host"><title>Parameters</title>
-    <refsect2><title>interface_address</title><para>IP addres of interface to be
+    <refsect2><title>interface_address</title><para>IP address of interface to be
     started, stopped or queried for its current state.</para></refsect2>
     <refsect2><title>action</title><para>Can only take one of the following integer values:</para>
       <simplelist>
@@ -56,7 +56,7 @@
         <member>2 - query state</member></simplelist></refsect2>
     <refsect2><title>options</title><para>An array of name-value pairs for
     setting up a HTTPS listeners.  This parameter only used for starting HTTPS
-    listeners, and nothing more.  The avalable options are:</para>
+    listeners, and nothing more.  The available options are:</para>
     <simplelist>
       <member>https_cv - certificate authority file for verification.</member>
       <member>https_cert - server certificate.</member>

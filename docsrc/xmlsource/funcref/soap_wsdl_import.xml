@@ -46,7 +46,7 @@
     language) wrappers will be generated for each SOAP operation that is 
     described.  The SOAP service will be represented by a PL module which will 
     be the overall container the generated PL wrappers.  
-    Once the WSDL file has been imported the PL wrappers are autmatically 
+    Once the WSDL file has been imported the PL wrappers are automatically 
     generated and available for use.</para>
   </refsect1>
   <refsect1 id="params_soap_wsdl_import">

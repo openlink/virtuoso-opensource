@@ -139,7 +139,7 @@
   <refsect1 id="sysprops_dav_api_change"><title>System Properties</title>
     <para>Names of &apos;standard live propeties&apos; matches tag names used in PROPFIND response for same purposes.</para>
     <para>Names of virtuoso-specific system properties starts with &apos;:virt&apos; substring.</para>
-    <para>In the table below, &apos;Read/Write&apos; access type means that the appication can try to set the property.
+    <para>In the table below, &apos;Read/Write&apos; access type means that the application can try to set the property.
     This does not mean that the property can be successfully changed for any particular resource or collection.</para>
     <table><title>System properties supported by DAV_PROP_GET and DAV_PROP_SET functions</title>
       <tgroup cols="4">

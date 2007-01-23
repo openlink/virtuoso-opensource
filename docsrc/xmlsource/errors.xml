@@ -3515,7 +3515,7 @@
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>SQ171</errorcode><errortype>42000</errortype>
-      <errorname><![CDATA[an SQL <module|stored procedure|user defined type> with name <name> allready exists]]></errorname>
+      <errorname><![CDATA[an SQL <module|stored procedure|user defined type> with name <name> already exists]]></errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -3527,7 +3527,7 @@
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>SQ173</errorcode><errortype>42000</errortype>
-      <errorname><![CDATA[Maximum number of keys (<num>) allready created]]></errorname>
+      <errorname><![CDATA[Maximum number of keys (<num>) already created]]></errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 </msgset>
@@ -6551,7 +6551,7 @@ x    </msgtext></msgmain></msg>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD016</errorcode><errortype>37000</errortype>
-      <errorname>Class &lt;type&gt; allready declared</errorname>
+      <errorname>Class &lt;type&gt; already declared</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -6575,7 +6575,7 @@ x    </msgtext></msgmain></msg>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD020</errorcode><errortype>42S01</errortype>
-      <errorname>Type &lt;type&gt; allready exists</errorname>
+      <errorname>Type &lt;type&gt; already exists</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -6839,7 +6839,7 @@ x    </msgtext></msgmain></msg>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD065</errorcode><errortype>37000</errortype>
-      <errorname>Field with name &lt;name&gt; is allready defined(inherited) for type &lt;type&gt;</errorname>
+      <errorname>Field with name &lt;name&gt; is already defined(inherited) for type &lt;type&gt;</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -6875,7 +6875,7 @@ x    </msgtext></msgmain></msg>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD071</errorcode><errortype>37000</errortype>
-      <errorname>Method &lt;name&gt; allready defined in type &lt;type&gt;</errorname>
+      <errorname>Method &lt;name&gt; already defined in type &lt;type&gt;</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -6965,7 +6965,7 @@ x    </msgtext></msgmain></msg>
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>UD086</errorcode><errortype>37000</errortype>
-      <errorname><![CDATA[Method <name> allready defined in type <name>]]></errorname>
+      <errorname><![CDATA[Method <name> already defined in type <name>]]></errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -7007,7 +7007,7 @@ x    </msgtext></msgmain></msg>
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>UD093</errorcode><errortype>42000</errortype>
-      <errorname><![CDATA[ALTER TYPE acction not implemented]]></errorname>
+      <errorname><![CDATA[ALTER TYPE action not implemented]]></errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 

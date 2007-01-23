@@ -117,7 +117,7 @@ texts of all that children.
 	  <row>
 	    <entry><errorcode>XP001</errorcode></entry>
 	    <entry><errorcode>XPFC2</errorcode></entry>
-	    <entry><errorname>Last atttribute has no value specified in the first argument of create-element XPATH function.</errorname></entry>
+	    <entry><errorname>Last attribute has no value specified in the first argument of create-element XPATH function.</errorname></entry>
 	    <entry>The <parameter>head</parameter> sequence is of even length.</entry>
 	  </row>
 	  <row>

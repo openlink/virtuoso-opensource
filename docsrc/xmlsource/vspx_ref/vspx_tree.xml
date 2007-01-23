@@ -101,7 +101,7 @@
     the leaves.  The tree has a root, which may or may not be visible.  
     The contents of the tree can either be fixed, in which case these are an
     XML tree, or dynamic, in which case these are generated level by level
-    by SQL functions attached to the tree. The tree can have various external appearences.
+    by SQL functions attached to the tree. The tree can have various external appearances.
 
     The tree is represented at run time by a vspx_tree instance.  
     Nodes of the tree are represented by vspx_tree_node objects, 

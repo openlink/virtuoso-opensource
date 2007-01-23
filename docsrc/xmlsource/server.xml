@@ -1182,7 +1182,7 @@ hostname dav [22/Oct/2003:15:25:00 +0300] "PASS <hidden>" 230 0
 				<listitem id="ini_HTTPServer_FTPServerAnonymousLogin">
 					<formalpara>
 						<title>FTPServerAnonymousLogin = 0</title>
-<para>Allows the FTP server to be accessable via the "anonymous" user login.
+<para>Allows the FTP server to be accessible via the "anonymous" user login.
 The anonymous user is not a real user, it has no SQL or DAV login ability.
 The anonymous user can only access collections or resources that are set to public.  </para>
 </formalpara>
@@ -1580,7 +1580,7 @@ reconnecting without reporting the error, which would be setting 1.</para>
 						it and returned to it's default idle state.
 						If an lengthy RPC is being processed the server will
 						switch the thread from burst mode to default mode while
-						running the RPC, so the asyncronous cancelation
+						running the RPC, so the asynchronous cancelation
 						requests can be processed.</para>
 					    <para>
 						To disable ever  going to burst mode, this  option can be set to 2

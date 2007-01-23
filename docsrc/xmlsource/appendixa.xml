@@ -142,7 +142,7 @@ allowed in a single position of a string: </para>
 </simplelist>
 
 <para>You can also list the characters that do NOT want -- just use a '^' as 
-the first symbol in a bracketted expression (i.e., 
+the first symbol in a bracketed expression (i.e., 
 <computeroutput>%[^a-zA-Z]%</computeroutput> matches a string with a character 
 that is not a letter between two percent signs).</para>
 

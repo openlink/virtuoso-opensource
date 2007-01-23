@@ -38,7 +38,7 @@
   are created using the WebDAV Users Administration page and a few more 
   options, as shown below.</para>
 
-  <para>Community blogging can be activitated using the 
+  <para>Community blogging can be activated using the 
   <emphasis>Generate WebSite Pages</emphasis> button.  This will generate a 
   DAV owned blog site that will host other blogs within a community.  It can be 
   configured to allow anyone to register and begin blogging and/or existing 
@@ -82,7 +82,7 @@
 	  <para>The description that will be accompanied with meta-data about the site, such as contained within RSS feeds.</para></formalpara>
 	  </listitem>
     <listitem><formalpara><title>Author's e-mail</title>
-	  <para>The email addess of the blog author.  This can be used for receiving notifications.</para></formalpara>
+	  <para>The email address of the blog author.  This can be used for receiving notifications.</para></formalpara>
 	  </listitem>
     <listitem><formalpara><title>Owner</title>
 	  <para>The WebDAV owner for the site.  This is supplied as read-only for reference only.</para></formalpara>
@@ -330,7 +330,7 @@
 		<figure float="1"><title>Weblog UI - Community Upstreaming</title>
           <graphic fileref="ui/blog010.jpg" width="756px" depth="257px"/></figure>
 
-  <para>Upstreaming keeps your blogs synchronised amoungst your various blog 
+  <para>Upstreaming keeps your blogs synchronised amongst your various blog 
   sites, should you have more than one.  This allows you to maintain all of your
   blogging centrally, and then upstream portions to appropriate servers 
   based on whether they are private, public or for your organisation or of 
@@ -370,7 +370,7 @@
 	  </listitem>
     <listitem><formalpara><title>Action</title>
       <para>The final step for adding your upstreaming entry is the Add 
-	  button.  The checkbox next to it can be toggled to activate or de-activite 
+	  button.  The checkbox next to it can be toggled to activate or de-activate 
 	  an upstream entry as required.</para></formalpara>
 	  </listitem>
   </itemizedlist>
@@ -394,7 +394,7 @@
 	  <para>The description that will be accompanied with meta-data about the site, such as contained within RSS feeds.</para></formalpara>
 	  </listitem>
     <listitem><formalpara><title>Author's e-mail</title>
-	  <para>The email addess of the blog author.  This can be used for receiving notifications.</para></formalpara>
+	  <para>The email address of the blog author.  This can be used for receiving notifications.</para></formalpara>
 	  </listitem>
     <listitem><formalpara><title>Home page URL</title>
       <para>If the blog user has another home page it can be supplied here for blog readers to visit.  A valid URL should be supplied.</para></formalpara>

@@ -58,7 +58,7 @@
     <refsect2><title>params</title>
       <para>array of parameters to the SOAP call; array of (ParamName, Value).
       The Virtuoso SOAP client can work with complex datatypes.  In order to
-      support this the parameters arrary must conform to the following convention:
+      support this the parameters array must conform to the following convention:
       vector ( vector ([name1], [type1]), value1, vector ([name2], [type2]), value2 ...).
       This will cause type checking and validation of the values to be
       encoded for SOAP request.</para></refsect2>

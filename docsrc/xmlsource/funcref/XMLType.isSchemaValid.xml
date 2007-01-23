@@ -41,7 +41,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_XMLType.isSchemaValid">
     <title>Description</title>
-    <para>The function validates the given XMLType instance agains the XML 
+    <para>The function validates the given XMLType instance against the XML 
 	schema located at <parameter>schema_url</parameter>.  The name of the 
 	current node of the XML entity should match <parameter>top_element_name</parameter> 
 	if it is specified.</para>  

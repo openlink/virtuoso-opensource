@@ -47,7 +47,7 @@
   </refsynopsisdiv>
   <refsect1 id="xpf_desc_let"><title>Description</title>
 <para>
-For every pair of arguments, the function calcluates values of
+For every pair of arguments, the function calculates values of
 these arguments and then creates a new temporary local variable whose name
 is the string value of the first argument in pair and the value assigned is
 the value of the second argument in pair.

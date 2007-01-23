@@ -43,8 +43,8 @@
   </refsynopsisdiv>
   <refsect1 id="desc_position"><title>Description</title>
     <para>position returns the one-based index for the first occurence of element within an 
-    <type>array</type> or <type>string</type>, beggining from offset start_index and iterating with step. 
-    If the second argument is a <type>string</type>, the first argrument must be a string with a single character.
+    <type>array</type> or <type>string</type>, beginning from offset start_index and iterating with step. 
+    If the second argument is a <type>string</type>, the first argument must be a string with a single character.
     If the second argument is an array of <type>any</type>, then depending of type of it's elements 
     same type is expected as the first argument.</para>
   </refsect1>

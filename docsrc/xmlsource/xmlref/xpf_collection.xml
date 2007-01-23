@@ -57,7 +57,7 @@
       <note>
 	<title>Note:</title>
 	<para>
-When using  http://local.virt/DAV/ URI the effective account calling fn:collection must have read access to the resources in question as defined by DAV permissions.  For the http mode of acccess, the server may request authentication, which the function will supply from the dynamic context, see below.
+When using  http://local.virt/DAV/ URI the effective account calling fn:collection must have read access to the resources in question as defined by DAV permissions.  For the http mode of access, the server may request authentication, which the function will supply from the dynamic context, see below.
 	</para>
       </note>
     </refsect2>
