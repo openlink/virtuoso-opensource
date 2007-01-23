@@ -27,48 +27,48 @@
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	*.css \
+	*.xsl \
+	docbook/bin/*.xml \
 	docbook/bin/ChangeLog \
 	docbook/bin/chunk.pl \
 	docbook/bin/dingbat.pl \
 	docbook/bin/docbook.pl \
 	docbook/bin/removexmlns.pl \
-	docbook/bin/*.xml \
 	docbook/BUGS \
 	docbook/ChangeLog \
-	docbook/common/ChangeLog \
 	docbook/common/*.xml \
 	docbook/common/*.xsl \
-	docbook/contrib/outline/ChangeLog \
+	docbook/common/ChangeLog \
 	docbook/contrib/outline/*.gif \
-	docbook/contrib/outline/README \
 	docbook/contrib/outline/*.xsl \
-	docbook/docsrc/ChangeLog \
+	docbook/contrib/outline/ChangeLog \
+	docbook/contrib/outline/README \
 	docbook/docsrc/*.xsl \
-	docbook/fo/ChangeLog \
+	docbook/docsrc/ChangeLog \
 	docbook/fo/*.xsl \
-	docbook/html/ChangeLog \
+	docbook/fo/ChangeLog \
 	docbook/html/*.xml \
 	docbook/html/*.xsl \
-	docbook/javahelp/ChangeLog \
+	docbook/html/ChangeLog \
 	docbook/javahelp/*.xsl \
-	docbook/lib/ChangeLog \
+	docbook/javahelp/ChangeLog \
 	docbook/lib/*.xsl \
+	docbook/lib/ChangeLog \
 	docbook/README \
-	docbook/template/ChangeLog \
-	docbook/template/README \
 	docbook/template/*.xml \
 	docbook/template/*.xsl \
-	docbook/test/ChangeLog \
+	docbook/template/ChangeLog \
+	docbook/template/README \
 	docbook/test/*.css \
-	docbook/test/fixfo.pl \
 	docbook/test/*.gif \
 	docbook/test/*.html \
 	docbook/test/*.xml \
+	docbook/test/ChangeLog \
+	docbook/test/fixfo.pl \
 	docbook/TODO \
 	docbook/VERSION \
 	docbook/WhatsNew \
-	docbook/xhtml/ChangeLog \
 	docbook/xhtml/*.xsl \
+	docbook/xhtml/ChangeLog \
 	sections/*.css \
-	sections/*.xsl \
-	*.xsl
+	sections/*.xsl
