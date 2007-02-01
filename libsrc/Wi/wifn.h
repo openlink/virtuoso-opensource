@@ -552,6 +552,7 @@ extern int prpc_force_burst_mode;
 extern long prpc_burst_timeout_msecs;
 #endif
 extern int sqlo_max_layouts;
+extern int32 sqlo_max_mp_size;
 extern long txn_after_image_limit;
 extern long stripe_growth_ratio;
 extern int disable_listen_on_unix_sock;

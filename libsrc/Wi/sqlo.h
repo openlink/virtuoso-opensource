@@ -175,6 +175,8 @@ struct df_elt_s
   bitf_t	dfe_unit_includes_vdb:1;
   locus_t *	dfe_locus;
   dk_set_t	dfe_remote_locus_refs;
+  dk_set_t	locus_content; /* (moved from .sub as refd with any dfe_type) 
+				  in a scenario copy, the state of loci at time of copy in subtree rooted here */
   ST *	dfe_tree;
   df_elt_t *	dfe_super;
   sqlo_t *	dfe_sqlo;
@@ -236,7 +238,6 @@ struct df_elt_s
       df_elt_t **	vdb_join_test; /* when join preds are not imported into the dt in vdb */
       df_elt_t **	invariant_test;
       float 		in_arity;  /* estimate evaluation count of the dt's head node  */
-      dk_set_t	locus_content; /* in a scenario copy, the state of loci at time of copy in subtree rooted here */
       char	is_locus_first;
       char	is_contradiction;
     } sub;

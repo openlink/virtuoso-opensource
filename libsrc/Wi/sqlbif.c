@@ -1993,7 +1993,7 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (dtp1 == DV_ARRAY_OF_POINTER)
   len = BOX_ELEMENTS (str);
   else if (dtp1 == DV_STRING_SESSION)
-  len = strses_length((dk_session_t *)str);
+    len = strses_length ((dk_session_t *)str);
   else
 #ifndef O12
   len = box_length (str) / sizeof_char - ((dtp1 != DV_G_REF_CLASS) ? 1 : 0);
@@ -10215,6 +10215,15 @@ bif_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (lvalue >= 0 && lvalue <= 10000)
 	qi->qi_rpc_timeout = lvalue;
     }
+
+  else if (0 == stricmp (opt, "TRANSACTION_TIMEOUT"))
+    {
+      if (dtp != DV_LONG_INT)
+	sqlr_new_error ("22023", "VD001", "Value of transaction_timeout must be an integer");
+      if (lvalue >= 0)
+	qi->qi_trx->lt_timeout = lvalue;
+    }
+
 
   else if (0 == stricmp (opt, "HTTP_IGNORE_DISCONNECT"))
     {

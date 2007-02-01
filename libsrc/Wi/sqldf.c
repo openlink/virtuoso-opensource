@@ -27,6 +27,8 @@
 */
 
 #include <string.h>
+#include "Dk.h"
+#include "Dk/Dkpool.h"
 #include "libutil.h"
 #include "sqlnode.h"
 #include "eqlcomp.h"
@@ -75,12 +77,45 @@ sqlo_df_elt (sqlo_t * so, ST * tree)
   return NULL;
 }
 
+size_t
+sqlo_df_size (int type)
+{
+#define df_elt_head ((df_elt_t*)0)->_
+  size_t len = (size_t) &df_elt_head;
+  switch (type)
+    {
+      case DFE_CONST: 
+	  break;
+      case DFE_COLUMN:
+	  len += sizeof (df_elt_head.col);
+	  break;
+      case DFE_BOP:
+      case DFE_BOP_PRED: 
+	  len += sizeof (df_elt_head.bin);
+	  break;
+      case DFE_CALL:
+	  len += sizeof (df_elt_head.call);
+	  break;  	  
+      default:
+	  len = sizeof (df_elt_t);
+    }
+  return len;
+}
 
 df_elt_t *
 sqlo_new_dfe (sqlo_t * so, int type, ST * tree)
 {
+#if 0
   TNEW (df_elt_t, dfe);
   memset (dfe, 0, sizeof (df_elt_t));
+#else  /* dfe_size */
+  df_elt_t * dfe; 
+  size_t dfe_len = sqlo_df_size (type);
+
+  dfe = (df_elt_t *) t_alloc (dfe_len);
+  memset (dfe, 0, dfe_len);
+#endif
+
   dfe->dfe_type = type;
   dfe->dfe_sqlo = so;
   dfe->dfe_tree = tree;
@@ -283,6 +318,14 @@ sqlo_is_contains_out_col (sqlo_t *so, df_elt_t *dfe, op_table_t *ot)
   return 0;
 }
 
+#ifdef MALLOC_DEBUG
+#define DBG_SQLO_MP
+int32 sqlo_pick_mp_size = 0;
+#define SQLO_MP_SAMPLE if (virtuoso_server_initialized && (THR_TMP_POOL)->mp_bytes > sqlo_pick_mp_size) \
+    			 sqlo_pick_mp_size = (THR_TMP_POOL)->mp_bytes;
+#else
+#define SQLO_MP_SAMPLE
+#endif
 
 df_elt_t *
 sqlo_df (sqlo_t * so, ST * tree)
@@ -295,6 +338,13 @@ sqlo_df (sqlo_t * so, ST * tree)
     sqlc_error (so->so_sc->sc_cc, ".....", "Stack Overflow");
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, ".....", "Out of memory");
+  SQLO_MP_SAMPLE;
+  if (sqlo_max_mp_size > 0 && (THR_TMP_POOL)->mp_bytes > sqlo_max_mp_size)
+    {
+      sqlc_error (so->so_sc->sc_cc, ".....", 
+	  "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting", 
+	  (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
+    } 
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     {
       dfe = sqlo_new_dfe (so, DFE_CONST, tree);
@@ -4042,6 +4092,7 @@ sqlo_dt_imp_pred_list_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *dfe)
 }
 
 int sqlo_max_layouts = 1000;
+int32 sqlo_max_mp_size = 10485760;
 
 
 int32
@@ -4124,6 +4175,20 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
     sqlc_error (so->so_sc->sc_cc, ".....", "Stack Overflow");
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, ".....", "Out of memory");
+  SQLO_MP_SAMPLE;      
+  if (sqlo_max_mp_size > 0 && (THR_TMP_POOL)->mp_bytes > sqlo_max_mp_size)
+    {
+      if (so->so_best) /* log a error */
+	{
+	  log_error ("The memory pool size %d reached the limit %d bytes, using the last best score.", 
+	      (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
+	  return;
+	}
+      else
+	sqlc_error (so->so_sc->sc_cc, ".....", 
+	    "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting.", 
+	    (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
+    } 
 
   if (!ot->ot_fixed_order && !IS_FOR_XML (sqlp_union_tree_right (ot->ot_dt)))
     sort_set = sqlo_layout_sort_tables (so, ot, ot->ot_from_dfes);
@@ -4352,7 +4417,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 void
 sqlo_restore_loci (df_elt_t * dt_dfe)
 {
-  DO_SET (locus_t *, copy, &dt_dfe->_.sub.locus_content)
+  DO_SET (locus_t *, copy, &dt_dfe->locus_content)
     {
       copy->loc_copy_of->loc_results = copy->loc_results;
     }
@@ -4440,7 +4505,7 @@ dfe_body_len (df_elt_t * body)
 void
 dfe_save_locus (sqlo_t * so, locus_t * loc)
 {
-  DO_SET (locus_t *, saved_loc, &so->so_copy_root->_.sub.locus_content)
+  DO_SET (locus_t *, saved_loc, &so->so_copy_root->locus_content)
     {
       if (saved_loc->loc_name == loc->loc_name)
 	return;
@@ -4450,7 +4515,7 @@ dfe_save_locus (sqlo_t * so, locus_t * loc)
     locus_t * copy_loc = (locus_t*) t_box_copy ((caddr_t) loc);
     copy_loc->loc_copy_of = loc;
     copy_loc->loc_results = t_set_copy (copy_loc->loc_results);
-    t_set_push (&so->so_copy_root->_.sub.locus_content, (void*) copy_loc);
+    t_set_push (&so->so_copy_root->locus_content, (void*) copy_loc);
   }
 }
 
@@ -5161,6 +5226,12 @@ sqlo_top_select (sql_comp_t * sc, ST ** ptree)
       so->so_is_select = 1;
       dfe = sqlo_top_1 (so, sc, ptree);
       sqlg_top (so, dfe);
+      SQLO_MP_SAMPLE;
+#ifdef DBG_SQLO_MP 
+      if (virtuoso_server_initialized)
+	fprintf (stderr, "sqlo_top_select %s %d mp_bytes=%d, max=%d\n", __FILE__, __LINE__, 
+	    (THR_TMP_POOL)->mp_bytes, sqlo_pick_mp_size);
+#endif      
       so->so_copy_root = dfe;
     }
   THROW_CODE
