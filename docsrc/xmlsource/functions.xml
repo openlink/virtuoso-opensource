@@ -110,6 +110,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 
 &end_result; &either; &elh_get_handler; &elh_load_handler; &encode_base64;
 &equ; &exec; &exec_close; &exec_next; &exec_result; &exec_result_names;
+&exec_metadata; &exec_score; 
 &exp; &explain;
 
 &file_delete; &file_dirlist; &file_mkdir; &file_mkpath; &file_stat;

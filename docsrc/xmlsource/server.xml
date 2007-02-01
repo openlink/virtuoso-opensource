@@ -885,6 +885,13 @@ JavaVMOption5  = -Ddt5=val5
 		</para>
 	    </formalpara>
 	</listitem>
+	<listitem id="ini_Parameters_MaxMemPoolSize">
+	    <formalpara>
+		<title>MaxMemPoolSize</title>
+		<para>Specifies the limit of the memory to be used for compiling a SQL statement. If the query compilation requires more memory an error will be signalled. If this is a zero then no limit will be apllied. The default is 10Mb i.e. when no parameter is specified, also if negative number or less than 5000000 is given then it would be set to 5000000 bytes.
+		</para>
+	    </formalpara>
+	</listitem>
 	<listitem id="ini_TempDBSize">
 	    <formalpara>
 		<title>TempDBSize</title>
@@ -1216,6 +1223,14 @@ from the HTTP threads after each request.  The default setting is "0".</para>
 	</para>
     </formalpara>
 </listitem>
+<listitem id="ini_HTTPServer_MaintenancePage">
+    <formalpara>
+	<title>MaintenancePage = file_name</title>
+	<para>The name of a HTML page or other static content to be returned to the user agents when server is running in atomic mode.
+	    Note that this page should be self-contained, i.e. no image or CSS not JavaScript references can be used. 
+	</para>
+    </formalpara>
+</listitem>
       </itemizedlist>
 		</sect4>
 		<sect4 id="ini_URIQA">
@@ -1284,6 +1299,20 @@ Section <link linkend="rdfandsparql">RDF Database and SPARQL</link> contains det
     <formalpara>
 	<title>DefaultGraph = IRI</title>
 	<para>IRI of the default graph to be used if no "default-graph-uri" parameter is specified.</para>
+    </formalpara>
+</listitem>
+<listitem id="ini_SPARQL_MaxExecutionTime">
+    <formalpara>
+	<title>MaxExecutionTime = seconds</title>
+	<para>This setting is used to limit the estimate time cost of the query to certain number of seconds, the default is no limit.</para>
+    </formalpara>
+</listitem>
+<listitem id="ini_SPARQL_ExecutionTimeout">
+    <formalpara>
+	<title>ExecutionTimeout = seconds</title>
+	<para>
+	    This setting is used to set the transaction execution timeout to certain limit in number of seconds, the default is no limit.
+	</para>
     </formalpara>
 </listitem>
 			</itemizedlist>
