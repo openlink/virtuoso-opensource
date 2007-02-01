@@ -76,11 +76,45 @@ create procedure "VAD"."DBA"."BLOB_2_STRING_OUTPUT" (
   in f2 integer,
   inout ses any) returns integer
 {
-  declare _temp_content any;
-  declare flen integer;
-  select subseq(RES_CONTENT, f1, f2) into _temp_content from ws.ws.sys_dav_res where RES_FULL_PATH=fname;
+  declare _blob, _part, _to_get any;
+  declare flen, offs, buf_sz integer;
+
+  flen := f2 - f1;
+  select RES_CONTENT into _blob from ws.ws.sys_dav_res where RES_FULL_PATH=fname;
+  -- the common case to get all the blob into a string session
+  if (f1 = 0 and length (_blob) = f2)
+    {
   ses := string_output ();
-  http (_temp_content, ses);
+      http (_blob, ses);
+    }
+  else if (flen < 10000000)
+    {
+      ses := string_output ();
+      _part := subseq (_blob, f1, f2);
+      http (_part, ses);
+    }
+  else
+    {
+      ses := string_output (http_strses_memory_size ());
+      _to_get := flen;
+      offs := f1;
+      buf_sz := 5000000;
+      while (1)
+	{
+	  --dbg_obj_print (offs, offs + buf_sz, _to_get);
+	  _part := subseq (_blob, offs, offs + buf_sz);
+	  http (_part, ses);
+	  offs := offs + buf_sz;
+
+	  if ((offs + buf_sz) > f2)
+	     buf_sz := f2 - offs;
+
+	  if (buf_sz <= 0)
+	    goto endloop;
+	}
+      endloop:;
+    }
+
   return 1;
 }
 ;
