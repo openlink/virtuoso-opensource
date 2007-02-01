@@ -700,7 +700,7 @@ function format_select(query_obg)
   {
     for(var i = format.options.length; i > 0; i--)
       format.options[i] = null;
-    format.options[1] = new Option('Table','');
+    format.options[1] = new Option('Table','application/isparql+table');
     format.options[2] = new Option('XML','application/sparql-results+xml');
     format.options[3] = new Option('JSON','application/sparql-results+json');
     format.options[4] = new Option('Javascript','application/javascript');
