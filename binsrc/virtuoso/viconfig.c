@@ -357,6 +357,7 @@ extern unsigned long log_file_line; /* from Dkernel.c */
 
 int32 c_sqlo_max_layouts = 0;
 extern int sqlo_max_layouts; /* from sqldf.c */
+extern int32 sqlo_max_mp_size;
 
 int32 c_sql_proc_use_recompile = 0;
 extern int sql_proc_use_recompile; /* from sqlcomp2.c */
@@ -805,6 +806,12 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "MaxOptimizeLayouts", &c_sqlo_max_layouts) == -1)
     c_sqlo_max_layouts = 1000;
+
+  if (cfg_getlong (pconfig, section, "MaxMemPoolSize", &sqlo_max_mp_size) == -1)
+    sqlo_max_mp_size = 10485760;
+
+  if (sqlo_max_mp_size != 0 && sqlo_max_mp_size < 5000000)
+    sqlo_max_mp_size = 5000000;
 
   if (cfg_getlong (pconfig, section, "SkipStartupCompilation", &c_sql_proc_use_recompile) == -1)
     c_sql_proc_use_recompile = 1;
