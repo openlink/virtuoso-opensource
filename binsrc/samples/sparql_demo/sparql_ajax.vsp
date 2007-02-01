@@ -112,7 +112,7 @@ WHERE {
             if (exists (select top 1 1 
                           from DB.DBA.SPARQL_DAWG_STATUS 
                           where TEST_URI = _tcase[1] and 
-                                TEST_STATUS = 'PASSED' or TEST_STATUS = 'PASSED/may-vary'))
+                                (TEST_STATUS = 'PASSED' or TEST_STATUS = 'PASSED/may-vary')))
                   goto there_is_passed_test;
               }
             goto skip_failed_group;
@@ -128,7 +128,7 @@ there_is_passed_test:
             if (not exists (select top 1 1 
                               from DB.DBA.SPARQL_DAWG_STATUS 
                               where TEST_URI = _rquri and 
-                                    TEST_STATUS = 'PASSED' or TEST_STATUS = 'PASSED/may-vary'))
+                                    (TEST_STATUS = 'PASSED' or TEST_STATUS = 'PASSED/may-vary')))
                 goto skip_failed_test;
               _origin := 'W3C DAWG';
 		          _descr := cast (_descr as varchar);
