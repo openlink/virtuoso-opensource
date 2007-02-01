@@ -35,8 +35,7 @@ OAT.Panelbar = function(div,delay) {
 		obj.panels[index][0].className += " panelbar_option_selected";
 		OAT.Dom.show(obj.panels[index][1]);
 		if (obj.delay) {
-			var as = OAT.AnimationStructure.generate(obj.panels[index][1],OAT.AnimationData.FADEIN,{});
-			var a = new OAT.Animation(as,obj.delay);
+			var a = new OAT.AnimationOpacity(obj.panels[index][1],{delay:obj.delay,opacity:1});
 			a.start();
 		}
 		obj.selectedIndex = index;
@@ -62,4 +61,4 @@ OAT.Panelbar = function(div,delay) {
 	
 	
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("panelbar");

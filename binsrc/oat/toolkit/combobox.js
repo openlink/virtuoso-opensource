@@ -63,4 +63,4 @@ OAT.ComboBox = function(defaultValue) {
 	OAT.Dom.attach(this.image,"click",obj.open);
 	OAT.Dom.attach(this.selected,"click",obj.open);
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("combobox");

@@ -22,6 +22,7 @@ OAT.ConnectionData = {
 OAT.Connection = function(type,optObj) {
 	var self = this;
 	this.type = type;
+	this.nocred = false; /* doesn't require credentials */
 	switch (type) {
 		case OAT.ConnectionData.TYPE_XMLA:
 			this.options = {
@@ -44,17 +45,18 @@ OAT.Connection = function(type,optObj) {
 	}
 	for (var p in optObj) if (p in this.options) { this.options[p] = optObj[p]; }
 	
-	this.toXML = function(uid) {
+	this.toXML = function(uid, noCreds) {
 		var xml = '<connection type="'+self.type+'"';
 		for (var p in self.options) { 
 			var v = self.options[p];
 			if (p == "user" || p == "password")  { v = OAT.Crypto.base64e(v); }
 			if ((p != "user" && p != "password") || uid) {
 				xml += ' '+p+'="';
-				xml += v;
+				xml += OAT.Dom.toSafeXML(v);
 				xml += '"'; 
 			}
 		}
+		xml += ' nocred="'+(noCreds ? 1 : 0)+'"';
 		xml += '/>';
 		return xml;
 	}
@@ -63,8 +65,10 @@ OAT.Connection = function(type,optObj) {
 		for (var p in self.options) {
 			var v = node.getAttribute(p);
 			if (p == "user" || p == "password")  { v = OAT.Crypto.base64d(v); }
-			self.options[p] = v;
+			self.options[p] = OAT.Dom.fromSafeXML(v);
 		}
+		var nc = node.getAttribute("nocred");
+		if (nc == true) { self.nocred = true; }
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("connection");

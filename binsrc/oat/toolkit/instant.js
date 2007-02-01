@@ -50,4 +50,4 @@ OAT.Instant = {
 		}
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("instant");

@@ -284,24 +284,20 @@ OAT.SimpleFX = {
 				var dims = OAT.Dom.getWH(elm);
 				elm.__origW = dims[0];
 				elm.__origH = dims[1];
-				var as1 = OAT.AnimationStructure.generate(elm,OAT.AnimationData.FADEOUT,{});
-				var as2 = OAT.AnimationStructure.generate(elm,OAT.AnimationData.RESIZE,{w:0,h:0,dist:10});
-				var e1 = function() {}
-				var e2 = function() {OAT.Dom.hide(elm);}
+				var a1 = OAT.AnimationOpacity(elm,{opacity:0,delay:5});
+				var a2 = OAT.AnimationSize(elm,{width:0,height:0,speed:10,delay:2});
+				var sf = function() {OAT.Dom.hide(elm);}
+				OAT.MSG.attach(a2.animation,OAT.MSG.ANIMATION_STOP,sf);
 			} else {
 				var orig_w = elm.__origW;
 				var orig_h = elm.__origH;
 				if (!orig_w || !orig_h) { alert("Cannot restore element which was initially hidden!"); }
 				OAT.Dom.show(elm);
-				var as1 = OAT.AnimationStructure.generate(elm,OAT.AnimationData.FADEIN,{});
-				var as2 = OAT.AnimationStructure.generate(elm,OAT.AnimationData.RESIZE,{w:orig_w,h:orig_h,dist:10});
-				var e1 = function() {}
-				var e2 = function() {elm.style.width = elm.__origW+"px"; elm.style.height = elm.__origH+"px"; OAT.Dom.show(elm); }
+				var a1 = OAT.AnimationOpacity(elm,{opacity:1,delay:5});
+				var a2 = OAT.AnimationSize(elm,{width:orig_w,height:orig_h,speed:10,delay:2});
+				var sf = function() {elm.style.width = elm.__origW+"px"; elm.style.height = elm.__origH+"px"; OAT.Dom.show(elm); }
+				OAT.MSG.attach(a2.animation,OAT.MSG.ANIMATION_STOP,sf);
 			}
-			var a1 = new OAT.Animation(as1,5);
-			var a2 = new OAT.Animation(as2,2);
-			a1.endFunction = e1;
-			a2.endFunction = e2;
 			elm.__shaderState++;
 			if (elm.__shaderState == 2) { elm.__shaderState = 0; }
 			a1.start();
@@ -315,4 +311,4 @@ OAT.SimpleFX = {
 		});
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("simplefx");

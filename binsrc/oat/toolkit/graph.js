@@ -140,4 +140,4 @@ OAT.Graph = function(c) {
 		}
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("graph");

@@ -59,7 +59,7 @@
 	sq.groups.getFull(index)
 	sq.groups.add()
 	sq.groups.remove(index)
-
+	
 */
 
 OAT.SqlQueryData = {
@@ -476,4 +476,4 @@ OAT.SqlQuery = function() {
 		
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("sqlquery");

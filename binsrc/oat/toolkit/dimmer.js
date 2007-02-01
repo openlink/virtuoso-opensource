@@ -53,4 +53,4 @@ OAT.Dimmer = {
 		} /* if shown */
 	} /* hide */
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("dimmer");

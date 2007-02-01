@@ -82,4 +82,4 @@ OAT.Combolist = function(optList,value) {
 	}
 	OAT.Dom.attach(this.img,"click",showRef);
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("combolist");

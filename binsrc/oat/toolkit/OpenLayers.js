@@ -1,4 +1,4 @@
-/* oat: pendingCount, no Array.prototype.find by prototype.js (l.70), no relative images location (l.294) */
+/* oat: featureLoaded, no Array.prototype.find by prototype.js (l.70), no relative images location (l.294) */
 /*
 
   OpenLayers.js -- OpenLayers Map Viewer Library
@@ -539,4 +539,4 @@ var size=this.map.getSize().clone();var url=this.getFullRequestString({BBOX:boun
 Event.observe(img,"load",this.showDiv.bindAsEventListener(this));}},showDiv:function(){Element.show(this.imgDiv);},setUrl:function(newUrl){OpenLayers.Layer.HTTPRequest.prototype.setUrl.apply(this,arguments);this.moveTo();},mergeNewParams:function(newParams){var upperParams=OpenLayers.Util.upperCaseObject(newParams);var newArguments=[upperParams];OpenLayers.Layer.HTTPRequest.prototype.mergeNewParams.apply(this,newArguments);this.moveTo();},getFullRequestString:function(newParams){var projection=this.map.getProjection();this.params.SRS=(projection=="none")?null:projection;return OpenLayers.Layer.Grid.prototype.getFullRequestString.apply(this,arguments);},loadImageDiv:function(){var size=this.map.getSize().clone();var bounds=this.map.getExtent();var url="";if(bounds!=null){url=this.getFullRequestString({BBOX:bounds.toBBOX(),WIDTH:size.w,HEIGHT:size.h});}
 this.div.innerHTML="";var tl=new OpenLayers.Pixel(0,0);var pos=this.map.getLayerPxFromViewPortPx(tl);if(this.params.TRANSPARENT=='true'){this.imgDiv=OpenLayers.Util.createAlphaImageDiv(null,pos,size,url,"absolute");}else{this.imgDiv=OpenLayers.Util.createImage(null,pos,size,url,"absolute");}
 this.div.appendChild(this.imgDiv);},CLASS_NAME:"OpenLayers.Layer.WMS.Untiled"});
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("openlayers");

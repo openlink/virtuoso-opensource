@@ -49,12 +49,12 @@ OAT.Tab = function(elm) {
 	};
 
 	this.go = function(index) {
-		this.goCallback(this.selectedIndex,index);
 		this.clear();
-		this.selectedIndex = index;
 		this.element.appendChild(this.values[index]);
 		OAT.Dom.show(this.values[index]);
 		OAT.Dom.addClass(this.keys[index],"tab_selected");
+		this.goCallback(this.selectedIndex,index);
+		this.selectedIndex = index;
 	};
 	
 	this.remove = function(element) {
@@ -78,4 +78,4 @@ OAT.Tab = function(elm) {
 	
 	OAT.Dom.clear(this.element); 
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("tab");

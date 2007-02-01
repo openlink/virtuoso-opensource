@@ -7,7 +7,7 @@
  *
  *  See LICENSE file for details.
  */
-
+ 
 /*
 	tl = new OAT.Timeline(portDiv, sliderDiv, paramsObj)
 	paramsObj = {
@@ -20,6 +20,8 @@
 	tl.addBand(name,color,label)
 	tl.addEvent(bandName,startTime,endTime,content,color)
 	tl.draw()
+	
+	.timeline .timeline_port .timeline_slider
 */
 
 OAT.TimelineData = {
@@ -72,7 +74,9 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 		lineHeight:16, /* size of one line */
 		bandHeight:20,
 		bandColor:"#fff",
-		margins:200 /* left & right color margins */
+		margins:200, /* left & right color margins */
+		resize:true,
+		formatter:true
 	}
 
 	for (var p in paramsObj) { self.options[p] = paramsObj[p]; }
@@ -98,7 +102,7 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	this.port.className = "timeline_port";
 	this.elm.className = "timeline";
 	this.sliderBtn.className = "timeline_slider";
-
+	
 	/* dragging */
 	OAT.Dom.attach(this.port,"mousedown",function(event){ self.mouse_x = event.clientX; OAT.TimelineData.obj = self; });
 	
@@ -177,14 +181,19 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	}
 	
 	this.drawResizer = function() {
+		if (!self.options.resize) { return; }
+		var parent = self.port.parentNode;
 		self.resize = OAT.Dom.create("div",{position:"absolute",width:"10px",height:"10px",right:"0px",fontSize:"1px",bottom:"0px",backgroundImage:"url(/DAV/JS/images/resize.gif)"});
-		self.port.appendChild(self.resize);
-		OAT.Resize.create(self.resize,self.sliderElm,OAT.Resize.TYPE_X,function(){self.sync();});
-		OAT.Resize.create(self.resize,self.port,OAT.Resize.TYPE_XY);
+		self.resize.style.zIndex = 6;
+		parent.appendChild(self.resize);
+		OAT.Resize.create(self.resize,parent,OAT.Resize.TYPE_XY);
+		OAT.Resize.create(self.resize,self.port,OAT.Resize.TYPE_XY,function(){self.sync();});
 	}
 	this.drawFormatSelect = function() {
-		var div = OAT.Dom.create("div",{position:"absolute",top:"1px",right:"1px",zIndex:5,font:"menu"});
-		this.port.appendChild(div);
+		if (!self.options.formatter) { return; }
+		var parent = self.port.parentNode;
+		var div = OAT.Dom.create("div",{position:"absolute",top:"-20px",right:"1px",zIndex:5,font:"menu"});
+		parent.appendChild(div);
 		div.appendChild(OAT.Dom.text("Date format: "));
 		div.appendChild(self.formatSelect);
 		OAT.Dom.option("[automatic]","",self.formatSelect);
@@ -209,6 +218,7 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	OAT.Dom.attach(self.formatSelect,"change",self.drawDateLabels);
 	
 	this.draw = function() {
+		if (!self.events.length) { return; } /* nothing to do */
 		/* preparation */
 		OAT.Dom.clear(self.elm);
 		OAT.Dom.clear(self.port);
@@ -238,7 +248,6 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 			var lines = scale.generateSet(); 
 			/* append them to timeline and plot suitable events */
 			for (var i=0;i<lines.length;i++) { /* for all time intervals */
-				debug.push(lines[i]);
 				var elm = lines[i].elm;
 				self.dateLabels.push(elm);
 				var startTime = lines[i].startTime;
@@ -306,9 +315,7 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 		self.drawDateLabels();
 		
 		/* compute lines */
-		for (var i=0;i<self.events.length;i++) {
-			self.computeLine(self.events[i]);
-		}
+		for (var i=0;i<self.events.length;i++) { self.computeLine(self.events[i]); }
 		
 		/* adjust heights */
 		var startingHeights = {};
@@ -317,9 +324,10 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 			startingHeights[p] = total;
 			var bh = self.bands[p].lines.length * self.options.lineHeight;
 			/* band heading */
-			var elm = OAT.Dom.create("div",{zIndex:4,position:"absolute",width:"100%",left:"0px",top:total+"px",textAlign:"center",fontWeight:"bold"});
+			var elm = OAT.Dom.create("div",{zIndex:4,position:"absolute",width:"100%",left:"0px",top:(total-1)+"px",textAlign:"center",fontWeight:"bold"});
+			elm.style.borderTop = "1px solid #000";
 			elm.style.backgroundColor = self.bands[p].color;
-			elm.style.height = self.options.bandHeight + "px";
+			elm.style.height = (self.options.bandHeight+1) + "px";
 			elm.innerHTML = self.bands[p].label;
 			self.port.appendChild(elm);
 			/* band */
@@ -393,4 +401,4 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 }
 OAT.Dom.attach(document,"mouseup",OAT.TimelineData.up);
 OAT.Dom.attach(document,"mousemove",OAT.TimelineData.move);
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("timeline");

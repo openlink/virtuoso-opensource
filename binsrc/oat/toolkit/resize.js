@@ -114,11 +114,11 @@ OAT.Resize = {
 		if (elm._Resize_movers) { elm._Resize_movers = []; }
 	},
 	
-	createDefault:function(parent) {
+	createDefault:function(parent,restrictionFunction,endFunction) {
 		if (!OAT.Preferences.allowDefaultResize) { return; }
 		var resize = OAT.Dom.create("div",{position:"absolute",width:"10px",height:"10px",right:"0px",fontSize:"1px",bottom:"0px",backgroundImage:"url(/DAV/JS/images/resize.gif)"});
 		parent.appendChild(resize);
-		OAT.Resize.create(resize,parent,OAT.Resize.TYPE_XY);
+		OAT.Resize.create(resize,parent,OAT.Resize.TYPE_XY,restrictionFunction,endFunction);
 		OAT.Dom.hide(resize);
 		var show = function(event) {
 			OAT.Dom.show(resize);
@@ -140,4 +140,4 @@ OAT.Resize = {
 }
 OAT.Dom.attach(document,"mousemove",OAT.Resize.move);
 OAT.Dom.attach(document,"mouseup",OAT.Resize.up);
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("resize");

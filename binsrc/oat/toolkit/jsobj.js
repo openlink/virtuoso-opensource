@@ -68,4 +68,4 @@ OAT.JSObj = {
 		return o;
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("jsobj");

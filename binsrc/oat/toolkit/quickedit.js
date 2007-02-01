@@ -71,4 +71,4 @@ OAT.QuickEdit = {
 		elm.parentNode.replaceChild(oldelm,elm);
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("quickedit");

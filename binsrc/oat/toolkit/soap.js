@@ -46,4 +46,4 @@ OAT.Soap = {
 		OAT.Ajax.command(OAT.Ajax.SOAP, target, ref, return_func, rt, customHeaders);
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("soap");

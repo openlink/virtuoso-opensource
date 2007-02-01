@@ -8,7 +8,7 @@
  *  See LICENSE file for details.
  */
 /*
-	new OAT.Grid(something,autoNumber);
+	new OAT.Grid(something,autoNumber,allowHiding);
 	Grid.rowOffset = 0;
 	Grid.createRow(data, [index]);
 	Grid.createHeader(data);
@@ -172,6 +172,8 @@ OAT.GridData = {
 				var coords = OAT.Dom.position(cell.container);
 				var w = cell.container.offsetWidth;
 				var x = coords[0];
+				/* IE7 has a *wrong* value of offsetLeft, so we have to do a small hack here */
+				if (OAT.Dom.isIE7()) { x -= OAT.Dom.position(cell.container.offsetParent)[0]; }
 				if (event.clientX >= x && event.clientX <= x+w) { /* inside this header */
 					if (cell.signal) { return; } /* not interesting */
 					for (var i=0;i<obj.header.cells.length;i++) { if (obj.header.cells[i].signal) obj.header.cells[i].signalEnd(); }
@@ -719,4 +721,4 @@ OAT.GridRowCell = function(obj,number,params) {
 
 OAT.Dom.attach(document,"mouseup",OAT.GridData.up);
 OAT.Dom.attach(document,"mousemove",OAT.GridData.move);
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("grid");

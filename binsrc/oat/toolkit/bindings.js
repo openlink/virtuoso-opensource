@@ -45,12 +45,13 @@ OAT.Bindings = {
 	},
 
 	bindColor:function(input,object,property) {
+		var c = new OAT.Color();
 		var callback = function(event) {
 			var colorRef = function(color) { object[property] = color; input.style.backgroundColor = color;}
 			var coords = OAT.Dom.position(input);
-			OAT.Color.pick(coords[0]-150,coords[1],colorRef);
+			c.pick(coords[0]-150,coords[1],colorRef);
 		}
 		OAT.Dom.attach(input,"click",callback);
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("bindings");

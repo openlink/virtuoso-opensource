@@ -8,6 +8,15 @@
  *  See LICENSE file for details.
  */
 
+OAT.FormDSData = {
+	TYPE_NONE:0,
+	TYPE_SQL:1,
+	TYPE_SOAP:2,
+	TYPE_REST:3,
+	TYPE_SPARQL:4,
+	TYPE_GDATA:5
+}
+
 OAT.FormDS = function(formDesignerObj) {
 	var self = this;
 	
@@ -16,9 +25,8 @@ OAT.FormDS = function(formDesignerObj) {
 	this.inputFields = []; /* for binding */
 	this.outputFields = []; /* provides data to controls */
 	this.outputLabels = []; /* alternative labels for outputFields */
-	this.type = 0; /* 0 none, 1 sql, 2 wsdl, 3 rest, 4 generic search... */
-	this.subtype = 0; /* 1 query, 2 saved, 3 table OR 0 = sparql, 1 = gdata, 2 = opensearch */
-	this.url = ""; /* link to saved query or wsdl */
+	this.type = 0; /* 0 none, 1 sql, 2 wsdl, 3 rest, 4 sparql, 5 gdata */
+	this.subtype = 0; /* 1 query, 3 table */
 	this.query = ""; /* only for type == 1 or type == 4*/
 	this.service = ""; /* name of wsdl service */
 	this.rootElement = ""; /* name of root input wsdl element */
@@ -28,11 +36,12 @@ OAT.FormDS = function(formDesignerObj) {
 	
 	this.typeToString = function() {
 		switch (self.type) {
-			case 0: return "NONE"; break;
-			case 1: return "SQL"; break;
-			case 2: return "SOAP/WSDL"; break;
-			case 3: return "REST"; break;
-			case 4: return "Generic Query Service"; break;
+			case OAT.FormDSData.TYPE_NONE: return "NONE"; break;
+			case OAT.FormDSData.TYPE_SQL: return "SQL"; break;
+			case OAT.FormDSData.TYPE_SOAP: return "SOAP/WSDL"; break;
+			case OAT.FormDSData.TYPE_REST: return "REST"; break;
+			case OAT.FormDSData.TYPE_SPARQL: return "SPARQL"; break;
+			case OAT.FormDSData.TYPE_GDATA: return "GDATA"; break;
 		}
 		return "";
 	}
@@ -54,7 +63,7 @@ OAT.FormDS = function(formDesignerObj) {
 		this.outputLabels = [];
 		this.connection = false;
 		this.type = 0; /* none, sql, wsdl... */
-		this.subtype = 0; /* query = 1, saved = 2, table = 3 */
+		this.subtype = 0; /* query = 1, table = 3 */
 		this.table = "";
 		this.query = "";
 		this.service = "";
@@ -63,11 +72,28 @@ OAT.FormDS = function(formDesignerObj) {
 		this.pageSize = 50;
 	}
 	
+	this.loadSaved = function(savedURL,callback) {
+		var qRef = function(data) {
+			switch (self.type) {
+				case OAT.FormDSData.TYPE_SQL: /* sql */
+					var queryObj = new OAT.SqlQuery();
+					queryObj.fromString(data);
+					self.query = queryObj.toString(OAT.SqlQueryData.TYPE_SQL);
+				break;
+				case OAT.FormDSData.TYPE_SPARQL: /* sparql */
+					self.query = data;
+				break;
+			}
+			if (callback) { callback(); }
+		}
+		OAT.Ajax.command(OAT.Ajax.GET + OAT.Ajax.AUTH_BASIC,savedURL,function(){return '';},qRef,OAT.Ajax.TYPE_TEXT);
+	}
+	
 	this.refresh = function(callback,do_links) {
 		/* we know binding type. let's create columns, relations etc */
 		switch (self.type) {
-			case 0: callback();	break;
-			case 1:
+			case OAT.FormDSData.TYPE_NONE: callback();	break;
+			case OAT.FormDSData.TYPE_SQL:
 				switch (self.subtype) {
 					case 1: /* query */
 						if (do_links) {
@@ -84,27 +110,6 @@ OAT.FormDS = function(formDesignerObj) {
 							}
 						} else { self.heuristicBind(); }
 						callback();
-					break;
-
-					case 2: /* saved query */
-						if (do_links) { 
-							self.inputFields = [];
-							self.outputFields = [];
-							self.outputLabels = [];
-							var loadRef = function(data) {
-								var queryObj = new OAT.SqlQuery();
-								queryObj.fromString(data);
-								self.query = queryObj.toString(OAT.SqlQueryData.TYPE_SQL);
-								for (var i=0;i<queryObj.columns.count;i++) { 
-									var name = OAT.SqlQueryData.deQualifyMulti(queryObj.columns.getResult(i));
-									self.inputFields.push(name);
-									self.outputFields.push(name);
-									self.outputLabels.push("");
-								}
-								callback();
-							}
-							OAT.Ajax.command(OAT.Ajax.GET + OAT.Ajax.AUTH_BASIC,self.table,function(){return '';},loadRef,OAT.Ajax.TYPE_TEXT);
-						} else { self.heuristicBind(); }
 					break;
 
 					case 3: /* table */
@@ -141,7 +146,7 @@ OAT.FormDS = function(formDesignerObj) {
 				}
 			break; /* data source types */
 			
-			case 2: /* wsdl */
+			case OAT.FormDSData.TYPE_SOAP: /* wsdl */
 				self.inputFields = [];
 				self.outputFields = [];
 				self.outputLabels = [];
@@ -174,7 +179,7 @@ OAT.FormDS = function(formDesignerObj) {
 				}
 			break; /* case 2 - wsdl */
 
-			case 3: /* rest */
+			case OAT.FormDSData.TYPE_REST: /* rest */
 				if (do_links) {
 					self.inputFields = $v("bind_rest_in").split(",");
 					self.outputFields = $v("bind_rest_out").split(",");
@@ -190,21 +195,26 @@ OAT.FormDS = function(formDesignerObj) {
 				callback();
 			break;
 			
-			case 4: /* generic query */
+			case OAT.FormDSData.TYPE_SPARQL: /* sparql */
 				self.xpath = 1;
 				self.inputFields = [];
 				self.outputFields = [];
 				self.outputLabels = [];
-				switch (self.subtype) {
-					case 0: /* sparql */
 						var sq = new OAT.SparqlQuery();
 						sq.fromString(self.query);
+				if (self.query == "") { sq.fromURL(self.connection.options.url); }
 						for (var i=0;i<sq.variables.length;i++) {
 							self.outputLabels.push(sq.variables[i]);
 							self.outputFields.push('//result/binding[@name="'+sq.variables[i]+'"]/node()/text()');
 						}
+				callback();
 					break;
-					case 1: /* gdata */
+			
+			case OAT.FormDSData.TYPE_GDATA:
+				self.xpath = 1;
+				self.inputFields = [];
+				self.outputFields = [];
+				self.outputLabels = [];
 						self.outputLabels = ["Feed title","Feed ID","Feed description","Feed link","Feed category",
 											 "Entry title","Entry ID","Entry description",
 											 "Entry date","Entry link","Entry content"];
@@ -212,10 +222,6 @@ OAT.FormDS = function(formDesignerObj) {
 											 '//atom:feed/atom:link[@rel="alternate"][@type="text/html"]/@href',"//atom:feed/atom:category/@term",
 											 "//atom:feed/atom:entry/atom:title","//atom:feed/atom:entry/atom:id","//atom:feed/atom:entry/atom:summary",
 											 "//atom:feed/atom:entry/atom:published","//atom:feed/atom:entry/atom:link","//atom:feed/atom:entry/atom:content"];
-					break;
-					case 2: /* opensearch */
-					break;
-				}
 				callback();
 			break;
 		} /* type switch */
@@ -406,4 +412,4 @@ OAT.FormDS = function(formDesignerObj) {
 		} /* for all masterFields */
 	} /* fromXML() */
 } /* FormDS() */
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("formds");

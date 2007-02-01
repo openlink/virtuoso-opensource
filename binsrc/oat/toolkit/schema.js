@@ -93,4 +93,4 @@ OAT.Schema = {
 		return false;
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("schema");

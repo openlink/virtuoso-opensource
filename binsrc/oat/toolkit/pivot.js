@@ -97,9 +97,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		
 		if (query) {
 			xml += '\t\t<query>'+query+'</query>\n';
-			xml += '\t\t<connection dsn="'+OAT.Xmla.dsn+'" endpoint="'+OAT.Xmla.endpoint+'" ';
-			if (saveCredentials) { xml += 'user="'+OAT.Crypto.base64e(OAT.Xmla.user)+'" password="'+OAT.Crypto.base64e(OAT.Xmla.password)+'"';}
-			xml += ' nocred="'+(noCredentials ? 1 : 0)+'"></connection>\n';
+			xml += OAT.Xmla.connection.toXML(saveCredentials,noCredentials);
 		} else {
 			xml += '\t\t<dataRows>\n';
 			for (var i=0;i<this.dataRows.length;i++) {
@@ -118,14 +116,14 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	
 	this.lightOn = function() {
 		for (var i=0;i<obj.gd.targets.length;i++) {
-			var elm = obj.gd.targets[i];
+			var elm = obj.gd.targets[i][0];
 			elm.style.color = "#f00";
 		}
 	}
 	
 	this.lightOff = function() {
 		for (var i=0;i<obj.gd.targets.length;i++) {
-			var elm = obj.gd.targets[i];
+			var elm = obj.gd.targets[i][0];
 			elm.style.color = "";
 		}
 	}
@@ -853,4 +851,4 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	this.init();
 	this.go();
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("pivot");

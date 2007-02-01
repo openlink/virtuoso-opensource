@@ -1,4 +1,4 @@
-/* 2.58 + <script> + pendingCount */
+/* 2.58 + <script> + featureLoaded */
 /* Copyright 2005-2006 Google. To use maps on your own site, visit http://www.google.com/apis/maps/. */ (function() { 
 var Bb="Required interface method not implemented";var lc=window._mStaticPath;var Cb=lc+"transparent.png";var K=Math.PI;var hc=Number.MAX_VALUE;
 function w(a,b,c,d){var e=$b(b).createElement(a);if(c){J(e,c)}if(d){ea(e,d)}if(b){Fb(b,e)}return e}
@@ -976,4 +976,4 @@ db(R,j);R.prototype.Wg=function(){var a=this.k();return new k(a.lng(),a.lat())}
 if(window.GLoad){window.GLoad()};
 
  })()
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("gapi");

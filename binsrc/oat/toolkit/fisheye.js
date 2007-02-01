@@ -76,12 +76,10 @@ OAT.FishEye = function(div,optObj) {
 		}
 		self.div.style.width = (total+options.spacing)+"px";
 		
-//		$("debug").innerHTML = dists.join(", ")+"<br/>"+sizes.join(", ");
 	}
 	self.recount = recount;
 	
 	var move = function(event) {
-//		$("debug").innerHTML += OAT.Dom.source(event).tagName+" ";
 		var pos = OAT.Dom.eventPos(event);
 		recount(pos[0]);
 	}
@@ -98,4 +96,4 @@ OAT.FishEye = function(div,optObj) {
 	OAT.Dom.attach(self.div,"mouseout",out);
 	OAT.Dom.attach(self.div,"mousemove",move);
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("fisheye");

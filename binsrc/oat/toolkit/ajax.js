@@ -29,6 +29,7 @@ OAT.Ajax = {
 	endRef:false,
 	errorRef:false,
 	cancel:false, /* cancel element */
+	dialog:false,
 	GET:1,
 	POST:2,
 	SOAP:4,
@@ -41,10 +42,40 @@ OAT.Ajax = {
 	TYPE_XML: 1,
 	user:"",       /* for http authorization */
 	password:"",
+	imagePath:"/DAV/JS/images",
 	requests:[],
+	
+	startNotify:function() {
+		if (OAT.Ajax.startRef) { OAT.Ajax.startRef(); return; }
+		if (OAT.Loader.loadedLibs.find("dialog") != -1) {
+			if (!OAT.Ajax.dialog) {
+				/* create an Ajax window */
+				var div = OAT.Dom.create("div");
+				div.innerHTML = "Ajax call in progress...";
+				var dimg = OAT.Dom.create("div");
+				var img = OAT.Dom.create("img");
+				img.setAttribute("src",OAT.Ajax.imagePath+"/progress.gif");
+				dimg.appendChild(img);
+				div.appendChild(dimg);
+				OAT.Ajax.dialog = new OAT.Dialog("Please wait",div,{width:260,modal:0,zIndex:1001,resize:0});
+				OAT.Ajax.dialog.ok = OAT.Ajax.dialog.hide;
+				OAT.Ajax.dialog.cancel = OAT.Ajax.dialog.hide;
+				OAT.Ajax.setCancel(OAT.Ajax.dialog.cancelBtn);
+			}
+			OAT.Ajax.dialog.show();
+
+		}
+	},
+	
+	endNotify:function() {
+		if (OAT.Ajax.endRef) { OAT.Ajax.endRef(); return; }
+		if (OAT.Loader.loadedLibs.find("dialog") != -1 && OAT.Ajax.dialog) {
+			OAT.Ajax.dialog.hide();
+		}
+	},
 
 	command:function(method, target, data_func, return_func, return_type, customHeaders) {
-		if (OAT.Ajax.startRef && !OAT.Ajax.number) { OAT.Ajax.startRef(); }
+		if ((OAT.Ajax.startRef || OAT.Preferences.showAjax) && !OAT.Ajax.number) { OAT.Ajax.startNotify(); }
 		OAT.Ajax.number++;
 		var xmlhttp = new OAT.XMLHTTP();
 		var data = null; /* default - no data */
@@ -54,9 +85,10 @@ OAT.Ajax = {
 		var callback_response = function() {
 			if (!request.state) { return; } /* cancelled */
 			if (xmlhttp.getReadyState() == 4) {
+
 				var headers = xmlhttp.getAllResponseHeaders();
 				OAT.Ajax.number--;
-				if (OAT.Ajax.endRef && !OAT.Ajax.number) { OAT.Ajax.endRef(); }
+				if ((OAT.Ajax.endRef || OAT.Preferences.showAjax) && !OAT.Ajax.number) { OAT.Ajax.endNotify(); }
 				if (xmlhttp.getStatus().toString().charAt(0) == "2" || xmlhttp.getStatus() == 0) {
 					if (return_type == OAT.Ajax.TYPE_TEXT) {
 		  				return_func(xmlhttp.getResponseText(),headers);
@@ -79,6 +111,7 @@ OAT.Ajax = {
 				} /* http error */
 			} /* response complete */
 		} /* callback_response */
+		
 		xmlhttp.setResponse(callback_response);
 
 		data = data_func(); /* request them from some user-specified routine */
@@ -102,9 +135,8 @@ OAT.Ajax = {
 			}
 		}
 		/* xmlhttp.obj.overrideMimeType("text/xml"); */
-		xmlhttp.send(data);
+		xmlhttp.send(method & OAT.Ajax.GET ? null : data);
 
-//		alert("SENDING\n\n"+data+"\n\nto: "+target);
 	},
 
 	setStart:function(callback) {
@@ -129,7 +161,7 @@ OAT.Ajax = {
 		for (var i=0;i<OAT.Ajax.requests.length;i++) {
 			if (OAT.Ajax.requests[i].state) { OAT.Ajax.requests[i].state = 0; }
 		}
-		if (OAT.Ajax.endRef) { OAT.Ajax.endRef(); }
+		if (OAT.Ajax.endRef || OAT.Preferences.showAjax) { OAT.Ajax.endNotify(); }
 		OAT.Ajax.number = 0;
 	}
 }
@@ -148,7 +180,7 @@ OAT.XMLHTTP = function() {
 		if (this.iframe) {
 			this.ifr.src = this.temp_src;
 		} else {
-  			this.obj.send(data);
+  			this.obj.send(data); 
 		}
 	}
 	this.setResponse = function(callback) {
@@ -226,4 +258,4 @@ OAT.XMLHTTP_supported = function() {
 	var dummy = new OAT.XMLHTTP();
 	return (!dummy.isIframe());
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("ajax");

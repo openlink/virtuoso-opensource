@@ -14,8 +14,8 @@
 	CSS: .upload .upload_add .upload_submit
 */
 
-OAT.Upload = function(method,action,target) {
-	var obj = this;
+OAT.Upload = function(method,action,target,inputName) {
+	var self = this;
 	this.content = OAT.Dom.create("div");
 	this.div = OAT.Dom.create("div");
 	this.div.className = "upload";
@@ -33,14 +33,14 @@ OAT.Upload = function(method,action,target) {
 	}
 	
 	this.add = function() {
-		var index = this.divs.length-1;
 		var div = OAT.Dom.create("div");
 		var input = OAT.Dom.create("input");
 		var del = OAT.Dom.create("input");
 		input.setAttribute("type","file");
+		input.name = inputName + "_" + self.divs.length;
 		del.setAttribute("type","button");
 		del.value = "Remove";
-		OAT.Dom.attach(del,"click",function(){obj.remove(div);});
+		OAT.Dom.attach(del,"click",function(){self.remove(div);});
 		div.appendChild(input);
 		div.appendChild(OAT.Dom.text(" "));
 		div.appendChild(del);
@@ -52,7 +52,7 @@ OAT.Upload = function(method,action,target) {
 	this.addBtn.setAttribute("type","button");
 	this.addBtn.className = "upload_add";
 	this.addBtn.value = "Add file";
-	OAT.Dom.attach(this.addBtn,"click",function(){obj.add();});
+	OAT.Dom.attach(this.addBtn,"click",function(){self.add();});
 	
 	this.submitBtn = OAT.Dom.create("input");
 	this.submitBtn.setAttribute("type","submit");
@@ -65,4 +65,4 @@ OAT.Upload = function(method,action,target) {
 	
 	this.add();
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("upload");

@@ -9,17 +9,69 @@
  */
 /*
 	var d = new OAT.Dock(div,numColumns)
-	d.addObject(colIndex, grabber, mover)
+	d.addObject(colIndex, content, options)
 
-	CSS: .dock, .dock_column_0 .. .dock_column_n-1, .dock_blank
+	CSS: .dock, .dock_column_0 .. .dock_column_n-1, .dock_blank .dock_window .dock_header .dock_content
 */
 
+OAT.DockWindow = function(content,options) {
+	var self = this;
+	this.options = {
+		color:"#55f",
+		titleColor:"#fff",
+		title:"Dock window"
+	}
+	for (var p in options) { self.options[p] = options[p]; }
+	this.state = 1;
+	
+	this.div = OAT.Dom.create("div",{marginBottom:"3px", border:"1px solid "+self.options.color,backgroundColor:"#fff"},"dock_window");
+	
+	this.header = OAT.Dom.create("div",{fontWeight:"bold",padding:"1px",color:self.options.titleColor,backgroundColor:self.options.color},"dock_header");
+
+	this.toggle = OAT.Dom.create("div",{styleFloat:"left",cssFloat:"left",width:"16px"});
+	this.toggle.innerHTML = "";
+	this.headerContent = OAT.Dom.create("span");
+	this.headerContent.innerHTML = self.options.title;
+	
+	this.content = OAT.Dom.create("div",{padding:"3px"},"dock_content");
+	this.content.appendChild($(content));
+
+	OAT.Dom.append([self.header,self.toggle,self.headerContent],[self.div,self.header,self.content]);
+
+	/* toggling */
+	this.actualizeState = function() {
+		if (self.state) {
+			self.toggle.innerHTML = "&ndash;";
+			OAT.Dom.show(self.content);
+		} else {
+			self.toggle.innerHTML = "+";
+			OAT.Dom.hide(self.content);
+		}
+	}
+	
+	var toggleRef = function() {
+		self.state = ++self.state % 2;
+		self.actualizeState();
+	}
+	
+	var outRef = function() {
+		self.toggle.innerHTML = "&#9786;";
+	};	
+	
+	OAT.Dom.attach(self.toggle,"click",toggleRef);	
+	OAT.Dom.attach(self.toggle,"mouseover",self.actualizeState);
+	OAT.Dom.attach(self.toggle,"mouseout",outRef);
+
+	this.actualizeState();
+	outRef();
+}
+
 OAT.Dock = function(div,numColumns) {
-	var obj = this;
+	var self = this;
 	this.div = $(div);
 	OAT.Dom.addClass(this.div,"dock");
 	this.columns = [];
-	this.movers = [];
+	this.windows = [];
 	this.dummies = [];
 	this.gd = new OAT.GhostDrag();
 	this.ghost = OAT.Dom.create("div",{border:"1px dashed #000",position:"absolute",display:"none"});
@@ -35,19 +87,19 @@ OAT.Dock = function(div,numColumns) {
 		this.gd.addTarget(dummie);
 	}
 	
-	this.startDrag = function(elm) {
-		obj.lock = 1;
-		var dims = OAT.Dom.getWH(elm);
-		for (var i=0;i<obj.columns.length;i++) { 
-			obj.columns[i].appendChild(obj.dummies[i]);
-			obj.dummies[i].style.height = dims[1] + "px";
+	this.startDrag = function(w) {
+		self.lock = 1;
+		var dims = OAT.Dom.getWH(w.div);
+		for (var i=0;i<self.columns.length;i++) { 
+			self.columns[i].appendChild(self.dummies[i]);
+			self.dummies[i].style.height = dims[1] + "px";
 		}
 		
 	}
 	
 	this.endDrag = function() {
-		obj.lock = 0;
-		OAT.Dom.hide(obj.ghost);
+		self.lock = 0;
+		OAT.Dom.hide(self.ghost);
 		/* 
 			hack: 
 			when we unlink dummies right after depressing mouse, 
@@ -55,9 +107,10 @@ OAT.Dock = function(div,numColumns) {
 			so we have to delay it a little bit
 		*/	
 		var hideRef = function() {
-			for (var i=0;i<obj.columns.length;i++) { OAT.Dom.unlink(obj.dummies[i]); }
+			for (var i=0;i<self.columns.length;i++) { OAT.Dom.unlink(self.dummies[i]); }
 		}
-		setTimeout(hideRef,500); 
+		
+		/* setTimeout(hideRef,500); */ /* commenting this solved some unknown issue ;) */
 	}
 	
 	this.move = function(mover,target) { /* finally moving the panel 'mover' to place 'target' */
@@ -69,9 +122,9 @@ OAT.Dock = function(div,numColumns) {
 		blank.className = "dock_blank";
 		blank.style.height = dims[1]+"px";
 		mover.parentNode.insertBefore(blank,mover);
-		var as = OAT.AnimationStructure.generate(blank,OAT.AnimationData.RESIZE,{w:dims[0],h:0,dist:5})
-		var a = new OAT.Animation(as,5);
-		a.endFunction = function(){OAT.Dom.unlink(blank);}
+		var sf = function(){OAT.Dom.unlink(blank);}
+		var a = new OAT.AnimationSize(blank,{speed:5,delay:5,height:0,stopFunction:sf});
+		OAT.MSG.attach(a.animation,OAT.MSG.ANIMATION_STOP,sf);
 		a.start();
 
 		/* put mover to right place */
@@ -85,9 +138,9 @@ OAT.Dock = function(div,numColumns) {
 		var abs_y = exact[1];
 		var s_coords, s_dims;
 		var index = -1;
-		for (var i=0;i<obj.movers.length;i++) {
-			var coords = OAT.Dom.position(obj.movers[i]);
-			var dims = OAT.Dom.getWH(obj.movers[i]);
+		for (var i=0;i<self.windows.length;i++) {
+			var coords = OAT.Dom.position(self.windows[i].div);
+			var dims = OAT.Dom.getWH(self.windows[i].div);
 			if (abs_x >= coords[0] && abs_x <= coords[0]+dims[0] &&
 				abs_y >= coords[1] && abs_y <= coords[1]+dims[1]) {
 				index = i;
@@ -95,9 +148,9 @@ OAT.Dock = function(div,numColumns) {
 				s_dims = dims;
 			}
 		}
-		if (index == -1) for (var i=0;i<obj.dummies.length;i++) {
-			var coords = OAT.Dom.position(obj.dummies[i]);
-			var dims = OAT.Dom.getWH(obj.dummies[i]);
+		if (index == -1) for (var i=0;i<self.dummies.length;i++) {
+			var coords = OAT.Dom.position(self.dummies[i]);
+			var dims = OAT.Dom.getWH(self.dummies[i]);
 			if (abs_x >= coords[0] && abs_x <= coords[0]+dims[0] &&
 				abs_y >= coords[1] && abs_y <= coords[1]+dims[1]) {
 				index = i;
@@ -109,40 +162,43 @@ OAT.Dock = function(div,numColumns) {
 	}
 	
 	this.check = function(event) { /* mousemove routine */
-		if (!obj.lock) { return; }
-		var tmp = obj.getOverElm(event);
+		if (!self.lock) { return; }
+		var tmp = self.getOverElm(event);
 		if (!tmp) {
-			OAT.Dom.hide(obj.ghost);
+			OAT.Dom.hide(self.ghost);
 		} else {
-			OAT.Dom.show(obj.ghost);
-			obj.ghost.style.width = (tmp[1][0] + 4) + "px";
-			obj.ghost.style.height = (tmp[1][1] + 4) + "px";
-			obj.ghost.style.left = (tmp[0][0] - 2) + "px";
-			obj.ghost.style.top = (tmp[0][1] - 2) + "px";
+			OAT.Dom.show(self.ghost);
+			self.ghost.style.width = (tmp[1][0] + 4) + "px";
+			self.ghost.style.height = (tmp[1][1] + 4) + "px";
+			self.ghost.style.left = (tmp[0][0] - 2) + "px";
+			self.ghost.style.top = (tmp[0][1] - 2) + "px";
 		}
 	}
 	
-	this.addObject = function(colIndex,grabber,mover) {
-		var grabber_elm = $(grabber);
-		var mover_elm = $(mover);
-		grabber_elm.style.cursor = "pointer";
-		this.movers.push(mover_elm);
-		this.columns[colIndex].appendChild(mover_elm);
+	this.addObject = function(colIndex,content,options) {
+		var w = new OAT.DockWindow(content,options);
+		self.windows.push(w);
+		
+		w.header.style.cursor = "pointer";
+		this.columns[colIndex].appendChild(w.div);
+		
 		var postProcess = function(elm) {
-			var dim = OAT.Dom.getWH(mover_elm);
+			var dim = OAT.Dom.getWH(w.div);
 			elm.style.width = dim[0]+"px";
 			elm.style.height = dim[1]+"px";
 			elm.style.border = "1px solid #000";
-			OAT.Dom.attach(elm,"mouseup",obj.endDrag);
+			OAT.Dom.attach(elm,"mouseup",self.endDrag);
 		}
-		var callback = function(target,x,y) { obj.move(mover_elm,target); }
-		this.gd.addSource(grabber_elm,postProcess,callback);
-		this.gd.addTarget(mover_elm);
-		OAT.Dom.attach(grabber_elm,"mousedown",function(){obj.startDrag(mover_elm);});
-		OAT.Dom.attach(grabber_elm,"mouseup",obj.endDrag);
+		
+		var callback = function(target,x,y) { self.move(w.div,target); }
+		this.gd.addSource(w.header,postProcess,callback);
+		this.gd.addTarget(w.div);
+		
+		OAT.Dom.attach(w.header,"mousedown",function(){self.startDrag(w);});
+		OAT.Dom.attach(w.header,"mouseup",self.endDrag);
 		
 	}
 	
-	OAT.Dom.attach(document,"mousemove",obj.check);
+	OAT.Dom.attach(document,"mousemove",self.check);
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("dock");

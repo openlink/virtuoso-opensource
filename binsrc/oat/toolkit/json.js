@@ -20,7 +20,7 @@ OAT.JSON = {
 		return eval('('+jsonString+')');
 	},
 	stringify:function(something, mD, c) {
-			var maxDepth = 2;
+		var maxDepth = 2;
 		if (typeof(maxDepth) != "undefined") { maxDepth = mD; }
 		if (maxDepth == 0) { return "[maximum depth achieved]"; }
 		var result = "";
@@ -76,4 +76,4 @@ OAT.JSON = {
 		return result;
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("json");

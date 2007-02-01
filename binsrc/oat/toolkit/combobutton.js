@@ -78,4 +78,4 @@ OAT.ComboButton = function() {
 	}
 	OAT.Dom.attach(this.image,"click",obj.open);
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("combobutton");

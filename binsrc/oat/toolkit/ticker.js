@@ -119,4 +119,4 @@ OAT.Ticker = function(div,text,optObj) {
 		obj.stopFlag = 1;
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("ticker");

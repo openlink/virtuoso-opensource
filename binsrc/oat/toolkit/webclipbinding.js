@@ -41,4 +41,4 @@ OAT.WebClipBindings = {
         var webclip = new WebClip($(div),copyCallback,pasteCallback,activeCallback,inactiveCallback);
 	} /* OAT.WebClipBindings.bind() */
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("webclipbinding");

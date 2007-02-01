@@ -84,44 +84,44 @@ OAT.Dav = {
 	},
 
   //----------------------------------------------------------------------------
-	list:function(target,responce) {
+	list:function(target,response) {
 		var ref = function() {
 			return OAT.Dav.generate();
 		}
 		customHeaders = {Depth:1};
 		OAT.Ajax.user = OAT.Dav.user;
 		OAT.Ajax.password = OAT.Dav.pass;
-		OAT.Ajax.command(OAT.Ajax.PROPFIND + OAT.Ajax.AUTH_BASIC, target, ref, responce,OAT.Ajax.TYPE_XML, customHeaders);
+		OAT.Ajax.command(OAT.Ajax.PROPFIND + OAT.Ajax.AUTH_BASIC, target, ref, response,OAT.Ajax.TYPE_XML, customHeaders);
 
 	},
 
   //----------------------------------------------------------------------------
-  create_col:function(current_path,col_name,responce){
+  create_col:function(current_path,col_name,response){
     OAT.Ajax.user = OAT.Dav.user;
     OAT.Ajax.password = OAT.Dav.pass;
     // TODO - validation
     var target = current_path+col_name;
-		OAT.Ajax.command(OAT.Ajax.MKCOL + OAT.Ajax.AUTH_BASIC, target, function(){}, responce,OAT.Ajax.TYPE_TEXT);
+		OAT.Ajax.command(OAT.Ajax.MKCOL + OAT.Ajax.AUTH_BASIC, target, function(){}, response,OAT.Ajax.TYPE_TEXT);
   },
 
   //----------------------------------------------------------------------------
-	openFile:function(dir,file,responce){
+	openFile:function(dir,file,response){
 	  var ld = (dir ? dir : ".");
 		var lf = (file ? ld+file : ld);
     var target = lf + '?'+ new Date().getMilliseconds();
     OAT.Ajax.user = OAT.Dav.user;
     OAT.Ajax.password = OAT.Dav.pass;
-		OAT.Ajax.command(OAT.Ajax.GET + OAT.Ajax.AUTH_BASIC, target, function(){return '';}, responce,OAT.Ajax.TYPE_TEXT);
+		OAT.Ajax.command(OAT.Ajax.GET + OAT.Ajax.AUTH_BASIC, target, function(){return '';}, response,OAT.Ajax.TYPE_TEXT);
 	},
 
   //----------------------------------------------------------------------------
-	saveFile:function(dir,file,ref,responce){
+	saveFile:function(dir,file,ref,response){
 	  var ld = (dir ? dir : ".");
 		var lf = (file ? ld+file : ld);
 		var target = lf;
 		OAT.Ajax.user = OAT.Dav.user;
 		OAT.Ajax.password = OAT.Dav.pass;
-		OAT.Ajax.command(OAT.Ajax.PUT + OAT.Ajax.AUTH_BASIC, target, ref, responce,OAT.Ajax.TYPE_TEXT);
+		OAT.Ajax.command(OAT.Ajax.PUT + OAT.Ajax.AUTH_BASIC, target, ref, response,OAT.Ajax.TYPE_TEXT);
 	},
 
   //----------------------------------------------------------------------------
@@ -199,7 +199,7 @@ OAT.DavType = function(el,root_el) {
   if (isNaN(num)) { num = 0; }
   this.contentlength = Math.round(num/1024) + " kB";
   this.contenttype   = OAT.get_prop_value(prop,'getcontenttype');
-  
+
 
 }
 
@@ -229,7 +229,7 @@ OAT.WebDav = {
       path:'',
       pathDefault:'/',
       filename:'',
-      file_ext:'',
+      filetypes:[],
       width:750,
       height:420,
       x:120,
@@ -295,9 +295,9 @@ OAT.WebDav = {
     }
     OAT.WebDav.is_open=1;
 
-	if ("pathDefault" in options) {
-		options.pathDefault = options.pathDefault.replace(/\/\//g,"/");
-	}
+  	if ("pathDefault" in options) {
+  		options.pathDefault = options.pathDefault.replace(/\/\//g,"/");
+  	}
 
     OAT.WebDav.toptions = OAT.WebDav.overwrite(OAT.WebDav.options,options);
 
@@ -326,8 +326,8 @@ OAT.WebDav = {
     win.div.id = "dav_browser";
     win.onclose = OAT.WebDav.close;
     document.body.appendChild(win.div);
-	var toolbarDiv = OAT.Dom.create("div");
-	win.content.appendChild(toolbarDiv);
+  	var toolbarDiv = OAT.Dom.create("div");
+  	win.content.appendChild(toolbarDiv);
     var toolbar = new OAT.Toolbar(toolbarDiv);
   	if(OAT.WebDav.toptions.toolbar.new_folder){
     	toolbar.addIcon(0,OAT.WebDav.toptions.imagePath+"icon_new.gif","Create New Folder",function(){
@@ -346,7 +346,7 @@ OAT.WebDav = {
                 data = OAT.Dav.dom2list(data);
 	              var el = data.root;
 	              OAT.WebDav.insert_into_grid(el,OAT.WebDav.grid.rows.length);
-  	            alert('Succesful');
+  	            alert('Successful');
               };
               OAT.Dav.list(li.href,ref);
   	          });
@@ -404,36 +404,58 @@ OAT.WebDav = {
 		}
   	OAT.Resize.create("spliter","dav_tree",OAT.Resize.TYPE_X,resizeRestriction);
   	OAT.Resize.create("spliter","dav_grid",-OAT.Resize.TYPE_X,resizeRestriction);
-	OAT.Resize.create(win.resize,"dav_tree",OAT.Resize.TYPE_Y);
-	OAT.Resize.create(win.resize,"spliter",OAT.Resize.TYPE_Y);
-	OAT.Resize.create(win.resize,"dav_grid",OAT.Resize.TYPE_XY);
+  	OAT.Resize.create(win.resize,"dav_tree",OAT.Resize.TYPE_Y);
+  	OAT.Resize.create(win.resize,"spliter",OAT.Resize.TYPE_Y);
+  	OAT.Resize.create(win.resize,"dav_grid",OAT.Resize.TYPE_XY);
 
     OAT.WebDav.buttons = OAT.Dom.create('div');
     OAT.WebDav.buttons.id="action_buttons";
     win.content.appendChild(OAT.WebDav.buttons);
 
-    var ok = OAT.Dom.create('input',{marginLeft:'10px'});
+    var ok = OAT.Dom.create('input',{marginLeft:'10px',width:'80px'});
     ok.id = 'dav_ok';
     ok.setAttribute('type','button');
 
-    var cancel = OAT.Dom.create('input',{marginLeft:'10px'});
+    var cancel = OAT.Dom.create('input',{marginLeft:'10px',width:'80px'});
     cancel.id = 'dav_cancel';
     cancel.setAttribute('type','button');
     cancel.setAttribute('value','  Cancel  ');
     OAT.Dom.attach(cancel,'click',OAT.WebDav.close);
 
-    var filename = OAT.Dom.create('input',{marginLeft:'10px'});
+    var filename = OAT.Dom.create('input',{marginLeft:'10px',width:'200px'});
     filename.id = 'dav_filename';
     filename.setAttribute('type','text');
+    OAT.Dom.attach(filename,'keydown',function(e){
+      dd(e)
+      if(e.keyCode == 13){
+        if($v('dav_filename').indexOf('*') != -1){
+          OAT.WebDav.show_resources(OAT.WebDav.activeNode.id);
+        }else{
+          ok.click();    
+        }
+      }
+    });
+
+    var filetype = OAT.Dom.create('select',{marginLeft:'10px',width:'204px'});
+    filetype.id = 'dav_filetype';
+    for(var i=0;i<OAT.WebDav.toptions.filetypes.length;i++){
+      value = OAT.WebDav.toptions.filetypes[i].ext;
+      label = OAT.WebDav.toptions.filetypes[i].label + ' (*.'+value+')';
+      OAT.Dom.option(label,value,filetype);
+    }
+    OAT.Dom.attach(filetype,'change',function(){
+      $('dav_filename').value = '';
+      OAT.WebDav.show_resources(OAT.WebDav.activeNode.id);
+    });
 
     if(OAT.WebDav.toptions.mode == "browser"){
+      if(OAT.WebDav.toptions.filetypes.length == 0){
+        value = '';
+        label = 'All files (*.*)';
+        OAT.Dom.option(label,value,filetype);
+      }
       ok.setAttribute('value','  OK  ');
       OAT.Dom.attach(ok,'click',function(){
-        var ext = OAT.WebDav.toptions.file_ext.indexOf('.') == 0 ? OAT.WebDav.toptions.file_ext.substring(1) : OAT.WebDav.toptions.file_ext;
-        var pattern = eval('/\.'+ ext +'$/');
-        if(ext != '' && pattern.exec($v('dav_filename')) == null){
-          $('dav_filename').value = $v('dav_filename') + "."+ext;
-        }
         var path = $v('dav_path');
         var fname = $('dav_filename').value;
         if(OAT.WebDav.selNode && OAT.WebDav.selNode.resourcetype == 'col'){
@@ -444,6 +466,11 @@ OAT.WebDav = {
       });
 
     }else if(OAT.WebDav.toptions.mode == "open_dialog"){
+      if(OAT.WebDav.toptions.filetypes.length == 0){
+        value = '';
+        label = 'All files (*.*)';
+        OAT.Dom.option(label,value,filetype);
+      }
       ok.setAttribute('value','  Open  ');
       OAT.Dom.attach(ok,'click',OAT.WebDav.button_open_click);
 
@@ -451,10 +478,19 @@ OAT.WebDav = {
       ok.setAttribute('value','  Save  ');
       OAT.Dom.attach(ok,'click', OAT.WebDav.button_save_click);
     }
-    OAT.WebDav.buttons.appendChild(OAT.Dom.text('File name:'));
-    OAT.WebDav.buttons.appendChild(filename);
-    OAT.WebDav.buttons.appendChild(ok);
-    OAT.WebDav.buttons.appendChild(cancel);
+    OAT.WebDav.buttons.line_1 = OAT.Dom.create('div');
+    OAT.WebDav.buttons.line_2 = OAT.Dom.create('div');
+    OAT.WebDav.buttons.appendChild(OAT.WebDav.buttons.line_1);
+    OAT.WebDav.buttons.appendChild(OAT.WebDav.buttons.line_2);
+
+    OAT.WebDav.buttons.line_1.appendChild(OAT.Dom.text('File name:'));
+    OAT.WebDav.buttons.line_1.appendChild(filename);
+    OAT.WebDav.buttons.line_1.appendChild(ok);
+
+    OAT.WebDav.buttons.line_2.appendChild(OAT.Dom.text('File type:'));
+    OAT.WebDav.buttons.line_2.appendChild(filetype);
+    OAT.WebDav.buttons.line_2.appendChild(cancel);
+
     OAT.Dav.user = OAT.WebDav.toptions.user;
     OAT.Dav.pass = OAT.WebDav.toptions.pass;
     $('dav_path').value     = OAT.WebDav.toptions.path;
@@ -481,17 +517,25 @@ OAT.WebDav = {
   },
 
   button_save_click:function(){
+    //var pattern = eval('/\.'+ OAT.WebDav.toptions.file_ext +'$/');
+    //if(OAT.WebDav.toptions.file_ext != '' && pattern.exec($v('dav_filename')) == null){
+    //  $('dav_filename').value = $v('dav_filename') + "."+OAT.WebDav.toptions.file_ext;
+    //}
+    var pattern = eval('/\.'+ $v('dav_filetype') +'$/');
+    if($v('dav_filetype') != '' && pattern.exec($v('dav_filename')) == null){
+      $('dav_filename').value = $v('dav_filename') + "."+$v('dav_filetype');
+    }
+
     if(!OAT.WebDav.toptions.dontDisplayWarning && OAT.WebDav.fileExist($v('dav_filename'))){
       res_confirm  = confirm('Do you want to replace existing file?')
     }else{
       res_confirm = true;
     }
     if(res_confirm){
-      var pattern = eval('/\.'+ OAT.WebDav.toptions.file_ext +'$/');
-      if(OAT.WebDav.toptions.file_ext != '' && pattern.exec($v('dav_filename')) == null){
-        $('dav_filename').value = $v('dav_filename') + "."+OAT.WebDav.toptions.file_ext;
+      var prepair = function(){
+        return OAT.WebDav.toptions.onConfirmClick($('dav_filetype').value);
       }
-      OAT.Dav.saveFile($v('dav_path'),$v('dav_filename'),OAT.WebDav.toptions.onConfirmClick,function(content){
+      OAT.Dav.saveFile($v('dav_path'),$v('dav_filename'),prepair,function(content){
         OAT.WebDav.toptions.afterSave($v('dav_path'),$v('dav_filename'));
         OAT.WebDav.options.filename = $v('dav_filename');
         OAT.WebDav.options.path = $v('dav_path');
@@ -561,17 +605,17 @@ OAT.WebDav = {
     }else{
       OAT.WebDav.open_levels = new Array();
     }
-    OAT.Dav.list(OAT.WebDav.activeNode.id,OAT.WebDav.responce);
+    OAT.Dav.list(OAT.WebDav.activeNode.id,OAT.WebDav.response);
     return;
   },
 
   //---------------------------------
   get_list:function(){
-    OAT.Dav.list(OAT.WebDav.activeNode.id,OAT.WebDav.responce);
+    OAT.Dav.list(OAT.WebDav.activeNode.id,OAT.WebDav.response);
   },
 
   //---------------------------------
-  responce:function(data){
+  response:function(data){
     $('dav_path').value=OAT.WebDav.activeNode.id.replace(/%20/g,' ');
     if(data.childNodes.length == 2){
 		  data = data.childNodes[1];
@@ -593,7 +637,7 @@ OAT.WebDav = {
     OAT.WebDav.load_resources(data);
     if(OAT.WebDav.open_levels.length > 0){
       OAT.WebDav.activeNode =  $(OAT.WebDav.activeNode.id+OAT.WebDav.open_levels[0].replace(/ /g,'%20')+"/");
-      OAT.Dav.list(OAT.WebDav.activeNode.id,OAT.WebDav.responce);
+      OAT.Dav.list(OAT.WebDav.activeNode.id,OAT.WebDav.response);
       OAT.WebDav.open_levels.shift();
     }else{
     OAT.WebDav.show_resources(data.root.href);
@@ -687,27 +731,50 @@ OAT.WebDav = {
 
   //---------------------------------
   insert_into_grid:function(el,i){
-      if(el.resourcetype == 'col'){
-        var ico_type = 'node-collapsed';
-      }else{
-        var ico_type = 'leaf';
-      }
-      var ico = OAT.WebDav.imagePathHtml(ico_type) + el.name;
-      OAT.WebDav.grid.createRow([{value:ico},{value:el.contentlength,align:OAT.GridData.ALIGN_RIGHT},el.contenttype,OAT.WebDav.format_date(el.lastmodified)])
-      OAT.Dom.attach(OAT.WebDav.grid.rows[i].html,'click',OAT.WebDav.list_click(el,i));
-      OAT.Dom.attach(OAT.WebDav.grid.rows[i].html,'dblclick',OAT.WebDav.list_dblclick(el,i));
-      OAT.WebDav.grid.rows[i].html.id = 'list_'+el.href;
+    if(el.resourcetype == 'col'){
+      var ico_type = 'node-collapsed';
+    }else{
+      var ico_type = 'leaf';
+    }
+    var ico = OAT.WebDav.imagePathHtml(ico_type) + el.name;
+    OAT.WebDav.grid.createRow([{value:ico},{value:el.contentlength,align:OAT.GridData.ALIGN_RIGHT},el.contenttype,OAT.WebDav.format_date(el.lastmodified)])
+    OAT.Dom.attach(OAT.WebDav.grid.rows[i].html,'click',OAT.WebDav.list_click(el,i));
+    OAT.Dom.attach(OAT.WebDav.grid.rows[i].html,'dblclick',OAT.WebDav.list_dblclick(el,i));
+    OAT.WebDav.grid.rows[i].html.id = 'list_'+el.href;
+    if(OAT.WebDav.filter_list(el)){
+      OAT.Dom.hide(OAT.WebDav.grid.rows[i].html);
+    }
 
   },
 
   //---------------------------------
+  filter_list:function(el){
+    if($v('dav_filename').indexOf('*') != -1){
+      var str = $v('dav_filename').substring($v('dav_filename').indexOf('*')+1);
+    }else{
+      var str = $v('dav_filetype');
+    }
+    if(str == '*'){
+      str = '';  
+    }
+    var pattern = eval('/'+ str +'$/');
+    if(!pattern.exec(el.name) && el.resourcetype == 'res'){
+      return true;
+      dd(el);
+    }else{
+      return false;  
+    }
+    return false;  
+  },
+  
+  //---------------------------------
   format_date:function(fulldate){
     var d = new Date(fulldate);
-	var lz = function(s) {
-		var ss = s.toString();
-		if (ss.length == 1) { ss = "0"+ss; }
-		return ss;
-	}
+	  var lz = function(s) {
+  		var ss = s.toString();
+  		if (ss.length == 1) { ss = "0"+ss; }
+  		return ss;
+  	}
     return lz(d.getMonth()+1)+'/'+lz(d.getDate())+'/'+d.getFullYear()+' '+lz(d.getHours())+':'+lz(d.getMinutes()) //04/24/2003 12:34
   },
 
@@ -815,7 +882,6 @@ OAT.WebDav = {
       OAT.WebDav.show_resources(node.id);
       $('dav_path').value=node.id;
     }
-
   },
 
   //---------------------------------
@@ -825,16 +891,16 @@ OAT.WebDav = {
         return OAT.WebDav.resources[i];
       }
     }
-  return false;
+    return false;
   },
 
   //---------------------------------
   sel_tree_node:function(obj){
     var parent = obj.parentNode.parentNode;
-	
-	window.o1 = obj;
-	window.o2 = parent;
-	window.oo = OAT.WebDav.activeNode.childNodes[1];
+
+  	window.o1 = obj;
+  	window.o2 = parent;
+  	window.oo = OAT.WebDav.activeNode.childNodes[1];
 
     OAT.WebDav.activeNode.childNodes[1].style.backgroundColor="";
     OAT.WebDav.activeNode.childNodes[1].style.color="";
@@ -883,13 +949,12 @@ OAT.WebDav = {
 
   //---------------------------------
   overwrite:function(options,new_options){
-	//var result = options;
-	//for (var p in new_options) { result[p] = new_options[p]; }
-	//return result;
-   var result = new Array();
+   var result = {};
   	for (var p in options) {
       if (p in new_options) {
-    	  if(typeof options[p] == 'object'){
+        if(isArray(options[p])){
+          result[p] = new_options[p];
+        }else if(typeof options[p] == 'object'){
     	    result[p] = OAT.WebDav.overwrite(options[p],new_options[p]);
     	  }else{
     			result[p] = new_options[p];
@@ -903,6 +968,14 @@ OAT.WebDav = {
 }
 
 //----------------------------------------------------------------------------
+function dd(txt){
+  if(typeof console == 'object'){
+    console.debug(txt);
+  }
+}
 
+function isArray(a) {
+    return (typeof a == 'object' && a.constructor == Array);
+}
 
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("dav");

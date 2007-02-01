@@ -19,6 +19,7 @@
 	var list = OAT.Xml.getLocalAttribute(elem,localName)
 	
 	var xpath = OAT.Xml.xpath(xmlDoc,xpath,nsObject)
+	var newXmlText = OAT.Xml.removeDefaultNamespace(xmlText)
 */
 
 OAT.Xml = {
@@ -46,7 +47,7 @@ OAT.Xml = {
 	
 	localName:function(elem) {
 		if (OAT.Dom.isIE()) {
-			return elme.baseName;
+			return elem.baseName;
 		} else {
 			return elem.localName;
 		}
@@ -55,7 +56,11 @@ OAT.Xml = {
 	createXmlDoc:function(string) {
 		if (document.implementation && document.implementation.createDocument) {				
 			var parser = new DOMParser();
+			try {
 			var xml = parser.parseFromString(string, "text/xml");
+			} catch(e) { 
+				alert('XML parsing error. Either the XML file is not well-formed or your browser sucks.');
+			}
 			return xml;
 		} else if (window.ActiveXObject) {
 			var xml = new ActiveXObject("Microsoft.XMLDOM")
@@ -117,6 +122,17 @@ OAT.Xml = {
 		return false;
 	},
 	
+	getLocalAttributes:function(elm) {
+		var obj = {};
+		for (var i=0;i<elm.attributes.length;i++) {
+			var att = elm.attributes[i];
+			var ln = att.localName;
+			var key = ln ? ln : att.baseName;
+			obj[key] = att.nodeValue;
+		}
+		return obj;
+	},
+	
 	xpath:function(xmlDoc,xpath,nsObject) {
 		var result = [];
 		function resolver(prefix) {
@@ -138,6 +154,11 @@ OAT.Xml = {
 			alert("Ooops - no XML parser available");
 			return false;
 		}
+	},
+	
+	removeDefaultNamespace:function(xmlText) {
+		var xml = xmlText.replace(/xmlns="[^"]*"/g,"");
+		return xml;
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("xml");

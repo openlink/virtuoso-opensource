@@ -8,11 +8,7 @@
  *  See LICENSE file for details.
  */
 /*
-	endpoint
-	dsn
-	user
-	password
-	query
+	connection
 	-
 	execute(callback,cursorOptions)  <-- needs endpoint && dsn && user && password && query
 	discover(callback) <-- needs endpoint
@@ -35,11 +31,7 @@
 */
 
 OAT.Xmla = {
-	endpoint:".",
-	dsn:"",
-	user:"",
-	password:"",
-	query:"",
+	connection:false,
 	executeHeader:{'Content-Type':'application/soap+xml; action="urn:schemas-microsoft-com:xml-analysis:Execute"'},
 	discoverHeader:{'Content-Type':'application/soap+xml; action="urn:schemas-microsoft-com:xml-analysis:Discover"'},
 	
@@ -83,9 +75,9 @@ OAT.Xmla = {
 				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
 				'<Command><Statement><![CDATA['+OAT.Xmla.query+']]></Statement></Command>'+
 				'<Properties><PropertyList>'+
-				'<DataSourceInfo>'+OAT.Xmla.dsn+'</DataSourceInfo>'+
-				'<UserName>'+OAT.Xmla.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.password+'</Password>';
+				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+				'<Password>'+OAT.Xmla.connection.options.password+'</Password>';
 			if (OAT.Preferences.useCursors && options.limit) {
 //				data += '<retrieve-row-count>1</retrieve-row-count>';
 				data += '<n-rows>'+options.limit+'</n-rows>';
@@ -99,7 +91,7 @@ OAT.Xmla = {
 			callback(result);
 		}
 		
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.executeHeader);
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.executeHeader);
 	},
 	
 	discover:function(callback) {
@@ -115,7 +107,7 @@ OAT.Xmla = {
 			var result = OAT.Xmla.discover_array(data);
 			callback(result);
 		}
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
 	},
 	
 	dbschema:function(callback) {
@@ -125,9 +117,9 @@ OAT.Xmla = {
 				'<RequestType>DBSCHEMA_CATALOGS</RequestType>'+
 				'<Restrictions xsi:nil="1" ></Restrictions>'+
 				'<Properties><PropertyList>'+
-				'<DataSourceInfo>'+OAT.Xmla.dsn+'</DataSourceInfo>'+
-				'<UserName>'+OAT.Xmla.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.password+'</Password>'+
+				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
 				'</PropertyList></Properties></Discover>';
 			return data;
 		}
@@ -136,7 +128,7 @@ OAT.Xmla = {
 			callback(result);
 		}
 		
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
 	},
 	
 	tables:function(catalog,callback) {
@@ -149,23 +141,19 @@ OAT.Xmla = {
 				'<TABLE_CATALOG>'+catalog+'</TABLE_CATALOG></RestrictionList></Restrictions>';
 			}
 			data += '<Properties><PropertyList>'+
-				'<DataSourceInfo>'+OAT.Xmla.dsn+'</DataSourceInfo>';
-			if (OAT.Xmla.user) {
-				data += '<UserName>'+OAT.Xmla.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.password+'</Password>';
+				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>';
+			if (OAT.Xmla.connection.options.user) {
+				data += '<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+				'<Password>'+OAT.Xmla.connection.options.password+'</Password>';
 			}
 			data +=	'</PropertyList></Properties></Discover>';
-/*			
-			alert("Debugging information: This is the DBSCHEMA_TABLES request (press OK to see it)");
-			alert(data);
-/**/
 			return data;
 		}
 		var cBack = function(data) {
 			var result = OAT.Xmla.tables_array(data);
 			callback(catalog,result);
 		}
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
 	},
 
 	columns:function(catalog,schema,table,callback) {
@@ -180,9 +168,9 @@ OAT.Xmla = {
 				}
 				data += '<TABLE_NAME>'+table+'</TABLE_NAME></RestrictionList></Restrictions>'+
 				'<Properties><PropertyList>'+
-				'<UserName>'+OAT.Xmla.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.password+'</Password>'+
-				'<DataSourceInfo>'+OAT.Xmla.dsn+'</DataSourceInfo>'+
+				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
+				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
 				'</PropertyList></Properties></Discover>';
 			return data;
 		}
@@ -191,7 +179,7 @@ OAT.Xmla = {
 			callback(result);
 		}
 		
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
 	},
 	
 	qualifiers:function(callback) {
@@ -200,18 +188,18 @@ OAT.Xmla = {
 				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
 				'<RequestType>DISCOVER_LITERALS</RequestType>'+
 				'<Properties><PropertyList>'+
-				'<UserName>'+OAT.Xmla.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.password+'</Password>'+
-				'<DataSourceInfo>'+OAT.Xmla.dsn+'</DataSourceInfo>'+
+				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
+				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
 				'</PropertyList></Properties></Discover>';
 			return data;
+
 		}
 		var cBack = function(data) {
 			var result = OAT.Xmla.qualifiers_array(data);
 			callback(result);
 		}
-		
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
 	},
 	
 	providerTypes:function(callback) {
@@ -220,9 +208,9 @@ OAT.Xmla = {
 				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
 				'<RequestType>DBSCHEMA_PROVIDER_TYPES</RequestType>'+
 				'<Properties><PropertyList>'+
-				'<UserName>'+OAT.Xmla.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.password+'</Password>'+
-				'<DataSourceInfo>'+OAT.Xmla.dsn+'</DataSourceInfo>'+
+				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
+				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
 				'</PropertyList></Properties></Discover>';
 			return data;
 		}
@@ -231,7 +219,7 @@ OAT.Xmla = {
 			callback(result);
 		}
 		
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
 	},
 	
 	primaryKeys:function(catalog,schema,table,callback) {
@@ -248,9 +236,9 @@ OAT.Xmla = {
 				}
 				data += '<TABLE_NAME>'+table+'</TABLE_NAME>';
 				data += '</RestrictionList></Restrictions><Properties><PropertyList>'+
-				'<DataSourceInfo>'+OAT.Xmla.dsn+'</DataSourceInfo>'+
-				'<UserName>'+OAT.Xmla.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.password+'</Password>'+
+				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
 				'</PropertyList></Properties></Discover>';
 			return data;
 		}
@@ -258,7 +246,7 @@ OAT.Xmla = {
 			var result = OAT.Xmla.primaryKeys_array(catalog,schema,table,data);
 			callback(result);
 		}
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
 	},
 	
 	foreignKeys:function(catalog,schema,table,callback) {
@@ -273,9 +261,9 @@ OAT.Xmla = {
 				data += '<TABLE_NAME>'+table+'</TABLE_NAME>';
 				data += '</RestrictionList></Restrictions>'+ 
 				'<Properties><PropertyList>'+
-				'<DataSourceInfo>'+OAT.Xmla.dsn+'</DataSourceInfo>'+
-				'<UserName>'+OAT.Xmla.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.password+'</Password>'+
+				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
 				'</PropertyList></Properties></Discover>';
 			return data;
 		}
@@ -283,7 +271,7 @@ OAT.Xmla = {
 			var result = OAT.Xmla.foreignKeys_array(catalog,schema,table,data);
 			callback(result);
 		}
-		OAT.Soap.command(OAT.Xmla.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
 	},
 
 /* --------------------------- */	
@@ -437,4 +425,4 @@ OAT.Xmla = {
 		return keys;
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("xmla");

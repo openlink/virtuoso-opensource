@@ -51,4 +51,4 @@ OAT.Profiler = {
 		OAT.Profiler.data = {"_":{total:0,start:0,end:0}};
 	}
 }
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("profiler");

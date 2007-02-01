@@ -49,7 +49,6 @@ function GBrowserIsCompatible()
 }
 function GLoad()
 {
-//    if (!GValidateKey(window._apiKey))
     if (!true)
     {
         G_INCOMPAT = true;
@@ -57,7 +56,7 @@ function GLoad()
         return;
         
     }
-    GLoadApi(["http://mt0.google.com/mt?n=404&v=w2.11&","http://mt1.google.com/mt?n=404&v=w2.11&","http://mt2.google.com/mt?n=404&v=w2.11&","http://mt3.google.com/mt?n=404&v=w2.11&"], ["http://kh0.google.com/kh?n=404&v=6&","http://kh1.google.com/kh?n=404&v=6&","http://kh2.google.com/kh?n=404&v=6&","http://kh3.google.com/kh?n=404&v=6&"], ["http://mt0.google.com/mt?n=404&v=apt.4&","http://mt1.google.com/mt?n=404&v=apt.4&","http://mt2.google.com/mt?n=404&v=apt.4&","http://mt3.google.com/mt?n=404&v=apt.4&"],window._apiKey);
+    GLoadApi(["http://mt0.google.com/mt?n=404&v=w2.29&","http://mt1.google.com/mt?n=404&v=w2.29&","http://mt2.google.com/mt?n=404&v=w2.29&","http://mt3.google.com/mt?n=404&v=w2.29&"], ["http://kh0.google.com/kh?n=404&v=11&","http://kh1.google.com/kh?n=404&v=11&","http://kh2.google.com/kh?n=404&v=11&","http://kh3.google.com/kh?n=404&v=11&"], ["http://mt0.google.com/mt?n=404&v=apt.32&","http://mt1.google.com/mt?n=404&v=apt.32&","http://mt2.google.com/mt?n=404&v=apt.32&","http://mt3.google.com/mt?n=404&v=apt.32&"],window._apiKey,"","",true);
     
 }
 function GUnload()
@@ -119,10 +118,10 @@ function GLoadMapsScript()
     if (GBrowserIsCompatible())
     {
 //        GScript("http://maps.google.com/mapfiles/maps2.48.api.js");
-//        GScript("/DAV/JS/toolkit/custom.maps2.48.api.js");
+//        GScript("/DAV/JS/oat/custom.maps2.48.api.js");
         
     }
     
 }
 GLoadMapsScript();
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("gmaps");

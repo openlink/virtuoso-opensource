@@ -14,7 +14,7 @@ WebClip = function(clipBoardControlContainer, copyCallback, pasteCallback, onCon
     clipBoardControlInput.rows = 1;;
     clipBoardControlInput.className = "CopyPasteInput";
     clipBoardControlInput.setAttribute("autocomplete", "off");  
-    clipBoardControlInput.value = "intialValueToHideCursor";
+    clipBoardControlInput.value = "initialValueToHideCursor";
     var lastKnownClipBoardValue = clipBoardControlInput.value;
         
     this.controlSelectedCallback = onControlSelected;
@@ -678,3 +678,4 @@ PresentationFormat = function()
     // URL encoded data.
     this.data;
 }
+OAT.Loader.featureLoaded("webclip");

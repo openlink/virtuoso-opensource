@@ -55,11 +55,15 @@ OAT.PieChart = function(div,optObj) {
 		var large = (angle >= Math.PI ? 1 : 0);
 
 		switch (phase) {
-			case 0:
+			case 0: /* top part */
+				if (value == total) { /* ellipse mode */
+					var pElm = OAT.SVG.element("ellipse",{stroke:"#000",fill:color,cx:cx,cy:cy,rx:r,ry:r*ycoef});
+				} else {
 				var path = "M "+cx+" "+cy+" L "+x1+" "+y1+" ";
 				path += "A "+r+" "+r*(ycoef)+" 0 "+large+" 1 "+x2+" "+y2+" ";
 				path += "L "+cx+" "+cy+" z";
 				var pElm = OAT.SVG.element("path",{"d":path,stroke:"#000",fill:color});
+				}
 				svgNode.appendChild(pElm);
 				var mid_angle = (start_angle + end_angle) / 2;
 				var x3 = (r+25) * Math.cos(mid_angle) + cx;
@@ -69,26 +73,44 @@ OAT.PieChart = function(div,optObj) {
 				textElm.textContent = value;
 				svgNode.appendChild(textElm);
 			break;
-			case 1:
+			case 1: /* lower part */
+				if (value == total) { /* ellipse mode */
+					var pElm = OAT.SVG.element("ellipse",{stroke:"#000",fill:color,cx:cx,cy:cy,rx:r,ry:r*ycoef});
+				} else {
 				var path = "M "+cx+" "+cy+" L "+x1+" "+y1+" ";
 				path += "A "+r+" "+(r*ycoef)+" 0 "+large+" 1 "+x2+" "+y2+" ";
 				path += "L "+cx+" "+cy+" z";
 				var pElm = OAT.SVG.element("path",{"d":path,stroke:"#000",fill:color});
+				}
 				svgNode.appendChild(pElm);
 			break;
-			case 2:
+			case 2: /* middle part */
 				var d = self.options.depth;
 				/* hack */
+				if (value == total) {
+					x1 = cx + r;
+					x2 = cx - r;
+					y1 = cy;
+					y2 = cy;
+				}
+				if (y1 < cy && y2 < cy) {
+					y1 = cy;
+					y2 = cy;
+					x1 = cx - r;
+					x2 = cx - r;
+				}
 				if (y1 < cy) {
 					y1 = cy;
-					x1 = cx + r * (x1 < cx ? -1 : 1);
+					x1 = cx + r;
+					large = 0;
 				}
 				if (y2 < cy) {
 					y2 = cy;
-					x2 = cx + r * (x2 < cx ? -1 : 1);
-				}
+					x2 = cx - r;
+					large = 0;
+				}  
 				var path = "M "+x1+" "+y1+" L "+x1+" "+(y1-d)+" ";
-				path += "A "+r+" "+(r*ycoef)+" 0 "+large+" 1 "+x2+" "+(y2-d)+" ";
+				path += "A "+r*1+" "+(r*ycoef)+" 0 "+large+" 1 "+x2+" "+(y2-d)+" ";
 				path += "L "+x2+" "+y2+" ";
 				path += "A "+r+" "+(r*ycoef)+" 0 "+large+" 0 "+x1+" "+y1+" ";
 				/* lighter color */
@@ -108,6 +130,7 @@ OAT.PieChart = function(div,optObj) {
 		var svg = OAT.SVG.canvas(w,h);
 		var group = OAT.SVG.element("g",{transform:"scale(1,1)"});
 		svg.appendChild(group);
+		self.div.appendChild(svg);
 		var total = 0;
 		for (var i=0;i<self.data.length;i++) { total += parseFloat(self.data[i]); }
 		var r = self.options.radius;
@@ -115,18 +138,18 @@ OAT.PieChart = function(div,optObj) {
 		var cy = r * self.options.ycoef + 40;
 		var angle = 2*Math.PI - Math.PI/2;
 		if (self.options.depth) {
-			for (var i=0;i<self.data.length;i++) {
+			for (var i=0;i<self.data.length;i++) { /* lower part */
 				var v = self.data[i];
 				var color = self.colors[i % self.colors.length];
 				angle = self.drawPie(group,v,total,angle,cx,cy+self.options.depth,color,1);
 			} /* for all data */
-			for (var i=0;i<self.data.length;i++) {
+			for (var i=0;i<self.data.length;i++) { /* middle part */
 				var v = self.data[i];
 				var color = self.colors[i % self.colors.length];
 				angle = self.drawPie(group,v,total,angle,cx,cy+self.options.depth,color,2);
 			} /* for all data */
 		}
-		for (var i=0;i<self.data.length;i++) {
+		for (var i=0;i<self.data.length;i++) { /* top part */
 			var v = self.data[i];
 			var color = self.colors[i % self.colors.length];
 			angle = self.drawPie(group,v,total,angle,cx,cy,color,0);
@@ -139,7 +162,6 @@ OAT.PieChart = function(div,optObj) {
 				svg.appendChild(text);
 			}
 		} /* for all data */
-		self.div.appendChild(svg);
 	} /* draw */
 } /* OAT.PieChart() */
-OAT.Loader.pendingCount--; 
+OAT.Loader.featureLoaded("piechart");

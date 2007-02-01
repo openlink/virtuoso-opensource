@@ -16,16 +16,24 @@ OAT.RDF = {
 		var triples = [];
 		var root = xmlDoc.documentElement;
 		var bnodePrefix = "_:";
-//		var idPrefix = "_id:";
 		var idPrefix = "#";
 		var bnodeCount = 0;
 		
+		function getAtt(obj,att) {
+			if (att in obj) { return obj[att]; }
+			return false;
+		}
+		
 		function processNode(node) {
-			var subj = OAT.Xml.getLocalAttribute(node,"about");
-			var id = OAT.Xml.getLocalAttribute(node,"nodeID");
+			var attribs = OAT.Xml.getLocalAttributes(node);
+			var subj = getAtt(attribs,"about");
+			var id1 = getAtt(attribs,"nodeID");
+			var id2 = getAtt(attribs,"ID");
 			if (!subj) { 
-				if (id) {
-					subj = idPrefix+id; 
+				if (id1) {
+					subj = idPrefix+id1; 
+				} else if (id2) {
+					subj = idPrefix+id2; 
 				} else {
 					subj = bnodePrefix+""+bnodeCount;
 					bnodeCount++;
@@ -39,7 +47,7 @@ OAT.RDF = {
 			}
 			for (var i=0;i<node.attributes.length;i++) {
 				var a = node.attributes[i];
-				if (OAT.Xml.localName(a) != "about" && OAT.Xml.localName(a) != "nodeID") {
+				if (OAT.Xml.localName(a) != "about" && OAT.Xml.localName(a) != "nodeID" && OAT.Xml.localName(a) != "ID") {
 					var pred = a.localName;
 					var obj = a.nodeValue;
 					triples.push([subj,pred,obj,1]);
@@ -47,13 +55,17 @@ OAT.RDF = {
 			} /* for all attributes */
 			for (var i=0;i<node.childNodes.length;i++) if (node.childNodes[i].nodeType == 1) {
 				var n = node.childNodes[i];
+				var nattribs = OAT.Xml.getLocalAttributes(n);
 				var pred = n.localName;
-				if (OAT.Xml.getLocalAttribute(n,"resource") != "") {
-					var obj = OAT.Xml.getLocalAttribute(n,"resource");
+				if (getAtt(nattribs,"resource") != "") { /* link via id */
+					var obj = getAtt(nattribs,"resource");
 					if (obj[0] == "#") { obj = idPrefix + obj.substring(1); }
 					triples.push([subj,pred,obj,1]);
-				} else if (OAT.Xml.getLocalAttribute(n,"nodeID") != "") {
-					var obj = idPrefix+OAT.Xml.getLocalAttribute(n,"nodeID");
+				} else if (getAtt(nattribs,"nodeID") != "") { /* link via id */
+					var obj = idPrefix+getAtt(nattribs,"nodeID");
+					triples.push([subj,pred,obj,1]);
+				} else if (getAtt(nattribs,"ID") != "") { /* link via id */
+					var obj = idPrefix+getAtt(nattribs,"ID");
 					triples.push([subj,pred,obj,1]);
 				} else {
 					var recursion = 0;
@@ -78,4 +90,4 @@ OAT.RDF = {
 		return triples;
 	}
 } /* OAT.RDF */
-OAT.Loader.pendingCount--;
+OAT.Loader.featureLoaded("rdf");

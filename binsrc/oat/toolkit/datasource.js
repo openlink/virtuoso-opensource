@@ -8,18 +8,11 @@
  *  See LICENSE file for details.
  */
 /*
-	var simpleCallback = function(dataRow, currentIndex) { alert(currentIndex); }
-	var multiCallback = function(dataRows, currentPageIndex) { alert(currentPageIndex); }
-	var fileCallback = function(xmlDoc) { alert(xmlDoc.documentElement.tagName); }
-
-	d = new OAT.DataSource(limit);
-	d.init();
+	var d = new OAT.DataSource(type);
+	d.connection = ...
+	d.options.xxx = yyy
 	
-	d.setConnection(connectionObject);
-	
-	d.setQuery(query);
-	d.setREST(format,xpath,queryString,outputFields);
-	d.setWSDL(service,inputObj,outputFields);
+	d.reset();
 	
 	d.bindRecord(simpleCallback);
 	d.bindPage(multiCallback);
@@ -27,38 +20,86 @@
 	d.bindEmpty(emptyCallback);
 	d.bindHeader(headerCallback);
 	
-	d.advancePage(something);   something: "-1","+1",number
-	d.advanceRecord(something);   something: "-1","+1",number
-	
-	d.executeQuery(q);
-	d.executeData(data);
-	
+	d.advanceRecord(something, ignoreDups);   something: "-1","+1",number
 */
+ 
+OAT.DataSourceData = {
+	TYPE_NONE:0,
+	TYPE_SQL:1,
+	TYPE_SOAP:2,
+	TYPE_REST:3,
+	TYPE_SPARQL:4,
+	TYPE_GDATA:5
+}
 
-OAT.DataSource = function(pageSize) {
+OAT.DataSource = function(type) {
 	var self = this;
-	self.boundRecords = [];
-	self.boundPages = [];
-	self.boundFiles = [];
-	self.boundEmpties = [];
-	self.boundHeaders = [];
-	self.dataRows = [];
-	self.recordIndex = -1; /* 0 .. self.dataRows.length */
-	self.pageIndex = -1; /* 0 .. self.dataRows.length */
-	self.pageSize = pageSize; /* if 0 then fetch all */
-	self.limit = pageSize;
+	this.name = "";
+	this.type = type; /* 0 none, 1 sql, 2 wsdl, 3 rest, 4 sparql, 5 gdata */
+	this.options = {};
 	
-	self.type = 0; /* 1 - sql, 2 - wsdl, 3 - rest */
-	self.query = "";
-	self.format = 0; /* xml / json */
-	self.xpath = 0;
-	self.service = "";
-	self.inputObj = {};
-	self.outputFields = [];
-	self.connection = false;
+	/* design features */
+	this.inputFields = []; /* for binding */
+	this.outputFields = []; /* provides data to controls */
+	this.outputLabels = []; /* alternative labels for outputFields */
 	
-	/* ------------------------------ binding -------------------------------*/
+	this.connection = false; /* connection object */
+	this.transport = false; /* transport object */
+
+	/* bindings */
+	this.boundRecords = [];
+	this.boundPages = [];
+	this.boundFiles = [];
+	this.boundEmpties = [];
+	this.boundHeaders = [];
 	
+	/* data */
+	this.dataRows = [];
+	this.recordIndex = -1; /* 0 .. self.dataRows.length */
+	this.pageIndex = -1; /* 0 .. self.dataRows.length */
+	this.pageSize = 0; /* if 0 then fetch all */
+	
+	switch (self.type) {
+		case OAT.DataSourceData.TYPE_SQL: self.transport = OAT.DSTransport.SQL; break;
+		case OAT.DataSourceData.TYPE_SOAP: self.transport = OAT.DSTransport.WSDL; break;
+		case OAT.DataSourceData.TYPE_REST: self.transport = OAT.DSTransport.REST; break;
+		case OAT.DataSourceData.TYPE_SPARQL: self.transport = OAT.DSTransport.REST; break;
+		case OAT.DataSourceData.TYPE_GDATA:	self.transport = OAT.DSTransport.REST; break;
+	}
+	for (var p in self.transport.options) { self.options[p] = self.transport.options[p]; } /* read options */
+	switch (self.type) {
+		case OAT.DataSourceData.TYPE_SQL:
+			self.connection = new OAT.Connection(OAT.ConnectionData.TYPE_XMLA);
+		break;
+		case OAT.DataSourceData.TYPE_SOAP:
+			self.connection = new OAT.Connection(OAT.ConnectionData.TYPE_WSDL);
+		break;
+		case OAT.DataSourceData.TYPE_REST:
+			self.connection = new OAT.Connection(OAT.ConnectionData.TYPE_REST);
+		break;
+		case OAT.DataSourceData.TYPE_SPARQL:
+			self.connection = new OAT.Connection(OAT.ConnectionData.TYPE_REST);
+			self.options.xpath = 1;
+			self.inputFields = [];
+			self.outputFields = [];
+			self.outputLabels = [];
+		break;
+		case OAT.DataSourceData.TYPE_GDATA:
+			self.connection = new OAT.Connection(OAT.ConnectionData.TYPE_REST);
+			self.options.xpath = 1;
+			self.inputFields = [];
+			self.outputFields = [];
+			self.outputLabels = [];
+			self.outputLabels = ["Feed title","Feed ID","Feed description","Feed link","Feed category",
+								 "Entry title","Entry ID","Entry description",
+								 "Entry date","Entry link","Entry content"];
+			self.outputFields = ["//atom:feed/atom:title","//atom:feed/atom:id","//atom:feed/atom:subtitle",
+								 '//atom:feed/atom:link[@rel="alternate"][@type="text/html"]/@href',"//atom:feed/atom:category/@term",
+								 "//atom:feed/atom:entry/atom:title","//atom:feed/atom:entry/atom:id","//atom:feed/atom:entry/atom:summary",
+								 "//atom:feed/atom:entry/atom:published","//atom:feed/atom:entry/atom:link","//atom:feed/atom:entry/atom:content"];
+		break;
+	}
+
 	this.bindEmpty = function(callback) {
 		var index = self.boundEmpties.length;
 		self.boundEmpties.push(callback);
@@ -110,75 +151,14 @@ OAT.DataSource = function(pageSize) {
 		self.boundHeaders.splice(index,1);
 	}
 
-	/* ------------------------------ processing -------------------------------*/
-	
-	/* set datasource to initial state */
-	this.init = function(query) {
+	this.reset = function() {
 		self.recordIndex = -1;
 		self.pageIndex = -1;
 		self.dataRows = [];
-		self.type = 0;
-		self.connection = false;
 	}
-	
-	this.setQuery = function(query) {
-		self.query = query;
-		self.type = 1;
-	}
-	
-	this.setConnection = function(connObj) {
-		self.connection = connObj;
-	}
-	
-	this.setREST = function(format,xpath,queryString,outputFields) {
-		self.query = queryString;
-		self.outputFields = outputFields;
-		self.type = 3;
-		self.format = format;
-		self.xpath = xpath;
-	}
-
-	this.setWSDL = function(service,inputObj,outputFields) {
-		self.service = service;
-		self.inputObj = inputObj;
-		self.outputFields = outputFields;
-		self.type = 2;
-	}
-	
-	this.ws2table = function(obj,xmlDoc,nsObj) { /* converts wsdl's output object into two-dimensional structure */
-		var allValues = {};
-		var data = [];
-		/* analyze maximum count */
-		var max = 0;
-		for (var i=0;i<self.outputFields.length;i++) {
-			var name = self.outputFields[i];
-			/* find number of appearances of this output field in output object */
-			if (self.xpath) { /* makes sense only for non-JSON data */
-				var nodes = OAT.Xml.xpath(xmlDoc,name,nsObj);
-				var values = [];
-				for (var j=0;j<nodes.length;j++) { values.push(OAT.Xml.textValue(nodes[j])); }
-			} else {
-				var values = OAT.JSObj.getAllValues(obj,name);
-			}
-			allValues[name] = values;
-			var l = values.length;
-			if (l > max) { max = l; }
-		}
-		for (var i=0;i<max;i++) {
-			var row = [];
-			for (var j=0;j<self.outputFields.length;j++) {
-				var name = self.outputFields[j];
-				var values = allValues[name];
-				var v = (values.length ? values[i % values.length] : "");
-				row.push(v);
-			}
-			data.push(row);
-		}
-		return [self.outputFields,data];
-	}
-	
-	/* test data for presence */
-	this.checkAvailability = function(index,strict) { /* we want PAGE starting at 'index'. is it possible? */
+		
+	this.checkAvailability = function(index,strict) { /* test data for presence */
+		/* we want PAGE starting at 'index'. is it possible? */
 		/*
 			a) all data cached -> true
 			b) all data missing -> false
@@ -194,78 +174,7 @@ OAT.DataSource = function(pageSize) {
 		if (count == self.pageSize) { return true; }
 		return (strict ? false : true);
 	}
-	
-	/* retrieve one record from cache */
-	this.fetchRecord = function(index,callback) { 
-		/* never sends queries, since appropriate page has to be recieved first! */
-		if (self.dataRows[index]) { callback(); }
-	}
-	
-	/* retrieve one page; either from cache or db */
-	this.fetchPage = function(index,callback) {
-		if (self.checkAvailability(index,true)) { callback(); return; }
-		
-		switch (self.type) {
-			case 1: /* query */
-				var ref = function(data) {
-					self.processData(data,index);
-					if (self.checkAvailability(index,false)) { callback(); }
-				}
-				var co = self.connection.options;
-				OAT.Xmla.user = co.user;
-				OAT.Xmla.password = co.password;
-				OAT.Xmla.dsn = co.dsn;
-				OAT.Xmla.endpoint = co.endpoint;
-				OAT.Xmla.query = self.query;
-				OAT.Xmla.execute(ref,{limit:self.limit,offset:index});
-			break;
-			
-			case 2: /* wsdl */
-				var ref = function(outputObj) {
-					var data = self.ws2table(outputObj);
-					self.processData(data,index);
-					if (self.checkAvailability(index,false)) { callback(); }
-				}
-				OAT.WS.invoke(self.connection.options.url,self.service,ref,self.inputObj);
-			break;
-			
-			case 3: /* rest */
-				var ref = function(text) {
-					var obj = {};
-					var nsObj = {};
-					var xmlDoc = false;
-					if (self.format == 0) { /* xml */
-						/* analyze namespaces */
-						var ns = text.match(/xmlns="([^"]*)"/);
-						if (ns) { nsObj[" "] = ns[1]; }
-						var ns = text.match(/xmlns:[^=]+="[^"]*"/g);
-						if (ns) for (var i=0;i<ns.length;i++) {
-							var tmp = ns[i];
-							var r = tmp.match(/xmlns:([^=]+)="([^"]*)"/);
-							nsObj[r[1]] = r[2];
-						}
-						/* BAD HACK FOR GECKO - remove default namespace - THIS IS WRONG AND UGLY!!! */
-						var t = text.replace(/xmlns="[^"]*"/g,"");
-						/***/
-						xmlDoc = OAT.Xml.createXmlDoc(t);
-						for (var i=0;i<self.boundFiles.length;i++) {
-							self.boundFiles[i](xmlDoc);
-						}
-						obj = OAT.JSObj.createFromXmlNode(xmlDoc.documentElement);
-					} 
-					if (self.format == 1) { /* json */
-						obj = OAT.JSON.parse(text);
-					}
-					var data = self.ws2table(obj,xmlDoc,nsObj);
-					self.processData(data,index);
-					if (self.checkAvailability(index,false)) { callback(); }
-				}
-				OAT.Ajax.command(OAT.Ajax.GET,self.connection.options.url,function(){return self.query;},ref,OAT.Ajax.TYPE_TEXT,{});
-			break;
-		}
-		
-	}
-	
+
 	/* add data to cache */
 	this.processData = function(data,index) {
 		self.header = data[0];
@@ -283,8 +192,25 @@ OAT.DataSource = function(pageSize) {
 		}
 	}
 	
-	/* calculate new index */
-	this.getNewIndex = function(something,index,size) {
+	this.fetchRecord = function(index,callback) {  /* retrieve one record from cache */
+		/* never sends queries, since appropriate page has to be received first! */
+		if (self.dataRows[index]) { callback(); }
+	}
+	
+	this.fetchPage = function(index,callback) { /* retrieve one page; either from cache or db */
+		if (self.checkAvailability(index,true)) { callback(); return; }
+		var ref = function(data) {
+			for (var i=0;i<self.boundFiles.length;i++) {
+				self.boundFiles[i](data);
+			}
+			var parsed = self.transport.parse(data,self.options,self.outputFields);
+			self.processData(parsed,index);
+			if (self.checkAvailability(index,false)) { callback(); }
+		}
+		self.transport.fetch(self.connection,self.options,index,ref);
+	}
+
+	this.getNewIndex = function(something,index,size) { /* calculate new index */
 		/* get new index number specified by 'something', when located @ index with page size 'size' */
 		var newIndex = -1;
 		if (typeof(something) == "string") {
@@ -297,12 +223,11 @@ OAT.DataSource = function(pageSize) {
 		}
 		return newIndex;
 	}
-	
-	/* go to record # */
-	this.advanceRecord = function(something) {
+
+	this.advanceRecord = function(something,ignoreDups) { 	/* go to record # */
 		/* get the record number we want */
 		var newIndex = self.getNewIndex(something,self.recordIndex,1); /* this is new requested index */
-		if (newIndex == -1 || newIndex == self.recordIndex) { return false; } /* do nothing if is not correct */
+		if (newIndex == -1 || (newIndex == self.recordIndex && !ignoreDups)) { return false; } /* do nothing if is not correct */
 		var newPageIndex = (self.pageSize ? Math.floor(newIndex / self.pageSize) : 0) * self.pageSize;
 		/* sometimes we also have to change page */
 		var callback = function() {
@@ -321,8 +246,7 @@ OAT.DataSource = function(pageSize) {
 		return true;
 	}
 	
-	/* go to page #, not to be directly called! */
-	this.advancePage = function(newIndex,command) {
+	this.advancePage = function(newIndex,command) { /* go to page #, not to be directly called! */
 		/* get the page we want */
 		var callback = function() {
 			var data = [];
@@ -339,5 +263,360 @@ OAT.DataSource = function(pageSize) {
 		self.fetchPage(newIndex,callback);
 	}
 	
-}
-OAT.Loader.pendingCount--;
+	this.typeToString = function() {
+		switch (self.type) {
+			case OAT.DataSourceData.TYPE_NONE: return "NONE"; break;
+			case OAT.DataSourceData.TYPE_SQL: return "SQL"; break;
+			case OAT.DataSourceData.TYPE_SOAP: return "SOAP/WSDL"; break;
+			case OAT.DataSourceData.TYPE_REST: return "REST"; break;
+			case OAT.DataSourceData.TYPE_SPARQL: return "SPARQL"; break;
+			case OAT.DataSourceData.TYPE_GDATA: return "GDATA"; break;
+		}
+		return "";
+	}
+
+	this.fieldBinding = {
+		selfFields:[], /* indexes */
+		masterDSs:[], /* references */
+		masterFields:[], /* indexes */
+		types:[] /* types: 0 - value, 1 - foreign column, 2 - ask at runtime, 3 - user input */
+	}
+	
+	this.loadSaved = function(savedURL,callback) {
+		var qRef = function(data) {
+			switch (self.type) {
+				case OAT.DataSourceData.TYPE_SQL: /* sql */
+					var queryObj = new OAT.SqlQuery();
+					queryObj.fromString(data);
+					self.query = queryObj.toString(OAT.SqlQueryData.TYPE_SQL);
+				break;
+				case OAT.DataSourceData.TYPE_SPARQL: /* sparql */
+					self.query = data;
+				break;
+			}
+			if (callback) { callback(); }
+		}
+		OAT.Ajax.command(OAT.Ajax.GET + OAT.Ajax.AUTH_BASIC,savedURL,function(){return '';},qRef,OAT.Ajax.TYPE_TEXT);
+	}
+	
+	this.refresh = function(callback,do_links,datasources) {
+		/* we know binding type. let's create columns, relations etc */
+		switch (self.type) {
+			case OAT.DataSourceData.TYPE_NONE: callback();	break;
+			case OAT.DataSourceData.TYPE_SQL:
+				if (self.options.table) { /* table */
+					if (do_links) {
+						var spl = self.options.table.split(".");
+						if (spl.length == 3) { 
+							var catalog = spl[0];
+							var schema = spl[1];
+							var table = spl[2];
+						} else {
+							var catalog = "";
+							var schema = "";
+							var table = spl[0];
+						}
+						var columnRef = function(pole) {
+							for (var i=0;i<pole.length;i++) {
+								var name = pole[i].name;
+								self.inputFields.push(name);
+								self.outputFields.push(name);
+								self.outputLabels.push("");
+							}
+							self.relationalBind(datasources,catalog,schema,table,callback);
+						}
+						self.inputFields = [];
+						self.outputFields = [];
+						self.outputLabels = [];
+						OAT.Xmla.connection = self.connection;
+						OAT.Xmla.columns(catalog,schema,table,columnRef);
+					} else { callback(); }
+				} else { /* query */
+					if (do_links) {
+						self.inputFields = [];
+						self.outputFields = [];
+						self.outputLabels = [];
+						var queryObj = new OAT.SqlQuery();
+						queryObj.fromString(self.options.query);
+						for (var i=0;i<queryObj.columns.count;i++) { 
+							var name = OAT.SqlQueryData.deQualifyMulti(queryObj.columns.getResult(i));
+							self.inputFields.push(name);
+							self.outputFields.push(name);
+							self.outputLabels.push("");
+						}
+						self.heuristicBind(datasources);
+					} 
+					callback();
+				}
+				break;
+			
+			case OAT.DataSourceData.TYPE_SOAP: /* wsdl */
+				self.inputFields = [];
+				self.outputFields = [];
+				self.outputLabels = [];
+				var wsdl = self.connection.options.url;
+				var paramsRef = function(input,output) {
+					for (var p in input) { self.options.rootelement = p; }
+					for (var p in input[self.options.rootelement]) { self.inputFields.push(p); }
+					self.outputFields = OAT.JSObj.getStringIndexes(output);
+					for (var i=0;i<self.outputFields.length;i++) { self.outputLabels.push(""); }
+					callback();
+				}
+				var servicesRef = function(arr) {
+					dialogs.services.show();
+					OAT.Dom.clear("services_select");
+					for (var i=0;i<arr.length;i++) {
+						OAT.Dom.option(arr[i],arr[i],"services_select");
+					}
+					dialogs.services.ok = selectRef;
+				}
+				var selectRef = function() {
+					var s = $v("services_select");
+					self.options.service = s;
+					dialogs.services.hide();
+					OAT.WS.listParameters(wsdl,s,paramsRef)
+				}
+				if (do_links) {
+					OAT.WS.listServices(wsdl,servicesRef);
+				} else {
+					OAT.WS.listParameters(wsdl,self.options.service,paramsRef);
+				}
+			break; /* case 2 - wsdl */
+
+			case OAT.DataSourceData.TYPE_REST: /* rest */
+				if (do_links) {
+					self.inputFields = $v("bind_rest_in").split(",");
+					self.outputFields = $v("bind_rest_out").split(",");
+					if (self.inputFields.length == 1 && self.inputFields[0] == "") { self.inputFields = []; }
+					if (self.outputFields.length == 1 && self.outputFields[0] == "") { self.outputFields = []; }
+					self.outputLabels = [];
+					for (var i=0;i<self.inputFields.length;i++) {
+						self.inputFields[i] = self.inputFields[i].trim();
+						self.outputLabels.push("");
+					}
+					for (var i=0;i<self.outputFields.length;i++) {
+						self.outputFields[i] = self.outputFields[i].trim();
+					}
+				}
+				callback();
+			break;
+			
+			case OAT.DataSourceData.TYPE_SPARQL: /* sparql */
+				var sq = new OAT.SparqlQuery();
+				sq.fromString(self.options.query);
+				if (self.options.query == "") { sq.fromString(self.connection.options.url); }
+				for (var i=0;i<sq.variables.length;i++) {
+					self.outputLabels.push(sq.variables[i]);
+					self.outputFields.push('//result/binding[@name="'+sq.variables[i]+'"]/node()/text()');
+				}
+				callback();
+			break;
+			
+			case OAT.DataSourceData.TYPE_GDATA:
+				callback();
+			break;
+		} /* type switch */
+	}
+	
+	this.heuristicBind = function(datasources) {
+		if (self.fieldBinding.selfFields.length != 0) { return; }
+		
+		function relationAllowed(secondDS) {
+			/* relation is allowed only with other datasource, which has no relation to us */
+			if (secondDS == self) { return false; }
+			for (var i=0;i<secondDS.fieldBinding.masterDSs.length;i++) {
+				var m = secondDS.fieldBinding.masterDSs[i];
+				if (m == self) { return false; }
+			}
+			return true;
+		}
+		
+		/* heuristic - automatic binding to parent form */
+		for (var i=0;i<self.inputFields.length;i++) {
+			var parts = self.inputFields[i].split("."); 
+			var sCol = parts.pop();
+			/* try to find appropriate column with same name elsewhere: that would be a good masterCol */
+			for (var j=0;j<datasources.length;j++) if (relationAllowed(datasources[j])) {
+				var ds = datasources[j];
+				for (var k=0;k<ds.outputFields.length;k++) {
+					var mCol = ds.outputFields[k].split(".").pop();
+					if (sCol == mCol) {
+						self.fieldBinding.selfFields.push(i);
+						self.fieldBinding.masterFields.push(k);
+						self.fieldBinding.masterDSs.push(ds);
+						self.fieldBinding.types.push(1);
+					}
+				} /* all other columns */
+			} /* all other forms */
+		} /* all our columns */
+	} /* tryParents */
+	
+	this.relationalBind = function(datasources,catalog,schema,table,callback) { /* xxx */
+		if (self.fieldBinding.selfFields.length != 0) { return; }
+
+		/* get foreign keys and try to figure out bindings to masters */
+		var fkRef = function(pole) {
+			for (var i=0;i<pole.length;i++) {
+				/* key = object w/ catalog,schema,table,column */
+				var pk = pole[i][0];
+				var fk = pole[i][1];
+				if (fk.catalog == catalog && fk.schema == schema && fk.table == table) { 
+					for (var j=0;j<datasources.length;j++) {
+						var ds=datasources[j];
+						var fq = (pk.catalog == "" ? pk.table : pk.catalog+"."+pk.schema+"."+pk.table);
+						if (fq == ds.table) {
+							/* good, let's add binding */
+							var index1 = ds.outputFields.find(pk.column);
+							var index2 = self.inputFields.find(fk.column);
+							self.fieldBinding.masterDSs.push(ds);
+							self.fieldBinding.masterFields.push(index1);
+							self.fieldBinding.selfFields.push(index2);
+							self.fieldBinding.types.push(1);
+						} /* ok */
+					} /* for all other forms */
+				} /* relation about our table */
+			} /* all relations */
+			if (callback) { callback(); }
+		}
+		OAT.Xmla.foreignKeys(catalog,schema,table,fkRef);
+	}
+	
+	this.toXML = function(uid,datasources,objects,nocred) {
+		var xml = '';
+		var fb = self.fieldBinding;
+		var tmp = [];
+		for (var j=0;j<fb.masterDSs.length;j++) {
+			var value = "false";
+			switch (parseInt(fb.types[j])) {
+				case 1: /* link to datasource */
+					value = datasources.find(fb.masterDSs[j]);
+				break;
+				case 3: /* link to uinput */
+					value = objects.find(fb.masterDSs[j]);
+				break;
+			}
+			tmp.push(value);
+		}
+		xml += '\t<ds name="'+self.name+'" type="'+self.type+'" pagesize="'+self.pageSize+'">\n';
+		xml += '\t\t'+self.connection.toXML(uid,nocred)+'\n';
+		xml += '\t\t<options';
+		for (var p in self.options) {
+			if (p != "query") { xml += ' '+p+'="'+self.options[p]+'"'; }
+		}
+		xml += '/>\n';
+		if ("query" in self.options) {
+			xml += '\t\t<query><![CDATA['+self.options.query+']]></query>\n';
+		}
+		xml += '\t\t<outputFields>\n';
+		for (var j=0;j<self.outputFields.length;j++) {
+			xml += '\t\t\t<outputField';
+			if (self.outputLabels.length && self.outputLabels[j] != "") { xml += ' label="'+self.outputLabels[j]+'"'; }
+			xml += '>'+OAT.Dom.toSafeXML(self.outputFields[j])+'</outputField>\n';
+		}
+		xml += '\t\t</outputFields>\n';
+		xml += '\t\t<inputFields>\n';
+		for (var j=0;j<self.inputFields.length;j++) {
+			xml += '\t\t\t<inputField>'+self.inputFields[j]+'</inputField>\n';
+		}
+		xml += '\t\t</inputFields>\n';
+		xml += '\t\t<selfFields>\n';
+		for (var j=0;j<fb.selfFields.length;j++) {
+			xml += '\t\t\t<selfField>'+fb.selfFields[j]+'</selfField>\n';
+		}
+		xml += '\t\t</selfFields>\n';
+		xml += '\t\t<masterFields>\n';
+		for (var j=0;j<fb.masterFields.length;j++) {
+			xml += '\t\t\t<masterField>'+OAT.Dom.toSafeXML(fb.masterFields[j])+'</masterField>\n';
+		}
+		xml += '\t\t</masterFields>\n';
+		xml += '\t\t<masterDSs>\n';
+		for (var j=0;j<tmp.length;j++) {
+			xml += '\t\t\t<masterDS>'+tmp[j]+'</masterDS>\n';
+		}
+		xml += '\t\t</masterDSs>\n';
+		xml += '\t\t<types>\n';
+		for (var j=0;j<fb.types.length;j++) {
+			xml += '\t\t\t<type>'+fb.types[j]+'</type>\n';
+		}
+		xml += '\t\t</types>\n';
+		xml += '\t</ds>\n';
+		return xml;
+	} /* toXML() */
+	
+	this.fromXML = function(node) {
+		var fb = self.fieldBinding;
+		self.name = node.getAttribute("name"); /* name */
+		self.pageSize = parseInt(node.getAttribute("pagesize")); /* name */
+		
+		if (node.getAttribute("subtype")) {
+			/* compatibility mode */
+			for (var p in self.options) { self.options[p] = node.getAttribute(p); }
+			if ("table" in self.options) {
+				var tablenode = node.getElementsByTagName("table")[0];
+				self.options.table = OAT.Xml.textValue(tablenode);
+				if (self.options.table == "undefined") { self.options.table = ""; }
+				if (self.options.table == "false") { self.options.table = ""; }
+			}
+			if ("limit" in self.options) { self.options.limit = self.pageSize; }
+			if ("output" in self.options) { self.options.output = parseInt(node.getAttribute("subtype")); }
+		} else {
+			/* standard mode */
+			var opts = node.getElementsByTagName("options")[0];
+			for (var p in self.options) { 
+				self.options[p] = opts.getAttribute(p); 
+				if (p == "table" && self.options[p] == "false") { self.options[p] = false; }
+			}
+		}
+		if ("query" in self.options) {
+			var qnode = node.getElementsByTagName("query")[0];
+			self.options.query = OAT.Xml.textValue(qnode);
+		}
+		
+		var cnode = node.getElementsByTagName("connection")[0];
+		var ctype = parseInt(cnode.getAttribute("type"));
+		self.connection = new OAT.Connection(ctype);
+		self.connection.fromXML(cnode);
+		
+		var tmp = node.getElementsByTagName("inputField");
+		self.inputFields = [];
+		for (var j=0;j<tmp.length;j++) {
+			self.inputFields.push(OAT.Xml.textValue(tmp[j]));
+		}
+		var tmp = node.getElementsByTagName("outputField");
+		self.outputFields = [];
+		self.outputLabels = [];
+		for (var j=0;j<tmp.length;j++) {
+			var v = OAT.Xml.textValue(tmp[j]);
+			self.outputFields.push(OAT.Dom.fromSafeXML(v));
+			var l = tmp[j].getAttribute("label");
+			v = "";
+			if (l && l != "") { v = l; }
+			self.outputLabels.push(v);
+		}
+
+		var tmp = node.getElementsByTagName("selfField");
+		for (var j=0;j<tmp.length;j++) {
+			fb.selfFields.push(parseInt(OAT.Xml.textValue(tmp[j])));
+		}
+		var tmp = node.getElementsByTagName("masterDS");
+		for (var j=0;j<tmp.length;j++) {
+			var val = OAT.Xml.textValue(tmp[j]);
+			fb.masterDSs.push(val);
+		}
+		var tmp = node.getElementsByTagName("type");
+		for (var j=0;j<tmp.length;j++) {
+			var val = OAT.Xml.textValue(tmp[j]);
+			fb.types.push(parseInt(val));
+		}
+		var tmp = node.getElementsByTagName("masterField");
+		for (var j=0;j<tmp.length;j++) {
+			var val = OAT.Xml.textValue(tmp[j]);
+			if (fb.types[j] < 2) {
+				fb.masterFields.push(fb.types[j] == 1 ? parseInt(val) : OAT.Dom.fromSafeXML(val));
+			} else {
+				fb.masterFields.push("");
+			}
+		} /* for all masterFields */
+	} /* fromXML() */
+} /* DataSource() */
+OAT.Loader.featureLoaded("datasource");
