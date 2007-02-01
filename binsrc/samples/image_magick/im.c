@@ -300,12 +300,24 @@ caddr_t bif_im_GetImageBlobWidth(caddr_t * qst, caddr_t * err, state_slot_t ** a
 {
   caddr_t res;
   unsigned long key_value;
+	char in_name[64];
   caddr_t blob = bif_string_arg (qst, args, 0, "IM GetImageBlobWidth");
   long blob_size = bif_long_arg (qst, args, 1, "IM GetImageBlobWidth");
+	int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 2 ? bif_string_arg (qst, args, 2, "IM GetImageBlobWidth") : NULL;
   key_value = 0;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
@@ -331,12 +343,24 @@ caddr_t bif_im_GetImageBlobDepth(caddr_t * qst, caddr_t * err, state_slot_t ** a
 {
   caddr_t res;
   unsigned long key_value;
+	char in_name[64];
   caddr_t blob = bif_string_arg (qst, args, 0, "IM GetImageBlobDepth");
   long blob_size = bif_long_arg (qst, args, 1, "IM GetImageBlobDepth");
+	int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 2 ? bif_string_arg (qst, args, 2, "IM GetImageBlobDepth") : NULL;
   key_value = 0;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
@@ -362,12 +386,24 @@ caddr_t bif_im_GetImageBlobHeight(caddr_t * qst, caddr_t * err, state_slot_t ** 
 {
   caddr_t res;
   unsigned long key_value;
+	char in_name[64];
   caddr_t blob = bif_string_arg (qst, args, 0, "IM GetImageBlobHeight");
   long blob_size = bif_long_arg (qst, args, 1, "IM GetImageBlobHeight");
+	int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 2 ? bif_string_arg (qst, args, 2, "IM GetImageBlobHeight") : NULL;
   key_value = 0;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
@@ -392,11 +428,23 @@ caddr_t bif_im_GetImageBlobHeight(caddr_t * qst, caddr_t * err, state_slot_t ** 
 caddr_t bif_im_GetImageBlobFormat(caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
   caddr_t res, key_value;
+	char in_name[64];
   caddr_t blob = bif_string_arg (qst, args, 0, "IM GetImageBlobFormat");
   long blob_size = bif_long_arg (qst, args, 1, "IM GetImageBlobFormat");
+	int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 2 ? bif_string_arg (qst, args, 2, "IM GetImageBlobFormat") : NULL;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
@@ -421,12 +469,24 @@ caddr_t bif_im_GetImageBlobFormat(caddr_t * qst, caddr_t * err, state_slot_t ** 
 caddr_t bif_im_GetImageBlobAttribute(caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
   caddr_t res, key_value;
+	char in_name[64];
   caddr_t blob = bif_string_arg (qst, args, 0, "IM GetImageBlobAttribute");
   long blob_size = bif_long_arg (qst, args, 1, "IM GetImageBlobAttribute");
   caddr_t key = bif_string_arg (qst, args, 2, "IM GetImageBlobAttribute");
+  int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 3 ? bif_string_arg (qst, args, 3, "IM GetImageBlobAttribute") : NULL;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
@@ -455,15 +515,27 @@ caddr_t bif_im_CropImageBlob(caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
   size_t length = 0;
   caddr_t res, image_blob;
+	char in_name[64];
   caddr_t blob = (caddr_t)bif_arg (qst, args, 0, "IM CropImageBlob");
   long blob_size = bif_long_arg (qst, args, 1, "IM CropImageBlob");
   unsigned long width = bif_long_arg (qst, args, 2, "IM CropImageBlob");
   unsigned long height = bif_long_arg (qst, args, 3, "IM CropImageBlob");
   long x = bif_long_arg (qst, args, 4, "IM CropImageBlob");
   long y = bif_long_arg (qst, args, 5, "IM CropImageBlob");
+	int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 6 ? bif_string_arg (qst, args, 6, "IM CropImageBlob") : NULL;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
@@ -590,14 +662,25 @@ caddr_t bif_im_RotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** ar
 {
   size_t length = 0;
   caddr_t res, image_blob;
+	char in_name[64];
   caddr_t blob = (caddr_t)bif_arg (qst, args, 0, "IM RotateImageBlob");
   long blob_size = bif_long_arg (qst, args, 1, "IM RotateImageBlob");
   double v_size = bif_double_arg (qst, args, 2, "IM RotateImageBlob");
   int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 3 ? bif_string_arg (qst, args, 3, "IM RotateImageBlob") : NULL;
   PixelWand *background;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
@@ -721,15 +804,27 @@ caddr_t bif_im_ResampleImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** 
 {
   size_t length = 0;
   caddr_t res, image_blob;
+	char in_name[64];
   caddr_t blob = (caddr_t)bif_arg (qst, args, 0, "IM ResampleImageBlob");
   long blob_size = bif_long_arg (qst, args, 1, "IM ResampleImageBlob");
   double v_size = bif_double_arg (qst, args, 2, "IM ResampleImageBlob");
   double h_size = bif_double_arg (qst, args, 3, "IM ResampleImageBlob");
   double blur = bif_double_arg (qst, args, 4, "IM ResampleImageBlob");
   long filter = bif_long_arg (qst, args, 5, "IM ResampleImageBlob");
+	int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 6 ? bif_string_arg (qst, args, 6, "IM ResampleImageBlob") : NULL;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
@@ -845,17 +940,29 @@ caddr_t bif_im_ResizeImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** ar
 {
   size_t length = 0;
   caddr_t res, image_blob;
+	char in_name[64];
   caddr_t blob = (caddr_t)bif_arg (qst, args, 0, "IM ResizeImageBlob");
   long blob_size = bif_long_arg (qst, args, 1, "IM ResizeImageBlob");
   long v_size = bif_long_arg (qst, args, 2, "IM ResizeImageBlob");
   long h_size = bif_long_arg (qst, args, 3, "IM ResizeImageBlob");
   double blur = bif_double_arg (qst, args, 4, "IM ResizeImageBlob");
   long filter = bif_long_arg (qst, args, 5, "IM ResizeImageBlob");
+	int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 6 ? bif_string_arg (qst, args, 6, "IM ResizeImageBlob") : NULL;
   if (filter < 0 || filter > 15)
     filter = PointFilter;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
@@ -969,16 +1076,28 @@ caddr_t bif_im_ThumbnailImageBlob (caddr_t * qst, caddr_t * err, state_slot_t **
 {
   size_t length = 0;
   caddr_t res, image_blob;
+	char in_name[64];
   caddr_t blob = (caddr_t)bif_arg (qst, args, 0, "IM ThumbnailImageBlob");
   long blob_size = bif_long_arg (qst, args, 1, "IM ThumbnailImageBlob");
   long v_size = bif_long_arg (qst, args, 2, "IM ThumbnailImageBlob");
   long h_size = bif_long_arg (qst, args, 3, "IM ThumbnailImageBlob");
   long filter = bif_long_arg (qst, args, 4, "IM ThumbnailImageBlob");
+	int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 5 ? bif_string_arg (qst, args, 5, "IM ThumbnailImageBlob") : NULL;
   if (filter < 0 || filter > 15)
     filter = PointFilter;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
@@ -1013,6 +1132,7 @@ bif_im_AnnotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   size_t length = 0;
   char * szMe = "IM AnnotateImageBlob";
   caddr_t res, image_blob;
+	char in_name[64];
   caddr_t blob = (caddr_t)bif_arg (qst, args, 0, szMe);
   long blob_size = box_length (blob) - 1;
   long x_pos = bif_long_arg (qst, args, 1, szMe);
@@ -1022,6 +1142,7 @@ bif_im_AnnotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   long angle = n_args > 4 ? bif_long_arg (qst, args, 4, szMe) : 0;
   long f_size = n_args > 5 ? bif_long_arg (qst, args, 5, szMe) : 12;
   char *text_color = n_args > 6 ? bif_string_arg (qst, args, 6, szMe) : "black" ;
+  char* in_format = n_args > 7 ? bif_string_arg (qst, args, 7, szMe) : NULL;
   DrawingWand *drawing_wand;
   PixelWand *pixel_wand;
   dtp_t dtp = DV_TYPE_OF (blob);
@@ -1040,7 +1161,15 @@ bif_im_AnnotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   magick_wand=NewMagickWand();
   drawing_wand = NewDrawingWand ();
   pixel_wand = NewPixelWand();
-
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
     {
@@ -1147,22 +1276,41 @@ caddr_t bif_im_ConvertImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** a
 {
   size_t length = 0;
   caddr_t res, image_blob;
+	char in_name[64];
+        char out_name[64];
   caddr_t blob = (caddr_t)bif_arg (qst, args, 0, "IM ConvertImageBlob");
   long blob_size = bif_long_arg (qst, args, 1, "IM ConvertImageBlob");
   caddr_t format = bif_string_arg (qst, args, 2, "IM ConvertImageBlob");
+	int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 3 ? bif_string_arg (qst, args, 3, "IM ConvertImageBlob") : NULL;
   mutex_enter (im_mutex);
   MagickWandGenesis();
   magick_wand=NewMagickWand();
+	if (in_format != NULL)
+	{
+		if (strlen(in_format) < 30)
+		{
+			strcpy(in_name, "image.");
+			strcat(in_name, in_format);
+			MagickSetFilename(magick_wand, in_name);
+		}
+                if (strlen(format) < 30)
+                {
+                        strcpy(out_name, "image.");                                                                                                                                                               
+                        strcat(out_name, format);                                                                                                                                                              
+                }
+	}
   status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
   if (status == MagickFalse)
   {
     WandExitMacro(magick_wand);
-    sqlr_new_error ("22023", "IM001", "bif_im_ConvertImageBlob cannot open file");
+    sqlr_new_error ("22023", "IM001", "bif_im_ConvertImageBlob cannot read the blob");
   }
   MagickResetIterator(magick_wand);
   while (MagickNextImage(magick_wand) != MagickFalse)
   {
     status = MagickSetImageFormat(magick_wand,format);
+    MagickSetFilename(magick_wand, out_name);
     if (status == MagickFalse)
     {
         WandExitMacro(magick_wand);
@@ -1170,7 +1318,11 @@ caddr_t bif_im_ConvertImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** a
         return;
     }
   }
-  image_blob = MagickGetImagesBlob(magick_wand, &length);
+  /*MagickResetIterator(magick_wand);
+  if (out_name)                                                                                              
+    status=MagickWriteImages(magick_wand, out_name, MagickTrue);
+  */
+  image_blob = MagickGetImageBlob(magick_wand, &length);
   if (length != 0)
   {
     res = dk_alloc_box (length, DV_BIN);
