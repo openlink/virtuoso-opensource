@@ -266,6 +266,7 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 */
 #define DV_MULTIPLE_VALUES 2
 
+#define DV_NON_BOX 101
 
 #define FIRST_DV_DTP 180
 

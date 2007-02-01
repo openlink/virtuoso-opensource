@@ -41,6 +41,41 @@ void mp_free (mem_pool_t * mp);
 #define LACERATED_POOL
 #endif
 
+#ifdef LACERATED_POOL
+struct mem_pool_s
+{
+  int mp_fill;
+  int mp_size;
+  caddr_t *mp_allocs;
+  size_t mp_bytes;
+#ifdef DEBUG
+  char *mp_alloc_file;
+  int mp_alloc_line;
+#endif
+};
+#else
+struct mem_block_s
+{
+  struct mem_block_s *	 mb_next;
+  size_t mb_fill;
+  size_t mb_size;
+};
+
+typedef struct mem_block_s mem_block_t;
+
+struct mem_pool_s
+{
+  mem_block_t *	mp_first;
+  int	mp_block_size;
+  size_t mp_bytes;
+#ifdef DEBUG
+  char *mp_alloc_file;
+  int mp_alloc_line;
+#endif
+};
+#endif
+
+
 #ifdef DEBUG /* Not MALLOC_DEBUG */
 extern mem_pool_t * dbg_mem_pool_alloc (const char *file, int line);
 #define mem_pool_alloc() dbg_mem_pool_alloc (__FILE__, __LINE__)

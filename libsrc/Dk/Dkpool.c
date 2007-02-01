@@ -35,17 +35,6 @@
 
 #ifdef LACERATED_POOL
 
-struct mem_pool_s
-{
-  int mp_fill;
-  int mp_size;
-  caddr_t *mp_allocs;
-#ifdef DEBUG
-  char *mp_alloc_file;
-  int mp_alloc_line;
-#endif
-};
-
 #ifdef DEBUG /* Not MALLOC_DEBUG */
 mem_pool_t * dbg_mem_pool_alloc (const char *file, int line)
 #else
@@ -95,25 +84,7 @@ void mp_alloc_box_assert (mem_pool_t * mp, caddr_t box)
 
 #else
 
-struct mem_block_s
-{
-  struct mem_block_s *	 mb_next;
-  size_t mb_fill;
-  size_t mb_size;
-};
 
-typedef struct mem_block_s mem_block_t;
-
-
-struct mem_pool_s
-{
-  mem_block_t *	mp_first;
-  int	mp_block_size;
-#ifdef DEBUG
-  char *mp_alloc_file;
-  int mp_alloc_line;
-#endif
-};
 
 #define MP_BLOCK_SIZE (4096 - ALIGN_8((sizeof (mem_block_t))))
 
@@ -173,6 +144,7 @@ caddr_t DBG_NAME(mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t d
   size_t len = ALIGN_4(len1+4);
 #endif
   caddr_t new_alloc = DBG_NAME(mallocp) (DBG_ARGS len, mp);
+  mp->mp_bytes += len;
   if (mp->mp_fill >= mp->mp_size)
     {
       caddr_t *newallocs;
@@ -190,7 +162,8 @@ caddr_t DBG_NAME(mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t d
   ptr = new_alloc;
 #endif
 #else
-  size_t len = ALIGN_8(len1+8);
+  int bh_len = (dtp != DV_NON_BOX ? 8 : 0);
+  size_t len = ALIGN_8(len1+bh_len);
   mem_block_t * mb = NULL;
   mem_block_t * f = mp->mp_first;
   size_t hlen = ALIGN_8((sizeof (mem_block_t))); /* we can have a doubles so structure also must be aligned */
@@ -211,6 +184,7 @@ caddr_t DBG_NAME(mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t d
 	      mb->mb_next = NULL;
 	      mp->mp_first = mb;
 	    }
+	  mp->mp_bytes += mb->mb_size;
 	}
       else
 	{
@@ -219,17 +193,21 @@ caddr_t DBG_NAME(mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t d
 	  mb->mb_fill = hlen;
 	  mb->mb_next = mp->mp_first;
 	  mp->mp_first = mb;
+	  mp->mp_bytes += mb->mb_size;
 	}
     }
   else
     mb = f;
-  ptr = ((dtp_t* ) mb) + mb->mb_fill + 4;
+  ptr = ((dtp_t* ) mb) + mb->mb_fill + (bh_len / 2);
   mb->mb_fill += len;
 #endif
+  if (bh_len)
+    {
   (ptr++)[0] = (dtp_t) (len1 & 0xff);
   (ptr++)[0] = (dtp_t) (len1 >> 8);
   (ptr++)[0] = (dtp_t) (len1 >> 16);
   (ptr++)[0] = dtp;
+    }
   memset (ptr, 0, len1);
   return ((caddr_t) ptr);
 }
@@ -569,7 +547,7 @@ t_sc_list (long n, ...)
 
 void DBG_NAME(mp_set_push) (DBG_PARAMS mem_pool_t *mp, dk_set_t * set, void* elt)
 {
-  s_node_t *s = (s_node_t *) DBG_NAME(mp_alloc_box)(DBG_ARGS mp, sizeof (s_node_t), DV_CUSTOM);
+  s_node_t *s = (s_node_t *) DBG_NAME(mp_alloc_box)(DBG_ARGS mp, sizeof (s_node_t), DV_NON_BOX);
   s->data = elt;
   s->next = *set;
   *set = s;
@@ -578,7 +556,7 @@ void DBG_NAME(mp_set_push) (DBG_PARAMS mem_pool_t *mp, dk_set_t * set, void* elt
 
 dk_set_t DBG_NAME(t_cons) (DBG_PARAMS void* car, dk_set_t cdr)
 {
-  TNEW (s_node_t, s);
+  s_node_t * s = (s_node_t *) t_alloc_box (sizeof (s_node_t), DV_NON_BOX);
   s->data = car;
   s->next = cdr;
   return s;
@@ -611,7 +589,7 @@ void DBG_NAME(t_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
 {
   if (!dk_set_member (*set, item))
     {
-      TNEW (s_node_t, newn);
+      s_node_t * newn = (s_node_t *) t_alloc_box (sizeof (s_node_t), DV_NON_BOX);
       newn->next = *set;
       newn->data = item;
       *set = newn;
@@ -718,7 +696,7 @@ dk_set_t DBG_NAME(t_set_copy) (DBG_PARAMS dk_set_t s)
   dk_set_t *last = &r;
   while (s)
     {
-      dk_set_t n = (dk_set_t) DBG_T_ALLOC_BOX (sizeof (s_node_t), DV_CUSTOM);
+      dk_set_t n = (dk_set_t) DBG_T_ALLOC_BOX (sizeof (s_node_t), DV_NON_BOX);
       *last = n;
       n->data = s->data;
       n->next = NULL;

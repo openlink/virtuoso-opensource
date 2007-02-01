@@ -348,6 +348,19 @@ box_non_copiable (caddr_t b)
   return NULL;
 }
 
+caddr_t
+box_copy_non_box (caddr_t b)
+{
+  GPF_T;
+  return NULL;
+}
+
+caddr_t
+box_mp_copy_non_box (mem_pool_t * mp, caddr_t b)
+{
+  GPF_T;
+  return NULL;
+}
 
 void
 dk_mem_hooks (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit)
@@ -1855,6 +1868,9 @@ caddr_t uname___empty;
 void dk_box_initialize(void)
 {
   dk_mem_hooks (DV_MEM_WRAPPER, box_mem_wrapper_copy_hook, box_mem_wrapper_destr_hook, 0);
+#ifdef MALLOC_DEBUG
+  dk_mem_hooks_2 (DV_NON_BOX, box_copy_non_box, NULL, 0, box_mp_copy_non_box);
+#endif  
   uname_mutex = mutex_allocate ();
   if (NULL == uname_mutex)
     GPF_T;
