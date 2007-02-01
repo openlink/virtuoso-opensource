@@ -19,12 +19,12 @@
 #  
 #  
 
-nodist_vad_DATA = isparql_dav.vad
+nodist_vad_DATA = sparql_demo_dav.vad
 
 CLEANFILES = \
-	make_isparql_vad.log \
-	make_isparql_vad.xml \
-	isparql_dav.vad \
+	make_sparql_demo_vad.log \
+	make_sparql_demo_vad.xml \
+	sparql_demo_dav.vad \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.lck \
@@ -33,7 +33,7 @@ CLEANFILES = \
 	virtuoso.tdb \
 	virtuoso.trx
 
-isparql_dav.vad: $(EXTRA_DIST)
+sparql_demo_dav.vad: $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
 
 clean-local:
