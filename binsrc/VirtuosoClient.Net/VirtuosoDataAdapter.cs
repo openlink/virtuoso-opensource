@@ -70,14 +70,20 @@ namespace OpenLink.Data.Virtuoso
          + VirtuosoConstants.VirtuosoDesignSN)]
     [ToolboxBitmap(typeof(VirtuosoDataAdapter), "OpenLink.Data.VirtuosoClient.VirtuosoDataAdapter.bmp") ]
 #endif
+#if ADONET2
+    public sealed class VirtuosoDataAdapter : DbDataAdapter
+#else
     public sealed class VirtuosoDataAdapter : DbDataAdapter, IDbDataAdapter
+#endif
     {
       internal readonly static BooleanSwitch Switch = 
 	  new BooleanSwitch ("VirtuosoClient.VirtuosoDataAdaper", "Marshaling");
+#if !ADONET2
         private VirtuosoCommand selectCommand;
         private VirtuosoCommand insertCommand;
         private VirtuosoCommand updateCommand;
         private VirtuosoCommand deleteCommand;
+#endif
 
         /*
                  * Inherit from Component through DbDataAdapter. The event
@@ -107,72 +113,142 @@ namespace OpenLink.Data.Virtuoso
         {
         }
 
-#if !ADONET2
+#if ADONET2
+        public new VirtuosoCommand SelectCommand 
+        {
+            get { return (VirtuosoCommand) base.SelectCommand; }
+            set { base.SelectCommand = value; }
+        }
+#else
         public VirtuosoCommand SelectCommand 
         {
             get { return selectCommand; }
             set { selectCommand = value; }
         }
-#endif
 
         IDbCommand IDbDataAdapter.SelectCommand 
         {
             get { return selectCommand; }
             set { selectCommand = (VirtuosoCommand) value; }
         }
+#endif
 
-#if !ADONET2
+#if ADONET2
+        public new VirtuosoCommand InsertCommand 
+        {
+            get { return (VirtuosoCommand) base.InsertCommand; }
+            set { base.InsertCommand = value; }
+        }
+#else
         public VirtuosoCommand InsertCommand 
         {
             get { return insertCommand; }
             set { insertCommand = value; }
         }
-#endif
 
         IDbCommand IDbDataAdapter.InsertCommand 
         {
             get { return insertCommand; }
             set { insertCommand = (VirtuosoCommand) value; }
         }
+#endif
 
-#if !ADONET2
+#if ADONET2
+        public new VirtuosoCommand UpdateCommand 
+        {
+            get { return (VirtuosoCommand) base.UpdateCommand; }
+            set { base.UpdateCommand = value; }
+        }
+#else
         public VirtuosoCommand UpdateCommand 
         {
             get { return updateCommand; }
             set { updateCommand = value; }
         }
-#endif
 
         IDbCommand IDbDataAdapter.UpdateCommand 
         {
             get { return updateCommand; }
             set { updateCommand = (VirtuosoCommand) value; }
         }
+#endif
 
-#if !ADONET2
+#if ADONET2
+        public new VirtuosoCommand DeleteCommand 
+        {
+            get { return (VirtuosoCommand) base.DeleteCommand; }
+            set { base.DeleteCommand = value; }
+        }
+#else
         public VirtuosoCommand DeleteCommand 
         {
             get { return deleteCommand; }
             set { deleteCommand = value; }
         }
-#endif
 
         IDbCommand IDbDataAdapter.DeleteCommand 
         {
             get { return deleteCommand; }
             set { deleteCommand = (VirtuosoCommand) value; }
         }
+#endif
 
-#if MONO
+#if MONO && !ADONET2
 		ITableMappingCollection IDataAdapter.TableMappings
 		{
 			get { return base.TableMappings; }
 		}
 #endif
 
-        /*
-                 * Implement abstract methods inherited from DbDataAdapter.
-                 */
+#if ADONET2
+    //
+    // Event handling implemented using generic event args, event handlers.
+    //
+        ///<summary>
+        /// Row updating event handler
+        ///</summary>
+        public event EventHandler<RowUpdatingEventArgs> RowUpdating
+        {
+            add { Events.AddHandler(EventRowUpdating, value); }
+            remove { Events.RemoveHandler(EventRowUpdating, value); }
+        }
+
+        ///<summary>
+        /// Row updated event handler
+        ///</summary>
+        public event EventHandler<RowUpdatedEventArgs> RowUpdated
+        {
+            add { Events.AddHandler(EventRowUpdated, value); }
+            remove { Events.RemoveHandler(EventRowUpdated, value); }
+        }
+
+        /// <summary>
+        /// Raised by the underlying DbDataAdapter when a row is being updated
+        /// </summary>
+        protected override void OnRowUpdating(RowUpdatingEventArgs value)
+        {
+            EventHandler<RowUpdatingEventArgs> handler =
+					Events[EventRowUpdating] as
+					EventHandler<RowUpdatingEventArgs>;
+            if (handler != null)
+                handler(this, value);
+        }
+
+        /// <summary>
+        /// Raised by the underlying DbDataAdapter after a row has been
+        //updated
+        /// </summary>
+        protected override void OnRowUpdated(RowUpdatedEventArgs value)
+        {
+            EventHandler<RowUpdatedEventArgs> handler =
+					Events[EventRowUpdated]as
+					EventHandler<RowUpdatedEventArgs>;
+            if (handler != null)
+                handler(this, (RowUpdatedEventArgs) value);
+        }
+
+#else
+
         override protected RowUpdatedEventArgs CreateRowUpdatedEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
         {
             return new VirtuosoRowUpdatedEventArgs(dataRow, command, statementType, tableMapping);
@@ -214,6 +290,8 @@ namespace OpenLink.Data.Virtuoso
             add { Events.AddHandler(EventRowUpdated, value); }
             remove { Events.RemoveHandler(EventRowUpdated, value); }
         }
+#endif
+
 /*
         public override DataTable [] FillSchema (DataSet ds, SchemaType schemaType)
         {
@@ -229,6 +307,11 @@ namespace OpenLink.Data.Virtuoso
         }
 */
     }
+
+#if !ADONET2
+    //
+    // Support classes for provider specific event handling
+    //
 
     public delegate void VirtuosoRowUpdatingEventHandler(object sender, VirtuosoRowUpdatingEventArgs e);
     public delegate void VirtuosoRowUpdatedEventHandler(object sender, VirtuosoRowUpdatedEventArgs e);
@@ -264,4 +347,5 @@ namespace OpenLink.Data.Virtuoso
             get  { return (VirtuosoCommand)base.Command; }
         }
     }
+#endif
 }

@@ -379,6 +379,12 @@ namespace OpenLink.Data.Virtuoso
 				row[isRowVersion] = columns[i].IsRowVersion;
 				row[isUnique] = columns[i].IsUnique;
 				row[isKey] = columns[i].IsKey;
+                // Assume key columns are not nullable.
+                // If IDataReader.GetSchema table reports a key column as
+                // IsKeyColumn==true but with AllowDBNull==true, 
+                // DataRowCollection.Find() reports that the table 
+                // associated with the parent DataTable doesn't
+                // have a primary key.
 				row[isAutoIncrement] = columns[i].IsAutoIncrement;
 				row[baseSchemaName] = columns[i].baseSchemaName;
 				row[baseCatalogName] = columns[i].baseCatalogName;
@@ -388,6 +394,13 @@ namespace OpenLink.Data.Virtuoso
 				else
 					row[baseColumnName] = columns[i].baseColumnName;
 				row[isHidden] = columns[i].IsHidden;
+                // Virtuoso returns the key as an additional column with 
+                // the IsHiddden property set to true.  However, if there
+                // are two columns with IsKey set to true I get errors saying
+                // that there is not primary key for the table.  This hack 
+                // fixes the problem...
+                if ((bool)row[isHidden])
+                   row[isKey] = false;
 				rows.Add (row);
 				row.AcceptChanges ();
 			}
@@ -812,7 +825,11 @@ namespace OpenLink.Data.Virtuoso
 			column.lobOffset = 0;
 		}
 
+#if ADONET2
+		protected override void Dispose (bool disposing)
+#else
 		private void Dispose (bool disposing)
+#endif
 		{
 			if (disposing)
 				Close ();
@@ -828,7 +845,7 @@ namespace OpenLink.Data.Virtuoso
           }
         }
 
-        public override void Dispose ()
+        public new void Dispose ()
         {
         }
 

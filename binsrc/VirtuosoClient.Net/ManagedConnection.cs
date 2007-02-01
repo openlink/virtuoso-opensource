@@ -85,6 +85,125 @@ namespace OpenLink.Data.Virtuoso
 			get;
 		}
 
+#if ADONET2
+        public override string ServerVersion
+        {
+            get
+            {
+                string version = "";
+                ManagedCommand cmd = new ManagedCommand (this);
+                cmd.SetParameters (null);
+                try
+                {
+                    cmd.Execute ("select sys_stat ('st_dbms_ver')");
+                    if (cmd.Fetch ())
+                    {
+					    object data = cmd.GetColumnData (0, cmd.GetColumnMetaData ());
+					    if (data != null && data is string)
+						  version = (string) data;
+                    }
+                }
+                finally
+                {
+                    cmd.CloseCursor (true);
+                    cmd.Dispose ();
+                }
+                return version;
+            }
+        }
+
+        public override string ServerName
+        {
+            get
+            {
+                string name = "";
+                ManagedCommand cmd = new ManagedCommand (this);
+                cmd.SetParameters (null);
+                try
+                {
+                    cmd.Execute ("select sys_stat ('st_dbms_name')");
+                    if (cmd.Fetch ())
+                    {
+					    object data = cmd.GetColumnData (0, cmd.GetColumnMetaData ());
+					    if (data != null && data is string)
+						  name = (string) data;
+                    }
+                }
+                finally
+                {
+                    cmd.CloseCursor (true);
+                    cmd.Dispose ();
+                }
+                return name;
+            }
+        }
+
+        public override CLI.IdentCase IdentCase
+        {
+            get
+            {
+                string caseMode = "";
+                ManagedCommand cmd = new ManagedCommand (this);
+                cmd.SetParameters (null);
+                try
+                {
+                    cmd.Execute ("select sys_stat ('st_case_mode')");
+                    if (cmd.Fetch ())
+                    {
+					    object data = cmd.GetColumnData (0, cmd.GetColumnMetaData ());
+					    if (data != null && data is string)
+						  caseMode = (string) data;
+                    }
+                }
+                finally
+                {
+                    cmd.CloseCursor (true);
+                    cmd.Dispose ();
+                }
+                if (caseMode == "2")
+                  return CLI.IdentCase.SQL_IC_MIXED;
+                else if (caseMode == "1")
+                  return CLI.IdentCase.SQL_IC_UPPER;
+                else
+                  return CLI.IdentCase.SQL_IC_SENSITIVE;
+            }
+        }
+
+        public override CLI.IdentCase QuotedIdentCase
+        {
+            get
+            {
+                return CLI.IdentCase.SQL_IC_SENSITIVE;
+            }
+        }
+
+        public override string UserName
+        {
+            get
+            {
+                string name = "";
+                ManagedCommand cmd = new ManagedCommand (this);
+                cmd.SetParameters (null);
+                try
+                {
+                    cmd.Execute ("select username()");
+                    if (cmd.Fetch ())
+                    {
+					    object data = cmd.GetColumnData (0, cmd.GetColumnMetaData ());
+					    if (data != null && data is string)
+						  name = (string) data;
+                    }
+                }
+                finally
+                {
+                    cmd.CloseCursor (true);
+                    cmd.Dispose ();
+                }
+                return name;
+            }
+        }
+
+#endif
 		public override void Close ()
 		{
 			if (futures != null)
@@ -185,7 +304,7 @@ namespace OpenLink.Data.Virtuoso
 				}
 				finally
 				{
-					cmd.CloseCursor ();
+					cmd.CloseCursor (true);
 					cmd.Dispose ();
 				}
 			}
@@ -209,7 +328,7 @@ namespace OpenLink.Data.Virtuoso
 			}
 			finally
 			{
-				cmd.CloseCursor ();
+				cmd.CloseCursor (true);
 				cmd.Dispose ();
 			}
 		}
@@ -318,7 +437,7 @@ namespace OpenLink.Data.Virtuoso
 			}
 			finally
 			{
-				cmd.CloseCursor ();
+				cmd.CloseCursor (true);
 				cmd.Dispose ();
 			}
 			return null;

@@ -161,8 +161,11 @@ namespace OpenLink.Data.Virtuoso
 					port = Int32.Parse (ds.Substring (colonIndex + 1));
 				}
 			}
-
+#if !ADONET2
 			IPAddress address = Dns.Resolve (host).AddressList[0];
+#else			
+			IPAddress address = Dns.GetHostEntry (host).AddressList[0];
+#endif			
 			return new IPEndPoint (address, port);
 		}
 

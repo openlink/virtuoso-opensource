@@ -58,7 +58,7 @@ namespace OpenLink.Data.Virtuoso
 		}
 
 #if ADONET2
-		public override void Dispose ()
+		public new void Dispose ()
 #else
 		public void Dispose ()
 #endif
@@ -69,16 +69,24 @@ namespace OpenLink.Data.Virtuoso
 
 #if ADONET2
 		protected override DbConnection DbConnection
-#else
-		public VirtuosoConnection Connection
-#endif
 		{
 			get { return connection; }
 		}
+#else
 
 		IDbConnection IDbTransaction.Connection
 		{
 			get { return connection; }
+		}
+#endif
+
+#if MONO && !ADONET2
+		public VirtuosoConnection Connection
+#else
+		public new VirtuosoConnection Connection
+#endif
+		{
+		        get { return connection; }
 		}
 
 #if ADONET2
@@ -118,7 +126,11 @@ namespace OpenLink.Data.Virtuoso
 			ended = true;
 		}
 
+#if ADONET2
+		protected override void Dispose (bool disposing)
+#else
 		private void Dispose (bool disposing)
+#endif
 		{
 			if (disposing)
 			{
@@ -126,6 +138,9 @@ namespace OpenLink.Data.Virtuoso
 					Rollback ();
 			}
 			connection = null;
+#if ADONET2
+            base.Dispose(disposing);
+#endif
 		}
 	}
 }

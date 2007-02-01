@@ -40,6 +40,9 @@ namespace OpenLink.Data.Virtuoso
 
 		private object distributedTransaction;
 		private object distributedTransactionId;
+        private string serverName;
+        private CLI.IdentCase identCase;
+        private CLI.IdentCase quotedIdentCase;
 
 		~InnerConnectionBase ()
 		{
@@ -109,6 +112,7 @@ namespace OpenLink.Data.Virtuoso
 		public abstract void SetCurrentCatalog (string name);
 
         internal string dbgen = Values.VERSION;
+#if !ADONET2
         public string ServerVersion
         {
             get
@@ -116,5 +120,12 @@ namespace OpenLink.Data.Virtuoso
                 return dbgen.ToString();
             }
         }
+#else
+        public abstract string ServerVersion { get; }
+        public abstract string ServerName { get; }
+        public abstract CLI.IdentCase IdentCase { get ;}
+        public abstract CLI.IdentCase QuotedIdentCase { get ;}
+        public abstract string UserName { get; }
+#endif
     }
 }

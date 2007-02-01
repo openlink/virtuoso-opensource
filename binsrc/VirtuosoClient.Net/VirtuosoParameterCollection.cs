@@ -369,21 +369,36 @@ namespace OpenLink.Data.Virtuoso
         }
 
 
-        protected override int CheckName(string parameterName)
-        {
-            //TODO: full implementation needed
-            throw new NotImplementedException();
-        }
+// jch ???
+//        protected override int CheckName(string parameterName)
+//        {
+//            //TODO: full implementation needed
+//            throw new NotImplementedException();
+//        }
 
 		protected override DbParameter GetParameter (int index)
 		{
 				return (VirtuosoParameter) items[index];
         }
+
+		protected override DbParameter GetParameter (string parameterName)
+		{
+				int index = IndexOf (parameterName);
+				DbParameter ret = index == -1 ? null : this [index];
+				return ret;
+        }
+
 		protected override void SetParameter (int index, DbParameter value)
-			{
+		{
 				CheckParameter (value);
 				items[index] = value;
-			}
+		}
+
+		protected override void SetParameter (string parameterName, DbParameter value)
+		{
+				CheckParameter (value);
+				this [IndexOf(parameterName)] = (VirtuosoParameter) value;
+		}
 #endif
         #endregion
 

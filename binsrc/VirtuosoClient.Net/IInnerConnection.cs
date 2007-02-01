@@ -87,5 +87,12 @@ namespace OpenLink.Data.Virtuoso
         {
             get;
         }
+
+#if ADONET2
+        String ServerName { get; }
+        CLI.IdentCase IdentCase { get; }
+        CLI.IdentCase QuotedIdentCase { get; }
+		string UserName { get; }
+#endif
     }
 }

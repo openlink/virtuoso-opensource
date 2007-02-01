@@ -49,7 +49,7 @@ namespace OpenLink.Data.Virtuoso
 		void Execute ();
 		bool Fetch ();
 		bool GetNextResult ();
-		void CloseCursor ();
+		void CloseCursor (bool isExecuted);
 
 		int GetRowCount ();
 		ColumnData[] GetColumnMetaData ();

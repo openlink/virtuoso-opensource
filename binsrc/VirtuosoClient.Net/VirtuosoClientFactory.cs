@@ -47,6 +47,7 @@ namespace OpenLink.Data.Virtuoso
 
         public readonly static VirtuosoClientFactory Instance = new VirtuosoClientFactory ();
         #region DbProviderFactory overrides
+#if false//jch
 	  public override DbProviderSupportedClasses SupportedClasses {
 	    get
 	      {
@@ -65,6 +66,7 @@ namespace OpenLink.Data.Virtuoso
 	      }
 
 	  }
+#endif
 
 	  public override DbCommand CreateCommand ()
 	    {

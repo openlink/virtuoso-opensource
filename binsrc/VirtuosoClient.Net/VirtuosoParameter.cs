@@ -314,19 +314,20 @@ namespace OpenLink.Data.Virtuoso
         }
 
         //TODO: check/extend this imp
-        int offset;
-        public override int Offset
-        {
-            get
-            {
-                return offset;
-            }
-
-            set
-            {
-                offset = value;
-            }
-        }
+// jch ???
+//        int offset;
+//        public override int Offset
+//        {
+//            get
+//            {
+//                return offset;
+//            }
+//
+//            set
+//            {
+//                offset = value;
+//            }
+//        }
 
         //TODO: check/extend this imp
         bool sourceColumnNullMapping;
@@ -344,24 +345,26 @@ namespace OpenLink.Data.Virtuoso
         }
 
 
-        public override void CopyTo(DbParameter destination)
-        {
-            VirtuosoParameter p = (VirtuosoParameter)destination;
-            p.paramName = paramName;
-            if (paramData != null && paramData is ICloneable)
-                p.paramData = ((ICloneable)paramData).Clone();
-            else
-                p.paramData = paramData;
-            p.paramType = paramType;
-            p.bufferType = bufferType;
-            p.direction = direction;
-            p.isNullable = isNullable;
-            p.precision = precision;
-            p.scale = scale;
-            p.size = size;
-            p.sourceColumn = sourceColumn;
-            p.sourceVersion = sourceVersion;
-        }
+// jch ~??
+//
+//        public override void CopyTo(DbParameter destination)
+//        {
+//            VirtuosoParameter p = (VirtuosoParameter)destination;
+//            p.paramName = paramName;
+//            if (paramData != null && paramData is ICloneable)
+//                p.paramData = ((ICloneable)paramData).Clone();
+//            else
+//                p.paramData = paramData;
+//            p.paramType = paramType;
+//            p.bufferType = bufferType;
+//            p.direction = direction;
+//            p.isNullable = isNullable;
+//            p.precision = precision;
+//            p.scale = scale;
+//            p.size = size;
+//            p.sourceColumn = sourceColumn;
+//            p.sourceVersion = sourceVersion;
+//        }
 #endif
 #endregion
 	}

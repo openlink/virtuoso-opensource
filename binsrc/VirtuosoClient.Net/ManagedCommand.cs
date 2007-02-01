@@ -301,13 +301,17 @@ namespace OpenLink.Data.Virtuoso
 			return (rc == CLI.ReturnCode.SQL_SUCCESS);
 		}
 
-		public void CloseCursor ()
+		public void CloseCursor (bool isExecuted)
 		{
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "ManagedCommand.CloseCursor ()");
 
-			currentRow = prefetchRow = null;
-			if (!isLastRow)
-				Cancel ();
+            if (isExecuted)
+            {
+			  currentRow = prefetchRow = null;
+			  if (!isLastRow)
+				  Cancel ();
+            }
+
 			if (pendingFuture != null)
 			{
 				connection.futures.Remove (pendingFuture);

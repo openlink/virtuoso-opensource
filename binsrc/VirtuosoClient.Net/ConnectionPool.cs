@@ -46,6 +46,7 @@ namespace OpenLink.Data.Virtuoso
 		private int lifetime;
 		private Timer expirationTimer;
 		private ResourcePool dtcPool;
+		private DateTime lastCleared = DateTime.MinValue;
 
 		private static Hashtable poolMap;
 
@@ -61,6 +62,11 @@ namespace OpenLink.Data.Virtuoso
 
 			if (options.Enlist)
 				dtcPool = new ResourcePool (new ResourcePool.TransactionEndDelegate (this.DistributedTransactionEnd));
+		}
+
+		~ConnectionPool ()
+		{
+			ClearAllPools();
 		}
 
 		internal static ConnectionPool GetPool (ConnectionOptions options)
@@ -92,6 +98,54 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
+		internal static void ClearPool (string connectionString)
+		{
+            lock (typeof(ConnectionPool))
+            {
+                // Find the pool identified by connectionString
+                if (poolMap == null)
+                    return;
+                ConnectionPool pool = (ConnectionPool)poolMap[connectionString];
+                if (pool == null)
+                    return;
+                pool.ClearPool();
+            }
+		}
+
+		internal static void ClearAllPools ()
+		{
+            lock (typeof(ConnectionPool))
+            {
+                if (poolMap == null)
+                    return;
+
+                IDictionaryEnumerator iter = poolMap.GetEnumerator();
+                while (iter.MoveNext())
+                {
+                    ConnectionPool pool = (ConnectionPool) iter.Value;
+                    if (pool != null)
+                        pool.ClearPool();
+                }
+            }
+		}
+
+		private void ClearPool ()
+		{
+            lock (this)
+            {
+                for (int i = --size; i >= 0; i--)
+                {
+				    pool[i].Close ();
+                }
+                size = 0;
+
+                // Set lastCleared so that any connections in use at the time
+                // of this call, which were drawn from this pool, are closed
+                // when they are returned via PutConnection.
+                lastCleared = DateTime.Now;
+            }
+		}
+
 		internal IInnerConnection GetConnection (ConnectionOptions options, VirtuosoConnection connection)
 		{
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "ConnectionPool.GetConnection ()");
@@ -116,10 +170,7 @@ namespace OpenLink.Data.Virtuoso
 					for (int i = 0; i < minSize; i++)
 					{
 						innerConnection = connection.CreateInnerConnection (options, false);
-						if (options.ConnectionLifetime == 0)
-							innerConnection.TimeStamp = DateTime.MinValue;
-						else
-							innerConnection.TimeStamp = DateTime.Now;
+						innerConnection.TimeStamp = DateTime.Now;
 						PutConnection (innerConnection);
 					}
 				}
@@ -131,10 +182,7 @@ namespace OpenLink.Data.Virtuoso
 			if (innerConnection == null)
 			{
 				innerConnection = connection.CreateInnerConnection (options, true);
-				if (options.ConnectionLifetime == 0)
-					innerConnection.TimeStamp = DateTime.MinValue;
-				else
-					innerConnection.TimeStamp = DateTime.Now;
+				innerConnection.TimeStamp = DateTime.Now;
 			}
 			else
 			{
@@ -151,6 +199,14 @@ namespace OpenLink.Data.Virtuoso
 		internal void PutConnection (IInnerConnection innerConnection)
 		{
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "ConnectionPool.PutConnection ()");
+
+            // Was connection in use when the pool was last cleared?
+            // If so, don't return it to the pool.
+            if (innerConnection.TimeStamp < lastCleared)
+            {
+				innerConnection.Close ();
+                return;
+            }
 
 			innerConnection.OuterConnectionWeakRef = null;
 			if (CanPool (innerConnection))

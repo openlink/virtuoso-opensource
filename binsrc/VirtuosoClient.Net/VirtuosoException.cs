@@ -23,6 +23,7 @@
 //
 
 using System;
+using System.Data.Common;
 using System.Text;
 using System.Runtime.InteropServices;
 
@@ -37,7 +38,11 @@ namespace OpenLink.Data.Virtuoso
 	/// <summary>
 	/// Summary description for VirtuosoException.
 	/// </summary>
+#if ADONET2
+	public sealed class VirtuosoException : DbException
+#else
 	public sealed class VirtuosoException : SystemException
+#endif
 	{
 		CLI.ReturnCode returnCode;
 		VirtuosoErrorCollection errors;

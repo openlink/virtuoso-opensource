@@ -24,6 +24,7 @@
 
 using System;
 using System.Collections;
+using System.Configuration;
 using System.Diagnostics;
 using System.EnterpriseServices;
 using System.Runtime.InteropServices;
@@ -94,7 +95,11 @@ namespace OpenLink.Data.Virtuoso
 
 		static OdbcConnection ()
 		{
+#if MONO || !ADONET2
 			string d = System.Configuration.ConfigurationSettings.AppSettings["driver"];
+#else
+			string d = System.Configuration.ConfigurationManager.AppSettings["driver"];
+#endif
 			if (d != null && d != "")
 				driver = d;
 
@@ -145,6 +150,59 @@ namespace OpenLink.Data.Virtuoso
 			else
 				return OdbcErrors.CreateErrors (CLI.HandleType.SQL_HANDLE_DBC, hdbc);
 		}
+
+#if ADONET2
+// jch todo
+        public override string ServerVersion
+        {
+            get
+            {
+                string version = "";
+                return version;
+            }
+        }
+
+        public override string ServerName
+        {
+            get
+            {
+                string name = "";
+                return name;
+            }
+        }
+
+        public override CLI.IdentCase IdentCase
+        {
+            get
+            {
+                int caseMode = 0;
+                if (caseMode == 2)
+                  return CLI.IdentCase.SQL_IC_MIXED;
+                else if (caseMode == 1)
+                  return CLI.IdentCase.SQL_IC_UPPER;
+                else
+                  return CLI.IdentCase.SQL_IC_SENSITIVE;
+            }
+        }
+
+        public override CLI.IdentCase QuotedIdentCase
+        {
+            get
+            {
+                return CLI.IdentCase.SQL_IC_SENSITIVE;
+            }
+        }
+
+        public override string UserName
+        {
+            get
+            {
+                string username = "";
+                return username;
+            }
+        }
+
+#endif
 
 		public override bool IsValid ()
 		{

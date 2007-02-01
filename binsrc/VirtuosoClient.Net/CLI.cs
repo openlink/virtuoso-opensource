@@ -308,7 +308,8 @@ namespace OpenLink.Data.Virtuoso
 
 		internal enum SqlType
 		{
-			SQL_UNKNOWN_TYPE = 0,
+			SQL_UNKNOWN_TYPE = -1,
+			SQL_ALL_TYPES = 0,
 			SQL_CHAR = 1,
 			SQL_NUMERIC = 2,
 			SQL_DECIMAL = 3,
@@ -391,6 +392,19 @@ namespace OpenLink.Data.Virtuoso
 			SQL_NULLABLE_UNKNOWN = 2
 		};
 
+        internal enum ProcedureType
+        {
+            SQL_PT_UNKNOWN = 0,
+            SQL_PT_PROCEDURE = 1,
+            SQL_PT_FUNCTION = 2
+        };
+
+        internal enum IndexType
+        {
+            SQL_INDEX_UNIQUE = 0,
+            SQL_INDEX_ALL = 1
+        };
+
 		internal enum SetPosOp
 		{
 			SQL_POSITION = 0,
@@ -415,6 +429,56 @@ namespace OpenLink.Data.Virtuoso
 			SQL_FETCH_ABSOLUTE = 5,
 			SQL_FETCH_RELATIVE = 6,
 		}
+
+        internal enum Searchable
+        {
+            SQL_PRED_NONE = 0,
+            SQL_PRED_CHAR = 1,
+            SQL_PRED_BASIC = 2,
+            SQL_PRED_SEARCHABLE = 3
+        };
+
+        internal enum GroupBy
+        {
+            SQL_GB_NOT_SUPPORTED = 0,
+            SQL_GB_GROUP_BY_EQUALS_SELECT = 1,
+            SQL_GB_GROUP_BY_CONTAINS_SELECT = 2,
+            SQL_GB_NO_RELATION = 3,
+            SQL_GB_COLLATE = 4
+        };
+
+        [Flags]
+        internal enum OuterJoin
+        {
+            SQL_OJ_LEFT =               0x00000001,
+            SQL_OJ_RIGHT =              0x00000002,
+            SQL_OJ_FULL =               0x00000004,
+            SQL_OJ_NESTED =             0x00000008,
+            SQL_OJ_NOT_ORDERED =        0x00000010,
+            SQL_OJ_INNER =              0x00000020,
+            SQL_OJ_ALL_COMPARISON_OPS = 0x00000040
+        };
+
+        internal enum IdentifierType
+        {
+            SQL_BEST_ROWID = 1,
+            SQL_ROWVER = 2
+        };
+
+        internal enum Scope
+        {
+            SQL_SCOPE_CURROW = 0,
+            SQL_SCOPE_TRANSACTION = 1,
+            SQL_SCOPE_SESSION = 2
+        };
+
+        internal enum IdentCase 
+        {
+            SQL_IC_UPPER = 1,
+            SQL_IC_LOWER = 2,
+            SQL_IC_SENSITIVE = 3,
+            SQL_IC_MIXED = 4,
+        }
 
 		internal static readonly IntPtr SQL_NULL_HANDLE = new IntPtr(0);
 

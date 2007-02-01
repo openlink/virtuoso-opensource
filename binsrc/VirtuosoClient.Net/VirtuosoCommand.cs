@@ -28,7 +28,7 @@ using System.Data.Common;
 
 using System.Diagnostics;
 using System.Text;
-#if (!MONO) // for now Mono doesn't have an IDE
+#if (!MONO || ADONET2) // for now Mono doesn't have an IDE
 using System.ComponentModel;
 using System.Drawing;
 #endif
@@ -41,7 +41,7 @@ namespace OpenLink.Data.VirtuosoClient
 namespace OpenLink.Data.Virtuoso
 #endif
 {
-#if (!MONO) // for now Mono doesn't have an IDE
+#if (!MONO || ADONET2) // for now Mono doesn't have an IDE
     [ToolboxBitmap(typeof(VirtuosoCommand), "OpenLink.Data.VirtuosoClient.VirtuosoCommand.bmp") ]
     [ToolboxItem(true)]
     [DesignTimeVisible(true)]
@@ -543,12 +543,12 @@ namespace OpenLink.Data.Virtuoso
 
 		private void CloseCursor (bool keepResults, VirtuosoDataReader reader)
 		{
-			if (!isExecuted)
-				return;
-
-			if (keepResults && commandType == CommandType.StoredProcedure)
-				innerCommand.GetParameters ();
-			innerCommand.CloseCursor ();
+			if (isExecuted)
+            {
+			  if (keepResults && commandType == CommandType.StoredProcedure)
+				  innerCommand.GetParameters ();
+            }
+			innerCommand.CloseCursor (isExecuted);
 
 			isExecuted = false;
 		}
@@ -608,7 +608,7 @@ namespace OpenLink.Data.Virtuoso
 		}
                 private bool m_design_time_visible = false;
 
-#if !(MONO)
+#if (!MONO || ADONET2)
                 [Browsable(false)]
                 [DefaultValue(true)]
                 [DesignOnly(true)]

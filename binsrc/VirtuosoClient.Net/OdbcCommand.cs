@@ -488,8 +488,10 @@ namespace OpenLink.Data.Virtuoso
 			return (rc == CLI.ReturnCode.SQL_SUCCESS);
 		}
 
-		public void CloseCursor ()
+		public void CloseCursor (bool isExecuted)
 		{
+            if (!isExecuted)
+              return;
 			CLI.ReturnCode rc = (CLI.ReturnCode) CLI.SQLFreeStmt (hstmt, (ushort) CLI.FreeStmtOption.SQL_CLOSE);
 			if (rc != CLI.ReturnCode.SQL_SUCCESS && rc != CLI.ReturnCode.SQL_NO_DATA)
 				Diagnostics.HandleResult (rc, this, outerCommand.Connection);

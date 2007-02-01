@@ -42,6 +42,7 @@ namespace OpenLink.Data.Virtuoso
 		internal abstract class Option
 		{
 			internal abstract void Set (string settingString);
+			internal abstract string Get ();
 		};
 
 		private sealed class StringOption : Option
@@ -49,6 +50,11 @@ namespace OpenLink.Data.Virtuoso
 			internal override void Set (string settingString)
 			{
 				setting = settingString;
+			}
+
+			internal override string Get ()
+			{
+				return setting;
 			}
 
 			internal string setting;
@@ -66,6 +72,11 @@ namespace OpenLink.Data.Virtuoso
 				setting = int.Parse (settingString);
 			}
 
+			internal override string Get ()
+			{
+				return setting.ToString();
+			}
+
 			internal int setting;
                     public override string ToString()
                     {
@@ -81,6 +92,11 @@ namespace OpenLink.Data.Virtuoso
 				setting = bool.Parse (settingString);
 			}
 
+			internal override string Get ()
+			{
+				return setting.ToString();
+			}
+
 			internal bool setting;
                     public override string ToString()
                     {
@@ -89,10 +105,43 @@ namespace OpenLink.Data.Virtuoso
 
 		}
 
-		private const int DEFAULT_CONN_TIMEOUT = 15;
-		private const int DEFAULT_CONN_LIFETIME = 0;
-		private const int DEFAULT_MIN_POOL_SIZE = 0;
-		private const int DEFAULT_MAX_POOL_SIZE = 100;
+		internal const int DEFAULT_CONN_TIMEOUT = 15;
+		internal const int DEFAULT_CONN_LIFETIME = 0;
+		internal const int DEFAULT_MIN_POOL_SIZE = 0;
+		internal const int DEFAULT_MAX_POOL_SIZE = 100;
+#if ODBC_CLIENT || CLIENT
+		internal const bool DEFAULT_USE_ODBC = true;
+#else
+		internal const bool DEFAULT_USE_ODBC = false;
+#endif
+		internal const bool DEFAULT_PERSIST_SECURITY_INFO = false;
+		internal const bool DEFAULT_POOLING = true;
+		internal const bool DEFAULT_ENLIST = true;
+
+		internal const string ODBC = "ODBC";
+		internal const string HOST = "HOST";
+		internal const string DATASOURCE = "Data Source";
+		internal const string SERVER = "Server";
+		internal const string ADDRESS = "Address";
+		internal const string NETWORKADDRESS = "Network Address";
+		internal const string UID = "UID";
+		internal const string USER_ID = "User ID";
+		internal const string USERID = "UserId";
+		internal const string PWD = "PWD";
+		internal const string PASSWORD = "Password";
+		internal const string DATABASE = "DATABASE";
+		internal const string INITIALCATALOG = "Initial Catalog";
+		internal const string CHARSET = "Charset";
+		internal const string ENCRYPT = "Encrypt";
+		internal const string PERSISTSECURITYINFO = "PersistSecurityInfo";
+		internal const string PERSIST_SECURITY_INFO = "Persist Security Info";
+		internal const string CONNECTTIMEOUT = "Connect Timeout";
+		internal const string CONNECTIONTIMEOUT = "Connection Timeout";
+		internal const string CONNECTIONLIFETIME = "Connection Lifetime";
+		internal const string MINPOOLSIZE = "Min Pool Size";
+		internal const string MAXPOOLSIZE = "Max Pool Size";
+		internal const string POOLING = "Pooling";
+		internal const string ENLIST = "Enlist";
 
 		private BooleanOption odbc;
 		private StringOption host;
@@ -140,37 +189,35 @@ namespace OpenLink.Data.Virtuoso
 			Reset ();
 
 			options = CollectionsUtil.CreateCaseInsensitiveHashtable (23);
-			options.Add ("ODBC", odbc);
-			options.Add ("HOST", host);
-			options.Add ("Data Source", host);
-			options.Add ("Server", host);
-			options.Add ("Address", host);
-			options.Add ("Network Address", host);
-			options.Add ("UID", uid);
-			options.Add ("User ID", uid);
-			options.Add ("PWD", pwd);
-			options.Add ("Password", pwd);
-			options.Add ("DATABASE", database);
-			options.Add ("Initial Catalog", database);
-			options.Add ("Charset", charset);
-			options.Add ("Encrypt", encrypt);
-			options.Add ("Persist Security Info", persistSecurityInfo);
-			options.Add ("Connect Timeout", connectionTimeout);
-			options.Add ("Connection Timeout", connectionTimeout);
-			options.Add ("Connection Lifetime", connectionLifetime);
-			options.Add ("Min Pool Size", minPoolSize);
-			options.Add ("Max Pool Size", maxPoolSize);
-			options.Add ("Pooling", pooling);
-			options.Add ("Enlist", enlist);
+			options.Add (ODBC, odbc);
+			options.Add (HOST, host);
+			options.Add (DATASOURCE, host);
+			options.Add (SERVER, host);
+			options.Add (ADDRESS, host);
+			options.Add (NETWORKADDRESS, host);
+			options.Add (UID, uid);
+			options.Add (USER_ID, uid);
+			options.Add (USERID, uid);
+			options.Add (PWD, pwd);
+			options.Add (PASSWORD, pwd);
+			options.Add (DATABASE, database);
+			options.Add (INITIALCATALOG, database);
+			options.Add (CHARSET, charset);
+			options.Add (ENCRYPT, encrypt);
+			options.Add (PERSISTSECURITYINFO, persistSecurityInfo);
+			options.Add (PERSIST_SECURITY_INFO, persistSecurityInfo);
+			options.Add (CONNECTTIMEOUT, connectionTimeout);
+			options.Add (CONNECTIONTIMEOUT, connectionTimeout);
+			options.Add (CONNECTIONLIFETIME, connectionLifetime);
+			options.Add (MINPOOLSIZE, minPoolSize);
+			options.Add (MAXPOOLSIZE, maxPoolSize);
+			options.Add (POOLING, pooling);
+			options.Add (ENLIST, enlist);
 		}
 
 		internal void Reset ()
 		{
-#if ODBC_CLIENT || CLIENT
-			odbc.setting = true;
-#else
-			odbc.setting = false;
-#endif
+			odbc.setting = DEFAULT_USE_ODBC;
 			host.setting = null;
 			uid.setting = null;
 			pwd.setting = null;
@@ -182,12 +229,7 @@ namespace OpenLink.Data.Virtuoso
 			connectionLifetime.setting = DEFAULT_CONN_LIFETIME;
 			minPoolSize.setting = DEFAULT_MIN_POOL_SIZE;
 			maxPoolSize.setting = DEFAULT_MAX_POOL_SIZE;
-#if ADONET2
-            // .NET Beta will throw NotImplementedExpcetion on Pool
-			pooling.setting = false;
-#else
             pooling.setting = true;
-#endif
             enlist.setting = Platform.HasDtc ();
 		}
 

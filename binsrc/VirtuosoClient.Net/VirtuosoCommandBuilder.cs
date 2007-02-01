@@ -45,26 +45,48 @@ namespace OpenLink.Data.Virtuoso
 	{
 		internal readonly static BooleanSwitch Switch = 
 		    new BooleanSwitch ("VirtuosoClient.ComponentBuilder", "Marshaling");
+#if !ADONET2
 		private string quotePrefix;
 		private string quoteSuffix;
 		private VirtuosoDataAdapter adapter;
-		private VirtuosoRowUpdatingEventHandler handler;
 		private string tableName;
  		private ColumnData[] columns;
 		private VirtuosoCommand deleteCommand;
 		private VirtuosoCommand insertCommand;
 		private VirtuosoCommand updateCommand;
+#endif
+#if !ADONET2
+		private VirtuosoRowUpdatingEventHandler handler;
+#else
+		private EventHandler<RowUpdatingEventArgs> handler;
+#endif
 
 		public VirtuosoCommandBuilder ()
 		{
+#if ADONET2 
+            // DbCommandBuilder defaults QuotePrefix and QuoteSuffix to
+            // empty strings
+            base.QuotePrefix = "\"";
+            base.QuoteSuffix = "\"";
+#endif
 		}
 
 		public VirtuosoCommandBuilder (VirtuosoDataAdapter adapter)
 		{
 			DataAdapter = adapter;
+#if ADONET2
+            base.QuotePrefix = "\"";
+            base.QuoteSuffix = "\"";
+#endif
 		}
 
-#if !ADONET2
+#if ADONET2
+		public new VirtuosoDataAdapter DataAdapter
+        {
+            get { return (VirtuosoDataAdapter)base.DataAdapter;}
+            set { base.DataAdapter = value; }
+        }
+#else
 		public VirtuosoDataAdapter DataAdapter
 		{
 			get
@@ -88,24 +110,64 @@ namespace OpenLink.Data.Virtuoso
 #endif
 
 #if ADONET2
+        /// Given an unquoted identifier in the correct catalog case, returns
+        /// the correct quoted form of that identifier, including properly
+        /// escaping any embedded quotes in the identifier.
+        public override string QuoteIdentifier(string unquotedIdentifier)
+        {
+            // Base class simply throws NotSupportedException
+            string ret = QuotePrefix + unquotedIdentifier + QuoteSuffix;
+            return ret;
+        }
+
+        /// Given a quoted identifier, returns the correct unquoted form of
+        /// that identifier, including properly un-escaping any embedded
+        /// quotes in the identifier.
+        public override string UnquoteIdentifier(string quotedIdentifier)
+        {
+            // Base class simply throws NotSupportedException
+            string ret = quotedIdentifier;
+
+            int length = quotedIdentifier.Length;
+            int startIndex = 0;
+            if (quotedIdentifier.StartsWith(QuotePrefix) &&
+                quotedIdentifier.EndsWith(QuoteSuffix))
+            {
+                length -= QuotePrefix.Length + QuoteSuffix.Length;
+                startIndex = QuotePrefix.Length;
+                ret = quotedIdentifier.Substring(startIndex, length);
+            }
+            return ret;
+        }
+#endif
+
+#if ADONET2
         public override string QuotePrefix
+		{
+			get { return base.QuotePrefix != null ? base.QuotePrefix : ""; }
+			set { base.QuotePrefix = value; }
+		}
 #else
         public string QuotePrefix
-#endif
 		{
 			get { return quotePrefix != null ? quotePrefix : ""; }
 			set { quotePrefix = value; }
 		}
+#endif
 
 #if ADONET2
         public override string QuoteSuffix
+		{
+			get { return base.QuoteSuffix != null ? base.QuotePrefix : ""; }
+			set { base.QuoteSuffix = value; }
+		}
 #else
 		public string QuoteSuffix
-#endif
 		{
 			get { return quoteSuffix != null ? quotePrefix : ""; }
 			set { quoteSuffix = value; }
 		}
+#endif
 
 		public static void DeriveParameters (VirtuosoCommand command)
 		{
@@ -199,28 +261,53 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
-#if !ADONET2
+#if ADONET2
+		public new VirtuosoCommand GetDeleteCommand ()
+#else
 		public VirtuosoCommand GetDeleteCommand ()
-		{
-			return GetDeleteCommand (null, null);
-		}
-
-		public VirtuosoCommand GetInsertCommand ()
-		{
-			return GetInsertCommand (null, null);
-		}
-
-		public VirtuosoCommand GetUpdateCommand ()
-		{
-			return GetUpdateCommand (null, null);
-		}
 #endif
+		{
+#if ADONET2
+            return (VirtuosoCommand)base.GetDeleteCommand();
+#else
+			return GetDeleteCommand (null, null);
+#endif
+		}
+
+#if ADONET2
+		public new VirtuosoCommand GetInsertCommand ()
+#else
+		public VirtuosoCommand GetInsertCommand ()
+#endif
+		{
+#if ADONET2
+            return (VirtuosoCommand)base.GetInsertCommand();
+#else
+			return GetInsertCommand (null, null);
+#endif
+		}
+
+#if ADONET2
+		public new VirtuosoCommand GetUpdateCommand ()
+#else
+		public VirtuosoCommand GetUpdateCommand ()
+#endif
+		{
+#if ADONET2
+            return (VirtuosoCommand)base.GetUpdateCommand();
+#else
+			return GetUpdateCommand (null, null);
+#endif
+		}
 
 #if ADONET2
         public override void RefreshSchema ()
+        {
+            //will this do?
+            base.RefreshSchema();
+        }
 #else
 		public void RefreshSchema ()
-#endif
 		{
 			tableName = null;
 			columns = null;
@@ -248,6 +335,9 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
+#endif
+
+#if !ADONET2
 		protected override void Dispose (bool disposing)
 		{
 			if (disposing)
@@ -267,7 +357,9 @@ namespace OpenLink.Data.Virtuoso
 			}
 			RefreshSchema ();
 		}
+#endif
 
+#if !ADONET2
 		private void RowUpdating (object sender, VirtuosoRowUpdatingEventArgs args)
 		{
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoCommandBuilder.RowUpdating()");
@@ -304,7 +396,9 @@ namespace OpenLink.Data.Virtuoso
 				args.Status = UpdateStatus.ErrorsOccurred;
 			}
 		}
+#endif 
 
+#if !ADONET2
 		private VirtuosoCommand GetDeleteCommand (DataTableMapping mapping, DataRow row)
 		{
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoCommandBuilder.GetDeleteCommand()");
@@ -453,7 +547,9 @@ namespace OpenLink.Data.Virtuoso
 			updateCommand = command;
 			return command;
 		}
+#endif
 
+#if !ADONET2
 		private VirtuosoCommand CollectInfo ()
 		{
 			if (adapter == null)
@@ -494,7 +590,9 @@ namespace OpenLink.Data.Virtuoso
 
 			return selectCommand;
 		}
+#endif
 
+#if !ADONET2
 		private string GetTableName (ColumnData[] columns)
 		{
 			if (columns == null)
@@ -554,6 +652,7 @@ namespace OpenLink.Data.Virtuoso
 			tableName.Append (QuoteSuffix);
 			return tableName.ToString ();
 		}
+#endif
 
 		private VirtuosoCommand CreateCommand (VirtuosoCommand selectCommand)
 		{
@@ -564,6 +663,7 @@ namespace OpenLink.Data.Virtuoso
 			return command;
 		}
 
+#if !ADONET2
 		private void AddParameter (
 			VirtuosoCommand command,
 			ColumnData column,
@@ -616,48 +716,72 @@ namespace OpenLink.Data.Virtuoso
 
 			command.Parameters.Add (parameter);
 		}
+#endif
     #region ADO.NET 2.0
 #if ADONET2
-        protected override DbProviderFactory ProviderFactory
-        {
-            get
-            {
-                return VirtuosoClientFactory.Instance;
-            }
-        }
+// jch ?????
+//        protected override DbProviderFactory ProviderFactory
+//        {
+//            get
+//            {
+//                return VirtuosoClientFactory.Instance;
+//            }
+//        }
 
 
+        /// Allows the provider implementation of the DbCommandBuilder class
+        /// to handle provider-specific parameter properties.
         protected override void ApplyParameterInfo(
             DbParameter p, DataRow row, 
             StatementType statementType, bool whereClause)
         {
-            //TODO: complete this when more docs
-            throw new NotImplementedException ("VirtuosoCommandBuilder.ApplyParameterInfo");
+           //No Action needed
         }
 
+        /// Returns the name of the specified parameter in the format of
+        /// @p#.
         protected override string GetParameterName(int parameterOrdinal)
         {
-            //TODO: complete this when more docs
-            throw new NotImplementedException("VirtuosoCommandBuilder.GetParameterName (int)");
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat("@p{0}", parameterOrdinal);
+            string ret = sb.ToString();
+            return ret;
         }
 
+        /// Returns the full parameter name, given the partial parameter name.
         protected override string GetParameterName(string parameterName)
         {
-            //TODO: complete this when more docs
-            throw new NotImplementedException("VirtuosoCommandBuilder.GetParameterName (string)");
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat("p{0}", parameterName);
+            string ret = sb.ToString();
+            return ret;
         }
 
+        /// Returns the placeholder for the parameter in the associated SQL
+        /// statement.
         protected override string GetParameterPlaceholder(int parameterOrdinal)
         {
-            //TODO: complete this when more docs
-            throw new NotImplementedException("VirtuosoCommandBuilder.GetParameterPlaceHolder (int)");
+            string ret = "?";
+            return ret;
         }
 
 
         protected override void SetRowUpdatingHandler(DbDataAdapter adapter)
         {
-            //TODO: complete this when more docs
-            throw new NotImplementedException("VirtuosoCommandBuilder.SetRowUpdatingHandler");
+            VirtuosoDataAdapter da = adapter as VirtuosoDataAdapter;
+            if (da == null)
+				throw new InvalidOperationException ("adapter is not set.");
+
+            handler = new
+				EventHandler<RowUpdatingEventArgs>(RowUpdatingEventHandler);
+
+            da.RowUpdating += handler;
+        }
+
+        private void RowUpdatingEventHandler(
+			object sender, RowUpdatingEventArgs e)
+        {
+            base.RowUpdatingHandler(e);
         }
 #endif
     #endregion

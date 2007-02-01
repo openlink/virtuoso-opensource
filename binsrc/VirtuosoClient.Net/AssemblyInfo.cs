@@ -60,11 +60,9 @@ OpenLink.Data.Virtuoso.VirtuosoConstants.AssemblyVersion
 //       - clear dependency for the installer
 
 [assembly: AssemblyDelaySign(false)]
-#if !ADONET2
 #if FROMIDE
 [assembly: AssemblyKeyFile(@"..\..\VirtuosoClient.snk")]
 #else
 [assembly: AssemblyKeyFile(@"VirtuosoClient.snk")]
-#endif
 #endif
 [assembly: AssemblyKeyName("")]
