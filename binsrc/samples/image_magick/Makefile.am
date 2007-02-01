@@ -37,7 +37,7 @@ im_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib 
 im_la_CFLAGS  += $(IM_CFLAGS)
 im_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
-im_la_LDFLAGS = -module -avoid-version -export-dynamic $(IM_LDFLAGS)
+im_la_LDFLAGS = -module -avoid-version -export-dynamic $(IM_LDFLAGS) -export-symbols im.exp
 
 # ----------------------------------------------------------------------
 #
