@@ -300,7 +300,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_qm_iri_class_optionlist_opt
 %type <backstack> spar_qm_iri_class_option_commalist
 %type <tree> spar_qm_iri_class_option
-%type <backstack> spar_qm_iri_class_formatlist
+%type <backstack> spar_qm_sprintff_list
 %type <tree> spar_qm_literal_class_optionlist_opt
 %type <backstack> spar_qm_literal_class_option_commalist
 %type <tree> spar_qm_literal_class_option
@@ -504,12 +504,9 @@ spar_dataset_clauses_opt
 
 spar_dataset_clause	/* [9]  	DatasetClause	  ::=  	'FROM' ( DefaultGraphClause | NamedGraphClause )	*/
 	: FROM_L spar_iriref spar_sponge_optionlist_opt {			/* [10]*	DefaultGraphClause	 ::=  SourceSelector SpongeOptionList?	*/
-                if (0 == sparp_env()->spare_default_graph_locked)
-                  {
-		    if (NULL != sparp_env()->spare_default_graph_precode)
-		      sparyyerror ("Default graph clause is defined twice");
-                    sparp_env()->spare_default_graph_precode = sparp_make_graph_precode (sparp_arg, $2, $3);
-                  } }
+                if (0 == sparp_env()->spare_default_graphs_locked)
+                  t_set_push (&(sparp_env()->spare_default_graph_precodes),
+                    sparp_make_graph_precode (sparp_arg, $2, $3) ); }
 	| FROM_L NAMED_L spar_iriref spar_sponge_optionlist_opt {		/* [11]*	NamedGraphClause	 ::=  'NAMED' SourceSelector SpongeOptionList?	*/
                 if (0 == sparp_env()->spare_named_graphs_locked)
                   t_set_push (&(sparp_env()->spare_named_graph_precodes),
@@ -984,9 +981,9 @@ spar_qm_simple_stmt	/* [Virt]	QmSimpleStmt	 ::=  QmCreateIRIClass | QmCreateLite
 	;
 
 spar_qm_create_iri_class	/* [Virt]	QmCreateIRIClass	 ::=  'CREATE' 'IRI' 'CLASS' QmIRIrefConst ( ( String QmSqlfuncArglist ) | ( 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader ) )	*/
-	: CREATE_L IRI_L CLASS_L spar_qm_iriref_const_expn SPARQL_STRING spar_qm_sqlfunc_arglist {
+	: CREATE_L IRI_L CLASS_L spar_qm_iriref_const_expn SPARQL_STRING spar_qm_sqlfunc_arglist spar_qm_iri_class_optionlist_opt {
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT",
-		  (SPART **)t_list (3, $4, $5, $6), NULL );
+		  (SPART **)t_list (3, $4, $5, $6), $7 );
                 sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
 	| CREATE_L IRI_L CLASS_L spar_qm_iriref_const_expn USING_L spar_qm_sqlfunc_header_commalist2 spar_qm_iri_class_optionlist_opt {
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS",
@@ -1048,14 +1045,14 @@ spar_qm_iri_class_option_commalist
 spar_qm_iri_class_option	/* [Virt]	QmIRIClassOption	 ::=  */
 	: BIJECTION_L		{			/*... 'BIJECTION'	*/
 		$$ = t_list (2, t_box_dv_uname_string ("BIJECTION"), 1L); }
-	| RETURNS_L spar_qm_iri_class_formatlist	{			/*... | 'RETURNS' STRING ('UNION' STRING)*	*/
+	| RETURNS_L spar_qm_sprintff_list	{			/*... | 'RETURNS' STRING ('UNION' STRING)*	*/
 		$$ = t_list (2, t_box_dv_uname_string ("RETURNS"),
 		    spar_make_vector_qm_sql (sparp_arg, t_revlist_to_array ($2)) ); }
 	;
 
-spar_qm_iri_class_formatlist
+spar_qm_sprintff_list
 	: SPARQL_STRING	{ $$ = NULL; t_set_push (&($$), $1); }
-	| spar_qm_iri_class_formatlist UNION_L SPARQL_STRING	{ $$ = $1; t_set_push (&($$), $3); }
+	| spar_qm_sprintff_list UNION_L SPARQL_STRING	{ $$ = $1; t_set_push (&($$), $3); }
 	;
 
 spar_qm_literal_class_optionlist_opt	/* [Virt]	QmLiteralClassOptions	 ::=  'OPTION' '(' QmLiteralClassOption (',' QmLiteralClassOption)* ')'	*/
@@ -1084,6 +1081,9 @@ spar_qm_literal_class_option	/* [Virt]	QmLiteralClassOption	 ::=  */
 		$$ = t_list (2, t_box_dv_uname_string ("LANG"), t_box_dv_uname_string ($2)); }
 	| BIJECTION_L		{			/*... | 'BIJECTION'	*/
 		$$ = t_list (2, t_box_dv_uname_string ("BIJECTION"), 1L); }
+	| RETURNS_L spar_qm_sprintff_list	{			/*... | 'RETURNS' STRING ('UNION' STRING)*	*/
+		$$ = t_list (2, t_box_dv_uname_string ("RETURNS"),
+		    spar_make_vector_qm_sql (sparp_arg, t_revlist_to_array ($2)) ); }
 	;
 
 spar_qm_create_quad_storage	/* [Virt]	QmCreateStorage	 ::=  'CREATE' 'QUAD' 'STORAGE' QmIRIrefConst QmMapTopGroup	*/

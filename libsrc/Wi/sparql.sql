@@ -1076,7 +1076,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
 
 create function DB.DBA.RDF_SQLVAL_OF_LONG (in longobj any) returns any
 {
-  --dbg_obj_princ ('DB.DBA.RDF_SQLVAL_OF_LONG (', longobj, ', tag ', __tag (longobj));
+  -- dbg_obj_princ ('DB.DBA.RDF_SQLVAL_OF_LONG (', longobj, ', tag ', __tag (longobj));
   if (isiri_id (longobj))
     {
       if (longobj >= #i1000000000)
@@ -3099,7 +3099,7 @@ create function DB.DBA.RDF_QM_ASSERT_JSO_TYPE (in inst varchar, in expected varc
           define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
           select ?t where {
-            graph `sql:JSO_SYS_GRAPH NIL` { `iri(?:inst)` rdf:type ?t } } ));
+            graph <http://www.openlinksw.com/schemas/virtrdf#> { `iri(?:inst)` rdf:type ?t } } ));
       if (actual is not null)
         signal ('22023', 'The RDF QM schema object <' || inst || '> already exists, type <' || cast (actual as varchar) || '>');
     }
@@ -3111,7 +3111,7 @@ create function DB.DBA.RDF_QM_ASSERT_JSO_TYPE (in inst varchar, in expected varc
         define input:storage ""
         prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
         select ?t where {
-          graph `sql:JSO_SYS_GRAPH NIL` { `iri(?:inst)` rdf:type ?t } } ) do
+          graph <http://www.openlinksw.com/schemas/virtrdf#> { `iri(?:inst)` rdf:type ?t } } ) do
         {
           if ("t" <> expected)
             signal ('22023', 'The RDF QM schema object <' || inst || '> has type <' || cast (actual as varchar) || '>, cannot use same identifier for <' || expected || '>');
@@ -3183,7 +3183,7 @@ create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_IS_FLAGGED (in storage varchar)
 create function DB.DBA.RDF_QM_GC_SUBTREE (in seed varchar) returns integer
 {
   declare graphiri varchar;
-  declare graphiri_id, subjs, objs any;
+  declare seed_id, graphiri_id, subjs, objs any;
   declare o_to_s, s_to_o any;
   set isolation = 'serializable';
   -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ')');
@@ -3191,8 +3191,12 @@ create function DB.DBA.RDF_QM_GC_SUBTREE (in seed varchar) returns integer
   s_to_o := dict_new ();
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
   graphiri_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (graphiri);
-  for (sparql define input:storage "" define output:valmode "LONG" select ?s ?o where {
-          graph ?:graphiri { ?s a [] ; ?p ?o . ?o a [] } } ) do
+  for (sparql define input:storage ""
+    define output:valmode "LONG"
+    define sql:table-option "LOOP"
+    select ?s ?o 
+    from <http://www.openlinksw.com/schemas/virtrdf#>
+    where { ?s a [] ; ?p ?o . ?o a [] } ) do
     {
       declare subjs_of_o, objs_of_s any;
       -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () caches ', "s", ' -> ', "o");
@@ -3207,7 +3211,8 @@ create function DB.DBA.RDF_QM_GC_SUBTREE (in seed varchar) returns integer
       else if (0 >= position ("o", objs_of_s))
         dict_put (s_to_o, "s", vector_concat (vector ("o"), objs_of_s));
     }
-  subjs := vector (DB.DBA.RDF_MAKE_IID_OF_QNAME (seed));
+  seed_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (seed);
+  subjs := vector (seed_id);
 again:
   vectorbld_init (objs);
   foreach (IRI_ID nod in subjs) do
@@ -3218,12 +3223,12 @@ again:
       if (subjs_of_nod is not null)
     {
           -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () does not delete ', nod, DB.DBA.RDF_QNAME_OF_IID (nod), ': side links ', subjs_of_nod);
-          if (nod = seed)
+          if (nod = seed_id)
             return subjs_of_nod[0];
           goto nop_nod; -- see below;
     }
 --      sparql define input:storage ""
---        delete from graph ?:graphiri { `iri(?:nod)` ?p ?o }
+--        delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { `iri(?:nod)` ?p ?o }
 --        where { graph ?:graphiri { `iri(?:nod)` ?p ?o } };
       delete from DB.DBA.RDF_QUAD where G = graphiri_id and S = nod;
       objs_of_nod := dict_get (s_to_o, nod, NULL);
@@ -3274,12 +3279,11 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
       qmid := coalesce ((sparql
           define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-          select ?s where {
-            graph ?:graphiri {
+          select ?s from <http://www.openlinksw.com/schemas/virtrdf#> where {
                 ?s rdf:type virtrdf:QuadMap .
                 ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:qmgraph)` .
                 ?s virtrdf:qmTableName "" .
-              } } ));
+              } ));
       if (qmid is null)
         return vector (vector ('00100', 'Quad map for graph <' || qmgraph || '> is not found'));
     }
@@ -3303,7 +3307,7 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
 --          define output:valmode "LONG"
 --          prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
 --          select ?subm where {
---            graph `sql:JSO_SYS_GRAPH NIL` {
+--            graph <http://www.openlinksw.com/schemas/virtrdf#> {
 --                ?:storage virtrdf:qmUserSubMaps ?subm .
 --              } } ));
 --      delete from RDF_QUAD
@@ -3330,14 +3334,18 @@ create function DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (in iritmpl varchar) returns 
 }
 ;
 
-create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in iritmpl varchar, in arglist any) returns any
+create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in iritmpl varchar, in arglist any, in options any) returns any
 {
   declare graphiri varchar;
   declare sprintffsid, superformatsid varchar;
   declare basetype, basetypeiri varchar;
-  declare res any;
-  declare arglist_len, isnotnull integer;
+  declare sffs, res any;
+  declare arglist_len, isnotnull, sff_ctr, sff_count integer;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
+  sffs := get_keyword_ucase ('RETURNS', options);
+  if (sffs is null)
+    sffs := vector (iritmpl); -- note that this is before macroexpand
+  sff_count := length (sffs);
   iritmpl := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (iritmpl);
   sprintffsid := classiri || '--Sprintffs';
   superformatsid := classiri || '--SuperFormats';
@@ -3377,7 +3385,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   basetypeiri := 'http://www.openlinksw.com/virtrdf-data-formats#' || basetype;
   sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-      insert in graph ?:graphiri
+  insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
         {
           `iri(?:classiri)`
             rdf:type virtrdf:QuadMapFormat ;
@@ -3393,10 +3401,9 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
           virtrdf:SPART_VARR_IS_IRI ,
           virtrdf:SPART_VARR_SPRINTFF ;
         virtrdf:qmfValRange-rvrSprintffs `iri(?:sprintffsid)` ;
-        virtrdf:qmfValRange-rvrSprintffCount 1 .
+        virtrdf:qmfValRange-rvrSprintffCount ?:sff_count .
       `iri(?:sprintffsid)`
-        rdf:type virtrdf:array-of-string ;
-        `iri (bif:sprintf ("%s%d", str (rdf:_), 1))` ?:iritmpl .
+        rdf:type virtrdf:array-of-string .
           `iri(?:superformatsid)`
             rdf:type virtrdf:array-of-QuadMapFormat .
     } where {};
@@ -3404,13 +3411,26 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
     {
       sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-      insert in graph ?:graphiri
+      insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
         {
           `iri(?:classiri)`
             virtrdf:qmfValRange-rvrRestrictions
               virtrdf:SPART_VARR_NOT_NULL .
         } where {};
         }
+  for (sff_ctr := 0; sff_ctr < sff_count; sff_ctr := sff_ctr + 1)
+    {
+      declare sff varchar;
+      sff := sffs [sff_ctr];
+      sff := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (sff);
+      sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
+        {
+          `iri(?:sprintffsid)`
+            `iri (bif:sprintf ("%s%d", str (rdf:_), ?:sff_ctr+1))` ?:sff .
+        } where {};
+    }
   return vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ')')));
 }
 ;
@@ -3478,7 +3498,7 @@ fheaders is, say,
   sffs := get_keyword_ucase ('RETURNS', options);
   sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-      insert in graph ?:graphiri
+  insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
         {
           `iri(?:classiri)`
             rdf:type virtrdf:QuadMapFormat;
@@ -3501,7 +3521,7 @@ fheaders is, say,
     {
       sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-      insert in graph ?:graphiri
+      insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
         {
           `iri(?:classiri)`
             virtrdf:qmfValRange-rvrRestrictions
@@ -3516,7 +3536,7 @@ fheaders is, say,
       sff_count := length (sffs);
       sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-      insert in graph ?:graphiri
+      insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
         {
           `iri(?:classiri)`
             virtrdf:qmfValRange-rvrRestrictions
@@ -3533,7 +3553,7 @@ fheaders is, say,
           sff := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (sff);
           sparql define input:storage ""
           prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-          insert in graph ?:graphiri
+          insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
             {
               `iri(?:sffsid)`
                 `iri (bif:sprintf ("%s%d", str (rdf:_), ?:sff_ctr+1))` ?:sff .
@@ -3597,7 +3617,7 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
     dt_expn := NULL;
   sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    insert in graph ?:graphiri
+  insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
       {
         `iri(?:classiri)`
           rdf:type virtrdf:QuadMapFormat;
@@ -3621,7 +3641,7 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
     {
       sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-      insert in graph ?:graphiri
+      insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
         {
           `iri(?:classiri)`
             virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_TYPED .
@@ -3693,7 +3713,7 @@ create function DB.DBA.RDF_QM_DEFINE_SUBCLASS (in subclassiri varchar, in superc
   DB.DBA.RDF_QM_ASSERT_JSO_TYPE (superclassiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat');
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    insert in graph ?:graphiri
+    insert in graph <http://www.openlinksw.com/schemas/virtrdf#>
       {
         `iri(?:subclassiri)` virtrdf:isSubclassOf `iri(?:superclassiri)` .
       }
@@ -3723,7 +3743,7 @@ create function DB.DBA.RDF_QM_DROP_QUAD_STORAGE (in storage varchar) returns any
   DB.DBA.RDF_QM_GC_SUBTREE (storage);
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    delete from graph ?:graphiri {
+    delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
         `iri(?:storage)` ?p ?o
       }
     where { graph ?:graphiri {
@@ -3741,7 +3761,7 @@ create function DB.DBA.RDF_QM_DEFINE_QUAD_STORAGE (in storage varchar) returns a
   qsusermaps := storage || '--UserMaps';
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    insert in graph ?:graphiri {
+    insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
         `iri(?:storage)`
           rdf:type virtrdf:QuadStorage ;
           virtrdf:qsUserMaps `iri(?:qsusermaps)` .
@@ -3760,7 +3780,7 @@ create function DB.DBA.RDF_QM_BEGIN_ALTER_QUAD_STORAGE (in storage varchar) retu
   DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (storage, 0);
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    insert in graph ?:graphiri {
+    insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
         `iri(?:storage)` virtrdf:qsAlterInProgress `bif:now NIL` .
       }
     where {} ) do {;}
@@ -3775,7 +3795,7 @@ create function DB.DBA.RDF_QM_END_ALTER_QUAD_STORAGE (in storage varchar) return
   DB.DBA.RDF_QM_ASSERT_JSO_TYPE (storage, 'http://www.openlinksw.com/schemas/virtrdf#QuadStorage');
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    delete from graph ?:graphiri {
+    delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
         `iri(?:storage)` virtrdf:qsAlterInProgress ?dtstart
       }
     where { graph ?:graphiri {
@@ -3799,7 +3819,7 @@ create function DB.DBA.RDF_QM_STORE_ATABLES (in graphiri varchar, in qmvid varch
       inner_id := qmvid || '-atable-' || alias || '-' || qtable;
       for (sparql define input:storage ""
         prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-        insert in graph ?:graphiri {
+        insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
             `iri(?:atablesid)`
               `iri (bif:sprintf ("%s%d", str (rdf:_), ?:atablectr+1))` `iri(?:inner_id)` .
             `iri(?:inner_id)`
@@ -3932,7 +3952,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
 /* Create everything if qmv has not been found */
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    delete from graph ?:graphiri {
+    delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:qmvid)` ?p ?o . }
     where { graph ?:graphiri {
             `iri(?:qmvid)` ?p ?o .
@@ -3945,7 +3965,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
     }
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    delete from graph ?:graphiri {
+    delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:qmvatablesid)` ?p ?o }
     where { graph ?:graphiri {
             `iri(?:qmvatablesid)` ?p ?o .
@@ -3958,14 +3978,14 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
     }
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    delete from graph ?:graphiri {
+    delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:qmvcolsid)` ?p ?o }
     where { graph ?:graphiri {
             `iri(?:qmvcolsid)` ?p ?o .
           } } ) do {;}
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    delete from graph ?:graphiri {
+    delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:qmvcondsid)` ?p ?o }
     where { graph ?:graphiri {
             `iri(?:qmvcondsid)` ?p ?o .
@@ -3977,7 +3997,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   columnsformkey := DB.DBA.RDF_QM_CHECK_COLUMNS_FORM_KEY (sqlcols);
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    insert in graph ?:graphiri {
+    insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
         `iri(?:qmvid)`
           rdf:type virtrdf:QuadMapValue;
           virtrdf:qmvTableName ?:tablename;
@@ -4006,7 +4026,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       inner_id := qmvid || '-col-' || alias || '-' || colname;
       for (sparql define input:storage ""
         prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-        insert in graph ?:graphiri {
+        insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
             `iri(?:qmvcolsid)`
               `iri (bif:sprintf ("%s%d", str (rdf:_), ?:colctr+1))` `iri(?:inner_id)` .
             `iri(?:inner_id)`  
@@ -4022,7 +4042,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       sqlcond := conds [condctr];
       for (sparql define input:storage ""
         prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-        insert in graph ?:graphiri {
+        insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
             `iri(?:qmvcondsid)`
               `iri (bif:sprintf ("%s%d", str (rdf:_), ?:condctr+1))` ?:sqlcond .
           }
@@ -4138,14 +4158,14 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
     }
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    delete from graph ?:graphiri {
+    delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:atablesid)` ?p ?o }
     where { graph ?:graphiri {
             `iri(?:atablesid)` ?p ?o .
           } } ) do {;}
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    delete from graph ?:graphiri {
+    delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
       `iri(?:qmcondsid)` ?p ?o }
     where { graph ?:graphiri {
             `iri(?:qmcondsid)` ?p ?o .
@@ -4158,7 +4178,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
     qmcondsid := NULL;
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    insert in graph ?:graphiri {
+    insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
         `iri(?:qmid)`
           rdf:type virtrdf:QuadMap ;
           virtrdf:qmGraphRange-rvrFixedValue ?:qmvfix_g ;
@@ -4192,7 +4212,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
       sqlcond := conds [condctr];
       for (sparql define input:storage ""
         prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-        insert in graph ?:graphiri {
+        insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
             `iri(?:qmcondsid)`
               `iri (bif:sprintf ("%s%d", str (rdf:_), ?:condctr+1))` ?:sqlcond .
           }
@@ -4290,7 +4310,7 @@ create procedure DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (in storage varchar, in qm
                         2),
                       0 ) ) ) .
                 optional {?id virtrdf:qmPriorityOrder ?ord} } } ) as sp
-      order by 2, 1 ) as sub );
+      order by 3, 2, 1 ) as sub );
   -- dbg_obj_princ ('DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE: found ', iris_and_orders);
   foreach (any itm in iris_and_orders) do
     {
@@ -4298,7 +4318,7 @@ create procedure DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (in storage varchar, in qm
       id := itm[0];
       p := itm[1];
       for (sparql define input:storage ""
-        delete from graph ?:graphiri {
+        delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
          `iri(?:lstiri)` `iri(?:p)` `iri(?:id)` . }
         where { } ) do {;}
     }
@@ -4313,7 +4333,7 @@ create procedure DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (in storage varchar, in qm
       if (ord > qmorder)
         {
           for (sparql define input:storage ""
-            insert in graph ?:graphiri {
+            insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
              `iri(?:lstiri)`
                `iri(bif:sprintf("%s%d", str(rdf:_), ?:ctr))`
                  `iri(?:qmid)` . }
@@ -4323,7 +4343,7 @@ create procedure DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (in storage varchar, in qm
           qmid_is_printed := 1;
         }
       for (sparql define input:storage ""
-        insert in graph ?:graphiri {
+        insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
          `iri(?:lstiri)`
            `iri(bif:sprintf("%s%d", str(rdf:_), ?:ctr))`
              `iri(?:id)` . }
@@ -4333,7 +4353,7 @@ create procedure DB.DBA.RDF_QM_ADD_MAPPING_TO_STORAGE (in storage varchar, in qm
   if (not qmid_is_printed)
     {
       for (sparql define input:storage ""
-        insert in graph ?:graphiri {
+        insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
          `iri(?:lstiri)`
            `iri(bif:sprintf("%s%d", str(rdf:_), ?:ctr))`
              `iri(?:qmid)` . }
@@ -4383,7 +4403,7 @@ create procedure DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (in storage varchar, 
                         2),
                       0 ) ) ) .
                 optional {?id virtrdf:qmPriorityOrder ?ord} } } ) as sp
-      order by 2, 1 ) as sub );
+      order by 3, 2, 1 ) as sub );
   -- dbg_obj_princ ('DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE: found ', iris_and_orders);
   foreach (any itm in iris_and_orders) do
     {
@@ -4391,7 +4411,7 @@ create procedure DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (in storage varchar, 
       id := itm[0];
       p := itm[1];
       for (sparql define input:storage ""
-        delete from graph ?:graphiri {
+        delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
          `iri(?:lstiri)` `iri(?:p)` `iri(?:id)` . }
         where { } ) do {;}
     }
@@ -4405,7 +4425,7 @@ create procedure DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (in storage varchar, 
       if (id <> qmid)
         {
           for (sparql define input:storage ""
-            insert in graph ?:graphiri {
+            insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
              `iri(?:lstiri)`
                `iri(bif:sprintf("%s%d", str(rdf:_), ?:ctr))`
                  `iri(?:id)` . }
@@ -4436,7 +4456,7 @@ create procedure DB.DBA.RDF_QM_SET_DEFAULT_MAPPING (in storage varchar, in qmid 
       signal ('22023', 'Quad map storage <' || storage || '> has set a default quad map <' || old_qmid || '>, drop it before adding <' || qmid || '>');
     }
   for (sparql define input:storage ""
-    insert in graph ?:graphiri { `iri(?:storage)` virtrdf:qsDefaultMap `iri(?:qmid)` . }
+    insert in graph <http://www.openlinksw.com/schemas/virtrdf#> { `iri(?:storage)` virtrdf:qsDefaultMap `iri(?:qmid)` . }
     where {} ) do {;}
 }
 ;
@@ -4598,15 +4618,16 @@ create function DB.DBA.RDF_GRAB_RESOLVER_DEFAULT (in base varchar, in rel_uri va
 
 create procedure DB.DBA.SPARQL_EVAL_TO_ARRAY (in query varchar, in dflt_graph varchar, in maxrows integer)
 {
-  declare sqltext, state, msg varchar;
+  declare state, msg varchar;
   declare metas, rset any;
-  sparql_explain (query);
-  sqltext := string_output_string (sparql_to_sql_text (query));
+  if (dflt_graph is not null)
+    query := concat ('sparql define input:default-graph-uri <', dflt_graph, '> ', query);
+  else
+    query := concat ('sparql ', query);
   state := '00000';
   metas := null;
   rset := null;
-  connection_set (':default_graph', dflt_graph);
-  exec (sqltext, state, msg, vector(), maxrows, metas, rset);
+  exec (query, state, msg, vector(), maxrows, metas, rset);
   -- dbg_obj_princ ('exec metas=', metas);
   if (state <> '00000')
     signal (state, msg);
@@ -4618,19 +4639,14 @@ create procedure DB.DBA.SPARQL_EVAL (in query varchar, in dflt_graph varchar, in
 {
   declare sqltext, state, msg varchar;
   declare metas, rset any;
-  sparql_explain (query);
-  sqltext := string_output_string (sparql_to_sql_text (query));
+  if (dflt_graph is not null)
+    query := concat ('sparql define input:default-graph-uri <', dflt_graph, '> ', query);
+  else
+    query := concat ('sparql ', query);
   state := '00000';
   metas := null;
   rset := null;
---  exec ('explain(?)', state, msg, vector (sqltext), 10000, metas, rset);
---  if (state <> '00000')
---    signal (state, msg);
-  state := '00000';
-  metas := null;
-  rset := null;
-  connection_set (':default_graph', dflt_graph);
-  exec (sqltext, state, msg, vector(), maxrows, metas, rset);
+  exec (query, state, msg, vector(), maxrows, metas, rset);
   if (state <> '00000')
     signal (state, msg);
   -- dbg_obj_princ ('exec metas=', metas);
@@ -4879,7 +4895,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       else if (1 = res_mode)
         return vector (vector (res_dict));
     }
-  if (strstr (ret_content_type, 'text/rdf+n3') is not null)
+  if (strstr (ret_content_type, 'text/rdf+n3') is not null or strstr (ret_content_type, 'text/rdf+ttl') is not null)
     {
       declare res_dict any;
       res_dict := DB.DBA.RDF_TTL2HASH (ret_body, '');
@@ -5686,7 +5702,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare named_graphs any;
   declare paramctr, paramcount, maxrows, can_sponge, should_sponge integer;
   declare ses, content any;
-  declare def_max, add_http_headers int;
+  declare def_max, add_http_headers, timeout int;
   declare http_meth, content_type, ini_dflt_graph varchar;
 
   ses := 0;
@@ -5699,6 +5715,16 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   maxrows := 1024*1024; -- More than enough for web-interface.
   http_meth := http_request_get ('REQUEST_METHOD');
   ini_dflt_graph := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultGraph');
+  timeout := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExecutionTimeout');
+  -- if timeout specified and it's over 1 second
+  if (timeout is not null)
+    {
+      timeout := atoi (timeout) * 1000;
+      if (timeout >= 1000)
+	{
+	  set TRANSACTION_TIMEOUT=timeout;
+        }
+    }
   content_type := http_request_header (lines, 'Content-Type', null, '');
   content := null;
   can_sponge := coalesce ((select top 1 1
@@ -5855,7 +5881,7 @@ http('</html>\n');
       else if ('should-sponge' = pname)
         {
           if (can_sponge)
-            should_sponge := 1;
+            should_sponge := trim(pvalue);
 	}
       else if ('format' = pname)
         {
@@ -5969,11 +5995,12 @@ http('</html>\n');
     }
   else
     {
-      full_query := concat ('define input:default-graph-uri "', dflt_graph, '" ', query);
+      full_query := concat ('define input:default-graph-uri <', dflt_graph, '> ', query);
     }
-  if (can_sponge and should_sponge)
-    full_query := concat ('define get:soft "soft" ', full_query);
+  if (can_sponge and should_sponge is not null and should_sponge <> '')
+    full_query := concat (sprintf('define get:soft "%s" ',should_sponge), full_query);
   full_query := concat ('define output:valmode "LONG" ', full_query);
+
   declare state, msg varchar;
   declare metas, rset any;
   state := '00000';
@@ -6004,8 +6031,12 @@ http('</html>\n');
   state := '00000';
   metas := null;
   rset := null;
-  connection_set (':default_graph', dflt_graph);
-  connection_set (':named_graphs', named_graphs);
+  foreach (varchar g in named_graphs) do
+    {
+      query := concat ('define input:named-graph-uri <', g, '> ', query);
+      http_header (sprintf ('X-SPARQL-named-graph: %U\r\n', g));
+    }
+  query := concat ('sparql define input:default-graph-uri <', dflt_graph, '> ', query);
   http_header (sprintf ('X-SPARQL-default-graph: %U\r\n', dflt_graph));
 --  http (sprintf ('<!-- X-SPARQL-default-graph: %U\r\n -->\n', dflt_graph));
 --  http ('<!-- Query:\n' || query || '\n-->\n', 0);
@@ -6312,8 +6343,14 @@ perform_actual_load:
       get_proxy := get_keyword_ucase ('get:proxy', options);
       --!!!TBD: proper support for POST
       --!!!TBD: proper authentication if get:login / get:password is provided.
+      --!!! XXX: if authentication is needed then better to use http_client() instead of http_get
       if (old_last_etag is not null)
         req_hdr := 'If-None-Match: ' || old_last_etag;
+      -- content negotiation
+      -- Here we tell to the remote party we want rdf in some form, if it supports content negotiation
+      -- then it may return rdf instead of html
+      req_hdr := req_hdr || case when length (req_hdr) > 0 then '\n' else '' end
+	|| 'Accept: application/rdf+xml, application/rdf+n3, application/rdf+turtle, application/xml, */*';
       -- dbg_obj_princ ('Calling http_get (', new_origin_uri, ',..., ', get_method, req_hdr, NULL, get_proxy, ')');
       ret_body := http_get (new_origin_uri, ret_hdr, get_method, req_hdr, NULL, get_proxy);
       -- dbg_obj_princ ('http_get returned header: ', ret_hdr);
@@ -6468,6 +6505,59 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
 }
 ;
 
+-- /* the content to be imported is processed here */
+create procedure DB.DBA.RDF_LOAD_MICROFORMAT_RESPONSE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout ret_body any)
+{
+  -- check to microformats
+  declare xt, xd, profile, mdta any;
+  set_user_id ('dba');
+  mdta := 0;
+  declare exit handler for sqlstate '*'
+    {
+      goto no_microformats;
+    };
+  xt := xtree_doc (ret_body, 2);
+  profile := cast (xpath_eval ('/html/head/@profile', xt) as varchar);
+  if (dest is null)
+    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+  -- eRDF
+  if (strstr (profile, 'http://purl.org/NET/erdf/profile') is not null)
+    {
+      declare exit handler for sqlstate '*'
+	{
+	  goto try_erdf;
+	};
+      xd := xslt ('http://local.virt/erdf2rdfxml', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+      if (xpath_eval ('count(/RDF/*)', xd) > 0)
+        mdta := mdta + 1;
+      xd := serialize_to_UTF8_xml (xd);
+      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    }
+  try_erdf:
+  -- currently no profile in RDFa, we try it to extract directly
+    {
+      declare xmlnss, i, l, nss any;
+      xmlnss := xmlnss_get (xt);
+      nss := '<namespaces>';
+      for (i := 0, l := length (xmlnss); i < l; i := i + 2)
+	{
+	  nss := nss || sprintf ('<namespace prefix="%s">%s</namespace>', xmlnss[i], xmlnss[i+1]);
+	}
+      nss := nss || '</namespaces>';
+      xd := xslt ('http://local.virt/rdfa2rdfxml', xt, vector ('baseUri', coalesce (dest, graph_iri), 'nss', xtree_doc (nss)));
+      if (xpath_eval ('count(/RDF/*)', xd) > 1)
+        mdta := mdta + 1;
+      xd := serialize_to_UTF8_xml (xd);
+      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    }
+  return mdta;
+  no_microformats:;
+  return 0;
+}
+;
+
+
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any)
 {
   declare dest varchar;
@@ -6484,13 +6574,20 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, coalesce (dest, graph_iri));
       return;
     }
-  if (strstr (ret_content_type, 'text/rdf+n3') is not null)
+  if (strstr (ret_content_type, 'text/rdf+n3') is not null or strstr (ret_content_type, 'text/rdf+ttl') is not null)
     {
+      -- XXX: this is strange, the bellow line is same as the if-d
       if (dest is null)
         delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
       delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
       DB.DBA.TTLP (ret_body, new_origin_uri, coalesce (dest, graph_iri));
       return;
+    }
+  -- (x)HTML, here is the microformats can be found
+  if (strstr (ret_content_type, 'text/html') is not null)
+    {
+      if (DB.DBA.RDF_LOAD_MICROFORMAT_RESPONSE (graph_iri, new_origin_uri, dest, ret_body))
+	return;
     }
   delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
   if (strstr (ret_content_type, 'text/plain') is not null)
@@ -6567,7 +6664,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2007-01-17 0003'
+                virtrdf:version '2007-01-21 0005'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -6586,7 +6683,8 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 virtrdf:DefaultQuadStorage
   rdf:type virtrdf:QuadStorage ;
   virtrdf:qsUserMaps virtrdf:DefaultQuadStorage-UserMaps ;
-  virtrdf:qsDefaultMap virtrdf:DefaultQuadMap .
+  virtrdf:qsDefaultMap virtrdf:DefaultQuadMap ;
+  virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
 virtrdf:DefaultQuadStorage-UserMaps
       rdf:type virtrdf:array-of-QuadMap .
       ';
@@ -6715,6 +6813,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_IID_CMP to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_OBJ_CMP to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LONG_CMP to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_GRAB to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_EVAL_TO_ARRAY to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_EVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_REXEC to SPARQL_SELECT',

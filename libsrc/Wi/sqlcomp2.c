@@ -648,6 +648,8 @@ yy_new_error (const char *s, const char *state, const char *native)
   int nlen;
   int this_lineno = scn3_lineno;
   char buf_for_next [2000];
+  if (scn3_inside_error_reporter)
+    goto jmp; /* see below */
   nlen = scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
   if (state)
     {
@@ -660,6 +662,7 @@ yy_new_error (const char *s, const char *state, const char *native)
       sql_err_native[sizeof (sql_err_native) - 1] = 0;
     }
   snprintf (sql_err_text + nlen, sizeof (sql_err_text)-nlen, ": %s at '%s'", s, yytext);
+  scn3_inside_error_reporter ++;
   if (0 != yylex ())
     if (scn3_lineno != this_lineno)
       strcpy (buf_for_next, " immediately before end of line");
@@ -669,6 +672,8 @@ yy_new_error (const char *s, const char *state, const char *native)
     strcpy (buf_for_next, " immediately before end of statement");
   strcat_ck (sql_err_text, buf_for_next);
   sql_err_text [sizeof (sql_err_text)-1] = '\0';
+
+jmp:
   longjmp_splice (&parse_reset, 1);
 }
 
@@ -682,8 +687,12 @@ yyerror (const char *s)
 void
 yyfatalerror (const char *s)
 {
+  if (scn3_inside_error_reporter)
+    goto jmp; /* see below */
   strcpy_ck (sql_err_text, s);
   sql_err_text [sizeof (sql_err_text)-1] = '\0';
+
+jmp:
   longjmp_splice (&parse_reset, 1);
 }
 
@@ -703,7 +712,11 @@ void yyerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
 #else
   snprintf (buf, sizeof (buf), ": %s at '%s'", strg, yytext);
 #endif
+  if (scn3_inside_error_reporter)
+    goto jmp; /* see below */
   scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
+  strcat_ck (sql_err_text, buf);
+  scn3_inside_error_reporter ++;
   if (0 != yylex ())
     if (scn3_lineno != this_lineno)
       strcpy (buf_for_next, " immediately before end of line");
@@ -711,8 +724,9 @@ void yyerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
       snprintf (buf_for_next, sizeof (buf_for_next), " before '%s'", yytext);
   else
     strcpy (buf_for_next, " immediately before end of statement");
-  strcat_ck (sql_err_text, buf);
   strcat_ck (sql_err_text, buf_for_next);
+
+jmp:
   longjmp_splice (&parse_reset, 1);
 }
 
@@ -732,8 +746,12 @@ void yyfatalerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
 #else
   snprintf (buf, sizeof (buf), ": %s at '%s'", strg, yytext);
 #endif
+  if (scn3_inside_error_reporter)
+    goto jmp; /* see below */
   scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
   strcat_ck (sql_err_text, buf);
+
+jmp:
   longjmp_splice (&parse_reset, 1);
 }
 

@@ -68,6 +68,7 @@ scn3_line_loc_t scn3_line_locs[MAX_PRAGMALINE_DEPTH];
 int scn3_pragmaline_depth = 0;
 scn3_include_fragment_t scn3_include_stack [MAX_INCLUDE_DEPTH];
 int scn3_include_depth = 0;
+int scn3_inside_error_reporter = 0;
 dk_session_t *scn3split_ses = NULL;
 
 
@@ -977,6 +978,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 #endif
   }
 
+<SPARQL_SKIP>[#][^\n\r]+{S_NL}	TOK_NL_SKIP;
 <SPARQL_SKIP>{S_NL}	TOK_NL_SKIP;
 <SPARQL_SKIP>.		TOK(LEXICAL_ERROR);	/* random non-SQL, non-HTML text */
 
@@ -1017,6 +1019,7 @@ scn3split_yy_reset (void)
   scn3_lineno_increment = 1;
   scn3_lexdepth = 0;
   scn3_include_depth = 0;
+  scn3_inside_error_reporter = 0;
   scn3_namespaces = NULL;
   scn3_pragma_line_reset ();
   dk_free_tree (scn3split_ses);

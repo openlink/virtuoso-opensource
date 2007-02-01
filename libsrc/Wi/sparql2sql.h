@@ -155,6 +155,14 @@ The function returns pointer ot DV_STRING that resides in a global hashtable; it
 The exception is that values returned by function when \c ignore_cache is set; these values are temporarily and should be deleted. */
 extern ccaddr_t sprintff_intersect (ccaddr_t sprintf_fmt1, ccaddr_t sprintf_fmt2, int ignore_cache);
 
+/*! Returns whether \c strg1 can be printed by \c sprintf_fmt2.
+The returned value is 0 if it's proven that \c strg1 can not be printed by \c sprintf_fmt2, nonzero otherwise. */
+extern int sprintff_like (ccaddr_t strg1, ccaddr_t sprintf_fmt2);
+
+/* Replaces every "%" in \c strg with "%%", so the result is an sprintf format string (a new DV_STRING plain or mempool box) */
+extern caddr_t sprintff_from_strg (ccaddr_t strg, int use_mem_pool);
+
+/*!< Changes fields \c rvrSprintffs and \c rvrSprintffCount of \c rvr by adding (up to) \c add_count elements of \c add_sffs */
 extern void sparp_rvr_add_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *add_sffs, ptrlong add_count);
 extern void sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *isect_sffs, ptrlong isect_count);
 
@@ -225,7 +233,10 @@ extern quad_storage_t *sparp_find_storage_by_name (ccaddr_t name);
 typedef struct tc_context_s {
   SPART *tcc_triple;		/*!< Triple pattern in question */
   SPART **tcc_sources;		/*!< Source graphs that can be used */
-  int tcc_ignore_named_sources;	/*!< Flag whether names sources should be ignored even if listed in tcc_sources */
+  int tcc_required_source_type;	/*!< NAMED_L or FROM_L, to indicate that the search is among named or unnamed sources */
+  quad_storage_t *tcc_qs;	/*!< Quad storage in question */
+  void *tcc_last_qmvs [SPART_TRIPLE_FIELDS_COUNT];	/*!< Pointers to recently checked QMVs or constants. QMVs tend to repeat in sequences. */
+  int tcc_last_qmv_results [SPART_TRIPLE_FIELDS_COUNT];	/*!< Results of recent comparisons. */
   dk_set_t tcc_cuts [SPART_TRIPLE_FIELDS_COUNT];	/*!< Accumulated red cuts for possible values of fields */
   dk_set_t tcc_found_cases;		/*!< Accumulated triple cases */
 } tc_context_t;
@@ -239,8 +250,9 @@ that match and not empty and not after the first (empty or nonempty) full match.
 extern int sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm);
 
 /*! This returns a mempool-allocated vector of quad maps
-that describe an union of all elementary datasources that can store triples that match a pattern. */
-extern triple_case_t **sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int ignore_named_sources);
+that describe an union of all elementary datasources that can store triples that match a pattern.
+\c required_source_type should be FROM_L or NAMED_L */
+extern triple_case_t **sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int required_source_type);
 
 /*! This calls sparp_find_triple_cases() and fills in tc_list and native_formats of triple->_.triple */
 extern void sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple);

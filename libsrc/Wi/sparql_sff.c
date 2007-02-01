@@ -356,7 +356,7 @@ f1_v_is_U:
       switch (f2_tail[0])
         {
         case '%': strcpy (res_buf, "%s"); return SFF_ISECT_OK;  /* Syntax error in f2, format like %01% */
-        case 'U': goto generic_tails; /* see below */
+        case 'U': (res_buf++)[0] = '%'; (res_buf++)[0] = 'U'; f2_tail++; continue;
         case 'd': (res_buf++)[0] = '%'; (res_buf++)[0] = 'd'; f2_tail++; continue;
         case 's': goto generic_tails; /* see below */
         default: goto generic_tails; /* see below */
@@ -366,7 +366,7 @@ f1_v_is_U:
 
 f1_v_is_d:
 f1_v_is_u:
-  if (!isdigit (f1_tail[0]) && ('%' != f1_tail[0]))
+  if (isdigit (f1_tail[0]) || ('%' == f1_tail[0]))
     goto generic_tails; /* see below */
   /* The unambiguous '%d' in f1 may match any %d-like chars, f2 vars (%u to %u) */
   f2_tail = f2; /* Roll back in f2 because current f2_v should be matched like any next f2 var before sync. */
@@ -428,9 +428,6 @@ generic_tails:
 }
 #endif
 
-id_hash_t *sprintff_known_intersects = NULL;
-dk_mutex_t *sprintff_intersect_mtx = NULL;
-
 static id_hashed_key_t sprintff_pair_hash (char *strp)
 {
   caddr_t *pair = (caddr_t *) strp;
@@ -452,6 +449,9 @@ static int sprintff_pair_cmp (char *x, char *y)
     return 0;
   return 1;
 }
+
+id_hash_t *sprintff_known_intersects = NULL;
+dk_mutex_t *sprintff_intersect_mtx = NULL;
 
 ccaddr_t
 sprintff_intersect (ccaddr_t f1, ccaddr_t f2, int ignore_cache)
@@ -544,11 +544,177 @@ sprintff_intersect (ccaddr_t f1, ccaddr_t f2, int ignore_cache)
     dk_free (full_res_buf, res_maxsize);
   key_pair [0] = box_dv_short_string (f1);
   key_pair [1] = box_dv_short_string (f2);
-#ifndef NDEBUG
+#if 0
   printf ("sprintff_intersect ('%s', '%s') = '%s'\n", key_pair[0], key_pair[1], (NULL == res) ? "NULL" : res);
 #endif
   id_hash_set (sprintff_known_intersects, (caddr_t)key_pair, (caddr_t)(&res));
   mutex_leave (sprintff_intersect_mtx);
+  return res;
+}
+
+/*! This function gets a string \c s1 and asprintf_format string \c f2.
+The function returns nonzero if it is proven that \c s1 can not be printed by \c f2.
+If it can be printed or if the function is in doubt then it returns zero. */
+static int sff_dislike (const char *s1, const char *f2)
+{
+  const char *f2_tail, *s1_tail;
+  char f2_v;
+  int s1_shifted;
+again:
+  while ((f2[0] == s1[0]) && ('\0' != f2[0]) && ('%' != f2[0]))
+    {
+      f2++; s1++;
+    }
+  if ('\0' == f2[0])
+    {
+      if ('\0' == s1[0])
+        {
+          return SFF_ISECT_OK; /* Reached end of both formats */
+        }
+      return SFF_ISECT_DISJOIN; /* Disjoint: s1 is longer than f2 */
+    }
+  if ('%' != f2[0])
+    return SFF_ISECT_DISJOIN; /* Disjoint fixed chars */
+/* Now we know that '%' == f2[0] */
+  if ('%' == f2[1])
+    {
+      f2 += 2; s1 += 1;
+      goto again; /* see above */
+    }
+/* Now we know that f2 starts with variable part */
+  f2_tail = f2 + 1;
+  while (!isalpha (f2_tail[0]) && ('\0' != f2_tail[0])) f2_tail++;
+  f2_v = (f2_tail++)[0];
+  switch (f2_v)
+    {
+    case 'U': goto f2_v_is_U; /* see below */
+    case 'd': goto f2_v_is_d; /* see below */
+    case 's': goto f2_v_is_s; /* see below */
+    case 'u': goto f2_v_is_u; /* see below */
+    default: goto generic_tails; /* see below */
+    }
+
+f2_v_is_U:
+  if (!(('\0' == f2_tail[0]) || ('/' == f2_tail[0]) || ('?' == f2_tail[0]) || ('=' == f2_tail[0]) || ('#' == f2_tail[0])))
+    goto generic_tails; /* see below */
+  /* The unambiguous '%U' in f2 may match any %U-like chars */
+  s1_tail = s1;
+  for (;;)
+    {
+      switch (s1_tail[0])
+        {
+        case '\0': case '/': case '?': case '=': case '#':
+          if (f2_tail[0] == s1_tail[0]) /* unambiguous synchronisation between f2 and s1 */
+            goto tails_are_in_sync; /* see below */
+          if ('\0' == f2_tail[0])
+            return SFF_ISECT_DIFF_END; /* One string ends with %U, other with non-%U fixed char */
+          return SFF_ISECT_DISJOIN;
+        default: s1_tail++; continue;
+        }
+    }
+  GPF_T; /* never reached */
+
+f2_v_is_d:
+f2_v_is_u:
+  if (isdigit (f2_tail[0]) || ('%' == f2_tail[0]))
+    goto generic_tails; /* see below */
+  /* The unambiguous '%d' in f2 may match any %d-like chars */
+  s1_tail = s1;
+  s1_shifted = 0;
+  for (;;)
+    {
+      if (isdigit (s1_tail[0]))
+        {
+          s1_tail++;
+          s1_shifted = 1; continue;
+        }
+      else if (!s1_shifted && ('-' == s1_tail[0]) && isdigit (s1_tail[0]) && ('-' != f2_tail[0]) && ('d' == f2_v))
+        {
+          s1_tail += 2;
+          s1_shifted = 1; continue;
+        }
+      else if (f2_tail[0] == s1_tail[0]) /* unambiguous synchronisation between f2 and s1 */
+        goto tails_are_in_sync; /* see below */
+      else if ('\0' == f2_tail[0])
+        return SFF_ISECT_DIFF_END; /* One string ends with %d, other with non-%d fixed char */
+      else
+        return SFF_ISECT_DISJOIN;
+    }
+  GPF_T; /* never reached */
+
+f2_v_is_s:
+  if ('\0' == f2_tail[0])
+    { /* %s at the end of f2 intersects with any s1 */
+      return SFF_ISECT_OK;
+    }
+  goto generic_tails; /* see below */
+
+tails_are_in_sync:
+  f2 = f2_tail;
+  s1 = s1_tail;
+  goto again;
+
+generic_tails:
+  return SFF_ISECT_OK;
+}
+
+int
+sprintff_like (ccaddr_t s1, ccaddr_t f2)
+{
+  int s1_chk_pos, f2_chk_pos, s1_strlen;
+/* Very basic check for disjoint beginnings. */
+  s1_chk_pos = f2_chk_pos = 0;
+  for (;;)
+    {
+      char c1 = s1 [s1_chk_pos];
+      char c2 = f2 [f2_chk_pos];
+      if ('%' == c2)
+        {
+          if (('%' == c1) && ('%' == f2 [f2_chk_pos + 1]))
+            {
+              s1_chk_pos++; f2_chk_pos += 2; /* Escaped percent char in f2 */
+              continue;
+            }
+          break; /* Variable part vs fixed char */
+        }
+      if (c1 != c2)
+        return 0; /* Difference in fixed chars */
+      if ('\0' == c1)
+        return 1;
+      s1_chk_pos++; f2_chk_pos++;
+    }
+/* Here we start actual calculation of a new result, starting from s1_chk_pos and f2_chk_pos offset. Then we cache it and return */
+  s1_strlen = s1_chk_pos + strlen (s1 + s1_chk_pos);
+  if (SFF_ISECT_OK == sff_dislike (s1 + s1_chk_pos, f2 + f2_chk_pos))
+    return 1;
+  return 0;
+}
+
+caddr_t
+sprintff_from_strg (ccaddr_t strg, int use_mem_pool)
+{
+  int ctr, strg_strlen = 0;
+  int strg_pct_ctr = 0;
+  caddr_t res;
+  char * res_tail;
+  while ('\0' != strg [strg_strlen])
+    {
+      if ('%' == strg [strg_strlen])
+        strg_pct_ctr++;
+      strg_strlen++;
+    }
+  if (use_mem_pool)
+    res = t_alloc_box (strg_strlen + strg_pct_ctr + 1, DV_STRING);
+  else
+    res = dk_alloc_box (strg_strlen + strg_pct_ctr + 1, DV_STRING);
+  res_tail = res;
+  for (ctr = 0; ctr <= /* not '<' */ strg_strlen; ctr++)
+    {
+      char c1 = strg[ctr];
+      if ('%' == c1)
+        (res_tail++)[0] = '%';
+      (res_tail++)[0] = c1;
+    }
   return res;
 }
 
@@ -599,7 +765,7 @@ sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *i
 {
   int old_len = rvr->rvrSprintffCount;
   int max_reslen, old_ctr, isect_ctr, res_ctr, res_count, res_buf_len, oldsize;
-  caddr_t *res = sparp->sparp_sprintff_isect_buf;
+  ccaddr_t *res = sparp->sparp_sprintff_isect_buf;
   max_reslen = old_len * isect_count;
   if (0 == max_reslen)
     {

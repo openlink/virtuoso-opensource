@@ -14,15 +14,17 @@ JSO_CONST virtrdf SPART_VARR_EXPORTED		0x1000	--!< The variable is exported to t
 JSO_CONST virtrdf SPART_VARR_CONFLICT		0x2000	--!< The variable should match conflicting requirements or should appear in the result set of an empty union, so it is never bound
 
 -- Flags of actions to be done in case of match of triple pattern to conditions of the quad map
-JSO_CONST virtrdf SPART_QM_EMPTY		0x002	--!< The quad map does not contain real mapping but it's a root of tree of submaps and it can set a common 'exclusive'
-JSO_CONST virtrdf SPART_QM_EXCLUSIVE		0x004	--!< The quad map is an almost-exclusive storage for triples whose fields match fixed fields of the map. Red cut in the pattern matching search.
-JSO_CONST virtrdf SPART_QM_OK_FOR_ANY_QUAD	0x008	--!< Nonzero if the quad map may contain any quad so it can be used as a default qm of the storage.
+JSO_CONST virtrdf SPART_QM_EMPTY		0x0002	--!< The quad map does not contain real mapping but it's a root of tree of submaps and it can set a common 'exclusive'
+JSO_CONST virtrdf SPART_QM_EXCLUSIVE		0x0004	--!< The quad map is an almost-exclusive storage for triples whose fields match fixed fields of the map. Red cut in the pattern matching search.
+JSO_CONST virtrdf SPART_QM_OK_FOR_ANY_QUAD	0x0008	--!< The quad map may contain any quad so it can be used as a default qm of the storage.
 
+JSO_CONST virtrdf SPART_QS_NO_IMPLICIT_USER_QM	0x0001	--!< The quad storage disables user quad maps for triple patterns with unbound graph.
+JSO_CONST virtrdf SPART_QS_BLOCK_DEFAULT_QM	0x0002	--!< The quad storage disables the use of default quad map and signals an error if no other qm matches.
 
 JSO_STRUCT_BEGIN rdf_val_range virtrdf ValRange		--!< Description of set of possible values of a variable or a format or an pattern item.
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values stored at the field
-JSO_SCALAR rvrDatatype STRING OPTIONAL			--!< Datatype of stored values, if fixed
-JSO_SCALAR rvrLanguage STRING OPTIONAL			--!< Language, if fixed
+JSO_SCALAR rvrDatatype ANY_URI OPTIONAL			--!< Datatype of stored values, if fixed
+JSO_SCALAR rvrLanguage ANY_URI OPTIONAL			--!< Language, if fixed
 JSO_SCALAR rvrFixedValue ANY OPTIONAL			--!< Value of stored values, if fixed
 JSO_SCALAR rvrSprintffs STRING_array OPTIONAL		--!< Sprintf formats that cover possible IRI values
 JSO_SCALAR rvrSprintffCount INTEGER OPTIONAL		--!< Number of used items of rvrSprintffs
@@ -75,8 +77,8 @@ JSO_SCALAR qmfCustomString1 STRING OPTIONAL		--!< The value that can be used as 
 JSO_POINTER qmfSuperFormats qm_format_array OPTIONAL	--!< Array of formats that can store any value that current format can store
 JSO_GROUP_BEGIN qmfValRange virtrdf rdf_val_range	--!< Natural restrictions on values stored in the source column of format
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
-JSO_SCALAR rvrDatatype STRING OPTIONAL
-JSO_SCALAR rvrLanguage STRING OPTIONAL
+JSO_SCALAR rvrDatatype ANY_URI OPTIONAL
+JSO_SCALAR rvrLanguage ANY_URI OPTIONAL
 JSO_SCALAR rvrFixedValue ANY OPTIONAL
 JSO_SCALAR rvrSprintffs STRING_array OPTIONAL
 JSO_SCALAR rvrSprintffCount INTEGER OPTIONAL
@@ -105,8 +107,8 @@ JSO_SCALAR qmvColumnsToIRI STRING OPTIONAL
 JSO_SCALAR qmvIriClass ANY_URI OPTIONAL			--!< Known IRI class, if the IRI is calculable
 JSO_GROUP_BEGIN qmvRange virtrdf rdf_val_range		--!< Natural restrictions on values stored in the source column of format
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values stored at the field
-JSO_SCALAR rvrDatatype STRING OPTIONAL			--!< Datatype of stored values, if fixed
-JSO_SCALAR rvrLanguage STRING OPTIONAL			--!< Language, if fixed
+JSO_SCALAR rvrDatatype ANY_URI OPTIONAL			--!< Datatype of stored values, if fixed
+JSO_SCALAR rvrLanguage ANY_URI OPTIONAL			--!< Language, if fixed
 JSO_SCALAR rvrFixedValue ANY OPTIONAL			--!< Value of stored values, if fixed
 JSO_GROUP_END
 JSO_STRUCT_END
@@ -114,26 +116,26 @@ JSO_STRUCT_END
 JSO_STRUCT_BEGIN quad_map virtrdf QuadMap		--!< Description of single mapping pattern, including its subpatterns.
 JSO_GROUP_BEGIN qmGraphRange virtrdf rdf_val_range	--!< Restrictions on graph
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
-JSO_SCALAR rvrDatatype STRING OPTIONAL
-JSO_SCALAR rvrLanguage STRING OPTIONAL
+JSO_SCALAR rvrDatatype ANY_URI OPTIONAL
+JSO_SCALAR rvrLanguage ANY_URI OPTIONAL
 JSO_SCALAR rvrFixedValue ANY OPTIONAL
 JSO_GROUP_END
 JSO_GROUP_BEGIN qmSubjectRange virtrdf rdf_val_range	--!< Restrictions on subject
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
-JSO_SCALAR rvrDatatype STRING OPTIONAL
-JSO_SCALAR rvrLanguage STRING OPTIONAL
+JSO_SCALAR rvrDatatype ANY_URI OPTIONAL
+JSO_SCALAR rvrLanguage ANY_URI OPTIONAL
 JSO_SCALAR rvrFixedValue ANY OPTIONAL
 JSO_GROUP_END
 JSO_GROUP_BEGIN qmPredicateRange virtrdf rdf_val_range	--!< Restrictions on predicate
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
-JSO_SCALAR rvrDatatype STRING OPTIONAL
-JSO_SCALAR rvrLanguage STRING OPTIONAL
+JSO_SCALAR rvrDatatype ANY_URI OPTIONAL
+JSO_SCALAR rvrLanguage ANY_URI OPTIONAL
 JSO_SCALAR rvrFixedValue ANY OPTIONAL
 JSO_GROUP_END
 JSO_GROUP_BEGIN qmObjectRange virtrdf rdf_val_range	--!< Restrictions on object
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
-JSO_SCALAR rvrDatatype STRING OPTIONAL
-JSO_SCALAR rvrLanguage STRING OPTIONAL
+JSO_SCALAR rvrDatatype ANY_URI OPTIONAL
+JSO_SCALAR rvrLanguage ANY_URI OPTIONAL
 JSO_SCALAR rvrFixedValue ANY OPTIONAL
 JSO_GROUP_END
 JSO_POINTER qmGraphMap qm_value OPTIONAL		--!< Graph map if triple has a variable in graph position
@@ -153,5 +155,6 @@ JSO_STRUCT_BEGIN quad_storage virtrdf QuadStorage	--!< All mapping patterns plus
 JSO_POINTER qsMjvMaps quad_map_array OPTIONAL
 JSO_POINTER qsUserMaps quad_map_array OPTIONAL
 JSO_POINTER qsDefaultMap quad_map REQUIRED
+JSO_SCALAR qsMatchingFlags BITMASK OPTIONAL
 JSO_SCALAR qsAlterInProgress ANY OPTIONAL
 JSO_STRUCT_END

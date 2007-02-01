@@ -126,6 +126,9 @@ extern scn3_include_fragment_t scn3_include_stack [MAX_INCLUDE_DEPTH];
 /*! Number of fragments that are started but not yet completed. It's zero while the whole text is in SQL */
 extern int scn3_include_depth;
 
+/*! Flag that indicates that yylex() is called from yy_new_error() and error during te call should not cause infinite recursion */
+extern int scn3_inside_error_reporter;
+
 extern dk_session_t *scn3split_ses;
 
 extern void scn3_pragma_line (char *text);

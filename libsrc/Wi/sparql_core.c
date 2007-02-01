@@ -29,6 +29,7 @@
 #include "xmlparser.h"
 #include "xmltree.h"
 #include "numeric.h"
+#include "security.h"
 #include "sqlcmps.h"
 #include "sparql.h"
 #include "sparql2sql.h"
@@ -451,37 +452,24 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
         break;
       }
     }
-  if (!strcmp (param, "output:valmode"))
+  if ((7 < strlen (param)) && !memcmp (param, "output:", 7))
     {
-      sparp->sparp_env->spare_output_valmode_name = t_box_dv_uname_string (value);
-      return;
+      if (!strcmp (param, "output:valmode")) {
+          sparp->sparp_env->spare_output_valmode_name = t_box_dv_uname_string (value); return; }
+      if (!strcmp (param, "output:format")) {
+          sparp->sparp_env->spare_output_format_name = t_box_dv_uname_string (value); return; }
     }
-  if (!strcmp (param, "output:format"))
+  if ((6 < strlen (param)) && !memcmp (param, "input:", 6))
     {
-      sparp->sparp_env->spare_output_format_name = t_box_dv_uname_string (value);
-      return;
-    }
   if (!strcmp (param, "input:default-graph-uri") || !strcmp (param, "input:named-graph-uri"))
     {
-#if 0
-      rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_grab);
-      const char *grab = NULL;
-      if (rgc->rgc_all)
-        grab = "input:grab-all";
-      else if ((NULL != rgc->rgc_consts) || (NULL != rgc->rgc_vars))
-        grab = "input:grab-iri";
-      if (NULL != grab)
-        spar_error (sparp, "define %s and define %s specify conflicting security rules", grab, param);
-#endif
   if (!strcmp (param, "input:default-graph-uri"))
     {
-      if (0 != sparp->sparp_env->spare_default_graph_locked)
-        spar_error (sparp, "'define %.30s' is used more than once", param);
-      sparp->sparp_env->spare_default_graph_precode =
-        sparp_make_graph_precode ( sparp,
+          SPART *new_precode = sparp_make_graph_precode ( sparp,
         spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
         NULL );
-      sparp->sparp_env->spare_default_graph_locked = 1;
+          t_set_push (&(sparp->sparp_env->spare_default_graph_precodes), new_precode);
+          sparp->sparp_env->spare_default_graphs_locked = 1;
       return;
     }
   if (!strcmp (param, "input:named-graph-uri"))
@@ -508,7 +496,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
     {
       rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_grab);
       const char *lock_pragma = NULL;
-      if (sparp->sparp_env->spare_default_graph_locked)
+      if (sparp->sparp_env->spare_default_graphs_locked)
         lock_pragma = "input:default-graph-uri";
       else if (sparp->sparp_env->spare_named_graphs_locked)
         lock_pragma = "input:named-graph-uri";
@@ -561,25 +549,14 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           rgc->rgc_limit = t_box_num_nonull (val);
           return;
         }
-      if (!strcmp (param, "input:grab-base"))
-        {
-          rgc->rgc_base = t_box_dv_uname_string (value);
-      return;
-    }
-      if (!strcmp (param, "input:grab-destination"))
-    {
-          rgc->rgc_destination = t_box_dv_uname_string (value);
-      return;
-    }
-      if (!strcmp (param, "input:grab-resolver"))
-    {
-          rgc->rgc_resolver_name = t_box_dv_uname_string (value);
-      return;
-    }
-      if (!strcmp (param, "input:grab-loader"))
-        {
-          rgc->rgc_loader_name = t_box_dv_uname_string (value);
-          return;
+          if (!strcmp (param, "input:grab-base")) {
+              rgc->rgc_base = t_box_dv_uname_string (value); return; }
+          if (!strcmp (param, "input:grab-destination")) {
+              rgc->rgc_destination = t_box_dv_uname_string (value); return; }
+          if (!strcmp (param, "input:grab-resolver")) {
+              rgc->rgc_resolver_name = t_box_dv_uname_string (value); return; }
+          if (!strcmp (param, "input:grab-loader")) {
+              rgc->rgc_loader_name = t_box_dv_uname_string (value); return; }
         }
     }
   if ((4 < strlen (param)) && !memcmp (param, "get:", 4))
@@ -595,6 +572,15 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           dk_set_push (opts_ptr, t_box_dv_uname_string (param));
           return;
         }
+    }
+  if ((4 < strlen (param)) && !memcmp (param, "sql:", 4))
+    {
+      if (!strcmp (param, "sql:table-option")) {
+          t_set_push (&(sparp->sparp_env->spare_common_sql_table_options), t_box_dv_uname_string (value));
+          return; }
+      if (!strcmp (param, "sql:select-option")) {
+          t_set_push (&(sparp->sparp_env->spare_sql_select_options), t_box_dv_uname_string (value));
+          return; }
     }
   spar_error (sparp, "Unsupported parameter '%.30s' in 'define'", param);
 }
@@ -723,35 +709,46 @@ void spar_gp_add_filter (sparp_t *sparp, SPART *filt)
   t_set_push ((dk_set_t *)(&(sparp->sparp_env->spare_acc_filters->data)), filt);
 }
 
-void spar_gp_add_filter_for_named_graph (sparp_t *sparp)
+void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t precodes, int suppress_filters_for_good_names)
 {
   sparp_env_t *env = sparp->sparp_env;
-  SPART *graph_expn = (SPART *)(env->spare_context_graphs->data);
-  if (0 == dk_set_length (env->spare_named_graph_precodes))
+  caddr_t varname;
+  int precode_count = dk_set_length (precodes);
+  SPART *graph_expn_copy, *filter;
+  if (0 == precode_count)
     return;
-  if ((SPAR_VARIABLE == SPART_TYPE (graph_expn)) ||
-    (SPAR_BLANK_NODE_LABEL == SPART_TYPE (graph_expn)) )
+  if (!SPAR_IS_BLANK_OR_VAR (graph_expn))
+    return;
+  varname = graph_expn->_.var.vname;
+  if (suppress_filters_for_good_names)
     {
-      caddr_t varname = graph_expn->_.var.vname;
       dk_set_t good_varnames = env->spare_good_graph_varnames;
-      if (0 > dk_set_position_of_string (good_varnames, varname))
-        {
-          SPART *graph_expn_copy = (
+      if (0 <= dk_set_position_of_string (good_varnames, varname))
+        return;
+    }
+  graph_expn_copy = (
             (SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
             spar_make_variable (sparp, varname) :
             spar_make_blank_node (sparp, varname, 0) );
-          SPART *filter = spartlist (sparp, 4, SPAR_FUNCALL,
+  filter = spartlist (sparp, 4, SPAR_FUNCALL,
             box_dv_uname_string ("LONG::bif:position"), 2,
             t_list (2,
               graph_expn_copy,
               spartlist (sparp, 4, SPAR_FUNCALL,
                 box_dv_uname_string ("SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"), 1,
                 t_list (1,
-                  spar_make_variable (sparp,
-                    box_dv_uname_string (SPAR_VARNAME_NAMED_GRAPHS) ) ) ) ) );
+          spartlist (sparp, 4, SPAR_FUNCALL,
+            box_dv_uname_string ("SQLVAL::bif:vector"), precode_count,
+            t_list_to_array (precodes) ) ) ) ) );
           spar_gp_add_filter (sparp, filter);
-        }
-    }
+}
+
+void
+spar_gp_add_filter_for_named_graph (sparp_t *sparp)
+{
+  sparp_env_t *env = sparp->sparp_env;
+  SPART *graph_expn = (SPART *)(env->spare_context_graphs->data);
+  spar_gp_add_filter_for_graph (sparp, graph_expn, env->spare_named_graph_precodes, 0);
 }
 
 SPART **
@@ -916,10 +913,18 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
 {
   dk_set_t src = NULL;
   SPART **sources;
+#if 0 /* Old version with single default graph IRI */
   if (NULL != sparp->sparp_env->spare_default_graph_precode)
     t_set_push (&src, spartlist (sparp, 2, FROM_L,
         sparp_tree_full_copy (sparp, sparp->sparp_env->spare_default_graph_precode, NULL) ) );
-  DO_SET(caddr_t, precode, &(sparp->sparp_env->spare_named_graph_precodes))
+#else
+  DO_SET(SPART *, precode, &(sparp->sparp_env->spare_default_graph_precodes))
+    {
+      t_set_push (&src, spartlist (sparp, 2, FROM_L, sparp_tree_full_copy (sparp, precode, NULL)));
+    }
+  END_DO_SET()
+#endif
+  DO_SET(SPART *, precode, &(sparp->sparp_env->spare_named_graph_precodes))
     {
       t_set_push (&src, spartlist (sparp, 2, NAMED_L, sparp_tree_full_copy (sparp, precode, NULL)));
     }
@@ -949,7 +954,7 @@ SPART *spar_make_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pr
   int fctr;
   for (;;)
     {
-      SPART *dflt;
+      dk_set_t dflts;
       if (NULL != graph)
         break;
       if (env->spare_context_graphs)
@@ -957,38 +962,26 @@ SPART *spar_make_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pr
         graph = (SPART *)t_box_copy_tree (env->spare_context_graphs->data);
           break;
         }
-      dflt = env->spare_default_graph_precode;
-      if (NULL != dflt)
+      dflts = env->spare_default_graph_precodes;
+      if ((NULL != dflts) && (NULL == dflts->next))
+        { /* If there's only one default graph then we can cheat and optimize the query a little bit by adding a restriction to the variable */
+          SPART *single_dflt = (SPART *)(dflts->data);
+          if (SPAR_FUNCALL == SPART_TYPE (single_dflt))	 /* FROM iriref OPTION (...) case */
         {
-          if (SPAR_FUNCALL == SPART_TYPE (dflt))	 /* FROM iriref OPTION (...) case */
-            {
-#if 0	/* !!!TBD: this code looks shorter but the optimizer fails to calculate the function only once */
               SPART *eq;
               graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_:graph"), 1);
-              spar_gp_add_filter (sparp, sparp_tree_full_copy (sparp, dflt, NULL));
-              eq = spartlist (sparp, 3, BOP_EQ, graph, sparp_tree_full_copy (sparp, dflt->_.funcall.argtrees[0], 0));
-              spar_gp_add_filter (sparp, eq);
-#elseif 0
-              SPART *eq1, *eq2;
-              graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_:graph"), 1);
-              eq1 = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, dflt, NULL));
-              spar_gp_add_filter (sparp, eq1);
-              eq2 = spartlist (sparp, 3, BOP_EQ, graph, sparp_tree_full_copy (sparp, dflt->_.funcall.argtrees[0], NULL));
-              spar_gp_add_filter (sparp, eq2);
-#else
-              SPART *eq;
-              graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_:graph"), 1);
-              eq = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, dflt, NULL));
+              eq = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, single_dflt, NULL));
               spar_gp_add_filter (sparp, eq);
 	      graph->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
-              graph->_.var.rvr.rvrFixedValue = sparp_tree_full_copy (sparp, dflt->_.funcall.argtrees[0], NULL);
-#endif
+              graph->_.var.rvr.rvrFixedValue = (caddr_t)sparp_tree_full_copy (sparp, single_dflt->_.funcall.argtrees[0], NULL);
+              break;
             }
-          else						/* FROM iriref case */
-            graph = sparp_tree_full_copy (sparp, env->spare_default_graph_precode, NULL);
+	/* Single FROM iriref without sponge options */
+          graph = sparp_tree_full_copy (sparp, single_dflt, NULL);
           break;
 	}
-        graph = spar_make_variable (sparp, t_box_dv_uname_string (SPAR_VARNAME_DEFAULT_GRAPH));
+      graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_:graph"), 1);
+      spar_gp_add_filter_for_graph (sparp, graph, dflts, 0);
       break;
     }
   if (SPAR_IS_BLANK_OR_VAR (graph))
@@ -1415,6 +1408,7 @@ void spart_dump_varr_bits (dk_session_t *ses, int varr_bits)
   VARR_BIT (SPART_VARR_TYPED, " typed");
   VARR_BIT (SPART_VARR_IS_LIT, " lit");
   VARR_BIT (SPART_VARR_IRI_CALC, " IRI-namecalc");
+  VARR_BIT (SPART_VARR_SPRINTFF, " SprintfF");
   VARR_BIT (SPART_VARR_IS_BLANK, " bnode");
   VARR_BIT (SPART_VARR_IS_IRI, " IRI");
   VARR_BIT (SPART_VARR_IS_REF, " reference");
@@ -1988,14 +1982,23 @@ sparp_clone_for_variant (sparp_t *sparp)
       iter->data = t_box_copy_tree ((caddr_t)opt);
     }
   END_DO_SET()
+#if 0 /* Old variant with single graph */
   ENV_SPART_COPY (spare_default_graph_precode);
-  ENV_COPY (spare_default_graph_locked);
+#else
+  env_copy->spare_default_graph_precodes = t_set_copy (env->spare_default_graph_precodes);
+  DO_SET_WRITABLE (SPART *, precode, iter, &(env_copy->spare_default_graph_precodes))
+    {
+      iter->data = t_box_copy_tree ((caddr_t)precode);
+    }
+  END_DO_SET()
+#endif
   env_copy->spare_named_graph_precodes = t_set_copy (env->spare_named_graph_precodes);
   DO_SET_WRITABLE (SPART *, precode, iter, &(env_copy->spare_named_graph_precodes))
     {
       iter->data = t_box_copy_tree ((caddr_t)precode);
     }
   END_DO_SET()
+  ENV_COPY (spare_default_graphs_locked);
   ENV_COPY (spare_named_graphs_locked);
   return sparp_copy;
 }
@@ -2144,10 +2147,20 @@ bif_sprintff_intersect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long ignore_cache = bif_long_arg (qst, args, 2, "__sprintff_intersect");
   caddr_t res;
   sec_check_dba ((query_instance_t *)qst, "__sprintff_intersect"); /* To prevent attack by intersecting garbage in order to run out of memory. */
-  res = sprintff_intersect (f1, f2, ignore_cache);
+  res = (caddr_t)sprintff_intersect (f1, f2, ignore_cache);
   if (NULL == res)
     return NEW_DB_NULL;
   return (ignore_cache ? res : box_copy (res));
+}
+
+caddr_t
+bif_sprintff_like (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t f1 = bif_string_or_uname_arg (qst, args, 0, "__sprintff_like");
+  caddr_t f2 = bif_string_or_uname_arg (qst, args, 1, "__sprintff_like");
+  caddr_t res;
+  sec_check_dba ((query_instance_t *)qst, "__sprintff_like"); /* To prevent attack by likeing garbage in order to run out of memory. */
+  return sprintff_like (f1, f2);
 }
 
 #ifdef DEBUG
@@ -2350,6 +2363,7 @@ sparql_init (void)
   bif_define ("sparql_explain", bif_sparql_explain);
   bif_define ("sparql_lex_analyze", bif_sparql_lex_analyze);
   bif_define ("__sprintff_intersect", bif_sprintff_intersect);
+  bif_define ("__sprintff_like", bif_sprintff_like);
 #ifdef DEBUG
   bif_define ("sparql_lex_test", bif_sparql_lex_test);
 #endif

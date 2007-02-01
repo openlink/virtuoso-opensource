@@ -2442,59 +2442,7 @@ void ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t ne
   char *coloncolon = strstr (vname, "::");
   if (NULL != coloncolon)
     vname = coloncolon + 1;
-  if (!strcmp (vname, SPAR_VARNAME_DEFAULT_GRAPH))
-    {
-      SPART *defined_precode = env->spare_default_graph_precode;
-      if (NULL != defined_precode)
-        {
-          if (env->spare_default_graph_locked)
-            {
-              ssg_print_scalar_expn (ssg, defined_precode, needed, NULL_ASNAME);
-              return;
-            }
-          ssg_puts (" coalesce (connection_get ('");
-          ssg_puts (vname);
-          ssg_puts ("'),");
-          ssg->ssg_indent += 1;
-          ssg_print_scalar_expn (ssg, defined_precode, needed, NULL_ASNAME);
-          ssg->ssg_indent -= 1;
-          ssg_puts (")");
-          return;
-        }
-      ssg_puts (" connection_get ('");
-      ssg_puts (vname);
-      ssg_puts ("')");
-      return;
-    }
-  else if (!strcmp (vname, SPAR_VARNAME_NAMED_GRAPHS))
-    {
-      dk_set_t defined_precodes = env->spare_named_graph_precodes;
-      if (0 != dk_set_length (defined_precodes))
-        {
-          if (env->spare_named_graphs_locked)
-            {
-              ssg_puts (" vector (");
-              ssg->ssg_indent += 1;
-              ssg_print_uri_list (ssg, defined_precodes, needed);
-              ssg->ssg_indent -= 1;
-              ssg_puts (")");
-              return;
-            }
-          ssg_puts (" coalesce (connection_get ('");
-          ssg_puts (vname);
-          ssg_puts ("'), vector (");
-          ssg->ssg_indent += 2;
-          ssg_print_uri_list (ssg, defined_precodes, needed);
-          ssg->ssg_indent -= 2;
-          ssg_puts ("))");
-          return;
-        }
-      ssg_puts (" connection_get ('");
-      ssg_puts (vname);
-      ssg_puts ("')");
-      return;
-    }
-  else if (isdigit (vname[1])) /* Numbered parameter */
+  if (isdigit (vname[1])) /* Numbered parameter */
     {
       ssg_puts (vname);
       return;
@@ -2882,9 +2830,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             goto print_asname;
           }
         e_varname = ssg->ssg_equivs[tree->_.var.equiv_idx]->e_varnames[0];
-        if (IS_BOX_POINTER (vmode) && (1 < vmode->qmfColumnCount) && (NULL == asname))
-          spar_sqlprint_error ("ssg_" "print_scalar_expn(): multi-column alias should have an alias name");
-        if (IS_BOX_POINTER (vmode) && (1 < vmode->qmfColumnCount) && IS_BOX_POINTER (asname))
+        if (IS_BOX_POINTER (vmode) && (1 < vmode->qmfColumnCount) && (IS_BOX_POINTER (asname) || (NULL == asname)))
           {
             int colctr;
             ssg_puts (" /*retval-list[*/ ");
@@ -2906,9 +2852,12 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
                   }
                 sprintf (buf, "%.100s~%d", /*tree->_.retval.vname*/ e_varname, colctr);
                 ssg_prin_id (ssg, buf);
+                if (NULL != asname)
+                  {
                 ssg_puts (" AS ");
                 sprintf (buf, "%.100s~%d", asname, colctr);
                 ssg_prin_id (ssg, buf);
+              }
               }
             ssg_puts (" /*]retval-list*/ ");
             return;
@@ -3028,6 +2977,20 @@ ssg_print_where_or_and (spar_sqlgen_t *ssg, const char *location)
       ssg_puts (" */ ");
       ssg_newline (1);
     }
+}
+
+void
+ssg_prin_option_commalist (spar_sqlgen_t *ssg, dk_set_t opts, int print_leading_comma)
+{
+  int ctr = 0;
+  DO_SET (caddr_t, o, &opts)
+    {
+      if (ctr || print_leading_comma)
+        ssg_puts (", ");
+      ssg_puts (o);
+      ctr++;
+    }
+  END_DO_SET()
 }
 
 void
@@ -4005,6 +3968,7 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART **trees, int tree_count, int pass
         caddr_t tabid = tree->_.triple.tabid;
         triple_case_t **tc_list = tree->_.triple.tc_list;
         quad_map_t *qm;
+        dk_set_t common_tblopts = ssg->ssg_sparp->sparp_env->spare_common_sql_table_options;
 #ifdef DEBUG
         if (1 != BOX_ELEMENTS_0 (tc_list))
           spar_internal_error (ssg->ssg_sparp, "ssg_" "print_table_exp(): qm_list does not contain exactly one qm");
@@ -4020,6 +3984,12 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART **trees, int tree_count, int pass
                 ssg_qr_uses_table (ssg, qm->qmTableName);
                 ssg_puts (" AS ");
                 ssg_prin_id (ssg, tabid);
+                if (NULL != common_tblopts)
+                  {
+                    ssg_puts (" TABLE OPTION (");
+                    ssg_prin_option_commalist (ssg, common_tblopts, 0);
+                    ssg_puts (") ");
+                  }
               }
             if (2 == pass)
               ssg_print_all_table_fld_restrictions (ssg, qm, tree->_.triple.tabid, tree->_.triple.tr_fields);
@@ -4470,7 +4440,9 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       END_DO_BOX_FAST;
       ssg->ssg_indent--;
     }
-   ssg_puts ("\nOPTION (QUIETCAST)");
+  ssg_puts ("\nOPTION (QUIETCAST");
+  ssg_prin_option_commalist (ssg, ssg->ssg_sparp->sparp_env->spare_sql_select_options, 1);
+  ssg_puts (")");
   if (NULL != formatter)
     {
       switch (tree->_.req_top.subtype)
