@@ -218,6 +218,9 @@ dv_to_sql_type (dtp_t dv, int cli_binary_timestamp)
     case DV_LONG_WIDE:
       return SQL_WVARCHAR;
 
+    case DV_ANY:
+      return SQL_VARCHAR;
+
     default:
       return SQL_VARCHAR;
     }
@@ -3475,6 +3478,9 @@ col_desc_get_display_size (col_desc_t *cd, int cli_binary_timestamp)
 	else
 	  return 8; 
       }
+
+    case DV_ANY:
+      return 4070;
 
     default:
       return SQL_NO_TOTAL;

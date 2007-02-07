@@ -2827,12 +2827,12 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
       FieldIdentifier = SQL_COLUMN_NULLABLE;
       break;
 
-    case SQL_DESC_LENGTH:
-    case SQL_DESC_OCTET_LENGTH:
     case SQL_DESC_SCALE:
       FieldIdentifier = SQL_COLUMN_SCALE;
       break;
 
+    case SQL_DESC_LENGTH:
+    case SQL_DESC_OCTET_LENGTH:
     case SQL_DESC_PRECISION:
       FieldIdentifier = SQL_COLUMN_PRECISION;
       break;
