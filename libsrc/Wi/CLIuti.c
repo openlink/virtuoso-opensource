@@ -3431,6 +3431,7 @@ col_desc_get_display_size (col_desc_t *cd, int cli_binary_timestamp)
     case DV_NUMERIC:
       return 2 + unbox (cd->cd_precision);
 
+    case DV_ANY:
     case DV_STRING:
     case DV_UNAME:
     case DV_BLOB:
@@ -3478,9 +3479,6 @@ col_desc_get_display_size (col_desc_t *cd, int cli_binary_timestamp)
 	else
 	  return 8; 
       }
-
-    case DV_ANY:
-      return 4070;
 
     default:
       return SQL_NO_TOTAL;

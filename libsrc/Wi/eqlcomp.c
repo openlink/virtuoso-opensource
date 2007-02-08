@@ -2303,6 +2303,8 @@ retry_dupe_check:
 	      prec = 10;
 	      desc->cd_scale = box_num (6);
 	    }
+	  if (desc->cd_dtp == DV_ANY)
+  	      prec = ROW_MAX_COL_BYTES;
 	  if (IS_BLOB_DTP (desc->cd_dtp))
 	    prec = 0x7fffffff;
 	  desc->cd_precision = box_num (prec);

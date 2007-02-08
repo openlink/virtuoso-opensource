@@ -366,12 +366,7 @@ virtodbc__SQLColAttributes (
 #endif
     case SQL_COLUMN_LENGTH:
       if (pfDesc)
-        {
-  	  if (cd->cd_dtp == DV_ANY)
-	    *pfDesc = 4070;
-	  else
-	    *pfDesc = unbox (cd->cd_precision);
-        }
+        *pfDesc = unbox (cd->cd_precision);
       break;
 
 #if ODBCVER >= 0x0300
@@ -379,12 +374,7 @@ virtodbc__SQLColAttributes (
 #endif
     case SQL_COLUMN_PRECISION:
       if (pfDesc)
-        {
-  	  if (cd->cd_dtp == DV_ANY)
-	    *pfDesc = 4070;
-	  else
-	    *pfDesc = unbox (cd->cd_precision);
-        }
+        *pfDesc = unbox (cd->cd_precision);
       break;
 
 #if ODBCVER >= 0x0300
@@ -1082,12 +1072,7 @@ virtodbc__SQLDescribeCol (
     *pibScale = (SQLSMALLINT) unbox (cd->cd_scale);
 
   if (pcbColDef)
-    {
-      if (cd->cd_dtp == DV_ANY)
-   	*pcbColDef = 4070;
-      else
-	*pcbColDef = (UDWORD) unbox (cd->cd_precision);
-    }
+    *pcbColDef = (UDWORD) unbox (cd->cd_precision);
 
   if (pfNullable)
     *pfNullable = (SQLSMALLINT) cd->cd_nullable;
