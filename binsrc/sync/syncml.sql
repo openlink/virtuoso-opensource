@@ -124,77 +124,6 @@ create index SYNC_RPLOG_COL on SYNC_RPLOG (RLOG_RES_COL)
 
 
 syncml_exec_no_error ('
-create trigger SRLOG_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES order 190
-  {
-    declare local_time datetime;
-    declare temp any;
-    declare temp, mime, new_name, id, p_id, atm any;
-    declare __rowguid any;
-
-    if (not exists (select 1 from SYNC_COLS_TYPES where RES_COL = CT_COL_ID))
-	return;
-
-    local_time := coalesce (connection_get (''A_LAST_LOCAL''), now ());
-
-    atm := registry_get (''__ATM'');
-
-    if (atm = RES_ID) return;
-
-    if ("LEFT" (RES_NAME, 1) = ''.'') return;
-
-    if (not exists (select 1 from SYNC_COLS_TYPES where RES_COL = CT_COL_ID))
-	return;
-
-    __rowguid := ROWGUID;
-
-    local_time := coalesce (connection_get (''A_LAST_LOCAL''), now ());
-    temp := RES_CONTENT;
-    temp := sync_pars_vcard_int (temp);
-    if (temp is NULL)
-      return;
-    new_name := uuid ();
-
-    id := WS.WS.GETID (''R'');
-    p_id := RES_COL;
-
-    set triggers off;
-
-    registry_set (''__ATM'', cast (id as varchar));
-
-    insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP,
-	RES_CONTENT, RES_TYPE, ROWGUID)
-	values (id, new_name, p_id, now (), now (), 2, ''111111111'', http_nogroup_gid(), temp, ''text/x-vcard'', __rowguid);
-
-
-    insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
-    	values (id, p_id, ''I'', local_time);
-  }
-')
-;
-
-syncml_exec_no_error ('
-create trigger SRLOG_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referencing old as O, new as N
-  {
-    declare local_time datetime;
-    local_time := coalesce (connection_get (''A_LAST_LOCAL''), now ());
-    update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = ''U'', SNAPTIME = local_time
-    	where RLOG_RES_ID = O.RES_ID;
-  }
-')
-;
-
-syncml_exec_no_error ('
-create trigger SRLOG_SYS_DAV_RES_D after delete on WS.WS.SYS_DAV_RES
-  {
-    declare local_time datetime;
-    local_time := coalesce (connection_get (''A_LAST_LOCAL''), now ());
-    update SYNC_RPLOG set RLOG_RES_COL = RES_COL, DMLTYPE = ''D'', SNAPTIME = local_time
-    	where RLOG_RES_ID = RES_ID;
-  }
-')
-;
-
-syncml_exec_no_error ('
 create table SYNC_SESSION
 	(
 	S_ID varchar,
@@ -256,7 +185,7 @@ create type sync_batch as (
 			    uid int default null,
 			    final any default null
 			  )
-			  self as ref temporary
+			  self as ref -- temporary
 constructor method sync_batch (hdr any),
 method auth_check (resph any, respb any) returns any,
 method sync_check_cred (cred any, tp any, name any, nonce any, allow_basic int) returns any,
@@ -274,6 +203,10 @@ create constructor method sync_batch (in hdr any) for sync_batch
     self.hdr := hdr;
     self.ver := coalesce (connection_get ('SyncML-ver'), '1.1');
     self.ver := cast(xpath_eval ('/SyncHdr/VerDTD/text()', hdr, 1) as varchar);
+    self.out_msgid := 0;
+    self.last_cmd := 0;
+    self.auth := 0;
+    self.remote_final := 0;
 --  dbg_obj_print ('VERSION self.ver ', self.ver);
     return;
   }
@@ -414,6 +347,7 @@ nf:
 	      xte_node (xte_head ('Target'), xte_node (xte_head ('LocURI'), self.src)),
 	      xte_node (xte_head ('Source'), xte_node (xte_head ('LocURI'), self.tgt))
 	      , xte_node (xte_head ('RespURI'), self.tgt)
+	      , xte_node (xte_head ('Meta'), xte_node (xte_head ('MaxMsgSize', 'xmlns', 'syncml:metinf'), '10000'))
 	  );
      }
 
@@ -538,12 +472,12 @@ create type sync_cmd as (
 			noresp int default 0,
 			meta any,
 			items any,
-			parent sync_cmd default null,
-			batch sync_batch,
+			parent DB.DBA.sync_cmd default null,
+			batch DB.DBA.sync_batch,
 			xt any,
 			state int,
 			out_data any default null
-			) self as ref temporary
+			) self as ref -- temporary
 constructor method sync_cmd (batch sync_batch, parent sync_cmd),
 method deserialize (xt any) returns any,
 method serialize_resp (code any, resp any) returns any,
@@ -575,6 +509,7 @@ create constructor method sync_cmd (inout batch sync_batch, inout parent sync_cm
   {
     self.batch := batch;
     self.parent := parent;
+    self.noresp := 0;
   }
 ;
 
@@ -713,7 +648,16 @@ create method process (inout resp any) for sync_cmd
 	l := length (self.items); i := 0;
 	while (i < l)
 	  {
+	    {
+	      declare exit handler for sqlstate '*'
+		{
+		    log_message (sprintf ('Command failed: %s, id %d, Error: %s ', self.tp, self.id, __SQL_MESSAGE));
+		    self.state := 500;
+		    goto __next;
+		};
 	    rc := call (h) (self, self.items[i], resp);
+	    }
+__next:;
 	    i := i + 1;
 	  }
 	if (self.state is not null)
@@ -820,8 +764,10 @@ create method sync_handle_put (inout xt any, inout resp any)  for sync_cmd
 
   xt := xml_cut (xt);
   loc := cast (xpath_eval ('/Item/Source/LocURI/text()', xt, 1) as varchar);
+
   if (loc like './devinf1%')
     {
+      -- TODO check xpath_eval result <> Null
       self.update_devinfo (xml_cut(xpath_eval ('/Item/Data/DevInf', xt, 1)));
     }
   else
@@ -917,12 +863,14 @@ create method sync_handle_add (inout xt any, inout resp any)  for sync_cmd
 
   xt := xml_cut (xt);
   loc := cast (xpath_eval ('/Item/Source/LocURI/text()', xt, 1) as varchar);
-  data := cast (xpath_eval ('/Item/Data/text()', xt, 1) as varchar);
+  data := xpath_eval ('string (/Item/Data)', xt, 1);
+  mime := null;
   if (self.meta is not null)
     mime := cast (xpath_eval ('/Meta/Type/text()', xml_cut (self.meta), 1) as varchar);
   path := self.resolve_uri (null);
 
   if (mime is null) mime := '';
+  if (data is not null) data := charset_recode (data, '_WIDE_', 'UTF-8');
 
   col_id := DAV_SEARCH_ID (path, 'c');
 
@@ -946,10 +894,12 @@ _continue:;
   whenever SQLSTATE '*' default;
 
   res_name := NULL;
-  res_name := xml_tree_doc ('<a>' || temp || '</a>');
-  res_name := cast (xpath_eval ('/a/N/text()', res_name, 1) as varchar);
-  res_name := replace ( res_name, ';', '');
-  res_name := replace ( res_name, '&', '');
+  res_name := xtree_doc ('<a>' || temp || '</a>', 0, '', 'utf-8');
+  res_name := xpath_eval ('string (//N)', res_name, 1);
+  res_name := replace (res_name, N';', N'');
+  res_name := replace (res_name, N'&', N'');
+  res_name := replace (res_name, N' ', N'+');
+  res_name := charset_recode (res_name, '_WIDE_', 'UTF-8');
 
   if (res_name is null)
     res_name := uuid ();
@@ -990,7 +940,9 @@ _continue:;
     mime := mime_in;
 
   --dbg_obj_print ('FILE TO UPLOAD res_path = ', res_path);
+  connection_set ('__sync_dav_upl', '1');
   rc := DAV_RES_UPLOAD_STRSES_INT (res_path, temp, mime, '110100000N', 'dav', null, null, null, 0);
+  connection_set ('__sync_dav_upl', '0');
 
   if (rc > 0)
     {
@@ -1195,7 +1147,7 @@ create method sync_issue_sync (inout xt any, inout resp any) for sync_cmd
   self.batch.send_list := get_keyword ('__send_list', self.batch.cmdstate, vector());
 
   if (not self.batch.remote_final)
-    self.batch.remote_final := get_keyword ('__remote_final', self.batch.cmdstate, vector());
+    self.batch.remote_final := get_keyword ('__remote_final', self.batch.cmdstate, 0);
 
   xte_nodebld_init (syn);
   self.batch.last_cmd := self.batch.last_cmd + 1;
@@ -1216,6 +1168,7 @@ create method sync_issue_sync (inout xt any, inout resp any) for sync_cmd
 
       {
 	declare repl, data, meta, cmdname any;
+	--dbg_obj_print ('DMLTYPE ->', DMLTYPE);
 
 	cmdname := 'Replace';
 	data := 0;
@@ -1243,14 +1196,24 @@ create method sync_issue_sync (inout xt any, inout resp any) for sync_cmd
 
 	if (not isinteger (data))
 	  {
-	data := cast (xslt ('http://local.virt/sync_out_xsl', xml_tree_doc (blob_to_string (data)),
-		vector ('devinf', dev_info, 'mime', meta)) as varchar);
+	    if (not xslt_is_sheet ('http://local.virt/sync_out_xsl'))
+	       sync_define_xsl ();
+	    data := xslt ('http://local.virt/sync_out_xsl', xtree_doc (data, 0, '', 'utf-8'),
+		vector ('devinf', dev_info, 'mime', meta));
+
+	    data := serialize_to_UTF8_xml (data);
+	    data := charset_recode (data, 'UTF-8', '_WIDE_');
+
+	    if (isinteger (data))
+		{
+    		    signal ('22023', 'Missing content.');
+		    goto end_loop;
+		}
 	  }
 
 _continue:;
   whenever SQLSTATE '*' default;
 
-	if (isinteger (data)) goto end_loop;
 
 	if (not isinteger (data))
 	message_size := message_size + length (data);
@@ -1424,6 +1387,8 @@ create method sync_handle_sync (inout xt any, inout resp any)  for sync_cmd
 }
 ;
 
+--/* */
+
 create method sync_handle_alert (inout xt any, inout resp any)  for sync_cmd
 {
   --dbg_printf ('sync_handle_alert');
@@ -1435,7 +1400,6 @@ create method sync_handle_alert (inout xt any, inout resp any)  for sync_cmd
 
   self.state := null;
   sync_code := 200;
-  xt := xml_cut (xt);
 
   alert_code := cast (xpath_eval ('/Alert/Data/text()', self.xt, 1) as varchar);
 
@@ -1447,6 +1411,8 @@ create method sync_handle_alert (inout xt any, inout resp any)  for sync_cmd
     }
 
   --dbg_obj_print ('alert_code', alert_code);
+
+  xt := xml_cut (xt);
 
   loc := cast (xpath_eval ('/Item/Target/LocURI/text()', xt, 1) as varchar);
   tgt := cast (xpath_eval ('/Item/Source/LocURI/text()', xt, 1) as varchar);
@@ -1469,6 +1435,12 @@ create method sync_handle_alert (inout xt any, inout resp any)  for sync_cmd
 
   if (not self.perm_check (path))
     return;
+
+  if (alert_code = '201')
+    {
+	sync_code := 201;
+	arlast := NULL;
+    }
 
   update SYNC_ANCHORS set A_NEXT_LOCAL = now (), A_LAST_REMOTE = arlast, A_NEXT_REMOTE = arnext
   	where A_COL_ID = col_id and A_DEV_ID = self.batch.devid;
@@ -1536,6 +1508,8 @@ create method sync_handle_alert (inout xt any, inout resp any)  for sync_cmd
       xte_nodebld_final (item, xte_head('Item'));
 
       self.batch.last_cmd := self.batch.last_cmd + 1;
+--  dbg_obj_print ('2 self ', self);
+--  dbg_obj_print ('2 self.batch ', self.batch);
       xte_nodebld_acc (aler, xte_node (xte_head ('CmdID'), cast (self.batch.last_cmd as varchar)));
       xte_nodebld_acc (aler, xte_node (xte_head ('Data'), cast (sync_code as varchar)));
       xte_nodebld_acc (aler, item);
@@ -1656,7 +1630,10 @@ create procedure sync_handle_request (in _xdoc any, in path any) returns any
 
   batch.final ();
 
-  if (batch.send_final)
+  --dbg_obj_print ('batch.send_final -> ', batch.send_final);
+  --dbg_obj_print ('batch.remote_final -> ', batch.remote_final);
+
+  if (batch.send_final and batch.remote_final)
     xte_nodebld_acc (_rspbody, xte_node (xte_head ('Final')));
   xte_nodebld_final (_rsphdr, xte_head ('SyncHdr'));
   xte_nodebld_final (_rspbody, xte_head ('SyncBody'));
@@ -1673,7 +1650,7 @@ create procedure sync_handle_request (in _xdoc any, in path any) returns any
 
 create method sync_handle_final (inout xt any, inout resp any)  for sync_cmd
 {
---dbg_printf ('sync_handle_final');
+  --dbg_obj_print ('sync_handle_final');
 
   if (not self.authenticated (null))
     return;
@@ -1681,60 +1658,6 @@ create method sync_handle_final (inout xt any, inout resp any)  for sync_cmd
   self.batch.remote_final := 1;
 
   return null;
-}
-;
-
-create procedure
-sync_parse_in_data (in _data any, inout _mime any)
---sync_parse_in_data (in _data any)
-{
-  declare prop, elm, val varchar;
-  declare idx, len, pos integer;
-  declare _xml, parsed, line any;
-
-  --dbg_obj_print (cast (_data as varchar));
-  --dbg_obj_print (__tag (_data));
-  --dbg_obj_print ('===');
-
-  _data := replace (_data, '\r\n', '\n');
-
-  _xml := string_output ();
-  parsed := split_and_decode (_data, 0, '\0\0\n');
-
-  len := length (parsed);
-  _mime := NULL;
-  idx := 0;
-
-  while (idx < len)
-    {
-       line := split_and_decode (parsed[idx], 0, '\0\0:');
-       pos := strstr (parsed[idx], ':');
-       if (pos is not NULL)
-	 {
-            val := subseq (parsed[idx], pos + 1, length (parsed[idx]));
-	    line := split_and_decode ("LEFT"(parsed[idx], pos), 0, '\0\0\;');
---	    dbg_obj_print ('val = ', val);
-	    if ("RIGHT" (val, 1) = '=') val := sync_parse_in_data_get_utf (parsed, val, idx);
-	    if (val = '' and upper (line[0]) = 'PHOTO') val := sync_parse_in_data_get_long (parsed, idx);
-	    elm := line[0];
-	    if (elm='PHOTO') goto next;
-	    prop := sync_parse_in_data_get_prop (line);
-	    if (elm='AALARM' and strstr (val, 'mp3')) goto next;  -- Sony put full path and break sync.
-	    if (upper (elm) = 'BEGIN' and idx = 0)
-	      {
-		if (upper (val) = 'VCARD') _mime := 'text/x-vcard';
-		else if (upper (val) = 'VNOTE') _mime := 'text/x-vnote';
-		else if (upper (val) = 'VCALENDAR') _mime := 'text/x-vcalendar';
-	      }
-	    if (upper (elm) <> 'BEGIN' and idx = 0)
-	      return NULL;
-	    http (sprintf ('<%s%s><![CDATA[%s]]></%s>\n', upper (elm), upper (prop), val, upper (elm)), _xml);
-	 }
-next:;
-       idx := idx + 1;
-    }
-
-  return (string_output_string(_xml));
 }
 ;
 
@@ -1775,7 +1698,7 @@ if (_content_type = 'application/vnd.syncml+wbxml')
 -----------------------------------------------
     declare temp, sid, mid any;
     temp := WBXML2XML (_req);
-    _xdoc := xml_tree_doc (temp);
+    _xdoc := xtree_doc (temp, 0, '', 'utf-8');
 
     sid := cast(xpath_eval ('/SyncML/SyncHdr/SessionID/text()', _xdoc, 1) as varchar);
     mid := cast(xpath_eval ('/SyncML/SyncHdr/MsgID/text()', _xdoc, 1) as varchar);
@@ -1817,7 +1740,7 @@ http_header (http_header_get () || 'Cache-Control: private\r\n');
 if (_content_type = 'application/vnd.syncml+wbxml')
   {
         declare _xt any;
-	declare ver, xml_str any;
+	declare xml_str any;
 	ver := coalesce (connection_get ('SyncML-ver'), '1.0');
 
 
@@ -1868,47 +1791,13 @@ else
 }
 ;
 
-create procedure
-sync_parse_in_data_get_long (in _all any, inout line integer)
-{
-   declare ret varchar;
-   ret := '\n';
-   line := line + 1;
-
-   while (_all[line] <> '')
-    {
-       ret := ret || _all[line] || '\n';
-       line := line + 1;
-    }
-   return ret;
-}
-;
-
-create procedure
-sync_parse_in_data_get_utf (in _all any, in _in varchar, inout line integer)
-{
-   declare ret varchar;
-   ret := _in || '\n';
-   line := line + 1;
-
-   while ("RIGHT" (_all[line], 1) = '=')
-    {
-       ret := ret || _all[line] || '\n';
-       line := line + 1;
-    }
-
-   ret := ret || _all[line] || '\n';
-   return ret;
-}
-;
-
 create procedure sync_define_xsl ()
 {
   declare ses any;
   ses := string_output ();
 http ('<?xml version=\'1.0\'?>\n', ses);
 http ('<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">\n', ses);
-http ('    <xsl:output method="text" omit-xml-declaration="yes"/>\n', ses);
+http ('    <xsl:output method="text" encoding="utf-8" omit-xml-declaration="yes"/>\n', ses);
 http ('    <xsl:param name="devinf"/>\n', ses);
 http ('    <xsl:param name="mime"/>\n', ses);
 http ('    <xsl:variable name="caps" select="$devinf/DevInf/CTCap[CTType[.=$mime]]"/>\n', ses);
@@ -2368,6 +2257,8 @@ sync_xml_to_node (in _mode any, in _col_name any)
 
    id := 'syncml_' || _col_name || '_' || _mode;
 
+   if (not xslt_is_sheet ('http://local.virt/sync_xml_to_pl'))
+	sync_define_xml_to_pl ();
    pl := cast (xslt ('http://local.virt/sync_xml_to_pl', xml_tree_doc (_xml), vector ('id', id)) as varchar);
 
    pl := replace (pl, '), )', '))');
@@ -2464,50 +2355,6 @@ create procedure yac_syncml_update_type (in sync_ver any, in sync_type any, in _
 ;
 
 
-create procedure sync_pars_vcard_int (inout _body any)
-{
-   declare parsed, _xml, len, line, idx, pos, val, elm, prop any;
-
-   declare exit handler for sqlstate '*'
-     {
-	return NULL;
-     };
-
-   if (1)
-     _body := charset_recode (cast (_body as varchar), 'UTF-16', 'UTF-8');
-
-  _xml := string_output ();
-  parsed := split_and_decode (_body, 0, '\0\0\r');
-
-  len := length (parsed);
-  idx := 0;
-
-  while (idx < len)
-    {
-       line := split_and_decode (parsed[idx], 0, '\0\0:');
-       pos := strstr (parsed[idx], ':');
-       if (pos is not NULL)
-	 {
-            val := subseq (parsed[idx], pos + 1, length (parsed[idx]));
-	    line := split_and_decode ("LEFT"(parsed[idx], pos), 0, '\0\0\;');
---	    dbg_obj_print ('val = ', val);
-	    if ("RIGHT" (val, 1) = '=') val := sync_parse_in_data_get_utf (parsed, val, idx);
-	    if (val = '' and upper (line[0]) = 'PHOTO') val := sync_parse_in_data_get_long (parsed, idx);
-	    elm := line[0];
-	    if (elm='PHOTO') goto next;
-	    prop := sync_parse_in_data_get_prop (line);
-	    if (elm='AALARM' and strstr (val, 'mp3')) goto next;  -- Sony put full path and break sync.
-	    if (upper (elm) <> 'BEGIN' and idx = 0)
-	      return NULL;
-	    http (sprintf ('<%s%s><![CDATA[%s]]></%s>\n', upper (elm), upper (prop), val, upper (elm)), _xml);
-	 }
-next:;
-       idx := idx + 1;
-    }
-   return (string_output_string(_xml));
-}
-;
-
 create procedure
 sync_parse_in_data_get_prop (in _all any)
 {
@@ -2538,6 +2385,382 @@ sync_parse_in_data_get_prop (in _all any)
 	idx := idx + 1;
      }
 
+   return ret;
+}
+;
+
+syncml_exec_no_error ('
+create trigger SRLOG_SYS_DAV_RES_D after delete on WS.WS.SYS_DAV_RES
+  {
+    declare local_time datetime;
+    local_time := coalesce (connection_get (''A_LAST_LOCAL''), now ());
+    update SYNC_RPLOG set RLOG_RES_COL = RES_COL, DMLTYPE = ''D'', SNAPTIME = local_time
+    	where RLOG_RES_ID = RES_ID;
+  }
+')
+;
+
+create procedure sync_recode (inout _body any)
+{
+   declare ret, fl any;
+
+   fl := 1;
+
+   if (strstr (_body, 'BEGIN') is not NULL)
+     return _body;
+
+   declare exit handler for sqlstate '2C000'
+     {
+   	whenever SQLSTATE '2C000' default;
+        if (fl = 2) return _body;
+   	goto _next;
+     };
+
+   ret := charset_recode (cast (_body as varchar), 'UTF-16', 'UTF-8');
+   return ret;
+
+_next:;
+
+   whenever SQLSTATE '*' default;
+
+   declare exit handler for sqlstate '*'
+     {
+	return _body;
+     };
+
+   fl := 2;
+   ret := charset_recode (cast (_body as varchar), 'UTF-16BE', 'UTF-8');
+   return ret;
+}
+;
+
+create procedure sync_pars_mult (inout _body any)
+{
+   declare ret, _beg, t2, _end, _part, _name, _ibody, _old any;
+   _ibody := _body;
+   _body := replace (_body, '\n', '');
+
+   ret := vector ();
+
+   while (length (trim (_body)))
+    {
+       _beg := strstr (_body, '<BEGIN');
+       _end := strstr (_body, '/END>');
+       _old := length (trim (_body));
+
+       _part := subseq (_body, _beg, _end + 5);
+
+--     dbg_obj_print (_part);
+--     dbg_obj_print (xml_tree_doc ('<root>' || _part || '</root>'));
+--     dbg_obj_print (length (trim (_body)));
+       t2 := xml_tree_doc ('<root>' || _part || '</root>');
+       _name := cast (xpath_eval ('//N', t2, 1) as varchar);
+       _name := replace (_name, ';', '_');
+       _name := replace (_name, '.', '_');
+       _name := trim (_name, '_');
+       if (_name = '') _name := cast (xpath_eval ('//FN', t2, 1) as varchar);
+       _name := replace (_name, '.', '_');
+       _name := replace (_name, '?', '_');
+       _name := replace (_name, ' ', '+');
+       _name := trim (_name, '_');
+
+       if (_name = '' or _name is NULL) _name := md5 (_ibody);
+--     string_to_file ('123/' || _name, _part, -2);
+
+	{;
+       declare exit handler for sqlstate '*'
+	{
+	   goto __next;
+	};
+	  xtree_doc (_part, 0, '', 'utf-8');
+	};
+
+       ret := vector_concat (ret, vector (vector (_part, _name)));
+__next:;
+       _body := replace (_body, _part, '');
+       if (_old = length (trim (_body))) return ret;
+    }
+
+  return ret;
+}
+;
+
+
+create trigger SRLOG_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES order 190
+  {
+    declare local_time datetime;
+    declare temp, mime, new_name, id, p_id, atm, idx, line, f_p any;
+    declare __rowguid any;
+
+    if (not exists (select 1 from SYNC_COLS_TYPES where RES_COL = CT_COL_ID))
+	return;
+
+    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+
+    atm := connection_get ('__ATM');
+
+    if (atm = RES_ID) return;
+
+    if (connection_get ('__sync_dav_upl') = '1')
+	{
+	  insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
+	      values (RES_ID, RES_COL, 'I', local_time);
+	  return;
+	}
+
+    if ("LEFT" (RES_NAME, 1) = '.') return;
+
+    if (not exists (select 1 from SYNC_COLS_TYPES where RES_COL = CT_COL_ID))
+	return;
+
+    __rowguid := ROWGUID;
+
+    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+    temp := RES_CONTENT;
+    temp := sync_pars_vcard_int (temp);
+
+    if (temp is NULL)
+      return;
+
+--	insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
+--	    values (RES_ID, RES_COL, 'I', local_time);
+
+    for (idx := 0; idx < length (temp); idx := idx + 1)
+      {
+	line := temp[idx];
+
+	--new_name := md5 (line) || uuid ();
+	new_name :=line[1];
+
+	id := WS.WS.GETID ('R');
+	p_id := RES_COL;
+	f_p  := RES_FULL_PATH;
+	f_p  := WS.WS.EXPAND_URL (f_p, new_name);
+
+	set triggers off;
+
+	connection_set ('__ATM', cast (id as varchar));
+
+	if (length (line[0]) > 0)
+	 {
+	   insert soft WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP,
+	       RES_CONTENT, RES_TYPE, ROWGUID, RES_FULL_PATH)
+	       values (id, new_name, p_id, now (), now (), 2, '111111111NN', http_nogroup_gid(),
+		   line[0], 'text/x-vcard', __rowguid, f_p);
+
+	--dbg_obj_print ('Insert  ->', RES_NAME);
+--	if ('vCards.vcf' <> RES_NAME)
+	   insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
+	       values (id, p_id, 'I', local_time);
+
+--	if ('vCards.vcf' = RES_NAME) raw_exec ();
+	 }
+      }
+  }
+;
+
+
+create trigger SRLOG_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referencing old as O, new as N
+  {
+    declare local_time datetime;
+    declare temp, mime, new_name, id, p_id, atm, idx, line, f_p any;
+    declare __rowguid any;
+
+    if (not exists (select 1 from SYNC_COLS_TYPES where N.RES_COL = CT_COL_ID))
+      return;
+
+    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+
+    atm := connection_get ('__ATU');
+
+    if (atm = N.RES_ID) return;
+
+    if (connection_get ('__sync_dav_upl') = '1')
+      {
+    	 update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = 'U', SNAPTIME = local_time
+		where RLOG_RES_ID = O.RES_ID;
+	 return;
+      }
+
+    if ("LEFT" (N.RES_NAME, 1) = '.') return;
+
+    __rowguid := N.ROWGUID;
+
+    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+    temp := N.RES_CONTENT;
+    temp := sync_pars_vcard_int (temp);
+
+    if (temp is NULL)
+      return;
+
+--    	   update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = 'U', SNAPTIME = local_time
+--		where RLOG_RES_ID = O.RES_ID;
+
+    for (idx := 0; idx < length (temp); idx := idx + 1)
+      {
+	line := temp[idx];
+
+	--new_name := md5 (line) || uuid ();
+	new_name :=line[1];
+
+	id := WS.WS.GETID ('R');
+	p_id := N.RES_COL;
+	f_p  := N.RES_FULL_PATH;
+	f_p  := WS.WS.EXPAND_URL (f_p, new_name);
+
+
+	set triggers off;
+
+	connection_set ('__ATU', cast (id as varchar));
+
+	if (length (line[0]) > 0)
+	 {
+	insert replacing WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP,
+	    RES_CONTENT, RES_TYPE, ROWGUID, RES_FULL_PATH)
+	    values (id, new_name, p_id, now (), now (), 2, '111111111', http_nogroup_gid(), line[0], 'text/x-vcard',
+		__rowguid, f_p);
+
+    	local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+
+	--dbg_obj_print ('Update  ->', N.RES_NAME);
+	   insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
+	       values (id, N.RES_COL, 'U', local_time);
+	 }
+	}
+  }
+;
+
+
+create procedure sync_pars_vcard_int (inout _body any)
+{
+   declare parsed, _xml, len, line, idx, pos, val, elm, prop any;
+
+   declare exit handler for sqlstate '*'
+     {
+	return NULL;
+     };
+
+   if (1)
+     _body := sync_recode (cast (_body as varchar));
+
+  _xml := string_output ();
+  _body := replace (_body, '\r\n', '\n');
+  _body := replace (_body, '\r', '\n');
+  parsed := split_and_decode (_body, 0, '\0\0\n');
+
+  len := length (parsed);
+  idx := 0;
+
+  while (idx < len)
+    {
+       line := split_and_decode (parsed[idx], 0, '\0\0:');
+       pos := strstr (parsed[idx], ':');
+       if (pos is not NULL)
+	 {
+            val := subseq (parsed[idx], pos + 1, length (parsed[idx]));
+	    line := split_and_decode ("LEFT"(parsed[idx], pos), 0, '\0\0\;');
+	    --dbg_obj_print ('val = ', val);
+	    --dbg_obj_print ('line = ', line);
+	    if (val <> '' and upper (line[0]) in ('PHOTO', 'NOTE')) val := val || sync_parse_in_data_get_long (parsed, idx);
+	    elm := line[0];
+	    prop := sync_parse_in_data_get_prop (line);
+	    if (elm='AALARM' and strstr (val, 'mp3')) goto next;  -- Sony put full path and break sync.
+	    elm := replace (elm, '\n', '');
+	    if (upper (elm) <> 'BEGIN' and idx = 0)
+	      return NULL;
+	    http (sprintf ('<%s%s><![CDATA[%s]]></%s>\n', upper (elm), upper (prop), val, upper (elm)), _xml);
+	 }
+next:;
+       idx := idx + 1;
+    }
+   return sync_pars_mult (string_output_string(_xml));
+}
+;
+
+create procedure
+sync_parse_in_data (in _data any, inout _mime any)
+--sync_parse_in_data (in _data any)
+{
+  declare prop, elm, val varchar;
+  declare idx, len, pos integer;
+  declare _xml, parsed, line any;
+
+  --dbg_obj_print (cast (_data as varchar));
+  --dbg_obj_print (__tag (_data));
+  --dbg_obj_print ('===');
+
+  _data := replace (_data, '\r\n', '\n');
+  _data := replace (_data, '\r', '\n');
+
+  _xml := string_output ();
+  parsed := split_and_decode (_data, 0, '\0\0\n');
+
+  len := length (parsed);
+  _mime := NULL;
+  idx := 0;
+
+   while (idx < len)
+     {
+       line := split_and_decode (parsed[idx], 0, '\0\0:');
+       pos := strstr (parsed[idx], ':');
+       if (pos is not NULL)
+	 {
+            val := subseq (parsed[idx], pos + 1, length (parsed[idx]));
+	    line := split_and_decode ("LEFT"(parsed[idx], pos), 0, '\0\0\;');
+	    if (val <> '' and upper (line[0]) in ('PHOTO', 'NOTE')) val := val || sync_parse_in_data_get_long (parsed, idx);
+	    elm := line[0];
+	    --dbg_obj_print ('line[0] = ', line[0]);
+	    --dbg_obj_print ('val = ', val);
+--	    if (elm='PHOTO' or elm='NOTE') goto next;
+	    prop := sync_parse_in_data_get_prop (line);
+	    if (elm='AALARM' and strstr (val, 'mp3')) goto next;  -- Sony put full path and break sync.
+	    if (upper (elm) = 'BEGIN' and idx = 0)
+	      {
+		if (upper (val) = 'VCARD') _mime := 'text/x-vcard';
+		else if (upper (val) = 'VNOTE') _mime := 'text/x-vnote';
+		else if (upper (val) = 'VCALENDAR') _mime := 'text/x-vcalendar';
+	      }
+	    if (upper (elm) <> 'BEGIN' and idx = 0)
+	      return NULL;
+	    http (sprintf ('<%s%s><![CDATA[%s]]></%s>\n', upper (elm), upper (prop), val, upper (elm)), _xml);
+	 }
+next:;
+       idx := idx + 1;
+    }
+
+  return (string_output_string(_xml));
+}
+;
+
+
+create procedure
+sync_parse_in_data_get_long (in _all any, inout line integer)
+{
+   declare ret varchar;
+   ret := '\n';
+   line := line + 1;
+
+   while (trim (_all[line]) <> '')
+    {
+       ret := ret || _all[line] || '\n';
+       line := line + 1;
+     }
+   return ret;
+}
+;
+
+
+create procedure
+sync_parse_in_data_note (in _all any, inout line integer)
+{
+   declare ret varchar;
+   ret := '\n';
+
+   while (trim (_all[line]) <> '')
+    {
+       ret := ret || _all[line] || '\n';
+       line := line + 1;
+    }
    return ret;
 }
 ;
