@@ -362,7 +362,7 @@ char * eh_names__UTF8_QR[] = {"UTF-8-QR", NULL};
 
 encoding_handler_t eh__UTF8_QR = {
   eh_names__UTF8_QR,
-  1, MAX_UTF8_CHAR, 0x0000, NULL, NULL,
+  1, MAX_UTF8_CHAR, 0x0000, 1, NULL, NULL,
   eh_decode_char__UTF8_QR,
   eh_decode_buffer__UTF8_QR,
   eh_decode_buffer_to_wchar__UTF8_QR,
@@ -375,7 +375,7 @@ char * eh_names__UTF8[] = {"UTF-8", "UTF8", NULL};
 
 encoding_handler_t eh__UTF8 = {
   eh_names__UTF8,
-  1, MAX_UTF8_CHAR, 0x0000, NULL, NULL,
+  1, MAX_UTF8_CHAR, 0x0000, 1, NULL, NULL,
   eh_decode_char__UTF8,
   eh_decode_buffer__UTF8,
   eh_decode_buffer_to_wchar__UTF8,
@@ -540,7 +540,7 @@ char * eh_names__UTF16BE[] = {"UTF-16BE", "UTF16BE", NULL};
 
 encoding_handler_t eh__UTF16BE = {
   eh_names__UTF16BE,
-  MIN_UTF16_CHAR, MAX_UTF16_CHAR, 0x1234, NULL, NULL,
+  MIN_UTF16_CHAR, MAX_UTF16_CHAR, 0x1234, 0, NULL, NULL,
   eh_decode_char__UTF16BE,
   eh_decode_buffer__UTF16BE,
   eh_decode_buffer_to_wchar__UTF16BE,
@@ -704,7 +704,7 @@ char * eh_names__UTF16LE[] = {"UTF-16LE", "UTF16LE", NULL};
 
 encoding_handler_t eh__UTF16LE = {
   eh_names__UTF16LE,
-  MIN_UTF16_CHAR, MAX_UTF16_CHAR, 0x4321, NULL, NULL,
+  MIN_UTF16_CHAR, MAX_UTF16_CHAR, 0x4321, 0, NULL, NULL,
   eh_decode_char__UTF16LE,
   eh_decode_buffer__UTF16LE,
   eh_decode_buffer_to_wchar__UTF16LE,
@@ -718,7 +718,7 @@ char * eh_names__UTF16[] = {"UTF-16", "UTF16", NULL};
 
 encoding_handler_t eh__UTF16 = {
   eh_names__UTF16,
-  MIN_UTF16_CHAR, MAX_UTF16_CHAR, 0x0000, NULL, NULL,
+  MIN_UTF16_CHAR, MAX_UTF16_CHAR, 0x0000, 0, NULL, NULL,
   eh_decode_char__UTF16LE,
   eh_decode_buffer__UTF16LE,
   eh_decode_buffer_to_wchar__UTF16LE,
@@ -821,7 +821,7 @@ char * eh_names__ASCII[] = {"ASCII", "US-ASCII", NULL};
 
 encoding_handler_t eh__ASCII = {
   eh_names__ASCII,
-  1, 1, 0x0000, NULL, NULL,
+  1, 1, 0x0000, 1, NULL, NULL,
   eh_decode_char__ASCII,
   eh_decode_buffer__ASCII,
   eh_decode_buffer_to_wchar__ASCII,
@@ -913,7 +913,7 @@ char * eh_names__ISO8859_1[] = {
 
 encoding_handler_t eh__ISO8859_1 = {
   eh_names__ISO8859_1,
-  1, 1, 0x0000, NULL, NULL,
+  1, 1, 0x0000, 1, NULL, NULL,
   eh_decode_char__ISO8859_1,
   eh_decode_buffer__ISO8859_1,
   eh_decode_buffer_to_wchar__ISO8859_1,
@@ -1017,7 +1017,7 @@ char * eh_names__WIDE_121[] = {
 
 encoding_handler_t eh__WIDE_121 = {
   eh_names__WIDE_121,
-  sizeof (wchar_t), sizeof (wchar_t), 0x0000, NULL, NULL,
+  sizeof (wchar_t), sizeof (wchar_t), 0x0000, 0, NULL, NULL,
   eh_decode_char__WIDE_121,
   eh_decode_buffer__WIDE_121,
   eh_decode_buffer_to_wchar__WIDE_121,
@@ -1135,7 +1135,7 @@ char * eh_names__UCS4BE[] = {
 
 encoding_handler_t eh__UCS4BE = {
   eh_names__UCS4BE,
-  4, 4, 0x1234, NULL, NULL,
+  4, 4, 0x1234, 0, NULL, NULL,
   eh_decode_char__UCS4BE,
   eh_decode_buffer__UCS4BE,
   eh_decode_buffer_to_wchar__UCS4BE,
@@ -1253,7 +1253,7 @@ char * eh_names__UCS4LE[] = {
 
 encoding_handler_t eh__UCS4LE = {
   eh_names__UCS4LE,
-  4, 4, 0x4321, NULL, NULL,
+  4, 4, 0x4321, 0, NULL, NULL,
   eh_decode_char__UCS4LE,
   eh_decode_buffer__UCS4LE,
   eh_decode_buffer_to_wchar__UCS4LE,
@@ -1267,7 +1267,7 @@ char * eh_names__UCS4[] = {
 
 encoding_handler_t eh__UCS4 = {
   eh_names__UCS4,
-  4, 4, 0x0000, NULL, NULL,
+  4, 4, 0x0000, 0, NULL, NULL,
   eh_decode_char__UCS4LE,
   eh_decode_buffer__UCS4LE,
   eh_decode_buffer_to_wchar__UCS4LE,

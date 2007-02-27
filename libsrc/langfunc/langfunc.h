@@ -317,6 +317,7 @@ struct encoding_handler_s {
   size_t eh_minsize;		/*!< minimum length of one unichar's encoded value */
   size_t eh_maxsize;		/*!< maximum length of one unichar's encoded value */
   int eh_byteorder;		/*!< the expected byteorder of data, if nonzero; used for 16- and 32-bit encodings */
+  int eh_stable_ascii7;		/*!< Nonzero if the encoding translates any single 7-bit byte to identical unichar */
   void *eh_encodedlangs;	/*!< Data for finding language handlers, filled by application, should be NULL initially */
   void *eh_appdata;		/*!< Application-specific data for this encoding, should be NULL initially */
   eh_decode_char_t *eh_decode_char;	/*!< Char-by-char decoder */

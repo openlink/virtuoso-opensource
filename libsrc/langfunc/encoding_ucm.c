@@ -188,7 +188,7 @@ char *eh_encode_wchar_buffer__ucm_dbcs (const wchar_t *src_buf, const wchar_t *s
 
 encoding_handler_t eh__ucm_dbcs_pattern = {
   NULL,
-  1, MAX_ENCLEN, 0x0000, NULL, NULL,
+  1, MAX_ENCLEN, 0x0000, 0, NULL, NULL,
   eh_decode_char__ucm_dbcs,
   eh_decode_buffer__ucm_dbcs,
   eh_decode_buffer_to_wchar__ucm_dbcs,
@@ -407,7 +407,7 @@ eh_encode_wchar_buffer__ucm_ebcdic (const wchar_t *src_buf, const wchar_t *src_b
 
 encoding_handler_t eh__ucm_ebcdic_pattern = {
   NULL,
-  1, MAX_ENCLEN, 0x0000, NULL, NULL,
+  1, MAX_ENCLEN, 0x0000, 0, NULL, NULL,
   eh_decode_char__ucm_ebcdic,
   eh_decode_buffer__ucm_ebcdic,
   eh_decode_buffer_to_wchar__ucm_ebcdic,

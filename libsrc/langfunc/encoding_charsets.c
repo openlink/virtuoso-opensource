@@ -329,7 +329,7 @@ const char * eh_init_charset_arrays(eh_charset_t *ecs)
 
 encoding_handler_t eh__charset_pattern = {
   NULL,
-  1, 1, 0x0000, NULL, NULL,
+  1, 1, 0x0000, 0, NULL, NULL,
   eh_decode_char__charset,
   eh_decode_buffer__charset,
   eh_decode_buffer_to_wchar__charset,
