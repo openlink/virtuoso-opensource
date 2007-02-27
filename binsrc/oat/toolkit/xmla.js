@@ -70,208 +70,204 @@ OAT.Xmla = {
 			limit:0
 		}
 		if (cursorOptions) for (var p in cursorOptions) { options[p] = cursorOptions[p]; }
-		var ref = function() {
-			var data = '<Execute env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
-				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
-				'<Command><Statement><![CDATA['+OAT.Xmla.query+']]></Statement></Command>'+
-				'<Properties><PropertyList>'+
-				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
-				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.connection.options.password+'</Password>';
-			if (OAT.Preferences.useCursors && options.limit) {
-//				data += '<retrieve-row-count>1</retrieve-row-count>';
-				data += '<n-rows>'+options.limit+'</n-rows>';
-				data += '<skip>'+options.offset+'</skip>';
-			}			
-			data += '</PropertyList></Properties></Execute>';
-			return data;
-		}
+
 		var cBack = function(data) {
 			var result = OAT.Xmla.execute_array(data);
 			callback(result);
 		}
+
+		var data = '<Execute env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
+			' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
+			'<Command><Statement><![CDATA['+OAT.Xmla.query+']]></Statement></Command>'+
+			'<Properties><PropertyList>'+
+			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+			'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+			'<Password>'+OAT.Xmla.connection.options.password+'</Password>';
+		if (OAT.Preferences.useCursors && options.limit) {
+//				data += '<retrieve-row-count>1</retrieve-row-count>';
+			data += '<n-rows>'+options.limit+'</n-rows>';
+			data += '<skip>'+options.offset+'</skip>';
+		}			
+		data += '</PropertyList></Properties></Execute>';
 		
-		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.executeHeader);
+		var o = {headers:OAT.Xmla.executeHeader,type:OAT.AJAX.TYPE_XML}
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 	
 	discover:function(callback) {
-		var ref = function() {
-			var data = '<Discover  env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
-				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
-				'<RequestType>DISCOVER_DATASOURCES</RequestType>'+
-				'<Restrictions xsi:nil="1" ></Restrictions>'+
-				'<Properties></Properties></Discover>';
-			return data;
-		}
 		var cBack = function(data) {
 			var result = OAT.Xmla.discover_array(data);
 			callback(result);
 		}
-		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+
+		var data = '<Discover  env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
+			' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
+			'<RequestType>DISCOVER_DATASOURCES</RequestType>'+
+			'<Restrictions xsi:nil="1" ></Restrictions>'+
+			'<Properties></Properties></Discover>';
+
+		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 	
 	dbschema:function(callback) {
-		var ref = function() {
-			var data = '<Discover  env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
-				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
-				'<RequestType>DBSCHEMA_CATALOGS</RequestType>'+
-				'<Restrictions xsi:nil="1" ></Restrictions>'+
-				'<Properties><PropertyList>'+
-				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
-				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
-				'</PropertyList></Properties></Discover>';
-			return data;
-		}
 		var cBack = function(data) {
 			var result = OAT.Xmla.dbschema_array(data);
 			callback(result);
 		}
 		
-		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		var data = '<Discover  env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
+			' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
+			'<RequestType>DBSCHEMA_CATALOGS</RequestType>'+
+			'<Restrictions xsi:nil="1" ></Restrictions>'+
+			'<Properties><PropertyList>'+
+			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+			'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+			'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
+			'</PropertyList></Properties></Discover>';
+
+		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 	
 	tables:function(catalog,callback) {
-		var ref = function() {
-			var data = '<Discover env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
-				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
-				'<RequestType xsi:type="xsd:string">DBSCHEMA_TABLES</RequestType>';
-			if (catalog != "") {
-				data += '<Restrictions xsi:nil="1" ><RestrictionList>'+
-				'<TABLE_CATALOG>'+catalog+'</TABLE_CATALOG></RestrictionList></Restrictions>';
-			}
-			data += '<Properties><PropertyList>'+
-				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>';
-			if (OAT.Xmla.connection.options.user) {
-				data += '<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.connection.options.password+'</Password>';
-			}
-			data +=	'</PropertyList></Properties></Discover>';
-			return data;
-		}
 		var cBack = function(data) {
 			var result = OAT.Xmla.tables_array(data);
 			callback(catalog,result);
 		}
-		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+
+		var data = '<Discover env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
+			' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
+			'<RequestType xsi:type="xsd:string">DBSCHEMA_TABLES</RequestType>';
+		if (catalog != "") {
+			data += '<Restrictions xsi:nil="1" ><RestrictionList>'+
+			'<TABLE_CATALOG>'+catalog+'</TABLE_CATALOG></RestrictionList></Restrictions>';
+		}
+		data += '<Properties><PropertyList>'+
+			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>';
+		if (OAT.Xmla.connection.options.user) {
+			data += '<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+			'<Password>'+OAT.Xmla.connection.options.password+'</Password>';
+		}
+		data +=	'</PropertyList></Properties></Discover>';
+
+		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 
 	columns:function(catalog,schema,table,callback) {
-		var ref = function() {
-			var data = '<Discover env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
-				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
-				'<RequestType>DBSCHEMA_COLUMNS</RequestType>'+
-				'<Restrictions><RestrictionList>';
-				if (catalog != "") {
-					data += '<TABLE_CATALOG>'+catalog+'</TABLE_CATALOG>';
-					data += '<TABLE_SCHEMA>'+schema+'</TABLE_SCHEMA>';
-				}
-				data += '<TABLE_NAME>'+table+'</TABLE_NAME></RestrictionList></Restrictions>'+
-				'<Properties><PropertyList>'+
-				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
-				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
-				'</PropertyList></Properties></Discover>';
-			return data;
-		}
 		var cBack = function(data) {
 			var result = OAT.Xmla.columns_array(data);
 			callback(result);
 		}
+
+		var data = '<Discover env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
+			' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
+			'<RequestType>DBSCHEMA_COLUMNS</RequestType>'+
+			'<Restrictions><RestrictionList>';
+			if (catalog != "") {
+				data += '<TABLE_CATALOG>'+catalog+'</TABLE_CATALOG>';
+				data += '<TABLE_SCHEMA>'+schema+'</TABLE_SCHEMA>';
+			}
+			data += '<TABLE_NAME>'+table+'</TABLE_NAME></RestrictionList></Restrictions>'+
+			'<Properties><PropertyList>'+
+			'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+			'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
+			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+			'</PropertyList></Properties></Discover>';
 		
-		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 	
 	qualifiers:function(callback) {
-		var ref = function() {
-			var data = '<Discover env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
-				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
-				'<RequestType>DISCOVER_LITERALS</RequestType>'+
-				'<Properties><PropertyList>'+
-				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
-				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
-				'</PropertyList></Properties></Discover>';
-			return data;
-
-		}
 		var cBack = function(data) {
 			var result = OAT.Xmla.qualifiers_array(data);
 			callback(result);
 		}
-		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+
+		var data = '<Discover env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
+			' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
+			'<RequestType>DISCOVER_LITERALS</RequestType>'+
+			'<Properties><PropertyList>'+
+			'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+			'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
+			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+			'</PropertyList></Properties></Discover>';
+
+		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 	
 	providerTypes:function(callback) {
-		var ref = function() {
-			var data = '<Discover env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
-				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
-				'<RequestType>DBSCHEMA_PROVIDER_TYPES</RequestType>'+
-				'<Properties><PropertyList>'+
-				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
-				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
-				'</PropertyList></Properties></Discover>';
-			return data;
-		}
 		var cBack = function(data) {
 			var result = OAT.Xmla.providerTypes_array(data);
 			callback(result);
 		}
+
+		var data = '<Discover env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
+			' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
+			'<RequestType>DBSCHEMA_PROVIDER_TYPES</RequestType>'+
+			'<Properties><PropertyList>'+
+			'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+			'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
+			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+			'</PropertyList></Properties></Discover>';
 		
-		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 	
 	primaryKeys:function(catalog,schema,table,callback) {
-		var ref = function() {
-			var data = '<Discover  env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
-				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
-				'<RequestType>DBSCHEMA_PRIMARY_KEYS</RequestType>'+
-				'<Restrictions><RestrictionList>';
-				if (catalog != "") {
-					data += '<TABLE_CATALOG>'+catalog+'</TABLE_CATALOG>';
-				}
-				if (schema != "") {
-					data += '<TABLE_SCHEMA>'+schema+'</TABLE_SCHEMA>';
-				}
-				data += '<TABLE_NAME>'+table+'</TABLE_NAME>';
-				data += '</RestrictionList></Restrictions><Properties><PropertyList>'+
-				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
-				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
-				'</PropertyList></Properties></Discover>';
-			return data;
-		}
 		var cBack = function(data) {
 			var result = OAT.Xmla.primaryKeys_array(catalog,schema,table,data);
 			callback(result);
 		}
-		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+
+		var data = '<Discover  env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
+			' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
+			'<RequestType>DBSCHEMA_PRIMARY_KEYS</RequestType>'+
+			'<Restrictions><RestrictionList>';
+			if (catalog != "") {
+				data += '<TABLE_CATALOG>'+catalog+'</TABLE_CATALOG>';
+			}
+			if (schema != "") {
+				data += '<TABLE_SCHEMA>'+schema+'</TABLE_SCHEMA>';
+			}
+			data += '<TABLE_NAME>'+table+'</TABLE_NAME>';
+			data += '</RestrictionList></Restrictions><Properties><PropertyList>'+
+			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+			'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+			'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
+			'</PropertyList></Properties></Discover>';
+
+		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 	
 	foreignKeys:function(catalog,schema,table,callback) {
-		var ref = function() {
-			var data = '<Discover  env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
-				' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
-				'<RequestType>DBSCHEMA_FOREIGN_KEYS</RequestType>'+
-				'<Restrictions><RestrictionList>';
-				if (catalog != "") {
-					data += '<PK_TABLE_CATALOG>'+catalog+'</PK_TABLE_CATALOG>';
-				}
-				data += '<TABLE_NAME>'+table+'</TABLE_NAME>';
-				data += '</RestrictionList></Restrictions>'+ 
-				'<Properties><PropertyList>'+
-				'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
-				'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
-				'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
-				'</PropertyList></Properties></Discover>';
-			return data;
-		}
 		var cBack = function(data) {
 			var result = OAT.Xmla.foreignKeys_array(catalog,schema,table,data);
 			callback(result);
 		}
-		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, ref, cBack, OAT.Ajax.TYPE_XML, OAT.Xmla.discoverHeader);
+
+		var data = '<Discover  env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
+			' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
+			'<RequestType>DBSCHEMA_FOREIGN_KEYS</RequestType>'+
+			'<Restrictions><RestrictionList>';
+			if (catalog != "") {
+				data += '<PK_TABLE_CATALOG>'+catalog+'</PK_TABLE_CATALOG>';
+			}
+			data += '<TABLE_NAME>'+table+'</TABLE_NAME>';
+			data += '</RestrictionList></Restrictions>'+ 
+			'<Properties><PropertyList>'+
+			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
+			'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
+			'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
+			'</PropertyList></Properties></Discover>';
+
+		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
+		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 
 /* --------------------------- */	

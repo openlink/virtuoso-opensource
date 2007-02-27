@@ -17,26 +17,42 @@ OAT.Drag = {
 	TYPE_X:1,
 	TYPE_Y:2,
 	TYPE_XY:3,
-	elm:[],
+	elm:false,
 	mouse_x:0,
 	mouse_y:0,
 	
 	move:function(event) {
-		if (!OAT.Drag.elm.length) return;
+		if (!OAT.Drag.elm) return;
+		OAT.Dom.removeSelection();
+		var vp = OAT.Dom.getViewport();
+		var pos = OAT.Dom.position(OAT.Drag.elm);
+		var cpos = OAT.Dom.eventPos(event);
+		var dims = OAT.Dom.getWH(OAT.Drag.elm);
+
+		/* stop when mouse leaves viewport */
+		if (event.clientX > vp[0] || event.clientX < 0 || event.clientY > vp[1] || event.clientY < 0) { 
+			return;
+		}
+
+		/* delta from last cursor scan */
 		var dx = event.clientX - OAT.Drag.mouse_x;
 		var dy = event.clientY - OAT.Drag.mouse_y;
+
 		/* check restriction */
 		var checkOK = true;
-		for (var i=0;i<OAT.Drag.elm.length;i++) {
-			var element = OAT.Drag.elm[i][0];
-			var options = OAT.Drag.elm[i][1];
+		var movers = OAT.Drag.elm._Drag_movers;
+		for (var i=0;i<movers.length;i++) {
+			var element = movers[i][0];
+			var options = movers[i][1];
 			var pos = OAT.Dom.getLT(element);
 			if (options.restrictionFunction(pos[0]+dx,pos[1]+dy)) { checkOK = false; }
 		}
+
+
 		/* perform dragging */
-		if (checkOK) for (var i=0;i<OAT.Drag.elm.length;i++) {
-			var element = OAT.Drag.elm[i][0];
-			var options = OAT.Drag.elm[i][1];
+		if (checkOK) for (var i=0;i<movers.length;i++) {
+			var element = movers[i][0];
+			var options = movers[i][1];
 			if (options.moveFunction) { options.moveFunction(dx,dy); } else {
 				switch (options.type) {
 					case OAT.Drag.TYPE_X: OAT.Dom.moveBy(element,dx,0); break;
@@ -44,18 +60,20 @@ OAT.Drag = {
 					case OAT.Drag.TYPE_XY: OAT.Dom.moveBy(element,dx,dy); break;
 				} /* switch */
 			} /* if not custom move function */
+			OAT.Drag.mouse_x = event.clientX;
+			OAT.Drag.mouse_y = event.clientY;
 		}
-		OAT.Drag.mouse_x = event.clientX;
-		OAT.Drag.mouse_y = event.clientY;
 	},
 	
 	up:function(event) {
-		for (var i=0;i<OAT.Drag.elm.length;i++) {
-			var element = OAT.Drag.elm[i][0];
-			var options = OAT.Drag.elm[i][1];
+		if (!OAT.Drag.elm) { return; }
+		var movers = OAT.Drag.elm._Drag_movers;
+		for (var i=0;i<movers.length;i++) {
+			var element = movers[i][0];
+			var options = movers[i][1];
 			options.endFunction(element);
 		}
-		OAT.Drag.elm = [];
+		OAT.Drag.elm = false;
 	},
 
 	create:function(clicker,mover,optObj) {
@@ -70,7 +88,7 @@ OAT.Drag = {
 		var elm = $(clicker);
 		var win = $(mover);
 		var ref = function(event) {
-			OAT.Drag.elm = elm._Drag_movers;
+			OAT.Drag.elm = elm;
 			OAT.Drag.mouse_x = event.clientX;
 			OAT.Drag.mouse_y = event.clientY;
 		}
@@ -106,7 +124,8 @@ OAT.Drag = {
 	createDefault:function(element,useIcon) {
 		if (!OAT.Preferences.allowDefaultDrag) { return; }
 		var elm = $(element);
-		var drag = OAT.Dom.create("div",{position:"absolute",width:"21px",height:"21px",backgroundImage:"url(/DAV/JS/images/drag.png)"});
+		var bg = "url(" + OAT.Preferences.imagePath + "drag.png)";
+		var drag = OAT.Dom.create("div",{position:"absolute",width:"21px",height:"21px",backgroundImage:bg});
 		var pos = OAT.Dom.getLT(elm);
 		drag.style.left = (pos[0]-21) + "px";
 		drag.style.top = (pos[1]-21) + "px";

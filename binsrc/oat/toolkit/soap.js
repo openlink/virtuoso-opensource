@@ -8,14 +8,14 @@
  *  See LICENSE file for details.
  */
 /*
-	OAT.Soap.command(target,data_func,return_func,return_type,customHeaders)
+	OAT.Soap.command(target, data, callback, optObj)
 */
 
 OAT.Soap = {
-	generate:function(data_func,wsdlFormat) {
-		var data = "";
+	generate:function(data,wsdlFormat) {
+		var data_ = "";
 		if (wsdlFormat) {
-			data += '<?xml version="1.0" ?>\n'+
+			data_ += '<?xml version="1.0" ?>\n'+
 				'<env:Envelope env:encodingType="http://schemas.xmlsoap.org/soap/encoding/" ' + 
 	 			'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ' +
 				'xmlns:xsd="http://www.w3.org/2001/XMLSchema" ' +
@@ -23,27 +23,19 @@ OAT.Soap = {
 				'xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" ' +
 				'xmlns:dt="urn:schemas-microsoft-com:datatypes"><env:Body>';
 		} else {
-			data += '<?xml version="1.0"?>\n'+
+			data_ += '<?xml version="1.0"?>\n'+
 				'<env:Envelope xmlns:env="http://www.w3.org/2003/05/soap-envelope"'+
 				' xmlns:xsd="http://www.w3.org/2001/XMLSchema"'+
 				' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'+
 				'<env:Body>';
 		}
-		data += data_func();
-		data += '</env:Body></env:Envelope>';
-		return data;
+		data_ += data;
+		data_ += '</env:Body></env:Envelope>';
+		return data_;
 	},
-	command:function(target, data_func, return_func, return_type, customHeaders, wsdlFormat) {
-		var ref = function() {
-			var wsdl = false;
-			if (wsdlFormat) { wsdl = true; }
-			return OAT.Soap.generate(data_func,wsdl);
-		}
-		var h = false;
-		var rt = OAT.Ajax.TYPE_TEXT;
-		if (customHeaders) { h = customHeaders; }
-		if (return_type) { rt = return_type; }
-		OAT.Ajax.command(OAT.Ajax.SOAP, target, ref, return_func, rt, customHeaders);
+	command:function(target, data, callback, optObj, wsdlFormat) {
+		var data_ = OAT.Soap.generate(data,wsdlFormat);
+		OAT.AJAX.SOAP(target, data_, callback, optObj);
 	}
 }
 OAT.Loader.featureLoaded("soap");

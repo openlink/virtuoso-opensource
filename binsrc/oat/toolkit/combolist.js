@@ -18,23 +18,30 @@
 	CSS: combo_list, combo_list_input, combo_list_option, combo_list_list
 */
 
-OAT.Combolist = function(optList,value) {
-	var obj = this;
+OAT.Combolist = function(optList,value,optObj) {
+	var self = this;
+	
+	this.options = {
+		name:"combo_list",
+		imagePath:OAT.Preferences.imagePath
+	}
+	
+	for (var p in optObj) { self.options[p] = optObj[p]; }
+	
 	this.value = value;
 	this.div = OAT.Dom.create("div");
 	this.div.className = "combo_list";
 	this.onchange = function() {};
 	
 	this.img = OAT.Dom.create("img");
-	this.img.src="images/Combolist_select.gif";
-	this.input = OAT.Dom.create("input");
-	this.input.setAttribute("type","text");
+	this.img.src = self.options.imagePath + "Combolist_select.gif";
+	this.input = OAT.Dom.create("input",{},"combo_list_input");
+	this.input.type = "text";
+	this.input.name = self.options.name;
 	this.input.value = value;
-	this.input.className = "combo_list_input";
 	
-	this.list = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",zIndex:200});
-	this.list.className = "combo_list_list";
-	OAT.Dom.attach(this.input,"keyup",function(){obj.value = obj.input.value; obj.onchange();});
+	this.list = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",zIndex:200},"combo_list_list");
+	OAT.Dom.attach(this.input,"keyup",function(){self.value = self.input.value; self.onchange(self.value);});
 	OAT.Instant.assign(this.list);
 	
 	this.clearOpts = function() {
@@ -48,20 +55,19 @@ OAT.Combolist = function(optList,value) {
 			t = option[0];
 			v = option[1];
 		}
-		var opt = OAT.Dom.create("div");
-		opt.className = "combo_list_option";
+		var opt = OAT.Dom.create("div",{},"combo_list_option");
 		opt.innerHTML = t;
 		opt.value = v;
 		attach(opt);
-		this.list.appendChild(opt);
+		self.list.appendChild(opt);
 	}
 
 	var attach = function(option) {
 		var ref = function(event) {
-			obj.value = option.value;
-			obj.input.value = option.innerHTML;
-			obj.onchange(obj.value);
-			obj.list._Instant_hide();
+			self.value = option.value;
+			self.input.value = option.innerHTML;
+			self.onchange(self.value);
+			self.list._Instant_hide();
 		}
 		OAT.Dom.attach(option,"click",ref);
 	}
@@ -70,15 +76,13 @@ OAT.Combolist = function(optList,value) {
 		this.addOption(optList[i]);
 	}
 	
-	this.div.appendChild(this.input);
-	this.div.appendChild(this.img);
-	document.body.appendChild(this.list);
+	OAT.Dom.append([self.div,self.input,self.img],[document.body,self.list]);
 	
 	var showRef = function(event) {
-		var coords = OAT.Dom.position(obj.input);
-		obj.list.style.left = (coords[0]) +"px";
-		obj.list.style.top = (coords[1]+obj.input.offsetHeight)+"px";
-		obj.list._Instant_show();
+		var coords = OAT.Dom.position(self.input);
+		self.list.style.left = coords[0] +"px";
+		self.list.style.top = (coords[1]+self.input.offsetHeight)+"px";
+		self.list._Instant_show();
 	}
 	OAT.Dom.attach(this.img,"click",showRef);
 }

@@ -327,6 +327,7 @@ OAT.GraphSidebar = function(graph) {
 		self.div.appendChild(topul_r);
 		self.div.appendChild(topul_c);
 		var t = new OAT.Tree({
+			imagePath:self.graph.options.imagePath,
 			checkboxMode:true,
 			checkNOI:false,
 			checkCallback:function(treeSet) {
@@ -335,6 +336,7 @@ OAT.GraphSidebar = function(graph) {
 		});
 		t.assign(topul_r,true);
 		var t = new OAT.Tree({
+			imagePath:self.graph.options.imagePath,
 			checkboxMode:true,
 			checkNOI:false,
 			checkCallback:function(treeSet) {
@@ -366,6 +368,7 @@ OAT.GraphSidebar = function(graph) {
 		topli.appendChild(edgeul);
 		self.div.appendChild(topul);
 		var t = new OAT.Tree({
+			imagePath:self.graph.options.imagePath,
 			checkboxMode:true,
 			checkNOI:false,
 			checkCallback:self.filterPredicates

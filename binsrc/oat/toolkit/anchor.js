@@ -12,27 +12,48 @@
 */
 
 OAT.AnchorData = {
-	active:false
+	active:false,
+	window:false
 }
 
 OAT.Anchor = {
-	callForData:function(win,options,anchor,pos) {
-		var ds = options.datasource;
-		ds.connection = options.connection;
-		
-		options.status = 1; /* loading */
-		var link = anchor.innerHTML;
-		var unlinkRef = function() {
-			win.caption.innerHTML = anchor.innerHTML;
+	imagePath:'/DAV/JS/images/',
+	zIndex:1,
+	
+	appendContent:function(options) {
+		if (options.content) {
+			var win = OAT.AnchorData.window;
+			win.content.style.width = "";
+			win.content.style.height = "";
+			if (options.width) { win.content.style.width = options.width + "px"; }
+			if (options.height) { win.content.style.height = options.height + "px"; }
+			OAT.Dom.clear(win.content);
+			win.content.appendChild(options.content);
 		}
-		ds.bindRecord(unlinkRef);
-		ds.bindEmpty(unlinkRef);
+	},
+	
+	callForData:function(options,pos) {
+		var win = OAT.AnchorData.window;
+		options.status = 1; /* loading */
+		if (options.title) { win.caption.innerHTML = options.title; }
 
+		var ds = options.datasource;
+		if (ds) { 
+			ds.connection = options.connection; 
+			var link = options.elm.innerHTML;
+			var unlinkRef = function() {
+				win.caption.innerHTML = options.elm.innerHTML;
+				if (options.title) { win.caption.innerHTML = options.title; }
+			}
+			ds.bindRecord(unlinkRef);
+			ds.bindEmpty(unlinkRef);
+		}
+			
 		switch (options.result_control) {
 			case "grid":
 				var g = new OAT.FormObject["grid"](0,0,0,1); /* x,y,designMode,forbidHiding */
 				g.showAll = true;
-				win.content.appendChild(g.elm);
+				options.content = g.elm;
 				g.elm.style.position = "relative";
 				g.init();
 				ds.bindRecord(g.bindRecordCallback);
@@ -45,7 +66,8 @@ OAT.Anchor = {
 					win.resizeTo(f.totalWidth+5,f.totalHeight+5);
 					win.anchorTo(pos[0],pos[1]);
 				}
-				var f = new OAT.Form(win.content,{onDone:resizeRef});
+				options.content = OAT.Dom.create("div");
+				var f = new OAT.Form(options.content,{onDone:resizeRef});
 				var ref = function(xmlText) {
 					var xmlDoc = OAT.Xml.createXmlDoc(xmlText);
 					f.createFromXML(xmlDoc);
@@ -54,11 +76,10 @@ OAT.Anchor = {
 			break;
 			case "timeline":
 				var tl = new OAT.FormObject["timeline"](0,20,0); /* x,y,designMode */
-				win.content.appendChild(tl.elm);
+				options.content = tl.elm;
 				tl.elm.style.position = "relative";
-				var dims = OAT.Dom.getWH(win.content);
-				tl.elm.style.width = (dims[0]-3)+"px";
-				tl.elm.style.height = (dims[1]-25)+"px";
+				tl.elm.style.width = (options.width-3)+"px";
+				tl.elm.style.height = (options.height-25)+"px";
 				tl.init();
 				/* canonic binding to output fields */
 				for (var i=0;i<tl.datasources[0].fieldSets.length;i++) {
@@ -68,10 +89,14 @@ OAT.Anchor = {
 			break;
 		} /* switch */
 		
+		OAT.Anchor.appendContent(options);
+
+		if (!ds) { return; }
+
 		ds.options.query = ds.options.query.replace(/\$link_name/g,link);
 		options.connection.options.endpoint = options.href;
 		options.connection.options.url = options.href;
-		
+
 		switch (ds.type) {
 			case OAT.DataSourceData.TYPE_SPARQL:
 				var sq = new OAT.SparqlQuery();
@@ -91,59 +116,87 @@ OAT.Anchor = {
 		if (elm.tagName.toLowerCase() != "a") { return; }
 		var options = {
 			href:false,
+			newHref:"javascript:void(0)",
 			connection:false,
 			datasource:false,
+			content:false,
+			title:false,
 			imagePath:"/DAV/JS/images/",
-			result:"grid",
+			result_control:"grid",
 			activation:"hover",
 			width:300,
 			height:0
 		};
 		for (var p in paramsObj) { options[p] = paramsObj[p]; }
+		options.elm = elm;
 
-		var win = new OAT.Window({close:1,resize:1,width:options.width,height:options.height,title:"Loading..."},OAT.WindowData.TYPE_RECT);
-		win.close = function() { OAT.Dom.unlink(win.div); }
-		win.onclose = win.close;
-
+		if (!OAT.AnchorData.window) { /* create window */
+			var win = new OAT.Window({close:1,resize:1,width:options.width,height:options.height,imagePath:OAT.Anchor.imagePath,title:"Loading..."},OAT.WindowData.TYPE_RECT);
+			win.div.style.zIndex = OAT.Anchor.zIndex;
+			win.close = function() { OAT.Dom.hide(win.div); }
+			win.onclose = win.close;
+			win.close();
+			document.body.appendChild(win.div);
+			function checkOver() {
+				var opts = OAT.AnchorData.active;
+				if (!opts) { return; }
+				if (opts.activation == "hover") { opts.endClose(); }
+			}
+			function checkOut() {
+				var opts = OAT.AnchorData.active;
+				if (!opts) { return; }
+				if (opts.activation == "hover") { opts.startClose(); }
+			}
+			OAT.Dom.attach(win.div,"mouseover",checkOver);
+			OAT.Dom.attach(win.div,"mouseout",checkOut);
+			OAT.AnchorData.window = win;
+		}
+		
 		options.status = 0; /* not initialized */
 		if (!options.href) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
-		elm.href = "javascript:void(0)";
+		elm.href = options.newHref;
 		var closeFlag = 0;
 		
-		var startClose = function() {
-			closeFlag = 1;
-			setTimeout(closeRef,1000);
-		}
-		var endClose = function() {
-			closeFlag = 0;
-		}
 
-		var displayRef = function(event) {
-			if (OAT.AnchorData.active) { OAT.AnchorData.active.close(); }
-			OAT.AnchorData.active = win;
-			endClose();
-			document.body.appendChild(win.div);
+		options.displayRef = function(event) {
+			var win = OAT.AnchorData.window;
+			win.close(); /* close existing window */
+			OAT.AnchorData.active = options;
+			options.endClose();
+			OAT.Dom.show(win.div);
 			var pos = OAT.Dom.eventPos(event);
+		
+			if (!options.status) { /* first time */
+				win.content.style.width = "200px";
+				win.content.style.height = "50px";
+				OAT.Anchor.callForData(options,pos); 
+			} else { 
+				OAT.Anchor.appendContent(options);
+			}
 			win.anchorTo(pos[0],pos[1]);
-			if (!options.status) { OAT.Anchor.callForData(win,options,elm,pos); }
 		}
-		var closeRef = function() {
-			if (closeFlag) {
-				win.close();
-				endClose();
+		options.closeRef = function() {
+			if (options.closeFlag) {
+				OAT.AnchorData.window.close();
+				options.endClose();
 				OAT.AnchorData.active = false;
 			}
+		}
+		options.startClose = function() {
+			options.closeFlag = 1;
+			setTimeout(options.closeRef,1000);
+		}
+		options.endClose = function() {
+			options.closeFlag = 0;
 		}
 		
 		switch (options.activation) {
 			case "hover":
-				OAT.Dom.attach(elm,"mouseover",displayRef);
-				OAT.Dom.attach(win.div,"mouseover",endClose);
-				OAT.Dom.attach(elm,"mouseout",startClose);
-				OAT.Dom.attach(win.div,"mouseout",startClose);
+				OAT.Dom.attach(elm,"mouseover",options.displayRef);
+				OAT.Dom.attach(elm,"mouseout",options.startClose);
 			break;
 			case "click":
-				OAT.Dom.attach(elm,"click",displayRef);
+				OAT.Dom.attach(elm,"click",options.displayRef);
 			break;
 		}
 	}

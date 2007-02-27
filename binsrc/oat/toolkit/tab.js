@@ -17,6 +17,8 @@
 */
 
 OAT.Tab = function(elm) {
+	var self = this;
+	
 	this.keys = [];
 	this.values = [];
 	this.element = $(elm);
@@ -28,16 +30,15 @@ OAT.Tab = function(elm) {
 		var element_1 = $(elm_1);
 		var element_2 = $(elm_2);
 		OAT.Dom.addClass(element_1,"tab");
-		var index = this.keys.length;
+		var index = self.keys.length;
 		
 		this.keys.push(element_1);
 		this.values.push(element_2);
-		var obj = this;
 		var ref=function() {
-			obj.go(index);
+			self.goTo(element_1);
 		}
 		OAT.Dom.attach(element_1,"click",ref);
-		this.go(index);
+		self.go(index);
 	};
 
 	this.clear = function() {
@@ -48,8 +49,15 @@ OAT.Tab = function(elm) {
 		}
 	};
 
+	this.goTo = function(clicker) {
+		var index = self.keys.find(clicker);
+		if (index == -1) { return; }
+		self.go(index);
+	};
+	
 	this.go = function(index) {
 		this.clear();
+		if (index == -1) { return; }
 		this.element.appendChild(this.values[index]);
 		OAT.Dom.show(this.values[index]);
 		OAT.Dom.addClass(this.keys[index],"tab_selected");
@@ -60,20 +68,20 @@ OAT.Tab = function(elm) {
 	this.remove = function(element) {
 		var elm = $(element);
 		var decreaseIndex = false;
-		var index = this.keys.find(elm);
-		if (index < this.selectedIndex) { decreaseIndex = true; }
-		if (index == this.selectedIndex) {
+		var index = self.keys.find(elm);
+		if (index < self.selectedIndex) { decreaseIndex = true; }
+		if (index == self.selectedIndex) {
 			decreaseIndex = true;
-			if (index == this.keys.length-1) {
-				this.go(index-1);
+			if (index == self.keys.length-1) {
+				self.go(index-1);
 				decreaseIndex = false;
 			} else {
-				this.go(index+1);
+				self.go(index+1);
 			}
 		}
-		this.keys.splice(index,1);
-		this.values.splice(index,1);
-		if (decreaseIndex) { this.selectedIndex--; }
+		self.keys.splice(index,1);
+		self.values.splice(index,1);
+		if (decreaseIndex) { self.selectedIndex--; }
 	};
 	
 	OAT.Dom.clear(this.element); 

@@ -199,7 +199,7 @@ OAT.SimpleFX = {
 
 	shadow:function(something, optObj) {
 		var options = {
-			imagePath:"/DAV/JS/images/",
+			imagePath:OAT.Preferences.imagePath,
 			offsetX:0,
 			offsetY:0,
 			bottomSize:8,

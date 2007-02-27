@@ -27,7 +27,7 @@ OAT.JSON = {
 		var cache = [];
 		if (c) { cache = c; }
 		for (var i=0;i<cache.length;i++) {
-			if (cache[i] == something) { return "[recursion]"; }
+			if (cache[i] === something) { return "[recursion]"; }
 		}
 		if (typeof(something) == "object") { cache.push(something); }
 		switch (typeof(something)) {

@@ -80,6 +80,7 @@ OAT.FormObjectNames = {
 	"linechart":"Line chart",
 	"sparkline":"Sparkline",
 	"pivot":"Pivot table",
+	"flash":"Flash",
 	"image":"Image",
 	"imagelist":"Image list",
 	"twostate":"Tabular/Columnar Combo",
@@ -141,16 +142,39 @@ OAT.FormObject = {
 				fo.elm.style[attr.name] = attr.value;
 			}
 			/* properties */
+			
 			tmp = node.getElementsByTagName("properties")[0].getElementsByTagName("property");
-			for (var i=0;i<tmp.length;i++) {
-				var name = tmp[i].getElementsByTagName("name")[0];
-				var value = tmp[i].getElementsByTagName("value")[0];
-				var obj = fo.properties[i];
-				obj.value = OAT.Xml.textValue(value);
-				if (obj.type == "datasource") { obj.value = dsArr[parseInt(obj.value)]; }
-				if (obj.variable) { obj.value = obj.value.split(","); }
-				if (obj.name != OAT.Xml.textValue(name)) { alert('Panic! Saved data incomplete?'); }
+			/*	compatibility hack for old format - NAV and GRAPH
+			*/
+			if ((fo.name == "nav" && tmp.length == 1) ||
+				(fo.name == "graph" && tmp.length == 13)) {
+					var list = [];
+					var value = tmp[0].getElementsByTagName("value")[0];
+					value = OAT.Xml.textValue(value);
+					fo.datasources[0].ds = dsArr[parseInt(value)];
+					for (var i=1;i<tmp.length;i++) {
+						list.push(tmp[i]);
+					}
+					tmp = list;
 			}
+			/* end hack */
+			
+			for (var i=0;i<tmp.length;i++) {
+				var name = OAT.Xml.textValue(tmp[i].getElementsByTagName("name")[0]);
+				var value = tmp[i].getElementsByTagName("value")[0];
+				var obj = false;
+				for (var j=0;j<fo.properties.length;j++) {
+					if (fo.properties[j].name == name) { obj = fo.properties[j]; }
+				}
+				if (!obj) { 
+					alert("Unknown (probably obsolete?) property '"+name+"'"); 
+				} else {
+					obj.value = OAT.Xml.textValue(value);
+					if (obj.variable) { obj.value = obj.value.split(","); }
+				}
+			}
+			
+			/* tab tricks */
 			if (fo.name == "tab") {
 				fo.__tp = [];
 				var tmp = node.getElementsByTagName("tab_page");
@@ -302,7 +326,7 @@ OAT.FormObject = {
 			var h = e.offsetHeight;
 			var z = e.style.zIndex;
 			/* element */
-			xml += '\t<object type="'+fo.name+'" parent="'+designer.objects.find(fo.parentContainer)+'" ';
+			xml += 'ft<object type="'+fo.name+'" parent="'+designer.objects.find(fo.parentContainer)+'" ';
 			if (fo.hidden == "1") { xml += 'hidden="1" '; }
 			xml += 'empty="'+fo.empty+'" ';
 			xml += 'value="'+fo.getValue()+'">\n';
@@ -336,7 +360,8 @@ OAT.FormObject = {
 				xml += '\t\t\t<property>\n';
 				xml += '\t\t\t\t<name>'+p.name+'</name>\n';
 				var val = p.value;
-				if (p.type == "datasource") { val = designer.datasources.find(val); }
+				// not needed anymore 
+				// if (p.type == "datasource") { val = designer.datasources.find(val); }
 				if (p.type == "container") { val = designer.objects.find(val); }
 				if (p.variable) { val = val.join(","); }
 				xml += '\t\t\t\t<value>'+val+'</value>\n';
@@ -669,6 +694,7 @@ OAT.FormObject = {
 		self.name="map";
 		self.resizable = true;
 		self.elm = OAT.Dom.create("div",{border:"1px solid #00f",backgroundColor:"#ddf",width:"100px",height:"100px",overflow:"hidden"});
+		self.windowWasOpened = false;
 		self.allowMultipleDatasources = true;
 		self.datasources = [
 			{ds:false,fieldSets:[
@@ -702,24 +728,28 @@ OAT.FormObject = {
 			self.elm.innerHTML = "Map";
 		}
 
-		self.clickRef = function(dsIndex,index) {
-			return function(marker,event) {
-				self.map.closeWindow();
-				/* call for data */
-				if (self.form) {
-					var cb = function() {
-						self.map.openWindow(marker,self.form.elm,event);
-						self.form.elm.style.display = "block";
-					}
-					if (self.form.datasources.length) { self.form.datasources[0].oneShotCallback = cb; }
-				}
-				var result = self.datasources[dsIndex].ds.advanceRecord(index);
-				if (!result || !self.form.datasources.length) { /* no advancement made, since we already have the data - or lookup has no datasources */
-					cb(); /* just display lookup */
-					if (self.form.datasources.length) { self.form.datasources[0].oneShotCallback = false; }
-				}
+		self.closeWindow = function() {
+			self.map.closeWindow();
+			if (self.form) { self.form.elm.style.display = "none"; }
+		}
+		
+		self.openWindow = function(dsIndex,recordIndex) {
+			if (self.form) {
+				var marker = self.markers[dsIndex][recordIndex];
+				self.map.openWindow(marker,self.form.elm);
+				self.form.elm.style.display = "block";
 			}
 		}
+
+		self.clickRef = function(dsIndex,index) {
+			return function(marker,event) {
+				self.windowWasOpened = true;
+				/* call for data */
+				var result = self.datasources[dsIndex].ds.advanceRecord(index);
+				if (!result) { self.openWindow(dsIndex,index); } /* no advancement made, since we already have the data */
+ 			} /* marker click reference */
+		}
+
 		self.setValue = function(value,dsIndex) { /* lat,lon,index,image */
 			self.map.removeMarkers(dsIndex);
 			if (self.multi) {
@@ -727,9 +757,11 @@ OAT.FormObject = {
 				for (var i=0;i<value.length;i++) { 
 					var lat = value[i][0];
 					var lon = value[i][1];
+					var index = value[i][2];
 					pointArr.push([lat,lon]); 
-					var ref = self.clickRef(dsIndex,value[i][2]);
-					self.map.addMarker(dsIndex,lat,lon,value[i][3],self.markerWidth,self.markerHeight,ref);
+					var ref = self.clickRef(dsIndex,index);
+					var m = self.map.addMarker(dsIndex,lat,lon,value[i][3],self.markerWidth,self.markerHeight,ref);
+					self.markers[dsIndex][index] = m;
 				}
 				self.map.optimalPosition(pointArr);
 				var az = self.map.getZoom();
@@ -738,8 +770,10 @@ OAT.FormObject = {
 			} else {
 				var lat = value[0][0];
 				var lon = value[0][1];
-				var ref = self.clickRef(dsIndex,value[0][2]);
-				self.map.addMarker(dsIndex,lat,lon,value[0][3],self.markerWidth,self.markerHeight,ref);
+				var index = value[0][2];
+				var ref = self.clickRef(dsIndex,index);
+				var m = self.map.addMarker(dsIndex,lat,lon,value[0][3],self.markerWidth,self.markerHeight,ref);
+				self.markers[dsIndex][index] = m;
 				self.zoom = self.map.getZoom();
 				self.map.centerAndZoom(lat,lon,self.zoom);
 			}
@@ -755,12 +789,11 @@ OAT.FormObject = {
 			}
 			self.prefix = self.properties[6].value;
 			self.multi = (self.properties[3].value == "1" ? 1 : 0);
-			self.fix = parseInt(self.properties[5].value);
+			self.fixObj = {fix:parseInt(self.properties[5].value),fixDistance:20};
 			self.markerWidth = parseInt(self.properties[7].value);
 			self.markerHeight = parseInt(self.properties[8].value);
-			self.markers = [];
 			/* markers available */
-			self.markerPath = "/DAV/JS/images/markers/";
+			self.markerPath = OAT.Preferences.imagePath+"markers/";
 			self.markerFiles = []; 
 			for (var i=1;i<=12;i++) {
 				var name = self.prefix + (i<10?"0":"") + i +".png";
@@ -768,7 +801,7 @@ OAT.FormObject = {
 			}
 			self.markerIndex = 0;
 			self.markerMapping = {};
-			self.map = new OAT.Map(self.elm,self.provider,self.fix,20);
+			self.map = new OAT.Map(self.elm,self.provider,self.fixObj);
 			self.map.centerAndZoom(0,0,self.zoom);
 			self.map.addTypeControl();
 			self.map.addMapControl();
@@ -780,6 +813,12 @@ OAT.FormObject = {
 				case "Map": self.map.setMapType(OAT.MapData.MAP_MAP); break;
 				case "Satellite": self.map.setMapType(OAT.MapData.MAP_ORTO); break;
 				case "Hybrid": self.map.setMapType(OAT.MapData.MAP_HYB); break;
+			}
+			
+			self.markers = [];
+			for (var i=0;i<self.datasources.length;i++) {
+				self.markers.push([]);
+				OAT.MSG.attach(self.datasources[i].ds,OAT.MSG.DS_RECORD_PREADVANCE,self.closeWindow);
 			}
 		}
 		
@@ -799,6 +838,7 @@ OAT.FormObject = {
 				var value = [lat,lon,currentIndex,image];
 				if (!self.multi) { self.setValue([value],dsIndex); }
 			}
+			if (self.windowWasOpened) { self.openWindow(dsIndex,currentIndex); }
 		}
 		self.bindPageCallback = function(dataRows,currentPageIndex,dsIndex) {
 			var values = [];
@@ -1227,7 +1267,7 @@ OAT.FormObject = {
 				fs.realIndexes.splice(i1-1,1);
 				fs.realIndexes.splice(newi,0,tmp);
 			}
-			self.grid.imagesPath = "/DAV/JS/images";
+			self.grid.imagePath = OAT.Preferences.imagePath;
 			if (!self.showAll) { 
 				var data = [];
 				for (var i=0;i<ds.names.length;i++) { 
@@ -1287,6 +1327,53 @@ OAT.FormObject = {
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	},
+
+	flash:function(x,y,designMode) {
+		var self = this;
+		OAT.FormObject.init(self);
+		self.resizable = true;
+		self.name="flash";
+		if (designMode) {
+			self.elm = OAT.Dom.create("div",{border:"1px solid #00f",backgroundColor:"#ddf",width:"100px",height:"100px"});
+			self.elm.innerHTML = "Flash";
+		} else {
+			self.elm = OAT.Dom.create("object");
+			self.param = OAT.Dom.create("param");
+			self.param.setAttribute("name","movie");
+			self.embed = OAT.Dom.create("embed");
+			self.embed.setAttribute("type","application/x-shockwave-flash");
+			self.embed.setAttribute("wmode","transparent");
+			var p = OAT.Dom.create("param");
+			p.setAttribute("name","wmode");
+			p.setAttribute("value","transparent");
+			OAT.Dom.append([self.elm,self.param,p]);
+		}
+		self.datasources = [
+			{ds:false,fieldSets:[
+				{name:"Source",variable:false,columnIndexes:[-1],names:[],realIndexes:[]}
+			]}
+		];
+		self.clear = function() {
+		}
+		self.setValue = function(value) {
+			OAT.Dom.unlink(self.embed);
+			var dims = OAT.Dom.getWH(self.elm);
+			self.embed.style.width = dims[0]+"px";
+			self.embed.style.height = dims[1]+"px"; 
+			self.param.setAttribute("value",value);
+			self.embed.setAttribute("src",value);
+			self.elm.appendChild(self.embed);
+		}
+		self.bindRecordCallback = function(dataRow,currentIndex) {
+			if (!dataRow) { return; }
+			var value = dataRow[self.datasources[0].fieldSets[0].realIndexes[0]];
+			self.setValue(value);
+		}
+		self.notify = function() { /* when waiting for new image, clear the old one */
+			self.clear();
+		}
+		OAT.FormObject.abstractParent(self,x,y);
+	},
 	
 	image:function(x,y,designMode) {
 		var self = this;
@@ -1304,18 +1391,25 @@ OAT.FormObject = {
 				{name:"Source",variable:false,columnIndexes:[-1],names:[],realIndexes:[]}
 			]}
 		];
+		
+		self.properties = [
+			{name:"User specified size",value:"0",type:"bool"}
+		];
+		
 		self.clear = function() {
 			self.elm.src = "";
 		}
 		self.setValue = function(value) {
-			self.elm.style.width = "";
-			self.elm.style.height = "";
-			if (OAT.Dom.isIE()) { return; }
+			if (self.properties[0].value == "0") {
+				self.elm.style.width = "";
+				self.elm.style.height = "";
+			}
 			if (value.match(/\./)) {
 				/* URL */
 				self.elm.src = value;
 				return; 
 			}
+			if (OAT.Dom.isIE()) { return; } /* IE doesn't support data: URLs */
 			self.elm.src = OAT.Dom.decodeImage(value);
 		}
 		self.bindRecordCallback = function(dataRow,currentIndex) {
@@ -1493,41 +1587,46 @@ OAT.FormObject = {
 			self.elm.className = "rdf_graph";
 		}
 		self.properties = [
-			{name:"Datasource",value:false,type:"datasource",positionOverride:1},
-/* 1 */		{name:"Type",value:1,type:"select",options:[["All nodes at once",0],["Equal distances",1]],positionOverride:2},
-/* 2 */		{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
-/* 3 */		{name:"Placement",value:0,type:"select",options:[["Random",0],["Circle",1]],positionOverride:2},
-/* 4 */		{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
-/* 5 */		{name:"Distance",value:1,type:"select",options:[["Close",0],["Medium",1],["Far",2]],positionOverride:2},
-/* 6 */		{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
-/* 7 */		{name:"Projection",value:0,type:"select",options:[["Planar",0],["Pseudo-spherical",1]],positionOverride:2},
-/* 8 */		{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
-/* 9 */		{name:"Labels",value:0,type:"select",options:[["On active node only",0],["Up to distance 1",1],["Up to distance 2",2],["Up to distance 3",3],["Up to distance 4",4],],positionOverride:2},
-/* 10 */	{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
-/* 11 */	{name:"Visible",value:0,type:"select",options:[["All nodes",0],["Selected up to distance 1",1],["Selected up to distance 2",2],["Selected up to distance 3",3],["Selected up to distance 4",4],],positionOverride:2},
-/* 12 */	{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
+/* 0 */		{name:"Type",value:1,type:"select",options:[["All nodes at once",0],["Equal distances",1]],positionOverride:2},
+/* 1 */		{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
+/* 2 */		{name:"Placement",value:0,type:"select",options:[["Random",0],["Circle",1]],positionOverride:2},
+/* 3 */		{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
+/* 4 */		{name:"Distance",value:1,type:"select",options:[["Close",0],["Medium",1],["Far",2]],positionOverride:2},
+/* 5 */		{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
+/* 6 */		{name:"Projection",value:0,type:"select",options:[["Planar",0],["Pseudo-spherical",1]],positionOverride:2},
+/* 7 */		{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
+/* 8 */		{name:"Labels",value:0,type:"select",options:[["On active node only",0],["Up to distance 1",1],["Up to distance 2",2],["Up to distance 3",3],["Up to distance 4",4],],positionOverride:2},
+/* 9 */		{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
+/* 10 */	{name:"Visible",value:0,type:"select",options:[["All nodes",0],["Selected up to distance 1",1],["Selected up to distance 2",2],["Selected up to distance 3",3],["Selected up to distance 4",4],],positionOverride:2},
+/* 11 */	{name:"Disable runtime editing",value:"0",type:"bool",positionOverride:2},
 		];
-		self.datasources = [];
+
+		self.datasources = [
+			{ds:false,fieldSets:[
+				{name:"Datasource",variable:false,names:[],columnIndexes:[],realIndexes:[]}
+			]}
+		];
+
 		self.clear = function() {
-			OAT.Dom.clear(self.elm);
+			// OAT.Dom.clear(self.elm);
 		}
 		self.setValue = function(rdfDoc) {
 			var triples = OAT.RDF.toTriples(rdfDoc);
 			var x = OAT.GraphSVGData.fromTriples(triples);
 			var ds = [];
-			if (self.properties[2].value == "1") { ds.push("type"); }
-			if (self.properties[4].value == "1") { ds.push("placement"); }
-			if (self.properties[6].value == "1") { ds.push("distance"); }
-			if (self.properties[8].value == "1") { ds.push("projection"); }
-			if (self.properties[10].value == "1") { ds.push("labels"); }
-			if (self.properties[12].value == "1") { ds.push("show"); }
+			if (self.properties[1].value == "1") { ds.push("type"); }
+			if (self.properties[3].value == "1") { ds.push("placement"); }
+			if (self.properties[5].value == "1") { ds.push("distance"); }
+			if (self.properties[7].value == "1") { ds.push("projection"); }
+			if (self.properties[8].value == "1") { ds.push("labels"); }
+			if (self.properties[11].value == "1") { ds.push("show"); }
 			var opts = {vertexSize:[4,8]}
-			opts.type = parseInt(self.properties[1].value);
-			opts.placement = parseInt(self.properties[3].value);
-			opts.distance = parseInt(self.properties[5].value);
-			opts.projection = parseInt(self.properties[7].value);
-			opts.labels = parseInt(self.properties[9].value);
-			opts.show = parseInt(self.properties[11].value);
+			opts.type = parseInt(self.properties[0].value);
+			opts.placement = parseInt(self.properties[2].value);
+			opts.distance = parseInt(self.properties[4].value);
+			opts.projection = parseInt(self.properties[6].value);
+			opts.labels = parseInt(self.properties[8].value);
+			opts.show = parseInt(self.properties[10].value);
 			opts.disabledSelects = ds;
 			self.obj = new OAT.GraphSVG(self.elm,x[0],x[1],opts);
 			OAT.Resize.createDefault(self.elm,false,self.obj.drawUpdate);
@@ -1685,7 +1784,7 @@ OAT.FormObject = {
 						fs.realIndexes.splice(i1-1,1);
 						fs.realIndexes.splice(newi,0,tmp);
 					}
-					self.grid.imagesPath = "/DAV/JS/images";
+					self.grid.imagePath = OAT.Preferences.imagePath;
 					self.grid.createHeader(data);
 					
 					OAT.Dom.attach(self.container,"scroll",function(event){event.cancelBubble = true;});
@@ -1767,10 +1866,12 @@ OAT.FormObject = {
 		self.elm.appendChild(self.nextp);
 //		self.elm.appendChild(self.last);
 
-		self.properties = [
-			{name:"Datasource",value:false,type:"datasource"}
+		self.datasources = [
+			{ds:false,fieldSets:[
+				{name:"Datasource",variable:false,names:[],columnIndexes:[],realIndexes:[]}
+			]}
 		];
-
+		
 		self.clear = function() {
 //			self.total.innerHTML = "";
 			self.current.value = "";
@@ -1914,12 +2015,16 @@ OAT.FormObject = {
 				xml += '<root xmlns:sql="urn:schemas-openlink-com:xml-sql"';
 				xml += ' sql:xsl="'+ss+'" ';
 				xml += '><sql:sqlx>'+result+'</sql:sqlx></root>';
-				var send_ref = function() { return xml; }
 				var recv_ref = function() { alert("New saved query created"); }
-				OAT.Ajax.command(OAT.Ajax.PUT + OAT.Ajax.AUTH_BASIC,target,send_ref,recv_ref,OAT.Ajax.TYPE_TEXT);
+				var o = {
+					auth:OAT.AJAX.AUTH_BASIC,
+					user:http_cred.user,
+					password:http_cred.password
+				}
+				OAT.AJAX.PUT(target,xml,recv_ref,o);
 			}
 			
-			OAT.Ajax.command(OAT.Ajax.GET,source,function(){return "";},processRef,OAT.Ajax.TYPE_TEXT,{});
+			OAT.AJAX.GET(source,false,processRef);
 		}
 		
 		if (designMode) {
@@ -2047,7 +2152,8 @@ OAT.FormObject = {
 				var index = value[i][4];
 				var div = OAT.Dom.create("div",{left:"-7px"});
 				var ball = OAT.Dom.create("div",{width:"16px",height:"16px",cssFloat:"left",styleFloat:"left"});
-				ball.style.backgroundImage = "url(/DAV/JS/images/Timeline_circle.png)";
+				var bg = "url(" + OAT.Preferences.imagePath + "Timeline_circle.png)";
+				ball.style.backgroundImage = bg;
 				if (link == "") {
 					var t = OAT.Dom.create("span");
 				} else {

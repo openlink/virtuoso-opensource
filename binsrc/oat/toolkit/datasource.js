@@ -200,9 +200,7 @@ OAT.DataSource = function(type) {
 	this.fetchPage = function(index,callback) { /* retrieve one page; either from cache or db */
 		if (self.checkAvailability(index,true)) { callback(); return; }
 		var ref = function(data) {
-			for (var i=0;i<self.boundFiles.length;i++) {
-				self.boundFiles[i](data);
-			}
+			for (var i=0;i<self.boundFiles.length;i++) { self.boundFiles[i](data); }
 			var parsed = self.transport.parse(data,self.options,self.outputFields);
 			self.processData(parsed,index);
 			if (self.checkAvailability(index,false)) { callback(); }
@@ -224,16 +222,18 @@ OAT.DataSource = function(type) {
 		return newIndex;
 	}
 
-	this.advanceRecord = function(something,ignoreDups) { 	/* go to record # */
+	this.advanceRecord = function(something) { 	/* go to record # */
 		/* get the record number we want */
 		var newIndex = self.getNewIndex(something,self.recordIndex,1); /* this is new requested index */
-		if (newIndex == -1 || (newIndex == self.recordIndex && !ignoreDups)) { return false; } /* do nothing if is not correct */
+		if (newIndex == -1 || newIndex == self.recordIndex) { return false; } /* do nothing if is not correct or the present one */
 		var newPageIndex = (self.pageSize ? Math.floor(newIndex / self.pageSize) : 0) * self.pageSize;
 		/* sometimes we also have to change page */
+		OAT.MSG.send(self,OAT.MSG.DS_RECORD_PREADVANCE,newIndex);
 		var callback = function() {
 			self.recordIndex = newIndex;
 			/* populate objects based on current index */
 			var data = self.dataRows[self.recordIndex];
+			OAT.MSG.send(self,OAT.MSG.DS_RECORD_ADVANCE,[data,self.recordIndex]);
 			for (var i=0;i<self.boundRecords.length;i++) {
 				/* notify all recieving objects */
 				self.boundRecords[i](data,self.recordIndex);
@@ -247,6 +247,7 @@ OAT.DataSource = function(type) {
 	}
 	
 	this.advancePage = function(newIndex,command) { /* go to page #, not to be directly called! */
+		OAT.MSG.send(self,OAT.MSG.DS_PAGE_PREADVANCE,newIndex);
 		/* get the page we want */
 		var callback = function() {
 			var data = [];
@@ -255,6 +256,7 @@ OAT.DataSource = function(type) {
 			for (var j=self.pageIndex;j<l;j++) {
 				data.push(self.dataRows[j]);
 			}
+			OAT.MSG.send(self,OAT.MSG.DS_PAGE_ADVANCE,[data,self.pageIndex]);
 			for (var i=0;i<self.boundPages.length;i++) {
 				self.boundPages[i](data,self.pageIndex);
 			} /* all page requesting objects */
@@ -296,7 +298,7 @@ OAT.DataSource = function(type) {
 			}
 			if (callback) { callback(); }
 		}
-		OAT.Ajax.command(OAT.Ajax.GET + OAT.Ajax.AUTH_BASIC,savedURL,function(){return '';},qRef,OAT.Ajax.TYPE_TEXT);
+		OAT.AJAX.GET(savedURL,false,qRef);
 	}
 	
 	this.refresh = function(callback,do_links,datasources) {

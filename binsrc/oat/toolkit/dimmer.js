@@ -16,25 +16,40 @@ OAT.Dimmer = {
 	elm:false, /* element */
 	root:false, /* root background */
 
+	update:function(event) {
+		if (!OAT.Dimmer.root) { return; }
+		var scroll = OAT.Dom.getScroll();
+		var dims = OAT.Dom.getViewport();
+		with (OAT.Dimmer.root.style) {
+			left = scroll[0]+"px";
+			top = scroll[1]+"px";
+			width = dims[0]+"px";
+			height = dims[1]+"px";
+		}
+	},
+	
 	show:function(something,optObj) {
+		if (OAT.Dimmer.elm) return; /* end if another is displayed */
 		var options = {
 			color:"#000",
 			opacity:0.5,
 			popup:false
 		}
-		if (optObj) for (var p in optObj) { options[p] = optObj[p]; }
-		if (OAT.Dimmer.elm) return; /* end if another is displayed */
+		for (var p in optObj) { options[p] = optObj[p]; }
 		var elm = $(something);
 		if (!elm) return;
 		OAT.Dimmer.elm = elm;
 		elm.oldZindex = elm.style.zIndex;
 		elm.style.zIndex = 1000;
-		var scroll = OAT.Dom.getScroll();
-		var x = scroll[0];
-		var y = scroll[1];
-		OAT.Dimmer.root = OAT.Dom.create("div",{position:"absolute",left:x+"px",top:y+"px",width:"100%",height:"100%",zIndex:999});
-		OAT.Dimmer.root.style.backgroundColor = options.color;
-		OAT.Dimmer.root.style.opacity = options.opacity;
+		OAT.Dimmer.root = OAT.Dom.create("div",{position:"fixed",left:"0px",top:"0px",width:"100%",height:"100%",zIndex:999});
+		if (OAT.Dom.isIE6()) { 
+			OAT.Dimmer.root.style.position = "absolute"; 
+			OAT.Dimmer.update();
+		} 
+		with (OAT.Dimmer.root.style) {
+			backgroundColor = options.color;
+			opacity = options.opacity;
+		}
 		OAT.Dimmer.root.style.filter = "alpha(opacity="+Math.round(100*options.opacity)+")";
 		document.body.appendChild(OAT.Dimmer.root);
 		document.body.appendChild(elm);
@@ -43,14 +58,17 @@ OAT.Dimmer = {
 	},
 	
 	hide:function() {
-		if (OAT.Dimmer.root) { 
-			OAT.Dom.hide(OAT.Dimmer.elm);
-			OAT.Dimmer.elm.style.zIndex = OAT.Dimmer.elm.oldZindex;
-			document.body.appendChild(OAT.Dimmer.elm);
-			OAT.Dom.unlink(OAT.Dimmer.root);
-			OAT.Dimmer.root = false;
-			OAT.Dimmer.elm = false;
-		} /* if shown */
+		if (!OAT.Dimmer.root) { return; }
+		OAT.Dom.hide(OAT.Dimmer.elm);
+		OAT.Dimmer.elm.style.zIndex = OAT.Dimmer.elm.oldZindex;
+		document.body.appendChild(OAT.Dimmer.elm);
+		OAT.Dom.unlink(OAT.Dimmer.root);
+		OAT.Dimmer.root = false;
+		OAT.Dimmer.elm = false;
 	} /* hide */
+}
+if (OAT.Dom.isIE6()) { 
+	OAT.Dom.attach(window,'resize',OAT.Dimmer.update); 
+	OAT.Dom.attach(window,'scroll',OAT.Dimmer.update); 
 }
 OAT.Loader.featureLoaded("dimmer");

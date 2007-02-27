@@ -28,6 +28,7 @@ OAT.Window = function(optObj,type) {
 
 	if (type && type != OAT.WindowData.TYPE_AUTO) { t = type; } else { t = autotype; } /* if specified, get specified */
 	if (OAT.Preferences.windowTypeOverride) { t = OAT.Preferences.windowTypeOverride; } /* if override, get overriding type */
+	if (t == OAT.WindowData.TYPE_AUTO) { t = autotype; }
 	var obj = false;
 	switch (t) {
 		case OAT.WindowData.TYPE_WIN:
@@ -82,7 +83,7 @@ OAT.WindowParent = function(obj,optObj) { /* abstract parent for all window impl
 		width:160,
 		height:50,
 		title:"",
-		imagePath:"/DAV/JS/images/"
+		imagePath:OAT.Preferences.imagePath
 	}
 
 	for (var p in optObj) {	obj.options[p] = optObj[p]; }
@@ -156,4 +157,3 @@ OAT.WindowParent = function(obj,optObj) { /* abstract parent for all window impl
 	obj.resizeTo(obj.options.width,obj.options.height);
 }
 OAT.Loader.featureLoaded("window");
-

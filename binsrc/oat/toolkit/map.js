@@ -1,6 +1,6 @@
 /*
 	Abstract API atop various mapping engines
-	var m = new OAT.Map(something, provider, fix)
+	var m = new OAT.Map(something, provider, optionsObject)
 	m.addTypeControl()
 	m.addMapControl()
 	m.setMapType(type)
@@ -10,7 +10,7 @@
 	m.addMarker(group,lat,lon,file,w,h,callback)
 	m.removeMarker(marker)
 	m.removeMarkers()
-	m.openWindow(marker,something,event)
+	m.openWindow(marker,something)
 	m.closeWindow()
 	m.optimalPosition(pointArr)
 */
@@ -29,13 +29,19 @@ OAT.MapData = {
 	FIX_STACK:3
 }
 
-OAT.Map = function(something, provider, fix, fixDistance) {
+OAT.Map = function(something, provider, optionsObject) {
 	var self = this;
+	this.options = {
+		fix:OAT.MapData.FIX_NONE,
+		fixDistance:20,
+		fixEpsilon:0.5
+	}
+	
+	for (var p in optionsObject) { self.options[p] = optionsObject[p]; }
+	
 	this.id = 0; /* ms map pins need id */
 	this.provider = provider;
 	this.obj = false;
-	this.fix = fix;
-	this.fixDistance = fixDistance;
 	this.elm = $(something);
 	this.markerArr = [];
 	this.layerObj = false;
@@ -44,11 +50,11 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 		case OAT.MapData.TYPE_G: self.obj = new GMap2(self.elm); break;
 		case OAT.MapData.TYPE_Y: self.obj = new YMap(self.elm); break;
 		case OAT.MapData.TYPE_MS: 
-		self.elm.id = 'our_mapping_element';
-		self.obj = new VEMap('our_mapping_element');
-		try {
-			self.obj.LoadMap();
-		} 
+			self.elm.id = 'our_mapping_element';
+			self.obj = new VEMap('our_mapping_element');
+			try {
+				self.obj.LoadMap();
+			} 
 			catch (e) {  }
 			self.layerObj = new OAT.Layers(100);
 		break;
@@ -70,7 +76,7 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 			break;
 	}
 	
-	if (fix != OAT.MapData.FIX_NONE) { /* marker fix */
+	if (self.options.fix != OAT.MapData.FIX_NONE) { /* marker fix */
 		switch (self.provider) { 
 			case OAT.MapData.TYPE_G: 
 				GEvent.addListener(self.obj,'zoomend',function(){self.fixMarkers();});
@@ -81,99 +87,125 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 			case OAT.MapData.TYPE_MS:
 				self.obj.AttachEvent("onendzoom",function(){self.fixMarkers();});
 			break;
+			case OAT.MapData.TYPE_OL:
+				self.obj.events.register("move",self.obj,function(){self.fixMarkers();});
+			break;
 		}
 	}
 	
 	/* --- methods --- */
 	
-	this.newGeoPosition = function(marker,siblingIndex,siblingCount) {
-		/* new position for marker: siblingIndex in [0,siblingCount-1] */
-		self.getOPP(marker);
-		var lat = marker.__coords[0];
-		var lon = marker.__coords[1];
+	this.newGeoPosition = function(markerGroup,index) {
+		/* new position for marker with respect to first marker of his group */
+		var marker = markerGroup[index];
 		var dx = 0; /* pixel change */
 		var dy = 0;
-		switch (self.fix) {
+		var dist = self.options.fixDistance;;
+		switch (self.options.fix) {
 			case OAT.MapData.FIX_ROUND1:
-				if (siblingIndex) {
-					var ang = 2*Math.PI*(siblingIndex-1)/(siblingCount-1);
-					dx = self.fixDistance * Math.cos(ang);
-					dy = self.fixDistance * Math.sin(ang);
+				if (index) {
+					var ang = 2*Math.PI*index/(markerGroup.length-1);
+					dx = dist * Math.cos(ang);
+					dy = dist * Math.sin(ang);
 				}
 			break;
 			case OAT.MapData.FIX_ROUND2:
-				var ang = 2*Math.PI*siblingIndex/siblingCount;
-				dx = self.fixDistance * Math.cos(ang);
-				dy = self.fixDistance * Math.sin(ang);
+				var ang = 2*Math.PI*index/markerGroup.length;
+				dx = dist * Math.cos(ang);
+				dy = dist * Math.sin(ang);
 			break;
 			case OAT.MapData.FIX_STACK:
-				dy = self.fixDistance*siblingIndex;
+				dy = dist * index;
 			break;
 		}
-		
+		var off = self.getNewCoords(marker,[dx,dy]);
+		var lat = off[0];
+		var lon = off[1];
+
 		switch (self.provider) { 
 			case OAT.MapData.TYPE_G: 
-				marker.setPoint(new GLatLng(lat+dy*self.opp,lon+dx*self.opp));	
+				marker.setPoint(new GLatLng(lat,lon));	
 			break;
 			case OAT.MapData.TYPE_Y: 
-				marker.setYGeoPoint(new YGeoPoint(lat+dy*self.opp,lon+dx*self.opp)); 
+				marker.setYGeoPoint(new YGeoPoint(lat,lon)); 
 			break;
 			case OAT.MapData.TYPE_MS: 
-				marker.LatLong.Latitude = lat + dy*self.opp;
-				marker.LatLong.Longitude = lon + dx*self.opp;
+				marker.LatLong.Latitude = lat;
+				marker.LatLong.Longitude = lon;
+			break;
+			case OAT.MapData.TYPE_OL: 
+				marker.lonlat.lon = lon;
+				marker.lonlat.lat = lat;
 			break;
 		}
 	}
 	
-	this.getOPP = function(testm) {
-		switch (self.provider) { /* compute real offset per pixel */
+	this.getNewCoords = function(marker,shiftArray) { /* compute real offsets */
+		switch (self.provider) { 
 			case OAT.MapData.TYPE_G: 
-				var ll1 = new GLatLng(testm.__coords[0],testm.__coords[1]);
+				var ll1 = new GLatLng(marker.__coords[0],marker.__coords[1]);
 				var p1 = self.obj.fromLatLngToDivPixel(ll1);
-				var p2 = new GPoint(p1.x,p1.y-1);
-				var ll2 = self.obj.fromDivPixelToLatLng(p2)
-				self.opp = ll2.lat() - testm.__coords[0];
+				var p2 = new GPoint(p1.x+shiftArray[0],p1.y+shiftArray[1]);
+				var ll2 = self.obj.fromDivPixelToLatLng(p2);
+				return [ll2.lat(),ll2.lng()];
 			break;
 			case OAT.MapData.TYPE_Y: 
-				var ll1 = new YGeoPoint(testm.__coords[0],testm.__coords[1]);
+				var ll1 = new YGeoPoint(marker.__coords[0],marker.__coords[1]);
 				var p1 = self.obj.convertLatLonXY(ll1);
-				var p2 = new YCoordPoint(p1.x,p1.y-1);
+				var p2 = new YCoordPoint(p1.x+shiftArray[0],p1.y+shiftArray[1]);
 				var ll2 = self.obj.convertXYLatLon(p2);
-				self.opp = ll2.Lat - testm.__coords[0];
+				return [ll2.Lat,ll2.Lon];
 			break;
 			case OAT.MapData.TYPE_MS: 
 				var z = 1 + self.getZoom();
-				var ll1 = new VELatLong(testm.__coords[0],testm.__coords[1]);
+				var ll1 = new VELatLong(marker.__coords[0],marker.__coords[1]);
 				var p1 = self.obj.LatLongToPixel(ll1,z);
-				var p2 = new Msn.VE.Pixel(p1.x,p1.y-1);
+				var p2 = new Msn.VE.Pixel(p1.x+shiftArray[0],p1.y+shiftArray[1]);
 				var ll2 = self.obj.PixelToLatLong(p2.x,p2.y,z);
-				self.opp = ll2.Latitude - testm.__coords[0];
+				return [ll2.Latitude,ll2.Longitude];
 			break;
-		}		
+			case OAT.MapData.TYPE_OL: 
+				var ll1 = new OpenLayers.LonLat(marker.__coords[1],marker.__coords[0]);
+				var p1 = self.obj.getPixelFromLonLat(ll1);
+				var p2 = new OpenLayers.Pixel(p1.x+shiftArray[0],p1.y+shiftArray[1]);
+				var ll2 = self.obj.getLonLatFromPixel(p2);
+				return [ll2.lat,ll2.lon];
+			break;
+		}
 	}
 	
 	this.fixMarkers = function() {
 		if (self.markerArr.length < 2) { return; }
-		var conversionObject = {}
+		var groups = [];
 		/* analyze positions */
 		for (var i=0;i<self.markerArr.length;i++) {
 			var m = self.markerArr[i];
-			var index = m.__coords[0]+","+m.__coords[1];
-			if (index in conversionObject) {
-				conversionObject[index]++;
+			var c = m.__coords;
+			var index = -1;
+			for (var j=0;j<groups.length;j++) {
+				/* find group for this marker */
+				var g = groups[j][0];
+				var dx = c[0] - g.__coords[0];
+				var dy = c[1] - g.__coords[1];
+				var dist = Math.sqrt(dx*dx+dy*dy);
+				if (dist <= self.options.fixEpsilon) { index = j; }
+			}
+			if (index != -1) {
+				groups[index].push(m);
 			} else {
-				conversionObject[index] = 1;
+				groups.push([m]);
 			}
 		}
+		
 		/* create better positions */
-		var usedConversion = {};
-		for (var i=0;i<self.markerArr.length;i++) {
-			var m = self.markerArr[i];
-			var index = m.__coords[0]+","+m.__coords[1];
-			if (!(index in usedConversion)) { usedConversion[index] = 0; }
-			self.newGeoPosition(m,usedConversion[index],conversionObject[index]);
-			usedConversion[index]++;
-		}
+		for (var i=0;i<groups.length;i++) {
+			var g = groups[i];
+			for (var j=0;j<g.length;j++) { /* re-position all markers */
+				self.newGeoPosition(g,j);
+			}
+		} /* for all groups */
+
+		if (self.provider == OAT.MapData.TYPE_G) { self.obj.layers[2].redraw(); }
 	}
 	
 	this.addTypeControl = function() {
@@ -234,7 +266,7 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 			case OAT.MapData.TYPE_G: self.obj.setZoom(zoom); break;
 			case OAT.MapData.TYPE_Y: self.obj.setZoomLevel(17-zoom); break;
 			case OAT.MapData.TYPE_MS: self.obj.SetZoomLevel(zoom+1); break;
-//			case OAT.MapData.TYPE_OL: self.obj.zoomTo(5); break;
+			case OAT.MapData.TYPE_OL: self.obj.zoomTo(5); break;
 		}	
 	}
 	
@@ -253,14 +285,15 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 		switch (self.provider) {
 			case OAT.MapData.TYPE_G: 
 				var icon = new GIcon(G_DEFAULT_ICON,file);
-				icon.iconSize = new GSize(w,h);
+				if (w && h) { icon.iconSize = new GSize(w,h); }
 				icon.shadow = "";
 				var marker = new GMarker(new GLatLng(lat,lon),icon);
 				self.obj.addOverlay(marker);
 				if (clickCallback) { GEvent.addListener(marker,'click',function(event){clickCallback(marker,event);}); }
 			break;
 			case OAT.MapData.TYPE_Y: 
-				var icon = new YImage(file,new YSize(w,h));
+				var icon = false;
+				if (w && h) { var icon = new YImage(file,new YSize(w,h)); }
 				var marker = new YMarker(new YGeoPoint(lat,lon),icon);
 				self.obj.addOverlay(marker);
 				if (clickCallback) { YEvent.Capture(marker,EventsList.MouseClick,function(event){clickCallback(marker,event);}); }
@@ -268,7 +301,8 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 			case OAT.MapData.TYPE_MS:
 				self.id++;
 				var id = "pin_"+self.id;
-				var marker = new VEPushpin(id,new VELatLong(lat,lon),file,null,null);
+				var f = (file ? file : null);
+				var marker = new VEPushpin(id,new VELatLong(lat,lon),f,null,null);
 				VEPushpin.ShowDetailOnMouseOver = false;
 				self.obj.AddPushpin(marker);
 				marker.__id = id;
@@ -281,10 +315,9 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 				if (clickCallback) { OAT.Dom.attach($(id).firstChild,"click",function(event){clickCallback(marker,event);}); }
 			break;
 			case OAT.MapData.TYPE_OL: 
-			    var marker = new OpenLayers.Marker(
-			        new OpenLayers.LonLat(lon,lat), 
-			        new OpenLayers.Icon(file,new OpenLayers.Size(w,h))
-				);
+				var icon = false;
+				if (w && h) { icon = new OpenLayers.Icon(file,new OpenLayers.Size(w,h)); }
+			    var marker = new OpenLayers.Marker( new OpenLayers.LonLat(lon,lat),icon);
 			    self.markersLayer.addMarker(marker);
 				marker.closeInfoWindow = function() { if (marker.__win) {
 						OAT.Dom.unlink(marker.__win.div); 
@@ -292,7 +325,7 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 					}
 				}
 				self.layerObj.addLayer(marker.icon.imageDiv,"mouseover");
-				if (clickCallback) { 
+				if (clickCallback) {
 					marker.icon.imageDiv.style.cursor = "pointer";
 					OAT.Dom.attach(marker.icon.imageDiv,"click",function(event){if (!marker.__win){clickCallback(marker,event);}}); 
 				}
@@ -302,6 +335,7 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 		marker.__coords = [lat,lon];
 		marker.__group = group;
 		self.markerArr.push(marker);
+//		self.fixMarkers();
 		return marker;
 	}
 	
@@ -354,24 +388,16 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 			
 			case OAT.MapData.TYPE_Y: 
 				var points = [];
-				var minLat = 180;
-				var minLon = 180;
-				var maxLat = -180;
-				var maxLon = -180;
 				for (var i=0;i<pointArr.length;i++) {
 					var lat = pointArr[i][0];
 					var lon = pointArr[i][1];
 					var point = new YGeoPoint(lat,lon);
 					points.push(point);
-					/* resize bounding box */
-					if (lat > maxLat) { maxLat = lat; }
-					if (lat < minLat) { minLat = lat; }
-					if (lon > maxLon) { maxLon = lon; }
-					if (lon < minLon) { minLon = lon; }
 				}
-				var clat = (minLat + maxLat)/2;
-				var clon = (minLon + maxLon)/2;
-				var autoZoom = self.obj.getZoomLevel(points);
+				var r = self.obj.getBestZoomAndCenter(points);
+				var autoZoom = 17 - r.zoomLevel;
+				var clat = r.YGeoPoint.Lat;
+				var clon = r.YGeoPoint.Lon;
 			break;
 			
 			case OAT.MapData.TYPE_MS: 
@@ -390,10 +416,25 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 			break;
 
 			case OAT.MapData.TYPE_OL: 
-				var c = self.obj.getCenter();
+				var points = [];
+				var minLat = 180;
+				var minLon = 180;
+				var maxLat = -180;
+				var maxLon = -180;
+				for (var i=0;i<pointArr.length;i++) {
+					var lat = pointArr[i][0];
+					var lon = pointArr[i][1];
+					/* resize bounding box */
+					if (lat > maxLat) { maxLat = lat; }
+					if (lat < minLat) { minLat = lat; }
+					if (lon > maxLon) { maxLon = lon; }
+					if (lon < minLon) { minLon = lon; }
+				}
+				var bounds = new OpenLayers.Bounds(minLon,minLat,maxLon,maxLat);
+				var c = bounds.getCenterLonLat();
 				var clat = c.lat;
 				var clon = c.lon;
-				var autoZoom = self.obj.getZoom(bounds);
+				var autoZoom = self.obj.getZoomForExtent(bounds);
 			break;
 
 		}
@@ -402,7 +443,7 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 		self.fixMarkers();
 	}
 	
-	this.openWindow = function(marker,something,event) {
+	this.openWindow = function(marker,something) {
 		var elm = $(something);
 		switch (self.provider) {
 			case OAT.MapData.TYPE_G:
@@ -437,7 +478,7 @@ OAT.Map = function(something, provider, fix, fixDistance) {
 				
 				$(marker.__id).appendChild(marker.__win.div);
 				var pos = OAT.Dom.eventPos(event);
-				win.anchorTo(pos[0],pos[1]);
+				win.anchorTo(0,0);
 				
 			break;
 

@@ -93,11 +93,11 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		vertex: { name: ""}
 		edge: { vertex1:{},name: "", vertex2:{} }
 	*/
-	window.g = this;
 	var self = this;
 	this.div = $(div);
 	this.svg = false;
 	this.options = {
+		imagePath:OAT.Preferences.imagePath,
 		vertexColor:"#f00",
 		edgeColor:"#888",
 		backgroundColor:"#ffc",

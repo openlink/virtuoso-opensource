@@ -116,7 +116,8 @@ OAT.Resize = {
 	
 	createDefault:function(parent,restrictionFunction,endFunction) {
 		if (!OAT.Preferences.allowDefaultResize) { return; }
-		var resize = OAT.Dom.create("div",{position:"absolute",width:"10px",height:"10px",right:"0px",fontSize:"1px",bottom:"0px",backgroundImage:"url(/DAV/JS/images/resize.gif)"});
+		var bg = "url(" + OAT.Preferences.imagePath + "resize.gif)";
+		var resize = OAT.Dom.create("div",{position:"absolute",width:"10px",height:"10px",right:"0px",fontSize:"1px",bottom:"0px",backgroundImage:bg});
 		parent.appendChild(resize);
 		OAT.Resize.create(resize,parent,OAT.Resize.TYPE_XY,restrictionFunction,endFunction);
 		OAT.Dom.hide(resize);

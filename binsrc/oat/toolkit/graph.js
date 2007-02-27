@@ -84,8 +84,8 @@ OAT.Graph = function(c) {
 		
 		sphereMove:function(elm,dx,dy) {
 			OAT.Dom.clear("info");
-			self.Nodes.distLimit = parseFloat($$("dist"));
-			self.Nodes.distCoef = parseFloat($$("inhibit"));
+			self.Nodes.distLimit = parseFloat($v("dist"));
+			self.Nodes.distCoef = parseFloat($v("inhibit"));
 			var a1 = elm.x;
 			var a2 = elm.y;
 			for (var i=0;i<self.Nodes.list.length;i++) if (self.Nodes.list[i] != elm) {

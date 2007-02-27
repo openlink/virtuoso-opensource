@@ -16,7 +16,7 @@
 	so.prefixes = [{"label": 'foaf',"uri":'http://xmlns.com/foaf/0.1/'}];
 	so.distinct = false;
 	so.variables = ['a','b','c']
-	so.from = '<http://example.com/graph>'
+	so.from = '<http://example.com/graph>' || ['<http://example.com/graph1>','<http://example.com/graph2>']
 	so.from_named = ['<http://example.com/named1>','<http://example.com/named2>'];
 	so.where = {}; // Look at the OAT.SparqlQueryData* for description.
 	so.limit = 10
@@ -88,6 +88,7 @@ OAT.SparqlQuery = function() {
 	this.from = '';
 	this.from_named = [];
 	this.where = [];
+	this.construct = false;
 	
 	this.clear = function() {
 		self.variables = [];
@@ -99,10 +100,11 @@ OAT.SparqlQuery = function() {
   	self.from = '';
   	self.from_named = [];
 	  self.where = [];
+	  self.construct = false;
 	}
 	
 	this.splitPiece = function(string) {
-		var word = string.match(/^(\w+)\s(.*)/);
+		var word = string.match(/^(\w+)\s*(.*)/);
 		switch (word[1].toUpperCase()) {
 			case "SELECT":
 				var main = word[2];
@@ -152,7 +154,13 @@ OAT.SparqlQuery = function() {
 				if (tmp[1])
 				  self.from_named.push(self.expandPrefix(tmp[2]));
 				else
-				  self.from = self.expandPrefix(tmp[2]);
+				  if (self.from instanceof Array)
+				    self.from.push(self.expandPrefix(tmp[2]));
+				  else
+				    if (self.from.trim() != '')
+				      self.from = Array(self.from,self.expandPrefix(tmp[2]));
+				    else 
+				      self.from = self.expandPrefix(tmp[2]);
 			break;
 			case "WHERE":
 				var main = word[2];
@@ -160,12 +168,23 @@ OAT.SparqlQuery = function() {
 				var eidx = main.lastIndexOf('}');
 				self.parseWhere(main.substring(bidx + 1,eidx));
 			break;
+			case "CONSTRUCT":
+				var main = word[2];
+				var bidx = main.indexOf('{');
+				var eidx = main.lastIndexOf('}');
+				self.parseConstruct(main.substring(bidx + 1,eidx));
+			break;
 		} /* switch */
 	}
 	
 	this.parseWhere = function(where)
 	{
 	  self.where = self.parseParts(where,self);
+	}
+	
+	this.parseConstruct = function(construct)
+	{
+	  self.construct = self.parseParts(construct,self);
 	}
 	
 	this.parseParts = function(str,pobj,prev)
@@ -515,7 +534,6 @@ OAT.SparqlQuery = function() {
 	  var bgn = 0;
 	  var part = '';
 	  var inquot = false;
-
 	  var re = new RegExp("(^" + keywords.join(")|(^") + ")","i");
 	  for(var i = 0;i<str.length;i++)
 	  {
@@ -571,19 +589,35 @@ OAT.SparqlQuery = function() {
 	  
 	  // select
 	  if (fullquery != '') fullquery += '\n';
-    fullquery += 'SELECT ';
-	  if (self.distinct) fullquery += 'DISTINCT ';
-	  if (self.variables.length == 0) fullquery += '*';
-	  else fullquery += '?' + self.variables.join(' ?');
+    if (self.construct)
+    {
+      var construct = '';
+      if (self.construct.type != 'group')
+        construct = '{\n' + self.genWhere(self.construct,1) + '}';
+      else
+        construct = self.genWhere(self.construct,0);
+  	  fullquery += 'CONSTRUCT ' + construct;
+    } else {
+      fullquery += 'SELECT ';
+  	  if (self.distinct) fullquery += 'DISTINCT ';
+  	  if (self.variables.length == 0) fullquery += '*';
+  	  else fullquery += '?' + self.variables.join(' ?');
+    }
 	  if (fullquery != '') fullquery += '\n';
 
     // from	    
-	  if (self.from != '') fullquery += 'FROM ' + self.from + '\n';
+	  if (self.from instanceof Array)
+	  {
+  	  for(var i = 0;i<self.from.length ;i++)
+  	    if (self.from[i] != '') fullquery += 'FROM ' + self.from[i] + '\n';
+  	} else
+  	  if (self.from != '') fullquery += 'FROM ' + self.from + '\n';
+
 	  for(var i = 0;i<self.from_named.length ;i++)
 	    fullquery += 'FROM NAMED ' + self.from_named[i] + '\n';
 
     // where 
-    var where = self.genWhere(self.where,0);
+    var where = '';
     if (self.where.type != 'group')
       where = '{\n' + self.genWhere(self.where,1) + '}';
     else
@@ -655,7 +689,7 @@ OAT.SparqlQuery = function() {
 		    if (obj.content.type != 'group')
 		    {
 		      ret += indent.repeat(depth) + '}';
-		    ret += '\n';
+		      ret += '\n';
 		    }
       break;
     // Is it optional?   optional {  }

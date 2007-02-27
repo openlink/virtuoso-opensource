@@ -10,7 +10,7 @@
 /*
 	OAT.Loader.preInit(callback) - do something when everything is loaded
 	OAT.Loader.loadFeatures(features,callback) - do something when features are loaded
-	OAT.Loader.loadedLibs = ["ajax","window",...]
+	OAT.Loader.loadedLibs = ["ajax2","window",...]
 	
 	Contains: 
 	* OAT
@@ -85,7 +85,6 @@ Date.prototype.toHumanString = function() {
 /* DOM common object */
 /*
 	$(something)
-	$$(something)
 	$v(something)
 	
 	OAT.Dom.create(tagName,styleObj,className)
@@ -119,6 +118,7 @@ Date.prototype.toHumanString = function() {
 	OAT.Dom.getWH(something)
 	OAT.Dom.moveBy(element,dx,dy)
 	OAT.Dom.resizeBy(element,dx,dy)
+	OAT.Dom.removeSelection()
 	OAT.Dom.getScroll()
 	OAT.Dom.getViewport()
 	OAT.Dom.getFreeSpace()
@@ -180,6 +180,13 @@ OAT.Dom = {
 		return elm;
 	},
 	
+	button:function(label) {
+		var b = OAT.Dom.create("input");
+		b.type = "button";
+		b.value = label;
+		return b;
+	},
+	
 	append:function() {
 		for (var i=0;i<arguments.length;i++) {
 			var arr = arguments[i];
@@ -210,6 +217,7 @@ OAT.Dom = {
 			return;
 		}
 		var elm = $(element);
+		if (!elm) { return; }
 		/* ie input hack */
 		var inputs_ = elm.getElementsByTagName("input");
 		var inputs = [];
@@ -235,6 +243,7 @@ OAT.Dom = {
 			return;
 		}
 		var elm = $(element);
+		if (!elm) { return; }
 		elm.style.display = "";
 		/* ie input hack */
 		var inputs_ = elm.getElementsByTagName("input");
@@ -286,6 +295,7 @@ OAT.Dom = {
 		/* walk up from the child. if we find parent element, return true */
 		var node = c_elm.parentNode;
 		do {
+			if (!node) { return false; }
 			if (node == p_elm) { return true; }
 			node = node.parentNode;
 		} while (node != document.body && node != document);
@@ -298,6 +308,10 @@ OAT.Dom = {
 	
 	isIE7:function() {
 		return (navigator.userAgent.match(/msie 7/i));
+	},
+	
+	isIE6:function() {
+		return (OAT.Dom.isIE() && !OAT.Dom.isIE7());
 	},
 
 	isGecko:function() {
@@ -466,12 +480,13 @@ OAT.Dom = {
 	},
 	
 	getViewport:function() {
-		if (OAT.Dom.isOpera() || (OAT.Dom.isIE() && !OAT.Dom.isIE7())) {
+		if (OAT.Dom.isOpera() || OAT.Dom.isIE6()) {
+			return [document.body.clientWidth,document.body.clientHeight];
+		} else if (document.compatMode == "BackCompat") {
 			return [document.body.clientWidth,document.body.clientHeight];
 		} else {
 			return [document.documentElement.clientWidth,document.documentElement.clientHeight];
 		}
-
 	},
 	
 	style:function(elm,property) {
@@ -635,17 +650,28 @@ OAT.Dom = {
 		return src;
 	},
 	
+	removeSelection:function() {
+		var selObj = false;
+		if (document.getSelection && !OAT.Dom.isGecko()) { selObj = document.getSelection(); }
+		if (window.getSelection) { selObj = window.getSelection(); }
+		if (document.selection) { selObj = document.selection; }
+		if (selObj) {
+			if (selObj.empty) { selObj.empty(); }
+			if (selObj.removeAllRanges) { selObj.removeAllRanges(); }
+		}
+	},
+	
 	getScroll:function() {
 		if (OAT.Dom.isWebKit() || OAT.Dom.isIE()) {
 			var l = document.body.scrollLeft;
 			var t = document.body.scrollTop;
 		} else {
-			var l = document.documentElement.scrollLeft;
-			var t = document.documentElement.scrollTop;
+			var l = Math.max(document.documentElement.scrollLeft,document.body.scrollLeft);
+			var t = Math.max(document.documentElement.scrollTop,document.body.scrollTop);
 		}
 		return [l,t];
 	},
-	
+
 	getFreeSpace:function(x,y) {
 		var scroll = OAT.Dom.getScroll();
 		var port = OAT.Dom.getViewport();
@@ -653,10 +679,8 @@ OAT.Dom = {
 		var spaceRight = port[0] - x + scroll[0];
 		var spaceTop = y - scroll[1];
 		var spaceBottom = port[1] - y + scroll[1];
-		
 		var left = (spaceLeft > spaceRight);
 		var top = (spaceTop > spaceBottom);
-		
 		return [left,top];
 		
 	},
@@ -795,7 +819,7 @@ OAT.Loader = {
 		}
 		return result;
 	},
-
+	
 	findPath:function() { /* scan for loader.js and OpenAjax.js */
 		var head = document.getElementsByTagName("head")[0];
 		var children = head.childNodes;
@@ -829,11 +853,18 @@ OAT.Loader = {
 
 /* messages */
 OAT.MSG = {
+	DEBUG:0,
 	OAT_DEBUG:0,
 	OAT_LOAD:1,
 	ANIMATION_STOP:2,
 	TREE_EXPAND:3,
 	TREE_COLLAPSE:4,
+	DS_RECORD_PREADVANCE:5,
+	DS_RECORD_ADVANCE:6,
+	DS_PAGE_PREADVANCE:7,
+	DS_PAGE_ADVANCE:8,
+	AJAX_START:9,
+	AJAX_ERROR:10,
 	
 	registry:[],
 	attach:function(sender,msg,callback) {
@@ -883,13 +914,14 @@ OAT.Debug = {
 		OAT.Debug.data.push([sender,name,event]);
 	}
 }
-//OAT.Debug.attach("*","*");
-OAT.Debug.attach("*",OAT.MSG.OAT_DEBUG);
+OAT.Debug.attach("*","*");
+//OAT.Debug.attach("*",OAT.MSG.OAT_DEBUG);
 
 /* dependency tree */
 OAT.Dependencies = {
 	ajax:"crypto",
-	soap:"ajax",
+	ajax2:"crypto",
+	soap:"ajax2",
 	window:["mswin","macwin","roundwin","rectwin"],
 	xmla:["soap","xml","connection"],
 	roundwin:["drag","resize","simplefx"],
@@ -910,20 +942,20 @@ OAT.Dependencies = {
 	dock:["animation","ghostdrag"],
 	calendar:"drag",
 	graph:"canvas",
-	dav:["grid","tree","toolbar","ajax","xml"],
+	dav:["grid","tree","toolbar","ajax2","xml"],
 	dialog:["window","dimmer"],
 	datasource:["jsobj","json","xml","connection","dstransport"],
 	gmaps:["gapi","map"],
 	ymaps:["map"],
 	simplefx:"animation",
 	msapi:["map","layers"],
-	ws:["xml","soap","ajax","schema","connection"],
+	ws:["xml","soap","ajax2","schema","connection"],
 	schema:["xml"],
 	timeline:["slider","tlscale","resize"],
 	piechart:"svg",
-	graphsvg:["svg","graphsidebar","rdf"],
+	graphsvg:["svg","graphsidebar","rdf","dereference"],
 	rdf:"xml",
-	anchor:["datasource","formobject","window","datasource","ajax"],
+	anchor:["window"],
 	openlayers:["map","layers","roundwin"],
 	svgsparql:["svg","ghostdrag","geometry"],
 	linechart:"svg",
@@ -931,9 +963,9 @@ OAT.Dependencies = {
 	webclip:"webclipbinding",
 	declarative:"json",
 	tree:"ghostdrag",
-	rdfbrowser:["rdf","tree"],
+	rdfbrowser:["rdf","tree","dereference","anchor"],
 	graphsidebar:"tree",
-	form:["ajax","dialog","datasource","formobject"],
+	form:["ajax2","dialog","datasource","formobject"],
 	rssreader:"xml"
 }
 

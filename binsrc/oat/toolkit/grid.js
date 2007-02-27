@@ -17,7 +17,7 @@
 	Grid.fromTable(table);
 	Grid.removeColumn(index);
 	Grid.clearData();
-	Grid.imagesPath = "../images";
+	Grid.imagePath = "../images";
 	Grid.rows[i].select()/deselect();
 	
 	OAT.GridData.LIMIT
@@ -189,7 +189,7 @@ OAT.Grid = function(something,autoNumber,allowHiding) {
 
 	this.reorderNotifier = false; /* notify app of reordering */
 	this.sortFunc = false;        /* custom sorting routine */
-	this.imagesPath = "../images";
+	this.imagePath = OAT.Preferences.imagePath;
 	this.rowOffset = 0;
 	this.allowHiding = allowHiding;
 	this.autoNumber = (autoNumber ? 1 : 0);
@@ -362,6 +362,9 @@ OAT.Grid = function(something,autoNumber,allowHiding) {
 			return (a > b ? c1 : c2);
 		}
 		var cmp;
+		
+		if (!self.rows.length) { return; } /* no work to be done */
+		
 		var testValue = this.rows[0].cells[index].value.innerHTML;
 		switch (coltype) {
 			case OAT.GridData.TYPE_STRING: cmp = strCmp; break;
@@ -502,7 +505,7 @@ OAT.GridHeaderCell = function(obj,number,params) {
 			case OAT.GridData.SORT_ASC: path = "asc"; break;
 			case OAT.GridData.SORT_DESC: path = "desc"; break;
 		}
-		self.sorter.style.backgroundImage = "url("+obj.imagesPath+"/Grid_"+path+".gif)";	
+		self.sorter.style.backgroundImage = "url("+obj.imagePath+"Grid_"+path+".gif)";	
 	}
 	
 	this.signal = 0;
@@ -542,7 +545,7 @@ OAT.GridHeaderCell = function(obj,number,params) {
 	this.container.style.position = "relative";
 	if (this.resizable) {
 		var mover = OAT.Dom.create("div",{width:"7px",height:"100%",position:"absolute",right:"-5px",top:"0px",cursor:"e-resize"});
-		mover.style.backgroundImage = "url("+obj.imagesPath+"/Grid_none.gif)";
+		mover.style.backgroundImage = "url("+obj.imagePath+"Grid_none.gif)";
 		this.container.appendChild(mover);
 		var callback = function (event) {
 			var pos = OAT.Dom.eventPos(event);

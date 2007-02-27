@@ -74,34 +74,43 @@ OAT.Dav = {
 	},
 
   //----------------------------------------------------------------------------
-	command:function(target, data_func, return_func, customHeaders) {
-		var ref = function() {
-			return OAT.Soap.generate(data_func);
+	command:function(target, data, return_func) {
+		var o = {
+			auth:OAT.AJAX.AUTH_BASIC,
+			user:OAT.Dav.user,
+			password:OAT.Dav.pass,
+			type:OAT.AJAX.TYPE_XML,
+			onerror:OAT.WebDav.handleError
 		}
-		var h = false;
-		if (customHeaders) { h = customHeaders; }
-		OAT.Ajax.command(OAT.Ajax.SOAP, target, ref, return_func, customHeaders);
+		OAT.AJAX.SOAP(target, OAT.Soap.generate(data), return_func,o);
 	},
 
   //----------------------------------------------------------------------------
 	list:function(target,response) {
-		var ref = function() {
-			return OAT.Dav.generate();
+		var o = {
+			headers:{Depth:1},
+			auth:OAT.AJAX.AUTH_BASIC,
+			user:OAT.Dav.user,
+			password:OAT.Dav.pass,
+			type:OAT.AJAX.TYPE_XML,
+			onerror:OAT.WebDav.handleError
 		}
-		customHeaders = {Depth:1};
-		OAT.Ajax.user = OAT.Dav.user;
-		OAT.Ajax.password = OAT.Dav.pass;
-		OAT.Ajax.command(OAT.Ajax.PROPFIND + OAT.Ajax.AUTH_BASIC, target, ref, response,OAT.Ajax.TYPE_XML, customHeaders);
+		OAT.AJAX.PROPFIND(target, OAT.Dav.generate(), response, o);
 
 	},
 
   //----------------------------------------------------------------------------
   create_col:function(current_path,col_name,response){
-    OAT.Ajax.user = OAT.Dav.user;
-    OAT.Ajax.password = OAT.Dav.pass;
     // TODO - validation
     var target = current_path+col_name;
-		OAT.Ajax.command(OAT.Ajax.MKCOL + OAT.Ajax.AUTH_BASIC, target, function(){}, response,OAT.Ajax.TYPE_TEXT);
+		var o = {
+			auth:OAT.AJAX.AUTH_BASIC,
+			user:OAT.Dav.user,
+			password:OAT.Dav.pass,
+			type:OAT.AJAX.TYPE_TEXT,
+			onerror:OAT.WebDav.handleError
+		}
+		OAT.AJAX.MKCOL(target, false, response,o);
   },
 
   //----------------------------------------------------------------------------
@@ -109,9 +118,14 @@ OAT.Dav = {
 	  var ld = (dir ? dir : ".");
 		var lf = (file ? ld+file : ld);
     var target = lf + '?'+ new Date().getMilliseconds();
-    OAT.Ajax.user = OAT.Dav.user;
-    OAT.Ajax.password = OAT.Dav.pass;
-		OAT.Ajax.command(OAT.Ajax.GET + OAT.Ajax.AUTH_BASIC, target, function(){return '';}, response,OAT.Ajax.TYPE_TEXT);
+		var o = {
+			auth:OAT.AJAX.AUTH_BASIC,
+			user:OAT.Dav.user,
+			password:OAT.Dav.pass,
+			type:OAT.AJAX.TYPE_TEXT,
+			onerror:OAT.WebDav.handleError
+		}
+		OAT.AJAX.GET(target, false, response,o);
 	},
 
   //----------------------------------------------------------------------------
@@ -119,9 +133,15 @@ OAT.Dav = {
 	  var ld = (dir ? dir : ".");
 		var lf = (file ? ld+file : ld);
 		var target = lf;
-		OAT.Ajax.user = OAT.Dav.user;
-		OAT.Ajax.password = OAT.Dav.pass;
-		OAT.Ajax.command(OAT.Ajax.PUT + OAT.Ajax.AUTH_BASIC, target, ref, response,OAT.Ajax.TYPE_TEXT);
+		var o = {
+			auth:OAT.AJAX.AUTH_BASIC,
+			user:OAT.Dav.user,
+			password:OAT.Dav.pass,
+			type:OAT.AJAX.TYPE_TEXT,
+			onerror:OAT.WebDav.handleError
+		}
+		var data = ref();
+		OAT.AJAX.PUT(target, data, response,o);
 	},
 
   //----------------------------------------------------------------------------
@@ -169,7 +189,6 @@ OAT.DavType = function(el,root_el) {
     ns = 'D:';
   }
   var propstat = this.returnListOfNodes(el.getElementsByTagName(ns+"propstat")[0].childNodes);
-
   var t = this.returnListOfNodes(propstat[0].childNodes)[2];
 
   if(t.childNodes.length == 1 && t.childNodes[0].tagName.indexOf('collection') != -1){
@@ -219,6 +238,30 @@ OAT.get_prop_value = function (propList,propName){
 //----------------------------------------------------------------------------
 OAT.WebDav = {
   resources:new Array(),
+  
+  handleError:function(xhr) {
+	  var status = xhr.getStatus();
+	  var text = xhr.getResponseText();
+  	  if(status == 404){
+  	    var msg = "The user: '"+OAT.Dav.user+"' doesn't appear to have a valid WebDAV home directory.\nPlease contact your Virtuoso Database Administrator about this problem."
+  	    var msg = "The requested URL "+OAT.WebDav.toptions.path +" was not found on this server."
+  	    alert(msg);
+  	    OAT.WebDav.toptions.user = "";
+  	    OAT.WebDav.toptions.pass = "";
+  	    OAT.WebDav.toptions.path = "";
+  	    OAT.WebDav.close();
+  	  }else if(status == 401){
+  	    var msg = "Unauthorized! Access to page is forbidden.";
+  	    alert(msg);
+  	    OAT.WebDav.toptions.user = "";
+  	    OAT.WebDav.toptions.pass = "";
+  	    OAT.WebDav.toptions.path = "";
+  	    OAT.WebDav.close();
+  	  }else{
+  	    alert('Problem #'+status+': '+text);
+  	  }
+   },
+  
   options: {
       container:'my_browser',
       mode:'browser',
@@ -305,20 +348,6 @@ OAT.WebDav = {
 			OAT.WebDav.toptions.path = OAT.WebDav.toptions.pathDefault;
 		}
 		OAT.WebDav.toptions.path = OAT.WebDav.toptions.path.substring(0,OAT.WebDav.toptions.path.lastIndexOf('/')+1);
-
-  	OAT.Ajax.handleError(function(status,text){
-  	  if(status == 404){
-  	    var msg = "The user: '"+OAT.Ajax.user+"' doesn't appear to have a valid WebDAV home directory.\nPlease contact your Virtuoso Database Administrator about this problem."
-  	    var msg = "The requested URL "+OAT.WebDav.toptions.path +" was not found on this server."
-  	    alert(msg);
-  	    OAT.WebDav.toptions.user = "";
-  	    OAT.WebDav.toptions.pass = "";
-  	    OAT.WebDav.toptions.path = "";
-  	    OAT.WebDav.close();
-  	  }else{
-  	    alert('Problem #'+status+': '+text);
-  	  }
-  	})
 
     OAT.WebDav.dialog_user_pass();
     var win = new OAT.Window({min:0,max:0,close:1,width:OAT.WebDav.toptions.width,height:OAT.WebDav.toptions.height,x:OAT.WebDav.toptions.x,y:OAT.WebDav.toptions.y,imagePath:OAT.WebDav.toptions.imagePath,title:"WebDAV Browser"});
@@ -560,7 +589,6 @@ OAT.WebDav = {
     OAT.WebDav.toptions.filename = $v('dav_filename');
     OAT.WebDav.toptions.path     = $v('dav_path');
     OAT.Dom.unlink($('dav_browser'));
-    OAT.Ajax.handleError(false);
   },
 
   fileExist:function(new_name){
@@ -720,6 +748,7 @@ OAT.WebDav = {
   //---------------------------------
   show_resources_details:function(id){
   	OAT.WebDav.grid = new OAT.Grid("dav_grid",0);
+  	OAT.WebDav.grid.imagePath = OAT.WebDav.toptions.imagePath;
   	var header = ["Name",{value:"Size",align:OAT.GridData.ALIGN_RIGHT},"Type","Modified"];
   	OAT.WebDav.grid.createHeader(header);
     var data = this.find_col_resources(id);
@@ -977,5 +1006,4 @@ function dd(txt){
 function isArray(a) {
     return (typeof a == 'object' && a.constructor == Array);
 }
-
 OAT.Loader.featureLoaded("dav");

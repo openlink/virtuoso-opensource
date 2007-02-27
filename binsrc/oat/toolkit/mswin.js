@@ -19,7 +19,7 @@ OAT.MsWin = function(optObj) {
 	OAT.WindowParent(this,optObj);
 	
 	OAT.Dom.applyStyle(this.div,{border:"1px solid #000",font:"menu",backgroundColor:"#fff"});
-	OAT.Dom.applyStyle(this.content,{overflow:"auto",paddingTop:"16px",paddingLeft:"2px",paddingRight:"2px",paddingBottom:"2px",position:"relative"}); 
+	OAT.Dom.applyStyle(this.content,{overflow:"auto",marginTop:"16px",paddingLeft:"2px",paddingRight:"2px",marginBottom:"10px",position:"relative"}); 
 
 	OAT.Dom.applyStyle(this.move,{position:"absolute",left:"0px",top:"0px",width:"100%",height:"16px",backgroundColor:"#0000a0",fontWeight:"bold",color:"#fff"}); 
 

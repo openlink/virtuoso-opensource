@@ -57,7 +57,7 @@ OAT.Xml = {
 		if (document.implementation && document.implementation.createDocument) {				
 			var parser = new DOMParser();
 			try {
-			var xml = parser.parseFromString(string, "text/xml");
+				var xml = parser.parseFromString(string, "text/xml");
 			} catch(e) { 
 				alert('XML parsing error. Either the XML file is not well-formed or your browser sucks.');
 			}

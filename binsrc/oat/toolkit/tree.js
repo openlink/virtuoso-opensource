@@ -74,7 +74,7 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		self.label.parentNode.replaceChild(self.gdElm,self.label);
 		self.gdElm.appendChild(self.label);
 	}
-
+	
 	if (self.options.checkboxMode && self.li) {
 		self.checkbox = OAT.Dom.create("input");
 		self.checkbox.type = "checkbox";
@@ -209,9 +209,9 @@ OAT.TreeNode = function(li,ul,parent,root) {
 			
 			case "toggle":
 				if (self.ul) {
-		OAT.Dom.detach(self.label,"dblclick",self.toggleState);
-		OAT.Dom.detach(self.treeIcon,"dblclick",self.toggleState);
-		}
+					OAT.Dom.detach(self.label,"dblclick",self.toggleState);
+					OAT.Dom.detach(self.treeIcon,"dblclick",self.toggleState);
+				}
 			break;
 		}
 		
@@ -244,9 +244,9 @@ OAT.TreeNode = function(li,ul,parent,root) {
 					OAT.Dom.attach(self.treeIcon,"click",self.toggleSelect);
 				}
 			break;
-
+			
 			case "toggle":
-		if (self.ul) {
+				if (self.ul) {
 					OAT.Dom.attach(self.label,"click",self.toggleState);
 					OAT.Dom.attach(self.treeIcon,"click",self.toggleState);
 				}
@@ -258,17 +258,17 @@ OAT.TreeNode = function(li,ul,parent,root) {
 				if (!self.options.poorMode) {
 					OAT.Dom.attach(self.label,"dblclick",self.toggleSelect);
 					OAT.Dom.attach(self.treeIcon,"dblclick",self.toggleSelect);
-		}
+				}
 			break;
-		
+			
 			case "toggle":
 				if (self.ul) {
 					OAT.Dom.attach(self.label,"dblclick",self.toggleState);
 					OAT.Dom.attach(self.treeIcon,"dblclick",self.toggleState);
-			}
+				}
 			break;
 		}
-		
+
 		if (self.options.poorMode) { return; }
 
 		if (self.ul) { OAT.Dom.attach(self.signIcon,"click",self.toggleState); } /* +- sign */
@@ -445,8 +445,8 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	this.applyImage = function(img,name) {
 		if (!img) { return; }
 		var o = self.options;
-		var path = o.imagePath + "/" + "Tree_" + (o.imagePrefix=="" ? "" : o.imagePrefix+"_") + name + "." + o.ext;
-		var pathB = o.imagePath + "/Blank.gif";
+		var path = o.imagePath + "Tree_" + (o.imagePrefix=="" ? "" : o.imagePrefix+"_") + name + "." + o.ext;
+		var pathB = o.imagePath + "Blank.gif";
 		if (OAT.Dom.isIE() && o.ext.toLowerCase() == "png") {
 			img.src = pathB;
 			img.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+path+"', sizingMethod='crop')";
@@ -518,7 +518,7 @@ OAT.TreeNode = function(li,ul,parent,root) {
 OAT.Tree = function(optObj) {
 	var self = this;
 	this.options = {
-		imagePath:"/DAV/JS/images",
+		imagePath:OAT.Preferences.imagePath,
 		imagePrefix:"",
 		ext:"png",
 		onlyOneOpened:0,

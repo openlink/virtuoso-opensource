@@ -38,8 +38,11 @@ OAT.WS = {
 		var request = OAT.WS.obj2xml(paramObj);
 		/* send request */
 		var cback = function(endpoint) {
-			var header = {"SOAPAction":service};
-			OAT.Soap.command(endpoint, function(){return request;}, function(xmlDoc) {OAT.WS.parseResponse(url,xmlDoc,service,callback);},OAT.Ajax.TYPE_XML,header,true);
+			var o = {
+				type:OAT.AJAX.TYPE_XML,
+				headers:{"SOAPAction":service}
+			};
+			OAT.Soap.command(endpoint, request, function(xmlDoc) {OAT.WS.parseResponse(url,xmlDoc,service,callback);},o,true);
 		}
 		OAT.WS.getEndpoint(url,cback);
 	},
@@ -181,7 +184,7 @@ OAT.WS = {
 				OAT.WS.cache[url] = xmlDoc;
 				callback(xmlDoc);
 			}
-			OAT.Ajax.command(OAT.Ajax.GET,url,function(){return '';},ref,OAT.Ajax.TYPE_XML,{});
+			OAT.AJAX.GET(url,'',ref,{type:OAT.AJAX.TYPE_XML});
 		}
 	}
 	

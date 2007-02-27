@@ -36,6 +36,7 @@ OAT.Ajax = {
 	PUT:8,
 	MKCOL:16,
 	PROPFIND:32,
+	PROPPATCH:64,
 	AUTH_BASIC: 1024,
 	AUTH_DIGEST: 512,
 	TYPE_TEXT: 0,
@@ -50,6 +51,8 @@ OAT.Ajax = {
 		if (OAT.Loader.loadedLibs.find("dialog") != -1) {
 			if (!OAT.Ajax.dialog) {
 				/* create an Ajax window */
+				var imagePath = OAT.Ajax.imagePath;
+				if (imagePath.charAt(imagePath.length - 1) == "/") imagePath = imagePath.substring(0,imagePath.length - 1);
 				var div = OAT.Dom.create("div");
 				div.innerHTML = "Ajax call in progress...";
 				var dimg = OAT.Dom.create("div");
@@ -57,7 +60,7 @@ OAT.Ajax = {
 				img.setAttribute("src",OAT.Ajax.imagePath+"/progress.gif");
 				dimg.appendChild(img);
 				div.appendChild(dimg);
-				OAT.Ajax.dialog = new OAT.Dialog("Please wait",div,{width:260,modal:0,zIndex:1001,resize:0});
+				OAT.Ajax.dialog = new OAT.Dialog("Please wait",div,{width:260,modal:0,zIndex:1001,resize:0,imagePath:OAT.Ajax.imagePath + "/"});
 				OAT.Ajax.dialog.ok = OAT.Ajax.dialog.hide;
 				OAT.Ajax.dialog.cancel = OAT.Ajax.dialog.hide;
 				OAT.Ajax.setCancel(OAT.Ajax.dialog.cancelBtn);
@@ -103,7 +106,7 @@ OAT.Ajax = {
 		  			}
 				} else {
 					if (OAT.Ajax.errorRef){
-						OAT.Ajax.errorRef(xmlhttp.getStatus(),xmlhttp.getResponseText());
+						OAT.Ajax.errorRef(xmlhttp.getStatus(),xmlhttp.getResponseText(),headers);
 					} else if (OAT.Ajax.httpError) {
 						var tmp = confirm("Problem retrieving data, status="+xmlhttp.getStatus()+", do you want to see returned problem description?");
 						if (tmp) { alert(xmlhttp.getResponseText()); }
@@ -127,6 +130,7 @@ OAT.Ajax = {
 		if (method & OAT.Ajax.PUT) { xmlhttp.open("PUT",target,true); }
 		if (method & OAT.Ajax.MKCOL) { xmlhttp.open("MKCOL",target,true); }
 		if (method & OAT.Ajax.PROPFIND) { xmlhttp.open("PROPFIND",target,true); }
+		if (method & OAT.Ajax.PROPPATCH) { xmlhttp.open("PROPPATCH",target,true); }
 		if (method & OAT.Ajax.AUTH_BASIC) {	xmlhttp.setRequestHeader('Authorization','Basic '+OAT.Crypto.base64e(OAT.Ajax.user+":"+OAT.Ajax.password)); }
 
 		if (customHeaders) {

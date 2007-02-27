@@ -14,7 +14,8 @@ OAT.DSTransport.SQL = {
 	fetch:function(conn,options,index,callback) {
 		OAT.Xmla.connection = conn;
 		OAT.Xmla.query = options.query;
-		OAT.Xmla.execute(callback,{limit:options.limit,offset:index});
+		var l = (options.cursortype == 1 ? options.limit : 0);
+		OAT.Xmla.execute(callback,{limit:l,offset:index});
 	},
 	parse:function(fetchedData,options,outputFields) {
 		return fetchedData;
@@ -65,7 +66,7 @@ OAT.DSTransport.WSDL = {
 
 OAT.DSTransport.REST = {
 	fetch:function(conn,options,index,callback) {
-		OAT.Ajax.command(OAT.Ajax.GET,conn.options.url,function(){return options.query;},callback,OAT.Ajax.TYPE_TEXT,{});
+		OAT.AJAX.GET(conn.options.url,options.query,callback);
 	},
 
 	parse:function(fetchedData,options,outputFields) {

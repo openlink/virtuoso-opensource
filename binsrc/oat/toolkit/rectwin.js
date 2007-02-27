@@ -20,7 +20,7 @@ OAT.RectWin = function(optObj) {
 	OAT.WindowParent(this,optObj);
 	
 	OAT.Dom.applyStyle(this.div,{border:"1px solid rgb(164,163,163)",font:"menu",backgroundColor:"#fff"});
-	OAT.Dom.applyStyle(this.content,{overflow:"auto",top:"16px",marginBottom:"20px",padding:"2px",position:"relative"}); 
+	OAT.Dom.applyStyle(this.content,{overflow:"auto",top:"16px",marginBottom:"30px",padding:"2px",position:"relative"}); 
 	
 	OAT.Dom.applyStyle(this.move,{position:"absolute",left:"0px",top:"0px",width:"100%",height:"16px"}); 
 
@@ -46,10 +46,13 @@ OAT.RectWin = function(optObj) {
 	
 	this.moveLink = function(left,top) {
 		OAT.Dom.show(self.link);
-		if (left) { self.link.style.left = "10px"; }
-		if (!left) { self.link.style.right = "40px"; }
-		if (top) { self.link.style.top = "-35px"; }
-		if (!top) { self.link.style.bottom = "-35px"; }
+		if (left) { self.link.style.left = "10px"; self.link.style.right = "";}
+		if (!left) { self.link.style.right = "40px"; self.link.style.left = "";}
+		if (top) { self.link.style.top = "-35px"; self.link.style.bottom = "";}
+		if (!top) { 
+			self.link.style.bottom = "-35px"; self.link.style.top = "";
+			if (OAT.Dom.isIE()) { self.link.style.bottom = "-36px"; }
+		}
 		if (left && top) {
 			var path = self.options.imagePath + "RectWin_lt.png";
 		}
@@ -62,14 +65,18 @@ OAT.RectWin = function(optObj) {
 		if (!left && top) {
 			var path = self.options.imagePath + "RectWin_rt.png";
 		}
+		self.link.style.width = "30px";
+		self.link.style.height = "35px";
 		self.link.src = path;
+		if (OAT.Dom.isIE6()) {
+			self.link.src = self.options.imagePath + "Blank.gif";
+		}
 		self.link.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+path+"', sizingMethod='crop')";
 	}
 	
 	this.anchorTo = function(x_,y_) { /* where should we put the window? */
 		var fs = OAT.Dom.getFreeSpace(x_,y_); /* [left,top] */
 		var dims = OAT.Dom.getWH(self.div);
-		
 		self.moveLink(!fs[0],!fs[1]);
 		
 		if (fs[1]) { /* top */

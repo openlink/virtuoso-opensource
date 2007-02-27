@@ -1,26 +1,12 @@
 /*
-
-  $Id$
-
-  This file is part of the OpenLink Ajax Toolkit (OAT) project
-
-  Copyright (C) 2006 Ondrej Zara
-  Copyright (C) 2006 OpenLink Software
-
-  This project is free software; you can redistribute it and/or modify it
-  under the terms of the GNU General Public License as published by the
-  Free Software Foundation; only version 2 of the License, dated June 1991
-
-  This project is distributed in the hope that it will be useful, but
-  WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software Foundation,
-  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-
-*/
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *
+ *  See LICENSE file for details.
+ */
 
 /*
 */
@@ -171,7 +157,7 @@ OAT.Form = function(targetElm,optObj) {
 	}
 
 	this.attachNav = function(nav) {
-		var ds = nav.properties[0].value;
+		var ds = nav.datasources[0].ds;
 		OAT.Dom.attach(nav.first,"click",function() { ds.advanceRecord(0); }); 
 		OAT.Dom.attach(nav.prevp,"click",function() { ds.advanceRecord(ds.recordIndex - ds.pageSize); });
 		OAT.Dom.attach(nav.prev,"click",function() { ds.advanceRecord("-1"); });
@@ -267,7 +253,8 @@ OAT.Form = function(targetElm,optObj) {
 		var do_binding = function(o,index) {
 			var ds = o.datasources[index].ds;
 			if (!ds) { return; }
-			if (o.bindRecordCallback) { 
+			if (o.bindFileCallback) { ds.bindFile(o.bindFileCallback) ;}
+			if (o.bindRecordCallback) {
 				var ref1 = function(dataRow,currentIndex) { o.bindRecordCallback(dataRow,currentIndex,index); }
 				ds.bindRecord(ref1); 
 			}
@@ -287,25 +274,14 @@ OAT.Form = function(targetElm,optObj) {
 				self.div.appendChild(o.elm);
 				o.init();
 				
+				if (o.name == "nav") { self.attachNav(o); }
+				
 				/* add dimensions to total width/height */
 				var pos = OAT.Dom.getLT(o.elm);
 				var dims = OAT.Dom.getWH(o.elm);
 				if (pos[0]+dims[0] > self.totalWidth) { self.totalWidth = pos[0]+dims[0]; }
 				if (pos[1]+dims[1] > self.totalHeight) { self.totalHeight = pos[1]+dims[1]; }
 
-				if (o.name == "nav") {
-					self.attachNav(o); 
-					var nav_ds = o.properties[0].value;
-					nav_ds.bindRecord(o.bindRecordCallback);
-				}
-				if (o.name == "graph") {
-					var graph_ds = o.properties[0].value;
-					if (!graph_ds) {
-						alert("No datasource connected to RDF Graph Control!");
-						return;
-					}
-					graph_ds.bindFile(o.bindFileCallback);
-				}
 				for (var j=0;j<o.datasources.length;j++) {
 					do_binding(o,j);
 				}
@@ -382,7 +358,6 @@ OAT.Form = function(targetElm,optObj) {
 			var dselm = dselms[i];
 			var type = parseInt(dselm.getAttribute("type"));
 			var ds = new OAT.DataSource(type);
-			
 			if (type == OAT.DataSourceData.TYPE_SQL) { self.sqlDS.push(ds); }
 			ds.fromXML(dselm);
 			self.datasources.push(ds);
@@ -491,7 +466,8 @@ OAT.Form = function(targetElm,optObj) {
 		if (!self.sqlDS.length) { needCreds = 0; } /* no credentials asked because no SQL datasources present */
 		if (self.sqlDS.length && self.sqlDS[0].connection.options.user) { needCreds = 0; } /* already present */
 		if (self.options.noCred) { needCreds = 0; }
-		if (self.sqlDS.length & self.sqlDS[0].connection.nocred) { needCreds = 0; }
+		if (self.sqlDS.length && self.sqlDS[0].connection.nocred) { needCreds = 0; }
+
 		if (!needCreds) { cb(); return; }
 		
 		/* display credentials dialog */
@@ -613,7 +589,7 @@ OAT.Form = function(targetElm,optObj) {
 		var createRef = function(xmlDoc) {
 			self.createFromXML(xmlDoc);
 		}
-		OAT.Ajax.command(OAT.Ajax.GET,url,function(){},createRef,OAT.Ajax.TYPE_XML);
+		OAT.AJAX.GET(url,false,createRef,{type:OAT.AJAX.TYPE_XML});
 	}
 }
 

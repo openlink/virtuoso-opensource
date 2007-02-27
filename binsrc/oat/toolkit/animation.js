@@ -26,7 +26,7 @@ OAT.Animation = function(element, optionsObject) { /* periodic executer */
 		conditionFunction:function() {},
 		stepFunction:function() {},
 		stopFunction:function() {}
-}
+	}
 	for (var p in optionsObject) { self.options[p] = optionsObject[p]; }
 	
 	this.step = function() {
@@ -53,8 +53,8 @@ OAT.Animation = function(element, optionsObject) { /* periodic executer */
 	this.stop = function() {
 		self.running = 0;
 	}
-	}
-	
+}
+
 OAT.AnimationSize = function(element, optionsObject) {
 	var self = this;
 	this.options = {
@@ -62,11 +62,11 @@ OAT.AnimationSize = function(element, optionsObject) {
 		height:-1,
 		delay:50,
 		speed:1
-}
+	}
 	for (var p in optionsObject) { self.options[p] = optionsObject[p]; }
-
+	
 	var o = {delay:self.options.delay};
-		
+
 	o.startFunction = function(a) { /* prepare step */
 		a.stepX = 0;
 		a.stepY = 0;
@@ -89,7 +89,7 @@ OAT.AnimationSize = function(element, optionsObject) {
 	o.stopFunction = function(a) {
 		if (self.options.width != -1) { a.elm.style.width = self.options.width + "px"; }
 		if (self.options.height != -1) { a.elm.style.height = self.options.height + "px"; }
-				}
+	}
 	o.conditionFunction = function(a) {
 		var ok_w = (a.signX > 0 ? a.width >= self.options.width : a.width <= self.options.width);
 		var ok_h = (a.signY > 0 ? a.height >= self.options.height : a.height <= self.options.height);
@@ -181,20 +181,20 @@ OAT.AnimationOpacity = function(element, optionsObject) {
 	o.startFunction = function(a) { /* prepare step */
 		a.opacity = 1;
 		if (OAT.Dom.isGecko()) { a.opacity = parseFloat(OAT.Dom.style(a.elm,"opacity")); }
-					if (OAT.Dom.isIE()) { 
+		if (OAT.Dom.isIE()) { 
 			var filter = OAT.Dom.style(a.elm,"filter"); 
-						var num = filter.match(/alpha\(opacity=([^\)]+)\)/);
+			var num = filter.match(/alpha\(opacity=([^\)]+)\)/);
 			if (num) { a.opacity = parseFloat(num[1])/100; }
-				}
+		}
 		a.step_ = 1;
 		a.diff = self.options.opacity - a.opacity;
 		a.sign = (a.diff >= 0 ? 1 : -1);
 		a.step_ = a.sign * self.options.speed;
-				}
+	}
 	o.stopFunction = function(a) {
 		a.elm.style.opacity = self.options.opacity;
 		a.elm.style.filter = "alpha(opacity="+Math.round(100*self.options.opacity)+")";
-}
+	}
 	o.conditionFunction = function(a) {
 		var ok = (a.sign > 0 ? a.opacity >= self.options.opacity : a.opacity <= self.options.opacity);
 		return ok;	

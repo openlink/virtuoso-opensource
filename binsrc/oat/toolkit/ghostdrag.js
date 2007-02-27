@@ -72,14 +72,7 @@ OAT.GhostDragData = {
 		/*
 			selection sukz. detect it and remove!
 		*/
-		var selObj = false;
-		if (document.getSelection && !OAT.Dom.isGecko()) { selObj = document.getSelection(); }
-		if (window.getSelection) { selObj = window.getSelection(); }
-		if (document.selection) { selObj = document.selection; }
-		if (selObj) {
-			if (selObj.empty) { selObj.empty(); }
-			if (selObj.removeAllRanges) { selObj.removeAllRanges(); }
-		}
+		OAT.Dom.removeSelection();
 
 		/* ok, now move */
 		var offs_x = event.clientX - elm.mouse_x;
@@ -122,11 +115,7 @@ OAT.GhostDrag = function() {
 		var ref = function(event) {
 			/* mouse pressed on element */
 			var index = self.sources.find(elm);
-			var ok = 0;
-			for (var i=0;i<self.sources.length;i++) {
-				if (self.sources[i] == elm) { ok = 1; }
-			}
-			if (!ok) return;
+			if (index == -1) return;
 			var x = event.clientX;
 			var y = event.clientY;
 			self.startDrag(self.sources[index],self.processes[index],self.callbacks[index],x,y);

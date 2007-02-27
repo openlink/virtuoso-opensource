@@ -22,10 +22,11 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 		zIndex:1000,
 		buttons:1,
 		resize:1,
-		autoEnter:1
+		autoEnter:1,
+		imagePath:OAT.Preferences.imagePath
 	}
 	if (optObj) for (var p in optObj) { options[p] = optObj[p]; }
-	var win = new OAT.Window({close:1, max:0, min:0, width:options.width, height:options.height, x:0, y:0, title:title,resize:options.resize});
+	var win = new OAT.Window({close:1, max:0, min:0, width:options.width, height:options.height, x:0, y:0, title:title,resize:options.resize,imagePath:options.imagePath});
  	$(contentDiv).style.margin = "1em";
  	var nav = OAT.Dom.create("table",{marginTop:"1em",width:"90%",textAlign:"center"});
  	var tbody = OAT.Dom.create("tbody");

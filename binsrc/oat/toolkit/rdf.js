@@ -12,6 +12,7 @@
 	OAT.RDF.toTriples(xmlDoc)
 */
 OAT.RDF = {
+	ignoredAttributes:["about","nodeID","ID","parseType"],
 	toTriples:function(xmlDoc) {
 		var triples = [];
 		var root = xmlDoc.documentElement;
@@ -24,7 +25,7 @@ OAT.RDF = {
 			return false;
 		}
 		
-		function processNode(node) {
+		function processNode(node,isPredicateNode) {
 			var attribs = OAT.Xml.getLocalAttributes(node);
 			var subj = getAtt(attribs,"about");
 			var id1 = getAtt(attribs,"nodeID");
@@ -40,15 +41,16 @@ OAT.RDF = {
 				}
 			}
 			
-			if (OAT.Xml.localName(node) != "Description") {
+			if (OAT.Xml.localName(node) != "Description" && !isPredicateNode) { /* add 'type' where needed */
 				var pred = "type";
-				var obj = node.localName;
+				var obj = OAT.Xml.localName(node);
 				triples.push([subj,pred,obj,0]); /* 0 - literal, 1 - reference */
 			}
 			for (var i=0;i<node.attributes.length;i++) {
 				var a = node.attributes[i];
-				if (OAT.Xml.localName(a) != "about" && OAT.Xml.localName(a) != "nodeID" && OAT.Xml.localName(a) != "ID") {
-					var pred = a.localName;
+				var local = OAT.Xml.localName(a);
+				if (OAT.RDF.ignoredAttributes.find(local) == -1) {
+					var pred = OAT.Xml.localName(a);
 					var obj = a.nodeValue;
 					triples.push([subj,pred,obj,1]);
 				}
@@ -56,28 +58,38 @@ OAT.RDF = {
 			for (var i=0;i<node.childNodes.length;i++) if (node.childNodes[i].nodeType == 1) {
 				var n = node.childNodes[i];
 				var nattribs = OAT.Xml.getLocalAttributes(n);
-				var pred = n.localName;
+				var pred = OAT.Xml.localName(n);
 				if (getAtt(nattribs,"resource") != "") { /* link via id */
 					var obj = getAtt(nattribs,"resource");
 					if (obj[0] == "#") { obj = idPrefix + obj.substring(1); }
 					triples.push([subj,pred,obj,1]);
 				} else if (getAtt(nattribs,"nodeID") != "") { /* link via id */
-					var obj = idPrefix+getAtt(nattribs,"nodeID");
+					var obj = processNode(n,true); 
 					triples.push([subj,pred,obj,1]);
 				} else if (getAtt(nattribs,"ID") != "") { /* link via id */
-					var obj = idPrefix+getAtt(nattribs,"ID");
+					var obj = processNode(n,true); 
 					triples.push([subj,pred,obj,1]);
 				} else {
-					var recursion = 0;
-					for (var j=0;j<n.childNodes.length;j++) if (n.childNodes[j].nodeType == 1) {
-						recursion = 1;
-						var obj = processNode(n.childNodes[j]);
-						triples.push([subj,pred,obj,1]);
+					var children = [];
+					for (var j=0;j<n.childNodes.length;j++) if (n.childNodes[j].nodeType == 1) { 
+						children.push(n.childNodes[j]);
 					}
-					if (!recursion) {
+					/* now what those children mean: */
+					if (children.length == 0) { /* no children nodes - take text content */
 						var obj = OAT.Xml.textValue(n);
 						triples.push([subj,pred,obj,0]);
-					}
+					} else if (children.length == 1) { /* one child - it is a standalone subject */
+						var obj = processNode(children[0]);
+						triples.push([subj,pred,obj,1]);
+					} else if (getAtt(nattribs,"parseType") == "Collection") { /* multiple children - each is a standalone node */
+						for (var j=0;j<children.length;j++) {
+							var obj = processNode(children[j]);
+							triples.push([subj,pred,obj,1]);
+						}
+					} else { /* multiple children - each is a pred-obj pair */
+						var obj = processNode(n,true);
+						triples.push([subj,pred,obj,1]);
+					} /* multiple children */
 				}
 			} /* for all subnodes */
 			return subj;

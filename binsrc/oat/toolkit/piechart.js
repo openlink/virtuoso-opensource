@@ -59,10 +59,10 @@ OAT.PieChart = function(div,optObj) {
 				if (value == total) { /* ellipse mode */
 					var pElm = OAT.SVG.element("ellipse",{stroke:"#000",fill:color,cx:cx,cy:cy,rx:r,ry:r*ycoef});
 				} else {
-				var path = "M "+cx+" "+cy+" L "+x1+" "+y1+" ";
-				path += "A "+r+" "+r*(ycoef)+" 0 "+large+" 1 "+x2+" "+y2+" ";
-				path += "L "+cx+" "+cy+" z";
-				var pElm = OAT.SVG.element("path",{"d":path,stroke:"#000",fill:color});
+					var path = "M "+cx+" "+cy+" L "+x1+" "+y1+" ";
+					path += "A "+r+" "+r*(ycoef)+" 0 "+large+" 1 "+x2+" "+y2+" ";
+					path += "L "+cx+" "+cy+" z";
+					var pElm = OAT.SVG.element("path",{"d":path,stroke:"#000",fill:color});
 				}
 				svgNode.appendChild(pElm);
 				var mid_angle = (start_angle + end_angle) / 2;
@@ -77,10 +77,10 @@ OAT.PieChart = function(div,optObj) {
 				if (value == total) { /* ellipse mode */
 					var pElm = OAT.SVG.element("ellipse",{stroke:"#000",fill:color,cx:cx,cy:cy,rx:r,ry:r*ycoef});
 				} else {
-				var path = "M "+cx+" "+cy+" L "+x1+" "+y1+" ";
-				path += "A "+r+" "+(r*ycoef)+" 0 "+large+" 1 "+x2+" "+y2+" ";
-				path += "L "+cx+" "+cy+" z";
-				var pElm = OAT.SVG.element("path",{"d":path,stroke:"#000",fill:color});
+					var path = "M "+cx+" "+cy+" L "+x1+" "+y1+" ";
+					path += "A "+r+" "+(r*ycoef)+" 0 "+large+" 1 "+x2+" "+y2+" ";
+					path += "L "+cx+" "+cy+" z";
+					var pElm = OAT.SVG.element("path",{"d":path,stroke:"#000",fill:color});
 				}
 				svgNode.appendChild(pElm);
 			break;
