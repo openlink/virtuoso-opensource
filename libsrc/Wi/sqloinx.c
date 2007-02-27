@@ -149,6 +149,8 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
   float a1, cost, best_arity;
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
   int n_eqs;
+  if (LOC_LOCAL != tb_dfe->dfe_locus)
+    return;
   DO_SET (dbe_key_t *, k1, &tb->tb_keys)
     {
       if (k1 != tb->tb_primary_key)
@@ -412,15 +414,18 @@ int
 sqlo_tb_inx_intersectable (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * joined, int n_eqs)
 {
   /* tb_dfe is placed and has in inx with leading eqs.  See if joined can be inx intersected */
+  if (LOC_LOCAL != tb_dfe->dfe_locus || LOC_LOCAL != joined->dfe_locus)
+    return 0;
   tb_dfe->dfe_is_placed = 0; /* consider only preds that don't depend on the first table */
   DO_SET (dbe_key_t *, key, &joined->_.table.ot->ot_table->tb_keys)
     {
       if (dk_set_is_subset (key->key_parts, joined->_.table.ot->ot_table_refd_cols))
 	{
 	  int n_eqs2 = sqlo_leading_eqs (key, joined->_.table.col_preds);
-	  if (n_eqs2 && key->key_n_significant - n_eqs2 == tb_dfe->_.table.key->key_n_significant - n_eqs)
+	  if (n_eqs2 && key->key_n_significant - n_eqs2 == tb_dfe->_.table.key->key_n_significant - n_eqs
+	      && key->key_n_significant > n_eqs2)
 	    {
-	      /* equal no of free vars */
+	      /* equal and non-zero no of free vars */
 	      int nth;
 	      for (nth = 0; nth < key->key_n_significant - n_eqs2; nth++)
 		{
