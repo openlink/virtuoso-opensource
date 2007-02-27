@@ -1,0 +1,6 @@
+make_isparql_vad.log
+make_isparql_vad.xml
+isparql*.vad
+virtuoso.*
+toolkit*
+version

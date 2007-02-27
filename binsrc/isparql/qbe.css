@@ -1,0 +1,173 @@
+#page .toolbar {
+  height: 30px;
+  background-color: #ddd;
+  border: 1px solid #888;
+}
+
+#page .toolbar_icon {
+  text-align: center;
+  vertical-align: middle;
+  height: 24px;
+  float: left;
+  margin: 2px;
+  cursor: pointer;
+  padding: 0px;
+  width: 24px;
+  height: 24px;
+}
+
+#page .toolbar_separator {
+  float: left;
+  width: 1px;
+  border-left: 1px solid #555;
+  height: 24px;
+  margin-top: 2px;
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
+#page label {
+  font-weight: normal;
+}
+
+#qbe_toolbar label {
+  float: right;
+  margin: 6px;
+  color: #444;
+  font-size: 10pt;
+  font-weight: normal;
+} 
+#qbe_datasource_cnt {
+  float: right;
+  margin-top:16px;
+}
+
+#qbe_datasource_graph_add {
+  float: right;
+  margin: 6px;
+  cursor:pointer;
+}
+ 
+#qbe_graph {
+  float: right;
+  width: 250px;
+  margin: 4px;
+}
+
+#page_qbe .toolbar_icon_down {
+  border: 1px inset #0e0;
+}
+
+#qbe_canvas {
+  height: 410px;
+  margin-bottom:10px;
+}
+
+#qbe_query_div {
+  margin-right:300px;
+}
+
+#qbe_resizer_area {
+  float: right;
+  width: 10px;
+  height: 10px;
+  z-index: 100;
+  font-size: 1px}
+
+#qbe_parent {
+  width: 100%;
+  height: 400px;
+  background-color: #fff;
+  border: 1px solid #888;
+}
+
+#schemas_tree_container {
+  clear: both;
+  margin: 0;
+  padding: 0;
+  padding: 0;
+  height: 250px;
+  overflow: auto;
+  position:relative; /* Fix for dragging */ 
+}
+
+#schemas_tree_container ul {
+  clear: both;
+  margin: 0;
+  margin-left: 10px;
+  padding: 0;
+}
+
+ul#schemas_tree {
+  margin-left: 0px;
+}
+
+#schemas_tree_container li {
+  clear: both;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+#schemas_tree_container li span{
+  white-space:nowrap;
+}
+
+#schemas_tree_container ul.tree_ul_1 {
+  margin: 0px;
+  padding: 0px}
+
+#schemas_tree_container li.tree_li_1 {
+  margin: 0px;
+  padding: 0px}
+
+#schemas_tree_container li.tree_li_4{
+  cursor: pointer}
+
+#schema {
+  width: 215px;
+}
+
+#qbe_orders
+{
+  padding: 1px;
+  margin-bottom:10px;
+  background-color: #fff;
+  border: 1px solid #888;
+}
+
+#qbe_orderby_grid .grid .header_value {
+  cursor: pointer;
+  border: 1px outset #fff;
+	padding: 2px 3px;
+	padding-right: 15px;
+}
+
+#qbe_props_node,
+#qbe_props_edge {
+  height:66px;
+}
+
+#qbe_props label {
+  width:75px;
+  float: left;
+}
+
+#qbe_props input[type=text] {
+  width:145px;
+}
+#qbe_props_visable {
+  display:inline;
+  width:100px;
+}
+#qbe_props_orderby {
+  float:right;
+  display:inline;
+  width:100px;
+  margin-right:10px;
+}
+
+#schemas button {
+ width:114px;
+ height:26px;
+}

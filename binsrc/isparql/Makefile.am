@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2007 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -19,12 +19,39 @@
 #  
 #  
 
-SUBDIRS = mono virtuoso tests driver maildrop sqldoc hosting bpel tutorial yacutia samples vsp ws sync vspx vad cached_resources virtodbc virtoledb virtuoso_sink xddl VirtuosoClient.Net oat isparql
+TOP=@TOP@
 
+nodist_vad_DATA = isparql_dav.vad
+
+
+noinst_SCRIPTS = make_vad.sh
+CLEANFILES =  \
+	make_isparql_vad.* \
+	isparql*.vad \
+	virtuoso.* \
+	version
+
+isparql_dav.vad: make_vad.sh
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
 
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = config/ccdefs.c
+EXTRA_DIST = \
+	*.css \
+	*.html \
+	*.js \
+	*.vsp \
+	hover.htc \
+	images/*.gif \
+	images/*.jpg \
+	images/*.png \
+	make_vad.sh \
+	syntax/*.js \
+	vad_version \
+	xslt/*.xsl

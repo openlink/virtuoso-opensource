@@ -1,0 +1,69 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *
+ *  See LICENSE file for details.
+ */
+#menu {
+	font: menu;
+	background-color: #aaa;
+	list-style-type: none;
+	height: 23px;
+	border-bottom: 1px solid #000;
+	z-index: 900;
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	width: 100%;
+}
+
+#menu a {
+	text-decoration:none;
+  color: #335;
+}
+
+#menu li {
+	cursor: pointer;
+	behavior: url("hover.htc");
+	display: inline;
+	position: relative;
+	top: 5px;
+	padding: 5px 8px;
+}
+
+#menu li:hover, #menu li.hover {
+	background-color: #ccc;
+}
+
+#menu ul {
+	position: absolute;
+	background-color: #aaa;
+	left: 0px;
+	top: 23px;
+	border: 1px solid #000;
+	width: 100px;
+	padding: 2px;
+	z-index: 999;
+}
+
+#menu ul li {
+	display: block;
+	padding: 4px 6px;
+	top: 0px;
+}
+
+#menu .hr {
+	margin: 0px;
+	padding: 0px;
+}
+
+#menu .menu_help {
+	width: 200px;
+}
+
+#menu .menu_qbe {
+	width: 120px;
+}

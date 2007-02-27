@@ -1,0 +1,174 @@
+/*
+--  $Id$
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+ */
+
+
+/* ---------------- grid -------------- */
+
+#graphs_grid_div table,
+div.grid table,
+table.grid {
+	border-collapse: collapse;
+	font: menu;
+}
+
+/* ---------------- rows -------------- */
+
+#graphs_grid_div tr,
+.grid tr {
+	border-left: 1px solid #000;
+	border-right: 1px solid #000;
+}
+
+#graphs_grid_div tr.even,
+.grid tr.even {
+	background-color: #f0f0ff;
+}
+
+#graphs_grid_div tr.odd,
+.grid tr.odd {
+	background-color: #f8f8ff;
+}
+
+#graphs_grid_div tr.hover,
+.grid tr.hover {
+	background-color: #feb;
+	border: 2px solid #000;
+}
+
+/* ---------------- cols -------------- */
+#graphs_grid_div thead td,
+.grid thead td {
+	background-color: #ebeadb;
+	font-weight: bold;
+	background-image: url(toolkit/images/Grid_header.gif);
+	background-position: 0% 100%;
+	background-repeat: repeat-x;
+	border-left: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+}
+
+#graphs_grid_div thead td.hover,
+.grid thead td.hover {
+	background-image: url(toolkit/images/Grid_header_hover.gif);
+}
+
+#graphs_grid_div td,
+.grid td {
+	border-bottom: 1px solid #888;
+	border-left: 1px solid #888;
+	border-right: 1px solid #888;
+}
+
+#graphs_grid_div td.index,
+.grid td.index {
+	background-color: #aaa;
+}
+
+#graphs_grid_div .header_value,
+.grid .header_value {
+	padding: 2px 3px;
+}
+
+#graphs_grid_div .row_value,
+.grid .row_value {
+	padding: 2px 3px;
+}
+
+/* ---------------- tabres -------------- */
+ul.tabres {
+  margin-top: 5px;
+  list-style-type: none;
+  text-align: left;
+  border-bottom: 1px solid #000;
+  margin: 0px;
+/*  margin-right:20px; */
+}
+
+ul.tabres li.tab {
+  margin: 3px;
+  padding: 0px 3px;
+  display: inline;
+  border: 1px solid #000;
+  background-color: #aba;
+  cursor: pointer;
+}
+
+ul.tabres li.nav {
+  margin: 3px;
+  padding: 0px 3px;
+  display: inline;
+  cursor: pointer;
+}
+
+ul.tabres li.tab_selected {
+  border-bottom: 1px solid #fff;
+  background-color: #fff;
+}
+
+ul.tabres li.tab:hover {
+  background-color: #ddd;
+}
+
+ul.tabres li.tab_selected:hover {
+  background-color: #fff;
+}
+
+#res_area {
+  font-family: arial, helvetica, sans-serif;
+  font-size: 9pt;
+  color: #335;
+  margin:0px;
+}  
+
+.res_container {
+  padding:0px;
+  background-color: #fff;
+}
+
+.result {
+  padding:5px;
+}
+
+.request,
+.response {
+  padding:5px;
+/*  overflow:auto; */
+}
+/* ---------------- rdf sidebar -------------- */
+.rdf_sidebar ul, .rdf_sidebar li {
+	margin: 0px;
+	padding: 0px;
+}
+
+.rdf_sidebar li {
+	margin-left: 0.5em;
+}
+
+.rdf_sidebar {
+	font-size: 80%;
+	border: 1px solid #000;
+	background-color: #fff;
+	width: 250px;
+	padding: 3px;
+}

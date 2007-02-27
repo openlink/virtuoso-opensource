@@ -1,0 +1,281 @@
+/*
+--  $Id$
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+ */
+
+@import url("webdav.css");
+@import url("menu.css");
+
+body {
+  font-family: arial, helvetica, sans-serif;
+  font-size: 9pt;
+  color: #335;
+  margin:0px;
+}
+
+img { border: 0;} 
+
+h1,h2,h3 { color: #005a9c }
+h2 { font-weight: normal}
+h3 { font-weight: normal}
+
+ul, li {
+	margin: 0px;
+	padding: 0px;
+}
+
+#right {
+  margin-top: 23px; 
+  width: 100%;
+}
+
+/*
+#r_hack {
+  background: #e8f3f6 url(images/tr_2.gif) no-repeat top right;
+}
+
+#r_hack div.r {
+  background: transparent url(images/tl_2.gif) no-repeat top left;
+}
+*/
+
+#r_hack div.r div.r {
+  background: #e8f3f6 url(images/br_2.gif) no-repeat bottom right;
+}
+
+#r_hack div.r div.r div.r {
+  background: transparent url(images/bl_2.gif) no-repeat bottom left;
+  padding: 5px;
+}
+
+.main_col_page { 
+  margin: 10px;
+}
+
+#foot { 
+  font-size: 7pt;
+  text-align: right;
+  float: left;
+  clear: both;
+  background-color: #FFFFFF;
+  height: 30px;
+  padding-top: 10px;
+  width: 100%;
+}
+
+#head h1 {
+  font-size: 14pt;
+  color: #fff;
+  padding-left: 400px;}
+
+ul#nav_bar { 
+  margin-top: 5px;
+  list-style-type: none;
+  text-align: left;
+/*  border-bottom: 1px solid #0066A3; */
+  margin: 0px;
+  padding: 0px;
+}
+
+#nav_bar li { 
+  margin: 0px;
+  margin-left: 20px;
+  margin-right: 0px;
+  padding: 0px 3px;
+  display: inline;
+  border: 1px solid #0066A3;
+  border-bottom: 1px solid #A0D0E4;
+  background-color: #A0D0E4;
+  cursor: pointer;
+}
+
+#nav_bar li.tab_selected {
+  border-bottom: 1px solid #E8F3F6;
+  background-color: #E8F3F6;
+}
+
+#nav_bar li.tab:hover {
+  background-color: #ddd;
+  border-bottom: 1px solid #ddd;
+}
+
+#nav_bar li.tab_selected:hover {
+  background-color: #E8F3F6;
+  border-bottom: 1px solid #E8F3F6;
+}
+
+img.corner {
+  width: 15px;
+  height: 15px;
+  border: none;
+  display: block !important;
+}
+
+#import_data_frame {
+  border:0px;
+  width: 600px;
+  height: 300px;
+}
+
+div.pager { 
+  float: left; clear: both;
+  background-color: #576; 
+  width: 99%;
+  text-align: center;
+}
+
+div.pager a { 
+  color: #ddd;
+  font-weight: bold;
+  text-decoration: none; 
+  padding-left: 10px;
+}
+
+label { font-size: 10pt; font-weight: bold;}
+#load,
+label.load { font-size: 8pt; font-weight: normal;}
+
+#query_div {
+}
+
+#page_query {
+}
+
+#query {
+  height: 50ex;
+  width: 100%;
+}
+
+#goptions label.align {
+  width:120px;
+  float: left;
+}
+
+div#virtuoso_options 
+{
+  clear:both;
+}
+
+#virtuoso_options label, #virtuoso_options input
+{
+  display: block;
+  float: left;
+}
+#virtuoso_options br
+{
+  clear: both;
+}
+
+#service{
+  width: 400px;
+}
+
+#default-graph-uri {
+  width: 100%;
+}
+
+#combo_list img {
+  width: 16px;
+  height: 16px;
+}
+
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 2px;
+  overflow: auto}
+
+.combo_list_option:hover {
+  background-color: #0080FF;
+  color: white}
+
+#explain {
+  float: right;
+}
+
+/* ---------------- tabres -------------- */
+
+ul#tabgrph {
+  margin-top: 5px;
+  list-style-type: none;
+  text-align: left;
+  /* border-bottom: 1px solid #0066A3; */
+  margin: 0px;
+  padding: 0px;
+}
+
+#tabgrph li.tab {
+  margin: 0px;
+  margin-right: 6px;
+  padding: 0px 3px;
+  display: inline;
+  border: 1px solid #0066A3;
+  background-color: #A0D0E4;
+  cursor: pointer;
+}
+
+#tabgrph li.tab_selected {
+  border-bottom: 1px solid #E8F3F6;
+  background-color: #E8F3F6;
+}
+
+#tabgrph li.tab:hover {
+  background-color: #ddd;
+}
+
+#tabgrph li.tab_selected:hover {
+  background-color: #E8F3F6;
+}
+
+
+/* ---------------- other -------------- */
+.ctl_right {
+  float:right;
+}
+
+
+/* ---------------- Warning -------------- */
+
+#warning
+{
+  border: 4px dashed red;
+  background-color: yellow;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+/* ---------------- tools -------------- */
+
+.tools_but {
+  width:190px;
+  font: Icon;
+  border: 1px Solid ThreeDShadow;
+  background: Window;
+  color: WindowText;
+  margin: 2px;
+}
+
+/* ---------------- progress -------------- */
+#ajax_progress {
+	height: 16px;
+	width: 80%;
+}

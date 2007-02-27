@@ -1,0 +1,430 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<!--
+
+  $Id$
+
+  This file is part of the OpenLink Ajax Toolkit (OAT) project
+
+  Copyright (C) 2006 Ondrej Zara
+  Copyright (C) 2006 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991
+
+  This project is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software Foundation,
+  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+-->
+  <head>
+    <title>OpenLink iSPARQL</title>
+    <link type="text/css" rel="stylesheet" href="SyntaxHighlighter.css"/>
+    <link  type="text/css"rel="stylesheet" href="default.css"/>
+    <link  type="text/css"rel="stylesheet" href="isparql.css"/>
+    <link type="text/css" rel="stylesheet" href="qbe.css"/>
+    <script type="text/javascript">
+      var featureList=["keyboard","tab","ajax2","combolist","window","tree","grid","anchor",
+            "dav","xml","svgsparql","toolbar","dialog","sparql","graphsvg","menu","layers"];
+    </script>
+    <script type="text/javascript" src="toolkit/loader.js"></script>
+    <script type="text/javascript" src="isparql.js"></script>
+    <script type="text/javascript" src="qbe.js"></script>
+    <script type="text/javascript" src="main.js"></script>
+    <script type="text/javascript" src="syntax/shCore.js"></script>
+    <script type="text/javascript" src="syntax/shBrushXml.js"></script>  
+    <script type="text/javascript" src="syntax/shBrushJScript.js"></script>  
+    <!--<script language="javascript" type="text/javascript" src="/firebug/firebug.js"></script>-->
+  </head>
+  <body>
+    <div id="page">
+      <div id="page_loading" style="margin-top:200px;text-align:center;">
+      Loading ...
+      <img src="toolkit/images/progress.gif"/>
+      </div>
+      <div id="page_content" style="display:none;">
+      <ul id="menu">
+        <li id="menu_qbe"><span id="tab_qbe" title="SPARQL Query By Example">QBE</span>
+          <ul class="menu_qbe" style="display:none;">
+            <li id="menu_qbe_clear">Clear Pane</li>
+            <li id="menu_qbe_load">Open</li>
+            <li id="menu_qbe_save">Save</li>
+            <li id="menu_qbe_saveas">Save As...</li>
+    				<li><hr/></li>
+            <li id="menu_qbe_run">Run Query</li>
+    				<li><hr/></li>
+            <li id="menu_qbe_generate">Generate</li>
+            <li id="menu_qbe_get_from_adv">Get from Advanced</li>
+    				<li><hr/></li>
+            <li id="menu_qbe_arrange">Auto Arrange</li>
+          </ul>
+        </li>
+        <li id="menu_query"><span id="tab_query" title="SPARQL Query By Typing">Advanced</span>
+          <ul class="menu_query" style="display:none;">
+            <li id="menu_reset">Reset</li>
+            <li id="menu_load">Open</li>
+            <li id="menu_save">Save</li>
+            <li id="menu_saveas">Save As...</li>
+    				<li><hr/></li>
+            <li id="menu_run">Run Query</li>
+    				<li><hr/></li>
+            <li id="menu_load_to_qbe">Visualize</li>
+            <li id="menu_get_from_qbe">Get from QBE</li>
+          </ul>
+        </li>
+        <li id="menu_proc_opt" title="Setup and Configuration">Options</li>
+        <li>Help
+    			<ul class="menu_help" style="display:none;">
+    				<li><a target="_blank" href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">Query Service Documentation</a></li>
+    				<li><a target="_blank" href="http://docs.openlinksw.com/virtuoso">Virtuoso Documentation</a></li>
+    				<li><a target="_blank" href="http://virtuoso.openlinksw.com/wiki/main/">Virtuoso Wiki</a></li>
+    				<li><a target="_blank" href="http://virtuoso.openlinksw.com/blog/">Virtuoso Blog</a></li>
+    			</ul>
+        </li>
+				<li id="menu_about">About</li>
+      </ul> <!-- menu -->
+      <div id="right">
+        <div id="r_hack"><div class="r"><div class="r"><div class="r">
+          <div id="main_col"></div> <!-- this is where the main_col_pages appear. It's magick (tm)! -->
+          <div class="main_col_page" id="page_qbe" style="display:none;">
+        	  <div id="qbe_toolbar">
+              <img id="qbe_datasource_graph_add" alt="add" title="add" src="images/edit_add.png"/>
+              <input id="qbe_graph" name="qbe_graph"  value=""/>
+              <label for="qbe_graph">Data Source URI</label>
+              <sub id="qbe_datasource_cnt">0</sub>
+        	  </div>
+          	<div id="qbe_query_div">
+            	<div id="qbe_canvas">
+            	  <div id="qbe_parent"></div>
+            	  <div id="qbe_resizer_area"></div>
+            	</div>
+            	<div id="qbe_orders">
+            	  <div id="qbe_orderby_grid"></div>
+              </div>
+              <div> <!-- Opera hack -->
+                <label for="qbe_format" class="align">Output format</label>
+                <select id="qbe_format">
+                  <option value="application/isparql+table" selected="selected">Table</option>
+                  <option value="application/sparql-results+xml">XML</option>
+                  <option value="application/sparql-results+json">JSON</option>
+                  <option value="application/javascript">Javascript</option>
+                  <option value="text/html">HTML</option>
+                </select>
+                <label for="qbe_maxrows" class="align">Max Rows</label>
+                <select id="qbe_maxrows">
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50" selected="selected">50</option>
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                </select>
+                <input type="checkbox" value="on" id="qbe_distinct"/>
+                <label for="qbe_distinct">Distinct</label>
+                <input type="button" value="Use Query & Close" id="qbe_return_btn">
+              </div><!-- /Opera hack -->
+            </div>
+          	<div id="qbe_props">
+          	  <div id="qbe_props_node">
+              	<label for="qbe_node_type">Type: </label>
+              	<select id="qbe_node_type">
+              		<option value="0">URI</option>
+              		<option value="1">Literal</option>
+              	</select>
+              	<br/>
+              	<label for="qbe_node_id">ID: </label>
+              	<input type="text" id="qbe_node_id"/>
+              	<br/>
+              	<label for="qbe_node_res_type">Datatype: </label>
+              	<input type="text" id="qbe_node_res_type" />
+            	</div>
+          	  <div id="qbe_props_edge" style="display:none;">
+          	    <label for="qbe_edge_type">Optional?</label>
+                <input type="checkbox" id="qbe_edge_type" />
+              	<br/>
+              	<label for="qbe_edge_value">Res Type: </label>
+              	<input type="text" id="qbe_edge_value" />
+            	</div>
+          	  <div id="qbe_props_group" style="display:none;">
+              	<label for="qbe_group_type">Group Type: </label>
+              	<select id="qbe_group_type">
+              		<option value="0">Graph</option>
+              		<option value="1">Optional</option>
+              		<option value="2">Union</option>
+              		<option value="3">Construct</option>
+              	</select>
+              	<br/>
+              	<label for="qbe_group_id">ID: </label>
+              	<input type="text" id="qbe_group_id"/>
+            	</div>
+          	  <div id="qbe_props_common">
+            	  <div id="qbe_props_orderby">
+            	    <label for="qbe_orderby">Order By?</label>
+                  <input type="checkbox" id="qbe_orderby" />
+                </div>
+            	  <div id="qbe_props_visable">
+            	    <label for="qbe_visible">Visible?</label>
+                  <input type="checkbox" id="qbe_visible" />
+                </div>
+            	</div>
+          	</div>
+          	<div id="schemas">
+            	<div id="schemas_tree_container">
+            	  <ul id="schemas_tree">
+            	    <li>Concepts<ul id="node_types"></ul></li>
+            	    <li>Terms<ul id="conn_props"></ul></li>
+            	  </ul>
+            	</div>
+            	<div id="schema_div"></div>
+            	<button id="schema_import">Import</button>
+            	<button id="schema_remove">Remove</button>
+            </div>
+            <div id="qbe_res_area"></div>
+          </div><!-- page_qbe -->
+          <div class="main_col_page" id="page_query" style="display:none;">
+        	  <div id="toolbar">
+        	  </div>
+        	  <br/>
+            <div id="query_div">
+              <form id="query_form">
+                <ul id="tabgrph">
+                  <li id="tabgrph_default" class="tab tab_selected">
+                    <label for="default-graph-uri">Graph</label>
+                  </li>
+                  <li id="tabgrph_named" class="tab">
+                    <label for="named-graphs">Named Graphs (<span id="named_graphs_cnt">0</span>)</label>
+                  </li>
+                </ul>
+                <div id="tabgrph_content"></div>
+                <div id="tabgrph_default_content">
+                  <input id="default-graph-uri" name="default-graph-uri" value=""/>
+                </div>
+                <div id="tabgrph_named_content">
+                  <div id="graphs_grid_div">
+                    <table class="grid" id="named_graph_list">
+                      <thead>
+                        <tr>
+                          <td><div style="width: 20px;" class="header_value"/></td>
+                          <td style="text-align: center;">
+                             <div style="overflow: hidden; width: 440px;" class="header_value">Named Graph</div>
+                          </td>
+                          <td><div style="overflow: hidden; width: 100px;" class="header_value"/></td>
+                        </tr>
+                      </thead>
+                      <tfoot>
+                        <tr class="even">
+                          <td></td>
+                          <td><input style="width: 440px;" type="input" id="named_graph_add" name="named_graph_add"/></td>
+                          <td style="text-align: center;">
+                            <button onclick="add_named_graph();return false;"><img alt="add" title="add" src="images/edit_add.png"/> add</button>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+                <br/>
+                <div id="topbox_ctl" class="ctl_right">
+                  <select name="prefix" id="prefix" onchange="prefix_insert()">
+      			        <option value="">-- Prefixes --</option>
+      			        <option value="PREFIX cc: &lt;http://web.resource.org/cc/&gt;">CC</option>
+      			        <option value="PREFIX dataview: &lt;http://www.w3.org/2003/g/data-view#&gt;">DATAVIEW</option>
+      			        <option value="PREFIX dc: &lt;http://purl.org/dc/elements/1.1/&gt;">DC</option>
+      			        <option value="PREFIX dcterms: &lt;http://purl.org/dc/terms/&gt;">DCTERMS</option>
+      			        <option value="PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;">FOAF</option>
+      			        <option value="PREFIX owl: &lt;http://www.w3.org/2002/07/owl#&gt;">OWL</option>
+      			        <option value="PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;">RDF</option>
+      			        <option value="PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;">RDFS</option>
+      			        <option value="PREFIX rss: &lt;http://purl.org/rss/1.0/&gt;">RSS</option>
+      			        <option value="PREFIX sioc: &lt;http://rdfs.org/sioc/ns#&gt;">SIOC</option>
+      			        <option value="PREFIX sioct: &lt;http://rdfs.org/sioc/types#&gt;">SIOCT</option>
+      			        <option value="PREFIX skos: &lt;http://www.w3.org/2004/02/skos/core#&gt;">SKOS</option>
+      			        <option value="PREFIX vs: &lt;http://www.w3.org/2003/06/sw-vocab-status/ns#&gt;">VS</option>
+      			        <option value="PREFIX wot: &lt;http://xmlns.com/wot/0.1/&gt;">WOT</option>
+      			        <option value="PREFIX xhtml: &lt;http://www.w3.org/1999/xhtml&gt;">XHTML</option>
+      			        <option value="PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;">XSD</option>
+      			      </select>
+      	          <select name="template" id="template" onchange="template_insert()">
+  				          <option value="">-- Template --</option>
+  				          <option value="SELECT DISTINCT ?s ?p ?o
+WHERE
+{
+   ?s ?p ?o .
+}">Select</option>
+
+  		              <option value="CONSTRUCT
+{
+   ?s ?p ?o .
+}
+WHERE
+{
+   ?s ?p ?o .
+}">Construct</option>
+		                <option value="ASK
+WHERE
+{
+   ?s ?p ?o .
+}">Ask</option>
+  				        </select>
+      	          <select name="tool" id="tool" onchange="tool_invoke()">
+  				          <option value="">-- Statement Help --</option>
+  				          <option value="tool_put_line_start('#')">Comment Selection</option>
+  				          <option value="tool_rem_line_start('#')">Uncomment Selection</option>
+  				          <option value="tool_put_line_start('    ')">Indent Selection</option>
+  				          <option value="tool_rem_line_start('    ')">Remove Indent Selection</option>
+  				          <option value="tool_put_around('OPTIONAL\n{\n','\n}\n')">Make Optional </option>
+  				          <option value="tool_put('BASE <http://example.org/base>')">put BASE</option>
+  				          <option value="tool_put('FROM <http://example.org/from>')">put FROM</option>
+  				          <option value="tool_put('FROM NAMED <http://example.org/named>')">put FROM NAMED</option>
+  				          <option value="tool_put('UNION\n')">put UNION</option>
+  				          <option value="tool_put('GRAPH')">put GRAPH</option>
+  				          <option value="tool_put('ORDER BY')">put ORDER BY</option>
+  				          <option value="tool_put('ORDER BY ASC(?x)')">put ORDER BY ASC()</option>
+  				          <option value="tool_put('ORDER BY DESC(?x)')">put ORDER BY DESC()</option>
+  				          <option value="tool_put('LIMIT 10')">put LIMIT</option>
+  				          <option value="tool_put('OFFSET 10')">put OFFSET</option>
+  				          <option value="tool_put('FILTER ( ?x < 3 ) .')">put Simple Filter</option>
+  				          <option value="tool_put('FILTER regex( str(?name), &quot;Jane&quot;, &quot;i&quot; ) .')">put Regexp Filter</option>
+  				          <option value="tool_put('FILTER ( bound(?x) ) .')">put Bound Filter</option>
+  				          <option value="tool_put('FILTER ( ?date > &quot;2005-01-01T00:00:00Z&quot;^^xsd:dateTime ) .')">put Date Filter</option>
+  				        </select>
+  				        <a href="#" onclick="tools_popup()"><img src="images/cr16-action-window_new.png" alt="Statement Help" title="Statement Help" border="0"/></a>
+  				      </div>
+                <label for="query">SPARQL Query</label><br/>
+                <div style="clear:both;">
+                  <textarea id="query" name="query" onchange="format_select(this)" onkeyup="format_select(this)" wrap="off">SELECT * WHERE {?s ?p ?o}</textarea>
+                </div>
+                <br/>
+                <div>
+                  <label for="format" class="align">Output format</label>
+                  <select id="format">
+                    <option value="application/isparql+table" selected="selected">Table</option>
+                    <option value="application/sparql-results+xml">XML</option>
+                    <option value="application/sparql-results+json">JSON</option>
+                    <option value="application/javascript">Javascript</option>
+                    <option value="text/html">HTML</option>
+                  </select>
+                  <label for="maxrows" class="align">Max Rows</label>
+                  <select id="maxrows">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50" selected="selected">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                  </select>
+                  <input type="button" value="Use Query & Close" id="return_btn">
+                </div>
+              </form>
+            </div> <!-- query_div -->
+            <div id="res_area"></div>
+          </div> <!-- page_query -->
+        </div></div></div></div> <!-- r_hack -->
+        <div id="foot">Copyright &copy; 2006 OpenLink Software, Inc</div>
+      </div> <!-- #right -->
+      </div><!-- #page_content -->
+    </div><!-- #page -->
+    <div id="windows" style="display:none;">
+      <div id="goptions">
+        <label for="username" class="align">Username</label>
+        <input type="text" id="username" value="demo">
+        <br/>
+        <label for="password" class="align">Password</label>
+        <input type="password" id="password" value="demo">
+        <br/>
+        <label for="login_put_type" class="align">Web Server type</label>
+        <select id="login_put_type">
+  			  <option value="http">HTTP - Basic</option>
+  			  <option value="dav" selected="selected">HTTP - WebDAV</option>
+  		  </select>
+        <hr/>
+        <label for="service">Query Service Endpoint</label>
+        <br/>
+        <div id="sr_cl_div"></div>
+        <div id="virtuoso_options" style="display:none">
+          <hr/>
+          Virtuoso Specific:
+          <br/>
+  			  <input id="should-sponge-grab-all-seealso" type="radio" value="grab-all-seealso" name="should-sponge"/>
+  			  <label for="should-sponge-grab-all-seealso">Retrieve all missing remote RDF data that might be useful,<br/> including seeAlso references</label>
+  			  <br/>
+          <input id="should-sponge-grab-all" type="radio" value="grab-all" name="should-sponge"/>
+          <label for="should-sponge-grab-all">Retrieve all missing remote RDF data that might be useful</label>
+          <br/>
+          <input id="should-sponge-soft" type="radio" value="soft" name="should-sponge" checked="checked"/>
+          <label for="should-sponge-soft">Retrieve remote RDF data for all missing source graphs</label>
+          <br/>
+          <input id="should-sponge-none" type="radio" value="" name="should-sponge"/>
+          <label for="should-sponge-none">Use only local data (including data retrieved before),<br/> do not retrieve more</label>
+          <br/>
+          <br/>
+          <input type="checkbox" value="1" name="proxy" id="proxy" checked="checked"/>
+          <label for="proxy">Proxy the request via Virtuoso, if it is a remote endpoint.</label>
+          <br/> <!-- This break is important, because of positioning problems ... don't remove it. -->
+        </div>
+  		</div>
+      <div id="qbe_save_div">
+    		Save as
+    		<select id="qbe_savetype">
+          <option value="rq">SPARQL Definitions Only</option>
+          <option value="isparql">SPARQL Query Diagram</option>
+          <option value="xml">XML file for execution</option>
+    		</select><br/>
+    		File name: <input type="text" name="save" id="qbe_save_name" />
+    		<input type="button" value="Browse" id="qbe_browse_btn" ><br/>
+  		</div>
+      <div id="save_div">
+    		Save as
+    		<select id="savetype">
+          <option value="rq">SPARQL Definitions Only</option>
+          <option value="xml">XML file for execution</option>
+    		</select><br/>
+    		File name: <input type="text" name="save" id="save_name" />
+    		<input type="button" value="Browse" id="browse_btn" ><br/>
+  		</div>
+      <div id="about_div">
+        <h1>OpenLink iSPARQL</h1>
+        <h2>Version: <span id="about_version">N/A</span><h2>
+        <h2>Build Date: <span id="about_date">N/A</span><h2>
+        <h3>Built using <a target="_blank" href="http://sourceforge.net/projects/oat">OpenLink Ajax Toolkit (OAT)</a><h3>
+        <h3>OAT version: <span id="about_oat_version">N/A</span></a><h3>
+  		</div>
+      <div id="qbe_dataset_div">
+        <table class="grid" id="qbe_dataset_list">
+          <thead>
+            <tr>
+              <td><div style="width: 20px;" class="header_value"/></td>
+              <td>
+                 <div style="overflow: hidden; width: 50px;" class="header_value">Type</div>
+              </td>
+              <td style="text-align: center;">
+                 <div style="overflow: hidden; width: 440px;" class="header_value">Data Source URI</div>
+              </td>
+              <td><div style="overflow: hidden; width: 100px;" class="header_value"/></td>
+            </tr>
+          </thead>
+          <tfoot>
+            <tr class="even">
+              <td></td>
+              <td>
+                <select id="qbe_dataset_type_add">
+                  <option value="F">From</option>
+                  <option value="N">Named</option>
+                </select>
+              </td>
+              <td><input style="width: 440px;" type="input" id="qbe_dataset_add" name="qbe_dataset_add"/></td>
+              <td style="text-align: center;">
+                <button id="qbe_dataset_add_btn"><img alt="add" title="add" src="images/edit_add.png"/> add</button>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
