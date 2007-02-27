@@ -5823,11 +5823,19 @@ http(sprintf ('				  	value="%s" size="80"/>\n', coalesce (ini_dflt_graph, '') )
 http('			  <br /><br />\n');
 if (can_sponge)
   {
-http('			  <input type="checkbox"' ||
-  case (isnull (get_keyword ('should-sponge', params))) when 0 then ' checked="checked"' else '' end ||
-  ' name="should-sponge" id="should-sponge" value="soft"/>\n');
-http('			  <label for="should-sponge">Retrieve remote RDF data for all missing source graphs</label>\n');
-http('			  <br /><br />\n');
+http('			  <input type="radio"' ||
+  case (get_keyword ('should-sponge', params, '')) when 'get-all' then ' checked="checked"' else '' end ||
+  ' name="should-sponge" id="should-sponge-grab-all" value="grab-all"/>\n');
+http('			  <label for="should-sponge-grab-all">Retrieve all missing remote RDF data that might be useful</label><br/>\n');
+http('			  <input type="radio"' ||
+  case (get_keyword ('should-sponge', params, '')) when 'soft' then ' checked="checked"' else '' end ||
+  ' name="should-sponge" id="should-sponge-soft" value="soft"/>\n');
+http('			  <label for="should-sponge-soft">Retrieve remote RDF data for all missing source graphs</label><br/>\n');
+http('			  <input type="radio"' ||
+  case (get_keyword ('should-sponge', params, '')) when '' then ' checked="checked"' else '' end ||
+  ' name="should-sponge" id="should-sponge-" value=""/>\n');
+http('			  <label for="should-sponge-">Use only local data (including data retrieved before), do not retrieve more</label><br/>\n');
+http('			  <br />\n');
   }
 else
   {
@@ -5883,7 +5891,7 @@ http('</html>\n');
           if (can_sponge)
             should_sponge := trim(pvalue);
 	}
-      else if ('format' = pname)
+      else if ('format' = pname or 'output' = pname)
         {
 	  format := pvalue;
 	}
@@ -5975,7 +5983,8 @@ http('</html>\n');
         query, '22023', 'The request does not contain text of SPARQL query', format);
       return;
     }
-  if (dflt_graph is null)
+
+  if (dflt_graph is null or dflt_graph = '')
     {
       declare req_hosts varchar;
       declare req_hosts_split any;
@@ -5993,12 +6002,14 @@ http('</html>\n');
         }
       full_query := query;
     }
-  else
-    {
+
+  if (dflt_graph is not null and dflt_graph <> '')
       full_query := concat ('define input:default-graph-uri <', dflt_graph, '> ', query);
-    }
-  if (can_sponge and should_sponge is not null and should_sponge <> '')
+
+  if ((should_sponge = 'soft') or (should_sponge = 'replacing'))
     full_query := concat (sprintf('define get:soft "%s" ',should_sponge), full_query);
+  else if (should_sponge = 'grab-all')
+    full_query := concat ('define input:grab-all "yes" define input:grab-depth 5 define input:grab-limit 100 ', full_query);
   full_query := concat ('define output:valmode "LONG" ', full_query);
 
   declare state, msg varchar;
@@ -6011,7 +6022,7 @@ http('</html>\n');
     {
       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
         '400', 'Bad Request',
-	query, state, msg, format);
+	full_query, state, msg, format);
       return;
     }
 
@@ -6036,18 +6047,22 @@ http('</html>\n');
       query := concat ('define input:named-graph-uri <', g, '> ', query);
       http_header (sprintf ('X-SPARQL-named-graph: %U\r\n', g));
     }
+  if (dflt_graph is not null and dflt_graph <> '')
+  {
   query := concat ('sparql define input:default-graph-uri <', dflt_graph, '> ', query);
   http_header (sprintf ('X-SPARQL-default-graph: %U\r\n', dflt_graph));
+  }
 --  http (sprintf ('<!-- X-SPARQL-default-graph: %U\r\n -->\n', dflt_graph));
 --  http ('<!-- Query:\n' || query || '\n-->\n', 0);
   set_user_id ('SPARQL');
+  -- dbg_obj_princ ('full_query = ', full_query);
   exec ( concat ('sparql ', full_query), state, msg, vector(), maxrows, metas, rset);
   -- dbg_obj_princ ('exec metas=', metas);
   if (state <> '00000')
     {
       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
         '500', 'SPARQL Request Failed',
-	query, state, msg, format);
+	full_query, state, msg, format);
       return;
     }
   declare accept varchar;
@@ -6506,51 +6521,269 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
 ;
 
 -- /* the content to be imported is processed here */
+create table DB.DBA.SYS_GRDDL_MAPPING (
+    GM_NAME varchar,
+    GM_PROFILE varchar,
+    GM_XSLT varchar,
+    primary key (GM_NAME)
+)
+create index SYS_GRDDL_MAPPING_PROFILE on DB.DBA.SYS_GRDDL_MAPPING (GM_PROFILE)
+;
+
+insert soft DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('eRDF', 'http://purl.org/NET/erdf/profile', 'http://local.virt/erdf2rdfxml')
+;
+
+insert soft DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('RDFa', '', 'http://local.virt/rdfa2rdfxml')
+;
+
+insert soft DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('hCard', 'http://www.w3.org/2006/03/hcard', 'http://local.virt/hcard2rdf')
+;
+
+insert soft DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('hCalendar', 'http://dannyayers.com/microformats/hcalendar-profile', 'http://local.virt/hcal2rdf')
+;
+
+insert soft DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('hReview', 'http://dannyayers.com/micromodels/profiles/hreview', 'http://local.virt/hreview2rdf')
+;
+
+insert soft DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('relLicense', '', 'http://local.virt/cc2rdf')
+;
+
+insert soft DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('Dublin Core', '', 'http://local.virt/dc2rdf')
+;
+
+insert soft DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('geoURL', '', 'http://local.virt/geo2rdf')
+;
+
+insert soft DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('Google Base', '', 'http://local.virt/google2rdf')
+;
+
+insert soft DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('Ning Metadata', '', 'http://local.virt/ning2rdf')
+;
+
+create procedure DB.DBA.RDF_HTTP_URL_GET (in url any, in base any)
+{
+  declare content varchar;
+  declare olduri varchar;
+  declare hdr any;
+  declare redirects int;
+
+  hdr := null;
+  redirects := 15;
+  url := WS.WS.EXPAND_URL (base, url);
+  again:
+  olduri := url;
+  if (redirects <= 0)
+    signal ('22023', 'Too many HTTP redirects', 'RDFXX');
+  content := http_get (url, hdr);
+  redirects := redirects - 1;
+
+  if (hdr[0] not like 'HTTP/1._ 200 %')
+    {
+      if (hdr[0] like 'HTTP/1._ 30_ %')
+	{
+	  url := http_request_header (hdr, 'Location');
+	  if (isstring (url))
+	    {
+	      url := WS.WS.EXPAND_URL (olduri, url);
+	      goto again;
+	    }
+	}
+      signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+      return NULL;
+    }
+  return content;
+}
+;
+
+
 create procedure DB.DBA.RDF_LOAD_MICROFORMAT_RESPONSE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout ret_body any)
 {
   -- check to microformats
-  declare xt, xd, profile, mdta any;
+  declare xt, xd, profile, mdta, xslt_style, profs, profs_done any;
+  declare xmlnss, i, l, nss, rdf_url_arr, content, hdr any;
+
   set_user_id ('dba');
   mdta := 0;
   declare exit handler for sqlstate '*'
     {
       goto no_microformats;
     };
+
   xt := xtree_doc (ret_body, 2);
+
+  -- this maybe is not need to be here, as it's a kind of content negotiation
+  rdf_url_arr  := xpath_eval ('//head/link[ @rel="meta" and @type="application/rdf+xml" ]/@href', xt, 0);
+  if (length (rdf_url_arr))
+    {
+      declare rdf_url_inx int;
+      rdf_url_inx := 0;
+      foreach (any rdf_url in rdf_url_arr) do
+	{
+	  declare exit handler for sqlstate '*' { goto try_next_link; };
+	  rdf_url := cast (rdf_url as varchar);
+	  content := RDF_HTTP_URL_GET (rdf_url, new_origin_uri);
+	  DB.DBA.RDF_LOAD_RDFXML (content, new_origin_uri, coalesce (dest, graph_iri));
+	  rdf_url_inx := rdf_url_inx + 1;
+	  try_next_link:;
+	}
+      if (rdf_url_inx > 0)
+	return rdf_url_inx;
+    }
+
+  xmlnss := xmlnss_get (xt);
+  nss := '<namespaces>';
+  for (i := 0, l := length (xmlnss); i < l; i := i + 2)
+    {
+      nss := nss || sprintf ('<namespace prefix="%s">%s</namespace>', xmlnss[i], xmlnss[i+1]);
+    }
+  nss := nss || '</namespaces>';
+  nss := xtree_doc (nss);
   profile := cast (xpath_eval ('/html/head/@profile', xt) as varchar);
+  profs := null;
+  profs_done := vector ();
+  if (profile is not null)
+    profs := split_and_decode (profile, 0, '\0\0 ');
+
   if (dest is null)
     delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
-  -- eRDF
-  if (strstr (profile, 'http://purl.org/NET/erdf/profile') is not null)
+
+  -- GRDDL - plan A, eRDF going here
+  if (profs is not null)
     {
-      declare exit handler for sqlstate '*'
+      foreach (any prof in profs) do
 	{
-	  goto try_erdf;
-	};
-      xd := xslt ('http://local.virt/erdf2rdfxml', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+	  xslt_style := (select GM_XSLT from DB.DBA.SYS_GRDDL_MAPPING where GM_PROFILE = prof);
+	  if (xslt_style is not null)
+	    {
+	      declare exit handler for sqlstate '*' { goto next_prof; };
+	      xd := xslt (xslt_style, xt, vector ('baseUri', coalesce (dest, graph_iri)));
       if (xpath_eval ('count(/RDF/*)', xd) > 0)
         mdta := mdta + 1;
       xd := serialize_to_UTF8_xml (xd);
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	      profs_done := vector_concat (profs_done, vector (prof));
+	    }
+	  next_prof:;
+        }
     }
-  try_erdf:
-  -- currently no profile in RDFa, we try it to extract directly
+  if (strstr (profile, 'http://www.w3.org/2003/g/data-view') is not null)
     {
-      declare xmlnss, i, l, nss any;
-      xmlnss := xmlnss_get (xt);
-      nss := '<namespaces>';
-      for (i := 0, l := length (xmlnss); i < l; i := i + 2)
+      declare xsl_arr any;
+      -- GRDDL - plan B, the xslt is specified in the document
+      declare exit handler for sqlstate '*' { goto try_rdfa; };
+      xsl_arr := xpath_eval ('/html/head/link[@rel="transformation"]/@href', xt, 0);
+      foreach (any xslt_uri in xsl_arr) do
 	{
-	  nss := nss || sprintf ('<namespace prefix="%s">%s</namespace>', xmlnss[i], xmlnss[i+1]);
+	  declare cnt, xsl_xd any;
+	  declare exit handler for sqlstate '*' { goto try_next; };
+	  xslt_uri := WS.WS.EXPAND_URL (new_origin_uri, cast (xslt_uri as varchar));
+	  {
+	    declare exit handler for sqlstate '*' { goto try_w3c; };
+	    xd := xslt (xslt_uri, xt);
+	    if (xpath_eval ('count(/RDF/*)', xd) > 0)
+	      mdta := mdta + 1;
+	    xd := serialize_to_UTF8_xml (xd);
+	    goto xslt_done;
 	}
-      nss := nss || '</namespaces>';
-      xd := xslt ('http://local.virt/rdfa2rdfxml', xt, vector ('baseUri', coalesce (dest, graph_iri), 'nss', xtree_doc (nss)));
-      if (xpath_eval ('count(/RDF/*)', xd) > 1)
+          try_w3c:
+	  xd := http_get (sprintf ('http://www.w3.org/2000/06/webdata/xslt?xslfile=%U;xmlfile=%U', xslt_uri, graph_iri));
+	  if (xpath_eval ('count(/RDF/*)', xtree_doc (xd)) > 0)
+	    mdta := mdta + 1;
+          xslt_done:
+	  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+          try_next:;
+	}
+    }
+  try_rdfa:;
+
+  if (not mdta)
+    {
+      -- currently no profile in RDFa and some similar, so we try it to extract directly
+      for select GM_XSLT, GM_PROFILE from DB.DBA.SYS_GRDDL_MAPPING do
+	{
+	  if (position (GM_PROFILE, profs_done) > 0)
+	    goto try_next1;
+	  declare exit handler for sqlstate '*' { goto try_next1; };
+	  xd := xslt (GM_XSLT, xt, vector ('baseUri', coalesce (dest, graph_iri), 'nss', nss));
+	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
         mdta := mdta + 1;
       xd := serialize_to_UTF8_xml (xd);
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	  try_next1:;
+	}
     }
+
+  if (not mdta)
+    {
+      -- try looking for feed
+      declare rss, atom any;
+
+      rss  := cast (xpath_eval('//head/link[ @rel="alternate" and @type="application/rss+xml" ]/@href', xt) as varchar);
+      atom := cast (xpath_eval('//head/link[ @rel="alternate" and @type="application/atom+xml" ]/@href', xt) as varchar);
+
+      xt := null;
+      if (atom is not null)
+        {
+	  declare exit handler for sqlstate '*' { goto try_rss; };
+	  content := DB.DBA.RDF_HTTP_URL_GET (atom, new_origin_uri);
+	  xt := xtree_doc (content);
+	  goto do_detect;
+        }
+try_rss:;
+      if (rss is not null)
+        {
+	  declare exit handler for sqlstate '*' { goto no_microformats; };
+	  content := DB.DBA.RDF_HTTP_URL_GET (rss, new_origin_uri);
+	  xt := xtree_doc (content);
+        }
+do_detect:;
+	if (xt is null)
+	  goto no_feed;
+	else if (xpath_eval ('/RDF', xt) is not null and content is not null)
+	  {
+	    xd := content;
+	    goto ins_rdf;
+	  }
+	else if (xpath_eval ('/feed', xt) is not null)
+	  {
+	    xd := xslt ('http://local.virt/atom2sioc', xt);
+	  }
+	else if (xpath_eval ('/rss', xt) is not null)
+	  {
+	    xd := xslt ('http://local.virt/rss2rdf', xt);
+	  }
+	else
+	  goto no_feed;
+
+	if (xpath_eval ('count(/RDF/*)', xd) > 0)
+	  mdta := mdta + 1;
+	xd := serialize_to_UTF8_xml (xd);
+ins_rdf:
+	DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+no_feed:;
+    }
+  -- generic xHTML, extraction as per our ontology
+  if (not mdta)
+    {
+      xt := xtree_doc (ret_body, 2);
+      xd := xslt ('http://local.virt/html2rdf', xt, vector ('base', coalesce (dest, graph_iri)));
+      if (xpath_eval ('count(/RDF/*)', xd) > 0)
+	mdta := mdta + 1;
+      xd := serialize_to_UTF8_xml (xd);
+      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    }
+
   return mdta;
   no_microformats:;
   return 0;
@@ -6574,7 +6807,10 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, coalesce (dest, graph_iri));
       return;
     }
-  if (strstr (ret_content_type, 'text/rdf+n3') is not null or strstr (ret_content_type, 'text/rdf+ttl') is not null)
+  if (
+       strstr (ret_content_type, 'text/rdf+n3') is not null or strstr (ret_content_type, 'text/rdf+ttl') is not null or
+       strstr (ret_content_type, 'application/rdf+n3') is not null or strstr (ret_content_type, 'application/rdf+turtle') is not null
+     )
     {
       -- XXX: this is strange, the bellow line is same as the if-d
       if (dest is null)
@@ -6584,7 +6820,11 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       return;
     }
   -- (x)HTML, here is the microformats can be found
-  if (strstr (ret_content_type, 'text/html') is not null)
+  if (
+       strstr (ret_content_type, 'text/html') is not null or
+       strstr (ret_content_type, 'application/atom+xml') is not null or
+       strstr (ret_content_type, 'application/rss+xml') is not null
+     )
     {
       if (DB.DBA.RDF_LOAD_MICROFORMAT_RESPONSE (graph_iri, new_origin_uri, dest, ret_body))
 	return;
@@ -6664,7 +6904,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2007-01-21 0005'
+                virtrdf:version '2007-02-06 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -6808,6 +7048,9 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.SPARQL_DESCRIBE_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESCRIBE_FIN to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_DESCRIBE_PUT to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_CONSTRUCT_INIT to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_CONSTRUCT_ACC to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_CONSTRUCT_FIN to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TYPEMIN_OF_OBJ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TYPEMAX_OF_OBJ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_IID_CMP to SPARQL_SELECT',
