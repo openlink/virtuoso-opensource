@@ -3180,7 +3180,7 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
       ssg_puts (" */");
       goto write_assuffix;
     }
-#ifdef DEBUG
+#if 0 /* no longer needed */
   if (SSG_VALMODE_LONG == needed)
     {
       ssg_puts (" /* LONG retval */");
@@ -4362,6 +4362,8 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       ssg_puts ("SELECT");
       lim = unbox (tree->_.req_top.limit);
       ofs = unbox (tree->_.req_top.offset);
+      if (DISTINCT_L == tree->_.req_top.subtype)
+        ssg_puts (" DISTINCT");
       if ((2147483647 != lim) || (0 != ofs))
         {
           char buf[40];
@@ -4371,8 +4373,6 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
             sprintf (buf, " TOP %ld", lim);
           ssg_puts (buf);
         }
-      if (DISTINCT_L == tree->_.req_top.subtype)
-        ssg_puts (" DISTINCT");
       if (NULL == retvalmode)
         retvalmode = ((NULL != formatter) ? SSG_VALMODE_LONG : SSG_VALMODE_SQLVAL);
       ssg_print_retval_list (ssg, tree->_.req_top.pattern,

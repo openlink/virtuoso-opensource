@@ -1401,7 +1401,7 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
       curr_eq->e_vars = (SPART **)t_list (1, NULL);
       curr_eq->e_var_count = 0;
     }
-#ifdef DEBUG
+#ifdef SPARQL_DEBUG
   sparp_dbg_gp_print (sparp, haystack_gp);
 #endif
   return curr_eq;
@@ -1434,7 +1434,7 @@ namesake_found:
   curr_vars[varcount++] = needle_var;
   needle_var->_.var.equiv_idx = curr_eq->e_own_idx;
   curr_eq->e_var_count = varcount;
-#ifdef DEBUG
+#ifdef SPARQL_DEBUG
   sparp_dbg_gp_print (sparp, haystack_gp);
 #endif
   return curr_eq;
@@ -2213,19 +2213,47 @@ test_next_old: ;
   rvr->rvrRedCutCount = len;
 }
 
+#ifdef DEBUG
+void
+dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf_val_range_t *rvr)
+{
+  caddr_t err = NULL;
+  int ctr;
+#define GOTO_RVR_ERR(x) { err = x; goto rvr_err; }
+  if (!(rvr->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != rvr->rvrSprintffCount))
+    GOTO_RVR_ERR("nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
+  if ((rvr->rvrRestrictions & SPART_VARR_FIXED) && (0 != rvr->rvrSprintffCount))
+    GOTO_RVR_ERR("nonzero rvrSprintffCount when SPART_VARR_FIXED");
+  if ((rvr->rvrRestrictions & SPART_VARR_FIXED) && (rvr->rvrRestrictions & SPART_VARR_SPRINTFF))
+    GOTO_RVR_ERR("SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
+  if (rvr->rvrRestrictions & SPART_VARR_SPRINTFF)
+    {
+      for (ctr = 0; ctr < rvr->rvrSprintffCount; ctr++)
+        {
+          caddr_t sff = rvr->rvrSprintffs[ctr];
+          dtp_t sff_dtp = DV_TYPE_OF (sff);
+            if (!IS_STRING_DTP(sff_dtp))
+              GOTO_RVR_ERR("non-string sprintff");
+        }
+    }
+  return;
+rvr_err:
+    spar_internal_error (sparp, t_box_sprintf (1000, "sparp_" "rvr_audit (%s:%d): %s", file, line, err));
+}
+#endif
+
 rdf_val_range_t *
 sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *src)
 {
-#ifndef NDEBUG
-  if (!(src->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != src->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_copy (): bad src: nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
-  if ((src->rvrRestrictions & SPART_VARR_FIXED) && (0 != src->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_copy (): bad src: nonzero rvrSprintffCount when SPART_VARR_FIXED");
-  if ((src->rvrRestrictions & SPART_VARR_FIXED) && (src->rvrRestrictions & SPART_VARR_SPRINTFF))
-    spar_internal_error (sparp, "sparp_" "rvr_copy (): bad src: SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
-#endif
   if (SPARP_RVR_CREATE == dest)
     dest = (rdf_val_range_t *)t_alloc (sizeof (rdf_val_range_t));
+  if (src->rvrRestrictions & SPART_VARR_CONFLICT)
+    {
+      memset (dest, 0, sizeof (rdf_val_range_t));
+      dest->rvrRestrictions = SPART_VARR_CONFLICT;
+      return dest;
+    }
+  sparp_rvr_audit (sparp, src);
   memcpy (dest, src, sizeof (rdf_val_range_t));
   if (NULL != src->rvrSprintffs)
     dest->rvrSprintffs = (ccaddr_t *)t_box_copy ((caddr_t)(src->rvrSprintffs));
@@ -2233,6 +2261,7 @@ sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *src)
     dest->rvrIriClasses = (ccaddr_t *)t_box_copy ((caddr_t)(src->rvrIriClasses));
   if (NULL != src->rvrRedCuts)
     dest->rvrRedCuts = (ccaddr_t *)t_box_copy ((caddr_t)(src->rvrRedCuts));
+  sparp_rvr_audit (sparp, dest);
   return dest;
 }
 
@@ -2243,20 +2272,8 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
   new_restr = (dest->rvrRestrictions | (addon->rvrRestrictions & changeable_flags));
   if (new_restr & SPART_VARR_CONFLICT)
     goto conflict; /* see below */
-#ifndef NDEBUG
-  if (!(dest->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != dest->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): start: bad dest: nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
-  if ((dest->rvrRestrictions & SPART_VARR_FIXED) && (0 != dest->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): start: bad dest: nonzero rvrSprintffCount when SPART_VARR_FIXED");
-  if ((dest->rvrRestrictions & SPART_VARR_FIXED) && (dest->rvrRestrictions & SPART_VARR_SPRINTFF))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): start: bad dest: SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
-  if (!(addon->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != addon->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): start: bad addon: nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
-  if ((addon->rvrRestrictions & SPART_VARR_FIXED) && (0 != addon->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): start: bad addon: nonzero rvrSprintffCount when SPART_VARR_FIXED");
-  if ((addon->rvrRestrictions & SPART_VARR_FIXED) && (addon->rvrRestrictions & SPART_VARR_SPRINTFF))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): start: bad addon: SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
-#endif
+  sparp_rvr_audit (sparp, dest);
+  sparp_rvr_audit (sparp, addon);
   if (dest->rvrDatatype != addon->rvrDatatype)
         {
       if (dest->rvrRestrictions & addon->rvrRestrictions & SPART_VARR_TYPED)
@@ -2373,20 +2390,8 @@ end_of_sff_processing:
     } while (0);
 #endif
   dest->rvrRestrictions = new_restr;
-#ifndef NDEBUG
-  if (!(dest->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != dest->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): end: bad dest: nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
-  if ((dest->rvrRestrictions & SPART_VARR_FIXED) && (0 != dest->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): end: bad dest: nonzero rvrSprintffCount when SPART_VARR_FIXED");
-  if ((dest->rvrRestrictions & SPART_VARR_FIXED) && (dest->rvrRestrictions & SPART_VARR_SPRINTFF))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): end: bad dest: SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
-  if (!(addon->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != addon->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): end: bad addon: nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
-  if ((addon->rvrRestrictions & SPART_VARR_FIXED) && (0 != addon->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): end: bad addon: nonzero rvrSprintffCount when SPART_VARR_FIXED");
-  if ((addon->rvrRestrictions & SPART_VARR_FIXED) && (addon->rvrRestrictions & SPART_VARR_SPRINTFF))
-    spar_internal_error (sparp, "sparp_" "rvr_tighten (): end: bad addon: SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
-#endif
+  sparp_rvr_audit (sparp, dest);
+  sparp_rvr_audit (sparp, addon);
   return;
 
 conflict:
@@ -2405,22 +2410,11 @@ sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, 
       int persistent_restr = (dest->rvrRestrictions & (SPART_VARR_EXPORTED | SPART_VARR_GLOBAL));
       sparp_rvr_copy (sparp, dest, addon);
       dest->rvrRestrictions |= persistent_restr;
+      sparp_rvr_audit (sparp, dest);
       return;
     }
-#ifndef NDEBUG
-  if (!(dest->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != dest->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): start: bad dest: nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
-  if ((dest->rvrRestrictions & SPART_VARR_FIXED) && (0 != dest->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): start: bad dest: nonzero rvrSprintffCount when SPART_VARR_FIXED");
-  if ((dest->rvrRestrictions & SPART_VARR_FIXED) && (dest->rvrRestrictions & SPART_VARR_SPRINTFF))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): start: bad dest: SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
-  if (!(addon->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != addon->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): start: bad addon: nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
-  if ((addon->rvrRestrictions & SPART_VARR_FIXED) && (0 != addon->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): start: bad addon: nonzero rvrSprintffCount when SPART_VARR_FIXED");
-  if ((addon->rvrRestrictions & SPART_VARR_FIXED) && (addon->rvrRestrictions & SPART_VARR_SPRINTFF))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): start: bad addon: SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
-#endif
+  sparp_rvr_audit (sparp, dest);
+  sparp_rvr_audit (sparp, addon);
   /* Can't loose these flags: */
   changeable_flags &= ~(SPART_VARR_EXPORTED | SPART_VARR_GLOBAL);
   new_restr = dest->rvrRestrictions & (addon->rvrRestrictions | ~changeable_flags);
@@ -2476,20 +2470,8 @@ end_of_sff_processing:
       sparp_rvr_add_iri_classes (sparp, dest, addon->rvrIriClasses, addon->rvrIriClassCount);
   sparp_rvr_intersect_red_cuts (sparp, dest, addon->rvrRedCuts, addon->rvrRedCutCount);
   dest->rvrRestrictions = new_restr;
-#ifndef NDEBUG
-  if (!(dest->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != dest->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): end: bad dest: nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
-  if ((dest->rvrRestrictions & SPART_VARR_FIXED) && (0 != dest->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): end: bad dest: nonzero rvrSprintffCount when SPART_VARR_FIXED");
-  if ((dest->rvrRestrictions & SPART_VARR_FIXED) && (dest->rvrRestrictions & SPART_VARR_SPRINTFF))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): end: bad dest: SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
-  if (!(addon->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != addon->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): end: bad addon: nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
-  if ((addon->rvrRestrictions & SPART_VARR_FIXED) && (0 != addon->rvrSprintffCount))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): end: bad addon: nonzero rvrSprintffCount when SPART_VARR_FIXED");
-  if ((addon->rvrRestrictions & SPART_VARR_FIXED) && (addon->rvrRestrictions & SPART_VARR_SPRINTFF))
-    spar_internal_error (sparp, "sparp_" "rvr_loose (): end: bad addon: SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
-#endif
+  sparp_rvr_audit (sparp, dest);
+  sparp_rvr_audit (sparp, addon);
  }
 
 
@@ -3338,6 +3320,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       if (NULL != orig->_.var.tabid)
         tgt->_.var.tabid = sparp_clone_id (sparp, orig->_.var.tabid);
       tgt->_.var.vname = t_box_copy (orig->_.var.vname);
+      sparp_rvr_copy (sparp, &(tgt->_.var.rvr), &(orig->_.var.rvr));
       return tgt;
     case SPAR_GP:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);

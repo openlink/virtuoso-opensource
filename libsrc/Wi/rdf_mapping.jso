@@ -15,13 +15,13 @@ JSO_CONST virtrdf SPART_VARR_CONFLICT		0x2000	--!< The variable should match con
 
 -- Flags of actions to be done in case of match of triple pattern to conditions of the quad map
 JSO_CONST virtrdf SPART_QM_EMPTY		0x0002	--!< The quad map does not contain real mapping but it's a root of tree of submaps and it can set a common 'exclusive'
-JSO_CONST virtrdf SPART_QM_EXCLUSIVE		0x0004	--!< The quad map is an almost-exclusive storage for triples whose fields match fixed fields of the map. Red cut in the pattern matching search.
-JSO_CONST virtrdf SPART_QM_OK_FOR_ANY_QUAD	0x0008	--!< The quad map may contain any quad so it can be used as a default qm of the storage.
+JSO_CONST virtrdf SPART_QM_EXCLUSIVE		0x0004	--!< The quad map is an almost-exclusive storage for triples whose fields match fixed fields of the map. Red cut in the pattern matching search
+JSO_CONST virtrdf SPART_QM_OK_FOR_ANY_QUAD	0x0008	--!< The quad map may contain any quad so it can be used as a default qm of the storage
 
-JSO_CONST virtrdf SPART_QS_NO_IMPLICIT_USER_QM	0x0001	--!< The quad storage disables user quad maps for triple patterns with unbound graph.
-JSO_CONST virtrdf SPART_QS_BLOCK_DEFAULT_QM	0x0002	--!< The quad storage disables the use of default quad map and signals an error if no other qm matches.
+JSO_CONST virtrdf SPART_QS_NO_IMPLICIT_USER_QM	0x0001	--!< The quad storage disables user quad maps for triple patterns with unbound graph
+JSO_CONST virtrdf SPART_QS_BLOCK_DEFAULT_QM	0x0002	--!< The quad storage disables the use of default quad map and signals an error if no other qm matches
 
-JSO_STRUCT_BEGIN rdf_val_range virtrdf ValRange		--!< Description of set of possible values of a variable or a format or an pattern item.
+JSO_STRUCT_BEGIN rdf_val_range virtrdf ValRange		--!< Description of set of possible values of a variable or a format or an pattern item
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values stored at the field
 JSO_SCALAR rvrDatatype ANY_URI OPTIONAL			--!< Datatype of stored values, if fixed
 JSO_SCALAR rvrLanguage ANY_URI OPTIONAL			--!< Language, if fixed
@@ -35,7 +35,7 @@ JSO_SCALAR rvrRedCutCount INTEGER PRIVATE		--!< Number of used items of rvrRedCu
 -- Don't forget to add NULLS to SPART_RVR_LIST_OF_NULLS when adding fields here
 JSO_STRUCT_END
 
-JSO_STRUCT_BEGIN qm_format virtrdf QuadMapFormat	--!< Description of single field where RDF data may come from.
+JSO_STRUCT_BEGIN qm_format virtrdf QuadMapFormat	--!< Description of single field where RDF data may come from
 JSO_SCALAR qmfName STRING REQUIRED			--!< Name used for error messages and debugging
 -- Templates that convert raw column into other types (can be applied to both field and not field expression)
 JSO_SCALAR qmfShortTmpl STRING REQUIRED			--!< 'short' value template, can be NULL
@@ -85,24 +85,32 @@ JSO_SCALAR rvrSprintffCount INTEGER OPTIONAL
 JSO_GROUP_END
 JSO_STRUCT_END
 
-JSO_STRUCT_BEGIN qm_atable virtrdf QuadMapATable	--!< Description of single source RDBMS table alias.
+JSO_STRUCT_BEGIN qm_atable virtrdf QuadMapATable	--!< Description of single source RDBMS table alias
 JSO_SCALAR qmvaAlias STRING REQUIRED			--!< Table alias where the column comes from
 JSO_SCALAR qmvaTableName STRING REQUIRED		--!< Column name
 JSO_STRUCT_END
 
-JSO_STRUCT_BEGIN qm_column virtrdf QuadMapColumn	--!< Description of single source RDBMS column.
+JSO_STRUCT_BEGIN qm_column virtrdf QuadMapColumn	--!< Description of single source RDBMS column
 JSO_SCALAR qmvcAlias STRING OPTIONAL			--!< Table alias where the column comes from
 JSO_SCALAR qmvcColumnName STRING REQUIRED		--!< Column name
 JSO_SCALAR qmvcColumnFromIRI STRING OPTIONAL
 JSO_STRUCT_END
 
-JSO_STRUCT_BEGIN qm_value virtrdf QuadMapValue		--!< Description of one of four column patterns of a mapping pattern.
-JSO_SCALAR qmvTableName STRING REQUIRED			--!< Table name that is used if no alias is used.
-JSO_POINTER qmvATables qm_atable_array OPTIONAL		--!< Aliased tables whose aliases are used in columns.
-JSO_POINTER qmvColumns qm_column_array REQUIRED
-JSO_SCALAR qmvConds STRING_array OPTIONAL		--!< Templates of filters and join conditions related to the value.
-JSO_POINTER qmvFormat qm_format REQUIRED
-JSO_SCALAR qmvColumnsFormKey BOOLEAN REQUIRED
+JSO_STRUCT_BEGIN qm_ftext virtrdf QuadMapFText		--!< Free text parameters of a quad map value
+JSO_SCALAR qmvftTableName STRING OPTIONAL		--!< Name of a table with free-text data
+JSO_SCALAR qmvftColumnName STRING REQUIRED		--!< Name of a column with free-text data
+JSO_SCALAR qmvftCond STRING OPTIONAL			--!< Templates of filters and join conditions related to the value
+JSO_SCALAR qmvftXmlIndex BOOLEAN OPTIONAL		--!< Flags if the free-text index is XML so can use xcontains (ditto xpath_contains)
+JSO_STRUCT_END
+
+JSO_STRUCT_BEGIN qm_value virtrdf QuadMapValue		--!< Description of one of four column patterns of a mapping pattern
+JSO_SCALAR qmvTableName STRING REQUIRED			--!< Table name that is used if no alias is used
+JSO_POINTER qmvATables qm_atable_array OPTIONAL		--!< Aliased tables whose aliases are used in columns
+JSO_POINTER qmvColumns qm_column_array REQUIRED		--!< Relational columns used as a source for qmvFormat
+JSO_SCALAR qmvConds STRING_array OPTIONAL		--!< Templates of filters and join conditions related to the value
+JSO_POINTER qmvFormat qm_format REQUIRED		--!< Quad map format used to convert relational data into RDF nodes
+JSO_POINTER qmvFText qm_ftext OPTIONAL			--!< Free text parameters
+JSO_SCALAR qmvColumnsFormKey BOOLEAN REQUIRED		--!< Flags whether columns of qmvColumns form a unique key of the relational table
 JSO_SCALAR qmvColumnsToIRI STRING OPTIONAL
 JSO_SCALAR qmvIriClass ANY_URI OPTIONAL			--!< Known IRI class, if the IRI is calculable
 JSO_GROUP_BEGIN qmvRange virtrdf rdf_val_range		--!< Natural restrictions on values stored in the source column of format
@@ -113,7 +121,7 @@ JSO_SCALAR rvrFixedValue ANY OPTIONAL			--!< Value of stored values, if fixed
 JSO_GROUP_END
 JSO_STRUCT_END
 
-JSO_STRUCT_BEGIN quad_map virtrdf QuadMap		--!< Description of single mapping pattern, including its subpatterns.
+JSO_STRUCT_BEGIN quad_map virtrdf QuadMap		--!< Description of single mapping pattern, including its subpatterns
 JSO_GROUP_BEGIN qmGraphRange virtrdf rdf_val_range	--!< Restrictions on graph
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
 JSO_SCALAR rvrDatatype ANY_URI OPTIONAL
@@ -142,16 +150,16 @@ JSO_POINTER qmGraphMap qm_value OPTIONAL		--!< Graph map if triple has a variabl
 JSO_POINTER qmSubjectMap qm_value OPTIONAL		--!< Subject map if triple has a variable in subject position
 JSO_POINTER qmPredicateMap qm_value OPTIONAL		--!< Predicate map if triple has a variable in predicate position
 JSO_POINTER qmObjectMap qm_value OPTIONAL		--!< Object map if triple has a variable in object position
-JSO_SCALAR qmTableName STRING OPTIONAL			--!< Table name where mapped rows are from, if this is the only table. Use only if there's no alias and hence no qmvATable.
-JSO_POINTER qmATables qm_atable_array OPTIONAL		--!< Aliased tables whose aliases are used in qmConds but not in qmvConds.
-JSO_SCALAR qmConds STRING_array OPTIONAL		--!< Join conditions and filters not included into qmvConds of columns.
+JSO_SCALAR qmTableName STRING OPTIONAL			--!< Table name where mapped rows are from, if this is the only table. Use only if there's no alias and hence no qmvATable
+JSO_POINTER qmATables qm_atable_array OPTIONAL		--!< Aliased tables whose aliases are used in qmConds but not in qmvConds
+JSO_SCALAR qmConds STRING_array OPTIONAL		--!< Join conditions and filters not included into qmvConds of columns
 JSO_SCALAR qmTableRowFilter STRING OPTIONAL		--!< DEPRECATED Filter expression that is true for rows that should be mapped, will appear in WHERE clauses
 JSO_POINTER qmUserSubMaps quad_map_array OPTIONAL	--!< Array of user-defined submaps, should never appear in MJVs or default storage
-JSO_SCALAR qmMatchingFlags BITMASK OPTIONAL		--!< What should be done in case of match of triple pattern to conditions of the quad map.
-JSO_SCALAR qmPriorityOrder INTEGER OPTIONAL		--!< Integer to specify default order in parent's qmUserSubMaps.
+JSO_SCALAR qmMatchingFlags BITMASK OPTIONAL		--!< What should be done in case of match of triple pattern to conditions of the quad map
+JSO_SCALAR qmPriorityOrder INTEGER OPTIONAL		--!< Integer to specify default order in parent's qmUserSubMaps
 JSO_STRUCT_END
 
-JSO_STRUCT_BEGIN quad_storage virtrdf QuadStorage	--!< All mapping patterns plus tracking info.
+JSO_STRUCT_BEGIN quad_storage virtrdf QuadStorage	--!< All mapping patterns plus tracking info
 JSO_POINTER qsMjvMaps quad_map_array OPTIONAL
 JSO_POINTER qsUserMaps quad_map_array OPTIONAL
 JSO_POINTER qsDefaultMap quad_map REQUIRED

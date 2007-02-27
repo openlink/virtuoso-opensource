@@ -643,7 +643,7 @@ SPART * spar_gp_finalize (sparp_t *sparp)
   dk_set_t req_membs = (dk_set_t) t_set_pop (&(env->spare_acc_req_triples));
   dk_set_t opt_membs = (dk_set_t) t_set_pop (&(env->spare_acc_opt_triples));
   dk_set_t filts = (dk_set_t) t_set_pop (&(env->spare_acc_filters));
-  ptrlong subtype = (ptrlong) t_set_pop (&(env->spare_context_gp_subtypes));
+  ptrlong subtype = (ptrlong)((void *)t_set_pop (&(env->spare_context_gp_subtypes)));
   SPART *res;
   spar_dbg_printf (("spar_gp_finalize (..., %ld)\n", (long)subtype));
   env->spare_good_graph_bmk = t_set_pop (&(env->spare_good_graph_varname_sets));
@@ -930,6 +930,9 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
     }
   END_DO_SET()
   sources = (SPART **)t_revlist_to_array (src);
+  if ((0 == BOX_ELEMENTS (sources)) &&
+    (NULL != (sparp->sparp_env->spare_common_sponge_options)) )
+    spar_error (sparp, "Retrieval options for source graphs (e.g., '%s') may be useless if the query does not contain 'FROM' or 'FROM NAMED'");
   return spartlist (sparp, 14, SPAR_REQ_TOP, subtype,
     sparp->sparp_env->spare_output_valmode_name,
     sparp->sparp_env->spare_output_format_name,
@@ -2158,9 +2161,8 @@ bif_sprintff_like (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t f1 = bif_string_or_uname_arg (qst, args, 0, "__sprintff_like");
   caddr_t f2 = bif_string_or_uname_arg (qst, args, 1, "__sprintff_like");
-  caddr_t res;
   sec_check_dba ((query_instance_t *)qst, "__sprintff_like"); /* To prevent attack by likeing garbage in order to run out of memory. */
-  return sprintff_like (f1, f2);
+  return box_num (sprintff_like (f1, f2));
 }
 
 #ifdef DEBUG

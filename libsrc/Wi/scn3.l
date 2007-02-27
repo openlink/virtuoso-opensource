@@ -965,7 +965,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_SQ_SKIP><<EOF>>		{ yyerror ("Unterminated SPARQL short single-quoted string"); }
 <SPARQL_DQ_SKIP><<EOF>>		{ yyerror ("Unterminated SPARQL short double-quoted string"); }
 
-<SPARQL_SKIP>[^''""\\\n\r(){}\[\];]+ TOK_SKIP;
+<SPARQL_SKIP>[^#''""\\\n\r(){}\[\];<>]+ TOK_SKIP;
 <SPARQL_SKIP><<EOF>>  {
 #ifndef SCN3SPLIT
     scn3_include_fragment_t *outer = scn3_include_stack + scn3_include_depth;
@@ -978,9 +978,10 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 #endif
   }
 
-<SPARQL_SKIP>[#][^\n\r]+{S_NL}	TOK_NL_SKIP;
+<SPARQL_SKIP>[#]([^\n\r]*){S_NL}	TOK_NL_SKIP;
 <SPARQL_SKIP>{S_NL}	TOK_NL_SKIP;
-<SPARQL_SKIP>.		TOK(LEXICAL_ERROR);	/* random non-SQL, non-HTML text */
+<SPARQL_SKIP>[<>]	TOK_SKIP;
+<SPARQL_SKIP>.		TOK(LEXICAL_ERROR);	/* random non-SPARQL text */
 
 .		TOK(LEXICAL_ERROR);	/* random non-SQL, non-HTML text */
 %%
