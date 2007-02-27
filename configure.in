@@ -2071,6 +2071,7 @@ AC_CONFIG_FILES([
 	binsrc/hosting/php5/Makefile
 	binsrc/hosting/python/Makefile
 	binsrc/hosting/ruby/Makefile
+	binsrc/isparql/Makefile
 	binsrc/maildrop/Makefile
 	binsrc/oat/Makefile
 	binsrc/oat/images/Makefile
@@ -2154,6 +2155,7 @@ AC_CONFIG_FILES([
 	appsrc/ODS-Discussion/Makefile
 	appsrc/ODS-FeedManager/Makefile
 	appsrc/ODS-Gallery/Makefile
+	appsrc/ODS-Polls/Makefile
 	appsrc/ODS-WebMail/Makefile
 	appsrc/ODS-Wiki/Makefile
 	appsrc/ODS-Wiki/plugin/Makefile
