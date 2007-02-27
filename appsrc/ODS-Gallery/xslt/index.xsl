@@ -35,17 +35,15 @@
 
         <link rel="alternate" type="application/atom+xml">
           <xsl:attribute name="title"><xsl:value-of select="root/instance_owner"/>&#39;s Photos Atom</xsl:attribute>
-          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/<xsl:value-of select="root/instance"/>/atom.xml</xsl:attribute>
+          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/><xsl:value-of select="root/home_url"/>atom.xml</xsl:attribute>
         </link>
-
 
         <link rel="alternate" type="application/rss+xml">
           <xsl:attribute name="title"><xsl:value-of select="root/instance_owner"/>&#39;s Photos RSS</xsl:attribute>
-          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/<xsl:value-of select="root/instance"/>/rss.xml</xsl:attribute>
+          <xsl:attribute name="href">http://<xsl:value-of select="root/host"/><xsl:value-of select="root/home_url"/>rss.xml</xsl:attribute>
         </link>
 
-      <link rel="pingback" href="http://localhost:84/mt-tb" >
-        </link>
+        <link rel="pingback" href="http://localhost:84/mt-tb" ></link>
 
       <xsl:if test="/root/user/@lat != ''">
         <meta name="geo.position" >
@@ -70,8 +68,6 @@
       	</script>
 
       	<script type="text/javascript" src="/ods/oat/loader.js"></script>
-<!--
--->
         <script type="text/javascript" language="JavaScript" src="/photos/res/js/ajax.js"></script>
         <script type="text/javascript" language="JavaScript" src="/photos/res/js/dataset.js"></script>
         <script type="text/javascript" language="JavaScript" src="/photos/res/js/ui.js"></script>
@@ -130,7 +126,6 @@
           <xsl:choose>
             <xsl:when test="@sid != ''">
               <li id="hello">
-                Hello, <xsl:value-of select="user/first_name"/>
               </li>
               <li id="my_albums_tab">
                 My albums
@@ -143,9 +138,11 @@
                 Settings
               </li>
               -->
+              <!--
               <li id="wa">
                 <xsl:value-of select="wa_home_title"/>
               </li>
+              -->
 
             </xsl:when>
             <xsl:otherwise>
@@ -175,7 +172,8 @@
             <div id="care_my_albums" class="toolbar">
               <h3>My Albums</h3>
               <ul id="my_albums_list"/>
-              <ul id="my_albums_man" >
+              <h4 id="my_albums_list_more">see all albums...</h4>
+              <ul id="my_albums_man" style="display:none">
                 <li id="new_album_tab">
                   Create new album
                 </li>
@@ -184,19 +182,31 @@
             <div id="care_edit_album" class="toolbar" style="display:none">
               <h3>Edit album</h3>
               <ul>
-                <li id="link_image_upload">Add images</li>
-                <li id="tag_images_tab">Tag images</li>
-                <li id="btn_edit_album">Edit album</li>
+                <li id="link_images_upload">Add images</li>
+                <li id="link_images_import">Import images</li>
+                <li id="link_images_export">Export images</li>
+                <!--<li id="tag_images_tab">Tag images</li>-->
+                <li id="link_edit_album">Edit album</li>
                 <li id="link_delete_album">Delete album</li>
                 <li id="link_delete_images">Delete images</li>
+              </ul>
+            </div>
+            <div id="care_nav_image" class="toolbar" style="display:none">
+              <h3>Album</h3>
+              <ul>
+                <li id="link_show_images">All images</li>
+              </ul>
+            </div>
+            <div id="care_view_album" class="toolbar" style="display:none">
+              <h3>View mode</h3>
+              <ul>
+                <li id="btn_slideshow">Slideshow</li>
               </ul>
             </div>
             <div id="care_edit_image" class="toolbar" style="display:none">
               <h3>Edit image</h3>
               <ul>
-                <li id="link_show_images">All images</li>
                 <li id="tag_image_tab">Tag image</li>
-                <li id="link_show_exif">EXIF information</li>
                 <li id="link_image_edit">Edit caption</li>
                 <li id="link_delete_image">Delete image</li>
               </ul>
@@ -205,12 +215,13 @@
               <h3>View mode</h3>
               <ul>
                 <li id="btn_slideshow">Slideshow</li>
+                <li id="link_show_exif">EXIF information</li>
               </ul>
             </div>
             <div id="care_slideshow" class="toolbar" style="display:none">
               <h3>Slideshow</h3>
               <div id="buttons">
-                  <img src="/photos/res/i/skipb_24.gif" width="24" height="24" id="SlideShow_back" alt="Previous Picture"/>
+                  <img src="/photos/res/i/skipb_24.gif" width="24" height="24" id="SlideShow_back" alt="Previus Picture"/>
                   <img src="/photos/res/i/pause_24.gif" width="24" height="24" id="SlideShow_stop" alt="Start/Pause"/>
                   <img src="/photos/res/i/skipf_24.gif" width="24" height="24" id="SlideShow_next" alt="Next picture"/>
               </div>
@@ -261,10 +272,18 @@
             <xsl:call-template name="edit_album"/>
 
             <div id="group_images">
-            <div id="upload_image" style="display:none;">
+              <div id="images_upload" style="display:none;">
               <iframe width="100%" height="750" src="" border="0" frameborder="0" ></iframe>
             </div>
-
+              <div id="images_import" style="display:none;">
+                <div id="images_import_flickr" class="link">Sing in Flickr</div>
+                <div id="images_import_flickr_list" class="link_disabled">Get your images from Flickr</div>
+                <div id="images_import_flickr_save" class="link_disabled">Save selected images in current gallery</div>
+              </div>
+              <div id="images_export" style="display:none;">
+                <div id="images_export_flickr" class="link">Sing in Flickr</div>
+                <div id="images_export_flickr_send" class="link_disabled">Upload selected images to Flickr</div>
+              </div>
             <div id="images" style="display:none;">
               <xsl:call-template name="nbsp"/>
             </div>
@@ -288,15 +307,15 @@
     </form>
     </div>
     <xsl:call-template name="ajax_action"/>
-    <div id="ddd">
+    <div id="wait" style="display:none;">
+      Please, wait
     </div>
   </body>
   </xsl:template>
 
-
 <!-- ========================================================================= -->
 <xsl:template name="comments">
-  <div id="comments" style="display:none;">
+    <div id="tags" style="display:none;" class="block">
     <table class="ramka" cellpadding="10">
       <tr>
         <td valign="top" class="left">
@@ -305,7 +324,7 @@
             Loading ...
           </div>
         </td>
-        <td valign="top" class="right">
+          <td valign="top" class="right" id="tags_edit" style="display:none;">
           <h2>Add new tag</h2>
           Tag:<br/>
           <textarea name="new_tag" id="new_tag"></textarea>
@@ -315,7 +334,8 @@
         </td>
       </tr>
     </table>
-
+    </div>
+    <div id="comments" style="display:none;" class="block">
     <table class="ramka" cellpadding="10">
       <tr>
         <td valign="top" class="left">
@@ -434,17 +454,10 @@
                         <option value="2004">2004</option>
                         <option value="2005">2005</option>
                         <option value="2006">2006</option>
+              <option value="2007">2007</option>
+              <option value="2008">2008</option>
+              <option value="2009">2009</option>
                       </select>
-                      <script>
-                        var d = new Date();
-                        var year = d.getFullYear();
-                        var month = d.getMonth()
-                        var month = d.getDay()
-
-                        document.f1.new_album_pub_date_day.selectedIndex = d.getDate()-1;
-                        document.f1.new_album_pub_date_month.selectedIndex = d.getMonth();
-                        document.f1.new_album_pub_date_year.selectedIndex = String(d.getFullYear()).substring(3)-1;
-                      </script>
                     </td>
                 </tr>
                 <tr>
@@ -549,21 +562,24 @@
                         <option value="2004">2004</option>
                         <option value="2005">2005</option>
                         <option value="2006">2006</option>
+              <option value="2007">2007</option>
+              <option value="2008">2008</option>
+              <option value="2009">2009</option>
                       </select>
                     </td>
                   </tr>
                   <tr>
                     <td><label for="edit_album_name">Visible</label></td>
                     <td>
-                      <input type="radio" name="album_visibility" value="1" />for all (public)<br/>
-                      <input type="radio" name="album_visibility" value="0"/>only for me (private )
+            <input type="radio" name="album_visibility" id="album_visibility_all" value="1" />for all (public)<br/>
+            <input type="radio" name="album_visibility" id="album_visibility_me" value="0"/>only for me (private )
                     </td>
                   </tr>
                   <tfoot>
                     <tr>
                       <td></td>
                       <td style="padding-top:20px;">
-                        <button type="button" name="btn_edit_album" OnClick="gallery.edit_album_action()">Save</button>
+              <button type="button" name="btn_edit_album_save" OnClick="gallery.edit_album_action()">Save</button>
                         <button type="button" name="btn_edit_album_cancel" OnClick="gallery.edit_album_cancel();">Cancel</button>
                       </td>
                     </tr>

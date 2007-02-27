@@ -40,21 +40,6 @@ wiki_uninst()
 
 drop procedure wiki_uninst
 ;
-create procedure WV.WIKI.SILENT_EXEC (in text varchar)
-{
-    declare exit handler for sqlstate  '*' {
-         rollback work;
-         return;
-    };
-    declare exit handler for not found {
-         rollback work;
-         return;
-    };
-    exec (text);
-  commit work;
-}
-;
-
 
 DELETE FROM WV.WIKI.CLUSTERS
 ;
@@ -252,10 +237,10 @@ WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.LOCK')
 
 
 
-WV.WIKI.SILENT_EXEC ('delete from WA_TYPES where WAT_NAME = \'oWiki\' or WAT_NAME=\'WIKIV\'');
-
-WV.WIKI.SILENT_EXEC ('drop type wa_wikiv');
-
+WV.WIKI.SILENT_EXEC ('delete from WA_TYPES where WAT_NAME = \'oWiki\' or WAT_NAME=\'WIKIV\'')
+;
+WV.WIKI.SILENT_EXEC ('drop type wa_wikiv')
+;
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiAdmin\')')
 ;
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiUser\')')
@@ -278,10 +263,9 @@ DB.DBA.VHOST_REMOVE(lpath=>'/wikiview')
 ;
 DB.DBA.VHOST_REMOVE(lpath=>'/DAV/wikiview')
 ;
-select EXEC ('drop procedure "'|| p_name ||'"') from sys_procedures where p_name like 'WV.%.%'
-;
-
-DB.DBA.DAV_DELETE ('/DAV/VAD/wiki/', 0, 'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()))
+--DB.DBA.DAV_DELETE ('/DAV/VAD/wiki/', 0, 'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()))
+--;
+registry_remove('wiki default uri')
 ;
 
 

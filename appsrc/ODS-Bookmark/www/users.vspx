@@ -67,16 +67,19 @@
     ]]>
   </v:method>
 
-  <vm:pagetitle>Select User/Group</vm:pagetitle>
-  <vm:popup_page_wrapper>
     <v:before-data-bind>
       <![CDATA[
-        if (self.v_mode = 'g')
+      if (self.v_mode = 'g') {
           self.v_filter := 'g';
-        if (self.v_mode = 'u')
+      } else {
           self.v_filter := 'u';
+      }
       ]]>
     </v:before-data-bind>
+
+  <vm:pagetitle>Select User/Group</vm:pagetitle>
+
+  <vm:popup_page_wrapper>
     <vm:variables>
       <v:variable name="v_params" param-name="params" type="varchar"/>
       <v:variable name="v_mode" persist="0" param-name="mode" type="varchar" default="''"/>
@@ -92,6 +95,8 @@
       <v:variable name="v_s2" persist="0" param-name="s2" type="varchar" default="''" />
     </vm:variables>
     <vm:pagebody>
+      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
       <?vsp http(sprintf('<input type="hidden" name="src"   id="src"   value="%s"/>', get_keyword('src', self.vc_page.vc_event.ve_params, ''))); ?>
       <?vsp http(sprintf('<input type="hidden" name="dst"   id="dst"   value="%s"/>', get_keyword('dst', self.vc_page.vc_event.ve_params, 'sc'))); ?>
       <?vsp http(sprintf('<input type="hidden" name="s1"    id="s1"    value="%s"/>', get_keyword('s1', self.vc_page.vc_event.ve_params, ''))); ?>
@@ -146,7 +151,11 @@
             self.v_mask := replace(self.v_mask, '%%', '%');
 
             group_sql := '';
+            if (self.v_mode = 's') {
+              user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where upper(U_NAME) like upper(\'%s\') and G_GRANTEE_ID = %d and G_GRANTER_ID = U_ID', self.v_mask, self.account_id);
+            } else {
             user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from WS.WS.SYS_DAV_USER where (upper(U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6) and (U_ID<>%d))', self.v_mask, self.account_id);
+            }
             if (user_sql = '') {
               control.ds_sql := group_sql;
             } else if (group_sql = '') {

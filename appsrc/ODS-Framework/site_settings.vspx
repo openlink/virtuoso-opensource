@@ -89,7 +89,7 @@
 	<tr>
 	  <td>
 	    <img src="images/icons/go_16.png" border="0" alt="" />
-	    <v:url name="appl5" value="Mapping Services" url="map_svc.vspx" render-only="1" />
+	    <v:url name="appl7" value="Mapping Services" url="map_svc.vspx" render-only="1" />
 	    <div>
 	      Mapping services providers.
 	    </div>
@@ -105,18 +105,44 @@
 	<tr>
 	  <td>
 	    <img src="images/icons/go_16.png" border="0" alt="" />
-	    <v:url name="appl5" value="Users Administration" url="accounts.vspx" render-only="1" />
+	    <v:url name="appl9" value="Users Administration" url="accounts.vspx" render-only="1" />
 	    <div>
 	     Enable or disable user accounts.
 	    </div>
 	  </td>
 	  <td>
 	    <img src="images/icons/go_16.png" border="0" alt="" />
-	    <v:url name="appl5" value="Notification Services" url="ping_svc.vspx" render-only="1" />
+	    <v:url name="appl10" value="Application instances" url="app_instance_limits.vspx" render-only="1" />
+	    <div>
+	      Application instances limitations.
+	    </div>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl11" value="RDF Data" url="rdf_storage.vspx" render-only="1" />
+	    <div>
+	      RDF Data Administration
+	    </div>
+	  </td>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl12" value="Notification Services" url="ping_svc.vspx" render-only="1" />
 	    <div>
 	      Notification services providers.
 	    </div>
 	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl11" value="LDAP Servers" url="ldap.vspx" render-only="1" />
+	    <div>
+	      LDAP Servers Administration
+	    </div>
+	  </td>
+	  <td />
 	</tr>
       </table>
     </vm:body>

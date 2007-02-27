@@ -35,26 +35,54 @@
   <xsl:template match="vm:ds-button-bar">
     <tr class="ds_button_bar">
       <td align="center" colspan="3">
+      
+    <xsl:processing-instruction name="vsp">
+        declare _ds_name varchar;
+        _ds_name := '<xsl:value-of select="//data-set/@name"/>';
+    </xsl:processing-instruction>
+<!--        
         <v:button action="simple" value="&lt;&lt;&lt;">
           <xsl:attribute name="name">
             <xsl:value-of select="concat(//data-set/@name,'_first')"/>
           </xsl:attribute>
         </v:button>
-        <v:button action="simple" value="&lt;&lt;">
+-->        
+        <v:button action="simple" value="&lt;&lt;" style="url">
           <xsl:attribute name="name">
             <xsl:value-of select="concat(//data-set/@name,'_prev')"/>
           </xsl:attribute>
         </v:button>
-        <v:button name="ds_group_list_next" action="simple" value="&gt;&gt;">
+
+<!--
+        <v:button
+          style="url"
+          action="simple"
+        >
+          <xsl:attribute name="name">
+            <xsl:value-of select="concat(//data-set/@name,'_navigation')"/>
+          </xsl:attribute>
+          <xsl:attribute name="value">
+            <xsl:value-of select="concat('--sprintf (\'%d\', self.',//data-set/@name,'.ds_data_source.ds_current_pager_idx)')"/>
+          </xsl:attribute>
+          xhtml_disabled="--case when self.ds_list_message.ds_data_source.ds_current_pager_idx = self.ds_list_message.ds_data_source.ds_current_page then 'true' else '@@hidden@@' end"
+          xhtml_style="--case when self.ds_list_message.ds_data_source.ds_current_pager_idx = self.ds_list_message.ds_data_source.ds_current_page then 'width:24pt;color:red;font-weight:bolder;text-decoration:underline' else 'width:24pt' end"
+        </v:button>
+-->
+        
+
+
+        <v:button name="ds_group_list_next" action="simple" value="&gt;&gt;" style="url">
           <xsl:attribute name="name">
             <xsl:value-of select="concat(//data-set/@name,'_next')"/>
           </xsl:attribute>
         </v:button>
+<!--
         <v:button name="ds_group_list_last" action="simple" value="&gt;&gt;&gt;">
           <xsl:attribute name="name">
             <xsl:value-of select="concat(//data-set/@name,'_last')"/>
           </xsl:attribute>
         </v:button>
+ -->
       </td>
     </tr>
   </xsl:template>

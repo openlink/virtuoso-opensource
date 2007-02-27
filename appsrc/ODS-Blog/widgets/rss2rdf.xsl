@@ -54,21 +54,24 @@
   <xsl:choose>
     <xsl:when test="name() = 'image'"/>
     <xsl:when test="namespace-uri()='' or namespace-uri()='http://backend.userland.com/rss2'">
-      <xsl:element name="{name()}" namespace="http://purl.org/rss/1.0/">
-        <xsl:apply-templates select="*|@*|text()" />
+      <xsl:element name="{local-name()}" namespace="http://purl.org/rss/1.0/">
+        <xsl:apply-templates select="*|text()" />
+      </xsl:element>
+    </xsl:when>
+    <xsl:when test="not ends-with (namespace-uri(), '/')">
+	<xsl:element name="{local-name()}" namespace="{concat (namespace-uri(), '/')}">
+        <xsl:apply-templates select="*|text()" />
       </xsl:element>
     </xsl:when>
     <xsl:otherwise>
       <xsl:copy>
-        <xsl:apply-templates select="*|@*|text()" />
+        <xsl:apply-templates select="*|text()" />
       </xsl:copy>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
 
-<xsl:template match="@*">
-  <!--<xsl:copy><xsl:value-of select="." /></xsl:copy>-->
-</xsl:template>
+<xsl:template match="@*"/>
 
 <xsl:template match="vi:*" />
 <xsl:template match="channel/itunes:*" />
@@ -242,47 +245,6 @@
 <xsl:template name="removeTags">
     <xsl:variable name="post" select="document-literal (., '', 2, 'UTF-8')"/>
     <xsl:value-of select="normalize-space(string($post))" />
-  <!--xsl:param name="html" select="." />
-  <xsl:choose>
-    <xsl:when test="contains($html,'&lt;')">
-      <xsl:call-template name="removeEntities">
-        <xsl:with-param name="html" select="substring-before($html,'&lt;')" />
-      </xsl:call-template>
-      <xsl:call-template name="removeTags">
-        <xsl:with-param name="html" select="substring-after($html, '&gt;')" />
-      </xsl:call-template>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:call-template name="removeEntities">
-        <xsl:with-param name="html" select="$html" />
-      </xsl:call-template>
-    </xsl:otherwise>
-  </xsl:choose-->
 </xsl:template>
-
-<!--xsl:template name="removeEntities">
-  <xsl:param name="html" select="." />
-  <xsl:choose>
-    <xsl:when test="contains($html,'&amp;')">
-      <xsl:value-of select="substring-before($html,'&amp;')" />
-      <xsl:variable name="c" select="substring-before(substring-after($html,'&amp;'),';')" />
-      <xsl:choose>
-        <xsl:when test="$c='nbsp'">&#160;</xsl:when>
-        <xsl:when test="$c='lt'">&lt;</xsl:when>
-        <xsl:when test="$c='gt'">&gt;</xsl:when>
-        <xsl:when test="$c='amp'">&amp;</xsl:when>
-        <xsl:when test="$c='quot'">&quot;</xsl:when>
-        <xsl:when test="$c='apos'">&apos;</xsl:when>
-        <xsl:otherwise>?</xsl:otherwise>
-      </xsl:choose>
-      <xsl:call-template name="removeTags">
-        <xsl:with-param name="html" select="substring-after($html, ';')" />
-      </xsl:call-template>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:value-of select="$html" />
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template-->
 
 </xsl:stylesheet>

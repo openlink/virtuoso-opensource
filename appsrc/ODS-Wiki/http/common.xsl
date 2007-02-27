@@ -31,7 +31,11 @@
     <xsl:param name="ti_local_name"/>
     <xsl:param name="ti_cluster_name"/>
     <xsl:param name="donotresolve"/>
+    <xsl:param name="qwikidisabled"/>
     <xsl:choose>
+      <xsl:when test="$qwikidisabled and (@style ='qwikiword')">
+	<a href="#" class="qwikidisabled"><xsl:apply-templates/></a>
+      </xsl:when>
       <xsl:when test="($donotresolve = 1) or (wv:QueryWikiWordLink($ti_cluster_name,@href) > 0)">
         <a>
           <!--      <xsl:copy-of select="@*" /> -->
@@ -76,9 +80,14 @@
     <xsl:param name="sid"/>
     <xsl:param name="realm"/>
     <xsl:param name="baseadjust"/>
+    <xsl:param name="linkisbad"/>
     <xsl:choose>
       <xsl:when test="$preview_mode = '1'">
         <xsl:attribute name="href"><xsl:value-of select="$baseadjust" />Main/NoWhere</xsl:attribute>
+      </xsl:when>
+      <xsl:when test="$linkisbad = 1">
+	<xsl:attribute name="href"><xsl:value-of select="wv:ReadOnlyWikiWordHREF($ti_cluster_name,@href,$sid,$realm, $baseadjust, '')" />?parent=<xsl:value-of select="$ti_local_name"/> </xsl:attribute>   
+        <xsl:attribute name="class">wikiword</xsl:attribute>
       </xsl:when>
       <xsl:otherwise>
         <xsl:attribute name="href"><xsl:value-of select="wv:ReadOnlyWikiWordHREF($ti_cluster_name,@href,$sid,$realm, $baseadjust, '')" /></xsl:attribute>   
@@ -119,7 +128,7 @@
     <xsl:param name="baseadjust"/>
     <xsl:param name="onclick"/>
     <xsl:choose>
-      <xsl:when test="($ti_local_name = '') or ($donotresolve = 1) or (wv:QueryWikiWordLink($ti_cluster_name, concat ($ti_cluster_name,'.',$ti_local_name)) > 0) or ($sys = '1') or ($id  != '')">
+      <xsl:when test="($ti_local_name = '') or ($donotresolve = 1) or (wv:QueryWikiWordLink($ti_cluster_name, $ti_local_name) > 0) or ($sys = '1') or ($id  != '')">
         <a>
           <xsl:attribute name="href"><xsl:value-of select="wv:ReadOnlyWikiWordHREF($ti_cluster_name,$ti_local_name, $sid, $realm, $baseadjust, string($wikiref_params))"/>
           </xsl:attribute>
@@ -163,7 +172,7 @@
   </form>
 </xsl:template>
 <xsl:template name="link-to-topic">
-  <xsl:value-of select="concat ($baseadjust, '../main/', wv:ReadOnlyWikiWordLink ($ti_cluster_name, $ti_local_name))"/>
+  <xsl:value-of select="concat ($baseadjust, wv:ReadOnlyWikiWordLink ($ti_cluster_name, $ti_local_name))"/>
 </xsl:template>
 <xsl:template name="security_hidden_inputs">
   <xsl:param name="sid"/>
@@ -311,6 +320,9 @@
          Cluster Settings
        </a>
      </xsl:if>
+     <a id="users-link"
+       href="{$baseadjust}{wv:ReadOnlyWikiWordLink('Main', 'WikiUsers')}">Users
+     </a>
      <div id="virtuoso-info">
        <ul class="left_nav">
          <li class="xtern"><a href="http://www.openlinksw.com">OpenLink Software</a></li>
@@ -743,11 +755,12 @@
 
 <xsl:template name="edit-form">
   <xsl:param name="text"/>
+  <xsl:param name="parent"/>
   <p> <xsl:value-of select="$text"/>
   Type the text below and press 'preview' button.
-  Please follow <a target="_blank" href="{$baseadjust}{wv:GetEnv('WIKICLUSTER',$env)}/GoodStyle">good style</a> guidelines and <a target="_blank" href="{$baseadjust}{wv:GetEnv('WIKICLUSTER',$env)}/TextFormattingRules">text formatting rules</a>.</p>
+  Please follow <a target="_blank" href="{wv:ResourceHREF(concat(wv:GetEnv('WIKICLUSTER',$env), '/GoodStyle'), $baseadjust)}">good style</a> guidelines and <a target="_blank" href="{wv:ResourceHREF(concat(wv:GetEnv('WIKICLUSTER',$env),'/TextFormattingRules'), $baseadjust)}">text formatting rules</a>.</p>
   <div id="edit_form_ctr">
-    <form method="post">
+    <form method="post" name="mainEdit" id="mainEdit">
       <xsl:attribute name="action"><xsl:call-template name="link-to-topic"/></xsl:attribute>
       <input type="hidden" name="editp" value="1"/>
       <xsl:call-template name="security_hidden_inputs"/>
@@ -756,39 +769,67 @@
       </textarea><br/>
       <input type="submit" name="command" value="Preview"></input>&nbsp;
       <input type="hidden" name="ReleaseLock" value="1"/>
+      <xsl:if test="$parent">
+	<input type="hidden" name="parent" value="{$parent}"></input>
+      </xsl:if>
       <input type="submit" name="command" value="Save and release lock"></input>
-      <input type="submit" name="command" value="Cancel"></input>
+      <input type="submit" name="command" value="Cancel" />
+
+      <script type="text/javascript">
+        function insertAtCursor(myField, myValue) {
+          //IE support
+          if (document.selection) {
+            myField.focus();
+            sel = document.selection.createRange();
+            sel.text = myValue;
+          }
+          //MOZILLA/NETSCAPE support
+          else if (myField.selectionStart || myField.selectionStart == '0') {
+            var startPos = myField.selectionStart;
+            var endPos = myField.selectionEnd;
+            myField.value = myField.value.substring(0, startPos)
+                          + myValue
+                          + myField.value.substring(endPos, myField.value.length);
+          } else {
+            myField.value += myValue;
+          }
+        }
+        function todayStr() {
+          var today=new Date()
+          var y=today.getYear()+1900
+	  var m= [ "Jan" , "Feb" , "Mar" , "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Dec"][today.getMonth()]
+          var d=today.getDate()
+          var dd=d&lt;10?"0"+d:d
+	  return dd + " " + m + " " + y;
+        }
+	function currentUser()
+	{
+	  return '<xsl:value-of select="$wikiuser"/>';
+	}
+        function insertDateAtCursor(field) {
+          var d=todayStr()
+          insertAtCursor(field, d);
+        }
+        function insertSign(field) {
+          var d="-- "  + currentUser() + " " + todayStr()
+          insertAtCursor(field, d);
+        }
+      </script>
+      <span>
+        <a id="insertSignature"
+           href="javascript:insertSign(document.mainEdit.text)"
+	   >Insert signature</a>
+      </span>
+      |
+       <span>
+        <a id="insertDate"
+           href="javascript:insertDateAtCursor(document.mainEdit.text)"
+	   >Insert today's date</a>
+      </span>
     </form>
   </div>
   <div id="page_help_ctr">
-    <h2>Text formatting tips (<a target="_blank" href="{$baseadjust}{wv:GetEnv('WIKICLUSTER',$env)}/TextFormattingRules">More...</a> )</h2>
-    <table class="page_help">
-      <tr><td class="ex_text">*Bold*</td><td>&#8658;</td><td><span class="ex_bold">Bold Text</span></td></tr>
-      <tr><td class="ex_text">_Italic_</td><td>&#8658;</td><td><span class="ex_italic">Italic</span></td></tr>
-      <tr><td class="ex_text">__Bold Italic__</td><td>&#8658;</td><td><span class="ex_bold_ital">Bold Italic</span></td></tr>
-      <tr><td class="ex_text">=Fixed Font=</td><td>&#8658;</td><td><span class="ex_fixed">Fixed Font</span></td></tr>
-      <tr><td class="ex_text">==Bold Fixed Font==</td><td>&#8658;</td><td><span class="ex_bold_fixed">Bold Fixed Font</span></td></tr>
-
-      <tr><td class="ex_text">[[http://foo.com][link]]</td><td>&#8658;</td><td><a href="http://openlinksw.com">link</a></td></tr>
-      <tr><td class="ex_text">   * Bulleted<br/>   * List<br/><i>(begin line with 3 spaces)</i></td><td>&#8658;</td><td><ul><li>Bulleted</li><li>List</li></ul></td></tr>
-      <tr><td class="ex_text">   1 Ordered<br/>   1 List<br/><i>(begin line with 3 spaces)</i></td><td>&#8658;</td><td><ol><li>Ordered</li><li>List</li></ol></td></tr>
-
-      <tr><td class="ex_text">Headings:<br/>---+ Lvl 1<br/>---++ Lvl 2<br/>---+++ Lvl 3<br/>---++++Lvl 4</td><td>&#8658;</td>
-        <td>
-          <span class="ex_head_1">Lvl 1</span><br/>
-          <span class="ex_head_2">Lvl 2</span><br/>
-          <span class="ex_head_3">Lvl 3</span><br/>
-          
-          <span class="ex_head_4">Lvl 4</span><br/>
-        </td>
-      </tr>
-      <tr><td class="ex_text">|*hdr1*|*hdr2*|*hdr3*|<br/>|col1|col2|col3|</td><td>&#8658;</td><td>Table</td></tr>
-    </table>
-    <h2>Wiki Words and links</h2>
-  
-    <p>Capitalized words written together are wikiwords, which will be automatically linked. Ex: WikiWord, PlanetTellus.</p>
-    <p>You mayLink references within page (anchors) are defined by writing a wikiword starting with hash in beginning of line. Ex: #MyAnchor. Use square brackets to make links to them: [[#MyAnchor][Link]] or [[MyTopic#MyAnchor][Jump]]</p>
-    <p>Please follow the <a target="_blank" href="{$baseadjust}{wv:GetEnv('WIKICLUSTER',$env)}/GoodStyle">Good Style Guidelines</a> when writing entries.</p>
+    <xsl:copy-of select="wv:TextFormattingRules($ti_cluster_id, $baseadjust)"/>
   </div>
   <div class="footer">
   </div>
@@ -797,6 +838,7 @@
 
 <xsl:template name="switch-to-another-mode">
   <xsl:param name="target-mode"/>
+  <xsl:if test="1 = 0">
   <form name="switch" method="POST">
     <xsl:attribute name="action"><xsl:call-template name="link-to-topic"/></xsl:attribute>
     <input type="hidden" name="command" value="edit"/>
@@ -813,6 +855,9 @@
       </xsl:otherwise>
     </xsl:choose>
         </form>
+    
+  </xsl:if>
+
 </xsl:template>
 
 </xsl:stylesheet>

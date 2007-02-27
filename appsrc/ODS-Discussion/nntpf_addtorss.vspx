@@ -47,6 +47,11 @@
           <div class="login">
             <vm:login/>
           </div>
+          <div id="adv_search_form">
+<!--
+           <vm:nntp-adv-search/>
+-->
+          </div>
           <div id="PC">
             <vm:nntp-sresult/>
           </div>

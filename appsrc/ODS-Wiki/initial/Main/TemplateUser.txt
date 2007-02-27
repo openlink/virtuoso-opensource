@@ -1,2 +1,4 @@
 | *full name* | %USERPROP{"FULLNAME"}% |
 | *e-mail*    | %USERPROP{"EMAIL"}% |
+
+<link rel="foaf" type="application/rdf+xml" title="FOAF" href="{BASEURL}/{SYSUSER}/about.rdf" />

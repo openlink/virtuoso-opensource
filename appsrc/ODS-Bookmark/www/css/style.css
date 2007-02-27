@@ -23,17 +23,10 @@
 
 body
 {
-  padding-right: 0px;
-  padding-bottom: 0px;
-  padding-left: 0px;
-  padding-top: 3px;
-  margin-right: 0px;
-  margin-bottom: 0px;
-  margin-left: 0px;
-  margin-top: 0px;
-  font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 75%;
-}
+  padding: 0;
+  margin: 0;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 9pt}
 
 a
 {
@@ -65,16 +58,57 @@ a:hover
 
 #LC
 {
-  width: 12%;
+  width: 170px;
   padding-top: 5px;
   vertical-align: top;
 }
 
 #RC
 {
-  width: 88%;
   padding-top: 5px;
   vertical-align: top;
+}
+
+/* Footer */
+
+#FT
+{
+  width: 100%;
+  position: relative;
+  bottom: 0px;
+  font-size: 8pt;
+  float: left;
+  clear: both;
+  text-align: right;
+  border-top: 2px solid #fff;
+  margin-right: 10px;
+  background-color: #fff;
+  background-image: url(../image/ods_main_footer.png);
+}
+
+#FT_L
+{
+  float: left;
+  clear: left;
+  margin-top: 10px;
+  margin-left: 8px;
+  border: 1px solid #788;
+}
+
+#FT_R
+{
+  float: right;
+  clear: right;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-right: 5px;
+  color: #788;
+}
+
+#FT_R a
+{
+  text-decoration: none;
+  color: inherit;
 }
 
 /* Left side within MT */
@@ -323,13 +357,57 @@ table#list thead input {
   font-weight: bold;
 }
 
-/*====== news ======*/
-.feed_main
+/*====== Panes ======*/
+.pane_main
 {
   width: 100%;
   height: 500px;
+  position: relative;
+}
+
+.pane_left
+{
+  width: 30.3%;
+  height: 100%;
+  float: left;
+  overflow: auto;
   border: solid #7f94a5;
-  border-width: 1px 1px 1px 1px;
+  border-width: 1px;;
+}
+
+.pane_right
+{
+  width: 69.3%;
+  height: 100%;
+  float: right;
+}
+
+.pane_right_sub
+{
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  border: solid #7f94a5;
+  border-width: 1px
+}
+
+.pane_right_sub1
+{
+  width: 100%;
+  height: 49.5%;
+  overflow: auto;
+  border: solid #7f94a5;
+  border-width: 1px
+}
+
+.pane_right_sub2
+{
+  width: 100%;
+  height: 49.5%;
+  margin-top: 0.3%;
+  overflow: auto;
+  border: solid #7f94a5;
+  border-width: 1px
 }
 
 .feed_pane
@@ -374,20 +452,25 @@ table#list thead input {
 
 #channel_header
 {
+  float: left;
   font-size: 1em;
-  padding: 3px 0 3px 0;
+  font-weight: bold;
   background-color: #EFEFEF;
   border: solid #7f94a5;
   border-width: 0px 0px 1px 0px;
 }
 
-#channel_subheader
+#channel_header_left
 {
-  font-size: 0.9em;
-  padding: 2px 0 2px 0;
-  background-color: #b0cde4;
-  border: solid #7f94a5;
-  border-width: 0px 0px 2px 0px;
+  float: left;
+  padding: 3px;
+}
+
+#channel_header_right
+{
+  float: right;
+  padding: 3px;
+  text-align: right;
 }
 
 /*====== rows ======   background-color: #EFEFEF; */
@@ -413,6 +496,15 @@ table#list thead input {
 .tr_select
 {
   background-color: #FFFFCC;
+}
+
+.read
+{
+}
+
+.unread
+{
+  font-weight: bold;
 }
 
 /*====== forms ======*/

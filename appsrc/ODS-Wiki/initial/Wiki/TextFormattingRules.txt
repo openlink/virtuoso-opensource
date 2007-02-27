@@ -44,6 +44,34 @@
     </td>
   </tr>
   <tr>
+    <td class="ex_text"><nowiki>[[http://foo.com link]]</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <a href="http://openlinksw.com">link</a>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>[[some human readable topic name]]</nowiki></td>
+    <td>⇒</td>
+    <td>
+      link to <nop>SomeHumanReadableTopicName topic
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>[[property:=value]]</nowiki></td>
+    <td>⇒</td>
+    <td>
+      defines some property for current topic
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>[[property::WikiWord]]</nowiki></td>
+    <td>⇒</td>
+    <td>
+      defines some relation with another topic
+    </td>
+  </tr>
+  <tr>
     <td class="ex_text"><nowiki>   * Bulleted
    * List </nowiki>
       <i>(begin line with 3 spaces)</i>
@@ -71,6 +99,15 @@
     </td>
   </tr>
   <tr>
+    <td class="ex_text"><nowiki>   Term: description text</nowiki>
+      <i>(begin line with 3 spaces, then term, colons, description )</i>
+    </td>
+    <td>⇒</td>
+    <td>
+   Term: description text
+    </td>
+  </tr>
+  <tr>
     <td class="ex_text">Headings:
 <nowiki>
 ---+ Lvl 1
@@ -87,6 +124,7 @@
       <br>
       <span class="ex_head_4">Lvl 4</span>
       <br>
+      *Note*: <i>up to nine dashes are recognized</i>
     </td>
   </tr>
   <tr>
@@ -96,10 +134,34 @@
     <td>Table</td>
   </tr>
   <tr>
-    <td class="ex_text"><nowiki>&lt;nowiki>WikiWord&lt;/nowiki></nowiki></td>
+    <td class="ex_text"><nowiki>%MACRONAME{"context"}%</nowiki></td>
     <td>⇒</td>
-    <td><nowiki>WikiWord</nowiki></td>
+    <td>Macro =MACRONAME= call</td>
   </tr>
+  <tr>
+    <td class="ex_text"><nowiki>&lt;noautolink>...&lt;/noautolink></nowiki></td>
+    <td>⇒</td>
+    <td>disable automatic <nop>WikiWord recognition</td>
+  </tr>
+
+  <tr>
+    <td class="ex_text"><nowiki>&lt;plainhtml>...&lt;/plainhtml></nowiki></td>
+    <td>⇒</td>
+    <td>disable any wiki markup recognition except <nop>WikiWord automatic recognition</td>
+  </tr>
+
+  <tr>
+    <td class="ex_text"><nowiki>&lt;nowiki>...&lt;/nowiki></nowiki></td>
+    <td>⇒</td>
+    <td>disable any wiki markup recognition</td>
+  </tr>
+
+  <tr>
+    <td class="ex_text"><nowiki>&lt;verbatim>...&lt;/verbatim></nowiki></td>
+    <td>⇒</td>
+    <td>disable HTML rendering</td>
+  </tr>
+
 </table>
 ---++ Wiki Words and links
 Capitalized words written together are wikiwords, which will be automatically linked. Ex: <nop>WikiWord, <nop>PlanetTellus.

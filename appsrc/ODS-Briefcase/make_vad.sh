@@ -22,7 +22,7 @@
 #
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.2.244"
+VERSION="1.2.254"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -234,7 +234,7 @@ sticker_init() {
   echo "  <name package=\"Briefcase\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Briefcase\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1999-2006 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1999-2007 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -246,7 +246,7 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.21.16\"/>" >> $STICKER
+  echo "    <versions_later package=\"1.33.06\"/>" >> $STICKER
   echo "  </require>" >> $STICKER
   echo "</dependencies>" >> $STICKER
   echo "<procedures uninstallation=\"supported\">" >> $STICKER
@@ -296,9 +296,9 @@ sticker_init() {
   do
      if echo "$file" | grep -v "\.vsp" >/dev/null
      then
-	      perms="110100100N"
+	      perms="110100100NN"
      else
-	      perms="111101101N"
+	      perms="111101101NN"
      fi
      name=`echo "$file" | cut -b10-`
      echo "  <file type=\"$TYPE\" overwrite=\"yes\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
@@ -373,12 +373,6 @@ ServerEnable = 1
 QueueMax     = 50000
 
 " > virtuoso.ini
-  if [ -f virtuoso.lic ]
-  then
-    echo "virtuoso.lic found"
-  else
-    cp $HOME/binsrc/tests/suite/virtuoso.lic virtuoso.lic 2>/dev/null
-  fi
   virtuoso_start
 }
 

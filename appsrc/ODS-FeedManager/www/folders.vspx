@@ -27,10 +27,10 @@
   <vm:pagewrapper>
     <vm:header/>
     <vm:variables>
-      <v:variable name="v_id"  type="integer" default="0"/>
+      <v:variable name="v_id" param-name="id" type="integer" default="0"/>
       <v:variable name="v_parent_id" type="varchar" default="'0'"/>
       <v:variable name="v_name" type="varchar" default="''"/>
-      <v:variable name="v_mode" type="varchar" default="''" persist="0"/>
+      <v:variable name="v_mode" param-name="mode" type="varchar" default="''" persist="0"/>
       <v:variable persist="session" name="ft_state" type="any" default="null" />
       <v:variable persist="session" name="ft_bookmark" type="varchar" default="null" />
     </vm:variables>
@@ -257,7 +257,7 @@
       <?vsp
         if (self.ft_bookmark is not null) {
           http ('\n<script type="text/javascript">\n');
-          http (sprintf ('location.hash = "%s";\n', self.ft_bookmark));
+          http (sprintf ('if (BrowserDetect.browser != \'Opera\') location.hash = "%s";\n', self.ft_bookmark));
           http ('</script>\n');
         }
       ?>

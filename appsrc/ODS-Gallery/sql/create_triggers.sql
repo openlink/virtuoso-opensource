@@ -37,6 +37,43 @@ create trigger trigger_make_thumbnails after insert on WS.WS.SYS_DAV_RES referen
 
   if(parent_name = current_user.gallery_dir){
     PHOTO.WA.make_thumbnail(current_user,N.RES_ID,0);
+    PHOTO.WA.save_meta_data_trigger(N.RES_ID,N.RES_CONTENT);
   }
 return;
 }
+;
+
+create trigger trigger_update_thumbnails after update on WS.WS.SYS_DAV_RES referencing new as N{
+
+  declare exit handler for sqlstate '*' {
+    dbg_obj_print('************');
+    dbg_obj_print('error');
+    dbg_obj_print(__SQL_MESSAGE);
+    resignal;
+  };
+
+  declare parent_id,parent_name integer;
+  select COL_PARENT into parent_id from WS.WS.SYS_DAV_COL WHERE COL_ID = N.RES_COL;
+  parent_name := DAV_SEARCH_PATH(parent_id,'C');
+  declare current_user photo_user;
+  current_user := new photo_user(cast(N.RES_OWNER as integer) );
+
+  if(parent_name = current_user.gallery_dir){
+    PHOTO.WA.make_thumbnail(current_user,N.RES_ID,0);
+    PHOTO.WA.save_meta_data_trigger(N.RES_ID,N.RES_CONTENT);
+  }
+  return;
+}
+;
+
+
+create trigger trigger_update_sys_info after update on DB.DBA.WA_INSTANCE referencing old as O, new as N
+{
+  if (udt_instance_of (O.WAI_INST, 'DB.DBA.wa_photo'))
+    {
+      update PHOTO.WA.SYS_INFO
+         set WAI_NAME = N.WAI_NAME
+	     where GALLERY_ID = O.WAI_ID;
+    }
+}
+;

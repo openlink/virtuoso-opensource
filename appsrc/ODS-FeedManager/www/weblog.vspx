@@ -339,14 +339,14 @@
               <![CDATA[
                 declare tmp any;
 
-                --declare exit handler for SQLSTATE '*' {
-                --  if (__SQL_STATE = 'TEST') {
-                --    self.vc_error_message := ENEWS.WA.test_clear(__SQL_MESSAGE);
-                -- 		self.vc_is_valid := 0;
-              	--	  return;
-              	--	}
-                --  resignal;
-                --};
+                declare exit handler for SQLSTATE '*' {
+                  if (__SQL_STATE = 'TEST') {
+                    self.vc_error_message := ENEWS.WA.test_clear(__SQL_MESSAGE);
+                    self.vc_is_valid := 0;
+                    return;
+                  }
+                  resignal;
+                };
 
                 self.v_name := trim(self.f_name.ufl_value);
                 self.v_api := trim(self.f_api.ufl_value);
@@ -527,7 +527,7 @@
       <?vsp
         if (self.wt_bookmark is not null) {
           http ('\n<script type="text/javascript">\n');
-          http (sprintf ('location.hash = "%s";\n', self.wt_bookmark));
+          http (sprintf ('if (BrowserDetect.browser != \'Opera\') location.hash = "%s";\n', self.wt_bookmark));
           http ('</script>\n');
         }
       ?>

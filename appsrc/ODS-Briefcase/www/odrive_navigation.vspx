@@ -26,44 +26,45 @@
   <v:variable name="nav_pos_fixed" type="int" default="0" />
   <v:variable name="nav_top" type="int" default="0"/>
   <v:variable name="nav_tip" type="varchar" default="''"/>
+  <v:variable name="domain_id" type="integer" default="-1"/>
+  <v:variable name="account_id" type="integer" default="-1"/>
+  <v:variable name="account_role" type="varchar" default="'public'"/>
+  <v:variable name="settings" type="any" />
+
   <v:method name="set_pmembers" arglist="">
     <![CDATA[
       udt_set (self.vc_parent.vc_page, 'nav_pos_fixed', self.nav_pos_fixed);
       udt_set (self.vc_parent.vc_page, 'nav_top', self.nav_top);
       udt_set (self.vc_parent.vc_page, 'nav_tip', self.nav_tip);
-      return;
     ]]>
   </v:method>
+
   <v:before-data-bind>
     <![CDATA[
       self.vc_authenticated := self.vc_parent.vc_page.vc_authenticated;
       self.sid := udt_get (self.vc_parent.vc_page, 'sid');
       self.realm := udt_get (self.vc_parent.vc_page, 'realm');
-      return;
+      self.domain_id := udt_get (self.vc_parent.vc_page, 'domain_id');
+      self.account_id := udt_get (self.vc_parent.vc_page, 'account_id');
+      self.account_role := udt_get (self.vc_parent.vc_page, 'account_role');
+      self.settings := udt_get (self.vc_parent.vc_page, 'settings');
     ]]>
   </v:before-data-bind>
-  <v:tree show-root="0" multi-branch="0" orientation="horizontal" root="ODRIVE.WA.odrive_navigation_root" start-path="" child-function="ODRIVE.WA.odrive_navigation_child">
+
+  <v:tree show-root="0" multi-branch="0" orientation="horizontal" root="ODRIVE.WA.navigation_root" start-path="" child-function="ODRIVE.WA.navigation_child">
     <v:before-data-bind>
       <![CDATA[
         declare page_name any;
-        page_name := ODRIVE.WA.odrive_get_page_name ();
+
+        page_name := ODRIVE.WA.page_name ();
         self.nav_pos_fixed := 0;
 
         if (page_name = 'error.vspx') {
           self.nav_pos_fixed := 1;
         } else if (not self.nav_top and page_name <> '') {
-          declare grp varchar;
-          declare xe any;
-
-          xe := xml_tree_doc (ODRIVE.WA.odrive_menu_tree());
-          grp := xpath_eval (sprintf ('/odrive_menu_tree/node[.//*[@url = "%s"]]/@allowed', page_name), xe, 1);
-          grp := cast (grp as varchar);
-
-          if (ODRIVE.WA.odrive_check_grants (ODRIVE.WA.account(), grp))
-            self.nav_pos_fixed := 1;
+          self.nav_pos_fixed := ODRIVE.WA.check_grants2 (self.account_role, page_name);
           control.vc_open_at (sprintf ('//*[@url = "%s"]', page_name));
         }
-
         self.set_pmembers ();
       ]]>
     </v:before-data-bind>
@@ -78,7 +79,7 @@
                 if (freeze_page is null or freeze_page = '' or freeze_page = 'default') {
                   http_rewrite ();
                   http_request_status ('HTTP/1.1 404 Not found');
-                  http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (ODRIVE.WA.odrive_get_page_name())));
+                  http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (ODRIVE.WA.page_name())));
                   http_flush();
                   return;
                 }
@@ -88,18 +89,10 @@
                 http_flush();
                 return;
 	            }
-              if (not self.vc_authenticated) {
-                (control.vc_parent as vspx_tree_node).tn_open := 0;
-                control.ufl_active := 0;
-              } else {
-                declare grp varchar;
-                grp :=  xpath_eval('/node/@allowed', (control.vc_parent as vspx_tree_node).tn_element, 1);
-                grp := cast (grp as varchar);
                 if ((control.vc_parent as vspx_tree_node).tn_open = 1)
                   control.ufl_active := 0;
                 else
-                  control.ufl_active := ODRIVE.WA.odrive_check_grants(ODRIVE.WA.account(), grp);
-              }
+                control.ufl_active := ODRIVE.WA.check_grants2(self.account_role, ODRIVE.WA.page_name ());
             ]]>
           </v:after-data-bind>
           <v:on-post>

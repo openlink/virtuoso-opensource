@@ -23,11 +23,27 @@
  -
 -->
 <v:page name="home" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+
+  <v:method name="set_recursive" arglist="in path any, in dav_perms any, in dav_owner any, in dav_group any">
+    <![CDATA[
+      declare items any;
+
+      items := ODRIVE.WA.DAV_DIR_LIST (path, 0);
+      foreach (any item in items) do {
+        ODRIVE.WA.DAV_SET(item[0], 'permissions', dav_perms);
+        ODRIVE.WA.DAV_SET(item[0], 'ownerID', dav_owner);
+        ODRIVE.WA.DAV_SET(item[0], 'groupID', dav_group);
+        if (item[1] = 'C')
+          self.set_recursive (item[0], dav_perms, dav_owner, dav_group);
+      }
+    ]]>
+  </v:method>
+
   <v:on-init>
     <![CDATA[
-      declare N, retValue, dav_owner, dav_group integer;
+      declare N, retValue, dav_id, dav_owner, dav_group integer;
       declare dav_detType, dav_mime, dav_name, dav_fullPath, dav_perms, msg, _p varchar;
-      declare dav_filename, dav_file any;
+      declare dav_filename, dav_file, rdf_content any;
       declare itemList any;
 
       msg := '';
@@ -82,11 +98,7 @@
               dav_filename := get_keyword('dav_url', self.vc_page.vc_event.ve_params, '');
               rdf_data := http_get(dav_filename);
             }
-            rdf_name := trim(get_keyword('dav_name', self.vc_page.vc_event.ve_params));
-            pos := strrchr (rdf_name, '.');
-            if (not isnull(pos))
-              rdf_name := subseq (rdf_name, 0, pos);
-            rdf_graph := ODRIVE.WA.odrive_host_url() || WS.WS.FIXPATH(ODRIVE.WA.odrive_real_path(self.dir_path) || rdf_name);
+            rdf_graph := trim(get_keyword('dav_name_rdf', self.vc_page.vc_event.ve_params));
             {
               declare continue handler for SQLSTATE '*' {
                 is_ttl := 0;
@@ -107,9 +119,9 @@
               signal ('TEST', 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.<>');
 
             if (is_ttl) {
-              DB.DBA.TTLP (rdf_data, rdf_graph, rdf_graph);
+              retValue := DB.DBA.TTLP (rdf_data, '', rdf_graph);
             } else {
-              DB.DBA.RDF_LOAD_RDFXML (rdf_data, rdf_graph, rdf_graph);
+              retValue := DB.DBA.RDF_LOAD_RDFXML (rdf_data, '', rdf_graph);
             }
 
           } else {
@@ -192,7 +204,7 @@
               dav_file := http_get(dav_filename);
               } else if (get_keyword ('dav_source', self.vc_page.vc_event.ve_params, '-1') = '2') {
                 dav_filename := get_keyword('dav_rdf', self.vc_page.vc_event.ve_params, '');
-                dav_file := (sparql define output:format 'RDF/XML' construct { ?s ?p ?o } where { graph ?:dav_filename { ?s ?p ?o } } );
+                dav_file := ODRIVE.WA.get_rdf (dav_filename);
             }
           }
           if (self.dav_type = 'R') {
@@ -268,15 +280,8 @@
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
               self.dav_path := dav_fullPath;
             } else {
-              if ('' <> get_keyword ('dav_recursive', self.vc_page.vc_event.ve_params, '')) {
-                itemList := ODRIVE.WA.DAV_DIR_LIST(self.dav_path, 1);
-                for (N := 0; N < length(itemList); N := N + 1)
-                  if (itemList[N][1] = 'R') {
-                    ODRIVE.WA.DAV_SET(itemList[N][0], 'permissions', dav_perms);
-                    ODRIVE.WA.DAV_SET(itemList[N][0], 'ownerID', dav_owner);
-                    ODRIVE.WA.DAV_SET(itemList[N][0], 'groupID', dav_group);
-                  }
-              }
+                if ('' <> get_keyword ('dav_recursive', self.vc_page.vc_event.ve_params, ''))
+                  self.set_recursive (self.dav_path, dav_perms, dav_owner, dav_group);
             }
 
             if (self.dav_detType = 'oMail') {
@@ -368,9 +373,13 @@
                 return;
               }
 
+                rdf_content := dav_file;
               retValue := ODRIVE.WA.DAV_RES_UPLOAD(dav_fullPath, dav_file, dav_mime, dav_perms, dav_owner, dav_group);
               if (ODRIVE.WA.DAV_ERROR(retValue))
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
+                if (dav_fullPath like (ODRIVE.WA.dav_home2 (self.account_id, 'owner') || 'Public%'))
+                  ODRIVE.WA.domain_ping (self.domain_id);
+
             } else {
               if (ODRIVE.WA.dav_rdf_has_metadata(self.dav_path)) {
                 declare param, property any;

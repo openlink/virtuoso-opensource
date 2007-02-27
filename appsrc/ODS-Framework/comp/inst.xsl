@@ -471,7 +471,7 @@
             </tr>
             <tr>
               <?vsp
-                if (self.wa_type in ('oDrive', 'oMail'))
+                if (self.wa_type in ('oMail'))
                 {
               ?>
               <th><label for="is_public1">Visible to public</label></th>

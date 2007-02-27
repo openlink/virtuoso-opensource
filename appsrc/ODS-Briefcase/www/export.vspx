@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0"?>
 <!--
  -
  -  $Id$
@@ -23,9 +23,8 @@
  -
 -->
 <v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <v:variable name="account" type="varchar" default="''"/>
-  <v:variable name="account_id" type="integer" default="-1"/>
-
+  <v:variable name="domain_id" type="integer" param-name="did" default="-1"/>
+  <v:variable name="account_id" type="integer" param-name="aid" default="-1"/>
   <v:variable name="v_output" type="varchar" param-name="output" default="''"/>
 
   <v:variable name="v_mode" type="varchar" default="'a'" param-name="mode"/>
@@ -43,7 +42,6 @@
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 
       if (self.v_output = 'about') {
-        self.account_id := cast(get_keyword('aid', self.vc_page.vc_event.ve_params, '-1') as integer);
         http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
         http ('<channel>\n');
         for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
@@ -66,7 +64,7 @@
             http_value (U_E_MAIL);
           http ('</webMaster>\n');
           http ('<link>');
-            http_value (ODRIVE.WA.odrive_url());
+            http_value (ODRIVE.WA.odrive_url (self.domain_id));
           http ('</link>\n');
         }
         for select top 15 *
@@ -115,17 +113,11 @@
    	    http_xslt (ODRIVE.WA.xslt_full ('rss2rdf.xsl'));
 
         goto _end;
-      } else {
-      self.account := ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params);
-      if (is_empty_or_null(self.account))
-        goto _error;
-      self.account_id := ODRIVE.WA.session_user_id(self.vc_page.vc_event.ve_params);
-
-      if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
+      } else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
         declare data, sql, params, state, msg, meta, result any;
 
         if (self.v_mode = 's') {
-          params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 10, get_keyword('b2', self.vc_page.vc_event.ve_params, ''), self.account);
+          params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 10, get_keyword('b2', self.vc_page.vc_event.ve_params, ''), ODRIVE.WA.account_name (self.account_id));
         }
 
         if (self.v_mode = 'a') {
@@ -161,7 +153,7 @@
                                          );
             N := N + 1;
           }
-          params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 11, data, self.account);
+          params := vector(get_keyword('b1', self.vc_page.vc_event.ve_params, ''), 0, 11, data, ODRIVE.WA.account_name (self.account_id));
         }
 
         sql := 'select <MAX> rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ?';
@@ -196,7 +188,7 @@
             http_value (U_E_MAIL);
           http ('</webMaster>\n');
           http ('<link>');
-            http_value (ODRIVE.WA.odrive_url());
+            http_value (ODRIVE.WA.odrive_url (self.domain_id));
           http ('</link>\n');
         }
         foreach (any row in result) do {
@@ -236,7 +228,6 @@
     	    http_xslt (ODRIVE.WA.xslt_full ('rss2atom.xsl'));
 
         goto _end;
-      }
       }
     _error:
       http('<?xml version="1.0" ?><empty />');

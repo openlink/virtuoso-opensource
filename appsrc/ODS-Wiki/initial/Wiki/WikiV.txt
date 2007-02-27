@@ -8,3 +8,7 @@ when the page is changed, so the browsing of the resulting pages is made more
 efficient then in the most of other engines.
 As a result, WikiV provides good speed and scalability for large
 corporate and Internet sites.
+
+Two major syntaxes are supported:
+   * [[TextFormattingRules][TWiki based oWiki dialect]] (default)
+   * [[MediaWikiFormattingRules][MediaWiki based syntax]] 

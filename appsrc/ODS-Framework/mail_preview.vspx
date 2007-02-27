@@ -32,7 +32,7 @@
     <vm:header>
       <vm:title>Invitation Preview</vm:title>
     </vm:header>
-    <vm:pagewrapper>
+    <vm:pagewrapper odsbar="no">
       <v:variable persist="temp" name="msg" type="varchar" default="null" param-name="txt2"/>
       <v:variable persist="temp" name="em_to" type="varchar" default="null" param-name="em_to"/>
       <vm:body>

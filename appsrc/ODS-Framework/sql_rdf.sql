@@ -1,0 +1,489 @@
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2006 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+-- Helpers
+
+create procedure ODS_SPARQL_QM_RUN (in txt varchar, in sig int := 1, in fl int := 0)
+{
+  declare REPORT, stat, msg, sqltext varchar;
+  declare metas, rowset any;
+  if (fl)
+   result_names (REPORT);
+  sqltext := string_output_string (sparql_to_sql_text (txt));
+  --dump_large_text_impl (sqltext);
+  stat := '00000';
+  msg := '';
+  rowset := null;
+  exec (sqltext, stat, msg, vector (), 1000, metas, rowset);
+  if (sig and stat <> '00000')
+    {
+      signal (stat, msg);
+    }
+  if (fl)
+    {
+      result ('STATE=' || stat || ': ' || msg);
+      if (rowset is not null)
+	{
+	  foreach (any r in rowset) do
+	    result (r[0] || ': ' || r[1]);
+	}
+    }
+}
+;
+
+-- Common ODS data
+
+wa_exec_no_error ('drop view SIOC_SITE');
+wa_exec_no_error ('drop view SIOC_USERS');
+wa_exec_no_error ('drop view SIOC_ODS_FORUMS');
+wa_exec_no_error ('drop view SIOC_ROLES');
+wa_exec_no_error ('drop view SIOC_ROLE_GRANTS');
+wa_exec_no_error ('drop view SIOC_GROUPS');
+wa_exec_no_error ('drop view SIOC_KNOWS');
+wa_exec_no_error ('drop view ODS_FOAF_PERSON');
+
+create view SIOC_SITE as select top 1
+	coalesce (WS_WEB_TITLE, sys_stat ('st_host_name')) as WS_WEB_TITLE,
+	sioc..get_ods_link () as WS_LINK,
+	'' as WS_DUMMY
+	from DB.DBA.WA_SETTINGS;
+
+create view SIOC_USERS as select U_ID, U_NAME, U_FULL_NAME,
+	case when length (U_E_MAIL) then 'mailto:'||U_E_MAIL else null end as E_MAIL,
+	case when length (U_E_MAIL) then sha1_digest (U_E_MAIL) else null end as E_MAIL_SHA1,
+	sioc..user_obj_iri (U_NAME) || '/sioc.rdf' as SEE_ALSO
+	from DB.DBA.SYS_USERS
+	where U_IS_ROLE = 0 and U_ACCOUNT_DISABLED = 0 and U_DAV_ENABLE = 1 and U_ID <> http_nobody_uid ();
+
+create view SIOC_GROUPS as select U_ID, U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 1 and U_ID <> http_nogroup_gid ();
+
+create view SIOC_ODS_FORUMS as select
+	U_NAME,
+	WAM_INST,
+	WAI_DESCRIPTION,
+	DB.DBA.wa_type_to_app (WAM_APP_TYPE) as APP_TYPE,
+        sioc..forum_iri (WAM_APP_TYPE, WAM_INST) as LINK,
+        sioc..forum_iri (WAM_APP_TYPE, WAM_INST) || '/sioc.rdf' as SEE_ALSO,
+	WAM_APP_TYPE as WAM_APP_TYPE
+	from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where
+	U_ID = WAM_USER and WAM_INST = WAI_NAME and WAM_MEMBER_TYPE = 1 and (WAM_IS_PUBLIC = 1 or WAI_TYPE_NAME = 'oDrive');
+
+create view SIOC_ROLES as
+	select
+	WAM_INST,
+	DB.DBA.wa_type_to_app (WAM_APP_TYPE) as APP_TYPE,
+	U_NAME,
+	WMT_NAME
+	from
+	DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER,
+	(select WMT_NAME, WMT_ID, WMT_APP from DB.DBA.WA_MEMBER_TYPE union all
+	 select 'owner', 1, WAT_NAME from DB.DBA.WA_TYPES) roles
+	where
+	U_ID = WAM_USER and WMT_APP = WAM_APP_TYPE and WMT_ID = WAM_MEMBER_TYPE and WAM_IS_PUBLIC;
+
+create view SIOC_ROLE_GRANTS as
+	select
+	sub.U_NAME as G_NAME,
+	super.U_NAME as U_NAME
+	from DB.DBA.SYS_ROLE_GRANTS, DB.DBA.SYS_USERS sub, DB.DBA.SYS_USERS super
+	where
+	GI_DIRECT = 1 and GI_SUB = sub.U_ID and GI_SUPER = super.U_ID and super.U_DAV_ENABLE;
+
+create view SIOC_KNOWS as
+	select f.sne_name as FROM_NAME, t.sne_name as TO_NAME from DB.DBA.sn_related, DB.DBA.sn_person f, DB.DBA.sn_person t
+	where snr_from = f.sne_id and snr_to = t.sne_id;
+
+create procedure ods_filter_uinf (in val any, in flags varchar, in fld int, in fmt varchar := null)
+{
+  declare r any;
+  if (length (flags) <= fld)
+    return null;
+  r := atoi (chr (flags[fld]));
+  if (r = 1)
+    {
+      if (isstring (val) and not length (val))
+        return null;
+      if (fmt is not null and val is not null)
+	return sprintf (fmt, val);
+      return val;
+    }
+  return null;
+};
+
+create view ODS_FOAF_PERSON as select
+	U_NAME,
+	case when length (U_E_MAIL) then 'mailto:'||U_E_MAIL else null end as E_MAIL,
+	case when length (U_E_MAIL) then sha1_digest (U_E_MAIL) else null end as E_MAIL_SHA1,
+	sioc..user_obj_iri (U_NAME) || '/about.rdf' as SEE_ALSO,
+	ods_filter_uinf (WAUI_FIRST_NAME, WAUI_VISIBLE, 1) as FIRST_NAME,
+	ods_filter_uinf (WAUI_LAST_NAME, WAUI_VISIBLE, 2) as LAST_NAME,
+	U_FULL_NAME,
+	ods_filter_uinf (WAUI_GENDER, WAUI_VISIBLE, 5) as GENDER,
+	ods_filter_uinf (WAUI_ICQ, WAUI_VISIBLE, 10) as ICQ,
+	ods_filter_uinf (WAUI_MSN, WAUI_VISIBLE, 14) as MSN,
+	ods_filter_uinf (WAUI_AIM, WAUI_VISIBLE, 12) as AIM,
+	ods_filter_uinf (WAUI_YAHOO, WAUI_VISIBLE, 13) as YAHOO,
+	ods_filter_uinf (
+	    substring (datestring(coalesce (WAUI_BIRTHDAY, now ())), 6, 5)
+	    , WAUI_VISIBLE, 6) as BIRTHDAY,
+	ods_filter_uinf (WAUI_BORG, WAUI_VISIBLE, 20) as ORG,
+	case when length (WAUI_HPHONE) and sioc..wa_user_pub_info (WAUI_VISIBLE, 18) then WAUI_HPHONE
+	when length (WAUI_HMOBILE) and sioc..wa_user_pub_info (WAUI_VISIBLE, 18) then WAUI_HMOBILE else  WAUI_BPHONE end as PHONE,
+	ods_filter_uinf (WAUI_LAT, WAUI_VISIBLE, 39, '%.06f') as LAT,
+	ods_filter_uinf (WAUI_LNG, WAUI_VISIBLE, 39, '%.06f') as LNG,
+	WAUI_WEBPAGE as WEBPAGE
+	from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS
+	where WAUI_U_ID = U_ID;
+
+
+-- ODS RDF VIEW
+
+create procedure ODS_RDF_VIEW_INIT (in fl int := 0)
+{
+  return;
+};
+
+create procedure ODS_RDF_VIEW_INIT_1 (in fl int := 0)
+{
+
+    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (JSO_SYS_GRAPH());
+    DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
+
+    sioc..ods_sioc_result ('Dropping old graph.');
+ODS_SPARQL_QM_RUN ('
+    drop graph iri("http://^{URIQADefaultHost}^/dataspace_v") .
+', 0, 0);
+
+    sioc..ods_sioc_result ('Old graph dropped.');
+    commit work;
+    sioc..ods_sioc_result ('Dropping virtrdf:ODSDataspace storage.');
+ODS_SPARQL_QM_RUN ('
+    drop virtrdf:ODSDataspace .
+', 0, 0);
+
+    sioc..ods_sioc_result ('virtrdf:ODSDataspace storage dropped.');
+
+ODS_SPARQL_QM_RUN ('
+    drop quad storage virtrdf:ODS .
+    ', 0, 0);
+
+--    ODS_SPARQL_QM_RUN ('
+--    create quad storage virtrdf:ODS {
+--      create virtrdf:DefaultQuadMap using storage virtrdf:DefaultQuadStorage .
+--    } .
+--    ', 1, fl);
+    sioc..ods_sioc_result ('Creating IRI classes.');
+
+ODS_SPARQL_QM_RUN ('
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix atom: <http://atomowl.org/ontologies/atomrdf#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+create iri class sioc:iri "%s" (in url varchar not null) .
+create iri class sioc:default_site "http://^{URIQADefaultHost}^/dataspace%U" (in dummy varchar not null) .
+create iri class sioc:user_iri "http://^{URIQADefaultHost}^/dataspace/%U" (in uname varchar not null) .
+create iri class foaf:person_iri "http://^{URIQADefaultHost}^/dataspace/%U#person" (in uname varchar not null) .
+create iri class foaf:person_geo_iri "http://^{URIQADefaultHost}^/dataspace/%U#person_based" (in uname varchar not null) .
+create iri class sioc:user_group_iri "http://^{URIQADefaultHost}^/dataspace/%U" (in uname varchar not null) .
+create iri class sioc:user_site_iri "http://^{URIQADefaultHost}^/dataspace/%U#site" (in uname varchar not null) .
+create iri class sioc:forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/%U/%U"
+	( in uname varchar not null, in forum_type varchar not null, in forum_name varchar not null) .
+create iri class sioc:role_iri "http://^{URIQADefaultHost}^/dataspace/%U/%U/%U#%U"
+	(in uname varchar not null, in tp varchar not null, in inst varchar not null, in role_name varchar not null) .
+    create iri class atom:person_iri "http://^{URIQADefaultHost}^/dataspace/%U#person" (in uname varchar not null) .
+    # Blog
+create iri class sioc:blog_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog/%U"
+	( in uname varchar not null, in forum_name varchar not null) .
+create iri class sioc:blog_post_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog/%U/%U"
+	( in uname varchar not null, in forum_name varchar not null, in postid varchar not null) .
+create iri class sioc:blog_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog/%U/%U/%d"
+	( in uname varchar not null, in forum_name varchar not null, in postid varchar not null, in comment_id int not null) .
+    create iri class sioc:tag_iri "http://^{URIQADefaultHost}^/dataspace/%U/concept#%U"
+	(in uname varchar not null, in tag varchar not null) .
+    create iri class sioc:blog_post_text_iri "http://^{URIQADefaultHost}^/dataspace/%U/weblog-text/%U/%U"
+	    ( in uname varchar not null, in forum_name varchar not null, in postid varchar not null) .
+    #Feeds
+    create iri class sioc:feed_iri "http://^{URIQADefaultHost}^/dataspace/feed/%d" (in feed_id integer not null) .
+    create iri class sioc:feed_item_iri "http://^{URIQADefaultHost}^/dataspace/feed/%d/%d" (in feed_id integer not null, in item_id integer not null) .
+    create iri class sioc:feed_item_text_iri "http://^{URIQADefaultHost}^/dataspace/feed/%d/%d/text" (in feed_id integer not null, in item_id integer not null) .
+    create iri class sioc:feed_mgr_iri "http://^{URIQADefaultHost}^/dataspace/%U/feeds/%U" (in uname varchar not null, in inst_name varchar not null) .
+    create iri class sioc:feed_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U/feeds/%U/%d/%d"
+	    (in uname varchar not null, in inst_name varchar not null, in item_id integer not null, in comment_id integer not null) .
+    #Bookmark
+    create iri class sioc:bmk_post_iri "http://^{URIQADefaultHost}^/dataspace/%U/bookmark/%U/%d"
+	    (in uname varchar not null, in inst_name varchar not null, in bmk_id integer not null) .
+    create iri class sioc:bmk_post_text_iri "http://^{URIQADefaultHost}^/dataspace/%U/bookmark/%U/%d/text"
+	    (in uname varchar not null, in inst_name varchar not null, in bmk_id integer not null) .
+    create iri class sioc:bmk_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/bookmark/%U"
+	    ( in uname varchar not null, in forum_name varchar not null) .
+    #Photo
+    create iri class sioc:photo_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/photos/%U"
+	    (in uname varchar not null, in inst_name varchar not null) .
+    create iri class sioc:photo_post_iri "http://^{URIQADefaultHost}^%s"
+	    (in path varchar not null) option (returns "http://^{URIQADefaultHost}^/DAV/%s") .
+    create iri class sioc:photo_post_text_iri "http://^{URIQADefaultHost}^%s/text"
+	    (in path varchar not null) option (returns "http://^{URIQADefaultHost}^/DAV/%s/text") .
+    create iri class sioc:photo_comment_iri "http://^{URIQADefaultHost}^%s:comment_%d"
+	    (in path varchar not null, in comment_id int not null) option (returns "http://^{URIQADefaultHost}^/DAV/%s:comment_%d") .
+    # Community
+    create iri class sioc:community_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/community/%U"
+	    (in uname varchar not null, in forum_name varchar not null) .
+    # Briefcase
+    create iri class sioc:odrive_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/briefcase/%U"
+	    (in uname varchar not null, in inst_name varchar not null) .
+    create iri class sioc:odrive_post_iri "http://^{URIQADefaultHost}^%s"
+	    (in path varchar not null) option (returns "http://^{URIQADefaultHost}^/DAV/%s") .
+    create iri class sioc:odrive_post_text_iri "http://^{URIQADefaultHost}^%s/text"
+	    (in path varchar not null) option (returns "http://^{URIQADefaultHost}^/DAV/%s/text") .
+    # Wiki
+    create iri class sioc:wiki_post_iri "http://^{URIQADefaultHost}^/dataspace/%U/wiki/%U/%U"
+	    (in uname varchar not null, in inst_name varchar not null, in topic_id varchar not null) .
+    create iri class sioc:wiki_post_text_iri "http://^{URIQADefaultHost}^/dataspace/%U/wiki/%U/%U/text"
+	    (in uname varchar not null, in inst_name varchar not null, in topic_id varchar not null) .
+    create iri class sioc:wiki_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/wiki/%U"
+	    ( in uname varchar not null, in forum_name varchar not null) .
+    # NNTPF
+    create iri class sioc:nntp_forum_iri "http://^{URIQADefaultHost}^/dataspace/discussion/%U"
+	    ( in forum_name varchar not null) .
+    create iri class sioc:nntp_post_iri "http://^{URIQADefaultHost}^/dataspace/discussion/%U/%U"
+	    ( in group_name varchar not null, in message_id varchar not null) .
+    create iri class sioc:nntp_post_text_iri "http://^{URIQADefaultHost}^/dataspace/discussion/%U/%U/text"
+	    ( in group_name varchar not null, in message_id varchar not null) .
+    create iri class sioc:nntp_role_iri "http://^{URIQADefaultHost}^/dataspace/discussion/%U#reader"
+	    ( in forum_name varchar not null) .
+', 1, fl);
+    sioc..ods_sioc_result ('IRI classes are created.');
+
+    commit work;
+    sioc..ods_sioc_result ('Creating the virtrdf:ODSDataspace storage.');
+ODS_SPARQL_QM_RUN ('
+prefix sioc: <http://rdfs.org/sioc/ns#>
+    prefix sioct: <http://rdfs.org/sioc/types#>
+prefix atom: <http://atomowl.org/ontologies/atomrdf#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix dc: <http://purl.org/dc/elements/1.1/>
+prefix dct: <http://purl.org/dc/terms/>
+prefix skos: <http://www.w3.org/2004/02/skos/core#>
+prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+    prefix bm: <http://www.w3.org/2002/01/bookmark#>
+    prefix exif: <http://www.w3.org/2003/12/exif/ns/>
+    prefix ann: <http://www.w3.org/2000/10/annotation-ns#>
+    alter quad storage virtrdf:DefaultQuadStorage
+    #  alter quad storage virtrdf:ODS
+  {
+	create virtrdf:ODSDataspace as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") option (exclusive)
+      {
+
+	    '
+	    || ODS_GET_APP_RDF_VIEWS () ||
+	    '
+        # Default ODS Site
+
+        sioc:default_site (DB.DBA.SIOC_SITE.WS_DUMMY) a sioc:Site ;
+        sioc:link sioc:iri (WS_LINK) ;
+ 	dc:title WS_WEB_TITLE .
+
+        # Forum
+        sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioc:Forum option (EXCLUSIVE);
+		sioc:id WAM_INST ;
+		    sioc:type APP_TYPE option (EXCLUSIVE) ;
+		sioc:description WAI_DESCRIPTION ;
+		sioc:link sioc:iri (LINK) ;
+		rdfs:seeAlso sioc:iri (SEE_ALSO) ;
+		sioc:has_host sioc:user_site_iri (U_NAME)
+	.
+
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:Weblog
+	            where (^{alias}^.WAM_APP_TYPE = ''WEBLOG2'') option (EXCLUSIVE) .
+
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:Bookmark
+	            where (^{alias}^.WAM_APP_TYPE = ''Bookmark'') option (EXCLUSIVE) .
+
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:Community
+	            where (^{alias}^.WAM_APP_TYPE = ''Community'') option (EXCLUSIVE) .
+
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:Feed
+	            where (^{alias}^.WAM_APP_TYPE = ''eNews2'') option (EXCLUSIVE) .
+
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:Briefcase
+	            where (^{alias}^.WAM_APP_TYPE = ''oDrive'') option (EXCLUSIVE) .
+
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:Photo
+	            where (^{alias}^.WAM_APP_TYPE = ''oGallery'') option (EXCLUSIVE) .
+
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:Wiki
+	            where (^{alias}^.WAM_APP_TYPE = ''oWiki'') option (EXCLUSIVE) .
+
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:Mail
+	            where (^{alias}^.WAM_APP_TYPE = ''oMail'') option (EXCLUSIVE) .
+
+	    # AtomOWL Feed
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a atom:Feed ;
+		    atom:link sioc:iri (LINK) ;
+		    atom:title WAM_INST .
+
+        # User
+        sioc:user_iri (DB.DBA.SIOC_USERS.U_NAME)
+		    a sioc:User option (EXCLUSIVE);
+       	sioc:id U_NAME ;
+	sioc:name U_FULL_NAME ;
+	sioc:email sioc:iri (E_MAIL) ;
+	sioc:email_sha1 E_MAIL_SHA1 ;
+	rdfs:seeAlso sioc:iri (SEE_ALSO) ;
+		    sioc:account_of foaf:person_iri (U_NAME) .
+
+        # Usergroup
+	    sioc:user_iri (DB.DBA.SIOC_GROUPS.U_NAME) a sioc:Usergroup option (EXCLUSIVE);
+       	sioc:id U_NAME
+	#where (^{alias}^.U_IS_ROLE = 1) XXX
+	.
+
+        # User Site
+	    sioc:user_site_iri (DB.DBA.SIOC_USERS.U_NAME) a sioc:Site option (EXCLUSIVE);
+	sioc:link sioc:user_iri (U_NAME)
+	.
+
+	# Site - Forum relation
+	sioc:user_site_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME)
+		    sioc:host_of sioc:forum_iri (U_NAME, APP_TYPE, WAM_INST)
+	.
+
+	# Roles & Membership
+	sioc:role_iri (DB.DBA.SIOC_ROLES.U_NAME, DB.DBA.SIOC_ROLES.APP_TYPE, DB.DBA.SIOC_ROLES.WAM_INST, DB.DBA.SIOC_ROLES.WMT_NAME)
+		    sioc:has_scope sioc:forum_iri (U_NAME, APP_TYPE, WAM_INST) .
+
+	sioc:forum_iri (DB.DBA.SIOC_ROLES.U_NAME, DB.DBA.SIOC_ROLES.APP_TYPE, DB.DBA.SIOC_ROLES.WAM_INST)
+		    sioc:scope_of  sioc:role_iri (U_NAME, APP_TYPE, WAM_INST, WMT_NAME) .
+
+	sioc:user_iri (DB.DBA.SIOC_ROLES.U_NAME)
+		    sioc:has_function sioc:role_iri (U_NAME, APP_TYPE, WAM_INST, WMT_NAME) .
+
+	    sioc:role_iri (DB.DBA.SIOC_ROLES.U_NAME, DB.DBA.SIOC_ROLES.APP_TYPE, DB.DBA.SIOC_ROLES.WAM_INST, DB.DBA.SIOC_ROLES.WMT_NAME)
+		    sioc:function_of sioc:user_iri (U_NAME) .
+
+	sioc:user_iri (DB.DBA.SIOC_ROLE_GRANTS.U_NAME)
+		    sioc:member_of sioc:user_group_iri (G_NAME) .
+
+	sioc:user_group_iri (DB.DBA.SIOC_ROLE_GRANTS.G_NAME)
+		    sioc:has_member sioc:user_iri (U_NAME) .
+
+	# Person
+	foaf:person_iri (DB.DBA.ODS_FOAF_PERSON.U_NAME) a foaf:Person ;
+        foaf:mbox sioc:iri(E_MAIL) ;
+	foaf:mbox_sha1sum E_MAIL_SHA1 ;
+	rdfs:seeAlso sioc:iri (SEE_ALSO) ;
+	foaf:nick U_NAME ;
+	foaf:name U_FULL_NAME ;
+	foaf:holdsAccount sioc:user_iri (U_NAME) ;
+        foaf:firstName FIRST_NAME ;
+	foaf:family_name LAST_NAME ;
+	foaf:gender GENDER ;
+	foaf:icqChatID ICQ ;
+	foaf:msnChatID MSN ;
+	foaf:aimChatID AIM ;
+	foaf:yahooChatID YAHOO ;
+	foaf:birthday BIRTHDAY ;
+	foaf:organization ORG ;
+	foaf:phone PHONE ;
+	foaf:based_near foaf:person_geo_iri (U_NAME) .
+
+	    foaf:person_geo_iri (DB.DBA.ODS_FOAF_PERSON.U_NAME) a geo:Point option (EXCLUSIVE) ;
+        geo:lat LAT ;
+        geo:lng LNG .
+
+	    # AtomOWL Person
+	    atom:person_iri (DB.DBA.ODS_FOAF_PERSON.U_NAME) a atom:Person option (EXCLUSIVE) ;
+		    atom:personName U_NAME ;
+		    atom:personEmail E_MAIL .
+
+
+        # Social Networking
+	    foaf:person_iri (DB.DBA.SIOC_KNOWS.FROM_NAME)
+	foaf:knows
+	    foaf:person_iri (TO_NAME).
+
+	    foaf:person_iri (DB.DBA.SIOC_KNOWS.TO_NAME)
+	foaf:knows
+	    foaf:person_iri (FROM_NAME).
+
+
+      }
+  } .
+', 1, fl);
+
+    sioc..ods_sioc_result ('The virtrdf:ODSDataspace storage is created.');
+}
+;
+
+create procedure ODS_GET_APP_RDF_VIEWS ()
+{
+  declare ret, tmp any;
+  ret := '';
+  for select DB.DBA.wa_type_to_app (WAT_NAME) as suffix from DB.DBA.WA_TYPES do
+    {
+      declare p_name varchar;
+      p_name := sprintf ('sioc.DBA.rdf_%s_view_str', suffix);
+      if (__proc_exists (p_name))
+	  {
+	    tmp := call (p_name) ();
+	    ret := ret || '\n' || tmp;
+	  }
+    }
+  if (__proc_exists ('sioc.DBA.rdf_nntpf_view_str'))
+    {
+      tmp := sioc.DBA.rdf_nntpf_view_str ();
+      ret := ret || '\n' || tmp;
+    }
+  return ret;
+};
+
+
+grant select on SIOC_SITE to "SPARQL";
+grant select on SIOC_USERS to "SPARQL";
+grant select on SIOC_ODS_FORUMS to "SPARQL";
+grant select on SIOC_ROLES to "SPARQL";
+grant select on SIOC_ROLE_GRANTS to "SPARQL";
+grant select on SIOC_GROUPS to "SPARQL";
+grant select on SIOC_KNOWS to "SPARQL";
+grant select on ODS_FOAF_PERSON to "SPARQL";
+grant execute on wa_type_to_app to "SPARQL";
+grant select on DB.DBA.NEWS_GROUPS to "SPARQL";
+grant execute on sioc.DBA.get_ods_link to "SPARQL";
+grant execute on DB.DBA.WA_LINK to "SPARQL";
+grant execute on sioc.DBA.sioc_date to "SPARQL";
+grant execute on sioc.DBA.user_obj_iri to "SPARQL";
+grant execute on sioc.DBA.forum_iri to "SPARQL";
+grant execute on sioc.DBA.post_iri to "SPARQL";
+grant execute on DB.DBA.ods_filter_uinf to "SPARQL";
+
+ODS_RDF_VIEW_INIT ();
+

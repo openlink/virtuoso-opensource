@@ -27,6 +27,12 @@
     <?vsp
       http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.account()));
     ?>
+    <?vsp
+      if (ODRIVE.WA.domain_is_public (self.domain_id)) {
+        http (sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC (RDF/XML)" href="%s" />', ODRIVE.WA.sioc_url (self.domain_id)));
+        http (sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC (N3/Turtle)" href="%s" />', replace(sprintf('%s/dataspace/%U/briefcase/%U/sioc.ttl', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.account (), ODRIVE.WA.domain_name (self.domain_id)), '+', '%2B')));
+      }
+    ?>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
@@ -35,36 +41,45 @@
     <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
     <?vsp
-      http(ODRIVE.WA.geo_url());
+      http (ODRIVE.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css" />
-    <meta name="dc.description" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description ()) ?>" />
-    <meta name="dc.title" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description ()) ?>" />
+    <meta name="dc.description" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description (self.domain_id)) ?>" />
+    <meta name="dc.title" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <script language="JavaScript" type="text/javascript" src="js/odrive.js" />
     <?vsp http('</script>'); ?>
     <title />
   </head>
   <body>
-    <v:page name="test1" xmlns:v="http://www.openlinksw.com/vspx/">
+    <v:page name="main" xmlns:v="http://www.openlinksw.com/vspx/">
+      <vm:variables>
+        <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
+        <v:variable persist="0" name="account_id" type="integer" default="-1"/>
+        <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
+        <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
+        <v:variable persist="0" name="settings" type="any" />
+      </vm:variables>
+
       <v:on-init>
         <![CDATA[
-          declare sCharset, sBrwCharset varchar;
+          set ISOLATION = 'Committed';
+          set http_charset = 'utf-8';
 
-          SET ISOLATION = 'Committed';
+          -- Initialize variables
+          declare aRequest, aSessInfo any;
 
-          -- Charset
-          sBrwCharset := http_request_header(lines, 'Accept-Charset', null);
-          if (sBrwCharset)
-            sCharset := regexp_match('[^,;$]*',sBrwCharset);
-          else
-            sCharset := 'UTF-8';
-          if (not position(upper(sCharset), charsets_list(0)))
-            sCharset := 'UTF-8';
-          exec(sprintf('SET CHARSET = ''%s''',sCharset));
-          exec(sprintf('SET HTTP_CHARSET = ''%s''',sCharset));
+          aRequest := ODRIVE.WA.validate_request (lines, 0);
+
+          aSessInfo := ODRIVE.WA.session_restore (aRequest, params);
+          self.domain_id := cast (get_keyword ('domain_id', aSessInfo, '-1') as integer);
+          self.account_id := cast (get_keyword ('user_id', aSessInfo, '-1') as integer);
+          self.account_role := get_keyword ('user_role', aSessInfo, '');
+          self.accountName := get_keyword ('user_name', aSessInfo, '');
+          self.settings := ODRIVE.WA.settings (self.account_id);
         ]]>
       </v:on-init>
+
       <v:placeholder />
     </v:page>
   </body>

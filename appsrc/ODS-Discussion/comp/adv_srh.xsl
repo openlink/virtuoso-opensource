@@ -47,7 +47,7 @@
 
 <xsl:template name="vm:search_fills">
   <table width="100%" id="content" cellspacing="0" cellpadding="0">
-    <vm:template enabled="--self.vc_authenticated">
+    <vm:template >
       <tr>
         <th colspan="2">Advanced Search</th>
       </tr>
@@ -55,9 +55,8 @@
         <td><b>Note</b></td>
         <td>
           Type the words or phrases (contained in double quotes) separated by
-          <STRONG>AND</STRONG> or <STRONG>OR</STRONG> keywords into
-          the text area provided that you wish to search the messages in News groups for.
-          Please use double quotes around phrases with alphanumeric characters
+          <STRONG>AND</STRONG> or <STRONG>OR</STRONG> keywords.
+          Please use double quotes around phrases with alphanumeric characters.
         </td>
       </tr>
       <tr>
@@ -73,24 +72,28 @@
       <tr>
         <td>
           <span class="header">
-	    <v:label value="--'Date'" format="%s"/>
+            <v:label value="--'Date after'" format="%s"/>
           </span>
         </td>
         <td>
-          <v:select-list name="sel_period">
-            <v:before-data-bind><v:script><![CDATA[
-              declare sel_vec any;
-              sel_vec := vector ('Newer than', 'Older than', 'Exactly');
-              (control as vspx_select_list).vsl_items := sel_vec;
-              (control as vspx_select_list).vsl_item_values := sel_vec;
-              (control as vspx_select_list).vsl_selected_inx := 0;
-            ]]></v:script></v:before-data-bind>
-          </v:select-list>
-          <v:text name="date_d_label" xhtml_size="--2" value="--self.date_m" />/
-          <v:text name="date_m_label" xhtml_size="--2" value="--self.date_d" />/
-          <v:text name="date_y_label" xhtml_size="--4" value="--self.date_y" /> (MM/DD/YYYY)
+          <v:text name="date_d_after" xhtml_size="--2" value="" /> -
+          <v:text name="date_m_after" xhtml_size="--2" value="" /> -
+          <v:text name="date_y_after" xhtml_size="--4" value="" /> (DD-MM-YYYY)
         </td>
       </tr>
+      <tr>
+        <td>
+          <span class="header">
+	    <v:label value="--'Date before'" format="%s"/>
+          </span>
+        </td>
+        <td>
+          <v:text name="date_d_before" xhtml_size="--2" value="" /> -
+          <v:text name="date_m_before" xhtml_size="--2" value="" /> -
+          <v:text name="date_y_before" xhtml_size="--4" value="" /> (DD-MM-YYYY)
+        </td>
+      </tr>
+
       <tr>
         <td>
           <span class="header">
@@ -99,6 +102,7 @@
         </td>
         <td>
           <v:text name="group_m_label" value="--self.group_mach" />
+          <a href="#"> add newsgroup(s)</a>
         </td>
       </tr>
       <tr>
@@ -108,9 +112,6 @@
           <input type="reset" name="reset" value="Clear" />
         </td>
       </tr>
-  </vm:template>
-  <vm:template enabled="--abs (self.vc_authenticated - 1)">
-     To advance search you must be login first.
   </vm:template>
    </table>
 </xsl:template>

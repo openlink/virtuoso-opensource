@@ -1290,10 +1290,28 @@ create procedure OMAIL.WA.domain_description(
 
 -------------------------------------------------------------------------------
 --
+create procedure OMAIL.WA.domain_nntp_name (
+  in domain_id integer)
+{
+  return sprintf ('ods.mail.%s.%s', OMAIL.WA.domain_owner_name (domain_id), OMAIL.WA.string2nntp (OMAIL.WA.domain_name (domain_id)));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure OMAIL.WA.domain_owner_id (
   inout _domain_id integer)
 {
   return (select A.WAM_USER from WA_MEMBER A, WA_INSTANCE B where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = _domain_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.domain_owner_name (
+  in domain_id integer)
+{
+  return (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = OMAIL.WA.domain_owner_id (domain_id));
 }
 ;
 
@@ -2637,33 +2655,17 @@ create procedure OMAIL.WA.omail_message(
     OMAIL.WA.utl_redirect(sprintf('err.vsp?sid=%s&realm=%s&err=%d',_sid,_realm,_error));
     return;
 
-  } else {
-    --declare exit handler for sqlstate '*' { return dbg_obj_print(__SQL_MESSAGE);};
+  } else if (get_keyword('fa_tags_save.x', params, '') <> '') {
+    declare tags varchar;
 
-    declare N integer;
-    declare tag, tags varchar;
-
-    if (get_keyword('fa_tag_add.x', params, '') <> '') {
-      -- add tag
-      tag := get_keyword('tag', params, '');
-      if (not OMAIL.WA.validate_tags(tag)) {
+    -- save tags
+    tags := trim(get_keyword('tags', params, ''));
+    if (tags <> '')
+      if (not OMAIL.WA.validate_tags (tags)) {
         OMAIL.WA.utl_redirect(sprintf('err.vsp?sid=%s&realm=%s&err=%d',_sid,_realm,4001));
         return;
       }
-      tags := OMAIL.WA.tags_select(_domain_id,_user_id,OMAIL.WA.omail_getp('msg_id',_params));
-      tags := OMAIL.WA.tags_join(tags, tag);
-      OMAIL.WA.tags_update(_domain_id,_user_id,OMAIL.WA.omail_getp('msg_id',_params), tags);
-    } else {
-      for (N := 0; N < length(params); N := N + 2)
-        if (params[N] like 'fa_tag_delete_%') {
-          tag := replace(replace(replace(params[N], 'fa_tag_delete_', ''), '.x', ''), '.y', '');
-          tags := OMAIL.WA.tags_select(_domain_id,_user_id,OMAIL.WA.omail_getp('msg_id',_params));
-          tags := OMAIL.WA.tag_delete(tags, tag);
           OMAIL.WA.tags_update(_domain_id,_user_id,OMAIL.WA.omail_getp('msg_id',_params), tags);
-          goto _break;
-        }
-    _break:;
-    }
   }
 
   -- Change Settings --------------------------------------------------------------------
@@ -3121,9 +3123,9 @@ create procedure OMAIL.WA.omail_open_message(
     if (OMAIL.WA.omail_getp('re_mode',_params) = 1) {
       -- get TO or Reply-To
       if (trim(mail_header(get_keyword('header', _fields, ''), 'Reply-To')) <> '')
-        _address := _address || OMAIL.WA.omail_address2xml('to', trim(mail_header(get_keyword('header', _fields, ''), 'Reply-To')), 0);
+        _address := OMAIL.WA.omail_address2xml('to', trim(mail_header(get_keyword ('header', _fields, ''), 'Reply-To')), 0);
       else
-        _address := _address || OMAIL.WA.omail_address2xml('to', _from, 0); -- from -> to
+        _address := OMAIL.WA.omail_address2xml('to', _from, 0); -- from -> to
     } else if (OMAIL.WA.omail_getp('re_mode',_params) = 2) {
       -- get FROM, TO, CC and BCC field
       _address := OMAIL.WA.omail_replyAddress(_user_id, get_keyword('address', _fields, ''));
@@ -3792,6 +3794,7 @@ create procedure OMAIL.WA.omail_save_msg(
   _address :=  sprintf('%s%s', _address, OMAIL.WA.omail_address2xml('bcc', _bcc,  0));
   _address :=  sprintf('%s%s', _address, OMAIL.WA.omail_address2xml('dcc', _dcc,  0));
   _address :=  sprintf('%s</addres_list>',_address);
+  dbg_obj_print (_address, _to);
 
   _rfc_id  :=  get_keyword('rfc_id', _params,'');
   _rfc_references := get_keyword('rfc_references', _params,'');
@@ -5183,7 +5186,7 @@ create procedure OMAIL.WA.omail_write(
 {
   -- www procedure
 
-  declare _rs,_sid,_realm,_wp,_sql_result1,_sql_result2,_faction,_pnames,_signature,_to,_cc,_bcc,_dcc,_subject,_eparams_url,_scopy,_html,_priority,_body varchar;
+  declare _rs,_sid,_realm,_wp,_sql_result1,_sql_result2,_faction,_pnames,_signature,_to,_cc,_bcc,_dcc,_subject,_tags,_eparams_url,_scopy,_html,_priority,_body varchar;
   declare _params,_page_params,_settings any;
   declare _sql_statm,_sql_params,_user_info any;
   declare _ind,_len,_user_id,_folder_id,_error,_msg_id,_domain_id integer;
@@ -5216,12 +5219,15 @@ create procedure OMAIL.WA.omail_write(
     _faction := 'preview';
   else if (get_keyword('fa_attach.x',params,'') <> '')
     _faction := 'attach';
+  else if (get_keyword('fa_dav.x',params,'') <> '')
+    _faction := 'DAV';
 
   _to       := replace(get_keyword('to', params, ''), 'mailto:', '');
   _cc       := get_keyword('cc', params, '');
   _bcc      := get_keyword('bcc', params, '');
   _dcc      := get_keyword('dcc', params, '');
   _subject  := get_keyword('subject', params, '');
+  _tags     := get_keyword('tags', params, '');
   _scopy    := get_keyword('ch_scopy', params, get_keyword('save_copy', _settings, '1'));
   _html     := get_keyword('html', params, '1');
   _priority := get_keyword('priority', params, '');
@@ -5255,11 +5261,39 @@ create procedure OMAIL.WA.omail_write(
     return;
   }
   if (_faction = 'save') {
-    -- > 'save new /update/  message into Draft'
+    -- > save new /update/  message into 'Draft'
     _msg_id := OMAIL.WA.omail_save_msg(_domain_id,_user_id,params,OMAIL.WA.omail_getp('msg_id',_params),_error);
     OMAIL.WA.omail_set_settings(_domain_id, _user_id, 'base_settings', _settings);
     if (_error = 0)
       OMAIL.WA.utl_redirect(sprintf('write.vsp?sid=%s&realm=%s&wp=%d%s',_sid,_realm,_msg_id,_eparams_url));
+    else
+      OMAIL.WA.utl_redirect(sprintf('err.vsp?sid=%s&realm=%s&err=%d',_sid,_realm,_error));
+    return;
+  }
+  if (_faction = 'DAV') {
+    -- > save new /update/ message and attached into 'Draft'
+    _msg_id := OMAIL.WA.omail_save_msg(_domain_id,_user_id, params, OMAIL.WA.omail_getp('msg_id',_params), _error);
+    OMAIL.WA.omail_set_settings(_domain_id, _user_id, 'base_settings', _settings);
+    if (_error <> 0)
+      goto _end;
+
+    -- save attached
+    declare N integer;
+    declare fileName, fParams any;
+    N := 1;
+    while (1) {
+      fileName := get_keyword(sprintf('f%d', N), params, '');
+      if (fileName = '')
+        goto _end;
+      fParams := vector ('att_source', '1', 'att_2', fileName);
+      OMAIL.WA.omail_insert_attachment(_domain_id, _user_id, fParams, _msg_id, _error);
+      if (_error <> 0)
+        goto _end;
+      N := N + 1;
+    }
+  _end:;
+    if (_error = 0)
+      OMAIL.WA.utl_redirect(sprintf('write.vsp?sid=%s&realm=%s&wp=%d%s',_sid,_realm,_msg_id, OMAIL.WA.omail_external_params_url(params)));
     else
       OMAIL.WA.utl_redirect(sprintf('err.vsp?sid=%s&realm=%s&err=%d',_sid,_realm,_error));
     return;
@@ -5302,6 +5336,9 @@ create procedure OMAIL.WA.omail_write(
     }
     if (_subject <> '')
       _sql_result1 := sprintf('%s<subject>%s</subject>\n',_sql_result1,_subject);
+
+    if (_tags <> '')
+      _sql_result1 := sprintf('%s<tags>%s</tags>\n',_sql_result1,_tags);
 
     if (_scopy = '1')
       OMAIL.WA.omail_setparam('save_copy', _settings, 1);
@@ -6162,6 +6199,17 @@ create procedure OMAIL.WA.xml2string(
 
 -------------------------------------------------------------------------------
 --
+create procedure OMAIL.WA.string2nntp (
+  in S varchar)
+{
+  S := replace (S, '.', '[dot]');
+  S := replace (S, '@', '[at]');
+  return sprintf ('%U', S);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure OMAIL.WA.utf2wide (
   inout S any)
 {
@@ -6902,7 +6950,7 @@ create procedure OMAIL.WA.nntp_update (
   if (nConversation = 0 and oConversation = 0)
     return;
 
-  nInstance := OMAIL.WA.domain_name(_domain_id);
+  nInstance := OMAIL.WA.domain_nntp_name (_domain_id);
   if (oConversation = 1 and nConversation = 0) {
 
     delete from DB.DBA.NEWS_MULTI_MSG where NM_GROUP = nntpGroup;

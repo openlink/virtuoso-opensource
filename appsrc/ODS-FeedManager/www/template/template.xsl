@@ -122,6 +122,25 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <xsl:template match="vm:popup_external_page_wrapper">
+    <xsl:element name="v:variable">
+      <xsl:attribute name="persist">0</xsl:attribute>
+      <xsl:attribute name="name">page_owner</xsl:attribute>
+      <xsl:attribute name="type">varchar</xsl:attribute>
+      <xsl:choose>
+        <xsl:when test="../@vm:owner">
+          <xsl:attribute name="default">'<xsl:value-of select="../@vm:owner"/>'</xsl:attribute>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:attribute name="default">null</xsl:attribute>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:element>
+    <xsl:apply-templates select="node()|processing-instruction()"/>
+    <div class="copyright"><vm:copyright /></div>
+  </xsl:template>
+
+  <!--=========================================================================-->
   <xsl:template match="vm:pagewrapper">
     <v:variable name="nav_pos_fixed" type="integer" default="0"/>
     <v:variable name="nav_top" type="integer" default="0"/>
@@ -131,12 +150,13 @@
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
-      <div id="HD">
         <ods:ods-bar app_type='eNews2'/>
-        <div class="enews_app_page_hdr app_page_hdr">
-          <img class="hdr_img" src="image/enewsbanner_sml.jpg" alt="ODS-Feed Manager"/>
+      <div style="background-color: #fff;">
+        <div style="float: left;">
+          <img src="image/enewsbanner_sml.jpg" alt="ODS-Feed Manager"/>
+        </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
-            <div class="app_hdr_cmds_ctr">
+          <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
             <v:text name="keywords" value="" xhtml_onkeypress="return submitEnter(\'F1\', \'GO\', event)"/>
             <xsl:call-template name="nbsp"/>
             <v:button name="GO" action="simple" style="url" value="Search" xhtml_alt="Simple Search">
@@ -150,20 +170,18 @@
                 self.vc_redirect(sprintf('search.vspx?keywords=%s&amp;mode=advanced', self.keywords.ufl_value));
             	</v:on-post>
   	        </v:button>
-              <div class="app_prefs_ctr">
+          </div>
+        </v:template>
+        <br style="clear: left;"/>
+      </div>
+      <div style="text-align: right; padding: 0em 0.5em 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
           <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
             <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
             |
       	  </v:template>
           <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>
-              </div> <!-- app_prefs_ctr -->
-            </div> <!-- app_hdr_cmds_ctr -->
-      	  </v:template>
-        <br style="clear: left;"/>
+      </div>
       <v:include url="enews_login.vspx"/>
-        </div> <!-- app_page_hdr -->
-      </div> <!-- #HD -->
-      <div id="MD">
       <table id="MTB">
         <tr>
           <!-- Navigation left column -->
@@ -189,7 +207,6 @@
               	</td>
               </tr>
             </table>
-      </div> <!-- #MD -->
       <div id="FT">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
@@ -199,12 +216,9 @@
           </a>
     </div>
         <div id="FT_R">
-          <a href="aboutus.html">About Us</a> |
-          <a href="faq.html">FAQ</a> |
-          <a href="privacy.html">Privacy</a> |
-          <a href="rabuse.vspx">Report Abuse</a> |
-          <a href="advertise.html">Advertise</a> |
-          <a href="contact.html">Contact Us</a>
+          <a href="<?V ENEWS.WA.wa_home_link () ?>faq.html">FAQ</a> |
+          <a href="<?V ENEWS.WA.wa_home_link () ?>privacy.html">Privacy</a> |
+          <a href="<?V ENEWS.WA.wa_home_link () ?>rabuse.vspx">Report Abuse</a>
 	    <div><vm:copyright /></div>
 	    <div><vm:disclaimer /></div>
     </div>
@@ -232,6 +246,8 @@
       <xsl:call-template name="vm:ocs-link" />
       <xsl:call-template name="vm:opml-link" />
       <xsl:call-template name="vm:foaf-link" />
+		  <vm:sioc-link format="rdf"> SIOC (RDF/XML)</vm:sioc-link>
+		  <vm:sioc-link format="ttl"> SIOC (N3/Turtle)</vm:sioc-link>
     </div>
   </xsl:template>
 
@@ -303,7 +319,7 @@
   <xsl:template name="vm:foaf-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sOFM.foaf" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
+        http(sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', ENEWS.WA.foaf_url (self.account_id)));
     ?>
     </div>
   </xsl:template>
@@ -314,6 +330,29 @@
     <?vsp
       http(sprintf('<a href="%sOFM.podcast" target="_blank" title="PODCAST export" alt="PODCAST export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> Podcast</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
     ?>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template match="vm:sioc-link">
+    <div>
+      <?vsp
+      {
+        declare suffix varchar;
+
+        suffix := 'rdf';
+      ?>
+      <xsl:if test="@format">
+        <xsl:processing-instruction name="vsp">
+  	      suffix := '<xsl:value-of select="@format"/>';
+        </xsl:processing-instruction>
+      </xsl:if>
+  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/feeds/%U/sioc.%s', ENEWS.WA.host_url (), ENEWS.WA.account(), ENEWS.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
+    	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
+      </a>
+      <?vsp
+        }
+      ?>
     </div>
   </xsl:template>
 

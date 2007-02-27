@@ -181,8 +181,10 @@ create method wa_new_inst (in login varchar) for ODS.COMMUNITY.wa_community {
   declare descr,  home, dav_folder VARCHAR;
 
 
-  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
-
+  {
+   declare exit handler for not found signal('WA002', 'owner does not exist');
+   select U_ID into uid from DB.DBA.SYS_USERS where U_NAME = login;
+  }
 
   if (not exists (select 1 from COMMUNITY.SYS_COMMUNITY_INFO where CI_OWNER = uid)) {
     num := 0;
@@ -624,6 +626,7 @@ create method wa_dashboard_last_item () for ODS.COMMUNITY.wa_community
        left join DB.DBA.WA_INSTANCE I on M.WAM_INST=I.WAI_NAME
        left join DB.DBA.SYS_USERS U on U.U_ID=M.WAM_USER
      where WAM_APP_TYPE = 'Community' and WAM_STATUS = 1  and WAM_IS_PUBLIC=1
+           and WAI_NAME = self.wa_name
      order by WAI_MODIFIED desc
 
    do {

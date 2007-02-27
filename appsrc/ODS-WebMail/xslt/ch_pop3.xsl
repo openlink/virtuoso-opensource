@@ -176,7 +176,7 @@
   <xsl:template match="account">
     <table width="600" cellpadding="0" cellspacing="0" class="content">
       <colgroup>
-        <col class="w150"/>
+        <col class="w160"/>
         <col/>
       </colgroup>
       <caption>

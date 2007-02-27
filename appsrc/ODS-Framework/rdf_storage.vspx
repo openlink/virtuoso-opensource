@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="blog-home-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>RDF Data Administration</vm:title>
+    </vm:header>
+    <vm:pagewrapper>
+      <vm:variable name="confirm" type="integer" default="0" persist="0" param-name="cnf"/>
+      <vm:variable name="what" type="varchar" default="null" persist="0"/>
+      <vm:variable name="doit" type="varchar" default="null" persist="0"/>
+
+      <vm:navigation on="settings"/>
+      <vm:navigation1 on="admin"/>
+      <vm:navigation2 on="endpoint"/>
+      <vm:rawheader caption="RDF Data Administration"/>
+      <vm:body>
+	  <script type="text/javascript"><![CDATA[
+function UpdateTab()
+{
+    var cnt = document.getElementById('message');
+    var xmlhttp = null;
+    try
+    {
+	xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+    }
+    catch (e) { }
+
+    if (xmlhttp == null)
+    {
+	try
+	{
+	    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	catch (e) { }
+    }
+    if (xmlhttp == null)
+	xmlhttp = new XMLHttpRequest();
+
+    xmlhttp.open("GET", "rdf_storage_state.vsp", false);
+    xmlhttp.setRequestHeader("Pragma", "no-cache");
+    xmlhttp.send("");
+    cnt.innerHTML = xmlhttp.responseText;
+    if (xmlhttp.status != 201)
+      timer = setTimeout("UpdateTab()", 3000);
+
+}
+	      ]]></script>
+	  <v:on-init>
+	      <![CDATA[
+  declare reqs, ct any;
+  reqs := http_pending_req ();
+  ct := 0;
+  foreach (any x in reqs) do
+    {
+      if (x[1] = http_path ())
+        ct := ct + 1;
+    }
+
+  -- no more than one thread must run the time wait queue
+  if (ct > 1)
+    {
+      self.confirm := -1;
+    }
+  ]]>
+</v:on-init>
+        <vm:login redirect="index.vspx"/>
+        <div class="box">
+          <div>
+	    <v:template name="tmpl1" type="simple" condition="self.confirm = 0">
+		<div class="fm">
+		    <p>
+			The "Rebuild RDF Data" function will clean the persisted ODS RDF data and will re-load it.<br />
+			The "Rebuild RDF View" function will re-generate the ODS RDF view. <br/>
+			Warning: Depending of the data volume of this ODS installation the above may take a very long time, please be patient.
+		    </p>
+		    <v:form name="build_f" mthod="POST" type="simple">
+			<fieldset>
+			    <span class="fm_ctl_btn">
+				<v:button action="simple" name="rdf_data" value="Rebuild RDF Data">
+				    <v:on-post>
+					self.confirm := 1;
+					self.what := 'data';
+				    </v:on-post>
+				</v:button>
+				<v:button action="simple" name="rdf_view" value="Rebuild RDF View">
+				    <v:on-post>
+					self.confirm := 1;
+					self.what := 'view';
+				    </v:on-post>
+				</v:button>
+			    </span>
+			</fieldset>
+		    </v:form>
+		</div>
+            </v:template>
+	    <v:template name="tmpl2" type="simple" condition="self.confirm = 1">
+		<div class="fm">
+		    <p>
+			Do you really want to rebuild the <?V case when self.what = 'view' then 'ODS RDF View' else 'ODS RDF Data' end ?>?
+		    </p>
+		    <v:form name="conf_f" mthod="POST" type="simple">
+			<fieldset>
+			    <span class="fm_ctl_btn">
+				<v:button name="cancel_btn" value="No" action="simple">
+				    <v:on-post>
+					self.vc_redirect ('rdf_storage.vspx');
+				    </v:on-post>
+				</v:button>
+				<v:button name="save_btn" action="submit" value="Yes">
+				    <v:on-post>
+					self.doit := self.what;
+					self.vc_redirect ('rdf_storage.vspx?cnf=-1');
+				    </v:on-post>
+				</v:button>
+			    </span>
+			</fieldset>
+		    </v:form>
+		</div>
+            </v:template>
+	    <v:template name="tmpl3" type="simple" condition="self.confirm = -1">
+		<div id="message">The ODS RDF update process is already running.</div>
+	  <script type="text/javascript"><![CDATA[
+setTimeout("UpdateTab()", 1000);
+]]></script>
+		<div class="fm">
+		    <span class="fm_ctl_btn">
+			<v:button name="back_btn" value="Go back to admin pages" action="simple">
+			    <v:on-post>
+				self.vc_redirect ('site_settings.vspx');
+			    </v:on-post>
+			</v:button>
+		    </span>
+		</div>
+	    </v:template>
+          </div>
+        </div>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+  <?vsp
+  {
+    if (self.doit = 'view' or self.doit = 'data')
+      {
+        http_flush ();
+      }
+
+    declare exit handler for sqlstate '*'
+    {
+      registry_set ('ods_rdf_state', sprintf ('Error: %s', regexp_match ('[^\r\n]*', __SQL_MESSAGE)));
+      goto endup;
+    };
+
+    commit work;
+    if (self.doit = 'view')
+      {
+	-- run the rdf_view composition
+	registry_set ('ods_rdf_state', 'ODS RDF view update started');
+	connection_set ('iri_result', 2);
+	ODS_RDF_VIEW_INIT_1 (0);
+	registry_set ('ods_rdf_state', 'ODS RDF view update finished');
+      }
+    else if (self.doit = 'data')
+      {
+	-- run the data collecting
+	registry_set ('ods_rdf_state', 'ODS RDF data update started');
+	sioc..fill_ods_sioc_online (1, 2);
+	registry_set ('ods_rdf_state', 'ODS RDF data update finished');
+      }
+    endup:;
+   }
+  ?>
+</v:page>

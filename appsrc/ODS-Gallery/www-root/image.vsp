@@ -21,7 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-    declare image any;
+    declare image,image_type any;
     declare image_id varchar;
     declare sid varchar;
     declare size integer;
@@ -31,9 +31,10 @@
     size := atoi(get_keyword('size',params,'1'));
 
     if(image_id <> ''){
+      image := blob_to_string(PHOTO.WA.get_thumbnail(sid,image_id,size,image_type));
+dbg_obj_print(image_type);
       http_rewrite();
-      http_header (sprintf('Content-Type: image/jpeg\r\n'));
-      image := blob_to_string(PHOTO.WA.get_thumbnail(sid,image_id,size));
+      http_header (sprintf('Content-Type: %s\r\n',image_type));
       http(image);
       http_flush();
     }else{

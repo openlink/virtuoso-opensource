@@ -71,7 +71,7 @@
                 '<a href="http://www.spurl.net/spurl.php?title=<TITLE>&url=<URL>" target="_ARNW_"><img border="0" src="image/gems/spurl.gif"></a>&nbsp;' ||
                 '<a href="http://www.simpy.com/simpy/LinkAdd.do?href=<URL>&title=<TITLE>" target="_ARNW_"><img border="0" src="image/gems/simpy.png"></a>&nbsp;' ||
                 '<a href="http://www.blinklist.com/index.php?Action=Blink/addblink.php&Description=&Url=<URL>&Title=<TITLE>" target="_ARNW_"><img border="0" src="image/gems/blinklist.gif"></a>';
-        if (mode = 'p') {
+        if ((mode = 'c') and (domain_id < 0)) {
           for (select EFI_ID,
                       ENEWS.WA.show_title(ENEWS.WA.wide2utf(EFI_TITLE)) EFI_TITLE,
                       ENEWS.WA.show_description(EFI_DESCRIPTION) DESCRIPTION,
@@ -135,7 +135,7 @@
             goto _end;
           }
         }
-        if ((mode = 'c') or (mode = 's') or (mode = 't')) {
+        if (((mode = 'c') and (domain_id > 0)) or (mode = 's') or (mode = 't') or (mode = 'f')) {
           tagError := '';
           if (get_keyword('atag', self.vc_event.ve_params, '') <> '') {
             tag := ENEWS.WA.tag_prepare(get_keyword('tag', self.vc_event.ve_params, ''));
@@ -160,7 +160,7 @@
           declare flag varchar;
           flag := get_keyword('f', self.vc_event.ve_params, 'r1');
 
-          if ((not isnull(account_id)) and (flag <> 'x')) {
+          if ((account_id > 0) and (flag <> 'x')) {
             ENEWS.WA.feed_change_flag(item_id, account_id, flag);
             http(sprintf('<input type="hidden" name="show" value="1"/>', flag));
           }
@@ -207,17 +207,8 @@
             ct := '';
             cv := '';
             tt := '';
-            if (account_id >= 0) {
-            if (coalesce(EFID_READ_FLAG, 0) = 1) {
-                rt := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%d\', \'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, domain_id, account_id, 'r0', mode, 'Mark unread', 'Mark unread');
-            } else {
-                rt := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%d\', \'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, domain_id, account_id, 'r1', mode, 'Mark read', 'Mark read');
-            }
-            if (coalesce(EFID_KEEP_FLAG, 0) = 1) {
-                ft := sprintf(' |  <a href="javascript: loadFromIFrame(\'%d\', \'%d\', \'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, domain_id, account_id, 'f0', mode, 'Unflag This', 'Unflag This');
-            } else {
-                ft := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%d\', \'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, domain_id, account_id, 'f1', mode, 'Flag This', 'Flag This');
-            }
+
+            -- Mail this
             mail_domain_id := ENEWS.WA.oMail_check(account_id);
             if (mail_domain_id) {
               mt := sprintf('subject=%U&body=%U', sprintf('OFM post: %s', EFI_TITLE), sprintf('OFM post:\n\nFeed: %s - %s\nPost: %s - %s', EFD_TITLE, EF_URI, EFI_TITLE, EFI_LINK));
@@ -226,8 +217,6 @@
               mt := sprintf('subject=%s&body=%s', sprintf('OFM post: %s', EFI_TITLE), sprintf('OFM post:\n\nChannel: %s - %s\nPost: %s - %s', EFD_TITLE, EF_URI, EFI_TITLE, EFI_LINK));
                 mt := sprintf(' | <a href="mailto:?%s" title="%s">%s</a>', mt, 'Mail This', 'Mail This');
             }
-            if (ENEWS.WA.blog_check(domain_id))
-                bt := sprintf(' | <a href="#" onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Blog This', 'Blog This');
 
             -- Comment this
             if (not isnull(EFI_COMMENT_API))
@@ -237,23 +226,44 @@
             if (ENEWS.WA.conversation_enable(domain_id))
                 cv := sprintf(' | <a href="#" onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Conversation', 'Conversation');
 
+
+            if (account_id >= 0) {
+              if (coalesce(EFID_READ_FLAG, 0) = 1) {
+                rt := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%d\', \'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, domain_id, account_id, 'r0', mode, 'Mark unread', 'Mark unread');
+              } else {
+                rt := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%d\', \'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, domain_id, account_id, 'r1', mode, 'Mark read', 'Mark read');
+              }
+              if (coalesce(EFID_KEEP_FLAG, 0) = 1) {
+                ft := sprintf(' |  <a href="javascript: loadFromIFrame(\'%d\', \'%d\', \'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, domain_id, account_id, 'f0', mode, 'Unflag This', 'Unflag This');
+              } else {
+                ft := sprintf(' | <a href="javascript: loadFromIFrame(\'%d\', \'%d\', \'%d\', \'%s\', \'%s\');" title="%s">%s</a>', EFI_ID, domain_id, account_id, 'f1', mode, 'Flag This', 'Flag This');
+              }
+
+              -- Blog this
+              if (ENEWS.WA.blog_check(domain_id))
+                bt := sprintf(' | <a href="#" onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Blog This', 'Blog This');
+
             -- Tags
-            tt := sprintf('&nbsp;Tags <a href="#" onclick="javascript: window.open(\'tags.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" class="nolink4" title="Revise tags">(Revise)</a>: <input type="text" name="tag"/>%s <a href="#" onclick="javascript: myPost(\'F1\', \'atag\', \'+\'); return false"><img src="image/add_16.png" border="0" alt="Add Tag" title="Add Tag" /></a>', sid, realm, domain_id, account_id, EFI_ID, tagError);
+            }
+            tt := '';
+            if (account_id >= 0)
+              tt := tt || sprintf('<a href="#" onclick="javascript: window.open(\'tags.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" class="nolink4" title="Revise tags">(Revise)</a>: <input type="text" name="tag"/>%s <a href="#" onclick="javascript: myPost(\'F1\', \'atag\', \'+\'); return false"><img src="image/add_16.png" border="0" alt="Add Tag" title="Add Tag" /></a>', sid, realm, domain_id, account_id, EFI_ID, tagError);
 
             tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
             tags := ENEWS.WA.tags2vector (tags);
             for (i := 0; i < length(tags); i := i + 1) {
-              tt := concat(tt, sprintf(', <a href="#" onclick="javascript: showTag(\'%s\');" title="Show items with tag %s"><b>%s</b></a>', tags[i], tags[i], tags[i]));
-              tt := concat(tt, sprintf(' <a href="#" onclick="javascript: myPost(\'F1\', \'dtag\', \'%d\'); return false"><img src="image/del_16.png" border="0" alt="Delete Tag" title="Delete Tag" /></a>', i));
+              tt := tt || sprintf(', <a href="#" onclick="javascript: showTag(\'%s\');" title="Show items with tag %s"><b>%s</b></a>', tags[i], tags[i], tags[i]);
+              if (account_id >= 0)
+                tt := tt || sprintf(' <a href="#" onclick="javascript: myPost(\'F1\', \'dtag\', \'%d\'); return false"><img src="image/del_16.png" border="0" alt="Delete Tag" title="Delete Tag" /></a>', i);
             }
-            } else {
-              tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
-              tags := ENEWS.WA.tags2vector (tags);
-              for (i := 0; i < length(tags); i := i + 1)
-                tt := concat(tt, sprintf(' %s |', tags[i]));
               tt := trim(tt, '|');
-              if (tt <> '')
+            tt := trim(tt, ',');
+            if (tt <> '') {
+              if (account_id >= 0) {
+                tt := ' Tags ' || tt;
+              } else {
                 tt := 'Tags:' || tt;
+            }
             }
 
             http(sprintf('<div id="feed_header">&nbsp;<b>Post</b>: <i>%s</i> | <b>Author</b>: <i>%s</i> | <b>Feed</b>: <i>%s</i>%s</div>', lt, author, ut, en));

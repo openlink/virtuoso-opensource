@@ -19,6 +19,8 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+--
+
 
 create procedure nntpf_exec_no_error(in expr varchar) {
   declare state, message, meta, result any;
@@ -46,11 +48,13 @@ nntpf_exec_no_error ('create table NNFE_THR (
 	FTHR_UID		integer,
 	FTHR_MESS_DETAILS	any,
 	FTHR_TOPIC_ID		varchar,
+	FTHR_FROM		varchar,
 	primary key (FTHR_MESS_ID, FTHR_GROUP)
 )')
 ;
 
 wa_add_col('DB.DBA.NNFE_THR', 'FTHR_TOPIC_ID', 'varchar');
+wa_add_col('DB.DBA.NNFE_THR', 'FTHR_FROM', 'varchar');
 
 nntpf_exec_no_error (
 'create table NNTPF_SUBS
@@ -74,6 +78,10 @@ nntpf_exec_no_error ('create index IN_FTHR_SUBJ on NNFE_THR (FTHR_SUBJ)')
 ;
 
 nntpf_exec_no_error ('create index NNFE_THR_DATE_IDX on NNFE_THR (FTHR_GROUP, FTHR_TOP, FTHR_DATE)')
+;
+
+-- the external links
+nntpf_exec_no_error ('create table NNTPF_MSG_LINKS (NML_MSG_ID varchar, NML_URL varchar, primary key (NML_MSG_ID, NML_URL))')
 ;
 
 nntpf_exec_no_error ('create procedure view nntpf_group_list_v as nntpf_group_list (_group, _fordate, _len)

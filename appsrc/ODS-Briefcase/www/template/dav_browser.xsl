@@ -35,7 +35,8 @@
       <v:variable name="source" persist="0" type="varchar" default="''" />
       <v:variable name="item_array" persist="0" type="any" default="null" />
       <v:variable name="need_overwrite" persist="0" type="integer" default="0" />
-      <v:variable name="dir_path" persist="1" type="varchar" default="'__root__'" />
+      <v:variable name="dir_spath" persist="1" type="varchar" default="'__root__'" />
+      <v:variable name="dir_path" persist="0" type="varchar" default="'__root__'" />
       <v:variable name="dir_right" persist="0" type="varchar" default="''" />
       <v:variable name="dir_select" persist="0" type="integer" default="0" />
       <v:variable name="dir_details" persist="1" type="integer" default="0" />
@@ -96,7 +97,10 @@
         <![CDATA[
           self.dir_path := get_keyword ('dir', self.vc_page.vc_event.ve_params, self.dir_path);
           if (self.dir_path = '__root__')
-            self.dir_path := ODRIVE.WA.odrive_dav_home();
+            self.dir_path := self.dir_spath;
+          if (self.dir_path = '__root__')
+            self.dir_path := ODRIVE.WA.dav_home2 (self.account_id, self.account_role);
+          self.dir_spath := self.dir_path;
           self.dir_details := cast(get_keyword('list_type', self.vc_page.vc_event.ve_params, self.dir_details) as integer);
 
           if ((self.command = 0) and (self.command_mode = 2))
@@ -105,14 +109,14 @@
           if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'simple') {
             self.command_set(0, 2);
             if (self.dir_path = '')
-              self.dir_path := ODRIVE.WA.odrive_dav_home();
+              self.dir_path := ODRIVE.WA.dav_home2 (self.account_id, self.account_role);
             self.search_simple := trim(get_keyword('keywords', self.vc_page.vc_event.ve_params));
           }
 
           if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'advanced') {
             self.command_set(0, 3);
             if (self.dir_path = '')
-              self.dir_path := ODRIVE.WA.odrive_dav_home();
+              self.dir_path := ODRIVE.WA.dav_home2 (self.account_id, self.account_role);
             ODRIVE.WA.dav_dc_set_base(self.search_dc, 'path', ODRIVE.WA.odrive_real_path(self.dir_path));
             ODRIVE.WA.dav_dc_set_base(self.search_dc, 'name', trim(get_keyword('keywords', self.vc_page.vc_event.ve_params)));
           }
@@ -327,8 +331,8 @@
         <![CDATA[
           declare item varchar;
           declare i integer;
-          self.source := ODRIVE.WA.odrive_refine_path(self.dir_path);
 
+          self.source := ODRIVE.WA.odrive_refine_path(self.dir_path);
           self.item_array := vector();
           i := 0;
           while (item := adm_next_checkbox('CB_', params, i)) {
@@ -337,7 +341,6 @@
                 ((command = 22) and ODRIVE.WA.det_action_enable(item, 'edit')) or
                 ((command = 23) and ODRIVE.WA.det_action_enable(item, 'edit')) or
                 ((command = 24) and ODRIVE.WA.det_action_enable(item, 'edit')  and (not ODRIVE.WA.DAV_ERROR(DB.DBA.DAV_SEARCH_ID(item, 'R')))) or
-                ((command = 25) and ODRIVE.WA.det_action_enable(item, 'edit')  and (not ODRIVE.WA.DAV_ERROR(DB.DBA.DAV_SEARCH_ID(item, 'R')))) or
                 ((command = 26) and ODRIVE.WA.odrive_read_permission(item)     and (not ODRIVE.WA.DAV_ERROR(DB.DBA.DAV_SEARCH_ID(item, 'R'))))
                )
               self.item_array := vector_concat(self.item_array, vector(item, null));
@@ -407,8 +410,13 @@
             if (not ODRIVE.WA.det_action_enable(ODRIVE.WA.odrive_real_path(self.dir_path), 'createContent'))
               return 0;
           }
+
+          if (cmd = 'shared')
+            if (self.account_role = 'public')
+              return 0;
+
           if (cmd = 'up')
-            if ((self.dir_path = 'Home') or (trim(self.dir_path, '/') = trim(ODRIVE.WA.odrive_dav_home(), '/')))
+            if ((self.dir_path = 'Home') or (trim(self.dir_path, '/') = trim(ODRIVE.WA.dav_home2 (self.account_id, self.account_role), '/')))
               return 0;
 
           if (cmd = 'upload') {
@@ -422,9 +430,10 @@
           if (cmd = 'new')
             if (not ODRIVE.WA.odrive_write_permission(ODRIVE.WA.odrive_real_path(self.dir_path)))
               return 0;
-          if (cmd = 'mail') {
-            return 0;
-          }
+
+          if (cmd = 'mail')
+            return ODRIVE.WA.oMail_check();
+
           return 1;
         ]]>
       </v:method>
@@ -621,7 +630,7 @@
           declare N integer;
           declare tmp, T varchar;
 
-          tmp := '';
+          tmp := sprintf ('&did=%d&aid=%d', self.domain_id, self.account_id);
           if (self.command_mode = 2) {
             tmp := concat(tmp, '&mode=s');
             tmp := concat(tmp, sprintf('&b1=%U', ODRIVE.WA.odrive_real_path(self.dir_path)));
@@ -734,7 +743,7 @@
         <v:template type="simple" enabled="-- case when ((self.command = 0) and (self.command_mode = 2)) then 1 else 0 end">
           <div class="boxHeader" style="text-align: center;">
             <b>Search </b>
-            <v:text name="simple" value="--self.search_simple" xhtml_onkeypress="return submitEnter(\'F1\', '', event)" xhtml_class="textbox" xhtml_size="70%" />
+          <v:text name="simple" value="--self.search_simple" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="70%" />
             <xsl:call-template name="nbsp" />
             |
             <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
@@ -928,9 +937,9 @@
                   if (not isnull(DB.DBA.DAV_HIDE_ERROR(DB.DBA.DAV_PROP_GET_INT (ODRIVE.WA.DAV_GET (self.dav_item, 'id'), 'R', 'DAV:checked-in', 0))))
                     self.dav_propEnable := 0;
               } else if (self.command_mode = 5) {
-                self.dav_item := ODRIVE.WA.DAV_INIT_RESOURCE();
+              self.dav_item := ODRIVE.WA.DAV_INIT_RESOURCE (self.dir_path);
               } else {
-                self.dav_item := ODRIVE.WA.DAV_INIT_COLLECTION();
+              self.dav_item := ODRIVE.WA.DAV_INIT_COLLECTION (self.dir_path);
                 if (self.command_mode = 1)
                   self.vc_page.vc_event.ve_params := vector_concat(self.vc_page.vc_event.ve_params, vector('dav_det', 'ResFilter', 'attr_dav_det', ''));
               }
@@ -976,23 +985,23 @@
           </div>
            <div id="c1">
             <div class="tabs">
-              <vm:tabCaption tab="1" tabs="11" caption="Main" />
+            <vm:tabCaption tab="1" tabs="10" caption="Main" />
               <v:template type="simple" enabled="-- gte(self.command_mode, 10)">
-              <vm:tabCaption tab="2" tabs="11" caption="Sharing" />
+            <vm:tabCaption tab="2" tabs="10" caption="Sharing" />
               </v:template>
               <v:template type="simple" enabled="-- case when (gte(self.command_mode, 10) and ODRIVE.WA.dav_rdf_has_metadata(self.dav_path)) then 1 else 0 end">
-              <vm:tabCaption tab="3" tabs="11" caption="Metadata" />
+            <vm:tabCaption tab="3" tabs="10" caption="Metadata" />
               </v:template>
               <v:template type="simple" enabled="-- case when (equ(self.command_mode, 10) and equ(self.dav_type, 'R') and ODRIVE.WA.det_action_enable(self.dav_path, 'version')) then 1 else 0 end">
-              <vm:tabCaption tab="11" tabs="11" caption="Versions" />
+            <vm:tabCaption tab="10" tabs="10" caption="Versions" />
               </v:template>
               <v:template type="simple" enabled="-- equ(self.dav_type, 'C')">
               <!-- <vm:tabCaption tab="4" tabs="10" caption="oMail" /> -->
-              <vm:tabCaption tab="5" tabs="11" caption="Filter" />
-              <vm:tabCaption tab="6" tabs="11" caption="FS link" />
-              <vm:tabCaption tab="7" tabs="11" caption="Base" />
-              <vm:tabCaption tab="8" tabs="11" caption="Extended" />
-              <vm:tabCaption tab="9" tabs="11" caption="Metadata" />
+            <vm:tabCaption tab="5" tabs="10" caption="Filter" />
+            <vm:tabCaption tab="6" tabs="10" caption="FS link" />
+            <vm:tabCaption tab="7" tabs="10" caption="Base" />
+            <vm:tabCaption tab="8" tabs="10" caption="Extended" />
+            <vm:tabCaption tab="9" tabs="10" caption="Metadata" />
               </v:template>
             </div>
             <div class="contents">
@@ -1000,7 +1009,7 @@
                 <table class="form-body" cellspacing="0">
                   <v:template type="simple" enabled="-- equ(self.command_mode, 5)">
                     <tr>
-                      <th>
+                    <th width="30%">
                         <vm:label for="dav_file" value="--'Destination'" />
                       </th>
                       <td style="padding-left: 4px">
@@ -1052,13 +1061,13 @@
                     </tr>
                   </v:template>
                   <tr>
-                    <th>
+                  <th width="30%">
                       <span id="label_dav"><v:label for="dav_name" value="--either(equ(self.dav_type, 'R'), 'File name (*)', 'Folder name (*)')" /></span>
-                      <span id="label_rdf" style="display: none;"><v:label for="dav_name" value="--'RDF graph name'" /></span>
+                    <span id="label_dav_rdf" style="display: none;"><v:label for="dav_name" value="--'RDF graph name'" /></span>
                     </th>
                     <td>
-                      <span id="label_rdf_prefix" style="display: none;"><b><v:label for="dav_name" value="--ODRIVE.WA.odrive_host_url() || WS.WS.FIXPATH(ODRIVE.WA.odrive_real_path(self.dir_path))" /></b></span>
-                      <v:text name="dav_name" value="--get_keyword('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.utf2wide(ODRIVE.WA.DAV_GET(self.dav_item, 'name')))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
+                    <v:text name="dav_name" xhtml_id="dav_name" value="--get_keyword('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.utf2wide(ODRIVE.WA.DAV_GET(self.dav_item, 'name')))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
+                    <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.odrive_host_url() || WS.WS.FIXPATH(ODRIVE.WA.odrive_real_path(self.dir_path)))" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
                     </td>
                   </tr>
                   <v:template type="simple" enabled="-- equ(self.dav_type, 'R')">
@@ -1067,7 +1076,7 @@
                         <v:label for="dav_mime" value="--'File Mime Type'" />
                       </th>
                       <td>
-                        <v:text name="dav_mime" value="--get_keyword('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" />
+                      <v:text name="dav_mime" value="--get_keyword('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
                         <v:template type="simple" enabled="--self.dav_enable">
                           <input type="button" value="Select" onClick="javascript: windowShow('mimes_select.vspx?params=dav_mime:s1;')" disabled="disabled" class="button" />
                         </v:template>
@@ -1191,7 +1200,7 @@
                       <th />
                       <td valign="center">
                         <input type="checkbox" name="dav_recursive" disabled="disabled" title="Recursive" />
-                        <b><v:label for="dav_recursive" value="--'Recursive'" /></b>
+                      <b><v:label for="dav_recursive" value="--'Apply changes to all subfolders and resources'" /></b>
                       </td>
                     </tr>
                   </v:template>
@@ -1536,7 +1545,7 @@
               coloriseTable('properties');
               coloriseTable('metaProperties');
               initDisabled();
-              initTab(11, 1);
+            initTab(10, 1);
             ]]>
           </script>
         </v:template>
@@ -1584,7 +1593,7 @@
         </v:template>
 
         <!-- List files for copy, move, .... -->
-        <v:template type="simple" enabled="-- case when (self.command in (20, 21, 22, 23, 24, 25)) then 1 else 0 end">
+      <v:template type="simple" enabled="-- case when (self.command in (20, 21, 22, 23, 24)) then 1 else 0 end">
           <div class="new-form-header">
             <?vsp
               if (self.command = 20) {
@@ -1597,8 +1606,6 @@
                 http('Operation - Delete');
               } else if (self.command = 24) {
                 http('Operation - Tagging');
-              } else if (self.command = 25) {
-                http('Operation - Mailing');
               }
             ?>
           </div>
@@ -1769,7 +1776,7 @@
                     <tr>
                       <th />
                       <td valign="center">
-                        <input type="checkbox" name="prop_recursive" title="Recursive" />
+                      <input type="checkbox" name="prop_recursive" id="prop_recursive" title="Recursive" />
                         <v:label for="prop_recursive" value="--'Recursive'" />
                       </td>
                     </tr>
@@ -2086,61 +2093,6 @@
             </div>
           </v:template>
 
-          <!-- Mass properties form -->
-          <v:template type="simple" enabled="-- equ(self.command, 25)">
-            <div class="contents" style="margin-top: 6px;">
-              <table class="form-body" cellspacing="0">
-                <tr>
-                  <th>
-                    <v:label for="f_tag2" value="Public tags" />
-                  </th>
-                  <td>ffff
-                  </td>
-                </tr>
-                <tr>
-                  <th>
-                    <v:label for="f_tag" value="Private tags" />
-                  </th>
-                  <td>fff
-                  </td>
-                </tr>
-              </table>
-            </div>
-            <div class="new-form-footer">
-              <v:button action="simple" value="Mail">
-                <v:on-post>
-                  <![CDATA[
-                    declare I, N integer;
-                    declare tags any;
-
-                    while (I < length(self.item_array)) {
-                      if (self.dav_tags <> '') {
-                        tags := ODRIVE.WA.DAV_PROP_GET(self.item_array[I], ':virtprivatetags');
-                        ODRIVE.WA.DAV_SET(self.item_array[I], 'privatetags', ODRIVE.WA.tags_join(tags, self.dav_tags));
-                      }
-                      if (self.dav_tags2 <> '') {
-                        tags := ODRIVE.WA.DAV_PROP_GET(self.item_array[I], ':virtpublictags');
-                        ODRIVE.WA.DAV_SET(self.item_array[I], 'publictags', ODRIVE.WA.tags_join(tags, self.dav_tags2));
-                      }
-                      I := I + 2;
-                    }
-
-                    self.command_pop(null);
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" value="Cancel">
-                <v:on-post>
-                  <![CDATA[
-                    self.command_pop(null);
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-            </div>
-          </v:template>
-
           <!-- Confirm operation - delete or override -->
           <v:template type="simple" enabled="-- case when (self.need_overwrite = 1 and (length(self.item_array) > 0) or self.command = 23) then 1 else 0 end">
             <v:template type="simple" enabled="-- case when (self.need_overwrite = 1 and (length(self.item_array) > 0)) then 1 else 0 end">
@@ -2198,7 +2150,7 @@
                       self.vc_is_valid := 0;
                       return;
                     }
-                    if ((not ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(e.ve_params))) and isnull(strstr(tmp, ODRIVE.WA.odrive_dav_home()))) {
+                  if ((not ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(e.ve_params))) and isnull(strstr(tmp, ODRIVE.WA.dav_home2 (self.account_id, self.account_role)))) {
                       self.vc_error_message := 'The path must be part of your home directory';
                       self.vc_is_valid := 0;
                       return;
@@ -2415,7 +2367,7 @@
                               <?vsp
                                 if ((self.dir_select = 0) and (self.dir_path <> '')) {
                               http('<th class="checkbox" width="1%">');
-                                    http('<input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)" title="Select All" />');
+                                http('<input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes (this, \'CB_\', true)" title="Select All" />');
                                   http('</th>');
                                 }
                               ?>
@@ -2474,7 +2426,7 @@
                               rowset := (control as vspx_row_template).te_rowset;
 
                               if ((self.dir_select = 0) and (self.dir_path <> ''))
-                              http(sprintf('<td align="center"><input type="checkbox" name="CB_%s" /></td>', rowset[8]));
+                              http(sprintf('<td align="center"><input type="checkbox" name="CB_%s" onclick="enableToolbars (this.form, \'CB_\')"/></td>', rowset[8]));
                             ?>
                             <td nowrap="nowrap">
                               <v:button action="simple" style="image" value="''" text="''" format="%s" xhtml_title="--ODRIVE.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[0])">
@@ -2497,8 +2449,8 @@
 
                                     if ((control.vc_parent as vspx_row_template).te_rowset[1] = 'C') {
                                       if (self.dir_path <> '')
-                                        self.dir_path := concat(self.dir_path, '/');
-                                      self.dir_path := concat(self.dir_path, (control.vc_parent as vspx_row_template).te_rowset[0]);
+                                      self.dir_path := rtrim (self.dir_path, '/') || '/';
+                                    self.dir_path := self.dir_path || (control.vc_parent as vspx_row_template).te_rowset[0];
                                     } else {
                                       http_request_status ('HTTP/1.1 302 Found');
                                       http_header (sprintf('Location: view_file.vsp?sid=%s&realm=%s&file=%U\r\n', self.sid , self.realm, (control.vc_parent as vspx_row_template).te_rowset[8]));
@@ -2644,6 +2596,7 @@
                   <script>
                     <![CDATA[
                       coloriseTable('dir');
+                    enableToolbars (document.forms['F1'], 'CB_');
                     ]]>
                   </script>
                 </div>
@@ -2703,7 +2656,7 @@
   <!--=========================================================================-->
   <xsl:template name="permissions-header1">
     <tr>
-      <th colspan="3" align="center">User</th>
+      <th colspan="3" align="center">Owner</th>
       <th colspan="3" align="center">Group</th>
       <th class="last" colspan="3" align="center">Other</th>
     </tr>
@@ -3766,7 +3719,7 @@
               declare cmd any;
               cmd := get_keyword ('toolbar_hidden', e.ve_params, '');
               if (cmd = 'home') {
-                self.dir_path := ODRIVE.WA.odrive_dav_home();
+                self.dir_path := ODRIVE.WA.dav_home2 (self.account_id, self.account_role);
                 self.command_set(0, 0);
               }
               if (cmd = 'shared') {
@@ -3774,7 +3727,7 @@
                 self.command_set(0, 0);
               }
               if (cmd = 'up') {
-                if (trim(self.dir_path, '/') = trim(ODRIVE.WA.odrive_dav_home(), '/')) {
+                if (trim(self.dir_path, '/') = trim(ODRIVE.WA.dav_home2 (self.account_id, self.account_role), '/')) {
                   self.dir_path := '';
                 } else {
                   declare pos integer;
@@ -3813,9 +3766,6 @@
                 self.dav_tags := '';
                 self.dav_tags2 := '';
                 self.prepare_command(control.vc_page.vc_event.ve_params, 24, 0);
-              }
-              if (cmd = 'mail') {
-                self.prepare_command(control.vc_page.vc_event.ve_params, 25, 0);
               }
               self.vc_data_bind(e);
              ]]>
@@ -3856,7 +3806,7 @@
         </v:before-render>
       </v:url>
 
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" xhtml_title="Shared Folders" xhtml_class="toolbar">
+      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" enabled="--self.toolbarEnable('shared')" xhtml_title="Shared Folders" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
             control.ufl_value := '<img src="image/folder_violet.png" border="0" />' || self.toolbarLabel('Shared Folders');
@@ -3879,7 +3829,7 @@
 
       <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
 
-      <v:url value="--''" format="%s" url="--'javascript: if (singleSelected(document.F1, ''CB_'', ''No items were selected to be renamed. Please select an item before you click the Rename button.'', ''You can only rename one item at a time. Please deselect all but one.'')) renameShow(document.F1, ''CB_'', ''rename.vspx?src=s'');'" enabled="--self.toolbarEnable('rename')" xhtml_titile="Rename" xhtml_class="toolbar" >
+      <v:url value="--''" format="%s" url="--'javascript: if (singleSelected(document.F1, ''CB_'', ''No items were selected to be renamed. Please select an item before you click the Rename button.'', ''You can only rename one item at a time. Please deselect all but one.'')) renameShow(document.F1, ''CB_'', ''rename.vspx?src=s'', 500, 250);'" enabled="--self.toolbarEnable('rename')" xhtml_titile="Rename" xhtml_class="toolbar" >
         <v:before-render>
           <![CDATA[
             control.ufl_value := '<img src="image/renm_32.png" border="0" />' || self.toolbarLabel('Rename');
@@ -3987,22 +3937,23 @@
         </span>
       </v:template>
 
-<!--
       <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
 
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for mailing.'')) toolbarPost(''mail'');'" enabled="--self.toolbarEnable('mail')" xhtml_title="Mail" xhtml_class="toolbar">
+      <vm:if test="ODRIVE.WA.oMail_check() <> 0">
+        <span id="tbMail" class="toolbar" style="display: none">
+          <v:url value="--''" format="%s" url="--'#'" xhtml_title="Mail">
         <v:before-render>
           <![CDATA[
             control.ufl_value := '<img src="image/mail_32.png" border="0" />' || self.toolbarLabel('Mail');
+                control.vu_url := sprintf('javascript: mailShow(document.F1, "CB_", "../../oMail/%d/write.vspx?return=F1&html=0&subject=%U", 800, 500);', ODRIVE.WA.oMail_check(), 'Send files from DAV');
           ]]>
         </v:before-render>
       </v:url>
-      <v:template type="simple" enabled="--case when self.toolbarEnable('mail') then 0 else 1 end">
-        <span class="toolbar">
+        </span>
+      </vm:if>
+      <span id="tbMail_gray" class="toolbar" style="display: inline;">
           <img src="image/grey_mail_32.png" border="0" alt="Mail" /><?vsp http(self.toolbarLabel('Mail'));?>
         </span>
-      </v:template>
--->
 
     </div>
     <div style="clear: both;" />

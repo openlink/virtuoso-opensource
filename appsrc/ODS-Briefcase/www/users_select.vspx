@@ -64,8 +64,7 @@
       return 0;
     ]]>
   </v:method>
-  <vm:pagetitle>Select User/Group</vm:pagetitle>
-  <vm:popup_page_wrapper>
+
     <v:before-data-bind>
       <![CDATA[
         if (self.v_mode = 'g')
@@ -78,6 +77,9 @@
         self.v_s2 := get_keyword('s2', self.vc_page.vc_event.ve_params, '');
       ]]>
     </v:before-data-bind>
+
+  <vm:pagetitle>Select User/Group</vm:pagetitle>
+  <vm:popup_page_wrapper>
     <vm:variables>
       <v:variable name="v_params" param-name="params" type="varchar"/>
       <v:variable name="v_mode" persist="0" param-name="mode" type="varchar" default="''"/>
@@ -92,7 +94,7 @@
       <v:variable name="v_s1" persist="0" type="varchar" default="''" />
       <v:variable name="v_s2" persist="0" type="varchar" default="''" />
     </vm:variables>
-    <v:form name="F1" type="simple" method="POST">
+    <vm:pagebody>
       <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
       <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
       <?vsp http(sprintf('<input type="hidden" name="src"   id="src"   value="%s"/>', get_keyword('src', self.vc_page.vc_event.ve_params, ''))); ?>
@@ -101,10 +103,6 @@
       <?vsp http(sprintf('<input type="hidden" name="s2"    id="s2"    value="%s"/>', get_keyword('s2', self.vc_page.vc_event.ve_params, ''))); ?>
       <v:text name="params" type="hidden" value="--self.v_params"/>
       <div style="padding: 0.5em;">
-        <div style="padding: 0 0 0.5em 0;">
-          &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-          <hr />
-        </div>
         <div class="boxHeader">
           Show
           <v:select-list name="filter" value="--self.v_filter" enabled="-- case when (self.v_mode = '') then 1 else 0 end">
@@ -185,7 +183,7 @@
                   <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
                     <th class="checkbox" width="1%">
                       <?vsp
-                        http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, ''cb_item''); updateChecked(this.form, ''cb_item''); "/>');
+                        http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, ''cb_item''); updateChecked(this.form, ''cb_item''); "/>');
                       ?>
                     </th>
                   </v:template>
@@ -285,6 +283,6 @@
           ]]>
         </script>
       </div>
-    </v:form>
+    </vm:pagebody>
   </vm:popup_page_wrapper>
 </v:page>

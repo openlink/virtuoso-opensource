@@ -286,7 +286,7 @@ OMAIL.WA.exec_no_error (
      if (O.DOMAIN_ID <> 1) {
        declare _name, _group any;
 
-       _name := OMAIL.WA.domain_name(O.DOMAIN_ID);
+       _name := OMAIL.WA.domain_nntp_name (O.DOMAIN_ID);
        _group := (select NG_GROUP from DB..NEWS_GROUPS where NG_NAME = _name);
        if (isnull(_group))
          return;
@@ -307,7 +307,7 @@ OMAIL.WA.exec_no_error (
        declare ts datetime;
        declare nInstance any;
 
-       nInstance := OMAIL.WA.domain_name(N.DOMAIN_ID);
+       nInstance := OMAIL.WA.domain_nntp_name(N.DOMAIN_ID);
        select M_RFC_ID, M_RFC_HEADER, M_RFC_REFERENCES, SUBJECT, RCV_DATE, ADDRESS
          into rfc_id, rfc_header, rfc_references, subject, ts, address
          from OMAIL.WA.MESSAGES
@@ -356,7 +356,7 @@ OMAIL.WA.exec_no_error (
 
        declare exit handler for not found { return;};
 
-       nInstance := OMAIL.WA.domain_name(N.DOMAIN_ID);
+       nInstance := OMAIL.WA.domain_nntp_name(N.DOMAIN_ID);
        select NG_GROUP, NG_NEXT_NUM into grp, ngnext from DB..NEWS_GROUPS where NG_NAME = nInstance;
        if (ngnext < 1)
          ngnext := 1;
@@ -408,7 +408,7 @@ OMAIL.WA.exec_no_error ('
     declare rfc_id, rfc_header, rfc_references varchar;
     declare nInstance any;
 
-    nInstance := OMAIL.WA.domain_name(N.C_DOMAIN_ID);
+    nInstance := OMAIL.WA.domain_nntp_name(N.C_DOMAIN_ID);
     id := N.C_ID;
 
     rfc_id := N.C_RFC_ID;
@@ -437,7 +437,7 @@ OMAIL.WA.exec_no_error ('
 
     --declare exit handler for not found { return;};
 
-    _name := OMAIL.WA.domain_name(N.C_DOMAIN_ID);
+    _name := OMAIL.WA.domain_nntp_name(N.C_DOMAIN_ID);
     select NG_GROUP, NG_NEXT_NUM into _group, _num_group from DB.DBA.NEWS_GROUPS where NG_NAME = _name;
     select C_RFC_ID into _key_id from OMAIL.WA.CONVERSATION where C_ID = N.C_ID;
 
@@ -460,7 +460,7 @@ OMAIL.WA.exec_no_error ('
   {
     declare _name, _group any;
 
-    _name := OMAIL.WA.domain_name(O.C_DOMAIN_ID);
+    _name := OMAIL.WA.domain_nntp_name(O.C_DOMAIN_ID);
     _group := (select NG_GROUP from DB..NEWS_GROUPS where NG_NAME = _name);
     if (isnull(_group))
       return;

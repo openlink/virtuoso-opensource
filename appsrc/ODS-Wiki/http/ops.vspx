@@ -22,7 +22,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<?vsp WV.WIKI.VSPHEADER (path,params,lines, 'Actions');
+<?vsp 
+-- WV.WIKI.VSPHEADER (path,params,lines, 'Actions');
 
 ?>
     <v:page 

@@ -878,6 +878,9 @@
 
 		    bdate := coalesce (bdate, now ());
 
+		    -- the delete must be there as update will nake a ftt hit
+		    delete from BLOG.DBA.MTYPE_BLOG_CATEGORY
+		    	where MTB_POST_ID = self.editpost and MTB_BLOG_ID = self.blogid;
                     update BLOG.DBA.SYS_BLOGS set
                       B_CONTENT = msg,
                       B_META = res,
@@ -889,7 +892,6 @@
                       B_BLOG_ID = self.blogid;
                     id := self.editpost;
                     retid := id;
-                    delete from BLOG.DBA.MTYPE_BLOG_CATEGORY where MTB_POST_ID = self.editpost and MTB_BLOG_ID = self.blogid;
                     delete from BLOG..BLOG_TAG where BT_BLOG_ID = self.blogid and BT_POST_ID = id;
                   }
                   {
@@ -1674,6 +1676,179 @@
       </div>
     </div>
   </v:template>
+  </xsl:template>
+
+  <xsl:template match="vm:weblog-import">
+      <v:variable name="step" type="int" default="1" />
+      <v:variable name="imp_src" type="any" default="null" />
+      <v:variable name="imp_url" type="any" default="null" />
+      <v:variable name="imp_bid" type="any" default="null" />
+      <v:variable name="imp_uid" type="any" default="null" />
+      <v:variable name="imp_pwd" type="any" default="null" />
+      <v:variable name="imp_api" type="any" default="null" />
+      <v:variable name="imp_n" type="int" default="0" />
+      <v:template name="tmpl1" type="simple" condition="self.step = 1">
+	  <h3>To import posts from another blog system enter:</h3>
+	  <div>
+	      <fieldset>
+		  <label for="imp_blog">Weblog or Feed URL</label>
+		  <v:text xhtml_class="textbox" xhtml_id="imp_blog"  name="imp_blog" xhtml_size="110" /><br/>
+		  <v:button xhtml_class="real_button" action="simple" name="bt_discov" value="Next">
+		      <v:on-post><![CDATA[
+			  declare xt1, url, cnt, hd, xt, tmp, res any;
+
+			  declare exit handler for sqlstate '*'
+			  {
+			    self.vc_is_valid := 0;
+			    self.vc_error_message := __SQL_MESSAGE;
+			  };
+			  url := self.imp_blog.ufl_value;
+			  cnt := BLOG..GET_URL_AND_REDIRECTS (url, hd);
+			  res := vector ();
+			  xt := xtree_doc (cnt, 2);
+
+			  if (xpath_eval ('/rss|/feed|/rdf', xt) is not null)
+			    {
+                              self.imp_url := url;
+			      self.step := 4;
+			      return;
+			    }
+
+			  tmp := xpath_eval ('//link[@rel="EditURI" and @type="application/rsd+xml"]/@href',xt);
+			  if (tmp is not null)
+			    {
+			      cnt := BLOG..GET_URL_AND_REDIRECTS (WS.WS.EXPAND_URL (url, tmp), hd);
+			      xt1 := xtree_doc (cnt);
+			      tmp := xpath_eval ('/rsd/service/apis/api', xt1, 0);
+			      foreach (any x in tmp) do
+			        {
+				  declare tit, link, bid, pref any;
+                                  tit := xpath_eval ('@name', x);
+                                  link := xpath_eval ('@apiLink', x);
+                                  bid := xpath_eval ('@blogID', x);
+				  pref := xpath_eval ('@preferred', x);
+				  if (pref = N'true')
+				    pref := 1;
+				  else
+                                    pref := 0;
+				  res := vector_concat (res, vector (vector (tit,link, bid, pref)));
+				}
+			    }
+			  tmp := xpath_eval ('//link[@rel="alternate" and @type="application/rss+xml"]|//link[@rel="alternate" and @type="application/atom+xml"]',xt,0);
+			  foreach (any x in tmp) do
+			    {
+			      declare tit, link any;
+                              tit := xpath_eval ('@title', x);
+                              link := xpath_eval ('@href', x);
+			      res := vector_concat (res, vector (vector (tit,link, '', 0)));
+			    }
+			  self.imp_src := res;
+                          self.impds1.vc_data_bind (e);
+			  self.step := 2;
+			  ]]></v:on-post>
+		  </v:button>
+	      </fieldset>
+	  </div>
+      </v:template>
+      <v:template name="tmpl2" type="simple" condition="self.step = 2">
+	  <h3>Please choose the source for import:</h3>
+	  <div>
+	      <table class="listing">
+		  <tr class="listing_header_row">
+		      <th>Name</th>
+		      <th>URL</th>
+		      <th>BlogID</th>
+		  </tr>
+		  <v:data-set name="impds1" data="--self.imp_src" meta="--vector ()" edit="0" nrows="-1" scrollable="1">
+		      <v:template name="t1" type="repeat">
+			  <v:template name="t2" type="browse">
+			      <tr  class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+				  <td>
+				      <v:radio-button name="rb1"
+					  group-name="rg1" value="--(control.vc_parent as vspx_row_template).te_ctr"
+					  initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[3]"
+					  />
+				      <v:label name="l1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+				  </td>
+				  <td><v:label name="l2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/></td>
+				  <td><v:label name="l3" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s"/></td>
+			      </tr>
+			  </v:template>
+		      </v:template>
+		  </v:data-set>
+	      </table>
+	      <v:button xhtml_class="real_button" action="simple" name="bt_discov2" value="Next">
+		  <v:on-post><![CDATA[
+		      declare ix, tmp any;
+		      ix := atoi (get_keyword ('rg1', e.ve_params, '-1'));
+		      if (ix < 0)
+		        {
+                          self.vc_is_valid := 0;
+			  self.vc_error_message := 'The credentials cannot be empty';
+			  return;
+			}
+		      tmp := self.imp_src[ix];
+		      self.imp_url := tmp[1];
+		      self.imp_bid := tmp[2];
+		      self.imp_api := tmp[0];
+		      if (length (self.imp_bid))
+		        self.step := 3;
+	              else
+                        self.step := 4;
+		      ]]></v:on-post>
+	      </v:button>
+	  </div>
+      </v:template>
+      <v:template name="tmpl3" type="simple" condition="self.step = 3">
+	  <h3>The selected target needs credentials:</h3>
+	  <fieldset>
+	      <label for="imp_blog_uid">Account name</label>
+	      <v:text xhtml_class="textbox" xhtml_id="imp_blog_uid"  name="imp_blog_uid" xhtml_size="50" /><br/>
+	      <label for="imp_blog_pwd">Account password</label>
+	      <v:text xhtml_class="textbox" xhtml_id="imp_blog_pwd"  name="imp_blog_pwd" xhtml_size="50" type="password" /><br/>
+	      <v:button xhtml_class="real_button" action="simple" name="bt_discov3" value="Next">
+		  <v:on-post>
+		      self.imp_uid := self.imp_blog_uid.ufl_value;
+		      self.imp_pwd := self.imp_blog_pwd.ufl_value;
+		      if (length (self.imp_uid) = 0 or length (self.imp_pwd) = 0)
+		        {
+                          self.vc_is_valid := 0;
+			  self.vc_error_message := 'The credentials cannot be empty';
+			  return;
+			}
+		      self.step := 4;
+		  </v:on-post>
+	      </v:button>
+	  </fieldset>
+      </v:template>
+      <v:template name="tmpl4" type="simple" condition="self.step = 4">
+	  <h3>Do you want to import posts from <?V self.imp_url ?> ?</h3>
+	      <v:button xhtml_class="real_button" action="simple" name="bt_discov4" value="Yes">
+		  <v:on-post>
+		      declare exit handler for sqlstate '*'
+		      {
+		        self.vc_is_valid := 0;
+		        self.vc_error_message := __SQL_MESSAGE;
+		      };
+		      self.imp_n :=
+		      BLOG..IMPORT_BLOG (self.blogid, self.user_id, self.imp_url, self.imp_api, self.imp_bid, self.imp_uid, self.imp_pwd);
+		      self.step := 5;
+		  </v:on-post>
+	      </v:button>
+	      <v:button xhtml_class="real_button" action="simple" name="bt_discov5" value="Cancel">
+		  <v:on-post>
+		      self.step := 1;
+		  </v:on-post>
+	      </v:button>
+      </v:template>
+      <v:template name="tmpl3" type="simple" condition="self.step = 5">
+	  <h3>Imported: <?V self.imp_n ?> post(s)</h3>
+	  <v:button xhtml_class="real_button" action="simple" name="bt_discov6" value="Ok">
+	      <v:on-post>
+		  self.step := 1;
+	      </v:on-post>
+	  </v:button>
+      </v:template>
   </xsl:template>
 
 </xsl:stylesheet>

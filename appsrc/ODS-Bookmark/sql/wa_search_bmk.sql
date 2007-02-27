@@ -25,4 +25,3 @@ create function WA_SEARCH_BMK_GET_EXCERPT_HTML (
    return res;
 }
 ;
-

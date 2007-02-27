@@ -509,6 +509,43 @@ create procedure COMMUNITY.COMM_USER_DASHBOARD_SP (in uid int, in inst_type varc
   }
 };
 
+create procedure COMMUNITY.COMM_COMMON_DASHBOARD_SP ( in inst_type varchar, in inst_parent_name varchar)
+{
+  declare inst_name, title, author, url nvarchar;
+  declare ts datetime;
+  declare inst web_app;
+  declare h, ret any;
+
+  result_names (inst_name, title, ts, author, url);
+  for select WAM_INST, WAI_INST, WAM_HOME_PAGE from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE
+  where WAI_NAME = WAM_INST and WAM_APP_TYPE = inst_type
+        and WAI_NAME in (SELECT  CM_MEMBER_APP from COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=inst_parent_name and CM_MEMBER_DATA is null)
+  do
+  {
+    inst := WAI_INST;
+    h := udt_implements_method (inst, fix_identifier_case ('wa_dashboard_last_item'));
+    if (h){
+       ret := call (h) (inst);
+       if (length (ret)){
+           declare xp any;
+           ret := xtree_doc (ret);
+     
+           xp := xpath_eval ('//*[title]', ret, 0);
+           foreach (any ret1 in xp) do
+           {
+               title := xpath_eval ('string(title/text())', ret1);
+               ts := xpath_eval ('string (dt/text())', ret1);
+               author := xpath_eval ('string (from/text())', ret1);
+               url := xpath_eval ('string (link/text())', ret1);
+               ts := cast (ts as datetime);
+               result (WAM_INST, title, ts, author, url);
+           }
+       }
+    }
+  }
+};
+
+
 create procedure COMMUNITY.COMM_DATE_FOR_HUMANS(in d datetime) {
 
   declare date_part varchar;
@@ -622,3 +659,18 @@ create procedure COMMUNITY.COMM_NEWINST_GET_CUSTOMOPTIONS (in option_type varcha
   
 
 };
+create procedure COMMUNITY.doPTSW (
+  in instance_name varchar,
+  in owner_uname varchar
+  )
+{
+  declare sioc_url  varchar;
+  
+  sioc_url:=replace (sprintf ('%s/dataspace/%U/community/%U/sioc.rdf', 'http://'||DB.DBA.WA_GET_HOST(), owner_uname, instance_name), '+', '%2B');
+  
+  
+  for (select  WAI_NAME,WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_NAME = instance_name and WAI_IS_PUBLIC = 1) do {
+    ODS.DBA.APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), sioc_url,'The Semantic Web.com');
+  }
+}
+;

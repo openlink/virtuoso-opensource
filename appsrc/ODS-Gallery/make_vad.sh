@@ -22,7 +22,7 @@
 #
 
 LOGDIR=`pwd`
-VERSION="0.3.10"
+VERSION="0.3.55"
 LOGFILE="${LOGDIR}/make_vad.log"
 STICKER="${LOGDIR}/make_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
@@ -187,7 +187,7 @@ directory_init() {
     mkdir vad/data/oGallery/$dir
   done
 
-  for file in `find sql www-root xslt -type f -print | LC_ALL=C sort | grep -v CVS`
+  for file in `find sql www-root xslt -type f -print | LC_ALL=C sort | grep -v CVS | grep -v Thumbs.db | grep -v upload.vspx- | grep -v .cvsignore`
   do
     cp $file vad/data/oGallery/$file
   done
@@ -221,7 +221,7 @@ sticker_init() {
   echo "  <require>" >> $STICKER
   echo "   <name package=\"Framework\">" >> $STICKER
   echo "   </name>" >> $STICKER
-  echo "   <versions_later package=\"1.30.45\">" >> $STICKER
+  echo "   <versions_later package=\"1.30.49\">" >> $STICKER
   echo "    <prop name=\"Date\" value=\"2005-04-28\" />" >> $STICKER
   echo "    <prop name=\"Comment\"" >> $STICKER
   echo "	  value=\"An incompatible version of WA\" />" >> $STICKER
@@ -267,6 +267,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/procedures.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/images.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/dav_api.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/flickr.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/sioc.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/comments.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/oGallery/sql/procedures/rss.sql', 1, 'report', 1);" >> $STICKER
@@ -288,9 +289,9 @@ sticker_init() {
   do
      if echo "$file" | grep -v "\.vsp" >/dev/null
      then
-	      perms="110100100N"
+	      perms="110100100NN"
      else
-	      perms="111101101N"
+	      perms="111101101NN"
      fi
      name=`echo "$file" | cut -b10-`
      echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
@@ -365,12 +366,6 @@ ServerEnable = 1
 QueueMax     = 50000
 
 " > virtuoso.ini
-  if [ -f virtuoso.lic ]
-  then
-    echo "virtuoso.lic found"
-  else
-    cp $HOME/binsrc/tests/suite/virtuoso.lic virtuoso.lic 2>/dev/null
-  fi
   virtuoso_start
 }
 

@@ -1,0 +1,217 @@
+<table cellspacing="0" cellpadding="0">
+<tr >
+	<td valign='top'>
+<code>
+&lt;plainhtml>..&lt;/plainhtml>
+</code>
+	</td>
+	<td>⇒</td>
+	<td>ignores Wiki markup, treats text as plain HTML
+	</td><td>
+	</td>
+</tr>
+<tr style='background: #EEEEEE'>
+	<td valign='top'>
+<code>
+&lt;noautolink>..&lt;/noautolink>
+</code>
+	</td>
+	<td>⇒</td>
+	<td>turn off WikiWord recognition.
+	</td><td>
+	</td>
+</tr>
+<tr >
+	<td valign='top'>
+<code>
+<nowiki>[[ADDRESS TITLE]]</nowiki><br/>
+[ADDRESS TITLE]<br/>
+[ADDRESS|TITLE]<br/>
+[ADDRESS]
+</code>
+	</td>
+	<td>⇒</td>
+	<td>produces a link. *ADDRESS* could be a <nop>WikiWord, e-mail, URL, or URL fragment
+	</td><td>
+	</td>
+</tr>
+<tr style='background: #EEEEEE'>
+	<td valign='top'>
+<code>
+== header2 ==<br/>
+=== header3 ===<br/>
+==== header4 ====<br/>
+===== header5 =====<br/>
+</code>
+	</td>
+	<td>⇒</td>
+	<td>headers
+	</td><td>
+	<h2>header2</h2><h3>header3</h3><h4>header4</h4><h5>header</h5></td>
+</tr>
+<tr >
+	<td valign='top'>
+<code>
+* item1<br/>
+* item2<br/>
+** subitem1<br/>
+*** subsubitem1
+</code>
+	</td>
+	<td>⇒</td>
+	<td>list
+	</td><td>
+	<ul><li>item1</li><li>item2</li><ul><li>subitem1</li><ul><li>subsubitem1</li></ul></ul></ul></td>
+</tr>
+<tr style='background: #EEEEEE'>
+	<td valign='top'>
+<code>
+# item1<br/>
+# item2<br/>
+## subitem1<br/>
+## subitem2<br/>
+### subsubitem1
+</code>
+	</td>
+	<td>⇒</td>
+	<td>numeric list
+	</td><td>
+	<ol><li>item1</li><li>item2</li><ol><li>subitem1</li><ul><li>subsubitem1</li></ul></ul></ul></td>
+</tr>
+<tr >
+	<td valign='top'>
+<code>
+# item1<br/>
+# item2<br/>
+#* subitem1<br/>
+#* subitem2<br/>
+#* subitem3<br/>
+#* subitem4
+</code>
+	</td>
+	<td>⇒</td>
+	<td>combined numeric list
+	</td><td>
+	<ul><li>item1</li><li>item2</li><ol><li>subitem1</li><li>subitem2</li><li>subitem3</li><li>subitem4</li></ul></ul></td>
+</tr>
+<tr style='background: #EEEEEE'>
+	<td valign='top'>
+<code>
+''text''
+</code>
+	</td>
+	<td>⇒</td>
+	<td>italic
+	</td><td>
+	 <i>text</i></td>
+</tr>
+<tr >
+	<td valign='top'>
+<code>
+'''text'''
+</code>
+	</td>
+	<td>⇒</td>
+	<td>bold
+	</td><td>
+	 <b>text</b></td>
+</tr>
+<tr style='background: #EEEEEE'>
+	<td valign='top'>
+<code>
+'''''text'''''
+</code>
+	</td>
+	<td>⇒</td>
+	<td>bold italic
+	</td><td>
+	 <bi>text</bi></td>
+</tr>
+<tr >
+	<td valign='top'>
+<code>
+=text=
+</code>
+	</td>
+	<td>⇒</td>
+	<td>fixed length font
+	</td><td>
+	 <tt>text</tt></td>
+</tr>
+<tr style='background: #EEEEEE'>
+	<td valign='top'>
+<code>
+<code>---</code>
+</code>
+	</td>
+	<td>⇒</td>
+	<td>horizontal line
+	</td><td>
+	 <hr/></td>
+</tr>
+<tr >
+	<td valign='top'>
+<code>
+%MACRO{parameters}%
+</code>
+	</td>
+	<td>⇒</td>
+	<td>macro call
+	</td><td>
+	</td>
+</tr>
+<tr style='background: #EEEEEE'>
+	<td valign='top'>
+<code>
+{| table-params<br/>
+! header column 1<br/>
+! header column 2<br/>
+! header column 3<br/>
+|-<br/>
+| col11 || col12 || col13<br/> 
+|-<br/>
+| col21 || col22 || col23<br/>
+|}
+</code>
+	</td>
+	<td>⇒</td>
+	<td>table formatting
+	</td><td>
+	<table><tr><th>header column 1</th><th>header column 2</th><th>header column 3</th></tr><tr> <td>col11</td> <td>col12</td> <td>col13</td> </tr> <tr> <td>col21</td> <td>col22</td> <td>col23</td> </tr> </table></td>
+</tr>
+<tr >
+	<td valign='top'>
+<code>
+{| table-params<br/>
+! header column 1<br/>
+! header column 2<br/>
+! header column 3<br/>
+|-<br/>
+| col11<br/> 
+| col12 <br/>
+| col13 <br/>
+|-<br/>
+| col22<br/> 
+| col22 <br/>
+| col23<br/>
+|}
+</code>
+	</td>
+	<td>⇒</td>
+	<td>alternative table formatting
+	</td><td>
+	 <table><tr><th>header column 1</th><th>header column 2</th><th>header column 3</th></tr><tr> <td>col11</td> <td>col12</td> <td>col13</td> </tr> <tr> <td>col21</td> <td>col22</td> <td>col23</td> </tr> </table></td>
+</tr>
+<tr style='background: #EEEEEE'>
+	<td valign='top'>
+<code>
+&lt;CODE>
+</code>
+	</td>
+	<td>⇒</td>
+	<td>inline verbatim
+	</td><td>
+	</td>
+</tr>
+
+</table>

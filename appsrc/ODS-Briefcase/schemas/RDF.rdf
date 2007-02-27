@@ -28,9 +28,9 @@
          xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
          xmlns:rss="http://www.openlinksw.com/schemas/RDF#">
   <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/RDF#">
-    <rdfs:label>RDF Data (RDF-XML and TURTLE)</rdfs:label>
+    <rdfs:label>RDF Data (RDF-XML, N3, TURTLE)</rdfs:label>
     <rdfs:comment>Semantic Web style data</rdfs:comment>
-    <virtrdf:catName>RDF Data (RDF-XML and TURTLE)</virtrdf:catName>
+    <virtrdf:catName>RDF Data (RDF-XML, N3, TURTLE)</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>
   <rdf:Property rdf:about="http://www.openlinksw.com/schemas/RDF#format">

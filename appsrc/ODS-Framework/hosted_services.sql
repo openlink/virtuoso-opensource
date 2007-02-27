@@ -283,6 +283,8 @@ wa_exec_no_error(
     )'
 )
 ;
+wa_add_col('DB.DBA.WA_TYPES', 'WAT_MAXINST', 'integer')
+;
 
 wa_exec_no_error(
   'CREATE TABLE WA_MEMBER_MODEL
@@ -437,6 +439,42 @@ wa_member_upgrade()
 
 drop procedure wa_member_upgrade
 ;
+
+
+wa_exec_no_error(
+  'CREATE TABLE WA_MEMBER_INSTCOUNT
+    (
+    WMIC_TYPE_NAME varchar references WA_TYPES on delete cascade,
+    WMIC_UID int  references SYS_USERS (U_ID) on delete cascade,
+    WMIC_INSTCOUNT integer default null,
+    primary key (WMIC_TYPE_NAME, WMIC_UID)
+    )'
+)
+;
+
+
+create procedure wa_member_doinstcount() {
+
+  if (registry_get ('__wa_member_doinstcount') = 'done')
+    return;
+
+  set triggers off;
+
+  insert into WA_MEMBER_INSTCOUNT (WMIC_TYPE_NAME,WMIC_UID,WMIC_INSTCOUNT)
+         select WAI_TYPE_NAME, WAM_USER, count(WAM_INST) as instcount
+         from DB.DBA.WA_MEMBER left join WA_INSTANCE on (WAM_INST=WAI_NAME)
+         where WAM_MEMBER_TYPE=1 and WAI_TYPE_NAME is not null
+         group by WAM_USER,WAI_TYPE_NAME
+         order by WAM_USER,WAI_TYPE_NAME;
+
+  set triggers on;
+  registry_set ('__wa_member_doinstcount', 'done');
+}
+;
+
+wa_member_doinstcount()
+;
+
 
 wa_exec_no_error_log(
 'create table WA_INVITATIONS (
@@ -1238,6 +1276,57 @@ create trigger WA_MEMBER_D after delete on WA_MEMBER
 }
 ;
 
+create trigger WA_MEMBER_I_DOINSTCOUNT after insert on WA_MEMBER referencing new as N
+{
+  if (N.WAM_MEMBER_TYPE = 1){
+
+    declare _inst_type varchar;
+    declare _inst_count integer;
+    declare exit handler for not found {
+      return;
+    };
+
+    select WAI_TYPE_NAME into _inst_type from WA_INSTANCE where WAI_NAME = N.WAM_INST;
+
+
+    declare exit handler for not found {
+        insert into WA_MEMBER_INSTCOUNT(WMIC_TYPE_NAME,WMIC_UID,WMIC_INSTCOUNT) values (_inst_type,N.WAM_USER,0);
+    };
+    select WMIC_INSTCOUNT into _inst_count from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=_inst_type and WMIC_UID=N.WAM_USER;
+
+    update WA_MEMBER_INSTCOUNT set WMIC_INSTCOUNT=WMIC_INSTCOUNT+1
+     where WMIC_TYPE_NAME=_inst_type and WMIC_UID=N.WAM_USER;
+  }
+
+  return;
+}
+;
+
+create trigger WA_MEMBER_D_DOINSTCOUNT after delete on WA_MEMBER
+{
+  if (WAM_MEMBER_TYPE = 1){
+
+    declare _inst_type varchar;
+    declare _inst_count integer;
+    declare exit handler for not found {
+      return;
+    };
+    select WAI_TYPE_NAME into _inst_type from WA_INSTANCE where WAI_NAME = WAM_INST;
+
+    declare exit handler for not found {
+        return;
+    };
+    select WMIC_INSTCOUNT into _inst_count from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=_inst_type and WMIC_UID=WAM_USER;
+
+
+    update WA_MEMBER_INSTCOUNT set  WMIC_INSTCOUNT=WMIC_INSTCOUNT-1
+     where WMIC_TYPE_NAME=_inst_type and WMIC_UID=WAM_USER;
+  }
+
+  return;
+}
+;
+
 -- zdravko
 create procedure wa_check_package (in pname varchar) -- Duplicate conductor procedure
 {
@@ -1254,7 +1343,8 @@ create procedure wa_vad_check (in pname varchar)
   declare nam varchar;
   nam := get_keyword (pname, vector ('blog2','Weblog','oDrive','Briefcase','enews2','Feed Manager',
   				      'oMail','Mail','bookmark','Bookmarks','oGallery','Gallery' ,
-				      'wiki','Wiki', 'wa', 'Framework','nntpf','Discussion'), null);
+				     'wiki','Wiki', 'wa', 'Framework','nntpf','Discussion',
+				     'polls','Polls'), null);
   if (nam is null)
     return vad_check_version (pname);
   else
@@ -1505,12 +1595,18 @@ create procedure INIT_SERVER_SETTINGS ()
   declare cnt int;
   cnt := (select count(*) from WA_SETTINGS);
   if (cnt = 1)
+  {
+    update WA_SETTINGS set WS_COPYRIGHT='Copyright &copy; 1999-2007 OpenLink Software';
     return;
+  }
   else if (cnt > 1)
     {
       declare fr int;
       fr := (select top 1 WS_ID from WA_SETTINGS);
       delete from WA_SETTINGS where WS_ID > fr;
+
+      update WA_SETTINGS set WS_COPYRIGHT='Copyright &copy; 1999-2007 OpenLink Software';
+
     }
   else
     {
@@ -1539,9 +1635,9 @@ create procedure INIT_SERVER_SETTINGS ()
 	      0,
 	      'default',
 	      '',
-	      'Enter your Account ID and Password',
+	      'Enter your Member ID and Password',
 	      '',
-	      'Copyright &copy; 1999-2006 OpenLink Software',
+	      'Copyright &copy; 1999-2007 OpenLink Software',
 	      '',
 	      sys_stat ('st_host_name')
 	      );
@@ -2688,7 +2784,7 @@ wa_exec_no_error_log(
     WAUI_GENDER VARCHAR(10),       -- 5
     WAUI_BIRTHDAY DATETIME,        -- 6
     WAUI_WEBPAGE VARCHAR(50),      -- 7
-    WAUI_FOAF VARCHAR(50),         -- 8
+    WAUI_FOAF VARCHAR(50),         -- 8 colum type changed below
     WAUI_MSIGNATURE VARCHAR(255),  -- 9
     WAUI_ICQ VARCHAR(50),          -- 10
     WAUI_SKYPE VARCHAR(50),        -- 11
@@ -2715,7 +2811,7 @@ wa_exec_no_error_log(
     WAUI_BCOUNTRY VARCHAR(50),     -- 23
     WAUI_BTZONE VARCHAR(50),       -- 24
     WAUI_BLAT REAL,                -- 47
-    WAUI_BLNG REAL,                -- 48
+    WAUI_BLNG REAL,                -- 47
     WAUI_BPHONE VARCHAR(50),       -- 25
     WAUI_BMOBILE VARCHAR(50),      -- 25
     WAUI_BREGNO VARCHAR(50),       -- 26
@@ -2742,6 +2838,8 @@ wa_exec_no_error_log(
     WAUI_SEARCHABLE	 int default 1,
     WAUI_LATLNG_HBDEF SMALLINT default 0,
     WAUI_SITE_NAME long varchar,
+    WAUI_INTERESTS long varchar,  -- 48
+    WAUI_BORG_HOMEPAGE long varchar,  -- 20 same as BORG
 
     primary key (WAUI_U_ID)
   )'
@@ -2769,6 +2867,12 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_LATLNG_HBDEF', 'SMALLINT default 0');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_JOIN_DATE', 'DATETIME','UPDATE DB.DBA.WA_USER_INFO SET WAUI_JOIN_DATE = now()');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SITE_NAME', 'LONG VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_INTERESTS', 'LONG VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BORG_HOMEPAGE', 'LONG VARCHAR');
+
+wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO DROP WAUI_FOAF');
+wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO ADD WAUI_FOAF LONG VARCHAR');
+
 
 create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N {
 
@@ -2932,6 +3036,10 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_WEBPAGE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'E_MAIL')
     UPDATE DB.DBA.SYS_USERS SET U_E_MAIL = _data WHERE U_ID = _uid;
+  else if (_key = 'WAUI_INTERESTS')
+    UPDATE WA_USER_INFO SET WAUI_INTERESTS = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_BORG_HOMEPAGE')
+    UPDATE WA_USER_INFO SET WAUI_BORG_HOMEPAGE = _data WHERE WAUI_U_ID = _uid;
 --home tab
   else if (_key = 'WAUI_HADDRESS1')
     UPDATE WA_USER_INFO SET WAUI_HADDRESS1 = _data WHERE WAUI_U_ID = _uid;
@@ -3289,6 +3397,24 @@ return_id:
 }
 ;
 
+create procedure WA_USER_INTERESTS (in txt any)
+{
+  declare arr any;
+  declare interest any;
+  result_names (interest);
+  if (not length (txt))
+    return;
+  txt := replace(txt, '\r', '\n');
+  txt := replace(txt, '\n\n', '\n');
+  arr := split_and_decode (txt, 0, '\0\0\n');
+  foreach (any i in arr) do
+    {
+      i := trim (i);
+      if (length (i))
+	result (i);
+    }
+};
+
 create procedure WA_USER_TAG_SET (in owner_uid any, in tagee_uid integer, in tags varchar)
 {
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_ID = owner_uid))
@@ -3458,7 +3584,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
   declare _bindustr, _borg, _bjob, _baddress1, _baddress2, _bcode, _bcity, _bstate, _bcountry, _btzone,
           _bphone, _bmobile, _bregno, _bcareer, _bempltotal, _bvendor, _bservice, _bother, _bnetwork varchar;
   declare _bresume, _audio, _fav_books, _fav_music, _fav_movie long varchar;
-  declare _WAUI_PHOTO_URL varchar;
+  declare _WAUI_PHOTO_URL, _interests, _org_page varchar;
   declare _WAUI_LAT, _WAUI_LNG, _WAUI_BLAT, _WAUI_BLNG real;
   declare _WAUI_LATLNG_HBDEF integer;
   declare _arr15, _arr16, _arr18, _arr22, _arr23, _arr25, _arr any;
@@ -3486,7 +3612,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
          WAUI_BCAREER, WAUI_BEMPTOTAL, WAUI_BVENDOR, WAUI_BSERVICE, WAUI_BOTHER, WAUI_BNETWORK, WAUI_RESUME,
          U_E_MAIL, WAUI_PHOTO_URL, WAUI_LAT, WAUI_LNG, WAUI_BLAT, WAUI_BLNG, WAUI_LATLNG_HBDEF,
 	 WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
-	 WAUI_SEARCHABLE
+	 WAUI_SEARCHABLE, WAUI_INTERESTS, WAUI_BORG_HOMEPAGE
     INTO _utitle, _fname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum,
          _uicq, _uskype, _uaim, _uyahoo, _umsn,
          _haddress1, _haddress2, _hcode, _hcity, _hstate, _hcountry, _htzone, _hphone, _hmobile,
@@ -3494,7 +3620,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
          _bphone, _bmobile, _bregno, _bcareer, _bempltotal, _bvendor, _bservice, _bother, _bnetwork, _bresume,
          _email, _WAUI_PHOTO_URL, _WAUI_LAT, _WAUI_LNG, _WAUI_BLAT, _WAUI_BLNG, _WAUI_LATLNG_HBDEF,
          _audio, _fav_books, _fav_music, _fav_movie,
-	 is_search
+	 is_search, _interests, _org_page
     FROM WA_USER_INFO, DB.DBA.SYS_USERS  where WAUI_U_ID = U_ID  and  U_ID = ufid;
 
   declare is_friend integer;
@@ -3700,6 +3826,16 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
        
     };
 
+    if (atoi(visb[48]) = 3 or (atoi(visb[48]) = 2 and not(is_friend)))
+      _interests := '';
+    else if (atoi(visb[48]) = 1 and umode = 1)
+      _data := concat(_data, ' ', blob_to_string (_interests));
+
+    if (atoi(visb[20]) = 3 or (atoi(visb[20]) = 2 and not(is_friend)))
+      _org_page := '';
+    else if (atoi(visb[20]) = 1 and umode = 1)
+      _data := concat(_data, ' ', blob_to_string (_org_page));
+
 
 
 
@@ -3767,6 +3903,8 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
   _arr [44] := _fav_books;
   _arr [45] := _fav_music;
   _arr [46] := _fav_movie;
+  _arr [47] := _interests;
+  _arr [48] := _org_page;
 
   if (is_search is not null and is_search = 0)
     _data := '';
@@ -4598,6 +4736,17 @@ create procedure WA_SET_APP_URL
        if (c_host = _vhost and lpath = '/')
          signal ('22023', 'The domain specified matches the host used to access the application configuration pages.');
 
+-- checks if user's custom domain overwrites default URIQA host      
+      
+       declare uriqa_defaulthost,userdefined_host any;
+       uriqa_defaulthost:=split_and_decode (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost'), 0, '\0\0:');
+       userdefined_host:=split_and_decode (_vhost, 0, '\0\0:');
+       if(uriqa_defaulthost[0]=userdefined_host[0])
+       {
+         signal ('22023', 'The domain specified as "My own domain" matches the default domain. Please use "Default domain".');
+        
+       }
+
      }
    else
      {
@@ -4749,13 +4898,15 @@ create procedure WA_GET_APP_NAME (in app varchar)
   else if (app = 'oMail')
     return 'Mail';
   else if (app = 'oGallery')
-    return 'Photos';
+    return 'Gallery';
   else if (app = 'xDiaspora' or app = 'Community')
     return 'Community';
   else if (app = 'Bookmark')
     return 'Bookmarks';
   else if (app = 'nntpf')
     return 'Discussion';
+  else if (app = 'polls')
+    return 'Polls';
   else
     return app;
 };
@@ -4779,13 +4930,15 @@ create procedure WA_GET_MFORM_APP_NAME (in app varchar)
   else if (app = 'oMail')
     return 'Mails';
   else if (app = 'oGallery')
-    return 'Photos';
+    return 'Galleries';
   else if (app = 'xDiaspora' or app = 'Community')
     return 'Communities';
   else if (app = 'Bookmark')
     return 'Bookmarks';
   else if (app = 'nntpf')
     return 'Discussions';
+  else if (app = 'polls')
+    return 'Polls';
   else
     return app;
 };
@@ -5138,4 +5291,25 @@ create procedure wa_make_url_from_vd (in host varchar, in lhost varchar, in path
     return rtrim(path, '/');
   else
   return sprintf ('http://%s%s%s/', host, port, rtrim(path, '/'));
+};
+
+create procedure
+WA_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner varchar, in model int := 0, in pub int := 1)
+{
+  declare inst web_app;
+  declare ty, h, id any;
+
+  select WAT_TYPE into ty from WA_TYPES where WAT_NAME = app_type;
+  inst := __udt_instantiate_class (fix_identifier_case (ty), 0);
+  inst.wa_name := inst_name;
+  inst.wa_member_model := model;
+  h := udt_implements_method (inst, 'wa_new_inst');
+  id := call (h) (inst, owner);
+  update WA_INSTANCE
+         set WAI_MEMBER_MODEL = model,
+             WAI_IS_PUBLIC = pub,
+             WAI_MEMBERS_VISIBLE = 1,
+             WAI_NAME = inst_name,
+             WAI_DESCRIPTION = inst_name || ' Description'
+       where WAI_ID = id;
 };

@@ -23,16 +23,10 @@
  -
 -->
 <v:page name="settings" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <v:before-data-bind>
-    <![CDATA[
-      self.v_settings := ODRIVE.WA.odrive_settings(self.vc_page.vc_event.ve_params);
-    ]]>
-  </v:before-data-bind>
   <vm:pagetitle>Settings</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header/>
     <vm:variables>
-      <v:variable name="v_settings" type="varchar" default="''"/>
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
     </vm:variables>
     <vm:pagebody>
@@ -53,7 +47,7 @@
                     <v:label for="f_rows" value="Rows per page"/>
                   </th>
                   <td>
-                    <v:text name="f_rows" null-value="--''" value="--get_keyword('rows', self.v_settings, '10')" xhtml_class="field-short"/>
+                  <v:text name="f_rows" null-value="--''" value="--get_keyword('rows', self.settings, '10')" xhtml_class="field-short"/>
                   </td>
                 </tr>
                 <tr>
@@ -61,13 +55,13 @@
                     <v:label for="f_chars" value="Limit of the resource names to"/>
                   </th>
                   <td>
-                    <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.v_settings, '60')" xhtml_class="field-short"/> (0 = no limit)
+                  <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_class="field-short"/> (0 = no limit)
                   </td>
                 </tr>
                 <tr>
                   <th width="30%"/>
                   <td>
-                    <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.v_settings, '1') as integer)" />
+                  <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.settings, '1') as integer)" />
                     <vm:label for="f_tbLabels" value="Show toolbar labels"/>
                   </td>
                 </tr>
@@ -81,7 +75,7 @@
                       <v:item value="1.0" name="1.0"/>
                       <v:before-data-bind>
                         <![CDATA[
-                          control.ufl_value := get_keyword('atomVersion', self.v_settings, '1.0');
+                        control.ufl_value := get_keyword('atomVersion', self.settings, '1.0');
                         ]]>
                       </v:before-data-bind>
                     </v:select-list>
@@ -96,56 +90,56 @@
                     Show columns in detail view
                   </th>
                   <td>
-                    <v:check-box name="f_column_2" xhtml_id="f_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#2', self.v_settings, '1') as integer)" />
+                  <v:check-box name="f_column_2" xhtml_id="f_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#2', self.settings, '1') as integer)" />
                     <vm:label for="f_column_2" value="Tags"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                    <v:check-box name="f_column_3" xhtml_id="f_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#3', self.v_settings, '1') as integer)" />
+                  <v:check-box name="f_column_3" xhtml_id="f_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#3', self.settings, '1') as integer)" />
                     <vm:label for="f_column_3" value="Size"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                    <v:check-box name="f_column_4" xhtml_id="f_column_4" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#4', self.v_settings, '1') as integer)" />
+                  <v:check-box name="f_column_4" xhtml_id="f_column_4" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#4', self.settings, '1') as integer)" />
                     <vm:label for="f_column_4" value="Date Modified"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                    <v:check-box name="f_column_5" xhtml_id="f_column_5" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#5', self.v_settings, '1') as integer)" />
+                  <v:check-box name="f_column_5" xhtml_id="f_column_5" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#5', self.settings, '1') as integer)" />
                     <vm:label for="f_column_5" value="Mime Type"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                    <v:check-box name="f_column_6" xhtml_id="f_column_6" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#6', self.v_settings, '1') as integer)" />
+                  <v:check-box name="f_column_6" xhtml_id="f_column_6" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#6', self.settings, '1') as integer)" />
                     <vm:label for="f_column_6" value="Kind"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                    <v:check-box name="f_column_7" xhtml_id="f_column_7" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#7', self.v_settings, '1') as integer)" />
+                  <v:check-box name="f_column_7" xhtml_id="f_column_7" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#7', self.settings, '1') as integer)" />
                     <vm:label for="f_column_7" value="User"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                    <v:check-box name="f_column_8" xhtml_id="f_column_8" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#8', self.v_settings, '1') as integer)" />
+                  <v:check-box name="f_column_8" xhtml_id="f_column_8" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#8', self.settings, '1') as integer)" />
                     <vm:label for="f_column_8" value="Group"/>
                   </td>
                 </tr>
                 <tr>
                   <th />
                   <td>
-                    <v:check-box name="f_column_9" xhtml_id="f_column_9" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#9', self.v_settings, '1') as integer)" />
+                  <v:check-box name="f_column_9" xhtml_id="f_column_9" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('column_#9', self.settings, '1') as integer)" />
                     <vm:label for="f_column_9" value="Permissions"/>
                   </td>
                 </tr>
@@ -175,23 +169,23 @@
                 ODRIVE.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
                 ODRIVE.WA.test(chars, vector('name', 'Max length of name', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
 
-                self.v_settings := ODRIVE.WA.set_keyword('rows', self.v_settings, cast(cast(rows as integer) as varchar));
-                self.v_settings := ODRIVE.WA.set_keyword('chars', self.v_settings, cast(cast(chars as integer) as varchar));
-                self.v_settings := ODRIVE.WA.set_keyword('tbLabels', self.v_settings, self.f_tbLabels.ufl_selected);
-                self.v_settings := ODRIVE.WA.set_keyword('atomVersion', self.v_settings, self.f_atomVersion.ufl_value);
-                self.v_settings := ODRIVE.WA.set_keyword('column_#2', self.v_settings, self.f_column_2.ufl_selected);
-                self.v_settings := ODRIVE.WA.set_keyword('column_#3', self.v_settings, self.f_column_3.ufl_selected);
-                self.v_settings := ODRIVE.WA.set_keyword('column_#4', self.v_settings, self.f_column_4.ufl_selected);
-                self.v_settings := ODRIVE.WA.set_keyword('column_#5', self.v_settings, self.f_column_5.ufl_selected);
-                self.v_settings := ODRIVE.WA.set_keyword('column_#6', self.v_settings, self.f_column_6.ufl_selected);
-                self.v_settings := ODRIVE.WA.set_keyword('column_#7', self.v_settings, self.f_column_7.ufl_selected);
-                self.v_settings := ODRIVE.WA.set_keyword('column_#8', self.v_settings, self.f_column_8.ufl_selected);
-                self.v_settings := ODRIVE.WA.set_keyword('column_#9', self.v_settings, self.f_column_9.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
+              self.settings := ODRIVE.WA.set_keyword('chars', self.settings, cast(cast(chars as integer) as varchar));
+              self.settings := ODRIVE.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
+              self.settings := ODRIVE.WA.set_keyword('column_#2', self.settings, self.f_column_2.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('column_#3', self.settings, self.f_column_3.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('column_#4', self.settings, self.f_column_4.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('column_#5', self.settings, self.f_column_5.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('column_#6', self.settings, self.f_column_6.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('column_#7', self.settings, self.f_column_7.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('column_#8', self.settings, self.f_column_8.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword('column_#9', self.settings, self.f_column_9.ufl_selected);
 
                 uid := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params));
-                insert replacing ODRIVE.WA.SETTINGS(USER_ID, USER_SETTINGS) values(uid, serialize(self.v_settings));
+              insert replacing ODRIVE.WA.SETTINGS(USER_ID, USER_SETTINGS) values(uid, serialize(self.settings));
 
-                self.vc_redirect('settings.vspx');
+              self.vc_redirect('home.vspx');
         	    ]]>
         	  </v:on-post>
           </v:button>

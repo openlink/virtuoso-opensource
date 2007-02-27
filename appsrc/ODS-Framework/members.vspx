@@ -664,7 +664,7 @@
               <tr class="listing_header_row">
                 <th> Name </th>
                 <th>Description </th>
-                <th width="1%">Membership Type(status)</th>
+                <th width="180px">Membership Type(status)</th>
                 <th align="center" width="1%">Action </th>
               </tr>
               <?vsp

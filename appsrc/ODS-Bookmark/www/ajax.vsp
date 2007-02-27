@@ -1,0 +1,137 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2006 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+  declare id, domain_id, account_id integer;
+  declare sid, realm, action, subAction any;
+  declare aRequest, aSession any;
+
+  sid := get_keyword ('sid', params, '');
+  realm := get_keyword ('realm', params, '');
+
+  id := cast (get_keyword ('id', params, '0') as integer);
+  action := get_keyword ('a', params, '');
+  subAction := get_keyword ('sa', params, '');
+
+  aRequest   := ENEWS.WA.validate_request(lines,0);
+  aSession   := ENEWS.WA.session_restore(aRequest, params);
+  domain_id  := cast(get_keyword('domain_id', aSession, '0') as integer);
+  account_id := cast(get_keyword('user_id', aSession, '0') as integer);
+
+  if (action = 'read') {
+    BMK.WA.bookmark_flag_set (id, account_id, 1);
+    BMK.WA.bookmark_last_visited (id, account_id);
+  }
+
+  if (action = 'import') {
+    declare progressID, progressIndex, progressMax any;
+
+	  progressID := get_keyword('id', params, '');
+	  progressIndex := registry_get ('bookmark_index_' || progressID);
+	  progressMax := registry_get ('bookmark_max_' || progressID);
+
+	  declare exit handler for sqlstate '*' {
+	    registry_remove ('bookmark_max_'    || progressID);
+	    registry_remove ('bookmark_index_'  || progressID);
+	    registry_remove ('bookmark_action_' || progressID);
+	    return;
+	  };
+
+
+	  if (subAction = 'reset') {
+	    registry_remove ('bookmark_max_'    || progressID);
+	    registry_remove ('bookmark_index_'  || progressID);
+	    registry_remove ('bookmark_action_' || progressID);
+
+  	  progressID := cast (msec_time() as varchar);
+	    http_rewrite ();
+	    http_header ('Content-Type: text/xml\r\n');
+	    http('<root>');
+	    http(sprintf('<id>%s</id>', cast (progressID as varchar)));
+	    http('</root>');
+
+	    connection_set('stop_execution', '1');
+	    return (0);
+	  }
+
+	  -- stop
+	  if (subAction = 'stop') {
+	    registry_set ('bookmark_action_' || progressID, 'stop');
+
+	    connection_set('stop_execution', '1');
+	    return (0);
+	  }
+
+	  -- state
+	  if (subAction = 'state') {
+      http_rewrite ();
+      http_header ('Content-Type: text/xml\r\n');
+      http('<root>');
+      if (not isinteger (progressIndex))
+        http(sprintf('<index>%s</index>', progressIndex));
+      http('</root>');
+
+	    connection_set('stop_execution','1');
+	    return (0);
+	  }
+
+	  -- clear
+	  --
+	  if (subAction = 'init') {
+
+
+      declare folder_id, folder_name, tags, R, S, T any;
+
+	    registry_set ('bookmark_index_' || progressID, '0');
+      R := DAV_RES_CONTENT_INT (DAV_SEARCH_ID ('/DAV/VAD/Bookmarks/Import/' || sid, 'R'), S, T, 0, 0);
+      S := blob_to_string (S);
+      DB.DBA.DAV_DELETE_INT ('/DAV/VAD/Bookmarks/Import/' || sid, 1, null, null, 0);
+
+	    -- flush and continue
+	    http_flush ();
+
+      -- check / create folder
+      folder_id := cast (get_keyword ('folder_id', params, '0') as integer);
+      folder_name := trim (get_keyword ('folder_name', params, ''));
+      folder_id := BMK.WA.folder_create (domain_id, folder_name, folder_id);
+      tags := trim (get_keyword ('tags', params, ''));
+
+      -- import
+      {
+        declare exit handler for sqlstate '*'
+        {
+        	goto _end;
+        };
+        BMK.WA.bookmark_import (S, domain_id, account_id, folder_id, tags, progressID);
+      }
+	  _end:;
+
+	    registry_remove ('bookmark_max_'    || progressID);
+	    registry_remove ('bookmark_index_'  || progressID);
+	    registry_remove ('bookmark_action_' || progressID);
+
+	    connection_set('stop_execution', '1');
+	    return (0);
+	  }
+  }
+
+?>

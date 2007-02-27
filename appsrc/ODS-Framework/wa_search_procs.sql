@@ -111,29 +111,55 @@ returns varchar
           url := (select x.WAI_INST.wa_home_url () from WA_INSTANCE x where x.WAI_NAME = _INST_NAME);
           amp := '?';
         }
+      
       if (url like 'javascript:%')
 	url := '#';
-      res := res || sprintf (
+	      
+      declare _sid varchar;
+      _sid := coalesce(connection_get ('wa_sid'),'');
+
+      if( (INST_TYPE='oMail' or INST_TYPE='oDrive')
+           and
+          (_user_id = http_nobody_uid()or _sid = '')
+        )
+      {res := res || sprintf (
+             '<img src="%s" alt="%s" border="0" title="%s" />',
+             WA_SEARCH_ADD_APATH (icon),
+             INST_TYPE, WA_GET_APP_NAME (INST_TYPE));
+      }
+      else
+      {res := res || sprintf (
           '<a href="%s"><img src="%s" alt="%s" border="0" title="%s" /></a>',
-          WA_SEARCH_ADD_APATH (
-            WA_SEARCH_ADD_SID_IF_AVAILABLE (
-	      url, _user_id, amp)),
+             WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (url, _user_id, amp)),
           WA_SEARCH_ADD_APATH (icon),
           INST_TYPE, WA_GET_APP_NAME (INST_TYPE));
+    }
     }
 
   if (res <> '')
     res := res || ' ';
+    
+
   if (_user_id <> http_nobody_uid () and _user_id <> _WAUT_USER_ID
        --and _WAUT_USER_ID <> http_dav_uid () and _WAUT_USER_ID <> 0
        and (not WA_USER_IS_FRIEND (_user_id, _WAUT_USER_ID)))
     {
+      
+       if( connection_get ('wa_sid') is not NULL and length(connection_get ('wa_sid'))>0)
+       {
       res := res || sprintf ('<a href="%s"><img src="%s" alt="Add to Friends" border="0" title="Add to Friends" /></a>',
 	  WA_SEARCH_ADD_APATH (
 	    WA_SEARCH_ADD_SID_IF_AVAILABLE (
 	      sprintf ('sn_make_inv.vspx?fmail=%U', _U_E_MAIL),
 	      _user_id, '&')),
 	      WA_SEARCH_ADD_APATH (sprintf ('images/icons/add_user_%d.png', case when for_search_result then 16 else 24 end)));
+       
+       }else{
+             res := res || sprintf ('<a href="%s"><img src="%s" alt="Add to Friends" border="0" title="Add to Friends" /></a>',
+	           WA_SEARCH_ADD_APATH (
+	               sprintf ('login.vspx?URL=sn_make_inv.vspx?fmail=%U', _U_E_MAIL)),
+	               WA_SEARCH_ADD_APATH (sprintf ('images/icons/add_user_%d.png', case when for_search_result then 16 else 24 end)));
+       }
     }
   return res;
 }
@@ -590,9 +616,7 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
       and ResId = _RES_ID;
 
   _WAUI_FULL_NAME := null;
-  select WAUI_FULL_NAME
-    into _WAUI_FULL_NAME
-    from DB.DBA.WA_USER_INFO where WAUI_U_ID = _RES_OWNER;
+  _WAUI_FULL_NAME := (select WAUI_FULL_NAME from DB.DBA.WA_USER_INFO where WAUI_U_ID = _RES_OWNER);
 
   _U_NAME := null;
   select U_NAME into _U_NAME from DB.DBA.SYS_USERS where U_ID = _RES_OWNER;
@@ -819,7 +843,7 @@ create function WA_SEARCH_ENEWS (in max_rows integer, in current_user_id integer
 	  '  SELECT 1 FROM ENEWS.WA.FEED_ITEM_DATA \n' ||
 	  '    WHERE \n' ||
 	  '      contains (EFID_TAGS, \n' ||
-	  '        sprintf (''[__lang "x-ViDoc" __enc "UTF-8"] (%S) AND (("^UID%d") OR ("^public"))'', \n' ||
+	  '        sprintf (''[__lang "x-ViDoc" __enc "UTF-8"] (%S) AND (("^UID%d") OR ("^public")) AND ("^I%%d")'', \n' ||
 	  '          EFI_ID))) \n',
 	  ret,
 	  tags_str,
@@ -1242,7 +1266,7 @@ returns varchar
     ret := sprintf ('select top %d EXCERPT, TAG_TABLE_FK, _SCORE, _DATE from \n(\n%s ORDER BY %s desc\n) q',
        max_rows, ret, case when sort_by_score <> 0 then  '_SCORE' else '_DATE' end);
 
-  -- dbg_obj_print ('1', ret);
+  --dbg_printf ('%s', ret);
   return ret;
 }
 ;

@@ -118,12 +118,6 @@
 --         self.topmenu_level:=get_keyword('l',self.vc_event.ve_params,'0');
       self.st_host := WA_GET_HOST ();
 
-
-      if ( (get_keyword('devaccess_code',self.vc_event.ve_params)) is not null ){
-        self.devaccess_code:=get_keyword('devaccess_code',self.vc_event.ve_params,'');
-        registry_set('devaccess_code',self.devaccess_code);
-      };
-
       ]]></v:on-init>
 
   <v:method name="set_page_error" arglist="in err any">
@@ -300,10 +294,14 @@
             xhtml_enctype="multipart/form-data" 
             xhtml_onsubmit="sflag=true;">
       <div id="HD"><?V ' ' ?>
+        <xsl:if test="not (@odsbar) or @odsbar != 'no'">
         <vm:ods-bar/>
-        <xsl:if test="not (@banner) or @banner != 'no'">
-		  <vm:banner />
         </xsl:if>
+
+        <!--xsl:if test="not (@banner) or @banner != 'no'">
+		  <vm:banner />
+        </xsl:if-->
+
       </div> <!-- HD -->
       <div id="MD">
 		  <vm:notification />
@@ -318,17 +316,17 @@
           </a>
               </div>
         <div id="FT_R">
-        <a href="aboutus.html">About Us</a> |
+          <!--<a href="aboutus.html">About Us</a> |-->
         <a href="faq.html">FAQ</a> |
         <a href="privacy.html">Privacy</a> |
         <a href="rabuse.vspx">Report Abuse</a> |
-          <a href="advertise.html">Advertise</a> |
-          <a href="contact.html">Contact Us</a>
+          <!--<a href="advertise.html">Advertise</a> |-->
+          <!--<a href="contact.html">Contact Us</a>-->
 	    <div><vm:copyright /></div>
 	    <div><vm:disclaimer /></div>
         </div>
       </div> <!-- FT -->
-  </v:form>
+    </v:form><font color="white">....</font>
   </body>
 </xsl:template>
 
@@ -895,7 +893,6 @@
     <v:variable name="maps_key" type="any" default="null" persist="temp" />
     <v:variable name="tab_pref" type="varchar" default="''" persist="temp" />
     <v:variable name="topmenu_level" type="varchar" default="'0'" persist="pagestate" param-name="l"/>
-    <v:variable name="devaccess_code" type="varchar" default="''" persist="session"/>
     <v:variable name="im_enabled" type="int" default="0" persist="temp"/>
 
     <xsl:for-each select="//vm:variable">
@@ -1326,7 +1323,7 @@
       }
     ?>
     <v:button name="{@data-set}_first" action="simple" style="url" value="first"
-        xhtml_alt="First" xhtml_title="First" text="&nbsp;First">
+        xhtml_alt="First" xhtml_title="First" text="First">
     </v:button>
   </xsl:if>
   -->
@@ -1338,7 +1335,7 @@
     }
   ?>
   <v:button name="{@data-set}_prev" action="simple" style="url" value="&lt;&lt;"
-    xhtml_alt="Previous" xhtml_title="Previous" text="&nbsp;Previous">
+    xhtml_alt="Previous" xhtml_title="Previous" text="Previous">
   </v:button>
     <![CDATA[&nbsp;]]>
     <![CDATA[&nbsp;]]>
@@ -1420,7 +1417,7 @@ if (i > 0)
     }
   ?>
   <v:button name="{@data-set}_next" action="simple" style="url" value="&gt;&gt;"
-    xhtml_alt="Next" xhtml_title="Next" text="&nbsp;Next">
+    xhtml_alt="Next" xhtml_title="Next" text="Next">
   </v:button>
   <!--
   <xsl:if test="not(@type) or @type = 'set'">
@@ -1432,7 +1429,7 @@ if (i > 0)
       }
     ?>
     <v:button name="{@data-set}_last" action="simple" style="url" value="last"
-      xhtml_alt="Last" xhtml_title="Last" text="&nbsp;Last">
+      xhtml_alt="Last" xhtml_title="Last" text="Last">
     </v:button>
   </xsl:if>
   -->
@@ -2717,5 +2714,72 @@ if (i > 0)
     <meta http-equiv="X-YADIS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
 
 </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template match="vm:ds-members-navigation">
+    &lt;?vsp
+      {
+        declare _prev, _next, _last, _first vspx_button;
+        declare d_prev, d_next, d_last, d_first int;
+
+        d_prev := d_next := d_last := d_first := 0;
+        _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
+        _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
+        _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
+        _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
+
+        if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
+          goto _skip;
+
+        if (_first is not null and not _first.vc_enabled)
+          d_first := 1;
+
+        if (_next is not null and not _next.vc_enabled)
+          d_next := 1;
+
+        if (_prev is not null and not _prev.vc_enabled)
+          d_prev := 1;
+
+        if (_last is not null and not _last.vc_enabled)
+          d_last := 1;
+
+      _skip:;
+    ?&gt;
+    <xsl:if test="not(@type) or @type = 'set'">
+    <?vsp
+      if (d_first)
+        http ('<img src="images/icons/first_16.png" alt="First" title="First" border="0" /> First');
+    ?>
+    <v:button name="{@data-set}_first" action="simple" style="image" value="images/icons/first_16.png" xhtml_alt="First" text="First"/>
+    </xsl:if>
+    <?vsp
+      if (d_first or _first.vc_enabled)
+        http ('&nbsp;');
+      if (d_prev)
+        http ('<img src="images/icons/previous_16.png" alt="Previous" title="Previous" border="0" /> Previous');
+    ?>
+    <v:button name="{@data-set}_prev" action="simple" style="image" value="images/icons/previous_16.png" xhtml_alt="Previous" text="Previous"/>
+    <?vsp
+      if (d_prev or _prev.vc_enabled)
+        http ('&nbsp;');
+      if (d_next)
+        http ('<img src="images/icons/next_16.png" alt="Next" title="Next" border="0" /> Next');
+    ?>
+    <v:button name="{@data-set}_next" action="simple" style="image" value="images/icons/next_16.png" xhtml_alt="Next" text="Next"/>
+    <xsl:if test="not(@type) or @type = 'set'">
+    <?vsp
+      if (d_next or _next.vc_enabled)
+        http ('&nbsp;');
+      if (d_last)
+        http ('<img src="images/icons/last_16.png" alt="Last" title="Last" border="0" /> Last');
+    ?>
+    <v:button name="{@data-set}_last" action="simple" style="image" value="images/icons/last_16.png" xhtml_alt="Last" text="Last"/>
+    </xsl:if>
+    <?vsp
+      }
+    ?>
+  </xsl:template>
+
+
 
 </xsl:stylesheet>

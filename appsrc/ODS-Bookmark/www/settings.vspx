@@ -50,8 +50,66 @@
           <div id="1" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
           <tr>
-            <th width="30%">
-                  <v:label for="f_chars" value="Bookmark name display"/>
+                <th width="30%" rowspan="2">
+                  Bookmarks view
+                </th>
+                <td>
+                  <?vsp
+                    declare S varchar;
+
+                    S := '';
+                    if (cast(get_keyword('panes', self.settings, '0') as integer) = 0)
+                      S := 'checked="checked"';
+                    http(sprintf('<input type="radio" name="r_panes" id="r_panes_0" value="0" %s />', S));
+                  ?>
+                  <xsl:call-template name="nbsp"/><vm:label for="r_panes_0" value="--'2-Pane view'" />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <?vsp
+                    declare S varchar;
+
+                    S := '';
+                    if (cast(get_keyword('panes', self.settings, '0') as integer) <> 0)
+                      S := 'checked="checked"';
+                    http(sprintf('<input type="radio" name="r_panes" id="r_panes_1" value="1" %s />', S));
+                  ?>
+                  <xsl:call-template name="nbsp"/><vm:label for="r_panes_1" value="--'3-Pane view'" />
+                </td>
+              </tr>
+              <tr>
+                <th width="30%" rowspan="2">
+                  Open bookmarks on <br /><i>(2 panes view only)</i>
+                </th>
+                <td>
+                  <?vsp
+                    declare S varchar;
+
+                    S := '';
+                    if (cast(get_keyword('bookmarkOpen', self.settings, '0') as integer) = 0)
+                      S := 'checked="checked"';
+                    http(sprintf('<input type="radio" name="r_bookmarkOpen" id="r_bookmarkOpen_0" value="0" %s />', S));
+                  ?>
+                  <xsl:call-template name="nbsp"/><vm:label for="r_bookmarkOpen_0" value="--'new window'" />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <?vsp
+                    declare S varchar;
+
+                    S := '';
+                    if (cast(get_keyword('bookmarkOpen', self.settings, '0') as integer) <> 0)
+                      S := 'checked="checked"';
+                    http(sprintf('<input type="radio" name="r_bookmarkOpen" id="r_bookmarkOpen_1" value="1" %s />', S));
+                  ?>
+                  <xsl:call-template name="nbsp"/><vm:label for="r_bookmarkOpen_1" value="--'current window'" />
+                </td>
+              </tr>
+              <tr>
+                <th rowspan="2">
+                  Bookmark name display
             </th>
             <td>
                   <?vsp
@@ -66,7 +124,6 @@
                 </td>
               </tr>
               <tr>
-                <th />
                 <td>
                   <?vsp
                     declare S varchar;
@@ -206,6 +263,8 @@
               BMK.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
               BMK.WA.test(chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
 
+              self.settings := BMK.WA.set_keyword('panes', self.settings, cast(cast(get_keyword ('r_panes', self.vc_page.vc_event.ve_params, '0') as integer) as varchar));
+              self.settings := BMK.WA.set_keyword('bookmarkOpen', self.settings, cast(cast(get_keyword ('r_bookmarkOpen', self.vc_page.vc_event.ve_params, '0') as integer) as varchar));
               self.settings := BMK.WA.set_keyword('chars', self.settings, cast(cast(chars as integer) as varchar));
               self.settings := BMK.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
               self.settings := BMK.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);

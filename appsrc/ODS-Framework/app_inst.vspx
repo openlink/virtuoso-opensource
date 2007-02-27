@@ -40,10 +40,25 @@
       <v:local-variable name="lvsn">
       <v:before-data-bind>
   <![CDATA[
+
+    if ( not length(self.sid)
+         and (self.app_type='oMail')
+       )
+    {
+      signal ('22023', sprintf ('You are not allowed to view personal information when not signed in.', self.fname));
+    };
+
+
+	 if (length (self.fname))
+	   {
     declare exit handler for not found
     {
-      signal ('22023', sprintf ('The user "%s" does not exist.', self.fname));
+	     signal ('22023', sprintf ('User "%s" does not exist.', self.fname));
     };
+
+	    select U_ID into self.ufid from SYS_USERS where U_NAME = self.fname;
+	   }
+
 
    if (not length (self.fname) and length (self.sid))
      self.fname := self.u_name;
@@ -107,7 +122,7 @@
       ?>
       <tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
         <td nowrap="nowrap">
-          <a href="<?V wa_expand_url (INST_URL, self.login_pars) ?>"><img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?></a>
+          <a href="<?V (case when locate('http://',INST_URL)=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||wa_expand_url (INST_URL, self.login_pars) ?>"><img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?></a>
         </td>
       </tr>
       <?vsp
@@ -173,6 +188,12 @@
             <vm:dash-ogallery-summary/>
             <?vsp
            }
+            else if (self.app_type = 'Polls')
+              {
+            ?>
+            <vm:dash-polls-summary/>
+            <?vsp
+              }
          ?>
         </td>
       </tr>

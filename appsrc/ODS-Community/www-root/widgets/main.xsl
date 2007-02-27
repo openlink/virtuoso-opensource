@@ -321,7 +321,10 @@
 
         self.wa_home:=ODS.COMMUNITY.COMM_GET_WA_URL ();
 
+
         ]]>
+        
+        ODS.COMMUNITY.doPTSW(self.comm_wainame,self.owner_name);        
         
         </v:on-init>
 
@@ -549,13 +552,14 @@ c.length);
   }
   return null;
 }
+// !!!! This event is dissabled due to OAT use of window.onload
 
-window.onload = function (e)
-{
-  var cookie = readCookie ("style");
-  var title = cookie ? cookie : getPreferredStyleSheet();
-  setActiveStyleSheet (title, 0);
-}
+//window.onload = function (e)
+//{
+//  var cookie = readCookie ("style");
+//  var title = cookie ? cookie : getPreferredStyleSheet();
+//  setActiveStyleSheet (title, 0);
+//}
   ]]>
       </script>
 <?vsp
@@ -614,7 +618,6 @@ window.onload = function (e)
        ]]></v:after-data-bind>
       </v:login>
       <div id="HD">
-       <ods:ods-bar app_type='Community'/>
       <script type="text/javascript">
        <![CDATA[
 //        document.getElementById('ods-bar-sep').style.display='none';
@@ -624,6 +627,7 @@ window.onload = function (e)
 
       </div>
       <div id="MD">
+       <ods:ods-bar app_type='Community'/>
         <xsl:apply-templates/>
       </div>
       </v:form>
@@ -1601,7 +1605,7 @@ window.onload = function (e)
               {
                    exec_result (dta);
            ?>
-           <li><a href="<?V wa_expand_url (dta[1], self.login_pars) ?>"><?V coalesce (dta[0], '*no title*') ?></a></li>
+           <li><a href="<?V wa_expand_url (dta[1], self.login_pars) ?>"><?V coalesce (wa_utf8_to_wide (dta[0]), '*no title*') ?></a></li>
            <?vsp
                 i := i + 1;
                 }
@@ -1878,10 +1882,13 @@ window.onload = function (e)
         ?>
         
        
-        <div class="info_container" style="margin:0px">
+        <div class="info_container" style="margin:0px;height: 340px;">
           <table cellspacing="0" cellpadding="0" border="0">
             <tr>
               <td>
+                  <div id="google_map" style="margins:1px; width: 300px;height: 310px;" >
+                   <img src="/community/public/images/indicator.gif" id="maploadwait" />
+                   </div>
                   <vm:map-control 
 	                    sql="sprintf ('select ' ||
                                     '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
@@ -1898,11 +1905,16 @@ window.onload = function (e)
 	                    key-name-inx="3"
 	                    key-val="self.uf_u_id"
                       div_id="google_map"
-                      zoom="-1"
-                      base_url="self.base_url"
                       wa_home_local="self.wa_home||'/'"
+                      zoom="0"                     
+                      base_url="self.base_url"      
+                      mapservice_name="GOOGLE"      
+
+
+
+
+
                        />
-                  <div id="google_map" style="margins:1px; width: 300px;height: 210px;" />
               </td>
             </tr>
             <tr>

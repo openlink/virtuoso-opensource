@@ -40,16 +40,25 @@
       <v:local-variable name="lvsn">
       <v:before-data-bind>
 	<![CDATA[
-	  declare exit handler for not found
+
+    if ( not length(self.sid)
+         and (self.app_type='oMail' or self.app_type='oDrive')
+       )
 	  {
-	    signal ('22023', sprintf ('User "%s" does not exist.', self.fname));
+      signal ('22023', sprintf ('You are not allowed to view personal information when not signed in.', self.fname));
 	  };
+
 
 	 if (not length (self.fname) and length (self.sid))
 	   self.fname := self.u_name;
 
 	 if (length (self.fname))
 	   {
+      declare exit handler for not found
+	    {
+	     signal ('22023', sprintf ('User "%s" does not exist.', self.fname));
+	    };
+	    
 	     select U_ID into self.ufid from SYS_USERS where U_NAME = self.fname;
 	   }
 	]]>
@@ -57,15 +66,42 @@
       </v:local-variable>
       <vm:login redirect="app_my_inst.vspx"/>
       <div id="LT_SB">
-	<ul class="sb app_insts_sb">
+        <ul class="sb app_cmds_sb">
           <vm:if test="length (self.sid)">
             <li>
               <v:url xhtml_class="ods_side_button" 
                      url="services.vspx" 
-                     name="my_app" value='<img src="images/icons/apps_16.png" border="0" /> Manage Applications' />
+                     name="my_app" 
+                     value='<img src="images/icons/apps_16.png" border="0" /> Manage Applications' />
             </li>
           </vm:if>
 	<?vsp
+          
+          declare usr_instnum,apptype_instnum int;
+
+          declare exit handler for not found {
+              apptype_instnum:=0;
+          };
+
+          select WAT_MAXINST 
+            into apptype_instnum 
+            from WA_TYPES 
+            where WAT_NAME = self.app_type;
+
+          if (apptype_instnum is null) 
+            apptype_instnum := 999999; -- XXX Magic number???
+
+          declare exit handler for not found 
+            {
+              usr_instnum:=0;
+          };
+          
+          select WMIC_INSTCOUNT 
+            into usr_instnum 
+            from WA_MEMBER_INSTCOUNT 
+            where WMIC_TYPE_NAME = self.app_type and 
+                  WMIC_UID=self.u_id;
+          
 	  if (
                (
 	         (length (self.sid) and (self.u_name = self.fname or 0 = length (self.fname)))
@@ -73,23 +109,27 @@
 	       (length (self.sid) = 0 and 0 = length (self.fname))
 	     )
 	       and
-	       (
-	         (self.app_type <> 'oDrive')
-	         or
-	         (not exists (select 1 from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_USER = self.u_id))
-	       )
+               apptype_instnum<>0
+               and
+               apptype_instnum>usr_instnum
 	     )
 	    {
         ?>
               <li>
                 <a class="ods_side_button" href="<?V 'index_inst.vspx?wa_name=' || self.app_type || self.login_pars || case when self.topmenu_level='1' then '&l=1' else '' end ?>">
-		   <img src="images/icons/new_16.png" border="0" />
-		  Create New
-		 </a>
+                  <img src="images/icons/new_16.png" border="0" />Create New</a>
               </li>
 	<?vsp
 	    }
+            
+?>
+
+        </ul> <!-- app_cmds_sb --> 
+        <ul class="sb app_insts_sb">            
+            
+<?vsp
 	  declare i int;
+
 	  for select * 
                 from WA_USER_APP_INSTANCES sub 
                 where user_id = self.u_id and 
@@ -154,7 +194,12 @@
     <vm:dash-ogallery-summary/>
     <?vsp
       }
-
+      else if (self.app_type = 'Polls')
+      {
+?>
+        <vm:dash-polls-summary/>
+<?vsp
+      }
 	}
       ?>
       </div> <!-- RT -->

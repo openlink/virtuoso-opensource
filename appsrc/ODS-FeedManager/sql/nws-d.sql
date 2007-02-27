@@ -36,6 +36,8 @@ ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.SFOLDER');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FOLDER');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FEED_DIRECTORY');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.DIRECTORY');
+ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FEED_ITEM_ENCLOSURE');
+ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FEED_ITEM_LINK');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FEED_ITEM_COMMENT');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FEED_ITEM');
 ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.FEED');
@@ -48,6 +50,20 @@ ENEWS.WA.exec_no_error('DROP TABLE ENEWS.WA.WEBLOG');
 -- Types
 ENEWS.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'eNews2\'');
 ENEWS.WA.exec_no_error('drop type wa_eNews2');
+
+-- Views
+ENEWS.WA.exec_no_error('drop view ENEWS..TAGS_VIEW');
+ENEWS.WA.exec_no_error('drop view ENEWS..TAGS_STATISTICS');
+
+-- Registry
+registry_remove ('_enews2_path_');
+registry_remove ('_enews2_version_');
+registry_remove ('_enews2_build_');
+registry_remove ('news_version_upgrade');
+registry_remove ('news_table_version');
+registry_remove ('news_index_version');
+registry_remove ('news_links_upgrade');
+registry_remove ('__ods_feeds_sioc_init');
 
 -- Procedures
 create procedure ENEWS.WA.drop_procedures()
@@ -83,6 +99,7 @@ ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_item_iri');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_comment_iri');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_item_url');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.author_iri');
+ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_foaf_maker');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feed_links_to');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_feeds_sioc');
 ENEWS.WA.exec_no_error('DROP procedure SIOC.DBA.feeds_item_insert');

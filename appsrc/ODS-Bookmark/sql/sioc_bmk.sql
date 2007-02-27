@@ -19,10 +19,9 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-
 use sioc;
 
-create procedure bmk_post_iri (in domain_id varchar, in bmk_id int)
+create procedure bmk_post_iri (in domain_id int, in bmk_id int)
 {
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
@@ -60,18 +59,36 @@ create procedure fill_ods_bookmark_sioc (in graph_iri varchar, in site_iri varch
   declare iri, c_iri, creator_iri, t_iri varchar;
   declare tags, linksTo any;
 
-  for (select WAI_NAME, BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, BD_CREATED, B_URI, WAM_USER
+ {
+    declare deadl, cnt any;
+    declare _domain, _b_id any;
+
+    _domain := _b_id := -1;
+    deadl := 3;
+    cnt := 0;
+    declare exit handler for sqlstate '40001' {
+      if (deadl <= 0)
+	resignal;
+      rollback work;
+      deadl := deadl - 1;
+      goto l0;
+    };
+    l0:
+
+  for (select B_ID, WAI_NAME, BD_DOMAIN_ID, BD_BOOKMARK_ID as _BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, BD_CREATED, B_URI, WAM_USER
         from DB.DBA.WA_INSTANCE,
              BMK..BOOKMARK_DOMAIN,
              BMK..BOOKMARK,
              DB.DBA.WA_MEMBER
-       where BD_DOMAIN_ID = WAI_ID
+        where
+          B_ID > _b_id and BD_DOMAIN_ID > _domain
+	  and BD_DOMAIN_ID = WAI_ID
          and BD_BOOKMARK_ID = B_ID
          and WAM_INST = WAI_NAME
           and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)) do
       {
       c_iri := bmk_iri (WAI_NAME);
-	iri := bmk_post_iri (BD_DOMAIN_ID, BD_BOOKMARK_ID);
+    iri := bmk_post_iri (BD_DOMAIN_ID, _BD_BOOKMARK_ID);
       creator_iri := user_iri (WAM_USER);
 
     -- maker
@@ -82,9 +99,19 @@ create procedure fill_ods_bookmark_sioc (in graph_iri varchar, in site_iri varch
       ods_sioc_post (graph_iri, iri, c_iri, creator_iri, BD_NAME, BD_CREATED, BD_LAST_UPDATE, B_URI, BD_DESCRIPTION, null, linksTo);
 
       -- tags
-      bookmark_id := BD_BOOKMARK_ID;
-    for (select BD_TAGS from BMK.WA.BOOKMARK_DATA where BD_OBJECT_ID = BD_DOMAIN_ID and BD_MODE = 0 and BD_BOOKMARK_ID = bookmark_id) do
+    bookmark_id := _BD_BOOKMARK_ID;
+    for (select BD_TAGS from BMK.WA.BOOKMARK_DATA where BD_OBJECT_ID = BD_DOMAIN_ID and BD_MODE = 0 and BD_BOOKMARK_ID = bookmark_id and not DB.DBA.is_empty_or_null (BD_TAGS)) do
 	  ods_sioc_tags (graph_iri, iri, BD_TAGS);
+    cnt := cnt + 1;
+    if (mod (cnt, 500) = 0)
+      {
+	commit work;
+	_b_id := B_ID;
+	_domain := BD_DOMAIN_ID;
+      }
+  }
+  commit work;
+
         }
     }
 ;
@@ -172,6 +199,9 @@ create procedure bookmark_tags_insert (
   if (isnull(domain_id))
     return;
 
+  if (DB.DBA.is_empty_or_null (tags))
+    return;
+
   declare graph_iri, iri, post_iri, home varchar;
 
   declare exit handler for sqlstate '*' {
@@ -192,6 +222,9 @@ create procedure bookmark_tags_delete (
   in tags any)
 {
   if (isnull(domain_id))
+    return;
+
+  if (DB.DBA.is_empty_or_null (tags))
     return;
 
   declare graph_iri, post_iri varchar;
@@ -245,6 +278,132 @@ create procedure ods_bookmark_sioc_init ()
 }
 ;
 
-BMK.WA.exec_no_error('ods_bookmark_sioc_init ()');
+--BMK.WA.exec_no_error('ods_bookmark_sioc_init ()');
 
 use DB;
+use DB;
+-- BOOKMARK
+wa_exec_no_error ('drop view ODS_BMK_POSTS');
+
+create view ODS_BMK_POSTS as select
+	WAI_NAME,
+	BD_DOMAIN_ID,
+	BD_BOOKMARK_ID,
+	BD_NAME,
+	BD_DESCRIPTION,
+	sioc..sioc_date (BD_LAST_UPDATE) as BD_LAST_UPDATE,
+	sioc..sioc_date (BD_CREATED) as BD_CREATED,
+	sioc..post_iri (U_NAME, 'bookmark', WAI_NAME, cast (BD_BOOKMARK_ID as varchar)) || '/sioc.rdf' as SEE_ALSO,
+	B_URI,
+	U_NAME
+	from
+	DB.DBA.WA_INSTANCE,
+	BMK..BOOKMARK_DOMAIN,
+	BMK..BOOKMARK,
+	DB.DBA.WA_MEMBER,
+	DB.DBA.SYS_USERS
+	where
+	BD_DOMAIN_ID = WAI_ID and
+	BD_BOOKMARK_ID = B_ID and
+	WAM_INST = WAI_NAME and
+	WAM_IS_PUBLIC = 1 and
+	WAM_USER = U_ID and
+	WAM_MEMBER_TYPE = 1;
+
+create procedure ODS_BMK_TAGS ()
+{
+  declare inst, uname, item_id, tag any;
+  result_names (inst, uname, item_id, tag);
+  for select WAM_INST, U_NAME, BD_TAGS, BD_BOOKMARK_ID from
+    BMK.WA.BOOKMARK_DATA, WA_MEMBER, WA_INSTANCE, SYS_USERS where
+    WAM_INST = WAI_NAME and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID and BD_OBJECT_ID = WAI_ID and BD_MODE = 0
+   do
+     {
+       if (length (BD_TAGS))
+	 {
+	   declare arr any;
+	   arr := split_and_decode (BD_TAGS, 0, '\0\0,');
+	  foreach (any t in arr) do
+	    {
+	      t := trim(t);
+	      if (length (t))
+		{
+		  result (WAM_INST, U_NAME, BD_BOOKMARK_ID, t);
+		}
+	    }
+	 }
+     }
+};
+
+wa_exec_no_error ('drop view ODS_BMK_TAGS');
+create procedure view ODS_BMK_TAGS as ODS_BMK_TAGS () (WAM_INST varchar, U_NAME varchar, ITEM_ID int, BD_TAG varchar);
+
+create procedure sioc.DBA.rdf_bookmark_view_str ()
+{
+  return
+      '
+        #Post
+        sioc:bmk_post_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME, DB.DBA.ODS_BMK_POSTS.BD_BOOKMARK_ID)
+	a sioc:Post option (EXCLUSIVE) ;
+        a bm:Bookmark option (EXCLUSIVE) ;
+        dc:title BD_NAME;
+        dct:created BD_CREATED ;
+	dct:modified BD_LAST_UPDATE ;
+	dc:date BD_LAST_UPDATE ;
+	ann:created BD_CREATED ;
+	dc:creator U_NAME ;
+	bm:recalls sioc:proxy_iri (B_URI) ;
+	sioc:link sioc:proxy_iri (B_URI) ;
+	sioc:content BD_DESCRIPTION ;
+	sioc:has_creator sioc:user_iri (U_NAME) ;
+	foaf:maker foaf:person_iri (U_NAME) ;
+	rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
+	sioc:has_container sioc:bmk_forum_iri (U_NAME, WAI_NAME) .
+
+        sioc:bmk_forum_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME)
+	a sioct:Bookmark ;
+        sioc:container_of
+	sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID) .
+
+	sioc:user_iri (DB.DBA.ODS_BMK_POSTS.U_NAME)
+	sioc:creator_of
+	sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID) .
+
+	# Post tags
+	sioc:bmk_post_iri (DB.DBA.ODS_BMK_TAGS.U_NAME, DB.DBA.ODS_BMK_TAGS.WAM_INST, DB.DBA.ODS_BMK_TAGS.ITEM_ID)
+	sioc:topic
+	sioc:tag_iri (U_NAME, BD_TAG) .
+
+	sioc:tag_iri (DB.DBA.ODS_BMK_TAGS.U_NAME, DB.DBA.ODS_BMK_TAGS.BD_TAG) a skos:Concept ;
+	skos:prefLabel BD_TAG ;
+	skos:isSubjectOf sioc:bmk_post_iri (U_NAME, WAM_INST, ITEM_ID) .
+
+        sioc:bmk_post_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME, DB.DBA.ODS_BMK_POSTS.BD_BOOKMARK_ID)
+	a atom:Entry ;
+	atom:title BD_NAME ;
+	atom:source sioc:bmk_forum_iri (U_NAME, WAI_NAME) ;
+	atom:author foaf:person_iri (U_NAME) ;
+        atom:published BD_CREATED ;
+	atom:updated BD_LAST_UPDATE ;
+	atom:content sioc:bmk_post_text_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID) .
+
+        sioc:bmk_post_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME, DB.DBA.ODS_BMK_POSTS.BD_BOOKMARK_ID)
+        a atom:Content ;
+        atom:type "text/plain" ;
+	atom:lang "en-US" ;
+	atom:body BD_DESCRIPTION .
+
+        sioc:bmk_forum_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME)
+	atom:contains
+	sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID) .
+
+      '
+      ;
+};
+
+grant select on ODS_BMK_POSTS to "SPARQL";
+grant select on ODS_BMK_TAGS to "SPARQL";
+
+
+-- END BOOKMARK
+ODS_RDF_VIEW_INIT ();

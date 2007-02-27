@@ -84,7 +84,7 @@
               <h3>Congratulations</h3>
               You successful add <?vsp http(cast(self.image_cnt as varchar)); ?> new image(s) to your album.<br/>
               You can continue to add new or you can
-              <button OnClick="window.parent.gallery.upload_image_finish()" title="Close this wizard">Finish</button>
+              <button OnClick="window.parent.gallery.images_upload_finish()" title="Close this wizard">Finish</button>
             </div>
           </v:template>
 
@@ -114,7 +114,7 @@
             <tr>
               <td></td>
               <td>
-                <button OnClick="window.parent.gallery.upload_image_cancel()" title="Close this panel">Cancel</button>
+                <button OnClick="window.parent.gallery.images_upload_cancel()" title="Close this panel">Cancel</button>
               </td>
               <td>
 

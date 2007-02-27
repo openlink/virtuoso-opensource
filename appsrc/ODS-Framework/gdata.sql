@@ -228,6 +228,7 @@ create procedure wa_app_to_type (in app varchar)
 	'photos','oGallery',
 	'community','community',
 	'bookmark','bookmark',
+	'polls','Polls',
 	'new','nntpf'
 	), app);
 };
@@ -243,7 +244,8 @@ create procedure wa_type_to_app (in app varchar)
 	'oGallery','photos',
 	'Community','community',
 	'Bookmark','bookmark',
-	'nntpf',    'discussion'
+	'nntpf',    'discussion',
+	'Polls',    'polls'
 	), app);
 };
 
@@ -255,10 +257,11 @@ create procedure wa_type_to_appg (in app varchar)
 	'oWiki',   'Wikis',
 	'oDrive',  'Briefcases',
 	'oMail',   'Mailboxes',
-	'oGallery','Photos',
+	'oGallery','Galleries',
 	'Community','Communities',
 	'Bookmark','Bookmarks',
-	'nntpf',    'Discussions'
+	'nntpf',   'Discussions',
+	'Polls',   'Polls'
 	), app);
 };
 
@@ -270,12 +273,21 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
   declare ppath varchar;
   declare path, pars, lines any;
   declare app, uname, inst, url, appn, post varchar;
-  declare vhost, lhost, p_path_str, full_path, p_full_path, l_path_str, gdata_url varchar;
-  declare id, do_rdf, do_sioc int;
+  declare vhost, lhost, p_path_str, full_path, p_full_path, l_path_str, gdata_url, accept varchar;
+  declare id, do_rdf, do_sioc, is_foaf, has_accept int;
+  declare sioc_fmt, ct, cn varchar;
 
   lines := http_request_header ();
   ppath := http_physical_path ();
+
+  -- the ods person iri going to same place as user iri
+  if (ppath like '/SOAP/Http/redirect/person/%')
+    ppath := '/SOAP/Http/redirect/' || substring (ppath, 28, length (ppath));
   path := split_and_decode (ppath, 0, '\0\0/');
+
+  accept := http_request_header (lines, 'Accept');
+  if (not isstring (accept))
+    accept := '';
 
   vhost := http_map_get ('vhost');
   lhost := http_map_get ('lhost');
@@ -285,6 +297,84 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
   inst := null;
   post := null;
   do_rdf := 0;
+  is_foaf := 0;
+  has_accept := 0;
+  sioc_fmt := 'RDF/XML';
+  ct := 'application/rdf+xml';
+  cn := null;
+
+  -- autodetection of the content
+  if (length (path) > 4 and regexp_match ('(application|text)/rdf.(xml|n3|turtle|ttl)', accept) is not null)
+    {
+      declare len int;
+      declare newres, pref varchar;
+
+      if (length (path) > 6)
+	pref := 'sioc';  -- for apps the default is sioc
+      else
+        pref := 'about'; -- for user it's foaf file
+
+      newres := pref || '.rdf';
+      if (regexp_match ('application/rdf.xml', accept) is not null)
+	{
+	  has_accept := 1;
+	  newres := pref || '.rdf';
+	}
+      else if (regexp_match ('text/rdf.n3', accept) is not null)
+	{
+	  has_accept := 1;
+	newres := pref || '.n3';
+	}
+      else if (
+	    regexp_match ('application/rdf.turtle', accept) is not null or
+	    regexp_match ('application/rdf.ttl', accept) is not null
+	  )
+	{
+	  has_accept := 1;
+	newres := pref || '.ttl';
+	}
+
+      len := length (path);
+      -- XXX: may be bellow we should have AND has_accept
+      if (path[len-1] not like '%.rdf' and path[len-1] not like '%.ttl')
+	{
+	  cn := newres;
+      if (path[len-1] = '')
+	    {
+	      path[len-1] := newres;
+	      ppath := ppath || newres;
+	    }
+      else
+	    {
+	      path := vector_concat (path, vector (newres));
+	      ppath := ppath || '/' || newres;
+	    }
+	}
+    }
+
+  -- set the format requested
+  if (ppath like '%/%.ttl')
+    {
+      ct := 'application/rdf+turtle';
+    sioc_fmt := 'TTL';
+    }
+  else if (ppath like '%/%.n3')
+    {
+      ct := 'text/rdf+n3';
+    sioc_fmt := 'TTL';
+    }
+
+  if (not has_accept)
+    ct := 'text/xml';
+
+  if (not has_accept and (ppath like '%/%.ttl' or ppath like '%/%.n3'))
+    ct := 'text/plain';
+
+  if (ppath like '%/foaf.%')
+    {
+      is_foaf := 1;
+      do_sioc := 1;
+    }
 
 
   if (length (path) > 4)
@@ -295,12 +385,13 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       goto redir;
     }
 
+  -- The FOAF for the whole ODS
   if (uname = 'about.rdf')
     {
       declare ses any;
-      ses := sioc..sioc_compose_xml (null, null, null, null, p);
+      ses := sioc..sioc_compose_xml (null, null, null, null, p, sioc_fmt, is_foaf);
       http (ses);
-      http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+      http_header (sprintf ('Content-Type: %s; charset=UTF-8\r\n', ct));
       return '';
     }
 
@@ -310,9 +401,11 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
   if (length (path) > 6)
     inst := path [6];
 
-  if (length (path) > 7 and path[5] = 'data' and path[6] = 'public' and path[7] = 'about.rdf')
-    app := 'users';
+-- obsolete
+--  if (length (path) > 7 and path[5] = 'data' and path[6] = 'public' and path[7] = 'about.rdf')
+--    app := 'users';
 
+  -- Yadis document
   if (app = 'yadis.xrds' and inst is null)
     {
       http_header ('Content-Type: application/xrds+xml; charset=UTF-8\r\n');
@@ -320,10 +413,13 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       return '';
     }
 
-  if (app = 'about.rdf' or app = 'sioc.rdf')
+  if (app like '%.rdf' or app like '%.ttl' or app like '%.n3') -- user's sioc/about file is requested
     {
-      if (app = 'sioc.rdf')
+      -- in both cases we do via sparql construct
+      if (app like 'sioc.%' or app like 'about.%')
 	do_sioc := 1;
+      if (app like 'about.%')
+        is_foaf := 1;
     app := 'users';
     }
 
@@ -332,7 +428,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       post := inst;
       inst := app;
       app := uname;
-      if (post = 'sioc.rdf')
+      if (post like 'sioc.%')
 	{
 	  do_sioc := 1;
 	  post := null;
@@ -341,7 +437,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
     }
 
   if (length (app) and app not in
-      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql'))
+      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql', 'polls', 'socialnetwork'))
    {
      signal ('22023', sprintf ('Invalid application domain [%s].', app));
    }
@@ -352,18 +448,19 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
   if (length (uname) = 0)
     signal ('22023', 'Account is not specified.');
 
+  -- if an instance name is detected, try to locate post and rdf resource which is requested
   if (app <> 'users' and length (inst) and length (path) > 7)
     {
-      if (path[7] = 'about.rdf')
+      if (path[7] like 'about.%')
     do_rdf := 1;
-      else if (path[7] = 'sioc.rdf')
+      else if (path[7] like 'sioc.%')
 	do_sioc := 1;
-      else if (length (path) > 8 and path[8] = 'sioc.rdf')
+      else if (length (path) > 8 and path[8] like 'sioc.%')
 	{
 	  post := path[7];
 	  do_sioc := 1;
 	}
-      else if (length (path) > 9 and path[9] = 'sioc.rdf')
+      else if (length (path) > 9 and path[9] like 'sioc.%')
 	{
 	  post := path[7]||'/'||path[8];
 	  do_sioc := 1;
@@ -371,11 +468,13 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       else
 	 post := path[7];
     }
-  if (not (do_rdf or do_sioc)
-      and app = 'wiki' and length(path) > 7)
+
+  -- some kludge for wiki
+  if (not (do_rdf or do_sioc) and app = 'wiki' and length(path) > 7)
     post := path[6] || '/' || path[7];
 
-  if (app = 'users' or (app is not null and (inst = 'about.rdf' or inst = 'sioc.rdf')))
+  -- user's about/sioc.rdf
+  if (app = 'users' or (app is not null and (inst like 'about.%' or inst like 'sioc.%')))
    {
       declare atype, foaf varchar;
 
@@ -388,17 +487,22 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	  foaf := 'afoaf.xml';
 	  pars := vector (':sne', cast (id as varchar), ':atype', DB.DBA.wa_app_to_type (app));
 	}
-      else if (do_sioc or (app is not null and inst = 'sioc.rdf'))
+      else if (do_sioc or (app is not null and inst like 'sioc.%'))
 	{
 	  declare ses any;
-	  ses := sioc..sioc_compose_xml (uname, null, app, null, p);
+	  ses := sioc..sioc_compose_xml (uname, null, app, null, p, sioc_fmt, is_foaf);
           http (ses);
-	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+	  http_header (sprintf ('Content-Type: %s; charset=UTF-8\r\n', ct));
+	  if (cn is not null)
+	    http_header (http_header_get () || sprintf ('Content-Location: %s\r\n', cn));
+
 	  return '';
 	}
       else
       pars := vector (':sne', cast (id as varchar));
 
+      -- old behaviour, should never come here
+      signal ('22023', 'No such resource.');
 
       p_path_str := '/DAV/VAD/wa/';
       l_path_str := (select top 1 HP_LPATH from DB.DBA.HTTP_PATH where HP_PPATH = p_path_str
@@ -422,6 +526,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 
   appn := DB.DBA.wa_app_to_type (app);
 
+  -- user home page
   if (length (app) = 0)
     {
       -- old behaviour
@@ -445,7 +550,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       http_header (http_header_get ()||sprintf ('X-XRDS-Location: %s\r\n', DB.DBA.wa_link (1, '/dataspace/'||uname||'/yadis.xrds')));
       return null;
     }
-  else if (length (inst) = 0)
+  else if (length (inst) = 0) -- app instance page
     {
       url := DB.DBA.wa_link (0, sprintf ('app_inst.vspx?app=%U&ufname=%U', appn, uname));
     }
@@ -495,6 +600,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	  from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE where
 	  U_NAME = uname and WAM_USER = U_ID and WAI_NAME = WAM_INST and WAM_INST = inst;
 
+      -- instance's about.rdf
       if (do_rdf)
 	{
 	  declare npars, hf any;
@@ -521,13 +627,15 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	    WS.WS."DEFAULT" (path, pars, lines);
 	  return null;
 	}
-      else if (do_sioc)
+      else if (do_sioc) -- instance or post's sioc.rdf
         {
 	  nntpf:
 	  declare ses any;
-	  ses := sioc..sioc_compose_xml (uname, inst, inst_type, post, p);
+	  ses := sioc..sioc_compose_xml (uname, inst, inst_type, post, p, sioc_fmt, is_foaf);
           http (ses);
-	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+	  http_header (sprintf ('Content-Type: %s; charset=UTF-8\r\n', ct));
+	  if (cn is not null)
+	    http_header (http_header_get () || sprintf ('Content-Location: %s\r\n', cn));
 	  return '';
         }
       else if (post is not null)

@@ -30,26 +30,52 @@
   <xsl:template match="vm:group-list">
     <v:variable name="headdsid" type="varchar"/>
     <v:variable name="r_count" type="integer" default="0"/>
+    <v:variable name="force_list" type="integer" default="1"/>
+    <v:variable name="dta" type="any"/>
+    <v:variable name="mtd" type="any"/>
       <v:before-data-bind>
         <![CDATA[
+        
+        
   if (self.vc_authenticated)
     self.headdsid := 'sid';
   else
     self.headdsid := 'none';
+        
+        if(get_keyword ('view', self.vc_event.ve_params)<>'list')
+        {
+           self.force_list:=0;
+        }
+
+          declare mtd, dta any;
+             
+          exec ('select NG_GROUP, NG_NAME, NG_DESC from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1', null, null, vector (), 0, mtd, dta );
+
+          self.dta:=dta;
+          self.mtd:=mtd[0];
+
+--          dbg_obj_print('ccc',self.dta);
+--          dbg_obj_print('ddd',self.mtd);
+
         ]]>
       </v:before-data-bind>
+
+      view: <v:url name="view_mode" value="--(case when (abs (nntpf_display_ds_group_list() - 1) and self.force_list<>1 ) then 'unthread' else 'thread' end)" url="--'nntpf_main.vspx?view='||(case when (abs (nntpf_display_ds_group_list() - 1) and self.force_list<>1 ) then 'list' else 'thread' end)" />
+       <br/>
       <table width="100%"
              class="nntp_groups_listing"
              cellspacing="0"
              cellpadding="0">
+
         <v:data-set name="ds_group_list"
-                    sql="select NG_GROUP, NG_NAME, NG_DESC
-                           from DB.DBA.NEWS_GROUPS
-                           where ns_rest (NG_GROUP, 0) = 1"
-                    nrows="10"
                     scrollable="1"
+                    data="--self.dta"
+                    meta="--self.mtd"
+                    nrows="10"
                     width="80"
-                    enabled="--nntpf_display_ds_group_list()">
+                    enabled="--self.force_list"
+                   >
+                   
           <v:template name="template1" type="simple">
             <tr class="listing_header_row">
               <th colspan="3">
@@ -64,7 +90,7 @@
             <v:template name="template7" type="if-not-exists">
               <tr>
                 <td align="center" colspan="5">
-                  No group defined on this server.<!-- should not see this -->
+                  No group defined on this server.
                 </td>
               </tr>
             </v:template>
@@ -118,8 +144,15 @@
 ?>
             </v:template>
           </v:template>
+
+
           <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+          <tr><td colspan="4" align="center">
+<!--
             <vm:ds-button-bar/>
+-->
+            <vm:ds-navigation-new data-set="ds_group_list"/>
+          </td></tr>
           </v:template>
         </v:data-set>
       </table>
@@ -130,7 +163,7 @@
               root="nntpf_group_tree_top"
               start-path="--vector ()"
               child-function="nntpf_group_child_node"
-              enabled="--abs (nntpf_display_ds_group_list() - 1)">
+              enabled="--( case when (abs (nntpf_display_ds_group_list() - 1) and self.force_list<>1 ) then 1 else 0 end )">
         <v:node-template name="node_tmpl_gr">
           <div style="margin-left:1em;">
             <v:button name="group_tree_toggle"

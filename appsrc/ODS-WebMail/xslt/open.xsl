@@ -72,7 +72,7 @@
   <xsl:template match="message">
     <table width="100%" cellpadding="0" cellspacing="0" class="content">
       <colgroup>
-        <col class="w150"/>
+        <col class="w160"/>
       </colgroup>
       <!-- From -->
       <tr>
@@ -137,29 +137,31 @@
       </tr>
       <!-- Tags -->
       <tr>
-        <th>Tags</th>
+        <th>Comma separated tags</th>
         <td>
-          <input type="text" name="tag" value="" size="20" />
+          <input type="text" name="tags" size="66" >
+            <xsl:attribute name="value"><xsl:value-of select="tags"/></xsl:attribute>
+          </input>
+          <xsl:call-template name="nbsp"/>
+          <input type="button" value="Clear" onclick="javascript: document.f1.elements['tags'].value = ''" class="button" />
+          <xsl:call-template name="nbsp"/>
           <xsl:call-template name="make_submit">
-            <xsl:with-param name="name">fa_tag_add</xsl:with-param>
-            <xsl:with-param name="src">/oMail/i/add_16.png</xsl:with-param>
-            <xsl:with-param name="alt">Add Tag</xsl:with-param>
-            <xsl:with-param name="border">0</xsl:with-param>
-            <xsl:with-param name="hspace">8</xsl:with-param>
-            <xsl:with-param name="vspace">0</xsl:with-param>
-          </xsl:call-template>
-          <xsl:call-template name="show_tags">
-            <xsl:with-param name="tags" select="tags"/>
+            <xsl:with-param name="name">fa_tags_save</xsl:with-param>
+            <xsl:with-param name="value">Save</xsl:with-param>
+            <xsl:with-param name="alt">Save Tags</xsl:with-param>
+            <xsl:with-param name="class">button</xsl:with-param>
           </xsl:call-template>
         </td>
       </tr>
       <!-- Attach -->
+      <xsl:if test="count(mime_list/mime_types) != 1">
       <tr>
         <th>Versions</th>
         <td>
           <xsl:apply-templates select="mime_list/mime_types"/>
         </td>
       </tr>
+      </xsl:if>
     </table>
   </xsl:template>
   <!-- ====================================================================================== -->
@@ -218,7 +220,7 @@
     |
   </xsl:template>
   <!-- ====================================================================================== -->
-  <!-- Attachment MSG -->
+  <!-- Attachement MSG -->
   <!-- ====================================================================================== -->
   <xsl:template match="attachments_msg">
     <xsl:apply-templates select="attachment_msg"/>
@@ -336,7 +338,7 @@
     <br/>
   </xsl:template>
   <!-- ====================================================================================== -->
-  <!-- Attachment FILE -->
+  <!-- Attachement FILE -->
   <!-- ====================================================================================== -->
   <xsl:template match="attachments">
     <!-- prikacheni failove -->
@@ -648,33 +650,6 @@
         </xsl:otherwise>
       </xsl:choose>
     </xsl:if>
-  </xsl:template>
-
-  <!-- ====================================================================================== -->
-  <xsl:template name="show_tags">
-    <xsl:param name="tags"/>
-    <xsl:param name="separator" select="','"/>
-
-    <xsl:if test="$tags != ''">
-      <xsl:variable name="tag"><xsl:value-of select="substring-before(concat($tags, $separator), $separator)"/></xsl:variable>
-      <xsl:variable name="after"><xsl:value-of select="substring-after($tags, $separator)"/></xsl:variable>
-
-      <xsl:text>, </xsl:text><xsl:value-of select="$tag"/>
-      <xsl:call-template name="make_submit">
-        <xsl:with-param name="name">fa_tag_delete_<xsl:value-of select="$tag"/></xsl:with-param>
-        <xsl:with-param name="src">/oMail/i/del_16.png</xsl:with-param>
-        <xsl:with-param name="alt">Delete Tag</xsl:with-param>
-        <xsl:with-param name="border">0</xsl:with-param>
-        <xsl:with-param name="hspace">8</xsl:with-param>
-        <xsl:with-param name="vspace">0</xsl:with-param>
-      </xsl:call-template>
-
-      <xsl:call-template name="show_tags">
-        <xsl:with-param name="tags" select="$after"/>
-        <xsl:with-param name="separator" select="$separator"/>
-      </xsl:call-template>
-    </xsl:if>
-
   </xsl:template>
 
   <!-- ====================================================================================== -->

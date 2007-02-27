@@ -51,15 +51,7 @@
     <v:variable name="is_sync" type="integer" default="0"/>
     <v:variable name="sync_message" type="varchar" default="''"/>
     <v:variable name="enabled" type="varchar" defaullt="'1'"/>
-    <!-- LDAP vars -->
-    <v:variable name="ldap_enable" type="integer" persist="0"/>
     <v:variable name="conv_enable" type="integer" persist="0"/>
-    <v:variable name="ldap_address" type="varchar" default="''"/>
-    <v:variable name="ldap_base" type="varchar" default="''"/>
-    <v:variable name="ldap_bind" type="varchar" default="''"/>
-    <v:variable name="ldap_uid" type="varchar" default="'uid'"/>
-    <v:variable name="ldap_version" type="integer" default="2"/>
-    <v:variable name="ldap_port" type="integer" default="389"/>
     <v:variable name="source_page" type="varchar"/>
     <!-- Technorati integration -->
     <v:variable name="technorati_api_key" type="varchar" default="''"/>
@@ -114,8 +106,6 @@
                   self.webmail_enable := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'webmail_enabled', 2);
                 if (self.conv_enable is null)
                   self.conv_enable := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'conv_enabled', 2);
-                if (self.ldap_enable is null)
-                  self.ldap_enable := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'ldap_enabled', 2);
                 if (self.host is null)
                   self.host := aref (split_and_decode (http_request_header (lines, 'Host'), 0, '\0\0:'), 0);
 		self.domains := (select XMLELEMENT ('domains',
@@ -192,17 +182,6 @@
 	      {
 	        WV.WIKI.DELICIOUSSYNC (cluster_id, self.vspx_user);
 	      }
-            WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'ldap_enabled', self.ldap_enable);
-	    if (self.ldap_enable = 1)
-	      {
-	        WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_address', trim (self.ldap_address_f.ufl_value));
-		WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_base', trim (self.ldap_base_f.ufl_value));
-		WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_bind', trim (self.ldap_bind_f.ufl_value));
-		WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_uid', trim (self.ldap_uid_f.ufl_value));
-		WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_version', atoi (trim (self.ldap_version_f.ufl_value)));
-		WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_port', trim (self.ldap_port_f.ufl_value));
-	      }
-	    WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'ldap_port', trim (self.ldap_port_f.ufl_value));
 	    self.sync_tmpl.vc_data_bind(e);
             self.vc_data_bind (e);
             }
@@ -215,12 +194,6 @@
 	        || WV.WIKI.DATEFORMAT (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'delicious_last_update'));
 	    else
 	      self.sync_message := '';
-	    self.ldap_address := WV.WIKI.CLUSTERPARAM(self.cluster_name, 'ldap_address', '');
-	    self.ldap_base := WV.WIKI.CLUSTERPARAM(self.cluster_name, 'ldap_base', '');
-	    self.ldap_bind := WV.WIKI.CLUSTERPARAM(self.cluster_name, 'ldap_bind', '');
-	    self.ldap_uid := WV.WIKI.CLUSTERPARAM(self.cluster_name, 'ldap_uid', 'uid');
-	    self.ldap_version := WV.WIKI.CLUSTERPARAM(self.cluster_name, 'ldap_version', 2);
-	    self.ldap_tmpl.vc_data_bind(e);
 
 	    self.technorati_api_key := WV.WIKI.CLUSTERPARAM(self.cluster_name,'technorati_api_key', '');
 	    self.technorati_tmpl.vc_data_bind(e);
@@ -407,57 +380,6 @@
             </div>
            </td>
           </tr>
-	<vm:setting-section name="LDAP integration">
-	        <v:template name="ldap_tmpl" type="simple">
-	    <vm:setting-parameter name="Toggle integration:">
-                        <v:button name="ldap_toggle" action="simple" xhtml_disabled="--self.enabled" 
-				value="--case when self.ldap_enable = 1 then 'Turn Off' else 'Turn On' end" 
-				>
-                          <v:on-post>
-                            <![CDATA[
-                              self.ldap_enable := 3 - self.ldap_enable;
-                              self.ldap_tmpl.vc_data_bind (e);
-                              ]]>
-                          </v:on-post>
-                        </v:button>
-	    </vm:setting-parameter>
-	    <vm:setting-parameter name="Address:">
-                       <v:text name="ldap_address_f" value="--self.ldap_address" 
-		        xhtml_size="40"
-		       	enabled="--case when self.ldap_enable = 1 then 1 else 0 end"/>
-	    </vm:setting-parameter>
-	    <vm:setting-parameter name="Port:">
-		       <v:text error-glyph="*" name="ldap_port_f" format="%ld" value="--self.ldap_port"
-		       	 enabled="--case when self.ldap_enable = 1 then 1 else 0 end">
-			 <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat="client"/>
-		       </v:text>
-	    </vm:setting-parameter>
-	    <vm:setting-parameter name="Base:">
-                       <v:text name="ldap_base_f" value="--self.ldap_base"
-		        xhtml_size="40"
-		       	enabled="--case when self.ldap_enable = 1 then 1 else 0 end"/>
-	    </vm:setting-parameter>
-	    <vm:setting-parameter name="Bind DN:">
-                       <v:text name="ldap_bind_f" value="--self.ldap_bind"
-		        xhtml_size="40"
-		       	enabled="--case when self.ldap_enable = 1 then 1 else 0 end"/>
-	    </vm:setting-parameter>
-	    <vm:setting-parameter name="Version:">
-			<v:data-list name="ldap_version_f" 
-			  value="--self.ldap_version" 
-			  list-document="--xtree_doc ('<vers><v>1</v><v>2</v></vers>')" 
-			  list-match="/vers/v" 
-			  list-key-path="." 
-			  list-value-path="number()" 
-		       	enabled="--case when self.ldap_enable = 1 then 1 else 0 end"/>
-            </vm:setting-parameter>
-	    <vm:setting-parameter name="UID field:">
-                       <v:text name="ldap_uid_f" value="--self.ldap_uid"
-		        xhtml_size="40"
-		       	enabled="--case when self.ldap_enable = 1 then 1 else 0 end"/>
-	    </vm:setting-parameter>
-		</v:template>
-	</vm:setting-section>
 	  <tr>
 	   <td>
              <div class="wiki-settings-templates">

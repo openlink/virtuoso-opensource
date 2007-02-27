@@ -22,9 +22,10 @@
  */
 
 body {
-  font-family: verdana, arial, sans-serif;
-  font-size: 12px;
-}
+  margin: 0;
+  padding: 0;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 12px}
 
 /*
   Fields
@@ -42,6 +43,48 @@ input[readonly]
 .readonly
 {
   background: #EFEFEF;
+}
+
+/* Footer */
+
+#FT
+{
+  width: 100%;
+  position: relative;
+  bottom: 0px;
+  font-size: 8pt;
+  float: left;
+  clear: both;
+  text-align: right;
+  border-top: 2px solid #fff;
+  margin-right: 10px;
+  background-color: #fff;
+  background-image: url(../ods_main_footer.png);
+}
+
+#FT_L
+{
+  float: left;
+  clear: left;
+  margin-top: 10px;
+  margin-left: 8px;
+  border: 1px solid #788;
+}
+
+#FT_R
+{
+  float: right;
+  clear: right;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-right: 5px;
+  color: #788;
+}
+
+#FT_R a
+{
+  text-decoration: none;
+  color: inherit;
 }
 
 /* mail tabs navigation ----------------------------------------------- */
@@ -170,9 +213,9 @@ colgroup col.w100
   width:100px;
 }
 
-colgroup col.w150
+colgroup col.w160
 {
-  width:150px;
+  width:160px;
 }
 
 colgroup col.w200
@@ -370,12 +413,16 @@ colgroup col.w80p
 }
 
 /* -- Buttons style ----------------------------------------------------- */
-.button {
-  font-size: 11px;
-  color: #000;
+input.button
+{
+  margin: .2em 0 .1em 0;
+  font-size: .8em;
+  font-family: verdana, sans-serif;
+  color: #ffffff;
   font-weight: bold;
-  text-decoration: none;
-  padding: 2px 5px 2px 0;
+  border: solid 1px;
+  border-color: #7f94a5;
+  background: #99b3c5;
 }
 
 #buttons

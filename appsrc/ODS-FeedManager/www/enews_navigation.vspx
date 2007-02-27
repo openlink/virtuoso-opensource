@@ -29,6 +29,9 @@
   <v:variable name="domain_id" type="integer" default="-1"/>
   <v:variable name="account_id" type="integer" default="-1"/>
   <v:variable name="account_role" type="varchar" default="'public'"/>
+  <v:variable name="accountName" type="varchar" default="'Public User'"/>
+  <v:variable name="settings" type="any" />
+
   <v:method name="set_pmembers" arglist="">
     <![CDATA[
       udt_set (self.vc_parent.vc_page, 'nav_pos_fixed', self.nav_pos_fixed);
@@ -45,6 +48,8 @@
       self.domain_id := udt_get (self.vc_parent.vc_page, 'domain_id');
       self.account_id := udt_get (self.vc_parent.vc_page, 'account_id');
       self.account_role := udt_get (self.vc_parent.vc_page, 'account_role');
+      self.accountName := udt_get (self.vc_parent.vc_page, 'accountName');
+      self.settings := udt_get (self.vc_parent.vc_page, 'settings');
       return;
     ]]>
   </v:before-data-bind>

@@ -326,9 +326,12 @@
         return;
       };
       id := call (h) (self.inst, connection_get ('vspx_user'));
-      if (self.wa_type not in ('oDrive', 'oMail') and self.switch_adv=1)
+      if (self.wa_type not in ('oMail') and self.switch_adv = 1)
       {
         self.is_public := self.is_public1.ufl_selected;
+      }
+      if (self.wa_type not in ('oDrive', 'oMail') and self.switch_adv = 1)
+      {
         self.is_visible := self.is_visible1.ufl_selected;
       }
       update WA_INSTANCE
@@ -372,7 +375,7 @@
 		}
 		else if (self.wa_type = 'oDrive')
 		{
-		  lpath := '/odrive';
+		  lpath := sprintf('/odrive/%d', id);
 		}
 	    }
 	  if (default_lpath is null)
@@ -487,7 +490,7 @@
       <vm:variable name="page_type" type="varchar" default="'new'" persist="0"/>
       <vm:variable name="wa_desc" type="varchar" default="null" persist="0"/>
       <vm:variable name="wa_cnt" type="int" default="0" persist="0"/>
-      <vm:variable name="itemplate" type="varcahr" default="null" persist="0"/>
+      <vm:variable name="itemplate" type="varchar" default="null" persist="0"/>
 
       <vm:navigation on="settings"/>
       <vm:subnavigation-new on="site"/>

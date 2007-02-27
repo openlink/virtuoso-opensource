@@ -165,7 +165,7 @@
         </v:select-list>
       </td>
       <td>
-        &nbsp;
+          <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -214,7 +214,8 @@
         </v:text>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
+
       </td>
     </tr>
     <tr>
@@ -223,7 +224,7 @@
         <v:text error-glyph="?" xhtml_id="regurl" name="regurl" value="--coalesce(get_keyword('regurl', params), USER_GET_OPTION(self.u_name, 'URL'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -237,7 +238,7 @@
         <v:text xhtml_id="regicq" name="regicq" value="--coalesce(get_keyword('regicq', params), USER_GET_OPTION(self.u_name, 'ICQ'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -246,7 +247,7 @@
         <v:text xhtml_id="regskype" name="regskype" value="--coalesce(get_keyword('regskype', params), USER_GET_OPTION(self.u_name, 'SKYPE'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -255,7 +256,7 @@
         <v:text xhtml_id="regaim" name="regaim" value="--coalesce(get_keyword('regaim', params), USER_GET_OPTION(self.u_name, 'AIM'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -264,7 +265,7 @@
         <v:text xhtml_id="regyahoo" name="regyahoo" value="--coalesce(get_keyword('regyahoo', params), USER_GET_OPTION(self.u_name, 'YAHOO'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -273,7 +274,7 @@
         <v:text xhtml_id="regmsn" name="regmsn" value="--coalesce(get_keyword('regmsn', params), USER_GET_OPTION(self.u_name, 'MSN'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -287,7 +288,7 @@
         <v:text xhtml_id="regaddr1" name="regaddr1" value="--coalesce(get_keyword('regaddr1', params), USER_GET_OPTION(self.u_name, 'ADDR1'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -296,7 +297,7 @@
         <v:text xhtml_id="regaddr2" name="regaddr2" value="--coalesce(get_keyword('regaddr2', params), USER_GET_OPTION(self.u_name, 'ADDR2'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -305,7 +306,7 @@
         <v:text xhtml_id="regcity" name="regcity" value="--coalesce(get_keyword('regcity', params), USER_GET_OPTION(self.u_name, 'CITY'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -314,7 +315,7 @@
         <v:text xhtml_id="regstate" name="regstate" value="--coalesce(get_keyword('regstate', params), USER_GET_OPTION(self.u_name, 'STATE'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -323,7 +324,7 @@
         <v:text xhtml_id="regzip" name="regzip" value="--coalesce(get_keyword('regzip', params), USER_GET_OPTION(self.u_name, 'ZIP'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -337,7 +338,7 @@
         </v:data-list>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -371,7 +372,7 @@
         </v:select-list>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -380,7 +381,7 @@
         <v:text xhtml_id="regphone" name="regphone" value="--coalesce(get_keyword('regphone', params), USER_GET_OPTION(self.u_name, 'PHONE'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -389,7 +390,7 @@
         <v:text xhtml_id="regmphone" name="regmphone" value="--coalesce(get_keyword('regmphone', params), USER_GET_OPTION(self.u_name, 'MPHONE'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -408,7 +409,7 @@
         </v:data-list>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -417,7 +418,7 @@
         <v:text xhtml_id="regorg" name="regorg" value="--coalesce(get_keyword('regorg', params), USER_GET_OPTION(self.u_name, 'ORGANIZATION'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -426,7 +427,7 @@
         <v:text xhtml_id="regjob" name="regjob" value="--coalesce(get_keyword('regjob', params), USER_GET_OPTION(self.u_name, 'JOB'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -435,7 +436,7 @@
         <v:text xhtml_id="regbaddr1" name="regbaddr1" value="--coalesce(get_keyword('regbaddr1', params), USER_GET_OPTION(self.u_name, 'BADDR1'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -444,7 +445,7 @@
         <v:text xhtml_id="regbaddr2" name="regbaddr2" value="--coalesce(get_keyword('regbaddr2', params), USER_GET_OPTION(self.u_name, 'BADDR2'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -453,7 +454,7 @@
         <v:text xhtml_id="regbcity" name="regbcity" value="--coalesce(get_keyword('regbcity', params), USER_GET_OPTION(self.u_name, 'BCITY'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -462,7 +463,7 @@
         <v:text xhtml_id="regbstate" name="regbstate" value="--coalesce(get_keyword('regbstate', params), USER_GET_OPTION(self.u_name, 'BSTATE'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -471,7 +472,7 @@
         <v:text xhtml_id="regbzip" name="regbzip" value="--coalesce(get_keyword('regbzip', params), USER_GET_OPTION(self.u_name, 'BZIP'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -485,7 +486,7 @@
         </v:data-list>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -519,7 +520,7 @@
         </v:select-list>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -528,7 +529,7 @@
         <v:text xhtml_id="regbphone" name="regbphone" value="--coalesce(get_keyword('regbphone', params), USER_GET_OPTION(self.u_name, 'BPHONE'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
     <tr>
@@ -537,7 +538,7 @@
         <v:text xhtml_id="regbmphone" name="regbmphone" value="--coalesce(get_keyword('regbmphone', params), USER_GET_OPTION(self.u_name, 'BMPHONE'))"/>
       </td>
       <td>
-        &nbsp;
+        <![CDATA[&nbsp;]]>
       </td>
     </tr>
 

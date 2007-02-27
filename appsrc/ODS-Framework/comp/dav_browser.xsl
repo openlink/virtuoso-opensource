@@ -704,7 +704,7 @@ else
                       </v:before-data-bind>
                     </v:data-list>
                   </td>
-                  <td>&nbsp;</td>
+                  <td><![CDATA[&nbsp;]]></td>
                 </tr>
                 <tr>
                   <td>Permissions</td>

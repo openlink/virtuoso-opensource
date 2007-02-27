@@ -22,14 +22,10 @@
  */
 
 body {
-	margin: 0px 0;
-	padding: 0px;;
-	text-align: center;
-	font-family: Arial;
-	color: #333;
-
-  font-family: "Trebuchet MS", Arial, sans-serif;
-}
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #333}
 
 li:hover{
   cursor:pointer;
@@ -131,6 +127,8 @@ li:hover{
   width:175px;
 }
 
+.toolbar{
+}
 
 .toolbar h3{
   background:url(../i/thead.png) no-repeat;
@@ -140,8 +138,13 @@ li:hover{
   margin-bottom:0px;
 }
 
-.toolbar{
+.toolbar h4{
+  font-weight:normal;
+  font-size:12px;
+  text-align:center;
+  margin-bottom:0px;
 }
+
 
 .toolbar ul{
   margin:0;
@@ -218,6 +221,24 @@ li:hover{
   width:100px;
   height:90px;
   overflow:hidden;
+  position:relative;
+}
+
+div#mssage{
+  border:1px solid #ADC9E0;
+  text-align:center;
+  padding:2px;
+  margin:6px;
+  font-size:12px;
+  width:400px !important;
+}
+
+
+#images div input{
+  padding:0;
+  position:absolute;
+  bottom:0px;
+  left:0px;
 }
 
 #preview input{
@@ -290,6 +311,8 @@ li:hover{
   clear:both;
   margin-left:10px;
   text-align:center;
+  width:500px;
+  height:370px;
 }
 
 #image img,
@@ -353,30 +376,30 @@ li:hover{
   margin-top:0;
 }
 
-#comments{
+.block{
   clear:both;
   padding:5px;
 }
 
-#comments .ramka{
+.block .ramka{
   width:580px;
 }
 
-#comments td{
+.block td{
   font-size:12px;
 }
 
-#comments td.left{
+.block td.left{
   width:350px;
 }
 
-#comments h2{
+.block h2{
   margin:5px 0 0;
   font-size: 12px ;
   border-bottom:1px solid #D6E6F6;
 }
 
-#comments h2.l{
+.block h2.l{
   background:url(../i/comments.png) no-repeat;
   padding-left:20px;
 }
@@ -563,4 +586,29 @@ padding:0;
 	cursor: w-resize;
 }
 
+#wait{
+  border:1px solid;
+  position:absolute;
+  top:200px;
+  left:400px;
+  padding:30px;
+  background: #FFFF9B;
+  font-size:14px;
+  width:400px;
+  background-repeat:no-repeat;
+  background-position:5% center;
+  padding-left:45px;
+}
 
+.link{
+  padding:5px;
+  color:#00f;
+  text-decoration:underline;
+  cursor:pointer;
+}
+
+.link_disabled{
+  padding:5px;
+  color:#ccc;
+  cursor:pointer;
+}

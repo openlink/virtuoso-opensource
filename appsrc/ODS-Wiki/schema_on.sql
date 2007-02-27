@@ -447,6 +447,10 @@ wiki_exec_no_error (
 'alter table WV.WIKI.TOPIC add AuthorName varchar'
 )
 ;
+wiki_exec_no_error (
+'alter table WV.WIKI.TOPIC add AuthorId int'
+)
+;
 wiki_exec_no_error('
 create index TopicByLocalNameAndAuthor on WV.WIKI.TOPIC (LocalName, ClusterId, AuthorName)')
 ;
@@ -537,6 +541,10 @@ wiki_exec_no_error (
 ;
 wiki_exec_no_error (
 'alter table WV.WIKI.COMMENT add C_HOME varchar'
+)
+;
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_OPENID_SIG varchar'
 )
 ;
 
@@ -689,3 +697,22 @@ wiki_exec_no_error('
 create index UPSTREAM_LOG_UPSTREAM on WV..UPSTREAM_LOG (UL_UPSTREAM_ID)')
 ;
 
+wiki_exec_no_error('
+create table WV..HIST (
+	H_ID int identity,
+	H_OP varchar(1) not null,
+	H_CLUSTER varchar not null,
+	H_TOPIC varchar not null,
+	H_DT datetime not null,
+	H_WHO varchar not null,
+	H_VER varchar not null,
+	primary key (H_ID)
+)')
+;
+
+wiki_exec_no_error('
+alter table WV..HIST add H_IS_PUBLIC int default 0')
+;
+
+wiki_exec_no_error('
+create index WIKI_HIST_CLUSTER on WV..HIST (H_CLUSTER)')

@@ -29,8 +29,8 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 	<vm:page>
-	  <vm:variable name="sparql_qr" type="any" defaut="null" param-name="qry"/>
-	  <vm:variable name="sparql_rq_res_name" type="varchar" defaut="null" param-name="rq_res_name"/>
+	  <vm:variable name="sparql_qr" type="any" default="null" param-name="qry"/>
+	  <vm:variable name="sparql_rq_res_name" type="varchar" default="null" param-name="rq_res_name"/>
 	  <v:on-init>
 	    <![CDATA[
 	    set isolation = 'uncommitted';

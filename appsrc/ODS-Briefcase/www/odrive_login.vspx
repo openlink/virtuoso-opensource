@@ -26,9 +26,17 @@
   <v:template name='inl' type='if-no-login'/>
   <v:after-data-bind>
     <![CDATA[
+      declare page_name varchar;
+
         set_qualifier ('DB');
 
-      if (not self.vc_authenticated) {
+      page_name := ODRIVE.WA.page_name ();
+      if (page_name = 'error.vspx')
+        return;
+
+      if (ODRIVE.WA.check_grants2 (self.account_role, page_name))
+        return;
+
         declare vh, lh, hf, ods_path any;
 
         vh := http_map_get ('vhost');
@@ -40,18 +48,13 @@
         else
           ods_path := DB.DBA.WA_LINK (1, '/ods/');
 
+      if (self.account_role = 'expire') {
         http_request_status ('HTTP/1.1 302 Found');
         http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));
         return;
       }
 
-        if ((self.page_owner is null and ODRIVE.WA.odrive_check_grants(ODRIVE.WA.account(), self.page_owner) <> 1) or
-          (self.page_owner <> '' and ODRIVE.WA.odrive_check_grants(ODRIVE.WA.account(), self.page_owner) <> 1)) {
           self.vc_redirect('home.vspx');
-          return;
-        }
-
-      return;
     ]]>
   </v:after-data-bind>
 </v:login>

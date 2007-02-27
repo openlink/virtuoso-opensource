@@ -388,6 +388,7 @@
   <xsl:param name="is_new"/>
   <xsl:param name="revision"/>
   <xsl:param name="user"/>
+    <xsl:param name="ti_rev_id"/>
   <xsl:variable name="content"><xsl:apply-templates select="node()" /></xsl:variable>
   <xsl:if test="not($content/h1)"><h1><xsl:value-of select="$ti_cluster_name" />.<xsl:value-of select="$ti_local_name" /></h1>
   </xsl:if>
@@ -464,7 +465,7 @@
 	      <xsl:with-param name="wikiref_cont"><xsl:value-of select="$ti_author"/></xsl:with-param>
 	    </xsl:call-template>
         </span>
-        <span id="top-mod-time"><xsl:value-of select="wv:funcall1('WV.WIKI.MOD_TIME', $ti_res_id)"/></span>
+	  <span id="top-mod-time"><xsl:value-of select="wv:funcall2('WV.WIKI.MOD_TIME', $ti_res_id, $ti_rev_id)"/></span>
       </div>
     </xsl:if>
   </div>
@@ -504,6 +505,8 @@
         </div>
       </form>
   </xsl:if>
+ 
+    
     <!--  <table width="100%" border="0"><tr><td align="left"> -->
   </xsl:template>
 

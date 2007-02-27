@@ -434,6 +434,16 @@ blog2_exec_no_error ('create table BLOG_POST_LINKS (
       primary key (PL_BLOG_ID, PL_POST_ID, PL_LINK)
       )');
 
+blog2_exec_no_error ('create table BLOG_POST_ENCLOSURES (
+      PE_BLOG_ID varchar,
+      PE_POST_ID varchar,
+      PE_URL varchar,
+      PE_TYPE varchar,
+      PE_LEN  int,
+      foreign key (PE_BLOG_ID, PE_POST_ID) references SYS_BLOGS (B_BLOG_ID, B_POST_ID) on delete cascade,
+      primary key (PE_BLOG_ID, PE_POST_ID, PE_URL)
+      )');
+
 blog2_exec_no_error ('create table SYS_BLOG_INFO
       (
       BI_BLOG_ID  varchar,
@@ -1466,6 +1476,30 @@ create procedure BLOG_LINKS_UPGRADE ()
 
 BLOG_LINKS_UPGRADE ();
 
+create procedure BLOG_ENCL_UPGRADE ()
+{
+  if (registry_get ('__BLOG_ENCL_UPGRADE_done') = 'done')
+    return;
+  for select B_BLOG_ID, B_POST_ID, B_CONTENT, B_META, B_HAVE_ENCLOSURE from BLOG..SYS_BLOGS do
+    {
+      declare meta BLOG.DBA."MWeblogPost";
+      declare enc BLOG.DBA."MWeblogEnclosure";
+      if (B_HAVE_ENCLOSURE = 1)
+	{
+	  meta := B_META;
+	  enc := meta.enclosure;
+	  if (length (enc."url"))
+	    {
+	  insert into BLOG_POST_ENCLOSURES (PE_BLOG_ID, PE_POST_ID, PE_URL, PE_TYPE, PE_LEN)
+	     values (B_BLOG_ID, B_POST_ID, enc."url", enc."type", enc."length");
+        }
+    }
+    }
+  registry_set ('__BLOG_ENCL_UPGRADE_done', 'done');
+};
+
+BLOG_ENCL_UPGRADE ();
+
 -- TRIGGERS
 
 
@@ -2065,9 +2099,7 @@ create procedure FTI_MAKE_OR_SEARCH_STRING (in exp varchar)
  vt := vt_batch (100, 'x-any', 'UTF-8');
  vt_batch_feed (vt, exp, 0, 0);
 
- dbg_obj_print (exp);
  war := vt_batch_strings_array (vt);
- dbg_obj_print (war);
 
  m := length (war);
  n := 0;
@@ -7151,8 +7183,8 @@ create procedure BLOG_GET_ATOM_URL_P (in url any)
   ;
 
 again:
-  if (was_html)
-    return null;
+  --if (was_html)
+  --  return null;
   commit work;
   cnt := GET_URL_AND_REDIRECTS (url, hdr);
 
@@ -7161,11 +7193,19 @@ again:
   if (xpath_eval ('/html', xt) is not null)
     {
       -- try to get atom apis
-      url := cast (xpath_eval ('/html/head/link[@rel="alternate" and @type="application/atom+xml"]/@href', xt) as varchar);
+      blog_url := url;
+      url := cast (xpath_eval ('/html/head/link[@rel="alternate" and @type="application/atomserv+xml"]/@href', xt) as varchar);
       was_html := 1;
       goto again;
     }
-  else if (xpath_eval ('/feed', xt) is not null)
+  else if (xpath_eval ('/service', xt) is not null)
+    {
+      atomp := cast (xpath_eval ('/service/workspace/collection/@href', xt) as varchar);
+      blogname := coalesce (xpath_eval ('string (/service/workspace/collection/@title)', xt), '');
+      blogname := blog_wide2utf (blogname);
+      result (atomp, blogname, blog_url);
+    }
+  else if (0 and xpath_eval ('/feed', xt) is not null) -- XXX: disabled
     {
       -- probably is atom
       atomp := cast (xpath_eval ('/feed/link[@rel="self" and @type="application/atom+xml"]/@href', xt) as varchar);
@@ -7949,4 +7989,158 @@ create procedure SUGGEST_TB_URLS (in txt any)
        nextl:;
      }
   return ret;
+};
+
+
+create procedure
+metaweblog.get_Recent_Posts (in uri varchar, in req "blogRequest", in lim int)
+{
+  declare ret, xe, arr any;
+  declare i, l int;
+  declare post any;
+  ret := DB.DBA.XMLRPC_CALL (uri, 'metaWeblog.getRecentPosts',
+         vector (req.blogid, req.user_name, req.passwd, lim));
+  ret := xml_tree_doc (ret);
+  xe := xpath_eval ('//Param1/item', ret, 0);
+  arr := vector (); i := 0; l := length (xe);
+  while (i < l)
+    {
+      ret := xml_cut (xe[i]);
+      post := soap_box_xml_entity_validating (ret, '', 0, 'BLOG.DBA.MTWeblogPost');
+      arr := vector_concat (arr, vector(post));
+      i := i + 1;
+    }
+enf:
+  return arr;
+}
+;
+
+
+create procedure
+IMPORT_BLOG (in blogid varchar, in user_id int, in url varchar, in api varchar, in bid varchar, in uid varchar, in pwd varchar)
+{
+  declare tmp, xt, cnt, hdr, rc any;
+  declare posts any;
+
+  url := cast (url as varchar);
+  api := cast (api as varchar);
+  bid := cast (bid as varchar);
+  uid := cast (uid as varchar);
+  pwd := cast (pwd as varchar);
+
+  rc := 0;
+  if (length (bid) = 0) -- import from a feed
+    {
+      declare title, content, published, postid any;
+      declare res "MTWeblogPost";
+      declare i int;
+
+      cnt := BLOG..GET_URL_AND_REDIRECTS (url, hdr);
+      xt := xtree_doc (cnt);
+      if (xpath_eval ('/rss', xt) is not null)
+        {
+          tmp := xpath_eval ('/rss/channel/item', xt, 0);
+	  posts := make_array (length (tmp), 'any');
+	  i := 0;
+	  foreach (any x in tmp) do
+	    {
+	      title := xpath_eval ('string(title)', x);
+	      content := xpath_eval ('string(description)', x);
+	      published := cast (xpath_eval ('string(pubDate)', x) as varchar);
+	      postid := xpath_eval ('string(postid)', x);
+	      res := new "MTWeblogPost" ();
+	      res.title := title;
+	      if (length (published))
+	        res.dateCreated := http_string_date (published);
+	      res.postid := postid;
+	      res.description := content;
+	      posts[i] := res;
+	      i := i + 1;
+	    }
+	}
+      else if (xpath_eval ('/feed', xt) is not null)
+        {
+          tmp := xpath_eval ('/feed/entry', xt, 0);
+	  posts := make_array (length (tmp), 'any');
+	  i := 0;
+	  foreach (any x in tmp) do
+	    {
+	      title := xpath_eval ('string(title)', x);
+	      content := xpath_eval ('string(content)', x);
+	      published := cast (xpath_eval ('string(published)', x) as varchar);
+	      postid := xpath_eval ('string(id)', x);
+	      res := new "MTWeblogPost" ();
+	      res.title := title;
+	      if (length (published))
+		res.dateCreated := stringdate (published);
+	      res.postid := postid;
+	      res.description := content;
+	      posts[i] := res;
+	      i := i + 1;
+	    }
+	}
+      else if (xpath_eval ('/RDF', xt) is not null)
+        {
+          tmp := xpath_eval ('/RDF/item', xt, 0);
+	  posts := make_array (length (tmp), 'any');
+	  i := 0;
+	  foreach (any x in tmp) do
+	    {
+	      title := xpath_eval ('string(title)', x);
+	      content := xpath_eval ('string(description)', x);
+	      published := cast (xpath_eval ('string(date)', x) as varchar);
+	      postid := xpath_eval ('string(@about)', x);
+	      res := new "MTWeblogPost" ();
+	      res.title := title;
+	      if (length (published))
+		res.dateCreated := stringdate (published);
+	      res.postid := postid;
+	      res.description := content;
+	      posts[i] := res;
+	      i := i + 1;
+	    }
+	}
+    }
+  else -- import using an api
+    {
+      if (api = 'MetaWeblog' or api = 'MoveableType')
+	{
+	  posts := metaweblog.get_Recent_Posts (url, BLOG.DBA."blogRequest" ('appKey', bid, '', uid, pwd), 100);
+	}
+      else -- use blogger
+	{
+	  posts := blogger.get_Recent_Posts (url, BLOG.DBA."blogRequest" ('appKey', bid, '', uid, pwd), 100);
+	}
+    }
+
+  foreach (any x in posts) do
+    {
+      declare title, content, pub, id any;
+      declare meta "MTWeblogPost";
+      id := cast (sequence_next ('blogger.postid') as varchar);
+      if (udt_instance_of ('BLOG.DBA.MTWeblogPost', x))
+	{
+	  declare p "MTWeblogPost";
+	  p := x;
+	  title := blog_wide2utf (p.title);
+	  content := blog_wide2utf (p.description);
+	  pub := p.dateCreated;
+	  meta := x;
+	  meta.title := title;
+	  meta.description := null;
+	}
+      else
+	{
+	  declare p "blogPost";
+	  p := x;
+	  title := null;
+	  content := blog_wide2utf (p.content);
+	  pub := p.dateCreated;
+	  meta := null;
+	}
+
+      insert into BLOG.DBA.SYS_BLOGS (B_APPKEY, B_POST_ID, B_BLOG_ID, B_TS, B_CONTENT, B_USER_ID, B_META, B_STATE, B_TITLE)
+	  values ('Import', id, blogid, pub, content, user_id, meta, 1, title);
+    }
+  return length (posts);
 };

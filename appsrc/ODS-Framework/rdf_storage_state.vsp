@@ -1,0 +1,12 @@
+<?vsp
+   declare rc any;
+   rc := registry_get ('ods_rdf_state');
+   if (rc like 'ODS RDF % update finished' or rc like 'Error: %')
+     {
+	http_request_status ('HTTP/1.1 201 Created');
+     } 
+   if (rc like 'http:%' or rc like 'mailto:')
+     rc := 'IRI: <'||rc||'>';
+?><div>
+  <i><?V substring (datestring (now ()), 1, 19) ?>:</i>&nbsp;<b><?V rc ?>
+</div>

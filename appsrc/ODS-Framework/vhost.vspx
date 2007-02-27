@@ -372,13 +372,16 @@ control.vc_enabled := 0;
 
 					commit work;
 
-                                        declare exit handler for sqlstate '*'
-                                        {
-                                          self.vc_is_valid := 0;
-                                          self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
-                                          rollback work;
-                                          return;
-                                        };
+-- Error handling disabled in order to activate defaul error handling and show error on Error page - error.vspx.
+
+--                                        declare exit handler for sqlstate '*'
+--                                        {
+--                                          self.vc_is_valid := 0;
+--                                          self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+--                                          rollback work;
+--                                          return;
+--                                        };
+
 
 
 					WA_SET_APP_URL (id, path, prefix, domain, old_path, old_host, old_ip);

@@ -21,11 +21,11 @@
  *  
  */
 
+/* template: openlink */
+
 body {
-  margin: 20px;
-  margin-left: 60px;
-  margin-right: 60px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   border: 1px solid darkgray;
   font-size: 0.7em;
   font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;

@@ -28,113 +28,51 @@ create procedure nntp_role_iri (in name varchar)
   return sprintf ('http://%s%s/discussion/%U#reader', get_cname(), get_base_path (), name);
 };
 
-create procedure get_sender (in email varchar)
-{
-   declare mail, name varchar;
-   mail := regexp_match ('<[^@<>]+@[^@<>]+>', email);
-   if (mail is null)
-     mail := regexp_match ('([^@()]+@[^@()]+)', email);
-   if (mail is null)
-     mail := regexp_match ('\\[[^@\\[\\]]+@[^@\\[\\]]+\\]', email);
-   if (mail is null)
-     return mail;
-   return trim (mail, '[]()<>');
-};
-
-create procedure nntp_process_parts (in parts any, inout body any, out result any)
-{
-  declare name1, mime1, name, mime, enc, content, charset varchar;
-  declare i, l, i1, l1, is_allowed int;
-  declare part, xt, xp any;
-
-  if (not isarray (result))
-    result := vector ();
-
-  if (not isarray (parts) or not isarray (parts[0]))
-    return 0;
-  -- test if there is an moblog compliant image
-  part := parts[0];
---  dbg_obj_print ('part=', part);
-
-  name1 := get_keyword_ucase ('filename', part, '');
-  if (name1 = '')
-    name1 := get_keyword_ucase ('name', part, '');
-
-  mime1 := get_keyword_ucase ('Content-Type', part, '');
-  charset := get_keyword_ucase ('charset', part, '');
-
-  if (mime1 = 'application/octet-stream' and name1 <> '') {
-    mime1 := http_mime_type (name1);
-  }
-
-  declare _cnt_disp any;
-  _cnt_disp := get_keyword_ucase('Content-Disposition', part, '');
-
---  dbg_obj_print (_cnt_disp, mime1);
-
-  if ((_cnt_disp = 'inline' or _cnt_disp = '') and mime1 = 'text/html')
-    {
-      name := name1;
-      mime := mime1;
-      enc := get_keyword_ucase ('Content-Transfer-Encoding', part, '');
---      dbg_obj_print (enc);
-      content := subseq (body, parts[1][0], parts[1][1]);
-      if (enc = 'base64')
-	content := decode_base64 (content);
-      else if (enc = 'quoted-printable')
-	content := uudecode (content, 12);
-      xt := xtree_doc (content, 2, '', 'UTF-9');
---      dbg_obj_print (xt);
-      xp := xpath_eval ('//a[starts-with (@href,"http") and not(img)]', xt, 0);
-      foreach (any elm in xp) do
-	{
-	  declare tit, href any;
-	  tit := cast (xpath_eval ('string()', elm) as varchar);
-	  href := cast (xpath_eval ('@href', elm) as varchar);
-	  result := vector_concat (result, vector (vector (tit, href)));
-	}
-      return 1;
-    }
-  -- process the parts
-  if(not isarray (parts[2]))
-    return 0;
-  i := 0;
-  l := length (parts[2]);
-  while (i < l) {
-    nntp_process_parts (parts[2][i], body, result);
-    i := i + 1;
-  }
-  return 0;
-
-};
-
-create procedure nntp_get_links (in message any)
-{
-  declare parsed_message, res any;
-  parsed_message := mime_tree (message);
-  res := null;
-  nntp_process_parts (parsed_message, message, res);
-  return res;
-};
 
 create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
-{
+    {
   declare iri, firi, title, arr, link, riri, maker, maker_iri varchar;
-  for select NG_GROUP, NG_NAME, NG_DESC, NG_TYPE from DB.DBA.NEWS_GROUPS do
+{
+    declare deadl, cnt any;
+    declare _grp, _msg any;
+
+    _grp := -1;
+    _msg := '';
+    deadl := 5;
+    cnt := 0;
+    declare exit handler for sqlstate '40001' {
+      if (deadl <= 0)
+	resignal;
+      rollback work;
+      deadl := deadl - 1;
+      goto l0;
+};
+    l0:
+
+  for select NG_GROUP, NG_NAME, NG_DESC, NG_TYPE from DB.DBA.NEWS_GROUPS where NG_GROUP > _grp do
     {
       firi := forum_iri ('nntpf', NG_NAME);
       sioc_forum (graph_iri, site_iri, firi, NG_NAME, 'nntpf', NG_DESC);
       riri := nntp_role_iri (NG_NAME);
       DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
-      for select NM_ID, NM_REC_DATE, NM_HEAD, NM_BODY from DB.DBA.NEWS_MSG, DB.DBA.NEWS_MULTI_MSG
-	where NM_GROUP = NG_GROUP and NM_KEY_ID = NM_ID and NM_TYPE = NG_TYPE do
+      DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('scope_of'), riri);
+      for select NM_KEY_ID from DB.DBA.NEWS_MULTI_MSG, DB.DBA.NEWS_MSG
+	where NM_GROUP = NG_GROUP and NM_KEY_ID > _msg do
 	  {
 	    declare par_iri, par_id, links_to any;
-	    iri := nntp_post_iri (NG_NAME, NM_ID);
-	    arr := deserialize (NM_HEAD);
+            declare _NM_ID, _NM_REC_DATE, _NM_HEAD, _NM_BODY any;
+
+	    whenever not found goto nxt;
+	    select NM_ID, NM_REC_DATE, NM_HEAD, NM_BODY
+		into _NM_ID, _NM_REC_DATE, _NM_HEAD, _NM_BODY
+		from DB.DBA.NEWS_MSG
+		where NM_ID = NM_KEY_ID and NM_TYPE = NG_TYPE;
+
+	    iri := nntp_post_iri (NG_NAME, _NM_ID);
+	    arr := deserialize (_NM_HEAD);
 	    title := get_keyword ('Subject', arr[0]);
 	    maker := get_keyword ('From', arr[0]);
-	    maker := get_sender (maker);
+	    maker := DB.DBA.nntpf_get_sender (maker);
 	    maker_iri := null;
 	    if (maker is not null)
 	      {
@@ -142,17 +80,24 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
 		foaf_maker (graph_iri, maker_iri, null, maker);
 	      }
 	    DB.DBA.nntpf_decode_subj (title);
-	    link := sprintf ('http://%s/nntpf/nntpf_disp_article.vspx?id=%U', DB.DBA.WA_CNAME (), encode_base64 (NM_ID));
-	    links_to := nntp_get_links (NM_BODY);
+	    link := sprintf ('http://%s/nntpf/nntpf_disp_article.vspx?id=%U', DB.DBA.WA_CNAME (), encode_base64 (_NM_ID));
+	    links_to := DB.DBA.nntpf_get_links (_NM_BODY);
 --	    dbg_obj_print (iri, links_to);
-	    ods_sioc_post (graph_iri, iri, firi, null, title, NM_REC_DATE, NM_REC_DATE, link, NM_BODY, null, links_to, maker_iri);
+	    ods_sioc_post (graph_iri, iri, firi, null, title, _NM_REC_DATE, _NM_REC_DATE, link, _NM_BODY, null, links_to, maker_iri);
 
-	    par_id := (select FTHR_REFER from DB.DBA.NNFE_THR where FTHR_MESS_ID = NM_ID and FTHR_GROUP = NG_GROUP);
+	    par_id := (select FTHR_REFER from DB.DBA.NNFE_THR where FTHR_MESS_ID = _NM_ID and FTHR_GROUP = NG_GROUP);
 	    if (par_id is not null)
 	      {
 		par_iri := nntp_post_iri (NG_NAME, par_id);
 		DB.DBA.RDF_QUAD_URI (graph_iri, par_iri, sioc_iri ('has_reply'), iri);
 		DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), par_iri);
+	      }
+	    nxt:
+	    cnt := cnt + 1;
+	    if (mod (cnt, 500) = 0)
+	      {
+		commit work;
+		_msg := NM_KEY_ID;
 	      }
 	  }
        for select U_NAME from DB.DBA.SYS_USERS where U_DAV_ENABLE = 1 and U_NAME <> 'nobody' and U_NAME <> 'nogroup' and U_IS_ROLE = 0
@@ -160,9 +105,13 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
 	   {
 	     declare user_iri varchar;
              user_iri := user_obj_iri (U_NAME);
-	     DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_member'), user_iri);
+	     DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('function_of'), user_iri);
 	     DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioc_iri ('has_function'), riri);
 	   }
+	 commit work;
+	 _grp := NG_GROUP;
+    }
+  commit work;
     }
 };
 
@@ -184,7 +133,7 @@ create procedure ods_nntp_sioc_init ()
 
 };
 
-db.dba.wa_exec_no_error('ods_nntp_sioc_init ()');
+--db.dba.wa_exec_no_error('ods_nntp_sioc_init ()');
 
 
 create trigger NEWS_GROUPS_SIOC_I after insert on DB.DBA.NEWS_GROUPS referencing new as N
@@ -200,12 +149,13 @@ create trigger NEWS_GROUPS_SIOC_I after insert on DB.DBA.NEWS_GROUPS referencing
   sioc_forum (graph_iri, site_iri, firi, N.NG_NAME, 'nntpf', N.NG_DESC);
   riri := nntp_role_iri (N.NG_NAME);
   DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
+  DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('scope_of'), riri);
   for select U_NAME from DB.DBA.SYS_USERS where U_DAV_ENABLE = 1 and U_NAME <> 'nobody' and U_NAME <> 'nogroup' and U_IS_ROLE = 0
     do
       {
 	declare user_iri varchar;
 	user_iri := user_obj_iri (U_NAME);
-	DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_member'), user_iri);
+	DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('function_of'), user_iri);
 	DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioc_iri ('has_function'), riri);
       }
   return;
@@ -270,7 +220,7 @@ create trigger NEWS_MULTI_MSG_SIOC_I after insert on DB.DBA.NEWS_MULTI_MSG refer
   title := get_keyword ('Subject', arr[0]);
   DB.DBA.nntpf_decode_subj (title);
   maker := get_keyword ('From', arr[0]);
-  maker := get_sender (maker);
+  maker := DB.DBA.nntpf_get_sender (maker);
   maker_iri := null;
   if (maker is not null)
     {
@@ -278,7 +228,7 @@ create trigger NEWS_MULTI_MSG_SIOC_I after insert on DB.DBA.NEWS_MULTI_MSG refer
       foaf_maker (graph_iri, maker_iri, null, maker);
     }
   link := sprintf ('http://%s/nntpf/nntpf_disp_article.vspx?id=%U', DB.DBA.WA_CNAME (), encode_base64 (m_id));
-  links_to := nntp_get_links (m_body);
+  links_to := DB.DBA.nntpf_get_links (m_body);
   ods_sioc_post (graph_iri, iri, firi, null, title, m_date, m_date, link, m_body, null, links_to, maker_iri);
   return;
 };
@@ -303,3 +253,123 @@ create trigger NEWS_MULTI_MSG_SIOC_D after delete on DB.DBA.NEWS_MULTI_MSG refer
 
 use DB;
 
+use DB;
+-- NNTPF
+
+wa_exec_no_error ('drop view ODS_NNTP_GROUPS');
+wa_exec_no_error ('drop view ODS_NNTP_POSTS');
+wa_exec_no_error ('drop view ODS_NNTP_USERS');
+wa_exec_no_error ('drop view ODS_NNTP_LINKS');
+
+create view ODS_NNTP_GROUPS as select NG_NAME, NG_DESC, '' as DUMMY from DB.DBA.NEWS_GROUPS;
+
+create view ODS_NNTP_POSTS as select
+	NG_GROUP,
+	NG_NAME,
+	NM_ID,
+	sioc..sioc_date (NM_REC_DATE) as REC_DATE,
+	NM_HEAD,
+	NM_BODY,
+	FTHR_SUBJ,
+	concat ('mailto:', FTHR_FROM) as MAKER,
+	FTHR_REFER
+	from
+	DB.DBA.NEWS_MSG join DB.DBA.NEWS_MULTI_MSG on (NM_ID = NM_KEY_ID)
+    	join DB.DBA.NEWS_GROUPS on (NM_GROUP = NG_GROUP and NM_TYPE = NG_TYPE)
+    	left outer join DB.DBA.NNFE_THR on (FTHR_MESS_ID = NM_ID and FTHR_GROUP = NG_GROUP);
+
+create view ODS_NNTP_USERS as select NG_NAME, U_NAME from DB.DBA.NEWS_GROUPS, DB.DBA.SYS_USERS
+	where U_DAV_ENABLE = 1 and U_NAME <> 'nobody' and U_NAME <> 'nogroup' and U_IS_ROLE = 0;
+
+create view ODS_NNTP_LINKS as select NML_MSG_ID, NML_URL, NG_NAME
+	from
+	NNTPF_MSG_LINKS
+	join DB.DBA.NEWS_MULTI_MSG on (NML_MSG_ID = NM_KEY_ID)
+	join DB.DBA.NEWS_GROUPS on (NM_GROUP = NG_GROUP);
+
+create procedure sioc.DBA.rdf_nntpf_view_str ()
+{
+  return
+      '
+      # NNTP forum
+      # SIOC
+      sioc:nntp_forum_iri (DB.DBA.ODS_NNTP_GROUPS.NG_NAME) a sioc:Forum ;
+      sioc:id NG_NAME ;
+      sioc:type "discussion" ;
+      sioc:description NG_DESC ;
+      sioc:has_host sioc:default_site (DUMMY) .
+
+      sioc:nntp_post_iri (DB.DBA.ODS_NNTP_POSTS.NG_NAME, DB.DBA.ODS_NNTP_POSTS.NM_ID) a sioc:Post ;
+      sioc:content NM_BODY ;
+      dc:title FTHR_SUBJ ;
+      dct:created  REC_DATE ;
+      dct:modified REC_DATE ;
+      foaf:maker sioc:iri (MAKER) ;
+      sioc:reply_of sioc:nntp_post_iri (NG_NAME, FTHR_REFER) ;
+      sioc:has_container sioc:nntp_forum_iri (NG_NAME) .
+
+      sioc:nntp_post_iri (DB.DBA.ODS_NNTP_POSTS.NG_NAME, DB.DBA.ODS_NNTP_POSTS.FTHR_REFER)
+      sioc:has_reply
+      sioc:nntp_post_iri (NG_NAME, NM_ID) .
+
+      sioc:nntp_forum_iri (DB.DBA.ODS_NNTP_POSTS.NG_NAME)
+      sioc:container_of
+      sioc:nntp_post_iri (NG_NAME, NM_ID) .
+
+      #OLD version sioc:nntp_forum_iri (DB.DBA.ODS_NNTP_USERS.NG_NAME)
+      #sioc:has_member
+      #sioc:user_iri (U_NAME) .
+
+      sioc:nntp_role_iri (DB.DBA.NEWS_GROUPS.NG_NAME)
+      sioc:has_scope
+      sioc:nntp_forum_iri (NG_NAME) .
+
+      sioc:nntp_forum_iri (DB.DBA.NEWS_GROUPS.NG_NAME)
+      sioc:scope_of
+      sioc:nntp_role_iri (NG_NAME) .
+
+      sioc:user_iri (DB.DBA.ODS_NNTP_USERS.U_NAME)
+      sioc:has_function
+      sioc:nntp_role_iri (NG_NAME) .
+
+      sioc:nntp_role_iri (DB.DBA.ODS_NNTP_USERS.NG_NAME)
+      sioc:function_of
+      sioc:user_iri (U_NAME) .
+
+      sioc:nntp_post_iri (DB.DBA.ODS_NNTP_LINKS.NG_NAME, DB.DBA.ODS_NNTP_LINKS.NML_MSG_ID)
+      sioc:links_to
+      sioc:iri (NML_URL) .
+
+      # AtomOWL
+      sioc:nntp_forum_iri (DB.DBA.ODS_NNTP_GROUPS.NG_NAME) a atom:Feed .
+
+      sioc:nntp_post_iri (DB.DBA.ODS_NNTP_POSTS.NG_NAME, DB.DBA.ODS_NNTP_POSTS.NM_ID) a atom:Entry ;
+      atom:title FTHR_SUBJ ;
+      atom:source sioc:nntp_forum_iri (NG_NAME) ;
+      atom:author sioc:iri (MAKER) ;
+      atom:published REC_DATE ;
+      atom:updated REC_DATE ;
+      atom:content sioc:nntp_post_text_iri (NG_NAME, NM_ID) .
+
+      sioc:nntp_post_text_iri (DB.DBA.ODS_NNTP_POSTS.NG_NAME, DB.DBA.ODS_NNTP_POSTS.NM_ID) a atom:Content ;
+      atom:type "text/plain"  option (EXCLUSIVE) ;
+      atom:lang "en-US"  option (EXCLUSIVE) ;
+      atom:body NM_BODY .
+
+      sioc:nntp_forum_iri (DB.DBA.ODS_NNTP_POSTS.NG_NAME)
+      atom:contains
+      sioc:nntp_post_iri (NG_NAME, NM_ID) .
+
+      '
+      ;
+};
+
+-- END NNTPF
+
+grant select on ODS_NNTP_GROUPS to "SPARQL";
+grant select on ODS_NNTP_POSTS to "SPARQL";
+grant select on ODS_NNTP_USERS to "SPARQL";
+grant select on ODS_NNTP_LINKS to "SPARQL";
+
+
+ODS_RDF_VIEW_INIT ();

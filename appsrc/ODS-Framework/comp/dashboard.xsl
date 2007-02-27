@@ -55,13 +55,13 @@
       <h3>Welcome to OpenLink Data Spaces.</h3>
       <p>With OpenLink Data Spaces, you find the people and services you need through the people you know and trust, 
       while you strengthen and extend your existing network.</p>
-      <p>Openlink Data Spaces Applications let you get through your daily tasks:</p>
+      <p>OpenLink Data Spaces Applications let you get through your daily tasks:</p>
       <ul>
         <li>Stay up to date with latest news on subjects that interest you</li>
         <li>Communicate with others using emails and blogs</li>
         <li>Collaborate with authoring information on Wikis, and much more!</li>
       </ul>
-      <!--a href="ods_tutorial.html">Learn more about Openlink Data Spaces</a-->
+      <!--a href="ods_tutorial.html">Learn more about OpenLink Data Spaces</a-->
     </div>
   </xsl:template>
  
@@ -82,7 +82,9 @@
      <vm:if test="wa_vad_check ('oDrive') is not null">
        <div class="sf_blurb">
 	 <vm:url
-	   value="--><!--sprintf ('Did you know that %s allows you to share you documents ideas, goal, ideas with your colleagues?',
+	   value="-->
+
+<!--sprintf ('Did you know that %s allows you to share you documents ideas, goal, ideas with your colleagues?',
 	   self.banner)"
 	   url="index_inst.vspx?wa_name=oDrive&amp;fr=promo" />
        </div>
@@ -279,7 +281,7 @@
             <th>
               <v:url name="orderby_instance"
                                    value="Instance"
-                     url="--'?order_by=instance&amp;prev_order_by='||get_keyword ('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword ('order_by', self.vc_event.ve_params,'')||
                         '&amp;order_way='||
                         (case when get_keyword ('order_by', self.vc_event.ve_params,'') = 'instance' AND 
                                    get_keyword ('order_way', self.vc_event.ve_params,'') = 'asc' 
@@ -295,7 +297,7 @@
             <th>
               <v:url name="orderby_subject"
                                    value="Subject"
-                     url="--'?order_by=subject&amp;prev_order_by='||
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||
                          get_keyword ('order_by', self.vc_event.ve_params,'')||
                          '&amp;order_way='||
                          (case when get_keyword ('order_by', self.vc_event.ve_params, '') = 'subject' AND 
@@ -311,7 +313,7 @@
             <th>
               <v:url name="orderby_creator"
                                    value="Creator"
-                     url="--'?order_by=creator&amp;prev_order_by='||
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||
                          get_keyword ('order_by', self.vc_event.ve_params, '')||
                          '&amp;order_way='||
                          (case when get_keyword ('order_by', self.vc_event.ve_params, '') = 'creator' AND 
@@ -328,7 +330,7 @@
             <th>
               <v:url name="orderby_date"
                                    value="Date"
-                     url="--'?order_by=date&amp;prev_order_by='||
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||
                          get_keyword ('order_by', self.vc_event.ve_params, '')||
                          '&amp;order_way='||
                          (case when get_keyword ('order_by', self.vc_event.ve_params, '') = 'date' AND
@@ -554,6 +556,9 @@
          declare inst_url_local varchar;
          inst_url_local :='not specified';
          inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
+         inst_url_local := (case when locate('http://',inst_url_local)=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||inst_url_local;
+         
+         url:=(case when locate('http://',sprintf('%s',url))=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||url;
 
          declare insttype_from_xsl varchar;
          insttype_from_xsl:='';
@@ -563,7 +568,7 @@
 		  </xsl:processing-instruction>
         <tr align="left">
        <?vsp
-            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark')
+            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark' or insttype_from_xsl='oGallery' or insttype_from_xsl='Polls')
             {
        ?>       
 
@@ -638,7 +643,7 @@
             <th>
               <v:url name="enews_orderby_instance"
                                    value="Instance"
-                     url="--'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                             '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -648,7 +653,7 @@
             <th>
               <v:url name="enews_orderby_subject"
                                    value="Subject"
-                     url="--'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -658,7 +663,7 @@
             <th>
               <v:url name="enews_orderby_creator"
                                    value="Creator"
-                     url="--'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -668,7 +673,7 @@
             <th>
               <v:url name="enews_orderby_date"
                                    value="Date"
-                     url="--'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -704,7 +709,7 @@
             <th>
               <v:url name="omail_orderby_subject"
                                    value="Subject"
-                     url="--'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -714,7 +719,7 @@
             <th>
               <v:url name="omail_orderby_creator"
                                    value="From"
-                     url="--'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -724,7 +729,7 @@
             <th>
               <v:url name="omail_orderby_date"
                                    value="Received"
-                     url="--'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -760,7 +765,7 @@
             <th>
               <v:url name="wiki_orderby_instance"
                                    value="Instance"
-                     url="--'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -770,7 +775,7 @@
             <th>
               <v:url name="wiki_orderby_subject"
                                    value="Topic"
-                     url="--'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -779,7 +784,7 @@
             <th>
               <v:url name="wiki_orderby_creator"
                                    value="From"
-                     url="--'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -789,7 +794,7 @@
             <th>
               <v:url name="wiki_orderby_date"
                                    value="Opened"
-                     url="--'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -825,7 +830,7 @@
             <th>
               <v:url name="odrive_orderby_subject"
                                    value="Resource"
-                     url="--'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -835,7 +840,7 @@
             <th>
               <v:url name="odrive_orderby_creator"
                                    value="Creator"
-                     url="--'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -845,7 +850,7 @@
             <th>
               <v:url name="odrive_orderby_date"
                                    value="Date"
-                     url="--'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -882,7 +887,7 @@
             <th>
               <v:url name="bmk_orderby_instance"
                                    value="Instance"
-                                   url="--'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -892,7 +897,7 @@
             <th>
               <v:url name="bmk_orderby_link"
                                    value="Bookmark"
-                                   url="--'?order_by=link&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=link&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -902,7 +907,7 @@
             <th>
               <v:url name="bmk_orderby_creator"
                                    value="Creator"
-                                   url="--'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -912,7 +917,7 @@
             <th>
               <v:url name="bmk_orderby_date"
                                    value="Date"
-                                   url="--'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -926,7 +931,7 @@
                     </table>
       </div> <!-- content_pane --> 
     </div>
-  </xsl:template>
+  </xsl:template> <!-- dash_bookmark_summary -->
 
   <xsl:template match="vm:dash-community-summary">
     <div class="widget w_app_summary w_bookmark_summary">
@@ -954,15 +959,15 @@
                     </table>
       </div>
     </div>
-  </xsl:template>
+  </xsl:template><!-- dash_community_summary -->
 
   <xsl:template match="vm:dash-ogallery-summary">
     <div class="widget w_app_summary w_ogallery_summary">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/egallery_16.png" 
-               alt="ODS-Feed Reader icon" />
+               src="images/icons/ogallery_16.png" 
+               alt="ODS-Gallery icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('oGallery') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
@@ -976,7 +981,7 @@
             <th>
               <v:url name="ogallery_orderby_instance"
                      value="Instance"
-                     url="--'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                             '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -985,8 +990,8 @@
             </th>
             <th>
               <v:url name="ogallery_orderby_subject"
-                     value="Subject"
-                     url="--'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     value="Photo"
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -996,7 +1001,7 @@
             <th>
               <v:url name="ogallery_orderby_creator"
                                    value="Creator"
-                     url="--'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -1006,7 +1011,7 @@
             <th>
               <v:url name="ogallery_orderby_date"
                                    value="Date"
-                     url="--'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
                                                          else 'asc' end) ||
@@ -1018,6 +1023,72 @@
 			<xsl:with-param name="app">oGallery</xsl:with-param>
 		    </xsl:call-template>
                     </table>
+      </div> <!-- w_pane -->
+    </div> <!-- widget -->
+  </xsl:template>
+
+  <xsl:template match="vm:dash-polls-summary">
+    <div class="widget w_app_summary w_polls_summary">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="images/icons/polls_16.png"
+               alt="ODS-Polls icon" />
+            <span class="w_title_text"><?V WA_GET_APP_NAME ('Polls') ?> Summary</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+        </div>
+      </div>
+      <div class="w_pane content_pane">
+        <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
+          <tr>
+            <th>
+              <v:url name="polls_orderby_instance"
+                     value="Instance"
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                            '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+                             />
+            </th>
+            <th>
+              <v:url name="polls_orderby_subject"
+                     value="Poll"
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="polls_orderby_creator"
+                     value="Creator"
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="polls_orderby_date"
+                     value="Date"
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">Polls</xsl:with-param>
+          </xsl:call-template>
+        </table>
       </div> <!-- w_pane -->
     </div> <!-- widget -->
   </xsl:template>
@@ -1040,7 +1111,7 @@
       <div class="w_pane content_pane">
         <h3>Welcome to OpenLink Data Spaces</h3>
         <p><i>There are many data spaces in the net, but this is yours</i><br/>
-        Openlink Data Spaces Applications can help you through your daily tasks.</p>
+        OpenLink Data Spaces Applications can help you through your daily tasks.</p>
         <p>Utilize and manage your contact network. Keep up to date with latest 
         news on subjects that interest you. Communicate with others using email, discussion lists and weblogs. 
         Collaborate with authoring information
@@ -1298,7 +1369,7 @@
       </ul>
         </div> <!-- pane content_pane -->
         <div class="w_footer">
-          <a href="search.vspx?newest=news&amp;l=1&lt;?V self.login_pars ?&gt;">More&amp;#133;</a>
+          <a href="search.vspx?newest=wiki&amp;l=1&lt;?V self.login_pars ?&gt;">More&amp;#133;</a>
         </div> <!-- w_footer -->
       </div> <!-- widget -->
          </vm:if>
@@ -1322,7 +1393,7 @@
     <vm:if test="not has_news_app">
       <div class="app_ad">
         <a href="index_inst.vspx?wa_name=eNews2&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
-          <img border="0" src="images/app_ads/ods_bann_newsdesk.jpg" alt="Create Your Own Personalized News Desk!" />
+          <img border="0" src="images/app_ads/ods_bann_feeds.jpg" alt="Create Your Own Personalized News Desk!" />
         </a>
         <div class="app_ad_ft">
           <input type="checkbox" id="news_app_ad_nuke"/>
@@ -1577,27 +1648,31 @@
             <table cellspacing="0" cellpadding="0" border="1">
               <tr>
                 <td>
-                    <vm:map-control 
-	                      sql="sprintf ('select ' ||
+                   <div id="google_map" style="margins:1px; width: 380px;height: 320px;" />
+                  <vm:oatmap-control 
+	                    sql="sprintf ('select _LAT,_LNG,_KEY_VAL,EXCERPT from ( \n ' ||
+	                                  'select \n' ||
                                       '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
                                       '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
 	                                    '  WAUI_U_ID as _KEY_VAL, \n' ||
 	                                    '  WA_SEARCH_USER_GET_EXCERPT_HTML (%d, vector (), WAUI_U_ID, '''', \n' ||
 	                                    '                                   WAUI_FULL_NAME, U_NAME, WAUI_PHOTO_URL, U_E_MAIL) as EXCERPT \n' ||
 	                                    'from  DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS \n' ||
-	                                    'where WAUI_LAT is not null and WAUI_LNG is not null and WAUI_U_ID = U_ID \n' ||
-	                                    '      and U_ID in (%s,%d)', coalesce (self.u_id, http_nobody_uid ()),friends_id_str,self.u_id)"
+	                                  'where WAUI_U_ID = U_ID \n' ||
+	                                  '      and U_ID in (%s,%d)' ||
+	                                  ') tmp_tbl \n' ||
+	                                  'where _LAT is not null and _LNG is not null \n',
+	                                  coalesce (self.u_id, http_nobody_uid ()),friends_id_str,self.u_id)"
 	                      baloon-inx="4"
 	                      lat-inx="1"
 	                      lng-inx="2"
 	                      key-name-inx="3"
 	                      key-val="self.uf_u_id"
                         div_id="google_map"
-                        zoom="17"
+                        zoom="0"
                         base_url="self.base_url"
                         mapservice_name="GOOGLE"
                          />
-                    <div id="google_map" style="margins:1px; width: 320px;height: 320px;" />
                 </td>
               </tr>
             </table>
@@ -1657,7 +1732,9 @@
         }
 	    ?>
       </div> <!-- content-pane -->
-      <div class="w_footer">&amp;nbsp;</div> <!-- w_footer -->
+      <div class="w_footer">
+        <a href="&lt;?V 'app_inst.vspx?app=Community'||self.login_pars ?&gt;">More&amp;#133;</a>
+      </div> <!-- w_footer -->
     </div> <!-- widget -->
   </xsl:template>
 
@@ -1705,7 +1782,7 @@
                         LEFT JOIN WS.WS.SYS_DAV_COL D on D.COL_ID=C.COL_PARENT
                         LEFT JOIN PHOTO.WA.comments CM on CM.RES_ID=A.RES_ID
                         LEFT JOIN DB.DBA.SYS_USERS U on U.U_ID=A.RES_OWNER
-                      where C.COL_NAME=''gallery'' and D.COL_NAME='''||self.u_name||'''
+              where C.COL_NAME=''Gallery'' and D.COL_NAME='''||self.u_name||'''
                       order by RES_MOD_TIME desc,CM.CREATE_DATE desc';
 
               rc := exec (q_str, null, null, vector (), 0, null, null, h);
@@ -1775,7 +1852,12 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-guestbook">
-    <vm:if test="wa_vad_check ('oMail') is not null and exists (select 1 from wa_member where WAM_APP_TYPE='oMail' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id)">
+    <vm:if test="wa_vad_check ('oMail') is not null and 
+                 exists (select 1 
+                           from wa_member 
+                           where WAM_APP_TYPE='oMail' and 
+                                 WAM_MEMBER_TYPE=1 and 
+                                 WAM_USER=self.u_id)">
       <div class="widget w_my_guestbook">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
@@ -1913,6 +1995,23 @@
 
   <xsl:template match="vm:dash-my-mail">
     <div class="widget w_my_mail">
+
+<?vsp
+  declare has_webmail int;
+
+  has_webmail := 0;
+
+  if (wa_check_package('oMail') and
+      exists (select 1 
+                from wa_member 
+                where WAM_APP_TYPE='oMail' and 
+                      WAM_MEMBER_TYPE=1 and 
+                      WAM_USER=self.u_id) )
+    {
+      has_webmail := 1;
+    }
+?>
+      <vm:if test="has_webmail">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
@@ -1927,22 +2026,14 @@
         </div>
         <div class="w_pane content_pane">
       <?vsp
-        declare has_no_appoftype int;
-        has_no_appoftype:=1;
-        if (wa_check_package('oMail') and
-            exists (select 1 from wa_member where WAM_APP_TYPE='oMail' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id) )
-        {
-              has_no_appoftype:=0;
-        }
-      ?>
-
-      <p>
-         <vm:if test="has_no_appoftype=0">      
-         <?vsp
 
               declare q_str, rc, dta, h any;
    
-              q_str:=sprintf('select COUNT(*) as ALL_CNT, SUM(either(MSTATUS,0,1)) as NEW_CNT from OMAIL.WA.MESSAGES where USER_ID = %d',self.u_id);
+  q_str := sprintf('select COUNT(*) as ALL_CNT, 
+                           SUM(either(MSTATUS,0,1)) as NEW_CNT 
+                      from OMAIL.WA.MESSAGES 
+                      where USER_ID = %d',
+                   self.u_id);
 
               rc := exec (q_str, null, null, vector (), 0, null, null, h);
               while (0 = exec_next (h, null, null, dta))
@@ -1950,7 +2041,6 @@
                 exec_result (dta);
               }
               exec_close (h);
-              
               
               declare _inst_url varchar;
               _inst_url:='#';
@@ -1968,13 +2058,21 @@
                              dta[1],
                              case when dta[1]<> 1 then 's' else '' end));
          ?>
+        
+        </div> <!-- content_pane -->
          </vm:if>
-         <vm:if test="has_no_appoftype=1">
-	          <vm:url value="Create your mail account!" url="index_inst.vspx?wa_name=oMail&amp;fr=promo&amp;l=1" />
+      <vm:if test="not has_webmail">
+        <div class="app_ad">
+          <a href="index_inst.vspx?wa_name=oMail&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+            <img border="0" src="images/app_ads/ods_bann_webmail.jpg" alt="Webmail app ad banner" />
+          </a>
+          <div class="app_ad_ft">
+            <input type="checkbox" id="news_app_ad_nuke"/>
+            <label for="news_app_ad_nuke">Do not show this next time</label>
+            <a href="#">Dismiss</a>
+          </div>
+        </div> <!-- app_ad -->
          </vm:if>
-
-      </p>
-      </div> <!-- content-pane -->
     </div> <!-- widget -->
   </xsl:template>
 

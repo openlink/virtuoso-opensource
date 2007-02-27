@@ -48,8 +48,8 @@
         self.vc_redirect(sprintf('%slogin.vspx?URL=%U', ods_path, sprintf('%s?URI=%s&TITLE=%V', HTTP_REQUESTED_URL(), get_keyword('URL', self.vc_page.vc_event.ve_params, ''), get_keyword('TITLE', self.vc_page.vc_event.ve_params, ''))));
         return;
       }
-      if (self.account_role = 'expire') {
 
+      if (self.account_role = 'expire') {
         http_request_status ('HTTP/1.1 302 Found');
         http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));;
         return;

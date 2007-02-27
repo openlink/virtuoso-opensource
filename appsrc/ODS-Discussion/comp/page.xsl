@@ -42,6 +42,7 @@
 	  select WAUI_LAT, WAUI_LNG into self.e_lat, self.e_lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = http_dav_uid ();
 	}
         self.host := http_request_header (lines, 'Host');
+        
 	   ]]></v:on-init>
       <div id="HD">
      <ods:ods-bar app_type='nntpf'/>
@@ -267,8 +268,19 @@
 
     <xsl:template match="vm:nntpf-copyright">
       <div class="copyright">
-         Articles belong to their respective posters.
+
+        <xsl:text disable-output-escaping="yes">
+           &lt;?vsp
+                declare _copyright varchar;
+    
+                select top 1  WS_COPYRIGHT into _copyright from WA_SETTINGS;
+                
+                http (coalesce (wa_utf8_to_wide (_copyright),''));
+           ?&gt;
+        </xsl:text>
+<!--
          Application <vm:opl-copyright-str from="2004"/>
+-->
       </div>
     </xsl:template>
     <xsl:template match="vm:geo-link">
@@ -288,5 +300,381 @@
     <xsl:template match="vm:*">
       <p class="error">Control not implemented: "<xsl:value-of select="local-name (.)"/>"</p>
     </xsl:template>
+
+
+  <xsl:template match="vm:ds-navigation">
+      <v:variable name="nav_next" type="integer" default="1" persist="1" />
+      <v:variable name="nav_prev"  type="integer" default="1" persist="1" />
+    &lt;?vsp
+     {
+      declare _prev, _next, _last, _first vspx_button;
+      declare d_prev, d_next, d_last, d_first, index_arr int;
+      d_prev := d_next := d_last := d_first := index_arr := 0;
+      _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
+      _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
+      _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
+      _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
+      if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
+        goto skipit;
+      index_arr := 1;
+      if (_first is not null and not _first.vc_enabled)
+      {
+        d_first := 1;
+      }
+      if (_next is not null and not _next.vc_enabled)
+      {
+        d_next := 1;
+      }
+      if (_prev is not null and not _prev.vc_enabled)
+      {
+        d_prev := 1;
+      }
+      if (_last is not null and not _last.vc_enabled)
+      {
+        d_last := 1;
+      }
+      skipit:;
+    ?&gt;
+    <!-- an version of page numbering -->
+    <xsl:if test="not(@type) or @type = 'set'">
+      <v:text name="{@data-set}_offs" type="hidden" value="0" />
+      <?vsp
+
+      if (index_arr)
+      {
+        declare dsname, idx_offs, frm_name any;
+        declare frm vspx_control;
+
+        frm := control.vc_find_parent_form (control);
+        frm_name := '';
+
+
+        if (frm is not null)
+            frm_name := frm.vc_name;
+
+        
+        -- this button is just to trigger the post, no render at all
+        if (0)
+        {
+        ?>
+        <v:button name="{@data-set}_idx" action="simple" style="url" value="Submit">
+          <v:on-post><![CDATA[
+          declare ds vspx_data_set;
+          declare dss vspx_data_source;
+          declare offs int;
+          offs := atoi(get_keyword (replace (control.vc_name, '_idx', '_offs'), e.ve_params, '0'));
+          ds := control.vc_find_parent (control, 'vspx_data_set');
+          if (ds.ds_data_source is not null)
+          {
+            ds.ds_rows_offs := ds.ds_nrows * offs;
+            ds.vc_data_bind (e);
+          }else if(ds.ds_rows_total>0 and (ds.ds_rows_total>ds.ds_nrows * offs)){
+            
+            ds.ds_rows_offs := ds.ds_nrows * offs;
+            ds.vc_data_bind (e);
+          }
+          
+          
+          ]]></v:on-post>
+        </v:button>
+        <?vsp
+        }
+        ?>
+        <xsl:processing-instruction name="vsp">
+         dsname := '<xsl:value-of select="@data-set"/>';
+        </xsl:processing-instruction>
+        <?vsp
+
+
+         declare i, n, t, c,dc integer;
+         declare _class varchar;
+         declare dss vspx_data_source;
+         declare ds vspx_data_set;
+         ds := control.vc_parent;
+
+
+         dss := null;
+         if (ds.ds_data_source is not null)
+             dss := ds.ds_data_source;
+         i := 0;
+         n := ds.ds_nrows;
+         t := 0;
+         self.nav_next:=1;
+         self.nav_prev:=1;
+         if (dss is not null)
+         {
+             t := dss.ds_total_rows;
+         }else
+         {
+             t := ds.ds_rows_total;
+         }
+         c := ds.ds_rows_offs/10;
+
+--dbg_obj_print ('n=',n, ' t=',t,' c=', c);
+
+         dc:=ceiling (t/n)+1-c;
+
+         if ((t/n) > 20)
+         { 
+           if( c>10 and c<ceiling(t/n) - 10)
+           {
+              i := c - 10;
+              dc := 11;
+           }
+           if(c<=10)
+              dc :=20-c;
+           if(c>=ceiling(t/n) - 10)
+           {
+              i  :=c - 10;
+              dc :=ceiling(t/n)-c+1;
+           }
+        }
+         
+--         dbg_obj_print('c+1=ceiling (t/n)',c,ceiling (t/n));
+
+         if(c=0)     
+            self.nav_prev:=0;
+
+         if(c=ceiling (t/n))     
+            self.nav_next:=0;
+
+
+         http('&#160;');
+         if (d_prev)
+         {
+           http ('<a href="javascript:void(0)">&lt;&lt;</a>');
+         }
+   
+   
+         if(self.nav_prev)
+        {
+        ?>
+
+         <v:button name="{@data-set}_prev" action="simple" style="url" value="&amp;lt;&amp;lt;"
+           xhtml_alt="Previous" xhtml_title="Previous" text="&nbsp;Previous">
+         </v:button>
+           <![CDATA[&nbsp;]]>
+           <![CDATA[&nbsp;]]>
+        <?vsp            
+        }  
+        
+        
+        while (i < c+dc )
+        {
+        ?>
+        | <a href="javascript:vaoid(0)" onclick="javascript: document.forms['<?V frm_name ?>'].<?V dsname ?>_offs.value = <?V i ?>; doPost ('<?V frm_name ?>', '<?V dsname ?>_idx'); return false;"><?vsp http_value (i + 1, case when c = i then 'b' else null end); ?></a>
+        <?vsp
+            i := i + 1;
+         }
+         if (i > 0)
+            http (' | ');
+      }
+      ?>
+    </xsl:if>
+      <![CDATA[&nbsp;]]>
+      <![CDATA[&nbsp;]]>
+    <?vsp
+      if (d_next)
+      {
+      http ('<a href="javascript:void(0)">&gt;&gt;</a>');
+      }
+
+      if(self.nav_next)
+      {
+    ?>
+    <v:button name="{@data-set}_next" action="simple" style="url" value="&amp;gt;&amp;gt;"
+      xhtml_title="Next" text="&nbsp;Next">
+    </v:button>
+    <?vsp
+      }
+    }
+    ?>
+  </xsl:template>
+
+
+  <xsl:template match="vm:ds-navigation-new">
+      <v:variable name="nav_next" type="integer" default="1" persist="1" />
+      <v:variable name="nav_prev"  type="integer" default="1" persist="1" />
+    &lt;?vsp
+     {
+     
+      declare _prev, _next, _last, _first vspx_button;
+      declare d_prev, d_next, d_last, d_first, index_arr int;
+      d_prev := d_next := d_last := d_first := index_arr := 0;
+      _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
+      _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
+      _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
+      _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
+      if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
+        goto skipit;
+      index_arr := 1;
+      if (_first is not null and not _first.vc_enabled)
+      {
+        d_first := 1;
+      }
+      if (_next is not null and not _next.vc_enabled)
+      {
+        d_next := 1;
+      }
+      if (_prev is not null and not _prev.vc_enabled)
+      {
+        d_prev := 1;
+      }
+      if (_last is not null and not _last.vc_enabled)
+      {
+        d_last := 1;
+      }
+      skipit:;
+    ?&gt;
+    <!-- an version of page numbering -->
+    <xsl:if test="not(@type) or @type = 'set'">
+      <v:text name="{@data-set}_offs" type="hidden" value="0" />
+      <?vsp
+
+      if (index_arr)
+      {
+        declare dsname, idx_offs, frm_name any;
+        declare frm vspx_control;
+
+        frm := control.vc_find_parent_form (control);
+        frm_name := '';
+
+
+        if (frm is not null)
+            frm_name := frm.vc_name;
+
+
+        -- this button is just to trigger the post, no render at all
+        if (0)
+        {
+        ?>
+        <v:button name="{@data-set}_idx" action="simple" style="url" value="Submit">
+          <v:on-post><![CDATA[
+          declare ds vspx_data_set;
+          declare dss vspx_data_source;
+          declare offs int;
+          offs := atoi(get_keyword (replace (control.vc_name, '_idx', '_offs'), e.ve_params, '0'));
+          ds := control.vc_find_parent (control, 'vspx_data_set');
+          if (ds.ds_data_source is not null)
+          {
+            ds.ds_rows_offs := ds.ds_nrows * offs;
+            ds.vc_data_bind (e);
+          }else if(ds.ds_rows_total>0 and (ds.ds_rows_total>ds.ds_nrows * offs)){
+            
+            ds.ds_rows_offs := ds.ds_nrows * offs;
+            ds.vc_data_bind (e);
+          }
+          
+          
+          ]]></v:on-post>
+        </v:button>
+        <?vsp
+        }
+        ?>
+        <xsl:processing-instruction name="vsp">
+         dsname := '<xsl:value-of select="@data-set"/>';
+        </xsl:processing-instruction>
+        <?vsp
+
+
+         declare i, n, t, c,dc integer;
+         declare _class varchar;
+         declare dss vspx_data_source;
+         declare ds vspx_data_set;
+         ds := control.vc_parent;
+
+         dss := null;
+         if (ds.ds_data_source is not null)
+             dss := ds.ds_data_source;
+         i := 0;
+         n := ds.ds_nrows;
+         t := 0;
+         self.nav_next:=1;
+         self.nav_prev:=1;
+         if (dss is not null)
+         {
+             t := dss.ds_total_rows;
+         }else
+         {
+             t := ds.ds_rows_total;
+         }
+         c := ds.ds_rows_offs/10;
+
+
+--dbg_obj_print ('n=',n, ' t=',t,' c=', c);
+
+         dc:=ceiling (t/n)+1-c;
+
+         if ((t/n) > 20)
+         { 
+           if( c>10 and c<ceiling(t/n) - 10)
+           {
+              i := c - 10;
+              dc := 11;
+           }
+           if(c<=10)
+              dc :=20-c;
+           if(c>=ceiling(t/n) - 10)
+           {
+              i  :=c - 10;
+              dc :=ceiling(t/n)-c+1;
+           }
+        }
+         
+--         dbg_obj_print('c+1=ceiling (t/n)',c,ceiling (t/n));
+
+         if(c=0)     
+            self.nav_prev:=0;
+
+         if(c=ceiling (t/n))     
+            self.nav_next:=0;
+
+
+         http('&#160;');
+   
+   
+         if(self.nav_prev)
+        {
+        ?>
+
+         <v:button name="{@data-set}_prev" action="simple" style="url" value="&amp;lt;&amp;lt;"
+           xhtml_alt="Previous" xhtml_title="Previous" text="&nbsp;Previous">
+         </v:button>
+           <![CDATA[&nbsp;]]>
+           <![CDATA[&nbsp;]]>
+        <?vsp            
+        }  
+        
+        
+        while (i < c+dc )
+        {
+        ?>
+        | <a href="javascript:vaoid(0)" onclick="javascript: document.forms['<?V frm_name ?>'].<?V dsname ?>_offs.value = <?V i ?>; doPost ('<?V frm_name ?>', '<?V dsname ?>_idx'); return false;"><?vsp http_value (i + 1, case when c = i then 'b' else null end); ?></a>
+        <?vsp
+            i := i + 1;
+         }
+         if (i > 0)
+            http (' | ');
+      }
+      ?>
+    </xsl:if>
+      <![CDATA[&nbsp;]]>
+      <![CDATA[&nbsp;]]>
+    <?vsp
+
+      if(self.nav_next)
+      {
+    ?>
+    <v:button name="{@data-set}_next" action="simple" style="url" value="&amp;gt;&amp;gt;"
+      xhtml_title="Next" text="&nbsp;Next">
+    </v:button>
+    <?vsp
+      }
+    }
+    ?>
+  </xsl:template>
+
+
+
 
 </xsl:stylesheet>

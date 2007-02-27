@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="error_page" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="rename" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:template type="simple" condition="(self.vc_is_valid and self.step)">
     <script type="text/javascript">
       <![CDATA[
@@ -35,15 +35,15 @@
   <vm:popup_page_wrapper>
     <vm:variables>
       <v:variable name="v_params" persist="0" param-name="params" type="varchar"/>
-      <v:variable name="v_file" persist="0" param-name="file" type="varchar"/>
+      <v:variable name="v_file" persist="0" param-name="f1" type="varchar"/>
       <v:variable name="v_path" persist="0" type="varchar"/>
       <v:variable name="v_old" persist="0" type="varchar"/>
       <v:variable name="v_new" type="varchar"/>
       <v:variable name="step" param-name="step" type="integer" default="0"/>
     </vm:variables>
-    <v:form name="F1" type="simple" method="POST">
-      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
+    <vm:pagebody>
+      <input type="hidden" name="sid" value="<?V get_keyword('sid', self.vc_page.vc_event.ve_params)?>" />
+      <input type="hidden" name="realm" value="<?V get_keyword('realm', self.vc_page.vc_event.ve_params)?>" />
       <input type="hidden" name="step" id="step" value="1"/>
       <v:before-data-bind>
         <![CDATA[
@@ -61,22 +61,13 @@
          }
         ]]>
       </v:before-data-bind>
-      <div style="padding: 0 0 0.5em 0;">
-        &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-        <hr />
-      </div>
-      <v:template type="simple" condition="not self.vc_is_valid">
-        <div class="error">
-    	    <p><v:error-summary/></p>
-        </div>
-      </v:template>
       <div class="new-form-header">
         Rename Resource
       </div>
       <div class="new-form-body">
         <table cellspacing="0">
           <tr>
-            <th>
+            <th width="30%">
               <v:label for="f_folder" value="Parent Folder"/>
             </th>
             <td>
@@ -96,7 +87,7 @@
               <v:label for="f_new" value="New Name"/>
             </th>
             <td>
-              <v:text name="f_new" value="--self.v_new" xhtml_size="60"/>
+              <v:text name="f_new" value="--self.v_new" xhtml_size="65%"/>
             </td>
           </tr>
         </table>
@@ -132,6 +123,6 @@
         </v:button>
         <v:button action="simple" value="Cancel" xhtml_onclick="javascript: if (opener != null) opener.focus(); window.close();" xhtml_class="form-button"/>
       </div>
-    </v:form>
+    </vm:pagebody>
   </vm:popup_page_wrapper>
 </v:page>

@@ -92,7 +92,7 @@ VERSION_INIT()
       for i in `find . -name 'Entries' | grep -v "vad/"`; do
 	  cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
       done
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=245 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=250 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
       rm -f version.tmp
       echo "$VERSION" > vad_version
   fi
@@ -272,7 +272,7 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.26.59\"/>" >> $STICKER
+  echo "    <versions_later package=\"1.33.11\"/>" >> $STICKER
   echo "  </require>" >> $STICKER
   echo "</dependencies>" >> $STICKER
   echo "<procedures uninstallation=\"supported\">" >> $STICKER
@@ -423,12 +423,6 @@ ServerEnable = 1
 QueueMax     = 50000
 
 " > virtuoso.ini
-  if [ -f virtuoso.lic ]
-  then
-    echo "virtuoso.lic found"
-  else
-    cp $HOME/binsrc/tests/suite/virtuoso.lic virtuoso.lic 2>/dev/null
-  fi
   virtuoso_start
 }
 

@@ -42,6 +42,8 @@ DELETE FROM DB.DBA.WA_TYPES WHERE WAT_NAME = 'oGallery';
 PHOTO.WA._exec_no_error('delete from WA_TYPES where WAT_NAME = \'Photo\'');
 PHOTO.WA._exec_no_error('drop trigger WS.WS.trigger_make_thumbnails');
 PHOTO.WA._exec_no_error('drop table PHOTO.WA.comments');
+PHOTO.WA._exec_no_error('drop table PHOTO.WA.SYS_INFO');
+PHOTO.WA._exec_no_error('drop table PHOTO.WA.EXIF_DATA');
 
 PHOTO.WA._exec_no_error('drop type wa_photo');
 PHOTO.WA._exec_no_error('drop type photo_user');

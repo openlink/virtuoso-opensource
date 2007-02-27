@@ -31,20 +31,22 @@
      it will be read and overwritten.
      do not edit! -->
     ]]>
+<![CDATA[<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">]]>
     <TITLE>My Bookmarks</TITLE>
     <H1>My Bookmarks</H1>
     <DL><![CDATA[<p>]]>
     <xsl:apply-templates/>
-    </DL>
+</DL><![CDATA[<p>]]>
   </xsl:template>
   <xsl:template match="folder">
-    <DL><![CDATA[<p>]]><![CDATA[<DT>]]><H3>
+    <![CDATA[<DT>]]><H3>
         <xsl:attribute name="ID"><xsl:value-of select="@id"/></xsl:attribute>
         <xsl:value-of select="@name"/>
       </H3>
+    <DL><![CDATA[<p>]]>
       <xsl:apply-templates select="bookmark"/>
       <xsl:apply-templates select="folder"/>
-    </DL>
+    </DL><![CDATA[<p>]]>
   </xsl:template>
   <xsl:template match="bookmark">
     <![CDATA[<DT>]]><A>

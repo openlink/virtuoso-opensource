@@ -112,7 +112,7 @@
   <xsl:template name="write_form">
     <table width="100%" cellpadding="0" cellspacing="0" border="0" class="content">
       <colgroup>
-        <col class="w150"/>
+        <col class="w160"/>
         <col/>
       </colgroup>
       <tr>
@@ -221,6 +221,17 @@
           </input>
         </td>
       </tr>
+      <!-- Tags -->
+      <tr>
+        <th>Comma separated tags</th>
+        <td>
+          <input type="text" name="tags" size="66" >
+            <xsl:attribute name="value"><xsl:value-of select="message/tags"/></xsl:attribute>
+          </input>
+          <xsl:call-template name="nbsp"/>
+          <input type="button" value="Clear" onclick="javascript: document.f1.elements['tags'].value = ''" class="button" />
+        </td>
+      </tr>
       <xsl:if test="count(attachments/attachment) > 0 ">
         <tr>
           <th>Files</th>
@@ -289,15 +300,10 @@
         <td style="height: 290px;" valign="top">
           <input name="message" type="hidden">
             <xsl:attribute name="value">
-              <xsl:choose>
-                <xsl:when test="string-length(message/mbody) > 0">
+              <xsl:if test="string-length (message/mbody) > 0">
                   <xsl:apply-templates select="message/mbody"/>
+              </xsl:if>
                   <xsl:apply-templates select="signature"/>
-                </xsl:when>
-                <xsl:otherwise>
-                  <xsl:apply-templates select="signature"/>
-                </xsl:otherwise>
-              </xsl:choose>
             </xsl:attribute>
           </input>
           <div>
@@ -329,11 +335,7 @@
     </table>
     <script language="JavaScript" type="text/javascript">
       populateArrays();
-    </script>
-    <script language="JavaScript" type="text/javascript">
       activateToggles();
-    </script>
-    <script language="JavaScript" type="text/javascript">
       initTab(document.forms['f1'].elements['mt']);
     </script>
   </xsl:template>

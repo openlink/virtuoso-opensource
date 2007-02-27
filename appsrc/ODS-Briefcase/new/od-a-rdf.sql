@@ -440,8 +440,6 @@ create procedure ODRIVE.WA.dav_rdf_has_metadata (
 {
   if ((select count(*) from WS.WS.SYS_MIME_RDFS where MR_MIME_IDENT = ODRIVE.WA.DAV_PROP_GET(path, ':getcontenttype') and MR_DEPRECATED = 0))
     return 1;
-  if (not isnull(ODRIVE.WA.DAV_RDF_PROP_GET(path, 'http://local.virt/DAV-RDF')))
-    return 1;
   return 0;
 }
 ;
@@ -453,9 +451,11 @@ create procedure ODRIVE.WA.dav_rdf_get_metadata (
 {
   declare metadata any;
 
+  if (ODRIVE.WA.dav_rdf_has_metadata (path)) {
   metadata := ODRIVE.WA.DAV_RDF_PROP_GET(path, 'http://local.virt/DAV-RDF');
   if (not ODRIVE.WA.DAV_ERROR(metadata))
     return xml_tree_doc(xslt('http://local.virt/davxml2n3xml', metadata));
+  }
   return null;
 }
 ;

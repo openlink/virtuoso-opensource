@@ -21,98 +21,264 @@
  *  
  */
 
-/* oWiki Clean CSS stylesheet */
+/* ODS-Wiki default skin CSS stylesheet */
 
-body
-{
+html { }
+
+body { 
   padding: 0;
   margin: 0;
-    background-color: #FFFFFF;
-    font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 9pt}
+  font-family: sans-serif;
+  font-size: 10pt;
+  background-color: #86b9d9}
 
-table { font-size: 9pt}
+h1,h2,h3,h4 {
+  margin-left: 4px;
+}
+
+h1 { }
+h2 { }
+h3 { }
+h4 { }
+
+table { 
+  font-size: 9pt;
+  font-family: Verdana, Arial, Helvetica, sans-serif}
+
+form { display: inline; padding: 0px; margin: 0px}
+
+input, textarea 
+{
+  border: 1px groove silver; 
+  padding: 1px;
+  margin: 0px;
+  font-family: Tahoma, sans-serif;
+  font-size: inherit;
+  font-family: inherit}
+
+pre {
+  background-color: white}
 
 /* Main page elements */
 
 /* Wraps entire page */
 
-#page {
+#page { margin: 0; padding: 0;}
+
+#head { 
+  width: 100%;
+  background-color: #fff;
   float: left;
   clear: both;
-  margin:0 auto;
+  margin: 0;
   padding: 0;
-  width: 100%}
+  padding-bottom: 2px;
+  border-bottom: 1px solid #5689a9}
 
-/* Contains the main menu, login, etc. */
+#head img {
+  float: left;
+  margin: 0px;
+  margin-right: 10px;
+  padding: 0;}
 
-#header {
+#hdr-search-form-ctr { 
+  background-color: #e3eff5;
+  vertical-align: middle; 
+  text-align: right}
+
+#hdr-search-form-ctr input {
+  margin: 5px;
+  border-style: inset;}
+
+#mid {
   width: 100%;
   margin: 0;
   padding: 0;
   float: left;
   clear: both}
 
-#main {
-  width: 65%;
-  float: left;
-  clear: left;
-  padding-left: 4px;
-  padding-right: 4px;
-  line-height: 1.2}
-
-#sidebar {
+#wiki-path { 
   font-size: 9pt;
-  color: #444;
-  width: 29%;
-  float: left;
-  padding-left: 4px;
-  padding-top: 5px;
-  border-left: 1px solid #aba}
+  margin: 0;
+  padding: 2px;
+  background-color: 96c9e9;}
 
-#sidebar h3 {
+div.ul-search {
+  margin: 0;
+  padding: 0;
+  display: inline}
+
+#content {
+ margin-left: 10px;
+ margin-right: 10px;
+ background: white;
+ color: black;
   font-size: 10pt;
-  color: #444;
-  margin-bottom: 0}
+ border-right: 1px solid #5689a9;
+ border-bottom: 1px solid #5689a9}
 
-ul.sb-search {}
+div.topic-text {
+  padding: 2px; 
+  margin: 10px;
+  margin-left: 3px}
+.topic-text pre {
+    background-color: #eeeeee;
+} 
 
-ul.sb-search li input {
-  font-size: 8pt;
-  width: 9em;}
 
-/* NOTE: make sure you don't remove the line-height
-   definition below or IE6 Peek-a-Boo bug will rear
-   its ugly head and ruin your day */
-
-#wiki-path {
-  float: left;
-  clear: left;
-  white-space: nowrap}
-
-#footer {
+#foot {
   float: left;
   clear: both;
-  padding-left: 5px;
-  padding-top: 3px;
-  font-size: 10pt;
+  margin-left: 5px}
+
+#foot-cols-ctr { 
+  clear: left}
+
+#foot div.col {
+  width: 120px;
+  color: #dee;
+  float: left;
+  margin: 4px}
+
+#foot div.col ul {
+  list-style-type: none;
+  padding: 0}
+
+#foot div.col h3 {
+  color: #dee;
+  margin: 0}
+
+#foot div.col h4 {
+  margin: 0}
+
+#foot a { 
+  color: #dee;
+  text-decoration: none}
+
+#foot a:hover {
+  color: blue}
+
+div.debug-info {
+  float: left;
+  clear: both;
+  display: none;
+}
+
+a.atom-lnk { 
+  background: transparent url(i/atom-icon-12.png) no-repeat left center;
+  padding-left: 18px}
+
+a.rss-lnk {
+  background: transparent url(i/rss-icon-12.png) no-repeat left center;
+  padding-left: 18px}
+
+a.rdf-lnk {
+  background: transparent url(i/rdf-icon-12.png) no-repeat left center;
+  padding-left: 18px}
+
+ 
+.wikitable
+{
+ font: 10px Verdana, Arial, Helvetica, sans-serif;
+  background-color: #DDD;
+  border: 0px solid #999999;
+}
+
+.wikitable td
+{
+  background-color: #FFFFFF;
+  border-width: 0px 0px 0px 0px;
+  padding: 0px;
+}
+
+.wikitable th
+{
+  background-color: #eeddee;
+  border-width: 1px 1px 1px 1px;
+  text-align: center;
+  padding: 1px;
+}
+
+.wikitable1 {
+    font: 12px Verdana, Arial, Helvetica, sans-serif;
+    background-color: #d5dcd5}
+
+.wikitable1.td {
+    border-style: solid;
+    border-width: 1px 1px 1px 1px;
+    border-color: #000;
+    padding: 1px;
+    background-color: #efefef}
+
+.wikitable1.th {
+    border-color: #000000;
+    border-style: solid;
+    border-width: 0px 0px 0px 1px;
+    text-align: center;
+    padding: 1px}
+
+
+.wiki_mails_container {
+    font: 13px Verdana, Arial, Helvetica, sans-serif;
   width: 100%;
-  color: #232;
-  background-color: #fff;
-  border-top: 1px solid #aaa}
+    background-color: #ffb}
+
+.wiki_mails_container.td {
+    border-style: solid;
+    padding: 1px}
+
+.wiki_mails_container.th
+{
+    text-align: left;
+    padding: 1px}
+
+.wiki_mail_container 
+{
+    font: 13px Verdana, Arial, Helvetica, sans-serif;
+    width: 100%;
+    background-color: #FFFFFF;
+    border-top: 1px solid #006699;
+    border-left: 1px solid #006699}
+
+.wiki_mail_header {
+    font: 13px Verdana, Arial, Helvetica, sans-serif;
+    width: 100%;
+    background-color: #ffffbb}
+
+div.wiki-error {
+  font: 10px Verdana, Arial, Helvetica, sans-serif;
+    background-color: red;
+    border-top: 1px solid #006699;
+    border-left: 1px solid #006699;
+    border-bottom: 1px solid #006699;
+    border-right: 1px solid #006699}
+
+.wiki-error h2 {
+    background-color: white}
+
+.wiki-error h3 {
+    background-color: red}
+
+.error {
+    color: red;
+    font-weight: bold;
+    background-color: white;
+    text-align: left}
+
+.wikitoc ul {
+  list-style-type: none;
+  font-size: 12pt}
+
 
 #node-footer {
   color: #232;
   text-align: right;
-  font-size: 9pt;
-  font-style: italic}
+  font-size: 8pt;
+  font-style: italic;
+  margin: 2px 12px;}
 
 #node-footer a {
-  font-style: normal;
-  color: #232}
-
-#node-footer a:hover {
-  color: blue}
+  font-style: normal}
 
 /* Contents layout */
 
@@ -131,59 +297,11 @@ ul.sb-search li input {
   margin-right: 3px}
 
 .login-area a {
-  color: #232;
-}
+  color: #232}
 
 .login-area a:hover {
-  color: #blue;
-}
+  color: #blue}
 
-ul.menu {
-  font-size: 8pt;
-  display: block;
-  margin: 0;
-  margin-top: 3px;
-  padding: 0;
-}
-
-ul.menu li {
-  display: inline;
-  background-color: white;
-  color: green;
-  padding-left: 4px;
-}
-
-ul.menu li a {
-  color: #232;
-}
-
-ul.menu li a:hover {
-  color: blue;
-}
-
-ul.menu li input {
-  width: 8em;
-  font-size: 8pt;
-  color: #232;
-}
-
-ul.menu li select {
-  font-size: 9pt;
-  color: #232;
-}
-
-ul.menu form { display: inline };
-
-div.ul-search {
-  margin: 0;
-  padding: 0;
-  display: inline}
-
-#content {
- background: white;
- color: black;
- font-size: 10pt;
-}
 
 div.feed-container ul {
   list-style-type: none;
@@ -191,26 +309,15 @@ div.feed-container ul {
   padding-top: 0px;
   margin-top: 0px;
   margin-bottom: 2px;
-  padding-top: 0px;
-}
+  padding-top: 0px}
 
 div.feed-container h3 {
   padding-bottom: 0;
-  margin-bottom: 0px;
-}
+  margin-bottom: 0px}
 
 .system_info
 {
-	font-size: 8pt;
-}
-
-a.wikiword:hover { background-color: #DFDFDF }
-
-a.absuri {
-  background: url(external.png) center right no-repeat;
-  padding-right: 13px;
-}
-
+  font-size: 8pt}
 
 div.box {
   background-color: white;
@@ -221,165 +328,70 @@ div.box {
   vertical-align: top;
   overflow: auto;
   overflow-y: auto;
-  overflow-x: auto;
-}
+  overflow-x: auto}
 
 div.help {
   background-color: FFF0D9;
   border: 1px solid green;
   margin-top: 0.5ex;
-  margin-bottom: 0.5ex;
-}
+  margin-bottom: 0.5ex}
 
-.wikitable {
-  font-size: 10pt;
-	background-color: #E5E5E5;
-	border: 0px solid #999999;
-}
+.wiki-nav-container {
+  display: inline}
 
-.wikitable td {
-    background-color: #FFFFFF;
-    border-style: solid;
-    border-width: 0px 0px 0px 0px;
-    border-color: #FFFFFF;
-    padding: 1px;
-}
-
-.wikitable th {
-    background-color: #eeddee;
-    border-color: #FFFFFF;
-    border-style: solid;
-    border-width: 0px 0px 0px 0px;
-    text-align: left;
-    padding: 1px;
-}
-
-.wikitable1 {
-    font: 12px Verdana, Arial, Helvetica, sans-serif;
-    background-color: #D5DCD5;
-}
-
-.wikitable1.td {
-    border-style: solid;
-    border-width: 1px 1px 1px 1px;
-    border-color: #000000;
-    padding: 1px;
-    background-color: #efefef;
-}
-
-.wikitable1.th{
-    border-color: #000000;
-    border-style: solid;
-    border-width: 0px 0px 0px 1px;
-    text-align: left;
-    padding: 1px;
-}
-
-.wiki-nav-container
-{
-  display: inline;
-  font-size: 10pt;
-  font-weight: bold;
-  width: 50%;
-}
-
-.wiki-nav-container a {
-  color: #232;
-}
+.wiki-nav-container a { }
 
 .wiki-nav-container a:hover {
-  color: blue;
-}
+  color: blue}
 
-#other-output-toolbar
-{
+#other-output-toolbar {
   height: 16px;
   font: 13px Verdana, Arial, Helvetica, sans-serif;
   width: 50%; 
   background-color: white;
   float: right;
-  text-align: right;
-}
+  text-align: right}
 
-#other-output-toolbar span
-{
-  padding: 1px;
-}
+#other-output-toolbar span {
+  padding: 1px}
 
-
-#wiki-toolbar-container
-{
-  padding-left: 5px;
-  padding-top: 3px;
+#wiki-toolbar-container {
+  float: left;
+  clear: both;
   font-size: 9pt;
-  width: 100%;
-  color: #232;
-}
+  margin-left: 5px}
 
-#wiki-toolbar-container a {
-  color: #232;
-}
+#wiki-toolbar-container a { }
 
 #wiki-toolbar-container a:hover {
-  color: blue;
-}
+  color: blue}
 
 #wiki_mails_container {
     font: 13px Verdana, Arial, Helvetica, sans-serif;
     width: 100%;
-    background-color: #FFFFBB;
+    background-color: #ffffbb;
     border-top: 1px solid #006699;
-    border-left: 1px solid #006699;
-}
+    border-left: 1px solid #006699}
 
 #wiki_mails_container td {
     border-style: solid;
-    padding: 1px;
-}
+    padding: 1px}
 
 #wiki_mails_container th {
     text-align: left;
-    padding: 1px;
-}
+    padding: 1px}
 
 #wiki_mail_container {
     font: 13px Verdana, Arial, Helvetica, sans-serif;
     width: 100%;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     border-top: 1px solid #006699;
-    border-left: 1px solid #006699;
-}
+    border-left: 1px solid #006699}
 
 #wiki_mail_header {
     font: 13px Verdana, Arial, Helvetica, sans-serif;
     width: 100%;
-    background-color: #FFFFBB;
-}
-
-
-.wiki-settings {
-    font: 13px Verdana, Arial, Helvetica, sans-serif;
-    background-color: white;
-    border-top: 1px solid #006699;
-    border-left: 1px solid #006699;
-    border-bottom: 1px solid #006699;
-    border-right: 1px solid #006699;
-    padding-left: 0px; 
-    padding-right: 0px; 
-}
-
-.wiki-settings h2 {
-  margin-top: 0em; 
-  font-size: 120%;
-  position: relative;
-  background: #eeeeee;
-  border: 1px solid #aaa;
-}
-
-.wiki-settings th { 
-    font: 12px Verdana, Arial, Helvetica, sans-serif;
-    text-align: left;
-}
+    background-color: #ffffbb}
 
 #wiki-error {
     font-size: 10pt;
@@ -387,192 +399,134 @@ div.help {
     border-top: 1px solid #006699;
     border-left: 1px solid #006699;
     border-bottom: 1px solid #006699;
-    border-right: 1px solid #006699;
-}
+    border-right: 1px solid #006699;}
 
 #wiki-error h2{
-    background-color: white;
-}
+    background-color: white}
 
-#wiki-error h3{
-    background-color: white;
-}
 
-.error
-{
-    color: red;
-    font-weight: bold;
-    background-color: white;
-    text-align: left;
-}
-
-.wiki-settings-delicious h2 {
-	background-color: yellow
-}
-
-.dashboard {
-  font-size: 10pt;
-	background-color: #99BBBB;
-	border: 1px solid #999999;
-}
+#wiki-error h3 {
+    background-color: white}
 
 /* Layout */
 
 div.login
 {
   font-size: 10pt;
-  font-weight: bold;
-}
+  font-weight: bold}
 
 #search {
   font: 13px Verdana, Arial, Helvetica, sans-serif;
   font-size: 10pt;
   font-weight: bold;
+  float: right;
 }
 
-div.ul-search
-{
+div.ul-search {
   display: inline;
    margin: 0px;
    list-style-type: none;
    padding: 1px;
-   font-size: 10pt;
-}
+  font-size: 10pt}
 
 .search-button {
-  width: 200px;
-  float: right;
-}
+  width: 300px;
+  float: right}
 
-ul.left_nav
-{
+ul.left_nav {
         list-style-type: none;
   padding: 0; 
-	font-size: 10pt;
-}
+  font-size: 10pt}
 
-.user-navigation
-{
+.user-navigation {
         padding: 3px;
         margin: 2px;
         padding: 5px;
-	font-size: 10pt;
-}
+  font-size: 10pt}
 
-ul.left_nav li
-{
-  margin: 0;
-}
+ul.left_nav li {
+  margin: 0}
 
 
-pre 
-{
-  background-color: white;
-}
-
-div.diff-insert
-{
-  background-color: #AAFFAA
-}
+div.diff-insert {
+  background-color: #aaffaa}
 
 div.diff-delete
 {
-  background-color: #FFAAAA
-}	
+  background-color: #ffaaaa}
 
-tr.search-first-col
-{
-  background-color: white
-}
+tr.search-first-col {
+  background-color: white}
 
-table.search-result
-{
-    font: 13px Verdana, Arial, Helvetica, sans-serif;
-}
+table.search-result {
+  font-size: 9pt;
+  font-family: Verdana, Arial, Helvetica, sans-serif}
 
-.login-form
-{
+.login-form {
   position: relative;
   left: 30%;
   top: 30%;
   width: 243px;
   font-size: 12pt;
   font-weight: bold;
-  text-align: left;
-}
+  text-align: left}
+
 .login-form span {
-  float: right;
-}
+  float: right}
 
 .login-form-input {
-  float: right;
-}
+  float: right}
 
 div.center { 
-  border-top: 1px solid #A5A0FF;
-  border-left: 1px solid #A5A0FF;
-  border-right: 1px solid #A5A0FF;
-  border-bottom: 1px solid #A5A0FF;
+  border-top: 1px solid #a5a0ff;
+  border-left: 1px solid #a5a0ff;
+  border-right: 1px solid #a5a0ff;
+  border-bottom: 1px solid #a5a0ff;
   width: 100%;
-  height: 90%;
-}
+  height: 90%}
 
 div.wiki-source-type {
-  display: inline;
-}
+  display: inline}
 
-.wiki-source-type {
-  font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 10px;
-}
+.wiki-source-type { }
 
 .wiki-source-type a {
-  color: #232;
-}
+  color: #232}
 
-.feed-container {
-}
+.feed-container { }
 
 .RSS20_FEED a {
   background-color: red;
   color: yellow;
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 10px;
-}
+  font-size: 9pt}
 
 .MACRO_RSS20_FEED {
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 10px;
-}
+  font-size: 9pt}
 
 .MACRO_RSS20_FEED a {
   background-color: red;
-  color: yellow;
-}
+  color: yellow}
 
 .ATOM_FEED {
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 10px;
-}
+  font-size: 9pt}
 
 .ATOM_FEED a {
-  background-color: #FFFFCC;
-}
+  background-color: #ffffcc}
 
 .MACRO_ATOM_FEED{
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 10px;
-}
+  font-size: 9pt}
 
 .MACRO_ATOM_FEED a {
-  background-color: yellow;
-}
+  background-color: yellow}
 
 .formdata {
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
   font-size: 10px;
-  background-color: #CCFFFF;
-}
+  background-color: #ccffff}
 
 .formdata th {
   text-align: left; 
@@ -581,107 +535,318 @@ div.wiki-source-type {
 .advanced-search {
   padding: 0px 0px 0px 0px;
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 10px;
-}
+  font-size: 9pt}
 
 .advanced-search h1 {
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.report {
-  font-size: 12px;
-}
+  font-size: 10pt;
+  font-weight: bold}
 
 .report span {
-  font-weight: bold;
-}
+  font-weight: bold}
 
 .wikitoc ul {
    list-style-type: none;
    list-style-position: inside;
    padding: 0 0 0 0;
    margin: 0 0 0 0;
-   font-size: 12pt;
-}
+   font-size: 12pt}
 
-.wikitoc li:hover {background-color: #FDF;}
+.wikitoc li:hover { 
+  background-color: #FDF;}
 
 
 .report-buttons {
    width: 346px;
-   float: left;
-}
+   float: left}
 
 .report-buttons span {
-   float: left;
-}
+   float: left}
 
-table.edit-commands
-{
+table.edit-commands {
      background-color: #EFBBEF;
-     width: 100%;
-}
+  width: 100%}
 
 .portlet ul {
-  list-style-type: square;
-}
+  list-style-type: square}
 
 .portlet li {
   padding: 0;
-  margin: 0;
-}
+  margin: 0}
 
 li#ca-talk {
-      margin-right: 1.6em;
-}
+  margin-right: 1.6em}
 
-#main-tab {
-}
+#main-tab { }
 
 #main-tab ul {
   list-style-type: none;
   padding: 0;
-  margin: 0;
-}
+  margin: 0}
 
-#main-tab li {
-}
+#main-tab li { }
 
 #main-tab a {
-  color: #232;
-}
+  color: #232}
 
 #main-tab a:visited {
-  color: #232;
-}
+  color: #232}
 
 #main-tab a:hover {
-  color: blue;
-}
+  color: blue}
 
 #main-tab li.selected a {
-  text-decoration: none;
-}
+  text-decoration: none} 
 
 .kupuconfig {
-  background-color: white;
-}
+  background-color: white}
 
 .textarea-box { width: 450px; height: 200px }
 .input-text { width: 450px; }
 
 #virtuoso-info {
+  display: none;
   border-top: 1px solid #aba;
   margin-top: 40px;
+  font-size: 9pt}
+
+#virtuoso-info a {
+  color: #232}
+
+#virtuoso-info a:visited {
+  color: #232}
+
+/* Settings pages */
+
+ul.menu {
+  list-style-type: none;
+  padding: 0;
+  mergin-left: 4px;
+}
+
+ul.menu li {
+  margin-right: 4px;
+  padding-left: 4px;
+  padding-right: 4px;
+  background-color: #888;
+  display: inline;
+  border: 1px solid #ddd;
+}
+
+ul.menu li a {
+  text-decoration: none}
+
+table.wiki-settings {
   font-size: 9pt;
 }
 
-#virtuoso-info a {
-  color: #232;
+table.wiki-settings th {
+  font-size: 9pt;
+  text-align: left;
+  font-weight: normal;  
 }
 
-#virtuoso-info a:visited {
-  color: #232;
+table.wiki-settings h2 {
+  margin: 0;
+  padding: 0;
+  background-color: #ddd;
+}
+
+table.wiki-settings div {
+  background-color: #dee;
+}
+
+html>body #text {
+  margin-left: 0px;
+  margin-right: 10px;
+  z-index: 400}
+
+div.homepage {
+  padding: 2em;
+  text-align: center}
+
+.search { 
+  color: inherit; 
+  background-color: inherit; 
+  padding: 2px;
+  padding-bottom: 2em}
+
+#currenttoc {
+  position: absolute;
+  left:0px;
+  top:100px;
+  width:197px;
+  background:#f0f0f0;
+  padding: 1px;
+  font-family: Verdana, Arial, Helvetica, sans-serif}
+
+#currenttoc a {
+  display: block;
+  background-color: inherit;
+  color: blue;
+  padding: 3px}
+
+#navbartop #nav2 {
+  background: #e1e1ff}
+
+.battenburg, .battenburg td, .battenburg tr {
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  border: 0px;
+  padding: 0px;
+  margin: 0px;
+  border-collapse: collapse}
+
+.battenburg div, .burg {
+  display: compact;
+  padding: 1em;
+  padding-top: 0px;
+  margin: 1em;
+  margin-right: 2em;
+  margin-left: 0em;
+  border: #aaa solid 1px;
+  background: #efeea5}
+
+.burg {
+  padding: 1em}
+
+.battenburg h2, .burg h2 {
+  margin-top: 0em;
+  font-size: 120%;
+  padding: 0.2em;
+  position: relative;
+  top: -10px;
+  background: #eee;
+  border: 1px solid #aaa}
+
+#opl { background: #ffeea8; }
+#office { background: #77dd99;}
+#tools { background: #abd;}
+#toolbox { background: #ffad87; }
+#linksinternal { }
+#linksref { background: #b8ecef; }
+#news { background: #d3ceca; }
+
+#edit_form_ctr { 
+  float: left; 
+  clear: both;
+  width: 100%;
+  float: left}
+
+div.working-area {
+  position: absolute;
+  top: 0px;
+  right: 5px;
+  left: 5px}
+
+#edit-text {
+  height: 500px;
+  width: 100%;
+  margin-bottom: 5px}
+
+#page_help_ctr {
+  float: left;
+  clear: both;
+  margin-top: 10px;
+  border: 1px solid black;
+  background-color: #aba;
+  width: 100%}
+
+table.page_help { margin: 3px; border: 1px solid black; padding: 4px}
+
+td.ex_text { font-family: monospace}
+
+span.ex_ital { font-style: italic}
+
+span.ex_bold { font-weight: bold}
+
+span.ex_bold_ital { font-weight: bold; font-style: italic}
+
+span.ex_bold_fixed { font-weight: bold; font-family: monospace}
+
+span.ex_head_1 { font-size: 16pt; font-weight: bold}
+
+span.ex_head_2 { font-size: 14pt; font-weight: bold}
+
+span.ex_head_3 { font-size: 12pt; font-weight: bold}
+
+span.ex_head_4 { font-size: 10pt; font-weight: bold}
+
+#page_help_ctr h2 { font-size: 11pt; margin-left: 4px; margin-bottom: 6px}
+
+#page_help_ctr h2 a { color: #333}
+
+#page_help_ctr h2 a:hover { color: #335}
+
+#page_help_ctr p { margin-left: 4px; margin-right: 4px}
+
+div.aux-info-area { 
+	position: absolute;
+	top: 11em;
+	left: 0px;
+	width: 15em}
+
+.aux-info-area ul {
+	list-style: none}
+
+div.login-area {
+	position: absolute;
+	top: 0em;
+	left: 50%;
+	height: 7em;
+	width: 50%;
+	text-align: right}
+
+div.tools-area {
+	position: absolute;
+	top: 7em;
+	width: 50%;
+	height: 4em;
+	left: 41em;
+	float: right;
+	text-align: right}
+
+.tools-area ul {
+	position: relative;
+	list-style: none}
+
+.tools-area li {
+	display: inline;
+	overflow: visible;
+	background-color: yellow}
+
+/* Comments */
+
+div.cm_node_top {
+  padding-left: 1em;
+  margin-left: 0px}
+
+div.cm_node {
+  padding-left: 1em;
+  margin-left: 0px;
+  border-left: 2px #e0e0e0 solid}
+
+div.comment {
+  margin: 3px}
+
+a.cmd {
+  border: 1px #aaaaaa solid;
+  background: #cccccc;
+  margin: 1px}
+
+a.cmd:hover {
+  border: 1px #aaaaaa solid;
+  background: #aaaaaa}
+
+div.comment-footer {
+    margin: 1px;
+    color: gray}
+
+div.comment-header {
+   border-bottom: 1px #cccccc solid;
+   font-size: 110%}
+
+   
+#simpages a {
+  line-height: 1.4em; padding-right: 0.4em;
 }

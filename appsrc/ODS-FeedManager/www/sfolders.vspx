@@ -61,10 +61,11 @@
       <v:variable name="sf_direction" persist="1" type="varchar" default="'asc'" />
     </vm:variables>
     <vm:pagebody>
-      <v:data-source name="dsrc" expression-type="sql" nrows="--ENEWS.WA.settings_rows(self.domain_id, self.account_id)" initial-offset="0">
+      <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
         <v:before-data-bind>
           <![CDATA[
             self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
+            control.ds_nrows := ENEWS.WA.settings_rows (self.settings);
             control.ds_sql := sprintf('select ESFO_ID, ESFO_NAME from ENEWS.WA.SFOLDER where ESFO_DOMAIN_ID = %d', self.domain_id);
             control.ds_sql := concat(control.ds_sql, ' order by ', self.sf_order, ' ', self.sf_direction);
           ]]>

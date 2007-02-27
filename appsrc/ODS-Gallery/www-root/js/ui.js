@@ -186,10 +186,7 @@ function dispach(e){
         }
         //dd('action:'+action);
         res = eval(action+'(el)')
-
         ok = 1;
-
-        //document.getElementById("debug").innerHTML = 'action: ' + action;
         break;
       }else{
         if(change_el){
@@ -399,11 +396,6 @@ function getId(str){
   }
 }
 
-function dd(txt){
-  if(OAT.Dom.isGecko()){
-    console.debug(txt);
-  }
-}
 //------------------------------------------------------------------------------
 function strip_spaces(mystr) {
   var newstring = "";
@@ -443,5 +435,10 @@ function setSid(){
   }
   return '';
 }
-//------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+function dd(txt){
+  if(typeof console == 'object'){
+    console.debug(txt);
+  }
+}

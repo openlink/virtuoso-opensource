@@ -22,25 +22,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<html>
-  <head>
-    <link rel="stylesheet" href="css/style.css" type="text/css"/>
-    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
-    <title>Blog/Comment page</title>
-  </head>
-  <body style="padding: 5px;">
-    <v:page name="blog" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  	  <v:template type="simple" condition="not self.vc_is_valid">
-  	    <div class="error">
-  		    <p><v:error-summary/></p>
-  	    </div>
-  	  </v:template>
-      <v:on-init>
-        <![CDATA[
-          self.sid := get_keyword('sid', self.vc_event.ve_params);
-          self.realm := get_keyword('realm', self.vc_event.ve_params);
-        ]]>
-      </v:on-init>
+<v:page name="blog" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Blog page</vm:pagetitle>
       <vm:popup_page_wrapper>
         <vm:variables>
           <v:variable persist="0" name="v_mode" param-name="mode" type="varchar" default="'blog'"/>
@@ -49,12 +32,7 @@
           <v:variable persist="0" name="v_aid" param-name="aid" type="integer"/>
           <v:variable persist="0" name="step" type="integer" default="0" />
         </vm:variables>
-        <v:form name="F1" type="simple" method="GET">
-          <input type="hidden" name="sid" value="&lt;?V get_keyword('sid', self.vc_event.ve_params) ?>"/>
-          <input type="hidden" name="realm" value="&lt;?V get_keyword('realm', self.vc_event.ve_params) ?>"/>
-          <div style="padding: 0 0 0.5em 0;">
-            <a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-          </div>
+    <vm:pagebody>
           <div class="new-form-header">
             <v:label format="%s" value="--concat(initcap(self.v_mode), ' this')" />
           </div>
@@ -221,8 +199,6 @@
               </v:on-post>
             </v:button>
           </div>
-        </v:form>
+    </vm:pagebody>
       </vm:popup_page_wrapper>
     </v:page>
-  </body>
-</html>

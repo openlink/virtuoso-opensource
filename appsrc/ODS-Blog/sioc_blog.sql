@@ -45,9 +45,25 @@ create procedure fill_ods_weblog_sioc (in graph_iri varchar, in site_iri varchar
   declare iri, cr_iri, blog_iri, cm_iri, tiri, maker varchar;
   declare links any;
 
+ {
+    declare deadl, cnt any;
+    declare _pid any;
+
+    _pid := '';
+    deadl := 3;
+    cnt := 0;
+    declare exit handler for sqlstate '40001' {
+      if (deadl <= 0)
+	resignal;
+      rollback work;
+      deadl := deadl - 1;
+      goto l0;
+    };
+    l0:
+
   for select B_BLOG_ID, B_POST_ID, BI_WAI_NAME, B_USER_ID, B_TITLE, B_TS, B_MODIFIED, BI_HOME, B_CONTENT, B_META, B_HAVE_ENCLOSURE
     from BLOG..SYS_BLOGS, BLOG..SYS_BLOG_INFO, DB.DBA.WA_INSTANCE
-    where B_BLOG_ID = BI_BLOG_ID and BI_WAI_NAME = WAI_NAME
+    where B_POST_ID > _pid and B_BLOG_ID = BI_BLOG_ID and BI_WAI_NAME = WAI_NAME
     and ((WAI_IS_PUBLIC = 1 and _wai_name is null) or BI_WAI_NAME = _wai_name) do
     {
       declare meta BLOG.DBA."MWeblogPost";
@@ -90,6 +106,50 @@ create procedure fill_ods_weblog_sioc (in graph_iri varchar, in site_iri varchar
       --	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('topic'), tiri);
       --	  DB.DBA.RDF_QUAD_URI_L (graph_iri, tiri, rdfs_iri ('label'), BT_TAG);
       --	}
+    cnt := cnt + 1;
+    if (mod (cnt, 500) = 0)
+      {
+	commit work;
+	_pid := B_POST_ID;
+      }
+    }
+   commit work;
+  }
+ {
+    declare deadl, cnt any;
+    declare _bid any;
+
+    _bid := '';
+    deadl := 3;
+    cnt := 0;
+    declare exit handler for sqlstate '40001' {
+      if (deadl <= 0)
+	resignal;
+      rollback work;
+      deadl := deadl - 1;
+      goto l1;
+    };
+    l1:
+
+  for select BI_WAI_NAME, BI_BLOG_ID from BLOG..SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where BI_WAI_NAME = WAI_NAME and ((WAI_IS_PUBLIC = 1 and _wai_name is null) or BI_WAI_NAME = _wai_name) and BI_BLOG_ID > _bid do
+    {
+      blog_iri := blog_iri (BI_WAI_NAME);
+      iri := sprintf ('http://%s/RPC2', get_cname());
+      ods_sioc_service (graph_iri, iri, blog_iri, null, null, null, iri, 'XML-RPC');
+      iri := sprintf ('http://%s/mt-tb', get_cname());
+      ods_sioc_service (graph_iri, iri, blog_iri, null, null, null, iri, 'XML-RPC');
+      iri := sprintf ('http://%s/Atom/%s', get_cname(), BI_BLOG_ID);
+      ods_sioc_service (graph_iri, iri, blog_iri, null, null, null, iri, 'Atom');
+      iri := sprintf ('http://%s/GData/%s', get_cname(), BI_BLOG_ID);
+      ods_sioc_service (graph_iri, iri, blog_iri, null, null, null, iri, 'GData');
+      cnt := cnt + 1;
+      if (mod (cnt, 500) = 0)
+        {
+	  commit work;
+	  _bid := BI_BLOG_ID;
+        }
+    }
+  commit work;
     }
 };
 
@@ -112,7 +172,30 @@ create procedure ods_weblog_sioc_init ()
 
 };
 
-db.dba.wa_exec_no_error('ods_weblog_sioc_init ()');
+--db.dba.wa_exec_no_error('ods_weblog_sioc_init ()');
+
+
+create trigger SYS_BLOG_INFO_SIOC_I after insert on BLOG..SYS_BLOG_INFO order 10 referencing new as N
+{
+  declare iri, blog_iri, graph_iri varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  blog_iri := blog_iri (N.BI_WAI_NAME);
+  iri := sprintf ('http://%s/RPC2', get_cname());
+  ods_sioc_service (graph_iri, iri, blog_iri, null, null, null, iri, 'XML-RPC');
+  iri := sprintf ('http://%s/mt-tb', get_cname());
+  ods_sioc_service (graph_iri, iri, blog_iri, null, null, null, iri, 'XML-RPC');
+  iri := sprintf ('http://%s/Atom/%s', get_cname(), N.BI_BLOG_ID);
+  ods_sioc_service (graph_iri, iri, blog_iri, null, null, null, iri, 'Atom');
+  iri := sprintf ('http://%s/GData/%s', get_cname(), N.BI_BLOG_ID);
+  ods_sioc_service (graph_iri, iri, blog_iri, null, null, null, iri, 'GData');
+  return;
+};
 
 create trigger SYS_BLOGS_SIOC_I after insert on BLOG..SYS_BLOGS order 10 referencing new as N
 {
@@ -331,3 +414,197 @@ create trigger BLOG_TAG_SIOC_D after delete on BLOG..BLOG_TAG referencing old as
 };
 
 use DB;
+use DB;
+-- BLOG
+
+-- BLOG posts & related
+
+wa_exec_no_error ('drop view ODS_BLOG_POSTS');
+wa_exec_no_error ('drop view ODS_BLOG_POST_LINKS');
+wa_exec_no_error ('drop view ODS_BLOG_POST_ATTS');
+wa_exec_no_error ('drop view ODS_BLOG_POST_TAGS');
+wa_exec_no_error ('drop view ODS_BLOG_COMMENTS');
+
+create view ODS_BLOG_POSTS as select
+	uo.U_NAME 	as B_OWNER,
+	i.BI_WAI_NAME	as B_INST,
+	p.B_POST_ID	as B_POST_ID,
+	p.B_TITLE	as B_TITLE,
+	p.B_CONTENT	as B_CONTENT,
+	sioc..sioc_date (p.B_TS) as B_CREATED,
+	sioc..sioc_date (p.B_MODIFIED) as B_MODIFIED,
+	WA_LINK (1, BI_HOME ||'?id='||B_POST_ID) as B_LINK,
+	uc.U_NAME	as B_CREATOR,
+        sioc..post_iri (uo.U_NAME, 'WEBLOG2', i.BI_WAI_NAME, p.B_POST_ID) || '/sioc.rdf' as B_SEE_ALSO,
+        md5 (sioc..post_iri (uo.U_NAME, 'WEBLOG2', i.BI_WAI_NAME, p.B_POST_ID)) as IRI_MD5
+	from BLOG.DBA.SYS_BLOG_INFO i, BLOG.DBA.SYS_BLOGS p, DB.DBA.SYS_USERS uo, DB.DBA.SYS_USERS uc
+	where p.B_BLOG_ID = i.BI_BLOG_ID and i.BI_OWNER = uo.U_ID and p.B_USER_ID = uc.U_ID;
+
+create view ODS_BLOG_POST_LINKS as select
+	U_NAME      	as B_OWNER,
+	BI_WAI_NAME 	as B_INST,
+	PL_POST_ID 	as B_POST_ID,
+	PL_LINK		as PL_LINK
+	from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.SYS_USERS, BLOG.DBA.BLOG_POST_LINKS
+	where PL_BLOG_ID = BI_BLOG_ID and BI_OWNER = U_ID;
+
+create view ODS_BLOG_POST_ATTS as select
+	U_NAME      	as B_OWNER,
+	BI_WAI_NAME 	as B_INST,
+	PE_POST_ID 	as B_POST_ID,
+	PE_URL		as PE_LINK
+	from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.SYS_USERS, BLOG.DBA.BLOG_POST_ENCLOSURES
+	where PE_BLOG_ID = BI_BLOG_ID and BI_OWNER = U_ID;
+
+create view ODS_BLOG_POST_TAGS as select
+	BT_TAG,
+	BT_POST_ID,
+	BI_WAI_NAME,
+	U_NAME
+	from
+	BLOG..BLOG_TAGS_STAT,
+	BLOG..SYS_BLOG_INFO,
+	DB.DBA.SYS_USERS
+	where blogid = BI_BLOG_ID and BI_OWNER = U_ID;
+
+create view ODS_BLOG_COMMENTS as select
+	U_NAME,
+	BI_WAI_NAME,
+	BM_POST_ID,
+	BM_ID,
+	BM_COMMENT,
+	BM_NAME,
+	case when length (BM_E_MAIL) then 'mailto:'||BM_E_MAIL else null end as E_MAIL,
+	case when length (BM_E_MAIL) then sha1_digest (BM_E_MAIL) else null end as E_MAIL_SHA1,
+	case when length (BM_HOME_PAGE) then BM_HOME_PAGE else NULL end as BM_HOME_PAGE,
+	sioc..sioc_date (BM_TS) as BM_CREATED,
+	BM_TITLE,
+        sioc..post_iri (U_NAME, 'WEBLOG2', BI_WAI_NAME, sprintf ('%s/%d', BM_POST_ID, BM_ID)) || '/sioc.rdf' as SEE_ALSO,
+        md5 (sioc..post_iri (U_NAME, 'WEBLOG2', BI_WAI_NAME, sprintf ('%s/%d', BM_POST_ID, BM_ID))) as IRI_MD5
+	from BLOG..BLOG_COMMENTS, BLOG..SYS_BLOG_INFO, DB.DBA.SYS_USERS
+	where BI_BLOG_ID = BM_BLOG_ID and BM_IS_PUB = 1 and BI_OWNER = U_ID;
+
+
+
+
+create procedure sioc.DBA.rdf_weblog_view_str ()
+{
+  return
+      '
+
+	# Blog Posts
+	sioc:blog_post_iri (DB.DBA.ODS_BLOG_POSTS.B_OWNER,
+			    DB.DBA.ODS_BLOG_POSTS.B_INST,
+			    DB.DBA.ODS_BLOG_POSTS.B_POST_ID) a sioc:Post ;
+        rdfs:seeAlso  sioc:iri (B_SEE_ALSO) ;
+	sioc:id IRI_MD5 ;
+	sioc:link sioc:iri (B_LINK) ;
+	sioc:has_creator sioc:user_iri (B_CREATOR) ;
+	foaf:maker foaf:person_iri (B_CREATOR) ;
+        sioc:has_container sioc:blog_forum_iri (B_OWNER, B_INST) ;
+        dc:title B_TITLE ;
+        dct:created B_CREATED ;
+ 	dct:modified B_MODIFIED ;
+	sioc:content B_CONTENT
+	.
+
+	sioc:user_iri (DB.DBA.ODS_BLOG_POSTS.B_CREATOR)
+	sioc:creator_of
+	sioc:blog_post_iri (B_OWNER, B_INST, B_POST_ID) .
+
+	sioc:blog_forum_iri (DB.DBA.ODS_BLOG_POSTS.B_OWNER, DB.DBA.ODS_BLOG_POSTS.B_INST)
+	sioc:container_of
+	sioc:blog_post_iri (B_OWNER, B_INST, B_POST_ID) .
+
+	# Blog Post links_to
+	sioc:blog_post_iri (DB.DBA.ODS_BLOG_POST_LINKS.B_OWNER,
+	    		    DB.DBA.ODS_BLOG_POST_LINKS.B_INST,
+			    DB.DBA.ODS_BLOG_POST_LINKS.B_POST_ID)
+	sioc:links_to
+	sioc:iri (PL_LINK) .
+
+	# Blog Post enclosures
+	sioc:blog_post_iri (DB.DBA.ODS_BLOG_POST_ATTS.B_OWNER,
+	    		    DB.DBA.ODS_BLOG_POST_ATTS.B_INST,
+			    DB.DBA.ODS_BLOG_POST_ATTS.B_POST_ID)
+	sioc:attachment
+	sioc:iri (PE_LINK) .
+
+        # Blog Post tags
+	sioc:blog_post_iri (DB.DBA.ODS_BLOG_POST_TAGS.U_NAME,
+	    		    DB.DBA.ODS_BLOG_POST_TAGS.BI_WAI_NAME,
+			    DB.DBA.ODS_BLOG_POST_TAGS.BT_POST_ID)
+	sioc:topic
+	sioc:tag_iri (U_NAME, BT_TAG) .
+
+        sioc:tag_iri (DB.DBA.ODS_BLOG_POST_TAGS.U_NAME, DB.DBA.ODS_BLOG_POST_TAGS.BT_TAG) a skos:Concept ;
+	skos:prefLabel BT_TAG ;
+	skos:isSubjectOf sioc:blog_post_iri (U_NAME,BI_WAI_NAME,BT_POST_ID) .
+
+	# Blog Comments
+        sioc:blog_comment_iri (DB.DBA.ODS_BLOG_COMMENTS.U_NAME,
+			       DB.DBA.ODS_BLOG_COMMENTS.BI_WAI_NAME,
+		   	       DB.DBA.ODS_BLOG_COMMENTS.BM_POST_ID,
+			       DB.DBA.ODS_BLOG_COMMENTS.BM_ID) a sioc:Post ;
+        sioc:id IRI_MD5 ;
+        rdfs:seeAlso sioc:iri (SEE_ALSO) ;
+	foaf:maker sioc:iri (BM_HOME_PAGE) ;
+	sioc:has_container sioc:blog_forum_iri (U_NAME, BI_WAI_NAME) ;
+	dc:title BM_TITLE ;
+	dct:created BM_CREATED ;
+ 	dct:modified BM_CREATED ;
+	sioc:content BM_COMMENT ;
+        sioc:reply_of sioc:blog_post_iri (U_NAME, BI_WAI_NAME, BM_POST_ID)
+        .
+
+        sioc:blog_post_iri (DB.DBA.ODS_BLOG_COMMENTS.U_NAME,
+			    DB.DBA.ODS_BLOG_COMMENTS.BI_WAI_NAME,
+		   	       DB.DBA.ODS_BLOG_COMMENTS.BM_POST_ID)
+	sioc:has_reply
+	sioc:blog_comment_iri (U_NAME, BI_WAI_NAME, BM_POST_ID, BM_ID)
+	.
+
+	sioc:blog_forum_iri (DB.DBA.ODS_BLOG_COMMENTS.U_NAME, DB.DBA.ODS_BLOG_COMMENTS.BI_WAI_NAME)
+	sioc:container_of
+	sioc:blog_comment_iri (U_NAME, BI_WAI_NAME, BM_POST_ID, BM_ID)
+	.
+
+	sioc:iri (DB.DBA.ODS_BLOG_COMMENTS.BM_HOME_PAGE) a foaf:Person ;
+        foaf:name BM_NAME ;
+	foaf:mbox sioc:iri (E_MAIL) ;
+	foaf:mbox_sha1sum E_MAIL_SHA1
+        .
+
+	# AtomOWL post
+	sioc:blog_post_iri (DB.DBA.ODS_BLOG_POSTS.B_OWNER,
+			    DB.DBA.ODS_BLOG_POSTS.B_INST,
+			    DB.DBA.ODS_BLOG_POSTS.B_POST_ID) a atom:Entry ;
+        atom:title B_TITLE ;
+	atom:source sioc:blog_forum_iri (B_OWNER, B_INST) ;
+	atom:author atom:person_iri (B_CREATOR) ;
+	atom:published B_CREATED ;
+	atom:updated B_MODIFIED ;
+	atom:content sioc:blog_post_text_iri (B_OWNER, B_INST, B_POST_ID) .
+
+        sioc:blog_post_text_iri (DB.DBA.ODS_BLOG_POSTS.B_OWNER, DB.DBA.ODS_BLOG_POSTS.B_INST, DB.DBA.ODS_BLOG_POSTS.B_POST_ID)
+	a atom:Content ;
+	atom:type "text/xhtml" ;
+	atom:lang "en-US" ;
+	atom:body B_CONTENT .
+
+	sioc:blog_forum_iri (DB.DBA.ODS_BLOG_POSTS.B_OWNER, DB.DBA.ODS_BLOG_POSTS.B_INST)
+	atom:contains
+	sioc:blog_post_iri (B_OWNER, B_INST, B_POST_ID) .
+
+
+      ';
+};
+
+grant select on ODS_BLOG_POSTS to "SPARQL";
+grant select on ODS_BLOG_POST_LINKS to "SPARQL";
+grant select on ODS_BLOG_POST_ATTS to "SPARQL";
+grant select on ODS_BLOG_POST_TAGS to "SPARQL";
+grant select on ODS_BLOG_COMMENTS to "SPARQL";
+
+-- END BLOG
+ODS_RDF_VIEW_INIT ();

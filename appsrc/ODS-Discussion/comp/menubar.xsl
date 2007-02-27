@@ -32,54 +32,30 @@
  -->
     <table class="menubar">
       <tr>
-<!--        
-        <td>
-        <vm:wa-link/>
-        </td>
--->
-        <td>
-
-          <v:url value="Home"
-                 format="%s"
-                 url="nntpf_main.vspx" />
+        <td class="menuitem">
+          <v:url value="Home" format="%s" url="nntpf_main.vspx" />
         </td>
         <v:template type="simple" condition="nntpf_groups_defined_p()">
-          <td>
+          <td class="menuitem">
             <v:url value="Post" url="nntpf_post.vspx" />
           </td>
         </v:template>
-        <v:template type="simple"
-                    condition="self.vc_authenticated">
-          <td>
-            <v:url value="My RSS"
-                   format="%s"
-                   url="nntpf_edit_rss.vspx" />
+        <v:template type="simple" condition="self.vc_authenticated">
+          <td class="menuitem">
+            <v:url value="My RSS" format="%s" url="nntpf_edit_rss.vspx" />
           </td>
-          <td>
-            <v:url value="Subscriptions"
-                   format="%s"
-                   url="nntpf_subs.vspx" />
+          <td class="menuitem">
+            <v:url value="Subscriptions" format="%s" url="nntpf_subs.vspx" />
           </td>
-          <td>
-            <v:url value="Preferences"
-                   format="%s"
-		   url="--'../' || nntpf_get_wa_home () || '/uiedit.vspx'" />
-          </td>
+          <td><!-- neccessery to stretch the table --> </td>
           <v:template type="simple"
                       condition="nntpf_conductor_installed_p()">
             <td>
-              <v:url value="NNTP Server admin"
-                     format="%s"
+              <v:url value="NNTP Server admin" format="%s"
                      url="nntpf_yacutia.vspx"
                      enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
             </td>
           </v:template>
-        </v:template>
-        <v:template type="simple"
-                    condition="not self.vc_authenticated">
-          <td>
-            <vm:register/>
-          </td>
         </v:template>
         <td class="last_cell">
           <vm:nntpf-search/>
@@ -89,29 +65,22 @@
     
   </xsl:template>
   <xsl:template match="vm:menu-bar-no-search">
-    <table class="menubar">
+    <table class="menubar" style="border: 1px solid">
       <tr>
-        <td>
-          <v:url value="--'Home'"
-                 format="%s"
-                 url="--'nntpf_main.vspx'" />
+        <td class="menuitem">
+          <v:url value="--'Home'" format="%s" url="--'nntpf_main.vspx'" />
         </td>
         <v:template type="simple" condition="nntpf_groups_defined_p()">
-          <td>
+          <td class="menuitem">
             <v:url value="Post" url="--'nntpf_post.vspx'" />
           </td>
         </v:template>
-        <v:template type="simple"
-                    condition="self.vc_authenticated">
-          <td>
-            <v:url value="--'My RSS'"
-                   format="%s"
-                   url="--'nntpf_edit_rss.vspx'" />
+        <v:template type="simple" condition="self.vc_authenticated">
+          <td class="menuitem">
+            <v:url value="--'My RSS'" format="%s" url="--'nntpf_edit_rss.vspx'" />
           </td>
           <td>
-            <v:url value="--'Preferences'"
-                   format="%s"
-		   url="--'../' || nntpf_get_wa_home () || '/uiedit.vspx'" />
+          <td><!-- neccessery to stretch the table --></td>
           </td>
           <td>
             <v:url value="--'  NNTP Server admin '"
@@ -119,25 +88,10 @@
                    url="--'nntpf_yacutia.vspx'"
                    enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
           </td>
+
         </v:template>
-        <v:template type="simple"
-                    condition="not self.vc_authenticated">
-          <td>
-            <vm:register/>
-          </td>
-        </v:template>
+           <td class="last_cell"><!-- neccessery to stretch the table --></td>
       </tr>
     </table>
   </xsl:template>
-  <xsl:template match="vm:wa-link">
-      <?vsp
-        if (registry_get ('wa_home_link') = 0){
-             http(sprintf('<a href="%s/?sid=%s&realm=%s">%s</a>',self.wa_home, coalesce(self.sid,''), coalesce(self.realm,'wa') ,case when registry_get ('wa_home_title') = 0 then 'OPS Home' else registry_get ('wa_home_title') end));
-        }else{
-             http(sprintf('<a href="%s?sid=%s&realm=%s">%s</a>',registry_get ('wa_home_link'), coalesce(self.sid,''), coalesce(self.realm,'wa') ,case when registry_get ('wa_home_title') = 0 then 'OPS Home' else registry_get ('wa_home_title') end));
-        }
-        
-      ?>
-  </xsl:template>
-
 </xsl:stylesheet>

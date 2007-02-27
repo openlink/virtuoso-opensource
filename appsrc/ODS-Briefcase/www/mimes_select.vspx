@@ -63,17 +63,13 @@
       <v:variable name="v_order" persist="0" type="varchar" default="'T_TYPE'" />
       <v:variable name="v_direction" persist="0" type="varchar" default="'asc'" />
     </vm:variables>
-    <v:form name="F1" type="simple" method="POST">
-      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="src"   id="src"   value="%s"/>', get_keyword('src', self.vc_page.vc_event.ve_params, ''))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="dst"   id="dst"   value="%s"/>', get_keyword('dst', self.vc_page.vc_event.ve_params, 'sc'))); ?>
+    <vm:pagebody>
+      <input type="hidden" name="sid" value="<?V get_keyword('sid', self.vc_page.vc_event.ve_params)?>" />
+      <input type="hidden" name="realm" value="<?V get_keyword('realm', self.vc_page.vc_event.ve_params)?>" />
+      <input type="hidden" name="src" value="<?V get_keyword('src', self.vc_page.vc_event.ve_params)?>" />
+      <input type="hidden" name="dst" value="<?V get_keyword('dst', self.vc_page.vc_event.ve_params, 'sc')?>" />
       <v:text name="params" type="hidden" value="--self.v_params"/>
       <div style="padding: 0.5em;">
-        <div style="padding: 0 0 0.5em 0;">
-          &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-          <hr />
-        </div>
         <div class="boxHeader">
           Show
           <v:select-list name="how" value="--self.v_how">
@@ -188,6 +184,6 @@
           ]]>
         </script>
       </div>
-    </v:form>
+    </vm:pagebody>
   </vm:popup_page_wrapper>
 </v:page>

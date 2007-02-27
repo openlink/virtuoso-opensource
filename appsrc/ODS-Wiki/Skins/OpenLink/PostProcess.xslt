@@ -39,26 +39,37 @@
   <xsl:param name="sid"/>
   <xsl:param name="realm"/>
     <xsl:param name="ods-bar"/>
+    <xsl:param name="geo_lat"/>
+    <xsl:param name="geo_lng"/>
+    <xsl:param name="geo_link"/>
     <html>
- <header>	
+      <head profile="http://internetalchemy.org/2003/02/profile">
+        <!-- FOAF link if exists -->
+        <xsl:copy-of select="//link"/>
   <title><xsl:value-of select="$ti_cluster_name"/>.<xsl:value-of select="$ti_local_name"/></title>
-  <link rel="stylesheet" href="{$baseadjust}../resources/Skins/OpenLink/default.css" type="text/css"></link>
-  <link rel="alternate" type="application/rss+xml" title="Changelog (RSS 2.0)" href="{$baseadjust}../resources/gems.vsp?cluster={$ti_cluster_name}&amp;type=rss20"></link>
-  <link rel="alternate" type="application/rss+xml" title="Changelog (ATOM)" href="{$baseadjust}../resources/gems.vsp?cluster={$ti_cluster_name}&amp;type=atom"></link>
-  <link rel="alternate" type="application/rss+xml" title="Changelog (RDF)" href="{$baseadjust}../gems.vsp?cluster={$ti_cluster_name}&amp;type=rdf"></link>
+	<link rel="stylesheet" href="{wv:ResourceHREF('Skins/OpenLink/default.css', $baseadjust)}" type="text/css"></link>
+	<link rel="alternate" type="application/rss+xml" title="Changelog (RSS 2.0)" href="{wv:ResourceHREF(concat('gems.vsp?cluster=', $ti_cluster_name, '&amp;type=rss20'), $baseadjust)}"></link>
+	<link rel="alternate" type="application/rss+xml" title="Changelog (ATOM)" href="{wv:ResourceHREF(concat ('gems.vsp?cluster=', $ti_cluster_name, '&amp;type=atom'), $baseadjust)}"></link>
+	<link rel="alternate" type="application/rss+xml" title="Changelog (RDF)" href="{wv:ResourceHREF(concat('gems.vsp?cluster=', $ti_cluster_name, '&amp;type=rdf'), $baseadjust)}"></link>
 	<link rel="self" type="application/atom+xml"
 	  href="/wiki/Atom"/>
 	<link rel="meta" type="application/rdf+xml" title="SIOC" href="{wv:sioc_uri($ti_cluster_name)}" />
 	<link rel="service.post" type="application/x.atom+xml"
 	      href="{wv:atom_pub_uri($ti_cluster_name)}"/>
- </header>
+        <meta name="dc.title" content="{$ti_abstract}" />
+        <meta name="dc.description" content="{$ti_abstract}" />
+        <xsl:if test="$geo_lng and $geo_lat">
+          <meta name="ICBM" content="{$geo_lng}, {$geo_lat}" />
+          <meta name="geo.position" content="{$geo_lng}; {$geo_lat}" />
+        </xsl:if>
+      </head>
  <body>
 	<div id="page">
 	  <div id="header">
             <xsl:copy-of select="$ods-bar"/>
-            <img>
+	    <!--   <img>
               <xsl:attribute name="src"><xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/></xsl:attribute>
-            </img>
+	    </img> -->
 
 	    <!--xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute-->
 	    <div class="login-area" style="display: none">
@@ -87,6 +98,9 @@
 	    </li>
 	    <li>
           <xsl:copy-of select="//form[@id='search-form']"/>
+	    </li>
+	    <li>
+	      | <xsl:copy-of select="//a[@id='users-link']"/>
 	    </li>
 	  </ul>
 	  <div id="sidebar">
@@ -155,6 +169,17 @@
           </a>
         </li>
       </ul>
+              <h3>Pings</h3>
+              <ul>
+                <xsl:if test="$geo_link">
+                  <li>
+                    <a>
+                      <xsl:attribute name="href">http://geourl.org/near?p=<xsl:value-of select="$geo_link"/></xsl:attribute>
+                      <img src="http://i.geourl.org/geourl.png" border="0"/>
+                    </a>
+                  </li>
+                </xsl:if>
+              </ul>
     </div>
 	    <!--xsl:apply-templates select="//div[@id='virtuoso-info']"/--> 
   </div>

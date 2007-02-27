@@ -103,6 +103,7 @@
 	     if (get_keyword ('make_attachments', params, '') <> '')
 	       self.vc_attach := 1;
 
+       
 	     if (get_keyword ('Post', params, '') <> '')
 	       {
 		  if ((get_keyword_ucase ('availble_groups', params, NULL) is NULL) and

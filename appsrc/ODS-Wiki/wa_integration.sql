@@ -126,8 +126,7 @@ create method wa_member_data_edit_form (in u_id int, inout stream any) for wa_wi
 
 create method wa_state_edit_form (inout stream any) for wa_wikiv {
   declare _home varchar;
-  _home := WV.WIKI.CLUSTERPARAM (self.cluster_id, 'home', '/wiki/main');
-  _home := WV.WIKI.MERGE_HTTP_PATH ('resources', _home);
+  _home := sprintf('http://%s/wiki/resources/', sioc..get_cname());
 
   declare  sid varchar;
   sid := connection_get ('wa_sid');
@@ -239,23 +238,12 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
 
   if (_home is not null)
     {
-      WV.WIKI.SETCLUSTERPARAM (_cluster_name, 'home', _home || '/main');
-      DB.DBA.VHOST_REMOVE(lpath=>_home || '/main');
-      DB.DBA.VHOST_REMOVE(lpath=>_home || '/resources');
-      DB.DBA.VHOST_DEFINE(
-	is_dav=>1, 
-	lpath=>_home || '/main',
-	ppath=>'/DAV/VAD/wiki/Root/main.vsp', 
-	vsp_user=>'Wiki', 
-	opts=>vector('noinherit', 1, 'executable','yes'));
-      DB.DBA.VHOST_DEFINE(
-	is_dav=>1, 
-	lpath=>_home || '/resources',
-	ppath=>'/DAV/VAD/wiki/Root/', 
-	vsp_user=>'Wiki', 
-	opts=>vector('executable','yes'));
---      insert soft WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER)
---	values ('%', _home || '/main', self.cluster_id);
+      declare _base, _resources varchar;
+      _base := registry_get('WIKI BASE');
+      _resources := registry_get('WIKI RESOURCES');
+      if (not isstring(_base)) { _base := _home ; }      
+      if (not isstring(_resources)) { _resources := _home  || '/resources'; }      
+      WV.WIKI.SETCLUSTERPARAM (_cluster_name, 'home', _base);
     }
   
   WV..ATOM_PUB_VHOST_DEFINE (_cluster_name);
@@ -301,10 +289,12 @@ create method wa_state_posted (in post any, inout stream any) for wa_wikiv {
 
 create method wa_home_url () for wa_wikiv {
  declare _home, _cluster varchar;
- _home := WV.WIKI.CLUSTERPARAM (self.cluster_id, 'home', '/wiki/main');
- 
+ _home := WV.WIKI.CLUSTERPARAM (self.cluster_id, 'home');
  _cluster := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = self.cluster_id);
+ if (_home is null)
+   return WV..CLUSTER_URL(_cluster);
  return _home || '/' ||  WV.WIKI.READONLYWIKIWORDLINK (_cluster, '');
+
 }
 ;
 
@@ -409,6 +399,8 @@ create trigger WIKI_WA_MEMBERSHIP_OPEN after insert on DB.DBA.WA_MEMBER order 10
     _role := _cluster_name || 'Readers';
   else
     signal ('WK001', 'Such membership is not supported ' || cast (N.WAM_MEMBER_TYPE as varchar) );
+  if (not exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g 
+	where g.U_NAME = _role and gi_super = N.WAM_USER and gi_grant = g.u_id))
   DB.DBA.USER_GRANT_ROLE (_user, _role);
 }
 ;
@@ -480,18 +472,19 @@ create method wa_addition_instance_urls (in _lpath varchar) for wa_wikiv
     _vhost := _vhost || ':' || port;
 
   insert replacing WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER) 
-	values (_vhost, WV.WIKI.CANONICAL_PATH(_lpath || '/%'), self.cluster_id);
+	values (_vhost, WV.WIKI.CANONICAL_PATH(_lpath, 3), self.cluster_id);
   if (_vhost <> '%')
     {
-      WV.WIKI.SETCLUSTERPARAM (self.cluster_id, 'home', 'http://' || _vhost || WV.WIKI.CANONICAL_PATH(_lpath || '/main', 0));
+      WV.WIKI.SETCLUSTERPARAM (self.cluster_id, 'home', 'http://' || _vhost || WV.WIKI.CANONICAL_PATH(_lpath, 0));
       update DB.DBA.WA_MEMBER set WAM_HOME_PAGE = self.wa_home_url() 
       	where WAM_INST = self.wa_name
 	and WAM_USER = (select U_ID from DB.DBA.SYS_USERS where U_NAME = WV.WIKI.CLUSTERPARAM (self.cluster_id, 'creator', 'dav'));
     }
+  return null;
   return vector ( 
       vector (
 	null, null,
-	rtrim (_lpath, '/') || '/main',
+	rtrim (_lpath),
       	'/DAV/VAD/wiki/Root/main.vsp',		-- phys_path
 	1, -- is dav
 	0, -- is brws
@@ -506,36 +499,38 @@ create method wa_addition_instance_urls (in _lpath varchar) for wa_wikiv
 	null, --	  soap_opts=>cur_add_url[14],
 	null, --	  auth_opts=>cur_add_url[15],
 	vector ('noinherit', 1, 'executable','yes'), -- opts
-	0),
-      vector (
-	null, null,
-	rtrim (_lpath, '/') || '/resources',
-      	'/DAV/VAD/wiki/Root/',		-- phys_path
-	1, -- is dav
-	0, -- is brws
-	null, -- def page
-	null, -- auth func
-	null, --		  realm=>cur_add_url[8],
-	null, --		  ppr_fn=>cur_add_url[9],
-	'Wiki', --		  vsp_user=>cur_add_url[10],
-	null, --		  soap_user=>cur_add_url[11],
-	null, --		  sec=>cur_add_url[12],
-	0, --	  ses_vars=>cur_add_url[13],
-	null, --	  soap_opts=>cur_add_url[14],
-	null, --	  auth_opts=>cur_add_url[15],
-	vector ('executable','yes'), -- opts
-	0));
+	0)
+--    ,
+--      vector (
+--	null, null,
+--	rtrim (_lpath, '/') || '/resources',
+--      	'/DAV/VAD/wiki/Root/',		-- phys_path
+--	1, -- is dav
+--	0, -- is brws
+--	null, -- def page
+--	null, -- auth func
+--	null, --		  realm=>cur_add_url[8],
+--	null, --		  ppr_fn=>cur_add_url[9],
+--	'Wiki', --		  vsp_user=>cur_add_url[10],
+--	null, --		  soap_user=>cur_add_url[11],
+--	null, --		  sec=>cur_add_url[12],
+--	0, --	  ses_vars=>cur_add_url[13],
+--	null, --	  soap_opts=>cur_add_url[14],
+--	null, --	  auth_opts=>cur_add_url[15],
+--	vector ('executable','yes'), -- opts
+--	0)
+     );
 }
 ;
 
 create method wa_vhost_options () for wa_wikiv {
   return vector(
-      	'/DAV/VAD/wiki/Root/',		-- phys_path
-	'redirect.vsp',
+      	'/DAV/VAD/wiki/Root/main.vsp',		-- phys_path
+	null,
 	'Wiki',				-- user
 	0,				-- is brws
 	1,				-- is dav
-	vector ('executable','yes'), -- opts
+	vector ('noinherit', 1, 'executable','yes'), -- opts
 	null,				-- pprs_fn
 	null				-- auth_fn
 	);

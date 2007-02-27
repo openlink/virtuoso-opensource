@@ -276,6 +276,19 @@ create procedure TRUNCATE_LOG (in streamid int, in _cnt int)
 }
 ;
 
+create procedure UPSTREAM_ALL (in streamid int)
+{
+  declare _cluster int;
+  _cluster := (select UP_CLUSTER_ID from UPSTREAM where UP_ID = streamid);
+  if (_cluster is not null) { 
+    for select TOPICID from WV.WIKI.TOPIC where CLUSTERID = _cluster do {
+      insert into UPSTREAM_ENTRY (UE_STREAM_ID, UE_TOPIC_ID, UE_OP)
+ 	      values (streamid, TOPICID, 'I');
+    }
+  }
+}
+;
+
 
 insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL) values ('wiki upstream', now(), 'WV..UPSTREAM_SCHEDULED_JOB()', 5)
 ;

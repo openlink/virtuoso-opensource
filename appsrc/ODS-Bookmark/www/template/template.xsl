@@ -102,7 +102,7 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:popup_page_wrapper">
-    <v:variable name="nav_pos_fixed" type="integer" default="0"/>
+    <v:variable name="nav_pos_fixed" type="integer" default="1"/>
     <v:variable name="nav_top" type="integer" default="0"/>
     <v:variable name="nav_tip" type="varchar" default="''"/>
     <xsl:for-each select="//v:variable">
@@ -117,6 +117,12 @@
         <xsl:apply-templates select="vm:pagebody" />
       </v:form>
     </div>
+    <div class="copyright"><vm:copyright /></div>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template match="vm:popup_external_page_wrapper">
+    <xsl:apply-templates select="node()|processing-instruction()"/>
     <div class="copyright"><vm:copyright /></div>
   </xsl:template>
 
@@ -183,22 +189,21 @@
           </td>
         </tr>
       </table>
-    </v:form>
-    <div class="footer">
-      <a href="<?V BMK.WA.wa_home_link () ?>aboutus.html" title="About Us">About Us</a> |
-      <a href="<?V BMK.WA.wa_home_link () ?>faq.html" title="FAQ">FAQ</a> |
-      <a href="<?V BMK.WA.wa_home_link () ?>privacy.html" title="Privacy">Privacy</a> |
-      <a href="<?V BMK.WA.wa_home_link () ?>rabuse.vspx" title="Report Abuse">Report Abuse</a> |
-      <a href="#" title="Advertise">Advertise</a> |
-      <a href="#" title="Contact Us">Contact Us</a>
+      <div id="FT">
+        <div id="FT_L">
+          <a href="http://www.openlinksw.com/virtuoso">
+            <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
+          </a>
     </div>
-    <div class="copyright">
+        <div id="FT_R">
+          <a href="<?V BMK.WA.wa_home_link () ?>faq.html">FAQ</a> |
+          <a href="<?V BMK.WA.wa_home_link () ?>privacy.html">Privacy</a> |
+          <a href="<?V BMK.WA.wa_home_link () ?>rabuse.vspx">Report Abuse</a>
 	    <div><vm:copyright /></div>
 	    <div><vm:disclaimer /></div>
-	    <a href="http://www.openlinksw.com/virtuoso">
-	      <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/PoweredByVirtuoso.gif" border="0" />
-	    </a>
     </div>
+      </div> <!-- FT -->
+    </v:form>
   </xsl:template>
 
   <!--=========================================================================-->
@@ -210,6 +215,9 @@
       <xsl:call-template name="vm:rdf-link" />
       <xsl:call-template name="vm:ocs-link" />
       <xsl:call-template name="vm:opml-link" />
+      <xsl:call-template name="vm:foaf-link" />
+		  <vm:sioc-link format="rdf"> SIOC (RDF/XML)</vm:sioc-link>
+		  <vm:sioc-link format="ttl"> SIOC (N3/Turtle)</vm:sioc-link>
     </div>
   </xsl:template>
 
@@ -281,8 +289,31 @@
   <xsl:template name="vm:foaf-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sBM.foaf" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.gif" border="0"/></a>', BMK.WA.dav_url(self.domain_id, self.account_id)));
+        http(sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', BMK.WA.foaf_url (self.account_id)));
     ?>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template match="vm:sioc-link">
+    <div>
+      <?vsp
+      {
+        declare suffix varchar;
+
+        suffix := 'rdf';
+      ?>
+      <xsl:if test="@format">
+        <xsl:processing-instruction name="vsp">
+  	      suffix := '<xsl:value-of select="@format"/>';
+        </xsl:processing-instruction>
+      </xsl:if>
+  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/bookmark/%U/sioc.%s', BMK.WA.host_url (), BMK.WA.account(), BMK.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
+    	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
+      </a>
+      <?vsp
+        }
+      ?>
     </div>
   </xsl:template>
 

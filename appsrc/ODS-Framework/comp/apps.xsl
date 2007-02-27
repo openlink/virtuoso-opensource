@@ -34,11 +34,11 @@
         select WAT_NAME, WAT_DESCRIPTION, WAT_TYPE
           from WA_TYPES
          where WAT_NAME <> \'WA\'
-           and ((WAT_NAME <> \'oDrive\')
+           and (
+                WAT_MAXINST is null
                  or
-                (not exists (select 1 from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = \'oDrive\' and WAI_NAME = WAM_INST and WAM_USER = ?))
+                WAT_MAXINST > (select WMIC_INSTCOUNT from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=WAT_NAME and WMIC_UID = ?)
                )
-        order by 1
       ]]>
     </v:expression>
     <v:param name="P1" value="self.u_id"/>

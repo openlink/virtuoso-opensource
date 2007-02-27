@@ -39,11 +39,11 @@
  <vm:variable name="uids" type="any" default="null" persist="temp"/>
  <vm:variable name="gurl" type="any" default="null" persist="pagestate"/>
  <vm:variable name="q_sel" type="any" default="null" persist="temp"/>
- <vm:variable name="s_tag_is_qry" type="int" defaut="0" param-name="tag-is-qry"/>
- <vm:variable name="sapps" type="varchar" defaut="null" param-name="apps"/>
- <vm:variable name="author" type="varchar" defaut="null" param-name="author"/>
- <vm:variable name="sparql_rq" type="int" defaut="null" param-name="rq"/>
- <vm:variable name="sparql_rq_res_name" type="varchar" defaut="null" param-name="rq_res_name"/>
+ <vm:variable name="s_tag_is_qry" type="int" default="0" param-name="tag-is-qry"/>
+ <vm:variable name="sapps" type="varchar" default="null" param-name="apps"/>
+ <vm:variable name="author" type="varchar" default="null" param-name="author"/>
+ <vm:variable name="sparql_rq" type="int" default="null" param-name="rq"/>
+ <vm:variable name="sparql_rq_res_name" type="varchar" default="null" param-name="rq_res_name"/>
  <v:on-init>
   <![CDATA[
   declare pars any;
@@ -122,7 +122,7 @@
       if (not e.ve_is_post)
 	self.do_search (e);
     }
-  else if (length (self.newest) > 0)
+  else if (length (self.newest) > 0 and (self.newest in ('users','blogs','wiki','news','bookmarks')))
     {
       self.page := -1;
       self.expr.ufl_value := self.qry;
@@ -270,9 +270,10 @@
 		self.s_tag_is_qry,
 		tags_vector
 		);
+      
         }
     }
-  if (query is not null)
+  if (query is not null and length(query)>0)
     {
       if (self.output <> 'html')
         {
@@ -337,17 +338,22 @@
 
        if (length (self.q_tags_expr.ufl_value))
 	  {
-	    declare arr, ses, tag_str any;
+	    declare arr, ses, tag_str, tmp_str any;
 	    ses := string_output ();
-	    arr := vt_parse (self.q_tags_expr.ufl_value);
+	    tmp_str := self.q_tags_expr.ufl_value;
+	    if (self.s_tag_is_qry = 0)
+	      {
+	        tmp_str := FTI_MAKE_SEARCH_STRING (WS.WS.DAV_TAG_NORMALIZE (tmp_str));
+	      }
+	    arr := vt_parse (tmp_str);
 	    self.gdata_cat_str (arr, ses);
 	    tag_str := string_output_string (ses);
 	    self.gurl := self.gurl || '-' || tag_str;
 	  }
 
-    if (length (self.expr.ufl_value)){
+      if (length (self.expr.ufl_value))
 	  self.gurl := self.gurl || '?q=' || sprintf ('%U', self.expr.ufl_value);
-	}
+      
   }
        else
          {
@@ -432,30 +438,23 @@
 	charset_recode (self.us_last_name.ufl_value, http_current_charset(), '_WIDE_'),
         cast (self.us_within_friends.ufl_value as integer),
 	_wai_name,
-	case
-          when length (self.us_dist_km.ufl_value) > 0
+  case when length (self.us_dist_km.ufl_value) > 0
            then cast (self.us_dist_km.ufl_value as real)
           else null end,
 	cast (self.us_dist_kind.ufl_value as integer),
-	case
-          when length (self.us_dist_pt_lat.ufl_value) > 0
+  case when length (self.us_dist_pt_lat.ufl_value) > 0
            then cast (self.us_dist_pt_lat.ufl_value as real)
           else null end,
-	case
-          when length (self.us_dist_pt_lng.ufl_value) > 0
+  case when length (self.us_dist_pt_lng.ufl_value) > 0
            then cast (self.us_dist_pt_lng.ufl_value as real)
           else null end,
-        case
-          when self.us_out_as.ufl_value = 'Map'
+  case when self.us_out_as.ufl_value = 'Map'
            then 2
-          else
-           cast (self.us_oby.ufl_value as integer)
-        end,
+       else cast (self.us_oby.ufl_value as integer)end,
         self.u_name,
         case when self.us_out_as.ufl_value = 'Map'
          then 0
-         else 1
-        end,
+       else 1 end,
 	tags_vector
   );
 
@@ -609,7 +608,7 @@
         self.atom_url.vu_url));
 ]]>?&gt;
    <v:template name="search_results_map" type="simple" enabled="--length (self.map_query)">
-    <vm:map-control
+    <vm:oatmap-control
 	sql="self.map_query"
 	baloon-inx="1"
 	lat-inx="6"
@@ -617,17 +616,10 @@
 	key-name-inx="8"
 	key-val="self.u_id"
         div_id="google_map"
-        zoom="15"
+        zoom="0"
         base_url="connection_get ('WA_SEARCH_PATH')" />
    </v:template>
   <vm:title>Search</vm:title>
-  <![CDATA[
-  <script type="text/javascript">
-  var toolkitPath="oat";
-  var featureList = ["ajax","xml"];
-  </script>
-  <script type="text/javascript" src="oat/loader.js"></script>
-  ]]>
  </vm:header>
  <vm:pagewrapper>
   <vm:variable name="ds_data" type="any" default="null"/>
@@ -635,7 +627,7 @@
   <vm:variable name="ds_rel_tags_data" type="any" default="null"/>
   <vm:variable name="ds_rel_tags_meta" type="any" default="null"/>
   <vm:variable name="total" type="int" default="0" />
-  <vm:variable name="score_ratio" type="float" defaut="1" />
+  <vm:variable name="score_ratio" type="float" default="1" />
   <vm:variable name="have_enews" type="int" default="0"/>
   <vm:variable name="have_blog" type="int" default="0"/>
   <vm:variable name="have_wiki" type="int" default="0"/>

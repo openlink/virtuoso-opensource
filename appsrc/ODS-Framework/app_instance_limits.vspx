@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="blog-home-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>Application instances limitations</vm:title>
+    </vm:header>
+    <vm:pagewrapper>
+      <vm:navigation on="settings"/>
+      <vm:rawheader caption="Application instances limitations"/>
+      <vm:body>
+         <vm:login redirect="index.vspx"/>
+         <table class="listing" rules="groups">
+             <colgroup>
+           <col/>
+           <col/>
+             </colgroup>
+             <tr class="listing_header_row">
+           <th>Application</th>
+           <th>Maximum number of instances per user</th>
+             </tr>
+             <v:data-set name="wat" sql="select WAT_NAME,WAT_MAXINST from WA_TYPES"
+           scrollable="1" editable="1" nrows="1000">
+           <v:template name="appst_rep" type="repeat">
+             <v:template name="appst_brows" type="browse">
+             <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                 <td>
+                     <v:label name="la1" value="--wa_type_to_appg((control.vc_parent as vspx_row_template).te_rowset[0])"/>
+                 </td>
+                 <td>
+                  <v:text name="txt2"
+                          value="--cast(coalesce((control.vc_parent as vspx_row_template).te_rowset[1],'MAX') as varchar)"
+                          xhtml_size="1" xhtml_MAXLENGTH="3" error-glyph="*">
+
+                    <v:on-post><![CDATA[
+                  
+                    if (self.vc_is_valid = 0 and e.ve_button = self.save1)
+                      return;
+
+                    if ( e.ve_button = self.save1
+                         and atoi(control.ufl_value)=0
+                         and control.ufl_value<>'0'
+                       )
+                       {
+                         if(control.ufl_value<>'MAX')
+                         { 
+                            self.vc_is_valid := 0;
+                            self.vc_error_message := 'The application instace number should be "0" - disabled, 3 digits number - sets number as limit, "MAX" - no limit';
+                            control.ufl_failed := 1;
+                            dbg_obj_print('error',control.ufl_value);
+                            return;
+                         }
+                       }
+                  
+                    if (e.ve_button = self.save1)
+                    {
+                        update WA_TYPES
+                           set WAT_MAXINST = (case when control.ufl_value='MAX' then null else cast(control.ufl_value as integer) end)
+                         where WAT_NAME = (control.vc_parent as vspx_row_template).te_rowset[0];
+
+                   dbg_obj_print((control.vc_parent as vspx_row_template).te_rowset[0]);
+                   dbg_obj_print(control.ufl_value);
+
+                    }
+                    else if (e.ve_button = self.cancel1)
+                    {
+                        control.ufl_value := cast(coalesce((SELECT WAT_MAXINST from WA_TYPES where WAT_NAME=(control.vc_parent as vspx_row_template).te_rowset[0]),'MAX') as varchar);
+                        self.vc_is_valid := 1;
+                        control.ufl_failed := 0;
+                    }
+                      ]]></v:on-post>
+                  </v:text>
+                 </td>
+             </tr>
+               </v:template>
+           </v:template>
+         
+           <v:template name="apps_footer" type="simple">
+               <tr>
+                 <td colspan="3" class="listing_col_action">
+                     <vm:ds-navigation data-set="wat" type="set" />
+                 </td>
+               </tr>
+               <tr>
+                   <td colspan="3" class="listing_col_action">
+                       <span class="fm_ctl_btn">
+                       <v:button name="cancel1" value="Set Default" action="simple">
+                       <v:on-post><![CDATA[
+                         declare ds vspx_data_set;
+                         declare rw vspx_row_template;
+                   
+                         declare i int;
+                         ds := self.wat;
+                         i := 0;
+                         while ((rw := ds.ds_iterate_rows (i)) is not null)
+                         {
+                            rw.vc_focus := 1;
+                            rw.vc_set_childs_focus (1, e);
+                            rw.vc_post (e);
+                         }
+                         ]]></v:on-post>
+                       </v:button>
+                       <v:button name="save1" value="Save" action="simple">
+                       <v:on-post><![CDATA[
+                         declare ds vspx_data_set;
+                         declare rw vspx_row_template;
+                   
+                         declare i int;
+                         ds := self.wat;
+                         i := 0;
+                         while ((rw := ds.ds_iterate_rows (i)) is not null)
+                           {
+                              rw.vc_focus := 1;
+                              rw.vc_set_childs_focus (1, e);
+                              rw.vc_post (e);
+                           }
+                       ]]></v:on-post>
+                       </v:button>
+                   </span>
+                   </td>
+               </tr>
+           </v:template>
+           </v:data-set>
+         </table>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>

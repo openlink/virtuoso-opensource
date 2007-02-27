@@ -34,7 +34,7 @@ create procedure PHOTO.WA.dav_browse(
   declare auth_uid,auth_pwd,current_gallery,private_tags varchar;
   declare home_dir,_col_perms,_col_user_name varchar;
   declare current_user photo_user;
-  declare params any;
+  declare params,res_user any;
   declare result SOAP_album array;
   declare album SOAP_album;
   declare visibility,_col_id,_col_owner,is_own integer;
@@ -43,7 +43,8 @@ create procedure PHOTO.WA.dav_browse(
   result := vector();
 
 
-  auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
+  auth_uid := PHOTO.WA._session_user (vector ('realm', 'wa', 'sid', sid),
+                                      current_user);
 
   current_gallery := path;
   -- TODO - da se proveri roliata na user-a za tozi instance(viewr gleda, writer - pishe)
@@ -57,17 +58,19 @@ create procedure PHOTO.WA.dav_browse(
           LEFT JOIN WS.WS.SYS_DAV_USER ON U_ID = COL_OWNER
    WHERE COL_ID = _col_id;
 
-  --select WAM_MEMBER_TYPE from DB.DBA.WA_MEMBER WHERE WAM_USER = current_user.user_id AND WAM_INST =
-  if(_col_owner = current_user.user_id){  --substring(_col_perms,7,1) = '1'){
+  if (_col_owner = current_user.user_id){  
     is_own := 1;
   }else{
     is_own := 0;
   }
 
-  dirlist := DAV_DIR_LIST (current_gallery , 0 , current_user.auth_uid , current_user.auth_pwd );
+  dirlist := DAV_DIR_LIST (current_gallery, 
+                           0, 
+                           current_user.auth_uid, 
+                           current_user.auth_pwd);
 
   if(__tag(dirlist) = 189){
-    return result;
+    goto ret;
   }
 
   declare ctr integer;
@@ -78,9 +81,7 @@ create procedure PHOTO.WA.dav_browse(
     if(dirlist[ctr][6] = 0){
       dirlist[ctr][6] := 0;
     }
-
-    if((dirlist[ctr][7] = current_user.user_id or substring(dirlist[ctr][5],7,1) = '1') and dirlist[ctr][10] <> '.thumbnails'){
-
+    if((dirlist[ctr][7] = current_user.user_id or substring(dirlist[ctr][5],7,1) = '1') and isnull(regexp_match('^\\.',dirlist[ctr][10]))){
       if(substring(dirlist[ctr][5],7,1) = '1'){
         visibility := 1; -- public
       }else{
@@ -98,19 +99,21 @@ create procedure PHOTO.WA.dav_browse(
       album.created := dirlist[ctr][8];
       album.mime_type := dirlist[ctr][9];
       album.name := dirlist[ctr][10];
-      album.thumb_id := (select RES_ID from WS.WS.SYS_DAV_RES where RES_COL = dirlist[ctr][4]);
+      album.thumb_id := (select RES_ID from WS.WS.SYS_DAV_RES where RES_COL = dirlist[ctr][4] AND regexp_match('^\\.',RES_NAME) IS NULL );
 
-      pub_date := DAV_PROP_GET(album.fullpath,'pub_date',current_user.auth_uid,current_user.auth_pwd);
+      res_user :=  PHOTO.WA._get_user_name(album.owner_id);
+
+      pub_date := DAV_PROP_GET(album.fullpath,'pub_date',res_user[0],res_user[1]);
       if(__tag(pub_date ) <> 189){
         album.pub_date := cast(pub_date  as datetime);
       }
 
-      description := DAV_PROP_GET(album.fullpath,'description',current_user.auth_uid,current_user.auth_pwd);
+      description := DAV_PROP_GET(album.fullpath,'description',res_user[0],res_user[1]);
       if(__tag(description) <> 189){
         album.description := cast(description  as varchar);
       }
 
-      private_tags := DAV_PROP_GET(album.fullpath,':virtprivatetags',current_user.auth_uid,current_user.auth_pwd);
+      private_tags := DAV_PROP_GET(album.fullpath,':virtprivatetags',res_user[0],res_user[1]);
       if(__tag(private_tags) <> 189){
         album.private_tags := PHOTO.WA.tags2vector(private_tags);
       }
@@ -120,7 +123,9 @@ create procedure PHOTO.WA.dav_browse(
     }
     ctr := ctr + 1;
   }
-  return SOAP_gallery(cast(is_own as integer),_col_user_name,result);
+  ret:
+  return SOAP_gallery (cast (is_own as integer),
+                       _col_user_name,result);
 }
 ;
 

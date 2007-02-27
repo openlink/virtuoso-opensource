@@ -1358,7 +1358,7 @@ create procedure MOB_GET_BLOG_ID (in _msg any, in tag varchar := 'blogId')
 }
 ;
 
-create procedure decode_uuencoded_attachment (in _data any, inout attaches any, inout opts any)
+create procedure decode_uuencoded_attachement (in _data any, inout attaches any, inout opts any)
 {
   declare data, outp, att any;
   declare line, nam, amime varchar;
@@ -1566,7 +1566,7 @@ create procedure DB.DBA.BLOG2_MOBLOG_PROCESS_MSG(in _caller_user_name varchar, i
       -- retrieve attachments with allowed mime types from mail
       declare _attaches any;
       _attaches := BLOG2_MOBBLOGGING_GET_MOB_MESSAGE(_mbody, _opts);
-      decode_uuencoded_attachment (_mbody, _attaches, _opts);
+      decode_uuencoded_attachement (_mbody, _attaches, _opts);
 
       -- if attaches was not founded - skip next block
       if(_attaches is null or not isarray(_attaches) or length(_attaches) = 0) goto _endmark;

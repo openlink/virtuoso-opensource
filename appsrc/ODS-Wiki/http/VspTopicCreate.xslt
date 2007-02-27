@@ -36,6 +36,10 @@
   <xsl:template match="/">
    <div class="working-area">
     <h3>Topic '<xsl:value-of select="$ti_raw_title"/>' does not exist</h3>
+    <h4>Similar topics:</h4>
+    <div style="text-align: justify; padding: 0 10%;">
+      <xsl:apply-templates/>
+    </div>
     <xsl:choose>
       <xsl:when test="wv:params('mode', 'plain') = 'plain'">
         <xsl:call-template name="switch-to-another-mode">
@@ -56,4 +60,12 @@
     </xsl:choose>
   </div>
   </xsl:template>
+  <xsl:template match="node()">
+      <xsl:copy>
+        <xsl:copy-of select="@*" />
+        <xsl:apply-templates select="node()" />
+      </xsl:copy>
+   </xsl:template>
+
+			     
 </xsl:stylesheet>

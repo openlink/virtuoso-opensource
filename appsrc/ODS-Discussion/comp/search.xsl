@@ -26,44 +26,61 @@
 	        xmlns:v="http://www.openlinksw.com/vspx/"
                 xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
   <xsl:template match="vm:nntpf-search">
-    Search: <v:text name="searchkeywords" xhtml:width="30" value="" />
-    <span class="error_summary">
-      <v:error-summary match="searchkeywords" />
-    </span>
-    <v:button name="go_search" action="submit" value="Go">
+    <script type="text/javascript"><![CDATA[
+    <!--
+    function submitenter_local(myfield,e)
+    {
+      var keycode;
+      if (window.event) keycode = window.event.keyCode;
+      else if (e) keycode = e.which;
+      else return true;
+
+      if (keycode == 13)
+        {
+
+          if(document.getElementById('searchkeywords').value.trim()!='')
+    {
+            document.location.href='<?V sprintf ('nntpf_addtorss.vspx?sid=%s&realm=%s', self.sid, self.realm) ?>&search='+document.getElementById('searchkeywords').value;
+          }
+          return false;
+        }
+      else
+       return true;
+    }
+    //-->
+    ]]></script>
+
+    <v:form type="simple" method="POST" name="search">
+       <v:button style="url" name="nntpf_search_adv" action="submit" value="Search">
+         <v:on-post>
+           <![CDATA[
+             http_request_status ('HTTP/1.1 302 Found');
+             http_header (sprintf ('Location: nntpf_adv_search.vspx?sid=%s&realm=%s&search=%V\r\n',
+                          self.sid, 
+                          self.realm, 
+                          get_keyword ('searchkeywords', 
+                          self.vc_page.vc_event.ve_params)));
+           ]]> 
+         </v:on-post>
+       </v:button>
+       <![CDATA[&nbsp;]]>
+
+
+      <v:text xhtml_size="10" name="searchkeywords" value="" xhtml_id="searchkeywords" xhtml_class="textbox" xhtml_onkeypress="return submitenter_local(this,event)"/>
+      <v:button xhtml_id="search_button" action="simple" value="images/go_16.png" style="image" name="GO" xhtml_title="Search" xhtml_alt="Search"/>
       <v:on-post>
         <![CDATA[
-
-  if (not self.vc_is_valid)
-    return;
-
-  if (trim (self.searchkeywords.ufl_value, ' ') = '')
-    {
-      self.searchkeywords.vc_error_message := 'Empty values for search are not allowed.';
-      self.vc_is_valid := 0;
-      return 0;
-    };
-
-  http_request_status ('HTTP/1.1 302 Found');
-  http_header (sprintf ('Location: nntpf_addtorss.vspx?sid=%s&realm=%s&search=%V\r\n',
+          if(e.ve_button.vc_name <> 'GO' or length (trim(self.searchkeywords.ufl_value)) = 0) {
+            return;
+          }
+          self.vc_redirect (sprintf ('nntpf_addtorss.vspx?sid=%s&realm=%s&search=%s',
                self.sid, 
                self.realm, 
-               encode_base64 (serialize (vector (get_keyword ('searchkeywords', 
-                                                              self.vc_page.vc_event.ve_params))))));
+                            get_keyword ('searchkeywords',self.vc_page.vc_event.ve_params)));
+          return;
         ]]> 
       </v:on-post>
-    </v:button>
-    <v:button style="url" name="nntpf_search_adv" action="submit" value="Advanced..." enabled="--self.vc_authenticated">
-      <v:on-post>
-        <![CDATA[
-  http_request_status ('HTTP/1.1 302 Found');
-  http_header (sprintf ('Location: nntpf_adv_search.vspx?sid=%s&realm=%s&search=%V\r\n',
-			self.sid, 
-                        self.realm, 
-                        get_keyword ('searchkeywords', 
-                                     self.vc_page.vc_event.ve_params)));
-        ]]> 
-      </v:on-post>
-    </v:button>
+    </v:form>
+
   </xsl:template>
 </xsl:stylesheet>

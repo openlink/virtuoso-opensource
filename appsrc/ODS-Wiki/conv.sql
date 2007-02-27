@@ -521,3 +521,29 @@ create procedure DB.DBA.oWiki_NEWS_MSG_I  (
 
 }
 ;
+
+create procedure DB.DBA.oWiki_NEWS_MSG_U  
+   (
+     inout O_NM_ID any,
+     inout N_NM_ID any,
+     inout N_NM_REF any,
+     inout N_NM_READ any,
+     inout N_NM_OWN any,
+     inout N_NM_REC_DATE any,
+     inout N_NM_STAT any,
+     inout N_NM_TRY_POST any,
+     inout N_NM_DELETED any,
+     inout N_NM_HEAD any,
+     inout N_NM_BODY any     )
+{
+   return;
+}
+;
+
+
+create procedure DB.DBA.oWiki_NEWS_MSG_D (inout O_NM_ID any)
+{
+  signal ('CONV3', 'Delete of a blog comment is not allowed');
+}
+;
+

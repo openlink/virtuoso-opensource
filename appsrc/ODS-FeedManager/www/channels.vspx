@@ -83,10 +83,11 @@
               </div>
             </div>
           </div>
-    	<v:data-source name="dsrc" expression-type="sql" nrows="--ENEWS.WA.settings_rows(self.domain_id, self.account_id)" initial-offset="0">
+      <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
         <v:before-data-bind>
           <![CDATA[
             self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
+            control.ds_nrows := ENEWS.WA.settings_rows (self.settings);
             control.ds_sql := sprintf('select EFD_ID, EF_ID, EF_URI, coalesce(coalesce(EFD_TITLE, EF_TITLE), \'~no title~\') EF_TITLE, cast(ENEWS.WA.channel_feeds(EF_ID) as integer) EF_COUNT from ENEWS.WA.FEED join ENEWS.WA.FEED_DOMAIN on EFD_FEED_ID = EF_ID where EFD_DOMAIN_ID = %d', self.domain_id);
             control.ds_sql := concat(control.ds_sql, ' order by ', self.c_order, ' ', self.c_direction);
           ]]>
@@ -208,7 +209,7 @@
                               };
                               commit work;
 
-                              ENEWS.WA.channel_delete(self.domain_id, e.ve_params[i+1]);
+                            ENEWS.WA.channel_delete (e.ve_params[i+1]);
                             }
                             _next:;
                           }

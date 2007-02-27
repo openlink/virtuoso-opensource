@@ -27,107 +27,121 @@
                 xmlns:xhtml="http://www.w3.org/TR/xhtml1/strict"
                 xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/"
                 xmlns:fn2="http://www.w3.org/2004/07/xpath-functions">
+
+<!-- $Id$ -->
+
   <xsl:output
     method="html"
-    encoding="UTF-8"
-    />
+   encoding="UTF-8" />
   <!-- new clean stylesheet (ghard)-->
   <xsl:include href="../../common.xsl"/>
   <xsl:template match="/">
     <xsl:param name="ti_cluster_name"/>
     <xsl:param name="baseadjust"/>
-    <xsl:param name="ods-bar"/>
     <xsl:param name="sid"/>
     <xsl:param name="realm"/>
-    <html>
-      <header>	
-	<title><xsl:value-of select="$ti_cluster_name"/>.<xsl:value-of select="$ti_local_name"/></title>
-	<link rel="stylesheet" href="{$baseadjust}../resources/Skins/default/default.css" type="text/css"></link>
-	<link rel="alternate" type="application/rss+xml" title="Changelog (RSS 2.0)" href="{$baseadjust}../resources/gems.vsp?cluster={$ti_cluster_name}&amp;type=rss20"></link>
-	<link rel="alternate" type="application/rss+xml" title="Changelog (ATOM)" href="{$baseadjust}../resources/gems.vsp?cluster={$ti_cluster_name}&amp;type=atom"></link>
-	<link rel="alternate" type="application/rss+xml" title="Changelog (RDF)" href="{$baseadjust}../gems.vsp?cluster={$ti_cluster_name}&amp;type=rdf"></link>
-	<link rel="self" type="application/atom+xml"
-	  href="/wiki/Atom"/>
-	<link rel="meta" type="application/rdf+xml" title="SIOC" href="{wv:sioc_uri($ti_cluster_name)}" />
-	<link rel="service.post" type="application/x.atom+xml"
-	      href="{wv:atom_pub_uri($ti_cluster_name)}"/>
-      </header>
-      <body>
-        <!-- <xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute> -->
-	<div id="page">
-	  <div id="header">
-            <xsl:copy-of select="$ods-bar"/>
-            <img>
-              <xsl:attribute name="src"><xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/></xsl:attribute>
-            </img>
+  <xsl:param name="ods-bar"/>
 
-<!--div class="login-area" style="display: none">
+    <html>
+    <head>	
+	<title><xsl:value-of select="$ti_cluster_name"/>.<xsl:value-of select="$ti_local_name"/></title>
+      <link rel="stylesheet" 
+            href="{wv:ResourceHREF('Skins/default/default.css', $baseadjust)}" 
+            type="text/css"></link>
+      <link rel="alternate" 
+            type="application/rss+xml" 
+            title="Changelog (RSS 2.0)" 
+            href="{wv:ResourceHREF(concat('gems.vsp?cluster=', $ti_cluster_name, '&amp;type=rss20'), $baseadjust)}"></link>
+      <link rel="alternate" 
+            type="application/rss+xml" 
+            title="Changelog (ATOM)" 
+            href="{wv:ResourceHREF(concat('gems.vsp?cluster=', $ti_cluster_name, '&amp;type=atom'), $baseadjust)}"></link>
+      <link rel="alternate" 
+            type="application/rss+xml" 
+            title="Changelog (RDF)" 
+            href="{wv:ResourceHREF(concat('gems.vsp?cluster=', $ti_cluster_name, '&amp;type=rdf'), $baseadjust)}"></link>
+      <link rel="self" 
+            type="application/atom+xml"
+	  href="/wiki/Atom"/>
+      <link rel="meta" 
+            type="application/rdf+xml" 
+            title="SIOC" 
+            href="{wv:sioc_uri($ti_cluster_name)}" />
+      <link rel="service.post" 
+            type="application/x.atom+xml"
+	      href="{wv:atom_pub_uri($ti_cluster_name)}"/>
+    </head>
+      <body>
+	<div id="page">
+	<div id="head">
+            <xsl:copy-of select="$ods-bar"/>
+<!--xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute-->
+          <div class="login-area" style="display: none">
 	      <xsl:apply-templates select="//img[@id='login-image']"/>
 	      <xsl:apply-templates select="//a[@id='login-link']"/>
 	      <xsl:if test="not $sid">
 		User is not authenticated
 	      </xsl:if>
 	      <xsl:apply-templates select="//form[@id='login-form']"/>
-</div-->
-	    <!--ul><li>
-	      <a href="{wv:registry_get ('wa_home_link', '/wa/')}/?sid={$sid}&realm={$realm}">
-		<xsl:value-of select="wv:registry_get('wa_home_title', 'OPS Home')"/>
-	      </a>
-	    </li>
-	    <li>
-	      <xsl:copy-of select="//a[@id='user-settings-link']"/>
-</li></ul-->
 	  </div>
-	  <div id="main">
-	    <div id="wiki-path">You are here: <xsl:copy-of select="//div[@class='wiki-nav-container']"/></div>
-	    <div id="content">
-	      <xsl:copy-of select="//div[@id='content']/."/>
+          <div id="hdr-search-form-ctr">
+            <xsl:copy-of select="//form[@id='search-form']"/>
+          </div>
+        </div> <!-- head -->
+	  <div id="mid">
+	    <div id="wiki-path">
+              <xsl:copy-of select="//div[@class='wiki-nav-container']"/>
+            </div>
+            <xsl:apply-templates select="//div[@id='content']/."/>
               <xsl:if test="//span[@id='top-mod-by']">
                 <div id="node-footer">
-                  Modified by <xsl:copy-of select="//span[@id='top-mod-by']"/> at <xsl:copy-of select="//span[@id='top-mod-time']"/>
+                Modified by 
+                <xsl:copy-of select="//span[@id='top-mod-by']"/> at 
+                <xsl:copy-of select="//span[@id='top-mod-time']"/>
                 </div>
               </xsl:if>
-	    </div> <!-- content -->
-	  </div> <!-- main -->
-	  <div id="sidebar">
-	    <div id="main-tab" class="portlet">
-              <ul class="sb-search">
-	    <li>
-                  <xsl:copy-of select="//form[@id='search-form']"/>
-	    </li>
-	    <li>
-	      <xsl:copy-of select="//a[@id='advanced-search-link']"/>
-	    </li>
-	  </ul>
-	      <h3>View</h3>
+	  </div> <!-- mid -->
+	  <div id="foot"> 
+            <xsl:copy-of select="//div[@id='wiki-toolbar-container']"/>
+            <div id="foot-cols-ctr">
+              <div class="col">
+                <h3>This Page</h3>
 	      <ul>
-		<xsl:apply-templates select="//li[@id='wiki-nstab-main']"/>
-		<xsl:apply-templates select="//li[@id='wiki-nstab-talks']"/>
 		<xsl:for-each select="//div[@class='wiki-source-type']">
 		  <xsl:element name="li">
 		    <xsl:copy-of select="a"/>
 		  </xsl:element> 
 		</xsl:for-each>
 	      </ul>
-              <h3>Settings</h3>
-              <ul class="settings"> 
-                <li>
-                  <xsl:copy-of select="//a[@id='cluster-settings-link']"/>
-                </li>
+              <ul>
+                  <xsl:apply-templates select="//li[@id='wiki-nstab-main']"/>
+                  <xsl:apply-templates select="//li[@id='wiki-nstab-talks']"/>
               </ul>
-	    </div>
-	    <div class="feed-container">
+              </div> <!-- col -->
+<!--xsl:apply-templates select="//div[@id='virtuoso-info']"/--> 
+              <div class="col">
 	      <h3>Cluster changes</h3>
 	      <ul>
 		<li>
-                  <img border="0" alt="ATOM" title="ATOM" src="{wv:ResourceHREF ('images/atom-icon-16.gif', $baseadjust)}"></img>
+                    <img border="0" 
+                         alt="ATOM" 
+                         title="ATOM" 
+                         src="{wv:ResourceHREF ('images/atom-icon-12.png', $baseadjust)}">
+                    </img>
 		  <a>
-		    <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','atom','cluster', $ti_cluster_name))"/></xsl:attribute>		
+                      <xsl:attribute name="href">
+                        <xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',
+                                                                $baseadjust, 
+                                                                vector ('type','atom','cluster', $ti_cluster_name))"/>
+                      </xsl:attribute>		
                     Atom 1.0
 		  </a>
 		</li>
 		<li>
-                  <img border="0" alt="RSS" title="RSS" src="{wv:ResourceHREF ('images/rss-icon-16.gif', $baseadjust)}"></img>
+                    <img border="0" 
+                         alt="RSS" 
+                         title="RSS" 
+                         src="{wv:ResourceHREF ('images/rss-icon-12.png', $baseadjust)}"></img>
 		  <a>
 		    <xsl:attribute name="href">
 		      <xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','rss20','cluster', $ti_cluster_name))"/>
@@ -136,7 +150,10 @@
 		  </a>
 		</li>
 		<li>
-                  <img border="0" alt="RDF" title="RDF" src="{wv:ResourceHREF ('images/rdf-icon-16.gif', $baseadjust)}"></img>
+                    <img border="0" 
+                         alt="RDF" 
+                         title="RDF" 
+                         src="{wv:ResourceHREF ('images/rdf-icon-12.png', $baseadjust)}"></img>
 		  <a>
 		    <xsl:attribute name="href">
 		      <xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','rdf','cluster', $ti_cluster_name))"/>
@@ -145,36 +162,70 @@
 		  </a>
 		</li>
 	      </ul>
+              </div>
+              <div class="col">
 	      <h3>Site Changes</h3>
 	      <ul>
 		<li>
-                  <img border="0" alt="ATOM" title="ATOM" src="{wv:ResourceHREF ('images/atom-icon-16.gif', $baseadjust)}"></img>
+                    <img border="0" 
+                         alt="ATOM" 
+                         title="ATOM" 
+                         src="{wv:ResourceHREF ('images/atom-icon-12.png', $baseadjust)}"></img>
 		  <a>
-		    <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','atom'))"/></xsl:attribute>		
+                      <xsl:attribute name="href">
+                        <xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','atom'))"/>
+                      </xsl:attribute>		
                     Atom 1.0
 		  </a>
 		</li>
 		<li>
-                  <img border="0" alt="RSS" title="RSS" src="{wv:ResourceHREF ('images/rss-icon-16.gif', $baseadjust)}"></img>
+                    <img border="0" 
+                         alt="RSS" 
+                         title="RSS" 
+                         src="{wv:ResourceHREF ('images/rss-icon-12.png', $baseadjust)}"></img>
 		  <a>
-		    <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','rss20'))"/></xsl:attribute>		
+                      <xsl:attribute name="href">
+                        <xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','rss20'))"/>
+                      </xsl:attribute>		
                     RSS 2.0
 		  </a>
 		</li>
 		<li>
-                  <img border="0" alt="RDF" title="RDF" src="{wv:ResourceHREF ('images/rdf-icon-16.gif', $baseadjust)}"></img>
+                    <img border="0" 
+                         alt="RDF" 
+                         title="RDF" 
+                         src="{wv:ResourceHREF ('images/rdf-icon-12.png', $baseadjust)}"></img>
 		  <a>
-		    <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','rdf'))"/></xsl:attribute>		
+                      <xsl:attribute name="href">
+                        <xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','rdf'))"/>
+                      </xsl:attribute>		
                     RDF
 		  </a>
 		</li>
 	      </ul>
-	    </div> <!-- feed-container -->
-	    <!--xsl:apply-templates select="//div[@id='virtuoso-info']"/--> 
-	  </div> <!-- sidebar -->
-	  <div id="footer">
-	    <xsl:apply-templates select="//div[@id='wiki-toolbar-container']"/>
-	  </div>
+              </div> <!-- col -->
+              <div class="col">
+                <h3>Tools</h3>
+	        <ul>
+	          <!--li>
+                    <a href="{wv:registry_get ('wa_home_link', '/wa/')}/?sid={$sid}&realm={$realm}">
+                      <xsl:value-of select="wv:registry_get('wa_home_title', 'OPS Home')"/>
+                    </a>
+	          </li-->
+	          <li>
+                    <xsl:copy-of select="//a[@id='user-settings-link']"/>
+	          </li>
+                  <li>
+                    <xsl:copy-of select="//a[@id='cluster-settings-link']"/>
+	          </li>
+	          <li>
+                    <xsl:copy-of select="//a[@id='advanced-search-link']"/>
+                  </li>
+	        </ul>
+              </div> <!-- col -->
+            </div> <!-- foot-col-ctr -->
+            <div class="debug-info">Default PostProcess.xslt</div>
+          </div> <!-- foot -->
 	</div> <!-- page -->
       </body>
     </html>

@@ -61,11 +61,12 @@
 	pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = self.vspx_user);
 	if (DAV_HIDE_ERROR (DAV_AUTHENTICATE (self.topic.ti_res_id, 'R', '_1_', self.vspx_user, pwd)) is not null)
 	  self.allow_change := 1;
-	self.ds.vc_data_bind(e);
-	self.ds2.vc_data_bind(e);
+	-- self.ds.vc_data_bind(e);
+	-- self.ds2.vc_data_bind(e);
         self.t1.vc_data_bind(e);
       ]]></v:after-data-bind>
       <v:before-data-bind><![CDATA[
+        self.login.vc_data_bind(e);
 	self.uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vspx_user);
 	self.nobody_uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = 'nobody');
 	self.topic.ti_curuser_username := self.vspx_user;
@@ -76,7 +77,6 @@
 	    self.pubtags := xpath_eval ('//tagset[@type="public"]/tag/@name', _tags, 0);
 	    self.privtags := xpath_eval ('//tagset[@type="private"]/tag/@name', _tags, 0);
 	  }	    
-        self.login.vc_data_bind(e);
     ]]></v:before-data-bind>
       <v:method name="set_tags" arglist="in uid int, in tags_str varchar"><![CDATA[
          declare _res int;
@@ -101,66 +101,25 @@
 		</tr>
 		<tr>
 		 <td width="50%">
-		  <v:form type="simple" method="POST">
-		   <v:data-set name="ds" data="--self.pubtags" meta="--vector()" scrollable="1" nrows="1000">
-		     <v:template name="template1" type="repeat" name-to-remove="" set-to-remove=""> 
-		       <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-		       </v:template>
-		       <v:template name="template2" type="browse" name-to-remove="table" set-to-remove="both">
-		         <v:button name="link" action="simple" style="url" value="--(control.vc_parent as vspx_row_template).te_rowset">
-			   <v:on-post><![CDATA[
-			dbg_obj_print ('test>>');
-			     self.vc_redirect (sprintf ('tag.vspx?id=%ld&tag=%s', self.id, 
-			       		(control.vc_parent as vspx_row_template).te_rowset));
-			   ]]></v:on-post>
-			 </v:button><v:button name="del" action="simple" value="images/del_16.png" style="image" enabled="--self.allow_change">
-			   <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
-			   <v:on-post><![CDATA[
-			     declare _tag varchar;
-			     _tag := cast ((control.vc_parent as vspx_row_template).te_rowset as varchar);
-			     self.pubtags := WV.WIKI.VECTOR_DROP (self.pubtags, _tag);
-			     self.set_tags (self.nobody_uid, WV.WIKI.STRJOIN(',', self.pubtags));
-			     self.vc_find_descendant_control('ds').vc_data_bind(e);
-			   ]]></v:on-post>
-			 </v:button> 
-			 <v:label name="comma1" value="--case when (control.vc_parent as vspx_row_template).te_ctr + 1  = (control.vc_parent.vc_parent as vspx_data_set).ds_rows_total then '' else ',' end"/>&nbsp;
-		       </v:template>
-		     </v:template>
-		   </v:data-set>
-		   </v:form>
+	         <?vsp
+		   foreach (any tag in self.pubtags) do {
+		      http (sprintf('<a href="tag.vspx?id=%ld&tag=%s">%s</a>', self.id, tag, tag));
+		      http (sprintf('<a href="remove_tag.vspx?id=%ld&tag=%s"><img src="images/del_16.png" border="0"/></a>', self.id, tag));
+		   }
+		 ?>
 		 </td>
 		 <td>
-		  <v:form type="simple" method="POST">
-		   <v:data-set name="ds2" data="--self.privtags" meta="--vector()" scrollable="1" nrows="1000">
-		     <v:template name="template11" type="repeat" name-to-remove="" set-to-remove=""> 
-		       <v:template name="template71" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-		       </v:template>
-		       <v:template name="template21" type="browse" name-to-remove="table" set-to-remove="both">
-		         <v:button name="link2" action="simple" style="url" value="--(control.vc_parent as vspx_row_template).te_rowset">
-			   <v:on-post><![CDATA[
-			     self.vc_redirect (sprintf ('tag.vspx?id=%ld&tag=%s', self.id, 
-			       		(control.vc_parent as vspx_row_template).te_rowset));
-			   ]]></v:on-post>
-			 </v:button><v:button name="del2" action="simple" value="images/del_16.png" style="image" enabled="--self.allow_change">
-			   <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
-			   <v:on-post><![CDATA[
-			     declare _tag varchar;
-			     _tag := cast ((control.vc_parent as vspx_row_template).te_rowset as varchar);
-			     self.privtags := WV.WIKI.VECTOR_DROP (self.privtags, _tag);
-			     self.set_tags (self.uid, WV.WIKI.STRJOIN(',', self.privtags));
-			     self.vc_find_descendant_control('ds2').vc_data_bind(e);
-			   ]]></v:on-post>
-			 </v:button>
-			 <v:label name="comma2" value="--case when (control.vc_parent as vspx_row_template).te_ctr + 1  = (control.vc_parent.vc_parent as vspx_data_set).ds_rows_total then '' else ',' end"/>&nbsp;
-		       </v:template>
-		     </v:template>
-		   </v:data-set>
-		   </v:form> 
+		   <?vsp
+		   foreach (any tag in self.privtags) do {
+		      http (sprintf('<a href="tag.vspx?privatep=1&id=%ld&tag=%s">%s</a>', self.id, tag, tag));
+		      http (sprintf('<a href="remove_tag.vspx?privatep=1&id=%ld&tag=%s"><img src="images/del_16.png" border="0"/></a>', self.id, tag));
+		   }
+		     ?>
 		 </td>
 	 	</tr>
 		<tr>
 		<v:template name="t1" type="simple">
-		 <v:form type="simple" method="POST">
+		  <v:form name="back_buttons" type="simple" method="POST">
 		  <td colspan="2">
 		    Add Tags (comma separated):
 		    <v:text name="tags_f" value="" error-glyph="*" xhtml_size="100%"/><br/>

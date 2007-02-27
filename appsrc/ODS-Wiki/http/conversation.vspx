@@ -30,13 +30,15 @@
 	doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
   <v:variable name="source_page1" type="varchar" default="NULL"/>
+  <v:variable name="write_enable" type="int" default="0"/>
   <head>
     <link rel="stylesheet" href="common.css" type="text/css"/>
     <link rel="stylesheet" href="Skins/default/default.css" type="text/css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
     <title>Conversation page</title>
   </head>
-  <vm:empty-body>
+  <vm:empty-body onload="javascript:setPaths ('/ods/images/', '/ods/');">
+    <script type="text/javascript" src="/ods/openid.js"> </script>
       <v:method name="getTitle" arglist="">
         <![CDATA[
           declare title any;
@@ -75,6 +77,14 @@
 	  declare _uname int;
 	  _uname := coalesce ((select VS_UID from DB.DBA.VSPX_SESSION where VS_SID = self.sid and VS_REALM = self.realm), 'WikiGuest');
 	  self.v_aid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _uname);
+
+	  declare _topicid, _clusterid int;
+   	  _topicid := get_keyword ('fid', self.vc_event.ve_params);
+	  _clusterid := (select ClusterId from WV.WIKI.TOPIC where TOPICID = _topicid);
+ 
+	  if (_clusterid is not null and 
+		(_uname = 'dav' or _uname = WV.WIKI.CLUSTERPARAM(_clusterid, 'creator', 'dav')))
+	   self.write_enable := 1;
         ]]>
       </v:on-init>
       <vm:popup_page_wrapper>
@@ -88,6 +98,7 @@
         <v:form name="F1" type="simple" method="GET">
           <input type="hidden" name="sid" value="&lt;?V get_keyword('sid', self.vc_event.ve_params) ?>"/>
           <input type="hidden" name="realm" value="&lt;?V get_keyword('realm', self.vc_event.ve_params) ?>"/>
+          <v:text name="oid_sig" value="" type="hidden" xhtml_id="oid_sig" />
 	  <vm:close-popup-link/>
           <div class="new-form-header">
             Conversation
@@ -113,15 +124,15 @@
 	                    <div class="<?V case when control.tn_level = 0 then 'cm_node_top' else 'cm_node' end ?>">
                     		<?vsp
                       		{
-                      		  declare id, comment, title, u_name, last_update, _home any;
+                      		  declare id, comment, title, u_name, last_update, _home, openid_sig any;
 
                       		  id := cast (control.tn_value as integer);
 
                       		  declare exit handler for not found;
 				  if (id >= 0)
 				    {
-					select C_SUBJECT, cast (C_TEXT as varchar), C_AUTHOR, WV.WIKI.DATEFORMAT(C_DATE), C_HOME
-	                      		    into title, comment, u_name, last_update, _home
+					select C_SUBJECT, cast (C_TEXT as varchar), C_AUTHOR, WV.WIKI.DATEFORMAT(C_DATE), C_HOME, C_OPENID_SIG
+	                      		    into title, comment, u_name, last_update, _home, openid_sig
 	                      		    from WV.WIKI.COMMENT
 		              		   where C_ID = id;
                       	?>
@@ -136,12 +147,13 @@
 	                  </div>
 			  <div class="comment-footer">
 		                        <span class="comment-user">
-		                          Posted by <a href="<?V coalesce(_home, sioc..get_graph()) ?>"><?V WV.WIKI.UTF2WIDE (u_name) ?></a>
+		                          Posted by <a href="<?V coalesce(_home, sioc..get_graph()) ?>"><?V WV.WIKI.UTF2WIDE (case when length(u_name) = 0 then _home else u_name end) ?></a> 
+				        <?V case when length(openid_sig) > 0 then '(verified)' else '' end ?>
 		                        </span>
 		                        <span class="comment-date"> on <?V cast(last_update as varchar) ?></span>
 	                  </div>
                           <div class="comment-actions">
-			    <v:button action="simple" style="url" value="Delete" xhtml_title="Delete" xhtml_class="button2">
+			    <v:button action="simple" style="url" value="Delete" xhtml_title="Delete" xhtml_class="button2" enabled="--self.write_enable">
                               <v:on-post>
                                 <![CDATA[
                         		      declare id int;
@@ -181,7 +193,7 @@
               <tr>
                 <td>
                   <hr />
-                  <v:button action="simple" style="url" value="Reply" xhtml_title="Reply" xhtml_class="button2">
+                  <v:button action="simple" style="url" value="Post a new comment" xhtml_title="Reply" xhtml_class="button2">
                     <v:on-post>
                       <![CDATA[
                         self.v_pid := null;
@@ -197,28 +209,54 @@
                 <tr>
                   <td>
                     <table cellspacing="0">
+
                       <tr>
                         <th valign="top">
-                          <v:label for="f_name" value="Name" />
+                          <v:label name="l_name" value="Name"/>
                         </th>
                         <td>
-                          <v:text name="f_name" value="--WV.WIKI.USER_DETAILS (self.v_aid, 'name')" xhtml_class="textbox" xhtml_size="70" />
+                          <v:text name="f_name" value="--case when self.vspx_user = 'WikiGuest' then '' else WV.WIKI.USER_DETAILS (self.v_aid, 'name') end" xhtml_class="textbox" xhtml_size="70" xhtml_disabled = "--case when self.vspx_user = 'WikiGuest' then '@@hidden@@' else '1' end"   xhtml_id="name1"/>
                         </td>
                       </tr>
                       <tr>
                         <th valign="top">
-                          <v:label for="f_homepage" value="Homepage" />
+                          <v:label name="l_mail" value="E-Mail"/>
                         </th>
                         <td>
-                          <v:text name="f_homepage" value="--WV.WIKI.USER_DETAILS (self.v_aid, 'homepage')" xhtml_class="textbox" xhtml_size="70" />
+                          <v:text 
+                            name="f_mail" 
+                            value="--case when self.vspx_user = 'WikiGuest' then '' else WV.WIKI.USER_DETAILS (self.v_aid, 'e-mail') end" 
+                            xhtml_class="textbox" 
+                            xhtml_size="70"  
+                            xhtml_disabled = "--case when self.vspx_user = 'WikiGuest' then '@@hidden@@' else '1' end"
+			    xhtml_id="email1"
+                            />
                         </td>
                       </tr>
                       <tr>
                         <th valign="top">
-                          <v:label for="f_mail" value="E-Mail" />
+                          <v:label for="openid_url" value="Homepage (OpenId)" />
                         </th>
                         <td>
-                          <v:text name="f_mail" value="--WV.WIKI.USER_DETAILS (self.v_aid, 'e-mail')" xhtml_class="textbox" xhtml_size="70" />
+                          <span id="img">
+                            <img src="" width="16" height="16" hspace="1" style="display: none;" />
+                          </span>
+                          <v:text
+                            name="openid_url"  
+                            value="--case when self.vspx_user = 'WikiGuest' then '' else WV.WIKI.USER_DETAILS (self.v_aid, 'homepage') end" 
+                            xhtml_disabled="--case when self.vspx_user = 'WikiGuest' then '@@hidden@@' else '1' end"
+                            class="textbox" 
+                            xhtml_size="50" 
+                            xhtml_id="openid_url" />
+                          <?vsp if (self.vspx_user = 'WikiGuest') { ?>
+                          <input type="button" 
+                            value="Verify" 
+                            id="verify_button" 
+                            onclick="javascript: onClickVerify(event);" 
+                            class="textbox" 
+                            />
+                          <br /><span id="msg" />
+                          <?vsp } ?>
                         </td>
                       </tr>
                       <tr>
@@ -243,9 +281,9 @@
                                 name := trim(self.f_name.ufl_value);
                                 mail := trim(self.f_mail.ufl_value);
 
-                                insert into WV.WIKI.COMMENT (C_TOPIC_ID, C_PARENT_ID, C_SUBJECT, C_TEXT, C_AUTHOR, C_EMAIL, C_DATE, C_HOME)
+                                insert into WV.WIKI.COMMENT (C_TOPIC_ID, C_PARENT_ID, C_SUBJECT, C_TEXT, C_AUTHOR, C_EMAIL, C_DATE, C_HOME, C_OPENID_SIG)
                                   values (self.v_fid, self.v_pid, title, comment, name, mail, now ()
-						, trim (self.f_homepage.ufl_value));
+						, trim (self.openid_url.ufl_value), self.oid_sig.ufl_value);
 				self.v_pid := identity_value();
 
                                 self.v_mode := 'show';

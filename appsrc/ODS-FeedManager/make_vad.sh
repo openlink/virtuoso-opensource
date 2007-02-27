@@ -22,7 +22,7 @@
 #
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.6.117"
+VERSION="1.7.135"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -32,7 +32,7 @@ THOST=${THOST-localhost}
 PORT=${PORT-1940}
 TPORT=${TPORT-`expr $PORT + 1000`}
 ISQL=${ISQL-isql}
-VAD_NAME="ods_feedmanager"
+VAD_NAME="feeds"
 VAD_DAV="$VAD_NAME"_dav.vad
 VAD_FS="$VAD_NAME"_filesystem.vad
 DSN="$HOST:$PORT"
@@ -217,7 +217,7 @@ sticker_init() {
   echo "  <name package=\"Feed Manager\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Feed Manager\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1999-2006 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1999-2007 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -229,7 +229,7 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.21.16\"/>" >> $STICKER
+  echo "    <versions_later package=\"1.33.06\"/>" >> $STICKER
   echo "  </require>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Weblog\"/>" >> $STICKER
@@ -238,6 +238,21 @@ sticker_init() {
   echo "</dependencies>" >> $STICKER
   echo "<procedures uninstallation=\"supported\">" >> $STICKER
   echo "  <sql purpose=\"pre-install\"><![CDATA[" >> $STICKER
+  echo "    whenever sqlstate '22003' goto passed;" >> $STICKER
+  echo "    whenever sqlstate '42001' goto failed;" >> $STICKER
+  echo "    \"IM ConvertImageBlob\" ();" >> $STICKER
+  echo "    if (1 = 0) {" >> $STICKER
+  echo "    failed:" >> $STICKER
+  echo "      VAD.DBA.VAD_FAIL_CHECK('This application require im.dll (im.so) plugin is not loaded, make sure you have something like this in ini file for loading Image Magick plugin:" >> $STICKER
+  echo "      [Plugins]" >> $STICKER
+  echo "      LoadPath = ./plugin" >> $STICKER
+  echo "      Load2    = plain, image_magick" >> $STICKER
+  echo "      ');" >> $STICKER
+  echo "    }" >> $STICKER
+  echo "    passed:" >> $STICKER
+  echo "    whenever sqlstate '22003' default;" >> $STICKER
+  echo "    whenever sqlstate '42001' default;" >> $STICKER
+  echo "" >> $STICKER
   echo "    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) " >> $STICKER
   echo "      { " >> $STICKER
   echo "        result ('ERROR', 'The Feed Manager package requires server version $NEED_VERSION or greater'); " >> $STICKER
@@ -276,9 +291,9 @@ sticker_init() {
   do
      if echo "$file" | grep -v "\.vsp" >/dev/null
      then
-	      perms="110100100N"
+	      perms="110100100NN"
      else
-	      perms="111101101N"
+	      perms="111101101NN"
      fi
      name=`echo "$file" | cut -b10-`
      echo "  <file type=\"$TYPE\" overwrite=\"yes\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
@@ -353,12 +368,6 @@ ServerEnable = 1
 QueueMax     = 50000
 
 " > virtuoso.ini
-  if [ -f virtuoso.lic ]
-  then
-    echo "virtuoso.lic found"
-  else
-    cp $HOME/binsrc/tests/suite/virtuoso.lic virtuoso.lic 2>/dev/null
-  fi
   virtuoso_start
 }
 

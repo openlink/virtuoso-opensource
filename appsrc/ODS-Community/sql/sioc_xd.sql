@@ -25,6 +25,18 @@ use sioc;
 create procedure fill_ods_community_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare iri, firi varchar;
+  declare deadl, cnt any;
+
+  deadl := 5;
+  cnt := 0;
+  declare exit handler for sqlstate '40001' {
+    if (deadl <= 0)
+      resignal;
+    rollback work;
+    deadl := deadl - 1;
+    goto l1;
+  };
+  l1:
   for select CM_COMMUNITY_ID, CM_MEMBER_APP, WAI_TYPE_NAME, WAI_DESCRIPTION
     from ODS.COMMUNITY.COMMUNITY_MEMBER_APP, DB.DBA.WA_INSTANCE where WAI_NAME = CM_MEMBER_APP
 	and ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
@@ -35,6 +47,7 @@ create procedure fill_ods_community_sioc (in graph_iri varchar, in site_iri varc
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), firi);
       DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('parent_of'), iri);
     }
+  commit work;
 };
 
 create trigger COMMUNITY_MEMBER_APP_SIOC_I after insert on ODS.COMMUNITY.COMMUNITY_MEMBER_APP referencing new as N
@@ -102,6 +115,43 @@ create procedure ods_community_sioc_init ()
 };
 
 
-ODS.COMMUNITY.exec_no_error('ods_community_sioc_init ()');
+--ODS.COMMUNITY.exec_no_error('ods_community_sioc_init ()');
 
 use DB;
+use DB;
+-- COMMUNITY
+
+wa_exec_no_error ('drop view ODS_COMMUNITIES');
+
+create view ODS_COMMUNITIES as
+		select
+		CM_COMMUNITY_ID,
+		cu.U_NAME as C_OWNER,
+		CM_MEMBER_APP,
+		DB.DBA.wa_type_to_app (am.WAM_APP_TYPE) as A_TYPE,
+		au.U_NAME as A_OWNER
+		from
+		ODS.COMMUNITY.COMMUNITY_MEMBER_APP, DB.DBA.WA_MEMBER cm, DB.DBA.WA_MEMBER am, DB.DBA.SYS_USERS cu, DB.DBA.SYS_USERS au
+		where CM_COMMUNITY_ID = cm.WAM_INST and cm.WAM_USER = cu.U_ID and CM_MEMBER_APP = am.WAM_INST and am.WAM_USER = au.U_ID
+		and cm.WAM_MEMBER_TYPE = 1 and am.WAM_MEMBER_TYPE = 1;
+
+create procedure sioc.DBA.rdf_community_view_str ()
+{
+  return
+      '
+      # Relation between forums and community
+      sioc:community_forum_iri (DB.DBA.ODS_COMMUNITIES.C_OWNER, DB.DBA.ODS_COMMUNITIES.CM_COMMUNITY_ID)
+      sioc:parent_of
+      sioc:forum_iri (A_OWNER, A_TYPE, CM_MEMBER_APP) .
+
+      sioc:forum_iri (DB.DBA.ODS_COMMUNITIES.A_OWNER, DB.DBA.ODS_COMMUNITIES.A_TYPE, DB.DBA.ODS_COMMUNITIES.CM_MEMBER_APP)
+      sioc:has_parent
+      sioc:community_forum_iri (C_OWNER, CM_COMMUNITY_ID) .
+
+      '
+      ;
+};
+
+grant select on ODS_COMMUNITIES to "SPARQL";
+-- END COMMUNITY
+ODS_RDF_VIEW_INIT ();

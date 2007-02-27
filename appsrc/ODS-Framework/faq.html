@@ -42,7 +42,72 @@
 	  </table>
 	</td>
       </tr>
-      <tr><td>This is Frequently Asked Questions Page</td></tr>
+      <tr><td>
+      <div style="padding:20px;">
+           <h2><a name="Data Space FAQ"></a>Data Space FAQ</h2>
+           <h3><a name="What is a Data Space?"></a>What is a Data Space?</h3>
+ A Data Space is an atomic point of presence in cyberspace (Internet, Web, Blogosphere, Wikispehere etc.) for interacting with Data, Information, Knowledge, and Services.
+ Its content may be imported from, or simply point to data in, other Data Spaces.
+ In all cases the content is either transient (generated  “on the fly”) or persistent (supported by cache synchronization schemes).<h3>
+            <a name="What would you typically find in a Data Space?"></a>What would you typically find in a Data Space?</h3>
+ The following:<ul>
+            <li>Raw Data - SQL, HTML, XML (raw), XHTML, RDF etc.
+</li>
+<li>Information (Data In Context) - XHTML (various microformats), Blog Posts (in RSS, Atom, RSS-RDF formats), Subscription Lists (OPML, OCS, etc), Social Networks (FOAF),  and many other forms of applied XML.
+</li>
+<li>Knowledge - Domain specific Concepts and Terms available in transient or persistent forms expressed in RDF with Domain, Schema, and  Instance Data serialized using formats such as RDF-XML, N3/Turtle etc.
+ E.g.
+ FOAF, SIOC, and Atom OWL amongst others </li>
+<li>Web Services - REST or SOAP based invocation of application logic for context sensitive and controlled interaction with Data Space content </li>
+<li>Web Services - REST or SOAP based invocation of application logic for context sensitive and controlled interaction with <a href="../Main/DataSpace" class="wikiword">Data Space</a> content.
+</li>
+<li>Knowledge - Information in actionable context that is available in transient or persistent forms expressed in a Graph Data Model.
+ Increasingly, RDF will provide the Data Language, RDFS its Schema Language, and OWL its Domain Rules Definition  (Ontology) Language .   Domain, Schema, and  Instance Data can be serialized using formats such as RDF-XML, N3/Turtle etc).</li>
+</ul>
+          <h3>
+            <a name="How do Data Spaces and Databases differ?"></a>How do Data Spaces and Databases differ?</h3>
+ Data Spaces are fundamentally problem-domain-specific database applications.
+ They offer functionality that you would instinctively expect of a database (e.g.
+ AICD data management) with the additonal benefit of being data model and query language agnostic.
+ Data Spaces are for the most part DBMS Engine and Data Access Middleware hybrids in the sense that ownership and control of data is inherently loosely-coupled.<h3>
+            <a name="How do Data Spaces and Content Management Systems differ?"></a>How do Data Spaces and Content Management Systems differ?</h3>
+ Data Spaces are inherently more flexible, they support multiple data models and data representation formats.
+ Content management systems do not possess the same degree of data model and data representation dexterity.<h3>
+            <a name="How do Data Spaces and Knowledgebases differ?"></a>How do Data Spaces and Knowledgebases differ?</h3>
+<p>A Data Space cannot dictate the perception of its content.
+ For instance, what I may consider as knowledge relative to my Data Space may not be the case to a remote client that interacts with it from a distance, Thus, defining my Data Space as Knowledgebase, purely, introduces constraints that reduce its broader effectiveness to third party clients (applications, services, users etc..).
+ A Knowledgebase is based on a Graph Data Model resulting in significant impedance for clients that are built around alternative models.
+ To reiterate, Data Spaces support multiple data models.</p>
+          <h3>
+            <a name="What Architectural Components make up a Data Space?"></a>What Architectural Components make up a Data Space?</h3>
+<ul>
+            <li>ORDBMS Engine - for Data Modeling agility (via complex purpose specific data types and data access methods), Data Atomicity, Data Concurrency, Transaction Isolation, and Durability (aka ACID).</li>
+</ul>
+          <ul>
+            <li>Virtual Database Engine - for creating unified views of  heterogeneous RDF, SQL, XML, Free Text, and other data.
+ This is all about Virtualization at the Data Access Level.</li>
+</ul>
+          <ul>
+            <li>Web Services Platform - enabling controlled access and manipulation (via application, service, or protocol logic) of Virtualized or Disparate Data.
+ This layer handles the decoupling of functionality from monolithic wholes for function specific invocation via Web Services using either the SOAP or REST approach.</li>
+</ul>
+          <h3>
+            <a name="Where do Data Spaces fit into the Web's rapid evolution?"></a>Where do Data Spaces fit into the Web&#39;s rapid evolution?</h3>
+<p>They are an essential part of the burgeoning Data Web / Semantic Web.
+ In short, they will take us from data “Mash-ups” (combining web accessible data that exists without integration and repurposing in mind) to “Mesh-ups” (combining web accessible data that exists with integration and repurposing in mind).</p>
+
+<br/>
+| <a target="_BLANK" href="http://virtuoso.openlinksw.com/wiki/main/Main/BlogFAQ">Weblog FAQ</a>
+| <a target="_BLANK" href="http://virtuoso.openlinksw.com/wiki/main/Main/BriefcaseFAQ">Briefcase FAQ</a>
+| <a target="_BLANK" href="http://virtuoso.openlinksw.com/wiki/main/Main/FeedManagerFAQ">Feed Manager FAQ</a>
+| <a target="_BLANK" href="http://virtuoso.openlinksw.com/wiki/main/Main/MailFAQ">Mail FAQ</a>
+| <a target="_BLANK" href="http://virtuoso.openlinksw.com/wiki/main/Main/BookmarkManagerFAQ">Bookmark FAQ</a>
+| <a target="_BLANK" href="http://virtuoso.openlinksw.com/wiki/main/Main/GalleryFAQ">Gallery FAQ</a>
+| <a target="_BLANK" href="http://virtuoso.openlinksw.com/wiki/main/Main/DiscussionsFAQ">Discussion FAQ</a>
+| <a target="_BLANK" href="http://virtuoso.openlinksw.com/wiki/main/Main/OdsCommunity">Community FAQ</a>
+|      
+</div>
+      </td></tr>
     </table>
   </body>
 </html>

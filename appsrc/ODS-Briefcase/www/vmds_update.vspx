@@ -436,7 +436,18 @@
                         <table>
                           <tr>
                             <td nowrap="nowrap">
-                              <v:label value="--(select concat(MT_DESCRIPTION, ' (.', MT_DEFAULT_EXT, ')') from WS.WS.SYS_MIME_TYPES where MT_IDENT = (control.vc_parent as vspx_row_template).te_column_value('MR_MIME_IDENT'))"/>
+                          <v:label value="--''">
+                            <v:after-data-bind>
+                              <![CDATA[
+                                declare mime any;
+
+                                mime := (control.vc_parent as vspx_row_template).te_column_value('MR_MIME_IDENT');
+                                control.ufl_value := (select mime || ' (' || MT_DESCRIPTION || ' - .' || MT_DEFAULT_EXT || ')' from WS.WS.SYS_MIME_TYPES where MT_IDENT = mime);
+                                if (isnull (control.ufl_value))
+                                  control.ufl_value := (select mime || '(.' || T_EXT || ')' from WS.WS.SYS_DAV_RES_TYPES where T_TYPE = mime);
+                              ]]>
+                            </v:after-data-bind>
+                          </v:label>
                             </td>
                             <td nowrap="nowrap">
                               <v:template type="simple" enabled="--equ(self.v_right, 'W')">

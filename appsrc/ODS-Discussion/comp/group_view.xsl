@@ -247,9 +247,15 @@
         <table width="100%" class="news_summary_encapsul" cellspacing="0" cellpadding="0">
           <tr>
             <td align="center" colspan="4">
+<!--              
               <v:button name="ds_list_message_first" style="url" action="simple" value="&lt;&lt;"/>
-              <v:button name="ds_list_message_prev" style="url" action="simple" value="&lt;"/>[
+-->
+              <![CDATA[&nbsp;]]>
+              <v:button name="ds_list_message_prev" style="url" action="simple" value="&lt;"/>
+              <![CDATA[&nbsp;]]>
+              
 	      <v:template name="template_pager" type="page-navigator">
+<!--
                    <v:button
                      name="ds_list_message_pager"
                      style="url"
@@ -260,13 +266,29 @@
                      xhtml_disabled="--case when self.ds_list_message.ds_data_source.ds_current_pager_idx = self.ds_list_message.ds_data_source.ds_current_page then 'true' else '@@hidden@@' end"
                      xhtml_style="--case when self.ds_list_message.ds_data_source.ds_current_pager_idx = self.ds_list_message.ds_data_source.ds_current_page then 'width:24pt;color:red;font-weight:bolder;text-decoration:underline' else 'width:24pt' end"
                    />
+-->
+
+                   <v:button
+                     name="ds_list_message_pager"
+                     style="url"
+                     action="simple"
+                     value="--case when self.ds_list_message.ds_data_source.ds_current_pager_idx = self.ds_list_message.ds_data_source.ds_current_page
+                                   then '<b>'||cast(self.ds_list_message.ds_data_source.ds_current_pager_idx as varchar)||'</b>'
+                                   else cast(self.ds_list_message.ds_data_source.ds_current_pager_idx as varchar) end"
+                    
+                   />
 			<?vsp
 				if (self.ds_list_message.ds_data_source.ds_total_pages - self.ds_list_message.ds_data_source.ds_current_pager_idx >= 0)
 				   http ('&nbsp; | &nbsp;');
 			?>
-                </v:template>]
+                </v:template>
+                
+              <![CDATA[&nbsp;]]>
               <v:button name="ds_list_message_next" style="url" action="simple" value="&gt;"/>
+              <![CDATA[&nbsp;]]>
+<!--
               <v:button name="ds_list_message_last" style="url" action="simple" value="&gt;&gt;"/>
+-->
 	      <input type="hidden" name="group" value="<?= get_keyword ('group', self.vc_page.vc_event.ve_params) ?>"/>
 	      <input type="hidden" name="view" value="<?= self.article_list_lenght ?>"/>
 	      <input type="hidden" name="old_view" value="<?=self.old_view?>"/>

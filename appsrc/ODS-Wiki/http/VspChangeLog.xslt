@@ -31,42 +31,28 @@
    encoding="utf-8"
 />
 
-<xsl:template match="ChangeLog">
-  <table class="wikitable">
-    <tr><td>Change Log</td></tr>
-    <tr><td>
+<xsl:template match="rss">
+  <div class="changelog">
+    <h3><xsl:value-of select="channel/title"/></h3>
     <table class="wikitable1">
-      <th align="left">Topic</th>
-      <th align="left">Action</th>
+        <th align="left">Description</th>
       <th align="left">Date</th>
-      <th align="left">Changed By</th>
-      <xsl:apply-templates select="Entry">
-        <xsl:sort select="@date" order="descending"/>
+	<xsl:apply-templates select="//item">
       </xsl:apply-templates>
     </table>
-  </td></tr></table>
+  </div>
 </xsl:template>
 
-<xsl:template match="Entry">
+<xsl:template match="item">
   <tr>
     <td>
+      <xsl:value-of select="title"/>
        <a>
-         <xsl:attribute name="href"><xsl:value-of select="@topicname"/></xsl:attribute>
-         <xsl:attribute name="style">wikiword</xsl:attribute>
-         <xsl:value-of select="@topicname"/>
+         <xsl:attribute name="href"><xsl:value-of select="link"/></xsl:attribute>
+	 more...
        </a>		     
     </td>
-    <td><xsl:value-of select="@action"/></td>
-    <td><xsl:value-of select="@date"/></td>
-    <td>
-      <xsl:if test="@who != ''">
-       <a>
-         <xsl:attribute name="href"><xsl:value-of select="@who"/></xsl:attribute>
-         <xsl:attribute name="style">wikiword</xsl:attribute>
-         <xsl:value-of select="@who"/>
-       </a>		     
-     </xsl:if>
-    </td>
+    <td><xsl:value-of select="pubDate"/></td>
   </tr>
 </xsl:template>
 

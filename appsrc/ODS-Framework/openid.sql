@@ -362,6 +362,52 @@ create procedure check_authentication
 {
   declare arr, ses, signature any;
   declare key_val, val, ss_key any;
+  declare nickname, email, fullname, dob, gender, postcode, country, lang, timezone, svec, idn, iarr any;
+
+  svec := vector ();
+
+  idn := get_keyword ('openid.identity', params, '');
+  iarr := sprintf_inverse (idn, 'http://%s/dataspace/%s', 1);
+
+  nickname := null;
+  if (length (iarr) = 2)
+    {
+      nickname := iarr[1];
+      nickname := rtrim(nickname, '/');
+    }
+
+  whenever not found goto nf;
+  select U_E_MAIL, U_FULL_NAME, WAUI_BIRTHDAY, WAUI_GENDER, WAUI_HCODE, WAUI_HCOUNTRY, WAUI_HTZONE
+     into email, fullname, dob, gender, postcode, country, timezone
+     from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where
+     WAUI_U_ID = U_ID and U_NAME = nickname;
+
+  if (dob is not null)
+    dob := substring (datestring (dob), 1, 10);
+
+  if (gender = 'male')
+    gender := 'M';
+  else if (gender = 'female')
+    gender := 'F';
+  else
+    gender := null;
+
+  if (length (country))
+    country := (select WC_CODE from DB.DBA.WA_COUNTRY where WC_NAME = country);
+
+  svec := vector (
+		    'sreg.nickname', nickname,
+		    'sreg.email', email,
+		    'sreg.fullname', fullname,
+		    'sreg.dob', dob,
+		    'sreg.gender', gender,
+		    'sreg.postcode', postcode,
+		    'sreg.country', country,
+		    'sreg.language', 'en',
+		    'sreg.timezone', null -- until fix the format
+		);
+
+  nf:;
 
   if (exists (select 1 from SERVER_SESSIONS where SS_HANDLE = assoc_handle))
     {
@@ -378,9 +424,16 @@ create procedure check_authentication
   foreach (any item in arr) do
     {
       key_val := 'openid.'||item;
-      val := get_keyword (key_val, params, '');
+      val := get_keyword (key_val, params, null);
       if (key_val = 'openid.mode')
 	val := 'id_res';
+      if (val is null and item like 'sreg.%')
+	{
+	  val := get_keyword (item, svec, '');
+	}
+      if (val is null)
+	val := '';
+
       http (sprintf ('%s:%s\x0A',item,val), ses);
     }
   if (user <> 'OpenID')

@@ -53,6 +53,7 @@
     <v:variable persist="0" name="bother" type="varchar" default="''"/>
     <v:variable persist="0" name="bnetwork" type="varchar" default="''"/>
     <v:variable persist="0" name="bresume" type="varchar" default="''"/>
+    <v:variable persist="0" name="org_page" type="varchar" default="''"/>
 
     <v:variable name="sav19" type="varchar" default="'1'" />
     <v:variable name="sav20" type="varchar" default="'1'" />
@@ -70,7 +71,6 @@
     <v:variable name="sav32" type="varchar" default="'1'" />
     <v:variable name="sav34" type="varchar" default="'1'" />
     <v:variable name="sav47" type="varchar" default="'1'" />
-    <v:variable name="sav48" type="varchar" default="'1'" />
 
 
     <v:before-data-bind>
@@ -82,10 +82,10 @@
         SELECT WAUI_BINDUSTRY, WAUI_BORG, WAUI_BJOB, WAUI_BADDRESS1, WAUI_BADDRESS2, WAUI_BCODE, WAUI_BCITY,
                WAUI_BSTATE, WAUI_BCOUNTRY, WAUI_BTZONE, WAUI_BPHONE, WAUI_BMOBILE, WAUI_BREGNO,
                WAUI_BCAREER, WAUI_BEMPTOTAL, WAUI_BVENDOR, WAUI_BSERVICE, WAUI_BOTHER, WAUI_BNETWORK, WAUI_RESUME,
-               WAUI_BLAT, WAUI_BLNG,WAUI_LATLNG_HBDEF
+               WAUI_BLAT, WAUI_BLNG,WAUI_LATLNG_HBDEF, WAUI_BORG_HOMEPAGE
           INTO _bindustr, _borg, _bjob, _baddress1, _baddress2, _bcode, _bcity, _bstate, _bcountry, _btzone,
                _bphone, _bmobile, _bregno, _bcareer, _bempltotal, _bvendor, _bservice, _bother, _bnetwork, _bresume,
-       	       self.blat, self.blng,self.blatlng_def
+       	       self.blat, self.blng,self.blatlng_def, self.org_page
 
           FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 
@@ -131,7 +131,6 @@
           self.sav32 := tmp[32];
           self.sav34 := tmp[34];
           self.sav47 := tmp[47];
-          self.sav48 := tmp[48];
         }
 
       if (e.ve_is_post and e.ve_button = self.page_form)
@@ -168,6 +167,15 @@
                           xhtml_style="width:216px"
                           xhtml_tabindex="2"/>
 		    <vm:u-prop-select name="sel_20" value="self.sav20" />
+                </td>
+              </tr>
+              <tr>
+                <th><label for="b_org_page">Organization Home Page</label></th>
+                <td class="listing_col" nowrap="1">
+                  <v:text name="b_org_page"
+                          value="--self.org_page"
+                          xhtml_style="width:216px"
+                          xhtml_tabindex="2"/>
                 </td>
               </tr>
               <tr>
@@ -309,7 +317,7 @@
                         xhtml_style="width:216px; margin-right:3px;"
                         xhtml_tabindex="8"/>
                     </td>
-                    <td rowspan="2" valing="center">
+                    <td rowspan="2" valign="center">
                      <vm:u-prop-select name="sel_47" value="self.sav47" />
                      <v:button name="set_blat_blong" action="simple" value="Set from address">
                        <v:on-post>
@@ -554,6 +562,7 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_RESUME', self.b_resume.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_BJOB', self.b_job.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_BORG', self.b_org.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_BORG_HOMEPAGE', self.b_org_page.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_BINDUSTRY', self.b_industr.ufl_value);
 
                         -- change user_text data

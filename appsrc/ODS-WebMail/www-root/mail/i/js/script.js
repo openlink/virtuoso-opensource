@@ -21,78 +21,111 @@
  *
  */
 // ---------------------------------------------------------------------------
-function Is()
-{
-    var agent = navigator.userAgent.toLowerCase();
-    this.major = parseInt(navigator.appVersion);
-    this.minor = parseFloat(navigator.appVersion);
-    this.ns  = ((agent.indexOf('mozilla')!=-1) && ((agent.indexOf('spoofer')==-1) && (agent.indexOf('compatible') == -1)));
-    this.ns2 = (this.ns && (this.major == 2));
-    this.ns3 = (this.ns && (this.major == 3));
-    this.ns4b = (this.ns && (this.minor < 4.04));
-    this.ns4 = (this.ns && (this.major >= 4));
-    this.ie   = (agent.indexOf("msie") != -1);
-    this.ie3  = (this.ie && (this.major == 2));
-    this.ie4  = (this.ie && (this.major >= 4));
-    this.op3 = (agent.indexOf("opera") != -1);
-    this.win   = (agent.indexOf("win")!=-1);
-    this.mac   = (agent.indexOf("mac")!=-1);
-    this.unix  = (agent.indexOf("x11")!=-1);
+var BrowserDetect = {
+  init: function () {
+    this.browser = this.searchString(this.dataBrowser) || "An unknown browser";
+    this.version = this.searchVersion(navigator.userAgent)
+      || this.searchVersion(navigator.appVersion)
+      || "an unknown version";
+    this.OS = this.searchString(this.dataOS) || "an unknown OS";
+  },
+  searchString: function (data) {
+    for (var i=0;i<data.length;i++)  {
+      var dataString = data[i].string;
+      var dataProp = data[i].prop;
+      this.versionSearchString = data[i].versionSearch || data[i].identity;
+      if (dataString) {
+        if (dataString.indexOf(data[i].subString) != -1)
+          return data[i].identity;
+      }
+      else if (dataProp)
+        return data[i].identity;
+    }
+  },
+  searchVersion: function (dataString) {
+    var index = dataString.indexOf(this.versionSearchString);
+    if (index == -1) return;
+    return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
+  },
+  dataBrowser: [
+    {   string: navigator.userAgent,
+      subString: "OmniWeb",
+      versionSearch: "OmniWeb/",
+      identity: "OmniWeb"
+    },
+    {
+      string: navigator.vendor,
+      subString: "Apple",
+      identity: "Safari"
+    },
+    {
+      prop: window.opera,
+      identity: "Opera"
+    },
+    {
+      string: navigator.vendor,
+      subString: "iCab",
+      identity: "iCab"
+    },
+    {
+      string: navigator.vendor,
+      subString: "KDE",
+      identity: "Konqueror"
+    },
+    {
+      string: navigator.userAgent,
+      subString: "Firefox",
+      identity: "Firefox"
+    },
+    {
+      string: navigator.vendor,
+      subString: "Camino",
+      identity: "Camino"
+    },
+    {    // for newer Netscapes (6+)
+      string: navigator.userAgent,
+      subString: "Netscape",
+      identity: "Netscape"
+    },
+    {
+      string: navigator.userAgent,
+      subString: "MSIE",
+      identity: "Explorer",
+      versionSearch: "MSIE"
+    },
+    {
+      string: navigator.userAgent,
+      subString: "Gecko",
+      identity: "Mozilla",
+      versionSearch: "rv"
+    },
+    {     // for older Netscapes (4-)
+      string: navigator.userAgent,
+      subString: "Mozilla",
+      identity: "Netscape",
+      versionSearch: "Mozilla"
+    }
+  ],
+  dataOS : [
+    {
+      string: navigator.platform,
+      subString: "Win",
+      identity: "Windows"
+    },
+    {
+      string: navigator.platform,
+      subString: "Mac",
+      identity: "Mac"
+    },
+    {
+      string: navigator.platform,
+      subString: "Linux",
+      identity: "Linux"
 }
+  ]
 
-var is = new Is();
-
-if(is.ns4) {
-    doc = "document";
-    sty = "";
-    htm = ".document"
-} else if(is.ie4) {
-    doc = "document.all";
-    sty = ".style";
-    htm = ""
-}
-
-// ---------------------------------------------------------------------------
-function delay(gap) { /* gap is in millisecs */
-  var then, now;
-  then = new Date().getTime();
-  now = then;
-  while ((now-then) < gap)
-    now=new Date().getTime();
-}
-
-// ---------------------------------------------------------------------------
-function showAddr()
-{
-	if (is.ie4) {
-		showAddr_ie();
-	} else {
-		showAddr_ns();
-	}
-}
-
-// ---------------------------------------------------------------------------
-function showAddr_ie()
-{
-	if(AddrStatus == 0) {
-  	AddrObj.visibility = "visible";
-  	if (eval(doc + '["att"]'))
-  		AttObj.visibility = "hidden";
-  	AddrStatus = 1;
-	} else {
-		AddrObj.visibility = "hidden";
-		if (eval(doc + '["att"]'))
-			AttObj.visibility = "visible";
-		AddrStatus = 0;
-	}
-}
-
-// ---------------------------------------------------------------------------
-function showAddr_ns()
-{
-	wwidth = window.outerWidth - 320;
-	window.open(winusrl,"hp","width=300,height=500,top=190,left=" + wwidth + ", location=no,scrollbars=yes");
-}
+};
+BrowserDetect.init();
 
 // ---------------------------------------------------------------------------
 function AddAdr(obj,addr)
@@ -190,6 +223,7 @@ function toggleValue(obj) {
 function initValue(obj) {
   var value = document.forms['f1'].elements['message'].value;
   if (obj.checked == true) {
+    if (!((BrowserDetect.browser == 'Opera') && (BrowserDetect.version <= '8.53')))
     enableDesignMode('rteMessage', initRte(value), false);
   } else {
     document.forms['f1'].elements['plainMessage'].value = value;

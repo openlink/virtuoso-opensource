@@ -57,6 +57,8 @@
           <v:variable persist="0" name="v_did" param-name="did" type="integer"/>
           <v:variable persist="0" name="v_aid" param-name="aid" type="integer"/>
           <v:variable persist="0" name="v_pid" type="integer"/>
+      <v:variable persist="temp" name="openid_sig" type="varchar" default="null" param-name="oid_sig"/>
+      <v:variable persist="temp" name="openid_key" type="varchar" default="null" param-name="oid_key"/>
         </vm:variables>
     <vm:pagebody>
           <div class="new-form-header">
@@ -87,6 +89,9 @@
               </div>
                 </td>
               </tr>
+          <?vsp
+            if (exists (select 1 from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is not null)) {
+          ?>
               <tr>
                 <td>
               <div class="comment-section">Comments</div>
@@ -132,13 +137,10 @@
                         <v:button action="simple" value="Delete" xhtml_title="Delete" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this comment?\');" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
-                        		      declare id int;
-                        		      id := cast ((control.vc_parent as vspx_tree_node).tn_value as integer);
+                              declare id integer;
 
-                                  delete from
-                                    ENEWS.WA.FEED_ITEM_COMMENT
-                                  where
-                                    EFIC_ID = id;
+                              id := cast ((control.vc_parent as vspx_tree_node).tn_value as integer);
+                              delete from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ID = id;
 
                                   self.v_mode := 'show';
                                   self.vc_data_bind(e);
@@ -156,6 +158,9 @@
                   </v:tree>
                 </td>
               </tr>
+          <?vsp
+            }
+          ?>
               <tr>
                 <td>
               <div class="comment-button"></div>
@@ -175,7 +180,7 @@
                           <v:label for="f_name" value="Name" />
                         </th>
                         <td>
-                          <v:text name="f_name" value="--ENEWS.WA.account_name(self.v_aid)" xhtml_class="textbox" xhtml_size="70" />
+                      <v:text name="f_name" xhtml_id="f_name" value="--ENEWS.WA.account_fullName (self.v_aid)" xhtml_class="textbox" xhtml_size="50" />
                         </td>
                       </tr>
                       <tr>
@@ -183,15 +188,26 @@
                           <v:label for="f_mail" value="E-Mail" />
                         </th>
                         <td>
-                          <v:text name="f_mail" value="--ENEWS.WA.account_mail(self.v_aid)" xhtml_class="textbox" xhtml_size="70" />
+                      <v:text name="f_mail" xhtml_id="f_mail" value="--ENEWS.WA.account_mail(self.v_aid)" xhtml_class="textbox" xhtml_size="50" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                      <v:label for="f_url" value="Web Site" />
+                      <v:label for="openid_url" value="Web Site" />
+		      <span id='img'>
+		        <img src="<?V case when length (self.openid_sig) then 'image/login-bg.gif' else '' end ?>"
+			     width="16"
+			     height="16"
+			     hspace="1"
+			     style="<?V case when length (self.openid_sig) then '' else 'display: none;' end ?>" />
+		      </span>
                     </th>
                     <td>
-                      <v:text name="f_url" value="--''" xhtml_class="textbox" xhtml_size="70" />
+   		      <v:text name="oid_key" value="--self.openid_key" type="hidden" xhtml_id="oid_key" />
+		      <v:text name="oid_sig" value="--self.openid_sig" type="hidden" xhtml_id="oid_sig" />
+		      <v:text name="openid_url" xhtml_id="openid_url" value="" xhtml_size="50" xhtml_class="textbox" />
+		      <input type='button' value='Verify' id='verify_button' onclick="javascript: onClickVerify(event);" class="button" />
+                      <span id='msg'></span>
                     </td>
                   </tr>
                   <tr>
@@ -233,18 +249,20 @@
                                 comment := trim(get_keyword('f_message', self.vc_event.ve_params, ''));
                                 name := trim(self.f_name.ufl_value);
                                 mail := trim(self.f_mail.ufl_value);
-                            url := trim(self.f_url.ufl_value);
+                            url := trim(self.openid_url.ufl_value);
 
                                 if (isnull(self.v_pid)) {
                                   -- get root comment;
                                   self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.v_did and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
-                                  if (isnull(self.v_pid))
-                                    self.v_pid := ENEWS.WA.nntp_root (self.v_did, self.v_fid);
+                              if (isnull(self.v_pid)) {
+                                ENEWS.WA.nntp_root (self.v_did, self.v_fid);
+                                self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.v_did and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
+                              }
                                 }
 
                                 ENEWS.WA.nntp_update_item (self.v_did, self.v_fid);
-                            insert into ENEWS.WA.FEED_ITEM_COMMENT (EFIC_PARENT_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_U_URL, EFIC_LAST_UPDATE)
-                              values (self.v_pid, self.v_did, self.v_fid, title, comment, name, mail, url, now ());
+                            insert into ENEWS.WA.FEED_ITEM_COMMENT (EFIC_PARENT_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_U_URL, EFIC_LAST_UPDATE, EFIC_OPENID_SIG)
+                              values (self.v_pid, self.v_did, self.v_fid, title, comment, name, mail, url, now (), self.oid_sig.ufl_value || '&mac_key=' || self.oid_key.ufl_value);
 
                                 self.v_mode := 'show';
                                 self.vc_data_bind(e);

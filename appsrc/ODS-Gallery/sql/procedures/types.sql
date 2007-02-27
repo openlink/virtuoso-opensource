@@ -24,6 +24,7 @@ PHOTO.WA._exec_no_error('drop type photo_user');
 PHOTO.WA._exec_no_error('drop type photo_comment');
 PHOTO.WA._exec_no_error('drop type photo_exif');
 PHOTO.WA._exec_no_error('drop type SOAP_album');
+PHOTO.WA._exec_no_error('drop type SOAP_external_album');
 PHOTO.WA._exec_no_error('drop type image_ids');
 PHOTO.WA._exec_no_error('drop type SOAP_gallery');
 PHOTO.WA._exec_no_error('drop type photo_instance');
@@ -40,7 +41,8 @@ create type photo_user as (
   last_name   varchar,
   full_name   varchar,
   sid         varchar,
-  realm       varchar
+  realm       varchar,
+  ses_vars    any
   )
   constructor method photo_user(auth_uid varchar),
   constructor method photo_user(auth_uid integer)
@@ -67,7 +69,7 @@ create constructor method photo_user(
       self.home_dir := DAV_SEARCH_PATH (result,'C');
     };
 
-    self.gallery_dir := concat(self.home_dir,'gallery/');
+    self.gallery_dir := concat(self.home_dir,PHOTO.WA.get_gallery_folder_name(),'/');
     self.user_id    := user_data[3];
     self.full_name  := user_data[2];
     self.first_name  := user_data[4];
@@ -103,7 +105,7 @@ create constructor method photo_user(
   }
 
   if(__tag(self.home_dir) <> 189){
-    self.gallery_dir := concat(self.home_dir,'gallery/');
+    self.gallery_dir := concat(self.home_dir,PHOTO.WA.get_gallery_folder_name(),'/');
   }else{
     self.gallery_dir := '';
   }
@@ -112,6 +114,10 @@ create constructor method photo_user(
 }
 ;
 
+create procedure PHOTO.WA.get_gallery_folder_name(){
+  return 'Gallery';  
+}
+;
 
 --------------------------------------------------------------------------------
 create type SOAP_gallery as(
@@ -254,6 +260,22 @@ for SOAP_album
  }
 ;
 
+--------------------------------------------------------------------------------
+create type SOAP_external_album as (
+  source varchar,
+  type varchar,
+  id integer,
+  visibility integer,
+  owner_id varchar,
+  mime_type varchar,
+  name varchar,
+  private_tags varchar array,
+  public_tags varchar array,
+  secret varchar,
+  server varchar,
+  farm varchar
+);
+
 
 --------------------------------------------------------------------------------
 
@@ -355,31 +377,33 @@ for photo_instance
 }
 ;
 --------------------------------------------------------------------------------
-create method photo_instance_create(in home_url varchar)
+create method photo_instance_create(in _home_url varchar)
 for photo_instance
 {
 
-  declare exit handler for NOT FOUND {
-    return null;
-  };
-
-  declare _home_path,_name,_home_url,_owner_name,_description varchar;
+  declare _home_path,_name,_owner_name,_description varchar;
   declare _owner_id,_i,_gallery_id integer;
-  declare path any;
+  declare path,_wai_id any;
 
-  path := PHOTO.WA.utl_parse_url(home_url);
-
-  _home_url := '/';
-  while(_i < length(path)){
-    if(isnull(strstr(path[_i],'.'))){
-      _home_url := concat(_home_url,path[_i],'/');
+  declare continue handler for NOT FOUND {
+    _wai_id := (SELECT VH_INST FROM WA_VIRTUAL_HOSTS WHERE CONCAT(VH_LPATH,'/') = _home_url);
+    if(_wai_id is null){
+      PHOTO.WA.http_404();
+      return;  
     }
-    _i := _i + 1;
-  }
+    SELECT OWNER_ID,HOME_PATH,PHOTO.WA.SYS_INFO.WAI_NAME,GALLERY_ID,U_NAME,WAI_DESCRIPTION
+      INTO _owner_id,_home_path,_name,_gallery_id,_owner_name,_description
+      FROM PHOTO.WA.SYS_INFO
+      JOIN DB.DBA.SYS_USERS ON U_ID = OWNER_ID
+      JOIN WA_INSTANCE WAI ON WAI.WAI_NAME = PHOTO.WA.SYS_INFO.WAI_NAME
+     WHERE WAI_ID = _wai_id;
+  };
 
   if(strstr(_home_url,'index.vspx')){
       _home_url := substring(_home_url,1,strstr(_home_url,'index.vspx'));
   };
+
+  path := PHOTO.WA.utl_parse_url(_home_url);
 
   SELECT OWNER_ID,HOME_PATH,PHOTO.WA.SYS_INFO.WAI_NAME,GALLERY_ID,U_NAME,WAI_DESCRIPTION
     INTO _owner_id,_home_path,_name,_gallery_id,_owner_name,_description
@@ -404,4 +428,5 @@ for photo_instance
   PHOTO.WA._exec_no_error('grant execute on photo_exif TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on photo_comment TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on SOAP_album TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on SOAP_external_album TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on SOAP_gallery TO SOAPGallery');

@@ -99,6 +99,9 @@
               
                       if(self.user_name is not null and self.is_inst_member and isstring (mapkey) and length (mapkey) > 0){
                     ?>
+                  <div id="google_map" class="google_map" >
+                   <img src="/community/public/images/indicator.gif" id="maploadwait" />
+                   </div>
                   <vm:map-control 
 	                    sql="sprintf ('select ' ||
                                     '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
@@ -120,7 +123,6 @@
                       wa_home_local="self.wa_home||'/'"
                        />
 
-                      <div id="google_map" class="google_map" />
                     <?vsp
                       }
                     ?>

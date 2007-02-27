@@ -48,7 +48,7 @@ create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar
         
         user_pwd := pwd_magic_calc(U_NAME,U_PWD, 1);
 
-        -- Predicates --
+        -- Predictes --
         post_iri    := gallery_post_iri(RES_FULL_PATH);
         forum_iri   := photo_iri (WAI_NAME);
 	    creator_iri := user_iri (RES_OWNER);
@@ -361,3 +361,171 @@ create procedure gallery_comment_url(in iri varchar, in comment_id int)
 ;
 
 use DB;
+use DB;
+-- PHOTO
+
+create procedure sioc.DBA.gallery_prop_get (in path varchar, in uid varchar, in pwd varchar, in def varchar)
+{
+  declare rc int;
+  rc := DB.DBA.DAV_PROP_GET (path, 'description', uid, pwd_magic_calc (uid, pwd, 1));
+  if (rc = -12)
+    return null;
+  else if (not isstring (rc))
+    return def;
+
+  return rc;
+};
+
+use DB;
+
+wa_exec_no_error ('drop view ODS_PHOTO_POSTS');
+
+create view ODS_PHOTO_POSTS as select
+		RES_ID,
+		m.WAM_INST WAI_NAME,
+		RES_FULL_PATH RES_FULL_PATH,
+		RES_NAME RES_NAME,
+		RES_TYPE RES_TYPE,
+		sioc..sioc_date (RES_CR_TIME) as  RES_CREATED,
+		sioc..sioc_date (RES_MOD_TIME) as RES_MODIFIED,
+		uo.U_NAME U_OWNER,
+		uo.U_PASSWORD U_PWD,
+	        um.U_NAME U_MEMBER,
+		sioc..gallery_post_url (p.HOME_URL, '/' || COL_NAME || '/' || RES_NAME, RES_NAME) as RES_LINK,
+		sioc..gallery_prop_get (RES_FULL_PATH, uo.U_NAME, uo.U_PASSWORD, RES_NAME) as RES_DESCRIPTION VARCHAR,
+		sioc..dav_res_iri (RES_FULL_PATH) || '/sioc.rdf' as SEE_ALSO
+		from
+		PHOTO..SYS_INFO p, WA_MEMBER m, WS.WS.SYS_DAV_RES, SYS_USERS uo, SYS_USERS um, WS.WS.SYS_DAV_COL
+		where
+		RES_COL = COL_ID and
+		p.WAI_NAME = m.WAM_INST and
+		m.WAM_MEMBER_TYPE = 1 and
+		um.U_ID = m.WAM_USER and
+		uo.U_ID = RES_OWNER and
+		RES_FULL_PATH like HOME_PATH || '%' and RES_FULL_PATH not like HOME_PATH || '%/.thumbnails/%';
+
+wa_exec_no_error ('drop view ODS_PHOTO_COMMENTS');
+wa_exec_no_error ('drop view ODS_PHOTO_TAGS');
+
+create view ODS_PHOTO_COMMENTS as select
+	COMMENT_ID,
+	p.RES_ID,
+	p.RES_NAME RES_NAME,
+	sioc..sioc_date (CREATE_DATE) as CREATE_DATE,
+	sioc..sioc_date (MODIFY_DATE) as MODIFY_DATE,
+	USER_ID,
+	TEXT,
+	WAI_NAME,
+	RES_FULL_PATH,
+	U_MEMBER,
+	mk.U_NAME as U_MAKER,
+	RES_LINK
+	from PHOTO.WA.comments c, DB.DBA.ODS_PHOTO_POSTS p, SYS_USERS mk
+	where c.RES_ID = p.RES_ID and mk.U_ID = USER_ID;
+
+create procedure ODS_PHOTO_TAGS ()
+{
+  declare private_tags any;
+  declare arr any;
+  declare inst, member, path, tag any;
+
+  result_names (inst, member, path, tag);
+  for select WAI_NAME, U_MEMBER, RES_FULL_PATH, U_OWNER, U_PWD from DB.DBA.ODS_PHOTO_POSTS do
+    {
+        private_tags := DB.DBA.DAV_PROP_GET(RES_FULL_PATH,':virtprivatetags',U_OWNER, pwd_magic_calc (U_OWNER, U_PWD, 1));
+	if (__tag(private_tags) <> 189)
+	  {
+	    arr := split_and_decode (private_tags, 0, '\0\0,');
+	    foreach (any t in arr) do
+	      {
+		t := trim (t);
+		if (length (t))
+		  {
+		    result (WAI_NAME, U_MEMBER, RES_FULL_PATH, t);
+		  }
+	      }
+	  }
+    }
+};
+
+create procedure view ODS_PHOTO_TAGS as ODS_PHOTO_TAGS () (WAI_NAME varchar, U_MEMBER varchar, RES_FULL_PATH varchar, RES_TAG varchar);
+
+create procedure sioc.DBA.rdf_photos_view_str ()
+{
+  return
+      '
+
+      # Posts
+      # SIOC
+      sioc:photo_post_iri (DB.DBA.ODS_PHOTO_POSTS.RES_FULL_PATH) a sioc:Post ;
+      dc:title RES_NAME ;
+      dct:created RES_CREATED ;
+      dct:modified RES_MODIFIED ;
+      sioc:content RES_DESCRIPTION ;
+      sioc:has_creator sioc:user_iri (U_OWNER) ;
+      foaf:maker foaf:person_iri (U_OWNER) ;
+      sioc:link sioc:proxy_iri (RES_LINK) ;
+      rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
+      sioc:has_container sioc:photo_forum_iri (U_MEMBER, WAI_NAME) .
+
+      sioc:photo_forum_iri (DB.DBA.ODS_PHOTO_POSTS.U_MEMBER, DB.DBA.ODS_PHOTO_POSTS.WAI_NAME)
+      a sioct:Photo ;
+      sioc:container_of
+      sioc:photo_post_iri (RES_FULL_PATH) .
+
+      sioc:user_iri (DB.DBA.ODS_PHOTO_POSTS.U_OWNER)
+      sioc:creator_of
+      sioc:photo_post_iri (RES_FULL_PATH) .
+
+      # Tags
+      sioc:photo_post_iri (DB.DBA.ODS_PHOTO_TAGS.RES_FULL_PATH)
+      sioc:topic
+      sioc:tag_iri (U_MEMBER, RES_TAG) .
+
+      sioc:tag_iri (DB.DBA.ODS_PHOTO_TAGS.U_MEMBER, DB.DBA.ODS_PHOTO_TAGS.RES_TAG) a skos:Concept ;
+      skos:prefLabel RES_TAG ;
+      skos:isSubjectOf sioc:photo_post_iri (RES_FULL_PATH) .
+
+      # Comments
+      sioc:photo_comment_iri (DB.DBA.ODS_PHOTO_COMMENTS.RES_FULL_PATH, DB.DBA.ODS_PHOTO_COMMENTS.COMMENT_ID) a sioc:Post ;
+      sioc:reply_of sioc:photo_post_iri (RES_FULL_PATH) ;
+      sioc:has_container sioc:photo_forum_iri (U_MEMBER, WAI_NAME) ;
+      dc:title RES_NAME ;
+      dct:created CREATE_DATE ;
+      dct:modified MODIFY_DATE ;
+      sioc:content TEXT ;
+      foaf:maker foaf:person_iri (U_MAKER)
+      .
+
+      sioc:photo_post_iri (DB.DBA.ODS_PHOTO_COMMENTS.RES_FULL_PATH)
+      sioc:has_reply
+      sioc:photo_comment_iri (RES_FULL_PATH, COMMENT_ID) .
+
+      # AtomOWL
+      sioc:photo_post_iri (DB.DBA.ODS_PHOTO_POSTS.RES_FULL_PATH) a atom:Entry ;
+      atom:title RES_NAME ;
+      atom:source sioc:photo_forum_iri (U_MEMBER, WAI_NAME) ;
+      atom:author foaf:person_iri (U_OWNER) ;
+      atom:published RES_CREATED ;
+      atom:updated RES_MODIFIED ;
+      atom:content sioc:photo_post_text_iri (RES_FULL_PATH) .
+
+      sioc:photo_post_text_iri (DB.DBA.ODS_PHOTO_POSTS.RES_FULL_PATH) a atom:Content ;
+      atom:type RES_TYPE ;
+      atom:body RES_DESCRIPTION .
+
+      sioc:photo_forum_iri (DB.DBA.ODS_PHOTO_POSTS.U_MEMBER, DB.DBA.ODS_PHOTO_POSTS.WAI_NAME)
+      atom:contains
+      sioc:photo_post_iri (RES_FULL_PATH) .
+
+      '
+      ;
+};
+
+grant select on ODS_PHOTO_POSTS to "SPARQL";
+grant select on ODS_PHOTO_COMMENTS to "SPARQL";
+grant select on ODS_PHOTO_TAGS to "SPARQL";
+grant execute on DB.DBA.ODS_PHOTO_TAGS to "SPARQL";
+
+-- END PHOTO
+ODS_RDF_VIEW_INIT ();

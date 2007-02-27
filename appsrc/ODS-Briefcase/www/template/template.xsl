@@ -99,38 +99,31 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:popup_page_wrapper">
-    <xsl:element name="v:variable">
-      <xsl:attribute name="persist">0</xsl:attribute>
-      <xsl:attribute name="name">page_owner</xsl:attribute>
-      <xsl:attribute name="type">varchar</xsl:attribute>
-      <xsl:choose>
-        <xsl:when test="../@vm:owner">
-          <xsl:attribute name="default">'<xsl:value-of select="../@vm:owner"/>'</xsl:attribute>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:attribute name="default">null</xsl:attribute>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:element>
-    <xsl:apply-templates select="node()|processing-instruction()"/>
-    <div class="copyright"><hr /><vm:copyright /></div>
+    <v:variable name="nav_pos_fixed" type="integer" default="1"/>
+    <v:variable name="nav_top" type="integer" default="0"/>
+    <v:variable name="nav_tip" type="varchar" default="''"/>
+    <xsl:for-each select="//v:variable">
+      <xsl:copy-of select="."/>
+    </xsl:for-each>
+    <div style="padding: 0.5em;">
+      <div style="padding: 0 0 0.5em 0;">
+        &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+        <hr />
+      </div>
+      <v:template type="simple" condition="not self.vc_is_valid">
+        <div class="error">
+          <p><v:error-summary/></p>
+        </div>
+      </v:template>
+      <v:form name="F1" type="simple" method="POST">
+        <xsl:apply-templates select="vm:pagebody" />
+      </v:form>
+    </div>
+    <div class="copyright"><vm:copyright /></div>
   </xsl:template>
 
   <!--=========================================================================-->
   <xsl:template match="vm:pagewrapper">
-    <xsl:element name="v:variable">
-      <xsl:attribute name="persist">0</xsl:attribute>
-      <xsl:attribute name="name">page_owner</xsl:attribute>
-      <xsl:attribute name="type">varchar</xsl:attribute>
-      <xsl:choose>
-        <xsl:when test="../@vm:owner">
-          <xsl:attribute name="default">'<xsl:value-of select="../@vm:owner"/>'</xsl:attribute>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:attribute name="default">null</xsl:attribute>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:element>
     <v:variable name="nav_pos_fixed" type="int" default="0"/>
     <v:variable name="nav_top" type="int" default="0"/>
     <v:variable name="nav_tip" type="varchar" default="''"/>
@@ -162,8 +155,10 @@
         <br style="clear: left;"/>
       </div>
       <div style="text-align: right; padding: 0em 0.5em 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
+        <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
           <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
           |
+        </v:template>
           <v:button action="simple" style="url" value="Help" xhtml_title="Help"/>
       </div>
       <v:include url="odrive_login.vspx"/>
@@ -182,22 +177,21 @@
       	</td>
       </tr>
     </table>
-    </v:form>
-    <div class="footer">
-      <a href="<?V ODRIVE.WA.wa_home_link () ?>aboutus.html" title="About Us">About Us</a> |
-      <a href="<?V ODRIVE.WA.wa_home_link () ?>faq.html" title="FAQ">FAQ</a> |
-      <a href="<?V ODRIVE.WA.wa_home_link () ?>privacy.html" title="Privacy">Privacy</a> |
-      <a href="<?V ODRIVE.WA.wa_home_link () ?>rabuse.vspx" title="Report Abuse">Report Abuse</a> |
-      <a href="#" title="Advertise">Advertise</a> |
-      <a href="#" title="Contact Us">Contact Us</a>
+      <div id="FT">
+        <div id="FT_L">
+          <a href="http://www.openlinksw.com/virtuoso">
+            <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
+          </a>
     </div>
-    <div class="copyright">
+        <div id="FT_R">
+          <a href="<?V ODRIVE.WA.wa_home_link () ?>faq.html">FAQ</a> |
+          <a href="<?V ODRIVE.WA.wa_home_link () ?>privacy.html">Privacy</a> |
+          <a href="<?V ODRIVE.WA.wa_home_link () ?>rabuse.vspx">Report Abuse</a>
 	    <div><vm:copyright /></div>
 	    <div><vm:disclaimer /></div>
-	    <a href="http://www.openlinksw.com/virtuoso">
-	      <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/PoweredByVirtuoso.gif" border="0" />
-	    </a>
     </div>
+      </div> <!-- FT -->
+    </v:form>
   </xsl:template>
 
   <!--=========================================================================-->

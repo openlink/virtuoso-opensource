@@ -32,7 +32,7 @@ TPORT=${TPORT-8440}
 PORT=${PORT-1940}
 ISQL=${ISQL-isql}
 DSN="$HOST:$PORT"
-NEED_VERSION=04.50.2905
+NEED_VERSION=04.50.2921
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
 then
@@ -101,7 +101,7 @@ VERSION_INIT()
 	  BASE=`cat version.base`
       fi
 
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=450 } { cnt = cnt + $1 } END { print cnt }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=560 } { cnt = cnt + $1 } END { print cnt }'`
 
       VERSION=`expr $BASE + $VERSION`
       CURR_VERSION=$VERSION
@@ -287,7 +287,7 @@ sticker_init() {
   echo "  <name package=\"Framework\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Framework\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1999-2006 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1999-2007 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -344,7 +344,8 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/wa_template.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/gdata.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/openid.sql', 1, 'report', 1);" >> $STICKER
-
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ods_api.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ldap.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/trs_export.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/foaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/ufoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
@@ -356,6 +357,7 @@ sticker_init() {
   #echo "      vhost_define (lpath=>'/wa',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'index.vspx');" >> $STICKER
   echo "      vhost_define (lpath=>'/ods',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'sfront.vspx');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/web_svc.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
@@ -453,12 +455,6 @@ ServerEnable = 1
 QueueMax     = 50000
 
 " > virtuoso.ini
-  if [ -f virtuoso.lic ]
-  then
-    echo "virtuoso.lic found"
-  else
-    cp $HOME/binsrc/tests/suite/virtuoso.lic virtuoso.lic 2>/dev/null
-  fi
   virtuoso_start
 }
 

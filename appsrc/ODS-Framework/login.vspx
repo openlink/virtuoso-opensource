@@ -35,10 +35,7 @@
     <vm:pagewrapper>
       <vm:rawheader caption=""/>
       <vm:body default-input="username">
-        <div class="splash">
-          <table>
-            <tr>
-              <td>
+        <div id="login_page">
                 <h1 class="page_title">
                   <?vsp
                     declare copy varchar;
@@ -49,16 +46,7 @@
                       http(copy);
                   ?>
                 </h1>
-              </td>
-            </tr>
-            <tr>
-              <td id="RB" valign="top">
                  <vm:login/>
-              </td>
-	      <td height="10" id="RB">
-	      </td>
-            </tr>
-          </table>
         </div>
       </vm:body>
     </vm:pagewrapper>

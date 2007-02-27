@@ -21,9 +21,11 @@
  *  
  */
 
+/* Openlink template */
+
 body {
-  padding: 0;
   margin: 0;
+  padding: 0;
   width: 100%}
 
 #HD {
@@ -306,28 +308,25 @@ h1 {
 h2 {
 	font-size: 100%;
 	color: #889FB1;
-	margin: 10px;
-
-}
-#mainarea p {
-	font-size: 70%;
-}
+  margin: 10px}
 h4 {
 	font-size: 80%;
-	color: #A4BFD5;
-}
+  color: #A4BFD5}
 h3 {
 	font-size: 90%;
-	color: #99B3C5;
-}
+  color: #99B3C5}
+
+#pagecontainer {
+  float: left;
+  clear: both}
+
 .copyright {
 	font-size: 70%;
 	color: #99B3C5;
 	padding-left: 20px;
 	text-align: right;
 	padding-right: 25px;
-	padding-top: 5px;
-}
+	padding-top: 5px}
 .footernav {
 	background-color: #99B3C5;
 	vertical-align: middle;
@@ -583,3 +582,86 @@ ul.info_container3 {
     text-align: left;
     padding: 1px 1px;
   }
+
+#mappingServiceSwitch{
+font-size: 10px;
+}
+
+#ods-bar-odslogin{
+padding: 0 12px 0 0;
+font-family: Verdana, Arial, Helvetica, sans-serif;
+font-size: 12px;
+}
+
+/* Generic widget styles */
+
+div.widget {
+  margin: 3px;
+  margin-top: 0px;
+  padding-top: 0px;
+  background-color: #f8f4f4;
+  font-size: 9pt;
+  border: 1px solid #575;
+  border-bottom: 2px solid #575;
+  width: 625px;
+  float: left}
+
+div.w_title_bar {
+  float: left;
+  clear: left;
+  width: 620px;
+  margin: 0;
+  padding-left: 5px;
+  font-size: 10pt;
+  font-weight: bold;
+  background-color: #86b9d9;
+  color: white}
+
+div.w_title_text_ctr {
+  float: left;
+  clear: left;
+  vertical-align: middle}
+
+div.w_title_text_ctr img {
+ margin-top: 2px}
+
+span.w_title_text {
+  margin-left: 4px;
+  vertical-align: middle}
+
+img.w_title_icon {
+  height: 16px;
+  width: 16px;
+  vertical-align: middle;
+  margin-bottom: 3px;}
+
+/* XXX widget buttons are not in use yet */
+
+div.w_title_btns_ctr {
+  display: none;
+  float: right;
+  clear: right;
+  margin: 0;
+  padding: 2px 2px 0 0}
+
+div.w_title_btns_ctr img {
+  border:0}
+
+div.w_pane {
+  float: left;
+  clear: both;
+  width: 100%}
+
+div.w_pane h3 {
+  margin-left: 3px}
+
+
+div.w_app_summary { width: 600px}
+div.w_app_summary div.w_title_bar {
+  width: 595px}
+
+#RT {
+  float: left;
+  clear: right;
+  margin: 0 5px 0 0
+ }

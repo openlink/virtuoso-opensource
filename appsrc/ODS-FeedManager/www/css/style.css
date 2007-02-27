@@ -21,21 +21,17 @@
  *  
  */
 
-html { padding: 0;margin: 0;}
-
 body
 {
-  padding: 0px;
-  margin: 0px;
+  padding: 0;
+  margin: 0;
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 75%;
+  font-size: 9pt;
 }
 
-a
-{
+a {
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  text-decoration: none;
-}
+  text-decoration: none}
 
 a:active
 {
@@ -84,7 +80,7 @@ div.app_hdr_cmds_ctr {
 #MD {
   float: left;
   clear: both;
-  width: 99%;
+  width: 100%;
   padding: 0;
   margin: 0 0 4px 4px;
   border: 0}
@@ -114,7 +110,7 @@ h1.page_hd {
 
 /* Footer */
 
-#FT {
+#FT1 {
   width: 100%;
   position: relative;
   bottom: 0px;
@@ -123,14 +119,61 @@ h1.page_hd {
   clear: both;
   text-align: right;
   border-top: 1px solid black;
+  background-color: #86b9d9
+}
+
+#FT_L1 {
+  float: left;
+  clear: left
+}
+
+#FT_R1 {
   padding-right: 10px;
-  background-color: #86b9d9}
+  float: right;
+  clear: right
+}
 
-#FT_L { float: left;
-  clear: left}
+/* Footer */
 
-#FT_R { float: right;
-  clear: right}
+#FT
+{
+  width: 100%;
+  position: relative;
+  bottom: 0px;
+  font-size: 8pt;
+  float: left;
+  clear: both;
+  text-align: right;
+  border-top: 2px solid #fff;
+  margin-right: 10px;
+  background-color: #fff;
+  background-image: url(../image/ods_main_footer.png);
+}
+
+#FT_L
+{
+  float: left;
+  clear: left;
+  margin-top: 10px;
+  margin-left: 8px;
+  border: 1px solid #788;
+}
+
+#FT_R
+{
+  float: right;
+  clear: right;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-right: 5px;
+  color: #788;
+}
+
+#FT_R a
+{
+  text-decoration: none;
+  color: inherit;
+}
 
 #MTB
 {
@@ -141,14 +184,13 @@ h1.page_hd {
 
 #LC
 {
-  width: 12%;
+  width: 170px;
   padding-top: 5px;
   vertical-align: top;
 }
 
 #RC
 {
-  width: 88%;
   padding-top: 5px;
   vertical-align: top;
 }
@@ -243,7 +285,7 @@ table.sub_page_area
 {
   color: red;
   font-weight: bold;
-  margin: 0px 0px 3px 0px;
+  margin: 3px 0px 3px 0px;
   background-color: white;
   border: 1pt solid red;
   text-align: center;
@@ -343,11 +385,6 @@ table.sub_page_area
 /*
   Fields
 */
-input:focus, select:focus, textarea:focus
-{
-  background: #FFFAEF;
-}
-
 input[readonly]
 {
   background: #EFEFEF;
@@ -400,44 +437,50 @@ table#list thead input {
   font-weight: bold;
 }
 
-/*====== news ======*/
-.feed_pane
+/*====== Panes ======*/
+.pane_main
 {
   width: 100%;
-  height: 550px;
-  border: solid #7f94a5;
-  border-width: 1px 1px 1px 1px;
+  height: 500px;
   position: relative;
 }
 
-.feed_subpane1
+.pane_left
 {
-  width: 29.8%;
-  height: 550px;
+  width: 30.3%;
+  height: 100%;
   float: left;
   overflow: auto;
-}
-
-.feed_subpane2
-{
-  width: 70%;
-  height: 275px;
-  float: right;
   border: solid #7f94a5;
-  border-width: 0px 0px 0px 1px;
-  overflow: auto;
+  border-width: 1px;
 }
 
-.feed_subpane3
+.pane_right
 {
-  width: 70%;
-  height: 275px;
+  width: 69.3%;
+  height: 100%;
   float: right;
-  border: solid #7f94a5;
-  border-width: 1px 0px 0px 1px;
-  overflow: auto;
 }
 
+.pane_right_sub1
+{
+  width: 100%;
+  height: 49.5%;
+  overflow: auto;
+  border: solid #7f94a5;
+  border-width: 1px
+}
+
+.pane_right_sub2
+{
+  width: 100%;
+  height: 49.5%;
+  margin-top: 0.3%;
+  border: solid #7f94a5;
+  border-width: 1px
+}
+
+/*====== news ======*/
 #feed_header
 {
   width: auto;
@@ -485,20 +528,34 @@ table#list thead input {
 
 #channel_header
 {
+  float: left;
   font-size: 1em;
-  padding: 3px 0 3px 0;
-  background-color: #EFEFEF;
+  font-weight: bold;
+  background-color: #b0cde4;
   border: solid #7f94a5;
   border-width: 0px 0px 1px 0px;
+}
+
+#channel_header_left
+{
+  float: left;
+  padding: 3px;
+}
+
+#channel_header_right
+{
+  float: right;
+  padding: 3px;
 }
 
 #channel_subheader
 {
   font-size: 0.9em;
-  padding: 2px 0 2px 0;
-  background-color: #b0cde4;
+  padding: 3px 0 3px 3px;
+  padding-top: 2px;
+  background-color: #EFEFEF;
   border: solid #7f94a5;
-  border-width: 0px 0px 2px 0px;
+  border-width: 0px 0px 1px 0px;
 }
 
 table#feed

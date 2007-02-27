@@ -57,23 +57,59 @@ function submitEnter(myForm, myButton, e)
 }
 
 // ---------------------------------------------------------------------------
-function selectAllCheckboxes (form, btn)
-{
-  for (var i = 0; i < form.elements.length; i = i + 1) {
-    var contr = form.elements[i];
-    if (contr != null && contr.type == "checkbox") {
-      contr.focus();
-      if (btn.value == 'Select All')
-        contr.checked = true;
+function selectAllCheckboxes (obj, prefix, toolbarsFlag) {
+  var objForm = obj.form;
+  for (var i = 0; i < objForm.elements.length; i++) {
+    var o = objForm.elements[i];
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1)
+      o.checked = (obj.value == 'Select All');
+  }
+  if (obj.value == 'Select All')
+    obj.value = 'Unselect All';
       else
-        contr.checked = false;
+    obj.value = 'Select All';
+  if (toolbarsFlag)
+    enableToolbars(objForm, prefix);
+  obj.focus();
+    }
+
+// ---------------------------------------------------------------------------
+function enableToolbars (objForm, prefix)
+{
+  var oCount = 0;
+  var fCount = 0;
+  var rCount = 0;
+  for (var i = 0; i < objForm.elements.length; i++) {
+    var o = objForm.elements[i];
+    if (o != null && o.type == 'checkbox' && !o.disabled && o.name.indexOf (prefix) != -1 && o.checked) {
+      oCount++;
+      if (o.name[o.name.length-1] == '/') {
+        fCount++;
+      } else {
+        rCount++;
+  }
     }
   }
-  if (btn.value == 'Select All')
-    btn.value = 'Unselect All';
-  else
-    btn.value = 'Select All';
-  btn.focus();
+  enableElement('tbMail', 'tbMail_gray', rCount>0);
+}
+
+// ---------------------------------------------------------------------------
+function enableElement (id, id_gray, idFlag)
+{
+  var mode = 'block';
+  var element = document.getElementById(id);
+  if (element != null) {
+    if (idFlag) {
+      element.style.display = 'block';
+      mode = 'none';
+    } else {
+      element.style.display = 'none';
+      mode = 'block';
+    }
+  }
+  element = document.getElementById(id_gray);
+  if (element != null)
+    element.style.display = mode;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,14 +131,18 @@ function countSelected (form, txt)
 // ---------------------------------------------------------------------------
 function getSelected (form, txt)
 {
+  var s = '';
+  var n = 1;
   if ((form != null) && (txt != null)) {
     for (var i = 0; i < form.elements.length; i++) {
       var obj = form.elements[i];
-      if ((obj != null) && (obj.type == "checkbox") && (obj.name.indexOf (txt) != -1) && obj.checked)
-        return (obj.name).substr(txt.length);
+      if ((obj != null) && (obj.type == "checkbox") && (obj.name.indexOf (txt) != -1) && obj.checked) {
+        s = s + '&f' + n + '=' + escape((obj.name).substr(txt.length));
+        n++;
+      }
     }
   }
-  return '';
+  return s;
 }
 
 // ---------------------------------------------------------------------------
@@ -330,12 +370,24 @@ function windowShow(sPage, width, height)
 //
 function renameShow(myForm, myPrefix, myPage, width, height)
 {
-  var myFile = getSelected(myForm, myPrefix);
-  if (myFile != '') {
-    if (height == null)
-      height = 250;
-    myPage = myPage + '&file=' + escape(myFile);
-    windowShow(myPage, width, height);
+  var myFiles = getSelected (myForm, myPrefix);
+  if (myFiles != '')
+    windowShow(myPage + myFiles, width, height);
+}
+
+// ---------------------------------------------------------------------------
+//
+function mailShow(myForm, myPrefix, myPage, width, height)
+{
+  var myFiles = getSelected (myForm, myPrefix);
+  if (myFiles != '') {
+    var myBody = 'Sending files:\n';
+    for (var i = 0; i < myForm.elements.length; i++) {
+      var obj = myForm.elements[i];
+      if ((obj != null) && (obj.type == "checkbox") && (obj.name.indexOf (myPrefix) != -1) && obj.checked)
+        myBody = myBody + (obj.name).substr(myPrefix.length) + '\n';
+    }
+    windowShow(myPage + myFiles + '&fa_dav.x=DAV&message=' + escape(myBody), width, height);
   }
 }
 
@@ -591,8 +643,9 @@ function toggleDavRows()
       showTableRow('rdf_store');
 
       showCell('label_dav');
-      hideCell('label_rdf');
-      hideCell('label_rdf_prefix');
+      hideCell('label_dav_rdf');
+      showCell('dav_name');
+      hideCell('dav_name_rdf');
     }
     if (document.forms['F1'].elements['dav_destination'][1].checked == '1') {
       hideCell('davRow_metadata');
@@ -608,8 +661,9 @@ function toggleDavRows()
         document.forms['F1'].elements['dav_source'][0].checked = '1';
 
       hideCell('label_dav');
-      showCell('label_rdf');
-      showCell('label_rdf_prefix');
+      showCell('label_dav_rdf');
+      hideCell('dav_name');
+      showCell('dav_name_rdf');
     }
   }
 }

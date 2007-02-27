@@ -28,19 +28,24 @@ body {
   font-size: 9pt;
   color: #233;
   padding: 0;
+  margin: 0}
+
+form {
   margin: 0;
-  border: 0}
+  padding: 0}
 
 h1 { font-size: 22px}
 h2 { font-size: 18px}
 h3 { font-size: 16px}
 
-th { text-align: left;}
+th { text-align: left}
 
 #page { 
-  width: 99%;
+  width: 100%;
   float: left; 
-  clear: both}
+  clear: both;
+  padding: 0;
+  margin: 0}
 
 /* Header */
 
@@ -55,35 +60,31 @@ th { text-align: left;}
 #HD_R {
   float: right;
   clear: right;
-  margin-top: 20px;
-}
+  margin-top: 20px}
 
 #HD_L {
   float: left;
   clear: both;
-  height: 60px;
-}
+  height: 60px}
 
 /* Middle */
 
 #MD {
-  width: 100%;
   float: left;
   clear: both;
+  width: 100%;
   padding: 0;
-  margin: 0 0 4px 4px;
-  border: 0}
+  margin: 0;
+  border: 0;
+  background-color: #e3eff5}
 
 h1.page_hd {
   clear: both;
   margin: 0;
   height: 60px;
-  padding: 10px 20px 0 0;
   color: #888;
-  background-image: url("images/ods_banner.jpg");
   background-repeat: no-repeat;
-  text-align: right;
-}
+  text-align: right}
 
 #LT {
   float: left;
@@ -106,22 +107,35 @@ h1.page_hd {
   float: left;
   clear: both;
   text-align: right;
-  border-top: 1px solid black;
-  padding-right: 10px;
-  background-color: #86b9d9}
+  border-top: 2px solid #fff;
+  margin-right: 10px;
+  background-color: #fff;
+  background-image: url(images/ods_main_footer.png);}
 
 #FT_L { float: left;
-  clear: left}
+  clear: left;
+  margin-top: 10px;
+  margin-left: 8px;
+  border: 1px solid #788}
 
 #FT_R { float: right;
   clear: right;
-  padding-right: 4px}
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-right: 5px;
+  color: #788}
+
+#FT_R a {
+  text-decoration: none;
+  color: inherit}
 
 /* Auxiliary pages with sidebar, app_my_inst, etc */
 
 #LT_SB { 
   float: left; clear: left;
-  width: 200px; margin: 0}
+  width: 200px; 
+  margin: 5px 5px 5px 2px;
+  border: 1px solid #3ae}
 
 a.ods_side_button {
   display: block;
@@ -129,22 +143,27 @@ a.ods_side_button {
   text-decoration: none;
   padding: 2px;
   margin: 0;
-  color: #426275;
-}
+  color: #426275}
 
 a.ods_side_button img {
-  vertical-align: middle;
-}
+  vertical-align: middle}
 
 ul.sb { 
   margin: 0; padding: 0;
   list-style-type: none;
-  background-color: #6bc;
-}
+  background-color: #ccc}
+
+ul.sb li {
+  background: #0075A8 url("images/navlv2default.png")}
 
 ul.sb li:hover {
-  background-color: #8cf
-}
+  background-color: #8cf}
+
+ul.sb li a {
+  color: inherit}
+
+ul.app_cmds_sb {
+  margin-bottom: 10px}
 
 #RT ul.sb {
   margin-left: 5px}
@@ -154,10 +173,8 @@ ul.sb li:hover {
 
 ul.button_bar {
   margin: 0;
-  padding: 3px;
   list-style-type: none;
-  background-color: #6bc;
-}
+  background-color: #6bc}
 
 ul.button_bar li:hover { 
   background-color: #8cf}
@@ -172,12 +189,12 @@ ul.button_bar li a { }
 
 div.widget {
   margin: 3px;
-  margin-top: 0px;
-  padding-top: 0px;
-  background-color: #f8f4f4;
+  padding: 0;
+  background-color: #fff;
+  background-image: url("images/default_widget.png");
+  background-repeat: repeat-x;
   font-size: 9pt;
-  border: 1px solid #575;
-  border-bottom: 2px solid #575;
+  border: 1px solid #67a3bd;
   width: 465px;
   float: left}
 
@@ -189,9 +206,7 @@ div.w_title_bar {
   padding-left: 5px;
   font-size: 10pt;
   font-weight: bold;
-  background-color: #86b9d9;
-  background-image: url(../i/w_title_gradient.png);
-  color: white}
+  color: #0073a6}
 
 div.w_title_text_ctr {
   float: left;
@@ -230,17 +245,31 @@ div.w_pane {
 div.w_pane h3 {
   margin-left: 3px}
 
+div.w_pane a {
+  color: #477}
+
+div.w_pane a:hover {
+  color: #255}
+
 div.w_footer {
   float: left;
   clear: both;
-  width: 459px;
-  padding: 0 3px 0 3px;
-  border-top: 1px solid #575;
-  background-color: #dde}
+  width: 100%;
+  margin-top: 4px;
+  border-top: 1px solid #ccc;
+  color: #666;
+  background-color: #fff;
+  background-image: url("images/footer_widget.png");
+  background-repeat: repeat-x;}
 
 div.w_footer a {
-  color: #222;
-  margin-right: 0.4em}
+  color: inherit;
+  text-decoration: none;
+  font-size: 8pt;
+  margin: 4px;}
+
+div.w_footer a:hover {
+  text-decoration: underline}
 
 div.w_resizer { 
   float: right; 
@@ -249,6 +278,9 @@ div.w_resizer {
   min-height: 16px;
   width: 16px; 
   background-color: red}
+
+div.widget div.content_pane p {
+  margin: 5px;} 
 
 div.widget div.settings_pane { display: none;}
 
@@ -263,13 +295,13 @@ div.w_activity h3 {
   font-size: 10pt;
   font-weight: normal;
   padding: 0;
-  margin: 0}
+  margin: 4px}
 div.w_activity ul { 
   list-style-type: none;
-  margin: 0 0 4px 0px;
-  padding: 0}
+  margin: 4px;
+  padding: 0;}
 div.w_activity ul li a {
-  color: #224}
+  color: inherit}
 
 /* Set to display: none if you don't want to display no of 
    active users */
@@ -277,17 +309,19 @@ div.w_activity ul li a {
 div.w_activity .usr_count {
   display: inline}
 
-div.w_activity .content_pane { 
-padding-left: 4px}
+div.w_activity .content_pane { }
 div.w_activity .w_act_lst li {
   display: inline;
   margin-right: 0.4em}
+div.w_activity ul li a {
+  font-size: 8pt;
+  color: inherit;}
+
 
 /* welcome */
 div.w_welcome p { margin: 4px}
 div.w_welcome h3 {
-  padding: 4px 4px;
-  margin: 0;}
+  margin: 4px}
 div.w_welcome a {
   color: #224}
 
@@ -295,16 +329,23 @@ div.w_welcome a {
 
 /* Generic sizing overriding widget size */
 
-div.w_app_summary { width: 600px}
+div.w_app_summary {
+  width: 600px;
+  margin: 5px;
+  min-height: 300px;}
 div.w_app_summary div.w_title_bar {
   width: 595px}
+table.app_summary_listing {
+  margin: 3px;
+  font-size: 9pt}
+table.app_summary_listing th a {
+  color: inherit}
 
 /* ODS-Weblog */
 
 div.w_blog_summary ul {
   font-size: 8pt;
   list-style-type: none;
-  padding: 0;
   margin: 3px}
 div.w_blog_summary ul li a {
   color: #444}
@@ -314,8 +355,7 @@ div.w_blog_summary ul li a {
 div.w_wiki_summary {}
 div.w_wiki_summary ul {
   font-size: 8pt;
-  list-style-type: none;
-  padding: 3px}
+  list-style-type: none}
 div.w_wiki_summary ul li a {
   color: #444}
 
@@ -324,22 +364,28 @@ div.w_wiki_summary ul li a {
 div.w_news_summary ul {
   font-size: 8pt;
   list-style-type: none;
-  margin: 0;
-  padding: 0 4px 0 4px}
+  margin: 0}
 div.w_news_summary ul li a {
   color: #444}
 
 /* User home page (myhome.vspx) */
 
 /* What's New */
+
 div.w_whats_new .content_pane {
   width: 100%;
-  background-color: #fe6}
+  background-color: #398ba8;
+  background-image: url("images/wnew_widget.png")}
+
 div.w_whats_new h3 {
-  margin: 4px 4px 4px 4px}
+  margin: 5px;}
+
 div.w_whats_new .content_pane p {
-  margin: 4px 0 4px 0; 
-  padding: 0 3px 0 3px}
+  margin: 5px; 
+  padding: 0;}
+
+div.w_whats_new .w_title_bar {
+  display: none}
 
 /* My Blog */
 
@@ -362,22 +408,19 @@ div.w_my_bookmarks ul {
 
 div.w_feed_reader {}
 div.w_feed_reader ul {
-  padding-left: 0px;
   margin: 3px;
   list-style-type: none}
 div.w_feed_reader ul li img { 
 border: 0}
 div.w_feed_reader div.footer {
   background-color: #77d}
-table.feed_table {
-}
+table.feed_table { }
 
 /* Feed reader */
 
 div.w_my_news {}
 div.w_my_news ul {
   margin: 3px;
-  padding-left: 0px;
   font-size: 8pt;
   list-style-type: none}
 div.w_my_news ul li img { 
@@ -393,16 +436,17 @@ table.feed_table img { vertical-align: middle;
 table.feed_table td.time {
   color: #8d9696}
 
-
 /* My Wiki */
-div.w_my_wiki {
-}
+div.w_my_wiki { }
 
 div.w_my_wiki ul {
   font-size: 8pt;
   clear: both;
   list-style-type: none;
   padding: 3px}
+
+div.w_my_wiki .content_pane a {
+  color: #477}
 
 /* My Mail */
 div.w_my_mail {}
@@ -416,16 +460,15 @@ div.w_my_mail p {
   padding-left: 3px}
 
 /* My Profile */
-div.w_my_profile {}
+div.w_my_profile {
+  background-color: #fff}
 div.w_my_profile table { 
-  width: 100%;
   border: 0;
-  padding: 0;
-  margin: 0}
+  margin: 8px;}
 div.w_my_profile th {
-  border: 0;
-  background-color: #ddd;
-  text-align: right}
+  font-size: 8pt;
+  color: #777;
+  font-weight: normal} 
 
 /* My Friends */
 div.w_my_friends {}
@@ -439,9 +482,17 @@ div.w_my_friends p.msg {
 /* My Communities */
 div.w_my_communities {}
 div.w_my_communities ul {
+  font-size: 8pt;
   margin-left: 4px;
   list-style-type: none;
   padding: 0}
+
+/* My Photos */
+div.w_my_photos ul {
+  font-size: 8pt;
+  margin: 5px;
+  padding: 0;
+  list-style-type: none}
 
 /* (transient) Message widget */
 
@@ -479,17 +530,102 @@ div.app_ad_ft label {
 
 /* error dialog */
 
+div.error_dialog { 
+  margin: 10px;
+  border: 1px solid #444;}
+
 div.error_dialog h1 {
-  color: #275533;
-}
+  color: #275533}
 
 div.error_dialog h1 img {
   padding: 0px 10px 0px 6px;
   vertical-align: middle;}
 
-div.error_dialog table.error_tech_info {}
+div.error_dialog .dialog_body {
+  margin: 6px}
 
-div.error_dialog .dialog_body {}
+table.error_tech_info {
+  font-size: 7pt;
+  color: #777;
+  border-top: 1px solid #444;
+  margin: 5px;}
+
+table.error_tech_info th {
+  text-align: left}
+
+table.error_tech_info caption {
+  text-align: left}
+
+div.error_dialog div.dialog_buttons {
+  margin: 5px;
+  text-align: right;}
+
+/* Login */
+
+#login_page { float: left; clear: both;
+  width: 100%;
+  color: #5f6366;
+  background-color: #d9e9f2;}
+#id_col { float: left; clear: left}
+#form_col { float: left; margin-bottom: 50px;}
+#login_form_ctr { 
+  margin: 20px;
+  border: 2px solid #b6d4e3;
+  background-color: #e0f0f9;
+  background-image: url(images/ods_signin_container1.png)}
+#login_form { margin: 10px;width: 300px;}
+#login_page img.id_logo { 
+  margin: 50px 50px 50px 40px}
+#login_page h1 {
+  margin-left: 50px}
+#login_page h2 {
+  font-size: 10pt;
+  margin-left: 10px}
+#login_page label {
+  display: block;
+  width: 100px;
+  float: left;
+  margin-bottom: 10px;
+  margin-top: 4px}
+#login_form_username {  
+  display: block;
+  width: 170px;
+  float: left;
+  margin-bottom: 10px}
+#login_form_password {  
+  display: block;
+  width: 170px;
+  float: left;
+  margin-bottom: 10px}
+#login_frm_cb_remember_me {
+  display: block;
+  float: left;
+  margin-left: 100px;
+  margin-bottom: 10px}
+#login_page br {
+  clear: left}
+#login_frm_b_login {
+  margin-left: 100px}
+div.login_error_ctr {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  background-color: #fff}
+p.login_error {
+  padding: 0;
+  padding-top: 5px;
+  margin-top: 10px;
+  margin: 5px;
+  width: 100%}
+p.login_error img {
+  vertical-align: middle;
+  margin-right: 3px;}
+#login_form a.pwd_recovery_url {
+  font-size: 8pt;
+  display: block;
+  margin-left: 100px;
+  margin-top: 5px;
+  color: #255}
 
 /* ugly table-based tabs deck */
 
@@ -503,8 +639,7 @@ td.tab_deck {
 
 table.navtab_tabs_ctr {
   margin: 0;
-  padding: 0;
-}
+  padding: 0}
 
 tr.navtab_row {
   background-color: #ddd}
@@ -566,7 +701,45 @@ div.map_user_data
 div.google_map
 {
      width: 800px;
-      height: 400px;
-}
+  height: 400px}
+
+/* =BEGIN= Listing controls colorization returned back =BEGIN= */
+
+table.listing
+{
+  width: 100%;
+  background-color: white}
+
+table.listing th
+{
+  border-color: #FFFFFF;
+  border-style: solid;
+  border-width: 0px 0px 0px 1px}
 
 
+tr.listing_header_row
+{
+  background-image: url(images/stl_blu1_grad.gif);
+  background-repeat: repeat-x}
+
+tr.listing_header_row th
+{
+  white-space: nowrap}
+
+a.listing_header_row, a.listing_header_row:visited, a.listing_header_row:hover
+{
+  white-space: nowrap;
+  color: #000000}
+
+tr.listing_row_even
+{ }
+
+tr.listing_row_odd
+{
+  background-color: #f0f0f0}
+
+tr.listing_row_selected
+{
+  background-color: gray}
+
+/* Listing controls colorization */

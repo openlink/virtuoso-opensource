@@ -142,6 +142,6 @@ create procedure ods_mail_sioc_init ()
   return;
 };
 
-OMAIL.WA.exec_no_error ('ods_mail_sioc_init ()');
+--OMAIL.WA.exec_no_error ('ods_mail_sioc_init ()');
 
 use DB;

@@ -19,16 +19,19 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
-
-create procedure WV.WIKI.SILENT_EXEC (in code varchar) { whenever sqlstate '*' goto cont; exec (code); return; cont: rollback work; };
+--  
+create procedure WV.WIKI.SILENT_EXEC (in code varchar) { whenever sqlstate '*' goto cont; exec (code); commit work; return; cont: rollback work; };
 -- WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiAdmin\')');
 -- WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiUser\')');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_CREATE (\'WikiAdmin\', 1)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_CREATE (\'WikiUser\', 1)');
-WV.WIKI.SILENT_EXEC ('DB.DBA.USER_CREATE (\'Wiki\', \'Wiki\', vector (\'DAV_ENABLE\', 1, \'SQL_ENABLE\', 1, \'LOGIN_QUALIFIER\', \'WV\'))');
-user_set_password ('Wiki', 'Wiki');
+
+WV.WIKI.SILENT_EXEC ('DB.DBA.USER_CREATE (\'Wiki\', uuid() , vector (\'LOGIN_QUALIFIER\', \'WV\', \'DISABLED\', 1, \'SQL_ENABLE\', 1, \'DAV_ENABLE\', 0))');
 grant all privileges to "Wiki";
-DB.DBA.USER_CREATE ('WikiGuest', '', vector ('DAV_ENABLE', 1, 'SQL_ENABLE', 0, 'LOGIN_QUALIFIER', 'WV'));
+DB.DBA.USER_SET_OPTION ('Wiki', 'SQL_ENABLE', 1);
+
+WV.WIKI.SILENT_EXEC ('DB.DBA.USER_CREATE (\'WikiGuest\', uuid(), vector (\'LOGIN_QUALIFIER\', \'WV\', \'SQL_ENABLE\', 0, \'DAV_ENABLE\', 1, \'DISABLED\', 1))');
+
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_GRANT_ROLE (\'Wiki\', \'administrators\', 0)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_GRANT_ROLE (\'Wiki\', \'WikiAdmin\', 1)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_GRANT_ROLE (\'Wiki\', \'WikiUser\', 1)');
@@ -37,5 +40,7 @@ WV.WIKI.SILENT_EXEC ('DB.DBA.USER_GRANT_ROLE (\'dav\', \'WikiAdmin\', 1)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_GRANT_ROLE (\'WikiGuest\', \'WikiUser\', 0)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_SET_QUALIFIER (\'Wiki\', \'WV\')');
 DB.DBA.VHOST_REMOVE(lpath=>'/wiki/resources');
+DB.DBA.VHOST_REMOVE(vhost=>sioc..get_cname(), lpath=>'/wiki/resources');
 DB.DBA.VHOST_DEFINE(is_dav=>1, lpath=>'/wiki/resources/', ppath=>'/DAV/VAD/wiki/Root/', vsp_user=>'Wiki', opts=>vector('executable','yes'));
+DB.DBA.VHOST_DEFINE(is_dav=>1, vhost=>sioc..get_cname(), lpath=>'/wiki/resources/', ppath=>'/DAV/VAD/wiki/Root/', vsp_user=>'Wiki', opts=>vector('executable','yes'));
 

@@ -50,8 +50,18 @@
  </v:after-data-bind>
  <vm:header>
   <vm:title>Users map</vm:title>
-    <vm:map-control
-	sql="sprintf ('select WAUI_LAT as _LAT, WAUI_LNG as _LNG, WAUI_U_ID as _KEY_VAL, WA_SEARCH_USER_GET_EXCERPT_HTML (%d, vector (), WAUI_U_ID, '''', WAUI_FULL_NAME, U_NAME, WAUI_PHOTO_URL, U_E_MAIL) as EXCERPT from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_LAT is not null and WAUI_LNG is not null and WAUI_U_ID = U_ID', coalesce (self.u_id, http_nobody_uid ()))"
+    <vm:oatmap-control
+    sql="sprintf ('select _LAT,_LNG,_KEY_VAL,EXCERPT from ( \n ' ||
+                  'select \n' ||
+                  '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
+                  '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
+                  '  WAUI_U_ID as _KEY_VAL, \n' ||
+                  '  WA_SEARCH_USER_GET_EXCERPT_HTML (%d, vector (), WAUI_U_ID, '''', WAUI_FULL_NAME, U_NAME, WAUI_PHOTO_URL, U_E_MAIL) as EXCERPT \n' ||
+                  'from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS \n'||
+                   'where WAUI_U_ID = U_ID \n' ||
+                  ') tmp_tbl \n' ||
+                  'where _LAT is not null and _LNG is not null \n',
+                   coalesce (self.u_id, http_nobody_uid ()))"
 	baloon-inx="4"
 	lat-inx="1"
 	lng-inx="2"

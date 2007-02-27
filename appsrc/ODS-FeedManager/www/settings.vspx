@@ -28,14 +28,11 @@
 	    declare exit handler for not found { goto _end; };
 
       if (isnull(get_keyword('f_rows', self.vc_page.vc_event.ve_params))) {
-        self.v_settings := ENEWS.WA.settings(self.domain_id, self.account_id);
         self.v_conversation := ENEWS.WA.settings(self.domain_id, -1);
   			return;
   		}
 
 		_end:
-		  if (isnull(self.v_settings))
-        self.v_settings := vector();
 		  if (isnull(self.v_conversation))
         self.v_conversation := vector();
       return;
@@ -45,7 +42,6 @@
   <vm:pagewrapper>
     <vm:header/>
     <vm:variables>
-      <v:variable name="v_settings" persist="0" type="varchar" default="null"/>
       <v:variable name="v_conversation" persist="0" type="varchar" default="null"/>
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
     </vm:variables>
@@ -67,7 +63,7 @@
                   <v:label for="f_rows" value="Rows per page"/>
                 </th>
                 <td>
-                  <v:text name="f_rows" value="--get_keyword('rows', self.v_settings, '10')" xhtml_class="field-text"/>
+                  <v:text name="f_rows" value="--get_keyword('rows', self.settings, '10')" xhtml_class="field-text"/>
                 </td>
               </tr>
               <tr>
@@ -75,22 +71,22 @@
                   <v:label value="Auto-refresh at login"/>
                 </th>
                 <td>
-                  <v:check-box name="f_updateFeeds" xhtml_id="f_updateFeeds" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateFeeds', self.v_settings, '0') as integer)" xhtml_title="Auto-refresh feeds at login" />
+                  <v:check-box name="f_updateFeeds" xhtml_id="f_updateFeeds" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateFeeds', self.settings, '0') as integer)" xhtml_title="Auto-refresh feeds at login" />
                   <vm:label for="f_updateFeeds" value="for feeds"/>
                 </td>
               </tr>
               <tr>
                 <td>
-                  <v:check-box name="f_updateBlogs" xhtml_id="f_updateBlogs" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateBlogs', self.v_settings, '0') as integer)"  xhtml_title="Auto-refresh blogs at login" />
+                  <v:check-box name="f_updateBlogs" xhtml_id="f_updateBlogs" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateBlogs', self.settings, '0') as integer)"  xhtml_title="Auto-refresh blogs at login" />
                   <vm:label for="f_updateBlogs" value="for blogs"/>
                 </td>
               </tr>
               <tr>
                 <th>
-                  Feed icons
+                  Feed images
                 </th>
                 <td>
-                  <v:check-box name="f_feedIcons" xhtml_id="f_feedIcons" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('feedIcons', self.v_settings, '1') as integer)"  xhtml_title="Show Feed Icons" />
+                  <v:check-box name="f_feedIcons" xhtml_id="f_feedIcons" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('feedIcons', self.settings, '1') as integer)"  xhtml_title="Show Feed Icons" />
                   <vm:label for="f_feedIcons" value="show"/>
                 </td>
               </tr>
@@ -104,7 +100,7 @@
                     <v:item value="1.0" name="1.0"/>
                     <v:before-data-bind>
                       <![CDATA[
-                        control.ufl_value := get_keyword('atomVersion', self.v_settings, '1.0');
+                        control.ufl_value := get_keyword('atomVersion', self.settings, '1.0');
                       ]]>
                     </v:before-data-bind>
                   </v:select-list>
@@ -145,17 +141,17 @@
           		  return;
               }
               tmp := cast(tmp as varchar);
-              self.v_settings := ENEWS.WA.set_keyword('rows', self.v_settings, tmp);
-              self.v_settings := ENEWS.WA.set_keyword('updateFeeds', self.v_settings, self.f_updateFeeds.ufl_selected);
-              self.v_settings := ENEWS.WA.set_keyword('updateBlogs', self.v_settings, self.f_updateBlogs.ufl_selected);
-              self.v_settings := ENEWS.WA.set_keyword('feedIcons', self.v_settings, self.f_feedIcons.ufl_selected);
-              self.v_settings := ENEWS.WA.set_keyword('atomVersion', self.v_settings, self.f_atomVersion.ufl_value);
+              self.settings := ENEWS.WA.set_keyword('rows', self.settings, tmp);
+              self.settings := ENEWS.WA.set_keyword('updateFeeds', self.settings, self.f_updateFeeds.ufl_selected);
+              self.settings := ENEWS.WA.set_keyword('updateBlogs', self.settings, self.f_updateBlogs.ufl_selected);
+              self.settings := ENEWS.WA.set_keyword('feedIcons', self.settings, self.f_feedIcons.ufl_selected);
+              self.settings := ENEWS.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
 
               conv := cast(get_keyword('conv', self.v_conversation, '0') as integer);
               self.v_conversation := ENEWS.WA.set_keyword('conv', self.v_conversation, self.f_conv.ufl_selected);
               self.v_conversation := ENEWS.WA.set_keyword('conv_init', self.v_conversation, self.f_conv_init.ufl_selected);
 
-              insert replacing ENEWS.WA.SETTINGS(ES_DOMAIN_ID, ES_ACCOUNT_ID, ES_DATA) values(self.domain_id, self.account_id, serialize(self.v_settings));
+              insert replacing ENEWS.WA.SETTINGS(ES_DOMAIN_ID, ES_ACCOUNT_ID, ES_DATA) values(self.domain_id, self.account_id, serialize(self.settings));
               insert replacing ENEWS.WA.SETTINGS(ES_DOMAIN_ID, ES_ACCOUNT_ID, ES_DATA) values(self.domain_id, -1, serialize(self.v_conversation));
               commit work;
 
@@ -164,7 +160,7 @@
        				if (self.f_conv.ufl_selected and self.f_conv_init.ufl_selected)
   					    ENEWS.WA.nntp_fill (self.domain_id);
 
-      	      self.vc_data_bind(e);
+              self.vc_redirect('news.vspx');
       	    ]]>
       	  </v:on-post>
         </v:button>

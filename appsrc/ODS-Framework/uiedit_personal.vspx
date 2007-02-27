@@ -48,6 +48,7 @@
     <v:variable persist="0" name="music" type="varchar" default="''"/>
     <v:variable persist="0" name="movie" type="varchar" default="''"/>
     <v:variable persist="0" name="issearch" type="int" default="1"/>
+    <v:variable persist="0" name="interests" type="varchar" default="''"/>
 
     <v:variable name="sav0" type="varchar" default="'1'" />
     <v:variable name="sav1" type="varchar" default="'1'" />
@@ -66,6 +67,7 @@
     <v:variable name="sav44" type="varchar" default="'1'" />
     <v:variable name="sav45" type="varchar" default="'1'" />
     <v:variable name="sav46" type="varchar" default="'1'" />
+    <v:variable name="sav48" type="varchar" default="'1'" />
 
     <v:before-data-bind>
       <![CDATA[
@@ -81,11 +83,11 @@
                WAUI_MSIGNATURE, WAUI_SUMMARY,
 	       U_E_MAIL, WAUI_PHOTO_URL,
 	       WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
-	       WAUI_SEARCHABLE
+	       WAUI_SEARCHABLE, WAUI_INTERESTS
           INTO _utitle, _ftname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum,
 	       _email, self.photo,
 	       self.audio, self.books, self.music, self.movie,
-	       self.issearch
+	       self.issearch, self.interests
           FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 
         self.utitle := _utitle;
@@ -113,7 +115,7 @@
 	  self.sav6 := tmp[6];
 	  self.sav7 := tmp[7];
 	  self.sav8 := tmp[8];
-	  self.sav9 := tmp[9];
+--	  self.sav9 := tmp[9]; --this is public/friends/private for mail signature
 	  self.sav33 := tmp[33];
 	  self.sav37 := tmp[37];
 
@@ -121,6 +123,7 @@
 	  self.sav44 := tmp[44];
 	  self.sav45 := tmp[45];
 	  self.sav46 := tmp[46];
+	  self.sav48 := tmp[48];
 	}
       ]]>
     </v:before-data-bind>
@@ -359,7 +362,9 @@
 			  message="Mail Signature cannot be longer then 255 chars"
 			  empty-allowed="1"/>
 		  </v:textarea>
+<!--
 		  <vm:u-prop-select name="sel_9" value="self.sav9" />
+-->
                 </td>
               </tr>
               <tr>
@@ -385,52 +390,61 @@
 			</v:button>
                 </td>
 	      </tr>
+	      <tr>
+		  <th><label for="e_int" title="Free text">Interests</label>
+		      <span class="explain"> (one URL per line)</span>
+		  </th>
+		<td class="listing_col" nowrap="1">
+		  <v:textarea name="e_int" value="--self.interests" xhtml_cols="50" xhtml_rows="5" xhtml_tabindex="13"/>
+		  <vm:u-prop-select name="sel_48" value="self.sav48" />
+		</td>
+	      </tr>
 
 	      <tr>
 		<th><label for="e_fbook" title="Free text">Favorite Books</label></th>
 		<td class="listing_col" nowrap="1">
-		  <v:text name="e_fbook" value="--self.books" xhtml_size="80" xhtml_tabindex="13"/>
+		  <v:text name="e_fbook" value="--self.books" xhtml_size="80" xhtml_tabindex="14"/>
 		  <vm:u-prop-select name="sel_44" value="self.sav44" />
 		</td>
 	      </tr>
 	      <tr>
 		<th><label for="e_fmusic" title="Free text">Favorite Music</label></th>
 		<td class="listing_col" nowrap="1">
-		  <v:text name="e_fmusic" value="--self.music" xhtml_size="80" xhtml_tabindex="14"/>
+		  <v:text name="e_fmusic" value="--self.music" xhtml_size="80" xhtml_tabindex="15"/>
 		</td>
 	      </tr>
 	      <tr>
 		<th><label for="e_fmovie" title="Free text">Favorite Movies</label></th>
 		<td class="listing_col" nowrap="1">
-		  <v:text name="e_fmovie" value="--self.movie" xhtml_size="80" xhtml_tabindex="15"/>
+		  <v:text name="e_fmovie" value="--self.movie" xhtml_size="80" xhtml_tabindex="16"/>
 		</td>
 	      </tr>
 
               <tr>
                 <th><label for="up_photo">Upload Photo</label></th>
                 <td class="listing_col" nowrap="1">
-		    <input name="up_photo" type="file" value="" xhtml_size="80" xhtml_tabindex="16"
+		    <input name="up_photo" type="file" value="" xhtml_size="80" xhtml_tabindex="17"
 			onblur="javascript: getFileName(this.form, this, this.form.s_photo);" />
                 </td>
               </tr>
               <tr>
                 <th><label for="s_photo">Photo</label></th>
                 <td class="listing_col" nowrap="1">
-                  <v:text name="s_photo" value="--self.photo" xhtml_size="80" xhtml_tabindex="17"/>
+                  <v:text name="s_photo" value="--self.photo" xhtml_size="80" xhtml_tabindex="18"/>
 		  <vm:u-prop-select name="sel_37" value="self.sav37" />
                 </td>
               </tr>
               <tr>
                 <th><label for="up_audio">Upload Audio</label></th>
                 <td class="listing_col" nowrap="1">
-		    <input name="up_audio" type="file" value="" xhtml_size="80" xhtml_tabindex="18"
+		    <input name="up_audio" type="file" value="" xhtml_size="80" xhtml_tabindex="19"
 			onblur="javascript: getFileName(this.form, this, this.form.s_audio);" />
                 </td>
               </tr>
               <tr>
                 <th><label for="s_audio">Audio</label></th>
                 <td class="listing_col" nowrap="1">
-                  <v:text name="s_audio" value="--self.audio" xhtml_size="80" xhtml_tabindex="19"/>
+                  <v:text name="s_audio" value="--self.audio" xhtml_size="80" xhtml_tabindex="20"/>
 		  <vm:u-prop-select name="sel_43" value="self.sav43" />
                 </td>
               </tr>
@@ -466,7 +480,7 @@
 			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
 			  </v:on-post>
 			</v:button>
-                  <v:button name="user_sset_personal" value="Save" action="simple" xhtml_tabindex="20">
+                  <v:button name="user_sset_personal" value="Save" action="simple" xhtml_tabindex="21">
                     <v:on-post>
                       <![CDATA[
                         if(self.vc_is_valid = 0) return;
@@ -613,6 +627,7 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MUSIC', self.e_fmusic.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MOVIES', self.e_fmovie.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_SEARCHABLE', self.in_search.ufl_selected);
+                        WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.e_int.ufl_value);
 
                         -- change user_text data
                         declare _pdata long varchar;

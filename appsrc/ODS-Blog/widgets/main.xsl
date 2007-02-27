@@ -268,7 +268,7 @@
 	  }
 
   self.host := http_request_header (lines, 'Host');
-  self.chost := sioc..get_cname ();
+  self.chost := wa_cname ();
 
   self.current_domain := self.host;
   if (strstr (self.host, ':'))
@@ -1122,7 +1122,9 @@ window.onload = function (e)
       <xsl:text>&#10;</xsl:text>
   </xsl:template>
   <xsl:template match="vm:disco-atom-link">
-      <link rel="alternate" type="application/atom+xml" title="&lt;?V BLOG..blog_utf2wide (self.title) ?> Atom" href="&lt;?vsp http (sprintf ('http://%s%sgems/atom%s.xml', self.host, self.base, '')); ?>"/>
+      <link rel="alternate" type="application/atom+xml" title="&lt;?V BLOG..blog_utf2wide (self.title) ?> Atom" href="&lt;?vsp http (sprintf ('http://%s%sgems/atom.xml', self.host, self.base)); ?>"/>
+      <xsl:text>&#10;</xsl:text>
+      <link rel="alternate" type="application/atomserv+xml" title="&lt;?V BLOG..blog_utf2wide (self.title) ?> Atom" href="&lt;?vsp http (sprintf ('http://%s/Atom/%s/intro', self.host, self.blogid)); ?>"/>
       <xsl:text>&#10;</xsl:text>
   </xsl:template>
 
@@ -1230,12 +1232,18 @@ window.onload = function (e)
     <div>
     <?vsp
     {
-    declare id_part varchar;
+    declare id_part, suff varchar;
     id_part := '';
+    suff := 'rdf';
     if (self.postid is not null)
       id_part := self.postid || '/';
     ?>
-	<a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/weblog/%U/%ssioc.rdf', self.chost, self.owner_name, self.inst_name, id_part)); ?>" class="{local-name()}">
+    <xsl:if test="@format">
+    <xsl:processing-instruction name="vsp">
+	suff := '<xsl:value-of select="@format"/>';
+    </xsl:processing-instruction>
+    </xsl:if>
+	<a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/weblog/%U/%ssioc.%s', self.chost, self.owner_name, self.inst_name, id_part, suff)); ?>" class="{local-name()}">
 	  <img border="0" alt="SIOC" title="SIOC" >
 	      <xsl:call-template name="feed-image">
 		  <xsl:with-param name="default">'rdf-icon-16.gif'</xsl:with-param>
@@ -1500,7 +1508,7 @@ window.onload = function (e)
   </xsl:template>
 
 
-  <xsl:template match="vm:foaf-link">
+  <xsl:template match="vm:foaf-link"><!--
     <?vsp if (self.have_comunity_blog is null or self.have_comunity_blog = 0) { ?>
     <div>
 	<a href="&lt;?vsp http (sprintf ('http://%s%sgems/blogroll.rdf', self.host, self.base)); ?>"  class="{local-name()}">
@@ -1513,7 +1521,7 @@ window.onload = function (e)
       </a>
     </div>
     <?vsp } ?>
-</xsl:template>
+    --></xsl:template>
 
   <xsl:template match="vm:ods-foaf-link">
     <div>
@@ -3380,6 +3388,9 @@ window.onload = function (e)
         </li>
         <li>
           <a href="<?V sprintf('index.vspx?page=tags&sid=%s&realm=wa', self.sid) ?>">Tagging Settings</a>
+        </li>
+        <li>
+          <a href="<?V sprintf('index.vspx?page=import&sid=%s&realm=wa', self.sid) ?>">Import</a>
         </li>
     </vm:if>
       </ul>

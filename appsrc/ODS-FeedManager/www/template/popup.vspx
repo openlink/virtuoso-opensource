@@ -29,42 +29,35 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <script type="text/javascript" language="JavaScript" src="js/enews.js" />
     <?vsp http('</script>'); ?>
+    <script type="text/javascript" language="JavaScript" src="js/openid.js" />
+    <?vsp http('</script>'); ?>
     <title></title>
   </head>
   <body>
-    <v:page xmlns:v="http://www.openlinksw.com/vspx/">
+    <v:page name="popup" xmlns:v="http://www.openlinksw.com/vspx/">
       <vm:variables>
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
         <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
+        <v:variable persist="0" name="settings" type="any" />
       </vm:variables>
       <v:on-init>
         <![CDATA[
-          declare aRequest, aSessInfo any;
-          declare sCharset, sBrwCharset varchar;
-
-          SET ISOLATION = 'Committed';
+          set ISOLATION = 'Committed';
+          set http_charset = 'utf-8';
 
           -- Initialize variables
-          aRequest := ENEWS.WA.validate_request(lines,0);
+          declare aRequest, aSessInfo any;
 
-          -- Charset
-          sBrwCharset := http_request_header(lines, 'Accept-Charset', null);
-          if (sBrwCharset)
-            sCharset := regexp_match('[^,;$]*',sBrwCharset);
-          else
-            sCharset := 'UTF-8';
-          if (not position(upper(sCharset), charsets_list(0)))
-            sCharset := 'UTF-8';
-          exec(sprintf('SET CHARSET = ''%s''',sCharset));
-          exec(sprintf('SET HTTP_CHARSET = ''%s''',sCharset));
+          aRequest := ENEWS.WA.validate_request(lines,0);
 
           aSessInfo := ENEWS.WA.session_restore(aRequest, params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword('user_role', aSessInfo, '');
           self.accountName := get_keyword('user_name', aSessInfo, '');
+          self.settings := ENEWS.WA.settings (self.domain_id, self.account_id);
         ]]>
       </v:on-init>
 

@@ -35,9 +35,9 @@
           <v:error-summary/>
         </div>
       </v:template>
-      <vm:popup_page_wrapper>
+      <vm:popup_external_page_wrapper>
         <vm:dav_browser view="popup"/>
-      </vm:popup_page_wrapper>
+      </vm:popup_external_page_wrapper>
     </v:page>
   </body>
 </html>

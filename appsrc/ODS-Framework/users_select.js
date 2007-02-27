@@ -28,33 +28,6 @@ function myPost(frm_name, fld_name, fld_value)
 }
 
 // ---------------------------------------------------------------------------
-function toolbarPost(fld_value)
-{
-  document.F1.toolbar_hidden.value = fld_value;
-  doPost ('F1', 'toolbar');
-}
-
-// ---------------------------------------------------------------------------
-function submitEnter(myForm, myButton, e)
-{
-  var keycode;
-  if (window.event)
-    keycode = window.event.keyCode;
-  else
-    if (e)
-      keycode = e.which;
-    else
-      return true;
-  if (keycode == 13) {
-    if (myButton != '') {
-      doPost (myForm, myButton);
-      return false;
-    } else
-      document.forms[myForm].submit();
-  }
-  return true;
-}
-// ---------------------------------------------------------------------------
 function selectAllCheckboxes (form, btn)
 {
   for (var i = 0; i < form.elements.length; i = i + 1) {
@@ -141,36 +114,6 @@ function singleSelected (form, txt, zeroMsq, moreMsg, mode)
   return true;
 }
 
-// ---------------------------------------------------------------------------
-//
-function getFileName(obj)
-{
-  var S = obj.value;
-  var N;
-  if (S.lastIndexOf('\\') > 0)
-    N = S.lastIndexOf('\\') + 1;
-  else
-    N = S.lastIndexOf('/') + 1;
-  S = S.substr(N, S.length);
-  if (S.indexOf('?') > 0) {
-    N = S.indexOf('?');
-    S = S.substr(0, N);
-  }
-  if (S.indexOf('#') > 0) {
-    N = S.indexOf('#');
-    S = S.substr(0, N);
-  }
-  if (document.F1.dav_destination[1].checked == '1') {
-    N = S.indexOf('.rdf');
-    S = S.substr(0, N);
-  }
-  if ((document.F1.dav_destination[0].checked == '1') && (document.F1.dav_source[2].checked == '1')) {
-    N = S.indexOf('.rdf');
-    if (N == -1)
-      S = S + '.rdf';
-  }
-  document.F1.dav_name.value = S;
-}
 
 // ---------------------------------------------------------------------------
 //
@@ -264,34 +207,6 @@ function initTab(tabs, defaultNo)
 
 // ---------------------------------------------------------------------------
 //
-function uncheck(checkBox)
-{
-  document.F1.elements[checkBox].checked = false;
-}
-
-// ---------------------------------------------------------------------------
-//
-function initDisabled()
-{
-	var box = document.F1.elements;
-	for (var i=0; i<box.length; i++)
-		if (box[i].disabled)
-      if (document.F1.elements['formRight'])
-        if (document.F1.elements['formRight'].value == '1')
-          box[i].disabled = false;
-}
-
-// ---------------------------------------------------------------------------
-//
-function initEnabled()
-{
-	var box = document.F1.elements;
-	for (var i=0; i<box.length; i++)
-    box[i].disabled = false;
-}
-
-// ---------------------------------------------------------------------------
-//
 function deleteConfirm()
 {
   return confirm('Are you sure you want to delete the chosen record?');
@@ -339,22 +254,6 @@ function trim(sString, ch)
   return sString;
 }
 
-// ---------------------------------------------------------------------------
-//
-function coloriseTable(id)
-{
-  if (document.getElementsByTagName) {
-    var table = document.getElementById(id);
-    if (table != null) {
-      var rows = table.getElementsByTagName("tr");
-      for (i = 0; i < rows.length; i++) {
-        if (rows[i].className != "nocolor") {
-          rows[i].className = "td_row" + (i % 2);
-        }
-      }
-    }
-  }
-}
 
 // ---------------------------------------------------------------------------
 //
@@ -457,24 +356,26 @@ function addChecked (form, txt, selectionMsq)
   if (!anySelected (form, txt, selectionMsq, 'confirm'))
     return;
 
+  var openerForm=eval('window.opener.document.'+form.name);
+  
   var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
+  if (form.elements['src'])
+    if (form.elements['src'].value.indexOf('s') != -1)
       submitMode = true;
   if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
+    if (openerForm)
+      if (openerForm.elements['submitting'])
         return false;
   var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
+  if (form.elements['dst'])
+    if (form.elements['dst'].value.indexOf('s') == -1)
       singleMode = false;
 
   var s1 = 's1';
   var s2 = 's2';
 
   var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
+  var params = form.elements['params'].value;
   var myArray;
   while(true) {
     myArray = myRe.exec(params);
@@ -488,10 +389,10 @@ function addChecked (form, txt, selectionMsq)
         if (opener_form.elements[myArray[1]]) {
           if (myArray[2] == 's1')
             if (opener_form.elements[myArray[1]])
-              rowSelectValue(opener_form.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
+              rowSelectValue(opener_form.elements[myArray[1]], form.elements[s1], singleMode, submitMode);
           if (myArray[2] == 's2')
             if (opener_form.elements[myArray[1]])
-              rowSelectValue(opener_form.elements[myArray[1]], window.document.F1.elements[s2], singleMode, submitMode);
+              rowSelectValue(opener_form.elements[myArray[1]], form.elements[s2], singleMode, submitMode);
         }
     if (myArray.length < 4)
       break;

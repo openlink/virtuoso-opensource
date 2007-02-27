@@ -194,6 +194,7 @@ BMK.WA.exec_no_error('
 
 BMK.WA.exec_no_error ('
   create trigger BOOKMARK_DOMAIN_WA_AI after insert on BMK.WA.BOOKMARK_DOMAIN referencing new as N {
+    BMK.WA.domain_ping (N.BD_DOMAIN_ID);
     if (__proc_exists (\'DB.DBA.WA_NEW_BOOKMARKS_IN\'))
       if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = N.BD_DOMAIN_ID and WAI_IS_PUBLIC = 1))
         DB.DBA.WA_NEW_BOOKMARKS_IN (N.BD_NAME, sprintf(\'/bookmark/bookmarks.vspx?location=%d\', N.BD_ID), N.BD_ID);
@@ -202,6 +203,7 @@ BMK.WA.exec_no_error ('
 
 BMK.WA.exec_no_error ('
   create trigger BOOKMARK_DOMAIN_WA_AU after update on BMK.WA.BOOKMARK_DOMAIN referencing new as N {
+    BMK.WA.domain_ping (N.BD_DOMAIN_ID);
     if (__proc_exists (\'DB.DBA.WA_NEW_BOOKMARKS_IN\'))
       if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = N.BD_DOMAIN_ID and WAI_IS_PUBLIC = 1))
         DB.DBA.WA_NEW_BOOKMARKS_IN (N.BD_NAME, sprintf(\'/bookmark/bookmarks.vspx?location=%d\', N.BD_ID), N.BD_ID);
@@ -226,8 +228,10 @@ BMK.WA.exec_no_error('
   	BD_MODE integer,
   	BD_OBJECT_ID integer,
   	BD_BOOKMARK_ID integer not null,
+    BD_READ_FLAG integer,
   	BD_TAGS varchar,
     BD_LAST_UPDATE datetime,
+    BD_VISITED integer default 0,
     BD_LAST_VISITED datetime,
 
     constraint FK_BOOKMARK_DATA_01 FOREIGN KEY (BD_BOOKMARK_ID) references BMK.WA.BOOKMARK (B_ID) on delete cascade,
@@ -235,6 +239,14 @@ BMK.WA.exec_no_error('
   	primary key (BD_ID)
   )
 ');
+
+BMK.WA.exec_no_error (
+  'alter table BMK.WA.BOOKMARK_DATA add BD_READ_FLAG integer', 'C', 'BMK.WA.BOOKMARK_DATA', 'BD_READ_FLAG'
+);
+
+BMK.WA.exec_no_error (
+  'alter table BMK.WA.BOOKMARK_DATA add BD_VISITED integer default 0', 'C', 'BMK.WA.BOOKMARK_DATA', 'BD_VISITED'
+);
 
 BMK.WA.exec_no_error('
   create index SK_BOOKMARK_DATA_01 on BMK.WA.BOOKMARK_DATA(BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID)
@@ -483,3 +495,10 @@ BMK.WA.path_update()
 ;
 registry_set ('bmk_path_update', '1')
 ;
+
+BMK.WA.exec_no_error ('
+  create trigger VSPX_SESSION_BOOKMARK_AD after delete on DB.DBA.VSPX_SESSION referencing old as O {
+    DB.DBA.DAV_DELETE_INT (\'/DAV/VAD/Bookmarks/Import/\' || O.VS_SID, 1, null, null, 0);
+  }
+');
+

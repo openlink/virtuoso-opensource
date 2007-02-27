@@ -223,8 +223,8 @@ function enableToolbars (objForm, prefix)
   enableElement('tbMove_gray', mCount==0);
   enableElement('tbRename', oCount==1);
   enableElement('tbRename_gray', oCount!=1);
-  enableElement('tbSharing', oCount==1);
-  enableElement('tbSharing_gray', oCount!=1);
+  enableElement('tbSharing', oCount>0);
+  enableElement('tbSharing_gray', oCount==0);
   enableElement('tbProperties', oCount==1);
   enableElement('tbProperties_gray', oCount!=1);
   enableElement('tbDelete', oCount>0);
@@ -754,3 +754,254 @@ function addCheckedTags (openerName, checkName)
   }
   window.close();
 }
+
+// ---------------------------------------------------------------------------
+//
+function openBookmark (id, accountID)
+{
+  if (accountID < 0)
+    return;
+  var c = getObject(id);
+  if (c)
+    if (c.className == 'unread')
+      c.className = 'read';
+  readBookmark (id);
+}
+
+// ---------------------------------------------------------------------------
+//
+function openIFrame (id, accountID, uri)
+{
+  if (accountID > 0) {
+    var c = getObject(id);
+    if (c)
+      if (c.className == 'unread')
+        c.className = 'read';
+    readBookmark (id);
+  }
+  document.getElementById('bookmark_content').innerHTML = '<iframe src="'+uri+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
+}
+
+// ---------------------------------------------------------------------------
+//
+function urlParam (fldName)
+{
+  var S = '';
+  var O = document.forms['F1'].elements[fldName];
+
+  if (O)
+    S += '&' + fldName + '=' + encodeURIComponent(O.value);
+  return S;
+}
+
+// ---------------------------------------------------------------------------
+//
+function showObject(id)
+{
+  var obj = document.getElementById(id);
+  if (obj != null) {
+    obj.style.display="";
+    obj.visible = true;
+  }
+}
+
+// ---------------------------------------------------------------------------
+//
+function hideObject(id)
+{
+  var obj = document.getElementById(id);
+  if (obj != null) {
+    obj.style.display="none";
+    obj.visible = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+//
+function initRequest ()
+{
+  var xmlhttp = null;
+  try {
+    xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+  } catch (e) { }
+
+  if (xmlhttp == null) {
+    try {
+      xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    } catch (e) { }
+  }
+
+  // Gecko / Mozilla / Firefox
+  if (xmlhttp == null)
+    xmlhttp = new XMLHttpRequest();
+
+  return xmlhttp;
+}
+
+// ---------------------------------------------------------------------------
+//
+var timer = null;
+var progressID = null;
+var progressMax = null;
+var progressStop = null;
+
+function resetState()
+{
+  var xmlhttp = initRequest();
+  var URL = 'ajax.vsp?a=import&sa=reset';
+  xmlhttp.open("POST", URL + urlParam("sid") + urlParam("realm"), false);
+  xmlhttp.setRequestHeader("Pragma", "no-cache");
+  xmlhttp.send(null);
+  try {
+    progressID = xmlhttp.responseXML.getElementsByTagName("id")[0].firstChild.nodeValue;
+  } catch (e) { }
+}
+
+// ---------------------------------------------------------------------------
+//
+function stopState()
+{
+  timer = null;
+
+  var xmlhttp = initRequest();
+  var URL = 'ajax.vsp?a=import&sa=stop';
+  xmlhttp.open("POST", URL+"&id="+progressID+urlParam("sid")+urlParam("realm"), false);
+  xmlhttp.setRequestHeader("Pragma", "no-cache");
+  xmlhttp.send(null);
+
+  doPost ('F1', 'btn_Background');
+}
+
+// ---------------------------------------------------------------------------
+//
+function initState ()
+{
+  // reset state first
+  resetState();
+
+  // init state
+  var xmlhttp = initRequest();
+  var URL = 'ajax.vsp';
+  xmlhttp.open("POST", URL, false);
+  xmlhttp.setRequestHeader("Pragma", "no-cache");
+  xmlhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+  xmlhttp.send("a=import&sa=init&id="+progressID+urlParam("sid")+urlParam("realm")+urlParam("folder_id")+urlParam("folder_name"));
+
+  createProgressBar();
+  timer = setTimeout("checkState()", 1000);
+
+  document.forms['F1'].action = 'bookmarks.vspx';
+}
+
+// ---------------------------------------------------------------------------
+//
+function checkState()
+{
+  var xmlhttp = initRequest();
+  var URL = 'ajax.vsp?a=import&sa=state';
+  xmlhttp.open("POST", URL+"&id="+progressID+urlParam("sid")+urlParam("realm"), true);
+  xmlhttp.onreadystatechange = function() {
+    if (xmlhttp.readyState == 4) {
+      var progressIndex;
+
+      // progressIndex
+      try {
+        progressIndex = xmlhttp.responseXML.getElementsByTagName("index")[0].firstChild.nodeValue;
+      } catch (e) { }
+
+      if (timer != null)
+        showProgress (progressIndex);
+      if ((progressIndex != null) && (progressIndex != progressMax) && (timer != null)) {
+        setTimeout("checkState()", 500);
+      } else {
+        hideObject('btn_Background');
+        document.getElementById("btn_Stop").value = 'Close';
+        timer = null;
+      }
+    }
+  }
+  xmlhttp.setRequestHeader("Pragma", "no-cache");
+  xmlhttp.send("");
+}
+
+var size = 40;
+var increment = 100 / size;
+
+// ---------------------------------------------------------------------------
+//
+// create the progress bar
+//
+function createProgressBar()
+{
+  progressMax = getObject('progressMax').innerHTML;
+
+  var centerCellName;
+  var tableText = "";
+  var tdText = "";
+  for (x = 0; x < size; x++) {
+    if (progressMax != null) {
+	    if (x == (size/2))
+	      centerCellName = "progress_" + x;
+	  }
+    tableText += "<td id=\"progress_" + x + "\" width=\"" + increment + "%\" height=\"20\" bgcolor=\"blue\" />";
+  }
+  var idiv = window.document.getElementById("progressText");
+  if (idiv)
+    idiv.innerHTML = "Imported 0 bookmarks from " + progressMax;
+  var idiv = window.document.getElementById("progressBar");
+  if (idiv)
+    idiv.innerHTML = "<table with=\"200\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr>" + tableText + "</tr></table>";
+  centerCell = window.document.getElementById(centerCellName);
+}
+
+// ---------------------------------------------------------------------------
+//
+// show the current percentage
+//
+function showProgress (progressIndex)
+{
+  if (progressMax == null)
+    return;
+
+  if (progressIndex == null)
+    progressIndex = progressMax;
+
+  var idiv = window.document.getElementById("progressText");
+  if (idiv)
+    idiv.innerHTML = "Imported " + progressIndex + " bookmarks from " + progressMax;
+  var percentage = Math.round (progressIndex * 100 / progressMax);
+  var percentageText = "";
+  if (percentage < 10) {
+    percentageText = "&nbsp;" + percentage;
+  } else {
+    percentageText = percentage;
+  }
+  centerCell.innerHTML = "<font color=\"white\">" + percentageText + "%</font>";
+  for (x = 0; x < size; x++) {
+    var cell = window.document.getElementById("progress_" + x);
+    if ((cell) && (percentage/x < increment)) {
+      cell.style.backgroundColor = "blue";
+    } else {
+      cell.style.backgroundColor = "red";
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+//
+function readBookmark (id)
+{
+  var sid = '';
+  if (document.forms['F1'].elements['sid'])
+    sid = document.forms['F1'].elements['sid'].value;
+  var realm = '';
+  if (document.forms['F1'].elements['realm'])
+    realm = document.forms['F1'].elements['realm'].value;
+  var URL = 'ajax.vsp?sid='+sid+'&realm='+realm+'&id='+id+'&a=read';
+
+  var xmlhttp = initRequest();
+  xmlhttp.open("POST", URL, false);
+  xmlhttp.setRequestHeader("Pragma", "no-cache");
+  xmlhttp.send(null);
+}
+

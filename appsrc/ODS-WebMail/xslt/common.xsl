@@ -93,39 +93,33 @@
             </td>
           </tr>
         </table>
-        <div class="footer">
-          <xsl:call-template name="make_href">
-            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>aboutus.html</xsl:with-param>
-            <xsl:with-param name="label">About Us</xsl:with-param>
-          </xsl:call-template>
-          |
-          <xsl:call-template name="make_href">
-            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>faq.html</xsl:with-param>
-            <xsl:with-param name="label">FAQ</xsl:with-param>
-          </xsl:call-template>
-          |
-          <xsl:call-template name="make_href">
-            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>privacy.html</xsl:with-param>
-            <xsl:with-param name="label">Privacy</xsl:with-param>
-          </xsl:call-template>
-          |
-          <xsl:call-template name="make_href">
-            <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>rabuse.vspx</xsl:with-param>
-            <xsl:with-param name="label">Report Abuse</xsl:with-param>
-          </xsl:call-template>
-          |
-          <xsl:call-template name="make_href">
-            <xsl:with-param name="url">#</xsl:with-param>
-            <xsl:with-param name="label">Advertise</xsl:with-param>
-          </xsl:call-template>
-          |
-          <xsl:call-template name="make_href">
-            <xsl:with-param name="url">#</xsl:with-param>
-            <xsl:with-param name="label">Contact Us</xsl:with-param>
-          </xsl:call-template>
-        </div>
-        <div class="copyright">Copyright <xsl:call-template name="copy"/> 1999-2006 OpenLink Software</div>
-        <xsl:call-template name="js_mark"/>
+        <div id="FT">
+          <div id="FT_L">
+            <a href="http://www.openlinksw.com/virtuoso">
+              <img alt="Powered by OpenLink Virtuoso Universal Server"
+                   src="/oMail/i/virt_power_no_border.png"
+                   border="0" />
+            </a>
+          </div>
+          <div id="FT_R">
+            <xsl:call-template name="make_href">
+              <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>faq.html</xsl:with-param>
+              <xsl:with-param name="label">FAQ</xsl:with-param>
+            </xsl:call-template>
+            |
+            <xsl:call-template name="make_href">
+              <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>privacy.html</xsl:with-param>
+              <xsl:with-param name="label">Privacy</xsl:with-param>
+            </xsl:call-template>
+            |
+            <xsl:call-template name="make_href">
+              <xsl:with-param name="url"><xsl:value-of select="/page/ods/link"/>rabuse.vspx</xsl:with-param>
+              <xsl:with-param name="label">Report Abuse</xsl:with-param>
+            </xsl:call-template>
+            <div><xsl:call-template name="copyright"/></div>
+            <div><xsl:call-template name="disclaimer"/></div>
+          </div>
+        </div> <!-- FT -->
       </body>
     </html>
   </xsl:template>
@@ -145,7 +139,7 @@
           <hr/>
         </div>
         <xsl:apply-templates/>
-        <div class="copyright">Copyright <xsl:call-template name="copy"/> 1999-2006 OpenLink Software</div>
+        <xsl:call-template name="copyright"/>
       </body>
     </html>
   </xsl:template>
@@ -372,6 +366,34 @@
       <xsl:text>...</xsl:text>
     </xsl:if>
   </xsl:template>
+
+  <!-- ====================================================================================== -->
+  <xsl:template name="show_tags">
+    <xsl:param name="tags"/>
+    <xsl:param name="separator" select="','"/>
+
+    <xsl:if test="$tags != ''">
+      <xsl:variable name="tag"><xsl:value-of select="substring-before(concat($tags, $separator), $separator)"/></xsl:variable>
+      <xsl:variable name="after"><xsl:value-of select="substring-after($tags, $separator)"/></xsl:variable>
+
+      <xsl:text>, </xsl:text><xsl:value-of select="$tag"/>
+      <xsl:call-template name="make_submit">
+        <xsl:with-param name="name">fa_tag_delete_<xsl:value-of select="$tag"/></xsl:with-param>
+        <xsl:with-param name="src">/oMail/i/del_16.png</xsl:with-param>
+        <xsl:with-param name="alt">Delete Tag</xsl:with-param>
+        <xsl:with-param name="border">0</xsl:with-param>
+        <xsl:with-param name="hspace">8</xsl:with-param>
+        <xsl:with-param name="vspace">0</xsl:with-param>
+      </xsl:call-template>
+
+      <xsl:call-template name="show_tags">
+        <xsl:with-param name="tags" select="$after"/>
+        <xsl:with-param name="separator" select="$separator"/>
+      </xsl:call-template>
+    </xsl:if>
+
+  </xsl:template>
+
   <!-- ========================================================================== -->
   <xsl:template match="select" mode="openx">
     <select>
@@ -430,7 +452,13 @@
   </xsl:template>
 
   <!-- ========================================================================== -->
-  <xsl:template name="js_mark"/>
+  <xsl:template name="copyright">
+    Copyright <xsl:call-template name="copy"/> 1999-2006 OpenLink Software
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="disclaimer">
+  </xsl:template>
 
   <!-- ====================================================================================== -->
   <xsl:template name="LH">

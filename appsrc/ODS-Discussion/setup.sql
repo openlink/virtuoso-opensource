@@ -411,6 +411,7 @@ registry_set ('__nntpf_ver', 'ODS Discussion ' || sys_stat ('st_dbms_ver'))
 create procedure
 nntpf_post_message (in params any)
 {
+   
    declare new_body, old_hdr, new_subj, nfrom, new_ref, new_attachments any;
    declare _old_ref, _groups, _old_id any;
    declare new_mess any;
@@ -666,7 +667,7 @@ nntpf_search_result (in _search_txt varchar)
 {
   declare _from, _subj, _nm_id, _grp_list varchar;
   declare _body, _head, _filter, _news_group, _ctr any;
-  declare _date_s, _date datetime;
+  declare _date_s_after,_date_s_before, _date datetime;
   declare _date_l, _from_l, _subj_l, _nm_id_l, _grp_list_l varchar;
 
   if (_search_txt is NULL or _search_txt = '') goto nf;
@@ -677,40 +678,44 @@ nntpf_search_result (in _search_txt varchar)
   _search_txt := _filter[0];
   _news_group := '%';
   _ctr := 0;
-  _date_s := now ();
+  _date_s_after := null;
+  _date_s_before := null;
 
   if (length (_filter) > 1)
     {
       declare st, msg, res1, res2 any;
 
+
       st := '';
-      _date_s := concat (_filter[2], ' ', _filter[3], ' ', _filter[4]);
-      exec ('select cast (? as date)', st, msg, vector (_date_s), 1, res1, res2);
-      if (st = '') _date_s := aref (aref (res2, 0), 0);
+      exec ('select cast (? as date)', st, msg, vector (concat (_filter[3], ' ', _filter[2], ' ', _filter[1])), 1, res1, res2);
+      if (st = '') _date_s_after := aref (aref (res2, 0), 0);
 
-      if (_filter[5] <> '')
-        _news_group := '%' || _filter[5] || '%';
+      st := '';
+      exec ('select cast (? as date)', st, msg, vector ( concat (_filter[6], ' ', _filter[5], ' ', _filter[4]) ), 1, res1, res2);
+      if (st = '') _date_s_before := aref (aref (res2, 0), 0);
 
-      if (trim (_filter[5]) = '*' or trim (_filter[5]) = '%')
+      if (_filter[7] <> '')
+        _news_group := '%' || _filter[7] || '%';
+
+      if (trim (_filter[7]) = '*' or trim (_filter[7]) = '%')
         _news_group := '%';
 
-      if (_filter[1] = 'Newer than') _ctr := 1;
-      else if (_filter[1] = 'Older than') _ctr := 2;
-      else { _ctr := 3; _date_s := dateadd ('hour', 12, _date_s); }
+      if (_date_s_after is not null)                     _ctr := 1; --Newer than
+      if (_date_s_before is not null)                    _ctr := 2; --Older than
+      if (_date_s_after is not null and _date_s_before is not null)  _ctr := 3; --between
     }
 
   declare cr_def cursor for select FTHR_DATE, FTHR_SUBJ, deserialize (FTHR_MESS_DETAILS)[0], FTHR_MESS_ID
     from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and contains (NM_BODY, _search_txt);
 
   declare cr1 cursor for select FTHR_DATE, FTHR_SUBJ, deserialize (FTHR_MESS_DETAILS)[0], FTHR_MESS_ID
-    from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and contains (NM_BODY, _search_txt) and _date_s <=  FTHR_DATE;
+    from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and contains (NM_BODY, _search_txt) and FTHR_DATE  >= _date_s_after  ;
 
   declare cr2 cursor for select FTHR_DATE, FTHR_SUBJ, deserialize (FTHR_MESS_DETAILS)[0], FTHR_MESS_ID
-    from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and contains (NM_BODY, _search_txt) and FTHR_DATE <= _date_s;
+    from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and contains (NM_BODY, _search_txt) and FTHR_DATE <= _date_s_before;
 
   declare cr3 cursor for select FTHR_DATE, FTHR_SUBJ, deserialize (FTHR_MESS_DETAILS)[0], FTHR_MESS_ID
-    from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and contains (NM_BODY, _search_txt)
-		and abs (datediff ('hour', FTHR_DATE, _date_s)) < 12;
+    from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and contains (NM_BODY, _search_txt) and _date_s_after <=  FTHR_DATE and FTHR_DATE <= _date_s_before;
 
   whenever not found goto nf;
 
@@ -754,6 +759,17 @@ create procedure nntpf_check_is_date_valid (in _all any)
   declare st, msg, res1, res2 any;
   st := '';
   exec ('select cast (? as date)', st, msg, vector (concat (_all[2], ' ', _all[3], ' ', _all[4])), 1, res1, res2);
+  if (st = '') return 1;
+
+  return 0;
+}
+;
+
+create procedure nntpf_check_is_datestr_valid (in datestr any)
+{
+  declare st, msg, res1, res2 any;
+  st := '';
+  exec ('select cast (? as date)', st, msg, vector (datestr), 1, res1, res2);
   if (st = '') return 1;
 
   return 0;
@@ -1250,7 +1266,7 @@ create procedure NEWS_MULTI_MSG_TO_NNFE_THR (in _NM_KEY_ID varchar, in _NM_GROUP
   declare l int;
 
   is_top := 1;
-  m_details := nntpf_thr_get_mess_details (_NM_KEY_ID);
+  m_details := nntpf_thr_get_mess_details (_NM_KEY_ID, 1);
 
   _refs := m_details[4];
   subj := m_details[1];
@@ -1307,8 +1323,10 @@ ins:
       fin:;
     }
 
-  insert soft NNFE_THR (FTHR_GROUP, FTHR_MESS_ID, FTHR_DATE, FTHR_TOP, FTHR_REFER, FTHR_SUBJ, FTHR_MESS_DETAILS, FTHR_UID, FTHR_TOPIC_ID)
-       values (_NM_GROUP, _NM_KEY_ID, m_details[0], is_top, _ref, m_details[1], m_details[2], m_details[3], topic_id);
+  insert soft NNFE_THR (FTHR_GROUP, FTHR_MESS_ID, FTHR_DATE, FTHR_TOP, FTHR_REFER,
+      FTHR_SUBJ, FTHR_MESS_DETAILS, FTHR_UID, FTHR_TOPIC_ID, FTHR_FROM)
+       values (_NM_GROUP, _NM_KEY_ID, m_details[0], is_top, _ref,
+	   m_details[1], m_details[2], m_details[3], topic_id, m_details[5]);
   return;
 }
 ;
@@ -1536,21 +1554,125 @@ create procedure nntpf_decode_subj (inout str varchar)
     }
 };
 
-create procedure
-nntpf_thr_get_mess_details (in _nm_id varchar)
+create procedure nntpf_get_sender (in email varchar)
 {
-   declare ret, temp, subj, post_date, autor, pos, host, my_host any;
-   declare person, email, _refs varchar;
+   declare mail, name varchar;
+   mail := regexp_match ('<[^@<>]+@[^@<>]+>', email);
+   if (mail is null)
+     mail := regexp_match ('([^@()]+@[^@()]+)', email);
+   if (mail is null)
+     mail := regexp_match ('\\[[^@\\[\\]]+@[^@\\[\\]]+\\]', email);
+   if (mail is null)
+     return mail;
+   return trim (mail, '[]()<>');
+};
+
+create procedure nntpf_process_parts (in parts any, inout body any, out result any)
+{
+  declare name1, mime1, name, mime, enc, content, charset varchar;
+  declare i, l, i1, l1, is_allowed int;
+  declare part, xt, xp any;
+
+  if (not isarray (result))
+    result := vector ();
+
+  if (not isarray (parts) or not isarray (parts[0]))
+    return 0;
+  -- test if there is an moblog compliant image
+  part := parts[0];
+--  dbg_obj_print ('part=', part);
+
+  name1 := get_keyword_ucase ('filename', part, '');
+  if (name1 = '')
+    name1 := get_keyword_ucase ('name', part, '');
+
+  mime1 := get_keyword_ucase ('Content-Type', part, '');
+  charset := get_keyword_ucase ('charset', part, '');
+
+  if (mime1 = 'application/octet-stream' and name1 <> '') {
+    mime1 := http_mime_type (name1);
+  }
+
+  declare _cnt_disp any;
+  _cnt_disp := get_keyword_ucase('Content-Disposition', part, '');
+
+--  dbg_obj_print (_cnt_disp, mime1);
+
+  if ((_cnt_disp = 'inline' or _cnt_disp = '') and mime1 = 'text/html')
+    {
+      name := name1;
+      mime := mime1;
+      enc := get_keyword_ucase ('Content-Transfer-Encoding', part, '');
+--      dbg_obj_print (enc);
+      content := subseq (body, parts[1][0], parts[1][1]);
+      if (enc = 'base64')
+	content := decode_base64 (content);
+      else if (enc = 'quoted-printable')
+	content := uudecode (content, 12);
+      xt := xtree_doc (content, 2, '', 'UTF-9');
+--      dbg_obj_print (xt);
+      xp := xpath_eval ('//a[starts-with (@href,"http") and not(img)]', xt, 0);
+      foreach (any elm in xp) do
+	{
+	  declare tit, href any;
+	  tit := cast (xpath_eval ('string()', elm) as varchar);
+	  href := cast (xpath_eval ('@href', elm) as varchar);
+	  result := vector_concat (result, vector (vector (tit, href)));
+	}
+      return 1;
+    }
+  -- process the parts
+  if(not isarray (parts[2]))
+    return 0;
+  i := 0;
+  l := length (parts[2]);
+  while (i < l) {
+    nntpf_process_parts (parts[2][i], body, result);
+    i := i + 1;
+  }
+  return 0;
+
+};
+
+create procedure nntpf_get_links (in message any)
+{
+  declare parsed_message, res any;
+  message := blob_to_string (message);
+  parsed_message := mime_tree (message);
+  res := null;
+  nntpf_process_parts (parsed_message, message, res);
+  return res;
+};
+
+
+create procedure
+nntpf_thr_get_mess_details (in _nm_id varchar, in do_links int := 0)
+{
+   declare ret, temp, subj, post_date, autor, pos, host, my_host, m_body any;
+   declare person, email, _refs, maker varchar;
    declare _u_id integer;
 
-   ret := make_array (5, 'any');
-   select deserialize (NM_HEAD)[0] into temp from DB.DBA.NEWS_MSG where NM_ID = _nm_id;
+   ret := make_array (6, 'any');
+   select deserialize (NM_HEAD)[0], NM_BODY into temp, m_body from DB.DBA.NEWS_MSG where NM_ID = _nm_id;
+
+   -- This may be is better to be moved inside the nntp
+   if (do_links and length (m_body))
+     {
+       declare links any;
+       links := nntpf_get_links (m_body);
+       foreach (any link in links) do
+	 {
+	   insert soft NNTPF_MSG_LINKS (NML_MSG_ID, NML_URL) values (_nm_id, link[1]);
+	 }
+     }
+
    subj := get_keyword ('Subject', temp, 'No Subject');
    nntpf_decode_subj (subj);
    post_date := get_keyword ('Date', temp, '');
    host := get_keyword ('Path', temp, '');
    post_date := nntpf_get_postdate (post_date);
-   autor := get_keyword ('From', temp, 'No Subject');
+   autor := get_keyword ('From', temp, 'No Sender');
+   maker := nntpf_get_sender (autor);
    autor := replace (autor, '/', '.');
    nntpf_decode_subj (autor);
    _u_id := NULL;
@@ -1592,6 +1714,7 @@ nntpf_thr_get_mess_details (in _nm_id varchar)
    aset (ret, 2, serialize (vector (person)));
    aset (ret, 3, _u_id);
    aset (ret, 4, _refs);
+   ret[5] := maker;
    return ret;
 }
 ;
@@ -1644,6 +1767,7 @@ create procedure
 nntpf_check_group_tree_name (in _name varchar, in _level integer)
 {
    declare temp any;
+   
    temp := split_and_decode (_name, 0, '\0\0.');
    if (length (temp) - 1 < _level) return NULL;
    return temp[_level];
@@ -1755,18 +1879,35 @@ nntpf_group_child_node (in node_name varchar,
    else
      return vector ();
 
+   
+   declare i integer;
+   i:=0;
+
    for (select distinct nntpf_check_group_tree_name (NG_NAME, lev) as temp_name
 	  from DB.DBA.NEWS_GROUPS
           where NG_NAME like k_name || '%' and
                 ns_rest (NG_GROUP, 0) = 1 order by NG_NAME) do
      {
-       if (temp_name is NULL) return vector ();
-       full_name := k_name || '.' || temp_name;
+        i:=i+1;
+
+       if (temp_name is NULL and lev<>1){
+             return vector ();
+       }
+
+       if (lev=1 and temp_name is NULL)
+       {
+             full_name := k_name;
+             temp_name := k_name;
+
+        }else   full_name := k_name || '.' || temp_name;
+
 
        if (exists (select 1 from DB.DBA.NEWS_GROUPS
                             where NG_NAME = full_name and
-                                  ns_rest (NG_GROUP, 0) = 1))
+                                  ns_rest (NG_GROUP, 0) = 1)
+           )
          {
+
            declare rss_link varchar;
 
            select NG_GROUP into gr_num
@@ -2714,4 +2855,18 @@ create procedure nntpf_get_wa_home ()
   return registry_get ('wa_home_link');
 };
 
+create procedure nntpf_doPTSW (
+  in owner_uname varchar := null
+  )
+{
+  declare sioc_url  varchar;
+  
+  if (owner_uname is not null)
+      sioc_url:=replace (sprintf ('%s/dataspace/discussion/%U/sioc.rdf', 'http://'||DB.DBA.WA_GET_HOST(), owner_uname), '+', '%2B');
+  else
+      sioc_url:=replace (sprintf ('%s/dataspace/discussion/sioc.rdf', 'http://'||DB.DBA.WA_GET_HOST()), '+', '%2B');
+  
+    ODS.DBA.APP_PING (null, 'http://'||DB.DBA.WA_GET_HOST()||' ODS Discussions', sioc_url); --sioc need to be updated in order to use non ODS applications to ping
+}
+;
 

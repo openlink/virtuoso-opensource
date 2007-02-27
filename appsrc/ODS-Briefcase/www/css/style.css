@@ -23,16 +23,10 @@
 
 body
 {
-  padding-right: 0px;
-  padding-bottom: 0px;
-  padding-left: 0px;
-  padding-top: 3px;
-  margin-right: 0px;
-  margin-bottom: 0px;
-  margin-left: 0px;
-  margin-top: 0px;
+  margin: 0;
+  padding: 0;
   font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
-  font-size: 75%;
+  font-size: 9pt;
 }
 
 a
@@ -98,6 +92,48 @@ a:hover
 
 #RCT_body
 {
+}
+
+/* Footer */
+
+#FT
+{
+  width: 100%;
+  position: relative;
+  bottom: 0px;
+  font-size: 8pt;
+  float: left;
+  clear: both;
+  text-align: right;
+  border-top: 2px solid #fff;
+  margin-right: 10px;
+  background-color: #fff;
+  background-image: url(../image/ods_main_footer.png);
+}
+
+#FT_L
+{
+  float: left;
+  clear: left;
+  margin-top: 10px;
+  margin-left: 8px;
+  border: 1px solid #788;
+}
+
+#FT_R
+{
+  float: right;
+  clear: right;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-right: 5px;
+  color: #788;
+}
+
+#FT_R a
+{
+  text-decoration: none;
+  color: inherit;
 }
 
 /* Left side within MT */
@@ -336,11 +372,6 @@ table#list th
 /*
   Fields
 */
-input:focus, select:focus
-{
-  background: #E3E8EF;
-}
-
 .field-text
 {
   width: 40em;

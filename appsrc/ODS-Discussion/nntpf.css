@@ -249,6 +249,7 @@ div.menu
 table.menubar
 {
   width: 100%;
+  height: 33px;
   padding: 3px;
   background-image: url(images/nav_grysteel1.gif);
   background-repeat: repeat-x;
@@ -267,6 +268,10 @@ table.menubar a
 table.menubar a:hover
 {
   color: yellow;
+}
+table.menubar .menuitem
+{
+width: 75px;
 }
 
 .nntp_groups_listing 

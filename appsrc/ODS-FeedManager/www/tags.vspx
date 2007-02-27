@@ -22,26 +22,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<html>
-  <head>
-    <link rel="stylesheet" href="css/style.css" type="text/css"/>
-    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
-    <script language="JavaScript" src="js/enews.js" />
-    <title>Tags page</title>
-  </head>
-  <body style="padding: 5px;">
-    <v:page name="pags" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  	  <v:template type="simple" condition="not self.vc_is_valid">
-  	    <div class="error">
-  		    <p><v:error-summary/></p>
-  	    </div>
-  	  </v:template>
-      <v:on-init>
-        <![CDATA[
-          self.sid := get_keyword('sid', self.vc_event.ve_params);
-          self.realm := get_keyword('realm', self.vc_event.ve_params);
-        ]]>
-      </v:on-init>
+<v:page name="tags" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Tags page</vm:pagetitle>
       <vm:popup_page_wrapper>
         <vm:variables>
           <v:variable persist="0" name="v_fid" param-name="fid" type="integer"/>
@@ -49,22 +31,17 @@
           <v:variable persist="0" name="v_aid" param-name="aid" type="integer"/>
           <v:variable persist="0" name="step" type="integer" default="0" />
         </vm:variables>
-        <v:form name="F1" type="simple" method="GET">
-          <input type="hidden" name="sid" value="&lt;?V get_keyword('sid', self.vc_event.ve_params) ?>"/>
-          <input type="hidden" name="realm" value="&lt;?V get_keyword('realm', self.vc_event.ve_params) ?>"/>
-          <div style="padding: 0 0 0.5em 0;">
-            <a href="#" onClick="javascript: if (opener != null) { opener.document.forms[0].submit(); opener.focus();} window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-          </div>
+    <vm:pagebody>
           <div class="form-header">
             <v:label format="%s" value="--'Tags'" />
           </div>
           <table class="form-body" cellspacing="0">
             <v:template type="simple" enabled="--case when (self.step = 0) then 1 else 0 end">
               <tr>
-                <th style="text-align: center; background-color: #FFD05F;">
+            <th style="text-align: center; background-color: #B0CDE4;">
                   <input type="checkbox" name="cbx_all" checked="checked" value="Unselect All" onClick="selectAllCheckboxes(this.form, this, 'cb_')"/>
                 </th>
-                <th style="text-align: center; background-color: #FFD05F; width: 100%;">Tag</th>
+            <th style="text-align: center; background-color: #B0CDE4; width: 100%;">Tag</th>
               </tr>
               <?vsp
                 declare i integer;
@@ -203,8 +180,6 @@
             </v:button>
             <v:button action="simple" value="Close" enabled="--case when (self.step = 0) then 0 else 1 end" xhtml_onclick=" javascript: if (opener != null) { opener.document.forms[0].submit(); opener.focus();} window.close(); " xhtml_class="form-button"/>
           </div>
-        </v:form>
+    </vm:pagebody>
       </vm:popup_page_wrapper>
     </v:page>
-  </body>
-</html>

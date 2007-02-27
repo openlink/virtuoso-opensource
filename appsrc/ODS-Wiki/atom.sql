@@ -43,6 +43,7 @@ create function ATOM_PUB_VHOST_DEFINE(in _cluster varchar)
 {
   declare login varchar;
   login := WV.WIKI.CLUSTERPARAM (_cluster, 'creator', 'dav');
+  DB.DBA.VHOST_REMOVE (lpath=>WV.WIKI.ATOM_BASE (login, _cluster));
   DB.DBA.VHOST_DEFINE (lpath=>WV.WIKI.ATOM_BASE (login, _cluster), ppath=>'/SOAP/Http/gdata', soap_user=>'Wiki', opts=>vector ('atom-pub', 1));
   WV.WIKI.SETCLUSTERPARAM (_cluster, 'atom-pub', WV.WIKI.ATOM_BASE (login, _cluster));
 }

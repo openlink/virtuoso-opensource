@@ -3455,7 +3455,11 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
       declare enc BLOG.DBA."MWeblogEnclosure";
       enc := (N.B_META as "MWeblogPost").enclosure;
       if (udt_instance_of ((N.B_META as "MWeblogPost").enclosure, 'BLOG.DBA.MWeblogEnclosure'))
+	{
 	enc_type := enc."type";
+	  insert into BLOG_POST_ENCLOSURES (PE_BLOG_ID,PE_POST_ID,PE_URL,PE_TYPE,PE_LEN)
+	     values (N.B_BLOG_ID, N.B_POST_ID, enc."url", enc_type, enc."length");
+	}
     have_encl := 1;
     }
   else
@@ -3538,16 +3542,27 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
 
       title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
       enc_type := null;
+      -- delete old enclosures
+      if (O.B_HAVE_ENCLOSURE = 1)
+	{
+	  delete from BLOG_POST_ENCLOSURES where PE_BLOG_ID = O.B_BLOG_ID and PE_POST_ID = O.B_POST_ID;
+	}
       if (N.B_META is not null and (N.B_META as "MWeblogPost").enclosure is not null)
 	{
 	  declare enc BLOG.DBA."MWeblogEnclosure";
 	  enc := (N.B_META as "MWeblogPost").enclosure;
 	  if (udt_instance_of ((N.B_META as "MWeblogPost").enclosure, 'BLOG.DBA.MWeblogEnclosure'))
+	    {
 	    enc_type := enc."type";
+	      insert into BLOG_POST_ENCLOSURES (PE_BLOG_ID,PE_POST_ID,PE_URL,PE_TYPE,PE_LEN)
+	        values (N.B_BLOG_ID, N.B_POST_ID, enc."url", enc_type, enc."length");
+	    }
 	have_encl := 1;
 	}
       else
+	{
 	have_encl := 0;
+	}
 
       ver := coalesce (O.B_VER, 1) + 1;
 

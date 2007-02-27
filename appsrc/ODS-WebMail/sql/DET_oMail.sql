@@ -660,7 +660,7 @@ create procedure "oMail_DAV_FC_PRED_METAS" (inout pred_metas any)
     'MSG_ID',		vector ('MESSAGES'	, 0, 'integer'	, 'MSG_ID'	),
     'RES_NAME',			vector ('MESSAGES'		, 0, 'varchar'	, 'concat("oMail_COMPOSE_NAME" (NULL, RCV_DATE, SND_DATE, PRIORITY, ADDRESS, SUBJECT), ''.eml'')'	),
     'RES_FULL_PATH',		vector ('MESSAGES'	, 0, 'varchar'	, 'concat (_param.detcolpath, "oMail_COMPOSE_NAME" (NULL, RCV_DATE, SND_DATE, PRIORITY, ADDRESS, SUBJECT), ''.eml'')'	),
-    'RES_TYPE',			vector ('MESSAGES'	, 0, 'varchar'	, '''text/html'''	),
+    'RES_TYPE',      vector ('MESSAGES'  , 0, 'varchar'  , '(''text/html'')'  ),
     'RES_OWNER_ID',		vector ('SYS_DAV_USERS'	, 0, 'integer'	, 'U_ID'	),
     'RES_OWNER_NAME',		vector ('SYS_DAV_USERS'	, 0, 'varchar'	, 'U_NAME'	),
     'RES_GROUP_ID',		vector ('MESSAGES'	, 0, 'integer'	, 'http_nogroup_gid()'	),

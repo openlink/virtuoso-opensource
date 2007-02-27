@@ -159,14 +159,13 @@ create procedure WA_SEARCH_ADD_ENEWS_TAG (
 }
 ;
 
-create procedure wa_collect_enews_tags (in id int)
+create procedure wa_collect_enews_tags (
+  in id integer)
 {
-
   declare tags any;
-  declare idx, len int;
-  declare tag varchar;
 
-  for (select EFI_ID,
+  for (select
+         EFI_ID,
    	    EFD_DOMAIN_ID,
    	    EFID_ACCOUNT_ID
           from ENEWS.WA.FEED_ITEM

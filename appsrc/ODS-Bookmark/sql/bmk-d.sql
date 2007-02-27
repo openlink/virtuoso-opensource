@@ -46,6 +46,9 @@ BMK.WA.exec_no_error('DROP TABLE BMK.WA.BOOKMARK');
 BMK.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'Bookmark\'');
 BMK.WA.exec_no_error('drop type wa_bookmark');
 
+-- Views
+BMK.WA.exec_no_error('drop view BMK..TAGS_VIEW');
+
 -- Procedures
 create procedure BMK.WA.drop_procedures()
 {

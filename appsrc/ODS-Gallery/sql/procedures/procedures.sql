@@ -43,6 +43,7 @@ create procedure PHOTO.WA.fix_dav_list(in dirlist any){
 
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA.photo_init_user_data(
+  in wai_id   integer,
   in wai_name varchar,
   in auth_uid varchar)
 {
@@ -67,10 +68,11 @@ create procedure PHOTO.WA.photo_init_user_data(
   if (isnull(strstr(sHost, '/DAV')))
     iIsDav := 0;
 
-  gallery_id := sequence_next('PHOTO.WA.gallery_id');
+  --gallery_id := sequence_next('PHOTO.WA.gallery_id');
+  gallery_id := wai_id;
   home_url   := connection_get('ogallery_customendpoint');
 
-  -- TODO - to check for backslash
+  -- TODO - to check for bakslash
 
   --if(strrchr(home_url,'/') <> length(home_url)){
   --  home_url   := home_url || '/';
@@ -85,7 +87,7 @@ create procedure PHOTO.WA.photo_init_user_data(
     next_ind   := '';
   }
 
-  home_path  := sprintf('/DAV/home/%s/gallery%s/',auth_uid,next_ind);
+  home_path  := sprintf('/DAV/home/%s/Gallery%s/',auth_uid,next_ind);
   app_path   := concat(sHost, 'www-root/portal/index.vsp');
 
   if(home_url is null){
@@ -176,26 +178,91 @@ create procedure PHOTO.WA._session_user(
   inout params any,
   inout current_user photo_user)
 {
-  declare auth_uid varchar;
+  declare auth_uid,_state varchar;
+  whenever not found goto not_found;
 
-  auth_uid := coalesce((select U.U_NAME
-                     from DB.DBA.VSPX_SESSION S,
-                          WS.WS.SYS_DAV_USER U
+  select U.U_NAME,VS_STATE
+    into auth_uid,_state
+   from DB.DBA.VSPX_SESSION S,WS.WS.SYS_DAV_USER U
                     where S.VS_REALM = get_keyword('realm', params, '')
                       and S.VS_SID   = get_keyword('sid', params, '')
-                      and S.VS_UID   = U.U_NAME), '');
+    and S.VS_UID   = U.U_NAME;
 
-  if(auth_uid <> ''){
     current_user := new photo_user(auth_uid);
     current_user.sid := get_keyword('sid', params, '');
     current_user.realm := get_keyword('realm', params, '');
-  }else{
-    current_user := new photo_user('nobody');
-  }
+  current_user.ses_vars := deserialize(blob_to_string(_state));
   return auth_uid;
+
+  not_found:
+  current_user := new photo_user('nobody');
+
+  return null;
 }
 ;
 
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA._session_var_save(
+  inout current_user photo_user)
+{
+  declare auth_uid,_state varchar;
+
+  _state := serialize(current_user.ses_vars);
+
+  update DB.DBA.VSPX_SESSION
+    set VS_STATE = _state
+  where VS_REALM = current_user.realm
+    and VS_SID   = current_user.sid;
+    --and VS_UID   = current_user.user_id;
+  return;
+};
+
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA._session_var_set(
+  inout current_user photo_user,
+  in param any,
+  in value any
+){
+  declare ind any;
+  ind := position(param,current_user.ses_vars);
+
+  if(ind > 0){
+    declare tmp any;
+    tmp := current_user.ses_vars;
+    tmp[ind] := value;
+    current_user.ses_vars := tmp;
+  }else{
+    current_user.ses_vars := vector_concat(current_user.ses_vars,vector(param,value));
+  }
+};
+
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA._session_var_unset(
+  inout current_user photo_user,
+  in param any
+){
+  declare ind,i,tmp any;
+  ind := position(param,current_user.ses_vars);
+  i:=0;
+  tmp:= vector();
+  if(ind > 0){
+    while(i < length(current_user.ses_vars)){
+      if(i <> ind-1){
+        tmp := vector_concat(tmp,vector(current_user.ses_vars[i],current_user.ses_vars[i+1]));
+      }
+      i:=i+2;
+    }
+    current_user.ses_vars := tmp;
+  }
+};
+
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA._session_var_get(
+  inout current_user photo_user,
+  in param any
+){
+  return get_keyword(param,current_user.ses_vars,null);
+};
 
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA._user_pwd(in auth_uid varchar){
@@ -271,6 +338,24 @@ out user_data any)
 }
 ;
 
+-------------------------------------------------------------------------------
+create procedure PHOTO.WA._get_user_name(
+  in user_id varchar
+){
+  declare user_name,user_pwd varchar;
+
+  declare exit handler for NOT FOUND {
+    return vector();
+  };
+
+  SELECT U_NAME,U_PASSWORD
+    into user_name,user_pwd
+    FROM DB.DBA.SYS_USERS
+   WHERE U_ID = user_id;
+
+  user_pwd := pwd_magic_calc(user_name, user_pwd, 1);
+  return vector(user_name,user_pwd);
+};
 
 -------------------------------------------------------------------------------
 create procedure get_dav_gallery(
@@ -484,6 +569,27 @@ create procedure PHOTO.WA.tag_delete(
     N := N + 1;
   }
   return trim(tags, ',');
+}
+;
+
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.isDav(){
+  declare
+    iIsDav integer;
+  declare
+    sHost varchar;
+
+  sHost := registry_get('_oGallery_path_');
+
+  if (cast(sHost as varchar) = '0')
+    sHost := '/apps/oGallery/';
+
+  iIsDav := 1;
+
+  if (isnull(strstr(sHost, '/DAV')))
+    iIsDav := 0;
+    
+  return iIsDav;  
 }
 ;
 

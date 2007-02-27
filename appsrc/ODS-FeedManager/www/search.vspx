@@ -66,19 +66,36 @@
 
   <v:method name="update_params" arglist="">
     <![CDATA[
-      declare tmp any;
+      declare params any;
+      params := self.vc_page.vc_event.ve_params;
 
-      self.v_keywords := trim(self.v_keywords);
-      self.v_expression := trim(self.v_expression);
-      self.v_tags := trim(self.v_tags);
-      self.v_read := trim(self.v_read);
-      self.v_flag := trim(self.v_flag);
-      self.v_after := trim(self.v_after);
-      self.v_before := trim(self.v_before);
+      self.v_mode := get_keyword('mode', params, self.v_mode);
+      self.v_keywords := trim(get_keyword('a_keywords', params, get_keyword('s_keywords', params, get_keyword('keywords', params, ''))));
+      self.v_expression := trim(get_keyword('f_expression', params, get_keyword('type', params, self.v_expression)));
+      self.v_conversation := self.f_conversation.ufl_selected;
+      self.v_tags := trim(get_keyword('f_tags', params, get_keyword('tags', params, self.v_tags)));
+      if (get_keyword('tag', params, '') <> '') {
+        if (is_empty_or_null(self.v_tags))
+          self.v_tags := '';
+        self.v_tags := concat(self.v_tags, ', ', get_keyword('tag', params));
+        self.v_tags := ENEWS.WA.tags2vector(self.v_tags);
+        self.v_tags := ENEWS.WA.tags2unique(self.v_tags);
+        self.v_tags := ENEWS.WA.vector2tags(self.v_tags);
+      }
+      self.v_read := trim(get_keyword('f_read', params, get_keyword('read', params, self.v_read)));
+      self.v_flag := trim(get_keyword('f_flag', params, get_keyword('flag', params, self.v_flag)));
+      self.v_after := trim(get_keyword('f_after', params, get_keyword('after', params, self.v_after)));
+      self.v_before := trim(get_keyword('f_before', params, get_keyword('before', params, self.v_before)));
 
-      tmp := ENEWS.WA.tags2vector(self.v_tags);
-      tmp := ENEWS.WA.vector_unique(tmp);
-      self.v_tags := ENEWS.WA.vector2tags(tmp);
+      self.v_type := trim(get_keyword('f_type', params, get_keyword('type', params, self.v_type)));
+      self.v_max := trim(get_keyword('f_max', params, get_keyword('max', params, self.v_max)));
+      self.v_order := trim(get_keyword('f_order', params, get_keyword('order', params, self.v_order)));
+      self.v_direction := trim(get_keyword('f_direction', params, get_keyword('direction', params, self.v_direction)));
+
+      self.v_group := self.f_group.ufl_selected;
+      self.v_cloud := self.f_cloud.ufl_selected;
+
+      self.sortChange (get_keyword ('sortColumn', params, ''));
     ]]>
   </v:method>
 
@@ -122,6 +139,7 @@
       ENEWS.WA.xml_set('keywords', data, self.v_keywords);
       if (self.v_mode <> 'simple') {
         ENEWS.WA.xml_set('expression', data, self.v_expression);
+        ENEWS.WA.xml_set('conversation', data, self.v_conversation);
         ENEWS.WA.xml_set('tags', data, self.v_tags);
         ENEWS.WA.xml_set('read', data, self.v_read);
         ENEWS.WA.xml_set('flag', data, self.v_flag);
@@ -245,6 +263,7 @@
 
       <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
       <v:variable name="v_expression" type="varchar" default="''"/>
+      <v:variable name="v_conversation" type="integer" default="0"/>
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_read" type="varchar" default="''"/>
       <v:variable name="v_flag" type="varchar" default="''"/>
@@ -268,33 +287,7 @@
     <vm:pagebody>
       <v:before-data-bind>
         <![CDATA[
-          self.v_mode := get_keyword('mode', self.vc_page.vc_event.ve_params, self.v_mode);
-
-          self.v_keywords := trim(get_keyword('a_keywords', self.vc_page.vc_event.ve_params, get_keyword('s_keywords', self.vc_page.vc_event.ve_params, get_keyword('keywords', self.vc_page.vc_event.ve_params, ''))));
-          self.v_expression := trim(get_keyword('f_expression', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_expression)));
-          self.v_tags := trim(get_keyword('f_tags', self.vc_page.vc_event.ve_params, get_keyword('tags', self.vc_page.vc_event.ve_params, self.v_tags)));
-          if (get_keyword('tag', self.vc_page.vc_event.ve_params, '') <> '') {
-            if (is_empty_or_null(self.v_tags))
-              self.v_tags := '';
-            self.v_tags := concat(self.v_tags, ', ', get_keyword('tag', self.vc_page.vc_event.ve_params));
-            self.v_tags := ENEWS.WA.tags2vector(self.v_tags);
-            self.v_tags := ENEWS.WA.tags2unique(self.v_tags);
-            self.v_tags := ENEWS.WA.vector2tags(self.v_tags);
-          }
-          self.v_read := trim(get_keyword('f_read', self.vc_page.vc_event.ve_params, get_keyword('read', self.vc_page.vc_event.ve_params, self.v_read)));
-          self.v_flag := trim(get_keyword('f_flag', self.vc_page.vc_event.ve_params, get_keyword('flag', self.vc_page.vc_event.ve_params, self.v_flag)));
-          self.v_after := trim(get_keyword('f_after', self.vc_page.vc_event.ve_params, get_keyword('after', self.vc_page.vc_event.ve_params, self.v_after)));
-          self.v_before := trim(get_keyword('f_before', self.vc_page.vc_event.ve_params, get_keyword('before', self.vc_page.vc_event.ve_params, self.v_before)));
-
-          self.v_type := trim(get_keyword('f_type', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_type)));
-          self.v_max := trim(get_keyword('f_max', self.vc_page.vc_event.ve_params, get_keyword('max', self.vc_page.vc_event.ve_params, self.v_max)));
-          self.v_order := trim(get_keyword('f_order', self.vc_page.vc_event.ve_params, get_keyword('order', self.vc_page.vc_event.ve_params, self.v_order)));
-          self.v_direction := trim(get_keyword('f_direction', self.vc_page.vc_event.ve_params, get_keyword('direction', self.vc_page.vc_event.ve_params, self.v_direction)));
-
-          self.v_group := self.f_group.ufl_selected;
-          self.v_cloud := self.f_cloud.ufl_selected;
-
-          self.sortChange (get_keyword ('sortColumn', e.ve_params, ''));
+          self.update_params();
         ]]>
       </v:before-data-bind>
       <v:on-post>
@@ -329,7 +322,7 @@
           <?vsp
             self.update_params();
     			  http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s" class="gems"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
-            if (ENEWS.WA.settings_atomVersion(self.domain_id, self.account_id) = '1.0') {
+            if (ENEWS.WA.settings_atomVersion (self.settings) = '1.0') {
     			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom10%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
     			  } else {
     			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom03%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
@@ -343,7 +336,12 @@
         <tr>
           <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;" >
             <td valign="top" style="border: solid #935000; border-width: 1px 1px 1px 1px;">
-        	  	<v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="--ENEWS.WA.settings_rows(self.domain_id, self.account_id)" scrollable="1">
+              <v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="0" scrollable="1">
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_nrows := ENEWS.WA.settings_rows (self.settings);
+                  ]]>
+                </v:before-data-bind>
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                   <table id="search" class="grid" style="border-width: 0px 0px 0px 0px;" cellspacing="0">
                     <thead class="sortHeader">
@@ -564,6 +562,17 @@
             			  <v:textarea name="f_expression" value="--self.v_expression" xhtml_rows="2" xhtml_cols="70"/>
                   </td>
                 </tr>
+                <v:template type="simple" enabled="--case when ENEWS.WA.conversation_enable(self.domain_id) then 1 else 0 end">
+                  <tr>
+                    <tr>
+                      <th width="30%">&nbsp;</th>
+                      <td>
+                				<v:check-box name="f_conversation" xhtml_id="f_conversation" value="1" initial-checked="--self.v_conversation" xhtml_title="Search in conversations" />
+                				<vm:label for="f_conversation" value="Search in conversations" />
+                      </td>
+                    </tr>
+                  </tr>
+                </v:template>
                 <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
                 <tr>
                   <th>

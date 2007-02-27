@@ -25,7 +25,11 @@
 -- ---------------------------------------------------
 
 ------------------------------------------------------------------------------
-create procedure ENEWS.WA.exec_no_error (in expr varchar, in execType varchar := '', in execTable varchar := '', in execColumn varchar := '')
+create procedure ENEWS.WA.exec_no_error (
+  in expr varchar,
+  in execType varchar := '',
+  in execTable varchar := '',
+  in execColumn varchar := '')
 {
   declare
     state,
@@ -36,11 +40,11 @@ create procedure ENEWS.WA.exec_no_error (in expr varchar, in execType varchar :=
   log_enable(1);
   if (execType = 'C') {
     if (coalesce((select 1 from DB.DBA.SYS_COLS where (0=casemode_strcmp("COLUMN", execColumn)) and (0=casemode_strcmp ("TABLE", execTable))), 0))
-      return;
+      goto _end;
   }
   if (execType = 'D') {
     if (not coalesce((select 1 from DB.DBA.SYS_COLS where (0=casemode_strcmp("COLUMN", execColumn)) and (0=casemode_strcmp ("TABLE", execTable))), 0))
-      return;
+      goto _end;
   }
   if (execType = 'S') {
     declare S varchar;
@@ -58,6 +62,8 @@ create procedure ENEWS.WA.exec_no_error (in expr varchar, in execType varchar :=
     expr := sprintf(expr, maxID);
   }
   exec(expr, state, message, vector(), 0, meta, result);
+_end:
+  return;
 }
 ;
 

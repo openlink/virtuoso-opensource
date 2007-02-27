@@ -47,7 +47,7 @@
 
         declare exit handler for not found
         {
-          signal ('22023', sprintf ('The user "%s" does not exists.', self.fname));
+            signal ('22023', sprintf ('The user "%s" does not exist.', self.fname));
         };
 
         if (self.fname is null)
@@ -118,9 +118,11 @@
     <v:label name="uown" value="--self.friends_name" render-only="1" format="%s" />
   </xsl:template>
 
+  <!-- url="-#-sprintf ('ufoaf.xml?:sne=%d', self.sne_id)" -->
   <xsl:template match="vm:foaf-link">
       <v:url name="u2" value='<img src="images/foaf.gif" border="0" alt="FOAF" />' format="%s"
-	                 url="--sprintf ('ufoaf.xml?:sne=%d', self.sne_id)" />
+	url="--WA_LINK (1, sprintf ('/dataspace/%s/about.rdf', case when self.isowner then self.u_name else self.fname end))"
+	/>
   </xsl:template>
 
   <xsl:template match="vm:vcard-link">
@@ -781,8 +783,10 @@
   <xsl:template match="vm:user-home-map">
       <v:template type="simple" name="user_home_map" enabled="--case when isstring (self.maps_key) and length (self.maps_key) > 0 then 1 else 0 end">
 
-    <vm:map-control
+    <vm:oatmap-control
 	sql="sprintf ('\n' ||
+	   'select _LAT,_LNG,_KEY_VAL,EXCERPT \n' ||
+	   'from ( \n' ||
 	   'select \n' ||
      '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
      '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
@@ -816,7 +820,9 @@
      '      sprintf (''[__lang &quot;x-any&quot; __enc &quot;UTF-8&quot;] (%S) AND (&quot;^UID%%d&quot;) AND (&quot;^TID%%d&quot;)'', \n' ||
      '          http_nobody_uid (), U_ID) \n' ||
      '      ) \n' ||
-           ' ) x) or WAUI_U_ID = %d)\n',
+     '             ) x) or WAUI_U_ID = %d)\n' ||
+     '     ) _tmp_tbl\n' ||
+     '     where _LAT is not null and _LNG is not null \n',
             coalesce (self.u_id, self.ufid), self.fname, self.fname, WA_GET_USER_TAGS_OR_QRY (self.ufid), self.ufid)"
         baloon-inx="4"
         lat-inx="1"
@@ -824,7 +830,7 @@
         key-name-inx="3"
         key-val="self.ufid"
         div_id="user_map"
-        zoom="16"
+        zoom="0"
         base_url="HTTP_REQUESTED_URL ()" />
 
    </v:template>

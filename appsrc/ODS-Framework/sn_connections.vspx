@@ -108,7 +108,8 @@
         </div><!-- LT -->
         <div id="RT">
           <v:button action="simple" style="image" name="u2" value="images/foaf.gif"
-                    url="--sprintf ('ufoaf.xml?:sne=%d', self.sne_id)" />
+	    url="--WA_LINK (1, sprintf ('/dataspace/%s/about.rdf', self.for_user))" />
+	  <!-- sprintf ('ufoaf.xml?:sne=%d', self.sne_id)" -->
 <?vsp
   if (self.fname is null or self.fname = self.u_name)
     {

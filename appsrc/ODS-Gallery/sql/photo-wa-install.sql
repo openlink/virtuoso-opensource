@@ -96,8 +96,6 @@ create procedure PHOTO.WA.photo_install()
                 soap_opts => vector('Use','literal','XML-RPC','no' ));
 
 
-  --INSERT REPLACING DB.DBA.WA_DOMAINS(WD_DOMAIN) values('domain.com');
-
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.dav_browse TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.create_new_album TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album TO SOAPGallery');
@@ -105,6 +103,9 @@ create procedure PHOTO.WA.photo_install()
   PHOTO.WA._exec_no_error('grant execute on image_ids TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on photo_exif TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on photo_comment TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on SOAP_external_album TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on SOAP_gallery TO SOAPGallery');
+  
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_attributes TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.add_comment TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_comments TO SOAPGallery');
@@ -113,22 +114,26 @@ create procedure PHOTO.WA.photo_install()
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_image TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.tag_images TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.tag_image TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on SOAP_gallery TO SOAPGallery');
+
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.remove_tag_image TO SOAPGallery');
-}
-;
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_login_link TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_get_photos_list TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_save_photos TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_send_photos TO SOAPGallery');
+  
+};
+
 -------------------------------------------------------------------------------
 PHOTO.WA._exec_no_error(
 '
   create type wa_photo under web_app as (
-    wa_domain varchar
+    gallery_id interger
 	)
   constructor method wa_photo(stream any),
   overriding method wa_new_inst(login varchar) returns any,
   overriding method wa_front_page (stream any) returns any,
   overriding method wa_home_url() returns varchar,
-  overriding method wa_drop_instance() returns any,
-  overriding method wa_domain_set (in domain varchar) returns any
+  overriding method wa_drop_instance() returns any
 '
 )
 ;
@@ -140,13 +145,13 @@ PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_vhost_opti
 PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_front_page_as_user(inout stream any, in user_name varchar) returns any');
 PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_dashboard() returns any');
 PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_dashboard_last_item() returns any');
+PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_addition_urls () returns any');
 
 -------------------------------------------------------------------------------
 create constructor method wa_photo (inout stream any) for wa_photo
 {
   return;
-}
-;
+};
 
 -------------------------------------------------------------------------------
 create method wa_new_inst (in login varchar) for wa_photo
@@ -165,11 +170,10 @@ create method wa_new_inst (in login varchar) for wa_photo
 
  -- iUserID := (select U_ID from SYS_USERS where U_NAME = login);
 
-  PHOTO.WA.photo_init_user_data(self.wa_name,login);
+  PHOTO.WA.photo_init_user_data(iWaiID,self.wa_name,login);
 
   return (self as web_app).wa_new_inst(login);
-}
-;
+};
 
 -------------------------------------------------------------------------------
 create method wa_drop_instance () for wa_photo
@@ -280,6 +284,30 @@ create method wa_vhost_options () for wa_photo
 ;
 
 -------------------------------------------------------------------------------
+create method wa_addition_urls () for wa_photo
+{  
+  declare
+    iIsDav integer;
+  declare
+    sHost varchar;
+
+  sHost := registry_get('_oGallery_path_');
+
+  if (cast(sHost as varchar) = '0')
+    sHost := '/apps/oGallery/';
+
+  iIsDav := 1;
+  return
+    vector(
+        vector(null, null, '/photos/res', sHost || 'www-root/', 1, 0, null, null, null, null, 'dba', null, null, 1, null, null, null, 0),
+        vector(null, null, '/ods', registry_get('_wa_path_') || '', 1, 0, null, null, null, null, 'dba', null, null, 1, null, null, null, 0),
+        vector(null, null, '/photos/SOAP', '/SOAP/', 0, 0, null, null, null, null, null, 'SOAPGallery', null, 1, vector('Use','literal','XML-RPC', 'yes'), null, null, 0)
+    );
+  
+  return null;
+};
+
+-------------------------------------------------------------------------------
 create method wa_dashboard () for wa_photo {
 
   declare iUser integer;
@@ -311,43 +339,54 @@ create method wa_dashboard () for wa_photo {
 ;
 
 -------------------------------------------------------------------------------
-create method wa_dashboard_last_item () for wa_photo {
 
+create method wa_dashboard_last_item () for wa_photo 
+{
   declare iUser integer;
   declare UserName,Names,_home_path,_home_url varchar;
   declare _xml,_xml_temp,ses any;
   declare _col_id integer;
 
-  select WAM_USER into iUser from WA_MEMBER where WAM_INST = self.wa_name;
-  select U_NAME,IFNULL(U_FULL_NAME,U_NAME) into UserName,Names from WS.WS.SYS_DAV_USER WHERE U_ID = iUser;
-  select HOME_PATH,HOME_URL into _home_path,_home_url from PHOTO.WA.SYS_INFO WHERE WAI_NAME = self.wa_name;
+  select WAM_USER 
+    into iUser 
+    from WA_MEMBER 
+    where WAM_INST = self.wa_name;
+
+  select U_NAME, IFNULL (U_FULL_NAME,U_NAME) 
+    into UserName, Names 
+    from WS.WS.SYS_DAV_USER 
+    where U_ID = iUser;
+
+  select HOME_PATH,HOME_URL 
+    into _home_path,_home_url 
+    from PHOTO.WA.SYS_INFO 
+    where WAI_NAME = self.wa_name;
 
   _col_id := DAV_SEARCH_ID(_home_path,'C');
 
   ses := string_output ();
 
   http('<gallery>',ses);
-  for(SELECT RES_ID,RES_NAME,C.COL_NAME,RES_NAME,RES_NAME,RES_MOD_TIME
-     FROM WS.WS.SYS_DAV_COL P,WS.WS.SYS_DAV_COL C, WS.WS.SYS_DAV_RES R
-     WHERE RES_OWNER = iUser
-     AND RES_COL = C.COL_ID
-     AND P.COL_ID = C.COL_PARENT
-     AND P.COL_ID = _col_id
-     ORDER BY RES_MOD_TIME desc
-  )do{
+  for (select RES_ID,RES_NAME,C.COL_NAME,RES_NAME,RES_NAME,RES_MOD_TIME
+         from WS.WS.SYS_DAV_COL P,WS.WS.SYS_DAV_COL C, WS.WS.SYS_DAV_RES R
+         where RES_OWNER = iUser
+         and RES_COL = C.COL_ID
+         and P.COL_ID = C.COL_PARENT
+         and P.COL_ID = _col_id
+         order by RES_MOD_TIME desc) do
+    {
     http(sprintf('<image id="%d">',RES_ID),ses);
     http(sprintf('<title><![CDATA[%s]]></title>',RES_NAME),ses);
     http(sprintf('<dt>%s</dt>', date_iso8601(RES_MOD_TIME)),ses);
-    http(sprintf('<link>%s#/%s/%s</link>',_home_url,COL_NAME,RES_NAME,RES_NAME),ses);
-    http(sprintf('<from>%s</from>',Names),ses);
+      http (sprintf ('<link><![CDATA[%s/#/%s/%s]]></link>', _home_url, COL_NAME, RES_NAME, RES_NAME), ses);
+    http(sprintf('<from><![CDATA[%s]]></from>',Names),ses);
     http(sprintf('<uid>%s</uid>',UserName),ses);
     http('</image>',ses);
   }
   http('</gallery>',ses);
 
   return string_output_string (ses);
-}
-;
+};
 
 create procedure ods_gallery_sioc_init ()
 {
@@ -365,3 +404,4 @@ create procedure ods_gallery_sioc_init ()
 
 PHOTO.WA._exec_no_error('ods_gallery_sioc_init()');
 
+PHOTO.WA._exec_no_error('PHOTO.WA.fill_exif_data()');

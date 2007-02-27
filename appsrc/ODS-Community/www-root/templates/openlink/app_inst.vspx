@@ -135,6 +135,8 @@
               </div>
               </td>
               <td id="mainarea"><br/>
+                <div id="RT">
+
                   <?vsp
                   if (self.app_type = 'WEBLOG2')
                     {
@@ -172,7 +174,15 @@
                       <vm:dash-community-summary/>
                   <?vsp
                     }
+                  else if (self.app_type = 'oGallery')
+                             {
                   ?>
+                      <vm:dash-ogallery-summary/>
+                  <?vsp
+                      }
+                    
+                  ?>
+                  </div>
               </td>
               <td class="advert1"><img src="/community/public/images/greygrad1.gif" width="200" height="460" /></td>
             </tr>

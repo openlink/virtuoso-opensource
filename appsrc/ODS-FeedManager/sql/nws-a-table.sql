@@ -47,6 +47,8 @@ ENEWS.WA.exec_no_error('
     EF_ERROR_LOG long varchar default null,
     EF_DATA long xml,
     EF_DASHBOARD long varchar,
+    EF_ICON_URI varchar,
+    EF_IMAGE_URI varchar,
 
     primary key (EF_ID)
   )
@@ -56,6 +58,18 @@ ENEWS.WA.exec_no_error('
   create unique index SK_FEED_01 on ENEWS.WA.FEED(EF_URI)
 ');
 
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_DASHBOARD long varchar', 'C', 'ENEWS.WA.FEED', 'EF_DASHBOARD'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_ICON_URI varchar', 'C', 'ENEWS.WA.FEED', 'EF_ICON_URI'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_IMAGE_URI varchar', 'C', 'ENEWS.WA.FEED', 'EF_IMAGE_URI'
+);
+
 ENEWS.WA.exec_no_error('
   create trigger FEED_INSERT AFTER INSERT ON ENEWS.WA.FEED referencing new as N {
     ENEWS.WA.channel_trigger (N.EF_ID, N.EF_UPDATE_PERIOD, N.EF_UPDATE_FREQ);
@@ -64,15 +78,44 @@ ENEWS.WA.exec_no_error('
 
 ENEWS.WA.exec_no_error('
   create trigger FEED_UPDATE AFTER UPDATE on ENEWS.WA.FEED referencing old as O, new as N {
+    declare id integer;
+
     if ((O.EF_UPDATE_PERIOD <> N.EF_UPDATE_PERIOD) or (O.EF_UPDATE_FREQ <> N.EF_UPDATE_FREQ))
       ENEWS.WA.channel_trigger (N.EF_ID, N.EF_UPDATE_PERIOD, N.EF_UPDATE_FREQ);
+    if ((isnull(O.EF_LAST_UPDATE) and not isnull(N.EF_LAST_UPDATE)) or (O.EF_LAST_UPDATE <> N.EF_LAST_UPDATE)) {
+      id := N.EF_ID;
+      for (select EFD_DOMAIN_ID from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = id) do {
+        ENEWS.WA.domain_ping (EFD_DOMAIN_ID);
+      }
+    }
   }
 ');
 
-ENEWS.WA.exec_no_error(
-  'alter table ENEWS.WA.FEED add EF_DASHBOARD long varchar', 'C', 'ENEWS.WA.FEED', 'EF_DASHBOARD'
-);
+ENEWS.WA.exec_no_error ('
+  create trigger FEED_DELETE after delete on ENEWS.WA.FEED referencing old as O {
+    if (not is_empty_or_null (O.EF_ICON_URI))
+      DB.DBA.DAV_DELETE_INT (O.EF_ICON_URI, 1, null, null, 0);
+  }
+');
 
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.update_imageUri ()
+{
+  declare id, data, imageUri any;
+
+  if (registry_get ('news_table_version') = '1')
+    return;
+  for (select EF_ID, EF_DATA from ENEWS.WA.FEED) do {
+    id := EF_ID;
+    imageUri := ENEWS.WA.xml_get('imageUrl', EF_DATA);
+    update ENEWS.WA.FEED
+       set EF_IMAGE_URI = imageUri
+     where EF_ID = id;
+  }
+}
+;
+ENEWS.WA.update_imageUri();
 
 -------------------------------------------------------------------------------
 --
@@ -135,12 +178,99 @@ ENEWS.WA.exec_no_error(
 );
 
 ENEWS.WA.exec_no_error('
+  create index SK_FEED_ITEM_01 on ENEWS.WA.FEED_ITEM (EFI_FEED_ID, EFI_ID)
+');
+
+-------------------------------------------------------------------------------
+--
+-- Item links
+--
+-------------------------------------------------------------------------------
+ENEWS.WA.exec_no_error ('
+  create table ENEWS.WA.FEED_ITEM_LINK (
+    EFIL_ITEM_ID integer not null,
+    EFIL_LINK varchar,
+    EFIL_TITLE varchar,
+
+    constraint FK_FEED_ITEM_LINK_01 FOREIGN KEY (EFIL_ITEM_ID) references ENEWS.WA.FEED_ITEM (EFI_ID) ON DELETE CASCADE,
+
+    primary key (EFIL_ITEM_ID, EFIL_LINK)
+  )
+');
+
+-------------------------------------------------------------------------------
+--
+-- Item enclosures
+--
+-------------------------------------------------------------------------------
+ENEWS.WA.exec_no_error ('
+  create table ENEWS.WA.FEED_ITEM_ENCLOSURE (
+    EFIE_ITEM_ID integer not null,
+    EFIE_URL varchar,
+    EFIE_TYPE varchar,
+    EFIE_LENGTH integer,
+
+    constraint FK_FEED_ITEM_ENCLOSURE_01 FOREIGN KEY (EFIE_ITEM_ID) references ENEWS.WA.FEED_ITEM (EFI_ID) ON DELETE CASCADE,
+
+    primary key (EFIE_ITEM_ID, EFIE_URL)
+  )
+');
+
+-------------------------------------------------------------------------------
+--
+-- Items triggers
+--
+-------------------------------------------------------------------------------
+create procedure ENEWS.WA.item_links_update (
+  inout item_id integer,
+  inout description any,
+  inout content any)
+{
+  declare exit handler for sqlstate '*' return;
+
+  declare xt, links, enclosures any;
+
+  if (not isnull(description)) {
+    if (isentity (description)) {
+      xt := description;
+    } else {
+      xt := xtree_doc (description, 2, '', 'UTF-8');
+    }
+
+    -- links
+    links := xpath_eval ('//a[starts-with (@href, "http") and not(img)]', xt, 0);
+    foreach (any x in links) do
+      insert replacing ENEWS.WA.FEED_ITEM_LINK (EFIL_ITEM_ID, EFIL_LINK, EFIL_TITLE)
+        values (item_id, cast (xpath_eval ('@href', x) as varchar), cast (xpath_eval ('string()', x) as varchar));
+  }
+
+  if (not isnull(content)) {
+    if (isentity (content)) {
+      xt := content;
+    } else {
+      xt := xtree_doc (content, 2, '', 'UTF-8');
+    }
+
+    -- enclosures
+    enclosures := xpath_eval ('//enclosure[@url]', xt, 0);
+    foreach (any x in enclosures) do
+      insert replacing ENEWS.WA.FEED_ITEM_ENCLOSURE (EFIE_ITEM_ID, EFIE_URL, EFIE_LENGTH, EFIE_TYPE)
+        values (item_id, cast (xpath_eval ('@url', x) as varchar), cast (xpath_eval ('@length', x) as integer), subseq (cast (xpath_eval ('@type', x) as varchar), 0, 2048));
+  }
+}
+;
+
+ENEWS.WA.exec_no_error ('
   create trigger ENEWS_FEED_ITEM_WA_IN after insert on ENEWS.WA.FEED_ITEM referencing new as N {
+
+    -- dashboard
     update ENEWS.WA.FEED
       set EF_DASHBOARD = ENEWS.WA.make_dasboard_item (EF_DASHBOARD, N.EFI_PUBLISH_DATE, N.EFI_TITLE, N.EFI_AUTHOR, N.EFI_DATA, sprintf(\'/enews2/news.vspx?link=%d\', N.EFI_ID), N.EFI_ID)
      where EF_ID = N.EFI_FEED_ID;
     if (__proc_exists (\'DB.DBA.WA_NEW_NEWS_IN\'))
       DB.DBA.WA_NEW_NEWS_IN (ENEWS.WA.show_title(N.EFI_TITLE), sprintf(\'/enews2/news.vspx?link=%d\', N.EFI_ID), N.EFI_ID);
+
+    ENEWS.WA.item_links_update(N.EFI_ID, N.EFI_DESCRIPTION, N.EFI_DATA);
   }
 ');
 
@@ -154,13 +284,9 @@ ENEWS.WA.exec_no_error('
   }
 ');
 
-ENEWS.WA.exec_no_error('
-  create index SK_FEED_ITEM_01 on ENEWS.WA.FEED_ITEM (EFI_FEED_ID, EFI_ID)
-');
-
 -------------------------------------------------------------------------------
 --
--- Contains directory structure
+-- Conatins directory structure
 --
 -------------------------------------------------------------------------------
 ENEWS.WA.exec_no_error('
@@ -258,10 +384,6 @@ ENEWS.WA.exec_no_error('
 
 
 ENEWS.WA.exec_no_error('
-  drop index SK_FEED_DOMAIN_01 ENEWS.WA.FEED_DOMAIN
-');
-
-ENEWS.WA.exec_no_error('
   create index SK_FEED_DOMAIN_01 on ENEWS.WA.FEED_DOMAIN(EFD_DOMAIN_ID, EFD_FEED_ID)
 ');
 
@@ -292,14 +414,6 @@ ENEWS.WA.exec_no_error(
 );
 
 ENEWS.WA.exec_no_error('
-  drop index SK_FEED_ITEM_DATA_01 ENEWS.WA.FEED_ITEM_DATA
-');
-
-ENEWS.WA.exec_no_error('
-  drop index SK_FEED_ITEM_DATA_02 ENEWS.WA.FEED_ITEM_DATA
-');
-
-ENEWS.WA.exec_no_error ('
   create index SK_FEED_ITEM_DATA_01 on ENEWS.WA.FEED_ITEM_DATA(EFID_ITEM_ID)
 ');
 
@@ -320,6 +434,7 @@ ENEWS.WA.exec_no_error('
     EFIC_RFC_ID varchar,
     EFIC_RFC_HEADER long varchar,
     EFIC_RFC_REFERENCES varchar default null,
+    EFIC_OPENID_SIG long varbinary default null,
 
     constraint FK_FEED_ITEM_COMMENT_01 FOREIGN KEY (EFIC_ITEM_ID) references ENEWS.WA.FEED_ITEM (EFI_ID) on delete cascade,
 
@@ -327,17 +442,25 @@ ENEWS.WA.exec_no_error('
   )
 ');
 
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED_ITEM_COMMENT add EFIC_OPENID_SIG long varbinary default null', 'C', 'ENEWS.WA.FEED_ITEM_COMMENT', 'EFIC_OPENID_SIG'
+);
+
 ENEWS.WA.exec_no_error('
   create unique index SK_FEED_ITEM_COMMENT_01 on ENEWS.WA.FEED_ITEM_COMMENT(EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_ID)
 ');
 
 ENEWS.WA.exec_no_error('
+  create index SK_FEED_ITEM_COMMENT_02 on ENEWS.WA.FEED_ITEM_COMMENT(EFIC_ITEM_ID)
+');
+
+ENEWS.WA.exec_no_error ('
   create trigger FEED_ITEM_COMMENT_I after insert on ENEWS.WA.FEED_ITEM_COMMENT referencing new as N {
     declare id integer;
     declare rfc_id, rfc_header, rfc_references varchar;
     declare nInstance any;
 
-    nInstance := ENEWS.WA.domain_name(N.EFIC_DOMAIN_ID);
+    nInstance := ENEWS.WA.domain_nntp_name (N.EFIC_DOMAIN_ID);
     id := N.EFIC_ID;
     rfc_id := N.EFIC_RFC_ID;
     if (isnull(rfc_id))
@@ -379,7 +502,7 @@ ENEWS.WA.exec_no_error('
 
     declare exit handler for not found { return;};
 
-    nInstance := ENEWS.WA.domain_name(N.EFIC_DOMAIN_ID);
+    nInstance := ENEWS.WA.domain_nntp_name (N.EFIC_DOMAIN_ID);
     select NG_GROUP, NG_NEXT_NUM into grp, ngnext from DB..NEWS_GROUPS where NG_NAME = nInstance;
     if (ngnext < 1)
       ngnext := 1;
@@ -414,7 +537,7 @@ ENEWS.WA.exec_no_error('
     declare grp integer;
     declare oInstance any;
 
-    oInstance := ENEWS.WA.domain_name(O.EFIC_DOMAIN_ID);
+    oInstance := ENEWS.WA.domain_nntp_name (O.EFIC_DOMAIN_ID);
     grp := (select NG_GROUP from DB..NEWS_GROUPS where NG_NAME = oInstance);
     delete from DB.DBA.NEWS_MULTI_MSG where NM_KEY_ID = O.EFIC_RFC_ID and NM_GROUP = grp;
     DB.DBA.ns_up_num (grp);
@@ -612,38 +735,6 @@ ENEWS.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.drop_index()
-{
-  if (registry_get ('news_index_version') <> '1') {
-    ENEWS.WA.exec_no_error('drop table ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION');
-  }
-}
-;
-
-ENEWS.WA.drop_index();
-
-ENEWS.WA.exec_no_error('
-  create text xml index on ENEWS.WA.FEED_ITEM(EFI_DESCRIPTION) with key EFI_ID not insert clustered with (EFI_ID, EFI_FEED_ID, EFI_PUBLISH_DATE) using function
-');
-
--------------------------------------------------------------------------------
---
-create procedure ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_index_hook (inout vtb any, inout d_id any)
-{
-  return ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_int (vtb, d_id, 0);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_unindex_hook (inout vtb any, inout d_id any)
-{
-  return ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_int (vtb, d_id, 1);
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_int (inout vtb any, inout d_id any, in mode any)
 {
   for (select EFI_DESCRIPTION, EFI_FEED_ID, EFI_TITLE, EFI_AUTHOR, EFI_PUBLISH_DATE from ENEWS.WA.FEED_ITEM where EFI_ID = d_id) do {
@@ -669,43 +760,37 @@ create procedure ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_int (inout vtb any, inout d_
 }
 ;
 
-ENEWS.WA.vt_index_ENEWS_WA_FEED_ITEM();
-DB.DBA.vt_batch_update('ENEWS.WA.FEED_ITEM', 'off', null);
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_index_hook (inout vtb any, inout d_id any)
+{
+  return ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_int (vtb, d_id, 0);
+}
+;
 
-ENEWS.WA.exec_no_error('
-  drop table ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS
-');
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_unindex_hook (inout vtb any, inout d_id any)
+{
+  return ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_int (vtb, d_id, 1);
+}
+;
 
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.drop_index()
 {
-  if (registry_get ('news_index_version') <> '1') {
-    ENEWS.WA.exec_no_error('drop table ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS');
+  if (registry_get ('news_index_version') <> '2') {
+    ENEWS.WA.exec_no_error ('drop table ENEWS.WA.FEED_ITEM_EFI_DESCRIPTION_WORDS');
   }
 }
 ;
+
 ENEWS.WA.drop_index();
 
-ENEWS.WA.exec_no_error('
-  create text index on ENEWS.WA.FEED_ITEM_DATA (EFID_TAGS) with key EFID_ID not insert clustered with (EFID_DOMAIN_ID, EFID_ACCOUNT_ID, EFID_ITEM_ID) using function language \'x-ViDoc\'
+ENEWS.WA.exec_no_error ('
+  create text xml index on ENEWS.WA.FEED_ITEM(EFI_DESCRIPTION) with key EFI_ID clustered with (EFI_ID, EFI_FEED_ID, EFI_PUBLISH_DATE) using function
 ');
-
--------------------------------------------------------------------------------
---
-create procedure ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_index_hook (inout vtb any, inout d_id any)
-{
-  return ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_int(vtb, d_id, 0);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_unindex_hook (inout vtb any, inout d_id any)
-{
-  return ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_int(vtb, d_id, 1);
-}
-;
 
 -------------------------------------------------------------------------------
 --
@@ -744,9 +829,83 @@ create procedure ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_int (inout vtb any, inout d_i
 }
 ;
 
-ENEWS.WA.vt_index_ENEWS_WA_FEED_ITEM_DATA();
-DB.DBA.vt_batch_update('ENEWS.WA.FEED_ITEM_DATA', 'off', null);
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_index_hook (inout vtb any, inout d_id any)
+{
+  return ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_int(vtb, d_id, 0);
+}
+;
 
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_unindex_hook (inout vtb any, inout d_id any)
+{
+  return ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_int(vtb, d_id, 1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.drop_index()
+{
+  if ((registry_get ('news_index_version') <> '2') or (not exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE='ENEWS.WA.FEED_ITEM_COMMENT_EFIC_COMMENT_WORDS'))) {
+    ENEWS.WA.exec_no_error ('drop table ENEWS.WA.FEED_ITEM_DATA_EFID_TAGS_WORDS');
+  }
+}
+;
+ENEWS.WA.drop_index();
+
+ENEWS.WA.exec_no_error ('
+  create text index on ENEWS.WA.FEED_ITEM_DATA (EFID_TAGS) with key EFID_ID clustered with (EFID_DOMAIN_ID, EFID_ACCOUNT_ID, EFID_ITEM_ID) using function language \'x-ViDoc\'
+');
+
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.FEED_ITEM_COMMENT_EFIC_COMMENT_int (inout vtb any, inout d_id any, in mode any)
+{
+  for (select EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ID = d_id) do {
+    vt_batch_feed (vtb, coalesce(EFIC_TITLE, ''), mode);
+    vt_batch_feed (vtb, coalesce(EFIC_COMMENT, ''), mode);
+    vt_batch_feed (vtb, sprintf ('^R%d', EFIC_DOMAIN_ID), mode);
+    vt_batch_feed (vtb, sprintf ('^I%s', EFIC_ITEM_ID), mode);
+    vt_batch_feed_offband (vtb, serialize (vector (EFIC_DOMAIN_ID, EFIC_ITEM_ID)), mode);
+  }
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.FEED_ITEM_COMMENT_EFIC_COMMENT_index_hook (inout vtb any, inout d_id any)
+{
+  return ENEWS.WA.FEED_ITEM_COMMENT_EFIC_COMMENT_int(vtb, d_id, 0);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.FEED_ITEM_COMMENT_EFIC_COMMENT_unindex_hook (inout vtb any, inout d_id any)
+{
+  return ENEWS.WA.FEED_ITEM_COMMENT_EFIC_COMMENT_int(vtb, d_id, 1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.drop_index()
+{
+  if (registry_get ('news_index_version') <> '2') {
+    ENEWS.WA.exec_no_error ('drop table ENEWS.WA.FEED_ITEM_COMMENT_EFIC_COMMENT_WORDS');
+  }
+}
+;
+ENEWS.WA.drop_index();
+
+ENEWS.WA.exec_no_error ('
+  create text index on ENEWS.WA.FEED_ITEM_COMMENT (EFIC_COMMENT) with key EFIC_ID clustered with (EFIC_DOMAIN_ID, EFIC_ITEM_ID) using function language \'x-ViDoc\'
+');
 
 -------------------------------------------------------------------------------
 --
@@ -801,7 +960,7 @@ create procedure ENEWS.WA.tags_procedure (
 ;
 
 ENEWS.WA.exec_no_error ('
-  drop view ENEWS.WA.TAGS_VIEW
+  drop view ENEWS..TAGS_VIEW
 ')
 ;
 
@@ -812,4 +971,17 @@ ENEWS.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
-registry_set ('news_index_version', '1');
+create procedure ENEWS.WA.news_links_upgrade ()
+{
+  if (registry_get ('news_links_upgrade') = '1')
+    return;
+
+  for (select EFI_ID, EFI_DESCRIPTION, EFI_DATA from ENEWS.WA.FEED_ITEM) do
+    ENEWS.WA.item_links_update(EFI_ID, EFI_DESCRIPTION, EFI_DATA);
+};
+
+ENEWS.WA.news_links_upgrade ();
+
+registry_set ('news_table_version', '1');
+registry_set ('news_index_version', '2');
+registry_set ('news_links_upgrade', '1');

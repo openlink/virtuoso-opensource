@@ -68,6 +68,20 @@
 	  </v:on-post>
 	</v:button>
       </vm:setting-parameter>
+      <vm:setting-parameter name="Inter cluster autolinks">
+	<v:button name="qwiki_toggle" action="simple"
+		  value="--case when WV.WIKI.CLUSTERPARAM(self.cluster_name, 'qwiki', 2) = 2 then 'Turn Off' else 'Turn On' end">
+	  <v:on-post>
+	    <![CDATA[
+		     if (WV.WIKI.CLUSTERPARAM(self.cluster_name, 'creator', '--') = self.vspx_user)
+		       {
+		         WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'qwiki', 3 - WV.WIKI.CLUSTERPARAM(self.cluster_name, 'qwiki', 2));
+			 self.vc_data_bind(e);
+		       }
+	    ]]>
+	  </v:on-post>
+	</v:button>
+      </vm:setting-parameter>
     </vm:setting-section>
   </xsl:template>
       
@@ -215,6 +229,12 @@
 -->
 	  <v:hidden name="id2" value="--get_keyword('id', self.defval)"/>
           <tr>
+            <td colspan="2"> 
+              <v:check-box name="initial_insert"  xhtml_id="initial_insert"/>
+              <label for="initial_insert">Make full cluster upstream first</label>
+            </td>
+          </tr>
+          <tr>
 	    <td align="left">
 	      <v:button name="add" action="submit" value="Add/Update Upstream">
 		<v:on-post>
@@ -237,6 +257,8 @@
 				self.upstream_password.ufl_value,
 				null);
 			   self.message_text := 'upstream added';
+                         if (self.initial_insert.ufl_selected)
+                           WV..UPSTREAM_ALL( (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self.cluster and UP_NAME = self.upstream_name.ufl_value) );
 		       }
 		     else
 		       {
@@ -312,7 +334,7 @@
     <v:button name="main_topic_redirect_btn" value="Back to the topic" xhtml_title="Cancel" xhtml_alt="Cancel" style="url" action="simple">
       <v:on-post>
 	<![CDATA[
-            self.vc_redirect(sprintf('../main/%U/', self.cluster_name));
+	    self.vc_redirect(WV..CLUSTER_URL(self.cluster_name));
 		 return;
 	]]></v:on-post>
     </v:button>
@@ -325,7 +347,7 @@
                  			VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
         ]]></v:before-data-bind>
 			<v:form name="login_form" method="POST" type="simple">
-				<div class="login" style="display: none">
+				<div class="login22" style="display: none">
 					<?vsp if (not exists (select * from
                  			VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm))                 
             {
@@ -399,7 +421,7 @@
             <ul class="left_nav">
               <li class="xtern"><a href="http://www.openlinksw.com">OpenLink Software</a></li>
               <li class="xtern"><a href="http://www.openlinksw.com/virtuoso">Virtuoso Web Site</a></li>
-              <li class="xtern"><img src="images/PoweredByVirtuoso.gif"/></li>
+              <li class="xtern"><img src="images/virt_power_no_border.png"/></li>
             </ul>
             <div style="font-size: 50%">
               Server version: <?vsp http (sys_stat('st_dbms_ver')); ?>
@@ -411,8 +433,11 @@
         </xsl:template>
         <xsl:template match="vm:empty-body">
           <body>             
+          <xsl:if test="@onload">
+            <xsl:attribute name="onload"><xsl:value-of select="@onload"/></xsl:attribute>
+          </xsl:if>
            <div id="page">
-            <div class="login-area">
+            <div class="login-area2">
               <vm:wiki-emb-login/>
             </div>
             <xsl:apply-templates/>
@@ -424,7 +449,7 @@
           <ods:ods-bar app_type='oWiki'/>
            <div id="page">
             <vm:logo/>
-            <div class="login-area">
+            <div class="login-area2">
               <vm:wiki-login/>
             </div>
               <xsl:apply-templates/>
@@ -448,7 +473,7 @@
         <xsl:template match="vm:back-button">
           <v:button xhtml_class="real_button" action="simple" name="cancel" value="Back to the topic" xhtml_title="Cancel" xhtml_alt="Cancel">
             <v:on-post><![CDATA[   
-              self.vc_redirect('../main/' || self.source_page);
+	      self.vc_redirect(WV..TOPIC_URL(self.source_page));
             ]]></v:on-post>
           </v:button>
         </xsl:template>

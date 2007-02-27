@@ -55,6 +55,10 @@
 	</xsl:if>
     </xsl:template>
 
+    <xsl:template match="object[embed]">
+	<xsl:apply-templates select="embed"/>
+    </xsl:template>
+
     <xsl:template match="head|script|form|input|button|textarea|object|frame|frameset|select" />
 
     <xsl:template match="img[@id[starts-with (., 'media_')]]">

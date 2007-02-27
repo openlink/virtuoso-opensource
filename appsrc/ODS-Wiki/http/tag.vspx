@@ -47,19 +47,16 @@
 	self.topic := _topic;
 	-- dbg_obj_print (self.topic);
 
-	if (self.privatep)
-	  self.uid := (select U_ID from DB.DBA.VSPX_SESSION, DB.DBA.SYS_USERS where U_NAME = VS_UID and VS_SID = self.sid and VS_REALM = self.realm);
-	else
-	  self.uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = 'nobody');
-	self.encoded_tag := WV.WIKI.ADD_SYSINFO (null, 'tag', self.tag, 1);
 	--  dbg_obj_print (self.encoded_tag);
       ]]></v:on-init>
       <v:after-data-bind><![CDATA[
-       ;
+        self.login.vc_data_bind(e);
+	if (self.privatep)
+	  self.uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vspx_user);
+	else
+	  self.uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = 'nobody');
+        self.ds.vc_data_bind(e);
       ]]></v:after-data-bind>
-      <v:before-data-bind><![CDATA[
-       ;
-      ]]></v:before-data-bind>
       <v:method name="make_url" arglist="in res_id int">
       <![CDATA[
       	declare _topic WV.WIKI.TOPICINFO;
@@ -82,9 +79,9 @@
 		</tr>
 		<tr>
 		 <td>
-		  <v:data-set name="ds" sql="SELECT RES_ID from WS.WS.SYS_DAV_RES where contains (RES_CONTENT, :tag)" scrollable="1" nrows="1000">
+		  <v:data-set name="ds" sql="SELECT DT_RES_ID from WS.WS.SYS_DAV_TAG  where DT_U_ID = :uid and contains (DT_TAGS, :tag)" scrollable="1" nrows="1000">
 		    <v:column name="DT_RES_ID"/>
-		    <v:param name="tag" value="self.encoded_tag"/>
+		    <v:param name="tag" value="self.tag"/>
 		    <v:param name="uid" value="self.uid"/>
 		    <table class="wikitable" width="100%">
 		     <v:template name="template1" type="repeat" name-to-remove="" set-to-remove=""> 
@@ -106,7 +103,7 @@
 			      _topic.ti_id := id;
 			      _topic.ti_find_metadata_by_id();	
 
-			      self.vc_redirect (sprintf('../main/%s/%s', _topic.ti_cluster_name, _topic.ti_local_name));
+			      self.vc_redirect (WV..TOPIC_URL(sprintf('%s/%s', _topic.ti_cluster_name, _topic.ti_local_name)));
 			    ]]></v:on-post>
 			   </v:button>				
 			 </td>

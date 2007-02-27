@@ -116,7 +116,7 @@ DAV_REGISTER_MIME_TYPE ('application/xbel+xml', 'XBEL Bookmark Exchange', 'xbel'
 DAV_REGISTER_MIME_TYPE ('application/xddl+xml', 'XDDL', 'xddl', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/x-apple-spotlight', 'Spotlight Objects', 'mdobject', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/x-openlink-image', 'JPEG Image', 'jpg', null, 'replacing');
-DAV_REGISTER_MIME_TYPE ('application/rdf+xml', 'RDF', 'rdf', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/rdf+xml', 'RDF Data (RDF-XML, N3, Turtle)', 'rdf', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/x-openlink-photo', 'Photo', 'jpg', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/zip', 'ZIP Archive', 'zip', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/x-openlinksw-vad', 'OpenLink Virtuoso VAD package', 'vad', null, 'replacing');
@@ -128,6 +128,8 @@ DAV_REGISTER_MIME_TYPE ('text/html', 'Web pages (HTML etc)', 'html', null, 'repl
 DAV_REGISTER_MIME_TYPE ('text/eml', 'Email files', 'eml', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('text/wiki', 'Wiki files', 'txt', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/xbrl+xml', 'Business Reports', 'xbrl', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('text/rdf+ttl', 'RDF Data (RDF-XML, N3, Turtle)', 'ttl', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('text/rdf+n3', 'RDF Data (RDF-XML, N3, Turtle)', 'n3', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/doap+rdf', 'DOAP Projects', 'doap', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/license', 'OpenLink License', 'lic', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/google-kinds+xml', 'Google Kinds documents', 'xml', null, 'replacing');
@@ -157,6 +159,8 @@ DAV_REGISTER_MIME_RDF('application/zip', 'http://www.openlinksw.com/schemas/Arch
 DAV_REGISTER_MIME_RDF('application/x-openlinksw-vad', 'http://www.openlinksw.com/schemas/VAD#');
 DAV_REGISTER_MIME_RDF('application/x-openlinksw-vsp', 'http://www.openlinksw.com/schemas/VSPX#');
 DAV_REGISTER_MIME_RDF('application/x-openlinksw-vspx+xml', 'http://www.openlinksw.com/schemas/VSPX#');
+DAV_REGISTER_MIME_RDF('text/rdf+ttl', 'http://www.openlinksw.com/schemas/RDF#');
+DAV_REGISTER_MIME_RDF('text/rdf+n3', 'http://www.openlinksw.com/schemas/RDF#');
 DAV_REGISTER_MIME_RDF('text/directory', 'http://www.w3.org/2001/vcard-rdf/3.0#');
 DAV_REGISTER_MIME_RDF('text/directory', 'http://www.openlinksw.com/schemas/ICS#');
 DAV_REGISTER_MIME_RDF('text/html', 'http://www.openlinksw.com/schemas/XHTML#');

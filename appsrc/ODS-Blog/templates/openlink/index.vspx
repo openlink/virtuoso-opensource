@@ -110,7 +110,8 @@
 		  <vm:itunes-link>iTunes Subscription</vm:itunes-link>
 		  <vm:mrss-link>Media RSS (Yahoo!)</vm:mrss-link>
 		  <vm:gdata-link>GData</vm:gdata-link>
-		  <vm:sioc-link>SIOC</vm:sioc-link>
+		  <vm:sioc-link format="rdf">SIOC (RDF/XML)</vm:sioc-link>
+		  <vm:sioc-link format="ttl">SIOC (N3/Turtle)</vm:sioc-link>
               </div>
 	    <div class="box">
 	      <h2>Tag Cloud

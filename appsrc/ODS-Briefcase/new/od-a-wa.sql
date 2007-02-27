@@ -66,26 +66,19 @@ create procedure ODRIVE.WA.odrive_vhost()
   -- Add a virtual directory for oDrive - public www -------------------------
   sHost := registry_get('_oDrive_path_');
   if (cast(sHost as varchar) = '0')
-    sHost := '/apps/oDrive/';
+    sHost := '/apps/Briefcase/';
   iIsDav := 1;
   if (isnull(strstr(sHost, '/DAV')))
     iIsDav := 0;
+
   VHOST_REMOVE(lpath    => '/odrive');
-  VHOST_DEFINE(lpath    => '/odrive',
-               ppath    => concat(sHost, 'www/'),
-               ses_vars => 1,
-               is_dav   => iIsDav,
-               is_brws  => 0,
-               vsp_user => 'dba',
-               realm    => 'wa',
-               def_page => 'home.vspx'
-             );
 
   USER_CREATE ('SOAPODrive', md5 (cast (now() as varchar)));
   USER_SET_QUALIFIER ('SOAPODrive', 'DBA');
 
   VHOST_REMOVE (lpath => '/odrive/SOAP');
-  VHOST_DEFINE (lpath => '/odrive/SOAP',
+  VHOST_REMOVE (lpath => '/dataspace/services/briefcase');
+  VHOST_DEFINE (lpath => '/dataspace/services/briefcase',
                 ppath => '/SOAP/',
                 soap_user => 'SOAPODrive',
                 soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' ));
@@ -130,7 +123,7 @@ ODRIVE.WA.exec_no_error (
 ;
 
 ODRIVE.WA.exec_no_error (
-  'alter type wa_oDrive add overriding method wa_size() returns int'
+  'alter type wa_oDrive add overriding method wa_size () returns integer'
 )
 ;
 
@@ -154,6 +147,16 @@ ODRIVE.WA.exec_no_error (
 )
 ;
 
+ODRIVE.WA.exec_no_error (
+  'alter type wa_oDrive add method wa_id () returns integer'
+)
+;
+
+ODRIVE.WA.exec_no_error (
+  'alter type wa_oDrive add overriding method wa_drop_instance () returns any'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 -- OPS methods
@@ -168,17 +171,24 @@ create constructor method wa_oDrive (inout stream any) for wa_oDrive
 
 -------------------------------------------------------------------------------
 --
+create method wa_id () for wa_oDrive
+{
+  return (select WAI_ID from WA_INSTANCE where WAI_NAME = self.wa_name);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- owner makes a new oDrive
 --
 create method wa_new_inst (in login varchar) for wa_oDrive
 {
-  declare uid integer;
+  declare iUserID, iWaiID integer;
+  declare retValue any;
 
-  -- dbg_obj_print('oDrive --> wa_new_inst');
-
-  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
-  if (isnull(uid))
-    signal('OD001', 'not a Virtuoso WA user');
+  iUserID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
+  if (isnull(iUserID))
+    signal('OD001', 'Not an ODS user');
 
   if (self.wa_member_model is null)
     self.wa_member_model := 0;
@@ -186,8 +196,45 @@ create method wa_new_inst (in login varchar) for wa_oDrive
   insert into WA_INSTANCE (WAI_NAME, WAI_TYPE_NAME, WAI_INST, WAI_DESCRIPTION, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE)
     values (self.wa_name, 'oDrive', self, '', 0, 0);
 
+  iWaiID := self.wa_id ();
+
+  -- Add a virtual directory for BM - public www -------------------------
+  VHOST_REMOVE(lpath    => '/odrive/' || cast (iWaiID as varchar));
+  VHOST_DEFINE(lpath    => '/odrive/' || cast (iWaiID as varchar),
+               ppath    => self.get_param('host') || 'www/',
+               ses_vars => 1,
+               is_dav   => self.get_param('isDAV'),
+               is_brws  => 0,
+               vsp_user => 'dba',
+               realm    => 'wa',
+               def_page => 'home.vspx',
+               opts     => vector ('domain', iWaiID)
+             );
+
   ODRIVE.WA.odrive_user_initialize(login);
-  return (self as web_app).wa_new_inst(login);
+  retValue := (self as web_app).wa_new_inst(login);
+
+  --  SIOC service
+  declare  graph_iri, iri, c_iri varchar;
+
+  graph_iri := SIOC..get_graph ();
+  iri := sprintf ('http://%s%s/services/briefcase', SIOC..get_cname(), SIOC..get_base_path ());
+  c_iri := SIOC..briefcase_iri (self.wa_name);
+  SIOC..ods_sioc_service (graph_iri, iri, c_iri, null, null, null, iri, 'SOAP');
+
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_drop_instance () for wa_oDrive
+{
+  declare iWaiID integer;
+
+  iWaiID := self.wa_id ();
+  VHOST_REMOVE(lpath => concat('/odrive/', cast (iWaiID as varchar)));
+  (self as web_app).wa_drop_instance ();
 }
 ;
 
@@ -203,8 +250,7 @@ create method wa_class_details() for wa_oDrive
 --
 create method wa_front_page(inout stream any) for wa_oDrive
 {
-  declare
-    sSid varchar;
+  declare sSid varchar;
 
   sSid := (select VS_SID from VSPX_SESSION where VS_REALM = 'wa' and VS_UID = connection_get('vspx_user'));
   http_request_status ('HTTP/1.1 302 Found');
@@ -241,7 +287,7 @@ create method wa_state_edit_form(inout stream any) for wa_oDrive
 --
 create method wa_home_url () for wa_oDrive
 {
-  return '/odrive/home.vspx';
+  return concat('/odrive/', cast (self.wa_id () as varchar), '/home.vspx');
 }
 ;
 
@@ -279,7 +325,7 @@ create method wa_vhost_options () for wa_oDrive
            'dba',                            -- user for execution
            0,                                -- directory browsing enabled (flag 0/1)
            self.get_param('isDAV'),          -- WebDAV repository  (flag 0/1)
-           vector (),                        -- virtual directory options, empty is not applicable
+           vector ('domain', self.wa_id ()), -- virtual directory options, empty is not applicable
            null,                             -- post-processing function (null is not applicable)
            null                              -- pre-processing (authentication) function
          );
@@ -296,7 +342,7 @@ create method get_param (in param varchar) for wa_oDrive
   if (param = 'host') {
     retValue := registry_get('_oDrive_path_');
     if (cast(retValue as varchar) = '0')
-      retValue := '/apps/oDrive/';
+      retValue := '/apps/Briefcase/';
   } if (param = 'isDAV') {
     retValue := 1;
     if (isnull(strstr(self.get_param('host'), '/DAV')))
@@ -308,13 +354,35 @@ create method get_param (in param varchar) for wa_oDrive
 
 create method wa_dashboard_last_item () for wa_oDrive
 {
-  declare ses any;
-  declare uid int;
+  declare ses, vspxUser any;
+  declare iUserID integer;
 
-  uid := (select top 1 U_ID from SYS_USERS A, WA_MEMBER B where B.WAM_USER = A.U_ID and B.WAM_INST= self.wa_name and B.WAM_MEMBER_TYPE = 1);
+  vspxUser := connection_get ('vspx_user');
+  iUserID := (select top 1 U_ID from SYS_USERS A, WA_MEMBER B where B.WAM_USER = A.U_ID and B.WAM_INST = self.wa_name and B.WAM_MEMBER_TYPE = 1);
   ses := string_output ();
 
   http ('<dav-db>', ses);
+  if (isnull (vspxUser)) {
+    for (select top 10 RES_FULL_PATH, RES_MOD_TIME, RES_NAME, RES_OWNER
+           from WS.WS.SYS_DAV_RES
+          where RES_OWNER = iUserID
+            and substring (RES_PERMS, 7, 1) = '1'
+          order by RES_MOD_TIME desc) do {
+
+      declare uname, full_name varchar;
+
+      uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = RES_OWNER);
+      full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = RES_OWNER);
+
+      http ('<resource>', ses);
+      http (sprintf ('<dt>%s</dt>', date_iso8601 (RES_MOD_TIME)), ses);
+      http (sprintf ('<title><![CDATA[%s]]></title>', RES_NAME), ses);
+      http (sprintf ('<link><![CDATA[%s]]></link>', RES_FULL_PATH), ses);
+      http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
+      http (sprintf ('<uid>%s</uid>', uname), ses);
+      http ('</resource>', ses);
+    }
+  } else {
   for select top 10 *
         from (select *
                 from (select top 10 RES_FULL_PATH, RES_MOD_TIME, RES_NAME, RES_OWNER
@@ -322,7 +390,7 @@ create method wa_dashboard_last_item () for wa_oDrive
                                join WS.WS.SYS_DAV_ACL_INVERSE on AI_PARENT_ID = RES_ID
                                  join WS.WS.SYS_DAV_ACL_GRANTS on GI_SUB = AI_GRANTEE_ID
                        where AI_PARENT_TYPE = 'R'
-                         and GI_SUPER = uid
+                           and GI_SUPER = iUserID
                          and AI_FLAG = 'G'
                        order by RES_MOD_TIME desc
                      ) acl
@@ -330,7 +398,7 @@ create method wa_dashboard_last_item () for wa_oDrive
                 select *
                   from (select top 10 RES_FULL_PATH, RES_MOD_TIME, RES_NAME, RES_OWNER
                           from WS.WS.SYS_DAV_RES
-                         where RES_OWNER = uid
+                           where RES_OWNER = iUserID
                            and RES_PERMS like '1%'
                          order by RES_MOD_TIME desc
                      ) own
@@ -350,6 +418,7 @@ create method wa_dashboard_last_item () for wa_oDrive
     http (sprintf ('<uid>%s</uid>', uname), ses);
     http ('</resource>', ses);
   }
+  }
   http ('</dav-db>', ses);
   return string_output_string (ses);
 }
@@ -359,9 +428,43 @@ create method wa_dashboard_last_item () for wa_oDrive
 --
 create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_oDrive
 {
-  declare userID integer;
+  declare domainID, userID integer;
 
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
   userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-  return sprintf ('%sexport.vspx?output=about&aid=%d', ODRIVE.WA.odrive_url (), userID);
+  return sprintf ('%sexport.vspx?output=about&did=%d&aid=%d', ODRIVE.WA.odrive_url (), domainID, userID);
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.path_upgrade ()
+{
+  declare inst any;
+
+  if (registry_get ('odrive_path_upgrade') = '1')
+    return;
+
+  for (select WAI_ID, WAI_NAME, WAI_INST from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oDrive') do {
+    VHOST_REMOVE(lpath    => '/odrive/' || cast (WAI_ID as varchar));
+    VHOST_DEFINE(lpath    => '/odrive/' || cast (WAI_ID as varchar),
+                 ppath    => (WAI_INST as wa_oDrive).get_param ('host') || 'www/',
+                 ses_vars => 1,
+                 is_dav   => (WAI_INST as wa_oDrive).get_param ('isDAV'),
+                 is_brws  => 0,
+                 vsp_user => 'dba',
+                 realm    => 'wa',
+                 def_page => 'home.vspx',
+                 opts     => vector ('domain', WAI_ID)
+               );
+    update DB.DBA.WA_MEMBER
+       set WAM_HOME_PAGE = '/odrive/' || cast (WAI_ID as varchar) || '/home.vspx'
+     where WAM_INST = WAI_NAME;
+  }
+  VHOST_REMOVE (lpath    => '/odrive/');
+}
+;
+
+ODRIVE.WA.path_upgrade ();
+
+registry_set ('odrive_path_upgrade', '1');

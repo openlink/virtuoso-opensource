@@ -80,7 +80,7 @@
           } else {
         ?>
             <tr>
-              <td colspan="2">
+              <td align="center" colspan="2">
                 No tags suggested
               </td>
             </tr>

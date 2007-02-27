@@ -188,13 +188,11 @@ create method wa_notify_member_changed(in account int, in otype int, in ntype in
 --
 create method wa_new_inst (in login varchar) for wa_bookmark
 {
-  declare
-    iUserID,
-    iWaiID integer;
+  declare iUserID, iWaiID integer;
 
   iUserID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
   if (isnull(iUserID))
-    signal('EN001', 'not a Virtuoso WA user');
+    signal('EN001', 'Not an ODS user');
 
   if (self.wa_member_model is null)
     self.wa_member_model := 0;

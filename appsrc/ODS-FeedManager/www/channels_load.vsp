@@ -108,7 +108,7 @@
 
     -- dbg_obj_print('start: ', dataLength, now());
     -- exec subscriptions
-    data := vector('rss', null, 'title', null, 'blog', null, 'format', null, 'lang', null, 'type', 'long');
+    data := vector('rss', null, 'title', null, 'home', null, 'format', null, 'lang', null, 'type', 'long');
     for (i := 0; i < dataLength; i := i + 1) {
       if  (cast(registry_get ('feed_' || progressID || '_action') as varchar) = 'stop')
         goto _stop;

@@ -140,9 +140,10 @@ function myTags(fld_value)
 }
 
 // ---------------------------------------------------------------------------
-function vspxPost(fButton, fName, fValue)
+function vspxPost(fButton, fName, fValue, f2Name, f2Value)
 {
   createHidden('F1', fName, fValue);
+  createHidden('F1', f2Name, f2Value);
   doPost ('F1', fButton);
 }
 

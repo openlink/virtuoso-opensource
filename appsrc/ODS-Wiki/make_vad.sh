@@ -90,13 +90,15 @@ version_init() {
       BASE=`cat version.base`
   fi
   VERSION=`cat version.tmp | awk ' BEGIN { cnt=0 } { cnt = cnt + $1 } END { print cnt }'`
+  CALC_VERSION=$VERSION
   VERSION=`expr $BASE + $VERSION`
   CURR_VERSION=$VERSION
   if [ -f version.curr ] ; then
       CURR_VERSION=`cat version.curr`
   fi
   if [ $CURR_VERSION -gt $VERSION ] ; then
-      BASE=`expr $CURR_VERSION - $VERSION + 1`
+      BASE=`expr $CURR_VERSION - CALC_VERSION + 1`
+      echo "new base: " $BASE
       echo $BASE > version.base
       VERSION=$CURR_VERSION
   fi
@@ -250,7 +252,7 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.26.84\"/>" >> $STICKER
+  echo "    <versions_later package=\"1.33.11\"/>" >> $STICKER
   echo "  </require>" >> $STICKER
   echo "</dependencies>" >> $STICKER
   echo "<procedures uninstallation=\"supported\">" >> $STICKER
@@ -310,6 +312,8 @@ sticker_init() {
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/drop.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/drop_proc.sql', 0, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.DAV_DELETE_INT ('/DAV/VAD/wiki/', 0, null, null, 0, 0);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"post-uninstall\">" >> $STICKER
@@ -325,7 +329,7 @@ sticker_init() {
   do
     if echo "$file" | grep -v "/CVS/" >/dev/null
     then
-      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101N\" makepath=\"yes\"/>" >> $STICKER
+      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
     fi
   done
   cd http
@@ -333,7 +337,7 @@ sticker_init() {
   do
     if echo "$file" | grep -v "CVS" >/dev/null
     then
-      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101N\" makepath=\"yes\"/>" >> $STICKER
+      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
     fi
   done
   cd ..
@@ -362,7 +366,7 @@ sticker_init() {
   do
     if echo "$file" | grep -v "CVS" >/dev/null
     then
-      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Template/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101N\" makepath=\"yes\"/>" >> $STICKER
+      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Template/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
     fi
   done
   cd ..
@@ -371,7 +375,7 @@ sticker_init() {
   do
     if echo "$file" | grep -v "CVS" >/dev/null
     then
-      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/Skins/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101N\" makepath=\"yes\"/>" >> $STICKER
+      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/Skins/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
     fi
   done
   cd ..
@@ -380,7 +384,7 @@ sticker_init() {
   do
     if echo "$file" | grep -v "CVS" >/dev/null
     then
-      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/kupu/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101N\" makepath=\"yes\"/>" >> $STICKER
+      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/kupu/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
     fi
   done
   cd ..
@@ -430,7 +434,7 @@ CallstackOnException = 2
 ; Timeout values are seconds
 ;
 
-[HTTPServer]
+[!HTTPServer]
 ServerPort = $TPORT 
 ServerRoot = .
 ServerThreads = 5
@@ -458,12 +462,6 @@ QueueMax     = 50000
 ;Load1 = plain, wikiv
 
 " > virtuoso.ini
-  if [ -f virtuoso.lic ]
-  then
-    echo "virtuoso.lic found"
-  else
-    cp $HOME/binsrc/tests/suite/virtuoso.lic virtuoso.lic 2>/dev/null
-  fi    
   virtuoso_start
 }
 

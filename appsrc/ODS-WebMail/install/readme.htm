@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+
+</head>
+
+<body>
+<a name="PageTop"></a>
+</p><div id="text">
+<h1><a name="Virtuoso_oMail_Installation"> Virtuoso oMail Installation </a></h1>
+<p>
+</p><h2><a name="Requirements"> Requirements </a></h2>
+To make a oMail Installation you need:
+<ul>
+<li> oMail VAD package (or CVS checkout)
+</li>
+<li> WA application
+</li>
+<li> running Virtuoso 3.5
+</li>
+<li> SMTP Server
+</li>
+<li> Mail Drop application
+</li>
+</ul>
+<p>
+</p><p>
+</p><h2><a name="Installation_process"> Installation process </a></h2>
+<p>
+</p><h3><a name="Step_1_Building_VAD_package"> </a> Step 1: Building VAD package </h3>
+<p>
+If you have oMail VAD package, you can jump to Step 2.
+</p><p>
+To create oMail VAD package, you must have a fresh copy of oMail sources from CVS repository and Virtuoso environment installed.
+</p><p>
+Path to module is: /export/home/appsdev/cvs/webmail
+</p><p>
+After cvs update, go to oMail directory and run:
+</p><pre>  make_vad.sh
+</pre>
+<p>
+After finishing, you can found oMail.vad package in the same folder.
+</p><p>
+</p><h3><a name="Step_2_Installing_VAD_package"> </a> Step 2: Installing VAD package </h3>
+If you already have installed WA application, you must only execute the procedure:
+<pre>
+  DB.DBA.VAD_INSTALL('/&lt;package_path&gt;/oMail.vad',0);
+
+</pre>
+<p>
+If installation is successful, you must found a message like:
+</p><pre>
+  00000    No errors detected, installation complete.
+  00000    Now making a final checkpoint.
+  00000    Final checkpoint is made.
+  00000    SUCCESS
+
+</pre>
+<p>
+</p><h3><a name="Step_3_Configuration_mail_receiv"> Step 3: Configuration mail receiving </a></h3>
+To receive mail you need:
+<ul>
+<li> SMTP server (MS SMTP, Sendmail, Qmail, ...)
+</li>
+<li> domain name (something domain.com)
+</li>
+<li> OpenLink Mail Drop program
+</li>
+</ul>
+<p>
+The working schema is:
+</p><pre>
+  Internet  ---&gt; SMTP Server(*@domain.com) ---&gt; Mail Drop App (via odbc) ---&gt; Virtuoso DB  message
+
+</pre>
+<p>
+You must configure some SMTP server to receive messages for your domain
+name and execute mail_drop application for every incoming mail message
+to this domain.
+</p><p>
+</p><h4><a name="For_Win_OS_"> For Win OS: </a></h4>
+You can use Windows version of mail drop program and standard MS SMTP Server
+<p>
+Need files are:
+</p><pre>
+  maildrop.dll
+  odbc_mail.exe
+  odbc_mail.ini
+  register.bat
+  smtpreg.vbs
+
+</pre>
+<p>
+You can found them in Virtuoso installation.
+</p><p>
+Put them in some folder and execute:
+</p><p>
+</p><pre>
+  #register.bat /register domain.com
+
+</pre>
+<p>
+This will register a rule in your MS SMTP server which means:
+</p><p>
+ "if incoming message is for domain domain.com, then execute odbc_mail.exe"
+</p><p>
+Then you must edit odbc_mail.ini. The main fields are:
+  DSN
+  Verify
+  Deliver
+</p><p>
+DSN must be a System DSN not a normal/file DSN.
+</p><p>
+You can download this <a href="http://oplussol4.usnet.private:8791/twiki/pub/Main/VirtWebMailInstall/odbc_mail.ini" target="_top">odbc_mail.ini</a>
+which is with real values for oMail Application and put it in the same
+folder where are other files (maildrop.dll, odbc_mail.exe).
+</p><p>Then you must configure SMTP server to add domain.com as alias
+or as default domain name. That can be done via Internet Information
+Services Administration
+</p><p>
+Path to administration:
+Start-&gt;Settings-&gt;Control Panel-&gt;Administrative Tools-&gt;Internet Information Services
+</p><p>
+</p><h3><a name="Step_4_Configuring_oMail_applica"> Step 4: Configuring oMail application </a></h3>
+If your installations of virtuoso have a WEB address like domain.com, go to address:
+<p>
+<a href="http://domain.com/ods/" target="_top">http://domain.com/ods/</a>
+</p><p>
+Here you must login as DAV administrator and configure domain names list with available domain for user registrations.
+</p><p>
+After successful login, go to "Site Settings" and fill the field: "Available WA Site domains".
+</p><p>
+When you are ready, press "Set" button and after that "Home" button. Now you can logout from administration
+</p><p>
+</p><h3><a name="Step_5_Login_into_oMail"> Step 5: Login into oMail </a></h3>
+If your installations of virtuoso have a WEB address like domain.com, go to address:
+<p>
+<a href="http://domain.com/ods/" target="_top">http://domain.com/ods/</a>
+</p><p>
+Here you can register new user or login via existing one.
+After successful login, you must see in "Available applications"
+</p><p>
+  oMail
+</p><p>
+Press the "Create Instance" button.
+</p><p>
+On next screen, you must:
+</p><ol>
+<li> type user name of your email address
+</li>
+<li> choose domain from list of available domains
+</li>
+</ol>
+<p>
+When you are ready, press "Save" and application will create you new mail box and return to home page.
+You can repeat last step many times to create multiple mailboxes with different names
+</p><p>
+When you are ready with creations of new mail boxes, you can login in any of them.
+To do this just chooses it from "Membership" list by clicking on the name.
+</p><p>
+</form></body></html>

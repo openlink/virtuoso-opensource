@@ -116,7 +116,7 @@
         <tr>
           <th><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-	    <v:text error-glyph="?" xhtml_id="reguid" name="reguid" value="--get_keyword('reguid', params)">
+	    <v:text error-glyph="?" xhtml_tabindex="1" xhtml_id="reguid" name="reguid" value="--get_keyword('reguid', params)">
 	      <v:validator test="length" min="1" max="20" message="Login name cannot be empty or longer then 20 chars" name="vv_reguid1"/>
 	      <v:validator test="sql" expression="length(trim(self.reguid.ufl_value)) < 1 or length(trim(self.reguid.ufl_value)) > 20" name="vv_reguid2"
 		message="Login name cannot be empty or longer then 20 chars" />
@@ -142,7 +142,7 @@
         <tr>
           <th><label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_id="regmail" name="regmail" value="--get_keyword ('regmail', params)">
+            <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" name="regmail" value="--get_keyword ('regmail', params)">
               <v:validator name="vv_regmail1" test="length" min="1" max="40" message="E-mail address cannot be empty or longer then 40 chars"/>
               <v:validator name="vv_regmail2" test="regexp" regexp="[^@ ]+@([^\. ]+\.)+[^\. ]+" message="Invalid E-mail address" />
             </v:text>
@@ -153,7 +153,7 @@
         <tr>
           <th><label for="regpwd">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_id="regpwd" type="password" name="regpwd" value="">
+            <v:text error-glyph="?" xhtml_tabindex="3" xhtml_id="regpwd" type="password" name="regpwd" value="">
               <v:validator test="length" min="1" max="40" message="Password cannot be empty or longer then 40 chars"/>
             </v:text>
           </td>
@@ -163,7 +163,7 @@
         <tr>
           <th><label for="regpwd1">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_id="regpwd1" type="password" name="regpwd1" value="">
+            <v:text error-glyph="?" xhtml_tabindex="4" xhtml_id="regpwd1" type="password" name="regpwd1" value="">
               <v:validator test="sql" expression="self.regpwd.ufl_value <> self.regpwd1.ufl_value"
                 message="Password verification does not match" />
             </v:text>
@@ -175,7 +175,7 @@
         <tr>
 	    <th><label for="regimg1">Enter the <?V case when self.im_enabled then 'number' else 'answer for the question' end ?> bellow<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_id="regimg1" name="regimg1" value="">
+            <v:text error-glyph="?" xhtml_tabindex="5" xhtml_id="regimg1" name="regimg1" value="">
               <v:validator test="sql" expression="self.reg_number is not null and self.reg_number <> self.regimg1.ufl_value"
                 message="The number verification does not match" />
             </v:text>

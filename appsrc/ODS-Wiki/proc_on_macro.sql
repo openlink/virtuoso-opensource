@@ -227,8 +227,6 @@ create function WV.WIKI.MACRO_INCLUDE (inout _data varchar, inout _context any, 
     return NULL;
   }
   ;
-    WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _topic.ti_get_entity (null,1), 
-	vector_concat (_env, _topic.ti_xslt_vector()));
   return (XMLELEMENT ('MACRO_INCLUDE',
    xpath_eval ('//div[@class=\'topic-text\']',
     WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _topic.ti_get_entity (null,1), 
@@ -297,6 +295,23 @@ create function WV.WIKI.MACRO_MAIN_DASHBOARD (inout _data varchar, inout _contex
   _report := XMLELEMENT ('MACRO_MAIN_DASHBOARD');
   _ent := xpath_eval ('//MACRO_MAIN_DASHBOARD', _report); 
 
+
+  declare _clusterid int;
+  _clusterid := cast (get_keyword ('ti_cluster_id', _env, '0') as int);
+  if (WV.WIKI.CLUSTERPARAM(_clusterid, 'qwiki', 2) = 1)
+    {
+      for select WAI_INST, WAI_NAME, WAI_DESCRIPTION from WA_INSTANCE, WV.WIKI.CLUSTERS
+        where WAI_TYPE_NAME = 'oWiki' 
+	 and WAI_NAME = CLUSTERNAME
+	 and CLUSTERID = _clusterid
+      do {
+        XMLAppendChildren (_ent, XMLELEMENT ('Cluster',
+                      XMLATTRIBUTES (WAI_NAME as "KEY"),
+                      XMLELEMENT (Name, WAI_NAME),
+                      XMLELEMENT ('Description', WAI_DESCRIPTION ) ) );
+        return _report;
+      }
+    }  
   for select WAI_INST, WAI_NAME, WAI_DESCRIPTION from WA_INSTANCE where WAI_TYPE_NAME = 'oWiki'
   do
     {
@@ -394,9 +409,7 @@ create function WV.WIKI.FEED (inout _env any, inout _data varchar, in _type varc
 
   declare _base_adjust varchar;
   _base_adjust := coalesce (connection_get ('WIKIV BaseAdjust'), '');
-  _home := _base_adjust || '../resources/';
-  
-
+  _home :=  WV.WIKI.RESOURCEHREF ('',  _base_adjust);
 
   return XMLELEMENT ('div',
 		     XMLATTRIBUTES ('MACRO_' || ucase (_type) || '_FEED_LINK' as "class"),
@@ -507,6 +520,40 @@ create function WV.WIKI.MAP (in funcname varchar, in v any, in result_type varch
 ;
   
       
+create function WV.WIKI.DROP_PARAM(in params any, in drop_param varchar)
+{
+  declare _res any;
+  vectorbld_init(_res);
+  declare idx int;
+  for (idx := 0; idx < length(params); idx:=idx+2)
+    {
+      if (drop_param <> params[idx])
+ 	{
+	  vectorbld_acc (_res, params[idx]);
+	  vectorbld_acc (_res, params[idx+1]);
+	}
+    }
+  vectorbld_final(_res);
+  return _res;
+}
+;
+
+create function WV.WIKI.BUILD_PARAMS (in params any)
+{
+  declare _res any;
+  vectorbld_init(_res);
+  declare idx int;
+  for (idx := 0; idx < length(params); idx:=idx+2)
+    {
+      if (isstring(params[idx+1]))
+	vectorbld_acc (_res, params[idx] || '=' || sprintf ('%U',params[idx+1]));
+    }
+
+  vectorbld_final(_res);
+  return WV.WIKI.STRJOIN ('&', _res);
+}
+;  
+
 
 create function WV.WIKI.MACRO_SEARCH (inout _data varchar, inout _context any, inout _env any)
 {
@@ -646,7 +693,7 @@ create function WV.WIKI.MACRO_TOC  (inout _data varchar, inout _context any, ino
   {
     for \$t in //h1 | //h2 | //h3 | //h4 | //h5 | //h6
     return
-	<li> { for \044nb in wv:nnbsps(\$t/local-name())//y return <label style="width: 10px; color:white;">_</span> } <img src="{\044baseadjust}../resources/images/d.gif"/> <a href="#{wv:trim(\$t/text())}"> { \$t/text() } </a>  </li>
+	<li> { for \044nb in wv:nnbsps(\$t/local-name())//y return <label style="width: 10px; color:white;">_</span> }<a href="#{wv:trim(\$t/text())}"> { \$t/text() } </a>  </li>
   }
   </ul>
  </div>
@@ -664,7 +711,7 @@ create function WV.WIKI.NNBSPS (in header_class varchar)
   declare ss any;
   ss := string_output();
   http ('<x>',ss);
-  for ( i:=0 ; i < 2*n ; i := i+1)
+  for ( i:=2 ; i < 2*n ; i := i+1)
     {
       http ('<y/>', ss);
     }
@@ -695,7 +742,8 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:trim', 'WV.WIKI.TRIM')
 
 create function WV.WIKI.MACRO_META_TOPICPARENT (inout _data varchar, inout _context any, inout _env any)
 {
-  if (get_keyword ('is_new', _env, NULL) is not null)
+  if (get_keyword ('is_new', _env, NULL) is not null
+     or get_keyword('command', _env, '') = 'Preview')
     return '((will be processed later))';
   declare _args any;
   declare _name, _signal varchar;
@@ -738,6 +786,7 @@ create function WV.WIKI.MACRO_META_TOPICPARENT (inout _data varchar, inout _cont
   update WV.WIKI.TOPIC set ParentId = _parent 
 	where TopicId = _topic
 	and ClusterId = _cluster;
+  signal('WVRLD' , '');
   return '';
 
 }
@@ -796,21 +845,26 @@ create function WV.WIKI.MACRO_REFBY (inout _data varchar, inout _context any, in
   _topic_id := get_keyword ('ti_id', _env, null);
   if (_topic_id is null)
     return '';
-  declare _ent any;
+  declare _ss any;
 
-  _ent := XMLELEMENT ('MACRO_REF_BY',
-   	   (select XMLELEMENT ('ul',
-	     XMLAGG (
-	     	XMLELEMENT ('li',
-		  XMLELEMENT ('a', 
-		    XMLATTRIBUTES (ClusterName || '.' || LocalName as "href",
-		    		   'wikiword' as "style"),
-		    ClusterName || '.' || LocalName ) ) ) )
+  _ss := string_output();
+  http ('<ul>', _ss);
+  for select ClusterName, LocalName 
 		    from WV.WIKI.LINK inner join WV.WIKI.TOPIC 
 		     on (OrigId = TopicId)
 		     natural join WV.WIKI.CLUSTERS
-		    where DestId = _topic_id));
-  return _ent;
+      where DestId = _topic_id
+      order by LocalName do {
+    http('<li>',_ss);
+    http ('<a style="wikiword" href="', _ss);
+    http_value (ClusterName || '.' || LocalName, null, _ss);
+    http ('">', _ss);
+    http_value (ClusterName || '.' || LocalName, null, _ss);
+    http ('</a>',_ss);
+    http('</li>',_ss);
+  }
+  http('</ul>', _ss);
+  return xtree_doc (string_output_string(_ss));
 }
 ;
 
@@ -1249,16 +1303,33 @@ create function WV.WIKI.MACRO_TOPPAGES (inout _data varchar, inout _context any,
 
 create function WV.WIKI.MACRO_USERS (inout _data varchar, inout _context any, inout _env any)
 {
-  declare _args, _res any;
+  declare _args, _res, _ent, _xml, _cluster any;
+  _cluster := get_keyword ('ti_cluster_name', _env);
   _args := WV.WIKI.PARSEMACROARGS (_data);
 
-  _res := (select XMLELEMENT ('ul', XMLAGG (
-	XMLELEMENT ('li', 
+  _res := (select VECTOR_AGG ( vector (ucase(UserName), XMLELEMENT ('li', 
 	 WV.WIKI.A (UserName, UserName, 'wikiword'),
 	 case when length(SecurityCmt) > 0 then ' -- ' || cast (SecurityCmt as varchar) else '' end)))
-    from WV.WIKI.USERS order by UserName);
+    from (select * from WV.WIKI.USERS order by UserName) a
+    where exists (select 1 from DB.DBA.WA_MEMBER 
+    		        where WAM_USER = USERID
+      			 and WAM_INST = _cluster)
+    );
 
-  return _res;
+  declare _last_char int;
+  _last_char := 0;
+  
+  _xml := XMLELEMENT ('ul');
+  _ent := xpath_eval ('/ul', _xml);
+
+  foreach (any p in _res) do {
+    if (_last_char <> p[0][0])
+      XMLAppendChildren (_ent, XMLELEMENT ('li', XMLELEMENT ('A', XMLATTRIBUTES (subseq (p[0], 0, 1) as "name"), subseq (p[0],0,1))));
+    _last_char := p[0][0];
+    XMLAppendChildren (_ent, p[1]);
+  }
+
+  return _xml;
 }
 ;
 
@@ -1329,7 +1400,49 @@ create function WV.WIKI.MACRO_inline (inout _data varchar, inout _context any, i
   return xtree_doc (_res, 2);
 }
 ;
+create function WV..PARSE_MACRONAME(in _name varchar)
+{
+  declare _parts any;
+  _parts := regexp_parse ('WV\\.[^.]+\\.MACRO_([^_]+)_(.*)', _name, 0);
+  if (_parts is null)
+    return vector ('Standard', subseq (_name, 14));
+  else
+    return vector (subseq (_name, _parts[2], _parts[3]), subseq (_name, _parts[4], _parts[5]));
+ }
+ ;
 
+create procedure WV.WIKI.MACRO_MACROS(inout _data varchar, inout _context any, inout _env any)
+{
+  declare _res, _ent any;
+  _res := xtree_doc('<div class="macro-list"/>');
+  _ent := xpath_eval ('/div', _res);
+
+  declare _ul, _ul_ent any;
+  declare _currns varchar;
+  _currns := '';
+  _ul := null;
+
+  for select WV..PARSE_MACRONAME(P_NAME)[0] as _ns, WV..PARSE_MACRO(P_NAME)[1] as _name 
+    from DB.DBA.SYS_PROCEDURES where P_NAME like 'WV.%.MACRO_%'
+    order by _ns, _name
+  do {
+    if (_currns <> _ns) 
+      {
+        if (_ul is not null)
+	  XMLAppendChildren(_ent, _ul);
+        _ul := xtree_doc (sprintf('<div><h2>%V</h2><ul/></div>', _ns));
+	_ul_ent := xpath_eval('//ul', _ul);
+	_currns := _ns;
+      }
+    XMLAppendChildren (_ul_ent, xtree_doc(sprintf('<li>%V</li>', _name)));
+  }
+  XMLAppendChildren(_ent, _ul);
+
+  return _res;
+}
+;
   
 use DB
 ;
+create function WV.WIKI.MACRO_VOSCOPY (inout _data varchar, inout _context any, inout _env any) { return ''; };
+create function WV.WIKI.MACRO_META_TOPICMOVED (inout _data varchar, inout _context any, inout _env any) { return ''; };

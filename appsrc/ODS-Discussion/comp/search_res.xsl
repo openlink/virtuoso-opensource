@@ -28,27 +28,54 @@
   xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
     <xsl:template match="vm:nntp-sresult">
     <v:variable name="_temp_id" type="varchar" />
+    <v:variable name="_invdatestr" type="varchar" />
     <v:variable name="_valid_date" type="integer" default="1" />
     <v:variable name="_valid_sch_text" type="integer" default="1" />
     <v:variable persist="temp" name="r_count" type="integer" default="0"/>
     <v:before-data-bind>
 	<![CDATA[
-	     --dbg_obj_print ('params = ', params);
-	     self.search_trm := get_keyword ('search', params);
-	     --dbg_obj_print ('!!! self.u_full_name = ', self.u_full_name);
-	     --dbg_obj_print ('!!! self.u_full_name = ', get_keyword ('s_text', params));
+
+       self.search_trm := encode_base64 (serialize(vector(get_keyword ('search', params))));
+
 	     if (get_keyword ('go_adv_search', params, '') <> '')
 	       {
 		  declare full_search_exp any;
 		  full_search_exp := vector (get_keyword ('s_text', params));
-		  full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('sel_period', params)));
-		  full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_d_label', params)));
-		  full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_m_label', params)));
-		  full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_y_label', params)));
+          full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_d_after', params)));
+          full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_m_after', params)));
+          full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_y_after', params)));
+          full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_d_before', params)));
+          full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_m_before', params)));
+          full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_y_before', params)));
 		  full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('group_m_label', params)));
-		  self._valid_date := nntpf_check_is_date_valid (full_search_exp);
-		  self._temp_id := nntpf_check_get_bad_date (full_search_exp);
+          
+          
+           declare _valid_date_before,_valid_date_after integer;
+           _valid_date_before:=1;
+           _valid_date_after:=1;
+           
+          if(length(get_keyword ('date_y_after', params)||get_keyword ('date_m_after', params)||get_keyword ('date_d_after', params))>0)
+             _valid_date_after := nntpf_check_is_datestr_valid (get_keyword ('date_y_after', params)||' '||get_keyword ('date_m_after', params)||' '||get_keyword ('date_d_after', params));
+          if (not _valid_date_after)
+                self._invdatestr := get_keyword ('date_d_after', params)||'/'||get_keyword ('date_m_after', params)||'/'||get_keyword ('date_y_after', params);
+          
+          if(length(get_keyword ('date_d_before', params)||get_keyword ('date_m_before', params)||get_keyword ('date_y_before', params))>0)
+             _valid_date_before := nntpf_check_is_datestr_valid (get_keyword ('date_y_before', params)||' '||get_keyword ('date_m_before', params)||' '||get_keyword ('date_d_before', params));
+          if (not _valid_date_before)
+          {
+              if(length(self._invdatestr))
+                self._invdatestr := self._invdatestr||', '||get_keyword ('date_d_before', params)||'/'||get_keyword ('date_m_before', params)||'/'||get_keyword ('date_y_before', params);
+              else
+                self._invdatestr := get_keyword ('date_d_before', params)||'/'||get_keyword ('date_m_before', params)||'/'||get_keyword ('date_y_before', params);
+          }
+          
+          if(_valid_date_before and _valid_date_after)    
+              self._valid_date:=1;
+          else  
+              self._valid_date:=0;
+         
 		  self.search_trm := encode_base64 (serialize (full_search_exp));
+
 	       }
 
 	      self._valid_sch_text := nntpf_check_is_sch_tex_valid (self.search_trm);
@@ -60,7 +87,11 @@
 
     <xsl:template name="vm:valid_search">
       <vm:template enabled="--either ((self._valid_date + self._valid_sch_text - 2), 0, 1)">
-	<p>Free-text search terms</p>
+<!--
+      <vm:template enabled="--(case when self.ds.ds_rows_total>0 then 1 else 0 end)">
+
+--> 
+
     <v:data-set name="ds" data="--nntpf_search_result_v_data (self.search_trm)" meta="--nntpf_search_result_v_meta (self.search_trm)" nrows="10" scrollable="1" width="80">
     <v:before-data-bind>
 	<![CDATA[
@@ -73,9 +104,10 @@
 	       }
 	]]>
     </v:before-data-bind>
-      <h3>List</h3>
+
+
          <table width="100%" class="news_summary_encapsul" cellspacing="0" cellpadding="0">
-      <v:template name="template_head" type="simple" name-to-remove="table" set-to-remove="bottom">
+      <v:template name="template_head" type="simple" name-to-remove="table" set-to-remove="bottom" enabled="--self.ds.ds_rows_total">
           <tr>
               <th align="left">No</th>
               <th align="left">Date</th>
@@ -85,14 +117,20 @@
               <th align="left">Action</th>
 	  </tr>
       </v:template>
-      <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
-        <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+        <v:template name="template_head_nores" type="simple" name-to-remove="table" set-to-remove="both" enabled="--( case when self.ds.ds_rows_total>0 then 0 else 1 end)">
             <tr>
               <td align="left" colspan="6">
-                <b>No rows selected</b>
+                <p>
+<!--
+                <b>Your search - <?V coalesce(get_keyword ('search', self.vc_event.ve_params),get_keyword ('s_text', self.vc_event.ve_params)) ?> - did not match any posts.</b>
+-->
+                <b>No matches found</b>
+                </p>
               </td>
             </tr>
         </v:template>
+
+      <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
         <v:template name="template_data" type="browse" name-to-remove="table" set-to-remove="both">
           <?vsp
             self.r_count := self.r_count + 1;
@@ -116,6 +154,7 @@
             <td align="left" width="10%">
 <?vsp
 	self._temp_id := encode_base64 (control.te_rowset[3]);
+  
 ?>
 		<a href="nntpf_disp_article.vspx?id=<?=self._temp_id?>" onclick="javascript: doPostValueN ('nntpf_s_res', 'disp_artic', '<?=self._temp_id?>'); return false">Read</a>
      		<xsl:call-template name="vm:disp_cancel"/>
@@ -125,15 +164,30 @@
           ?>
         </v:template>
       </v:template>
-      <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+      <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top" enabled="--self.ds.ds_rows_total">
           <tr>
             <td align="center" colspan="6">
+<!--
               <v:button name="ds_first" action="simple" value="&lt;&lt;&lt;"/>
               <v:button name="ds_prev" action="simple" value="&lt;&lt;"/>
               <v:button name="ds_next" action="simple" value="&gt;&gt;"/>
               <v:button name="ds_last" action="simple" value="&gt;&gt;&gt;"/>
-	      <v:text name="search" type="hidden" value="--self.search_trm" />
-	      <v:text name="s_text" type="hidden" value="--get_keyword ('s_text', params)" />
+-->
+    <br/>
+        <v:text name="search" type="hidden" value="--get_keyword ('search', self.vc_page.vc_event.ve_params, '')" />
+        <v:text name="s_text" type="hidden" value="--get_keyword ('s_text', self.vc_page.vc_event.ve_params, '')" />
+
+        <v:text name="date_d_after" type="hidden" value="--get_keyword ('date_d_after', self.vc_page.vc_event.ve_params, '')" />
+        <v:text name="date_m_after" type="hidden" value="--get_keyword ('date_m_after', self.vc_page.vc_event.ve_params, '')" />
+        <v:text name="date_y_after" type="hidden" value="--get_keyword ('date_y_after', self.vc_page.vc_event.ve_params, '')" />
+        <v:text name="date_d_before" type="hidden" value="--get_keyword ('date_d_before', self.vc_page.vc_event.ve_params, '')" />
+        <v:text name="date_m_before" type="hidden" value="--get_keyword ('date_m_before', self.vc_page.vc_event.ve_params, '')" />
+        <v:text name="date_y_before" type="hidden" value="--get_keyword ('date_y_before', self.vc_page.vc_event.ve_params, '')" />
+        <v:text name="group_m_label" type="hidden" value="--get_keyword ('group_m_label', self.vc_page.vc_event.ve_params, '')" />
+        <v:text name="go_adv_search" type="hidden" value="--get_keyword ('go_adv_search', self.vc_page.vc_event.ve_params, '')" />
+
+
+     <vm:ds-navigation data-set="ds"/>
             </td>
           </tr>
       </v:template>
@@ -156,21 +210,27 @@
 	  </vm:template>
 
 	<vm:template enabled="--abs (self._valid_date - 1)">
-		<p>Date: <?vsp http(self._temp_id); ?> is not valid.</p>
+    <?vsp
+     if(strchr(self._invdatestr,',') is not null)
+        http('<p>Dates: '|| self._invdatestr||' are not valid.</p>');
+     else
+        http('<p>Date: '|| self._invdatestr||' is not valid.</p>');
+    ?>
 	 </vm:template>
 
-	<vm:template enabled="--abs (self._valid_sch_text - 1)">
+  <vm:template enabled="--( 1- abs (self._valid_sch_text))">
 		<p>The search expression:
-			"<?vsp http(deserialize (decode_base64 (self.search_trm))[0]); ?>" is not valid.
+      "<?vsp http(coalesce(deserialize (decode_base64 (self.search_trm))[0],'')); ?>" is not valid.
 		</p>
 	 </vm:template>
 
 	</xsl:template>
+
        <xsl:template name="vm:rss_url">
-	<vm:template enabled="--self.vc_authenticated">
-	<p>Add to my RSS feeds.</p>
-	<p>Description: <v:text name="rss_search_desc" xhtml:width="30" value="--concat ('Results for: ', deserialize (decode_base64 (self.search_trm))[0])" />
-	   <v:button name="go_search" action="submit" value="Add as RSS feed">
+  <vm:template enabled="--(case when self.vc_authenticated and self.ds.ds_rows_total>0 then 1 else 0 end)">
+
+  <p><v:url value="--'My RSS feeds '" format="%s" url="--'nntpf_edit_rss.vspx'" /> <v:text name="rss_search_desc" xhtml:width="30" value="--concat ('Results for: ', deserialize (decode_base64 (self.search_trm))[0])" />
+     <v:button name="go_search" action="submit" value="Add">
 	   <v:on-post><![CDATA[
 		declare _user, _desc, _url, _sch_text, _id, _parameters any;
 

@@ -25,7 +25,8 @@
 <v:page name="wa-home-page"
   xmlns:v="http://www.openlinksw.com/vspx/"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+  on-error-redirect="error.vspx">
   <v:variable name="ssid" type="varchar" default="null" param-name="sid"/>
   <v:variable name="srealm" type="varchar" default="null" param-name="realm"/>
   <v:variable name="suser" type="varchar" default="null" param-name="ufname"/>
@@ -40,6 +41,17 @@
         template := '/samples/wa/home.vspx';
         goto default_template;
       }
+
+    declare exit handler for not found
+      {
+                signal ('22023', sprintf ('The user "%s" does not exist.', self.suser));
+            };
+    {
+      declare tmp_uid int;
+      select U_ID into tmp_uid from SYS_USERS where U_NAME=self.suser;
+    }
+
+
 
     declare exit handler for not found
       {

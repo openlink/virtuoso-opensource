@@ -336,8 +336,8 @@ create procedure  ods_wiki_sioc_init ()
 
 WV.WIKI.SILENT_EXEC('sioc..attachment_upgrade()')
 ;
-WV.WIKI.SILENT_EXEC('sioc..ods_wiki_sioc_init()')
-;
+--WV.WIKI.SILENT_EXEC('sioc..ods_wiki_sioc_init()')
+--;
 
 
 use DB
@@ -372,3 +372,84 @@ wiki_exec_no_error ('drop trigger WV.Wiki.TOPIC_SIOC_I')
 ;
 wiki_exec_no_error ('drop trigger WV.Wiki.TOPIC_SIOC_D')
 ;
+use DB;
+-- WIKI
+
+wa_exec_no_error ('drop view ODS_WIKI_POSTS');
+--wa_exec_no_error ('drop view ODS_WIKI_TAGS');
+create view ODS_WIKI_POSTS as select
+	c.CLUSTERID as _id,
+	CLUSTERNAME,
+	LOCALNAME,
+	TITLETEXT,
+	U_NAME,
+	U_E_MAIL,
+	T_OWNER_ID,
+	sioc..sioc_date (T_CREATE_TIME) as RES_CREATED,
+	RES_CONTENT,
+	sioc..sioc_date (RES_MOD_TIME) as RES_MODIFIED
+    from
+    	WV.WIKI.TOPIC t,
+	WV.WIKI.CLUSTERS c,
+	DB.DBA.WA_INSTANCE,
+	WS.WS.SYS_DAV_RES,
+       	DB.DBA.SYS_USERS
+    where c.CLUSTERID = t.CLUSTERID
+      and c.CLUSTERNAME = WAI_NAME
+      and WAI_IS_PUBLIC = 1
+      and RES_ID = t.RESID
+      and U_ID = T_OWNER_ID;
+
+
+create procedure sioc.DBA.rdf_wiki_view_str ()
+{
+  return
+      '
+      # Posts
+      sioc:wiki_post_iri (DB.DBA.ODS_WIKI_POSTS.U_NAME, DB.DBA.ODS_WIKI_POSTS.CLUSTERNAME, DB.DBA.ODS_WIKI_POSTS.LOCALNAME) a sioc:Post ;
+      dc:title LOCALNAME ;
+      dct:created RES_CREATED ;
+      dct:modified RES_MODIFIED ;
+      sioc:content RES_CONTENT ;
+      sioc:has_creator sioc:user_iri (U_NAME) ;
+      foaf:maker foaf:person_iri (U_NAME) ;
+      #sioc:link sioc:iri (RES_LINK) ;
+      #rdfs:seeAlso sioc:iri (SEE_ALSO) ;
+      sioc:has_container sioc:wiki_forum_iri (U_NAME, CLUSTERNAME) .
+
+      sioc:wiki_forum_iri (DB.DBA.ODS_WIKI_POSTS.U_NAME, DB.DBA.ODS_WIKI_POSTS.CLUSTERNAME)
+      sioc:container_of
+      sioc:wiki_post_iri (U_NAME, CLUSTERNAME, LOCALNAME) .
+
+      sioc:user_iri (DB.DBA.ODS_WIKI_POSTS.U_NAME)
+      sioc:creator_of
+      sioc:wiki_post_iri (U_NAME, CLUSTERNAME, LOCALNAME) .
+
+      # AtomOWL
+      sioc:wiki_post_iri (DB.DBA.ODS_WIKI_POSTS.U_NAME, DB.DBA.ODS_WIKI_POSTS.CLUSTERNAME, DB.DBA.ODS_WIKI_POSTS.LOCALNAME)
+      a atom:Entry ;
+      atom:title LOCALNAME ;
+      atom:source sioc:wiki_forum_iri (U_NAME, CLUSTERNAME) ;
+      atom:author foaf:person_iri (U_NAME) ;
+      atom:published RES_CREATED ;
+      atom:updated RES_MODIFIED ;
+      atom:content sioc:wiki_post_text_iri (U_NAME, CLUSTERNAME, LOCALNAME) .
+
+      sioc:wiki_post_text_iri (DB.DBA.ODS_WIKI_POSTS.U_NAME, DB.DBA.ODS_WIKI_POSTS.CLUSTERNAME, DB.DBA.ODS_WIKI_POSTS.LOCALNAME)
+      a atom:Content ;
+      atom:type "text/xhtml" ;
+      atom:lang "en-US" ;
+      atom:body RES_CONTENT .
+
+      sioc:wiki_forum_iri (DB.DBA.ODS_WIKI_POSTS.U_NAME, DB.DBA.ODS_WIKI_POSTS.CLUSTERNAME)
+      atom:contains
+      sioc:wiki_post_iri (U_NAME, CLUSTERNAME, LOCALNAME) .
+
+      '
+      ;
+};
+
+grant select on ODS_WIKI_POSTS to "SPARQL";
+--grant select on ODS_WIKI_TAGS to "SPARQL";
+-- END WIKI
+ODS_RDF_VIEW_INIT ();

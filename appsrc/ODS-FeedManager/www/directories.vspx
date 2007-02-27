@@ -143,11 +143,7 @@
                   <v:button value="delete" action="simple" xhtml_onclick="return confirm(\'Are you sure that you want to delete all directories?\');" xhtml_class="button" xhtml_alt="Delete all directories">
                     <v:on-post>
                       <![CDATA[
-                        declare directories any;
-
-                        directories := ENEWS.WA.directory_root();
-                        foreach (varchar directory in directories) do
-                     	    ENEWS.WA.directory_delete(cast(directory as integer));
+                        ENEWS.WA.directory_delete_all ();
                   	    self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -275,7 +271,7 @@
 
               <div style="padding: 0.5em 0 0.5em 0;">
                 <v:text name="channel_id" type="hidden" value="--''" format="%s"/>
-                <?vsp http(sprintf('<input type="button" value="Add feed(s)" onClick="javascript:windowShow(\'channels_select.vspx?dst=m&src=s&params=channel_id:s1;&ex=%d\', 800)" class="button"/>', self.v_id)); ?>
+                <?vsp http(sprintf('<input type="button" value="Add feed(s)" onClick="javascript:windowShow(\'channels_select.vspx?sid=%s&realm=%s&dst=m&src=s&params=channel_id:s1;&ex=%d\', 800)" class="button"/>', self.sid, self.realm, self.v_id)); ?>
               </div>
 
               <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
@@ -396,7 +392,7 @@
       <?vsp
         if (self.dt_bookmark is not null) {
           http ('\n<script type="text/javascript">\n');
-          http (sprintf ('location.hash = "%s";\n', self.dt_bookmark));
+          http (sprintf ('if (BrowserDetect.browser != \'Opera\') location.hash = "%s";\n', self.dt_bookmark));
           http ('</script>\n');
         }
       ?>

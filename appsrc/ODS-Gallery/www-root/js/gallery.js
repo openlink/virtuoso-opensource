@@ -28,6 +28,8 @@ var ds_albums = new dataSet();
 var ds_current_album = new dataSet();
 
 var gallery = new Object();
+gallery.flickr = {};
+gallery.flickr.status = '';
 var gallery_path;
 
 //------------------------------------------------------------------------------
@@ -45,23 +47,24 @@ gallery.init = function (path){
   this.slideshow      = new panel('slideshow');
   this.new_album      = new panel('new_album');
   this.edit_album     = new panel('edit_album');
-  this.upload_image   = new panel('upload_image');
+  this.images_upload      = new panel('images_upload');
+  this.tags           = new panel('tags');
   this.comments       = new panel('comments');
   this.comments_list  = new panel('comments_list');
   this.image_info     = new panel('image_info');
   this.image_edit     = new panel('image_edit');
+  this.link_images_import = new panel('link_images_import');
+  this.link_images_import = new panel('link_images_export');
 
   this.slideshow_run = 0;
   this.show_exif_flag = 0;
 
   gallery.current_state = Array(3);
   if(location.hash && location.hash != '#'){
-
     gallery.current_state = location.hash.substring(1).split(':')
-
     page_location = location.href.substring(0,location.href.indexOf('#'))
-
   }
+
   gallery_path = path;
   $("wrapper").onclick = dispach;
   gallery.ajax.load_albums(gallery_path);
@@ -114,6 +117,13 @@ gallery.init = function (path){
   OAT.Dom.attach("SlideShow_back",'click',SlideShow_back);
   OAT.Dom.attach("SlideShow_stop",'click',SlideShow_stop);
   OAT.Dom.attach("SlideShow_next",'click',SlideShow_next);
+  OAT.Dom.attach("images_import_flickr",'click',gallery.ajax.flickr_login_link);
+  OAT.Dom.attach("images_import_flickr_list",'click',gallery.ajax.flickr_get_photos_list);
+  OAT.Dom.attach("images_import_flickr_save",'click',gallery.ajax.flickr_save_photos);
+  OAT.Dom.attach("images_export_flickr",'click',gallery.ajax.flickr_login_link);
+  OAT.Dom.attach("images_export_flickr_send",'click',gallery.ajax.flickr_send_photos);
+
+
 
   var slider = new OAT.Slider("slider_btn",{minPos:10,maxPos:140});
   slider.onchange = function(value) {
@@ -186,17 +196,6 @@ gallery.setCurrentByName = function(current_name){
 
 //------------------------------------------------------------------------------
 gallery.closePanels = function(){
-  this.hideAlbums();
-  this.images.hide();
-  this.image.hide();
-  this.info.hide();
-  this.error_box.hide();
-  this.slideshow.hide();
-  this.new_album.hide();
-  this.edit_album.hide();
-  this.upload_image.hide();
-  this.image_info.hide();
-  this.comments.hide();
 
 }
 
@@ -210,11 +209,6 @@ gallery.albums_click = function(el){
   gallery.ajax.load_images(current_id);
   }
 
-
-//------------------------------------------------------------------------------
-  gallery.addCollections = function (dav_lines){
-
-  }
 
 //------------------------------------------------------------------------------
   gallery.editCollections = function (dav_lines){
@@ -245,12 +239,25 @@ gallery.albums_click = function(el){
 //------------------------------------------------------------------------------
 gallery.new_album_tab_click = function (){
 
-  gallery.closePanels();
-
-  this.new_album.show();
+  gallery.managePanels('new_album');
   $('new_album_description').value = '';
   $('new_album_name').value = '';
+  var d = new Date();
+  var year = d.getFullYear();
+  var month = d.getMonth()
+  var month = d.getDay()
+
+  $('new_album_pub_date_day').selectedIndex = d.getDate()-1;
+  $('new_album_pub_date_month').selectedIndex = d.getMonth();
+  $('new_album_pub_date_year').selectedIndex = String(d.getFullYear()).substring(3)-1;
+  
   gallery.nav.tabs(2);
+}
+
+//------------------------------------------------------------------------------
+gallery.new_album_close_click = function(){
+ gallery.my_albums_tab_click();
+ gallery.nav.tabs(1);
 }
 
 //------------------------------------------------------------------------------
@@ -266,7 +273,7 @@ gallery.new_album_action = function (){
     return;
   }
   //ajax.Start(gallery_new_album,'');
-  gallery.ajax.new_album('');
+  gallery.ajax.new_album();
 }
 
 //------------------------------------------------------------------------------
@@ -275,7 +282,7 @@ gallery.new_album_name_click = function(el){
 }
 
 //------------------------------------------------------------------------------
-gallery.btn_edit_album_click = function (){
+gallery.link_edit_album_click = function (){
 
   gallery.managePanels('edit_album');
 
@@ -286,15 +293,15 @@ gallery.btn_edit_album_click = function (){
     document.f1.edit_album_description.value = ds_albums.current.description;
   }
   var t_date = sdate2obj(ds_albums.current.pub_date);
-  document.f1.edit_album_pub_date_year.selectedIndex  = String(t_date.elements[0]).substring(3);
-  document.f1.edit_album_pub_date_day.selectedIndex   = Number(t_date.elements[2])-1;
-  document.f1.edit_album_pub_date_month.selectedIndex = Number(t_date.elements[1])-1;
 
+  $('edit_album_pub_date_year').selectedIndex  = String(t_date.elements[0]).substring(3,4);
+  $('edit_album_pub_date_day').selectedIndex   = Number(t_date.elements[2])-1;
+  $('edit_album_pub_date_month').selectedIndex = Number(t_date.elements[1])-1;
 
   if(ds_albums.current.visibility == 1){
-    document.f1.album_visibility[0].checked = true;
+    $('album_visibility_all').checked = true;
   }else{
-    document.f1.album_visibility[1].checked = true;
+    $('album_visibility_me').checked = true;
   }
   gallery.hideAlbums();
 }
@@ -311,23 +318,21 @@ gallery.edit_album_action = function (){
   gallery.ajax.edit_album();
 }
 //------------------------------------------------------------------------------
-gallery.link_image_upload_click = function(){
+gallery.link_images_upload_click = function(){
   gallery.managePanels('image_upload')
-
-  var id = returnIndexFirstChild(gallery.upload_image.childNodes)
-  gallery.upload_image.childNodes[id].src=base_path+"upload.vspx?sid="+sid+"&realm=wa&album="+ds_albums.current.name;
-
+  var id = returnIndexFirstChild(gallery.images_upload.childNodes)
+  gallery.images_upload.childNodes[id].src=base_path+"upload.vspx?sid="+sid+"&realm=wa&album="+ds_albums.current.name;
 }
 
 //------------------------------------------------------------------------------
-gallery.upload_image_cancel = function (){
-  this.upload_image.hide();
+gallery.images_upload_cancel = function (){
+  this.images_upload.hide();
   this.images.show();
   gallery.ajax.load_images(ds_albums.current.index);
 }
 
 //------------------------------------------------------------------------------
-gallery.upload_image_finish = function(id){
+gallery.images_upload_finish = function(id){
   gallery.ajax.load_images(ds_albums.current.index);
 }
 
@@ -347,16 +352,10 @@ gallery.showImages = function (){
     }
     return false;
   }
-
   gallery.hideAlbums();
-  gallery.upload_image.hide();
-
+  gallery.images_upload.hide();
   gallery.showImagesInside();
-  //gallery.image_info.hide();
-  gallery.comments.hide();
-
 }
-
 
 //------------------------------------------------------------------------------
 gallery.showImagesInside = function (){
@@ -366,8 +365,6 @@ gallery.showImagesInside = function (){
     this.images.clear();
     this.images.show();
     this.image.hide();
-  //this.albums_list.hide();
-  //this.albums_man.hide();
 
     gallery.hideSlideShow();
 
@@ -385,7 +382,7 @@ gallery.showImagesInside = function (){
   gallery.info.show();
 
     for(var r=0;r<ds_current_album.list.length;r++){
-      new_coll = preview_image(ds_current_album.list[r],r);
+    new_coll = preview_image(r);
       this.images.appendChild(new_coll);
     }
     if(ds_current_album.list.length == 0){
@@ -410,12 +407,19 @@ gallery.showImagesInside = function (){
 
 //------------------------------------------------------------------------------
 gallery.showImage = function(i){
+  var current_image = ds_current_album.list[i];
 
     gallery.images.hide();
 
     gallery.image.innerHTML = "";
-    src = ds_current_album.list[i].path;
-    src = base_path+'image.vsp?'+setSid()+'image_id='+ds_current_album.list[i].id
+  if(current_image.source){
+    src = current_image.source.replace('_t.jpg','.jpg');
+  }else{
+    src = current_image.path; //ds_current_album.list[i].path;
+    src = base_path+'image.vsp?'+setSid()+'image_id='+current_image.id
+    path_set_file(current_image.name);
+  }
+
     gallery.image.appendChild(makeImg(src));
 
     gallery.image.show();
@@ -431,11 +435,9 @@ gallery.showImage = function(i){
   $('path_my_albums').innerHTML = 'My Albums > ';
   $('path_pub_date').innerHTML = sdate2obj(ds_albums.current.pub_date).year + ' > ';
   $('path_album_name').innerHTML = ds_albums.current.name + ' > ';
-  $('path_image_name').innerHTML = ds_current_album.list[i].name;
-
-  //gallery.showImageToolbar(i)
+  $('path_image_name').innerHTML = current_image.name;
+  $('caption').innerHTML = current_image.description;
   gallery.managePanels('showImage');
-  //setLi('btn_preview','on')
   gallery.hideSlideShow();
 
     ds_current_album.setCurrent(i);
@@ -445,19 +447,19 @@ gallery.showImage = function(i){
   $('preview_left').innerHTML = "";
   $('preview_right').innerHTML = "";
     if(i>0){
-    $('preview_left').appendChild(preview_image(ds_current_album.list[i-1],i-1,'previous'));
+    $('preview_left').appendChild(preview_image(i-1,'previous'));
     }
     if(i<ds_current_album.list.length-1){
-    $('preview_right').appendChild(preview_image(ds_current_album.list[Number(i)+1],Number(i)+1,'next'));
+    $('preview_right').appendChild(preview_image(Number(i)+1,'next'));
     }
 
     document.f1.new_comment.value = '';
     gallery.comments.show();
   gallery.showTags();
 
-  gallery.ajax.image_get_comments(ds_current_album.list[i].id)
+  gallery.ajax.image_get_comments(current_image.id)
 
-    path_set_file(ds_current_album.list[i].name);
+
 }
 
 
@@ -496,7 +498,8 @@ gallery.addComment = function(comment){
 
 //------------------------------------------------------------------------------
 gallery.showTags = function(){
-  tags = ds_current_album.current.private_tags
+  gallery.tags.show();
+  var tags = ds_current_album.current.private_tags
   var tags_list = $('tags_list')
   tags_list.innerHTML = '';
 
@@ -506,6 +509,9 @@ gallery.showTags = function(){
 
   for(var i = 0;i<tags.length;i++){
     gallery.addTag(tags[i]);
+  }
+  if(sid != ''){
+    OAT.Dom.show('tags_edit');
   }
 }
 
@@ -525,7 +531,9 @@ gallery.addTag = function(tag,first){
   }
   tags_list.appendChild(div);
   div.appendChild(txt);
+  if(sid != ''){
   div.appendChild(edit);
+  }
   txt.appendChild(document.createTextNode(tag));
   edit.appendChild(document.createTextNode('[Delete]'));
   OAT.Dom.attach(edit,'click',gallery.delete_tag_click)
@@ -536,7 +544,7 @@ gallery.delete_tag_click = function(e){
   if (!e) var e = window.event
   var el = (e.target) ? e.target : e.srcElement
 
-  if(confirm('Are you sure that you want to delete this tag?')){
+  if(confirm('Are you sure that you want to detele this tag?')){
     var tag = el.parentNode.childNodes[1].innerHTML;
    gallery.ajax.image_remove_tags(ds_current_album.current.id,tag);
   }
@@ -589,7 +597,7 @@ gallery.bnt_new_tag_click = function(){
     return;
   }
   if(!gallery.tags_is_unique(ds_current_album.current.private_tags, new_tag)){
-    alert('This tag already exists. Please, change it');
+    alert('This tag allready exists. Please, change it');
     return;
   }
   gallery.ajax.image_add_tags(ds_current_album.current.id,new_tag);
@@ -623,68 +631,19 @@ gallery.path_album_name_click = function(){
   gallery.link_show_images_click();
 }
 
-//------------------------------------------------------------------------------
-gallery.showSlideshowToolbarZZ = function(){
-  gallery.toolbar.clear();
-  gallery.toolbar.show();
-  gallery.image_info.hide();
-
-  var title = document.createElement('h3')
-  title.appendChild(document.createTextNode('Edit album'));
-
-  img_tools = makeUl('img_tools')
-
-  img_tools.appendChild(makeLi('All images','btn_thumb','','on'));
-
-  gallery.toolbar.appendChild(title);
-  gallery.toolbar.appendChild(img_tools)
-
-
-  var title = document.createElement('h3')
-  title.appendChild(document.createTextNode('View mode'));
-
-  var slider_code = document.createElement('div');
-  slider_code.setAttribute('class','slider');
-  slider_code.setAttribute('id','slider_1');
-  slider_code.innerHTML = '<input class="slider_input" id="slider_input_1" name="slider_input_1"/>'
-
-
-  var manage = document.createElement('div');
-  manage.setAttribute('id','buttons')
-  //manage.appendChild(makeImg('res/i/skipb_24.gif',24,24,'manageSlideShowPrev','','Previous Picture'));
-  manage.appendChild(makeImg('/photos/res/i/pause_24.gif',24,24,'manageSlideShow','','Start/Pause'));
-  manage.appendChild(makeImg('/photos/res/i/skipf_24.gif',24,24,'manageSlideShowNext','','Next picture'));
-
-  img_tools = makeUl('img_tools')
-  img_tools.appendChild(makeLi(manage));
-  img_tools.appendChild(makeLi(slider_code,'btn_slideshow_faster'));
-  img_tools.appendChild(makeLi('show Status','btn_slideshow_status'));
-
-  gallery.toolbar.appendChild(title);
-  gallery.toolbar.appendChild(img_tools)
-
-  s = new Slider(document.getElementById("slider_1"),document.getElementById("slider_input_1"));
-  s.setMaximum(30);
-  s.setMinimum(1);
-  s.setValue(3)
-  s.onchange = function(){
-    window.status = s.getValue();
-    pause = s.getValue() * 1000;
-    gallery.statusSlideShow();
-    }
-
-}
-
 
 //------------------------------------------------------------------------------
 gallery.link_show_images_click = function(){
-  //gallery.stopSlideShow();
   path_set_folder(ds_albums.current.name);
   gallery.showImages();
 }
 //------------------------------------------------------------------------------
 gallery.btn_slideshow_click = function(){
+
   gallery.managePanels('images_slideshow')
+  $('caption').innerHTML = 'Slideshow';
+  $('preview_left').innerHTML = "";
+  $('preview_right').innerHTML = "";
 
   if(ds_current_album.list.length < 2){
     gallery.showImages();
@@ -692,13 +651,6 @@ gallery.btn_slideshow_click = function(){
   }
 
   this.slideshow.show();
-  this.upload_image.hide();
-  this.edit_album.hide();
-  this.info.hide();
-  this.images.hide();
-  this.comments.hide();
-
-  OAT.Dom.show('care_slideshow');
 
       for(var i=0;i<ds_current_album.list.length;i++){
 		var elm = OAT.Dom.create("div",{position:"relative",width:"490px",height:"400px",cssFloat:"left",styleFloat:"left"});
@@ -749,11 +701,6 @@ gallery.btn_slideshow_slower_click = function(){
 }
 
 //------------------------------------------------------------------------------
-gallery.hideInfo = function(){
-  this.info.innerHTML = '';
-}
-
-//------------------------------------------------------------------------------
 gallery.hideAlbums = function(){
   gallery.albums.hide();
   gallery.albums_list.hide();
@@ -773,8 +720,8 @@ gallery.wa_click = function (){
 
 //------------------------------------------------------------------------------
 gallery.home_click = function (){
-  location.hash = '';
-  location.reload();
+  location.href = page_location;
+  setTimeout(100,function(){location.reload();})
 }
 
 //------------------------------------------------------------------------------
@@ -832,10 +779,7 @@ gallery.btn_image_edit_cancel_click = function(){
   gallery.image_edit.hide();
 }
 
-//------------------------------------------------------------------------------
-gallery.new_album_close_click = function(){
- gallery.my_albums_tab_click();
-}
+
 
 
 //------------------------------------------------------------------------------
@@ -906,7 +850,7 @@ gallery.get_image = function(id){
 //------------------------------------------------------------------------------
 gallery.showError = function (ex){
 
-    var s = '<img src="res/i/close-24.gif" id="new_album_close" class="close_button" title="Close this panel" OnClick="gallery.error_box.hide()" />';
+    var s = '<img src="/photos/res/i/close-24.gif" class="close_button" title="Close this panel" OnClick="gallery.error_box.hide()" />';
 
   if (ex.constructor == String) {
     s = ex;
@@ -929,6 +873,7 @@ gallery.showError = function (ex){
   gallery.error_box.clear();
   gallery.error_box.show();
   gallery.error_box.appendChild(box);
+  OAT.Dom.hide('wait');
 
 }
 
@@ -991,18 +936,28 @@ function preview_album(album,i,mode){
 }
 
 //------------------------------------------------------------------------------
-function preview_image(current_image,i,mode){
+function preview_image(i,mode){
+  var current_image = ds_current_album.list[i];
 
   src = current_image.fullpath;
+  if(current_image.source){
+    src = current_image.source;
+  }else{
   src = base_path+'image.vsp?'+setSid()+'image_id='+current_image.id+'&size=0';
-
+  }
   if(current_image.visibility == 1){
     var alt = current_image.name + '\r\n Public visible';
   }else{
     var alt = 'Private visible';
   }
   var div = OAT.Dom.create('div');
-  div.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(src,'','','img',alt)))
+  //div.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(src,'','','img',alt)))
+  image_html = makeImg(src,'','','img',alt);
+  div.appendChild(image_html);
+  OAT.Dom.attach(image_html,'click',function(){
+    gallery.showImage(i);
+  })
+  div.current_image = current_image;
 
   if(mode == 'previous'){
     div.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(base_path + 'i/frew.gif',12,12,'move_button')))
@@ -1068,46 +1023,147 @@ feed_url = function(type){
   location.href =  base_url + type + current_album;
 }
 
+//------------------------------------------------------------------------------
+gallery.link_images_import_click = function(){
+  gallery.managePanels('images_import');
+  if(gallery.flickr.status == 'logged'){
+    OAT.Dom.addClass('images_import_flickr','link_disabled');
+    OAT.Dom.removeClass('images_import_flickr','link');
+
+    OAT.Dom.addClass('images_import_flickr_save','link_disabled');
+    OAT.Dom.removeClass('images_import_flickr_save','link');
+
+    OAT.Dom.addClass('images_import_flickr_list','link');
+    OAT.Dom.removeClass('images_import_flickr_list','link_disabled');
+  }
+  $('info_discription').innerHTML = "";
+  $('path_my_albums').innerHTML = 'My Albums > ';
+  $('path_pub_date').innerHTML = sdate2obj(ds_albums.current.pub_date).year + ' > ';
+  $('path_album_name').innerHTML = ds_albums.current.name;
+  $('path_image_name').innerHTML = "";
+  $('caption').innerHTML = 'Import images from Flickr';
+  $('preview_left').innerHTML = "";
+  $('preview_right').innerHTML = "";
+
+}
+
+//------------------------------------------------------------------------------
+gallery.link_images_export_click = function(){
+  gallery.managePanels('images_export');
+  $('info_discription').innerHTML = "";
+  $('path_my_albums').innerHTML = 'My Albums > ';
+  $('path_pub_date').innerHTML = sdate2obj(ds_albums.current.pub_date).year + ' > ';
+  $('path_album_name').innerHTML = ds_albums.current.name;
+  $('path_image_name').innerHTML = "";
+  $('caption').innerHTML = 'Export images from Flickr';
+  $('preview_left').innerHTML = "";
+  $('preview_right').innerHTML = "";
+
+}
 
 //------------------------------------------------------------------------------
 gallery.managePanels = function(action){
 
-  if(action == 'showImages'){
-      OAT.Dom.show('care_edit_album');
-      OAT.Dom.show('care_view_mode');
-      OAT.Dom.hide('care_edit_image');
-      gallery.comments.hide();
-      gallery.image_info.hide();
+  OAT.Dom.hide('images_import');
+  OAT.Dom.hide('images_export');
 
-  }else if(action == 'showImage'){
-      OAT.Dom.hide('care_edit_album');
-      OAT.Dom.show('care_edit_image');
-      OAT.Dom.show('care_view_mode');
-
-  }else if(action == 'edit_album'){
-      OAT.Dom.show('edit_album');
-      OAT.Dom.hide('images');
-  }else if(action == 'image_upload'){
-      OAT.Dom.show('upload_image');
-      //OAT.Dom.hide('edit_image');
-
-  }else if(action == 'my_albums'){
+  if(action == 'my_albums'){
     gallery.albums.show();
     gallery.showAlbumsInfo();
     gallery.albums_list.show();
-    gallery.albums_man.show();
-    gallery.upload_image.hide();
+    if(sid != ''){
+      gallery.albums_man.show();
+    }
+    gallery.images_upload.hide();
     gallery.new_album.hide();
     gallery.error_box.clear();
     gallery.images.hide();
     gallery.image.hide();
     gallery.hideSlideShow();
     gallery.comments.hide();
+    gallery.tags.hide();
     gallery.image_info.hide();
+    OAT.Dom.hide('care_edit_album');
+    OAT.Dom.hide('care_view_album');
+    OAT.Dom.hide('image_edit');
+
+  }else if(action == 'showImages'){
+    if(sid != ''){
+      OAT.Dom.show('care_edit_album');
+    }
+    OAT.Dom.show('care_view_album');
+    OAT.Dom.hide('care_view_mode');
+    OAT.Dom.hide('care_nav_image');
+      OAT.Dom.hide('care_edit_image');
+      gallery.comments.hide();
+    gallery.tags.hide();
+      gallery.image_info.hide();
+
+  }else if(action == 'showImage'){
+      OAT.Dom.hide('care_edit_album');
+    OAT.Dom.show('care_nav_image');
+    if(sid != ''){
+      OAT.Dom.show('care_edit_image');
+    }
+      OAT.Dom.show('care_view_mode');
+    OAT.Dom.hide('care_view_album');
+
+  }else if(action == 'images_import'){
+    OAT.Dom.show('images_import');
+    OAT.Dom.show('images_import');
+    OAT.Dom.hide('images');
+    OAT.Dom.hide('edit_album');
+    OAT.Dom.hide('images_upload');
+    OAT.Dom.hide('images_export');
+
+  }else if(action == 'images_export'){
+    OAT.Dom.show('images_export');
+    OAT.Dom.show('images');
+
+  }else if(action == 'edit_album'){
+      OAT.Dom.show('edit_album');
+      OAT.Dom.hide('images');
+
+    OAT.Dom.hide('images_upload');
+
+  }else if(action == 'new_album'){
+    this.hideAlbums();
+    this.images.hide();
+    this.image.hide();
+    this.info.hide();
+    this.error_box.hide();
+    this.slideshow.hide();
+    this.new_album.hide();
+    this.edit_album.hide();
+    this.images_upload.hide();
+    this.image_info.hide();
+    this.comments.hide();
+    this.tags.hide();
+
+    OAT.Dom.hide('care_edit_album');
+    OAT.Dom.show('care_my_albums');
+
+    OAT.Dom.show('new_album');
+
+  }else if(action == 'image_upload'){
+    OAT.Dom.show('images_upload');
+    OAT.Dom.hide('edit_album');
+    gallery.images.hide();
+
+  }else if(action == 'images_slideshow'){
+    OAT.Dom.show('care_nav_image');
+    OAT.Dom.hide('care_view_album');
+    gallery.images.hide();
+    gallery.image.hide();
+    gallery.tags.hide();
+
+    this.images_upload.hide();
+    this.edit_album.hide();
+    //this.info.hide();
+    this.comments.hide();
+
+    OAT.Dom.show('care_slideshow');
   }
-
-
-
 }
 
 
@@ -1140,9 +1196,14 @@ gallery.ajax.load_albums = function(path){
     }
     gallery.showAlbumsInfo();
     gallery.albums.innerHTML="";
+    $('my_albums_list').innerHTML="";
     for(var r=0;r<ds_albums.list.length;r++){
       new_coll = preview_collection(ds_albums.list[r],r);
       gallery.albums.appendChild(new_coll);
+      album_list = OAT.Dom.create('li');
+      album_list.innerHTML = ds_albums.list[r].name.substring(0,12);
+      album_list.id = "my_albums_list_"+r;
+      $('my_albums_list').appendChild(album_list);
     };
     gallery.managePanels('my_albums');
 
@@ -1150,6 +1211,17 @@ gallery.ajax.load_albums = function(path){
 
   gallery.ajax(prepare,call,finish);
 };
+
+
+//------------------------------------------------------------------------------
+gallery.my_albums_list_click = function(el){
+  gallery.albums_click(el);
+}
+
+//------------------------------------------------------------------------------
+gallery.my_albums_list_more_click = function(){
+  gallery.home_click();
+}
 
 //------------------------------------------------------------------------------
 gallery.ajax.new_album = function(){
@@ -1185,9 +1257,15 @@ gallery.ajax.new_album = function(){
     var new_coll = preview_collection(ds_albums.list[r],r);
     gallery.albums.appendChild(new_coll);
 
+    album_list = OAT.Dom.create('li');
+    album_list.innerHTML = ds_albums.list[r].name.substring(0,12);
+    album_list.id = "my_albums_list_"+r;
+    $('my_albums_list').appendChild(album_list);
+
     gallery.setCurrent(r);
     gallery.showImages();
-    gallery.link_image_upload_click();
+    gallery.link_images_upload_click();
+    gallery.new_album.hide();
   };
 
   gallery.ajax(prepare,call,finish);
@@ -1248,6 +1326,7 @@ gallery.ajax.delete_album = function(id){
   finish = function (p) {
     ds_current_album.loadList(p.albums);
     gallery.showImages()
+    OAT.Dom.hide('wait');
   };
   gallery.ajax(prepare,call,finish);
   }
@@ -1286,7 +1365,7 @@ gallery.ajax.image_edit = function(id){
   finish = function(res) {
     if(res != 0){
       ds_current_album.editImageInList(res);
-      alert('Succesful')
+      alert('Succesfull')
       gallery.showImage(ds_current_album.current.index);
 
     }else{
@@ -1414,7 +1493,7 @@ gallery.ajax.image_get_exif = function(id){
       var td2 = tr.insertCell(1);
 
       td1.appendChild(document.createTextNode(out_data[i].name+': '));
-      td2.appendChild(document.createTextNode(out_data[i].value));
+      td2.appendChild(document.createTextNode(out_data[i].value!='undefined'?out_data[i].value:''));
     }
     gallery.image_info.clear();
     gallery.image_info.appendChild(t);
@@ -1423,3 +1502,147 @@ gallery.ajax.image_get_exif = function(id){
 };
 
 
+//------------------------------------------------------------------------------
+gallery.ajax.flickr_login_link = function(e){
+  if (!e) var e = window.event
+  var el = (e.target) ? e.target : e.srcElement
+  var mode;
+  if(el.id == 'images_import_flickr'){
+    mode = 'import'
+  }else{
+    mode = 'export';
+  }
+  call = proxies.SOAP.flickr_login_link;
+  prepare = function(){
+    OAT.Dom.show('wait');
+    return Array(sid)
+  };
+  finish = function(out_data) {
+    var url = out_data[0];
+    var frob = out_data[1];
+    gallery.flickr.status = 'logged';
+    flickr_window = window.open(url,'flickr_login',"resizable=1,width=800,height=400,top=100,left=100,scrollbars=1,location=0,status=1");
+    flickr_window.focus();
+    timer = setInterval(function(){
+        if(flickr_window.closed){
+          if(mode == 'import'){
+            OAT.Dom.addClass('images_import_flickr','link_disabled');
+            OAT.Dom.removeClass('images_import_flickr','link');
+            OAT.Dom.addClass('images_import_flickr_list','link');
+            OAT.Dom.removeClass('images_import_flickr_list','link_disabled');
+          }else{
+            OAT.Dom.addClass('images_export_flickr','link_disabled');
+            OAT.Dom.removeClass('images_export_flickr','link');
+            OAT.Dom.addClass('images_export_flickr_send','link');
+            OAT.Dom.removeClass('images_export_flickr_send','link_disabled');
+          }
+          clearInterval(timer)
+        }
+      },500);
+
+    OAT.Dom.hide('wait');
+  };
+  gallery.ajax(prepare,call,finish);
+};
+
+//------------------------------------------------------------------------------
+gallery.ajax.flickr_get_photos_list = function(){
+  if(gallery.flickr.status == ''){
+    alert('Please, first sing in Flickr');
+    return;
+  }
+  call = proxies.SOAP.flickr_get_photos_list;
+  prepare = function() {
+    OAT.Dom.show('wait');
+    return Array(sid,gallery.flickr.frob)
+  };
+  finish = function(out_data) {
+    ds_current_album.loadList(out_data);
+    gallery.showImages()
+    OAT.Dom.addClass('images_import_flickr_save','link');
+    OAT.Dom.removeClass('images_import_flickr_save','link_disabled');
+    OAT.Dom.addClass('images_import_flickr_list','link_disabled');
+    OAT.Dom.removeClass('images_import_flickr_list','link');
+
+    //OAT.Dom.hide('images_import_flickr_list');
+    OAT.Dom.show('images_import');
+    //OAT.Dom.show('images_import_flickr_save');
+    OAT.Dom.hide('wait');
+    return;
+  };
+  gallery.ajax(prepare,call,finish);
+};
+
+
+//------------------------------------------------------------------------------
+gallery.ajax.flickr_save_photos = function(){
+  var ids = new Array();
+  if(gallery.flickr.status == ''){
+    alert('Please, first sing in Flickr');
+    return;
+  }
+  for(var i=0;i<ds_current_album.list.length;i++){
+    if($('image_id_'+i).checked){
+      ids[ids.length]= $('image_id_'+i).parentNode.current_image.id + '_' + $('image_id_'+i).parentNode.current_image.secret;
+    }
+  }
+  if(ids.length == 0){
+    alert('Please, first select one or more photos');
+    return;
+  }
+
+  call = proxies.SOAP.flickr_save_photos;
+  prepare = function() {
+    OAT.Dom.show('wait');
+    return Array(sid,ds_albums.current.id,ids);
+  };
+  finish = function(out_data) {
+    //OAT.Dom.show('images_import_flickr_list');
+    //OAT.Dom.hide('images_import_flickr_save');
+    OAT.Dom.addClass('images_import_flickr_save','link_disabled');
+    OAT.Dom.removeClass('images_import_flickr_save','link');
+    OAT.Dom.addClass('images_import_flickr_list','link');
+    OAT.Dom.removeClass('images_import_flickr_list','link_disabled');
+    gallery.ajax.load_images(ds_albums.current.index);
+    return;
+  };
+  gallery.ajax(prepare,call,finish);
+};
+
+//------------------------------------------------------------------------------
+gallery.ajax.flickr_send_photos = function(){
+  if(gallery.flickr.status == ''){
+    alert('Please, first sing in Flickr');
+    return;
+  }
+  gallery.error_box.clear();
+  var ids = new Array();
+  for(var i=0;i<ds_current_album.list.length;i++){
+    if($('image_id_'+i).checked){
+      ids[ids.length]= $('image_id_'+i).parentNode.current_image.id;
+    }
+  }
+  if(ids.length == 0){
+    alert('Please, first select one or more photos');
+    return;
+  }
+
+  call = proxies.SOAP.flickr_send_photos;
+  prepare = function() {
+    OAT.Dom.show('wait');
+    return Array(sid,ids);
+  };
+  finish = function(out_data) {
+    url = "http://www.flickr.com/tools/uploader_edit.gne?ids=" + out_data
+    flickr_window = window.open(url,'flickr_login',"resizable=1,width=900,height=600,top=100,left=100,scrollbars=1,location=0,status=1");
+
+    for(var i=0;i<ds_current_album.list.length;i++){
+      if($('image_id_'+i).checked){
+        $('image_id_'+i).checked = false
+      }
+    }
+    OAT.Dom.hide('wait');
+    return;
+  };
+  gallery.ajax(prepare,call,finish);
+};
