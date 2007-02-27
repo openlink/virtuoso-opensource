@@ -206,6 +206,76 @@ caddr_t bif_im_GetImageFileFormat(caddr_t * qst, caddr_t * err, state_slot_t ** 
   return res;
 }
 
+caddr_t bif_im_GetImageFileIdentify(caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  caddr_t res, key_value;
+  caddr_t file_name = bif_string_arg (qst, args, 0, "IM GetImageFileIdentify");
+  mutex_enter (im_mutex);
+  MagickWandGenesis();
+  magick_wand=NewMagickWand();
+  status=MagickReadImage(magick_wand, file_name);
+  if (status == MagickFalse)
+  {
+    WandExitMacro(magick_wand);
+    sqlr_new_error ("22023", "IM001", "bif_im_GetImageFileIdentify cannot open file");
+  }
+  MagickResetIterator(magick_wand);
+  while (MagickNextImage(magick_wand) != MagickFalse)
+  {
+    key_value = MagickIdentifyImage(magick_wand);
+  }
+  if (key_value)
+    res = box_dv_short_string(key_value);
+  else
+    res = NEW_DB_NULL;
+  magick_wand=DestroyMagickWand(magick_wand);
+  MagickWandTerminus();
+  mutex_leave (im_mutex);
+  return res;
+}
+
+caddr_t bif_im_GetImageBlobIdentify(caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  caddr_t res, key_value;
+  char in_name[64];
+  caddr_t blob = bif_string_arg (qst, args, 0, "IM GetImageBlobIdentify");
+  long blob_size = bif_long_arg (qst, args, 1, "IM GetImageBlobIdentify");
+        int n_args = BOX_ELEMENTS(args);
+  char* in_format = n_args > 2 ? bif_string_arg (qst, args, 2, "IM GetImageBlobIdentify") : NULL;
+  key_value = 0;
+  mutex_enter (im_mutex);
+  MagickWandGenesis();
+  magick_wand=NewMagickWand();
+        if (in_format != NULL)
+        {
+                if (strlen(in_format) < 30)
+                {
+                        strcpy(in_name, "image.");
+                        strcat(in_name, in_format);
+                        MagickSetFilename(magick_wand, in_name);
+                }
+        }
+  status=MagickReadImageBlob(magick_wand, (const void *)blob, (const size_t)blob_size);
+  if (status == MagickFalse)
+  {
+    WandExitMacro(magick_wand);
+    sqlr_new_error ("22023", "IM001", "bif_im_GetImageBlobIdentify cannot read blob");
+  }
+  MagickResetIterator(magick_wand);
+  while (MagickNextImage(magick_wand) != MagickFalse)
+  {
+    key_value = MagickIdentifyImage(magick_wand);
+  }
+  if (key_value)
+    res = box_dv_short_string(key_value);
+  else
+    res = NEW_DB_NULL;
+  magick_wand=DestroyMagickWand(magick_wand);
+  MagickWandTerminus();
+  mutex_leave (im_mutex);
+  return res;
+}
+
 caddr_t bif_im_GetImageFileWidth(caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
   caddr_t res;
@@ -1385,6 +1455,9 @@ void im_connect (void *appdata)
   bif_define ("IM CropImageFile", bif_im_CropImageFile);
   bif_define ("IM GetImageFileAttribute", bif_im_GetImageFileAttribute);
   bif_define ("IM GetImageFileFormat", bif_im_GetImageFileFormat);
+  bif_define ("IM GetImageFileIdentify", bif_im_GetImageFileIdentify);
+  bif_define ("IM GetImageBlobIdentify", bif_im_GetImageBlobIdentify);
+
   bif_define ("IM GetImageFileWidth", bif_im_GetImageFileWidth);
   bif_define ("IM GetImageFileHeight", bif_im_GetImageFileHeight);
   bif_define ("IM GetImageFileDepth", bif_im_GetImageFileDepth);
