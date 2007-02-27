@@ -1,0 +1,1778 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+  -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="polls" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+
+  <v:method name="mode_test" arglist="">
+    <![CDATA[
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      if (self.pTag <> lcase(get_keyword ('tag', params, '')))
+        self.ds.vc_reset();
+      self.pTag := lcase(get_keyword ('tag', params, ''));
+      self.pPoll := get_keyword ('poll', params, '');
+      if (self.pPoll <> '') {
+        self.v_id := cast (self.pPoll as integer);
+        if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, self.v_id)) {
+          self.v_step := '';
+          self.pAction := 'edit';
+        } else if (POLLS.WA.poll_enable_vote (self.v_id)) {
+          self.pAction := 'vote';
+        } else if (POLLS.WA.poll_enable_result (self.v_id)) {
+          self.pAction := 'result';
+        }
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="toolbarLabel" arglist="in cmd varchar">
+    <![CDATA[
+      if (self.pLabels = 0)
+        return '';
+      return sprintf ('<br /><span class="toolbarLabel">%s</span>', cmd);
+    ]]>
+  </v:method>
+
+  <v:method name="toolbarEnable" arglist="in cmd varchar">
+    <![CDATA[
+      if ((cmd = 'Poll/Create') and ((self.account_role in ('public', 'guest')) or (self.pMode = 'PublicPolls')))
+        return 0;
+      return 1;
+    ]]>
+  </v:method>
+
+  <v:method name="qValue" arglist="in fName varchar">
+    <![CDATA[
+      if (self.v_number <= length (self.v_questions))
+        return get_keyword (fName, self.v_questions[self.v_number-1], '');
+      return '';
+    ]]>
+  </v:method>
+
+  <v:method name="qPrepare" arglist="">
+    <![CDATA[
+      declare N integer;
+      declare tmp, tmp2, params, qParams, answers any;
+
+      qParams := vector ();
+      params := self.vc_page.vc_event.ve_params;
+
+      tmp := cast (get_keyword ('pq_id', params, '-1') as integer);
+      qParams := vector_concat (qParams, vector ('$id', tmp));
+      qParams := vector_concat (qParams, vector ('$type', self.pq_type.ufl_value));
+      tmp := trim (get_keyword ('pq_text', params, ''));
+      if (self.v_mode = 'M')
+        POLLS.WA.test (tmp, vector('name', 'Question ' || cast (self.v_number as varchar), 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
+      if (not isnull (self.v_questions)) {
+        for (N := 0; N < length (self.v_questions); N := N + 1)
+          if ((N+1 <> self.v_number) and (tmp = get_keyword('$text', self.v_questions[N], '')))
+            signal ('TEST', sprintf ('Questions %d and %d are duplicated!<>', self.v_number, N+1));
+      }
+      qParams := vector_concat (qParams, vector ('$text', tmp));
+      if (self.pq_type.ufl_value = 'M') {
+        qParams := vector_concat (qParams, vector ('choices', self.pq_choices.ufl_value));
+        qParams := vector_concat (qParams, vector ('allowed', self.pq_allowed.ufl_value));
+        answers := vector ();
+        for (N := 1; N <= cast(self.pq_choices.ufl_value as integer); N := N + 1) {
+          tmp := trim (get_keyword ('pq_answer_' || cast (N as varchar), params));
+          POLLS.WA.test (tmp, vector('name', 'Answer ' || cast (N as varchar), 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
+          if (POLLS.WA.vector_contains (answers, tmp))
+            signal ('TEST', 'Some answers are duplicated!<>');
+
+          answers := vector_concat (answers, vector (tmp));
+          qParams := vector_concat (qParams, vector ('answer_' || cast (N as varchar), tmp));
+        }
+      } else if (self.pq_type.ufl_value = 'N') {
+        tmp := get_keyword ('pq_range_start', params, '0');
+        tmp := POLLS.WA.test(tmp, vector('name', 'Number range start', 'class', 'integer', 'type', 'integer', 'minValue', 1));
+        qParams := vector_concat (qParams, vector ('range_start', tmp));
+        tmp2 := get_keyword ('pq_range_end', params, '0');
+        tmp2 := POLLS.WA.test(tmp2, vector('name', 'Number range end', 'class', 'integer', 'type', 'integer', 'minValue', tmp));
+        qParams := vector_concat (qParams, vector ('range_end', tmp2));
+        tmp := cast (get_keyword ('pq_range_decimals', params, '0') as integer);
+        qParams := vector_concat (qParams, vector ('range_decimals', tmp));
+      }
+      self.qSet (qParams);
+    ]]>
+  </v:method>
+
+  <v:method name="qSet" arglist="inout qParams any">
+    <![CDATA[
+      if (isnull (self.v_questions))
+        self.v_questions := vector ();
+      if (self.v_number <= length (self.v_questions)) {
+        self.v_questions := POLLS.WA.vector_set (self.v_questions, self.v_number-1, qParams);
+      } else {
+        self.v_questions := vector_concat (self.v_questions, vector (qParams));
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="qGet" arglist="">
+    <![CDATA[
+      if (isnull (self.v_questions))
+        self.v_questions := vector ();
+      if (self.v_number <= length (self.v_questions))
+        return self.v_questions [self.v_number-1];
+      return vector ();
+    ]]>
+  </v:method>
+
+  <v:method name="qMove" arglist="in qFrom integer, in qTo integer">
+    <![CDATA[
+      declare N integer;
+      declare retValue any;
+
+      retValue := vector ();
+      for (N := 0; N < length (self.v_questions); N := N + 1)
+        if (N = qFrom-1) {
+          retValue := vector_concat (retValue, vector (self.v_questions[qTo-1]));
+        } else if (N = qTo-1) {
+          retValue := vector_concat (retValue, vector (self.v_questions[qfrom-1]));
+        } else {
+          retValue := vector_concat (retValue, vector (self.v_questions[N]));
+        }
+      return retValue;
+    ]]>
+  </v:method>
+
+  <v:method name="qDelete" arglist="in qNumber integer">
+    <![CDATA[
+      declare N, id integer;
+      declare retValue any;
+
+      retValue := vector ();
+      for (N := 0; N < length (self.v_questions); N := N + 1)
+        if (N <> qNumber-1)
+          retValue := vector_concat (retValue, vector (self.v_questions[N]));
+      if (qNumber <= length (self.v_questions)) {
+        id := cast (get_keyword ('$id', self.v_questions[qNumber-1], '-1') as integer);
+        if (id <> -1) {
+          if (isnull (self.v_deleted))
+            self.v_deleted := vector ();
+          self.v_deleted := vector_concat (self.v_deleted, vector (id));
+          POLLS.WA.vector_unique (self.v_deleted);
+        }
+      }
+      return retValue;
+    ]]>
+  </v:method>
+
+  <vm:pagetitle>Polls</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header>
+      Polls
+    </vm:header>
+    <vm:variables>
+      <v:variable persist="0" name="pSelected" type="any" default="null" />
+      <v:variable persist="0" name="pMode" type="varchar" default="'MyPolls'" />
+      <v:variable persist="0" name="pAction" type="varchar" default="'browse'" />
+      <v:variable persist="0" name="pTag" type="varchar" default="null" />
+      <v:variable persist="temp" name="pPoll" type="any" default="''" />
+
+      <v:variable name="pLabels" type="integer" default="1" />
+      <v:variable name="pChars" type="integer" default="60" />
+
+      <v:variable persist="0" name="v_step" type="varchar" default="''" />
+      <v:variable persist="0" name="v_mode" type="varchar" default="'S'"/>
+      <v:variable name="v_id" type="any" default="-1" />
+      <v:variable name="v_name" type="varchar" default="''" />
+      <v:variable name="v_description" type="varchar" default="''" />
+      <v:variable name="v_tag" type="varchar" default="''" />
+      <v:variable name="v_tags" type="varchar" default="''" />
+      <v:variable name="v_multi_vote" type="integer" default="0" />
+      <v:variable name="v_vote_result" type="integer" default="1" />
+      <v:variable name="v_vote_result_before" type="integer" default="0" />
+      <v:variable name="v_vote_result_opened" type="integer" default="1" />
+      <v:variable name="v_date_start_mode" type="integer" default="0" />
+      <v:variable name="v_date_start" type="any" default="null" />
+      <v:variable name="v_date_end_mode" type="integer" default="0" />
+      <v:variable name="v_date_end" type="any" default="null" />
+      <v:variable persist="0" name="v_number" type="integer" default="1" />
+      <v:variable persist="0" name="v_questions" type="any" default="null" />
+      <v:variable persist="0" name="v_deleted" type="any" default="null" />
+    </vm:variables>
+    <vm:pagebody>
+      <v:before-data-bind>
+        <![CDATA[
+          self.mode_test();
+        ]]>
+      </v:before-data-bind>
+      <v:template type="simple">
+        <?vsp http ('<input type="hidden" name="tbHidden" value="" />'); ?>
+        <?vsp
+          if (0)
+          {
+        ?>
+            <v:button name="toolbar" action="simple" style="url" value="Submit">
+              <v:on-post>
+                <![CDATA[
+                  declare cmd any;
+                  cmd := get_keyword ('tbHidden', e.ve_params, '');
+                  if (cmd = 'MyPolls') {
+                    self.ds.vc_reset ();
+                    self.pMode := cmd;
+                    self.pAction := 'browse';
+                    self.pTag := '';
+                  }
+
+                  if (cmd = 'PublicPolls') {
+                    self.ds.vc_reset ();
+                    self.pMode := cmd;
+                    self.pAction := 'browse';
+                    self.pTag := '';
+                  }
+
+                  if (cmd = 'Poll/Create') {
+                    self.pAction := 'create';
+                    self.v_step := '';
+                    self.v_id := -1;
+                    self.v_tags := '';
+                  }
+
+                  if (cmd = 'tag') {
+                    declare N integer;
+
+                    self.pAction := 'tag';
+                    self.pSelected := vector();
+                    for (N := 0; N < length(e.ve_params); N := N + 4) {
+                      if (e.ve_params[N] = 'cb_item')
+                        self.pSelected := vector_concat(self.pSelected, vector(e.ve_params[N+1]));
+                    }
+                  }
+
+                  if (cmd = 'delete') {
+                    declare N, id integer;
+
+                    for (N := 0; N < length(e.ve_params); N := N + 4) {
+                      if (e.ve_params[N] = 'cb_item') {
+                        id := cast(e.ve_params[N+1] as integer);
+                        POLLS.WA.poll_delete(id, self.domain_id);
+                      }
+                    }
+                  }
+                _end:
+                  self.vc_data_bind(e);
+                 ]]>
+               </v:on-post>
+            </v:button>
+        <?vsp
+          }
+        ?>
+        <div class="toolbar">
+          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''MyPolls'');'" xhtml_title="My Polls" xhtml_class="toolbar">
+            <v:before-render>
+              <![CDATA[
+                control.ufl_value := '<img src="image/polls_32.png" border="0" />' || self.toolbarLabel('My Polls');
+              ]]>
+            </v:before-render>
+          </v:url>
+
+          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''PublicPolls'');'" xhtml_title="Public Polls" xhtml_class="toolbar">
+            <v:before-render>
+              <![CDATA[
+                control.ufl_value := '<img src="image/polls_public_32.png" border="0" />' || self.toolbarLabel('Public Polls');
+              ]]>
+            </v:before-render>
+          </v:url>
+
+          <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
+
+          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''Poll/Create'');'" enabled="--self.toolbarEnable('Poll/Create')" xhtml_title="New Poll" xhtml_class="toolbar">
+            <v:before-render>
+              <![CDATA[
+                control.ufl_value := '<img src="image/polls_add_32.png" border="0" />' || self.toolbarLabel('New Poll');
+              ]]>
+            </v:before-render>
+          </v:url>
+          <v:template type="simple" enabled="--case when self.toolbarEnable('Poll/Create') then 0 else 1 end">
+            <span class="toolbar">
+              <img src="image/grey_polls_add_32.png" border="0" alt="New Poll" /><?vsp http (self.toolbarLabel('New Poll'));?>
+            </span>
+          </v:template>
+
+          <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
+
+          <span id="tbTag" class="toolbar" style="display: none">
+            <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''tag'');'" enabled="--self.toolbarEnable('tag')" xhtml_title="Tag">
+              <v:before-render>
+                <![CDATA[
+                  control.ufl_value := '<img src="image/tag_32.png" border="0" />' || self.toolbarLabel('Tag');
+                ]]>
+              </v:before-render>
+            </v:url>
+          </span>
+          <span id="tbTag_gray" class="toolbar" style="display: inline;">
+            <img src="image/grey_tag_32.png" border="0" alt="Tag" /><?vsp http (self.toolbarLabel('Tag'));?>
+          </span>
+
+          <span id="tbDelete" class="toolbar" style="display: none">
+            <v:url value="--''" format="%s" url="--'javascript: if (confirmAction(\'Are you sure that you want to delete selected items?\', document.F1, ''cb_'', ''No items were selected for deletion.'')) toolbarPost(''delete'');'" xhtml_title="Delete">
+              <v:before-render>
+                <![CDATA[
+                  control.ufl_value := '<img src="image/del_32.png" border="0" />' || self.toolbarLabel('Delete');
+                ]]>
+              </v:before-render>
+            </v:url>
+          </span>
+          <span id="tbDelete_gray" class="toolbar" style="display: inline;">
+            <img src="image/grey_del_32.png" border="0" alt="Delete" /><?vsp http (self.toolbarLabel('Delete'));?>
+          </span>
+
+        </div>
+        <div style="clear: both;" />
+      </v:template>
+      <div class="polls_main">
+        <?vsp
+          if (0)
+          {
+        ?>
+            <v:button name="pt_tags" action="simple" style="url" value="Submit" />
+            <v:button name="pt_browse" action="simple" style="url" value="Submit">
+              <v:on-post>
+                <![CDATA[
+                  declare action any;
+
+                  -- action
+                  action := get_keyword ('pt_action', e.ve_params, '');
+                  if (action <> '') {
+                    self.v_id := cast(get_keyword ('pt_value', e.ve_params, '0') as integer);
+                    if (action = 'delete') {
+                      POLLS.WA.poll_delete(self.v_id, self.domain_id);
+                    }
+                    if (action = 'active') {
+                      POLLS.WA.poll_active (self.v_id, self.domain_id);
+                    }
+                    if (action = 'close') {
+                      POLLS.WA.poll_close (self.v_id, self.domain_id);
+                    }
+                    if (action = 'edit') {
+                      self.v_step := '';
+                      self.pAction := action;
+                    }
+                    if (action = 'vote') {
+                      self.pAction := action;
+                    }
+                    if (action = 'clear') {
+                      POLLS.WA.poll_clear (self.v_id, self.domain_id);
+                    }
+                    if (action = 'result') {
+                      self.pAction := action;
+                    }
+                    if (action = 'number') {
+                      declare exit handler for SQLSTATE '*' {
+                        if (__SQL_STATE = 'TEST') {
+                          self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        resignal;
+                      };
+                      self.qPrepare ();
+                      self.v_number := cast (get_keyword ('pq_number', e.ve_params, '1') as integer);
+                    }
+                  }
+
+                  self.vc_data_bind (e);
+               ]]>
+              </v:on-post>
+            </v:button>
+        <?vsp
+          }
+        ?>
+        <div class="polls_left">
+          <div class="polls_left_sub1">
+            <?vsp
+              declare tMin, tMax integer;
+              declare tClass, tStyle varchar;
+
+              if (self.pMode = 'MyPolls') {
+                select max(T_COUNT),
+                       min(T_COUNT)
+                  into tMax, tMin
+                  from POLLS.WA.TAGS
+                 where T_DOMAIN_ID = self.domain_id
+                   and T_COUNT > 0;
+
+                for (select T_TAG, T_COUNT
+                       from POLLS.WA.TAGS
+                      where T_DOMAIN_ID = self.domain_id
+                        and T_COUNT > 0
+                      order by T_TAG) do
+                {
+                  tStyle := ODS.WA.tag_style(T_COUNT, tMin, tMax);
+                  tClass := '';
+                  if (self.pTag = T_TAG)
+                    tClass := 'nolink_a';
+                  http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', T_TAG, T_TAG, tClass, tStyle, T_TAG));
+                }
+              }
+              if (self.pMode = 'PublicPolls') {
+                select max(T_COUNT),
+                       min(T_COUNT)
+                  into tMax, tMin
+                  from (select T_TAG, sum(T_COUNT) T_COUNT
+                          from POLLS.WA.TAGS,
+                               DB.DBA.WA_INSTANCE
+                         where WAI_ID = T_DOMAIN_ID
+                           and WAI_IS_PUBLIC = 1
+                           and T_DOMAIN_ID <> self.domain_id
+                           and T_COUNT > 0
+                         group by T_TAG) x;
+                for (select T_TAG, T_COUNT
+                       from (select T_TAG, sum(T_COUNT) T_COUNT
+                               from POLLS.WA.TAGS,
+                                    DB.DBA.WA_INSTANCE
+                              where WAI_ID = T_DOMAIN_ID
+                                and WAI_IS_PUBLIC = 1
+                                and T_DOMAIN_ID <> self.domain_id
+                                and T_COUNT > 0
+                              group by T_TAG) x
+                      where T_COUNT > 0
+                      order by T_TAG) do
+                {
+                  tStyle := ODS.WA.tag_style(T_COUNT, tMin, tMax);
+                  tClass := '';
+                  if (self.pTag = T_TAG)
+                    tClass := 'nolink_a';
+                  http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', T_TAG, T_TAG, tClass, tStyle, T_TAG));
+                }
+              }
+            ?>
+          </div>
+        </div>
+        <div class="polls_right">
+          <v:template type="simple" enabled="--case when (self.pAction = 'browse') then 1 else 0 end">
+            <v:data-source name="dsrc" expression-type="sql" nrows="--POLLS.WA.settings_rows(self.account_id)" initial-offset="0">
+              <v:before-data-bind>
+                <![CDATA[
+                  declare data any;
+
+                  self.mode_test();
+
+                  if (self.pMode = 'MyPolls')
+                    POLLS.WA.xml_set('MyPolls', data, 1);
+
+                  if (self.pMode = 'PublicPolls')
+                    POLLS.WA.xml_set('PublicPolls', data, 1);
+
+                  if (not is_empty_or_null (self.pTag))
+                    POLLS.WA.xml_set('tags', data, self.pTag);
+
+                  control.ds_parameters := vector ();
+                  control.ds_sql := POLLS.WA.search_sql (self.domain_id, self.account_id, data);
+                ]]>
+              </v:before-data-bind>
+            </v:data-source>
+
+            <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
+
+              <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom" >
+                <table id="polls" class="polls_grid" cellspacing="0">
+                  <thead class="sortHeader">
+                    <tr>
+                      <v:template type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.pMode = 'PublicPolls')) then 0 else 1 end">
+                        <th class="checkbox" width="1%">
+                          <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
+                        </th>
+                      </v:template>
+                      <th class="last">
+                        <?vsp
+                          declare S, T varchar;
+
+                          S := 'My Polls';
+                          if (self.pMode = 'PublicPolls')
+                            S := 'Public Polls';
+                          T := '';
+                          if (not is_empty_or_null(self.pTag))
+                            T := ', Tag: ' || self.pTag;
+                          http (S || T);
+                        ?>
+                      </th>
+                    </tr>
+                  </thead>
+                </table>
+              </v:template>
+
+              <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+                <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                  <table>
+                    <tr align="center">
+                      <td colspan="2" height="100px">
+                        <v:label value="-- case when (self.pMode = 'MyPolls') then 'No polls' else 'No activated or closed public polls' end" />
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+
+                <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                  <table>
+                    <tr>
+                      <v:template type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.pMode = 'PublicPolls')) then 0 else 1 end">
+                        <td align="center" valign="top">
+                          <?vsp
+                            declare S varchar;
+
+                            S := '';
+                            if (self.pPoll = ((control.vc_parent) as vspx_row_template).te_column_value('P_ID'))
+                              S := 'checked="checked"';
+
+                            http (sprintf ('<input type="checkbox" name="cb_item" value="%d" %s onclick="selectCheck(this, \'cb_item\')" />', ((control.vc_parent) as vspx_row_template).te_column_value('P_ID'), S));
+                          ?>
+                        </td>
+                      </v:template>
+                      <td valign="top">
+                        <?vsp
+                          declare N, id, did integer;
+                          declare title, actions, tags any;
+
+                          http (sprintf ('<div style="float: left;"><b>%s</b></div>', POLLS.WA.stringCut((control as vspx_row_template).te_column_value('P_NAME'), self.pChars)));
+
+                          id := (control as vspx_row_template).te_column_value('P_ID');
+                          did := (control as vspx_row_template).te_column_value('P_DOMAIN_ID');
+                          title := '\'' || (control as vspx_row_template).te_column_value('P_NAME') || '\'';
+                          tags := (control as vspx_row_template).te_column_value('P_TAGS');
+
+                          actions := '';
+                          if (POLLS.WA.poll_enable_vote (id))
+                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'vote\', \'pt_value\', \'%d\');" title="Vote %s" class="link_ed">vote</a>', id, title);
+
+                          if (POLLS.WA.poll_enable_clear (self.domain_id, self.account_role, id))
+                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to clear all votes?\')) vspxPost (\'pt_browse\', \'pt_action\', \'clear\', \'pt_value\', \'%d\'); " title="Clear %s" class="link_ed">clear</a>', id, title);
+
+                          if (POLLS.WA.poll_enable_result (id) > 0)
+                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'result\', \'pt_value\', \'%d\');" title="Results of %s" class="link_ed">result</a>', id, title);
+
+                          if (POLLS.WA.poll_enable_activate (self.domain_id, self.account_role, id))
+                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to activate this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'active\', \'pt_value\', \'%d\'); " title="Activate %s" class="link_ed">activate</a>', id, title);
+
+                          if (POLLS.WA.poll_enable_close (self.domain_id, self.account_role, id))
+                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to close this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'close\', \'pt_value\', \'%d\'); " title="Close %s" class="link_ed">close</a>', id, title);
+
+                          if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, id) = 1)
+                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link_ed">edit</a>', id, title);
+
+                          if (POLLS.WA.poll_enable_delete (self.domain_id, self.account_role, id))
+                            actions := actions || either(equ(actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to delete this item?\')) vspxPost (\'pt_browse\', \'pt_action\', \'delete\', \'pt_value\', \'%d\'); " title="Delete %s" class="link_ed">delete</a>', id, title);
+
+                          http ('<div style="float: right; text-align: right; padding-right: 0.3em;">');
+                          http (actions);
+                          http ('</div>');
+
+                          if (not is_empty_or_null(tags)) {
+                            http ('<br style="clear: both;" /><i>Tags: ');
+                            tags := split_and_decode (tags, 0, '\0\0,');
+                            for (N := 0; N < length(tags); N := N + 1) {
+                              http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s">%s</a> ',  tags[N], tags[N], tags[N]));
+                              if (N <> length(tags)-1)
+                                http (' | ');
+                            }
+                            http ('</i>');
+                          }
+                        ?>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+
+              </v:template>
+
+              <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                <table>
+                  <tr align="center">
+                    <td align="center" colspan="2">
+                      <vm:ds-navigation data-set="ds"/>
+                    </td>
+                  </tr>
+                </table>
+              </v:template>
+
+            </v:data-set>
+            <script type="text/javascript">
+              <![CDATA[
+                coloriseTable('polls');
+
+                var objForm = document.forms['F1'];
+                for (var i = 0; i < objForm.elements.length; i++) {
+                  var o = objForm.elements[i];
+                  if (o != null && o.type == 'checkbox' && !o.disabled && o.name.indexOf ('cb_item') != -1)
+                    coloriseRow(getParent(o, 'tr'), o.checked);
+                }
+                enableToolbars (objForm, 'cb_item');
+              ]]>
+            </script>
+          </v:template>
+
+          <v:template type="simple" enabled="--case when (self.pAction = 'tag') then 1 else 0 end">
+            <div class="new-form-header">
+              <v:label format="%s" value="Tag poll(s)" />
+            </div>
+            <div class="new-form-body">
+              <table cellspacing="0">
+                <tr>
+                  <th>
+                    <v:label for="t_tag" value="Comma Delimited Tags" />
+                  </th>
+                  <td>
+                    <v:text name="t_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    My Tags
+                  </th>
+                  <td>
+                    <?vsp
+                      declare _done integer;
+
+                      _done := 0;
+                      for (select T_TAG from POLLS.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_TAG <> '' order by T_TAG) do {
+                        http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'t_tag\');"><i>%s</i></a> ', T_TAG, T_TAG));
+                        _done := 1;
+                      }
+                      if (not _done)
+                        http ('no tags');
+                    ?>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="new-form-footer">
+              <v:button action="simple" value="Tag" xhtml_class="form-button">
+                <v:on-post>
+                  <![CDATA[
+                    self.v_tag := POLLS.WA.tag_prepare(self.t_tag.ufl_value);
+                    if (not POLLS.WA.validate_tags(self.v_tag)) {
+                      self.vc_is_valid := 0;
+                      self.vc_error_message := 'The expression is not valid tag(s).';
+                      return;
+                    }
+                    declare N integer;
+
+                    for (N := 0; N < length(self.pSelected); N := N + 1) {
+                      self.v_tags := POLLS.WA.poll_tags_select(self.pSelected[N], self.domain_id);
+                      self.v_tags := POLLS.WA.tags_join(self.v_tags, self.v_tag);
+                      POLLS.WA.poll_tags_update (self.pSelected[N], self.domain_id, self.v_tags);
+                    }
+
+                    self.v_tag := '';
+                    self.pAction := 'browse';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                <v:on-post>
+                  <![CDATA[
+                    self.v_tag := '';
+                    self.pAction := 'browse';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+          </v:template>
+
+          <v:template type="simple" enabled="--case when ((self.pAction = 'create') or (self.pAction = 'edit')) then 1 else 0 end">
+            <v:before-data-bind>
+              <![CDATA[
+                declare exit handler for not found {
+                  self.pAction := 'create';
+                  self.v_step := '';
+                  self.v_id := -1;
+                  goto _end;
+                };
+
+                declare params, S, V, P any;
+                declare N integer;
+                params := self.vc_page.vc_event.ve_params;
+
+                if ((self.pAction = 'edit') and (self.v_step = '')) {
+                  select P_NAME,
+                         P_DESCRIPTION,
+                         P_TAGS,
+                         P_MULTI_VOTE,
+                         P_VOTE_RESULT,
+                         P_VOTE_RESULT_BEFORE,
+                         P_VOTE_RESULT_OPENED,
+                         POLLS.WA.dt_date (P_DATE_START),
+                         POLLS.WA.dt_date (P_DATE_END)
+                    into self.v_name,
+                         self.v_description,
+                         self.v_tags,
+                         self.v_multi_vote,
+                         self.v_vote_result,
+                         self.v_vote_result_before,
+                         self.v_vote_result_opened,
+                         self.v_date_start,
+                         self.v_date_end
+                    from POLLS.WA.POLL
+                   where P_ID = self.v_id;
+
+                  self.v_step := '1';
+                  self.v_date_start_mode := case when (isnull(self.v_date_start)) then 0 else 1 end;
+                  self.v_date_end_mode := case when (isnull(self.v_date_end)) then 0 else 1 end;
+                  if (not self.v_date_start_mode)
+                    self.v_date_start := POLLS.WA.dt_date (now ());
+                  if (not self.v_date_end_mode)
+                    self.v_date_end := POLLS.WA.dt_date (dateadd ('day', 60, now ()));
+
+                  self.v_questions := vector ();
+                  self.v_deleted := vector ();
+                  for (select * from POLLS.WA.QUESTION where Q_POLL_ID = self.v_id order by Q_NUMBER) do {
+                    V := vector ('$id', Q_ID, '$number', coalesce (Q_NUMBER, 1), '$text', Q_TEXT, '$required', Q_REQUIRED, '$type', Q_TYPE);
+                    P := deserialize (Q_ANSWER);
+                    for (N := 0; N < length (P); N := N + 2)
+                      V := vector_concat (V, vector(P[N], P[N+1]));
+                    self.v_questions := vector_concat (self.v_questions, vector (V));
+                  }
+                  return;
+                }
+
+              _end:
+                if ((self.pAction = 'create') and (self.v_step = '')) {
+                  self.v_step := '0';
+                  self.v_name := '';
+                  self.v_description := '';
+                  self.v_tags := '';
+                  self.v_multi_vote := 0;
+                  self.v_vote_result := 1;
+                  self.v_vote_result_before := 0;
+                  self.v_vote_result_opened := 1;
+                  self.v_date_start_mode := 0;
+                  self.v_date_start := POLLS.WA.dt_date (now ());
+                  self.v_date_end_mode := 0;
+                  self.v_date_end := POLLS.WA.dt_date (dateadd ('day', 60, now ()));
+                  self.v_questions := vector ();
+                  self.v_deleted := vector ();
+                }
+
+                self.v_name := get_keyword ('p_name', params, self.v_name);
+                self.v_description := get_keyword ('p_description', params, self.v_description);
+                self.v_tags := get_keyword ('p_tags', params, self.v_tags);
+                self.v_multi_vote := cast(get_keyword ('p_multi_vote', params, self.v_multi_vote) as integer);
+                self.v_vote_result := cast(get_keyword ('p_vote_result', params, self.v_vote_result) as integer);
+                self.v_vote_result_before := cast(get_keyword ('p_vote_result_before', params, self.v_vote_result_before) as integer);
+                self.v_vote_result_opened := cast(get_keyword ('p_vote_result_opened', params, self.v_vote_result_opened) as integer);
+                self.v_date_start_mode := cast(get_keyword ('p_date_start_mode', params, self.v_date_start_mode) as integer);
+                self.v_date_start := get_keyword ('p_date_start', params, self.v_date_start);
+                self.v_date_end_mode := cast(get_keyword ('p_date_end_mode', params, self.v_date_end_mode) as integer);
+                self.v_date_end := get_keyword ('p_date_end', params, self.v_date_end);
+
+                if (not isnull(get_keyword ('text', params))) {
+                  declare qParams any;
+
+                  qParams := vector ();
+                  for (N := 0; N < length (params); N := N + 2) {
+                    if (params[N] like 'pq_%')
+                      qParams := vector_concat (qParams, vector(replace (params[N], 'rq_', ''), params[N+1]));
+                  }
+                  self.qSet (qParams);
+                }
+              ]]>
+            </v:before-data-bind>
+
+            <v:template type="simple" enabled="-- case when (self.v_step = '0') then 1 else 0 end">
+              <div class="new-form-header">
+                <v:label format="%s" value="--'Create Poll - Step 1: Select poll type'" />
+              </div>
+              <div class="new-form-body">
+                <table cellspacing="0">
+                  <tr>
+                    <th height="100px">
+                      Select poll type
+                    </th>
+                    <td nowrap="nowrap">
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_mode = 'S')
+                          S := 'checked="checked"';
+                        http (sprintf ('<input type="radio" name="mode" id="mode_0" value="S" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp" /><vm:label for="mode_0" value="--'Single question'" />
+                      <br />
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_mode <> 'S')
+                          S := 'checked="checked"';
+                        http (sprintf ('<input type="radio" name="mode" id="mode_1" value="M" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp" /><vm:label for="mode_1" value="--'Multiple questions'" />
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div class="new-form-footer">
+                <v:button action="simple" value="Next" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.v_mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, '0');
+                      self.v_step := '1';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.pAction := 'browse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </v:template>
+
+
+            <v:template type="simple" enabled="-- case when (self.v_step = '1') then 1 else 0 end">
+              <div class="new-form-header">
+                <v:label format="%s" value="--case when (self.pAction = 'create') then 'Create Poll - Step 2: Parameters' else 'Update Poll - Step 1: Parameters' end" />
+              </div>
+              <div class="new-form-body">
+                <table cellspacing="0">
+                  <tr>
+                    <th>
+                      <v:label for="p_name" value="-- case when (self.v_mode = 'S') then 'Question' else 'Poll Name' end" />
+                    </th>
+                    <td>
+                      <v:text name="p_name" null-value="--''" value="--POLLS.WA.utf2wide(self.v_name)" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="p_description" value="Description" />
+                    </th>
+                    <td>
+                      <v:textarea name="p_description" null-value="--''" value="--POLLS.WA.utf2wide(self.v_description)" fmt-function="POLLS.WA.utf2wide" xhtml_cols="45" xhtml_rows="3" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <script type="text/javascript">
+                      function suggestTags ()
+                      {
+                        window.open ('tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;txt=' + escape (document.F1.elements['p_name'].value) + '&amp;txt2=' + escape (document.F1.elements['p_description'].value) + '&amp;fld=p_tags', 'polls_suggest_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500');
+                      }
+                    </script>
+                    <th>
+                      <v:label for="p_tags" value="Comma Delimited Tags" />
+                    </th>
+                    <td>
+                      <v:text name="p_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
+                      <input type="button" value="Suggest" onClick="javascript: suggestTags();" class="button" />
+                      <input type="button" value="Clear" onClick="javascript: document.F1.elements['p_tags'].value = ''" class="button" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      My Tags
+                    </th>
+                    <td>
+                      <?vsp
+                        declare _done integer;
+
+                        _done := 0;
+                        for (select T_TAG from POLLS.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_TAG <> '' order by T_TAG) do {
+                          http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'p_tags\');"><i>%s</i></a> ', T_TAG, T_TAG));
+                          _done := 1;
+                        }
+                        if (not _done)
+                          http ('no tags');
+                      ?>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th valign="top" rowspan="3">
+                      Results
+                    </th>
+                    <td>
+                      <v:check-box name="p_vote_result" xhtml_id="p_vote_result" is-boolean="1" true-value="1" false-value="0" value="--self.v_vote_result" />
+                      <vm:label for="p_vote_result" value="Any user can see results after closing" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <v:check-box name="p_vote_result_before" xhtml_id="p_vote_result_before" is-boolean="1" true-value="1" false-value="0" value="--self.v_vote_result_before" />
+                      <vm:label for="p_vote_result_before" value="User can see results before voted for" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <v:check-box name="p_vote_result_opened" xhtml_id="p_vote_result_opened" is-boolean="1" true-value="1" false-value="0" value="--self.v_vote_result_opened" />
+                      <vm:label for="p_vote_result_opened" value="User can see results before closing" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th valign="top" rowspan="2">
+                      Multi voting
+                    </th>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_multi_vote = 0)
+                          S := 'checked="checked"';
+                        http (sprintf ('<input type="radio" name="p_multi_vote" id="p_multi_vote_0" value="0" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp" /><vm:label for="p_multi_vote_0" value="--'User can vote only once'" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_multi_vote = 1)
+                          S := 'checked="checked"';
+                        http (sprintf ('<input type="radio" name="p_multi_vote" id="p_multi_vote_1" value="1" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp" /><vm:label for="p_multi_vote_1" value="--'User can vote multiple times'" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      Poll starting
+                    </th>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_date_start_mode = 0)
+                          S := 'checked="checked"';
+                        http (sprintf ('<input type="radio" name="p_date_start_mode" id="p_date_start_mode_0" value="0" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp" /><vm:label for="p_date_start_mode_0" value="--'Manually'" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th />
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_date_start_mode = 1)
+                          S := 'checked="checked"';
+                        http (sprintf ('<input type="radio" name="p_date_start_mode" id="p_date_start_mode_1" value="1" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp" /><vm:label for="p_date_start_mode_1" value="--'Automatically at'" /><xsl:call-template name="nbsp" />
+                      <v:text name="p_date_start" null-value="--''" value="--self.v_date_start" xhtml_size="10" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      Poll closing
+                    </th>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_date_end_mode = 0)
+                          S := 'checked="checked"';
+                        http (sprintf ('<input type="radio" name="p_date_end_mode" id="p_date_end_mode_0" value="0" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp" /><vm:label for="p_date_end_mode_0" value="--'Manually'" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th />
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_date_end_mode = 1)
+                          S := 'checked="checked"';
+                        http (sprintf ('<input type="radio" name="p_date_end_mode" id="p_date_end_mode_1" value="1" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp" /><vm:label for="p_date_end_mode_1" value="--'Automatically at'" /><xsl:call-template name="nbsp" />
+                      <v:text name="p_date_end" null-value="--''" value="--self.v_date_end" xhtml_size="10" />
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div class="new-form-footer">
+                <v:button action="simple" value="Back" enabled="-- case when (self.pAction = 'create') then 1 else 0 end" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.v_step := '0';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Next" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      declare tmp, params any;
+
+                      declare exit handler for SQLSTATE '*' {
+                        if (__SQL_STATE = 'TEST') {
+                          self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        resignal;
+                      };
+
+                      params := self.vc_page.vc_event.ve_params;
+                      self.v_name := POLLS.WA.test(self.p_name.ufl_value, vector('name', either(equ(self.v_mode, 'S'), 'Question', 'Poll Name'), 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
+                      self.v_tags := trim(self.p_tags.ufl_value);
+                      POLLS.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
+                      tmp := POLLS.WA.tags2vector(self.v_tags);
+                      tmp := POLLS.WA.vector_unique(tmp);
+                      self.v_tags := POLLS.WA.vector2tags(tmp);
+                      self.v_multi_vote := cast(get_keyword ('p_multi_vote', params, '0') as integer);
+                      self.v_vote_result := cast(get_keyword ('p_vote_result', params, '0') as integer);
+                      self.v_vote_result_before := cast(get_keyword ('p_vote_result_before', params, '0') as integer);
+                      self.v_vote_result_opened := cast(get_keyword ('p_vote_result_opened', params, '0') as integer);
+                      self.v_date_start := trim(self.p_date_start.ufl_value);
+                      if (get_keyword ('p_date_start_mode', self.vc_page.vc_event.ve_params, '0') <> '0')
+                        POLLS.WA.test(self.v_date_start, vector('name', 'Vote opening date', 'class', 'date2', 'type', 'date'));
+                      self.v_date_end := trim(self.p_date_end.ufl_value);
+                      if (get_keyword ('p_date_end_mode', self.vc_page.vc_event.ve_params, '0') <> '0')
+                        POLLS.WA.test(self.v_date_end, vector('name', 'Vote opening date', 'class', 'date2', 'type', 'date'));
+
+                      self.v_number := 1;
+                      if (self.v_mode = 'S') {
+                        declare qParams any;
+
+                        qParams := self.qGet ();
+                        POLLS.WA.set_keyword ('$text', qParams, self.v_name);
+                        self.qSet (qParams);
+                      }
+
+                      self.v_step := '2';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.pAction := 'browse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </v:template>
+
+            <v:template type="simple" enabled="-- case when (self.v_step = '2') then 1 else 0 end">
+              <div class="new-form-header">
+                <v:label format="%s" value="--case when (self.pAction = 'create') then 'Create Poll - Step 3: Questions' else 'Update Poll - Step 2: Questions' end" />
+              </div>
+              <div class="new-form-body">
+                <table cellspacing="0">
+                  <v:template type="simple" enabled="-- case when (self.v_mode = 'M') then 1 else 0 end">
+                    <tr>
+                      <td>
+                        <v:template type="simple" enabled="-- case when (length (self.v_questions) > 1) then 1 else 0 end">
+                          Select Question Number
+                          <v:select-list name="pq_number" value="--self.v_number" xhtml_onchange="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'number\', \'pt_value\', \'\');">
+                            <v:before-data-bind>
+                              <![CDATA[
+                                declare N integer;
+
+                                control.vsl_items := vector ();
+                                control.vsl_item_values := vector ();
+
+                                for (N := 0; N < length (self.v_questions); N := N + 1) {
+                                  control.vsl_items := vector_concat (control.vsl_items, vector (sprintf('%d', N+1)));
+                                  control.vsl_item_values := vector_concat (control.vsl_item_values, vector (sprintf('%d', N+1)));
+                                }
+                              ]]>
+                            </v:before-data-bind>
+                          </v:select-list>
+                        </v:template>
+                      </td>
+                      <th>
+                        <v:button action="simple" value="Add" xhtml_title="Add New Question" xhtml_class="button">
+                          <v:on-post>
+                            <![CDATA[
+                              declare id integer;
+
+                              declare exit handler for SQLSTATE '*' {
+                                if (__SQL_STATE = 'TEST') {
+                                  self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
+                                  self.vc_is_valid := 0;
+                                  return;
+                                }
+                                resignal;
+                              };
+                              self.qPrepare ();
+                              self.v_number := length (self.v_questions) + 1;
+                              if (length (self.v_deleted)) {
+                                id := self.v_deleted [length(self.v_deleted)-1];
+                                self.v_deleted := POLLS.WA.vector_cut (self.v_deleted, id);
+                                self.qSet (vector(vector ('$id', id)));
+                              } else {
+                                self.qSet (vector());
+                              }
+
+                            _end:
+                              self.vc_data_bind(e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                        <v:template type="simple" enabled="-- case when (length (self.v_questions) > 1) then 1 else 0 end">
+                          <v:button action="simple" value="Delete" xhtml_title="Delete Current Question" xhtml_class="button">
+                            <v:on-post>
+                              <![CDATA[
+                                self.v_questions := self.qDelete (self.v_number);
+                                if (self.v_number > length (self.v_questions))
+                                  self.v_number := length (self.v_questions);
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                          <v:template type="simple" enabled="-- case when (self.v_number <> 1) then 1 else 0 end">
+                            <v:button action="simple" value="Up" xhtml_title="Up Current Question" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.v_questions := self.qMove (self.v_number, self.v_number-1);
+                                  self.v_number := self.v_number - 1;
+                                  self.vc_data_bind(e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </v:template>
+                          <v:template type="simple" enabled="-- case when (self.v_number = 1) then 1 else 0 end">
+                            <v:button action="simple" value="Down" xhtml_title="Down Current Question" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.v_questions := self.qMove (self.v_number, self.v_number+1);
+                                  self.v_number := self.v_number + 1;
+                                  self.vc_data_bind(e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </v:template>
+                        </v:template>
+                      </th>
+                    </tr>
+                  </v:template>
+                  <tr style="background-color: #b0cde4;">
+                    <th>
+                      <vm:label for="pq_text" value="--sprintf ('Question %d', self.v_number)" />
+                    </th>
+                    <td>
+                      <v:text name="pq_id" type="hidden" value="--self.qValue('$id')" />
+                      <v:text name="pq_text" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('$text'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" >
+                        <v:before-data-bind>
+                          <![CDATA[
+               			        if (self.v_mode = 'S')
+                              control.tf_style := 3;
+                          ]]>
+                        </v:before-data-bind>
+                      </v:text>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <vm:label for="pq_type" value="Select Type" />
+                    </th>
+                    <td>
+                      <v:select-list name="pq_type" value="--self.qValue('$type')" xhtml_onchange="javascript: changeQuestionType (this);" >
+                        <v:item name="Multiple choice" value="M" />
+                        <v:item name="Number range" value="N" />
+                      </v:select-list>
+                    </td>
+                  </tr>
+                  <tr id="tr_question_choices">
+                    <th>
+                      <vm:label for="pq_choices" value="Answer choices"/>
+                    </th>
+                    <td>
+                      <v:select-list name="pq_choices" value="--self.qValue('choices')" xhtml_onchange="javascript: changeAnswerChoices (this);">
+                        <v:item name="2" value="2" />
+                        <v:item name="3" value="3" />
+                        <v:item name="4" value="4" />
+                        <v:item name="5" value="5" />
+                        <v:item name="6" value="6" />
+                        <v:item name="7" value="7" />
+                        <v:item name="8" value="8" />
+                        <v:item name="9" value="9" />
+                        <v:item name="10" value="10" />
+                      </v:select-list>
+                    </td>
+                  </tr>
+                  <tr id="tr_question_allowed">
+                    <th>
+                      <vm:label for="pq_allowed" value="Answers allowed" />
+                    </th>
+                    <td>
+                      <v:select-list name="pq_allowed" value="--self.qValue('allowed')">
+                        <v:item name="1" value="1" />
+                        <v:item name="2" value="2" />
+                      </v:select-list>
+                    </td>
+                  </tr>
+                  <tr id="tr_answer_1">
+                    <th>
+                      <vm:label for="pq_answer_1" value="Answer 1" />
+                    </th>
+                    <td>
+                      <v:text name="pq_answer_1" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('answer_1'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="tr_answer_2">
+                    <th>
+                      <vm:label for="pq_answer_2" value="Answer 2" />
+                    </th>
+                    <td>
+                      <v:text name="pq_answer_2" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('answer_2'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="tr_answer_3" style="display: none;">
+                    <th>
+                      <vm:label for="pq_answer_3" value="Answer 3" />
+                    </th>
+                    <td>
+                      <v:text name="pq_answer_3" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('answer_3'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="tr_answer_4" style="display: none;">
+                    <th>
+                      <vm:label for="pq_answer_4" value="Answer 4" />
+                    </th>
+                    <td>
+                      <v:text name="pq_answer_4" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('answer_4'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="tr_answer_5" style="display: none;">
+                    <th>
+                      <vm:label for="pq_answer_5" value="Answer 5" />
+                    </th>
+                    <td>
+                      <v:text name="pq_answer_5" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('answer_5'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="tr_answer_6" style="display: none;">
+                    <th>
+                      <vm:label for="pq_answer_6" value="Answer 6" />
+                    </th>
+                    <td>
+                      <v:text name="pq_answer_6" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('answer_6'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="tr_answer_7" style="display: none;">
+                    <th>
+                      <vm:label for="pq_answer_7" value="Answer 7" />
+                    </th>
+                    <td>
+                      <v:text name="pq_answer_7" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('answer_7'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="tr_answer_8" style="display: none;">
+                    <th>
+                      <vm:label for="pq_answer_8" value="Answer 8" />
+                    </th>
+                    <td>
+                      <v:text name="pq_answer_8" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('answer_8'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="tr_answer_9" style="display: none;">
+                    <th>
+                      <vm:label for="pq_answer_9" value="Answer 9" />
+                    </th>
+                    <td>
+                      <v:text name="pq_answer_9" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('answer_9'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="tr_answer_10" style="display: none;">
+                    <th>
+                      <vm:label for="pq_answer_10" value="Answer 10" />
+                    </th>
+                    <td>
+                      <v:text name="pq_answer_10" null-value="--''" value="--POLLS.WA.utf2wide (self.qValue('answer_10'))" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
+                    </td>
+                  </tr>
+                  <tr id="tr_range_start" style="display: none;">
+                    <th>
+                      <vm:label for="pq_range_start" value="Number range start" />
+                    </th>
+                    <td>
+                      <v:text name="pq_range_start" null-value="--''" value="--self.qValue('range_start')" xhtml_size="10" />
+                    </td>
+                  </tr>
+                  <tr id="tr_range_end" style="display: none;">
+                    <th>
+                      <vm:label for="pq_range_end" value="Number range end" />
+                    </th>
+                    <td>
+                      <v:text name="pq_range_end" null-value="--''" value="--self.qValue('range_end')" xhtml_size="10" />
+                    </td>
+                  </tr>
+                  <tr id="tr_range_decimals" style="display: none;">
+                    <th>
+                      <vm:label for="pq_range_decimals" value="Decimal Places" />
+                    </th>
+                    <td>
+                      <v:select-list name="pq_range_decimals" value="--self.qValue('range_decimals')">
+                        <v:item name="0" value="0" />
+                        <v:item name="1" value="1" />
+                        <v:item name="2" value="2" />
+                      </v:select-list>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div class="new-form-footer">
+                <v:button action="simple" value="Back" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.v_step := '1';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Preview" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      declare exit handler for SQLSTATE '*' {
+                        if (__SQL_STATE = 'TEST') {
+                          self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        resignal;
+                      };
+                      self.qPrepare ();
+
+                      self.v_step := '3';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Save" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      declare N, M integer;
+                      declare qParams, qAnswers any;
+
+                      declare exit handler for SQLSTATE '*' {
+                        if (__SQL_STATE = 'TEST') {
+                          self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        resignal;
+                      };
+
+                      self.qPrepare ();
+
+                      if (self.v_date_start_mode = 0) {
+                        self.v_date_start := null;
+                      } else {
+                        self.v_date_start := POLLS.WA.dt_deformat (self.v_date_start);
+                      }
+                      if (self.v_date_end_mode = 0) {
+                        self.v_date_end := null;
+                      } else {
+                        self.v_date_end := POLLS.WA.dt_deformat (self.v_date_end);
+                      }
+                      self.v_id := POLLS.WA.poll_update (self.v_id,
+                                                         self.domain_id,
+                                                         self.v_name,
+                                                         self.v_description,
+                                                         self.v_tags,
+                                                         self.v_multi_vote,
+                                                         self.v_vote_result,
+                                                         self.v_vote_result_before,
+                                                         self.v_vote_result_opened,
+                                                         self.v_date_start,
+                                                         self.v_date_end,
+                                                         self.v_mode
+                                                        );
+
+                      for (N := 0; N < length (self.v_questions); N := N + 1) {
+                        qParams := self.v_questions [N];
+                        qAnswers := vector ();
+                        for (M := 0; M < length (qParams); M := M + 2) {
+                          if ((qParams[M] not like '$%') and (qParams[M+1] <> ''))
+                            qAnswers := vector_concat (qAnswers, vector (qParams[M], qParams[M+1]));
+                        }
+                        POLLS.WA.question_update (cast (get_keyword ('$id', qParams, '-1') as integer),
+                                                  self.v_id,
+                                                  N+1,
+                                                  get_keyword ('$text', qParams, ''),
+                                                  get_keyword ('$description', qParams, ''),
+                                                  cast (get_keyword ('$required', qParams, '1') as integer),
+                                                  get_keyword ('$type', qParams, 'M'),
+                                                  serialize (qAnswers)
+                                                 );
+                      }
+                      for (N := 0; N < length (self.v_deleted); N := N + 1)
+                        POLLS.WA.question_delete (self.v_deleted[N]);
+
+                      self.pAction := 'browse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.pAction := 'browse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+              <script type="text/javascript">
+                <![CDATA[
+                  var objForm = document.forms['F1'];
+                  changeQuestionType (objForm ['pq_type']);
+                  changeAnswerChoices (objForm ['pq_choices']);
+                ]]>
+              </script>
+            </v:template>
+
+            <v:template type="simple" enabled="-- case when (self.v_step = '3') then 1 else 0 end">
+              <div class="new-form-header">
+                <v:label format="%s" value="--case when (self.pAction = 'create') then 'Create Poll - Preview' else 'Update Poll - Preview' end" />
+              </div>
+              <div class="new-form-body">
+                <?vsp
+                  declare N, M integer;
+                  declare choices, allowed, question, answer any;
+                  declare qType, qText, qRequired any;
+                  declare range_start, range_end, range_decimals any;
+
+                  for (M := 0; M < length (self.v_questions); M := M + 1) {
+                    question := self.v_questions [M];
+                    qType := get_keyword ('$type', question, 'M');
+                    qText :=  get_keyword ('$text', question, '');
+                    qRequired := cast (get_keyword ('$required', question, '1') as integer);
+
+                    if (qType = 'N') {
+                      range_start := cast (get_keyword ('range_start', question, '0') as float);
+                      range_end := cast (get_keyword ('range_end', question, '0') as float);
+                      range_decimals := cast (get_keyword ('range_decimals', question, '0') as integer);
+
+                      http (sprintf ('<p class="vote-question">%d. %s? ', M+1, qText));
+                      http (sprintf ('<input name="answer_%d" value="" onblur="javascript: checkRange (this);" size="7"/> <i style="font-size: 0.8em"> (Number in range [%d, %d])</i>', M, range_start, range_end));
+                      http ('</p>');
+                    }
+                    if (qType = 'M')
+                      http (sprintf ('<p class="vote-question">%d. %s?</p>', M+1, qText));
+
+                    http ('<p class="vote-answer">');
+                    http (sprintf ('<input type="hidden" name="id_%d" value="%d" />', M, M));
+                    http (sprintf ('<input type="hidden" name="type_%d" value="%s" />', M, qType));
+                    http (sprintf ('<input type="hidden" name="required_%d" value="%d" />', M, qRequired));
+                    if (qType = 'N') {
+                      http (sprintf ('<input type="hidden" name="range_start_%d" value="%d" />', M, range_start));
+                      http (sprintf ('<input type="hidden" name="range_end_%d" value="%d" />', M, range_end));
+                      http (sprintf ('<input type="hidden" name="range_decimals_%d" value="%d" />', M, range_decimals));
+                    } else if (qType = 'M') {
+                      choices := cast (get_keyword ('choices', question, '1') as integer);
+                      allowed := cast (get_keyword ('allowed', question, '2') as integer);
+                      http (sprintf ('<input type="hidden" name="choices_%d" value="%d" />', M, choices));
+                      http (sprintf ('<input type="hidden" name="allowed_%d" value="%d" />', M, allowed));
+                      for (N := 1; N <= choices; N := N + 1) {
+                        answer := get_keyword (sprintf ('answer_%d', N), question, '');
+                        if (answer <> '') {
+                          if (allowed <> 1) {
+                            http (sprintf ('<input type="checkbox" name="answer_%d_%d" id="answer_%d_%d" value="1" onclick="checkChoices (this)" /> <label for="answer_%d_%d">%s</label><br />', N, M, N, M, N, M, answer));
+                          } else {
+                            http (sprintf ('<input type="radio" name="answer_%d" id="answer_%d_%d" value="%d" /> <label for="answer_%d_%d">%s</label><br />', M, N, M, N, N, M, answer));
+                          }
+                        }
+                      }
+                      if (allowed <> 1)
+                        http (sprintf ('<br /><i style="font-size: 0.9em">Max %d answers are allowed</i>', allowed));
+                    }
+                    http ('</p>');
+                  }
+                ?>
+              </div>
+              <div class="new-form-footer">
+                <v:button action="simple" value="Back" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.v_step := '2';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </v:template>
+
+          </v:template>
+
+          <v:template type="simple" enabled="--case when (self.pAction = 'vote') then 1 else 0 end">
+            <div class="new-form-header">
+              <v:label format="%s" value="Poll vote" />
+            </div>
+            <div class="new-form-body">
+              <?vsp
+                declare answers any;
+                declare range_start, range_end, range_decimals any;
+                declare N, choices, allowed, answer any;
+
+                for (select * from POLLS.WA.QUESTION where Q_POLL_ID = self.v_id order by Q_ID) do {
+                  answers := deserialize (Q_ANSWER);
+
+                  if (Q_TYPE = 'N') {
+                    range_start := cast (get_keyword ('range_start', answers, '0') as float);
+                    range_end := cast (get_keyword ('range_end', answers, '0') as float);
+                    range_decimals := cast (get_keyword ('range_decimals', answers, '0') as integer);
+
+                    http (sprintf ('<p class="vote-question">%d. %s? ', Q_NUMBER, Q_TEXT));
+                    http (sprintf ('<input name="answer_%d" value="" onblur="javascript: checkRange (this);" size="7"/> <i style="font-size: 0.8em"> (Number in range [%d, %d])</i>', Q_ID, range_start, range_end));
+                    http ('</p>');
+                  }
+                  if (Q_TYPE = 'M')
+                    http (sprintf ('<p class="vote-question">%d. %s?</p>', Q_NUMBER, Q_TEXT));
+
+
+                  http ('<p class="vote-answer">');
+                  http (sprintf ('<input type="hidden" name="id_%d" value="%d" />', Q_ID, Q_ID));
+                  http (sprintf ('<input type="hidden" name="type_%d" value="%s" />', Q_ID, Q_TYPE));
+                  http (sprintf ('<input type="hidden" name="required_%d" value="%d" />', Q_ID, Q_REQUIRED));
+                  if (Q_TYPE = 'N') {
+                    http (sprintf ('<input type="hidden" name="range_start_%d" value="%d" />', Q_ID, range_start));
+                    http (sprintf ('<input type="hidden" name="range_end_%d" value="%d" />', Q_ID, range_end));
+                    http (sprintf ('<input type="hidden" name="range_decimals_%d" value="%d" />', Q_ID, range_decimals));
+                  } else if (Q_TYPE = 'M') {
+                    choices := cast (get_keyword ('choices', answers, '1') as integer);
+                    allowed := cast (get_keyword ('allowed', answers, '2') as integer);
+                    http (sprintf ('<input type="hidden" name="choices_%d" value="%d" />', Q_ID, choices));
+                    http (sprintf ('<input type="hidden" name="allowed_%d" value="%d" />', Q_ID, allowed));
+                    for (N := 1; N <= choices; N := N + 1) {
+                      answer := get_keyword (sprintf ('answer_%d', N), answers, '');
+                      if (answer <> '') {
+                        if (allowed <> 1) {
+                          http (sprintf ('<input type="checkbox" name="answer_%d_%d" id="answer_%d_%d" value="1" onclick="checkChoices (this)" /> <label for="answer_%d_%d">%s</label><br />', N, Q_ID, N, Q_ID, N, Q_ID, answer));
+                        } else {
+                          http (sprintf ('<input type="radio" name="answer_%d" id="answer_%d_%d" value="%d" /> <label for="answer_%d_%d">%s</label><br />', Q_ID, N, Q_ID, N, N, Q_ID, answer));
+                        }
+                      }
+                    }
+                    if (allowed <> 1)
+                      http (sprintf ('<br /><i style="font-size: 0.9em">Max %d answers are allowed</i>', allowed));
+                  }
+                  http ('</p>');
+                }
+              ?>
+            </div>
+            <div class="new-form-footer">
+              <v:button action="simple" value="Vote" xhtml_onclick="javascript: return checkVote(this);" xhtml_class="form-button">
+                <v:on-post>
+                  <![CDATA[
+                    declare N, vote_id, question_id, choices, allowed integer;
+                    declare client_id, value varchar;
+                    declare params, answer any;
+                    params := self.vc_page.vc_event.ve_params;
+
+                    client_id := client_attr ('client_ip');
+                    vote_id := POLLS.WA.vote_insert (self.v_id, client_id);
+                    for (select * from POLLS.WA.QUESTION where Q_POLL_ID = self.v_id order by Q_ID) do {
+                      question_id := Q_ID;
+                      if (Q_TYPE = 'N') {
+                        answer := trim(get_keyword ('answer_'||cast (Q_ID as varchar), params, ''));
+                        POLLS.WA.answer_insert (vote_id, question_id, 1, answer);
+                      }
+                      if (Q_TYPE = 'M') {
+                        choices := cast (get_keyword ('choices_'||cast (Q_ID as varchar), params, '0') as integer);
+                        allowed := cast (get_keyword ('allowed_'||cast (Q_ID as varchar), params, '0') as integer);
+                        if (allowed <> 1) {
+                          for (N := 1; N <= choices; N := N + 1) {
+                            answer := trim(get_keyword ('answer_'||cast (N as varchar)||'_'||cast (Q_ID as varchar), params, ''));
+                            if (answer <> '')
+                              POLLS.WA.answer_insert (vote_id, question_id, N, answer);
+                          }
+                        } else {
+                          N := cast (get_keyword ('answer_'||cast (Q_ID as varchar), params, '0') as integer);
+                          if (N <> 0)
+                            POLLS.WA.answer_insert (vote_id, question_id, N, '1');
+                        }
+                      }
+                    }
+
+                    self.pAction := 'browse';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                <v:on-post>
+                  <![CDATA[
+                    self.pAction := 'browse';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+          </v:template>
+
+          <v:template type="simple" enabled="--case when (self.pAction = 'result') then 1 else 0 end">
+            <div class="new-form-header">
+              <v:label format="%s" value="Vote results" />
+            </div>
+            <div class="new-form-body">
+              <?vsp
+                declare N, pHeight integer;
+                declare tmp, Q, S, answers, vt, aValue, aCount any;
+                declare rChart, rLegends, rPercents, rFlag any;
+
+                tmp := POLLS.WA.poll_enable_result (self.v_id);
+                if (tmp = -1) {
+                  http ('<p class="vote-poll">Poll is not activated and results can not be shown</p>');
+                  goto _end;
+                }
+                if (tmp = -2) {
+                  http ('<p class="vote-poll">Poll is closed, user is not voted and results can not be shown!</p>');
+                  goto _end;
+                }
+                if (tmp = -3) {
+                  http ('<p class="vote-poll">Poll is not closed and results can not be shown</p>');
+                  goto _end;
+                }
+                if (tmp = -4) {
+                  http ('<p class="vote-poll">Poll is not voted and results can not be shown. Please vote first!</p>');
+                  goto _end;
+                }
+
+                Q := 0;
+                for (select P_NAME, P_MODE, P_VOTES, Q.* from POLLS.WA.QUESTION Q, POLLS.WA.POLL P where Q.Q_POLL_ID = self.v_id and Q.Q_POLL_ID = P.P_ID order by Q.Q_ID) do {
+                  Q := Q + 1;
+                  if ((P_MODE = 'M') and (Q = 1))
+                    http (sprintf ('<p class="vote-poll">%s <i style="font-size: 0.8em; font-weight: normal;">(%d vote(s))</i></p>', P_NAME, P_VOTES));
+                  vt := '';
+                  if ((P_MODE = 'S') and (Q = 1))
+                    vt := sprintf ('(%d vote(s))', P_VOTES);
+                  http (sprintf ('<p class="vote-question">%d. %s? <i style="font-size: 0.8em; font-weight: normal;">%s</i></p>', Q, Q_TEXT, vt));
+                  answers := deserialize (Q_ANSWER);
+
+                  http ('<p class="vote-answer">');
+                  if (Q_TYPE = 'N') {
+                    declare range_start, range_end, range_decimals any;
+
+                    range_start := cast (get_keyword ('range_start', answers, '0') as float);
+                    range_end := cast (get_keyword ('range_end', answers, '0') as float);
+                    range_decimals := cast (get_keyword ('range_decimals', answers, '0') as integer);
+
+                    aValue := 0;
+                    aCount := 0;
+                    for (select A_VALUE from POLLS.WA.ANSWER where A_QUESTION_ID = Q_ID and A_NUMBER = 1) do {
+                      aCount := aCount + 1;
+                      aValue := aValue + cast (A_VALUE as float);
+                    }
+                    S := xslt_format_number (aValue / P_VOTES, '#.00');
+                    http (sprintf ('Average answers result in range [%d, %d]: <b>%s</b>', range_start, range_end, S));
+                  }
+                  if (Q_TYPE = 'M') {
+                    declare choices, allowed, answer any;
+
+                    rChart := 'bar';
+                    rLegends := '';
+                    rPercents := '';
+                    rFlag := 0;
+                    choices := cast (get_keyword ('choices', answers, '1') as integer);
+                    allowed := cast (get_keyword ('allowed', answers, '2') as integer);
+                    http ('<table id="vote-result-table" cellspacing="0">');
+                    http ('<thead>');
+                    http ('<tr>');
+                    http ('<th>No</th><th>Answer</th><th>Votes</th><th>Percent</th>');
+                    http ('</tr>');
+                    http ('</thead>');
+                    for (N := 1; N <= choices; N := N + 1) {
+                      answer := get_keyword (sprintf ('answer_%d', N), answers, '');
+                      select count (*) into aCount from POLLS.WA.ANSWER where A_QUESTION_ID = Q_ID and A_NUMBER = N;
+                      S := xslt_format_number (100.00 * aCount / P_VOTES, '#.00');
+                      rLegends := rLegends || ',"' || answer || '"';
+                      rPercents := rPercents || ',' || cast(aCount as varchar);
+                      if (aCount <> 0)
+                        rFlag := 1;
+                      http (sprintf ('<tr><td align="right">%d.</td><td>%s</td><td align="right">%d</td><td align="right">%s %s</td></tr>', N, answer, aCount, S, '%'));
+                    }
+                    http ('</table>');
+                    pHeight := 200;
+                    if (choices > 5)
+                      pHeight := pHeight + (choices - 5) * 33;
+                  }
+                  if ((Q_TYPE = 'M') and (rFlag <> 0)) {
+                    rLegends := trim (rLegends, ',');
+                    rPercents := trim (rPercents, ',');
+                    if (rChart = 'bar') {
+                      http (         '<div class="chart_content">');
+                      http (sprintf ('<div id="bar_content_%d" style="height: 200px; width: 100%s;"></div>', Q_ID, '%'));
+                      http (         '</div>');
+                      http (         '<script type="text/javascript">');
+                      http (sprintf ('  var chart = new OAT.BarChart("bar_content_%d");', Q_ID));
+                      http (sprintf ('  chart.attachData([%s]);', rPercents));
+                      http (sprintf ('  chart.attachTextX([%s]);', rLegends));
+                      http (         '  chart.draw();');
+                      http (         '</script>');
+                    }
+                    if (rChart = 'pie') {
+                      http (         '<div class="chart_content">');
+                      http (sprintf ('<div id="pie_content_%d" style="height: %dpx; width: 100%s;"></div>', Q_ID, pHeight, '%'));
+                      http (         '</div>');
+                      http (         '<script type="text/javascript">');
+                      http (sprintf ('  var chart = new OAT.PieChart("pie_content_%d");', Q_ID));
+                      http (sprintf ('  chart.attachData([%s]);', rPercents));
+                      http (sprintf ('  chart.attachText([%s]);', rLegends));
+                      http (         '  chart.draw();');
+                      http (         '</script>');
+                    }
+                  }
+                  http ('</p>');
+                }
+              _end:;
+              ?>
+            </div>
+            <div class="new-form-footer">
+              <v:button action="simple" value="Back" xhtml_class="form-button">
+                <v:on-post>
+                  <![CDATA[
+                    self.pAction := 'browse';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+            <script type="text/javascript">
+              <![CDATA[
+                coloriseTable('vote-result-table');
+              ]]>
+            </script>
+          </v:template>
+
+        </div>
+      </div>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

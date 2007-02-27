@@ -1,0 +1,145 @@
+<?xml version="1.0"?>
+<!--
+ -
+  -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:variable name="domain_id" type="integer" param-name="did" default="-1"/>
+  <v:variable name="account_id" type="integer" param-name="aid" default="-1"/>
+
+  <v:variable name="v_output" type="varchar" param-name="output" default="''"/>
+  <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
+  <v:variable name="v_expression" type="varchar" default="''" param-name="expression"/>
+  <v:variable name="v_tags" type="varchar" default="''" param-name="tags"/>
+
+  <v:variable name="v_own" type="integer" default="1" param-name="own"/>
+  <v:variable name="v_public" type="integer" default="1" param-name="public"/>
+
+  <v:variable name="v_max" type="varchar" default="'100'" param-name="max"/>
+  <v:variable name="v_order" type="varchar" default="'_NAME'" param-name="order"/>
+  <v:variable name="v_direction" type="varchar" default="'asc'" param-name="direction"/>
+
+  <![CDATA[
+    <?vsp
+      set http_charset = 'UTF-8';
+      http_rewrite ();
+      http_request_status ('HTTP/1.1 200 OK');
+      http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+
+      if (self.v_output in ('rss', 'rdf', 'atom03', 'atom10')) {
+        declare data, sql, sqlParams, state, msg, meta, rows, maxRows any;
+
+        POLLS.WA.xml_set('keywords', data, self.v_keywords);
+        POLLS.WA.xml_set('expression', data, self.v_expression);
+        POLLS.WA.xml_set('tags', data, self.v_tags);
+        if (self.v_own = 1)
+          POLLS.WA.xml_set('MyPolls', data, 1);
+        if (self.v_public = 1)
+          POLLS.WA.xml_set('PublicPolls', data, 1);
+
+        if (length(xpath_eval('//entry', data, 0)) = 0)
+          goto _error;
+
+        state := '00000';
+        sqlParams := vector();
+        sql := POLLS.WA.search_sql (self.domain_id, self.account_id, data);
+        exec(sql, state, msg, sqlParams, 0, meta, rows);
+        if (state <> '00000')
+          goto _error;
+
+        http ('<?xml version="1.0" encoding="UTF-8"?>\n');
+        http ('<rss version="2.0">\n');
+        http ('<channel>\n');
+        for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
+          http ('<title>');
+            http_value (POLLS.WA.utf2wide(POLLS.WA.domain_name (self.domain_id)));
+          http ('</title>\n');
+          http ('<description>');
+            http_value (POLLS.WA.utf2wide(POLLS.WA.domain_description (self.domain_id)));
+          http ('</description>\n');
+          http ('<managingEditor>');
+            http_value (U_E_MAIL);
+          http ('</managingEditor>\n');
+          http ('<pubDate>');
+            http_value (POLLS.WA.dt_rfc1123 (now()));
+          http ('</pubDate>\n');
+          http ('<generator>');
+            http_value ('Virtuoso Universal Server ' || sys_stat('st_dbms_ver'));
+          http ('</generator>\n');
+          http ('<webMaster>');
+            http_value (U_E_MAIL);
+          http ('</webMaster>\n');
+          http ('<link>');
+            http_value (POLLS.WA.polls_url (self.domain_id));
+          http ('</link>\n');
+        }
+        foreach (any row in rows) do {
+          http ('<item>\n');
+            http ('<title>');
+              http_value (POLLS.WA.utf2wide (row[2]));
+            http ('</title>\n');
+            http ('<description>');
+              http_value (POLLS.WA.utf2wide (POLLS.WA.poll_description (row[0])));
+            http ('</description>\n');
+            http ('<link>');
+              http_value (POLLS.WA.poll_url ( row[1], row[0]));
+            http ('</link>\n');
+            http ('<guid>');
+              http_value (POLLS.WA.poll_url ( row[1], row[0]));
+            http ('</guid>\n');
+            http ('<pubDate>');
+              http_value (POLLS.WA.dt_rfc1123 (row[4]));
+            http ('</pubDate>\n');
+            for (select TV_TAG from POLLS..TAGS_VIEW where tags = row[3]) do {
+              http ('<category>');
+                http_value (TV_TAG);
+              http ('</category>\n');
+            }
+            if (self.v_output <> 'rss') {
+              http ('<vi:modified xmlns:vi="http://www.openlinksw.com/weblog/">');
+                http_value (POLLS.WA.dt_iso8601 (row[5]));
+              http ('</vi:modified>\n');
+            }
+          http ('</item>\n');
+        }
+        http ('</channel>\n');
+        http ('</rss>');
+
+        if (self.v_output = 'atom03')
+          http_xslt (POLLS.WA.xslt_full ('rss2atom03.xsl'));
+
+        else if (self.v_output = 'atom10')
+          http_xslt (POLLS.WA.xslt_full ('rss2atom.xsl'));
+
+        else if (self.v_output = 'rdf')
+          http_xslt (POLLS.WA.xslt_full ('rss2rdf.xsl'));
+
+        goto _end;
+      }
+    _error:
+      http('<?xml version="1.0" ?><empty />');
+
+    _end:
+      return;
+    ?>
+  ]]>
+</v:page>

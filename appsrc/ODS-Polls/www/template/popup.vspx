@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+  -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
+  <head profile="http://internetalchemy.org/2003/02/profile">
+    <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <script type="text/javascript" language="JavaScript" src="js/polls.js" />
+    <?vsp http('</script>'); ?>
+    <title></title>
+  </head>
+  <body>
+    <v:page xmlns:v="http://www.openlinksw.com/vspx/">
+      <vm:variables>
+        <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
+        <v:variable persist="0" name="account_id" type="integer" default="-1"/>
+        <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
+        <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
+      </vm:variables>
+      <v:on-init>
+        <![CDATA[
+          declare aRequest, aSessInfo any;
+          declare sCharset, sBrwCharset varchar;
+
+          SET ISOLATION = 'Committed';
+
+          -- Initialize variables
+          aRequest := POLLS.WA.validate_request(lines,0);
+
+          -- Charset
+          sBrwCharset := http_request_header(lines, 'Accept-Charset', null);
+          if (sBrwCharset)
+            sCharset := regexp_match('[^,;$]*',sBrwCharset);
+          else
+            sCharset := 'UTF-8';
+          if (not position(upper(sCharset), charsets_list(0)))
+            sCharset := 'UTF-8';
+          exec(sprintf('SET CHARSET = ''%s''',sCharset));
+          exec(sprintf('SET HTTP_CHARSET = ''%s''',sCharset));
+
+          aSessInfo := POLLS.WA.session_restore(aRequest, params, lines);
+          self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
+          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
+          self.account_role := get_keyword('user_role', aSessInfo, '');
+          self.accountName := get_keyword('user_name', aSessInfo, '');
+        ]]>
+      </v:on-init>
+
+      <v:placeholder />
+    </v:page>
+  </body>
+</html>

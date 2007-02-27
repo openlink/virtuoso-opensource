@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+  -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="preferences" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Preferences</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header/>
+    <vm:variables>
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+    </vm:variables>
+    <vm:pagebody>
+      <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
+      <div class="new-form-header" style="margin-top: 6px;">
+        Preferences
+      </div>
+      <div class="new-form-body">
+        <table class="form-body" cellspacing="0">
+          <tr>
+            <th width="30%">
+              <v:label for="f_chars" value="Polls name display"/>
+            </th>
+            <td>
+              <?vsp
+                declare S varchar;
+
+                S := '';
+                if (cast(get_keyword('chars', self.settings, '0') as integer) = 0)
+                  S := 'checked="checked"';
+                http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', S));
+              ?>
+              <xsl:call-template name="nbsp"/><vm:label for="r_chars_0" value="--'show everything'" />
+            </td>
+          </tr>
+          <tr>
+            <th />
+            <td>
+              <?vsp
+                declare S varchar;
+
+                S := '';
+                if (cast(get_keyword('chars', self.settings, '0') as integer) <> 0)
+                  S := 'checked="checked"';
+                http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', S));
+              ?>
+              <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
+              <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
+              <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
+            </td>
+          </tr>
+          <tr>
+            <th width="30%"/>
+            <td>
+              <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.settings, '1') as integer)" />
+              <vm:label for="f_tbLabels" value="Show toolbar labels"/>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <v:label for="f_rows" value="Rows per page"/>
+            </th>
+            <td>
+              <v:text name="f_rows" value="--get_keyword('rows', self.settings, '10')" xhtml_size="3"/>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              Atom File Version
+            </th>
+            <td>
+              <v:select-list name="f_atomVersion">
+                <v:item value="0.3" name="0.3"/>
+                <v:item value="1.0" name="1.0"/>
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ufl_value := get_keyword('atomVersion', self.settings, '1.0');
+                  ]]>
+                </v:before-data-bind>
+              </v:select-list>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="new-form-footer">
+        <v:button action="simple" value="Save" xhtml_class="form-button">
+          <v:on-post>
+            <![CDATA[
+              declare rows, chars any;
+
+              declare exit handler for SQLSTATE '*' {
+                if (__SQL_STATE = 'TEST') {
+                  self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                resignal;
+              };
+
+              rows := trim(self.f_rows.ufl_value);
+              chars := trim(self.f_chars.ufl_value);
+              if (get_keyword ('r_chars', self.vc_page.vc_event.ve_params, '-1') = '0')
+                chars := '0';
+
+              POLLS.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
+              POLLS.WA.test(chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
+
+              self.settings := POLLS.WA.set_keyword('chars', self.settings, cast(cast(chars as integer) as varchar));
+              self.settings := POLLS.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
+              self.settings := POLLS.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
+              self.settings := POLLS.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
+
+              insert replacing POLLS.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.settings));
+              commit work;
+
+              POLLS.WA.domain_gems_create(self.domain_id, self.account_id);
+
+              self.vc_redirect('polls.vspx');
+            ]]>
+          </v:on-post>
+        </v:button>
+        <v:button action="simple" value="Clear" xhtml_class="form-button">
+          <v:on-post>
+            <![CDATA[
+              delete from POLLS.WA.SETTINGS where S_ACCOUNT_ID = self.account_id;
+
+              self.vc_redirect('settings.vspx');
+            ]]>
+          </v:on-post>
+        </v:button>
+        <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:on-post>
+            <![CDATA[
+              self.vc_redirect('polls.vspx');
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+      <script>
+        <![CDATA[
+          initTab(3, 1);
+        ]]>
+      </script>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
