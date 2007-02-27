@@ -32,6 +32,8 @@
       <![CDATA[
         self.org := registry_get ('__nntp_organization_header');
         self._from := registry_get ('__nntp_from_header');
+	self._retr := registry_get ('__nntp_self_retr');
+	if (self._retr = 0) self._retr := 3;
       ]]>
   </v:on-init>
   <vm:pagetitle>Virtuoso NNTP Server Global Management</vm:pagetitle>
@@ -39,6 +41,7 @@
     <vm:variables>
       <v:variable name="org" persist="0" type="varchar" default="''" />
       <v:variable name="_from" persist="0" type="varchar" default="''" />
+      <v:variable name="_retr" persist="0" type="integer" default="3" />
     </vm:variables>
     <vm:variables>
       <v:variable name="ns_id" persist="0" type="integer" default="0" />
@@ -101,6 +104,14 @@
           </td>
           <td>
 	    <v:text xhtml_size="80" type="simple" value="--self._from" name="from_head"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+	    Post retrieve:
+          </td>
+          <td>
+	    <v:text xhtml_size="80" type="simple" value="--self._retr" name="retrive"/>
           </td>
         </tr>
         <tr>

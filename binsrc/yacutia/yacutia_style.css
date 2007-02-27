@@ -789,6 +789,11 @@ tr.listing_row_odd
         background-color: #f0f0f0;
 }
  
+tr.listing_row_selected
+{
+  background-color: green;
+}
+ 
 td.listing_column
 {
 }

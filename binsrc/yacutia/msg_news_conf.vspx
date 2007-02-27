@@ -32,13 +32,19 @@
      <![CDATA[
   if (get_keyword ('upd', params, '') <> '')
     {
-      declare _org, _from varchar;
+      declare _org, _from, _retrive varchar;
 
       _org := get_keyword ('org_head', params, '');
       _from := get_keyword ('from_head', params, '');
+      _retrive := atoi (get_keyword ('retrive', params, '3'));
 
       registry_set ('__nntp_from_header', _from);
       registry_set ('__nntp_organization_header', _org);
+      registry_set ('__nntp_self_retr', cast (_retrive as varchar));
+
+      if (_retrive < 1) _retrive := 1;
+
+      update NEWS_MSG_NNTP set NM_TRY_POST = _retrive where NM_TRY_POST is not NULL;
 
       cfg_write (virtuoso_ini_path(), 'HTTPServer', 'NNTPOrganizationHeader', _org);
       cfg_write (virtuoso_ini_path(), 'HTTPServer', 'NNTPFromHeader', _from);
