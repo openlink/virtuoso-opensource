@@ -414,7 +414,7 @@ db_log_registry (dk_session_t * log)
 
 
 void
-registry_set_1 (char *name, char *value, int is_boxed)
+registry_set_1 (const char *name, const char *value, int is_boxed)
 {
   caddr_t *place;
   ASSERT_IN_TXN;
@@ -438,7 +438,7 @@ registry_set_1 (char *name, char *value, int is_boxed)
 
 
 caddr_t
-registry_get (char *name)
+registry_get (const char *name)
 {
   caddr_t *place;
   ASSERT_IN_TXN;

@@ -2097,7 +2097,6 @@ if (xj->xj_children || following_join)
      xj->xj_element, nth, pk_args, http_out, depth, head_nth );
 }
 
-#define XMLVIEW_DEBUG
 void
 xmlg_store_proc (xv_context_t * xvc)
 {

@@ -769,8 +769,8 @@ long sequence_next_inc (char *name, int in_map, long inc_by);
 long sequence_remove (char *name, int in_map);
 box_t sequence_get_all ( void ); /* returns the name,value, name,value array */
 
-EXE_EXPORT(caddr_t, registry_get, (char *name));
-void registry_set_1 (char * name, char * value, int is_boxed);
+EXE_EXPORT(caddr_t, registry_get, (const char *name));
+void registry_set_1 (const char * name, const char * value, int is_boxed);
 #define registry_set(name,value) registry_set_1(name,value,0)
 EXE_EXPORT(box_t, registry_get_all, ( void )); /* returns the name,value, name,value array */
 caddr_t registry_remove (char *name);
