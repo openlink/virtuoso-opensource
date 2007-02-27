@@ -1983,6 +1983,7 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case DV_BLOB_HANDLE: case DV_BLOB_WIDE_HANDLE: case DV_BLOB_XPER_HANDLE:
     case DV_STRING_SESSION: case DV_ARRAY_OF_POINTER:
       break;
+    default:  
     sqlr_new_error ("22023", "SR023",
     "Function subseq needs a string, array or object id as its first argument, "
     "not an arg of type %s (%d)",
