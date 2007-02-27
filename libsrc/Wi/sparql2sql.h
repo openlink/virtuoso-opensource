@@ -184,6 +184,13 @@ extern void sparp_rvr_intersect_red_cuts (sparp_t *sparp, rdf_val_range_t *rvr, 
 
 #define SPARP_RVR_CREATE ((rdf_val_range_t *)1L)
 
+#ifdef DEBUG
+extern void dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf_val_range_t *rvr);
+#define sparp_rvr_audit(sparp,rvr) dbg_sparp_rvr_audit (__FILE__, __LINE__, sparp, rvr)
+#else
+#define sparp_rvr_audit(sparp,rvr) 0
+#endif
+
 /*! Creates a copy of given \c src (the structure plus member lists but not literals).
 If dest is equal to SPARP_RVR_CREATE then it allocates new rvr otherwise it overwrites \c dest */
 extern rdf_val_range_t *sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *src);
