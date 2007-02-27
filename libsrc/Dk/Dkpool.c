@@ -201,13 +201,17 @@ caddr_t DBG_NAME(mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t d
   ptr = ((dtp_t* ) mb) + mb->mb_fill + (bh_len / 2);
   mb->mb_fill += len;
 #endif
+#ifndef LACERATED_POOL
   if (bh_len)
     {
+#endif
   (ptr++)[0] = (dtp_t) (len1 & 0xff);
   (ptr++)[0] = (dtp_t) (len1 >> 8);
   (ptr++)[0] = (dtp_t) (len1 >> 16);
   (ptr++)[0] = dtp;
+#ifndef LACERATED_POOL
     }
+#endif
   memset (ptr, 0, len1);
   return ((caddr_t) ptr);
 }
