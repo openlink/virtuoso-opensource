@@ -502,7 +502,6 @@ extern uint32 big_endian_box_length (const void *box);
   do { \
     uint32 byte_buffer_hash_res = (text[0]); \
     const unsigned char *byte_buffer_hash_text = ((const unsigned char *)(text)); \
-    const unsigned char *byte_buffer_hash_tail = byte_buffer_hash_text; \
     while (byte_buffer_hash_text[0]) \
       { \
 	byte_buffer_hash_res = (byte_buffer_hash_res * 0x41010021) + (byte_buffer_hash_text)[0]; \
