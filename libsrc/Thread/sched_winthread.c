@@ -731,6 +731,55 @@ mutex_option (dk_mutex_t * mtx, char * name, mtx_entry_check_t ck, void * cd)
 }
 #endif
 
+void
+dk_mutex_init (dk_mutex_t * mtx, int type)
+{
+  memset (mtx, 0, sizeof (dk_mutex_t));
+  mtx->mtx_type = type;
+#ifdef MTX_DEBUG
+  mtx->mtx_owner = NULL;
+#endif
+  if (type == MUTEX_TYPE_LONG)
+    {
+      mtx->mtx_handle = CreateMutex (NULL, FALSE, NULL);
+    }
+  else
+    {
+      NEW_VAR (CRITICAL_SECTION, cs);
+      mtx->mtx_handle = cs;
+      InitializeCriticalSection(mtx->mtx_handle);
+#ifdef MTX_METER
+      if (all_mtxs_mtx)
+	mutex_enter (all_mtxs_mtx);
+      dk_set_push (&all_mtxs, (void*) mtx);
+      if (all_mtxs_mtx)
+	mutex_leave (all_mtxs_mtx);
+#endif
+    }
+  return;
+}
+
+void
+dk_mutex_destroy (dk_mutex_t *mtx)
+{
+#ifdef MTX_METER
+  mutex_enter (all_mtxs_mtx);
+  dk_set_delete (&all_mtxs, (void*) mtx);
+  mutex_leave (all_mtxs_mtx);
+#endif
+  if (mtx->mtx_type == MUTEX_TYPE_LONG)
+    {
+      CloseHandle (mtx->mtx_handle);
+    }
+  else
+    {
+      DeleteCriticalSection(mtx->mtx_handle);
+      dk_free(mtx->mtx_handle, sizeof(CRITICAL_SECTION));
+    }
+#ifdef MTX_DEBUG
+  dk_free_box (mtx->mtx_name);
+#endif
+}
 
 void
 mutex_free (dk_mutex_t *self)
