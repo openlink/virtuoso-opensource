@@ -869,8 +869,19 @@ After processing 'text1<!--comment-->text2' two string children text1 and text2 
 	      continue;
 	    }
 	  if (!is_xslns (child_name))
+            {
 	    if (!(XSLT_ELGRP_RESELS & childgroups))
+                {
+                  if (!strcmp (child_name, "http://www.w3.org/1999/xhtml:div") &&
+                    !strcmp (name, "http://www.w3.org/1999/XSL/Transform:stylesheet") )
+                    { /* Relax syntax for weird comments inside the stylesheet. */
+	              tree[child_idx] = NULL;
+		      dk_free_tree ((box_t) child);
+		      continue;
+                    }
 	      sqlr_new_error_xsltree_xdl ("XS370", "XS060", ((caddr_t *)(tree)), "Misplaced element '%s'", child_name);
+                }
+            }
 	  { /* The order of assignments here is very important. Memory leaks in other cases */
 	    caddr_t newchild = (caddr_t) xslt_sheet_compile_subtree (child, childgroups);
 	    tree[child_idx] = NULL;
