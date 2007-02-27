@@ -1,6 +1,5 @@
 %{
 /* 
- * $Id$
  *  
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
@@ -22,6 +21,7 @@
  *  
  *  
 */
+/* $Id$ */
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -36,18 +36,24 @@
 #endif
 
 #define MAXLISTDEPTH 10
-
+#define wlex_font_t		int
 #define WLEX_FONT_DEFAULT	0
 #define WLEX_FONT_B		1
-#define WLEX_FONT_U		2
-#define WLEX_FONT_BU		3
+#define WLEX_FONT_I		2
+#define WLEX_FONT_BI		3
 #define WLEX_FONT_TT		4
 #define WLEX_FONT_BTT		5
-#define WLEX_FONT_I		6
 
 #define WLEX_LIST_UL		0
 #define WLEX_LIST_OL		1
 #define WLEX_LIST_DL		2
+
+#define LINKT_COPY		0
+#define LINKT_NORMALIZE		1
+#define LINKT_IMG		2
+
+
+#define FONT_STACK_SZ		10
 
 typedef struct bufmem_s {
   char *bm_memblock;
@@ -55,7 +61,7 @@ typedef struct bufmem_s {
 } bufmem_t;
 
 typedef struct wlex_state_s {
-  int wlex_font;
+  wlex_font_t wlex_font[FONT_STACK_SZ];
   int wlex_headerlevel;
   int wlex_listlevel;  
   int wlex_listmodes[MAXLISTDEPTH];
@@ -77,7 +83,7 @@ typedef struct wlex_state_s {
   int wlex_text_ofs;
   dk_session_t *wlex_out;
 #endif
-  int __test;
+  int wlex_in_td;
   int wlex_nowiki;
   int wlex_prevst;
   } wlex_state_t;
@@ -94,7 +100,7 @@ typedef struct wlex_state_s {
 	((' ' == (ch)) || ('\t' == (ch))\
 	|| (!isalnum((ch)) && (',' != (ch)) && ('.' != (ch)) && ('_' != (ch)) && ('-' != (ch))))
 
-static wlex_state_t wlex_instance;
+wlex_state_t wlex_instance;
 #define STATE(n) (wlex_instance.n)
 #define STATEPTR (&wlex_instance)
 
@@ -103,8 +109,8 @@ static wlex_state_t wlex_instance;
 #define WLEX_RESET_TABLE	0x04
 #define WLEX_RESET_LIST		0x08
 #define WLEX_RESET_PARA		0x10
-
 static void wlex_reset(int what);
+
 static int wlex_textbegin (void);
 
 #define STARTPARA \
@@ -141,9 +147,9 @@ static int wlex_textbegin (void);
     PRINT(yytext); PRINT(" -->\n"); \
     } while(0);
 
-#define YY_FATAL_ERROR(msg) wikiyylexerror (msg)
+#define YY_FATAL_ERROR(msg) creolewikiyylexerror (msg)
 
-static void wikiyylexerror (char * msg);
+static void creolewikiyylexerror (char * msg);
 
 static void bm_alloc (bufmem_t *buf, size_t len)
 {
@@ -209,39 +215,68 @@ static void xml_encode (const char* str)
     }
 }
 
+static void print_attr (char* text)
+{
+  session_buffered_write (STATE(wlex_out), (text), strlen(text)-1);
+}
 
-
-
-
-static void wlex_font(int newfont)
+static void wlex_font(wlex_font_t newfont)
 {
   char *tags;
-  if (newfont == STATE(wlex_font))
+  if (newfont == STATE(wlex_font)[0])
     return;
-  switch (STATE(wlex_font))
+  switch (STATE(wlex_font)[0])
     {
     case WLEX_FONT_DEFAULT: tags=""; break;
-    case WLEX_FONT_B: tags = "</B>"; break;
-    case WLEX_FONT_U: tags = "</U>"; break;
-    case WLEX_FONT_I: tags = "</I>"; break;
-    case WLEX_FONT_BU: tags = "</U></B>"; break;
+    case WLEX_FONT_B: tags = "</strong>"; break;
+    case WLEX_FONT_I: tags = "</em>"; break;
+    case WLEX_FONT_BI: tags = "</em></strong>"; break;
     case WLEX_FONT_TT: tags = "</CODE>"; break;
     case WLEX_FONT_BTT: tags = "</CODE></B>"; break;
     }
-  PRINTTEXT(tags);
-  STATE(wlex_font) = newfont;
-  switch (STATE(wlex_font))
+  /* PRINTTEXT(tags); */
+  if (WLEX_FONT_DEFAULT != newfont) 
+    {
+       int idx;
+       for (idx=FONT_STACK_SZ-1; idx>0; --idx)
+         STATE(wlex_font)[idx] =  STATE(wlex_font)[idx-1];
+    }
+  STATE(wlex_font)[0] = newfont;
+  switch (STATE(wlex_font)[0])
     {
     case WLEX_FONT_DEFAULT: tags = ""; break;
-    case WLEX_FONT_B: tags = "<B>"; break;
-    case WLEX_FONT_U: tags = "<U>"; break;
-    case WLEX_FONT_I: tags = "<I>"; break;
-    case WLEX_FONT_BU: tags = "<B><U>"; break;
+    case WLEX_FONT_B: tags = "<strong>"; break;
+    case WLEX_FONT_I: tags = "<em>"; break;
+    case WLEX_FONT_BI: tags = "<strong><em>"; break;
     case WLEX_FONT_TT: tags = "<CODE>"; break;
     case WLEX_FONT_BTT: tags = "<B><CODE>"; break;
     }
   PRINTTEXT(tags);
 }
+
+static void wlex_font_pop()
+{
+  char *tags;
+  switch (STATE(wlex_font)[0])
+    {
+    case WLEX_FONT_DEFAULT: tags=""; break;
+    case WLEX_FONT_B: tags = "</strong>"; break;
+    case WLEX_FONT_I: tags = "</em>"; break;
+    case WLEX_FONT_BI: tags = "</em></strong>"; break;
+    case WLEX_FONT_TT: tags = "</CODE>"; break;
+    case WLEX_FONT_BTT: tags = "</CODE></B>"; break;
+    }
+  PRINTTEXT(tags); 
+  if(STATE(wlex_font)[0] != WLEX_FONT_DEFAULT)
+    {
+       int idx;
+       for (idx=0; idx<FONT_STACK_SZ-1; ++idx)
+         STATE(wlex_font)[idx] =  STATE(wlex_font)[idx+1]; 
+    }
+  STATE(wlex_font)[FONT_STACK_SZ-1] = 0;
+}
+;
+  
 
 static void wlex_headerlevel(int newlevel)
 {
@@ -358,7 +393,7 @@ static void wlex_id_print (wlex_state_t * st)
 
 static void wlex_reset(int what)
 {
-  if ((what & WLEX_RESET_FONT) && (WLEX_FONT_DEFAULT != STATE(wlex_font)))
+  if ((what & WLEX_RESET_FONT) && (WLEX_FONT_DEFAULT != STATE(wlex_font)[0]))
     wlex_font(WLEX_FONT_DEFAULT);
   if (what & WLEX_RESET_FONT)
     {
@@ -379,7 +414,7 @@ static void wlex_reset(int what)
       STATE(wlex_in_table) );
 }
 
-int wlex_textbegin (void)
+static int wlex_textbegin (void)
 {
   if ((0 != STATE(wlex_headerlevel)) ||
     (0 != STATE(wlex_listlevel)) ||
@@ -395,7 +430,7 @@ int wlex_textbegin (void)
 
 static void wlex_ahref_2 (char *href, char *style, char *title, char* predicate)
 {
-  STARTPARA; PRINT("<A HREF=\""); xml_encode(href); PRINT("\" ");
+  STARTPARA; PRINT("<A HREF=\""); PRINT(href); PRINT("\" ");
   if (predicate)
     {
       PRINT("PREDICATE=\"");
@@ -411,8 +446,14 @@ static void wlex_ahref (char *href, char *style, char *title)
   wlex_ahref_2 (href, style, title, NULL);
 }
 
+static void wlex_img (char *href, char *style, char *title)
+{
+  STARTPARA; PRINT("<img src=\""); PRINT(href); PRINT("\" ");
+  PRINT("style=\""); PRINT(style); PRINT("\" "); 
+  PRINT("alt=\""); PRINT(title); PRINT("\" />"); 
+}	
 
-char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
+static char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
 {
   char *src, *tgt;
   bufmem_t *buf = &(st->wikiwordbuf);
@@ -448,19 +489,16 @@ char *wlex_wikiwordnorm (wlex_state_t *st, char *text)
 
 static void wlex_split_forced_link (wlex_state_t *st, char *text, char *delim)
 {
+  int offset = 1;
   bufmem_t *href = &(st->hrefbuf);
   bufmem_t *title = &(st->titlebuf);
   int textlen = strlen (text);
   char *href_start, *href_end, *title_start, *title_end;
   bm_alloc (href, textlen);
   bm_alloc (title, textlen);
-  href_start = text + 2; /* to omit first "[[" */
-  title_end = text + textlen - 2; /* '... - 2' is to omit last "]]" */
-  /* handle the case of triple "[" */
-  if ((href_start[0] == '[') && (title_end > href_start)  && (title_end[-1] == ']'))
-    {
-      ++href_start; --title_end;
-    }
+  offset = 2;
+  href_start = text + offset; /* to omit first "[[" */  
+  title_end = text + textlen - offset; /* '... - 2' is to omit last "]]" */
   if (NULL == delim) /* Same text is for both href and title */
     {
        href_end = title_end;
@@ -526,10 +564,14 @@ static void wlex_split_forced_sem_link (wlex_state_t *st, char *text, char *deli
 static void wlex_forced_link (wlex_state_t *st, char *text, char *delim, int wordnorm, char *style)
 {
    wlex_split_forced_link (st, text, delim);
-   if (wordnorm)
+   if (LINKT_NORMALIZE == wordnorm)
      wlex_ahref (wlex_wikiwordnorm (st, st->hrefbuf.bm_memblock), style, st->titlebuf.bm_memblock);
-   else
+   else if (LINKT_COPY == wordnorm)
      wlex_ahref (st->hrefbuf.bm_memblock, style, st->titlebuf.bm_memblock);
+   else if (LINKT_IMG == wordnorm)
+     wlex_img (st->hrefbuf.bm_memblock, style, st->titlebuf.bm_memblock);
+   else
+     COPYTEXT;
 }
 
 static void wlex_forced_link_with_pred (wlex_state_t *st, char *text, char *delim_pred, char *delim, char *style)
@@ -562,6 +604,87 @@ int wlex_count_header_level (char * line)
   return cnt;
 }
 
+/*! counts number of conseq symbol appearance */
+int char_count (char * line, char symbol)
+{
+  int counter = 0;
+  while (*line++ == symbol) ++counter;
+  return counter;
+}
+
+int strcount_int (char * line, char* symbols)
+{
+  char* sym;
+  for (sym = symbols; sym[0]; ++sym)
+    {
+      int cnt = char_count (line, sym[0]); 
+      if (cnt)
+        return cnt;
+    }
+  return 0;
+}
+
+/*! counts number of conseq symbols appearance  */
+int strcount (char *line, char *symbols)
+{
+  int counter = 0;
+  while (line[0])
+    {
+      int cnt = strcount_int (line, symbols);
+      if (!cnt)
+		return counter;
+	  counter += cnt;
+	  line += cnt;
+    }
+  return counter;
+}
+
+
+/*! returns end of paragraph if applicable */
+const char * search_end_of_para(const char* text)
+{
+   char * p = (char*) text;
+again:     
+   if (!p[0])
+     return p;
+   p = strchr (p, '\n');
+   if (!p)
+     return text + strlen(text) - 1; /* it is safe since _text_ already checked to have more than 1 symbol */
+   while(p[0] && (('\t' == *p) || ' ' == *p)) ++p;
+   if('\n' == *p)
+     return p;
+   goto again;
+}
+
+
+/*! checks is this pattern is in the current paragraph */
+int in_this_paragraph(const char* pattern, const char* text)
+{
+   const char* end_of_para = search_end_of_para (text);
+   char * p = strstr (text, pattern);
+   if (!p)
+     return 0;
+   return (p < end_of_para);
+}
+
+
+static void
+creolewlex_wiki_list (char* line)
+{
+  int cnt = strcount (line, "*#");
+  /* assert (c > 0) */
+  if (line[cnt-1] == '#')
+    wlex_list (cnt, WLEX_LIST_OL, NULL);
+  else
+    wlex_list (cnt, WLEX_LIST_UL, NULL);
+}
+
+static void 
+print_col(char* line)
+{
+  size_t sz = strlen(line);
+  NPRINT(line, sz ? sz - 1 : 0);
+}
 
 #ifndef WLEX_TEST
 #undef YY_INPUT
@@ -584,7 +707,7 @@ int wlex_count_header_level (char * line)
 %x PLAINHTML
 %x TABLELINE
 %x TABLEHEADER
-%x WIKTOLOGY
+%x MACRO
 
 WS		([ \t]+)
 WSNLS		([ \t\n\r]*)
@@ -592,13 +715,13 @@ ENDPUNCT	([.,:;\)\]\}\<\>])
 STARTPUNCT	([\(\[\{\<\>])
 S_NL		((\r)?(\n)(\r)?)
 WS_NL		({WS}?{S_NL})
-WSS_NL		({WS}*{S_NL})
+PARA_END	({WS_NL}{WS_NL})
 BLANK		({WS}|{S_NL})
 NOTAWORDSTART	({WS}|{S_NL}|{ENDPUNCT})
 NOTAWORDEND	({WS}|{S_NL}|{STARTPUNCT})
 NOTENDOFCODE	(([^\n<])|("<"[^/])|("</"[^Cc])|("</"[Cc][^Oo])|("</"[Cc][Oo][^Dd])|("</"[Cc][Oo][Dd][^Ee])|("</"[Cc][Oo][Dd][Ee](" "?)[^>]))
 WORDCHAR	([A-Za-z0-9/\\.])
-SIMPLEWORD	(([A-Za-z0-9/\\.]+)?[A-Za-z0-9\\])
+SIMPLEWORD	(([A-Za-z0-9\\.]+)?[A-Za-z0-9\\])
 SIMPLEWORD2	(([A-Za-z0-9/\\.]+)?[A-Za-z0-9_=/\\])
 WIKIWORD	((([A-Z]+)([a-z]+)([A-Z]+)([A-Za-z0-9]*))|("%WIKIUSERNAME%"))
 CLUSTERNAME	((([A-Z]+)([a-z]+)([A-Za-z0-9]*))|("%TWIKIWEB%"))
@@ -606,22 +729,16 @@ QWIKIWORD	({CLUSTERNAME}"."{WIKIWORD})
 SITENAME	({WIKIWORD}|([A-Z]+))
 INTERWIKI	({SITENAME}":"(({CLUSTERNAME}".")?){WIKIWORD})
 DEFTERM		([^ \t\r\n:]+)
-SIMPLESENTENCE	([a-zA-Z0-9\-\.][a-zA-Z0-9\-\. \t]*)
-BWORD		({SIMPLESENTENCE}"*")
-TTWORD		({SIMPLESENTENCE}"=")
-BUWORD		({SIMPLESENTENCE}"__")
-IWORD		({SIMPLESENTENCE}"/"{BLANK})
-UWORD		({SIMPLESENTENCE}"_")
-BTTWORD		(([^ =\t\r\n]+)"==")
 PROTOCOL	((("http")|("https")|("ftp")|("gopher")|("news")|("file")|("telnet"))"://")
 HOSTNAME	([A-Za-z](([A-Za-z0-9-]*[A-Za-z0-9])|([A-Za-z0-9]*)))
 DOMAINNAME	({HOSTNAME}(("."{HOSTNAME})*))
-LOCALRES	([A-Za-z0-9_.:|/?+%&-=@]+)
+LOCALRES	([A-Za-z0-9_.:|/?+%&-=@~]+)
 FRAG		("#"{LOCALRES})
 USERNAME	([A-Za-z]([A-Za-z0-9_-]*))
 ABSURI		({PROTOCOL}(({USERNAME}(("!"{LOCALRES})?)"@")?){DOMAINNAME}(((":"{LOCALRES})|("/"(({LOCALRES}?))))({FRAG}?))?)
 DUMMYURI	({PROTOCOL}([A-Za-z0-9_.:|/?+%&-=~#]+))
 LINKTITLE	([^[\]\|]+)
+LINKTITLE2	([^[\]\| :]+)
 FORCEDWIKILINK	([^\r\n\[\]~@:\\/{}<>\|]+)
 EMAIL		({USERNAME}"@"{DOMAINNAME}(("?"{LOCALRES})?))
 MAILTO		("mailto:"{USERNAME}"@"{DOMAINNAME}(("?"{LOCALRES})?))
@@ -631,8 +748,6 @@ MACROARGNAME	([a-z]+)
 MACROARGVALUE	("\""[A-Za-z0-9_.:;|\\/?+%&'` \t-\[\]$^]*"\"")
 MACROARG	({MACROARGNAME}"="{MACROARGVALUE})
 MACROARGS	({WS}?({MACROARG}({WS}{MACROARG})*{WS}?)?)
-INLINEMACROCONT ((([^?][^>])|(.[^?][^>]))*|.)
-INLINEMACRO	("<?inline"{INLINEMACROCONT}"?>")
 CELLFRAG	([^|\r\n]*)
 CELL		({CELLFRAG}("\\"{WS_NL}{CELLFRAG})*)
 TABLEROW	("|"({CELL}"|")+{WS_NL})
@@ -645,15 +760,25 @@ DOCTYPE		("<!DOCTYPE")([^>]*>)
 MFONTMOD	("\*"|"=="|"__")
 MFONTMODNEXT	([\*=_])
 MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
-        /* Wiktology */
-WIKTOLOGYMARK   (".ontology"|".ONTOLOGY")
-WIKTOLOGYSTOP   (".end"|".END")
-%%
+LISTMARK	("*"|"#")
+LINE		([^\n\r]*){WS_NL}
+HTMLATTRNAME	([A-Za-z0-9_]+)
+HTMLATTRVALUE	([A-Za-z0-9_.:;\\/?+%&'`\[\]$^]*)
+HTMLATTRVALUE2	("\""[A-Za-z0-9_\.\:\;\|\\/?\+\%\&\'\` \t\-\[\]\$\^]*"\"")
+HTMLATTR	({HTMLATTRNAME}"="({HTMLATTRVALUE2}|{HTMLATTRVALUE}))
+HTMLATTRS	({WS}?({HTMLATTR}({WS}{HTMLATTR})*{WS}?)?)
+TABLETD		([^\n\r|]+)
+BAREND		([\|\n\r])
+NOTBAR		([^\|])
+SINGLEBAR	("|"[^\|])
+TABLECOLATTR ({WS}*{HTMLATTRS}{WS}*)
+TABLECOL    ({TABLETD})
 
+%%
 	/* Verbatim */
-<INITIAL>^({WS}?)"<verbatim>"{WS_NL}	{ BEGIN(VERBATIM); wlex_verbatim(1); }
-<VERBATIM>^({WS}?)"</verbatim>"{WS_NL}	{ BEGIN(INITIAL); wlex_verbatim(0); }
-<VERBATIM>"</verbatim>"{WS_NL}		{ BEGIN(INITIAL); wlex_verbatim(0); }
+<INITIAL>^({WS}?)"{{{"{WS_NL}	{ BEGIN(VERBATIM); wlex_verbatim(1); }
+<VERBATIM>^({WS}?)"}}}"{WS_NL}	{ BEGIN(INITIAL); wlex_verbatim(0); }
+<VERBATIM>"}}}"{WS_NL}		{ BEGIN(INITIAL); wlex_verbatim(0); }
 <VERBATIM>"<"				{ PRINT ("&lt;"); }
 <VERBATIM>">"				{ PRINT ("&gt;"); }
 <VERBATIM>[^<\r\n]*[\r\n]		{ PRINT (yytext); }
@@ -661,16 +786,6 @@ WIKTOLOGYSTOP   (".end"|".END")
 <VERBATIM>{SIMPLEWORD}			{ PRINT (yytext); }
 <VERBATIM>"<?"				{ PRINT ("&lt;?"); }
 <VERBATIM>.				{ PRINT(yytext); }
-
-	/* Wiktology */
-<INITIAL>{WIKTOLOGYMARK}{WS_NL}		{ PRINT("<p><b>Wikitology detected:</b><br><div id='wiktology'>"); BEGIN(WIKTOLOGY); wlex_verbatim(1); }
-<WIKTOLOGY>"<"				{ PRINT ("&lt;"); }
-<WIKTOLOGY>">"				{ PRINT ("&gt;"); }
-<WIKTOLOGY>[^<\r\n]*[\r\n]		{ PRINT (yytext); }
-<WIKTOLOGY>[ \t\r\n]			{ PRINT (yytext); }
-<WIKTOLOGY>{SIMPLEWORD}			{ PRINT (yytext); }
-<WIKTOLOGY>"<?"				{ PRINT ("&lt;?"); }
-<WIKTOLOGY>{WIKTOLOGYSTOP}{WS_NL}		{ PRINT("</div></p><b>End of Wikitology</b><br>"); BEGIN(INITIAL); wlex_verbatim(0); }
 
 
 	/* WikiLinks. This is the core :) They are of highest possible priority */
@@ -685,64 +800,61 @@ WIKTOLOGYSTOP   (".end"|".END")
 
 
 
-	/* PlainHtml */
-<INITIAL>^({WS}?)"<plainhtml>"{WS_NL}		{ BEGIN(PLAINHTML); }
-<INITIAL>"<nowiki>"			{ BEGIN(PLAINHTML); STATE(wlex_noautolink) = 1; STATE(wlex_nowiki) = 1;  STATE(wlex_in_any_text) = 1; STATE(wlex_prevst) = INITIAL; }
-<TABLELINE>"<nowiki>"			{ BEGIN(PLAINHTML); STATE(wlex_noautolink) = 1; STATE(wlex_nowiki) = 1;  STATE(wlex_in_any_text) = 1; STATE(wlex_prevst) = TABLELINE; }
-<PLAINHTML>^({WS}?)"</plainhtml>"{WS_NL}	{ BEGIN(INITIAL); }
-<PLAINHTML>"</nowiki>"				{ if ((STATE(wlex_prevst)) == TABLELINE) { BEGIN(TABLELINE);} else { BEGIN(INITIAL);} STATE(wlex_noautolink) = 0; STATE (wlex_nowiki) = 0; }
-<PLAINHTML>"</html>"{WS_NL}		        { BEGIN(INITIAL); }
-<PLAINHTML>{WS_NL}				{ if (STATE(wlex_nowiki)) PRINT ("<BR/>"); }
-<PLAINHTML>.					{ PRINT (yytext); }
+<INITIAL>"{{{"			{ BEGIN(PLAINHTML); STATE(wlex_noautolink) = 1; STATE(wlex_nowiki) = 1;  STATE(wlex_in_any_text) = 1; STATE(wlex_prevst) = INITIAL; PRINT("<tt>"); }
+<TABLELINE>"{{{"		{ BEGIN(PLAINHTML); STATE(wlex_noautolink) = 1; STATE(wlex_nowiki) = 1;  STATE(wlex_in_any_text) = 1; STATE(wlex_prevst) = TABLELINE; PRINT("<tt>"); }
+<PLAINHTML>"}}}"		{ if ((STATE(wlex_prevst)) == TABLELINE) { BEGIN(TABLELINE);} else { BEGIN(INITIAL);} STATE(wlex_noautolink) = 0; STATE (wlex_nowiki) = 0; PRINT("</tt>"); }
+<PLAINHTML>"<"			{ PRINT ("&lt;"); }
+<PLAINHTML>">"			{ PRINT ("&gt;"); }
+<PLAINHTML>"'"			{ PRINT ("&quot;"); }
+<PLAINHTML>"&"			{ PRINT ("&amp;"); }
+<PLAINHTML>{WS_NL}		{ if (STATE(wlex_nowiki)) PRINT ("<BR/>"); }
+<PLAINHTML>[^<>'&]		{ PRINT (yytext); }
 
 <INITIAL,TABLELINE>^({WS}?)"<noautolink>"{WS_NL}		{ STATE(wlex_noautolink) = 1; }
 <INITIAL,TABLELINE>^({WS}?)"</noautolink>"{WS_NL}		{ STATE(wlex_noautolink) = 0; }
 
 	/* Other links. Their priorities are higher than anything else except <verbatim> */
-<INITIAL,TABLELINE>{MAILTO}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "mailto", yytext+7); else COPYTEXT; }
-<INITIAL,TABLELINE>{EMAIL}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "mailto", yytext); else COPYTEXT; }
-<INITIAL,TABLELINE>{ABSURI}				{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_ahref (yytext, "absuri", yytext); else COPYTEXT; }
-<INITIAL,TABLELINE>"[[["{LINKTITLE}"]]]"		{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword");  }
-<INITIAL,TABLELINE>"[["{PREDICATE}"::"{FORCEDWIKILINK}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", NULL, "forcedwikiword");  }
-<INITIAL,TABLELINE>"[["{MAILTO}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "mailto"); }
-<INITIAL,TABLELINE>"[["{MAILTO}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "mailto");  }
-<INITIAL,TABLELINE>"[["{WIKIWORD}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "wikiword"); }
-<INITIAL,TABLELINE>"[["{WIKIWORD}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "wikiword");  }
-<INITIAL,TABLELINE>"[["{QWIKIWORD}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "qwikiword");  }
-<INITIAL,TABLELINE>"[["{QWIKIWORD}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "qwikiword");  }
-<INITIAL,TABLELINE>"[["{INTERWIKI}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "interwiki");  }
-<INITIAL,TABLELINE>"[["{INTERWIKI}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "interwiki");  }
-<INITIAL,TABLELINE>"[["{DUMMYURI}" "{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, " ", 0, "absuri"); }
-<INITIAL,TABLELINE>"[["{DUMMYURI}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "absuri"); }
-<INITIAL,TABLELINE>"[["{FRAG}" "{LINKTITLE}"]]"		{ wlex_forced_link (STATEPTR, yytext, " ", 0, "anchorhere"); }
-<INITIAL,TABLELINE>"[["{FRAG}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "anchorhere");  }
-<INITIAL,TABLELINE>"[["{LINKTITLE}"]]"			{ wlex_forced_link (STATEPTR, yytext, NULL, 1, "forcedwikiword");  }
-<INITIAL,TABLELINE>"[["{FORCEDWIKILINK}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 1, "forcedwikiword");  }
-<INITIAL,TABLELINE>"[["{LOCALRES}"]["{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "][", 0, "reluri");  }
-<INITIAL,TABLELINE>"[["{PREDICATE}"::"{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", "|", "forcedwikiword");  }
-<INITIAL,TABLELINE>"[["{PREDICATE}":="{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_div_with_pred (STATEPTR, yytext, ":=", "|", "semanticvalue");  }
+<INITIAL,TABLELINE,TABLEHEADER>{MAILTO}				{ wlex_ahref (yytext, "mailto", yytext+7); }
+<INITIAL,TABLELINE,TABLEHEADER>{EMAIL}				{ wlex_ahref (yytext, "mailto", yytext); }
+<INITIAL,TABLELINE,TABLEHEADER>{ABSURI}				{ wlex_ahref (yytext, "absuri", yytext); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{ABSURI}"]]"			{ wlex_forced_link (STATEPTR, yytext, NULL, LINKT_COPY, "absuri"); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{DUMMYURI}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", 0, "absuri"); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{PREDICATE}"::"{FORCEDWIKILINK}"]]"	{ wlex_forced_link_with_pred (STATEPTR, yytext, "::", NULL, "forcedwikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{MAILTO}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", LINKT_COPY, "mailto");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{WIKIWORD}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", LINKT_COPY, "wikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{QWIKIWORD}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", LINKT_COPY, "qwikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{INTERWIKI}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", LINKT_COPY, "interwiki");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{FRAG}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", LINKT_COPY, "anchorhere");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{LINKTITLE}"]]"			{ wlex_forced_link (STATEPTR, yytext, NULL, LINKT_NORMALIZE, "forcedwikiword"); }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{FORCEDWIKILINK}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", LINKT_NORMALIZE, "forcedwikiword");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{LOCALRES}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", LINKT_COPY, "reluri");  }
+<INITIAL,TABLELINE,TABLEHEADER>"[["{LINKTITLE}"|"{LINKTITLE}"]]"	{ wlex_forced_link (STATEPTR, yytext, "|", LINKT_NORMALIZE, "forcedwikiword"); }
+<INITIAL,TABLELINE,TABLEHEADER>"{{"{LINKTITLE}"|"{LINKTITLE}"}}"	{ wlex_forced_link (STATEPTR, yytext, "|", LINKT_IMG, "absuri"); }
+
+
 
 	/* HTML tags */
 <INITIAL>"<"("pre"|"PRE")[^\r\n<>]*">"	{ if (!STATE(wlex_xmp_depth)) STATE(wlex_format_lock) += 1; PRINT(yytext); }
 <INITIAL>"</"("pre"|"PRE")[ \t]*">"	{ if (!STATE(wlex_xmp_depth) && (0 < STATE(wlex_format_lock))) STATE(wlex_format_lock) -= 1; PRINT(yytext); }
 <INITIAL>"<"("xmp"|"XMP")[^\r\n<>]*">"	{ STATE(wlex_xmp_depth) += 1; STATE(wlex_format_lock) += 1; PRINT(yytext); }
 <INITIAL>"</"("xmp"|"XMP")[ \t]*">"	{ if (0 < STATE(wlex_xmp_depth)) { STATE(wlex_xmp_depth) -= 1; STATE(wlex_format_lock) -= 1; } PRINT(yytext); }
-<INITIAL,TABLELINE,PLAINHTML>"<"{TAGNAME}[^\r\n<>]*">"	{
+<INITIAL,TABLELINE>"<"{TAGNAME}[^\r\n<>]*">"	{
         if (!STATE(wlex_in_para) && !STATE(wlex_in_any_text))
 	  STATE(wlex_in_para) = STATE(wlex_in_any_text) = STATE(wlex_para_depressed) = 1;
 	PRINT(yytext);
     }
-<INITIAL,TABLELINE,PLAINHTML>"</"{TAGNAME}[ \t]*">"	{ PRINT(yytext); }
+<INITIAL,TABLELINE>"</"{TAGNAME}[ \t]*">"	{ PRINT(yytext); }
 <INITIAL,TABLELINE,PLAINHTML>{NOP}			{ PRINT("<!-- nop -->"); }
 
 	/* Ends of lines and ends of paragraphs */
 <INITIAL>"."{WS_NL}{WS_NL}	{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else PRINTTEXT("."); wlex_reset (~0); }
-<INITIAL>"."{WS_NL}		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else PRINTTEXT(".\n"); }
+<INITIAL>"."{WS_NL}		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else PRINTTEXT(".\n"); PRINT("<br/>");
+}
 <INITIAL>". "/{BLANK}		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else PRINTTEXT(".\n"); }
 <INITIAL>"."/{BLANK}		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else PRINTTEXT(".\n"); }
 <INITIAL>{WS}"."		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else COPYTEXT; }
 <INITIAL>{WS_NL}{WS_NL}		{ if (0 < STATE(wlex_format_lock)) PRINT(yytext); else wlex_reset (~0); }
- <INITIAL>{WS_NL}		{ if (0 < STATE(wlex_format_lock)) 
+<INITIAL>{WS_NL}		{ if (0 < STATE(wlex_format_lock)) 
  				    PRINT(yytext); 
 				  else
 				    {
@@ -750,46 +862,38 @@ WIKTOLOGYSTOP   (".end"|".END")
 				         wlex_headerlevel(0); 
 				      PRINTTEXT(" "); 
 				    }
+				  PRINT("<br/>");
 				}
 
 	/* Titles */
-<INITIAL,TABLELINE>^{WS}*"---"([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"---#"{WS}	{ BEGIN(INITIAL); wlex_headerlevel (1); }
-<INITIAL,TABLELINE>^{WS}*"--"([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"--#"{WS}	{ BEGIN(INITIAL); wlex_headerlevel (1); }
-<INITIAL,TABLELINE>^{WS}*"---"("-"*)([+]+)	{ BEGIN(INITIAL); wlex_headerlevel (wlex_count_header_level(yytext)); }
-<INITIAL,TABLELINE>^{WS}*"------#"{WS}	{ BEGIN(INITIAL); wlex_headerlevel (1); }
+<INITIAL,TABLELINE>^{WS}*"====="	{ BEGIN(INITIAL); wlex_headerlevel (5); }
+<INITIAL,TABLELINE>^{WS}*"===="		{ BEGIN(INITIAL); wlex_headerlevel (4); }
+<INITIAL,TABLELINE>^{WS}*"==="		{ BEGIN(INITIAL); wlex_headerlevel (3); }
+<INITIAL,TABLELINE>^{WS}*"=="		{ BEGIN(INITIAL); wlex_headerlevel (2); } 
+
+<INITIAL,TABLELINE>"====="	{ wlex_reset (~0); }
+<INITIAL,TABLELINE>"===="	{ wlex_reset (~0); }
+<INITIAL,TABLELINE>"==="	{ wlex_reset (~0); }
+<INITIAL,TABLELINE>"=="		{ wlex_reset (~0); }
+
 <INITIAL,TABLELINE>"!!"		{ if (STATE(wlex_headerlevel)) PRINT("<NOTOC />"); else PRINT(yytext); }
 
-	/* Lists */
-<INITIAL,TABLELINE>^([ ][ ][ ])+"*"{WS}			{ BEGIN(INITIAL); wlex_list ((strchr(yytext, '*') - yytext) / 3, WLEX_LIST_UL, NULL); }
-<INITIAL,TABLELINE>^([ ][ ][ ])+[1-9]([0-9]*)([.]?){WS}	{ BEGIN(INITIAL); wlex_list ((strdigit(yytext) - yytext) / 3, WLEX_LIST_OL, NULL); }
-<INITIAL,TABLELINE>^([ ][ ][ ])+{DEFTERM}":"{WS}	{ BEGIN(INITIAL); wlex_list ((strnonws(yytext) - yytext) / 3, WLEX_LIST_DL, yytext); }
-<INITIAL,TABLELINE>^([\t])+"*"{WS}			{ BEGIN(INITIAL); wlex_list (strchr(yytext, '*') - yytext, WLEX_LIST_UL, NULL); }
-<INITIAL,TABLELINE>^([\t])+[1-9]([0-9]*)([.]?){WS}	{ BEGIN(INITIAL); wlex_list (strdigit(yytext) - yytext, WLEX_LIST_OL, NULL); }
-<INITIAL,TABLELINE>^([\t])+{DEFTERM}":"{WS}		{ BEGIN(INITIAL); wlex_list (strnonws(yytext) - yytext, WLEX_LIST_DL, yytext); }
-
 	/* Font processing */
-<INITIAL,TABLELINE>{WS}*{MFONTMODS}		{ COPYTEXT; }
-
-<INITIAL,TABLELINE>{WS}*"__"/{NOTAWORDSTART}	{ if (WLEX_FONT_BU == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>{WS}*"*"/{NOTAWORDSTART}	{ if (WLEX_FONT_B == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>{WS}*"_"/{NOTAWORDSTART}	{ if (WLEX_FONT_U == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>{WS}*"=="/{NOTAWORDSTART}	{ if (WLEX_FONT_BTT == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>{WS}*"="/{NOTAWORDSTART}	{ if (WLEX_FONT_TT == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-<INITIAL,TABLELINE>{WS}*"/"/{NOTAWORDSTART}	{ if (WLEX_FONT_I == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
-
-<INITIAL,TABLELINE>{WS}*"__"/{BUWORD}		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BU); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}*"*"/{BWORD}		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}*"_"/{UWORD}		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_U); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}*"=="/{BTTWORD}		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BTT); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}*"="/{TTWORD}		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_TT); } else COPYTEXT; }
-<INITIAL,TABLELINE>{WS}*"/"/{IWORD}		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
-
+<INITIAL,TABLELINE>"//"		{ if (WLEX_FONT_I == STATE(wlex_font)[0]) wlex_font_pop(); else wlex_font (WLEX_FONT_I); }
+<INITIAL,TABLELINE>^"//"	{ if (WLEX_FONT_I == STATE(wlex_font)[0]) wlex_font_pop(); else wlex_font (WLEX_FONT_I); }
+<INITIAL,TABLELINE>"**"		{ if (WLEX_FONT_B == STATE(wlex_font)[0]) wlex_font_pop(); else wlex_font (WLEX_FONT_B); }
+<INITIAL,TABLELINE>^"**"	{ if (WLEX_FONT_B == STATE(wlex_font)[0]) wlex_font_pop(); else wlex_font (WLEX_FONT_B); }
 <TABLEHEADER>{WS}"*"		{ STATE(wlex_in_any_text) = 1; }
+	/* Lists */
+<INITIAL,TABLELINE>^{LISTMARK}+			{ BEGIN(INITIAL); creolewlex_wiki_list (yytext); }
+<INITIAL,TABLELINE>^("*:"){WS}+			{ PRINT (yytext + 2); } 
+
+
+
+
  
 	/* Other formatting */
-<INITIAL,TABLELINE>^({WS}?)"---"			{ PRINT("<HR />"); }
+<INITIAL,TABLELINE>^({WS}?)"----"			{ PRINT("<HR />"); }
 <INITIAL,TABLELINE>^({WS}?)"#"{WIKIWORD}	{
 	PRINT("<A NAME=\"");
 	PRINT(strchr (yytext, '#')+1);
@@ -810,8 +914,6 @@ WIKTOLOGYSTOP   (".end"|".END")
 	PRINT("<?"); NPRINT(yytext+1,lbrace-(yytext+1)); PRINT(" param=");
 	NPRINT(lbrace+1, rbrace-(lbrace+1)); PRINT("?>");
     }
-<INITIAL,TABLELINE>{INLINEMACRO}	{ COPYTEXT; }
-	
 
 	/* Tables */
 <INITIAL>^{WS}?/{THROW}		{ wlex_reset(~WLEX_RESET_LIST); BEGIN(TABLEHEADER);  STATE(wlex_in_any_text) = 1; PRINT("\n<TABLE class=\"wikitable\">"); }
@@ -839,11 +941,6 @@ WIKTOLOGYSTOP   (".end"|".END")
 <TABLELINE>.				{ PRINT(yytext); }
 
 
-	/* Inlined verbatims
-	<INITIAL>"<CODE>"({NOTENDOFCODE}*)({S_NL}({NOTENDOFCODE}+))*({S_NL}?)({WS}?)"</CODE>"	{ COPYTEXT; }
-	<INITIAL>"<CODE>"({NOTENDOFCODE}*)({S_NL}({NOTENDOFCODE}+))*{WS_NL}{WS_NL}			{ COPYTEXT; }
-	<INITIAL>"</CODE>"						{ LEXERROR("</CODE> is found but no <CODE> before it"); }
-	*/
 
 	/* Others */
 <*>{SIMPLEWORD}			{ COPYTEXT; }
@@ -856,7 +953,7 @@ WIKTOLOGYSTOP   (".end"|".END")
 /*<INITIAL>.([^ \t\r\n\[\]#*_=<A-Z1-9-]*)	{ COPYTEXT; }*/
 
 int
-wikiyywrap (void)
+creolewikiyywrap (void)
 {
   return (1);
 }
@@ -866,11 +963,11 @@ int main(int argc, char *argv[])
 {
   if (argc > 1)
     yyin = fopen (argv[1], "r");
-  wikiyylex();
+  creolewikiyylex();
   return 0;
 }
 #else
-void wikiyylex_prepare (char *text, dk_session_t *out)
+void creolewikiyylex_prepare (char *text, dk_session_t *out)
 {
   memset (&wlex_instance, 0, sizeof (wlex_instance));
   STATE (wlex_text) = text;
@@ -879,7 +976,7 @@ void wikiyylex_prepare (char *text, dk_session_t *out)
   BEGIN(INITIAL);
 }
 
-static void wikiyylexerror (char * msg)
+void creolewikiyylexerror (char * msg)
 {
   du_thread_t * self = THREAD_CURRENT_THREAD;
   caddr_t * err = dk_alloc_box_zero (3 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);

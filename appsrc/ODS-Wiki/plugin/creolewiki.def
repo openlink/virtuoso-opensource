@@ -1,0 +1,3 @@
+LIBRARY CREOLEWIKI
+EXPORTS
+  creolewiki_check @1

@@ -19,7 +19,7 @@
 #  
 #  
 
-lib_LTLIBRARIES = wikiv.la mediawiki.la
+lib_LTLIBRARIES = wikiv.la mediawiki.la creolewiki.la
 
 wikiv_la_SOURCES = \
 	wikiv.c \
@@ -37,7 +37,7 @@ wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
 
 wikiv_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
-wikiv_la_LDFLAGS = -module -avoid-version -export-dynamic
+wikiv_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols wikiv.exp
 
 mediawiki_la_SOURCES = \
 	mediawiki.c \
@@ -55,30 +55,59 @@ mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
 
 mediawiki_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
-mediawiki_la_LDFLAGS = -module -avoid-version -export-dynamic
+mediawiki_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols mediawiki.exp
 
-BUILT_SOURCES = maclex.c wikilex.c media_maclex.c media_wikilex.c
-CLEANFILES = maclex.c wikilex.c media_maclex.c media_wikilex.c
+creolewiki_la_SOURCES = \
+	creolewiki.c \
+	media_maclex.c \
+	media_wikilex.c \
+	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+
+creolewiki_la_CFLAGS  = @VIRT_AM_CFLAGS@
+creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc
+creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
+creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
+creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
+creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
+creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
+creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
+
+creolewiki_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
+creolewiki_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols creolewiki.exp
+
+BUILT_SOURCES = \
+	maclex.c wikilex.c \
+	media_maclex.c media_wikilex.c \
+	creole_maclex.c creole_wikilex.c
+
+CLEANFILES = \
+	maclex.c wikilex.c \
+	media_maclex.c media_wikilex.c \
+	creole_maclex.c creole_wikilex.c \
+	lex.macyy.c lex.wikiyy.c \
+	lex.mediamacyy.c lex.mediawikiyy.c \
+	lex.creolemacyy.c lex.creolewikiyy.c
+
+GEN=${top_srcdir}/bin/generate
 
 maclex.c: maclex.l
-	echo "$(LEX) -8 -Pmacyy $(srcdir)/maclex.l failed" > lex.macyy.c
-	$(LEX) -8 -Pmacyy $(srcdir)/maclex.l
-	mv lex.macyy.c maclex.c
+	$(GEN) $(FLEX) -o maclex.c -t -8 -Pmacyy $(srcdir)/maclex.l
 
 wikilex.c: wikilex.l
-	echo "$(LEX) -8 -Pwikiyy $(srcdir)/wikilex.l failed" > lex.wikiyy.c
-	$(LEX)  -8 -Pwikiyy $(srcdir)/wikilex.l
-	mv lex.wikiyy.c wikilex.c
+	$(GEN) $(FLEX) -o wikilex.c -t -8 -Pwikiyy $(srcdir)/wikilex.l
 
 media_maclex.c: media_maclex.l
-	echo "$(LEX) -8 -Pmediamacyy $(srcdir)/media_maclex.l failed" > lex.macyy.c
-	$(LEX) -8 -Pmediamacyy $(srcdir)/media_maclex.l
-	mv lex.mediamacyy.c media_maclex.c
+	$(GEN) $(FLEX) -o media_maclex.c -t -8 -Pmediamacyy $(srcdir)/media_maclex.l
 
 media_wikilex.c: media_wikilex.l
-	echo "$(LEX) -8 -Pmediawikiyy $(srcdir)/wikilex.l failed" > lex.wikiyy.c
-	$(LEX)  -8 -Pmediawikiyy $(srcdir)/media_wikilex.l
-	mv lex.mediawikiyy.c media_wikilex.c
+	$(GEN) $(FLEX) -o media_wikilex.c -t -8 -Pmediawikiyy $(srcdir)/media_wikilex.l
+
+creole_maclex.c: creole_maclex.l
+	$(GEN) $(FLEX) -o creole_maclex.c -t -8 -Pcreolemacyy $(srcdir)/creole_maclex.l
+
+creole_wikilex.c: creole_wikilex.l
+	$(GEN) $(FLEX) -o creole_wikilex.c -t -8 -Pcreolewikiyy $(srcdir)/creole_wikilex.l
+
 
 # ----------------------------------------------------------------------
 #
@@ -86,9 +115,11 @@ media_wikilex.c: media_wikilex.l
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+ 	*.def \
+	*.exp \
 	maclex.l \
+	wikilex.l \
 	media_maclex.l \
 	media_wikilex.l \
-	mediawiki.def \
-	wikilex.l \
-	wikiv.def
+	creole_maclex.l \
+	creole_wikilex.l
