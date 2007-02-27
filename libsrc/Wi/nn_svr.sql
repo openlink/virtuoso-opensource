@@ -1355,7 +1355,7 @@ ns_post (in _message any)
 {
   declare _from, _newsgroups, _ref, _id, _id_old, _news_all, _org, grp_type varchar;
   declare _parse, _head, _body, _nntp_path, _nntp_phost, _news_gr_list any;
-  declare _ng_group, _num, _ng_num, _mode, _fng_server, _check_addr integer;
+  declare _ng_group, _num, _ng_num, _mode, _fng_server, _check_addr, _retr integer;
 
   _mode := 1;
 
@@ -1518,9 +1518,12 @@ next:
 	return;
       };
 
+      _retr := registry_get ('__nntp_self_retr');
+      if (_retr = 0) _retr:= 3;
+
       insert soft DB.DBA.NEWS_MSG (NM_ID, NM_REF, NM_REC_DATE, NM_BODY,
-         NM_HEAD, NM_READ, NM_STAT, NM_TYPE)
-          values (_id, _ref, now(), _body, serialize (_parse), 0, 0, grp_type);
+         NM_HEAD, NM_READ, NM_STAT, NM_TYPE, NM_TRY_POST)
+          values (_id, _ref, now(), _body, serialize (_parse), 0, 0, grp_type, _retr);
 
       insert soft DB.DBA.NEWS_MULTI_MSG (NM_KEY_ID, NM_GROUP, NM_NUM_GROUP)
         values ( _id, _ng_group, _num);
@@ -1559,17 +1562,18 @@ next:
 create procedure
 ns_post_out ()
 {
-   declare _nm_body, _nm_stat, _nm_id any;
+   declare _nm_body, _nm_id, _nm_group any;
 
    whenever not found goto nf;
 
-   declare cr cursor for select blob_to_string (NM_BODY), NM_ID, NM_STAT
-       from DB.DBA.NEWS_MSG where NM_STAT > 0;
+   declare cr cursor for select blob_to_string (NM_BODY), NM_ID
+       from DB.DBA.NEWS_MSG where NM_STAT > 0 and NM_TRY_POST is not NULL;
    open cr (exclusive, prefetch 1);
    while (1)
      {
-       fetch cr into _nm_body, _nm_id, _nm_stat;
-       ns_post_out_core (_nm_body, _nm_id, _nm_stat);
+       fetch cr into _nm_body, _nm_id;
+       select top 1 NM_GROUP into _nm_group from DB.DBA.NEWS_MULTI_MSG where NM_KEY_ID = _nm_id;
+       ns_post_out_core (_nm_body, _nm_id, _nm_group);
      }
 
  nf:
@@ -1583,18 +1587,19 @@ ns_post_out ()
 create procedure
 ns_post_out_id (in _nm_id varchar)
 {
-   declare _nm_body, _nm_stat any;
+   declare _nm_body, _nm_group any;
 
    whenever not found goto nf;
 
-   declare cr cursor for select blob_to_string (NM_BODY), NM_STAT
-       from DB.DBA.NEWS_MSG where NM_ID = _nm_id;
+   select top 1 NM_GROUP into _nm_group from DB.DBA.NEWS_MULTI_MSG where NM_KEY_ID = _nm_id;
+
+   declare cr cursor for select blob_to_string (NM_BODY) from DB.DBA.NEWS_MSG where NM_ID = _nm_id;
 
    open cr (exclusive, prefetch 1);
 
-   fetch cr into _nm_body, _nm_stat;
+   fetch cr into _nm_body;
 
-   ns_post_out_core (_nm_body, _nm_id, _nm_stat);
+   ns_post_out_core (_nm_body, _nm_id, _nm_group);
 
  nf:
      close cr;
@@ -1607,15 +1612,17 @@ ns_post_out_id (in _nm_id varchar)
 
 
 create procedure
-ns_post_out_core (inout _nm_body any, inout _nm_id varchar, inout _nm_stat integer)
+ns_post_out_core (inout _nm_body any, inout _nm_id varchar, inout _group_in integer)
 {
    declare _ns_server, _ns_user, _ns_pass varchar;
    declare state, msg varchar;
    declare _ns_port, _ng_server integer;
 
-   select NG_SERVER into _ng_server from DB.DBA.NEWS_GROUPS where NG_GROUP = _nm_stat - 1;
+   select NG_SERVER into _ng_server from DB.DBA.NEWS_GROUPS where NG_GROUP = _group_in;
+
    select NS_SERVER, NS_PORT, NS_USER, NS_PASS into _ns_server, _ns_port, _ns_user, _ns_pass
      from DB.DBA.NEWS_SERVERS where NS_ID = _ng_server;
+
    _ng_server := sprintf ('%s:%i', _ns_server, _ns_port);
    state := '00000';
    commit work;
@@ -1627,7 +1634,9 @@ ns_post_out_core (inout _nm_body any, inout _nm_id varchar, inout _nm_stat integ
          vector (_ng_server, _ns_user, _ns_pass, _nm_body));
 
    if (state = '00000' or msg like '% 441 435 Duplicate%')
-     update DB.DBA.NEWS_MSG set NM_STAT = 0 where NM_ID= _nm_id;
+     update DB.DBA.NEWS_MSG set NM_STAT = 0, NM_TRY_POST = NULL where NM_ID= _nm_id;
+   else
+     update DB.DBA.NEWS_MSG set NM_TRY_POST = either (NM_TRY_POST - 1, NM_TRY_POST - 1, NULL) where NM_ID= _nm_id;
 }
 ;
 
