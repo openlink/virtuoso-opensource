@@ -346,7 +346,15 @@ normalize_value (lenmem_t * lsp);
 /* Functions that in common use for dtd.c and xmlread.c */
 extern int test_ws (struct vxml_parser_s * parser);
 extern int get_att_name (struct vxml_parser_s * parser);
-extern int test_char (struct vxml_parser_s * parser, unichar ch);
+extern int test_char_int (struct vxml_parser_s * parser, unichar ch);
+#define test_char(parser,ch) \
+  (((0 != parser->src_eh->eh_stable_ascii7) && \
+    (parser->pptr.ptr == (parser->eptr.ptr-1)) && \
+    (parser->pptr.ptr[0] != ch) && \
+    (parser->pptr.buf == (parser->eptr.buf)) && \
+    (parser->pptr.ptr[0] != '%') ) ? \
+   0 : test_char_int (parser, ch) )
+
 extern char* get_encoded_name (struct vxml_parser_s* parser, unichar* beg, unichar* end,
 			   char** name, dtd_validator_t* validator);
 extern int dtd_get_att_type (struct vxml_parser_s* parser,

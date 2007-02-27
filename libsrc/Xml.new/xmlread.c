@@ -43,6 +43,49 @@
 #define xml_dbg_printf(a)
 #endif
 
+unsigned char vxml_char_props [0x100] = {
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+  'B','@','@','@','@','@','@','@','@','B','C','@','@','C','@','@',
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+  '@','@','@','@','@','@','@','@','@','@','@','@','@','@','@','@',
+/*     !   "   #   $   %   &   '   (   )   *   +   ,   -   .   /  */
+  'B','@','H','@','@','P','P','H','@','@','@','@','@','@','@','@',
+/* 0   1   2   3   4   5   6   7   8   9   :   ;   <   =   >   ?  */
+  '@','@','@','@','@','@','@','@','@','@','@','@','D','@','@','@',
+/* @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O  */
+  '@', 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
+/* P   Q   R   S   T   U   V   W   X   Y   Z   [   \   ]   ^   _  */
+   0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,'@','@','D','@','@',
+/* `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o  */
+  '@', 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
+/* p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~  \x7f*/
+   0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,'@','@','@','@','@',
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`',
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+  '`','`','`','`','`','`','`','`','`','`','`','`','`','`','`','`' };
+
+#define VXML_CHARPROP_CTRL		((unsigned char)('A'^'@'))	/*0x01*/
+#define VXML_CHARPROP_SPACE		((unsigned char)('B'^'@'))	/*0x02*/
+#define VXML_CHARPROP_TEXTEND		((unsigned char)('D'^'@'))	/*0x04*/
+#define VXML_CHARPROP_ATTREND		((unsigned char)('H'^'@'))	/*0x08*/
+#define VXML_CHARPROP_ENTBEGIN		((unsigned char)('P'^'@'))	/*0x10*/
+#define VXML_CHARPROP_8BIT		((unsigned char)('`'^'@'))	/*0x20*/
+#define VXML_CHARPROP_ANY_SPECIAL	((unsigned char)(~'@'))		/*0xcf*/
+#define VXML_CHARPROP_ANY_NONCHAR	((unsigned char)(~0))		/*0xcf*/
+
 #ifndef NO_validate_parser_bricks
 static int validate_brick (brick_t *brk)
 {
@@ -85,6 +128,49 @@ int validate_parser_bricks (vxml_parser_t * parser)
   return 0;
 error:
   return -1;
+}
+#endif
+
+#if 0
+unichar get_many_plain_tok_chars (vxml_parser_t * parser, utf8char **tgtbuf_tail_ptr, utf8char *tgtbuf_end, unsigned char stop_at)
+{
+#ifdef DEBUG
+  if (0 == parser->src_eh->eh_stable_ascii7)
+    GPF_T;
+  if (!(stop_at & VXML_CHARPROP_8BIT))
+    GPF_T;
+#endif
+  tgtbuf_end -= (MAX_UTF8_CHAR+1); /* This is to  */
+  if (parser->static_src_tail < parser->static_src_end)
+    {
+      do {
+          utf8char c;
+          if (tgtbuf_tail_ptr [0] >= tgtbuf_end)
+            goto end_of_tgtbuf_fill;
+          c = parser->static_src_tail[0];
+          if (vxml_char_props [c] & stop_at)
+            goto end_of_tgtbuf_fill;
+          ((tgtbuf_tail_ptr[0])++)[0] = c;
+          parser->static_src_tail++;
+        } while (parser->static_src_tail < parser->static_src_end);
+      goto end_of_tgtbuf_fill;
+    }
+  if (parser->feeder == NULL)
+    return UNICHAR_EOD;
+  while (parser->feed_tail < parser->feed_end)
+    {
+      utf8char c;
+      if (tgtbuf_tail_ptr [0] >= tgtbuf_end)
+        goto end_of_tgtbuf_fill;
+      c = parser->feed_tail[0];
+      if (vxml_char_props [c] & stop_at)
+        goto end_of_tgtbuf_fill;
+      ((tgtbuf_tail_ptr[0])++)[0] = c;
+      parser->feed_tail++;
+    }
+
+end_of_tgtbuf_fill:
+  return get_tok_char (parser);
 }
 #endif
 
@@ -489,12 +575,77 @@ normalize_name (buf_range_t * brp)
     }
 }
 
+#ifdef DEBUG
+int grand_total_skip_ctr = 0;
+int grand_total_get_ctr = 0;
+#endif
+
+int
+skip_plain_tok_chars (vxml_parser_t * parser, int stop_at)
+{
+  utf8char *ebuf_end;
+  utf8char *range_begin = (utf8char *)(parser->eptr.ptr);
+  int res;
+#ifndef NDEBUG
+  if (0 == parser->src_eh->eh_stable_ascii7)
+    GPF_T;
+  if (parser->eptr.ptr != parser->pptr.ptr)
+    GPF_T;
+#endif
+  ebuf_end = (utf8char *)(parser->eptr.buf->end) - (MAX_UTF8_CHAR+1);
+  if (parser->static_src_tail < parser->static_src_end)
+    {
+      do {
+          utf8char c;
+          if (parser->eptr.ptr >= ebuf_end)
+            goto end_of_ebuf_fill;
+          c = parser->static_src_tail[0];
+          if (vxml_char_props [c] & stop_at)
+            goto end_of_ebuf_fill;
+          ((parser->eptr.ptr)++)[0] = c;
+          parser->static_src_tail++;
+        } while (parser->static_src_tail < parser->static_src_end);
+      goto end_of_ebuf_fill;
+    }
+  if (parser->feeder == NULL)
+    goto end_of_ebuf_fill;
+  while (parser->feed_tail < parser->feed_end)
+    {
+      utf8char c;
+      if (parser->eptr.ptr >= ebuf_end)
+        goto end_of_ebuf_fill;
+      c = parser->feed_tail[0];
+      if (vxml_char_props [c] & stop_at)
+        goto end_of_ebuf_fill;
+      ((parser->eptr.ptr)++)[0] = c;
+      parser->feed_tail++;
+    }
+end_of_ebuf_fill:
+  parser->pptr.ptr = parser->eptr.ptr;
+  res = ((utf8char *)(parser->eptr.ptr) - range_begin);
+  parser->curr_pos.col_c_num += res;
+#ifdef DEBUG
+  grand_total_skip_ctr += res;
+  /*{
+    int ctr;
+    printf ("skip_plain_tok_chars(..., %d): |", stop_at);
+    for (ctr = 0; ctr < res; ctr++)
+      putchar (range_begin[ctr]);
+    printf ("|\n");
+  }*/
+#endif
+  return res;
+}
+
 
 unichar
 get_tok_char (vxml_parser_t * parser)
 {
   unichar c;
   char *put_tmp;
+#ifdef DEBUG
+  grand_total_get_ctr++;
+#endif
 
 #ifndef NO_validate_parser_bricks
   static int ctr = 0;
@@ -666,14 +817,15 @@ test_case_string (vxml_parser_t * parser, const char * s,
 }
 
 int
-test_char (vxml_parser_t * parser, unichar ch)
+test_char_int (vxml_parser_t * parser, unichar ch)
 {
   unichar c;
   buf_ptr_t rem = parser->pptr;
-
   c = get_tok_char (parser);
   if (c == ch)
+    {
     return 1;
+    }
   else if ('%' == c)
     {
       parser->pptr = rem;
@@ -813,6 +965,8 @@ test_class_str (vxml_parser_t * parser, const xml_char_class_t cclass)
 
   for (;;)
     {
+      if ((0 != parser->src_eh->eh_stable_ascii7) && (parser->pptr.ptr == parser->eptr.ptr))
+        skip_plain_tok_chars (parser, VXML_CHARPROP_ANY_NONCHAR);
       tmp = parser->pptr;
       c = get_tok_char (parser);
       switch (c)
@@ -1022,6 +1176,8 @@ get_value (vxml_parser_t * parser, int dtd_body)
   rem = parser->pptr;
   for (;;)
     {
+      if ((0 != parser->src_eh->eh_stable_ascii7) && (parser->pptr.ptr == parser->eptr.ptr))
+        skip_plain_tok_chars (parser, VXML_CHARPROP_8BIT | VXML_CHARPROP_CTRL | VXML_CHARPROP_ENTBEGIN | VXML_CHARPROP_ATTREND);
       tmp = parser->pptr;
       c = get_tok_char (parser);
       if (c == delim)
@@ -1064,6 +1220,8 @@ get_attr_value (vxml_parser_t * parser, int dtd_body)
 	  parser->pptr = rem;
 	  for (;;)
 	    {
+              if ((0 != parser->src_eh->eh_stable_ascii7) && (parser->pptr.ptr == parser->eptr.ptr))
+                skip_plain_tok_chars (parser, VXML_CHARPROP_8BIT | VXML_CHARPROP_SPACE | VXML_CHARPROP_CTRL | VXML_CHARPROP_ENTBEGIN | VXML_CHARPROP_ATTREND | VXML_CHARPROP_TEXTEND);
 	      tmp = parser->pptr;
 	      c = get_tok_char (parser);
 	      switch (c)
@@ -1072,6 +1230,8 @@ get_attr_value (vxml_parser_t * parser, int dtd_body)
 		case 0x9:
 		case 0xD:
 		case 0xA:
+		case '"':
+		case '\'':
 		  goto html_value_ended;
 		case '&':
 		  {
@@ -1113,6 +1273,11 @@ html_value_ended:
 
   for (;;)
     {
+      if ((0 != parser->src_eh->eh_stable_ascii7) && (parser->pptr.ptr == parser->eptr.ptr))
+        {
+          if (skip_plain_tok_chars (parser, VXML_CHARPROP_8BIT | VXML_CHARPROP_CTRL | VXML_CHARPROP_ENTBEGIN | VXML_CHARPROP_ATTREND))
+	    last_char_replaced = 0;
+        }
       tmp = parser->pptr;
       c = get_tok_char (parser);
       if (c == delim && !last_char_replaced)
@@ -2941,7 +3106,8 @@ character_data:
 	      handle_char_data(parser, parser->bptr, parser->pptr);
 	      advance_ptr (parser);
 	    }
-
+          if ((0 != parser->src_eh->eh_stable_ascii7) && (parser->pptr.ptr == parser->eptr.ptr))
+            skip_plain_tok_chars (parser, VXML_CHARPROP_8BIT | VXML_CHARPROP_TEXTEND | VXML_CHARPROP_CTRL | VXML_CHARPROP_ENTBEGIN);
 	  tmp = parser->pptr;
 	  c = get_tok_char (parser);
 	}

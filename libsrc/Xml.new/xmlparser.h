@@ -171,12 +171,12 @@ do { \
  } while (0)
 
 typedef struct vxml_parser_attrdata_s {
-  tag_attr_t *local_attrs;
-  size_t local_attrs_count;
-  nsdecl_t *local_nsdecls;
-  size_t local_nsdecls_count;
-  nsdecl_t *all_nsdecls;
-  size_t all_nsdecls_count;
+  tag_attr_t *local_attrs;	/*!< Attributes of the local tag */
+  size_t local_attrs_count;	/*!< Number of used element in \c local_attrs array */
+  nsdecl_t *local_nsdecls;	/*!< Namespace declarations made in the current opening tag */
+  size_t local_nsdecls_count;	/*!< Number of used element in \c local_nsdecls array */
+  nsdecl_t *all_nsdecls;	/*!< All namespace declarations in all ancestor-or-self tags, as a stack. It may contain duplicates so always search from end to begin */
+  size_t all_nsdecls_count;	/*!< Number of used element in \c all_nsdecls array */
 } vxml_parser_attrdata_t;
 
 typedef void (*VXmlStartElementHandler)
