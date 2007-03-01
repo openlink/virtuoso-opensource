@@ -275,7 +275,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200 "
-				Optimization="3"
+				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\tidy;..\binsrc\driver;."
 				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;O12;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG"
 				MinimalRebuild="true"
@@ -691,6 +691,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sparql_qm.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sparql_sff.c"
 				>
 			</File>
 			<File
