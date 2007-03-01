@@ -30,7 +30,7 @@ THOST=${THOST-localhost}
 PORT=${PORT-1940}
 TPORT=${TPORT-`expr $PORT + 1000`}
 ISQL=${ISQL-isql}
-VAD_NAME="polls"
+VAD_NAME="ods_polls"
 VAD_DAV="$VAD_NAME"_dav.vad
 VAD_FS="$VAD_NAME"_filesystem.vad
 DSN="$HOST:$PORT"
@@ -54,6 +54,22 @@ else
   RM="rm -f"
 fi
 
+VOS=0
+if [ -f ../../autogen.sh ]
+then
+    VOS=1
+fi
+
+if [ "z$SERVER" = "z" ]  
+then
+    if [ "x$HOST_OS" != "x" ]
+    then
+	SERVER=virtuoso-odbc-t.exe
+    else
+	SERVER=virtuoso
+    fi
+fi
+
 rm -rf vad
 
 . $HOME/binsrc/tests/suite/test_fn.sh
@@ -73,11 +89,11 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "x$HOST_OS" != "x" ]
+  if [ "z$HOST_OS" != "z" ] 
   then
-    $BUILD/../bin/virtuoso-odbc-t +foreground &
+      "$SERVER" +foreground &
   else
-    virtuoso #+wait
+      "$SERVER" +wait
   fi
   stat="true"
   while true
@@ -110,7 +126,7 @@ do_command_safe () {
   shift
   shift
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if [ "x$HOST_OS" != "x" ]
+  if [ "x$HOST_OS" != "x"  -a "z$BUILD" != "z" ]
         then
           $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
         else
@@ -351,8 +367,8 @@ then
 fi
 virtuoso_shutdown
 STOP_SERVER
-chmod 644 polls_dav.vad
-chmod 644 polls_filesystem.vad
+chmod 644 $VAD_DAV
+chmod 644 $VAD_FS
 directory_clean
 
 echo 'Successful create'

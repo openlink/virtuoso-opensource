@@ -322,6 +322,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mediawiki", "mediawiki.vcpr
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ods_polls_vad", "polls_vad.vcproj", "{FAB7D8D8-C7DD-11DB-930B-CD6B662399AA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AFB1D909-86D0-49DE-8BD8-DF89349F934E} = {AFB1D909-86D0-49DE-8BD8-DF89349F934E}
+		{7DF920B2-EFDA-11DA-988C-EBAD6065650A} = {7DF920B2-EFDA-11DA-988C-EBAD6065650A}
+		{F4E88BFA-FC96-439D-9E67-0A92AB541EE0} = {F4E88BFA-FC96-439D-9E67-0A92AB541EE0}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -544,6 +551,10 @@ Global
 		{408E2482-2623-11DB-9BB9-97600548391D}.Debug.Build.0 = Debug|Win32
 		{408E2482-2623-11DB-9BB9-97600548391D}.Release.ActiveCfg = Release|Win32
 		{408E2482-2623-11DB-9BB9-97600548391D}.Release.Build.0 = Release|Win32
+		{FAB7D8D8-C7DD-11DB-930B-CD6B662399AA}.Debug.ActiveCfg = Debug|Win32
+		{FAB7D8D8-C7DD-11DB-930B-CD6B662399AA}.Debug.Build.0 = Debug|Win32
+		{FAB7D8D8-C7DD-11DB-930B-CD6B662399AA}.Release.ActiveCfg = Release|Win32
+		{FAB7D8D8-C7DD-11DB-930B-CD6B662399AA}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

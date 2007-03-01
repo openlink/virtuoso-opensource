@@ -394,6 +394,9 @@
 				RelativePath="..\libsrc\Wi\sparql_qm.c">
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\sparql_sff.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\sql3_vc.c">
 			</File>
 			<File
