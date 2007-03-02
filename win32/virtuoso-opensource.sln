@@ -314,7 +314,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ods_discussion_vad", "nntpf
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "isparql_vad", "isparql_vad.vcproj", "{6260E42E-239D-11DB-9594-FD7021681415}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sparql_demo_vad", "isparql_vad.vcproj", "{6260E42E-239D-11DB-9594-FD7021681415}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
