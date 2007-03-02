@@ -235,16 +235,15 @@ AC_PROG_LN_S
 AC_PROG_YACC
 ## AC_CHECK_PROGS(YACC, yacc byacc 'bison -l', yacc)
 
-AM_PROG_LEX
-if test "$LEX" != flex ; then
- AC_MSG_ERROR(You need to install flex)
-fi
 
 AC_PATH_PROG(HTMLDOC, htmldoc)
 AM_CONDITIONAL(WITH_HTMLDOC, test "x$HTMLDOC" != "x")
 
+AM_PROG_LEX
+
+AC_PATH_PROG(FLEX, flex, flex)
 AC_PATH_PROG(GAWK, gawk, gawk)
-AC_PATH_PROG(GPERF,gperf, gperf)
+AC_PATH_PROG(GPERF, gperf, gperf)
 AC_PATH_PROG(PERL, perl, perl)
 AC_PATH_PROG(PYTHON, python, python)
 AC_PATH_PROG(RUBY, ruby, ruby)
