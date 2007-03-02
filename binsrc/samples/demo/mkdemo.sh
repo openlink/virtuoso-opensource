@@ -387,7 +387,8 @@ cat >> virtuoso.ini <<END_CFG
 LoadPath = ./plugin
 Load1    = plain, wikiv
 Load2    = plain, mediawiki
-Load3    = plain, im
+Load3    = plain, creolewiki
+Load4    = plain, im
 END_CFG
 
 if [ ! -d plugin ] 
@@ -404,6 +405,7 @@ else
     cp -f $HOME/binsrc/samples/image_magick/.libs/im.so plugin
     cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/wikiv.so plugin
     cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/mediawiki.so plugin
+    cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/creolewiki.so plugin
 fi
 
 HOSTNAME=`uname -n`
@@ -785,6 +787,7 @@ then
     DO_COMMAND "vad_install ('ods_discussion_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_feedmanager_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_gallery_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_polls.vad')" dba dba
     DO_COMMAND "vad_install ('ods_webmail_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_wiki_dav.vad')" dba dba
     DO_COMMAND "delete from wa_domains where WD_DOMAIN = 'localhost'" dba dba
