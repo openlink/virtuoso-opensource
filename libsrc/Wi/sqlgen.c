@@ -1369,11 +1369,6 @@ sqlg_set_stmt (sqlo_t * so, df_elt_t * qexp, ST ** target_names)
   if (!sc->sc_super)
     sel->src_gen.src_input = (qn_input_fn) select_node_input;
 #endif
-#if UNIVERSE
-  /* The union may have acquired remote queries so make it always mixed. */
-  if (cc->cc_query->qr_remote_mode == QR_LOCAL)
-    cc->cc_query->qr_remote_mode = QR_MIXED;
-#endif
   return ((data_source_t*) un);
 }
 

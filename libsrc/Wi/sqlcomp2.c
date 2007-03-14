@@ -59,12 +59,7 @@ sqlc_mark_last_ts_in_join (sql_comp_t * sc, comp_table_t * ct)
   table_source_t *ts = ct->ct_ts;
 #endif
 }
-#if UNIVERSE
-#define CT_IS_REMOTE(ct) \
-  (ct -> ct_rts != NULL)
-#else
 #define CT_IS_REMOTE(ct) 0
-#endif
 
 void
 sqlc_opt_last_joins (sql_comp_t * sc)
@@ -904,11 +899,6 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
     sqlc_error (sc->sc_cc, ".....", "Stack Overflow");
   if (DK_MEM_RESERVE)
     sqlc_error (sc->sc_cc, ".....", "Out of memory");
-#if UNIVERSE
-  if ((tree->type != SELECT_STMT) && sqlc_pass_through_stmt (sc, tree))
-    ;
-  else
-#endif
     switch (tree->type)
       {
       case SELECT_STMT:
@@ -977,11 +967,6 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
 	sqlc_check_mpu_name (tree->_.module.name, MPU_MODULE);
 	sqlc_module_decl (sc, tree);
 	return;			/* params already in place. */
-#ifdef UNIVERSE
-      case REMOTE_ROUTINE_DECL:
-	sqlc_remote_routine_decl (sc, tree);
-	return;			/* don't need any params. */
-#endif
 
       case TRIGGER_DEF:
 	sqlc_trigger_decl (sc, tree);

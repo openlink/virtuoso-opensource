@@ -637,9 +637,6 @@ client_connection_free (client_connection_t * cli)
     }
 
   cli_scrap_cursors (cli, NULL, NULL);
-#if UNIVERSE
-  cli_rcon_free (cli);
-#endif
   hosting_clear_cli_attachments (cli, 1);
   cli_scrap_cached_statements (cli);
 
@@ -3259,9 +3256,6 @@ sql_code_arfw_global_init ()
   sqls_arfw_define_uddi ();
   sqls_arfw_define_imsg ();
   sqls_arfw_define_auto ();
-#if UNIVERSE  
-  sqls_arfw_define_vdb ();
-#endif  
 }
 
 

@@ -244,9 +244,6 @@ sec_dd_grant (dbe_schema_t * sc, const char *object, const char *column,
     }
   else if (op == GR_REXECUTE)
     {
-#if UNIVERSE
-      rds_dd_grant (object, is_grant, grantee);
-#endif
     }
   else
     {

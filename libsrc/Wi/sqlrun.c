@@ -142,11 +142,6 @@ ssl_free_data (state_slot_t * sl, caddr_t data)
     case SSL_CONSTANT:
       break;
 
-#if UNIVERSE
-    case SSL_REMOTE_STMT:
-      rst_close ((struct _rstmtstruct *) data);
-      break;
-#endif
 
     default:
       GPF_T;			/* This ssl type should not be here */

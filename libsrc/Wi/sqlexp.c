@@ -208,16 +208,6 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
 	type_name))
       return;
 
-#ifdef UNIVERSE
-  if (!fun_udt_name && proc && IS_REMOTE_ROUTINE_QR(proc))
-    {
-      if (!sec_proc_check (proc, sc->sc_client->cli_user->usr_id,
-	    sc->sc_client->cli_user->usr_g_id))
-	sqlc_new_error (sc->sc_cc, "42000", "SQ079", "No permission to execute procedure %s.", fun_name);
-      sqlc_proc_remote ((caddr_t *)sc, full_name, code, ret, params, (caddr_t) ret_param);
-      return;
-    }
-#endif
   if (fun_name /*&& !bif_find (fun_name)*/)
     {
       if (!proc)

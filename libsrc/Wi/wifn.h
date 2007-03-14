@@ -483,9 +483,6 @@ struct query_s * sch_proc_def (dbe_schema_t * sch, const char * name);
 struct query_s * sch_partial_proc_def (dbe_schema_t * sc, caddr_t name, char *q_def, char *o_def);
 struct query_s * sch_proc_exact_def (dbe_schema_t * sch, caddr_t name);
 struct query_s * sch_module_def (dbe_schema_t * sch, caddr_t name);
-#ifdef UNIVERSE
-extern void sch_set_remote_proc_def (caddr_t name, caddr_t proc);
-#endif
 #define IS_REMOTE_ROUTINE_QR(qr) ((qr) && (qr)->qr_is_remote_proc)
 void sch_set_proc_def (dbe_schema_t * sch, caddr_t name,  struct query_s * qr);
 void sch_set_module_def (dbe_schema_t * sch, caddr_t name,  struct query_s * qr);
@@ -541,16 +538,6 @@ extern long pl_debug_all;
 extern char * pl_debug_cov_file;
 extern long vt_batch_size_limit;
 extern long sqlc_add_views_qualifiers;
-#if UNIVERSE
-extern unsigned long vdb_oracle_catalog_fix; /* from odbccat.c */
-extern long vdb_attach_autocommit; /* from odbccat.c */
-extern long rds_disconnect_timeout; /* from sqlrrun.c */
-extern int32 vdb_client_fixed_thread;
-extern int prpc_disable_burst_mode;
-extern int prpc_forced_fixed_thread;
-extern int prpc_force_burst_mode;
-extern long prpc_burst_timeout_msecs;
-#endif
 extern int sqlo_max_layouts;
 extern int32 sqlo_max_mp_size;
 extern long txn_after_image_limit;

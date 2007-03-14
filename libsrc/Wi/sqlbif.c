@@ -10001,12 +10001,6 @@ bif_drop_proc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       return (dk_alloc_box (0, DV_DB_NULL));
     }
-#ifdef UNIVERSE
-  if (IS_REMOTE_ROUTINE_QR (proc))
-    {
-      sch_set_remote_proc_def (full_name, NULL);
-    }
-#endif
   if (is_proc)
     sch_set_proc_def (isp_schema (qi->qi_space), proc->qr_proc_name, NULL);
   else

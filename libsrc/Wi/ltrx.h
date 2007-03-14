@@ -516,12 +516,6 @@ void lt_timestamp (lock_trx_t * lt, char * tv_ret);
 caddr_t lt_timestamp_box (lock_trx_t * lt);
 void itc_assert_lock (it_cursor_t * itc);
 
-#if UNIVERSE
-int lt_remote_transact (lock_trx_t * lt, int is_commit);
-#endif
-
-
-
 void lt_free_rb (lock_trx_t * lt);
 
 

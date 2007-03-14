@@ -532,13 +532,6 @@ lt_2pc_prepare (lock_trx_t * lt)
   _2pc_printf (("lt_2pc_prepare\n"));
   lt->lt_status = LT_PREPARE_PENDING;
 
-#if UNIVERSE
-  if (LTE_OK != lt_remote_transact (lt, 1))
-    {
-      rc = LTE_DEADLOCK;
-      goto failed;
-    }
-#endif
   if (LTE_OK != lt_log_replication (lt))
     {
       rc = LTE_LOG_FAILED;
@@ -760,41 +753,6 @@ tp_data_free (tp_data_t * tpd)
 
 #define MSG_BUF_SIZE 300
 
-#if UNIVERSE
-void
-DoSQLError (SQLHDBC hdbc, SQLHSTMT hstmt)
-{
-
-  SQLCHAR szSqlState[MSG_BUF_SIZE];
-  SQLCHAR szErrorMsg[MSG_BUF_SIZE];
-
-  SQLINTEGER fNativeError = 0;
-  SQLSMALLINT cbErrorMsg = MSG_BUF_SIZE;
-  SQLRETURN rc;
-
-  rc = SQLError (henv,
-      hdbc,
-      hstmt,
-      szSqlState, &fNativeError, szErrorMsg, MSG_BUF_SIZE, &cbErrorMsg);
-
-  if (rc != SQL_NO_DATA_FOUND || rc != SQL_ERROR)
-    {
-      if (fNativeError != 0x1645)	/* ignore change database to master context message */
-	{
-	  _2pc_printf (("SQLError info:\n"));
-	  _2pc_printf (("SqlState: %s, fNativeError: %x\n", szSqlState,
-		  fNativeError));
-	  _2pc_printf (("Error Message: %s\n", szErrorMsg));
-	}
-    }
-  else
-    {
-      _2pc_printf (("SQLError() failed: %x, NO_DATA_FOUND OR SQL_ERROR\n",
-	      rc));
-    }
-
-}
-#endif
 
 static caddr_t
 bif_2pc_enlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1156,115 +1114,11 @@ tp_trx_enlist (rds_connection_t * rcon, query_instance_t * qi)
 tp_result_t
 tp_trx_commit_1 (lock_trx_t * lt, int is_commit)
 {
-#if UNIVERSE 
-  virt_trx_t *vtrx = (virt_trx_t *) (lt->lt_2pc._2pc_info ?
-      lt->lt_2pc._2pc_info->dtrx_info : NULL);
-  SQLUSMALLINT op = is_commit ? SQL_TP_PREPARE : SQL_TP_ABORT;
-  if (!vtrx || lt->lt_2pc._2pc_invalid)
-    {
-      return LTE_DEADLOCK;
-    }
-  if (SQL_TP_PREPARE == op)
-    {
-      virt_trx_set_state (_2pc_dtp->vtp_cli, vtrx->vtx_id,
-	  virt_tp_prepare_pending);
-      DO_SET (virt_rcon_t *, vbranch, &vtrx->vtx_cons)
-      {
-	CON (dbc, vbranch->vtr_branch_handle.l_rmt->rc_hdbc);
-	caddr_t *res;
-	future_t *f;
-	_2pc_printf (("sql_tp_transact... %x", op));
-	f = PrpcFuture (dbc->con_session, &s_sql_tp_transact, (long) op, 0);
-	res = (caddr_t *) PrpcFutureNextResult (f);
-	PrpcFutureFree (f);
-	if (!DKSESSTAT_ISSET (dbc->con_session, SST_OK) ||
-	    (res != (caddr_t *) SQL_SUCCESS))
-	  {
-	    if (res != (caddr_t *) SQL_SUCCESS)
-	      {
-		_2pc_printf (("prepare failed %s %s\n", res[1], res[2]));
-		dk_free_tree ((caddr_t) res);
-	      }
-	    else
-	      {
-		dk_free_tree (odbc_error (vbranch->vtr_branch_handle.l_rmt,
-			SQL_NULL_HENV,  (SQLHDBC) dbc, SQL_NULL_HSTMT,  NULL));
-		_2pc_printf (("lost connection to branch at stage 1"));
-	      }
-	    vbranch->vtr_is_finalized = 1;
-	    op = SQL_TP_ABORT;
-	    goto finalize;
-	  }
-	tp_trx_exclude (0, vbranch->vtr_branch_handle.l_rmt);
-	_2pc_printf ((" done\n"));
-      }
-      END_DO_SET ();
-      if (op == SQL_TP_PREPARE)
-	{
-	  virt_trx_set_state (_2pc_dtp->vtp_cli, vtrx->vtx_id,
-	      virt_tp_commit_pending);
-	  return LTE_OK;
-	}
-    }
-finalize:
-  virt_trx_set_state (_2pc_dtp->vtp_cli, vtrx->vtx_id,
-      virt_tp_rollback_pending);
-  return LTE_DEADLOCK;
-#endif
 }
 
 tp_result_t
 tp_trx_commit_2 (caddr_t distr_trx, int is_commit)
 {
-#if UNIVERSE
-  virt_trx_t *vtrx = (virt_trx_t *) distr_trx;
-  SQLUSMALLINT op = is_commit ? SQL_TP_COMMIT : SQL_TP_ABORT;
-  DO_SET (virt_rcon_t *, vbranch, &vtrx->vtx_cons)
-  {
-    if (!vbranch->vtr_is_finalized)
-      {
-	CON (dbc, vbranch->vtr_branch_handle.l_rmt->rc_hdbc);
-	caddr_t *res;
-	future_t *f;
-	_2pc_printf (("sql_tp_transact... %x", op));
-	f = PrpcFuture (dbc->con_session, &s_sql_tp_transact, (long) op, 0);
-	res = (caddr_t *) PrpcFutureNextResult (f);
-	PrpcFutureFree (f);
-	if (!DKSESSTAT_ISSET (dbc->con_session, SST_OK) ||
-	    (res != (caddr_t *) SQL_SUCCESS))
-	  {
-	    if (res != (caddr_t *) SQL_SUCCESS)
-	      {
-		_2pc_printf (("transact failed, error %s",
-			virt_2pc_format_error_string ((caddr_t) res)));
-		if (res != (caddr_t *) SQL_ERROR)
-		  dk_free_tree ((caddr_t) res);
-	      }
-	    else
-	      {
-		dk_free_tree (odbc_error (vbranch->vtr_branch_handle.l_rmt,
-			SQL_NULL_HENV,  (SQLHDBC) dbc, SQL_NULL_HSTMT,  NULL));
-		_2pc_printf (("lost connection to branch at stage 2"));
-	      }
-	    vtrx->vtx_needs_recovery = 1;
-	    continue;
-	  }
-	_2pc_printf ((" done\n"));
-      }
-  }
-  END_DO_SET ()DO_SET (virt_rcon_t *, vbranch, &vtrx->vtx_cons)
-  {
-    tp_trx_exclude_001 (0, vbranch->vtr_branch_handle.l_rmt);
-  }
-  END_DO_SET ()if (!vtrx->vtx_needs_recovery)
-    {
-      virt_trx_set_state (_2pc_dtp->vtp_cli, vtrx->vtx_id,
-	  (op == SQL_TP_COMMIT ? virt_tp_committed : virt_tp_rollbacked));
-    }
-
-  /* lt->lt_2pc._2pc_info->vtbl->exclude(lt,rcon); */
-
-#endif
   return LTE_OK;
 }
 
@@ -1315,14 +1169,6 @@ tp_trx_set_uuid (virt_trx_t * vtrx)
 int
 tp_l_enlist_remote (rds_connection_t * rcon, virt_rcon_t * vbranch)
 {
-#if UNIVERSE
-  tp_l_set_server_uuid (rcon, vbranch);
-  _2pc_printf (("enlisting %s", vbranch->vtr_trx->vtx_cookie));
-  SQLSetConnectOption (rcon->rc_hdbc, SQL_ENLIST_IN_VIRTTP,
-      (SQLULEN) vbranch);
-  rcon->rc_is_enlisted = ENLISTED;
-  _2pc_printf ((" done\n"));
-#endif
   return 0;
 }
 
@@ -1346,27 +1192,6 @@ virt_prepare_set_log (tp_data_t * tpd)
 int
 virt_tp_recover (box_t recov_data)
 {
-#if UNIVERSE 
-  unsigned long port = tp_get_port (recov_data);
-  caddr_t address = tp_get_addr (recov_data);
-  virt_trx_id_t trx_id = tp_get_trx_id (recov_data);
-  struct in_addr in_addr;
-  char *addr_str;
-  int st;
-  memcpy (&in_addr, address, sizeof (struct in_addr));
-  addr_str = inet_ntoa (in_addr);
-  if (addr_str)
-    _2pc_printf (("VIRT TP recovery info port = %ld address %s [%s]",
-	    port, addr_str, uuid_bin_encode (recov_data)));
-  else
-    _2pc_printf (("VIRT TP recovery info port = %ld address [%s]",
-	    port, uuid_bin_encode (recov_data)));
-
-  /* connect to main DTC server */
-  st = virt_recover_status (_2pc_dtp->vtp_cli, &in_addr, port, trx_id);
-  if (st >= 0)
-    return st;
-#endif
   return SQL_ROLLBACK;
 }
 
@@ -1382,99 +1207,6 @@ virt_tp_create ()
   LEAVE_TXN;
   return virt_tp;
 }
-#if UNIVERSE
-int
-virt_recover_status (client_connection_t * cli, struct in_addr *addr,
-    unsigned long port, unsigned long trx_id)
-{
-  char name[1024];
-  remote_ds_t *rds = 0;
-  remote_stmt_t *rst = 0;
-  rds_connection_t *rcon = 0;
-  caddr_t err = 0;
-  int reconnect_ctr = 0;
-  int rc;
-  SQLINTEGER ret = -1;
-  char * stmt_text = "select _2PC.DBA._0001_GET_TRX_STATE (?)";
-
-  snprintf (name, sizeof (name), "%s:%ld", inet_ntoa (addr[0]), port);
-  _2pc_printf (("connecting to %s", name));
-
-  rds = find_remote_ds (name, 1);
-  rds->rds_uid = box_string ("_2PC");
-  rds->rds_pwd = box_string ("_2PC0103050713");
-
-re_connect:
-  rcon = rds_connection (rds, cli->cli_trx, cli, &err);
-  if (err)
-    goto fin;
-  if (rcon->rc_txn_capable != SQL_TC_NONE)
-    RCON_SET_AUTOCOMMIT (rcon, 1);
-  rst = rc_stmt (rcon, stmt_text, strhash ((caddr_t)&stmt_text), &err);
-  if (err)
-    {
-      if (!reconnect_ctr && rcon->rc_to_disconnect
-	  && rcon->rc_vdb_actions < 2)
-	{
-	  reconnect_ctr++;
-	  rst_connections_free (rcon, rst, cli->cli_trx);
-	  dk_free_tree (err);
-	  err = NULL;
-	  goto re_connect;
-	}
-      goto fin;
-    }
-  rc_used (rcon);
-
-  SQLSetStmtOption (rst->rst_hstmt, SQL_QUERY_TIMEOUT, 5);
-  {
-    rc = SQLBindParameter (rst->rst_hstmt, 1, SQL_PARAM_INPUT,
-	SQL_C_LONG, SQL_INTEGER, 0, 0, &trx_id, 0, NULL);
-    if (rc != SQL_SUCCESS)
-      goto fin;
-    if (err)
-      {
-	if (!reconnect_ctr && rcon->rc_to_disconnect
-	    && rcon->rc_vdb_actions < 2)
-	  {
-	    reconnect_ctr++;
-	    rst_connections_free (rcon, rst, cli->cli_trx);
-	    dk_free_tree (err);
-	    err = NULL;
-	    goto re_connect;
-	  }
-	rst_used (rst);
-	goto fin;
-      }
-  }
-  _2pc_printf (("calling _2PC.DBA._0001_GET_TRX_STATE (?)"));
-  rc = SQLExecute (rst->rst_hstmt);
-  if (SQL_SUCCESS == rc)
-    {
-      SQLLEN cols;
-      rc = SQLBindCol (rst->rst_hstmt, 1, SQL_INTEGER, (SQLPOINTER) & ret, 0, &cols);
-      if (SQL_SUCCESS == rc)
-	{
-	  rc = SQLFetch (rst->rst_hstmt);
-	  _2pc_printf (("_2PC.DBA._0001_GET_TRX_STATE (?) = %ld", ret));
-	}
-      else
-	DoSQLError (rcon->rc_hdbc, rst->rst_hstmt);
-    }
-  else
-    DoSQLError (rcon->rc_hdbc, rst->rst_hstmt);
-fin:
-  if (rcon)
-    rst_connections_free (rcon, rst, cli->cli_trx);
-  if (err)
-    {
-      _2pc_printf (("failed to recover [%s]",
-	      virt_2pc_format_error_string (err)));
-      dk_free_tree (err);
-    }
-  return ret;
-}
-#endif 
 
 static caddr_t
 bif_mts_fail_after_prepare (caddr_t * qst, caddr_t * err_ret,
@@ -1489,24 +1221,6 @@ bif_mts_fail_after_prepare (caddr_t * qst, caddr_t * err_ret,
 void
 virt_tp_store_connections (lock_trx_t * lt)
 {
-#if UNIVERSE
-  DO_SET (rds_connection_t *, rcon, &lt->lt_2pc._2pc_remotes)
-  {
-    if (rcon->rc_to_disconnect)
-      {
-	rds_drop_connections (rcon->rc_rds);
-	/* must be enabled in non debug version */
-#if 0
-	rds_connection_free (rcon);
-#endif
-      }
-    else
-      {
-	lt->lt_2pc._2pc_info->vtbl->exclude (lt, rcon);
-      }
-  }
-  END_DO_SET ();
-#endif
 }
 
 

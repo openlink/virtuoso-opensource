@@ -1069,10 +1069,6 @@ sqlc_union_stmt (sql_comp_t * sc, ST ** ptree)
     u_qr->qr_is_bunion_term = (char) tree->_.set_exp.is_best;
   }
   END_DO_SET ();
-#if UNIVERSE
-  /* The union may have acquired remote queries so make it always mixed. */
-  cc->cc_query->qr_remote_mode = QR_MIXED;
-#endif
 }
 
 

@@ -657,10 +657,6 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
   sqlc_table_used (sc, tb);
   if (tb && find_remote_table (tb->tb_name, 0))
     {
-#if UNIVERSE
-      sqlc_insert_remote (sc, tree);
-      return;
-#endif
     }
   if (!tb)
     sqlc_new_error (sc->sc_cc, "42S02", "SQ096", "No table %s.",
@@ -995,9 +991,6 @@ sqlc_update_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc)
   sqlc_table_used (sc, tb);
   if (tb && find_remote_table (tb->tb_name, 0))
     {
-#if UNIVERSE
-      sqlc_update_remote_pos (sc, tree, cursor_sqc);
-#endif 
     }
   else
     {
@@ -1103,20 +1096,6 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
   sqlc_table_used (sc, tb);
   if (tb && find_remote_table (tb->tb_name, 0))
     {
-#if UNIVERSE
-      if (sqlc_no_remote_pk)
-	{
-	  if (SUITABLE_FOR_NO_PK (tb, TRIG_UPDATE))
-	    sqlc_update_remote_searched_no_pk (sc, tree);
-	  else
-	    {
-	      LOG_FOR_NO_PK (tb->tb_name, "update");
-	      sqlc_update_remote_searched (sc, tree);
-	    }
-	}
-      else
-	sqlc_update_remote_searched (sc, tree);
-#endif
     }
   else if (tb && (vd = (ST *) sch_view_def (sc->sc_cc->cc_schema, tb->tb_name)) &&
       !tb_is_trig_at (tb, TRIG_UPDATE, TRIG_INSTEAD, NULL))
@@ -1217,9 +1196,6 @@ sqlc_delete_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc)
   sqlc_table_used (sc, tb);
   if (tb && find_remote_table (tb->tb_name, 0))
     {
-#if UNIVERSE 
-      sqlc_delete_remote_pos (sc, tree, cursor_sqc);
-#endif 
     }
   else
     {
@@ -1269,20 +1245,6 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
 
   if (tb && find_remote_table (tb->tb_name, 0))
     {
-#if UNIVERSE
-      if (sqlc_no_remote_pk)
-	{
-	  if (SUITABLE_FOR_NO_PK (tb, TRIG_DELETE))
-	    sqlc_delete_remote_searched_no_pk (sc, tree);
-	  else
-	    {
-	      LOG_FOR_NO_PK (tb->tb_name, "delete");
-	      sqlc_delete_remote_searched (sc, tree);
-	    }
-	}
-      else
-	sqlc_delete_remote_searched (sc, tree);
-#endif
     }
   else if (tb && (vd = (ST *) sch_view_def (sc->sc_cc->cc_schema, tb->tb_name)) &&
       !tb_is_trig_at (tb, TRIG_DELETE, TRIG_INSTEAD, NULL))

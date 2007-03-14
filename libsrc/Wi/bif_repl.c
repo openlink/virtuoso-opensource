@@ -82,10 +82,6 @@ sched_do_round_1 (const char * text)
 void
 sched_run_at_start (void)
 {
-#if UNIVERSE 
-  if (!cfg_disable_vdb_stat_refresh)
-  sched_do_round_1 ("DB.DBA.SYS_STAT_VDB_SYNC ()");
-#endif  
 }
 
 void

@@ -2366,9 +2366,6 @@ key_ensure_visible_parts (dbe_key_t * key)
     if (n_cols >= sizeof (cols) / sizeof (caddr_t))
       break;
     if (0 != strcmp (col->col_name, "_IDN") 
-#if UNIVERSE
-	&& 0 != vdb_is_col_visible (key, col)
-#endif
 	)
       {
 	cols[n_cols++] = col;

@@ -638,10 +638,6 @@ subq_init (query_t * subq, caddr_t * inst)
 {
   dk_set_t nodes = subq->qr_bunion_reset_nodes ? subq->qr_bunion_reset_nodes : subq->qr_nodes;
   /* nodes to reset - a bunion term's nodes are owned by the enclosing qr, hence the different list */
-#if UNIVERSE
-  if (subq->qr_remote_mode != QR_LOCAL)
-    remote_subq_close (subq, inst);
-#endif
 
   DO_SET (table_source_t *, ts, &nodes)
     {

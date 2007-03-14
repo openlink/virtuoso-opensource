@@ -1339,9 +1339,6 @@ repl_init (void)
 
   if (!db_name)
     {
-#if UNIVERSE
-      log_error ("The DBName in virtuoso.ini is mandatory. Give a unique symbolic name for this server instance. Defaulting to 'anonymous'.");
-#endif
       db_name = box_string ("anonymous");
     }
 

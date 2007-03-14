@@ -296,11 +296,7 @@ sqlc_cursor_def (sql_comp_t * sc, ST * stmt)
 	!SEL_IS_DISTINCT (stmt->_.cr_def.spec) &&
 	!sqlp_tree_has_fun_ref (stmt->_.cr_def.spec))
     {
-#if UNIVERSE
-    remote_co = sqlc_expand_remote_cursor (sc, stmt->_.cr_def.spec);
-#else 
     remote_co = NULL;
-#endif
     }
   else
     remote_co = NULL;

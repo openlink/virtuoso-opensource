@@ -374,9 +374,6 @@ data_source_t *sqlc_add_sort_nodes (sql_comp_t * sc, data_source_t * old_head);
 void sqlc_user_aggregate_decl (sql_comp_t * sc, ST * tree);
 void sqlc_routine_decl (sql_comp_t * sc, ST * tree);
 void sqlc_module_decl (sql_comp_t * sc, ST * tree);
-#ifdef UNIVERSE
-void sqlc_remote_routine_decl (sql_comp_t * sc, ST * tree);
-#endif
 
 void sqlc_trigger_decl (sql_comp_t * sc, ST * tree);
 
@@ -420,37 +417,6 @@ void t_st_and (ST ** cond, ST * pred);
 struct remote_table_s * find_remote_table (char * name, int create);
 
 
-#if UNIVERSE
-dbe_table_t *  sqlc_expand_remote_cursor (sql_comp_t * sc, ST * tree);
-
-
-
-int sqlc_ct_is_local (sql_comp_t * sc, comp_table_t * ct, ST* tree);
-
-int sqlc_pass_through_stmt (sql_comp_t * sc, ST * tree);
-
-void sqlc_insert_remote (sql_comp_t * sc, ST * tree);
-
-void sqlc_update_remote_searched (sql_comp_t * sc, ST * tree);
-void sqlc_update_remote_searched_no_pk (sql_comp_t * sc, ST * tree);
-
-void sqlc_update_remote_pos (sql_comp_t * sc, ST * tree,
-    subq_compilation_t * sqc);
-
-void sqlc_delete_remote_pos (sql_comp_t * sc, ST * tree,
-    subq_compilation_t * sqc);
-
-void sqlc_delete_remote_searched (sql_comp_t * sc, ST * tree);
-void sqlc_delete_remote_searched_no_pk (sql_comp_t * sc, ST * tree);
-
-void sprintf_more (char *text, size_t len, int *fill, const char *string,...);
-void tailprintf(char *text, size_t len, int *fill, const char *string,...); /* IvAn/AutoDTD/000919 Added */
-
-void sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp,
-    char *text, size_t tlen, int *fill);
-
-
-#endif
 
 
 /* sqlview.c */

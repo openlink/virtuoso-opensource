@@ -1419,11 +1419,6 @@ lt_transact (lock_trx_t * lt, int op)
   lt_check_stray_locks (lt, 0);
 #endif
   lt_clear_waits (lt);
-#if UNIVERSE
-  if (SQL_ROLLBACK == op && lt->lt_remotes
-      && !lt->lt_vdb_threads)
-    lt_remote_transact (lt, 0);
-#endif
   lt->lt_status = LT_DELTA_ROLLED_BACK;
   ASSERT_IN_TXN;
   lt->lt_lw_threads = 0;

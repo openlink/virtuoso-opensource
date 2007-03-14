@@ -555,32 +555,6 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
     cli_prefetch = 20;
   srv_client_defaults_init ();
 
-#if UNIVERSE
-  rds_disconnect_timeout = ((long) ((ptrlong) cfg_get_parm (wholefile, "\nvdb_disconnect_timeout:", 0))) * 1000;
-  if (!rds_disconnect_timeout)
-    rds_disconnect_timeout = 1000000;
-  vdb_oracle_catalog_fix = ((long) ((ptrlong) cfg_get_parm (wholefile, "\nvdb_oracle_catalog_fix:", 0)));
-  vdb_attach_autocommit = ((long) ((ptrlong) cfg_get_parm (wholefile, "\nvdb_attach_in_autocommit:", 0)));
-  helper = ((long) ((ptrlong) cfg_get_parm (wholefile, "\nvdb_client_fixed_thread:", 0)));
-  vdb_client_fixed_thread = helper & 0x01;
-  if (!prpc_disable_burst_mode)
-    prpc_disable_burst_mode = helper & 0x02;
-  if (!prpc_forced_fixed_thread)
-    prpc_forced_fixed_thread = helper & 0x04;
-  if (!prpc_force_burst_mode)
-    prpc_force_burst_mode = helper & 0x08;
-
-#if 0
-  prpc_disable_burst_mode = 0;
-  prpc_forced_fixed_thread = 0;
-  vdb_client_fixed_thread = 0;
-  prpc_force_burst_mode = 1;
-#endif
-
-  COND_PARAM_WITH_DEFAULT ("\nprpc_burst_timeout_msecs:", prpc_burst_timeout_msecs, 100);
-  COND_PARAM_WITH_DEFAULT ("\ndisable_listen_on_unix_sock:", disable_listen_on_unix_sock, 0);
-  COND_PARAM ("\nvdb_skip_dml_primary_key:", sqlc_no_remote_pk);
-#endif
   crashdump_start_dp = (dp_addr_t) (ptrlong) cfg_get_parm (wholefile, "\ncrashdump_start_dp:", 0);
   crashdump_end_dp = (dp_addr_t) (ptrlong) cfg_get_parm (wholefile, "\ncrashdump_end_dp:", 0);
   c_checkpoint_sync = (int) (ptrlong) cfg_get_parm (wholefile, "\ncheckpoint_sync_mode:", 0);

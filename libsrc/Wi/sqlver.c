@@ -46,9 +46,6 @@ char *build_opsys_id = OPSYS;			/* eg. Linux */
 #endif
 
 const char *build_special_server_model = " "
-#if UNIVERSE 
-"VDB"
-#endif
 ;
 ; /* eg. empty or integration binaries */
 #if 0

@@ -1546,10 +1546,6 @@ static char *vt_batch_update_text =
 "  declare has_it integer; \n"
 /*"  datatable := complete_table_name (fix_identifier_case (datatable), 1); \n"*/
 "  datatable := complete_table_name ((datatable), 1); \n"
-#if UNIVERSE
-"  if (exists (select 1 from DB.DBA.SYS_REMOTE_TABLE where RT_NAME = datatable)) \n"
-"    return 'OFF'; \n"
-#endif
 "  select count (*) into has_it from DB.DBA.SYS_VT_INDEX where VI_TABLE = datatable; \n"
 "  if (has_it <> 1) \n"
 "    signal (\'42S02\', \'The table is not freetext indexed\', \'FT018\'); \n"

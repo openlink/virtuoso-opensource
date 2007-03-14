@@ -450,13 +450,6 @@ lt_commit (lock_trx_t * lt, int free_trx)
 	return LTE_2PC_ERROR;
       }
 #endif
-#if UNIVERSE
-  if (LTE_OK != (lt_code = lt_remote_transact (lt, 1)))
-    {
-      lt_rollback_1 (lt, free_trx);
-      return lt_code;
-    }
-#endif
   if (LTE_OK != lt_log_replication (lt))
     {
       lt_rollback_1 (lt, free_trx);
@@ -565,9 +558,6 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
 
   lt->lt_status = LT_CLOSING;
   lt_repl_rollback (lt);
-#if UNIVERSE
-  lt_remote_transact (lt, 0);
-#endif
   DBG_PT_ROLLBACK (lt);
   if (lt->lt_mode == TM_SNAPSHOT)
     {
@@ -1763,9 +1753,6 @@ kill_next_txn:
       mutex_leave (map_mtx);
     }
 
-#if defined (UNIVERSE)
-  rds_reaper ();
-#endif
   failed_login_purge ();
 
   if (cfg_autocheckpoint > 0)	/* Autocheckpointing wanted? */

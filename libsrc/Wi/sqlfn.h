@@ -676,10 +676,6 @@ void vdb_leave_1 (query_instance_t * qi, caddr_t *err_ret);
 void remote_table_source_input (remote_table_source_t * ts, caddr_t * inst,
     caddr_t * state);
 
-#if UNIVERSE
-void rds_reaper (void);
-int vdb_is_col_visible (dbe_key_t * key, dbe_column_t * col);
-#endif
 
 caddr_t deref_node_main_row (it_cursor_t * it, buffer_desc_t ** buf,
     dbe_key_t * key, it_cursor_t * main_itc);
@@ -694,10 +690,6 @@ char * sch_full_proc_name_1 (dbe_schema_t * sc, const char * ref_name,
     char * q_def, char * o_def, char *m_def);
 char * sch_full_module_name (dbe_schema_t * sc, char * ref_name,
     char * q_def, char * o_def);
-#if UNIVERSE
-char * sch_full_remote_proc_name (char * ref_name, char * q_def, char * o_def);
-#endif
-
 char * cli_qual (client_connection_t * cli);
 
 long bh_get_data_from_user (blob_handle_t * bh, client_connection_t * cli,
@@ -774,15 +766,6 @@ int cli_check_ws_terminate (client_connection_t *cli);
 
 
 typedef struct _rstmtstruct remote_stmt_t;
-
-#if defined  (UNIVERSE) && ! defined (SOLARIS)
-
-void rst_close (remote_stmt_t * rst);
-void remote_init (void);
-void remote_subq_close (query_t * qr, caddr_t * inst);
-int rst_is_to_disconnect (remote_stmt_t * rst);
-
-#endif
 
 
 /* sqlprt.h */
@@ -911,10 +894,6 @@ query_t * cli_cached_sql_compile (caddr_t query_text, client_connection_t *cli,
 /* sqlrcomp.h */
 void sprintf_more (char *text, size_t len, int *fill, const char *string,...);
 void tailprintf(char *text, size_t len, int *fill, const char *string,...);
-#ifdef UNIVERSE
-void sqlc_proc_remote (caddr_t * sc, char *name, dk_set_t * code,
-    state_slot_t *ret, state_slot_t **params, caddr_t ret_param);
-#endif
 
 /* sqlexp.c */
 caddr_t * proc_result_col_from_ssl (int inx, state_slot_t *ssl, long type, caddr_t pq, caddr_t po, caddr_t pn);

@@ -1046,12 +1046,6 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp,
         sqlc_wide_string_literal (text, tlen, fill, (wchar_t *) exp);
         sc->sc_exp_sqt.sqt_dtp = dtp;
 #else
-#if UNIVERSE
-	remote_table_source_t *rts =
-	  ct ? ct->ct_rts : sc_pass_through_rts_node (sc);
-	dk_set_append_1 (&rts->rts_params, ssl_new_constant (sc->sc_cc, (caddr_t)exp));
-	sprintf_more (text, tlen, fill, "?");
-#endif
 #endif
         break;
       }
@@ -1069,17 +1063,6 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp,
 
     case DV_SYMBOL:
       {
-#if UNIVERSE
-	remote_table_source_t *rts =
-	  ct ? ct->ct_rts : sc_pass_through_rts_node (sc);
-	col_ref_rec_t *crr;
-	sqlc_mark_param_ref (sc, exp);
-	crr = sqlc_col_or_param (sc, exp, 0);
-	dk_set_append_1 (&rts->rts_params,
-			 (void *) sqlc_col_ref_rec_ssl (sc, crr));
-	sc->sc_exp_param = crr->crr_ssl;
-	sprintf_more (text, tlen, fill, " ? ");
-#endif
 	break;
       }
 #ifndef MAP_DIRECT_BIN_CHAR

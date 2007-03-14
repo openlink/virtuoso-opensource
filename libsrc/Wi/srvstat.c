@@ -443,9 +443,6 @@ dbms_status_report (void)
   rep_printf ("Log = %s, " OFF_T_PRINTF_FMT " bytes\n",
 	      dbs->dbs_log_name ? dbs->dbs_log_name : "none",
 	      (OFF_T_PRINTF_DTP) dbs->dbs_log_length);
-#ifdef UNIVERSE
-  rep_printf ("VDB: %ld exec %ld fetch %ld transact %ld error\n", vdb_n_exec, vdb_n_fetch, vdb_n_transact, vdb_n_error);
-#endif
   rep_printf ("%ld pages have been changed since last backup (in checkpoint state)\n", dbs_count_incbackup_pages (dbs));
 
   bp_curr_ts = bp_curr_timestamp ();
@@ -1049,11 +1046,7 @@ static long my_fd_setsize = FD_SETSIZE;
 static char * my_bp_prefix = bp_ctx.db_bp_prfx;
 static long my_case_mode;
 static long st_has_vdb =
-#if UNIVERSE 
-  1;
-#else
   0;
-#endif
 char st_os_user_name[512];
 static char *_st_os_user_name = &st_os_user_name[0];
 
