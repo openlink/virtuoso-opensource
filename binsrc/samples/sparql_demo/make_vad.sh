@@ -34,39 +34,27 @@ ISQL=${ISQL-isql}
 DSN="$HOST:$PORT"
 HOST_OS=`uname -s | grep WIN`
 NEED_VERSION=04.50.2911
-
 if [ "x$HOST_OS" != "x" ]
 then
-    TEMPFILE="`cygpath -m $TMP/isql.$$`"
-    STICKER="`cygpath -m $STICKER`"
-    if [ "x$SRC" != "x" ]
-    then
-	HOME=$SRC
-    else
-	HOME="`cygpath -m $HOME`"
-    fi
-    LN="cp -rf"
-    RM="rm -rf"
+TEMPFILE="`cygpath -m $TMP/isql.$$`"
+STICKER="`cygpath -m $STICKER`"
+if [ "x$SRC" != "x" ]
+then
+HOME=$SRC
 else
-    TEMPFILE=/tmp/isql.$$
-    LN="ln -fs"
-    RM="rm -f"
+HOME="`cygpath -m $HOME`"
 fi
-
+LN="cp -rf"
+RM="rm -rf"
+else
+TEMPFILE=/tmp/isql.$$
+LN="ln -fs"
+RM="rm -f"
+fi
 VOS=0
-if [ -f ../../../autogen.sh ]
+if [ -f ../../autogen.sh ]
 then
     VOS=1
-fi
-
-if [ "z$SERVER" = "z" ]  
-then
-    if [ "x$HOST_OS" != "x" ]
-    then
-	SERVER=virtuoso-odbc-t.exe
-    else
-	SERVER=virtuoso
-    fi
 fi
 
 . $HOME/binsrc/tests/suite/test_fn.sh
@@ -108,12 +96,11 @@ virtuoso_start() {
     starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
     timeout=600
     $myrm -f *.lck
-
-    if [ "z$HOST_OS" != "z" ] 
+  if [ "x$HOST_OS" != "x" ]
     then
-	"$SERVER" +foreground &
+      $BUILD/../bin/virtuoso-odbc-t +foreground &
     else
-	"$SERVER" +wait
+    virtuoso +wait
     fi
     stat="true"
     while true
@@ -147,7 +134,7 @@ do_command_safe () {
     shift
     shift
     echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if [ "x$HOST_OS" != "x" -a "z$BUILD" != "z" ]
+  if [ "x$HOST_OS" != "x" ]
   then
     $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
   else
@@ -317,77 +304,69 @@ sticker_init() {
     echo "</sticker>" >> $STICKER
 }
 
-
 virtuoso_init() {
     LOG "Virtuoso.ini creation..."
-    cat > virtuoso.ini <<-VIRT_EOF
-	[Database]
-	DatabaseFile    = virtuoso.db
-	TransactionFile = virtuoso.trx
-	ErrorLogFile    = virtuoso.log
-	ErrorLogLevel   = 7
-	FileExtend      = 200
-	Striping        = 0
-	LogSegments     = 0
-	Syslog    = 0
+  echo "
+[Database]
+DatabaseFile    = virtuoso.db
+TransactionFile = virtuoso.trx
+ErrorLogFile    = virtuoso.log
+ErrorLogLevel   = 7
+FileExtend      = 200
+Striping        = 0
+LogSegments     = 0
+Syslog    = 0
 
-	;
-	;  Server parameters
-	;
-	[Parameters]
-	ServerPort           = $PORT
-	ServerThreads        = 100
-	CheckpointInterval   = 0
-	NumberOfBuffers      = 2000
-	MaxDirtyBuffers      = 1200
-	MaxCheckpointRemap   = 2000
-	UnremapQuota         = 0
-	AtomicDive           = 1
-	PrefixResultNames    = 0
-	CaseMode             = 2
-	DisableMtWrite       = 0
-	MaxStaticCursorRows  = 5000
-	AllowOSCalls         = 0
-	DirsAllowed          = $HOME
-	CallstackOnException = 1
-	
-	;
-	; HTTP server parameters
-	;
-	; Timeout values are seconds
-	;
-	
-	[!HTTPServer]
-	ServerPort = $TPORT
-	ServerRoot = .
-	ServerThreads = 5
-	MaxKeepAlives = 10
-	EnabledDavVSP = 1
+;
+;  Server parameters
+;
+[Parameters]
+ServerPort           = $PORT
+ServerThreads        = 100
+CheckpointInterval   = 0
+NumberOfBuffers      = 2000
+MaxDirtyBuffers      = 1200
+MaxCheckpointRemap   = 2000
+UnremapQuota         = 0
+AtomicDive           = 1
+PrefixResultNames    = 0
+CaseMode             = 2
+DisableMtWrite       = 0
+MaxStaticCursorRows  = 5000
+AllowOSCalls         = 0
+DirsAllowed          = $HOME
+CallstackOnException = 1
 
-	[Client]
-	SQL_QUERY_TIMEOUT  = 0
-	SQL_TXN_TIMEOUT    = 0
-	SQL_PREFETCH_ROWS  = 100
-	SQL_PREFETCH_BYTES = 16000
-	SQL_NO_CHAR_C_ESCAPE = 0
-	
-	[AutoRepair]
-	BadParentLinks = 0
-	BadDTP         = 0
-	
-	[Replication]
-	ServerName   = the_big_server
-	ServerEnable = 1
-	QueueMax     = 50000
-VIRT_EOF
+;
+; HTTP server parameters
+;
+; Timeout values are seconds
+;
 
-    if [ -f virtuoso.lic ]
-    then
-	echo "virtuoso.lic found"
-    else
-	cp $HOME/binsrc/tests/suite/virtuoso.lic virtuoso.lic 2>/dev/null
-    fi
+[!HTTPServer]
+ServerPort = $TPORT
+ServerRoot = .
+ServerThreads = 5
+MaxKeepAlives = 10
+EnabledDavVSP = 1
 
+[Client]
+SQL_QUERY_TIMEOUT  = 0
+SQL_TXN_TIMEOUT    = 0
+SQL_PREFETCH_ROWS  = 100
+SQL_PREFETCH_BYTES = 16000
+SQL_NO_CHAR_C_ESCAPE = 0
+
+[AutoRepair]
+BadParentLinks = 0
+BadDTP         = 0
+
+[Replication]
+ServerName   = the_big_server
+ServerEnable = 1
+QueueMax     = 50000
+
+" > virtuoso.ini
     virtuoso_start
 }
 

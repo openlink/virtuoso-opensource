@@ -222,7 +222,7 @@ create procedure SPARQL_MKPATH (in path varchar)
   if (DAV_HIDE_ERROR (DAV_SEARCH_ID (path, 'C')) is not null)
     return;
   SPARQL_MKPATH (subseq (path, 0, length (path) - 1));
-  DAV_COL_CREATE (path, '110110110RR', 'dav', 'dav', 'dav', 'dav');
+  DAV_COL_CREATE (path, '110110110RR', 'dav', 'dav', 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
 }
 ;
 

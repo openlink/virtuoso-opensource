@@ -31,7 +31,7 @@
     <link type="text/css" rel="stylesheet" href="SyntaxHighlighter.css"></link>  
     <script type="text/javascript">
       var toolkitPath="toolkit"; 
-      var featureList=["tab","ajax","combolist","window","tree","grid","dav","xml"];
+      var featureList=["tab","ajax2","combolist","window","tree","grid","dav","xml"];
     </script>
     <script type="text/javascript" src="toolkit/loader.js"></script>
     <script type="text/javascript" src="sparql_ajax.js"></script>
@@ -138,13 +138,13 @@ there_is_passed_test:
 		          _descr := replace (_descr, '  ', ' ');
 ?>
                       <li class="lvl2">
-                        <div style="padding-left:34px;">
+                        <!--<div style="padding-left:34px;">-->
                           <a href="#" onclick="load_dawg('<?V manifests[ctr] ?>','<?vsp http_url(_name); ?>','<?V grp ?>')">
 <?vsp 
   http(replace (_descr,'-','-<wbr></wbr>')); 
 ?>    
                           </a>
-                        </div>
+                        <!--</div>-->
                       </li> <!-- lvl2 -->
 <?vsp
 skip_failed_test: ;
@@ -176,13 +176,13 @@ skip_failed_group: ;
 	          {
 ?>
                       <li class="lvl2">
-                        <div style="padding-left:34px;">
+                        <!--<div style="padding-left:34px;">-->
                           <a href="#" onclick="load_sq('<?V _SQ_GROUP ?>','<?vsp http_url(_SQ_NAME); ?>')">
 <?vsp 
       http(replace(_SQ_NAME,'-','-<wbr></wbr>')); 
 ?>
                           </a>
-                        </div>
+                        <!--</div>-->
                       </li> <!-- lvl2 -->
 <?vsp
 		        }

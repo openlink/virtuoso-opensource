@@ -174,14 +174,14 @@ ul.docs_list li:hover {
 #dawg_tree    li.lvl1,
 #virt_ext_tree li.lvl1,
 #samples_tree li.lvl1 {
-  margin-top: 5px;
+  margin-top: 2px;
   clear: both}
 
 #dawg_tree    li.lvl2,
 #virt_ext_tree li.lvl2,
 #samples_tree li.lvl2 {
   width:203px;
-  margin-top: 10px;
+  margin-top: 2px;
   clear: both;
   font-weight: normal;}
 

@@ -23,7 +23,8 @@
 
 function init()
 {
-  OAT.Preferences.windowTypeOverride = 0;
+  OAT.Preferences.imagePath = "toolkit/images/";
+  OAT.AJAX.imagePath = "toolkit/images";
   
   tab = new OAT.Tab ("main_col");
   tab.add ("tab_home","page_home");
@@ -60,11 +61,11 @@ function init()
   sr_cl.addOption("http://my.opera.com/community/sparql/sparql");
   sr_cl.addOption("http://www.wasab.dk/morten/2005/04/sparqlette/");
 
-  var dawg_tree = new OAT.Tree({imagePath:"toolkit/images",ext:"png"}); 
+  var dawg_tree = new OAT.Tree({imagePath:"toolkit/images/",ext:"png",onClick:"toggle", onDblClick:"toggle"}); 
   dawg_tree.assign("dawg_tree",true);
-  var virt_ext_tree = new OAT.Tree({imagePath:"toolkit/images",ext:"png"}); 
+  var virt_ext_tree = new OAT.Tree({imagePath:"toolkit/images/",ext:"png",onClick:"toggle", onDblClick:"toggle"}); 
   virt_ext_tree.assign("virt_ext_tree",true);
-  var samples_tree = new OAT.Tree({imagePath:"toolkit/images",ext:"png"}); 
+  var samples_tree = new OAT.Tree({imagePath:"toolkit/images/",ext:"png",onClick:"toggle", onDblClick:"toggle"}); 
   samples_tree.assign("samples_tree",true);
 
   filewin = new OAT.Window({close:1,min:0,max:0,x:450,y:155,width:500,height:400,title:"View File",imagePath:"toolkit/images/"});
@@ -166,7 +167,7 @@ function view_file(path,fname,data)
   else
   {
     $('file_window_content').innerHTML = 'Loading data please wait ....';
-	  OAT.Ajax.command(OAT.Ajax.GET, path, function(){return '';}, response,OAT.Ajax.TYPE_TEXT);
+	  OAT.AJAX.GET(path, '', response,{type:OAT.AJAX.TYPE_TEXT});
 	}
 }
 
@@ -254,7 +255,7 @@ function load_dawg(list,item,page)
       $(page + '_etalon').innerHTML = res.replace(/</g,'&lt;');
     }
   };
-  OAT.Ajax.command(OAT.Ajax.GET, "./load_dawg_usecase.vsp?list=" + list + "&case=" + item, function(){return '';}, callback, OAT.Ajax.TYPE_XML);
+  OAT.AJAX.GET("./load_dawg_usecase.vsp?list=" + list + "&case=" + item, '', callback, {type:OAT.AJAX.TYPE_XML});
 }
 
 function load_dawg_query(page)
@@ -333,7 +334,7 @@ function load_sq(list,item)
     $('sq_query').setAttribute('sqdata',query);
     $('sq_content').innerHTML +='  <br/><button name="load_sq_query" id="load_sq_query" onclick="load_sq_query()">Load Query</button><br/>';
   };
-  OAT.Ajax.command(OAT.Ajax.GET, "./load_sq.vsp?list=" + list + "&case=" + item, function(){return '';}, callbacksq, OAT.Ajax.TYPE_XML);
+  OAT.AJAX.GET("./load_sq.vsp?list=" + list + "&case=" + item, '', callbacksq, {type:OAT.AJAX.TYPE_XML});
 }
 
 function load_sq_query()
@@ -561,21 +562,6 @@ function QueryExec(param)
     return body;
   };
 
-  //in case of an error exec the callback also, but give a parameter er
-  OAT.Ajax.errorRef = function(status,response,headers)
-  {
-    param = 'er';
-    if (!response)
-    {
-      response = 'There was a problem with your request! The server returned status code: ' + status + '<br/>\n';
-      response += 'Unfortunately your browser does not allow us to show the error. ';
-      response += 'This is a known bug in the Opera Browser.<br/>\n';
-      response += 'However you can click this link which will open a new window with the error: <br/>\n';
-      response += '<a target="_blank" href="/sparql/?' + body() + '">/sparql/?' + body() + '</a>';
-    }
-    callback('<pre>' + response + '</pre>',headers);
-  }
-
   //RESULT PROCESSING
   var callback = function(data,headers) 
   { 
@@ -675,7 +661,34 @@ function QueryExec(param)
   else 
     endpoint = 'remote.vsp?';
   
-  OAT.Ajax.command(OAT.Ajax.POST, endpoint, body, callback, OAT.Ajax.TYPE_TEXT,ReqHeaders);
+	optObj = {
+		headers:ReqHeaders,
+		type:OAT.AJAX.TYPE_TEXT,
+		//in case of an error exec the callback also, but give a parameter er
+		onerror:function(xhr)
+    {
+      var status = xhr.getStatus();
+      var response = xhr.getResponseText();
+			var headers = xhr.getAllResponseHeaders();
+			var data = '';
+      param = 'er';
+      if (!response)
+      {
+        response = 'There was a problem with your request! The server returned status code: ' + status + '<br/>\n';
+        response += 'Unfortunately your browser does not allow us to show the error. ';
+        response += 'This is a known bug in the Opera Browser.<br/>\n';
+        response += 'However you can click this link which will open a new window with the error: <br/>\n';
+        response += '<a target="_blank" href="/sparql/?' + body() + '">/sparql/?' + body() + '</a>';
+      }
+      else 
+      {
+        data = response.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      }
+      callback('<pre>' + data + '</pre>',headers);
+    }
+	}
+  
+  OAT.AJAX.POST(endpoint, body(), callback, optObj);
 }
 
 var last_format = 1;
@@ -735,7 +748,7 @@ function load_click(rid)
     fileloadwin.content.innerHTML = data;
   }
 
-  OAT.Ajax.command(OAT.Ajax.GET, "./sparql_file.vsp?" + params, function(){return '';}, callbacklq, OAT.Ajax.TYPE_TEXT);
+  OAT.AJAX.GET("./sparql_file.vsp?" + params, '', callbacklq, {type:OAT.AJAX.TYPE_TEXT});
   
 }
 
@@ -744,7 +757,7 @@ function load_rq_click(rid)
   var callbacklrq = function(data) {
     $('query').value = data;
   }
-  OAT.Ajax.command(OAT.Ajax.GET, "./sparql_file.vsp?act=load&rid=" + rid, function(){return '';}, callbacklrq, OAT.Ajax.TYPE_TEXT);
+  OAT.AJAX.GET("./sparql_file.vsp?act=load&rid=" + rid, '', callbacklrq, {type:OAT.AJAX.TYPE_TEXT});
   OAT.Dom.hide(fileloadwin.div);
 }
 
@@ -761,15 +774,15 @@ function store_click(){
     {
       if (confirm("Resource already exists.\nDo you want to overwrite it?"))
       {
-        OAT.Ajax.command(OAT.Ajax.POST, "./sparql_file.vsp?act=store&pub="+pub+"&res_name="+encodeURIComponent(res_name)+'&ovr=1', 
-            function(){ return '&query=' + encodeURIComponent($v('query')); }, callbacklsc, OAT.Ajax.TYPE_TEXT);
+        OAT.AJAX.POST("./sparql_file.vsp?act=store&pub="+pub+"&res_name="+encodeURIComponent(res_name)+'&ovr=1', 
+            '&query=' + encodeURIComponent($v('query')), callbacklsc, {type:OAT.AJAX.TYPE_TEXT});
       }
     } else 
       alert(data);
   }
 	
-  OAT.Ajax.command(OAT.Ajax.POST, "./sparql_file.vsp?act=store&pub="+pub+"&res_name="+encodeURIComponent(res_name), 
-      function(){ return '&query=' + encodeURIComponent($v('query')); }, callbacklsc, OAT.Ajax.TYPE_TEXT);
+  OAT.AJAX.POST("./sparql_file.vsp?act=store&pub="+pub+"&res_name="+encodeURIComponent(res_name), 
+      '&query=' + encodeURIComponent($v('query')), callbacklsc, {type:OAT.AJAX.TYPE_TEXT});
   
 }
 
