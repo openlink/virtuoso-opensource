@@ -22,6 +22,7 @@ OAT.Anchor = {
 	
 	appendContent:function(options) {
 		if (options.content) {
+			if (typeof(options.content) == "function") { options.content = options.content(); }
 			var win = OAT.AnchorData.window;
 			win.content.style.width = "";
 			win.content.style.height = "";
@@ -155,8 +156,6 @@ OAT.Anchor = {
 		options.status = 0; /* not initialized */
 		if (!options.href) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
 		elm.href = options.newHref;
-		var closeFlag = 0;
-		
 
 		options.displayRef = function(event) {
 			var win = OAT.AnchorData.window;

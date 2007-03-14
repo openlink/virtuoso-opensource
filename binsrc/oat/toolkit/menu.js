@@ -10,7 +10,7 @@
 /*
 	m = new OAT.Menu()
 	m.closeFilter = className
-	m.moCloseFilter = className
+	m.noCloseFilter = className
 	m.createFromUL(ul)
 
 */

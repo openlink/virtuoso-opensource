@@ -129,7 +129,7 @@ OAT.Dav = {
 	},
 
   //----------------------------------------------------------------------------
-	saveFile:function(dir,file,ref,response){
+	saveFile:function(dir,file,ref,response,headers){
 	  var ld = (dir ? dir : ".");
 		var lf = (file ? ld+file : ld);
 		var target = lf;
@@ -138,7 +138,8 @@ OAT.Dav = {
 			user:OAT.Dav.user,
 			password:OAT.Dav.pass,
 			type:OAT.AJAX.TYPE_TEXT,
-			onerror:OAT.WebDav.handleError
+			onerror:OAT.WebDav.handleError,
+			headers:headers
 		}
 		var data = ref();
 		OAT.AJAX.PUT(target, data, response,o);
@@ -215,8 +216,18 @@ OAT.DavType = function(el,root_el) {
   var cl = OAT.get_prop_value(prop,'getcontentlength');
   /* ondrej: display size in kbytes */
   var num = parseInt(cl);
-  if (isNaN(num)) { num = 0; }
+  if (isNaN(num)) 
+    this.contentlength = '';
+  else
+    this.contentlength = num + " b";
+  if (num > 1024)
   this.contentlength = Math.round(num/1024) + " kB";
+  if (num > 1024*1024)
+    this.contentlength = Math.round(num/(1024*1024)) + " MB";
+  if (num > 1024*1024*1024)
+    this.contentlength = Math.round(num/(1024*1024*1024)) + " GB";
+  if (num > 1024*1024*1024*1024)
+    this.contentlength = Math.round(num/(1024*1024*1024*1024)) + " TB";
   this.contenttype   = OAT.get_prop_value(prop,'getcontenttype');
 
 
@@ -455,7 +466,6 @@ OAT.WebDav = {
     filename.id = 'dav_filename';
     filename.setAttribute('type','text');
     OAT.Dom.attach(filename,'keydown',function(e){
-      dd(e)
       if(e.keyCode == 13){
         if($v('dav_filename').indexOf('*') != -1){
           OAT.WebDav.show_resources(OAT.WebDav.activeNode.id);
@@ -564,12 +574,15 @@ OAT.WebDav = {
       var prepair = function(){
         return OAT.WebDav.toptions.onConfirmClick($('dav_filetype').value);
       }
+      var headers = {};
+      if (OAT.WebDav.SaveContentType)
+        headers = {'Content-Type':OAT.WebDav.SaveContentType};
       OAT.Dav.saveFile($v('dav_path'),$v('dav_filename'),prepair,function(content){
         OAT.WebDav.toptions.afterSave($v('dav_path'),$v('dav_filename'));
         OAT.WebDav.options.filename = $v('dav_filename');
         OAT.WebDav.options.path = $v('dav_path');
         OAT.WebDav.close();
-      });
+      },headers);
     }
   },
 
@@ -789,7 +802,6 @@ OAT.WebDav = {
     var pattern = eval('/'+ str +'$/');
     if(!pattern.exec(el.name) && el.resourcetype == 'res'){
       return true;
-      dd(el);
     }else{
       return false;  
     }
@@ -847,7 +859,7 @@ OAT.WebDav = {
       var node = $(el.href);
       OAT.WebDav.list_sel(el,index);
       if(el.resourcetype == 'res'){
-        $('dav_filename').value=OAT.Dav.remove_path(el.href);
+        $('dav_filename').value=el.name;
       }
     }
   },
@@ -860,7 +872,7 @@ OAT.WebDav = {
         OAT.WebDav.activeNode = node;
         OAT.WebDav.get_list();
       }else{
-        $('dav_filename').value=OAT.Dav.remove_path(el.href);
+        $('dav_filename').value=el.name;
         if(OAT.WebDav.toptions.mode == 'open_dialog'){
           OAT.WebDav.button_open_click();
         }

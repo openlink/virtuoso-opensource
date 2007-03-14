@@ -164,6 +164,7 @@ OAT.GhostDrag = function() {
 	}
 
 	this.startDrag = function(elm,process,callback,x,y) {
+		if (OAT.GhostDragData.lock) { return; }
 		self.pending = 1;
 		self.originalElement = elm;
 		self.callback = callback;

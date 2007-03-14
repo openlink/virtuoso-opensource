@@ -586,10 +586,5 @@ OAT.Tree = function(optObj) {
 		return obj;
 	}
 	
-	this.clear = function() {
-		self.walk("removeEvents");
-		if (self.tree.ul) { OAT.Dom.unlink(self.tree.ul); }
-	}
-
 }
 OAT.Loader.featureLoaded("tree");

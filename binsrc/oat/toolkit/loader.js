@@ -434,35 +434,12 @@ OAT.Dom = {
 	
 	attach:function(elm,event,callback) {
 		var element = $(elm);
-		OAT.Events.push([element,event,callback]);
 		OAT.Dom._attach(element,event,callback);
 	},
 	
 	detach:function(elm,event,callback) {
 		var element = $(elm);
-		var index = -1;
-		for (var i=0;i<OAT.Events.length;i++) {
-			var rec = OAT.Events[i];
-			if (rec[0] == element && rec[1] == event && rec[2] == callback) { index = i; }
-		}
-		if (index != -1) { OAT.Events.splice(index,1); }
-		OAT.Dom._detach(element,event,callback);
-	},
-
-	detachAll:function(elm) {
-		var element = $(elm);
-		var indexArr = [];
-		for (var i=0;i<OAT.Events.length;i++) {
-			var rec = OAT.Events[i];
-			if (rec[0] == element) { indexArr.push(i); }
-		}
-		for (var i=indexArr.length-1;i>=0;i--) {
-			var index = indexArr[i];
-			var event = OAT.Events[index][1];
-			var callback = OAT.Events[index][2];
 			OAT.Dom._detach(element,event,callback);
-			OAT.Events.splice(index,1); 
-		}
 	},
 
 	source:function(event) {
@@ -470,7 +447,8 @@ OAT.Dom = {
 	},
 	
 	eventPos:function(event) {
-		if (OAT.Dom.isWebKit()) {
+
+		if (0 && OAT.Dom.isWebKit()) { /* temporarily disabled; it looks like new webkits correctly report coords relative to viewport */
 			return [event.clientX,event.clientY];
 		} else {
 			var sl = document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft;
@@ -963,7 +941,7 @@ OAT.Dependencies = {
 	webclip:"webclipbinding",
 	declarative:"json",
 	tree:"ghostdrag",
-	rdfbrowser:["rdf","tree","dereference","anchor"],
+	rdfbrowser:["rdf","tree","dereference","anchor","rdftabs","tab"],
 	graphsidebar:"tree",
 	form:["ajax2","dialog","datasource","formobject"],
 	rssreader:"xml"

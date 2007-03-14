@@ -150,9 +150,10 @@ OAT.Calendar = function() {
 		self.div.style.display = "block";
 		if (date) {
 			self.date = date;
-			self.oldDate[0] = OAT.Calendar.date[0];
-			self.oldDate[1] = OAT.Calendar.date[1];
-			self.oldDate[2] = OAT.Calendar.date[2];
+			self.oldDate[0] = date[0];
+			self.oldDate[1] = date[1];
+			self.oldDate[2] = date[2];
+			
 			self.setYear();
 			self.setMonth();
 		}

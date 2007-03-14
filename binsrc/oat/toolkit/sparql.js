@@ -81,6 +81,7 @@ OAT.SparqlQuery = function() {
 	var self = this;
 	this.variables = [];
 	this.distinct = false;
+	this.describe = false;
 	this.prefixes = [];
 	this.orders = [];
 	this.limit = false;
@@ -93,6 +94,7 @@ OAT.SparqlQuery = function() {
 	this.clear = function() {
 		self.variables = [];
   	self.distinct = false;
+  	self.describe = false;
 		self.prefixes = [];
 		self.orders = [];
   	self.limit = false;
@@ -106,6 +108,8 @@ OAT.SparqlQuery = function() {
 	this.splitPiece = function(string) {
 		var word = string.match(/^(\w+)\s*(.*)/);
 		switch (word[1].toUpperCase()) {
+			case "DESCRIBE":
+			  self.describe = true;
 			case "SELECT":
 				var main = word[2];
   				var tmp = main.match(/(distinct)?\s*(.*)/i);
@@ -521,7 +525,7 @@ OAT.SparqlQuery = function() {
 	this.fromString = function(str) {
 		self.clear();
 		
-		var keywords = ["PREFIX","SELECT","CONSTRUCT","ASK","FROM","WHERE","ORDER","LIMIT","OFFSET"];
+		var keywords = ["PREFIX","SELECT","DESCRIBE","CONSTRUCT","ASK","FROM","WHERE","ORDER","LIMIT","OFFSET"];
 		
 		var pieces = self.splitOnKeywords(str,keywords);
 		for (var i=1;i<pieces.length;i++) {	self.splitPiece(pieces[i]); }
@@ -598,7 +602,8 @@ OAT.SparqlQuery = function() {
         construct = self.genWhere(self.construct,0);
   	  fullquery += 'CONSTRUCT ' + construct;
     } else {
-      fullquery += 'SELECT ';
+      if (self.describe) fullquery += 'DESCRIBE ';
+      else fullquery += 'SELECT ';
   	  if (self.distinct) fullquery += 'DISTINCT ';
   	  if (self.variables.length == 0) fullquery += '*';
   	  else fullquery += '?' + self.variables.join(' ?');

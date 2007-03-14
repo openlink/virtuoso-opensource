@@ -16,7 +16,7 @@ OAT.RDF = {
 	toTriples:function(xmlDoc) {
 		var triples = [];
 		var root = xmlDoc.documentElement;
-		var bnodePrefix = "_:";
+		var bnodePrefix = "_:" + Math.round(1000*Math.random()) + "_";
 		var idPrefix = "#";
 		var bnodeCount = 0;
 		

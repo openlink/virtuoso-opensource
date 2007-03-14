@@ -78,7 +78,7 @@ OAT.GraphSVGData = {
 			var type = t[3];
 			var o1 = present(v1);
 			var o2 = present(v2);
-			if (!o1) { o1 = {name:v1,type:1}; vertices.push(o1); }
+			if (!o1) { o1 = {name:v1,type:1}; vertices.push(o1); } else { o1.type = 1; }
 			if (!o2) { o2 = {name:v2,type:type}; vertices.push(o2); }
 			edges.push({name:t[1],vertex1:o1,vertex2:o2});
 		}
@@ -777,7 +777,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		/* based on current settings, find some coordinates for vertices */
 		self.computeVerticesPosition();
 		self.drawUpdate();
-		self.selectNode(self.selectedNode);
+		if (self.selectedNode) { self.selectNode(self.selectedNode); }
 	} /* draw */
 	
 	this.init();
