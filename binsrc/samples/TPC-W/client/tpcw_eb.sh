@@ -8,7 +8,6 @@ then
   rm -f tpcw_eb.log
   rm -f tpcw_eb.bad 
   rm -f tpcw_eb.lck
-  cp $HOME/binsrc/tests/suite/virtuoso.lic .
 fi
 
 SRV=./virtuoso-t

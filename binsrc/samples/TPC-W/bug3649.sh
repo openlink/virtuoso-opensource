@@ -222,7 +222,6 @@ rm -f tpcw.trx
 rm -f tpcw.log
 rm -f tpcw.bad 
 rm -f tpcw.lck
-cp $HOME/binsrc/tests/suite/virtuoso.lic .
 mkdir ./html >> $LOGFILE
 mkdir ./html/imagegen >> $LOGFILE
 
