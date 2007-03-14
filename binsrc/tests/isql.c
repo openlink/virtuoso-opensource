@@ -9012,7 +9012,7 @@ again:
 
 	      print_error (SQL_NULL_HENV, hdbc, SQL_NULL_HSTMT, rc);
 
-	      if (!isqlt_tcscmp (_T("28000"), SQL_error_state) || !isqlt_tcscmp (_T("08004"), SQL_error_state))
+	      if (!isqlt_tcscmp (_T("28000"), SQL_error_state))
 		{
 		  if (++retries > 3)
 		    {
