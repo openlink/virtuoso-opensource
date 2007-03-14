@@ -625,6 +625,19 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": VDB select count (*) in a cursor STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+
+
+create view t1order as select row_no, string1, string2 from r1..t1 order by row_no;
+
+select top 2 * from t1order where row_no is null or row_no > 111;
+
+echo both $if $equ $last[1] 113 "PASSED" "***FAILED";
+echo both ": or of known false in dt predf import\n";
+
+-- *** the 2 below do not work.  Bad locus after import of preds into the dt.
+select top 2 * from t1order a where row_no is null or exists (select 1 from t1order b where a.row_no = 1 + b.row_no);
+select top 2 * from t1order a where  exists (select 1 from t1order b where a.row_no = 1 + b.row_no);
+
 -- testcase bug #7866
 select X1.FI3 from R1..T1 X1 where X1.ROW_NO in (select distinct X2.ROW_NO from R1..T1 X2);
 ECHO BOTH $IF $EQU $ROWCNT 1000 "PASSED" "***FAILED";

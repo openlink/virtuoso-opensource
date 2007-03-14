@@ -1235,6 +1235,18 @@ ECHO BOTH ": B10317-2 MIN is " $LAST[2] "\n";
 ECHO BOTH $IF $EQU $LAST[3] NULL "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B10317-3 MAX is " $LAST[3] "\n";
+
+
+create view t1order as select row_no, string1, string2 from t1 order by row_no;
+
+select top 2 * from t1order where row_no is null or row_no > 111;
+
+echo both $if $equ $last[1] 113 "PASSED" "***FAILED";
+echo both "or of known false in dt predf import\n";
+
+select top 2 * from t1order a where row_no is null or exists (select 1 from t1order b where a.row_no = 1 + b.row_no);
+
+
 -- End of test
 --
 ECHO BOTH "COMPLETED: SQL Optimizer tests part 2 (sqlo2.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
