@@ -27,9 +27,6 @@
 */
 
 #include <libutil.h>
-#ifdef PERSISTENT_SERVICE
-# include <dbsv/agentapi.h>
-#endif
 #include "sqlver.h"
 #include "wi.h"
 #ifdef _RENDEZVOUS
@@ -60,7 +57,6 @@
 
 int	f_foreground;
 char *	f_config_file;
-char *	f_license_file;
 extern char *f_old_dba_pass;
 extern char *f_new_dba_pass;
 extern char *f_new_dav_pass;
@@ -71,8 +67,8 @@ int	f_crash_dump;
 int	f_read_from_rebuilt_database;
 int	f_wait;
 int	f_debug;
-char *	f_mode = "";
-char *	f_dump_keys = "";
+const char *	f_mode = "";
+const char *	f_dump_keys = "";
 
 
 extern long min_signal_handling;
@@ -90,13 +86,9 @@ struct pgm_option options[] =
   {"configfile", 'c', ARG_STR, &f_config_file,
     "use alternate configuration file"},
 
-  {"licensefile", 'l', ARG_STR, &f_license_file,
-    "use alternate license file"},
-
   {"no-checkpoint", 'n', ARG_NONE, &f_no_checkpoint,
     "do not checkpoint on startup"},
 
-#ifndef PERSISTENT_SERVICE
   {"checkpoint-only", 'C', ARG_NONE, &f_checkpoint_only,
     "exit as soon as checkpoint on startup is complete"},
 
@@ -120,29 +112,24 @@ struct pgm_option options[] =
   {"dumpkeys", 'K', ARG_STR, &f_dump_keys,
     "specify key id(s) to dump on crash dump (default : all)"},
 
-  {"restore-backup", 'r', ARG_STR, &recover_file_prefix,
+  {"restore-backup", 'r', ARG_STR, (char **) &recover_file_prefix,
     "restore from online backup"},
 
   {"backup-dirs", 'B', ARG_STR, &backup_dirs,
     "default backup directories"},
 
-  {"pwdold", '-', ARG_STR, &f_old_dba_pass, "Old DBA password"},
-
-  {"pwddba", '-', ARG_STR, &f_new_dba_pass, "New DBA password"},
-
-  {"pwddav", '-', ARG_STR, &f_new_dav_pass, "New DAV password"},
-
   {"debug", 'd', ARG_NONE, &f_debug, "Show additional debugging info"},
-#else
 
-  DEFAULT_AGENT_OPTIONS
-#endif
+  {"pwdold", '\0', ARG_STR, &f_old_dba_pass, "Old DBA password"},
+
+  {"pwddba", '\0', ARG_STR, &f_new_dba_pass, "New DBA password"},
+
+  {"pwddav", '\0', ARG_STR, &f_new_dav_pass, "New DAV password"},
 
   {0}
 };
 
 
-#ifndef PERSISTENT_SERVICE
 struct pgm_info program_info =
 {
   NULL,
@@ -151,7 +138,6 @@ struct pgm_info program_info =
   EXP_RESPONSE,
   options
 };
-#endif
 
 
 /* Externals from libWi */
@@ -197,40 +183,6 @@ extern LOG *stderr_log;
 static int db_shutdown;
 static int is_in_use;			/* .lck file created */
 
-
-#ifdef PERSISTENT_SERVICE
-/* No need to initialize the openlink transport libraries */
-int
-vsa_init (void)
-{
-  return 0;
-}
-
-
-char *
-sig_abbrev (int n)
-{
-  return NULL;
-}
-
-
-static int
-shutdown_proc (int sig)
-{
-  db_shutdown = SHUTRQ_NORMAL;
-  semaphore_leave (background_sem);
-  return HDLR_NO_TERMINATION;
-}
-
-
-void
-sigh_action (int action)
-{
-# error XXX NOT COMPLETE
-  sigterm_hook = sighup_hook = shutdown_proc;
-}
-
-#elif defined (unix)
 
 #define SIGNOTHING	(-1)
 
@@ -333,6 +285,7 @@ sigh_report_and_forget (int sig)
 
 #define MAX_SIGNALS 128
 
+#ifndef SHARED_OBJECT
 static void
 sigh_set_notifiers ()
 {
@@ -361,6 +314,7 @@ sigh_set_notifiers ()
 	}
     }
 }
+#endif
 
 
 static void
@@ -551,12 +505,6 @@ usage (void)
   program_info.program_version = version;
   default_usage ();
 
-#ifdef PERSISTENT_SERVICE
-  fputs (
-      "\nThis is an OpenLink Persistent Service Component\n"
-      "and can only be started by the OpenLink Request Broker.\n",
-      stderr);
-#endif
 
   call_exit (1);
 }
@@ -623,28 +571,20 @@ main (int argc, char **argv)
 
   srv_set_cfg(new_cfg_replace_log, new_cfg_set_checkpoint_interval, new_db_read_cfg, new_dbs_read_cfg, new_cfg_read_storages);
 
-#ifdef PERSISTENT_SERVICE
-  boot_service (&argc, &argv, options);
-  f_foreground = 1;
-  /* No need to set up stderr_log, since boot_service closes std(in|out|err) */
-#else
   initialize_program (&argc, &argv);
 
   /* all of the below means foreground ! */
   if (f_backup_dump || recover_file_prefix || f_crash_dump)
     f_foreground = 1;
 
-#ifndef PERSISTENT_SERVICE
   /* put ourselves in the background */
   os_background ();
-#endif
 
   if (f_foreground)
     stderr_log = log_open_fp (stderr, LOG_DEBUG, L_MASK_ALL,
             f_debug ?
                 L_STYLE_LEVEL | L_STYLE_GROUP | L_STYLE_TIME :
 		L_STYLE_GROUP | L_STYLE_TIME);
-#endif
 
   /* parse configuration file */
   if (cfg_setup () == -1)
@@ -670,7 +610,6 @@ main (int argc, char **argv)
     }
 #endif
 
-#ifndef PERSISTENT_SERVICE
   /* Started for backup dump */
   if (f_backup_dump)
     {
@@ -709,7 +648,6 @@ main (int argc, char **argv)
 	}
       viunix_terminate (0);
     }
-#endif /* PERSISTENT_SERVICE */
 
   /* begin normal server operation */
 

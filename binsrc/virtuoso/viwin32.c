@@ -155,7 +155,6 @@ void ssl_server_listen ();
 int	f_foreground;			/* foreground mode */
 int	f_debug;			/* debug mode */
 char *f_config_file;			/* config file to use */
-char *f_license_file;			/* license file to use */
 extern char *f_old_dba_pass;
 extern char *f_new_dba_pass;
 extern char *f_new_dav_pass;
@@ -229,12 +228,10 @@ static int	set_virtuoso_dir (void);
 /* Program options */
 struct pgm_option options[] =
 {
+  {"foreground", 'f', ARG_NONE, &f_foreground, "run in the foreground"},
+
   {"configfile", 'c', ARG_STR, &f_config_file,
     "specify an alternate configuration file to use,\n"
-    "\t\t\tor a directory where virtuoso.ini can be found"},
-
-  {"licensefile", 'l', ARG_STR, &f_license_file,
-    "specify an alternate license file to use,\n"
     "\t\t\tor a directory where virtuoso.ini can be found"},
 
   {"no-checkpoint", 'n', ARG_NONE, &f_no_checkpoint,
@@ -256,37 +253,33 @@ struct pgm_option options[] =
   {"restore-crash-dump", 'R', ARG_NONE, &f_read_from_rebuilt_database,
     "restore from a crash-dump"},
 
-  {"foreground", 'f', ARG_NONE, &f_foreground, "run in the foreground"},
-
-  {"pwdold", '-', ARG_STR, &f_old_dba_pass, "Old DBA password"},
-
-  {"pwddba", '-', ARG_STR, &f_new_dba_pass, "New DBA password"},
-
-  {"pwddav", '-', ARG_STR, &f_new_dav_pass, "New DAV password"},
-
-  {"debug", 'd', ARG_NONE, &f_debug, "allocate a debugging console"},
-
-  {"service", 'S', ARG_FUNC, f_service, "specify a service action to perform"},
-
-  {"instance", 'I', ARG_STR, &f_instance,
-    "specify a service instance to start/stop/create/delete"},
-
   {"mode", 'M', ARG_STR, &f_mode,
     "specify mode options for server startup (onbalr)"},
 
   {"dumpkeys", 'K', ARG_STR, &f_dump_keys,
     "specify key id(s) to dump on crash dump (default : all)"},
 
-  {"manual", 'm', ARG_NONE, &f_service_manual,
-    "specify when create a service to make it for manual startup"},
-
-  {"restore-backup", 'r', ARG_STR, &recover_file_prefix,
+  {"restore-backup", 'r', ARG_STR, (char **) &recover_file_prefix,
     "restore from online backup"},
 
   {"backup-dirs", 'B', ARG_STR, &backup_dirs,
     "default backup directories"},
 
-  {"debug", 'd', ARG_NONE, &f_debug, "Show additional debugging info"},
+  {"debug", 'd', ARG_NONE, &f_debug, "allocate a debugging console"},
+
+  {"pwdold", '\0', ARG_STR, &f_old_dba_pass, "Old DBA password"},
+
+  {"pwddba", '\0', ARG_STR, &f_new_dba_pass, "New DBA password"},
+
+  {"pwddav", '\0', ARG_STR, &f_new_dav_pass, "New DAV password"},
+
+  {"service", 'S', ARG_FUNC, f_service, "specify a service action to perform"},
+
+  {"instance", 'I', ARG_STR, &f_instance,
+    "specify a service instance to start/stop/create/delete"},
+
+  {"manual", 'm', ARG_NONE, &f_service_manual,
+    "specify when create a service to make it for manual startup"},
 
   {0}
 };
@@ -347,9 +340,6 @@ read_service_name_from_ini ()
     f_config_file = "virtuoso.ini";
   f_config_file = s_strdup (setext (f_config_file, "ini", EXT_ADDIFNONE));
 
-  if (f_license_file == NULL)
-    f_license_file = "virtuoso";
-
   if (cfg_init (&pconfig, f_config_file) == -1)
     {
       log (L_ERR, "There is no configuration file %s", f_config_file);
@@ -407,6 +397,7 @@ is_default_instance (void)
 static int
 service_action (SC_HANDLE hSCManager, int cmd)
 {
+  SERVICE_DESCRIPTION servDesc;
   SERVICE_STATUS servStatus;
   SC_HANDLE hService;
   LPTSTR binaryPath;
@@ -565,7 +556,7 @@ service_action (SC_HANDLE hSCManager, int cmd)
 	  commandLine,		// Address of name of binary file
 	  NULL,			// Address of name of load ordering group
 	  NULL,			// Address of variable to get tag identifier
-	  "Tcpip\0Afd\0\0",	// Address of array of dependency names
+	  "rpcss\0\0",		// Generic TCP/IP dependency
 	  NULL,			// Address of account name of service
 	  NULL);		// Address of password for service account
       if (hService == NULL)
@@ -577,6 +568,11 @@ service_action (SC_HANDLE hSCManager, int cmd)
 	  free (commandLine);
 	  return -1;
 	}
+
+      sprintf (commandLine, "Virtuoso %s instance",
+	  is_default_instance () ? "default" : f_instance);
+      servDesc.lpDescription = commandLine;
+      ChangeServiceConfig2 (hService, SERVICE_CONFIG_DESCRIPTION, &servDesc);
 
       log (L_INFO, "The %s service has been registered", instanceName);
       log (L_INFO, "  and is associated with the executable %s", binaryPath);
@@ -785,19 +781,14 @@ CreateApplicationConsole (void)
 {
   /*
    *  First, associate invalid handles with the standard
-   *  Borland C library file descriptors
+   *  C library file descriptors
    */
   fclose (stderr);
   fclose (stdin);
   fclose (stdout);
 
-#ifdef __BORLANDC__
-  stdout->fd = stderr->fd = stdin->fd = (char) _open_osfhandle (
-      (unsigned long) INVALID_HANDLE_VALUE, O_TEXT);
-#else
   stdout->_file = stderr->_file = stdin->_file = _open_osfhandle (
-      (HANDLE) INVALID_HANDLE_VALUE, _O_TEXT);
-#endif
+      (intptr_t) INVALID_HANDLE_VALUE, _O_TEXT);
 
   /*
    *  If we will need an extra console for debugging, allocate one
@@ -811,17 +802,10 @@ CreateApplicationConsole (void)
       fclose (stdin);
       fclose (stdout);
 
-#ifdef __BORLANDC__
-      stdout->fd = stderr->fd = (char) _open_osfhandle (
-	  (unsigned long) GetStdHandle (STD_ERROR_HANDLE), O_TEXT);
-      stdin->fd = (char) _open_osfhandle (
-	  (unsigned long) GetStdHandle (STD_INPUT_HANDLE), O_TEXT);
-#else
       stdout->_file = stderr->_file = _open_osfhandle (
-	  (HANDLE) GetStdHandle (STD_ERROR_HANDLE), _O_TEXT);
+	  (intptr_t) GetStdHandle (STD_ERROR_HANDLE), _O_TEXT);
       stdin->_file = _open_osfhandle (
-	  (HANDLE) GetStdHandle (STD_INPUT_HANDLE), _O_TEXT);
-#endif
+	  (intptr_t) GetStdHandle (STD_INPUT_HANDLE), _O_TEXT);
     }
 
   return NO_ERROR;
@@ -2026,11 +2010,3 @@ ApplicationMain (int argc, char **argv)
 
   return NO_ERROR;
 }
-
-#ifdef __BORLANDC__
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-    LPSTR lpCmdLine, int nShowCmd )
-{
-  return ApplicationMain(0,NULL);
-}
-#endif

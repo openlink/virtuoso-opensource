@@ -49,7 +49,6 @@ EXPORTS
     srv_make_new_error  @104
     sqlr_new_error      @105
     qi_check_trx_error  @106
-    qi_have_trx_error   @107
 
 
     sql_compile     @200
@@ -132,7 +131,6 @@ EXPORTS
     udt_instance_of         @603
     hit_next            @604
     id_hash_iterator        @605
-    isp_schema          @606
     qst_get             @607
     dk_alloc_box_zero       @608
     scan_session_boxing     @610
@@ -205,5 +203,5 @@ EXPORTS
     vdb_enter			    @685
     vdb_leave_1			    @686
     virtuoso_set_create_thread	    @687
-
+    isp_schema_1 		   @688
 	

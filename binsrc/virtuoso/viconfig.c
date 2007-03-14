@@ -28,9 +28,6 @@
 
 /*#define WIN95COMPAT*/ /*!!! To avoid using SetAffinityMask() */
 
-#ifdef __BORLANDC__
-#include <io.h>
-#endif
 #include <libutil.h>
 #include "sqlnode.h"
 #include "sqlver.h"
@@ -60,11 +57,6 @@
 #define PATH_MAX   MAX_PATH
 #else
 #include <dirent.h>
-#endif
-
-#ifdef __BORLANDC__
-#include <dir.h>
-#define PATH_MAX MAXPATH
 #endif
 
 #ifndef PATH_MAX
@@ -172,6 +164,8 @@ extern long stripe_growth_ratio;
 /* If zero, don't do it. */
 /* Specified in minutes. Note that 1440 minutes = 24 hours. */
 extern unsigned long cfg_autocheckpoint; /* from auxfiles.c */
+extern int default_txn_isolation;
+extern int c_use_aio;
 extern long txn_after_image_limit; /* from log.c */
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
@@ -223,6 +217,8 @@ int32 c_vdb_client_fixed_thread;
 int32 c_prpc_burst_timeout_msecs;
 int32 c_vdb_serialize_connect;
 int32 c_disable_listen_on_unix_sock;
+int32 c_default_txn_isolation;
+int32 c_c_use_aio;
 
 extern int disable_listen_on_unix_sock;
 
@@ -513,9 +509,6 @@ cfg_setup (void)
   if (f_config_file == NULL)
     f_config_file = "virtuoso.ini";
 
-  if (f_license_file == NULL)
-    f_license_file = "virtuoso";
-
   f_config_file = s_strdup (setext (f_config_file, "ini", EXT_ADDIFNONE));
 
   if (cfg_init (&pconfig, f_config_file) == -1)
@@ -566,17 +559,6 @@ cfg_setup (void)
     crashdump_end_dp = (dp_addr_t) long_helper;
 
   /* Now setup the log so that other errors go into the file as well */
-
-#ifdef PERSISTENT_SERVICE
-  /*
-   *  handle +logfile/+loglevel command line options.
-   *
-   *  If the f_logfile is not set, boot_service didn't open the log file
-   *  for us. If it did, both ErrorLogFile and ErrorLogLevel have no effect.
-   */
-  if (f_logfile == NULL)
-#endif
-    {
       virtuoso_log = log_open_file (c_error_log_file, c_error_log_level, L_MASK_ALL,
             f_debug ?
                 L_STYLE_LEVEL | L_STYLE_GROUP | L_STYLE_TIME :
@@ -586,7 +568,7 @@ cfg_setup (void)
       startup_log = NULL;
       if (c_syslog)
 	cfg_open_syslog (c_error_log_level);
-    }
+
   if (cfg_getstring (pconfig, section, "xa_persistent_file", &c_xa_persistent_file) == -1)
     c_xa_persistent_file = s_strdup (setext (prefix, "pxa", EXT_SET));
 
@@ -823,6 +805,18 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "JavaClasspath", &c_java_classpath) == -1)
     c_java_classpath = 0;
+
+  if (cfg_getlong (pconfig, section, "DefaultIsolation", &c_default_txn_isolation) == -1)
+    c_default_txn_isolation = ISO_REPEATABLE;
+
+  if (c_default_txn_isolation != ISO_UNCOMMITTED && 
+      c_default_txn_isolation != ISO_COMMITTED && 
+      c_default_txn_isolation != ISO_REPEATABLE && 
+      c_default_txn_isolation != ISO_SERIALIZABLE) 
+    c_default_txn_isolation = ISO_REPEATABLE;
+
+  if (cfg_getlong (pconfig, section, "UseAIO", &c_c_use_aio) == -1)
+    c_c_use_aio = 0;
 
   {
     int nbdirs;
@@ -1510,6 +1504,8 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   temp_aspx_dir = c_temp_aspx_dir;
 
   java_classpath = c_java_classpath;
+  default_txn_isolation = c_default_txn_isolation;
+  c_use_aio = c_c_use_aio; 
 #ifdef _SSL
   https_port = c_https_port;
   https_cert = c_https_cert;
