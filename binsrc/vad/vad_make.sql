@@ -136,6 +136,20 @@ create procedure "VAD"."DBA"."VAD_DAV_MKCOL" (
 }
 ;
 
+create procedure "VAD"."DBA"."VAD_DAV_MOVE" (
+  in name varchar,
+  in destination varchar,
+  in overwrite int := 1) returns integer
+{
+  declare usr, pwd varchar;
+  declare ret integer;
+  usr := 'dav';
+  pwd := pwd_magic_calc('dav', (select U_PWD from WS.WS.SYS_DAV_USER where U_NAME='dav'), 1);
+  ret := "DB"."DBA"."DAV_MOVE" (name, destination, overwrite, usr, pwd);
+  return ret;
+}
+;
+
 create procedure "VAD"."DBA"."VAD_DAV_GET_RES" (
   inout ini any,
   in name varchar,
@@ -2160,5 +2174,55 @@ create procedure DB.DBA.VAD_DEPS_CHECK (in parr any, in name varchar, in version
   }
     }
 
+}
+;
+
+
+create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
+{
+  declare vads, name, ver, arr, isdav any;
+  declare pname, pver, pfull, pisdav any;
+  declare vaddir any;
+
+  vaddir := cfg_item_value (virtuoso_ini_path (), 'Parameters', 'VADInstallDir'); --'../vad/';
+
+  if (vaddir is null)
+    return;
+
+  declare exit handler for sqlstate '*'
+  {
+    log_message ('Can\'t get list of vad packages in ' || vaddir);
+    return;
+  };
+
+  arr := sys_dirlist (vaddir, 1);
+
+  if (isstring (file_stat (vaddir || 'ods_framework_dav.vad')))
+    arr := vector_concat (vector ('ods_framework_dav.vad'), arr);
+
+  foreach (any f in arr) do
+    {
+       if (f like '%.vad')
+	 {
+	   declare continue handler for sqlstate '*';
+	   pisdav := 0;
+           if (f like '%_dav.vad')
+             pisdav := 1;
+	   VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, 0);
+	   ver := vad_check_version (pname);
+	   if (ver is not null)
+	     {
+	       isdav := coalesce (
+		(select top 1 1 from VAD.DBA.VAD_REGISTRY where R_KEY like sprintf ('/VAD/%s/%s/resources/dav/%%', pname, ver)),
+		0);
+	     }
+--           dbg_obj_print (pname, pver, pfull, isdav);
+	   if (pver > ver and isdav = pisdav)
+	     {
+	       log_message ('Installing '||pfull||' version '||pver|| ' '||case when isdav then '(DAV)' else '' end);
+	       vad_install (vaddir||f);
+	     }
+	 }
+    }
 }
 ;
