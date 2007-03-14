@@ -75,22 +75,37 @@ section.
 				<para>If you have not already done so, please download your copy of OpenLink
     Virtuoso from the OpenLink web site.  The URL is 
     <ulink url="http://www.openlinksw.com">http://www.openlinksw.com</ulink>.
-    When you visit the site, select &quot;Software availability and download&quot;. </para>
-	<para>The Windows file is a single executable for example ntvez30z.exe</para>
+    When you visit the site, select &quot;Download &amp; Evaluation&quot;. </para>
+                                <orderedlist>
+                                   <listitem>
+                                     <para>Select product &quot;OpenLink Virtuoso: Personal Edition &quot;</para>
+                                   </listitem>
+                                   <listitem>
+                                     <para>From &quot;Product Category&quot; choose &quot;Universal Server&quot;</para>
+                                   </listitem>
+                                   <listitem>
+                                     <para>From &quot;Product&quot; choose &quot;Virtuoso Universal Server&quot;</para>
+                                   </listitem>
+                                   <listitem>
+                                     <para>Select &quot;Database Version&quot;</para>
+                                   </listitem>
+                                   <listitem>
+                                     <para>From &quot;server OS&quot; select &quot;Windows&quot; and click &quot;Next&quot;</para>
+                                   </listitem>
+                                   <listitem>
+                                     <para>Select a release and click &quot;Next&quot;</para>
+                                   </listitem>
+                                   <listitem>
+                                     <para>You will be prompt to login in not already.</para>
+                                   </listitem>
+                                   <listitem>
+                                     <para>Click &quot;Next&quot;</para>
+                                   </listitem>
+                                   <listitem>
+                                     <para>Download the desired component. For example, click the HTTP link for &quot;Multi-Threaded Universal Server (Commercial Edition)  for OpenLink Virtuoso 4.x&quot;</para>
+                                   </listitem>
+                                </orderedlist>
 			</sect3>
-<!--
-			<sect3 id="douhaveunzipsw">
-				<title>Do you have WinZip or other unzip software?</title>
-				<para>Virtuoso is delivered as a zip file.  You will likely already have
-    software to extract the files from the archive.  However, if you do not, you should
-    install a zip extraction utility.  One such product is 
-    <ulink url="http://www.winzip.com/">Winzip</ulink>, which is also available for
-    evaluation from numerous shareware sites such as 
-    <ulink url="http://www.shareware.com">http://www.shareware.com</ulink>.
-     Of course, OpenLink makes no claims regarding the unzip software that you use, or
-    where you acquire it.</para>
-			</sect3>
--->
 			<sect3 id="douhavelic">
 				<title>Do you have the License file?</title>
 				<para>The server will need a license file, and this is automatically delivered by email
@@ -125,7 +140,7 @@ for Windows NT/2000/XP.</para></note>
 			</sect3>
 			<sect3 id="allocoftcpports">
 				<title>Allocation of TCP/IP ports</title>
-				<para>The Default and Demo databases have the following port allocations:</para>
+				<para>The Default database have the following port allocations:</para>
 <table><title>Port Usage</title>
   <tgroup cols="2">
  <thead><row><entry>Port</entry><entry>Used by</entry></row></thead>
@@ -136,26 +151,16 @@ for Windows NT/2000/XP.</para></note>
 <row>
   <entry>8889</entry>
   <entry>Default Virtuoso Visual Server Administration Interface HTTP port</entry></row>
-<row>
-  <entry>1112</entry>
-  <entry>Demo Virtuoso Server port</entry></row>
-<row>
-  <entry>8890</entry>
-  <entry>Demo Virtuoso Visual Server Administration Interface HTTP port</entry></row>
     </tbody>
   </tgroup>
 </table>
-<para>
-    During the installation you will be prompted for the HTTP port number on which the Virtuoso System
-    manager will listen. If the port is already in use, you will encounter problems, and should
-    choose another free port when you are prompted.</para>
-				<para>By default, the Virtuoso DBMS listens on port 1111 and the Demo
-    database on 1112. These port numbers are not selectable at install time.
+				<para>By default, the Virtuoso DBMS listens on port 1111.
+    This port number is not selectable at install time.
     If the port is currently in use by another server then after the installation completes
     you will need to change the port number in the Local Virtuoso ODBC DSN that is created
     during the installation process, and also in the following file:</para>
 				<programlisting>
-C:\Program Files\OpenLink\Virtuoso\bin\virtuoso.ini
+C:\Program Files\OpenLink Software\Virtuoso 5.0\bin\virtuoso.ini
 </programlisting>
 				<para>To check if a port is in use on NT, you can use the
     following command, and review the output:</para>
@@ -220,287 +225,128 @@ netstat -an | more
     solution, which implies that your Applications, Virtuoso&apos;s client and server components,
     and the back end database engine(s) that you want to access via Virtuoso all reside on the
     same machine. </para>
+                                <para>Virtuoso Personal Edition Release 5.0 Installation on Windows</para>
 				<orderedlist>
-<!--
 					<listitem>
-						<para>Extract contents of ZIP archive into a temporary installation directory</para>
-					</listitem>
- -->
-					<listitem>
-						<para>Run the installer program, for example &quot;ntvez30z.exe&quot;</para>
-					</listitem>
-					<listitem>
-						<para>The install engine will load.</para>
-						<figure id="wininst002" float="1">
-							<title>The Prepare Screen</title>
-							<graphic fileref="inst/02prepare.png" width="384" depth="191"/>
+						<para>Double click on the Virtuoso Personal Edition installer (for example &quot;ntvpz2zz.msi&quot;) to run the Windows installer.</para>
+                                                <figure id="winpersinst001" float="1">
+							<title>Run the installer</title>
+							<graphic fileref="inst/v50pex8601.png" width="194" depth="62"/>
 						</figure>
 					</listitem>
 					<listitem>
-						<para>This installer might have been compiled for an older version of
-						the installer engine than the one on your system. This will be the
-						case on an XP system without the Service Pack 1. Just confirm OK
-						and continue with installation. It is not a serious problem.</para>
-						<figure id="wininst003" float="1">
-							<title>Engine version Warning</title>
-							<graphic fileref="inst/03engine.png" width="324" depth="199"/>
-						</figure>
-					</listitem>
-					<listitem>
-						<para>Follow the installers on-screen instructions.</para>
-						<figure id="wininst010" float="1">
+						<para>The installer Welcome dialog is loaded:</para>
+						<figure id="winpersinst002" float="1">
 							<title>The Welcome Screen</title>
-							<graphic fileref="inst/10welcome.png" width="504" depth="386"/>
+							<graphic fileref="inst/v50pex8602.png" width="504" depth="386"/>
 						</figure>
 					</listitem>
 					<listitem>
 						<para>You read the full license agreement information and make sure 
             that you agree with all the terms and conditions before proceeding 
             with the installation.</para>
-						<figure id="wininst011" float="1">
+						<figure id="winpersinst003" float="1">
 							<title>License Agreement</title>
-							<graphic fileref="inst/11license.png" width="504" depth="386"/>
+							<graphic fileref="inst/v50pex8603.png" width="504" depth="386"/>
 						</figure>
 					</listitem>
 					<listitem>
-						<para>Choose the installation type that you want to install.  The 
-            "Client Only" option is for installing other client machines that 
-            will be used to access Virtuoso remotely, and so do not need the 
-            database installed.</para>
-						<figure id="wininst013" float="1">
+						<para>If a license file already exists the installer can place this in the correct location for use.
+            Browse to the location of your installer file and the installer will use this for the Virtuoso Server. Alternatively
+            the &quot;Try &amp; Buy&quot; feature of the installer can be used to enable a trial or full license file to be
+            obtained online.</para>
+						<figure id="winpersinst004" float="1">
+							<title>The License File Location</title>
+							<graphic fileref="inst/v50pex8604.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>Choose to obtain a Trial license for an evaluation or enter the shop
+            site to purchase a full license.</para>
+						<figure id="winpersinst005" float="1">
+							<title>The obtain Trial license screen</title>
+							<graphic fileref="inst/v50pex8605.png" width="976" depth="682"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>Click on the &quot;Download License&quot; button on the right to obtain the
+            license file immediately. An e-mail will also be sent with details of the license and the location on the ODS account
+            of the registered user where in can be obtained from at a later date. Once a license file is available on the machine
+            use the &quot;Browse&quot; button to locate it and the &quot;Set License&quot; button to initialize the Virtuoso
+            server with this license file.</para>
+						<figure id="winpersinst006" float="1">
+							<title>The Download license screen</title>
+							<graphic fileref="inst/v50pex8606.png" width="976" depth="680"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>Choose the installation type that you want to install.</para>
+						<figure id="winpersinst007" float="1">
 							<title>Setup Type</title>
-							<graphic fileref="inst/13installtype.png" width="504" depth="386"/>
+							<graphic fileref="inst/v50pex8607.png" width="504" depth="386"/>
 						</figure>
 					</listitem>
 					<listitem>
-						<para>You can transparently integrate Virtuoso with various
-						hosting environments.
-						Your system may show a subset of the available environments
-						that are listed in the figure below.</para>
-						<figure id="wininst014" float="1">
-							<title>Supported Hosting Environments</title>
-							<graphic fileref="inst/14support.png" width="504" depth="386"/>
-						</figure>
-					</listitem>
-					<listitem>
-						<para>Choose the destination directory for the installation.  The 
-            installer will create the installation structure below this.</para>
-						<figure id="wininst017" float="1">
+						<para>If the custom option was chosen, the installer prompts for the
+            Destination folder of the installation.</para>
+						<figure id="winpersinst008" float="1">
 							<title>Choose Destination Location</title>
-							<graphic fileref="inst/17destination.png" width="504" depth="386"/>
+							<graphic fileref="inst/v50pex8608.png" width="504" depth="386"/>
 						</figure>
 					</listitem>
 					<listitem>
-						<para>If you have already got files at this location, you will be warned.
-						</para>
-						<figure id="wininst018" float="1">
-							<title>Choose Destination Location</title>
-							<graphic fileref="inst/18filesexist.png" width="404" depth="126"/>
-						</figure>
-					</listitem>
-					<listitem>
-						<para>Select the components that you want to install.
-            Each selected item will have a tick in the tick-box.  These are 
-            the only items that will be installed.</para>
-						<figure id="wininst020" float="1">
+						<para>Select the Product Features to be installed.</para>
+						<figure id="winpersinst009" float="1">
 							<title>Select Components</title>
-							<graphic fileref="inst/20feature.png" width="504" depth="386"/>
+							<graphic fileref="inst/v50pex8609.png" width="504" depth="386"/>
 						</figure>
 					</listitem>
 					<listitem>
-						<para>This warning may appear to inform you that the Virtuoso installer 
-            cannot find the Microsoft SMTP service.  If you will not be using 
-            the SMTP features of Virtuoso this message can be ignored.  If you 
-            will be using an alternative SMTP server possibly on another machine 
-            you can ignore this message.  The installation will proceed in 
-            either case.</para>
-						<figure id="wininst021" float="1">
-							<title>SMTP Service Warning </title>
-							<graphic fileref="inst/21smtp.png" width="622" depth="101"/>
-						</figure>
-					</listitem>
-<!--
-					<listitem>
-						<para>If you earlier chose to install more than one Java class versions 
-            then you will be presented with this dialog to choose how you want 
-            the installer to update your environment to include the Virtuoso 
-            JDBC driver.</para>
-						<figure id="wininst022" float="1">
-							<title>Select Classpath</title>
-							<graphic fileref="inst/22jdk.png" width="504" depth="386"/>
-						</figure>
-					</listitem>
- -->
-					<listitem>
-						<para>If you are installing to a directory that contained a previous 
-            installation of Virtuoso the installer may find that you already 
-            a demo database .db file.  This prompt confirms whether you want 
-            it replaced.</para>
-						<figure id="wininst023" float="1">
-							<title>Demo DB Overwrite Question</title>
-							<graphic fileref="inst/23demooverwrite.png" width="599" depth="126"/>
+						<para>The Installation is now ready to proceed.</para>
+						<figure id="winpersinst010" float="1">
+							<title>Proceed Installation</title>
+							<graphic fileref="inst/v50pex8610.png" width="504" depth="386"/>
 						</figure>
 					</listitem>
 					<listitem>
-						<para>The default database server requires a valid license file 
-            (virtuoso.lic) before it will successfully start.  This file is usually 
-            delivered by email.  If you are not in possession of a license file 
-            at this time then you can install it later manually.</para>
-						<figure id="wininst024" float="1">
-							<title>Select License File</title>
-							<graphic fileref="inst/24licfile.png" width="504" depth="386"/>
+						<para>The Progress of the installation is indicated in the Status bar.</para>
+						<figure id="winpersinst011" float="1">
+							<title>Status bar</title>
+							<graphic fileref="inst/v50pex8611.png" width="504" depth="386"/>
 						</figure>
 					</listitem>
 					<listitem>
-						<para>Use this dialog to locate the license file that you wish to 
-            use.  If you do not have a license file you will need to install 
-            it later, in which case you can cancel this dialog.</para>
-						<figure id="wininst025" float="1">
-							<title>Select License File</title>
-							<graphic fileref="inst/25licfile2.png" width="563" depth="419"/>
+						<para>The installation is now complete.</para>
+						<figure id="winpersinst012" float="1">
+							<title>Complete Installation</title>
+							<graphic fileref="inst/v50pex8612.png" width="508" depth="386"/>
 						</figure>
 					</listitem>
 					<listitem>
-						<para>After the installation has completed you may want one of the 
-            installed Virtuoso servers to be started.  Choose the appropriate 
-            action.</para>
-						<figure id="wininst030" float="1">
-							<title>Select Startup Database</title>
-							<graphic fileref="inst/30startdb.png" width="504" depth="386"/>
-						</figure>
-						<para>Virtuoso is installed as a Windows Service which can be started 
-            manually or automatically at boot time.  These options let you choose 
-            which.</para>
-					</listitem>
-					<listitem>
-						<para>Choose the server variant you wish to use for the default server.
-						The list will only show supported environments as indicated earlier.</para>
-						<figure id="wininst032" float="1">
-							<title>Select Default Server</title>
-							<graphic fileref="inst/32selectdef.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>Choose the server variant you wish to use for the demo server.
-						The list will only show supported environments as indicated earlier.</para>
-						<figure id="wininst034" float="1">
-							<title>Select Demo Database Server</title>
-							<graphic fileref="inst/34selectdemo.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para></para>
-						<figure id="wininst036" float="1">
-							<title>Select Service Startup Type</title>
-							<graphic fileref="inst/36startuptype.png" width="504" depth="386"/>
+						<para>The installer may prompt for the machine to be reboot if required.</para>
+						<figure id="winpersinst013" float="1">
+							<title>Reboot prompt</title>
+							<graphic fileref="inst/v50pex8613.png" width="436" depth="161"/>
 						</figure>
 					</listitem>
 					<listitem>
-						<para>Shortcuts to the program and documentation will be contained 
-            under a subdirectory of the Start Menu.  Choose the name of the 
-            directory.</para>
-						<figure id="wininst040" float="1">
-							<title>Select Program Folder</title>
-							<graphic fileref="inst/40menufolder.png" width="504" depth="386"/></figure>
+						<para>Choose to change the &quot;dba&quot; and &quot;dav&quot; administrative
+         user passwords from their default of &quot;dba&quot; and &quot;dav&quot; respectively to a value of your choice.</para>
+						<figure id="winpersinst014" float="1">
+							<title>Reboot prompt</title>
+							<graphic fileref="inst/v50pex8614.png" width="678" depth="547"/>
+						</figure>
 					</listitem>
 					<listitem>
-						<para>Press Next to begin copying files or press Back to change 
-            any of the settings of the installer.</para>
-						<figure id="wininst050" float="1">
-							<title>Start Copying Files</title>
-							<graphic fileref="inst/50startcopy.png" width="504" depth="386"/></figure>
+						<para>The Virtuoso Server Welcome page will now be displayed indicating the
+         server is online. This Web based page can be used for general configuration and usage of the Virtuoso Server.</para>
+						<figure id="winpersinst015" float="1">
+							<title>Reboot prompt</title>
+							<graphic fileref="inst/v50pex8615.png" width="722" depth="675"/>
+						</figure>
 					</listitem>
-					<listitem>
-						<para>Before any files can be copied the installer must make sure that 
-            there are now running Virtuoso services that will lock files that 
-            must be overwritten.</para>
-						<figure id="wininst055" float="1">
-							<title>Preparing to Copy Files</title>
-							<graphic fileref="inst/55serviceconflict.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>This will give an indication of the progress of the file 
-            copying process.</para>
-						<figure id="wininst058" float="1">
-							<title>Copying Files Progress</title>
-							<graphic fileref="inst/58copyfiles.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>The Virtuoso includes a web server that can be used for 
-            administering the server remotely.  You must choose a free TCP/IP 
-            port number for the web server listener to use.  This is for the 
-            default Virtuoso server.</para>
-						<figure id="wininst060" float="1">
-							<title>Database Server HTTP Port Select</title>
-							<graphic fileref="inst/60defhttp.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>The Virtuoso Default server listens on a specific port for
-						commands. You must choose a free TCP/IP port number for this.</para>
-						<figure id="wininst062" float="1">
-							<title>Database Server Port Select</title>
-							<graphic fileref="inst/62defport.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>Set the Administration password for the Default Virtuoso Server.
-						Repeat the password to make sure you enter it correctly.</para>
-						<figure id="wininst064" float="1">
-							<title>Default Server Administration Password</title>
-							<graphic fileref="inst/64defdba.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>Set the DAV password for the Default Virtuoso Server.
-						Repeat the password to make sure you enter it correctly.</para>
-						<figure id="wininst066" float="1">
-							<title>Default Server DAV Password</title>
-							<graphic fileref="inst/66defdav.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>If the Demo database was selected then this is configured in a similar
-						way to the Default database. Set the Admin interface HTTP port.</para>
-						<figure id="wininst070" float="1">
-							<title>Demo Database Server HTTP Port Select</title>
-							<graphic fileref="inst/70demohttp.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>Set the port for the Demo server.</para>
-						<figure id="wininst072" float="1">
-							<title>Demo Database Server Port Select</title>
-							<graphic fileref="inst/72demoport.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>Set the Administration password for the Demo Virtuoso Server.
-						Repeat the password to make sure you enter it correctly.</para>
-						<figure id="wininst074" float="1">
-							<title>Demo Server Administration Password</title>
-							<graphic fileref="inst/74demodba.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>Set the DAV password for the Demo Virtuoso Server.
-						Repeat the password to make sure you enter it correctly.</para>
-						<figure id="wininst076" float="1">
-							<title>Demo Server DAV Password</title>
-							<graphic fileref="inst/76demodav.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>As per your selection earlier, Virtuoso services will now be started.</para>
-						<figure id="wininst080" float="1">
-							<title>Starting Demo Service</title>
-							<graphic fileref="inst/80demostart.png" width="301" depth="104"/></figure>
-					</listitem>
-					<listitem>
-						<para>The final confirmation of the completion of the installation.  
-            You may need to reboot the machine for the client drivers to be 
-            correctly installed.</para>
-						<figure id="wininst091" float="1">
-							<title>Setup Complete</title>
-							<graphic fileref="inst/91complete.png" width="504" depth="386"/></figure>
-					</listitem>
-					<listitem>
-						<para>If a server was started during the install, then the
-						Administration page is shown in a web browser.</para>
-						<figure id="wininst095" float="1">
-							<title>Administration Page</title>
-							<graphic fileref="inst/95admingui.png" width="553" depth="385"/></figure>
-					</listitem>
+
+
 				</orderedlist>
 			</sect3>
 			<sect3 id="TwoTierConfigInst">
@@ -1768,164 +1614,135 @@ bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
   that you have the correct package from the <ulink url="http://www.openlinksw.com/">OpenLink</ulink>
   Web Site.</para>
 
-  <para>The following packages are available for download, with their respective
-  disk image filenames:</para>
-
-  <simplelist>
-    <member>OpenLink Virtuoso Enterprise v3.0 - VirtuosoEnterprise-3.0.dmg</member>
-    <member>OpenLink Virtuoso Client v3.0 - VirtuosoClient-3.0.dmg</member>
-  </simplelist>
-
-  <para>The Enterprise Edition of Virtuoso using the systems native
-	threading architecture to provide a truly scalable solution for supporting
-	potentially large systems whereas the Lite version uses a customized library
-	developed by OpenLink for good performance on smaller systems.  For most
-	evaluation purposes there will not be that much difference.</para>
-
-	<para>You will need an ODBC Driver Manager to make use of ODBC Data sources.
-	You can download the iODBC Driver Manager from the <ulink url="http://www.iodbc.org">iODBC</ulink>
-	Web Site</para>
-
-	<para>The Virtuoso server once installed will attempt to bind to the TCP/IP ports
-	1111, 1112, 8889, and 8890 by default, so you will have to determine whether
-	these are already in use by other services or you will need to change the default
-	settings during the installation process.</para>
-
 	</sect2>
 
   <sect2 id="macosxinst"><title>Installation Process</title>
 
-  <para>Once the image file has been downloaded and saved to a convenient location you
-  will have to mount the disk image by double-clicking on the file.  Once mounted you
-  will need to launch the installer program, which will be one of the following
-  depending on the image downloaded:</para>
+  <para>Open the Virtuoso Personal Edition Disk Image file ntvpz2zz.dmg by either double clicking on
+        the DMG file in the Finder windows or using the &quot;open&quot; command from a Terminal window, to mount
+        the Disk Image containing the VirtuosoPersonalEdition.mpkg installer.
+  </para>
 
-  <simplelist>
-    <member>VirtuosoEnterprise-3.0.mpkg</member>
-    <member>VirtuosoLite-3.0.mpkg</member>
-    <member>VirtuosoClient-3.0.mpkg</member>
-  </simplelist>
+  <figure id="v50pe00" float="1"><title>Mounting the Disk Image</title>
+    <graphic fileref="mac/v50pe00.png" width="250" depth="217"/></figure>
 
-  <figure id="macinstall01" float="1"><title>Mounting the Disk Image</title>
-    <graphic fileref="mac/install01.jpg" /></figure>
+  <para>The installer will load the Introduction page.
+  </para>
 
-  <para>In order for the system to allow you to install a new package you are
-	required to be identified as an administrator.  To do this you have to click
-	the lock icon at the bottom of the Installer dialog box.</para>
+  <figure id="v50pe01" float="1"><title>Installer Introduction Page</title>
+    <graphic fileref="mac/v50pe01.png" width="626" depth="445"/></figure>
 
-  <figure id="macinstall02" float="1"><title>Identifying yourself as Administrator</title>
-    <graphic fileref="mac/install02.jpg"/></figure>
+  <para>Review the Readme page for any important information concerning the product installation.
+  </para>
 
-	<para>Once your authentication is accepted, you will be presented with the
-	Installer introduction page.</para>
+  <figure id="v50pe02" float="1"><title>Important Information</title>
+    <graphic fileref="mac/v50pe02.png" width="624" depth="441"/></figure>
 
-  <figure id="macinstall03" float="1"><title>Installer Introduction Page</title>
-    <graphic fileref="mac/install.jpg"/></figure>
+  <para>Read the license agreement and &quot;agree&quot; to the terms.
+  </para>
 
-  <para>Please read the Important Information.</para>
+  <figure id="v50pe03" float="1"><title>Software License Agreement</title>
+    <graphic fileref="mac/v50pe03.png" width="621" depth="442"/></figure>
 
-  <figure id="osximage01" float="1"><title>Important Information</title>
-    <graphic fileref="mac/osximage01.gif"/></figure>
+  <para>Select the Destination volume the software is to be installed on.
+  </para>
 
-  <para>Please read the Software License Agreement.</para>
+  <figure id="v50pe04" float="1"><title>Select Destination</title>
+    <graphic fileref="mac/v50pe04.png" width="622" depth="440"/></figure>
 
-  <figure id="osximage02" float="1"><title>Software License Agreement</title>
-    <graphic fileref="mac/osximage02.gif"/></figure>
+  <para>Choose to perform and Easy(default) installation or click on the &quot;customize&quot; button to perfrom a Custom installation.
+  </para>
 
-  <para>You must agree to the terms of the license in order to install.</para>
+  <figure id="v50pe05" float="1"><title>Selecting the Type of Installation</title>
+    <graphic fileref="mac/v50pe05.png" width="622" depth="440"/></figure>
 
-  <figure id="osximage03" float="1"><title>Confirm Acceptance</title>
-    <graphic fileref="mac/osximage03.gif"/></figure>
+  <para>If the &quot;Custom&quot; option was selected in the previous step then select the packages to be installed.
+  </para>
 
-	<para>Continue with the installation by choosing <emphasis>Select Destination</emphasis>
-	and choose the destination drive where you wish to install the OpenLink
-	Virtuoso product.</para>
-
-  <figure id="macinstall04" float="1"><title>Select Destination</title>
-    <graphic fileref="mac/install09.jpg"/></figure>
-
-	<para>You can choose the <emphasis>Installation Type</emphasis> to be either
-	Easy Install, taking the defaults, or Customize your installation to your needs.
-	The following screens assume a custom Install. Click on Customize to proceed.</para>
-
-  <figure id="osximage05" float="1"><title>Selecting the Type of Installation</title>
-    <graphic fileref="mac/osximage05.gif" /></figure>
-
-	<para>Chose the packages you wish to install.</para>
-
-  <figure id="macinstall05" float="1"><title>Customizing the Installation</title>
-    <graphic fileref="mac/install11.jpg" /></figure>
-
-	<para>Installer prepares for file transfer.</para>
-
-  <figure id="osximage07" float="1"><title>Preparing files</title>
-    <graphic fileref="mac/osximage07.gif" /></figure>
-
-	<para>During the installation you will need to enter your passphrase.</para>
-
-  <figure id="osximage08" float="1"><title>Enter Passphrase</title>
-    <graphic fileref="mac/osximage08.gif" /></figure>
-
-	<para>The installer will continue installing files</para>
-
-  <figure id="osximage09" float="1"><title>Installing...</title>
-    <graphic fileref="mac/osximage09.gif" /></figure>
-
-	<para>Select the database to startup at the end of the install.</para>
-
-  <figure id="osximage10" float="1"><title>Starup choice</title>
-    <graphic fileref="mac/osximage10.gif" /></figure>
-
-	<para>A license file is required to use the server.
-	During the download process, a license file is emailed to you.</para>
-
-  <figure id="osximage11" float="1"><title>License intro</title>
-    <graphic fileref="mac/osximage11.gif" /></figure>
-
-	<para>Choose folder for license file.</para>
-
-  <figure id="osximage12" float="1"><title>Choose license folder</title>
-    <graphic fileref="mac/osximage12.gif" /></figure>
-
-	<para>Choose license file.</para>
-
-  <figure id="osximage13" float="1"><title>Choose license folder</title>
-    <graphic fileref="mac/osximage13.gif" /></figure>
+  <figure id="v50pe06" float="1"><title>Customizing the Installation</title>
+    <graphic fileref="mac/v50pe06.png" width="619" depth="449"/></figure>
 
 
-	<para>You now have to configure the Virtuoso.</para>
+  <para>The software must be install by a user with Administrative privileges on the machine.
+  </para>
 
-  <figure id="osximage14" float="1"><title>Main Server</title>
-    <graphic fileref="mac/osximage14.gif" /></figure>
+  <figure id="v50pe07" float="1"><title>Identifying yourself as Administrator</title>
+    <graphic fileref="mac/v50pe07.png" width="437" depth="238"/></figure>
 
-  <figure id="osximage15" float="1"><title>Demo Server</title>
-    <graphic fileref="mac/osximage15.gif" /></figure>
+  <para>The software components will be installed the status of which is indicated by the progress bar.
+  </para>
 
-  <figure id="osximage16" float="1"><title>Account Password</title>
-    <graphic fileref="mac/osximage16.gif" /></figure>
+  <figure id="v50pe08" float="1"><title>Preparing ... </title>
+    <graphic fileref="mac/v50pe08.png" width="623" depth="441"/></figure>
 
-  <figure id="osximage17" float="1"><title>Zero Config</title>
-    <graphic fileref="mac/osximage17.gif" /></figure>
+  <para>The Virtuoso Server is started at the end of this process and a Web page loaded enabling you
+        to obtain a trial or full license from the company order processing site online.
+  </para>
 
-  <figure id="osximage18" float="1"><title>Server Tab</title>
-    <graphic fileref="mac/osximage18.gif" /></figure>
+  <figure id="v50pe09" float="1"><title>Admin Assistant</title>
+    <graphic fileref="mac/v50pe09.png" width="737" depth="361"/></figure>
 
-	<para>The installation is now complete.</para>
+  <para>Choose to obtain a Trial license for an evaluation or enter the shop site to purchase a full license.
+  </para>
 
-  <figure id="osximage19" float="1"><title>Success</title>
-    <graphic fileref="mac/osximage19.gif" /></figure>
+  <figure id="v50pe10" float="1"><title>The Trial license page</title>
+    <graphic fileref="mac/v50pe10.png" width="905" depth="693"/></figure>
 
-	<para>If a server was instructed to start at the end of the install,
-	then the web browser is shown on the Administration page for the server.</para>
+  <para>Click on the &quot;Download License&quot; button on the right to obtain the license file immediately.
+        An e-mail will also be sent with details of the license and the location on the ODS account of the
+        registered user where in can be obtained from at a later date. Once a license file is available on the
+        machine use the &quot;Browse&quot; button to locate it and the &quot;Set License&quot; button to
+        initialize the Virtuoso server with this license file.
+  </para>
 
-  <figure id="osximage20" float="1"><title>Admin Assistant</title>
-    <graphic fileref="mac/osximage20.gif" /></figure>
+  <figure id="v50pe11" float="1"><title>Download license</title>
+    <graphic fileref="mac/v50pe11.png" width="881" depth="759"/></figure>
 
+  <para>Choose to change the &quot;dba&quot; and &quot;dav&quot; administrative user passwords from their default
+        of &quot;dba&quot; and &quot;dav&quot; respectively to a value of your choice.
+  </para>
 
+  <figure id="v50pe12" float="1"><title>Change passwords</title>
+    <graphic fileref="mac/v50pe12.png" width="858" depth="503"/></figure>
 
-	<para>Once the installation has finished it is safe to unmount the
-	disk image directory by dragging and dropping the directory in the trash icon
-	of the dock.</para>
+  <para>The Virtuoso Server Welcome page will now be displayed indicating the server is online.
+        This Web based page can be used for general configuration and usage of the Virtuoso Server.
+  </para>
+
+  <figure id="v50pe13" float="1"><title>Welcome</title>
+    <graphic fileref="mac/v50pe13.png" width="766" depth="622"/></figure>
+
+  <para>The Installation is now complete.
+  </para>
+
+  <figure id="v50pe14" float="1"><title>Installation complete</title>
+    <graphic fileref="mac/v50pe14.png" width="623" depth="439"/></figure>
+
+  	</sect2>
+
+        <sect2 id="macosxconfigur"><title>Configuration</title>
+
+  <para>Click on the &quot;Conductor&quot; link in the left frame of the Welcome page to load the
+        Virtuoso Conductor which is the Administration interface for the installation.
+        Enter the &quot;dba&quot; username and password to login.
+  </para>
+
+  <figure id="v50pe15" float="1"><title>Configuration</title>
+    <graphic fileref="mac/v50pe15.png" width="877" depth="752"/></figure>
+
+  <para>Once logged into the Condictor click on any of the &quot;Tabs&quot; along the top to Administer the various
+        features ofthe Virtuoso Universal Server installation.
+  </para>
+
+  <figure id="v50pe16" float="1"><title>Various features using Condcutor Tabs</title>
+    <graphic fileref="mac/v50pe16.png" width="878" depth="749"/></figure>
+
+  <para>Apple scripts for starting and stopping your Virtuoso Universal Server installation are located in
+        the &quot;/Application/OpenLink Virtuoso&quot; folder of the machine.
+  </para>
+
+  <figure id="v50pe17" float="1"><title>Location of apple scripts</title>
+    <graphic fileref="mac/v50pe17.png" width="377" depth="438"/></figure>
 
 	</sect2>
 

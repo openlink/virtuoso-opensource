@@ -54,7 +54,28 @@
   <member>st_build_date</member>
   <member>st_lic_owner</member>
   <member>st_lic_max_connections</member>
+  <member>st_lic_current_use</member>
+  <member>st_lic_granted_use</member>
+  <member>st_lic_peak_use</member>
+  <member>st_lic_times_exceeded</member>
+  <member>st_lic_claims</member>
+  <member>st_lic_clients</member>
+  <member>st_lic_issuer</member>
   <member>st_lic_serial_number</member>
+  <member>st_lic_release</member>
+  <member>st_lic_platform</member>
+  <member>st_lic_expiredate</member>
+  <member>st_lic_ncpus</member>
+  <member>st_lic_nusers</member>
+  <member>st_lic_modules</member>
+  <member>st_lic_applications</member>
+  <member>st_lic_availability</member>
+  <member>st_lic_clients</member>
+  <member>st_lic_nodename</member>
+  <member>st_lic_wstype</member>
+  <member>st_lic_notice</member>
+  <member>st_lic_lmgr_version</member>
+  <member>st_lic_lmgr_directory</member>
   <member>st_proc_served</member>
   <member>st_proc_active</member>
   <member>st_proc_running</member>

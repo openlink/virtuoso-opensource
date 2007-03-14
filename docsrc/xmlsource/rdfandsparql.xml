@@ -846,6 +846,15 @@ The typical use of this pragma is querying a set of related resources when only 
 It turns all variables and IRI constants in all graph, subject and object fields of all triple patterns of the query into values for
 <emphasis>input:grab-var</emphasis> and <emphasis>input:grab-iri</emphasis>,
 so the SPARQL processor will dereference everything what might be related to the text of the query.</listitem>
+  <listitem><emphasis>input:grab-seealso</emphasis> specifies an IRI of an predicate similar to foaf:seeAlso.
+Predicates of that sort suggest location of resources that contain more data about predicate subject.
+The IRI dereferencing routine may use these predicates to find additional IRIs for loading resources.
+This is especially useful when the text of the query comes from remote client and may lack triple patterns like
+<emphasis><![CDATA[optional { ?id <SeeAlso> ?more }]]></emphasis> from the previous example.
+The use of <emphasis>input:grab-seealso</emphasis> makes the SPARQL query nondeterministic, because the order and the number of retrieved documents will
+depend on execution plan and they may change from run to run.
+This pragma can be used more than once to specify many IRIs, but this feature is costly.
+Every additional predicate may result in significant number of lookups in the RDF storage, affecting total execution time.</listitem>
   <listitem><emphasis>input:grab-limit</emphasis> should be an integer that is a maximum allowed number of resource retrievals.
 The default value is pretty big (few millions of documents) so it is strongly recommended to set smaller value.
 Set it even if you're absolutely sure that the set of resources is small, because program errors are always possible.

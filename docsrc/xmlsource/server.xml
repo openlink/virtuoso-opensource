@@ -892,6 +892,30 @@ JavaVMOption5  = -Ddt5=val5
 		</para>
 	    </formalpara>
 	</listitem>
+	<listitem id="ini_Parameters_DefaultIsolation">
+	    <formalpara>
+		<title>DefaultIsolation</title>
+		<para>This specifies the default transaction isolation.  This isolation is used
+		    unless overridden by a client  setting it using the SQL_TXN_ISOLATION or
+		    equivalent connection option or a stored procedure locally setting it with
+		    the SET statement.  The values are as by the SQL_TXN_ constants in ODBC,
+		    that is, 1 for read uncommitted, 2 for read committed, 4 for repeatable
+		    read and 8 for serializable.  If nothing is specified, the default is 
+		    repeatable read.
+		</para>
+	    </formalpara>
+	</listitem>
+	<listitem id="ini_Parameters_UseAIO">
+	    <formalpara>
+		<title>UseAIO</title>
+		<para>This specifies whether to use asynchronous file I/O on supporting Unix
+		    systems.  A value of 0 means not using it.  A value of 1 means using
+		    lio_listio for any background write or read ahead if available.  A value of
+		    2 means to use the regular blocking read and write but to merge adjacent
+		    operations into a single system call when possible.
+		</para>
+	    </formalpara>
+	</listitem>
 	<listitem id="ini_TempDBSize">
 	    <formalpara>
 		<title>TempDBSize</title>

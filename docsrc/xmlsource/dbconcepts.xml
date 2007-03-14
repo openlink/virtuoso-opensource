@@ -841,10 +841,25 @@ may or may not be committed, hence there is no guarantee of transaction integrit
 			</sect4>
 			<sect4 id="ReadCommit">
 				<title>Read Committed</title>
-				<para>Reading will wait for access to exclusively locked rows. Such rows
-are ones that have been read FOR UPDATE, updated or inserted.  Reading a row does not
-leave a lock in place; therefore, some other transaction may modify a row that has been read
-in a <parameter>read committed</parameter> transaction while the latter is in progress.
+				<para>Historical Read Committed</para>
+                                <para>Starting with release 5.0, Virtuoso has a non-locking,
+versioned <parameter>read committed</parameter> transaction mode. This is similar to Oracle's default isolation.
+</para>
+                                <para>If a locked row is read without FOR UPDATE being specified and another
+transaction owns the lock, the reading transaction will see the row in the state it had before being modified
+by the transaction owning the lock. There will be no wait. If a row has been inserted but the insert not committed,
+the row will not be seen by the <parameter>read committed</parameter> transaction. If a row has been updated or deleted,
+the row will be seen as it was before the uncommitted modifying transaction.
+</para>
+                                <para>If a row is read in <parameter>read committed</parameter> mode with FOR UPDATE specified
+or as part of a searched update or delete statement, the <parameter>read committed</parameter> transaction will wait for a
+locked row and will set an exclusive lock on the row if the row matches the search criteria. This exclusive lock will be
+held until the <parameter>read committed</parameter> transaction terminates.
+</para>
+                                <para>Hence, if FOR UPDATE is specified, a <parameter>read committed</parameter> transaction
+will have repeatable read semantics, otherwise it guarantees no repeatable read but does guarantee that uncommitted data are never seen.
+</para>
+                                <para>To make this the default mode, set DefaultIsolation in the Parameters section of virtuoso.ini to 2.
 </para>
 			</sect4>
 			<sect4 id="RepeatableRead">
