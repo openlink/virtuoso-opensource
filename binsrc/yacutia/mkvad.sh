@@ -263,12 +263,12 @@ VERSION_INIT()
       fi
   else  
   rm -f version.tmp
-  for i in `find . -name 'Entries'`; do
+      for i in `find . -name 'Entries' | grep -v toolkit`; do
         cat "$i" | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
   done
   LANG=POSIX
   export LANG
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=165 } { cnt = cnt + $1 } END { printf "1.0%01.04f", cnt/10000 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=600 } { cnt = cnt + $1 } END { printf "1.0%01.04f", cnt/10000 }'`
   rm -f version.tmp
       echo "$VERSION" > vad_version
   fi
@@ -366,10 +366,8 @@ echo "</sticker>" >> $STICKER
 #==============================================================================
 #  MAIN ROUTINE
 #==============================================================================
-#rm -f yacutia_dav.vad
 rm -f conductor_dav.vad
 rm -f conductor_filesystem.vad
-#rm -f yacutia_filesystem.vad
 rm -rf vad
 rm -f $LOGFILE
 rm -f vad.db vad.trx vad.log virtuoso.ini virtuoso.tdb
@@ -419,7 +417,6 @@ cp -f $HOME/binsrc/xddl/xddl_tables.xsd .
 cp -f $HOME/binsrc/xddl/xddl.sql vad/vsp/conductor
 cp -f $HOME/binsrc/xddl/xddl_dav.sql vad/vsp/conductor
 cp -f $HOME/binsrc/xddl/xddl_filesystem.sql vad/vsp/conductor
-cp -f $HOME/binsrc/samples/demo/virtuoso.lic . 2>/dev/null
 cp -f images/* vad/vsp/conductor/images
 cp -f images/dav_browser/* vad/vsp/conductor/images/dav_browser
 #cp -f images/buttons/* vad/vsp/conductor/images/buttons
