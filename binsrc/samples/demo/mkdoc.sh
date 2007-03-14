@@ -341,6 +341,7 @@ LOG "Directory init..."
 
   $CP docsrc/images/mac/*.jpg vad/data/doc/images/mac/.
   $CP docsrc/images/mac/*.gif vad/data/doc/images/mac/.
+  $CP docsrc/images/mac/*.png vad/data/doc/images/mac/.
 
   $CP docsrc/images/misc/*.jpg vad/data/doc/images/misc/.
   $CP docsrc/images/misc/*.gif vad/data/doc/images/misc/.
