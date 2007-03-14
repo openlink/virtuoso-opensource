@@ -238,6 +238,12 @@ class VirtuosoTypes
 
    public static final int DV_DATETIME = 211;
 
+   /* 
+    *  IRI
+    */
+   public static final int DV_IRI_ID = 243;
+   public static final int DV_IRI_ID_8 = 244;
+
    /**
     *  Codes for Remote Actions
     */

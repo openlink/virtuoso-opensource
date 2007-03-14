@@ -538,6 +538,17 @@ class VirtuosoInputStream extends BufferedInputStream
 		     //System.out.println (res.toString());
                      return res;
                    }
+             case VirtuosoTypes.DV_IRI_ID:
+                   {
+                     res = new Integer(readlongint());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_IRI_ID_8:
+                   {
+                     res = new Long((((long)readlongint() << 32) & 0xffffffff00000000L) |
+          (readlongint() & 0xffffffffL) );
+                     return res;
+                   }
              default:
                  // Problem !
                  //System.out.println("Tag not defined : "+tag);
