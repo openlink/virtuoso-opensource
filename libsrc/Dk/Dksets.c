@@ -87,6 +87,28 @@ DBG_NAME(dk_set_delete) (DBG_PARAMS dk_set_t * set, void *item)
   return 0;
 }
 
+void *
+DBG_NAME(dk_set_delete_nth) (DBG_PARAMS dk_set_t * set, int idx)
+{
+  s_node_t *node = *set;
+  dk_set_t *previous = set;
+  if (0 > idx)
+    return NULL;
+  while (node)
+    {
+      if (0 == idx)
+	{
+          void *res = node->data;
+	  *previous = node->next;
+	  DK_FREE (node, sizeof (s_node_t));
+	  return res;
+	}
+      previous = &(node->next);
+      node = node->next;
+      idx--;
+    }
+  return NULL;
+}
 
 uint32
 dk_set_length (s_node_t * set)

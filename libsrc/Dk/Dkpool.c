@@ -588,8 +588,8 @@ void * DBG_NAME(t_set_pop) (DBG_PARAMS s_node_t ** set)
   return NULL;
 }
 
-
-void DBG_NAME(t_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
+int
+DBG_NAME(t_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
 {
   if (!dk_set_member (*set, item))
     {
@@ -597,7 +597,24 @@ void DBG_NAME(t_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
       newn->next = *set;
       newn->data = item;
       *set = newn;
+      return 1;
     }
+  return 0;
+}
+
+
+int
+DBG_NAME(t_set_push_new_string) (DBG_PARAMS s_node_t ** set, void *item)
+{
+  if (0 > dk_set_position_of_string (*set, item))
+    {
+      s_node_t * newn = (s_node_t *) t_alloc_box (sizeof (s_node_t), DV_NON_BOX);
+      newn->next = *set;
+      newn->data = item;
+      *set = newn;
+      return 1;
+    }
+  return 0;
 }
 
 

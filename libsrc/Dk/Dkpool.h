@@ -241,7 +241,8 @@ box_t t_box_float (float d);
 void dbg_mp_set_push (const char *file, int line, mem_pool_t *mp, dk_set_t * set, void* elt);
 dk_set_t dbg_t_cons (const char *file, int line, void* car, dk_set_t cdr);
 void dbg_t_set_push (const char *file, int line, dk_set_t * set, void* elt);
-void dbg_t_set_pushnew (const char *file, int line, s_node_t ** set, void *item);
+int dbg_t_set_pushnew (const char *file, int line, s_node_t ** set, void *item);
+int dbg_t_set_push_new_string (const char *file, int line, s_node_t ** set, void *item);
 void *dbg_t_set_pop (const char *file, int line, dk_set_t * set);
 dk_set_t  dbg_t_set_union (const char *file, int line, dk_set_t s1, dk_set_t s2);
 dk_set_t  dbg_t_set_intersect (const char *file, int line, dk_set_t s1, dk_set_t s2);
@@ -249,12 +250,12 @@ dk_set_t  dbg_t_set_diff (const char *file, int line, dk_set_t s1, dk_set_t s2);
 caddr_t* dbg_t_list_to_array (const char *file, int line, dk_set_t list);
 caddr_t* dbg_t_revlist_to_array (const char *file, int line, dk_set_t list);
 int dbg_t_set_delete (const char *file, int line, dk_set_t * set, void *item);
-void dbg_t_set_pushnew (const char *file, int line, s_node_t ** set, void *item);
 dk_set_t dbg_t_set_copy (const char *file, int line, dk_set_t s);
 #define mp_set_push(mp,set,elt)	dbg_mp_set_push (__FILE__, __LINE__, (mp), (set), (elt))
 #define t_cons(car,cdr)		dbg_t_cons (__FILE__, __LINE__, (car), (cdr))
 #define t_set_push(set,elt)	dbg_t_set_push (__FILE__, __LINE__, (set), (elt))
 #define t_set_pushnew(set,item)	dbg_t_set_pushnew (__FILE__, __LINE__, (set), (item))
+#define t_set_push_new_string(set,item)	dbg_t_set_push_new_string (__FILE__, __LINE__, (set), (item))
 #define t_set_pop(set)		dbg_t_set_pop (__FILE__, __LINE__, (set))
 #define t_set_union(s1,s2)	dbg_t_set_union (__FILE__, __LINE__, (s1), (s2))
 #define t_set_intersect(s1,s2)	dbg_t_set_intersect (__FILE__, __LINE__, (s1), (s2))
@@ -262,13 +263,13 @@ dk_set_t dbg_t_set_copy (const char *file, int line, dk_set_t s);
 #define t_list_to_array(list)	dbg_t_list_to_array (__FILE__, __LINE__, (list))
 #define t_revlist_to_array(list)	dbg_t_revlist_to_array (__FILE__, __LINE__, (list))
 #define t_set_delete(set,item)	dbg_t_set_delete (__FILE__, __LINE__, (set), (item))
-#define t_set_pushnew(set,item)	dbg_t_set_pushnew (__FILE__, __LINE__, (set), (item))
 #define t_set_copy(s)		dbg_t_set_copy (__FILE__, __LINE__, (s))
 #else
 void mp_set_push (mem_pool_t *mp, dk_set_t * set, void* elt);
 dk_set_t t_cons (void* car, dk_set_t cdr);
 void t_set_push (dk_set_t * set, void* elt);
-void t_set_pushnew (s_node_t ** set, void *item);
+int t_set_pushnew (s_node_t ** set, void *item);
+int t_set_push_new_string (s_node_t ** set, void *item);
 void *t_set_pop (dk_set_t * set);
 dk_set_t  t_set_union (dk_set_t s1, dk_set_t s2);
 dk_set_t  t_set_intersect (dk_set_t s1, dk_set_t s2);
@@ -276,7 +277,6 @@ dk_set_t  t_set_diff (dk_set_t s1, dk_set_t s2);
 caddr_t* t_list_to_array (dk_set_t list);
 caddr_t* t_revlist_to_array (dk_set_t list);
 int t_set_delete (dk_set_t * set, void *item);
-void t_set_pushnew (s_node_t ** set, void *item);
 dk_set_t t_set_copy (dk_set_t s);
 #endif
 

@@ -78,6 +78,7 @@ dk_set_t dk_set_last (dk_set_t set);
 dk_set_t dk_set_conc (dk_set_t s1, dk_set_t s2);
 
 EXE_EXPORT (int, dk_set_delete, (dk_set_t *set, void *item));
+EXE_EXPORT (void *, dk_set_delete_nth, (dk_set_t *set, int idx));
 EXE_EXPORT (void, dk_set_push, (s_node_t **set, void *item));
 
 #ifdef MALLOC_DEBUG
@@ -90,6 +91,7 @@ void dbg_dk_set_push (const char *file, int line, s_node_t **set, void *item);
 void dbg_dk_set_pushnew (const char *file, int line, s_node_t **set, void *item);
 void *dbg_dk_set_pop (const char *file, int line, s_node_t **set);
 int dbg_dk_set_delete (const char *file, int line, dk_set_t *set, void *item);
+void *dbg_dk_set_delete_nth (const char *file, int line, dk_set_t *set, int idx);
 void dbg_dk_set_free (const char *file, int line, s_node_t *set);
 dk_set_t dbg_dk_set_copy (const char *file, int line, dk_set_t s);
 
@@ -105,6 +107,7 @@ dk_set_t dbg_dk_set_copy (const char *file, int line, dk_set_t s);
 #define dk_set_pushnew(S,I)	dbg_dk_set_pushnew (__FILE__, __LINE__, (S), (I))
 #define dk_set_pop(S)		dbg_dk_set_pop (__FILE__, __LINE__, (S))
 #define dk_set_delete(S,I)	dbg_dk_set_delete (__FILE__, __LINE__, (S), (I))
+#define dk_set_delete_nth(S,N)	dbg_dk_set_delete_nth (__FILE__, __LINE__, (S), (N))
 #define dk_set_free(S)		dbg_dk_set_free (__FILE__,__LINE__, (S))
 #define dk_set_copy(S)		dbg_dk_set_copy (__FILE__,__LINE__, (S))
 
