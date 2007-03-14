@@ -2127,7 +2127,7 @@ sync_datastore_vcard_11 (in _sourceref varchar)
 
 return sprintf ('
             <DataStore>
-              <SourceRef/>
+              <SourceRef>%s</SourceRef>
               <Rx-Pref>
                 <CTType>text/x-vcard</CTType>
                 <VerCT>2.1</VerCT>
@@ -2181,30 +2181,155 @@ return sprintf ('
               <PropName>SOUND</PropName>
               <PropName>UID</PropName>
               <PropName>VERSION</PropName>
-            </CTCap>
-            <CTCap>
+            </CTCap>', _sourceref);
+
+}
+;
+
+create procedure
+sync_datastore_vcalendar_11 (in _sourceref varchar)
+{
+  return
+'<DataStore>
+  <SourceRef>'||_sourceref||'</SourceRef>
+  <DisplayName>'||_sourceref||'</DisplayName>
+  <Rx-Pref>
+    <CTType>text/x-vcalendar</CTType>
+    <VerCT>1.0</VerCT>
+  </Rx-Pref>
+  <Tx-Pref>
+    <CTType>text/x-vcalendar</CTType>
+    <VerCT>1.0</VerCT>
+  </Tx-Pref>
+  <SyncCap>
+    <SyncType>1</SyncType>
+    <SyncType>2</SyncType>
+  </SyncCap>
+</DataStore>
+<CTCap>
               <CTType>text/x-vcalendar</CTType>
               <PropName>BEGIN</PropName>
+  <ValEnum>VCALENDAR</ValEnum>
+  <ValEnum>VEVENT</ValEnum>
+  <ValEnum>VTODO</ValEnum>
               <PropName>END</PropName>
-              <PropName>AALARM</PropName>
+  <ValEnum>VCALENDAR</ValEnum>
+  <ValEnum>VEVENT</ValEnum>
+  <ValEnum>VTODO</ValEnum>
+  <PropName>VERSION</PropName>
+  <ValEnum>1.0</ValEnum>
               <PropName>ATTACH</PropName>
-              <PropName>CLASS</PropName>
+  <PropName>TZ</PropName>
+  <PropName>LAST-MODIFIED</PropName>
               <PropName>DCREATED</PropName>
+  <PropName>CATEGORIES</PropName>
+  <PropName>CLASS</PropName>
+  <PropName>SUMMARY</PropName>
               <PropName>DESCRIPTION</PropName>
-              <PropName>DTEND</PropName>
+  <PropName>LOCATION</PropName>
               <PropName>DTSTART</PropName>
-              <PropName>DUE</PropName>
+  <PropName>DTEND</PropName>
+  <PropName>ATTENDEE</PropName>
+  <PropName>RRULE</PropName>
               <PropName>EXDATE</PropName>
-              <PropName>LAST-MODIFIED</PropName>
-              <PropName>LOCATION</PropName>
+  <PropName>AALARM</PropName>
+  <PropName>DALARM</PropName>
+  <PropName>DUE</PropName>
               <PropName>PRIORITY</PropName>
-              <PropName>RRULE</PropName>
-              <PropName>SUMMARY</PropName>
+  <PropName>STATUS</PropName>
               <PropName>UID</PropName>
-              <PropName>VERSION</PropName>
-            </CTCap>
-');
+</CTCap>';
+}
+;
 
+create procedure
+sync_datastore_vcalendar_12 (in _sourceref varchar)
+{
+  return
+'<DataStore>
+ <SourceRef>'|| _sourceref ||'</SourceRef>
+ <Rx-Pref>
+  <CTType>text/x-vcalendar</CTType>
+  <VerCT>1.0</VerCT>
+ </Rx-Pref>
+ <Tx-Pref>
+  <CTType>text/x-vcalendar</CTType>
+  <VerCT>1.0</VerCT>
+ </Tx-Pref>
+ <CTCap>
+  <CTType>text/x-vcalendar</CTType>
+  <VerCT>1.0</VerCT>
+  <Property>
+   <PropName>BEGIN</PropName>
+   <ValEnum>VCALENDAR</ValEnum>
+   <ValEnum>VEVENT</ValEnum>
+  </Property>
+  <Property>
+   <PropName>END</PropName>
+   <ValEnum>VCALENDAR</ValEnum>
+   <ValEnum>VEVENT</ValEnum>
+  </Property>
+  <Property>
+              <PropName>VERSION</PropName>
+   <ValEnum>1.0</ValEnum>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>SUMMARY</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>CATEGORIES</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>CLASS</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>LOCATION</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>DESCRIPTION</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>DTSTART</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>DTEND</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>TRANSP</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>RRULE</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>EXDATE</PropName>
+  </Property>
+  <Property>
+   <PropName>AALARM</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>DALARM</PropName>
+   <MaxOccur>1</MaxOccur>
+  </Property>
+  <Property>
+   <PropName>ATTENDEE</PropName>
+  </Property>
+            </CTCap>
+ <SyncCap>
+  <SyncType>1</SyncType>
+  <SyncType>2</SyncType>
+ </SyncCap>
+</DataStore>';
 }
 ;
 
@@ -2309,7 +2434,8 @@ create procedure yac_syncml_detect (in _name any)
 
 create procedure yac_syncml_type ()
 {
-   return vector('N', 'Off', 'vcard_11', 'vcard 11', 'vcard_12', 'vcard 12');
+   return vector('N', 'Off', 'vcard_11', 'vcard 11', 'vcard_12', 'vcard 12',
+       'vcalendar_11', 'vcalendar 11', 'vcalendar_12', 'vcalendar 12');
 }
 ;
 
