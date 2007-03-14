@@ -156,7 +156,6 @@ ServerEnable = 1
 QueueMax     = 50000
 
 " > virtuoso.ini
-  cp ../virtuoso.lic virtuoso.lic 2>/dev/null
   virtuoso_start
   do_command $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/', '/', 0, 0, NULL,  NULL, NULL, NULL, 'dba', NULL, NULL, 0);"
   do_command $DSN "load $HOME/binsrc/vspx/vspx_demo_init.sql;"
