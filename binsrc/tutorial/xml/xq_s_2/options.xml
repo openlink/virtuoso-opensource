@@ -23,9 +23,9 @@
 <init>
 <src load_at_start="" load_to_clean="search.sql"/>
 <deps item="conductor" example="conductor_dav.vad package" type="package" />
-<deps item="Framework" example="ods_dav.vad package" type="package" />
-<deps item="Feed Manager" example="feeds_dav.vad package" type="package" />
-<deps item="Briefcase" example="briefcase_dav.vad package" type="package" />
-<deps item="Weblog" example="blog_dav.vad package" type="package" />
+<deps item="Framework" example="ods_framework_dav.vad package" type="package" />
+<deps item="Feed Manager" example="ods_feedmanager_dav.vad package" type="package" />
+<deps item="Briefcase" example="ods_briefcase_dav.vad package" type="package" />
+<deps item="Weblog" example="ods_blog_dav.vad package" type="package" />
 <auth req="1"/>
 </init>

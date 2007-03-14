@@ -23,6 +23,6 @@
 <init>
 <src load_at_start="" load_to_clean="blog_query.sql"/>
 <src start="blog_query.vsp" link="/blog-query/blog_query.vsp"/>
-<deps item="Framework" example="ods_dav.vad package" type="package" />
+<deps item="Framework" example="ods_framework_dav.vad package" type="package" />
 <deps item="Weblog" example="The Weblog application needs to be installed before using this tutorial. At least one instance of Weblog needs to be created." type="package" />
 </init>

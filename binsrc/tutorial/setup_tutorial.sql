@@ -252,3 +252,76 @@ create procedure t_populate_sioc (in path varchar)
   DB.DBA.RDF_LOAD_RDFXML(data,graph,graph);
     
 };
+
+
+create procedure tut_generate_tomcat_url (in tut_name any, in lines any)
+{
+
+   -- First get the tomcat HTTP port.
+
+   declare path, ini_s, idx, pos, ini_f, port, temp, line, fhost any;
+
+   declare exit handler for sqlstate '*'
+     {
+	connection_set ('TomcatStatus', 'BAD');
+	return '';
+     };
+
+   idx := 1;
+   ini_s := '';
+   path := '';
+
+   while (ini_s is not NULL)
+    {
+	ini_s := cfg_item_value(virtuoso_ini_path(), 'Parameters','JavaVMOption' || cast (idx as varchar));
+	if (strstr (ini_s, 'catalina.home'))
+	   {
+		pos := strstr (ini_s, '=');
+		path := "RIGHT" (ini_s, length (ini_s) - pos - 1);
+		ini_s := NULL;
+	   }
+	idx := idx + 1;
+    }
+
+   if (path = '' and tut_name <> '')
+	signal ('TUT01', 'Can''t get Catalina home dir.');
+
+   ini_f := file_to_string (path || '/conf/server.xml');
+   ini_f := xml_tree_doc (ini_f);
+   port := xpath_eval ('//Service/Connector/@port', ini_f, 1);
+
+   if (port is NULL and tut_name <> '')
+	signal ('TUT02', 'Can''t get tomcat HTTP port.');
+
+   port := cast (port as varchar);
+   fhost := http_request_header (lines, 'Host', null, 'localhost');
+   fhost := split_and_decode (fhost, 0, ':=:');
+   fhost := fhost[0];
+
+   -- Make list of samples
+
+   declare exit handler for sqlstate '08001'
+     {
+	connection_set ('TomcatStatus', 'BAD');
+	return '';
+	signal ('TUT03', 'Tomcat is not started. Please Start it in order to continue whit sample.');
+     };
+
+   temp := http_get ('http://' || fhost || ':' || port || '/jsp-examples/');
+   temp := xml_tree_doc (xml_tree (temp, 2));
+   temp := xpath_eval ('//@href', temp, 0);
+
+   if (not exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = '/jsp_tutorial'))
+     VHOST_DEFINE (lpath=>'/jsp_tutorial',ppath=>'http://' || fhost || ':' || port || '/jsp-examples/');
+
+   for (declare x any, x := 0; x < length (temp); x := x + 1)
+     {
+	 line := cast (temp[x] as varchar);
+	 if (strstr (line, tut_name))
+  	   return 'http://' || fhost || ':' || server_http_port () || '/jsp_tutorial/' || line;
+     }
+
+  return '';
+}
+;
+

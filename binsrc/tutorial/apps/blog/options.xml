@@ -23,5 +23,5 @@
 <init>
 <src load_at_start="" load_to_clean="blog.sql"/>
 <src start="blog_home.vspx" link="blog_home.vspx"/>
-<deps item="Weblog" example="blog_dav.vad package" type="package" />
+<deps item="Weblog" example="ods_blog_dav.vad package" type="package" />
 </init>

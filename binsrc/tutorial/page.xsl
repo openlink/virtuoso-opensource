@@ -815,6 +815,14 @@
 
         if (hosting_fail)
           dependa := concat (dependa, sprintf ('<p style="color: red"><small>In order to run this example you need %s.</small></p>', hosting_name));
+
+--      JSP hosting
+
+	tut_generate_tomcat_url ('', lines);
+        if (connection_get ('TomcatStatus') = 'BAD')
+          dependa := concat (dependa, '<p style="color: red"><small>In order to run this example you need start tomcat.</small></p>');
+
+--      end JSP hosting
       }
       cn := cn + 1;
     }
@@ -967,6 +975,7 @@
           aref (sources, i) like '%.pl' or
           aref (sources, i) like '%.py' or
           aref (sources, i) like '%.rb' or
+          aref (sources, i) like '%.jsp' or
           (aref (sources, i) like '%.php' and
             aref (sources, i) not like '.%.php')))
       have_vsp := have_vsp + 1;
@@ -1097,7 +1106,7 @@
       src_name <> 'options.xml' and
       src_name <> regexp_replace (current_page, '.vspx?$', '.xml') and
       source_ext in
-      ('vsp', 'sql','xsl','xml','xsd','html','java','pl','pm','py','rb','cs','vspx','aspx','wsdl','bpel','php', 'xq', 'xslt', 'cpp', 'h'))
+      ('vsp', 'sql','xsl','xml','xsd','html','java','pl','pm','py','rb','cs','vspx','aspx','wsdl','bpel','php', 'xq', 'xslt', 'cpp', 'h', 'jsp'))
     {
       if (sources[i] like '%.sql' and ((load_c <> '' and sources[i] = load_c) or (load_c = '' and sources[i] like '%.sql')))
         goto next_item;
@@ -1111,6 +1120,13 @@
         </td>
         <td class="source_table_action">
 <?vsp
+          if ((not no_run) and
+            aref (sources, i) like '%.jsp')
+	    {
+          ?>
+	  <a target="run_frame_java" href="<?=tut_generate_tomcat_url (sources[i], lines)?>">Run</a>
+          <?vsp
+	    }
           if ( (not no_run) and
             (aref (sources, i) like '%.vsp'
             or aref (sources, i) like '%.html'

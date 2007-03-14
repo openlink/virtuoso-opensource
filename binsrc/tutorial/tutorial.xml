@@ -420,6 +420,9 @@
           <group Title="Ruby Runtime Hosting">
       			<example id="HO-S-16" fspath="hosting/ho_s_16"></example>
           </group>
+          <group Title="JSP Runtime Hosting">
+      			<example id="HO-S-17" fspath="hosting/ho_s_17"></example>
+          </group>
         </group>
       </group>
     </subsection>
