@@ -23,6 +23,7 @@
 --  
 
   -- disconnect the client immediately
+  set isolation='repeatable';
   http_flush ();
 
   declare reqs, ct any;
@@ -46,7 +47,6 @@
   whenever not found goto nf;
 again:
   cnt := 0;
-  commit work;
   ts := now ();
   --dbg_obj_print ('start pooling', ts);
   open cr (exclusive, prefetch 1);
@@ -60,8 +60,8 @@ again:
 	  conn := ses_connect ('localhost:' || server_http_port ());
 	  ses_write (' \r\n\r\n', conn);
 	  http_on_message (conn, 'BPEL.BPEL.ALARM_CALLBACK', vector (inst, node, scp, scp_inst, scp_id));
-	  commit work;
 	  close cr;
+	  commit work;
 	  goto again;
 	}
       cnt := cnt + 1;
@@ -72,6 +72,7 @@ nf:
   if (cnt = 0)
     return;
   -- wait a second (resolution is 1 sec)
+  commit work; -- release the locks
   delay (1);
   goto again;
 ?>

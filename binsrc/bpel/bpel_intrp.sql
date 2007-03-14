@@ -1711,6 +1711,7 @@ create procedure BPEL.BPEL.ALARM_CALLBACK (inout ses any, inout cd any)
 
   if (rc = 0)
     {
+      commit work;
       delay (1);
       goto again2;
     }
