@@ -121,6 +121,16 @@ ul.tabres li.nav {
   cursor: pointer;
 }
 
+ul.tabres li.nav_right {
+  margin: 3px;
+  display: inline;
+  float:right;
+}
+
+ul.tabres li.nav_right a {
+  margin: 3px;
+}
+
 ul.tabres li.tab_selected {
   border-bottom: 1px solid #fff;
   background-color: #fff;

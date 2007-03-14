@@ -107,9 +107,6 @@ ul#schemas_tree {
   margin: 0;
   padding: 0;
   cursor: pointer;
-}
-
-#schemas_tree_container li span{
   white-space:nowrap;
 }
 
@@ -170,4 +167,12 @@ ul#schemas_tree {
 #schemas button {
  width:114px;
  height:26px;
+}
+
+#qbe_service_div {
+  display:inline;
+}
+
+#qbe_service_div input {
+  width:300px;
 }

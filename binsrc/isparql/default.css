@@ -193,6 +193,10 @@ div#virtuoso_options
   width: 100%;
 }
 
+.combo_list {
+  display:inline;
+}
+
 #combo_list img {
   width: 16px;
   height: 16px;
@@ -278,4 +282,14 @@ ul#tabgrph {
 #ajax_progress {
 	height: 16px;
 	width: 80%;
+}
+
+/* ---------------- -------- -------------- */
+
+#adv_service_div {
+  display:inline;
+}
+
+#adv_service_div input {
+  width:300px;
 }

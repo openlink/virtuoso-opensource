@@ -26,12 +26,19 @@
 <?vsp
 
             declare default_dgu varchar;
-            default_dgu := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
-            if (default_dgu is not null)
-              default_dgu := 'http://' || default_dgu || '/dataspace';
+  default_dgu := cfg_item_value (virtuoso_ini_path(), 'SPARQL', 'DefaultGraph');
+  if (default_dgu is null)
+    default_dgu := '';
+
+  declare def_qry varchar;
+  def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
+  if (def_qry is null)
+    def_qry := 'SELECT * WHERE {?s ?p ?o}';
 ?>
 <script type="text/javascript">
   var default_dgu = '<?V default_dgu ?>';
+  var default_qry = '<?V def_qry ?>';
+  var default_spng = 'soft';
 	var toolkitImagesPath = "toolkit/images";
 </script>
 <?include index.html ?>

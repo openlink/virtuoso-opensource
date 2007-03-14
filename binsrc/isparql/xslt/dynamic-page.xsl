@@ -46,7 +46,14 @@
 		
 		var goptions = {};
 		goptions.service = "<xsl:value-of select="i:service" />";
-		goptions.should_sponge = "<xsl:value-of select="i:should_sponge" />";
+		var sponge = '';
+		sponge = "<xsl:value-of select="i:should_sponge" />";
+		<xsl:if test="../i:should_sponge">
+  		sponge = "<xsl:value-of select="../i:should_sponge" />";
+		</xsl:if>
+		<xsl:if test="../i:service">
+  		goptions.service = "<xsl:value-of select="../i:service" />";
+		</xsl:if>
 		var graph = "<xsl:value-of select="i:graph" />";
 		var isVirtuoso = true;
 		<![CDATA[
@@ -56,13 +63,14 @@
         OAT.AJAX.imagePath = toolkitImagesPath;
         OAT.Anchor.imagePath = toolkitImagesPath + '/';
         var params = {
+          service:goptions.service,
           query:OAT.Dom.fromSafeXML($('query').innerHTML),
           default_graph_uri:graph,
           maxrows:0,
           format:'application/isparql+table',
           res_div:$('res_area'),
           imagePath:"/isparql/images/",
-          should_sponge:goptions.should_sponge,
+          should_sponge:sponge,
           hideRequest:true,
           hideResponce:true
         }

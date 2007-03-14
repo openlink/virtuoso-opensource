@@ -52,7 +52,7 @@
       <div id="page_content" style="display:none;">
       <ul id="menu">
         <li id="menu_qbe"><span id="tab_qbe" title="SPARQL Query By Example">QBE</span>
-          <ul class="menu_qbe" style="display:none;">
+          <ul id="menu_qbe_down" class="menu_qbe" style="display:none;">
             <li id="menu_qbe_clear">Clear Pane</li>
             <li id="menu_qbe_load">Open</li>
             <li id="menu_qbe_save">Save</li>
@@ -67,7 +67,7 @@
           </ul>
         </li>
         <li id="menu_query"><span id="tab_query" title="SPARQL Query By Typing">Advanced</span>
-          <ul class="menu_query" style="display:none;">
+          <ul id="menu_query_down" class="menu_query" style="display:none;">
             <li id="menu_reset">Reset</li>
             <li id="menu_load">Open</li>
             <li id="menu_save">Save</li>
@@ -117,6 +117,7 @@
                   <option value="application/javascript">Javascript</option>
                   <option value="text/html">HTML</option>
                 </select>
+                <!--
                 <label for="qbe_maxrows" class="align">Max Rows</label>
                 <select id="qbe_maxrows">
                   <option value="10">10</option>
@@ -125,9 +126,25 @@
                   <option value="100">100</option>
                   <option value="200">200</option>
                 </select>
+                -->
                 <input type="checkbox" value="on" id="qbe_distinct"/>
                 <label for="qbe_distinct">Distinct</label>
+                <select id="qbe_sponge">
+                  <option value="grab-all-seealso">Get all Remote & Related Data</option>
+                  <option value="grab-all">Get all Remote Data</option>
+                  <option value="soft" selected="selected">Get Remote Data when Missing Locally</option>
+                  <option value="">Get Local Data Only</option>
+                </select>
+                <label for="qbe_query_type">Type</label>
+                <select id="qbe_query_type">
+                  <option value="SELECT" selected="selected">SELECT</option>
+                  <option value="DESCRIBE">DESCRIBE</option>
+                </select>
                 <input type="button" value="Use Query & Close" id="qbe_return_btn">
+              </div><!-- /Opera hack -->
+              <div> <!-- Opera hack -->
+                <label for="qbe_service">Endpoint</label>
+                <div id="qbe_service_div"></div>
               </div><!-- /Opera hack -->
             </div>
           	<div id="qbe_props">
@@ -177,8 +194,6 @@
           	<div id="schemas">
             	<div id="schemas_tree_container">
             	  <ul id="schemas_tree">
-            	    <li>Concepts<ul id="node_types"></ul></li>
-            	    <li>Terms<ul id="conn_props"></ul></li>
             	  </ul>
             	</div>
             	<div id="schema_div"></div>
@@ -298,7 +313,7 @@ WHERE
   				      </div>
                 <label for="query">SPARQL Query</label><br/>
                 <div style="clear:both;">
-                  <textarea id="query" name="query" onchange="format_select(this)" onkeyup="format_select(this)" wrap="off">SELECT * WHERE {?s ?p ?o}</textarea>
+                  <textarea id="query" name="query" onchange="format_select(this)" onkeyup="format_select(this)" wrap="off"></textarea>
                 </div>
                 <br/>
                 <div>
@@ -310,6 +325,7 @@ WHERE
                     <option value="application/javascript">Javascript</option>
                     <option value="text/html">HTML</option>
                   </select>
+                  <!--
                   <label for="maxrows" class="align">Max Rows</label>
                   <select id="maxrows">
                     <option value="10">10</option>
@@ -318,8 +334,19 @@ WHERE
                     <option value="100">100</option>
                     <option value="200">200</option>
                   </select>
+                  -->
+                  <select id="adv_sponge">
+                    <option value="grab-all-seealso">Get all Remote & Related Data</option>
+                    <option value="grab-all">Get all Remote Data</option>
+                    <option value="soft" selected="selected">Get Remote Data when Missing Locally</option>
+                    <option value="">Get Local Data Only</option>
+                  </select>
                   <input type="button" value="Use Query & Close" id="return_btn">
                 </div>
+                <div> <!-- Opera hack -->
+                  <label for="adv_service">Endpoint</label>
+                  <div id="adv_service_div"></div>
+                </div><!-- /Opera hack -->
               </form>
             </div> <!-- query_div -->
             <div id="res_area"></div>

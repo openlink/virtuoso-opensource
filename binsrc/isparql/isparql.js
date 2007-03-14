@@ -48,7 +48,7 @@ window.iSPARQL = {
       return str;
     }
     
-    var URIClick = function(anchor,deref){
+    var URIClick = function(anchor,click_type){
       var new_query;
     	var from = '';
   
@@ -71,14 +71,23 @@ window.iSPARQL = {
     	}
     	
     	params.should_sponge = '';
-  	  if (deref)
+  	  if (click_type == 1)
   	  {
-  	    if (sq.from instanceof Array && sq.from.find('<' + anchor.uri + '>') == -1)
-  	      from += 'FROM <' + anchor.uri + '>\n';
+  	    //if (sq.from instanceof Array && sq.from.find('<' + anchor.uri + '>') == -1)
+  	    //  from += 'FROM <' + anchor.uri + '>\n';
+  	      from = 'FROM <' + anchor.uri + '>\n';
   	    new_query = 'SELECT *\n' +
   	                from +
                     'WHERE {?s ?p ?o}\n';
       	params.should_sponge = 'soft';
+  	  }
+  	  else if (click_type == 2)
+  	  {
+  	      from = 'FROM <' + anchor.uri + '>\n';
+  	    new_query = 'SELECT distinct ?class\n' +
+  	                from +
+                    'WHERE {[] a ?class}\n';
+      	params.should_sponge = '';
   	  }
   	  else if(anchor.header && anchor.header.toLowerCase() == 'property')
   	  {
@@ -111,21 +120,40 @@ window.iSPARQL = {
   		a1.innerHTML = "Explore";
   		a1.href = "javascript:void(0)";
   
+  		var li4 = OAT.Dom.create("li");
+  		var a4 = OAT.Dom.create("a");
+  		a4.innerHTML = "Get Concepts";
+  		a4.href = "javascript:void(0)";
+  		
+  		var hr1 = OAT.Dom.create("hr");
+  		
   		var li2 = OAT.Dom.create("li");
   		var a2 = OAT.Dom.create("a");
-  		a2.innerHTML = "Data Drill Down";
+  		a2.innerHTML = "Get Data Set (Dereference)";
   		a2.href = "javascript:void(0)";
   
   		var li3 = OAT.Dom.create("li");
   		var a3 = OAT.Dom.create("a");
-  		a3.innerHTML = "Data Drill Down in new window";
+  		a3.innerHTML = "Get Data Set (Dereference) in new window";
   		a3.href = "javascript:void(0)";
   
-  		OAT.Dom.append([ul,li1,li2,li3],[li1,a1],[li2,a2],[li3,a3]);
+  		var hr2 = OAT.Dom.create("hr");
+
+  		var li5 = OAT.Dom.create("li");
+  		var a5 = OAT.Dom.create("a");
+  		a5.innerHTML = "(X)HTML Page Open";
+  		a5.target = "_blank";
+  		a5.href = anchor.uri;
+
+  		OAT.Dom.append([ul,li1,li4,hr1,li2,li3,hr2,li5],[li1,a1],[li4,a4],[li2,a2],[li3,a3],[li5,a5]);
   
   		OAT.Dom.attach(a1,"click",function() {
   			OAT.AnchorData.window.close();
   			URIClick(anchor);
+  		});
+  		OAT.Dom.attach(a4,"click",function() {
+  			OAT.AnchorData.window.close();
+  			URIClick(anchor,2);
   		});
   		OAT.Dom.attach(a2,"click",function() {
   			OAT.AnchorData.window.close();
@@ -212,6 +240,18 @@ window.iSPARQL = {
   
   },
 
+  defaultEndpoints:["/sparql",
+                    "http://demo.openlinksw.com/sparql",
+                    "http://myopenlink.net:8890/sparql/",
+                    "http://xmlarmyknife.org/api/rdf/sparql/query",
+                    "http://www.sparql.org/sparql",
+                    "http://www.govtrack.us/sparql",
+                    "http://abdera.watson.ibm.com:8080/sparql",
+                    "http://km.aifb.uni-karlsruhe.de/services/sparql/SPARQL",
+                    "http://jena.hpl.hp.com:3040/backstage",
+                    "http://my.opera.com/community/sparql/sparql",
+                    "http://www.wasab.dk/morten/2005/04/sparqlette/"],
+
 
   QueryExec:function(paramsObj)
   {
@@ -259,13 +299,55 @@ window.iSPARQL = {
       //RESULT PROCESSING
       callback:function(data,headers,param) 
       {
-        var pfx = params.res_div.id + '_';
         // Clear the tabls
         OAT.Dom.clear(params.res_div);
         
         // Make the tabs 
         var tabres_ul = OAT.Dom.create("ul");
         tabres_ul.className = "tabres";
+
+        var tabres_li_formats = OAT.Dom.create("li");
+        tabres_li_formats.className = "nav_right";
+        var format_orig = params.format;
+        if ((params.query.match(/construct/i) || params.query.match(/describe/i)))
+        {
+          var a_n3 = OAT.Dom.create("a");
+          a_n3.innerHTML = 'N3/Turtle';
+          a_n3.target = '_blank';
+          params.format = 'text/rdf+n3';
+          a_n3.href = params.service + '?' + body();
+          var a_rdf = OAT.Dom.create("a");
+          a_rdf.innerHTML = 'RDF/XML';
+          a_rdf.target = '_blank';
+          params.format = 'application/rdf+xml';
+          a_rdf.href = params.service + '?' + body();
+          OAT.Dom.append([tabres_ul,tabres_li_formats],[tabres_li_formats,a_n3,a_rdf]);
+        } else {
+          var a_xml = OAT.Dom.create("a");
+          a_xml.innerHTML = 'XML';
+          a_xml.target = '_blank';
+          params.format = 'application/sparql-results+xml';
+          a_xml.href = params.service + '?' + body();
+          var a_json = OAT.Dom.create("a");
+          a_json.innerHTML = 'JSON';
+          a_json.target = '_blank';
+          params.format = 'application/sparql-results+json';
+          a_json.href = params.service + '?' + body();
+          var a_js = OAT.Dom.create("a");
+          a_js.innerHTML = 'JavaScript';
+          a_js.target = '_blank';
+          params.format = 'application/javascript';
+          a_js.href = params.service + '?' + body();
+          var a_html = OAT.Dom.create("a");
+          a_html.innerHTML = 'HTML';
+          a_html.target = '_blank';
+          params.format = 'text/html';
+          a_html.href = params.service + '?' + body();
+          OAT.Dom.append([tabres_ul,tabres_li_formats],[tabres_li_formats,a_xml,a_json,a_js,a_html]);
+        }
+        params.format = format_orig;
+        
+
         var tabres_li_result = OAT.Dom.create("li");
         tabres_li_result.innerHTML = "result";
         OAT.Dom.append([tabres_ul,tabres_li_result]);
@@ -576,6 +658,8 @@ window.iSPARQL = {
     if (endpoint.match(/^http:\/\//) && params.proxy && isVirtuoso)
       endpoint = './remote.vsp';
   
+    OAT.Dom.clear(params.res_div);
+  
     // generate the request body
     var body = function()
     {
@@ -630,7 +714,7 @@ window.iSPARQL = {
           body += encodeURIComponent(params.named_graphs[n]); 
         }
       }
-      return body;
+      return body.substring(1);
     }
   
     //in case of an error exec the callback also, but give a parameter er
