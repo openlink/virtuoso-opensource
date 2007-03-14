@@ -752,7 +752,6 @@ case $1 in
    cp ../vspsoap.vsp vspsoap.vsp
    cp ../vspsoap_mod.vsp vspsoap_mod.vsp
    MakeIni
-   cp ../virtuoso.lic virtuoso.lic
    cp ../etalon_ouput_gz etalon_ouput_gz
    cp ../syncml.dtd syncml.dtd
    mkdir r4
@@ -769,25 +768,28 @@ case $1 in
        then
 	   LOG "Create ODS VAD Package"
 	   (cd ../../../samples/wa/; ./make_vad.sh)
-	   cp ../../../samples/wa/ods_dav.vad ./
+	   cp ../../../samples/wa/ods_framework_dav.vad ./
 	   LOG "Create BLOG VAD Package"
 	   (cd ../../../weblog2/; ./make_vad.sh)
-	   cp ../../../weblog2/blog_dav.vad ./
+	   cp ../../../weblog2/ods_blog_dav.vad ./
+	   LOG "Create SyncML VAD Package"
+	   (cd ../../../sync/; make)
+	   cp ../../../sync/syncml_dav.vad ./
        elif [ "x$SRC" != "x" ]
        then
 	   LOG "Create ODS VAD Package"
 	   (cd "$SRC/binsrc/samples/wa/" ; ./make_vad.sh)
-	   cp "$SRC/binsrc/samples/wa/ods_dav.vad" .
+	   cp "$SRC/binsrc/samples/wa/ods_framework_dav.vad" .
 	   LOG "Create BLOG VAD Package"
 	   (cd "$SRC/binsrc/weblog2/" ; ./make_vad.sh)
-	   cp "$SRC/binsrc/weblog2/blog_dav.vad" .
+	   cp "$SRC/binsrc/weblog2/ods_blog_dav.vad" .
        elif [ ! -f ../../../../autogen.sh ]
        then
 	   LOG "***ABORTED: Cannot build ODS & Blog2 VAD packages"
 	   exit 1
        fi
    fi
-   if [ ! -f ods_dav.vad -o ! -f blog_dav.vad ]
+   if [ ! -f ods_framework_dav.vad -o ! -f ods_blog_dav.vad ]
    then
      BLOG_TEST=0  
      LOG "ODS & Blog2 VAD packages are not built"
@@ -798,8 +800,12 @@ case $1 in
    then
        DoCommand $DSN "registry_set ('__blog_api_tests__', '1');" 
        DoCommand $DSN "checkpoint;" 
-       DoCommand $DSN "VAD_INSTALL ('ods_dav.vad', 0, 1);" 
-       DoCommand $DSN "VAD_INSTALL ('blog_dav.vad', 0, 1);" 
+       DoCommand $DSN "VAD_INSTALL ('ods_framework_dav.vad', 0, 1);" 
+       DoCommand $DSN "VAD_INSTALL ('ods_blog_dav.vad', 0, 1);" 
+   fi
+   if [ -f $PLUGINDIR/wbxml2.so ]
+   then
+       DoCommand $DSN "VAD_INSTALL ('syncml_dav.vad', 0, 1);"
    fi
    cd ..
 
@@ -984,22 +990,29 @@ case $1 in
    fi
 
 
-#if [ -f $PLUGINDIR/wbxml2.so ]
-#then
-#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tsyncml.sql 
-#   if test $STATUS -ne 0
-#   then
-#      LOG "***ABORTED: tsyncml.sql"
-#      exit 1
-#   fi
-#   else
-#      LOG "SKIP      : tsyncml.sql"
-#fi
+if [ -f $PLUGINDIR/wbxml2.so ]
+then
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tsyncml.sql 
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: tsyncml.sql"
+      exit 1
+   fi
+   else
+      LOG "SKIP      : tsyncml.sql"
+fi
 
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoapcpl.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoapcpl.sql"
+      exit 1
+   fi
+
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < url_rewrite_test.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: url_rewrite_test.sql"
       exit 1
    fi
 

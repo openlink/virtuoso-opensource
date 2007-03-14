@@ -237,7 +237,6 @@ case $1 in
    GenURI11
    GenURI10
    GenURI1011
-   cp ../virtuoso.lic virtuoso.lic
    MakeIni
    GenHTML
    GenVSP

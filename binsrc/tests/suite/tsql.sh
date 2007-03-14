@@ -37,25 +37,25 @@ rm -f $DBFILE
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 
-#START_SERVER $PORT 1000
-#RUN $INS $DSN 100000  100
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb.sql
-#if test $STATUS -ne 0
-#then
-#    LOG "***ABORTED: cpt rb  -- tcptrb.sql"
-#    exit 1
-#fi
-#RUN $ISQL $DSN '"EXEC=raw_exit();"' ERRORS=STDOUT
-#
-#
-#START_SERVER $PORT 1000
-#
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb2.sql
-#if test $STATUS -ne 0
-#then
-#    LOG "***ABORTED: cpt rb -- tcptrb2.sql"
-#    exit 1
-#fi
+START_SERVER $PORT 1000
+RUN $INS $DSN 100000  100
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: cpt rb  -- tcptrb.sql"
+    exit 1
+fi
+RUN $ISQL $DSN '"EXEC=raw_exit();"' ERRORS=STDOUT
+
+
+START_SERVER $PORT 1000
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb2.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: cpt rb -- tcptrb2.sql"
+    exit 1
+fi
 
 
 

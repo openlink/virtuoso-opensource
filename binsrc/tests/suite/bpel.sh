@@ -131,7 +131,7 @@ Syslog			= 0
 ;
 [Parameters]
 ServerPort         	= $1
-ServerThreads      	= 100
+ServerThreads      	= 10
 CheckpointInterval 	= 60
 NumberOfBuffers    	= 2000
 MaxDirtyBuffers    	= 1200
@@ -154,7 +154,7 @@ AllowOSCalls		= 1
 HTTPLogFile = http.log
 ServerPort = $2
 ServerRoot = .
-ServerThreads = 15
+ServerThreads = 10
 MaxKeepAlives = 20
 KeepAliveTimeout = 15
 MaxCachedProxyConnections = 0
@@ -251,7 +251,6 @@ LOG "Seller instance"
 
 rm -rf t1
 cp -r ../../bpel/tests/t1 ./
-cp virtuoso.lic t1
 
 #LOGFILE=../../bpel.output
 cd t1
@@ -326,14 +325,11 @@ SetPort "wsrm/wsrmsvc.wsdl"
 SetPort "tver/service.wsdl"
 SetPort "tevent/AsyncBPELService.wsdl"
 
-cp ../virtuoso.lic ./
-
 cd ..
 rm -rf fault1_req
 mkdir fault1_req
 cd fault1_req
 cp -r ../../../bpel/tests/fault1/*.vsp .
-cp ../virtuoso.lic ./
 #LOGFILE=../../bpel.output
 MakeConfig $DS2 $HP2
 DSN=$DS2

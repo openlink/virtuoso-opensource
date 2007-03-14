@@ -130,7 +130,6 @@ rm -rf xslt
 mkdir xslt
 cd xslt
 MakeConfig $DS1 $HTTP_PORT
-cp ../virtuoso.lic .
 START_SERVER $DS1 1000
 cd ..
 

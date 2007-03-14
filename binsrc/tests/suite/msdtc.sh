@@ -141,7 +141,6 @@ RUN $ISQL $DS2 dba dba '"EXEC=raw_exit();"' ERRORS=STDOUT
 rm -rf msdtc1
 mkdir msdtc1
 cd msdtc1
-cp ../virtuoso.lic virtuoso.lic
 
 mkINI "virtuoso.ini" $DS1
 
@@ -153,7 +152,6 @@ cd ..
 rm -rf msdtc2
 mkdir msdtc2
 cd msdtc2
-cp ../virtuoso.lic virtuoso.lic
 
 mkINI "virtuoso.ini" $DS2
 
@@ -240,7 +238,6 @@ fi
 rm -rf msdtc3
 mkdir msdtc3
 cd msdtc3
-cp ../virtuoso.lic virtuoso.lic
 
 
 mkINI "virtuoso.ini" $DS3

@@ -171,7 +171,6 @@ mkdir rep1 rep3
 SILENT=0
 cd rep1
 MakeConfig $DBNAME1 $http1 $DS1
-[ -f ../virtuoso.lic ] && cp ../virtuoso.lic .
 CHECK_PORT $http1
 ECHO "Starting server 'rep1'"
 START_SERVER $DS1 1000
@@ -179,7 +178,6 @@ cd ..
 
 cd rep3
 MakeConfig $DBNAME3 $http3 $DS3
-[ -f ../virtuoso.lic ] && cp ../virtuoso.lic .
 CHECK_PORT $http3
 ECHO "Starting server 'rep3'"
 START_SERVER $DS3 1000

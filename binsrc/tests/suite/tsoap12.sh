@@ -4265,7 +4265,6 @@ cp $HOME/binsrc/vsp/soapdemo/soap12-addon.sql .
 cp -f ../tvspxex.awk .
 #MakeIni
 MakeConfig 
-cp ../virtuoso.lic virtuoso.lic
 gen_req
 CHECK_PORT $TPORT
 sav_log=$LOGFILE

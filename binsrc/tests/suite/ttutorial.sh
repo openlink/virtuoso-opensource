@@ -74,7 +74,6 @@ rm -rf suppfiles
 cp -R ../../tutorial_test/suppfiles .
 cp -f ../../urlsimu suppfiles
 cp -f ../../isql suppfiles
-cp -f ../virtuoso.lic .
 
 cp -f ../$TESTCFGFILE $TESTCFGFILE 
 

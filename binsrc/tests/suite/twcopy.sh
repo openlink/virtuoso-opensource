@@ -594,7 +594,6 @@ GenEndPage 18 ./dir3/sub32/
 GenEndPage 19 ./dir3/sub32/
 
 
-cp ../virtuoso.lic virtuoso.lic
 MakeIni
 START_SERVER $DS1 1000
 CHECK_HTTP_PORT $TPORT

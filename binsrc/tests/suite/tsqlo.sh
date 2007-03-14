@@ -191,7 +191,6 @@ RUN $ISQL $DS2 dba dba '"EXEC=raw_exit();"' ERRORS=STDOUT
 rm -rf oremote1
 mkdir oremote1
 cd oremote1
-cp ../virtuoso.lic virtuoso.lic
 cat ../$TESTCFGFILE | sed -e "s/PORT/$DS1/g" -e "s/SQLOPTIMIZE/1/g" -e "s/CASE_MODE/$CASE_MODE/g" > $CFGFILE
 START_SERVER $DS1 1000
 cd ..
@@ -199,7 +198,6 @@ cd ..
 rm -rf oremote2
 mkdir oremote2
 cd oremote2
-cp ../virtuoso.lic virtuoso.lic
 cat ../$TESTCFGFILE | sed -e "s/PORT/$DS2/g" -e "s/SQLOPTIMIZE/1/g" -e "s/CASE_MODE/$CASE_MODE/g" > $CFGFILE
 START_SERVER $DS2 1000
 cd ..

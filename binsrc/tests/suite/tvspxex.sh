@@ -2574,7 +2574,6 @@ GenBlogReq
 cp -f ../tvspxex.awk .
 #MakeIni
 MakeConfig 
-cp ../virtuoso.lic virtuoso.lic
 CHECK_PORT $TPORT
 START_SERVER $DSN 1000
 sleep 4

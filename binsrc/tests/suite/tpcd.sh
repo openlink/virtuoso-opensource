@@ -50,7 +50,6 @@ RUN $ISQL $DS2 dba dba '"EXEC=raw_exit();"' ERRORS=STDOUT
 rm -rf tpcdremote1
 mkdir tpcdremote1
 cd tpcdremote1
-cp ../virtuoso.lic virtuoso.lic
 MAKECFG_FILE ../$TESTCFGFILE $DS1 $CFGFILE
 START_SERVER $DS1 1000
 cd ..
@@ -84,7 +83,6 @@ LOG
 rm -rf tpcdremote2
 mkdir tpcdremote2
 cd tpcdremote2
-cp ../virtuoso.lic virtuoso.lic
 MAKECFG_FILE ../$TESTCFGFILE $DS2 $CFGFILE
 START_SERVER $DS2 1000
 cd ..
