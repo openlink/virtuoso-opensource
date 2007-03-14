@@ -94,7 +94,7 @@ int plugin_load (
 	    }
 	  if (NULL != result->uv_companyname)
 	    {
-	      strcat (buf, ", signed by ");
+	      strcat (buf, " from ");
 	      strcat (buf, result->uv_companyname);
 	    }
 	  if (buf[0] != '\0')
