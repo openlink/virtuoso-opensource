@@ -647,10 +647,10 @@ else
                   </tr>
                 </v:template>
                 <v:template name="dav_template002" type="simple" enabled="-- equ(self.crfolder_mode, 2)">
-                  <script type="text/javascript">
+                  <!--<script type="text/javascript">
                     var toolkitPath="toolkit"; var featureList=["combolist"];
                   </script>
-                  <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>
+                  <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>-->
                   <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
                   <script type="text/javascript">
                     function init(){
@@ -1155,10 +1155,10 @@ else
         }
         nferr:;
     </v:before-data-bind>
-                <script type="text/javascript">
+                <!--<script type="text/javascript">
                   var toolkitPath="toolkit"; var featureList=["combolist"];
                 </script>
-                <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>
+                <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>-->
                 <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
               <table>
                 <?vsp
@@ -2189,10 +2189,10 @@ else
               </div> <!-- objects_selector -->
 
                 <v:template name="properties_mod" type="simple" enabled="-- case when ((length(self.col_array) > 0 or length(self.res_array) > 0) and self.command = 4) then 1 else 0 end">
-                <script type="text/javascript">
+                <!--<script type="text/javascript">
                   var toolkitPath="toolkit"; var featureList=["tab","combolist"];
                 </script>
-                <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>
+                <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>-->
                 <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
                 <script type="text/javascript">
                   function init(){

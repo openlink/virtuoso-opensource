@@ -48,10 +48,19 @@
     <title></title>
     <?vsp
 
-http ('<script type="text/javascript">IE7_PNG_SUFFIX=".png";</script>');
+http ('<script type="text/javascript">var IE7_PNG_SUFFIX=".png";</script>');
 http ('<!--[IF lt IE 7]><script src="ie7/ie7-standard-p.js" type="text/javascript"></script><![endif]-->');
 
     ?>
+  <![CDATA[
+  <script type="text/javascript">
+  var featureList = ["combolist", "ajax", "tab"];
+  </script>
+  <script type="text/javascript" src="toolkit/loader.js"></script>
+  <script type="text/javascript">
+    OAT.Preferences.imagePath = "toolkit/images/";
+  </script>
+  ]]>
   </head>
   <body>
     <v:placeholder />

@@ -25,24 +25,24 @@ Cookies:
   dav_show_scr_adv (exp 7 days) controls initial display of blocks vp_1/vp_2 and status of checkbox wg_vs_adv
 */
 
+var pr_name_cl = {};
+var pr_inx = 1;
+
 function init_properties_mod() 
 {
   var tab = new OAT.Tab ("tab_viewport");
-  tab.add ("tab_owner_perms","owner_perms");
   tab.add ("tab_props","props");
-  tab.go (0); /* is 0-based index... */
-  
-  pr_inx = 1;
+  tab.add ("tab_owner_perms","owner_perms");
+  //tab.go (0); /* is 0-based index... */
 
-  var mt_cl = new OAT.Combolist([],"");
-  mt_cl.input.name = "mime_type";
+  var mt_cl = new OAT.Combolist([],"",{name:"mime_type",imagePath:"images/"});
   $("mime_cl").appendChild(mt_cl.div);
   for (var i = 0; i < mime_types.length; i++)
   {
     mt_cl.addOption(mime_types[i]);
   }
 
-  pr_name_cl = new OAT.Combolist(['xml-sql','xml-sql-root','xml-sql-dtd','xml-sql-schema','xml-stylesheet','xper'],"");
+  pr_name_cl = new OAT.Combolist(['xml-sql','xml-sql-root','xml-sql-dtd','xml-sql-schema','xml-stylesheet','xper'],"",{imagePath:"images/"});
   //pr_name_cl.input.name = "pr_name";
   $("pr_name_div").appendChild(pr_name_cl.div);
 
@@ -67,8 +67,7 @@ function init_properties_mod()
 
 function init_prop_edit() 
 {
-  var mt_cl = new OAT.Combolist([],cur_mime_type);
-  mt_cl.input.name = "mime_type1";
+  var mt_cl = new OAT.Combolist([],cur_mime_type,{name:"mime_type1",imagePath:"images/"});
   $("mime_cl").appendChild(mt_cl.div);
   for (var i = 0; i < mime_types.length; i++)
   {
@@ -78,8 +77,7 @@ function init_prop_edit()
 
 function init_upload() 
 {
-  var mt_cl = new OAT.Combolist([],cur_mime_type);
-  mt_cl.input.name = "mime_type";
+  var mt_cl = new OAT.Combolist([],cur_mime_type,{name:"mime_type",imagePath:"images/"});
   $("mime_cl").appendChild(mt_cl.div);
   for (var i = 0; i < mime_types.length; i++)
   {
@@ -118,6 +116,7 @@ function directive_add(){
   }
   
   table_rows_decor(tbody);
+  return true;
 }
 
 
@@ -211,7 +210,7 @@ function erase_cookie (name)
 
 function select_row_click(e){
   var targ;
-	if (!e) var e = window.event;
+	if (!e) e = window.event;
 	if (e.target) targ = e.target;
 	else if (e.srcElement) targ = e.srcElement;
 	if (targ.nodeType == 3) // defeat Safari bug

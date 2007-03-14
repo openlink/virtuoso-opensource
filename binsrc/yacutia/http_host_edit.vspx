@@ -45,13 +45,6 @@
     </vm:variables>
     <vm:header caption="Virtual Host Properties"/>
     <vm:pagebody>
-  <![CDATA[
-  <script type="text/javascript">
-  var toolkitPath="toolkit";
-  var featureList = ["combolist"];
-  </script>
-  <script type="text/javascript" src="toolkit/loader.js"></script>
-  ]]>
         <v:on-init>
 	  declare pos int;
 	  if (self.vhost is null or self.lhost is null)

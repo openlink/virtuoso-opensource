@@ -44,11 +44,6 @@
   <vm:pagebody>
   <![CDATA[
   <script type="text/javascript">
-  var toolkitPath="toolkit";
-  var featureList = ["ajax"];
-  </script>
-  <script type="text/javascript" src="toolkit/loader.js"></script>
-  <script type="text/javascript">
 function callSparql (graph_id, qry_id, res_id)
 {
   var qry_in = document.getElementById (qry_id);

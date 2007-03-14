@@ -45,13 +45,6 @@
   <vm:header caption="Hosted Domains and Virtual Directories">
   </vm:header>
   <vm:pagebody>
-  <![CDATA[
-  <script type="text/javascript">
-  var toolkitPath="toolkit";
-  var featureList = ["combolist"];
-  </script>
-  <script type="text/javascript" src="toolkit/loader.js"></script>
-  ]]>
     <v:template name="mode_temp1" type="simple" enabled="-- equ(self.mode, 'del')">
       <v:before-data-bind>
         <v:script><![CDATA[
