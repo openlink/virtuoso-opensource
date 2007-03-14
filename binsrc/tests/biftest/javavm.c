@@ -49,6 +49,8 @@
 #include "arith.h"
 #include "srvmultibyte.h"
 
+#undef isp_schema
+#define isp_schema(x) isp_schema_1(x)
 #include <jni.h>
 
 /* #define DEBUG */
@@ -122,6 +124,8 @@ jmethodID getHours_id = 0;
 jmethodID getMinutes_id = 0;
 jmethodID getSeconds_id = 0;
 jmethodID getTimezoneOffset_id = 0;
+
+int sand_box = 1;
 
 static caddr_t java_exception_text (JNIEnv * env);
 #define IF_JAVA_ERR_GO(env,label,err) \
@@ -408,6 +412,9 @@ jvm_activate_access_granter (int granter_mode)
   caddr_t err = NULL;
   jobject inst = 0;
 
+  if (!sand_box)
+    return 0;
+
   if (new_thr)
     return 1;
 
@@ -542,7 +549,6 @@ JNIEXPORT jobject JNICALL Java_BpelVarsAdaptor_get_1var_1data
   const char * my_query = (*env)->GetStringUTFChars(env, query, &iscopy);
   const char * my_vars = (*env)->GetStringUTFChars(env, vars, &iscopy);
   const char * my_xmlnss = (*env)->GetStringUTFChars(env, xmlnss, &iscopy);
-  JavaVM * java_vm = 0;
   jbyteArray jb;
 
   caddr_t res = bpel_get_var_by_dump (my_name, my_part, my_query, my_vars, my_xmlnss);
@@ -3285,6 +3291,7 @@ javavm_version_string ()
 void
 bif_init_func_javavm (void)
 {
+  caddr_t sand_box_opt = NULL;
   sql_class_imp_t *imp_map = get_imp_map_ptr (UDT_LANG_JAVA);
   log_info ("Hosting Java VM %s", JAVAVM_VERSION);
   java_vm_mutex = mutex_allocate ();
@@ -3313,11 +3320,20 @@ bif_init_func_javavm (void)
   imp_map->scli_deserialize = udt_jvm_deserialize;
 
   old_ddl_hook = set_ddl_init_hook (javavm_ddl_hook);
+
+  if (virtuoso_cfg_getstring ("Parameters", "JavaSandBox", &sand_box_opt) == -1)
+    sand_box = 1;
+  else if (!strcmp (sand_box_opt, "0"))
+    sand_box = 0;
+
+  if (sand_box)
+    {
   set_virt_class_loader_r_to_jvm ();
   set_virt_access_granter_to_jvm ();
   set_virt_class_loader_ur_to_jvm ();
   set_help_class_to_jvm ();
   jvm_set_access_granter ();
+    }
   set_bpel_classes_to_jvm ();
 #ifndef WIN32
   setlocale (LC_ALL, "C");
