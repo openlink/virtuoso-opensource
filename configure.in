@@ -387,7 +387,7 @@ dnl not used AC_FUNC_GETLOADAVG
 ##									##
 ##########################################################################
 
-AC_CHECK_FUNCS(getpagesize gettimeofday strtok_r ftruncate fchmod fsync ftime localtime_r syslog)
+AC_CHECK_FUNCS(getpagesize gettimeofday strtok_r ftruncate fchmod fsync ftime localtime_r gmtime_r syslog)
 AC_CHECK_FUNCS(snprintf vsnprintf)
 AC_CHECK_FUNCS(wcsdup wcscasecmp wcsicmp)
 AC_CHECK_FUNCS(wcscmp wcslen wcsncat wcsnicmp wcsncasecmp wcsncmp wcscpy iswspace iswdigit wcsncpy wtol wtoi wcschr wcsrchr wcsstr wcscat iswlower iswupper towlower towupper)
