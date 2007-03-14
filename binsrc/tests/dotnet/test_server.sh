@@ -144,7 +144,6 @@ export BACKUP_DUMP_OPTION CRASH_DUMP_OPTION TESTCFGFILE SERVER
 
 # Start the server
 rm -f $DELETEMASK
-cp ../suite/virtuoso.lic .
 MAKE_CFG ../suite/$TESTCFGFILE $DS1 $HTTPPORT1
 
 if [ -f VirtuosoClientSuite/OpenLink.Data.$CLIENT ] ; then
