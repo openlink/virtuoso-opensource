@@ -557,7 +557,7 @@ CallstackOnException = 1
 ; Timeout values are seconds
 ;
 
-[HTTPServer]
+[!HTTPServer]
 ServerPort = $TPORT
 ServerRoot = .
 ServerThreads = 5
@@ -580,12 +580,6 @@ ServerName   = the_big_server
 ServerEnable = 1
 QueueMax     = 50000" > virtuoso.ini
 
-  if [ -f virtuoso.lic ]
-  then
-    echo "virtuoso.lic found"
-  else
-    cp $HOME/binsrc/tests/suite/virtuoso.lic virtuoso.lic 2>/dev/null
-  fi
   virtuoso_start
 }
 

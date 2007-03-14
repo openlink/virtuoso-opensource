@@ -46,7 +46,6 @@ fi
 rm -f tpcd.bad 
 rm -f tpcd.lck
 rm -f virtuoso.lck
-cp ../virtuoso.lic .
 
 SRV=./virtuoso-t
 SRV=virtuoso-t

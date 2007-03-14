@@ -156,19 +156,16 @@ cp ../Sut.* bpeltpcc
 cat ../dbservices.wsdl | sed -e "s/HTTPPORTDB/$HTTPPORTDB/g" > bpeltpcc/dbservices.wsdl
 cat ../tdservices.wsdl | sed -e "s/HTTPPORTTD/$HTTPPORTTD/g" > bpeltpcc/tdservices.wsdl
 MakeConfig $DS1 $HTTPPORTBP
-cp $SUITE/virtuoso.lic .
 START_SERVER $DS1 1000
 cd ..
 
 cd db
 MakeConfig $DS2 $HTTPPORTDB
-cp $SUITE/virtuoso.lic .
 START_SERVER $DS2 1000
 cd ..
 
 cd td
 MakeConfig $DS3 $HTTPPORTTD
-cp $SUITE/virtuoso.lic .
 START_SERVER $DS3 1000
 cd ..
 
