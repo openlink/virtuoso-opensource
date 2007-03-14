@@ -52,16 +52,11 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
   if (position (orig_res_ext_upper, vector ('.TXT')) and 
 	connection_get ('oWiki Topic') is not null and 
 	connection_get ('oWiki Topic') = orig_res_name)
-    {
       return 'text/wiki';
-    }
   if (position (orig_res_ext_upper,
     vector ('.BMP', '.DIB', '.RLE', '.CR2', '.CRW', '.EMF', '.EPS', '.IFF', '.LBM', '.JP2', '.JPX', '.JPK', '.J2K',
      '.JPC', '.J2C', '.JPE', '.JIF', '.JFIF', '.JPG', '.JPEG', '.GIF') ) )
     return 'application/x-openlink-image';
---  if (position (orig_res_ext_upper,
---    vector ('.RDF', '.RDFS') ) )
---    return 'application/rdf+xml';
   if (position (orig_res_ext_upper,
     vector ('.XML', '.RDF', '.RDFS', '.RSS', '.RSS2', '.XBEL', '.FOAF', '.OPML', '.WSDL', '.BPEL', '.VSPX', '.VSCX', '.XDDL') ) )
     return 'text/xml';
@@ -144,10 +139,9 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
           return dflt_ret;
         };
       if (content is null)
-        {
-          -- dbg_obj_princ ('null content');
           return 'text/xml';
-        }
+      if (html_start = 0)
+          html_start := null;
       if (html_start is null)
         {
           if (230 = __tag (content))
@@ -162,20 +156,14 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
                   min_frag_len := 20000;
                 }
               else
-                {
                   min_frag_len := max_frag_len;
-                }
               for (frag_len := max_frag_len; (frag_len >= min_frag_len) and (html_start is null); frag_len := frag_len - 1000)
                 {
-                  -- dbg_obj_princ ('Will try to parse\n', subseq (content, 0, frag_len));
           	  html_start := xtree_doc (subseq (content, 0, frag_len), 18, 'http://localdav.virt/' || orig_res_name, 'LATIN-1', 'x-any',
             			'Validation=DISABLE Include=DISABLE BuildStandalone=DISABLE SchemaDecl=DISABLE' );
-                  -- dbg_obj_princ ('The result is\n', html_start);
                 }
             }
         }
-      -- dbg_obj_princ ('guessing ', html_start);
-      -- dbg_obj_princ ('based on ', content, 'dtp', __tag (content));
       if (xpath_eval ('[xmlns="http://usefulinc.com/ns/doap#"] exists (/project)', html_start))
         return 'application/doap+rdf';
       if (xpath_eval ('[xmlns:atom="http://purl.org/atom/ns#"] exists (/atom:feed[@version])', html_start))
@@ -1903,5 +1891,74 @@ create procedure DAV_SPOTLIGHT_ADD (inout res any, in name varchar, inout val an
         xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P',
 	  'http://www.apple.com/metadata#' || name),
 	    cast (val as nvarchar) ) );
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.XML_UNIX_DATE_TO_ISO (in unixdt integer)
+{
+  declare ts any;
+  if (not isinteger (unixdt))
+    return '';
+  ts := dateadd ('second', unixdt, stringdate ('1970-1-1'));
+  ts := dt_set_tz (ts, 0);
+  return soap_print_box (ts, '', 0);
+}
+;
+
+insert soft DB.DBA.SYS_XPF_EXTENSIONS (XPE_NAME, XPE_PNAME)
+       VALUES ('http://www.openlinksw.com/xsltext/:unixTime2ISO', 'DB.DBA.XML_UNIX_DATE_TO_ISO')
+;
+
+xpf_extension ('http://www.openlinksw.com/xsltext/:unixTime2ISO', 'DB.DBA.XML_UNIX_DATE_TO_ISO', 0)
+;
+
+create procedure DAV_EXTRACT_META_AS_RDF_XML (in resname varchar, in rescontent any := null)
+{
+  declare res_type_uri, restype varchar;
+  declare html_start, type_tree any;
+  declare addon_n3, spotlight_addon_n3, ret any;
+
+  if (rescontent is null)
+    rescontent := XML_URI_GET (resname, '');
+  html_start := null;
+  spotlight_addon_n3 := null;
+  addon_n3 := null;
+  restype := DAV_GUESS_MIME_TYPE (resname, rescontent, html_start);
+  if (restype is not null)
+    {
+      declare exit handler for sqlstate '*'
+        {
+          goto addon_n3_set;
+	};
+      addon_n3 := call ('DB.DBA.DAV_EXTRACT_RDF_' || restype)(resname, rescontent, html_start);
+      res_type_uri := DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(restype);
+	  type_tree := xtree_doc ('<N3 N3S="http://local.virt/this" N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" N3O="'
+	  || res_type_uri || '"/>' );
+	  addon_n3 := DAV_RDF_MERGE (addon_n3, type_tree, null, 0);
+addon_n3_set: ;
+    }
+  if (__proc_exists ('SPOTLIGHT_METADATA', 2) is not null)
+    spotlight_addon_n3 := DAV_EXTRACT_SPOTLIGHT (resname, rescontent);
+  if (addon_n3 is null and spotlight_addon_n3 is null)
+    goto no_op;
+
+no_old:
+  if (spotlight_addon_n3 is not null)
+    {
+      if (addon_n3 is not null)
+        addon_n3 := DAV_RDF_MERGE (addon_n3, spotlight_addon_n3, null, 0);
+      else
+        addon_n3 := spotlight_addon_n3;
+    }
+  ret := xslt ('http://local.virt/davxml2rdfxml', addon_n3, vector ('this-real-uri', resname));
+  if (xpath_eval ('count(/RDF/*)', ret) = 0)
+    goto no_op;
+  ret := serialize_to_UTF8_xml (ret);
+  -- FIXME: use a rules in the xslt above instead of string replace
+  ret := replace (ret, 'http://local.virt/this', resname);
+  return ret;
+no_op:
+  return NULL;
 }
 ;

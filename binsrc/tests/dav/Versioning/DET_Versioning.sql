@@ -534,9 +534,16 @@ create function "Versioning_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), 
     ( select G_ID from WS.WS.SYS_DAV_GROUP
       where G_NAME = 'Versioning_' || coalesce ((select COL_NAME from WS.WS.SYS_DAV_COL where COL_ID=id[1] and COL_DET='HostFs'), '')
       ), puid+1);
-  pperms := '110100100NN';
   if ((what <> 'R') and (what <> 'C'))
     return -14;
+  if ('R' = what and (length(id) > 2))
+    {
+      select RES_PERMS, RES_OWNER, RES_GROUP into pperms, puid, pgid from WS.WS.SYS_DAV_RES where RES_ID = id[2]; -- Versioning permissions are original resource permissions
+    }
+  else
+    {
+      pperms := '110100100NN';
+    }
   allow_anon := WS.WS.PERM_COMP (substring (cast (pperms as varchar), 7, 3), req);
   if (a_uid is null)
     {

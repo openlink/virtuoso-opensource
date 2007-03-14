@@ -177,7 +177,7 @@ next_cand: ;
     {
       declare obj any;
       obj := candidates [cand_ctr];
-      if (not exists (select top 1 1 from DB.DBA.RDF_QUAD table option (index RDF_QUAD_PGOS)
+      if (not exists (select top 1 1 from DB.DBA.RDF_QUAD
           where G = graph_id and O = obj option (quietcast) ) )
     {
           for (select P,O from DB.DBA.RDF_QUAD where G = graph_id and S = obj) do

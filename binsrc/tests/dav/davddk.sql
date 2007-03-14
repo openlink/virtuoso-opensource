@@ -1215,6 +1215,8 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/opml+xml
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/rdf+xml','rdf')
 ;
+update WS.WS.SYS_DAV_RES_TYPES set T_TYPE='application/rdf+xml' where T_TYPE <> 'application/rdf+xml' and T_EXT = 'rdf'
+;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/pdf','pdf')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/postscript','ai')
