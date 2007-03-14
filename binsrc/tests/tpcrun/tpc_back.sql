@@ -52,7 +52,7 @@ ECHO BOTH $IF $EQU $STATE "OK"  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": status " $STATE " " $MESSAGE "\n";
 
-tc_stat (1);
+tc_stat ();
 
 
 
