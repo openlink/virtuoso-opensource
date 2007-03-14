@@ -105,6 +105,7 @@ vhost_remove (lpath=>'/');
 vhost_define (lpath=>'/', ppath=>'/DAV/', is_dav=>1);
 
 DAV_MAKE_DIR ('/DAV/calendar/', http_dav_uid (), null, '110110110N');
+DB.DBA.SYNC_MAKE_DAV_DIR ('vcalendar_11', DAV_SEARCH_ID ('/DAV/calendar/','C'), 'calendar', '/DAV/calendar/', '1.0');
 DAV_RES_UPLOAD ('/DAV/syncml.dtd', file_to_string ('syncml.dtd'), '', '110100100N', 'dav', 'dav', 'dav', 'dav');
 
 delete from sync_session;
@@ -136,9 +137,9 @@ create procedure test_syncml ()
       ret := http_get ('http://localhost:$U{HTTPPORT}/', null, 'POST',
       'Content-Type: application/vnd.syncml+wbxml', blob_to_string (dt));
       ret := WBXML2XML (ret);
-      http ('<!DOCTYPE SyncML SYSTEM "http://localhost:$U{HTTPPORT}/syncml.dtd">', ses);
-      http (serialize_to_UTF8_xml (ret), ses);
-      dbg_obj_print (string_output_string (ses));
+      --http ('<!DOCTYPE SyncML SYSTEM "http://localhost:$U{HTTPPORT}/syncml.dtd">', ses);
+      --http (serialize_to_UTF8_xml (ret), ses);
+      --dbg_obj_print (string_output_string (ses));
 --    xml_validate_dtd (ses, 0, '', 'UTF-8', 'x-any', 'Validation=RIGOROUS Fsa=ERROR FsaBadWs=IGNORE BuildStandalone=ENABLE SignalOnError=ENABLE');
       result (id);
     }
