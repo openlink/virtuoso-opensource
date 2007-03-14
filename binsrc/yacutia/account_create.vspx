@@ -905,8 +905,11 @@
         while (i < cnt)
           {
             if (self.roles_grant_list[i] <> self.dl_default_group.ufl_value)
+	      {
+	        if (not exists (select 1 from SYS_ROLE_GRANTS, SYS_USERS g, SYS_USERS u 
+		  where g.U_NAME = self.roles_grant_list[i] and gi_super = u.u_id and u.u_name = user_name and gi_grant = g.u_id))
               USER_GRANT_ROLE(user_name, self.roles_grant_list[i]);
-
+	      }
             i := i + 1;
           }
 
