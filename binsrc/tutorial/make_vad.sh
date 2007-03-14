@@ -331,7 +331,12 @@ sticker_init() {
   echo "    <prop name=\"Build\" value=\"Release\"/>" >> $STICKER
   echo "  </version>" >> $STICKER
   echo "</caption>" >> $STICKER
-	echo "<dependencies/>" >> $STICKER
+  echo "<dependencies>" >> $STICKER
+  echo "  <require>" >> $STICKER
+  echo "    <name package=\"Demo\"/>" >> $STICKER
+  echo "    <versions_later package=\"1.00.00\"/>" >> $STICKER
+  echo "  </require>" >> $STICKER
+  echo "</dependencies>" >> $STICKER
   echo "<ddls>" >> $STICKER
   echo "  <sql purpose=\"pre-install\">" >> $STICKER
   echo "  </sql>" >> $STICKER
@@ -486,7 +491,7 @@ CallstackOnException = 1
 ; Timeout values are seconds
 ;
 
-[HTTPServer]
+[!HTTPServer]
 ServerPort = $TPORT
 ServerRoot = .
 ServerThreads = 5
@@ -510,12 +515,6 @@ ServerEnable = 1
 QueueMax     = 50000
 
 " > virtuoso.ini
-  if [ -f virtuoso.lic ]
-  then
-    echo "virtuoso.lic found"
-  else
-    cp $HOME/binsrc/tests/suite/virtuoso.lic virtuoso.lic 2>/dev/null
-  fi
   virtuoso_start
 }
 
