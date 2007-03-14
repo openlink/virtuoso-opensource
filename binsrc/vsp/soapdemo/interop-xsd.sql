@@ -20,12 +20,12 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element xmlns="http://www.w3.org/2001/XMLSchema" name="echoStringArrayParam" targetNamespace="http://soapinterop.org/xsd" type="xsd1:ArrayOfstring_literal" xmlns:xsd1="http://soapinterop.org/xsd" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType name="ArrayOfstring_literal" xmlns="http://www.w3.org/2001/XMLSchema"  targetNamespace="http://soapinterop.org/xsd">
     <sequence>
         <element maxOccurs="unbounded" minOccurs="1" name="string" type="string"/>
@@ -33,22 +33,22 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element xmlns="http://www.w3.org/2001/XMLSchema" name="echoStringArrayReturn" targetNamespace="http://soapinterop.org/xsd" type="xsd1:ArrayOfstring_literal" xmlns:xsd1="http://soapinterop.org/xsd" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 			<element name="x_Document" type="typens:Document" targetNamespace="http://soapinterop.org/xsd" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:typens="http://soapinterop.org/xsd" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 			<element name="result_Document" type="typens:Document" targetNamespace="http://soapinterop.org/xsd" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:typens="http://soapinterop.org/xsd" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <complexType name="Document"
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -63,12 +63,12 @@ targetNamespace="http://soapinterop.org/xsd"
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element  xmlns="http://www.w3.org/2001/XMLSchema" name="x_Employee" type="emp:Employee" targetNamespace = "http://soapinterop.org/employee" xmlns:emp="http://soapinterop.org/employee" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 			<complexType name="Person" xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://soapinterop.org/person">
 				<sequence>
@@ -78,12 +78,12 @@ select soap_dt_define('','
 			</complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 			<element xmlns="http://www.w3.org/2001/XMLSchema"  name="result_Employee" type="emp:Employee" targetNamespace = "http://soapinterop.org/employee" xmlns:emp="http://soapinterop.org/employee" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
       <complexType name="Header1"
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -98,7 +98,7 @@ targetNamespace="http://soapinterop.org/xsd"
       </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -108,7 +108,7 @@ targetNamespace="http://soapinterop.org/xsd"
 name="Header1" type="types:Header1" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
       <complexType name="Header2"
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -124,7 +124,7 @@ targetNamespace="http://soapinterop.org/xsd"
       </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -134,7 +134,7 @@ targetNamespace="http://soapinterop.org/xsd"
 name="Header2" type="types:Header2" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType name="ArrayOfstring" targetNamespace="http://soapinterop.org/xsd"
    xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
@@ -152,7 +152,7 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType name="ArrayOfint" targetNamespace="http://soapinterop.org/xsd"
    xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
@@ -171,7 +171,7 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType name="ArrayOflong" targetNamespace="http://soapinterop.org/xsd"
    xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
@@ -191,7 +191,7 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType name="ArrayOffloat" targetNamespace="http://soapinterop.org/xsd"
    xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
@@ -210,7 +210,7 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType name="ArrayOfSOAPStruct" targetNamespace="http://soapinterop.org/xsd"
    xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
@@ -230,7 +230,7 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType name="SOAPStruct" targetNamespace="http://soapinterop.org/xsd"
    xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
@@ -245,7 +245,7 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType name="ArrayOfString2D" targetNamespace="http://soapinterop.org/xsd"
    xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
@@ -262,7 +262,7 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType xmlns="http://www.w3.org/2001/XMLSchema"  name="SOAPArrayStruct" targetNamespace="http://soapinterop.org/xsd" >
 <all>
   <element name="varString" type="string" nillable="true" />
@@ -273,7 +273,7 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType xmlns="http://www.w3.org/2001/XMLSchema"  name="SOAPStructStruct" targetNamespace="http://soapinterop.org/xsd">
     <all>
      <element name="varString" type="string" nillable="true" />
@@ -284,7 +284,7 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 	      <complexType  name ="ArrayOfSOAPStruct"
 	      targetNamespace="http://soapinterop.org/xsd2"
@@ -301,7 +301,7 @@ select soap_dt_define('','
 	      </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
             <complexType name="List"
 	    targetNamespace="http://soapinterop.org/xsd"
 	    xmlns:xsd1="http://soapinterop.org/xsd"
@@ -317,7 +317,7 @@ select soap_dt_define('','
             </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType xmlns="http://www.w3.org/2001/XMLSchema" name="Person" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://soapinterop.org/xsd">
 <sequence>
 <element minOccurs="1" maxOccurs="1" name="Age" type="double"/>
@@ -330,17 +330,17 @@ select soap_dt_define('','
 
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element xmlns="http://www.w3.org/2001/XMLSchema" name="x_Person" targetNamespace="http://soapinterop.org/xsd" xmlns:pers="http://soapinterop.org/xsd" type="pers:Person" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 			<element  xmlns="http://www.w3.org/2001/XMLSchema" name="x_Person" type="pers:Person" targetNamespace = "http://soapinterop.org/person" xmlns:pers="http://soapinterop.org/person" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 			<complexType name="Employee" targetNamespace = "http://soapinterop.org/employee"
 			xmlns="http://www.w3.org/2001/XMLSchema"
@@ -353,27 +353,27 @@ select soap_dt_define('','
 			</complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element xmlns="http://www.w3.org/2001/XMLSchema" name="result_Person" targetNamespace="http://soapinterop.org/xsd" xmlns:pers="http://soapinterop.org/xsd" type="pers:Person" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 			<element xmlns="http://www.w3.org/2001/XMLSchema"  name="result_Person" type="pers:Person" targetNamespace = "http://soapinterop.org/person" xmlns:pers="http://soapinterop.org/person" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element xmlns="http://www.w3.org/2001/XMLSchema" name="echoStructParam" targetNamespace="http://soapinterop.org/xsd" type="xsd1:SOAPStruct" xmlns:xsd1="http://soapinterop.org/xsd" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element xmlns="http://www.w3.org/2001/XMLSchema" name="echoStructReturn" targetNamespace="http://soapinterop.org/xsd" type="xsd1:SOAPStruct" xmlns:xsd1="http://soapinterop.org/xsd" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
             <element name="echoStringArray"
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -388,7 +388,7 @@ targetNamespace="http://soapinterop.org/xsd"
             </element>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
             <element name="echoStringArrayResponse"
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -403,7 +403,7 @@ targetNamespace="http://soapinterop.org/xsd"
             </element>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -412,12 +412,12 @@ targetNamespace="http://soapinterop.org/xsd"
 type="string" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
 <element xmlns="http://www.w3.org/2001/XMLSchema" name="echoStringReturn" targetNamespace="http://soapinterop.org/xsd" type="string" />
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
             <element name="echoString"
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -433,7 +433,7 @@ targetNamespace="http://soapinterop.org/xsd"
             </element>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
             <element name="echoStringResponse"
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -449,7 +449,7 @@ targetNamespace="http://soapinterop.org/xsd"
             </element>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType name="SOAPStruct" targetNamespace="http://soapinterop.org/xsd"
    xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
@@ -464,7 +464,7 @@ select soap_dt_define('','
 </complexType>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
             <element name="echoStruct"
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -479,7 +479,7 @@ targetNamespace="http://soapinterop.org/xsd"
             </element>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
             <element name="echoStructResponse"
 xmlns="http://www.w3.org/2001/XMLSchema"
@@ -494,7 +494,7 @@ targetNamespace="http://soapinterop.org/xsd"
             </element>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
             <element name="echoVoid"
   		xmlns="http://www.w3.org/2001/XMLSchema"
@@ -504,7 +504,7 @@ select soap_dt_define('','
             </element>
 ');
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 
             <element name="echoVoidResponse"
   		xmlns="http://www.w3.org/2001/XMLSchema"

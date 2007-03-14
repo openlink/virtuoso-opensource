@@ -21,15 +21,15 @@
 --  
 --  
 
-USER_CREATE ('EmptySA', uuid(), vector ('DISABLED', 1));
-USER_CREATE ('Import1', uuid(), vector ('DISABLED', 1));
-USER_CREATE ('Import2', uuid(), vector ('DISABLED', 1));
-USER_CREATE ('Import3', uuid(), vector ('DISABLED', 1));
-USER_CREATE ('Compound1', uuid(), vector ('DISABLED', 1));
-USER_CREATE ('Compound2', uuid(), vector ('DISABLED', 1));
-USER_CREATE ('DocLit', uuid(), vector ('DISABLED', 1));
-USER_CREATE ('DocPars', uuid(), vector ('DISABLED', 1));
-USER_CREATE ('RpcEnc', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('EmptySA', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('Import1', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('Import2', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('Import3', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('Compound1', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('Compound2', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('DocLit', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('DocPars', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('RpcEnc', uuid(), vector ('DISABLED', 1));
 
 use Interop3;
 
@@ -232,7 +232,7 @@ grant execute on RpcEnc.echoVoid  to RpcEnc;
 
 use DB;
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/EmptySA',
     ppath=>'/SOAP/',
     soap_user=>'EmptySA',
@@ -243,7 +243,7 @@ VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Import1',
     ppath=>'/SOAP/',
     soap_user=>'Import1',
@@ -254,7 +254,7 @@ VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Import2',
     ppath=>'/SOAP/',
     soap_user=>'Import2',
@@ -265,7 +265,7 @@ VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Import3',
     ppath=>'/SOAP/',
     soap_user=>'Import3',
@@ -276,7 +276,7 @@ VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Compound1',
     ppath=>'/SOAP/',
     soap_user=>'Compound1',
@@ -288,7 +288,7 @@ VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Compound2',
     ppath=>'/SOAP/',
     soap_user=>'Compound2',
@@ -300,7 +300,7 @@ VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/DocLit',
     ppath=>'/SOAP/',
     soap_user=>'DocLit',
@@ -312,7 +312,7 @@ VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/DocPars',
     ppath=>'/SOAP/',
     soap_user=>'DocPars',
@@ -324,7 +324,7 @@ VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/RpcEnc',
     ppath=>'/SOAP/',
     soap_user=>'RpcEnc',

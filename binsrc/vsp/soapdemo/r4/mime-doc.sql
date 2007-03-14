@@ -21,15 +21,15 @@
 --  
 --  
 
-USER_CREATE ('interop4m', uuid(), vector ('DISABLED', 1))
+DB.DBA.USER_CREATE ('interop4m', uuid(), vector ('DISABLED', 1))
 ;
 
-user_set_qualifier ('interop4m', 'interop4m');
-VHOST_REMOVE (lpath=>'/r4/groupG/mime/doc')
+DB.DBA.user_set_qualifier ('interop4m', 'interop4m');
+DB.DBA.VHOST_REMOVE (lpath=>'/r4/groupG/mime/doc')
 ;
 
 
-VHOST_DEFINE (lpath=>'/r4/groupG/mime/doc', ppath=>'/SOAP/', soap_user=>'interop4m',
+DB.DBA.VHOST_DEFINE (lpath=>'/r4/groupG/mime/doc', ppath=>'/SOAP/', soap_user=>'interop4m',
     soap_opts => vector (
       'Namespace','http://soapinterop.org/attachments/','MethodInSoapAction','no', 'ServiceName', 'GroupGService'
       )

@@ -21,7 +21,7 @@
 --  
 --  
 
-USER_CREATE ('TestList', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('TestList', uuid(), vector ('DISABLED', 1));
 
 use Interop3;
 
@@ -37,7 +37,7 @@ grant execute on TestList.echoLinkedList to TestList;
 
 use DB;
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/List',
     ppath=>'/SOAP/',
     soap_user=>'TestList',

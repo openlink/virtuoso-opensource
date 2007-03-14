@@ -28,24 +28,24 @@ drop user soap12doc;
 
 drop user soap12rpc;
 
-USER_CREATE ('WSRP', uuid(), vector ('DISABLED', 1));
-USER_CREATE ('soap12doc', uuid(), vector ('DISABLED', 1));
-USER_CREATE ('soap12rpc', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('WSRP', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('soap12doc', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('soap12rpc', uuid(), vector ('DISABLED', 1));
 
-VHOST_REMOVE (lpath=>'/router');
+DB.DBA.VHOST_REMOVE (lpath=>'/router');
 
-VHOST_DEFINE (lpath=>'/router', ppath=>'/SOAP/', soap_user=>'WSRP', soap_opts=>vector ('router', 'yes', 'role', 'http://example.org/ts-tests/B'));
+DB.DBA.VHOST_DEFINE (lpath=>'/router', ppath=>'/SOAP/', soap_user=>'WSRP', soap_opts=>vector ('router', 'yes', 'role', 'http://example.org/ts-tests/B'));
 
-VHOST_REMOVE (lpath=>'/soap12');
+DB.DBA.VHOST_REMOVE (lpath=>'/soap12');
 
-VHOST_REMOVE (lpath=>'/soap12-doc');
-VHOST_REMOVE (lpath=>'/soap12-rpc');
+DB.DBA.VHOST_REMOVE (lpath=>'/soap12-doc');
+DB.DBA.VHOST_REMOVE (lpath=>'/soap12-rpc');
 
-VHOST_DEFINE (lpath=>'/soap12', ppath=>'/SOAP/', soap_user=>'INTEROP', soap_opts=>vector('ServiceName', 'InteropTests', 'CR-escape', 'yes', 'router', 'no', 'role', 'http://example.org/ts-tests/C', 'HttpSOAPVersion', '12'));
+DB.DBA.VHOST_DEFINE (lpath=>'/soap12', ppath=>'/SOAP/', soap_user=>'INTEROP', soap_opts=>vector('ServiceName', 'InteropTests', 'CR-escape', 'yes', 'router', 'no', 'role', 'http://example.org/ts-tests/C', 'HttpSOAPVersion', '12'));
 
-VHOST_DEFINE (lpath=>'/soap12-doc', ppath=>'/SOAP/', soap_user=>'soap12doc', soap_opts=>vector('ServiceName', 'InteropTests', 'CR-escape', 'yes', 'router', 'no', 'role', 'http://example.org/ts-tests/C', 'HttpSOAPVersion', '12'));
+DB.DBA.VHOST_DEFINE (lpath=>'/soap12-doc', ppath=>'/SOAP/', soap_user=>'soap12doc', soap_opts=>vector('ServiceName', 'InteropTests', 'CR-escape', 'yes', 'router', 'no', 'role', 'http://example.org/ts-tests/C', 'HttpSOAPVersion', '12'));
 
-VHOST_DEFINE (lpath=>'/soap12-rpc', ppath=>'/SOAP/', soap_user=>'soap12rpc', soap_opts=>vector('ServiceName', 'InteropTests', 'CR-escape', 'yes', 'router', 'no', 'role', 'http://example.org/ts-tests/C', 'HttpSOAPVersion', '12'));
+DB.DBA.VHOST_DEFINE (lpath=>'/soap12-rpc', ppath=>'/SOAP/', soap_user=>'soap12rpc', soap_opts=>vector('ServiceName', 'InteropTests', 'CR-escape', 'yes', 'router', 'no', 'role', 'http://example.org/ts-tests/C', 'HttpSOAPVersion', '12'));
 
 
 SOAP_LOAD_SCH ('<schema xmlns="http://www.w3.org/2001/XMLSchema"

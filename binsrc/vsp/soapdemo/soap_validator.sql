@@ -20,7 +20,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-select soap_dt_define ('',
+select DB.DBA.soap_dt_define ('',
 '<complexType xmlns="http://www.w3.org/2001/XMLSchema" name="cte" targetNamespace="http://tempuri.org/">
   <all>
     <element name="ctLeftAngleBrackets" type="int"/>
@@ -71,7 +71,7 @@ returns any __soap_type 'http://tempuri.org/:cte'
   return ret;
 };
 
-select soap_dt_define ('',
+select DB.DBA.soap_dt_define ('',
 '<complexType xmlns="http://www.w3.org/2001/XMLSchema" name="stooges" targetNamespace="http://tempuri.org/">
   <all>
     <element name="curly" type="int"/>
@@ -111,7 +111,7 @@ in num integer, in bool integer, in state varchar, in doub varchar, in dat datet
   return ret;
 };
 
-select soap_dt_define('','
+select DB.DBA.soap_dt_define('','
 <complexType name="ArrayOfstring" targetNamespace="http://tempuri.org/"
    xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
@@ -157,7 +157,7 @@ create procedure WS.SOAP.nestedStructTest (in myStruct any) returns integer
   return res;
 };
 
-select soap_dt_define ('',
+select DB.DBA.soap_dt_define ('',
 '<complexType xmlns="http://www.w3.org/2001/XMLSchema" name="ssrt" targetNamespace="http://tempuri.org/">
   <all>
     <element name="times10" type="int"/>
@@ -176,7 +176,7 @@ returns any __soap_type 'http://tempuri.org/:ssrt'
 };
 
 
-select soap_dt_define ('',
+select DB.DBA.soap_dt_define ('',
 '<complexType xmlns="http://www.w3.org/2001/XMLSchema" name="toolkit_info" targetNamespace="http://tempuri.org/">
   <all>
     <element name="toolkitDocsUrl" type="string"/>

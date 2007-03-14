@@ -23,16 +23,16 @@
 -- schema definition
 
 -- virtual directory setup
-USER_CREATE ('interop4xsd', uuid(), vector ('DISABLED', 1))
+DB.DBA.USER_CREATE ('interop4xsd', uuid(), vector ('DISABLED', 1))
 ;
 
-user_set_qualifier ('interop4xsd', 'interop4xsd');
+DB.DBA.user_set_qualifier ('interop4xsd', 'interop4xsd');
 
 
-VHOST_REMOVE (lpath=>'/r4/groupI')
+DB.DBA.VHOST_REMOVE (lpath=>'/r4/groupI')
 ;
 
-VHOST_DEFINE (lpath=>'/r4/groupI', ppath=>'/SOAP/', soap_user=>'interop4xsd',
+DB.DBA.VHOST_DEFINE (lpath=>'/r4/groupI', ppath=>'/SOAP/', soap_user=>'interop4xsd',
     soap_opts => vector (
       'Namespace','http://soapinterop.org/','MethodInSoapAction','yes',
       'ServiceName', 'GroupIService', 'elementFormDefault', 'qualified'

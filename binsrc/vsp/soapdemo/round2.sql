@@ -21,18 +21,18 @@
 --  
 --  
 
-USER_CREATE ('INTEROP', '_interop8027918273', vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('INTEROP', '_interop8027918273', vector ('DISABLED', 1));
 
-user_set_qualifier ('INTEROP', 'Interop');
+DB.DBA.user_set_qualifier ('INTEROP', 'Interop');
 
 
-VHOST_REMOVE (lpath=>'/Interop');
+DB.DBA.VHOST_REMOVE (lpath=>'/Interop');
 
-VHOST_REMOVE (lpath=>'/interop');
+DB.DBA.VHOST_REMOVE (lpath=>'/interop');
 
-VHOST_DEFINE (lpath=>'/Interop', ppath=>'/SOAP/', soap_user=>'INTEROP', soap_opts=>vector('Namespace','http://soapinterop.org/','MethodInSoapAction','no', 'ServiceName', 'InteropTests', 'HeaderNS', 'http://soapinterop.org/echoheader/', 'CR-escape', 'yes'));
+DB.DBA.VHOST_DEFINE (lpath=>'/Interop', ppath=>'/SOAP/', soap_user=>'INTEROP', soap_opts=>vector('Namespace','http://soapinterop.org/','MethodInSoapAction','no', 'ServiceName', 'InteropTests', 'HeaderNS', 'http://soapinterop.org/echoheader/', 'CR-escape', 'yes'));
 
-VHOST_DEFINE (lpath=>'/interop', ppath=>'/SOAP/', soap_user=>'INTEROP', soap_opts=>vector('Namespace','http://soapinterop.org/','MethodInSoapAction','no', 'ServiceName', 'InteropTests', 'HeaderNS', 'http://soapinterop.org/echoheader/', 'CR-escape', 'yes'));
+DB.DBA.VHOST_DEFINE (lpath=>'/interop', ppath=>'/SOAP/', soap_user=>'INTEROP', soap_opts=>vector('Namespace','http://soapinterop.org/','MethodInSoapAction','no', 'ServiceName', 'InteropTests', 'HeaderNS', 'http://soapinterop.org/echoheader/', 'CR-escape', 'yes'));
 
 
 use Interop;

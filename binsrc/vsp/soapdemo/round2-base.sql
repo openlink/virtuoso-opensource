@@ -195,12 +195,12 @@ __soap_type 'http://www.w3.org/2001/XMLSchema:boolean'
 };
 
 
-USER_CREATE ('INTEROP', 'interop', vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('INTEROP', 'interop', vector ('DISABLED', 1));
 
-user_set_qualifier ('INTEROP', 'Interop');
+DB.DBA.user_set_qualifier ('INTEROP', 'Interop');
 
 
-VHOST_DEFINE (lpath=>'/Interop', ppath=>'/SOAP/', soap_user=>'INTEROP', soap_opts=>vector('SchemaNS','http://soapinterop.org/xsd','Namespace','http://soapinterop.org/','MethodInSoapAction','no', 'ServiceName', 'InteropTests'));
+DB.DBA.VHOST_DEFINE (lpath=>'/Interop', ppath=>'/SOAP/', soap_user=>'INTEROP', soap_opts=>vector('SchemaNS','http://soapinterop.org/xsd','Namespace','http://soapinterop.org/','MethodInSoapAction','no', 'ServiceName', 'InteropTests'));
 
 grant execute on Interop.INTEROP.echoString to INTEROP;
 grant execute on Interop.INTEROP.echoStringArray to INTEROP;

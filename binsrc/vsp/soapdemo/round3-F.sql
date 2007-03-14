@@ -21,7 +21,7 @@
 --  
 --  
 
-USER_CREATE ('TestHeaders', uuid(), vector ('DISABLED', 1));
+DB.DBA.USER_CREATE ('TestHeaders', uuid(), vector ('DISABLED', 1));
 
 use Interop3;
 
@@ -42,7 +42,7 @@ grant execute on Header.echoString to TestHeaders;
 
 use DB;
 
-VHOST_DEFINE (
+DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Hdr',
     ppath=>'/SOAP/',
     soap_user=>'TestHeaders',
@@ -72,12 +72,12 @@ create procedure r3_ext_upload (in bs varchar)
 
 r3_ext_upload ('../../vsp/soapdemo');
 
-VHOST_DEFINE (lpath=>'/r3/Extensibility/services.wsdl',
+DB.DBA.VHOST_DEFINE (lpath=>'/r3/Extensibility/services.wsdl',
               ppath=>'/DAV/interop3/wsdl/extensions.wsdl.vsp',
 	      is_dav=>1,
 	      vsp_user=>'dba');
 
-VHOST_DEFINE (lpath=>'/r3/ExtensibilityRequired/services.wsdl',
+DB.DBA.VHOST_DEFINE (lpath=>'/r3/ExtensibilityRequired/services.wsdl',
               ppath=>'/DAV/interop3/wsdl/extensions_required.wsdl.vsp',
 	      is_dav=>1,
 	      vsp_user=>'dba');

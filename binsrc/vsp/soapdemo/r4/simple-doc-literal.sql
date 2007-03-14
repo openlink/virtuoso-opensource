@@ -19,16 +19,16 @@
 --  
 --  
 
-USER_CREATE ('interop4hsd', uuid(), vector ('DISABLED', 1))
+DB.DBA.USER_CREATE ('interop4hsd', uuid(), vector ('DISABLED', 1))
 ;
 
-user_set_qualifier ('interop4hsd', 'interop4hsd');
+DB.DBA.user_set_qualifier ('interop4hsd', 'interop4hsd');
 
 
-VHOST_REMOVE (lpath=>'/r4/groupH/simple/doc')
+DB.DBA.VHOST_REMOVE (lpath=>'/r4/groupH/simple/doc')
 ;
 
-VHOST_DEFINE (lpath=>'/r4/groupH/simple/doc', ppath=>'/SOAP/', soap_user=>'interop4hsd',
+DB.DBA.VHOST_DEFINE (lpath=>'/r4/groupH/simple/doc', ppath=>'/SOAP/', soap_user=>'interop4hsd',
     soap_opts => vector (
       'Namespace','http://soapinterop.org/wsdl','MethodInSoapAction','empty',
       'ServiceName', 'GroupHService', 'FaultNS', 'http://soapinterop.org/wsdl'

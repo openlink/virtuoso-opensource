@@ -20,9 +20,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-VHOST_REMOVE (lpath=>'/Interop/documents');
+DB.DBA.VHOST_REMOVE (lpath=>'/Interop/documents');
 
-VHOST_DEFINE (lpath=>'/Interop/documents', ppath=>'/soapdemo/', vsp_user=>'dba', def_page=>'interop.html');
+DB.DBA.VHOST_DEFINE (lpath=>'/Interop/documents', ppath=>'/soapdemo/', vsp_user=>'dba', def_page=>'interop.html');
 
 --drop table SERVICES;
 create table SERVICES(
@@ -557,6 +557,7 @@ create procedure float_failed_text (in test_name varchar, in val1 any, in val2 a
 
   return concat ('Failed: ', test_name, ' float value [', val1, '] <> [', val2, ']');
 }
+;
 
 create procedure string_failed_text (in test_name varchar, in val1 any, in val2 any)
 {
@@ -574,7 +575,7 @@ create procedure string_failed_text (in test_name varchar, in val1 any, in val2 
 
   return concat ('Failed: ', test_name, ' string value [', val1, '] <> [', val2, ']');
 }
-
+;
 create procedure int_if (in val1 any, in val2 any)
 {
   if (val1 is null)
@@ -751,7 +752,7 @@ create procedure NEW_TEST_SERVICE (in module_name varchar, in op_name varchar, i
 
   return 'Failed';
 }
-
+;
 create procedure TEST_SERVICE (in module_name varchar, in test_type varchar, in parameters varchar,
 			       inout request varchar, inout responce varchar, in wsdl_url varchar,
 			       in is_literal integer, in _wsdl varchar)
