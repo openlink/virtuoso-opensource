@@ -1380,7 +1380,7 @@ tcpses_select (
       /* error? */
       if (errno == SYS_EINTR)
 	{
-	  /* Possible EINTR caused by tasker signal */
+	  /* Possible EINTR caused by task signal */
 	  dbg_printf_2 (("Select ended by EINTR."));
 	  set_array_status (ses_count, reads, SST_INTERRUPTED);
 	  set_array_status (ses_count, writes, SST_INTERRUPTED);
@@ -2131,7 +2131,7 @@ tcpses_error_message (int saved_errno, char *msgbuf, int size)
       case WSAEINPROGRESS: 	strncpy (msgbuf, "Operation now in progress", size - 1); break;
       case WSAEINTR: 		strncpy (msgbuf, "Interrupted function call", size - 1); break;
       case WSAEINVAL: 		strncpy (msgbuf, "Invalid argument", size - 1); break;
-      case WSAEISCONN: 		strncpy (msgbuf, "Socket allready connected", size - 1); break;
+      case WSAEISCONN: 		strncpy (msgbuf, "Socket already connected", size - 1); break;
       case WSAEMFILE: 		strncpy (msgbuf, "Too many open files", size - 1); break;
       case WSAEMSGSIZE: 	strncpy (msgbuf, "Message too long", size - 1); break;
       case WSAENETDOWN: 	strncpy (msgbuf, "Network is down", size - 1); break;
@@ -2157,12 +2157,12 @@ tcpses_error_message (int saved_errno, char *msgbuf, int size)
       case WSA_IO_INCOMPLETE:	strncpy (msgbuf, "Overlapped I/O event object not in signaled state", size - 1); break;
       case WSA_IO_PENDING:	strncpy (msgbuf, "Overlapped operations will complete later", size - 1); break;
       case WSA_NOT_ENOUGH_MEMORY:	strncpy (msgbuf, "Insufficient memory available", size - 1); break;
-      case WSANOTINITIALISED:	strncpy (msgbuf, "Successfull WSAStartup not yet performed", size - 1); break;
+      case WSANOTINITIALISED:	strncpy (msgbuf, "Successful WSAStartup not yet performed", size - 1); break;
       case WSANO_DATA:		strncpy (msgbuf, "Valid name, no data record of requested type", size - 1); break;
       case WSANO_RECOVERY:	strncpy (msgbuf, "This is a nonrecoverable error", size - 1); break;
       case WSASYSCALLFAILURE:	strncpy (msgbuf, "System call failure", size - 1); break;
       case WSASYSNOTREADY:	strncpy (msgbuf, "Network subsystem is unavailable", size - 1); break;
-      case WSATRY_AGAIN:	strncpy (msgbuf, "Nonauthoritative host not found", size - 1); break;
+      case WSATRY_AGAIN:	strncpy (msgbuf, "Non-authoritative host not found", size - 1); break;
       case WSAVERNOTSUPPORTED:	strncpy (msgbuf, "Winsock.dll version out of range", size - 1); break;
       case WSAEDISCON:		strncpy (msgbuf, "Graceful shutdown in progress", size - 1); break;
       case WSA_OPERATION_ABORTED: strncpy (msgbuf, "Overlapped operation aborted", size - 1); break;

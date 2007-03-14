@@ -477,7 +477,7 @@ call_default_read (dk_session_t * ses, int is_recursive, int *did_call)
 
 int prpc_disable_burst_mode = 0;
 int prpc_force_burst_mode = 0;
-int prpc_self_signal_inited = 0;
+int prpc_self_signal_initialized = 0;
 
 static int
 check_inputs_low (TAKE_G
@@ -607,7 +607,7 @@ check_inputs_low (TAKE_G
 			}
 		      else
 			{
-			  thrs_printf ((thrs_fo, "ses %p thr:%p tried birst, but it's not RPC thread\n", ses, THREAD_CURRENT_THREAD));
+			  thrs_printf ((thrs_fo, "ses %p thr:%p tried burst, but it's not RPC thread\n", ses, THREAD_CURRENT_THREAD));
 			  mutex_leave (thread_mtx);
 			}
 		    }
@@ -1618,7 +1618,7 @@ schedule_future:
 	    }
 	  else
 	    {
-	      if (prpc_force_burst_mode && prpc_self_signal_inited)
+	      if (prpc_force_burst_mode && prpc_self_signal_initialized)
 		{
 		  thrs_printf ((thrs_fo, "ses %p thr:%p forced boost to burst\n", ses, THREAD_CURRENT_THREAD));
 		  ses->dks_thread_state = DKST_BURST;
@@ -1770,7 +1770,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
 	}
       else
 	{
-	  /*if (prpc_force_burst_mode && prpc_self_signal_inited)
+	  /*if (prpc_force_burst_mode && prpc_self_signal_initialized)
 	    {
 	      thrs_printf ((thrs_fo, "ses %p thr:%p forced boost to burst\n", ses, THREAD_CURRENT_THREAD));
 	      ses->dks_thread_state = DKST_BURST;
@@ -3366,15 +3366,15 @@ void
 PrpcSelfSignalInit (char *addr)
 {
   char addr2[100];
-  static int inited = 0;
+  static int initialized = 0;
 
-  if (inited)
+  if (initialized)
     return;
   if (!strchr (addr, ':'))
     snprintf (addr2, sizeof (addr2), "localhost:%s", addr);
   else
     strcpy_ck (addr2, addr);
-  inited = 1;
+  initialized = 1;
   sig_session = PrpcConnect2 (addr2, SESCLASS_TCPIP, NULL, NULL, NULL, 0);
   if (!sig_session || !DKSESSTAT_ISSET (sig_session, SST_OK))
     {
@@ -3386,7 +3386,7 @@ PrpcSelfSignalInit (char *addr)
   sig_mtx = mutex_allocate ();
   remove_from_served_sessions (sig_session);
   dks_n_housekeeping_sessions += 2;
-  prpc_self_signal_inited = 1;
+  prpc_self_signal_initialized = 1;
 }
 
 

@@ -457,7 +457,7 @@ service_read (dk_session_t * ses, char *buffer, int req_bytes, int need_all)
  *
  * If input buffer contains enough data, copies the data into the buffer
  * Else :
- * 1) if we want more than a bufferful, we read straight into the target.
+ * 1) if we want more than a buffer full, we read straight into the target.
  * 2) if we want less, we fill the buffer until there is enough and then copy
  * the data into the target and leave whatever else was read in the buffer.
  * I/O errors are handled in service_read. This always returns successfully.
@@ -487,7 +487,7 @@ session_buffered_read (dk_session_t * ses, char *buffer, int req_bytes)
       int bytes_from_previous;
 
       /* Move the stuff in the buffer to target.
-         If there's more than a bufferful needed, read into the target
+         If there's more than a buffer full needed, read into the target
          if less, fill the buffer. */
       memcpy (buffer, &ses->dks_in_buffer[ses->dks_in_read],
 	  bytes_from_previous

@@ -44,7 +44,7 @@ typedef struct strsestmpfile_s strsestmpfile_t;
 
 struct strsestmpfile_s
   {
-    int         ses_max_blocks_in_mem;	/* max bloks in memory to use */
+    int         ses_max_blocks_in_mem;	/* max blocks in memory to use */
     int         ses_max_blocks_init;
     int         ses_file_descriptor;
     caddr_t     ses_temp_file_name;
@@ -149,7 +149,7 @@ struct session_s
 /*
  *  Session functions
  */
-session_t *session_allocate (int seslass);
+session_t *session_allocate (int sesclass);
 int session_free (session_t * ses);
 EXE_EXPORT (int,  session_set_address, (session_t * ses, char *addrinfo));
 EXE_EXPORT (int, session_listen, (session_t * ses));

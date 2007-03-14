@@ -8,7 +8,7 @@
  *  A box is a block of memory with a header
  *  containing a 24 bit length and an 8 bit tag.
  *  Boxes start at word boundaries bit the length is in system
- *  so that it does not the logical length of a boxdoes not
+ *  so that it does not the logical length of a box does not
  *  have to be a multiple of 4
  *
  *  The tag is an arbitrary application specific field
@@ -130,7 +130,7 @@ box_dv_uname_audit_one (uint32 cpair_idx)
           ctr++;
           refctr += blk->unb_hdr[UNB_HDR_REFCTR];
           if (0 >= blk->unb_hdr[UNB_HDR_REFCTR])
-            GPF_T1 ("Nonpositive refcount");
+            GPF_T1 ("Negative refcount");
           if (UNAME_LOCK_REFCOUNT <= blk->unb_hdr[UNB_HDR_REFCTR])
             GPF_T1 ("Big refcount but not immortal");
 #ifdef MALLOC_DEBUG
@@ -1878,7 +1878,7 @@ void dk_box_initialize(void)
   box_dv_uname_make_immortal (uname___empty);
 #ifndef DV_UNAME_STATS
 #ifdef DEBUG
-  /* Uname trick is... well, a trick. If broken, it will cause never-catched errors. Thus check it always. */
+  /* Uname trick is... well, a trick. If broken, it will cause never-catch errors. Thus check it always. */
   {
     int ctr;
     caddr_t *list1 = (caddr_t *)dk_alloc_box(sizeof(caddr_t) * UNAME_TABLE_SIZE * 2, DV_ARRAY_OF_POINTER);

@@ -50,7 +50,7 @@ typedef const void * cbox_t;
 /* This is a pointer that will never be equal to any box pointer (alignment...) */
 #define BADBEEF_BOX ((box_t)(0xBADBEEF))
 
-/* This is the maximum alowed box length.
+/* This is the maximum allowed box length.
 We have three bytes in the header to record it. */
 #define MAX_BOX_LENGTH ((size_t)0xFFFFFF)
 #define MAX_BOX_ELEMENTS (MAX_BOX_LENGTH/sizeof(void *))
@@ -472,8 +472,7 @@ typedef struct dk_mem_wrapper_s
 #else
 #ifndef WIN32
 #if (__BYTE_ORDER != __BIG_ENDIAN)
-!! You have gluck in the configuration !!
-!! Some value should be assigned to __BYTE_ORDER on any UNIX !!
+#error "Some value should be assigned to __BYTE_ORDER on any UNIX!!"
 #endif
 #endif
 extern uint32 big_endian_box_length (const void *box);
@@ -603,7 +602,7 @@ typedef int (*box_destr_f) (caddr_t box);
 typedef caddr_t (*box_copy_f) (caddr_t box);
 typedef caddr_t (*box_tmp_copy_f) (mem_pool_t * mp, caddr_t box);
 caddr_t box_non_copiable (caddr_t b);
-void dk_mem_hooks (dtp_t dtp, box_copy_f cpoier, box_destr_f destr, int can_appear_twice_in_tree);
+void dk_mem_hooks (dtp_t dtp, box_copy_f copier, box_destr_f destr, int can_appear_twice_in_tree);
 void dk_mem_hooks_2 (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit, box_tmp_copy_f t_c);
 
 void box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp);

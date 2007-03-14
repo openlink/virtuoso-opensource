@@ -327,7 +327,7 @@ treehashcmp (char *x, char *y)
 }
 
 
-/* Allocator-dependant functions, dk_alloc versions */
+/* Allocator-dependent functions, dk_alloc versions */
 
 #define DBG_HASHEXT_NAME(name) DBG_NAME(name)
 #define DBG_HASHEXT_ALLOC(SZ) DK_ALLOC((SZ))
@@ -459,7 +459,7 @@ id_hash_set_rehash_pct (id_hash_t * ht, uint32 pct)
 #undef DBG_HASHEXT_FREE
 
 
-/* Allocator-dependant functions, t_alloc versions */
+/* Allocator-dependent functions, t_alloc versions */
 
 #ifdef MALLOC_DEBUG
 #define DBG_HASHEXT_NAME(name) dbg_t_##name

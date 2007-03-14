@@ -3,7 +3,8 @@
  *
  *  $Id$
  *
- *  Temp memory pool for objects that should be allocated one by one but freed alltogether.
+ *  Temp memory pool for objects that should be allocated one by one but freed 
+ *  together.
  *  
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.

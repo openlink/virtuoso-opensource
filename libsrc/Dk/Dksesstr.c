@@ -113,7 +113,7 @@ strdev_free_buf (buffer_elt_t *b, caddr_t arg)
 }
 
 
-/* outputs the input buffer up to the last full utf8 char boundry */
+/* outputs the input buffer up to the last full utf8 char boundary */
 /* utf8_in : the incoming (possibly not correct) utf8 string */
 /* max_utf8_chars : the max length of the utf8_in */
 /* out_buf : the buffer to hold the (correctly ending) utf8 */
@@ -878,7 +878,7 @@ strses_deserialize (dk_session_t * session, dtp_t macro)
       str = (caddr_t) scan_session_boxing (session);
 
       if (str && DV_TYPE_OF (str) != DV_STRING)
-	{ /* being paranoic is a good thing */
+	{ /* being paranoid is a good thing */
 	  dk_free_tree (str);
 	  sr_report_future_error (session, "", "Invalid data type of the incoming session segment");
 	  str = NULL;
@@ -1159,7 +1159,7 @@ strses_get_part_1 (dk_session_t *ses, void *buf2, long starting_ofs, long nbytes
 
 	      if (ses->dks_session->ses_file->ses_fd_curr_char_pos > starting_ofs ||
 		  ses->dks_session->ses_file->ses_fd_curr_char_pos == 0)
-		{ /* if the file ptr is behind the requested one start from the begining */
+		{ /* if the file ptr is behind the requested one start from the beginning */
 		  if (-1 == lseek (fd, 0, SEEK_SET))
 		    {
 		      log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
@@ -1301,7 +1301,7 @@ read_wides_from_utf8_file (
       unsigned char *data_ptr = &src_buffer[0];
       size_t converted;
 
-      /* read a bufferfull */
+      /* read a buffer full */
       readed = read (fd, src_buffer, to_read_bytes);
       if (-1 == readed)
 	{
@@ -1325,7 +1325,7 @@ read_wides_from_utf8_file (
 		  VIRT_MB_CUR_MAX, &mb);
 	      if (sz == (size_t) -1)
 		{
-		  log_error ("Unvalid utf-8 data in file %s", ses->dks_session->ses_file->ses_temp_file_name);
+		  log_error ("Invalid utf-8 data in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 		  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
 		  return -1;
 		}
@@ -1342,7 +1342,7 @@ read_wides_from_utf8_file (
 	  converted = virt_mbsnrtowcs ((wchar_t *) dest, &data_ptr, readed, nchars, &mb);
 	  if (converted == (size_t) -1)
 	    {
-	      log_error ("Unvalid utf-8 data in file %s", ses->dks_session->ses_file->ses_temp_file_name);
+	      log_error ("Invalid utf-8 data in file %s", ses->dks_session->ses_file->ses_temp_file_name);
 	      SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
 	      return -1;
 	    }
