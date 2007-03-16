@@ -40,9 +40,9 @@
 typedef struct triple_feed_s {
   query_instance_t *tf_qi;
   id_hash_t *tf_blank_node_ids;
-  id_hash_t *tf_cached_iids;
   caddr_t tf_app_env;		/*!< Environment for use by callbacks, owned by caller */
   caddr_t tf_graph_uri;		/*!< Graph uri, owned by caller */
+  caddr_t tf_graph_iid;		/*!< Graph iri ID, local */
   ccaddr_t tf_stmt_texts[COUNTOF__TRIPLE_FEED];
   query_t *tf_queries[COUNTOF__TRIPLE_FEED];
 } triple_feed_t;
@@ -51,6 +51,7 @@ extern triple_feed_t *tf_alloc (void);
 extern void tf_free (triple_feed_t *tf);
 extern void tf_set_stmt_texts (triple_feed_t *tf, const char **stmt_texts, caddr_t *err_ptr);
 extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
+extern void tf_commit (triple_feed_t *tf);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
 

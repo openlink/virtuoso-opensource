@@ -163,18 +163,23 @@ sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name)
 {
   char *right_dot = strrchr (name, '.');
   caddr_t prefix = ((NULL == right_dot) ? NULL : t_box_dv_short_nchars (name, right_dot - name));
-  caddr_t aliased_table;
+  caddr_t aliased_table = NULL;
   switch (type)
     {
     case SPARQL_PLAIN_ID:
-      if (NULL == sparp->sparp_env->spare_qm_default_table)
+      prefix = sparp->sparp_env->spare_qm_current_table_alias;
+      if (NULL != prefix)
+        aliased_table = spar_qm_find_base_table (sparp, prefix);
+      else
+        aliased_table = sparp->sparp_env->spare_qm_default_table;
+      if (NULL == aliased_table)
         {
           if (NULL != sparp->sparp_env->spare_qm_parent_tables_of_aliases)
             spar_error (sparp, "Table alias name is not specified for column %.100s", name);
           else
             spar_error (sparp, "Table name is not specified for column %.100s", name);
         }
-      return spartlist (sparp, 4, SPAR_SQLCOL, sparp->sparp_env->spare_qm_default_table, NULL, name);
+      return spartlist (sparp, 4, SPAR_SQLCOL, aliased_table, prefix, name);
     case SPARQL_SQL_ALIASCOLNAME:
       {
         if (NULL == right_dot)
@@ -203,6 +208,16 @@ sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name)
   return NULL; /* never reached */
 }
 
+static SPART *
+spar_make_qm_col_desc (sparp_t *sparp, SPART *col)
+{
+  return spar_make_vector_qm_sql (sparp,
+    (SPART **)t_list (3,
+      col->_.qm_sqlcol.qtable,
+      col->_.qm_sqlcol.alias,
+      col->_.qm_sqlcol.col ) );
+}
+
 SPART *
 spar_make_qm_value (sparp_t *sparp, caddr_t format_name, SPART **cols)
 {
@@ -210,6 +225,8 @@ spar_make_qm_value (sparp_t *sparp, caddr_t format_name, SPART **cols)
   dk_set_t map_atables = NULL;
   dk_set_t cond_tmpls = NULL;
   dk_set_t col_descs = NULL;
+  SPART **col_descs_array;
+  SPART *ft_generator = NULL;
   int colctr;
   DO_BOX_FAST (SPART *, col, colctr, cols)
     {
@@ -217,8 +234,7 @@ spar_make_qm_value (sparp_t *sparp, caddr_t format_name, SPART **cols)
       caddr_t tbl = col->_.qm_sqlcol.qtable;
       if (NULL == tbl)
         tbl = sparp->sparp_env->spare_qm_default_table;
-      t_set_push (&col_descs, spar_make_vector_qm_sql (sparp,
-          (SPART **)t_list (3, tbl, a, col->_.qm_sqlcol.col) ) );
+      t_set_push (&col_descs, spar_make_qm_col_desc (sparp, col));
       if (NULL == a)
         a = t_box_dv_short_string ("");
       if (0 > dk_set_position_of_string (map_aliases, a))
@@ -230,12 +246,48 @@ spar_make_qm_value (sparp_t *sparp, caddr_t format_name, SPART **cols)
         }
     }
   END_DO_BOX_FAST;
+  col_descs_array = (SPART **)t_revlist_to_array (col_descs);
   spar_qm_find_all_conditions (sparp, map_aliases, &cond_tmpls);
+  if (NULL != sparp->sparp_env->spare_qm_ft_indexes_of_columns)
+    { /* If there exist 'TEXT LITERAL...' declarations then there might be freetext-specific properties */
+      caddr_t ft_alias;
+      dk_set_t ft_map_aliases = NULL;
+      dk_set_t ft_cond_tmpls = NULL;
+      caddr_t qmft_key = spar_qm_collist_crc (cols, "ftcols-", 0);
+      spar_qm_ft_t *ft = dk_set_get_keyword (sparp->sparp_env->spare_qm_ft_indexes_of_columns, qmft_key, NULL);
+      if (NULL == ft)
+        goto end_of_free_text; /* see below */
+      ft_alias = ft->sparqft_ft_sqlcol->_.qm_sqlcol.alias;
+      if (0 > dk_set_position_of_string (map_aliases, ft_alias))
+        { /* If free-text alias is not one of qmv aliases then it may have additional join/where conditions */
+          dk_set_t all_tmpls = NULL;
+          ft_map_aliases = map_aliases;
+          t_set_push (&map_aliases, ft_alias);
+          spar_qm_find_all_conditions (sparp, map_aliases, &all_tmpls);
+          DO_SET (caddr_t, tmpl, &all_tmpls)
+            {
+              if (0 > dk_set_position_of_string (cond_tmpls, tmpl))
+                t_set_push (&ft_cond_tmpls, tmpl); /* ...thus ft_cond_tmpls does not intersect with cond_tmpls */
+            }
+          END_DO_SET ()
+        }
+      ft_generator = spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_FT_USAGE",
+        (SPART **)t_list (5,
+          ft->sparqft_type, ft_alias,
+          spar_make_qm_col_desc (sparp, ft->sparqft_ft_sqlcol),
+          spar_make_vector_qm_sql (sparp, col_descs_array),
+          spar_make_vector_qm_sql (sparp, (SPART **)t_list_to_array (ft_cond_tmpls)) ),
+        (SPART **)(ft->sparqft_options) );
+      ft->sparqft_use_ctr++;
+    }
+end_of_free_text: ;
+
   return spar_make_vector_qm_sql (sparp,
-    (SPART **)t_list (4, format_name,
+    (SPART **)t_list (5, format_name,
       spar_make_vector_qm_sql (sparp, (SPART **)t_list_to_array (map_atables)),
-      spar_make_vector_qm_sql (sparp, (SPART **)t_revlist_to_array (col_descs)),
-      spar_make_vector_qm_sql (sparp, (SPART **)t_list_to_array (cond_tmpls)) ) );
+      spar_make_vector_qm_sql (sparp, col_descs_array),
+      spar_make_vector_qm_sql (sparp, (SPART **)t_list_to_array (cond_tmpls)),
+      ft_generator ) );
 }
 
 caddr_t
@@ -370,6 +422,47 @@ spar_qm_add_table_filter (sparp_t *sparp, caddr_t tmpl)
   t_set_push (&(sparp->sparp_env->spare_qm_where_conditions), descr);
 }
 
+caddr_t
+spar_qm_collist_crc (SPART **cols, const char *prefix, int ignore_order)
+{
+  ptrlong total_crc = BOX_ELEMENTS (cols);
+  int ctr;
+  DO_BOX_FAST (SPART *, col, ctr, cols)
+    {
+      ptrlong agg, crc;
+      NTS_BUFFER_HASH (crc, col->_.qm_sqlcol.alias);
+      agg = crc;
+      NTS_BUFFER_HASH (crc, col->_.qm_sqlcol.qtable);
+      agg += 5 * crc;
+      NTS_BUFFER_HASH (crc, col->_.qm_sqlcol.col);
+      agg += 17 * crc;
+      if (ignore_order)
+        total_crc += agg;
+      else
+        total_crc += agg * (5 + ctr);
+    }
+  END_DO_BOX_FAST;
+  return t_box_sprintf (50, "%.20s%x", prefix, total_crc);
+}
+
+void
+spar_qm_add_text_literal (sparp_t *sparp, caddr_t ft_type,
+  caddr_t ft_table_alias, SPART *ft_col, SPART **qmv_cols, SPART **options )
+{
+  spar_qm_ft_t *qft;
+  caddr_t qmft_key;
+  caddr_t old_ft;
+  if (NULL == qmv_cols)
+    qmv_cols = (SPART **)t_list (1, ft_col);
+  qft = (spar_qm_ft_t *)t_list (5, ft_type, ft_col, qmv_cols, options, (ptrlong)0); /* should match sizeof (spar_qm_ft_t) */
+  qmft_key = spar_qm_collist_crc (qmv_cols, "ftcols-", 0);
+  old_ft = dk_set_get_keyword (sparp->sparp_env->spare_qm_ft_indexes_of_columns, qmft_key, NULL);
+  if (NULL != old_ft)
+    spar_error (sparp, "Only one free text index per column is allowed. %s has two", qmft_key);
+  t_set_push (&(sparp->sparp_env->spare_qm_ft_indexes_of_columns), qft);
+  t_set_push (&(sparp->sparp_env->spare_qm_ft_indexes_of_columns), qmft_key);
+}
+
 void spar_qm_check_filter_aliases (sparp_t *sparp, dk_set_t used_aliases)
 {
   dk_set_t used_base_aliases = NULL;
@@ -457,8 +550,8 @@ spar_qm_get_atables_and_aliases (sparp_t *sparp, caddr_t qm_id, caddr_t alias, c
 }
 
 
-SPART *
-spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, caddr_t options)
+static SPART *
+spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **options)
 {
   caddr_t storage_name = sparp->sparp_env->spare_storage_name;
   caddr_t raw_id = (caddr_t) spar_qm_get_local (sparp, CREATE_L, 0);
@@ -606,16 +699,16 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, caddr_t o
         spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (final_atables))),
         spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (final_cond_tmpls)))
  ),
-      (SPART **)options );
+      options );
 }
 
 SPART *
-spar_qm_make_empty_mapping (sparp_t *sparp, caddr_t qm_id, caddr_t options)
+spar_qm_make_empty_mapping (sparp_t *sparp, caddr_t qm_id, SPART **options)
 {
   return spar_qm_make_mapping_impl (sparp, 0, qm_id, options);
 }
 
-SPART *spar_qm_make_real_mapping (sparp_t *sparp, caddr_t qm_id, caddr_t options)
+SPART *spar_qm_make_real_mapping (sparp_t *sparp, caddr_t qm_id, SPART **options)
 {
   return spar_qm_make_mapping_impl (sparp, 1, qm_id, options);
 }

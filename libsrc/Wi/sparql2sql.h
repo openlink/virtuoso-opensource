@@ -503,6 +503,7 @@ extern ssg_valmode_t ssg_rettype_of_function (spar_sqlgen_t *ssg, caddr_t name);
 extern ssg_valmode_t ssg_argtype_of_function (spar_sqlgen_t *ssg, caddr_t name, int arg_idx);
 extern void ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name);
 
+extern void ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed);
 extern void ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, ssg_valmode_t native, const char *asname);
 extern void ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, const char *asname);
 extern void ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree);
@@ -518,15 +519,16 @@ extern void ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree);
 #define SSG_RETVAL_FROM_FIRST_UNION_MEMBER	0x80
 #define SSG_RETVAL_TOPMOST			0x100
 #define SSG_RETVAL_NAME_INSTEAD_OF_TREE		0x200
+#define SSG_RETVAL_DIST_SER_LONG		0x400	/*!< Use DB.DBA.RDF_DIST_SER_LONG wrapper to let DISTINCT work with formatters. */
 /* descend = 0 -- at level, can descend. 1 -- at sublevel, can't descend, -1 -- at level, can't descend */
 extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
   sparp_equiv_t *eq, int flags, ssg_valmode_t needed, const char *asname );
 
 extern void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_valmode_t needed, const char *asname);
 
-extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree);
-extern void ssg_print_all_table_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qm, caddr_t alias, SPART **fields);
-extern void ssg_print_table_exp (spar_sqlgen_t *ssg, SPART **trees, int tree_count, int pass);
+extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx);
+extern void ssg_print_all_table_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qm, caddr_t alias, SPART *triple);
+extern void ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_count, int pass);
 
 #define SSG_PRINT_UNION_NOFIRSTHEAD	0x01	/*!< Flag to suppress printing of 'SELECT retvallist' of the first member of the union */
 #define SSG_PRINT_UNION_NONEMPTY_STUB	0x02	/*!< Flag to print a stub that returns a 1-row result of single column, instead of a stub with empty resultset */

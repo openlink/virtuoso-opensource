@@ -282,83 +282,6 @@ sparp_expand_top_retvals (sparp_t *sparp)
   sparp->sparp_expr->_.req_top.retvals = new_retvals;
 }
 
-/* Removal of redundant unions in GPs and top-level ANDs in FILTERs.
-\c trav_env_this is not used.
-\c common_env is not used. */
-
-int
-sparp_gp_trav_flatten (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
-{
-  int is_dirt = 0;
-  if (SPAR_GP != curr->type) /* Not a gp ? -- nothing to do */
-    return 0;
-#if 0
-  {
-    if (UNION_L == curr->_.gp.subtype)
-      {
-        int ctr, len, sublen;
-        SPART **oldmembers;
-        SPART **newmembers;
-        if (0 != BOX_ELEMENTS (curr->_.gp.filters))
-	  spar_internal_error (sparp, "SPARQL: filter conditions in union?");
-flatten_unions_of_unions:
-	oldmembers = curr->_.gp.members;
-	len = BOX_ELEMENTS (oldmembers);
-	for (ctr = 0; ctr < len; ctr++)
-          {
-            SPART *memb = oldmembers[ctr];
-            if (SPAR_GP != SPART_TYPE (memb))
-	      break;
-	    if (UNION_L != memb->_.gp.subtype)
-	      continue;
-            sublen = BOX_ELEMENTS (memb->_.gp.members);
-	    newmembers = (SPART **)t_alloc_box ((len + sublen - 1) * sizeof (SPART *), DV_ARRAY_OF_POINTER);
-	    memcpy (newmembers, oldmembers, ctr * sizeof (SPART *));
-	    memcpy (newmembers + ctr, memb->_.gp.members, sublen * sizeof (SPART *));
-	    memcpy (newmembers + ctr + sublen, oldmembers + ctr + 1, (len - (ctr + 1)) * sizeof (SPART *));
-            mp_check_tree (THR_TMP_POOL, newmembers);
-	    /*curr[0] = memb[0];*/
-	    curr->_.gp.members = newmembers;
-            is_dirt = 1;
-	    goto flatten_unions_of_unions;
-          }
-      }
-  }
-#endif
-  {
-    int ctr, len;
-    SPART **oldfilters;
-    SPART **newfilters;
-flatten_top_ands_in_filters:
-    oldfilters = curr->_.gp.filters;
-    len = BOX_ELEMENTS (oldfilters);
-    for (ctr = 0; ctr < len; ctr++)
-      {
-        SPART *filt = oldfilters[ctr];
-	if (BOP_AND != SPART_TYPE (filt))
-	  continue;
-        newfilters = (SPART **)t_alloc_box ((len + 1)* sizeof (SPART *), DV_ARRAY_OF_POINTER);
-        memcpy (newfilters, oldfilters, ctr * sizeof (SPART *));
-        newfilters[ctr] = filt->_.bin_exp.left;
-        newfilters[ctr + 1] = filt->_.bin_exp.right;
-        memcpy (newfilters + ctr + 2, oldfilters + ctr + 1, (len - (ctr + 1)) * sizeof (SPART *));
-        curr->_.gp.filters = newfilters;
-        is_dirt = 1;
-        goto flatten_top_ands_in_filters;
-      }
-  }
-  return is_dirt ? SPAR_GPT_RESCAN : 0;  
-}
-
-void
-sparp_flatten (sparp_t *sparp)
-{
-  /*sparp_env_t *env = sparp->sparp_env;*/
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
-    sparp_gp_trav_flatten, NULL,
-    NULL, NULL,
-    NULL );
-}
 
 /* Composing counters of usages.
 \c trav_env_this points to the innermost graph pattern.
@@ -475,6 +398,35 @@ sparp_count_usages (sparp_t *sparp)
   END_DO_BOX_FAST;
 }
 
+
+static int
+sparp_expn_rside_rank (SPART *tree)
+{
+  switch (SPART_TYPE (tree))
+    {
+    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+      {
+        ptrlong restr = tree->_.var.rvr.rvrRestrictions;
+        if (SPART_VARR_FIXED & restr)
+          return 0x20;
+        if (SPART_VARR_GLOBAL & restr)
+          return 0x10;
+        if (SPART_VARR_IS_IRI & restr)
+          return 0x8;
+        if (SPART_VARR_IS_REF & restr)
+          return 0x4;
+        if (SPART_VARR_IS_LIT & restr)
+          return 0x2;
+        return 0x0;
+      }
+    case SPAR_LIT: return 0x40;
+    case SPAR_QNAME: return 0x100;
+    case SPAR_BUILT_IN_CALL: return 0x1000;
+    case SPAR_FUNCALL: return 0x10000;
+    }
+  return 0x20000;
+}
+
 /* Processing of simple filters that introduce restrictions on variables
 \c trav_env_this is not used.
 \c common_env is not used. */
@@ -482,7 +434,39 @@ sparp_count_usages (sparp_t *sparp)
 int
 sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
 {
-  switch (filt->type)
+/* We rotate comparisons before anything else */
+  switch (SPART_TYPE (filt))
+    {
+    case BOP_EQ:
+    case BOP_NEQ:
+    case BOP_LT:
+    case BOP_LTE:
+    case BOP_GT:
+    case BOP_GTE:
+      {
+        SPART *l = filt->_.bin_exp.left;
+        SPART *r = filt->_.bin_exp.right;
+        int lrrank = sparp_expn_rside_rank (l);
+        int rrrank = sparp_expn_rside_rank (r);
+        if (lrrank > rrrank)
+          {
+            filt->_.bin_exp.right = l;
+            filt->_.bin_exp.left = r;
+            switch (SPART_TYPE (filt))
+              {
+              case BOP_LT:	filt->type = BOP_GT; break;
+              case BOP_LTE:	filt->type = BOP_GTE; break;
+              case BOP_GT:	filt->type = BOP_LT; break;
+              case BOP_GTE:	filt->type = BOP_LTE; break;
+              }
+          }
+        break;
+      }
+    default:
+      break;
+    }
+/* Now filters can be processed */
+  switch (SPART_TYPE (filt))
     {
     case BOP_EQ:
       {
@@ -491,30 +475,32 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
         int ret = 0;
         if (SPAR_IS_BLANK_OR_VAR (l))
           {
-            if (SPAR_IS_BLANK_OR_VAR (r))
-              {
 		sparp_equiv_t *eq_l = sparp_equiv_get (sparp, curr, l, 0);
+            switch (SPART_TYPE (r))
+              {
+              case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+                {
 		sparp_equiv_t *eq_r = sparp_equiv_get (sparp, curr, r, 0);
+                  eq_l->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL;
 	        ret = sparp_equiv_merge (sparp, eq_l, eq_r);
-	        goto eq_inspected;
+                  break;
 	      }
-	    else if (SPAR_IS_LIT (r))
+              case SPAR_LIT:
 	      {
-		sparp_equiv_t *eq_l = sparp_equiv_get (sparp, curr, l, 0);
 	        ret = sparp_equiv_restrict_by_literal (sparp, eq_l, NULL, r);
-	        goto eq_inspected;
-              }
+                  break;
           }
-        else if (SPAR_IS_LIT (l))
+              case SPAR_BUILT_IN_CALL:
           {
-            if (SPAR_IS_BLANK_OR_VAR (r))
+                  switch (r->_.builtin.btype)
               {
-		sparp_equiv_t *eq_r = sparp_equiv_get (sparp, curr, r, 0);
-	        ret = sparp_equiv_restrict_by_literal (sparp, eq_r, NULL, l);
-	        goto eq_inspected;
+                    case STR_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL; break;
+                    case IRI_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_NOT_NULL; break;
+                    }
+                  break;
+                }
 	      }
 	  }
-eq_inspected:
         if (
           (SPARP_EQUIV_MERGE_OK == ret) ||
           (SPARP_EQUIV_MERGE_CONFLICT == ret) ||
@@ -2230,7 +2216,7 @@ dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf_val_range_t
     {
       for (ctr = 0; ctr < rvr->rvrSprintffCount; ctr++)
         {
-          caddr_t sff = rvr->rvrSprintffs[ctr];
+          ccaddr_t sff = rvr->rvrSprintffs[ctr];
           dtp_t sff_dtp = DV_TYPE_OF (sff);
             if (!IS_STRING_DTP(sff_dtp))
               GOTO_RVR_ERR("non-string sprintff");
@@ -2416,7 +2402,7 @@ sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, 
   sparp_rvr_audit (sparp, dest);
   sparp_rvr_audit (sparp, addon);
   /* Can't loose these flags: */
-  changeable_flags &= ~(SPART_VARR_EXPORTED | SPART_VARR_GLOBAL);
+  changeable_flags &= ((ptrlong)(SPART_VARR__ALL)) & ~(SPART_VARR_EXPORTED | SPART_VARR_GLOBAL);
   new_restr = dest->rvrRestrictions & (addon->rvrRestrictions | ~changeable_flags);
   if (dest->rvrDatatype != addon->rvrDatatype)
     {
@@ -2436,7 +2422,7 @@ sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, 
           caddr_t fv = rvr_string_fixedvalue (dest);
           if (NULL != fv)
             {
-              caddr_t fv_fmt = sprintff_from_strg (fv, 1);
+              ccaddr_t fv_fmt = sprintff_from_strg (fv, 1);
               if (0 != dest->rvrSprintffCount)
                 spar_internal_error (sparp, "sparp_" "rvr_loose (): bad dest: nonzero rvrSprintffCount when SPART_VARR_FIXED");
               sparp_rvr_add_sprintffs (sparp, dest, &fv_fmt, 1);
@@ -2450,7 +2436,7 @@ sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, 
           caddr_t fv = rvr_string_fixedvalue (addon);
           if (NULL != fv)
             {
-              caddr_t fv_fmt = sprintff_from_strg (fv, 1);
+              ccaddr_t fv_fmt = sprintff_from_strg (fv, 1);
               if (0 != addon->rvrSprintffCount)
                 spar_internal_error (sparp, "sparp_" "rvr_loose (): bad addon: nonzero rvrSprintffCount when SPART_VARR_FIXED");
               sparp_rvr_add_sprintffs (sparp, dest, &fv_fmt, 1);
@@ -2531,7 +2517,6 @@ sparp_rewrite_basic (sparp_t *sparp)
 {
   SPART *root = sparp->sparp_expr;
   sparp_audit_mem (sparp);
-  sparp_flatten (sparp);
   sparp_count_usages (sparp);
   sparp_audit_mem (sparp);
   sparp_restrict_by_simple_filters (sparp);
@@ -2707,10 +2692,6 @@ sparp_find_storage_by_name (ccaddr_t name)
   return NULL;
 }
 
-typedef struct sparp_tm_s {
-  SPART rem_g, rem_s, rem_p, rem_o, isect_g, isect_s, isect_p, isect_o;
-} sparp_tm_t;
-
 ptrdiff_t qm_field_map_offsets[4] = {
   JSO_FIELD_OFFSET(quad_map_t,qmGraphMap),
   JSO_FIELD_OFFSET(quad_map_t,qmSubjectMap),
@@ -2723,10 +2704,11 @@ ptrdiff_t qm_field_constants_offsets[4] = {
   JSO_FIELD_OFFSET(quad_map_t,qmPredicateRange.rvrFixedValue),
   JSO_FIELD_OFFSET(quad_map_t,qmObjectRange.rvrFixedValue) };
 
-#define SSG_QM_NO_MATCH			0	/*!< Triple matching triple pattern can not match the qm restriction, disjoint */
-#define SSG_QM_PARTIAL_MATCH		1	/*!< Triple matching triple pattern may match the qm restriction, but no warranty, common case */
-#define SSG_QM_FULL_MATCH		2	/*!< Triple matching triple pattern will also match the qm restriction, but no warranty, triple pattern is more strict than qm */
-#define SSG_QM_FULL_EXCLUSIVE_MATCH	3	/*!< SSG_QM_FULL_MATCH plus qm is exclusive so red cut and no more search for possible quad maps of lower priority */
+#define SSG_QM_UNSET			0	/*!< The value is not yet calculated */
+#define SSG_QM_NO_MATCH			1	/*!< Triple matching triple pattern can not match the qm restriction, disjoint */
+#define SSG_QM_PARTIAL_MATCH		2	/*!< Triple matching triple pattern may match the qm restriction, but no warranty, common case */
+#define SSG_QM_FULL_MATCH		3	/*!< Triple matching triple pattern will also match the qm restriction, but no warranty, triple pattern is more strict than qm */
+#define SSG_QM_FULL_EXCLUSIVE_MATCH	4	/*!< SSG_QM_FULL_MATCH plus qm is exclusive so red cut and no more search for possible quad maps of lower priority */
 
 int
 sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
@@ -2878,48 +2860,41 @@ field_sff_isects_qmv_sff: ;
 int
 sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
 {
-  sparp_tm_t tm;
   SPART *src_g = tcc->tcc_triple->_.triple.tr_graph;
   SPART *src_s = tcc->tcc_triple->_.triple.tr_subject;
   SPART *src_p = tcc->tcc_triple->_.triple.tr_predicate;
   SPART *src_o = tcc->tcc_triple->_.triple.tr_object;
-  int g_match = SSG_QM_FULL_MATCH, s_match = SSG_QM_FULL_MATCH,
-    p_match = SSG_QM_FULL_MATCH, o_match = SSG_QM_FULL_MATCH;
+  int g_match = SSG_QM_UNSET, s_match = SSG_QM_UNSET,
+    p_match = SSG_QM_UNSET, o_match = SSG_QM_UNSET;
   if (NULL == qm)
     return SSG_QM_NO_MATCH;    
-  memset (&tm, 0, sizeof (sparp_tm_t));
-  /* Check of graph */
+  /* First of all we perform check for cached matches, esp. for failures. */
   if ((NULL != qm->qmGraphMap) && (tcc->tcc_last_qmvs [SPART_TRIPLE_GRAPH_IDX] == qm->qmGraphMap))
+    {
     g_match = tcc->tcc_last_qmv_results [SPART_TRIPLE_GRAPH_IDX];
-  else
-    {
-      g_match = sparp_check_field_mapping_g (sparp, tcc, src_g, qm, qm->qmGraphMap, &(qm->qmGraphRange));
-      if (NULL != qm->qmGraphMap)
-    {
-          tcc->tcc_last_qmvs [SPART_TRIPLE_GRAPH_IDX] = qm->qmGraphMap;
-          tcc->tcc_last_qmv_results [SPART_TRIPLE_GRAPH_IDX] = g_match;
-        }
-    }
       if (SSG_QM_NO_MATCH == g_match)
         return SSG_QM_NO_MATCH;
-  /* Check of subject */
-  if ((NULL != qm->qmSubjectMap) && (tcc->tcc_last_qmvs [SPART_TRIPLE_SUBJECT_IDX] == qm->qmSubjectMap))
-    s_match = tcc->tcc_last_qmv_results [SPART_TRIPLE_SUBJECT_IDX];
-  else
-    {
-      s_match = sparp_check_field_mapping_spo (sparp, tcc, src_s, qm, qm->qmSubjectMap, &(qm->qmSubjectRange));
-      if (NULL != qm->qmSubjectMap)
-    {
-          tcc->tcc_last_qmvs [SPART_TRIPLE_SUBJECT_IDX] = qm->qmSubjectMap;
-          tcc->tcc_last_qmv_results [SPART_TRIPLE_SUBJECT_IDX] = s_match;
-        }
     }
+  if ((NULL != qm->qmSubjectMap) && (tcc->tcc_last_qmvs [SPART_TRIPLE_SUBJECT_IDX] == qm->qmSubjectMap))
+    {
+      s_match = tcc->tcc_last_qmv_results [SPART_TRIPLE_SUBJECT_IDX];
       if (SSG_QM_NO_MATCH == s_match)
         return SSG_QM_NO_MATCH;
-  /* Check of predicate */
+    }
   if ((NULL != qm->qmPredicateMap) && (tcc->tcc_last_qmvs [SPART_TRIPLE_PREDICATE_IDX] == qm->qmPredicateMap))
-    p_match = tcc->tcc_last_qmv_results [SPART_TRIPLE_PREDICATE_IDX];
-  else
+    {
+      p_match = tcc->tcc_last_qmv_results [SPART_TRIPLE_PREDICATE_IDX];
+      if (SSG_QM_NO_MATCH == p_match)
+        return SSG_QM_NO_MATCH;
+    }
+  if ((NULL != qm->qmObjectMap) && (tcc->tcc_last_qmvs [SPART_TRIPLE_OBJECT_IDX] == qm->qmObjectMap))
+    {
+      o_match = tcc->tcc_last_qmv_results [SPART_TRIPLE_OBJECT_IDX];
+      if (SSG_QM_NO_MATCH == o_match)
+        return SSG_QM_NO_MATCH;
+    }
+  /* Check of predicate first, because it's more selective than other */
+  if (SSG_QM_UNSET == p_match)
     {
       p_match = sparp_check_field_mapping_spo (sparp, tcc, src_p, qm, qm->qmPredicateMap, &(qm->qmPredicateRange));
       if (NULL != qm->qmPredicateMap)
@@ -2927,13 +2902,35 @@ sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
           tcc->tcc_last_qmvs [SPART_TRIPLE_PREDICATE_IDX] = qm->qmPredicateMap;
           tcc->tcc_last_qmv_results [SPART_TRIPLE_PREDICATE_IDX] = p_match;
         }
-    }
       if (SSG_QM_NO_MATCH == p_match)
         return SSG_QM_NO_MATCH;
+    }
+  /* Check of graph */
+  if (SSG_QM_UNSET == g_match)
+    {
+      g_match = sparp_check_field_mapping_g (sparp, tcc, src_g, qm, qm->qmGraphMap, &(qm->qmGraphRange));
+      if (NULL != qm->qmGraphMap)
+    {
+          tcc->tcc_last_qmvs [SPART_TRIPLE_GRAPH_IDX] = qm->qmGraphMap;
+          tcc->tcc_last_qmv_results [SPART_TRIPLE_GRAPH_IDX] = g_match;
+        }
+      if (SSG_QM_NO_MATCH == g_match)
+        return SSG_QM_NO_MATCH;
+    }
+  /* Check of subject */
+  if (SSG_QM_UNSET == s_match)
+    {
+      s_match = sparp_check_field_mapping_spo (sparp, tcc, src_s, qm, qm->qmSubjectMap, &(qm->qmSubjectRange));
+      if (NULL != qm->qmSubjectMap)
+    {
+          tcc->tcc_last_qmvs [SPART_TRIPLE_SUBJECT_IDX] = qm->qmSubjectMap;
+          tcc->tcc_last_qmv_results [SPART_TRIPLE_SUBJECT_IDX] = s_match;
+        }
+      if (SSG_QM_NO_MATCH == s_match)
+        return SSG_QM_NO_MATCH;
+    }
   /* Check of object */
-  if ((NULL != qm->qmObjectMap) && (tcc->tcc_last_qmvs [SPART_TRIPLE_OBJECT_IDX] == qm->qmObjectMap))
-    o_match = tcc->tcc_last_qmv_results [SPART_TRIPLE_OBJECT_IDX];
-  else
+  if (SSG_QM_UNSET == o_match)
     {
       o_match = sparp_check_field_mapping_spo (sparp, tcc, src_o, qm, qm->qmObjectMap, &(qm->qmObjectRange));
       if (NULL != qm->qmObjectMap)
@@ -2941,9 +2938,9 @@ sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
           tcc->tcc_last_qmvs [SPART_TRIPLE_OBJECT_IDX] = qm->qmObjectMap;
           tcc->tcc_last_qmv_results [SPART_TRIPLE_OBJECT_IDX] = o_match;
         }
-    }
       if (SSG_QM_NO_MATCH == o_match)
         return SSG_QM_NO_MATCH;
+    }
   /* The conclusion */
   if ((SSG_QM_FULL_MATCH == g_match) && (SSG_QM_FULL_MATCH == s_match) &&
     (SSG_QM_FULL_MATCH == p_match) && (SSG_QM_FULL_MATCH == o_match) )
@@ -2955,6 +2952,7 @@ int
 sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
 {
   int ctr, fld_ctr, single_fixed_fld = -1;
+  int qm_is_a_good_case = 0;
   int common_status = sparp_check_triple_case (sparp, tcc, qm);
   if (SSG_QM_NO_MATCH == common_status)
     return SSG_QM_NO_MATCH;
@@ -2965,7 +2963,23 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
         return SSG_QM_FULL_EXCLUSIVE_MATCH;
     }
   END_DO_BOX_FAST;
-  if (!(SPART_QM_EMPTY & qm->qmMatchingFlags))
+  for (;;)
+    {
+      if (SPART_QM_EMPTY & qm->qmMatchingFlags)
+        break; /* not a good case */
+      if (0 != tcc->tcc_triple->_.triple.ft_type)
+        {
+          qm_ftext_t *qmft;
+          if (NULL == qm->qmObjectMap)
+            break; /* not a good case for ft */
+          qmft = qm->qmObjectMap->qmvFText;
+          if (NULL == qmft)
+            break; /* not a good case for ft */
+        }
+      qm_is_a_good_case = 1;
+      break;
+    }
+  if (qm_is_a_good_case)
     {
       triple_case_t *tc = (triple_case_t *)t_alloc (sizeof (triple_case_t));
       tc->tc_qm = qm;
@@ -3108,7 +3122,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
           triple_case_t *tc = new_cases [ctr];
           qm_value_t *qmv = SPARP_FIELD_QMV_OF_QM (tc->tc_qm, field_ctr);
           caddr_t fld_const = SPARP_FIELD_CONST_OF_QM (tc->tc_qm, field_ctr);
-          caddr_t *red_cuts = tc->tc_red_cuts [field_ctr];
+          ccaddr_t *red_cuts = tc->tc_red_cuts [field_ctr];
           rdf_val_range_t qmv_rvr;
           if (NULL != qmv)
             {
@@ -3120,9 +3134,11 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
                   qmv_rvr.rvrRestrictions |= SPART_VARR_SPRINTFF;
                   sparp_rvr_add_sprintffs (sparp, &qmv_rvr, qmv_fmt->qmfValRange.rvrSprintffs, qmv_fmt->qmfValRange.rvrSprintffCount);
                 }
-              if ((NULL != qmv->qmvIriClass) && !(SPART_VARR_IRI_CALC & qmv_rvr.rvrRestrictions))
+              if ((NULL != qmv->qmvIriClass) &&
+                !(SPART_VARR_IRI_CALC & qmv_rvr.rvrRestrictions) &&
+                (SPART_VARR_IS_REF & qmv->qmvFormat->qmfValRange.rvrRestrictions) )
                 {
-                  qmv_rvr.rvrRestrictions |= (SPART_VARR_IRI_CALC | SPART_VARR_IS_REF | SPART_VARR_IS_IRI);
+                  qmv_rvr.rvrRestrictions |= SPART_VARR_IRI_CALC;
                   sparp_rvr_add_iri_classes (sparp, &qmv_rvr, &(qmv->qmvIriClass), 1);
                 }
               sparp_rvr_intersect_red_cuts (sparp, &qmv_rvr, red_cuts, BOX_ELEMENTS_0 (red_cuts));
@@ -3485,6 +3501,7 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       eq_idx = orig->_.var.equiv_idx;
       tgt->_.var.vname = t_box_copy (orig->_.var.vname);
+      sparp_rvr_copy (sparp, &(tgt->_.var.rvr), &(orig->_.var.rvr));
       return tgt;
     case SPAR_GP:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
@@ -4175,6 +4192,72 @@ do_detach:
   return 0;
 }
 
+int sparp_gp_trav_1var (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+{
+  SPART **single_var_ptr = (SPART **)common_env;
+  if (!SPAR_IS_BLANK_OR_VAR (curr))
+    return 0;
+  if (SPART_VARNAME_IS_GLOB (curr->_.var.vname))
+    return 0;
+  if (NULL != single_var_ptr[0])
+    {
+      single_var_ptr[0] = (SPART *)(1L);
+      return SPAR_GPT_COMPLETED;
+    }
+  single_var_ptr[0] = curr;
+  return SPAR_GPT_NODOWN;
+}
+
+int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+{
+  int filt_ctr;
+  if (SPAR_GP != curr->type) /* Not a gp ? -- nothing to do */
+    return 0;
+  if (0 == BOX_ELEMENTS_0 (curr->_.gp.filters)) /* No filters -- nothing to do */
+    return 0;
+  DO_BOX_FAST_REV (SPART *, filt, filt_ctr, curr->_.gp.filters)
+    {
+      SPART *single_var = NULL;
+      sparp_equiv_t *sv_eq;
+      int subval_ctr, subval_count;
+      sparp_gp_trav_int (sparp, filt, trav_env_this, &(single_var),
+        NULL, NULL,
+        sparp_gp_trav_1var, NULL, NULL);
+      if (!IS_BOX_POINTER (single_var))
+        continue;
+      sv_eq = SPARP_EQUIV(sparp, single_var->_.var.equiv_idx);
+      if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
+        continue; /* It's unsafe to localize a filter on nullable variable. Consider { ... optional {<s> <p> ?o} filter (!bound(?o))}} */
+      if (0 != sv_eq->e_gspo_uses)
+        continue; /* The filter can not be detached here so it may be localized on every loop, resulting in redundand localized filters */
+      subval_count = BOX_ELEMENTS_0 (sv_eq->e_subvalue_idxs);
+      if (0 == subval_count)
+        continue; /* No subvalues -- can't localize because this either have no effect or drop the filter */
+      if (10 < subval_count)
+        continue; /* Too many subvalues -- unsafe to localize, too many filter conditions may kill SQL compiler */
+      DO_BOX_FAST_REV (ptrlong, subval_eq_idx, subval_ctr, sv_eq->e_subvalue_idxs)
+        {
+          sparp_equiv_t *sub_eq = SPARP_EQUIV (sparp, subval_eq_idx);
+          SPART *sub_gp = sub_eq->e_gp;
+          if (UNION_L == sub_gp->_.gp.subtype)
+            subval_count += (BOX_ELEMENTS (sub_gp->_.gp.members) - 1);
+        }
+      END_DO_BOX_FAST_REV;
+      if (10 < subval_count)
+        continue; /* Too many subvalues found after correction for member unions */
+      sparp_gp_detach_filter (sparp, curr, filt_ctr, NULL);
+      DO_BOX_FAST_REV (ptrlong, subval_eq_idx, subval_ctr, sv_eq->e_subvalue_idxs)
+        {
+          sparp_equiv_t *sub_eq = SPARP_EQUIV (sparp, subval_eq_idx);
+          SPART *sub_gp = sub_eq->e_gp;
+          SPART *filter_clone = sparp_tree_full_copy (sparp, filt, curr);
+          sparp_gp_attach_filter (sparp, sub_gp, filter_clone, 0, NULL);
+        }
+      END_DO_BOX_FAST_REV;
+    }
+  END_DO_BOX_FAST_REV;
+  return 0;
+}
 
 int
 sparp_calc_importance_of_eq (sparp_t *sparp, sparp_equiv_t *eq)
@@ -4499,7 +4582,7 @@ sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
   if (DESCRIBE_L == sparp->sparp_expr->_.req_top.subtype)
     sparp->sparp_expr->_.req_top.retvals = 
       spar_retvals_of_describe (sparp, sparp->sparp_expr->_.req_top.retvals);
-  if ((NULL != rgc->rgc_vars) || (NULL != rgc->rgc_consts))
+  if (rgc->rgc_pview_mode)
     {
       sparp_rewrite_grab (sparp);
       return;
@@ -4576,6 +4659,17 @@ again:
     NULL );
   sparp_equiv_audit_all (sparp, 0);
   sparp_rewrite_basic (sparp);
+  sparp_equiv_audit_all (sparp, 0);
+  if (!(opt_ctr % 2)) /* Do this not in every loop because it's costly and it almost never give a result after first loop */
+    {
+      sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+        sparp_gp_trav_localize_filters, NULL,
+        NULL, NULL,
+        NULL );
+      sparp_equiv_audit_all (sparp, 0);
+      sparp_rewrite_basic (sparp);
+      sparp_equiv_audit_all (sparp, 0);
+    }
   sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
 
   if (sparp->sparp_rewrite_dirty)
@@ -4633,20 +4727,26 @@ sparp_rewrite_grab (sparp_t *sparp)
   caddr_t retselid;
   ptrlong top_subtype;
   dk_set_t new_vars = NULL;
+  dk_set_t sa_graphs = NULL;
   spar_sqlgen_t ssg;
   sql_comp_t sc;
   int sub_sparp_ctr;
+  ptrlong rgc_flags = 0;
+  int use_plain_return;
   retselid = sparp->sparp_expr->_.req_top.retselid;
   top_subtype = sparp->sparp_expr->_.req_top.subtype;
+  use_plain_return = (((CONSTRUCT_L == top_subtype) || (DESCRIBE_L == top_subtype)) ? 1 : 0);
   t_set_push (&(env->spare_selids), retselid);
   DO_SET (caddr_t, grab_name, &(rgc->rgc_vars))
     {
       t_set_push (&new_vars, spar_make_variable (sparp, grab_name));
     }
   END_DO_SET()
+  if (NULL != rgc->rgc_destination)
+    t_set_push (&sa_graphs, rgc->rgc_destination);
   t_set_pop (&(env->spare_selids));
   grab_retvals = (SPART **)t_revlist_to_array (new_vars);
-/* Making subqueries */
+/* Making subqueries: seed */
   sub_sparps[0] = sparp_of_seed = sparp_clone_for_variant (sparp);
   sparp_of_seed->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
   sparp_of_seed->sparp_expr->_.req_top.subtype = SELECT_L;
@@ -4654,11 +4754,27 @@ sparp_rewrite_grab (sparp_t *sparp)
   sparp_of_seed->sparp_expr->_.req_top.retvalmode_name = t_box_string ("LONG");
   sparp_of_seed->sparp_expr->_.req_top.limit = t_box_num (SPARP_MAXLIMIT);
   sparp_of_seed->sparp_expr->_.req_top.offset = 0;
+  sparp_of_seed->sparp_env->spare_globals_are_numbered = 1;
+  sparp_of_seed->sparp_env->spare_global_num_offset = 1;
+  sparp_of_seed->sparp_env->spare_grab.rgc_sa_graphs = env->spare_grab.rgc_sa_graphs;
+  sparp_of_seed->sparp_env->spare_grab.rgc_sa_preds = env->spare_grab.rgc_sa_preds;
+  sparp_of_seed->sparp_env->spare_grab.rgc_sa_vars = env->spare_grab.rgc_sa_vars;
+  sparp_of_seed->sparp_env->spare_grab.rgc_vars = env->spare_grab.rgc_vars;
+/* Making subqueries: iter */
   sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed);
   sparp_of_iter->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp_of_seed->sparp_expr, NULL);
+  sparp_of_iter->sparp_env->spare_globals_are_numbered = 1;
+  sparp_of_iter->sparp_env->spare_global_num_offset = 1;
+  sparp_of_iter->sparp_env->spare_grab.rgc_sa_graphs = env->spare_grab.rgc_sa_graphs;
+  sparp_of_iter->sparp_env->spare_grab.rgc_sa_preds = env->spare_grab.rgc_sa_preds;
+  sparp_of_iter->sparp_env->spare_grab.rgc_sa_vars = env->spare_grab.rgc_sa_vars;
+  sparp_of_iter->sparp_env->spare_grab.rgc_vars = env->spare_grab.rgc_vars;
 /*!!! TBD: relax graph conditions in sparp_of_iter */
+/* Making subqueries: final */
   sub_sparps[2] = sparp_of_final = sparp_clone_for_variant (sparp);
   sparp_of_final->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
+  sparp_of_final->sparp_env->spare_globals_are_numbered = 1;
+  sparp_of_final->sparp_env->spare_global_num_offset = 0;
 /*!!! TBD: relax graph conditions in sparp_of_final */
   for (sub_sparp_ctr = 3; sub_sparp_ctr--; /* no step */)
     {
@@ -4676,17 +4792,25 @@ sparp_rewrite_grab (sparp_t *sparp)
       sql_texts [sub_sparp_ctr] = strses_string (ssg.ssg_out);
       strses_free (ssg.ssg_out);
     }
-  sparp->sparp_expr = spartlist (sparp, 15, SPAR_CODEGEN, /* #0 */
+  if (rgc->rgc_intermediate)
+    rgc_flags |= 0x0001;
+  sparp->sparp_expr = spartlist (sparp, 19, SPAR_CODEGEN, /* #0 */
     t_box_num ((ptrlong)(ssg_grabber_codegen)),
-    sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),
-    t_box_dv_short_string ("sql:RDF_GRAB"), 
+    sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),	/* #2 */
+    t_box_dv_short_string ("sql:RDF_GRAB"),	/* #3 */
     sql_texts[0], sql_texts[1], sql_texts[2], /* #4-#6 */
-    t_box_copy (sparp->sparp_expr->_.req_top.limit), 
+    t_box_copy (sparp->sparp_expr->_.req_top.limit),	/* #7 */
     ((NULL == rgc->rgc_consts) ? NULL :
       spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (rgc->rgc_consts))) ), /* #8 */
-    t_box_copy (rgc->rgc_depth), t_box_copy (rgc->rgc_limit), /* #9-#10 */
-    t_box_copy (rgc->rgc_base), t_box_copy (rgc->rgc_destination),
-    t_box_copy (rgc->rgc_resolver_name), t_box_copy (rgc->rgc_loader_name) ); /* #13-#14 */
+    ((NULL == sa_graphs) ? NULL :
+      spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (sa_graphs))) ), /* #9 */
+    ((NULL == rgc->rgc_sa_preds) ? NULL :
+      spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (rgc->rgc_sa_preds))) ), /* #10 */
+    t_box_copy (rgc->rgc_depth), t_box_copy (rgc->rgc_limit), /* #11-#12 */
+    t_box_copy (rgc->rgc_base), t_box_copy (rgc->rgc_destination),	/* #13-#14 */
+    t_box_copy (rgc->rgc_resolver_name), t_box_copy (rgc->rgc_loader_name),	/* #15-#16 */
+    use_plain_return,	/* #17 */
+    t_box_num (rgc_flags) );	/* #18 */
 }
 
 void
@@ -4694,24 +4818,33 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
 {
   int argctr = 0;
 /* The order of declarations is important: side effect on init */
-  SPART **retvals		= (SPART **)(spart->_.codegen.args [argctr++]);
-  caddr_t procedure_name	= (caddr_t)(spart->_.codegen.args [argctr++]);
-  caddr_t seed_sql_text		= (caddr_t)(spart->_.codegen.args [argctr++]);
-  caddr_t iter_sql_text		= (caddr_t)(spart->_.codegen.args [argctr++]);
-  caddr_t final_sql_text	= (caddr_t)(spart->_.codegen.args [argctr++]);
-  caddr_t ret_limit		= (caddr_t)(spart->_.codegen.args [argctr++]);
-  SPART *const_get_vector_expn	= (SPART *)(spart->_.codegen.args [argctr++]);
-  caddr_t depth			= (caddr_t)(spart->_.codegen.args [argctr++]);
-  caddr_t grab_limit		= (caddr_t)(spart->_.codegen.args [argctr++]);
-  caddr_t base			= (caddr_t)(spart->_.codegen.args [argctr++]);
-  caddr_t destination		= (caddr_t)(spart->_.codegen.args [argctr++]);
-  caddr_t resolver_name		= (caddr_t)(spart->_.codegen.args [argctr++]);
-  caddr_t loader_name		= (caddr_t)(spart->_.codegen.args [argctr++]);
+  SPART **retvals		= (SPART **)(spart->_.codegen.args [argctr++]);	/* #2 */
+  caddr_t procedure_name	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #3 */
+  caddr_t seed_sql_text		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #4 */
+  caddr_t iter_sql_text		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #5 */
+  caddr_t final_sql_text	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #6 */
+  caddr_t ret_limit		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #7 */
+  SPART *const_vector_expn	= (SPART *)(spart->_.codegen.args [argctr++]);	/* #8 */
+  SPART *sa_graphs_vector_expn	= (SPART *)(spart->_.codegen.args [argctr++]);	/* #9 */
+  SPART *sa_preds_vector_expn	= (SPART *)(spart->_.codegen.args [argctr++]);	/* #10 */
+  caddr_t depth			= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #11 */
+  caddr_t grab_limit		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #12 */
+  caddr_t base			= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #13 */
+  caddr_t destination		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #14 */
+  caddr_t resolver_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #15 */
+  caddr_t loader_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #16 */
+  int use_plain_return		= (ptrlong)(spart->_.codegen.args [argctr++]);	/* #17 */
+  caddr_t rgc_flags		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #18 */
   int varctr, varcount = BOX_ELEMENTS (retvals);
+  int need_comma;
   caddr_t call_alias = t_box_sprintf (0x100, "grabber-t%d", ssg->ssg_sparp->sparp_key_gen);
   ssg->ssg_sparp->sparp_key_gen += 1;
-  if (NULL == const_get_vector_expn)
-    const_get_vector_expn = (SPART *)t_NEW_DB_NULL;
+  if (NULL == const_vector_expn)
+    const_vector_expn = (SPART *)t_NEW_DB_NULL;
+  if (NULL == sa_graphs_vector_expn)
+    sa_graphs_vector_expn = (SPART *)t_NEW_DB_NULL;
+  if (NULL == sa_preds_vector_expn)
+    sa_preds_vector_expn = (SPART *)t_NEW_DB_NULL;
   if (NULL == depth)
     depth = (caddr_t)1L;
   if (NULL == grab_limit)
@@ -4724,6 +4857,15 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
     resolver_name = t_box_dv_short_string ("DB.DBA.RDF_GRAB_RESOLVER_DEFAULT");
   if (NULL == loader_name)
     loader_name = t_box_dv_short_string ("DB.DBA.RDF_SPONGE_UP");
+  if (use_plain_return)
+    {
+      ssg_puts ("SELECT TOP 1 ");
+      ssg_prin_function_name (ssg, procedure_name);
+      ssg_puts (" (");
+      ssg->ssg_indent += 1;
+    }
+  else
+    {
   ssg_puts ("SELECT ");
   for (varctr = 0; varctr < varcount; varctr++)
     {
@@ -4745,23 +4887,60 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   ssg_newline (0);
   ssg_puts ("FROM ");
   ssg_prin_function_name (ssg, procedure_name);
-  ssg_puts (" (_grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_depth, _grabber_doc_limit, _grabber_base, _grabber_destination, _grabber_resolver, _grabber_loader) (rset any)");
+      ssg_puts (" (_grabber_params, _grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_sa_graphs, _grabber_sa_preds, _grabber_depth, _grabber_doc_limit, _grabber_base, _grabber_destination, _grabber_resolver, _grabber_loader, _plain_ret, _grabber_flags) (rset any) ");
   ssg_prin_id (ssg, call_alias);
+      ssg_newline (0);
+      ssg_puts ("WHERE _grabber_params = ");
+    }
+  need_comma = 0;
+  ssg_puts ("vector (");
+  DO_SET (caddr_t, vname, &(ssg->ssg_sparp->sparp_env->spare_global_var_names))
+    {
+      if (need_comma)
+        ssg_puts (", ");
+      else
+        need_comma = 1;
+      ssg_print_global_param (ssg, vname, SSG_VALMODE_SQLVAL);
+    }
+  END_DO_SET ();
+  ssg_puts (")");
 #define PROC_PARAM_EQ_SPART(txt,var) do { \
+    if (use_plain_return) \
+      { \
+        ssg_puts (", "); \
+        ssg_newline (0); \
+      } \
+    else \
+      { \
     ssg_newline (0); \
+        ssg_puts (" AND "); \
     ssg_puts (txt); \
+        ssg_puts (" = "); \
+      } \
     ssg_print_scalar_expn (ssg, (SPART *)(var), SSG_VALMODE_SQLVAL, NULL_ASNAME); \
     } while (0)
-  PROC_PARAM_EQ_SPART ("WHERE _grabber_seed = ", seed_sql_text);
-  PROC_PARAM_EQ_SPART (" AND _grabber_iter = ", iter_sql_text);
-  PROC_PARAM_EQ_SPART (" AND _grabber_final = ", final_sql_text);
-  PROC_PARAM_EQ_SPART (" AND _grabber_ret_limit = ", ret_limit);
-  PROC_PARAM_EQ_SPART (" AND _grabber_consts = ", const_get_vector_expn);
-  PROC_PARAM_EQ_SPART (" AND _grabber_depth = ", depth);
-  PROC_PARAM_EQ_SPART (" AND _grabber_doc_limit = ", grab_limit);
-  PROC_PARAM_EQ_SPART (" AND _grabber_base = ", base);
-  PROC_PARAM_EQ_SPART (" AND _grabber_destination = ", destination);
-  PROC_PARAM_EQ_SPART (" AND _grabber_resolver = ", resolver_name);
-  PROC_PARAM_EQ_SPART (" AND _grabber_loader = ", loader_name);
+  PROC_PARAM_EQ_SPART ("_grabber_seed", seed_sql_text);
+  PROC_PARAM_EQ_SPART ("_grabber_iter", iter_sql_text);
+  PROC_PARAM_EQ_SPART ("_grabber_final", final_sql_text);
+  PROC_PARAM_EQ_SPART ("_grabber_ret_limit", ret_limit);
+  PROC_PARAM_EQ_SPART ("_grabber_consts", const_vector_expn);
+  PROC_PARAM_EQ_SPART ("_grabber_sa_graphs", sa_graphs_vector_expn);
+  PROC_PARAM_EQ_SPART ("_grabber_sa_preds", sa_preds_vector_expn);
+  PROC_PARAM_EQ_SPART ("_grabber_depth", depth);
+  PROC_PARAM_EQ_SPART ("_grabber_doc_limit", grab_limit);
+  PROC_PARAM_EQ_SPART ("_grabber_base", base);
+  PROC_PARAM_EQ_SPART ("_grabber_destination", destination);
+  PROC_PARAM_EQ_SPART ("_grabber_resolver", resolver_name);
+  PROC_PARAM_EQ_SPART ("_grabber_loader", loader_name);
+  PROC_PARAM_EQ_SPART ("_plain_ret", use_plain_return);
+  PROC_PARAM_EQ_SPART ("_grabber_flags", rgc_flags);
 #undef PROC_PARAM_EQ_SPART
+  if (use_plain_return)
+    {
+      ssg_putchar (')');
+      ssg->ssg_indent -= 1;
+      ssg_newline (0);
+      ssg_puts ("FROM DB.DBA.RDF_QUAD ");
+      ssg_prin_id (ssg, call_alias);
+    }
 }

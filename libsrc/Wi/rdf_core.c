@@ -51,7 +51,6 @@ tf_alloc (void)
 {
   NEW_VARZ (triple_feed_t, tf);
   tf->tf_blank_node_ids = id_hash_allocate (1021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
-  tf->tf_cached_iids = id_hash_allocate (4000 /* was 410210 */, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
   return tf;
 }
 
@@ -71,21 +70,13 @@ tf_free (triple_feed_t *tf)
       dk_free_box (dict_key[0]);      
       dk_free_tree (dict_val[0]);
     }
-  dict = tf->tf_cached_iids;
-  for( id_hash_iterator (&dict_hit,dict);
-    hit_next(&dict_hit, (char **)(&dict_key), (char **)(&dict_val));
-    /*no step*/ )
-    {
-      dk_free_box (dict_key[0]);
-      dk_free_tree (dict_val[0]);
-    }
   id_hash_free (tf->tf_blank_node_ids);
-  id_hash_free (tf->tf_cached_iids);
   for (ctr = 0; ctr < COUNTOF__TRIPLE_FEED; ctr++)
     {
       if (tf->tf_queries[ctr])
 	qr_free (tf->tf_queries[ctr]);
     }
+  dk_free_tree (tf->tf_graph_iid);
   dk_free (tf, sizeof (triple_feed_t));
 }
 
@@ -118,18 +109,14 @@ tf_get_iid (triple_feed_t *tf, caddr_t uri)
   caddr_t *params;
   local_cursor_t *lc = NULL;
   dtp_t uri_dtp = DV_TYPE_OF (uri);
-  caddr_t *hit;
   caddr_t err = NULL;
   if ((DV_STRING != uri_dtp) && (DV_UNAME != uri_dtp))
     return box_copy_tree (uri);
-  hit = (caddr_t *)id_hash_get (tf->tf_cached_iids, (caddr_t)(&(uri)));
-  if (NULL != hit)
-    return box_copy_tree (hit[0]);
   params = (caddr_t *)list (6,
     unames_colon_number[0],
     box_copy (uri),
     unames_colon_number[1],
-    box_copy (tf->tf_graph_uri),
+    box_copy (tf->tf_graph_iid),
     unames_colon_number[2],
     box_copy_tree (tf->tf_app_env) );
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_queries[TRIPLE_FEED_GET_IID], tf->tf_qi, NULL, NULL, &lc, params, NULL, 1);
@@ -142,26 +129,27 @@ tf_get_iid (triple_feed_t *tf, caddr_t uri)
   if (lc && lc_next (lc))
     {
       caddr_t iid = box_copy_tree (lc_nth_col (lc, 0));
-      caddr_t key = box_copy (uri);
-      if (tf->tf_cached_iids->ht_count > 3 * tf->tf_cached_iids->ht_buckets)
-	{
-	  int rnd_inx = sqlbif_rnd (&tf_rnd_seed);
-	  caddr_t del_key, del_data;
-	  if (id_hash_remove_rnd (tf->tf_cached_iids, rnd_inx, (caddr_t)&del_key, (caddr_t) &del_data))
-	    {
-	      dk_free_tree (del_key);
-	      dk_free_tree (del_data);
-	    }
-	}
-      id_hash_set (tf->tf_cached_iids, (caddr_t)(&key), (caddr_t)(&iid));      
       lc_free (lc);
-      return box_copy_tree (iid);
+      return iid;
     }
   lc_free (lc);
   sqlr_new_error ("22023", "RDF02",
     "RDF loader has failed to create ID for URI '%.100s' by '%.100s'",
     uri, tf->tf_stmt_texts[TRIPLE_FEED_GET_IID] );
   return NULL;
+}
+
+
+void
+tf_commit (triple_feed_t *tf)
+{
+  caddr_t *params;
+  caddr_t err = NULL;
+  params = (caddr_t *)list (0);
+  err = qr_exec (tf->tf_qi->qi_client, tf->tf_queries[TRIPLE_FEED_COMMIT], tf->tf_qi, NULL, NULL, NULL, params, NULL, 1);
+  dk_free_box ((box_t) params);
+  if (NULL != err)
+    sqlr_resignal (err);
 }
 
 
@@ -520,11 +508,15 @@ this means that <#foo> can be written :foo and using @keywords one can reduce th
   if (NULL == ns_uri)
     {
       if (!strcmp (ns_pref, "rdf:"))
-        ns_uri = box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+        ns_uri = uname_rdf_ns_uri;
+      else if (!strcmp (ns_pref, "xsd:"))
+        ns_uri = uname_xmlschema_ns_uri_hash;
+      else if (!strcmp (ns_pref, "virtrdf:"))
+        ns_uri = uname_virtrdf_ns_uri;
       else
         {
           dk_free_box (ns_pref);
-          ttlyyerror_impl (TTLP_ARG ns_pref, "Undefined namespace prefix");
+          ttlyyerror_impl (TTLP_ARG qname, "Undefined namespace prefix");
         }
     }
   dk_free_box (ns_pref);
@@ -634,8 +626,6 @@ tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
   caddr_t *params;
   local_cursor_t *lc = NULL;
   caddr_t err;
-  caddr_t g_uri;
-  caddr_t g_iid, s_iid, p_iid, o_iid;
 #ifdef DEBUG
   switch (DV_TYPE_OF (o_uri))
     {
@@ -645,21 +635,12 @@ tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
       rdf_dbg_printf (("\ntf_triple (%s)", o_uri));
     }
 #endif
-  g_uri = box_copy (tf->tf_graph_uri);
-  g_iid = tf_get_iid (tf, g_uri);
-  s_iid = tf_get_iid (tf, s_uri);
-  p_iid = tf_get_iid (tf, p_uri);
-  o_iid = tf_get_iid (tf, o_uri);
-  params = (caddr_t *)list (18,
-    unames_colon_number[0], g_uri,
-    unames_colon_number[1], g_iid,
-    unames_colon_number[2], s_uri,
-    unames_colon_number[3], s_iid,
-    unames_colon_number[4], p_uri,
-    unames_colon_number[5], p_iid,
-    unames_colon_number[6], o_uri,
-    unames_colon_number[7], o_iid,
-    unames_colon_number[8], box_copy_tree (tf->tf_app_env) );
+  params = (caddr_t *)list (10,
+    unames_colon_number[0], box_copy (tf->tf_graph_iid),
+    unames_colon_number[1], s_uri,
+    unames_colon_number[2], p_uri,
+    unames_colon_number[3], o_uri,
+    unames_colon_number[4], box_copy_tree (tf->tf_app_env) );
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_queries[TRIPLE_FEED_TRIPLE], tf->tf_qi, NULL, NULL, &lc, params, NULL, 1);
   lc_free (lc);
   dk_free_box ((box_t) params);
@@ -672,8 +653,6 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
   caddr_t *params;
   local_cursor_t *lc = NULL;
   caddr_t err;
-  caddr_t g_uri;
-  caddr_t g_iid, s_iid, p_iid;
   switch (DV_TYPE_OF (obj_sqlval))
     {
     case DV_LONG_INT:
@@ -683,21 +662,14 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
     default:
       rdf_dbg_printf (("\ntf_triple_l (..., %s, %s)", obj_datatype, obj_language)); break;
     }
-  g_uri = box_copy (tf->tf_graph_uri);
-  g_iid = tf_get_iid (tf, g_uri);
-  s_iid = tf_get_iid (tf, s_uri);
-  p_iid = tf_get_iid (tf, p_uri);
-  params = (caddr_t *)list (20,
-    unames_colon_number[0], g_uri,
-    unames_colon_number[1], g_iid,
-    unames_colon_number[2], s_uri,
-    unames_colon_number[3], s_iid,
-    unames_colon_number[4], p_uri,
-    unames_colon_number[5], p_iid,
-    unames_colon_number[6], obj_sqlval,
-    unames_colon_number[7], obj_datatype,
-    unames_colon_number[8], obj_language,
-    unames_colon_number[9], box_copy_tree (tf->tf_app_env) );
+  params = (caddr_t *)list (14,
+    unames_colon_number[0], box_copy (tf->tf_graph_iid),
+    unames_colon_number[1], s_uri,
+    unames_colon_number[2], p_uri,
+    unames_colon_number[3], obj_sqlval,
+    unames_colon_number[4], obj_datatype,
+    unames_colon_number[5], obj_language,
+    unames_colon_number[6], box_copy_tree (tf->tf_app_env) );
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_queries[TRIPLE_FEED_TRIPLE_L], tf->tf_qi, NULL, NULL, &lc, params, NULL, 1);
   lc_free (lc);
   dk_free_box ((box_t) params);
@@ -793,8 +765,11 @@ iter_is_set:
   QR_RESET_CTX
     {
       tf_set_stmt_texts (tf, (const char **)stmt_texts, NULL);
+      tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
+      tf_commit (tf);
       ttlyy_reset ();
       ttlyyparse();
+      tf_commit (tf);
     }
   QR_RESET_CODE
     {
@@ -1052,7 +1027,7 @@ typedef struct name_id_cache_s
   dk_mutex_t *	nic_mtx;
   dk_hash_t *	nic_id_to_name;
   id_hash_t *	nic_name_to_id;
-  int		nic_size;
+  unsigned long	nic_size;
 } name_id_cache_t;
 
 
@@ -1116,7 +1091,7 @@ nic_id_name (name_id_cache_t * nic, ptrlong id)
 }
 
 name_id_cache_t *
-nic_allocate (int sz, int is_box)
+nic_allocate (unsigned long sz, int is_box)
 {
   NEW_VARZ (name_id_cache_t, nic);
   nic->nic_size = sz;
@@ -1126,6 +1101,7 @@ nic_allocate (int sz, int is_box)
     nic->nic_name_to_id = id_hash_allocate (sz / 3, sizeof (caddr_t), sizeof (ptrlong), treehash, treehashcmp);
   nic->nic_id_to_name = hash_table_allocate (sz / 3);
   nic->nic_mtx =mutex_allocate ();
+  mutex_option (nic->nic_mtx, is_box ? "NICB" : "NIC", NULL, NULL);
   return nic;
 }
 
@@ -1133,7 +1109,6 @@ void
 nic_flush (name_id_cache_t * nic)
 {
   caddr_t name_box = NULL;
-  caddr_t * place;
   int bucket_ctr = 0;
   mutex_enter (nic->nic_mtx);
   for (bucket_ctr = nic->nic_name_to_id->ht_buckets; bucket_ctr--; /* no step */)
@@ -1214,7 +1189,7 @@ tb_new_id_and_name (lock_trx_t * lt, it_cursor_t * itc, dbe_table_t * tb, caddr_
   itc_from (itc, itc->itc_insert_key);
   ITC_SEARCH_PARAM(itc, name);
   ITC_OWNS_PARAM(itc, name);
-  itc->itc_specs = itc->itc_insert_key->key_insert_spec;
+  itc->itc_key_spec = itc->itc_insert_key->key_insert_spec;
   itc_insert_unq_ck (itc, pk_image, NULL);
   tb_string_and_int_for_insert (id_key, sk_image, itc, name, res_box);
   itc->itc_insert_key = id_key;
@@ -1223,7 +1198,7 @@ tb_new_id_and_name (lock_trx_t * lt, it_cursor_t * itc, dbe_table_t * tb, caddr_
   ITC_SEARCH_PARAM(itc, res_box);
   ITC_SEARCH_PARAM(itc, name);
   ITC_OWNS_PARAM (itc, name);
-  itc->itc_specs = itc->itc_insert_key->key_insert_spec;
+  itc->itc_key_spec = itc->itc_insert_key->key_insert_spec;
 
   itc_insert_unq_ck (itc, sk_image, NULL);
   log_array = list (5, box_string ("DB.DBA.ID_REPLAY (?, ?, ?, ?)"),
@@ -1274,7 +1249,7 @@ tb_name_to_id (lock_trx_t * lt, char * tb_name, caddr_t name, char * value_seq_n
   else
     itc->itc_isolation = ISO_UNCOMMITTED;
   itc->itc_search_mode = SM_INSERT;
-  itc->itc_specs = key->key_insert_spec;
+  itc->itc_key_spec = key->key_insert_spec;
   ITC_FAIL (itc)
     {
 re_search:
@@ -1293,7 +1268,7 @@ re_search:
       else
 	{
 	  itc->itc_isolation = ISO_SERIALIZABLE;
-          itc->it_lock_mode = PL_EXCLUSIVE;
+          itc->itc_lock_mode = PL_EXCLUSIVE;
           itc->itc_search_mode = SM_READ;
 	  if (!itc->itc_position)
 	    rc = NO_WAIT;
@@ -1501,7 +1476,7 @@ tb_id_to_name (lock_trx_t * lt, char * tb_name, caddr_t id)
   itc_from (itc, key);
   ITC_SEARCH_PARAM (itc, id);
   itc->itc_isolation =ISO_COMMITTED;
-  itc->itc_specs = key->key_insert_spec;
+  itc->itc_key_spec = key->key_insert_spec;
   ITC_FAIL (itc)
     {
       buf = itc_reset (itc);
@@ -1578,11 +1553,27 @@ bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_iri_id_cache_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  int bucket_ctr;
+  query_instance_t * qi = (query_instance_t *) qst;
+  lock_trx_t *lt = qi->qi_trx;
+  caddr_t log_array;
+  int rc;
   if (!srv_have_global_lock (THREAD_CURRENT_THREAD))
     srv_make_new_error ("42000", "SR535", "iri_id_cache_flush() can be used only inside atomic section");
   nic_flush (iri_name_cache);
   nic_flush (iri_prefix_cache);
+  log_array = list (1, box_string ("iri_id_cache_flush()"));
+  mutex_enter (log_write_mtx);
+  rc = log_text_array_sync (lt, log_array);
+  mutex_leave (log_write_mtx);
+  dk_free_tree (log_array);
+  if (rc != LTE_OK)
+    {
+static caddr_t details = NULL;
+      if (NULL == details)
+        details = box_dv_short_string ("while writing new IRI_ID allocation to log file");
+/*      if (lt->lt_client != bootstrap_cli) */
+      sqlr_resignal (srv_make_trx_error (rc, details));
+    }
   return NULL;
 }
 

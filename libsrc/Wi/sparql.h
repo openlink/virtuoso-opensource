@@ -104,16 +104,31 @@ typedef struct spar_query_s
   } spar_query_t;
 #endif
 
+/*! WHERE condition template and aliases it refers to */
 typedef struct sparp_qm_table_condition_s {
   caddr_t	sparqtc_tmpl;		/*!< The original template text of the condition */
   caddr_t *	sparqtc_aliases;	/*!< Vector of all distinct aliases used in the template */
 } sparp_qm_table_condition_t;
 
+/*! Free-text column description */
+typedef struct spar_qm_ft_s {
+  caddr_t	sparqft_type;		/*!< NULL for plain free-text index, something else for text xml index */
+  SPART *	sparqft_ft_sqlcol;	/*!< Free-text indexed column */
+  SPART **	sparqft_qmv_sqlcols;	/*!< Columns that are used in quad map value */
+  SPART **      sparqft_options;	/*!< Options as declared in 'OPTION (...)' list of 'TEXT LITERAL ...' clause */
+  int		sparqft_use_ctr;	/*!< Use counter. It is an error if a 'TEXT LITERAL ...' clause is not used in the QM statement */
+} spar_qm_ft_t;
+
 /*! Configuration of RDF grabber, A.K.A. 'IRI resolver'. */
 typedef struct rdf_grab_config_s {
-    dk_set_t		rgc_consts;		/*!< Constants to be used as names of additional graphs */
+    int		rgc_pview_mode;		/*!< The query is executed unsing procedure view that will form a result-set by calling mroe than one statement via exec() */
     int			rgc_all;		/*!< Automatically add all IRI constants/vars (except P) to spare_grab_consts */
+    int		rgc_intermediate;	/*!< Automatically add all IRI constants/vars (except P) to spare_grab_consts */
+    dk_set_t	rgc_consts;		/*!< Constants to be used as names of additional graphs */
     dk_set_t		rgc_vars;		/*!< Names of variables whose values should be used as names of additional graphs */
+    dk_set_t	rgc_sa_graphs;		/*!< SeeAlso graph names. Every time a value can be downloaded, its seeAlso values can also be downloaded */
+    dk_set_t	rgc_sa_preds;		/*!< SeeAlso predicate names. Every time a value can be downloaded, its seeAlso values can also be downloaded */
+    dk_set_t	rgc_sa_vars;		/*!< Names of variables whose values should be used as names of subjects (not objects!) for seeAlso predicates */
     caddr_t		rgc_depth;		/*!< Number of iterations that can be made to find additional graphs */
     caddr_t		rgc_limit;		/*!< Limit on number of grabbed remote documents */
     caddr_t		rgc_base;		/*!< Base IRI to use as a first argument to the grab IRI resolver */
@@ -122,6 +137,7 @@ typedef struct rdf_grab_config_s {
     caddr_t		rgc_loader_name;	/*!< Name of function that actually load the resource */
 } rdf_grab_config_t;
 
+/* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
 typedef struct sparp_env_s
   {
     /*spar_query_t *	spare_sparqr;*/
@@ -161,11 +177,16 @@ typedef struct sparp_env_s
     dk_set_t		spare_good_graph_varname_sets;	/*!< Pointers to the spare_known_gspo_varnames stack, to pop */
     dk_set_t		spare_good_graph_bmk;		/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
     dk_set_t		spare_selids;			/*!< Select IDs of GPs */
+    dk_set_t		spare_global_var_names;		/*!< List of all distinct global names used in the query, to know what should be pased to 'rdf grab' procedure view */
+    int			spare_globals_are_numbered;	/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
+    int			spare_global_num_offset;	/*!< If spare_globals_are_numbered then numbers of 'app-specific' global parameters starts from spare_global_num_offset up, some number of first params are system-specific. */
     dk_set_t		spare_acc_qm_sqls;		/*!< Backstack of first-level function calls that change quad maps, items are SPART * with SPAR_QM_SQL_FUNCALL type */
     caddr_t		spare_qm_default_table;		/*!< The name of default table (when a single table name is used without an alias for everything. */
+    caddr_t		spare_qm_current_table_alias;	/*!< The last alias definition, used for processing of 'FROM table AS alias TEXT LITERAL ...' */
     dk_set_t		spare_qm_parent_tables_of_aliases;	/*!< get_keyword-style list of aliases of relational tables, aliases are keys, tables are values. */
     dk_set_t		spare_qm_parent_aliases_of_aliases;	/*!< get_keyword-style list of aliases of other aliases, parent aliases are values. */
     dk_set_t		spare_qm_descendants_of_aliases;	/*!< get_keyword-style list of aliases of other aliases, bases are keys, sets of descendants are values. */
+    dk_set_t		spare_qm_ft_indexes_of_columns;		/*!< get_keyword-style list of free-text indexes of aliased columns, 'alias.col' are keys, spar_qm_ft_t are values. */
     dk_set_t		spare_qm_where_conditions;	/*!< Set of 'where' conditions for tables represented by sparp_qm_table_condition_t structures. */
     dk_set_t		spare_qm_locals;		/*!< Parameters in not-yet-closed '{...}' blocks. Names (as keyword ids) and values, with NULLs as bookmarks. */
     dk_set_t		spare_qm_affected_jso_iris;	/*!< Backstack of affected JS objects */
@@ -342,6 +363,7 @@ typedef struct spar_tree_s
       caddr_t tabid;
         triple_case_t **tc_list;
         struct qm_format_s *native_formats[SPART_TRIPLE_FIELDS_COUNT];
+        ptrlong ft_type;
       } triple;
     struct { /* Note that all first members of \c retval case should match to \c var case */
       caddr_t vname;
@@ -422,6 +444,11 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 #define SPART_BAD_EQUIV_IDX (ptrlong)(SMALLEST_POSSIBLE_POINTER-1)
 #define SPART_BAD_GP_SUBTYPE (ptrlong)(SMALLEST_POSSIBLE_POINTER-2)
 
+#define SPAR_FT_CONTAINS	1
+#define SPAR_FT_XCONTAINS	2
+#define SPAR_FT_XPATH_CONTAINS	3
+#define SPAR_FT_XQUERY_CONTAINS	4
+
 extern caddr_t spar_var_name_of_ret_column (SPART *tree);
 extern caddr_t spar_alias_name_of_ret_column (SPART *tree);
 
@@ -455,6 +482,8 @@ extern caddr_t spar_selid_pop (sparp_t *sparp);
 extern void spar_gp_init (sparp_t *sparp, ptrlong subtype);
 extern SPART *spar_gp_finalize (sparp_t *sparp);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
+extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object);
+extern int spar_filter_is_freetext (SPART *filt);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
 extern void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t precodes, int suppress_filters_for_good_names);
 extern void spar_gp_add_filter_for_named_graph (sparp_t *sparp);
@@ -464,7 +493,7 @@ extern SPART **spar_retvals_of_delete (sparp_t *sparp, SPART *graph_to_patch, SP
 extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **order, caddr_t limit, caddr_t offset);
-extern SPART *spar_make_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object);
+extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
@@ -499,15 +528,17 @@ extern dk_set_t spar_qm_find_descendants_of_alias (sparp_t *sparp, caddr_t base_
 extern void spar_qm_add_aliased_table (sparp_t *sparp, caddr_t parent_qtable, caddr_t new_alias);
 extern void spar_qm_add_aliased_alias (sparp_t *sparp, caddr_t parent_alias, caddr_t new_alias);
 extern void spar_qm_add_table_filter (sparp_t *sparp, caddr_t tmpl);
+extern void spar_qm_add_text_literal (sparp_t *sparp, caddr_t ft_type, caddr_t ft_table_alias, SPART *ft_col, SPART **qmv_cols, SPART **options);
 extern void spar_qm_check_filter_aliases (sparp_t *sparp, dk_set_t used_aliases);
 extern SPART *sparp_make_qm_sqlcol (sparp_t *sparp, ptrlong type, caddr_t name);
+extern caddr_t spar_qm_collist_crc (SPART **cols, const char *prefix, int ignore_order);
 extern SPART *spar_make_qm_value (sparp_t *sparp, caddr_t format_name, SPART **cols);
 extern void spar_qm_find_all_conditions (sparp_t *sparp, dk_set_t map_aliases, dk_set_t *cond_tmpls_ptr);
 extern SPART *spar_make_qm_sql (sparp_t *sparp, const char *fname, SPART **fixed, SPART **named);
 extern SPART *spar_make_vector_qm_sql (sparp_t *sparp, SPART **fixed);
 extern SPART *spar_make_topmost_qm_sql (sparp_t *sparp);
-extern SPART *spar_qm_make_empty_mapping (sparp_t *sparp, caddr_t qm_id, caddr_t options);
-extern SPART *spar_qm_make_real_mapping (sparp_t *sparp, caddr_t qm_id, caddr_t options);
+extern SPART *spar_qm_make_empty_mapping (sparp_t *sparp, caddr_t qm_id, SPART **options);
+extern SPART *spar_qm_make_real_mapping (sparp_t *sparp, caddr_t qm_id, SPART **options);
 
 
 #endif

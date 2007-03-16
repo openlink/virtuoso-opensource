@@ -40,7 +40,7 @@ extern "C" {
 }
 #endif
 
-#ifdef DEBUG
+#ifdef RDFXML_DEBUG
 #define rdfxml_dbg_printf(x) dbg_printf (x)
 #else
 #define rdfxml_dbg_printf(x)
@@ -516,6 +516,18 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
       dk_free_box (aname);
       xp->xp_boxed_name = NULL;
     }
+  if ((XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) && (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype))
+    { /* This means pasrseType="Resource". It should be handled immediately to prevent error in case of pasrseType="Resource" nested inside inner. */
+      xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
+      if (NULL != inner->xrl_reification_id)
+        {
+          xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_subject, outer->xrl_subject);
+          xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
+          xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, inner->xrl_subject);
+          xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+        }
+      inner->xrl_predicate = NULL;
+    }
 }
 
 
@@ -796,10 +808,13 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   QR_RESET_CTX
     {
       tf_set_stmt_texts (tf, stmt_texts, NULL);
+      tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
+      tf_commit (tf);
       if (0 == setjmp (context.xp_error_ctx))
         rc = VXmlParse (parser, text, xrie.xrie_text_len);
       else
 	rc = 0;
+      tf_commit (tf);
     }
   QR_RESET_CODE
     {

@@ -432,9 +432,10 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{F}{R}{O}{M}			{ return FROM_L		; }
 <SPARQL>{F}{U}{N}{C}{T}{I}{O}{N}	{ return FUNCTION_L	; }
 <SPARQL>{G}{R}{A}{P}{H}			{ return GRAPH_L	; }
-<SPARQL>{I}{R}{I}			{ return IRI_L		; }
 <SPARQL>{I}{N}				{ return IN_L		; }
+<SPARQL>{I}{N}{D}{E}{X}			{ return INDEX_L	; }
 <SPARQL>{I}{N}{S}{E}{R}{T}		{ return INSERT_L	; }
+<SPARQL>{I}{R}{I}			{ return IRI_L		; }
 <SPARQL>{I}{S}{B}{L}{A}{N}{K}		{ return isBLANK_L	; }
 <SPARQL>{I}{S}{I}{R}{I}			{ return isIRI_L	; }
 <SPARQL>{I}{S}{L}{I}{T}{E}{R}{A}{L}	{ return isLITERAL_L	; }
@@ -468,6 +469,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{T}{R}{U}{E}			{ return true_L		; }
 <SPARQL>{U}{N}{I}{O}{N}			{ return UNION_L	; }
 <SPARQL>{U}{S}{I}{N}{G}			{ return USING_L	; }
+
+<SPARQL>{T}{E}{X}{T}			{ sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return TEXT_BL	; }
+<SPARQL>{X}{M}{L}			{ sparyylval.box = t_box_dv_short_nchars (sparyytext, sparyyleng); return XML_BL	; }
 
 <SPARQL>{I}{D}{E}{N}{T}{I}{F}{I}{E}{D}	{ BEGIN SPARQL_AFTER_IDENTIFIED; return IDENTIFIED_L	; }
 <SPARQL>{W}{H}{E}{R}{E}			{ BEGIN SPARQL_AFTER_WHERE; return WHERE_L	; }
