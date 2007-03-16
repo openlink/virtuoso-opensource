@@ -238,6 +238,7 @@ artm_print:
 	  break;
 
 	case INS_CALL:
+	case INS_CALL_BIF:
 	  if (in->_.call.ret != (state_slot_t *)1)
 	    {
 	      ssl_print (in->_.call.ret);
@@ -418,9 +419,9 @@ ks_print (key_source_t * ks)
 		  ks->ks_descending ? "DESC" : "ASC"));
 
   ssl_list_print (ks->ks_out_slots);
-  stmt_printf (("\n"));
+  stmt_printf (("\n%s", ks->ks_spec.ksp_key_cmp ? " inlined " : ""));
 
-  sp_list_print (ks->ks_spec);
+  sp_list_print (ks->ks_spec.ksp_spec_array);
   stmt_printf (("\n"));
 
   if (ks->ks_row_spec)
@@ -470,10 +471,10 @@ ts_print (table_source_t * ts)
 			term->iop_ks->ks_key->key_name));
 
 	  ks_print (term->iop_ks);
-	  stmt_printf (("\n  start spec: "));
-	  sp_list_print (term->iop_ks_start_spec);
-	  stmt_printf (("\n  full spec: "));
-	  sp_list_print (term->iop_ks_full_spec);
+	  stmt_printf (("\n  start spec: %s ", term->iop_ks_start_spec.ksp_key_cmp ? " inlined " : ""));
+	  sp_list_print (term->iop_ks_start_spec.ksp_spec_array);
+	  stmt_printf (("\n  full spec: %s ", term->iop_ks_full_spec.ksp_key_cmp ? "inlined " : ""));
+	  sp_list_print (term->iop_ks_full_spec.ksp_spec_array);
 	  if (iop->iop_ks_row_spec)
 	    {
 	      stmt_printf (("\n  row spec: "));

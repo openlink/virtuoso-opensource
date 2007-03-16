@@ -5808,3 +5808,108 @@ create procedure DB.DBA.VACUUM (in table_name varchar := '%', in index_name varc
     }
 }
 ;
+
+
+
+create procedure tc_result (in n varchar)
+{
+  declare exit handler for sqlstate '*' {
+    result (-1, n);
+};
+if (sys_stat (n) = 0)
+  return;
+  result (sys_stat (n), n);
+}
+;
+
+create procedure tc_stat ()
+{
+declare cond varchar (60);
+declare n int;
+result_names (n, cond);
+  tc_result ('tc_initial_while_closing');
+  tc_result ('tc_initial_while_closing_died');
+  tc_result ('tc_client_dropped_connection');
+  tc_result ('tc_no_client_in_tp_data');
+  tc_result ('tc_bp_get_buffer');
+  tc_result ('tc_bp_get_buffer_loop');
+  tc_result ('tc_first_free_replace');
+  tc_result ('tc_hi_lock_new_lock');
+  tc_result ('tc_hi_lock_old_dp_no_lock');
+  tc_result ('tc_hi_lock_old_dp_no_lock_deadlock');
+  tc_result ('tc_hi_lock_old_dp_no_lock_put_lock');
+  tc_result ('tc_hi_lock_lock');
+  tc_result ('tc_hi_lock_lock_deadlock');
+  tc_result ('tc_pg_write_compact');
+  tc_result ('tc_write_cancel');
+  tc_result ('tc_write_scrapped_buf');
+  tc_result ('tc_serializable_land_reset');
+  tc_result ('tc_dive_cache_compares');
+  tc_result ('tc_desc_serial_reset');
+  tc_result ('tc_try_land_write');
+  tc_result ('tc_try_land_reset');
+  tc_result ('tc_up_transit_parent_change');
+  tc_result ('tc_dp_set_parent_being_read');
+  tc_result ('tc_dp_changed_while_waiting_mtx');
+  tc_result ('tc_dive_split');
+  tc_result ('tc_dtrans_split');
+  tc_result ('tc_up_transit_wait');
+  tc_result ('tc_double_deletes');
+  tc_result ('tc_delete_parent_waits');
+  tc_result ('tc_wait_trx_self_kill');
+  tc_result ('tc_split_while_committing');
+  tc_result ('tc_rb_code_non_unique');
+  tc_result ('tc_set_by_pl_wait');
+  tc_result ('tc_split_2nd_read');
+  tc_result ('tc_read_wait');
+  tc_result ('tc_write_wait');
+  tc_result ('tc_reentry_split');
+  tc_result ('tc_pl_moved_in_reentry');
+  tc_result ('tc_release_pl_on_deleted_dp');
+  tc_result ('tc_release_pl_on_absent_dp');
+  tc_result ('tc_cpt_lt_start_wait');
+  tc_result ('tc_cpt_rollback');
+  tc_result ('tc_wait_for_closing_lt');
+  tc_result ('tc_pl_non_owner_wait_ref_deld');
+  tc_result ('tc_pl_split');
+  tc_result ('tc_pl_split_multi_owner_page');
+  tc_result ('tc_pl_split_while_wait');
+  tc_result ('tc_insert_follow_wait');
+  tc_result ('tc_history_itc_delta_wait');
+  tc_result ('tc_page_wait_reset');
+  tc_result ('tc_posthumous_lock');
+  tc_result ('tc_finalize_while_being_read');
+  tc_result ('tc_rollback_cpt_page');
+  tc_result ('tc_kill_closing');
+  tc_result ('tc_dive_cache_hits');
+  tc_result ('tc_deadlock_win_get_lock');
+  tc_result ('tc_double_deadlock');
+  tc_result ('tc_update_wait_move');
+  tc_result ('tc_root_cache_miss');
+  tc_result ('tc_dive_would_deadlock');
+  tc_result ('tc_bm_split_left_separate_but_no_split;');
+  tc_result ('tc_enter_transiting_bm_inx');
+  tc_result ('tc_root_image_miss');
+  tc_result ('tc_root_image_ref_deleted');
+  tc_result ('tc_root_write');
+  tc_result ('tc_cpt_rollback_retry');
+  tc_result ('tc_uncommit_cpt_page');
+  tc_result ('tc_repl_cycle');
+  tc_result ('tc_repl_connect_quick_reuse');
+  tc_result ('tc_no_thread_kill_idle');
+  tc_result ('tc_no_thread_kill_vdb');
+  tc_result ('tc_no_thread_kill_running');
+  tc_result ('tc_deld_row_rl_rb');
+  tc_result ('tc_blob_read');
+  tc_result ('tc_blob_write');
+  tc_result ('tc_blob_ra');
+  tc_result ('tc_blob_ra_size');
+  tc_result ('tc_get_buf_failed');
+  tc_result ('tc_read_wait_decoy');
+  tc_result ('tc_read_absent_while_finalize');
+  tc_result ('tc_read_wait_while_ra_finding_buf');
+  tc_result ('tc_unregister_enter');
+
+}
+;
+

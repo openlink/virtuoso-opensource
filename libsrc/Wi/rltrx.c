@@ -29,6 +29,7 @@
 #include "sqlnode.h"
 #include "sqlfn.h"
 #include "statuslog.h"
+#include "wifn.h"
 
 #ifdef VIRTTP
 #include "2pc.h"
@@ -117,9 +118,6 @@ void
 rl_add_pl_to_owners (it_cursor_t * itc, row_lock_t * rl, page_lock_t * pl)
 {
   it_cursor_t *waiting;
-  ITC_IN_MAP (itc);
-  /* don't need map to move rlocks between sides of a split.
-   * however do need map to assign pl's to owner trx's */
   if (rl->pl_is_owner_list)
     {
       dk_set_t rl_owner = (dk_set_t) rl->pl_owner;
@@ -168,17 +166,19 @@ pg_move_lock (it_cursor_t * itc, row_lock_t ** locks, int n_locks, int from, int
 void
 itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend)
 {
-  page_lock_t *left_pl = IT_DP_PL (itc->itc_tree, left->bd_page);
+  page_lock_t *left_pl = itc->itc_pl;
   page_lock_t *extend_pl;
-  ASSERT_IN_MAP (itc->itc_tree);
   if (!left_pl)
     return;
   extend_pl = pl_allocate ();
   extend_pl->pl_page = extend->bd_page;
   PL_SET_TYPE (extend_pl, PL_EXCLUSIVE);
   extend_pl->pl_it = itc->itc_tree;
-  sethash (DP_ADDR2VOID (extend->bd_page), itc->itc_tree->it_locks, (void *) extend_pl);
+
+  ITC_IN_TRANSIT (itc, left->bd_page, extend->bd_page);
+  sethash (DP_ADDR2VOID (extend->bd_page), &IT_DP_MAP (itc->itc_tree, extend->bd_page)->itm_locks, (void *) extend_pl);
   extend->bd_pl = extend_pl;
+  mtx_assert (itc->itc_pl == IT_DP_PL (itc->itc_tree, left->bd_page));
   if (PL_IS_FINALIZE (left_pl))
     PL_SET_FLAG (extend_pl, PL_FINALIZE);
 #if 1
@@ -227,9 +227,10 @@ itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend)
 void
 itc_split_lock_waits (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend)
 {
-  page_lock_t *left_pl = IT_DP_PL (itc->itc_tree, left->bd_page);
   page_lock_t *extend_pl;
-  ASSERT_IN_MAP (itc->itc_tree);
+  page_lock_t *left_pl;
+  ITC_IN_TRANSIT  (itc, left->bd_page, extend->bd_page);
+  left_pl = IT_DP_PL (itc->itc_tree, left->bd_page);
   if (!left_pl)
     return;
   extend_pl = IT_DP_PL (itc->itc_tree, extend->bd_page);
@@ -324,13 +325,14 @@ itc_make_pl (it_cursor_t * itc, buffer_desc_t * buf)
 {
   dp_addr_t dp = itc->itc_page;
   page_lock_t *pl = pl_allocate ();
-  ASSERT_IN_MAP (itc->itc_tree);
   pl->pl_it = itc->itc_tree;
-  sethash (DP_ADDR2VOID (dp), itc->itc_tree->it_locks, (void *) pl);
+  ITC_IN_KNOWN_MAP (itc, itc->itc_page);
+  sethash (DP_ADDR2VOID (dp), &IT_DP_MAP (itc->itc_tree, itc->itc_page)->itm_locks, (void *) pl);
   if (buf)
     buf->bd_pl = pl;
   pl->pl_page = dp;
   pl->pl_type = itc->itc_lock_mode;
+  ITC_LEAVE_MAP_NC (itc);
   itc->itc_pl = pl;
   lt_add_pl (itc->itc_ltrx, pl, 1);
 }
@@ -343,7 +345,8 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
   int not_own = 0;
   int new_pl = 0;
   page_lock_t *pl = itc->itc_pl;
-  if (itc->itc_ltrx->lt_is_excl)
+  if (itc->itc_ltrx->lt_is_excl
+      || INS_DOUBLE_LP == rl)
     return;
   if (!pl)
     {
@@ -351,7 +354,6 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
       if (buf && buf->bd_writer != THREAD_CURRENT_THREAD)
 	GPF_T1 ("Thread not writer of buffer in insert row lock");
 #endif
-      ITC_IN_MAP (itc);
       itc_make_pl (itc, buf);
       pl = itc->itc_pl;
       new_pl = 1;
@@ -397,7 +399,6 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
     {
       if (not_own)
 	rdbg_printf (("would be miss insert pl T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
-      ITC_IN_MAP (itc);
       lt_add_pl (itc->itc_ltrx, pl, 0);
     }
 }
@@ -433,7 +434,6 @@ itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret)
       if (rl)
 	if (!lock_add_owner ((gen_lock_t *) rl, itc, 0))
 	  {
-	    ITC_IN_MAP (itc);
 	    lock_wait ((gen_lock_t *) rl, itc, buf, ITC_NO_LOCK);
 	    return WAIT_OVER;
 	  }
@@ -481,6 +481,8 @@ itc_landed_lock_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
     {
       if (leaf_pointer ((*buf_ret)->bd_buffer, itc->itc_position))
 	return NO_WAIT;  /* only a leaf can be locked */
+      /* the point of setting the itc_is_on_row flag is to acquire the lock in case of wait.  A RR cursor will not acquire the lock before it has checked all the row criteria but a serializable will */
+      itc->itc_is_on_row = 1;
       return (itc_set_lock_on_row (itc, buf_ret));
     }
   if (!pl)
@@ -489,8 +491,6 @@ itc_landed_lock_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
     {
       if (!lock_is_acquirable ((gen_lock_t *) pl, itc))
 	{
-	  ITC_IN_MAP (itc);
-	  itc_register_cursor (itc, INSIDE_MAP);
 	  lock_wait ((gen_lock_t *) pl, itc, *buf_ret, ITC_NO_LOCK);
 	  *buf_ret = page_reenter_excl (itc);
 	  return WAIT_OVER;
@@ -507,8 +507,6 @@ itc_landed_lock_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
       if (!lock_is_acquirable ((gen_lock_t *) rl, itc))
 	{
 	  /*int is_cus = 0, cus_pos1;*/
-	  ITC_IN_MAP (itc);
-	  itc_register_cursor (itc, INSIDE_MAP);
 	  lock_wait ((gen_lock_t *) rl, itc, *buf_ret, ITC_NO_LOCK);
 	  *buf_ret = page_reenter_excl (itc);
 	  return WAIT_OVER;
@@ -545,16 +543,16 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
     {
       if (is_new_pl)
 	{
-	  IN_LT_LOCKS;
+	  IN_LT_LOCKS (lt);
 	  LT_CHECK_NEW_PL (lt, pl);
 	  dk_set_push (&lt->lt_locks, (void *) pl);
-	  LEAVE_LT_LOCKS;
+	  LEAVE_LT_LOCKS (lt);
 	}
       else
 	{
-	  IN_LT_LOCKS;
+	  IN_LT_LOCKS (lt);
 	dk_set_pushnew (&lt->lt_locks, (void *) pl);
-	  LEAVE_LT_LOCKS;
+	  LEAVE_LT_LOCKS (lt);
 	}
     }
   else
@@ -566,20 +564,20 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
 	  if (dk_set_member ((dk_set_t) pl->pl_owner, (void *) lt))
 	    return;
 	  dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) lt);
-	  IN_LT_LOCKS;
+	  IN_LT_LOCKS  (lt);
 	  LT_CHECK_NEW_PL (lt, pl);
 	  dk_set_push (&lt->lt_locks, (void *) pl);
-	  LEAVE_LT_LOCKS;
+	  LEAVE_LT_LOCKS (lt);
 	}
       else if (lt == pl->pl_owner)
 	return;
       else if (pl->pl_owner == NULL)
 	{
 	  pl->pl_owner = lt;
-	  IN_LT_LOCKS;
+	  IN_LT_LOCKS (lt);
 	  LT_CHECK_NEW_PL (lt, pl);
 	  dk_set_push (&lt->lt_locks, (void *) pl);
-	  LEAVE_LT_LOCKS;
+	  LEAVE_LT_LOCKS (lt);
 	}
       else
 	{
@@ -588,10 +586,10 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
 	  pl->pl_owner = NULL;
 	  dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) prev);
 	  dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) lt);
-	  IN_LT_LOCKS;
+	  IN_LT_LOCKS (lt);
 	  LT_CHECK_NEW_PL (lt, pl);
 	  dk_set_push (&lt->lt_locks, (void *) pl);
-	  LEAVE_LT_LOCKS;
+	  LEAVE_LT_LOCKS (lt);
 	}
     }
 }
@@ -614,6 +612,7 @@ itc_make_rl (it_cursor_t * itc)
 
   if (itc->itc_ltrx->lt_status != LT_PENDING)
     rdbg_printf (("*** making posthumous lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+  assert (itc->itc_position);
   rl->rl_pos = itc->itc_position;
   rl->rl_next = PL_RLS (pl, itc->itc_position);
   PL_RLS (pl, itc->itc_position) = rl;
@@ -649,7 +648,6 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 	GPF_T1 ("pl and itc on different pages");
       if (PL_IS_PAGE (pl))
 	{
-	  ITC_IN_MAP (itc);
 	  rc = lock_enter ((gen_lock_t *) itc->itc_pl, itc, *buf_ret);
 	  if (NO_WAIT == rc)
 	    return rc;
@@ -659,22 +657,20 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
       rl = pl_row_lock_at (pl, itc->itc_position);
       if (rl)
 	{
-	  ITC_IN_MAP (itc);
 	  rc = lock_enter ((gen_lock_t *) rl, itc, *buf_ret);
-	  if (itc->itc_is_on_row
-	      && itc->itc_isolation == ISO_SERIALIZABLE
+	  if (NO_WAIT == rc)
+	    {
+	      if (itc->itc_isolation == ISO_SERIALIZABLE
 	      && itc->itc_search_mode != SM_INSERT)
 	    PL_SET_FLAG (rl, RL_FOLLOW);
-	  if (NO_WAIT == rc)
 	    return rc;
+	    }
 	  *buf_ret = page_reenter_excl (itc);
 	  return rc;
 	}
       else
 	{
 	  ITC_MARK_LOCK_SET (itc);
-	  ITC_IN_MAP (itc); /* down frames from itc_escalate_lock() can cause a GPF
-			     when any_lt is accessed */
 	  if (PL_CAN_ESCALATE (itc, pl, (*buf_ret)))
 	    {
 	      itc_escalate_lock (itc, itc->itc_lock_mode);
@@ -688,9 +684,12 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
     }
   else
     {
-      ITC_IN_MAP (itc);
+#if defined (MTX_DEBUG) || defined (PAGE_TRACE)
+      ITC_IN_OWN_MAP (itc);
       if (IT_DP_PL (itc->itc_tree, itc->itc_page))
 	GPF_T1 ("itc_pl null when there is a pl");
+      ITC_LEAVE_MAP_NC (itc);
+#endif
       itc_make_pl (itc, *buf_ret);
       if (ITC_PREFER_PAGE_LOCK (itc))
 	{
@@ -725,11 +724,50 @@ itc_serializable_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
       return NO_WAIT;
     }
   TC (tc_serializable_land_reset);
-  ITC_IN_MAP (itc);
+  ITC_IN_KNOWN_MAP (itc, (*buf_ret)->bd_page);
   rdbg_printf (("  serializable landing reset T=%d L=%d pos=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page, itc->itc_position));
   page_leave_inner (*buf_ret);
+  ITC_LEAVE_MAP_NC (itc);
   *buf_ret = itc_reset (itc);
   return WAIT_OVER;
+}
+
+
+int
+itc_read_committed_check (it_cursor_t * itc, int pos, buffer_desc_t * buf)
+{
+  rb_entry_t *rbe;
+  db_buf_t page;
+  page_lock_t * pl = buf->bd_pl;
+  gen_lock_t * gl;
+  if (PL_IS_PAGE (pl))
+    gl = (gen_lock_t *) pl;
+  else 
+    {
+      gl = (gen_lock_t *) pl_row_lock_at (pl, pos);
+      if (!gl)
+	return DVC_MATCH;
+    }
+
+  if (PL_EXCLUSIVE != PL_TYPE (gl))
+    return DVC_MATCH;
+  /* the lock concerns this row, either ecl row lock hwre or excl page lock on page */
+  page = buf->bd_buffer;
+  if (itc->itc_ltrx == gl->pl_owner)
+    return (IE_ISSET (page + pos, IEF_DELETE)) ? DVC_LESS : DVC_MATCH;
+  /* this is somebody else's lock.  Get the rb record. 
+   * Note that if the owner is committing at this time, this cr may have seen a after image  row before but here it will see a pre image . 
+   * To prevent this, use repeatable.  Read committed only means that no uncommitted states are shown, not that you don't get half transactions.  
+   * If showing half transactions in read committtedf is good enough for Oracle it is good enough for us. */
+  
+  rbe = lt_rb_entry (gl->pl_owner, page + pos, NULL, NULL, 1);
+  if (!rbe)
+    return DVC_MATCH; /* row not modified, just locked */
+  if (RB_INSERT == rbe->rbe_op)
+    return DVC_LESS; /* uncommitted insert */
+  itc->itc_row_data = rbe->rbe_string + rbe->rbe_row + IE_FIRST_KEY; 
+  /* rbe and related will stay allocated as long as the page is taken.  Will only disappear after the owner has finalized this page. */
+  return DVC_MATCH;
 }
 
 
@@ -740,6 +778,9 @@ itc_lock_failure (it_cursor_t * itc, char * msg)
 	  itc, (unsigned long) itc->itc_page, itc->itc_position, itc->itc_insert_key ? itc->itc_insert_key->key_name : "no key",
 	  (int) itc->itc_isolation, (int) itc->itc_lock_mode, msg));
 
+#ifndef NDEBUG
+  GPF_T1 ("itc_assert_locksseems inconsistent");
+#endif
 }
 
 
@@ -769,13 +810,16 @@ lock_is_owner (gen_lock_t * pl, lock_trx_t * lt, it_cursor_t * itc)
 void
 itc_assert_lock_1 (it_cursor_t * itc)
 {
-  if (!itc->itc_ltrx || itc->itc_space != itc->itc_tree->it_commit_space)
+  if (!ITC_IS_LTRX (itc))
     return;
+  ITC_IN_OWN_MAP (itc);
   if (itc->itc_pl != IT_DP_PL (itc->itc_tree, itc->itc_page))
     {
+      ITC_LEAVE_MAPS (itc);
       itc_lock_failure (itc, "mismatched itc and itc_pl");
       return;
     }
+  ITC_LEAVE_MAPS (itc);
   if (itc->itc_isolation < ISO_REPEATABLE
       || !itc->itc_is_on_row)
     return;
@@ -810,9 +854,7 @@ itc_assert_lock (it_cursor_t * itc)
 #if 0
   return;
 #else
-  ITC_IN_MAP (itc);
   itc_assert_lock_1 (itc);
-  ITC_LEAVE_MAP (itc);
 #endif
 }
 
@@ -826,8 +868,6 @@ itc_leave_page_locks (it_cursor_t * itc)
 void
 pl_set_finalize (page_lock_t * pl, buffer_desc_t * buf)
 {
-  if (buf->bd_space != buf->bd_space->isp_tree->it_commit_space)
-    GPF_T1 ("finalizable lock must be on delta'ed page");
   if (!pl)
     GPF_T1("pl should not be null in pl_set_finalize");
   PL_SET_FLAG (pl, PL_FINALIZE);
@@ -837,6 +877,9 @@ pl_set_finalize (page_lock_t * pl, buffer_desc_t * buf)
 #define PAGE_NOT_CHANGED 0
 #define PAGE_UPDATED 1
 #define PAGE_DELETED 2
+#define LEAF_CHG_MASK 4
+/* LEAF_CHG_MASK is on in the rc if the first row was deleted.  Thhis means that the leaf ptr should begin with the key of the first row. 
+ * This is nice to have in order to avoid inserts to non leaf and in order not to miss follow locks on previous pages.  The point is that the seek must land beside the next smaller and if leaf ptrs are out of whack this is not always so */
 
 int
 itc_finalize_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos)
@@ -854,16 +897,20 @@ itc_finalize_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos)
 
   if (IE_ISSET (page + pos, IEF_DELETE))
     {
+      int is_first = itc->itc_position == SHORT_REF (page + DP_FIRST);
+      itc->itc_row_key = itc->itc_insert_key = (*buf_ret)->bd_tree->it_key;
       itc_commit_delete (itc, buf_ret);
       if (*buf_ret != buf_from)
 	return PAGE_DELETED;
-      return PAGE_UPDATED;
+      return PAGE_UPDATED | (is_first ? LEAF_CHG_MASK : 0);
     }
   else if (IE_ISSET (page + pos, IEF_UPDATE))
     {
       int row_end;
       int new_len;
       dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, SHORT_REF (page + pos + IE_KEY_ID));
+      if (key->key_is_bitmap)
+	itc_invalidate_bm_crs (itc, *buf_ret, 0, NULL); /* can be registered on rc pre-images. */
       l = row_reserved_length (page + pos, key);
       new_len = row_length (page + pos, key);
       row_end = pos + l;
@@ -877,56 +924,96 @@ itc_finalize_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos)
 
 
 void
+pl_finalize_absent (page_lock_t * pl, it_cursor_t * itc)
+{
+  buffer_desc_t decoy;
+  it_map_t * itm = IT_DP_MAP (pl->pl_it, pl->pl_page);
+  dp_addr_t dp = pl->pl_page;
+  index_tree_t * tree = pl->pl_it;
+  memset (&decoy, 0, sizeof (buffer_desc_t));
+  decoy.bd_being_read = 1;
+  BD_SET_IS_WRITE (&decoy, 1);
+  sethash (DP_ADDR2VOID (pl->pl_page), &itm->itm_dp_to_buf, (void*) &decoy);
+  ITC_LEAVE_MAP_NC (itc);
+  pl_release (pl, itc->itc_ltrx, NULL);
+  /* note that from now on pl can be free */
+  ITC_IN_KNOWN_MAP (itc, dp);
+  if (decoy.bd_read_waiting || decoy.bd_write_waiting)
+    {
+      buffer_desc_t * buf;
+      dp_addr_t phys_dp;
+      IT_DP_REMAP (tree, dp, phys_dp);
+      ITC_LEAVE_MAP_NC (itc);
+      TC (tc_read_absent_while_finalize);
+      buf = bp_get_buffer (NULL, BP_BUF_REQUIRED);
+      buf->bd_being_read = 1;
+      buf->bd_page = dp;
+      buf->bd_storage = tree->it_storage;
+      buf->bd_physical_page = phys_dp;
+      BD_SET_IS_WRITE (buf, 1);
+      buf->bd_readers = 0;
+      buf->bd_write_waiting = NULL;
+      buf->bd_tree = tree;
+      buf_disk_read (buf);
+      ITC_IN_KNOWN_MAP (itc, dp);
+      sethash (DP_ADDR2VOID (dp), &itm->itm_dp_to_buf, (void*) buf);
+      buf->bd_pl = (page_lock_t *) gethash (DP_ADDR2VOID (dp), &itm->itm_locks);
+      DBG_PT_READ (buf, itc->itc_ltrx);
+      buf->bd_being_read = 0;
+      buf->bd_readers = decoy.bd_readers;
+      BD_SET_IS_WRITE (buf, decoy.bd_is_write);
+      buf->bd_read_waiting = decoy.bd_read_waiting;
+      buf->bd_write_waiting = decoy.bd_write_waiting;
+      /* this thread has read the buffer and will now leave to let the waiting in */
+      page_mark_change (buf, RWG_WAIT_DISK);
+      page_leave_inner (buf);
+      ITC_LEAVE_MAP_NC (itc);
+    }
+  else 
+    {
+      remhash (DP_ADDR2VOID (dp), &itm->itm_dp_to_buf);
+      ITC_LEAVE_MAP_NC (itc);
+    }
+}
+
+
+void
 pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 {
-  int change = PAGE_NOT_CHANGED, rc, dirty = 0;
+  int change = PAGE_NOT_CHANGED, rc, dirty = 0, change_leaf_ptr = 0;
   lock_trx_t *lt = itc->itc_ltrx;
-  index_space_t *isp;
   dp_addr_t phys;
   buffer_desc_t *buf = NULL;
-  ITC_IN_MAP (itc);
   if (DP_DELETED == pl->pl_page)
     {
-      ITC_LEAVE_MAP (itc);
       TC (tc_release_pl_on_deleted_dp);
       pl_release (pl, lt, NULL);
       return;
     }
 
-  buf = isp_locate_page (pl->pl_it->it_commit_space, pl->pl_page,
-			 &isp, &phys);
-  if (!buf && !PL_IS_FINALIZE (pl))
+  if (!PL_IS_FINALIZE (pl))
     {
-      /* must make a decoy as if 'being read', so that no locks get added while the lock is being released */
-      buffer_desc_t decoy;
-      dp_addr_t dp = pl->pl_page;
-      memset (&decoy, 0, sizeof (decoy));
-      decoy.bd_being_read = 1;
-      sethash (DP_ADDR2VOID (dp), itc->itc_space->isp_dp_to_buf, (void*) &decoy);
-      ITC_LEAVE_MAP (itc);
-      TC (tc_release_pl_on_absent_dp);
-      pl_release (pl, itc->itc_ltrx, NULL);
-      ITC_IN_MAP (itc);
-      remhash (DP_ADDR2VOID (dp), itc->itc_space->isp_dp_to_buf);
-      buf_release_read_waits (&decoy, RWG_WAIT_DECOY);
-      ITC_LEAVE_MAP (itc);
+      /* if it is absent and needs no finalize, do not read it if not needed. * butmake a decoy for it, as if it was being read.  And if somebody comes in on the decoy, then must actually read the page, so that this looks like a 2nd in read for the thread that waits on the decoy.  If none waits, don't read */
+      it_map_t * itm;
+      ITC_IN_KNOWN_MAP (itc, pl->pl_page);
+      itm = IT_DP_MAP (pl->pl_it, pl->pl_page);
+      if (DP_DELETED != pl->pl_page && !PL_IS_FINALIZE (pl) && !(buf = gethash (DP_ADDR2VOID (pl->pl_page), &itm->itm_dp_to_buf)))
+	{
+	  pl_finalize_absent (pl, itc);
       return;
     }
-
-  if (buf && buf->bd_being_read)
-    TC (tc_finalize_while_being_read);
-
+    }
   do
     {
-      ITC_IN_MAP (itc);
       if (DP_DELETED == pl->pl_page)
 	{
 	  TC (tc_release_pl_on_deleted_dp);
-	  ITC_LEAVE_MAP (itc);
+	  ITC_LEAVE_MAPS (itc);
 	  pl_release (pl, lt, NULL);
 	  return;
 	}
-      page_wait_access (itc, pl->pl_page, NULL, NULL, &buf, PA_WRITE, RWG_WAIT_KEY);
+      ITC_IN_KNOWN_MAP (itc, pl->pl_page);
+      page_wait_access (itc, pl->pl_page, NULL, &buf, PA_WRITE, RWG_WAIT_KEY);
     }
   while (itc->itc_to_reset > RWG_WAIT_KEY);
 
@@ -934,14 +1021,11 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
     {
       /* check needed here because the page could have gone out during the above wait and the wait itself could give 'a no wait status with bad timing  The page map does not serialize the whole delete as atomic. */
       TC (tc_release_pl_on_deleted_dp);
-      ITC_LEAVE_MAP (itc);
+      ITC_LEAVE_MAPS (itc);
       pl_release (pl, lt, NULL);
       return;
     }
 
-  if (PL_IS_FINALIZE (pl)
-      && buf && buf->bd_space != buf->bd_space->isp_tree->it_commit_space)
-    GPF_T1 ("finalizable non-delta'ed page");
   itc->itc_page = pl->pl_page;
   if (PL_IS_PAGE (pl))
     {
@@ -950,6 +1034,8 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 	{
 	  int next_pos = IE_NEXT (buf->bd_buffer + pos);
 	  rc = itc_finalize_row (itc, &buf, pos);
+	  change_leaf_ptr |= rc & LEAF_CHG_MASK;
+	  rc = rc & ~LEAF_CHG_MASK; 
 	  change = MAX (change, rc);
 	  if (PAGE_DELETED == change)
 	    break;
@@ -965,6 +1051,8 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 	if (rl->pl_owner == lt)
 	  {
 	    rc = itc_finalize_row (itc, &buf, rl->rl_pos);
+	    change_leaf_ptr |= rc & LEAF_CHG_MASK;
+	    rc = rc & ~LEAF_CHG_MASK; 
 	    change = MAX (change, rc);
 	    if (PAGE_DELETED == change)
 	      goto rls_done;	/* no break, DO_RLOCKS is 2 nested loops */
@@ -974,8 +1062,6 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
     rls_done:;
     }
 
-  ITC_IN_MAP (itc);
-
   if (change != PAGE_NOT_CHANGED
       && !PL_IS_FINALIZE (pl))
     {
@@ -983,22 +1069,22 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
       dbg_page_map (buf);
       /* GPF_T1 ("Finalize flag not set on page lock"); */
       /* autorepair if page was in checkpoint, make it a delta */
-      if (buf->bd_space != buf->bd_space->isp_tree->it_commit_space)
-	itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
     }
-
+  if (change != PAGE_DELETED && change_leaf_ptr)
+    {
+      pl_release (pl, lt, buf);
+      itc->itc_row_key = itc->itc_insert_key = buf->bd_tree->it_key;
+      itc_fix_leaf_ptr (itc, buf);
+      return;
+    }
+  pl_release (pl, lt, buf);
+  ITC_IN_KNOWN_MAP (itc, itc->itc_page);
   if (change == PAGE_UPDATED)
-    dirty = buf_set_dirty_inside (buf);
+    buf_set_dirty_inside (buf);
   if (change != PAGE_NOT_CHANGED)
     page_mark_change (buf, change == PAGE_UPDATED ? RWG_WAIT_KEY : RWG_WAIT_SPLIT);
-
-  ITC_LEAVE_MAP (itc);
-  pl_release (pl, lt, buf);
-  ITC_IN_MAP (itc);
   page_leave_inner (buf);
-  ITC_LEAVE_MAP (itc);
-  if (dirty)
-    wi_new_dirty (buf);
+  ITC_LEAVE_MAP_NC (itc);
 }
 
 
@@ -1023,23 +1109,28 @@ itc_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_lock
   key_id = SHORT_REF (page + pos + IE_KEY_ID);
   if (key_id)
     {
-      rb_entry_t *rbe = lt_rb_entry (lt, page + pos, NULL, NULL);
+      rb_entry_t *rbe = lt_rb_entry (lt, page + pos, NULL, NULL, 1);
       if (!rbe)
 	{
 	  return PAGE_NOT_CHANGED;
 	}
       if (RB_INSERT == rbe->rbe_op)
 	{
+	  int is_first = itc->itc_position == SHORT_REF (page + DP_FIRST);
+	  itc->itc_row_key = itc->itc_insert_key = (*buf_ret)->bd_tree->it_key;
 	  itc_commit_delete (itc, buf_ret);
 	  if (was_rl)
 	    was_rl->rl_pos = 0;
 	  if (*buf_ret != buf_from)
 	    return PAGE_DELETED;
+	  return PAGE_UPDATED | (is_first ? LEAF_CHG_MASK : 0);
 	}
       else
 	{
 	  short prev_next = IE_NEXT (page + pos);
-	  l = row_reserved_length (page + pos, buf->bd_space->isp_tree->it_key);
+	  if (buf->bd_tree->it_key->key_is_bitmap)
+	    itc_invalidate_bm_crs (itc, *buf_ret, 0, NULL); /** can be registered based on after image that is no longer valid */
+	  l = row_reserved_length (page + pos, buf->bd_tree->it_key);
 	  if (rbe->rbe_row_len > ROW_ALIGN (l))
 	    GPF_T1 ("Space for row is shorter than pre-image");
 	  memcpy (page + pos,
@@ -1062,42 +1153,35 @@ itc_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_lock
 void
 pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
 {
-  int change = PAGE_NOT_CHANGED, rc, dirty = 0;
+  int change = PAGE_NOT_CHANGED, rc, change_leaf_ptr = 0;
   lock_trx_t *lt = itc->itc_ltrx;
-  index_space_t *isp;
-  dp_addr_t phys;
   buffer_desc_t *buf = NULL;
-  ITC_IN_MAP (itc);
+  ITC_IN_KNOWN_MAP (itc, pl->pl_page);
 
   if (DP_DELETED == pl->pl_page)
     {
-      ITC_LEAVE_MAP (itc);
+      ITC_LEAVE_MAP_NC (itc);
       TC (tc_release_pl_on_deleted_dp);
       pl_release (pl, lt, NULL);
       return;
     }
 
 
-  buf = isp_locate_page (pl->pl_it->it_commit_space, pl->pl_page,
-			 &isp, &phys);
-  if (PL_IS_FINALIZE (pl)
-      && buf && !buf->bd_being_read && buf->bd_space != buf->bd_space->isp_tree->it_commit_space)
-    GPF_T1 ("finalizable non-delta'ed page");
   if (buf && buf->bd_being_read)
     TC (tc_finalize_while_being_read);
 
 
   do
     {
-      ITC_IN_MAP (itc);
+      ITC_IN_KNOWN_MAP (itc, pl->pl_page);
       if (DP_DELETED == pl->pl_page)
 	{
 	  TC (tc_release_pl_on_deleted_dp);
-	  ITC_LEAVE_MAP (itc);
+	  ITC_LEAVE_MAPS (itc);
 	  pl_release (pl, lt, NULL);
 	  return;
 	}
-      page_wait_access (itc, pl->pl_page, NULL, NULL, &buf, PA_WRITE, RWG_WAIT_KEY);
+      page_wait_access (itc, pl->pl_page, NULL, &buf, PA_WRITE, RWG_WAIT_KEY);
     }
   while (itc->itc_to_reset > RWG_WAIT_KEY);
 
@@ -1105,13 +1189,9 @@ pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
     {
       /* check needed here because the page could have gone out during the above wait and the wait itself could give 'a no wait status with bad timing  The page map does not serialize the whole delete as atomic. */
       TC (tc_release_pl_on_deleted_dp);
-      ITC_LEAVE_MAP (itc);
+      ITC_LEAVE_MAPS (itc);
       pl_release (pl, lt, NULL);
       return;
-    }
-  if (buf->bd_space == buf->bd_space->isp_tree->it_checkpoint_space)
-    {
-      TC (tc_rollback_cpt_page);
     }
 
   itc->itc_page = pl->pl_page;
@@ -1122,6 +1202,8 @@ pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
 	{
 	  int next_pos = IE_NEXT (buf->bd_buffer + pos);
 	  rc = itc_rollback_row (itc, &buf, pos, NULL, pl);
+	  change_leaf_ptr |= rc & LEAF_CHG_MASK;
+	  rc = rc & ~LEAF_CHG_MASK; 
 	  change = MAX (change, rc);
 	  if (PAGE_DELETED == change)
 	    break;
@@ -1135,6 +1217,8 @@ pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
 	if (rl->pl_owner == lt)
 	  {
 	    rc = itc_rollback_row (itc, &buf, rl->rl_pos, rl, pl);
+	    change_leaf_ptr |= rc & LEAF_CHG_MASK;
+	    rc = rc & ~LEAF_CHG_MASK; 
 	    change = MAX (change, rc);
 	    if (PAGE_DELETED == change)
 	      goto rls_done;	/* not break, DO_RLOCKS is 2 nested loops */
@@ -1143,18 +1227,21 @@ pl_rollback_page (page_lock_t * pl, it_cursor_t * itc)
       END_DO_RLOCK;
     rls_done:;
     }
-  ITC_IN_MAP (itc);
+  if (change != PAGE_DELETED && change_leaf_ptr)
+    {
+      pl_release (pl, lt, buf);
+      itc->itc_row_key = itc->itc_insert_key = buf->bd_tree->it_key;
+      itc_fix_leaf_ptr (itc, buf);
+      return;
+    }
+  pl_release (pl, lt, buf);
+  ITC_IN_KNOWN_MAP (itc, itc->itc_page);
   if (change == PAGE_UPDATED)
-    dirty = buf_set_dirty_inside (buf);
+    buf_set_dirty_inside (buf);
   if (change != PAGE_NOT_CHANGED)
     page_mark_change (buf, change == PAGE_UPDATED ? RWG_WAIT_KEY : RWG_WAIT_SPLIT);
-  ITC_LEAVE_MAP (itc);
-  pl_release (pl, lt, buf);
-  ITC_IN_MAP (itc);
   page_leave_inner (buf);
-  ITC_LEAVE_MAP (itc);
-  if (dirty)
-    wi_new_dirty (buf);
+  ITC_LEAVE_MAP_NC (itc);
 }
 
 
@@ -1189,6 +1276,7 @@ lt_wait_until_dead (lock_trx_t * lt)
   ASSERT_IN_TXN;
   TC (tc_wait_trx_self_kill);
   dk_set_push (&lt->lt_wait_end, (void *) thr);
+  if (!lt->lt_threads) GPF_T1 ("can't wait for self kill of a txn with no thread inside");
   rdbg_printf (("Wait for transact of %s T=%p\n", LT_NAME (lt), lt));
   LEAVE_TXN;
 /*  rdbg_printf (("Wait for transact of %s T=%ld\n", LT_NAME (lt), TRX_NO (lt))); */
@@ -1347,7 +1435,7 @@ lt_transact (lock_trx_t * lt, int op)
       GPF_T1 ("mismatched lt thread counts in lt_transact");
     }
 
-
+  lt->lt_timeout = 0; /* make sure no 2 kills because of timeout detectedby reaper. */
   if (LT_DELTA_ROLLED_BACK == lt->lt_status)
     return;
   if (LT_CLOSING == lt->lt_status)
@@ -1368,38 +1456,36 @@ lt_transact (lock_trx_t * lt, int op)
           lt->lt_client ? lt->lt_client->cli_autocommit : 0);
     }
   lt->lt_status = LT_CLOSING;
-  ITC_INIT (itc, NULL, lt);
 #ifdef PAGE_TRACE
   lt_check_stray_locks (lt, 1);
 #endif
   LEAVE_TXN;
-  itc->itc_is_in_map_sem = 0;
+  ITC_INIT (itc, NULL, lt);
   lt_hi_transact (lt, op);
-  IN_LT_LOCKS;
+  IN_LT_LOCKS (lt);
   pl_set = lt->lt_locks;
   for (;;)
     {
       lt->lt_locks = NULL;
-      LEAVE_LT_LOCKS;
+      LEAVE_LT_LOCKS (lt);
       DO_SET (page_lock_t *, pl, &pl_set)
       {
 	itc->itc_tree = pl->pl_it;
-	itc->itc_space = itc->itc_tree->it_commit_space;
 	if (SQL_COMMIT == op)
 	  pl_finalize_page (pl, itc);
 	else
 	  pl_rollback_page (pl, itc);
-	ITC_LEAVE_MAP (itc);
+	ITC_LEAVE_MAPS (itc);
       }
       END_DO_SET ();
       dk_set_free (pl_set);
-      IN_LT_LOCKS;
+      IN_LT_LOCKS (lt);
       pl_set = lt->lt_locks;
       if (!pl_set)
 	break;
       TC (tc_split_while_committing);
     }
-  LEAVE_LT_LOCKS;
+  LEAVE_LT_LOCKS (lt);
   lt_free_rb (lt);
   lt_blob_transact (itc, op);
   IN_TXN;
@@ -1525,7 +1611,7 @@ rb_entry_eq (db_buf_t row1, db_buf_t row2)
 
 
 rb_entry_t *
-lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_ret)
+lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_ret, int leave_mtx)
 {
   key_id_t key_id = SHORT_REF (row + IE_KEY_ID);
   dbe_key_t * key;
@@ -1536,6 +1622,7 @@ lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_r
   key = sch_id_to_key (wi_inst.wi_schema, key_id);
   rb_code = key_hash_cols (row, key, key->key_key_fixed, HC_INIT);
   rb_code = key_hash_cols (row, key, key->key_key_var, rb_code);
+  mutex_enter (&lt->lt_rb_mtx);
   rbe = (rb_entry_t *) gethash ((void *) (ptrlong) rb_code, lt->lt_rb_hash);
   if (code_ret)
     *code_ret = rb_code;
@@ -1547,9 +1634,15 @@ lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_r
 	GPF_T1 ("rbe paged out");
 
       if (rb_entry_eq (row, rbe->rbe_string + rbe->rbe_row))
+	{
+	  if (leave_mtx)
+	    mutex_leave (&lt->lt_rb_mtx);
 	return rbe;
+	}
       rbe = rbe->rbe_next;
     }
+  if (leave_mtx)
+    mutex_leave (&lt->lt_rb_mtx);
   return NULL;
 }
 
@@ -1560,6 +1653,7 @@ lt_rb_new_entry (lock_trx_t * lt, long rb_code, rb_entry_t * prev,
 {
   NEW_VARZ (rb_entry_t, rbe);
   ent_len = ROW_ALIGN (ent_len);
+  ASSERT_IN_MTX (&lt->lt_rb_mtx);
   if (!prev)
     sethash ((void *) (ptrlong) rb_code, lt->lt_rb_hash, (void *) (ptrlong) rbe);
   else
@@ -1591,12 +1685,13 @@ lt_rb_insert (lock_trx_t * lt, db_buf_t row)
   rb_entry_t *rbe;
   if (lt->lt_is_excl)
     return;
-  rbe = lt_rb_entry (lt, row, &rb_code, &prev);
+  rbe = lt_rb_entry (lt, row, &rb_code, &prev, 0);
   if (!rbe)
     {
       key_len = row_length (row, sch_id_to_key (wi_inst.wi_schema, SHORT_REF (row + IE_KEY_ID)));
       lt_rb_new_entry (lt, rb_code, prev, row, (short) key_len, RB_INSERT);
     }
+  mutex_leave (&lt->lt_rb_mtx);
 }
 
 
@@ -1609,7 +1704,7 @@ lt_no_rb_insert (lock_trx_t * lt, db_buf_t row)
   rb_entry_t *rbe;
   if (lt->lt_is_excl)
     return;
-  rbe = lt_rb_entry (lt, row, &rb_code, &prev);
+  rbe = lt_rb_entry (lt, row, &rb_code, &prev, 0);
   if (!rbe)
     GPF_T1 ("no rb entry when removing insert rb entry");
   prev = (rb_entry_t *)gethash ((void*)(ptrlong)rb_code, lt->lt_rb_hash);
@@ -1632,6 +1727,7 @@ lt_no_rb_insert (lock_trx_t * lt, db_buf_t row)
       GPF_T1("rbe ent not found in rem rb entry");
     }
  end:
+  mutex_leave (&lt->lt_rb_mtx);
   dk_free ((caddr_t) rbe, sizeof (rb_entry_t));
 }
 
@@ -1643,12 +1739,13 @@ lt_rb_update (lock_trx_t * lt, db_buf_t row)
   int row_len;
   long rb_code;
   rb_entry_t *prev;
-  rb_entry_t *rbe = lt_rb_entry (lt, row, &rb_code, &prev);
+  rb_entry_t *rbe = lt_rb_entry (lt, row, &rb_code, &prev, 0);
   if (!rbe)
     {
       row_len = row_length (row, sch_id_to_key (wi_inst.wi_schema, SHORT_REF (row + IE_KEY_ID)));
       lt_rb_new_entry (lt, rb_code, prev, row, row_len, RB_UPDATE);
     }
+  mutex_leave (&lt->lt_rb_mtx);
 }
 
 

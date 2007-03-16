@@ -1146,12 +1146,12 @@ qi_read_type_schema_1 (query_instance_t * qi, char *read_udt,
       dk_set_free (derived_set);
     }
   if (!err)
-    err = isp_read_object_dd (NULL, lt, sc);
+    err = it_read_object_dd (lt, sc);
   if (err)
     return err;
   if (!udt)
     return NULL;
-  err = sec_read_grants (qi->qi_client, qi, NULL, read_udt, 0);
+  err = sec_read_grants (qi->qi_client, qi, read_udt, 0);
   return err;
 }
 
@@ -3625,8 +3625,8 @@ udt_i_find_member_address (caddr_t *qst, state_slot_t *actual_ssl,
     {
       if (c_ins >= ins)
 	break;
-      if (c_ins->ins_type == INS_CALL && c_ins->_.call.ret == actual_ssl &&
-	  c_ins->_.call.bif == bif_udt_member_handler &&
+      if (c_ins->ins_type == INS_CALL_BIF && c_ins->_.call.ret == actual_ssl &&
+	  c_ins->_.bif.bif == bif_udt_member_handler &&
 	  BOX_ELEMENTS (c_ins->_.call.params) == 3)
 	{
 	  caddr_t udi = qst_get (qst, c_ins->_.call.params[2]);

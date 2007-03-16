@@ -28,9 +28,8 @@
  *  
 */
 
-#include "wi.h"
+#include "sqlnode.h"
 #include "sqlver.h"
-
 
 /*
  *  These are the global variables that are set through the config file
@@ -84,6 +83,7 @@ int n_oldest_flushable;
 int null_bad_dtp;
 int atomic_dive = 0;
 int dive_pa_mode = PA_READ;
+int default_txn_isolation = ISO_REPEATABLE;
 int prefix_in_result_col_names;
 int disk_no_mt_write;
 char *db_name;
@@ -117,6 +117,7 @@ char *run_as_os_uname = NULL;
 
 int32 c_checkpoint_sync = 2;
 int c_use_o_direct = 0;
+int c_use_aio = 0;
 
 void _db_read_cfg (dbe_storage_t * dbs, char *mode);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);
@@ -234,8 +235,8 @@ _cfg_set_checkpoint_interval (int32 f)
   FILE *cfg = fopen (CFG_FILE, "r");
   while (fgets (cfg_line, sizeof (cfg_line), cfg))
     {
-      if (1 == sscanf (cfg_line, "\nautocheckpoint: %ld", &f_val))
-	snprintf (cfg_line, sizeof (cfg_line), "autocheckpoint: %ld\n", f);
+      if (1 == sscanf (cfg_line, "\nautocheckpoint: %d", &f_val))
+	snprintf (cfg_line, sizeof (cfg_line), "autocheckpoint: %d\n", f);
       dk_set_push (&lines, (void *) box_string (cfg_line));
     }
   fclose (cfg);
@@ -304,7 +305,9 @@ void
 srv_client_defaults_init (void)
 {
   client_defaults = (caddr_t)
-    list (14,
+    list (16,
+	  box_string ("SQL_TXN_ISOLATION"),
+	  box_num (default_txn_isolation),
 	  box_string ("SQL_PREFETCH_ROWS"),
 	  box_num (cli_prefetch),
 	  box_string ("SQL_PREFETCH_BYTES"),
@@ -474,6 +477,12 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   main_bufs = (int) (ptrlong) cfg_get_parm (wholefile, "\nnumber_of_buffers:", 0);
   cf_lock_in_mem = (int) (ptrlong) cfg_get_parm (wholefile, "\nlock_in_mem:", 0);
   atomic_dive = (int) (ptrlong) cfg_get_parm (wholefile, "\natomic_dive:", 0);
+  if (2 == atomic_dive)
+    {
+      dive_pa_mode = PA_WRITE;
+    }
+  atomic_dive = 0;
+      
   max_dirty = (int) (ptrlong) cfg_get_parm (wholefile, "\nmax_dirty_buffers:", 0);
   wi_inst.wi_max_dirty = max_dirty;
   if (cfg_get_parm (wholefile, "\nautocorrect_links:", 0))
@@ -553,12 +562,12 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   cli_no_system_tables = (long) (ptrlong) cfg_get_parm (wholefile, "\nSQL_NO_SYSTEM_TABLES:", 0);
   if (!cli_prefetch)
     cli_prefetch = 20;
-  srv_client_defaults_init ();
 
   crashdump_start_dp = (dp_addr_t) (ptrlong) cfg_get_parm (wholefile, "\ncrashdump_start_dp:", 0);
   crashdump_end_dp = (dp_addr_t) (ptrlong) cfg_get_parm (wholefile, "\ncrashdump_end_dp:", 0);
   c_checkpoint_sync = (int) (ptrlong) cfg_get_parm (wholefile, "\ncheckpoint_sync_mode:", 0);
   c_use_o_direct = (int) (ptrlong) cfg_get_parm (wholefile, "\nuse_o_direct:", 0);
+  c_use_aio = (int) (ptrlong) cfg_get_parm (wholefile, "\nuse_aio:", 0);
   null_unspecified_params = (long) (ptrlong) cfg_get_parm(wholefile, "\nnull_unspecified_params:", 0);
   COND_PARAM("\ncase_mode:", case_mode);
   COND_PARAM("\ndo_os_calls:", do_os_calls);
@@ -670,6 +679,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   if (!txn_after_image_limit)
     txn_after_image_limit = 50000000L;
   COND_PARAM_WITH_DEFAULT("\nmax_optimize_layouts:", sqlo_max_layouts, 1000);
+  COND_PARAM_WITH_DEFAULT("\nmax_optimize_memory:", sqlo_max_mp_size, 10000000);
   COND_PARAM_WITH_DEFAULT("\ntemp_allocation_pct:", helper, 30);
   wi_inst.wi_temp_allocation_pct = (short) helper;
   if (wi_inst.wi_temp_allocation_pct > 100)
@@ -677,6 +687,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   else if (wi_inst.wi_temp_allocation_pct < 0)
     wi_inst.wi_temp_allocation_pct = 30;
 
+  COND_PARAM_WITH_DEFAULT("\ndefault_txn_isolation:", default_txn_isolation, ISO_REPEATABLE);
   COND_PARAM_WITH_DEFAULT("\nsql_compile_on_startup:", sql_proc_use_recompile, 1);
   COND_PARAM_WITH_DEFAULT("\nreqursive_ft_usage:", recursive_ft_usage, 1);
   COND_PARAM_WITH_DEFAULT("\nreqursive_trigger_calls:", recursive_trigger_calls, 1);
@@ -687,6 +698,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   COND_PARAM_WITH_DEFAULT("\nauto_sql_stats:", dbe_auto_sql_stats, 0);
 
   srv_plugins_init();
+  srv_client_defaults_init ();
 }
 
 

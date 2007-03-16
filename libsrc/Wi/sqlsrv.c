@@ -315,8 +315,6 @@ int check_os_user (caddr_t u_sys_name, caddr_t u_sys_pwd)
 void
 lt_wait_until_alone (lock_trx_t * lt)
 {
-  dk_mutex_t *lock_mtx = wi_inst.wi_txn_mtx;
-
   while (lt->lt_threads > 1)
     {
       GPF_T1 ("Invalid lt_threads count on lt");
@@ -348,11 +346,11 @@ lt_leave (lock_trx_t * lt)
   END_DO_SET();
 #endif
   CHECK_DK_MEM_RESERVE (lt);
-  if (LT_FREEZE == lt->lt_status
-      && ! LT_HAS_DELTA (lt))
+  if (LT_FREEZE == lt->lt_status)
     {
       rdbg_printf (("Trx T=%ld Freeze ack in lt_leave\n", TRX_NO (lt)));
       lt_ack_freeze_inner (lt);
+      rc = LTE_OK;
     }
   else if (LT_BLOWN_OFF == lt->lt_status
       || LT_CLOSING == lt->lt_status
@@ -368,9 +366,6 @@ lt_leave (lock_trx_t * lt)
 
   ASSERT_IN_TXN;
   lt_threads_dec_inner (lt);
-  if (lt->lt_threads <= 1
-      && lt->lt_thread_waiting_exclusive)
-    semaphore_leave (lt->lt_thread_waiting_exclusive->thr_sem);
   return rc;
 }
 
@@ -381,36 +376,14 @@ lt_close (lock_trx_t * lt, int fcommit)
   int rc;
   ASSERT_OUTSIDE_MTX (lt->lt_client->cli_mtx);
   ASSERT_IN_TXN;
-  if (lt->lt_being_closed)
-    {
-      lt_leave (lt);
-      return lt->lt_error;
-    }
-  lt->lt_being_closed = 1;
-  if (lt->lt_threads > 1)
-    {
-      du_thread_t *self = THREAD_CURRENT_THREAD;
-      if (SQL_ROLLBACK == fcommit)
-	/* other threads seeing this will terminate asap */
-	lt->lt_status = LT_BLOWN_OFF;
-
-      lt->lt_thread_waiting_exclusive = self;
-      dbg_printf (("txn going to close wait\n"));
-      LEAVE_TXN;
-      semaphore_enter (self->thr_sem);
-    }
-  else
-    LEAVE_TXN;
-  IN_TXN;
   lt_threads_set_inner (lt, 1);
   if (SQL_COMMIT == fcommit)
-    rc = lt_commit (lt, TRX_CONT);
+    rc = lt_commit (lt, TRX_CONT_LT_LEAVE);
   else
     {
       rc = lt->lt_error;
-      lt_rollback (lt, TRX_CONT);
+      lt_rollback (lt, TRX_CONT_LT_LEAVE);
     }
-  lt_leave (lt);
   return rc;
 }
 
@@ -795,8 +768,6 @@ cli_set_default_qual (client_connection_t * cli)
 
 long srv_connect_ctr = 0;
 long srv_max_clients;
-time_t __EXP_TIME = 0;
-int srv_max_connections = MAX_SESSIONS;
 
 static dk_mutex_t *logins_mutex = NULL;
 static dk_hash_t *logins_hash = NULL;
@@ -831,12 +802,18 @@ srv_delete_login (client_connection_t *cli)
 static void
 srv_add_login (client_connection_t *cli)
 {
+  uint32 nlogons;
+
   mutex_enter (logins_mutex);
 #ifndef NDEBUG
   if (gethash (cli, logins_hash))
     GPF_T1 ("adding a logon twice");
 #endif
   sethash (cli, logins_hash, cli);
+  srv_connect_ctr++;
+  nlogons = logins_hash->ht_count;
+  if ((long) nlogons > srv_max_clients)
+    srv_max_clients = nlogons;
   mutex_leave (logins_mutex);
 }
 
@@ -953,19 +930,6 @@ srv_client_session_died (dk_session_t * ses)
 
   DKS_DB_DATA (ses) = NULL;
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, NULL);
-}
-
-
-static int
-srv_is_max_connections (void)
-{
-  uint32 n = srv_get_n_logons ();
-
-  srv_connect_ctr++;
-  if (((long)n) > srv_max_clients)
-    srv_max_clients = n;
-
-  return (((int) (n + http_threads)) > srv_max_connections);
 }
 
 
@@ -1129,6 +1093,10 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
       dk_free_box (cli_ver);
       if (!user || !sec_user_has_group (0, user->usr_g_id))
 	{
+	  if (!user)
+	    err = srv_make_new_error ("28000", "SR311",
+		"Bad login");
+	  else
 	  err = srv_make_new_error ("08004", "SR311",
 	      "Shutting down the server permitted only to DBA group");
 	  DKST_RPC_DONE (client);
@@ -1146,25 +1114,34 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
       return 0;
     }
 
-  if (srv_is_max_connections ())
+
+  if (user)
     {
-      thrs_printf ((thrs_fo, "ses %p thr:%p in connect4\n", client, THREAD_CURRENT_THREAD));
+      if (!info && !sec_check_info (user, NULL, 0, NULL, NULL))
+	user = NULL;
+      else if (info && !sec_check_info (user, info[LGID_APP_NAME],
+	      (long) unbox (info[LGID_PID]), info[LGID_MACHINE], info[LGID_OS]))
+	{
+	  thrs_printf ((thrs_fo, "ses %p thr:%p in connect5\n", client, THREAD_CURRENT_THREAD));
       DKST_RPC_DONE (client);
       if (cli_ver && ODBC_DRV_VER_G_NO (cli_ver) >= 1619)
 	{
-	  caddr_t err = srv_make_new_error ("08004", "SR207",
-	      "Maximum licensed connections exceeded");
+	      caddr_t err = srv_make_new_error ("08004", "LI101",
+		  "Application access not licensed");
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
 	  dk_free_tree (err);
 	}
       else
 	PrpcAddAnswer ((caddr_t) 0, DV_ARRAY_OF_POINTER, FINAL, 1);
       dk_free_box (cli_ver);
+	  PrpcDisconnect (client);
 
+	  log_error ("Application access not licensed for %s@%s.%s",
+		user->usr_name, info[LGID_MACHINE], info[LGID_APP_NAME]);
       client_connection_free (cli);
       DKS_DB_DATA (client) = NULL;
-      log_error ("Exceeded maximum number of licensed connections");
       return 0;
+    }
     }
 
   if (!user)
@@ -2261,7 +2238,7 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
       if (qi->qi_threads > 1)
 	{
 	  du_thread_t *self = THREAD_CURRENT_THREAD;
-	  qi->qi_terminate_requested = 1;
+	  cli->cli_terminate_requested = 1;
 	  qi->qi_threads--;
 	  qi->qi_thread_waiting_termination = self;
 	  dbg_printf (("sf_sql_free_stmt going to wait for termination\n"));
@@ -2327,7 +2304,7 @@ cli_transact (client_connection_t * cli, int op, caddr_t * replicate)
 
   LEAVE_CLIENT (cli);
   rc = lt_close (lt, op);
-  LEAVE_TXN;
+  /* lt_close leaves the txn mtx */
   if (rc == LTE_OK)
     {
       res = SQL_SUCCESS;
@@ -2725,9 +2702,6 @@ sf_shutdown (char *log_name, lock_trx_t * trx)
     (*db_exit_hook) ();
   call_exit (0);
 }
-
-
-int check_license (void);
 
 
 void
@@ -3578,8 +3552,6 @@ srv_global_init (char *mode)
   PrpcSetInprocessHooks (sql_inprocess_enter, sql_inprocess_leave);
 #endif
 
-  /* note: this call sets srv_max_connections on success */
-
   /* crashdump log_init (on the command line NEW) */
   if (f_read_from_rebuilt_database)
     {
@@ -3614,6 +3586,7 @@ srv_global_init (char *mode)
       return;
     }
   ddl_scheduler_init ();
+  
   ddl_repl_init ();
 
   ddl_fk_init ();
@@ -3627,17 +3600,17 @@ srv_global_init (char *mode)
   rdf_core_init ();
   sparql_init ();
 #endif
+  http_init_part_one ();
   ddl_init_plugin ();
   if (!strchr (mode, 'a'))
     {
-
       sec_read_users ();
-      sec_read_grants (NULL, NULL, NULL, NULL, 0);
+      sec_read_grants (NULL, NULL, NULL, 0);
       sec_read_tb_rls (NULL, NULL, NULL);
       sinv_read_sql_inverses (NULL, bootstrap_cli);
       read_proc_tables (1);
       read_proc_tables (0);
-      sec_read_grants (NULL, NULL, NULL, NULL, 1); /* call second time to do read of execute grants */
+      sec_read_grants (NULL, NULL, NULL, 1); /* call second time to do read of execute grants */
       ddl_standard_procs ();
 #if REPLICATION_SUPPORT
       repl_init ();
@@ -3647,13 +3620,12 @@ srv_global_init (char *mode)
   ddl_obackup_init ();
 
   ddl_ensure_stat_tables ();
-  http_init_part_one ();
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, bootstrap_cli);
   if (!in_crash_dump)
     sql_code_global_init ();
   /* and a third time to process grants over the sqls_define procs */
   if (!strchr (mode, 'a'))
-    sec_read_grants (NULL, NULL, NULL, NULL, 1);
+    sec_read_grants (NULL, NULL, NULL, 1);
   if (ddl_init_hook)
     ddl_init_hook (bootstrap_cli);
   local_commit (bootstrap_cli);

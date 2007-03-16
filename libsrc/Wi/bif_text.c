@@ -327,6 +327,30 @@ bif_vt_is_noise  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+void
+vt_word_string_ends  (db_buf_t str, d_id_t * d_id_1, d_id_t * d_id_2)
+{
+  /* string, out first, out last */
+  int l, hl;
+    int pos = 0;
+  d_id_t first;
+  int total = box_length (str) - 1;
+  d_id_t * id = NULL;
+
+  D_SET_AT_END (&first);
+  while (pos < total)
+    {
+      WP_LENGTH (str + pos, hl, l);
+      id = (d_id_t *) (str + pos + hl);
+      if (D_AT_END (&first))
+	d_id_set (&first, id);
+      pos += l + hl;
+    }
+  d_id_set (d_id_1, &first);
+  d_id_set (d_id_2, id);
+}
+
+
 caddr_t
 bif_vt_word_string_ends  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -351,6 +375,33 @@ bif_vt_word_string_ends  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   qst_set (qst, args[1], box_d_id (&first));
   qst_set (qst, args[2], box_d_id (&last));
   return 0;
+}
+
+
+caddr_t
+bif_wb_all_done  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* word batch, out firest d_id, out flag true if more than 1 left */
+  d_id_t d_id_1;
+  d_id_t d_id_2;
+  caddr_t * wb = (caddr_t *) bif_array_arg (qst, args, 0, "wb_all_done");
+  int inx;
+  int len = BOX_ELEMENTS (wb);
+  for (inx = 0; inx < len; inx++)
+    {
+      caddr_t wst = wb[inx];
+      if (DV_STRINGP (wst))
+	{
+	  vt_word_string_ends (wst, &d_id_1, &d_id_2);
+	  qst_set (qst, args[1], box_d_id (&d_id_1));
+	  if (inx < len - 1)
+	    qst_set (qst, args[2], box_num (1));
+	  else 
+	    qst_set (qst, args[2], box_num (0));
+	  return box_num (0);
+	}
+    }
+  return box_num (1);
 }
 
 
@@ -1930,7 +1981,7 @@ static char *vt_free_text_proc_gen_text =
 "	\'    select VT_D_ID, VT_DATA, VT_LONG_DATA  from \"%I\".\"%I\".\"%I\" TABLE OPTION (INDEX PRIMARY KEY) where VT_WORD = word and VT_D_ID <= d_id\\\n\', name_part (full_words_table,0), name_part (full_words_table,1), name_part (full_words_table,2)), \n"
 "	\'       order by VT_WORD desc, VT_D_ID desc; \n"
 "	   n_w := n_w + length (wb); \n"
-"	   while (0 = DB.DBA.wb_all_done (wb, d_id, several_left))\n"
+"	   while (0 = wb_all_done_bif (wb, d_id, several_left))\n"
 "	     {\n"
 "	       chunk_d_id := 0;\n"
 "	       whenever not found goto first;\n"
@@ -2044,7 +2095,7 @@ static char *vt_free_text_proc_gen_text =
 "  DB.DBA.execstr (text_value);\n"
 "\n"
 "  text_value := \n"
-"	  sprintf (\'create procedure \"%I\".\"%I\".\"VT_HITS_%I\" (in vtb any, in invd any) {return;}\',\n"
+"	  sprintf (\'create procedure \"%I\".\"%I\".\"VT_HITS_%I\" (inout vtb any, inout invd any) {return;}\',\n"
 "	  name_part(_data_table,0),name_part(_data_table,1),name_part (_data_table,2));\n"
 "  DB.DBA.execstr (text_value);\n"
 "\n"
@@ -3011,7 +3062,7 @@ bif_text_init (void)
 {
   bif_define ("vt_word_string_ends", bif_vt_word_string_ends);
   bif_define ("vt_word_string_details", bif_vt_word_string_details);
-
+  bif_define_typed ("wb_all_done_bif", bif_wb_all_done, &bt_integer);
   bif_define ("vt_batch", bif_vt_batch);
   bif_define ("vt_batch_d_id", bif_vt_batch_d_id);
   bif_define ("vt_batch_alpha_range", bif_vt_batch_alpha_range);
@@ -3057,11 +3108,11 @@ ddl_text_init (void)
 
   if (tb && tb_name_to_column (tb, LAST_FTI_COL))
     ddl_std_proc (vt_create_text_index_text, 0);
-  ddl_std_proc (wb_all_done_text, 0);
   ddl_std_proc (vt_get_gz_wordump_ex_text_0, 0);
   ddl_std_proc (vt_get_gz_wordump_ex_text, 0);
   ddl_std_proc (vt_free_text_proc_gen_text, 0);
   ddl_std_proc (vt_clear_free_text_index_text, 1);
+  ddl_std_proc (wb_all_done_text, 0);
   ddl_std_proc (vt_create_update_log_text, 0);
 }
 

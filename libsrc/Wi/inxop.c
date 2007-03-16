@@ -54,16 +54,19 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
   /* set by pl, see if on same page. If not, 
    * do full lookup.  If asc order, a negative can be confirmed on local page if max of page less than key sought.*/
   int res;
-  ITC_IN_MAP (itc);
-  page_wait_access (itc, pl->itc_page, NULL, NULL, buf_ret, PA_READ, RWG_WAIT_DATA);
+#ifdef ADAPTIVE_LAND
+  itc->itc_dive_mode = PA_WRITE;
+  /* this is likely a leaf.  Get excl.  There will be no automatic registration in page_wait_access because there is no buf_from here */
+#endif
+  ITC_IN_VOLATILE_MAP (itc, pl->itc_page);
+  page_wait_access (itc, pl->itc_page, NULL, buf_ret, itc->itc_dive_mode, RWG_WAIT_DATA);
   if (itc->itc_to_reset <= RWG_WAIT_DATA
       && (*buf_ret)->bd_content_map->pm_count)
     {
       page_map_t * pm = (*buf_ret)->bd_content_map;
       if (itc == (it_cursor_t *) pl)
 	{
-	  ITC_IN_MAP (itc);
-	  itc_unregister (itc, INSIDE_MAP);
+	  itc_unregister_inner (itc, *buf_ret);
 	}
       else 
 	{
@@ -72,7 +75,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
       itc->itc_landed = 0;
       if (is_asc)
 	{
-	  ITC_LEAVE_MAP (itc);
+	  ITC_LEAVE_MAPS (itc);
 	  res = pg_key_compare (*buf_ret, pm->pm_entries[pm->pm_count - 1], itc);
 	  if (DVC_GREATER == res || DVC_MATCH == res)
 	    {
@@ -81,8 +84,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
 	      (*n_hits)++; /* hit for purposes of locality whether data found or not */
 	      return res;
 	    }
-	  ITC_IN_MAP (itc);
-	  page_leave_inner (*buf_ret);
+	  page_leave_outside_map (*buf_ret);
 	}
       else 
 	{
@@ -92,13 +94,11 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
 	      (*n_hits)++;
 	      return res;
 	    }
-	  ITC_IN_MAP (itc);
-	  page_leave_inner (*buf_ret);
+	  page_leave_outside_map (*buf_ret);
 	}
     }
-  ITC_IN_MAP (itc);
   if (itc == (it_cursor_t *) pl)
-    itc_unregister (itc, INSIDE_MAP);
+    itc_unregister (itc);
   *buf_ret = itc_reset (itc);
   res = itc_next (itc, buf_ret);
   return res;
@@ -115,7 +115,7 @@ itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst,
   int res;
   if (!il->il_n_read)
     GPF_T1 ("il not inited.");
-  if (pl && pl->itc_space_registered 
+  if (pl && pl->itc_is_registered 
       && n > 3 && n / (hits | 1) < 3)
     {
       res = itc_near_random (itc, pl, buf_ret,
@@ -297,7 +297,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	      /* now it could be landed past the last bit of the bitmap whose range corresponds to the spec.  Can be one after that.  If still no next then really at end of range. */
 	      int rc2;
 	      itc->itc_is_on_row = 1; /*force one step fwd */
-	      itc->itc_specs = itc->itc_insert_key->key_bm_ins_leading;
+	      itc->itc_key_spec = itc->itc_insert_key->key_bm_ins_leading;
 	      itc->itc_bm_col_spec = NULL;
 	      rc2 = itc_next (itc, &buf);
 	      if (DVC_INDEX_END == rc2 || (DVC_GREATER == rc2 && itc->itc_bp.bp_at_end))
@@ -323,8 +323,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
       FAILCK (itc);
       if (DVC_MATCH == rc)
 	{
-	  ITC_IN_MAP (itc);
-	  itc_register_cursor (itc, INSIDE_MAP);
+	  itc_register (itc, buf);
 	  itc_page_leave (itc, buf);
 	  return IOP_ON_ROW;
 	}
@@ -339,8 +338,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 		  /* the bp_value is the next higher.  Set the ssl by it. */
 		  itc->itc_is_on_row = 1; /* set this so that next operation, should the other itc match, will advance and not repeat this same row */
 		  inxop_set_bm_ssl (iop, itc, qst);
-		  ITC_IN_MAP (itc);
-		  itc_register_cursor (itc, INSIDE_MAP);
+		  itc_register (itc, buf);
 		  itc_page_leave (itc, buf);
 		  return IOP_NEW_VAL;
 		}
@@ -402,19 +400,19 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
     {
     case IOP_START:
     case IOP_NEXT:
-      is_nulls = ks_make_spec_list (itc, iop->iop_ks_start_spec, qst);
+      is_nulls = ks_make_spec_list (itc, iop->iop_ks_start_spec.ksp_spec_array, qst);
       itc->itc_search_par_fill = itc->itc_insert_key->key_n_significant;
       /* set the fill to be like full eq of all parts because the row spec is so laid out that it presupposes the full eq  search spec to precede it. */
       is_nulls |= ks_make_spec_list (itc, iop->iop_ks_row_spec, qst);
-      itc->itc_specs = iop->iop_ks_start_spec;
+      itc->itc_key_spec = iop->iop_ks_start_spec;
       itc->itc_row_specs = iop->iop_ks_row_spec;
       break;
     case IOP_TARGET:
-      is_nulls = ks_make_spec_list (itc, iop->iop_ks_full_spec, qst);
+      is_nulls = ks_make_spec_list (itc, iop->iop_ks_full_spec.ksp_spec_array, qst);
       if (is_nulls)
 	{
 	  int res;
-	  if (itc->itc_space_registered)
+	  if (itc->itc_is_registered)
 	    return IOP_AT_END; /*found something already, type no longer castable but was, so no more hits possible */
 	  res = inxop_next (iop, qi, IOP_START, ts);
 	  if (IOP_ON_ROW == res)
@@ -422,7 +420,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	  return IOP_AT_END;
 	}
       is_nulls |= ks_make_spec_list (itc, iop->iop_ks_row_spec, qst);
-      itc->itc_specs = iop->iop_ks_full_spec;
+      itc->itc_key_spec = iop->iop_ks_full_spec;
       itc->itc_row_specs = iop->iop_ks_row_spec;
       break;
     }
@@ -491,8 +489,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
       
       if (DVC_MATCH == rc)
 	{
-	  ITC_IN_MAP (itc);
-	  itc_register_cursor (itc, INSIDE_MAP);
+	  itc_register (itc, buf);
 	  itc_page_leave (itc, buf);
 	  return IOP_ON_ROW;
 	}
@@ -504,7 +501,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	    {
 	      if (DVC_LESS == rc)
 		{
-		  itc->itc_specs = iop->iop_ks_start_spec;
+		  itc->itc_key_spec = iop->iop_ks_start_spec;
 		  itc->itc_is_on_row = 1;  /* force it to go one forward */
 		  rc2 = itc_next (itc, &buf);
 		  if (DVC_GREATER == rc2 || DVC_INDEX_END == rc2)
@@ -515,8 +512,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 		  if (DVC_MATCH == rc2)
 		    {
 		      /* the iop_out ssls are set because they are the ks:iouyt_ssls */
-		      ITC_IN_MAP (itc);
-		      itc_register_cursor (itc, INSIDE_MAP);
+		      itc_register (itc, buf);
 		      itc_page_leave (itc, buf);
 		      return IOP_NEW_VAL;
 		    }
@@ -531,7 +527,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 	      if (DVC_GREATER == rc)
 		{
 		  /* if mismatch in given or in free parts */
-		  itc->itc_specs = iop->iop_ks_start_spec;
+		  itc->itc_key_spec = iop->iop_ks_start_spec;
 		  rc2 = itc_next (itc, &buf);
 		  if (DVC_GREATER == rc2)
 		    {
@@ -540,8 +536,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 		    }
 		  else  if (DVC_MATCH == rc2)
 		    {
-		      ITC_IN_MAP (itc);
-		      itc_register_cursor (itc, INSIDE_MAP);
+		      itc_register (itc, buf);
 		      itc_page_leave (itc, buf);
 		      return IOP_NEW_VAL;
 		    }
@@ -698,16 +693,8 @@ inx_op_source_input (table_source_t * ts, caddr_t * inst,
 	  else
 	    {
 	      /* We joined with the primary key row. */
-	      ts_set_placeholder (ts, state, main_itc, main_buf);
-	      ITC_FAIL (main_itc)
-	      {
+	      ts_set_placeholder (ts, state, main_itc, &main_buf);
 		itc_page_leave (main_itc, main_buf);
-	      }
-	      ITC_FAILED
-	      {
-		itc_free (main_itc);
-	      }
-	      END_FAIL (main_itc);
 	      itc_free (main_itc);
 	    }
 	}

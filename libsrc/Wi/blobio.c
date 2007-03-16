@@ -400,6 +400,22 @@ bh_copy (caddr_t box)
   return (caddr_t) bhcopy;
 }
 
+
+caddr_t
+bh_mp_copy (mem_pool_t * mp, caddr_t box)
+{
+  blob_handle_t *bh = (blob_handle_t *) box;
+  blob_handle_t *bhcopy = mp_alloc_box (mp, sizeof (blob_handle_t), box_tag (box));
+  memcpy (bhcopy, bh, sizeof (*bhcopy));
+  bhcopy->bh_pages = (dp_addr_t *) mp_box_copy (mp, (caddr_t) bhcopy->bh_pages);
+  bh->bh_source_session = NULL;
+  bhcopy->bh_state.buffer = mp_full_box_copy_tree (mp, bhcopy->bh_state.buffer);
+  if (bh->bh_ask_from_client == 2 || bh->bh_ask_from_client == 2)
+    bhcopy->bh_ask_from_client = 0;
+  return (caddr_t) bhcopy;
+}
+
+
 static int
 symbol_write (char * string, dk_session_t * session)
 {
@@ -573,9 +589,9 @@ blobio_init (void)
   PrpcSetWriter (DV_COMPOSITE, (ses_write_func) print_composite);
   dk_mem_hooks (DV_COMPOSITE, comp_copy, comp_destroy, 0);
   /* Hooks added for BLOB handlers to process page directories */
-  dk_mem_hooks (DV_BLOB_HANDLE, bh_copy, bh_destroy, 0);
-  dk_mem_hooks (DV_BLOB_XPER_HANDLE, bh_copy, bh_destroy, 0);
-  dk_mem_hooks (DV_BLOB_WIDE_HANDLE, bh_copy, bh_destroy, 0);
+  dk_mem_hooks_2 (DV_BLOB_HANDLE, bh_copy, bh_destroy, 0, bh_mp_copy);
+  dk_mem_hooks_2 (DV_BLOB_XPER_HANDLE, bh_copy, bh_destroy, 0, bh_mp_copy);
+  dk_mem_hooks_2 (DV_BLOB_WIDE_HANDLE, bh_copy, bh_destroy, 0, bh_mp_copy);
 
   PrpcSetWriter (DV_SYMBOL, (ses_write_func) symbol_write);
   rt[DV_SYMBOL] = box_read_symbol;

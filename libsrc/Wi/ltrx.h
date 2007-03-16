@@ -148,18 +148,27 @@ do { \
 
 typedef struct lock_trx_s
   {
+    char			lt_status;
+    char			lt_mode;  /* lock / snapshot  */
+    char			lt_is_excl;
+    char			lt_error;
+    int			lt_threads;
+    dk_mutex_t		lt_locks_mtx;
+    dk_mutex_t		lt_rb_mtx;
+    dk_mutex_t *	lt_log_mtx;
+    dk_hash_t *		lt_rb_hash;
+    dk_hash_t *		lt_dirty_blobs;	/* Hashtable of blobs modified by transaction, some are deld at commit, others at rollback */
 
-    int			lt_status;
-    int			lt_mode;  /* lock / snapshot  */
-    int			lt_is_excl;
-    int			lt_error;
-    int			lt_isolation;
-    int			lt_being_closed;
+    dk_session_t *	lt_log;
+    dk_set_t		lt_remotes;
+
+
+    /* all below members are considerd data area and cleared with memset in lt_cleare, saving individual ones as needed */
+#define LT_DATA_AREA_FIRST lt_locks
     dk_set_t		lt_locks;
     dk_set_t		lt_waits_for;
     dk_set_t		lt_waiting_for_this;
     long		lt_age;
-    int			lt_threads;
 #ifdef CHECK_LT_THREADS
     const char *	lt_enter_file;
     int	        	lt_enter_line;
@@ -173,18 +182,11 @@ typedef struct lock_trx_s
     long		lt_timeout;
     long		lt_started;
 
-    dk_mutex_t *	lt_log_mtx;
     caddr_t *		lt_replicate;
     int                 lt_repl_is_raw;
-    dk_session_t *	lt_log;
     int			lt_log_fd;
     caddr_t		lt_log_name;
-    dk_set_t		lt_blob_log; /* pdl of blob start addresses to log. Zero if
-				      * a blob in question is deleted later in the
-				      * same trx */
-    dk_hash_t *		lt_dirty_blobs;	/* Hashtable of blobs modified by transaction,
-					 * which should be deleted at commit time
-					 * and/or at rollback time */
+    dk_set_t		lt_blob_log; /* pdl of blob start addresses to log. Zero if overwritten in the same trx */
     char		lt_timestamp[DT_LENGTH];
     dk_session_t *	lt_backup;  /* if running an online backup,
 				     * the session to the backup device */
@@ -195,11 +197,8 @@ typedef struct lock_trx_s
 					    * log file or 0 if no blobs */
 #endif
 
-    dk_set_t		lt_remotes;
-    du_thread_t *	lt_thread_waiting_exclusive;
 
 
-    dk_hash_t *		lt_rb_hash;
     db_buf_t		lt_rb_page;
     short		lt_rbp_fill;
     dk_set_t		lt_rb_pages;
@@ -232,7 +231,7 @@ typedef struct lock_trx_s
     dk_hash_t *	lt_upd_hi;  /* for each update node active in txn, the set of affected hi's */
     dk_set_t		lt_hi_delta;
 #ifdef PAGE_TRACE
-    long		lt_trx_no;
+    int		lt_trx_no;
 #endif
     caddr_t		lt_error_detail; /* if non-zero fill it with details about the error at hand */
 #ifdef MSDTC_DEBUG
@@ -265,15 +264,15 @@ typedef struct lock_trx_s
 
 
 #define ITC_IS_LTRX(itc) \
-  (!itc->itc_ltrx ||  !itc->itc_ltrx->lt_is_excl)
+  (itc->itc_ltrx &&  !itc->itc_ltrx->lt_is_excl)
 
 
 #if defined (PAGE_TRACE) | defined (MTX_DEBUG)
 #define ITC_FIND_PL(itc, buf) \
   if (ITC_IS_LTRX (itc)) \
     { \
-      ITC_IN_MAP (itc); \
-      itc->itc_pl = (page_lock_t*) gethash (DP_ADDR2VOID (itc->itc_page), itc->itc_tree->it_locks); \
+      ITC_IN_KNOWN_MAP (itc, itc->itc_page);						\
+      itc->itc_pl = (page_lock_t*) gethash (DP_ADDR2VOID (itc->itc_page), &IT_DP_MAP (itc->itc_tree, itc->itc_page)->itm_locks); \
       if ((buf)->bd_pl != itc->itc_pl) GPF_T1 ("bd_pl and itc_pl not in sync"); \
     }
 #else
@@ -282,8 +281,9 @@ typedef struct lock_trx_s
     itc->itc_pl = (buf)->bd_pl;
 #endif
 
+
 #define IT_DP_PL(it, dp) \
-  (page_lock_t *) gethash (DP_ADDR2VOID (dp), it->it_locks)
+  ((page_lock_t *) gethash (DP_ADDR2VOID (dp), &IT_DP_MAP (it, dp)->itm_locks))
 
 #define LT_NAME(lt) \
   (lt->lt_client->cli_session && !lt->lt_client->cli_ws ? \
@@ -394,10 +394,11 @@ typedef struct page_lock_s
 
 
 #define LT_CLEAR_ERROR_AFTER_RB(lt, max_thr) \
+  { \
   ASSERT_IN_TXN; \
   if (lt->lt_threads <= max_thr && lt->lt_status == LT_DELTA_ROLLED_BACK) \
-    lt_restart (lt); \
-
+    lt_restart (lt, TRX_CONT);							\
+}
 
 
 int lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf, int acquire);
@@ -440,13 +441,14 @@ void lt_resume_waiting_end (lock_trx_t * lt);
 void lt_wait_until_dead (lock_trx_t * lt);
 void lt_ack_close (lock_trx_t * lt);
 void lt_ack_freeze_inner (lock_trx_t * lt);
-void lt_restart (lock_trx_t * lt);
+void lt_restart (lock_trx_t * lt, int leave_flag);
 
 
 
 /* free_trx for lt_commit / lt_rollbak */
 #define TRX_FREE 1
 #define TRX_CONT 0
+#define TRX_CONT_LT_LEAVE 2
 
 void lt_clear_waits (lock_trx_t * lt);
 
@@ -473,10 +475,11 @@ void lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl);
 int pl_lt_is_owner (page_lock_t * pl, lock_trx_t * lt);
 int itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 int itc_serializable_land (it_cursor_t * itc, buffer_desc_t ** buf_ret);
+int itc_read_committed_check (it_cursor_t * itc, int pos, buffer_desc_t * buf);
 void pl_set_finalize (page_lock_t * pl, buffer_desc_t * buf);
 void lt_blob_transact (it_cursor_t * itc, int op);
 
-rb_entry_t * lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_ret);
+rb_entry_t * lt_rb_entry (lock_trx_t * lt, db_buf_t row, long *code_ret, rb_entry_t ** prev_ret, int leave_mtx);
 
 void lt_rb_insert (lock_trx_t * lt, db_buf_t key);
 void lt_no_rb_insert (lock_trx_t * lt, db_buf_t row);
@@ -528,6 +531,9 @@ void lt_free_rb (lock_trx_t * lt);
 
 #ifdef PAGE_TRACE
 
+#define it_title(it) \
+  (!it ? " NULL IT " : ((it->it_key  && it->it_key->key_name) ? it->it_key->key_name : " unnamed key "))
+
 extern int page_trace_on;
 
 #ifndef DBG_PT_PRINTF
@@ -538,19 +544,19 @@ extern int page_trace_on;
 { \
   DBG_PT_PRINTF (("READ L=%d P=%d FL=%d B=%p TX=%d SP=%s\n", \
       buf->bd_page, buf->bd_physical_page, SHORT_REF (buf->bd_buffer + DP_FLAGS), buf,lt ?  lt->lt_trx_no : -1, \
-      isp_title (buf->bd_space))); \
+      it_title (buf->bd_tree))); \
   buf->bd_trx_no = lt? lt->lt_trx_no : -1; \
 }
 
 #define DBG_PT_WRITE(buf, overr) \
-  DBG_PT_PRINTF (("WRITE L=%d P=%d B=%x TX=%d SP=%s PHYS=%d\n", \
+  DBG_PT_PRINTF (("WRITE L=%d P=%d B=%p TX=%d SP=%s PHYS=%d\n", \
       buf->bd_page, buf->bd_physical_page, buf, buf->bd_trx_no, \
-      isp_title (buf->bd_space), overr))
+      it_title (buf->bd_tree), overr))
 
 
 
 #define DBG_PT_PRE_IMAGE(buf) \
-  DBG_PT_PRINTF (("PREIMAGE L=%d P=%d B=%x\n", \
+  DBG_PT_PRINTF (("PREIMAGE L=%d P=%d B=%p\n", \
       buf->bd_page, buf->bd_physical_page, buf))
 
 #define DBG_PT_COMMIT(lt) \
@@ -572,7 +578,7 @@ extern int page_trace_on;
 #define DBG_PT_NEW_PAGE(buf) \
 { \
   buf->bd_trx_no = buf->bd_space->isp_trx->trx_no; \
-  DBG_PT_PRINTF (("NEW L=%d B=%x FL=%d TX=%d \n", \
+  DBG_PT_PRINTF (("NEW L=%d B=%p FL=%d TX=%d \n", \
 	buf->bd_page, SHORT_REF (buf->bd_buffer + DP_FLAGS)buf, buf->bd_trx_no)) \
 }
 
@@ -584,9 +590,9 @@ extern int page_trace_on;
   DBG_PT_PRINTF (("PREV REMAP=%d ", dp))
 
 #define DBG_PT_BUF_SCRAP(buf) \
-  DBG_PT_PRINTF (("SCRAP L=%d P=%d B=%x TX=%d SP=%s\n", \
+  DBG_PT_PRINTF (("SCRAP L=%d P=%d B=%p TX=%d SP=%s\n", \
       buf->bd_page, buf->bd_physical_page, buf, buf->bd_trx_no, \
-      isp_title (buf->bd_space)))
+      it_title (buf->bd_tree)))
 
 #endif
 
@@ -653,6 +659,10 @@ extern int page_trace_on;
 
 
 extern long  tc_try_land_write;
+extern long  tc_try_land_reset;
+extern  long tc_dp_changed_while_waiting_mtx;
+extern long tc_dp_set_parent_being_read;
+extern long tc_up_transit_parent_change;
 extern long  tc_dive_split;
 extern long  tc_dtrans_split;
 extern long  tc_up_transit_wait;
@@ -666,6 +676,21 @@ extern long  tc_split_2nd_read;
 extern long  tc_read_wait;
 extern long  tc_reentry_split;
 extern long  tc_write_wait;
+extern long tc_dive_would_deadlock;
+extern long tc_pl_moved_in_reentry;
+extern long tc_enter_transiting_bm_inx;
+extern long tc_aio_seq_read;
+extern long tc_aio_seq_write;
+extern long tc_read_absent_while_finalize;
+extern long tc_fix_outdated_leaf_ptr;
+extern long tc_bm_split_left_separate_but_no_split;
+extern long tc_unregister_enter;
+extern long tc_root_write;
+extern long tc_root_image_miss;
+extern long tc_root_image_ref_deleted;
+extern long tc_uncommit_cpt_page;
+extern long tc_root_cache_miss;
+extern long tc_aq_sleep;
 extern long  tc_release_pl_on_deleted_dp;
 extern long  tc_release_pl_on_absent_dp;
 extern long  tc_cpt_lt_start_wait;
@@ -719,6 +744,6 @@ extern resource_t * rb_page_rc;
 #endif
 
 
-#define LW_CALL(it)  rdbg_printf (("    LW call it %x %s:%d\n", it, __FILE__, __LINE__));
+#define LW_CALL(it)  rdbg_printf (("    LW call it %p %s:%d\n", it, __FILE__, __LINE__));
 
 #endif /* _LTRX_H */

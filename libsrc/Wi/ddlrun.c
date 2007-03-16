@@ -2100,7 +2100,7 @@ sch_fill_key_subkey (dbe_schema_t * sc)
 
 
 caddr_t
-isp_read_object_dd (index_space_t * isp, lock_trx_t * lt, dbe_schema_t * sc)
+it_read_object_dd (lock_trx_t * lt, dbe_schema_t * sc)
 {
   client_connection_t *temp_cli = client_connection_create ();
   caddr_t err;
@@ -2842,7 +2842,7 @@ count_exceed (query_instance_t * qi, const char *name, long cnt, const char *idx
   else
     return 0;
 
-  snprintf (stmt, sizeof (stmt), "select 1 from \"%s\"", escaped_name);
+  snprintf (stmt, sizeof (stmt), "select 1 from \"%s\" table option (index primary key)", escaped_name);
   dk_free_box (escaped_name);
   qr = sql_compile (stmt, qi->qi_client, NULL, SQLC_DEFAULT);
   if (!qr)
@@ -5757,43 +5757,6 @@ const char *stat_proc1 =
 "  result (sys_stat (c), c);\n"
 "}\n";
 
-const char *stat_proc2 =
-"create procedure tc_stat (in q integer := 0)\n"
-"{\n"
-"  declare v integer;\n"
-"  declare c varchar;\n"
-"  result_names (v, c);\n"
-"  __tc_no (    'tc_try_land_write');\n"
-"  __tc_no (    'tc_read_wait');\n"
-"  __tc_no (    'tc_write_wait');\n"
-"  __tc_no (    'tc_dive_split');\n"
-"  __tc_no (    'tc_dtrans_split');\n"
-"  __tc_no (    'tc_up_transit_wait');\n"
-"  __tc_no (    'tc_double_deletes');\n"
-"  __tc_no (    'tc_delete_parent_waits');\n"
-"  __tc_no (    'tc_wait_trx_self_kill');\n"
-"  __tc_no (    'tc_split_while_committing');\n"
-"  __tc_no (    'tc_rb_code_non_unique');\n"
-"  __tc_no (    'tc_set_by_pl_wait');\n"
-"  __tc_no (    'tc_split_2nd_read');\n"
-"  __tc_no ('tc_release_pl_on_deleted_dp');\n"
-"  __tc_no ('tc_release_pl_on_absent_dp');\n"
-"  __tc_no ('tc_cpt_rollback');\n"
-"  __tc_no ('tc_cpt_lt_start_wait');\n"
-"  __tc_no ('tc_cpt_rollback_retry');\n"
-"  __tc_no ('tc_wait_for_closing_lt');\n"
-"  __tc_no ('tc_dive_cache_hits');\n"
-"   __tc_no ('tc_deadlock_win_get_lock');\n"
-"   __tc_no ('tc_double_deadlock');\n"
-"   __tc_no ('tc_update_wait_move');\n"
-"   __tc_no ('tc_no_thread_kill_idle');\n"
-"   __tc_no ('tc_no_thread_kill_vdb');\n"
-"   __tc_no ('tc_no_thread_kill_running');\n"
-"   __tc_no ('prof_avg_exec');\n"
-"   __tc_no ('tc_deld_row_rl_rb');\n"
-"   __tc_no ('tc_read_wait_decoy');\n"
-"  __tc_no ('tc_finalize_while_being_read');\n"
-"}\n";
 
 const char * wsst =
 "create procedure ws_stat (in q integer := 0)\n"
@@ -6134,7 +6097,6 @@ ddl_standard_procs (void)
   ddl_std_proc (drop_trigger_text, 1);
   ddl_std_proc (drop_proc_text, 1);
   ddl_std_proc (stat_proc1, 1);
-  ddl_std_proc (stat_proc2, 1);
   ddl_std_proc (wsst, 1);
   ddl_std_proc (pk1, 0);
   ddl_std_proc (pk2, 0);
@@ -6206,7 +6168,10 @@ const char *sys_k_stat_text =
 "	key_stat (DB.DBA.SYS_FILL_NAME(KEY_TABLE), name_part (KEY_NAME, 2), 'n_landings') as LANDED,\n"
 "	key_stat (DB.DBA.SYS_FILL_NAME(KEY_TABLE), name_part (KEY_NAME, 2), 'total_last_page_hits') as CONSEC,\n"
 "	key_stat (DB.DBA.SYS_FILL_NAME(KEY_TABLE), name_part (KEY_NAME, 2), 'page_end_inserts') as RIGHT_EDGE,\n"
-"	key_stat (DB.DBA.SYS_FILL_NAME(KEY_TABLE), name_part (KEY_NAME, 2), 'page_end_inserts') as LOCK_ESC\n"
+"	key_stat (DB.DBA.SYS_FILL_NAME(KEY_TABLE), name_part (KEY_NAME, 2), 'read_wait') as read_wait,\n"
+"	key_stat (DB.DBA.SYS_FILL_NAME(KEY_TABLE), name_part (KEY_NAME, 2), 'write_wait') as write_wait,\n"
+"	key_stat (DB.DBA.SYS_FILL_NAME(KEY_TABLE), name_part (KEY_NAME, 2), 'landing_wait') as landing_wait,\n"
+"	key_stat (DB.DBA.SYS_FILL_NAME(KEY_TABLE), name_part (KEY_NAME, 2), 'pl_wait') as pl_wait\n"
 "	from SYS_KEYS  where KEY_MIGRATE_TO is null\n";
 
 const char *sys_l_stat_text =
@@ -6242,7 +6207,6 @@ void
 ddl_ensure_stat_tables (void)
 {
   ddl_std_proc (stat_proc1, 1);
-  ddl_std_proc (stat_proc2, 1);
   ddl_std_proc (stat_proc3, 1);
   ddl_ensure_table ("do this allways",
       "select exec (sprintf ('drop view %s', V_NAME)) from DB.DBA.SYS_VIEWS \n"

@@ -69,6 +69,7 @@
 #define ONE_PRED		(ptrlong)33
 #define EXISTS_PRED		(ptrlong)34
 #define IN_SUBQ_PRED		(ptrlong)35
+#define SUBQ_F_NOT_IN 1 /*marks not in of subq in the subq.flags */
 
 #define SUBQ_PRED_MIN		ANY_PRED
 #define SUBQ_PRED_MAX		IN_SUBQ_PRED

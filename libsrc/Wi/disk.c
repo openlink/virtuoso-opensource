@@ -58,7 +58,8 @@ dk_hash_t * row_hash = 0;
 int h_index = 0;
 
 #if DB_SYS_BYTE_ORDER == DB_ORDER_LITTLE_ENDIAN
-void DBS_REVERSE_LONG(db_buf_t pl)
+void 
+DBS_REVERSE_LONG(db_buf_t pl)
 {
   if (h_index && gethash((void*) pl, row_hash))
     return;
@@ -69,7 +70,10 @@ void DBS_REVERSE_LONG(db_buf_t pl)
       if (h_index) sethash ((void*) pl, row_hash, (void*) 1);
     }
 }
-void  DBS_REVERSE_SHORT(db_buf_t ps)
+
+
+void 
+DBS_REVERSE_SHORT(db_buf_t ps)
 {
   if (h_index && gethash((void*) ps, row_hash))
     return;
@@ -80,20 +84,27 @@ void  DBS_REVERSE_SHORT(db_buf_t ps)
       if (h_index) sethash ((void*) ps, row_hash, (void*) 1);
     }
 }
-long  DBS_REV_LONG_REF(db_buf_t p)
+
+
+long 
+DBS_REV_LONG_REF(db_buf_t p)
 {
   if (h_index && gethash((void*) p, row_hash))
     return LONG_REF (p);
   return LONG_REF_NA (p);
 }
-short DBS_REV_SHORT_REF(db_buf_t ps)
+
+
+short 
+DBS_REV_SHORT_REF(db_buf_t ps)
 {
   if (h_index && gethash((void*) ps, row_hash))
     return SHORT_REF (ps);
   return SHORT_REF_NA ((ps));
 }
 #else
-void  DBS_REVERSE_LONG(db_buf_t pl)
+void  
+DBS_REVERSE_LONG(db_buf_t pl)
 {
   if (h_index && gethash((void*) pl, row_hash))
     return;
@@ -104,7 +115,10 @@ void  DBS_REVERSE_LONG(db_buf_t pl)
       if (h_index) sethash ((void*) pl, row_hash, (void*) 1);
     }
 }
-void  DBS_REVERSE_SHORT(db_buf_t ps)
+
+
+void  
+DBS_REVERSE_SHORT(db_buf_t ps)
 {
   if (h_index && gethash((void*) ps, row_hash))
     return;
@@ -116,14 +130,16 @@ void  DBS_REVERSE_SHORT(db_buf_t ps)
     }
 }
 
-long  DBS_REV_LONG_REF(db_buf_t p)
+long 
+DBS_REV_LONG_REF(db_buf_t p)
 {
   if (h_index && gethash((void*) p, row_hash))
     return LONG_REF (p);
   return LONG_REF_BE (p);
 }
 
-short DBS_REV_SHORT_REF(db_buf_t ps)
+short 
+DBS_REV_SHORT_REF(db_buf_t ps)
 {
   if (h_index && gethash((void*) ps, row_hash))
     return SHORT_REF (ps);
@@ -173,7 +189,6 @@ resource_t * pm_rc_2;
 resource_t * pm_rc_3;
 resource_t * pm_rc_4;
 hash_index_cache_t hash_index_cache;
-dk_mutex_t * lt_locks_mtx;
 
 struct wi_inst_s * wi_instance_get(void) { return &wi_inst; }
 
@@ -194,8 +209,59 @@ dbs_allocate (char * name, char type)
   dbs->dbs_cpt_remap = hash_table_allocate (101);
   dk_hash_set_rehash (dbs->dbs_cpt_remap, 4);
   dbs->dbs_cpt_tree = it_allocate (dbs);
+  dbs->dbs_unfreeable_dps = hash_table_allocate (203);
   return dbs;
 }
+
+dk_hash_t * page_set_checksums;
+
+#ifdef PAGE_SET_CHECKSUM
+
+uint32
+page_set_checksum (db_buf_t page)
+{
+  uint32 ck = 0;
+  uint32 * p = (uint32*) page;
+  int inx;
+  /* first 2021 int32's with a step of 17, the last 3 with a step of 1 */
+  for (inx = 0; inx < ((PAGE_DATA_SZ / sizeof (uint32)) / 17) * 17; inx+= 17)
+    ck = ck ^ p[inx] ^ p[inx + 1] ^ p[inx + 2] ^ p[inx + 3]
+      ^ p[inx + 4] ^ p[inx + 5] ^ p[inx + 6] ^ p[inx + 7] ^ p[inx + 8] 
+      ^ p[inx + 9] ^ p[inx + 10] ^ p[inx +11] ^ p[inx + 12] ^ p[inx + 13] 
+      ^ p[inx + 14] ^ p[inx + 15] ^ p[inx + 16];
+  for (inx = ((PAGE_DATA_SZ / sizeof (uint32)) / 17) * 17; inx < PAGE_DATA_SZ / sizeof (uint32); inx++)
+    ck = ck ^ ((uint32*)page)[inx];
+  return ck;
+}
+
+
+void
+page_set_checksum_init (db_buf_t page)
+{
+  sethash ((void *) page, page_set_checksums, (void*) (ptrlong) page_set_checksum (page));
+}
+
+void
+page_set_check (db_buf_t page)
+{
+  void * cks;
+  uint32 ck, pck;
+  GETHASH (page, page_set_checksums, cks, no_cksum);
+  ck = (unsigned ptrlong) cks;
+  pck = page_set_checksum (page);
+  if (ck != pck)
+    GPF_T1 ("page set checksum error");
+ no_cksum: ;
+}
+
+void
+page_set_update_checksum (uint32 * page, int inx, int bit)
+{
+  uint32 ck = (unsigned ptrlong) gethash ((void*)page, page_set_checksums);
+  ck = ck ^ 1L << bit;
+  sethash ((void *)page, page_set_checksums, (void*) (unsigned ptrlong) ck);
+}
+#endif
 
 
 dbe_storage_t *
@@ -277,20 +343,32 @@ it_page_map_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
 
 resource_t * it_rc;
 
+#define IT_INIT_HASH_SIZE (11 * IT_N_MAPS)
 
 index_tree_t *
 it_allocate (dbe_storage_t * dbs)
 {
+  int inx;
   NEW_VARZ (index_tree_t, tree);
 
-  tree->it_page_map_mtx = mutex_allocate_typed (MUTEX_TYPE_SHORT);
   tree->it_lock_release_mtx = mutex_allocate ();
+  for (inx = 0; inx < IT_N_MAPS; inx++)
+    {
+      it_map_t * itm = &tree->it_maps[inx];
+      dk_mutex_init (&itm->itm_mtx, MUTEX_TYPE_SHORT);
+      hash_table_init (&itm->itm_remap, IT_INIT_HASH_SIZE / IT_N_MAPS);
+      dk_hash_set_rehash (&itm->itm_remap, space_rehash_threshold);
+      hash_table_init (&itm->itm_dp_to_buf, IT_INIT_HASH_SIZE / IT_N_MAPS);
+      dk_hash_set_rehash (&itm->itm_dp_to_buf, space_rehash_threshold);
 
-  tree->it_commit_space = isp_allocate (tree, COMMIT_REMAP_SIZE);
-  tree->it_checkpoint_space = isp_allocate (tree, 3);
-  tree->it_commit_space->isp_prev = tree->it_checkpoint_space;
-  tree->it_locks = hash_table_allocate (101);
-  dk_hash_set_rehash (tree->it_locks, space_rehash_threshold);
+      hash_table_init (&itm->itm_locks, IT_INIT_HASH_SIZE / IT_N_MAPS);
+      dk_hash_set_rehash (&itm->itm_locks, space_rehash_threshold);
+#ifdef MTX_DEBUG
+      itm->itm_dp_to_buf.ht_required_mtx = &itm->itm_mtx;
+      itm->itm_remap.ht_required_mtx = &itm->itm_mtx;
+      itm->itm_locks.ht_required_mtx = &itm->itm_mtx;
+#endif
+    }
   tree->it_storage = dbs;
   dk_set_push (&dbs->dbs_trees, (void*)tree);
   return tree;
@@ -327,8 +405,14 @@ it_temp_tree_check ()
       dk_hash_iterator_t hit;
       void * dp;
       buffer_desc_t * buf;
-      dk_hash_iterator (&hit, it->it_commit_space->isp_dp_to_buf);
-      
+      int inx;
+      GPF_T ("function not complete");
+      for (inx = 0; inx < IT_N_MAPS; inx++)
+	{
+	  it_map_t * itm = &it->it_maps[inx];
+	  dk_hash_iterator (&hit, &itm->itm_dp_to_buf);
+	  /* This function is not complete */
+	}
     }
   END_DO_SET();
 }
@@ -350,14 +434,20 @@ it_temp_allocate (dbe_storage_t * dbs)
   index_tree_t * tree = (index_tree_t *) resource_get (it_rc);
   if (!tree)
     {
+      int inx;
       NEW_VARZ (index_tree_t, tree);
+      for (inx = 0; inx < IT_N_MAPS; inx++)
+	{
+	  it_map_t * itm = &tree->it_maps[inx];
+	  dk_mutex_init (&itm->itm_mtx, MUTEX_TYPE_SHORT);
+	  hash_table_init (&itm->itm_remap, 11);
+	  dk_hash_set_rehash (&itm->itm_remap, space_rehash_threshold);
+	  hash_table_init (&itm->itm_dp_to_buf, 11);
+	  dk_hash_set_rehash (&itm->itm_dp_to_buf, space_rehash_threshold);
+	  hash_table_init (&itm->itm_locks, 11);
+	  dk_hash_set_rehash (&itm->itm_locks, space_rehash_threshold);
+	}
 
-      tree->it_page_map_mtx = mutex_allocate ();
-
-      tree->it_commit_space = isp_allocate (tree, 101);
-      tree->it_locks = hash_table_allocate (10);
-      dk_hash_set_rehash (tree->it_commit_space->isp_dp_to_buf, 2);
-      dk_hash_set_rehash (tree->it_commit_space->isp_remap, 5);
       tree->it_storage = dbs;
       it_temp_tree_active (tree);
       return tree;
@@ -376,14 +466,17 @@ it_temp_allocate (dbe_storage_t * dbs)
 void
 it_free (index_tree_t * it)
 {
-  IN_PAGE_MAP (it);
-  isp_free (it->it_commit_space);
-  if (it->it_checkpoint_space)
-    isp_free (it->it_checkpoint_space);
-  if (it->it_locks)
-    hash_table_free (it->it_locks);
-  LEAVE_PAGE_MAP (it);
-  mutex_free (it->it_page_map_mtx);
+  int inx;
+  for (inx = 0; inx < IT_N_MAPS; inx++)
+    {
+      it_map_t * itm = &it->it_maps[inx];
+      dk_mutex_destroy (&itm->itm_mtx);
+      hash_table_destroy (&itm->itm_remap);
+      hash_table_destroy (&itm->itm_dp_to_buf);
+      hash_table_destroy (&itm->itm_locks);
+    }
+  if (it->it_lock_release_mtx)
+    mutex_free (it->it_lock_release_mtx);
   dk_free ((void*) it, sizeof (index_tree_t));
 }
 
@@ -391,12 +484,14 @@ it_free (index_tree_t * it)
 void
 it_temp_tree (index_tree_t * it)
 {
-  buffer_desc_t * buf = isp_new_page (it->it_commit_space, 0, DPF_INDEX, 0, 0);
+  buffer_desc_t * buf = it_new_page (it, 0, DPF_INDEX, 0, 0);
+  it_map_t * itm;
   pg_init_new_root (buf);
-  it->it_commit_space->isp_root = buf->bd_page;
-  IN_PAGE_MAP (it);
+  it->it_root = buf->bd_page;
+  itm = IT_DP_MAP (it, buf->bd_page);
+  mutex_enter (&itm->itm_mtx);
   page_leave_inner (buf);
-  LEAVE_PAGE_MAP (it);
+  mutex_leave (&itm->itm_mtx);
 }
 
 
@@ -413,11 +508,11 @@ it_temp_free (index_tree_t * it)
    * Therefore  all cancellations get done first and then all buffers that remain are detached from the it being deleted. */
   
   it_cursor_t itc_auto;
+  int inx;
   it_cursor_t * itc = &itc_auto;
   ptrlong dp, remap;
   buffer_desc_t * buf;
   dk_hash_iterator_t hit;
-  index_space_t * isp;
   if (!it)
     return;
   if (it->it_hi && it_hi_done (it))
@@ -426,63 +521,68 @@ it_temp_free (index_tree_t * it)
     GPF_T1 ("freeing hash without invalidating it first");
   ITC_INIT (itc, NULL, NULL);
   itc_from_it (itc, it);
-  isp = it->it_commit_space;
   buf_dbg_printf (("temp tree %x free \n", isp));
+  for (inx = 0; inx < IT_N_MAPS; inx++)
+    {
+      it_map_t * itm = &it->it_maps[inx];
  again:
-  ITC_IN_MAP (itc);
-  dk_hash_iterator (&hit, isp->isp_dp_to_buf);
+      ITC_IN_KNOWN_MAP (itc, inx);
+      dk_hash_iterator (&hit, &itm->itm_dp_to_buf);
   while (dk_hit_next (&hit, (void**) &dp, (void **) &buf))
     {
-      ASSERT_IN_MAP (itc->itc_tree);
-      if (buf->bd_space && buf->bd_space != isp)
+	  ASSERT_IN_MAP (itc->itc_tree, inx);
+	  if (buf->bd_tree && buf->bd_tree != it)
 	GPF_T1 ("it_temp_free with buffer that belongs to other tree");
       buf->bd_is_dirty = 0;
       if (BUF_WIRED (buf)
-	  || buf->bd_in_write_queue ||buf->bd_iq)
+	      ||buf->bd_iq)
 	{
-	  page_wait_access (itc, buf->bd_page, buf, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
-	  ITC_LEAVE_MAP (itc);
+	      page_wait_access (itc, buf->bd_page, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
+	      ITC_LEAVE_MAPS (itc);
 	  buf_cancel_write (buf);
-	  ITC_IN_MAP (itc);
+	      ITC_IN_KNOWN_MAP (itc, inx);
 	  page_leave_inner (buf);
 	  goto again; /* sequence broken, hash iterator to be re-inited */
 	}
     }
-  ITC_IN_MAP (itc);
-  dk_hash_iterator (&hit, isp->isp_dp_to_buf);
+      ITC_IN_KNOWN_MAP (itc, inx);
+      dk_hash_iterator (&hit, &itm->itm_dp_to_buf);
   while (dk_hit_next (&hit, (void**) &dp, (void **) &buf))
 	{
-      ASSERT_IN_MAP (itc->itc_tree);
-      if (buf->bd_space && buf->bd_space != isp)
+	  ASSERT_IN_MAP (itc->itc_tree, inx);
+	  if (buf->bd_tree && buf->bd_tree != it)
 	GPF_T1 ("it_temp_free with buffer that belongs to other tree");
       if (BUF_WIRED (buf)
-	  || buf->bd_in_write_queue ||buf->bd_iq)
+	      || buf->bd_iq)
 	{
 	  log_error ("it_temp_free:  Buffers should not be in write queue after cancellation.");
 	}
       BUF_BACKDATE(buf);
-      buf->bd_space = NULL;
+	  buf->bd_tree = NULL;
       buf->bd_is_dirty = 0;
       buf->bd_page = 0;
       buf->bd_physical_page = 0;
     }
-  clrhash (isp->isp_dp_to_buf);
-  ITC_LEAVE_MAP (itc);
-  itc_free (itc);
-  dk_hash_iterator (&hit, isp->isp_remap);
+      clrhash (&itm->itm_dp_to_buf);
+      ITC_LEAVE_MAPS (itc);
+      dk_hash_iterator (&hit, &itm->itm_remap);
   IN_DBS (it->it_storage);
   while (dk_hit_next (&hit, (void**)&dp, (void**)&remap))
     {
       dbs_free_disk_page (it->it_storage, (dp_addr_t) dp);
     }
   LEAVE_DBS (it->it_storage);
-  clrhash (isp->isp_remap);
+      clrhash (&itm->itm_remap);
+      ITC_LEAVE_MAPS (itc);
+    }
+  itc_free (itc);
+      
   if (it->it_hi)
     hi_free (it->it_hi);
   it->it_hi = NULL;
   it->it_hi_reuses = 0;
   it_temp_tree_done (it);
-  if (it->it_commit_space->isp_hash_size != it->it_commit_space->isp_dp_to_buf->ht_actual_size)
+  if (it->it_maps[0].itm_remap.ht_actual_size != IT_INIT_HASH_SIZE / IT_N_MAPS)
     it_free (it); /* rehashed to non-standard size. do not recycle.  */
   else
     {
@@ -514,14 +614,14 @@ map_free (page_map_t * map)
 
 #define BUFFER_GROUP_SIZE 14
 
-typedef db_buf_t db_page_buf_t[PAGE_SZ];
+typedef dtp_t db_page_buf_t[PAGE_SZ];
 
 typedef struct buffer_group_s {
   buffer_desc_t bg_items[BUFFER_GROUP_SIZE];
   int bg_used;
   struct buffer_group_s *bg_prev, *bg_next;
   db_page_buf_t *bg_buffer0;
-  db_buf_t bg_space [PAGE_SZ * (BUFFER_GROUP_SIZE+1)];
+  dtp_t bg_space [PAGE_SZ * (BUFFER_GROUP_SIZE+1)];
 } buffer_group_t;
 
 static dk_hash_t *bg_of_bd = NULL;
@@ -701,19 +801,46 @@ bp_stats (buffer_pool_t * bp)
 
 
 int
+bp_buf_enter (buffer_desc_t * buf, it_map_t ** itm_ret)
+{
+  index_tree_t  ** volatile bd_tree = &buf->bd_tree;
+  volatile dp_addr_t * bd_page = &buf->bd_page;
+  dp_addr_t dp = *bd_page;
+  index_tree_t * tree = *bd_tree;
+  it_map_t * itm;
+  if (!tree)
+    return 0;
+  itm = IT_DP_MAP (tree, dp);
+  mutex_enter (&itm->itm_mtx);
+  if (*bd_tree == tree && dp == *bd_page)
+    {
+      *itm_ret = itm;
+      return 1;
+    }
+  mutex_leave (&itm->itm_mtx);
+ return 0;
+}
+
+int
 bp_found (buffer_desc_t * buf, int from_free_list)
 {
   buffer_pool_t * bp = buf->bd_pool;
-  index_space_t * last_isp = buf->bd_space;
+  index_tree_t * last_tree = buf->bd_tree;
+  dp_addr_t dp;
+  volatile dp_addr_t * bd_page = &buf->bd_page;
+  index_tree_t ** volatile bd_tree = &buf->bd_tree;
+  it_map_t * itm;
   /* the buffer is considered for reuse.  If so, even if not getting the buf from the deleted list,
    * pop it out of the deleted list.  If the list breaks in the middle, no harm done.  Seldom occurrence due to it being dirty written outside of bp_mtx */
+  if (buf->bd_registered)
+    return 0;
   if (!from_free_list && buf->bd_next)
     {
       buf->bd_pool->bp_first_free = buf->bd_next;
       buf->bd_next = NULL;
     }
 
-  if (!last_isp)
+  if (!last_tree)
     {
       /* when taking a non-used buffer, the serialization is on the
        * bp, not the map of the buffer's tree.  Must check for flags, as
@@ -727,34 +854,40 @@ bp_found (buffer_desc_t * buf, int from_free_list)
       LEAVE_BP (bp);
       buf->bd_timestamp = bp->bp_ts;
 #ifdef BUF_DEBUG
-      buf->bd_prev_space = NULL;
+      buf->bd_prev_tree = NULL;
 #endif
       return 1;
     }
-  IN_PAGE_MAP (last_isp->isp_tree);
-  if (BUF_AVAIL (buf) 
-      && buf->bd_space == last_isp)
+  dp = *bd_page;
+  itm = IT_DP_MAP (last_tree, dp);
+  mutex_enter (&itm->itm_mtx);
+  if (dp != *bd_page || *bd_tree != last_tree)
+    {
+      mutex_leave (&itm->itm_mtx);
+      return 0;
+    }
+  if (BUF_AVAIL (buf))
     {
       buf->bd_readers = 1;
 	  /* the buffer may have been freed from its isp between reading the last_isp and entering its map.
 	   */
 #ifdef BUF_DEBUG
-      buf->bd_prev_space = last_isp;
+      buf->bd_prev_tree = last_tree;
       buf_dbg_printf (("Buf %x leaves tree %x\n", buf, last_isp));
 #endif
-	  if (!remhash (DP_ADDR2VOID (buf->bd_page), last_isp->isp_dp_to_buf))
+      if (!remhash (DP_ADDR2VOID (buf->bd_page), &itm->itm_dp_to_buf))
 	    GPF_T1 ("buffer not in the hash of the would be space of residence");
       buf->bd_page = 0;
-      buf->bd_space = NULL;
+      buf->bd_tree = NULL;
+      mutex_leave (&itm->itm_mtx);
       if (!from_free_list)
       bp->bp_next_replace = (int) ((buf - bp->bp_bufs) + 1);
       bp_replace_age += bp->bp_ts - buf->bd_timestamp;
-      LEAVE_PAGE_MAP (last_isp->isp_tree);
       LEAVE_BP (bp);
       buf->bd_timestamp = bp->bp_ts;
       return 1;
     }
-  LEAVE_PAGE_MAP (last_isp->isp_tree);
+  mutex_leave (&itm->itm_mtx);
   return 0;
 }
 
@@ -780,8 +913,19 @@ bp_stat_action (buffer_pool_t * bp)
   if ((n_dirty * 100) / (n_clean + n_dirty) > bp_flush_trig_pct
     || action_ctr++ % 10 == 0)
     {
+      if (iq_is_on ())
+	{
+	  /* not inside checkpoint. bp_get_buffer can happen inside, for reading uncommitted pages for cpt rb */
       wi_check_all_compact (age_limit);
       mt_write_dirty (bp, age_limit, 0);
+    }
+      else 
+	{
+	  /*  mtx just pro forma, only one thread in cpt anyway */
+	  mutex_leave (bp->bp_mtx);
+	  bp_write_dirty (bp, 0, 0, ALL_DIRTY);
+	  mutex_enter (bp->bp_mtx);
+	}
     }
   if (n_clean)
     return age_limit;
@@ -830,7 +974,7 @@ bp_wait_flush (buffer_pool_t * bp)
 
 #define BD_REPLACE_CHECK(n) \
 { \
-  if (!buf[n].bd_space) \
+  if (!buf[n].bd_tree) \
     { \
       best = &buf[n]; \
       best_age = 0; \
@@ -951,6 +1095,7 @@ bp_get_buffer (buffer_pool_t * bp, int mode)
 
 long gpf_time = 0;
 
+#ifdef MTX_DEBUG
 int
 buf_set_dirty (buffer_desc_t * buf)
 {
@@ -958,13 +1103,15 @@ buf_set_dirty (buffer_desc_t * buf)
     if (!BUF_WIRED (buf))
     GPF_T1 ("can't set a buffer as dirty if not on it.");
   */
-  if (!buf->bd_space->isp_prev
-      && buf->bd_space->isp_tree->it_checkpoint_space)
-    {
-      gpf_time = get_msec_real_time();
-      GPF_T1 ("Dirty buffer in checkpoint");
-    }
 
+#ifdef MTX_DEBUG
+    {
+    it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
+    mutex_enter (&itm->itm_mtx);
+    assert (gethash (DP_ADDR2VOID(buf->bd_page), &itm->itm_remap));
+    mutex_leave (&itm->itm_mtx);
+    }
+#endif
   if (!buf->bd_is_dirty)
     {
       /* BUF_TICK (buf); */
@@ -986,16 +1133,14 @@ buf_set_dirty_inside (buffer_desc_t * buf)
 {
   if (!BUF_WIRED (buf))
     GPF_T1 ("can't set a buffer as dirty if not on it.");
-  if (!buf->bd_space->isp_prev)
-#ifdef CHECKPOINT_TIMING
-    {
-      gpf_time = get_msec_real_time();
-      GPF_T1 ("Dirty buffer in checkpoint");
-    }
-#else
-    GPF_T1 ("Dirty buffer in checkpoint");
-#endif
 
+#ifdef MTX_DEBUG
+    {
+    it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
+    ASSERT_IN_MTX (&itm->itm_mtx);
+    if (!gethash (DP_ADDR2VOID(buf->bd_page), &itm->itm_remap)) GPF_T1 ("not remapped when being set to dirty");
+    }
+#endif
 
   if (!buf->bd_is_dirty)
     {
@@ -1006,6 +1151,7 @@ buf_set_dirty_inside (buffer_desc_t * buf)
     }
   return 0;
 }
+#endif
 
 
 void
@@ -1031,20 +1177,18 @@ buf_set_last (buffer_desc_t * buf)
 {
   /* when this is called, the buffer 1. will not be in any tree cache, 2. will be occupied, all other resets done elsewhere */
   buffer_pool_t * bp = buf->bd_pool;
-  index_space_t * isp = buf->bd_space;
+  index_tree_t * tree = buf->bd_tree;
   DBG_PT_BUF_SCRAP (buf);
-  if (isp)
+  if (tree && buf->bd_page)
     {
-      ASSERT_IN_MAP (isp->isp_tree);
-      if (buf->bd_page && gethash ((void*)(ptrlong)buf->bd_page, isp->isp_dp_to_buf))
+      ASSERT_IN_MAP (tree, buf->bd_page);
+      if (buf->bd_page && gethash ((void*)(ptrlong)buf->bd_page, &IT_DP_MAP (tree, buf->bd_page)->itm_dp_to_buf))
 	GPF_T1 ("buf_set_last called while buffer still in isp's cache.");
     }
   if (!buf->bd_is_write && !buf->bd_readers)
     GPF_T1 ("Must have write on a buffer to set it last"); /* we also accept read cause blob structure errors sometimes have read access when they scrap the buffer */
   buf->bd_pl = NULL;
-  buf->bd_page = 0;
-  buf->bd_physical_page = 0;
-  /* set the bp_space null only later, in the final page_leave_inner.  This prevents buffer replacement from taking the buffer until it is all cleared because it will wat on the space's map. */
+  /* set the bd_tree and bd_page to null only later, in the final page_leave_inner.  This prevents buffer replacement from taking the buffer until it is all cleared because it will wat on the space's map. */
   if (buf->bd_is_dirty)
     {
       wi_inst.wi_n_dirty--;
@@ -1085,7 +1229,7 @@ bp_make_buffer_list (int n)
   unsigned char *buffers_space, *buf_ptr;
   NEW_VARZ (buffer_pool_t, bp);
   bp->bp_mtx = mutex_allocate ();
-  mutex_option (bp->bp_mtx, "BP", bp_mtx_entry_check, (void*) bp);
+  mutex_option (bp->bp_mtx, "BP", NULL /*bp_mtx_entry_check */, (void*) bp);
   bp->bp_n_bufs = n;
   bp->bp_bufs = (buffer_desc_t *) dk_alloc (sizeof (buffer_desc_t) * n);
   memset (bp->bp_bufs, 0, sizeof (buffer_desc_t) * n);
@@ -1159,13 +1303,22 @@ dp_set_backup_flag (dbe_storage_t * dbs, dp_addr_t page, int on)
   dp_addr_t array_page;
 
   dbs_locate_incbackup_bit (dbs, page, &array, &array_page, &inx, &bit);
-
   if (on)
     {
+      if (0 == (array[inx] & 1L<<bit))
+	{
+	  page_set_update_checksum (array, inx, bit);
       array[inx] |= (1 << bit);
     }
+    }
   else
+    {
+      if (array[inx] & 1L<<bit)
+	{
+	  page_set_update_checksum (array, inx, bit);
     array[inx] &= ~(1 << bit);
+	}
+    }
 }
 
 
@@ -1391,15 +1544,6 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 	&& !sch_id_to_key (wi_inst.wi_schema, SHORT_REF (buf->bd_buffer + DP_KEY_ID)))
       GPF_T1 ("Writing index page with no key");
 
-  if (SHORT_REF (buf->bd_buffer + DP_FIRST) == 0 &&
-      flags == DPF_INDEX &&
-      buf->bd_page != buf->bd_space->isp_root)
-    {
-      log_error ("Write of empty page P=%ld Remap = %ld",
-		 buf->bd_page, dest);
-      if (!correct_parent_links)
-	GPF_T1 ("Write of empty page");
-    }
 
   if (DPF_INDEX == flags)
     bytes = PAGE_SZ;		/* buf -> bd_content_map -> pm_filled_to; */
@@ -1517,15 +1661,18 @@ dbs_read_page_set (dbe_storage_t * dbs, dp_addr_t first_dp, int flag)
   if (strchr (wi_inst.wi_open_mode, 'a'))	/* dummy, db unreadable */
     return first;
 
+  dbs_unfreeable (dbs, first_dp, flag);
   buf_disk_read (first);
+  page_set_checksum_init (first->bd_buffer + DP_DATA);
   while ((dp_first = LONG_REF (prev->bd_buffer + DP_OVERFLOW)))
     {
       buffer_desc_t *buf = buffer_allocate (flag);
       buf->bd_storage = dbs;
       prev->bd_next = buf;
       buf->bd_physical_page = buf->bd_page = dp_first;
+      dbs_unfreeable (dbs, dp_first, flag);
       buf_disk_read (buf);
-
+      page_set_checksum_init (buf->bd_buffer + DP_DATA);
       prev = buf;
     }
   return first;
@@ -1536,6 +1683,7 @@ dbs_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   while (buf)
     {
+      page_set_check (buf->bd_buffer + DP_DATA);
       buf_disk_write (buf, 0);
       buf = buf->bd_next;
     }
@@ -1575,8 +1723,11 @@ dbs_page_set_extend (dbe_storage_t* dbs, buffer_desc_t** page_set, int offset)
     }
   *prev = new_page;
   new_page->bd_physical_page = new_page->bd_page = n * BITS_ON_PAGE + offset;
+  dbs_unfreeable (dbs, new_page->bd_page, SHORT_REF (new_page->bd_buffer + DP_FLAGS));
+
   /* Free set is backed to the first page in its area */
   ((dp_addr_t *) (new_page->bd_buffer + DP_DATA))[0] |= 0x03;
+  page_set_checksum_init (new_page->bd_buffer + DP_DATA);
   /* The free list is backed on the first page of the area it covers */
   if (prev_page)
     {
@@ -1605,6 +1756,7 @@ dbs_locate_page_bit (dbe_storage_t* dbs, buffer_desc_t** ppage_set, dp_addr_t ne
 	}
       free_set = free_set->bd_next;
     }
+  page_set_check (free_set->bd_buffer + DP_DATA);
   *array = (dp_addr_t *) (free_set->bd_buffer + DP_DATA);
   *inx = (int) ((near_dp % BITS_ON_PAGE) / BITS_IN_LONG);
   *bit = (int) ((near_dp % BITS_ON_PAGE) % BITS_IN_LONG);
@@ -1677,6 +1829,7 @@ fc_lookup (dbe_storage_t * dbs)
       if (array[inx] != 0xffffffff)
 	{
 	  bit = word_free_bit (array[inx]);
+	  page_set_update_checksum (array, inx, bit);
 	  array[inx] |= ((uint32) 1) << bit;
 	  dbs->dbs_n_free_pages--;
 	  if (0xffffffff == array[inx])
@@ -1752,6 +1905,17 @@ long dbs_count_free_pages (dbe_storage_t * dbs)
   return res;
 }
 
+
+#ifdef PAGE_SET_CHECKSUM
+/* if free set checksum is on, checking the free bit checks the checksum and this should be serialized to avoid false positives 
+ * If no checksum, no serialization is needed for checking a free bit */
+#define IN_DBS_IF_CKSUM(dbs) IN_DBS(dbs)
+#define LEAVE_DBS_IF_CKSUM(dbs) LEAVE_DBS(dbs)
+#else
+#define IN_DBS_IF_CKSUM(dbs) 
+#define LEAVE_DBS_IF_CKSUM(dbs) 
+#endif
+
 long
 dbs_is_free_page (dbe_storage_t * dbs, dp_addr_t n)
 {
@@ -1760,9 +1924,14 @@ dbs_is_free_page (dbe_storage_t * dbs, dp_addr_t n)
   int inx, bit;
   if (n >= dbs->dbs_n_pages)
     return 1;
+  IN_DBS_IF_CKSUM (dbs);
   dbs_locate_free_bit (dbs, n, &array, &page, &inx, &bit);
   if (0 == (array[inx] & (1 << bit)))
+    {
+      LEAVE_DBS_IF_CKSUM (dbs);
     return 1;
+    }
+  LEAVE_DBS_IF_CKSUM (dbs);
   return 0;
 }
 
@@ -1774,8 +1943,12 @@ dbs_page_allocated (dbe_storage_t * dbs, dp_addr_t n)
   dp_addr_t page;
   int inx, bit;
   dbs_locate_free_bit (dbs, n, &array, &page, &inx, &bit);
+  if (0 == (array[inx] & 1L << bit))
+    {
+      page_set_update_checksum (array, inx, bit);
   array[inx] |= 1 << bit;
   dbs->dbs_n_free_pages--;
+    }
 }
 
 
@@ -1964,7 +2137,7 @@ dbs_extend_stripes (dbe_storage_t * dbs)
 void
 itc_hold_pages (it_cursor_t * itc, buffer_desc_t * buf, int n)
 {
-  dbe_storage_t * dbs = itc->itc_space->isp_tree->it_storage;
+  dbe_storage_t * dbs = itc->itc_tree->it_storage;
   IN_DBS (dbs);
   FAILCK (itc);
   if (dbs->dbs_n_free_pages - dbs->dbs_n_pages_on_hold > (uint32) n)
@@ -1997,7 +2170,7 @@ itc_hold_pages (it_cursor_t * itc, buffer_desc_t * buf, int n)
 void
 itc_free_hold (it_cursor_t * itc)
 {
-  dbe_storage_t * dbs = itc->itc_space->isp_tree->it_storage;
+  dbe_storage_t * dbs = itc->itc_tree->it_storage;
   IN_DBS (dbs);
   dbs->dbs_n_pages_on_hold -= itc->itc_n_pages_on_hold;
   itc->itc_n_pages_on_hold = 0;
@@ -2010,7 +2183,7 @@ itc_free_hold (it_cursor_t * itc)
 void
 itc_check_disk_space (it_cursor_t * itc, buffer_desc_t * buf, int n)
 {
-  dbe_storage_t * dbs = itc->itc_space->isp_tree->it_storage;
+  dbe_storage_t * dbs = itc->itc_tree->it_storage;
   FAILCK (itc);
   if (dbs->dbs_n_free_pages - dbs->dbs_n_pages_on_hold < (uint32) n)
     {
@@ -2049,6 +2222,7 @@ dbs_get_free_disk_page_near (dbe_storage_t * dbs, dp_addr_t near_dp)
       while (free_buf)
 	{
 	  page = (uint32 *) (free_buf->bd_buffer + DP_DATA);
+	  page_set_check ((db_buf_t) page);
 	  for (word = 0; word < LONGS_ON_PAGE; word++)
 	    {
 	      if (page[word] != 0xffffffff)
@@ -2065,6 +2239,7 @@ dbs_get_free_disk_page_near (dbe_storage_t * dbs, dp_addr_t near_dp)
 
     }
 bit_found:
+  page_set_update_checksum (page, word, bit);
   page[word] |= ((uint32) 1) << bit;
   dbs->dbs_n_free_pages--;
   dp = (bit + (word * BITS_IN_LONG) + (page_no * BITS_ON_PAGE));
@@ -2105,6 +2280,16 @@ dbs_get_free_disk_page (dbe_storage_t * dbs, dp_addr_t near_dp)
 }
 
 
+void
+dbs_unfreeable (dbe_storage_t * dbs, dp_addr_t dp, int flag)
+{
+  if (!flag) GPF_T1 ("must have non-0 flag for unfreeable dp");
+  sethash (DP_ADDR2VOID (dp), dbs->dbs_unfreeable_dps, (void*)(ptrlong)  flag);
+}
+
+
+int freeing_unfreeable; /*must be set if freeing registry, remap list or such pages */
+
 long disk_releases = 0;
 void
 dbs_free_disk_page (dbe_storage_t * dbs, dp_addr_t dp)
@@ -2122,6 +2307,13 @@ dbs_free_disk_page (dbe_storage_t * dbs, dp_addr_t dp)
       log_info ("Freeing dp out of range %d ", dp);
       return;
     }
+  if (gethash (DP_ADDR2VOID (dp), dbs->dbs_unfreeable_dps))
+    {
+      if (freeing_unfreeable)
+	remhash (DP_ADDR2VOID (dp), dbs->dbs_unfreeable_dps);
+      else
+	GPF_T1 ("freeing an unfreeable page, like registry, remap list or page set");
+    }
   dbs_locate_free_bit (dbs, dp, &page, &page_no, &word, &bit);
 
 #ifndef NDEBUG
@@ -2129,6 +2321,7 @@ dbs_free_disk_page (dbe_storage_t * dbs, dp_addr_t dp)
   if (!(page[word] & (1 << bit)))
     GPF_T1 ("Double free of disk page.");
 #endif
+  page_set_update_checksum (page, word, bit);
   page[word] &= ~(1 << bit);
   dbs->dbs_n_free_pages++;
   disk_releases++;
@@ -2264,12 +2457,13 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
       else
 	{
 	  /* Be civilized. Get read access for the time to write */
-	  index_space_t * isp = buf->bd_space;
-	  if (isp)
+	  index_tree_t * tree = buf->bd_tree;
+	  if (tree)
 	    {
-	      IN_PAGE_MAP (isp->isp_tree);
+	      it_map_t * itm;
+	      if (bp_buf_enter (buf, &itm))
+	    {
 	      if (buf->bd_is_dirty
-		  && !buf->bd_in_write_queue
 		  && !buf->bd_iq)
 		{
 		  if (!buf->bd_is_write &&
@@ -2279,7 +2473,8 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
 		      bufs[fill++] = buf;
 		    }
 		}
-	      LEAVE_PAGE_MAP (isp->isp_tree);
+		  mutex_leave (&itm->itm_mtx);
+		}
 	    }
 	}
       page_ctr++;
@@ -2299,10 +2494,11 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
       wi_inst.wi_n_dirty--;
       if (!force)
 	{
-	  index_space_t * isp = bufs[n]->bd_space;
-	  IN_PAGE_MAP (isp->isp_tree);
+	  index_tree_t * tree = bufs[n]->bd_tree;
+	  it_map_t * itm = IT_DP_MAP (tree, bufs[n]->bd_page);
+	  mutex_enter (&itm->itm_mtx);
 	  page_leave_inner (bufs[n]);
-	  LEAVE_PAGE_MAP (isp->isp_tree);
+	  mutex_leave (&itm->itm_mtx);
 	}
     }
   dk_free (bufs, bufs_len);
@@ -2718,7 +2914,8 @@ dbs_reset_row_na (db_buf_t row, dbe_key_t * page_key)
 }
 
 
-void dbs_rev_h_index  (dbe_storage_t * dbs, buffer_desc_t * buf)
+void 
+dbs_rev_h_index  (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   if (buf->bd_physical_page && dbs_is_free_page (dbs, buf->bd_physical_page))
 		return;
@@ -2748,7 +2945,7 @@ void dbs_rev_h_index  (dbe_storage_t * dbs, buffer_desc_t * buf)
   {
     db_buf_t page = buf->bd_buffer;
     key_id_t pg_key_id = SHORT_REF (page + DP_KEY_ID);
-    dbe_key_t * pg_key = KI_TEMP == pg_key_id ?  buf->bd_space->isp_tree->it_key
+    dbe_key_t * pg_key = KI_TEMP == pg_key_id ?  buf->bd_tree->it_key
       : sch_id_to_key (wi_inst.wi_schema, pg_key_id);
     int pos = SHORT_REF (page + DP_FIRST);
 
@@ -3158,6 +3355,8 @@ wi_open_dbs ()
 
 
 extern dk_mutex_t * log_write_mtx;
+extern   dk_mutex_t * transit_list_mtx;
+
 
 void
 wi_open (char *mode)
@@ -3165,10 +3364,13 @@ wi_open (char *mode)
   int inx;
   const_length_init ();
   bm_init ();
+  search_inline_init ();
   wi_inst.wi_txn_mtx = mutex_allocate_typed (MUTEX_TYPE_SHORT);
-  mutex_option (wi_inst.wi_txn_mtx, "TXN", txn_mtx_entry_check, NULL);
+  mutex_option (wi_inst.wi_txn_mtx, "TXN", NULL /*txn_mtx_entry_check */, NULL);
   log_write_mtx = mutex_allocate ();
-  mutex_option (log_write_mtx, "Log write", NULL, NULL);
+  mutex_option (log_write_mtx, "Log_write", NULL, NULL);
+  transit_list_mtx = mutex_allocate ();
+  mutex_option (transit_list_mtx, "transit_list", NULL, NULL);
   db_read_cfg (NULL, mode);
 
   wi_inst.wi_bps = (buffer_pool_t **) dk_alloc_box (bp_n_bps * sizeof (caddr_t), DV_CUSTOM);
@@ -3229,6 +3431,13 @@ void rbp_free (caddr_t p);
 extern dk_hash_t * dp_compact_checked;
 extern dk_mutex_t * dp_compact_mtx;
 
+#ifdef MTX_DEBUG
+#define TRX_RC_SZ 2
+#else
+#define TRX_RC_SZ 200
+#endif
+
+
 
 void
 wi_init_globals (void)
@@ -3236,6 +3445,9 @@ wi_init_globals (void)
   PrpcInitialize ();
   blobio_init ();
 
+#ifdef PAGE_SET_CHECKSUM
+  page_set_checksums = hash_table_allocate (203);
+#endif
   #ifdef DISK_CHECKSUM
   disk_checksum = hash_table_allocate (100000);
   dck_mtx = mutex_allocate ();
@@ -3250,22 +3462,23 @@ wi_init_globals (void)
 				   (rc_destr_t) rl_free, NULL, 0);
   rb_page_rc = resource_allocate (100, (rc_constr_t) rbp_allocate,
 				  (rc_destr_t) rbp_free, NULL, 0);
+  mutex_option (rb_page_rc->rc_mtx, "rb_pages", NULL, NULL);
   /* resource_no_sem (lock_rc); */
 
-  trx_rc = resource_allocate (200, (rc_constr_t) lt_allocate,
+  trx_rc = resource_allocate (TRX_RC_SZ, (rc_constr_t) lt_allocate,
 			    (rc_destr_t) lt_free, (rc_destr_t) lt_clear, 0);
   buf_sort_mtx = mutex_allocate_typed (MUTEX_TYPE_LONG);
   time_mtx = mutex_allocate ();
   checkpoint_mtx = mutex_allocate_typed (MUTEX_TYPE_LONG);
   mutex_option (checkpoint_mtx, "CPT", NULL, NULL);
-  lt_locks_mtx = mutex_allocate ();
-  mutex_option (lt_locks_mtx, "LT_LOCKS", NULL, NULL);
+  old_roots_mtx = mutex_allocate ();
+  mutex_option (old_roots_mtx, "old_root_images", NULL, NULL);
 
   hash_index_cache.hic_mtx = mutex_allocate ();
 #ifdef BUF_DEBUG
   temp_trees_mtx = mutex_allocate ();
 #endif
-  mutex_option (hash_index_cache.hic_mtx, "hash index cache", NULL, NULL);
+  mutex_option (hash_index_cache.hic_mtx, "hash_index_cache", NULL, NULL);
   hash_index_cache.hic_hashes = id_hash_allocate (101, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   hash_index_cache.hic_col_to_it = hash_table_allocate (201);
   hash_index_cache.hic_pk_to_it = hash_table_allocate (201);
@@ -3297,12 +3510,16 @@ dbe_key_open (dbe_key_t * key)
       start_str = registry_get (kf->kf_name);
       LEAVE_TXN;
       kf->kf_it = it_allocate (kf->kf_storage);
-
-      mutex_option (kf->kf_it->it_page_map_mtx, kf->kf_name, it_page_map_entry_check, (void*) kf->kf_it);
       {
+	int inx;
 	char mtx_name[200];
-	snprintf (mtx_name, sizeof (mtx_name), "lock rel %100s", kf->kf_name);
+	snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%100s", kf->kf_name);
 	mutex_option (kf->kf_it->it_lock_release_mtx, mtx_name, NULL,  NULL);
+	for (inx = 0; inx < IT_N_MAPS; inx++)
+	  {
+	    sprintf (mtx_name, "%s:%d", kf->kf_name, inx);
+	    mutex_option (&(kf->kf_it->it_maps[inx].itm_mtx), mtx_name, NULL /*it_page_map_entry_check*/, (void*) &kf->kf_it->it_maps[inx]);
+      }
       }
       kf->kf_it->it_key = key;
       if (start_str)
@@ -3310,37 +3527,46 @@ dbe_key_open (dbe_key_t * key)
       dk_free_tree (start_str);
       if (!start_dp)
 	{
-	  buffer_desc_t * buf = isp_new_page (kf->kf_it->it_commit_space, 0, DPF_INDEX, 0, 0);
+	  it_map_t * itm;
+	  buffer_desc_t * buf = it_new_page (kf->kf_it, 0, DPF_INDEX, 0, 0);
 	  pg_init_new_root (buf);
-	  kf->kf_it->it_commit_space->isp_root = buf->bd_page;
-	  kf->kf_it->it_checkpoint_space->isp_root = buf->bd_page;
-	  IN_PAGE_MAP (kf->kf_it);
+	  kf->kf_it->it_root = buf->bd_page;
+	  itm = IT_DP_MAP (kf->kf_it, buf->bd_page);
+	  mutex_enter (&itm->itm_mtx);
 	  page_leave_inner (buf);
-	  LEAVE_PAGE_MAP (kf->kf_it);
+	  mutex_leave (&itm->itm_mtx);
 	}
       else
 	{
-	  kf->kf_it->it_commit_space->isp_root = start_dp;
+	  kf->kf_it->it_root = start_dp;
 	}
     }
   END_DO_BOX;
 }
 
 
+#define ROOT_WRONG_KEY 0
+#define ROOT_EMPTY 1
+#define ROOT_NOT_EMPTY 2
+
+
 int
-buf_is_empty_root (buffer_desc_t * buf)
+buf_is_empty_root (buffer_desc_t * buf, dbe_key_t * key)
 {
   int ct = buf->bd_content_map->pm_count, pos;
-  key_id_t key_id;
+  key_id_t key_id = SHORT_REF (buf->bd_buffer + DP_KEY_ID);
+  dbe_key_t * page_key = sch_id_to_key (wi_inst.wi_schema, key_id);
+  if (!page_key || page_key->key_super_id != key->key_super_id)
+    return ROOT_WRONG_KEY;
   if (ct != 1)
-    return 0;
+    return ROOT_NOT_EMPTY;
   pos = buf->bd_content_map->pm_entries[0];
   key_id = SHORT_REF (buf->bd_buffer + pos + IE_KEY_ID);
   if (key_id != KI_LEFT_DUMMY)
-    return 0;
+    return ROOT_NOT_EMPTY;
   if (0 != LONG_REF (buf->bd_buffer + pos + IE_LEAF))
-    return 0;
-  return 1;
+    return ROOT_NOT_EMPTY;
+  return ROOT_EMPTY;
 }
 
 
@@ -3352,32 +3578,41 @@ key_dropped (dbe_key_t * key)
     return; /* is in the tree of its super */
   DO_BOX (dbe_key_frag_t *, kf, inx, key->key_fragments)
     {
+      int is_empty;
       buffer_desc_t * buf;
       it_cursor_t itc_auto;
       it_cursor_t * itc = &itc_auto;
       ITC_INIT (itc, kf->kf_it->itc_commit_space, NULL);
       itc_from_it (itc, kf->kf_it);
       do {
-	ITC_IN_MAP (itc);
-	page_wait_access (itc, itc->itc_space->isp_root, NULL, NULL, &buf, PA_WRITE, RWG_WAIT_SPLIT);
+	ITC_IN_VOLATILE_MAP (itc, itc->itc_tree->it_root);
+	page_wait_access (itc, itc->itc_tree->it_root, NULL, &buf, PA_WRITE, RWG_WAIT_SPLIT);
       } while (itc->itc_to_reset >= RWG_WAIT_SPLIT);
-      if (!buf_is_empty_root (buf))
+      is_empty = buf_is_empty_root (buf, key);
+      if (ROOT_NOT_EMPTY == is_empty)
 	{
-	  log_error ("Dropping schema for a non-empty index tree");
-	  itc_page_leave (itc, buf);
-	  ITC_LEAVE_MAP (itc);
-	  continue;
+	  log_error ("Dropping schema for a non-empty index tree %s.  Not dangerous.", key->key_name);
 	}
-      ITC_IN_MAP (itc);
+
+      if (ROOT_WRONG_KEY != is_empty)
+	{
+	  itc->itc_page = buf->bd_page;
+	  ITC_IN_KNOWN_MAP (itc, buf->bd_page);
       itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
-      isp_free_page (kf->kf_it->it_commit_space, buf);
-      ITC_LEAVE_MAP (itc);
+	  it_free_page (kf->kf_it, buf);
+	  ITC_LEAVE_MAP_NC (itc);
+	}
+      else
+	{
+	  log_error ("Tree with a root of another key in dropping tree of %s.", key->key_name);
+	}
+      ITC_LEAVE_MAPS (itc);
       IN_TXN;
       registry_set (kf->kf_name, NULL);
       dk_set_delete (&wi_inst.wi_master->dbs_trees, kf->kf_it);
       dk_set_push (&wi_inst.wi_master->dbs_deleted_trees, kf->kf_it);
       LEAVE_TXN;
-      kf->kf_it->it_commit_space->isp_root = 0;
+      kf->kf_it->it_root = 0;
     }
   END_DO_BOX;
 }
@@ -3390,7 +3625,7 @@ dbe_key_save_roots (dbe_key_t * key)
   DO_BOX (dbe_key_frag_t *, kf, inx, key->key_fragments)
     {
       char str[20];
-      snprintf (str, sizeof (str), "%d", (int) kf->kf_it->it_commit_space->isp_root);
+      snprintf (str, sizeof (str), "%d", (int) kf->kf_it->it_root);
       ASSERT_IN_TXN; /* called from checkpoint inside txn mtx */
       registry_set (kf->kf_name, str);
     }

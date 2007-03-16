@@ -585,7 +585,7 @@ xper_blob_append_data (xper_ctx_t * ctx, const char *data, size_t len)
   size_t filled;
   buffer_desc_t *buf;
   size_t len1;
-  ASSERT_OUTSIDE_MAP (ctx->xpc_itc->itc_tree);
+  ASSERT_OUTSIDE_MAP (ctx->xpc_itc->itc_tree, ctx->xpc_itc->itc_page);
   ITC_FAIL (ctx->xpc_itc)
   {
     filled = LONG_REF/*_NA*/ (ctx->xpc_buf->bd_buffer + DP_BLOB_LEN);
@@ -594,14 +594,14 @@ xper_blob_append_data (xper_ctx_t * ctx, const char *data, size_t len)
 	if (filled >= PAGE_DATA_SZ)
 	  {
 	    size_t old_n_pages = BL_N_PAGES(ctx_bh->bh_length); /* number of new pages is old_n_pages + 1 */
-	    buf = isp_new_page (ctx->xpc_itc->itc_space, ctx->xpc_itc->itc_page,
+	    buf = it_new_page (ctx->xpc_itc->itc_tree, ctx->xpc_itc->itc_page,
 		DPF_BLOB, 0, 0);
 #ifdef DEBUG
 	    if (0 == buf->bd_page)
 	      GPF_T;
 #endif
 	    xper_blob_log_page_to_dir (ctx_bh, old_n_pages, buf->bd_page);
-	    ITC_LEAVE_MAP (ctx->xpc_itc);
+	    ITC_LEAVE_MAPS (ctx->xpc_itc);
 	    if (!buf)
 	      {
 		xper_destroy_ctx (ctx);
@@ -612,10 +612,8 @@ xper_blob_append_data (xper_ctx_t * ctx, const char *data, size_t len)
 	    LONG_SET/*_NA*/ (ctx->xpc_buf->bd_buffer + DP_BLOB_LEN, PAGE_DATA_SZ);
 	    LONG_SET/*_NA*/ (ctx->xpc_buf->bd_buffer + DP_OVERFLOW, buf->bd_page);
 	    buf_set_dirty (ctx->xpc_buf);
-	    ITC_IN_MAP (ctx->xpc_itc);
-	    page_leave_inner (ctx->xpc_buf);
+	    page_leave_outside_map (ctx->xpc_buf);
 	    ctx->xpc_buf = NULL;
-	    ITC_LEAVE_MAP (ctx->xpc_itc);
 	    ctx->xpc_buf = buf;
 	    filled = 0;
 	  }
@@ -626,11 +624,11 @@ xper_blob_append_data (xper_ctx_t * ctx, const char *data, size_t len)
 	len -= len1;
 	data += len1;
       }
-    ITC_LEAVE_MAP (ctx->xpc_itc);
+    ITC_LEAVE_MAPS (ctx->xpc_itc);
   }
   ITC_FAILED
   {
-    ITC_LEAVE_MAP (ctx->xpc_itc);
+    ITC_LEAVE_MAPS (ctx->xpc_itc);
     xper_destroy_ctx (ctx);
     log_error ("Out of disk space for database");
     sqlr_new_error ("XE000", "XP102", "ITC error while parsing XML");
@@ -687,7 +685,7 @@ get_blob_page_for_read (it_cursor_t * itc, xper_doc_t * xpd, unsigned n)
   buffer_desc_t *buf;
   dp_addr_t nth_page;
   nth_page = xpd->xpd_bh->bh_pages[n];
-  if (!page_wait_blob_access (itc, nth_page, &buf, PA_READ, xpd->xpd_bh, 0))
+  if (!page_wait_blob_access (itc, nth_page, &buf, PA_READ, xpd->xpd_bh, 1))
     longjmp_splice (itc->itc_fail_context, RST_ERROR);
   return buf;
 }
@@ -698,7 +696,7 @@ get_blob_page_for_write (it_cursor_t * itc, xper_doc_t * xpd, unsigned n)
   buffer_desc_t *buf;
   dp_addr_t nth_page;
   nth_page = xpd->xpd_bh->bh_pages[n];
-  if (!page_wait_blob_access (itc, nth_page, &buf, PA_WRITE, xpd->xpd_bh, 0))
+  if (!page_wait_blob_access (itc, nth_page, &buf, PA_WRITE, xpd->xpd_bh, 1))
     longjmp_splice (itc->itc_fail_context, RST_ERROR);
   return buf;
 }
@@ -722,7 +720,7 @@ set_long_in_blob (xper_ctx_t * ctx, long pos, long value)
 	{
 	  LONG_SET_NA (buf->bd_buffer + DP_DATA + pos % PAGE_DATA_SZ, value);
 	  buf_set_dirty (buf);
-	  page_leave_inner (buf);
+	  page_leave_outside_map (buf);
 	}
       else
 	{			/* the worst case - number is split between pages */
@@ -732,7 +730,7 @@ set_long_in_blob (xper_ctx_t * ctx, long pos, long value)
 	  LONG_SET_NA (cbuf, value);
 	  memcpy (buf->bd_buffer + DP_DATA + pos % PAGE_DATA_SZ, cbuf, split);
 	  buf_set_dirty (buf);
-	  page_leave_inner (buf);
+	  page_leave_outside_map (buf);
 	  if (next_page_no == last_page_no)
 	    {
 	      memcpy (ctx->xpc_buf->bd_buffer + DP_DATA, cbuf + split, 4 - split);
@@ -743,7 +741,7 @@ set_long_in_blob (xper_ctx_t * ctx, long pos, long value)
 	      buf = get_blob_page_for_write (ctx->xpc_itc, ctx->xpc_doc, next_page_no); /* the end is not on the current page */
 	      memcpy (buf->bd_buffer + DP_DATA, cbuf + split, 4 - split);
 	      buf_set_dirty (buf);
-	      page_leave_inner (buf);
+	      page_leave_outside_map (buf);
 	    }
 	}
     }
@@ -781,7 +779,6 @@ cb_trace_start_tag (xper_ctx_t * ctx, xper_stag_t * data)
       pos = (long) (ptrlong) ctx->xpc_poss->data;
       ITC_FAIL (ctx->xpc_itc)
       {
-	ITC_IN_MAP (ctx->xpc_itc);
 	if (pos > 0)
 	  {
 	    /* first child */
@@ -800,11 +797,11 @@ cb_trace_start_tag (xper_ctx_t * ctx, xper_stag_t * data)
 	    data->parent =
 		((ctx->xpc_poss->next) ? (long) (ptrlong) ctx->xpc_poss->next->data : 0);
 	  }
-	ITC_LEAVE_MAP (ctx->xpc_itc);
+	ITC_LEAVE_MAPS (ctx->xpc_itc);
       }
       ITC_FAILED
       {
-	ITC_LEAVE_MAP (ctx->xpc_itc);
+	ITC_LEAVE_MAPS (ctx->xpc_itc);
 	sqlr_new_error ("XE000", "XP9A9", "ITC error on writing persistent XML");
       }
       END_FAIL (ctx->xpc_itc);
@@ -827,7 +824,7 @@ cb_element_start (void *userdata, const char * name, vxml_parser_attrdata_t *att
   caddr_t tmp_box;
 
 /* IvAn/TextXperIndex/000815 Word counter added */
-  ASSERT_OUTSIDE_MAP (ctx->xpc_itc->itc_tree); /* To ensure we had no chance to get deadlock inside the XML parser */
+  ASSERT_OUTSIDE_MAP (ctx->xpc_itc->itc_tree, ctx->xpc_itc->itc_page); /* To ensure we had no chance to get deadlock inside the XML parser */
   count_buffered_words (ctx);
   ctx->xpc_word_hider = XML_MKUP_STAG;
 
@@ -870,7 +867,6 @@ cb_trace_end_tag (xper_ctx_t * ctx, long curr_pos, const char * name)
   /* end tag */
   ITC_FAIL (ctx->xpc_itc)
   {
-    ITC_IN_MAP (ctx->xpc_itc);
     set_long_in_blob (ctx, pos + ctx->xpc_tn_length2 +
 	STR_NAME_OFF + STR_END_TAG_OFF,
 	curr_pos);
@@ -884,11 +880,11 @@ cb_trace_end_tag (xper_ctx_t * ctx, long curr_pos, const char * name)
 	    STR_NAME_OFF + STR_ADDON_OR_ATTR_OFF + (2 * 4),
 	    (long) ctx->xpc_attr_word_ctr);
       }
-    ITC_LEAVE_MAP (ctx->xpc_itc);
+    ITC_LEAVE_MAPS (ctx->xpc_itc);
   }
   ITC_FAILED
   {
-    ITC_LEAVE_MAP (ctx->xpc_itc);
+    ITC_LEAVE_MAPS (ctx->xpc_itc);
     sqlr_new_error ("XE000", "XP9A9", "ITC error on writing persistent XML");
   }
   END_FAIL (ctx->xpc_itc);
@@ -905,7 +901,7 @@ cb_element_end (void *userdata, const char * name)
   xper_textplist_t *textplist_i;
 
 /* IvAn/TextXperIndex/000815 Word counter added */
-  ASSERT_OUTSIDE_MAP (ctx->xpc_itc->itc_tree); /* To ensure we had no chance to get deadlock inside the XML parser */
+  ASSERT_OUTSIDE_MAP (ctx->xpc_itc->itc_tree, ctx->xpc_itc->itc_page); /* To ensure we had no chance to get deadlock inside the XML parser */
   count_buffered_words (ctx);
   if (XML_MKUP_ETAG != ctx->xpc_word_hider)
     {
@@ -1361,10 +1357,8 @@ xper_destroy_ctx (xper_ctx_t * ctx)
     }
   if ((NULL != ctx->xpc_itc) && (NULL != ctx->xpc_buf))
     {
-      ITC_IN_MAP (ctx->xpc_itc);
       buf_set_dirty (ctx->xpc_buf);
-      page_leave_inner (ctx->xpc_buf); /* This should be done before blob_chain_delete() below */
-      ITC_LEAVE_MAP (ctx->xpc_itc);
+      page_leave_outside_map (ctx->xpc_buf); /* This should be done before blob_chain_delete() below */
     }
   if (NULL != ctx->xpc_doc)
     {
@@ -1432,7 +1426,6 @@ static caddr_t
   ITC_FAIL (tmp_itc)
   {
     pn = pos / PAGE_DATA_SZ;
-    ITC_IN_MAP (tmp_itc);
     buf = get_blob_page_for_read (tmp_itc, xpe->xe_doc.xpd, pn);
 
     if (NULL != buf)
@@ -1443,10 +1436,9 @@ static caddr_t
       {
 	if (NULL != buf)
 	  {
-	    page_leave_inner (buf);
+	    page_leave_outside_map (buf);
 	    buf = NULL;
 	  }
-	ITC_LEAVE_MAP (tmp_itc);
 	itc_free (tmp_itc);
 	if (box)
 	  dk_free_box (box);
@@ -1456,11 +1448,11 @@ static caddr_t
     pos++;
     if (0 == pos % PAGE_DATA_SZ)
       {
-	page_leave_inner (buf);
+	page_leave_outside_map (buf);
 	buf = NULL;
 	pn++;
 	buf = get_blob_page_for_read (tmp_itc, xpe->xe_doc.xpd, pn);
-	ITC_LEAVE_MAP (tmp_itc);
+	ITC_LEAVE_MAPS (tmp_itc);
       }
 
     if (DV_SHORT_STRING_SERIAL == dtp)
@@ -1476,12 +1468,10 @@ static caddr_t
 	else
 	  {			/* the worst case - number is split between pages */
 	    memcpy (cbuf, buf->bd_buffer + DP_DATA + PAGE_DATA_SZ - split, split);
-	    ITC_IN_MAP (tmp_itc);
-	    page_leave_inner (buf);
+	    page_leave_outside_map (buf);
 	    buf = NULL;
 	    pn++;
 	    buf = get_blob_page_for_read (tmp_itc, xpe->xe_doc.xpd, pn);
-	    ITC_LEAVE_MAP (tmp_itc);
 	    memcpy (cbuf + split, buf->bd_buffer + DP_DATA, 4 - split);
 	    len = LONG_REF_NA (cbuf);
 	  }
@@ -1498,11 +1488,9 @@ static caddr_t
 
 	if (0 == pos % PAGE_DATA_SZ)
 	  {
-	    ITC_IN_MAP (tmp_itc);
-	    page_leave_inner (buf);
+	    page_leave_outside_map (buf);
 	    buf = NULL;
 	    buf = get_blob_page_for_read (tmp_itc, xpe->xe_doc.xpd, ++pn);
-	    ITC_LEAVE_MAP (tmp_itc);
 	  }
 
 	memcpy (box + i, buf->bd_buffer + DP_DATA + pos % PAGE_DATA_SZ, cpsz);
@@ -1510,16 +1498,13 @@ static caddr_t
 	pos += (long) cpsz;
 	i += cpsz;
       }
-    ITC_IN_MAP (tmp_itc);
-    page_leave_inner (buf);
+    page_leave_outside_map (buf);
     buf = NULL;
-    ITC_LEAVE_MAP (tmp_itc);
   }
   ITC_FAILED
   {
     if (NULL != buf)
-      page_leave_inner (buf);
-    ITC_LEAVE_MAP (tmp_itc);
+      page_leave_outside_map (buf);
     itc_free (tmp_itc);
     if (box)
       dk_free_box (box);
@@ -2164,8 +2149,7 @@ bdfi_read (void *read_cd, char *tgtbuf, size_t bsize)
 
 get_more:
     nth_page = iter->bdfi_bh->bh_pages[iter->bdfi_page_idx];
-    ITC_IN_MAP (tmp_itc);
-    if (!page_wait_blob_access (tmp_itc, nth_page, &buf, PA_READ, iter->bdfi_bh, 0))
+    if (!page_wait_blob_access (tmp_itc, nth_page, &buf, PA_READ, iter->bdfi_bh, 1))
       {
         iter->bdfi_total_pos = iter->bdfi_bh->bh_diskbytes;
       }
@@ -2216,17 +2200,16 @@ get_more:
           GPF_T;
 #endif
       }
-    page_leave_inner (buf);
+    page_leave_outside_map (buf);
     buf = NULL;
-    ITC_LEAVE_MAP (tmp_itc);
+    ITC_LEAVE_MAPS (tmp_itc);
     if (bsize && (iter->bdfi_total_pos < iter->bdfi_bh->bh_diskbytes))
       goto get_more; /* see above */
   }
   ITC_FAILED
   {
     if (NULL != buf)
-      page_leave_inner (buf);
-    ITC_LEAVE_MAP (tmp_itc);
+      page_leave_outside_map (buf);
     itc_free (tmp_itc);
     sqlr_new_error ("XE000", "XP9A5", "Error while reading XML from BLOB");
   }
@@ -2317,15 +2300,15 @@ blob_looks_like_serialized_xml (query_instance_t * qi, blob_handle_t * bh)
       res = XE_PLAIN_TEXT_OR_SERIALIZED_VECTOR;
     else
       res = XE_PLAIN_TEXT;
-    page_leave_inner (buf);
+    page_leave_outside_map (buf);
     buf = NULL;
-    ITC_LEAVE_MAP (itc);
+    ITC_LEAVE_MAPS (itc);
   }
   ITC_FAILED
   {
     if (NULL != buf)
-      page_leave_inner (buf);
-    ITC_LEAVE_MAP (itc);
+      page_leave_outside_map (buf);
+    ITC_LEAVE_MAPS (itc);
     itc_free (itc);
     sqlr_new_error ("XE000", "XP9A6", "ITC error while checking persistent XML");
   }
@@ -2629,9 +2612,9 @@ parse_source:
 
     ITC_FAIL (context.xpc_itc)
     {
-      buf = isp_new_page (context.xpc_itc->itc_space, context.xpc_itc->itc_page,
+      buf = it_new_page (context.xpc_itc->itc_tree, context.xpc_itc->itc_page,
 	  DPF_BLOB, 0, 0);
-      ITC_LEAVE_MAP (context.xpc_itc);
+      ITC_LEAVE_MAPS (context.xpc_itc);
       if (!buf)
 	{
 	  xper_destroy_ctx (&context);
@@ -2644,7 +2627,7 @@ parse_source:
     }
     ITC_FAILED
     {
-      ITC_LEAVE_MAP (context.xpc_itc);
+      ITC_LEAVE_MAPS (context.xpc_itc);
       xper_destroy_ctx (&context);
       dk_free_box (uri);
       sqlr_new_error ("XE000", "XP102", "ITC error while parsing XML");
@@ -2729,7 +2712,6 @@ parse_source:
 	  context.xpc_main_word_ctr += 1;
 	ITC_FAIL (context.xpc_itc)
 	{
-	  ITC_IN_MAP (context.xpc_itc);
 /* IvAn/TextXperIndex/000815 Word counter added, "root" replaced with " root" */
 	  set_long_in_blob (&context, XPER_ROOT_POS + 7 /*DV_SHORT_STR " root" */  +
 	      STR_NAME_OFF + STR_END_TAG_OFF,
@@ -2743,11 +2725,11 @@ parse_source:
 		  STR_NAME_OFF + STR_ADDON_OR_ATTR_OFF + (2 * 4),
 		  (long) context.xpc_attr_word_ctr);
 	    }
-	  ITC_LEAVE_MAP (context.xpc_itc);
+	  ITC_LEAVE_MAPS (context.xpc_itc);
 	}
 	ITC_FAILED
 	{
-	  ITC_LEAVE_MAP (context.xpc_itc);
+	  ITC_LEAVE_MAPS (context.xpc_itc);
 	  dk_free_box (uri);
 	  sqlr_new_error ("XE000", "XP9A9", "ITC error on writing persistent XML");
 	}
@@ -2773,15 +2755,14 @@ parse_source:
 	  {
 	    ITC_FAIL (context.xpc_itc)
 	    {
-	      ITC_IN_MAP (context.xpc_itc);
 	      set_long_in_blob (&context, XPER_ROOT_POS + 7 /*DV_SHORT_STR " root" */  +
 		  STR_NAME_OFF + STR_NS_OFF,
 		  (long) xpd->xpd_bh->bh_length);
-	      ITC_LEAVE_MAP (context.xpc_itc);
+	      ITC_LEAVE_MAPS (context.xpc_itc);
 	    }
 	    ITC_FAILED
 	    {
-	      ITC_LEAVE_MAP (context.xpc_itc);
+	      ITC_LEAVE_MAPS (context.xpc_itc);
 	      dk_free_box (uri);
 	      sqlr_new_error ("XE000", "XP9A9", "ITC error on writing persistent XML");
 	    }
@@ -2789,11 +2770,9 @@ parse_source:
 	    blob_append_dtd (&context, xpd->xd_dtd);
 	  }
       }
-    ITC_IN_MAP (context.xpc_itc);
     buf_set_dirty (context.xpc_buf);
-    page_leave_inner (context.xpc_buf);
+    page_leave_outside_map (context.xpc_buf);
     context.xpc_buf = NULL;
-    ITC_LEAVE_MAP (context.xpc_itc);
     if (!rc)
       {
         dk_free_box (uri);
@@ -6235,9 +6214,9 @@ xper_entity_t *
     tgt_xpd->xpd_bh->bh_it = context.xpc_itc->itc_tree;
     ITC_FAIL (context.xpc_itc)
     {
-      buf = isp_new_page (context.xpc_itc->itc_space, context.xpc_itc->itc_page,
+      buf = it_new_page (context.xpc_itc->itc_tree, context.xpc_itc->itc_page,
 	  DPF_BLOB, 0, 0);
-      ITC_LEAVE_MAP (context.xpc_itc);
+      ITC_LEAVE_MAPS (context.xpc_itc);
       if (!buf)
 	{
 	  xper_destroy_ctx (&context);
@@ -6249,7 +6228,7 @@ xper_entity_t *
     }
     ITC_FAILED
     {
-      ITC_LEAVE_MAP (context.xpc_itc);
+      ITC_LEAVE_MAPS (context.xpc_itc);
       xper_destroy_ctx (&context);
       sqlr_new_error ("XE000", "XP102", "ITC error while cutting XML");
     }
@@ -6279,24 +6258,20 @@ xper_entity_t *
 /* Now we put dtd into blob, if there's something to put */
     ITC_FAIL (context.xpc_itc)
     {
-      ITC_IN_MAP (context.xpc_itc);
       if (0 < dtd_get_buffer_length (src_dtd_ptr[0]))
 	{
 	  set_long_in_blob (&context, XPER_ROOT_POS + 7 /*DV_SHORT_STR " root" */  +
 	      STR_NAME_OFF + STR_NS_OFF,
 	      (long) tgt_xpd->xpd_bh->bh_length);
-	  ITC_LEAVE_MAP (context.xpc_itc);
 	  blob_append_dtd (&context, src_dtd_ptr[0]);
 	}
-      ITC_IN_MAP (context.xpc_itc);
       buf_set_dirty (context.xpc_buf);
-      page_leave_inner (context.xpc_buf);
+      page_leave_outside_map (context.xpc_buf);
       context.xpc_buf = NULL;
-      ITC_LEAVE_MAP (context.xpc_itc);
     }
     ITC_FAILED
     {
-      ITC_LEAVE_MAP (context.xpc_itc);
+      ITC_LEAVE_MAPS (context.xpc_itc);
       xper_destroy_ctx (&context);
       sqlr_new_error ("XE000", "XP102", "ITC error while cutting XML");
     }

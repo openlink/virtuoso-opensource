@@ -101,7 +101,9 @@ cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
 		  reg_buf->bd_page = first;
 		  reg_buf->bd_physical_page = first;
 		  buf_disk_read (reg_buf);
+		  freeing_unfreeable = 1;
 		  dbs_free_disk_page (dbs, first);
+		  freeing_unfreeable = 0;
 		  first = LONG_REF (reg_buf->bd_buffer + DP_OVERFLOW);
 		}
 	    }

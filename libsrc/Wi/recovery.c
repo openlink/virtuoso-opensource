@@ -65,15 +65,16 @@ static int bkp_check_and_recover_blobs = 0;
 static void
 walk_page_transit (it_cursor_t * itc, dp_addr_t dp, buffer_desc_t ** buf_ret)
 {
+  buffer_desc_t * target = NULL;
   for (;;)
     {
-      ITC_IN_MAP (itc);
-      page_wait_access (itc, dp, NULL, *buf_ret, buf_ret,
-			PA_WRITE , RWG_WAIT_SPLIT);
-      if (itc->itc_to_reset != RWG_WAIT_DECOY)
+      page_wait_access (itc, dp, *buf_ret, &target,
+			PA_WRITE , RWG_WAIT_NO_ENTRY_IF_WAIT);
+      if (target)
 	break;
     }
-  ITC_LEAVE_MAP (itc);
+  *buf_ret = target;
+  itc->itc_page = dp;
 }
 
 
@@ -87,6 +88,7 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
     page_func_t func, void* ctx)
 {
   dp_addr_t dp_from = (*buf_ret)->bd_page;
+  buffer_desc_t * buf_from = *buf_ret;
   dp_addr_t leaf;
   db_buf_t page;
   int pos;
@@ -112,13 +114,15 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
       leaf = leaf_pointer (page, pos);
       if (leaf)
 	{
+	  buf_from = *buf_ret;
+	  dp_from = buf_from->bd_page;
 	  save_pos = pos;
 
 	  walk_page_transit (it, leaf, buf_ret);
 	  if ((uint32) (LONG_REF ((*buf_ret)->bd_buffer + DP_PARENT)) != dp_from)
 	    {
 	      log_error ("Bad parent link in %ld coming from %ld link %ld",
-		  leaf, dp_from, LONG_REF ((*buf_ret)->bd_buffer + DP_PARENT));
+		  leaf, buf_from->bd_page, LONG_REF ((*buf_ret)->bd_buffer + DP_PARENT));
 	      if (!correct_parent_links)
 		GPF_T1 ("Bad parent link in backup");
 	    }
@@ -167,11 +171,11 @@ walk_db (lock_trx_t * lt, page_func_t func)
 	    itc->itc_isolation = ISO_UNCOMMITTED;
 	    ITC_FAIL (itc)
 	      {
-		ITC_IN_MAP (itc);
+		itc->itc_random_search = RANDOM_SEARCH_ON; /* do not use root image cache */
 		buf = itc_reset (itc);
+		itc->itc_random_search = RANDOM_SEARCH_OFF;
 		itc_try_land (itc, &buf);
 		/* the whole traversal is in landed (PA_WRITE() mode. page_transit_if_can will not allow mode change in transit */
-		ITC_IN_MAP (itc);
 		if (!buf->bd_content_map)
 		  {
 		    log_error ("Blog ref'referenced as index tree top node dp=%d key=%s\n", buf->bd_page, itc->itc_insert_key->key_name);
@@ -179,7 +183,6 @@ walk_db (lock_trx_t * lt, page_func_t func)
 		else 
 		walk_dbtree (itc, &buf, 0, func, 0);
 		itc_page_leave (itc, buf);
-		ITC_LEAVE_MAP (itc);
 	      }
 	    ITC_FAILED
 	      {
@@ -334,12 +337,12 @@ bkp_check_blob_col (it_cursor_t *master_itc, dtp_t *col, dbe_key_t *key, dbe_col
   bh = bh_from_dv (col, itc);
   if (!bh->bh_page_dir_complete)
     {
-      bh_fetch_dir (itc->itc_tree->it_commit_space, lt, bh);
+      bh_fetch_dir (lt, bh);
     }
   n_pages = box_length ((caddr_t) bh->bh_pages);
   if (BLOB_OK != blob_check (bh))
     return 0;
-  bh_read_ahead (itc->itc_tree->it_commit_space, NULL, bh, 0, bh->bh_diskbytes);
+  bh_read_ahead (NULL, bh, 0, bh->bh_diskbytes);
   while (start)
     {
       uint32 timestamp;
@@ -347,31 +350,27 @@ bkp_check_blob_col (it_cursor_t *master_itc, dtp_t *col, dbe_key_t *key, dbe_col
 
       if (pg_inx >= n_pages)
 	{
-	  ITC_LEAVE_MAP (itc);
 	  log_warning ("blob has nmore pages than pages in page dir.  Can be cyclic.)  Start )= %d", bh->bh_page);
 	  status = 0;
 	  break;
 	}
       if (start != bh->bh_pages[pg_inx])
 	{
-	  ITC_LEAVE_MAP (itc);
 	  log_warning ("blob page dir dp  %d  differs from linked list dp = %d start = %d.",
 		       bh->bh_pages[pg_inx], start, bh->bh_page);
 	  status = 0;
 	  break;
 	}
 
-      ITC_IN_MAP (itc);
-      page_wait_access (itc, start, NULL, NULL, &buf, PA_READ, RWG_WAIT_ANY);
+      ITC_IN_KNOWN_MAP (itc, start);
+      page_wait_access (itc, start, NULL, &buf, PA_READ, RWG_WAIT_ANY);
       if (!buf || PF_OF_DELETED == buf)
 	{
-	  ITC_LEAVE_MAP (itc);
 	  log_warning ("Attempt to read deleted blob dp = %d start = %d.",
 	      start, bh_page);
 	  status = 0;
 	  break;
 	}
-      ITC_IN_MAP (itc);
       type = SHORT_REF (buf->bd_buffer + DP_FLAGS);
       timestamp = LONG_REF (buf->bd_buffer + DP_BLOB_TS);
 
@@ -380,7 +379,7 @@ bkp_check_blob_col (it_cursor_t *master_itc, dtp_t *col, dbe_key_t *key, dbe_col
 	{
 	  log_warning ("wrong blob type blob dp = %d start = %d\n", start, bh_page);
 	  status = 0;
-	  page_leave_inner (buf);
+	  page_leave_outside_map (buf);
 	  break;
 	}
 
@@ -389,16 +388,14 @@ bkp_check_blob_col (it_cursor_t *master_itc, dtp_t *col, dbe_key_t *key, dbe_col
 	  log_warning ("Dirty read of blob dp = %d start = %d.",
 	      start, bh_page);
 	  status = 0;
-	  page_leave_inner (buf);
+	  page_leave_outside_map (buf);
 	  break;
 	}
       start = LONG_REF (buf->bd_buffer + DP_OVERFLOW);
-      ASSERT_IN_MAP (itc->itc_tree);
       if (buf)
-	page_leave_inner (buf);
+	page_leave_outside_map (buf);
       pg_inx += 1;
     }
-  ITC_LEAVE_MAP (itc);
   itc_free (itc);
 
   dk_free_box ((caddr_t) bh);
@@ -727,10 +724,8 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
 		}
 	      if (bkp_check_and_recover_blobs)
 		{
-		  ITC_LEAVE_MAP (it);
 		  if (bkp_check_and_recover_blob_cols (it, page + pos))
 		    buf_set_dirty (buf);
-		  ITC_IN_MAP (it);
 		}
 	      log_insert (it->itc_ltrx, row_key, page+pos, INS_REPLACING);
 	      log_row_blobs (it, page+pos);
@@ -748,7 +743,6 @@ next:
     {
       if (!is_crash_dump)
 	{
-	  ITC_LEAVE_MAP (it);
 	}
       rc = lt_backup_flush (it->itc_ltrx, 1);
       if (rc != LTE_OK)
@@ -1263,11 +1257,11 @@ db_pages_to_log (char *mode, volatile dp_addr_t start_dp, volatile dp_addr_t end
 			db_dbg_account_check_page_in_hash (buf->bd_page);
 #endif
 		    }
-		  page_leave_inner (buf);
+		  buf->bd_is_write = 0;
+		  buf->bd_readers = 0;
 		}
 	    }
 	}
-      ITC_LEAVE_MAP (it);
     }
   ITC_FAILED
     {

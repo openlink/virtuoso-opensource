@@ -352,9 +352,9 @@ bm_insert (bitno_t bm_start, db_buf_t bm, short * bm_len_ret, bitno_t value, int
 void
 key_make_bm_specs (dbe_key_t * key)
 {
-  search_spec_t * sp = key->key_insert_spec;
-  search_spec_t ** bm_ins = &key->key_bm_ins_spec;
-  search_spec_t ** bm_leading = &key->key_bm_ins_leading;
+  search_spec_t * sp = key->key_insert_spec.ksp_spec_array;
+  search_spec_t ** bm_ins = &key->key_bm_ins_spec.ksp_spec_array;
+  search_spec_t ** bm_leading = &key->key_bm_ins_leading.ksp_spec_array;
   while (sp)
     {
       NEW_VARZ (search_spec_t, sp3);
@@ -378,6 +378,8 @@ key_make_bm_specs (dbe_key_t * key)
       }
       sp = sp->sp_next;
     }
+  ksp_cmp_func (&key->key_bm_ins_spec);
+  ksp_cmp_func (&key->key_bm_ins_leading);
 }
 
 
@@ -425,7 +427,7 @@ itc_bm_insert_single (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t image, in
       itc_page_leave  (itc, buf);
       itc->itc_search_mode = SM_INSERT;
     }
-  itc->itc_specs = itc->itc_insert_key->key_insert_spec; /* have insert specs, there can be other specs from prev seek */
+  itc->itc_key_spec = itc->itc_insert_key->key_insert_spec; /* have insert specs, there can be other specs from prev seek */
   rc = itc_insert_unq_ck (itc, image, NULL);
   itc->itc_search_mode = SM_INSERT;
 }
@@ -468,12 +470,22 @@ upd_truncate_row (it_cursor_t * itc, buffer_desc_t ** buf, int nl)
 }
 
 
+/* this is bad whichever way one cuts it.
+ *  A transit of an itc takes place when the bm row it is registered at splits.  Some goo to the right side.
+ * Now this cannot be very well done inside the insert of the  right side because of page map lock order.
+ * So it is done after the fact.  But many concurrent inserts can have the itc transiting. 
+ * So every insert must remember which itc it made to transit.  But because many transits can be going at the same time for one itc,
+ * we must count how many transits are in fact going and reset the transiting flag only after the last transit is done.  Hence there is a local and global list of transiting itcs.   Remove the local list from the globakl list and reset the transit flag for those that are no longer in the list. */
+
+
+dk_set_t transit_itc_list;
+dk_mutex_t * transit_list_mtx;
+
 void
-itc_invalidate_bm_crs (it_cursor_t * itc)
+itc_invalidate_bm_crs (it_cursor_t * itc, buffer_desc_t * buf, int is_in_transit, dk_set_t * local_transits)
 {
   it_cursor_t * registered;
-  ASSERT_IN_MAP (itc->itc_space->isp_tree);
-  registered = (it_cursor_t *) gethash (DP_ADDR2VOID(itc->itc_page), itc->itc_space->isp_page_to_cursor);
+  registered = buf->bd_registered;
   while (registered)
     {
       if (registered->itc_position == itc->itc_position)
@@ -481,9 +493,49 @@ itc_invalidate_bm_crs (it_cursor_t * itc)
 	  if (itc->itc_bp.bp_is_pos_valid && registered->itc_bp.bp_value == itc->itc_bp.bp_value)
 	    registered->itc_is_on_row = 0; /*marks deletion of the value at which registered was */
 	  registered->itc_bp.bp_is_pos_valid = 0;
+	  if (is_in_transit)
+	    {
+	      mutex_enter (transit_list_mtx);
+	      dk_set_push (&transit_itc_list, (void*)registered);
+	      mutex_leave  (transit_list_mtx);
+	      dk_set_push (local_transits, (void*) registered);
+	      registered->itc_bp.bp_transiting = 1;
+	    }
 	}
       registered = registered->itc_next_on_page;
     }
+}
+
+void
+bm_reset_transits (dk_set_t local_transits)
+{
+  dk_set_t * prev;
+  dk_set_t all_transits;
+  mutex_enter (transit_list_mtx);
+  DO_SET (it_cursor_t *, transiting, &local_transits)
+    {
+      prev = &transit_itc_list;
+      all_transits = transit_itc_list;
+      while (all_transits)
+	{
+	  if (transiting == (it_cursor_t*) all_transits->data)
+	    {
+	      if (!dk_set_member (all_transits->next, (void*)transiting))
+		transiting->itc_bp.bp_transiting = 0;
+	      else
+		printf ("bing. itc %p is in more than one local transit lists\n", transiting);
+	      *prev = all_transits->next;
+	      all_transits->next = NULL;
+	      dk_set_free (all_transits);
+	      break;
+	    }
+	  prev = &all_transits->next;
+	  all_transits = all_transits->next;
+	}
+    }
+  END_DO_SET();
+  mutex_leave (transit_list_mtx);
+  dk_set_free (local_transits);
 }
 
 
@@ -498,10 +550,68 @@ box_iri_int64 (int64 n, dtp_t dtp)
 
 
 void
+itc_bm_split_move_crs (it_cursor_t * itc, dk_set_t local_transits)
+{
+  /* the left and right sides are marked by a plh.  Enter left, take the concerned out, enter right, put them there.
+   *      As the position of each becomes known, reset the transiting bit */
+  bitno_t r_split = unbox_iri_int64 (itc->itc_search_params[itc->itc_search_par_fill - 1]);
+  buffer_desc_t * left_buf;
+  int fill = 0, inx;
+  it_cursor_t * cr_temp[1000];
+  placeholder_t * right = itc->itc_bm_split_right_side;
+  placeholder_t * left = itc->itc_bm_split_left_side;
+  it_cursor_t * registered;
+
+  if (!right)
+    {
+      log_error ("itc_bm_split_move_crs with no itc_bm_split_right_side");
+      bm_reset_transits (local_transits);
+      return;
+    }
+
+  left->itc_bp.bp_transiting = 0;
+  right->itc_bp.bp_transiting = 0;
+  left_buf = itc_set_by_placeholder (itc, itc->itc_bm_split_left_side);
+  registered = left_buf->bd_registered;
+  while (registered)
+    {
+      if (registered != (it_cursor_t*) left
+	  && registered->itc_position == left->itc_position)
+	{
+	  /* if it is on the split row and above the split point or if it has not yet read the splitting row because it was locked */
+	  if (registered->itc_bp.bp_just_landed || registered->itc_bp.bp_value >= r_split)
+	    cr_temp[fill++]= registered;
+	  if (fill > 999)
+	    GPF_T1 ("over 1000 crs registered for bm row split");
+	}
+      registered = registered->itc_next_on_page;
+    }
+  for (inx = 0; inx < fill; inx++)
+    itc_unregister_inner (cr_temp[inx], left_buf);
+  if (right->itc_page != left->itc_page)
+    {
+      page_leave_outside_map (left_buf);
+      left_buf = itc_set_by_placeholder (itc, right);
+    }
+  for (inx = 0; inx < fill; inx++)
+    {
+      cr_temp[inx]->itc_to_reset = RWG_WAIT_SPLIT; /*if just landed, this will make it reset the search*/
+      cr_temp[inx]->itc_position = right->itc_position;
+      cr_temp[inx]->itc_page = right->itc_page;
+      cr_temp[inx]->itc_bp.bp_is_pos_valid = 0;
+      itc_register (cr_temp[inx], left_buf);
+    }
+  page_leave_outside_map (left_buf);
+  bm_reset_transits (local_transits);
+}
+
+
+void
 itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t image)
 {
   /* the itc is on a row.  It can be a singleton or one with ce's.  If singleton, delete
    * the singleton and make a 2 value row with the singleton and the new row. Otherwise add the value to the ce's on the row, possibly splitting the row */
+  dk_set_t volatile local_transits = NULL;
   int off, len, rc, row_reserved, row_align_len;
   bitno_t r_start;
   db_buf_t page;
@@ -545,7 +655,7 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t image)
 	    caddr_t box = box_iri_int64 (bm_start, itc->itc_insert_key->key_bit_cl->cl_sqt.sqt_dtp);
 	    ITC_OWNS_PARAM (itc, box);
 	    itc->itc_search_params[itc->itc_search_par_fill - 1] = box;
-	    itc->itc_specs = itc->itc_insert_key->key_insert_spec;
+	    itc->itc_key_spec = itc->itc_insert_key->key_insert_spec;
 	    itc->itc_desc_order = 0;
 	    itc_insert_unq_ck (itc, image, NULL);
 	  }
@@ -574,12 +684,15 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t image)
     space_at_end = 0;
 
   bm_len = len;
+  if (!itc->itc_ltrx->lt_is_excl)
+    {
   lt_rb_update (itc->itc_ltrx, buf->bd_buffer + itc->itc_position);
+    }
   if (!buf->bd_is_dirty)
     {
-      ITC_IN_MAP (itc);
+      ITC_IN_KNOWN_MAP (itc, buf->bd_page);
       itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
-      ITC_LEAVE_MAP (itc);
+      ITC_LEAVE_MAP_NC (itc);
     }
   if (!buf->bd_is_write || buf->bd_readers)
     GPF_T1 ("should have excl buffer in bm ins in row");
@@ -605,9 +718,8 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t image)
 	    }
 	}
       pg_check_map (buf);
-      ITC_IN_MAP (itc);
       itc->itc_bp.bp_is_pos_valid = 0;
-      itc_invalidate_bm_crs (itc);
+      itc_invalidate_bm_crs (itc, buf, 0, NULL);
       itc_page_leave (itc, buf);
       return;
     }
@@ -657,29 +769,33 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t image)
 
 
   memcpy (&left_pl, itc, sizeof (placeholder_t));
-  if (left_pl.itc_next_on_page || left_pl.itc_space_registered) GPF_T1 ("not supposed to be registered while inside bm_ins_on_row");
-  ITC_IN_MAP (itc);
-  itc_register_cursor ((it_cursor_t *)&left_pl, INSIDE_MAP);
+  if (left_pl.itc_next_on_page || left_pl.itc_is_registered) GPF_T1 ("not supposed to be registered while inside bm_ins_on_row");
+  itc_register ((it_cursor_t *)&left_pl, buf);
   itc->itc_bm_split_left_side = &left_pl;
+  itc->itc_bm_split_right_side = NULL;
   itc->itc_bp.bp_is_pos_valid = 0; /* reset the flag so itc_invalidate_bm_crs does not consider the value it itc_bp.bp_value to be deleted */
-  itc_invalidate_bm_crs (itc);
+  itc_invalidate_bm_crs (itc, buf, 1, &local_transits);
   itc_page_leave (itc, buf);
   itc->itc_search_mode = SM_INSERT;
   IE_SET_FLAGS (&image[0], 0); /* can come from existing row, can have tail reserved etc.  Not valid in insert */
   ITC_SAVE_FAIL (itc);
   ITC_FAIL (itc)
     {
-      itc->itc_specs = itc->itc_insert_key->key_insert_spec;
+      itc->itc_key_spec = itc->itc_insert_key->key_insert_spec;
       itc->itc_desc_order = 0;
       rc = itc_insert_unq_ck (itc, image, NULL);
+      itc_bm_split_move_crs (itc, local_transits);
     }
   ITC_FAILED
     {
+      bm_reset_transits (local_transits);
       goto after_fail; /* do not exit, free the mem and placeholders, let the next one catch the busted transaction state */
     }
   END_FAIL (itc);
  after_fail:
-  itc_unregister ((it_cursor_t *) &left_pl, OUTSIDE_MAP);
+  if (itc->itc_bm_split_right_side)
+    plh_free (itc->itc_bm_split_right_side);
+  itc_unregister ((it_cursor_t *) &left_pl);
   dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 1]);
   itc->itc_search_params[itc->itc_search_par_fill - 1] = old_sp;
   ITC_RESTORE_FAIL (itc);
@@ -713,7 +829,7 @@ key_bm_insert (it_cursor_t * itc,
       printf ("bing\n");
   }
 #endif
-  itc->itc_specs = key->key_bm_ins_spec;
+  itc->itc_key_spec = key->key_bm_ins_spec;
   itc->itc_no_bitmap = 1; /* all ops here will ignore any bitmap features of the inx */
   itc->itc_lock_mode = PL_EXCLUSIVE;
   itc->itc_isolation = ISO_SERIALIZABLE;
@@ -726,7 +842,7 @@ key_bm_insert (it_cursor_t * itc,
       if (!itc->itc_is_on_row)
 	{
 	  /* There is no row with the leading parts equal and bit field lte with the value being inserted */
-	  itc->itc_specs = key->key_bm_ins_leading;
+	  itc->itc_key_spec = key->key_bm_ins_leading;
 	  itc->itc_desc_order = 0;
 	  rc2 = itc_next (itc, &buf);
 	  if (DVC_MATCH != rc2)
@@ -936,6 +1052,7 @@ itc_bm_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   bitno_t bm_start;
   int rc;
   dbe_key_t * key = itc->itc_insert_key;
+  ASSERT_OUTSIDE_MAPS (itc);
   itc->itc_row_data = (*buf_ret)->bd_buffer + itc->itc_position + IE_FIRST_KEY;
   itc->itc_is_on_row = 0;
     ITC_COL (itc, (*key->key_bm_cl), off, bm_len);
@@ -948,11 +1065,9 @@ itc_bm_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   upd_truncate_row (itc, buf_ret, IE_FIRST_KEY + off + bm_len);
   CL_SET_LEN (key, key->key_bm_cl, itc->itc_row_data, bm_len);
   itc->itc_bp.bp_is_pos_valid = 1;
-  ITC_IN_MAP (itc);
-  itc_invalidate_bm_crs (itc);
+  itc_invalidate_bm_crs (itc, *buf_ret, 0, NULL);
   if (bm_len)
-    return BM_DEL_DONE; /* stay in map, itc_page_leave is next in caller */
-  ITC_LEAVE_MAP(itc);
+    return BM_DEL_DONE;
   return BM_DEL_ROW; /* went empty, del as a normal row */
 }
 
@@ -974,10 +1089,12 @@ itc_bm_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 void
 itc_init_bm_search (it_cursor_t * itc)
 {
-  search_spec_t * sp = itc->itc_specs;
+  key_spec_t null_ksp = {NULL, NULL};
+  search_spec_t * sp = itc->itc_key_spec.ksp_spec_array;
   int n_specs = 0;
   dbe_key_t * key = itc->itc_insert_key;
   search_spec_t * bm_spec = NULL;
+  itc->itc_bm_inx_spec = null_ksp;
   while (sp)
     {
       n_specs++;
@@ -991,8 +1108,8 @@ itc_init_bm_search (it_cursor_t * itc)
       || (CMP_GT == bm_spec->sp_min_op && !itc->itc_desc_order)
       || (CMP_GTE == bm_spec->sp_min_op && !itc->itc_desc_order))
     {
-      itc->itc_bm_inx_spec = itc->itc_specs;
-      itc->itc_specs = key->key_bm_ins_spec;
+      itc->itc_bm_inx_spec = itc->itc_key_spec;
+      itc->itc_key_spec = key->key_bm_ins_spec;
       itc->itc_desc_order = 1;
       itc->itc_search_mode = SM_READ;
       return;
@@ -1001,7 +1118,7 @@ itc_init_bm_search (it_cursor_t * itc)
       || (CMP_GTE == bm_spec->sp_min_op && CMP_NONE == bm_spec->sp_max_op && itc->itc_desc_order))
     {
       /* only lower limit and desc order.  Start at end and use row check for end. Seek with only leading parts */
-      itc->itc_specs = itc->itc_insert_key->key_bm_ins_leading;
+      itc->itc_key_spec = itc->itc_insert_key->key_bm_ins_leading;
     }
   else if (itc->itc_desc_order
 	   && bm_spec->sp_max_op != CMP_NONE && bm_spec->sp_min_op != CMP_NONE)
@@ -1026,15 +1143,15 @@ itc_bm_land (it_cursor_t * itc, buffer_desc_t * buf)
   key_id_t row_key_id;
   if ((bm_spec = itc->itc_bm_col_spec))
     {
-      if (itc->itc_desc_order && itc->itc_bm_inx_spec)
+      if (itc->itc_desc_order && itc->itc_bm_inx_spec.ksp_spec_array)
 	{
 	  itc->itc_desc_order = 0;
-	  itc->itc_specs = itc->itc_insert_key->key_bm_ins_leading;
+	  itc->itc_key_spec = itc->itc_insert_key->key_bm_ins_leading;
 	}
       else if (itc->itc_desc_order 
 	       && CMP_NONE != bm_spec->sp_min_op 
 	       && CMP_NONE == bm_spec->sp_max_op)
-	itc->itc_specs = itc->itc_insert_key->key_bm_ins_leading; /* when desc order and lower limit, do not compare bm col in landed search because this would sometimes exclude the last bitmap row */
+	itc->itc_key_spec = itc->itc_insert_key->key_bm_ins_leading; /* when desc order and lower limit, do not compare bm col in landed search because this would sometimes exclude the last bitmap row */
     }
   itc->itc_bp.bp_new_on_row = 1;
   row_key_id = SHORT_REF (buf->bd_buffer + itc->itc_position + IE_KEY_ID);

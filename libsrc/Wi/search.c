@@ -157,6 +157,10 @@ db_buf_length (unsigned char *buf, long *head_ret, long *len_ret)
       *head_ret = 1;
       *len_ret = DT_LENGTH;
       break;
+    case DV_RDF:
+      *head_ret = 1;
+      len_ret = rbs_length (buf);
+      break;
     default:
       /* Report */
       bd = NULL;
@@ -235,7 +239,7 @@ itc_dive_cache_check (it_cursor_t * itc)
     return NULL;
   if (! (itc->itc_search_mode == SM_READ_EXACT || itc->itc_search_mode == SM_INSERT))
     return NULL;
-  if (!key || !itc->itc_specs)
+  if (!key || !itc->itc_key_spec.ksp_spec_array)
     return NULL;
   ITC_IN_MAP (itc);
   dp = key->key_last_page;
@@ -308,7 +312,7 @@ itc_col_check (it_cursor_t * itc, search_spec_t * spec, int param_inx)
       switch (DV_TYPE_OF (param))
 	{
 	case DV_LONG_INT:
-	  n2 = unbox (param);
+	  n2 = unbox_inline (param);
 	  return NUM_COMPARE (n1, n2);
 	case DV_SINGLE_FLOAT:
 	  return cmp_double (((float)n1), *(float*) param, DBL_EPSILON);
@@ -417,14 +421,13 @@ itc_col_check (it_cursor_t * itc, search_spec_t * spec, int param_inx)
 	    }
 	  else
 	    {
+	      ITC_REAL_ROW_KEY (itc);
 	      key = itc->itc_row_key;
 	      off = key->key_row_var_start;
 	    }
 	  n1 = SHORT_REF (row + key->key_length_area) - off;
 	  dv1 = row + off;
 	}
-      else if (n1 > 0)
-	GPF_T1 ("fixed length compares should be covered by now");
       else
 	{
 	  off = SHORT_REF (row - n1);
@@ -460,7 +463,7 @@ itc_col_check (it_cursor_t * itc, search_spec_t * spec, int param_inx)
     case DV_STRING:
       collation = spec->sp_collation;
       dv2 = (db_buf_t) itc->itc_search_params[param_inx];
-      n2 = box_length (dv2) - 1;
+      n2 = box_length_inline (dv2) - 1;
       inx = 0;
       if (collation)
 	{
@@ -520,78 +523,6 @@ itc_col_check (it_cursor_t * itc, search_spec_t * spec, int param_inx)
   return 0;
 }
 
-
-extern int atomic_dive;
-
-
-buffer_desc_t *
-itc_reset (it_cursor_t * it)
-{
-  /* Enter to root in read mode and return the buffer */
-  buffer_desc_t *buf = NULL;
-
-  it->itc_position = 0;
-  it->itc_landed = 0;
-  it->itc_is_on_row = 0;
-  it->itc_nth_seq_page = 0;
-  it->itc_n_lock_escalations = 0;
-  it->itc_ra_root_fill = 0;
-  it->itc_n_reads = 0;
-  it->itc_at_data_level = 0;
-
-  if (it->itc_space_registered)
-    {
-  ITC_IN_MAP (it);
-  itc_unregister (it, INSIDE_MAP);
-    }
-
-  it->itc_to_reset = 0;
-  it->itc_page = 0;
-  if (it->itc_tree->it_hi)
-    {
-      ITC_IN_MAP (it);
-      page_wait_access (it, it->itc_tree->it_hash_first, NULL, NULL, &buf, PA_READ, RWG_WAIT_ANY);
-	ITC_LEAVE_MAP (it);
-      it->itc_position = SHORT_REF (buf->bd_buffer + DP_FIRST);
-      it->itc_page = buf->bd_page;
-      it->itc_landed = 1;
-	return buf;
-    }
-
-#if 0
-  buf = itc_dive_cache_check (it);
-  if (buf)
-    return buf;
-#endif
-  for (;;)
-    {
-      dp_addr_t dp, back_link;
-      ITC_IN_MAP (it);
-      dp = it->itc_space->isp_root;
-      page_wait_access (it, dp, NULL, NULL, &buf, PA_READ, RWG_WAIT_KEY);
-      if (it->itc_to_reset > RWG_WAIT_KEY)
-	continue;
-      if (!atomic_dive)
-	ITC_LEAVE_MAP(it);
-      back_link = LONG_REF (buf->bd_buffer + DP_PARENT);
-      if (back_link)
-	{
-           log_error ("Bad parent link in the tree start page %ld, parent link=%ld."
-	       " Please do a dump and restore.",
-	       dp, back_link);
-	}
-      it->itc_page = dp;
-      break;
-    }
-#ifdef NEW_HASH
-  itc_hi_source_page_used (it, it->itc_page);
-#endif
-  if (!it->itc_no_bitmap && it->itc_insert_key && it->itc_insert_key->key_is_bitmap)
-    itc_init_bm_search (it);
-  return buf;
-}
-
-
 #ifdef MALLOC_DEBUG
 it_cursor_t *
 dbg_itc_create (const char *file, int line, void * isp, lock_trx_t * trx)
@@ -622,23 +553,18 @@ itc_clear (it_cursor_t * it)
     {
       /* hash fill buffer, never in the same tree as this itc */
       buffer_desc_t * hb = it->itc_hash_buf;
-      IN_PAGE_MAP (hb->bd_space->isp_tree);
-      page_leave_inner (hb);
-      LEAVE_PAGE_MAP (hb->bd_space->isp_tree);
+      page_leave_outside_map (hb);
       it->itc_hash_buf = NULL;
     }
   if (it->itc_buf)
     {
       buffer_desc_t * hb = it->itc_buf;
-      ITC_IN_MAP (it);
-      page_leave_inner (hb);
+      page_leave_outside_map (hb);
     }
-  if (it->itc_space_registered)
+  if (it->itc_is_registered)
     {
-      ITC_IN_MAP (it);
-      itc_unregister (it, INSIDE_MAP);
+      itc_unregister (it);
     }
-  ITC_LEAVE_MAP (it);
 #ifndef O12
   if (it->itc_extension)
     {
@@ -646,7 +572,7 @@ itc_clear (it_cursor_t * it)
       it->itc_extension = NULL;
     }
 #endif
-  if (it->itc_st.cols)
+  if (it->itc_random_search != RANDOM_SEARCH_OFF && it->itc_st.cols)
     itc_col_stat_free (it, 0, 0);
 }
 
@@ -664,6 +590,11 @@ itc_free_owned_params (it_cursor_t * itc)
 void
 itc_free (it_cursor_t * it)
 {
+  if (ITC_PLACEHOLDER == it->itc_type)
+    {
+      dk_free ((caddr_t)it, sizeof (placeholder_t));
+      return;
+    }
   itc_clear (it);
   if (it->itc_is_allocated)
     dk_free ((caddr_t) it, sizeof (it_cursor_t));
@@ -673,7 +604,7 @@ itc_free (it_cursor_t * it)
 void
 plh_free (placeholder_t * pl)
 {
-  itc_unregister ((it_cursor_t *) pl, OUTSIDE_MAP);
+  itc_unregister ((it_cursor_t *) pl);
   dk_free ((caddr_t) pl, sizeof (placeholder_t));
 }
 
@@ -681,13 +612,28 @@ plh_free (placeholder_t * pl)
 placeholder_t *
 plh_copy (placeholder_t * pl)
 {
-
+  return NULL;
+#if 0
   NEW_VAR (placeholder_t, new_pl);
-  mutex_enter (pl->itc_space->isp_tree->it_page_map_mtx);
+  IN_VOLATILE_MAP (pl->itc_tree, pl->itc_page);
   memcpy (new_pl, pl, ITC_PLACEHOLDER_BYTES);
-  new_pl->itc_space_registered = NULL;
-  itc_register_cursor ((it_cursor_t *) new_pl, INSIDE_MAP);
-  mutex_leave (pl->itc_space->isp_tree->it_page_map_mtx);
+  new_pl->itc_type = ITC_PLACEHOLDER;
+  new_pl->itc_is_registered = 0;
+  itc_register ((it_cursor_t *) new_pl);
+  mutex_leave (&IT_DP_MAP (pl->itc_tree, pl->itc_page)->itm_mtx);
+  return new_pl;
+#endif
+}
+
+
+placeholder_t *
+plh_landed_copy (placeholder_t * pl, buffer_desc_t * buf)
+{
+  NEW_VAR (placeholder_t, new_pl);
+  memcpy (new_pl, pl, ITC_PLACEHOLDER_BYTES);
+  new_pl->itc_type = ITC_PLACEHOLDER;
+  new_pl->itc_is_registered = 0;
+  itc_register ((it_cursor_t *) new_pl, buf);
   return new_pl;
 }
 
@@ -696,33 +642,23 @@ buffer_desc_t *
 itc_set_by_placeholder (it_cursor_t * itc, placeholder_t * pl)
 {
   buffer_desc_t *buf;
-  if (itc->itc_space_registered)
+  if (itc->itc_is_registered)
     {
-      ITC_IN_MAP (itc);
-      itc_unregister (itc, INSIDE_MAP);
-      ITC_LEAVE_MAP (itc);
+      GPF_T1 ("not supposed to set a registered itc by placeholder");
+      itc_unregister (itc);
     }
-  itc->itc_space = pl->itc_space;
-  itc->itc_tree = pl->itc_space->isp_tree;
-  for (;;)
-    {
-      CHECK_TRX_DEAD (itc, NULL, ITC_BUST_CONTINUABLE);
-      ITC_IN_MAP (itc); /* check_trx_dead may freeze and return and have itc not in map */
+  itc->itc_tree = pl->itc_tree;
+  buf = pl_enter (pl, itc);
       memcpy (itc, pl, ITC_PLACEHOLDER_BYTES);
-
       itc->itc_landed = 1;
-      itc->itc_space_registered = NULL;
+  itc->itc_is_registered = 0;
       itc->itc_type = ITC_CURSOR;
-
-      page_wait_access (itc, pl->itc_page, NULL, NULL, &buf, PA_WRITE, RWG_NO_WAIT);
-      if (itc->itc_to_reset <= RWG_NO_WAIT)
-	break;
-      TC (tc_set_by_pl_wait);
-    }
   ITC_FIND_PL (itc, buf);
+  itc->itc_pl = buf->bd_pl;
   itc->itc_position = pl->itc_position;
   /* Set now when in, if it moved while waiting. */
-  ITC_LEAVE_MAP (itc);
+  ITC_LEAVE_MAPS (itc);
+  itc->itc_owns_page = 0;
   return buf;
 }
 
@@ -767,6 +703,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
   dtp_t dtp1 = *dv1;
   dtp_t dtp2 = *dv2;
   int32 n1 = 0, n2 = 0;			/*not used before set */
+  db_buf_t org_dv1 = dv1;
   int64 ln1, ln2;
 
 
@@ -948,6 +885,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 	dtp1 = DV_IRI_ID;
 	ln1 = INT64_REF_NA (dv1 + 1);
 	break;
+      case DV_RDF: return dv_rdf_compare (dv1, dv2);
       default:
 	collation = NULL;
       }
@@ -1054,7 +992,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 	dtp2 = DV_IRI_ID;
 	ln2 = INT64_REF_NA (dv2 + 1);
 	break;
-
+      case DV_RDF: return dv_rdf_compare (org_dv1, dv2);
       default:
 	collation = NULL;
 
@@ -1433,10 +1371,12 @@ itc_hash_next_page (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   dp_addr_t next = LONG_REF ((*buf_ret)->bd_buffer + DP_OVERFLOW);
   if (!next)
     return DVC_INDEX_END;
-  ITC_IN_MAP (itc);
+  ITC_IN_KNOWN_MAP (itc, itc->itc_page);
   page_leave_inner (*buf_ret);
-  page_wait_access (itc, next, NULL, NULL, buf_ret, PA_READ, RWG_WAIT_ANY);
-  ITC_LEAVE_MAP (itc);
+  ITC_LEAVE_MAP_NC (itc);
+  ITC_IN_KNOWN_MAP (itc, next);
+  page_wait_access (itc, next, NULL, buf_ret, PA_WRITE, RWG_WAIT_ANY);
+  ITC_LEAVE_MAPS (itc);
   itc->itc_position = SHORT_REF ((*buf_ret)->bd_buffer + DP_FIRST);
   itc->itc_page = next;
   return DVC_MATCH;
@@ -1455,22 +1395,21 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
   search_spec_t *sp;
   key_id_t key = itc->itc_row_key_id;
   dbe_key_t *row_key = NULL;
-
-  ITC_LEAVE_MAP (itc);
   if (itc->itc_insert_key && itc->itc_insert_key->key_is_bitmap && !itc->itc_no_bitmap)
     return itc_bm_row_check (itc, buf);
   if (RANDOM_SEARCH_ON == itc->itc_random_search)
     itc->itc_st.n_sample_rows++;
   
-  if (key != itc->itc_key_id)
-    {
+  if (key == itc->itc_key_id)
+    itc->itc_row_key = itc->itc_insert_key;
+  else
 	{
 	  if (!sch_is_subkey (isp_schema (NULL), key, itc->itc_key_id))
 	    return DVC_LESS;	/* Key specified but this ain't it */
-	  else
-	    itc->itc_row_key = row_key = sch_id_to_key (isp_schema (NULL), key);
-	}
+      ITC_REAL_ROW_KEY (itc);
+      row_key = itc->itc_row_key;
     }
+
 
   sp = itc->itc_row_specs;
   if (sp)
@@ -1571,12 +1510,15 @@ itc_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
 {
   dp_addr_t leaf;
   int res, pos, map_pos;
-
+  int just_landed_match = 0;
   dp_addr_t leaf_from, up;
 
+  if (!it->itc_key_spec.ksp_key_cmp)
+    it->itc_key_spec.ksp_key_cmp = SM_READ == it->itc_search_mode ? pg_key_compare : pg_insert_key_compare;
   if (ISO_SERIALIZABLE == it->itc_isolation && SM_INSERT != it->itc_search_mode)
     it->itc_search_mode = SM_READ; /* no exact, must set follow lock to item before match range */
 start:
+#ifndef NDEBUG
   if (!(*buf_ret)->bd_readers && !(*buf_ret)->bd_is_write)
     GPF_T1 ("buffer not wired occupied in itc_search");
   if (it->itc_page != (*buf_ret)->bd_page)
@@ -1587,36 +1529,27 @@ start:
       CHECK_TRX_DEAD (it, buf_ret, ITC_BUST_THROW);
       GPF_T1 ("Buffer and cursor on different pages");
     }
+#endif
   CHECK_TRX_DEAD (it, buf_ret, ITC_BUST_CONTINUABLE);
   leaf = 0;
-#ifndef PMN_THREADS
-  THREAD_ALLOW_SWITCH ();
-#endif
   it->itc_is_on_row = 0;
 
-  if (!atomic_dive || it->itc_landed)
-  ITC_LEAVE_MAP (it);
   if (!it->itc_landed)
     {
       if (RANDOM_SEARCH_ON == it->itc_random_search)
-	res = itc_random_leaf (it, *buf_ret, &leaf);
-      else if (it->itc_search_mode == SM_READ)
-	res = itc_page_split_search (it, *buf_ret, &leaf);
-      else
-	res = itc_page_insert_search (it, *buf_ret, &leaf);
-    }
-  else
     {
-      if (it->itc_bp.bp_just_landed && RWG_WAIT_SPLIT == itc_bm_land_lock (it, buf_ret))
+	  res = itc_random_leaf (it, *buf_ret, &leaf);
+	  if (leaf)
 	{
-	  *buf_ret = itc_reset (it);
+	      itc_dive_transit (it, buf_ret, leaf);
 	  goto start;
 	}
-      res = itc_page_search (it, buf_ret, &leaf);
     }
+      else if (it->itc_search_mode == SM_READ)
+	res = itc_page_split_search (it, buf_ret);
+      else
+	res = itc_page_insert_search (it, buf_ret);
 
-  if (!it->itc_landed && !leaf)
-    {
       itc_try_land (it, buf_ret);
       if (!it->itc_landed)
 	{
@@ -1636,37 +1569,39 @@ start:
 	  if (NO_WAIT != itc_serializable_land (it, buf_ret))
 	    goto start;
 	}
-      if ((ISO_SERIALIZABLE == it->itc_isolation || ISO_COMMITTED == it->itc_isolation)
-	  && DVC_MATCH == res)
+      if (DVC_MATCH == res)
 	{
-	  goto start; /* pass through itc_page_search to check for lock */
+	  just_landed_match = 1;
+	  goto start; /* pass through itc_page_search to check locks, row specs etc */
 	}
       if (it->itc_search_mode == SM_READ)
 	{
-	  if (res == DVC_LESS)
+	  if (res == DVC_LESS && !it->itc_desc_order)
 	    {
 	      it->itc_bp.bp_at_end = 1;
 	      itc_skip_entry (it, (*buf_ret)->bd_buffer);
 	      if (it->itc_position)
 		goto start;
 	      res = DVC_INDEX_END;
+	      goto search_switch;
 	    }
-	  if (res == DVC_MATCH)
-	    /* recheck, maybe match not full if non-trailing part
-	     * not an equal match */
-	    goto start;
-
 	  if (res == DVC_GREATER && it->itc_desc_order)
 	    {
 	      res = DVC_INDEX_END;
+	      goto search_switch;
 	    }
 	}
+      return res;
+    }
       else
 	{
-	  /* SM_READ_EXACT */
-	  if (res != DVC_MATCH)
-	    return res;
+      if (it->itc_bp.bp_just_landed && RWG_WAIT_SPLIT == itc_bm_land_lock (it, buf_ret))
+	{
+	  *buf_ret = itc_reset (it);
+	  goto start;
 	}
+      res = itc_page_search (it, buf_ret, &leaf, just_landed_match);
+      just_landed_match = 0;
     }
 
 search_switch:
@@ -1674,6 +1609,7 @@ search_switch:
     {
     case DVC_INDEX_END:
       {
+	it->itc_is_on_row = 0;
 	if (it->itc_desc_serial_reset)
 	  {
 	    /* for convenience, put the reset condition together with index end so as not to check upon every return of itc_page_search */
@@ -1696,11 +1632,14 @@ search_switch:
       up_again:
 	if (it->itc_is_vacuum)
 	  itc_vacuum_compact (it, *buf_ret);
-	ITC_IN_MAP (it);
 	up = LONG_REF (((*buf_ret)->bd_buffer) + DP_PARENT);
+	/* in principle, the parent link must be read inside the dp's map.  Here we only want to know if it is 0.
+	 * The map is not needed for that since aroot can stop being a root only by somebidy changing it, which can't be since this itc is ecl in.
+	 * However, non-0 parent links can change due to splits and they must be read and transited atomically in the right map. */
 	leaf_from = (*buf_ret)->bd_page;
 	if (!up)
 	  {
+	    ITC_LEAVE_MAPS (it);
 	    return DVC_INDEX_END;
 	  }
 	if (RANDOM_SEARCH_ON == it->itc_random_search)
@@ -1713,9 +1652,10 @@ search_switch:
 		return DVC_INDEX_END;
 	      }
 	  }
-	itc_up_transit (it, buf_ret);
-	/* We're in on the parent node. Where do we go now? */
-	ITC_LEAVE_MAP (it);
+	if (DVC_INDEX_END == itc_up_transit (it, buf_ret))
+	  return DVC_INDEX_END; /* the non-root became root while waiting for parent, which got popped away by itc_delete_single_leaf.  At end. Return */
+
+	/* This never fails. We're in on the parent node. Where do we go now? */
 #ifdef PMN_THREADS
 	PROCESS_ALLOW_SCHEDULE ();
 #endif
@@ -1732,12 +1672,13 @@ search_switch:
 	  itc_prev_entry (it, *buf_ret);
 	else
 	  itc_skip_entry (it, (*buf_ret)->bd_buffer);
-	res = itc_page_search (it, buf_ret, &leaf);
+	res = itc_page_search (it, buf_ret, &leaf, 0);
 	if (res == DVC_GREATER)
+	  {
+	    it->itc_is_on_row = 0;
 	  return DVC_INDEX_END;
-	if (res == DVC_MATCH
-	    || res == DVC_MATCH_COMPLETE
-	    || res == DVC_NO_MATCH_COMPLETE)
+	  }
+	if (res == DVC_MATCH)
 	  {
 	    pos = it->itc_position;
 	    itc_read_ahead (it, buf_ret);
@@ -1749,10 +1690,11 @@ search_switch:
 
     case DVC_LESS:
       {
+	it->itc_is_on_row = 0;
 	if (leaf)
 	  {
 	    /* Go down on the right edge. */
-	      itc_down_transit (it, buf_ret, leaf);
+	      itc_landed_down_transit (it, buf_ret, leaf);
 	    goto start;
 	  }
 	else
@@ -1765,71 +1707,19 @@ search_switch:
 	/* If there's a way down, leaf will have it. */
 	if (leaf)
 	  {
-	      itc_down_transit (it, buf_ret, leaf);
+	    itc_landed_down_transit (it, buf_ret, leaf);
 	    goto start;
 	  }
-	else
-	  {
-	    /* The key value matches. Check key id and other columns */
-	    if (!IE_ISSET ((*buf_ret)->bd_buffer + it->itc_position, IEF_DELETE)
-		&& itc_row_check (it, *buf_ret) == DVC_MATCH)
-	      {
+	/* must come from itc_page_search.  Any landing must pass via itc_page_search before coming here */
 		it->itc_is_on_row = 1;
 		if (it->itc_owns_page != it->itc_page
-		    && ISO_REPEATABLE == it->itc_isolation)
+	    && (ISO_REPEATABLE == it->itc_isolation
+		|| (PL_EXCLUSIVE == it->itc_lock_mode && it->itc_isolation > ISO_UNCOMMITTED)))
 		  {
 		    int wait_rc = itc_set_lock_on_row (it, buf_ret);
 		    if (wait_rc != NO_WAIT || !it->itc_is_on_row)
-		      goto start;
-		  }
-		ITC_AGE_TRX (it, 1);
-		if (it->itc_search_mode == SM_READ)
-		  {
-		    /* not in SM_READ_EXACT, where no more fetched */
-		    if (it->itc_ks && it->itc_ks->ks_is_last)
-		      {
-			if (it->itc_desc_order)
-			  itc_prev_entry (it, *buf_ret);
-			else
-			  itc_skip_entry (it, (*buf_ret)->bd_buffer);
-			goto start;
-		      }
-		  }
-		return DVC_MATCH;
+	      goto start; /* if waited, must recheck the key, again pass via itc_page_searchh */
 	      }
-	    else
-	      {
-		if (it->itc_search_mode == SM_READ_EXACT)
-		  return DVC_LESS;
-		if (it->itc_desc_order)
-		  itc_prev_entry (it, *buf_ret);
-		else
-		  itc_skip_entry (it, (*buf_ret)->bd_buffer);
-		goto start;
-	      }
-	  }
-      }
-    case DVC_MATCH_COMPLETE:
-    case DVC_NO_MATCH_COMPLETE:
-      {
-	it->itc_is_on_row = 1;
-
-	if (ISO_REPEATABLE == it->itc_isolation
-	    || ISO_SERIALIZABLE == it->itc_isolation)
-	  {
-	    if (NO_WAIT != itc_set_lock_on_row (it, buf_ret))
-	      goto start;
-	  }
-	if (!it->itc_is_on_row)
-	  {
-	    goto start;
-	  }
-	if (DVC_NO_MATCH_COMPLETE == res)
-	  goto start;
-	pos = it->itc_position;
-	if (IE_ISSET ((*buf_ret)->bd_buffer + pos, IEF_DELETE))
-	  goto start;
-
 	ITC_AGE_TRX (it, 1);
 	if (it->itc_search_mode == SM_READ)
 	  {
@@ -1851,6 +1741,7 @@ search_switch:
 	if (leaf)
 	  GPF_T1 ("no leaf at dvc_greater");
 	/* No previous leaf. This is the place, said Brigham. Insert here. */
+	it->itc_is_on_row = 0;
 	return DVC_GREATER;
       }
     }
@@ -1858,9 +1749,15 @@ search_switch:
 }
 
 
+#if 1
+#define ITC_CK_POS(itc)
+#else
+/*not needed */
 #define ITC_CK_POS(itc)\
   {if (itc->itc_position && (itc->itc_position < DP_DATA || itc->itc_position > PAGE_SZ - 8)) \
     GPF_T1("itc_position out of range after itc_search"); }
+#endif
+
 
 int
 itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret)
@@ -1935,10 +1832,11 @@ itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret)
 }
 
 long  tc_desc_serial_reset;
-
+/* control is read committed will show previous committed value Oracle style or wait */
+int min_iso_that_waits = ISO_REPEATABLE;
 
 int
-itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret)
+itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret,   int skip_first_key_cmp)
 {
   db_buf_t page = (*buf_ret)->bd_buffer;
   dp_addr_t leaf = 0;
@@ -1948,28 +1846,27 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
   int pos;
   char txn_clear = PS_LOCKS;
 
+  if (it->itc_wst)
+    return (itc_text_search (it, buf_ret, leaf_ret));
+
   if (ISO_UNCOMMITTED == it->itc_isolation)
     txn_clear = PS_OWNED;
   else if (ISO_COMMITTED == it->itc_isolation)
     {
-      if (!it->itc_pl)
+      if (!(*buf_ret)->bd_pl)
 	txn_clear = PS_OWNED;
     }
   else if (ISO_REPEATABLE == it->itc_isolation)
     {
-      if (!it->itc_pl)
+      if (!(*buf_ret)->bd_pl)
 	{
 	  txn_clear = PS_NO_LOCKS;
 	}
     }
 
-  if (it->itc_wst)
-    return (itc_text_search (it, buf_ret, leaf_ret));
 
   while (1)
     {
-      int first_open_passed = 0;
-
       if (!it->itc_position)
 	{
 	  *leaf_ret = 0;
@@ -1983,7 +1880,8 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	  if (it->itc_owns_page != it->itc_page)
 	    {
 	      if (it->itc_isolation == ISO_SERIALIZABLE
-		  || ITC_MAYBE_LOCK (itc, it->itc_position))
+		  || ((it->itc_isolation >= min_iso_that_waits || PL_EXCLUSIVE == it->itc_lock_mode)
+		      && ITC_MAYBE_LOCK (itc, it->itc_position)))
 		{
 		  for (;;)
 		    {
@@ -1995,6 +1893,8 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 			  it->itc_desc_serial_reset = 1;
 			  return DVC_INDEX_END;
 			}
+		      if (NO_WAIT != wrc)
+			skip_first_key_cmp = 0; /* if waited, must recheck the key even if just landed with a read exact match */
 		      if (ISO_SERIALIZABLE == it->itc_isolation
 			  || NO_WAIT == wrc)
 			break;
@@ -2049,62 +1949,65 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	  it->itc_row_data = page + pos + IE_FIRST_KEY;
 	  it->itc_at_data_level = 1;
 	  leaf = 0;
-	  if (!it->itc_row_key || it->itc_row_key->key_id != key_id)
-	    it->itc_row_key = sch_id_to_key (wi_inst.wi_schema, key_id);
 	}
-
-      for (sp = it->itc_specs;; sp = sp->sp_next)
+      if (skip_first_key_cmp)
 	{
-	  if (!sp)
-	    break;
-
-
+	  /* if just came, landed with match and read exact mode and there was no wait, this is already checked */
+	  skip_first_key_cmp = 0;
+	  res = DVC_MATCH;
+	}
+      else if (it->itc_key_spec.ksp_key_cmp != pg_key_compare 
+	       && it->itc_key_spec.ksp_key_cmp != pg_insert_key_compare
+	       && it->itc_key_spec.ksp_key_cmp)
+	{
+	  res = it->itc_key_spec.ksp_key_cmp (*buf_ret, pos, it);
+	  if (DVC_GREATER == res)
+	    return res;
+	}
+      else 
+	{
+	  res = DVC_MATCH;
+	  for (sp = it->itc_key_spec.ksp_spec_array; sp; sp = sp->sp_next)
+	{
 	  DV_COMPARE_SPEC_W_NULL (res, sp, it);
 
 	  if (res == DVC_MATCH)
 	    {
-	      if (sp->sp_min_op != CMP_EQ)
-		first_open_passed = 1;
 	      continue;
 	    }
 	  if (res == DVC_LESS)
 	    {
-	      /* The thing's too small. We want larger, on with the leaf */
+		  /*  column is too small.  If there is a leaf, go ther else search at end */
 	      if (ITC_NULL_CK(it, sp->sp_cl))
 		{
 		  if (!leaf)
 		    goto next_row;  /* skip a null on the row */
-		  first_open_passed = 1;
 		  break;
 		}
 	      break;
 	    }
 	  if (res == DVC_GREATER)
 	    {
-	      if (first_open_passed)
-		{
-		  /* Check next row. There's a prior '>' condition that passed
-		     There may be matches further of with another value of
-		     the prior key part */
-		  break;
-		}
-	      else
-		{
 		  *leaf_ret = 0;
 		  it->itc_position = pos;
 		  return DVC_GREATER;
 		}
 	    }
 	}
-      if (IE_ISSET (page + pos, IEF_DELETE))
-	goto next_row;
-      if (!sp ||
-	  (leaf && first_open_passed))
+      if (PS_LOCKS == txn_clear && ISO_COMMITTED == it->itc_isolation 
+	  && PL_EXCLUSIVE != it->itc_lock_mode 
+	  && ISO_REPEATABLE == min_iso_that_waits)
 	{
-	  /* The loop has exhausted all search specs.
-	     This means it's a match. */
+	  if (DVC_MATCH != itc_read_committed_check (it, pos, *buf_ret))
+	    goto next_row;
+	}
+      else if (IE_ISSET (page + pos, IEF_DELETE))
+	  goto next_row;
 	  *leaf_ret = leaf;
-	  if (!leaf && !sp)
+      /* if go to the leaf even if the compare was less because the leaf can still hold stuff if in desc order.  In asc order the compare never gives dvc_less if the index is not out of order */
+      if (leaf)
+	return DVC_MATCH;
+      if (DVC_MATCH == res)
 	    {
 	      row_check = itc_row_check (it, *buf_ret);
 	      if (DVC_GREATER == row_check)
@@ -2113,29 +2016,20 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 		{
 		  if (it->itc_ks && it->itc_ks->ks_is_last
 		      && (PS_OWNED == txn_clear
+		      || (ISO_COMMITTED == it->itc_isolation  && PL_EXCLUSIVE != it->itc_lock_mode)
 			  || ISO_SERIALIZABLE == it->itc_isolation))
 		    {
-		      /* A RR cursor that does not own the page must return to itc_search for the locks. */
+		  /* A RR or *exckl RC cursor that does not own the page must return to itc_search for the locks.  */
 		      goto next_row;
 		    }
-		  return DVC_MATCH_COMPLETE;
+	      return DVC_MATCH;
 		}
 	      else
 		goto next_row;
 	    }
-	  else
-	    return DVC_MATCH;
-	}
-      if (res == DVC_LESS && !leaf && it->itc_desc_order && !first_open_passed)
+      else if (res == DVC_LESS && !leaf && it->itc_desc_order)
 	{
 	  return DVC_GREATER;	/* end of search */
-	}
-      if (res == DVC_LESS && leaf && it->itc_desc_order)
-	{
-	  *leaf_ret = leaf;
-	  return DVC_MATCH;
-	  /* if there's a lesser leaf ptr, go down if desc order.
-	   * The end is when you hit a lesser leaf */
 	}
       /* Next entry on page */
 
@@ -2157,14 +2051,14 @@ int
 pg_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it)
 {
   db_buf_t page = buf->bd_buffer;
-  search_spec_t *spec = it->itc_specs;
+  search_spec_t *spec = it->itc_key_spec.ksp_spec_array;
   key_id_t key_id = SHORT_REF (page + pos + IE_KEY_ID);
   if (KI_LEFT_DUMMY == key_id)
     {
       it->itc_row_key_id = 0;
       return DVC_LESS;
     }
-  ITC_SET_ROW_KEY_ID (it, key_id);
+  it->itc_row_key_id = key_id;
   it->itc_row_data = page + pos + (!key_id ? IE_LP_FIRST_KEY : IE_FIRST_KEY);
   for (;;)
     {
@@ -2188,9 +2082,12 @@ pg_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it)
 
 
 int
-itc_page_split_search (it_cursor_t * it, buffer_desc_t * buf,
-		       dp_addr_t * leaf_ret)
+itc_page_split_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
 {
+ new_page:
+  {
+    dp_addr_t leaf;
+    buffer_desc_t * buf = *buf_ret;
   db_buf_t page = buf->bd_buffer;
   int res;
   page_map_t *map = buf->bd_content_map;
@@ -2199,12 +2096,11 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t * buf,
   int guess;
   int at_or_above_res = -100;
   key_id_t key_id;
-  if (buf->bd_is_write)
+    if (it->itc_dive_mode == PA_READ ? buf->bd_is_write : !buf->bd_is_write)
     GPF_T1 ("split search supposed to be in read mode");
   if (map->pm_count == 0)
     {
       it->itc_position = 0;
-      *leaf_ret = 0;
       return DVC_GREATER;
     }
 
@@ -2215,7 +2111,7 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t * buf,
 	{
 	  if (at_or_above_res == -100)
 	    {
-	      at_or_above_res = pg_key_compare (buf,
+	      at_or_above_res = it->itc_key_spec.ksp_key_cmp (buf,
 						       map->pm_entries[at_or_above], it);
 	    }
 	  switch (at_or_above_res)
@@ -2227,9 +2123,22 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t * buf,
 	      it->itc_map_pos = at_or_above;
 	      key_id = SHORT_REF (page + it->itc_position + IE_KEY_ID);
 	      if (!key_id || KI_LEFT_DUMMY == key_id)
-		*leaf_ret = LONG_REF (page + map->pm_entries[at_or_above] + IE_LEAF);
-	      else
-		*leaf_ret = 0;
+		  {
+		    leaf = LONG_REF (page + map->pm_entries[at_or_above] + IE_LEAF);
+		    if (leaf)
+		      {
+			if (buf->bd_is_ro_cache)
+			  {
+			    itc_root_cache_enter (it, buf_ret, leaf);
+		return at_or_above_res;
+	      }
+			itc_dive_transit (it, buf_ret, leaf);
+			goto new_page;
+		      }
+		  }
+		it->itc_row_key_id = key_id;
+		it->itc_row_data = page + it->itc_position + IE_FIRST_KEY;
+		it->itc_map_pos = at_or_above;
 		return at_or_above_res;
 	      }
 	    case DVC_GREATER:
@@ -2237,15 +2146,13 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t * buf,
 		/* The lower limit, 0 was greater. No way down. */
 		it->itc_position = map->pm_entries[at_or_above];
 		it->itc_map_pos = at_or_above;
-		*leaf_ret = 0;
 		return DVC_GREATER;
 	      }
 	    }
 	}
       /* OK, we have an interval to search */
       guess = at_or_above + ((below - at_or_above) / 2);
-      res = pg_key_compare (buf, map->pm_entries[guess],
-	  it);
+      res = it->itc_key_spec.ksp_key_cmp (buf, map->pm_entries[guess], it);
       switch (res)
 	{
 	case DVC_LESS:
@@ -2263,15 +2170,12 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t * buf,
 	      below = guess;
 	    }
 	  break;
-	case DVC_MATCH_COMPLETE:	/* index AND scalar match */
-	case DVC_NO_MATCH_COMPLETE:	/* index match, scalar fail */
-	  it->itc_position = map->pm_entries[guess];
-	  *leaf_ret = 0;
-	  return res;
 
 	case DVC_GREATER:
 	  below = guess;
 	  break;
+	default: GPF_T1 ("key_cmp_t can't return that");
+	}
 	}
     }
 }
@@ -2280,15 +2184,15 @@ int
 pg_insert_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it)
 {
   db_buf_t page = buf->bd_buffer;
-  search_spec_t *spec = it->itc_specs;
+  search_spec_t *spec = it->itc_key_spec.ksp_spec_array;
   key_id_t key_id = SHORT_REF (page + pos + IE_KEY_ID);
-  it->itc_row_data = page + pos + IE_FIRST_KEY + (!key_id ? 4 : 0);
   if (KI_LEFT_DUMMY == key_id)
     {
       it->itc_row_key_id = 0;
       return DVC_LESS;
     }
-  ITC_SET_ROW_KEY_ID (it, key_id);
+  it->itc_row_key_id = key_id;
+  it->itc_row_data = page + pos + (key_id ? IE_FIRST_KEY : IE_LP_FIRST_KEY);
   for (;;)
     {
       int res;
@@ -2311,9 +2215,13 @@ pg_insert_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it)
 
 
 int
-itc_page_insert_search (it_cursor_t * it, buffer_desc_t * buf,
-			dp_addr_t * leaf_ret)
+itc_page_insert_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
 {
+ new_page:
+  for (;;)
+    {
+      dp_addr_t leaf;
+      buffer_desc_t * buf = *buf_ret;
   db_buf_t page = buf->bd_buffer;
   int res;
   page_map_t *map = buf->bd_content_map;
@@ -2325,7 +2233,6 @@ itc_page_insert_search (it_cursor_t * it, buffer_desc_t * buf,
   if (map->pm_count == 0)
     {
       it->itc_position = 0;
-      *leaf_ret = 0;
       return DVC_GREATER;
     }
   for (;;)
@@ -2334,7 +2241,7 @@ itc_page_insert_search (it_cursor_t * it, buffer_desc_t * buf,
 	{
 	  if (at_or_above_res == -100)
 	    {
-	      at_or_above_res = pg_insert_key_compare (buf,
+		  at_or_above_res = it->itc_key_spec.ksp_key_cmp (buf,
 		  map->pm_entries[at_or_above], it);
 	    }
 	  switch (at_or_above_res)
@@ -2343,12 +2250,24 @@ itc_page_insert_search (it_cursor_t * it, buffer_desc_t * buf,
 	    case DVC_LESS:
 	      {
 	      it->itc_position = map->pm_entries[at_or_above];
-	      it->itc_map_pos = at_or_above;
 	      key_id = SHORT_REF (page + it->itc_position + IE_KEY_ID);
 	      if (!key_id || KI_LEFT_DUMMY == key_id)
-		*leaf_ret = LONG_REF (page + map->pm_entries[at_or_above] + IE_LEAF);
-	      else
-		*leaf_ret = 0;
+		      {
+			leaf = LONG_REF (page + map->pm_entries[at_or_above] + IE_LEAF);
+			if (leaf)
+			  {
+			    if (buf->bd_is_ro_cache)
+			      {
+				itc_root_cache_enter (it, buf_ret, leaf);
+				return at_or_above_res;
+			      }
+			    itc_dive_transit (it, buf_ret, leaf);
+			    goto new_page;
+			  }
+		      }
+		    it->itc_map_pos = at_or_above;
+		    it->itc_row_data = page + it->itc_position + IE_FIRST_KEY;
+		    it->itc_row_key_id = key_id;
 		return at_or_above_res;
 	      }
 	    case DVC_GREATER:
@@ -2356,14 +2275,13 @@ itc_page_insert_search (it_cursor_t * it, buffer_desc_t * buf,
 		/* The lower limit, 0 was greater. No way down. */
 		it->itc_position = map->pm_entries[at_or_above];
 		it->itc_map_pos = 0;
-		*leaf_ret = 0;
 		return DVC_GREATER;
 	      }
 	    }
 	}
       /* OK, we have an interval to search */
       guess = at_or_above + ((below - at_or_above) / 2);
-      res = pg_insert_key_compare (buf, map->pm_entries[guess],
+	  res = it->itc_key_spec.ksp_key_cmp (buf, map->pm_entries[guess],
 	  it);
       switch (res)
 	{
@@ -2373,18 +2291,28 @@ itc_page_insert_search (it_cursor_t * it, buffer_desc_t * buf,
 	  break;
 	case DVC_MATCH:	/* row found, dependent not checked */
 	  it->itc_position = map->pm_entries[guess];
-	  it->itc_map_pos = guess;
-	  *leaf_ret = it->itc_row_key_id ? 0 : LONG_REF (page + map->pm_entries[guess] + IE_LEAF);
+	      key_id = SHORT_REF (page + it->itc_position + IE_KEY_ID);
+	      if (!key_id)
+		{
+		  leaf = LONG_REF (page + it->itc_position + IE_LEAF);
+		  if (buf->bd_is_ro_cache)
+		    {
+		      itc_root_cache_enter (it, buf_ret, leaf);
 	  return res;
-	case DVC_MATCH_COMPLETE:	/* index AND scalar match */
-	case DVC_NO_MATCH_COMPLETE:	/* index match, scalar fail */
-	  it->itc_position = map->pm_entries[guess];
-	  *leaf_ret = 0;
-	  return res;
+		    }
 
+		  itc_dive_transit (it, buf_ret, leaf);
+		  goto new_page;
+		}
+	      it->itc_map_pos = guess;
+	      it->itc_row_key_id = key_id;
+	      it->itc_row_data = page + it->itc_position + IE_FIRST_KEY;
+	      return res;
 	case DVC_GREATER:
 	  below = guess;
 	  break;
+	    default: GPF_T1 ("can't have this res for key_cmp_t");
+	}
 	}
     }
 }
@@ -2398,7 +2326,6 @@ itc_from_keep_params (it_cursor_t * it, dbe_key_t * key)
   it->itc_row_key_id = key->key_id;
   it->itc_key_id = key->key_id;
   it->itc_tree = key->key_fragments[0]->kf_it;
-  it->itc_space = it->itc_tree->it_commit_space;
 }
 
 
@@ -2422,7 +2349,6 @@ itc_from (it_cursor_t * it, dbe_key_t * key)
   it->itc_row_key_id = key->key_id;
   it->itc_key_id = key->key_id;
   it->itc_tree = key->key_fragments[0]->kf_it;
-  it->itc_space = it->itc_tree->it_commit_space;
 }
 
 
@@ -2440,7 +2366,6 @@ itc_from_it (it_cursor_t * itc, index_tree_t * it)
       itc->itc_row_key_id = it->it_key->key_id;
     }
   itc->itc_tree = it;
-  itc->itc_space = it->it_commit_space;
 }
 
 
@@ -2575,8 +2500,8 @@ itc_read_ahead1 (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 	  if (!pl)
 	    {
 	      itc->itc_position = org_pos;
-	      ITC_LEAVE_MAP (itc);
-	      pl = plh_copy ((placeholder_t *) itc);
+	      ITC_LEAVE_MAPS (itc);
+	      pl = plh_landed_copy ((placeholder_t *) itc, *buf_ret);
 	    }
 	  if (DVC_MATCH != itc_ra_sibling (itc, buf_ret))
 	    break;
@@ -2590,10 +2515,12 @@ itc_read_ahead1 (it_cursor_t * itc, buffer_desc_t ** buf_ret)
  ra_scanned:
   if (pl)
     {
-      ITC_IN_MAP (itc);
+      ITC_IN_KNOWN_MAP (itc, (*buf_ret)->bd_page);
       page_leave_inner (*buf_ret);
+      ITC_LEAVE_MAP_NC (itc);
       *buf_ret = itc_set_by_placeholder (itc, pl);
-      ITC_LEAVE_MAP (itc);
+      ITC_LEAVE_MAPS (itc);
+      itc_unregister_inner ((it_cursor_t *)pl, *buf_ret);
       plh_free (pl);
     }
   else
@@ -2612,72 +2539,83 @@ itc_read_ahead_blob (it_cursor_t * itc, ra_req_t *ra )
   if (!itc || !ra || ra->ra_fill < 2)
     goto fin;
 
-  ITC_IN_MAP (itc);
   if (!iq_is_on ())
     {
-      ITC_LEAVE_MAP (itc);
       goto fin;
     }
   for (inx = 0; inx < ra->ra_fill; inx++)
     {
       buffer_desc_t decoy;
       dp_addr_t phys;
-      index_space_t * bisp;
       buffer_desc_t * btmp;
-      ITC_IN_MAP (itc);
+      ITC_IN_KNOWN_MAP (itc, ra->ra_dp[inx]);
       if (!DBS_PAGE_IN_RANGE (itc->itc_tree->it_storage, ra->ra_dp[inx]) 
 	  ||dbs_is_free_page (itc->itc_tree->it_storage, ra->ra_dp[inx]) || 0 == ra->ra_dp[inx])
 	{
 	  log_error ("*** read-ahead of a free or out of range page dp L=%ld, database not necessarily corrupted.",
 	       ra->ra_dp[inx]);
+	  ITC_LEAVE_MAP_NC (itc);
 	  continue;
 	}
-      btmp = isp_locate_page (itc->itc_space, ra->ra_dp[inx],
-			      &bisp, &phys);
+      btmp = IT_DP_TO_BUF (itc->itc_tree, ra->ra_dp[inx]);
+	IT_DP_REMAP (itc->itc_tree, ra->ra_dp[inx], phys);
       if (DP_DELETED == phys)
 	{
 	  /* between finding the page and here, the page may have been deleted.  OIr reused for sth else. Latter is not dangerous, it will just not be found and will move out with cache replacement */
 	  log_error ("Read ahead of page deleted in commit space, LL=%d not dangerous.\n", ra->ra_dp[inx]);
+	  ITC_LEAVE_MAP_NC (itc);
 	  continue;
 	}
       if (!btmp)
 	{
 	  memset (&decoy, 0, sizeof (decoy));
 	  decoy.bd_being_read = 1;
-	  sethash (DP_ADDR2VOID (ra->ra_dp[inx]), itc->itc_space->isp_dp_to_buf, (void*) &decoy);
-	  ITC_LEAVE_MAP (itc);
+	  decoy.bd_is_write = 1;
+	  decoy.bd_page = ra->ra_dp[inx];
+	  decoy.bd_tree = itc->itc_tree;
+	  sethash (DP_ADDR2VOID (ra->ra_dp[inx]), &IT_DP_MAP (itc->itc_tree, ra->ra_dp[inx])->itm_dp_to_buf, (void*) &decoy);
+		      
+	  ITC_LEAVE_MAP_NC (itc);
 	  btmp = bp_get_buffer (NULL, BP_BUF_IF_AVAIL);
-	  ITC_IN_MAP (itc);
-	  remhash (DP_ADDR2VOID (ra->ra_dp[inx]), itc->itc_space->isp_dp_to_buf);
+	  ITC_IN_KNOWN_MAP (itc, ra->ra_dp[inx]);
+	  remhash (DP_ADDR2VOID (ra->ra_dp[inx]), &IT_DP_MAP (itc->itc_tree, ra->ra_dp[inx])->itm_dp_to_buf);
 	  if (!btmp)
 	    {
-	      buf_release_read_waits (&decoy, RWG_WAIT_DECOY);
+	      page_mark_change (&decoy, 1 + RWG_WAIT_ANY);
+	      page_leave_inner (&decoy);
+	      ITC_LEAVE_MAP_NC (itc);
 	      break;
 	    }
-	  btmp->bd_waiting_read = decoy.bd_waiting_read;
-	  if (decoy.bd_waiting_read)
+	  if (decoy.bd_read_waiting || btmp->bd_write_waiting)
 	    TC (tc_read_wait_while_ra_finding_buf);
 	  ra->ra_bufs[ra->ra_bfill++] = btmp;
 
 	  if (!ra->ra_dp[inx])
 	    GPF_T1 ("Scheduling 0 for read ahead.\n");
-	  isp_set_buffer (bisp, ra->ra_dp[inx], phys, btmp);
+	  sethash (DP_ADDR2VOID (ra->ra_dp[inx]), &IT_DP_MAP (itc->itc_tree, ra->ra_dp[inx])->itm_dp_to_buf, (void*) btmp);
+	  btmp->bd_page = ra->ra_dp[inx];
+	  btmp->bd_physical_page = phys;
+	  btmp->bd_tree = itc->itc_tree;
+	  btmp->bd_storage = btmp->bd_tree->it_storage;
 	  btmp->bd_being_read = 1;
 	  btmp->bd_readers = 0;
-	  BD_SET_IS_WRITE (btmp, 0);
-	  btmp->bd_write_waiting = NULL;
+	  BD_SET_IS_WRITE (btmp, 1);
+	  btmp->bd_write_waiting = decoy.bd_write_waiting;
+	  btmp->bd_read_waiting = decoy.bd_read_waiting;
+	  ITC_LEAVE_MAP_NC (itc);
 	  itc->itc_n_reads++;
 	  ITC_MARK_READ (itc);
 	  DBG_PT_PRINTF ((" SCH RA L=%d P=%d B=%p \n", btmp->bd_page, btmp->bd_physical_page, btmp));
 	}
       else
 	{
+	  ITC_LEAVE_MAP_NC (itc);
 	  if (btmp->bd_pool)
 	    BUF_TOUCH (btmp); /* make sure won't get replaced if already in */
 	  /* check that btmp has bd_pool, because this is nil if the btmp is a decoy in read-ahead */
 	}
     }
-  ITC_LEAVE_MAP (itc);
+  ITC_LEAVE_MAPS (itc);
   if (ra->ra_bfill)
     {
       ra_count++;
@@ -2686,7 +2624,7 @@ itc_read_ahead_blob (it_cursor_t * itc, ra_req_t *ra )
 	dbg_printf (("RA %d sibling %d pages %d leaves\n", ra->ra_nsiblings, ra->ra_bfill, ra->ra_fill));
       iq_schedule (ra->ra_bufs, ra->ra_bfill);
     }
-  ITC_LEAVE_MAP (itc);
+  ITC_LEAVE_MAPS (itc);
 fin:
   if (ra)
     dk_free_box((box_t) ra);
@@ -2714,15 +2652,6 @@ itc_up_rnd_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 }
 
 
-
-typedef struct col_stat_s 
-{
-  id_hash_t *	cs_distinct;
-  long		cs_len;
-  long		cs_n_values;
-} col_stat_t;
-
-
 void
 itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 {
@@ -2736,10 +2665,17 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
   dk_hash_iterator (&it, itc->itc_st.cols);
   while (dk_hit_next (&it, (void**) &col, (void**) &cs))
     {
+      if (upd_col && (0 == stricmp (col->col_name, "P") || 0 == stricmp (col->col_name, "G")))
+	{
+	  col->col_stat = cs;
+	}
+      else
+	{
       id_hash_iterator (&hit, cs->cs_distinct);
       while (hit_next (&hit, (caddr_t*) &data, (caddr_t*) &count))
 	{
 	  dk_free_tree (*data);
+	}
 	}
       if (upd_col)
 	{
@@ -2759,8 +2695,11 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 	      col->col_avg_len = 0; /* no data, use declared prec instead */
 	    }
 	}
+      if (col->col_stat != cs)
+	{
       id_hash_free (cs->cs_distinct);
       dk_free ((caddr_t) cs, sizeof (col_stat_t));
+    }
     }
   hash_table_free (itc->itc_st.cols);
   itc->itc_st.cols = NULL;
@@ -2843,7 +2782,92 @@ itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 }
 
 
+int
+itc_page_split_search_1 (it_cursor_t * it, buffer_desc_t * buf,
+		       dp_addr_t * leaf_ret)
+{
+  db_buf_t page = buf->bd_buffer;
+  int res;
+  page_map_t *map = buf->bd_content_map;
+  int below = map->pm_count;
+  int at_or_above = 0;
+  int guess;
+  int at_or_above_res = -100;
+  key_id_t key_id;
+  if (PA_READ == it->itc_dive_mode ? buf->bd_is_write : !buf->bd_is_write)
+    GPF_T1 ("split search supposed to be in read mode");
+  if (map->pm_count == 0)
+    {
+      it->itc_position = 0;
+      *leaf_ret = 0;
+      return DVC_GREATER;
+    }
 
+
+  for (;;)
+    {
+      if ((below - at_or_above) <= 1)
+	{
+	  if (at_or_above_res == -100)
+	    {
+	      at_or_above_res = pg_key_compare (buf,
+						       map->pm_entries[at_or_above], it);
+	    }
+	  switch (at_or_above_res)
+	    {
+	    case DVC_MATCH:
+	    case DVC_LESS:
+	      {
+	      it->itc_position = map->pm_entries[at_or_above];
+	      it->itc_map_pos = at_or_above;
+	      key_id = SHORT_REF (page + it->itc_position + IE_KEY_ID);
+	      if (!key_id || KI_LEFT_DUMMY == key_id)
+		*leaf_ret = LONG_REF (page + map->pm_entries[at_or_above] + IE_LEAF);
+	      else
+		*leaf_ret = 0;
+		return at_or_above_res;
+	      }
+	    case DVC_GREATER:
+	      {
+		/* The lower limit, 0 was greater. No way down. */
+		it->itc_position = map->pm_entries[at_or_above];
+		it->itc_map_pos = at_or_above;
+		*leaf_ret = 0;
+		return DVC_GREATER;
+	      }
+	    }
+	}
+      /* OK, we have an interval to search */
+      guess = at_or_above + ((below - at_or_above) / 2);
+      res = pg_key_compare (buf, map->pm_entries[guess],
+	  it);
+      switch (res)
+	{
+	case DVC_LESS:
+	  at_or_above = guess;
+	  at_or_above_res = res;
+	  break;
+	case DVC_MATCH:	/* row found, dependent not checked */
+	  if (it->itc_desc_order)
+	    {
+	      at_or_above = guess;
+	      at_or_above_res = res;
+	    }
+	  else
+	    {
+	      below = guess;
+	    }
+	  break;
+	  it->itc_position = map->pm_entries[guess];
+	  *leaf_ret = 0;
+	  return res;
+
+	case DVC_GREATER:
+	  below = guess;
+	  break;
+	}
+    }
+}
 
 
 
@@ -2879,7 +2903,7 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
   while (pos)
 		{
       int res = DVC_MATCH;
-      search_spec_t * sp = itc->itc_specs;
+      search_spec_t * sp = itc->itc_key_spec.ksp_spec_array;
       key_id_t r_k_id = SHORT_REF (page + pos + IE_KEY_ID);
       itc->itc_row_data = page + pos + (r_k_id ? IE_FIRST_KEY : IE_LP_FIRST_KEY);
       if (KI_LEFT_DUMMY == r_k_id)
@@ -2949,7 +2973,7 @@ itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret)
   leaf = 0;
   it->itc_is_on_row = 0;
 
-  ITC_LEAVE_MAP (it);
+  ITC_LEAVE_MAPS (it);
   if (!(*buf_ret)->bd_content_map)
     {
       log_error ("Suspect index page dp=%d key=%s, probably blob ref'd as index node.", (*buf_ret)->bd_page, it->itc_insert_key->key_name);
@@ -2959,7 +2983,7 @@ itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret)
   if (RANDOM_SEARCH_ON == it->itc_random_search)
     res = itc_random_leaf (it, *buf_ret, &rnd_leaf);
   else 
-    res = itc_page_split_search (it, *buf_ret, &leaf);
+    res = itc_page_split_search_1 (it, *buf_ret, &leaf);
   if (it->itc_st.cols)
     itc_page_col_stat (it, *buf_ret);
   ctr = itc_matches_on_page (it, *buf_ret, &leaf_ctr, &leaf);
@@ -3012,6 +3036,7 @@ key_count_estimate  (dbe_key_t * key, int n_samples, int upd_col_stats)
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
+  itc_clear_stats (itc);
   itc_from (itc, key);
   itc->itc_random_search = RANDOM_SEARCH_ON;
   if (upd_col_stats)
@@ -3052,7 +3077,8 @@ key_rdf_lang_id (caddr_t name)
   itc_from (itc, key);
   ITC_SEARCH_PARAM (itc, name);
   itc->itc_isolation = ISO_UNCOMMITTED;
-  itc->itc_specs = &sp;
+  itc->itc_key_spec.ksp_spec_array = &sp;
+  itc->itc_key_spec.ksp_key_cmp = NULL;
   memset (&sp, 0, sizeof (sp));
   sp.sp_min_op = CMP_EQ;
   sp.sp_cl = *key_find_cl (key, ((dbe_column_t *) key->key_parts->data)->col_id);

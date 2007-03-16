@@ -158,6 +158,15 @@ typedef struct sql_type_s
   } sql_type_t;
 
 
+
+typedef struct col_stat_s 
+{
+  id_hash_t *	cs_distinct;
+  int64		cs_len;
+  int64		cs_n_values;
+} col_stat_t;
+
+
 struct dbe_column_s
   {
     char *		col_name;
@@ -183,6 +192,7 @@ struct dbe_column_s
     int64                col_count; /* non-null */
     int64                col_n_distinct; /* count of distinct */
     caddr_t *           col_hist;
+    col_stat_t *	col_stat;
     caddr_t		col_min; /* min column value */
     caddr_t		col_max; /* max column value */
     caddr_t *		col_options; /* max column value */
@@ -220,6 +230,16 @@ typedef struct dbe_key_frag_s
 } dbe_key_frag_t;
 
 
+typedef struct key_spec_s 
+{
+  struct search_spec_s * 	ksp_spec_array;
+  int (*ksp_key_cmp) (struct buffer_desc_s * buf, int pos, struct it_cursor_s * itc);
+} key_spec_t;
+
+
+#define ITC_KEY_INC(itc, dm) if (itc->itc_insert_key) itc->itc_insert_key->dm++;
+
+
 struct dbe_key_s
 {
   char *		key_name;
@@ -248,6 +268,10 @@ struct dbe_key_s
   long		key_lock_set;
   long		key_lock_escalations;
   long		key_page_end_inserts;
+  long		key_write_wait;
+  long		key_read_wait;
+  long		key_landing_wait;
+  long		key_pl_wait;
 
   dp_addr_t		key_last_page;
   char		key_is_last_right_edge;
@@ -257,11 +281,10 @@ struct dbe_key_s
   long		key_n_dirty;
   long		key_n_new;
 
-  struct search_spec_s *	key_insert_spec;
-  struct search_spec_s *	key_bm_ins_spec;
-  struct search_spec_s *	key_bm_ins_leading;
+  key_spec_t 		key_insert_spec;
+  key_spec_t		key_bm_ins_spec;
+  key_spec_t		key_bm_ins_leading;
   dk_set_t		key_visible_parts; /* parts in create table order, only if primary key */
-  struct index_space_s *	key_isp;	/* if temp key, the temp isp */
 
   /* free text */
   dbe_table_t *	key_text_table;

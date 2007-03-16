@@ -1065,7 +1065,7 @@ void
 cv_call_set_result_cols (sql_comp_t * sc, instruction_t * ins, state_slot_t **params)
 {
   query_t *qr = sc->sc_cc->cc_query;
-  if (ins->_.call.bif == bif_result_names && qr)
+  if (INS_CALL_BIF == ins->ins_type && ins->_.bif.bif == bif_result_names && qr)
     {
       int inx;
       DO_BOX (state_slot_t *, ssl, inx, params)
@@ -1082,6 +1082,7 @@ void
 cv_call (dk_set_t * code, state_slot_t * fun_exp, caddr_t proc,
 	 state_slot_t * ret, state_slot_t ** params)
 {
+  bif_t bif = NULL;
   NEW_INSTR (ins, INS_CALL, code);
   if (proc)
     {
@@ -1092,9 +1093,14 @@ cv_call (dk_set_t * code, state_slot_t * fun_exp, caddr_t proc,
   if (fun_exp && IS_REAL_SSL (ret))
     ins->ins_type = INS_CALL_IND;
   else
-    ins->_.call.bif = bif_find (proc);
+    bif = bif_find (proc);
   ins->_.call.ret = ret;
   ins->_.call.params = params;
+  if (bif)
+    {
+      ins->_.bif.bif = bif;
+      ins->ins_type = INS_CALL_BIF;
+    }
 }
 
 void
@@ -1295,10 +1301,11 @@ cv_is_local (code_vec_t cv)
 	case INS_SUBQ:
 	  return 0;
 	case INS_CALL:
-	  if (!ins->_.call.bif
-	      || bif_uses_index (ins->_.call.bif))
+	case INS_CALL_IND:
 	    return 0;
-
+	case INS_CALL_BIF:
+	  if (bif_uses_index (ins->_.bif.bif))
+	    return 0;
 	  break;
 	}
     }
@@ -1320,6 +1327,7 @@ cv_assigned_slots (code_vec_t cv)
 	{
 	case INS_CALL:
 	case INS_CALL_IND:
+	case INS_CALL_BIF:
 	  if (ins->_.call.ret)
 	    dk_set_push (&res, (void*) ins->_.call.ret);
 	  break;
@@ -1542,13 +1550,19 @@ cv_free (code_vec_t cv)
 	  else
 	    dk_free ((box_t) ins->_.pred.cmp, -1);
 	}
-      else if (ins->ins_type == INS_CALL)
+      else if (ins->ins_type == INS_CALL
+	       || ins->ins_type == INS_CALL_IND)
 	{
 	  dk_free_box (ins->_.call.proc);
 	  dk_free_box ((caddr_t) ins->_.call.params);
 	  dk_free_tree ((caddr_t) ins->_.call.kwds);
+	  proc_name_free (ins->_.call.pn);
 	}
-      else if (ins->ins_type == INS_HANDLER)
+      else if (ins->ins_type == INS_CALL_BIF)
+	{
+	  dk_free_box (ins->_.bif.proc);
+	  dk_free_box ((caddr_t) ins->_.bif.params);
+	}      else if (ins->ins_type == INS_HANDLER)
 	{
 	  dk_free_tree ((box_t) ins->_.handler.states);
 	}

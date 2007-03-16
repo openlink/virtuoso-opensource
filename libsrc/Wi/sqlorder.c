@@ -79,7 +79,7 @@ setp_node_free (setp_node_t * setp)
     {
       ha_free (setp->setp_reserve_ha);
     }
-  key_free_trail_specs (setp->setp_insert_specs);
+  key_free_trail_specs (setp->setp_insert_spec.ksp_spec_array);
   dk_free_box ((box_t) setp->setp_last_vals);
 }
 

@@ -316,6 +316,11 @@ dv_ext_to_num (dtp_t * place, caddr_t to)
 #define NUM_TO_MEM(mem, dtp, n_box) \
   if (IS_BOX_POINTER(n_box)) {\
     dtp = box_tag (n_box); \
+    if (dtp == DV_RDF) { \
+      n_box = ((rdf_box_t *) n_box)->rb_box; \
+      if  (!IS_BOX_POINTER (n_box)) goto nonboxed##mem; \
+      dtp = box_tag (n_box); \
+    } \
      if (dtp == DV_LONG_INT) { \
 	* (ptrlong*) &mem = * (ptrlong*) n_box; \
     } else if (dtp == DV_DOUBLE_FLOAT) \
@@ -327,6 +332,7 @@ dv_ext_to_num (dtp_t * place, caddr_t to)
       numeric_copy ((numeric_t) &mem, (numeric_t) n_box); \
     } \
   } else { \
+    nonboxed##mem: \
     * (ptrlong *)&mem = (ptrlong) n_box; \
     dtp = DV_LONG_INT; \
   }
@@ -452,6 +458,9 @@ cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *col
   NUMERIC_VAR (dn1);
   NUMERIC_VAR (dn2);
   dtp_t dtp1, dtp2, res_dtp;
+
+  if ((IS_BOX_POINTER (box1) && DV_RDF == box_tag (box1))  || (IS_BOX_POINTER (box2) && DV_RDF == box_tag (box2)))
+    return rdf_box_compare (box1, box2);
 
   NUM_TO_MEM (dn1, dtp1, box1);
   NUM_TO_MEM (dn2, dtp2, box2);

@@ -261,12 +261,12 @@ mq_create_xa_message (int type, void *resource, void *tp_data)
   return mm;
 }
 
-#ifndef NDEBUG
-unsigned long tc_initial_while_closing = 0;
-unsigned long tc_initial_while_closing_died = 0;
-unsigned long tc_client_dropped_connection = 0;
-unsigned long tc_no_client_in_tp_data = 0;
-#endif
+
+long tc_initial_while_closing = 0;
+long tc_initial_while_closing_died = 0;
+long tc_client_dropped_connection = 0;
+long tc_no_client_in_tp_data = 0;
+
 
 static void
 tp_free_cli_after_unenlist (client_connection_t * client,
@@ -611,7 +611,7 @@ lt_2pc_commit (lock_trx_t * lt)
 #ifdef MSDTC_DEBUG
   lt->lt_in_mts = 0;
 #endif
-  lt_restart (lt);
+  lt_restart (lt, TRX_CONT);
 
   return LTE_OK;
 }
@@ -990,9 +990,7 @@ trx_uuid_t;
 caddr_t
 tp_get_server_uuid ()
 {
-#ifdef UUID_BY_SERIAL
-  return uuid_bin_encode (srv_license_digest);
-#elif defined (UUID_BY_PORT)
+#if defined (UUID_BY_PORT)
 
 #if defined (_REENTRANT)
   char buff[4096];

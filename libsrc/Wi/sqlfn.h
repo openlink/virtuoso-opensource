@@ -144,7 +144,7 @@ extern void sparp_compile_subselect (spar_query_env_t *sparqre);
 
 
 void ts_set_placeholder (table_source_t * ts, caddr_t * state,
-    it_cursor_t *itc, buffer_desc_t * buf);
+    it_cursor_t *itc, buffer_desc_t ** buf_ret);
 
 void insert_node_input (insert_node_t * ins, caddr_t * inst, caddr_t * state);
 
@@ -809,6 +809,10 @@ int sqt_fixed_length (sql_type_t * sqt);
 void wi_free_schemas (void);
 void wi_free_old_qrs (void);
 int dtp_is_column_compatible (dtp_t dtp);
+proc_name_t * proc_name (char * str);
+void proc_name_free (proc_name_t * pn);
+proc_name_t * proc_name_ref (proc_name_t * pn);
+
 
 /* srvcr.c */
 caddr_t box_conc (caddr_t, caddr_t);
@@ -1078,7 +1082,7 @@ void key_make_bm_specs (dbe_key_t * key);
 int itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf);
 void itc_bm_land (it_cursor_t * itc, buffer_desc_t * buf);
 void itc_next_bit (it_cursor_t * itc, buffer_desc_t *buf);
-void itc_invalidate_bm_crs (it_cursor_t * itc);
+void itc_invalidate_bm_crs (it_cursor_t * itc, buffer_desc_t * buf, int is_transit, dk_set_t * local_transits);
 int64  unbox_iri_int64 (caddr_t x);
 int itc_bm_land_lock (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void itc_init_bm_search (it_cursor_t * itc);

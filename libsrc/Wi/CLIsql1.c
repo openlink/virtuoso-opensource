@@ -507,7 +507,7 @@ con_set_defaults (cli_connection_t * con, caddr_t * login_res)
   if (BOX_ELEMENTS (login_res) > LG_DEFAULTS)
     {
       caddr_t *cdefs = (caddr_t *) login_res[LG_DEFAULTS];
-
+      con->con_isolation = cdef_param (cdefs, "SQL_TXN_ISOLATION", SQL_TXN_REPEATABLE_READ);
       con->con_defs.cdef_prefetch = cdef_param (cdefs, "SQL_PREFETCH_ROWS", SELECT_PREFETCH_QUOTA);
 
       con->con_defs.cdef_prefetch_bytes = cdef_param (cdefs, "SQL_PREFETCH_BYTES", 0);

@@ -85,7 +85,8 @@ typedef long jmp_label_t;
 #define IN_ARTM_TIMES		23
 #define IN_ARTM_DIV		24
 #define IN_ARTM_IDENTITY	25
-#define IN_BRET 		26
+#define INS_CALL_BIF 26
+#define IN_BRET 		27
 #define INS_MAX			IN_BRET
 #define INS_MIN			IN_ARTM_FPTR
 
@@ -172,13 +173,20 @@ struct instruction_s {
     } close;
     struct {
       char		ins_type;
-      bif_t		bif;
       caddr_t		proc;
       state_slot_t *	ret;
       state_slot_t **	params;
       state_slot_t *	proc_ssl;
       caddr_t *		kwds;
+      proc_name_t *	pn;
     } call;
+    struct {
+      char		ins_type;
+      caddr_t		proc;
+      state_slot_t *	ret;
+      state_slot_t **	params;
+      bif_t		bif;
+    } bif;
     struct {
       char		ins_type;
       short		label;

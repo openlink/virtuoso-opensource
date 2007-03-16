@@ -51,7 +51,7 @@ void rds_dd_grant (char *object, int is_grant, oid_t grantee);
 void sec_read_tables (void);
 
 caddr_t sec_read_grants (client_connection_t * cli, query_instance_t * caller_qi,
-    index_space_t * isp, char * table, int only_execute_gr);
+    char * table, int only_execute_gr);
 caddr_t sec_read_tb_rls (client_connection_t * cli, query_instance_t * caller_qi,
     char * table);
 
@@ -62,6 +62,8 @@ user_t * sec_check_login (char * name, char * pass, dk_session_t * ses);
 #define PLLH_VALID	1
 int sec_call_login_hook (caddr_t *puid, caddr_t digest, dk_session_t *ses, client_connection_t *cli);
 
+
+int sec_check_info (user_t * user, char *app_name, long pid, char *machine, char *os);
 
 void sec_read_users (void);
 user_t *sec_new_user (query_instance_t * qi, char *name, char *pass);

@@ -58,6 +58,10 @@
 
 
 long  tc_try_land_write;
+long  tc_try_land_reset;
+long tc_up_transit_parent_change;
+long tc_dp_set_parent_being_read;
+long tc_dp_changed_while_waiting_mtx;
 long  tc_dive_split;
 long  tc_dtrans_split;
 long  tc_up_transit_wait;
@@ -70,6 +74,23 @@ long  tc_set_by_pl_wait;
 long  tc_split_2nd_read;
 long  tc_read_wait;
 long  tc_write_wait;
+long tc_dive_would_deadlock;
+long tc_pl_moved_in_reentry;
+long tc_enter_transiting_bm_inx;
+long tc_aio_seq_read;
+long tc_aio_seq_write;
+
+long tc_read_absent_while_finalize;
+long tc_fix_outdated_leaf_ptr;
+long tc_bm_split_left_separate_but_no_split;
+long tc_aq_sleep;
+long tc_root_write;
+long tc_root_image_miss;
+long tc_root_image_ref_deleted;
+long tc_uncommit_cpt_page;
+
+long tc_unregister_enter;
+long tc_root_cache_miss;
 long  tc_reentry_split;
 long  tc_release_pl_on_deleted_dp;
 long  tc_release_pl_on_absent_dp;
@@ -108,6 +129,31 @@ long  tc_get_buf_failed;
 long  tc_read_wait_decoy;
 long  tc_read_wait_while_ra_finding_buf;
 long  tc_pg_write_compact;
+
+
+extern long tc_initial_while_closing;
+extern long tc_initial_while_closing_died ;
+extern long tc_client_dropped_connection ;
+extern long tc_no_client_in_tp_data ;
+extern long tc_bp_get_buffer;
+extern long tc_bp_get_buffer_loop ;
+extern long tc_first_free_replace ;
+extern long tc_hi_lock_new_lock ;
+extern long tc_hi_lock_old_dp_no_lock ;
+extern long tc_hi_lock_old_dp_no_lock_deadlock;
+extern long tc_hi_lock_old_dp_no_lock_put_lock;
+extern long tc_hi_lock_lock;
+extern long tc_hi_lock_lock_deadlock;
+extern long tc_write_cancel;
+extern long tc_write_scrapped_buf;
+extern long tc_serializable_land_reset;
+extern long tc_dive_cache_compares;
+extern long tc_desc_serial_reset;
+extern long tc_dp_set_parent_being_read;
+extern long tc_reentry_split;
+extern long tc_kill_closing;
+extern long tc_get_buf_failed;
+
 
 long  tft_random_seek;
 long  tft_seq_seek;
@@ -160,8 +206,6 @@ void trset_printf (const char *str, ...);
 void trset_end ();
 
 #define rep_printf	trset_printf
-
-static char st_lic_max_connections_buffer[200];
 
 /* status to sys_stat variables */
 char st_dbms_name_buffer[1000];
@@ -279,15 +323,17 @@ process_status_report (void)
 int
 dbs_mapped_back (dbe_storage_t * dbs)
 {
-  int n_back = 0, n_new = 0;
+  int n_back = 0, n_new = 0, inx;
   if (dbs->dbs_type != DBS_PRIMARY)
     return 0;
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
+      for (inx = 0; inx < IT_N_MAPS; inx++)
+	{
       ptrlong dp, phys_dp;
       dk_hash_iterator_t hit;
-      IN_PAGE_MAP (it);
-      dk_hash_iterator (&hit, it->it_commit_space->isp_remap);
+	  mutex_enter (&it->it_maps[inx].itm_mtx);
+	  dk_hash_iterator (&hit, &it->it_maps[inx].itm_remap);
       while (dk_hit_next (&hit, (void**) &dp, (void**) &phys_dp))
 	{
 	  if (dp == phys_dp)
@@ -298,7 +344,9 @@ dbs_mapped_back (dbe_storage_t * dbs)
 		n_new++;
 	    }
 	}
-      LEAVE_PAGE_MAP (it);
+	  mutex_leave (&it->it_maps[inx].itm_mtx);
+	}
+
     }
   END_DO_SET ();
   return n_back;
@@ -370,7 +418,7 @@ dbms_status_report (void)
   long read_percent = 0, write_percent = 0, interval_msec = 0;
   static long last_time;
   static long last_read_cum_time, last_write_cum_time;
-  int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0;
+  int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0, n_crsr = 0;
   char * bp_curr_ts;
   dk_mem_stat (mem, sizeof (mem));
   PrpcStatus (rpc, sizeof (rpc));
@@ -395,8 +443,10 @@ dbms_status_report (void)
 	    {
 	      buf = &bp->bp_bufs[inx];
 	      n_buffers++;
-	      if (buf->bd_page)
+	      if (buf->bd_tree)
 		n_used++;
+	      if (buf->bd_registered)
+		n_crsr++;
 	      if (BUF_WIRED (buf))
 		n_wired++;
 	      if (buf->bd_is_dirty)
@@ -411,11 +461,11 @@ dbms_status_report (void)
       st_db_free_pages = dbs_count_free_pages (dbs);
       rep_printf ("\nDatabase Status:\n"
 	  "  File size " OFF_T_PRINTF_FMT ", %ld pages, %ld free.\n"
-	  "  %d buffers, %d used, %d dirty %d wired down, repl age %d %d w. io.\n",
+	  "  %d buffers, %d used, %d dirty %d wired down, repl age %d %d w. io %d w/crsr.\n",
 	  (OFF_T_PRINTF_DTP) dbs->dbs_file_length, dbs->dbs_n_pages,
 	  st_db_free_pages,
 	  n_buffers, n_used, n_dirty, n_wired,
-		  bp_replace_count ? (int) (bp_replace_age / bp_replace_count) : 0, n_io );
+		  bp_replace_count ? (int) (bp_replace_age / bp_replace_count) : 0, n_io, n_crsr );
       snprintf (st_db_file_size, sizeof (st_db_file_size_buffer), OFF_T_PRINTF_FMT,
 	  (OFF_T_PRINTF_DTP) dbs->dbs_file_length);
       st_db_pages = dbs->dbs_n_pages;
@@ -456,10 +506,8 @@ dbms_status_report (void)
   st_db_log_name = (char *) (dbs->dbs_log_name ? dbs->dbs_log_name : "none");
   snprintf (st_db_log_length, sizeof (st_db_log_length_buffer), OFF_T_PRINTF_FMT,
       (OFF_T_PRINTF_DTP)dbs->dbs_log_length);
-#ifndef NO_OPLKIT
-  rep_printf ("Clients: %ld connects, max %ld concurrent, %d licensed\n",
-      srv_connect_ctr, srv_max_clients, srv_max_connections);
-#endif
+  rep_printf ("Clients: %ld connects, max %ld concurrent\n",
+      srv_connect_ctr, srv_max_clients);
   rep_printf ("%s %s\n", rpc, mem);
   dk_free_box (st_rpc_stat);
   st_rpc_stat = box_dv_short_string (rpc);
@@ -481,23 +529,6 @@ isp_rep_map_fn (void *key, void *value)
     isp_r_new++;
   else
     isp_r_delta++;
-#endif
-}
-
-
-void
-isp_status_report (index_space_t * isp, char *title)
-{
-  #ifndef O12
-  if (mutex_try_enter (db_main_tree->it_page_map_mtx))
-    {
-      isp_r_new = 0;
-      isp_r_delta = 0;
-      maphash (isp_rep_map_fn, isp->isp_remap);
-      rep_printf ("Index space %s:  %ld changed, %ld new pages.\n",
-	  title, isp_r_delta, isp_r_new);
-      mutex_leave (db_main_tree->it_page_map_mtx);
-    }
 #endif
 }
 
@@ -741,7 +772,7 @@ lt_wait_status (void)
 void
 srv_lock_report (const char * mode)
 {
-  int thr_ct = 0, lw_ct = 0, vdb_ct = 0;
+  int thr_ct = 0, lw_ct = 0, vdb_ct = 0, inx;
   IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
@@ -770,13 +801,16 @@ srv_lock_report (const char * mode)
     {
       DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
 	{
-	  IN_PAGE_MAP (it);
+	  for (inx = 0; inx < IT_N_MAPS; inx++)
+	    {
+	      mutex_enter (&it->it_maps[inx].itm_mtx);
 	  if (0 == setjmp_splice (&locks_done))
 	    {
 	      locks_printed = 0;
-	      maphash (lock_status, it->it_locks);
+		  maphash (lock_status, &it->it_maps[inx].itm_locks);
+		}
+	      mutex_leave (&it->it_maps[inx].itm_mtx);
 	    }
-	  LEAVE_PAGE_MAP (it);
 	}
       END_DO_SET();
       lt_wait_status ();
@@ -799,6 +833,15 @@ stat_skip_dots (char *x)
   return x;
 }
 
+
+int
+it_remap_count (index_tree_t * it)
+{
+  int sum = 0,  inx;
+  for (inx = 0; inx < IT_N_MAPS; inx++)
+    sum += it->it_maps[inx].itm_remap.ht_count;
+  return sum;
+}
 
 void
 hic_status ()
@@ -824,7 +867,7 @@ hic_status ()
 	}
 #ifdef NEW_HASH
       rep_printf ("\n     %d pages %d entries %d reuses %d busy %d src pages %s %X %X\n",
-	  it->it_commit_space->isp_remap->ht_count,
+		  it_remap_count (it),
 	  it->it_hi->hi_count,
 	  it->it_hi_reuses,
 	  it->it_ref_count,
@@ -834,7 +877,7 @@ hic_status ()
 	  ((unsigned int) it->it_hi->hi_isolation));
 #else
       rep_printf ("\n     %d pages %d entries %d reuses %d busy %s \n",
-	  it->it_commit_space->isp_remap->ht_count,
+	  0,
 	  it->it_hi->hi_count,
 	  it->it_hi_reuses,
 	  it->it_ref_count,
@@ -892,16 +935,18 @@ st_collect_ps_info (dk_set_t * arr)
 	      id_hash_iterator_t it;
 	      srv_stmt_t **stmt;
 	      caddr_t *text;
-
+	      IN_CLIENT (cli);
 	      id_hash_iterator (&it, cli->cli_statements);
-	      while (hit_next (&it, (caddr_t *) & text, (caddr_t *) & stmt))
+	      while (hit_next (&it, (void **) & text, (void **) & stmt))
 		{
-		  if ((*stmt)->sst_start_msec && (*stmt)->sst_inst && (*stmt)->sst_query)
+		  caddr_t * inst = (*stmt)->sst_inst;
+		  if ((*stmt)->sst_start_msec && inst && (*stmt)->sst_query)
 		    {
 		      dk_set_push (arr, box_string ((*stmt)->sst_query->qr_text));
 		      dk_set_push (arr, box_num (time_now - (*stmt)->sst_start_msec));
 		    }
 		}
+	      LEAVE_CLIENT (cli);
 	    }
 	}
     }
@@ -933,7 +978,6 @@ void
 status_report (const char * mode)
 {
   dk_set_t clients;
-  char buf [200];
 
   ASSERT_OUTSIDE_TXN;
 
@@ -992,7 +1036,8 @@ status_report (const char * mode)
       DO_SET (caddr_t, data, &set)
 	{
 	  if (DV_TYPE_OF (data) == DV_C_STRING)
-	    rep_printf ("%s\n", data);
+
+	    rep_printf ("%.80s\n", data);
 	  else
 	    rep_printf ("%12ld ", unbox (data));
 	  dk_free_box (data);
@@ -1065,6 +1110,9 @@ stat_desc_t stat_descs [] =
     {"lock_leaves", &lock_leaves, NULL},
 
     {"tc_try_land_write",  &tc_try_land_write, NULL},
+    {"tc_dp_changed_while_waiting_mtx", &tc_dp_changed_while_waiting_mtx},
+    {"tc_try_land_reset",  &tc_try_land_reset, NULL},
+    {"tc_up_transit_parent_change", &tc_up_transit_parent_change},
     {"tc_dive_split",  &tc_dive_split, NULL},
     {"tc_dtrans_split",  &tc_dtrans_split, NULL},
     {"tc_up_transit_wait",  &tc_up_transit_wait, NULL},
@@ -1079,6 +1127,47 @@ stat_desc_t stat_descs [] =
     {"tc_read_wait_decoy", &tc_read_wait_decoy, NULL},
     {"tc_read_wait",  &tc_read_wait, NULL},
     {"tc_write_wait",  &tc_write_wait, NULL},
+    {"tc_dive_would_deadlock", &tc_dive_would_deadlock},
+    {"tc_pl_moved_in_reentry", &tc_pl_moved_in_reentry},
+    {"tc_enter_transiting_bm_inx", &tc_enter_transiting_bm_inx},
+    {"tc_aio_seq_write", &tc_aio_seq_write},
+    {"tc_aio_seq_read", &tc_aio_seq_read},
+    {"tc_read_absent_while_finalize", &tc_read_absent_while_finalize},
+    {"tc_fix_outdated_leaf_ptr", &tc_fix_outdated_leaf_ptr},
+    {"tc_bm_split_left_separate_but_no_split", &tc_bm_split_left_separate_but_no_split},
+    {"tc_aq_sleep", &tc_aq_sleep},
+    {"tc_root_image_miss", &tc_root_image_miss},
+    {"tc_root_image_ref_deleted", &tc_root_image_ref_deleted},
+    {"tc_uncommit_cpt_page", &tc_uncommit_cpt_page},
+    {"tc_root_write", &tc_root_write},
+    {"tc_unregister_enter", &tc_unregister_enter},
+    {"tc_root_cache_miss", &tc_root_cache_miss},
+
+
+    {"tc_initial_while_closing", &tc_initial_while_closing },
+    {"tc_initial_while_closing_died", &tc_initial_while_closing_died },
+    {"tc_client_dropped_connection", &tc_client_dropped_connection },
+    {"tc_no_client_in_tp_data", &tc_no_client_in_tp_data },
+    {"tc_bp_get_buffer", &tc_bp_get_buffer },
+
+    {"tc_bp_get_buffer_loop", &tc_bp_get_buffer_loop },
+    {"tc_first_free_replace", &tc_first_free_replace },
+    {"tc_hi_lock_new_lock", &tc_hi_lock_new_lock },
+    {"tc_hi_lock_old_dp_no_lock", &tc_hi_lock_old_dp_no_lock },
+    {"tc_hi_lock_old_dp_no_lock_deadlock", &tc_hi_lock_old_dp_no_lock_deadlock },
+    {"tc_hi_lock_old_dp_no_lock_put_lock", &tc_hi_lock_old_dp_no_lock_put_lock },
+    {"tc_hi_lock_lock", &tc_hi_lock_lock },
+    {"tc_hi_lock_lock_deadlock", &tc_hi_lock_lock_deadlock },
+    {"tc_write_cancel", &tc_write_cancel },
+    {"tc_write_scrapped_buf", &tc_write_scrapped_buf },
+    {"tc_serializable_land_reset", &tc_serializable_land_reset },
+    {"tc_dive_cache_compares", &tc_dive_cache_compares },
+    {"tc_desc_serial_reset", &tc_desc_serial_reset },
+    {"tc_dp_set_parent_being_read", &tc_dp_set_parent_being_read },
+    {"tc_reentry_split", &tc_reentry_split },
+    {"tc_kill_closing", &tc_kill_closing },
+    {"tc_get_buf_failed", &tc_get_buf_failed },
+
     {"tc_release_pl_on_deleted_dp", &tc_release_pl_on_deleted_dp, NULL},
     {"tc_release_pl_on_absent_dp", &tc_release_pl_on_absent_dp, NULL},
     {"tc_cpt_lt_start_wait", &tc_cpt_lt_start_wait, NULL},
@@ -1366,6 +1455,16 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    return (box_num (key->key_read));
 	  if (0 == strcmp (stat_name, "lock_set"))
 	    return (box_num (key->key_lock_set));
+	  if (0 == strcmp (stat_name, "write_wait"))
+	    return (box_num (key->key_write_wait - key->key_landing_wait - key->key_pl_wait));
+	  /* landing waits and pl waits are also counted in write waits, so subtract here */
+	  if (0 == strcmp (stat_name, "read_wait"))
+	    return (box_num (key->key_read_wait));
+	  if (0 == strcmp (stat_name, "landing_wait"))
+	    return (box_num (key->key_landing_wait));
+	  if (0 == strcmp (stat_name, "pl_wait"))
+	    return (box_num (key->key_pl_wait));
+
 	  if (0 == strcmp (stat_name, "lock_waits"))
 	    return (box_num (key->key_lock_wait));
 	  if (0 == strcmp (stat_name, "lock_wait_time"))
@@ -1385,7 +1484,7 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  if (0 == strcmp (stat_name, "n_new"))
 	    return (box_num (key->key_n_new));
 	  if (0 == strcmp (stat_name, "n_pages"))
-	    return (box_num (key->key_fragments[0]->kf_it->it_commit_space->isp_remap->ht_count));
+	    return (box_num (it_remap_count (key->key_fragments[0]->kf_it)));
 	  if (0 == strcmp (stat_name, "n_rows"))
 	    return (box_num (key->key_table->tb_count));
 	  if (0 == strcmp (stat_name, "n_est_rows"))
@@ -2257,9 +2356,7 @@ dbg_page_map_f (buffer_desc_t * buf, FILE * out)
   page_key = sch_id_to_key (wi_inst.wi_schema, page_key_id);
   fprintf (out, "Page %ld %s, child of %ld remap %ld   Key %s: \n",
 	   (long) buf->bd_page,
-	   buf->bd_space ?
-	     (buf->bd_space == buf->bd_space->isp_tree->it_checkpoint_space ? "CHECKPOINT" : "NEW") :
-	     "UNSPEC",
+	   " ",
 	   (long) LONG_REF (buf->bd_buffer + DP_PARENT),
 	   (long) buf->bd_physical_page,
 	   page_key_id == KI_TEMP ? "temp key" : page_key ? page_key->key_name : "<no key>");
@@ -2278,8 +2375,8 @@ dbg_page_map_f (buffer_desc_t * buf, FILE * out)
       return;
     }
   fflush (out);
-  if (!page_key && buf->bd_space)
-    page_key = buf->bd_space->isp_tree->it_key;
+  if (!page_key && buf->bd_tree)
+    page_key = buf->bd_tree->it_key;
   if (!page_key)
     return;
   while (pos)
@@ -2382,19 +2479,19 @@ dbg_print_itcs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
     {
-      index_space_t * isp = it->it_commit_space;
-      dk_hash_iterator_t hit;
-      if (isp->isp_page_to_cursor->ht_count)
+      int inx;
+      for (inx = 0; inx < IT_N_MAPS; inx++)
 	{
+	  it_map_t * itm = &it->it_maps[inx];
 	  int n = 0;
-	  ptrlong dp;
 	  it_cursor_t * cr, *cr2;
+	  if (!itm->itm_dp_to_buf.ht_count)
+	    continue;
 	  printf ("tree %p: \n", (void *)it);
-	  dk_hash_iterator (&hit, isp->isp_page_to_cursor);
-	  while (dk_hit_next (&hit, (void **) &dp, (void **) &cr))
+	  DO_HT (void *, ignore, buffer_desc_t *, buf, &itm->itm_dp_to_buf)
 	    {
-	      printf (" \npage %ld:", (long) dp);
-	      for (cr2 = cr; cr2; cr2 = cr2->itc_next_on_page)
+	      printf (" \npage %ld:", (long) buf->bd_page);
+	      for (cr2 = buf->bd_registered; cr2; cr2 = cr2->itc_next_on_page)
 		{
 		  n++;
 		  if (n > 1000)
@@ -2404,7 +2501,7 @@ dbg_print_itcs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		}
 	      printf (" %d crsrs: ", n);
 	      n = 0;
-	      for (cr2 = cr; cr2; cr2 = cr2->itc_next_on_page)
+	      for (cr2 = buf->bd_registered; cr2; cr2 = cr2->itc_next_on_page)
 		{
 		  printf (" %p ", (void *)cr2);
 		  if (n > 10)
@@ -2412,6 +2509,7 @@ dbg_print_itcs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		  n++;
 		}
 	    }
+	  END_DO_HT;
 	}
     }
   END_DO_SET();
@@ -2420,7 +2518,8 @@ dbg_print_itcs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-char * srv_st_dbms_name ()
+char * 
+srv_st_dbms_name ()
 {
    return st_dbms_name;
 }

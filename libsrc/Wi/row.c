@@ -1758,11 +1758,8 @@ in database migration. The fix will not work when keys with multiple fragments
 are implemented. */
     QI_CHECK_STACK (qi, &qst, INS_STACK_MARGIN);
   it->itc_tree = key->key_fragments[0]->kf_it;
-/* The following string temporary fixes a similar bug that was found first time
-in database migration (US demo database for Virtuoso 2.7 migrated to 3.0). */
-  it->itc_space = it->itc_tree->it_commit_space;
 
-  it->itc_specs = KEY_INSERT_SPEC (key);
+  it->itc_key_spec = key->key_insert_spec;
   it->itc_out_state = qst;
   itc_free_owned_params (it);
   ITC_START_SEARCH_PARS (it);
@@ -1774,7 +1771,7 @@ in database migration (US demo database for Virtuoso 2.7 migrated to 3.0). */
 
   SHORT_SET (&image[IE_KEY_ID], key->key_id);
   SHORT_SET (&image[IE_NEXT_IE], 0);
-  for (sp = it->itc_specs; sp; sp = sp->sp_next)
+  for (sp = it->itc_key_spec.ksp_spec_array; sp; sp = sp->sp_next)
     {
       caddr_t data = QST_GET (qst, ik->ik_slots[inx]);
       row_set_col (&image[IE_FIRST_KEY], &sp->sp_cl, data, &v_fill, ROW_MAX_DATA, key, &err, it, NULL, qst);
@@ -1862,8 +1859,6 @@ in database migration (US demo database for Virtuoso 2.7 migrated to 3.0). */
 
 	  /* leave and return */
 	  itc_page_leave (it, unq_buf);
-
-	  ITC_LEAVE_MAP (it);
 	  if (ins->ins_mode == INS_SOFT && key->key_is_primary)
 	    {
 	      it->itc_position = 0;
@@ -1921,7 +1916,7 @@ itc_row_insert_1 (it_cursor_t * it, db_buf_t row, buffer_desc_t ** unq_buf,
   it->itc_row_key = prime_key;
   it->itc_row_key_id = prime_key->key_id;
 
-  it->itc_specs = NULL;
+  it->itc_key_spec = prime_key->key_insert_spec;
   it->itc_insert_key = prime_key;
   itc_from (it, prime_key);
   itc_insert_row_params (it, row);
@@ -1968,7 +1963,7 @@ itc_row_key_insert (it_cursor_t * it, db_buf_t row, dbe_key_t * ins_key)
   dbe_table_t *tb;
   it->itc_position = 0;
   key_id = SHORT_REF (row + IE_KEY_ID);
-  prime_key = sch_id_to_key (isp_schema (it->itc_space), key_id);
+  prime_key = sch_id_to_key (isp_schema (NULL), key_id);
   if (!prime_key)
     {
       itc_free (it);
@@ -2005,7 +2000,7 @@ itc_drop_index (it_cursor_t * it, dbe_key_t * key)
       {
 	itc_delete (it, &del_buf, NO_BLOBS);
 	it->itc_is_on_row = 0;
-	ITC_LEAVE_MAP (it);
+	ITC_LEAVE_MAPS (it);
 	ctr++;
       }
     dbg_printf (("Deleted %d keys.\n", ctr));

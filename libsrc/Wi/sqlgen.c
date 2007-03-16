@@ -263,7 +263,7 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
 		}
 	      spec = dfe_to_spec (cp, upper, key);
 	    }
-	  ks_spec_add (&ks->ks_spec, spec);
+	  ks_spec_add (&ks->ks_spec.ksp_spec_array, spec);
 	  /* Only 0-n equalities plus 0-1 ordinal relations allowed here.  Rest go to row specs. */
 	  if (spec->sp_min_op != CMP_EQ)
 	    break;
@@ -304,6 +304,7 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
   }
   END_DO_SET ();
   sqlg_ks_out_cols (so, tb_dfe, ks);
+  ksp_cmp_func (&ks->ks_spec);
   return ks;
 }
 
@@ -355,14 +356,14 @@ sqlg_ks_make_main_spec (sqlo_t * so, df_elt_t * tb_dfe, key_source_t * ks,
 			key_source_t * order_ks)
 {
   int part_no = 0;
-  search_spec_t **last_spec = &ks->ks_spec;
-  if (ks->ks_spec)
+  search_spec_t **last_spec = &ks->ks_spec.ksp_spec_array;
+  if (ks->ks_spec.ksp_spec_array)
     SQL_GPF_T(so->so_sc->sc_cc);		/* prime key specs left after order key processed */
 
   DO_SET (dbe_column_t *, col, &ks->ks_key->key_parts)
   {
     if (part_no >= ks->ks_key->key_n_significant)
-      return;
+      break;
     else
       {
 	NEW_VARZ (search_spec_t, sp);
@@ -377,6 +378,7 @@ sqlg_ks_make_main_spec (sqlo_t * so, df_elt_t * tb_dfe, key_source_t * ks,
     part_no++;
   }
   END_DO_SET ();
+  ksp_cmp_func (&ks->ks_spec);
 }
 
 void
@@ -582,14 +584,14 @@ sqlg_inx_op_and_ks (sqlo_t * so, inx_op_t * and_iop, inx_op_t * iop,
 		    df_inx_op_t * and_dio, df_inx_op_t * dio)
 {
   key_source_t * ks = iop->iop_ks;
-  search_spec_t ** last_spec = &iop->iop_ks_full_spec ;
+  search_spec_t ** last_spec = &iop->iop_ks_full_spec.ksp_spec_array;
   search_spec_t * sp;
   dk_set_t max_ssls = NULL;
   int nth = 0, nth_free = 0;
   int is_first = NULL == and_iop->iop_max;
   int n_eqs;
   nth = 0;
-  sp = ks->ks_spec;
+  sp = ks->ks_spec.ksp_spec_array;
   DO_SET (dbe_column_t *, col, &iop->iop_ks->ks_key->key_parts)
     {
       if (sp && sp->sp_min_op == CMP_EQ)
@@ -647,7 +649,7 @@ sqlg_inx_op_and_ks (sqlo_t * so, inx_op_t * and_iop, inx_op_t * iop,
   iop->iop_ks_row_spec = ks->ks_row_spec;
   ks->ks_row_spec = NULL;
   iop->iop_ks_start_spec = ks->ks_spec;
-  ks->ks_spec = NULL;
+  ks->ks_spec.ksp_spec_array = NULL;
   inx_op_set_search_params (so->so_sc, NULL, iop);
 }
 
@@ -779,7 +781,7 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
 
   ts->ts_is_outer = tb_dfe->_.table.ot->ot_is_outer;
   order_ks = ts->ts_order_ks;
-  if (order_ks && order_ks->ks_spec)
+  if (order_ks && order_ks->ks_spec.ksp_spec_array)
     ts->ts_is_unique = tb_dfe->_.table.is_unique;
   /* if the order key has no spec then this can't be a full match of the key.  The situation is a contradiction, can happen if there is a unique pred but the wrong key.  Aberration of score function is possible cause.*/
 
@@ -1166,7 +1168,7 @@ sqlg_generate_proc_ts (sqlo_t * so, df_elt_t * dt_dfe, dk_set_t *precompute)
   END_DO_BOX;
 
   setp_distinct_hash (sc, &setp, 0);
-  setp.setp_ha->ha_op = HA_FILL;
+  setp.setp_ha->ha_op = HA_PROC_FILL;
 
   ts->ts_is_outer = ot->ot_is_outer;
   ts->ts_order_cursor = ssl_new_itc (sc->sc_cc);
@@ -1856,7 +1858,7 @@ setp_key_insert_spec (setp_node_t * setp)
 {
   dbe_key_t * key = setp->setp_ha->ha_key;
   int inx = 0, n;
-  search_spec_t **next_spec = &setp->setp_insert_specs;
+  search_spec_t **next_spec = &setp->setp_insert_spec.ksp_spec_array;
 
 
   for (n = 0; n < key->key_n_significant; n++)
@@ -1879,6 +1881,7 @@ setp_key_insert_spec (setp_node_t * setp)
 	}
       inx++;
     }
+  ksp_cmp_func (&setp->setp_insert_spec);
 }
 
 
@@ -2165,9 +2168,10 @@ bitmap_index_box);
 		      arg = go->go_old_val;
 		      acc_args[0] = go->go_old_val;
 		      cv_call (&code, NULL, t_box_copy (ua->ua_init.uaf_name), ret, (state_slot_t **) /*list*/ sc_list (1, go->go_old_val));
-		      go->go_ua_init_setp_call = (instruction_t *)box_copy_tree((box_t) code->data);
+		      go->go_ua_init_setp_call = code_to_cv (so->so_sc, code);
+		      code = NULL;
 		      cv_call (&code, NULL, t_box_copy (ua->ua_acc.uaf_name), ret, acc_args);
-		      go->go_ua_acc_setp_call = (instruction_t *)box_copy_tree((box_t) code->data);
+		      go->go_ua_acc_setp_call = code_to_cv (so->so_sc, code);
 		      break;
 		    }
 		  default: ;

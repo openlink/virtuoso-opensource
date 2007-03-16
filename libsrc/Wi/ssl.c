@@ -138,7 +138,7 @@ stssl_ks (comp_context_t * cc, key_source_t * ks)
   STSSL (ks->ks_from_temp_tree);
   STSSL (ks->ks_init_place);
   STSSL (ks->ks_grouping);
-  stssl_sp (cc, ks->ks_spec);
+  stssl_sp (cc, ks->ks_spec.ksp_spec_array);
   stssl_sp (cc, ks->ks_row_spec);
   stssl_list (ks->ks_out_slots);
   stssl_cv (cc, ks->ks_local_code);
@@ -153,8 +153,8 @@ stssl_inx_op (comp_context_t * cc, inx_op_t * iop)
   if (iop->iop_ks)
     stssl_ks (cc, iop->iop_ks);
   stssl_arr (iop->iop_max);
-  stssl_sp (cc, iop->iop_ks_start_spec);
-  stssl_sp (cc, iop->iop_ks_full_spec);
+  stssl_sp (cc, iop->iop_ks_start_spec.ksp_spec_array);
+  stssl_sp (cc, iop->iop_ks_full_spec.ksp_spec_array);
   stssl_sp (cc, iop->iop_ks_row_spec);
   if (iop->iop_terms)
     {
@@ -333,7 +333,7 @@ stssl_qnode (comp_context_t * cc, table_source_t * node)
       STSSL (setp->setp_sorted);
       STSSL (setp->setp_flushing_mem_sort);
       stssl_arr (setp->setp_ordered_gb_out);
-      stssl_sp (cc, setp->setp_insert_specs);
+      stssl_sp (cc, setp->setp_insert_spec.ksp_spec_array);
       stssl_ha (cc, setp->setp_reserve_ha);
     }
   else if (IS_NODE (gs_union_node_input, node))
@@ -405,6 +405,10 @@ stssl_ins (comp_context_t * cc, instruction_t * ins)
       stssl_arr (ins->_.call.params);
       STSSL (ins->_.call.ret);
       STSSL (ins->_.call.proc_ssl);
+      break;
+    case INS_CALL_BIF:
+      stssl_arr (ins->_.bif.params);
+      STSSL (ins->_.bif.ret);
       break;
     case INS_SUBQ:
       stssl_query (cc, ins->_.subq.query);

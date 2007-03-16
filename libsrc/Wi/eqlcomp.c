@@ -362,6 +362,7 @@ qr_free (query_t * qr)
       dk_free_tree (qr->qr_proc_ret_type);
       dk_free_box (qr->qr_trig_table);
       dk_free_box ((box_t) qr->qr_trig_upd_cols);
+      proc_name_free (qr->qr_pn);
     }
   dk_free_box ((caddr_t) qr->qr_proc_cost);
 #ifdef PLDBG
@@ -854,7 +855,7 @@ void
 ks_set_search_params (sql_comp_t * sc, comp_table_t * ct, key_source_t * ks)
 {
   int inx = 0;
-  search_spec_t *sp = ks->ks_spec;
+  search_spec_t *sp = ks->ks_spec.ksp_spec_array;
 
   while (sp)
     {
@@ -889,7 +890,7 @@ void
 inx_op_set_search_params (sql_comp_t * sc, comp_table_t * ct, inx_op_t * iop)
 {
   int inx = 0;
-  search_spec_t *sp = iop->iop_ks_full_spec;
+  search_spec_t *sp = iop->iop_ks_full_spec.ksp_spec_array;
 
   while (sp)
     {
@@ -908,7 +909,7 @@ inx_op_set_search_params (sql_comp_t * sc, comp_table_t * ct, inx_op_t * iop)
 	sp->sp_max = inx++;
       sp = sp->sp_next;
     }
-  sp = iop->iop_ks_start_spec;
+  sp = iop->iop_ks_start_spec.ksp_spec_array;
   inx = 0;
   while (sp)
     {
@@ -925,7 +926,7 @@ inx_op_set_search_params (sql_comp_t * sc, comp_table_t * ct, inx_op_t * iop)
 void
 ks_check (key_source_t * ks)
 {
-  search_spec_t *spec = ks->ks_spec;
+  search_spec_t *spec = ks->ks_spec.ksp_spec_array;
   while (spec)
     spec = spec->sp_next;
   spec = ks->ks_row_spec;
@@ -1018,7 +1019,7 @@ key_source_create (comp_context_t * cc,
 	if (spec)
 	  {
 	    sps[i]->sp_cl = *key_find_cl (key, col->col_id);
-	    ks_spec_add (&ks->ks_spec, sps[i]);
+	    ks_spec_add (&ks->ks_spec.ksp_spec_array, sps[i]);
 	    dk_free_tree ((caddr_t) spec);
 	    specs[i] = NULL;
 	    ks_check (ks);
@@ -1082,7 +1083,7 @@ ks_free (key_source_t * ks)
 {
   if (!ks)
     return;
-  key_free_trail_specs (ks->ks_spec);
+  key_free_trail_specs (ks->ks_spec.ksp_spec_array);
   key_free_trail_specs (ks->ks_row_spec);
   dk_set_free (ks->ks_out_cols);
   dk_set_free (ks->ks_out_slots);
@@ -1142,8 +1143,8 @@ ks_make_main_spec (comp_context_t * cc, key_source_t * ks, char *cr_name)
   caddr_t name_sym;
   char temp_name[200];
   int part_no = 0;
-  search_spec_t **last_spec = &ks->ks_spec;
-  if (ks->ks_spec)
+  search_spec_t **last_spec = &ks->ks_spec.ksp_spec_array;
+  if (ks->ks_spec.ksp_spec_array)
     GPF_T;	/* prime key specs left after order key processed */
   DO_SET (dbe_column_t *, col, &ks->ks_key->key_parts)
   {
@@ -1211,8 +1212,8 @@ inx_op_free (inx_op_t * iop)
     }
   dk_free_box ((caddr_t) iop->iop_out);
   dk_free_box ((caddr_t) iop->iop_max);
-  key_free_trail_specs  (iop->iop_ks_start_spec);
-  key_free_trail_specs  (iop->iop_ks_full_spec);
+  key_free_trail_specs  (iop->iop_ks_start_spec.ksp_spec_array);
+  key_free_trail_specs  (iop->iop_ks_full_spec.ksp_spec_array);
   key_free_trail_specs  (iop->iop_ks_row_spec);
   dk_free ((caddr_t) iop, sizeof (inx_op_t));
 }
@@ -2096,7 +2097,7 @@ qr_describe_param_names (query_t * qr, stmt_compilation_t *sc, caddr_t *err_ret)
 	}
     }
   END_DO_INSTR
-  if (!found || ins->_.call.bif)
+  if (!found)
     return;
 
   proc_name = ins->_.call.proc;

@@ -163,7 +163,7 @@ pg_make_map (buffer_desc_t * buf)
     }
 
   pg_key = KI_TEMP == k_id ?
-      buf->bd_space->isp_tree->it_key :
+      buf->bd_tree->it_key :
       sch_id_to_key (wi_inst.wi_schema, k_id);
   if (!map)
     {
@@ -223,7 +223,7 @@ pg_check_map (buffer_desc_t * buf)
   int org_free = buf->bd_content_map->pm_bytes_free;
   int pos, ctr = 0;
   db_buf_t page;
-  /*memcpy (&org_map, buf->bd_content_map, ((ptrlong)(&((page_map_t*)0)->pm_entries)) + 2 * buf->bd_content_map->pm_count); */
+  memcpy (&org_map, buf->bd_content_map, ((ptrlong)(&((page_map_t*)0)->pm_entries)) + 2 * buf->bd_content_map->pm_count);
   /* for debug, copy the entries, the whole struct may overflow addr space. */
   if (!buf->bd_is_write)
     GPF_T1 ("must have written access to buffer to check it");
@@ -234,6 +234,12 @@ pg_check_map (buffer_desc_t * buf)
   pg_make_map (buf);
   if (org_free != buf->bd_content_map->pm_bytes_free)
     GPF_T1 ("map bytes free out of sync");
+  org_map.pm_size = buf->bd_content_map->pm_size;
+  if (org_map.pm_filled_to < buf->bd_content_map->pm_filled_to)
+    GPF_T1 ("filled to of map is too low");
+  org_map.pm_filled_to = buf->bd_content_map->pm_filled_to;
+  if (memcmp (&org_map, buf->bd_content_map, ((ptrlong)(&((page_map_t*)0)->pm_entries)) + 2 * buf->bd_content_map->pm_count))
+    GPF_T1 ("map not in sync with buf");
 #if 0
   /* debug code for catching insert/update of a particular row */
   page = buf->bd_buffer;
@@ -257,22 +263,20 @@ pg_check_map (buffer_desc_t * buf)
 #endif
 
 void
-pg_move_cursors (it_cursor_t ** temp_itc, int fill, dp_addr_t dp_from,
+pg_move_cursors (it_cursor_t ** temp_itc, int fill, buffer_desc_t * buf_from,
     int from, dp_addr_t page_to, int to, buffer_desc_t * buf_to)
 {
   int n;
   it_cursor_t *it_list;
-  index_space_t *isp;
   if (!fill)
     return;
-
+  assert (buf_from->bd_is_write && (!buf_to || buf_to->bd_is_write));
   for (n = 0; n < fill; n++)
     {
       it_list = temp_itc[n];
       if (!it_list)
 	continue;
-      isp = it_list->itc_space_registered;
-      if (it_list->itc_page == dp_from
+      if (it_list->itc_page == buf_from->bd_page
 	  && it_list->itc_position == from)
 	{
 	  temp_itc[n] = NULL;
@@ -284,9 +288,9 @@ pg_move_cursors (it_cursor_t ** temp_itc, int fill, dp_addr_t dp_from,
 	  it_list->itc_position = to;
 	  if (page_to != it_list->itc_page)
 	    {
-	      itc_unregister (it_list, INSIDE_MAP);
+	      itc_unregister_inner (it_list, buf_from);
 	      it_list->itc_page = page_to;
-	      itc_register_cursor (it_list, INSIDE_MAP);
+	      itc_register (it_list, buf_to);
 	    }
 	}
     }
@@ -294,13 +298,12 @@ pg_move_cursors (it_cursor_t ** temp_itc, int fill, dp_addr_t dp_from,
 
 
 void
-pg_delete_move_cursors (it_cursor_t * itc, dp_addr_t dp_from,
-    int from, dp_addr_t page_to, int to, buffer_desc_t * buf_to)
+pg_delete_move_cursors (it_cursor_t * itc, buffer_desc_t * buf_from, int pos_from,
+			buffer_desc_t * buf_to, int pos_to)
 {
   it_cursor_t *it_list;
-
-  it_list = (it_cursor_t *)
-      gethash (DP_ADDR2VOID (dp_from), itc->itc_space->isp_page_to_cursor);
+  assert (buf_from->bd_is_write && (!buf_to || buf_to->bd_is_write));
+  it_list = buf_from->bd_registered;
 
   while (it_list)
     {
@@ -308,23 +311,22 @@ pg_delete_move_cursors (it_cursor_t * itc, dp_addr_t dp_from,
       if (buf_to)
 	{
 	  rdbg_printf (("  itc delete move by T=%d moved itc=%x  from L=%d pos=%d to L=%d pos=%d was_on_row=%d \n",
-			TRX_NO (itc->itc_ltrx), it_list, it_list->itc_page, it_list->itc_position, page_to, to, it_list->itc_is_on_row));
-	  itc_unregister (it_list, INSIDE_MAP);
-	  it_list->itc_page = page_to;
-	  it_list->itc_position = to;
+			TRX_NO (itc->itc_ltrx), it_list, it_list->itc_page, it_list->itc_position, buf_to->bd_page, pos_to, it_list->itc_is_on_row));
+	  itc_unregister_inner (it_list, buf_from);
+	  it_list->itc_page = buf_to->bd_page;
+	  it_list->itc_buf_registered = buf_to;
+	  it_list->itc_position = pos_to;
 	  it_list->itc_is_on_row = 0;
-	  itc_register_cursor (it_list, INSIDE_MAP);
-
+	  itc_register (it_list, buf_to);
 	}
       else
 	{
-	  if (it_list->itc_page == dp_from
-	      && it_list->itc_position == from)
+	  if (it_list->itc_page == buf_from->bd_page
+	      && it_list->itc_position == pos_from)
 	    {
 	      rdbg_printf (("  itc delete move inside page by T=%d moved itc=%x  from L=%d pos=%d to L=%d pos=%d was_on_row=%d \n",
-			    TRX_NO (itc->itc_ltrx), it_list, it_list->itc_page, it_list->itc_position, page_to, to, it_list->itc_is_on_row));
-
-	      it_list->itc_position = to;
+			    TRX_NO (itc->itc_ltrx), it_list, it_list->itc_page, it_list->itc_position, buf_from->bd_page, pos_to, it_list->itc_is_on_row));
+	      it_list->itc_position = pos_to;
 	      it_list->itc_is_on_row = 0;
 	    }
 	}
@@ -407,53 +409,33 @@ is_ptr_in_array (void**array, int fill, void* ptr)
 
 
 void
-itc_keep_together (it_cursor_t * itc, buffer_desc_t * buf, it_cursor_t ** cursors_in_trx, int cr_fill)
+itc_keep_together (it_cursor_t * itc, buffer_desc_t * buf, buffer_desc_t * buf_from,
+		   it_cursor_t ** cursors_in_trx, int cr_fill)
 {
   it_cursor_t * cr_tmp [1000];
   int inx;
 
-  if (itc->itc_bm_split_left_side)
+  if (itc->itc_bm_split_left_side && !itc->itc_bm_split_right_side)
     {
       /* this inserts the right side of a split bm inx entry. Move the crs registered on the left side to the right side 
-       * if they are past the dividing value.  If just landed waiting, mark then to reset the search */
+       * if they are past the dividing value.  If just landed waiting, mark then to reset the search 
+       * The left and right are not always on the same page.  This is because the ins may have split or because of pre-existingf leaf pointers in the parent that just split the start of the left and of the right.  So different pages is not always split. */
+      buffer_desc_t * left_buf;
       placeholder_t * left = itc->itc_bm_split_left_side;
-      int fill = 0;
-      it_cursor_t * registered;
-      bitno_t r_split = unbox_iri_int64 (itc->itc_search_params[itc->itc_search_par_fill - 1]);
-      ITC_IN_MAP (itc);
-      registered = (it_cursor_t*) gethash (DP_ADDR2VOID (left->itc_page), itc->itc_space->isp_page_to_cursor);
-      while (registered)
+      left_buf = left->itc_buf_registered;
+      if (left_buf != buf_from && left_buf != buf)
 	{
-	  if (registered != (it_cursor_t*) left 
-	      && registered->itc_position == left->itc_position
-	      && !is_ptr_in_array ((void**)cursors_in_trx, cr_fill, (void*)registered))
-	    {
-	      /* if it is on the split row and above the split point or if it has not yet read the splitting row because it was locked */
-	      if (registered->itc_bp.bp_just_landed || registered->itc_bp.bp_value >= r_split)
-		cr_tmp[fill++]= registered;
+	  TC (tc_bm_split_left_separate_but_no_split);
 	    }
-	  registered = registered->itc_next_on_page;
-	}
-      for (inx = 0; inx < fill; inx++)
-	{
-	  itc_unregister (cr_tmp[inx], INSIDE_MAP);
-	  cr_tmp[inx]->itc_to_reset = RWG_WAIT_SPLIT; /*if just landed, this will make it reset the search*/
-	  cr_tmp[inx]->itc_position = itc->itc_position;
-	  cr_tmp[inx]->itc_page = itc->itc_page;
-	  cr_tmp[inx]->itc_bp.bp_is_pos_valid = 0;
-	  itc_register_cursor (cr_tmp[inx], INSIDE_MAP);
-	}
-      itc_unregister ((it_cursor_t *) left, INSIDE_MAP);
-      itc->itc_bm_split_left_side = NULL;
+      itc->itc_bm_split_right_side = plh_landed_copy ((placeholder_t *) itc, buf);
     }
 
   if (!itc->itc_keep_together_pos)
     return;
-  ITC_IN_MAP (itc);
   if (!cursors_in_trx)
     {
-      it_cursor_t * registered = (it_cursor_t *)
-	gethash (DP_ADDR2VOID (itc->itc_keep_together_dp), itc->itc_space->isp_page_to_cursor);
+      it_cursor_t * registered = buf_from->bd_registered;
+
       /* could be inlined but use generic route for better testability */
       cursors_in_trx = cr_tmp;
       cr_fill = 0;
@@ -474,7 +456,7 @@ itc_keep_together (it_cursor_t * itc, buffer_desc_t * buf, it_cursor_t ** cursor
 	/* rdbg_printf (("keep together move on %d\n", itc->itc_page)); */
       }
   pg_move_cursors (cursors_in_trx, cr_fill,
-		   itc->itc_keep_together_dp, itc->itc_keep_together_pos,
+		   buf_from, itc->itc_keep_together_pos,
 		   itc->itc_page, itc->itc_position,
 		   buf);
 
@@ -508,7 +490,7 @@ pg_write_compact (it_cursor_t * it, buffer_desc_t * buf_from,
   page_map_t org_map;
   page_lock_t * pl_ext;
   page_lock_t * pl_from;
-  int insert_len = 0;
+  int insert_len = 0, insert_len_1 = 0, insert_len_2 = 0;
   int tail = 0, ins_tail = 0; /*leave this much after each/inserted row for expansion */
   db_buf_t ext_page;
   db_buf_t from = buf_from->bd_buffer;
@@ -531,8 +513,15 @@ pg_write_compact (it_cursor_t * it, buffer_desc_t * buf_from,
 
 
   if (insert)
+    {
     insert_len = row_length (insert, it->itc_insert_key);
-
+      if (INS_DOUBLE_LP == new_rl)
+	{
+	  insert_len_1 = ROW_ALIGN (insert_len);
+	  insert_len_2 = row_length (insert + insert_len_1, it->itc_insert_key);
+	  insert_len = insert_len_1 + insert_len_2;
+	}
+    }
   if (!buf_ext)
     {
       int space = buf_from->bd_content_map->pm_bytes_free - ROW_ALIGN (insert_len);
@@ -549,14 +538,12 @@ pg_write_compact (it_cursor_t * it, buffer_desc_t * buf_from,
     }
   ext_page = buf_ext ? buf_ext->bd_buffer : NULL;
 
-  ITC_IN_MAP (it);
-  pl_ext = buf_ext ? IT_DP_PL (it->itc_tree, buf_ext->bd_page) : NULL;
-  pl_from = IT_DP_PL (it->itc_tree, buf_from->bd_page);
+  pl_ext = buf_ext ? buf_ext->bd_pl : NULL;
+  pl_from = buf_from->bd_pl;
   if (pl_from && !PL_IS_PAGE (pl_from) && pl_from->pl_n_row_locks > map_to->pm_count)
     GPF_T1 ("more locks than rows");
 
-  cr = (it_cursor_t *)
-      gethash (DP_ADDR2VOID (it->itc_page), it->itc_space->isp_page_to_cursor);
+  cr = buf_from->bd_registered;
   pl_rlock_table (pl_from, rlocks, &rl_fill);
   for (cr = cr; cr; cr = cr->itc_next_on_page)
     {
@@ -564,10 +551,8 @@ pg_write_compact (it_cursor_t * it, buffer_desc_t * buf_from,
       if (cr_fill >= sizeof (cursors_in_trx) / sizeof (caddr_t))
 	GPF_T1 ("too many cursors on splitting page.");
     }
-  if (0 == cr_fill)
-    {
-      ITC_LEAVE_MAP (it);
-    }
+  if (!cr_fill)
+    ITC_LEAVE_MAPS (it);
 
   memcpy (&org_map, buf_from->bd_content_map, ((ptrlong)(&((page_map_t*)0)->pm_entries)) + 2 * buf_from->bd_content_map->pm_count); /* for debug, copy the entries, the whole struct may overflow addr space. */
   pg_map_clear (buf_from);
@@ -602,15 +587,21 @@ pg_write_compact (it_cursor_t * it, buffer_desc_t * buf_from,
 	  if (is_to_extend)
 	    {
 	      it->itc_page = dp_ext;
-	      ITC_IN_MAP (it);
-	      it->itc_pl = IT_DP_PL (it->itc_tree, dp_ext);
+	      it->itc_pl = buf_ext->bd_pl;
 	    }
-	  itc_keep_together (it, is_to_extend ? buf_ext : buf_from,
+	  itc_keep_together (it, is_to_extend ? buf_ext : buf_from, buf_from,
 			     cursors_in_trx, cr_fill);
-	  if (new_rl)
+	  ITC_LEAVE_MAPS (it);
+	  if (new_rl && INS_DOUBLE_LP != new_rl)
 	    itc_insert_rl (it, is_to_extend ? buf_ext : buf_from, it->itc_position, new_rl, RL_NO_ESCALATE);
 	  ADD_MAP_ENT (place_to, insert_len);
 	  LINK_PREV (place_to);
+	  if (INS_DOUBLE_LP == new_rl)
+	    {
+	      int right = place_to + insert_len_1;
+	      LINK_PREV (right);
+	      map_append (is_to_extend ? &buf_ext->bd_content_map : &buf_from->bd_content_map, right);
+	    }
 	  place_to += ROW_ALIGN (insert_len) + tail + ins_tail;
 	}
 
@@ -628,7 +619,7 @@ pg_write_compact (it_cursor_t * it, buffer_desc_t * buf_from,
       memcpy (&page_to[place_to], &from[place_from], (int) (l));
       pg_move_lock (it, rlocks, rl_fill, place_from, place_to,
 		    is_to_extend ? pl_ext : pl_from, is_to_extend);
-      pg_move_cursors (cursors_in_trx, cr_fill, dp_from, place_from,
+      pg_move_cursors (cursors_in_trx, cr_fill, buf_from, place_from,
 	  is_to_extend ? dp_ext : dp_from, place_to,
 	  is_to_extend ? buf_ext : buf_from);
 
@@ -637,6 +628,7 @@ pg_write_compact (it_cursor_t * it, buffer_desc_t * buf_from,
       place_to += ROW_ALIGN (l)  + tail;
       place_from = IE_NEXT (from + place_from);
     }
+  ITC_LEAVE_MAPS (it);
   IS_FIRST (place_to, 0);
   if (!first_copied)
     GPF_T;
@@ -653,27 +645,6 @@ pg_write_compact (it_cursor_t * it, buffer_desc_t * buf_from,
 }
 
 
-buffer_desc_t *
-page_rleaf_enter (it_cursor_t * itc, dp_addr_t dp)
-{
-  buffer_desc_t * buf = NULL;
-  ITC_IN_MAP (itc);
-  do
-    {
-      ITC_IN_MAP (itc);
-      buf = page_fault (itc, dp);
-    }
-  while (!buf);
-  ITC_IN_MAP (itc);
-  return buf;
-}
-
-
-void
-page_rleaf_leave (buffer_desc_t * buf)
-{
-  /* empty - the rleaf entry did not increment read or write count */
-}
 /*
    When an inner node splits the leaves to the right of the split must be
    updated.
@@ -685,41 +656,14 @@ pg_reloc_right_leaves (it_cursor_t * it, db_buf_t page, dp_addr_t dp)
   int any = 0;
   dp_addr_t leaf;
   int pos = SHORT_REF (page + DP_FIRST);
-  buffer_desc_t *buf;
   while (pos)
     {
       leaf = leaf_pointer (page, pos);
       if (leaf)
 	{
 	  any = 1;
-	  ITC_IN_MAP (it);
 	  ITC_AGE_TRX (it, 5);
-	  buf = page_rleaf_enter (it, leaf);
-
-	  rdbg_printf_2 (("	Parent of %ld from %ld to %ld.\n",
-		  buf->bd_page,
-		  LONG_REF (buf->bd_buffer + DP_PARENT), dp));
-
-	  if (gethash (DP_ADDR2VOID (buf->bd_page), it->itc_space->isp_remap))
-	    {
-	      /* This trx has a delta. Set the parent link. */
-	      LONG_SET (buf->bd_buffer + DP_PARENT, dp);
-	      buf->bd_is_dirty = 1;
-	      page_rleaf_leave (buf);
-	    }
-	  else
-	    {
-#ifdef DEBUG
-	      buffer_desc_t *old_buf = buf;
-#endif
-	      itc_delta_this_buffer (it, buf, DELTA_STAY_INSIDE);
-
-	      LONG_SET (buf->bd_buffer + DP_PARENT, dp);
-	      /* could have been written out in the meantime */
-	      buf->bd_is_dirty = 1;
-	      page_rleaf_leave (buf);
-	    }
-
+	  itc_set_parent_link (it, leaf, dp);
 	}
       pos = IE_NEXT (page + pos);
     }
@@ -735,10 +679,6 @@ box_n_bin (dtp_t * bin, int len)
   return res;
 }
 
-/* This makes a leaf pointer with
-   dv_cont_string, 0 key id, key parts and DV_LEAF to the given leaf.
-   Tha page's leftmost entry is copied and returned. It is assumed the page
-   has no gap at the start.  */
 
 db_buf_t
 itc_make_leaf_entry (it_cursor_t * itc, db_buf_t row, dp_addr_t to)
@@ -818,6 +758,20 @@ itc_make_leaf_entry (it_cursor_t * itc, db_buf_t row, dp_addr_t to)
 }
 
 
+db_buf_t
+lp_concat (dbe_key_t * key, db_buf_t lp1, db_buf_t lp2)
+{
+  int l1 = row_length (lp1, key);
+  int l2 = row_length (lp2, key);
+  db_buf_t dl = (db_buf_t) dk_alloc_box (ROW_ALIGN (l1) + ROW_ALIGN (l2), DV_STRING);
+  memcpy (dl, lp1, l1);
+  memcpy (dl + ROW_ALIGN (l1), lp2, l2);
+  dk_free_box ((caddr_t) lp1);
+  dk_free_box ((caddr_t) lp2);
+  return dl;
+}
+
+
 void
 itc_split (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
 	   row_lock_t * new_rl)
@@ -840,13 +794,13 @@ itc_split (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
   if (THR_IS_STACK_OVERFLOW (self, &buf, SPLIT_STACK_MARGIN))
     GPF_T1 ("out of stack space in itc_split");
   /* Take extend near parent. if root, extend near old root */
-  extend = isp_new_page (it->itc_space,
+  it->itc_tree->it_is_single_page = 0;
+  extend = it_new_page (it->itc_tree,
       dp_parent ? dp_parent : buf->bd_page,
       DPF_INDEX, 0, it->itc_n_pages_on_hold);
   if (dp_parent)
     dp_may_compact ((*buf_ret)->bd_storage, dp_parent);
 
-  ITC_IN_MAP (it);
   ITC_MARK_NEW (it);
   if (!extend)
     GPF_T1 ("Out of disk in split");
@@ -855,50 +809,48 @@ itc_split (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
       extend->bd_page, new_rl);
   if ((*buf_ret)->bd_pl && PL_IS_PAGE ((*buf_ret)->bd_pl))
     {
-      ITC_IN_MAP (it);
   itc_split_lock_waits (it, *buf_ret, extend);
     }
+  ITC_LEAVE_MAPS (it);
   right_leaf = itc_make_leaf_entry (it, extend->bd_buffer + DP_DATA, extend->bd_page);
 
   if (!dp_parent)
     {
       /* Root split */
 
-      rdbg_printf_2 (("Root %ld split.\n", buf->bd_page));
+      rdbg_printf_2 (("Root %ld split.\n", (*buf_ret)->bd_page));
 
       is_new_root = 1;
-      ITC_LEAVE_MAP (it);
-      parent = isp_new_page (it->itc_space, buf->bd_page, DPF_INDEX, 0, it->itc_n_pages_on_hold);
+      parent = it_new_page (it->itc_tree, buf->bd_page, DPF_INDEX, 0, it->itc_n_pages_on_hold);
       dp_parent = parent->bd_page;
       if (!parent)
 	GPF_T1 ("Out of disk in root split");
-      ITC_IN_MAP (it);
       LONG_SET (buf->bd_buffer + DP_PARENT, dp_parent);
       left_leaf = itc_make_leaf_entry (it, buf->bd_buffer + DP_DATA, buf->bd_page);
       memcpy (parent->bd_buffer + DP_DATA, left_leaf,
 	  (int) (box_length ((caddr_t) left_leaf)));
       SHORT_SET (parent->bd_buffer + DP_FIRST, DP_DATA);
-      it->itc_space->isp_root = parent->bd_page;
       pg_make_map (parent);
+      ITC_IN_KNOWN_MAP (it, parent->bd_page);
+      /* don't set it in the middle of the itc_reset sequence */
+      it->itc_tree->it_root = parent->bd_page;
+      ITC_LEAVE_MAP_NC (it);
     }
   else
     {
-      do
-	{
-	  ITC_IN_MAP (it);
-	  dp_parent = LONG_REF (page + DP_PARENT);
-	  page_wait_access (it, dp_parent, NULL, NULL, &parent, PA_WRITE, RWG_NO_WAIT);
-	}
-      while (it->itc_to_reset > RWG_NO_WAIT);
-      ITC_IN_MAP (it);
+      parent = itc_write_parent (it, buf);
+      dp_parent = parent->bd_page;
+      ITC_IN_KNOWN_MAP (it, dp_parent);
+      it->itc_page = parent->bd_page;
       itc_delta_this_buffer (it, parent, DELTA_MAY_LEAVE);
 
     }
 
+  ITC_LEAVE_MAPS (it);
   LONG_SET (&extend->bd_buffer[DP_PARENT], parent->bd_page);
 
   rdbg_printf_2 (("    Node %ld split %s. Extend to %ld , Parent %ld .\n",
-      buf->bd_page, (split > PAGE_SZ / 2 ? "R" : ""),
+		  (*buf_ret)->bd_page, (split > PAGE_SZ / 2 ? "R" : ""),
       extend->bd_page, dp_parent));
 
   /* Now change the parent pointers of leaves to the right of split */
@@ -925,18 +877,34 @@ itc_split (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
 
   it->itc_position = ext_pos;
   it->itc_page = parent->bd_page;
+  it->itc_pl = parent->bd_pl;
+  if (!is_new_root)
+    {
+      int next;
+      it->itc_keep_together_pos = ext_pos;
+      it->itc_keep_together_dp = parent->bd_page;
+      left_leaf = itc_make_leaf_entry (it, buf->bd_buffer + DP_DATA, buf->bd_page);
+      page_unlink_row (parent, it->itc_position, &next);
+      it->itc_position = next;
+      right_leaf = lp_concat (it->itc_insert_key, left_leaf, right_leaf);
+      left_leaf = NULL;
+    }
+  else 
   itc_skip_entry (it, parent->bd_buffer);
 
   /* Position cursor on parent right after this leaf's pointer.
      The extend page leaf entry will come here. */
-  ITC_IN_MAP (it);
+  ITC_IN_KNOWN_MAP (it, buf->bd_page);
   page_mark_change (buf, RWG_WAIT_SPLIT);
   page_leave_inner (buf);
+  ITC_LEAVE_MAP_NC (it);
+  ITC_IN_KNOWN_MAP (it, extend->bd_page);
   page_leave_inner (extend);
+  ITC_LEAVE_MAP_NC (it);
 
-  itc_insert_dv (it, &parent, right_leaf, 1, NULL);
+  itc_insert_dv (it, &parent, right_leaf, 1, is_new_root ?NULL : INS_DOUBLE_LP);
 
-  /* Descending edge. Deallocate and leave pages. */
+  /* Returning edge. Deallocate and leave pages. */
   if (left_leaf)
     dk_free_box ((caddr_t) left_leaf);
   dk_free_box ((box_t) right_leaf);
@@ -1027,18 +995,23 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
 {
   buffer_desc_t *buf = *buf_ret;
   page_map_t *map = buf->bd_content_map;
-  int  len;
+  int  len, len_1, len_2 = 0;
   int pos = it->itc_position, pos_after;
   db_buf_t page = buf->bd_buffer;
   long right_ins = SHORT_REF (page + DP_RIGHT_INSERTS);
   int data_len;
-  ITC_LEAVE_MAP (it);
+  ITC_LEAVE_MAPS (it);
   buf_set_dirty (*buf_ret);
   if (it->itc_position == 0
       && it->itc_insert_key)
     it->itc_insert_key->key_page_end_inserts++;
   len = row_length (dv, it->itc_insert_key);
-
+  if (INS_DOUBLE_LP == new_rl)
+    {
+      len_1 = ROW_ALIGN (len);
+      len_2 = row_length (dv + len_1, it->itc_insert_key);
+      len = len_1 + len_2;
+    }
 #ifdef MTX_DEBUG
   if (!is_recursive)
     ins_leaves_check (buf);
@@ -1052,10 +1025,19 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
 
   if (PAGE_SZ - map->pm_filled_to >= data_len)
     {
-      int ins_pos, first;
+      int ins_pos, first, next_link;
       ins_pos = map->pm_filled_to;
       memcpy (&page[ins_pos], dv, data_len);
       pos_after = map_insert (&buf->bd_content_map, pos, map->pm_filled_to);
+      if (len_2)
+	{
+	  int p_2 = pos_after ? IE_NEXT (page + pos_after) : SHORT_REF (page + DP_FIRST);
+	  map_insert (&buf->bd_content_map, p_2, map->pm_filled_to + len_1);
+	  IE_SET_NEXT (page + ins_pos, ins_pos + len_1);
+	  next_link = ins_pos + len_1;
+	}
+      else
+	next_link = ins_pos;
       map = buf->bd_content_map;
       map->pm_filled_to += data_len;
       map->pm_bytes_free -= data_len;
@@ -1064,7 +1046,7 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
       if (pos_after)
 	{
 	  int next = IE_NEXT (page + pos_after);
-	  IE_SET_NEXT (page + ins_pos, next);
+	  IE_SET_NEXT (page + next_link, next);
 	  IE_SET_NEXT (page + pos_after, ins_pos);
 
 	  if (pos_after != SHORT_REF (page + DP_LAST_INSERT))
@@ -1079,7 +1061,7 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
 	      if (right_ins < 1000)
 		SHORT_SET ((page + DP_RIGHT_INSERTS), (short)(right_ins + 1));
 	    }
-	  SHORT_SET (page + DP_LAST_INSERT, ins_pos);
+	  SHORT_SET (page + DP_LAST_INSERT, next_link);
 	}
       else
 	{
@@ -1087,18 +1069,25 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
 	  first = SHORT_REF (page + DP_FIRST);
 	  if (first && first != pos)
 	    GPF_T;		/*Bad first of page */
-	  IE_SET_NEXT (page + ins_pos, first);
+	  IE_SET_NEXT (page + next_link, first);
 	  SHORT_SET (page + DP_FIRST, ins_pos);
 	}
 
       it->itc_position = ins_pos;
-      ITC_IN_MAP (it);
-      itc_keep_together (it, buf, NULL, 0);
-      if (new_rl)
+      ITC_IN_KNOWN_MAP (it, it->itc_page);
+      itc_keep_together (it, buf, buf, NULL, 0);
+      if (new_rl && INS_DOUBLE_LP != new_rl)
 	itc_insert_rl (it, buf, ins_pos, new_rl, RL_ESCALATE_OK);
+      ITC_LEAVE_MAPS (it);
       pg_check_map (buf);
-      ITC_IN_MAP (it);
-      buf_set_dirty (buf);
+      if (ins_pos == SHORT_REF (buf->bd_buffer + DP_FIRST)
+	  && (!new_rl || INS_NEW_RL == new_rl || INS_DOUBLE_LP == new_rl))
+	{
+	  itc_fix_leaf_ptr (it, buf);
+	  return 1;
+	}
+      ITC_IN_KNOWN_MAP (it, it->itc_page);
+      buf_set_dirty_inside (buf);
       page_mark_change (*buf_ret, RWG_WAIT_KEY);
       itc_page_leave (it, *buf_ret);
       return 1;
@@ -1109,10 +1098,17 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
   if (data_len <= map->pm_bytes_free)
     {
       /* No split, compress. */
+      int is_first = it->itc_position == SHORT_REF (buf->bd_buffer + DP_FIRST) 
+	&& (INS_NEW_RL == new_rl || INS_DOUBLE_LP == new_rl);
       pg_check_map (buf);
       pg_write_compact (it, buf, it->itc_position, dv, PAGE_SZ, NULL, 0, new_rl);
       pg_check_map (buf);
-      ITC_IN_MAP (it);
+      if (is_first)
+	{
+	  itc_fix_leaf_ptr (it, buf);
+	  return 1;
+	}
+      ITC_IN_KNOWN_MAP (it, it->itc_page);
       page_mark_change (*buf_ret, RWG_WAIT_KEY);
       itc_page_leave (it, buf);
       return 1;
@@ -1127,45 +1123,9 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, db_buf_t dv,
 }
 
 
-void
-itc_make_exact_spec (it_cursor_t * it, db_buf_t thing)
-{
-#ifdef O12
-  O12;
-#else
-  long len, head_len, key_len, key_head_len;
-  int key_pos;
-  dbe_key_t *key;
-  key_id_t key_id;
-
-  it->itc_specs = NULL;
-  /* Make the search spec, search and insert. */
-  db_buf_length (thing, &head_len, &len);
-  key_id = SHORT_REF (thing + head_len + IE_KEY_ID);
-  key = sch_id_to_key (isp_schema (it->itc_space), key_id);
-  it->itc_specs = KEY_INSERT_SPEC (key);
-  it->itc_insert_key = key;
-  key_pos = (int) head_len + 4;
-  ITC_START_SEARCH_PARS (it);
-  while (thing[key_pos] != DV_DEPENDENT && thing[key_pos] != DV_LEAF)
-    {
-      ITC_SEARCH_PARAM (it, &thing[key_pos]);
-
-      db_buf_length (&thing[key_pos], &key_head_len, &key_len);
-      key_pos += (int) key_head_len + (int) key_len;
-    }
-#endif
-}
-
-
 /*
    The top level API for inserting an entry. The entry is a regular index
-   entry string with:
-   DV_xx_CONT_STRING
-   key id (1 long)
-   n DV_<xx>  entries, one for each key part.
-   DV_LEAF or DV_DEPENDENT to mark the dependent part.
-   arbitrary binary data up to the length of the cont string.  */
+   entry. */
 
 int
 itc_insert_unq_ck (it_cursor_t * it, db_buf_t thing, buffer_desc_t ** unq_buf)
@@ -1203,11 +1163,11 @@ itc_insert_unq_ck (it_cursor_t * it, db_buf_t thing, buffer_desc_t ** unq_buf)
   if (NO_WAIT != itc_insert_lock (it, buf, &res))
     goto reset_search;
  re_insert:
-  if (!buf->bd_is_dirty)
+  if (BUF_NEEDS_DELTA (buf))
     {
-      ITC_IN_MAP (it);
+      ITC_IN_KNOWN_MAP (it, it->itc_page);
       itc_delta_this_buffer (it, buf, DELTA_MAY_LEAVE);
-      ITC_LEAVE_MAP (it);
+      ITC_LEAVE_MAP_NC (it);
     }
   if (!buf->bd_is_write)
     GPF_T1 ("insert and no write access to buffer");
@@ -1272,7 +1232,7 @@ itc_insert_unq_ck (it_cursor_t * it, db_buf_t thing, buffer_desc_t ** unq_buf)
       GPF_T1 ("Bad search result in insert");
     }
   KEY_TOUCH (it->itc_insert_key);
-  ITC_LEAVE_MAP (it);
+  ITC_LEAVE_MAPS (it);
   if (KI_TEMP != it->itc_insert_key->key_id)
     {
       lt_rb_insert (it->itc_ltrx, thing);
@@ -1419,9 +1379,9 @@ itc_delete_as_excl (it_cursor_t * itc, buffer_desc_t ** buf_ret, int maybe_blobs
   db_buf_t page = buf->bd_buffer;
   if (!buf->bd_is_write)
     GPF_T1 ("Delete w/o write access");
-  ITC_IN_MAP (itc);
+  ITC_IN_KNOWN_MAP (itc, itc->itc_page);
   itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
-  ITC_LEAVE_MAP (itc);
+  ITC_LEAVE_MAP_NC (itc);
 
   if (!itc->itc_no_bitmap && itc->itc_insert_key && itc->itc_insert_key->key_is_bitmap)
     {
@@ -1451,13 +1411,13 @@ itc_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret, int maybe_blobs)
     GPF_T1 ("Delete w/o write access");
   if (!ITC_IS_LTRX (itc))
     GPF_T1 ("itc_delete outside of commit space");
-  lt_rb_update (itc->itc_ltrx, page + pos);
-  if (!buf->bd_is_dirty)
+  if (BUF_NEEDS_DELTA (buf))
     {
-  ITC_IN_MAP (itc);
+      ITC_IN_KNOWN_MAP (itc, itc->itc_page);
   itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
-  ITC_LEAVE_MAP (itc);
+      ITC_LEAVE_MAP_NC (itc);
     }
+  lt_rb_update (itc->itc_ltrx, page + pos);
   if (!itc->itc_no_bitmap && itc->itc_insert_key->key_is_bitmap)
     {
       if (BM_DEL_DONE == itc_bm_delete (itc, buf_ret))
@@ -1500,21 +1460,74 @@ long delete_parent_waits;
 #define rdbg_printf_m(a)
 #endif
 
-buffer_desc_t *
-itc_single_leaf_set_parent (it_cursor_t * itc, dp_addr_t leaf, dp_addr_t parent)
+int
+page_unlink_row (buffer_desc_t * buf, int pos, int * pos_after)
 {
-  buffer_desc_t * buf;
-  ITC_IN_MAP (itc);
-  buf = page_rleaf_enter (itc, leaf);
-  itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
-  ITC_IN_MAP (itc);
-  rdbg_printf_m ((" Parent of L=%ld from L=%ld to L=%ld in single leaf delete\n", (long)(buf->bd_page),
-		  (long)(LONG_REF (buf->bd_buffer + DP_PARENT)), (long)parent));
-  LONG_SET (buf->bd_buffer + DP_PARENT, parent);
-  buf->bd_is_dirty = 1;
-  page_rleaf_leave (buf);
-  ASSERT_IN_MAP (buf->bd_space->isp_tree);
-  return buf;
+  int was_first_lp = 0;
+  db_buf_t page = buf->bd_buffer;
+  int len = row_reserved_length (page + pos, buf->bd_tree->it_key);
+  int prev_pos = map_delete (&buf->bd_content_map, pos);
+  page_map_t * map = buf->bd_content_map;
+  int new_pos = IE_NEXT (page + pos);
+  if (pos_after)
+    *pos_after = new_pos;
+  if (prev_pos)
+    {
+      IE_SET_NEXT (page + prev_pos, new_pos);
+    }
+  else
+    {
+      if (0 == SHORT_REF (page + pos + IE_KEY_ID))
+	was_first_lp = 1;
+      SHORT_SET (page + DP_FIRST, new_pos);
+    }
+  map->pm_bytes_free += ROW_ALIGN (len);
+  return was_first_lp;
+}
+
+
+void
+itc_fix_leaf_ptr (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  buffer_desc_t * parent;
+  db_buf_t lp;
+  dp_addr_t dp_from = buf->bd_page;
+  int first = SHORT_REF (buf->bd_buffer + DP_FIRST), pos;
+  if (!LONG_REF (buf->bd_buffer + DP_PARENT))
+    {
+      page_leave_outside_map (buf);
+      return;
+    }
+  TC (tc_fix_outdated_leaf_ptr);
+  lp = itc_make_leaf_entry (itc, buf->bd_buffer + first, dp_from);
+  parent =   itc_write_parent (itc, buf);
+  ITC_IN_KNOWN_MAP (itc, buf->bd_page);
+  page_mark_change (buf, RWG_WAIT_SPLIT);
+  page_leave_inner (buf);
+  ITC_LEAVE_MAP_NC (itc);
+  if (!parent)
+    return;
+  pos = find_leaf_pointer (parent, dp_from, NULL, NULL);
+  if (pos <= 0)
+    GPF_T1 ("can't find leaf ptr in fix of outdated leaf ptr");
+  itc->itc_position = pos;
+  itc->itc_page = parent->bd_page;
+  ITC_SAVE_FAIL (itc);
+  ITC_FAIL (itc)
+    {
+      itc->itc_row_key = itc->itc_insert_key;
+      itc->itc_position = pos;
+      upd_refit_row (itc, &parent, lp);
+    }
+  ITC_FAILED
+    {
+      log_info ("A delete of first row failed updating the parent probably because of would split and could not get guaranteed space to split.  This is not very dangerous");
+      goto after_fail;
+    }
+  END_FAIL (itc);
+  ITC_RESTORE_FAIL (itc);
+ after_fail:
+  dk_free_box ((box_t) lp);
 }
 
 
@@ -1537,66 +1550,62 @@ itc_delete_single_leaf (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 	dp_addr_t old_leaf = buf->bd_page;
 	buffer_desc_t *old_buf = buf;
 	buffer_desc_t *parent;
+	db_buf_t lp;
+	placeholder_t * pl;
 	old_dp = old_buf->bd_page;
-	while (1)
-	  {
-	    dp_addr_t dp_parent;
-	    ITC_IN_MAP (itc);
-	    dp_parent = LONG_REF (old_buf->bd_buffer + DP_PARENT);
-	    if (!dp_parent)
+	parent = itc_write_parent (itc, buf);
+	if (!parent)
 	      {
 		buffer_desc_t * leaf_buf;
 		/* The page w/ the single leaf is the root */
+	    itc_set_parent_link (itc, leaf, 0);
+		    
 		rdbg_printf_m (("Single leaf root popped old root L=%ld new root L=%ld \n", (long)(buf->bd_page), (long)leaf));
-		ITC_IN_MAP (itc);
-		leaf_buf = itc_single_leaf_set_parent (itc, leaf, 0);
-		pg_delete_move_cursors (itc, buf->bd_page, 0,
-					leaf_buf->bd_page, SHORT_REF (leaf_buf->bd_buffer + DP_FIRST), leaf_buf);
-
-		isp_free_page (itc->itc_space, buf);
-		ITC_IN_MAP (itc);
-		itc->itc_tree->it_commit_space->isp_root = leaf;
+	    ITC_IN_KNOWN_MAP (itc, leaf);
+	    itc->itc_tree->it_root = leaf;
+	    page_wait_access (itc, leaf, NULL, &leaf_buf, PA_WRITE, RWG_WAIT_ANY);
+	    pg_delete_move_cursors (itc, buf, 0,
+				    leaf_buf, SHORT_REF (leaf_buf->bd_buffer + DP_FIRST));
+	    page_leave_outside_map (leaf_buf);
+	    ITC_IN_KNOWN_MAP (itc, buf->bd_page);
+	    it_free_page (itc->itc_tree, buf);
+	    ITC_LEAVE_MAPS (itc);
 		do
 		  {
-		    ITC_IN_MAP (itc);
-		    page_wait_access (itc, itc->itc_tree->it_commit_space->isp_root, NULL, NULL, buf_ret, PA_WRITE, RWG_WAIT_SPLIT);
+		ITC_IN_VOLATILE_MAP (itc, itc->itc_tree->it_root);
+		page_wait_access (itc, itc->itc_tree->it_root, NULL, buf_ret, PA_WRITE, RWG_WAIT_SPLIT);
 		  } while (itc->itc_to_reset >= RWG_WAIT_SPLIT);
 		itc->itc_page = (*buf_ret)->bd_page;
-		ITC_LEAVE_MAP (itc);
+	    ITC_LEAVE_MAPS (itc);
 		return 1;
 	      }
-
-	    page_wait_access (itc, dp_parent, NULL, NULL, &parent, PA_WRITE, RWG_WAIT_KEY);
-	    if (itc->itc_to_reset <= RWG_WAIT_KEY)
-	      break;
-	    TC (tc_delete_parent_waits);
-	  }
-
-	ITC_IN_MAP (itc);
 	buf = parent;
 	itc->itc_page = buf->bd_page;
 	pos = find_leaf_pointer (buf, old_leaf, NULL, NULL);
-	if (!pos)
+	if (pos <= 0)
 	  GPF_T1 ("No leaf in super noted in popping a single child non-leaf");
 	itc->itc_position = pos;
 	itc->itc_is_on_row = 1;
+	pl = plh_landed_copy ((placeholder_t *) itc, buf);
 
-
-	ITC_IN_MAP (itc);
-	pg_delete_move_cursors (itc, old_buf->bd_page, 0,
-				buf->bd_page, pos, buf);
+	ITC_IN_TRANSIT (itc, old_buf->bd_page, parent->bd_page);
+	pg_delete_move_cursors (itc, old_buf, 0,
+				buf, pos);
 
 	page_mark_change (old_buf, RWG_WAIT_SPLIT);
 	pl_page_deleted (IT_DP_PL (itc->itc_tree, old_buf->bd_page), old_buf);
-	itc_single_leaf_set_parent (itc, leaf, buf->bd_page);
-	isp_free_page (itc->itc_space, old_buf); /*incl. leave buffer */
-	itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
-	page_mark_change (buf, RWG_WAIT_KEY);
-	buf_set_dirty_inside (buf);
-	*buf_ret = buf;
+	ITC_LEAVE_MAPS (itc);
+	lp = itc_make_leaf_entry (itc, old_buf->bd_buffer + SHORT_REF (old_buf->bd_buffer + DP_FIRST), leaf);
+	itc_set_parent_link (itc, leaf, buf->bd_page);
+	ITC_IN_KNOWN_MAP (itc, old_buf->bd_page);
+	it_free_page (itc->itc_tree, old_buf); /*incl. leave buffer */
+	ITC_LEAVE_MAPS (itc);
+	upd_refit_row (itc, &buf, lp);
 	rdbg_printf_m ((" Single child page L=%ld popped parent L=%ld leaf L=%ld \n", (long)old_dp, (long)(buf->bd_page), (long)leaf));
-	LONG_SET (buf->bd_buffer + pos + IE_LEAF, leaf);
-	ITC_LEAVE_MAP (itc);
+	dk_free_box ((caddr_t)lp);
+	*buf_ret = itc_set_by_placeholder (itc, pl);
+	itc_unregister_inner ((it_cursor_t *) pl, *buf_ret);
+	plh_free (pl);
 	return 1;
       }
     }
@@ -1613,7 +1622,7 @@ itc_commit_delete (it_cursor_t * it, buffer_desc_t ** buf_ret)
   long len;
   db_buf_t page;
   page_map_t *map;
-  int pos, prev_pos = 0, new_pos;
+  int pos, prev_pos = 0, new_pos, was_first_lp;
 
   if (!buf->bd_is_write)
     GPF_T;			/* Delete when cursor not on row */
@@ -1623,7 +1632,8 @@ delete_from_cursor:
   page = buf->bd_buffer;
   pos = it->itc_position;
 
-  len = row_reserved_length (page + pos, buf->bd_space->isp_tree->it_key);
+  was_first_lp = 0;
+  len = row_reserved_length (page + pos, buf->bd_tree->it_key);
   prev_pos = map_delete (&buf->bd_content_map, pos);
   map = buf->bd_content_map;
   new_pos = IE_NEXT (page + pos);
@@ -1633,18 +1643,18 @@ delete_from_cursor:
     }
   else
     {
+      if (0 == SHORT_REF (page + pos + IE_KEY_ID))
+	was_first_lp = 1;
       SHORT_SET (page + DP_FIRST, new_pos);
     }
 
   if (!buf->bd_is_dirty)
     {
-      ITC_LEAVE_MAP (it);
+      ITC_LEAVE_MAPS (it);
       buf_set_dirty (buf);
     }
-  /* Did it go empty ? */
-  ITC_IN_MAP (it);
-  pg_delete_move_cursors (it, it->itc_page, it->itc_position,
-      it->itc_page, new_pos, NULL);
+  pg_delete_move_cursors (it, buf, it->itc_position,
+			  NULL, new_pos);
   it->itc_position = new_pos;
   map->pm_bytes_free += (short) ROW_ALIGN (len);
   if (map->pm_bytes_free > (PAGE_DATA_SZ * 2) / 3)  /* if less than 2/3 full */
@@ -1659,28 +1669,17 @@ delete_from_cursor:
       if (map->pm_bytes_free != PAGE_SZ - DP_DATA)
 	GPF_T;			/* Bad free count */
       rdbg_printf_2 (("    Deleting page L=%d\n", old_buf->bd_page));
-      while (1)
-	{
-	  dp_addr_t dp_parent;
-	  ITC_IN_MAP (it);
-	  dp_parent = LONG_REF (old_buf->bd_buffer + DP_PARENT);
-	  if (!dp_parent)
+      parent = itc_write_parent (it, buf);
+      
+      if (!parent)
 	    {
 	      /* The root went empty */
 	      pg_map_clear (buf);
 	      *buf_ret = buf;
 	      *buf_ret = buf;
-	      ITC_LEAVE_MAP (it);
+	  ITC_LEAVE_MAPS (it);
 	      return DVC_MATCH;
 	    }
-
-	  page_wait_access (it, dp_parent, NULL, NULL, &parent, PA_WRITE, RWG_WAIT_KEY);
-	  if (it->itc_to_reset <= RWG_WAIT_KEY)
-	    break;
-	  TC (tc_delete_parent_waits);
-	}
-
-      ITC_IN_MAP (it);
       buf = parent;
       it->itc_page = buf->bd_page;
       pos = find_leaf_pointer (buf, old_leaf, NULL, NULL);
@@ -1690,20 +1689,32 @@ delete_from_cursor:
       it->itc_is_on_row = 1;
 
       /* The cursor is now in on the parent. Delete on away. */
-      ITC_IN_MAP (it);
-      pg_delete_move_cursors (it, old_buf->bd_page, 0,
-	  buf->bd_page, pos, buf);
+      ITC_IN_TRANSIT (it, old_buf->bd_page, buf->bd_page);
+      pg_delete_move_cursors (it, old_buf, 0,
+	  buf, pos);
 
-      page_mark_change (old_buf, RWG_WAIT_SPLIT);
       pl_page_deleted (IT_DP_PL (it->itc_tree, old_buf->bd_page), old_buf);
-      DBG_PT_PRINTF (("  Found leaf ptr for delete of L=%d on L=%d \n", old_buf->bd_page, buf->bd_page));
-      isp_free_page (it->itc_space, old_buf); /*incl. leave buffer */
       itc_delta_this_buffer (it, buf, DELTA_MAY_LEAVE);
+      ITC_LEAVE_MAPS (it);
+      DBG_PT_PRINTF (("  Found leaf ptr for delete of L=%d on L=%d \n", old_buf->bd_page, buf->bd_page));
+      ITC_IN_KNOWN_MAP (it, old_buf->bd_page);
+      /* Note that it_free_page must be called when holding exactly one map, not while holding transit.  If this results in cancelling a write, the write cancel can deadlock if this thread holds an extra map mtx */
+      page_mark_change (old_buf, RWG_WAIT_SPLIT);
+      it_free_page (it->itc_tree, old_buf); /*incl. leave buffer */
+      ITC_LEAVE_MAP_NC (it);
       *buf_ret = buf;
       goto delete_from_cursor;
     }
   itc_delete_rl_bust (it, pos);
   *buf_ret = buf;
+  if (was_first_lp)
+    {
+      placeholder_t * pl = plh_landed_copy ((placeholder_t *)it, buf);
+      itc_fix_leaf_ptr (it, buf);
+      *buf_ret = itc_set_by_placeholder (it, pl);
+      itc_unregister_inner (pl, *buf_ret);
+      plh_free (pl);
+    }
   return DVC_MATCH;
 }
 
@@ -1864,14 +1875,16 @@ it_compact (index_tree_t *it, buffer_desc_t * parent2, page_rel_t * pr, int pr_f
   *pos_ret = prev_ent;
   pg_make_map (parent);
   /* delete the pages that are not needed */
-        ITC_IN_MAP (itc);
   for (inx = 0; inx < pr_fill; inx++)
     {
-      itc_delta_this_buffer (itc, pr[inx].pr_buf, 1);
+      buffer_desc_t * buf = pr[inx].pr_buf;
+      itc->itc_page = buf->bd_page;
+      ITC_IN_OWN_MAP (itc);
+      itc_delta_this_buffer (itc, buf, DELTA_STAY_INSIDE);
       if (pr[inx].pr_deleted)
 	{
 	  rdbg_printf_2 (("D=%d ", pr[inx].pr_buf->bd_page));
-	  isp_free_page (it->it_commit_space, pr[inx].pr_buf);
+	  it_free_page (it, pr[inx].pr_buf);
 	}
       else 
 	{
@@ -1880,11 +1893,17 @@ it_compact (index_tree_t *it, buffer_desc_t * parent2, page_rel_t * pr, int pr_f
 	  SHORT_SET (pr[inx].pr_buf->bd_buffer + DP_FIRST, SHORT_REF (pr[inx].pr_new_buf->bd_buffer + DP_FIRST));
 	  pg_make_map (pr[inx].pr_buf);
 	  n_leaves += pr[inx].pr_buf->bd_content_map->pm_count;
+	  ITC_IN_KNOWN_MAP (itc, pr[inx].pr_buf->bd_page)
 	  page_mark_change (pr[inx].pr_buf, RWG_WAIT_SPLIT);
 	  page_leave_inner (pr[inx].pr_buf);
 	}
+      ITC_LEAVE_MAP_NC (itc);
     }
+  itc->itc_page = parent->bd_page;
+  ITC_IN_OWN_MAP (itc);
+  itc_delta_this_buffer (itc, parent, DELTA_STAY_INSIDE);
   page_mark_change (parent, RWG_WAIT_SPLIT);
+  ITC_LEAVE_MAP_NC (itc);
   cmp_printf (("  Compacted %d pages to %d under %ld first =%d, org count=%d\n", pr_fill, pr_fill - n_del, parent->bd_page, first_lp_inx, org_count));
   if (parent->bd_content_map->pm_count != org_count - n_del )
     GPF_T1 ("mismatch of leaves before and after compact");
@@ -1892,15 +1911,15 @@ it_compact (index_tree_t *it, buffer_desc_t * parent2, page_rel_t * pr, int pr_f
 }
 
 void
-pr_free (page_rel_t * pr, int pr_fill)
+pr_free (page_rel_t * pr, int pr_fill, int leave_bufs)
 {
-  int inx, leave = 1;
+  int inx;
   for (inx = 0; inx < pr_fill; inx++)
     {
       dk_free_box (pr[inx].pr_leaf_ptr);
       buffer_free (pr[inx].pr_new_buf);
-      if (leave && pr[inx].pr_buf->bd_is_write)
-	page_leave_inner (pr[inx].pr_buf);
+      if (leave_bufs)
+	page_leave_outside_map (pr[inx].pr_buf);
     }
 }
 
@@ -1934,13 +1953,13 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
     }
   est_res_pages = ((total_fill + (total_fill / 12)) / PAGE_DATA_SZ) + 1;
   if (est_res_pages>= n_source_pages)
+    {
     return CP_STILL_INSIDE;
+    }
   for (inx = 0; inx < pr_fill; inx++)
     {
-      BD_SET_IS_WRITE (pr[inx].pr_buf, 1);
       n_leaves += pr[inx].pr_buf->bd_content_map->pm_count;
     }
-  LEAVE_PAGE_MAP (it);
   /* could be savings.  Make precise relocation calculations */
   target_fill = MIN (PAGE_SZ, DP_DATA + (total_fill / est_res_pages));
   target_pr = &pr[0];
@@ -2004,6 +2023,10 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
       fprintf (stderr, "nlp_sum - olp_sum > pm_bytes_free\n");
       return CP_REENTER; /* the new leaf pointers would not fit on parent.  Do nothing */
     }
+
+  if (!LONG_REF (parent->bd_buffer + DP_PARENT))
+    it_root_image_invalidate (parent->bd_tree);
+
   /* can compact now.  Will be at least 1 page shorter */
   ac_pages_in += pr_fill;
   ac_pages_out += n_target_pages;
@@ -2024,29 +2047,22 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
   if (pr_fill > 1) \
     {\
       compact_rc = it_try_compact (it, parent, pr, pr_fill, &pos, mode);	\
-      if (CP_REENTER == compact_rc) \
-	IN_PAGE_MAP (it); \
-      ASSERT_IN_MAP (it); \
-      pr_free (pr, pr_fill); \
+      pr_free (pr, pr_fill, CP_CHANGED != compact_rc); /*if no change, the bufs are still occupied */ \
       if (CP_CHANGED == compact_rc) \
         any_change = CP_CHANGED; \
     } \
+  else \
+    pr_free (pr, pr_fill, 1);	\
   pr_fill = 0; \
 }
 
 
-#define BUF_COMPACT_READY(buf, leaf, it) \
-  (buf && !buf->bd_is_write && !buf->bd_readers && buf->bd_is_dirty \
-   && !buf->bd_being_read && !buf->bd_to_bust && !buf->bd_write_waiting && !buf->bd_waiting_read \
-   && !gethash ((void*)(ptrlong)leaf, it->it_commit_space->isp_page_to_cursor) \
-   && !gethash ((void*)(ptrlong)leaf, it->it_locks)) 
 
-
-#define BUF_COMPACT_ALL_READY(buf, leaf, it) \
+#define BUF_COMPACT_ALL_READY(buf, leaf, itm) \
   (buf && !buf->bd_is_write && !buf->bd_readers  \
-   && !buf->bd_being_read && !buf->bd_to_bust && !buf->bd_write_waiting && !buf->bd_waiting_read \
-   && !gethash ((void*)(ptrlong)leaf, it->it_commit_space->isp_page_to_cursor) \
-   && !gethash ((void*)(ptrlong)leaf, it->it_locks)) 
+   && !buf->bd_being_read && !buf->bd_read_waiting && !buf->bd_write_waiting \
+   && !buf->bd_registered \
+   && !gethash (DP_ADDR2VOID (leaf), &itm->itm_locks))
 
 
 
@@ -2056,11 +2072,11 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
 int
 it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
 {
+  it_map_t  * parent_itm;
   page_rel_t pr[MAX_CP_BATCH];
   int pr_fill = 0, pos, any_change = 0, compact_rc;
   db_buf_t page = parent->bd_buffer;
-  ASSERT_IN_MAP (it);
-  parent->bd_is_write = 1;
+  if (!parent->bd_is_write) GPF_T1 ("compact expects write access");
   /* loop over present and dirty children, find possible sequences to compact. Rough check first. */
   pos = SHORT_REF (parent->bd_buffer + DP_FIRST);
   while (pos)
@@ -2068,11 +2084,18 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
       dp_addr_t leaf = ie_leaf (page + pos);
       if (leaf)
 	{
-	  buffer_desc_t * buf = (buffer_desc_t*) gethash ((void*)(ptrlong) leaf, it->it_commit_space->isp_dp_to_buf);
-	  if (COMPACT_ALL == mode ? BUF_COMPACT_ALL_READY (buf, leaf, it) : BUF_COMPACT_READY (buf, leaf, it))
+	  it_map_t * itm = IT_DP_MAP (it, leaf);
+	  buffer_desc_t * buf;
+	  mutex_enter (&itm->itm_mtx);
+	  buf = (buffer_desc_t*) gethash ((void*)(ptrlong) leaf, &itm->itm_dp_to_buf);
+	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm) 
+	       && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty))
 	    {
-	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, it->it_commit_space->isp_remap))
-		GPF_T1 ("In compact, no remap dp fpr a dirty buffer");
+	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
+		GPF_T1 ("In compact, no remap dp for a dirty buffer");
+	      BD_SET_IS_WRITE (buf, 1);
+	      mutex_leave (&itm->itm_mtx);
+	      
 	      memset (&pr[pr_fill], 0, sizeof (page_rel_t));
 	      pr[pr_fill].pr_buf = buf;
 	      pr[pr_fill].pr_dp = leaf;
@@ -2082,6 +2105,7 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
 	    }
 	  else
 	    {
+	      mutex_leave (&itm->itm_mtx);
 	      CHECK_COMPACT;
 	    }
 	}
@@ -2097,7 +2121,12 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
   if (CP_CHANGED == any_change)
     parent->bd_is_dirty = 1;
   if (COMPACT_DIRTY == mode)
+    {
+      parent_itm = IT_DP_MAP (it, parent->bd_page);
+      mutex_enter (&parent_itm->itm_mtx);
   page_leave_inner (parent);
+      mutex_leave (&parent_itm->itm_mtx);
+    }
   return any_change;
 }
 
@@ -2107,17 +2136,17 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
 void 
 itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t * buf)
 {
-  if (gethash ((void*)(ptrlong) itc->itc_page, itc->itc_space->isp_page_to_cursor)
+  it_map_t * itm = IT_DP_MAP (itc->itc_tree, itc->itc_page);
+  if (buf->bd_registered 
       || itc->itc_pl
-      || buf->bd_to_bust || buf->bd_write_waiting)
-
-  itc_hold_pages (itc, buf, DP_VACUUM_RESERVE);
-  ITC_IN_MAP (itc);
-  if (CP_CHANGED == it_cp_check_node (itc->itc_space->isp_tree, buf, COMPACT_ALL))
+      || buf->bd_read_waiting || buf->bd_write_waiting)
     {
-      itc_delta_this_buffer (itc, buf, 0);
+      return;
     }
-  ITC_LEAVE_MAP (itc);
+  itc_hold_pages (itc, buf, DP_VACUUM_RESERVE);
+  ITC_LEAVE_MAPS (itc);
+  it_cp_check_node (itc->itc_tree, buf, COMPACT_ALL);
+  ITC_LEAVE_MAPS (itc);
   itc_free_hold (itc);
 }
 
@@ -2151,36 +2180,46 @@ dp_is_compact_checked (dbe_storage_t * dbs, dp_addr_t dp)
 void
 it_check_compact (index_tree_t * it, int age_limit)
 {
-  int rc;
+  int rc, inx;
   void *dp;
-  buffer_desc_t *buf, *parent;
+  dk_hash_t * candidates = hash_table_allocate (101);
   dk_hash_iterator_t hit;
-  /* rough check for possible activity.  Can do outside map */
-  if (it->it_commit_space->isp_dp_to_buf->ht_count < 50
-      || it->it_commit_space->isp_remap->ht_count < 50)
-    return;
-  IN_PAGE_MAP (it);
- again:
-  ASSERT_IN_MAP (it);
-  dk_hash_iterator (&hit, it->it_commit_space->isp_dp_to_buf);
-  while (dk_hit_next (&hit, &dp, (void**) &buf))
+  for (inx = 0; inx < IT_N_MAPS; inx++)
+    {
+      it_map_t * itm = &it->it_maps[inx];
+      mutex_enter (&itm->itm_mtx);
+      DO_HT (void *, ignore, buffer_desc_t *, buf, &itm->itm_dp_to_buf)
     {
       if (buf->bd_pool && buf->bd_pool->bp_ts - buf->bd_timestamp >= age_limit)
 	{
 	  dp_addr_t parent_dp = LONG_REF (buf->bd_buffer + DP_PARENT);
-	  parent = (buffer_desc_t *) gethash ((void*)(ptrlong) parent_dp,  it->it_commit_space->isp_dp_to_buf);
-	  if (BUF_COMPACT_READY (parent, parent_dp, it))
-	    {
-	      if (!dp_is_compact_checked (parent->bd_storage, parent->bd_page))
+	      if (!dp_is_compact_checked (it->it_storage, parent_dp))
 		{
-		  rc = it_cp_check_node (it, parent, COMPACT_DIRTY);
-		  if (CP_CHANGED == rc)
-		    goto again;
+		  sethash (DP_ADDR2VOID (parent_dp), candidates, (void*) 1);
+		}
 		}
 	    }
+      END_DO_HT;
+      mutex_leave (&itm->itm_mtx);
 	}
+
+  DO_HT (ptrlong, parent_dp, void *, ignore, candidates)
+    {
+      buffer_desc_t * parent;
+      it_map_t * parent_itm = IT_DP_MAP (it, parent_dp);
+      mutex_enter (&parent_itm->itm_mtx);
+      parent = (buffer_desc_t *) gethash ((void*)(ptrlong) parent_dp, &parent_itm->itm_dp_to_buf);
+      if (BUF_COMPACT_ALL_READY (parent, parent_dp, parent_itm) && parent->bd_is_dirty)
+	{
+	  BD_SET_IS_WRITE (parent, 1);
+	  mutex_leave (&parent_itm->itm_mtx);
+	  rc = it_cp_check_node (it, parent, COMPACT_DIRTY);
+	}
+      else
+	mutex_leave (&parent_itm->itm_mtx);
     }
-  LEAVE_PAGE_MAP (it);
+  END_DO_HT;
+  hash_table_free (candidates);
 }
 
 

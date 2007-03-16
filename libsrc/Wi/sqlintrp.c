@@ -69,6 +69,7 @@ unsigned char ins_lengths[INS_MAX + 1] = {
   ALIGN_INSTR(sizeof (dummy_ins_t._.artm)),
   ALIGN_INSTR(sizeof (dummy_ins_t._.artm)),
   ALIGN_INSTR(sizeof (dummy_ins_t._.artm)),
+  ALIGN_INSTR(sizeof (dummy_ins_t._.bif)),
   ALIGN_INSTR(sizeof (dummy_ins_t._.bret))
 };
 
@@ -267,6 +268,59 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 
 
 void
+ins_call_bif (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
+{
+  caddr_t err = NULL;
+      caddr_t value;
+  if (ins->_.bif.ret == CV_CALL_PROC_TABLE)
+	{
+	  sqlr_new_error ("42000", "SR184",
+	      "Built-in function is not allowed as the outermost "
+	      "function in a procedure view.  "
+	      "Define an intermediate PL function to call the bif.");
+	}
+
+#ifdef WIRE_DEBUG
+  /*      list_wired_buffers (__FILE__, __LINE__, "BIF call start");*/
+#endif
+  value = ins->_.bif.bif (qst, &err, ins->_.call.params);
+#ifdef WIRE_DEBUG
+  /*      list_wired_buffers (__FILE__, __LINE__, "BIF call finish");*/
+#endif
+
+      if (!err)
+	{
+      if (ins->_.bif.ret && IS_REAL_SSL (ins->_.bif.ret))
+	qst_set (qst, ins->_.bif.ret, value);
+	  else
+	    dk_free_tree (value);
+	  return;
+	}
+      else
+	{
+#ifndef NDEBUG
+	  /* GK: that should really be uncommented, but all the bifs should be checked first */
+	  dk_free_tree (value);
+#endif
+	  sqlr_resignal (err);
+	}
+
+}
+
+
+#define CALL_SET_PN(ins, proc) \
+{ \
+  if (proc && proc->qr_pn && INS_CALL == ins->ins_type)	\
+    { \
+      proc_name_t * prev_pn = ins->_.call.pn; \
+      ins->_.call.pn = proc_name_ref (proc->qr_pn); \
+      proc_name_free (prev_pn); \
+    } \
+}
+
+
+
+void
 ins_call (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 {
   PROC_SAVE_VARS;
@@ -288,46 +342,11 @@ ins_call (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
   int any_out = 0;
   int n_ret_param = qi->qi_query->qr_is_call == 2 ? 1 : 0;
   char auto_qi[AUTO_QI_DEFAULT_SZ];
-
-  if (ins->_.call.bif)
-    {
-      caddr_t value;
-      if (ins->_.call.ret == CV_CALL_PROC_TABLE)
-	{
-	  sqlr_new_error ("42000", "SR184",
-	      "Built-in function is not allowed as the outermost "
-	      "function in a procedure view.  "
-	      "Define an intermediate PL function to call the bif.");
-	}
-
-#ifdef WIRE_DEBUG
-/*      list_wired_buffers (__FILE__, __LINE__, "BIF call start");*/
-#endif
-      value = ins->_.call.bif (qst, &err, ins->_.call.params);
-#ifdef WIRE_DEBUG
-/*      list_wired_buffers (__FILE__, __LINE__, "BIF call finish");*/
-#endif
-
-      if (!err)
-	{
-	  if (ins->_.call.ret && IS_REAL_SSL (ins->_.call.ret))
-	    qst_set (qst, ins->_.call.ret, value);
-	  else
-	    dk_free_tree (value);
-	  return;
-	}
-      else
-	{
-#ifndef NDEBUG
-	  /* GK: that should really be uncommented, but all the bifs should be checked first */
-	  dk_free_tree (value);
-#endif
-	  sqlr_resignal (err);
-	}
-
-    }
-
-  if (DV_TYPE_OF (proc_name) == DV_ARRAY_OF_POINTER)
+  if (0 == strcmp (proc_name, "STRING_OUTPUT"))
+    printf ("bang");
+  if (ins->_.call.pn && (proc = ins->_.call.pn->pn_query))
+    ;
+  else if (DV_TYPE_OF (proc_name) == DV_ARRAY_OF_POINTER)
     {
       caddr_t err = NULL;
       caddr_t *proc_mtd_call = (caddr_t *)proc_name;
@@ -407,6 +426,7 @@ report_error:
 	  /*fprintf (stderr, "in sch_partial_proc_def for %s returned %p\n", proc_name, proc);*/
 	  if ((query_t *) -1L == proc)
 	    proc = NULL;
+	  CALL_SET_PN (ins, proc);
 	}
       else
 	proc = sch_proc_def (isp_schema (qi->qi_space), proc_name);
@@ -420,7 +440,7 @@ report_error:
   if (!proc || IS_REMOTE_ROUTINE_QR (proc))
     {
       bif_t bif = bif_find (proc_name);
-      if (bif && is_computed)
+      if (bif)
 	{
 	  caddr_t value = bif (qst, &err, ins->_.call.params);
 	  if (!err)
@@ -433,12 +453,6 @@ report_error:
 	    }
 	  else
 	    sqlr_resignal (err);
-	}
-      if (bif)
-	{
-	  ins->_.call.bif = bif;
-	  ins_call (ins, qst, code_vec);
-	  return;
 	}
       if (QR_IS_MODULE_PROC (qi->qi_query))
 	{
@@ -458,6 +472,7 @@ report_error:
 	{
 	  ins->_.call.proc = box_dv_uname_string (proc_name_2);
 	  qr_garbage (qi->qi_query, proc_name); /* free later, not now because this not serialized */
+	  CALL_SET_PN (ins, proc);
 	}
       if (!proc)
 	sqlr_new_error ("42001", "SR185", "Undefined procedure %s.", proc_name);
@@ -1364,7 +1379,7 @@ vdb_enter (query_instance_t * qi)
   CHECK_DK_MEM_RESERVE (lt);
   if (LT_PENDING != lt->lt_status)
     {
-      if (LT_FREEZE == lt->lt_status && !LT_HAS_DELTA (lt))
+      if (LT_FREEZE == lt->lt_status)
 	{
 	  lt_ack_freeze_inner (lt);
 	}
@@ -1433,14 +1448,15 @@ void
 qi_check_trx_error (query_instance_t * qi, int only_terminate)
 {
   caddr_t err = NULL;
+  client_connection_t * cli = qi->qi_client;
   CHECK_SESSION_DEAD (qi->qi_trx);
   CHECK_DK_MEM_RESERVE (qi->qi_trx);
-  if (/* !only_terminate && */ qi->qi_trx->lt_status != LT_PENDING)
+  if (qi->qi_trx->lt_status != LT_PENDING)
     {
       lock_trx_t * lt = qi->qi_trx;
       int lt_err = lt->lt_error;
       IN_TXN;
-      if (LT_FREEZE == lt->lt_status && !LT_HAS_DELTA (lt))
+      if (LT_FREEZE == lt->lt_status)
 	{
 	  lt_ack_freeze_inner (lt);
 	  lt->lt_status = LT_PENDING;
@@ -1453,24 +1469,19 @@ qi_check_trx_error (query_instance_t * qi, int only_terminate)
       sqlr_resignal (err);
     }
 
-  if (qi->qi_client->cli_start_time &&
-      time_now_msec - qi->qi_client->cli_start_time > BURST_STOP_TIMEOUT
-      && qi->qi_client->cli_session
-      && cli_is_interactive (qi->qi_client)
-      && !qi->qi_client->cli_ws)
+  if (cli->cli_start_time &&
+      time_now_msec - cli->cli_start_time > BURST_STOP_TIMEOUT
+      && cli->cli_session
+      && cli_is_interactive (cli)
+      && !cli->cli_ws)
     {
-      dks_stop_burst_mode (qi->qi_client->cli_session);
+      dks_stop_burst_mode (cli->cli_session);
     }
 
-  if (qi->qi_client &&
-      !(qi->qi_terminate_requested || qi->qi_client->cli_terminate_requested) &&
-      cli_check_ws_terminate (qi->qi_client))
-    {
-      qi->qi_client->cli_terminate_requested = 1;
-    }
+  if (cli->cli_ws && cli_check_ws_terminate (cli))
+    cli->cli_terminate_requested = 1;
 
-  if (qi->qi_terminate_requested ||
-      (qi->qi_client && qi->qi_client->cli_terminate_requested))
+  if (cli->cli_terminate_requested)
     {
       longjmp_splice (qi->qi_thread->thr_reset_ctx, RST_KILLED);
     }
@@ -1491,40 +1502,6 @@ qi_signal_if_trx_error (query_instance_t * qi)
       sqlr_resignal (err);
     }
 }
-
-
-int
-qi_have_trx_error (query_instance_t * qi)
-{
-  if (qi->qi_trx->lt_status != LT_PENDING)
-    {
-      return 1;
-    }
-
-  if (qi->qi_client->cli_start_time &&
-      time_now_msec - qi->qi_client->cli_start_time > BURST_STOP_TIMEOUT
-       && qi->qi_client->cli_session
-       && cli_is_interactive (qi->qi_client)
-       && !qi->qi_client->cli_ws)
-    {
-      dks_stop_burst_mode (qi->qi_client->cli_session);
-    }
-
-  if (qi->qi_client &&
-      !(qi->qi_terminate_requested || qi->qi_client->cli_terminate_requested) &&
-      cli_check_ws_terminate (qi->qi_client))
-    {
-      qi->qi_client->cli_terminate_requested = 1;
-    }
-
-  if (qi->qi_terminate_requested ||
-      (qi->qi_client && qi->qi_client->cli_terminate_requested))
-    {
-      return 1;
-    }
-  return 0;
-}
-
 
 
 instruction_t *
@@ -1774,12 +1751,15 @@ again:
 		  ins_call ((instruction_t *) ins, qst, code_vec);
 		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.call)));
 		  break;
+	      case INS_CALL_BIF:
+		  ins_call_bif ((instruction_t *) ins, qst, code_vec);
+		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.bif)));
+		  break;
 	      case INS_SUBQ:
 		  ins_subq ((instruction_t *) ins, qst);
 		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.subq)));
 		  break;
 	      case INS_QNODE:
-		  qi_check_trx_error (qi, 1);
 		  ins_qnode ((instruction_t *) ins, qst);
 		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.qnode)));
 		  break;
@@ -1864,11 +1844,9 @@ again:
 	    {
 	      sqlr_resignal (err);
 	    }
-	  if ((ins->ins_type == INS_CALL ||
-		ins->ins_type == INS_CALL_IND) &&
-	      ins->_.call.bif)
+	  if (ins->ins_type == INS_CALL_BIF)
 	    {
-	      err_append_callstack_procname (err, ins->_.call.proc, NULL, -1);
+	      err_append_callstack_procname (err, ins->_.bif.proc, NULL, -1);
 	      if (1 < callstack_on_exception)
 	        {
 		  int argidx;
@@ -1904,7 +1882,6 @@ code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc)
   instruction_t * ins = code_vec;
   caddr_t *qst = itc->itc_out_state;
   query_instance_t *qi = (query_instance_t *)qst;
-  ITC_LEAVE_MAP (itc);
   for (;;)
     {
       switch (ins->ins_type)
@@ -1943,6 +1920,10 @@ code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc)
 	case INS_CALL_IND:
 	  ins_call (ins, qst, code_vec);
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.call)));
+	  break;
+	case INS_CALL_BIF:
+	  ins_call_bif (ins, qst, code_vec);
+	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.bif)));
 	  break;
 	case INS_SUBQ:
 	  ins_subq (ins, qst);

@@ -537,7 +537,7 @@ float compiler_unit_msecs = 0;
 
 #define SQLO_NITERS 1000
 
-#define COL_COUNT "select count (*) from SYS_COLS a where COL_DTP > 0 and exists (select 1 from SYS_COLS b table option (loop) where a.\"TABLE\" = b.\"TABLE\" and a.\"COLUMN\" = b.\"COLUMN\")"
+#define COL_COUNT "select count (*) from SYS_COLS a table option (index primary key) where  exists (select 1 from SYS_COLS b table option (loop) where a.\"TABLE\" = b.\"TABLE\" and a.\"COLUMN\" = b.\"COLUMN\")"
 
 void
 srv_calculate_sqlo_unit_msec (void)
@@ -554,6 +554,7 @@ srv_calculate_sqlo_unit_msec (void)
   client_connection_t *cli = bootstrap_cli;
 
   old_tb_count = sys_cols_tb->tb_count;
+  sys_cols_tb->tb_count = wi_inst.wi_schema->sc_id_to_col->ht_count;
 
   qr = sql_compile (COL_COUNT, cli, &err, SQLC_DEFAULT);
   start_time = (float) get_msec_real_time ();
@@ -575,6 +576,7 @@ srv_calculate_sqlo_unit_msec (void)
 
   score_box = (caddr_t) sql_compile (COL_COUNT, cli, &err, SQLC_SQLO_SCORE);
   score = unbox_float (score_box);
+  /*printf ("cu score = %f\n", score);*/
   dk_free_tree (score_box);
   compiler_unit_msecs = (end_time - start_time) / (score * inx);
 

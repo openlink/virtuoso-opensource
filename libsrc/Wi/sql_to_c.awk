@@ -548,6 +548,10 @@ END 	{
 		in_xsl_mode = 0
 
 	      }
+	    if (pass_bootstrap_cli != 0)
+	      {
+	       print "#undef isp_schema\n#define isp_schema(x) isp_schema_1(x)\n"  
+	      }  
 	    if (n_xslts > 0)
 	      {
 		print "static const char * xslt_define = \"xslt_sheet (?, xtree_doc (?, 128, ?, 'LATIN-1', 'x-any', 'BuildStandalone=ENABLE'))\";"

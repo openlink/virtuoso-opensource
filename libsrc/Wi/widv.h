@@ -205,6 +205,7 @@ typedef unsigned int64 iri_id_t;
 
 #define DV_IRI_ID 243
 #define DV_IRI_ID_8 244
+#define DV_RDF 246
 #define DV_COMPOSITE 255 /* value important for free text, where long w/ high byte of 255 signifies composite key */
 
 #define DV_OBJECT 254
@@ -507,6 +508,7 @@ sqlr_new_error is void, and should never return.
     ((type) == DV_IRI_ID) ? "IRI_ID" : \
     ((type) == DV_IRI_ID_8) ? "IRI_ID" : \
   ((type) == DV_UNAME) ? "UNAME" : \
+  ((type) == DV_RDF) ? "rdf" : \
   "UNK_DV_TYPE" )
 #endif /* _WIDV_H */
 

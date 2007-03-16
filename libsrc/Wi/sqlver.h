@@ -26,16 +26,15 @@
  *  
 */
 
-#define PRODUCT_COPYRIGHT	"Copyright (C) OpenLink Software 1999-2006"
+#define PRODUCT_COPYRIGHT	"Copyright (C) 1999-2007 OpenLink Software"
 #define PRODUCT_NAME		"OpenLink Virtuoso"
 
 /* DBMS Server */
-/*#define PRODUCT_DBMS		PRODUCT_NAME " VDBMS"*/
 #define PRODUCT_DBMS		PRODUCT_NAME
 #define DBMS_SRV_NAME		PRODUCT_DBMS " Universal Server"
-#define DBMS_SRV_VER_ONLY	"04.50"
-#define DBMS_SRV_GEN_MAJOR	"29"
-#define DBMS_SRV_GEN_MINOR	"21"
+#define DBMS_SRV_VER_ONLY	"05.00"
+#define DBMS_SRV_GEN_MAJOR	"30"
+#define DBMS_SRV_GEN_MINOR	"05"
 #define DBMS_SRV_VER		DBMS_SRV_VER_ONLY "." \
 				DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR
 
@@ -45,7 +44,7 @@
 /* ODBC Driver */
 #define PRODUCT_ODBC		PRODUCT_NAME " ODBC"
 #define ODBC_DRV_NAME		PRODUCT_ODBC " Driver"
-#define ODBC_DRV_VER_ONLY	"04.50"
+#define ODBC_DRV_VER_ONLY	DBMS_SRV_VER_ONLY
 #define ODBC_DRV_GEN_MAJOR	DBMS_SRV_GEN_MAJOR
 #define ODBC_DRV_GEN_MINOR	DBMS_SRV_GEN_MINOR
 #define ODBC_DRV_VER		ODBC_DRV_VER_ONLY "." \

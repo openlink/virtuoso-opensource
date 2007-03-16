@@ -35,6 +35,8 @@
 typedef struct instruction_s	instruction_t;
 typedef struct instruction_s	 * code_vec_t;
 typedef struct data_source_s	data_source_t;
+typedef struct proc_name_s proc_name_t;
+
 typedef struct query_s		query_t;
 typedef struct user_aggregate_s user_aggregate_t;
 
@@ -144,6 +146,16 @@ typedef struct state_const_slot_s
   (* ((ptrlong *) &qst[inx]))
 
 
+struct proc_name_s 
+{
+  int 		pn_ref_count;
+  query_t *	pn_query;
+  char		pn_name[1];
+};
+
+
+
+
 struct query_s
   {
     int			qr_ref_count;
@@ -172,19 +184,20 @@ struct query_s
 					   SQL 'where current of' */
 
     caddr_t		qr_proc_name;	/*!< If SQL procedure, this is the name */
+    proc_name_t *	qr_pn;
     caddr_t		qr_trig_table;	/*!< If trigger, name of table */
     bitf_t		qr_is_ddl:1;
     bitf_t		qr_is_complete:1; /* false while trig being compiled */
-    bitf_t		qr_trig_time;	/*!< If trigger, time of launch: before/after/instead */
-    bitf_t		qr_trig_event;	/*!< If trigger, type of event: insert/delete/update */
+    char		qr_trig_time;	/*!< If trigger, time of launch: before/after/instead */
+    char		qr_trig_event;	/*!< If trigger, type of event: insert/delete/update */
     user_aggregate_t *  qr_aggregate;	/*!< If user-defined aggregate, this points to the implementation */
     oid_t *		qr_trig_upd_cols;
     int			qr_trig_order;
     dbe_table_t *	qr_trig_dbe_table;
     caddr_t *		qr_trig_old_cols;
     state_slot_t **	qr_trig_old_ssl;
-    bitf_t 		qr_lock_mode;
-    bitf_t		qr_is_call; /* true if this is top level proc call */
+   bitf_t 		qr_lock_mode:3;
+    char		qr_is_call; /* true if this is top level proc call */
     bitf_t		qr_no_cast_error:1;
     oid_t		qr_proc_owner;
     dk_hash_t *		qr_proc_grants;
@@ -282,11 +295,10 @@ typedef struct query_instance_s
 
     du_thread_t *	qi_thread;
     short		qi_threads;
-    bitf_t		qi_terminate_requested:1;
+    bitf_t              qi_lock_mode:3;
     bitf_t		qi_is_allocated:1;
     bitf_t		qi_autocommit:1;
     bitf_t		qi_no_triggers:1;
-    bitf_t              qi_lock_mode:3;
     bitf_t		qi_assert_found:1; /* gpf if next select gets 'not found */
     bitf_t 		qi_pop_user:1;
     bitf_t 		qi_no_cast_error:1;
@@ -360,16 +372,15 @@ typedef struct hash_area_s
 #define HA_ORDER 2
 #define HA_GROUP 3
 #define HA_FILL 4
-
+#define HA_PROC_FILL 5
 
 typedef struct key_source_s
   {
     dbe_key_t *		ks_key;
     state_slot_t *	ks_init_place;
-    search_spec_t *	ks_spec;
+    key_spec_t 		ks_spec;
     int			ks_init_used;
     search_spec_t *	ks_row_spec;
-
     dk_set_t		ks_out_cols;
     dk_set_t		ks_out_slots;
     out_map_t *	ks_out_map; /* inline array of dbe_col_locs for each member of ks:_out_slots for the matching key */
@@ -442,8 +453,8 @@ typedef struct inx_op_s
 
   /* Members for the leaves, the actual indices */
   key_source_t * 	iop_ks;
-  search_spec_t *	iop_ks_start_spec;
-  search_spec_t *	iop_ks_full_spec;
+  key_spec_t 	iop_ks_start_spec;
+  key_spec_t 	iop_ks_full_spec;
   search_spec_t *	iop_ks_row_spec;
   state_slot_t **	iop_out;
   state_slot_t * 	iop_itc;
@@ -462,12 +473,11 @@ typedef struct table_source_s
     key_source_t *	ts_main_ks;
     state_slot_t *	ts_order_cursor;
     state_slot_t *	ts_current_of;
-    bitf_t		ts_is_unique;	/* Only one hit expected, don't look for more */
-    bitf_t		ts_is_outer;
+    bitf_t		ts_is_unique:1;	/* Only one hit expected, don't look for more */
+    bitf_t		ts_is_outer:1;
     bitf_t		ts_is_random:1; /* random search */
+    bitf_t 		ts_no_blobs:1;
     caddr_t		ts_rnd_pcnt;
-    bitf_t 		ts_no_blobs;
-    bitf_t		 ts_ancestor_refd;
     code_vec_t		ts_after_join_test;
     struct inx_op_s *	ts_inx_op;
     inx_locality_t	ts_il;
@@ -754,7 +764,7 @@ typedef struct setp_node_s
     state_slot_t *	setp_flushing_mem_sort;
     struct fun_ref_node_s *	setp_ordered_gb_fref;
     state_slot_t **	setp_ordered_gb_out;
-    search_spec_t *	setp_insert_specs;
+    key_spec_t 	setp_insert_spec;
     hash_area_t *	setp_reserve_ha;
     int	                setp_any_distinct_gos;
     int			setp_any_user_aggregate_gos;
@@ -993,7 +1003,6 @@ typedef struct client_connection_s
 					   the uncommitted schema if statements
 					   have to be compiled in it.
 					   e.g. create index stmt */
-    index_space_t *	cli_temp_isp;
     caddr_t		cli_qualifier;
 
     int			cli_support_row_count;

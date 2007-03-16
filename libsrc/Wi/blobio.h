@@ -92,6 +92,7 @@ typedef struct blob_handle_s blob_handle_t;
    lt_blobs_delete_at_rollback queues of transaction. It should be allocated by
    'blob_layout_ctor' function and will be freed by 'blob_chain_delete' */
 
+/*#define BL_DEBUG*/
 struct blob_layout_s
   {
     dtp_t bl_blob_handle_dtp;	/*!< Type of BLOB handle, to pay special attention to the length of wide BLOBs */
@@ -103,6 +104,12 @@ struct blob_layout_s
     int	bl_page_dir_complete;	/*!< Flags if we have to read bl_page_dir in order to get all pages */
     int bl_delete_later;	/*!< Flags if this blob should be deleted later in case of commit and/or rollback */
     struct index_tree_s * bl_it;	/*!< Index tree of the row that contains the field with this blob. */
+#ifdef BL_DEBUG
+    const char *file_alloc;
+    int line_alloc;
+    const char *file_free;
+    int line_free;
+#endif
   };
 
 typedef struct blob_layout_s blob_layout_t;
@@ -140,7 +147,57 @@ struct index_space_s;
 struct lock_trx_s;
 struct it_cursor_s;
 
-int bh_read_ahead (struct index_space_s *isp, struct lock_trx_s *lt, blob_handle_t * bh, unsigned from, unsigned to);
+int bh_read_ahead (struct lock_trx_s *lt, blob_handle_t * bh, unsigned from, unsigned to);
+
+
+typedef struct rdf_box_s
+{
+  int32		rb_ref_count;
+  short		rb_type;
+  short		rb_lang;
+  unsigned	rb_is_complete:1;
+  unsigned	rb_is_outlined:1;
+  int32		rb_ro_id;
+  caddr_t	rb_box;
+} rdf_box_t;
+
+int rbs_length (db_buf_t rbs);
+
+#define RDF_POP(dtp, data, lt)			\
+{ \
+  if (DV_RDF == dtp) \
+    {\
+      if (((rdf_box_t*)data)->rb_is_complete) \
+	data = ((rdf_box_t *)data)->rb_box; \
+      else\
+	data = rb_complete (data, lt); \
+    } \
+}
+
+
+#define RDF_POP_NC(dtp, data)			\
+{ \
+  if (DV_RDF == dtp) \
+    {\
+      if (((rdf_box_t*)data)->rb_is_complete) \
+	data = ((rdf_box_t *)data)->rb_box; \
+      else\
+	sqlr_new_error ("22032", "RDFBX", "An incomplete outlined rdf box is not a valid operand for function."); \
+    } \
+}
+
+
+#define RDF_POP_NO_ERROR(dtp, data, not_complete)		\
+{ \
+  if (DV_RDF == dtp) \
+    {\
+      if (((rdf_box_t*)data)->rb_is_complete) \
+	data = ((rdf_box_t *)data)->rb_box; \
+      else\
+	goto not_complete; \
+    } \
+}
+
 
 /* The following has nothing to do with blobs, but is here because this
    header file is included both by wi.h and cliint.h, of which the former

@@ -442,7 +442,10 @@ ol_write_page_set (ol_backup_context_t * ctx, buffer_desc_t * buf,  int clr)
   while (buf)
     {
       if (clr)
+	{
 	memset (buf->bd_buffer + DP_DATA, 0, PAGE_DATA_SZ);
+	  page_set_checksum_init (buf->bd_buffer + DP_DATA);
+	}
       if (-1 == ol_backup_page (NULL, buf, ctx))
 	return -1;
       buf = buf->bd_next;
@@ -533,7 +536,12 @@ int ol_regist_unmark (it_cursor_t * itc, buffer_desc_t * buf, ol_backup_context_
 
   dbs_locate_incbackup_bit (wi_inst.wi_master, buf->bd_page,
 			    &array, &array_page, &inx, &bit);
+
+  if (array[inx] & 1<<bit)
+    {
+      page_set_update_checksum (array, inx, bit);
   array[inx] &= ~(1 << bit);
+    }
   return 0;
 }
 
@@ -1365,6 +1373,7 @@ bif_backup_context_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     while (fs && is)
       {
 	memcpy (is->bd_buffer + DP_DATA, fs->bd_buffer + DP_DATA, PAGE_DATA_SZ);
+	page_set_checksum_init (is->bd_buffer + DP_DATA);
 	fs = fs->bd_next;
 	is = is->bd_next;
       }

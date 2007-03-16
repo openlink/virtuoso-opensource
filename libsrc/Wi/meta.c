@@ -94,7 +94,7 @@ void
 dbe_schema_dead (dbe_schema_t * sc)
 {
   ASSERT_IN_TXN;
-  sc->sc_free_since = get_msec_real_time ();
+  sc->sc_free_since = approx_msec_real_time ();
   dk_set_pushnew (&wi_inst.wi_free_schemas, (void *) sc);
 }
 
@@ -141,7 +141,7 @@ void
 wi_free_schemas ()
 {
 #if !defined (PURIFY) && !defined (VALGRIND)
-  long now = get_msec_real_time ();
+  long now = approx_msec_real_time ();
   int any_freed;
   /* ASSERT_IN_MAP; */
   do
@@ -1059,9 +1059,6 @@ dbe_key_free (dbe_key_t * key)
   dk_free ((caddr_t) key->key_row_var, -1);
   dk_free_box (key->key_name);
   dk_free_tree ((box_t) key->key_options);
-  key_free_trail_specs (key->key_insert_spec);
-  key_free_trail_specs (key->key_bm_ins_spec);
-  key_free_trail_specs (key->key_bm_ins_leading);
   dk_free ((caddr_t) key, sizeof (dbe_key_t));
 }
 
@@ -1108,6 +1105,87 @@ sch_table_key (dbe_schema_t * sc, const char *table, const char *key, int non_pr
   return (tb_name_to_key (tb, key, non_primary));
 }
 
+
+id_hashed_key_t
+proc_name_hash_f (char *strp)
+{
+  char *str = *(char **) strp;
+  id_hashed_key_t h;
+  str = &((proc_name_t *)str)->pn_name[0];
+ NTS_BUFFER_HASH (h, str);
+  return (h & ID_HASHED_KEY_MASK);
+}
+
+
+int
+proc_name_cmp (char *x, char *y)
+{
+  return 0 == strcmp (&(*(proc_name_t**)x)->pn_name[0], &(*(proc_name_t**)y)->pn_name[0]);
+}
+
+dk_mutex_t * proc_name_mtx;
+id_hash_t * proc_name_hash;
+
+#define PN_HEADER  ((ptrlong)(&((proc_name_t*)0)->pn_name))
+
+proc_name_t * 
+proc_name (char * name)
+{
+  proc_name_t ** place;
+  int len = strlen (name);
+  proc_name_t * pn = (proc_name_t *) dk_alloc (PN_HEADER +len + 1);
+  if (!proc_name_mtx)
+    {
+      proc_name_mtx = mutex_allocate ();
+      proc_name_hash = id_hash_allocate (2003, sizeof (caddr_t), sizeof (caddr_t), proc_name_hash_f, proc_name_cmp);
+    }
+  pn->pn_ref_count = 1;
+  pn->pn_query = NULL;
+  strcpy (&pn->pn_name[0], name);
+  pn->pn_name[len] = 0;
+  mutex_enter (proc_name_mtx);
+  place = (proc_name_t **) id_hash_get (proc_name_hash, (caddr_t) &pn);
+  if (place)
+    {
+      proc_name_t * found = *place;
+      found->pn_ref_count++;
+      mutex_leave (proc_name_mtx);
+      dk_free (pn, -1);
+      return found;
+    }
+  id_hash_set (proc_name_hash, (caddr_t)&pn, (caddr_t)&pn);
+  mutex_leave (proc_name_mtx);
+  return pn;
+}
+
+proc_name_t *
+proc_name_ref (proc_name_t * pn)
+{
+  mutex_enter (proc_name_mtx);
+  pn->pn_ref_count++;
+  mutex_leave (proc_name_mtx);
+  return pn;
+}
+
+
+void 
+proc_name_free (proc_name_t * pn)
+{
+  if (!pn)
+    return;
+  mutex_enter (proc_name_mtx);
+  pn->pn_ref_count--;
+  if (!pn->pn_ref_count)
+    {
+      id_hash_remove (proc_name_hash, (caddr_t)&pn);
+      mutex_leave (proc_name_mtx);
+      dk_free ((caddr_t)pn, -1);
+      return;
+    }
+  mutex_leave (proc_name_mtx);
+}
+
+
 dk_mutex_t * old_qr_mtx;
 
 
@@ -1147,6 +1225,20 @@ sch_set_procmod_def (dbe_schema_t * sc, caddr_t name, query_t *proc, sc_object_t
       id_casemode_hash_set (sc->sc_name_to_object[o_type], qn_key, o_key, (caddr_t) & proc);
     }
   mutex_leave (old_qr_mtx);
+  if (sc_to_proc == o_type)
+    {
+      if (proc)
+	{
+	  proc->qr_pn = proc_name (proc->qr_proc_name);
+	  proc->qr_pn->pn_query = proc;
+	}
+      else
+	{
+	  proc_name_t * pn = proc_name (name);
+	  pn->pn_query = NULL;
+	  proc_name_free (pn);
+	}
+    }
 }
 
 
@@ -1894,7 +1986,7 @@ isp_read_schema (lock_trx_t * lt)
   END_FAIL (itc_cols);
   itc_free (itc_cols);
 
-  err = isp_read_object_dd (NULL, lt, sc);
+  err = it_read_object_dd (lt, sc);
   if (err)
     sqlr_resignal (err);
   {
@@ -2135,7 +2227,7 @@ qi_read_table_schema_1 (query_instance_t * qi, char *read_tb, dbe_schema_t * sc)
   lc_free (lc);
   if (err)
     return err;
-  err = isp_read_object_dd (NULL, lt, sc);
+  err = it_read_object_dd (lt, sc);
   if (err)
     return err;
   if (!defined_table)
@@ -2150,7 +2242,7 @@ qi_read_table_schema_1 (query_instance_t * qi, char *read_tb, dbe_schema_t * sc)
       dbe_key_layout (k);
     }
   END_DO_SET ();
-  err = sec_read_grants (qi->qi_client, qi, NULL, read_tb, 0);
+  err = sec_read_grants (qi->qi_client, qi, read_tb, 0);
   if (err)
     return err;
   err = sec_read_tb_rls (qi->qi_client, qi, read_tb);
@@ -2326,7 +2418,7 @@ search_spec_t *
 dbe_key_insert_spec (dbe_key_t * key)
 {
   int inx = 0, n;
-  search_spec_t **next_spec = &key->key_insert_spec;
+  search_spec_t **next_spec = &key->key_insert_spec.ksp_spec_array;
 
 
   for (n = 0; n < key->key_n_significant; n++)
@@ -2348,7 +2440,8 @@ dbe_key_insert_spec (dbe_key_t * key)
 	}
       inx++;
     }
-  return (key->key_insert_spec);
+  ksp_cmp_func (&key->key_insert_spec);
+  return (key->key_insert_spec.ksp_spec_array);
 }
 
 

@@ -135,7 +135,7 @@ ssl_free_data (state_slot_t * sl, caddr_t data)
       break;
 
     case SSL_ITC:
-      itc_unregister ((it_cursor_t *) data, OUTSIDE_MAP);
+      itc_unregister ((it_cursor_t *) data);
       itc_free ((it_cursor_t *) data);
       break;
 
@@ -533,7 +533,8 @@ qi_kill (query_instance_t * qi, int is_error)
   if (qi->qi_caller != CALLER_CLIENT)
     {
       int rc = LTE_OK;
-      if (qi->qi_trx->lt_status != LT_PENDING)
+      if (qi->qi_trx->lt_status != LT_PENDING
+	  && qi->qi_trx->lt_status != LT_FREEZE)
 	rc = qi->qi_trx->lt_error;
       qi_free ((caddr_t *) qi);
       return rc;
@@ -552,8 +553,10 @@ qi_kill (query_instance_t * qi, int is_error)
       rc = lt_close (qi->qi_trx, is_error == QI_DONE ? SQL_COMMIT : SQL_ROLLBACK);
     }
   else
+    {
     rc = lt_leave (qi->qi_trx);
   LEAVE_TXN;
+    }
   qi_free ((caddr_t *) qi);
   ASSERT_OUTSIDE_MTX (cli->cli_mtx);
   if (thr_waiting)
@@ -569,7 +572,7 @@ qi_select_leave (query_instance_t * qi)
   if (qi->qi_caller != CALLER_CLIENT)
     return LTE_OK;
   IN_CLIENT (qi->qi_client);
-  if (qi->qi_terminate_requested)
+  if (qi->qi_client->cli_terminate_requested)
     {
       LEAVE_CLIENT (qi->qi_client);
       return (qi_kill (qi, QI_ERROR));
@@ -596,15 +599,10 @@ void
 qn_input (data_source_t * xx, caddr_t * inst, caddr_t * state)
 {
   query_instance_t *qi = (query_instance_t *) inst;
-
-  if (qi->qi_client &&
-      !(qi->qi_terminate_requested || qi->qi_client->cli_terminate_requested) &&
-      cli_check_ws_terminate (qi->qi_client))
-    {
-      qi->qi_client->cli_terminate_requested = 1;
-    }
-
-  if (qi->qi_terminate_requested || (qi->qi_client && qi->qi_client->cli_terminate_requested))
+  client_connection_t * cli = qi->qi_client;
+  if (cli->cli_ws && cli_check_ws_terminate (cli))
+    cli->cli_terminate_requested = 1;
+  if (cli->cli_terminate_requested)
     {
       longjmp_splice (qi->qi_thread->thr_reset_ctx, RST_KILLED);
     }
@@ -763,16 +761,19 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 
       if (IS_NUM_DTP (dtp) && IS_NUM_DTP (target_dtp))
 	{
-	  /* compare different number types.  If col more precise than arg, cast to col here, otherwise the cast is in itc_col_check */
+	  /* compare different number types.  If col more precise than arg, cast to col here, otherwise the cast is in itc_col_check.
+	  * if param is more precise, disable any inlined compare funcs since they do not cast. */
 	  switch (target_dtp)
 	    {
 	    case DV_LONG_INT:
 	      ITC_SEARCH_PARAM (itc, data); /* all are more precise, no cast down */
+	      itc->itc_key_spec.ksp_key_cmp = NULL;
 	      return 0;
 	    case DV_SINGLE_FLOAT:
 	      if (DV_LONG_INT == dtp)
 		goto cast_param_up;
 	      ITC_SEARCH_PARAM (itc, data);
+	      itc->itc_key_spec.ksp_key_cmp = NULL;
 	      return 0;
 	    case DV_DOUBLE_FLOAT:
 	      goto cast_param_up;
@@ -780,6 +781,7 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	      if (DV_DOUBLE_FLOAT == dtp)
 		{
 		  ITC_SEARCH_PARAM (itc, data);
+		  itc->itc_key_spec.ksp_key_cmp = NULL;
 		  return 0;
 		}
 	      goto cast_param_up;
@@ -861,7 +863,7 @@ ks_search_param_update (it_cursor_t * itc, search_spec_t * ks_spec, caddr_t itc_
 void 
 ks_check_params_changed (it_cursor_t * itc, key_source_t * ks, caddr_t * state)
 {
-  search_spec_t * ks_spec = ks->ks_spec;
+  search_spec_t * ks_spec = ks->ks_spec.ksp_spec_array;
   while (ks_spec)
     {
       caddr_t val;
@@ -952,6 +954,7 @@ ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
 
   itc->itc_ks = ks;
   itc->itc_out_state = state;
+  itc->itc_key_spec = ks->ks_spec;
   if (ks->ks_from_temp_tree)
     {
       if (! itc_from_sort_temp (itc, qi, ks->ks_from_temp_tree))
@@ -966,11 +969,10 @@ ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
       itc->itc_is_vacuum = ks->ks_is_vacuum;
       itc_free_owned_params (itc);
       ITC_START_SEARCH_PARS (itc);
-      is_nulls = ks_make_spec_list (itc, ks->ks_spec, state);
+      is_nulls = ks_make_spec_list (itc, ks->ks_spec.ksp_spec_array, state);
       is_nulls |= ks_make_spec_list (itc, ks->ks_row_spec, state);
       if (is_nulls)
 	return 0;
-      itc->itc_specs = ks->ks_spec;
       itc->itc_row_specs = ks->ks_row_spec;
       if (ts->src_gen.src_query->qr_select_node
 	  && ts->src_gen.src_query->qr_lock_mode != PL_EXCLUSIVE)
@@ -1021,7 +1023,7 @@ ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
 #ifdef DEBUG
 	if (0)
 	  {
-	    sp_print_specs (itc->itc_specs);
+	    sp_print_specs (itc->itc_key_spec.ksp_spec_array);
 	  }
 #endif
 	if (must_find)
@@ -1049,13 +1051,13 @@ ks_main_row (key_source_t * ks, caddr_t * inst, caddr_t * state,
   itc_from (itc, ks->ks_key);
   itc->itc_search_mode = SM_READ_EXACT;
   itc->itc_insert_key = ks->ks_key;
+  itc->itc_key_spec = ks->ks_spec;
   itc_free_owned_params (itc);
   ITC_START_SEARCH_PARS (itc);
-  is_nulls = ks_make_spec_list (itc, ks->ks_spec, state);
+  is_nulls = ks_make_spec_list (itc, ks->ks_spec.ksp_spec_array, state);
   is_nulls |= ks_make_spec_list (itc, ks->ks_row_spec, state);
   if (is_nulls)
     return 0;
-  itc->itc_specs = ks->ks_spec;
   itc->itc_row_specs = ks->ks_row_spec;
   if (ts->src_gen.src_query->qr_select_node
       && ts->src_gen.src_query->qr_lock_mode != PL_EXCLUSIVE)
@@ -1101,7 +1103,7 @@ ks_main_row (key_source_t * ks, caddr_t * inst, caddr_t * state,
 
 void
 ts_set_placeholder (table_source_t * ts, caddr_t * state,
-    it_cursor_t * itc, buffer_desc_t * buf)
+		    it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   query_instance_t *qi;
   if (ts->ts_current_of)
@@ -1118,16 +1120,13 @@ ts_set_placeholder (table_source_t * ts, caddr_t * state,
 	    locality = 1;
 	}
       qi = (query_instance_t *) QST_INSTANCE (state);
-#if 1
       if (ts->src_gen.src_query->qr_no_co_if_no_cr_name &&
 	  !locality &&
 	  qi->qi_cursor_name &&
 	  ts->ts_no_blobs &&
-	  !ts->ts_ancestor_refd &&
 	  0 == strcmp (qi->qi_stmt->sst_id, qi->qi_cursor_name))
 	/* called from client, no blobs, no SQLSetCursorName */
 	return;
-#endif
       {
 	placeholder_t *old_pl =
 	    (placeholder_t *) QST_GET_V (state, ts->ts_current_of);
@@ -1138,20 +1137,20 @@ ts_set_placeholder (table_source_t * ts, caddr_t * state,
 	      old_pl->itc_position = itc->itc_position;
 	    else
 	      {
-		ITC_IN_MAP (itc);
-		itc_unregister ((it_cursor_t *) old_pl, INSIDE_MAP);
+		itc->itc_is_on_row = 1;
+		itc_unregister_while_on_page ((it_cursor_t *) old_pl, itc, buf_ret);
+		old_pl->itc_is_on_row = itc->itc_is_on_row;
 		old_pl->itc_page = itc->itc_page;
 		old_pl->itc_position = itc->itc_position;
-		itc_register_cursor ((it_cursor_t *) old_pl, INSIDE_MAP);
+		itc_register ((it_cursor_t *) old_pl, *buf_ret);
 	      }
 	  }
 	else
 	  {
 	    NEW_VAR (placeholder_t, pl);
-	    ITC_IN_MAP (itc);
 	    memcpy (pl, itc, ITC_PLACEHOLDER_BYTES);
 	    pl->itc_type = ITC_PLACEHOLDER;
-	    itc_register_cursor ((it_cursor_t *) pl, INSIDE_MAP);
+	    itc_register ((it_cursor_t *) pl, *buf_ret);
 	    qst_set (state, ts->ts_current_of, (caddr_t) pl);
 	  }
       }
@@ -1267,11 +1266,11 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	      ts_outer_output (ts, inst);
 	      return;
 	    }
-	  ITC_IN_MAP (order_itc);
+#ifndef NDEBUG
+	  ITC_IN_KNOWN_MAP (order_itc, order_itc->itc_page);
 	  itc_assert_lock (order_itc);
-
-	  ITC_IN_MAP (order_itc); /* as itc_assert_lock leave the mutex */
-	  itc_register_cursor (order_itc, INSIDE_MAP);
+#endif
+	  itc_register (order_itc, order_buf);
 	  itc_page_leave (order_itc, order_buf);
 	  qn_record_in_state ((data_source_t *) ts, inst, state);
 	}
@@ -1284,10 +1283,10 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	    order_buf = page_reenter_excl (order_itc);
 	    if (DVC_MATCH == itc_next (order_itc, &order_buf))
 	      {
-		ITC_IN_MAP (order_itc);
+#ifndef NDEBUG
 		itc_assert_lock (order_itc);
-		ITC_IN_MAP (order_itc); /* as itc_assert_lock leave the mutex */
-		itc_register_cursor (order_itc, INSIDE_MAP);
+#endif
+		itc_register (order_itc, order_buf);
 		itc_page_leave (order_itc, order_buf);
 		qn_record_in_state ((data_source_t *) ts, inst, state);
 
@@ -1314,7 +1313,9 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	  ITC_INIT (main_itc, qi->qi_space, qi->qi_trx);
 	  rc = ks_main_row (ts->ts_main_ks, inst, state, main_itc,
 			    &main_buf, ts);
+#ifndef NDEBUG
 	  itc_assert_lock (main_itc);
+#endif
 	  if (!rc)
 	    {
 #ifdef DEBUG
@@ -1334,16 +1335,8 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	  else
 	    {
 	      /* We joined with the primary key row. */
-	      ts_set_placeholder (ts, state, main_itc, main_buf);
-	      ITC_FAIL (main_itc)
-	      {
+	      ts_set_placeholder (ts, state, main_itc, &main_buf);
 		itc_page_leave (main_itc, main_buf);
-	      }
-	      ITC_FAILED
-	      {
-		itc_free (main_itc);
-	      }
-	      END_FAIL (main_itc);
 	      itc_free (main_itc);
 	    }
 	}
@@ -1378,18 +1371,12 @@ table_source_input_unique (table_source_t * ts, caddr_t * inst, caddr_t * state)
       return;
     }
 
-  ts_set_placeholder (ts, state, order_itc, order_buf);
+  ts_set_placeholder (ts, state, order_itc, &order_buf);
 
-  ITC_FAIL (order_itc)
-  {
+#ifndef NDEBUG
     itc_assert_lock (order_itc);
+#endif
     itc_page_leave (order_itc, order_buf);
-  }
-  ITC_FAILED
-  {
-    itc_free (order_itc);
-  }
-  END_FAIL (order_itc);
   qi_check_buf_writers ();
   itc_free (order_itc);
 
@@ -1481,7 +1468,7 @@ itc_get_alt_key (it_cursor_t * cr_itc, it_cursor_t * del_itc,
     }
   cr_itc->itc_row_key_id = cr_itc->itc_row_key->key_id;
   itc_from (del_itc, alt_key);
-  del_itc->itc_specs = KEY_INSERT_SPEC (alt_key);
+  del_itc->itc_key_spec =  alt_key->key_insert_spec;
   del_itc->itc_search_mode = SM_INSERT;
 
   DO_SET (dbe_column_t *, col, &alt_key->key_parts)
@@ -1653,7 +1640,7 @@ delete_node_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 	main_itc = &main_itc_auto;
 	ITC_INIT (main_itc, QI_SPACE (inst), QI_TRX (inst));
 	main_itc->itc_lock_mode = PL_EXCLUSIVE;
-	ITC_LEAVE_MAP (cr_itc);
+	ITC_LEAVE_MAPS (cr_itc);
 	ITC_FAIL (main_itc)
 	{
 	  cr_itc->itc_position = pos_before;
@@ -1882,7 +1869,7 @@ itc_make_deref_spec (it_cursor_t * itc, db_buf_t row)
       break;
   }
   END_DO_SET ();
-  itc->itc_specs = KEY_INSERT_SPEC (key);
+  itc->itc_key_spec = key->key_insert_spec;
 }
 
 
@@ -1909,7 +1896,8 @@ deref_node_input (deref_node_t * dn, caddr_t * inst, caddr_t * state)
 
       sp.sp_is_boxed = 1;
 
-      ref_itc->itc_specs = &sp;
+      ref_itc->itc_key_spec.ksp_spec_array = &sp;
+      ref_itc->itc_key_spec.ksp_key_cmp = NULL;
       ref_itc->itc_key_id = KI_OBJECT_ID;
 #endif
     }
@@ -1931,7 +1919,6 @@ deref_node_input (deref_node_t * dn, caddr_t * inst, caddr_t * state)
   {
     ref_buf = itc_reset ((ITC) ref_itc);
     res = itc_search ((ITC) ref_itc, &ref_buf);
-    ITC_LEAVE_MAP (ref_itc);
     if (res == DVC_MATCH)
       {
 	if (dn->dn_row)
@@ -1944,11 +1931,11 @@ deref_node_input (deref_node_t * dn, caddr_t * inst, caddr_t * state)
 	      }
 	    else
 	      {
-		it_cursor_t *main_itc = itc_create (ref_itc->itc_space,
+		it_cursor_t *main_itc = itc_create (NULL,
 		    ref_itc->itc_ltrx);
 		caddr_t row = deref_node_main_row ((ITC) ref_itc, &ref_buf,
 		    cr_key->key_table->tb_primary_key, (ITC) main_itc);
-		ITC_LEAVE_MAP (main_itc);
+		ITC_LEAVE_MAPS (main_itc);
 		if (!row)
 		  {
 		    itc_free ((ITC) ref_itc);
@@ -1964,10 +1951,10 @@ deref_node_input (deref_node_t * dn, caddr_t * inst, caddr_t * state)
 	if (dn->dn_place)
 	  {
 	    NEW_VAR (placeholder_t, pl);
-	    ITC_IN_MAP (ref_itc);
+	    ITC_IN_KNOWN_MAP (ref_itc, ref_itc->itc_page);
 	    memcpy (pl, (ITC) ref_itc, ITC_PLACEHOLDER_BYTES);
 	    pl->itc_type = ITC_PLACEHOLDER;
-	    itc_register_cursor ((it_cursor_t *) pl, INSIDE_MAP);
+	    itc_register ((it_cursor_t *) pl, ref_buf);
 	    qst_set (state, dn->dn_place, (caddr_t) pl);
 	  }
       }
@@ -2630,7 +2617,7 @@ qi_set_options (query_instance_t * qi, stmt_options_t * opts)
   else
     {
       qi->qi_lock_mode = PL_SHARED;
-      qi->qi_isolation = ISO_REPEATABLE;
+      qi->qi_isolation = default_txn_isolation;
     }
   qi->qi_autocommit = opts ? (long) opts->so_autocommit : 0;
   qi->qi_max_rows = opts ? (long)  opts->so_max_rows : 0;
@@ -2669,11 +2656,6 @@ qi_initial_enter_trx (query_instance_t * qi)
       if (rc != LTE_OK)
 	goto return_err;
     }
-  if (lt->lt_being_closed)
-    {
-      LEAVE_TXN;
-      return LTE_DEADLOCK;
-    }
   CHECK_DK_MEM_RESERVE (lt);
   if (lt->lt_status == LT_PENDING)
     {
@@ -2693,13 +2675,14 @@ qi_initial_enter_trx (query_instance_t * qi)
     {
       LEAVE_CLIENT (qi->qi_client);
       lt_close (lt, SQL_ROLLBACK);
-      LEAVE_TXN;
+      /* lt close leaves the txn mtx */
       IN_CLIENT (qi->qi_client);
       return rc;
     }
   else
     {
       LT_CLEAR_ERROR_AFTER_RB (lt, 0);
+      lt_threads_dec_inner (lt);
     }
 return_err:
   LEAVE_TXN;
@@ -2774,7 +2757,7 @@ qr_exec (client_connection_t * cli, query_t * qr,
       if (prof_on)
 	stmt->sst_start_msec = get_msec_real_time ();
       else
-	stmt->sst_start_msec = 0;
+	stmt->sst_start_msec = approx_msec_real_time ();
       qi->qi_stmt = stmt;
       if (qr->qr_select_node && !cr_name && stmt
 	  && !was_autocommit)
@@ -3077,17 +3060,6 @@ qi_enter_trx (query_instance_t * qi, caddr_t *detail_ptr)
 
   IN_TXN;
   lt_wait_checkpoint ();
-  if (lt->lt_being_closed)
-    {
-      qi_detach_from_stmt (qi);
-      LEAVE_TXN;
-      LEAVE_CLIENT (qi->qi_client);
-      if (detail_ptr)
-	*detail_ptr = box_copy (LT_ERROR_DETAIL (qi->qi_trx));
-      qi_free ((caddr_t *) qi);
-      dbg_printf(("not initial %d\n",lt->lt_being_closed));
-      return LTE_DEADLOCK;
-    }
   ASSERT_IN_TXN;
 #ifdef INPROCESS_CLIENT
   if (!IS_INPROCESS_CLIENT (lt->lt_client))
@@ -3100,7 +3072,6 @@ qi_enter_trx (query_instance_t * qi, caddr_t *detail_ptr)
     {
       LEAVE_TXN;
       LEAVE_CLIENT (qi->qi_client);
-      dbg_printf(("not initial 2 %d\n",lt->lt_being_closed));
       if (detail_ptr)
 	*detail_ptr = box_copy (LT_ERROR_DETAIL (qi->qi_trx));
       rc = qi_kill (qi, QI_ERROR);

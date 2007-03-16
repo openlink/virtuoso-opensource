@@ -604,7 +604,7 @@ failed_login_from (dk_session_t *ses)
   if (ses && ses->dks_session)
     {
       failed_login_t *login = NULL, **plogin = &login;
-      long now = get_msec_real_time ();
+      long now = approx_msec_real_time ();
 
       tcpses_print_client_ip (ses->dks_session, from, sizeof (from));
 
@@ -639,7 +639,7 @@ failed_login_to_disconnect (dk_session_t *ses)
   if (ses && ses->dks_session)
     {
       failed_login_t *login = NULL, **plogin = &login;
-      long now = get_msec_real_time ();
+      long now = approx_msec_real_time ();
 
       tcpses_print_client_ip (ses->dks_session, from, sizeof (from));
 
@@ -704,7 +704,7 @@ failed_login_purge (void)
    id_hash_iterator_t hit;
    char **key;
    failed_login_t *login = NULL, **plogin;
-   long now = get_msec_real_time ();
+   long now = approx_msec_real_time ();
    static long last_start_time = 0;
 
    if (now - last_start_time > LOGIN_FAILED_INACTIVITY_PERIOD_MSEC)
@@ -795,6 +795,12 @@ failed:
   return NULL;
 }
 
+
+int
+sec_check_info (user_t * user, char *app_name, long pid, char *machine, char *os)
+{
+  return 1;
+}
 
 
 void
@@ -1390,7 +1396,7 @@ int sec_initialized = 0;
 
 /* if only_execute_gr flag passed then do only executable grants */
 caddr_t
-sec_read_grants (client_connection_t * cli, query_instance_t * caller_qi, index_space_t * isp,
+sec_read_grants (client_connection_t * cli, query_instance_t * caller_qi,
     char *table, int only_execute_gr)
 {
   dbe_schema_t * sc;

@@ -1931,6 +1931,24 @@ t_st_or (ST ** cond, ST * pred)
 }
 
 
+int
+st_equal_no_serial (box_t st1, box_t st2)
+{
+  /*compare but ignore serial nos for bin preds */
+  dtp_t dtp1 = DV_TYPE_OF (st1);
+  dtp_t dtp2 = DV_TYPE_OF (st2);
+  if (dtp1 == dtp2 && dtp1 == DV_ARRAY_OF_POINTER 
+      && BIN_EXP_P ((ST*) st1) 
+      && ((ST*) st1)->type == ((ST*)st2)->type)
+    {
+      return (box_equal ((box_t) ((ST*)st1)->_.bin_exp.left, (box_t)((ST*)st2)->_.bin_exp.left)
+	      && box_equal ((box_t) ((ST*)st1)->_.bin_exp.right, (box_t)((ST*)st2)->_.bin_exp.right));
+    }
+
+  return box_equal (st1, st2);
+}
+
+
 ST *
 sqlo_bop_expand_or (sqlo_t * so, ST * tree)
 {
@@ -1973,7 +1991,7 @@ sqlo_bop_expand_or (sqlo_t * so, ST * tree)
 		      and_elt->_.bin_exp.left = and_elt->_.bin_exp.right;
 		      and_elt->_.bin_exp.right = tmp;
 		    }
-		  if (box_equal ((box_t) and_elt, (box_t) first_and_elt))
+		  if (st_equal_no_serial ((box_t) and_elt, (box_t) first_and_elt))
 		    {
 		      have_it_here = 1;
 		      iter->data = first_and_elt;
@@ -2330,8 +2348,11 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 
 
 void
-sqlo_subq_convert_to_exists (sqlo_t * so, ST * tree)
+sqlo_subq_convert_to_exists (sqlo_t * so, ST ** tree_ret)
 {
+  ST * tree = *tree_ret;
+  ST * org_left = tree->_.subq.left;
+  ptrlong org_flags = tree->_.subq.flags;
   int to_negate = 0;
   switch (tree->type)
     {
@@ -2449,6 +2470,13 @@ sqlo_subq_convert_to_exists (sqlo_t * so, ST * tree)
 			  tree->type = BOP_NOT;
 			  tree->_.bin_exp.left = current;
 			}
+		    }
+		  /* the trick with not in and nulls.  If it was a not in, put not null (left) and not (exists ....) in the result */
+		  if (SUBQ_F_NOT_IN == org_flags)
+		    {
+		      ST * nn = t_listst (3, BOP_NOT, t_listst (3, BOP_NULL, org_left, NULL), NULL);
+		      ST * ne = t_listst (3, BOP_NOT, tree, NULL);
+		      *tree_ret = t_listst (4, BOP_AND, nn, ne, NULL);
 		    }
 		}
 	      else
@@ -2650,7 +2678,7 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	  sqlo_scope (so, &(tree->_.subq.left));
 	  sqlo_scope (so, &(tree->_.subq.subq));
  	  so->so_bin_op_is_negate = so_bin_op_is_negate;
-	  sqlo_subq_convert_to_exists (so, tree);
+	  sqlo_subq_convert_to_exists (so, ptree);
 	}
 
     }

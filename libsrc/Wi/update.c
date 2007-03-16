@@ -289,7 +289,7 @@ itc_insert_row_params (it_cursor_t * ins_itc, db_buf_t row)
   ins_itc->itc_row_key = ins_itc->itc_insert_key;
   ins_itc->itc_row_key_id = ins_itc->itc_row_key->key_id;
   ins_itc->itc_row_data = row + IE_FIRST_KEY;
-  ins_itc->itc_specs = KEY_INSERT_SPEC (ins_itc->itc_insert_key);
+  ins_itc->itc_key_spec = ins_itc->itc_insert_key->key_insert_spec;
   DO_SET (dbe_column_t *, col, &key->key_parts)
     {
       if (++inx > key->key_n_significant)
@@ -362,8 +362,8 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
       TRX_POISON (ins_itc -> itc_ltrx);
       sqlr_new_error ("42000", "SR249", "Ruling part too long on %s.", key->key_name);
     }
-  ins_itc->itc_specs = NULL;
   itc_from (ins_itc, key);
+  ins_itc->itc_key_spec = key->key_insert_spec;
   ins_itc->itc_no_bitmap = 1;
   itc_insert_row_params (ins_itc, key_image);
   if (key->key_is_bitmap)
@@ -385,30 +385,31 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
   int bytes_left;
   int ol, nl;
   db_buf_t page;
-  dbe_key_t * new_key = sch_id_to_key (wi_inst.wi_schema, SHORT_REF (new_image + IE_KEY_ID));
+  key_id_t key_id = SHORT_REF (new_image + IE_KEY_ID);
+  int is_leaf_ptr = (!key_id || KI_LEFT_DUMMY == key_id);
+  dbe_key_t * new_key = is_leaf_ptr ? itc->itc_insert_key : sch_id_to_key (wi_inst.wi_schema, key_id);
   if (!(*buf)->bd_is_write)
     GPF_T1 ("update w/o write access");
   pg_check_map (*buf);
-  if (!(*buf)->bd_is_dirty)
+  if (BUF_NEEDS_DELTA (*buf))
     {
-      ITC_IN_MAP (itc);
+      ITC_IN_KNOWN_MAP (itc, itc->itc_page);
   itc_delta_this_buffer (itc, *buf, DELTA_MAY_LEAVE);
-      ITC_LEAVE_MAP (itc);
+      ITC_LEAVE_MAP_NC (itc);
     }
-  if (ITC_IS_LTRX (itc)
-      && (itc->itc_ltrx && ((*buf)->bd_page != itc->itc_page || itc->itc_page != itc->itc_pl->pl_page)))
+  if (ITC_IS_LTRX (itc) && !is_leaf_ptr
+      && (((*buf)->bd_page != itc->itc_page || itc->itc_page != itc->itc_pl->pl_page)))
     GPF_T1 ("inconsistent pl_page, bd_page and itc_page in upd_refit_row");
   page = (*buf)->bd_buffer;
   ol = row_reserved_length (page + itc->itc_position, itc->itc_row_key);
   nl = row_length (new_image, new_key);
-  if (itc->itc_space == itc->itc_tree->it_commit_space
-      && !itc->itc_ltrx->lt_is_excl)
+  if (!is_leaf_ptr && !itc->itc_ltrx->lt_is_excl)
     {
       lt_rb_update (itc->itc_ltrx, page + itc->itc_position);
     }
   bytes_left = ROW_ALIGN (ol) - ROW_ALIGN (nl);
-  /* excl mode txn will always do delete+insert because it does not rely on commit to complete the op */
-  if (bytes_left >= 0 && (!itc->itc_ltrx || !itc->itc_ltrx->lt_is_excl))
+  /* excl mode txn will always do delete+insert because it does not rely on commit to complete the op.  Leaf pointers are done inside commit so these are also ins+del.  */
+  if (bytes_left >= 0 && (!itc->itc_ltrx || !itc->itc_ltrx->lt_is_excl) && !is_leaf_ptr)
     {
       int pos = itc->itc_position;
       int old_next = IE_NEXT (&page[pos + IE_NEXT_IE]);
@@ -425,8 +426,7 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
       pg_check_map (*buf);
       if (new_key->key_is_bitmap)
 	{
-	  ITC_IN_MAP (itc);
-	  itc_invalidate_bm_crs (itc);
+	  itc_invalidate_bm_crs (itc, *buf, 0, NULL);
 	}
       itc_page_leave (itc, *buf);
     }
@@ -434,7 +434,7 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
     {
       int prev_pos, insert_pos;
       int pos = itc->itc_position;
-      if ((*buf)->bd_content_map->pm_bytes_free >= nl - ol)
+      if ((*buf)->bd_content_map->pm_bytes_free >= nl - ol && !is_leaf_ptr)
 	{
 	  /* if the page will not split, there could be space enough between this row and the start of the physically next one. */ 
 	  int after = map_entry_after ((*buf)->bd_content_map, pos);
@@ -449,8 +449,7 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
 	      pg_check_map (*buf);
 	      if (new_key->key_is_bitmap)
 		{
-		  ITC_IN_MAP (itc);
-		  itc_invalidate_bm_crs (itc);
+		  itc_invalidate_bm_crs (itc, *buf, 0, NULL);
 		}
 	      itc_page_leave (itc, *buf);
 	      return;
@@ -473,7 +472,7 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
       (*buf)->bd_content_map->pm_bytes_free += ROW_ALIGN (ol);
 
       itc->itc_position = insert_pos;
-      if (ITC_IS_LTRX (itc))
+      if (!is_leaf_ptr && ITC_IS_LTRX (itc))
 	{
 	  rl = upd_refit_rlock (itc, pos);
 	  if  (!rl && !PL_IS_PAGE (itc->itc_pl))
@@ -483,8 +482,9 @@ upd_refit_row (it_cursor_t * itc, buffer_desc_t ** buf,
       itc->itc_row_key = new_key;
       itc->itc_row_key_id = new_key ? new_key->key_id : 0;
       pg_check_map (*buf);
-      itc_insert_dv (itc, buf, new_image, 0, rl);
-      ITC_LEAVE_MAP (itc);
+      itc_insert_dv (itc, buf, new_image, is_leaf_ptr, rl);
+      /* the recursive flag is is_leaf_ptr. This is set when changes leaf ptrs inside transact. Means the call will not bust and assumes the reserve is already held.  */
+      ITC_LEAVE_MAPS (itc);
     }
 }
 
@@ -496,14 +496,13 @@ update_quick (update_node_t * upd, caddr_t * qst, it_cursor_t * cr_itc, buffer_d
 	      db_buf_t image, caddr_t * err_ret)
 {
   int inx;
-  lt_rb_update (cr_itc->itc_ltrx, cr_buf->bd_buffer + cr_itc->itc_position);
-  if (!cr_buf->bd_is_dirty)
+  if (BUF_NEEDS_DELTA (cr_buf))
     {
   ITC_FAIL (cr_itc)
     {
-      ITC_IN_MAP (cr_itc);
+	  ITC_IN_KNOWN_MAP (cr_itc, cr_buf->bd_page);
       itc_delta_this_buffer (cr_itc, cr_buf, DELTA_MAY_LEAVE);
-	  ITC_LEAVE_MAP (cr_itc);
+	  ITC_LEAVE_MAP_NC (cr_itc);
     }
   ITC_FAILED
     {
@@ -511,7 +510,7 @@ update_quick (update_node_t * upd, caddr_t * qst, it_cursor_t * cr_itc, buffer_d
     }
   END_FAIL (cr_itc);
     }
-
+  lt_rb_update (cr_itc->itc_ltrx, cr_buf->bd_buffer + cr_itc->itc_position);
 
   DO_BOX (dbe_col_loc_t *, cl, inx, upd->upd_fixed_cl)
     {
@@ -582,7 +581,7 @@ update_node_run (update_node_t * upd, caddr_t * inst,
       if (pl->itc_owns_page != cr_itc->itc_page || pl->itc_lock_mode != PL_EXCLUSIVE)
 #endif
 	{
-	  cr_itc->itc_insert_key = pl->itc_space->isp_tree->it_key; /* for debug info */
+	  cr_itc->itc_insert_key = pl->itc_tree->it_key; /* for debug info */
 	  itc_set_lock_on_row (cr_itc, (buffer_desc_t **)&cr_buf);
 	  if (!cr_itc->itc_is_on_row)
 	  {
@@ -635,7 +634,7 @@ update_node_run (update_node_t * upd, caddr_t * inst,
 	ITC_INIT (main_itc, QI_SPACE (inst), QI_TRX (inst));
 	main_itc->itc_lock_mode = PL_EXCLUSIVE;
 
-	ITC_LEAVE_MAP (cr_itc);
+	ITC_LEAVE_MAPS (cr_itc);
 	ITC_FAIL (main_itc)
 	{
 	  res = itc_get_alt_key (cr_itc, main_itc, NULL, &main_buf,
@@ -674,7 +673,7 @@ update_node_run (update_node_t * upd, caddr_t * inst,
 
     if ((new_key = tb->tb_primary_key->key_migrate_to))
       {
-	dbe_key_t *new_prim = sch_id_to_key (isp_schema (main_itc->itc_space), new_key);
+	dbe_key_t *new_prim = sch_id_to_key (isp_schema (NULL), new_key);
 	if (new_prim)
 	  new_tb = new_prim->key_table;
       }
@@ -684,14 +683,17 @@ update_node_run (update_node_t * upd, caddr_t * inst,
  update MYTABLE set LONG_XML_COL = LONG_VARCHAR_XML_COL;
  because conversion may read blob by blob_to_string() and its itc will enter map.
   */
-    ITC_LEAVE_MAP (main_itc);
+    ITC_LEAVE_MAPS (main_itc);
 #ifdef MTX_DEBUG
   if (main_buf->bd_writer != THREAD_CURRENT_THREAD)
     GPF_T1 ("Must have write on buffer to check it");
 #endif
 
+  /* blob ops in recompose row will use the itc to enter blobs and lose the pl.  Safe to save like this since the main_buf is never left in the process */
+  mtx_assert (main_itc->itc_pl == main_buf->bd_pl);
     keys = upd_recompose_row (state, upd, tb, new_tb, new_image, &image[main_itc->itc_position + IE_FIRST_KEY],
 			      main_itc, &row_err, &any_blob, cr_key);
+  main_itc->itc_pl =main_buf->bd_pl;
     if (row_err)
       {
 	itc_page_leave (main_itc, main_buf);
@@ -725,7 +727,6 @@ update_node_run (update_node_t * upd, caddr_t * inst,
 	  itc_delete_this (main_itc, &main_buf, DVC_MATCH, NO_BLOBS);	/* blobs handled separately */
 
 	  keys = tb->tb_keys;
-	  main_itc->itc_specs = NULL;
 	  itc_row_insert_1 (main_itc, &new_image[0], NULL, 1, 1);
 	}
       else
@@ -942,17 +943,15 @@ row_insert_node_input (row_insert_node_t * ins, caddr_t * inst,
 	  {
 	  case INS_NORMAL:
 	    itc_page_leave (it, buf);
-	    ITC_LEAVE_MAP (it);
 	    itc_free (it);
 	    sqlr_new_error ("23000", "SR261", "Non unique primary key.");
 	  case INS_SOFT:
 	    itc_page_leave (it, buf);
-	    ITC_LEAVE_MAP (it);
 	    break;
 	  case INS_REPLACING:
 	    {
 	      dbe_key_t *key =
-	      sch_id_to_key (isp_schema (it->itc_space),
+	      sch_id_to_key (isp_schema (NULL),
 		   (key_id_t) SHORT_REF (row + IE_KEY_ID));
 	      itc_replace_row (it, buf, row, key, state);
 	      log_insert (it->itc_ltrx, key, row, ins->rins_mode);
@@ -1017,7 +1016,7 @@ itc_replace_row (it_cursor_t * main_itc, buffer_desc_t * main_buf, db_buf_t new_
     return REPLACE_RETRY;
 
   itc_copy_row (main_itc, main_buf, image);
-  ITC_LEAVE_MAP (main_itc);
+  ITC_LEAVE_MAPS (main_itc);
   {
     buffer_desc_t *del_buf;
     dbe_table_t *tb = old_key->key_table;
@@ -1027,7 +1026,8 @@ itc_replace_row (it_cursor_t * main_itc, buffer_desc_t * main_buf, db_buf_t new_
     itc_delete (main_itc, &main_buf, MAYBE_BLOBS);
     itc_page_leave (main_itc, main_buf);
     main_itc->itc_position = save_pos;
-    del_itc = itc_create (main_itc->itc_space, main_itc->itc_ltrx);
+    del_itc = itc_create (NULL
+, main_itc->itc_ltrx);
     del_itc->itc_lock_mode = PL_EXCLUSIVE;
     ITC_FAIL (del_itc)
       {
@@ -1122,7 +1122,7 @@ start:
 	ITC_INIT (main_itc, QI_SPACE (inst), QI_TRX (inst));
 	main_itc->itc_lock_mode = PL_EXCLUSIVE;
 
-	ITC_LEAVE_MAP (cr_itc);
+	ITC_LEAVE_MAPS (cr_itc);
 	ITC_FAIL (main_itc)
 	{
 	  res = itc_get_alt_key (cr_itc, main_itc, NULL, &main_buf,

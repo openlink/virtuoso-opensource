@@ -662,7 +662,10 @@ yy_new_error (const char *s, const char *state, const char *native)
     if (scn3_lineno != this_lineno)
       strcpy (buf_for_next, " immediately before end of line");
     else
+      {
       snprintf (buf_for_next, sizeof (buf_for_next), " before '%s'", yytext);
+	buf_for_next [sizeof (buf_for_next) - 1] = 0;
+      }
   else
     strcpy (buf_for_next, " immediately before end of statement");
   strcat_ck (sql_err_text, buf_for_next);

@@ -100,6 +100,7 @@ typedef struct
 int virtuoso_cfg_getstring (char *section, char *key, char **pret);
 void build_set_special_server_model (const char *new_model);
 
+typedef void (*exit_hook_t) (void);
 void VirtuosoServerSetInitHook (void (*hook) (void));
 exit_hook_t VirtuosoServerSetExitHook (exit_hook_t exitf);
 int VirtuosoServerMain (int argc, char **argv);

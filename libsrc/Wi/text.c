@@ -1079,6 +1079,13 @@ struct wst_search_specs_s
   search_spec_t wst_range_spec[1];
   search_spec_t wst_next_spec[2];
   search_spec_t wst_next_d_id_spec[2];
+
+  key_spec_t	wst_ks_init;
+  key_spec_t	wst_ks_seek;
+  key_spec_t	wst_ks_seek_asc_seq;
+  key_spec_t	wst_ks_range;
+  key_spec_t	wst_ks_next;
+  key_spec_t	wst_ks_next_d_id;
 };
 
 typedef struct wst_search_specs_s wst_search_specs_t;
@@ -1129,6 +1136,18 @@ wst_get_specs (dbe_key_t *key)
   ss = res->wst_next_d_id_spec;		SS_ASSIGN(word_cl[0]	,CMP_EQ	,+0	,0	,0	);
 
   res->wst_specs_are_initialized = 1;
+
+#define WST_KSP(name) \
+  res->wst_ks_##name .ksp_spec_array = &res->wst_##name##_spec[0]; \
+  ksp_cmp_func (&res->wst_ks_##name); 
+
+  WST_KSP (init);
+  WST_KSP (seek);
+  WST_KSP (seek_asc_seq);
+  WST_KSP (range);
+  WST_KSP (next);
+  WST_KSP (next_d_id);
+
   mutex_leave (wst_get_specs_mtx);
 
   return res;
@@ -1164,14 +1183,14 @@ wst_random_seek (word_stream_t * wst)
   if (D_INITIAL (&target))
     {
       spec_is_seek = 0;
-      itc->itc_specs = specs->wst_init_spec;
+      itc->itc_key_spec = specs->wst_ks_init;
       itc->itc_desc_order = wst->sst_is_desc;
     }
   else
     {
       tft_random_seek++;
       spec_is_seek = 1;
-      itc->itc_specs = specs->wst_seek_spec;
+      itc->itc_key_spec = specs->wst_ks_seek;
       itc->itc_desc_order = 1;
     }
   dk_free_box (wst->wst_seek_target_box);
@@ -1195,7 +1214,7 @@ wst_random_seek (word_stream_t * wst)
 	}
       itc->itc_desc_order = wst->sst_is_desc;
       if (spec_is_seek && !itc->itc_desc_order)
-	itc->itc_specs = specs->wst_seek_asc_seq_spec;
+	itc->itc_key_spec = specs->wst_ks_seek_asc_seq;
       itc->itc_wst = wst;
       itc->itc_is_on_row = 0;
       rc = itc_next (itc, &buf);
@@ -1207,8 +1226,7 @@ wst_random_seek (word_stream_t * wst)
 	  D_SET_AT_END (&wst->sst_d_id);
 	  return DVC_GREATER;
 	}
-      ITC_IN_MAP (itc);
-      itc_register_cursor (itc, INSIDE_MAP);
+      itc_register (itc, buf);
       itc_page_leave (itc, buf);
       wst->wst_itc = itc;
       return DVC_MATCH;
@@ -1312,7 +1330,7 @@ wst_range_itc (sst_tctx_t *tctx, const char * word, caddr_t *lower, caddr_t high
   TEXT_ITC_INIT (itc, qi);
   itc_from (itc, tctx->tctx_table->tb_primary_key);
   specs = wst_get_specs(itc->itc_row_key);
-  itc->itc_specs = specs->wst_range_spec;
+  itc->itc_key_spec = specs->wst_ks_range;
   lower_offs = (int) itc->itc_search_par_fill; /* Ensure the offset of lower limit */
   ITC_SEARCH_PARAM (itc, lcopy);
   ITC_SEARCH_PARAM (itc, higher);
@@ -1336,8 +1354,7 @@ wst_range_itc (sst_tctx_t *tctx, const char * word, caddr_t *lower, caddr_t high
 	  if (DVC_MATCH == cmp_like (hit, word, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	    {
 	      *lower = hit;
-	      ITC_IN_MAP (itc);
-	      itc_register_cursor (itc, INSIDE_MAP);
+	      itc_register (itc, buf);
 	      itc_page_leave (itc, buf);
 	      return itc;
 	    }
@@ -1392,11 +1409,11 @@ bif_vt_words_next_d_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!cr_ssl)
     sqlr_new_error ("09000", "FT040", "No cursor for vt_words_next_d_id");
   pl = (placeholder_t *) qst_get (qst, cr_ssl);
-  if (!pl || !pl->itc_space_registered)
+  if (!pl || !pl->itc_is_registered)
     sqlr_new_error ("24000", "FT004", "cursor in vt_words_next_d_id is not open or not on row");
   itc_from (itc, tb->tb_primary_key);
   specs = wst_get_specs (itc->itc_row_key);
-  itc->itc_specs = specs->wst_next_d_id_spec;
+  itc->itc_key_spec = specs->wst_ks_next_d_id;
   ITC_SEARCH_PARAM (itc, word);
   ITC_FAIL (itc)
     {
@@ -1440,8 +1457,7 @@ wst_seq_seek (word_stream_t * wst)
 	  itc_page_leave (itc, buf);
 	  return (wst_random_seek (wst));
 	}
-      ITC_IN_MAP (itc);
-	itc_register_cursor (itc, INSIDE_MAP);
+      itc_register (itc, buf);
       itc_page_leave (itc, buf);
     }
   ITC_FAILED
@@ -2075,7 +2091,7 @@ sst_freq_factor (search_stream_t * sst)
   /* decrease the score if hits are sparse relative to document length.
    * last hit position is considered as length; 16 added then to adjust weights for very short documents */
   int last;
-  if (0 == sst->sst_all_ranges)
+  if (0 == sst->sst_all_ranges || !sst->sst_all_ranges_fill)
     last = 16;
   else
     last = (int) sst->sst_all_ranges[sst->sst_all_ranges_fill-1].r_end + 16;

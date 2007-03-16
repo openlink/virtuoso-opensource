@@ -252,25 +252,23 @@ setp_filled (setp_node_t * setp, caddr_t * qst)
 #ifdef NEW_HASH
       bp_ref_itc = (it_cursor_t *) QST_GET_V (qst, ha->ha_bp_ref_itc);
 #endif
-      IN_PAGE_MAP (it);
       if (ins_itc && ins_itc->itc_hash_buf)
 	{
-	  page_leave_inner (ins_itc->itc_hash_buf);
+	  page_leave_outside_map (ins_itc->itc_hash_buf);
 	  ins_itc->itc_hash_buf = NULL;
 	}
       if (ref_itc && ref_itc->itc_buf)
 	{
-	  page_leave_inner (ref_itc->itc_buf);
+	  page_leave_outside_map (ref_itc->itc_buf);
 	  ref_itc->itc_buf = NULL;
 	}
 #ifdef NEW_HASH
       if (bp_ref_itc && bp_ref_itc->itc_buf)
 	{
-	  page_leave_inner (bp_ref_itc->itc_buf);
+	  page_leave_outside_map (bp_ref_itc->itc_buf);
 	  bp_ref_itc->itc_buf = NULL;
 	}
 #endif
-      LEAVE_PAGE_MAP (it);
 
     }
 }
