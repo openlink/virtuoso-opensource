@@ -76,6 +76,7 @@ typedef struct ws_http_map_s
     int		hm_xml_template;
     int		hm_executable;
     caddr_t 	hm_htkey;
+    caddr_t     hm_url_rewrite_rule;
   } ws_http_map_t;
 #endif
 
@@ -121,6 +122,9 @@ typedef struct ws_connection_s
     wcharset_t *	ws_charset;
     int			ws_ignore_disconnect;
     caddr_t 		ws_store_in_cache;     /* the url to be cached */
+#ifdef _SSL    
+    SSL_CTX *		ws_ssl_ctx;
+#endif    
   } ws_connection_t;
 
 #define WS_CHARSET(ws, qst) \

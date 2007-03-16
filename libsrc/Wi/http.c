@@ -41,17 +41,11 @@
 #include "sqlbif.h"
 #include "xml.h"
 #include "libutil.h"
-#ifndef NO_OPLKIT
-#endif
 #include "security.h"
 #include "statuslog.h"
 #include "wifn.h"
 #include "sqltype.h"
 #include "datesupp.h"
-
-#ifdef NO_OPLKIT
-#define DEFAULT_MAX_CONNECTIONS 100
-#endif
 
 #ifdef BIF_XML
 #include "sqlpar.h"
@@ -85,6 +79,10 @@
 #define XML_VERSION		"1.0"
 
 #define DKS_CLEAR_DEFAULT_READ_READY_ACTION(ses) SESSION_SCH_DATA (ses)->sio_default_read_ready_action = NULL
+
+#ifndef WIN32
+#define closesocket close
+#endif
 
 resource_t *ws_dbcs;
 basket_t ws_queue;
@@ -1402,6 +1400,9 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   ws->ws_ignore_disconnect = 0;
   dk_free_tree (ws->ws_store_in_cache);
   ws->ws_store_in_cache = NULL;
+#ifdef _SSL
+  ws->ws_ssl_ctx = NULL;
+#endif  
 }
 
 char http_server_id_string_buf [1024];
@@ -2429,6 +2430,71 @@ err_end:
   return 1;
 }
 
+/*##**********************************************************
+* This calls the URL rewrite PL/SQL function
+* TODO: txn state check possibly need to retry
+*************************************************************/
+void
+ws_url_rewrite (ws_connection_t *ws)
+{
+#ifdef VIRTUAL_DIR
+  static query_t * url_rewrite_qr = NULL;
+  client_connection_t * cli = ws->ws_cli;
+  query_t * proc;
+  caddr_t err = NULL;
+  int rc = LTE_OK;
+  local_cursor_t * lc = NULL;
+
+  if (!ws || !ws->ws_map || !ws->ws_map->hm_url_rewrite_rule)
+    return;
+
+  if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_URLREWRITE", NULL, "dba", 0)))
+    {
+      err = srv_make_new_error ("42000", "HT058", "The authentication procedure DB.DBA.HTTP_URLREWRITE does not exists");
+      goto error_end;
+    }
+  if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
+    {
+      err = srv_make_new_error ("42000", "HT059", "The authentication procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
+      goto error_end;
+    }
+  if (proc->qr_to_recompile)
+    {
+      proc = qr_recompile (proc, &err);
+      if (err)
+	goto error_end;
+    }
+  if (!url_rewrite_qr)
+    url_rewrite_qr = sql_compile ("DB.DBA.HTTP_URLREWRITE (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+
+  ws->ws_cli->cli_http_ses = ws->ws_strses;
+  ws->ws_cli->cli_ws = ws;
+
+  IN_TXN;
+  lt_threads_set_inner (cli->cli_trx, 1);
+  LEAVE_TXN;
+
+  err = qr_quick_exec (url_rewrite_qr, cli, NULL, &lc, 3,
+      ":0", ws->ws_path_string, QRP_STR,
+      ":1", ws->ws_map->hm_url_rewrite_rule, QRP_STR,
+      ":2", box_copy_tree (ws->ws_params), QRP_RAW
+      );
+
+  IN_TXN;
+  if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
+    lt_rollback (cli->cli_trx, TRX_CONT);
+  else
+    rc = lt_commit (cli->cli_trx, TRX_CONT);
+  lt_threads_set_inner (cli->cli_trx, 0);
+  LEAVE_TXN;
+
+error_end:
+  if (err)
+    dk_free_tree (err);
+  if (lc)
+    lc_free (lc);
+#endif
+}
 
 /*##**********************************************************
 * Check if PL/SQL authentication function supplied
@@ -3295,6 +3361,7 @@ ws_read_req (ws_connection_t * ws)
 	}
       ws->ws_lines = (caddr_t*) list_to_array (dk_set_nreverse (lines));
       ws_path_and_params (ws);
+      ws_url_rewrite (ws);
 #ifdef _IMSG
 	}
 #endif
@@ -3361,12 +3428,43 @@ ws_serve_connection (ws_connection_t * ws)
 {
   int n_consec = 0;
   int try_pipeline;
-  dk_session_t * ses = ws->ws_session;
+  dk_session_t * volatile ses = ws->ws_session;
+
+#ifdef _SSL  
+  if (ws->ws_ssl_ctx)
+    {
+      SSL_CTX * ssl_ctx = ws->ws_ssl_ctx;
+      int dst = 0;
+      int ssl_err = 0;
+      timeout_t to = {100, 0};
+      SSL * new_ssl = NULL;
+
+      if (NULL != tcpses_get_ssl (ses->dks_session))
+	SSL_free ((SSL *) tcpses_get_ssl (ses->dks_session));
+      to = ses->dks_read_block_timeout;
+      session_set_control (ses->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
+      dst = tcpses_get_fd (ses->dks_session);
+      new_ssl = SSL_new (ssl_ctx);
+      SSL_set_fd (new_ssl, dst);
+      ssl_err = SSL_accept (new_ssl);
+      if (ssl_err == -1)
+	{
+	  ERR_print_errors_fp (stderr);
+	  SSL_free (new_ssl);
+	  ses->dks_ws_status = DKS_WS_DISCONNECTED;
+	  goto check_state;
+	}
+      else
+        tcpses_to_sslses (ses->dks_session, (void *)(new_ssl));
+    }
+#endif  
+
  next_input:
   ws->ws_cli->cli_http_ses = ws->ws_session;
   ws_read_req (ws);
   try_pipeline = ws_can_try_pipeline (ws);
 
+check_state:
   mutex_enter (ws_queue_mtx);
   if (ses->dks_to_close)
     {
@@ -3488,20 +3586,7 @@ ws_inet_session_init (dk_session_t * accept, ws_connection_t * ws)
   SSL_CTX * ssl_ctx = (SSL_CTX *)tcpses_get_sslctx (accept->dks_session);
 
   if (ssl_ctx) /* We got a HTTPS connection, let do ssl_accept */
-    {
-      int dst = 0;
-      int ssl_err = 0;
-      SSL * new_ssl = NULL;
-      if (NULL != tcpses_get_ssl (ws->ws_session->dks_session))
-	SSL_free ((SSL *) tcpses_get_ssl (ws->ws_session->dks_session));
-      dst = tcpses_get_fd (ws->ws_session->dks_session);
-      new_ssl = SSL_new (ssl_ctx);
-      SSL_set_fd (new_ssl, dst);
-      ssl_err = SSL_accept (new_ssl);
-      if (ssl_err == -1)
-	ERR_print_errors_fp (stderr);
-      tcpses_to_sslses (ws->ws_session->dks_session, (void *)(new_ssl));
-    }
+    ws->ws_ssl_ctx = ssl_ctx; /* we record the ssl ctx only, will do SSL_accept further */
   else if (NULL != tcpses_get_ssl (ws->ws_session->dks_session)) /* HTTP mode , hence clear R/W hooks */
     sslses_to_tcpses (ws->ws_session->dks_session);
 #endif
@@ -3882,6 +3967,56 @@ http_session_no_catch_arg (caddr_t * qst, state_slot_t ** args, int nth,
       res = qi->qi_client->cli_http_ses;
     }
   return res;
+}
+
+
+caddr_t
+http_path_to_array (char * path, int mode)
+{
+  int n_fill, inx;
+  unsigned char ch;
+  char name [PATH_ELT_MAX_CHARS];
+  dk_set_t paths = NULL;
+  inx = 0;
+  n_fill = 0;
+  if (!path)
+    return NULL;
+  for (;;)
+    {
+      ch = path [inx++];
+      if (n_fill > sizeof (name) - 3)
+	break;
+      if ((0 == ch || ' ' == ch || '\n' == ch || '\r' == ch || '\t' == ch
+	  || ch == '?') && mode == 0)
+	break;
+      if (0 == ch  && mode == 1)
+	break;
+      if (ch == '/')
+	{
+	  if (n_fill > 1 || (n_fill == 1 && name[0] != '.'))
+	    {
+	      dk_set_push (&paths, (void*) box_line (name, n_fill));
+	      n_fill = 0;
+	    }
+	}
+      else if (ch == '%')
+	{
+	  name[n_fill++] = char_hex_digit (path [inx + 0]) * 16
+	    + char_hex_digit (path [inx + 1]);
+	  inx += 2;
+	}
+      else
+	{
+	  name[n_fill++] = ch;
+	}
+    }
+  if (n_fill > 1 || (n_fill == 1 && name[0] != '.'))
+    dk_set_push (&paths, box_line (name, n_fill));
+
+  if (paths)
+    return list_to_array (dk_set_nreverse (paths));
+  else
+    return NULL;
 }
 
 
@@ -4274,21 +4409,34 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   query_instance_t * qi = (query_instance_t *) qst;
   caddr_t new_path = bif_string_arg (qst, args, 0, "http_internal_redirect");
   caddr_t new_phy_path = NULL;
+  caddr_t * parr;
+  ws_connection_t * ws = qi->qi_client->cli_ws;
 
-  if(NULL==qi->qi_client->cli_http_ses)
+  if (NULL == ws)
     sqlr_new_error ("42000", "HT067",
 	"http_internal_redirect() function allowed only inside HTTP request");
-  dk_free_tree (qi->qi_client->cli_ws->ws_path_string);
-  qi->qi_client->cli_ws->ws_path_string = box_copy (new_path);
+
+  ws = qi->qi_client->cli_ws;
+
+  dk_free_tree (ws->ws_path_string);
+  dk_free_tree (ws->ws_path);
+  ws->ws_path_string = box_copy (new_path);
+  parr = (caddr_t *) http_path_to_array (new_path, 1);
+  ws->ws_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
 
   if (BOX_ELEMENTS (args) > 1)
     new_phy_path = bif_string_or_null_arg (qst, args, 1, "http_internal_redirect");
 
+#ifdef VIRTUAL_DIR
   if (new_phy_path != NULL)
     {
-      dk_free_tree (qi->qi_client->cli_ws->ws_p_path_string);
-      qi->qi_client->cli_ws->ws_p_path_string = box_copy (new_phy_path);
+      dk_free_tree (ws->ws_p_path_string);
+      dk_free_tree (ws->ws_p_path);
+      ws->ws_p_path_string = box_copy (new_phy_path);
+      parr = (caddr_t *) http_path_to_array (new_phy_path, 1);
+      ws->ws_p_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
     }
+#endif  
   
   return (caddr_t) NULL;
 }
@@ -4990,6 +5138,7 @@ http_connect (char * uri, caddr_t * err_ret, caddr_t ** head_ret, caddr_t method
   char * slash, * http_pos, *content_type;
   timeout_t timeout;
   char len_fld [128];
+  char ua_fld [128];
   timeout.to_sec = 10;
   timeout.to_usec = 0;
   *err_ret = NULL;
@@ -5033,9 +5182,14 @@ http_connect (char * uri, caddr_t * err_ret, caddr_t ** head_ret, caddr_t method
   if (header && strlen(header) < 1)
     header = NULL;
 
+  if (header != NULL && NULL == nc_strstr ((unsigned char *) header, (unsigned char *) "User-Agent:"))
+    snprintf (ua_fld, sizeof (ua_fld), "User-Agent: %s\r\n", http_client_id_string);
+  else
+    strcpy_ck (ua_fld, "");
+
 snprintf (req, sizeof (req), "%s %s HTTP/1.1\r\n"
 	      "Host: %s\r\n"
-	      "User-Agent: %s\r\n"
+	      "%s"
 #ifndef _USE_CACHED_SES
 	      "Connection: close\r\n"
 #else
@@ -5047,7 +5201,7 @@ snprintf (req, sizeof (req), "%s %s HTTP/1.1\r\n"
 	      ((method != NULL) ? method : "GET"),
 	      (slash && *slash != 0) ? slash : "/",
 	      host,
-	      http_client_id_string,
+	      ua_fld,
 	      ((header != NULL) ? header : ""), ((header != NULL) ? "\r\n" : ""),
 	      content_type,
 	      len_fld);
@@ -5765,7 +5919,6 @@ bif_ses_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t volatile res;
   dk_session_t * volatile ses;
   int volatile error = 0;
-  query_instance_t *qi = (query_instance_t *) qst;
   long n;
 
   ses = http_session_arg (qst, args, 0, "ses_read");
@@ -5853,6 +6006,24 @@ bif_http_param (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_http_set_params (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  char * pars = bif_arg (qst, args, 0, "http_set_params");
+  if (qi->qi_client->cli_ws)
+    {
+      int n_pars;
+      if (!ARRAYP (pars))
+	sqlr_new_error ("22023", "HTXXX", "An array is expected as parameter");
+      n_pars = BOX_ELEMENTS (pars);
+      if (0 != (n_pars % 2))
+	sqlr_new_error ("22023", "HTXXX", "A name value pairs are expected as parameter");
+      dk_free_tree (qi->qi_client->cli_ws->ws_params);
+      qi->qi_client->cli_ws->ws_params = box_copy_tree (pars);
+    }
+  return NULL;
+}
 
 static void
 ws_make_chunked (query_instance_t *qi, ws_connection_t *ws)
@@ -6373,9 +6544,6 @@ static char *ws_get_ftext =
 "    return concat ('__http_handler_', substring (p1, dot + 2, length (p1)));\n"
 "}";
 
-#ifndef WIN32
-#define closesocket close
-#endif
 
 caddr_t *
 box_tcpip_localhost_names (void)
@@ -6650,6 +6818,8 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		map->hm_xml_template = 1;
 	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"executable"))
 		map->hm_executable = 1;
+	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"url_rewrite"))
+		map->hm_url_rewrite_rule = box_copy_tree (opts[i+1]);
 	    }
 	  map->hm_opts = (caddr_t *) box_copy_tree ((box_t) opts);
 	}
@@ -6877,6 +7047,11 @@ bif_http_listen_host (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t *listening = NULL;
   int rc = 0;
   sec_check_dba ((query_instance_t *) qst, "http_listen_host"); /* listen hosts MUST be manipulated only by DBA */
+
+  /* it's probably a vhost_define call during startup */
+  if (!virtuoso_server_initialized)
+    return box_num (-1);
+
 #if 0
     {
       id_hash_iterator_t it;
@@ -6931,55 +7106,6 @@ bif_http_listen_host (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
     }
   return (box_num (rc));
-}
-
-caddr_t
-http_path_to_array (char * path, int mode)
-{
-  int n_fill, inx;
-  unsigned char ch;
-  char name [PATH_ELT_MAX_CHARS];
-  dk_set_t paths = NULL;
-  inx = 0;
-  n_fill = 0;
-  if (!path)
-    return NULL;
-  for (;;)
-    {
-      ch = path [inx++];
-      if (n_fill > sizeof (name) - 3)
-	break;
-      if ((0 == ch || ' ' == ch || '\n' == ch || '\r' == ch || '\t' == ch
-	  || ch == '?') && mode == 0)
-	break;
-      if (0 == ch  && mode == 1)
-	break;
-      if (ch == '/')
-	{
-	  if (n_fill > 1 || (n_fill == 1 && name[0] != '.'))
-	    {
-	      dk_set_push (&paths, (void*) box_line (name, n_fill));
-	      n_fill = 0;
-	    }
-	}
-      else if (ch == '%')
-	{
-	  name[n_fill++] = char_hex_digit (path [inx + 0]) * 16
-	    + char_hex_digit (path [inx + 1]);
-	  inx += 2;
-	}
-      else
-	{
-	  name[n_fill++] = ch;
-	}
-    }
-  if (n_fill > 1 || (n_fill == 1 && name[0] != '.'))
-    dk_set_push (&paths, box_line (name, n_fill));
-
-  if (paths)
-    return list_to_array (dk_set_nreverse (paths));
-  else
-    return NULL;
 }
 
 /* IvAn/DkAllocBoxZero/010107 Runaway fixed (strcat with garbage in 1st argument) */
@@ -7340,6 +7466,8 @@ bif_http_map_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     res = box_num (map->hm_is_dav);
   else if (!strcmp (member, "executable"))
     res = box_num (map->hm_executable);
+  else if (!strcmp (member, "url_rewrite"))
+    res = box_copy_tree ((box_t) map->hm_url_rewrite_rule);
   return res;
 }
 
@@ -8588,6 +8716,7 @@ http_init_part_one ()
   bif_define ("http_kill", bif_http_kill);
   bif_define ("http_request_header", bif_http_request_header);
   bif_define_typed ("http_param", bif_http_param, &bt_any);
+  bif_define_typed ("http_set_params", bif_http_set_params, &bt_any);
   bif_define_typed ("http_body_read", bif_http_body_read, &bt_any);
   bif_define_typed ("__http_stream_params", bif_http_stream_params, &bt_any);
   bif_define_typed ("is_http_ctx", bif_is_http_ctx, &bt_any);
@@ -8708,7 +8837,6 @@ http_threads_allocate (int n_threads)
 int
 http_init_part_two ()
 {
-  int inx;
   dk_session_t *listening;
 #ifdef _SSL
   dk_session_t *ssl_listen = NULL;
@@ -8725,7 +8853,6 @@ http_init_part_two ()
   /* Do not override user defined default procedure */
   if (!sch_proc_def (wi_inst.wi_schema, ws_def_2_name))
     ddl_std_proc (ws_def_2, 1);
-  /* another license check */
 
   if (!local_interfaces)
     local_interfaces = box_tpcip_get_interfaces ();
