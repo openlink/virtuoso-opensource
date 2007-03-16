@@ -670,12 +670,12 @@ void aps_unlock_array (ap_set_t **sets, int set_count, int free_array)
 #endif
       rwlock_unlock (set->aps_rwlock);
 #ifdef DEBUG
-      dbg_printf (("Phrase set %s (%d): %d probes, %d bit misses, %d bit hits, %d tbl misses %d tbl hits\n",
+      dbg_printf (("Phrase set %s (%ld): %ld probes, %ld bit misses, %ld bit hits, %ld tbl misses %ld tbl hits\n",
           set->aps_name, set->aps_id,
           set->aps_probes, set->aps_probes - set->aps_bit_hits, set->aps_bit_hits,
           set->aps_bit_hits - set->aps_real_hits,  set->aps_real_hits ));
       density = (double)(set->aps_size) / (double)(set->aps_bitarrays.apb_bufsize * 8);
-      dbg_printf (("%d phrases in %d bits (%d scale) might give %d bit hits on %d probes\n",
+      dbg_printf (("%ld phrases in %d bits (%d scale) might give %d bit hits on %ld probes\n",
           set->aps_size, set->aps_bitarrays.apb_bufsize * 16, set->aps_bitarrays.apb_scale,
 	  (int)((double)(set->aps_probes) * density * density), set->aps_probes ));
 #endif
