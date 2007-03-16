@@ -31,7 +31,7 @@
 #define IN_LIBUTIL
 #endif
 
-#include <libutil.h>
+#include "libutil.h"
 #include "sqlver.h"
 #include "wi.h"
 #ifdef _RENDEZVOUS
