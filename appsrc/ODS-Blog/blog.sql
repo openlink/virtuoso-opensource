@@ -574,6 +574,8 @@ blog2_add_col('BLOG.DBA.SYS_BLOG_CHANNELS', 'BC_SHARED', 'int')
 blog2_add_col('BLOG.DBA.SYS_BLOG_CHANNELS', 'BC_REL', 'varchar')
 ;
 
+blog2_exec_no_error ('create index SYS_BLOG_CHANNELS_I1 on SYS_BLOG_CHANNELS (BC_BLOG_ID, BC_CAT_ID)');
+
 
 blog2_exec_no_error ('create table SYS_BLOG_CHANNEL_CATEGORY (
   BCC_ID integer identity,

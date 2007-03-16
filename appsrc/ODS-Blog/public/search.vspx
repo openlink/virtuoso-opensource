@@ -22,17 +22,22 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<html>
-  <head>
-    <title>Weblogs Advanced Search</title>
-    <link rel="stylesheet" type="text/css" href="/weblog/public/css/default.css"/>
-  </head>
   <v:page name="main"
       xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
       style="/DAV/VAD/blog2/widgets/main.xsl"
       xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
       xmlns:ods="http://www.openlinksw.com/vspx/ods/"
       >
+<html>
+  <head>
+    <title>Weblogs Advanced Search</title>
+    <link rel="stylesheet" type="text/css" href="/weblog/public/css/default.css"/>
+    <?vsp if (length (self.ds_data)) { ?>
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="<?V self.qurl ?>xml" />
+    <link rel="alternate" type="application/atom+xml" title="Atom" href="<?V self.qurl ?>atom" />
+    <link rel="meta" title="RDF" type="application/rdf+xml" href="<?V self.qurl ?>rdf" />
+    <?vsp } ?>
+  </head>
     <v:variable name="blogid" type="varchar" default="null" param-name="blogid"/>
     <v:variable name="title" type="varchar" default="''"/>
     <v:variable name="copy" type="varchar" default="''"/>
@@ -299,12 +304,12 @@
 		   self.vc_error_message := 'Invalid keyword string entered';
 		   return;
 		};
-	        vt_parse ('[__lang \'x-any\' __enc \'UTF-8\'] ' || str);
+	        vt_parse ('[__lang \'x-ViDoc\' __enc \'UTF-8\'] ' || str);
 	      }
 	      ftcond := ' and contains (B_CONTENT, ?) ';
 	      pars := vector_concat (pars, vector (
 	      concat (
-	      		'[__lang \'x-any\' __enc \'UTF-8\'] ',
+	      		'[__lang \'x-ViDoc\' __enc \'UTF-8\'] ',
 			str)
 		     ));
 	    }
@@ -1338,5 +1343,5 @@
         return;
   }
   ?>
-  </v:page>
 </html>
+</v:page>

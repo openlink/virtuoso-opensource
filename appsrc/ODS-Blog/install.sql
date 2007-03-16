@@ -3494,6 +3494,15 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
 	      'insert', authorid, null)
   where BI_BLOG_ID = N.B_BLOG_ID;
 
+  if (not exists (select 1 from BLOG.DBA.MTYPE_BLOG_CATEGORY where MTB_BLOG_ID = N.B_BLOG_ID and MTB_POST_ID = N.B_POST_ID))
+    {
+      for select MTC_ID from BLOG.DBA.MTYPE_CATEGORIES where MTC_BLOG_ID = N.B_BLOG_ID and MTC_DEFAULT = 1 do
+	{
+	  insert soft BLOG.DBA.MTYPE_BLOG_CATEGORY (MTB_CID, MTB_POST_ID, MTB_BLOG_ID, MTB_IS_AUTO)
+	      values (MTC_ID, N.B_POST_ID, N.B_BLOG_ID, 1);
+	}
+    }
+
   ODS..APP_PING (_wai_name, title, home);
 
   -- WA widgets

@@ -495,10 +495,10 @@ create procedure sioc.DBA.rdf_weblog_view_str ()
 	# Blog Posts
 	sioc:blog_post_iri (DB.DBA.ODS_BLOG_POSTS.B_OWNER,
 			    DB.DBA.ODS_BLOG_POSTS.B_INST,
-			    DB.DBA.ODS_BLOG_POSTS.B_POST_ID) a sioc:Post ;
-        rdfs:seeAlso  sioc:iri (B_SEE_ALSO) ;
+			    DB.DBA.ODS_BLOG_POSTS.B_POST_ID) a sioct:BlogPost ;
+        rdfs:seeAlso  sioc:proxy_iri (B_SEE_ALSO) ;
 	sioc:id IRI_MD5 ;
-	sioc:link sioc:iri (B_LINK) ;
+	sioc:link sioc:proxy_iri (B_LINK) ;
 	sioc:has_creator sioc:user_iri (B_CREATOR) ;
 	foaf:maker foaf:person_iri (B_CREATOR) ;
         sioc:has_container sioc:blog_forum_iri (B_OWNER, B_INST) ;
@@ -521,14 +521,14 @@ create procedure sioc.DBA.rdf_weblog_view_str ()
 	    		    DB.DBA.ODS_BLOG_POST_LINKS.B_INST,
 			    DB.DBA.ODS_BLOG_POST_LINKS.B_POST_ID)
 	sioc:links_to
-	sioc:iri (PL_LINK) .
+	sioc:proxy_iri (PL_LINK) .
 
 	# Blog Post enclosures
 	sioc:blog_post_iri (DB.DBA.ODS_BLOG_POST_ATTS.B_OWNER,
 	    		    DB.DBA.ODS_BLOG_POST_ATTS.B_INST,
 			    DB.DBA.ODS_BLOG_POST_ATTS.B_POST_ID)
 	sioc:attachment
-	sioc:iri (PE_LINK) .
+	sioc:proxy_iri (PE_LINK) .
 
         # Blog Post tags
 	sioc:blog_post_iri (DB.DBA.ODS_BLOG_POST_TAGS.U_NAME,
@@ -545,10 +545,10 @@ create procedure sioc.DBA.rdf_weblog_view_str ()
         sioc:blog_comment_iri (DB.DBA.ODS_BLOG_COMMENTS.U_NAME,
 			       DB.DBA.ODS_BLOG_COMMENTS.BI_WAI_NAME,
 		   	       DB.DBA.ODS_BLOG_COMMENTS.BM_POST_ID,
-			       DB.DBA.ODS_BLOG_COMMENTS.BM_ID) a sioc:Post ;
+			       DB.DBA.ODS_BLOG_COMMENTS.BM_ID) a sioct:Comment ;
         sioc:id IRI_MD5 ;
-        rdfs:seeAlso sioc:iri (SEE_ALSO) ;
-	foaf:maker sioc:iri (BM_HOME_PAGE) ;
+        rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
+	foaf:maker sioc:proxy_iri (BM_HOME_PAGE) ;
 	sioc:has_container sioc:blog_forum_iri (U_NAME, BI_WAI_NAME) ;
 	dc:title BM_TITLE ;
 	dct:created BM_CREATED ;
@@ -569,9 +569,9 @@ create procedure sioc.DBA.rdf_weblog_view_str ()
 	sioc:blog_comment_iri (U_NAME, BI_WAI_NAME, BM_POST_ID, BM_ID)
 	.
 
-	sioc:iri (DB.DBA.ODS_BLOG_COMMENTS.BM_HOME_PAGE) a foaf:Person ;
+	sioc:proxy_iri (DB.DBA.ODS_BLOG_COMMENTS.BM_HOME_PAGE) a foaf:Person ;
         foaf:name BM_NAME ;
-	foaf:mbox sioc:iri (E_MAIL) ;
+	foaf:mbox sioc:proxy_iri (E_MAIL) ;
 	foaf:mbox_sha1sum E_MAIL_SHA1
         .
 
