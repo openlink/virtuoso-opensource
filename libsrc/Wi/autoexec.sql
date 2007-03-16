@@ -73,5 +73,9 @@ DB.DBA.DAV_AUTO_REPLICATE_TO_RDF_QUAD ()
 ;
 
 --!AFTER
+VAD.DBA.VAD_AUTO_UPGRADE ()
+;
+
+--!AFTER
 ddl_autoexec ('')
 ;
