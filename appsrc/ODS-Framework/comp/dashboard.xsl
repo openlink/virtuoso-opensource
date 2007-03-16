@@ -161,7 +161,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/blog_16.png" 
+               src="images/icons/ods_weblog_16.png"
                alt="ODS-Weblog icon"/>
           <span class="w_title_text">Top Blogs</span>
         </div>
@@ -193,7 +193,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/enews_16.png" 
+               src="images/icons/ods_feeds_16.png"
                alt="ODS-Feed Reader icon" />
           <span class="w_title_text">Latest News</span>
         </div>
@@ -228,7 +228,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon" 
-               src="images/icons/wiki_16.png" 
+               src="images/icons/ods_wiki_16.png"
                alt="ODS-Weblog icon"/>
           <span class="w_title_text">Wiki Activity</span>
         </div>
@@ -265,7 +265,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/blog_16.png"
+               src="images/icons/ods_weblog_16.png"
                alt="ODS-Weblog icon"/>
           <span class="w_title_text"><?V WA_GET_APP_NAME ('WEBLOG2') ?> Summary</span>
         </div>
@@ -628,7 +628,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/enews_16.png" 
+               src="images/icons/ods_feeds_16.png"
                alt="ODS-Feed Reader icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('eNews2') ?> Summary</span>
         </div>
@@ -694,7 +694,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon" 
-               src="images/mail_16.png"
+               src="images/icons/ods_mail_16.png"
                alt="ODS-Mail icon" />
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oMail') ?> Summary</span>
         </div>
@@ -750,7 +750,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/wiki_16.png"
+               src="images/icons/ods_wiki_16.png"
                alt="ODS-Wiki icon"/>
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oWiki') ?> Summary</span>
         </div>
@@ -815,7 +815,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon" 
-               src="images/icons/odrive_16.png" 
+               src="images/icons/ods_briefcase_16.png"
                alt="ODS-Briefcase icon"/>
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oDrive') ?> Summary</span>
         </div>
@@ -871,7 +871,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/edit_16.png" 
+               src="images/icons/ods_bookmarks_16.png"
                alt="ODS-Bookmark icon" />
           <span class="w_title_text"><?V WA_GET_APP_NAME ('Bookmark') ?> summary</span>
         </div>
@@ -938,7 +938,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/.png" 
+               src="images/icons/ods_community_16.png"
                alt="ODS-Community icon" />
           <span class="w_title_text"><?V WA_GET_APP_NAME ('Community') ?> Summary</span>
         </div>
@@ -966,7 +966,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/ogallery_16.png" 
+               src="images/icons/ods_gallery_16.png"
                alt="ODS-Gallery icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('oGallery') ?> Summary</span>
         </div>
@@ -1032,7 +1032,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/polls_16.png"
+               src="images/icons/ods_poll_16.png"
                alt="ODS-Polls icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('Polls') ?> Summary</span>
         </div>
@@ -1302,7 +1302,7 @@
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
-                 src="images/icons/blog_16.png" 
+                 src="images/icons/ods_weblog_16.png"
                  alt="ODS-Weblog icon" />
             <span class="w_title_text">My Blog</span>
           </div>
@@ -1355,7 +1355,7 @@
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon" 
-                 src="images/icons/wiki_16.png"
+                 src="images/icons/ods_wiki_16.png"
                  alt="ODS-Wiki icon" /> 
             <span class="w_title_text">My Wiki</span>
     </div>
@@ -1407,7 +1407,7 @@
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
-                 src="images/icons/enews_16.png" 
+                 src="images/icons/ods_feeds_16.png"
                  alt="ODS-Feed Reader icon" /> 
             <span class="w_title_text">My News</span>
           </div>
@@ -1453,7 +1453,7 @@
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon" 
-                 src="images/icons/edit_16.png" 
+                 src="images/icons/ods_bookmarks_16.png"
                  alt="ODS-Bookmarks icon"/>
             <span class="w_title_text">My Bookmarks</span>
           </div>
@@ -1696,7 +1696,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/group_16.png" 
+               src="images/icons/ods_community_16.png"
                alt="ODS-Communities icon"/> 
           <span class="w_title_text">My Communities</span>
         </div>
@@ -1743,7 +1743,7 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon" 
-               src="images/icons/ogallery_16.png" 
+               src="images/icons/ods_gallery_16.png"
                width="16" height="16"/>
           <span class="w_title_text">My Photos</span>
         </div>
@@ -1771,9 +1771,11 @@
       <table border="0" cellpadding="0" cellspacing="0" class="infoarea2">
        <tr>
          <?vsp
-
               declare q_str, rc, dta, h, curr_davres any;
+  declare _gallery_folder_name varchar;
+
               curr_davres := '';
+  _gallery_folder_name:=coalesce(PHOTO.WA.get_gallery_folder_name(),'Gallery');
 
               q_str:='select distinct RES_FULL_PATH,RES_MOD_TIME,U_FULL_NAME,U_NAME,coalesce(text,RES_NAME) as res_comment
                       from WS.WS.SYS_DAV_RES A
@@ -1782,7 +1784,7 @@
                         LEFT JOIN WS.WS.SYS_DAV_COL D on D.COL_ID=C.COL_PARENT
                         LEFT JOIN PHOTO.WA.comments CM on CM.RES_ID=A.RES_ID
                         LEFT JOIN DB.DBA.SYS_USERS U on U.U_ID=A.RES_OWNER
-              where C.COL_NAME=''Gallery'' and D.COL_NAME='''||self.u_name||'''
+              where C.COL_NAME='''||_gallery_folder_name||''' and D.COL_NAME='''||self.u_name||'''
                       order by RES_MOD_TIME desc,CM.CREATE_DATE desc';
 
               rc := exec (q_str, null, null, vector (), 0, null, null, h);
@@ -2015,7 +2017,7 @@
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
-                 src="images/icons/mail_16.png" 
+                 src="images/icons/ods_mail_16.png"
                  alt="ODS-Mail icon" />
             <span class="w_title_text">My Mail</span>
           </div>

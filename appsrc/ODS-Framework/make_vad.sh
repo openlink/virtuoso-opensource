@@ -229,6 +229,7 @@ directory_init() {
   mkdir vad/data/wa/images/dav_browser
   mkdir vad/data/wa/images/icons
   mkdir vad/data/wa/images/buttons
+  mkdir vad/data/wa/images/oat
   mkdir vad/data/wa/tmpl
   mkdir vad/data/wa/templates
   mkdir vad/data/wa/templates/default
@@ -248,6 +249,8 @@ directory_init() {
   cp comp/*.xsl vad/data/wa/comp
   cp comp/*.js vad/data/wa/comp
   cp $HOME/binsrc/oat/toolkit/*.js vad/data/wa/oat/.
+  cp $HOME/binsrc/oat/images/*.png vad/data/wa/images/oat/.
+  cp $HOME/binsrc/oat/images/*.gif vad/data/wa/images/oat/.
 #  cp $HOME/binsrc/oat/toolkit/ajax.js vad/data/wa/oat/.
 #  cp $HOME/binsrc/oat/toolkit/dom.js vad/data/wa/oat/.
 #  cp $HOME/binsrc/oat/toolkit/loader.js vad/data/wa/oat/.
@@ -363,6 +366,8 @@ sticker_init() {
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
+#  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/drop_sioc_proc.sql', 1, 'report', 1);" >> $STICKER
+#  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/drop_sioc_trig.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/drop.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER

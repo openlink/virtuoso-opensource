@@ -84,6 +84,13 @@
 	      }
 	  }
 	</v:on-init>
+    <v:template name="registration_na"  type="simple" enabled="--(1-coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0))">
+     <div style="padding: 20px 20px 20px 35px;">
+      This service is currently not accepting new registrations without invitation.
+     </div> 
+     
+    </v:template>
+    <v:template name="registration"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
       <table>
         <script type="text/javascript">
           <![CDATA[
@@ -440,6 +447,9 @@
          }
       ]]>
       </v:on-post>
+     </v:template>
+
     </v:form>
+
   </xsl:template>
 </xsl:stylesheet>

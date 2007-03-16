@@ -304,12 +304,12 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
   cn := null;
 
   -- autodetection of the content
-  if (length (path) > 4 and regexp_match ('(application|text)/rdf.(xml|n3|turtle|ttl)', accept) is not null)
+  if (length (path) > 3 and regexp_match ('(application|text)/rdf.(xml|n3|turtle|ttl)', accept) is not null)
     {
       declare len int;
       declare newres, pref varchar;
 
-      if (length (path) > 6)
+      if (length (path) > 6 or strrchr (ppath,'#') is not null)
 	pref := 'sioc';  -- for apps the default is sioc
       else
         pref := 'about'; -- for user it's foaf file
@@ -436,9 +436,38 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       uname := 'nobody';
     }
 
+  -- here it goes for all sioc or accepts rdf
+  -- the old code bellow for calling sioc..sioc_compose_xml or sioc..ods_rdf_describe
+  -- also the sioc..sioc_compose_xml should be cleaned
+  if ((has_accept or ppath like '%/sioc.%') and not is_foaf)
+    {
+	 declare ses, iri any;
+	 iri := http_path ();
+	 if (iri like '%/sioc.%')
+	   {
+	     iri := subseq (iri, 0, strrchr (iri, '/'));
+	   }
+	 iri := replace (iri, '''', '%27');
+	 iri := replace (iri, '<', '%3C');
+	 iri := replace (iri, '>', '%3E');
+         ses := sioc..ods_rdf_describe (iri, sioc_fmt, is_foaf);
+	 http_header (sprintf ('Content-Type: %s; charset=UTF-8\r\n', ct));
+	 http (ses);
+	 return '';
+    }
+
   if (length (app) and app not in
       ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql', 'polls', 'socialnetwork'))
    {
+     if (has_accept)
+       {
+	 declare ses any;
+         ses := sioc..ods_rdf_describe (http_path (), sioc_fmt, is_foaf);
+	 http_header (sprintf ('Content-Type: %s; charset=UTF-8\r\n', ct));
+	 http (ses);
+	 return '';
+       }
+     else
      signal ('22023', sprintf ('Invalid application domain [%s].', app));
    }
 
@@ -480,10 +509,10 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 
       foaf := 'ufoaf.xml';
       uname := path[4];
-      select sne_id into id from DB.DBA.sn_entity where sne_name = uname;
 
       if (app is not null and inst = 'about.rdf')
 	{
+	  select sne_id into id from DB.DBA.sn_entity where sne_name = uname;
 	  foaf := 'afoaf.xml';
 	  pars := vector (':sne', cast (id as varchar), ':atype', DB.DBA.wa_app_to_type (app));
 	}
@@ -560,6 +589,15 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
       declare inst_type varchar;
       declare exit handler for not found
 	{
+	  if (has_accept and __SQL_STATE = 100)
+	    {
+	      declare ses any;
+	      ses := sioc..ods_rdf_describe (http_path (), sioc_fmt, is_foaf);
+	      http_header (sprintf ('Content-Type: %s; charset=UTF-8\r\n', ct));
+	      http (ses);
+	      return '';
+	    }
+	  else
 	  signal ('22023', 'No such application instance');
 	};
       inst := replace (inst, '+', ' ');
@@ -607,7 +645,17 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	  --dbg_obj_print ('RDF');
 	  full_path := _inst.wa_rdf_url (vhost, lhost);
 	  if (full_path is null)
+	    {
+	      if (has_accept)
+		{
+		  declare ses any;
+		  ses := sioc..ods_rdf_describe (http_path (), sioc_fmt, is_foaf);
+		  http_header (sprintf ('Content-Type: %s; charset=UTF-8\r\n', ct));
+		  http (ses);
+		  return '';
+		}
 	    signal ('22023', 'Not implemented');
+	    }
 
 	  hf := WS.WS.PARSE_URI (full_path);
 	  full_path := hf[2];
@@ -646,8 +694,18 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	  else if (__proc_exists ('sioc..'||app||'_post_url'))
 	    url := call ('sioc..'||app||'_post_url') (vhost, lhost, inst, post);
 	  if (url is null)
+	    {
+	      if (has_accept)
+		{
+		  declare ses any;
+		  ses := sioc..ods_rdf_describe (http_path (), sioc_fmt, is_foaf);
+		  http_header (sprintf ('Content-Type: %s; charset=UTF-8\r\n', ct));
+		  http (ses);
+		  return '';
+		}
 	    signal ('22023', 'Not implemented');
 	}
+    }
     }
 redir:
   http_request_status ('HTTP/1.1 302 Found');

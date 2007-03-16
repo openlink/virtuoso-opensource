@@ -379,10 +379,10 @@ wa_exec_no_error(
      WAM_MEMBER_TYPE int, -- 1= owner 2= admin 3=regular, -1=waiting approval etc.
      WAM_MEMBER_SINCE datetime,
      WAM_EXPIRES datetime,
-     WAM_IS_PUBLIC int default 1,  -- zdravko -- Duplicate WAI_IS_PUBLIC
+     WAM_IS_PUBLIC int default 1,  -- Duplicate WAI_IS_PUBLIC
      WAM_MEMBERS_VISIBLE int default 1,  -- Duplicate WAI_MEMBERS_VISIBLE
      WAM_HOME_PAGE varchar,
-     WAM_APP_TYPE varchar,-- zdravko
+     WAM_APP_TYPE varchar,
      WAM_DATA any, -- app dependent, e.g. last payment info, other.
        primary key (WAM_USER, WAM_INST, WAM_MEMBER_TYPE)
     )'
@@ -3785,17 +3785,17 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
     else if (atoi(visb[43]) = 1 and umode = 1)
       _data := concat(_data, ' ', blob_to_string (_audio));
 
-    if (atoi(visb[44]) = 3 or (atoi(visb[44]) = 2 and not(is_friend)))
-      {
-        _fav_books := '';
-        _fav_music := '';
-        _fav_movie := '';
-      }
-    else if (atoi(visb[43]) = 1 and umode = 1)
-      {
-	_data := concat(_data, ' ', blob_to_string (_fav_books), ' ',
-	  blob_to_string (_fav_music), ' ', blob_to_string (_fav_movie));
-      }
+    if (atoi(visb[44]) = 3 or (atoi(visb[44]) = 2 and not(is_friend))) _fav_books := '';
+    else if (atoi(visb[44]) = 1 and umode = 1)
+        _data := concat(_data, ' ', blob_to_string (_fav_books));
+
+    if (atoi(visb[45]) = 3 or (atoi(visb[45]) = 2 and not(is_friend))) _fav_music := '';
+    else if (atoi(visb[45]) = 1 and umode = 1)
+        _data := concat(_data, ' ', blob_to_string (_fav_music));
+
+    if (atoi(visb[46]) = 3 or (atoi(visb[46]) = 2 and not(is_friend))) _fav_movie := '';
+    else if (atoi(visb[46]) = 1 and umode = 1)
+        _data := concat(_data, ' ', blob_to_string (_fav_movie));
 
 
     if (_WAUI_LATLNG_HBDEF=0)
@@ -4747,6 +4747,24 @@ create procedure WA_SET_APP_URL
         
        }
 
+       if(locate('localhost',userdefined_host[0]))
+       {
+         signal ('22023', 'The host domain "localhost" is not valid.');
+
+       }
+
+       if(strchr (userdefined_host[0], '.') is null)
+       {
+         signal ('22023', 'The host domain value is not valid. Please ensure you have ".". For instance: xxx.yyy');
+
+       }
+
+       if(length(tcpip_gethostbyname (userdefined_host[0])) =0)
+       {
+         signal ('22023', 'The host domain value is not valid. There is no DNS record for it.');
+
+       }
+
      }
    else
      {
@@ -4946,17 +4964,17 @@ create procedure WA_GET_MFORM_APP_NAME (in app varchar)
 create procedure wa_inst_type_icon (in app varchar)
 {
   if (app = 'WEBLOG2')
-    return 'blog';
+    return 'ods_weblog';
   else if (app = 'eNews2')
-    return 'enews';
+    return 'ods_feeds';
   else if (app = 'oWiki')
-    return 'wiki';
+    return 'ods_wiki';
   else if (app = 'oDrive')
-    return 'odrive';
+    return 'ods_briefcase';
   else if (app = 'oMail')
-    return 'mail';
+    return 'ods_mail';
   else if (app = 'oGallery')
-    return 'ogallery';
+    return 'ods_gallery';
   else if (app = 'xDiaspora' or app = 'Community')
     return 'go';
   else if (app = 'bookmark')

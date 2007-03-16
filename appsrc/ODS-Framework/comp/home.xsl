@@ -313,6 +313,9 @@
                             </tr>
                             </v:template>
                             <v:template name="usummary" type="simple" enabled="--case when coalesce(self.arr[33],'') <> '' then 1 else 0 end">
+                            <?vsp
+                            
+                            ?>
                             <tr>
                               <th><v:label name="1sum" value="Summary:"/></th>
                               <td><pre><v:label name="lsum1" value="--coalesce(self.arr[33],'')"/></pre></td>
@@ -328,10 +331,20 @@
                               <th><v:label name="fav1" value=""/>Favorite Books:</th>
                               <td><v:label name="lfav1" value="--coalesce(self.arr[44],'')"/></td>
                             </tr>
+			    <?vsp
+			        }
+			      if (coalesce(self.arr[45],'') <> '')
+			        {
+		 	    ?>
                             <tr>
                               <th><v:label name="fav2" value=""/>Favorite Music:</th>
                               <td><v:label name="lfav2" value="--coalesce(self.arr[45],'')"/></td>
                             </tr>
+			    <?vsp
+			        }
+			      if (coalesce(self.arr[46],'') <> '')
+			        {
+		 	    ?>
                             <tr>
                               <th><v:label name="fav3" value=""/>Favorite Movies:</th>
                               <td><v:label name="lfav3" value="--coalesce(self.arr[46],'')"/></td>
@@ -339,8 +352,6 @@
 
 			    <?vsp
 			        }
-		            ?>
-			    <?vsp
 			      if (coalesce(self.arr[43],'') <> '')
 			        {
 			    ?>

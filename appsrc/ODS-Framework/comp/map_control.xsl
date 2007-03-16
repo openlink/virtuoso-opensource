@@ -167,6 +167,18 @@
 <![CDATA[
 <script  type="text/javascript">
 
+ODSInitArray.push(mapInitPrepare);
+
+function mapInitPrepare()
+{
+  if (typeof(window.mapInit) == "function")
+    {
+      OAT.Loader.loadFeatures(["gmaps","ymaps"], function(){setTimeout(mapInit,60)});
+    };
+
+  return;
+}
+
 var MAX_ZOOM_LEVEL = 15;
 var BURLINGTON_LAT = 42.490;
 var BURLINGTON_LNG = -71.19;

@@ -3,7 +3,7 @@
 
 create procedure S3_SAVE_USER (in _user_name varchar)
 {
-   declare user_id integer;
+   declare user_id, idx integer;
    declare stmt, txt varchar;
    declare ret, ses any;
 
@@ -19,11 +19,29 @@ create procedure S3_SAVE_USER (in _user_name varchar)
 
 --  seve SQL USER;
 
-   stmt := sprintf ('select * from DB.DBA.SYS_USERS where U_NAME = ''%s''', _user_name);
+   stmt := sprintf ('DB.DBA.SYS_USERS where U_NAME = ''%s''', _user_name);
    S3_GET_TABLE_DATA (stmt, ses);
 
---   stmt := sprintf ('select * from DB.DBA.WA_USER_INFO where WAUI_U_ID = ''%i''', user_id);
---   S3_GET_TABLE_DATA (stmt, ses);
+   stmt := sprintf ('DB.DBA.WA_USER_INFO where WAUI_U_ID = ''%i''', user_id);
+   S3_GET_TABLE_DATA (stmt, ses, vector ('WAUI_U_ID'));
+
+   stmt := sprintf ('DB.DBA.WA_USER_TEXT where WAUT_U_ID = ''%i''', user_id);
+   S3_GET_TABLE_DATA (stmt, ses, vector ('WAUT_U_ID'));
+
+   -- DB.DBA.WA_INSTANCE
+   -- DB.DBA.WA_MEMBER
+
+   stmt := sprintf ('DB.DBA.WA_MEMBER where WAM_USER = ''%i''', user_id);
+   S3_GET_TABLE_DATA (stmt, ses, vector ('WAM_USER'));
+
+   idx := 0;
+   for (select WAI_NAME from WA_INSTANCE, WA_MEMBER where WAM_INST = WAI_NAME and WAM_USER = user_id) do
+     {
+   	stmt := sprintf ('DB.DBA.WA_INSTANCE where encode_base64 (WAI_NAME) = ''%s''', encode_base64 (WAI_NAME));
+   	S3_GET_TABLE_DATA (stmt, ses, vector (), idx);
+	idx := idx + 1;
+     }
+
 /*
    stmt := sprintf ('select * from DB.DBA.sn_entity where sne_name = ''%s''', _user_name);
    ret := vector_concat (ret, vector ('DB.DBA.sn_entity'));
@@ -74,14 +92,15 @@ create procedure S3_SAVE_USER (in _user_name varchar)
 
 create procedure S3_RESTORE_USER (in _user_data any)
 {
-  declare user_id integer;
-  declare _un_comp varchar;
-  declare user_name integer;
+  declare user_id, idx integer;
+  declare _un_comp, user_name varchar;
+  declare temp1, temp2, temp3 any;
 
   _un_comp := string_output ();
   gz_uncompress (_user_data, _un_comp);
   _user_data := string_output_string (_un_comp);
-  _user_data := xtree_doc (_user_data, 0, '', 'utf-8');
+--  _user_data := xtree_doc (_user_data, 0, '', 'utf-8');
+  _user_data := xml_tree_doc (_user_data);
 
   -- GET USER NAME FIRST
 
@@ -104,6 +123,9 @@ create procedure S3_RESTORE_USER (in _user_data any)
 
 -- XXX DEBUG
   delete from DB.DBA.WA_USER_INFO where WAUI_U_ID = user_id;
+  delete from DB.DBA.WA_USER_TEXT where WAUT_U_ID = user_id;
+  delete from DB.DBA.WA_MEMBER where WAM_USER = user_id;
+  delete from WA_INSTANCE;
   delete from DB.DBA.sn_entity where sne_name = user_name;
   delete from DB.DBA.sn_source where sns_name = user_name;
   delete from DB.DBA.sn_person where sne_name = user_name;
@@ -113,13 +135,46 @@ create procedure S3_RESTORE_USER (in _user_data any)
   S3_UPDATE_TABLE ('DB.DBA.SYS_USERS', _user_data, 'U_ID = ' || cast (user_id as varchar), vector ('U_NAME', 'U_PASSWORD'));
   commit work;
 
-return;
-
   insert into DB.DBA.WA_USER_INFO (WAUI_U_ID) values (user_id);
   commit work;
 
   S3_UPDATE_TABLE ('DB.DBA.WA_USER_INFO', _user_data, 'WAUI_U_ID = ' || cast (user_id as varchar));
   commit work;
+
+  insert into DB.DBA.WA_USER_TEXT (WAUT_U_ID) values (user_id);
+  commit work;
+
+  S3_UPDATE_TABLE ('DB.DBA.WA_USER_TEXT', _user_data, 'WAUT_U_ID = ' || cast (user_id as varchar));
+  commit work;
+
+  set triggers off;
+  idx := 0;
+  while (temp1 is not NULL)
+   {
+      declare temp5 web_app;
+
+      temp1 := S3_GET_DATA_FROM_XML ('DB.DBA.WA_MEMBER', 'WAM_INST', idx, 182, _user_data);
+      if (temp1 is NULL) goto next1;
+      temp2 := S3_GET_DATA_FROM_XML ('DB.DBA.WA_MEMBER', 'WAM_MEMBER_TYPE', idx, 189, _user_data);
+      temp3 := S3_GET_DATA_FROM_XML ('DB.DBA.WA_INSTANCE', 'WAI_INST', idx, 0, _user_data);
+      dbg_obj_print ('temp1 ->', temp1);
+      dbg_obj_print ('temp2 ->', temp2);
+      dbg_obj_print ('temp3 ->', temp3);
+      temp5 := deserialize (decode_base64 (cast (temp3 as varchar)));
+
+      insert soft DB.DBA.WA_INSTANCE (WAI_NAME, WAI_INST) values (temp1, temp5);
+      insert soft DB.DBA.WA_MEMBER (WAM_USER, WAM_INST, WAM_MEMBER_TYPE) values (user_id, temp1, temp2);
+      S3_UPDATE_TABLE ('DB.DBA.WA_INSTANCE', _user_data, 'encode_base64 (WAI_NAME) = ''' || encode_base64 (temp1) || '''',
+	vector ('WAI_NAME', 'WAI_INST'));
+      --- XXX name is not unique
+      S3_UPDATE_TABLE ('DB.DBA.WA_MEMBER', _user_data, 'encode_base64 (WAM_INST) = ''' || encode_base64 (temp1) || '''',
+	vector ('WAM_USER', 'WAM_INST', 'WAM_MEMBER_TYPE'));
+      idx:= idx + 1;
+   }
+next1:;
+
+  commit work;
+  set triggers on;
 
 --  S3_INSERT_INTO_TABLE ('DB.DBA.sn_entity', _user_data, 'sne_name', user_name);
 --  commit work;
@@ -165,11 +220,15 @@ create procedure S3_TRIM_META (in _meta any)
 ;
 
 
-create procedure S3_GET_TABLE_DATA (in stmt any, inout ses any)
+create procedure S3_GET_TABLE_DATA (in stmt any, inout ses any, in not_in any := null, in beg integer := 0)
 {
    declare state, msg, meta, res varchar;
 
+   stmt := 'select * from ' || stmt;
+
+   state := '';
    exec (stmt, state, msg, vector (), 100, meta, res);
+   if (state <> '') signal (state, msg);
 
 dbg_obj_print ('meta 1 ->', meta);
 
@@ -177,32 +236,51 @@ dbg_obj_print ('meta 1 ->', meta);
 
 --   res := serialize (res[0]);
 --   meta := serialize (meta);
-   res := S3_MAKE_RDF (meta, res, ses);
+   res := S3_MAKE_RDF (meta, res, ses, not_in, beg);
 
    return res;
 }
 ;
 
 
-create procedure S3_MAKE_RDF (in meta any, inout data any, inout ses any)
+create procedure S3_MAKE_RDF (in meta any, inout data any, inout ses any, in not_in any, in beg_from int)
 {
    declare table_name varchar;
    declare idx1, idx2 integer;
 
+   dbg_obj_print (meta);
+   dbg_obj_print (meta[0][1][7]);
+   dbg_obj_print (meta[0][1][9]);
+   dbg_obj_print (meta[0][1][10]);
+
    table_name := meta[0][1][7] || '.' || meta[0][1][9] || '.' || meta[0][1][10];
    meta := S3_TRIM_META (meta);
    if (data = vector()) data := make_array (length (meta), 'any');
+   if (not_in is NULL) not_in := vector ();
 
    for (idx1 := 0; idx1 < length (data); idx1 := idx1 + 1)
       {
    	 for (idx2 := 0; idx2 < length (meta); idx2 := idx2 + 1)
             {
-		if (data [idx1][idx2] is not NULL)
+--		if (data [idx1][idx2] is not NULL)
+		if (S3_NOT_DEF_VALUE (data [idx1][idx2], table_name, meta[idx2])
+		   and not position (meta[idx2], not_in) )
 		  {
 		     http ('<rdf:Description', ses);
     --		S3_PRINT_TRIPLE (table_name || '___row' || cast (idx1 as varchar) || '___' || meta[idx2], data [idx1][idx2], ses);
-		     S3_PRINT_TRIPLE (replace (encode_base64 (serialize (vector (table_name, meta[idx2], idx1))), '=', '_'),
-				data [idx1][idx2], ses);
+
+--		     S3_PRINT_TRIPLE (replace (encode_base64 (serialize (vector (table_name, meta[idx2], idx1))), '=', '_'),
+--				data [idx1][idx2], ses);
+
+--		     S3_PRINT_TRIPLE (replace (encode_base64 (serialize (vector (table_name, meta[idx2]))), '=', '_') || '_' ||
+--			cast (idx1 as varchar),	data [idx1][idx2], ses);
+
+		     S3_PRINT_TRIPLE (replace (encode_base64 (serialize (vector (table_name, meta[idx2]))) || '_' ||
+			cast (idx1 + beg_from as varchar), '=', '_'), data [idx1][idx2], ses);
+
+	dbg_obj_print ('ADDED ', table_name, '-', meta[idx2], '-', data [idx1][idx2]);
+	dbg_obj_print ('ADDED ', encode_base64 (serialize (vector (table_name, meta[idx2]))));
+
 		     http ('</rdf:Description>', ses);
 		  }
             }
@@ -212,6 +290,38 @@ create procedure S3_MAKE_RDF (in meta any, inout data any, inout ses any)
    return;
 }
 ;
+
+
+create procedure S3_NOT_DEF_VALUE (in data any, in table_name any, in col_name any)
+{
+   if (exists (select 1 from SYS_COLS where "TABLE" = table_name and "COLUMN" = col_name and COL_CHECK = 'I'))
+      {
+	return 0;
+      }
+
+   if (exists (select 1 from SYS_COLS where "TABLE" = table_name and "COLUMN" = col_name and deserialize (COL_DEFAULT) = data))
+      {
+	return 0;
+      }
+
+   if (exists (select 1 from SYS_COLS where "TABLE" = table_name and "COLUMN" = col_name and
+	deserialize (COL_DEFAULT) is NULL and data is NULL))
+      {
+	return 0;
+      }
+
+   if (exists (select 1 from SYS_COLS where "TABLE" = table_name and "COLUMN" = col_name and
+	COL_DTP in (128)))
+      {
+	return 0;
+      }
+
+   --- XXX Add timestamp columns too!
+
+   return 1;
+}
+;
+
 
 
 create procedure S3_PRINT_TRIPLE (in table_column_name any, inout data any, inout ses any)
@@ -224,19 +334,10 @@ create procedure S3_PRINT_TRIPLE (in table_column_name any, inout data any, inou
 	if (isinteger (data) or data is NULL)
 	 {
    	  http_value (data, 0, ses);
-   dbg_obj_print ('S3_PRINT_TRIPLE 1 -> data ', data);
-	 }
-	else if (isarray (data) or __tag(data) = 211)
-	 {
---     	  http_value (encode_base64 (serialize (data)), 0, ses);
-   	  http (encode_base64 (serialize (data)), ses);
-   dbg_obj_print ('S3_PRINT_TRIPLE 2 -> data ', encode_base64 (serialize (data)));
 	 }
 	else
 	 {
---   	  http_value (serialize (data), 0, ses);
-   	  http (serialize (data), ses);
-   dbg_obj_print ('S3_PRINT_TRIPLE 3 -> data ', data);
+   	  http (encode_base64 (serialize (data)), ses);
 	 }
    http ('</dc:data>', ses);
 }
@@ -248,8 +349,9 @@ create procedure S3_GET_DATA_FROM_XML (in table_name varchar, in column_name var
 {
    declare temp any;
 
-   temp := replace (encode_base64 (serialize (vector (table_name, column_name, _row))), '=', '_');
---   dbg_obj_print ('S3_GET_DATA_FROM_XML temp -> ', temp);
+   temp := encode_base64 (serialize (vector (table_name, column_name))) || '_' || cast (_row as varchar);
+   temp := replace (temp, '=', '_');
+   dbg_obj_print ('S3_GET_DATA_FROM_XML temp -> ', temp);
 
    temp := xpath_eval ('string (//' || temp || ')', data, 1);
 --   dbg_obj_print ('S3_GET_DATA_FROM_XML temp -> ', temp);
@@ -258,7 +360,7 @@ create procedure S3_GET_DATA_FROM_XML (in table_name varchar, in column_name var
 
    temp := trim (temp, 'n');
 
-   if (_tag = 182)
+   if (_tag in (182, 125, 211))
 	temp := deserialize (decode_base64 (cast (temp as varchar)));
 
 --   dbg_obj_print ('S3_GET_DATA_FROM_XML temp -> ', temp);
@@ -284,11 +386,10 @@ create procedure S3_UPDATE_USER_TABLE (inout _user_data any)
   _user_name := S3_GET_DATA_FROM_XML ('DB.DBA.SYS_USERS', 'U_NAME', 0, 182, _user_data);
   _user_pass := S3_GET_DATA_FROM_XML ('DB.DBA.SYS_USERS', 'U_PASSWORD', 0, 182, _user_data);
   _user_pass := pwd_magic_calc (_user_name, _user_pass, 1);
-  _user_sql := S3_GET_DATA_FROM_XML ('DB.DBA.SYS_USERS', 'U_SQL_ENABLE', 0, 182, _user_data);
+  _user_sql := S3_GET_DATA_FROM_XML ('DB.DBA.SYS_USERS', 'U_SQL_ENABLE', 0, 189, _user_data);
 
 -- XXX DEBUG CODE
-  _user_name := _user_name || '_1';
-  delete from SYS_USERS where U_NAME = _user_name;
+-- delete from SYS_USERS where U_NAME = _user_name;
 -- XXX DEBUG CODE
 
   uid :=  DB.DBA.USER_CREATE (_user_name, _user_pass, vector ('SQL_ENABLE', _user_sql));
@@ -341,21 +442,37 @@ create procedure S3_UPDATE_TABLE (in table_name varchar, inout all_data any, in 
 
 	if (data is NULL) goto _next;
 
-	if (position ("COLUMN", not_in)) goto _next;
+	if (not_in is not NULL and position ("COLUMN", not_in)) goto _next;
 
-	data := encode_base64 (serialize (data));
+--	dbg_obj_print ('data ', deserialize (decode_base64(cast (data as varchar))));
+	dbg_obj_print ('data ', data);
+	dbg_obj_print ('data ', data);
 
-	if (COL_DTP in (182))
+	if (COL_DTP in (182, 125, 211, 254))
 	  {
+	      data := encode_base64 (serialize (data));
 	      stmt := sprintf ('update %s set %s=deserialize (decode_base64 (''%s'')) where %s', table_name, "COLUMN", data, pk);
+	  }
+	else if (COL_DTP in (189))
+	  {
+--	      data := deserialize (decode_base64 (data));
+	      stmt := sprintf ('update %s set %s=%s where %s', table_name, "COLUMN", data, pk);
+	  }
+	else
+	  {
+	      dbg_obj_print ('data = ', data);
+	      dbg_obj_print ('COL_DTP = ', COL_DTP);
+	      signal ('DEBUG', 'Unsupported tag %i', COL_DTP);
 	  }
 
 	if (stmt is not NULL)
 	  {
 	  dbg_obj_print ('stmt ', stmt);
+		state := '';
 	     exec (stmt, state, msg, vector (), 100, mtd, res);
 		dbg_obj_print (stmt);
 		dbg_obj_print (state);
+	    if (state <> '') signal (state, msg);
 	  }
 
 _next:;
@@ -384,9 +501,11 @@ _next:;
 	        stmt := sprintf ('update %s set %s=deserialize (decode_base64 (''%s'')) where %s', table_name, meta[xx], tmp, pk);
 	      }
 
+		state := '';
 	     exec (stmt, state, msg, vector (), 100, mtd, res);
 		dbg_obj_print (stmt);
 		dbg_obj_print (state);
+	    if (state <> '') signal (state, msg);
 	  }
      }
 

@@ -192,6 +192,7 @@ nf_uid2:;
 if(typeof(OAT)=='undefined')
 {
     var toolkitPath="<?V self.odsbar_ods_gpath ?>oat";
+  var toolkitImagesPath="<?V self.odsbar_ods_gpath ?>images/oat";
     var featureList = ["dom"];
 
     var ODSInitArray = new Array();
@@ -210,7 +211,6 @@ if(typeof(OAT)=='undefined')
 
    OAT.Loader.loadFeatures(["ajax","xml"],function(){}); 
     
-   ODSInitArray.push(mapInitPrepare);
                                      
    if (typeof ODSInitArray != 'undefined')
    {
@@ -228,16 +228,6 @@ if(typeof(OAT)=='undefined')
 }
 
 
-function mapInitPrepare()
-{
-
-      if (typeof(window.mapInit) == "function")
-        {
-     OAT.Loader.loadFeatures(["gmaps","ymaps"], function(){setTimeout(mapInit,60)}); 
-   };
-   
-   return;
-}
 
 function submitenter(fld, btn, e)
 {
@@ -296,10 +286,17 @@ function getUrlOnEnter(e)
            url="--self.odsbar_ods_gpath||'login.vspx?URL='||http_path() "
            is-local="1"/>
       |
+    <v:template name="odsbar_barregister"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
     <v:url name="odsbar_odsregister_button"
            value="Sign Up"
            url="--self.odsbar_ods_gpath||'register.vspx?URL='||http_path() "
-           is-local="1"/>
+           is-local="1"
+           />
+    </v:template>
+    <v:template name="odsbar_barregister_txt"  type="simple" enabled="--(1-coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0))">
+            Sign Up
+    </v:template>
+
      </div>
 
   <div id="HD_ODS_BAR" style="display:none;">
@@ -359,10 +356,16 @@ function getUrlOnEnter(e)
                      url="--self.odsbar_ods_gpath||'login.vspx'"
                      is-local="1"/>
           |
+              <v:template name="ods_barregister"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
               <v:url name="ods_barregister_button"
                      value="Sign Up"
                      url="--self.odsbar_ods_gpath||'register.vspx'"
                      is-local="1"/>
+              </v:template>
+              <v:template name="ods_barregister_txt"  type="simple" enabled="--(1-coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0))">
+                  Sign Up
+              </v:template>
+
          </vm:if>
 
          <vm:if test=" length (self.sid) > 0 ">
@@ -379,10 +382,10 @@ function getUrlOnEnter(e)
                      xhtml_class="user_profile_lnk"/>
 
           <v:url name="odsbar_logout_url"
-                    value="logout"
+                     value="Logout"
                     url="?logout=true"
-                    xhtml_title="logout"
-                    xhtml_alt="logout"
+                     xhtml_title="Logout"
+                     xhtml_alt="Logout"
                      xhtml_class="logout_lnk"
                      is-local="1"/>
          </vm:if>
@@ -510,6 +513,9 @@ function getUrlOnEnter(e)
 
         if(locate('/rdf_storage.vspx',_http_path))
             curr_location:=curr_location||site_settings_url||'RDF Data Administration > ';
+
+        if(locate('/app_instance_limits.vspx',_http_path))
+            curr_location:=curr_location||site_settings_url||'Application Instances Limit > ';
 
 
          http(rtrim(curr_location,' > '));

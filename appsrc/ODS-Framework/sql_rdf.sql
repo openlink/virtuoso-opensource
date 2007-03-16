@@ -176,9 +176,13 @@ ODS_SPARQL_QM_RUN ('
     sioc..ods_sioc_result ('Old graph dropped.');
     commit work;
     sioc..ods_sioc_result ('Dropping virtrdf:ODSDataspace storage.');
-ODS_SPARQL_QM_RUN ('
-    drop virtrdf:ODSDataspace .
-', 0, 0);
+
+    for select DB.DBA.wa_type_to_app (WAT_NAME) as suffix from DB.DBA.WA_TYPES do
+      {
+	ODS_SPARQL_QM_RUN ('drop virtrdf:ODSDataspace-'||suffix||' .', 0, 0);
+      }
+    ODS_SPARQL_QM_RUN ('drop virtrdf:ODSDataspace-discussion .', 0, 0);
+    ODS_SPARQL_QM_RUN ('drop virtrdf:ODSDataspace .', 0, 0);
 
     sioc..ods_sioc_result ('virtrdf:ODSDataspace storage dropped.');
 
@@ -186,18 +190,19 @@ ODS_SPARQL_QM_RUN ('
     drop quad storage virtrdf:ODS .
     ', 0, 0);
 
---    ODS_SPARQL_QM_RUN ('
---    create quad storage virtrdf:ODS {
---      create virtrdf:DefaultQuadMap using storage virtrdf:DefaultQuadStorage .
---    } .
---    ', 1, fl);
+    ODS_SPARQL_QM_RUN ('
+    create quad storage virtrdf:ODS {
+      create virtrdf:DefaultQuadMap using storage virtrdf:DefaultQuadStorage .
+    } .
+    ', 1, fl);
     sioc..ods_sioc_result ('Creating IRI classes.');
 
 ODS_SPARQL_QM_RUN ('
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix atom: <http://atomowl.org/ontologies/atomrdf#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
-create iri class sioc:iri "%s" (in url varchar not null) .
+    #create iri class sioc:iri "%s" (in url varchar not null) .
+    create iri class sioc:proxy_iri "http://^{URIQADefaultHost}^/proxy/%U" (in url varchar not null) .
 create iri class sioc:default_site "http://^{URIQADefaultHost}^/dataspace%U" (in dummy varchar not null) .
 create iri class sioc:user_iri "http://^{URIQADefaultHost}^/dataspace/%U" (in uname varchar not null) .
 create iri class foaf:person_iri "http://^{URIQADefaultHost}^/dataspace/%U#person" (in uname varchar not null) .
@@ -287,46 +292,48 @@ prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
     prefix bm: <http://www.w3.org/2002/01/bookmark#>
     prefix exif: <http://www.w3.org/2003/12/exif/ns/>
     prefix ann: <http://www.w3.org/2000/10/annotation-ns#>
+    prefix wikiont: <http://sw.deri.org/2005/04/wikipedia/wikiont.owl#>
     alter quad storage virtrdf:DefaultQuadStorage
     #  alter quad storage virtrdf:ODS
   {
-	create virtrdf:ODSDataspace as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") option (exclusive)
-      {
 
 	    '
-	    || ODS_GET_APP_RDF_VIEWS () ||
+	    ||
+	    ODS_GET_APP_RDF_VIEWS () ||
 	    '
+	create virtrdf:ODSDataspace as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") option (exclusive)
+	  {
+
         # Default ODS Site
 
-        sioc:default_site (DB.DBA.SIOC_SITE.WS_DUMMY) a sioc:Site ;
-        sioc:link sioc:iri (WS_LINK) ;
+	    sioc:default_site (DB.DBA.SIOC_SITE.WS_DUMMY) a sioc:Space ;
+	    sioc:link sioc:proxy_iri (WS_LINK) ;
  	dc:title WS_WEB_TITLE .
 
         # Forum
         sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
-		    a sioc:Forum option (EXCLUSIVE);
+		    a sioc:Container option (EXCLUSIVE);
 		sioc:id WAM_INST ;
 		    sioc:type APP_TYPE option (EXCLUSIVE) ;
 		sioc:description WAI_DESCRIPTION ;
-		sioc:link sioc:iri (LINK) ;
-		rdfs:seeAlso sioc:iri (SEE_ALSO) ;
-		sioc:has_host sioc:user_site_iri (U_NAME)
+		    sioc:link sioc:proxy_iri (LINK) ;
+		    rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
+		    sioc:has_space sioc:user_site_iri (U_NAME)
 	.
-
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
 		    a sioct:Weblog
 	            where (^{alias}^.WAM_APP_TYPE = ''WEBLOG2'') option (EXCLUSIVE) .
 
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
-		    a sioct:Bookmark
+		    a sioct:BookmarkFolder
 	            where (^{alias}^.WAM_APP_TYPE = ''Bookmark'') option (EXCLUSIVE) .
 
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
-		    a sioct:Community
+		    a sioc:Community
 	            where (^{alias}^.WAM_APP_TYPE = ''Community'') option (EXCLUSIVE) .
 
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
-		    a sioct:Feed
+		    a sioct:SubscriptionList
 	            where (^{alias}^.WAM_APP_TYPE = ''eNews2'') option (EXCLUSIVE) .
 
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
@@ -334,21 +341,22 @@ prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 	            where (^{alias}^.WAM_APP_TYPE = ''oDrive'') option (EXCLUSIVE) .
 
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
-		    a sioct:Photo
+		    a sioct:ImageGallery
 	            where (^{alias}^.WAM_APP_TYPE = ''oGallery'') option (EXCLUSIVE) .
 
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
 		    a sioct:Wiki
 	            where (^{alias}^.WAM_APP_TYPE = ''oWiki'') option (EXCLUSIVE) .
 
-	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
-		    a sioct:Mail
-	            where (^{alias}^.WAM_APP_TYPE = ''oMail'') option (EXCLUSIVE) .
+
+	    #sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+	    #	    a sioct:MailingList
+            #        where (^{alias}^.WAM_APP_TYPE = ''oMail'') option (EXCLUSIVE) .
 
 	    # AtomOWL Feed
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
 		    a atom:Feed ;
-		    atom:link sioc:iri (LINK) ;
+		    atom:link sioc:proxy_iri (LINK) ;
 		    atom:title WAM_INST .
 
         # User
@@ -356,9 +364,9 @@ prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 		    a sioc:User option (EXCLUSIVE);
        	sioc:id U_NAME ;
 	sioc:name U_FULL_NAME ;
-	sioc:email sioc:iri (E_MAIL) ;
+		    sioc:email sioc:proxy_iri (E_MAIL) ;
 	sioc:email_sha1 E_MAIL_SHA1 ;
-	rdfs:seeAlso sioc:iri (SEE_ALSO) ;
+		    rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
 		    sioc:account_of foaf:person_iri (U_NAME) .
 
         # Usergroup
@@ -368,13 +376,13 @@ prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 	.
 
         # User Site
-	    sioc:user_site_iri (DB.DBA.SIOC_USERS.U_NAME) a sioc:Site option (EXCLUSIVE);
+	    sioc:user_site_iri (DB.DBA.SIOC_USERS.U_NAME) a sioc:Space option (EXCLUSIVE);
 	sioc:link sioc:user_iri (U_NAME)
 	.
 
 	# Site - Forum relation
 	sioc:user_site_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME)
-		    sioc:host_of sioc:forum_iri (U_NAME, APP_TYPE, WAM_INST)
+		    sioc:space_of sioc:forum_iri (U_NAME, APP_TYPE, WAM_INST)
 	.
 
 	# Roles & Membership
@@ -398,9 +406,9 @@ prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 
 	# Person
 	foaf:person_iri (DB.DBA.ODS_FOAF_PERSON.U_NAME) a foaf:Person ;
-        foaf:mbox sioc:iri(E_MAIL) ;
+		    foaf:mbox sioc:proxy_iri(E_MAIL) ;
 	foaf:mbox_sha1sum E_MAIL_SHA1 ;
-	rdfs:seeAlso sioc:iri (SEE_ALSO) ;
+		    rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
 	foaf:nick U_NAME ;
 	foaf:name U_FULL_NAME ;
 	foaf:holdsAccount sioc:user_iri (U_NAME) ;
@@ -455,13 +463,20 @@ create procedure ODS_GET_APP_RDF_VIEWS ()
       if (__proc_exists (p_name))
 	  {
 	    tmp := call (p_name) ();
-	    ret := ret || '\n' || tmp;
+	    ret := ret || '\n'
+	    || 'create virtrdf:ODSDataspace-' || suffix
+	    || ' as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") { \n'
+	    || tmp
+	    || '\n} . \n';
 	  }
     }
   if (__proc_exists ('sioc.DBA.rdf_nntpf_view_str'))
     {
       tmp := sioc.DBA.rdf_nntpf_view_str ();
-      ret := ret || '\n' || tmp;
+      ret := ret || '\n'
+      || 'create virtrdf:ODSDataspace-discussion as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") { \n'
+      || tmp
+      || '\n} . \n';
     }
   return ret;
 };

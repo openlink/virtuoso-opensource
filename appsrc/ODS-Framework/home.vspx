@@ -103,7 +103,7 @@
         <!--<a href="aboutus.html">About Us</a> |-->
 	  <a href="faq.html">FAQ</a> |
 	  <a href="#">Privacy</a> |
-	  <a href="rabuse.vspx">Report Abuse</a> |
+        <a href="rabuse.vspx">Report Abuse</a> <!-- |-->
         <!--<a href="#">Advertise</a> |-->
         <!--a href="#">Contact Us</a-->
 	    <div><vm:copyright /></div>

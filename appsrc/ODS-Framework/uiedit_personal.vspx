@@ -411,12 +411,14 @@
 		<th><label for="e_fmusic" title="Free text">Favorite Music</label></th>
 		<td class="listing_col" nowrap="1">
 		  <v:text name="e_fmusic" value="--self.music" xhtml_size="80" xhtml_tabindex="15"/>
+		  <vm:u-prop-select name="sel_45" value="self.sav45" />
 		</td>
 	      </tr>
 	      <tr>
 		<th><label for="e_fmovie" title="Free text">Favorite Movies</label></th>
 		<td class="listing_col" nowrap="1">
 		  <v:text name="e_fmovie" value="--self.movie" xhtml_size="80" xhtml_tabindex="16"/>
+		  <vm:u-prop-select name="sel_46" value="self.sav46" />
 		</td>
 	      </tr>
 

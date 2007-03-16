@@ -599,14 +599,6 @@
  </v:method>
 
  <vm:header>
-&lt;?vsp<![CDATA[
-    if (self.plate_enabled)
-      http (sprintf ('<link rel="alternate" type="application/rss+xml" title="Search RSS feed (RSS 2.0)" href="%s" />',
-        self.rss_url.vu_url));
-    if (self.plate_enabled)
-      http (sprintf ('<link rel="alternate" type="application/rss+xml" title="Search RSS feed (Atom)" href="%s" />',
-        self.atom_url.vu_url));
-]]>?&gt;
    <v:template name="search_results_map" type="simple" enabled="--length (self.map_query)">
     <vm:oatmap-control
 	sql="self.map_query"
@@ -620,6 +612,11 @@
         base_url="connection_get ('WA_SEARCH_PATH')" />
    </v:template>
   <vm:title>Search</vm:title>
+   <?vsp if (self.plate_enabled) { ?>
+    <link rel="alternate" type="application/rss+xml" title="Search RSS feed (RSS 2.0)" href="<?V self.page_url ?>&amp;o=xml" />
+    <link rel="alternate" type="application/atom+xml" title="Search RSS feed (Atom)" href="<?V self.page_url ?>&amp;o=atom" />
+    <link rel="meta" title="RDF" type="application/rdf+xml" href="<?V self.page_url ?>&amp;o=rdf" />
+   <?vsp } ?>
  </vm:header>
  <vm:pagewrapper>
   <vm:variable name="ds_data" type="any" default="null"/>

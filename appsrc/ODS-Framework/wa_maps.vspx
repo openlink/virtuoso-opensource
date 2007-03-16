@@ -68,7 +68,7 @@
 	key-name-inx="3"
 	key-val="self.uf_u_id"
         div_id="google_map"
-        zoom="15"
+    zoom="0"
         base_url="self.base_url" />
  </vm:header>
  <vm:pagewrapper>

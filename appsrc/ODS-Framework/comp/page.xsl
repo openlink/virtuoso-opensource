@@ -319,7 +319,7 @@
           <!--<a href="aboutus.html">About Us</a> |-->
         <a href="faq.html">FAQ</a> |
         <a href="privacy.html">Privacy</a> |
-        <a href="rabuse.vspx">Report Abuse</a> |
+          <a href="rabuse.vspx">Report Abuse</a> <!-- |-->
           <!--<a href="advertise.html">Advertise</a> |-->
           <!--<a href="contact.html">Contact Us</a>-->
 	    <div><vm:copyright /></div>
@@ -1441,7 +1441,7 @@ if (i > 0)
 <xsl:template match="vm:site-member">
   <table class="ctl_grp">
     <tr>
-      <th>Allow WA Default-Site Registrations</th>
+      <th>Allow ODS Default-Site Registrations</th>
       <td>
         <v:check-box name="ssetc1" value="1" initial-checked="--(select top 1 WS_REGISTER from WA_SETTINGS)" />
       </td>
