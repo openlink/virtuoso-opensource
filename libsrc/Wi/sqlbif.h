@@ -104,6 +104,7 @@ int bif_is_relocatable (bif_t bif);
 
 
 extern bif_type_t bt_varchar;
+extern bif_type_t bt_wvarchar;
 extern bif_type_t bt_any;
 extern bif_type_t bt_integer;
 extern bif_type_t bt_double;

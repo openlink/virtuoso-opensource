@@ -531,8 +531,14 @@ bif_type_t bt_varbinary = {NULL, DV_BIN, 0, 0};
 bif_type_t bt_any = {NULL, DV_ANY, 0, 0};
 bif_type_t bt_integer = {NULL, DV_LONG_INT, 0, 0};
 bif_type_t bt_iri = {NULL, DV_IRI_ID, 0, 0};
-
-
+bif_type_t bt_double = {NULL, DV_DOUBLE_FLOAT, 0, 0};
+bif_type_t bt_float = {NULL, DV_SINGLE_FLOAT, 0, 0};
+bif_type_t bt_numeric = {NULL, DV_NUMERIC, 40, 20};
+bif_type_t bt_time = {NULL, DV_TIME, 0, 0};
+bif_type_t bt_date = {NULL, DV_DATE, 10, 0};
+bif_type_t bt_datetime = {NULL, DV_DATETIME, 10, 0};
+bif_type_t bt_timestamp = {NULL, DV_DATETIME, 10, 0};
+bif_type_t bt_bin = {NULL, DV_BIN, 10, 0};
 
 ptrlong
 bif_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
@@ -1774,6 +1780,8 @@ again:
       {
 	arr = ((caddr_t *) arr)[inx];
 	idxctr ++;
+	if (!IS_BOX_POINTER (arr))
+          sqlr_new_error ("22003", "SR020", "aset() requires %d or more dimensions for input vector.", idxctr);
 	goto again; /* see above */
       }
     dk_free_tree (((caddr_t *) arr)[inx]);
@@ -4020,6 +4028,16 @@ bif_chr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return str;
 }
 
+caddr_t
+bif_chr1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  unsigned long n = (unsigned long) bif_long_arg (qst, args, 0, "chr1");
+  caddr_t str = dk_alloc_box (2, DV_LONG_STRING);
+  str[0] = (n & 0xff); 
+  str[1] = '\0';
+  return str;
+}
+
 
 /* Let's use our own definitions in the following functions, so that we
    get also the ISO 8859/1 diacritic letters between 192 and 255
@@ -5115,7 +5133,6 @@ caddr_t
 bif_not (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg1 = bif_arg (qst, args, 0, "not");
-  int condition = 0;
 
   dtp_t dtp = DV_TYPE_OF (arg1);
   switch (dtp)
@@ -5426,10 +5443,6 @@ caddr_t BIF_NAME (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)\
 }
 
 
-bif_type_t bt_double = {NULL, DV_DOUBLE_FLOAT, 0, 0};
-bif_type_t bt_float = {NULL, DV_SINGLE_FLOAT, 0, 0};
-bif_type_t bt_numeric = {NULL, DV_NUMERIC, 40, 20};
-
 GENERAL_DOUBLE_FUNC (bif_acos, "acos", acos (x))
 GENERAL_DOUBLE_FUNC (bif_asin, "asin", asin (x))
 GENERAL_DOUBLE_FUNC (bif_atan, "atan", atan (x))
@@ -5641,7 +5654,6 @@ bif_pwd_magic_calc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       client_connection_t *cli = qi->qi_client;
       caddr_t uname = cli->cli_user ? cli->cli_user->usr_name : (caddr_t) "dba";
-      int permit = 0;
       if (pwd_magic_users != (dk_set_t) 1)
   {
     DO_SET (caddr_t, un, &pwd_magic_users)
@@ -6122,7 +6134,6 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
   dk_set_t res = NULL;
   sql_comp_t sc;
   caddr_t str;
-  caddr_t result_array = NULL;
   caddr_t start_filename;
   int has_useful_lexems;
   int start_lineno;
@@ -7344,7 +7355,6 @@ row_deref (caddr_t * qst, caddr_t id, placeholder_t **place_ret, caddr_t * row_r
     {
       ref_buf = itc_reset ((ITC) ref_itc);
       res = itc_search ((ITC) ref_itc, &ref_buf);
-      ITC_LEAVE_MAP (ref_itc);
       if (res == DVC_MATCH)
 	{
 	  if (row_ret)
@@ -7362,10 +7372,9 @@ row_deref (caddr_t * qst, caddr_t id, placeholder_t **place_ret, caddr_t * row_r
 	      else
 		{
 		  it_cursor_t *main_itc =
-		      itc_create (ref_itc->itc_space, ref_itc->itc_ltrx);
+		      itc_create (NULL, ref_itc->itc_ltrx);
 		  caddr_t row = deref_node_main_row ((ITC) ref_itc, &ref_buf,
 		      cr_key->key_table->tb_primary_key, main_itc);
-		  ITC_LEAVE_MAP (main_itc);
 		  if (!row)
 		    {
 		      itc_free ((ITC) ref_itc);
@@ -7381,27 +7390,17 @@ row_deref (caddr_t * qst, caddr_t id, placeholder_t **place_ret, caddr_t * row_r
 	  if (place_ret)
 	    {
 	      NEW_VAR (placeholder_t, pl);
-	      ITC_IN_MAP (ref_itc);
+	      ITC_IN_KNOWN_MAP (ref_itc, ref_itc->itc_page);
 	      memcpy (pl, (ITC) ref_itc, ITC_PLACEHOLDER_BYTES);
 	      pl->itc_type = ITC_PLACEHOLDER;
-	      itc_register_cursor ((it_cursor_t *) pl, INSIDE_MAP);
+	      itc_register ((it_cursor_t *) pl, ref_buf);
 	      *place_ret = pl;
 	    }
 	}
-      ITC_FAIL (ref_itc)
-	{
-	  /* make new fail ctx because ref_itc may have been set above */
 	  itc_page_leave ((ITC) ref_itc, ref_buf);
 	}
       ITC_FAILED
 	{
-	  itc_free ((ITC) ref_itc);
-	  ref_itc = NULL;
-	}
-      END_FAIL (((ITC) ref_itc));
-    }
-  ITC_FAILED
-    {
       if (ref_itc)
 	{
 	  itc_free ((ITC) ref_itc);
@@ -7438,7 +7437,7 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   long volatile dp = (long) bif_long_arg (qst, args, 0, "page_dump");
   buffer_desc_t buf_auto;
-  unsigned char bd_buffer[PAGE_SZ];
+  ALIGNED_PAGE_BUFFER (bd_buffer);
   buffer_desc_t *buf = NULL;
   it_cursor_t itc_auto, *itc = &itc_auto;
 
@@ -7447,23 +7446,21 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
     {
       itc->itc_tree = it;
-      ITC_IN_MAP (itc);
-      buf = (buffer_desc_t *) gethash (DP_ADDR2VOID (dp), it->it_commit_space->isp_dp_to_buf);
-      if (!buf)
-	buf = (buffer_desc_t *) gethash (DP_ADDR2VOID (dp), it->it_checkpoint_space->isp_dp_to_buf);
+      ITC_IN_KNOWN_MAP (itc, dp);
+      buf = (buffer_desc_t *) gethash (DP_ADDR2VOID (dp), &IT_DP_MAP (it, dp)->itm_dp_to_buf);
       if (buf)
 	{
 	  dbg_page_map (buf);
-	  ITC_LEAVE_MAP(itc);
+	  ITC_LEAVE_MAP_NC (itc);
 	  return 0;
 	}
-      ITC_LEAVE_MAP(itc);
+      ITC_LEAVE_MAP_NC(itc);
     }
   END_DO_SET();
 
   buf = &buf_auto;
   memset (&buf_auto, 0, sizeof (buf_auto));
-  buf->bd_buffer = &bd_buffer[0];
+  buf->bd_buffer = bd_buffer;
   buf->bd_page = buf->bd_physical_page = dp;
   buf->bd_storage = wi_inst.wi_master;
   if (WI_ERROR == buf_disk_read (buf))
@@ -7652,27 +7649,27 @@ caddr_t string_to_time_dt_box (char * data);
 long
 num_check_prec (long val, int prec, char *title, caddr_t *err_ret)
 {
-  if (prec)
-    {
-      long v1 = val;
-      int prec_save = prec;
-      while (prec--)
-  v1 /= 10;
-      if (v1)
+  long n;
+  static long precs[] = {0, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
+  if (10 <= prec || !prec)
+    return val;
+  n = precs[prec];
+  if (val < n && val > -n)
+    return val;
+  else 
   {
     caddr_t err =
         srv_make_new_error ("22023", "SR346",
       "precision (%d) overflow in %s",
-      prec_save, title);
+			    prec, title);
     if (err_ret)
       *err_ret = err;
     else
       sqlr_resignal (err);
     return 0;
   }
-    }
-  return val;
 }
+
 
 caddr_t
 box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
@@ -9711,6 +9708,9 @@ bif_ddl_change (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *) qst;
   caddr_t repl = box_copy_tree ((box_t) qi->qi_trx->lt_replicate);
   /* save the logging mode across the autocommit inside the schema read */
+  dbe_table_t * tb_def = sch_name_to_table (wi_inst.wi_schema, tb);
+  if (tb_def && tb_def->tb_primary_key && tb_def->tb_primary_key->key_id <= KI_UDT)
+    sqlr_new_error ("42000", ".....", "May not redef or reload def of system table");
   qi_read_table_schema (qi, tb);
   qi->qi_trx->lt_replicate = (caddr_t *)repl;
   log_dd_change (qi -> qi_trx, tb);
@@ -10238,23 +10238,22 @@ caddr_t
 bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int32 old_cp_interval;
-  int must_lock = 1;
-
+  int atomic = srv_have_global_lock  (THREAD_CURRENT_THREAD);
   c_checkpoint_interval = (int32) bif_long_arg (qst, args, 0, "checkpoint_interval");
   old_cp_interval = cfg_autocheckpoint / 60000L;
 
-  /* don't try locking the cpt mutex if current is in atomic mode */
-  if (srv_have_global_lock (THREAD_CURRENT_THREAD))
-    must_lock = 0;
-
-  if (must_lock)
+  if (!atomic)
+    {
   IN_CPT (((query_instance_t *) qst)->qi_trx);
+    }
   if (-1 > c_checkpoint_interval)
   c_checkpoint_interval = -1;
   cfg_autocheckpoint = 60000L * c_checkpoint_interval;
   cfg_set_checkpoint_interval (c_checkpoint_interval);
-  if (must_lock)
+  if (!atomic)
+    {
   LEAVE_CPT(((query_instance_t *) qst)->qi_trx);
+    }
   return box_num (old_cp_interval);
 }
 
@@ -10877,6 +10876,31 @@ bif_mutex_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
+bif_spin_wait_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* number of ietrations, flag = 0 for all on same, 2 all on different, 2 all on same with try enter */
+  int hncooh = 0;
+#ifdef _PTHREAD_H
+  long inx;
+  long n_loops = (long) bif_long_arg (qst, args, 0, "spin__wait_meter");
+  long loop_len  = (long) bif_long_arg (qst, args, 1, "spin_wait_meter");
+  dk_mutex_t * mtx = mutex_allocate ();
+  mutex_enter (mtx);
+  for (inx = 0; inx < n_loops; inx++)
+    {
+      int inx2;
+      pthread_mutex_trylock ((pthread_mutex_t*) mtx->mtx_handle);
+      for (inx2 = 0; inx2 < loop_len; inx2++)
+	hncooh++;
+    }
+  mutex_leave (mtx);
+  mutex_free (mtx);
+#endif
+  return box_num (hncooh);
+}
+
+
+caddr_t
 bif_spin_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
 #if HAVE_SPINLOCK
@@ -10939,7 +10963,6 @@ bif_mem_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long sum = 0;
   long n = (long) bif_long_arg (qst, args, 0, "mem_meter");
   long sz = (long) bif_long_arg (qst, args, 1, "mem_meter");
-  int32 ** arr;
   for (ctr = 0; ctr < n; ctr++)
     {
       int32 ** arr = (int32 **) malloc (sizeof (void*) * sz);
@@ -11070,10 +11093,14 @@ bif_busy_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	n_key = 0;
 	DO_SET (dbe_key_t *, key, &tb->tb_keys)
 	  {
-	    if (mutex_try_enter (key->key_fragments[0]->kf_it->it_page_map_mtx))
-	      mutex_leave (key->key_fragments[0]->kf_it->it_page_map_mtx);
+	      int inx;
+	      for (inx = 0; inx < IT_N_MAPS; inx++)
+		{
+		  if (mutex_try_enter (&key->key_fragments[0]->kf_it->it_maps[inx].itm_mtx))
+		    mutex_leave (&key->key_fragments[0]->kf_it->it_maps[inx].itm_mtx);
 	    else 
 	      counts[n_key]++;
+		}
 	    n_key++;
 	  }
 	END_DO_SET();
@@ -11117,7 +11144,7 @@ caddr_t
 bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
 #ifdef HAVE_GETRUSAGE
-  caddr_t * res = dk_alloc_box_zero (sizeof (caddr_t) * 8, DV_ARRAY_OF_POINTER);
+  caddr_t * res = dk_alloc_box_zero (sizeof (caddr_t) * 10, DV_ARRAY_OF_POINTER);
   struct rusage ru;
   getrusage (RUSAGE_SELF, &ru);
   res[0] = box_num (ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000);
@@ -11128,6 +11155,8 @@ bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   res[5] = box_num (ru.ru_nswap);
   res[6] = box_num (ru.ru_inblock);
   res[7] = box_num (ru.ru_oublock);
+  res[8] = box_num (ru.ru_nvcsw);
+  res[9] = box_num (ru.ru_nivcsw);
   return (caddr_t) res;
 #else
   return box_num (0);
@@ -11345,12 +11374,6 @@ fcache_init ()
   bif_define ("cache_get", bif_cache_get);
 }
 
-
-bif_type_t bt_time = {NULL, DV_TIME, 0, 0};
-bif_type_t bt_date = {NULL, DV_DATE, 10, 0};
-bif_type_t bt_datetime = {NULL, DV_DATETIME, 10, 0};
-bif_type_t bt_timestamp = {NULL, DV_DATETIME, 10, 0};
-bif_type_t bt_bin = {NULL, DV_BIN, 10, 0};
 
 void bif_cursors_init (void);
 
@@ -12308,6 +12331,8 @@ fin:
 void ssl_constant_init ();
 void bif_diff_init ();
 void bif_aq_init ();
+void rdf_box_init ();
+
 
 void
 sql_bif_init (void)
@@ -12355,6 +12380,7 @@ sql_bif_init (void)
   bif_define ("composite_ref", bif_composite_ref);
   bif_define_typed ("ascii", bif_ascii, &bt_integer);
   bif_define_typed ("chr", bif_chr, &bt_varchar);
+  bif_define_typed ("chr1", bif_chr1, &bt_varchar);
 
 /* Substring extraction: */
   bif_define_typed ("subseq", bif_subseq, &bt_string);
@@ -12611,6 +12637,7 @@ sql_bif_init (void)
   bif_define ("__set", bif_set);
   bif_define_typed ("vector_concat", bif_vector_concatenate, &bt_any);
   bif_define ("mutex_meter", bif_mutex_meter);
+  bif_define ("spin_wait_meter", bif_spin_wait_meter);
   bif_define ("spin_meter", bif_spin_meter);
   bif_define ("mem_meter", bif_mem_meter);
   bif_define ("mutex_stat", bif_mutex_stat);
@@ -12749,6 +12776,7 @@ sql_bif_init (void)
   bif_hosting_init ();
   bif_aq_init ();
   bif_diff_init();
+  rdf_box_init ();
   return;
 }
 
