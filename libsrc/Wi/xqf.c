@@ -483,19 +483,19 @@ __get_iso_date ( const char *str, char *dt, int dtflags, const char *ctor_name )
   const char *tail, *group_end;
   int fld_values[8];
   static int fld_min_values[8] =	{ 1	, 1	, 1	, 0	, 0	, 0	, 0	, 0	};
-  static int fld_max_values[8] =	{ 9999	, 12	, 31	, 23	, 59	, 60	, 14	, 59	};
+  static int fld_max_values[8] =	{ 9999	, 12	, 31	, 23	, 59	, 61	, 14	, 59	};
   static int fld_max_lengths[8] =	{ 4	, 2	, 2	, 2	, 2	, 2	, 2	, 2	};
   static int delms[8] =			{ '-'	, '-'	, 'T'	, ':'	, ':'	, '\0'	, ':'	, '\0'	};
   static const char *names[8] =	{"year"	,"month","day"	,"hour"	,"minute","second","TZ hour","TZ minute"};
   static int days_in_months[12] = { 31, -1, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
   int fld_idx;
   tail = group_end = str;
+  memcpy (fld_values, fld_min_values, 8 * sizeof (int));
   for (fld_idx = 0; fld_idx < 8; fld_idx++)
     {
       int fld_flag = (1 << fld_idx);
-      int fld_value;
+      int fldlen, fld_maxlen, fld_value;
       int expected_delimiter;
-      fld_values[fld_idx] = fld_min_values[fld_idx];
       if ('\0' == tail[0])
         continue;
       if (0 == (dtflags & fld_flag))
@@ -508,23 +508,88 @@ __get_iso_date ( const char *str, char *dt, int dtflags, const char *ctor_name )
             tzsign = 1;
         }
       for (group_end = tail; isdigit (group_end[0]); group_end++) /*no body*/;
-      if ((group_end - tail) != fld_max_lengths[fld_idx] && ((DTFLAG_YY != fld_flag) || ((group_end - tail) > fld_max_lengths[fld_idx])))
-	sqlr_new_error ("42001", "XPQ??", "Incorrect %s length in '%s' constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
-      expected_delimiter = delms[fld_idx];
-      if ((expected_delimiter != group_end[0]) &&
-        ('\0' != group_end[0]) &&
-        !((DTFLAG_SS == fld_flag) && (NULL != strchr ("+-Z",group_end[0]))) )
-	sqlr_new_error ("42001", "XPQ??", "Incorrect %s delimiter in '%s' constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
-      fld_values[fld_idx] = fld_value = atoi (tail);
-      res_flags |= fld_flag;
-      if ((DTFLAG_SS == fld_flag) && ('Z' == group_end[0]) && ('\0' == group_end[1]))
+      fldlen = group_end - tail;
+      fld_maxlen = fld_max_lengths[fld_idx];
+/*Check for field length and parse special cases like missing delimiters in year-month-day or hour:minute */
+      if (fldlen == fld_maxlen)
+        goto field_length_checked; /* see below */
+      if ((DTFLAG_YY == fld_flag) && (fldlen < fld_maxlen))
+        goto field_length_checked; /* see below */
+      if ((DTFLAG_YY == fld_flag) && (8 == fldlen))
+        {
+          fld_values[0] = ((((((tail[0]-'0') * 10) + (tail[1]-'0')) * 10) + (tail[2]-'0')) * 10) + (tail[3]-'0');
+          fld_values[1] = ((tail[4]-'0') * 10) + (tail[5]-'0');
+          tail += 6;
+          fld_idx++;
+          res_flags |= DTFLAG_YY | DTFLAG_MM;
+          continue;
+        }
+      if ((DTFLAG_HH == fld_flag) && (4 == fldlen) && (tail > str) && (('T' == tail[-1]) || (('X' == tail[-1]) && ('T' == tail[-2]))))
 	{
-	  fld_values[6] = fld_values[7] = tzmin = 0;
+          fld_values[3] = ((tail[0]-'0') * 10) + (tail[1]-'0');
+          fld_values[4] = ((tail[2]-'0') * 10) + (tail[3]-'0');
+          fld_values[5] = 0;
+          fld_idx += 2;
+          tail += 4;
+          res_flags |= DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS;
+          if (('Z' == group_end[0]) && ('\0' == group_end[1]))
+            {
+              tzmin = 0;
 	  group_end++;
 	  break;
 	}
+          continue;
+        }
+      sqlr_new_error ("42001", "XPQ??", "Incorrect %s field length in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
+
+field_length_checked:
+      fld_values[fld_idx] = fld_value = atoi (tail);
+      res_flags |= fld_flag;
+
+      expected_delimiter = delms[fld_idx];
+      if (expected_delimiter == group_end[0])
+        goto field_delim_checked; /* see below */
+      if ('\0' == group_end[0])
+        goto field_delim_checked; /* see below */
+      if (NULL != strchr ("+-Z",group_end[0]))
+        {
+          if ('Z' == group_end[0])
+            {
+              if ('\0' != group_end[1])
+                sqlr_new_error ("42001", "XPQ??", "Invalid timezone in %s constructor:\"%.300s\"", ctor_name, str);
+              tzmin = 0;
+            }
+          if (DTFLAG_SS == fld_flag)
+            goto field_delim_checked; /* see below */
+          if ((DTFLAG_DD == fld_flag) && (!(dtflags & (DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS))))
+            {
+              fld_idx += 3;
+              goto field_delim_checked; /* see below */
+            }
+        }
+      sqlr_new_error ("42001", "XPQ??", "Incorrect %s delimiter in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
+
+field_delim_checked:
+
+      if (DTFLAG_ZH == fld_flag)
+        tzmin = 0;
+      tail = group_end;
+      if ('\0' == tail[0])
+        continue;
+      if (('T' == tail[0]) && ('X' == tail[1]))
+        tail++;
+      tail++;
+    }
+  if ('\0' != tail[0])
+    sqlr_new_error ("42001", "XPQ??", "Extra symbols (%.200s) after the end of data in '%s' constructor :\"%.300s\"", group_end, ctor_name, str);
+  for (fld_idx = 0; fld_idx < 8; fld_idx++)
+    {
+      int fld_flag = (1 << fld_idx);
+      int fld_value = fld_values[fld_idx];
+      if (0 == (res_flags & fld_flag))
+        continue; /* not set -- no check */
       if ((fld_value < fld_min_values[fld_idx]) || (fld_value > fld_max_values[fld_idx]))
-        sqlr_new_error ("42001", "XPQ??", "Incorrect '%s' value in '%s' constructor:\"%s\"", names[fld_idx], ctor_name, str);
+        sqlr_new_error ("42001", "XPQ??", "Incorrect %s value in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
       if (DTFLAG_DD == fld_flag)
         {
           int month = fld_values[1];
@@ -532,14 +597,9 @@ __get_iso_date ( const char *str, char *dt, int dtflags, const char *ctor_name )
 	  if (2 == month) /* February */
 	    days_in_this_month = days_in_february (fld_values[0]);
 	  if (fld_value > days_in_this_month)
-	    sqlr_new_error ("42001", "XPQ??", "Too many days in '%s' constructor:\"%.300s\"", ctor_name, str);          
+	    sqlr_new_error ("42001", "XPQ??", "Too many days in %s constructor:\"%.300s\"", ctor_name, str);          
         }
-      if (DTFLAG_ZH == fld_flag)
-        tzmin = 0;
-      tail = group_end + 1;
     }
-  if ('\0' != group_end[0])
-    sqlr_new_error ("42001", "XPQ??", "Extra symbols(%s,%s) after the end of data in '%s' constructor :\"%s\"", tail, group_end, ctor_name, str);
   tzmin += (60 * fld_values[6]) + fld_values[7];
   if (tzsign)
     tzmin *= -1;
@@ -3214,28 +3274,28 @@ xqf_define_builtin (
 
 static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
 /* Keep these strings sorted alphabetically by p_name! */
-/*	p_name			| p_proc			| p_opcode		| null	| p_dest_dtp */
-    {	"byte"			, __integer_from_string		, XQ_INT8		, 0	, DV_LONG_INT	},
-    {	"currentDateTime"	, __cur_datetime		, 0			, 0	, 0		},
-    {	"date"			, __datetime_from_string	, XQ_DATE		, 0	, DV_DATE	},
-    {	"dateTime"		, __datetime_from_string	, XQ_DATETIME		, 0	, DV_DATETIME	},
-    {	"decimal"		, __numeric_from_string		, 0			, 0	, DV_NUMERIC	},
-    {	"double"		, __float_from_string		, XQ_DOUBLE		, 0	, DV_DOUBLE_FLOAT},
-    {	"duration"		, __duration_from_string	, 0			, 0	, 0		},
-    {	"float"			, __float_from_string		, XQ_FLOAT		, 0	, DV_SINGLE_FLOAT},
-    {	"gDay"			, __datetime_from_string	, XQ_DAY		, 0	, 0		},
-    {	"gMonth"		, __datetime_from_string	, XQ_MONTH		, 0	, 0		},
-    {	"gMonthDay"		, __datetime_from_string	, XQ_MONTHDAY		, 0	, 0		},
-    {	"gYear"			, __datetime_from_string	, XQ_YEAR		, 0	, 0		},
-    {	"gYearMonth"		, __datetime_from_string	, XQ_YEARMONTH		, 0	, 0		},
-    {	"int"			, __integer_from_string		, XQ_INT32		, 0	, DV_LONG_INT	},
-    {	"integer"		, __integer_from_string		, XQ_INT		, 0	, DV_LONG_INT	},
-    {	"long"			, __integer_from_string		, XQ_INT64		, 0	, DV_LONG_INT	},
-    {	"normalizedString"	, __gen_string_from_string	, XQ_NORM_STRING	, 0	, 0		},
-    {	"short"			, __integer_from_string		, XQ_INT16		, 0	, DV_LONG_INT	},
-/*  {	"string"		, __gen_string_from_string	, XQ_STRING		, 0	, 0		}, */
-    {	"time"			, __datetime_from_string	, XQ_TIME		, 0	, 0		},
-    {	"token"			, __gen_string_from_string	, XQ_TOKEN		, 0	, 0		} };
+/*	p_name			| p_proc			| p_opcode		| null	| p_dest_dtp	| p_typed_bif_name */
+    {	"byte"			, __integer_from_string		, XQ_INT8		, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	},
+    {	"currentDateTime"	, __cur_datetime		, 0			, 0	, 0		, "__xqf_str_parse_datetime"	},
+    {	"date"			, __datetime_from_string	, XQ_DATE		, 0	, DV_DATE	, "__xqf_str_parse_date"	},
+    {	"dateTime"		, __datetime_from_string	, XQ_DATETIME		, 0	, DV_DATETIME	, "__xqf_str_parse_datetime"	},
+    {	"decimal"		, __numeric_from_string		, 0			, 0	, DV_NUMERIC	, "__xqf_str_parse_numeric"	},
+    {	"double"		, __float_from_string		, XQ_DOUBLE		, 0	, DV_DOUBLE_FLOAT, "__xqf_str_parse_double"	},
+    {	"duration"		, __duration_from_string	, 0			, 0	, 0		, "__xqf_str_parse_datetime"	},
+    {	"float"			, __float_from_string		, XQ_FLOAT		, 0	, DV_SINGLE_FLOAT, "__xqf_str_parse_float"	},
+    {	"gDay"			, __datetime_from_string	, XQ_DAY		, 0	, 0		, "__xqf_str_parse_datetime"	},
+    {	"gMonth"		, __datetime_from_string	, XQ_MONTH		, 0	, 0		, "__xqf_str_parse_datetime"	},
+    {	"gMonthDay"		, __datetime_from_string	, XQ_MONTHDAY		, 0	, 0		, "__xqf_str_parse_datetime"	},
+    {	"gYear"			, __datetime_from_string	, XQ_YEAR		, 0	, 0		, "__xqf_str_parse_datetime"	},
+    {	"gYearMonth"		, __datetime_from_string	, XQ_YEARMONTH		, 0	, 0		, "__xqf_str_parse_datetime"	},
+    {	"int"			, __integer_from_string		, XQ_INT32		, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	},
+    {	"integer"		, __integer_from_string		, XQ_INT		, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	},
+    {	"long"			, __integer_from_string		, XQ_INT64		, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	},
+    {	"normalizedString"	, __gen_string_from_string	, XQ_NORM_STRING	, 0	, 0		, "__xqf_str_parse_nvarchar"	},
+    {	"short"			, __integer_from_string		, XQ_INT16		, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	},
+/*  {	"string"		, __gen_string_from_string	, XQ_STRING		, 0	, 0		, "__xqf_str_parse_nvarchar"	}, */
+    {	"time"			, __datetime_from_string	, XQ_TIME		, 0	, 0		, "__xqf_str_parse_time"	},
+    {	"token"			, __gen_string_from_string	, XQ_TOKEN		, 0	, 0		, "__xqf_str_parse_nvarchar"	} };
 
 xqf_str_parser_desc_t *xqf_str_parser_descs_ptr = xqf_str_parser_descs;
 int xqf_str_parser_desc_count = sizeof (xqf_str_parser_descs)/sizeof (xqf_str_parser_desc_t);
@@ -3283,10 +3343,15 @@ void xqf_init(void)
   st_double =  (sql_tree_tmp *) list (3, DV_DOUBLE_FLOAT, (ptrlong)0, (ptrlong)0);
 
   bif_define ("__xqf_str_parse", bif_xqf_str_parse);
-
+  bif_define_typed ("__xqf_str_parse_datetime"	, bif_xqf_str_parse	, &bt_datetime	);
+  bif_define_typed ("__xqf_str_parse_double"	, bif_xqf_str_parse	, &bt_double	);
+  bif_define_typed ("__xqf_str_parse_float"	, bif_xqf_str_parse	, &bt_float	);
+  bif_define_typed ("__xqf_str_parse_integer"	, bif_xqf_str_parse	, &bt_integer	);
+  bif_define_typed ("__xqf_str_parse_numeric"	, bif_xqf_str_parse	, &bt_numeric	);
+  bif_define_typed ("__xqf_str_parse_nvarchar"	, bif_xqf_str_parse	, &bt_wvarchar	);
+  bif_define_typed ("__xqf_str_parse_time"	, bif_xqf_str_parse	, &bt_time	);
 
   /* Functions */
-
   xqf_define_builtin ("ENTITY"					, NULL /*xqf_entity*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
   xqf_define_builtin ("ID"					, NULL /*xqf_id*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
   xqf_define_builtin ("IDREF"					, NULL /*xqf_idref*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);

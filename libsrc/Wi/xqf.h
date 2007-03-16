@@ -37,6 +37,7 @@ typedef struct xqf_str_parser_desc_s
   int p_opcode;
   dtp_t p_can_default;
   dtp_t p_dest_dtp;
+  const char *p_typed_bif_name;
 }
 xqf_str_parser_desc_t;
 
