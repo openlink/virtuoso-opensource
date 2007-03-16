@@ -3112,6 +3112,15 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
+bif_dict_size (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit1 = bif_dict_iterator_arg (qst, args, 0, "dict_size", 0);
+  id_hash_t *ht = hit1->hit_hash;
+  return box_num (ht->ht_inserts - ht->ht_deletes);
+}
+
+
+caddr_t
 bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   id_hash_iterator_t hit, *hit1 = bif_dict_iterator_arg (qst, args, 0, "dict_list_keys", 0);
@@ -3642,6 +3651,7 @@ xslt_init (void)
   bif_define ("dict_put", bif_dict_put);
   bif_define ("dict_get", bif_dict_get);
   bif_define ("dict_remove", bif_dict_remove);
+  bif_define ("dict_size", bif_dict_size);
   bif_define ("dict_list_keys", bif_dict_list_keys);
   bif_define ("dict_to_vector", bif_dict_to_vector);
   bif_define ("gvector_sort", bif_gvector_sort);
