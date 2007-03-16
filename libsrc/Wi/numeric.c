@@ -115,12 +115,12 @@ static struct numeric_s _num_10	= { 2, 0, 0, 0, { 1, 0	}};	/* 10 */
    compare the magnitudes. */
 
 
-#define num_static
+#define num_static static
 
 int
 _numeric_size (void)
 {
-  return (sizeof (struct numeric_s));
+  return sizeof (struct numeric_s) + NUMERIC_MAX_DATA_BYTES - NUMERIC_PADDING;
 }
 
 static int
@@ -1847,7 +1847,7 @@ _numeric_to_string (numeric_t n, char *str, size_t max_str, int new_prec, int ne
       else
 	{
 	  strcpy_size_ck (str, "-Inf", max_str);
-	  return NUMERIC_STS_OVERFLOW;
+	  return NUMERIC_STS_UNDERFLOW;
 	}
     }
 
