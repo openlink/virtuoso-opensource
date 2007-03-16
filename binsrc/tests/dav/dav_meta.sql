@@ -1185,7 +1185,7 @@ create function "DAV_EXTRACT_RDF_text/wiki" (in orig_res_name varchar, inout con
       _author := coalesce (connection_get ('HTTP_CLI_UID'), 'Unknown');
       _cluster := connection_get ('oWiki Cluster', 'Main');
 
-      _ent := xtree_doc ( "WikiV lexer" (content || '\r\n', 'Main', 'DoesntMatter', 'wiki', null), 2);
+      _ent := xtree_doc ( "WikiV lexer" (blob_to_string(content) || '\r\n', 'Main', 'DoesntMatter', 'wiki', null), 2);
       -- descendant-or-self::* is important here,
       -- since title text can be under anchor or other html tag
       declare titles any;
