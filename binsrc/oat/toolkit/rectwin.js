@@ -51,7 +51,7 @@ OAT.RectWin = function(optObj) {
 		if (top) { self.link.style.top = "-35px"; self.link.style.bottom = "";}
 		if (!top) { 
 			self.link.style.bottom = "-35px"; self.link.style.top = "";
-			if (OAT.Dom.isIE()) { self.link.style.bottom = "-36px"; }
+			if (OAT.Dom.isIE()) { self.link.style.bottom = "-35px"; }
 		}
 		if (left && top) {
 			var path = self.options.imagePath + "RectWin_lt.png";

@@ -33,7 +33,8 @@ OAT.PivotData = {
 	TYPE_BASIC:[0,"Basic - 123,456"],
 	TYPE_PERCENT:[1,"Percentual - 123,456%"],
 	TYPE_SCI:[2,"Scientific - 123,456E+02"],
-	TYPE_SPACE:[3,"With space - 1 234.567"]
+	TYPE_SPACE:[3,"With space - 1 234.567"],
+	TYPE_INT:[3,"Simple integer - 1234"]
 }
 
 OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,headerColIndexes,filterIndexes,dataColumnIndex,optObj) {
@@ -143,22 +144,22 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	
 	this.filterOK = function(index) {
 		var hope = 1;
-		var dataRow = this.dataRows[index];
-		for (var i=0;i<this.filterIndexes.length;i++) { /* for all filters */
-			var fi = this.filterIndexes[i]; /* this column is important */
-			var s = this.filterDiv.selects[i]; /* select node */
+		var dataRow = self.dataRows[index];
+		for (var i=0;i<self.filterIndexes.length;i++) { /* for all filters */
+			var fi = self.filterIndexes[i]; /* this column is important */
+			var s = self.filterDiv.selects[i]; /* select node */
 			if (s.selectedIndex && $v(s) != dataRow[fi]) { hope = 0; }
 		}
 		if (!hope) { return hope; }
-		for (var i=0;i<this.rowConditions.length;i++) {
-			var value = dataRow[this.rowConditions[i]];
-			var cond = this.conditions[this.rowConditions[i]];
+		for (var i=0;i<self.rowConditions.length;i++) {
+			var value = dataRow[self.rowConditions[i]];
+			var cond = self.conditions[self.rowConditions[i]];
 			if (value in cond.blackList) { hope = 0; }
 		}
 		if (!hope) { return hope; }
-		for (var i=0;i<this.colConditions.length;i++) {
-			var value = dataRow[this.colConditions[i]];
-			var cond = this.conditions[this.colConditions[i]];
+		for (var i=0;i<self.colConditions.length;i++) {
+			var value = dataRow[self.colConditions[i]];
+			var cond = self.conditions[self.colConditions[i]];
 			if (value in cond.blackList) { hope = 0; }
 		}
 		return hope;
@@ -192,9 +193,9 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				tmpObj[cond.distinctValuesArr[i]] = 0;
 			} /* for distinct values to be tested */
 			for (var i=0;i<obj.rowCount;i++) {
-				var value = obj.dataRows[i][index]
-				var data = obj.dataRows[i][obj.dataColumnIndex];
-				if (value in tmpObj && !obj.isNull(data)) { tmpObj[value] = 1; }
+				var value = obj.dataRows[i][index];
+				var data = obj.dataRows[i][self.dataColumnIndex];
+				if (value in tmpObj && !self.isNull(data) && self.filterOK(i) ) { tmpObj[value] = 1; }
 			} /* for all data */
 			for (var p in tmpObj) {
 				/* testing finished, now fuck off all distinct values with only null data */
@@ -473,7 +474,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		return div;
 	}
 	
-	this.count = function() {
+	this.createFilters = function() {
 		/* create filters */
 		var savedValues = [];
 		var div = self.filterDiv;
@@ -511,7 +512,9 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			d.appendChild(close);
 			self.filterDiv.appendChild(d);
 		}
+	}
 		
+	this.count = function() {
 		/* important point - take data and create a two-dimensional structure */
 		self.data = [];
 		var tmp = [];
@@ -710,6 +713,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 					case OAT.PivotData.TYPE_BASIC[0]: result = result.toFixed(2); break;
 					case OAT.PivotData.TYPE_PERCENT[0]: result = result.toFixed(2)+"%"; break;
 					case OAT.PivotData.TYPE_SCI[0]: result = result.toExponential(2); break;
+					case OAT.PivotData.TYPE_INT[0]: result = parseInt(result); break;
 					case OAT.PivotData.TYPE_SPACE[0]: 
 						result = result.toFixed(2); 
 						result = result.toString();
@@ -821,6 +825,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	}
 	
 	this.go = function() {
+		self.createFilters();
 		for (var i=0;i<obj.conditions.length;i++) { obj.createCondition(i); }
 		obj.gd.clearSources();
 		obj.gd.clearTargets();

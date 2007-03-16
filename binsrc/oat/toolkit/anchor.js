@@ -114,7 +114,6 @@ OAT.Anchor = {
 
 	assign:function(element,paramsObj) {
 		var elm = $(element);
-		if (elm.tagName.toLowerCase() != "a") { return; }
 		var options = {
 			href:false,
 			newHref:"javascript:void(0)",
@@ -154,8 +153,8 @@ OAT.Anchor = {
 		}
 		
 		options.status = 0; /* not initialized */
-		if (!options.href) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
-		elm.href = options.newHref;
+		if (!options.href && 'href' in elm) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
+		if (elm.tagName.toString().toLowerCase() == "a") { elm.href = options.newHref; }
 
 		options.displayRef = function(event) {
 			var win = OAT.AnchorData.window;

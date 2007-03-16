@@ -99,9 +99,9 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	this.sliderElm.appendChild(this.sliderBtn);
 	
 	this.slider = new OAT.Slider(this.sliderBtn,{});
-	this.port.className = "timeline_port";
+	OAT.Dom.addClass(this.port,"timeline_port");
 	this.elm.className = "timeline";
-	this.sliderBtn.className = "timeline_slider";
+	OAT.Dom.addClass(this.sliderBtn,"timeline_slider");
 	
 	/* dragging */
 	OAT.Dom.attach(this.port,"mousedown",function(event){ self.mouse_x = event.clientX; OAT.TimelineData.obj = self; });
@@ -144,6 +144,17 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 			d.setMilliseconds(0);
 			return d;
 		}
+		if ((r = str.match(/(....)-(..)-(..)T(..):(..)/))) {
+			var d = new Date();
+			d.setFullYear(r[1]);
+			d.setMonth(parseInt(r[2])-1);
+			d.setDate(r[3]);
+			d.setHours(r[4]);
+			d.setMinutes(r[5]);
+			d.setSeconds(0);
+			d.setMilliseconds(0);
+			return d;
+		}
 		if ((r = str.match(/(.{1,2})\.(.{1,2})\.(....)/))) {
 			var d = new Date();
 			d.setFullYear(r[3]);
@@ -155,8 +166,9 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 			d.setMilliseconds(0);
 			return d;
 		}
-		
-		return new Date(str);
+		var def = new Date(str);
+		if (isNaN(def)) { return false; }
+		return def;
 	}
 	
 	this.addBand = function(name,color,label) {
@@ -170,8 +182,10 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	
 	this.addEvent = function(bandIndex,startTime,endTime,content,color) {
 		var st = self.fixDate(startTime);
+		if (!st) { return; } /* bad format */
 		if (endTime) {
 			var et = self.fixDate(endTime);
+			if (!et) { return; } /* bad format */
 		} else {
 			var et = self.fixDate(startTime);
 		}

@@ -127,7 +127,13 @@ OAT.RDFBrowser = function(div,optObj) {
 				remove.href = "#";
 				remove.innerHTML = "Remove from storage";
 				removeRef(remove,i);
-				d.appendChild(remove);
+				
+				var perm = OAT.Dom.create("a");
+				perm.innerHTML = "permalink";
+				var part = window.location.toString().match(/^[^#]+/);
+				perm.href = part[0]+"#"+encodeURIComponent(item.href);
+				
+				OAT.Dom.append([d,remove,OAT.Dom.text(" - "),perm]);
 				self.store.div.appendChild(d);
 	}
 	
@@ -136,11 +142,17 @@ OAT.RDFBrowser = function(div,optObj) {
 			self.store.div.appendChild(d);
 		},
 		
-		addURL:function(url) {
+		addURL:function(u) {
+			var url = u.toString().trim();
 			self.uri = url;
 			var cback = function(xmlDoc) {
 		if (self.options.indicator) { OAT.Dom.show(self.options.indicator); }
 		var triples = OAT.RDF.toTriples(xmlDoc);
+				/* sanitize triples */
+				for (var i=0;i<triples.length;i++) {
+					var t = triples[i];
+					t[2] = t[2].replace(/<script[^>]*>/gi,'');
+				}
 				if (self.options.indicator) { OAT.Dom.hide(self.options.indicator); }
 				self.store.addTriples(triples,url,url);
 	}
@@ -215,13 +227,33 @@ OAT.RDFBrowser = function(div,optObj) {
 			url.value = self.options.defaultURL;
 			self.store.url = url;
 			
-			var btn = OAT.Dom.button("Add to document storage");
+			var btn1 = OAT.Dom.button("Add to document storage");
+			var btn2 = OAT.Dom.button("Browse DAV");
 	
 		var h = OAT.Dom.create("h3");
 			h.innerHTML = "Storage";
-			OAT.Dom.append([self.cacheDiv,h,url,btn,self.store.div]);
-			OAT.Dom.attach(btn,"click",self.store.loadFromInput);
+			OAT.Dom.append([self.cacheDiv,h,url,btn1,btn2,self.store.div]);
+			OAT.Dom.attach(btn1,"click",self.store.loadFromInput);
+			OAT.Dom.attach(btn2,"click",function() {
+				var options = {
+					mode:'open_dialog',
+					pathDefault:'/DAV/home/demo/',
+					onConfirmClick:function(path,fname,data) {
+						url.value = path+fname;
+						return true; /* return false will keep browser open */
+					}
+				};
+				OAT.WebDav.open(options);
+			});
+			
+			/* DAV init */
+			var options = {
+				imagePath:self.options.imagePath,
+				imageExt:'png'
+			};
+			OAT.WebDav.init(options);
 		
+			/* querystring url */
 			var r = false;
 			if ((r = window.location.toString().match(/#(.+)$/))) {
 				url.value = decodeURIComponent(r[1]);
@@ -265,13 +297,14 @@ OAT.RDFBrowser = function(div,optObj) {
 			height:0,
 			result_control:false
 		};
+		if (OAT.Dom.isIE()) { obj.width = 300; }
 		OAT.Anchor.assign(element,obj);
 		}
 	
 	this.generateURIActions = function(uri) {
 		var list = [];
 		var a = OAT.Dom.create("a");
-		a.innerHTML = "Add to document storage";
+		a.innerHTML = "Get Data Set (Dereference)";
 		a.href = "javascript:void(0)";
 		OAT.Dom.attach(a,"click",function() {
 			/* dereference link - add */
@@ -281,7 +314,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		list.push(a);
 
 		var a = OAT.Dom.create("a");
-		a.innerHTML = "Use as document storage";
+		a.innerHTML = "Get Data Set (Dereference) - replace storage";
 		a.href = "javascript:void(0)";
 		OAT.Dom.attach(a,"click",function() {
 			/* dereference link - replace */
@@ -292,14 +325,14 @@ OAT.RDFBrowser = function(div,optObj) {
 		list.push(a);
 		
 		var a = OAT.Dom.create("a");
-		a.innerHTML = "Use as document storage - permalink";
+		a.innerHTML = "Get Data Set (Dereference) - permalink";
 		var root = window.location.toString().match(/^[^#]+/)[0];
 		a.href = root+"#"+encodeURIComponent(uri);
 		list.push(a);
 		list.push(false);
 
 		var a = OAT.Dom.create("a");
-		a.innerHTML = "Filter by this URI";
+		a.innerHTML = "Explore";
 		a.href = "javascript:void(0)";
 		OAT.Dom.attach(a,"click",function() {
 			/* dereference link */
@@ -309,7 +342,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		list.push(a);
 
 		var aa = OAT.Dom.create("a");
-		aa.innerHTML = "Filter by this URI - Bookmark";
+		aa.innerHTML = "Explore - Bookmark";
 		aa.href = "javascript:void(0)";
 		OAT.Dom.attach(aa,"click",function(){
 			var label = prompt("Please name your bookmark:",uri);
@@ -367,7 +400,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				count++;
 				if (obj[o] > 1) { atLeastOne = true; }
 			}
-			if (!atLeastOne || count <= 1 || count > self.options.maxDistinctValues) { delete cats[p]; }
+			if ((!atLeastOne && p != "type") || (count <= 1 && p != "type") || count > self.options.maxDistinctValues) { delete cats[p]; }
 		}
 		
 		function assign(node,p,o) {
@@ -621,7 +654,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.sideDiv = OAT.Dom.create("div",{},"rdf_side");
 		self.tabsUL = OAT.Dom.create("ul",{},"rdf_tabs");
 		self.tabDiv = OAT.Dom.create("div",{},"rdf_content");
-		OAT.Dom.append([self.parent,self.cacheDiv,self.sideDiv,self.filterDiv,self.tabsUL,self.tabDiv]);
+		OAT.Dom.append([self.parent,self.sideDiv,self.cacheDiv,self.filterDiv,self.tabsUL,self.tabDiv]);
 		OAT.Dom.append([self.sideDiv,self.categoryDiv,self.bookmarkDiv]);
 		
 		self.tab = new OAT.Tab(self.tabDiv);

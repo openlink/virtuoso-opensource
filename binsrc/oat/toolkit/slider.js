@@ -29,7 +29,6 @@ OAT.SliderData = {
 		if (o.options.direction == OAT.SliderData.DIR_V) { delta = event.clientY - OAT.SliderData.mouse_y; }
 		var newpos = delta + OAT.SliderData.initPos;
 		var newval = o.positionToValue(newpos);
-		$("d").innerHTML = newval;
 		if (newval >= o.options.minValue && newval <= o.options.maxValue && newval != o.value) { o.slideTo(newval,true); }
 	},
 	up:function() {

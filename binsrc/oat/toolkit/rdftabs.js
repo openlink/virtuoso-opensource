@@ -14,7 +14,7 @@
 	tab.reset();
 	tab.redraw();
 	
-	.rdf_sort .rdf_group .rdf_clear .rdf_data 
+	.rdf_sort .rdf_group .rdf_clear .rdf_data .rtf_tl_port .rdf_tl_slider
 */
 OAT.RDFTabs = {};
 
@@ -97,10 +97,11 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 			/* decide output format */
 			var data = preds[i][1];
 			var r = false;
-			if (data.match(/(jpe?g|png|gif)$/i)) { /* image */
+			if (data.match(/^http.*(jpe?g|png|gif)$/i)) { /* image */
 				content = OAT.Dom.create("img");
 				content.title = data;
 				content.src = data;
+				self.parent.createAnchor(content,data);
 			} else if (data.match(/^http/i)) { /* link */
 				content = OAT.Dom.create("a");
 				content.innerHTML = data;
@@ -123,7 +124,9 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 				if (a.href.match(/^http/)) { self.parent.createAnchor(a,a.href); }
 			}
 			OAT.Dom.append([d,strong,content],[div,d]);
+			
 		} /* for all predicates */
+		
 		return div;
 	}
 
@@ -343,6 +346,7 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 	this.elm.style.top = "24px";
 	
 	this.redraw = function() {
+		if (OAT.Dom.isIE()) { return; }
 		var triples = [];
 		/* create raw triples */
 		for (var i=0;i<self.parent.data.length;i++) {
@@ -364,5 +368,126 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 	}
 }
 OAT.RDFTabs.svg.prototype = new OAT.RDFTabs.parent();
+
+OAT.RDFTabs.map = function(parent,optObj) {
+	var self = this;
+	
+	this.options = {
+		provider:OAT.MapData.TYPE_G
+	}
+	for (var p in optObj) { self.options[p] = optObj[p]; }
+
+	this.map = false;
+	this.parent = parent;
+	this.elm.style.position = "relative";
+	this.elm.style.width = "100%";
+	this.elm.style.height = "100%";
+
+	this.tryItem = function(item) {
+		var preds = item[1];
+		var pointResource = false;
+		for (var i=0;i<preds.length;i++) {
+			var p = preds[i];
+			if (p[0] == "based_near") { pointResource = p[1]; } /* this is resource containig geo coordinates */
+		}
+		if (!pointResource) { return false; }
+		for (var i=0;i<self.parent.data.length;i++) {
+			var it = self.parent.data[i];
+			if (it[0] == pointResource) {
+				/* find coords */
+				var coords = [0,0];
+				for (var j=0;j<it[1].length;j++) {
+					if (it[1][j][0] == "lat") { coords[0] = it[1][j][1]; }
+					if (it[1][j][0] == "long") { coords[1] = it[1][j][1]; }
+				} /* for all geo properties */
+				return coords;
+			} /* geo resource */
+		} /* for all resources */
+	}
+	
+	this.attachMarker = function(data,item) {
+		var m = false;
+		var callback = function() {
+			var div = OAT.Dom.create("span");
+			div.innerHTML = item[0];
+			self.map.openWindow(m,div);
+		}
+		m = self.map.addMarker(1,data[0],data[1],false,false,false,callback);
+	}
+	
+	this.redraw = function() {
+		self.map = new OAT.Map(self.elm,self.options.provider);
+		self.map.centerAndZoom(0,0,0);
+		self.map.addTypeControl();
+		self.map.addMapControl();
+		var list = [];
+		for (var i=0;i<self.parent.data.length;i++) {
+			var item = self.parent.data[i];
+			var data = self.tryItem(item);
+			if (!data) { continue; }
+			/* add marker */
+			self.attachMarker(data,item);
+			list.push(data);
+		}
+		self.map.optimalPosition(list);
+	}
+}
+OAT.RDFTabs.map.prototype = new OAT.RDFTabs.parent();
+
+OAT.RDFTabs.timeline = function(parent,optObj) {
+	var self = this;
+	
+	this.options = {
+		imagePath:OAT.Preferences.imagePath
+	}
+	for (var p in optObj) { self.options[p] = optObj[p]; }
+
+	this.initialized = false;
+	this.parent = parent;
+	this.elm.style.position = "relative";
+	this.elm.style.width = "100%";
+	this.elm.style.height = "100%";
+	this.elm.style.top = "20px";
+	
+	this.port = OAT.Dom.create("div",{},"rdf_tl_port");
+	this.slider = OAT.Dom.create("div",{},"rdf_tl_slider");
+	OAT.Dom.append([self.elm,self.port,self.slider]);
+
+	this.tryItem = function(item) {
+		var preds = item[1];
+		var pointResource = false;
+		for (var i=0;i<preds.length;i++) {
+			var p = preds[i];
+			if (p[0] == "date") { return p[1]; }
+		}
+		return false;
+	}
+	
+	this.redraw = function() {
+		if (!self.initialized) {
+			self.tl = new OAT.Timeline(self.port,self.slider,self.options);
+			self.initialized = true;
+		}	
+		self.tl.clear();
+		self.tl.addBand("Timeline","#8FaFcE");
+		
+		for (var i=0;i<self.parent.data.length;i++) {
+			var item = self.parent.data[i];
+			var date = self.tryItem(item);
+			if (!date) { continue; }
+			/* add event */
+			var content = OAT.Dom.create("div",{left:"-7px"});
+			var ball = OAT.Dom.create("div",{width:"16px",height:"16px",cssFloat:"left",styleFloat:"left"});
+			ball.style.backgroundImage = "url("+self.options.imagePath+"Timeline_circle.png)";
+			var t = OAT.Dom.create("span");
+			t.innerHTML = item[0];
+			OAT.Dom.append([content,ball,t]);
+			self.tl.addEvent("Timeline",date,date,content,"#ddd");
+		}
+		self.tl.draw();
+		self.tl.slider.slideTo(0,1);
+	}
+}
+OAT.RDFTabs.timeline.prototype = new OAT.RDFTabs.parent();
 
 OAT.Loader.featureLoaded("rdftabs");

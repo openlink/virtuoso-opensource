@@ -941,7 +941,7 @@ OAT.Dependencies = {
 	webclip:"webclipbinding",
 	declarative:"json",
 	tree:"ghostdrag",
-	rdfbrowser:["rdf","tree","dereference","anchor","rdftabs","tab"],
+	rdfbrowser:["rdf","tree","dereference","anchor","rdftabs","tab","dav"],
 	graphsidebar:"tree",
 	form:["ajax2","dialog","datasource","formobject"],
 	rssreader:"xml"

@@ -205,7 +205,7 @@ OAT.Map = function(something, provider, optionsObject) {
 			}
 		} /* for all groups */
 
-		if (self.provider == OAT.MapData.TYPE_G) { self.obj.layers[2].redraw(); }
+		if (self.provider == OAT.MapData.TYPE_OL) { self.obj.layers[2].redraw(); }
 	}
 	
 	this.addTypeControl = function() {

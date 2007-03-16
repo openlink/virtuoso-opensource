@@ -56,7 +56,7 @@ function GLoad()
         return;
         
     }
-    GLoadApi(["http://mt0.google.com/mt?n=404&v=w2.37&","http://mt1.google.com/mt?n=404&v=w2.37&","http://mt2.google.com/mt?n=404&v=w2.37&","http://mt3.google.com/mt?n=404&v=w2.37&"], ["http://kh0.google.com/kh?n=404&v=14&","http://kh1.google.com/kh?n=404&v=14&","http://kh2.google.com/kh?n=404&v=14&","http://kh3.google.com/kh?n=404&v=14&"], ["http://mt0.google.com/mt?n=404&v=apt.36&","http://mt1.google.com/mt?n=404&v=apt.36&","http://mt2.google.com/mt?n=404&v=apt.36&","http://mt3.google.com/mt?n=404&v=apt.36&"],window._apiKey,"","",true);
+	GLoadApi(["http://mt0.google.com/mt?n=404&v=w2.43&","http://mt1.google.com/mt?n=404&v=w2.43&","http://mt2.google.com/mt?n=404&v=w2.43&","http://mt3.google.com/mt?n=404&v=w2.43&"], ["http://kh0.google.com/kh?n=404&v=15&","http://kh1.google.com/kh?n=404&v=15&","http://kh2.google.com/kh?n=404&v=15&","http://kh3.google.com/kh?n=404&v=15&"], ["http://mt0.google.com/mt?n=404&v=apt.42&","http://mt1.google.com/mt?n=404&v=apt.42&","http://mt2.google.com/mt?n=404&v=apt.42&","http://mt3.google.com/mt?n=404&v=apt.42&"],window._apiKey,"","",true);
 }
 function GUnload()
 {
