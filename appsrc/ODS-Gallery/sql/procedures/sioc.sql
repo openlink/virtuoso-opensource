@@ -24,16 +24,17 @@ use sioc;
 create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
     {
   declare post_iri, forum_iri, creator_iri,private_tags,tags,user_pwd,cm_iri,title,content,links_to,c_link varchar;
-  declare pos,dir,album,_ind,ts,modf,link any;
+  declare pos,dir,album,_ind,ts,modf,link, svc_iri any;
 
-  for select OWNER_ID, WAI_NAME, HOME_PATH,HOME_URL from PHOTO..SYS_INFO
-  do{
-  for select p.OWNER_ID as OWNER_ID, p.WAI_NAME as WAI_NAME, p.HOME_PATH as HOME_PATH,p.HOME_URL as HOME_URL
+  for select p.WAI_NAME as WAI_NAME, p.HOME_PATH as HOME_PATH,p.HOME_URL as HOME_URL
       from PHOTO..SYS_INFO p, DB.DBA.WA_INSTANCE i
       where p.WAI_NAME = i.WAI_NAME
       and ((i.WAI_IS_PUBLIC = 1 and _wai_name is null) or p.WAI_NAME = _wai_name)
 	do
 	  {
+      forum_iri   := photo_iri (WAI_NAME);
+      svc_iri := sprintf ('http://%s/photos/SOAP', get_cname());
+      ods_sioc_service (graph_iri, svc_iri, forum_iri, null, 'text/xml', svc_iri||'/services.wsdl', svc_iri, 'SOAP');
       for select RES_ID MAIN_RES_ID,RES_FULL_PATH, RES_NAME, RES_TYPE, RES_CR_TIME, RES_MOD_TIME, RES_OWNER,U_NAME,U_PWD
 	          from WS.WS.SYS_DAV_RES
 	          join WS.WS.SYS_DAV_USER ON RES_OWNER = U_ID
@@ -49,8 +50,7 @@ create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar
         user_pwd := pwd_magic_calc(U_NAME,U_PWD, 1);
 
         -- Predictes --
-        post_iri    := gallery_post_iri(RES_FULL_PATH);
-        forum_iri   := photo_iri (WAI_NAME);
+        post_iri    := post_iri_ex (forum_iri, MAIN_RES_ID);
 	    creator_iri := user_iri (RES_OWNER);
         title       := RES_NAME;
         ts          := RES_CR_TIME;
@@ -93,7 +93,6 @@ create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar
 	    }
     }
   }
-}
 ;
 
 
@@ -132,8 +131,8 @@ create trigger SYS_DAV_RES_PHOTO_SIOC_I after insert on WS.WS.SYS_DAV_RES refere
    
       user_pwd    := pwd_magic_calc(U_NAME,U_PWD, 1);
       
-      post_iri    := gallery_post_iri(N.RES_FULL_PATH);
       forum_iri   := photo_iri (WAI_NAME);
+      post_iri    :=  post_iri_ex (forum_iri, N.RES_ID);
       creator_iri := user_iri (N.RES_OWNER);
       title       := N.RES_NAME;
       ts          := N.RES_CR_TIME;
@@ -183,9 +182,9 @@ create trigger SYS_DAV_RES_PHOTO_SIOC_U after update on WS.WS.SYS_DAV_RES refere
     {
       user_pwd      := pwd_magic_calc(U_NAME,U_PWD, 1);
       
-      old_post_iri  := gallery_post_iri(O.RES_FULL_PATH);
-      post_iri      := gallery_post_iri(N.RES_FULL_PATH);
       forum_iri     := photo_iri (WAI_NAME);
+      old_post_iri  := post_iri_ex (forum_iri, O.RES_ID);
+      post_iri      := post_iri_ex (forum_iri, N.RES_ID);
       creator_iri := user_iri (N.RES_OWNER);
       title         := N.RES_NAME;
       ts            := N.RES_CR_TIME;
@@ -206,15 +205,35 @@ create trigger SYS_DAV_RES_PHOTO_SIOC_U after update on WS.WS.SYS_DAV_RES refere
 
 create trigger SYS_DAV_RES_PHOTO_SIOC_D after delete on WS.WS.SYS_DAV_RES referencing old as O
 {
-  declare dav_res_iri, photo_iri, creator_iri varchar;
-  declare graph_iri varchar;
+  declare dir varchar;
+  declare post_iri, forum_iri, creator_iri, old_post_iri,user_pwd,title,ts,modf,link,links_to,content,tags varchar;
+  declare pos int;
+  declare graph_iri,album varchar;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
+
+  pos := strrchr (O.RES_FULL_PATH, '/');
+  if (pos is null)
+    return;
+
+  dir := subseq (O.RES_FULL_PATH, 0,pos);
+  pos := strrchr (dir, '/');
+  dir := subseq (O.RES_FULL_PATH, 0, pos+1);
   graph_iri := get_graph ();
-  dav_res_iri := dav_res_iri (O.RES_FULL_PATH);
-  delete_quad_s_or_o (graph_iri, dav_res_iri, dav_res_iri);
+
+  for select p.WAI_NAME as WAI_NAME,p.HOME_URL as HOME_URL
+     from PHOTO..SYS_INFO p,
+          DB.DBA.WA_INSTANCE i
+    where p.HOME_PATH = dir
+      and p.WAI_NAME = i.WAI_NAME
+      and i.WAI_IS_PUBLIC = 1 do
+    {
+      forum_iri     := photo_iri (WAI_NAME);
+      old_post_iri  := post_iri_ex (forum_iri, O.RES_ID);
+      delete_quad_s_or_o (graph_iri, old_post_iri, old_post_iri);
+    }
   return;
 }
 ;
@@ -224,14 +243,14 @@ create trigger PHOTO_COMMENTS_SIOC_I after insert on PHOTO.WA.COMMENTS referenci
 {
   declare iri, graph_iri, home, post_iri, _wai_name,_home_url varchar;
   declare cm_iri,_res_full_path,_res_name,album,link,c_link,forum_iri  varchar;
-  declare album_id integer;
+  declare album_id, _res_id integer;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
-  SELECT RES_FULL_PATH,RES_NAME,RES_COL
-    INTO _res_full_path,_res_name,album_id 
+  SELECT RES_FULL_PATH,RES_NAME,RES_COL, RES_ID
+    INTO _res_full_path,_res_name,album_id, _res_id
     FROM WS.WS.SYS_DAV_RES 
    WHERE RES_ID = N.RES_ID;
   
@@ -241,8 +260,6 @@ create trigger PHOTO_COMMENTS_SIOC_I after insert on PHOTO.WA.COMMENTS referenci
    WHERE COL_ID = album_id;
 
   graph_iri := get_graph ();
-  post_iri  := gallery_post_iri(_res_full_path);
-  cm_iri    := gallery_comment_iri(post_iri,N.COMMENT_ID);
   
   for SELECT OWNER_ID, WAI_NAME, HOME_PATH,HOME_URL FROM PHOTO..SYS_INFO WHERE GALLERY_ID = N.GALLERY_ID 
   do{
@@ -252,6 +269,8 @@ create trigger PHOTO_COMMENTS_SIOC_I after insert on PHOTO.WA.COMMENTS referenci
       link      := gallery_post_url(HOME_URL,album || '/' || _res_name);
       c_link    := gallery_comment_url(link,N.COMMENT_ID);
   }
+  post_iri  := post_iri_ex (forum_iri, _res_id);
+  cm_iri    := gallery_comment_iri(post_iri,N.COMMENT_ID);
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = _wai_name and WAI_IS_PUBLIC = 1))
     return;
 
@@ -267,14 +286,14 @@ create trigger PHOTO_COMMENTS_SIOC_U after update on PHOTO.WA.COMMENTS referenci
     {
   declare iri, graph_iri, home, post_iri, _wai_name,_home_url varchar;
   declare cm_iri,_res_full_path,_res_name,album,link,c_link,forum_iri  varchar;
-  declare album_id integer;
+  declare album_id, _res_id integer;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
-  SELECT RES_FULL_PATH,RES_NAME,RES_COL
-    INTO _res_full_path,_res_name,album_id 
+  SELECT RES_FULL_PATH,RES_NAME,RES_COL, RES_ID
+    INTO _res_full_path,_res_name,album_id, _res_id
     FROM WS.WS.SYS_DAV_RES 
    WHERE RES_ID = N.RES_ID;
   
@@ -284,8 +303,6 @@ create trigger PHOTO_COMMENTS_SIOC_U after update on PHOTO.WA.COMMENTS referenci
    WHERE COL_ID = album_id;
     
   graph_iri := get_graph ();
-  post_iri  := gallery_post_iri(_res_full_path);
-  cm_iri    := gallery_comment_iri(post_iri,N.COMMENT_ID);
   
   for SELECT OWNER_ID, WAI_NAME, HOME_PATH,HOME_URL FROM PHOTO..SYS_INFO WHERE GALLERY_ID = N.GALLERY_ID 
   do{
@@ -298,6 +315,9 @@ create trigger PHOTO_COMMENTS_SIOC_U after update on PHOTO.WA.COMMENTS referenci
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = _wai_name and WAI_IS_PUBLIC = 1))
     return;
 
+  post_iri  := post_iri_ex (forum_iri, _res_id);
+  cm_iri    := gallery_comment_iri(post_iri,N.COMMENT_ID);
+
   delete_quad_s_or_o (graph_iri, cm_iri, cm_iri);
   ods_sioc_post (graph_iri, cm_iri, forum_iri, null, _res_name , N.CREATE_DATE, N.CREATE_DATE, c_link, N.TEXT);
   DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
@@ -309,17 +329,26 @@ create trigger PHOTO_COMMENTS_SIOC_U after update on PHOTO.WA.COMMENTS referenci
 
 create trigger PHOTO_COMMENTS_SIOC_D after delete on PHOTO.WA.COMMENTS referencing old as O
 {
-  declare iri, graph_iri, cr_iri, blog_iri,post_iri,_res_full_path,cm_iri varchar;
+  declare iri, graph_iri, home, post_iri, _wai_name,_home_url varchar;
+  declare cm_iri,_res_full_path,_res_name,album,link,c_link,forum_iri  varchar;
+  declare album_id,_res_id integer;
+
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
   return;
 };
-  SELECT RES_FULL_PATH
-    INTO _res_full_path
+  SELECT RES_FULL_PATH, RES_ID
+    INTO _res_full_path, _res_id
     FROM WS.WS.SYS_DAV_RES 
    WHERE RES_ID = O.RES_ID;
+
   graph_iri := get_graph ();
-  post_iri  := gallery_post_iri(_res_full_path);
+  for SELECT OWNER_ID, WAI_NAME, HOME_PATH,HOME_URL FROM PHOTO..SYS_INFO WHERE GALLERY_ID = O.GALLERY_ID
+  do{
+      forum_iri := photo_iri (WAI_NAME);
+      _wai_name := WAI_NAME;
+  }
+  post_iri  := post_iri_ex (forum_iri, _res_id);
   cm_iri    := gallery_comment_iri(post_iri,O.COMMENT_ID);
   delete_quad_s_or_o (graph_iri, cm_iri, cm_iri);
   return;
@@ -456,8 +485,9 @@ create procedure sioc.DBA.rdf_photos_view_str ()
       '
 
       # Posts
-      # SIOC
-      sioc:photo_post_iri (DB.DBA.ODS_PHOTO_POSTS.RES_FULL_PATH) a sioc:Post ;
+      # TODO: add exif data
+      #
+      sioc:photo_post_iri (DB.DBA.ODS_PHOTO_POSTS.RES_FULL_PATH) a exif:IFD ;
       dc:title RES_NAME ;
       dct:created RES_CREATED ;
       dct:modified RES_MODIFIED ;
@@ -469,7 +499,6 @@ create procedure sioc.DBA.rdf_photos_view_str ()
       sioc:has_container sioc:photo_forum_iri (U_MEMBER, WAI_NAME) .
 
       sioc:photo_forum_iri (DB.DBA.ODS_PHOTO_POSTS.U_MEMBER, DB.DBA.ODS_PHOTO_POSTS.WAI_NAME)
-      a sioct:Photo ;
       sioc:container_of
       sioc:photo_post_iri (RES_FULL_PATH) .
 
@@ -487,7 +516,7 @@ create procedure sioc.DBA.rdf_photos_view_str ()
       skos:isSubjectOf sioc:photo_post_iri (RES_FULL_PATH) .
 
       # Comments
-      sioc:photo_comment_iri (DB.DBA.ODS_PHOTO_COMMENTS.RES_FULL_PATH, DB.DBA.ODS_PHOTO_COMMENTS.COMMENT_ID) a sioc:Post ;
+      sioc:photo_comment_iri (DB.DBA.ODS_PHOTO_COMMENTS.RES_FULL_PATH, DB.DBA.ODS_PHOTO_COMMENTS.COMMENT_ID) a sioct:Comment ;
       sioc:reply_of sioc:photo_post_iri (RES_FULL_PATH) ;
       sioc:has_container sioc:photo_forum_iri (U_MEMBER, WAI_NAME) ;
       dc:title RES_NAME ;
@@ -500,23 +529,6 @@ create procedure sioc.DBA.rdf_photos_view_str ()
       sioc:photo_post_iri (DB.DBA.ODS_PHOTO_COMMENTS.RES_FULL_PATH)
       sioc:has_reply
       sioc:photo_comment_iri (RES_FULL_PATH, COMMENT_ID) .
-
-      # AtomOWL
-      sioc:photo_post_iri (DB.DBA.ODS_PHOTO_POSTS.RES_FULL_PATH) a atom:Entry ;
-      atom:title RES_NAME ;
-      atom:source sioc:photo_forum_iri (U_MEMBER, WAI_NAME) ;
-      atom:author foaf:person_iri (U_OWNER) ;
-      atom:published RES_CREATED ;
-      atom:updated RES_MODIFIED ;
-      atom:content sioc:photo_post_text_iri (RES_FULL_PATH) .
-
-      sioc:photo_post_text_iri (DB.DBA.ODS_PHOTO_POSTS.RES_FULL_PATH) a atom:Content ;
-      atom:type RES_TYPE ;
-      atom:body RES_DESCRIPTION .
-
-      sioc:photo_forum_iri (DB.DBA.ODS_PHOTO_POSTS.U_MEMBER, DB.DBA.ODS_PHOTO_POSTS.WAI_NAME)
-      atom:contains
-      sioc:photo_post_iri (RES_FULL_PATH) .
 
       '
       ;

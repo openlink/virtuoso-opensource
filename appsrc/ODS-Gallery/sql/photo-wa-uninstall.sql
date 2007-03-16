@@ -38,21 +38,29 @@ DELETE FROM DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'oGallery';
 DELETE FROM DB.DBA.WA_MEMBER_TYPE WHERE WMT_APP = 'oGallery';
 DELETE FROM DB.DBA.WA_TYPES WHERE WAT_NAME = 'oGallery';
 
+
+--TRIGGERS related to SIOC
+PHOTO.WA._exec_no_error('DROP TRIGGER WS.WS.SYS_DAV_RES_PHOTO_SIOC_I');
+PHOTO.WA._exec_no_error('DROP TRIGGER WS.WS.SYS_DAV_RES_PHOTO_SIOC_U');
+PHOTO.WA._exec_no_error('DROP TRIGGER WS.WS.SYS_DAV_RES_PHOTO_SIOC_D');
+
 -- Types
 PHOTO.WA._exec_no_error('delete from WA_TYPES where WAT_NAME = \'Photo\'');
 PHOTO.WA._exec_no_error('drop trigger WS.WS.trigger_make_thumbnails');
 PHOTO.WA._exec_no_error('drop table PHOTO.WA.comments');
+PHOTO.WA._exec_no_error('drop trigger DB.DBA.trigger_update_sys_info');
 PHOTO.WA._exec_no_error('drop table PHOTO.WA.SYS_INFO');
 PHOTO.WA._exec_no_error('drop table PHOTO.WA.EXIF_DATA');
 
 PHOTO.WA._exec_no_error('drop type wa_photo');
 PHOTO.WA._exec_no_error('drop type photo_user');
 PHOTO.WA._exec_no_error('drop type SOAP_album');
+PHOTO.WA._exec_no_error('drop type SOAP_external_album');
+PHOTO.WA._exec_no_error('drop type SOAP_gallery');
 PHOTO.WA._exec_no_error('drop type photo_comment');
 PHOTO.WA._exec_no_error('drop type image_ids');
 PHOTO.WA._exec_no_error('drop type photo_exif');
-
-
+PHOTO.WA._exec_no_error('drop type photo_instance');
 
 
 
