@@ -723,3 +723,58 @@ create procedure WS.WS.HTTP_CACHE_STORE (inout path any, inout store int)
 }
 ;
 
+-- /* extended http proxy service */
+create procedure virt_proxy_init ()
+{
+  if (exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'PROXY'))
+    return;
+  DB.DBA.USER_CREATE ('PROXY', uuid(), vector ('DISABLED', 1));
+  DB.DBA.VHOST_DEFINE (lpath=>'/proxy', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY');
+}
+;
+
+virt_proxy_init ()
+;
+
+
+create procedure ext_http_proxy (in url varchar, in header varchar := null, in force varchar := null) __SOAP_HTTP 'text/html'
+{
+  declare hdr, content, req_hdr any;
+  declare ct any;
+  declare stat, msg, metas, accept, rset, triples, ses any;
+  req_hdr := null;
+  if (header is not null)
+    req_hdr := header;
+  if (force is not null)
+    {
+      if (lower (force) = 'rdf')
+	{
+	  set http_charset='utf-8';
+          accept := '';
+	  if (header is not null and length (header))
+	    accept := http_request_header (split_and_decode (header, 0, '\0\0\r\n'), 'Accept', null, null);
+          stat := '00000';
+	  set_user_id ('SPARQL');
+          exec (sprintf ('sparql define get:soft "soft" CONSTRUCT { ?s ?p ?o } FROM <%s> WHERE { ?s ?p ?o }', url),
+	    stat, msg, vector (), 0, metas, rset);
+	  if (stat <> '00000')
+	    signal (stat, msg);
+	  ses := string_output (1000000);
+	  commit work;
+	  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
+	  http (ses);
+          return '';
+	}
+      else
+        signal ('22023', 'The "force" parameter supports "rdf"');
+    }
+  content := DB.DBA.RDF_HTTP_URL_GET (url, '', hdr, 'GET', req_hdr);
+  ct := http_request_header (hdr, 'Content-Type');
+  if (ct is not null)
+    http_header (sprintf ('Content-Type: %s\r\n', ct));
+  return content;
+}
+;
+
+grant execute on ext_http_proxy to PROXY
+;
