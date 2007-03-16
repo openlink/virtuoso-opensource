@@ -72,7 +72,7 @@
         </v:script>
       </v:on-init>
       <v:template type="simple" enabled= "--case when (self.pack_ready = 1) then 1 else 0 end">
-      <div class="dialog dlg_info">
+      <div>
 	<img class="dialog_icon" src="images/icons/messagebox_info.png" alt="Stop" title="Stop"/>
             Installing a VAD package will put the database in atomic mode, halting other client threads<br/>
             for duration of the installation. If the installation encounters a fatal error such as running<br/>
