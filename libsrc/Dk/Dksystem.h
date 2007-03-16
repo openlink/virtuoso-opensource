@@ -29,16 +29,12 @@
 #ifndef _DKSYSTEM_H
 #define _DKSYSTEM_H
 
-#ifdef __BORLANDC__
-# include "Dkconfig.bc"
+#ifdef _WIN64
+# include "Dkconfig.w64"
+#elif defined (WIN32)
+# include "Dkconfig.w32"
 #else
-# ifdef _WIN64
-#  include "Dkconfig.w64"
-# elif defined (WIN32)
-#  include "Dkconfig.w32"
-# else
-#  include "Dkconfig.h"
-# endif
+# include "Dkconfig.h"
 #endif
 
 #if 0

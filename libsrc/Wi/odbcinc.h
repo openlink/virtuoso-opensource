@@ -33,7 +33,7 @@
 # include <config.h>
 #endif
 
-#if (defined (WIN32) || defined (UNIX_ODBC) || defined(__BORLANDC__)) && !defined (UDBC)
+#if (defined (WIN32) || defined (UNIX_ODBC)) && !defined (UDBC)
 # include "Dk.h"
 # ifdef WIN32
 #  include <windows.h>

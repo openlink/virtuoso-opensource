@@ -52,17 +52,10 @@ extern char * getenv JPP((const char * name));
 
 #ifdef NEED_FAR_POINTERS
 
-#ifdef __TURBOC__
-/* These definitions work for Borland C (Turbo C) */
-#include <alloc.h>		/* need farmalloc(), farfree() */
-#define far_malloc(x)	farmalloc(x)
-#define far_free(x)	farfree(x)
-#else
 /* These definitions work for Microsoft C and compatible compilers */
 #include <malloc.h>		/* need _fmalloc(), _ffree() */
 #define far_malloc(x)	_fmalloc(x)
 #define far_free(x)	_ffree(x)
-#endif
 
 #else /* not NEED_FAR_POINTERS */
 

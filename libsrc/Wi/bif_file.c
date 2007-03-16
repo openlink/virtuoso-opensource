@@ -64,9 +64,7 @@
 
 #ifdef WIN32
 #include <windows.h>
-#ifndef __BORLANDC__
 #define HAVE_DIRECT_H
-#endif
 #endif
 
 #ifdef HAVE_DIRECT_H
@@ -81,11 +79,6 @@
 #define FS_DIR_MODE	 (S_IRWXU | S_IRWXG)
 #endif
 
-#ifdef __BORLANDC__
-#include <dir.h>
-#define PATH_MAX MAXPATH
-#define mkdir(p,m)	mkdir (p)
-#endif
 #include "datesupp.h"
 
 extern dk_session_t *http_session_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);

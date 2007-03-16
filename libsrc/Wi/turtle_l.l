@@ -30,11 +30,7 @@
 #include "xmltree.h"
 #include "rdf_core.h"
 #include "turtle_p.h"
-#ifdef __BORLANDC__ /* Rogue Wave STL contains numeric.h */
-#include "G:\libsrc\Wi\numeric.h"
-#else
 #include "numeric.h"
-#endif
 
 #define ttlyyerror(strg) ttlyyerror_impl(TTLP_ARG ttlyytext, (strg))
 

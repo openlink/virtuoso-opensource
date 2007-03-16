@@ -30,9 +30,6 @@
 #ifdef _MSC_VER
 #define strcasecmp stricmp
 #endif
-#ifdef __BORLANDC__
-#define strcasecmp strcmpi
-#endif
 
 #define LANG_SUCCESS			0
 #define LANG_TOO_MANY_HANDLERS		(-2)

@@ -20,7 +20,7 @@
 
 #define LIBNAME "any2eucjp()"
 
-#if defined(__MSC__) || defined(__BORLANDC__) || defined(__TURBOC__) || defined(_Windows) || defined(MSDOS)
+#if defined(__MSC__)  || defined(_Windows) || defined(MSDOS)
 #ifndef SJISPRE
 #define SJISPRE 1
 #endif

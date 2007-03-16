@@ -27,11 +27,7 @@
 */
 
 #include "Dk.h"
-#ifdef __BORLANDC__ /* Rogue Wave STL contains numeric.h */
-#include "G:\libsrc\Wi\numeric.h"
-#else
 #include "numeric.h"
-#endif
 
 /* activates code for divmod, modulo, powmod, pow, sqr */
 #define NUMERIC_EXTS	1

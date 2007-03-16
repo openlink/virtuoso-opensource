@@ -25,19 +25,6 @@
 
 
 #define SOAP_TYPE_SCHEMA10 "urn:schemas-xmlsoap-org:soap.v1"
-#ifdef __BORLANDC__
-#define SOAP_TYPE_SCHEMA11 "http:/" "/schemas.xmlsoap.org/soap/envelope/"
-#define SOAP_ENC_SCHEMA11 "http:/" "/schemas.xmlsoap.org/soap/encoding/"
-#define SOAP_WSDL_SCHEMA11 "http:/" "/schemas.xmlsoap.org/wsdl/"
-#define SOAP_DIME_SCHEMA "http:/" "/schemas.xmlsoap.org/ws/2002/04/dime/"
-#define W3C_TYPE_SCHEMA_XSI "http:/" "/www.w3.org/1999/XMLSchema-instance"
-#define W3C_TYPE_SCHEMA_XSD "http:/" "/www.w3.org/1999/XMLSchema"
-#define W3C_2001_TYPE_SCHEMA_XSI "http:/" "/www.w3.org/2001/XMLSchema-instance"
-#define W3C_2001_TYPE_SCHEMA_XSD "http:/" "/www.w3.org/2001/XMLSchema"
-#define SOAP_ACTOR_FIRST "http:/" "/schemas.xmlsoap.org/soap/actor/next"
-#define SOAP_CONTENT_TYPE_200204 "http:/" "/schemas.xmlsoap.org/ws/2002/04/content-type/"
-#define SOAP_REF_SCH_200204	 "http:/" "/schemas.xmlsoap.org/ws/2002/04/reference/"
-#else
 #define SOAP_TYPE_SCHEMA11 "http://schemas.xmlsoap.org/soap/envelope/"
 #define SOAP_ENC_SCHEMA11 "http://schemas.xmlsoap.org/soap/encoding/"
 #define SOAP_WSDL_SCHEMA11 "http://schemas.xmlsoap.org/wsdl/"
@@ -58,7 +45,6 @@
 #define SOAP_ROLE_NONE		SOAP_TYPE_SCHEMA12"/role/none"
 #define SOAP_ROLE_ULTIMATE	SOAP_TYPE_SCHEMA12"/role/ultimateReceiver"
 
-#endif
 #define MS_TYPE_SCHEMA "urn:schemas-microsoft-com:datatypes"
 /*#define VIRTUOSO_TYPE_SCHEMA "urn:openlinksw-com:virtuoso"*/
 #define BPEL4WS_PL_URI	"http://schemas.xmlsoap.org/ws/2003/05/partner-link/"

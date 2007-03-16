@@ -43,9 +43,7 @@
 
 #ifdef WIN32
 #include <windows.h>
-#ifndef __BORLANDC__
 #define HAVE_DIRECT_H
-#endif
 #endif
 
 #ifdef HAVE_DIRECT_H
@@ -59,13 +57,6 @@
 #include <dirent.h>
 #define FS_DIR_MODE	 (S_IRWXU | S_IRWXG)
 #endif
-
-#ifdef __BORLANDC__
-#include <dir.h>
-#define PATH_MAX MAXPATH
-#define mkdir(p,m)	mkdir (p)
-#endif
-
 
 #undef DBG_BREAKPOINTS
 #undef INC_DEBUG

@@ -867,9 +867,7 @@ db_to_log (void)
 
 #ifdef WIN32
 #include <windows.h>
-#ifndef __BORLANDC__
 #define HAVE_DIRECT_H
-#endif
 #endif
 
 #ifdef HAVE_DIRECT_H
@@ -880,10 +878,6 @@ db_to_log (void)
 #include <dirent.h>
 #endif
 
-#ifdef __BORLANDC__
-#include <dir.h>
-#define PATH_MAX MAXPATH
-#endif
 
 void
 backup_prepare (query_instance_t * qi, char * file)

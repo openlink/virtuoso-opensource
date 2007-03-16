@@ -33,11 +33,7 @@
 #include "odbcinc.h"
 #include "virtext.h"	/* virtuoso odbc extensions */
 #include "sqlcomp.h"
-#ifdef __BORLANDC__ /* Rogue Wave STL contains numeric.h */
-#include "G:\libsrc\Wi\numeric.h"
-#else
 #include "numeric.h"
-#endif
 #include "blobio.h"
 #include "widv.h"
 #include "wirpce.h"

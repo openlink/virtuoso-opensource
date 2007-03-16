@@ -46,11 +46,7 @@
 struct keyword { char *keiiyword; int token; };
 extern const struct keyword *lex_hash_kw (register const char *str, register unsigned int len);
 #endif
-#ifdef __BORLANDC__ /* Rogue Wave STL contains numeric.h */
-#include "G:\libsrc\Wi\numeric.h"
-#else
 #include "numeric.h"
-#endif
 #include "sqlcmps.h"
 #include "sqlcstate.h"
 

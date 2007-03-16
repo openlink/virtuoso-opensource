@@ -29,9 +29,6 @@
 #ifndef _DKTYPES_H
 #define _DKTYPES_H
 
-#ifdef __BORLANDC__
-#include <values.h>
-#endif
 #ifdef _MSC_VER
 #include <limits.h>
 #endif
@@ -90,7 +87,7 @@
 #define ptr_ulong uptrlong
 
 
-#if defined (OS2) || defined (WIN32) || defined (__BORLANDC__)
+#if defined (OS2) || defined (WIN32)
 # define ssize_t	signed int
 # ifndef _ITYPES_H
 typedef char *		caddr_t;

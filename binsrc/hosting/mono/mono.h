@@ -135,9 +135,7 @@ void virtuoso_set_create_thread (CreateThreadPtr ptr);
 
 #ifdef WIN32
 #include <windows.h>
-#ifndef __BORLANDC__
 #define HAVE_DIRECT_H
-#endif
 #endif
 
 #ifdef HAVE_DIRECT_H
@@ -152,11 +150,6 @@ void virtuoso_set_create_thread (CreateThreadPtr ptr);
 #define FS_DIR_MODE	 (S_IRWXU | S_IRWXG)
 #endif
 
-#ifdef __BORLANDC__
-#include <dir.h>
-#define PATH_MAX MAXPATH
-#define mkdir(p,m)	mkdir (p)
-#endif
 
 void VirtuosoServerSetInitHook (void (*hook) (void));
 int VirtuosoServerMain (int argc, char **argv);

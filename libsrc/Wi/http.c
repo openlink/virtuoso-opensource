@@ -71,11 +71,6 @@
 #include <dirent.h>
 #endif
 
-#ifdef __BORLANDC__
-#include <dir.h>
-#define PATH_MAX MAXPATH
-#endif
-
 #define XML_VERSION		"1.0"
 
 #define DKS_CLEAR_DEFAULT_READ_READY_ACTION(ses) SESSION_SCH_DATA (ses)->sio_default_read_ready_action = NULL

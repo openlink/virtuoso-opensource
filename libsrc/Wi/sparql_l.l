@@ -29,11 +29,7 @@
 #include "xmltree.h"
 #include "sparql.h"
 #include "sparql_p.h"
-#ifdef __BORLANDC__ /* Rogue Wave STL contains numeric.h */
-#include "G:\libsrc\Wi\numeric.h"
-#else
 #include "numeric.h"
-#endif
 
 #define sparyyerror(strg) sparyyerror_impl(sparp, sparyytext, (strg))
 

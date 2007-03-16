@@ -39,11 +39,7 @@
 #include "xpathp_impl.h"
 #include "sqlpfn.h"
 #include "xpathp.h"
-#ifdef __BORLANDC__ /* Rogue Wave STL contains numeric.h */
-#include "G:\libsrc\Wi\numeric.h"
-#else
 #include "numeric.h"
-#endif
 #include "sqlcstate.h"
 
 #define xpyyerror(strg) xpyyerror_impl(xpp, xpyytext, (strg))
