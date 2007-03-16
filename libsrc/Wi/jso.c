@@ -1156,7 +1156,7 @@ bif_jso_triple_get_objs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t jsubj = bif_string_or_wide_or_uname_arg (qst, args, 0, "jso_triple_get_objs");
   caddr_t jpred = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_triple_get_objs");
-  return jso_triple_get_objs (qst, jsubj, jpred);
+  return (caddr_t)jso_triple_get_objs (qst, jsubj, jpred);
 }
 
 caddr_t
@@ -1164,7 +1164,7 @@ bif_jso_triple_get_subjs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 {
   caddr_t jpred = bif_string_or_wide_or_uname_arg (qst, args, 0, "jso_triple_get_subjs");
   caddr_t jobj = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_triple_get_subjs");
-  return jso_triple_get_subjs (qst, jpred, jobj);
+  return (caddr_t)jso_triple_get_subjs (qst, jpred, jobj);
 }
 
 caddr_t
@@ -1175,6 +1175,103 @@ bif_jso_mark_affected (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jso_mark_affected (inst);
   return inst;
 }
+
+/* JSO digest layout is as following:
+2-byte type (i.e. 0-th item of jso), LSB first
+Up to 20 first bytes of string value (i.e. 1-st item of jso).
+Zero byte.
+4-byte ID (i.e. 3-rd item of jso), LSB first, MSB last
+2-byte language (i.e. 2-th item of jso), LSB first
+The whole digest can be cached as 4-th item of jso.
+ */
+
+caddr_t
+bif_jso_make_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int argcount = BOX_ELEMENTS (args);
+  caddr_t *longobj;
+  caddr_t strg, old_digest;
+  unsigned char buf[30];
+  unsigned char *buf_tail;
+  ptrlong dt_idx, lang_idx, obj_id;
+  int strg_len;
+  switch (argcount)
+    {
+    case 1:
+      longobj = (caddr_t *)bif_array_arg (qst, args, 0, "jso_make_digest");
+      if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (longobj)) || (5 > BOX_ELEMENTS (longobj)))
+        sqlr_new_error ("22023", "SR542", "Argument of jso_make_digest() is not a JSO (type %d)", DV_TYPE_OF (longobj));
+      if (DV_STRING == DV_TYPE_OF (longobj[4]))
+        return box_copy (longobj[4]);
+      if (DV_LONG_INT != DV_TYPE_OF (longobj[0]))
+        sqlr_new_error ("22023", "SR542", "Argument of jso_make_digest() is not a JSO (type of [0] %d)", DV_TYPE_OF (longobj[0]));
+      dt_idx = unbox (longobj[0]);
+      strg = longobj[1];
+      if (DV_STRING != DV_TYPE_OF (strg))
+        sqlr_new_error ("22023", "SR542", "Argument of jso_make_digest() is not a JSO (type of [1] %d)", DV_TYPE_OF (strg));
+      if (DV_LONG_INT != DV_TYPE_OF (longobj[2]))
+        sqlr_new_error ("22023", "SR542", "Argument of jso_make_digest() is not a JSO (type of [2] %d)", DV_TYPE_OF (longobj[2]));
+      lang_idx = unbox (longobj[2]);
+      if (DV_LONG_INT != DV_TYPE_OF (longobj[3]))
+        sqlr_new_error ("22023", "SR542", "Argument of jso_make_digest() is not a JSO (type of [3] %d)", DV_TYPE_OF (longobj[3]));
+      obj_id = unbox (longobj[3]);
+      break;
+    case 5:
+      old_digest = bif_arg (qst, args, 4, "jso_make_digest");
+      if (DV_STRING == DV_TYPE_OF (old_digest))
+        return box_copy (old_digest);
+      /* no break */
+    case 4:
+      dt_idx = (caddr_t *)bif_long_arg (qst, args, 0, "jso_make_digest");
+      strg = (caddr_t *)bif_string_arg (qst, args, 1, "jso_make_digest");
+      lang_idx = (caddr_t *)bif_long_arg (qst, args, 2, "jso_make_digest");
+      obj_id = (caddr_t *)bif_long_arg (qst, args, 3, "jso_make_digest");
+      break;
+    default:
+      sqlr_new_error ("22023", "SR542", "%d arguments in call of jso_make_digest(), should be 1, 4 or 5", argcount);
+    }
+  if (dt_idx & ~0xffff)
+    sqlr_new_error ("22023", "SR542", "Argument of jso_make_digest() is not a JSO ([0]=%ld)", (long)dt_idx);
+  if (lang_idx & ~0xffff)
+    sqlr_new_error ("22023", "SR542", "Argument of jso_make_digest() is not a JSO ([2]=%ld)", (long)lang_idx);
+  if (!obj_id)
+    sqlr_new_error ("22023", "SR542", "Argument of jso_make_digest() is not a JSO ([3]=%ld)", (long)obj_id);
+  buf_tail = buf;
+  (buf_tail++)[0] = (unsigned char)dt_idx;
+  (buf_tail++)[0] = (unsigned char)(dt_idx >> 8);
+  strg_len = box_length (strg) - 1;
+  if (strg_len > 20)
+    strg_len = 20;
+  memcpy (buf_tail, strg, strg_len);
+  buf_tail += strg_len;
+  (buf_tail++)[0] = '\0';
+  (buf_tail++)[0] = (unsigned char)obj_id;
+  (buf_tail++)[0] = (unsigned char)(obj_id >> 8);
+  (buf_tail++)[0] = (unsigned char)(obj_id >> 16);
+  (buf_tail++)[0] = (unsigned char)(obj_id >> 24);
+  (buf_tail++)[0] = (unsigned char)lang_idx;
+  (buf_tail++)[0] = (unsigned char)(lang_idx >> 8);
+  return box_dv_short_nchars ((char *)buf, buf_tail-buf);
+}
+
+caddr_t
+bif_jso_parse_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  unsigned char *buf = (unsigned char *) bif_string_arg (qst, args, 0, "jso_parse_digest");
+  size_t buf_len = box_length (buf) - 1;
+  unsigned char *buf_end = buf + buf_len;
+  ptrlong dt, obj_idx, lang;
+  if ((29 < buf_len) || (9 > buf_len))
+    sqlr_new_error ("22023", "SR543", "Argument of jso_parse_digest() is not valid (length = %ld)", (long)(buf_len));
+  if ('\0' != buf_end[-7])
+    sqlr_new_error ("22023", "SR543", "Argument of jso_parse_digest() is not valid (bad syntax)");
+  dt = buf[0] | (buf[1] << 8);
+  obj_idx = buf_end[-6] | (buf_end[-5] << 8) | (buf_end[-4] << 16) | (buf_end[-3] << 24);
+  lang = buf_end[-2] | (buf_end[-1] << 8);
+  return list (5, dt, box_dv_short_nchars ((char *)(buf + 2), buf_len - 9), lang,
+    box_num (obj_idx), box_dv_short_nchars ((char *)buf, buf_len) );
+}
+
 
 jso_class_descr_t jso_cd_array_of_any;
 jso_class_descr_t jso_cd_array_of_string;
@@ -1217,4 +1314,6 @@ void jso_init ()
   bif_define ("jso_triple_get_objs", bif_jso_triple_get_objs);
   bif_define ("jso_triple_get_subjs", bif_jso_triple_get_subjs);
   bif_define ("jso_mark_affected", bif_jso_mark_affected);
+  bif_define ("jso_make_digest", bif_jso_make_digest);
+  bif_define ("jso_parse_digest", bif_jso_parse_digest);
 }
