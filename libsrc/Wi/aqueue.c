@@ -33,6 +33,7 @@ int aq_max_threads = 10;
 
 int aq_free (async_queue_t * aq);
 
+long tc_aq_from_queue;
 
 void
 aq_thread_func (aq_thread_t * aqt)
@@ -47,12 +48,22 @@ aq_thread_func (aq_thread_t * aqt)
     {
       async_queue_t * aq = aqt->aqt_aq;
       aq_request_t * aqr = aqt->aqt_aqr;
+      assert (AQR_QUEUED == aqr->aqr_state);
       lt_enter_anyway (aqt->aqt_cli->cli_trx);
+      if (IS_BOX_POINTER (aqt->aqt_cli->cli_trx->lt_replicate))
+	dk_free_tree (aqt->aqt_cli->cli_trx->lt_replicate);
+      aqt->aqt_cli->cli_trx->lt_replicate = REPL_LOG;
+      if (AQR_QUEUED != aqr->aqr_state)
+	GPF_T1 ("aqr_state is supposed to be AQR_QUEUEED here");
+      mutex_enter (aq->aq_mtx);
       aqr->aqr_state = AQR_RUNNING;
+      /* set the state inside the aq_mtx because it is tested with an or of queued and running and if this falls in the middle of this test, other thread can think it is neither queued nor running */
+      mutex_leave (aq->aq_mtx);
       /* with privs of te owner of the aq being served */
       aqt->aqt_cli->cli_user = aq->aq_cli->cli_user;
       CLI_SET_QUAL (aqt->aqt_cli, aq->aq_cli->cli_qualifier);
       aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
+      assert (aqt->aqt_thread->thr_sem->sem_entry_count == 0);
       aqr->aqr_args = NULL;
       IN_TXN;
       lt_leave (aqt->aqt_cli->cli_trx);
@@ -66,6 +77,7 @@ aq_thread_func (aq_thread_t * aqt)
       if (aqr)
 	{
 	  mutex_leave (aq->aq_mtx);
+	  TC (tc_aq_from_queue);
 	  continue;
 	}
       aq->aq_n_threads--;
@@ -76,6 +88,7 @@ aq_thread_func (aq_thread_t * aqt)
 	}
       else
 	mutex_leave (aq->aq_mtx);
+      TC (tc_aq_sleep);
       resource_store (aq_threads, (void*)aqt);
       semaphore_enter (self->thr_sem);
     }
@@ -129,6 +142,7 @@ aq_request (async_queue_t * aq, aq_func_t f, caddr_t args)
   if (!aqt)
     {
       mutex_leave (aq->aq_mtx);
+      printf ("aq execution on requesting thread\n");
       aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
       aqr->aqr_args = NULL;
       aqr->aqr_state = AQR_DONE;
@@ -146,6 +160,7 @@ aq_request (async_queue_t * aq, aq_func_t f, caddr_t args)
 void
 aqr_free (aq_request_t * aqr)
 {
+  assert (AQR_DONE == aqr->aqr_state);
   dk_free_tree (aqr->aqr_args);
   dk_free_tree (aqr->aqr_error);
   dk_free ((caddr_t) aqr, sizeof (aq_request_t));
@@ -165,6 +180,7 @@ aq_wait (async_queue_t * aq, int req_no, caddr_t *err, int wait)
       *err = AQ_NO_REQUEST;
       return (caddr_t)AQ_NO_REQUEST;
     }
+  assert (AQR_DONE == aqr->aqr_state || AQR_RUNNING == aqr->aqr_state ||  AQR_QUEUED == aqr->aqr_state);
   if (AQR_RUNNING == aqr->aqr_state ||  AQR_QUEUED == aqr->aqr_state)
     {
       if (wait)
@@ -173,7 +189,8 @@ aq_wait (async_queue_t * aq, int req_no, caddr_t *err, int wait)
 	  mutex_leave (aq->aq_mtx);
 	  semaphore_enter (THREAD_CURRENT_THREAD->thr_sem);
 	  mutex_enter (aq->aq_mtx);
-	  remhash ((void*)(ptrlong)req_no, aq->aq_requests);
+	  if (!remhash ((void*)(ptrlong)req_no, aq->aq_requests))
+	    GPF_T1 ("aqr was not in ar_requests for remove.");
 	  mutex_leave (aq->aq_mtx);
 	  val = aqr->aqr_value;
 	  *err = aqr->aqr_error;
@@ -193,7 +210,8 @@ aq_wait (async_queue_t * aq, int req_no, caddr_t *err, int wait)
   *err = aqr->aqr_error;
   aqr->aqr_error = NULL;
   aqr->aqr_value = NULL;
-  remhash ((void*)(ptrlong)req_no, aq->aq_requests);
+  if (!remhash ((void*)(ptrlong)req_no, aq->aq_requests))
+    GPF_T1 ("aqr not in aq_requests for remove");
   aqr_free (aqr);
   mutex_leave (aq->aq_mtx);
   return val;
@@ -213,17 +231,21 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
   while (dk_hit_next (&hit, (void**) &req_no, (void**)&aqr))
     {
       if (AQR_DONE == aqr->aqr_state)
-	{
-	  remhash ((void*) req_no, aq->aq_requests);
-	  aqr_free (aqr);
 	  continue;
-	}
       mutex_leave (aq->aq_mtx);
       v = aq_wait (aq, (int) req_no, &err, 1);
       dk_free_tree (v);
       dk_free_tree (err);
       goto again;
     }
+  dk_hash_iterator (&hit, aq->aq_requests);
+  while (dk_hit_next (&hit, (void**) &req_no, (void**)&aqr))
+    {
+      if (AQR_DONE != aqr->aqr_state)
+	GPF_T1 ("aqr supposed to bne done after all have been waited for");
+      aqr_free (aqr);
+    }
+  clrhash (aq->aq_requests);
   mutex_leave (aq->aq_mtx);
   return NULL;
 }
@@ -235,8 +257,12 @@ aq_allocate (int n_threads)
   async_queue_t * aq = (async_queue_t *) dk_alloc_box_zero (sizeof (async_queue_t), DV_ASYNC_QUEUE);
   aq->aq_ref_count = 1;
   aq->aq_requests = hash_table_allocate (101);
-  aq->aq_max_threads = n_threads;
   aq->aq_mtx = mutex_allocate ();
+#ifdef MTX_DEBUG
+  aq->aq_requests->ht_required_mtx = aq->aq_mtx;
+#endif
+  aq->aq_max_threads = n_threads;
+  mutex_option (aq->aq_mtx, "AQ", NULL, NULL);
   aq->aq_cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   return aq;
 }
@@ -245,18 +271,22 @@ aq_allocate (int n_threads)
 int
 aq_free (async_queue_t * aq)
 {
+  mutex_enter (aq->aq_mtx);
   if (!aq->aq_deleted)
     {
       aq->aq_ref_count--;
       if (aq->aq_ref_count)
+	{
+	  mutex_leave (aq->aq_mtx);
 	return 1;
-      mutex_enter (aq->aq_mtx);
+	}
       if (aq->aq_n_threads)
 	{
 	  aq_request_t * aqr;
 	  while((aqr = (aq_request_t*) basket_get (&aq->aq_queue)))
 	    {
 	      remhash ((void*)(ptrlong)aqr->aqr_req_no, aq->aq_requests);
+	      aqr->aqr_state = AQR_DONE;
 	      aqr_free (aqr);
 	    }
 	  aq->aq_deleted = 1;
@@ -273,6 +303,9 @@ aq_free (async_queue_t * aq)
       }
       mutex_leave (aq->aq_mtx);
     }
+#ifdef MTX_DEBUG
+  aq->aq_requests->ht_required_mtx = NULL;
+#endif
   hash_table_free (aq->aq_requests);
   mutex_free (aq->aq_mtx);
   return 0;
@@ -333,7 +366,7 @@ aq_sql_func (caddr_t *av , caddr_t * err_ret)
     {
       *err_ret = NULL;
       proc = qr_recompile (proc, err_ret);
-      if (*err_ret);
+      if (*err_ret)
       return NULL;
     }
   if (!sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
@@ -393,6 +426,8 @@ bif_aq_wait  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (BOX_ELEMENTS (args) > 3 && ssl_is_settable (args[3]))
     qst_set (qst, args[3], err);
+  else 
+    dk_free_tree (err);
   return val;
 }
 
@@ -414,12 +449,22 @@ bif_aq_wait_all  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
+aq_serialize (caddr_t x, dk_session_t * ses)
+{
+  print_int (0, ses);
+}
+
+
+void
 bif_aq_init ()
 {
   dk_mem_hooks (DV_ASYNC_QUEUE, (box_copy_f) aq_copy, (box_destr_f)aq_free, 0);
+  PrpcSetWriter (DV_ASYNC_QUEUE, aq_serialize);
   bif_define ("async_queue", bif_async_queue);
   bif_define ("aq_request", bif_aq_request);
   bif_define ("aq_wait", bif_aq_wait);
+  bif_set_uses_index (bif_aq_wait);
   bif_define ("aq_wait_all", bif_aq_wait_all);
+  bif_set_uses_index (bif_aq_wait_all);
   aq_threads = resource_allocate (20, NULL, NULL, NULL, 0);
 }

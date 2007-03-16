@@ -41,8 +41,8 @@ typedef struct aq_thread_s
 {
   client_connection_t *aqt_cli;
   du_thread_t *	aqt_thread;
-  async_queue_t *	aqt_aq;
-  struct aq_request_s *	aqt_aqr;
+  async_queue_t *	volatile aqt_aq;
+  struct aq_request_s *	volatile aqt_aqr;
 } aq_thread_t;
 
 
@@ -55,17 +55,17 @@ typedef struct aq_request_s
   aq_func_t	aqr_func;
   caddr_t	aqr_args;
   du_thread_t *	aqr_waiting;
-  caddr_t	aqr_value;
+  caddr_t volatile aqr_value;
   caddr_t	aqr_error;
-  int		aqr_state;
+  volatile int		aqr_state;
   async_queue_t *	aqr_aq;
 } aq_request_t;
 
 
 /* aqr_state */
-#define AQR_QUEUED 0
-#define AQR_RUNNING 1
-#define AQR_DONE 2
+#define AQR_QUEUED 2
+#define AQR_RUNNING 3
+#define AQR_DONE 4
 
 
 int aq_request (async_queue_t * aq, aq_func_t f, caddr_t arg);
