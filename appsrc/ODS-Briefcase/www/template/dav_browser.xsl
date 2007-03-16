@@ -3806,7 +3806,7 @@
         </v:before-render>
       </v:url>
 
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" enabled="--self.toolbarEnable('shared')" xhtml_title="Shared Folders" xhtml_class="toolbar">
+      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" xhtml_title="Shared Folders" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
             control.ufl_value := '<img src="image/folder_violet.png" border="0" />' || self.toolbarLabel('Shared Folders');
