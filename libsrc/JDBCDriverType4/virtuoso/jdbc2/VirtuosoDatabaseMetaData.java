@@ -158,7 +158,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
    }
 
    /**
-    * Returns the name of this database product. In our case it's Openlink Virtuoso DBMS.
+    * Returns the name of this database product. In our case it's OpenLink Virtuoso DBMS.
     *
     * @return the database product name.
     * @exception virtuoso.jdbc2.VirtuosoException No errors returned (just an implementation question).
