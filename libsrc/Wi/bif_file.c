@@ -49,7 +49,7 @@
 #define UUID_T_DEFINED
 #include "libutil.h"		/* needed by bif_cfg_* functions */
 #include "statuslog.h"
-#include <util/md5.h>
+#include "util/md5.h"
 #include <sys/stat.h>
 
 #ifdef HAVE_SYS_WAIT_H

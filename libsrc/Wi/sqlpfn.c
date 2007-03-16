@@ -36,7 +36,7 @@
 #include "security.h"
 #include "multibyte.h"
 #include "srvmultibyte.h"
-#include <util/strfuns.h>
+#include "util/strfuns.h"
 #include "crsr.h"
 #include "sqltype.h"
 #include "sqlbif.h"

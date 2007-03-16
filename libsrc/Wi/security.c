@@ -44,9 +44,9 @@
 #include "sqlfn.h"
 #include "sqlpar.h"
 #include "security.h"
-#include <util/fnmatch.h>
-#include <util/md5.h>
-#include <util/strfuns.h>
+#include "util/fnmatch.h"
+#include "util/md5.h"
+#include "util/strfuns.h"
 #include "statuslog.h"
 #include "sqltype.h"
 #include "virtpwd.h"

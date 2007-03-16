@@ -41,7 +41,7 @@
 #include "datesupp.h"
 #include "multibyte.h"
 #include "srvmultibyte.h"
-#include <util/strfuns.h>
+#include "util/strfuns.h"
 
 #define KUBL_ILLEGAL_DATE_VALUE (0)	/* Added by AK 15-JAN-1997. */
 

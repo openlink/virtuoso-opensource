@@ -36,8 +36,8 @@
 #include "sqlintrp.h"
 #include "arith.h"
 #include "crsr.h"
-#include <util/md5.h>
-#include <util/strfuns.h>
+#include "util/md5.h"
+#include "util/strfuns.h"
 #include "sqlbif.h"
 #include "list2.h"
 #include "sqltype_c.h"

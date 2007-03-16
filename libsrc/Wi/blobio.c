@@ -29,7 +29,7 @@
 
 #include "virtpwd.h"
 #define MD5_CTX virt__MD5_CTX
-#include <util/md5.h>
+#include "util/md5.h"
 #include "CLI.h"
 #include "multibyte.h"
 #include "sqlfn.h"

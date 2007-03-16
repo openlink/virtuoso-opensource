@@ -28,7 +28,7 @@
 #ifndef _WI_XID_H
 #define _WI_XID_H
 
-#include <util/uuid.h>
+#include "util/uuid.h"
 
 /* XA ids support */
 #if !defined (XA_H)

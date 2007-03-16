@@ -27,7 +27,7 @@
 */
 
 #include "CLI.h"
-#include <util/strfuns.h>
+#include "util/strfuns.h"
 
 /*
  *  Important preprocessor symbols for the internal ranges
