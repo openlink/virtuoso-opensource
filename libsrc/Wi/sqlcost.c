@@ -115,6 +115,59 @@ dbe_key_row_cost (dbe_key_t * key, float * rpp)
 }
 
 
+caddr_t sqlo_iri_constant_name (ST* tree);
+
+#if 1
+#define CARD_ADJUST(x) x
+#else
+#define CARD_ADJUST(x) ((x) < 1 ? (x) + ((1 - (x)) * 0.01) : (x))
+#endif
+
+
+int 
+sqlo_enum_col_arity (df_elt_t * pred, dbe_column_t * left_col, float * a1)
+{
+  int is_allocd = 0;
+  df_elt_t * right;
+  ptrlong * place;
+  caddr_t name, data;
+  if (!left_col->col_stat || BOP_EQ != pred->_.bin.op)
+    return 0;
+  right = pred->_.bin.right;
+  data = (caddr_t) pred->_.bin.right->dfe_tree;
+  if ((name = sqlo_iri_constant_name ((ST*) data)))
+    {
+      data = key_name_to_iri_id (NULL, name, 0);
+      if (!data)
+	goto unknown;
+      is_allocd = 1;
+    }
+  else if (DFE_IS_CONST (right))
+    data = (caddr_t) right->dfe_tree;
+  place = (ptrlong*) id_hash_get (left_col->col_stat->cs_distinct, (caddr_t)&data);
+  if (is_allocd)
+    dk_free_box (data);
+  if (place)
+    {
+      ptrlong count = *place;
+      *a1 = ((float)count) / left_col->col_stat->cs_n_values;
+      *a1 = CARD_ADJUST (*a1);
+      return 1;
+    }
+ unknown:
+  /* it is a constant but it is not mentioned in the sample.  Must be a rare value.  We guess that the vals mentioned in the sampole cover 90% of rows.  */
+  if (!left_col->col_defined_in || !left_col->col_defined_in->tb_primary_key)
+    return 0;
+  {
+    float n_unsampled = left_col->col_stat->cs_distinct->ht_count / 10.0;
+    float n_rows = dbe_key_count (left_col->col_defined_in->tb_primary_key);
+    *a1 =  n_unsampled / (n_rows / 10);
+    *a1 = CARD_ADJUST (*a1);
+    return 1;
+  }
+}
+
+
 void
 sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 {
@@ -125,7 +178,10 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
     {
     *a1 = (float) 0.03;
       if (lower->_.bin.left == lower->_.bin.right)
+	{
 	*a1 = 1; /* recognize the dummy 1=1 */
+	  return;
+	}
     }
   else if (!upper)
     *a1 = 0.3;
@@ -138,6 +194,8 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
       lower->_.bin.left->_.col.col->col_count != DBE_NO_STAT_DATA)
     {
       dbe_column_t *left_col = lower->_.bin.left->_.col.col;
+      if (lower && sqlo_enum_col_arity (lower, left_col, a1))
+	return;
       if (lower->_.bin.op == BOP_EQ)
 	{
 
@@ -149,7 +207,7 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 	       DVC_GREATER == cmp_boxes ((caddr_t) lower->_.bin.right->dfe_tree, left_col->col_max,
 		 left_col->col_collation, left_col->col_collation)))
 	    { /* the boundary is constant and its outside min/max */
-	      *a1 = 0.0001; /* out of range.  Because unsure, do not make  it exact 0 */
+	      *a1 = 0.1 / left_col->col_n_distinct; /* out of range.  Because unsure, do not make  it exact 0 */
 	    }
 	  else if (DFE_IS_CONST (lower->_.bin.right) && left_col->col_hist)
 	    { /* the boundary is constant and there is a column histogram */
@@ -187,7 +245,7 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 		}
 	      else
 		{
-		  *a1 = 0.001;
+		  *a1 = 0.1;
 		}
 	    }
 	}
@@ -245,11 +303,11 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 	{
 	  if (left_col->col_n_distinct > 0)
 	    {
-	      *a1 = (float) (1.00 / left_col->col_n_distinct);
+	      *a1 = MIN (5.0 / left_col->col_n_distinct, 0.8);
 	    }
 	  else
 	    {
-	      *a1 = 0;
+	      *a1 = 0.00001;
 	    }
 	}
     }
@@ -262,6 +320,7 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
       *a1 = (float) (1.00 / dbe_key_count (left_col->col_defined_in->tb_primary_key));
     }
   *a1 = MIN (1, *a1);
+  *a1 = CARD_ADJUST (*a1);
 }
 
 
@@ -732,9 +791,11 @@ sqlo_inx_sample (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_
   int v_fill = 0, inx;
   search_spec_t ** prev_sp;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
+  itc_clear_stats (itc);
   itc_from (itc, key);
   memset (&specs,0,  sizeof (specs));
-  prev_sp = &itc->itc_specs;
+  prev_sp = &itc->itc_key_spec.ksp_spec_array;
+  itc->itc_key_spec.ksp_key_cmp = NULL;
   for (inx = 0; inx < n_parts; inx++)
     {
       res = dfe_const_to_spec (lowers[inx], uppers[inx], key, &specs[inx],
@@ -748,7 +809,9 @@ sqlo_inx_sample (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_
       prev_sp = &specs[inx].sp_next;
     }
 
+  itc->itc_random_search = RANDOM_SEARCH_ON; /* disable use of root cache by itc_reset */
   buf = itc_reset (itc);
+  itc->itc_random_search = RANDOM_SEARCH_OFF;
   res = itc_sample (itc, &buf);
   itc_page_leave (itc, buf);
   tb_count = dbe_key_count (key->key_table->tb_primary_key);
@@ -895,8 +958,10 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
   inx_cost = dbe_key_unit_cost (dfe->_.table.key);
   DO_SET (dbe_column_t *, part, &dfe->_.table.key->key_parts)
     {
-      df_elt_t * lower = sqlo_key_part_best (part, dfe->_.table.col_preds, 0);
-      df_elt_t * upper = sqlo_key_part_best (part, dfe->_.table.col_preds, 1);
+      df_elt_t * lower = NULL;
+      df_elt_t * upper = NULL;
+      lower = sqlo_key_part_best (part, dfe->_.table.col_preds, 0);
+      upper = sqlo_key_part_best (part, dfe->_.table.col_preds, 1);
       if (lower || upper)
 	{
 	  sqlo_pred_unit (lower, upper, &p_cost, &p_arity);
@@ -918,18 +983,29 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
 		  if (inx_const_fill && nth_part == inx_const_fill)
 		    inx_arity_guess_for_const_parts = inx_arity / p_arity; /* inx_arity before being multiplied by the p_arity of the non-const part.  Set exactly once, after seeing the first non-constant key part. */
 		}
-		      
 	      if (!lower || BOP_EQ != lower->_.bin.op)
 		is_indexed = 0;
 	    }
 	  else
 	    {
-	      col_cost += (float) p_cost;
 	      col_arity *= p_arity;
+	      col_cost += p_cost * col_arity;
 	    }
 	}
-      else if (nth_part < n_significant)
+      else
 	is_indexed = 0;
+      DO_SET (df_elt_t *, pred, &dfe->_.table.col_preds)
+	{
+	  if (DFE_TEXT_PRED == pred->dfe_type)
+	    continue;
+	  if (DFE_BOP_PRED == pred->dfe_type && part == pred->_.bin.left->_.col.col && pred != lower && pred != upper)
+	    {
+	      sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
+	      col_arity *= p_arity;
+	      col_cost += p_cost * col_arity;
+	    }
+	}
+      END_DO_SET();
       nth_part++;
       if (is_indexed && nth_part == unq_limit )
 	unique = 1;
@@ -1010,9 +1086,11 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
     {
       /* very rough. 1/1000 selected, cost is 1.5*unit of text inx * 1/1000 of indexed table count.
        * no accounting for whether text inx joins with main table or offband ops */
-      float text_key_cost = dbe_key_unit_cost (tb_text_key (dfe->_.table.ot->ot_table)->key_text_table->tb_primary_key);;
-      total_arity *= 0.001;
-      total_cost += 1.5 * text_key_cost + text_key_cost * dbe_key_count (dfe->_.table.ot->ot_table->tb_primary_key) * 0.001;
+      float text_selectivity = 0.001;
+      float text_key_cost = dbe_key_unit_cost (tb_text_key (dfe->_.table.ot->ot_table)->key_text_table->tb_primary_key);
+      total_arity *= text_selectivity;
+      total_cost = 1.5 * text_key_cost + text_key_cost * dbe_key_count (dfe->_.table.ot->ot_table->tb_primary_key) * text_selectivity
+	+ total_cost * text_selectivity;
     }
   if (HR_FILL == dfe->_.table.hash_role)
     {
@@ -1034,6 +1112,9 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
     }
   total_cost += p_cost * total_arity;
   total_arity *= p_arity;
+  if (dfe->_.table.ot->ot_is_outer)
+    total_arity = MAX (1, total_arity);
+  /* the right of left outer has never cardinality < 1.  But the join tests etc are costed at cardinality that can be < 1. So adjust this as last.*/
       dfe->dfe_arity = *a1 = total_arity;
       dfe->dfe_unit = *u1 = total_cost;
 }
@@ -1233,6 +1314,10 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 		*u1 /= *a1;
 	    }
 	}
+      if (dfe->dfe_type == DFE_DT 
+	  && dfe->_.sub.ot->ot_is_outer)
+	*a1 = MAX (1, *a1); /* right siode of left oj has min cardinality 1 */
+
       break;
     case DFE_QEXP:
       sqlo_set_cost (dfe, u1, a1, overhead_ret);
