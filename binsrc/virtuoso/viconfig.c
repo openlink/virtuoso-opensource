@@ -28,7 +28,7 @@
 
 /*#define WIN95COMPAT*/ /*!!! To avoid using SetAffinityMask() */
 
-#include <libutil.h>
+#include "libutil.h"
 #include "sqlnode.h"
 #include "sqlver.h"
 
