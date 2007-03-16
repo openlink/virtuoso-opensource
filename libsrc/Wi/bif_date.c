@@ -129,6 +129,16 @@ dayofweek (caddr_t arg)
     }
 }
 
+#if defined(HAVE_GMTIME_R) 
+#define GMTIME_R(g,t) \
+    do { \
+      struct tm result; \
+      g = gmtime_r(t, &result); \
+    } while (0)
+#else
+#define GMTIME_R(g,t) g = gmtime(t)
+#endif
+
 /* since we keep time internally in GMT the local time should not be used
    after dt_to_timestampstruct, because it already uses the locales eq. timezone and daylight savings .
  */
@@ -148,7 +158,7 @@ bif_##x##name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args) \
   dt_to_timestamp_struct (arg, &ts); \
   _time = ((time_t)24) * 60 * 60 * (date2num (ts.year, ts.month, ts.day) - (time_t) date2num (1970, 1, 1)); \
   \
-  gtm = gmtime (&_time); \
+  GMTIME_R (gtm, &_time); \
   if (NULL != gtm) \
     strftime (szTmp, sizeof (szTmp), format, gtm); \
   else \

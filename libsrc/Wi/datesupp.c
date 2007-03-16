@@ -293,8 +293,13 @@ dt_now (caddr_t dt)
   long day;
   time_t tim = time (NULL);
   struct tm tm;
+#if defined(HAVE_GMTIME_R)
+  struct tm result;
 
+  tm = *gmtime_r (&tim, &result);
+#else  
   tm = *gmtime (&tim);
+#endif  
   day = date2num (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
   DT_SET_DAY (dt, day);
   DT_SET_HOUR (dt, tm.tm_hour);
@@ -320,7 +325,12 @@ void
 time_t_to_dt (time_t tim, long fraction, char *dt)
 {
   long day;
+#if defined(HAVE_GMTIME_R)
+  struct tm result;
+  struct tm tm = *gmtime_r (&tim, &result);
+#else  
   struct tm tm = *gmtime (&tim);
+#endif
   day = date2num (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
   DT_SET_DAY (dt, day);
   DT_SET_HOUR (dt, tm.tm_hour);
@@ -564,9 +574,17 @@ dt_init ()
   struct tm ltm;
   struct tm gtm;
   time_t tim;
+#if defined(HAVE_GMTIME_R)
+  struct tm result;
+#endif  
+
   tim = time (NULL);
   ltm = *localtime (&tim);
+#if defined(HAVE_GMTIME_R)
+  gtm = *gmtime_r (&tim, &result);
+#else 
   gtm = *gmtime (&tim);
+#endif  
   lt = mktime (&ltm);
   gt = mktime (&gtm);
   dt_local_tz = (int) (lt - gt) / 60;
