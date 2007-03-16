@@ -344,7 +344,6 @@ create procedure sioc.DBA.rdf_bookmark_view_str ()
       '
         #Post
         sioc:bmk_post_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME, DB.DBA.ODS_BMK_POSTS.BD_BOOKMARK_ID)
-	a sioc:Post option (EXCLUSIVE) ;
         a bm:Bookmark option (EXCLUSIVE) ;
         dc:title BD_NAME;
         dct:created BD_CREATED ;
@@ -361,7 +360,6 @@ create procedure sioc.DBA.rdf_bookmark_view_str ()
 	sioc:has_container sioc:bmk_forum_iri (U_NAME, WAI_NAME) .
 
         sioc:bmk_forum_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME)
-	a sioct:Bookmark ;
         sioc:container_of
 	sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID) .
 

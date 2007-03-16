@@ -49,6 +49,14 @@ BMK.WA.exec_no_error('drop type wa_bookmark');
 -- Views
 BMK.WA.exec_no_error('drop view BMK..TAGS_VIEW');
 
+-- Registry
+registry_remove ('_bookmark_path_');
+registry_remove ('_bookmark_version_');
+registry_remove ('_bookmark_build_');
+registry_remove ('bmk_path_update');
+registry_remove ('__ods_bookmark_sioc_init');
+
+
 -- Procedures
 create procedure BMK.WA.drop_procedures()
 {
