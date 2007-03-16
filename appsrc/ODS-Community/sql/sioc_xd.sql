@@ -44,8 +44,8 @@ create procedure fill_ods_community_sioc (in graph_iri varchar, in site_iri varc
     {
       firi := xd_iri (CM_COMMUNITY_ID);
       iri := forum_iri (WAI_TYPE_NAME, CM_MEMBER_APP);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), firi);
-      DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('parent_of'), iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('part_of'), firi);
+      DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_part'), iri);
     }
   commit work;
 };
@@ -64,8 +64,8 @@ create trigger COMMUNITY_MEMBER_APP_SIOC_I after insert on ODS.COMMUNITY.COMMUNI
     do
       {
 	iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
-	DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), firi);
-	DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('parent_of'), iri);
+	DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('part_of'), firi);
+	DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_part'), iri);
       }
   return;
 };
@@ -141,11 +141,11 @@ create procedure sioc.DBA.rdf_community_view_str ()
       '
       # Relation between forums and community
       sioc:community_forum_iri (DB.DBA.ODS_COMMUNITIES.C_OWNER, DB.DBA.ODS_COMMUNITIES.CM_COMMUNITY_ID)
-      sioc:parent_of
+      sioc:has_part
       sioc:forum_iri (A_OWNER, A_TYPE, CM_MEMBER_APP) .
 
       sioc:forum_iri (DB.DBA.ODS_COMMUNITIES.A_OWNER, DB.DBA.ODS_COMMUNITIES.A_TYPE, DB.DBA.ODS_COMMUNITIES.CM_MEMBER_APP)
-      sioc:has_parent
+      sioc:part_of
       sioc:community_forum_iri (C_OWNER, CM_COMMUNITY_ID) .
 
       '

@@ -324,7 +324,7 @@ CallstackOnException = 1
 ; Timeout values are seconds
 ;
 
-[HTTPServer]
+[!HTTPServer]
 ServerPort = $TPORT
 ServerRoot = .
 ServerThreads = 5

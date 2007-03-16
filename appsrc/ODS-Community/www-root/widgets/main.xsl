@@ -832,7 +832,13 @@ c.length);
   </xsl:template>
 
   <xsl:template match="vm:copyright">
-      2005 OpenLink Software
+      <?vsp
+        declare _copyright varchar;
+        
+        select top 1 WS_COPYRIGHT into _copyright from WA_SETTINGS;
+
+        http(coalesce(_copyright,'Copyright © 1999-'||LEFT(datestring (now()), 4)||' OpenLink Software'));
+      ?>
     <xsl:value-of select="."/>
   </xsl:template>
 
@@ -2561,19 +2567,20 @@ c.length);
 
 
 <xsl:template match="vm:bottom-links">
+<!--
                   <a href="/community/public/aboutcommunity.html">About Community</a>
                    | 
-                  <a href="<?V self.wa_home ?>/faq.html">FAQ</a>
-                   | 
                   <a href="#">Terms</a>
-                   | 
-                  <a href="#">Privacy</a>
-                   | 
-                  <a href="<?V self.wa_home ?>/rabuse.vspx">Report Abuse</a>
                    | 
                   <a href="#">Advertise</a>
                    | 
                   <a href="#">Contact Us</a>
+-->
+                  <a href="<?V self.wa_home ?>/faq.html">FAQ</a>
+                   | 
+                  <a href="<?V self.wa_home ?>/privacy.html">Privacy</a>
+                   | 
+                  <a href="<?V self.wa_home ?>/rabuse.vspx">Report Abuse</a>
 </xsl:template>
 
 <xsl:template match="vm:meta-geourl">
