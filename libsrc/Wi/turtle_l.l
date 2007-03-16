@@ -256,13 +256,13 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
 <INITIAL>"{"				{ ttlp_inst.ttlp_lexdepth++; return _LBRA; }
 <INITIAL>"}"				{ ttlp_inst.ttlp_lexdepth--; return _RBRA; }
 
-<INITIAL>"<"([^\\>`\001-\040])*">"	{
+<INITIAL>"<"([^\\>\001-\040])*">"	{
     ttlyylval.box = box_dv_short_nchars (ttlyytext + 1, ttlyyleng - 2);
     return Q_IRI_REF;
   }
 
-<INITIAL>"<"(([^\\>`\001-\040])|{SPAR_ECHAR})*">"	{
-    ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 1, '>');  
+<INITIAL>"<"(([^\\>\001-\040])|{SPAR_ECHAR})*">"	{
+    ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '>');  
     return Q_IRI_REF;
   }
 
