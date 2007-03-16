@@ -56,6 +56,7 @@ extern "C" {
 #endif
 #include "xpathp_impl.h"
 #include "xpathp.h"
+#include "date.h" /* for DT_DT_TYPE */
 
 #define REF_REL_URI(xte,head) \
  ((BOX_ELEMENTS (head) > 4) ? \
@@ -9389,6 +9390,32 @@ caddr_t bif_xml_follow_logical_path (caddr_t * qst, caddr_t * err_ret, state_slo
   return (caddr_t)tgt;
 }
 
+caddr_t bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg = bif_arg (qst, args, 0, "__xsd_type");
+  dtp_t dtp = DV_TYPE_OF (arg); 
+  switch (dtp)
+    {
+    case DV_DATETIME:
+      switch (DT_DT_TYPE(arg))
+        {
+        case DT_TYPE_DATE: return uname_xmlschema_ns_uri_hash_date;
+        case DT_TYPE_TIME: return uname_xmlschema_ns_uri_hash_time;
+        default : return uname_xmlschema_ns_uri_hash_dateTime;
+        }
+    case DV_STRING: return uname_xmlschema_ns_uri_hash_string;
+    case DV_LONG_INT: return uname_xmlschema_ns_uri_hash_integer;
+    case DV_NUMERIC: case DV_DOUBLE_FLOAT: return uname_xmlschema_ns_uri_hash_double;
+    case DV_DB_NULL: return NEW_DB_NULL;
+    default:
+      if (1 == BOX_ELEMENTS (args))
+        sqlr_new_error ("22023", "SR544", 
+          "Function __xsd_type() can not find XML Schema datatype that matches SQL datatype %s (%d)",
+          dv_type_title (dtp), dtp );
+      return box_copy_tree (bif_arg (qst, args, 1, "__xsd_type"));
+    }
+}
+
 xml_doc_cache_t *xml_doc_cache_alloc (void *owner)
 {
   NEW_VARZ (xml_doc_cache_t, xdc);
@@ -9528,6 +9555,7 @@ caddr_t uname_virtrdf_ns_uri_QuadStorage;
 caddr_t uname_virtrdf_ns_uri_array_of_any;
 caddr_t uname_virtrdf_ns_uri_array_of_string;
 caddr_t uname_virtrdf_ns_uri_bitmask;
+caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 caddr_t uname_virtrdf_ns_uri_loadAs;
 caddr_t uname_xml;
@@ -9545,12 +9573,14 @@ caddr_t uname_xmlschema_ns_uri_hash_any;
 caddr_t uname_xmlschema_ns_uri_hash_anyURI;
 caddr_t uname_xmlschema_ns_uri_hash_boolean;
 caddr_t uname_xmlschema_ns_uri_hash_bitmask;
+caddr_t uname_xmlschema_ns_uri_hash_date;
 caddr_t uname_xmlschema_ns_uri_hash_dateTime;
 caddr_t uname_xmlschema_ns_uri_hash_decimal;
 caddr_t uname_xmlschema_ns_uri_hash_double;
 caddr_t uname_xmlschema_ns_uri_hash_float;
 caddr_t uname_xmlschema_ns_uri_hash_integer;
 caddr_t uname_xmlschema_ns_uri_hash_string;
+caddr_t uname_xmlschema_ns_uri_hash_time;
 caddr_t unames_colon_number[20];
 
 bif_type_t bt_xml_entity = {NULL, DV_XML_ENTITY, 0, 0};
@@ -9609,6 +9639,7 @@ xml_tree_init (void)
   UNAME_IT(uname_virtrdf_ns_uri_array_of_any	, VIRTRDF_NS_URI "array-of-any"	);
   UNAME_IT(uname_virtrdf_ns_uri_array_of_string	, VIRTRDF_NS_URI "array-of-string"	);
   UNAME_IT(uname_virtrdf_ns_uri_bitmask		, VIRTRDF_NS_URI "bitmask"	);
+  UNAME_IT(uname_virtrdf_ns_uri_isSpecialPredicate	, VIRTRDF_NS_URI "isSpecialPredicate"	);
   UNAME_IT(uname_virtrdf_ns_uri_isSubclassOf	, VIRTRDF_NS_URI "isSubclassOf"	);
   UNAME_IT(uname_virtrdf_ns_uri_loadAs		, VIRTRDF_NS_URI "loadAs"	);
   UNAME_IT(uname_xml				, "xml"				);
@@ -9625,12 +9656,14 @@ xml_tree_init (void)
   UNAME_IT(uname_xmlschema_ns_uri_hash_any	, XMLSCHEMA_NS_URI "#any"	);
   UNAME_IT(uname_xmlschema_ns_uri_hash_anyURI	, XMLSCHEMA_NS_URI "#anyURI"	);
   UNAME_IT(uname_xmlschema_ns_uri_hash_boolean	, XMLSCHEMA_NS_URI "#boolean"	);
+  UNAME_IT(uname_xmlschema_ns_uri_hash_date	, XMLSCHEMA_NS_URI "#date"	);
   UNAME_IT(uname_xmlschema_ns_uri_hash_dateTime	, XMLSCHEMA_NS_URI "#dateTime"	);
   UNAME_IT(uname_xmlschema_ns_uri_hash_decimal	, XMLSCHEMA_NS_URI "#decimal"	);
   UNAME_IT(uname_xmlschema_ns_uri_hash_double	, XMLSCHEMA_NS_URI "#double"	);
   UNAME_IT(uname_xmlschema_ns_uri_hash_float	, XMLSCHEMA_NS_URI "#float"	);
   UNAME_IT(uname_xmlschema_ns_uri_hash_integer	, XMLSCHEMA_NS_URI "#integer"	);
   UNAME_IT(uname_xmlschema_ns_uri_hash_string	, XMLSCHEMA_NS_URI "#string"	);
+  UNAME_IT(uname_xmlschema_ns_uri_hash_time	, XMLSCHEMA_NS_URI "#time"	);
   for (ctr = 0; ctr < (sizeof (unames_colon_number) / sizeof (caddr_t)); ctr++)
     {
       char tmp[15];
@@ -9736,6 +9769,7 @@ xml_tree_init (void)
   bif_define ("__xml_deserialize_packed", bif_xml_deserialize_packed);
   bif_define ("xml_get_logical_path", bif_xml_get_logical_path);
   bif_define ("xml_follow_logical_path", bif_xml_follow_logical_path);
+  bif_define ("__xsd_type", bif_xsd_type);
   dk_mem_hooks (DV_XML_ENTITY, xe_make_copy, xe_destroy, 0);
   dk_mem_hooks (DV_XQI, box_non_copiable, xqi_destroy, 0);
   dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 0);

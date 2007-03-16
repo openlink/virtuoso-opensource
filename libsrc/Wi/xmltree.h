@@ -946,6 +946,7 @@ extern caddr_t uname_virtrdf_ns_uri_QuadStorage;
 extern caddr_t uname_virtrdf_ns_uri_array_of_any;
 extern caddr_t uname_virtrdf_ns_uri_array_of_string;
 extern caddr_t uname_virtrdf_ns_uri_bitmask;
+extern caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 extern caddr_t uname_virtrdf_ns_uri_loadAs;
 extern caddr_t uname_xml;
@@ -962,12 +963,14 @@ extern caddr_t uname_xmlschema_ns_uri_hash;
 extern caddr_t uname_xmlschema_ns_uri_hash_any;
 extern caddr_t uname_xmlschema_ns_uri_hash_anyURI;
 extern caddr_t uname_xmlschema_ns_uri_hash_boolean;
+extern caddr_t uname_xmlschema_ns_uri_hash_date;
 extern caddr_t uname_xmlschema_ns_uri_hash_dateTime;
 extern caddr_t uname_xmlschema_ns_uri_hash_decimal;
 extern caddr_t uname_xmlschema_ns_uri_hash_double;
 extern caddr_t uname_xmlschema_ns_uri_hash_float;
 extern caddr_t uname_xmlschema_ns_uri_hash_integer;
 extern caddr_t uname_xmlschema_ns_uri_hash_string;
+extern caddr_t uname_xmlschema_ns_uri_hash_time;
 extern caddr_t unames_colon_number[20];
 
 
