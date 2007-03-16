@@ -185,6 +185,7 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
   {
       iri := feed_iri (EF_ID);
       m_iri := feed_mgr_iri (EFD_DOMAIN_ID);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
     DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
     cnt := cnt + 1;
@@ -607,15 +608,16 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
       '
 
 	# Feeds
-        sioc:feed_iri (DB.DBA.ODS_FEED_FEED_DOMAIN.EF_ID) a sioc:Forum option (EXCLUSIVE) ;
+        sioc:feed_iri (DB.DBA.ODS_FEED_FEED_DOMAIN.EF_ID) a atom:Feed option (EXCLUSIVE) ;
         sioc:link sioc:proxy_iri (EF_URI) ;
+	atom:link sioc:proxy_iri (EF_URI) ;
+	atom:title EF_TITLE ;
 	sioc:has_parent sioc:feed_mgr_iri (U_NAME, WAI_NAME) .
 	sioc:feed_mgr_iri (DB.DBA.ODS_FEED_FEED_DOMAIN.U_NAME, DB.DBA.ODS_FEED_FEED_DOMAIN.WAI_NAME)
-	a sioct:Feed ;
 	sioc:parent_of sioc:feed_iri (EF_ID) .
 
 	# Posts
-	sioc:feed_item_iri (DB.DBA.ODS_FEED_POSTS.EFI_FEED_ID, DB.DBA.ODS_FEED_POSTS.EFI_ID) a sioc:Post ;
+	sioc:feed_item_iri (DB.DBA.ODS_FEED_POSTS.EFI_FEED_ID, DB.DBA.ODS_FEED_POSTS.EFI_ID) a sioc:Item ;
   	sioc:has_container sioc:feed_iri (EFI_FEED_ID) ;
 	dc:title EFI_TITLE ;
 	dct:created PUBLISH_DATE ;
@@ -636,7 +638,7 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
 	skos:isSubjectOf sioc:feed_item_iri (EFI_FEED_ID, EFID_ITEM_ID) .
 
 	# Comments
-	sioc:feed_comment_iri (DB.DBA.ODS_FEED_COMMENTS.U_NAME, DB.DBA.ODS_FEED_COMMENTS.WAI_NAME, DB.DBA.ODS_FEED_COMMENTS.EFIC_ITEM_ID, DB.DBA.ODS_FEED_COMMENTS.EFIC_ID) a sioc:Post ;
+	sioc:feed_comment_iri (DB.DBA.ODS_FEED_COMMENTS.U_NAME, DB.DBA.ODS_FEED_COMMENTS.WAI_NAME, DB.DBA.ODS_FEED_COMMENTS.EFIC_ITEM_ID, DB.DBA.ODS_FEED_COMMENTS.EFIC_ID) a sioct:Comment ;
 	dc:title EFIC_TITLE ;
 	sioc:content EFIC_COMMENT ;
 	dct:modified LAST_UPDATE ;
@@ -669,11 +671,6 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
 	sioc:feed_item_iri (DB.DBA.ODS_FEED_ATTS.EFI_FEED_ID, DB.DBA.ODS_FEED_ATTS.EFI_ID)
 	sioc:attachment
 	sioc:proxy_iri (EFIE_URL) .
-
-	# AtomOWL post
-        sioc:feed_iri (DB.DBA.ODS_FEED_FEED_DOMAIN.EF_ID) a atom:Feed ;
-	atom:link sioc:proxy_iri (EF_URI) ;
-	atom:title EF_TITLE .
 
 	sioc:feed_item_iri (DB.DBA.ODS_FEED_POSTS.EFI_FEED_ID, DB.DBA.ODS_FEED_POSTS.EFI_ID) a atom:Entry ;
         atom:title EFI_TITLE ;

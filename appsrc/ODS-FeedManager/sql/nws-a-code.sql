@@ -748,6 +748,7 @@ create procedure ENEWS.WA.domain_nntp_name (
   in domain_id integer)
 {
   return sprintf ('ods.feeds.%s.%U', ENEWS.WA.domain_owner_name (domain_id), ENEWS.WA.string2nntp (ENEWS.WA.domain_name (domain_id)));
+  --return ENEWS.WA.domain_name (domain_id);
 }
 ;
 
@@ -5817,6 +5818,16 @@ create procedure ENEWS.WA.blog_check(
 
 -----------------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.discussion_check ()
+{
+  if (isnull (VAD_CHECK_VERSION ('Discussion')))
+    return 0;
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.version_update()
 {
   if (registry_get ('news_version_upgrade') = '1')
@@ -6519,3 +6530,43 @@ create procedure DB.DBA.OFM_NEWS_MSG_D (
 grant execute on ENEWS.WA.host_url to public;
 
 xpf_extension ('http://www.openlinksw.com/feeds/:getHost', 'ENEWS.WA.host_url');
+
+-----------------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.news_comment_upgrade ()
+{
+  declare isConversation, domain_id, nntpGroup integer;
+  declare nntpName varchar;
+
+  if (registry_get ('news_comment_upgrade') = '1')
+    return;
+
+  for (select * from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'eNews2') do {
+    domain_id := WAI_ID;
+    nntpName  := WAI_NAME;
+    nntpGroup := (select NG_GROUP from DB.DBA.NEWS_GROUPS where NG_NAME = nntpName);
+    if (not isnull (nntpGroup)) {
+      isConversation := cast (get_keyword('conv', ENEWS.WA.settings (domain_id, -1), '0') as integer);
+      if (isConversation = 0) {
+        delete from DB.DBA.NEWS_MULTI_MSG where NM_GROUP = nntpGroup;
+        delete from DB.DBA.NEWS_GROUPS where NG_NAME = nntpName;
+        delete from ENEWS.WA.FEED_ITEM_COMMENT where DOMAIN_ID = domain_id;
+      } else {
+        if (not exists (select 1 from DB.DBA.NEWS_GROUPS where NG_NAME = ENEWS.WA.domain_nntp_name (domain_id))) {
+          update DB.DBA.NEWS_GROUPS
+             set NG_NAME = ENEWS.WA.domain_nntp_name (domain_id)
+           where NG_GROUP = nntpGroup;
+        } else {
+          delete from DB.DBA.NEWS_GROUPS where NG_NAME = nntpName;
+        }
+      }
+    }
+  }
+}
+;
+
+ENEWS.WA.news_comment_upgrade ()
+;
+registry_set ('news_comment_upgrade', '1')
+;
+

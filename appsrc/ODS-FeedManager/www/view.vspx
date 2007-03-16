@@ -223,6 +223,7 @@
                 ct := sprintf(' | <a href="#" onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&mode=comment&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Comment This', 'Comment This');
 
             -- Conversation
+            if (ENEWS.WA.discussion_check ())
             if (ENEWS.WA.conversation_enable(domain_id))
                 cv := sprintf(' | <a href="#" onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Conversation', 'Conversation');
 

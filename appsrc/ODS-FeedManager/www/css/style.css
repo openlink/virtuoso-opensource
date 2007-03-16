@@ -291,6 +291,13 @@ table.sub_page_area
   text-align: center;
 }
 
+.error_text
+{
+  color: red;
+  font-weight: bold;
+  text-align: center;
+}
+
 .attention_marker
 {
   color: #ff0033;

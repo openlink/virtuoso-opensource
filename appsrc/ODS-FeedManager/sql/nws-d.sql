@@ -63,6 +63,7 @@ registry_remove ('news_version_upgrade');
 registry_remove ('news_table_version');
 registry_remove ('news_index_version');
 registry_remove ('news_links_upgrade');
+registry_remove ('news_comment_upgrade');
 registry_remove ('__ods_feeds_sioc_init');
 
 -- Procedures

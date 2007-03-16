@@ -110,17 +110,44 @@
           </div>
           <div id="2" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
+              <v:template type="simple" enabled="--either (equ (ENEWS.WA.discussion_check (), 1), 0, 1)">
+                <tr>
+                  <td class="error_text" colspan="2">
+                    <b>The Conversation feature is disabled. You need to install the ODS Discussion package in order to use it.</b>
+                  </td>
+                </tr>
+              </v:template>
               <tr>
                 <th width="30%">&nbsp;</th>
                 <td>
-          				<v:check-box name="f_conv" xhtml_id="f_conv" value="1" initial-checked="--get_keyword('conv', self.v_conversation, '1')" xhtml_title="Enable conversation on this instance" />
+                  <?vsp
+                    declare S, T varchar;
+
+                    S := '';
+          				  if (not ENEWS.WA.discussion_check ())
+          				    S := 'disabled="disabled"';
+                    T := '';
+          				  if (cast(get_keyword ('conv', self.v_conversation, '0') as integer) = 1)
+          				    T := 'checked';
+                    http (sprintf ('<input type="checkbox" name="f_conv" value="1" %s %s />', T, S));
+                  ?>
           				<vm:label for="f_conv" value="Enable conversation on this instance" />
                 </td>
               </tr>
               <tr>
                 <th width="30%">&nbsp;</th>
                 <td>
-          				<v:check-box name="f_conv_init" xhtml_id="f_conv_init" value="1" initial-checked="--get_keyword('conv_init', self.v_conversation, '1')" xhtml_title="Initialize the news group with existing posts" />
+                  <?vsp
+                    declare S, T varchar;
+
+                    S := '';
+          				  if (not ENEWS.WA.discussion_check ())
+          				    S := 'disabled="disabled"';
+                    T := '';
+          				  if (cast(get_keyword ('conv_init', self.v_conversation, '0') as integer) = 1)
+          				    T := 'checked';
+                    http (sprintf ('<input type="checkbox" name="f_conv_init" value="1" %s %s />', T, S));
+                  ?>
           				<vm:label for="f_conv_init" value="Initialize the news group with existing posts" />
                 </td>
               </tr>
@@ -132,8 +159,9 @@
         <v:button action="simple" value="Save" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[
-              declare conv, tmp any;
+              declare conv, f_conv, f_conv_init, tmp, params any;
 
+              params := self.vc_page.vc_event.ve_params;
               tmp := trim(self.f_rows.ufl_value);
               if (not ENEWS.WA.validate('integer', tmp) or (cast(tmp as integer) < 5) or (cast(tmp as integer) > 1000)) {
                 self.vc_error_message := 'The parameter ''Rows per page'' must be integer in range [5, 1000].';
@@ -148,17 +176,21 @@
               self.settings := ENEWS.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
 
               conv := cast(get_keyword('conv', self.v_conversation, '0') as integer);
-              self.v_conversation := ENEWS.WA.set_keyword('conv', self.v_conversation, self.f_conv.ufl_selected);
-              self.v_conversation := ENEWS.WA.set_keyword('conv_init', self.v_conversation, self.f_conv_init.ufl_selected);
+              f_conv := cast (get_keyword ('f_conv', params, '0') as integer);
+              f_conv_init := cast (get_keyword ('f_conv_init', params, '0') as integer);
+              self.v_conversation := ENEWS.WA.set_keyword ('conv', self.v_conversation, f_conv);
+              self.v_conversation := ENEWS.WA.set_keyword ('conv_init', self.v_conversation, f_conv_init);
 
               insert replacing ENEWS.WA.SETTINGS(ES_DOMAIN_ID, ES_ACCOUNT_ID, ES_DATA) values(self.domain_id, self.account_id, serialize(self.settings));
               insert replacing ENEWS.WA.SETTINGS(ES_DOMAIN_ID, ES_ACCOUNT_ID, ES_DATA) values(self.domain_id, -1, serialize(self.v_conversation));
               commit work;
 
               ENEWS.WA.domain_gems_create(self.domain_id, self.account_id);
-  					  ENEWS.WA.nntp_update (self.domain_id, null, conv, self.f_conv.ufl_selected);
-       				if (self.f_conv.ufl_selected and self.f_conv_init.ufl_selected)
+          		if (ENEWS.WA.discussion_check ()) {
+    					  ENEWS.WA.nntp_update (self.domain_id, null, conv, f_conv);
+         				if (f_conv and f_conv_init)
   					    ENEWS.WA.nntp_fill (self.domain_id);
+    					}
 
               self.vc_redirect('news.vspx');
       	    ]]>
