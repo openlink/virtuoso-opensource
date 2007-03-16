@@ -292,9 +292,76 @@ sqlo_df_virt_col (sqlo_t * so, op_virt_col_t * vc)
 }
 
 
+df_elt_t *
+sqlo_const_cond (sqlo_t * so, df_elt_t * dfe)
+{
+  /* if the dfe is a cond known at compile time return DFE_TRUE or DFE_FALSE and if not known return the dfe */
+  df_elt_t * op, * left, * right;
+  switch (dfe->dfe_type)
+    {
+    case DFE_BOP_PRED:
+    case DFE_BOP:
+      switch (dfe->_.bin.op)
+	{
+	case BOP_NOT:
+	  op = sqlo_const_cond (so, dfe->_.bin.left);
+	  if (DFE_TRUE == op)
+	    return DFE_FALSE;
+	  if (DFE_FALSE == op)
+	    return DFE_TRUE;
+	  else return dfe;
+	case BOP_EQ:
+	  if (dfe->_.bin.left == dfe->_.bin.right)
+	    return DFE_TRUE;
+	  return dfe;
+	  
+	case BOP_NULL:
+	  op = dfe->_.bin.left;
+	  if (DFE_CONST == op->dfe_type)
+	    {
+	      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (op->dfe_tree) || DV_SYMBOL == DV_TYPE_OF (op->dfe_tree))
+		return dfe; /* in fact a col ref to outside proc scope */
+	      return DV_DB_NULL == DV_TYPE_OF (op->dfe_tree) ? DFE_TRUE : DFE_FALSE;
+	    }
+	  if (DFE_COLUMN == op->dfe_type)
+	    {
+	      op_table_t * defd = (op_table_t *) op->dfe_tables->data;
+	      if (defd->ot_table && !defd->ot_is_outer && op->_.col.col && op->_.col.col->col_sqt.sqt_non_null)
+		return DFE_FALSE;
+	    }
+	  return dfe;
+	case BOP_OR:
+	  left = sqlo_const_cond (so, dfe->_.bin.left);
+	  right = sqlo_const_cond (so, dfe->_.bin.right);
+	  if (DFE_TRUE == left || DFE_TRUE == right)
+	    return DFE_TRUE;
+	  if (DFE_FALSE == left && DFE_FALSE == right)
+	    return DFE_FALSE;
+	  return dfe;
+	case BOP_AND:
+	  left = sqlo_const_cond (so, dfe->_.bin.left);
+	  right = sqlo_const_cond (so, dfe->_.bin.right);
+	  if (DFE_FALSE == left || DFE_FALSE == right)
+	    return DFE_FALSE;
+	  if (DFE_TRUE == left && DFE_TRUE == right)
+	    return DFE_TRUE;
+	  return dfe;
+
+	default: return dfe;
+	}
+    default: return dfe;
+    }
+}
+
+
 void
 sqlo_push_pred (sqlo_t *so, df_elt_t *dfe)
 {
+  df_elt_t * c = sqlo_const_cond (so, dfe);
+  if (DFE_TRUE == c)
+    return;
+  if (DFE_FALSE == c)
+    so->so_this_dt->ot_is_contradiction = 1;
   t_set_push (&so->so_this_dt->ot_preds, (void*) dfe);
 }
 
@@ -577,6 +644,18 @@ sqlo_df (sqlo_t * so, ST * tree)
 	      dfe->dfe_tables = t_set_union (dfe->_.bin.left->dfe_tables, dfe->_.bin.right->dfe_tables);
 	    else
 	      dfe->dfe_tables = dfe->_.bin.left->dfe_tables;
+	  }
+	if (BOP_OR == tree->type)
+	  {
+	    df_elt_t * c1 = sqlo_const_cond (so, dfe->_.bin.left);
+	    df_elt_t * c2 = sqlo_const_cond (so, dfe->_.bin.right);
+	    if ((DFE_FALSE == c1 && DFE_FALSE == c2)
+		|| (DFE_TRUE == c1 && DFE_TRUE == c2))
+	      ;
+	    else if (DFE_FALSE == c1)
+	      dfe = c2;
+	    else if (DFE_FALSE == c2)
+	      dfe = c1;
 	  }
 	if (was_top)
 	  sqlo_push_pred (so, dfe);
@@ -1295,6 +1374,8 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
   df_elt_t * placed = NULL;
   /* check if equal exp already placed */
   locus_t * loc = super->dfe_locus;
+  if (!IS_BOX_POINTER (dfe))
+    return dfe; /*true and falsecond markers */
   if (1 /*!loc || LOC_LOCAL == loc */)
     {
       switch (dfe->dfe_type)
@@ -1708,7 +1789,8 @@ sqlo_import_preds (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t p
 	  ST *new_tree = new_tree_pred->pred_text;
 
 	  new_dfe = sqlo_df (so, new_tree);
-	  new_dfe->dfe_type = pred_type;
+	  if (DFE_DT == new_dfe->dfe_type || DFE_VALUE_SUBQ == new_dfe->dfe_type)
+	    new_dfe->dfe_type = DFE_EXISTS;
 	  if (new_dfe == pred)
 	    new_dfe->dfe_is_placed = 0;
 	  t_set_push (&res, (void*) new_dfe);
@@ -2073,6 +2155,24 @@ sqlo_key_part_best (dbe_column_t * col, dk_set_t col_preds, int upper_only)
 }
 
 
+int
+sqlo_is_text_order (sqlo_t * so, df_elt_t * dfe)
+{
+  /* decide if text inx is the most selective.  For rdf, do not make text inx driving if there is a match of ro_digest */
+  if (0 == stricmp ("DB.DBA.RDF_OBJ",  dfe->_.table.ot->ot_table->tb_name ))
+    {
+      DO_SET (df_elt_t *, cp, &dfe->_.table.col_preds)
+	{
+	  if ((DFE_BOP == cp->dfe_type  || DFE_BOP_PRED == cp->dfe_type )
+	      && BOP_EQ == cp->_.bin.op && 0 == stricmp (cp->_.bin.left->_.col.col->col_name, "RO_DIGEST"))
+	    return 0;
+	}
+      END_DO_SET();
+      return 1;
+    }
+  return 1;
+}
+
 
 void
 sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
@@ -2163,12 +2263,14 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 
       if (tb_dfe->_.table.text_pred)
 	{
-	  if (!opt_inx_name && !best_unq)
+	  if (!opt_inx_name && !best_unq
+	      && sqlo_is_text_order (so, tb_dfe))
 	    {
 	      tb_dfe->_.table.is_text_order = 1;
 	      tb_dfe->_.table.key = tb_text_key (tb_dfe->_.table.ot->ot_table);
 	      tb_dfe->dfe_unit = 0;
 	      dfe_table_cost (tb_dfe, &tb_dfe->dfe_unit, &tb_dfe->dfe_arity, &ov, 0);
+	      return;
 	    }
 	  else
 	    {
@@ -2184,12 +2286,14 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
   tb_dfe->_.table.is_unique = best_unq;
   tb_dfe->dfe_unit = best_cost;
   tb_dfe->dfe_arity = true_arity != -1 ? true_arity : arity;
+  if (tb_dfe->_.table.hash_role != HR_FILL && !tb_dfe->_.table.is_text_order)
   sqlo_try_inx_int_joins (so, tb_dfe, &group, &best_group);
   if (group)
     {
       sqlo_place_inx_int_join  (so, tb_dfe, group, after_preds);
     }
-  else if (!opt_inx_name && !best_unq && !tb_dfe->_.table.is_text_order )
+  else if (!opt_inx_name && !best_unq && !tb_dfe->_.table.is_text_order 
+	   && HR_FILL != tb_dfe->_.table.hash_role)
     sqlo_find_inx_intersect (so, tb_dfe, col_preds, best_cost);
 }
 
@@ -3485,6 +3589,47 @@ sqt_types_set (sql_type_t *left, sql_type_t *right)
 }
 
 
+void 
+sqlo_hash_filler (sqlo_t * so, df_elt_t * fill_dfe, dk_set_t preds, float * fill_unit, float * fill_arity, float * ov)
+{
+  fill_dfe->_.table.is_unique = 0; /* the filler is not unique even if the ref is */
+  fill_dfe->_.table.inx_preds = NULL;
+  fill_dfe->_.table.col_preds = NULL;
+  fill_dfe->_.table.col_pred_merges = NULL;
+  fill_dfe->_.table.all_preds = preds;
+  fill_dfe->_.table.join_test = NULL;
+  fill_dfe->_.table.after_join_test = NULL;
+  fill_dfe->_.table.vdb_join_test = NULL;
+  fill_dfe->dfe_next = NULL;
+  fill_dfe->_.table.key = NULL;
+  sqlo_tb_col_preds (so, fill_dfe, preds, NULL);
+  dfe_unit_cost (fill_dfe, 1, fill_unit, fill_arity, ov);
+}
+
+void 
+sqlo_best_hash_filler (sqlo_t * so, df_elt_t * fill_dfe, int remote, dk_set_t * org_preds, dk_set_t * post_preds, float * fill_unit, float * fill_arity, float * ov)
+{
+  float best;
+  if (remote != RHJ_LOCAL)
+    {
+      sqlo_hash_filler (so, fill_dfe, *org_preds, fill_unit, fill_arity, ov);
+      return;
+    }
+  sqlo_hash_filler (so, fill_dfe, NULL, fill_unit, fill_arity, ov);
+  best = *fill_unit;
+  if (*org_preds)
+    {
+      sqlo_hash_filler (so, fill_dfe, *org_preds, fill_unit, fill_arity, ov);
+      if (*fill_unit < 0.7 * best)
+	{
+	  return;
+	}
+      sqlo_hash_filler (so, fill_dfe, NULL, fill_unit, fill_arity, ov);
+      *post_preds = dk_set_conc (t_set_copy (*org_preds), *post_preds);
+    }
+}
+
+
 int
 sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score_ret)
 {
@@ -3519,7 +3664,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
       if (!pred->dfe_tables)
 	t_set_push (&org_preds, (void*)pred);
       else if (!pred->dfe_tables->next
-	  && remote != RHJ_LOCAL)
+	       /*&& remote != RHJ_LOCAL*/)
 	{
 	  /* a remote hash temp is never shared hence can have max preds at the filling */
 	  t_set_push (&org_preds, (void*)pred);
@@ -3561,20 +3706,9 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
 
 
   fill_dfe = (df_elt_t *) t_box_copy ((caddr_t) dfe);
-  fill_dfe->_.table.hash_role = HR_FILL;
   fill_dfe->_.table.inx_op = NULL;
-  fill_dfe->_.table.is_unique = 0; /* the filler is not unique even if the ref is */
-  fill_dfe->_.table.inx_preds = NULL;
-  fill_dfe->_.table.col_preds = NULL;
-  fill_dfe->_.table.col_pred_merges = NULL;
-  fill_dfe->_.table.all_preds = org_preds;
-  fill_dfe->_.table.join_test = NULL;
-  fill_dfe->_.table.after_join_test = NULL;
-  fill_dfe->_.table.vdb_join_test = NULL;
-  fill_dfe->dfe_next = NULL;
-  fill_dfe->_.table.key = NULL;
-  sqlo_tb_col_preds (so, fill_dfe, org_preds, NULL);
-  dfe_unit_cost (fill_dfe, 1, &fill_unit, &fill_arity, &ov);
+  fill_dfe->_.table.hash_role = HR_FILL;
+  sqlo_best_hash_filler (so, fill_dfe, remote, &org_preds, &post_preds, &fill_unit, &fill_arity, &ov);
   if (!mode)
     {
       if (super_ot && ST_P (super_ot->ot_dt, SELECT_STMT) &&
@@ -3715,6 +3849,8 @@ sqlo_try_in_loop (sqlo_t *so, op_table_t * ot, df_elt_t * tb_dfe, df_elt_t ** su
   int flag = (int)(ptrlong) sqlo_opt_value (ot->ot_opts, OPT_SUBQ_LOOP);
   if (SUBQ_NO_LOOP == flag)
     return;
+  if (sqlo_max_mp_size > 0 && (THR_TMP_POOL)->mp_bytes > (sqlo_max_mp_size / 3 * 2))
+    return;
   if (DFE_TABLE != tb_dfe->dfe_type
       || IS_BOX_POINTER (tb_dfe->dfe_super->dfe_locus))
     return; /* if not a table or a table in a pss through dt.  For pass through ,let the remote decide */
@@ -3741,10 +3877,14 @@ sqlo_try_in_loop (sqlo_t *so, op_table_t * ot, df_elt_t * tb_dfe, df_elt_t ** su
 	      copy->_.select_stmt.selection = 
 		t_list (1, t_list (5, BOP_AS, t_box_copy_tree ((caddr_t) subq_out_col),
 				   NULL, subq_out_col->_.col_ref.name, NULL));
+	      if (!copy->_.select_stmt.table_exp->_.table_exp.group_by)
+		{
+		  /* if the looped subq has a group by, the distinct is implicit, otehrwise turn it on */
 	      if (IS_BOX_POINTER (copy->_.select_stmt.top))
 		copy->_.select_stmt.top->_.top.all_distinct = 1;
 	      else 
 		copy->_.select_stmt.top = (ST*)(ptrlong)1; /*distinct */
+		}
 	      sqlo_scope (so, &copy);
 	      subq_dfe = sqlo_df (so, copy);
 	      subq_prefix = subq_dfe->_.sub.ot->ot_new_prefix;
@@ -5227,7 +5367,7 @@ sqlo_top_select (sql_comp_t * sc, ST ** ptree)
       dfe = sqlo_top_1 (so, sc, ptree);
       sqlg_top (so, dfe);
       SQLO_MP_SAMPLE;
-#ifdef DBG_SQLO_MP 
+#ifdef noDBG_SQLO_MP 
       if (virtuoso_server_initialized)
 	fprintf (stderr, "sqlo_top_select %s %d mp_bytes=%d, max=%d\n", __FILE__, __LINE__, 
 	    (THR_TMP_POOL)->mp_bytes, sqlo_pick_mp_size);
