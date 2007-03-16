@@ -49,6 +49,7 @@ int mt_write_pending = 0;
 
 
 dk_set_t mti_io_queues;
+int n_iqs; /*length of mti_io_queues*/
 
 
 
@@ -86,8 +87,8 @@ buf_cancel_write (buffer_desc_t * buf)
    * this is if the bufffer is occupied when the write turn comes, the write will be skipped and the buffer rem'd from the queue.
    * Thus the bd_iq of an occupied buffer can be async reset by another thread. */
   io_queue_t * iq = buf->bd_iq;
-  if (buf->bd_space)
-    ASSERT_OUTSIDE_MAP (buf->bd_space->isp_tree);
+  if (buf->bd_tree)
+    ASSERT_OUTSIDE_MAP (buf->bd_tree, buf->bd_page);
 
   /* Note that this can block waiting for IQ which is owned by another
   thread in iq_schedule. The thread in iq_schedule can block on this
@@ -97,9 +98,6 @@ buf_cancel_write (buffer_desc_t * buf)
 
   if (!buf->bd_is_write)
     GPF_T1 ("write cancel when nobody inside buffer");
-  if (buf->bd_in_write_queue
-      && !buf->bd_iq)
-    GPF_T1 ("buffer being queued for write during write cancel");
   if (iq)
     {
       IN_IOQ (iq);
@@ -110,7 +108,6 @@ buf_cancel_write (buffer_desc_t * buf)
 	  L2_DELETE (iq->iq_first, iq->iq_last, buf, bd_iq_);
 	  TC (tc_write_cancel);
 	  buf->bd_iq = NULL;
-	  buf->bd_in_write_queue = 0;
 	}
       LEAVE_IOQ (iq);
     }
@@ -173,9 +170,7 @@ iq_schedule (buffer_desc_t ** bufs, int n)
 	    }
 	  if (!buf->bd_being_read)
 	    {
-	      IN_PAGE_MAP (buf->bd_space->isp_tree);
-	      page_leave_inner (buf);
-	      LEAVE_PAGE_MAP (buf->bd_space->isp_tree);
+	      page_leave_outside_map (buf);
 	    }
 	}
       LEAVE_IOQ (iq);
@@ -196,6 +191,380 @@ iq_schedule (buffer_desc_t ** bufs, int n)
 	mti_writes_queued += n;
     }
 }
+
+
+long tc_write_scrapped_buf;
+
+extern int c_use_aio;
+long tc_aio_seq_read;
+long tc_aio_seq_write;
+
+
+/*#define HAVE_AIO */
+#ifdef HAVE_AIO
+
+#include <aio.h>
+
+#define AIO_NONE 0
+#define AIO_NATIVE 1
+#define AIO_MERGING 2
+
+
+#define IQ_LISTIO
+
+#define MAX_MERGE 100
+#define MERGE_THR_SIZE ((30*1024)+(MAX_MERGE*PAGE_SZ))
+
+void 
+iq_read_merge (struct aiocb ** list, int n, char * temp)
+{
+  int inx, inx2, bytes;
+  int fd = list[0]->aio_fildes;
+  OFF_T first_offset = list[0]->aio_offset;
+  OFF_T last_planned = first_offset, seek;
+  for (inx = 1; inx < n; inx++)
+    {
+      if (list[inx]->aio_fildes != fd
+	  || list[inx]->aio_lio_opcode != LIO_READ)
+	break;
+      if (list[inx]->aio_offset - last_planned > 2 * PAGE_SZ
+	  || list[inx]->aio_offset - first_offset > (MAX_MERGE - 1) * PAGE_SZ)
+	break;
+      list[inx]->__error_code = -1;
+      last_planned = list[inx]->aio_offset;
+    }
+  seek = lseek (fd, first_offset, SEEK_SET);
+  if (seek != first_offset)
+    GPF_T1 ("bad return from lseek");
+  if (first_offset == last_planned)
+    {
+      bytes = read (fd, list[0]->aio_buf, PAGE_SZ);
+      if (bytes != PAGE_SZ)
+	GPF_T1 ("bad no of bytes from read");
+      list[0]->__return_value = bytes;
+      list[0]->__error_code = 0;
+      return;
+    }
+  list[0]->__error_code = -1;
+  bytes = read (fd, temp,  (last_planned - first_offset) + PAGE_SZ);
+  if (bytes != (last_planned - first_offset) + PAGE_SZ)
+    GPF_T1 ("bad no of bytes returned for merged read");
+  for (inx2 = 0; inx2 <= MIN (inx, n - 1); inx2++)
+    {
+      if (-1 == list[inx2]->__error_code)
+	{
+	  memcpy (list[inx2]->aio_buf, temp + (list[inx2]->aio_offset - first_offset), PAGE_SZ);
+	  list[inx2]->__return_value = PAGE_SZ;
+	  list[inx2]->__error_code = 0;
+	}
+    }
+}
+
+
+void 
+iq_write_merge (struct aiocb ** list, int n, char * temp)
+{
+  int inx, inx2, bytes;
+  int fd = list[0]->aio_fildes;
+  OFF_T first_offset = list[0]->aio_offset;
+  OFF_T last_planned = first_offset, seek;
+  for (inx = 1; inx < n; inx++)
+    {
+      if (list[inx]->aio_fildes != fd
+	  || list[inx]->aio_lio_opcode != LIO_WRITE)
+	break;
+      if (list[inx]->aio_offset - last_planned != PAGE_SZ
+	  || list[inx]->aio_offset - first_offset > (MAX_MERGE - 1) * PAGE_SZ)
+	break;
+      list[inx]->__error_code = -1;
+      last_planned = list[inx]->aio_offset;
+    }
+  seek = lseek (fd, first_offset, SEEK_SET);
+  if (seek != first_offset)
+    GPF_T1 ("bad return from lseek");
+  if (first_offset == last_planned)
+    {
+      bytes = write (fd, list[0]->aio_buf, PAGE_SZ);
+      if (bytes != PAGE_SZ)
+	GPF_T1 ("bad no of bytes from read");
+      list[0]->__return_value = bytes;
+      list[0]->__error_code = 0;
+      return;
+    }
+  list[0]->__error_code = -1;
+  for (inx2 = 0; inx2 <= MIN (inx, n - 1); inx2++)
+    {
+      if (-1 == list[inx2]->__error_code)
+	{
+	  memcpy (temp + (list[inx2]->aio_offset - first_offset), list[inx2]->aio_buf, PAGE_SZ);
+	  list[inx2]->__return_value = PAGE_SZ;
+	  list[inx2]->__error_code = 0;
+	}
+    }
+  bytes = write (fd, temp,  (last_planned - first_offset) + PAGE_SZ);
+  if (bytes != (last_planned - first_offset) + PAGE_SZ)
+    GPF_T1 ("bad no of bytes returned for merged read");
+}
+
+
+void
+iq_listio (struct aiocb ** list, int fill)
+{
+  /* like lio_listio with LIO_WAIT , but merges reads that are close enough together, only PAGE_SZ chunks donw  */
+  char temp_space [(MAX_MERGE + 1) * PAGE_SZ];
+  char * temp = ALIGN_8K (&temp_space[0]);
+  int inx;
+  for (inx = 0; inx < fill; inx++)
+    {
+      if (list[inx]->__return_value)
+	continue;
+      if (LIO_READ == list[inx]->aio_lio_opcode)
+	iq_read_merge (&list[inx], fill - inx, temp);
+      else 
+		iq_write_merge (&list[inx], fill - inx, temp);
+    }
+}
+
+
+int
+aio_fd (buffer_desc_t * buf, dk_hash_t * aio_ht, OFF_T * off)
+{
+  dbe_storage_t * dbs = buf->bd_storage;
+  dk_hash_t * dbs_ht = (dk_hash_t *) gethash ((void*) buf->bd_storage, aio_ht);
+  if (buf->bd_storage->dbs_disks)
+    {
+      int fd;
+      disk_stripe_t * dst;
+      if (!dbs_ht)
+	{
+	  dbs_ht = hash_table_allocate (10);
+	  sethash ((void*)dbs, aio_ht, (void*) dbs_ht);
+	}
+      dst = dp_disk_locate (buf->bd_storage, buf->bd_physical_page, off);
+      fd = (int)(ptrlong) gethash ((void*)dst, dbs_ht); 
+      if (!fd)
+	{
+	  fd = dst_fd (dst);
+	  sethash ((void*)dst, dbs_ht, (void*)(ptrlong)fd);
+	}
+      return fd;
+    }
+  else
+    {
+      if (!dbs_ht)
+	{
+	  sethash ((void*)buf->bd_storage, aio_ht, (void*) 1);
+	  mutex_enter (buf->bd_storage->dbs_file_mtx);
+	}
+      *off = ((int64)PAGE_SZ) * buf->bd_physical_page;
+      return buf->bd_storage->dbs_fd;
+    }
+}
+
+
+void 
+aio_fd_free (dk_hash_t * aio_ht)
+{
+  DO_HT (dbe_storage_t *, dbs, dk_hash_t *, ht, aio_ht)
+    {
+      if ((dk_hash_t*) 1 == ht)
+	{
+	  mutex_leave (dbs->dbs_file_mtx);
+	}
+      else 
+	{
+	  DO_HT (disk_stripe_t *, dst, ptrlong, fd, ht)
+	    {
+	      dst_fd_done (dst, fd);
+	    }
+	  END_DO_HT;
+	  hash_table_free (ht);
+	}
+    }
+  END_DO_HT;
+  hash_table_free (aio_ht);
+}
+
+
+#define MAX_AIO_BATCH 200
+
+extern long read_cum_time;
+extern long disk_reads;
+extern long disk_writes;
+
+
+void 
+iq_aio (io_queue_t * iq)
+{
+  /* runs a batch through aio. Enters and returns inside iq_mtx */
+  struct aiocb cb[MAX_AIO_BATCH];
+  struct aiocb * list[MAX_AIO_BATCH];
+  buffer_desc_t * bufs[MAX_AIO_BATCH];
+  int32 lio_time, n_reads = 0, n_writes = 0;
+  int fill = 0, inx, rc;
+  dp_addr_t last_read = 0, last_write = 0;
+  dk_hash_t * aio_ht = hash_table_allocate (10);
+  for (;;)
+    {
+      it_map_t * buf_itm = NULL;
+      OFF_T off;
+      buffer_desc_t * buf;
+      if (!iq->iq_current)
+	iq->iq_current = iq->iq_first;
+      if (!iq->iq_current)
+	{
+	  if (!fill)
+	    return;
+	  else 
+	    break;
+	}
+      buf = iq->iq_current;
+      if (buf->bd_being_read)
+	{
+	  int fd = aio_fd (buf, aio_ht, &off);
+
+	  if (!buf->bd_is_write) GPF_T1 ("read ahead buf must have  bd_is_write");
+	  mti_reads_queued--;
+	  if (!buf->bd_page)
+	    GPF_T1 ("read ahead of 0");
+	  n_reads++;
+	  iq->iq_action_ctr += 2; /* counts for 3 if syncing for cpt */
+	  memset (&cb[fill], 0, sizeof (struct aiocb));
+	  cb[fill].aio_fildes = fd;
+	  cb[fill].aio_offset = off;
+	  cb[fill].aio_lio_opcode = LIO_READ;
+	  cb[fill].aio_buf = buf->bd_buffer;
+	  cb[fill].aio_nbytes = PAGE_SZ;
+	  list[fill] = &cb[fill];
+	  bufs[fill] = buf;
+	  last_write = 0;
+	  if (last_read + PAGE_SZ == off)
+	    tc_aio_seq_read++;
+	  last_read = off;
+	  fill++;
+	}
+      else
+	{
+	  mti_writes_queued--;
+	  LEAVE_IOQ (iq);
+	  if (bp_buf_enter (buf, &buf_itm))
+	    {
+	      /* now we are in the mtx of buf_itm and the buf was not reused whille waiting for the mtx */
+	      it_map_t * buf_itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
+	      if (buf->bd_is_dirty
+		  && buf->bd_tree 
+		  && buf->bd_page
+		  && !buf->bd_is_write
+		  && !buf->bd_write_waiting)
+		{
+		  /* If the buffer hasn't moved out of sort order and
+		     hasn't been flushed by a sync write */
+		  buf->bd_readers++;
+		  buf->bd_is_dirty = 0;
+		  /* clear dirty flag BEFORE write because the buffer
+		   * can move and the flag can go back on DURING the write */
+		  mutex_leave (&buf_itm->itm_mtx);
+		  {
+		    OFF_T off;
+		    int fd = aio_fd (buf, aio_ht, &off);
+		    if (!buf->bd_page)
+		      GPF_T1 ("read ahead of 0");
+		    iq->iq_action_ctr += 1; /* counts for 3 if syncing for cpt */
+		    n_writes++;
+		    memset (&cb[fill], 0, sizeof (struct aiocb));
+		    cb[fill].aio_fildes = fd;
+		    cb[fill].aio_offset = off;
+		    cb[fill].aio_lio_opcode = LIO_WRITE;
+		    cb[fill].aio_buf = buf->bd_buffer;
+		    cb[fill].aio_nbytes = PAGE_SZ;
+		    list[fill] = &cb[fill];
+		    bufs[fill] = buf;
+		    last_read = 0;
+		    if (last_write + PAGE_SZ == off)
+	    tc_aio_seq_write++;
+		    last_write = off;
+		    fill++;
+		  }
+		}
+	      else
+		{
+		  mutex_leave (&buf_itm->itm_mtx);
+		}
+	    }
+	  else
+	    TC (tc_write_scrapped_buf);
+	  IN_IOQ (iq);
+	}
+      buf->bd_iq = NULL;
+      iq->iq_current = buf->bd_iq_next;
+      L2_DELETE (iq->iq_first, iq->iq_last, buf, bd_iq_);
+      if (MAX_AIO_BATCH == fill || !iq->iq_current)
+	break;
+    }
+  LEAVE_IOQ (iq);
+  lio_time = get_msec_real_time ();
+  if (AIO_MERGING == c_use_aio)
+    iq_listio (list, fill);
+  else
+    {
+      rc = lio_listio (LIO_NOWAIT, list, fill, NULL);
+      if (rc)
+	{
+	  log_error ("lio_listion returns %d errno %d", rc, errno);
+	  GPF_T1 ("error in lio_listio");
+	}
+    }
+  for (inx = 0; inx < fill; inx++)
+    {
+      buffer_desc_t * buf = bufs[inx];
+      it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
+      if (AIO_NATIVE == c_use_aio)
+	{
+	  rc = aio_suspend (&list[inx], 1, NULL);
+	  if (rc) GPF_T1 ("aio_suspend returns error");
+	  /*printf ("aio done %d\n", buf->bd_physical_page);*/
+	}
+      if (cb[inx].__return_value != PAGE_SZ || cb[inx].__error_code)
+	GPF_T1 ("aio cb has error code");
+      if (buf->bd_being_read)
+	{
+	  int flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
+	  if (DPF_INDEX == flags)
+	    pg_make_map (buf);
+	  else if (buf->bd_content_map)
+	    {
+	      resource_store (PM_RC (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
+	      buf->bd_content_map = NULL;
+	    }
+	  if (DPF_BLOB == flags || DPF_BLOB_DIR == flags)
+	    TC(tc_blob_read);
+
+	}
+      mutex_enter (&itm->itm_mtx);
+      if (buf->bd_being_read)
+	{
+	  buf->bd_pl = IT_DP_PL (buf->bd_tree, buf->bd_page);
+	  buf->bd_being_read = 0;
+	}
+      else
+	{
+	  mtx_assert (buf->bd_pl == IT_DP_PL (buf->bd_tree, buf->bd_page));
+	  wi_inst.wi_n_dirty--;
+	}
+      page_leave_inner (buf);
+      mutex_leave (&itm->itm_mtx);
+    }
+  lio_time = get_msec_real_time () - lio_time;
+  read_cum_time += (lio_time / fill) * n_reads;
+  write_cum_time += (lio_time / fill) * n_writes;
+  disk_writes += n_writes;
+  disk_reads += n_reads;
+  aio_fd_free (aio_ht);
+  IN_IOQ (iq);
+}
+#else
+#define MERGE_THR_SIZE 50000
+#endif
 
 
 void
@@ -228,6 +597,7 @@ iq_shutdown (int mode)
 	  {
 	    du_thread_t * self = THREAD_CURRENT_THREAD;
 	    all_empty = 0;
+	    iq->iq_action_ctr = 0;
 	    dk_set_push (&iq->iq_waiting_shut, (void*) self);
 	    LEAVE_IOQ (iq);
 	    rdbg_printf (("IQ shut wait start\n"));
@@ -281,37 +651,15 @@ iq_is_on (void)
 }
 
 
-void
-buf_release_read_waits (buffer_desc_t * buf, int to_reset)
-{
-  it_cursor_t * waiting;
-  buf->bd_being_read = 0;
-  waiting = buf->bd_waiting_read;
-  if (RWG_WAIT_DECOY == to_reset)
-    buf->bd_waiting_read = NULL;
-  while (waiting)
-    {
-      it_cursor_t *next = waiting->itc_next_waiting;
-      if (to_reset)
-	waiting->itc_to_reset = to_reset;
-      dbg_printf (("Release second read at %ld,\n", buf->bd_page));
-      semaphore_leave (waiting->itc_thread->thr_sem);
-      waiting = next;
-    }
-}
-
-
 #define IQ_NO_OP 0
 #define IQ_READ 1
 #define IQ_WRITE 2
 
-long tc_write_scrapped_buf;
 
 void
 iq_loop (io_queue_t * iq)
 {
-  index_tree_t * buf_it;
-  index_space_t * buf_isp, * buf_new_isp;
+  it_map_t * buf_itm;
   int leave_needed;
   long start_write_cum_time = 0;
   buffer_desc_t * buf;
@@ -321,6 +669,7 @@ iq_loop (io_queue_t * iq)
   IN_IOQ (iq);
   for (;;)
     {
+      iq->iq_action_ctr++;
       if (!iq->iq_current)
 	iq->iq_current = iq->iq_first;
 
@@ -333,36 +682,48 @@ iq_loop (io_queue_t * iq)
 	  IN_IOQ (iq);
 	  continue;
 	}
+      if (iq->iq_waiting_shut && iq_on && iq->iq_action_ctr > main_bufs / (n_iqs * n_iqs))
+	{
+	  /* if the  iq's are not being turned off and the iq has not gone empty within main_bufs operations, then it can be the iq will not go empty and cpt will be indefinitely delayed.  So let the cpt thread continyue.  It will eventually stop all processing and turn off the iq's after activity is suspended.
+	  * n_iqs is squared because cpt  waits on each in turn.  In this way the max cpt wait is about the time it takes for the combined iq's to turn over the buffer pool worth of data. */
+	  iq_dry (iq);
+	}
+#ifdef HAVE_AIO
+      if (AIO_NONE != c_use_aio)
+	{
+	  iq_aio (iq);
+	  continue;
+	}
+#endif
       leave_needed = IQ_NO_OP;
-      buf_it = NULL;
+      buf_itm = NULL;
       buf = iq->iq_current;
 
       if (buf->bd_being_read)
 	{
+	  if (!buf->bd_is_write) GPF_T1 ("read ahead buf must have  bd_is_write");
 	  mti_reads_queued--;
 	  if (!buf->bd_page)
 	    GPF_T1 ("read ahead of 0");
+	  iq->iq_action_ctr += 2; /* counts for 3 if syncing for cpt */
 	  LEAVE_IOQ (iq);
 	  is_read_pending++;
 	  buf_disk_read (buf);
 	  is_read_pending--;
 	  DBG_PT_READ (buf, ((lock_trx_t*) NULL));
-	  leave_needed = IQ_READ;
+	  leave_needed = IQ_WRITE;
+	  buf_itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
 	}
       else
 	{
 	  mti_writes_queued--;
 	  LEAVE_IOQ (iq);
-	  buf_isp = buf->bd_space;
-	  if (buf_isp)
+
+	  if (bp_buf_enter (buf, &buf_itm))
 	    {
-	      buf_it = buf_isp->isp_tree;
-	      /* buffer replacement w/ write cancel can change the bd_space between
-	       * reading the value and getting the mtx.  Possible bug of buffer repl during write also */
-	      IN_PAGE_MAP (buf_it);
-	      buf_new_isp = buf->bd_space;
+	      /* now we are in the mtx of buf_itm and the buf was not reused whille waiting for the mtx */
 	      if (buf->bd_is_dirty
-		  && buf_new_isp && buf_it == buf_new_isp->isp_tree
+		  && buf->bd_tree 
 		  && buf->bd_page
 		  && !buf->bd_is_write
 		  && !buf->bd_write_waiting)
@@ -375,7 +736,7 @@ iq_loop (io_queue_t * iq)
 		  /* clear dirty flag BEFORE write because the buffer
 		   * can move and the flag can go back on DURING the write */
 		  leave_needed = IQ_WRITE;
-		  LEAVE_PAGE_MAP (buf_it);
+		  mutex_leave (&buf_itm->itm_mtx);
 		  buf_disk_write (buf, dp_to);
 
 		  if (_thread_sched_preempt == 0 &&
@@ -395,7 +756,7 @@ iq_loop (io_queue_t * iq)
 		  rdbg_printf (("[Canceled W ??? now %ld %ld]",
 				buf->bd_page, buf->bd_physical_page));
 #endif
-		  LEAVE_PAGE_MAP (buf_it);
+		  mutex_leave (&buf_itm->itm_mtx);
 		}
 	    }
 	  else
@@ -403,24 +764,25 @@ iq_loop (io_queue_t * iq)
 	}
       IN_IOQ (iq);
       buf->bd_iq = NULL;
-      buf->bd_in_write_queue = 0;
       iq->iq_current = buf->bd_iq_next;
       L2_DELETE (iq->iq_first, iq->iq_last, buf, bd_iq_);
       if (IQ_WRITE == leave_needed)
 	{
+	  it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
 	  LEAVE_IOQ (iq);
-	  IN_PAGE_MAP (buf_it);
-	  wi_inst.wi_n_dirty--;
-	  page_leave_inner (buf);
-	  LEAVE_PAGE_MAP (buf_it);
-	  IN_IOQ (iq);
+	  mutex_enter (&itm->itm_mtx);
+	  if (buf->bd_being_read)
+	    {
+	      buf->bd_pl = IT_DP_PL (buf->bd_tree, buf->bd_page);
+	      buf->bd_being_read = 0;
 	}
-      else if (IQ_READ == leave_needed)
+	  else
 	{
-	  LEAVE_IOQ (iq);
-	  IN_PAGE_MAP (buf->bd_space->isp_tree);
-	  buf_release_read_waits (buf, RWG_WAIT_DECOY);
-	  LEAVE_PAGE_MAP (buf->bd_space->isp_tree);
+	      mtx_assert (buf->bd_pl == IT_DP_PL (buf->bd_tree, buf->bd_page));
+	      wi_inst.wi_n_dirty--;
+	    }
+	  page_leave_inner (buf);
+	  mutex_leave (&itm->itm_mtx);
 	  IN_IOQ (iq);
 	}
     }
@@ -455,12 +817,13 @@ dst_assign_iq (disk_stripe_t * dst)
   {
     dk_thread_t * thr;
     NEW_VARZ (io_queue_t, iq);
+    n_iqs++;
     dk_set_push (&mti_io_queues, (void*) iq);
     iq->iq_id = (dst) ? box_copy (dst->dst_iq_id) : NULL;
     iq->iq_mtx = mutex_allocate ();
     mutex_option (iq->iq_mtx, (char *) (iq->iq_id ? iq->iq_id : "IQ"), iq_mtx_entry_check, (void *) iq);
     thr = PrpcThreadAllocate (
-			      (thread_init_func) iq_loop, 50000, iq);
+			      (thread_init_func) iq_loop, (c_use_aio == 2 ? MERGE_THR_SIZE : 50000) , iq);
     if (!thr)
       {
 	log_error ("Can's start the server because it can't create a system thread. Exiting");
@@ -500,31 +863,25 @@ mt_write_dirty (buffer_pool_t * bp, int age_limit, int phys_eq_log)
   ASSERT_IN_MTX (bp->bp_mtx);
   for (inx = 0; inx < bp->bp_n_bufs; inx++)
     {
-      index_space_t * isp;
+      it_map_t * buf_itm;
       buf = &bp->bp_bufs[inx];
       if (((int) (bp->bp_ts - buf->bd_timestamp)) < age_limit)
 	continue;
-      isp = buf->bd_space;
-      if (isp && buf->bd_is_dirty)
+      if (bp_buf_enter (buf, &buf_itm))
 	{
-	  IN_PAGE_MAP (isp->isp_tree);
 	  if (!buf->bd_is_write
 	      && !buf->bd_readers
 	      && !buf->bd_write_waiting
-	      && !buf->bd_in_write_queue
+	      && !buf->bd_iq
 	      && buf->bd_is_dirty
-	      && buf->bd_space == isp /* could have been changed right before getting the page map*/
 	      )
 	    {
 	      if (buf->bd_being_read)
 		GPF_T1 ("planning write of buffer being read");
-	      if (buf->bd_iq)
-		GPF_T1 ("planning write of buffer with already with an iq");
-	      buf->bd_in_write_queue = 1;
 	      buf->bd_readers++;
 	      bufs[fill++] = buf;
 	    }
-	  LEAVE_PAGE_MAP (isp->isp_tree);
+	  mutex_leave (&buf_itm->itm_mtx);
 	}
     }
   LEAVE_BP (bp);
