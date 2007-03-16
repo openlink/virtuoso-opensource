@@ -152,6 +152,7 @@ libwi_la_SOURCES = \
 	rltrx.c \
 	row.c \
 	search.c \
+	search_in.c \
 	hash.c \
 	security.c \
 	sort.c \
@@ -599,6 +600,23 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/tests/dav/n3xml2uriqahtml.xsl \
 	$(top_srcdir)/binsrc/tests/dav/rdfa2rdfxml.xsl \
 	$(top_srcdir)/binsrc/tests/dav/rdfxml2n3xml.xsl
+
+SQL_FILES_DAV		+= \
+	$(top_srcdir)/libsrc/Wi/rdfa2rdfxml.xsl \
+	$(top_srcdir)/libsrc/Wi/erdf2rdfxml.xsl \
+	$(top_srcdir)/libsrc/Wi/atom2sioc.xsl \
+	$(top_srcdir)/libsrc/Wi/atom2rdf.xsl \
+	$(top_srcdir)/libsrc/Wi/html2rdf.xsl \
+	$(top_srcdir)/libsrc/Wi/cc2rdf.xsl \
+	$(top_srcdir)/libsrc/Wi/dc2rdf.xsl \
+	$(top_srcdir)/libsrc/Wi/geo2rdf.xsl \
+	$(top_srcdir)/libsrc/Wi/hcal2rdf.xsl \
+	$(top_srcdir)/libsrc/Wi/hcard2rdf.xsl \
+	$(top_srcdir)/libsrc/Wi/hreview2rdf.xsl \
+	$(top_srcdir)/libsrc/Wi/google2rdf.xsl \
+	$(top_srcdir)/libsrc/Wi/ning2rdf.xsl \
+	$(top_srcdir)/libsrc/Wi/flickr2rdf.xsl
+
 
 SQL_FILES_VAD		= \
 	$(top_srcdir)/binsrc/vad/vad_root.sql \
