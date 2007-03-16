@@ -406,15 +406,15 @@ create procedure sioc.DBA.rdf_wiki_view_str ()
   return
       '
       # Posts
-      sioc:wiki_post_iri (DB.DBA.ODS_WIKI_POSTS.U_NAME, DB.DBA.ODS_WIKI_POSTS.CLUSTERNAME, DB.DBA.ODS_WIKI_POSTS.LOCALNAME) a sioc:Post ;
+      sioc:wiki_post_iri (DB.DBA.ODS_WIKI_POSTS.U_NAME, DB.DBA.ODS_WIKI_POSTS.CLUSTERNAME, DB.DBA.ODS_WIKI_POSTS.LOCALNAME) a wikiont:Article ;
       dc:title LOCALNAME ;
       dct:created RES_CREATED ;
       dct:modified RES_MODIFIED ;
       sioc:content RES_CONTENT ;
       sioc:has_creator sioc:user_iri (U_NAME) ;
       foaf:maker foaf:person_iri (U_NAME) ;
-      #sioc:link sioc:iri (RES_LINK) ;
-      #rdfs:seeAlso sioc:iri (SEE_ALSO) ;
+      #sioc:link sioc:proxy_iri (RES_LINK) ;
+      #rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
       sioc:has_container sioc:wiki_forum_iri (U_NAME, CLUSTERNAME) .
 
       sioc:wiki_forum_iri (DB.DBA.ODS_WIKI_POSTS.U_NAME, DB.DBA.ODS_WIKI_POSTS.CLUSTERNAME)

@@ -97,7 +97,7 @@ version_init() {
       CURR_VERSION=`cat version.curr`
   fi
   if [ $CURR_VERSION -gt $VERSION ] ; then
-      BASE=`expr $CURR_VERSION - CALC_VERSION + 1`
+      BASE=`expr $CURR_VERSION - $CALC_VERSION + 1`
       echo "new base: " $BASE
       echo $BASE > version.base
       VERSION=$CURR_VERSION
@@ -305,6 +305,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/atom.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/upstream.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/plugins.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/errors.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/postinstall.sql', 1, 'report', 1);" >> $STICKER
   echo "      " >> $STICKER
   echo "    ]]>" >> $STICKER
@@ -314,6 +315,8 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/drop.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/drop_proc.sql', 0, 'report', 1);" >> $STICKER
   echo "      DB.DBA.DAV_DELETE_INT ('/DAV/VAD/wiki/', 0, null, null, 0, 0);" >> $STICKER
+  echo "      DB.DBA.wa_exec_no_error('drop procedure WV.WIKI.SILENT_EXEC');" >> $STICKER
+  echo "      DB.DBA.wa_exec_no_error('drop procedure WV.Wiki.SILENT_EXEC');" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"post-uninstall\">" >> $STICKER

@@ -1760,7 +1760,7 @@ create procedure WV.WIKI.SKINSCOLLECTION ()
 
 create procedure WV.WIKI.SKINSPATH (in _skin varchar, in _base_adjust varchar)
 {
-  return sprintf('http://%s/wiki/resources/Skins/%s/', sioc..get_cname() ,  _skin);
+  return WV.WIKI.RESOURCEHREF('Skins/' || _skin || '/', _base_adjust);
 }
 ;
 
@@ -2401,8 +2401,20 @@ create function WV.WIKI.RESOURCEHREF (in href varchar, in _base_adjust varchar)
 {
   declare _resources varchar;
   _resources := registry_get('WIKI RESOURCES');
-  if (isinteger(_resources))
+  if (isinteger(_resources) or not is_http_ctx())
+    {
+      declare vh, lh, hf, lines any;
+      lines := http_request_header ();
+      vh := http_map_get ('vhost');
+      lh := http_map_get ('lhost');
+      hf := http_request_header (lines, 'Host');
+      if(strchr (hf, ':') is null)
+        hf:=hf||':'|| server_http_port ();
+      if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/wiki/resources'))
+        return 'http://' || hf || '/wiki/resources/' || href;
+      else
     return sprintf ('http://%s/wiki/resources/%s', sioc..get_cname(), href);
+    }
   else
     return _resources || href;
 }
@@ -2696,4 +2708,21 @@ create function WV..TOPIC_URL(in _topic varchar)
 }
 ;
 
+create function WV..ODS_LINK(inout lines any)
+{
+  declare vh, lh, hf any;
+  if (not is_http_ctx())
+    return WA_LINK(1, '/ods/');
+  vh := http_map_get ('vhost');
+  lh := http_map_get ('lhost');
+  hf := http_request_header (lines, 'Host');
+ 
+  if(strchr (hf, ':') is null)
+    hf:=hf||':'|| server_http_port ();
+  if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
+    return 'http://' || hf || '/ods/';
+  else
+    return WA_LINK(1, '/ods/');
+}
+;
 

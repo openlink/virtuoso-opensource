@@ -794,9 +794,9 @@ create method ti_report_attachments () returns any for WV.WIKI.TOPICINFO
 				 self.ti_local_name as Topic,
 				 aref (_file, 10) as Name,
 				 aref (_file, 0) as Path,
-				 WV.WIKI.DATEFORMAT (aref (_file, 8)) as "ModTime",
+				 WV.WIKI.DATEFORMAT (aref (_file, 3)) as "ModTime",
 				 WV.WIKI.PRINTLENGTH (aref (_file, 2)) as "Size",
-				 WV.WIKI.DATEFORMAT (aref (_file, 3)) as "Date",
+				 WV.WIKI.DATEFORMAT (aref (_file, 8)) as "Date",
 				 aref (_file, 9) as Type,
 				 aref (_file, 5) as Permissions,
 				 (select UserName from WV.WIKI.USERS where UserId = aref (_file, 7)) as Owner),
@@ -1163,8 +1163,8 @@ create trigger "Wiki_TopicTextInsert" after insert on WS.WS.SYS_DAV_RES order 10
        select U_FULL_NAME, U_NAME into _uname, _uid from DB.DBA.SYS_USERS where U_ID = N.RES_OWNER;
        _newtopic.ti_fill_url();
        DB.DBA.WA_NEW_WIKI_IN (WV.WIKI.NORMALIZEWIKIWORDLINK (_newtopic.ti_cluster_name, _newtopic.ti_local_name), _newtopic.ti_url || '?', _newtopic.ti_id);
-       insert into WV.WIKI.DASHBORD (WD_TITLE, WD_UNAME, WD_UID, WD_URL)
-	  values (subseq (_newtopic.ti_text, 0, 200), _uname, _uid, _newtopic.ti_url || '?');
+       insert into WV.WIKI.DASHBOARD (WD_TIME, WD_TITLE, WD_UNAME, WD_UID, WD_URL)
+	  values (now(), subseq (_newtopic.ti_text, 0, 200), _uname, _uid, _newtopic.ti_url || '?');
      }
   --dbg_obj_princ (2,  WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
   skip: ;
@@ -2585,10 +2585,11 @@ create procedure WV.WIKI.DELICIOUSSYNC (in _cluster int, in _user varchar)
 create method ti_fill_url () for WV.WIKI.TOPICINFO
 {
   declare _home varchar;
-  _home := WV.WIKI.CLUSTERPARAM (self.ti_cluster_name, 'home', '/wiki/main');
-  self.ti_url := sprintf ('%s/%s',
-			  _home,
-			  WV.WIKI.READONLYWIKIWORDLINK (self.ti_cluster_name, self.ti_local_name));
+  _home := WV.WIKI.CLUSTERPARAM (self.ti_cluster_name, 'home');
+  if (_home is not null)
+    self.ti_url := sprintf ('%s/%s', _home, WV.WIKI.READONLYWIKIWORDLINK (self.ti_cluster_name, self.ti_local_name));
+  else
+    self.ti_url := WV..TOPIC_URL (WV.WIKI.READONLYWIKIWORDLINK (self.ti_cluster_name, self.ti_local_name));
   return self.ti_url;
 }
 ;
@@ -3054,8 +3055,11 @@ create procedure WV.WIKI.IMPORT (in cluster varchar,
 	    content := WV.WIKI.ADD_REFBY_MACRO (content);
 	  if (WV.WIKI.DIFFS (cluster, file_spec, content))
 	    {
-  	      WV.WIKI.GETLOCK (DB.DBA.DAV_SEARCH_PATH (cluster_col_id, 'C') ||  file_spec, auth);
+  	      declare _path varchar;
+	      _path := DB.DBA.DAV_SEARCH_PATH (cluster_col_id, 'C') ||  file_spec;
+  	      WV.WIKI.GETLOCK (_path, auth);
 	      WV.WIKI.UPLOADPAGE (cluster_col_id, file_spec, content, owner, 0, auth);
+    	      WV.WIKI.RELEASELOCK (_path, auth);
 --              DB.DBA.DAV_CHECKIN_INT (DB.DBA.DAV_SEARCH_PATH (cluster_col_id, 'C') ||  file_spec, null, null, 0);
 	      commit work;
 	      result (file_spec);
@@ -4042,7 +4046,7 @@ create procedure WV.WIKI.UPGRADE__UPDATE_AUTHOR_ID()
     _max_ver := (select max(RV_ID) from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = _res_id);
     if (_max_ver is not null)
       {
-         update WV.WIKI.TOPIC set AuthorId = (select U_ID from DB.DBA.SYS_USERS, WS.WS.SYS_DAV_RES_VERSION where RV_ID = _max_ver and RV_WHO = U_NAME)
+         update WV.WIKI.TOPIC set AuthorId = (select U_ID from DB.DBA.SYS_USERS, WS.WS.SYS_DAV_RES_VERSION where RV_ID = _max_ver and RV_WHO = U_NAME and RV_RES_ID = _res_id)
 	   where ResId = _res_id;
       }
   }
@@ -4522,6 +4526,20 @@ create procedure RSS(in _cluster varchar, in _type varchar)
   return string_output_string(_out);
 }
 ;
+
+create procedure WIKI_LINK()
+{
+  return 'http://' || sioc..get_cname() || '/wiki';
+}
+;
+
+
+create procedure RESOURCE_PATH()
+{
+  return WIKI_LINK() || '/resources';
+}
+;
+
 
 use DB
 ;

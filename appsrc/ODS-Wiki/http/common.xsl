@@ -297,6 +297,8 @@
        <input type="hidden" name="name" value="{$ti_local_name}"></input>
        <input type="hidden" name="page" value="{wv:ReadOnlyWikiWordLink($ti_cluster_name, $ti_local_name)}"></input>
        <input type="hidden" name="scope" value="{$ti_cluster_name}"></input>
+       <input type="hidden" name="sid" value="{$sid}"></input>
+       <input type="hidden" name="realm" value="wa"></input>
        <input type="textare" name="q" size="24">
          <xsl:attribute name="value">Search</xsl:attribute>
          <xsl:attribute name="onFocus">
@@ -309,14 +311,14 @@
      <a id="advanced-search-link">
        <xsl:variable name="link" select="wv:ReadOnlyWikiWordLink($ti_cluster_name, $ti_local_name)"/>
        <xsl:attribute name="href">
-         <xsl:value-of select="wv:ResourceHREF2 ('advanced_search.vspx', $baseadjust, vector ('cluster', $ti_cluster_name, 'page', $link))"/>
+	 <xsl:value-of select="wv:ResourceHREF2 ('advanced_search.vspx', $baseadjust, vector ('cluster', $ti_cluster_name, 'page', $link, 'sid', $sid, 'realm', 'wa'))"/>
        </xsl:attribute>
        Advanced Search
      </a>
      <xsl:if test="$sid and ($sid != '')">
        <a id="user-settings-link" href="{wv:registry_get ('wa_home_link', '/wa/')}/uiedit.vspx?sid={$sid}&realm={$realm}">User Settings</a>
        <a id="cluster-settings-link">
-         <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('settings.vspx',$baseadjust,vector('cluster',$ti_cluster_name, 'name', $ti_local_name))"/></xsl:attribute>		
+	 <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('settings.vspx',$baseadjust,vector('cluster',$ti_cluster_name, 'name', $ti_local_name, 'sid', $sid, 'realm', 'wa'))"/></xsl:attribute>		
          Cluster Settings
        </a>
      </xsl:if>

@@ -48,6 +48,7 @@
 <xsl:param name="wikiref_cont"/>
 
 <xsl:param name="dashboard">0</xsl:param>
+<xsl:param name="admin"/>
 
 <xsl:variable name="hrefdisable">
   <xsl:if test="$preview_mode = '1'">hrefdisable=on&amp;</xsl:if>
@@ -60,8 +61,7 @@
 <xsl:template name="Toolbar"/>
 
  <xsl:template name="Root">
-	Application fault signaled during processing the page:
-	<xsl:apply-templates/>
+   Application fault signaled during processing the page. Error has been reported, quote id is:  <xsl:apply-templates/>
 	<br/>
 	<xsl:call-template name="wikiref">
 	  <xsl:with-param name="wikiref_cont"><xsl:value-of select="wv:funcall0('WV.WIKI.DASHBOARD')"/></xsl:with-param>
@@ -109,12 +109,7 @@
 
  <xsl:template match="error">
   <div class="error">
-    <xsl:if test="@State != '42WV9'">
-	[<xsl:value-of select="@State"/>]
-    </xsl:if>
-    <pre>
-	<code><xsl:value-of select="text()"/></code>
-    </pre>
+    <xsl:value-of select="@id"/>
   </div>
  </xsl:template>
 

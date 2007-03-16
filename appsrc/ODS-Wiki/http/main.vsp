@@ -185,7 +185,7 @@ again:
   declare deadlock_cnt int;
   deadlock_cnt := 5;
  
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*', not found {
 major_exit_handler:
 	  if ( (__SQL_STATE = '42001') and (deadlock_cnt > 0))
 	    {
@@ -211,11 +211,17 @@ major_exit_handler:
 error_report:
 	  sql_state := __SQL_STATE;
 	  sql_message := __SQL_MESSAGE;
+	  declare error_id varchar;
+	  rollback work;
 	  if (sql_state = '42WV9')
 	    {
 --		sql_state := 'Application Error';
 		sql_message := subseq (sql_message, 0, strchr (sql_message, '\n'));
+	    	error_id := sql_message;
 	    }
+	  else
+	    error_id := WV..ADD_ERROR (sql_state, sql_message);
+	  commit work;
           http_rewrite();
   	  http_header ('Content-Type: text/html; charset=UTF-8\r\n');
 	  WV.WIKI.VSPHEADER (path,params,lines, _topic, _base_adjust);	 
@@ -224,8 +230,7 @@ error_report:
 	  http_value (WV.WIKI.VSPXSLT ('PostProcess.xslt', 
  	 	WV.WIKI.VSPXSLT ( 'VspReportError.xslt',
 		XMLELEMENT ('error', 
-			XMLATTRIBUTES (sql_state as "State"),
-			sql_message),
+			XMLATTRIBUTES (error_id as "id")),
 		_ext_params),
 	    _ext_params, WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default')));
 	  WV.WIKI.VSPFOOTER (path,params,lines);
@@ -359,7 +364,7 @@ cont:
 	  goto major_exit_handler;
   	http_rewrite();
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  DB.DBA.WA_LINK(1, '/ods/'), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || sprintf ('?command=save&text=%U', _text)));
+        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || sprintf ('?command=save&text=%U', _text)));
         return;
       };
 
@@ -434,6 +439,14 @@ content:
     }	
   if (_cmd = 'attach')
     {
+      declare exit handler for sqlstate '42WV9' {
+	if (_user <> 'WikiGuest')
+	  goto major_exit_handler;
+  	http_rewrite();
+        http_request_status ('HTTP/1.1 302 Found');
+        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=attach'));
+        return;
+      };
 	WV.WIKI.VSPTOPICATTACH (path, lines, _topic,
 		 WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
  	goto make_footer;
@@ -480,7 +493,7 @@ content:
 	  goto major_exit_handler;
   	http_rewrite();
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  DB.DBA.WA_LINK(1, '/ods/'), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=edit&' || _parent));
+        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=edit&' || _parent));
         return;
       };
       declare _filename varchar;
@@ -561,7 +574,7 @@ create_or_view:
 	  _title := sprintf ('?goto_title=%U', _title);
 	else
 	  _title := '';
-        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  DB.DBA.WA_LINK(1, '/ods/'), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || _title || '?' ||  _parent));
+        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || _title || '?' ||  _parent));
         return;
       };
 

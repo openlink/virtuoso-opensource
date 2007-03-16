@@ -274,17 +274,17 @@ wiki_exec_no_error (
 ;
 
 wiki_exec_no_error (
-'create table WV.WIKI.DASHBORD (
+'create table WV.WIKI.DASHBOARD (
   WD_TIME	timestamp,
   WD_TITLE	varchar,
   WD_UNAME	varchar,
-  WD_URL	varchar,
-  primary key (WD_TIME)
+  WD_UID        varchar,
+  WD_URL	varchar
 )')
 ;
-
-wiki_exec_no_error (
-'alter table WV.WIKI.DASHBORD add WD_UID varchar')
+wiki_exec_no_error('
+create index WV_WIKI_DASHBOARD_TIME on WV.WIKI.DASHBOARD (WD_TIME)
+')
 ;
 
 
@@ -716,3 +716,14 @@ alter table WV..HIST add H_IS_PUBLIC int default 0')
 
 wiki_exec_no_error('
 create index WIKI_HIST_CLUSTER on WV..HIST (H_CLUSTER)')
+;
+
+wiki_exec_no_error ('
+create table WV..ERRORS (
+	E_ID varchar,
+	E_DT datetime not null,
+	E_CODE varchar not null,
+	E_MESSAGE varchar not null, 
+	primary key (E_ID)
+)')
+;

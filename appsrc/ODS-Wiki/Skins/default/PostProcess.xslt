@@ -221,6 +221,9 @@
 	          <li>
                     <xsl:copy-of select="//a[@id='advanced-search-link']"/>
                   </li>
+		  <li>
+		    <xsl:copy-of select="//a[@id='users-link']"/>
+		  </li>
 	        </ul>
               </div> <!-- col -->
             </div> <!-- foot-col-ctr -->

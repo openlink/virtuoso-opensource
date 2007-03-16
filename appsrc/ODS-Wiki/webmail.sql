@@ -155,7 +155,7 @@ create function WV.WIKI.MAIL_EXCERPT (in _user_id int, in _mail_id int)
   message := OMAIL.WA.omail_get_message (1, _user_id, _mail_id, 1);
 
   if (message is not null)
-    return search_excerpt (vector (), get_keyword ('message', message));
+    return search_excerpt (vector (), get_keyword ('message', message, ''));
   return '';
 }
 ;

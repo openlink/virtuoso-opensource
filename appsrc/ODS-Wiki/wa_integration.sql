@@ -542,7 +542,7 @@ create method wa_dashboard_last_item () for wa_wikiv
   declare t_time, t_tit, t_name, t_url, t_uid any;
 
   select top 1 WD_TIME, WD_TITLE, WD_UNAME, WD_UID, WD_URL
-	into t_time, t_tit, t_name, t_uid, t_url from WV.WIKI.DASHBORD order by WD_TIME desc;
+	into t_time, t_tit, t_name, t_uid, t_url from WV.WIKI.DASHBOARD order by WD_TIME desc;
 
   return WV.WIKI.MAKE_DASHBOARD_ITEM (t_time, t_tit, t_name, t_uid, t_url);
 }
