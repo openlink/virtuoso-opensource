@@ -2468,8 +2468,14 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
   subjects := dict_list_keys (subj_dict, 1);
   gvector_sort (subjects, 1, 0, 0);
   s_count := length (subjects);
-  sorted_graphs := graphs;
-  if (sorted_graphs is null)
+  vectorbld_init (sorted_graphs);
+  foreach (any g in graphs) do
+    {
+      if (isiri_id (g))
+        vectorbld_acc (sorted_graphs, g);
+    }
+  vectorbld_final (sorted_graphs);
+  if (0 = length (sorted_graphs))
         {
       declare g_dict any;
       g_dict := dict_new ();
