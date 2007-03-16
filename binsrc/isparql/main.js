@@ -36,6 +36,7 @@ var qbe = {};
 var adv = {};
 var tab = {};
 var page_w = 800;
+var page_h = 800;
 var l = new OAT.Layers(100);
 
 function init()
@@ -477,6 +478,7 @@ iSPARQL.Advanced = function ()
       }
 
 	  OAT.Dom.show(self.results_win.div);
+	  window.scrollTo(0,OAT.Dom.getWH(self.results_win.div)[0] - 40);
     iSPARQL.QueryExec(params);
 	}
 	
@@ -599,7 +601,7 @@ iSPARQL.Advanced = function ()
 	icon_get_from_qbe = t.addIcon(0,"images/compfile.png","Get from QBE",self.func_get_from_qbe); 
 	OAT.Dom.attach("menu_get_from_qbe","click",self.func_get_from_qbe);
 
-	this.results_win = new OAT.Window({title:"Query Results", close:1, min:0, max:0, width:page_w - 40, height:500, x:20,y:360});
+	this.results_win = new OAT.Window({title:"Query Results", close:1, min:0, max:0, width:page_w - 40, height:500, x:20,y:560});
 	$("page_query").appendChild(self.results_win.div);
 	self.results_win.content.appendChild($("res_area"));
   self.results_win.onclose = function() { OAT.Dom.hide(self.results_win.div); }
@@ -620,7 +622,7 @@ function get_file_type(file_name)
 }
 
 function set_dav_props(res){
-  if (isVirtuoso && res.substring(res.lastIndexOf('.') + 1).toLowerCase() == 'xml')
+  if (isVirtuoso && (!res.match(/isparql\.xml$/i)) && res.substring(res.lastIndexOf('.') + 1).toLowerCase() == 'xml')
   {
 	  OAT.AJAX.GET('./set_dav_props.vsp?res='+encodeURIComponent(res),'',function(){return '';},{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC});
 	}

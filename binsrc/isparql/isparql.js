@@ -42,6 +42,8 @@ window.iSPARQL = {
     var putPrefix = function(str) 
     {
       var tmp = '';
+      if (str == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+        return 'a';
       for(var i = 0;i < params.prefixes.length; i++)
         if (str.substring(0,params.prefixes[i].uri.length) == params.prefixes[i].uri)
           return params.prefixes[i].label + ':' + str.substring(params.prefixes[i].uri.length);

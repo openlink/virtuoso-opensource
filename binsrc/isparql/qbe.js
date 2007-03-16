@@ -311,7 +311,7 @@ iSPARQL.QBE = function ()
 	l.addLayer(this.props_win.div);
 	this.props_win.content.appendChild($("qbe_props"));
 
-	this.results_win = new OAT.Window({title:"Query Results", close:1, min:0, max:0, width:page_w - 40, height:500, x:20,y:360});
+	this.results_win = new OAT.Window({title:"Query Results", close:1, min:0, max:0, width:page_w - 40, height:500, x:20,y:600});
 	$("page_qbe").appendChild(this.results_win.div);
 	l.addLayer(this.results_win.div);
 	this.results_win.content.appendChild($("qbe_res_area"));
@@ -348,6 +348,10 @@ iSPARQL.QBE = function ()
   self.schematree.unbound.collapse();
   this.schematree.bound = self.schematree.tree.createChild('bound',1);
   self.schematree.bound.collapse();
+  var ref_img = OAT.Dom.create('img');
+  ref_img.src = 'images/reload.png';
+	OAT.Dom.attach(ref_img,"click",function(){self.schematree.bound.expand();self.SchemaTreeRefresh()});
+	self.schematree.bound.gdElm.appendChild(ref_img);
   
 	this.save = function(save_name,save_type) {
 	  var data = self.getSaveData(save_type)
@@ -651,7 +655,7 @@ iSPARQL.QBE = function ()
         //default_graph_uri:node.li.uri,
         default_graph_uri:'',
         maxrows:0,
-  	    should_sponge:'',
+  	    should_sponge:((node.li.bound)?'':'soft'),
         format:'application/sparql-results+json',
         errorHandler:function(xhr)
         {
@@ -1119,12 +1123,12 @@ iSPARQL.QBE = function ()
     }; 
   }
   self.svgsparql.ghostdrag.addSource(icon_add,process,drop);
-  OAT.Dom.resizeBy(icon_add,1,1);
   OAT.Dom.unlink(icon_add.firstChild);
-  OAT.Dom.resizeBy(icon_add,-1,-1);
   icon_add.style.backgroundImage = "url(images/qbe_add.gif)";
   icon_add.style.backgroundRepeat = "no-repeat";
   icon_add.style.backgroundPosition = "center";
+  icon_add.style.width = '24';
+  icon_add.style.height = '24';
 
 	icon_draw = t.addIcon(1,"images/qbe_draw.gif","Draw mode",function(state) {
 		if (!state) { return; }
@@ -1143,12 +1147,12 @@ iSPARQL.QBE = function ()
     }
   }
   self.svgsparql.ghostdrag.addSource(icon_draw,process,drop);
-  OAT.Dom.resizeBy(icon_draw,1,1);
   OAT.Dom.unlink(icon_draw.firstChild);
-  OAT.Dom.resizeBy(icon_draw,-1,-1);
   icon_draw.style.backgroundImage = "url(images/qbe_draw.gif)";
   icon_draw.style.backgroundRepeat = "no-repeat";
   icon_draw.style.backgroundPosition = "center";
+  icon_draw.style.width = '24';
+  icon_draw.style.height = '24';
 
 	icon_group = t.addIcon(0,"images/qbe_group.png","Group Selected",function(state) {
 	  if (self.svgsparql.selectedNodes.length > 0)
@@ -1607,6 +1611,7 @@ iSPARQL.QBE = function ()
 	  }
 	  OAT.Dom.show(self.results_win.div);
 	  l.raise(self.results_win.div);
+	  window.scrollTo(0,OAT.Dom.getWH(self.results_win.div)[0] - 40);
     iSPARQL.QueryExec(params);
 	}
 	
@@ -1738,6 +1743,7 @@ iSPARQL.QBE = function ()
   	}
   	
   	// Starting actual routines
+  	try {
 
 	  if (data.match(/<[\w:_ ]+>/))
       var xml = OAT.Xml.createXmlDoc(data);
@@ -1871,11 +1877,14 @@ iSPARQL.QBE = function ()
   	  self.format_set();
   		self.svgsparql.reposition();
     }
+    } catch (e) {
+  		self.clear();
+      alert('There was an error tring to visualize the query. Please check if the query is valid.');
+    }
 	}
 	
 	this.QueryGenerate = function()
 	{
-	  var query = $('query');
     
     var proc_nodes = {};
     var used_prefixes = Array();
