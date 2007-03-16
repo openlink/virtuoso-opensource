@@ -4,15 +4,23 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
 @prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#> .
+@prefix bif: <bif:> .
+@prefix sql: <sql:> .
 
 virtrdf:loadAs virtrdf:loadAs virtrdf:jsoTriple .
 virtrdf:loadAs virtrdf:item virtrdf:jsoTriple .
 virtrdf:isSubclassOf virtrdf:loadAs virtrdf:jsoTriple .
 virtrdf:version virtrdf:loadAs virtrdf:jsoTriple .
+virtrdf:isSpecialPredicate virtrdf:loadAs virtrdf:jsoTriple .
+
+bif:contains virtrdf:isSpecialPredicate bif:contains .
+bif:xcontains virtrdf:isSpecialPredicate bif:xcontains .
+bif:xpath_contains virtrdf:isSpecialPredicate bif:xpath_contains .
+bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2007-02-24 0001' ;
+  virtrdf:version '2007-03-15 0001' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -31,8 +39,8 @@ virtrdf:version virtrdf:loadAs virtrdf:jsoTriple .
     rdfdf:multipart-literal-fn-nullable ,
     rdfdf:sql-varchar-uri-fn ,			rdfdf:sql-varchar-uri-fn-nullable ,
     rdfdf:sql-integer-uri-fn ,			rdfdf:sql-integer-uri-fn-nullable ,
-    rdfdf:sql-varchar-literal-fn-nullable ,
-    rdfdf:sql-integer-literal-fn-nullable
+    rdfdf:sql-varchar-literal-fn ,		rdfdf:sql-varchar-literal-fn-nullable ,
+    rdfdf:sql-integer-literal-fn ,		rdfdf:sql-integer-literal-fn-nullable
 .
 
 rdfdf:default-iid
@@ -1001,9 +1009,9 @@ rdfdf:sql-integer-uri-fn-nullable-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
 .
 
-rdfdf:sql-varchar-literal-fn-nullable
+rdfdf:sql-varchar-literal-fn
   rdf:type virtrdf:QuadMapFormat;
-  virtrdf:qmfName "sql-varchar-literal-fn-nullable";
+  virtrdf:qmfName "sql-varchar-literal-fn";
   virtrdf:qmfShortTmpl " ^{alias-dot}^^{column}^";				# STRING REQUIRED "short" value template, can be NULL
   virtrdf:qmfLongTmpl " DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (^{custom-verbatim-1}^ (^{alias-dot}^^{column}^))";	# STRING REQUIRED "long" value template, can be NULL
   virtrdf:qmfSqlvalTmpl " ^{custom-verbatim-1}^ (^{alias-dot}^^{column}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
@@ -1037,18 +1045,58 @@ rdfdf:sql-varchar-literal-fn-nullable
   virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
   virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#any";	# STRING OPTIONAL Datatype of stored values, if fixed
 #  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfCustomString1 "DB.DBA.RDF_DF_VARCHAR_LITERAL";
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
+  virtrdf:qmfSuperFormats rdfdf:sql-varchar-literal-fn-SuperFormats
+.
+
+rdfdf:sql-varchar-literal-fn-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat;
+.
+
+rdfdf:sql-varchar-literal-fn-nullable
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:inheritFrom rdfdf:sql-varchar-literal-fn;
+  virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
+  virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
+    virtrdf:SPART_VARR_IS_LIT;
+  virtrdf:qmfName "sql-varchar-literal-fn-nullable";
   virtrdf:qmfSuperFormats rdfdf:sql-varchar-literal-fn-nullable-SuperFormats
 .
 
 rdfdf:sql-varchar-literal-fn-nullable-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
 .
+
+rdfdf:sql-varchar-literal-fn-nullable-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat;
+.
+
+rdfdf:sql-integer-literal-fn
+  rdf:type virtrdf:QuadMapFormat;
+  virtrdf:inheritFrom rdfdf:sql-varchar-literal-fn;
+  virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
+  virtrdf:qmfName "sql-integer-literal-fn";
+  virtrdf:qmfCmpFuncName "DB.DBA.RDF_OBJ_CMP";					# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
+  virtrdf:qmfTypeminTmpl " NULL";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
+  virtrdf:qmfTypemaxTmpl " NULL";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
+  virtrdf:qmfIsBijection 0;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfIsStable 0;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
+  virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
+  virtrdf:qmfCustomString1 "DB.DBA.RDF_DF_INTEGER_URI";
+  virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
+  virtrdf:qmfSuperFormats rdfdf:sql-integer-literal-fn-SuperFormats
+.
+
+rdfdf:sql-integer-literal-fn-SuperFormats
+  rdf:type virtrdf:array-of-QuadMapFormat;
+.
+
 rdfdf:sql-integer-literal-fn-nullable
   rdf:type virtrdf:QuadMapFormat;
   virtrdf:inheritFrom rdfdf:sql-varchar-literal-fn-nullable;
@@ -1090,11 +1138,10 @@ virtrdf:DefaultQuadMap-G
 
 virtrdf:DefaultQuadMap-G-cols      
           rdf:type virtrdf:array-of-QuadMapColumn;
-  rdf:_1 virtrdf:DefaultQuadMap-G-col-G
+  rdf:_1 virtrdf:DefaultQuadMap-G-col-G;
 .
 
 virtrdf:DefaultQuadMap-G-col-G  
-              rdf:name virtrdf:DefaultQuadMap-G-col-G;
               rdf:type virtrdf:QuadMapColumn;
               virtrdf:qmvcColumnName "G";
 .
@@ -1109,7 +1156,7 @@ virtrdf:DefaultQuadMap-S
 
 virtrdf:DefaultQuadMap-S-cols
           rdf:type virtrdf:array-of-QuadMapColumn;
-  rdf:_1 virtrdf:DefaultQuadMap-S-col-S
+  rdf:_1 virtrdf:DefaultQuadMap-S-col-S;
 .
 
 virtrdf:DefaultQuadMap-S-col-S
@@ -1127,7 +1174,7 @@ virtrdf:DefaultQuadMap-P
 
 virtrdf:DefaultQuadMap-P-cols
           rdf:type virtrdf:array-of-QuadMapColumn;
-  rdf:_1 virtrdf:DefaultQuadMap-P-col-P
+  rdf:_1 virtrdf:DefaultQuadMap-P-col-P;
 .
 
 virtrdf:DefaultQuadMap-P-col-P  
