@@ -8855,13 +8855,6 @@ http_init_part_two ()
   if (!localhost_names)
     localhost_names = box_tcpip_localhost_names ();
 
-  if (http_threads > srv_max_connections - 1)
-    {
-      log_info ("HTTP Server threads exceed the number of connections allowed. Setting to %d",
-	  srv_max_connections - 1);
-      http_threads = srv_max_connections - 1;
-    }
-
   if (!http_port)
     return 1;
 
