@@ -55,10 +55,8 @@
             </div> <!-- LT -->
             <div id="RT">
               <div class="calctr">
-                <div class="calendar">
                   <vm:nntp-cal />
                 </div>
-              </div>
             </div> <!-- RT -->
           </div> <!-- PC -->
         </v:form>

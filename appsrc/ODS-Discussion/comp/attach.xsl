@@ -43,7 +43,7 @@
       <td>
   <p><span class="header">Select: </span>
                     <v:check-box name="is_dav1" value="on"/><label>WebDAV Source </label>
-		    <v:text name="f_path1"/>
+		    <v:text name="f_path1" xhtml_id="f_path1"/>
                       <v:button action="simple" name="browsepath1" value="Browse...">
 			<v:after-data-bind>
      			  <![CDATA[
@@ -55,7 +55,7 @@
 
   <p><span class="header">Select: </span>
                     <v:check-box name="is_dav2" value="on"/><label>WebDAV Source </label>
-		    <v:text name="f_path2"/>
+		    <v:text name="f_path2" xhtml_id="f_path2"/>
                       <v:button action="simple" name="browsepath2" value="Browse...">
 			<v:after-data-bind>
      			  <![CDATA[
@@ -67,7 +67,7 @@
 
   <p><span class="header">Select: </span>
                     <v:check-box name="is_dav3" value="on"/><label>WebDAV Source </label>
-		    <v:text name="f_path3"/>
+		    <v:text name="f_path3" xhtml_id="f_path3"/>
                       <v:button action="simple" name="browsepath3" value="Browse...">
 			<v:after-data-bind>
      			  <![CDATA[

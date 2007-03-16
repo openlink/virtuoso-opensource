@@ -38,10 +38,43 @@
   <script type="text/javascript">
   <!--alert (target + ' ' + fld_name  + ' ' + startPath + ' ' + isDir + ' ' + isDav);-->
     <![CDATA[
+    var _davBrowser=new Object;
+    var _currDavRoot='<?V(case when self.u_name is not NULL then '/DAV/home/'||self.u_name||'/' else '/DAV/home/' end)?>';
+    function davbrowseInit()
+	  {
+	   var options = {
+                    imagePath:toolkitImagesPath+'/',
+                    imageExt:'png',
+                    pathDefault:_currDavRoot,
+                   };
+     OAT.WebDav.init(options);
+    
+     _davBrowser=OAT.WebDav;
+	  } 
+	  
+//	  dd(_davBrowser);
+                       
+    function oatdav_browse (davfile_fieldname)
+    {
+          var options = {
+          mode:'browser',
+          onConfirmClick :function(path,fname){
+                    $(davfile_fieldname).value = path + fname;
+                    }
+          };
+          
+          _davBrowser.open(options);
+    }
+    
+    
     function doBrowse(target,fld_name, startPath, isDir, isDav)
     {
       window._result = document.nntpf_post[fld_name];
-
+      if(isDav)
+      {
+       oatdav_browse (fld_name);
+      }else
+      {
       window.open( target + '&ppath=' +
                   document.nntpf_post[fld_name].value +
                   '&caption=Choose+' + (isDir ? 'path' : 'resource') +
@@ -55,7 +88,7 @@
                   '&start-path=' + (isDav ? '/DAV' : startPath )+ '&retname=_result',
                   'window',
                   'scrollbars=yes, resizable=yes, menubar=no, height=500, width=500');
-
+      }
     }
     function defineOpts (val)
     {

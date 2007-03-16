@@ -121,6 +121,20 @@ div.calendar
   background-repeat: repeat-x;
 }
 
+div.calendar_year,div.calendar_month
+{
+  text-align: center;
+}
+
+td..calendar_selected
+{
+color:red;
+}
+td.calendar_special
+{
+background-color: #798F9E;
+}
+
 div.login
 {
 

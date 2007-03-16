@@ -163,7 +163,7 @@
               root="nntpf_group_tree_top"
               start-path="--vector ()"
               child-function="nntpf_group_child_node"
-              enabled="--( case when (abs (nntpf_display_ds_group_list() - 1) and self.force_list<>1 ) then 1 else 0 end )">
+              enabled="--( case when self.force_list<>1 then 1 else 0 end )">
         <v:node-template name="node_tmpl_gr">
           <div style="margin-left:1em;">
             <v:button name="group_tree_toggle"

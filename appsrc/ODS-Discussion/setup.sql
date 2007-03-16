@@ -363,7 +363,7 @@ nntpf_get_host (in lines any)
       hpa := split_and_decode (hp, 0, '\0\0:');
       ret := ret || ':' || hpa[1];
     }
-  else
+  else if(not isstring (ret))
     ret := sys_stat ('st_host_name') || ':' || server_http_port();
   return ret;
 }
@@ -675,7 +675,9 @@ nntpf_search_result (in _search_txt varchar)
   result_names (_date_l, _from_l, _subj_l, _nm_id_l, _grp_list_l);
 
   _filter := deserialize (decode_base64 (_search_txt));
+
   _search_txt := _filter[0];
+  if(length(_search_txt)=0) _search_txt:=null;
   _news_group := '%';
   _ctr := 0;
   _date_s_after := null;
@@ -700,9 +702,13 @@ nntpf_search_result (in _search_txt varchar)
       if (trim (_filter[7]) = '*' or trim (_filter[7]) = '%')
         _news_group := '%';
 
-      if (_date_s_after is not null)                     _ctr := 1; --Newer than
-      if (_date_s_before is not null)                    _ctr := 2; --Older than
-      if (_date_s_after is not null and _date_s_before is not null)  _ctr := 3; --between
+     
+      if (_date_s_after is not null)                                                        _ctr := 1; -- Newer than with search text
+      if (_date_s_before is not null)                                                       _ctr := 2; -- Older than with search text
+      if (_date_s_after is not null and _date_s_before is not null)                         _ctr := 3; -- Between with search text
+      if (_search_txt is null and _date_s_after is not null and _date_s_before is not null) _ctr := 4; -- All newsgroups between 2 dates
+      if (_search_txt is null and _date_s_after is not null and _date_s_before is not null
+           and _date_s_after=_date_s_before)                                                _ctr := 5; -- All newsgroups for a day
     }
 
   declare cr_def cursor for select FTHR_DATE, FTHR_SUBJ, deserialize (FTHR_MESS_DETAILS)[0], FTHR_MESS_ID
@@ -717,12 +723,21 @@ nntpf_search_result (in _search_txt varchar)
   declare cr3 cursor for select FTHR_DATE, FTHR_SUBJ, deserialize (FTHR_MESS_DETAILS)[0], FTHR_MESS_ID
     from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and contains (NM_BODY, _search_txt) and _date_s_after <=  FTHR_DATE and FTHR_DATE <= _date_s_before;
 
+  declare cr4 cursor for select FTHR_DATE, FTHR_SUBJ, deserialize (FTHR_MESS_DETAILS)[0], FTHR_MESS_ID
+    from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and  _date_s_after <=  FTHR_DATE and FTHR_DATE <= _date_s_before;
+
+  declare cr5 cursor for select FTHR_DATE, FTHR_SUBJ, deserialize (FTHR_MESS_DETAILS)[0], FTHR_MESS_ID
+    from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and _date_s_after <=  FTHR_DATE and FTHR_DATE <= dateadd ('day', 1, _date_s_after);
+
+
   whenever not found goto nf;
 
   if (not _ctr) open cr_def (prefetch 1);
   else if (_ctr = 1) open cr1 (prefetch 1);
   else if (_ctr = 2) open cr2 (prefetch 1);
   else if (_ctr = 3) open cr3 (prefetch 1);
+  else if (_ctr = 4) open cr4 (prefetch 1);
+  else if (_ctr = 5) open cr5 (prefetch 1);
 
   while (1)
     {
@@ -730,6 +745,8 @@ nntpf_search_result (in _search_txt varchar)
        else if (_ctr = 1) fetch cr1 into _date, _subj, _from, _nm_id;
        else if (_ctr = 2) fetch cr2 into _date, _subj, _from, _nm_id;
        else if (_ctr = 3) fetch cr3 into _date, _subj, _from, _nm_id;
+     else if (_ctr = 4) fetch cr4 into _date, _subj, _from, _nm_id;
+     else if (_ctr = 5) fetch cr5 into _date, _subj, _from, _nm_id;
 
        _grp_list := '';
 
@@ -751,6 +768,8 @@ nntpf_search_result (in _search_txt varchar)
     close cr1;
     close cr2;
     close cr3;
+    close cr4;
+    close cr5;
 }
 ;
 
@@ -2304,7 +2323,9 @@ create procedure NNTPF_GR_LIST_RSS_2_XML (in params any, in lines any)
 
   ses := string_output ();
 
+  
   _id := get_keyword ('rss', params, NULL);
+
 
   if (exists (select 1 from NNTPFE_USERRSSFEEDS where FEURF_ID = _id))
      select deserialize (FEURF_PARAM), FEURF_DESCR into _parameters, _desc
@@ -2330,6 +2351,7 @@ create procedure NNTPF_GR_LIST_RSS_2_XML (in params any, in lines any)
     }
   else
     {
+       _stext:=encode_base64 (serialize(vector(_stext)));
        sel_text := 'NNTPF_GET_GROUP_RSS_SEARCH (p1)';
        where_text := sprintf ('where p1 = ''%s''', _stext);
     }

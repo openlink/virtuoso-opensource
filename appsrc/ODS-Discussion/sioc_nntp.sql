@@ -293,18 +293,17 @@ create procedure sioc.DBA.rdf_nntpf_view_str ()
       '
       # NNTP forum
       # SIOC
-      sioc:nntp_forum_iri (DB.DBA.ODS_NNTP_GROUPS.NG_NAME) a sioc:Forum ;
+      sioc:nntp_forum_iri (DB.DBA.ODS_NNTP_GROUPS.NG_NAME) a sioct:MessageBoard ;
       sioc:id NG_NAME ;
-      sioc:type "discussion" ;
       sioc:description NG_DESC ;
-      sioc:has_host sioc:default_site (DUMMY) .
+      sioc:has_space sioc:default_site (DUMMY) .
 
-      sioc:nntp_post_iri (DB.DBA.ODS_NNTP_POSTS.NG_NAME, DB.DBA.ODS_NNTP_POSTS.NM_ID) a sioc:Post ;
+      sioc:nntp_post_iri (DB.DBA.ODS_NNTP_POSTS.NG_NAME, DB.DBA.ODS_NNTP_POSTS.NM_ID) a sioct:BoardPost ;
       sioc:content NM_BODY ;
       dc:title FTHR_SUBJ ;
       dct:created  REC_DATE ;
       dct:modified REC_DATE ;
-      foaf:maker sioc:iri (MAKER) ;
+      foaf:maker sioc:proxy_iri (MAKER) ;
       sioc:reply_of sioc:nntp_post_iri (NG_NAME, FTHR_REFER) ;
       sioc:has_container sioc:nntp_forum_iri (NG_NAME) .
 
@@ -338,7 +337,7 @@ create procedure sioc.DBA.rdf_nntpf_view_str ()
 
       sioc:nntp_post_iri (DB.DBA.ODS_NNTP_LINKS.NG_NAME, DB.DBA.ODS_NNTP_LINKS.NML_MSG_ID)
       sioc:links_to
-      sioc:iri (NML_URL) .
+      sioc:proxy_iri (NML_URL) .
 
       # AtomOWL
       sioc:nntp_forum_iri (DB.DBA.ODS_NNTP_GROUPS.NG_NAME) a atom:Feed .
@@ -346,7 +345,7 @@ create procedure sioc.DBA.rdf_nntpf_view_str ()
       sioc:nntp_post_iri (DB.DBA.ODS_NNTP_POSTS.NG_NAME, DB.DBA.ODS_NNTP_POSTS.NM_ID) a atom:Entry ;
       atom:title FTHR_SUBJ ;
       atom:source sioc:nntp_forum_iri (NG_NAME) ;
-      atom:author sioc:iri (MAKER) ;
+      atom:author sioc:proxy_iri (MAKER) ;
       atom:published REC_DATE ;
       atom:updated REC_DATE ;
       atom:content sioc:nntp_post_text_iri (NG_NAME, NM_ID) .

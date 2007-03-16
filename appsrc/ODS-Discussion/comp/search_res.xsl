@@ -78,8 +78,12 @@
 
 	       }
 
+       if(self._valid_date and length(get_keyword ('search', params,''))=0){
+         self._valid_sch_text := 1;
+       }else
+       {
 	      self._valid_sch_text := nntpf_check_is_sch_tex_valid (self.search_trm);
-
+       }
 	]]>
     </v:before-data-bind>
 	<xsl:call-template name="vm:valid_search" />

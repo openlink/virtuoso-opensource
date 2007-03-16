@@ -24,6 +24,50 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/weblog/" version="1.0">
   <xsl:template match="vm:nntp-cal">
+  <img id="cal_anchor" src="images/spacer.png" />
+      <script type="text/javascript">
+       <![CDATA[
+           
+           var divLT=document.getElementById('LT');
+           if(divLT.offsetHeight<170)
+           {
+            divLT.style.height='170px';
+           }
+           
+           var nntpCal = new Object;
+           
+           function calendarInit()
+           {
+           nntpCal = new OAT.Calendar();
+           var calAnchor = document.getElementById('cal_anchor');
+           
+           nntpCal.show(calAnchor.x+10, calAnchor.y+12, clickCal);
+           }
+
+           function clickCal(_date)
+           {
+
+            var sid='<?Vself.sid?>';
+            var realm='<?Vself.realm?>';
+            var loginParams=(sid.length?'sid='+sid:'')+(realm.length?'&realm='+realm:'');
+            var searchStr;
+            
+            searchStr  = '?'+(loginParams.length ? loginParams+'&' : '') +
+                         'date_d_after='+_date[2]+'&date_m_after='+_date[1]+'&date_y_after='+_date[0] +
+                         '&date_d_before='+_date[2]+'&date_m_before='+_date[1]+'&date_y_before='+_date[0] +
+                         '&go_adv_search=true';
+
+            document.location='nntpf_addtorss.vspx'+searchStr;
+   
+            nntpCal.show(nntpCal.div.style.left, nntpCal.div.style.top, clickCal);
+           }
+
+        ]]>
+      </script>
+
+  </xsl:template>
+
+  <xsl:template match="vm:nntp-cal-old">
     <v:form name="nntp_cal_form" method="POST" type="simple">
     <v:calendar name="nntp_cal" initial-date="--coalesce (self.nntp_cal_day, now ())">
       <v:on-post>

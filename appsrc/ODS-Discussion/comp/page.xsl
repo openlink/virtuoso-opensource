@@ -48,7 +48,29 @@
      <ods:ods-bar app_type='nntpf'/>
       <script type="text/javascript">
        <![CDATA[
-//        document.getElementById('ods-bar-sep').style.display='none';
+
+function dd(txt){
+  if(typeof console == 'object'){
+    console.debug(txt);
+  }
+}
+	   ODSInitArray.push(discussionsOatControlsInit);
+	   function discussionsOatControlsInit()
+	   {
+	
+	      if (typeof(window.davbrowseInit) == "function")
+        {
+          OAT.Loader.loadFeatures(["dav","window"], function(){davbrowseInit()});
+        };
+
+	      if (typeof(window.calendarInit) == "function")
+        {
+          OAT.Loader.loadFeatures(["calendar"], function(){calendarInit()});
+        };
+      return;
+
+	   }
+	   
         ]]>
       </script>
       </div>

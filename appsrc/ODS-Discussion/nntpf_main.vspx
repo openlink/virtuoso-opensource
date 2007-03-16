@@ -63,12 +63,13 @@
               </v:template>
               <v:template type="simple" condition="not nntpf_groups_defined_p()">
                 <vm:info-dialog>
-                  <title>No newsgroups available</title>
-                  <vm:user-msg>
-                      No newsgroups are currently hosted by the server.
-                      A user with system administrator privileges may add newsgroups using the
-                      Administration interface.
-                  </vm:user-msg>
+                  <title>No newsgroups are currently hosted by the server. </title>
+                      You can add such by:<br/>
+                      <ol>
+                        <li style="margin-left:40px;">Enable Conversations from your Wiki, Weblog, Mail or Feeds instances.</li>
+                        <li style="margin-left:40px;">Using Conductor if you have administrator privileges.</li>
+                      </ol>
+                  <vm:user-msg/>
                   <vm:dbg-msg/>
                   <vm:docs-link/>
                 </vm:info-dialog>
@@ -76,11 +77,9 @@
             </div> <!-- LT -->
             <div id="RT">
               <div class="calctr">
-                <div class="calendar">
                   <vm:nntp-cal />
                 </div>
               </div>
-            </div>
           </div> <!-- PC -->
         </v:form>
       </vm:page>
