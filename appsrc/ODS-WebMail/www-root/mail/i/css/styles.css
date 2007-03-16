@@ -87,6 +87,12 @@ input[readonly]
   color: inherit;
 }
 
+.error_text
+{
+  color: red;
+  font-weight: bold;
+}
+
 /* mail tabs navigation ----------------------------------------------- */
 #mail_nav
 {

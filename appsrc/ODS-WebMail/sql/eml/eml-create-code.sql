@@ -4506,8 +4506,15 @@ create procedure OMAIL.WA.omail_set_mail(
 
   -- XML structure-------------------------------------------------------------------
   _rs := OMAIL.WA.omail_page_params(_page_params);
-  _rs := sprintf('%s<settings>%s</settings>', _rs, OMAIL.WA.omail_settings_list(_settings));
-
+  _rs := sprintf('%s<settings>', _rs);
+  _rs := sprintf('%s<msg_name selected="%d"><![CDATA[%s]]></msg_name>',_rs, OMAIL.WA.omail_getp('msg_name',_settings), OMAIL.WA.omail_getp('msg_name_txt',_settings));
+  _rs := sprintf('%s<msg_reply><![CDATA[%s]]></msg_reply>', _rs, OMAIL.WA.omail_getp('msg_reply',_settings));
+  _rs := sprintf('%s<msg_result>%d</msg_result>', _rs, OMAIL.WA.omail_getp('msg_result',_settings));
+  _rs := sprintf('%s<usr_sig_inc selected="%d"><![CDATA[%s]]></usr_sig_inc>', _rs, OMAIL.WA.omail_getp('usr_sig_inc',_settings),OMAIL.WA.omail_getp('usr_sig_txt',_settings));
+  _rs := sprintf('%s<atom_version>%s</atom_version>', _rs, OMAIL.WA.omail_getp('atom_version', _settings));
+  _rs := sprintf('%s<conversation>%d</conversation>', _rs, OMAIL.WA.omail_getp('conversation', _settings));
+  _rs := sprintf('%s<discussion>%d</discussion>', _rs, OMAIL.WA.discussion_check ());
+  _rs := sprintf('%s</settings>', _rs);
   return _rs;
 }
 ;
@@ -4603,24 +4610,6 @@ _end:
     return 1;
 
   return 0;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure OMAIL.WA.omail_settings_list (
-  in _settings  any)
-{
-  declare _rs varchar;
-
-  _rs := '';
-  _rs := sprintf('%s<msg_name selected="%d"><![CDATA[%s]]></msg_name>',_rs, OMAIL.WA.omail_getp('msg_name',_settings), OMAIL.WA.omail_getp('msg_name_txt',_settings));
-  _rs := sprintf('%s<msg_reply><![CDATA[%s]]></msg_reply>', _rs, OMAIL.WA.omail_getp('msg_reply',_settings));
-  _rs := sprintf('%s<msg_result>%d</msg_result>', _rs, OMAIL.WA.omail_getp('msg_result',_settings));
-  _rs := sprintf('%s<usr_sig_inc selected="%d"><![CDATA[%s]]></usr_sig_inc>', _rs, OMAIL.WA.omail_getp('usr_sig_inc',_settings),OMAIL.WA.omail_getp('usr_sig_txt',_settings));
-  _rs := sprintf('%s<atom_version>%s</atom_version>', _rs, OMAIL.WA.omail_getp('atom_version', _settings));
-  _rs := sprintf('%s<conversation>%d</conversation>', _rs, OMAIL.WA.omail_getp('conversation', _settings));
-  return _rs;
 }
 ;
 
@@ -5365,6 +5354,7 @@ create procedure OMAIL.WA.omail_write(
   aset(_page_params, 3, vector('user_info', OMAIL.WA.array2xml(_user_info)));
   aset(_page_params,4,vector('save_copy', get_keyword('save_copy', _settings, '1')));
   aset(_page_params,5,vector('conversation', get_keyword('conversation', _settings, '0')));
+  aset(_page_params, 6, vector ('discussion', OMAIL.WA.discussion_check ()));
 
   -- If massage is saved, that we open the Draft folder in Folders tree
   if (OMAIL.WA.omail_getp('msg_id',_params) <> 0)
@@ -6804,6 +6794,15 @@ create procedure OMAIL.WA.dt_string (
 -- DCC procedures
 --
 -----------------------------------------------------------------------------------------
+create procedure OMAIL.WA.discussion_check ()
+{
+  if (isnull (VAD_CHECK_VERSION ('Discussion')))
+    return 0;
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
 --
 create procedure OMAIL.WA.dcc_address (
   in _dcc integer,
@@ -6841,6 +6840,8 @@ _skip:
 }
 ;
 
+-----------------------------------------------------------------------------------------
+--
 create procedure OMAIL.WA.dcc_update (
   in address varchar,
   in addresses varchar)

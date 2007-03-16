@@ -163,7 +163,7 @@
           <a href="#" onClick="javascript: toggleCell('cc');"><label id="label_cc">Add CC</label></a>
           <xsl:call-template name="nbsp"/>
           <a href="#" onClick="javascript: toggleCell('bcc');"><label id="label_bcc">Add BCC</label></a>
-          <xsl:if test="//conversation = 1">
+          <xsl:if test="(//conversation = 1) and (//discussion = 1)">
             <xsl:call-template name="nbsp"/>
             <a href="#" onClick="javascript: toggleCell('dcc');"><label id="label_dcc">Add DCC</label></a>
           </xsl:if>

@@ -107,7 +107,7 @@ create procedure message_delete (
   };
 
   graph_iri := get_graph ();
-  iri := mail_post_iri (domain_id, user, message_id);
+  iri := mail_post_iri (domain_id, user_id, message_id);
   delete_quad_s_or_o (graph_iri, iri, iri);
 };
 

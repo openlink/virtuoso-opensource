@@ -179,12 +179,22 @@
       <td>
         <xsl:call-template name="make_checkbox">
           <xsl:with-param name="name">conversation</xsl:with-param>
+          <xsl:with-param name="id">conversation</xsl:with-param>
           <xsl:with-param name="value">1</xsl:with-param>
           <xsl:with-param name="checked"><xsl:if test=". = 1">1</xsl:if></xsl:with-param>
+          <xsl:with-param name="disabled"><xsl:choose><xsl:when test="../discussion = 0">1</xsl:when><xsl:otherwise>-1</xsl:otherwise></xsl:choose></xsl:with-param>
         </xsl:call-template>
-        Enable conversation on this instance
+        <label for="conversation">Enable conversation on this instance</label>
       </td>
     </tr>
+    <xsl:if test="../discussion = 0">
+      <tr>
+        <th></th>
+        <td class="error_text">
+          The Conversation feature is disabled. You need to install the ODS Discussion package in order to use it.
+        </td>
+      </tr>
+    </xsl:if>
   </xsl:template>
   <!-- ====================================================================================== -->
 </xsl:stylesheet>
