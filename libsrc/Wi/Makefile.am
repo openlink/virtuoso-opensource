@@ -773,25 +773,38 @@ blog_pages.sql: FORCE
 #
 # JSON
 #
-rdf_mapping_jso.h: rdf_mapping.jso jso_reformat.awk
-	@${GEN} ${GAWK} -o rdf_mapping_jso.h -f jso_reformat.awk \
-		-v "output_mode=h" -v "h_wrapper=__RFD_MAPPING_JSO_H" \
-		rdf_mapping.jso
+rdf_mapping_jso.h: $(srcdir)/rdf_mapping.jso $(srcdir)/jso_reformat.awk
+	@${GEN} ${GAWK} \
+		-o rdf_mapping_jso.h \
+		-f $(srcdir)/jso_reformat.awk \
+		-v "output_mode=h" \
+		-v "h_wrapper=__RFD_MAPPING_JSO_H" \
+		-v "init_name=rdf_mapping" \
+		$(srcdir)/rdf_mapping.jso
 
-rdf_mapping_jso.c: rdf_mapping.jso jso_reformat.awk
-	@${GEN} ${GAWK} -o rdf_mapping_jso.c -f jso_reformat.awk \
+rdf_mapping_jso.c: $(srcdir)/rdf_mapping.jso $(srcdir)/jso_reformat.awk
+	@${GEN} ${GAWK} \
+		-o rdf_mapping_jso.c \
+		-f $(srcdir)/jso_reformat.awk \
 		-v "output_mode=c" \
-		rdf_mapping.jso
+		-v "init_name=rdf_mapping" \
+		$(srcdir)/rdf_mapping.jso
 
-rdf_mapping_jso.ttl: rdf_mapping.jso jso_reformat.awk
-	@${GEN} ${GAWK} -o rdf_mapping_jso.ttl -f jso_reformat.awk \
+rdf_mapping_jso.ttl: $(srcdir)/rdf_mapping.jso $(srcdir)/jso_reformat.awk
+	@${GEN} ${GAWK} \
+		-o rdf_mapping_jso.ttl \
+		-f $(srcdir)/jso_reformat.awk \
 		-v "output_mode=ttl" \
-		rdf_mapping.jso
+		-v "init_name=rdf_mapping" \
+		$(srcdir)/rdf_mapping.jso
 
-rdf_mapping_jso.ttl-sample: rdf_mapping.jso jso_reformat.awk
-	@${GEN} ${GAWK} -o rdf_mapping_jso.ttl-sample -f jso_reformat.awk \
+rdf_mapping_jso.ttl-sample: $(srcdir)/rdf_mapping.jso $(srcdir)/jso_reformat.awk
+	@${GEN} ${GAWK} \
+		-o rdf_mapping_jso.ttl-sample \
+		-f $(srcdir)/jso_reformat.awk \
 		-v "output_mode=ttl-sample" \
-		rdf_mapping.jso
+		-v "init_name=rdf_mapping" \
+		$(srcdir)/rdf_mapping.jso
 
 .PHONY: generated
 generated: \

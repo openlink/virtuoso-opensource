@@ -84,9 +84,9 @@ function top_h ()
     }
   if (post_init == "")
     {
-      init_name = FILENAME
-      gsub("[.]jso$","_jso_init",init_name)
-      post_init = "\nextern void " init_name " (void);"
+      #init_name = FILENAME
+      #gsub("[.]jso$","_jso_init",init_name)
+      post_init = "\nextern void " init_name "_jso_init (void);"
     }
 }
 
@@ -151,16 +151,17 @@ function top_c ()
 {
   if (includes_printed == 0)
     {
-      header_name = FILENAME
-      gsub("[.]jso$","_jso.h",header_name)
+      #header_name = FILENAME
+      #gsub("[.]jso$","_jso.h",header_name)
+      header_name = init_name "_jso.h"
       print "#include \"" header_name "\""
       includes_printed = 1
     }
   if (post_init == "")
     {
-      init_name = FILENAME
-      gsub("[.]jso$","_jso_init",init_name)
-      post_init = "\nvoid\n" init_name " (void)\n{"
+      #init_name = FILENAME
+      #gsub("[.]jso$","_jso_init",init_name)
+      post_init = "\nvoid\n" init_name "_jso_init (void)\n{"
     }
 }
 
