@@ -267,13 +267,16 @@ sticker_init() {
   echo "  <sql purpose=\"post-install\">" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
 	echo "" >> $STICKER
-	echo "DB.DBA.VHOST_REMOVE (lpath=>'/isparql/');" >> $STICKER
-	echo "DB.DBA.VHOST_DEFINE (lpath=>'/isparql/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'dba', is_dav=>1, def_page => 'index.vsp');" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/iSPARQL/sql/setup.sql',1,'report',1);" >> $STICKER
+	echo "      DB.DBA.VHOST_REMOVE (lpath=>'/isparql/');" >> $STICKER
+	echo "      DB.DBA.VHOST_DEFINE (lpath=>'/isparql/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'dba', is_dav=>1, def_page => 'index.vsp');" >> $STICKER
   echo "" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/iSPARQL/sql/drop.sql',1,'report',1);" >> $STICKER
+	echo "      DB.DBA.VHOST_REMOVE (lpath=>'/isparql/');" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "</ddls>" >> $STICKER

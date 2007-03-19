@@ -382,7 +382,6 @@ iSPARQL.QBE = function ()
   			data = xml;
 			break;
 			case "isparql":
-			case "isparql.xml":
 			  var xslt = location.pathname.substring(0,location.pathname.lastIndexOf("/")) + '/xslt/dynamic-page.xsl';
 			  data += self.QueryGenerate();
     		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -996,7 +995,7 @@ iSPARQL.QBE = function ()
     		pass:goptions.password,
         pathDefault:pathDefault + '/',
     		path:path + '/',
-    		filetypes:[{ext:'rq',label:'SPARQL Definitions Only'},{ext:'isparql',label:'SPARQL Query Diagram'},{ext:'isparql.xml',label:'iSPARQL Dynamic Page'},{ext:'xml',label:'XML file for execution'},{ext:'*',label:'All files'}],
+    		filetypes:[{ext:'rq',label:'SPARQL Definitions'},{ext:'isparql',label:'Dynamic Data Web Page'},{ext:'xml',label:'XML Server Page'},{ext:'*',label:'All files'}],
         onConfirmClick:function(path,fname,data){
           goptions.last_path = path + fname;
           self.loadFromString(data);
@@ -1052,7 +1051,7 @@ iSPARQL.QBE = function ()
     		pass:goptions.password,
         pathDefault:pathDefault + '/',
     		path:path + '/',
-    		filetypes:[{ext:'rq',label:'SPARQL Definitions Only'},{ext:'isparql',label:'SPARQL Query Diagram'},{ext:'isparql.xml',label:'iSPARQL Dynamic Page'},{ext:'xml',label:'XML file for execution'}]
+    		filetypes:[{ext:'rq',label:'SPARQL Definitions'},{ext:'isparql',label:'Dynamic Data Web Page'},{ext:'xml',label:'XML Server Page'}]
 			};
 			OAT.WebDav.open(options);
     	if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
@@ -1753,7 +1752,47 @@ iSPARQL.QBE = function ()
     {
   		self.clear();
       self.svgsparql.fromXML(xml);
-    } else if (xml.firstChild && xml.getElementsByTagName("iSPARQL").length && xml.getElementsByTagName("sparql_design").length) {
+//      } else if (xml.firstChild && xml.getElementsByTagName("iSPARQL").length && xml.getElementsByTagName("sparql_design").length) {
+//        var isparql_node = xml.getElementsByTagName("iSPARQL")[0];
+//    		self.clear();
+//        if (isparql_node.getElementsByTagName("sparql_design").length)
+//        {
+//          self.svgsparql.fromXML(isparql_node.getElementsByTagName("sparql_design")[0]);
+//        }
+//        
+//        if (xml.getElementsByTagName("schema").length)
+//        {
+//          var schemas = xml.getElementsByTagName("schema");
+//          for (var i=0;i < schemas.length;i++)
+//            self.SchemaImport(schemas[i].getAttribute('uri'),1);
+//        }
+//  
+//        if (xml.getElementsByTagName("should_sponge").length)
+//        {
+//          var sponge_node = xml.getElementsByTagName("should_sponge")[0];
+//          $('qbe_sponge').value = OAT.Xml.textValue(sponge_node);
+//        }
+//  
+//        if (xml.getElementsByTagName("service").length)
+//        {
+//          var service = xml.getElementsByTagName("service")[0];
+//          self.service.input.value = OAT.Xml.textValue(service);
+//        }
+//        
+//    		for (var i=0;i<self.svgsparql.groups.length;i++)
+//    		  self.svgsparql.groups[i].MySetType(self.svgsparql.groups[i].getType());
+  
+      } else {
+        if (xml.firstChild && xml.getElementsByTagName("iSPARQL").length) {
+          if (xml.getElementsByTagName("ISparqlDynamicPage").length)
+          {
+            var dyn_page_node = xml.getElementsByTagName("ISparqlDynamicPage")[0];
+            var query_node = dyn_page_node.getElementsByTagName("query")[0];
+            data = OAT.Xml.textValue(query_node);
+          }
+          var design_loaded = false;
+          if (xml.getElementsByTagName("sparql_design").length)
+          {
       var isparql_node = xml.getElementsByTagName("iSPARQL")[0];
   		self.clear();
       if (isparql_node.getElementsByTagName("sparql_design").length)
@@ -1782,12 +1821,9 @@ iSPARQL.QBE = function ()
       
   		for (var i=0;i<self.svgsparql.groups.length;i++)
   		  self.svgsparql.groups[i].MySetType(self.svgsparql.groups[i].getType());
+        		design_loaded = true;
+          }
 
-    } else {
-      if (xml.firstChild && xml.getElementsByTagName("iSPARQL").length && xml.getElementsByTagName("ISparqlDynamicPage").length) {
-        var dyn_page_node = xml.getElementsByTagName("ISparqlDynamicPage")[0];
-        var query_node = dyn_page_node.getElementsByTagName("query");
-          data = OAT.Xml.textValue(query_node);
       } else if (xml.firstChild && xml.getElementsByTagName("sparql").length) {
         var nodes = xml.getElementsByTagName("sparql");
         for (var i=0;i<nodes.length;i++)
@@ -1795,6 +1831,8 @@ iSPARQL.QBE = function ()
             data = OAT.Xml.textValue(nodes[i]);
       }
         
+        if (!design_loaded)
+        {
       var tmp = data.match(/#should-sponge:(.*)/i)
       if (tmp && tmp.length > 1)
       {
@@ -1806,9 +1844,11 @@ iSPARQL.QBE = function ()
       {
         self.service.input.value = tmp[1].trim();
       }
+        }
 
     	var sq = new OAT.SparqlQuery();
     	sq.fromString(data);
+        if (!design_loaded)
   		self.clear();
 
   		/* prefixes */
@@ -1816,8 +1856,6 @@ iSPARQL.QBE = function ()
   		self.SchemasReset();
   		for (var i=0;i<sq.prefixes.length;i++)
   		  self.SchemaImport(sq.prefixes[i].uri,1);
-
-      self.SchemaTreeRefresh();
 
   	  $('qbe_graph').value = '';
   	  if (sq.from instanceof Array)
@@ -1836,6 +1874,8 @@ iSPARQL.QBE = function ()
   	  if (sq.describe) $('qbe_query_type').selectedIndex = 1;
   	  else $('qbe_query_type').selectedIndex = 0;
   	  
+        if (!design_loaded)
+        {
   	  if (sq.construct)
   	  {
     		var const_nodes = [];
@@ -1846,6 +1886,7 @@ iSPARQL.QBE = function ()
   	  
   		var nodes = [];
   		walkSparqlQuery(sq.where,nodes,false);
+    	  }
   		/* orders */
       for (var i=0;i<sq.orders.length;i++)
       {
@@ -1875,6 +1916,8 @@ iSPARQL.QBE = function ()
       }
       
   	  self.format_set();
+        self.SchemaTreeRefresh();
+        if (!design_loaded)
   		self.svgsparql.reposition();
     }
     } catch (e) {

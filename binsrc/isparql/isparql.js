@@ -73,6 +73,7 @@ window.iSPARQL = {
     	}
     	
     	params.should_sponge = '';
+    	params.default_graph_uri = '';
   	  if (click_type == 1)
   	  {
   	    //if (sq.from instanceof Array && sq.from.find('<' + anchor.uri + '>') == -1)

@@ -62,12 +62,16 @@
         OAT.Preferences.imagePath = toolkitImagesPath + "/";
         OAT.AJAX.imagePath = toolkitImagesPath;
         OAT.Anchor.imagePath = toolkitImagesPath + '/';
+        var query = OAT.Dom.fromSafeXML($('query').innerHTML);
+        var format = 'application/isparql+table';
+        if(query.match(/construct/i) || query.match(/describe/i))
+          format = 'application/isparql+rdf-graph';
         var params = {
           service:goptions.service,
           query:OAT.Dom.fromSafeXML($('query').innerHTML),
           default_graph_uri:graph,
           maxrows:0,
-          format:'application/isparql+table',
+          format:format,
           res_div:$('res_area'),
           imagePath:"/isparql/images/",
           should_sponge:sponge,

@@ -366,7 +366,7 @@ iSPARQL.Advanced = function ()
     		pass:goptions.password,
         pathDefault:pathDefault + '/',
     		path:path + '/',
-    		filetypes:[{ext:'rq',label:'SPARQL Definitions Only'},{ext:'isparql.xml',label:'iSPARQL Dynamic Page'},{ext:'xml',label:'XML file for execution'},{ext:'*',label:'All files'}],
+    		filetypes:[{ext:'rq',label:'SPARQL Definitions'},{ext:'isparql',label:'Dynamic Data Web Page'},{ext:'xml',label:'XML Server Page'},{ext:'*',label:'All files'}],
         onConfirmClick:function(path,fname,data){
           goptions.last_path = path + fname;
           loadProcess(data);
@@ -421,7 +421,7 @@ iSPARQL.Advanced = function ()
     		pass:goptions.password,
         pathDefault:pathDefault + '/',
     		path:path + '/',
-    		filetypes:[{ext:'rq',label:'SPARQL Definitions Only'},{ext:'isparql.xml',label:'iSPARQL Dynamic Page'},{ext:'xml',label:'XML file for execution'}]
+    		filetypes:[{ext:'rq',label:'SPARQL Definitions'},{ext:'isparql',label:'Dynamic Data Web Page'},{ext:'xml',label:'XML Server Page'}]
 			};
 			OAT.WebDav.open(options);
     	if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
@@ -442,6 +442,7 @@ iSPARQL.Advanced = function ()
       browseCallback:function(query,params){
     	  OAT.Dom.show(self.results_win.div);
         $('query').value = query;
+        $('default-graph-uri').value = params.default_graph_uri;
       },
       browseStart:icon_start,
       browseBack:icon_back,
@@ -525,7 +526,7 @@ iSPARQL.Advanced = function ()
 			case "rq":
 			  data += $v('query');
 			break;
-			case "isparql.xml":
+			case "isparql":
 			  var xslt = location.pathname.substring(0,location.pathname.lastIndexOf("/")) + '/xslt/dynamic-page.xsl';
 			  data += $v('query');
     		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -616,7 +617,7 @@ iSPARQL.Advanced = function ()
 function get_file_type(file_name)
 {
   if (file_name.match(/isparql\.xml$/i))
-    return 'isparql.xml';
+    return 'isparql';
   else
     return file_name.substring(file_name.lastIndexOf(".") + 1);
 }
