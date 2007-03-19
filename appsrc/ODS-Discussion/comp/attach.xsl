@@ -42,19 +42,29 @@
       </td>
       <td>
   <p><span class="header">Select: </span>
-                    <v:check-box name="is_dav1" value="on"/><label>WebDAV Source </label>
+      <v:check-box name="is_dav1" value="on" xhtml_id="is_dav1"
+         xhtml_onClick="switchElemtensByCheckbox(\'f_path1_dav\',\'f_path1_fs\',\'is_dav1\')"
+      /><label>WebDAV Source </label>
+
+      <input type="file" name="f_path1_fs" size="20" id="f_path1_fs"/>
+     <span id="f_path1_dav" style="display:none;">
 		    <v:text name="f_path1" xhtml_id="f_path1"/>
-                      <v:button action="simple" name="browsepath1" value="Browse...">
+      <v:button action="browse" name="browsepath1" value="Browse...">
 			<v:after-data-bind>
      			  <![CDATA[
      control.vc_add_attribute ('onclick', sprintf ('javascript: doBrowse(''nntpf_browser.vspx?sid=%s&realm=%s'', \'f_path1\', ''%s'', 0, document.nntpf_post.is_dav1.checked); return false', self.sid, self.realm, replace(http_root(), '\\','/')));
 			  ]]>
 			</v:after-data-bind>
 		      </v:button>
+     </span>
   </p>
 
   <p><span class="header">Select: </span>
-                    <v:check-box name="is_dav2" value="on"/><label>WebDAV Source </label>
+        <v:check-box name="is_dav2" value="on" xhtml_id="is_dav2"
+         xhtml_onClick="switchElemtensByCheckbox(\'f_path2_dav\',\'f_path2_fs\',\'is_dav2\')"
+        /><label>WebDAV Source </label>
+      <input type="file" name="f_path2_fs" size="20" id="f_path2_fs"/>
+     <span id="f_path2_dav" style="display:none;">
 		    <v:text name="f_path2" xhtml_id="f_path2"/>
                       <v:button action="simple" name="browsepath2" value="Browse...">
 			<v:after-data-bind>
@@ -63,10 +73,16 @@
 			  ]]>
 			</v:after-data-bind>
 		      </v:button>
+		  </span>
   </p>
 
   <p><span class="header">Select: </span>
-                    <v:check-box name="is_dav3" value="on"/><label>WebDAV Source </label>
+         <v:check-box name="is_dav3" value="on"  xhtml_id="is_dav3"
+                     xhtml_onClick="switchElemtensByCheckbox(\'f_path3_dav\',\'f_path3_fs\',\'is_dav3\')"
+         /><label>WebDAV Source </label>
+      <input type="file" name="f_path3_fs" size="20" id="f_path3_fs"/>
+
+     <span id="f_path3_dav" style="display:none;">
 		    <v:text name="f_path3" xhtml_id="f_path3"/>
                       <v:button action="simple" name="browsepath3" value="Browse...">
 			<v:after-data-bind>
@@ -75,6 +91,7 @@
 			  ]]>
 			</v:after-data-bind>
 		      </v:button>
+		  </span>
   </p>
   </td>
   </tr>

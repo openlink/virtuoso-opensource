@@ -49,7 +49,7 @@
 
           declare mtd, dta any;
              
-          exec ('select NG_GROUP, NG_NAME, NG_DESC from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1', null, null, vector (), 0, mtd, dta );
+          exec ('select NG_GROUP, NG_NAME, NG_DESC from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1 and NG_STAT<>-1', null, null, vector (), 0, mtd, dta );
 
           self.dta:=dta;
           self.mtd:=mtd[0];
@@ -60,7 +60,7 @@
         ]]>
       </v:before-data-bind>
 
-      view: <v:url name="view_mode" value="--(case when (abs (nntpf_display_ds_group_list() - 1) and self.force_list<>1 ) then 'unthread' else 'thread' end)" url="--'nntpf_main.vspx?view='||(case when (abs (nntpf_display_ds_group_list() - 1) and self.force_list<>1 ) then 'list' else 'thread' end)" />
+      view: <v:url name="view_mode" value="--(case when self.force_list<>1 then 'unthread' else 'thread' end)" url="--'nntpf_main.vspx?view='||(case when self.force_list<>1 then 'list' else 'thread' end)" />
        <br/>
       <table width="100%"
              class="nntp_groups_listing"
@@ -229,4 +229,152 @@
       ?>
     ]]>
   </xsl:template>
+
+
+  <xsl:template match="vm:odsgroup-list">
+    <v:variable name="headdsid" type="varchar"/>
+    <v:variable name="r_count" type="integer" default="0"/>
+    <v:variable name="force_list" type="integer" default="1"/>
+    <v:variable name="dta" type="any"/>
+    <v:variable name="mtd" type="any"/>
+      <v:before-data-bind>
+        <![CDATA[
+        
+         if (self.vc_authenticated)
+           self.headdsid := 'sid';
+         else
+           self.headdsid := 'none';
+        
+        if(get_keyword ('view', self.vc_event.ve_params)<>'list')
+        {
+           self.force_list:=0;
+        }
+
+          declare mtd, dta any;
+             
+          exec ('select NG_GROUP, NG_NAME, NG_DESC,NG_STAT from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1 and NG_TYPE<>\'NNTP\'', null, null, vector (), 0, mtd, dta );
+
+          self.dta:=dta;
+          self.mtd:=mtd[0];
+
+        ]]>
+      </v:before-data-bind>
+
+      <table width="100%"
+             class="nntp_groups_listing"
+             cellspacing="0"
+             cellpadding="0">
+
+        <v:data-set name="ds_group_list"
+                    scrollable="1"
+                    data="--self.dta"
+                    meta="--self.mtd"
+                    nrows="10"
+                    width="80"
+                    enabled="--self.force_list"
+                   >
+                   
+          <v:template name="template1" type="simple">
+            <tr class="listing_header_row">
+              <th colspan="2">
+                <v:label value="'Available ODS newsgroups:'" format="%s" width="80"/>
+              </th>
+              <th colspan="2">
+                <v:label value="'View:'" format="%s" width="80"/>
+              </th>
+            </tr>
+          </v:template>
+          <v:template name="template2" type="repeat">
+            <v:template name="template7" type="if-not-exists">
+              <tr>
+                <td align="center" colspan="5">
+                  No group defined on this server.
+                </td>
+              </tr>
+            </v:template>
+
+            <v:template name="template4" type="browse">
+              <?vsp
+                self.r_count := self.r_count + 1;
+                 http (sprintf ('<tr class="%s">',
+                       case
+                         when mod (self.r_count, 2)
+                         then 'listing_row_odd'
+                         else '' end));
+              ?>
+                <td align="left">
+<!--
+                  <v:check-box name="nntp_groups_state"
+                               value="-- case when(control.vc_parent as vspx_row_template).te_rowset[3]>0 then 'checked' else 'unchecked' end"  />
+-->
+                </td>
+                <td>
+                  <v:url name="nntp_groups"
+                         format="%s"
+                         value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                         url="--'nntpf_nthread_view.vspx?group=' ||
+                                cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                         xhtml_class="nntp_group"/>
+                </td>
+                <td>
+                  <v:url name="nntp_groups1"
+                         format="%s"
+                         value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
+                         url="--'nntpf_nthread_view.vspx?group=' ||
+                                cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                         xhtml_class="nntp_group"/>
+                </td>
+                <td>
+                  <![CDATA[&nbsp;]]>
+                  <v:button name="nntp_groups_enable"
+                          action="simple"
+                          style="url"
+                          value="--'&nbsp;subscribe'"
+                          enabled="--(case when (control.vc_parent as vspx_row_template).te_rowset[3]<0 then 1 else 0 end)"
+                  >
+                   <v:on-post>
+                   
+                       update  DB.DBA.NEWS_GROUPS set NG_STAT=1 where NG_GROUP=(control.vc_parent as vspx_row_template).te_rowset[0];
+                       self.vc_data_bind(e);
+                   </v:on-post>
+                  </v:button>
+
+                  <v:button name="nntp_groups_disable"
+                          action="simple"
+                          style="url"
+                          value="--'&nbsp;unsubscribe'"
+                          enabled="--(case when (control.vc_parent as vspx_row_template).te_rowset[3]>0 then 1 else 0 end)"
+                  >
+                   <v:on-post>
+--                     DB.DBA.MSG_NEWS_CLEAR_MESSAGES((control.vc_parent as vspx_row_template).te_rowset[3], (control.vc_parent as vspx_row_template).te_rowset[0], 'clear all');
+--                     delete from DB.DBA.NEWS_GROUPS where NG_GROUP = (control.vc_parent as vspx_row_template).te_rowset[0];
+                       update  DB.DBA.NEWS_GROUPS set NG_STAT=-1 where NG_GROUP=(control.vc_parent as vspx_row_template).te_rowset[0];
+                       self.vc_data_bind(e);
+                   </v:on-post>
+                  </v:button>
+                </td>
+<?vsp
+        http('</tr>');
+?>
+            </v:template>
+          </v:template>
+
+
+          <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+          <tr><td colspan="4" align="center">
+            <vm:ds-navigation-new data-set="ds_group_list"/>
+          </td></tr>
+          </v:template>
+        </v:data-set>
+      </table>
+      <input type="hidden"
+             name="<?= self.headdsid ?>"
+             value="<?= self.sid ?>"
+             enabled="--self.vc_authenticated" />
+      <input type="hidden" name="realm" value="wa" />
+      <input type="hidden" name="group" value="" />
+    </xsl:template>
+
+
+
 </xsl:stylesheet>

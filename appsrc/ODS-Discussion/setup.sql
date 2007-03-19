@@ -468,13 +468,13 @@ nntpf_post_message (in params any)
 
   new_attachments := '';
 
-  if (get_keyword ('f_path1', params, '') <> '')
+  if (get_keyword ('f_path1', params, '') <> '' or get_keyword ('f_path1_fs', params, '') <> '')
     new_attachments := nntpf_uudecode_file (1, params);
 
-  if (get_keyword ('f_path2', params, '') <> '')
+  if (get_keyword ('f_path2', params, '') <> '' or get_keyword ('f_path2_fs', params, '') <> '')
     new_attachments := new_attachments || nntpf_uudecode_file (2, params);
 
-  if (get_keyword ('f_path3', params, '') <> '')
+  if (get_keyword ('f_path3', params, '') <> '' or get_keyword ('f_path3_ds', params, '') <> '')
     new_attachments := new_attachments || nntpf_uudecode_file (3, params);
 
 -- BODY
@@ -490,18 +490,23 @@ nntpf_post_message (in params any)
 create procedure
 nntpf_uudecode_file (in num integer, in params any)
 {
-   declare f_name varchar;
+   declare f_name,f_name_fs varchar;
    declare is_dav integer;
    declare content, ret any;
 
    f_name := 'f_path' || cast (num as varchar);
+   f_name_fs := 'f_path' || cast (num as varchar)||'_fs';
    f_name := get_keyword (f_name, params, '');
+   f_name_fs := get_keyword (f_name_fs, params, '');
 
    is_dav := 'is_dav' || cast (num as varchar);
    is_dav := get_keyword (is_dav, params, NULL);
 
    if (is_dav is NULL)
+   {
+      f_name  := f_name_fs;
       content := file_to_string (f_name);
+   }
    else
      select blob_to_string (RES_CONTENT) into content from WS.WS.SYS_DAV_RES where RES_FULL_PATH = f_name;
 
@@ -856,10 +861,11 @@ nntpf_check_is_dav_admin (in _u_name varchar, in u_full_name varchar)
      return 1;
 
 -- XXX XXX XXX
-   return 0;
+--   return 0;
 
    select U_ID, U_GROUP into oid, ogid from WS.WS.SYS_DAV_USER where U_NAME = _u_name;
 
+   
    if (oid = http_dav_uid() or ogid = (http_dav_uid()+1))
      return 1;
 
@@ -1244,7 +1250,7 @@ nntpf_search_result_v_meta (in _str varchar)   -- FIXME make only one procedure.
 
 
 create procedure
-nntpf_group_list_v_data (in _group integer, in _for_date datetime, in _len integer)
+nntpf_group_list_v_data (in _group integer, in _for_date datetime, in _len integer, in _orderby varchar := '')
 {
   declare mtd, dta any;
 
@@ -1253,17 +1259,18 @@ nntpf_group_list_v_data (in _group integer, in _for_date datetime, in _len integ
 
 -- dbg_obj_print (_group, _for_date, _len);
 
-  exec ('select _date, _subj, _from, _nm_id from nntpf_group_list_v where _group = ? and _fordate = ? and _len = ?',
+  exec ('select _date, _subj, _from, _nm_id from nntpf_group_list_v where _group = ? and _fordate = ? and _len = ? '||_orderby,
 	null, null, vector (_group, _for_date, _len), 0, mtd, dta );
+
   return dta;
 }
 ;
 
 create procedure
-nntpf_group_list_v_meta (in _group integer, in _for_date datetime, in _len integer)
+nntpf_group_list_v_meta (in _group integer, in _for_date datetime, in _len integer, in _orderby varchar := '')
 {
   declare mtd, dta any;
-  exec_metadata ('select _date, _subj, _from, _nm_id from nntpf_group_list_v where _group = ? and _fordate = ?',
+  exec_metadata ('select _date, _subj, _from, _nm_id from nntpf_group_list_v where _group = ? and _fordate = ?'||_orderby,
 	null, null, mtd);
   return mtd[0];
 }
@@ -1830,7 +1837,7 @@ nntpf_group_tree_top (in parameters any)
 --               NG_GROUP as gr_num,
 --               NG_DESC as _desc
 	  from DB.DBA.NEWS_GROUPS
-          where ns_rest (NG_GROUP, 0) = 1 order by NG_NAME) do
+          where ns_rest (NG_GROUP, 0) = 1 and NG_STAT<>-1 order by NG_NAME) do
      {
 
 --        rss_link := ' | <a href=&#34;*&#34; onclick=&#34;javascript:doPostValueRSS (''nntpf'', ''disp_group'', ''' ||

@@ -21,9 +21,6 @@
  *
  */
 
-{
-	color: #3333ff; text-decoration: none
-}
 
 body
 {
@@ -126,7 +123,7 @@ div.calendar_year,div.calendar_month
   text-align: center;
 }
 
-td..calendar_selected
+td.calendar_selected
 {
 color:red;
 }
@@ -445,14 +442,12 @@ div.info_dialog
 div.info_dialog h3
 {
   font-size: 14pt;
-  align: top;
   margin-top: 10px;
 }
 
 div.info_dialog img.icon
 {
   float: left;
-  align: top;
   padding: 10px;
 }
 

@@ -54,6 +54,10 @@
               <v:url value="NNTP Server admin" format="%s"
                      url="nntpf_yacutia.vspx"
                      enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
+              <![CDATA[&nbsp;&nbsp;]]>
+              <v:url value="Settings" format="%s"
+                     url="nntpf_odsnewsgroups_admin.vspx"
+                     enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
             </td>
           </v:template>
         </v:template>
@@ -87,6 +91,10 @@
                    format="%s"
                    url="--'nntpf_yacutia.vspx'"
                    enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
+              <![CDATA[&nbsp;&nbsp;]]>
+              <v:url value="Settings" format="%s"
+                     url="nntpf_odsnewsgroups_admin.vspx"
+                     enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
           </td>
 
         </v:template>

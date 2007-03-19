@@ -66,7 +66,21 @@
           _davBrowser.open(options);
     }
     
+    function switchElemtensByCheckbox(elmA,elmB,checkboxName)
+    {
+      // checkbox that control visibility - first element is visible when checkbox is cheked
+     var _switch=document.getElementById(checkboxName);
     
+     if(_switch.checked)
+     {
+      OAT.Dom.show(elmA);
+      OAT.Dom.hide(elmB)
+     }else
+     {
+      OAT.Dom.show(elmB);
+      OAT.Dom.hide(elmA)
+     }
+    }
     function doBrowse(target,fld_name, startPath, isDir, isDav)
     {
       window._result = document.nntpf_post[fld_name];
@@ -163,7 +177,7 @@
 	       }
 
 	     for (select NG_NAME, NG_POST, NG_GROUP from NEWS_GROUPS
-		where NG_POST = 1 and ns_rest (NG_GROUP, 1) = 1) do
+		where NG_POST = 1 and ns_rest (NG_GROUP, 1) = 1 and NG_STAT<>-1) do
 	           self.grp_list := vector_concat (self.grp_list, vector (NG_NAME));
 
 	     self.vc_disl_warnning := nntpf_is_display_warning (self.grp_selected);

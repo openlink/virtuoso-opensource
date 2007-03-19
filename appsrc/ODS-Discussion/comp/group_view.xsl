@@ -32,11 +32,44 @@
     <v:variable name="old_view" type="int" default="10" />
     <v:variable persist="temp" name="r_count" type="integer" default="0"/>
     <v:variable name="art_id" type="varchar"/>
-    <!--v:on-init>
+    <v:variable name="order_by_str" type="varchar"/>
+    <v:variable name="order_way_str" type="varchar"/>
+    <v:variable name="prev_order_way_str" type="varchar"/>
+    <v:variable name="order_full_str" type="varchar"/>
+
+    <v:on-init>
       <![CDATA[
-    dbg_obj_print ('on-init self.fordate = ', self.fordate);
+--    dbg_obj_print ('on-init self.fordate = ', self.fordate);
+
+      
+
+       declare order_full_str varchar;
+       
+       self.order_by_str:='';
+       
+       self.order_by_str       := get_keyword('order_by', self.vc_event.ve_params,'date');
+       self.order_way_str      := get_keyword('order_way', self.vc_event.ve_params,'');
+       self.prev_order_way_str := get_keyword('prev_order_way', self.vc_event.ve_params,'');
+
+       if (self.order_way_str='' ){
+          self.order_way_str:='ASC';
+          if(self.order_by_str='date') self.order_way_str:='DESC';
+       }
+
+       if (self.prev_order_way_str='') self.prev_order_way_str:=self.order_way_str;
+
+       self.order_full_str:=' order by ';
+       self.order_full_str:=self.order_full_str||(case when self.order_by_str='date'    then '_date'
+                                                       when self.order_by_str='creator' then '_from'
+                                                       when self.order_by_str='subject' then  '_subj'
+                                                       else '_date'
+                                                  end);
+
+       self.order_full_str:=self.order_full_str||' '||self.order_way_str;
+
+
       ]]>
-    </v:on-init-->
+    </v:on-init>
     <v:before-data-bind>
       <![CDATA[
   self.grp_sel_no_thr := get_keyword ('group', params);
@@ -70,11 +103,26 @@
   self.art_id := get_keyword ('disp_artic', self.vc_page.vc_event.ve_params, '-');
       ]]>
     </v:after-data-bind>
+
+  <script type="text/javascript">
+    <![CDATA[
+    function setOrderParams(orderBy,orderWay,prevOrderWay)
+    {
+
+      document.getElementById('order_by').value=orderBy;
+      document.getElementById('order_way').value=orderWay;
+      document.getElementById('prev_order_way').value=prevOrderWay;
+      
+      doPost('nntpf','ds_list_message_pager_1');
+    }
+    ]]>
+  </script>
+
     <v:data-source nrows="--self.article_list_lenght"
                    initial-offset="0"
                    name="dss"
-                   data='--nntpf_group_list_v_data (self.grp_sel_no_thr, self.fordate, self.article_list_lenght)'
-                   meta="--nntpf_group_list_v_meta (self.grp_sel_no_thr, self.fordate, self.article_list_lenght)"
+                   data='--nntpf_group_list_v_data (self.grp_sel_no_thr, self.fordate, self.article_list_lenght, self.order_full_str)'
+                   meta="--nntpf_group_list_v_meta (self.grp_sel_no_thr, self.fordate, self.article_list_lenght, self.order_full_str)"
                    expression-type="array" />
     <v:data-set name="ds_list_message"
                 data-source="self.dss"
@@ -185,10 +233,26 @@
         </p>
         <h3>Summary</h3>
         <table width="100%" class="news_summary_encapsul" cellspacing="0" cellpadding="0">
+          <input type="hidden" id="order_by" name="order_by" value="<?Vself.order_by_str?>"/>
+          <input type="hidden" id="order_way" name="order_way" value="<?Vself.order_way_str?>"/>
+          <input type="hidden" id="prev_order_way" name="prev_order_way" value="<?Vself.prev_order_way_str?>"/>
           <tr>
-            <th align="left">Date</th>
-            <th align="left">From</th>
-            <th align="left">Subject</th>
+            <th align="left" style="width:150px;">
+            <a href="javascript:void(0)" onClick="setOrderParams('date','<?V(case when self.order_by_str='date' AND self.order_way_str='asc' then 'desc'
+                                                                                  when self.order_by_str='date' AND self.order_way_str='desc' then 'asc'
+                                                                                  else 'asc' end)?>','<?Vself.prev_order_way_str?>')">Date</a>
+
+            </th>
+            <th align="left" style="width:220px;">
+            <a href="javascript:void(0)" onClick="setOrderParams('creator','<?V(case when self.order_by_str='creator' AND self.order_way_str='asc' then 'desc'
+                                                                                     when self.order_by_str='creator' AND self.order_way_str='desc' then 'asc'
+                                                                                     else 'asc' end)?>','<?Vself.prev_order_way_str?>')">From</a>
+            </th>
+            <th align="left">
+            <a href="javascript:void(0)" onClick="setOrderParams('subject','<?V(case when self.order_by_str='subject' AND self.order_way_str='asc' then 'desc'
+                                                                                     when self.order_by_str='subject' AND self.order_way_str='desc' then 'asc'
+                                                                                     else 'asc' end)?>','<?Vself.prev_order_way_str?>')">Subject</a>
+            </th>
             <th align="left">Action</th>
 	  </tr>
         </table>
