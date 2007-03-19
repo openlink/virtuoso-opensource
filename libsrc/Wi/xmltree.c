@@ -7719,6 +7719,8 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
         }
       else
         tree = (caddr_t *) xml_make_tree (qi, str, &err, charset, server_default_lh, &dtd);
+      if (str != val)
+	dk_free_box (str);
       if (!tree)
 	{
 	  if (xqr->xqr_is_quiet)
@@ -7729,8 +7731,6 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
 	  else
 	    sqlr_resignal (err);
 	}
-      if (str != val)
-	dk_free_box (str);
       xe = (xml_entity_t *) xte_from_tree ((caddr_t) tree, qi);
       xe->xe_doc.xd->xd_dtd = dtd; /* Refcounter added inside xml_make_tree */
       if ('\0' != abs_uri[0])
