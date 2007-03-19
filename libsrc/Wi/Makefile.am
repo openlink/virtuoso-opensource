@@ -416,7 +416,7 @@ libwi_base_la_cflags  += -Dlint -DNEW_HASH
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Dk
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/zlib
-libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Wi
+libwi_base_la_cflags  += -I$(srcdir)
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/langfunc
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/plugin
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Tidy
@@ -489,24 +489,24 @@ libwic_la_LDLAGS  = -static
 #generated stuff
 SQL_FILES		= \
 	$(top_srcdir)/binsrc/vsp/vsp_auth.sql \
-	snapshot_repl.sql \
-	system.sql \
-	system2.sql \
-	soap.sql \
-	wsrp_ultim.xsl \
-	wsrp_resp.xsl \
-	wsrp_interm.xsl \
-	wsrp_error.xsl \
-	soap_sch.xsl \
-	soap_import_sch.xsl \
-	odbccat.sql \
-	useraggr.sql \
-	wsdl_expand.xsl \
-	wsdl_parts.xsl \
-	wsdl_import.xsl \
-	xmlrpc_soap.xsl \
-	soap_xmlrpc.xsl \
-	soap12_router.xsl \
+	$(srcdir)/snapshot_repl.sql \
+	$(srcdir)/system.sql \
+	$(srcdir)/system2.sql \
+	$(srcdir)/soap.sql \
+	$(srcdir)/wsrp_ultim.xsl \
+	$(srcdir)/wsrp_resp.xsl \
+	$(srcdir)/wsrp_interm.xsl \
+	$(srcdir)/wsrp_error.xsl \
+	$(srcdir)/soap_sch.xsl \
+	$(srcdir)/soap_import_sch.xsl \
+	$(srcdir)/odbccat.sql \
+	$(srcdir)/useraggr.sql \
+	$(srcdir)/wsdl_expand.xsl \
+	$(srcdir)/wsdl_parts.xsl \
+	$(srcdir)/wsdl_import.xsl \
+	$(srcdir)/xmlrpc_soap.xsl \
+	$(srcdir)/soap_xmlrpc.xsl \
+	$(srcdir)/soap12_router.xsl \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrm_ddl.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrm_xsd.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrmcli.sql \
@@ -517,31 +517,31 @@ SQL_FILES		= \
 	$(top_srcdir)/binsrc/sync/syncml.sql \
 	$(top_srcdir)/binsrc/sync/wbxml.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrmcall.xsl \
-	cov_report.xsl \
-	cov_time.xsl
+	$(srcdir)/cov_report.xsl \
+	$(srcdir)/cov_time.xsl
 
 #SQL_FILES_BLOG		= \
 #	$(top_srcdir)/binsrc/weblog2/widgets/rss2rdf.xsl
 
 SQL_FILES_VDB		= \
-	vdb.sql
+	$(srcdir)/vdb.sql
 
 SQL_FILES_SPARQL	= \
-	sparql.sql
+	$(srcdir)/sparql.sql
 
 SQL_FILES_1		= \
-	simile.sql \
-	oledb.sql \
-        information_schema.sql
+	$(srcdir)/simile.sql \
+	$(srcdir)/oledb.sql \
+        $(srcdir)/information_schema.sql
 
 SQL_FILES_DDK		= \
-	users.sql \
-	replddk.sql \
+	$(srcdir)/users.sql \
+	$(srcdir)/replddk.sql \
 	$(top_srcdir)/binsrc/tests/dav/davddk.sql \
-	mail_cli.sql \
+	$(srcdir)/mail_cli.sql \
 	$(top_srcdir)/binsrc/vsp/admin/admin_ddl.sql \
 	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfsddk.sql \
-	virtual_dir.sql
+	$(srcdir)/virtual_dir.sql
 
 SQL_FILES_DBP		= \
 	$(top_srcdir)/binsrc/vsp/admin/dbpump/dbpump_root.sql \
@@ -554,14 +554,14 @@ SQL_FILES_DBP		= \
 	$(top_srcdir)/binsrc/vsp/admin/dbpump/pars_init.sql
 
 SQL_FILES_2PC		= \
-	2pc.sql
+	$(srcdir)/2pc.sql
 
 SQL_FILES_1		+= \
-	http_auth.sql \
-	xmla.sql \
-	vt_text.sql \
-	xml_view.sql \
-	openxml.sql \
+	$(srcdir)/http_auth.sql \
+	$(srcdir)/xmla.sql \
+	$(srcdir)/vt_text.sql \
+	$(srcdir)/xml_view.sql \
+	$(srcdir)/openxml.sql \
 	$(top_srcdir)/binsrc/vspx/vspx.sql \
 	$(top_srcdir)/binsrc/vspx/vspx_add_locations.xsl \
 	$(top_srcdir)/binsrc/vspx/vspx_expand.xsl \
@@ -570,12 +570,12 @@ SQL_FILES_1		+= \
 	$(top_srcdir)/binsrc/vspx/vspx_log_format.xsl \
 	$(top_srcdir)/binsrc/vspx/vspx.xsd \
 	$(top_srcdir)/binsrc/vspx/vspx.xsl \
-	hosting.sql
+	$(srcdir)/hosting.sql
 
 #	$(top_srcdir)/binsrc/tags/phrasematch.sql
 
 SQL_FILES_AUTO		= \
-	autoexec.sql
+	$(srcdir)/autoexec.sql
 
 SQL_FILES_ADM		= \
 	$(top_srcdir)/binsrc/vsp/admin/admin.sql \
@@ -602,20 +602,20 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/tests/dav/rdfxml2n3xml.xsl
 
 SQL_FILES_DAV		+= \
-	$(top_srcdir)/libsrc/Wi/rdfa2rdfxml.xsl \
-	$(top_srcdir)/libsrc/Wi/erdf2rdfxml.xsl \
-	$(top_srcdir)/libsrc/Wi/atom2sioc.xsl \
-	$(top_srcdir)/libsrc/Wi/atom2rdf.xsl \
-	$(top_srcdir)/libsrc/Wi/html2rdf.xsl \
-	$(top_srcdir)/libsrc/Wi/cc2rdf.xsl \
-	$(top_srcdir)/libsrc/Wi/dc2rdf.xsl \
-	$(top_srcdir)/libsrc/Wi/geo2rdf.xsl \
-	$(top_srcdir)/libsrc/Wi/hcal2rdf.xsl \
-	$(top_srcdir)/libsrc/Wi/hcard2rdf.xsl \
-	$(top_srcdir)/libsrc/Wi/hreview2rdf.xsl \
-	$(top_srcdir)/libsrc/Wi/google2rdf.xsl \
-	$(top_srcdir)/libsrc/Wi/ning2rdf.xsl \
-	$(top_srcdir)/libsrc/Wi/flickr2rdf.xsl
+	$(srcdir)/rdfa2rdfxml.xsl \
+	$(srcdir)/erdf2rdfxml.xsl \
+	$(srcdir)/atom2sioc.xsl \
+	$(srcdir)/atom2rdf.xsl \
+	$(srcdir)/html2rdf.xsl \
+	$(srcdir)/cc2rdf.xsl \
+	$(srcdir)/dc2rdf.xsl \
+	$(srcdir)/geo2rdf.xsl \
+	$(srcdir)/hcal2rdf.xsl \
+	$(srcdir)/hcard2rdf.xsl \
+	$(srcdir)/hreview2rdf.xsl \
+	$(srcdir)/google2rdf.xsl \
+	$(srcdir)/ning2rdf.xsl \
+	$(srcdir)/flickr2rdf.xsl
 
 
 SQL_FILES_VAD		= \
@@ -626,22 +626,28 @@ SQL_FILES_VAD		= \
 	$(top_srcdir)/binsrc/vad/vad_make.sql
 
 SQL_FILES_UDDI		= \
-	uddi.sql
+	$(srcdir)/uddi.sql
 
-SQL_FILES_ADM		+= repl.sql
+SQL_FILES_ADM		+= \
+	$(srcdir)/repl.sql
 
 if WITH_IMSG
-SQL_FILES_IMSG		 = pop3_svr.sql \
-			   ftp.sql \
-			   nn_svr.sql \
-			   ../../binsrc/vsp/admin/admin_news/admin_news.sql
+SQL_FILES_IMSG		 = \
+	$(srcdir)/pop3_svr.sql \
+	$(srcdir)/ftp.sql \
+	$(srcdir)/nn_svr.sql \
+	$(top_srcdir)/binsrc/vsp/admin/admin_news/admin_news.sql
 endif
 
-sqlwords.h: sqlwords.gperf
-	@${GEN} ${GPERF} -o sqlwords.h -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ sqlwords.gperf -Nlex_hash_kw 
+sqlwords.h: $(srcdir)/sqlwords.gperf
+	@${GEN} ${GPERF} \
+		-o sqlwords.h \
+		-aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ \
+		-Nlex_hash_kw \
+		$(srcdir)/sqlwords.gperf
 
 sql3.c: sql3.y
-	$(YACC) -vd -osql3.c ../../libsrc/Wi/sql3.y
+	$(YACC) -vd -osql3.c $(srcdir)/sql3.y
 
 sql3.h: sql3.c
 	## Recover from the removal of $@
@@ -651,17 +657,17 @@ sql3.h: sql3.c
 	fi
 
 scn3.c: scn3.l sql3.c sqlwords.h
-	$(LEX) -oscn3.c ../../libsrc/Wi/scn3.l
+	$(LEX) -oscn3.c $(srcdir)/scn3.l
 
 scn3split.c: scn3.l sql3.c sqlwords.h
-	$(LEX) -Pscn3splityy -oscn3split.c ../../libsrc/Wi/scn3.l
+	$(LEX) -Pscn3splityy -oscn3split.c $(srcdir)/scn3.l
 
-sql_code_cache.c: ../../binsrc/cached_resources/cached_resources.c sql_code_cache_impl.c
+sql_code_cache.c: $(top_srcdir)/binsrc/cached_resources/cached_resources.c sql_code_cache_impl.c
 	@echo "#include \"sql_code_cache_impl.c\"" > $@
-	@echo "#include \"../../binsrc/cached_resources/cached_resources.c\"" >> $@
+	@echo "#include \"$(top_srcdir)/binsrc/cached_resources/cached_resources.c\"" >> $@
 
 xpathp.c: xpathp.y
-	$(YACC) -vd -oxpathp.c -pxpyy ../../libsrc/Wi/xpathp.y
+	$(YACC) -vd -oxpathp.c -pxpyy $(srcdir)/xpathp.y
 
 xpathp.h: xpathp.c
 	## Recover from the removal of $@
@@ -674,10 +680,10 @@ xpathp_lex_props.c: list_lex_props.sh xpathp.y
 	list_lex_props.sh xpathp.y xpathp_lex_props.c
 
 xpscn.c: xpscn.l xpathp.h
-	$(LEX) -Pxpyy -oxpscn.c ../../libsrc/Wi/xpscn.l
+	$(LEX) -Pxpyy -oxpscn.c $(srcdir)/xpscn.l
 
 sparql_p.c: sparql_p.y
-	$(YACC) -vd -osparql_p.c -psparyy ../../libsrc/Wi/sparql_p.y
+	$(YACC) -vd -osparql_p.c -psparyy $(srcdir)/sparql_p.y
 
 sparql_p.h: sparql_p.c
 	## Recover from the removal of $@
@@ -690,10 +696,10 @@ sparql_lex_props.c: list_lex_props.sh sparql_p.y
 	list_lex_props.sh sparql_p.y sparql_lex_props.c
 
 sparql_l.c: sparql_l.l sparql_p.h
-	$(LEX) -Psparyy -osparql_l.c ../../libsrc/Wi/sparql_l.l
+	$(LEX) -Psparyy -osparql_l.c $(srcdir)/sparql_l.l
 
 turtle_p.c: turtle_p.y
-	$(YACC) -vd -oturtle_p.c -pttlyy ../../libsrc/Wi/turtle_p.y
+	$(YACC) -vd -oturtle_p.c -pttlyy $(srcdir)/turtle_p.y
 
 turtle_p.h: turtle_p.c
 	## Recover from the removal of $@
@@ -706,66 +712,117 @@ turtle_lex_props.c: list_lex_props.sh turtle_p.y
 	list_lex_props.sh turtle_p.y turtle_lex_props.c
 
 turtle_l.c: turtle_l.l turtle_p.h
-	$(LEX) -Pttlyy -oturtle_l.c ../../libsrc/Wi/turtle_l.l
+	$(LEX) -Pttlyy -oturtle_l.c $(srcdir)/turtle_l.l
 
 
-AWK_FILES = sql_to_c.awk
+AWK_FILES = $(srcdir)/sql_to_c.awk
 
 sql_code.c: $(SQL_FILES) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code.c -f sql_to_c.awk \
-		-v pl_stats=$(PLSTATS) $(SQL_FILES)
+	@${GEN} ${GAWK} \
+		-o sql_code.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES)
 
 sql_code_1.c: $(SQL_FILES_1) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_1.c -f sql_to_c.awk \
-		-v init_name=_1 -v pl_stats=$(PLSTATS) $(SQL_FILES_1)
+	@${GEN} ${GAWK} \
+		-o sql_code_1.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_1 \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_1)
 
 sql_code_ddk.c: $(SQL_FILES_DDK) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_ddk.c -f sql_to_c.awk \
-		-v init_name=_ddk -v pl_stats=$(PLSTATS) $(SQL_FILES_DDK)
+	@${GEN} ${GAWK} \
+		-o sql_code_ddk.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_ddk \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_DDK)
 
 sql_code_adm.c: $(SQL_FILES_ADM) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_adm.c -f sql_to_c.awk \
-		-v init_name=_adm -v pl_stats=$(PLSTATS) $(SQL_FILES_ADM)
+	@${GEN} ${GAWK} \
+		-o sql_code_adm.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_adm \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_ADM)
 
 sql_code_dav.c: $(SQL_FILES_DAV) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_dav.c -f sql_to_c.awk \
-		-v init_name=_dav -v pl_stats=$(PLSTATS) $(SQL_FILES_DAV)
+	@${GEN} ${GAWK} \
+		-o sql_code_dav.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_dav \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_DAV)
 
 sql_code_vad.c: $(SQL_FILES_VAD) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_vad.c -f sql_to_c.awk \
-		-v init_name=_vad -v pl_stats=$(PLSTATS) $(SQL_FILES_VAD)
+	@${GEN} ${GAWK} \
+		-o sql_code_vad.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_vad \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_VAD)
 
 sql_code_dbp.c: $(SQL_FILES_DBP) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_dbp.c -f sql_to_c.awk \
-		-v init_name=_dbp -v pl_stats=$(PLSTATS) $(SQL_FILES_DBP)
+	@${GEN} ${GAWK} \
+		-o sql_code_dbp.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_dbp \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_DBP)
 
 sql_code_uddi.c: $(SQL_FILES_UDDI) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_uddi.c -f sql_to_c.awk \
-		-v init_name=_uddi -v pl_stats=$(PLSTATS) $(SQL_FILES_UDDI) 
+	@${GEN} ${GAWK} \
+		-o sql_code_uddi.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_uddi \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_UDDI) 
 
 sql_code_imsg.c: $(SQL_FILES_IMSG) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_imsg.c -f sql_to_c.awk \
-		-v init_name=_imsg -v pl_stats=$(PLSTATS) $(SQL_FILES_IMSG)
+	@${GEN} ${GAWK} \
+		-o sql_code_imsg.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_imsg \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_IMSG)
 
 sql_code_auto.c: $(SQL_FILES_AUTO) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_auto.c -f sql_to_c.awk \
-		-v init_name=_auto -v pl_stats=$(PLSTATS) $(SQL_FILES_AUTO)
+	@${GEN} ${GAWK} \
+		-o sql_code_auto.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_auto \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_AUTO)
 
 sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_2pc.c -f sql_to_c.awk \
-		-v init_name=_2pc -v pl_stats=$(PLSTATS) $(SQL_FILES_2PC)
+	@${GEN} ${GAWK} \
+		-o sql_code_2pc.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_2pc \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_2PC)
 
 #sql_code_blog.c: $(SQL_FILES_BLOG) $(AWK_FILES)
-#	@${GEN} ${GAWK} -o sql_code_2pc.c -f sql_to_c.awk \
+#	@${GEN} ${GAWK} -o sql_code_2pc.c -f $(srcdir)/sql_to_c.awk \
 #		-v init_name=_blog -v pl_stats=$(PLSTATS) $(SQL_FILES_BLOG)
 
 sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_vdb.c -f sql_to_c.awk \
-		-v init_name=_vdb -v pl_stats=$(PLSTATS) $(SQL_FILES_VDB)
+	@${GEN} ${GAWK} \
+		-o sql_code_vdb.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_vdb \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_VDB)
 
 sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_sparql.c -f sql_to_c.awk \
-		-v init_name=_sparql -v pl_stats=$(PLSTATS) $(SQL_FILES_SPARQL)
+	@${GEN} ${GAWK} \
+		-o sql_code_sparql.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_sparql \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_SPARQL)
 
 blog_pages.sql: FORCE
 	(cd $(top_srcdir)/binsrc/weblog ; gmake)
@@ -843,22 +900,12 @@ generated: \
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	sql_to_c.awk \
-	sqlwords.gperf \
+	*.sql \
+	*.xsl \
+	jso_reformat.awk \
 	list_lex_props.sh \
-	2pc.sql autoexec.sql ftp.sql hosting.sql http_auth.sql \
-	information_schema.sql mail_cli.sql nn_svr.sql odbccat.sql \
-	simile.sql oledb.sql openxml.sql pop3_svr.sql replddk.sql repl.sql \
-	snapshot_repl.sql soap.sql sparql.sql system2.sql system.sql \
-	uddi.sql useraggr.sql users.sql vdb.sql virtual_dir.sql vt_text.sql \
-	xml_a.sql xmla.sql xml_view.sql \
-	blog.xsl cov_report.xsl cov_time.xsl \
-	soap12_router.xsl soap_import_sch.xsl soap_sch.xsl soap_xmlrpc.xsl \
-	wsdl_expand.xsl wsdl_import.xsl wsdl_parts.xsl wsrp_error.xsl \
-	wsrp_interm.xsl wsrp_resp.xsl wsrp_ultim.xsl xmlrpc_soap.xsl \
-	scn3.l sparql_l.l turtle_l.l xpscn.l \
-	sparql_p.y sql3.y turtle_p.y xpathp.y \
-	2pc_client.c bif_gnw.c bif_mts.c bif_purify.c crypt.c \
-	iodbcinst.c mts_client.c mts_com.cpp mtx.cpp name.c \
-	plugin_gate.c sql3_vc.c sql_code_cache_impl.c ssl.c \
-	string_tmpl.c jso.c jso.h jso_reformat.awk rdf_mapping.jso
+	mts_com.cpp \
+	mtx.cpp \
+	rdf_mapping.jso \
+	sqlwords.gperf \
+	sql_to_c.awk
