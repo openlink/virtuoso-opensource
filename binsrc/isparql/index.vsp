@@ -42,8 +42,8 @@
     def_qry := 'SELECT * WHERE {?s ?p ?o}';
 ?>
 <script type="text/javascript">
-  var default_dgu = '<?V default_dgu ?>';
-  var default_qry = '<?V def_qry ?>';
+  var default_dgu = '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>';
+  var default_qry = '<?vsp http(replace(def_qry,'\'','\\\'')); ?>';
   var default_spng = 'soft';
 	var toolkitImagesPath = "toolkit/images";
 </script>

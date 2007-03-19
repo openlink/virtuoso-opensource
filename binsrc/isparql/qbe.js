@@ -103,6 +103,7 @@ iSPARQL.QBE = function ()
 
 	this.clear = function(){
 	  self.svgsparql.clear();
+    self.svgsparql.ghostdrag.addTarget(self.props_win.content);
 	  for (var i = self.orderby_grid.header.cells.length;i > 1; i--)
 	  {
       self.orderby_grid.header.removeColumn(i - 1);
@@ -169,6 +170,9 @@ iSPARQL.QBE = function ()
 			OAT.Dom.hide("qbe_props_edge");
 			OAT.Dom.hide("qbe_props_group");
 			OAT.Dom.show("qbe_props_node");
+			OAT.Dom.show("qbe_props_common");
+			self.props_win.caption.innerHTML = '&nbsp;Node';
+			
 		  
       var t = node.getLabel(2);
       if (t == '--type--') t = '';
@@ -186,13 +190,17 @@ iSPARQL.QBE = function ()
 		},
 		deselectNodeCallback:function(node) {
 			node.svg.setAttribute("stroke-width","0.001"); /* cannot be zero due to bug in firefox */
+			OAT.Dom.hide("qbe_props_common");
 			OAT.Dom.hide("qbe_props_node");
+			self.props_win.caption.innerHTML = '&nbsp;';
 		},
 		selectEdgeCallback:function(edge) {
 			edge.svg.setAttribute("stroke","#f00");
 			OAT.Dom.hide("qbe_props_node");
 			OAT.Dom.hide("qbe_props_group");
 			OAT.Dom.show("qbe_props_edge");
+			OAT.Dom.show("qbe_props_common");
+			self.props_win.caption.innerHTML = '&nbsp;Connector';
 			
 			var val = edge.getLabel(1);
 			if (val == '?') val = '';
@@ -208,7 +216,9 @@ iSPARQL.QBE = function ()
 		},
 		deselectEdgeCallback:function(edge) {
 			edge.svg.setAttribute("stroke","#888"); /* cannot be zero due to bug in firefox */
+			OAT.Dom.hide("qbe_props_common");
 			OAT.Dom.hide("qbe_props_edge");
+			self.props_win.caption.innerHTML = '&nbsp;';
 		},
 		selectGroupCallback:function(group) {
 			group.svg.setAttribute("stroke-width","2");
@@ -216,6 +226,8 @@ iSPARQL.QBE = function ()
 			OAT.Dom.hide("qbe_props_node");
 			OAT.Dom.hide("qbe_props_edge");
 			OAT.Dom.show("qbe_props_group");
+			OAT.Dom.show("qbe_props_common");
+			self.props_win.caption.innerHTML = '&nbsp;Group';
 
 			var val = group.getLabel(1);
 			if (val == '?') val = '';
@@ -242,7 +254,9 @@ iSPARQL.QBE = function ()
 		},
 		deselectGroupCallback:function(group) {
 			group.svg.setAttribute("stroke-width","0.001");
+			OAT.Dom.hide("qbe_props_common");
 			OAT.Dom.hide("qbe_props_group");
+			self.props_win.caption.innerHTML = '&nbsp;';
 		},
 	  addNodeCallback:function(node,loadMode)
 	  { 
@@ -303,7 +317,7 @@ iSPARQL.QBE = function ()
 	this.schema_win.content.appendChild($("schemas"));
 	OAT.Resize.create(this.schema_win.resize, "schemas_tree_container", OAT.Resize.TYPE_XY);
 
-	this.props_win = new OAT.Window({title:"Properties", close:0, min:0, max:0, width:win_width, height:86, x:win_x,y:100});
+	this.props_win = new OAT.Window({title:"", close:0, min:0, max:0, width:win_width, height:86, x:win_x,y:100});
 	this.props_win.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
 		return l < 0 || t < 0;
 	}
@@ -688,6 +702,7 @@ iSPARQL.QBE = function ()
   // Function executed on drop
   this.SchemaNodeDragDrop = function(target,x_,y_) { 
     var obj = this.originalElement.OATTreeObj.li;
+    var val = self.putPrefix('<' + obj.uri + '>');
     if (target == qbe.svgsparql)
     {
       if (obj.uritype == 'class')
@@ -696,13 +711,18 @@ iSPARQL.QBE = function ()
   			var x = x_ - pos[0];
   			var y = y_ - pos[1];
         var node = target.addNode(x,y,"",0);
-        node.MySetLabel(2,self.putPrefix('<' + obj.uri + '>'));
+        node.MySetLabel(2,val);
       }
-    } else {
+    } else if (target.svgsparql) {
 			var pos = OAT.Dom.position(target.svgsparql.parent);
 			var x = x_ - pos[0];
 			var y = y_ - pos[1];
-      target.setValueByDrop(self.putPrefix('<' + obj.uri + '>'),obj.uritype,x,y); 
+      target.setValueByDrop(val,obj.uritype,x,y); 
+    } else if (target == self.props_win.content) {
+  		if (self.svgsparql.selectedNode) 
+  		  self.svgsparql.selectedNode.setValueByDrop(val,obj.uritype);
+  		else if (self.svgsparql.selectedEdge) 
+  		  self.svgsparql.selectedEdge.setValueByDrop(val,obj.uritype);
     }
   }
   		  
