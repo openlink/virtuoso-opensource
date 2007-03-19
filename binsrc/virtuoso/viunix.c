@@ -448,7 +448,6 @@ viunix_parent_notify (unsigned int status)
 	close (bg_pipe[1]);
     }
 }
-#endif
 
 
 #ifndef PACKAGE_NAME
