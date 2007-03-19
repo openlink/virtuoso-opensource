@@ -39,8 +39,52 @@
 
 	     if (get_keyword ('go_adv_search', params, '') <> '')
 	       {
+
+           declare searchtxt_arr any;
+           searchtxt_arr:=split_and_decode(get_keyword ('s_text', params),0,'\0\0 ');
+           
+           declare searchwords_option int;
+           searchwords_option:=get_keyword ('searchwords_option', params,'0');
+           
+           declare searchtxt varchar;
+           searchtxt:='';
+           
+           declare idx integer;
+           idx:=0;
+           while(idx<length(searchtxt_arr)){
+           
+              if(searchtxt_arr[idx] not in ('or','OR','Or','and','AND','And'))
+              {
+                --search options - 0-at least one;1-all;2-phrase;3-non;
+                
+                if(searchwords_option in ('0','3'))
+                   searchtxt:=searchtxt||' OR '||searchtxt_arr[idx];
+                else if(searchwords_option='1')
+                   searchtxt:=searchtxt||' AND '||searchtxt_arr[idx];
+                else
+                   searchtxt:=searchtxt||' '||searchtxt_arr[idx];
+              }
+              idx:=idx+1;
+           }
+           
+           
+           searchtxt := (case when searchwords_option in ('0','3') then subseq(searchtxt,4)
+                              when searchwords_option='1' then subseq(searchtxt,5)
+                              else subseq(searchtxt,1)
+                              end);
+
+           if(searchwords_option='2')
+                   searchtxt:='"'||searchtxt||'"';
+
+           if(searchwords_option='3')
+                   searchtxt:='Newsgroups and not('||searchtxt||')';
+
 		  declare full_search_exp any;
+          if(length(searchtxt))
+             full_search_exp := vector (searchtxt);
+          else
 		  full_search_exp := vector (get_keyword ('s_text', params));
+             
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_d_after', params)));
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_m_after', params)));
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_y_after', params)));
@@ -48,6 +92,7 @@
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_m_before', params)));
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_y_before', params)));
 		  full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('group_m_label', params)));
+          
           
           
            declare _valid_date_before,_valid_date_after integer;
@@ -180,6 +225,7 @@
     <br/>
         <v:text name="search" type="hidden" value="--get_keyword ('search', self.vc_page.vc_event.ve_params, '')" />
         <v:text name="s_text" type="hidden" value="--get_keyword ('s_text', self.vc_page.vc_event.ve_params, '')" />
+        <v:text name="searchwords_option" type="hidden" value="--get_keyword ('searchwords_option', self.vc_page.vc_event.ve_params,'0')" />
 
         <v:text name="date_d_after" type="hidden" value="--get_keyword ('date_d_after', self.vc_page.vc_event.ve_params, '')" />
         <v:text name="date_m_after" type="hidden" value="--get_keyword ('date_m_after', self.vc_page.vc_event.ve_params, '')" />

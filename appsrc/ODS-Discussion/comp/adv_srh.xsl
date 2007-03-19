@@ -65,7 +65,13 @@
 	    <v:label value="--'Search Expression'" format="%s"/>
           </span>
         </td>
-        <td>
+        <td> <v:select-list name="searchwords_option" xhtml_id="searchwords_option">
+                <v:item name="with at least one of the words" value="0"/>
+                <v:item name="with all the words" value="1"/>
+                <v:item name="with the exact phrase" value="2"/>
+                <v:item name="without the words" value="3"/>
+            </v:select-list>
+              <br/>
            <v:textarea name="s_text" value="--self.srch_text" xhtml_rows="5" xhtml_cols="60" />
         </td>
       </tr>
