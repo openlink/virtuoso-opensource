@@ -52,6 +52,7 @@ EXTRA_DIST = \
 	images/*.jpg \
 	images/*.png \
 	make_vad.sh \
+	sql/*.sql \
 	syntax/*.js \
 	vad_version \
 	xslt/*.xsl
