@@ -19,9 +19,36 @@
 #  
 #  
 
+TOP=@TOP@
+
+nodist_vad_DATA	= syncml_dav.vad
+noinst_SCRIPTS	= make_vad.sh
+
+syncml_dav.vad: make_vad.sh $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+
+CLEANFILES =  \
+	make_syncml_vad.log \
+	make_syncml_vad.xml \
+	syncml_dav.vad \
+	vad.db \
+	vad.log \
+	vad.trx \
+	version.curr \
+	version.tmp \
+	virtuoso.ini \
+	virtuoso.pxa \
+	virtuoso.tdb
+
+clean-local:
+	-rm -rf vad
+
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = drop.sql syncml.sql sync.sql sync.vsp wbxml.sql make_vad.sh
+EXTRA_DIST = \
+	*.sql \
+	*.vsp
