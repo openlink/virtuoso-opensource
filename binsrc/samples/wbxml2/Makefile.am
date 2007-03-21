@@ -18,12 +18,39 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
-SUBDIRS = demo docbookview IBuySpy image_magick JDBC odp petshop schemaview sparql_demo TPC-W webapp xpath xquery wbxml2
 
+if WITH_WBXML2
+lib_LTLIBRARIES = wbxml2.la
+else
+all:
+	@echo "**"
+	@echo "** WARNING: wbxml2 plugin can not be build"
+	@echo "**"
+endif
+
+wbxml2_la_SOURCES = \
+	wbxml2.c \
+	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+
+wbxml2_la_CFLAGS  = @VIRT_AM_CFLAGS@
+wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc
+wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
+wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
+wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
+wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
+wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
+wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib 
+wbxml2_la_CFLAGS  += $(WBXML2_CFLAGS)
+wbxml2_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
+wbxml2_la_LDFLAGS = -module -avoid-version -export-dynamic -no-undefined $(WBXML2_LDFLAGS) -export-symbols wbxml2.exp
 
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST=
+EXTRA_DIST = \
+	*.sql \
+	wbxml.input \
+	wbxml2.def \
+	wbxml2.exp

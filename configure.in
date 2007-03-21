@@ -1161,6 +1161,75 @@ AC_SUBST(IM_LDFLAGS)
 
 ##########################################################################
 #                                                                        #
+# WbXML2                                                                 #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(wbxml2, [dnl
+AC_HELP_STRING([--enable-wbxml2(=DIR)], [enable the WBXML2 plugin (default)])
+AC_HELP_STRING([--disable-wbxml2], [disable the WBXML2 plugin])dnl
+], [
+     case "${enableval}" in
+       yes)      with_wbxml2="yes" ;;
+       no)       with_wbxml2="no" ;;
+       /*)       with_wbxml2="${enableval}" ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-wbxml2) ;;
+     esac
+  ],
+  [ with_wbxml2="yes" ])
+
+if test "x$with_wbxml2" != "xno"
+then
+    AC_MSG_CHECKING([if WBXML2 lib usability])
+    old_CFLAGS="$CFLAGS"
+    old_LIBS="$LIBS"
+    old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    case "$with_wbxml2" in
+	yes) 
+	   WBXML2_CFLAGS=""
+	   WBXML2_LDFLAGS="-lwbxml2"
+	   ;;
+	*) 
+	   WBXML2_CFLAGS="-I$with_wbxml2/include"
+	   WBXML2_LDFLAGS="-L$with_wbxml2/lib -lwbxml2"
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_wbxml2/lib" 
+	   export LD_LIBRARY_PATH
+	   ;;
+    esac
+
+    CFLAGS="$CFLAGS $WBXML2_CFLAGS" 
+    LIBS="$LIBS $WBXML2_LDFLAGS"
+
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wbxml.h>
+int 
+main ()
+{
+  WBXMLParser *wbxml_parser = wbxml_parser_create();
+
+  return 0;
+}],
+[
+ AC_MSG_RESULT(good)
+],
+[
+ AC_MSG_RESULT(bad)
+ with_wbxml2="no"
+])
+    LIBS="$old_LIBS"
+    CFLAGS="$old_CFLAGS"
+    LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
+fi
+AM_CONDITIONAL(WITH_WBXML2, test "x$with_wbxml2" != "xno" )
+AC_SUBST(WBXML2_CFLAGS)
+AC_SUBST(WBXML2_LDFLAGS)
+
+
+##########################################################################
+#                                                                        #
 # Perl Hosting                                                           #
 #                                                                        #
 ##########################################################################
@@ -2080,6 +2149,7 @@ AC_CONFIG_FILES([
 	binsrc/samples/docbookview/Makefile
 	binsrc/samples/IBuySpy/Makefile
 	binsrc/samples/image_magick/Makefile
+	binsrc/samples/wbxml2/Makefile
 	binsrc/samples/JDBC/Makefile
 	binsrc/samples/Makefile
 	binsrc/samples/odp/Makefile

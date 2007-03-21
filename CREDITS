@@ -232,3 +232,13 @@ iODBC
 
     iODBC is distributed under the terms of either the LGPL or BSD license:
     <http://www.iodbc.org/index.php?page=docs/license>
+
+
+WBXML2
+<http://libwbxml.aymerick.com>
+
+    Parts of Virtuoso may be linked against the WBXML2 library.
+
+    WBXML2 is distributed under the terms of the GNU Lesser General Public
+    License (LGPL): <http://www.gnu.org/licenses/lgpl.html>.
+
