@@ -151,11 +151,11 @@ OAT.Anchor = {
 			OAT.Dom.attach(win.div,"mouseout",checkOut);
 			OAT.AnchorData.window = win;
 		}
-		
+
 		options.status = 0; /* not initialized */
 		if (!options.href && 'href' in elm) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
 		if (elm.tagName.toString().toLowerCase() == "a") { elm.href = options.newHref; }
-
+		
 		options.displayRef = function(event) {
 			var win = OAT.AnchorData.window;
 			win.close(); /* close existing window */
@@ -187,7 +187,7 @@ OAT.Anchor = {
 		options.endClose = function() {
 			options.closeFlag = 0;
 		}
-		
+	
 		switch (options.activation) {
 			case "hover":
 				OAT.Dom.attach(elm,"mouseover",options.displayRef);

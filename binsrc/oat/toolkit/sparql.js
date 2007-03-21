@@ -524,11 +524,14 @@ OAT.SparqlQuery = function() {
 	
 	this.fromString = function(str) {
 		self.clear();
+		try {
+		  var keywords = ["PREFIX","SELECT","DESCRIBE","CONSTRUCT","ASK","FROM","WHERE","ORDER","LIMIT","OFFSET"];
 		
-		var keywords = ["PREFIX","SELECT","DESCRIBE","CONSTRUCT","ASK","FROM","WHERE","ORDER","LIMIT","OFFSET"];
-		
-		var pieces = self.splitOnKeywords(str,keywords);
-		for (var i=1;i<pieces.length;i++) {	self.splitPiece(pieces[i]); }
+		  var pieces = self.splitOnKeywords(str,keywords);
+		  for (var i=1;i<pieces.length;i++) {	self.splitPiece(pieces[i]); }
+		} catch (e) {
+		  alert('Invalid query!\nThere was a problem parsing the query. Please, check the syntax.');
+		}
 	}
 	
 	this.splitOnKeywords = function (str,keywords)

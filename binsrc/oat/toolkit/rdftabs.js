@@ -76,6 +76,10 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		var h = OAT.Dom.create("h3");
 		h.innerHTML = item[0];
 		div.appendChild(h);
+		if (item[0].match(/^http/i)) {
+			self.parent.createAnchor(h,item[0]);
+			h.style.cursor = "pointer";
+		}
 
 		var preds = item[1];
 		for (var i=0;i<preds.length;i++) {
@@ -382,13 +386,17 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	this.elm.style.position = "relative";
 	this.elm.style.width = "100%";
 	this.elm.style.height = "100%";
+	
+	this.keyProperties = ["based_near","geo"];
+	this.latProperties = ["lat","latitude"];
+	this.lonProperties = ["lon","long","longitude"];
 
 	this.tryItem = function(item) {
 		var preds = item[1];
 		var pointResource = false;
 		for (var i=0;i<preds.length;i++) {
 			var p = preds[i];
-			if (p[0] == "based_near") { pointResource = p[1]; } /* this is resource containig geo coordinates */
+			if (self.keyProperties.find(p[0]) != -1) { pointResource = p[1]; } /* this is resource containig geo coordinates */
 		}
 		if (!pointResource) { return false; }
 		for (var i=0;i<self.parent.data.length;i++) {
@@ -397,9 +405,10 @@ OAT.RDFTabs.map = function(parent,optObj) {
 				/* find coords */
 				var coords = [0,0];
 				for (var j=0;j<it[1].length;j++) {
-					if (it[1][j][0] == "lat") { coords[0] = it[1][j][1]; }
-					if (it[1][j][0] == "long") { coords[1] = it[1][j][1]; }
+					if (self.latProperties.find(it[1][j][0]) != -1) { coords[0] = it[1][j][1]; }
+					if (self.lonProperties.find(it[1][j][0]) != -1) { coords[1] = it[1][j][1]; }
 				} /* for all geo properties */
+				if (coords[0] == 0 || coords[1] == 0) { return false; }
 				return coords;
 			} /* geo resource */
 		} /* for all resources */
@@ -408,8 +417,19 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	this.attachMarker = function(data,item) {
 		var m = false;
 		var callback = function() {
-			var div = OAT.Dom.create("span");
-			div.innerHTML = item[0];
+			var div = OAT.Dom.create("div");
+			var s = OAT.Dom.create("div",{fontWeight:"bold"});
+			s.innerHTML = item[0];
+			div.appendChild(s);
+			var preds = item[1];
+			for (var i=0;i<preds.length;i++) {
+				var p = preds[i][0];
+				var o = preds[i][1];
+				if (self.keyProperties.find(p) != -1) { continue; }
+				var s = OAT.Dom.create("div");
+				s.innerHTML = p+": "+o;
+				div.appendChild(s);
+			}
 			self.map.openWindow(m,div);
 		}
 		m = self.map.addMarker(1,data[0],data[1],false,false,false,callback);

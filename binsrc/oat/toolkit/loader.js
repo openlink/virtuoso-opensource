@@ -29,6 +29,12 @@ window.OAT = {};
 window.OAT.Events = [];
 
 /* several helpful prototypes */
+Array.prototype.copy = function() {
+	var a = [];
+	for (var i=0;i<this.length;i++) { a.push(this[i]); }
+	return a;
+}
+
 Array.prototype.find = function(str) {
 	var index = -1;
 	for (var i=0;i<this.length;i++) if (this[i] == str) { index = i; }
@@ -185,6 +191,18 @@ OAT.Dom = {
 		b.type = "button";
 		b.value = label;
 		return b;
+	},
+	
+	radio:function(name) {
+		if (OAT.Dom.isIE()) {
+			var elm = document.createElement('<input type="radio" name="'+name+'" />');
+			return elm;
+		} else {
+			var elm = OAT.Dom.create("input");
+			elm.name = name;
+			elm.type = "radio";
+			return elm;
+		}
 	},
 	
 	append:function() {
@@ -439,7 +457,7 @@ OAT.Dom = {
 	
 	detach:function(elm,event,callback) {
 		var element = $(elm);
-			OAT.Dom._detach(element,event,callback);
+		OAT.Dom._detach(element,event,callback);
 	},
 
 	source:function(event) {

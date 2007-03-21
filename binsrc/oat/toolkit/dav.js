@@ -221,7 +221,7 @@ OAT.DavType = function(el,root_el) {
   else
     this.contentlength = num + " b";
   if (num > 1024)
-  this.contentlength = Math.round(num/1024) + " kB";
+    this.contentlength = Math.round(num/1024) + " kB";
   if (num > 1024*1024)
     this.contentlength = Math.round(num/(1024*1024)) + " MB";
   if (num > 1024*1024*1024)

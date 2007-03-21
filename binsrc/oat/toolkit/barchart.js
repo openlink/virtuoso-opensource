@@ -121,6 +121,7 @@ OAT.BarChart = function(div,optObj) {
 	this.draw = function() {
 		OAT.Dom.clear(self.div);
 		self.div.style.width = "100%";
+		if (!self.data.length) { return; }
 		var position = self.options.paddingLeft;
 		var width = self.data.length * (self.options.width + self.options.spacing);
 		self.freeH = self.getFreeH();

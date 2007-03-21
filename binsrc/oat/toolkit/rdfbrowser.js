@@ -102,7 +102,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			OAT.Dom.append([self.bookmarkDiv,h,d]);
 		}
 	}
-
+	
 	this.store = {
 		div:OAT.Dom.create("div"),
 		items:[],
@@ -111,8 +111,8 @@ OAT.RDFBrowser = function(div,optObj) {
 			var total = 0;
 			var removeRef = function(a,index) {
 				OAT.Dom.attach(a,"click",function(){self.store.remove(index);});
-	}
-	
+			}
+			
 			for (var i=0;i<self.store.items.length;i++) {
 				var d = OAT.Dom.create("div");
 				var item = self.store.items[i];
@@ -135,8 +135,8 @@ OAT.RDFBrowser = function(div,optObj) {
 				
 				OAT.Dom.append([d,remove,OAT.Dom.text(" - "),perm]);
 				self.store.div.appendChild(d);
-	}
-	
+			}
+			
 			var d = OAT.Dom.create("div");
 			d.innerHTML = "TOTAL: "+total+" triples";
 			self.store.div.appendChild(d);
@@ -146,8 +146,8 @@ OAT.RDFBrowser = function(div,optObj) {
 			var url = u.toString().trim();
 			self.uri = url;
 			var cback = function(xmlDoc) {
-		if (self.options.indicator) { OAT.Dom.show(self.options.indicator); }
-		var triples = OAT.RDF.toTriples(xmlDoc);
+				if (self.options.indicator) { OAT.Dom.show(self.options.indicator); }
+				var triples = OAT.RDF.toTriples(xmlDoc);
 				/* sanitize triples */
 				for (var i=0;i<triples.length;i++) {
 					var t = triples[i];
@@ -155,10 +155,10 @@ OAT.RDFBrowser = function(div,optObj) {
 				}
 				if (self.options.indicator) { OAT.Dom.hide(self.options.indicator); }
 				self.store.addTriples(triples,url,url);
-	}
+			}
 			OAT.Dereference.go(url,cback,{type:OAT.AJAX.TYPE_XML});
 		},
-	
+		
 		addTriples:function(triples,label,href) {
 			var o = {
 				label:label,
@@ -208,7 +208,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				self.allData = [];
 				for (var i=0;i<self.store.items.length;i++) {
 					todo.append(self.store.items[i].triples);
-	}
+				}
 			} else {
 				todo = self.store.items[self.store.items.length-1].triples;
 			}
@@ -229,8 +229,8 @@ OAT.RDFBrowser = function(div,optObj) {
 			
 			var btn1 = OAT.Dom.button("Add to document storage");
 			var btn2 = OAT.Dom.button("Browse DAV");
-	
-		var h = OAT.Dom.create("h3");
+			
+			var h = OAT.Dom.create("h3");
 			h.innerHTML = "Storage";
 			OAT.Dom.append([self.cacheDiv,h,url,btn1,btn2,self.store.div]);
 			OAT.Dom.attach(btn1,"click",self.store.loadFromInput);
@@ -252,7 +252,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				imageExt:'png'
 			};
 			OAT.WebDav.init(options);
-		
+
 			/* querystring url */
 			var r = false;
 			if ((r = window.location.toString().match(/#(.+)$/))) {
@@ -261,8 +261,8 @@ OAT.RDFBrowser = function(div,optObj) {
 			}
 		}
 		
-		}
-		
+	}
+
 	this.addTab = function(type,label,optObj) {
 		var obj = new OAT.RDFTabs[type](self,optObj);
 		self.tabs.push(obj);
@@ -277,11 +277,11 @@ OAT.RDFBrowser = function(div,optObj) {
 		var genRef = function() {
 			var list = self.generateURIActions(uri);
 			var ul = OAT.Dom.create("ul",{paddingLeft:"20px",marginLeft:"0px"});
-		for (var i=0;i<list.length;i++) {
+			for (var i=0;i<list.length;i++) {
 				if (list[i]) {
 					var elm = OAT.Dom.create("li");
 					elm.appendChild(list[i]);
-			} else {
+				} else {
 					var elm = OAT.Dom.create("hr");
 				}
 				ul.appendChild(elm);
@@ -299,7 +299,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		};
 		if (OAT.Dom.isIE()) { obj.width = 300; }
 		OAT.Anchor.assign(element,obj);
-		}
+	}
 	
 	this.generateURIActions = function(uri) {
 		var list = [];
@@ -365,7 +365,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		for (var i=0;i<self.tabs.length;i++) { self.tabs[i].reset(); }
 		if (self.tab.selectedIndex != -1) { self.tabs[self.tab.selectedIndex].redraw(); }
 	}
-	
+
 	this.drawCategories = function() { /* category tree */
 		OAT.Dom.clear(self.categoryDiv);
 		var h = OAT.Dom.create("h3");
@@ -479,7 +479,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			}
 			OAT.Dom.attach(link,"click",ref);
 		}
-		
+
 		for (var i=0;i<self.filtersProperty.length;i++) {
 			var f = self.filtersProperty[i];
 			var div = OAT.Dom.create("div");
@@ -512,7 +512,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			div.appendChild(remove);
 			self.filterDiv.appendChild(div);
 		}
-		
+
 		if (!self.filtersURI.length && !self.filtersProperty.length) {
 			var div = OAT.Dom.create("div");
 			div.innerHTML = "No filters are selected. Create some by clicking on values in Categories you want to view.";
@@ -560,13 +560,13 @@ OAT.RDFBrowser = function(div,optObj) {
 				} /* uri filter */
 				
 				if (t == OAT.RDFBrowserData.FILTER_PROPERTY) {
-				for (var j=0;j<preds.length;j++) {
-					var pair = preds[j];
-					if ((pair[0] == filter[0] && pair[1] == filter[1]) || (pair[0] == filter[0] && filter[1] == "")) {
-						newData.push(arr[i]); 
-						break;
-					}
-				} /* for all pairs */
+					for (var j=0;j<preds.length;j++) {
+						var pair = preds[j];
+						if ((pair[0] == filter[0] && pair[1] == filter[1]) || (pair[0] == filter[0] && filter[1] == "")) {
+							newData.push(arr[i]); 
+							break;
+						}
+					} /* for all pairs */
 				}  /* property filter */
 
 			} /* for all subjects */
@@ -575,7 +575,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		
 		switch (type) {
 			case OAT.RDFBrowserData.FILTER_ALL: /* all filters */
-			self.data = self.allData;
+				self.data = self.allData;
 				for (var i=0;i<self.filtersProperty.length;i++) {
 					var f = self.filtersProperty[i];
 					self.data = filterObj(OAT.RDFBrowserData.FILTER_PROPERTY,self.data,f);
@@ -583,7 +583,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				for (var i=0;i<self.filtersURI.length;i++) {
 					var f = self.filtersURI[i];
 					self.data = filterObj(OAT.RDFBrowserData.FILTER_URI,self.data,f);
-			}
+				}
 			break;
 
 			case OAT.RDFBrowserData.FILTER_PROPERTY:
@@ -610,27 +610,27 @@ OAT.RDFBrowser = function(div,optObj) {
 			break;
 		}
 		self.applyFilters(type);
-		}
-		
+	}
+	
 	this.removeFilter = function(type,predicate,object) {
 		var index = -1;
-	
+		
 		switch (type) {
 			case OAT.RDFBrowserData.FILTER_URI: 
 				for (var i=0;i<self.filtersURI.length;i++) {
 					var f = self.filtersURI[i];
 					if (f == predicate) { index = i; }
-	}
+				}
 				if (index == -1) { return; }
 				self.filtersURI.splice(index,1);
 			break;
-	
+
 			case OAT.RDFBrowserData.FILTER_PROPERTY: 
 				for (var i=0;i<self.filtersProperty.length;i++) {
 					var f = self.filtersProperty[i];
-			if (f[0] == predicate && f[1] == object) { index = i; }
-		}
-		if (index == -1) { return; }
+					if (f[0] == predicate && f[1] == object) { index = i; }
+				}
+				if (index == -1) { return; }
 				self.filtersProperty.splice(index,1);
 			break;
 		}
