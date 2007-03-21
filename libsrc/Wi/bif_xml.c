@@ -2948,6 +2948,7 @@ xml_uri_get (query_instance_t * qi, caddr_t *err_ret, caddr_t *options, ccaddr_t
       ":1", box_copy (rel_uri), QRP_RAW);
   if (SQL_SUCCESS != err)
     {
+      LC_FREE(lc);
       if (err_ret)
 	*err_ret = err;
       return NULL;
@@ -3002,6 +3003,7 @@ xml_uri_resolve (query_instance_t * qi, caddr_t *err_ret, ccaddr_t base_uri, cca
       ":2", ((NULL == output_charset) ? NEW_DB_NULL : box_dv_short_string (output_charset)), QRP_RAW );
   if (SQL_SUCCESS != err)
     {
+      LC_FREE(lc);
       if (err_ret)
 	*err_ret = err;
       return NULL;
@@ -3069,6 +3071,7 @@ xml_uri_resolve_like_get (query_instance_t * qi, caddr_t *err_ret, ccaddr_t base
       ":2", ((NULL == output_charset) ? NEW_DB_NULL : box_dv_short_string (output_charset)), QRP_RAW );
   if (SQL_SUCCESS != err)
     {
+      LC_FREE(lc);
       if (err_ret)
 	*err_ret = err;
       return NULL;

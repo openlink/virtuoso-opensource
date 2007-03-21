@@ -223,6 +223,8 @@ caddr_t lc_get_col (local_cursor_t * lc, char * name);
 void lc_free (local_cursor_t * lc);
 
 long lc_next (local_cursor_t * lc);
+#define LC_FREE(lc) if (lc) \
+    		      lc_free (lc)
 
 caddr_t qr_quick_exec (query_t * qr, client_connection_t * cli, char * id,
 		       local_cursor_t ** lc_ret, long n_pars, ...);
