@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+  -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="preferences" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+
+  <v:method name="render_select" arglist="inout name any">
+    <![CDATA[
+  	  declare s1, s2, s3, s4 varchar;
+
+  	  s1 := either (equ (name, 'uid'), 'selected', '');
+  	  s2 := either (equ (name, 'cn'), 'selected', '');
+  	  s3 := either (equ (name, 'mail'), 'selected', '');
+  	  s4 := either (equ (name, 'title'), 'selected', '');
+
+  	  http (sprintf ('<select name="sel_%s" onchange="checkRest (this.form, this)">', name));
+  	  http ('<option value="skip">--</option>');
+  	  http (sprintf ('<option value="nick" %s>Login Name</option>', s1));
+  	  http (sprintf ('<option value="name" %s>Name</option>', s2));
+  	  http (sprintf ('<option value="mbox" %s>E-Mail</option>', s3));
+  	  http (sprintf ('<option value="title" %s>Title</option>', s4));
+  	  http ('</select>');
+	  ]]>
+	</v:method>
+
+  <vm:pagetitle>Preferences</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header/>
+    <vm:variables>
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+
+      <v:variable name="v_mode" type="varchar" default="'LDAP/browse'"/>
+      <v:variable name="v_step" type="varchar" default="''"/>
+
+      <v:variable name="v_name" type="varchar" default="''"/>
+      <v:variable name="v_host" type="varchar" default="''"/>
+      <v:variable name="v_port" type="varchar" default="'389'"/>
+      <v:variable name="v_base_dn" type="varchar" default="''"/>
+      <v:variable name="v_bind_dn" type="varchar" default="''"/>
+      <v:variable name="v_password" type="varchar" default="''"/>
+      <v:variable name="v_default" type="integer" default="1"/>
+      <v:variable name="v_search" type="varchar" default="'(cn=*)'"/>
+      <v:variable name="v_maps" type="any" default="null"/>
+      <v:variable name="v_data" type="any" default="null"/>
+    </vm:variables>
+    <vm:pagebody>
+      <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
+      <div id="c1">
+        <div class="tabs">
+          <vm:tabCaption tab="1" tabs="2" caption="Preferences"/>&nbsp;
+          <vm:tabCaption tab="2" tabs="2" caption="LDAP Servers"/>&nbsp;
+        </div>
+        <div class="contents">
+          <div id="1" class="tabContent" style="display: none;">
+            <div class="new-form-body">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <th width="30%">
+                    <v:label for="f_chars" value="Contact name display"/>
+                  </th>
+                  <td>
+                    <?vsp
+                      declare S varchar;
+
+                      S := '';
+                      if (cast(get_keyword('chars', self.settings, '0') as integer) = 0)
+                        S := 'checked="checked"';
+                      http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', S));
+                    ?>
+                    <xsl:call-template name="nbsp"/><vm:label for="r_chars_0" value="--'show everything'" />
+                  </td>
+                </tr>
+                <tr>
+                  <th />
+                  <td>
+                    <?vsp
+                      declare S varchar;
+
+                      S := '';
+                      if (cast(get_keyword('chars', self.settings, '0') as integer) <> 0)
+                        S := 'checked="checked"';
+                      http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', S));
+                    ?>
+                    <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
+                    <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
+                    <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th width="30%"/>
+                  <td>
+                    <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.settings, '1') as integer)" />
+                    <vm:label for="f_tbLabels" value="Show toolbar labels"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_rows" value="Rows per page"/>
+                  </th>
+                  <td>
+                    <v:text name="f_rows" value="--get_keyword('rows', self.settings, '10')" xhtml_size="3"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    Atom File Version
+                  </th>
+                  <td>
+                    <v:select-list name="f_atomVersion">
+                      <v:item value="0.3" name="0.3"/>
+                      <v:item value="1.0" name="1.0"/>
+                      <v:before-data-bind>
+                        <![CDATA[
+                          control.ufl_value := get_keyword('atomVersion', self.settings, '1.0');
+                        ]]>
+                      </v:before-data-bind>
+                    </v:select-list>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="new-form-footer">
+              <v:button action="simple" value="Save" xhtml_class="form-button">
+                <v:on-post>
+                  <![CDATA[
+                    declare rows, chars any;
+
+                    declare exit handler for SQLSTATE '*' {
+                      if (__SQL_STATE = 'TEST') {
+                        self.vc_error_message := AB.WA.test_clear(__SQL_MESSAGE);
+                        self.vc_is_valid := 0;
+                        return;
+                      }
+                      resignal;
+                    };
+
+                    rows := trim(self.f_rows.ufl_value);
+                    chars := trim(self.f_chars.ufl_value);
+                    if (get_keyword ('r_chars', self.vc_page.vc_event.ve_params, '-1') = '0')
+                      chars := '0';
+
+                    AB.WA.test (rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
+                    AB.WA.test (chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
+
+                    self.settings := AB.WA.set_keyword ('chars', self.settings, cast(cast(chars as integer) as varchar));
+                    self.settings := AB.WA.set_keyword ('rows', self.settings, cast(cast(rows as integer) as varchar));
+                    self.settings := AB.WA.set_keyword ('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
+                    self.settings := AB.WA.set_keyword ('atomVersion', self.settings, self.f_atomVersion.ufl_value);
+
+                    insert replacing AB.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.settings));
+                    commit work;
+
+                    AB.WA.domain_gems_create(self.domain_id, self.account_id);
+
+                    self.vc_redirect('home.vspx');
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" value="Clear" xhtml_class="form-button">
+                <v:on-post>
+                  <![CDATA[
+                    delete from AB.WA.SETTINGS where S_ACCOUNT_ID = self.account_id;
+
+                    self.vc_redirect('settings.vspx');
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                <v:on-post>
+                  <![CDATA[
+                    self.vc_redirect('home.vspx');
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+          </div>
+          <div id="2" class="tabContent" style="display: none;">
+            <vm:if test="self.v_mode = 'LDAP/browse'">
+              <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_nrows := AB.WA.settings_rows (self.settings);
+                    control.ds_sql := 'select * from AB.WA.LDAP_SERVERS';
+                  ]]>
+                </v:before-data-bind>
+              </v:data-source>
+              <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
+                <div style="padding: 0 0 0.5em 0;">
+                  <v:button action="simple" value="Add" xhtml_class="button">
+                    <v:on-post>
+                      <![CDATA[
+                        self.v_mode := 'LDAP/add';
+                        self.v_step := '1';
+                        self.v_name := '';
+                        self.v_host := '';
+                        self.v_port := '389';
+                        self.v_base_dn := '';
+                        self.v_bind_dn := '';
+                        self.v_password := '';
+                        self.v_maps := null;
+                        self.v_data := null;
+
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </div>
+
+                <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table id="ldap" class="grid" cellspacing="0">
+                    <thead class="sortHeader">
+                      <tr>
+                        <th align="left">
+                          LDAP Name
+                        </th>
+                        <th class="last" align="center" width="1%">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                  </table>
+                </v:template>
+
+                <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+                  <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                    <table>
+                      <tr align="center">
+                        <td colspan="2">No LDAP servers</td>
+                      </tr>
+                    </table>
+                  </v:template>
+
+                  <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                    <table>
+                      <tr>
+                        <td nowrap="nowrap">
+                          <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('LS_NAME')" format="%s"/>
+                        </td>
+                        <td nowrap="nowrap">
+                          <v:button value="Edit" action="simple" xhtml_class="button">
+                            <v:on-post>
+                              <![CDATA[
+                                self.v_mode := 'LDAP/edit';
+                                self.v_step := '1';
+                                self.v_name := (control.vc_parent as vspx_row_template).te_column_value('LS_NAME');
+                                select LS_HOST,
+                                       LS_PORT,
+                                       LS_BASE_DN,
+                                       LS_BIND_DN,
+                                       LS_PASSWORD,
+                                       deserialize (LS_MAPS)
+                                  into self.v_host,
+                                       self.v_port,
+                                       self.v_base_dn,
+                                       self.v_bind_dn,
+                                       self.v_password,
+                                       self.v_maps
+                                  from AB.WA.LDAP_SERVERS
+                                 where LS_DOMAIN_ID = self.domain_id
+                                   and LS_NAME = self.v_name;
+
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                          <v:button value="Delete" action="simple" xhtml_onclick="javascript: return deleteConfirm();" xhtml_class="button">
+                            <v:on-post>
+                              <![CDATA[
+                                delete from AB.WA.LDAP_SERVERS where LS_DOMAIN_ID = self.domain_id and LS_NAME = (control.vc_parent as vspx_row_template).te_column_value('LS_NAME');
+
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                        </td>
+                      </tr>
+                    </table>
+                  </v:template>
+
+                </v:template>
+
+                <v:template type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                    <tr align="center">
+                      <td colspan="4">
+                        <vm:ds-navigation data-set="ds"/>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+
+              </v:data-set>
+            </vm:if>
+            <vm:if test="(self.v_mode <> 'LDAP/browse') and (self.v_step = '1')">
+              <div class="new-form-body">
+                <table cellspacing="0">
+                  <tr>
+                    <th width="30%">
+                      <vm:label for="f_name" value="LDAP server name"/>
+                    </th>
+                    <td>
+                      <v:text name="f_name" null-value="--''" value="--AB.WA.utf2wide(self.v_name)" xhtml_size="70"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <vm:label for="f_host" value="Host URL"/>
+                    </th>
+                    <td>
+                      <v:text name="f_host" null-value="--''" value="--self.v_host" xhtml_size="70"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <vm:label for="f_port" value="Host port"/>
+                    </th>
+                    <td>
+                      <v:text name="f_port" null-value="--''" value="--self.v_port" xhtml_size="10"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_base_dn" value="Base DN"/>
+                    </th>
+                    <td>
+                      <v:text name="f_base_dn" null-value="--''" value="--self.v_base_dn" xhtml_size="70"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_bind_dn" value="Bind DN"/>
+                    </th>
+                    <td>
+                      <v:text name="f_bind_dn" null-value="--''" value="--self.v_bind_dn" xhtml_size="70"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_password" value="Password"/>
+                    </th>
+                    <td>
+                      <v:text name="f_password" type="password" null-value="--''" value="--self.v_password" xhtml_size="30"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_search" value="Search string"/>
+                    </th>
+                    <td>
+                      <v:text name="f_search" null-value="--''" value="--self.v_search" xhtml_size="70"/>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div class="new-form-footer">
+                <v:button action="simple" value="Next" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                    	declare host varchar;
+
+                      declare exit handler for SQLSTATE '*' {
+                        if (__SQL_STATE = 'TEST') {
+                          self.vc_error_message := AB.WA.test_clear(__SQL_MESSAGE);
+                           self.vc_is_valid := 0;
+                          return;
+                        }
+                        resignal;
+                      };
+
+                      self.v_name := trim (self.f_name.ufl_value);
+                      self.v_host := trim (self.f_host.ufl_value);
+                      self.v_port := trim (self.f_port.ufl_value);
+                      self.v_base_dn := trim (self.f_base_dn.ufl_value);
+                      self.v_bind_dn := trim (self.f_bind_dn.ufl_value);
+                      self.v_password := trim (self.f_password.ufl_value);
+                      self.v_search := trim (self.f_search.ufl_value);
+                      AB.WA.test (self.v_name, vector('name', 'LDAP server name', 'class', 'varchar', 'canEmpty', 0));
+                      AB.WA.test (self.v_host, vector('name', 'LDAP server host', 'class', 'varchar', 'canEmpty', 0));
+                      AB.WA.test (self.v_port, vector('name', 'LDAP server port', 'class', 'varchar', 'canEmpty', 0));
+                      AB.WA.test (self.v_base_dn, vector('name', 'Base DN', 'class', 'varchar', 'canEmpty', 0));
+                      AB.WA.test (self.v_bind_dn, vector('name', 'Bind DN', 'class', 'varchar', 'canEmpty', 0));
+
+                    	declare exit handler for sqlstate '*'
+                    	{
+                    	  self.vc_error_message := 'Unknown LDAP server. Please, check parameters!';
+                    	  self.vc_is_valid := 0;
+                    	  return;
+                    	};
+                      connection_set ('LDAP_VERSION', 2);
+                    	host := 'ldap://' || self.v_host || ':' || self.v_port;
+                      self.v_data := ldap_search (host, 0, self.v_base_dn, self.v_search, self.v_bind_dn, self.v_password);
+
+                      self.v_step := '2';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.v_mode := 'LDAP/browse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </vm:if>
+            <vm:if test="(self.v_mode <> 'LDAP/browse') and (self.v_step = '2')">
+              <table id="ldap" class="grid" cellspacing="0">
+                <thead class="sortHeader">
+                  <tr>
+                    <th>LDAP Property</th>
+                    <th>User Property</th>
+                    <th>Sample Data (based on first record)</th>
+                  </tr>
+                </thead>
+                <tr>
+                </tr>
+                <?vsp
+                  declare N, M integer;
+                  declare data any;
+
+                  for (N := 0; N < length (self.v_data); N := N + 2) {
+            	      if (self.v_data [N] = 'entry') {
+            	        data := self.v_data [N+1];
+            	        for (M := 0; M < length (data); M := M + 2) {
+            	  ?>
+            	  <tr>
+            	    <td>
+            		    <?V data[M] ?>
+            		  </td>
+            		  <td class="listing_col" nowrap="1">
+            		    <?vsp
+            		      self.render_select (data[M]);
+            		    ?>
+            		  </td>
+            		  <td>
+            		    <?V substring (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end, 1, 50) ?>
+            		  </td>
+                </tr>
+            	  <?vsp
+                      }
+                      goto _end;
+            	      }
+                  }
+                _end:;
+                ?>
+              </table>
+              <div class="new-form-footer">
+                <v:button action="simple" value="Save" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      declare N integer;
+                      declare params any;
+
+                      params := e.ve_params;
+                      self.v_maps := vector ();
+                      for (N := 0; N < length (params); N := N + 2)
+                        if (params[N] like 'sel_%' and params[N+1] <> 'skip')
+	                        self.v_maps := vector_concat (self.v_maps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
+
+                      insert replacing AB.WA.LDAP_SERVERS (LS_DOMAIN_ID, LS_NAME, LS_HOST, LS_PORT, LS_BASE_DN, LS_BIND_DN, LS_PASSWORD, LS_DEFAULT, LS_MAPS)
+                        values (self.domain_id, self.v_name, self.v_host, self.v_port, self.v_base_dn, self.v_bind_dn, self.v_password, self.v_default, serialize (self.v_maps));
+
+                      self.v_mode := 'LDAP/browse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.v_mode := 'LDAP/browse';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </vm:if>
+          </div>
+        </div>
+      </div>
+      <script>
+        <![CDATA[
+          initTab(2, 1);
+          coloriseTable('ldap');
+        ]]>
+      </script>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

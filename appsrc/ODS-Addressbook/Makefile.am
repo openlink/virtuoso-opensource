@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2007 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -19,16 +19,38 @@
 #  
 #  
 
-SUBDIRS = \
-	ODS-Framework \
-	ODS-Addressbook \
-	ODS-Blog \
-	ODS-Bookmark \
-	ODS-Briefcase \
-	ODS-Community \
-	ODS-Discussion \
-	ODS-FeedManager \
-	ODS-Gallery \
-	ODS-Polls \
-	ODS-WebMail \
-	ODS-Wiki
+TOP=@TOP@
+
+nodist_vad_DATA = ods_addressbook_dav.vad
+
+CLEANFILES = \
+	*.vad \
+	make_ods_addressbook_vad.log \
+	make_ods_addressbook_vad.xml \
+	virtuoso.db \
+	virtuoso.ini \
+	virtuoso.lck \
+	virtuoso.log \
+	virtuoso.pxa \
+	virtuoso.tdb \
+	virtuoso.trx
+
+ods_addressbook_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
+
+EXTRA_DIST = \
+	make_vad.sh \
+	sql/*.sql \
+	www/*.vspx \
+	www/css/*.css \
+	www/image/*.gif \
+	www/image/*.jpg \
+	www/image/*.png \
+	www/image/dav_browser/*.png \
+	www/js/*.js \
+	www/template/*.vspx \
+	www/template/*.xsl \
+	xslt/*.xsl

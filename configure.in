@@ -2217,6 +2217,7 @@ AC_CONFIG_FILES([
 	libsrc/zlib/Makefile
 	appsrc/Makefile
 	appsrc/ODS-Framework/Makefile
+	appsrc/ODS-Addressbook/Makefile
 	appsrc/ODS-Blog/Makefile
 	appsrc/ODS-Bookmark/Makefile
 	appsrc/ODS-Briefcase/Makefile
