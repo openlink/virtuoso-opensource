@@ -523,3 +523,5 @@ conductor/view_dav_res.vsp
 conductor/view.vsp
 conductor/sparql_input.vspx  
 conductor/sparql_load.vspx
+conductor/sparql_filters.vspx
+conductor/rdf_filters.vspx

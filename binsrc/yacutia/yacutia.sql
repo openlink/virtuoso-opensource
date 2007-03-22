@@ -426,8 +426,12 @@ create procedure adm_menu_tree ()
   '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',
-  '<node name="GRDDL" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
-     <node name="GRDDL" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
+case when check_package('rdf_mappers') then
+  '<node name="GRDDL Mappings" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
+     <node name="GRDDL Mappings" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
+   </node>' else '' end,
+   '<node name="RDF Mappers" url="rdf_filters.vspx"  id="191" tip="RDF Mappers " allowed="yacutia_message">
+     <node name="RDF Mappers" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
    </node>',
 '</node>
  <node name="NNTP" url="msg_news_conf.vspx"  id="157" tip="Mail and news messaging" allowed="yacutia_message">',
