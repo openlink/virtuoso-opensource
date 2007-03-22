@@ -515,8 +515,6 @@ SQL_FILES		= \
 	$(top_srcdir)/binsrc/ws/wstr/wstr_ddl.sql \
 	$(top_srcdir)/binsrc/ws/wstr/wstrcli.sql \
 	$(top_srcdir)/binsrc/ws/wstr/wstrsrv.sql \
-	$(top_srcdir)/binsrc/sync/syncml.sql \
-	$(top_srcdir)/binsrc/sync/wbxml.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrmcall.xsl \
 	$(srcdir)/cov_report.xsl \
 	$(srcdir)/cov_time.xsl
