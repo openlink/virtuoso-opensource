@@ -890,8 +890,6 @@ create function DB.DBA.RDF_SQLVAL_OF_OBJ (in shortobj any) returns any
 
 create function DB.DBA.RDF_BOOL_OF_OBJ (in shortobj any) returns any
 {
-  if (shortobj is null)
-    return null;
   if (isiri_id (shortobj))
     return null;
   if (isinteger (shortobj))
@@ -904,7 +902,7 @@ create function DB.DBA.RDF_BOOL_OF_OBJ (in shortobj any) returns any
     {
       if (shortobj is null)
         return null;
-      return neq (shortobj, 0.0);
+      if (equ (shortobj, 0.0) or equ (shortobj, '')) return 0; else return 1;
     }
   declare twobyte integer;
   twobyte := rdf_box_type (shortobj);
@@ -1125,8 +1123,6 @@ create function DB.DBA.RDF_SQLVAL_OF_LONG (in longobj any) returns any
 
 create function DB.DBA.RDF_BOOL_OF_LONG (in longobj any) returns any
 {
-  if (longobj is null)
-    return null;
   if (isiri_id (longobj))
     return NULL;
   if (isinteger (longobj))
@@ -1136,7 +1132,11 @@ create function DB.DBA.RDF_BOOL_OF_LONG (in longobj any) returns any
       return 0;
     }
   if (246 <> __tag (longobj))
-    return neq (longobj, 0.0);
+    {
+      if (longobj is null)
+        return null;
+      if (equ (longobj, 0.0) or equ (longobj, '')) return 0; else return 1;
+    }
   declare dtqname any;
   if (257 = rdf_box_type (longobj))
     goto type_ok;
@@ -2717,26 +2717,34 @@ create function DB.DBA.RDF_LONG_CMP (in long1 any, in long2 any) returns integer
 --!AWK PUBLIC
 create function DB.DBA.RDF_DIST_SER_LONG (in val any) returns any
 {
---  declare val_tag integer;
---  val_tag := __tag (val);
---  if (193 = val_tag)
---    return serialize (vector (val[0], val[1], val[2]));
---  if (182 = val_tag)
---    return serialize (val);
+  if (rdf_box_is_storeable (val))
+    {
+      if (not (isstring (val)))
+        return val;
+      if ('' = val)
   return val;
+      if (val[0] < 128)
+        return val;
+      return serialize (val);
+    }
+  return serialize (vector (rdf_box_data (val), rdf_box_type (val), rdf_box_lang (val), rdf_box_is_complete (val)));
 }
 ;
 
 --!AWK PUBLIC
 create function DB.DBA.RDF_DIST_DESER_LONG (in strg any) returns any
 {
---  declare res any;
---  if (not isstring (strg))
+  if (not (isstring (strg)))
     return strg;
---  res := deserialize (strg);
---  if (193 <> __tag (res))
---    return res;
---  return vector (res[0], res[1], res[2], null, null);
+  if ('' = strg)
+    return strg;
+  if (strg[0] < 128)
+    return strg;
+  declare res any;
+  res := deserialize (strg);
+  if (193 <> __tag (res))
+    return res;
+  return rdf_box (res[0], res[1], res[2], 0, res[3]);
 }
 ;
 
