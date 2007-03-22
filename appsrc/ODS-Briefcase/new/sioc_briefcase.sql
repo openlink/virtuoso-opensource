@@ -122,7 +122,7 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
         tags := '';
       ods_sioc_tags (graph_iri, iri, tags);
 
-        -- SIOC data for 'application/foaf+xml' and SocialNetwork application
+        -- SIOC data for 'application/foaf+xml' and AddressBook application
         content := RES_CONTENT;
         briefcase_sioc_insert_ex (RES_FULL_PATH, RES_TYPE, RES_OWNER, _U_NAME, content);
       }
@@ -197,7 +197,7 @@ create procedure briefcase_sioc_insert (
       tags := '';
     ods_sioc_tags (graph_iri, iri, tags);
 
-    -- SIOC data for 'application/foaf+xml' and SocialNetwork application
+    -- SIOC data for 'application/foaf+xml' and AddressBook application
     briefcase_sioc_insert_ex (r_full_path, r_type, r_owner, path[3], r_content);
   }
 }
@@ -221,11 +221,11 @@ create procedure briefcase_sioc_insert_ex (
   -- is FOAF file?
   --
   if ((r_type = 'application/foaf+xml') or (r_type = 'application/rdf+xml')) {
-    appType := 'SocialNetwork';
+    appType := 'AddressBook';
     sn_id := ODRIVE.WA.check_app (appType, r_owner);
     if (not sn_id)
       sn_id := DB.DBA.ODS_CREATE_NEW_APP_INST (appType, r_ownerName || '''s ' || appType, r_ownerName);
-    c_iri := socialnetwork_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = sn_id));
+    c_iri := addressbook_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = sn_id));
 
     w_iri := dav_res_iri (r_full_path || '.tmp');
     also_iri := dav_res_iri (r_full_path);
@@ -314,11 +314,11 @@ create procedure briefcase_sioc_insert_ex (
     g_iri := get_graph ();
     creator_iri := user_iri (r_owner);
 
-    appType := 'SocialNetwork';
+    appType := 'AddressBook';
     sn_id := ODRIVE.WA.check_app (appType, r_owner);
     if (not sn_id)
       sn_id := DB.DBA.ODS_CREATE_NEW_APP_INST (appType, r_ownerName || '''s ' || appType, r_ownerName);
-    c_iri := socialnetwork_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = sn_id));
+    c_iri := addressbook_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = sn_id));
     also_iri := dav_res_iri (r_full_path);
     ODRIVE.WA.DAV_PROP_SET (r_full_path, 'virt:graphIri', also_iri);
 
