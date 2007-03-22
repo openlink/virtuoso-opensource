@@ -100,6 +100,7 @@ CLEANFILES = \
 C_FILES_SPARQL	= \
 	jso.c \
 	rdfbox.c \
+	rdfinf.h \
         rdf_core.c \
         rdf_mapping_jso.c \
         rdfxml_parser.c \

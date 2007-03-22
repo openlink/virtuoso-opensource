@@ -1350,6 +1350,8 @@ key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
   caddr_t local_copy;
   caddr_t prefix, local;
   caddr_t pref_id, iri_id;
+  if (DV_IRI_ID == DV_TYPE_OF (name))
+    return box_copy (name);
   if (!iri_split (name, &prefix, &local))
     return NULL;
   pref_id_no = nic_name_id (iri_prefix_cache, prefix);
@@ -1657,9 +1659,152 @@ char * iri_replay =
 "    signal ('RDFXX', 'Unknown table in ID_REEPLAY ');\n"
   "}\n";
 
-char * rdf_prefix_text = "create table DB.DBA.RDF_PREFIX (RP_NAME varchar primary key, RP_ID int not null unique)";
+char * rdf_prefix_text = "create table DB.DBA.RDF_PREFIX (RP_NAME varchar not null primary key, RP_ID int not null unique)";
 
-char * rdf_iri_text = "create table DB.DBA.RDF_IRI (RI_NAME varchar primary key, RI_ID IRI_ID not null unique)";
+char * rdf_iri_text = "create table DB.DBA.RDF_IRI (RI_NAME varchar not null primary key, RI_ID IRI_ID not null unique)";
+
+/* Free text on DB.DBA.RDF_QUAD */
+
+dk_mutex_t *rdf_obj_ft_rules_mtx = NULL;
+id_hash_t *rdf_obj_ft_rules = NULL;
+
+typedef struct rdf_obj_ft_rule_hkey_s
+{
+   iri_id_t hkey_g;
+   iri_id_t hkey_p;
+} rdf_obj_ft_rule_hkey_t;
+
+id_hashed_key_t rdf_obj_ft_rule_hkey_hash (caddr_t p_data)
+{
+  rdf_obj_ft_rule_hkey_t *ht = (rdf_obj_ft_rule_hkey_t *)p_data;
+  return ((id_hashed_key_t)(ht->hkey_g * 65539 + ht->hkey_p) & ID_HASHED_KEY_MASK);
+}
+
+int rdf_obj_ft_rule_hkey_cmp (caddr_t d1, caddr_t d2)
+{
+  rdf_obj_ft_rule_hkey_t *ht1 = (rdf_obj_ft_rule_hkey_t *)d1;
+  rdf_obj_ft_rule_hkey_t *ht2 = (rdf_obj_ft_rule_hkey_t *)d2;
+  return ((ht1->hkey_g == ht2->hkey_g) && (ht1->hkey_p == ht2->hkey_p));
+}
+
+caddr_t
+bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  iri_id_t g_id = bif_iri_id_or_null_arg (qst, args, 0, "__rdf_obj_ft_rule_add");
+  iri_id_t p_id = bif_iri_id_or_null_arg (qst, args, 1, "__rdf_obj_ft_rule_add");
+  caddr_t reason = bif_string_arg (qst, args, 2, "__rdf_obj_ft_rule_add");
+  dk_set_t *known_reasons_ptr;
+  rdf_obj_ft_rule_hkey_t hkey;
+  hkey.hkey_g = g_id;
+  hkey.hkey_p = p_id;
+  mutex_enter (rdf_obj_ft_rules_mtx);
+  known_reasons_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules, (caddr_t)(&hkey));
+  if (NULL == known_reasons_ptr)
+    {
+      dk_set_t new_reasons = NULL;
+      dk_set_push (&new_reasons, box_copy (reason));
+      id_hash_set (rdf_obj_ft_rules, (caddr_t)(&hkey), (caddr_t)(&new_reasons));
+      mutex_leave (rdf_obj_ft_rules_mtx);
+      return box_num (1);
+    }
+  if (0 > dk_set_position_of_string (known_reasons_ptr[0], reason))
+    {
+      dk_set_push (known_reasons_ptr, box_copy (reason));
+      mutex_leave (rdf_obj_ft_rules_mtx);
+      return box_num (1);
+    }
+  mutex_leave (rdf_obj_ft_rules_mtx);
+  return box_num (0);
+}
+
+caddr_t
+bif_rdf_obj_ft_rule_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  iri_id_t g_id = bif_iri_id_or_null_arg (qst, args, 0, "__rdf_obj_ft_rule_del");
+  iri_id_t p_id = bif_iri_id_or_null_arg (qst, args, 1, "__rdf_obj_ft_rule_del");
+  caddr_t reason = bif_string_arg (qst, args, 2, "__rdf_obj_ft_rule_del");
+  dk_set_t *known_reasons_ptr;
+  int reason_pos;
+  rdf_obj_ft_rule_hkey_t hkey;
+  hkey.hkey_g = g_id;
+  hkey.hkey_p = p_id;
+  mutex_enter (rdf_obj_ft_rules_mtx);
+  known_reasons_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules, (caddr_t)(&hkey));
+  if (NULL == known_reasons_ptr)
+    {
+      mutex_leave (rdf_obj_ft_rules_mtx);
+      return box_num (0);
+    }
+  reason_pos = dk_set_position_of_string (known_reasons_ptr[0], reason);
+  if (0 > reason_pos)
+    {
+      mutex_leave (rdf_obj_ft_rules_mtx);
+      return box_num (0);
+    }
+  dk_free_box (dk_set_delete_nth (known_reasons_ptr, reason_pos));
+  if (NULL == known_reasons_ptr[0])
+    id_hash_remove (rdf_obj_ft_rules, (caddr_t)(&hkey));
+  mutex_leave (rdf_obj_ft_rules_mtx);
+  return box_num (1);
+}
+
+caddr_t
+bif_rdf_obj_ft_rule_zap_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int bucket_ctr = 0;
+  mutex_enter (rdf_obj_ft_rules_mtx);
+  for (bucket_ctr = rdf_obj_ft_rules->ht_buckets; bucket_ctr--; /* no step */)
+    {
+      rdf_obj_ft_rule_hkey_t key;
+      dk_set_t reasons;
+      while (id_hash_remove_rnd (rdf_obj_ft_rules, bucket_ctr, (caddr_t)(&key), (caddr_t)(&reasons)))
+        {
+          while (NULL != reasons)
+            {
+              caddr_t reason = dk_set_pop (&reasons);
+              dk_free_box (reason);
+            }
+        }
+    }
+  mutex_leave (rdf_obj_ft_rules_mtx);
+  return 0;
+}
+
+caddr_t
+bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  iri_id_t g_id = bif_iri_id_or_null_arg (qst, args, 0, "__rdf_obj_ft_rule_check");
+  iri_id_t p_id = bif_iri_id_or_null_arg (qst, args, 1, "__rdf_obj_ft_rule_check");
+  rdf_obj_ft_rule_hkey_t hkey;
+  hkey.hkey_g = 0;
+  hkey.hkey_p = 0;
+  mutex_leave (rdf_obj_ft_rules_mtx);
+  if (NULL != id_hash_get (rdf_obj_ft_rules, (caddr_t)(&hkey)))
+    goto hit; /* see_below */
+  hkey.hkey_g = g_id;
+  hkey.hkey_p = 0;
+  if (NULL != id_hash_get (rdf_obj_ft_rules, (caddr_t)(&hkey)))
+    goto hit; /* see_below */
+  hkey.hkey_g = 0;
+  hkey.hkey_p = p_id;
+  if (NULL != id_hash_get (rdf_obj_ft_rules, (caddr_t)(&hkey)))
+    goto hit; /* see_below */
+  hkey.hkey_g = g_id;
+  hkey.hkey_p = p_id;
+  if (NULL != id_hash_get (rdf_obj_ft_rules, (caddr_t)(&hkey)))
+    goto hit; /* see_below */
+  mutex_leave (rdf_obj_ft_rules_mtx);
+  return box_num (0);
+
+hit:
+  mutex_leave (rdf_obj_ft_rules_mtx);
+  return box_num (1);
+}
+
+void rdf_inf_init ();
 
 void
 rdf_core_init (void)
@@ -1677,6 +1822,10 @@ rdf_core_init (void)
   bif_set_uses_index (bif_id_to_iri);
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define ("iri_id_cache_flush", bif_iri_id_cache_flush);
+  bif_define ("__rdf_obj_ft_rule_add", bif_rdf_obj_ft_rule_add);
+  bif_define ("__rdf_obj_ft_rule_del", bif_rdf_obj_ft_rule_del);
+  bif_define ("__rdf_obj_ft_rule_zap_all", bif_rdf_obj_ft_rule_zap_all);
+  bif_define ("__rdf_obj_ft_rule_check", bif_rdf_obj_ft_rule_check);
 #ifdef DEBUG
   bif_define ("turtle_lex_test", bif_turtle_lex_test);
 #endif
@@ -1684,5 +1833,10 @@ rdf_core_init (void)
   iri_prefix_cache = nic_allocate (main_bufs / 20, 0);
   ddl_ensure_table ("DB.DBA.RDF_PREFIX", rdf_prefix_text);
   ddl_ensure_table ("DB.DBA.RDF_IRI", rdf_iri_text);
+  rdf_obj_ft_rules_mtx = mutex_allocate ();
+  rdf_obj_ft_rules = id_hash_allocate (10000,
+    sizeof (rdf_obj_ft_rule_hkey_t), sizeof (dk_set_t),
+    rdf_obj_ft_rule_hkey_hash, rdf_obj_ft_rule_hkey_cmp );
   ddl_std_proc (iri_replay, 0);
+  rdf_inf_init ();
 }

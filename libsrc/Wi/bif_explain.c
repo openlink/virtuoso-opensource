@@ -49,6 +49,8 @@
 #include "xmltree.h"
 #endif
 #include "sqlcstate.h"
+#include "sqlo.h"
+#include "rdfinf.h"
 
 /* sqlprt.c */
 void trset_start (caddr_t *qst);
@@ -728,6 +730,18 @@ node_print (data_source_t * node)
 	  stmt_printf (("  after join test\n"));
 	  code_vec_print (hs->hs_after_join_test);
 	}
+    }
+  else if (in == (qn_input_fn) rdf_inf_pre_input)
+    {
+      rdf_inf_pre_node_t *ri = (rdf_inf_pre_node_t *) node;
+      stmt_printf (("RDF Inference %s iterates ", ri->ri_outer_any_passed ? " outer " : ""));
+      ssl_print (ri->ri_output);
+      stmt_printf (("\n"));
+      stmt_printf (("  o= "));
+      ssl_print (ri->ri_o);
+      stmt_printf ((" p= "));
+      ssl_print (ri->ri_p);
+      stmt_printf (("\n"));
     }
 #ifdef BIF_XML
   else if (in == (qn_input_fn) txs_input)

@@ -205,7 +205,6 @@ typedef unsigned int64 iri_id_t;
 
 #define DV_IRI_ID 243
 #define DV_IRI_ID_8 244
-#define DV_RDF 246
 #define DV_COMPOSITE 255 /* value important for free text, where long w/ high byte of 255 signifies composite key */
 
 #define DV_OBJECT 254

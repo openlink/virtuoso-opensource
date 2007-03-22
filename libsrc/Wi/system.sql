@@ -4893,6 +4893,12 @@ create table DB.DBA.CLR_VAC (
 )
 ;
 
+-- __ANY is a placeholder in a long any col declaration, not to be instantiated.
+
+--!AFTER
+exec_quiet ('create type __ANY as (__any any)')
+;
+
 
 create procedure exec_quiet (in expn varchar)
 {

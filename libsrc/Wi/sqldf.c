@@ -2180,6 +2180,7 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 {
   float cost, arity, ov;
   float true_arity = -1;
+  int true_arity_n_parts = 0;
   dbe_key_t *best = NULL;
   float  best_cost;
   int best_unq = 0;
@@ -2246,7 +2247,15 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 	      if (tb_dfe->_.table.is_unique)
 		true_arity = arity; /* reliable if unique but if many key parts with many distinct vals arity can be reported as less than 1. */
 	      else if (tb_dfe->_.table.is_arity_sure)
-		true_arity = -1 == true_arity ? arity : MIN (true_arity, arity);
+		{
+		  if (true_arity_n_parts < tb_dfe->_.table.is_arity_sure)
+		    {
+		      true_arity = arity;
+		      true_arity_n_parts = tb_dfe->_.table.is_arity_sure;
+		    }
+		  if (true_arity_n_parts == tb_dfe->_.table.is_arity_sure)
+		    true_arity = MIN (true_arity, arity);
+		}
 	      if (!best || cost < best_cost)
 		{
 		  best_cost = cost;

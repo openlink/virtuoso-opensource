@@ -63,7 +63,7 @@ struct data_source_s
   * ((state_entry_t **) & inst [src->src_out_state])
 
 #define SRC_IN_STATE(src, inst) \
-  * ((caddr_t **) & inst [src->src_in_state])
+  * ((caddr_t **) & inst [(src)->src_in_state])
 
 #define SSL_PARAMETER		0
 #define SSL_COLUMN		2
@@ -533,8 +533,8 @@ typedef struct remote_table_source_s
   ((qn_input_fn) remote_table_source_input == n->src_gen.src_input)
 
 #define IS_TS(n) \
-  ((qn_input_fn) table_source_input_unique == n->src_gen.src_input ||\
-   (qn_input_fn) table_source_input == n->src_gen.src_input)
+  ((qn_input_fn) table_source_input_unique == (n)->src_gen.src_input ||	\
+   (qn_input_fn) table_source_input == (n)->src_gen.src_input)
 
 
 typedef struct subq_source_s

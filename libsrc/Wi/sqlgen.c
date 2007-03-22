@@ -405,6 +405,24 @@ sqlg_virtual_col_ssl (sqlo_t *so, op_virt_col_t *vc)
 }
 
 
+state_slot_t *
+sqlg_rdf_text_check (df_elt_t * tb_dfe, text_node_t * txs, state_slot_t * id_ssl)
+{
+  sql_comp_t * sc = tb_dfe->dfe_sqlo->so_sc;
+  if (0 == stricmp (tb_dfe->_.table.ot->ot_table->tb_name, "DB.DBA.RDF_OBJ"))
+    {
+      if (id_ssl->ssl_column && 0 == stricmp (id_ssl->ssl_column->col_name, "RO_DIGEST"))
+	{
+	  state_slot_t * id2 = sqlc_new_temp (sc, "ro_id", DV_LONG_INT);
+	  dk_set_t code = NULL;
+	  cv_call (&code, NULL, t_box_string ("ro_digest_id"), id2, (state_slot_t **) t_list (1, id_ssl)); 
+	  txs->src_gen.src_pre_code = code_to_cv (sc, code);
+	}
+    }
+  return id_ssl;
+}
+
+
 void
 sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe)
 {
@@ -430,6 +448,7 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe)
       dbe_column_t *col = (dbe_column_t *) tb_text_key (ot->ot_table)->key_parts->data;
       df_elt_t *col_dfe = sqlo_df (so, t_listst (3, COL_DOTTED, ot->ot_new_prefix, col->col_name));
       text_id = sqlg_dfe_ssl (so, col_dfe);
+      text_id = sqlg_rdf_text_check (tb_dfe, txs, text_id);
     }
   txs->txs_cached_string = sqlc_new_temp (sc, "text_search_cached_exp_string", DV_SHORT_STRING);
   txs->txs_cached_compiled_tree = sqlc_new_temp (sc, "text_search_cached_tree", DV_ARRAY_OF_POINTER);
@@ -2969,6 +2988,15 @@ sqlg_any_in_locus (sqlo_t * so, df_elt_t * start_dfe, locus_t * loc)
 }
 
 
+data_source_t *
+qn_next (data_source_t * qn)
+{
+  if (qn->src_continuations)
+    return (data_source_t *) qn->src_continuations->data;
+  return NULL;
+}
+
+
 query_t *
 sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	       ST ** target_names, state_slot_t ***sel_out_ret)
@@ -3115,6 +3143,11 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	      qn->src_pre_code = code_to_cv (so->so_sc, pre_code);
 	      pre_code = NULL;
 	      sql_node_append (&head, qn);
+	      if (DFE_TABLE== dfe->dfe_type
+		  && HR_FILL != dfe->_.table.hash_role)
+		sqlg_rdf_inf (dfe, qn, &head);
+	      while (qn_next (last_qn))
+		last_qn = qn_next (last_qn);
 	      break;
 	    case DFE_GROUP:
 	      group_dfe = dfe;

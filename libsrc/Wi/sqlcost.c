@@ -37,7 +37,7 @@
 #include "remote.h"
 #include "sqlo.h"
 #include "list2.h"
-
+#include "rdfinf.h"
 
 
 
@@ -469,8 +469,11 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
 caddr_t
 sqlo_iri_constant_name (ST* tree)
 {
-  if (ST_P (tree, CALL_STMT) && 1 == BOX_ELEMENTS (tree->_.call.params)
-      && DV_STRINGP (tree->_.call.name) && nc_strstr (tree->_.call.name, "iid_of_qname")
+  if (DV_IRI_ID == DV_TYPE_OF (tree))
+    return (caddr_t)tree;
+  if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
+      && DV_STRINGP (tree->_.call.name) && 
+      (nc_strstr (tree->_.call.name, "iid_of_qname") || nc_strstr (tree->_.call.name, "IRI_TO_ID"))
       && DV_STRINGP (tree->_.call.params[0]))
     return (caddr_t) tree->_.call.params[0];
   return NULL;
@@ -780,10 +783,10 @@ dfe_const_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key,
 }
 
 
-int
-sqlo_inx_sample (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts)
+int64
+sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts)
 {
-  int res, tb_count;
+  int64 res, tb_count;
   buffer_desc_t * buf;
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
@@ -818,6 +821,73 @@ sqlo_inx_sample (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_
   return MIN (tb_count, res);
 }
 
+extern caddr_t rdfs_type;
+
+int64
+sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts)
+{
+  rdf_inf_ctx_t * ctx = rdf_name_to_ctx (sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE));
+  if (ctx && 0 == stricmp ("DB.DBA.RDF_QUAD", tb_dfe->_.table.ot->ot_table->tb_name))
+    {
+      rdf_sub_t * sub;
+      caddr_t p_const = NULL, o_const = NULL;
+      int inx;
+      df_elt_t * o_dfe = NULL, *p_dfe = NULL;
+      ST * org_o = NULL, * org_p = NULL;
+      for (inx = 0; inx < n_parts; inx++)
+	{
+	  switch (lowers[inx]->_.bin.left->_.col.col->col_name[0])
+	    {
+	    case 'P': p_dfe = lowers[inx]->_.bin.right; org_p = p_dfe->dfe_tree; break;
+	    case 'O': o_dfe = lowers[inx]->_.bin.right; org_o = o_dfe->dfe_tree; break;
+	    }
+	}
+      p_const = dfe_iri_const (p_dfe);
+      if (box_equal (rdfs_type, p_const)
+	  && (o_const = dfe_iri_const (o_dfe))
+	  && (sub = ric_iri_to_sub (ctx, o_const))
+	  && sub->rs_subclasses)
+	{
+	  /* the p is rdfstype and o given.  See about counts of subcs */
+	  int64 s, est = 0;
+	  int any_est = 0;
+	  DO_SET (caddr_t, sub_iri, &sub->rs_subclasses)
+	    {
+	      o_dfe->dfe_tree = (ST*)sub_iri;
+	      s = sqlo_inx_sample_1 (key, lowers, uppers, n_parts);
+	      if (s >= 0)
+		{
+		  est += s;
+		  any_est = 1;
+		}
+	    }
+	  END_DO_SET();
+	  o_dfe->dfe_tree = org_o;
+	  return any_est ? est : -1;
+	}
+      if (p_const && (sub = ric_iri_to_sub (ctx, p_const))
+	  && sub->rs_subproperties)
+	{
+	  /* the p is given and has subproperties */
+	  int64 s, est = 0;
+	  int any_est = 0;
+	  DO_SET (caddr_t, sub_iri, &sub->rs_subproperties)
+	    {
+	      p_dfe->dfe_tree = (ST*) sub_iri;
+	      s = sqlo_inx_sample_1 (key, lowers, uppers, n_parts);
+	      if (s >= 0)
+		{
+		  est += s;
+		  any_est = 1;
+		}
+	    }
+	  END_DO_SET();
+	  p_dfe->dfe_tree = org_p;
+	  return any_est ? est : -1;
+	}
+    }
+  return sqlo_inx_sample_1 (key, lowers, uppers, n_parts);
+}
 
 
 float
@@ -1023,7 +1093,7 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
   else if (LOC_LOCAL == dfe->dfe_locus && inx_const_fill
 	   && !(dfe->dfe_sqlo->so_sc->sc_is_update && 0 == strcmp (dfe->_.table.ot->ot_new_prefix, "t1")))
     {
-      int inx_sample = sqlo_inx_sample (key, inx_lowers, inx_uppers, inx_const_fill);
+      int64 inx_sample = sqlo_inx_sample (dfe, key, inx_lowers, inx_uppers, inx_const_fill);
       if (-1 == inx_sample)
 	goto no_sample;
       else if (0 == inx_sample)
@@ -1031,7 +1101,7 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
       else 
 	inx_arity = inx_sample * inx_arity / (inx_arity_guess_for_const_parts != -1 ? inx_arity_guess_for_const_parts : inx_arity);
       /* Consider if 2 first key parts are const and third is var.  Get the real arity for the const but do not forget the guess  for  the 3rd*/
-      dfe->_.table.is_arity_sure = 1;
+      dfe->_.table.is_arity_sure = inx_const_fill;
     no_sample: ;
     }
   dfe->_.table.is_unique = unique;

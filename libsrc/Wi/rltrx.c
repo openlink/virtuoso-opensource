@@ -778,8 +778,10 @@ itc_lock_failure (it_cursor_t * itc, char * msg)
 	  itc, (unsigned long) itc->itc_page, itc->itc_position, itc->itc_insert_key ? itc->itc_insert_key->key_name : "no key",
 	  (int) itc->itc_isolation, (int) itc->itc_lock_mode, msg));
 
+#if 0
 #ifndef NDEBUG
   GPF_T1 ("itc_assert_locksseems inconsistent");
+#endif
 #endif
 }
 

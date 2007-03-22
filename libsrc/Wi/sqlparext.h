@@ -305,12 +305,14 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_SPARQL ((ptrlong) 907)
 
 #define OPT_HASH ((ptrlong) 903)
+#define OPT_INTERSECT ((ptrlong) 1015)
 #define OPT_LOOP ((ptrlong) 904)
 #define OPT_RANDOM_FETCH ((ptrlong) 905)
 #define OPT_SUBQ_LOOP (ptrlong) 910
 #define SUBQ_NO_LOOP 2
 #define SUBQ_LOOP 1
 #define OPT_VACUUM (ptrlong)913
+#define OPT_RDF_INFERENCE ((ptrlong)1014)
 
 /* GROUPING SETS */
 #define GROUPING_FUNC	"__grouping"

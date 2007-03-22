@@ -414,7 +414,7 @@ int
 sqlo_tb_inx_intersectable (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * joined, int n_eqs)
 {
   /* tb_dfe is placed and has in inx with leading eqs.  See if joined can be inx intersected */
-  if (LOC_LOCAL != tb_dfe->dfe_locus || LOC_LOCAL != joined->dfe_locus)
+  if (tb_dfe->_.table.ot->ot_rds  || joined->_.table.ot->ot_rds)
     return 0;
   tb_dfe->dfe_is_placed = 0; /* consider only preds that don't depend on the first table */
   DO_SET (dbe_key_t *, key, &joined->_.table.ot->ot_table->tb_keys)
@@ -448,6 +448,26 @@ sqlo_tb_inx_intersectable (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * joined, in
 }
 
 
+int
+sqlo_opts_inx_int (caddr_t * opts)
+{
+  int inx, len;
+  if (!opts)
+    return 0;
+  len = BOX_ELEMENTS (opts);
+  for (inx = 0; inx < len; inx += 2)
+    {
+      switch ((ptrlong)opts[inx])
+	{
+	case OPT_JOIN: case OPT_INDEX:
+	case OPT_RANDOM_FETCH:
+	  return 0;
+	}
+    }
+  return 1;
+}
+
+
 void
 sqlo_try_inx_int_joins (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * group_ret, float * best_group)
 {
@@ -471,7 +491,7 @@ sqlo_try_inx_int_joins (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * group_ret, fl
 	  && DFE_TABLE == joined->dfe_type
 	  && !joined->_.table.ot->ot_is_outer
 	  && !joined->_.table.ot->ot_rds
-	  && !joined->_.table.ot->ot_opts)
+	  && sqlo_opts_inx_int (joined->_.table.ot->ot_opts))
 	{
 	  if (sqlo_tb_inx_intersectable (so, tb_dfe, joined, n_eqs))
 	    {

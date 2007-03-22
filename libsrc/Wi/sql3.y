@@ -1629,12 +1629,14 @@ sql_option
 	: ORDER { $$ = CONS (OPT_ORDER, CONS (1, NULL)); }
 	| QUIETCAST_L { $$ = CONS (OPT_SPARQL, CONS (1, NULL)); }
 	| HASH { $$ = CONS (OPT_JOIN, CONS (OPT_HASH, NULL)); }
+	| INTERSECT { $$ = CONS (OPT_JOIN, CONS (OPT_INTERSECT, NULL)); }
 	| LOOP { $$ = CONS (OPT_JOIN, CONS (OPT_LOOP, NULL)); }
 	| LOOP EXISTS { $$ = CONS (OPT_SUBQ_LOOP, CONS (SUBQ_LOOP, NULL)); }
 	| DO NOT LOOP EXISTS { $$ = CONS (OPT_SUBQ_LOOP, CONS (SUBQ_NO_LOOP, NULL)); }
 	| INDEX identifier { $$ = CONS (OPT_INDEX, CONS ($2, NULL)); }
 	| INDEX PRIMARY KEY { $$ = CONS (OPT_INDEX, CONS (t_box_string ("PRIMARY KEY"), NULL)); }
 	| INDEX TEXT_L KEY { $$ = CONS (OPT_INDEX, CONS (t_box_string ("TEXT KEY"), NULL)); }
+	| WITH STRING { $$ = CONS (OPT_RDF_INFERENCE, CONS ($2, NULL)); }
 	| NAME INTNUM {
 	  if (!stricmp ($1, "vacuum"))
 	    $$ = CONS (OPT_VACUUM, CONS ($2, NULL));
@@ -2973,6 +2975,10 @@ column_data_type
 		    }
 		  else
 		    $$ = t_listst (4, (long) DV_BLOB, t_box_num (0x7fffffff), NULL, $2);
+		}
+	| LONG_L ANY 
+		{
+		  $$ = t_listst (4, (long) DV_BLOB, t_box_num (0x7fffffff), NULL, t_box_string ("DB.DBA.__ANY"));
 		}
 	| LONG_L XML /* user defined type into long col */
 		{ $$ = t_listst (5, (long) DV_BLOB, t_box_num (0x7fffffff), NULL, NULL,

@@ -160,4 +160,7 @@ extern caddr_t rdf_load_turtle (
   caddr_t *stmts, caddr_t app_env,
   query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret );
 
+/* Metadata about free-text index on DB.DBA.RDF_OBJ */
+extern id_hash_t *rdf_obj_ft_rules;
+
 #endif

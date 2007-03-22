@@ -3554,6 +3554,14 @@ end:
 void
 udt_can_write_to (sql_type_t *sqt, caddr_t data, caddr_t *err_ret)
 {
+  dtp_t dtp = DV_TYPE_OF (data);
+  if (sqt->sqt_dtp == DV_BLOB && sqt->sqt_class && !strcmp (sqt->sqt_class->scl_name, "DB.DBA.__ANY"))
+    {
+      if (dtp != DV_BLOB_WIDE_HANDLE)
+	return;
+      *err_ret = srv_make_new_error ("22023", "UD055", "Can't write a wide blob handle into a long any column,.  Cast to string or string output first.");
+      return;
+    }
   if ((sqt->sqt_dtp == DV_OBJECT || sqt->sqt_dtp == DV_BLOB) && sqt->sqt_class &&
       DV_TYPE_OF (data) == DV_OBJECT &&
       UDT_I_CLASS (data) &&

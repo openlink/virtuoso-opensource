@@ -2160,6 +2160,14 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	      fprintf (out, "#i%Ld", i);
               break;
             }
+        case DV_RDF:
+            {
+              rdf_box_t *rb = (rdf_box_t *)object;
+	      fprintf (out, "rdf_box(");
+              dbg_print_box_aux (rb->rb_box, out, known);
+	      fprintf (out, ",%ld,%ld,%ld,%ld)", (long)(rb->rb_type), (long)(rb->rb_lang), (long)(rb->rb_ro_id), (long)(rb->rb_is_complete));
+              break;
+            }
 	default:
 	  {
 	    fprintf (out, "Wacky box tag = %d\n", (int) tag);
