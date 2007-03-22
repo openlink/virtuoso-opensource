@@ -25,13 +25,12 @@ body
 {
   padding: 0;
   margin: 0;
-  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-family: Verdana, Arial, Helvetica, Sans-Serif;
   font-size: 9pt;
 }
 
 a
 {
-  font-family: Verdana, Arial, Sans-Serif;
   text-decoration: none;
 }
 
@@ -911,6 +910,7 @@ a.toolbar
   padding: 10px 0 10px 0;
   color: #4F56A6;
   font-weight: bold;
+  font-size: 12px;
   text-decoration: none;
   text-align: center;
 }
@@ -923,6 +923,7 @@ span.toolbar
   padding: 10px 0 10px 0;
   color: #4F56A6;
   font-weight: bold;
+  font-size: 12px;
   text-decoration: none;
   text-align: center;
 }

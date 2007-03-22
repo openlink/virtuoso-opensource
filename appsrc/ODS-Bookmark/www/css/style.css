@@ -30,7 +30,6 @@ body
 
 a
 {
-  font-family: Verdana, Arial, Sans-Serif;
   text-decoration: none;
 }
 
@@ -965,6 +964,7 @@ a.toolbar
 	padding: 10px 0 10px 0;
 	color: #4F56A6;
 	font-weight: bold;
+  font-size: 13px;
 	text-decoration: none;
 	text-align: center;
 }
@@ -977,6 +977,7 @@ span.toolbar
 	padding: 10px 0 10px 0;
 	color: #4F56A6;
 	font-weight: bold;
+  font-size: 13px;
 	text-decoration: none;
 	text-align: center;
 }

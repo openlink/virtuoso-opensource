@@ -24,8 +24,8 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: Verdana, Arial, Helvetica, sans-serif;
-  font-size: 12px}
+  font-family: Verdana, Arial, Helvetica, Sans-Serif;
+  font-size: 9px}
 
 /*
   Fields
@@ -96,7 +96,7 @@ input[readonly]
 /* mail tabs navigation ----------------------------------------------- */
 #mail_nav
 {
-  font-size: 1.1em;
+  font-size: 12px;
   font-weight: bold;
   margin: 5px 0 0 0;
   padding: 0px;
@@ -145,6 +145,7 @@ input[readonly]
   border-width: 0px 0px 1px 0px;
   border-color: #440000;
   border-style: solid;
+  font-size: 11px;
 }
 
 #ramka .left
@@ -182,7 +183,6 @@ input[readonly]
 #tree td
 {
   color: #000000;
-  font-size: 12px;
 }
 
 #tree a
@@ -194,7 +194,6 @@ input[readonly]
 #tree a:hover
 {
   color: #0000FF;
-  font-size: 12px;
   text-decoration: underline;
 }
 

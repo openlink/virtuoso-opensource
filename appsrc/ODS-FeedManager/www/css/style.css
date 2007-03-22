@@ -25,12 +25,11 @@ body
 {
   padding: 0;
   margin: 0;
-  font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
+  font-family: Verdana, Arial, Helvetica, Sans-Serif;
   font-size: 9pt;
 }
 
 a {
-  font-family: Verdana, Arial, Helvetica, Helv, sans-serif;
   text-decoration: none}
 
 a:active
