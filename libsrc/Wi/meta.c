@@ -1046,12 +1046,19 @@ dbe_key_create (dbe_schema_t * sc, dbe_table_t * tb,
 void
 dbe_key_free (dbe_key_t * key)
 {
+  search_spec_t * sp = key->key_insert_spec.ksp_spec_array;
   DO_SET (dbe_column_t *, col, &key->key_parts)
     {
       dk_free_box (col->col_name);
       dk_free ((caddr_t) col, sizeof (dbe_column_t));
     }
   END_DO_SET ();
+  while (sp)
+    {
+      search_spec_t * tmp = sp;
+      sp = sp->sp_next;
+      dk_free (tmp, sizeof (search_spec_t));
+    }
   dk_set_free (key->key_parts);
   dk_free ((caddr_t) key->key_key_fixed, -1);
   dk_free ((caddr_t) key->key_key_var, -1);
