@@ -19,7 +19,7 @@
 #  
 #  
 
-AUTOMAKE_OPTIONS	= gnu 1.9 dist-zip
+AUTOMAKE_OPTIONS	= gnu 1.6 dist-zip
 
 SUBDIRS = . docsrc libsrc binsrc appsrc
 

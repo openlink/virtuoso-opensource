@@ -36,7 +36,7 @@ AC_INIT([Virtuoso Open Source Edition],
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
 AC_CONFIG_AUX_DIR([binsrc/config])
 AM_CONFIG_HEADER([libsrc/Dk/config.h])
-AM_INIT_AUTOMAKE([tar-ustar])
+AM_INIT_AUTOMAKE(AC_PACKAGE_TARNAME, AC_PACKAGE_VERSION, [tar-ustar])
 AM_MAINTAINER_MODE
 
 
