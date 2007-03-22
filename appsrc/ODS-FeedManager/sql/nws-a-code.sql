@@ -121,7 +121,7 @@ create procedure ENEWS.WA.validate_request(
   V := split_and_decode(ltrim(S,'/'),0,'\0\0/');
   aset(aResult,4,split_and_decode(V[length(V)-1],0,'\0\0.'));
   if (length(V) > 1)
-    aset(aResult,3,subseq(V,i,Length(V) - 1));
+    aset(aResult,3,subseq(V,i,length (V) - 1));
   else
     aset(aResult,3,vector(''));
   -- Return verified request information
@@ -1075,7 +1075,7 @@ create procedure ENEWS.WA.feed_refresh_int(
   inout tag varchar)
 {
   declare content varchar;
-  declare resHdr any;
+  declare resHdr, reqHdr any;
   declare xt any;
   declare items any;
   declare N, L integer;
@@ -1086,14 +1086,16 @@ create procedure ENEWS.WA.feed_refresh_int(
    where EFI_FEED_ID = id
      and ((EFI_LAST_UPDATE is not null) and dateadd('day', days, EFI_LAST_UPDATE) < now());
 
+  reqHdr := 'User-agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)\r\n';
   newUri := uri;
 again:
   commit work;
   oldUri := newUri;
-  content := http_get(newUri, resHdr);
+  content := http_get (newUri, resHdr, 'GET', reqHdr);
   if (resHdr[0] not like 'HTTP/1._ 200 %') {
     if (resHdr[0] like 'HTTP/1._ 30_ %') {
 	    newUri := http_request_header (resHdr, 'Location');
+      newUri := WS.WS.EXPAND_URL (oldUri, newUri);
       if (newUri <> oldUri)
         goto again;
 	  }
@@ -1133,7 +1135,7 @@ again:
       };
       is_xml := 1;
       if (isentity (xt))
-        DB.DBA.RDF_LOAD_RDFXML (ENEWS.WA.xml2string (xt), uri, uri);
+        DB.DBA.RDF_LOAD_RDFXML (ENEWS.WA.xml2string (xt), '', uri);
     }
     if (is_xml) {
       sql := sprintf(
@@ -1486,6 +1488,7 @@ create procedure ENEWS.WA.channel_retrieve (
     }
     if (resHdr[0] like 'HTTP/1._ 4__ %' or resHdr[0] like 'HTTP/1._ 5__ %')
       return resHdr[0];
+    uri := newUri;
   }
 
   if (reqType = '')

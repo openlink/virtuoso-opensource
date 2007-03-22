@@ -124,7 +124,7 @@
 
         aset(data, 1, rss);
         aset(data, 3, title);
-        aset(data, 5, get_keyword ('$_blog_'   || N, params));
+        aset(data, 5, get_keyword ('$_home_'   || N, params));
         aset(data, 7, get_keyword ('$_format_' || N, params));
         aset(data, 9, get_keyword ('$_lang_'   || N, params));
 
