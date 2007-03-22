@@ -83,9 +83,11 @@ nntpf_exec_no_error ('create index NNFE_THR_DATE_IDX on NNFE_THR (FTHR_GROUP, FT
 -- the external links
 nntpf_exec_no_error ('create table NNTPF_MSG_LINKS (NML_MSG_ID varchar, NML_URL varchar, primary key (NML_MSG_ID, NML_URL))')
 ;
-
+-- procedure view nntpf_group_list_v UPDATED
+nntpf_exec_no_error ('drop view nntpf_group_list_v')
+;
 nntpf_exec_no_error ('create procedure view nntpf_group_list_v as nntpf_group_list (_group, _fordate, _len)
-	(_date varchar, _from varchar, _subj varchar, _nm_id varchar)')
+	(_date datetime, _from varchar, _subj varchar, _nm_id varchar)')
 ;
 
 nntpf_exec_no_error ('create procedure view nntpf_search_result_v as nntpf_search_result (_str)

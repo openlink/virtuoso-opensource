@@ -74,7 +74,8 @@
           <a href="#" onclick="javascript: doPostN ('nnv', 'view_20'); return false">20</a> |
           <a href="#" onclick="javascript: doPostN ('nnv', 'view_50'); return false">50</a> | last
           <a href="#" onclick="javascript: doPostN ('nnv', 'view_5d'); return false">5 days</a> |
-          <v:url value="--'Unthreaded view'"
+          enable
+          <v:url value="--'Unthread view'"
                  format="%s"
 		 url="--sprintf ('nntpf_nthread_view.vspx?group=%s', self.grp_sel_thr)" /> |
 	  <v:url value="Subscribe" format="%s"

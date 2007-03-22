@@ -225,7 +225,7 @@
              5 days
           </a>
           | enable
-          <v:url value="--'threaded view'"
+          <v:url value="--'Thread view'"
                  format="%s"
 		 url="--'nntpf_thread_view.vspx?group='||self.grp_sel_no_thr || '&amp;thr=1'" /> |
 	  <v:url value="Subscribe" format="%s" url="--sprintf ('nntpf_subs_group.vspx?group=%s', self.grp_sel_no_thr)" />

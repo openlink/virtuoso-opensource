@@ -48,19 +48,12 @@
             <v:url value="Subscriptions" format="%s" url="nntpf_subs.vspx" />
           </td>
           <td><!-- neccessery to stretch the table --> </td>
-          <v:template type="simple"
-                      condition="nntpf_conductor_installed_p()">
             <td>
-              <v:url value="NNTP Server admin" format="%s"
-                     url="nntpf_yacutia.vspx"
-                     enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
-              <![CDATA[&nbsp;&nbsp;]]>
               <v:url value="Settings" format="%s"
                      url="nntpf_odsnewsgroups_admin.vspx"
                      enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
             </td>
           </v:template>
-        </v:template>
         <td class="last_cell">
           <vm:nntpf-search/>
         </td>
@@ -83,15 +76,11 @@
           <td class="menuitem">
             <v:url value="--'My RSS'" format="%s" url="--'nntpf_edit_rss.vspx'" />
           </td>
-          <td>
-          <td><!-- neccessery to stretch the table --></td>
+          <td class="menuitem">
+            <v:url value="Subscriptions" format="%s" url="nntpf_subs.vspx" />
           </td>
+          <td><!-- neccessery to stretch the table --></td>
           <td>
-            <v:url value="--'  NNTP Server admin '"
-                   format="%s"
-                   url="--'nntpf_yacutia.vspx'"
-                   enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
-              <![CDATA[&nbsp;&nbsp;]]>
               <v:url value="Settings" format="%s"
                      url="nntpf_odsnewsgroups_admin.vspx"
                      enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />

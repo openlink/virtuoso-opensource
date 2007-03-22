@@ -58,8 +58,16 @@
               <v:template type="simple" condition="nntpf_groups_defined_p()">
                 <div class="group_list">
 		  <vm:geo-link><img src="http://i.geourl.org/geourl.png" border="0"/></vm:geo-link>
+                  <v:template type="simple" condition="nntpf_conductor_installed_p()">
+                   <![CDATA[&nbsp;]]>
+                   <v:url value="Available newsgroups from Conductor" format="%s"
+                       url="nntpf_yacutia.vspx"
+                       enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
+                   <br/><br/>
+                 </v:template>
                   <vm:odsgroup-list/>
                 </div>
+
               </v:template>
             </div> <!-- LT -->
             <div id="RT">

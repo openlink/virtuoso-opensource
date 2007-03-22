@@ -916,7 +916,7 @@ nntpf_group_list (in _group integer, in _fordate datetime, in _len integer)
          fetch crl into _subj, _nm_id, _date, _from;
        else
          fetch cr into _subj, _nm_id, _date, _from;
-       result (nntpf_print_date_in_thread (_date), deserialize (_from)[0], _subj, _nm_id);
+       result (_date, deserialize (_from)[0], _subj, _nm_id);
     }
 
   nf:
@@ -1259,7 +1259,7 @@ nntpf_group_list_v_data (in _group integer, in _for_date datetime, in _len integ
 
 -- dbg_obj_print (_group, _for_date, _len);
 
-  exec ('select _date, _subj, _from, _nm_id from nntpf_group_list_v where _group = ? and _fordate = ? and _len = ? '||_orderby,
+  exec ('select nntpf_print_date_in_thread (_date) as _datestr, _subj, _from, _nm_id from nntpf_group_list_v where _group = ? and _fordate = ? and _len = ? '||_orderby,
 	null, null, vector (_group, _for_date, _len), 0, mtd, dta );
 
   return dta;
@@ -1270,7 +1270,7 @@ create procedure
 nntpf_group_list_v_meta (in _group integer, in _for_date datetime, in _len integer, in _orderby varchar := '')
 {
   declare mtd, dta any;
-  exec_metadata ('select _date, _subj, _from, _nm_id from nntpf_group_list_v where _group = ? and _fordate = ?'||_orderby,
+  exec_metadata ('select nntpf_print_date_in_thread (_date) as _datestr, _subj, _from, _nm_id from nntpf_group_list_v where _group = ? and _fordate = ?'||_orderby,
 	null, null, mtd);
   return mtd[0];
 }
@@ -1837,7 +1837,7 @@ nntpf_group_tree_top (in parameters any)
 --               NG_GROUP as gr_num,
 --               NG_DESC as _desc
 	  from DB.DBA.NEWS_GROUPS
-          where ns_rest (NG_GROUP, 0) = 1 and NG_STAT<>-1 order by NG_NAME) do
+          where ns_rest (NG_GROUP, 0) = 1 and (NG_STAT<>-1 or NG_STAT is null) order by NG_NAME) do
      {
 
 --        rss_link := ' | <a href=&#34;*&#34; onclick=&#34;javascript:doPostValueRSS (''nntpf'', ''disp_group'', ''' ||

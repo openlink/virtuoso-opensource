@@ -49,7 +49,7 @@
 
           declare mtd, dta any;
              
-          exec ('select NG_GROUP, NG_NAME, NG_DESC from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1 and NG_STAT<>-1', null, null, vector (), 0, mtd, dta );
+          exec ('select NG_GROUP, NG_NAME, NG_DESC from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1 and (NG_STAT<>-1 or NG_STAT is null)', null, null, vector (), 0, mtd, dta );
 
           self.dta:=dta;
           self.mtd:=mtd[0];
@@ -60,7 +60,7 @@
         ]]>
       </v:before-data-bind>
 
-      view: <v:url name="view_mode" value="--(case when self.force_list<>1 then 'unthread' else 'thread' end)" url="--'nntpf_main.vspx?view='||(case when self.force_list<>1 then 'list' else 'thread' end)" />
+      View All: <v:url name="view_mode" value="--(case when self.force_list<>1 then 'Unthread' else 'Thread' end)" url="--'nntpf_main.vspx?view='||(case when self.force_list<>1 then 'list' else 'thread' end)" />
        <br/>
       <table width="100%"
              class="nntp_groups_listing"
@@ -78,13 +78,25 @@
                    
           <v:template name="template1" type="simple">
             <tr class="listing_header_row">
-              <th colspan="3">
+              <th colspan="5">
                 <v:label value="'Available newsgroups:'" format="%s" width="80"/>
               </th>
-              <th colspan="2">
+            </tr>
+            <tr class="listing_header_row">
+              <th >
+                <v:label value="'Name'" format="%s" width="80"/>
+              </th>
+              <th >
+                <v:label value="'Description'" format="%s" width="80"/>
+              </th>
+              <th>
                 <v:label value="'View:'" format="%s" width="80"/>
               </th>
+              <th >
+                <v:label value="'Action'" format="%s" width="80"/>
+              </th>
             </tr>
+
           </v:template>
           <v:template name="template2" type="repeat">
             <v:template name="template7" type="if-not-exists">
@@ -103,13 +115,6 @@
                      then 'listing_row_odd'
                      else '' end));
             ?>
-                <td align="left">
-                  <v:url value="RSS"
-                       url="--concat ('nntpf_rss_group.vspx?group=' ||
-                                      cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))"
-                       enabled="--self.vc_authenticated"
-                       xhtml_class="nntp_group_rss"/>
-                </td>
                 <td>
                   <v:url name="nntp_groups"
                          format="%s"
@@ -129,16 +134,24 @@
                 <td>
                   <v:url name="nntp_groups2"
                          format="%s"
-                         value="--'list'"
+                         value="--'List'"
                          url="--'nntpf_nthread_view.vspx?group=' ||
                               cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"/> |
                   <v:url name="nntp_groups3"
                          format="%s"
-                         value="--'thread'"
+                         value="--'Thread'"
                          url="--'nntpf_thread_view.vspx?group=' ||
                               cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar) ||
                               '&amp;thr=1'"/>
                 </td>
+                <td align="left">
+                  <v:url value="RSS"
+                       url="--concat ('nntpf_rss_group.vspx?group=' ||
+                                      cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))"
+                       enabled="--self.vc_authenticated"
+                       xhtml_class="nntp_group_rss"/>
+                </td>
+
 <?vsp
         http('</tr>');
 ?>
@@ -343,7 +356,7 @@
                           action="simple"
                           style="url"
                           value="--'&nbsp;unsubscribe'"
-                          enabled="--(case when (control.vc_parent as vspx_row_template).te_rowset[3]>0 then 1 else 0 end)"
+                          enabled="--(case when (control.vc_parent as vspx_row_template).te_rowset[3]>0  or (control.vc_parent as vspx_row_template).te_rowset[3] is null then 1 else 0 end)"
                   >
                    <v:on-post>
 --                     DB.DBA.MSG_NEWS_CLEAR_MESSAGES((control.vc_parent as vspx_row_template).te_rowset[3], (control.vc_parent as vspx_row_template).te_rowset[0], 'clear all');
