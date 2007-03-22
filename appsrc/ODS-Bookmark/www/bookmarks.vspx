@@ -514,7 +514,7 @@
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
 
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''import'');'" enabled="--self.toolbarEnable('import')" xhtml_title="Import" xhtml_class="toolbar">
+          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''import'');'" enabled="--self.toolbarEnable('import')" xhtml_title="Import Bookmarks" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
                 control.ufl_value := '<img src="image/impt_32.png" border="0"/>' || self.toolbarLabel('Import');
@@ -542,7 +542,7 @@
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
 
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''Bookmark/Create'');'" enabled="--self.toolbarEnable('Bookmark/Create')" xhtml_title="New Folder" xhtml_class="toolbar">
+          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''Bookmark/Create'');'" enabled="--self.toolbarEnable('Bookmark/Create')" xhtml_title="Create New Bookmark" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
                 control.ufl_value := '<img src="image/bmk_add_32.png" border="0"/>' || self.toolbarLabel('New Bookmark');
@@ -555,7 +555,7 @@
             </span>
           </v:template>
 
-          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''Folder/Create'');'" enabled="--self.toolbarEnable('Folder/Create')" xhtml_title="New Folder" xhtml_class="toolbar">
+          <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''Folder/Create'');'" enabled="--self.toolbarEnable('Folder/Create')" xhtml_title="Create New Folder" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
                 control.ufl_value := '<img src="image/new_fldr_32.png" border="0"/>' || self.toolbarLabel('New Folder');
