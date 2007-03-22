@@ -44,9 +44,7 @@ EXTRA_DIST = \
 	make_vad.sh \
 	sql/*.sql \
 	sql/eml/*.sql \
-	sql/install.bat \
 	sql/res/*.sql \
-	sql/uninstall.bat \
 	sql/utl/*.sql \
 	www-root/*.vsp \
 	www-root/mail/i/*.gif \
