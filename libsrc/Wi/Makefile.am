@@ -604,20 +604,7 @@ SQL_FILES_DAV		= \
 
 SQL_FILES_DAV		+= \
 	$(srcdir)/rdfa2rdfxml.xsl \
-	$(srcdir)/erdf2rdfxml.xsl \
-	$(srcdir)/atom2sioc.xsl \
-	$(srcdir)/atom2rdf.xsl \
-	$(srcdir)/html2rdf.xsl \
-	$(srcdir)/cc2rdf.xsl \
-	$(srcdir)/dc2rdf.xsl \
-	$(srcdir)/geo2rdf.xsl \
-	$(srcdir)/hcal2rdf.xsl \
-	$(srcdir)/hcard2rdf.xsl \
-	$(srcdir)/hreview2rdf.xsl \
-	$(srcdir)/google2rdf.xsl \
-	$(srcdir)/ning2rdf.xsl \
-	$(srcdir)/flickr2rdf.xsl
-
+	$(srcdir)/erdf2rdfxml.xsl
 
 SQL_FILES_VAD		= \
 	$(top_srcdir)/binsrc/vad/vad_root.sql \
