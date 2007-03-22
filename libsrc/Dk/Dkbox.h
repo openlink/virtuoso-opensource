@@ -410,6 +410,8 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define DV_UNAME 217		/*!< Unique name, whose single instance is saved in system-wide registry */
 #define DV_REFERENCE 206	/*!< Reference to an 'self as ref' object, this is a read-only thing with do-nothing copy and free semantics */
 #define DV_XPATH_QUERY 232	/*!< Query object, this is a read-only thing with reference counting */
+#define DV_RDF 246		/*!< RDF object that is SQL value + type id + language id + outline id + flag whether the sql value is full */
+
 
 
 /* Special box for wrapping memory for user-specific objects. */
@@ -541,6 +543,17 @@ typedef struct uname_blk_s
 #define DV_UNAME_BOX_HASH(hash,box) (hash) = UNAME_TO_UNAME_BLK(box)->unb_hdr[UNB_HDR_HASH]
 #endif
 
+typedef struct rdf_box_s
+{
+  int32		rb_ref_count;
+  short		rb_type;
+  short		rb_lang;
+  unsigned	rb_is_complete:1;
+  unsigned	rb_is_outlined:1;
+  int32		rb_ro_id;
+  caddr_t	rb_box;
+} rdf_box_t;
+/* see blobio.h for the rest of rdf_box things. */
 
 EXE_EXPORT (box_t, dk_alloc_box, (size_t bytes, dtp_t tag));
 EXE_EXPORT (box_t, dk_try_alloc_box, (size_t bytes, dtp_t tag));
