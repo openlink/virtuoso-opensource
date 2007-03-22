@@ -185,6 +185,14 @@ then
     exit 1
 fi
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinf.sql 
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rdf inference -- trdfinf.sql"
+    exit 1
+fi
+
+
 
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]
