@@ -45,7 +45,7 @@ noinst_HEADERS = \
 	crsr.h date.h datesupp.h eqlcomp.h hosting.h http_client.h http.h \
 	iodbcinst.h ksrvext.h ksrvextphp.h lisprdr.h list2.h log.h ltrx.h \
 	map_schema.h msdtc.h mts_client.h mts_com.h mts.h multibyte.h \
-	numeric.h odbcinc.h pldebug.h rdf_core.h recovery.h remote.h \
+	numeric.h odbcinc.h pldebug.h rdfinf.h rdf_core.h recovery.h remote.h \
 	rendezvous.h repl.h replsr.h schspace.h security.h sha.h shuric.h \
 	soap.h sparql2sql.h sparql.h sparql_p.h sql3.h sqlbif.h sqlcmps.h \
 	sqlcomp.h sqlcstate.h sqlfn.h sqlintrp.h sqlnode.h sqlocr.h sqlofn.h \
@@ -100,7 +100,7 @@ CLEANFILES = \
 C_FILES_SPARQL	= \
 	jso.c \
 	rdfbox.c \
-	rdfinf.h \
+	rdfinf.c \
         rdf_core.c \
         rdf_mapping_jso.c \
         rdfxml_parser.c \
