@@ -20,7 +20,7 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2007-03-15 0001' ;
+  virtrdf:version '2007-03-12 0002' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -1131,6 +1131,7 @@ virtrdf:DefaultQuadMap
 virtrdf:DefaultQuadMap-G      
       rdf:type virtrdf:QuadMapValue;
       virtrdf:qmvTableName "DB.DBA.RDF_QUAD";
+  virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
   virtrdf:qmvColumns virtrdf:DefaultQuadMap-G-cols;
   virtrdf:qmvFormat rdfdf:default-iid-nonblank;
   virtrdf:qmvColumnsFormKey 0;
@@ -1143,12 +1144,14 @@ virtrdf:DefaultQuadMap-G-cols
 
 virtrdf:DefaultQuadMap-G-col-G  
               rdf:type virtrdf:QuadMapColumn;
+  virtrdf:qmvcAlias "!pquad";
               virtrdf:qmvcColumnName "G";
 .
     
 virtrdf:DefaultQuadMap-S  
       rdf:type virtrdf:QuadMapValue;
       virtrdf:qmvTableName "DB.DBA.RDF_QUAD";
+  virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
   virtrdf:qmvColumns virtrdf:DefaultQuadMap-S-cols;
   virtrdf:qmvFormat rdfdf:default-iid;
   virtrdf:qmvColumnsFormKey 0;
@@ -1161,12 +1164,14 @@ virtrdf:DefaultQuadMap-S-cols
 
 virtrdf:DefaultQuadMap-S-col-S
               rdf:type virtrdf:QuadMapColumn;
+  virtrdf:qmvcAlias "!pquad";
               virtrdf:qmvcColumnName "S";
 .
 
 virtrdf:DefaultQuadMap-P  
       rdf:type virtrdf:QuadMapValue;
       virtrdf:qmvTableName "DB.DBA.RDF_QUAD";
+  virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
   virtrdf:qmvColumns virtrdf:DefaultQuadMap-P-cols;
   virtrdf:qmvFormat rdfdf:default-iid-nonblank;
   virtrdf:qmvColumnsFormKey 0;
@@ -1179,13 +1184,16 @@ virtrdf:DefaultQuadMap-P-cols
 
 virtrdf:DefaultQuadMap-P-col-P  
               rdf:type virtrdf:QuadMapColumn;
+  virtrdf:qmvcAlias "!pquad";
               virtrdf:qmvcColumnName "P";
 .
 
 virtrdf:DefaultQuadMap-O  
       rdf:type virtrdf:QuadMapValue;
       virtrdf:qmvTableName "DB.DBA.RDF_QUAD";
+  virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
   virtrdf:qmvColumns virtrdf:DefaultQuadMap-O-cols;
+  virtrdf:qmvFText virtrdf:DefaultQuadMap-ft;
   virtrdf:qmvFormat rdfdf:default;
   virtrdf:qmvColumnsFormKey 0;
 .
@@ -1197,5 +1205,32 @@ virtrdf:DefaultQuadMap-O-cols
 
 virtrdf:DefaultQuadMap-O-col-O
               rdf:type virtrdf:QuadMapColumn;
+  virtrdf:qmvcAlias "!pquad";
               virtrdf:qmvcColumnName "O";
 .
+
+virtrdf:DefaultQuadMap-atables
+  rdf:type virtrdf:array-of-QuadMapATable;
+  rdf:_1 virtrdf:DefaultQuadMap-pquad;
+.
+
+virtrdf:DefaultQuadMap-pquad
+  rdf:type virtrdf:QuadMapATable;
+  virtrdf:qmvaAlias "!pquad";
+  virtrdf:qmvaTableName "DB.DBA.RDF_QUAD";
+.
+
+virtrdf:DefaultQuadMap-ft
+  rdf:type virtrdf:QuadMapFText;
+  virtrdf:qmvftAlias "pobj";
+  virtrdf:qmvftColumnName "RO_LONG";
+  virtrdf:qmvftConds virtrdf:DefaultQuadMap-ft-conds;
+  virtrdf:qmvftTableName "DB.DBA.RDF_OBJ";
+  virtrdf:qmvftXmlIndex 1;
+.
+
+virtrdf:DefaultQuadMap-ft-conds
+  rdf:type virtrdf:array-of-string;
+  rdf:_1 "^{!pquad.}^.O = ^{pobj.}^.RO_DIGEST";
+.
+
