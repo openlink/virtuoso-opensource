@@ -2172,6 +2172,7 @@ create procedure OMAIL.WA.omail_get_settings (
   if (OMAIL.WA.omail_getp('conversation', _settings) not in (0,1))
     OMAIL.WA.omail_setparam('conversation',_settings, 0);
 
+  OMAIL.WA.omail_setparam ('discussion', _settings, OMAIL.WA.discussion_check ());
   OMAIL.WA.omail_setparam('update_flag', _settings, 0);
   return _settings;
 }
@@ -3794,7 +3795,6 @@ create procedure OMAIL.WA.omail_save_msg(
   _address :=  sprintf('%s%s', _address, OMAIL.WA.omail_address2xml('bcc', _bcc,  0));
   _address :=  sprintf('%s%s', _address, OMAIL.WA.omail_address2xml('dcc', _dcc,  0));
   _address :=  sprintf('%s</addres_list>',_address);
-  dbg_obj_print (_address, _to);
 
   _rfc_id  :=  get_keyword('rfc_id', _params,'');
   _rfc_references := get_keyword('rfc_references', _params,'');
@@ -5193,7 +5193,7 @@ create procedure OMAIL.WA.omail_write(
 
   -- Set constants  -------------------------------------------------------------------
   _sql_params  := vector(0,0,0,0,0,0);
-  _page_params := vector(0,0,0,0,0,0,0,0,0,0,0,0);
+  _page_params := vector (0,0,0,0,0,0,0,0,0,0,0,0,0,0);
   _sql_result1 := '';
   _sql_result2 := '';
   _faction     := '';
@@ -5358,7 +5358,7 @@ create procedure OMAIL.WA.omail_write(
 
   -- If massage is saved, that we open the Draft folder in Folders tree
   if (OMAIL.WA.omail_getp('msg_id',_params) <> 0)
-    aset(_page_params,6,vector('folder_id',130));
+    aset (_page_params, 7, vector ('folder_id', 130));
 
   -- XML structure-------------------------------------------------------------------
   _rs := '';
@@ -5377,15 +5377,6 @@ create procedure OMAIL.WA.omail_write(
 
   --dbg_obj_print(_rs);
   return _rs;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure OMAIL.WA.omail_split_address(
-  in full_address varchar)
-{
-  return split_and_decode(full_address,0,'\0\0@');
 }
 ;
 
@@ -7314,11 +7305,22 @@ create procedure OMAIL.WA.GET_ODS_BAR (
   inout _params any,
   inout _lines any)
 {
-  --dbg_obj_print('params: ', deserialize(_params));
-  --dbg_obj_print(deserialize(_lines));
   return ODS.BAR._EXEC('oMail', deserialize(_params), deserialize(_lines));
 }
 ;
 
+-----------------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.get_copyright ()
+{
+  return coalesce ((select top 1 wa_utf8_to_wide (replace (WS_COPYRIGHT, '&copy;', '(C)')) from WA_SETTINGS), '');
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
 grant execute on OMAIL.WA.GET_ODS_BAR to public;
+grant execute on OMAIL.WA.get_copyright to public;
+
 xpf_extension ('http://www.openlinksw.com/mail/:getODSBar', 'OMAIL.WA.GET_ODS_BAR');
+xpf_extension ('http://www.openlinksw.com/mail/:getCopyright', 'OMAIL.WA.get_copyright');

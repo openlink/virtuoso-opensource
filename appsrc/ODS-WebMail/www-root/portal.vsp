@@ -41,7 +41,8 @@
     goto exec_start;
   };
 
-  SET ISOLATION = 'Committed';
+  set ISOLATION = 'Committed';
+  set http_charset = 'utf-8';
 
 exec_start:;
 

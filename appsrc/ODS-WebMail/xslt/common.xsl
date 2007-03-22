@@ -23,8 +23,9 @@
  -
 -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:mail="http://www.openlinksw.com/mail/">
-  <xsl:output method="xhtml" indent="yes" omit-xml-declaration="no" encoding="windows-1251" doctype-public="-//W3C//DTD XHTML 1.0 Strict //EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"/>
+  <xsl:output method="xhtml" indent="yes" omit-xml-declaration="no" encoding="utf-8" doctype-public="-//W3C//DTD XHTML 1.0 Strict //EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"/>
   <xsl:include href="base.xsl"/>
+
   <xsl:variable name="sid" select="/page/sid"/>
   <xsl:variable name="realm" select="/page/realm"/>
   <xsl:variable name="fid" select="/page/folder_id"/>
@@ -453,7 +454,7 @@
 
   <!-- ========================================================================== -->
   <xsl:template name="copyright">
-    Copyright <xsl:call-template name="copy"/> 1999-2006 OpenLink Software
+    <xsl:value-of select="mail:getCopyright ()"/>
   </xsl:template>
 
   <!-- ========================================================================== -->
