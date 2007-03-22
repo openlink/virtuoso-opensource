@@ -77,8 +77,8 @@ long  tc_write_wait;
 long tc_dive_would_deadlock;
 long tc_pl_moved_in_reentry;
 long tc_enter_transiting_bm_inx;
-long tc_aio_seq_read;
-long tc_aio_seq_write;
+extern long tc_aio_seq_read;
+extern long tc_aio_seq_write;
 
 long tc_read_absent_while_finalize;
 long tc_fix_outdated_leaf_ptr;
