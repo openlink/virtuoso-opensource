@@ -796,7 +796,8 @@ odsbarSafeInit();
                      vector ('eCRM', 'eCRM'),
                      vector ('Bookmark', 'bookmark'),
                      vector ('nntpf','Discussion'),
-                     vector ('Polls','Polls')
+                     vector ('Polls','Polls'),
+                     vector ('AddressBook','AddressBook')
                     );
       arr_notlogged := vector (
                                vector ('Community', 'Community'),
@@ -808,7 +809,8 @@ odsbarSafeInit();
                                vector ('eCRM', 'eCRM'),
                                vector ('Bookmark', 'bookmark'),
                                vector ('nntpf','Discussion'),
-                               vector ('Polls','Polls')
+                               vector ('Polls','Polls'),
+                               vector ('AddressBook','AddressBook')
                               );
 
       declare arr_url any;

@@ -200,6 +200,12 @@
         <vm:dash-polls-summary/>
 <?vsp
       }
+      else if (self.app_type = 'AddressBook')
+      {
+?>
+        <vm:dash-addressbook-summary/>
+<?vsp
+      }
 	}
       ?>
       </div> <!-- RT -->

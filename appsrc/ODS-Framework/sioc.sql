@@ -302,9 +302,9 @@ create procedure polls_iri (in wai_name varchar)
   return forum_iri ('Polls', wai_name);
 };
 
-create procedure socialnetwork_iri (in wai_name varchar)
+create procedure addressbook_iri (in wai_name varchar)
 {
-  return forum_iri ('SocialNetwork', wai_name);
+  return forum_iri ('AddressBook', wai_name);
 };
 
 create procedure calendar_iri (in wai_name varchar)
@@ -332,7 +332,7 @@ create procedure ods_sioc_forum_ext_type (in app varchar)
 	'Bookmark',      ext_iri ('BookmarkFolder'),
 	'nntpf',         ext_iri ('MessageBoard'),
 	'Polls',         ext_iri ('SurveyCollection'),
-	'SocialNetwork', ext_iri ('SocialNetwork')
+	'AddressBook', ext_iri ('AddressBook')
 	), app);
 };
 
@@ -351,7 +351,7 @@ create procedure ods_sioc_forum_type (in app varchar)
 	'Bookmark',      'Container',
 	'nntpf',         'Forum',
 	'Polls',         'Container',
-	'SocialNetwork', 'Container'
+	'AddressBook', 'Container'
 	), app);
   return sioc_iri (pclazz);
 };
@@ -1452,7 +1452,7 @@ create procedure all_predicates ()
      ext_iri ('ImageGallery'),
      ext_iri ('MailingList'),
      ext_iri ('MessageBoard'),
-     ext_iri ('SocialNetwork'),
+     ext_iri ('AddressBook'),
      ext_iri ('SubscriptionList'),
      ext_iri ('SurveyCollection'),
      ext_iri ('Weblog'),

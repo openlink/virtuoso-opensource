@@ -39,6 +39,7 @@ h2 { font-size: 18px}
 h3 { font-size: 16px}
 
 th { text-align: left}
+td { text-align: left}
 
 #page { 
   width: 100%;
@@ -703,6 +704,31 @@ div.google_map
      width: 800px;
   height: 400px}
 
+/* Site settings pages
+
+div.settings_form {
+  margin: 5px}
+
+div.settings_form label {
+  float: left;
+  clear: left;
+  width: 20em;
+  margin: 2px}
+
+div.settings_form label.rb_cb {
+  float: none;
+  clear: none;
+  width: 20em;
+  margin: 2px}
+
+div.settings_form input[type="text"]{
+  width: 40em;
+  margin: 2px;}
+
+div.settings_form input[type="radio"]{
+  clear: left;
+  margin: 2px}
+*/
 /* =BEGIN= Listing controls colorization returned back =BEGIN= */
 
 table.listing

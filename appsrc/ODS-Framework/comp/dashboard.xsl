@@ -568,7 +568,7 @@
 		  </xsl:processing-instruction>
         <tr align="left">
        <?vsp
-            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark' or insttype_from_xsl='oGallery' or insttype_from_xsl='Polls')
+            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark' or insttype_from_xsl='oGallery' or insttype_from_xsl='Polls' or insttype_from_xsl='AddressBook')
             {
        ?>       
 
@@ -1087,6 +1087,72 @@
           </tr>
           <xsl:call-template name="user-dashboard-item-extended">
             <xsl:with-param name="app">Polls</xsl:with-param>
+          </xsl:call-template>
+        </table>
+      </div> <!-- w_pane -->
+    </div> <!-- widget -->
+  </xsl:template>
+
+  <xsl:template match="vm:dash-addressbook-summary">
+    <div class="widget w_app_summary w_addressbook_summary">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="images/icons/ods_poll_16.png"
+               alt="ODS-Polls icon" />
+            <span class="w_title_text"><?V WA_GET_APP_NAME ('AddressBook') ?> Summary</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+        </div>
+      </div>
+      <div class="w_pane content_pane">
+        <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
+          <tr>
+            <th>
+              <v:url name="addressbook_orderby_instance"
+                     value="Instance"
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                            '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+                             />
+            </th>
+            <th>
+              <v:url name="addressbook_orderby_subject"
+                     value="Poll"
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="addressbook_orderby_creator"
+                     value="Creator"
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="addressbook_orderby_date"
+                     value="Date"
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">AddressBook</xsl:with-param>
           </xsl:call-template>
         </table>
       </div> <!-- w_pane -->
@@ -1996,7 +2062,6 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-mail">
-    <div class="widget w_my_mail">
 
 <?vsp
   declare has_webmail int;
@@ -2014,6 +2079,7 @@
     }
 ?>
       <vm:if test="has_webmail">
+      <div class="widget w_my_mail">
         <div class="w_title_bar">
           <div class="w_title_text_ctr">
             <img class="w_title_icon"
@@ -2062,6 +2128,7 @@
          ?>
         
         </div> <!-- content_pane -->
+      </div> <!-- widget -->
          </vm:if>
       <vm:if test="not has_webmail">
         <div class="app_ad">
@@ -2075,7 +2142,6 @@
           </div>
         </div> <!-- app_ad -->
          </vm:if>
-    </div> <!-- widget -->
   </xsl:template>
 
 

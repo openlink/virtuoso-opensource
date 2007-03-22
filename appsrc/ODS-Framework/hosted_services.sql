@@ -1344,7 +1344,7 @@ create procedure wa_vad_check (in pname varchar)
   nam := get_keyword (pname, vector ('blog2','Weblog','oDrive','Briefcase','enews2','Feed Manager',
   				      'oMail','Mail','bookmark','Bookmarks','oGallery','Gallery' ,
 				     'wiki','Wiki', 'wa', 'Framework','nntpf','Discussion',
-				     'polls','Polls'), null);
+				     'polls','Polls', 'addressbook','AddressBook'), null);
   if (nam is null)
     return vad_check_version (pname);
   else
@@ -4925,6 +4925,8 @@ create procedure WA_GET_APP_NAME (in app varchar)
     return 'Discussion';
   else if (app = 'polls')
     return 'Polls';
+  else if (app = 'addressbook')
+    return 'AddressBook';
   else
     return app;
 };
@@ -4957,6 +4959,8 @@ create procedure WA_GET_MFORM_APP_NAME (in app varchar)
     return 'Discussions';
   else if (app = 'polls')
     return 'Polls';
+  else if (app = 'addressbook')
+    return 'AddressBook';
   else
     return app;
 };

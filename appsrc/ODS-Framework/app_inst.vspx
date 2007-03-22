@@ -71,7 +71,7 @@
       </v:before-data-bind>
       </v:local-variable>
       <vm:login redirect="app_inst.vspx"/>
-      <table border="0" class="listing">
+      <table border="0" class="app_inst_page">
       <tr>
    <?vsp
 
@@ -192,6 +192,12 @@
               {
             ?>
             <vm:dash-polls-summary/>
+            <?vsp
+              }
+            else if (self.app_type = 'AddressBook')
+              {
+            ?>
+            <vm:dash-addressbooks-summary/>
             <?vsp
               }
          ?>

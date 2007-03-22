@@ -86,7 +86,8 @@
 #ods_bar_first_lvl li a { 
   margin-top: 0px;
   padding: 6px 3px 6px 3px;
-  vertical-align: middle}
+  vertical-align: middle;
+  color: #fff; /* Required due to buggy CSS in IE */}
 
 #ods_bar_first_lvl li a img {
   margin-top: 2px;
@@ -112,7 +113,8 @@
   margin-left: 27px;}
 
 #ods_bar_second_lvl li a {
-  vertical-align: middle}
+  vertical-align: middle;
+  color: #444; /* Required by buggy IE CSS implementation */ }
 
 #ods_bar_home_path {
   margin: 2px 0px 0px 36px;
