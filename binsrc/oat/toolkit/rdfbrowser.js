@@ -18,6 +18,9 @@
 	rb.removeFilter(OAT.RDFBrowserData.FILTER_PROPERTY,"property","object");
 	rb.removeFilter(OAT.RDFBrowserData.FILTER_URI,"uri");
 	
+	rb.toXML();
+	rb.fromXML();
+	
 	.rdf_filter .rdf_categories
 	
 	data: [
@@ -130,7 +133,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				
 				var perm = OAT.Dom.create("a");
 				perm.innerHTML = "permalink";
-				var part = window.location.toString().match(/^[^#]+/);
+				var part = window.location.toString().match(/^[^?#]+/);
 				perm.href = part[0]+"#"+encodeURIComponent(item.href);
 				
 				OAT.Dom.append([d,remove,OAT.Dom.text(" - "),perm]);
@@ -142,7 +145,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			self.store.div.appendChild(d);
 		},
 		
-		addURL:function(u) {
+		addURL:function(u,l) {
 			var url = u.toString().trim();
 			self.uri = url;
 			var cback = function(xmlDoc) {
@@ -154,7 +157,8 @@ OAT.RDFBrowser = function(div,optObj) {
 					t[2] = t[2].replace(/<script[^>]*>/gi,'');
 				}
 				if (self.options.indicator) { OAT.Dom.hide(self.options.indicator); }
-				self.store.addTriples(triples,url,url);
+				var label = (l ? l : url);
+				self.store.addTriples(triples,label,url);
 			}
 			OAT.Dereference.go(url,cback,{type:OAT.AJAX.TYPE_XML});
 		},
@@ -227,8 +231,8 @@ OAT.RDFBrowser = function(div,optObj) {
 			url.value = self.options.defaultURL;
 			self.store.url = url;
 			
-			var btn1 = OAT.Dom.button("Add to document storage");
-			var btn2 = OAT.Dom.button("Browse DAV");
+			var btn1 = OAT.Dom.button("Data Source URI");
+			var btn2 = OAT.Dom.button("WebDav Open");
 			
 			var h = OAT.Dom.create("h3");
 			h.innerHTML = "Storage";
@@ -237,7 +241,9 @@ OAT.RDFBrowser = function(div,optObj) {
 			OAT.Dom.attach(btn2,"click",function() {
 				var options = {
 					mode:'open_dialog',
-					pathDefault:'/DAV/home/demo/',
+					pathDefault:'/DAV/home/'+http_cred.user+'/',
+					user:http_cred.user,
+					pass:http_cred.password,
 					onConfirmClick:function(path,fname,data) {
 						url.value = path+fname;
 						return true; /* return false will keep browser open */
@@ -246,13 +252,6 @@ OAT.RDFBrowser = function(div,optObj) {
 				OAT.WebDav.open(options);
 			});
 			
-			/* DAV init */
-			var options = {
-				imagePath:self.options.imagePath,
-				imageExt:'png'
-			};
-			OAT.WebDav.init(options);
-
 			/* querystring url */
 			var r = false;
 			if ((r = window.location.toString().match(/#(.+)$/))) {
@@ -644,6 +643,18 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.applyFilters(OAT.RDFBrowserData.FILTER_ALL);
 	}
 	
+	this.getTitle = function(item) {
+		var result = item[0];
+		var props = ["label","title"];
+		var preds = item[1];
+		for (var i=0;i<preds.length;i++) {
+			var p = preds[i][0];
+			var o = preds[i][1];
+			if (props.find(p) != -1) { return o; }
+		}
+		return result;
+	}
+	
 	this.init = function() {
 		/* dom */
 		OAT.Dom.clear(self.parent);
@@ -665,6 +676,31 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.redraw();
 		self.store.init();
 		self.bookmarks.redraw();
+	}
+	
+	this.toXML = function(xslStr) {
+		var xml = '<?xml version="1.0" ?>\n';
+		if (xslStr) { xml += xslStr+'\n'; }
+		xml += '<rdfbrowser>\n';
+		for (var i=0;i<self.store.items.length;i++) {
+			var item = self.store.items[i];
+			xml += '\t<uri label="'+item.label+'">'+OAT.Dom.toSafeXML(item.href)+'</uri>\n';
+		}
+		
+		xml += '</rdfbrowser>\n';
+		return xml;
+	}
+	
+	this.fromXML = function(xmlDoc) {
+		self.store.clear();
+		self.removeAllFilters();
+		var items = xmlDoc.getElementsByTagName("uri");
+		for (var i=0;i<items.length;i++) {
+			var item = items[i];
+			var label = item.getAttribute("label");
+			var href = OAT.Xml.textValue(item);
+			self.store.addURL(OAT.Dom.fromSafeXML(href),label);
+		}
 	}
 	
 	this.init();

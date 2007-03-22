@@ -233,7 +233,11 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	OAT.Dom.attach(self.formatSelect,"change",self.drawDateLabels);
 	
 	this.draw = function() {
-		if (!self.events.length) { return; } /* nothing to do */
+		if (!self.events.length) { 
+			self.drawFormatSelect();
+			self.drawResizer();
+			return;
+		} /* nothing to do */
 		/* preparation */
 		OAT.Dom.clear(self.elm);
 		OAT.Dom.clear(self.port);

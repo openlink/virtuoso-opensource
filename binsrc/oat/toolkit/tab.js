@@ -38,7 +38,7 @@ OAT.Tab = function(elm) {
 			self.goTo(element_1);
 		}
 		OAT.Dom.attach(element_1,"click",ref);
-		self.go(index);
+		self.go(index,true);
 	};
 
 	this.clear = function() {
@@ -55,13 +55,13 @@ OAT.Tab = function(elm) {
 		self.go(index);
 	};
 	
-	this.go = function(index) {
+	this.go = function(index,forbidCallback) {
 		this.clear();
 		if (index == -1) { return; }
 		this.element.appendChild(this.values[index]);
 		OAT.Dom.show(this.values[index]);
 		OAT.Dom.addClass(this.keys[index],"tab_selected");
-		this.goCallback(this.selectedIndex,index);
+		if (!forbidCallback) { this.goCallback(this.selectedIndex,index); }
 		this.selectedIndex = index;
 	};
 	

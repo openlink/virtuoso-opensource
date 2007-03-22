@@ -133,6 +133,10 @@ OAT.Dav = {
 	  var ld = (dir ? dir : ".");
 		var lf = (file ? ld+file : ld);
 		var target = lf;
+		var data = ref();
+		if (headers == undefined) headers = {};
+    if (OAT.Dav.SaveContentType)
+      headers['Content-Type'] = OAT.Dav.SaveContentType;
 		var o = {
 			auth:OAT.AJAX.AUTH_BASIC,
 			user:OAT.Dav.user,
@@ -141,7 +145,6 @@ OAT.Dav = {
 			onerror:OAT.WebDav.handleError,
 			headers:headers
 		}
-		var data = ref();
 		OAT.AJAX.PUT(target, data, response,o);
 	},
 
@@ -574,15 +577,12 @@ OAT.WebDav = {
       var prepair = function(){
         return OAT.WebDav.toptions.onConfirmClick($('dav_filetype').value);
       }
-      var headers = {};
-      if (OAT.WebDav.SaveContentType)
-        headers = {'Content-Type':OAT.WebDav.SaveContentType};
       OAT.Dav.saveFile($v('dav_path'),$v('dav_filename'),prepair,function(content){
         OAT.WebDav.toptions.afterSave($v('dav_path'),$v('dav_filename'));
         OAT.WebDav.options.filename = $v('dav_filename');
         OAT.WebDav.options.path = $v('dav_path');
         OAT.WebDav.close();
-      },headers);
+      });
     }
   },
 
@@ -993,7 +993,7 @@ OAT.WebDav = {
    var result = {};
   	for (var p in options) {
       if (p in new_options) {
-        if(isArray(options[p])){
+        if(typeof options[p] == 'object' && options[p].constructor == Array){
           result[p] = new_options[p];
         }else if(typeof options[p] == 'object'){
     	    result[p] = OAT.WebDav.overwrite(options[p],new_options[p]);
@@ -1008,14 +1008,4 @@ OAT.WebDav = {
   }
 }
 
-//----------------------------------------------------------------------------
-function dd(txt){
-  if(typeof console == 'object'){
-    console.debug(txt);
-  }
-}
-
-function isArray(a) {
-    return (typeof a == 'object' && a.constructor == Array);
-}
 OAT.Loader.featureLoaded("dav");

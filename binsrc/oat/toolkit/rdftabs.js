@@ -388,17 +388,38 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	this.elm.style.height = "100%";
 	
 	this.keyProperties = ["based_near","geo"];
+	this.locProperties = ["location"];
 	this.latProperties = ["lat","latitude"];
 	this.lonProperties = ["lon","long","longitude"];
 
+	this.geoCode = function(address,item) {
+		self.pointListLock++;
+		var cb = function(coords) {
+			if (coords && coords[0] != 0 && coords[1] != 0) {
+				self.pointList.push(coords);
+				self.attachMarker(coords,item);
+			}
+			self.pointListLock--;
+		}
+		self.map.geoCode(address,cb);
+	}
+	
 	this.tryItem = function(item) {
 		var preds = item[1];
 		var pointResource = false;
+		var locValue = false;
 		for (var i=0;i<preds.length;i++) {
 			var p = preds[i];
 			if (self.keyProperties.find(p[0]) != -1) { pointResource = p[1]; } /* this is resource containig geo coordinates */
+			if (self.locProperties.find(p[0]) != -1) { locValue = p[1]; } /* this is resource containig geo coordinates */
 		}
-		if (!pointResource) { return false; }
+		if (!pointResource && !locValue) { return false; }
+		
+		if (!pointResource) { /* geocode location */
+			self.geoCode(locValue,item);
+			return;
+		}
+		/* normal marker add */
 		for (var i=0;i<self.parent.data.length;i++) {
 			var it = self.parent.data[i];
 			if (it[0] == pointResource) {
@@ -408,18 +429,20 @@ OAT.RDFTabs.map = function(parent,optObj) {
 					if (self.latProperties.find(it[1][j][0]) != -1) { coords[0] = it[1][j][1]; }
 					if (self.lonProperties.find(it[1][j][0]) != -1) { coords[1] = it[1][j][1]; }
 				} /* for all geo properties */
-				if (coords[0] == 0 || coords[1] == 0) { return false; }
-				return coords;
+				if (coords[0] == 0 || coords[1] == 0) { return; }
+				self.pointList.push(coords);
+				self.attachMarker(coords,item);
+				return;
 			} /* geo resource */
 		} /* for all resources */
-	}
+	} /* tryItem */
 	
 	this.attachMarker = function(data,item) {
 		var m = false;
 		var callback = function() {
 			var div = OAT.Dom.create("div");
 			var s = OAT.Dom.create("div",{fontWeight:"bold"});
-			s.innerHTML = item[0];
+			s.innerHTML = self.parent.getTitle(item);
 			div.appendChild(s);
 			var preds = item[1];
 			for (var i=0;i<preds.length;i++) {
@@ -440,16 +463,24 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		self.map.centerAndZoom(0,0,0);
 		self.map.addTypeControl();
 		self.map.addMapControl();
-		var list = [];
+		self.pointList = [];
+		self.pointListLock = 0;
 		for (var i=0;i<self.parent.data.length;i++) {
 			var item = self.parent.data[i];
 			var data = self.tryItem(item);
-			if (!data) { continue; }
-			/* add marker */
-			self.attachMarker(data,item);
-			list.push(data);
 		}
-		self.map.optimalPosition(list);
+		OAT.Resize.createDefault(self.elm);
+
+		function tryList() {
+			if (!self.pointListLock) { 
+				if (!self.pointList.length) { alert("Nothing displayable was found :("); }
+				self.map.optimalPosition(self.pointList); 
+			} else {
+				setTimeout(tryList,500);
+			}
+		}
+		tryList();
+		
 	}
 }
 OAT.RDFTabs.map.prototype = new OAT.RDFTabs.parent();
@@ -466,7 +497,7 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 	this.parent = parent;
 	this.elm.style.position = "relative";
 	this.elm.style.width = "100%";
-	this.elm.style.height = "100%";
+	this.elm.style.height = "200px";
 	this.elm.style.top = "20px";
 	
 	this.port = OAT.Dom.create("div",{},"rdf_tl_port");
@@ -499,9 +530,10 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 			var content = OAT.Dom.create("div",{left:"-7px"});
 			var ball = OAT.Dom.create("div",{width:"16px",height:"16px",cssFloat:"left",styleFloat:"left"});
 			ball.style.backgroundImage = "url("+self.options.imagePath+"Timeline_circle.png)";
-			var t = OAT.Dom.create("span");
-			t.innerHTML = item[0];
+			var t = OAT.Dom.create("a");
+			t.innerHTML = self.parent.getTitle(item);
 			OAT.Dom.append([content,ball,t]);
+			self.parent.createAnchor(t,item[0]);
 			self.tl.addEvent("Timeline",date,date,content,"#ddd");
 		}
 		self.tl.draw();

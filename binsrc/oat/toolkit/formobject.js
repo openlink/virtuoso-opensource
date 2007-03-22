@@ -326,7 +326,7 @@ OAT.FormObject = {
 			var h = e.offsetHeight;
 			var z = e.style.zIndex;
 			/* element */
-			xml += 'ft<object type="'+fo.name+'" parent="'+designer.objects.find(fo.parentContainer)+'" ';
+			xml += '\t<object type="'+fo.name+'" parent="'+designer.objects.find(fo.parentContainer)+'" ';
 			if (fo.hidden == "1") { xml += 'hidden="1" '; }
 			xml += 'empty="'+fo.empty+'" ';
 			xml += 'value="'+fo.getValue()+'">\n';
