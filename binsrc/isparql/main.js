@@ -411,6 +411,7 @@ iSPARQL.Advanced = function ()
 			var options = {
 				mode:'save_dialog',
 				onConfirmClick:function(ext){
+				  OAT.Dav.SaveContentType = get_mime_type(ext);
       		return self.getSaveData(ext);
 				},
 				afterSave:function(path,fname){

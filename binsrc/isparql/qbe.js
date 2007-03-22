@@ -1060,7 +1060,7 @@ iSPARQL.QBE = function ()
 			var options = {
 				mode:'save_dialog',
 				onConfirmClick:function(ext){
-				  OAT.WebDav.SaveContentType = get_mime_type(ext);
+				  OAT.Dav.SaveContentType = get_mime_type(ext);
       		return qbe.getSaveData(ext);
 				},
 				afterSave:function(path,fname){
@@ -1942,7 +1942,7 @@ iSPARQL.QBE = function ()
     }
     } catch (e) {
   		self.clear();
-      alert('There was an error tring to visualize the query. Please check if the query is valid.');
+      alert('There was an error trying to visualize the query. Please check if the query is valid.');
     }
 	}
 	
