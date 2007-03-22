@@ -4746,6 +4746,7 @@ http_request (char * host, caddr_t * req, caddr_t * body, caddr_t * err_ret,
 	{
 	  PrpcDisconnect (ses);
 	  PrpcSessionFree (ses);
+	  dk_free_tree (list_to_array (head));
 	  return (http_request (host, req, body, err_ret, head_ret, ent_ses));
 	}
       else
@@ -4927,13 +4928,13 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 	  session_buffered_write (ws->ws_session, "\r\n0\r\n", 5); /* Write last zero chunk */
 	}
       session_flush (ws->ws_session);
-      dk_free_tree ((box_t) head);
     }
   FAILED
     {
       error = 1;
     }
   END_WRITE_FAIL (ws->ws_session);
+  dk_free_tree ((box_t) head);
   if (error)
     SESSTAT_SET (ws->ws_session->dks_session, SST_BROKEN_CONNECTION);
   if (close || error || !SESSTAT_ISSET (ses->dks_session, SST_OK))
