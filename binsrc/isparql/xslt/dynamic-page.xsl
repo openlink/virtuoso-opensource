@@ -98,12 +98,29 @@
           params.default_graph_uri = page_params['dereference-uri'];
           params.should_sponge = 'soft';
         }
+        // show query by default
+        params.showQuery = true;
         if (page_params['showQuery'])
+        {
+          if (page_params['showQuery'] != '0')
           params.showQuery = true;
+          else
+            params.showQuery = false;
+        }
         if (page_params['showRequest'])
+        {
+          if (page_params['showRequest'] != '0')
           params.hideRequest = false;
+          else
+            params.hideRequest = true;
+        }
         if (page_params['showResponce'])
+        {
+          if (page_params['showResponce'] != '0')
           params.hideResponce = false;
+          else
+            params.hideRequest = true;
+        }
 
         iSPARQL.QueryExec(params);
 			}
