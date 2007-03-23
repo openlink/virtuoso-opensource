@@ -1893,7 +1893,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
             }
           else if (257 <> rdf_box_lang (obj))
             {
-              res := coalesce ((select RDT_QNAME from DB.DBA.RDF_LANGUAGE where RDT_TWOBYTE = rdf_box_lang (obj)));
+              res := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
               http (' xml:lang="', ses); http_value (res, 0, ses); http ('"', ses);
             }
           dat := rdf_box_data (obj);
@@ -7451,9 +7451,9 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
   if (isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE')))
     return;
   __atomic (1);
+  {
   declare exit handler for sqlstate '*'
     {
-      __atomic (0);
       log_message ('Error during upgrade of free-text index of RDF_QUAD:');
       log_message (__SQL_STATE || ': ' || "LEFT" (__SQL_MESSAGE, 3));
       log_message ('Remove the transaction log and start previous version of Virtuoso.');
@@ -7567,6 +7567,7 @@ tmpval_cur_end: ;
 --  checkpoint;
   commit work;
   log_enable (1);
+  }
   __atomic (0);
   exec ('checkpoint');
   DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
@@ -7644,6 +7645,15 @@ create procedure rdfs_rule_set (in name varchar, in gn varchar, in remove int :=
   rdf_inf_clear (name);
   rdfs_load_schema (name, gn);
   log_text ('db.dba.rdfs_load_schema (?, ?)', name, gn);
+}
+;
+
+create function DB.DBA.RDF_IID_OF_QNAME (in qname varchar) returns IRI_ID
+{
+  whenever sqlstate '*' goto retnull;
+  return iri_to_id (qname, 0);
+  retnull:
+  return null;
 }
 ;
 

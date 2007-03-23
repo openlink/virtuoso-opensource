@@ -1398,7 +1398,7 @@ bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t name = bif_arg (qst, args, 0, "iri_to_id");
   caddr_t box_to_delete = NULL;
   caddr_t res;
-  int make_new = bif_long_arg (qst, args, 1, "iri_to_id");
+  int make_new = (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "iri_to_id") : 1);
   dtp_t dtp = DV_TYPE_OF (name);
   switch (dtp)
     {
