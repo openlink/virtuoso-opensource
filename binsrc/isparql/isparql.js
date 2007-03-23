@@ -311,6 +311,8 @@ window.iSPARQL = {
 
         var tabres_li_formats = OAT.Dom.create("li");
         tabres_li_formats.className = "nav_right";
+        OAT.Dom.append([tabres_ul,tabres_li_formats]);
+        // We have to change params.format on each interaction in order to change the param 
         var format_orig = params.format;
         if ((params.query.match(/construct/i) || params.query.match(/describe/i)))
         {
@@ -324,7 +326,7 @@ window.iSPARQL = {
           a_rdf.target = '_blank';
           params.format = 'application/rdf+xml';
           a_rdf.href = params.service + '?' + body();
-          OAT.Dom.append([tabres_ul,tabres_li_formats],[tabres_li_formats,a_n3,a_rdf]);
+          OAT.Dom.append([tabres_li_formats,a_n3,a_rdf]);
         } else {
           var a_xml = OAT.Dom.create("a");
           a_xml.innerHTML = 'XML';
@@ -346,7 +348,7 @@ window.iSPARQL = {
           a_html.target = '_blank';
           params.format = 'text/html';
           a_html.href = params.service + '?' + body();
-          OAT.Dom.append([tabres_ul,tabres_li_formats],[tabres_li_formats,a_xml,a_json,a_js,a_html]);
+          OAT.Dom.append([tabres_li_formats,a_xml,a_json,a_js,a_html]);
         }
         params.format = format_orig;
         
