@@ -65,9 +65,6 @@ create index RO_VAL on DB.DBA.RDF_OBJ (RO_VAL)
 alter table DB.DBA.RDF_OBJ add RO_DIGEST any
 ;
 
-create index RO_DIGEST on DB.DBA.RDF_OBJ (RO_DIGEST)
-;
-
 create table DB.DBA.RDF_DATATYPE (
   RDT_IID IRI_ID not null primary key,
   RDT_TWOBYTE integer not null unique,
@@ -150,15 +147,6 @@ create procedure DB.DBA.RDF_OBJ_RO_LONG_UNINDEX_HOOK (inout vtb any, inout d_id 
 rdf_inf_const_init ()
 ;
 
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
-DB.DBA.vt_create_text_index (fix_identifier_case ('DB.DBA.RDF_OBJ'), fix_identifier_case ('RO_LONG'), fix_identifier_case ('RO_ID'),
-  0, 0, vector (), 1, '*ini*', '*ini*' )
-;
-
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
-DB.DBA.vt_batch_update (fix_identifier_case ('DB.DBA.RDF_OBJ'), 'ON', 1)
-;
-
 create procedure DB.DBA.RDF_GLOBAL_RESET ()
 {
 --  checkpoint;
@@ -179,8 +167,6 @@ create procedure DB.DBA.RDF_GLOBAL_RESET ()
   sequence_set ('RDF_RO_ID', 1, 0);
   sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 0);
   sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 0);
-  __atomic (0);
---  checkpoint;
   TTLP (
     cast ( XML_URI_GET (
         'http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl', '' ) as varchar ),
@@ -206,7 +192,6 @@ virtrdf:DefaultQuadStorage-UserMaps
   sequence_set ('RDF_URL_IID_BLANK', 1000010000, 1);
   sequence_set ('RDF_PREF_SEQ', 101, 1);
   sequence_set ('RDF_RO_ID', 1001, 1);
-  __atomic (1);
   iri_id_cache_flush ();
   __atomic (0);
   exec ('checkpoint');
@@ -7447,6 +7432,22 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
 
 create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
 {
+  declare stat, msg varchar;
+  exec ('create index RO_DIGEST on DB.DBA.RDF_OBJ (RO_DIGEST)', stat, msg);
+  if (exists (select top 1 1 from DB.DBA.SYS_COLS
+    where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ_RO_LONG_WORDS')
+    and "COLUMN" = fix_identifier_case ('VT_WORD') )
+    and exists (select top 1 1 from DB.DBA.SYS_COLS
+    where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
+    and "COLUMN" = fix_identifier_case ('RO_DIGEST')
+    and COL_DTP = 242 ) )
+    return;
+  exec ('DB.DBA.vt_create_text_index (
+    fix_identifier_case (''DB.DBA.RDF_OBJ''),
+    fix_identifier_case (''RO_LONG''),
+    fix_identifier_case (''RO_ID''),
+    0, 0, vector (), 1, ''*ini*'', ''*ini*'')', stat, msg);
+  exec ('DB.DBA.vt_batch_update (fix_identifier_case (''DB.DBA.RDF_OBJ''), ''ON'', 1)', stat, msg);
   if (isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE')))
     return;
   __atomic (1);
@@ -7467,7 +7468,6 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
     and "COLUMN" = fix_identifier_case ('RO_DIGEST')
     and COL_DTP = 182 ))
     {
-      declare stat, msg varchar;
       exec ('drop index RO_DIGEST', stat, msg);
       exec ('alter table DB.DBA.RDF_OBJ drop RO_DIGEST', stat, msg);
       exec ('alter table DB.DBA.RDF_OBJ add RO_DIGEST any', stat, msg);
@@ -7568,20 +7568,18 @@ tmpval_cur_end: ;
   commit work;
   log_enable (1);
   __atomic (0);
+  exec ('checkpoint');
+  DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
 }
 ;
 
+--!AFTER __PROCEDURE__ DB.DBA.XML_URI_GET !
 DB.DBA.RDF_QUAD_FT_UPGRADE ()
 ;
 
 --!AFTER __PROCEDURE__ DB.DBA.USER_CREATE !
 DB.DBA.RDF_CREATE_SPARQL_ROLES ()
 ;
-
---!AFTER __PROCEDURE__ DB.DBA.XML_URI_GET !
-DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
-;
-
 
 -- loading subclass inference ctxs
 
