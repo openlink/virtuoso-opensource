@@ -229,6 +229,27 @@ AB.WA.exec_no_error('
 -------------------------------------------------------------------------------
 --
 AB.WA.exec_no_error('
+  create table AB.WA.GRANTS (
+    G_ID integer identity,
+    G_GRANTER_ID integer not null,
+    G_GRANTEE_ID integer not null,
+    G_PERSON_ID integer not null,
+
+    PRIMARY KEY (G_ID)
+  )
+');
+
+AB.WA.exec_no_error('
+  create index SK_GRANTS_01 on AB.WA.GRANTS (G_GRANTER_ID, G_PERSON_ID)
+');
+
+AB.WA.exec_no_error('
+  create index SK_GRANTS_02 on AB.WA.GRANTS (G_GRANTEE_ID, G_PERSON_ID)
+');
+
+-------------------------------------------------------------------------------
+--
+AB.WA.exec_no_error('
   create table AB.WA.LDAP_SERVERS (
     LS_DOMAIN_ID integer not null,
     LS_NAME varchar not null,

@@ -37,7 +37,7 @@
 
       if (not (self.account_role in ('public', 'guest')))
         self.v_own := self.f_own.ufl_selected;
-      self.v_public := self.f_public.ufl_selected;
+      self.v_shared := self.f_shared.ufl_selected;
     ]]>
   </v:method>
 
@@ -70,9 +70,9 @@
         AB.WA.xml_set('expression', data, self.v_expression);
         AB.WA.xml_set('tags', data, self.v_tags);
         if (self.v_own = 1)
-          AB.WA.xml_set('MyPersons', data, 1);
-        if (self.v_public = 1)
-          AB.WA.xml_set('PublicPersons', data, 1);
+          AB.WA.xml_set('MyContacts', data, 1);
+        if (self.v_shared = 1)
+          AB.WA.xml_set('MySharedContacts', data, 1);
       }
 
       self.ds_data := vector ();
@@ -141,8 +141,8 @@
       if (mode = 'export') {
         if (cast(self.v_own as integer) <> 1)
           tmp := concat(tmp, sprintf('&%sown=%s', prefix, cast(self.v_own as varchar)));
-        if (cast(self.v_public as integer) <> 1)
-          tmp := concat(tmp, sprintf('&%spublic=%s', prefix, cast(self.v_public as varchar)));
+        if (cast(self.v_shared as integer) <> 1)
+          tmp := concat(tmp, sprintf('&%spublic=%s', prefix, cast(self.v_shared as varchar)));
         if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
           tmp := concat(tmp, sprintf('&%smax=%U', prefix, self.v_max));
         if (not is_empty_or_null(self.v_order) and self.v_order <> '_NAME')
@@ -187,7 +187,7 @@
       <v:variable name="v_expression" type="varchar" default="''"/>
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_own" type="integer" default="1"/>
-      <v:variable name="v_public" type="integer" default="1"/>
+      <v:variable name="v_shared" type="integer" default="1"/>
 
       <v:variable name="v_output" type="varchar" default="'html'"/>
       <v:variable name="v_max" type="varchar" default="'100'"/>
@@ -223,7 +223,7 @@
           -- options
           if (not (self.account_role in ('public', 'guest')))
             self.v_own := self.f_own.ufl_selected;
-          self.v_public := self.f_public.ufl_selected;
+          self.v_shared := self.f_shared.ufl_selected;
 
           self.v_max := trim (get_keyword ('f_max', self.vc_page.vc_event.ve_params, self.v_max));
           self.v_order := trim (get_keyword ('f_order', self.vc_page.vc_event.ve_params, self.v_order));
@@ -418,8 +418,8 @@
                 <tr>
                   <th/>
                   <td>
-                    <v:check-box name="f_public" initial-checked="self.v_public" xhtml_id="f_public" value="1" />
-                    <b><vm:label for="f_public" value="Search in public contacts"/></b>
+                    <v:check-box name="f_shared" initial-checked="self.v_shared" xhtml_id="f_shared" value="1" />
+                    <b><vm:label for="f_shared" value="Search in my shared contacts"/></b>
                   </td>
                 </tr>
               </table>

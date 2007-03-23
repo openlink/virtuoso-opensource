@@ -21,6 +21,7 @@
 --
 
 -- Tables
+AB.WA.exec_no_error('DROP TABLE AB.WA.GRANTS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.PERSONS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.LDAP_SERVERS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.TAGS');

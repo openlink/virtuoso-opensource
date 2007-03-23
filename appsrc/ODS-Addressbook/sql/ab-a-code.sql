@@ -727,6 +727,7 @@ create procedure AB.WA.account_delete(
 
   if (iCount = 0) {
     delete from AB.WA.SETTINGS where S_ACCOUNT_ID = account_id;
+    delete from AB.WA.GRANTS where G_GRANTER_ID = account_id or G_GRANTEE_ID = account_id;
   }
   AB.WA.domain_gems_delete (domain_id, account_id);
 
@@ -1463,6 +1464,143 @@ _end:
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.ab_tree2(
+  in domain_id integer,
+  in user_id integer,
+  in node varchar,
+  in path varchar)
+{
+  declare node_type, node_id any;
+
+  node_id := AB.WA.node_id(node);
+  node_type := AB.WA.node_type(node);
+  if (node_type = 'r') {
+    if (node_id = 2)
+      return vector('Shared Contacts By', AB.WA.make_node ('u', -1), AB.WA.make_path(path, 'u', -1));
+  }
+
+  declare retValue any;
+  retValue := vector ();
+
+  if ((node_type = 'u') and (node_id = -1))
+    for (select distinct U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = user_id and G_GRANTER_ID = U_ID order by 2) do
+      retValue := vector_concat(retValue, vector(U_NAME, AB.WA.make_node ('u', U_ID), AB.WA.make_path(path, 'u', U_ID)));
+
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.ab_node_has_childs (
+  in domain_id integer,
+  in user_id integer,
+  in node varchar,
+  in path varchar)
+{
+  declare node_type, node_id any;
+
+  node_id := AB.WA.node_id(node);
+  node_type := AB.WA.node_type(node);
+
+  if ((node_type = 'u') and (node_id = -1))
+    if (exists (select 1 from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = user_id and G_GRANTER_ID = U_ID))
+      return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.ab_path2_int(
+  in node varchar,
+  inout path varchar)
+{
+  declare node_type, node_id any;
+
+  node_id := AB.WA.node_id(node);
+  node_type := AB.WA.node_type(node);
+
+  if ((node_type = 'u') and (node_id >= 0))
+    path := sprintf('%s/%s', AB.WA.make_node (node_type, -1), path);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.ab_path2 (
+  in node varchar,
+  in grant_id integer)
+{
+  declare user_id, root_id any;
+  declare path any;
+
+  path := node;
+  user_id := (select G_GRANTER_ID from AB.WA.GRANTS where G_ID = grant_id);
+  AB.WA.ab_path2_int (node, root_id, path);
+  return '/' || path;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.make_node (
+  in node_type varchar,
+  in node_id any)
+{
+  return node_type || '#' || cast(node_id as varchar);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.make_path (
+  in path varchar,
+  in node_type varchar,
+  in node_id any)
+{
+  return path || '/' || AB.WA.make_node (node_type, node_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.node_type(
+  in code varchar)
+{
+  if ((length(code) > 1) and (substring(code,2,1) = '#'))
+    return left(code, 1);
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.node_id (
+  in node varchar)
+{
+  declare exit handler for sqlstate '*' { return -1; };
+
+  if ((length(node) > 2) and (substring(node,2,1) = '#'))
+    return cast(subseq(node, 2) as integer);
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.node_suffix (
+  in node varchar)
+{
+  if ((length(node) > 2) and (substring(node,2,1) = '#'))
+    return subseq(node, 2);
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Show functions
 --
 -------------------------------------------------------------------------------
@@ -2127,8 +2265,35 @@ create procedure AB.WA.dashboard_get(
   declare ses any;
 
   ses := string_output ();
-  http ('<sn-db>', ses);
-  http ('</sn-db>', ses);
+  http ('<ab-db>', ses);
+  for select top 10 *
+        from (select a.P_NAME,
+                     AB.WA.contact_url (domain_id, P_ID) P_URI,
+                     coalesce (a.P_UPDATED, now ()) P_UPDATED
+                from AB.WA.PERSONS a,
+                     DB.DBA.WA_INSTANCE b,
+                     DB.DBA.WA_MEMBER c
+                where a.P_DOMAIN_ID = domain_id
+                  and b.WAI_ID = a.P_DOMAIN_ID
+                  and c.WAM_INST = b.WAI_NAME
+                  and c.WAM_USER = user_id
+                order by a.P_UPDATED desc
+             ) x do {
+
+    declare uname, full_name varchar;
+
+    uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = user_id);
+    full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = user_id);
+
+    http ('<ab>', ses);
+    http (sprintf ('<dt>%s</dt>', date_iso8601 (P_UPDATED)), ses);
+    http (sprintf ('<title><![CDATA[%s]]></title>', P_NAME), ses);
+    http (sprintf ('<link><![CDATA[%s]]></link>', P_URI), ses);
+    http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
+    http (sprintf ('<uid>%s</uid>', uname), ses);
+    http ('</ab>', ses);
+  }
+  http ('</ab-db>', ses);
   return string_output_string (ses);
 }
 ;
@@ -2464,13 +2629,17 @@ create procedure AB.WA.contact_update2 (
       (
         P_ID,
         P_DOMAIN_ID,
-        P_NAME
+        P_NAME,
+        P_CREATED,
+        P_UPDATED
       )
       values
       (
         id,
         domain_id,
-        pValue
+        pValue,
+        now (),
+        now ()
       );
     return id;
   }
@@ -2561,7 +2730,7 @@ create procedure AB.WA.search_sql (
          '  AB.WA.PERSONS p              \n' ||
          'where p.P_DOMAIN_ID = <DOMAIN_ID> <TEXT> <TAGS> <WHERE> \n';
   }
-  if (not is_empty_or_null(AB.WA.xml_get('PublicContacts', data))) {
+  if (not is_empty_or_null(AB.WA.xml_get('MySharedContacts', data))) {
     if (S <> '')
       S := S || '\n union \n';
     S := S ||
@@ -2574,10 +2743,9 @@ create procedure AB.WA.search_sql (
          ' p.P_UPDATED                   \n' ||
          'from                           \n' ||
          '  AB.WA.PERSONS p,             \n' ||
-         '  DB.DBA.WA_INSTANCE i         \n' ||
-         'where i.WAI_ID = p.P_DOMAIN_ID \n' ||
-         '  and i.WAI_IS_PUBLIC = 1    \n' ||
-         '  and p.P_DOMAIN_ID <> <DOMAIN_ID> <TEXT> <TAGS> <WHERE> \n';
+         '  AB.WA.GRANTS g               \n' ||
+         'where p.P_ID = g.G_PERSON_ID   \n' ||
+         '  and g.G_GRANTEE_ID = <ACCOUNT_ID> <TEXT> <TAGS> <WHERE> \n';
   }
 
   S := 'select <MAX> * from (' || S || ') x';

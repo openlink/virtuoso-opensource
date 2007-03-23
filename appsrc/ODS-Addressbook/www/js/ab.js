@@ -217,6 +217,7 @@ function enableToolbars (objForm, prefix)
       oCount += 1;
   }
   enableElement('tbTag', 'tbTag_gray', oCount>0);
+  enableElement('tbSharing', 'tbSharing_gray', oCount>0);
   enableElement('tbDelete', 'tbDelete_gray', oCount>0);
 }
 

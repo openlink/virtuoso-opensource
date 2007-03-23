@@ -25,13 +25,12 @@ body
 {
   padding: 0;
   margin: 0;
-  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-family: Verdana, Arial, Helvetica, Sans-Serif;
   font-size: 9pt;
 }
 
 a
 {
-  font-family: Verdana, Arial, Sans-Serif;
   text-decoration: none;
 }
 
@@ -398,7 +397,7 @@ table#list thead input {
   padding: 3px;
   background-color: #EFEFEF;
   border: solid #7f94a5;
-  border-width: 0px 0px 1px 0px;
+  border-width: 1px;
 }
 
 #ab_subheader
@@ -799,6 +798,15 @@ thead.sortHeader a:hover
   background-color: #EFEFEF;
 }
 
+.new-form-mapping
+{
+  width: 100%;
+  height: 445px;
+  overflow: auto;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 1px;
+}
+
 .no-border
 {
   border-width: 0;
@@ -911,6 +919,7 @@ a.toolbar
   padding: 10px 0 10px 0;
   color: #4F56A6;
   font-weight: bold;
+  font-size: 12px;
   text-decoration: none;
   text-align: center;
 }
@@ -923,6 +932,7 @@ span.toolbar
   padding: 10px 0 10px 0;
   color: #4F56A6;
   font-weight: bold;
+  font-size: 12px;
   text-decoration: none;
   text-align: center;
 }
