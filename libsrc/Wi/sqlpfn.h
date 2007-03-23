@@ -241,4 +241,6 @@ extern char *part_tok (char ** place);
 
 ST * sqlp_infoschema_redirect (ST *texp);
 
+void sqlp_breakup (ST * sel);
+
 #endif /* _SQLPFN_H */

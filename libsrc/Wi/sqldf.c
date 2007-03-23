@@ -4459,7 +4459,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
       if (ST_P (ot->ot_dt, SELECT_STMT))
 	{
 	  sqlo_fun_ref_epilogue (so, ot);
-	  if (is_top || SEL_IS_DISTINCT (ot->ot_dt))
+	  if (is_top || SEL_IS_DISTINCT (ot->ot_dt) || sel_n_breakup (ot->ot_dt))
 	    {
 	      int inx;
 	      ST *top_exp = SEL_TOP (ot->ot_dt);

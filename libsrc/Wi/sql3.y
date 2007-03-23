@@ -188,6 +188,8 @@
 %type <tree> string_concatenation_operator
 %type <list> opt_scalar_exp_commalist
 %type <tree> selection
+%type <list> breakup_list 
+%type <list> breakup_term 
 %type <box> atom
 %type <box> atom_no_obe
 %type <box> parameter_ref
@@ -560,7 +562,7 @@
 
 /* literal keyword tokens */
 
-%token ALL AMMSC ANY ATTACH ASC AUTHORIZATION BETWEEN BY
+%token ALL AMMSC ANY ATTACH ASC AUTHORIZATION BETWEEN BREAKUP BY
 %token CASCADE CHARACTER CHECK CLOSE COMMIT CONSTRAINT CONTINUE CREATE CUBE CURRENT
 %token CURSOR DECIMAL_L DECLARE DEFAULT DELETE_L DESC DISTINCT DOUBLE_L
 %token DROP ESCAPE EXISTS FETCH FLOAT_L FOR FOREIGN FOUND FROM GOTO GO
@@ -1704,7 +1706,7 @@ selectinto_statement
 		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $3), $6->_.table_exp.from),
 		      NULL,
 		      $6);
-
+		  sqlp_breakup (qspec);
                   qspec = sqlp_add_top_1 (qspec);
 
 		  $$ = t_listst (5,
@@ -1879,26 +1881,43 @@ opt_corresponding
 non_final_query_spec
 	: SELECT opt_top selection non_final_table_exp
 		{ $$ = t_listst (5, SELECT_STMT, $2,
-		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $3), $4->_.table_exp.from) , NULL, $4); }
+		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $3), $4->_.table_exp.from) , NULL, $4);
+		  sqlp_breakup ($$); }
 
 	;
 
 query_spec
 	: SELECT opt_top selection table_exp
 		{ $$ = t_listst (5, SELECT_STMT, $2,
-		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $3), $4->_.table_exp.from) , NULL, $4); }
+		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $3), $4->_.table_exp.from) , NULL, $4);
+		  sqlp_breakup ($$); }
 	;
 
 query_no_from_spec
 	: SELECT opt_top selection
 		{
 		  $$ = t_listst (5, SELECT_STMT, NULL,
-		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $3), NULL) , NULL, NULL); }
+		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $3), NULL) , NULL, NULL);
+		  sqlp_breakup ($$); }
+	;
+
+
+
+breakup_term 
+: '(' select_scalar_exp_commalist  ')' { $$ = dk_set_conc ($2, t_CONS (t_list (5, BOP_AS, (ptrlong) 1, NULL, t_box_string ("__brkup_cond"), NULL), NULL)); }
+	| '(' select_scalar_exp_commalist WHERE search_condition ')' {
+	  ST * cond = (ST*)t_list (2, SEARCHED_CASE, t_list (4, $4, (caddr_t)1,  t_list (2, QUOTE, NULL), 0));
+	  $$ = dk_set_conc ($2, t_CONS (cond, NULL)); }
+	;
+
+breakup_list 
+	: breakup_term { $$ = t_CONS ($1, NULL);}
+	| breakup_list breakup_term { $$ = t_NCONC ($1, t_CONS ($2, NULL)); }
 	;
 
 selection
 	: select_scalar_exp_commalist	{ $$ = (ST *) t_list_to_array ($1); }
-/*	| '*'			{ $$ = (ST *) STAR; }  */
+| BREAKUP breakup_list { $$ = t_list_to_array (t_CONS (t_list (1, SELECT_BREAKUP), $2)); }
 	;
 
 non_final_table_exp
@@ -2269,6 +2288,7 @@ subquery
 	: '(' SELECT opt_top selection table_exp ')'
 		{ $$ = t_listst (5, SELECT_STMT, $3,
 		      sqlp_stars (sqlp_wrapper_sqlxml ((ST **) $4), $5->_.table_exp.from), NULL, $5);
+		  sqlp_breakup ((ST*) $$);
 		}
 	| '(' SPARQL_L sqlonly_query_exp ')'	{ $$ = $3; }
 	;

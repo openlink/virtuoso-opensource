@@ -800,6 +800,15 @@ typedef struct fun_ref_node_s
     hi_signature_t *	fnr_hi_signature;
   } fun_ref_node_t;
 
+
+typedef struct breakup_node_s 
+{
+  data_source_t	src_gen;
+  int		brk_current_slot;
+  state_slot_t **	brk_output;
+  state_slot_t **	brk_all_output;
+} breakup_node_t;
+
 #define SQL_NODE_INIT_NO_ALLOC(type, en, input, del) \
   data_source_init ((data_source_t *) en, sc->sc_cc, 0); \
   en->src_gen.src_input = (qn_input_fn) input; \

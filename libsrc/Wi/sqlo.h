@@ -621,7 +621,7 @@ ST * sinv_check_inverses (ST *tree, client_connection_t *cli);
 void sinv_sqlo_check_col_val (ST **pcol, ST **pval, dk_set_t *acol, dk_set_t *aval);
 sinv_map_t * sinv_call_map (ST * tree, client_connection_t * cli);
 int sqlo_is_contains_vdb_tb (sqlo_t *so, op_table_t *ot, char ctype, ST **args);
-
+int sel_n_breakup (ST* sel);
 
 
 /* cost model constants */

@@ -2389,7 +2389,9 @@ bitmap_index_box);
   *head = (data_source_t *) fref_node;
 }
 
-caddr_t bif_grouping (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+
+caddr_t 
+bif_grouping (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong curr_bitmap = bif_long_arg (qst, args, 1, GROUPING_FUNC);
   ptrlong et_bitmap_idx = bif_long_arg (qst, args, 2, GROUPING_FUNC);
@@ -2400,7 +2402,9 @@ caddr_t bif_grouping (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (!(QST_INT(qst,et_bitmap_idx) & curr_bitmap));
 }
 
-caddr_t bif_grouping_set_bitmap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+
+caddr_t 
+bif_grouping_set_bitmap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
     ptrlong bitmap_idx = bif_long_arg (qst, args, 0, GROUPING_SET_FUNC);
     ptrlong curr_bitmap = bif_long_arg (qst, args, 1, GROUPING_SET_FUNC);
@@ -2889,6 +2893,23 @@ sqlg_add_fail_stub (sqlo_t * so, data_source_t ** head)
 }
 
 
+void
+sqlg_add_breakup_node (sql_comp_t * sc, data_source_t ** head,
+    state_slot_t *** ssl_ret, int n_per_set)
+{
+  state_slot_t ** ssl_out = *ssl_ret;
+  int inx;
+  SQL_NODE_INIT (breakup_node_t, brk, breakup_node_input, breakup_node_free);
+  brk->brk_all_output = ssl_out;
+  brk->brk_output = dk_alloc_box (sizeof (caddr_t) * n_per_set, DV_BIN);
+  brk->brk_current_slot = cc_new_instance_slot  (sc->sc_cc);
+  for (inx = 0; inx < n_per_set; inx++)
+    brk->brk_output[inx] = brk->brk_all_output[inx];
+  sql_node_append (head, (data_source_t *) brk);
+  *ssl_ret = (state_slot_t**) box_copy ((caddr_t) brk->brk_output);
+}
+
+
 static state_slot_t **
 sqlg_handle_select_list (sqlo_t *so, df_elt_t * dfe, data_source_t ** head,
     dk_set_t code, data_source_t *last_qn, ST ** target_names)
@@ -2935,6 +2956,8 @@ sqlg_handle_select_list (sqlo_t *so, df_elt_t * dfe, data_source_t ** head,
     }
   if (SEL_IS_DISTINCT (tree))
     sqlc_add_distinct_node (sc, head, res, (long) dfe->dfe_arity);
+  if (sel_n_breakup (tree))
+    sqlg_add_breakup_node (sc, head, &res, sel_n_breakup (tree));
   return res;
 }
 

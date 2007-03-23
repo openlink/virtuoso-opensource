@@ -255,6 +255,15 @@ then
 fi
 
 
+
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbreakup.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rtest.sh: rtbreakup.sql"
+    exit 1
+fi
+
+
 RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rtrxdead.sql
 if test $STATUS -ne 0
 then

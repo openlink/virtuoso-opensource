@@ -596,6 +596,8 @@ sqlc_select_as (state_slot_t ** sls, caddr_t ** as_list)
   int inx;
   DO_BOX (ST *, as, inx, as_list)
   {
+    if (inx >= BOX_ELEMENTS (sls))
+      break; /* can be less slots than as declas if breakup select */
     if (as && sls[inx])
       {
 	dk_free_box (sls[inx]->ssl_name);

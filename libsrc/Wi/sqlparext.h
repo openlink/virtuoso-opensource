@@ -101,7 +101,7 @@
 #define INTERSECT_ALL_ST	(ptrlong)120
 #define PROC_TABLE		(ptrlong)121
 #define SELECT_TOP		 (ptrlong)122
-
+ #define SELECT_BREAKUP ((ptrlong)123)
 
 #define TABLE_DOTTED		(ptrlong)200
 #define COL_DOTTED		(ptrlong)201
@@ -679,7 +679,9 @@ typedef struct sql_tree_s
 
 
 #define SEL_IS_DISTINCT(st) \
-  (!IS_BOX_POINTER (st->_.select_stmt.top) ? (ptrlong) st->_.select_stmt.top : st->_.select_stmt.top->_.top.all_distinct)
+  (!IS_BOX_POINTER (st->_.select_stmt.top) ? (ptrlong) st->_.select_stmt.top == 1 : st->_.select_stmt.top->_.top.all_distinct)
+
+
 
 #define SEL_SET_DISTINCT(st, f) \
 { \

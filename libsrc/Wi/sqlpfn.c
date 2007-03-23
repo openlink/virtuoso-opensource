@@ -1157,6 +1157,8 @@ sqlp_expand_1_star_table_ref (ST * col, ST * tb_ref, dk_set_t * exp)
 	      selection = (ST **) table->_.select_stmt.selection;
 	      DO_BOX (ST *, as_exp, n_col, selection)
 		{
+		  if (sel_n_breakup (table) && n_col >= sel_n_breakup (table) - 1)
+		    break;
 		  t_dk_set_append_1 (exp,
 		      t_list (3, COL_DOTTED,
 			t_box_copy (tb_pref),
@@ -2298,3 +2300,69 @@ sqlp_add_top_1 (ST *select_stmt)
     }
   return select_stmt;
 }
+
+
+ST *
+sqlo_pop_as (ST * real_col)
+{
+  while (ST_P (real_col, BOP_AS))
+    real_col = real_col->_.as_exp.left;
+  return real_col;
+}
+
+
+void
+sqlp_breakup (ST * sel)
+{
+  /* if the selection is a breakup list, put the component exps of the breakup list in the selection and save the breakup info in the top.
+   * Check that lists are of equal length */
+  static int breakup_alias_ctr = 0;
+  int inx, is_first = 1, brk_len;
+  dk_set_t new_terms = NULL;
+  dk_set_t * terms = (dk_set_t *) sel->_.select_stmt.selection;
+  if (BOX_ELEMENTS (terms) < 2
+      || !ST_P ( ((ST *)terms[0]), SELECT_BREAKUP) )
+    return;
+  if (sel->_.select_stmt.top || !sel->_.select_stmt.table_exp
+      || sel->_.select_stmt.table_exp->_.table_exp.order_by || sel->_.select_stmt.table_exp->_.table_exp.group_by)
+    yyerror ("breakup is not compatibnle with distinct, group by, order by or select with no from");
+  DO_BOX (dk_set_t, term_list, inx, terms)
+    {
+if (!inx)
+  continue; /* the 0th elt is a marker.  Not partt of the breakup set */
+      if (is_first)
+	brk_len = dk_set_length (term_list);
+      else if (brk_len != dk_set_length (term_list))
+	yyerror ("breakup terms lists are not of even length");
+      DO_SET (ST *, exp, &term_list)
+	{
+	  if (!is_first)
+	    {
+	      char alias[12];
+	      sprintf (alias, "%d", breakup_alias_ctr++);
+	      ST * exp2 = sqlo_pop_as (exp);
+	      t_set_push (&new_terms, (void*) t_list (5, BOP_AS, exp2, NULL, t_box_string (alias), NULL));
+	    }
+	  else 
+	    t_set_push (&new_terms, (void*) exp);
+	}
+      END_DO_SET();
+      is_first = 0;
+    }
+  END_DO_BOX;
+  sel->_.select_stmt.selection = t_list_to_array (dk_set_nreverse (new_terms));
+  sel->_.select_stmt.top = (ST*) (ptrlong) brk_len;
+}
+
+
+int
+sel_n_breakup (ST* sel)
+{
+  /* returns the count of cols in each result row after breakup.  NEver less than 2 because there is always at least one col plus the flag to include or skip */
+  ptrlong v;
+  if (IS_BOX_POINTER (sel->_.select_stmt.top))
+    return 0;
+  v = (ptrlong) sel->_.select_stmt.top;
+  return v > 1 ? v : 0;
+}
+
