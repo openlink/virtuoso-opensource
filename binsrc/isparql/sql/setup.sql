@@ -39,7 +39,16 @@ create trigger ISPARQL_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referenci
 
 create procedure WS.WS.__http_handler_isparql (in content any, in params any, in lines any, inout in_path_url_out_status_and_hdr any)
 {
+  return iSPARQL.DBA.http_isparql_file_handler(content, params, lines, in_path_url_out_status_and_hdr);
+}; 
   
+create procedure WS.WS.__http_handler_head_isparql (in content any, in params any, in lines any, inout in_path_url_out_status_and_hdr any)
+{
+  return iSPARQL.DBA.http_isparql_file_handler(content, params, lines, in_path_url_out_status_and_hdr);
+}; 
+  
+create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params any, in lines any, inout in_path_url_out_status_and_hdr any)
+{
   declare accept varchar;
   declare _format varchar;
 
@@ -105,6 +114,7 @@ create procedure WS.WS.__http_handler_isparql (in content any, in params any, in
 
       if (strcasestr(_query,'construct') is null and 
           strcasestr(_query,'describe') is null and 
+          strcasestr(_query,'distinct') is null and 
           (
             strcasestr (accept, 'text/rdf+n3') is not null or
             strcasestr (accept, 'application/rdf+xml') is not null or
