@@ -34,7 +34,7 @@ echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ":  3 inst of c1 with f \n";
 
 
-select id_to_iri (s), id_to_iri (p), id_to_iri (o) from rdf_quad table option (with 'inft') where g = rdf_iid_of_qname ('inft');
+select id_to_iri (s), id_to_iri (p), id_to_iri (o) from rdf_quad table option (with 'inft') where g = iri_to_id ('inft', 0);
 echo both $if $equ $rowcnt 13 "PASSED" "***FAILED";
 echo both ": 13 triples in g inft\n";
 
@@ -42,9 +42,9 @@ echo both ": 13 triples in g inft\n";
 
 select id_to_iri (a.s) from rdf_quad a table option (with 'inft'), rdf_quad b table option (with 'inft ')
 where a.g = iri_to_id ('inft', 0) and b.g = iri_to_id ('inft', 0)
-	and a.o = rdf_iid_of_qname ('c1') and b.o = rdf_iid_of_qname ('c1')
-	and a.p = rdf_iid_of_qname ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
-	and b.p = rdf_iid_of_qname ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+	and a.o = iri_to_id ('c1', 0) and b.o = iri_to_id ('c1', 0)
+	and a.p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0)
+	and b.p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0)
 	and a.s = b.s;
 
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
@@ -53,9 +53,9 @@ echo both ": inx int on o = c1 and p = rdfs:type\n";
 
 explain ('select 1 from rdf_quad a table option (with ''inft''), rdf_quad b table option (with ''inft '')
 where a.g = iri_to_id (''inft'', 0) and b.g = iri_to_id (''inft'', 0)
-	and a.o = rdf_iid_of_qname (''c1'') and b.o = rdf_iid_of_qname (''c1'')
-	and a.p = rdf_iid_of_qname (''http://www.w3.org/1999/02/22-rdf-syntax-ns#type'')
-	and b.p = rdf_iid_of_qname (''http://www.w3.org/1999/02/22-rdf-syntax-ns#type'')
+	and a.o = iri_to_id (''c1'', 0) and b.o = iri_to_id (''c1'', 0)
+	and a.p = iri_to_id (''http://www.w3.org/1999/02/22-rdf-syntax-ns#type'', 0)
+	and b.p = iri_to_id (''http://www.w3.org/1999/02/22-rdf-syntax-ns#type'', 0)
 	and a.s = b.s', -5);
 
 
