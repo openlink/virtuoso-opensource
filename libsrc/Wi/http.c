@@ -1886,6 +1886,7 @@ ws_get_ranges (ws_connection_t *ws, char *err_text, int err_text_max, volatile O
     }
 
 done:
+  dk_free_tree (range_hdr);
   if (n_ranges)
     {
       caddr_t res;
