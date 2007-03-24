@@ -349,10 +349,11 @@ rb_free (rdf_box_t * rb)
   return 0;
 }
 
-void
+caddr_t
 rb_copy (rdf_box_t * rb)
 {
   rb->rb_ref_count++;
+  return rb;
 }
 
 int
