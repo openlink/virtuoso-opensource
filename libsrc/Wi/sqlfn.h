@@ -47,7 +47,7 @@ typedef struct spar_query_env_s
   scn3_include_frag_t *	sparqre_src;	/*!< This is not for use in the parser! This is for inliner inside scn3.l only */
   int			sparqre_direct_client_call;	/*!< The result-set produced by the compiled query will go directly to the ODBC/JDBC client */
   ptrlong		sparqre_start_lineno;
-  ptrlong *		sparqre_param_ctr;
+  int *			sparqre_param_ctr;
   const char *		sparqre_tail_sql_text;
   int			sparqre_allow_sql_extensions;
   caddr_t		sparqre_base_uri;

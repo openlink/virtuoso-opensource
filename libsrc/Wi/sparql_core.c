@@ -1377,7 +1377,7 @@ spar_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
     {
       dk_set_t lexems = NULL;
       caddr_t result_array;
-      ptrlong param_ctr = 0;
+      int param_ctr = 0;
       spar_query_env_t sparqre;
       sparp_t *sparp;
       sparp_env_t *se;
@@ -2237,7 +2237,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
 caddr_t
 bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  ptrlong param_ctr = 0;
+  int param_ctr = 0;
   spar_query_env_t sparqre;
   sparp_t * sparp;
   caddr_t str = bif_string_arg (qst, args, 0, "sparql_explain");
@@ -2263,7 +2263,7 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  ptrlong param_ctr = 0;
+  int param_ctr = 0;
   spar_query_env_t sparqre;
   sparp_t * sparp;
   caddr_t str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");

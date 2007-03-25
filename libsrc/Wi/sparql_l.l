@@ -519,14 +519,14 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
   }
 
 <SPARQL>"??"	{
-    char buf[20]; sprintf (buf, ":%ld", sparp->sparp_sparqre->sparqre_param_ctr[0]);
+    char buf[20]; sprintf (buf, ":%d", sparp->sparp_sparqre->sparqre_param_ctr[0]);
     sparp->sparp_sparqre->sparqre_param_ctr[0] += 1;
     sparyylval.box = t_box_dv_uname_string (buf);
     return QUEST_COLON_PARAMNUM;
   }
 
 <SPARQL>[$]"?"	{
-    char buf[20]; sprintf (buf, ":%ld", sparp->sparp_sparqre->sparqre_param_ctr[0]);
+    char buf[20]; sprintf (buf, ":%d", sparp->sparp_sparqre->sparqre_param_ctr[0]);
     sparp->sparp_sparqre->sparqre_param_ctr[0] += 1;
     sparyylval.box = t_box_dv_uname_string (buf);
     return DOLLAR_COLON_PARAMNUM;
