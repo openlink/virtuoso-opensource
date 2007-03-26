@@ -704,14 +704,14 @@ turtle_l.c: turtle_l.l turtle_p.h
 
 AWK_FILES = $(srcdir)/sql_to_c.awk
 
-sql_code.c: $(SQL_FILES) $(AWK_FILES)
+sql_code.c: $(SQL_FILES) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code.c \
 		-f $(srcdir)/sql_to_c.awk \
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES)
 
-sql_code_1.c: $(SQL_FILES_1) $(AWK_FILES)
+sql_code_1.c: $(SQL_FILES_1) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_1.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -719,7 +719,7 @@ sql_code_1.c: $(SQL_FILES_1) $(AWK_FILES)
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_1)
 
-sql_code_ddk.c: $(SQL_FILES_DDK) $(AWK_FILES)
+sql_code_ddk.c: $(SQL_FILES_DDK) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_ddk.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -727,7 +727,7 @@ sql_code_ddk.c: $(SQL_FILES_DDK) $(AWK_FILES)
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_DDK)
 
-sql_code_adm.c: $(SQL_FILES_ADM) $(AWK_FILES)
+sql_code_adm.c: $(SQL_FILES_ADM) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_adm.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -735,7 +735,7 @@ sql_code_adm.c: $(SQL_FILES_ADM) $(AWK_FILES)
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_ADM)
 
-sql_code_dav.c: $(SQL_FILES_DAV) $(AWK_FILES)
+sql_code_dav.c: $(SQL_FILES_DAV) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_dav.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -743,7 +743,7 @@ sql_code_dav.c: $(SQL_FILES_DAV) $(AWK_FILES)
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_DAV)
 
-sql_code_vad.c: $(SQL_FILES_VAD) $(AWK_FILES)
+sql_code_vad.c: $(SQL_FILES_VAD) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_vad.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -751,7 +751,7 @@ sql_code_vad.c: $(SQL_FILES_VAD) $(AWK_FILES)
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_VAD)
 
-sql_code_dbp.c: $(SQL_FILES_DBP) $(AWK_FILES)
+sql_code_dbp.c: $(SQL_FILES_DBP) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_dbp.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -759,15 +759,15 @@ sql_code_dbp.c: $(SQL_FILES_DBP) $(AWK_FILES)
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_DBP)
 
-sql_code_uddi.c: $(SQL_FILES_UDDI) $(AWK_FILES)
+sql_code_uddi.c: $(SQL_FILES_UDDI) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_uddi.c \
 		-f $(srcdir)/sql_to_c.awk \
 		-v init_name=_uddi \
 		-v pl_stats=$(PLSTATS) \
-		$(SQL_FILES_UDDI) 
+		$(SQL_FILES_UDDI)
 
-sql_code_imsg.c: $(SQL_FILES_IMSG) $(AWK_FILES)
+sql_code_imsg.c: $(SQL_FILES_IMSG) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_imsg.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -775,7 +775,7 @@ sql_code_imsg.c: $(SQL_FILES_IMSG) $(AWK_FILES)
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_IMSG)
 
-sql_code_auto.c: $(SQL_FILES_AUTO) $(AWK_FILES)
+sql_code_auto.c: $(SQL_FILES_AUTO) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_auto.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -783,7 +783,7 @@ sql_code_auto.c: $(SQL_FILES_AUTO) $(AWK_FILES)
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_AUTO)
 
-sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES)
+sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_2pc.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -795,7 +795,7 @@ sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES)
 #	@${GEN} ${GAWK} -o sql_code_2pc.c -f $(srcdir)/sql_to_c.awk \
 #		-v init_name=_blog -v pl_stats=$(PLSTATS) $(SQL_FILES_BLOG)
 
-sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES)
+sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_vdb.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -803,7 +803,7 @@ sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES)
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_VDB)
 
-sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES)
+sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES) Makefile
 	@${GEN} ${GAWK} \
 		-o sql_code_sparql.c \
 		-f $(srcdir)/sql_to_c.awk \
@@ -817,38 +817,41 @@ blog_pages.sql: FORCE
 #
 # JSON
 #
-rdf_mapping_jso.h: $(srcdir)/rdf_mapping.jso $(srcdir)/jso_reformat.awk
+JSO_FILES	= $(srcdir)/rdf_mapping.jso
+JSO_AWK		= $(srcdir)/jso_reformat.awk
+
+rdf_mapping_jso.h: $(JSO_FILES) $(JSO_AWK) Makefile
 	@${GEN} ${GAWK} \
 		-o rdf_mapping_jso.h \
-		-f $(srcdir)/jso_reformat.awk \
+		-f $(JSO_AWK) \
 		-v "output_mode=h" \
 		-v "h_wrapper=__RFD_MAPPING_JSO_H" \
 		-v "init_name=rdf_mapping" \
-		$(srcdir)/rdf_mapping.jso
+		$(JSO_FILES)
 
-rdf_mapping_jso.c: $(srcdir)/rdf_mapping.jso $(srcdir)/jso_reformat.awk
+rdf_mapping_jso.c: $(JSO_FILES) $(JSO_AWK) Makefile
 	@${GEN} ${GAWK} \
 		-o rdf_mapping_jso.c \
-		-f $(srcdir)/jso_reformat.awk \
+		-f $(JSO_AWK) \
 		-v "output_mode=c" \
 		-v "init_name=rdf_mapping" \
-		$(srcdir)/rdf_mapping.jso
+		$(JSO_FILES)
 
-rdf_mapping_jso.ttl: $(srcdir)/rdf_mapping.jso $(srcdir)/jso_reformat.awk
+rdf_mapping_jso.ttl: $(JSO_FILES) $(JSO_AWK) Makefile
 	@${GEN} ${GAWK} \
 		-o rdf_mapping_jso.ttl \
-		-f $(srcdir)/jso_reformat.awk \
+		-f $(JSO_AWK) \
 		-v "output_mode=ttl" \
 		-v "init_name=rdf_mapping" \
-		$(srcdir)/rdf_mapping.jso
+		$(JSO_FILES)
 
-rdf_mapping_jso.ttl-sample: $(srcdir)/rdf_mapping.jso $(srcdir)/jso_reformat.awk
+rdf_mapping_jso.ttl-sample: $(JSO_FILES) $(JSO_AWK) Makefile
 	@${GEN} ${GAWK} \
 		-o rdf_mapping_jso.ttl-sample \
-		-f $(srcdir)/jso_reformat.awk \
+		-f $(JSO_AWK) \
 		-v "output_mode=ttl-sample" \
 		-v "init_name=rdf_mapping" \
-		$(srcdir)/rdf_mapping.jso
+		$(JSO_FILES)
 
 .PHONY: generated
 generated: \
