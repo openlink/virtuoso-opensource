@@ -222,7 +222,7 @@ directory_init() {
   mkdir vad/data/blog2/widgets
   cp index.vspx vad/data/blog2
   cp *.sql vad/data/blog2
-  cp $HOME/binsrc/tests/dav/DET_Blog.sql vad/data/blog2
+  cp $HOME/binsrc/dav/DET_Blog.sql vad/data/blog2
   cp -rf public/* vad/data/blog2/public
   cp -f templates/openlink/default.css vad/data/blog2/public/css/default.css
   cp -f templates/default/* vad/data/blog2/templates/default 2>/dev/null

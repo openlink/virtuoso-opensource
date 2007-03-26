@@ -182,7 +182,7 @@ directory_init() {
   cp *.css vad/data/nntpf
   cp *.sql vad/data/nntpf
   cp *.vsp vad/data/nntpf
-  cp $HOME/binsrc/tests/dav/DET_nntp.sql vad/data/nntpf
+  cp $HOME/binsrc/dav/DET_nntp.sql vad/data/nntpf
   cp comp/*.xsl vad/data/nntpf/comp
 # cp comp/*.xml vad/data/nntpf/comp
   cp images/*.png vad/data/nntpf/images

@@ -535,7 +535,7 @@ SQL_FILES_1		= \
 SQL_FILES_DDK		= \
 	$(srcdir)/users.sql \
 	$(srcdir)/replddk.sql \
-	$(top_srcdir)/binsrc/tests/dav/davddk.sql \
+	$(top_srcdir)/binsrc/dav/davddk.sql \
 	$(srcdir)/mail_cli.sql \
 	$(top_srcdir)/binsrc/vsp/admin/admin_ddl.sql \
 	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfsddk.sql \
@@ -581,24 +581,24 @@ SQL_FILES_ADM		= \
 	$(top_srcdir)/binsrc/vspx/browser/admin_dav_browser.sql
 
 SQL_FILES_DAV		= \
-	$(top_srcdir)/binsrc/tests/dav/dav_acct.sql \
-	$(top_srcdir)/binsrc/tests/dav/dav_api.sql \
-	$(top_srcdir)/binsrc/tests/dav/dav_meta.sql \
-	$(top_srcdir)/binsrc/tests/dav/dav_rdf_quad.sql \
-	$(top_srcdir)/binsrc/tests/dav/dav.sql \
-	$(top_srcdir)/binsrc/tests/dav/DET_CatFilter.sql \
-	$(top_srcdir)/binsrc/tests/dav/DET_HostFs.sql \
-	$(top_srcdir)/binsrc/tests/dav/DET_PropFilter.sql \
-	$(top_srcdir)/binsrc/tests/dav/DET_ResFilter.sql \
-	$(top_srcdir)/binsrc/tests/dav/uriqa.sql \
-	$(top_srcdir)/binsrc/tests/dav/Versioning/DET_Versioning.sql \
+	$(top_srcdir)/binsrc/dav/dav_acct.sql \
+	$(top_srcdir)/binsrc/dav/dav_api.sql \
+	$(top_srcdir)/binsrc/dav/dav_meta.sql \
+	$(top_srcdir)/binsrc/dav/dav_rdf_quad.sql \
+	$(top_srcdir)/binsrc/dav/dav.sql \
+	$(top_srcdir)/binsrc/dav/DET_CatFilter.sql \
+	$(top_srcdir)/binsrc/dav/DET_HostFs.sql \
+	$(top_srcdir)/binsrc/dav/DET_PropFilter.sql \
+	$(top_srcdir)/binsrc/dav/DET_ResFilter.sql \
+	$(top_srcdir)/binsrc/dav/uriqa.sql \
+	$(top_srcdir)/binsrc/dav/Versioning/DET_Versioning.sql \
 	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfs.sql \
-	$(top_srcdir)/binsrc/tests/dav/davxml2n3xml.xsl \
-	$(top_srcdir)/binsrc/tests/dav/davxml2rdfxml.xsl \
-	$(top_srcdir)/binsrc/tests/dav/erdf2rdfxml.xsl \
-	$(top_srcdir)/binsrc/tests/dav/n3xml2uriqahtml.xsl \
-	$(top_srcdir)/binsrc/tests/dav/rdfa2rdfxml.xsl \
-	$(top_srcdir)/binsrc/tests/dav/rdfxml2n3xml.xsl
+	$(top_srcdir)/binsrc/dav/davxml2n3xml.xsl \
+	$(top_srcdir)/binsrc/dav/davxml2rdfxml.xsl \
+	$(top_srcdir)/binsrc/dav/erdf2rdfxml.xsl \
+	$(top_srcdir)/binsrc/dav/n3xml2uriqahtml.xsl \
+	$(top_srcdir)/binsrc/dav/rdfa2rdfxml.xsl \
+	$(top_srcdir)/binsrc/dav/rdfxml2n3xml.xsl
 
 SQL_FILES_DAV		+= \
 	$(srcdir)/rdfa2rdfxml.xsl \

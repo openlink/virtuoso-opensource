@@ -2163,7 +2163,7 @@ AC_CONFIG_FILES([
 	binsrc/sqldoc/Makefile
 	binsrc/sync/Makefile
 	binsrc/tests/biftest/Makefile
-	binsrc/tests/dav/Makefile
+	binsrc/dav/Makefile
 	binsrc/tests/dotnet/Makefile
 	binsrc/tests/Makefile
 	binsrc/tests/oledb/Makefile
