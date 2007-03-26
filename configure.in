@@ -2164,6 +2164,7 @@ AC_CONFIG_FILES([
 	binsrc/sync/Makefile
 	binsrc/tests/biftest/Makefile
 	binsrc/dav/Makefile
+	binsrc/rdf_mappers/Makefile
 	binsrc/tests/dotnet/Makefile
 	binsrc/tests/Makefile
 	binsrc/tests/oledb/Makefile
