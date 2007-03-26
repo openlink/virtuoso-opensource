@@ -540,7 +540,8 @@ SQL_FILES_DDK		= \
 	$(srcdir)/mail_cli.sql \
 	$(top_srcdir)/binsrc/vsp/admin/admin_ddl.sql \
 	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfsddk.sql \
-	$(srcdir)/virtual_dir.sql
+	$(srcdir)/virtual_dir.sql \
+	$(srcdir)/url_rewrite.sql
 
 SQL_FILES_DBP		= \
 	$(top_srcdir)/binsrc/vsp/admin/dbpump/dbpump_root.sql \
