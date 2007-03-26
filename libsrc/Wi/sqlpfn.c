@@ -2339,8 +2339,8 @@ if (!inx)
 	  if (!is_first)
 	    {
 	      char alias[12];
-	      sprintf (alias, "%d", breakup_alias_ctr++);
 	      ST * exp2 = sqlo_pop_as (exp);
+	      sprintf (alias, "%d", breakup_alias_ctr++);
 	      t_set_push (&new_terms, (void*) t_list (5, BOP_AS, exp2, NULL, t_box_string (alias), NULL));
 	    }
 	  else 
