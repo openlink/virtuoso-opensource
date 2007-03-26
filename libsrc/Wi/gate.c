@@ -580,17 +580,18 @@ pl_enter (placeholder_t * pl, it_cursor_t * ctl_itc)
   buffer_desc_t *buf;
   dp_addr_t volatile target_dp;
   dp_addr_t volatile target_dp_1;
-  if (!pl->itc_is_registered)
-    GPF_T1 ("no reentry registration");
   pl->itc_owns_page  = 0; /* can have committed or moved etc since last on the page */
+  if (!pl->itc_is_registered)
+    GPF_T1 ("pl must be registered in pl_enter");
 retry:
   if (ctl_itc->itc_ltrx && ctl_itc->itc_ltrx->lt_status != LT_CLOSING)
     {
       /* make an exception for closing since deletes inside commit or rollback can call this */
       CHECK_TRX_DEAD (ctl_itc, NULL, ITC_BUST_CONTINUABLE);
     }
+
   target_dp_1 = pl->itc_page;
-  ITC_IN_VOLATILE_MAP (ctl_itc, pl->itc_page);
+  ITC_IN_KNOWN_MAP (ctl_itc, target_dp_1);
   target_dp = pl->itc_page; /* now it is in the map but it can still move because anybody owning the specific buffer can move it */
   /* check that we are at least in the right map. */
   if (target_dp != target_dp_1)
@@ -607,14 +608,20 @@ retry:
       goto retry;
     }
   buf = pl->itc_buf_registered;
-  if (!buf)
-    GPF_T1 ("registered pl has no regfistered buf");
+  if (!buf
+      || buf->bd_page != target_dp_1)
+    {
+      /* the buf could just disappear for transit or could have changed so we're no longer in the right map */
+      TC (tc_pl_moved_in_reentry);
+      ITC_LEAVE_MAP_NC (ctl_itc);
+      goto retry;
+    }
   if (!buf->bd_is_write && !buf->bd_readers  
       && BUF_NONE_WAITING (buf))
     {
       if (buf->bd_page != pl->itc_page)
 	{
-	  if (pl->itc_page == target_dp)
+	  if (pl->itc_page == target_dp_1)
 	    GPF_T1 ("the registered buf is is a different page than the itc page but the pl has not moved during the reentry");
 	  TC (tc_pl_moved_in_reentry);
 	  ITC_LEAVE_MAP_NC (ctl_itc);
@@ -654,7 +661,7 @@ page_reenter_excl (it_cursor_t * itc)
 {
   buffer_desc_t *buf;
   buf = pl_enter ((placeholder_t *) itc, itc);
-  itc_unregister_inner (itc, buf);
+  itc_unregister_inner (itc, buf, 0);
   ITC_FIND_PL (itc, buf);
   ITC_LEAVE_MAPS (itc); /* only because itc_find_pl may enter ifdef mtx_debug */
   if (!itc->itc_tree->it_hi
@@ -1316,9 +1323,9 @@ itc_register (it_cursor_t * itc, buffer_desc_t * buf)
   /* Called before going through hyperspace. If the gate busts you
      this will be the life line. */
 
-  if (itc->itc_is_registered)
+  if (itc->itc_is_registered && itc->itc_buf_registered)
     {
-      GPF_T;			/* double registration */
+      GPF_T1 ("double registration");
       return;			/* Already registered. */
     }
   if (buf->bd_page != itc->itc_page)
@@ -1364,7 +1371,7 @@ itc_check_loop_in_placeholder (placeholder_t * list)
 
 
 void
-itc_unregister_inner (it_cursor_t * itc, buffer_desc_t * buf)
+itc_unregister_inner (it_cursor_t * itc, buffer_desc_t * buf, int is_transit)
 {
   it_cursor_t ** prev = &buf->bd_registered;
   it_cursor_t * reg = buf->bd_registered;
@@ -1377,7 +1384,8 @@ itc_unregister_inner (it_cursor_t * itc, buffer_desc_t * buf)
 	{
 	  *prev = itc->itc_next_on_page;
 	  itc->itc_next_on_page = NULL;
-	  itc->itc_is_registered = 0;
+	  if (!is_transit)
+	    itc->itc_is_registered = 0; /* when reg'd moves from page to page the flag stays set. Otherwise ureg at the same time can be confused */
 	  itc->itc_buf_registered = NULL;
     return;
 	}
@@ -1397,31 +1405,24 @@ itc_unregister (it_cursor_t * it_in)
   buffer_desc_t * reg_buf;
   it_map_t * itm;
   dp_addr_t dp;
+  if (itc->itc_bp.bp_transiting)
+    goto enter;
   if (!itc->itc_is_registered)
     return;
-  IN_VOLATILE_MAP (itc->itc_tree, itc->itc_page);
   dp = itc->itc_page;
   itm = IT_DP_MAP (itc->itc_tree, dp);
+  mutex_enter (&itm->itm_mtx);
   reg_buf = itc->itc_buf_registered;
-  if (!reg_buf)
+  if (reg_buf && !reg_buf->bd_is_write && !reg_buf->bd_readers
+      && dp == itc->itc_page && reg_buf->bd_page == dp)
 	    {
-      reg_buf = IT_DP_TO_BUF (itc->itc_tree, itc->itc_page);
-      if (!reg_buf)
-	GPF_T1 ("a buffer corresponding to a registerd cursor was not in its cache.  Registration is supposed to prevent replacement");
-	    }
-	  else
-	    {
-      if (reg_buf->bd_page != itc->itc_page || reg_buf->bd_tree != itc->itc_tree)
-	GPF_T1 ("itc_buf_registered was present but did not match itc_page or itc_tree of the itc"); 
-	    }
-  if (!reg_buf->bd_is_write && !reg_buf->bd_readers)
-	{
-      itc_unregister_inner ((it_cursor_t *) itc, reg_buf);
+      itc_unregister_inner ((it_cursor_t *) itc, reg_buf, 0);
       mutex_leave (&itm->itm_mtx);
       return;
     }
 
   mutex_leave (&itm->itm_mtx);
+ enter:
   TC (tc_unregister_enter);
 	    {
     buffer_desc_t * buf;
@@ -1430,7 +1431,7 @@ itc_unregister (it_cursor_t * it_in)
     ITC_INIT (reg_itc, NULL, NULL);
     itc_from_it (reg_itc, itc->itc_tree);
     buf = itc_set_by_placeholder (reg_itc, itc);
-    itc_unregister_inner ((it_cursor_t *)itc, buf);
+    itc_unregister_inner ((it_cursor_t *)itc, buf, 0);
     itc_page_leave (reg_itc, buf);
   }
 }
@@ -1443,31 +1444,24 @@ itc_unregister_while_on_page (it_cursor_t * it_in, it_cursor_t * preserve_itc, b
   buffer_desc_t * reg_buf;
   it_map_t * itm;
   dp_addr_t dp;
+  if (itc->itc_bp.bp_transiting)
+    goto enter;
   if (!itc->itc_is_registered)
     return;
-  IN_VOLATILE_MAP (itc->itc_tree, itc->itc_page);
   dp = itc->itc_page;
   itm = IT_DP_MAP (itc->itc_tree, dp);
+  mutex_enter (&itm->itm_mtx);
   reg_buf = itc->itc_buf_registered;
-  if (!reg_buf)
+  if (reg_buf && !reg_buf->bd_is_write && !reg_buf->bd_readers
+      && itc->itc_page == dp && reg_buf->bd_page ==dp)
 		{
-      reg_buf = IT_DP_TO_BUF (itc->itc_tree, itc->itc_page);
-      if (!reg_buf)
-	GPF_T1 ("a buffer corresponding to a registerd cursor was not in its cache.  Registration is supposed to prevent replacement");
-		}
-  else
-    {
-      if (reg_buf->bd_page != itc->itc_page || reg_buf->bd_tree != itc->itc_tree)
-	GPF_T1 ("itc_buf_registered was present but did not match itc_page or itc_tree of the itc"); 
-	    }
-  if (!reg_buf->bd_is_write && !reg_buf->bd_readers)
-    {
-      itc_unregister_inner ((it_cursor_t *) itc, reg_buf);
+      itc_unregister_inner ((it_cursor_t *) itc, reg_buf, 0);
       mutex_leave (&itm->itm_mtx);
       return;
 	}
 
   mutex_leave (&itm->itm_mtx);
+ enter:
   TC (tc_unregister_enter);
   {
     buffer_desc_t * buf;
@@ -1478,7 +1472,7 @@ itc_unregister_while_on_page (it_cursor_t * it_in, it_cursor_t * preserve_itc, b
     itc_register (preserve_itc, *preserve_buf);
     page_leave_outside_map (*preserve_buf);
     buf = itc_set_by_placeholder (reg_itc, itc);
-    itc_unregister_inner ((it_cursor_t *)itc, buf);
+    itc_unregister_inner ((it_cursor_t *)itc, buf, 0);
     itc_page_leave (reg_itc, buf);
     *preserve_buf = page_reenter_excl (preserve_itc);
     }

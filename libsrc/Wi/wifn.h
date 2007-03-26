@@ -216,7 +216,7 @@ void itc_set_parent_link (it_cursor_t * itc, dp_addr_t child_dp, dp_addr_t new_p
 void  itc_root_cache_enter (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t leaf);
 void itc_register (it_cursor_t * itc, buffer_desc_t * buf);
 void itc_unregister (it_cursor_t * itc);
-void itc_unregister_inner (it_cursor_t * itc, buffer_desc_t * buf);
+void itc_unregister_inner (it_cursor_t * itc, buffer_desc_t * buf, int is_transit);
 void itc_unregister_while_on_page (it_cursor_t * it_in, it_cursor_t * preserve_itc, buffer_desc_t ** preserve_buf);
 
 

@@ -652,6 +652,8 @@ itc_set_by_placeholder (it_cursor_t * itc, placeholder_t * pl)
       memcpy (itc, pl, ITC_PLACEHOLDER_BYTES);
       itc->itc_landed = 1;
   itc->itc_is_registered = 0;
+  itc->itc_buf_registered = NULL; /* should be set because of tests in itc_register */
+  itc->itc_next_on_page = NULL;
       itc->itc_type = ITC_CURSOR;
   ITC_FIND_PL (itc, buf);
   itc->itc_pl = buf->bd_pl;
@@ -2520,7 +2522,7 @@ itc_read_ahead1 (it_cursor_t * itc, buffer_desc_t ** buf_ret)
       ITC_LEAVE_MAP_NC (itc);
       *buf_ret = itc_set_by_placeholder (itc, pl);
       ITC_LEAVE_MAPS (itc);
-      itc_unregister_inner ((it_cursor_t *)pl, *buf_ret);
+      itc_unregister_inner ((it_cursor_t *)pl, *buf_ret, 0);
       plh_free (pl);
     }
   else

@@ -736,7 +736,7 @@ itc_bust_this_trx (it_cursor_t * it, buffer_desc_t ** buf, int may_ret)
 	    }
 	  else if (it->itc_buf_registered == *buf)
 	    {
-	      itc_unregister_inner (it, *buf);
+	      itc_unregister_inner (it, *buf, 0);
 	      page_leave_outside_map (*buf);
 	    }
 	  else

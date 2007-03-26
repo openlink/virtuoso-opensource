@@ -54,19 +54,35 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
   /* set by pl, see if on same page. If not, 
    * do full lookup.  If asc order, a negative can be confirmed on local page if max of page less than key sought.*/
   int res;
+  dp_addr_t target_dp;
 #ifdef ADAPTIVE_LAND
   itc->itc_dive_mode = PA_WRITE;
   /* this is likely a leaf.  Get excl.  There will be no automatic registration in page_wait_access because there is no buf_from here */
 #endif
-  ITC_IN_VOLATILE_MAP (itc, pl->itc_page);
-  page_wait_access (itc, pl->itc_page, NULL, buf_ret, itc->itc_dive_mode, RWG_WAIT_DATA);
+  target_dp = pl->itc_page;
+  ITC_IN_KNOWN_MAP (itc, target_dp);
+  page_wait_access (itc, target_dp, NULL, buf_ret, itc->itc_dive_mode, RWG_WAIT_DATA);
+  /* itc_page can change anytime.  Accept entry only if pl->itc_pagge agtrees with entry after entry */
+  if (PF_OF_DELETED == *buf_ret)
+    goto entry_failed;
   if (itc->itc_to_reset <= RWG_WAIT_DATA
-      && (*buf_ret)->bd_content_map->pm_count)
+      && (*buf_ret)->bd_page != pl->itc_page)
     {
-      page_map_t * pm = (*buf_ret)->bd_content_map;
+      page_leave_outside_map (*buf_ret)
+      goto entry_failed;
+    }
+  if (itc->itc_to_reset <= RWG_WAIT_DATA)
+    {
+      page_map_t * pm;
+      if ( !(*buf_ret)->bd_content_map || !(*buf_ret)->bd_content_map->pm_count)
+	{
+	  page_leave_outside_map (*buf_ret)
+	    goto entry_failed;
+	}
+      pm = (*buf_ret)->bd_content_map;
       if (itc == (it_cursor_t *) pl)
 	{
-	  itc_unregister_inner (itc, *buf_ret);
+	  itc_unregister_inner (itc, *buf_ret, 0);
 	}
       else 
 	{
@@ -97,6 +113,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
 	  page_leave_outside_map (*buf_ret);
 	}
     }
+ entry_failed:
   if (itc == (it_cursor_t *) pl)
     itc_unregister (itc);
   *buf_ret = itc_reset (itc);

@@ -587,7 +587,7 @@ itc_bm_split_move_crs (it_cursor_t * itc, dk_set_t local_transits)
       registered = registered->itc_next_on_page;
     }
   for (inx = 0; inx < fill; inx++)
-    itc_unregister_inner (cr_temp[inx], left_buf);
+    itc_unregister_inner (cr_temp[inx], left_buf, 1);
   if (right->itc_page != left->itc_page)
     {
       page_leave_outside_map (left_buf);
@@ -769,7 +769,7 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t image)
 
 
   memcpy (&left_pl, itc, sizeof (placeholder_t));
-  if (left_pl.itc_next_on_page || left_pl.itc_is_registered) GPF_T1 ("not supposed to be registered while inside bm_ins_on_row");
+  if (left_pl.itc_is_registered) GPF_T1 ("not supposed to be registered while inside bm_ins_on_row");
   itc_register ((it_cursor_t *)&left_pl, buf);
   itc->itc_bm_split_left_side = &left_pl;
   itc->itc_bm_split_right_side = NULL;
