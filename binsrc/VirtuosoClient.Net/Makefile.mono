@@ -7,67 +7,70 @@ CSC=mcs
 #CSFLAGS=-debug+ /d:MONO /d:DEBUG /d:DEBUG_IO
 CSFLAGS=/optimize+ /d:MONO
 
-SOURCES=\
- ArrayOfLongPacked.cs\
- AssemblyInfo.cs\
- BlobHandle.cs\
- BufferType.cs\
- CLI.cs\
- ConnectionOptions.cs\
- ConnectionPool.cs\
- ConnectionStringParser.cs\
- DataType.cs\
- DateTimeMarshaler.cs\
- Diagnostics.cs\
- DTC.cs\
- ExplicitString.cs\
- Future.cs\
- FutureList.cs\
- IConvertData.cs\
- ICreateErrors.cs\
- IInnerCommand.cs\
- IInnerConnection.cs\
- IMarshal.cs\
- ISession.cs\
- InnerConnectionBase.cs\
- MD5.cs\
- ManagedCommand.cs\
- ManagedConnection.cs\
- ManagedErrors.cs\
- Marshaler.cs\
- MemoryHandle.cs\
- OdbcCommand.cs\
- OdbcConnection.cs\
- OdbcErrors.cs\
- ParameterData.cs\
- Platform.cs\
- RPC.cs\
- Service.cs\
- StatementList.cs\
- TcpConnection.cs\
- TcpSession.cs\
- Unix.cs\
- VirtDbType.cs\
- VirtuosoCommand.cs\
- VirtuosoCommandBuilder.cs\
- VirtuosoConnection.cs\
- VirtuosoDataAdapter.cs\
- VirtuosoDataReader.cs\
- VirtuosoError.cs\
- VirtuosoErrorCollection.cs\
- VirtuosoException.cs\
- VirtuosoInfoMessage.cs\
- VirtuosoParameter.cs\
- VirtuosoParameterCollection.cs\
- VirtuosoPermission.cs\
- VirtuosoPermissionAttribute.cs\
- VirtuosoTransaction.cs\
- SqlXml.cs\
- VirtuosoWarning.cs\
- IVirtuosoError.cs\
- Win32.cs
+# Set this if using MONO 1.2.3.1
+#CSFLAGS += /d:MONO1231
 
-REFERENCES=/r:System.Data /r:System.EnterpriseServices
+SOURCES	= \
+	ArrayOfLongPacked.cs \
+	AssemblyInfo.cs \
+	BlobHandle.cs \
+	BufferType.cs \
+	CLI.cs \
+	ConnectionOptions.cs \
+	ConnectionPool.cs \
+	ConnectionStringParser.cs \
+	DataType.cs \
+	DateTimeMarshaler.cs \
+	Diagnostics.cs \
+	DTC.cs \
+	ExplicitString.cs \
+	Future.cs \
+	FutureList.cs \
+	IConvertData.cs \
+	ICreateErrors.cs \
+	IInnerCommand.cs \
+	IInnerConnection.cs \
+	IMarshal.cs \
+	InnerConnectionBase.cs \
+	ISession.cs \
+	IVirtuosoError.cs \
+	ManagedCommand.cs \
+	ManagedConnection.cs \
+	ManagedErrors.cs \
+	Marshaler.cs \
+	MD5.cs \
+	MemoryHandle.cs \
+	OdbcCommand.cs \
+	OdbcConnection.cs \
+	OdbcErrors.cs \
+	ParameterData.cs \
+	Platform.cs \
+	RPC.cs \
+	Service.cs \
+	SqlXml.cs \
+	StatementList.cs \
+	TcpConnection.cs \
+	TcpSession.cs \
+	Unix.cs \
+	VirtDbType.cs \
+	VirtuosoCommandBuilder.cs \
+	VirtuosoCommand.cs \
+	VirtuosoConnection.cs \
+	VirtuosoDataAdapter.cs \
+	VirtuosoDataReader.cs \
+	VirtuosoErrorCollection.cs \
+	VirtuosoError.cs \
+	VirtuosoException.cs \
+	VirtuosoInfoMessage.cs \
+	VirtuosoParameterCollection.cs \
+	VirtuosoParameter.cs \
+	VirtuosoPermissionAttribute.cs \
+	VirtuosoPermission.cs \
+	VirtuosoTransaction.cs \
+	VirtuosoWarning.cs \
+	Win32.cs
+
+REFERENCES	= /r:System.Data /r:System.EnterpriseServices
 
 RESOURCES=
 # /resource:OpenLink.Data.VirtuosoClient.VirtuosoConnection.bmp\
@@ -84,6 +87,7 @@ OpenLink.Data.VirtuosoClient.dll: $(SOURCES)
 
 OpenLink.Data.VirtuosoOdbcClient.dll: $(SOURCES) 
 	$(CSC) /unsafe /target:library /out:$@ /define:ODBC_CLIENT $(CSFLAGS) $(SOURCES) $(REFERENCES) $(RESOURCES)
+
 
 clean:
 	rm -rf \

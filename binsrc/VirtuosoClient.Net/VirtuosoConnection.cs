@@ -491,7 +491,7 @@ namespace OpenLink.Data.Virtuoso
 //        [Description ("hahaahha")]
         [Category("Data")]
 #endif
-#if ADONET2
+#if ADONET2 && !MONO1231
         public override event StateChangeEventHandler StateChange;
 #else
         public event StateChangeEventHandler StateChange;
