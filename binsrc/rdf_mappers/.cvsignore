@@ -1,0 +1,12 @@
+make_rdf_mappers_vad.log
+rdf_mappers_dav.vad
+rdf_mappers_filesystem.vad
+vad
+vad.db
+vad.log
+vad.trx
+vad_dav.xml
+vad_fs.xml
+virtuoso.ini
+virtuoso.pxa
+virtuoso.tdb
