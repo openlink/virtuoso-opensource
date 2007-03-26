@@ -101,26 +101,26 @@ C_FILES_SPARQL	= \
 	jso.c \
 	rdfbox.c \
 	rdfinf.c \
-        rdf_core.c \
-        rdf_mapping_jso.c \
-        rdfxml_parser.c \
-        sparql2sql.c \
-        sparql2sqltext.c \
-        sparql_core.c \
-        sparql_l.c \
-        sparql_p.c \
-        sparql_qm.c \
-        sparql_sff.c \
-        sql_code_sparql.c \
-        turtle_l.c \
-        turtle_p.c
+	rdf_core.c \
+	rdf_mapping_jso.c \
+	rdfxml_parser.c \
+	sparql2sql.c \
+	sparql2sqltext.c \
+	sparql_core.c \
+	sparql_l.c \
+	sparql_p.c \
+	sparql_qm.c \
+	sparql_sff.c \
+	sql_code_sparql.c \
+	turtle_l.c \
+	turtle_p.c
 
 
 libwi_la_SOURCES = \
-        sql3.c \
-        scn3.c \
-        xpathp.c \
-        xpscn.c \
+	sql3.c \
+	scn3.c \
+	xpathp.c \
+	xpscn.c \
 	schspace.c \
 	arith.c \
 	aqueue.c \
@@ -218,12 +218,12 @@ libwi_la_SOURCES = \
 	sql_code_dbp.c \
 	rendezvous.c \
 	$(C_FILES_SPARQL)
-	
+
 libwi_odbc_la_SOURCES = \
-        sql3.c \
-        scn3.c \
-        xpathp.c \
-        xpscn.c \
+	sql3.c \
+	scn3.c \
+	xpathp.c \
+	xpscn.c \
 	schspace.c \
 	arith.c \
 	aqueue.c \
@@ -320,7 +320,7 @@ libwi_odbc_la_SOURCES = \
 	sql_code_dbp.c \
 	rendezvous.c \
 	$(C_FILES_SPARQL)
-	
+
 #KUBL_REPL_FILES
 libwi_la_SOURCES += \
 	repldb.c \
@@ -531,7 +531,7 @@ SQL_FILES_SPARQL	= \
 SQL_FILES_1		= \
 	$(srcdir)/simile.sql \
 	$(srcdir)/oledb.sql \
-        $(srcdir)/information_schema.sql
+	$(srcdir)/information_schema.sql
 
 SQL_FILES_DDK		= \
 	$(srcdir)/users.sql \
@@ -878,7 +878,7 @@ generated: \
 	turtle_p.h \
 	xpathp.c \
 	xpathp.h \
-	xpscn.c 
+	xpscn.c
 
 
 # ----------------------------------------------------------------------
