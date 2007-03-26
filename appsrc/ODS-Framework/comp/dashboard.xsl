@@ -1098,8 +1098,8 @@
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
           <img class="w_title_icon"
-               src="images/icons/ods_poll_16.png"
-               alt="ODS-Polls icon" />
+               src="images/icons/ods_ab_16.png"
+               alt="ODS-AddressBook icon" />
             <span class="w_title_text"><?V WA_GET_APP_NAME ('AddressBook') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
@@ -1122,7 +1122,7 @@
             </th>
             <th>
               <v:url name="addressbook_orderby_subject"
-                     value="Poll"
+                     value="Contact"
                      url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
                                           '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
                                                                when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
