@@ -413,7 +413,6 @@ libwi_odbc_la_SOURCES += \
 	bif_xper.c
 
 libwi_base_la_cflags  = @VIRT_AM_CFLAGS@
-libwi_base_la_cflags  += -Dlint -DNEW_HASH
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Dk
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/zlib
