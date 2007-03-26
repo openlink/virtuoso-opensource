@@ -75,11 +75,25 @@ if (not e.ve_is_post and self.del_item is not null)
 			  <v:after-data-bind>
 if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 {
+  declare skey, _key, _uid any;
+  skey := control.te_rowset[5];
+  skey := deserialize (skey);
+  if (not isarray(skey))
+    {
+      _key := control.te_rowset[5];
+      _uid := '';
+    }
+  else
+    {
+      _key := skey[0];
+      _uid := skey[1];
+    }
   self.desc1.ufl_value := control.te_rowset[2];
   self.patt1.ufl_value := control.te_rowset[0];
   self.typ1.ufl_value := control.te_rowset[1];
   self.pl1.ufl_value := control.te_rowset[4];
-  self.key1.ufl_value := control.te_rowset[5];
+  self.key1.ufl_value := _key;
+  self.key2.ufl_value := _uid;
 }
 	                  </v:after-data-bind>
 			  <tr class="<?V case when self.edit_item = control.te_rowset[3] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
@@ -141,6 +155,10 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 		  <v:text name="pl1" value="" xhtml_size="110" xhtml_id="pl1" error-glyph="*">
 		  </v:text><br />
 
+		  <label for="key2">API Account</label>
+		  <v:text name="key2" value="" xhtml_size="110" xhtml_id="key2" error-glyph="*">
+		  </v:text><br />
+
 		  <label for="key1">API Key</label>
 		  <v:text name="key1" value="" xhtml_size="110" xhtml_id="key1" error-glyph="*">
 		  </v:text><br />
@@ -160,6 +178,7 @@ control.vc_enabled := 0;
 		  </v:button>
 		  <v:button name="save1" value="--case when self.edit_item is null then 'Add' else 'Update' end" action="simple">
 		      <v:on-post>
+declare _key any;
 if (not self.vc_is_valid)
   return;
 
@@ -177,6 +196,12 @@ self.patt1.ufl_value := trim (self.patt1.ufl_value);
 self.typ1.ufl_value  := trim (self.typ1.ufl_value);
 self.pl1.ufl_value   := trim (self.pl1.ufl_value);
 self.key1.ufl_value  := trim (self.key1.ufl_value);
+self.key2.ufl_value  := trim (self.key2.ufl_value);
+
+if (not length (self.key2.ufl_value))
+  _key := self.key1.ufl_value;
+else
+  _key := serialize (vector (self.key1.ufl_value, self.key2.ufl_value));
 
 if (not length (self.desc1.ufl_value) or
     not length (self.patt1.ufl_value) or
@@ -196,7 +221,7 @@ if (not length (self.desc1.ufl_value) or
 if (self.edit_item is null)
 {
   insert into DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN,RM_TYPE,RM_HOOK,RM_KEY,RM_DESCRIPTION)
-  values (self.patt1.ufl_value,self.typ1.ufl_value,self.pl1.ufl_value,self.key1.ufl_value,self.desc1.ufl_value)
+  values (self.patt1.ufl_value,self.typ1.ufl_value,self.pl1.ufl_value,_key,self.desc1.ufl_value)
   ;
 }
 else
@@ -205,7 +230,7 @@ else
     RM_PATTERN = self.patt1.ufl_value,
     RM_TYPE = self.typ1.ufl_value,
     RM_HOOK = self.pl1.ufl_value,
-    RM_KEY = self.key1.ufl_value,
+    RM_KEY = _key,
     RM_DESCRIPTION = self.desc1.ufl_value
     where RM_ID = self.edit_item;
 }
@@ -215,6 +240,7 @@ self.patt1.ufl_value := '';
 self.typ1.ufl_value := '';
 self.pl1.ufl_value := '';
 self.key1.ufl_value := '';
+self.key2.ufl_value := '';
 self.edit_item := null;
 control.vc_data_bind (e);
 self.maps.vc_data_bind (e);
