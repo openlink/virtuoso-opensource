@@ -149,10 +149,7 @@
 				RelativePath="..\libsrc\zlib\gzio.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\zlib\infblock.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\zlib\infcodes.c">
+				RelativePath="..\libsrc\zlib\infback.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\zlib\inffast.c">
@@ -162,9 +159,6 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\zlib\inftrees.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\zlib\infutil.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\zlib\trees.c">

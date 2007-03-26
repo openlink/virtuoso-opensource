@@ -54,6 +54,8 @@
 #define CLR_VERSION "1.0"
 #define DV_EXTENSION_OBJ 255
 /*#define CLR_DEBUG*/
+#undef isp_shema
+#define isp_schema(x) isp_schema_1(x)
 
 caddr_t bif_http_handler_aspx (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 

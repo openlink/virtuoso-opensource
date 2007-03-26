@@ -328,6 +328,12 @@
 				RelativePath="..\libsrc\Wi\rdf_mapping_jso.c">
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\rdfbox.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\rdfinf.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\rdfxml_parser.c">
 			</File>
 			<File
@@ -362,6 +368,9 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\search.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\search_in.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\security.c">
