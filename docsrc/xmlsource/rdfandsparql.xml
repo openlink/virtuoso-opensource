@@ -1571,6 +1571,227 @@ xsd:integer (in strg varchar) returns integer
 </sect2>
 </sect1>
 
+<sect1 id="rdfsparqlrule"><title>RDF Inference in Virtuoso</title>
+<sect2 id="rdfsparqlruleintro"><title>Introduction</title>
+<para>Virtuoso SPARQL can use an inference context for inferring triples that are not physically stored.
+Such an inference context can be built from one or more graphs containing RDF Schema triples. The supported
+RDF Schema or OWL constraints are imported from these graphs and are grouped together into rule bases.
+A rule base is a persistent entity that can be referenced by a SPARQL query or end point. Queries running
+with a given rule base work as if the triples asserted by this rule base were included in the graph or graphs accessed by the query.
+</para>
+<para>As of version 5.0, Virtuoso recognizes <emphasis>rdfs:subClassOf</emphasis> and <emphasis>rdfs:subPropertyOf</emphasis>.
+Other RDF Schema or OWL information is not taken into account.
+</para>
+</sect2>
+<sect2 id="rdfsparqlrulemake"><title>Making Rule Sets</title>
+<para>Since RDF Schema and OWL schemas are RDF graphs, these can be loaded into the triple store. Thus, in order to use
+such a schema as query context, one first loads the corresponding document into the triple store using <emphasis>ttlp</emphasis> or
+<emphasis>rdf_load_rdfxml</emphasis> or related functions. After the schema document is loaded, one can add the assertions therein
+into an inference context with the <emphasis>rdfs_rule_set</emphasis> function. This function specifies a logical name for the rule
+set plus a graph URI. It is possible to combine multiple schema graphs into a single rule set. A single schema
+graph may also independently participate in multiple rule sets.
+</para>
+<programlisting>
+rdfs_rule_set (in name varchar, in uri varchar, in remove int := 0)
+</programlisting>
+<para>This function adds the applicable facts of the graph into a rule set. The graph URI must correspond
+to the graph IRI of a graph stored in the triple store of the Virtuoso instance. If the remove argument
+is true, the specified graph is removed from the rule set instead.
+</para>
+</sect2>
+<sect2 id="rdfsparqlrulechange"><title>Changing Rule Sets</title>
+<para>Changing a rule set affects queries made after the change. Some queries may have been previously
+compiled and will not be changed as a result of modifying the rule set. When a rule set is changed, i.e.
+when <emphasis>rdfs_rule_set</emphasis> is called with the first argument set to a pre-existing rule set's name, all the graphs
+associated with this name are read and the relevant facts are added to a new empty rule set. Thus, if
+triples are deleted from or added to the graphs comprising the rule set, calling <emphasis>rdfs_rule_set</emphasis> will refresh
+the rule set to correspond to the state of the stored graphs.
+</para>
+</sect2>
+<sect2 id="rdfsparqlrulesubclassandsubprop"><title>Subclasses and Subproperties</title>
+<para>Virtuoso SPARQL supports RDF Schema subclasses and subproperties.
+</para>
+<para>The predicates <emphasis>rdfs:subClassOf</emphasis> and <emphasis>rdfs:subPropertyOf</emphasis> are
+recognized when they appear in graphs included in a rule set. When such a rule set is specified as a context
+for a SPARQL query, the following extra triples are generated as needed.
+</para>
+<para>For every <emphasis>?s rdf:type ?class</emphasis>, a triple <emphasis>?s rdf:type ?superclass</emphasis> is considered to exist,
+such that <emphasis>?superclass</emphasis> is a direct or indirect superclass of <emphasis>?class</emphasis>. Direct superclasses are
+declared with the <emphasis>rdfs:subClassOf</emphasis> predicate in the rule set graph. Transitivity of superclasses
+is automatically taken into account, meaning that if a is a superclass of b and b a superclass of c,
+then a is a superclass of c also. Cyclic superclass relations are not allowed. If such occur in the rule set data,
+the behavior is undefined but will not involve unterminating recursion.
+</para>
+<para>For every <emphasis>?s ?subpredicate ?o</emphasis>, a triple <emphasis>?s ?superpredicate ?o</emphasis>
+is considered to exist if the rule context declares <emphasis>?superpredicate</emphasis> to be a superpredicate
+of <emphasis>?predicate</emphasis>. This is done by havingthe triple <emphasis>?subpredicate rdfs:subPropertyOf ?superpredicate</emphasis>
+as part of the graphs making up the rule context. Transitivity is observed, thus if a is a subpredicate of b and b
+a subpredicate of c, then a is also a subpredicate of c.
+</para>
+</sect2>
+<sect2 id="rdfsparqlruleintro"><title>Implementation</title>
+<para>Triples entailed by subclass or subproperty statements in an inference context are not physically stored.
+Such triples are added to the result set by the query run time as needed. Also queries involving subclass or subproperty
+rules are not rewritten into unions of all the possible triple patterns that might imply the pattern that is requested.
+Instead, the SQL compiler adds special nodes that iterate over subclasses or subproperties at run time. The cost model
+also takes subclasses and subproperties into account when determining the approximate cardinality of triple patterns.
+</para>
+<para>In essence, Virtuoso's support for subclasses and subproperties is backward chaining, i.e. it does not materialize
+all implied triples but rather looks for the basic facts implying these triples at query evaluation time.
+</para>
+</sect2>
+<sect2 id="rdfsparqlruleintro"><title>Enabling Inference</title>
+<para>In a SPARQL query, the define inference clause is used to instruct the compiler to use the rules in the named rule set. For example:
+</para>
+<programlisting>
+SQL> rdfs_rule_set ('sample', 'rule_graph');
+
+SQL> sparql define inference "sample" select * from &lt;g&gt; where {?s ?p ?o};
+</programlisting>
+<para>will include all the implied triples into the result set, using the rules in the sample rule set.
+</para>
+<para>In SQL, if RDF_QUAD occurs in a select from clause, inference can be added with the table option <emphasis>WITH</emphasis>, as follows:
+</para>
+<programlisting>
+select * from rdf_quad table option (with 'sample') where g = iri_to_id ('xx', 0);
+</programlisting>
+<para>This is about the same as:
+</para>
+<programlisting>
+define inference "sample" select * from &lt;xx&gt; where {?s ?p ?o}
+</programlisting>
+</sect2>
+<sect2 id="rdfsparqlruleexamples"><title>Examples</title>
+<programlisting>
+ttlp ('
+  &lt;ic1&gt; a &lt;c1&gt; .
+  &lt;ic2&gt; a &lt;c2&gt; .
+  &lt;ic3&gt; a &lt;c3&gt; .
+  &lt;ic1&gt; &lt;p1&gt; &lt;ic1p1&gt; .
+  &lt;ic2&gt; &lt;p1&gt; &lt;ic2p1&gt;.
+  &lt;ic3&gt; &lt;p1&gt; &lt;ic3p1&gt; .
+  &lt;ic1&gt; &lt;cl2&gt; &lt;c2&gt; .
+  ', '', 'inft');
+</programlisting>
+<para>This loads a graph with some sample triples. The graph is called inft.
+</para>
+<programlisting>
+ttlp (' @prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+  &lt;c2&gt; rdfs:subClassOf &lt;c1&gt; .
+  &lt;c3&gt; rdfs:subClassOf &lt;c2&gt; .
+  &lt;c5&gt; rdfs:subClassOf &lt;c4&gt; .
+  &lt;p1&gt; rdfs:subPropertyOf &lt;p0&gt; .
+  ', '', 'sc');
+</programlisting>
+<para>This loads a graph called sc that contains assertions about subclasses and subproperties.
+</para>
+<programlisting>
+rdfs_rule_set ('inft', 'sc');
+</programlisting>
+<para>This defines the rule context inft that is initialized from the contents of graph sc.
+</para>
+<programlisting>
+sparql define inference 'inft' select ?s from &lt;inft&gt; where {?s a &lt;c1&gt; }
+</programlisting>
+<para>This returns the instances of c1. Since c2 and c3 are subclasses of c1, instances of
+c1, c2 and c3 are all returned. This results in the subjects ic1, ic2 and ic3.
+</para>
+<programlisting>
+select id_to_iri (s)
+from rdf_quad table option (with 'inft')
+where g = iri_to_id ('inft',0)
+  and p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0)
+  and o = iri_to_id ('c1', 0);
+</programlisting>
+<para>This is the corresponding SQL query, internally generated by the SPARQL query.
+</para>
+</sect2>
+<sect2 id="rdfsparqlrulefulltext"><title>Using Full Text Search in SPARQL</title>
+<para>Virtuoso's triple store supports optional full text indexing of RDF object values since version 5.0.
+It is possible to declare that objects of triples with a given predicate or graph get indexed.
+The graphs and triples may be enumerated or a wildcard may be used.
+</para>
+<para>The triples for which a full text index entry exists can be found using the <emphasis>bif:contains</emphasis>
+or related filters and predicates.
+</para>
+<para>For example, the query:
+</para>
+<programlisting>
+select *
+  from &lt;people&gt;
+ where {?s foaf:Name ?name . ?name bif_contains "rich*" .}
+</programlisting>
+<para>would match all subjects whose <emphasis>foaf:Name</emphasis> contained a word starting with Rich.
+This would match Richard, Richie etc.
+</para>
+<para>If the <emphasis>bif:contains</emphasis> or related predicate is applied to an object that is not
+a string or is not the object of an indexed triple, no match will be found.
+</para>
+<para>The syntax for text patterns is identical to the syntax for the SQL contains predicate.
+</para>
+<para>The SPARQL/SQL optimizer determines whether the text pattern will be used to drive the query or whether it
+will filter results after other conditions are applied first. As opposed to <emphasis>bif:contains</emphasis>,
+regexp matching never drives the query or makes us of an index, thus regexps are in practice checked after other conditions.
+</para>
+</sect2>
+<sect2 id="rdfsparqlrulespecifywhatindex"><title>Specifying What to Index</title>
+<para>Whether the object of a given triple is indexed in the text index depends on indexing rules. If at least one
+indexing rule matches the triple, the object gets indexed if the object is a string. An indexing rule specifies
+a graph and a predicate. Either may be an IRI or NULL, in which case it matches all IRI's.
+</para>
+<para>Rules also have a 'reason', which can be used to group rules into application-specific sets. A triple will stop
+being indexed only after all rules mandating its indexing are removed. When an application requires indexing a
+certain set of triples, rules are added to for the purpose. These rules are tagged with the name of the application
+as their reason. When an application no longer requires indexing, the rules belonging to this application can be
+removed. This will not turn off indexing if another application still needs certain triples to stay indexed.
+</para>
+<para>Indexing is enabled/disable for specific graph/predicate combinations with:
+</para>
+<programlisting>
+create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar, in reason varchar) returns integer
+</programlisting>
+<programlisting>
+create function DB.DBA.RDF_OBJ_FT_RULE_DEL (in rule_g varchar, in rule_p varchar, in reason varchar) returns integer
+</programlisting>
+<para>The first function adds a rule. The two first arguments are the text representation of the IRI's for the graph
+and predicate. If NULL is given then all graph's or predicates match. Specifying both as NULL means that all
+string valued objects will be added to a text index.
+</para>
+<para>The reason argument is an arbitrary string identifying the application that needs this rule. Two applications can
+add the same rule. Removing one of them will still keep the rule in effect.
+</para>
+<para>The second function reverses the effect of the first. Only a rule that actually has been added can be deleted.
+Thus one cannot say that all except a certain enumerated set should be indexed.
+</para>
+<programlisting>
+Here goes Ivan's example:
+</programlisting>
+</sect2>
+<sect2 id="rdfsparqlruletimeindexing"><title>Time of Indexing</title>
+<para>The triple store's text index is by default in manual batch mode. This means that changes in triples are periodically
+reflected in the text index but are not maintained in strict synchrony. This is much more efficient than keeping the
+indices in constant synchrony. This setting may be altered with the <emphasis>db.dba.vt_batch_update</emphasis> stored procedure.
+</para>
+<para>To force synchronization of the RDF text index, use:
+</para>
+<programlisting>
+SQL> db.dba.vt_inc_index_db_dba_rdf_obj ();
+</programlisting>
+<para>To set the text index to follow the triples in real time, use:
+</para>
+<programlisting>
+SQL> db.dba.vt_batch_update ('DB.DBA.RDF_OBJ', 'ON', null);
+</programlisting>
+<para>To set the text index to be updated every 10 minutes, use:
+</para>
+<programlisting>
+db.dba.vt_batch_update ('DB.DBA.RDF_OBJ', 'ON', 10);
+</programlisting>
+<para>To make the update always manual, specify NULL as the last argument above.
+</para>
+</sect2>
+</sect1>
+
 <sect1 id="rdfsparqlprotocolendpoint"><title>Virtuoso SPARQL Query Service</title>
 <sect2 id="rdfsparqlprotocolendpointintro"><title>Introduction</title>
 <para>The Virtuoso SPARQL query service implements the <ulink url="http://www.w3.org/TR/rdf-sparql-protocol/">SPARQL Protocol for RDF</ulink>
