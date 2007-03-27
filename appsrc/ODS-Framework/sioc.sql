@@ -356,6 +356,8 @@ create procedure ods_sioc_forum_type (in app varchar)
   return sioc_iri (pclazz);
 };
 
+DB.DBA.RDF_OBJ_FT_RULE_ADD (get_graph (), null, 'ODS RDF Data');
+
 create procedure ods_graph_init ()
 {
   declare iri, site_iri, graph_iri varchar;
@@ -1081,6 +1083,7 @@ create procedure fill_ods_sioc_online (in doall int := 0, in iri_result int := 1
     result_names (res_iri);
   connection_set ('iri_result', iri_result);
   fill_ods_sioc (doall);
+  DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
   registry_set ('__ods_sioc_version', ods_current_ver ());
   exec ('checkpoint');
 };
