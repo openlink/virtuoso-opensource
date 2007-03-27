@@ -3518,6 +3518,7 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
           sparp_jso_validate_format (sparp, tgt->_.triple.native_formats[fld_ctr]);
           tgt->_.triple.tr_fields[fld_ctr] = sparp_tree_full_copy (sparp, orig->_.triple.tr_fields[fld_ctr], parent_gp);
         }
+      tgt->_.triple.options = sparp_treelist_full_copy (sparp, orig->_.triple.options, parent_gp);
       return tgt;
     case SPAR_BUILT_IN_CALL:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);

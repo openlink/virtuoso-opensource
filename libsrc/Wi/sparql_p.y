@@ -145,7 +145,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token IDENTIFIED_L	/*:: PUNCT("WHERE"), SPAR, LAST1("IDENTIFIED BY"), LAST1("IDENTIFIED\r\nBY"), LAST1("IDENTIFIED #qq\r\nBY"), ERR("IDENTIFIED"), ERR("IDENTIFIED bad") ::*/
 %token IN_L		/*:: PUNCT_SPAR_LAST("IN") ::*/
 %token INDEX_L		/*:: PUNCT_SPAR_LAST("INDEX") ::*/
+%token INFERENCE_L	/*:: PUNCT_SPAR_LAST("INFERENCE") ::*/
 %token INSERT_L		/*:: PUNCT_SPAR_LAST("INSERT") ::*/
+%token INTO_L		/*:: PUNCT_SPAR_LAST("INTO") ::*/
 %token IRI_L		/*:: PUNCT_SPAR_LAST("IRI") ::*/
 %token isBLANK_L	/*:: PUNCT_SPAR_LAST("isBLANK") ::*/
 %token isIRI_L		/*:: PUNCT_SPAR_LAST("isIRI") ::*/
@@ -156,7 +158,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token LIKE_L		/*:: PUNCT_SPAR_LAST("LIKE") ::*/
 %token LIMIT_L		/*:: PUNCT_SPAR_LAST("LIMIT") ::*/
 %token LITERAL_L	/*:: PUNCT_SPAR_LAST("LITERAL") ::*/
+%token LOAD_L		/*:: PUNCT_SPAR_LAST("LOAD") ::*/
 %token MAKE_L		/*:: PUNCT_SPAR_LAST("MAKE") ::*/
+%token MODIFY_L		/*:: PUNCT_SPAR_LAST("MODIFY") ::*/
 %token NAMED_L		/*:: PUNCT_SPAR_LAST("NAMED") ::*/
 %token NIL_L		/*:: PUNCT_SPAR_LAST("NIL") ::*/
 %token NOT_L		/*:: PUNCT_SPAR_LAST("NOT") ::*/
@@ -264,7 +268,11 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_triples1
 %type <nothing> spar_props_opt
 %type <nothing> spar_props
-%type <nothing> spar_graph_nodes
+%type <nothing> spar_objects
+%type <nothing> spar_ograph_node
+%type <trees> spar_triple_optionlist_opt
+%type <backstack> spar_triple_option_commalist
+%type <trees> spar_triple_option
 %type <tree> spar_verb
 %type <tree> spar_triples_node
 %type <nothing> spar_cons_collection
@@ -413,7 +421,7 @@ spar_define		/* [Virt]	Define		 ::=  'DEFINE' QNAME (QNAME | Q_IRI_REF | String 
         | DEFINE_L QNAME Q_IRI_REF { sparp_define (sparp_arg, $2, Q_IRI_REF, $3); }
 	| DEFINE_L QNAME SPARQL_STRING { sparp_define (sparp_arg, $2, SPARQL_STRING, $3); }
 	| DEFINE_L QNAME SPARQL_INTEGER { sparp_define (sparp_arg, $2, SPARQL_INTEGER, $3); }
-	| DEFINE_L QNAME spar_global_var { sparp_define (sparp_arg, $2, SPAR_VARIABLE, $3); }
+	| DEFINE_L QNAME spar_global_var { sparp_define (sparp_arg, $2, SPAR_VARIABLE, (caddr_t)$3); }
 	;
 
 spar_base_decl_opt	/* [3]  	BaseDecl	  ::=  	'BASE' Q_IRI_REF	*/
@@ -684,21 +692,46 @@ spar_props_opt		/* [30]  	PropertyList	  ::=  	PropertyListNotEmpty?	*/
 
 spar_props		/* [31]  	PropertyListNotEmpty	  ::=  	Verb ObjectList ( ';' PropertyList )?	*/
 	: spar_verb { t_set_push (&(sparp_env()->spare_context_predicates), $1); }
-	    spar_graph_nodes { t_set_pop (&(sparp_env()->spare_context_predicates)); }
+	    spar_objects { t_set_pop (&(sparp_env()->spare_context_predicates)); }
 	| spar_props _SEMI
 	    spar_verb { t_set_push (&(sparp_env()->spare_context_predicates), $3); }
-	    spar_graph_nodes { t_set_pop (&(sparp_env()->spare_context_predicates)); }
+	    spar_objects { t_set_pop (&(sparp_env()->spare_context_predicates)); }
 	| spar_props _SEMI error { sparyyerror ("Predicate expected after semicolon"); }
 	| error { sparyyerror ("Predicate expected"); }
 	;
 
-spar_graph_nodes	/* [32]  	ObjectList	  ::=  	GraphNode ( ',' ObjectList )?	*/
-	: spar_graph_node {
-		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL, NULL, $1); }
-	| spar_graph_nodes _COMMA spar_graph_node {
-		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL, NULL, $3); }
-	| spar_graph_nodes _COMMA error { sparyyerror ("Object expected after comma"); }
+spar_objects		/* [32]*	ObjectList	 ::=  ObjGraphNode ( ',' ObjectList )?	*/
+	: spar_ograph_node { }
+	| spar_objects _COMMA spar_ograph_node { }
+	| spar_objects _COMMA error { sparyyerror ("Object expected after comma"); }
 	| error { sparyyerror ("Object expected"); }
+	;
+
+spar_ograph_node	/* [Virt]	ObjGraphNode	 ::=  GraphNode TripleOptions?	*/
+	: spar_graph_node spar_triple_optionlist_opt {
+		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL, NULL, $1, $2); }
+	;
+
+spar_triple_optionlist_opt	/* [Virt]	TripleOptions	 ::=  'OPTION' '(' TripleOption ( ',' TripleOption )? ')'	*/
+	: /* empty */	{ $$ = NULL; }
+	| OPTION_L _LPAR spar_triple_option_commalist _RPAR { $$ = (SPART **)t_revlist_to_array ($3); }
+	;
+
+spar_triple_option_commalist
+	: spar_triple_option	{ $$ = NULL; t_set_push (&($$), ((SPART **)($1))[0]); t_set_push (&($$), ((SPART **)($1))[1]); }
+	| spar_triple_option_commalist _COMMA spar_triple_option	{ $$ = $1;  t_set_push (&($$), ((SPART **)($3))[0]); t_set_push (&($$), ((SPART **)($3))[1]); }
+	;
+
+spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF | SPARQL_STRING )	*/
+	: INFERENCE_L SPARQL_PLAIN_ID {
+		if (strcasecmp ($2, "none"))
+		  $$ = (SPART **)t_list (2, INFERENCE_L, $2);
+		else
+		  $$ = (SPART **)t_list (2, INFERENCE_L, NULL); }
+	| INFERENCE_L QNAME {
+		  $$ = (SPART **)t_list (2, INFERENCE_L, sparp_expand_qname_prefix (sparp_arg, $2)); }
+        | INFERENCE_L Q_IRI_REF { $$ = (SPART **)t_list (2, INFERENCE_L, $2); }
+	| INFERENCE_L SPARQL_STRING { $$ = (SPART **)t_list (2, INFERENCE_L, $2); }
 	;
 
 spar_verb		/* [33]  	Verb	  ::=  	VarOrBlankNodeOrIRIref | 'a'	*/
@@ -720,8 +753,8 @@ spar_triples_node	/* [34]  	TriplesNode	  ::=  	Collection | BlankNodePropertyLi
 		spar_gp_add_triple_or_special_filter (sparp_arg,
 		    NULL, NULL,
 		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
-		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_nil)
-		  );
+		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_nil),
+		  NULL );
 		t_set_pop (&(sparp_env()->spare_context_subjects));
 		$$ = t_set_pop (&(sparp_env()->spare_context_subjects)); }
 	;
@@ -735,17 +768,17 @@ spar_cons_collection	/* [32]  	ObjectList	  ::=  	GraphNode ( ',' ObjectList )?	
 	: spar_graph_node {
 		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL,
 		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
-		  $1 ); }
+		  $1, NULL ); }
 	| spar_cons_collection spar_graph_node {
 		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:cons"), 1); 
 		spar_gp_add_triple_or_special_filter (sparp_arg,
 		    NULL, NULL,
 		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
-		  bn );
+		  bn, NULL );
 		sparp_env()->spare_context_subjects->data = bn;
 		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL,
 		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
-		  $2 ); }
+		  $2, NULL ); }
 	;
 
 spar_graph_node		/* [37]  	GraphNode	  ::=  	VarOrTerm | TriplesNode	*/

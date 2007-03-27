@@ -4253,6 +4253,7 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
   triple_case_t **tc_list = tree->_.triple.tc_list;
   quad_map_t *qm;
   dk_set_t common_tblopts = ssg->ssg_sparp->sparp_env->spare_common_sql_table_options;
+  dk_set_t tblopts = common_tblopts;
 #ifdef DEBUG
   if (1 != BOX_ELEMENTS_0 (tc_list))
     spar_internal_error (ssg->ssg_sparp, "ssg_" "print_table_exp(): qm_list does not contain exactly one qm");
@@ -4277,10 +4278,22 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
       ssg_qr_uses_table (ssg, qm->qmTableName);
       ssg_puts (" AS ");
       ssg_prin_id (ssg, tabid);
-      if (NULL != common_tblopts)
+      {
+        int idx;
+        caddr_t active_inference = ssg->ssg_sparp->sparp_env->spare_inference_name;
+        SPART **triple_opts = tree->_.triple.options;
+        for (idx = BOX_ELEMENTS_0 (triple_opts) - 2; idx >= 0; idx -= 2)
+          {
+            if ((ptrlong)INFERENCE_L == (ptrlong)(triple_opts [idx]))
+              active_inference = (caddr_t)(triple_opts [idx+1]);
+          }
+        if (NULL != active_inference)
+          t_set_push (&tblopts, t_box_sprintf (200, "WITH '%.100s'", active_inference));
+      }
+      if (NULL != tblopts)
         {
           ssg_puts (" TABLE OPTION (");
-          ssg_prin_option_commalist (ssg, common_tblopts, 0);
+          ssg_prin_option_commalist (ssg, tblopts, 0);
           ssg_puts (") ");
           }
       }

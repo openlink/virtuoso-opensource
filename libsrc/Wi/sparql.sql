@@ -157,14 +157,14 @@ create procedure DB.DBA.RDF_GLOBAL_RESET ()
   delete from DB.DBA.RDF_URL;
   delete from DB.DBA.RDF_IRI;
   delete from DB.DBA.RDF_PREFIX;
-  delete from DB.DBA.RDF_OBJ;
+--  delete from DB.DBA.RDF_OBJ;
   delete from DB.DBA.RDF_DATATYPE;
   delete from DB.DBA.RDF_LANGUAGE;
   delete from DB.DBA.RDF_OBJ_FT_RULES;
   sequence_set ('RDF_URL_IID_NAMED', 1000000, 0);
   sequence_set ('RDF_URL_IID_BLANK', 1000000000, 0);
   sequence_set ('RDF_PREF_SEQ', 1, 0);
-  sequence_set ('RDF_RO_ID', 1, 0);
+--  sequence_set ('RDF_RO_ID', 1, 0);
   sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 0);
   sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 0);
   TTLP (

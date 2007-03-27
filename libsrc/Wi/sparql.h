@@ -149,6 +149,7 @@ typedef struct sparp_env_s
     caddr_t             spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
     caddr_t             spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping */
+    caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
 #if 0 /* These will be used when libraries of inference rules are introduced. Don't forget to patch sparp_clone_for_variant()! */
     struct sparp_env_s *spare_parent_env;		/*!< Pointer to parent env */
     id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */
@@ -363,6 +364,7 @@ typedef struct spar_tree_s
       caddr_t tabid;
         triple_case_t **tc_list;
         struct qm_format_s *native_formats[SPART_TRIPLE_FIELDS_COUNT];
+        SPART **options;
         ptrlong ft_type;
       } triple;
     struct { /* Note that all first members of \c retval case should match to \c var case */
@@ -476,13 +478,13 @@ extern caddr_t spar_strliteral (sparp_t *sparp, const char *sparyytext, int strg
 extern caddr_t spar_mkid (sparp_t * sparp, const char *prefix);
 extern void spar_change_sign (caddr_t *lit_ptr);
 
-extern void sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t value);
+extern void sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, ccaddr_t value);
 extern void spar_selid_push (sparp_t *sparp);
 extern caddr_t spar_selid_pop (sparp_t *sparp);
 extern void spar_gp_init (sparp_t *sparp, ptrlong subtype);
 extern SPART *spar_gp_finalize (sparp_t *sparp);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
-extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object);
+extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **options);
 extern int spar_filter_is_freetext (SPART *filt);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
 extern void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t precodes, int suppress_filters_for_good_names);
@@ -493,7 +495,7 @@ extern SPART **spar_retvals_of_delete (sparp_t *sparp, SPART *graph_to_patch, SP
 extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **order, caddr_t limit, caddr_t offset);
-extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object);
+extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **options);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);

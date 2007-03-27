@@ -438,7 +438,7 @@ static const char *sparp_integer_defines[] = {
 static const char *sparp_var_defines[] = { NULL };
 
 void
-sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t value)
+sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, ccaddr_t value)
 {
   switch (value_lexem_type)
     {
@@ -499,6 +499,13 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       sparp->sparp_env->spare_storage_name = t_box_dv_uname_string (value);
       return;
     }
+      if (!strcmp (param, "input:inference"))
+        {
+          if (NULL != sparp->sparp_env->spare_inference_name)
+            spar_error (sparp, "'define %.30s' is used more than once", param);
+          sparp->sparp_env->spare_inference_name = t_box_dv_uname_string (value);
+          return;
+        }
       if ((11 < strlen (param)) && !memcmp (param, "input:grab-", 11))
     {
       rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_grab);
@@ -1057,7 +1064,7 @@ static ptrlong usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT] = {
   SPART_VARR_NOT_NULL };					/* object	*/
 
 void
-spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object)
+spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
   SPART *triple;
@@ -1116,12 +1123,12 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
           return;
         }
     }
-  triple = spar_make_plain_triple (sparp, graph, subject, predicate, object);
+  triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, options);
   spar_gp_add_member (sparp, triple);
 }
 
 SPART *
-spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object)
+spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
   caddr_t key;
@@ -1129,11 +1136,11 @@ spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
   SPART *triple;
   key = t_box_sprintf (0x100, "%s-t%d", env->spare_selids->data, sparp->sparp_key_gen);
   sparp->sparp_key_gen += 1;
-  triple = spartlist (sparp, 13, SPAR_TRIPLE,
+  triple = spartlist (sparp, 14, SPAR_TRIPLE,
     graph, subject, predicate, object,
     env->spare_selids->data, key, NULL,
     NULL, NULL, NULL, NULL,
-    0L );
+    options, 0L );
   for (fctr = 0; fctr < SPART_TRIPLE_FIELDS_COUNT; fctr++)
     {
       SPART *fld = triple->_.triple.tr_fields[fctr];
@@ -1896,6 +1903,8 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	          sprintf (buf, " ft predicate %d", (int)(tree->_.triple.ft_type));
 	          SES_PRINT (ses, buf);
                 }
+              if (NULL != tree->_.triple.options)
+                spart_dump (tree->_.triple.options, ses, indent+2, "OPTIONS", -2);
 	      spart_dump (tree->_.triple.tr_graph, ses, indent+2, "GRAPH", -1);
 	      spart_dump (tree->_.triple.tr_subject, ses, indent+2, "SUBJECT", -1);
 	      spart_dump (tree->_.triple.tr_predicate, ses, indent+2, "PREDICATE", -1);
