@@ -21,7 +21,7 @@
 TOP=@TOP@
 
 nodist_demo_DATA = demo.db demo.ini
-nodist_vad_DATA = doc_dav.vad
+nodist_vad_DATA = doc_dav.vad demo_dav.vad
 
 if WITH_HTMLDOC
 #dist_htmldoc_DATA = $(top_srcdir)/docsrc/html_virt/*.html
@@ -39,31 +39,39 @@ uninstall-local:
 	rm -f "$(htmldocdir)"/*.html
 
 CLEANFILES =  \
+	*.vad \
+	*.output \
+	*.log \
+	default.ini \
 	demo.db \
-	demo.trx \
-	demo.log \
+	demo.ini \
 	demo.lck \
 	demo.tdb \
-	demo.ini \
-	default.ini \
-	mkdemo.output \
-	virtuoso.tdb \
+	demo.trx \
+	doc_vad_dav.xml \
+	make__demo_vad.xml \
+	mkdemo.tdb \
+	mkdoc.tdb \
 	srv_errors.txt \
-	xmemdump.txt \
+	vad_version \
+	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.pxa \
-	*.vad \
-	doc_vad_dav.xml \
-	mkdoc.output
+	virtuoso.tdb \
+	virtuoso.trx \
+	xmemdump.txt
 
-#	$(top_srcdir)/binsrc/tutorial/tutorial_dav.vad $(top_srcdir)/binsrc/yacutia/conductor_dav.vad $(top_srcdir)/binsrc/bpel/bpel_dav.vad
-demo.db: mkdemo.sh mkdemo.sql mkdemo.ini doc_dav.vad 
+demo.db: mkdemo.sh mkdemo.sql mkdemo.ini doc_dav.vad demo_dav.vad
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HTMLDOC="$(HTMLDOC)" \
 	     prefix="$(prefix)" HOST=localhost sh mkdemo.sh
 
 doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HTMLDOC="$(HTMLDOC)" \
 	     HOST=localhost sh mkdoc.sh
+
+demo_dav.vad: make_vad.sh
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HTMLDOC="$(HTMLDOC)" \
+	     HOST=localhost sh make_vad.sh
 
 
 # ----------------------------------------------------------------------
@@ -93,6 +101,7 @@ EXTRA_DIST = \
 	EMP8 \
 	EMP9 \
 	flags.tar.gz \
+	make_vad.sh \
 	mkdemo.bat \
 	mkdemo.ini \
 	mkdemo.sh \

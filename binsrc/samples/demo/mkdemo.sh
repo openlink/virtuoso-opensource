@@ -362,12 +362,10 @@ then
         (cd $HOME/binsrc/samples/sparql_demo ; make)
         (cd $HOME/binsrc/tutorial ; make)
         (cd $HOME/binsrc/yacutia ; make)
-        (cd $HOME/appsrc ; make)
     fi
-    $LN $HOME/appsrc/*/*_dav.vad .
 else
-    (cd $BPEL; chmod +x make_vad.sh ; ./make_vad.sh)
-    (chmod +x mkdoc.sh ; ./mkdoc.sh)
+    (cd $BPEL; make )
+    [ -f doc_dav.vad ] || (chmod +x mkdoc.sh ; ./mkdoc.sh)
 fi
 
 # curpwd=`pwd`
