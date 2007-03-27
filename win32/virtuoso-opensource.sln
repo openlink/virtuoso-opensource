@@ -333,6 +333,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wbxml2", "wbxml2.vcproj", "
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rdf_mappers_vad", "rdf_mappers.vcproj", "{C6451C76-DC57-11DB-930B-CD6B662399AA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AFB1D909-86D0-49DE-8BD8-DF89349F934E} = {AFB1D909-86D0-49DE-8BD8-DF89349F934E}
+		{F4E88BFA-FC96-439D-9E67-0A92AB541EE0} = {F4E88BFA-FC96-439D-9E67-0A92AB541EE0}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -546,6 +552,10 @@ Global
 		{5582D8D0-DB93-11DB-930B-CD6B662399AA}.Debug.Build.0 = Debug|Win32
 		{5582D8D0-DB93-11DB-930B-CD6B662399AA}.Release.ActiveCfg = Release|Win32
 		{5582D8D0-DB93-11DB-930B-CD6B662399AA}.Release.Build.0 = Release|Win32
+		{C6451C76-DC57-11DB-930B-CD6B662399AA}.Debug.ActiveCfg = Debug|Win32
+		{C6451C76-DC57-11DB-930B-CD6B662399AA}.Debug.Build.0 = Debug|Win32
+		{C6451C76-DC57-11DB-930B-CD6B662399AA}.Release.ActiveCfg = Release|Win32
+		{C6451C76-DC57-11DB-930B-CD6B662399AA}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection
