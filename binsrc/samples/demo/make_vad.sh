@@ -21,8 +21,6 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
-set -x
-
 VERSION="1.00.00"
 LOGDIR=`pwd`
 LOGFILE="${LOGDIR}/make__demo_vad.log"
@@ -411,8 +409,8 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/StoreDB_schema_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/StoreDB_data_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/StoreDB_proc_vad.sql', 1, 'report', 1);" >> $STICKER
-  #echo "      VHOST_DEFINE (lpath=>'/PortalCSVS', ppath=>'/IBuySpy/PortalCSVS/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
-  #echo "      VHOST_DEFINE (lpath=>'/StoreCSVS', ppath=>'/IBuySpy/StoreCSVS/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
+  echo "      VHOST_DEFINE (lpath=>'/PortalCSVS', ppath=>'/IBuySpy/PortalCSVS/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
+  echo "      VHOST_DEFINE (lpath=>'/StoreCSVS', ppath=>'/IBuySpy/StoreCSVS/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/CreateDBLogin1_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/CreateTables1_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/CreateTables2_vad.sql', 1, 'report', 1);" >> $STICKER
