@@ -1825,28 +1825,11 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _start_path varchar
     }
   else if (mime_type = 'text/html' or ctype = 'text/html')
     {
-      declare profile varchar;
-      declare xt any;
-      xt := xtree_doc (content, 2);
-      profile := cast (xpath_eval ('/html/head/@profile', xt) as varchar);
-      if (get_keyword ('meta_erdf', opts, 0) = 1 and strstr (profile, 'http://purl.org/NET/erdf/profile') is not null)
+      if (get_keyword ('meta_grddl', opts, 0) = 1 and __proc_exists ('DB.DBA.RDF_LOAD_HTML_RESPONSE'))
         {
-	  xd := xslt ('http://local.virt/erdf2rdfxml', xt, vector ('baseUri', _base));
-	  DB.DBA.RDF_LOAD_RDFXML (serialize_to_UTF8_xml (xd), '', _graph);
-	}
-      -- currently no profile in RDFa, we try it to extract directly
-      if (get_keyword ('meta_rdfa', opts, 0) = 1)
-        {
-	  declare xmlnss, i, l, nss any;
-	  xmlnss := xmlnss_get (xt);
-	  nss := '<namespaces>';
-          for (i := 0, l := length (xmlnss); i < l; i := i + 2)
-	    {
-	      nss := nss || sprintf ('<namespace prefix="%s">%s</namespace>', xmlnss[i], xmlnss[i+1]);
-	    }
-	  nss := nss || '</namespaces>';
-	  xd := xslt ('http://local.virt/rdfa2rdfxml', xt, vector ('baseUri', _base, 'nss', xtree_doc (nss)));
-	  DB.DBA.RDF_LOAD_RDFXML (serialize_to_UTF8_xml (xd), '', _graph);
+	  declare aq, ps, _key any;
+	  aq := ps := _key := null;
+	  DB.DBA.RDF_LOAD_HTML_RESPONSE (_graph, _graph, null, content, aq, ps, _key);
 	}
     }
 }

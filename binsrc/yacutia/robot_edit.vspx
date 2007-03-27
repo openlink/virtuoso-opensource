@@ -325,12 +325,11 @@
 		  <v:check-box name="meta_rss" value="1" initial-checked="--get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rss" />
 		  <label for="meta_rss">RSS/RDF</label>&#160;
 
-		  <v:check-box name="meta_rdfa" value="1" initial-checked="--get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rdfa" />
-		  <label for="meta_rdfa">RDFa</label>&#160;
+		  <?vsp if (__proc_exists ('DB.DBA.RDF_LOAD_HTML_RESPONSE'))  { ?>
+		  <v:check-box name="meta_grddl" value="1" initial-checked="--get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_grddl" />
+		  <label for="meta_grddl">GRDDL</label>&#160;
+		  <?vsp } ?>
 
-		  <v:check-box name="meta_erdf" value="1" initial-checked="--get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_erdf" >
-		  </v:check-box>
-		  <label for="meta_erdf">eRDF</label>&#160;
                 </div>
               </td>
             </tr>
@@ -417,10 +416,9 @@
 
 			opts := vector (
 			 'meta_foaf', atoi (get_keyword ('meta_foaf', params, '0')),
-			 'meta_rdf', atoi (get_keyword ('meta_atom', params, '0')),
+			 'meta_rdf', atoi (get_keyword ('meta_rdf', params, '0')),
 			 'meta_rss',   atoi (get_keyword ('meta_rss', params, '0')),
-			 'meta_erdf', atoi (get_keyword ('meta_erdf', params, '0')),
-			 'meta_rdfa', atoi (get_keyword ('meta_rdfa', params, '0'))
+			 'meta_grddl', atoi (get_keyword ('meta_grddl', params, '0'))
 			);
 			self._udata := opts;
 
