@@ -228,8 +228,9 @@ create procedure wa_app_to_type (in app varchar)
 	'photos','oGallery',
 	'community','community',
 	'bookmark','bookmark',
+	'discussion','nntpf',
 	'polls','Polls',
-	'new','nntpf'
+	'addressbook', 'AddressBook'
 	), app);
 };
 
@@ -245,7 +246,8 @@ create procedure wa_type_to_app (in app varchar)
 	'Community','community',
 	'Bookmark','bookmark',
 	'nntpf',    'discussion',
-	'Polls',    'polls'
+	'Polls',       'polls',
+	'AddressBook', 'addressbook'
 	), app);
 };
 
@@ -261,7 +263,7 @@ create procedure wa_type_to_appg (in app varchar)
 	'Community','Communities',
 	'Bookmark','Bookmarks',
 	'nntpf',   'Discussions',
-	'Polls',   'Polls'
+	'addressbook', 'AddressBooks'
 	), app);
 };
 
