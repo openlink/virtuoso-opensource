@@ -68,6 +68,9 @@
            }
            
            
+           declare full_search_exp any;
+           if(length(searchtxt))
+           {
            searchtxt := (case when searchwords_option in ('0','3') then subseq(searchtxt,4)
                               when searchwords_option='1' then subseq(searchtxt,5)
                               else subseq(searchtxt,1)
@@ -79,9 +82,8 @@
            if(searchwords_option='3')
                    searchtxt:='Newsgroups and not('||searchtxt||')';
 
-		  declare full_search_exp any;
-          if(length(searchtxt))
              full_search_exp := vector (searchtxt);
+          }
           else
 		  full_search_exp := vector (get_keyword ('s_text', params));
              

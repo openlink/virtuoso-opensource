@@ -41,6 +41,11 @@
         <v:form name="nntpf" type="simple">
 	  <v:before-data-bind>
 	   <![CDATA[
+      if(length(self.u_name) and (not nntpf_check_is_dav_admin (self.u_name, self.u_full_name)))
+         self.vc_redirect (self.odsbar_ods_gpath||'login.vspx?URL=/nntpf/nntpf_main.vspx');
+      else if (not nntpf_check_is_dav_admin (self.u_name, self.u_full_name))
+         self.vc_redirect (self.odsbar_ods_gpath||'login.vspx?URL=/nntpf/nntpf_odsnewsgroups_admin.vspx');
+
 	      self.grp_sel_thr := NULL;
 	   ]]>
 	   </v:before-data-bind>
@@ -68,7 +73,7 @@
               <v:template type="simple" condition="nntpf_groups_defined_p() and  nntpf_check_is_dav_admin (self.u_name, self.u_full_name)">
                 <div class="group_list">
 		  <vm:geo-link><img src="http://i.geourl.org/geourl.png" border="0"/></vm:geo-link>
-                  <table border="1" cellspacing="0" cellpadding="2" width="98%">
+                  <table border="0" cellspacing="0" cellpadding="2" width="98%">
                    <tr>
                     <td>
                       <vm:odsgroup-list/>
@@ -77,7 +82,7 @@
                   <v:template type="simple" condition="nntpf_conductor_installed_p()">
                    <![CDATA[&nbsp;]]>
                    <v:url value="Available newsgroups from Conductor" format="%s"
-                       url="nntpf_yacutia.vspx"
+                          url="--case when ( self.u_name ='dav' )then '#' else 'nntpf_yacutia.vspx' end"
                        enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
                    <br/><br/>
                  </v:template>

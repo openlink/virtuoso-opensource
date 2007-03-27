@@ -250,17 +250,6 @@
     <v:variable name="force_list" type="integer" default="1"/>
     <v:variable name="dta" type="any"/>
     <v:variable name="mtd" type="any"/>
-      <v:on-init>
-        <![CDATA[
-         
-         if(self.vc_event.ve_is_post and get_keyword ('groups_savechanges', self.vc_event.ve_params, '')<>'')
-         {
---               update  DB.DBA.NEWS_GROUPS set NG_STAT=1 where  NG_GROUP in ();
---               update  DB.DBA.NEWS_GROUPS set NG_STAT=-1 where NG_GROUP in ();
-
-         }
-        ]]>
-      </v:on-init>
 
       <v:before-data-bind>
         <![CDATA[
@@ -339,9 +328,11 @@
                          else '' end));
               ?>
                 <td align="left">
+<!--
                   <v:check-box name="nntp_groups_state"
                                value="1"
                                initial-checked="--(case when (control.vc_parent as vspx_row_template).te_rowset[3]<0 then 1 else 0 end)"  />
+-->
                 </td>
                 <td>
                   <v:url name="nntp_groups"
@@ -399,7 +390,10 @@
             <vm:ds-navigation-new data-set="ds_group_list"/>
           </td></tr>
           <tr><td colspan="4" align="left">
-            <v:button name="groups_savechanges" action="simple" style='url' value="Save changes" />
+<!--
+            <v:button name="groups_subscribe" action="simple" style='url' value="Subscribe" />
+            <v:button name="groups_unsubscribe" action="simple" style='url' value="Unsubscribe" />
+-->
           </td></tr>
           </v:template>
 
