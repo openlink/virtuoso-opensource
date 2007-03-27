@@ -55,9 +55,25 @@
               <div class="login">
                 <vm:login/>
               </div>
-              <v:template type="simple" condition="nntpf_groups_defined_p()">
+              <v:template type="simple" condition="not nntpf_check_is_dav_admin (self.u_name, self.u_full_name)">
+                <div class="group_list">
+                 <p>You have no rights to manage newsgroups.</p>
+                </div>
+              </v:template>
+              <v:template type="simple" condition="not nntpf_groups_defined_p() and  nntpf_check_is_dav_admin (self.u_name, self.u_full_name)">
+                <div class="group_list">
+                 <p>There are no available newsgroups.</p>
+                </div>
+              </v:template>
+              <v:template type="simple" condition="nntpf_groups_defined_p() and  nntpf_check_is_dav_admin (self.u_name, self.u_full_name)">
                 <div class="group_list">
 		  <vm:geo-link><img src="http://i.geourl.org/geourl.png" border="0"/></vm:geo-link>
+                  <table border="1" cellspacing="0" cellpadding="2" width="98%">
+                   <tr>
+                    <td>
+                      <vm:odsgroup-list/>
+                    </td>
+                    <td>
                   <v:template type="simple" condition="nntpf_conductor_installed_p()">
                    <![CDATA[&nbsp;]]>
                    <v:url value="Available newsgroups from Conductor" format="%s"
@@ -65,10 +81,13 @@
                        enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
                    <br/><br/>
                  </v:template>
-                  <vm:odsgroup-list/>
+                    </td>
+                   </tr>
+                  </table>
                 </div>
 
               </v:template>
+              
             </div> <!-- LT -->
             <div id="RT">
 <!--

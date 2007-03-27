@@ -250,6 +250,18 @@
     <v:variable name="force_list" type="integer" default="1"/>
     <v:variable name="dta" type="any"/>
     <v:variable name="mtd" type="any"/>
+      <v:on-init>
+        <![CDATA[
+         
+         if(self.vc_event.ve_is_post and get_keyword ('groups_savechanges', self.vc_event.ve_params, '')<>'')
+         {
+--               update  DB.DBA.NEWS_GROUPS set NG_STAT=1 where  NG_GROUP in ();
+--               update  DB.DBA.NEWS_GROUPS set NG_STAT=-1 where NG_GROUP in ();
+
+         }
+        ]]>
+      </v:on-init>
+
       <v:before-data-bind>
         <![CDATA[
         
@@ -289,11 +301,22 @@
                    
           <v:template name="template1" type="simple">
             <tr class="listing_header_row">
-              <th colspan="2">
+              <th colspan="4">
                 <v:label value="'Available ODS newsgroups:'" format="%s" width="80"/>
               </th>
-              <th colspan="2">
-                <v:label value="'View:'" format="%s" width="80"/>
+            </tr>
+
+            <tr class="listing_header_row">
+              <th >
+              </th>
+              <th>
+                <v:label value="'Name'" format="%s" width="80"/>
+              </th>
+              <th >
+                <v:label value="'Description'" format="%s" width="80"/>
+              </th>
+              <th >
+                <v:label value="'Action'" format="%s" width="80"/>
               </th>
             </tr>
           </v:template>
@@ -316,10 +339,9 @@
                          else '' end));
               ?>
                 <td align="left">
-<!--
                   <v:check-box name="nntp_groups_state"
-                               value="-- case when(control.vc_parent as vspx_row_template).te_rowset[3]>0 then 'checked' else 'unchecked' end"  />
--->
+                               value="1"
+                               initial-checked="--(case when (control.vc_parent as vspx_row_template).te_rowset[3]<0 then 1 else 0 end)"  />
                 </td>
                 <td>
                   <v:url name="nntp_groups"
@@ -338,7 +360,6 @@
                          xhtml_class="nntp_group"/>
                 </td>
                 <td>
-                  <![CDATA[&nbsp;]]>
                   <v:button name="nntp_groups_enable"
                           action="simple"
                           style="url"
@@ -377,7 +398,11 @@
           <tr><td colspan="4" align="center">
             <vm:ds-navigation-new data-set="ds_group_list"/>
           </td></tr>
+          <tr><td colspan="4" align="left">
+            <v:button name="groups_savechanges" action="simple" style='url' value="Save changes" />
+          </td></tr>
           </v:template>
+
         </v:data-set>
       </table>
       <input type="hidden"
