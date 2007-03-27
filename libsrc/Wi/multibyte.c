@@ -732,17 +732,17 @@ guess_nchars_enc (const unsigned char *buf, size_t buflen)
     {
       unsigned char c = tail[0];
       wchar_t wc = ((wchar_t *)tail)[0];
-      if ((0xD0 == tail[-3]) && (0xBF == tail[-2]) && (0xC0 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail >= (buf+3)))
+      if ((tail >= (buf+3)) && (0xD0 == tail[-3]) && (0xBF == tail[-2]) && (0xC0 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)))
         scores [GUESS_UTF8_OF_UTF8] += (8+8+6+2);
-      else if ((0xD0 == tail[-4]) && (0xBF == tail[-3]) && (0xE0 == (tail[-2] & ~0x03)) && (0x94 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail >= (buf+4)))
+      else if ((tail >= (buf+4)) && (0xD0 == tail[-4]) && (0xBF == tail[-3]) && (0xE0 == (tail[-2] & ~0x03)) && (0x94 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)))
         scores [GUESS_UTF8_OF_UTF8] += (8+8+6+6+2);
-      else if ((0xD1 == tail[-4]) && (0x8F == tail[-3]) && (0xE0 == (tail[-2] & ~0x03)) && (0x94 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail >= (buf+4)))
+      else if ((tail >= (buf+4)) && (0xD1 == tail[-4]) && (0x8F == tail[-3]) && (0xE0 == (tail[-2] & ~0x03)) && (0x94 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)))
         scores [GUESS_UTF8_OF_UTF8] += (8+8+6+6+2);
-      else if ((0 == tail[-3]) && (0 == tail[-2]) && (0xC0 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail >= (buf+3)))
+      else if ((tail >= (buf+3)) && (0 == tail[-3]) && (0 == tail[-2]) && (0xC0 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)))
         scores [GUESS_UTF8_OF_WCHAR] += (8+8+6+2);
-      else if ((0xC0 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail > buf))
+      else if ((tail > buf) && (0xC0 == (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)))
         scores [GUESS_UTF8_OF_8BIT] += (6+2);
-      else if ((0xC0 != (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)) && (tail >= buf))
+      else if ((tail > buf) && (0xC0 != (tail[-1] & ~0x03)) && (0x80 == (c & ~0x3F)))
         scores [GUESS_UTF8] += (1+2);
       else if (0x80 == (c & ~0x7F))
         scores [GUESS_8BIT] += 1;

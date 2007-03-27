@@ -122,7 +122,7 @@ sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 1)
 sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 1)
 ;
 
-create procedure DB.DBA.RDF_OBJ_RO_LONG_INDEX_HOOK (inout vtb any, inout d_id any)
+create procedure DB.DBA.RDF_OBJ_RO_DIGEST_INDEX_HOOK (inout vtb any, inout d_id any)
 {
   for (select coalesce (RO_LONG, RO_VAL, RO_DIGEST) as txt
     from DB.DBA.RDF_OBJ where RO_ID=d_id and RO_DIGEST is not null) do
@@ -133,7 +133,7 @@ create procedure DB.DBA.RDF_OBJ_RO_LONG_INDEX_HOOK (inout vtb any, inout d_id an
 }
 ;
 
-create procedure DB.DBA.RDF_OBJ_RO_LONG_UNINDEX_HOOK (inout vtb any, inout d_id any)
+create procedure DB.DBA.RDF_OBJ_RO_DIGEST_UNINDEX_HOOK (inout vtb any, inout d_id any)
 {
   for (select coalesce (RO_LONG, RO_VAL, RO_DIGEST) as txt
     from DB.DBA.RDF_OBJ where RO_ID=d_id and RO_DIGEST is not null) do
@@ -506,6 +506,12 @@ create function DB.DBA.RDF_MAKE_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
     signal ('RDFXX', sprintf ('Bad call: DB.DBA.RDF_MAKE_RO_DIGEST (%d, %s, %d, %d)', dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte, need_digest) );
   if (126 = __tag (v))
     v := blob_to_string (v);
+  else if (246 = __tag (v))
+    {
+      dt_twobyte := rdf_box_type (v);
+      lang_twobyte := rdf_box_lang (v);
+      v := rdf_box_data (v);
+    }
   if (isstring (v) and (dt_twobyte = 257) and (lang_twobyte = 257) and (length (v) <= 20))
     {
       if (not need_digest)
@@ -576,7 +582,10 @@ new_long:
       if (need_digest)
         insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_DIGEST) values (id, tridgell, v, digest);
       else
+        {
+          set triggers off;
               insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG) values (id, tridgell, v);
+        }
       return digest;
       -- old_digest := null;
       -- goto recheck;
@@ -618,7 +627,10 @@ new_short:
       if (need_digest)
         insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_DIGEST) values (id, v, digest);
       else
+        {
+          set triggers off;
               insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL) values (id, v);
+        }
       return digest;
       -- old_digest := null;
       -- goto recheck;
@@ -754,32 +766,26 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, 
 create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
   in o_val any, in o_type varchar, in o_lang varchar ) returns any
 {
-  if ('http://www.w3.org/2001/XMLSchema#boolean' = o_type)
+  if (isstring (o_type))
     {
-      if (('true' = o_val) or ('1' = o_val))
-        return 1;
-      else if (('false' = o_val) or ('0' = o_val))
-        return 0;
-      else signal ('RDFXX', 'Invalid notation of boolean literal');
+      declare parsed any;
+      parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
+      if (parsed is not null)
+        {
+          if (246 = __tag (parsed))
+            rdf_box_set_type (parsed,
+              DB.DBA.RDF_TWOBYTE_OF_DATATYPE (DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type)));
+          return parsed;
     }
-  if ('http://www.w3.org/2001/XMLSchema#date' = o_type)
-    return __xqf_str_parse ('date', o_val);
-  if ('http://www.w3.org/2001/XMLSchema#dateTime' = o_type)
-    return __xqf_str_parse ('dateTime', o_val);
-  if ('http://www.w3.org/2001/XMLSchema#double' = o_type)
-    return cast (o_val as double precision);
-  if ('http://www.w3.org/2001/XMLSchema#float' = o_type)
-    return cast (o_val as float);
-  if ('http://www.w3.org/2001/XMLSchema#integer' = o_type)
-    return cast (o_val as int);
-  if ('http://www.w3.org/2001/XMLSchema#time' = o_type)
-    return __xqf_str_parse ('time', o_val);
-  if (isstring(o_type) or isstring (o_lang))
-    {
       return DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
         o_val,
         DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type),
         o_lang );
+    }
+  if (isstring (o_lang))
+    {
+      return DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
+        o_val, NULL, o_lang );
     }
   return DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (o_val);
 }
@@ -955,7 +961,17 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any)
       return cast (shortobj as varchar);
     }
   if (rdf_box_is_complete (shortobj))
+    {
+      if (182 = rdf_box_data_tag (shortobj))
     return rdf_box_data (shortobj);
+      if (211 = rdf_box_data_tag (shortobj))
+        {
+          declare vc varchar;
+          vc := cast (rdf_box_data (shortobj) as varchar); --!!!TBD: replace with proper serialization
+          return replace (vc, ' ', 'T');
+        }
+      return cast (rdf_box_data (shortobj) as varchar);
+    }
       declare id int;
   declare v2 varchar;
   id := rdf_box_ro_id (shortobj);
@@ -1043,33 +1059,24 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
 create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
   in o_val any, in o_type varchar, in o_lang varchar ) returns any
 {
-  if ('http://www.w3.org/2001/XMLSchema#boolean' = o_type)
+  if (isstring (o_type))
     {
-      if (('true' = o_val) or ('1' = o_val))
-        return 1;
-      else if (('false' = o_val) or ('0' = o_val))
-        return 0;
-      else signal ('RDFXX', 'Invalid notation of boolean literal');
+      declare parsed any;
+      parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
+      if (parsed is not null)
+        {
+          if (246 = __tag (parsed))
+            rdf_box_set_type (parsed,
+              DB.DBA.RDF_TWOBYTE_OF_DATATYPE (DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type)));
+          return parsed;
     }
-  if ('http://www.w3.org/2001/XMLSchema#date' = o_type)
-    return __xqf_str_parse ('date', o_val);
-  if ('http://www.w3.org/2001/XMLSchema#dateTime' = o_type)
-    return __xqf_str_parse ('dateTime', o_val);
-  if ('http://www.w3.org/2001/XMLSchema#double' = o_type)
-    return cast (o_val as double precision);
-  if ('http://www.w3.org/2001/XMLSchema#float' = o_type)
-    return cast (o_val as float);
-  if ('http://www.w3.org/2001/XMLSchema#integer' = o_type)
-    return cast (o_val as int);
-  if ('http://www.w3.org/2001/XMLSchema#time' = o_type)
-    return __xqf_str_parse ('time', o_val);
-  if (isstring(o_type) or isstring (o_lang))
-    {
       return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (
         o_val,
         DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type),
         o_lang );
     }
+  if (isstring (o_lang))
+    return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (o_val, NULL, o_lang);
   return DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (o_val);
 }
 ;
@@ -1186,7 +1193,17 @@ create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
   if (246 = __tag (longobj))
     {
       if (rdf_box_is_complete (longobj))
+        {
+          if (182 = rdf_box_data_tag (longobj))
         return rdf_box_data (longobj);
+          if (211 = rdf_box_data_tag (longobj))
+            {
+              declare vc varchar;
+              vc := cast (rdf_box_data (longobj) as varchar); --!!!TBD: replace with proper serialization
+              return replace (vc, ' ', 'T');
+            }
+          return cast (rdf_box_data (longobj) as varchar);
+        }
       declare id integer;
       declare v2 varchar;
       id := rdf_box_ro_id (longobj);
@@ -1500,42 +1517,19 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env, ');');
-  if ('http://www.w3.org/2001/XMLSchema#boolean' = o_type)
+  if (isstring (o_type))
     {
-      if (('true' = o_val) or ('1' = o_val))
-        o_val := 1;
-      else if (('false' = o_val) or ('0' = o_val))
-        o_val := 0;
-      else signal ('RDFXX', 'Invalid notation of boolean literal');
+      declare parsed any;
+      parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
+      if (parsed is not null)
+        {
+          if (246 = __tag (parsed))
+            rdf_box_set_type (parsed,
+              DB.DBA.RDF_TWOBYTE_OF_DATATYPE (DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type)));
+          insert soft DB.DBA.RDF_QUAD (G,S,P,O)
+          values (g_iid, iri_to_id (s_uri, 1), iri_to_id (p_uri, 1), parsed);
+          return;
     }
-  else if ('http://www.w3.org/2001/XMLSchema#date' = o_type)
-    {
-      o_val := __xqf_str_parse ('date', o_val);
-    }
-  else if ('http://www.w3.org/2001/XMLSchema#dateTime' = o_type)
-    {
-      o_val := __xqf_str_parse ('dateTime', o_val);
-    }
-  else if ('http://www.w3.org/2001/XMLSchema#double' = o_type)
-    {
-      o_val := cast (o_val as double precision);
-    }
-  else if ('http://www.w3.org/2001/XMLSchema#float' = o_type)
-    {
-      o_val := cast (o_val as float);
-    }
-  else if ('http://www.w3.org/2001/XMLSchema#integer' = o_type)
-    {
-      o_val := cast (o_val as int);
-    }
-  else if ('http://www.w3.org/2001/XMLSchema#time' = o_type)
-    {
-      o_val := __xqf_str_parse ('time', o_val);
-    }
-  else if (isstring (o_type) or isstring (o_lang))
-    {
-      if (not isstring (o_type))
-        o_type := null;
       if (not isstring (o_lang))
         o_lang := null;
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
@@ -1544,6 +1538,13 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
           o_val,
           DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type),
           o_lang ) );
+      return;
+    }
+  if (isstring (o_lang))
+    {
+      insert soft DB.DBA.RDF_QUAD (G,S,P,O)
+      values (g_iid, iri_to_id (s_uri, 1), iri_to_id (p_uri, 1),
+        DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (o_val, NULL, o_lang) );
       return;
     }
   if (isstring (o_val)) -- !!TBD add 'or isentity (o_val)'
@@ -1710,10 +1711,21 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
   else if (246 = __tag (obj))
         {
           http ('"', ses);
+      if (182 = rdf_box_data_tag (obj))
       http_escape (rdf_box_data (obj), 11, ses, 1, 1);
+      else if (211 = rdf_box_data_tag (obj))
+        {
+          declare vc varchar;
+           vc := cast (rdf_box_data (obj) as varchar); --!!!TBD: replace with proper serialization
+           http_escape (replace (vc, ' ', 'T'), 11, ses, 1, 1);
+        }
+      else
+        http_escape (cast (rdf_box_data (obj) as varchar), 11, ses, 1, 1);
       if (257 <> rdf_box_type (obj))
             {
           res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
+          if (res is null)
+            signal ('OBLOM', sprintf ('Bad rdf box type (%d), box "%s"', rdf_box_type (obj), cast (rdf_box_data (obj) as varchar)));
               http ('"^^<', ses);
               http_escape (res, 12, ses, 1, 1);
 	      http ('> ', ses);
@@ -2001,28 +2013,8 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC (inout _env any, inout 
 	}
       else
         {
-	  declare lang, dt varchar;
-	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val);
-	  dt := DB.DBA.RDF_DATATYPE_OF_LONG (_val);
-	  http ('"', _env);
-	  http_escape (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 11, _env, 1, 1);
-	  if (lang is not null)
-	    {
-	      if (dt is not null)
-                http (sprintf ('"@"%V"^^<%V> ] ;',
-		    cast (lang as varchar), cast (dt as varchar)), _env);
-	      else
-                http (sprintf ('"@"%V" ] ;',
-		    cast (lang as varchar)), _env);
-	    }
-	  else
-	    {
-	      if (dt is not null)
-                http (sprintf ('"^^<%V> ] ;',
-		    cast (dt as varchar)), _env);
-	      else
-                http (sprintf ('" ] ;'), _env);
-	    }
+          DB.DBA.RDF_LONG_TO_TTL (_val, _env);
+          http (sprintf (' ] ;'), _env);
         }
 end_of_binding: ;
 
@@ -2115,7 +2107,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC (inout _env any, in
 	      else
                 http (sprintf ('>'), _env);
 	    }
-	  http_value (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 0, _env);
+	  http_value (DB.DBA.RDF_STRSQLVAL_OF_LONG (_val), 0, _env);
           http ('</rs:value></rs:binding>', _env);
         }
 end_of_binding: ;
@@ -2243,9 +2235,9 @@ from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS
 ;
 
 -----
--- Insert and delete operations for lists of triples
+-- Insert, delete, modify operations for lists of triples
 
-create function DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any)
+create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any)
 {
   declare ctr integer;
   if (not isiri_id (graph_iri))
@@ -2259,7 +2251,7 @@ create function DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any)
 }
 ;
 
-create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any)
+create procedure DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any)
 {
   declare ctr integer;
   if (not isiri_id (graph_iri))
@@ -2272,6 +2264,13 @@ create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any)
       P = triples[ctr][1] and
       O = DB.DBA.RDF_OBJ_OF_LONG (triples[ctr][2]);
     }
+}
+;
+
+create procedure DB.DBA.RDF_MODIFY_TRIPLES (in graph_iri any, in del_triples any, in ins_triples any)
+{
+  DB.DBA.RDF_DELETE_TRIPLES (graph_iri, del_triples);
+  DB.DBA.RDF_INSERT_TRIPLES (graph_iri, ins_triples);
 }
 ;
 
@@ -2294,6 +2293,15 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
   len := length (triples);
   DB.DBA.RDF_DELETE_TRIPLES (graph_iri, triples);
   return len;
+}
+;
+
+create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_triples_dict any, in ins_triples_dict any)
+{
+  if (del_triples_dict is not null)
+    DB.DBA.SPARQL_DELETE_DICT_CONTENT (graph_iri, del_triples_dict);
+  if (ins_triples_dict is not null)
+    DB.DBA.SPARQL_INSERT_DICT_CONTENT (graph_iri, ins_triples_dict);
 }
 ;
 
@@ -6428,37 +6436,17 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_W (
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_W (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, log_mode, ')');
   declare s_iid, p_iid IRI_ID;
-  if ('http://www.w3.org/2001/XMLSchema#boolean' = o_type)
+  if (isstring (o_type))
     {
-      if (('true' = o_val) or ('1' = o_val))
-        o_val := 1;
-      else if (('false' = o_val) or ('0' = o_val))
-        o_val := 0;
-      else signal ('RDFXX', 'Invalid notation of boolean literal');
+      declare parsed any;
+      parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
+      if (parsed is not null)
+        {
+          if (246 = __tag (parsed))
+            rdf_box_set_type (parsed,
+              DB.DBA.RDF_TWOBYTE_OF_DATATYPE (DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type)));
+          o_val := parsed;
     }
-  else if ('http://www.w3.org/2001/XMLSchema#date' = o_type)
-    {
-      o_val := __xqf_str_parse ('date', o_val);
-    }
-  else if ('http://www.w3.org/2001/XMLSchema#dateTime' = o_type)
-    {
-      o_val := __xqf_str_parse ('dateTime', o_val);
-    }
-  else if ('http://www.w3.org/2001/XMLSchema#double' = o_type)
-    {
-      o_val := cast (o_val as double precision);
-    }
-  else if ('http://www.w3.org/2001/XMLSchema#float' = o_type)
-    {
-      o_val := cast (o_val as float);
-    }
-  else if ('http://www.w3.org/2001/XMLSchema#integer' = o_type)
-    {
-      o_val := cast (o_val as int);
-    }
-  else if ('http://www.w3.org/2001/XMLSchema#time' = o_type)
-    {
-      o_val := __xqf_str_parse ('time', o_val);
     }
   whenever sqlstate '41000' goto again_iid;
 again_iid:
@@ -6484,6 +6472,15 @@ again_o:
     }
       else
         o_val := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_val, g_iid, p_iid);
+    }
+  else if (246 = __tag (o_val))
+    {
+      whenever sqlstate '41000' goto again_o_box;
+again_o_box:
+      if (182 = rdf_box_data_tag (o_val) and __rdf_obj_ft_rule_check (g_iid, p_iid))
+        o_val := DB.DBA.RDF_MAKE_RO_DIGEST (257, o_val, 257, 1);
+      else if (not rdf_box_is_storeable (o_val))
+        o_val := DB.DBA.RDF_MAKE_RO_DIGEST (257, o_val, 257, 0);
     }
   -- dbg_obj_princ ('final o_val = ', o_val);
   whenever sqlstate '41000' goto again_quad;
@@ -7254,7 +7251,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2007-03-12 0002'
+                virtrdf:version '2007-03-27 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -7391,8 +7388,10 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_INSERT_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_MODIFY_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_INSERT_DICT_CONTENT to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_DELETE_DICT_CONTENT to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_DESC_AGG_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESC_AGG_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESC_AGG_FIN to SPARQL_SELECT',
@@ -7444,7 +7443,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
     return;
   exec ('DB.DBA.vt_create_text_index (
     fix_identifier_case (''DB.DBA.RDF_OBJ''),
-    fix_identifier_case (''RO_LONG''),
+    fix_identifier_case (''RO_DIGEST''),
     fix_identifier_case (''RO_ID''),
     0, 0, vector (), 1, ''*ini*'', ''*ini*'')', stat, msg);
   exec ('DB.DBA.vt_batch_update (fix_identifier_case (''DB.DBA.RDF_OBJ''), ''ON'', 1)', stat, msg);

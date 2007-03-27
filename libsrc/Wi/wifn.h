@@ -849,9 +849,9 @@ void hosting_plugin_init (void);
 void plugin_loader_init(void);
 
 /*  rdfbox.c */
-int dv_rdf_compare (db_buf_t dv1, db_buf_t dv2);
-int rdf_box_compare (caddr_t rb1, caddr_t rb2);
-
+extern rdf_box_t * rb_allocate (void);
+extern int dv_rdf_compare (db_buf_t dv1, db_buf_t dv2);
+extern int rdf_box_compare (caddr_t rb1, caddr_t rb2);
 
 /* bif_file.c */
 void init_file_acl_set (char *acl_string1, dk_set_t * acl_set_ptr);

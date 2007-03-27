@@ -700,6 +700,7 @@ name (caddr_t box1, caddr_t box2, caddr_t * qst, state_slot_t * target) \
   NUMERIC_VAR (dn1); \
   NUMERIC_VAR (dn2); \
   dtp_t dtp1, dtp2, res_dtp; \
+retry_rdf_boxes: \
   NUM_TO_MEM (dn1, dtp1, box1); \
   NUM_TO_MEM (dn2, dtp2, box2); \
   if (DV_LONG_INT == dtp1 && dtp1 == dtp2) \
@@ -743,7 +744,17 @@ name (caddr_t box1, caddr_t box2, caddr_t * qst, state_slot_t * target) \
 	} \
     } \
   else \
+    { \
+      if (dtp1 == DV_RDF || dtp2 == DV_RDF) \
+        { \
+          if (dtp1 == DV_RDF) \
+            box1 = ((rdf_box_t *)(box1))->rb_box; \
+          if (dtp2 == DV_RDF) \
+            box2 = ((rdf_box_t *)(box2))->rb_box; \
+          goto retry_rdf_boxes; \
+        } \
     sqlr_new_error ("22003", "SR087", "Non numeric arguments to arithmetic operation."); \
+    } \
   return NULL; \
 }
 
@@ -754,6 +765,7 @@ box_mod (caddr_t box1, caddr_t box2, caddr_t * qst, state_slot_t * target)
   NUMERIC_VAR (dn1);
   NUMERIC_VAR (dn2);
   dtp_t dtp1, dtp2, res_dtp;
+retry_rdf_boxes:
   NUM_TO_MEM (dn1, dtp1, box1);
   NUM_TO_MEM (dn2, dtp2, box2);
   if (dtp1 == DV_DB_NULL || dtp2 == DV_DB_NULL)
@@ -794,7 +806,17 @@ box_mod (caddr_t box1, caddr_t box2, caddr_t * qst, state_slot_t * target)
 	}
     }
   else
-    sqlr_new_error ("22003", "SR091", "Non numeric arguments to arithmetic operation modulo");
+    {
+      if (dtp1 == DV_RDF || dtp2 == DV_RDF)
+        {
+          if (dtp1 == DV_RDF)
+            box1 = ((rdf_box_t *)(box1))->rb_box;
+          if (dtp2 == DV_RDF)
+            box2 = ((rdf_box_t *)(box2))->rb_box;
+          goto retry_rdf_boxes;
+        }
+      sqlr_new_error ("22003", "SR087", "Non numeric arguments to arithmetic operation modulo");
+    }
   return NULL;
 }
 

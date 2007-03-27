@@ -31,7 +31,7 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt)
 
 
 rdf_box_t *
-rb_allocate ()
+rb_allocate (void)
 {
   rdf_box_t * rb= (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_box_t), DV_RDF);
   rb->rb_ref_count = 1;
@@ -134,7 +134,18 @@ bif_rdf_box_data (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (should_be_complete && !(rb->rb_is_complete))
         sqlr_new_error ("22023", "SR545", "An incomplete RDF box '%.100s' is passed to rdf_box_data (..., %ld)", rb->rb_box, should_be_complete);
     }
-  return box_copy_tree (((rdf_box_t *)rb)->rb_box);
+  return box_copy_tree (rb->rb_box);
+}
+
+
+caddr_t
+bif_rdf_box_data_tag (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_data_tag");
+  dtp_t rb_dtp = DV_TYPE_OF (rb);
+  if (DV_RDF != rb_dtp)
+    return box_num (rb_dtp);
+  return box_num (DV_TYPE_OF (rb->rb_box));
 }
 
 
@@ -157,6 +168,18 @@ bif_rdf_box_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (RDF_BOX_DEFAULT_TYPE);
 }
 
+caddr_t
+bif_rdf_box_set_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_box_t *rb = bif_rdf_box_arg (qst, args, 0, "rdf_box_set_type");
+  long type = bif_long_arg (qst, args, 1, "rdf_box_set_type");
+  if ((RDF_BOX_DEFAULT_TYPE > type) || (type & ~0xffff))
+    sqlr_new_error ("22023", "SR554", "Invalid datatype id %ld as argument 2 of rdf_box_set_type()", type);
+  if (0 != rb->rb_ro_id)
+    sqlr_new_error ("22023", "SR555", "Datatype id can be changed only if rdf box has no ro_id in call of rdf_box_set_type ()");
+  rb->rb_type = type;
+  return box_num (type);
+}
 
 caddr_t
 bif_rdf_box_is_complete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -353,7 +376,7 @@ caddr_t
 rb_copy (rdf_box_t * rb)
 {
   rb->rb_ref_count++;
-  return rb;
+  return (caddr_t)rb;
 }
 
 int
@@ -592,10 +615,12 @@ rdf_box_init ()
   bif_define_typed ("is_rdf_box", bif_is_rdf_box, &bt_integer);
   bif_define_typed ("rdf_box_set_data", bif_rdf_box_set_data, &bt_any);
   bif_define ("rdf_box_data", bif_rdf_box_data);
+  bif_define_typed ("rdf_box_data_tag", bif_rdf_box_data_tag, &bt_integer);
   bif_define_typed ("rdf_box_ro_id", bif_rdf_box_ro_id, &bt_integer);
   bif_define ("rdf_box_set_ro_id", bif_rdf_box_set_ro_id);
   bif_define_typed ("rdf_box_lang", bif_rdf_box_lang, &bt_integer);
   bif_define_typed ("rdf_box_type", bif_rdf_box_type, &bt_integer);
+  bif_define ("rdf_box_set_type", bif_rdf_box_type);
   bif_define_typed ("rdf_box_is_complete", bif_rdf_box_is_complete, &bt_integer);
   /*bif_define_typed ("rdf_box_set_is_complete", bif_rdf_box_set_is_complete, &bt_integer);*/
   bif_define_typed ("rdf_box_is_storeable", bif_rdf_box_is_storeable, &bt_integer);

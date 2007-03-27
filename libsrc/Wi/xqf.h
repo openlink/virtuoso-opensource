@@ -36,6 +36,7 @@ typedef struct xqf_str_parser_desc_s
   qpq_ctr_callback p_proc;
   int p_opcode;
   dtp_t p_can_default;
+  int p_rdf_boxed;
   dtp_t p_dest_dtp;
   const char *p_typed_bif_name;
 }
