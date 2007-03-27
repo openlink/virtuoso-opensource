@@ -1902,7 +1902,10 @@ create constructor method vspx_vscx (in name varchar, in parent vspx_control, in
 	    file_delete (vspxm_name||'0', 1);
 	    file_delete (sql_name, 1);
 	  }
+	log_enable (0, 1);
 	exec (sprintf ('grant execute on %s to "%s"', q_full_class_name, vspx_user));
+	commit work;
+	log_enable (1, 1);
       }
 
     self.vc_init (name, parent);
@@ -5401,6 +5404,7 @@ create procedure vspx_load_sql (
               stmt := concat (sprintf ('#line %d "%s"\n', sline-1, sql_name), stmt);
             }
           stat := '00000'; msg := '';
+	  log_enable (0, 1);
           exec (stmt, stat, msg);
           if (stat = '00000')
 	    {
@@ -5481,6 +5485,7 @@ create procedure vspx_src_store (in resource_name varchar, inout ses any)
   else
     {
       declare rc int;
+      log_enable (0, 1);
       rc := DAV_RES_UPLOAD_STRSES_INT (resource_name, ses, '', '110100000NN',
         coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = connection_get ('DAVUserID'))),
         coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = connection_get ('DAVGroupID'))),
@@ -5729,6 +5734,7 @@ vspx_dispatch (in resource_name varchar, inout path any, inout params any, inout
 
   icc_lock_at_commit ('vspx_dispatch', 1);
   commit work;
+  log_enable (0);
 
   if ((registry_get (resource_name) = signature) and udt_is_available (full_subclass_name)
     and vspx_check_file_deps (resource_name)) {
@@ -5742,6 +5748,10 @@ generate:
     declare stat, msg varchar;
     declare exit handler for sqlstate '*' {
 --  dbg_obj_print('\nNested fail in class', class_name, '\nOld signature:', registry_get (resource_name), '\nNew signature:', signature);
+      if (udt_is_available (full_subclass_name) and subclass_name <> class_name)
+        exec (concat ('drop type ', q_full_subclass_name), stat, msg);
+      if (udt_is_available (full_class_name))
+        exec (concat ('drop type ', q_full_class_name), stat, msg );
       registry_set (resource_name, '');
       if (unlink) {
         -- silently delete temp files
@@ -5749,6 +5759,7 @@ generate:
         file_delete (vspxm_name||'0', 1);
         file_delete (sql_name, 1);
       }
+      log_enable (1);
       icc_unlock_now ('vspx_dispatch');
       prof_sample ('VSPX compilation', msec_time () - now, 4);
       resignal;
@@ -5777,14 +5788,17 @@ generate:
       file_delete (vspxm_name||'0', 1);
       file_delete (sql_name, 1);
     }
+    log_enable (0, 1);
     exec (concat ('grant execute on ', q_full_class_name, ' to "', vspx_user, '"'), stat, msg);
     if (subclass_name <> class_name)
       exec (concat ('grant execute on ', q_full_subclass_name, ' to "', vspx_user, '"'), stat, msg);
+    commit work;
     icc_unlock_now ('vspx_dispatch');
     goto run;
   }
 
 run:
+  log_enable (1, 1);
 
   if (compile_only)
     return null;
