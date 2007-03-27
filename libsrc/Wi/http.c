@@ -3767,6 +3767,13 @@ ws_keep_alive_ready (dk_session_t * ses)
       ws_keep_alive_disconnected (ses);
       return;
     }
+/*
+     sometimes the select returns ses fd is ready for reading, but sequential read waits for input,
+     therefore this can't be done here as it would block all incoming connections. furthermore 
+     this should not be done if it is ssl connection as it will loose 1-st byte. 
+     anyway the ws_read_req follows, which will terminate request chain if connection is broken.  
+*/
+#if 0  
   CATCH_READ_FAIL (ses)
     {
       session_buffered_read_char (ses);
@@ -3778,6 +3785,7 @@ ws_keep_alive_ready (dk_session_t * ses)
       return;
     }
   END_READ_FAIL (ses);
+#endif  
   mutex_enter (ws_queue_mtx);
   remove_from_served_sessions (ses);
   DKS_CLEAR_DEFAULT_READ_READY_ACTION (ses);
