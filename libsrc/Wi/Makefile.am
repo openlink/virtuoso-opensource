@@ -595,14 +595,8 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfs.sql \
 	$(top_srcdir)/binsrc/dav/davxml2n3xml.xsl \
 	$(top_srcdir)/binsrc/dav/davxml2rdfxml.xsl \
-	$(top_srcdir)/binsrc/dav/erdf2rdfxml.xsl \
 	$(top_srcdir)/binsrc/dav/n3xml2uriqahtml.xsl \
-	$(top_srcdir)/binsrc/dav/rdfa2rdfxml.xsl \
 	$(top_srcdir)/binsrc/dav/rdfxml2n3xml.xsl
-
-SQL_FILES_DAV		+= \
-	$(srcdir)/rdfa2rdfxml.xsl \
-	$(srcdir)/erdf2rdfxml.xsl
 
 SQL_FILES_VAD		= \
 	$(top_srcdir)/binsrc/vad/vad_root.sql \
