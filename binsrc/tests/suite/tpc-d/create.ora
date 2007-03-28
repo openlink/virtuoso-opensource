@@ -1,0 +1,11 @@
+
+
+set u{integer} = "numeric (9)";
+set u{smallmoney}="numeric(3,2)";
+set u{ largemoney}="numeric(20,2)";
+set u{ datetime}=date;
+set u{ date}=date;
+
+
+load create_tables.sql;
+
