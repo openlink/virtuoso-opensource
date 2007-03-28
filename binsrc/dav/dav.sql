@@ -1105,6 +1105,7 @@ etag_err:
 }
 ;
 
+-- /* HEAD METHOD */
 create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines varchar)
 {
   declare path_len, id integer;
@@ -1138,6 +1139,20 @@ create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines var
   u_id := null;
   g_id := null;
   rc := DAV_AUTHENTICATE_HTTP (id, st, '1__', 1, lines, uname, upwd, u_id, g_id, _perms);
+  if ((rc < 0) and (rc <> -1))
+    {
+      if (-24 = rc)
+	return 0;
+      http_rewrite (0);
+      http_request_status ('HTTP/1.1 403 Prohibited');
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	    '<HTML><HEAD>',
+	    '<TITLE>403 Prohibited</TITLE>',
+	    '</HEAD><BODY>', '<H1>Prohibited</H1> ',
+	    'You are not permitted to view the content of this location: ',
+	    http_path (path), '.</BODY></HTML>'));
+      return 0;
+    }
   if ('R' = st)
     {
       if (isarray (id))
@@ -1150,8 +1165,61 @@ create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines var
 	}
       else
 	{
-	  select RES_NAME, length (RES_CONTENT), RES_TYPE into name, msg_len, cont_type
+	  declare resource_owner, exec_safety_level, is_admin_owned_res, rc, is_exist integer;
+	  declare dot, fext, full_path varchar;
+	  declare content any;
+
+	  is_admin_owned_res := 0;
+
+	  rc := DAV_AUTHENTICATE_HTTP (id, st, '1_1', 0, lines, uname, upwd, u_id, g_id, _perms);
+	  if (rc >= 0)
+	    exec_safety_level := 1;
+
+	  select RES_NAME, length (RES_CONTENT), RES_TYPE, RES_OWNER, RES_FULL_PATH, RES_CONTENT
+	      into name, msg_len, cont_type, resource_owner, full_path, content
           from WS.WS.SYS_DAV_RES where RES_ID = id;
+
+	  if (resource_owner = http_dav_uid ())
+	    is_admin_owned_res := 1;
+
+	  if (http_map_get ('executable') or (exec_safety_level and is_admin_owned_res))
+	    exec_safety_level := 2;
+
+	  dot := strrchr (name, '.');
+	  if (dot is not null)
+	    {
+	      fext := concat ('__http_handler_head_', substring (name, dot + 2, length (name)));
+	      if (__proc_exists (fext, 2))
+		is_exist := 1;
+	      else
+		  {
+		    fext := concat ('WS.WS.', fext);
+		    if (__proc_exists (fext, 1))
+		      is_exist := 1;
+		  }
+
+	      if (is_exist and exec_safety_level > 0)
+		{
+		  declare stream_params, hdl_mode any;
+		  __set_user_id (http_map_get ('vsp_uid'));
+		  stream_params := __http_stream_params ();
+		  hdl_mode := concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', full_path);
+		  http (call (fext) (blob_to_string (content), stream_params, lines, hdl_mode));
+		  if (isarray (hdl_mode) and length (hdl_mode) > 1)
+		    {
+		      if (hdl_mode[0] <> '' and isstring (hdl_mode[0]))
+			http_request_status (hdl_mode[0]);
+		      if (hdl_mode[1] <> '' and isstring (hdl_mode[1]))
+			http_header (hdl_mode[1]);
+		    }
+		  return;
+		}
+	    }
+
+	  if ((exec_safety_level > 1) and (name like '%.vsp' or name like '%.vspx'))
+	    {
+	      return;
+	    }
           etag := WS.WS.ETAG (name, DAV_SEARCH_ID (vector_concat (vector(''), path), 'P'));
 	}
       if (not isstring (cont_type))
@@ -2075,7 +2143,7 @@ end_xml:
 		 _http_ranges_header := http_sys_parse_ranges_header (length (content));
 
 		 if (isinteger (_http_ranges_header))
-		   { -- the bif has allready sent the 416
+		   { -- the bif has already sent the 416
 		     return;
 		   }
 		 else if (_http_ranges_header is not null)
@@ -2185,7 +2253,7 @@ create procedure WS.WS.POST (in path varchar, inout params varchar, in lines var
      if (__proc_exists ('DB.DBA.SYNCML'))
      DB.DBA.SYNCML (path, params, lines);
      else
-       signal ('37000', 'The SyncML isn''t install');
+       signal ('37000', 'The SyncML server is not available');
    }
   else
    {
@@ -2805,7 +2873,7 @@ create procedure WS.WS.GET_DAV_AUTH (in lines any, in allow_anon integer, in can
 
   if (rc = 0) -- PLLH_INVALID, must reject
     goto request_auth;
-  if (rc = 1) -- PLLH_VALID, authentication is alredy done
+  if (rc = 1) -- PLLH_VALID, authentication is already done
     goto authenticated;
   -- rc = -1 PLLH_NO_AUTH, should check
 
@@ -4415,7 +4483,7 @@ create procedure WS.WS.XMLSQL_TO_STRSES (
 	   ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="',
 	   _sch, '">\n'), ses);
 
-  -- Query evaliation
+  -- Query evaluation
   xml_auto (_q, vector (), ses);
 
   -- closing the root element
