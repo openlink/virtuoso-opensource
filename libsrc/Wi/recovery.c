@@ -1325,6 +1325,9 @@ db_crash_to_log (char *mode)
       wi_open_dbs ();
       mt_write_init ();
       wi_inst.wi_schema = sc;
+      log_debug ("Dumping the registry");
+      db_log_registry (bootstrap_cli->cli_trx->lt_log);
+      lt_backup_flush (bootstrap_cli->cli_trx, 1);
     }
 
   log_debug ("Dumping the data");
