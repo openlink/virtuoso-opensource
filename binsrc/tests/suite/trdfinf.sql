@@ -124,3 +124,20 @@ select id_to_iri (s), id_to_iri (p), id_to_iri (o)  from rdf_quad table option (
 echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
 echo both ": fs gp =  rdfstype  go = c2  \n";
 
+
+sparql define input:inference  'inft' select ?s ?p from <inft> where { ?s ?p <c1> . };
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": fs fp go with  sparql\n";
+
+sparql define input:inference  'inft' select * from <inft> where { ?s ?p <c1> . ?s ?p1 <ic2p1> . };
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+echo both ": fs fp go join fs fp go with  sparql\n";
+
+sparql define input:inference  'inft' select * from <inft> where { ?s ?p <c1> . ?s ?p1 <ic2p1> option (inference 'none') . };
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+echo both ": fs fp go join fs fp go with  sparql inf none\n";
+
+sparql  select * from <inft> where { ?s ?p <c1> option (inference 'inft') . ?s ?p1 <ic2p1> . };
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+echo both ": fs fp go join fs fp go with  sparql inf inft\n";
+
