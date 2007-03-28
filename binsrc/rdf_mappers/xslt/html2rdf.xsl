@@ -34,16 +34,16 @@
   <xsl:param name="base" />
   <xsl:template match="/">
       <rdf:RDF>
-      <xsl:apply-templates select="html/head"/>
+	  <xsl:apply-templates select="html/head"/>
 	  <xsl:apply-templates select="/" mode="rdf-in-comment"/>
       </rdf:RDF>
   </xsl:template>
   <xsl:template match="html/head">
-	  <foaf:Document rdf:about="{$base}">
-	      <xsl:apply-templates select="title|meta"/>
-	      <xsl:apply-templates select="/html/body//img[@src]"/>
-	      <xsl:apply-templates select="/html/body//a[@href]"/>
-	  </foaf:Document>
+      <foaf:Document rdf:about="{$base}">
+	  <xsl:apply-templates select="title|meta"/>
+	  <xsl:apply-templates select="/html/body//img[@src]"/>
+	  <xsl:apply-templates select="/html/body//a[@href]"/>
+      </foaf:Document>
   </xsl:template>
   <xsl:template match="*" mode="rdf-in-comment">
       <xsl:apply-templates mode="rdf-in-comment"/>
