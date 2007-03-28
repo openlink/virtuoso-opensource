@@ -1781,7 +1781,7 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   rdf_obj_ft_rule_hkey_t hkey;
   hkey.hkey_g = 0;
   hkey.hkey_p = 0;
-  mutex_leave (rdf_obj_ft_rules_mtx);
+  mutex_enter (rdf_obj_ft_rules_mtx);
   if (NULL != id_hash_get (rdf_obj_ft_rules, (caddr_t)(&hkey)))
     goto hit; /* see_below */
   hkey.hkey_g = g_id;
