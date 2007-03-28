@@ -379,8 +379,8 @@ iSPARQL.QBE = function ()
 	this.getSaveData = function(save_type){
 		var data = "";
 		
-		data += '#should-sponge:' + $v('qbe_sponge') + '\n';
-		data += '#service:' + self.service.input.value + '\n';
+//		data += '#should-sponge:' + $v('qbe_sponge') + '\n';
+//		data += '#service:' + self.service.input.value + '\n';
 		
 		switch (save_type) {
 			case "rq":
@@ -405,7 +405,7 @@ iSPARQL.QBE = function ()
   			//xml += '<service>'+goptions.service+'</service>\n';
   			//xml += '<should_sponge>'+goptions.should_sponge+'</should_sponge>\n';
   			xml += '<proxy>'+goptions.proxy+'</proxy>\n';
-  			xml += '<query>'+OAT.Dom.toSafeXML(data)+'</query>\n';
+  			xml += '<query><![CDATA['+data+']]></query>\n';
   			for (var i=0;i < self.UpdatedSchemas.length;i++)
   			  xml += '<schema uri="'+ self.UpdatedSchemas[i] +'"/>\n';
   			xml += '</ISparqlDynamicPage>\n';
