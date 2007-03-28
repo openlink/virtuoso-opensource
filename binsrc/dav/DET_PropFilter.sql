@@ -441,7 +441,7 @@ create function "PropFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, 
       else if (RES_NAME = prev_raw_name)
         {
           merged := "PropFilter_FNMERGE" (RES_NAME, RES_ID);
-          if (not prev_is_patched) -- The first record in a sequence of namesakes is writen w/o merging, go fix it
+          if (not prev_is_patched) -- The first record in a sequence of namesakes is written w/o merging, go fix it
             {
               declare prev_id integer;
 	      declare prev_merged varchar;
@@ -524,7 +524,7 @@ order by RES_NAME, RES_ID',
       else if (orig_name = prev_raw_name)
         {
           merged := "PropFilter_FNMERGE" (orig_name, orig_id);
-          if (not prev_is_patched) -- The first record in a sequence of namesakes is writen w/o merging, go fix it
+          if (not prev_is_patched) -- The first record in a sequence of namesakes is written w/o merging, go fix it
             {
               declare prev_id integer;
 	      declare prev_merged varchar;

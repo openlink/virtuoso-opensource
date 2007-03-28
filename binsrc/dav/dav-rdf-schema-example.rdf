@@ -48,7 +48,7 @@
   <!-- Note that for every string value that have "xml:lang" in this example, there may be more than one RDF triplet, one for every distinct language and
      maybe one default value -->
   <rdf:Property rdf:about="http://www.purl.org/dc/types/issued">
-    <!-- <rdfs:Domain> is not specified because the property can be used ouside this schema. -->
+    <!-- <rdfs:Domain> is not specified because the property can be used outside this schema. -->
     <!-- The type of allowed values of the property, e.g. http://www.w3.org/2001/XMLSchema#dateTime in this case.
      The default is http://www.w3.org/2001/XMLSchema#string that is usually written as 'xsd:string'. -->
     <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
@@ -95,7 +95,7 @@
       <!-- no need for not-a-list view: <virtrdf:defaultSortDir>asc</virtrdf:defaultSortDir> -->
     </virtrdf:displayMode-BrowsePlain>
     <virtrdf:displayMode-BrowseExpert rdf:parseType="Resource">
-      <!-- Commonly used porpnames are virtrdf:displayMode-ListView, virtrdf:displayMode-BrowsePlain, virtrdf:displayMode-BrowseExpert -->
+      <!-- Commonly used propnames are virtrdf:displayMode-ListView, virtrdf:displayMode-BrowsePlain, virtrdf:displayMode-BrowseExpert -->
       <virtrdf:label xml:lang="en-US">Issue Date</virtrdf:label>
       <virtrdf:displayOrder>1</virtrdf:displayOrder>
       <!-- no need for not-a-list view: <virtrdf:defaultSortDir>asc</virtrdf:defaultSortDir> -->
@@ -112,7 +112,7 @@
 
   <!-- - - - - - 8< - - - - - -->
 
-  <!-- This part refers to dependant objects and can be implemented after everything else. -->
+  <!-- This part refers to dependent objects and can be implemented after everything else. -->
 
   <!-- This is an example of description of a property with object nodes as values, not literal values.
     The full property name is http://www.openlinksw.com/schemas/dav-rdf-schema-example#written-by -->
@@ -139,7 +139,7 @@
     <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     <!-- This indicates that e-mail can be a property of author.
     If no virtrdf:domain is specified for a property then this is a property of the resource.
-    Thus e-mail is dismplyed in the list of proerties of anuthor (if this list is displayed at all), unlike other properties listed above. -->
+    Thus e-mail is displayed in the list of properties of author (if this list is displayed at all), unlike other properties listed above. -->
     <virtrdf:domain rdf:resource="author"/>
     <!-- This indicates that e-mail can be a property of editor. -->
     <virtrdf:domain rdf:resource="editor"/>

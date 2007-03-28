@@ -1280,7 +1280,7 @@ create function IMC_TO_XML (in _src varchar)
           declare sub_IMC any;
           declare close_type varchar;
           if (2 > length (stack))
-            signal ('22007', sprintf ('IMC text contains redundand "END" at line %d', line_idx + 1));
+            signal ('22007', sprintf ('IMC text contains redundant "END" at line %d', line_idx + 1));
           close_type := upper (subseq (line, strchr (line, ':') + 1));
           if (close_type <> IMC_type)
             signal ('22007', sprintf ('IMC text contains "END:%s" instead of expected "END:%s" at line %d', close_type, IMC_type, line_idx + 1));
@@ -1437,7 +1437,7 @@ create function "DAV_EXTRACT_RDF_text/directory" (in orig_res_name varchar, inou
           'http://www.w3.org/2001/vcard-rdf/3.0#NICKNAME', 'NICKNAME/val',
           'http://www.w3.org/2001/vcard-rdf/3.0#BDAY', 'declare namespace virtbpel="http://www.openlinksw.com/virtuoso/bpel"; for \044v in BDAY/val return virtbpel:unix-datetime-parser (\044v)',
           'http://www.w3.org/2001/vcard-rdf/3.0#MAILER', 'MAILER/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#GEO', 'GEO/val', -- If proper lattitude/longitude pair of <fld> is specified then do not display
+          'http://www.w3.org/2001/vcard-rdf/3.0#GEO', 'GEO/val', -- If proper latitude/longitude pair of <fld> is specified then do not display
           'http://www.w3.org/2001/vcard-rdf/3.0#TITLE', 'TITLE/val',
           'http://www.w3.org/2001/vcard-rdf/3.0#ROLE', 'ROLE/val',
           'http://www.w3.org/2001/vcard-rdf/3.0#CATEGORIES', 'CATEGORIES/val',

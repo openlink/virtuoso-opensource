@@ -193,9 +193,9 @@ ECHO BOTH "Checking versioning, Pass 0 ...\n";
 ok(   [delete from WS.WS.SYS_DAV_LOCK],
 	[" Clear all locks"] )	
 ok(   [DB.DBA.DAV_DELETE ('/DAV/versioning/', 1, 'dav','dav')],
-	[" Deleting verisioning collection"] )	
+	[" Deleting versioning collection"] )	
 ok(   [DB.DBA.DAV_DELETE ('/DAV/vers/', 1, 'dav','dav')],
-	[" Deleting verisioning collection"] )	
+	[" Deleting versioning collection"] )	
 valgt(   [select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/', '110100000R', 'dav', 'administrators', 'dav', 'dav')], [0],
 	[" Create test collection: "])
 	
@@ -249,7 +249,7 @@ valgt(   [select DAV_SEARCH_ID ('/DAV/versioning/test2-1.txt', 'R')], [0],
 
 ECHO BOTH "Checking versioning, Pass 1 ...\n";
 valgt(  [select upload_doc ('/DAV/versioning/file0.txt', 'content of file1.txt, version 1')], [0],
-	[ " upload inititial version of file0.txt "])
+	[ " upload initial version of file0.txt "])
 val(    [select RES_STATUS from WS.WS.SYS_DAV_RES where RES_FULL_PATH =  '/DAV/versioning/file0.txt'], ['AV'],
 	[ " check status of file0.txt "])
 val(    [select RV_ID from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = DAV_SEARCH_ID ('/DAV/versioning/file0.txt', 'R')], [1],
@@ -259,7 +259,7 @@ val(    [select RV_ID from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = DAV_SEARC
 ECHO BOTH "Checking versioning, Pass 2 ...\n";
 
 valgt(  [select upload_doc ('/DAV/versioning/file1.txt', 'content of file1.txt, version 1')], [0],
-	[ " upload inititial version of file1.txt "])
+	[ " upload initial version of file1.txt "])
 valgt(  [select upload_doc ('/DAV/versioning/file1.txt', 'content of file1.txt, version 2')], [0],
 	[ " upload second version of file1.txt "])
 valgt(  [select upload_doc ('/DAV/versioning/file1.txt', 'content of file1.txt, version 3')], [0],
@@ -288,7 +288,7 @@ valgt(	[select DB.DBA.DAV_DELETE ('/DAV/versioning/file1.txt', 1, 'dav','dav')],
 	[ " delete /DAV/versioning/file1.txt file "])
 
 valgt(  [select upload_doc ('/DAV/versioning/test_dir/a2/file1.txt', 'content of file1.txt, version 1')], [0],
-	[ " upload inititial version of test_dir/a2/file1.txt "])
+	[ " upload initial version of test_dir/a2/file1.txt "])
 valgt(  [select upload_doc ('/DAV/versioning/test_dir/a2/file1.txt', 'content of file1.txt, version 2')], [0],
 	[ " upload second version of test_dir/a2/file1.txt "])
 valgt(  [select upload_doc ('/DAV/versioning/test_dir/a2/file1.txt', 'content of file1.txt, version 3')], [0],
@@ -330,7 +330,7 @@ ok(	[select DAV_PROP_SET ('/DAV/versioning/', 'virt:Versioning-History', '/DAV/v
 	[ " set virt:Version-History " ])
 
 valgt(  [select upload_doc ('/DAV/versioning/file1.txt', 'content of file1.txt, version 1')], [0],
-	[ " upload inititial version of file1.txt "])
+	[ " upload initial version of file1.txt "])
 valgt(  [select upload_doc ('/DAV/versioning/file1.txt', 'content of file1.txt, version 2')], [0],
 	[ " upload second version of file1.txt "])
 valgt(  [select upload_doc ('/DAV/versioning/file1.txt', 'content of file1.txt, version 3')], [0],
@@ -589,7 +589,7 @@ val(	[select check_file ('/DAV/versioning/workspace!/test11.txt')], ["found"],
 	[" check workspace copy "])
 ], [])
 valgt(  [select upload_doc ('/DAV/versioning/test11.txt', 'content of test11.txt in workspace')], [0],
-	[" upload new contentn of file [test11.txt] "])
+	[" upload new content of file [test11.txt] "])
 val(	[select get_doc ('/DAV/versioning/VVC/test11.txt/last')],['hello world! - 11'],
 	[" check content of test11.txt (last VR before CHECKIN) "])
 valgt(	[select DAV_CHECKIN('/DAV/versioning/test11.txt', 'dav', 'dav')], [0],
@@ -804,7 +804,7 @@ val(	[select count (*) from ws.ws.sys_dav_res_version where rv_res_id = dav_sear
 	[" count of versions in ws.ws.sys_dav_res_version table "])
 
 ok(   [DB.DBA.DAV_DELETE ('/DAV/versioning2/', 1, 'dav','dav')],
-	[" Deleting second verisioning collection"] )	
+	[" Deleting second versioning collection"] )	
 valgt(   [select DB.DBA.DAV_COL_CREATE ('/DAV/versioning2/', '110100000R', 'dav', 'administrators', 'dav', 'dav')], [0],
 	[" Create test collection: "])
 valgt(   [select upload_docs ('/DAV/versioning2/', 20)], [0],
@@ -998,7 +998,7 @@ vallt(  [select DB.DBA.DAV_REMOVE_VERSION_CONTROL ('/DAV/versioning2/test9.txt',
 ECHO BOTH "Checking versioning, Pass 1R ... [set version control]\n";
 
 ok(   [DB.DBA.DAV_DELETE ('/DAV/vers_test/', 1, 'dav','dav')],
-	[" Deleting verisioning collection"] )	
+	[" Deleting versioning collection"] )	
 valgt(   [select DB.DBA.DAV_COL_CREATE ('/DAV/vers_test/', '110100000R', 'dav', 'administrators', 'dav', 'dav')], [0],
 	[" Create test collection: "])	
 ok(   [update WS.WS.SYS_DAV_COL set COL_AUTO_VERSIONING='A' where COL_ID = DAV_SEARCH_ID ('/DAV/vers_test/', 'C')],
@@ -1028,7 +1028,7 @@ valgt(  [select DB.DBA.DAV_SET_VERSIONING_CONTROL ('/DAV/vers_test/', NULL, 'A',
 
 
 ok(   [DB.DBA.DAV_DELETE ('/DAV/vers_test/', 1, 'dav','dav')],
-	[" Deleting verisioning collection"] )	
+	[" Deleting versioning collection"] )	
 valgt(   [select DB.DBA.DAV_COL_CREATE ('/DAV/vers_test/', '110100000R', 'dav', 'administrators', 'dav', 'dav')], [0],
 	[" Create test collection: "])	
 ok(   [update WS.WS.SYS_DAV_COL set COL_AUTO_VERSIONING='A' where COL_ID = DAV_SEARCH_ID ('/DAV/vers_test/', 'C')],
@@ -1109,11 +1109,11 @@ val(	[select DAV_HIDE_ERROR (get_prop('/DAV/versioning2/1.txt', 'DAV:version-his
 
 ECHO BOTH "wrapping several versions in one\n";
 ok(   [DB.DBA.DAV_DELETE ('/DAV/versioning3/', 1, 'dav','dav')],
-	[" Deleting second verisioning collection"] )	
+	[" Deleting second versioning collection"] )	
 valgt(   [select DB.DBA.DAV_COL_CREATE ('/DAV/versioning3/', '110100000R', 'dav', 'administrators', 'dav', 'dav')], [0],
 	[" Create test collection: "])
 valgt(  [select upload_doc ('/DAV/versioning3/file1.txt', 'content of file1.txt, version 1')], [0],
-	[ " upload inititial version of file1.txt "])
+	[ " upload initial version of file1.txt "])
 valgt(  [select DB.DBA.DAV_VERSION_CONTROL ('/DAV/versioning3/file1.txt', 'dav', 'dav')], [0],
 	[ " set versioning control " ])
 ok(	[select DAV_PROP_SET ('/DAV/versioning3/file1.txt', 'DAV:auto-version', 'DAV:checkout-checkin', 'dav', 'dav')],
@@ -1148,7 +1148,7 @@ val(	[select get_doc ('/DAV/versioning3/file1.txt')], ['content of file1.txt, ve
 -- DAV_COPY test
 
 ok(   [DB.DBA.DAV_DELETE ('/DAV/vers_copy/', 1, 'dav','dav')],
-	[" Delete verisioning collection"] )	
+	[" Delete versioning collection"] )	
 valgt(   [select DB.DBA.DAV_COL_CREATE ('/DAV/vers_copy/', '110100000R', 'dav', 'administrators', 'dav', 'dav')], [0],
 	[" Create test collection: "])	
 valgt(   [select upload_docs ('/DAV/vers_copy/', 20)], [0],

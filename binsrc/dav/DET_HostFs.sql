@@ -991,7 +991,7 @@ create function "HostFs_DAV_RES_CONTENT" (in id any, inout content any, out type
   return 0;
 
 no_res:
-  -- dbg_obj_princ ('HostFs_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ') catched an error ', __SQL_STATE, __SQL_MESSAGE);
+  -- dbg_obj_princ ('HostFs_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ') caught an error ', __SQL_STATE, __SQL_MESSAGE);
   WS.WS.HOSTFS_RES_DISAPPEARS (id[2]);
   return -1;
 }

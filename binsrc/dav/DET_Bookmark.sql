@@ -88,7 +88,7 @@ create function "bookmark_DAV_AUTHENTICATE" (in id any, in what char(1), in req 
 --| This exactly matches DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 --| The function should fully check access because DAV_AUTHENTICATE_HTTP do nothing with auth data either before or after calling this DET function.
 --| Unlike DAV_AUTHENTICATE, user name passed to DAV_AUTHENTICATE_HTTP header may not match real DAV user.
---| If DET call is successfull, DAV_AUTHENTICATE_HTTP checks whether the user have read permission on mount point collection.
+--| If DET call is successful, DAV_AUTHENTICATE_HTTP checks whether the user have read permission on mount point collection.
 --| Thus even if DET function allows anonymous access, the whole request may fail if mountpoint is not readable by public.
 create function "bookmark_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 {
@@ -150,7 +150,7 @@ create function "bookmark_DAV_COL_CREATE" (in detcol_id any, in path_parts any, 
 }
 ;
 
---| It looks like that this is redundand and should be removed at all.
+--| It looks like that this is redundant and should be removed at all.
 create function "bookmark_DAV_COL_MOUNT" (in detcol_id any, in path_parts any, in full_mount_path varchar, in mount_det varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('bookmark_DAV_COL_MOUNT (', detcol_id, path_parts, full_mount_path, mount_det, permissions, uid, gid, auth_uid, ')');
@@ -158,7 +158,7 @@ create function "bookmark_DAV_COL_MOUNT" (in detcol_id any, in path_parts any, i
 }
 ;
 
---| It looks like that this is redundand and should be removed at all.
+--| It looks like that this is redundant and should be removed at all.
 create function "bookmark_DAV_COL_MOUNT_HERE" (in parent_id any, in full_mount_path varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('bookmark_DAV_COL_MOUNT_HERE (', parent_id, full_mount_path, permissions, uid, gid, auth_uid, ')');
@@ -509,7 +509,7 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 				'100000000NN', ownergid, owner_uid, now(), 'dav/unix-directory', orig_name) ) );
 			}
 		}
-                if (top_id[3] = 1 and top_id[4] <> 0) -- and top_id[5] = 0) -- level of bookmaark instance, list of bookmark folders
+                if (top_id[3] = 1 and top_id[4] <> 0) -- and top_id[5] = 0) -- level of bookmark instance, list of bookmark folders
 		{
                         declare tmp int;
                         tmp := top_id[5];

@@ -44,7 +44,7 @@ ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_VCR_CO_VERSION INTEGER;
 ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_VCR_STATE INTEGER; -- 0 CIN, -- 1 COUT
 
 CREATE TABLE WS.WS.SYS_DAV_RES_VERSION (
-  RV_RES_ID INTEGER NOT NULL, -- This is equal to either exising resource ID or to an attic ID
+  RV_RES_ID INTEGER NOT NULL, -- This is equal to either existing resource ID or to an attic ID
   RV_ID INTEGER NOT NULL, -- Version ID
   RV_NODE_NAME VARCHAR, -- Version number string as it can be used for data export. NULL to generate automatically.
   RV_PREV_ID INTEGER, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
@@ -67,7 +67,7 @@ CREATE TABLE WS.WS.SYS_DAV_RES_DIFF (
 );
 
 CREATE TABLE WS.WS.SYS_DAV_RES_MERGE (
-  RM_RES_ID INTEGER NOT NULL, -- This is equal to either exising resource ID or to an attic ID
+  RM_RES_ID INTEGER NOT NULL, -- This is equal to either existing resource ID or to an attic ID
   RM_ID INTEGER NOT NULL, -- Version number after merge
   RM_BRANCH_PREV_ID INTEGER NOT NULL, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID)
   RM_ACT_ID INTEGER, -- referenced by WS.WS.SYS_DAV_ACTIVITY (ACT_ID) when NOT NULL
@@ -188,7 +188,7 @@ CREATE TRIGGER "Versioning_DAV_RES_INSERT" AFTER INSERT ON WS.WS.SYS_DAV_RES REF
       set triggers off;
       update WS.WS.SYS_DAV_RES set RES_STATUS = 'AV' where RES_ID = N.RES_ID;
       set triggers on;
-      insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either exising resource ID or to an attic ID
+      insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
 		  RV_ID, -- Version ID
 		  RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
 		  RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
@@ -213,7 +213,7 @@ CREATE TRIGGER "Versioning_DAV_RES_UPDATE" AFTER UPDATE ON WS.WS.SYS_DAV_RES REF
       _ver_prev_id := (select max (RV_ID) from WS.WS.SYS_DAV_RES_VERSION
       			where RV_RES_ID = N.RES_ID);
       _ver_id := _ver_prev_id + 1;
-      insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either exising resource ID or to an attic ID
+      insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
 		  RV_ID, -- Version ID
 		  RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
 		  RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL

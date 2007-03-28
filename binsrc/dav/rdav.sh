@@ -87,7 +87,7 @@ $URLPUT -l "$LT" unlock.url >> dav.log
 CHEKLOG "UNLOCK" 4 dav.log
 
 $URLPUT -l "$LT" unlock.url | tee err.log >> errors.log
-CHEKLOG "UNLOCKING UNEXISTING LOCK" 2 err.log
+CHEKLOG "UNLOCKING NONEXISTING LOCK" 2 err.log
 
 $URLPUT -l "Destination: http://localhost%3a6666/DAV/Dav_Coll_Moved/" move.url >> dav.log
 CHEKLOG "MOVE" 4 dav.log
@@ -115,6 +115,6 @@ $URLPUT eprop.url | tee err.log >> errors.log
 CHEKLOG "PROPFIND OVER NONEXISTING COLLECTION" 2 err.log
 
 $URLPUT -t get_test eget.url | tee err.log >> errors.log
-CHEKLOG "GET UNEXISTING RESOURCE" 2 err.log
+CHEKLOG "GET NONEXISTING RESOURCE" 2 err.log
 
 echo "FINISHED: DAV METHODS TEST"

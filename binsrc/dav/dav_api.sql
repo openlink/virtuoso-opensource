@@ -1489,7 +1489,7 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
   if (a_uid is null)
     {
       a_uid := DAV_CHECK_AUTH (a_uname, a_pwd, 0);
-      -- dbg_obj_princ ('DAV_CHECK_AUTH (', a_uname, a_pwd, 0, ') returs ', a_uid);
+      -- dbg_obj_princ ('DAV_CHECK_AUTH (', a_uname, a_pwd, 0, ') returns ', a_uid);
     }
   if (a_uid < 0)
     return a_uid;
@@ -1626,7 +1626,7 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
     {
       if (a_uid < 0)
         {
-          -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', a_uid, ' (that is a neagtive a_uid)');
+          -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', a_uid, ' (that is a negtive a_uid)');
 	  return a_uid;
 	}
      if (a_uid = 1) -- Anonymous FTP
@@ -2943,9 +2943,9 @@ DAV_PROP_SET (
     in propvalue any,
     in auth_uname varchar := null,
     in auth_pwd varchar := null,
-    in owerwrite integer := 0 )
+    in overwrite integer := 0 )
 {
-  return DAV_PROP_SET_INT (path, propname, propvalue, auth_uname, auth_pwd, 1, 1, owerwrite);
+  return DAV_PROP_SET_INT (path, propname, propvalue, auth_uname, auth_pwd, 1, 1, overwrite);
 }
 ;
 
@@ -3708,7 +3708,7 @@ DAV_RES_CONTENT_INT (
     in id any,
     inout content any,
     out type varchar,
-    in content_mode integer, -- 0 for set output to a string or blob, 1 for wrinting to content as to session, 2 for set output to whatever including XML, 3 for writing to http.
+    in content_mode integer, -- 0 for set output to a string or blob, 1 for writing to content as to session, 2 for set output to whatever including XML, 3 for writing to http.
     in extern integer := 1,
     in auth_uname varchar := null, in auth_pwd varchar := null )
 {
@@ -4185,7 +4185,7 @@ create procedure WS.WS.ACL_ADD_ENTRY(inout acl varbinary, in uid integer, in bit
 
 -------------------------------------------------------------------------------
 --
--- Removes an existng entry.
+-- Removes an existing entry.
 -- The grant flag is not given since the ACL will not simultaneously contain
 -- an entry granting and revoking the exact same thing.
 --
@@ -5302,7 +5302,7 @@ DAV_DEPRECATE_MIME_RDF (in m_ident varchar, in schema_uri varchar)
 create function
 DAV_RDF_PROP_SET (
     in path varchar,			-- Path to the resource or collection
-    in single_schema varchar,		-- Name of single RDF schema to filter out redundand records or NULL to compose any number of properties.
+    in single_schema varchar,		-- Name of single RDF schema to filter out redundant records or NULL to compose any number of properties.
     in rdf any,				-- RDF XML
     in auth_uname varchar := null,
     in auth_pwd varchar := null) returns integer
@@ -5316,7 +5316,7 @@ DAV_RDF_PROP_SET (
 create procedure
 DAV_RDF_PROP_GET (
     in path varchar,			-- Path to the resource or collection
-    in single_schema varchar,		-- Name of single RDF schema to filter out redundand records or NULL to return all non-deprecated schemas associated in WS.WS.SYS_MIME_RDFS with the resource.
+    in single_schema varchar,		-- Name of single RDF schema to filter out redundant records or NULL to return all non-deprecated schemas associated in WS.WS.SYS_MIME_RDFS with the resource.
     in auth_uname varchar := null,
     in auth_pwd varchar := null) returns any
 {
@@ -5450,7 +5450,7 @@ DAV_RDF_PREPROCESS_RDFXML (in rdfxml any, in main_res nvarchar, in already_n3 in
 create function
 DAV_RDF_PROP_SET_INT (
     in path varchar,		-- Path to the resource or collection
-    in single_schema varchar,	-- Name of single RDF schema to filter out redundand records or NULL to compose any number of properties.
+    in single_schema varchar,	-- Name of single RDF schema to filter out redundant records or NULL to compose any number of properties.
     in rdf any,			-- RDF XML
     in auth_uname varchar := null,
     in auth_pwd varchar := null,

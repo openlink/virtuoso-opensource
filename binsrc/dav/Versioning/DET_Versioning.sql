@@ -39,7 +39,7 @@ ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_VCR_STATE INTEGER -- 0 CIN, -- 1 COUT
 ;
 
 CREATE TABLE WS.WS.SYS_DAV_RES_VERSION (
-  RV_RES_ID INTEGER NOT NULL, -- This is equal to either exising resource ID or to an attic ID
+  RV_RES_ID INTEGER NOT NULL, -- This is equal to either existing resource ID or to an attic ID
   RV_ID INTEGER NOT NULL, -- Version ID
   RV_NODE_NAME VARCHAR, -- Version number string as it can be used for data export. NULL to generate automatically.
   RV_PREV_ID INTEGER, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
@@ -67,7 +67,7 @@ CREATE TABLE WS.WS.SYS_DAV_RES_DIFF (
 ;
 
 CREATE TABLE WS.WS.SYS_DAV_RES_MERGE (
-  RM_RES_ID INTEGER NOT NULL, -- This is equal to either exising resource ID or to an attic ID
+  RM_RES_ID INTEGER NOT NULL, -- This is equal to either existing resource ID or to an attic ID
   RM_ID INTEGER NOT NULL, -- Version number after merge
   RM_BRANCH_PREV_ID INTEGER NOT NULL, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID)
   RM_ACT_ID INTEGER, -- referenced by WS.WS.SYS_DAV_ACTIVITY (ACT_ID) when NOT NULL
@@ -252,7 +252,7 @@ CREATE TRIGGER "Versioning_DAV_RES_INSERT" AFTER INSERT ON WS.WS.SYS_DAV_RES ORD
       set triggers on;
       delete from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = N.RES_ID;
       delete from WS.WS.SYS_DAV_RES_DIFF where RD_RES_ID = N.RES_ID;
-      insert replacing WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either exising resource ID or to an attic ID
+      insert replacing WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
 		  RV_ID, -- Version ID
 		  RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
 		  RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
@@ -352,7 +352,7 @@ full_copy:
       if (_auto_version_type = 'DAV:checkout-checkin' -- checkout-checkin
 	  or (_auto_version_type = 'DAV:checkout-unlocked-checkin'))
 	{
-	      insert replacing WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either exising resource ID or to an attic ID
+	      insert replacing WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
 		  RV_ID, -- Version ID
 		  RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
 		  RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
@@ -517,7 +517,7 @@ create function "Versioning_DAV_AUTHENTICATE" (in id any, in what char(1), in re
 --| This exactly matches DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 --| The function should fully check access because DAV_AUTHENTICATE_HTTP do nothing with auth data either before or after calling this DET function.
 --| Unlike DAV_AUTHENTICATE, user name passed to DAV_AUTHENTICATE_HTTP header may not match real DAV user.
---| If DET call is successfull, DAV_AUTHENTICATE_HTTP checks whether the user have read permission on mount point collection.
+--| If DET call is successful, DAV_AUTHENTICATE_HTTP checks whether the user have read permission on mount point collection.
 --| Thus even if DET function allows anonymous access, the whole request may fail if mountpoint is not readable by public.
 create function "Versioning_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 {
@@ -591,7 +591,7 @@ create function "Versioning_DAV_COL_CREATE" (in detcol_id any, in path_parts any
 }
 ;
 
---| It looks like that this is redundand and should be removed at all.
+--| It looks like that this is redundant and should be removed at all.
 create function "Versioning_DAV_COL_MOUNT" (in detcol_id any, in path_parts any, in full_mount_path varchar, in mount_det varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
    -- dbg_obj_princ ('Versioning_DAV_COL_MOUNT (', detcol_id, path_parts, full_mount_path, mount_det, permissions, uid, gid, auth_uid, ')');
@@ -599,7 +599,7 @@ create function "Versioning_DAV_COL_MOUNT" (in detcol_id any, in path_parts any,
 }
 ;
 
---| It looks like that this is redundand and should be removed at all.
+--| It looks like that this is redundant and should be removed at all.
 create function "Versioning_DAV_COL_MOUNT_HERE" (in parent_id any, in full_mount_path varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
 {
    -- dbg_obj_princ ('Versioning_DAV_COL_MOUNT_HERE (', parent_id, full_mount_path, permissions, uid, gid, auth_uid, ')');
@@ -1272,7 +1272,7 @@ create function "Versioning_DAV_RES_CONTENT" (in id any, inout content any, out 
 {
    -- dbg_obj_princ ('Versioning_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
   declare _res int;
-  if (aref (id, 3) = -1) -- histrory
+  if (aref (id, 3) = -1) -- history
     {
       declare _xml any;
       _xml := ( select XMLELEMENT ('history',
@@ -1673,7 +1673,7 @@ create procedure DAV_CHECKIN_INT (in path varchar, in auth varchar, in pwd varch
 		RV_RES_ID = _id);
   if (_ver_id is null)
     {
-      insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either exising resource ID or to an attic ID
+      insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
 		  RV_ID, -- Version ID
 		  RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
 		  RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
@@ -1711,7 +1711,7 @@ full_copy:
 	    _diff_type := 'c';
 	}
      _ver_next_id := _ver_id + 1;
-     insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either exising resource ID or to an attic ID
+     insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
 		  RV_ID, -- Version ID
 		  RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
 		  RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
@@ -1864,7 +1864,7 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
   declare _content any;
   select RES_TYPE, RES_CONTENT into _type, _content from WS.WS.SYS_DAV_RES where RES_ID = _id;
   --dbg_obj_princ ('insert into *version: ', _id);
-  insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either exising resource ID or to an attic ID
+  insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
 		  RV_ID, -- Version ID
 		  RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
 		  RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
@@ -2096,7 +2096,7 @@ full_copy:
 	}
       delete from WS.WS.SYS_DAV_RES_DIFF where RD_RES_ID = id and RD_TO_ID > _prev_version;
       delete from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = id and RV_ID > _prev_version;
-      insert replacing WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either exising resource ID or to an attic ID
+      insert replacing WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
 		  RV_ID, -- Version ID
 		  RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
 		  RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL

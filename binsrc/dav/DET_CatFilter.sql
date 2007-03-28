@@ -304,7 +304,7 @@ create function "CatFilter_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts 
 
   -- dbg_obj_princ ('CatFilter_DAV_SEARCH_ID_IMPL: ', path_parts, colpath, orig_fnameext, orig_id, rfc_spath, rfc_list_cond, filter_data);
 
-  if (isarray (orig_id)) -- TODO: remove this and make better processing to return -1 if path contains criterions that filter out orig_id
+  if (isarray (orig_id)) -- TODO: remove this and make better processing to return -1 if path contains criteria that filter out orig_id
     return orig_id;
   len := length (filter_data);
   vectorbld_init (filter);

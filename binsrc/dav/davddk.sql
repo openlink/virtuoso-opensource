@@ -223,7 +223,7 @@ create table WS.WS.SYS_RDF_SCHEMAS (
   RS_LOCAL_ADDONS	varchar,		-- Location URI used to retrieve local metadata made by local applications (e.g., comments, helps, screen names etc.).
   RS_PRECOMPILED	long xml,		-- This contains a precompiled mix of data from both schema and local addons.
   RS_COMPILATION_DATE	datetime,		-- Date of the last compilation.
-  RS_CATNAME		varchar,		-- A readable and unique label of an RDF schema taht can act as collection name in category filter.
+  RS_CATNAME		varchar,		-- A readable and unique label of an RDF schema that can act as collection name in category filter.
   RS_PROP_CATNAMES	long varchar,		-- The serialized vector of names and labels of all declared properties of top-level elements for category filter.
   RS_DEPRECATED		integer,		-- Flag if schema is deprecated.
   primary key (RS_URI)
@@ -990,13 +990,13 @@ create procedure WS.WS.SYS_DAV_INIT ()
   {
     -- __atomic (0);
     result (__SQL_STATE, __SQL_MESSAGE);
-    log_message ('The error was occured during execution of procedure WS.WS.SYS_DAV_INIT().');
+    log_message ('The error occurred during execution of procedure WS.WS.SYS_DAV_INIT().');
     log_message ('This procedure has failed to upgrade WebDAV to Virtuoso 4.0 format.');
     log_message ('The content of data stored in DAV resources remain changed, but access');
     log_message ('permissions may become invalid. To guard your database installation from');
     log_message ('potential security problems, remove the transaction log before restarting');
     log_message ('the server.');
-    log_message ('The following error has terminated to upgrade:');
+    log_message ('The following error has terminated the upgrade:');
     log_message(concat(cast(__SQL_STATE as varchar), ' ', cast(__SQL_MESSAGE as varchar)));
     raw_exit(-1);
     return;

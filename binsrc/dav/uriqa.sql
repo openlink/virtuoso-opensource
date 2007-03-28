@@ -563,8 +563,8 @@ create function WS.WS.URIQA_HANDLER_NATIVE_HTTP (inout op varchar, inout uri var
     resp_page := http_get (req_uri, resp_header, 'POST', req_header, '');
   else
     resp_page := http_get (req_uri, resp_header, 'POST', req_header, string_output_string (body));
-  -- dbg_obj_princ ('responce header: ', resp_header);
-  -- dbg_obj_princ ('responce body: ', resp_page);
+  -- dbg_obj_princ ('response header: ', resp_header);
+  -- dbg_obj_princ ('response body: ', resp_page);
   http (resp_page);
   is_final := 1;
   if (length (resp_header) > 0)

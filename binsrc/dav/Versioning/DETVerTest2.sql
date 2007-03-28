@@ -83,7 +83,7 @@ create procedure get_doc_v (in path varchar, in ver int)
 
 DB.DBA.DAV_DELETE ('/DAV/versioning/', 1, 'dav','dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH " Deleting verisioning collection"  ":" $STATE "\n";	
+ECHO BOTH " Deleting versioning collection"  ":" $STATE "\n";	
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH " Create test collection: " ":" $LAST[1] "\n";
@@ -156,7 +156,7 @@ ECHO BOTH  " check /DAV/versioning/test2-1.txt "  ":" $LAST[1] "\n";
 ECHO BOTH "Checking versioning, Pass 1 ...\n";
 select upload_doc ('/DAV/versioning/file0.txt', 'content of file1.txt, version 1');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH  " upload inititial version of file0.txt " ":" $LAST[1] "\n";
+ECHO BOTH  " upload initial version of file0.txt " ":" $LAST[1] "\n";
 select RES_STATUS from WS.WS.SYS_DAV_RES where RES_FULL_PATH =  '/DAV/versioning/file0.txt';
 ECHO BOTH $IF $EQU $LAST[1] 'AV' "PASSED:" "***FAILED:";
 ECHO BOTH  " check status of file0.txt " ":" $LAST[1] "\n";
@@ -169,7 +169,7 @@ ECHO BOTH "Checking versioning, Pass 2 ...\n";
 
 select upload_doc ('/DAV/versioning/file1.txt', 'content of file1.txt, version 1');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH  " upload inititial version of file1.txt " ":" $LAST[1] "\n";
+ECHO BOTH  " upload initial version of file1.txt " ":" $LAST[1] "\n";
 select upload_doc ('/DAV/versioning/file1.txt', 'content of file1.txt, version 2');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " upload second version of file1.txt " ":" $LAST[1] "\n";

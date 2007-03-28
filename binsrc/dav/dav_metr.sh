@@ -142,7 +142,7 @@ waitAll ()
      do
        sleep 5
        clients=`ps -e | grep urlsimu | grep -v grep | wc -l`
-       echo -e "Clients remainig: $clients      \r"
+       echo -e "Clients remaining: $clients      \r"
      done 
 }
 
@@ -237,7 +237,7 @@ RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "_SIZE=$2 _USERS=$1 _LOOP
  ok_n=`grep 'HTTP/1.1 2' cli_*.log | wc -l`
  tot_ok=`expr $ok_n / 2 / $count`  
 
- echo "Total sucessful R/W:  $tot_ok  of ($3)" | tee -a $STATFILE
+ echo "Total successful R/W:  $tot_ok  of ($3)" | tee -a $STATFILE
  
  echo "=================== END ===========================" | tee -a $STATFILE
 
