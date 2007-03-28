@@ -2554,6 +2554,7 @@ sf_makecp (char *log_name, lock_trx_t *trx, int fail_on_vdb, int shutdown)
 	{
 	  IN_TXN;
 	  lt_threads_inc_inner (trx);
+	  LEAVE_TXN;
 	}
 
       return;
@@ -2569,6 +2570,7 @@ sf_makecp (char *log_name, lock_trx_t *trx, int fail_on_vdb, int shutdown)
     {
       IN_TXN;
       lt_threads_inc_inner (trx);
+      LEAVE_TXN;
     }
   return;
 }
