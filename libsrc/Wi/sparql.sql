@@ -7461,7 +7461,8 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
     };
 --  checkpoint;
   log_enable (0);
-  log_message ('Upgrading RDF indices.  Can be up to an hour per GB of RDF data.');
+  if (exists (select top 1 1 from DB.DBA.RDF_QUAD))
+    log_message ('Upgrading RDF indices.  Can be up to an hour per GB of RDF data.');
   registry_set ('DB.DBA.RDF_QUAD_FT_UPGRADE', '1');
   if (exists (select top 1 1 from DB.DBA.SYS_COLS
     where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
