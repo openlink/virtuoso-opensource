@@ -34,25 +34,27 @@ ISQL=${ISQL-isql}
 DSN="$HOST:$PORT"
 HOST_OS=`uname -s | grep WIN`
 NEED_VERSION=04.50.2914
+
 if [ "x$HOST_OS" != "x" ]
 then
-TEMPFILE="`cygpath -m $TMP/isql.$$`"
-STICKER="`cygpath -m $STICKER`"
-if [ "x$SRC" != "x" ]
-then
-HOME=$SRC
+    TEMPFILE="`cygpath -m $TMP/isql.$$`"
+    STICKER="`cygpath -m $STICKER`"
+    if [ "x$SRC" != "x" ]
+    then
+	HOME=$SRC
+    else
+	HOME="`cygpath -m $HOME`"
+    fi
+    LN="cp -rf"
+    RM="rm -rf"
 else
-HOME="`cygpath -m $HOME`"
+    TEMPFILE=/tmp/isql.$$
+    LN="ln -fs"
+    RM="rm -f"
 fi
-LN="cp -rf"
-RM="rm -rf"
-else
-TEMPFILE=/tmp/isql.$$
-LN="ln -fs"
-RM="rm -f"
-fi
+
 VOS=0
-if [ -f ../../autogen.sh ]
+if [ -f ../../../autogen.sh ]
 then
     VOS=1
 fi
@@ -212,16 +214,16 @@ directory_init() {
   mkdir vad/data/demo/sample_data/images/art
   mkdir vad/data/demo/sample_data/images/flags
   mkdir vad/data/demo/xmlsql
-  $RM flags flags.tar
+  $RM -r flags flags.tar
   cat flags.tar.gz | gunzip - > flags.tar
   tar -xf flags.tar
-  $RM art art.tar
+  $RM -r art art.tar
   cat art.tar.gz | gunzip - > art.tar
   tar -xf art.tar
   cp -rf flags/* vad/data/demo/sample_data/images/flags
   cp -rf art/* vad/data/demo/sample_data/images/art
-  $RM flags flags.tar
-  $RM art art.tar
+  $RM -r flags flags.tar
+  $RM -r art art.tar
   cp -f CAT1                                                    vad/data/demo/sql
   cp -f CAT2                                                    vad/data/demo/sql
   cp -f CAT3                                                    vad/data/demo/sql
@@ -562,5 +564,5 @@ vad_create
 virtuoso_shutdown
 chmod 644 demo_dav.vad
 chmod 644 virtuoso.trx
-#directory_clean
+directory_clean
 BANNER "FINISHED PACKAGING DEMO VAD"
