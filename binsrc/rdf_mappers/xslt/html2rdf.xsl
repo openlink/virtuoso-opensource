@@ -33,16 +33,28 @@
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="base" />
   <xsl:template match="/">
+      <rdf:RDF>
       <xsl:apply-templates select="html/head"/>
+	  <xsl:apply-templates select="/" mode="rdf-in-comment"/>
+      </rdf:RDF>
   </xsl:template>
   <xsl:template match="html/head">
-      <rdf:RDF>
 	  <foaf:Document rdf:about="{$base}">
 	      <xsl:apply-templates select="title|meta"/>
 	      <xsl:apply-templates select="/html/body//img[@src]"/>
 	      <xsl:apply-templates select="/html/body//a[@href]"/>
 	  </foaf:Document>
-      </rdf:RDF>
+  </xsl:template>
+  <xsl:template match="*" mode="rdf-in-comment">
+      <xsl:apply-templates mode="rdf-in-comment"/>
+  </xsl:template>
+  <xsl:template match="text()|@*" mode="rdf-in-comment">
+  </xsl:template>
+  <xsl:template match="comment()" mode="rdf-in-comment">
+      <xsl:variable name="doc" select="document-literal (.)"/>
+      <xsl:if test="$doc/rdf:RDF/rdf:*">
+	  <xsl:copy-of select="$doc/rdf:RDF/rdf:*"/>
+      </xsl:if>
   </xsl:template>
   <xsl:template match="title">
       <dc:title>
