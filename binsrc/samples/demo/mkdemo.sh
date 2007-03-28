@@ -777,7 +777,12 @@ then
     #
     #  OpenLink Data Spaces
     #
+    for f in `find $HOME/appsrc -name '*_dav.vad' -print`
+    do
+	$LN $f .
+    done
     DO_COMMAND "vad_install ('ods_framework_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_addressbook_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_blog_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_bookmark_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_briefcase_dav.vad')" dba dba
@@ -785,7 +790,7 @@ then
     DO_COMMAND "vad_install ('ods_discussion_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_feedmanager_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_gallery_dav.vad')" dba dba
-    DO_COMMAND "vad_install ('ods_polls.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_polls_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_webmail_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_wiki_dav.vad')" dba dba
     DO_COMMAND "delete from wa_domains where WD_DOMAIN = 'localhost'" dba dba
