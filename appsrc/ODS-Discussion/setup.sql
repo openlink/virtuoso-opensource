@@ -490,22 +490,31 @@ nntpf_post_message (in params any)
 create procedure
 nntpf_uudecode_file (in num integer, in params any)
 {
-   declare f_name,f_name_fs varchar;
+  
+   declare f_name,f_name_fs,f_value_fs varchar;
    declare is_dav integer;
    declare content, ret any;
 
+
    f_name := 'f_path' || cast (num as varchar);
-   f_name_fs := 'f_path' || cast (num as varchar)||'_fs';
    f_name := get_keyword (f_name, params, '');
-   f_name_fs := get_keyword (f_name_fs, params, '');
+
+   f_name_fs  := 'f_path' || cast (num as varchar)||'_fs';
+   f_value_fs := get_keyword (f_name_fs, params, '');
+   f_name_fs  := get_keyword('filename',get_keyword ('attr-'||f_name_fs, params, ''), '');
+
 
    is_dav := 'is_dav' || cast (num as varchar);
    is_dav := get_keyword (is_dav, params, NULL);
 
+
    if (is_dav is NULL)
    {
+      if (f_name_fs <> '' and length (f_value_fs))
+      {
       f_name  := f_name_fs;
-      content := file_to_string (f_name);
+       content := f_value_fs;
+      }
    }
    else
      select blob_to_string (RES_CONTENT) into content from WS.WS.SYS_DAV_RES where RES_FULL_PATH = f_name;

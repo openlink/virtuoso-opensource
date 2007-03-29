@@ -42,10 +42,11 @@
       </td>
       <td>
   <p><span class="header">Select: </span>
-      <v:check-box name="is_dav1" value="on" xhtml_id="is_dav1"
+      <v:template type="simple" name="is_dav1_container" enabled="--self.vc_authenticated">
+      <v:check-box name="is_dav1" xhtml_id="is_dav1"
          xhtml_onClick="switchElemtensByCheckbox(\'f_path1_dav\',\'f_path1_fs\',\'is_dav1\')"
       /><label>WebDAV Source </label>
-
+      </v:template>
       <input type="file" name="f_path1_fs" size="20" id="f_path1_fs"/>
      <span id="f_path1_dav" style="display:none;">
 		    <v:text name="f_path1" xhtml_id="f_path1"/>
@@ -60,9 +61,11 @@
   </p>
 
   <p><span class="header">Select: </span>
+      <v:template type="simple" name="is_dav2_container" enabled="--self.vc_authenticated">
         <v:check-box name="is_dav2" value="on" xhtml_id="is_dav2"
          xhtml_onClick="switchElemtensByCheckbox(\'f_path2_dav\',\'f_path2_fs\',\'is_dav2\')"
         /><label>WebDAV Source </label>
+      </v:template>
       <input type="file" name="f_path2_fs" size="20" id="f_path2_fs"/>
      <span id="f_path2_dav" style="display:none;">
 		    <v:text name="f_path2" xhtml_id="f_path2"/>
@@ -77,9 +80,11 @@
   </p>
 
   <p><span class="header">Select: </span>
+      <v:template type="simple" name="is_dav3_container" enabled="--self.vc_authenticated">
          <v:check-box name="is_dav3" value="on"  xhtml_id="is_dav3"
                      xhtml_onClick="switchElemtensByCheckbox(\'f_path3_dav\',\'f_path3_fs\',\'is_dav3\')"
          /><label>WebDAV Source </label>
+      </v:template>
       <input type="file" name="f_path3_fs" size="20" id="f_path3_fs"/>
 
      <span id="f_path3_dav" style="display:none;">

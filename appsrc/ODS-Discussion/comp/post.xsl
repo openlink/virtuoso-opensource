@@ -36,23 +36,22 @@
   <v:variable name="vc_disl_warnning" type="integer" default="0"/>
   <v:variable name="vc_invalid_email_addr" type="integer" default="0"/>
   <script type="text/javascript">
-  <!--alert (target + ' ' + fld_name  + ' ' + startPath + ' ' + isDir + ' ' + isDav);-->
     <![CDATA[
     var _davBrowser=new Object;
     var _currDavRoot='<?V(case when self.u_name is not NULL then '/DAV/home/'||self.u_name||'/' else '/DAV/home/' end)?>';
+
     function davbrowseInit()
 	  {
-	   var options = {
-                    imagePath:toolkitImagesPath+'/',
+	   var options = {imagePath:toolkitImagesPath+'/',
                     imageExt:'png',
-                    pathDefault:_currDavRoot,
+                    pathDefault:_currDavRoot
                    };
+     
      OAT.WebDav.init(options);
     
      _davBrowser=OAT.WebDav;
 	  } 
 	  
-//	  dd(_davBrowser);
                        
     function oatdav_browse (davfile_fieldname)
     {
@@ -70,7 +69,6 @@
     {
       // checkbox that control visibility - first element is visible when checkbox is cheked
      var _switch=document.getElementById(checkboxName);
-    
      if(_switch.checked)
      {
       OAT.Dom.show(elmA);
@@ -81,6 +79,7 @@
       OAT.Dom.hide(elmA)
      }
     }
+    
     function doBrowse(target,fld_name, startPath, isDir, isDav)
     {
       window._result = document.nntpf_post[fld_name];
@@ -159,6 +158,7 @@
 		      http_request_status ('HTTP/1.1 302 Found');
   		      http_header ('Location: nntpf_warning.vsp?id=1\r\n');
 		    }
+		  
 		  nntpf_post_message (params);
 		  self.vc_post_ready := 1;
 	       }

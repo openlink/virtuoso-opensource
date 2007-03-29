@@ -34,11 +34,12 @@
     <head>
       <v:include url="virtuoso_app_links.xhtml"/>
       <link rel="stylesheet" type="text/css" href="nntpf.css"/>
+      <link rel="stylesheet" type="text/css" href="webdav.css"/>
       <title>ODS Discussion</title>
     </head>
     <body>
       <vm:page>
-        <v:form name="nntpf_post" type="simple">
+        <v:form name="nntpf_post" type="simple" xhtml_enctype="multipart/form-data">
           <vm:nntpf-title/>
           <div class="menu">
             <vm:menu-bar/>
