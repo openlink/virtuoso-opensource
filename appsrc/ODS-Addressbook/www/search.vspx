@@ -142,7 +142,7 @@
         if (cast(self.v_own as integer) <> 1)
           tmp := concat(tmp, sprintf('&%sown=%s', prefix, cast(self.v_own as varchar)));
         if (cast(self.v_shared as integer) <> 1)
-          tmp := concat(tmp, sprintf('&%spublic=%s', prefix, cast(self.v_shared as varchar)));
+          tmp := concat(tmp, sprintf('&%sshared=%s', prefix, cast(self.v_shared as varchar)));
         if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
           tmp := concat(tmp, sprintf('&%smax=%U', prefix, self.v_max));
         if (not is_empty_or_null(self.v_order) and self.v_order <> '_NAME')
@@ -187,7 +187,7 @@
       <v:variable name="v_expression" type="varchar" default="''"/>
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_own" type="integer" default="1"/>
-      <v:variable name="v_shared" type="integer" default="1"/>
+      <v:variable name="v_shared" type="integer" default="0"/>
 
       <v:variable name="v_output" type="varchar" default="'html'"/>
       <v:variable name="v_max" type="varchar" default="'100'"/>
@@ -304,7 +304,10 @@
                     <table>
                       <tr>
                         <td valign="top">
-                          <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[2]" />
+                          <v:url value="--AB.WA.stringCut ((control.vc_parent as vspx_row_template).te_rowset[2], self.pChars)"
+                                 url="--AB.WA.contact_url ((control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[0]) || sprintf('&sid=%s&realm=%s', self.sid, self.realm)"
+                                 format="%s"
+                                 xhtml_title="--AB.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[2])"/>
                           <?vsp
                             declare N integer;
                             declare id, tags any;

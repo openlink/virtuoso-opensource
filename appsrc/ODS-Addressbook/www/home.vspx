@@ -306,7 +306,7 @@
 
       <v:variable name="v_bCountry" type="varchar" default="''" />
       <v:variable name="v_bCity" type="varchar" default="''" />
-      <v:variable name="v_abState" type="varchar" default="''" />
+      <v:variable name="v_bState" type="varchar" default="''" />
       <v:variable name="v_bCode" type="varchar" default="''" />
       <v:variable name="v_bAddress1" type="varchar" default="''" />
       <v:variable name="v_bAddress2" type="varchar" default="''" />
@@ -410,7 +410,7 @@
 
                     self.v_bCountry := '';
                     self.v_bCity := '';
-                    self.v_abState := '';
+                    self.v_bState := '';
                     self.v_bCode := '';
                     self.v_bAddress1 := '';
                     self.v_bAddress2 := '';
@@ -473,6 +473,11 @@
 
                   if (cmd = 'export') {
                     self.abAction := cmd;
+                    self.abSelected := vector();
+                    for (N := 0; N < length(e.ve_params); N := N + 4) {
+                      if (e.ve_params[N] = 'cb_item')
+                        self.abSelected := vector_concat(self.abSelected, vector(e.ve_params[N+1]));
+                    }
                   }
 
                 _end:
@@ -1107,7 +1112,7 @@
                          self.v_hWeb,
                          self.v_bCountry,
                          self.v_bCity,
-                         self.v_abState,
+                         self.v_bState,
                          self.v_bCode,
                          self.v_bAddress1,
                          self.v_bAddress2,
@@ -1596,7 +1601,7 @@
            		            </v:on-post>
 			                  </v:button>
                         </vm:if>
-                        <?vsp self.viewField (self.v_hLat); ?>
+                        <?vsp self.viewField (cast (self.v_hLat as varchar)); ?>
 		                  </td>
 		                </tr>
 		                <tr>
@@ -1607,7 +1612,7 @@
                         <vm:if test="self.abAction <> 'view'">
 			                  <v:text name="ab_hLng" value="--case when self.v_hLng is not null then sprintf ('%.6f', coalesce (self.v_hLng, 0.00)) else '' end" xhtml_size="20" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_hLng); ?>
+                        <?vsp self.viewField (cast (self.v_hLng as varchar)); ?>
 		                  </td>
 		                </tr>
                     <tr>
@@ -1669,8 +1674,8 @@
       		                  <![CDATA[
       		                    if (e.ve_initiator = control) {
                     		        control.ufl_value := get_keyword (control.vc_get_name(), e.ve_params);
-                            			self.v_abState := null;
-                           			  self.ab_abState.vc_data_bind (e);
+                                  self.v_bState := null;
+                                   self.ab_bState.vc_data_bind (e);
                           		} else {
       		                      control.ufl_value := self.v_bCountry;
                           		}
@@ -1693,9 +1698,9 @@
                       </th>
       		            <td>
                         <vm:if test="self.abAction <> 'view'">
-        		              <v:data-list name="ab_abState" value="--self.v_abState" sql="select * from WA_PROVINCE where WP_COUNTRY = self.ab_bCountry.ufl_value" key-column="WP_PROVINCE" value-column="WP_PROVINCE" />
+                          <v:data-list name="ab_bState" value="--self.v_bState" sql="select * from WA_PROVINCE where WP_COUNTRY = self.ab_bCountry.ufl_value" key-column="WP_PROVINCE" value-column="WP_PROVINCE" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_abState); ?>
+                        <?vsp self.viewField (self.v_bState); ?>
                       </td>
                     </tr>
                     <tr>
@@ -1794,7 +1799,7 @@
                             		         trim (coalesce (self.ab_bAddress1.ufl_value, '')),
                             		         trim (coalesce (self.ab_bAddress2.ufl_value, '')),
                             		         trim (coalesce (self.ab_bCity.ufl_value, '')),
-                              		         trim (coalesce (self.ab_abState.ufl_value, '')),
+                                           trim (coalesce (self.ab_bState.ufl_value, '')),
                             		         trim (coalesce (self.ab_bCode.ufl_value, '')),
                             		         trim (coalesce (self.ab_bCountry.ufl_value, '')),
                             		         lat,
@@ -1809,7 +1814,7 @@
            		            </v:on-post>
 			                  </v:button>
                         </vm:if>
-                        <?vsp self.viewField (self.v_bLat); ?>
+                        <?vsp self.viewField (cast (self.v_bLat as varchar)); ?>
 		                  </td>
 		                </tr>
 		                <tr>
@@ -1820,7 +1825,7 @@
                         <vm:if test="self.abAction <> 'view'">
 			                  <v:text name="ab_bLng" value="--case when self.v_bLng is not null then sprintf ('%.6f', coalesce (self.v_bLng, 0.00)) else '' end" xhtml_size="20" />
                         </vm:if>
-                        <?vsp self.viewField (self.v_bLng); ?>
+                        <?vsp self.viewField (cast (self.v_bLng as varchar)); ?>
 		                  </td>
 		                </tr>
                     <tr>
@@ -1982,7 +1987,7 @@
                     self.v_hWeb          := trim (self.ab_hWeb.ufl_value);
                     self.v_bCountry      := trim (self.ab_bCountry.ufl_value);
                     self.v_bCity         := trim (self.ab_bCity.ufl_value);
-                    self.v_abState        := trim (self.ab_abState.ufl_value);
+                    self.v_bState        := trim (self.ab_bState.ufl_value);
                     self.v_bCode         := trim (self.ab_bCode.ufl_value);
                     self.v_bAddress1     := trim (self.ab_bAddress1.ufl_value);
                     self.v_bAddress2     := trim (self.ab_bAddress2.ufl_value);
@@ -2014,8 +2019,8 @@
                       self.v_yahoo,
                       self.v_msn,
                       self.v_hCountry,
-                      self.v_hCity,
                       self.v_hState,
+                      self.v_hCity,
                       self.v_hCode,
                       self.v_hAddress1,
                       self.v_hAddress2,
@@ -2027,8 +2032,8 @@
                       self.v_hMail,
                       self.v_hWeb,
                       self.v_bCountry,
+                      self.v_bState,
                       self.v_bCity,
-                      self.v_abState,
                       self.v_bCode,
                       self.v_bAddress1,
                       self.v_bAddress2,
@@ -2691,10 +2696,21 @@
                               (
                                 -- basic props
                                 'P_NAME',        'NICKNAME/val',
+                                'P_TITLE',          'N/fld[4]',
+                                'P_FIRST_NAME',     'N/fld[2]',
+                                'P_LAST_NAME',      'N/fld[1]|N/val',
                                 'P_FULL_NAME',   'FN/val',
                                 'P_MAIL',        'for \044v in EMAIL/val return \044v',
                                 'P_LAST_NAME',   'N/fld[1]|N/val',
-                                'P_WEB',         'URL/val'
+                                'P_WEB',            'URL/val',
+                                'P_H_ADDRESS1',     'ADR/fld[3]',
+                                'P_H_ADDRESS2',     'ADR/fld[2]',
+                                'P_H_CITY',         'ADR/fld[4]',
+                                'P_H_CODE',         'ADR/fld[6]',
+                                'P_H_STATE',        'ADR/fld[5]',
+                                'P_H_COUNTRY',      'ADR/fld[7]',
+                                'P_B_ORGANIZATION', 'ORG/val',
+                                'P_B_JOB',          'TITLE/val'
                               );
                           }
                           id := -1;
@@ -2716,7 +2732,7 @@
 
 			                -- FOAF
 			                if (self.i_type = 1) {
-			                  declare Items, Item any;
+                        declare Meta, Items, Item any;
 
 	                      declare continue handler for SQLSTATE '*' {
                           --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE)
@@ -2732,23 +2748,30 @@
                                                            ' SELECT ?x ' ||
                                                            '   FROM <%s> ' ||
                                                            '  WHERE {?x rdf:type foaf:Person} ', t_iri));
+                        Meta := vector ('P_NAME', 'P_FULL_NAME', 'P_FIRST_NAME', 'P_LAST_NAME', 'P_MAIL', 'P_WEB', 'P_ICQ', 'P_MSN', 'P_AIM', 'P_YAHOO');
                         for (N := 0; N < length (Items); N := N + 1) {
                           S := ' SPARQL ' ||
                                ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
                                ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
                                ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
-                               ' SELECT ?P_NAME, ?P_FULL_NAME, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_MAIL, ?P_WEB ' ||
+                               ' SELECT ?P_NAME, ?P_FULL_NAME, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO ' ||
                                ' FROM <%s> ' ||
                                ' WHERE { ' ||
-                               '         <%s> a foaf:Person. ' ||
-                               '         OPTIONAL{ <%s> foaf:nick ?P_NAME}. ' ||
-                               '         OPTIONAL{ <%s> foaf:name ?P_FULL_NAME}. ' ||
-                               '         OPTIONAL{ <%s> foaf:firstNname ?P_FIRST_NAME}. ' ||
-                               '         OPTIONAL{ <%s> foaf:family_name ?P_LAST_NAME}. ' ||
-                               '         OPTIONAL{ <%s> foaf:mbox ?P_MAIL}. ' ||
-                               '         OPTIONAL{ <%s> foaf:homepage ?P_WEB}. ' ||
+                               '         FILTER(?person = <%s>) .' ||
+                               '         ?person a foaf:Person . ' ||
+                               '         OPTIONAL{ ?person foaf:nick ?P_NAME} . ' ||
+                               '         OPTIONAL{ ?person foaf:name ?P_FULL_NAME} . ' ||
+                               '         OPTIONAL{ ?person foaf:firstNname ?P_FIRST_NAME} . ' ||
+                               '         OPTIONAL{ ?person foaf:family_name ?P_LAST_NAME} . ' ||
+                               '         OPTIONAL{ ?person foaf:mbox ?P_MAIL} . ' ||
+                               '         OPTIONAL{ ?person foaf:homepage ?P_WEB} . ' ||
+                               '         OPTIONAL{ ?person foaf:icqChatID ?P_ICQ } .' ||
+                               '         OPTIONAL{ ?person foaf:msnChatID ?P_MSN } .' ||
+                               '         OPTIONAL{ ?person foaf:aimChatID ?P_AIM } .' ||
+                               '         OPTIONAL{ ?person foaf:yahooChatID ?P_YAHOO } .' ||
                                '       }';
-                          Item := AB.WA.ab_sparql (sprintf (S, t_iri, Items [N][0], Items [N][0], Items [N][0], Items [N][0], Items [N][0], Items [N][0], Items [N][0]));
+
+                          Item := AB.WA.ab_sparql (sprintf (S, t_iri, Items [N][0]));
                           id := -1;
                           if (length (Item)) {
                             fullName := null;
@@ -2761,14 +2784,9 @@
                             id := AB.WA.contact_update2 (id, self.domain_id, 'P_NAME', coalesce (Item[0][0], fullName));
                             if (not isnull (fullName))
                               AB.WA.contact_update2 (id, self.domain_id, 'P_FULL_NAME', fullName);
-                            if (not isnull (Item[0][2]))
-                              AB.WA.contact_update2 (id, self.domain_id, 'P_FIRST_NAME', Item[0][2]);
-                            if (not isnull (Item[0][3]))
-                              AB.WA.contact_update2 (id, self.domain_id, 'P_LAST_NAME', Item[0][3]);
-                            if (not isnull (Item[0][4]))
-                              AB.WA.contact_update2 (id, self.domain_id, 'P_MAIL', Item[0][4]);
-                            if (not isnull (Item[0][5]))
-                              AB.WA.contact_update2 (id, self.domain_id, 'P_WEB', Item[0][5]);
+                            for (M := 2; N < length (Meta); M := M + 1)
+                              if (not isnull (Item[0][M]))
+                                AB.WA.contact_update2 (id, self.domain_id, Meta[M], Item[0][M]);
                           }
   			                }
   			              _delete:;
@@ -2871,27 +2889,27 @@
           <v:template type="simple" enabled="--case when (self.abAction = 'export') then 1 else 0 end">
 
             <div class="new-form-header">
-              <v:label format="%s" value="Export contacts"/>
+              <v:label format="%s" value="-- case when (length (self.abSelected)) then 'Export selected contacts' else 'Export all contacts' end" />
             </div>
 
             <div class="new-form-body">
               <table cellspacing="0">
                 <tr>
-                  <th rowspan="3" valign="top">
+                  <th rowspan="3" valign="center">
                     <v:label for="e_format" value="Content type" />
                   </th>
                   <td>
-                    <input type="radio" name="e_format" id="e_format_0" value="vCard" checked="checked" onclick="changeExportName('e_file', '.foaf', '.vcf');"/><xsl:call-template name="nbsp"/><label for="e_format_0">vCard</label>
+                    <input type="radio" name="e_format" id="e_format_0" value="vCard" checked="checked" onclick="changeExportName('e_file', ['.foaf', '.csv'], '.vcf');" /><xsl:call-template name="nbsp" /><label for="e_format_0">vCard</label>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <input type="radio" name="e_format" id="e_format_1" value="FOAF" onclick="changeExportName('e_file', '.vcf', '.foaf');"/><xsl:call-template name="nbsp"/><label for="e_format_1">FOAF</label>
+                    <input type="radio" name="e_format" id="e_format_1" value="FOAF" onclick="changeExportName('e_file', ['.vcf', '.csv'], '.foaf');" /><xsl:call-template name="nbsp" /><label for="e_format_1">FOAF</label>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <input type="radio" name="e_format" id="e_format_1" value="FOAF" onclick="changeExportName('e_file', '.vcf', '.csv');"/><xsl:call-template name="nbsp"/><label for="e_format_1">CSV</label>
+                    <input type="radio" name="e_format" id="e_format_1" value="csv" onclick="changeExportName('e_file', ['.foaf', '.vcf'], '.csv');" /><xsl:call-template name="nbsp" /><label for="e_format_1">CSV</label>
                   </td>
                 </tr>
                 <tr>
@@ -2899,7 +2917,7 @@
                     <v:label for="e_file" value="File name"/>
                   </th>
                   <td>
-                    <input type="text" name="e_file" value="Contacts.vcf" size="40"/>
+                    <v:text name="e_file" value="contacts.vcf" xhtml_class="textbox" xhtml_size="40" />
                   </td>
                 </tr>
               </table>
@@ -2909,6 +2927,47 @@
               <v:button action="simple" value="Export" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
+                    declare params any;
+
+                    params := e.ve_params;
+
+                    http_rewrite ();
+                    http_request_status ('HTTP/1.1 200 OK');
+                    http_header ('Content-Type: application/octet-stream\r\n');
+                    http_header (sprintf ('Content-Disposition: inline; filename="%s"\r\n', self.e_file.ufl_value));
+
+                    if (get_keyword ('e_format', params) = 'vCard') {
+                      -- vCard
+                      if (length (self.abSelected)) {
+                        foreach (any id in self.abSelected) do
+                          http (AB.WA.export_vcard (cast (id as integer), self.domain_id));
+                      } else {
+                        for (select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = self.domain_id) do
+                          http (AB.WA.export_vcard (P_ID, self.domain_id));
+                      }
+
+                    } else if (get_keyword ('e_format', params) = 'FOAF') {
+                      -- foaf
+                      if (length (self.abSelected)) {
+                        http (AB.WA.export_foaf (self.abSelected, self.domain_id));
+                      } else {
+                        http (AB.WA.export_foaf (null, self.domain_id));
+                      }
+
+                    } else if (get_keyword ('e_format', params) = 'csv') {
+                      -- CSV
+                      http (AB.WA.export_csv_head ());
+                      if (length (self.abSelected)) {
+                        foreach (any id in self.abSelected) do
+                          http (AB.WA.export_csv (cast (id as integer), self.domain_id));
+                      } else {
+                        for (select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = self.domain_id) do
+                          http (AB.WA.export_csv (P_ID, self.domain_id));
+                      }
+
+                    }
+                    http_flush ();
+
                     self.abAction := 'browse';
                     self.vc_data_bind(e);
                   ]]>

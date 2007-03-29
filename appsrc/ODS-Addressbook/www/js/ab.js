@@ -520,7 +520,8 @@ function createHidden2(doc, frm_name, fld_name, fld_value) {
 function changeExportName(fld_name, from, to) {
   var obj = document.forms['F1'].elements[fld_name];
   if (obj)
-    obj.value = (obj.value).replace(from, to);
+    for (var i = 0; i < from.length; ++i)
+      obj.value = (obj.value).replace(from[i], to);
 }
 
 // ---------------------------------------------------------------------------

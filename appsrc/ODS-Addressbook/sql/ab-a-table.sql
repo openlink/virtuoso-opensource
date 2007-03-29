@@ -167,6 +167,41 @@ create procedure AB.WA.PERSONS_P_NAME_int (inout vtb any, inout d_id any, in mod
     vt_batch_feed (vtb, coalesce(P_FIRST_NAME, ''), mode);
     vt_batch_feed (vtb, coalesce(P_LAST_NAME, ''), mode);
     vt_batch_feed (vtb, coalesce(P_FULL_NAME, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_GENDER, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_BIRTHDAY, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_MAIL, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_WEB, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_ICQ, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_SKYPE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_AIM, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_YAHOO, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_MSN, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_COUNTRY, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_STATE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_CITY, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_CODE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_ADDRESS1, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_ADDRESS2, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_TZONE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_LAT, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_LNG, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_PHONE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_MOBILE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_MAIL, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_H_WEB, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_COUNTRY, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_STATE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_CITY, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_CODE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_ADDRESS1, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_ADDRESS2, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_TZONE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_LAT, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_LNG, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_PHONE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_MOBILE, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_MAIL, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_B_WEB, ''), mode);
 
     if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = P_DOMAIN_ID and WAI_TYPE_NAME = 'AddressBook' and WAI_IS_PUBLIC = 1))
       vt_batch_feed (vtb, '^public', mode);
@@ -282,7 +317,7 @@ create procedure AB.WA.tags_procedure (
 ;
 
 AB.WA.exec_no_error ('
-  create procedure view SN..TAGS_VIEW as AB.WA.tags_procedure (tags) (TV_TAG varchar)
+  create procedure view AB..TAGS_VIEW as AB.WA.tags_procedure (tags) (TV_TAG varchar)
 ')
 ;
 

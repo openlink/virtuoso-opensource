@@ -450,6 +450,28 @@ create procedure AB.WA.export_rss_sqlx_int (
   http ('from DB.DBA.SYS_USERS where U_ID = <USER_ID> \n', retValue);
   http (']]></sql:sqlx>\n', retValue);
 
+  http ('<sql:sqlx xmlns:sql=\'urn:schemas-openlink-com:xml-sql\'><![CDATA[\n', retValue);
+  http ('select \n', retValue);
+  http ('  XMLAGG(XMLELEMENT(\'item\', \n', retValue);
+  http ('    XMLELEMENT(\'title\', AB.WA.utf2wide (P_NAME)), \n', retValue);
+  http ('    XMLELEMENT(\'description\', AB.WA.utf2wide (P_FULL_NAME)), \n', retValue);
+  http ('    XMLELEMENT(\'guid\', P_ID), \n', retValue);
+  http ('    XMLELEMENT(\'link\', AB.WA.contact_url (<DOMAIN_ID>, P_ID)), \n', retValue);
+  http ('    XMLELEMENT(\'pubDate\', AB.WA.dt_rfc1123 (P_UPDATED)), \n', retValue);
+  http ('    (select XMLAGG (XMLELEMENT (\'category\', TV_TAG)) from AB..TAGS_VIEW where tags = P_TAGS), \n', retValue);
+  http ('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', AB.WA.dt_iso8601 (P_UPDATED)))) \n', retValue);
+  http ('from (select top 15  \n', retValue);
+  http ('        P_NAME, \n', retValue);
+  http ('        P_FULL_NAME, \n', retValue);
+  http ('        P_UPDATED, \n', retValue);
+  http ('        P_TAGS, \n', retValue);
+  http ('        P_ID \n', retValue);
+  http ('      from \n', retValue);
+  http ('        AB.WA.PERSONS \n', retValue);
+  http ('      where P_DOMAIN_ID = <DOMAIN_ID> \n', retValue);
+  http ('      order by P_UPDATED desc) x \n', retValue);
+  http (']]></sql:sqlx>\n', retValue);
+
   http ('</channel>\n', retValue);
   http ('</rss>\n', retValue);
 
@@ -2425,8 +2447,8 @@ create procedure AB.WA.contact_update (
   in yahoo varchar,
   in msn varchar,
   in hCountry varchar,
-  in hCity varchar,
   in hState varchar,
+  in hCity varchar,
   in hCode varchar,
   in hAddress1 varchar,
   in hAddress2 varchar,
@@ -2438,8 +2460,8 @@ create procedure AB.WA.contact_update (
   in hMail varchar,
   in hWeb varchar,
   in bCountry varchar,
-  in bCity varchar,
   in bState varchar,
+  in bCity varchar,
   in bCode varchar,
   in bAddress1 varchar,
   in bAddress2 varchar,
@@ -2477,8 +2499,8 @@ create procedure AB.WA.contact_update (
         P_YAHOO,
         P_MSN,
         P_H_COUNTRY,
-        P_H_CITY,
         P_H_STATE,
+        P_H_CITY,
         P_H_CODE,
         P_H_ADDRESS1,
         P_H_ADDRESS2,
@@ -2490,8 +2512,8 @@ create procedure AB.WA.contact_update (
         P_H_MAIL,
         P_H_WEB,
         P_B_COUNTRY,
-        P_B_CITY,
         P_B_STATE,
+        P_B_CITY,
         P_B_CODE,
         P_B_ADDRESS1,
         P_B_ADDRESS2,
@@ -2528,8 +2550,8 @@ create procedure AB.WA.contact_update (
         yahoo,
         msn,
         hCountry,
-        hCity,
         hState,
+        hCity,
         hCode,
         hAddress1,
         hAddress2,
@@ -2541,8 +2563,8 @@ create procedure AB.WA.contact_update (
         hMail,
         hWeb,
         bCountry,
-        bCity,
         bState,
+        bCity,
         bCode,
         bAddress1,
         bAddress2,
@@ -2664,8 +2686,177 @@ create procedure AB.WA.contact_update2 (
       update AB.WA.PERSONS set P_MAIL = pValue where P_ID = id;
     if (pName = 'P_WEB')
       update AB.WA.PERSONS set P_WEB = pValue where P_ID = id;
+    if (pName = 'P_ICQ')
+      update AB.WA.PERSONS set P_ICQ = pValue where P_ID = id;
+    if (pName = 'P_SKYPE')
+      update AB.WA.PERSONS set P_SKYPE = pValue where P_ID = id;
+    if (pName = 'P_AIM')
+      update AB.WA.PERSONS set P_AIM = pValue where P_ID = id;
+    if (pName = 'P_YAHOO')
+      update AB.WA.PERSONS set P_YAHOO = pValue where P_ID = id;
+    if (pName = 'P_MSN')
+      update AB.WA.PERSONS set P_MSN = pValue where P_ID = id;
+
+    if (pName = 'P_H_ADDRESS1')
+      update AB.WA.PERSONS set P_H_ADDRESS1 = pValue where P_ID = id;
+    if (pName = 'P_H_ADDRESS2')
+      update AB.WA.PERSONS set P_H_ADDRESS2 = pValue where P_ID = id;
+    if (pName = 'P_H_CODE')
+      update AB.WA.PERSONS set P_H_CODE = pValue where P_ID = id;
+    if (pName = 'P_H_CITY')
+      update AB.WA.PERSONS set P_H_CITY = pValue where P_ID = id;
+    if (pName = 'P_H_STATE')
+      update AB.WA.PERSONS set P_H_STATE = pValue where P_ID = id;
+    if (pName = 'P_H_COUNTRY')
+      update AB.WA.PERSONS set P_H_COUNTRY = pValue where P_ID = id;
+    if (pName = 'P_H_TZONE')
+      update AB.WA.PERSONS set P_H_TZONE = pValue where P_ID = id;
+    if (pName = 'P_H_LAT')
+      update AB.WA.PERSONS set P_H_LAT = pValue where P_ID = id;
+    if (pName = 'P_H_LNG')
+      update AB.WA.PERSONS set P_H_LNG = pValue where P_ID = id;
+    if (pName = 'P_H_PHONE')
+      update AB.WA.PERSONS set P_H_PHONE = pValue where P_ID = id;
+    if (pName = 'P_H_MOBILE')
+      update AB.WA.PERSONS set P_H_MOBILE = pValue where P_ID = id;
+    if (pName = 'P_H_MAIL')
+      update AB.WA.PERSONS set P_H_MAIL = pValue where P_ID = id;
+    if (pName = 'P_H_WEB')
+      update AB.WA.PERSONS set P_H_WEB = pValue where P_ID = id;
+
+    if (pName = 'P_B_ADDRESS1')
+      update AB.WA.PERSONS set P_B_ADDRESS1 = pValue where P_ID = id;
+    if (pName = 'P_B_ADDRESS2')
+      update AB.WA.PERSONS set P_B_ADDRESS2 = pValue where P_ID = id;
+    if (pName = 'P_B_CODE')
+      update AB.WA.PERSONS set P_B_CODE = pValue where P_ID = id;
+    if (pName = 'P_B_CITY')
+      update AB.WA.PERSONS set P_B_CITY = pValue where P_ID = id;
+    if (pName = 'P_B_STATE')
+      update AB.WA.PERSONS set P_B_STATE = pValue where P_ID = id;
+    if (pName = 'P_B_COUNTRY')
+      update AB.WA.PERSONS set P_B_COUNTRY = pValue where P_ID = id;
+    if (pName = 'P_B_TZONE')
+      update AB.WA.PERSONS set P_B_TZONE = pValue where P_ID = id;
+    if (pName = 'P_B_LAT')
+      update AB.WA.PERSONS set P_B_LAT = pValue where P_ID = id;
+    if (pName = 'P_B_LNG')
+      update AB.WA.PERSONS set P_B_LNG = pValue where P_ID = id;
+    if (pName = 'P_B_PHONE')
+      update AB.WA.PERSONS set P_B_PHONE = pValue where P_ID = id;
+    if (pName = 'P_B_MOBILE')
+      update AB.WA.PERSONS set P_B_MOBILE = pValue where P_ID = id;
+    if (pName = 'P_B_MAIL')
+      update AB.WA.PERSONS set P_B_MAIL = pValue where P_ID = id;
+    if (pName = 'P_B_WEB')
+      update AB.WA.PERSONS set P_B_WEB = pValue where P_ID = id;
+    if (pName = 'P_B_ORGANIZATION')
+      update AB.WA.PERSONS set P_B_ORGANIZATION = pValue where P_ID = id;
+    if (pName = 'P_B_JOB')
+      update AB.WA.PERSONS set P_B_JOB = pValue where P_ID = id;
   }
   return id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.contact_field (
+  in id integer,
+  in domain_id integer,
+  in pName varchar)
+{
+  if (pName = 'P_NAME')
+    return (select P_NAME from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_TITLE')
+    return (select P_TITLE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_FIRST_NAME')
+    return (select P_FIRST_NAME from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_LAST_NAME')
+    return (select P_LAST_NAME from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_FULL_NAME')
+    return (select P_FULL_NAME from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_GENDER')
+    return (select P_GENDER from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_BIRTHDAY')
+    return (select P_BIRTHDAY from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_FOAF')
+    return (select P_FOAF from AB.WA.PERSONS where P_ID = id);
+
+  if (pName = 'P_MAIL')
+    return (select P_MAIL from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_WEB')
+    return (select P_WEB from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_ICQ')
+    return (select P_ICQ from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_SKYPE')
+    return (select P_SKYPE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_AIM')
+    return (select P_AIM from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_YAHOO')
+    return (select P_YAHOO from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_MSN')
+    return (select P_MSN from AB.WA.PERSONS where P_ID = id);
+
+  if (pName = 'P_H_ADDRESS1')
+    return (select P_H_ADDRESS1 from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_ADDRESS2')
+    return (select P_H_ADDRESS2 from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_CODE')
+    return (select P_H_CODE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_CITY')
+    return (select P_H_CITY from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_STATE')
+    return (select P_H_STATE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_COUNTRY')
+    return (select P_H_COUNTRY from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_TZONE')
+    return (select P_H_TZONE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_LAT')
+    return (select P_H_LAT from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_LNG')
+    return (select P_H_LNG from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_PHONE')
+    return (select P_H_PHONE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_MOBILE')
+    return (select P_H_MOBILE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_MAIL')
+    return (select P_H_MAIL from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_H_WEB')
+    return (select P_H_WEB from AB.WA.PERSONS where P_ID = id);
+
+  if (pName = 'P_B_ADDRESS1')
+    return (select P_B_ADDRESS1 from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_ADDRESS2')
+    return (select P_B_ADDRESS2 from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_CODE')
+    return (select P_B_CODE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_CITY')
+    return (select P_B_CITY from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_STATE')
+    return (select P_B_STATE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_COUNTRY')
+    return (select P_B_COUNTRY from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_TZONE')
+    return (select P_B_TZONE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_LAT')
+    return (select P_B_LAT from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_LNG')
+    return (select P_B_LNG from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_PHONE')
+    return (select P_B_PHONE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_MOBILE')
+    return (select P_B_MOBILE from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_MAIL')
+    return (select P_B_MAIL from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_WEB')
+    return (select P_B_WEB from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_ORGANIZATION')
+    return (select P_B_ORGANIZATION from AB.WA.PERSONS where P_ID = id);
+  if (pName = 'P_B_JOB')
+    return (select P_B_JOB from AB.WA.PERSONS where P_ID = id);
+
+  return null;
 }
 ;
 
@@ -2703,6 +2894,303 @@ create procedure AB.WA.contact_tags_update (
          P_DOMAIN_ID = domain_id;
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.export_vcard (
+  in id integer,
+  in domain_id integer)
+{
+  declare S varchar;
+  declare sStream any;
+
+  sStream := string_output();
+  for (select * from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id) do {
+	  http ('BEGIN:VCARD\r\n', sStream);
+	  http ('VERSION:2.1\r\n', sStream);
+
+	  -- personal
+	  http (sprintf ('NICKNAME:%s\r\n', P_NAME), sStream);
+	  if (not is_empty_or_null (P_FULL_NAME))
+  	  http (sprintf ('FN:%s\r\n', P_FULL_NAME), sStream);
+	  http (sprintf ('N:%s;%s\r\n', P_FIRST_NAME, P_LAST_NAME), sStream);
+	  if (not is_empty_or_null (P_BIRTHDAY))
+	    http (sprintf ('BDAY:%s\r\n', date_iso8601 (P_BIRTHDAY)), sStream);
+
+	  -- contact
+	  if (not is_empty_or_null (P_MAIL))
+	    http (sprintf ('EMAIL;PREF;INTERNET:%s\r\n', P_MAIL), sStream);
+	  if (not is_empty_or_null (P_WEB))
+	    http (sprintf ('URL:%s\r\n', P_WEB), sStream);
+
+    -- Home
+	  S := ';';
+	  S := S || ''  || coalesce (P_H_ADDRESS1, '');
+	  S := S || ';' || coalesce (P_H_ADDRESS2, '');
+	  S := S || ';' || coalesce (P_H_CITY, '');
+	  S := S || ';' || coalesce (P_H_STATE, '');
+	  S := S || ';' || coalesce (P_H_CODE, '');
+	  S := S || ';' || coalesce (P_H_COUNTRY, '');
+	  if (S <> ';;;;;;')
+	    http (sprintf ('ADR;TYPE=HOME:%s\r\n', S), sStream);
+	  if (not is_empty_or_null (P_H_TZONE))
+	    http (sprintf ('TS:%s\r\n', P_H_TZONE), sStream);
+
+	  if (not is_empty_or_null (P_H_PHONE))
+	    http (sprintf ('TEL;TYPE=HOME:%s\r\n', P_H_PHONE), sStream);
+	  if (not is_empty_or_null (P_H_MOBILE))
+	    http (sprintf ('TEL;TYPE=HOME;TYPE=CELL:%s\r\n', P_H_MOBILE), sStream);
+
+    -- Business
+	  S := ';';
+	  S := S || ''  || coalesce (P_B_ADDRESS1, '');
+	  S := S || ';' || coalesce (P_B_ADDRESS2, '');
+	  S := S || ';' || coalesce (P_B_CITY, '');
+	  S := S || ';' || coalesce (P_B_STATE, '');
+	  S := S || ';' || coalesce (P_B_CODE, '');
+	  S := S || ';' || coalesce (P_B_COUNTRY, '');
+	  if (S <> ';;;;;;')
+  	  http (sprintf ('ADR;TYPE=WORK:%s\r\n', S), sStream);
+
+	  if (not is_empty_or_null (P_B_PHONE))
+	    http (sprintf ('TEL;TYPE=WORK:%s\r\n', P_B_PHONE), sStream);
+	  if (not is_empty_or_null (P_B_MOBILE))
+	    http (sprintf ('TEL;TYPE=WORK;TYPE=CELL:%s\r\n', P_B_MOBILE), sStream);
+
+	  if (not is_empty_or_null (P_B_ORGANIZATION))
+	    http (sprintf ('ORG:%s\r\n', P_B_ORGANIZATION), sStream);
+	  if (not is_empty_or_null (P_B_JOB))
+	    http (sprintf ('TITLE:%s\r\n', P_B_JOB), sStream);
+
+	  http ('END:VCARD\r\n', sStream);
+	}
+  return string_output_string(sStream);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.export_csv_head ()
+{
+  return '"Name",' ||
+         '"Title",' ||
+         '"First Name",' ||
+         '"Last Name",' ||
+         '"Full Name",' ||
+         '"Gender",' ||
+         '"Birthday",' ||
+         '"Mail",' ||
+         '"Web Page",' ||
+         '"Home Address",' ||
+         '"Home Address 2",' ||
+         '"Home City",' ||
+         '"Home State",' ||
+         '"Home Postal Code",' ||
+         '"Home Country",' ||
+         '"Home Timezone",' ||
+         '"Home Phone",' ||
+         '"Home Mobile",' ||
+         '"Home Mail",' ||
+         '"Home Web Page",' ||
+         '"Business Address",' ||
+         '"Business Address 2",' ||
+         '"Business City",' ||
+         '"Business State",' ||
+         '"Business Postal Code",' ||
+         '"Business Country",' ||
+         '"Business Timezone",' ||
+         '"Business Phone",' ||
+         '"Business Mobile",' ||
+         '"Business Mail",' ||
+         '"Business Web Page",' ||
+         '"Indistry",' ||
+         '"Company",' ||
+         '"Job Title",' ||
+         '"Tags"\r\n';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.export_csv (
+  in id integer,
+  in domain_id integer)
+{
+  declare S varchar;
+
+  S := '';
+  for (select * from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id) do {
+    S := sprintf
+           (
+            '"%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"\r\n',
+            coalesce (P_NAME, ''),
+            coalesce (P_TITLE, ''),
+            coalesce (P_FIRST_NAME, ''),
+            coalesce (P_LAST_NAME, ''),
+            coalesce (P_FULL_NAME, ''),
+            coalesce (P_GENDER, ''),
+            case when (isnull (P_BIRTHDAY)) then '' else date_iso8601 (P_BIRTHDAY) end,
+            coalesce (P_MAIL, ''),
+            coalesce (P_WEB, ''),
+            coalesce (P_H_ADDRESS1, ''),
+            coalesce (P_H_ADDRESS2, ''),
+            coalesce (P_H_CITY, ''),
+            coalesce (P_H_STATE, ''),
+            coalesce (P_H_CODE, ''),
+            coalesce (P_H_COUNTRY, ''),
+            coalesce (P_H_TZONE, ''),
+            coalesce (P_H_PHONE, ''),
+            coalesce (P_H_MOBILE, ''),
+            coalesce (P_H_MAIL, ''),
+            coalesce (P_H_WEB, ''),
+            coalesce (P_B_ADDRESS1, ''),
+            coalesce (P_B_ADDRESS2, ''),
+            coalesce (P_B_CITY, ''),
+            coalesce (P_B_STATE, ''),
+            coalesce (P_B_CODE, ''),
+            coalesce (P_B_COUNTRY, ''),
+            coalesce (P_B_TZONE, ''),
+            coalesce (P_B_PHONE, ''),
+            coalesce (P_B_MOBILE, ''),
+            coalesce (P_B_MAIL, ''),
+            coalesce (P_B_WEB, ''),
+            coalesce (P_B_INDUSTRY, ''),
+            coalesce (P_B_ORGANIZATION, ''),
+            coalesce (P_B_JOB, ''),
+            coalesce (P_TAGS, '')
+           );
+    ;
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.export_foaf (
+  in ids any,
+  in domain_id integer)
+{
+  declare S, T varchar;
+  declare sStream any;
+  declare st, msg, meta, rows any;
+
+  sStream := string_output();
+  S := 'sparql
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+        PREFIX sioc: <http://rdfs.org/sioc/ns#>
+        PREFIX dc: <http://purl.org/dc/elements/1.1/>
+        PREFIX dct: <http://purl.org/dc/terms/>
+        PREFIX atom: <http://atomowl.org/ontologies/atomrdf#>
+        PREFIX vcard: <http://www.w3.org/2001/vcard-rdf/3.0#>
+        PREFIX bio: <http://purl.org/vocab/bio/0.1/>
+        CONSTRUCT {
+	        ?person a foaf:Person .
+	        ?person foaf:nick ?nick .
+	        ?person foaf:name ?name .
+	        ?person foaf:firstName ?firstName .
+	        ?person foaf:family_name ?family_name .
+	        ?person foaf:gender ?gender .
+	        ?person foaf:mbox ?mbox .
+	        ?person foaf:mbox_sha1sum ?mbox_sha1sum .
+	        ?person foaf:icqChatID ?icqChatID .
+	        ?person foaf:msnChatID ?msnChatID .
+	        ?person foaf:aimChatID ?aimChatID .
+	        ?person foaf:yahooChatID ?yahooChatID .
+	        ?person foaf:birthday ?birthday .
+	        ?person foaf:phone ?phone.
+	        ?person foaf:based_near ?based_near .
+	        ?based_near ?based_near_predicate ?based_near_subject .
+	        ?person foaf:knows ?knows .
+	        ?knows rdfs:seeAlso ?knows_seeAlso .
+	        ?knows foaf:nick ?knows_nick .
+	        ?person foaf:workplaceHomepage ?workplaceHomepage .
+	        ?org foaf:homepage ?workplaceHomepage .
+	        ?org rdf:type foaf:Organization .
+	        ?org dc:title ?orgtit .
+	        ?person foaf:homepage ?homepage .
+	        ?person vcard:ADR ?adr .
+	        ?adr vcard:Country ?country .
+	        ?adr vcard:Region ?state .
+          ?adr vcard:Locality ?city .
+          ?adr vcard:Pcode ?pcode .
+          ?adr vcard:Street ?street .
+          ?adr vcard:Extadd ?extadd .
+	        ?person bio:olb ?bio .
+	        ?person bio:event ?event .
+	        ?event rdf:type bio:Birth .
+	        ?event dc:date ?bdate .
+	      }
+	      WHERE {
+	        graph <%s>
+	        {
+	          <FILTER>
+	          ?person sioc:has_container <%s> .
+	          optional { ?person foaf:nick ?nick } .
+	          optional { ?person foaf:name ?name } .
+	          optional { ?person foaf:firstName ?firstName } .
+	          optional { ?person foaf:family_name ?family_name } .
+	          optional { ?person foaf:gender ?gender } .
+	          optional { ?person foaf:birthday ?birthday } .
+	          optional { ?person foaf:mbox ?mbox ;
+	                             foaf:mbox_sha1sum ?mbox_sha1sum .
+	                   } .
+	          optional { ?person foaf:icqChatID ?icqChatID } .
+	          optional { ?person foaf:msnChatID ?msnChatID } .
+	          optional { ?person foaf:aimChatID ?aimChatID } .
+	          optional { ?person foaf:yahooChatID ?yahooChatID } .
+	          optional { ?person foaf:phone ?phone } .
+	          optional { ?person foaf:based_near ?based_near .
+	                     ?based_near ?based_near_predicate ?based_near_subject .
+	                   } .
+	          optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
+	          optional { ?org foaf:homepage ?workplaceHomepage .
+	                     ?org a foaf:Organization ;
+	                          dc:title ?orgtit .
+	                   } .
+	          optional { ?person foaf:homepage ?homepage } .
+	          optional { ?person vcard:ADR ?adr .
+	                     optional { ?adr vcard:Country ?country }.
+		                   optional { ?adr vcard:Region ?state } .
+		                   optional { ?adr vcard:Locality ?city } .
+		                   optional { ?adr vcard:Pcode ?pcode  } .
+		                   optional { ?adr vcard:Street ?street } .
+		                   optional { ?adr vcard:Extadd ?extadd } .
+		                 }
+	          optional { ?person bio:olb ?bio } .
+            optional { ?person bio:event ?event.
+                       ?event a bio:Birth ; dc:date ?bdate
+                     }.
+	          optional { ?person foaf:knows ?knows .
+	                     ?knows rdfs:seeAlso ?knows_seeAlso .
+	                     ?knows foaf:nick ?knows_nick .
+                     } .
+	        }
+	      }';
+
+	S := sprintf (S, SIOC..get_graph (), SIOC..addressbook_iri (AB.WA.domain_name (domain_id)));
+  T := '';
+	if (not isnull (ids)) {
+	  foreach (any id in ids) do {
+	    if (T = '') {
+	      T := sprintf ('(?person = <%s>)', SIOC..addressbook_contact_iri (domain_id, cast (id as integer)));
+	    } else {
+	      T := T || ' || ' || sprintf ('(?person = <%s>)', SIOC..addressbook_contact_iri (domain_id, cast (id as integer)));
+	    }
+	  }
+	  T := sprintf ('FILTER (%s) .', T);
+	}
+  S := replace (S, '<FILTER>', T);
+  st := '00000';
+  exec (S, st, msg, vector (), 0, meta, rows);
+  if ('00000' = st)
+    DB.DBA.SPARQL_RESULTS_WRITE (sStream, meta, rows, '', 1);
+  return string_output_string(sStream);
+}
+;
+
 
 -------------------------------------------------------------------------------
 --
@@ -2780,3 +3268,21 @@ create procedure AB.WA.search_sql (
 }
 ;
 
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.version_update ()
+{
+  for (select WAI_ID, WAM_USER
+         from DB.DBA.WA_MEMBER
+                join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST
+        where WAI_TYPE_NAME = 'AddressBook'
+          and WAM_MEMBER_TYPE = 1) do {
+    AB.WA.domain_update (WAI_ID, WAM_USER);
+  }
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+AB.WA.version_update ()
+;
