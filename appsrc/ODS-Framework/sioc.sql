@@ -1534,7 +1534,10 @@ create procedure all_predicates ()
     vcard_iri ('ADR'),
     vcard_iri ('Country'),
     vcard_iri ('Locality'),
-    vcard_iri ('Region')
+     vcard_iri ('Region'),
+     vcard_iri ('Pcode'),
+     vcard_iri ('Street'),
+     vcard_iri ('Extadd')
  );
 }
 ;
