@@ -262,7 +262,7 @@ pg_check_map_1 (buffer_desc_t * buf)
 
 #if defined (MTX_DEBUG) | defined (PAGE_TRACE)
 void
-pg_check_map_1 (buffer_desc_t * buf)
+pg_check_map (buffer_desc_t * buf)
 {
   pg_check_map_1 (buf);
 }
