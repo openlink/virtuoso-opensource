@@ -125,7 +125,7 @@ window.iSPARQL = {
   
   		var li4 = OAT.Dom.create("li");
   		var a4 = OAT.Dom.create("a");
-  		a4.innerHTML = "Get Concepts";
+  		a4.innerHTML = "Get Classes";
   		a4.href = "javascript:void(0)";
   		
   		var hr1 = OAT.Dom.create("hr");
