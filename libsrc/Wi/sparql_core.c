@@ -438,7 +438,7 @@ static const char *sparp_integer_defines[] = {
 static const char *sparp_var_defines[] = { NULL };
 
 void
-sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, ccaddr_t value)
+sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t value)
 {
   switch (value_lexem_type)
     {
@@ -777,7 +777,7 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       caddr_t var_name;
       dk_set_t *req_triples_ptr;
       SPART *triple_with_var_obj = NULL;
-      if (2 < filt->_.funcall.argcount)
+      if (2 < BOX_ELEMENTS (filt->_.funcall.argtrees))
         spar_error (sparp, "Not enough parameters for special predicate %s()", ft_pred_name);
       ft_literal_var = filt->_.funcall.argtrees[0];
       if (SPAR_VARIABLE != SPART_TYPE (ft_literal_var))
@@ -828,16 +828,13 @@ void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t p
             (SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
             spar_make_variable (sparp, varname) :
             spar_make_blank_node (sparp, varname, 0) );
-  filter = spartlist (sparp, 4, SPAR_FUNCALL,
-            box_dv_uname_string ("LONG::bif:position"), 2,
-            t_list (2,
+  filter = spar_make_funcall (sparp, 0, "LONG::bif:position",
+    (SPART **)t_list (2,
               graph_expn_copy,
-              spartlist (sparp, 4, SPAR_FUNCALL,
-                box_dv_uname_string ("SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"), 1,
-                t_list (1,
-          spartlist (sparp, 4, SPAR_FUNCALL,
-            box_dv_uname_string ("SQLVAL::bif:vector"), precode_count,
-            t_list_to_array (precodes) ) ) ) ) );
+      spar_make_funcall (sparp, 0, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES",
+        (SPART **)t_list (1,
+          spar_make_funcall (sparp, 0, "SQLVAL::bif:vector",
+            (SPART **)t_list_to_array (precodes) ) ) ) ) );
           spar_gp_add_filter (sparp, filter);
 }
 
@@ -864,8 +861,7 @@ spar_retvals_of_construct (sparp_t *sparp, SPART *ctor_gp)
     {
       SPART *triple = ctor_gp->_.gp.members[triple_ctr];
       SPART **tvector_args = (SPART **)t_list (6, NULL, NULL, NULL, NULL, NULL, NULL);
-      SPART *tvector_call = spartlist (sparp, 4, SPAR_FUNCALL,
-        box_dv_uname_string ("LONG::bif:vector"), (ptrlong)(6), tvector_args );
+      SPART *tvector_call = spar_make_funcall (sparp, 0, "LONG::bif:vector", tvector_args);
       int triple_is_const = 1;
       for (fld_ctr = 1; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         {
@@ -926,18 +922,14 @@ blank_added:
       else
         t_set_push (&var_tvectors, tvector_call);
     }
-  ctor_call = spartlist (sparp, 4, SPAR_FUNCALL,
-    box_dv_uname_string ("sql:SPARQL_CONSTRUCT"), (ptrlong)(3),
-      t_list (3,
-        spartlist (sparp, 4, SPAR_FUNCALL,
-          box_dv_uname_string ("bif:vector"),
-          dk_set_length (var_tvectors), t_list_to_array (var_tvectors) ),
-        spartlist (sparp, 4, SPAR_FUNCALL,
-          box_dv_uname_string ("LONG::bif:vector"),
-          dk_set_length (vars), t_revlist_to_array (vars) ),
-        spartlist (sparp, 4, SPAR_FUNCALL,
-          box_dv_uname_string ("bif:vector"),
-          dk_set_length (const_tvectors), t_list_to_array (const_tvectors) ) ) );
+  ctor_call = spar_make_funcall (sparp, 0, "sql:SPARQL_CONSTRUCT",
+      (SPART **)t_list (3,
+        spar_make_funcall (sparp, 0, "bif:vector",
+          (SPART **)t_list_to_array (var_tvectors) ),
+        spar_make_funcall (sparp, 0, "LONG::bif:vector",
+          (SPART **)t_revlist_to_array (vars) ),
+        spar_make_funcall (sparp, 0, "bif:vector",
+          (SPART **)t_list_to_array (const_tvectors) ) ) );
 #if 1
   return (SPART **)t_list (1, ctor_call);
 #else /* This was when list of retvals was also in use as a list of variables */
@@ -950,9 +942,8 @@ SPART **
 spar_retvals_of_insert (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp)
 {
   SPART **ctor_retval = spar_retvals_of_construct (sparp, ctor_gp);
-  ctor_retval[0] = spartlist (sparp, 4, SPAR_FUNCALL,
-    box_dv_uname_string ("sql:SPARQL_INSERT_DICT_CONTENT"), (ptrlong)(2),
-      t_list (2, graph_to_patch, ctor_retval[0]) );
+  ctor_retval[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_INSERT_DICT_CONTENT",
+      (SPART **)t_list (2, graph_to_patch, ctor_retval[0]) );
   return ctor_retval;
 }
 
@@ -960,9 +951,8 @@ SPART **
 spar_retvals_of_delete (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp)
 {
   SPART **ctor_retval = spar_retvals_of_construct (sparp, ctor_gp);
-  ctor_retval[0] = spartlist (sparp, 4, SPAR_FUNCALL,
-    box_dv_uname_string ("sql:SPARQL_DELETE_DICT_CONTENT"), (ptrlong)(2),
-      t_list (2, graph_to_patch, ctor_retval[0]) );
+  ctor_retval[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_DELETE_DICT_CONTENT",
+      (SPART **)t_list (2, graph_to_patch, ctor_retval[0]) );
   return ctor_retval;
 }
 
@@ -999,25 +989,19 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals)
       t_set_push (&graphs, g);
     }
   END_DO_SET()
-  agg_call = spartlist (sparp, 4, SPAR_FUNCALL,
-    box_dv_uname_string ("sql:SPARQL_DESC_AGG"), (ptrlong)(1),
-      t_list (1,
-        spartlist (sparp, 4, SPAR_FUNCALL,
-          box_dv_uname_string ("LONG::bif:vector"),
-          dk_set_length (vars), t_list_to_array (vars) ) ) );
-  descr_call = spartlist (sparp, 4, SPAR_FUNCALL,
-    box_dv_uname_string ("sql:SPARQL_DESC_DICT"), (ptrlong)(4),
-      t_list (4,
+  agg_call = spar_make_funcall (sparp, 0, "sql:SPARQL_DESC_AGG",
+      (SPART **)t_list (1,
+        spar_make_funcall (sparp, 0, "LONG::bif:vector",
+          (SPART **)t_list_to_array (vars) ) ) );
+  descr_call = spar_make_funcall (sparp, 0, "sql:SPARQL_DESC_DICT",
+      (SPART **)t_list (4,
         agg_call,
-        spartlist (sparp, 4, SPAR_FUNCALL,
-          box_dv_uname_string ("LONG::bif:vector"),
-          dk_set_length (consts), t_list_to_array (consts) ),
+        spar_make_funcall (sparp, 0, "LONG::bif:vector",
+          (SPART **)t_list_to_array (consts) ),
         ((NULL == graphs) ? (SPART *)t_NEW_DB_NULL :
-          spartlist (sparp, 4, SPAR_FUNCALL,
-            box_dv_uname_string ("LONG::bif:vector"),
-            dk_set_length (graphs), t_list_to_array (graphs) ) ),
-        spartlist (sparp, 4, SPAR_FUNCALL, /*!!!TBD describe options will come here */
-          box_dv_uname_string ("bif:vector"), 0, t_list(0) ) ) );
+          spar_make_funcall (sparp, 0, "LONG::bif:vector",
+            (SPART **)t_list_to_array (graphs) ) ),
+        spar_make_funcall (sparp, 0, "bif:vector", NULL) ) ); /*!!!TBD describe options will come here */
   return (SPART **)t_list (1, descr_call);
 }
 
@@ -1047,12 +1031,12 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   if ((0 == BOX_ELEMENTS (sources)) &&
     (NULL != (env->spare_common_sponge_options)) )
     spar_error (sparp, "Retrieval options for source graphs (e.g., '%s') may be useless if the query does not contain 'FROM' or 'FROM NAMED'", env->spare_common_sponge_options->data);
-  return spartlist (sparp, 14, SPAR_REQ_TOP, subtype,
+  return spartlist (sparp, 15, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
     env->spare_output_format_name,
     t_box_copy (env->spare_storage_name),
     retvals, retselid,
-    sources, pattern, order,
+    sources, pattern, NULL, order,
     limit, offset, NULL, (ptrlong)(0) );
 }
 
@@ -1117,9 +1101,8 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
       if (0 != BOX_ELEMENTS (spec_pred_names))
         {
           spar_gp_add_filter (sparp,
-            spartlist (sparp, 4, SPAR_FUNCALL,
-              t_box_copy_tree (spec_pred_names[0]),
-              (ptrlong)2, (SPART *)t_list (2, subject, object) ) );
+            spar_make_funcall (sparp, 0, spec_pred_names[0],
+              (SPART **)t_list (2, subject, object) ) );
           return;
         }
     }
@@ -1333,12 +1316,18 @@ SPART *sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options)
     }
   else
     mixed_options = options;
-  return spartlist (sparp, 4, SPAR_FUNCALL, t_box_dv_short_string ("sql:RDF_SPONGE_UP"),
-    (ptrlong)2,
+  return spar_make_funcall (sparp, 0, "sql:RDF_SPONGE_UP",
     (SPART **)t_list (2,
        iriref,
-       spartlist (sparp, 4, SPAR_FUNCALL, t_box_dv_short_string ("bif:vector"),
-         (ptrlong)(BOX_ELEMENTS (mixed_options)), mixed_options ) ) );
+       spar_make_funcall (sparp, 0, "bif:vector", mixed_options) ) );
+}
+
+SPART *
+spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **args)
+{
+  if (NULL == args)
+    args = (SPART **)t_list (0);
+  return spartlist (sparp, 4, SPAR_FUNCALL, t_box_dv_short_string (funname), args, (ptrlong)aggregate_mode);
 }
 
 id_hashed_key_t
@@ -1759,12 +1748,12 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	    }
 	  case SPAR_FUNCALL:
 	    {
-	      int ctr;
+	      int argctr, argcount = BOX_ELEMENTS (tree->_.funcall.argtrees);
 	      spart_dump (tree->_.funcall.qname, ses, indent+2, "FUNCTION NAME", 0);
-	      for (ctr = 0; ctr < tree->_.funcall.argcount; ctr++)
-		{
-		  spart_dump (tree->_.funcall.argtrees[ctr], ses, indent+2, "ARGUMENT", -1);
-		}
+              if (tree->_.funcall.agg_mode)
+		spart_dump ((void *)(tree->_.funcall.agg_mode), ses, indent+2, "AGGREGATE MODE", 0);
+	      for (argctr = 0; argctr < argcount; argctr++)
+		spart_dump (tree->_.funcall.argtrees[argctr], ses, indent+2, "ARGUMENT", -1);
 	      break;
 	    }
 	  case SPAR_GP:

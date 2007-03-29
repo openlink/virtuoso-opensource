@@ -122,6 +122,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token AS_L		/*:: PUNCT_SPAR_LAST("AS") ::*/
 %token ASC_L		/*:: PUNCT_SPAR_LAST("ASC") ::*/
 %token ASK_L		/*:: PUNCT_SPAR_LAST("ASK") ::*/
+%token AVG_L		/*:: PUNCT_SPAR_LAST("AVG") ::*/
 %token BASE_L		/*:: PUNCT_SPAR_LAST("BASE") ::*/
 %token BIJECTION_L	/*:: PUNCT_SPAR_LAST("BIJECTION") ::*/
 %token BOUND_L		/*:: PUNCT_SPAR_LAST("BOUND") ::*/
@@ -129,6 +130,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token CLASS_L		/*:: PUNCT_SPAR_LAST("CLASS") ::*/
 %token CREATE_L		/*:: PUNCT_SPAR_LAST("CREATE") ::*/
 %token CONSTRUCT_L	/*:: PUNCT_SPAR_LAST("CONSTRUCT") ::*/
+%token COUNT_LPAR		/*:: PUNCT("COUNT ("), SPAR, LAST1("COUNT ()"), LAST1("COUNT\r\n()"), LAST1("COUNT #qq\r\n()"), ERR("COUNT"), ERR("COUNT bad") ::*/
+%token COUNT_DISTINCT_L		/*:: PUNCT("COUNT DISTINCT"), SPAR, LAST("COUNT DISTINCT"), LAST("COUNT\r\nDISTINCT"), LAST("COUNT #qq\r\nDISTINCT"), ERR("COUNT"), ERR("COUNT bad") ::*/
 %token DATATYPE_L	/*:: PUNCT_SPAR_LAST("DATATYPE") ::*/
 %token DEFINE_L		/*:: PUNCT_SPAR_LAST("DEFINE") ::*/
 %token DELETE_L		/*:: PUNCT_SPAR_LAST("DELETE") ::*/
@@ -142,7 +145,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token FROM_L		/*:: PUNCT_SPAR_LAST("FROM") ::*/
 %token FUNCTION_L	/*:: PUNCT_SPAR_LAST("FUNCTION") ::*/
 %token GRAPH_L		/*:: PUNCT_SPAR_LAST("GRAPH") ::*/
-%token IDENTIFIED_L	/*:: PUNCT("WHERE"), SPAR, LAST1("IDENTIFIED BY"), LAST1("IDENTIFIED\r\nBY"), LAST1("IDENTIFIED #qq\r\nBY"), ERR("IDENTIFIED"), ERR("IDENTIFIED bad") ::*/
+%token IDENTIFIED_L	/*:: PUNCT("IDENTIFIED"), SPAR, LAST1("IDENTIFIED BY"), LAST1("IDENTIFIED\r\nBY"), LAST1("IDENTIFIED #qq\r\nBY"), ERR("IDENTIFIED"), ERR("IDENTIFIED bad") ::*/
 %token IN_L		/*:: PUNCT_SPAR_LAST("IN") ::*/
 %token INDEX_L		/*:: PUNCT_SPAR_LAST("INDEX") ::*/
 %token INFERENCE_L	/*:: PUNCT_SPAR_LAST("INFERENCE") ::*/
@@ -160,6 +163,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token LITERAL_L	/*:: PUNCT_SPAR_LAST("LITERAL") ::*/
 %token LOAD_L		/*:: PUNCT_SPAR_LAST("LOAD") ::*/
 %token MAKE_L		/*:: PUNCT_SPAR_LAST("MAKE") ::*/
+%token MAX_L		/*:: PUNCT_SPAR_LAST("MAX") ::*/
+%token MIN_L		/*:: PUNCT_SPAR_LAST("MIN") ::*/
 %token MODIFY_L		/*:: PUNCT_SPAR_LAST("MODIFY") ::*/
 %token NAMED_L		/*:: PUNCT_SPAR_LAST("NAMED") ::*/
 %token NIL_L		/*:: PUNCT_SPAR_LAST("NIL") ::*/
@@ -181,6 +186,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token STORAGE_L	/*:: PUNCT_SPAR_LAST("STORAGE") ::*/
 %token SUBCLASS_L	/*:: PUNCT_SPAR_LAST("SUBCLASS") ::*/
 %token SUBJECT_L	/*:: PUNCT_SPAR_LAST("SUBJECT") ::*/
+%token SUM_L		/*:: PUNCT_SPAR_LAST("SUM") ::*/
 %token true_L		/*:: PUNCT_SPAR_LAST("true") ::*/
 %token UNION_L		/*:: PUNCT_SPAR_LAST("UNION") ::*/
 %token USING_L		/*:: PUNCT_SPAR_LAST("USING") ::*/
@@ -284,6 +290,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_retcols
 %type <tree> spar_retcol
 %type <tree> spar_retcol_value
+%type <tree> spar_ret_agg_call
+%type <box> spar_agg_name
 %type <tree> spar_var
 %type <tree> spar_global_var
 %type <tree> spar_graph_term
@@ -453,16 +461,19 @@ spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ',
 	    spar_select_rset spar_dataset_clauses_opt { spar_gp_init (sparp_arg, WHERE_L); }
             spar_where_clause spar_solution_modifier {
 		$$ = spar_make_top (sparp_arg, $1, $3, spar_selid_pop (sparp_arg),
-		  $6, (SPART **)($7[0]), (caddr_t)($7[1]), (caddr_t)($7[2]) ); }
+		  $6, 
+		  (SPART **)($7[0]), (caddr_t)($7[1]), (caddr_t)($7[2]) ); }
 	;
 
 spar_select_query_mode	/* ::=  'SELECT' 'DISTINCT'?	*/
 	: SELECT_L		{ $$ = SELECT_L; }
 	| SELECT_L DISTINCT_L	{ $$ = DISTINCT_L; }
+	| SELECT_L COUNT_DISTINCT_L	{ $$ = COUNT_DISTINCT_L; }
 	;
 
-spar_select_rset	/* ::=  ( ( Retcol ( ','? Retcol )* ) | '*' )	*/
+spar_select_rset	/* ::=  ( ( Retcol ( ','? Retcol )* ) | '*' | 'COUNT' )	*/
 	: _STAR			{ $$ = (SPART **) _STAR; }
+	/*| COUNT_LPAR _STAR _RPAR	{ $$ = (SPART **) COUNT_LPAR; }*/
 	| spar_retcols	{ $$ = (SPART **) t_revlist_to_array ($1); }
 	;
 
@@ -815,15 +826,30 @@ spar_retcols		/* ::=  ( Retcol ( ','? Retcol )*	*/
 	| spar_retcols _COMMA spar_retcol	{ $$ = $1; t_set_push (&($$), $3); }
 	;
 
-spar_retcol		/* [Virt]	Retcol	 ::=  ( Var | ( '(' Expn ')' ) ) ( 'AS' ( VAR1 | VAR2 ) )?	*/
+spar_retcol		/* [Virt]	Retcol	 ::=  ( Var | ( '(' Expn ')' ) | RetAggCall ) ( 'AS' ( VAR1 | VAR2 ) )?	*/
 	: spar_retcol_value					{ $$ = $1; }
 	| spar_retcol_value AS_L QUEST_VARNAME		{ $$ = spartlist (sparp_arg, 3, SPAR_ALIAS, $1, $3); }
 	| spar_retcol_value AS_L DOLLAR_VARNAME		{ $$ = spartlist (sparp_arg, 3, SPAR_ALIAS, $1, $3); }
 	;
 
-spar_retcol_value	/* ::=  ( Var | ( '(' Expn ')' ) )	*/
+spar_retcol_value	/* ::=  ( Var | ( '(' Expn ')' | RetAggCall ) )	*/
 	: spar_var
         | _LPAR spar_expn _RPAR	{ $$ = $2; }
+	| spar_ret_agg_call { $$ = $1; }
+	;
+
+spar_ret_agg_call	/* [Virt]	RetAggCall	 ::=  AggName '(', ( '*' | ( 'DISTINCT'? Var ) ) ')'	*/
+	: spar_agg_name spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, $2)); }
+	| spar_agg_name _STAR _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, (ptrlong)1)); }
+        | spar_agg_name DISTINCT_L spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, DISTINCT_L, $1, (SPART **)t_list (1, $3)); }
+	;
+
+spar_agg_name	/* [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'	*/
+	: COUNT_LPAR	{ $$ = t_box_dv_uname_string ("bif:COUNT"); }
+	| AVG_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:AVG"); }
+	| MIN_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:MIN"); }
+	| MAX_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:MAX"); }
+	| SUM_L	_LPAR	{ $$ = t_box_dv_uname_string ("bif:SUM"); }
 	;
 
 spar_var		/* [41]*	Var	 ::=  VAR1 | VAR2 | GlobalVar	*/
@@ -902,7 +928,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		  else
 		    {
 		      SPART **args = (SPART **)(((dk_set_t)NIL_L == $2) ? NULL : t_revlist_to_array ($2));
-		      $$ = spartlist (sparp_arg, 4, SPAR_FUNCALL, $1->_.lit.val, (ptrlong)(BOX_ELEMENTS_0 (args)), args);
+		      $$ = spar_make_funcall (sparp_arg, 0, $1->_.lit.val, args);
 		    } }
 	| spar_rdf_literal		{ $$ = (SPART *)($1); }
 	| spar_numeric_literal		{ $$ = (SPART *)($1); }
@@ -945,7 +971,7 @@ spar_built_in_regex	/* [53]	RegexExpn	 ::=  'REGEX' '(' Expn ',' Expn ( ',' Expn
 spar_function_call	/* [54]  	FunctionCall	  ::=  	IRIref ArgList	*/
 	: spar_iriref spar_arg_list	{
                   SPART **args = (SPART **)(((dk_set_t)NIL_L == $2) ? NULL : t_revlist_to_array ($2));
-		  $$ = spartlist (sparp_arg, 4, SPAR_FUNCALL, $1->_.lit.val, (ptrlong)(BOX_ELEMENTS_0 (args)), args); }
+		  $$ = spar_make_funcall (sparp_arg, 0, $1->_.lit.val, args); }
 	;
 
 spar_arg_list_opt	/* ::=  ArgList?	*/

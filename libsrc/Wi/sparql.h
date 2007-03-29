@@ -165,6 +165,7 @@ typedef struct sparp_env_s
     dk_set_t		spare_named_graph_precodes;		/*!< Named graphs as set by protocol or FROM NAMED graph-uri-precode */
     int			spare_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten */
     dk_set_t		spare_common_sql_table_options;	/*!< SQL 'TABLE OPTION' strings that are added to every table */
+    dk_set_t		spare_groupings;		/*!< Variabes that should be placed in GROUP BY list */
     dk_set_t		spare_sql_select_options;	/*!< SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
     dk_set_t		spare_context_graphs;		/*!< Expressions that are default values for graph field */
     dk_set_t		spare_context_subjects;		/*!< Expressions that are default values for subject field */
@@ -327,8 +328,8 @@ typedef struct spar_tree_s
       } conv; /*!< temporary use in SQL printer */
     struct {
       caddr_t qname;
-      ptrlong argcount;
       SPART **argtrees;
+        ptrlong agg_mode;
       } funcall;
     struct {
       ptrlong subtype;
@@ -352,6 +353,7 @@ typedef struct spar_tree_s
       caddr_t retselid;
       SPART **sources;
       SPART *pattern;
+        SPART **groupings;
       SPART **order;
       caddr_t limit;
       caddr_t offset;
@@ -478,7 +480,7 @@ extern caddr_t spar_strliteral (sparp_t *sparp, const char *sparyytext, int strg
 extern caddr_t spar_mkid (sparp_t * sparp, const char *prefix);
 extern void spar_change_sign (caddr_t *lit_ptr);
 
-extern void sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, ccaddr_t value);
+extern void sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t value);
 extern void spar_selid_push (sparp_t *sparp);
 extern caddr_t spar_selid_pop (sparp_t *sparp);
 extern void spar_gp_init (sparp_t *sparp, ptrlong subtype);
@@ -500,6 +502,7 @@ extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options);
+extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
 
 extern void spar_fill_lexem_bufs (sparp_t *sparp);
 extern void spar_copy_lexem_bufs (sparp_t *tgt_sparp, spar_lexbmk_t *begin, spar_lexbmk_t *end, int skip_last_n);

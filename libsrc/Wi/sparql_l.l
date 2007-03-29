@@ -297,6 +297,9 @@ static int sparscn_NUMBER_double (void *yylval, sparp_t *sparp)
 	/* Internals of triple-double-quoted SPARQL string lit */
 %x SPARQL_DDDQ
 
+	/* Whitespace between 'COUNT' keyword and '(' or 'DISTINCT' after it */
+%x SPARQL_AFTER_COUNT
+
 	/* Whitespace between 'WHERE' keyword and '(' or '{' after it */
 %x SPARQL_AFTER_WHERE
 
@@ -408,12 +411,14 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{A}{S}				{ return AS_L		; }
 <SPARQL>{A}{S}{C}			{ return ASC_L		; }
 <SPARQL>{A}{S}{K}			{ return ASK_L		; }
+<SPARQL>{A}{V}{G}			{ return AVG_L		; }
 <SPARQL>{B}{A}{S}{E}			{ return BASE_L		; }
 <SPARQL>{B}{I}{J}{E}{C}{T}{I}{O}{N}	{ return BIJECTION_L	; }
 <SPARQL>{B}{O}{U}{N}{D}			{ return BOUND_L	; }
 <SPARQL>{B}{Y}				{ return BY_L		; }
 <SPARQL>{C}{L}{A}{S}{S}			{ return CLASS_L	; }
 <SPARQL>{C}{O}{N}{S}{T}{R}{U}{C}{T}	{ return CONSTRUCT_L	; }
+<SPARQL>{C}{O}{U}{N}{T}			{ BEGIN SPARQL_AFTER_COUNT; }
 <SPARQL>{C}{R}{E}{A}{T}{E}		{ return CREATE_L	; }
 <SPARQL>{D}{A}{T}{A}{T}{Y}{P}{E}	{ return DATATYPE_L	; }
 <SPARQL>{D}{E}{F}{I}{N}{E}		{ return DEFINE_L	; }
@@ -445,6 +450,8 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{L}{I}{T}{E}{R}{A}{L}		{ return LITERAL_L	; }
 <SPARQL>{L}{O}{A}{D}			{ return LOAD_L		; }
 <SPARQL>{M}{A}{K}{E}			{ return MAKE_L	; }
+<SPARQL>{M}{A}{X}			{ return MAX_L		; }
+<SPARQL>{M}{I}{N}			{ return MIN_L		; }
 <SPARQL>{M}{O}{D}{I}{F}{Y}		{ return MODIFY_L	; }
 <SPARQL>{N}{A}{M}{E}{D}			{ return NAMED_L	; }
 <SPARQL>{N}{I}{L}			{ return NIL_L		; }
@@ -464,6 +471,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{S}{E}{L}{E}{C}{T}		{ return SELECT_L	; }
 <SPARQL>{S}{U}{B}{C}{L}{A}{S}{S}	{ return SUBCLASS_L	; }
 <SPARQL>{S}{U}{B}{J}{E}{C}{T}		{ return SUBJECT_L	; }
+<SPARQL>{S}{U}{M}			{ return SUM_L		; }
 <SPARQL>{S}{T}{R}			{ return STR_L		; }
 <SPARQL>{S}{T}{O}{R}{A}{G}{E}		{ return STORAGE_L	; }
 <SPARQL>{T}{R}{U}{E}			{ return true_L		; }
@@ -589,6 +597,11 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL_DQ><<EOF>>		{ sparyyerror ("Unterminated short double-quoted string"); }
 
 
+	/* Whitespace after COUNT keyword */
+<SPARQL_AFTER_COUNT>"(" { BEGIN SPARQL; TOKPAR_OPEN (COUNT_LPAR, ')', GET_CURRENT_BEGIN) }
+<SPARQL_AFTER_COUNT>{D}{I}{S}{T}{I}{N}{C}{T} { BEGIN SPARQL; return COUNT_DISTINCT_L; }
+<SPARQL_AFTER_COUNT><<EOF>>	{ sparyyerror ("Unexpected end of SPARQL expression after IDENTIFIED keyword"); }
+
 	/* Whitespace after IDENTIFIED keyword */
 
 <SPARQL_AFTER_IDENTIFIED>{B}{Y}		{ BEGIN SPARQL; return BY_L; }
@@ -637,9 +650,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 
 	/* Whitespace and comments */
 
-<SPARQL,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>("#"(.*))?{S_NL}		{ sparp->sparp_lexlineno++; }
-<SPARQL,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>"#"(.*)				{ }
-<SPARQL,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>[ \t]+				{ }
+<SPARQL,SPARQL_AFTER_COUNT,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>("#"(.*))?{S_NL}		{ sparp->sparp_lexlineno++; }
+<SPARQL,SPARQL_AFTER_COUNT,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>"#"(.*)				{ }
+<SPARQL,SPARQL_AFTER_COUNT,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>[ \t]+				{ }
 
 <SPARQL_SQL_FRAGMENT>"/\*"	{ BEGIN (SPARQL_SQL_COMMENT); yymore(); }
 <SPARQL_SQL_FRAGMENT><<EOF>>	{ sparyyerror ("Unterminated SQL fragment after WHERE keyword"); }
@@ -650,6 +663,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 
 	/* Traps; these rules should be latest rules in the file. */
 
+<SPARQL_AFTER_COUNT>.	{ sparyyerror ("Only '(' and 'DISTINCT' are allowed after COUNT keyword in SPARQL expression"); }
 <SPARQL_AFTER_IDENTIFIED>.	{ sparyyerror ("Ill formed IDENTIFIED BY term"); }
 <SPARQL_AFTER_WHERE>.	{ sparyyerror ("Only '{', '(' and a string literal are allowed after WHERE keyword in SPARQL expression"); }
 <SPARQL>.		{ sparyyerror ("Invalid character in SPARQL expression"); }

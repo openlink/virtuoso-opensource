@@ -93,7 +93,7 @@ scan_for_children:
       {
         tree_cat = 1;
         sub_expns = tree->_.funcall.argtrees;
-	sub_expn_count = tree->_.funcall.argcount;
+	sub_expn_count = BOX_ELEMENTS (sub_expns);
         break;
       }
     case SPAR_GP:
@@ -262,24 +262,66 @@ sparp_expand_top_retvals (sparp_t *sparp)
   sparp_env_t *env = sparp->sparp_env;
   caddr_t retselid = sparp->sparp_expr->_.req_top.retselid;
   dk_set_t names = NULL;
-  SPART **new_retvals;
-  int varctr, varcount;
-  if (((SPART **)_STAR) != sparp->sparp_expr->_.req_top.retvals)
+  dk_set_t new_vars = NULL;
+  SPART **old_retvals = sparp->sparp_expr->_.req_top.retvals;
+  if (IS_BOX_POINTER (old_retvals))
+    {
+      dk_set_t gbys = NULL;
+      int ctr;
+      DO_BOX_FAST (SPART *, retexpn, ctr, old_retvals)
+        {
+          if ((SPAR_FUNCALL == SPART_TYPE (retexpn)) && retexpn->_.funcall.agg_mode)
+            goto agg_found; /* see below */
+        }
+      END_DO_BOX_FAST;
     return;
+agg_found:
+      DO_BOX_FAST (SPART *, retexpn, ctr, old_retvals)
+        {
+          if ((SPAR_FUNCALL == SPART_TYPE (retexpn)) && retexpn->_.funcall.agg_mode)
+            continue;
+          sparp_gp_trav (sparp, retexpn, &names,
+            NULL, NULL,
+            sparp_gp_trav_list_retvals, NULL,
+            NULL );
+        }
+      END_DO_BOX_FAST;
+      t_set_push (&(env->spare_selids), retselid);
+      while (NULL != names)
+        {
+          caddr_t varname = t_set_pop (&names);
+          SPART *var = spar_make_variable (sparp, varname);
+          t_set_push (&new_vars, var);
+        }  
+      t_set_pop (&(env->spare_selids));
+      sparp->sparp_expr->_.req_top.groupings = (SPART **)t_revlist_to_array (new_vars);
+      return;
+    }
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, &names,
     NULL, NULL,
     sparp_gp_trav_list_retvals, NULL,
     NULL );
-  new_retvals = (SPART **)t_revlist_to_array (names);
-  varcount = BOX_ELEMENTS (new_retvals);
   t_set_push (&(env->spare_selids), retselid);
-  for (varctr = 0; varctr < varcount; varctr++)
+  while (NULL != names)
     {
-      caddr_t varname = (caddr_t)new_retvals[varctr];
-      new_retvals[varctr] = spar_make_variable (sparp, varname);
+      caddr_t varname = t_set_pop (&names);
+      SPART *var = spar_make_variable (sparp, varname);
+      t_set_push (&new_vars, var);
     }  
   t_set_pop (&(env->spare_selids));
-  sparp->sparp_expr->_.req_top.retvals = new_retvals;
+  if ((SPART **)_STAR == old_retvals)
+    {
+      sparp->sparp_expr->_.req_top.retvals = (SPART **)t_list_to_array (new_vars);
+    }
+/*  else if ((SPART **)COUNT_L == old_retvals)
+    {
+      SPART *countagg;
+      t_set_push (&new_vars, (caddr_t)((ptrlong)1));
+      countagg = spar_make_funcall (sparp, 1, "bif:COUNT", (SPART **)t_list_to_array (new_vars));
+      sparp->sparp_expr->_.req_top.retvals = (SPART **)t_list (1, countagg);
+    }*/
+  else
+    spar_internal_error (sparp, "sparp_" "expand_top_retvals () failed to process special result-set");
 }
 
 
@@ -383,6 +425,14 @@ sparp_count_usages (sparp_t *sparp)
   DO_BOX_FAST (SPART *, expn, ctr, sparp->sparp_expr->_.req_top.retvals)
     {
       sparp_gp_trav (sparp, expn, sparp->sparp_expr->_.req_top.pattern,
+        NULL, NULL,
+        sparp_gp_trav_cu_in_retvals, NULL,
+        NULL );
+    }
+  END_DO_BOX_FAST;
+  DO_BOX_FAST (SPART *, grouping, ctr, sparp->sparp_expr->_.req_top.groupings)
+    {
+      sparp_gp_trav (sparp, grouping, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
         sparp_gp_trav_cu_in_retvals, NULL,
         NULL );
@@ -1138,6 +1188,14 @@ sparp_equiv_audit_retvals (sparp_t *sparp)
   DO_BOX_FAST (SPART *, expn, ctr, sparp->sparp_expr->_.req_top.retvals)
     {
       sparp_gp_trav_int (sparp, expn, trav_envs+1, sparp->sparp_expr->_.req_top.pattern,
+        NULL, NULL,
+        sparp_gp_trav_equiv_audit_retvals, NULL,
+        NULL );
+    }
+  END_DO_BOX_FAST;
+  DO_BOX_FAST (SPART *, grouping, ctr, sparp->sparp_expr->_.req_top.groupings)
+    {
+      sparp_gp_trav_int (sparp, grouping, trav_envs+1, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
         sparp_gp_trav_equiv_audit_retvals, NULL,
         NULL );
@@ -3427,18 +3485,11 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       return tgt;
     case SPAR_BUILT_IN_CALL:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
-      tgt->_.builtin.args = (SPART **)t_box_copy ((caddr_t) orig->_.builtin.args);
-      DO_BOX_FAST_REV (SPART *, arg, arg_ctr, orig->_.builtin.args)
-        {
-          tgt->_.builtin.args[arg_ctr] = sparp_tree_full_clone_int (sparp, arg, parent_gp);
-        }
-      END_DO_BOX_FAST_REV;
+      tgt->_.builtin.args = sparp_treelist_full_copy (sparp, orig->_.builtin.args, parent_gp);
       return tgt;
     case SPAR_FUNCALL:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
-      tgt->_.funcall.argtrees = (SPART **)t_box_copy ((caddr_t) orig->_.funcall.argtrees);
-      for (arg_ctr = orig->_.funcall.argcount; arg_ctr--; /*no step*/)
-        tgt->_.funcall.argtrees[arg_ctr] = sparp_tree_full_clone_int (sparp, orig->_.funcall.argtrees[arg_ctr], parent_gp);
+      tgt->_.funcall.argtrees = sparp_treelist_full_copy (sparp, orig->_.funcall.argtrees, parent_gp);
       return tgt;
     case SPAR_REQ_TOP:
       spar_error (sparp, "Internal SPARQL compiler error: can not clone TOP of request");
@@ -3533,6 +3584,7 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.req_top.retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.retvals, parent_gp);
       tgt->_.req_top.sources = sparp_treelist_full_copy (sparp, orig->_.req_top.sources, parent_gp);
       tgt->_.req_top.pattern = sparp_tree_full_copy (sparp, orig->_.req_top.pattern, parent_gp);
+      tgt->_.req_top.groupings = sparp_treelist_full_copy (sparp, orig->_.req_top.groupings, parent_gp);
       tgt->_.req_top.order = sparp_treelist_full_copy (sparp, orig->_.req_top.order, parent_gp);
       tgt->_.req_top.limit = t_box_copy (orig->_.req_top.limit);
       tgt->_.req_top.offset = t_box_copy (orig->_.req_top.offset);
@@ -3934,6 +3986,13 @@ sparp_set_retval_and_order_selid (sparp_t *sparp)
   DO_BOX_FAST (SPART *, filt, ctr, sparp->sparp_expr->_.req_top.retvals)
     {
       sparp_gp_trav_int (sparp, filt, trav_envs + 1, top_gp_selid,
+        NULL, NULL,
+        sparp_set_retval_selid_cbk, NULL, NULL );
+    }
+  END_DO_BOX_FAST;
+  DO_BOX_FAST (SPART *, grouping, ctr, sparp->sparp_expr->_.req_top.groupings)
+    {
+      sparp_gp_trav_int (sparp, grouping, trav_envs + 1, top_gp_selid,
         NULL, NULL,
         sparp_set_retval_selid_cbk, NULL, NULL );
     }

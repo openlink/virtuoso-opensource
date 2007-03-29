@@ -34,6 +34,7 @@
 #include "xpf.h"
 #include "xqf.h"
 #include "date.h" /* for DT_DT_TYPE */
+#include "numeric.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -207,7 +208,7 @@ const char *ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subty
   if (!strcmp (name, "RDF/XML"))
     switch (subtype)
       {
-      case SELECT_L: case DISTINCT_L: return "DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML";
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: return "DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML";
       case CONSTRUCT_L: case DESCRIBE_L: return "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML";
       case ASK_L: return "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML";
       default: return NULL;
@@ -215,7 +216,7 @@ const char *ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subty
   if (!strcmp (name, "TURTLE") || !strcmp (name, "TTL"))
     switch (subtype)
       {
-      case SELECT_L: case DISTINCT_L: return "DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL";
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: return "DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL";
       case CONSTRUCT_L: case DESCRIBE_L: return "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL";
       case ASK_L: return "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL";
       default: return NULL;
@@ -1293,11 +1294,24 @@ ssg_print_box_as_sqlval (spar_sqlgen_t *ssg, caddr_t box, int allow_uname)
       break;
     case DV_DOUBLE_FLOAT:
       buffill = sprintf (tmpbuf, "%lg", unbox_double (box));
+      if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+        {
+          strcpy (tmpbuf+buffill, ".0");
+          buffill += 2;
+        }
       break;
     case DV_NUMERIC:
-      numeric_to_string ((numeric_t)box, tmpbuf, buflen);
+      {
+        numeric_t nbox = (numeric_t)box;
+        numeric_to_string (nbox, tmpbuf, buflen);
       buffill = strlen (tmpbuf);
+        if (/*(10 > numeric_raw_precision (nbox)) && (0 == numeric_scale (nbox)) &&*/ (NULL == strchr (tmpbuf, '.')))
+          {
+            strcpy (tmpbuf+buffill, ".0");
+            buffill += 2;
+          }
       break;
+      }
 #if 0
 #ifndef MAP_DIRECT_BIN_CHAR
     case DV_BIN:
@@ -2710,7 +2724,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
       }
     case SPAR_FUNCALL:
       {
-        int bigtext, arg_ctr, arg_count = tree->_.funcall.argcount;
+        int bigtext, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
 	ssg_valmode_t native = ssg_rettype_of_function (ssg, tree->_.funcall.qname);
         if (native != needed)
@@ -2745,6 +2759,13 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
            (arg_count > 3) );
         ssg_prin_function_name (ssg, tree->_.funcall.qname);
         ssg_puts (" (");
+        if (tree->_.funcall.agg_mode)
+          {
+            if (!strcmp (tree->_.funcall.qname, "bif:COUNT") && ((ptrlong)1 == tree->_.funcall.argtrees[0]))
+              arg_count = 1; /* Trick to handle SELECT COUNT FROM ... that is translated to SELECT COUNT (1, all vars) */
+            if (DISTINCT_L == tree->_.funcall.agg_mode)
+              ssg_puts (" DISTINCT");
+          }
         ssg->ssg_indent++;
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
@@ -3811,7 +3832,7 @@ void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, s
       return;
     case SPAR_FUNCALL:
       {
-        int bigtext, arg_ctr, arg_count = tree->_.funcall.argcount;
+        int bigtext, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
         int ctr;
 	ssg_valmode_t native = ssg_rettype_of_function (ssg, tree->_.funcall.qname);
@@ -3845,7 +3866,7 @@ void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, s
             ssg_puts (parser_desc->p_name);
             ssg_puts ("'");
             ssg->ssg_indent++;
-            for (ctr = 0; ctr < tree->_.funcall.argcount; ctr++)
+            for (ctr = 0; ctr < BOX_ELEMENTS (tree->_.funcall.argtrees); ctr++)
               {
                 ssg_puts (", ");
                 ssg_print_scalar_expn (ssg, tree->_.funcall.argtrees[ctr], SSG_VALMODE_SQLVAL, NULL_ASNAME);
@@ -3860,6 +3881,13 @@ void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, s
            (arg_count > 3) );
         ssg_prin_function_name (ssg, tree->_.funcall.qname);
         ssg_puts (" (");
+        if (tree->_.funcall.agg_mode)
+          {
+            if (!strcmp (tree->_.funcall.qname, "bif:COUNT") && ((ptrlong)1 == tree->_.funcall.argtrees[0]))
+              arg_count = 1; /* Trick to handle SELECT COUNT FROM ... that is translated to SELECT COUNT (1, all vars) */
+            if (DISTINCT_L == tree->_.funcall.agg_mode)
+              ssg_puts (" DISTINCT");
+          }
         ssg->ssg_indent++;
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
@@ -3906,8 +3934,7 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
     }
   if (SSG_RETVAL_DIST_SER_LONG & flags)
     {
-      ret_column = spartlist (ssg->ssg_sparp, 4,
-        SPAR_FUNCALL, t_box_string ("SPECIAL::sql:RDF_DIST_SER_LONG"), (ptrlong)1,
+      ret_column = spar_make_funcall (ssg->ssg_sparp, 0, "SPECIAL::sql:RDF_DIST_SER_LONG",
         (SPART **) t_list (1, ret_column) );
       var_name = NULL;
     }
@@ -4521,7 +4548,7 @@ ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm)
 
 void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
 {
-  int oby_ctr;
+  int gby_ctr, oby_ctr;
   long lim, ofs;
   SPART	*tree = ssg->ssg_tree;
   ptrlong subtype = tree->_.req_top.subtype;
@@ -4542,12 +4569,16 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   ssg->ssg_equiv_count = tree->_.req_top.equiv_count;
   ssg->ssg_equivs = tree->_.req_top.equivs;
   formatter = ssg_find_formatter_by_name_and_subtype (tree->_.req_top.formatmode_name, tree->_.req_top.subtype);
+  if (COUNT_DISTINCT_L == subtype)
+    retvalmode = SSG_VALMODE_SQLVAL;
+  else
   retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
   if ((NULL != formatter) && (NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
     spar_sqlprint_error ("'output:valmode' declaration conflicts with 'output:format'");
   switch (subtype)
     {
     case SELECT_L:
+    case COUNT_DISTINCT_L:
     case DISTINCT_L:
       if (NULL == retvalmode)
         retvalmode = ((NULL != formatter) ? SSG_VALMODE_LONG : SSG_VALMODE_SQLVAL);
@@ -4561,7 +4592,13 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           else
             spar_sqlprint_error ("This version of SPARQL compiler does not fully support 'output:valmode' declaration for SELECT DISTINCT");
         }
-      if (NULL != formatter)
+      if (COUNT_DISTINCT_L == subtype)
+        {
+          ssg_puts ("SELECT COUNT (*) AS \"callret-0\" FROM (");
+          ssg->ssg_indent += 1;
+          ssg_newline (0);
+        }
+      else if (NULL != formatter)
         {
           ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
           ssg_puts ("vector (");
@@ -4583,7 +4620,7 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       ssg_puts ("SELECT");
       lim = unbox (tree->_.req_top.limit);
       ofs = unbox (tree->_.req_top.offset);
-      if (DISTINCT_L == tree->_.req_top.subtype)
+      if ((COUNT_DISTINCT_L == tree->_.req_top.subtype) || (DISTINCT_L == tree->_.req_top.subtype))
         ssg_puts (" DISTINCT");
       if ((2147483647 != lim) || (0 != ofs))
         {
@@ -4645,6 +4682,20 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   ssg_print_union (ssg, tree->_.req_top.pattern, tree->_.req_top.retvals,
     SSG_PRINT_UNION_NOFIRSTHEAD | SSG_PRINT_UNION_NONEMPTY_STUB | SSG_RETVAL_MUST_PRINT_SOMETHING,
     top_retval_flags, retvalmode );
+  if (0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.groupings))
+    {
+      ssg_newline (0);
+      ssg_puts ("GROUP BY");
+      ssg->ssg_indent++;
+      DO_BOX_FAST(SPART *, grouping, gby_ctr, tree->_.req_top.groupings)
+        {
+	  if (gby_ctr > 0)
+            ssg_putchar (',');
+          ssg_print_retval_simple_expn (ssg, tree->_.req_top.pattern, grouping, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+        }
+      END_DO_BOX_FAST;
+      ssg->ssg_indent--;
+    }
   if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && (NULL == formatter))
     {
       ssg_newline (0);
@@ -4662,11 +4713,12 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   ssg_puts ("\nOPTION (QUIETCAST");
   ssg_prin_option_commalist (ssg, ssg->ssg_sparp->sparp_env->spare_sql_select_options, 1);
   ssg_puts (")");
-  if ((NULL != formatter) || (NULL != deser_name))
+  if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (NULL != deser_name))
     {
       switch (tree->_.req_top.subtype)
         {
         case SELECT_L:
+        case COUNT_DISTINCT_L:
         case DISTINCT_L:
         case ASK_L:
           ssg_puts (" ) AS ");
