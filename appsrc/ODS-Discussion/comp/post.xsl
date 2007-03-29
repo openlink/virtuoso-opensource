@@ -227,14 +227,19 @@
           <span class="header">From</span>
         </td>
         <td>
-          <v:label value="--self.post_from" format="%V" width="80" enabled="--self.vc_authenticated" />
+          <v:label value="--coalesce(self.post_from,'')" format="%V" width="80" enabled="--self.vc_authenticated" />
           <v:text name="post_from_n" value="--''" format="%s" xhtml:size="50" type="--''" enabled="--abs (self.vc_authenticated - 1)" />
           <font color="rgb(0,64,123)">
             <v:label value="--' Please enter a valid email address.'" format="%s" enabled="--abs (self.vc_authenticated - 1)" />
           </font>
+          <v:template type="simple" enabled="--self.vc_invalid_email_addr">
+            Please enter a valid <v:url url="--'/ods/uiedit.vspx?focus=email'" value="mail"/> address.
+          </v:template>
+<!--
           <v:label enabled="--self.vc_invalid_email_addr"
                    value="--'The current user''s email address appears to be invalid. Posting is likely to fail.'"
                    format="%s"/>
+-->
           <input type="hidden" name="post_from_n" value="<?= self.post_from ?>" enabled="--self.vc_authenticated" />
         </td>
       </tr>

@@ -142,6 +142,7 @@
 	      f.value = fn.value + ' ' + ln.value;
 	    }
         }
+        
     ]]></script>
 
     <v:form name="usr_personal" type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=1">
@@ -232,6 +233,14 @@
                     <v:validator test="length" min="1" max="40" message="E-mail address cannot be empty or longer then 40 chars" name="vv_email1"/>
                     <v:validator test="regexp" regexp="[^@ ]+@([^\. ]+\.)+[^\. ]+" message="Invalid E-mail address" name="vv_email2"/>
                   </v:text>
+    <script type="text/javascript"><![CDATA[
+    var focus='<?V get_keyword('focus',self.vc_event.ve_params,'')?>'+'';
+    if(focus=='email')
+    {
+      $('regmail').focus();
+    }
+    ]]></script>
+                  
                   <div style="display:inline; color:red;"><v:error-summary match="regmail" /></div>
 		  <vm:u-prop-select name="sel_4" value="self.sav4" />
                 </td>
