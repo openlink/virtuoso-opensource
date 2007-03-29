@@ -74,7 +74,7 @@ Connection options:
   -S server port      - Specifies the TCP port to connect to
   -E                  - Specifies that encryption will be used
   -C                  - Specifies that password will be sent in cleartext
-  -X pkcs12_file      - Specifies that encryption & X509 certificateswill
+  -X pkcs12_file      - Specifies that encryption & X509 certificates will
                         be used
   -T server_cert      - Specifies that CA certificate file to be used
   -b size             - Specifies that large command buffer to be used

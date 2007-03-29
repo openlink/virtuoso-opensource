@@ -50,7 +50,7 @@ The In-process address has the following form:</para>
 "<computeroutput>in-process</computeroutput>" keyword, followed by another 
 colon, and finally the port number on which the server listens for TCP connections.</para>
 
-<para>This port is only used for establishing the in-process connection, afterwhich 
+<para>This port is only used for establishing the in-process connection, after which 
 the connection proceeds exclusively through the in-process procedure call mechanism.</para>
 
 <para>The in-process connections are presently only supported by the Virtuoso 

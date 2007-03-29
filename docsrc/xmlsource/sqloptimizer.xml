@@ -78,7 +78,7 @@ The <link linkend="fn_sys_db_stat">DB.DBA.SYS_DB_STAT</link> stored procedure pe
 
   <para>constructs table column histogram and feeds it into the
   DB.DBA.SYS_COL_HIST system table.  The default value of prec, in both cases,
-  is 5, which implies that  a five percent sample of the table will be used.  A   percentage of 0 means thatthe whole table will be read.</para>
+  is 5, which implies that  a five percent sample of the table will be used.  A   percentage of 0 means that the whole table will be read.</para>
 
 <example id="ex_sqlopt1"><title>Demonstration of the STAT_ANALYSE &amp; STAT_HISTOGRAM Procedures</title>
 <para>The following script is intended for use with the ISQL program as the
