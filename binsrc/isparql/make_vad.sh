@@ -204,9 +204,12 @@ directory_init() {
 
   mkdir vad/data/iSPARQL/toolkit
   mkdir vad/data/iSPARQL/toolkit/images
+  mkdir vad/data/iSPARQL/toolkit/images/markers
   cp -p $HOME/binsrc/oat/toolkit/*.js vad/data/iSPARQL/toolkit/
   cp -p $HOME/binsrc/oat/images/*.png vad/data/iSPARQL/toolkit/images/
   cp -p $HOME/binsrc/oat/images/*.gif vad/data/iSPARQL/toolkit/images/
+  cp -p $HOME/binsrc/oat/images/markers/*.png vad/data/iSPARQL/toolkit/images/markers/
+
 
   for dir in `find . -type d | grep "\\./[^/]*$"  | grep -v CVS | grep -v vad | grep -v toolkit`
 #  for dir in `find . -type d | grep "\\./[^/]*$"  | grep -v CVS | grep -v vad`
