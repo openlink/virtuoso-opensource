@@ -42,7 +42,8 @@ wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc
 wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib 
 wbxml2_la_CFLAGS  += $(WBXML2_CFLAGS)
 wbxml2_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
-wbxml2_la_LDFLAGS = -module -avoid-version -export-dynamic -no-undefined $(WBXML2_LDFLAGS) -export-symbols wbxml2.exp
+wbxml2_la_LDFLAGS = -module -avoid-version -export-dynamic -no-undefined -export-symbols wbxml2.exp
+wbxml2_la_LIBADD  = $(WBXML2_LDFLAGS) -lexpat
 
 # ----------------------------------------------------------------------
 #
