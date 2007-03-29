@@ -53,7 +53,6 @@ CLEANFILES =  \
 	mkdemo.tdb \
 	mkdoc.tdb \
 	srv_errors.txt \
-	vad_version \
 	virtuoso.db \
 	virtuoso.ini \
 	virtuoso.pxa \

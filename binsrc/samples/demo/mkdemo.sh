@@ -43,17 +43,19 @@ MAKEDOCS=${MAKEDOCS-0}
 HTMLDOCS=${HTMLDOCS-1}
 ISQL=${ISQL-isql}
 HOST_OS=`uname -s | grep WIN`
+
 if [ "x$HOST_OS" != "x" ]
 then
-TEMPFILE="`cygpath -m $TMP/isql.$$`"
-HOME="`cygpath -m $HOME`"
-LN="cp -rf"
-RM="rm -rf"
+    TEMPFILE="`cygpath -m $TMP/isql.$$`"
+    HOME="`cygpath -m $HOME`"
+    LN="cp -rf"
+    RM="rm -rf"
 else
-TEMPFILE=/tmp/isql.$$
-LN="ln -f -s"
-RM="rm -f"
+    TEMPFILE=/tmp/isql.$$
+    LN="ln -f -s"
+    RM="rm -rf"
 fi
+
 BPEL=$HOME/binsrc/bpel/
 VOS=0
 if [ "z$SERVER" = "z" ]  
@@ -362,6 +364,8 @@ then
         (cd $HOME/binsrc/samples/sparql_demo ; make)
         (cd $HOME/binsrc/tutorial ; make)
         (cd $HOME/binsrc/yacutia ; make)
+	(cd $HOME/binsrc/samples/image_magick ; make)
+	(cd $HOME/appsrc ; make)
     fi
 else
     (cd $BPEL; make )
@@ -399,6 +403,7 @@ then
     cp -f $BINDIR/im.dll plugin
     cp -f $BINDIR/wikiv.dll plugin
     cp -f $BINDIR/mediawiki.dll plugin
+    cp -f $BINDIR/creolewiki.dll plugin
 else
     cp -f $HOME/binsrc/samples/image_magick/.libs/im.so plugin
     cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/wikiv.so plugin
@@ -409,10 +414,10 @@ fi
 HOSTNAME=`uname -n`
 if [ $VOS -eq 1 -a "x$HOST_OS" != "x" ]
 then
-BINDIR=`cygpath -m "$BINDIR"`    
-PLUGINDIR=`echo "$BINDIR" | sed -e 's#/#\\\/#g; s# #\\ #g; s#-#\\-#g'`    
+    BINDIR=`cygpath -m "$BINDIR"`    
+    PLUGINDIR=`echo "$BINDIR" | sed -e 's#/#\\\/#g; s# #\\ #g; s#-#\\-#g'`    
 else
-PLUGINDIR=`echo "$prefix/lib"| sed -e 's#/#\\\/#g; s# #\\ #g; s#-#\\-#g'` 
+    PLUGINDIR=`echo "$prefix/lib"| sed -e 's#/#\\\/#g; s# #\\ #g; s#-#\\-#g'` 
 fi
 
 cat $HOME/bin/installer/demo.ini | sed -e "s/DEMOSQLPORT/$DEMOSQLPORT/g" -e "s/DEMOHTTPPORT/$DEMOHTTPPORT/g" -e "s/HOSTNAMEREPLACEME/$HOSTNAME/g" -e "s/ZNAME/$HOSTNAME:$DEMOSQLPORT/g" -e "s/[A-Z]*SAFEREPLACEME/;/g" -e "s/\.\.\/bin\/hosting/$PLUGINDIR/g" -e "s/URIQAREPLACEME/$HOSTNAME:$DEMOHTTPPORT/g" > demo.ini
