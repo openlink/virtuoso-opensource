@@ -40,6 +40,7 @@ clean-local:
 	-rm -rf vad
 
 EXTRA_DIST = \
+	install/*.htm \
 	install/odbc_mail.ini \
 	make_vad.sh \
 	sql/*.sql \
