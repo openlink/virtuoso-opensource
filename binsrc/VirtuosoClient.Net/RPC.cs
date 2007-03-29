@@ -84,6 +84,7 @@ namespace OpenLink.Data.Virtuoso
 		DV_TIMESTAMP_OBJ = 208,
 		DV_TIME = 210,
 		DV_DATETIME = 211,
+		DV_ANY = 242
 	}
 
 	internal enum RpcTag
