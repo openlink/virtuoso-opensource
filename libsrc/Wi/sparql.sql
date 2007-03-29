@@ -7440,7 +7440,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
     where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
     and "COLUMN" = fix_identifier_case ('RO_DIGEST')
     and COL_DTP = 242 ) )
-    return;
+    goto final_qm_reload;
   exec ('DB.DBA.vt_create_text_index (
     fix_identifier_case (''DB.DBA.RDF_OBJ''),
     fix_identifier_case (''RO_DIGEST''),
@@ -7448,7 +7448,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
     0, 0, vector (), 1, ''*ini*'', ''*ini*'')', stat, msg);
   exec ('DB.DBA.vt_batch_update (fix_identifier_case (''DB.DBA.RDF_OBJ''), ''ON'', 1)', stat, msg);
   if (isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE')))
-    return;
+    goto final_qm_reload;
   __atomic (1);
   {
   declare exit handler for sqlstate '*'
@@ -7571,6 +7571,8 @@ tmpval_cur_end: ;
   }
   __atomic (0);
   exec ('checkpoint');
+
+final_qm_reload:  
   DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
 }
 ;
