@@ -1,3 +1,1670 @@
+2007-03-29 21:47  source
+
+	* Updated version to 5.0.0-rc7
+
+2007-03-29 21:46  source
+
+	* Fixed (NULL) when no mail provided in post
+
+2007-03-29 21:27  source
+
+	* Added missing im.exp to distribution
+
+2007-03-29 18:25  source
+
+	* Fixed typos
+
+2007-03-29 15:48  source
+
+	* Added constant DV_ANY
+
+2007-03-29 15:47  source
+
+	* Fixed library dependency
+
+2007-03-29 15:44  source
+
+	* Updated version
+
+2007-03-29 15:43  source
+
+	* Added missing file
+
+2007-03-29 15:43  source
+
+	* Added new SIOC predicates for VCARD
+
+2007-03-29 15:43  source
+
+	* Fixed IE javascript problem
+
+2007-03-29 15:42  source
+
+	* Fixed small bugs
+	* Fixed GEMS
+
+2007-03-29 15:33  source
+
+	* Added images/markers
+
+2007-03-29 14:58  source
+
+	* Use LIBS instead of LDFLAGS for testing library functionality
+	* Use Magick-config --libs to get all library dependencies
+	* Small namespace cleanup
+
+2007-03-29 14:56  source
+
+	* Fixed problem with library dependencies
+
+2007-03-29 12:08  source
+
+	* Small fixes to build demo database
+
+2007-03-29 10:32  source
+
+	* Fixed label text
+
+2007-03-29 10:30  source
+
+	* Fix for RDF FT upgrade bug
+
+2007-03-29 08:55  source
+
+	* Updated version to 5.0.0-rc6
+
+2007-03-29 08:55  source
+
+	* Added aggregate functions
+	* Added auto-grouping
+	* Added SELECT COUNT DISTINCT
+	* Fixed ".0" issue in printing non-integers that have no digits after dot
+
+2007-03-29 08:52  source
+
+	* Fixed typo in debug code
+
+2007-03-29 08:48  source
+
+	* Fixed browse attachement from local FS
+	* Fixed WebDAV issue with /DAV/home
+	* Added CSS for WebDAV
+	* Small bugfixes
+
+2007-03-28 21:02  source
+
+	* Fixed building demo_dav.vad for VOS
+
+2007-03-28 15:24  source
+
+	* Fixed loading ODS vad packages
+
+2007-03-28 15:22  source
+
+	* Removed dependency with demo vad
+
+2007-03-28 15:01  source
+
+	* Fixed for IE xslt bug
+
+2007-03-28 14:59  source
+
+	* Fixed entering mutex instead of leaving it
+
+2007-03-28 14:59  source
+
+	* Fixed missing leave txn mutex when done
+
+2007-03-28 14:58  source
+
+	* Suppress upgrade message on a new database
+
+2007-03-28 11:57  source
+
+	* Updated version to 5.0.0-rc5
+
+2007-03-28 11:57  source
+
+	* Fixed get registry also when starting with different inis for schema
+	  and data
+
+2007-03-28 11:50  source
+
+	* Merged from upstream project
+
+2007-03-28 11:48  source
+
+	* Removed deprecated file
+
+2007-03-28 11:48  source
+
+	* Added test for INF with SPARQL
+
+2007-03-28 11:47  source
+
+	* Added new test files
+
+2007-03-28 11:42  source
+
+	* Fixed comment
+
+2007-03-28 11:41  source
+
+	* Added hook for HEAD method in dav
+	* Fixed spelling
+
+2007-03-28 11:41  source
+
+	* Fixed spelling
+
+2007-03-28 11:40  source
+
+	* Fixed whitespace
+
+2007-03-28 11:38  source
+
+	* Added GEO and RDF-in-comments
+
+2007-03-27 20:45  source
+
+	* Updated version to 5.0.0-rc4
+
+2007-03-27 20:44  source
+
+	* Added support for define input:inference and for option (inference ...)
+
+2007-03-27 20:14  source
+
+	* Updated version information
+
+2007-03-27 20:05  source
+
+	* Fixed sql error in calendar
+	* Fixed ODS newsgroup management
+	* Reverted previous patch
+
+2007-03-27 16:36  source
+
+	* Added RDF FT rule
+
+2007-03-27 16:35  source
+
+	* Fixed bad labels
+
+2007-03-27 15:53  source
+
+	* Fix no IN_CPT during atomic
+
+2007-03-27 13:56  source
+
+	* Fixed build ordering
+
+2007-03-27 12:48  source
+
+	* Fixed vhost for demo vad package
+
+2007-03-27 12:29  source
+
+	* Added scripts for making demo vad package
+
+2007-03-27 12:07  source
+
+	* Added build rule for rdf_mappers
+
+2007-03-27 11:42  source
+
+	* Fixed group name
+
+2007-03-27 10:17  source
+
+	* Moved to rdf_mappers
+	* Removed deprecated files
+
+2007-03-27 10:14  source
+
+	* Moved to rdf_mappers
+
+2007-03-27 10:09  source
+
+	* Added full support for typed non-string rdf boxes
+	* Changed RDF FT data column to RO_DIGEST
+	* Added arithmetics on rdf boxes
+	* Fixed XQF constructors
+
+2007-03-27 10:07  source
+
+	* Removed 1 byte read inside the select thread, which can hang the server
+
+2007-03-27 10:05  source
+
+	* Changed webrobot to use rdf_mappers instead of builtin grddl xslt
+	* Added notice about deps to webrobot
+
+2007-03-27 10:00  source
+
+	* Changed webrobot to use rdf_mappers instead of builtin grddl xslt
+
+2007-03-27 09:58  source
+
+	* Disabled log for vspx page class as this is temp object and will
+	  make errors in reply leading to bad page rendering
+
+2007-03-27 09:56  source
+
+	* Changed RDF FT data column to RO_DIGEST
+
+2007-03-26 21:47  source
+
+	* Fixed make clean
+
+2007-03-26 21:39  source
+
+	* Added rdf_mappers package
+
+2007-03-26 14:47  source
+
+	* Moved binsrc/tests/dav to binsrc/dav
+
+2007-03-26 14:17  source
+
+	* Fixed win32 build files
+
+2007-03-26 13:33  source
+
+	* Added workaround for Mono 1.2.3.1
+
+2007-03-26 13:24  source
+
+	* Removed deprecated defines
+
+2007-03-26 13:21  source
+
+	* Fixed build dependencies
+
+2007-03-26 13:20  source
+
+	* Fixed whitespace
+
+2007-03-26 13:17  source
+
+	* Fixed addressbook dashboard
+
+2007-03-26 13:14  source
+
+	* Added support for additional mappers
+
+2007-03-26 13:12  source
+
+	* Merged from upstream project
+
+2007-03-26 12:55  source
+
+	* Added missing url rewrite functions
+
+2007-03-26 10:51  source
+
+	* Fixed variable declaration order
+
+2007-03-26 07:58  source
+
+	* Fixed problem registering/unregistering pagelock
+
+2007-03-26 07:57  source
+
+	* Added message informing user of RDF index upgrade time
+
+2007-03-25 23:14  source
+
+	* Changed parameter counter to int
+
+2007-03-24 11:46  source
+
+	* Fixed return value of rb_copy
+
+2007-03-23 15:18  source
+
+	* Sync with upstream project
+
+2007-03-23 15:07  source
+
+	* Changed showQuery to be default
+	* Changed show* params can now be turned off by setting 0 if default is
+	  changed
+
+2007-03-23 15:05  source
+
+	* Code cleanup
+
+2007-03-23 15:05  source
+
+	* Added support for head request
+	* Fixed code not to try construct queries with distinct select
+
+2007-03-23 13:17  source
+
+	* Updated version to 5.0.0-rc3
+
+2007-03-23 13:16  source
+
+	* Fixed function names
+
+2007-03-23 13:13  source
+
+	* Added support for SELECT BREAKUP(expr) in subquery
+
+2007-03-23 13:11  source
+
+	* Fixed backward compatibility
+	* Changed error handling in upgrade
+
+2007-03-23 09:17  source
+
+	* Fix for upgrading database to new rdf ft
+
+2007-03-22 22:09  source
+
+	* Updated version to 5.0.0-rc2
+
+2007-03-22 22:08  source
+
+	* Fixed font families and sizes
+
+2007-03-22 22:07  source
+
+	* Fixed labels
+
+2007-03-22 16:54  source
+
+	* Updated version nr
+
+2007-03-22 16:27  source
+
+	* Fixed typo
+
+2007-03-22 16:11  source
+
+	* Moved Syncml to binsrc/sync
+
+2007-03-22 15:37  source
+
+	* Updated version to 5.0.0-rc1
+
+2007-03-22 15:36  source
+
+	* Fixes for BOOL of an empty string and for DISTINCT of calculated
+	  non-storable rdf boxes in LONG valmode
+
+2007-03-22 14:59  source
+
+	* Removed deprecated files
+
+2007-03-22 14:52  source
+
+	* Added new banner file and fixed up markup that was displaying the app ad
+	  in a widget frame
+	* Added Addressbook application
+	* Fixed UI style to ODS Tabs when no login
+	* Fixed column alignment in IE
+	* Fixed tab label text visiblity in IE
+
+2007-03-22 14:48  source
+
+	* Fixed javascript error in Save Draft
+	* Fixed debug info from post
+	* Fixed copyright info
+
+2007-03-22 14:46  source
+
+	* Fixed OPLM imports to retrieve Feeds posts
+
+2007-03-22 14:45  source
+
+	* Changed SocialNetwork to Addressbook
+
+2007-03-22 14:45  source
+
+	* Fixed SQL syntax error
+	* Fixed Syntax
+	* Fixed group name
+	* Fixed setting not shown for dba and dav users
+	* Fixed newsgroup creation after enable Conversations
+
+2007-03-22 14:41  source
+
+	* Added initial implementation of ODS Addressbook
+
+2007-03-22 13:22  source
+
+	* Moved to rdf_mappers
+
+2007-03-22 13:20  source
+
+	* Use DF_RDF boxes in RDF_QUAD and RDF_OBJ
+	* Added support for RDF inference
+	* Added long ANY type
+
+2007-03-22 13:12  source
+
+	* Fixed memory leak
+
+2007-03-22 13:10  source
+
+	* Added support for new RDF boxes
+
+2007-03-22 13:09  source
+
+	* Added support for RDF freetext
+
+2007-03-22 13:08  source
+
+	* Additional tests
+
+2007-03-22 13:05  source
+
+	* Added RDF mappers package; grddl&flickr, amazon are moved out of the
+	  server code
+
+2007-03-22 12:57  source
+
+	* Fix for setting content type when using OAT.WebDav
+
+2007-03-22 12:29  source
+
+	* Sync with upstream project
+
+2007-03-22 10:36  source
+
+	* Fixed duplicate symbol on Mac OS X
+
+2007-03-22 09:18  source
+
+	* Reset automake to version 1.6
+
+2007-03-21 13:14  source
+
+	* Added wbxml2 plugin
+
+2007-03-21 10:17  source
+
+	* Added rules to actually build syncml_dav.vad
+
+2007-03-21 10:16  source
+
+	* Sync with upstream project
+
+2007-03-21 10:12  source
+
+	* Fixed memory leak
+
+2007-03-19 20:43  source
+
+	* Added new search options for text search
+	* Added admin resource for ODS newsgroups
+
+2007-03-19 20:40  source
+
+	* Fixed memory leak
+
+2007-03-19 20:39  source
+
+	* Dynamic properties window title change
+	* Added support to drop C&P on the property window
+	* Fixed escape of DefaultQuery
+
+2007-03-19 15:43  source
+
+	* Added new files to distribute
+
+2007-03-19 15:40  source
+
+	* Added format to redirect
+	* Corrected response code
+	* Change to generate construct query
+	* Fix for file perms on update
+	* Fix for loading files
+	* Changed file type labels
+	* Added read right to others
+	* Added virtuoso handler for isparql files
+	* Fixed dynamic pages and construct display pages
+	* Fixed default graph and dereference browsing
+
+2007-03-19 15:28  source
+
+	* Fixed posting attachements
+	* Fixed js console warnings
+	* New post attach now uses general browse button for fs file select
+	* Added subscribe/unsubscribe ODS newsgroups
+	* Added ordering to newsgroup list view
+
+2007-03-19 11:42  source
+
+	* Fixed when building in separate directory from source
+
+2007-03-19 11:38  source
+
+	* Fix for generating JSO code when doing out-of-source build
+
+2007-03-19 11:32  source
+
+	* Use automake 1.9
+	* Use autoconf 2.59
+	* Use ustar format if possible, since it can handle long path/file names
+
+2007-03-19 11:01  source
+
+	* Fixed spurious #endif
+
+2007-03-16 21:24  source
+
+	* Fixed make dist
+
+2007-03-16 17:55  source
+
+	* Extensive changes for new database optimization (vajra)
+	* Added build rule for sponges
+
+2007-03-16 17:55  source
+
+	* Extensive changes for new database optimization (vajra)
+
+2007-03-16 17:54  source
+
+	* Removed redundant check
+
+2007-03-16 17:20  source
+
+	* Changed RDF views
+	* Fixed autologin for attachment
+	* Fixed offline posting
+	* Fixed dashboard reporting
+	* Fixed correct date
+	* Added resource url on edit screen
+	* Fixed redirects, errors.sql to vad build
+	* Fixed error reporting
+	* Fixed sioct to be global
+	* Fixed users link to tools
+	* Added interdomain cookies
+	* Fixed uninstall-install url for ODS Dashboard
+	* Fixed uninstall script
+
+2007-03-16 17:19  source
+
+	* Changed to new sioc version
+	* Fixed showing user error when conversation feature disabled
+
+2007-03-16 17:19  source
+
+	* Changed rdf re new sioc version
+	* Changed to new sioc version
+	* Fixed adding service to the rdf
+	* Fixed uninstall
+
+2007-03-16 17:19  source
+
+	* Changed RDF views
+	* Fixed bug if user is not in sn
+	* Changed to new SIOC version
+	* Fixed text
+	* Keep web service ref when making a new instance
+	* Changed map control init; now separated from ODS_BAR
+	* Added oat/images directory
+	* Added SIOCREF queries
+	* Changed sioct to global
+	* Changed describe when asked for rdf in a dataspace added vcalendar 1.1 to
+	  the syncml immutablegraphs
+	* Fixed uninstall
+	* Fixed visibility bug for personal data
+	* Changed map zoom level to 0 not important
+	* Changed feed discovery link in search try to get embeeded rdf	from xhtml
+	* Fixed SIOC update when new = old
+	* Removed pipe from page footer.
+	* Added new ODS application icons.
+	* Fixed My photos dashboard
+	* Disabled  ODS-BAR Sign up button when registratation disabled
+	* Added additional checks of end point
+	* Added path navigation in Site settings
+
+2007-03-16 17:19  source
+
+	* Fixed rdf for new sioc version
+	* Changed to new sioc version
+	* Fixed user error message if conversation feature is disabled
+	* Changed si to be in sql_rdf
+	* Added post comment after OpenID versification shows SQL error
+	* Changed bottom links to be hidden
+
+2007-03-16 17:18  source
+
+	* Changed RDF views
+	* Changed map control init now separated from ODS_BAR
+	* Fixed OAT.Calendar support
+	* Added calendar support in search engine
+	* Fixed OAT.WebDav support
+	* Fixed rss url generation
+	* Fixed rss generation
+	* Fixed text
+
+2007-03-16 17:18  source
+
+	* Changed RDF views
+	* Changed to new sioc version
+	* Fixed sioct to be global
+	* Changed bottom links to be hidden
+	* Fixed copyright message
+
+2007-03-16 17:18  source
+
+	* Fixed rdf re new sioc version
+	* Changed to new sioc version
+	* Added support for wsdl
+	* Added support for LDAP and vCard uploads
+	* Changed this si to be in sql_rdf
+	* Changed bottom links to be hidden
+
+2007-03-16 17:18  source
+
+	* Fixed rdf re new sioc version
+	* Fixed Uninstall
+	* Fixed this si to be in sql_rdf
+	* Changed bottom links to be hidden
+
+2007-03-16 17:17  source
+
+	* Changes in rdf views
+	* Changed UTF-8 for /proxy default category when none bnode in xml
+	  serialization
+	* Fixed bug in searching for "abc num.num"
+	* Changed  sioct to be global
+	* Changed feed discovery link in search try to get embeeded rdf from xhtml
+
+2007-03-16 16:51  source
+
+	* New graphics
+
+2007-03-16 15:37  source
+
+	* Updated version number to 5.0.0-pre1
+
+2007-03-16 14:13  source
+
+	* New image
+
+2007-03-16 14:12  source
+
+	* Removed obsolete console.debug
+	* Added refresh for bound graphs
+	* Added initial exception handling
+	* Fixed schema import
+	* Fixed result window position
+	* Fixed problem with toolbar icons in Opera
+	* Fixed when DefaultGraph ini setting is not set to try URIQA host
+
+2007-03-16 14:10  source
+
+	* Fix for SPARQL define output:valmode "LONG" define get:soft "soft"
+	  DESCRIBE ?s ?p ?o FROM <http://del.icio.us/tag/sweo> WHERE { ?s ?p ?o }
+
+2007-03-16 12:51  source
+
+	* Removed references to old BORLAND compiler
+
+2007-03-16 12:41  source
+
+	* Fixed typo
+
+2007-03-16 12:27  source
+
+	* Changed include <...> into include "..."
+
+2007-03-16 12:26  source
+
+	* Added support for long documents
+
+2007-03-16 12:26  source
+
+	* Added support for xsd:date and xsd_time
+	* Small bugfixes
+
+2007-03-16 12:24  source
+
+	* Sync with upstream project
+
+2007-03-16 12:20  source
+
+	* Extensive changes for new database optimization (vajra)
+	* Added new RDF box type
+	* Fixed missing cases in hash join, group, distinct
+	* Remember distinct value counts for p and g cols in RDF. Use these for
+	  cost model cardinality when compar with non-leading const.
+
+2007-03-16 12:14  source
+
+	* Changes for new database optimization (vajra)
+	* If c_use_aio == 2, the threads for background write must have a stack
+	  size large enough for MAX_MERGE * PAGE_SZ.
+	* Added initial support for aoi
+
+2007-03-16 12:11  source
+
+	* Use gmtime_r where available
+
+2007-03-16 12:10  source
+
+	* Changes for new database optimization (vajra)
+	* Added nicknames for bif_xqf_str_parse with typed return values for
+	  different types.
+	* Added rdf_box type
+	* Added bif_chr1()
+	* Fixed GPF when array is not a box
+
+2007-03-16 12:07  source
+
+	* Changes for new database optimization (vajra)
+	* Fixed misplaced ";", always skip 1st recompiled proc call, return only
+	  if there is an error
+	* Fixed possible threading issue
+
+2007-03-16 12:03  source
+
+	* Added new URL rewriting rules
+	* Added user-agent substitution via http_get
+	* Fixed HTTPS connection handshake so it does not block
+	* Fixed non-mozilla UA when sponging
+
+2007-03-16 11:56  source
+
+	* Changes for new database optimization (vajra)
+	* Different sort of candidate next tables
+	* Cost model for RDF ft inx
+	* When importing oreds into dt, no not assume their type. Some can change
+	  due to known false or etc. Otherwise, if it comes out a dt or value subq
+	  from import, the real meaning is exists.
+	* Small bug fixes
+
+2007-03-16 11:53  source
+
+	* Maybe have a pred's mon cardinality so that it doesn't underflow w/ too
+	  many.
+	* Preserve order of cardinality but not absolute cardinality
+	* Remember distinct value counts for p and g cols in RDF. Use these for
+	  cost model cardinality when compare with non-leading const.
+	* Note outer joings in cost model, can't have cardinality < 1
+	* Added cost model for RDF ft inx.
+	* Generic cost model fix for text preds when text pred is driving.
+
+2007-03-16 11:49  source
+
+	* Changed include <...> into include "..." for local vos headers
+
+2007-03-16 11:37  source
+
+	* Added extended proxy service
+	* Added UTF-8 for /proxy default category when none bnode in xml
+	  serialization
+	* Use "soft" as "replacing" can kill the /dataspace
+
+2007-03-16 11:33  source
+
+	* Added optimizations for SPARQL DESCRIBE
+	* Added optimizations for RDF loaders: no more separate callback calls for
+	  obtaining IRI IDs, no more local hashtable of IRI_IDs of IRIs,
+	  optional log_mode parameter for multithreaded loaders
+	* Added free-text suppport for RDF views
+	* Added improved seeAlso support
+	* Added PingService. After receiving some URL from outside, ping a service
+	  if configured
+	* Added output format aliases
+	* Added support for zero-argument iri classes and views
+	* Added feed discovery link in search try to get embedded rdf from xhtml
+	* Added support for Flickr
+	* Added sparp_qp_trav_localize_filters rewriting. This fixes problem with
+	    sparql .... where {?x <y> ?z optional { ?x <p> <q> }
+	      filter {bif:contains (?x ...)))}
+	  This also improves code generation for cases when filter with one non-NULL
+	  variable is placed too close to expression root
+	* Added describe when asked for rdf in a dataspace
+	* Added support for vcalendar 1.1 to syncml immuytablegraphs
+	* Added subjects of a given object to DESCRIBE
+	* Added nicknames for big_xqf_str_parse with typed return values for different
+	  types
+	* Added define input:grab-intermediate
+	* Added support for xsd:date and xsd:time (dbpedia:birthdate)
+	* Changed index RDF_QUAD_PGOS into RDF_QUAD_OGPS
+	* Fixed SPARQL DESCRIBE with sponge
+	* Fix for MusicBrainz RDF views
+	* Fixed UTF-8 for /proxy default category when non bnode in xml serialization
+	* Fixed sending UTF-8 strings as UTF-8
+	* Enforce UTF-8 in /sparql use http_value & wide string as otherwise <> etc
+	  symbols may not be escaped
+	* Fixed SPARQL define output:format "TTL" select distinct
+	* Fixed default query for /sparql
+	* Fixed last chance to get meta data, call the dav's metadata extractor
+	* Fixed SPARQL define output:valmode "LONG" define get:soft "soft"
+	  DESCRIBE ?s ?p ?o from <http:del.icio.us/tag/sweo> where {?s ?p ?o}
+	* Fixed RDF parsing of nested elements with parsetype="Resource"
+	* Fixed SPARQL define output:valmode "LONG" select distinct ...
+	* Fixed memory pool corruption during declaration of free-text table in quad
+	  map view
+	* Small bugfixes
+
+2007-03-16 10:26  source
+
+	* Fixed supported for backquote in TURTLE
+
+2007-03-16 10:25  source
+
+	* Added bif_jso_make_digest and bif_jso_parse_digest
+
+2007-03-16 10:00  source
+
+	* Added VAD_AUTO_UPGRADE call to server startup
+
+2007-03-16 09:59  source
+
+	* Added nicknames for bif_xqd_str_parse with types return values for
+	  different types
+	* Added support for xsd:date and xsd:time
+	* Extended __get_iso_date(0 to accept values that match DATE-TIME from RFC
+	* Small bugfixes
+
+2007-03-16 09:56  source
+
+	* Added bif_dict_size()
+
+2007-03-16 09:56  source
+
+	* Added support for flickr
+	* Added more sponges
+	* Fixed base URL for hcal
+	* Small bugfixes
+
+2007-03-16 09:45  source
+
+	* Added support for xsd:date and xsd:time
+	* Added bif:contains _predicate_
+
+2007-03-16 09:39  source
+
+	* Added initial implementation of rdf_box
+
+2007-03-16 09:35  source
+
+	* Fixed debug warning messages
+
+2007-03-16 09:23  source
+
+	* Small bugfix
+
+2007-03-14 15:22  source
+
+	* Fixed spelling
+
+2007-03-14 15:10  source
+
+	* Added AOI ini setting
+	* Added TXN isolation setting
+	* Added missing functions to windows export file
+	* Removed PRESISTENT_SERVICE support
+	* Removed old Borland leftovers
+	* Removed old license file argument
+	* Small cleanups
+
+2007-03-14 14:58  source
+
+	* Synced with upstream project
+
+2007-03-14 14:57  source
+
+	* Added new images to docs
+
+2007-03-14 14:47  source
+
+	* Fixed OAT toolkit integration
+
+2007-03-14 14:45  source
+
+	* Role can only be granted if it is not granted already
+
+2007-03-14 14:44  source
+
+	* Removed reference to virtuoso.lic
+	* Removed references to old yacutia_dav.vad package names
+	* Updated version
+
+2007-03-14 14:42  source
+
+	* Fixes for creating demo_dav.vad package
+
+2007-03-14 14:40  source
+
+	* Added VAD_DAV_MOVE and VAD_AUTO_UPGRADE procedures
+
+2007-03-14 14:39  source
+
+	* Demo  VAD files
+
+2007-03-14 14:38  source
+
+	* Added "JSP Runtime Hosting" tutorial
+
+2007-03-14 14:35  source
+
+	* Added tut_generate_tomcat_url procedure
+	* Added "JSP Runtime hosting" tutorial
+	* Added case for .jsp pages
+	* Use OSD vad package names
+	* Added check for tomcat
+
+2007-03-14 14:33  source
+
+	* Added dependency to Demo.vad in sticker
+	* Removed reference to virtuoso.lic
+
+2007-03-14 14:32  source
+
+	* Added describe when asked for RDF in a database
+	* Added vcalendar 1.1 to the syncml immutable graphs
+	* Added support for vcal 1.2
+
+2007-03-14 14:30  source
+
+	* Sync from upstream project
+
+2007-03-14 14:25  source
+
+	* Sync with upstream project
+
+2007-03-14 14:23  source
+
+	* Updated version/date
+
+2007-03-14 14:23  source
+
+	* Release locks before waiting
+	* Release locks after restart
+
+2007-03-14 14:20  source
+
+	* Fixed SynlML script
+
+2007-03-14 14:19  source
+
+	* Added test for checkpoint of uncommitted.
+	* Added test cases for dropping known false preds from ors
+
+2007-03-14 14:18  source
+
+	* Added SyncML test
+	* Changed number of threads when testing
+	* Removed reference to virtuoso.lic
+	* Use ODS vad package names
+	* Fixed time.vsp for bpel
+	* Added test for checkpoint of uncommitted.
+	* Added test cases for dropping known false preds from ors
+
+2007-03-14 14:15  source
+
+	* Removed reference to virtuoso.lic
+
+2007-03-14 14:14  source
+
+	* Added SandBox mode
+
+2007-03-14 14:13  source
+
+	* Removed argument
+
+2007-03-14 14:13  source
+
+	* Fixed support for long documents
+	* Call the dav's metadata extractor as a last chance to get meta information
+	* Added check to FLICKR about meta information of image
+	* Allow sql optimizer to figure which index to use
+	* Fixed versioning permissions
+
+2007-03-14 14:08  source
+
+	* Do not ask for password on permanent connection errors
+
+2007-03-14 14:07  source
+
+	* Updated documentation
+
+2007-03-14 12:57  source
+
+	* Added check for gmtime_r
+
+2007-03-14 12:54  source
+
+	* Upgraded to zlib version 1.2.3
+
+2007-03-14 12:36  source
+
+	* Fixed output string
+
+2007-03-14 12:35  source
+
+	* Added support for DV_IRI_ID and DV_IRI_ID_8 datatypes
+
+2007-03-14 12:33  source
+
+	* Added dk_set_delete_nth
+	* Added t_set_puch_new_string
+
+2007-03-14 12:28  source
+
+	* Removed rest of UNIVERSE code
+
+2007-03-12 10:48  source
+
+	* Changes to the visual studio 2005 project do that it builds the
+	  ADO.NET 2 provider. (jchv0007)
+
+2007-03-02 10:53  source
+
+	* Added better check for flex
+
+2007-03-02 10:08  source
+
+	* Added creolewiki plugin
+	* Added ods_polls_dav.vad
+
+2007-03-02 09:56  source
+
+	* Fixed building sparql_demo_dav.vad
+
+2007-03-01 18:58  source
+
+	* Fixed windows build
+
+2007-03-01 16:41  source
+
+	* Fixed win64 build files
+
+2007-03-01 14:37  source
+
+	* Fixed package name
+
+2007-03-01 12:06  source
+
+	* Fixed building on win32
+
+2007-02-27 22:04  source
+
+	* Added SPARQL QBE designer
+
+2007-02-27 22:04  source
+
+	* Added ODS-Polls
+	* Added SPARQL QBE designer
+
+2007-02-27 21:42  source
+
+	* Added new ODS-Polls application
+
+2007-02-27 21:19  source
+
+	* Synchronized with upstream projects
+
+2007-02-27 21:16  source
+
+	* Added support for CreoleWiki format
+
+2007-02-27 13:43  source
+
+	* Fixed sparp_rvr_copy: always return something
+	* Fixed GPF in sprintff optimization in wb/SparqlQMJoin when
+	  oplsioc:subname-of-supername is added
+	* Small fixes
+
+2007-02-27 13:41  source
+
+	* Fixed non-DEBUG build
+
+2007-02-27 13:40  source
+
+	* Added more sponges
+
+2007-02-27 13:36  source
+
+	* Fixed small bugs
+
+2007-02-27 13:35  source
+
+	* Relaxed syntax for wierd comments inside stylesheet
+	  (xhtml:div inside xsl:stylesheet)
+
+2007-02-27 13:33  source
+
+	* Do not make an inx int join if all key parts are given.
+	* Do not make join or local inx ints involving remote tables
+
+2007-02-27 13:32  source
+
+	* Fixed GPF when non-boxed 0 is given as argument
+
+2007-02-27 13:32  source
+
+	* Fixed compiler warnings
+
+2007-02-27 13:30  source
+
+	* Added handling of application/rdf+n3
+	* Fixed getting predefined default graph if one is omitted from request
+	* Added grants for SPARQL_CONSTRUCT_*
+	* Fixed processing default-graph only if not null and not empty
+	* Fixed to show the fully generated query on error
+	* Added alias output for param format
+	* Fixed google base * ning filters to rdf
+	* Fixed bug with multiple meta links
+	* Added GRDDL support
+	* Fixes for GPF in sprintff optimization in wb/SparqlQmJoin when
+	  oplsioc:subname-of-supername is added.
+	* Added more microformats
+	* Added sponge to take feeds if it's a basic html page
+
+2007-02-27 13:24  source
+
+	* Fixed for lacerated memory pools
+
+2007-02-27 13:24  source
+
+	* Removed unused variable
+
+2007-02-27 13:23  source
+
+	* Added new function for enhanced mutexes
+
+2007-02-27 13:22  source
+
+	* Added 7bit safety flag
+
+2007-02-27 13:21  source
+
+	* Added inlined reading for series of plain characters
+	* Fix for accelerated parsing of <a attr="&nbsp;latincharacters" />
+	  when &nbsp; is not defined
+	* Fix for reading docsrc/xmlsource/virtdocs.xml
+
+2007-02-27 13:19  source
+
+	* Fixed copyright
+
+2007-02-27 13:19  source
+
+	* Additional fixes for SyncML
+	* Fixed N91 tests
+
+2007-02-27 13:18  source
+
+	* Added news post retrieval
+
+2007-02-27 13:16  source
+
+	* Added usage description
+	* Added normalization of ISQL outputs
+	* Added truncation of trailing whitespace
+	* Added substring replace
+
+2007-02-27 13:15  source
+
+	* Added functions GetImageFileIdentify and GetImageBlobIdentify
+
+2007-02-27 13:14  source
+
+	* New files from upstream project
+
+2007-02-27 13:13  source
+
+	* Fixed GPF in sprintff optimization in wb/SparqlQMJoin when
+	  oplsioc:subname-of-supername is added
+
+2007-02-27 11:47  source
+
+	* Merged from upstream project
+
+2007-02-08 09:28  source
+
+	* Simplified patch for precision of DV_ANY type
+
+2007-02-07 16:19  source
+
+	* Describe DV_ANY field as VARCHAR with LENGTH of 4070
+
+2007-02-01 15:17  source
+
+	* Only export the plugin gate function
+
+2007-02-01 13:56  source
+
+	* Renamed isparql_dav.vad to sparql_demo_dav.vad
+
+2007-02-01 12:11  source
+
+	* Added ADO.NET 2 support
+	* Fixed building on Mono
+
+2007-02-01 12:05  source
+
+	* Changed package name from isparql to sparql_demo
+
+2007-02-01 12:03  source
+
+	* Fix for propagation SPART_VARR_SPRINGDD restruction from receivers down
+	* Caching for qmv matching results
+	* Added initial support for content negotiation and microformats
+	* Added timeout on transaction to prevent it to run forever
+	* SPARQL optimization: check for formats when quad maps are compared with
+	  triples
+	* Added support for SPARQL option ( return ) for sprintf-based IRI classes
+	* Fixed sorting of submaps in quad map when a new submap is added
+	* Fixed intersection
+	* Added SPARQL define sql:table-option ... define sql:select-option
+	* Fixed bug in SIOCref queries
+	* Fixed bug passing IRI graph into exec() calls
+	* Fixed "multi-column alias should have an alias name" and removed warning
+	* Faster RDF meta-schema update
+	* Added 2006-November semantic for graphs
+
+2007-02-01 11:58  source
+
+	* Update version to 29.21 due to changes in RDF views
+
+2007-02-01 11:56  source
+
+	* Allocate dfe with variable length
+	* Check the mp allocated bytes in sqlo, to prevent killing the server
+	  with hugh query
+
+2007-02-01 11:49  source
+
+	* Save additional space for dk_set in tmp pool
+	* Check the mp allocated bytes in sqlo, to prevent killing the server
+	  with huge query
+
+2007-02-01 11:47  source
+
+	* Documentation updates
+
+2007-02-01 11:47  source
+
+	* Fixed problem with packages > 10MB
+
+2007-02-01 11:45  source
+
+	* Check the mp allocated bytes in sqlo, to prevent killing the server with
+	  huge query
+	* Added MaxMemPoolSize in bytes (>5Mb) set to 0 to disable
+
+2007-02-01 11:43  source
+
+	* Fixed 2006-November semantics for graphs
+
+2007-02-01 11:42  source
+
+	* Fixed showing only PASSED or PASSED/may-vary samples
+
+2007-02-01 11:41  source
+
+	* Fixed loosing format on construct autochange
+
+2007-02-01 11:40  source
+
+	* Added optional argument
+
+2007-02-01 11:37  source
+
+	* Updated to OAT 2.1 release
+
+2007-01-23 01:06  source
+
+	* Updated extra_dist
+
+2007-01-23 01:04  source
+
+	* Added documentation on vacuum
+
+2007-01-23 01:01  source
+
+	* Added SIOC support
+	* Added sioc:type Documentation
+
+2007-01-23 00:56  source
+
+	* Fixed spelling
+
+2007-01-22 22:10  source
+
+	* Added graphics
+
+2007-01-22 22:09  source
+
+	* Changed SPARQL demo package name from isparql to sparql_demo
+
+2007-01-22 22:04  source
+
+	* Changed SPARQL demo pacakge name from isparql to sparql_demo
+	* Fixed installation slowness
+	* Fixed for OAT 2.0
+	* Fixed URL for dcterms
+	* Fixed IRI print/parse (grantee)
+
+2007-01-22 22:01  source
+
+	* Added panetrdf
+	* Added TTL version of SIOC
+	* Added new tutorial files
+	* Added SIOC transformation
+	* Fixed missing attributes
+	* Fixed GEO dat vi hostip
+
+2007-01-22 21:58  source
+
+	* Added SIOC TTL output file
+
+2007-01-22 21:58  source
+
+	* Added SIOC TTL output file
+	* Added SIOC Gems - RDF and TTL
+	* Changed Openlink into OpenLink
+
+2007-01-22 21:57  source
+
+	* Added SIOC TTL output file
+	* Added SIOC Gems - RDF and TTL
+	* Fixed IE7 problem
+
+2007-01-22 21:55  source
+
+	* Renamed SPARQL Demo package from isparql to sparql_demo
+
+2007-01-22 21:42  source
+
+	* Addes SyncML support
+	* Removed some old procedures
+	* Fixed javacript errors
+	* Fixed spelling
+
+2007-01-22 21:40  source
+
+	* Unqualified trigger failed to drop
+
+2007-01-22 21:38  source
+
+	* Fixed issue with start/stop
+
+2007-01-22 15:44  source
+
+	* Added SPARQL 'sprintff' analysis and optimization
+
+2007-01-22 15:44  source
+
+	* Added SPARQL 'sprintff' analysis and optimization
+	* Added SPARQL/MaxExecutionTime to linmit the sparql execution time based on
+	  cost
+	* Added new functions like get_keyword_ucase
+	* Added support for literal classes plus minor fixes
+	* Optimized code for faster ODS upgrade
+	* Fixed speed of DB.DBA.RDF_QM_GC_SUBTREE
+	* Fix for membername-of-groupname quad map
+	* Added distinction between @-keywords and language identifiers
+	* Fixed names without colons
+	* Fixed blank node ids inside formulas
+	* Extended N3 parser; support for {} reification formulas, variables
+	  blank node verbs, error recovery for literal subjects
+	* Fix for resolving IRIs with "#' in IRI dereferencer
+	* Fix for codegen input:grab for list of constants
+	* Fixed error diagnostic in RDF/XML parser
+	* Fixes for DROP IRI/LITERAL CLASS
+	* Fixed for get:... and input:grab... parameters
+	* Extended should_sponge parameter of /sparql endpoint to pass the value
+	  to the core
+
+2007-01-22 15:35  source
+
+	* Have dedicated field for thread mem pool for t_alloc*
+
+2007-01-22 15:28  source
+
+	* Added maintenance page
+
+2007-01-22 15:26  source
+
+	* Added maintenance page
+	* Added new bif function ses_read for reading string_output session
+
+2007-01-22 15:25  source
+
+	* Fixed include path
+
+2007-01-22 15:25  source
+
+	* Fixed dk_alloc_zero to allocate right amount of bytes and initialize to 0
+
+2007-01-22 15:22  source
+
+	* Before to write remap pages, check if they actually a remap as in mean
+	  time can be corrupted if there is a corruption, use a new set of free
+	  pages to write the remap
+
+2007-01-22 15:22  source
+
+	* Use memmove instead of memcpy as memory areas are overlapping
+
+2007-01-22 15:21  source
+
+	* Fixed compiler warnings
+
+2007-01-22 15:19  source
+
+	* Added missing prototypes
+
+2007-01-22 15:18  source
+
+	* Cannot delete an empty host
+	* Make sure we commit our work in the right places to release the locks
+
+2007-01-22 15:16  source
+
+	* Fixed memory leaks
+
+2007-01-22 15:13  source
+
+	* Added lock check on database files to make sure we do not corrupt the
+	  database when someone removes the .lck file by mistake and starts
+	  virtuoso again
+
+2007-01-22 15:12  source
+
+	* Prevent crash in the middle of a checkpoint
+
+2007-01-22 15:10  source
+
+	* Fixed comment
+
+2007-01-22 15:10  source
+
+	* bitmap inx ins of new ce after array that is one short of full.
+	* bitmap sequential search with cond on non-bm col and no cond on bm col
+	* bitmap inx row's range starts at the bm start, not the ce start of the
+	  first ce.  After delete this can screw things up.
+
+2007-01-22 15:07  source
+
+	* Fixed memory leak
+	* Changed Openlink into OpenLink
+
+2007-01-22 15:07  source
+
+	* Make checksums and masks all uint32 instead of int and ptrlong for
+	  64bit compatibility
+
+2007-01-22 15:03  source
+
+	* Added support for DV_UNAME to bif_md5()
+	* Clarified error message of bif_vector_sort
+
+2007-01-22 15:01  source
+
+	* Fixed second argument of tridgell32 function
+
+2007-01-22 14:58  source
+
+	* Fixed compiler warning
+
+2007-01-22 14:57  source
+
+	* Added function exec_score to return the cost in msec
+
+2007-01-22 14:53  source
+
+	* Added param to row_count to return the caller n_affected
+
+2007-01-22 14:51  source
+
+	* Added support for DV_UNAME to bif_subseq
+
+2007-01-22 14:48  source
+
+	* If the server is in atomic mode, the thread already has a mutex on cpt,
+	  so in this case we should not lock here to avoid a deadlock
+
+2007-01-22 14:37  source
+
+	* Allow hash tables and mutexes as inline structures
+	* Have multiple ways for malloc cache for better concurrency
+	* Added more mutex asserts
+	* Fixed mutex placing in resources
+	* Check sizes of id_hash_t
+	* Settable copier for dv tags for mp_full_box_copy_tree
+	* Fixed compiler warnings
+
+2007-01-22 14:35  source
+
+	* Added function dk_set_getptr_keyword
+
+2007-01-22 14:33  source
+
+	* Fixed GPF in reaper
+	* Cleanup debugging
+
+2007-01-22 14:28  source
+
+	* Added dedicated field for thread mem pook for t_alloc*
+	* Set mutex type to adaptive if supported on OS
+	* Fixed some concurrency problems on resource allocation
+	* Allow hash tables and mutexes as inline structures
+	* Check sizes of id_hash_t
+	* Settable copier for dv tags for mp_full_box_copy_tree
+	* Fixed namespace problem with Solaris
+	* Fixed compilation on old versions of linux
+
+2007-01-22 14:14  source
+
+	* Merged in latest information from quad-map
+	* Added SPARQL 'sprintff' optimization
+
+2007-01-22 14:13  source
+
+	* Added option for returning maintenance page
+
+2007-01-22 14:12  source
+
+	* Added free of statement handle
+
+2007-01-22 14:11  source
+
+	* Display correct php version info
+
+2007-01-22 14:09  source
+
+	* Small enhancements to testsuite
+
+2007-01-22 14:07  source
+
+	* Fixed bug "integer instead of directory list"
+	* Various small fixes
+
+2007-01-22 14:06  source
+
+	* Added support for application/rdf+xml, application/rdf+ttl and
+	  application/rdf+n3 types
+
+2007-01-22 14:01  source
+
+	* Limit search expression to 1k to prevent DOS
+
+2007-01-22 13:59  source
+
+	* Fixed menu links
+
+2007-01-22 13:59  source
+
+	* Fixed download link
+
+2007-01-22 13:57  source
+
+	* Rewrote VAD_READ for efficiency
+	* Fixed checking package checksum
+	* Fixed error reporting
+	* Fixed spelling
+
+2007-01-22 13:55  source
+
+	* Added option to treat VIEWS as TABLES in SQLTables
+
+2007-01-22 13:52  source
+
+	* Added error handler
+	* Fixed copy v-card to DAV
+	* Added some procedures from conductor
+	* Added UI procedure
+
+2007-01-22 13:49  source
+
+	* Added SIOC support
+
+2007-01-22 13:49  source
+
+	* Use batch update for text index
+
+2007-01-22 13:48  source
+
+	* Fixed DAV permissions
+	* Fixed command line expansion problem with cygwin
+
+2007-01-22 13:17  source
+
+	* Added support for JDK 1.5
+
+2007-01-22 13:17  source
+
+	* Added functions ConvertImageBlob and ConvertImageFile
+
+2007-01-22 13:16  source
+
+	* Added extra test
+
+2007-01-22 13:13  source
+
+	* In newer perl versions the POPpx does not return n_a
+
+2007-01-22 13:11  source
+
+	* Changed Openlink into OpenLink
+
+2007-01-22 13:10  source
+
+	* Fixed DAV permissions
+
+2007-01-21 23:52  source
+
+	* Latest documentation changes
+
+2006-12-11 20:37  source
+
+	* Fixed problem configuring with --enable-openldap=DIR
+
 2006-12-05 10:14  source
 
 	* Updated version to 4.5.7 final
@@ -1537,10 +3204,6 @@
 
 	* Added syntax highlight for results
 
-2006-09-11 11:01  source
-
-	* Merged from upstream project
-
 2006-09-11 11:00  source
 
 	* Regenerated
@@ -2336,10 +3999,6 @@
 
 	* Added text for Opera problem with HTTP status code 400
 
-2006-07-27 15:26  source
-
-	* New files from upstream OAT project
-
 2006-07-27 14:38  source
 
 	* Fixed column lengths for SQLGetTypeInfo
@@ -2563,10 +4222,6 @@
 
 	* Fixed BIF function name changed from DB.DBA.RDF_EXP_LOAD_RDFXML to
 	  DB.DBA.RDF_LOAD_RDFXML
-
-2006-07-24 07:57  source
-
-	* Merged newer version of OAT
 
 2006-07-24 07:56  source
 
@@ -2895,10 +4550,6 @@
 2006-07-14 17:30  source
 
 	* New Dawg behaviour
-
-2006-07-14 17:30  source
-
-	* Merged patches from upstream OAT archive
 
 2006-07-14 17:27  source
 
