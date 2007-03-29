@@ -571,13 +571,13 @@ if test "$with_krb" != "no"; then
 fi
 
 if test "$with_krb" != "no"; then
-    ac_saved_CPPFLAGS=$CPPFLAGS
+    save_CPPFLAGS=$CPPFLAGS
     CPPFLAGS="$krbinc $CPPFLAGS"
     AC_CHECK_HEADERS(krb5.h gssapi/gssapi.h gssapi/gssapi_generic.h gssapi/gssapi_krb5.h,,
 		      [
 		       with_krb="no"
 		      ])
-    CPPFLAGS=$ac_saved_CPPFLAGS
+    CPPFLAGS=$save_CPPFLAGS
 fi
 if test "$with_krb" != "no"; then
     AC_DEFINE(_KERBEROS, 1, "Kerberos support")
@@ -624,12 +624,11 @@ then
   openssl_CFLAGS="$openssl_CFLAGS -DOPENSSL_NO_KRB5"
 fi
 
-old_CPPFLAGS="$CPPFLAGS"
-old_LDFLAGS="$LDFLAGS"
-_saved_libs="$LIBS"
+save_CPPFLAGS="$CPPFLAGS"
+save_LIBS="$LIBS"
+
 CPPFLAGS="$CPPFLAGS $openssl_CFLAGS"
-LDFLAGS="$LDFLAGS $openssl_LDFLAGS"
-LIBS="$LIBS -lssl -lcrypto"
+LIBS="$LIBS $openssl_LDFLAGS"
 case $host in
 *-solaris*)
 	LIBS="$LIBS -lsocket"
@@ -749,9 +748,8 @@ main ()
 [
  AC_MSG_ERROR([bad. Check the config.log for details])
 ])
-LDFLAGS="$old_LDFLAGS"
-CPPFLAGS="$old_CPPFLAGS"
-LIBS="$_saved_libs"
+LIBS="$save_LIBS"
+CPPFLAGS="$save_CPPFLAGS"
 AC_SUBST(openssl_CFLAGS)
 AC_SUBST(openssl_LDFLAGS)
 
@@ -777,20 +775,23 @@ AC_HELP_STRING([--disable-openldap], [disable the OpenLDAP support (default)])dn
 if test "x$with_ldap" != "xno"
 then
     AC_MSG_CHECKING([if OpenLDAP lib usability])
-    old_CPPFLAGS="$CPPFLAGS"
-    old_LDFLAGS="$LDFLAGS"
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
     case "$with_ldap" in
 	yes) 
+	   openldap_CFLAGS=""
 	   openldap_LDFLAGS="-lldap -llber"
-	   LDFLAGS="$LDFLAGS $openldap_LDFLAGS" ;;
+	   ;;
 	*) 
 	   openldap="-I$with_ldap/include"
 	   openldap_LDFLAGS="-L$with_ldap/lib -lldap -llber"
-	   CPPFLAGS="$CPPFLAGS $openldap_CFLAGS" 
-	   LDFLAGS="$LDFLAGS $openldap_LDFLAGS"
-	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_ldap/lib" ;;
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_ldap/lib"
+	   export LD_LIBRARY_PATH 
+	   ;;
     esac
+    CPPFLAGS="$CPPFLAGS $openldap_CFLAGS" 
+    LIBS="$LIBS $openldap_LDFLAGS"
     AC_TRY_RUN([
 #include <ldap.h>  
 #include <stdio.h>
@@ -816,8 +817,8 @@ main ()
  AC_MSG_RESULT(bad)
  with_ldap="no"
 ])
-    LDFLAGS="$old_LDFLAGS"
-    CPPFLAGS="$old_CPPFLAGS"
+    LIBS="$save_LIBS"
+    CPPFLAGS="$save_CPPFLAGS"
     LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
 fi
 AM_CONDITIONAL(WITH_LDAP, test "x$with_ldap" != "xno" )
@@ -931,23 +932,23 @@ AC_HELP_STRING([--disable-php4], [disable PHP 4.x extension (default)])dnl
 if test "x$with_php4" != "xno" 
 then
     AC_MSG_CHECKING([libphp4 lib usability])
-    old_CPPFLAGS="$CPPFLAGS"
-    old_LDFLAGS="$LDFLAGS"
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
     case "$with_php4" in
 	yes) 
+	   php4_CFLAGS=""
 	   php4_LDFLAGS="-lphp4"
-	   LDFLAGS="$LDFLAGS $php4_LDFLAGS"
 	   ;;
 	*) 
 	   php4_CFLAGS="-I$with_php4/include/php/main -I$with_php4/include/php/Zend -I$with_php4/include/php/TSRM -I$with_php4/include/php"
 	   php4_LDFLAGS="-L$with_php4/lib -lphp4"
-	   CPPFLAGS="$CPPFLAGS $php4_CFLAGS" 
-	   LDFLAGS="$LDFLAGS $php4_LDFLAGS"
 	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_php4/lib" 
 	   export LD_LIBRARY_PATH 
 	   ;;
     esac
+    CPPFLAGS="$CPPFLAGS $php4_CFLAGS" 
+    LIBS="$LIBS $php4_LDFLAGS"
     AC_TRY_RUN([
 #include <stdio.h>
 #include <stdlib.h>
@@ -968,8 +969,8 @@ main ()
  AC_MSG_RESULT(bad)
  with_php4="no"
 ])
-    LDFLAGS="$old_LDFLAGS"
-    CPPFLAGS="$old_CPPFLAGS"
+    LIBS="$save_LIBS"
+    CPPFLAGS="$save_CPPFLAGS"
     LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH
 fi
@@ -1001,23 +1002,23 @@ AC_HELP_STRING([--disable-php5], [disable PHP 5.x extension (default)])dnl
 if test "x$with_php5" != "xno" 
 then
     AC_MSG_CHECKING([libphp5 lib usability])
-    old_CPPFLAGS="$CPPFLAGS"
-    old_LDFLAGS="$LDFLAGS"
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
     case "$with_php5" in
 	yes) 
+	   php5_CFLAGS="-lphp5"
 	   php5_LDFLAGS="-lphp5"
-	   LDFLAGS="$LDFLAGS $php5_LDFLAGS"
 	   ;;
 	*) 
 	   php5_CFLAGS="-I$with_php5/include/php/main -I$with_php5/include/php/Zend -I$with_php5/include/php/TSRM -I$with_php5/include/php"
 	   php5_LDFLAGS="-L$with_php5/lib -lphp5"
-	   CPPFLAGS="$CPPFLAGS $php5_CFLAGS" 
-	   LDFLAGS="$LDFLAGS $php5_LDFLAGS"
 	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_php5/lib" 
 	   export LD_LIBRARY_PATH 
 	   ;;
     esac
+    LIBS="$LIBS $php5_LDFLAGS"
+    CPPFLAGS="$CPPFLAGS $php5_CFLAGS" 
     AC_TRY_RUN([
 #include <stdio.h>
 #include <stdlib.h>
@@ -1038,8 +1039,8 @@ main ()
  AC_MSG_RESULT(bad)
  with_php5="no"
 ])
-    LDFLAGS="$old_LDFLAGS"
-    CPPFLAGS="$old_CPPFLAGS"
+    LIBS="$save_LIBS"
+    CPPFLAGS="$save_CPPFLAGS"
     LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH
 fi
@@ -1114,21 +1115,24 @@ AC_HELP_STRING([--disable-imagemagick], [disable the ImageMagick plugin])dnl
 if test "x$with_im" != "xno"
 then
     AC_MSG_CHECKING([if ImageMagick lib usability])
-    old_CPPFLAGS="$CPPFLAGS"
-    old_LDFLAGS="$LDFLAGS"
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
     case "$with_im" in
 	yes) 
-	   IM_LDFLAGS="-lMagick -lWand"
-	   LDFLAGS="$LDFLAGS $IM_LDFLAGS" ;;
+	   IM_CFLAGS=""
+	   IM_LDFLAGS="`Magick-config --libs`"
+	   ;;
+
 	*) 
 	   IM_CFLAGS="-I$with_im/include"
-	   IM_LDFLAGS="-L$with_im/lib -lMagick -lWand"
-	   CPPFLAGS="$CPPFLAGS $IM_CFLAGS" 
-	   LDFLAGS="$LDFLAGS $IM_LDFLAGS"
+	   IM_LDFLAGS="-L$with_im/lib `$with_im/bin/Magick-config --libs`"
 	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib" 
-	   export LD_LIBRARY_PATH ;;
+	   export LD_LIBRARY_PATH
+	   ;;
     esac
+    CPPFLAGS="$CPPFLAGS $IM_CFLAGS" 
+    LIBS="$LIBS $IM_LDFLAGS"
     AC_TRY_RUN([
 #include <stdio.h>
 #include <stdlib.h>
@@ -1149,8 +1153,8 @@ main ()
  AC_MSG_RESULT(bad)
  with_im="no"
 ])
-    LDFLAGS="$old_LDFLAGS"
-    CPPFLAGS="$old_CPPFLAGS"
+    LIBS="$save_LIBS"
+    CPPFLAGS="$save_CPPFLAGS"
     LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH
 fi
@@ -1181,7 +1185,7 @@ if test "x$with_wbxml2" != "xno"
 then
     AC_MSG_CHECKING([if WBXML2 lib usability])
     old_CFLAGS="$CFLAGS"
-    old_LIBS="$LIBS"
+    save_LIBS="$LIBS"
     old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
     case "$with_wbxml2" in
 	yes) 
@@ -1218,8 +1222,8 @@ main ()
  AC_MSG_RESULT(bad)
  with_wbxml2="no"
 ])
-    LIBS="$old_LIBS"
     CFLAGS="$old_CFLAGS"
+    LIBS="$save_LIBS"
     LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH
 fi
@@ -1319,10 +1323,10 @@ if test "x$RUBY" != "x"  -a "x$with_ruby" != "xno" ; then
     RUBY_ARCHDIR=`$RUBY -e 'require "rbconfig.rb"; puts Config::expand("\$(archdir)")'`
     RUBY_CFLAGS="-I$RUBY_ARCHDIR"
     RUBY_LDFLAGS="-lruby"
-    old_CPPFLAGS="$CPPFLAGS"
-    old_LDFLAGS="$LDFLAGS"
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
     CPPFLAGS="$CPPFLAGS $RUBY_CFLAGS" 
-    LDFLAGS="$LDFLAGS $RUBY_LDFLAGS"
+    LIBS="$LIBS $RUBY_LDFLAGS"
 
     AC_MSG_CHECKING([if Ruby lib usability])
     AC_TRY_RUN([
@@ -1343,8 +1347,8 @@ main ()
  with_ruby="no"
 ])
 
-    LDFLAGS="$old_LDFLAGS"
-    CPPFLAGS="$old_CPPFLAGS"
+    LIBS="$save_LIBS"
+    CPPFLAGS="$save_CPPFLAGS"
 fi
 AM_CONDITIONAL(WITH_RUBY, test "x$RUBY" != "x" -a "x$with_ruby" != "xno")
 AC_SUBST(RUBY_CFLAGS)
@@ -1452,10 +1456,10 @@ if test "x$have_mono" = "xyes" ; then
     AC_SUBST(GMODULE_LIBS)
 fi
 AC_SUBST(LIBTHR)
-_saved_libs="$LIBS"
+save_LIBS="$LIBS"
 LIBS="$LIBTHR $LIBS"
 AC_CHECK_FUNCS(pthread_attr_setstacksize pthread_attr_getstacksize)
-LIBS="$_saved_libs"
+LIBS="$save_LIBS"
 srvrlibs="$srvrlibs $LIBTHR"
 AM_CONDITIONAL(WITH_PTHREADS, test "x$WITH_PTHREADS" = "xyes" )
 
