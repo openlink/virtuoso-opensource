@@ -39,9 +39,14 @@
            function calendarInit()
            {
            nntpCal = new OAT.Calendar();
-           var calAnchor = document.getElementById('cal_anchor');
            
-           nntpCal.show(calAnchor.x+10, calAnchor.y+12, clickCal);
+           var anchorTopLeft=OAT.Dom.position('cal_anchor');
+
+           if (OAT.Dom.isIE() == false)
+              nntpCal.show(anchorTopLeft[0]+10, anchorTopLeft[1]+12, clickCal);
+           else
+              nntpCal.show(anchorTopLeft[0]+10, anchorTopLeft[1]+2, clickCal);
+
            }
 
            function clickCal(_date)
