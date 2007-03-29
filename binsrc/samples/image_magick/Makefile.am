@@ -45,4 +45,7 @@ im_la_LIBADD  = $(IM_LDFLAGS)
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = im.def demo.sql
+EXTRA_DIST = \
+	*.sql \
+	im.def \
+	im.exp
