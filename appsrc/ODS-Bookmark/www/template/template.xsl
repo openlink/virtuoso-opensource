@@ -244,7 +244,7 @@
   <xsl:template name="vm:atom-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sBM.atom" target="_blank" title="ATOM export" alt="ATOM export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> Atom</a>', BMK.WA.dav_url(self.domain_id, self.account_id)));
+        http (sprintf('<a href="%sBM.atom" target="_blank" title="ATOM export" alt="ATOM export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> Atom</a>', BMK.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -253,7 +253,7 @@
   <xsl:template name="vm:rss-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sBM.rss" target="_blank" title="RSS export" alt="RSS export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> RSS</a>', BMK.WA.dav_url(self.domain_id, self.account_id)));
+        http (sprintf('<a href="%sBM.rss" target="_blank" title="RSS export" alt="RSS export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> RSS</a>', BMK.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -262,7 +262,7 @@
   <xsl:template name="vm:rdf-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sBM.rdf" target="_blank" title="RDF export" alt="RDF export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> RDF</a>', BMK.WA.dav_url(self.domain_id, self.account_id)));
+        http (sprintf('<a href="%sBM.rdf" target="_blank" title="RDF export" alt="RDF export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> RDF</a>', BMK.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -271,7 +271,7 @@
   <xsl:template name="vm:ocs-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sBM.ocs" target="_blank" title="OCS export" alt="OCS export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OCS</a>', BMK.WA.dav_url(self.domain_id, self.account_id)));
+        http (sprintf('<a href="%sBM.ocs" target="_blank" title="OCS export" alt="OCS export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OCS</a>', BMK.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -280,7 +280,7 @@
   <xsl:template name="vm:opml-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sBM.opml" target="_blank" title="OPML export" alt="OPML export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OPML</a>', BMK.WA.dav_url(self.domain_id, self.account_id)));
+        http (sprintf('<a href="%sBM.opml" target="_blank" title="OPML export" alt="OPML export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OPML</a>', BMK.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -289,7 +289,7 @@
   <xsl:template name="vm:foaf-link">
     <div>
     <?vsp
-        http(sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', BMK.WA.foaf_url (self.account_id)));
+        http(sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', BMK.WA.foaf_url (BMK.WA.domain_owner_id (self.domain_id))));
     ?>
     </div>
   </xsl:template>
@@ -308,7 +308,7 @@
   	      suffix := '<xsl:value-of select="@format"/>';
         </xsl:processing-instruction>
       </xsl:if>
-  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/bookmark/%U/sioc.%s', BMK.WA.host_url (), BMK.WA.account(), BMK.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
+  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/bookmark/%U/sioc.%s', BMK.WA.host_url (), BMK.WA.domain_owner_name (self.domain_id), BMK.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
     	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
       </a>
       <?vsp

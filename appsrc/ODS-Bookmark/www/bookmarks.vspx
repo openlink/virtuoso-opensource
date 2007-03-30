@@ -783,7 +783,7 @@
           <v:template type="simple" enabled="--case when (self.bMode = 'browse') then 1 else 0 end">
             <div class="pane_right_sub<?V case when (cast(get_keyword('panes', self.settings, '0') as integer) = 0) then '' else '1' end ?>">
             <?vsp
-              declare className, nodeName, image, mt, st, sv any;
+                declare nodeName, image, mt, st, sv any;
 
               mt := '';
               if (not ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
@@ -793,32 +793,19 @@
               st := replace(st, sprintf('value="%s"', sv), sprintf('value="%s" selected="selected"', sv));
 
               self.mode_test();
-              className := 'Root';
               image := 'folder_16.png';
-              if (BMK.WA.node_type (self.bNode) = 'f') {
+                if (BMK.WA.node_type (self.bNode) = 's') {
                 if (BMK.WA.node_id (self.bNode) >= 0)
-                  className := 'Folder';
-              } else if (BMK.WA.node_type (self.bNode) = 's') {
-                if (BMK.WA.node_id (self.bNode) >= 0) {
-                  className := 'Smart Folder';
                   image := 'sfolder_16.jpg';
-                }
               } else if (BMK.WA.node_type (self.bNode) = 't') {
-                if (BMK.WA.node_suffix (self.bNode) <> '') {
-                  className := 'Tag';
+                  if (BMK.WA.node_suffix (self.bNode) <> '')
                   image := 'tag_16.png';
-                }
               } else if (BMK.WA.node_type (self.bNode) = 'u') {
                 if (BMK.WA.node_id (self.bNode) >= 0) {
-                  className := 'User';
                   image := 'user_16.png';
                 } else {
-                  className := 'Users';
                   image := 'group_16.png';
                 }
-              } else if (BMK.WA.node_type (self.bNode) = 'F') {
-                if (BMK.WA.node_id (self.bNode) >= 0)
-                  className := 'Folder';
               }
 
               nodeName := null;

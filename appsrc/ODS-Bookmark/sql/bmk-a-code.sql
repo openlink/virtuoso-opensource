@@ -467,6 +467,15 @@ create procedure BMK.WA.domain_owner_id (
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.domain_owner_name (
+  inout domain_id integer)
+{
+  return (select C.U_NAME from WA_MEMBER A, WA_INSTANCE B, SYS_USERS C where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id and C.U_ID = A.WAM_USER);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.domain_gems_create (
   inout domain_id integer,
   inout account_id integer)
@@ -2175,14 +2184,11 @@ create procedure BMK.WA.bookmark_url (
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.dav_url (
-  in domain_id integer,
-  in account_id integer)
+  in domain_id integer)
 {
   declare home varchar;
 
-  if (account_id < 0)
-    account_id := BMK.WA.domain_owner_id (domain_id);
-  home := BMK.WA.dav_home(account_id);
+  home := BMK.WA.dav_home (BMK.WA.domain_owner_id (domain_id));
   if (isnull(home))
     return '';
   return concat(BMK.WA.host_url(), home, 'BM/', BMK.WA.domain_gems_name(domain_id), '/');
