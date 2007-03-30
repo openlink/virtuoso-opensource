@@ -289,7 +289,7 @@
   <xsl:template name="vm:foaf-link">
     <div>
     <?vsp
-        http(sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', BMK.WA.foaf_url (BMK.WA.domain_owner_id (self.domain_id))));
+        http(sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', BMK.WA.foaf_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>

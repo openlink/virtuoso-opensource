@@ -316,6 +316,11 @@ _end:
 --
 create procedure BMK.WA.check_grants2(in role_name varchar, in page_name varchar)
 {
+  declare tree any;
+
+  tree := xml_tree_doc (BMK.WA.menu_tree ());
+  if (isnull (xpath_eval (sprintf ('//node[(@url = "%s") and contains(@allowed, "%s")]', page_name, role_name), tree, 1)))
+    return 0;
   return 1;
 }
 ;
@@ -416,7 +421,7 @@ create procedure BMK.WA.menu_tree (
     <node name="11"            url="bookmarks.vspx"       id="11"  place="link" allowed="public guest reader author owner admin"/>
     <node name="12"            url="search.vspx"          id="12"  place="link" allowed="public guest reader author owner admin"/>
     <node name="13"            url="error.vspx"           id="13"  place="link" allowed="public guest reader author owner admin"/>
-    <node name="14"            url="settings.vspx"        id="14"  place="link" allowed="public guest reader author owner admin"/>
+    <node name="14"            url="settings.vspx"        id="14"  place="link" allowed="reader author owner admin"/>
     <node name="15"            url="bookmark.vspx"        id="15"  place="link" allowed="public guest reader author owner admin"/>
   </node>
 </menu_tree>';
@@ -2222,9 +2227,9 @@ create procedure BMK.WA.sioc_url (
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.foaf_url (
-  in account_id integer)
+  in domain_id integer)
 {
-  return sprintf('%s/dataspace/%s/about.rdf', BMK.WA.host_url (), BMK.WA.account_name (account_id));
+  return sprintf('%s/dataspace/%s/about.rdf', BMK.WA.host_url (), BMK.WA.domain_owner_name (domain_id));
 }
 ;
 

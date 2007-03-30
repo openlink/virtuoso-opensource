@@ -317,7 +317,7 @@
       <v:template type="simple">
         <v:before-render>
           <![CDATA[
-            control.vc_enabled := case when (length (self.ds_data) and self.vc_is_valid = 1) then 1 else 0 end;
+            control.vc_enabled := case when (length (self.ds_data) and (self.vc_is_valid = 1) and self.v_step) then 1 else 0 end;
           ]]>
         </v:before-render>
         <div style="padding-bottom: 5px;">
