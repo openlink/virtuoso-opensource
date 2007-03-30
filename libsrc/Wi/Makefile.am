@@ -55,7 +55,7 @@ noinst_HEADERS = \
 	virtext.h virtpwd.h widd.h widisk.h widv.h wifn.h wi.h wirpce.h \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
-	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h
+	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h
 
 
 generated_code = \
@@ -885,10 +885,17 @@ generated: \
 EXTRA_DIST = \
 	*.sql \
 	*.xsl \
+ 	*.l \
+	*.y \	
 	jso_reformat.awk \
 	list_lex_props.sh \
 	mts_com.cpp \
 	mtx.cpp \
 	rdf_mapping.jso \
 	sqlwords.gperf \
-	sql_to_c.awk
+	sql_to_c.awk \
+	bif_kerberoscli.c \
+	bif_mts.c \
+	bif_purify.c \
+	mts_client.c \
+	sql_code_cache_impl.c

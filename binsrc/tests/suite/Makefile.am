@@ -78,11 +78,13 @@ EXTRA_DIST= \
 	thttp.sh \
 	timsg.sh \
 	tjdbc.sh \
-	tpc-d/LOAD.sh \
 	tpcd.sh \
+	tpc-d/LOAD.sh \
 	tpc-d/*.sql \
+	tpc-d/*.sh \
+	tpc-d/*.ora \
 	tpc-d/tpc-d.remotes.default \
-	tpc-d/tpcd.sh \
+	tpc-d/test.awk \
 	tproxy.sh \
 	tp.sh \
 	trecov_schema.sh \
@@ -107,6 +109,7 @@ EXTRA_DIST= \
 	tvspxex.awk \
 	tvspxex.sh \
 	tvspx.sh \
+	twiki.sh \
 	twcopy.sh \
 	txslt.cmp \
 	txslt.sh \

@@ -89,8 +89,28 @@ EXTRA_DIST = \
 	ho_s_15/COM/VirtCOMServer/VirtCOMServerPS.vcproj.vspscc \
 	ho_s_15/VirtCOMObject.cpp \
 	ho_s_15/VirtCOMObject.h \
+	ho_s_16/*.rb \
 	ho_s_16/*.xml \
-	ho_s_16/cgitest.rb \
+	ho_s_17/*.xml \
+	ho_s_17/basic-arithmetic.jsp \
+	ho_s_17/basic-comparisons.jsp \
+	ho_s_17/book.jsp \
+	ho_s_17/date.jsp \
+	ho_s_17/dynamicattrs.jsp \
+	ho_s_17/foo.jsp \
+	ho_s_17/foreach.jsp \
+	ho_s_17/forward.jsp \
+	ho_s_17/functions.jsp \
+	ho_s_17/hello.jsp \
+	ho_s_17/if.jsp \
+	ho_s_17/implicit-objects.jsp \
+	ho_s_17/jsptoservlet.jsp \
+	ho_s_17/panel.jsp \
+	ho_s_17/plugin.jsp \
+	ho_s_17/products.jsp \
+	ho_s_17/repeat.jsp \
+	ho_s_17/shuffle.jsp \
+	ho_s_17/xml.jsp \
 	ho_s_2/*.sql \
 	ho_s_2/*.vsp \
 	ho_s_2/*.xml \
@@ -108,7 +128,6 @@ EXTRA_DIST = \
 	ho_s_30/*.php \
 	ho_s_30/*.sql \
 	ho_s_30/*.xml \
-	ho_s_30/.sanep.php \
 	ho_s_30/WebCalendar/*.gif \
 	ho_s_30/WebCalendar/*.html \
 	ho_s_30/WebCalendar/*.php \

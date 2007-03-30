@@ -61,49 +61,50 @@ libz_la_LDFLAGS = -prefer-pic
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	ChangeLog \
 	FAQ \
 	INDEX \
 	README \
-	ChangeLog \
 	*.txt \
-	configure \
-	example.c \
-	make_vms.com \
-	minigzip.c \
-	zlib.3 \
+	amiga/Makefile.pup \
+	amiga/Makefile.sas \
+	as400/*.txt \
 	as400/bndsrc \
 	as400/compile.clp \
-	as400/*.txt \
 	as400/zlib.inc \
+	configure \
+	contrib/README.contrib \
+	contrib/ada/*.txt \
 	contrib/ada/buffer_demo.adb \
 	contrib/ada/mtest.adb \
 	contrib/ada/read.adb \
 	contrib/ada/test.adb \
-	contrib/ada/*.txt \
-	contrib/ada/zlib.adb \
-	contrib/ada/zlib.ads \
-	contrib/ada/zlib.gpr \
 	contrib/ada/zlib-streams.adb \
 	contrib/ada/zlib-streams.ads \
 	contrib/ada/zlib-thin.adb \
 	contrib/ada/zlib-thin.ads \
-	contrib/asm586/match.S \
+	contrib/ada/zlib.adb \
+	contrib/ada/zlib.ads \
+	contrib/ada/zlib.gpr \
 	contrib/asm586/README.586 \
-	contrib/asm686/match.S \
+	contrib/asm586/match.S \
 	contrib/asm686/README.686 \
+	contrib/asm686/match.S \
+	contrib/blast/*.txt \
+	contrib/blast/README \
 	contrib/blast/blast.c \
 	contrib/blast/blast.h \
-	contrib/blast/README \
 	contrib/blast/test.pk \
-	contrib/blast/*.txt \
 	contrib/delphi/*.txt \
+	contrib/delphi/ZLib.pas \
 	contrib/delphi/ZLibConst.pas \
 	contrib/delphi/zlibd32.mak \
-	contrib/delphi/ZLib.pas \
-	contrib/dotzlib/DotZLib/AssemblyInfo.cs \
+	contrib/dotzlib/*.txt \
 	contrib/dotzlib/DotZLib.build \
-	contrib/dotzlib/DotZLib/ChecksumImpl.cs \
 	contrib/dotzlib/DotZLib.chm \
+	contrib/dotzlib/DotZLib.sln \
+	contrib/dotzlib/DotZLib/AssemblyInfo.cs \
+	contrib/dotzlib/DotZLib/ChecksumImpl.cs \
 	contrib/dotzlib/DotZLib/CircularBuffer.cs \
 	contrib/dotzlib/DotZLib/CodecBase.cs \
 	contrib/dotzlib/DotZLib/Deflater.cs \
@@ -111,41 +112,40 @@ EXTRA_DIST = \
 	contrib/dotzlib/DotZLib/DotZLib.csproj \
 	contrib/dotzlib/DotZLib/GZipStream.cs \
 	contrib/dotzlib/DotZLib/Inflater.cs \
-	contrib/dotzlib/DotZLib.sln \
 	contrib/dotzlib/DotZLib/UnitTests.cs \
-	contrib/dotzlib/*.txt \
+	contrib/infback9/README \
 	contrib/infback9/infback9.c \
 	contrib/infback9/infback9.h \
 	contrib/infback9/inffix9.h \
 	contrib/infback9/inflate9.h \
 	contrib/infback9/inftree9.c \
 	contrib/infback9/inftree9.h \
-	contrib/infback9/README \
 	contrib/inflate86/inffas86.c \
 	contrib/inflate86/inffast.S \
-	contrib/iostream2/zstream.h \
-	contrib/iostream2/zstream_test.cpp \
-	contrib/iostream3/README \
-	contrib/iostream3/test.cc \
-	contrib/iostream3/TODO \
-	contrib/iostream3/zfstream.cc \
-	contrib/iostream3/zfstream.h \
 	contrib/iostream/test.cpp \
 	contrib/iostream/zfstream.cpp \
 	contrib/iostream/zfstream.h \
+	contrib/iostream2/zstream.h \
+	contrib/iostream2/zstream_test.cpp \
+	contrib/iostream3/README \
+	contrib/iostream3/TODO \
+	contrib/iostream3/test.cc \
+	contrib/iostream3/zfstream.cc \
+	contrib/iostream3/zfstream.h \
 	contrib/masm686/match.asm \
+	contrib/masmx64/*.txt \
 	contrib/masmx64/bld_ml64.bat \
 	contrib/masmx64/gvmat64.asm \
 	contrib/masmx64/inffas8664.c \
 	contrib/masmx64/inffasx64.asm \
-	contrib/masmx64/*.txt \
+	contrib/masmx86/*.txt \
 	contrib/masmx86/bld_ml32.bat \
 	contrib/masmx86/gvmat32.asm \
 	contrib/masmx86/gvmat32c.c \
 	contrib/masmx86/inffas32.asm \
 	contrib/masmx86/mkasm.bat \
-	contrib/masmx86/*.txt \
 	contrib/minizip/ChangeLogUnzip \
+	contrib/minizip/Makefile \
 	contrib/minizip/crypt.h \
 	contrib/minizip/ioapi.c \
 	contrib/minizip/ioapi.h \
@@ -159,17 +159,18 @@ EXTRA_DIST = \
 	contrib/minizip/unzip.h \
 	contrib/minizip/zip.c \
 	contrib/minizip/zip.h \
-	contrib/pascal/example.pas \
 	contrib/pascal/*.txt \
+	contrib/pascal/example.pas \
 	contrib/pascal/zlibd32.mak \
 	contrib/pascal/zlibpas.pas \
+	contrib/puff/README \
 	contrib/puff/puff.c \
 	contrib/puff/puff.h \
-	contrib/puff/README \
 	contrib/puff/zeros.raw \
-	contrib/README.contrib \
-	contrib/testzlib/testzlib.c \
 	contrib/testzlib/*.txt \
+	contrib/testzlib/testzlib.c \
+	contrib/untgz/Makefile \
+	contrib/untgz/Makefile.msc \
 	contrib/untgz/untgz.c \
 	contrib/vstudio/*.txt \
 	contrib/vstudio/vc7/miniunz.vcproj \
@@ -182,35 +183,51 @@ EXTRA_DIST = \
 	contrib/vstudio/vc7/zlibvc.vcproj \
 	contrib/vstudio/vc8/miniunz.vcproj \
 	contrib/vstudio/vc8/minizip.vcproj \
-	contrib/vstudio/vc8/testzlibdll.vcproj \
 	contrib/vstudio/vc8/testzlib.vcproj \
+	contrib/vstudio/vc8/testzlibdll.vcproj \
 	contrib/vstudio/vc8/zlib.rc \
 	contrib/vstudio/vc8/zlibstat.vcproj \
 	contrib/vstudio/vc8/zlibvc.def \
 	contrib/vstudio/vc8/zlibvc.sln \
 	contrib/vstudio/vc8/zlibvc.vcproj \
+	example.c \
+	examples/*.html \
+	examples/README.examples \
 	examples/fitblk.c \
 	examples/gun.c \
 	examples/gzappend.c \
 	examples/gzjoin.c \
 	examples/gzlog.c \
 	examples/gzlog.h \
-	examples/*.html \
-	examples/README.examples \
 	examples/zpipe.c \
 	examples/zran.c \
-	old/descrip.mms \
+	make_vms.com \
+	minigzip.c \
+	msdos/Makefile.bor \
+	msdos/Makefile.dj2 \
+	msdos/Makefile.emx \
+	msdos/Makefile.msc \
+	msdos/Makefile.tc \
 	old/*.html \
-	old/os2/zlib.def \
-	old/README \
 	old/*.txt \
+	old/Makefile.riscos \
+	old/README \
+	old/descrip.mms \
+	old/os2/Makefile.os2 \
+	old/os2/zlib.def \
 	projects/README.projects \
+	projects/visualc6/*.txt \
 	projects/visualc6/example.dsp \
 	projects/visualc6/minigzip.dsp \
-	projects/visualc6/*.txt \
 	projects/visualc6/zlib.dsp \
 	projects/visualc6/zlib.dsw \
 	qnx/package.qpg \
 	win32/*.txt \
+	win32/Makefile.bor \
+	win32/Makefile.emx \
+	win32/Makefile.gcc \
+	win32/Makefile.msc \
+	win32/zlib.def \
 	win32/zlib1.rc \
-	win32/zlib.def
+	zconf.in.h \
+	zlib.3

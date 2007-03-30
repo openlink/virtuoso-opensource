@@ -27,13 +27,14 @@
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	*.gif \
-	inst/*.png \
 	*.jpg \
+	inst/*.png \
 	mac/*.gif \
 	mac/*.jpg \
+	mac/*.png \
 	misc/*.gif \
-	misc/*.ico \
 	misc/*.jpg \
+	misc/favicon.ico \
 	rth/*.jpg \
 	tree/*.gif \
 	ui/*.gif \

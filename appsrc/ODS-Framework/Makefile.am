@@ -60,6 +60,7 @@ EXTRA_DIST = \
 	images/*.jfif \
 	images/*.jpg \
 	images/*.png \
+	images/*.psd \
 	images/app_ads/*.jpg \
 	images/dav_browser/*.png \
 	make_vad.sh \
