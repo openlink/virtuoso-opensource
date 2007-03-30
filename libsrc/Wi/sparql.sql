@@ -7660,3 +7660,66 @@ create function DB.DBA.RDF_IID_OF_QNAME (in qname varchar) returns IRI_ID
 }
 ;
 
+-- WS handlers for .rq files (application/sparql-query)
+create procedure
+WS.WS.__http_handler_rq (in content any, in params any, in lines any, inout ipath_ostat any)
+{
+  return DB.DBA.http_rq_file_handler(content, params, lines, ipath_ostat);
+}
+;
+
+create procedure
+WS.WS.__http_handler_head_rq (in content any, in params any, in lines any, inout ipath_ostat any)
+{
+  return DB.DBA.http_rq_file_handler(content, params, lines, ipath_ostat);
+}
+;
+
+create procedure
+DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout ipath_ostat any)
+{
+  declare accept varchar;
+  declare _format varchar;
+
+  accept := http_request_header (lines, 'Accept', null, '');
+
+  _format := get_keyword('format', params, '');
+  if (_format <> '')
+    {
+      _format := (
+      case lower(_format)
+      when 'json' then 'application/sparql-results+json'
+      when 'js' then 'application/javascript'
+      when 'html' then 'text/html'
+      when 'sparql' then 'application/sparql-results+xml'
+      when 'xml' then 'application/sparql-results+xml'
+      when 'rdf' then 'application/rdf+xml'
+      when 'n3' then 'text/rdf+n3'
+      else _format
+      end);
+    }
+
+  if (_format <> '' or
+      strcasestr (accept, 'application/sparql-results+json') is not null or
+      strcasestr (accept, 'application/json') is not null or
+      strcasestr (accept, 'application/sparql-results+xml') is not null or
+      strcasestr (accept, 'text/rdf+n3') is not null or
+      strcasestr (accept, 'application/rdf+xml') is not null or
+      strcasestr (accept, 'application/javascript') is not null or
+      strcasestr (accept, 'application/soap+xml') is not null or
+      strcasestr (accept, 'application/rdf+turtle') is not null
+     )
+    {
+      http_request_status ('HTTP/1.1 303 See Other');
+      http_header (sprintf('Location: /sparql?query=%U&format=%U\r\n', content, accept));
+      return '';
+    }
+  if (strcasestr (accept, 'application/sparql-query') is not null)
+     http_header ('Content-Type: application/sparql-query\r\n');
+  else
+     http_header ('Content-Type: text/plain\r\n');
+  http (content);
+  return '';
+}
+;
+
