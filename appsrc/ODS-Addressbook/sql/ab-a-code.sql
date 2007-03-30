@@ -432,7 +432,7 @@ create procedure AB.WA.xslt_root()
 {
   declare sHost varchar;
 
-  sHost := cast (registry_get('sn_path') as varchar);
+  sHost := cast (registry_get('ab_path') as varchar);
   if (sHost = '0')
     return 'file://apps/AddressBook/xslt/';
   if (isnull (strstr(sHost, '/DAV/VAD')))
@@ -1106,30 +1106,6 @@ _again:
     return null;
 
   return (cont);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure AB.WA.xslt_root()
-{
-  declare sHost varchar;
-
-  sHost := cast (registry_get('_sn_path_') as varchar);
-  if (sHost = '0')
-    return 'file://apps/addressbook/xslt/';
-  if (isnull (strstr(sHost, '/DAV/VAD')))
-    return sprintf ('file://%sxslt/', sHost);
-  return sprintf ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:%sxslt/', sHost);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure AB.WA.xslt_full(
-  in xslt_file varchar)
-{
-  return concat(AB.WA.xslt_root(), xslt_file);
 }
 ;
 
