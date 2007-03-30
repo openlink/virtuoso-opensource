@@ -39,16 +39,20 @@ uninstall-local:
 	rm -f "$(htmldocdir)"/*.html
 
 CLEANFILES =  \
-	*.vad \
-	*.output \
 	*.log \
+	*.output \
+	*.vad \
+	art.tar \
 	default.ini \
 	demo.db \
 	demo.ini \
 	demo.lck \
 	demo.tdb \
 	demo.trx \
+	doc.db \
+	doc.trx \
 	doc_vad_dav.xml \
+	flags.tar \
 	make__demo_vad.xml \
 	mkdemo.tdb \
 	mkdoc.tdb \
@@ -59,6 +63,9 @@ CLEANFILES =  \
 	virtuoso.tdb \
 	virtuoso.trx \
 	xmemdump.txt
+
+clean-local:
+	-rm -rf art flags vad plugin classlib
 
 demo.db: mkdemo.sh mkdemo.sql mkdemo.ini doc_dav.vad demo_dav.vad
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HTMLDOC="$(HTMLDOC)" \
