@@ -187,7 +187,7 @@
       <v:variable name="v_expression" type="varchar" default="''"/>
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_own" type="integer" default="1"/>
-      <v:variable name="v_public" type="integer" default="1"/>
+      <v:variable name="v_public" type="integer" default="0"/>
 
       <v:variable name="v_output" type="varchar" default="'html'"/>
       <v:variable name="v_max" type="varchar" default="'100'"/>
@@ -252,7 +252,7 @@
       <v:template type="simple">
         <v:before-render>
           <![CDATA[
-            control.vc_enabled := case when (length (self.ds_data) and self.vc_is_valid = 1) then 1 else 0 end;
+            control.vc_enabled := case when (length (self.ds_data) and (self.vc_is_valid = 1) and self.v_step) then 1 else 0 end;
           ]]>
         </v:before-render>
         <div style="padding-bottom: 5px;">

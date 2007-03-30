@@ -315,6 +315,11 @@ _end:
 --
 create procedure POLLS.WA.check_grants2(in role_name varchar, in page_name varchar)
 {
+  declare tree any;
+
+  tree := xml_tree_doc (POLLS.WA.menu_tree ());
+  if (isnull (xpath_eval (sprintf ('//node[(@url = "%s") and contains(@allowed, "%s")]', page_name, role_name), tree, 1)))
+    return 0;
   return 1;
 }
 ;
@@ -395,6 +400,27 @@ create procedure POLLS.WA.page_name ()
   aPath := http_path ();
   aPath := split_and_decode (aPath, 0, '\0\0/');
   return aPath [length (aPath) - 1];
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.menu_tree ()
+{
+  declare S varchar;
+
+  S :=
+'<?xml version="1.0" ?>
+<menu_tree>
+  <node name="home" url="polls.vspx"            id="1"   allowed="public guest reader author owner admin">
+    <node name="11" url="polls.vspx"            id="11"  allowed="public guest reader author owner admin"/>
+    <node name="12" url="search.vspx"          id="12"  allowed="public guest reader author owner admin"/>
+    <node name="13" url="error.vspx"           id="13"  allowed="public guest reader author owner admin"/>
+    <node name="14" url="settings.vspx"        id="14"  allowed="reader author owner admin"/>
+  </node>
+</menu_tree>';
+
+  return S;
 }
 ;
 

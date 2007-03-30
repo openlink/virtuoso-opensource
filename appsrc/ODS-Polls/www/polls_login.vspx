@@ -33,6 +33,9 @@
       if (page_name = 'error.vspx')
         return;
 
+      if (POLLS.WA.check_grants2 (self.account_role, page_name))
+        return;
+
       declare vh, lh, hf, ods_path any;
 
       vh := http_map_get ('vhost');
@@ -50,7 +53,7 @@
         http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));;
         return;
       }
-      return;
+      self.vc_redirect('polls.vspx');
     ]]>
   </v:after-data-bind>
 </v:login>
