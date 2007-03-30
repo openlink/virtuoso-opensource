@@ -299,7 +299,7 @@
   <xsl:template match="vm:foaf-link">
     <div>
       <?vsp
-        http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', POLLS.WA.foaf_url (self.account_id)));
+        http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', POLLS.WA.foaf_url (self.domain_id)));
       ?>
     </div>
   </xsl:template>

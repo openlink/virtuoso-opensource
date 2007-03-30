@@ -1057,9 +1057,9 @@ create procedure POLLS.WA.sioc_url (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.foaf_url (
-  in account_id integer)
+  in domain_id integer)
 {
-  return sprintf('%s/dataspace/%s/about.rdf', POLLS.WA.host_url (), POLLS.WA.account_name (account_id));
+  return sprintf('%s/dataspace/%s/about.rdf', POLLS.WA.host_url (), POLLS.WA.domain_owner_name (domain_id));
 }
 ;
 
