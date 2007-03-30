@@ -2172,52 +2172,123 @@ Can be found at 'http://example.com:8080/sparql_demo/' depending on the local Vi
 <sect2 id="rdftables"><title>Virtuoso Semantic Bank end point</title>
     <para>
 	What is Piggy Bank?
-	Piggy Bank is an extension to the Firefox Web browser that turns it into a Semantic Web browser, letting you make use of existing information on the Web in more useful and flexible ways not offered by the original Web sites. 
-
     </para>
+    <para>
+	Piggy Bank is an extension to the Firefox Web browser that turns it into a Semantic Web browser, letting you make use of existing information on the Web in more useful and flexible ways not offered by the original Web sites. 
+    </para>
+    <para></para>
     <para>
 	What is Semantic Bank?
-	Semantic Bank is the server companion of Piggy Bank that lets you persist, share and publish data collected by individuals, groups or communities. Here is a screen shot of one in action: 
-
-	What can I do with this?
-	A Semantic Bank allows you to:
-	persist your information remotely on a server. This is useful, for example, if you want to share data between two of your computers or to avoid losing it due to mistakes or failure. 
-	share information with other people. The ability to tag resources creates a powerful serendipitous categorization (as proven by things like del.icio.us or Flickr). 
-	lets you publish your information, both in the "pure" RDF form (for those who know how to make use of it) or to regular web pages, with the usual Longwell facetted browsing view of it 
-	How can I help?
-	Semantic Bank is an open source software and built around the spirit of open participation and collaboration.
-	There are several ways you can help:
-	Install a Semantic Bank and lets us know about it, so that we can update the list of available Semantic Banks. 
-	Subscribe to our mailing lists to show your interest and give us feedback 
-	Report problems and ask for new features through our issue tracking system. 
-	Send us patches or fixes to the code 
-	Licensing and Legal Issues
-	Semantic Bank is open source software and is licensed under the BSD license.
-	Note, however, that this software ships with libraries that are not released under the same license; that we interpret their licensing terms to be compatible with ours and that we are redistributing them unmodified. For more information on the licensing terms of the libraries Semantic Bank depends on, please refer to the source code.
-
     </para>
+    <para>
+	Semantic Bank is the server companion of Piggy Bank that lets you persist, share and publish data collected by individuals, groups or communities. Here is a screen shot of one in action: 
+    </para>
+    <para></para>
+    <para></para>
+    <para>
+	What can I do with this?
+    </para>
+    <para>
+	A Semantic Bank allows you to:
+    </para>
+    <para></para>
+    <para>
+	persist your information remotely on a server. This is useful, for example, if you want to share data between two of your computers or to avoid losing it due to mistakes or failure. 
+    </para>
+    <para></para>
+    <para>
+	share information with other people. The ability to tag resources creates a powerful serendipitous categorization (as proven by things like del.icio.us or Flickr). 
+    </para>
+    <para></para>
+    <para>
+	lets you publish your information, both in the "pure" RDF form (for those who know how to make use of it) or to regular web pages, with the usual Longwell facetted browsing view of it 
+    </para>
+    <para></para>
+    <para></para>
+    <para>
+	How can I help?
+    </para>
+    <para>
+	Semantic Bank is an open source software and built around the spirit of open participation and collaboration.
+    </para>
+    <para>
+	There are several ways you can help:
+    </para>
+    <para></para>
+    <para>
+	Install a Semantic Bank and lets us know about it, so that we can update the list of available Semantic Banks. 
+    </para>
+    <para>
+	Subscribe to our mailing lists to show your interest and give us feedback 
+    </para>
+    <para>
+	Report problems and ask for new features through our issue tracking system. 
+    </para>
+    <para>
+	Send us patches or fixes to the code 
+    </para>
+    <para>
+	Licensing and Legal Issues
+    </para>
+    <para></para>
+    <para></para>
+    <para>
+	Semantic Bank is open source software and is licensed under the BSD license.
+    </para>
+    <para></para>
+    <para>
+	Note, however, that this software ships with libraries that are not released under the same license; that we interpret their licensing terms to be compatible with ours and that we are redistributing them unmodified. For more information on the licensing terms of the libraries Semantic Bank depends on, please refer to the source code.
+    </para>
+    <para></para>
     <para>
 	Download location:
+    </para>
+    <para></para>
+    <para>
 	<ulink url="http://simile.mit.edu/dist/semantic-bank/">"http://simile.mit.edu/dist/semantic-bank/</ulink>
     </para>
+    <para></para>
+    <para></para>
     <para>
 	The Virtuoso Semantic Bank end point.
-
-	Before you can publish, you must register with one or more Semantic Banks:
-	Invoke the menu command Tools » Piggy Bank » My Semantic Bank Accounts.... 
-	Click Add... in the Semantic Bank Accounts dialog box. 
-	In the popup dialog box, type in the URL to the Virtuoso Semantic Bank you want to register with.  Example: http://servar_name:server_port/bank
-	Enter an account a valid Virtuoso DAV user. (Note: currently we do not use encryption during authentication; do not use your precious password here.) 
-	Click OK, wait for the account to get registered, and then dismiss the Semantic Bank Accounts dialog box. 
-	To publish an item, just click the corresponding Publish button (much like how you save the item). To publish all the items being viewed, click the Publish All button.
-
     </para>
     <para>
-
+	Before you can publish, you must register with one or more Semantic Banks:
+    </para>
+    <para>
+	Invoke the menu command Tools » Piggy Bank » My Semantic Bank Accounts.... 
+    </para>
+    <para></para>
+    <para>
+	Click Add... in the Semantic Bank Accounts dialog box. 
+    </para>
+    <para></para>
+    <para>
+	In the popup dialog box, type in the URL to the Virtuoso Semantic Bank you want to register with.  Example: http://servar_name:server_port/bank
+    </para>
+    <para></para>
+    <para>
+	Enter an account a valid Virtuoso DAV user. (Note: currently we do not use encryption during authentication; do not use your precious password here.) 
+    </para>
+    <para></para>
+    <para>
+	Click OK, wait for the account to get registered, and then dismiss the Semantic Bank Accounts dialog box. 
+    </para>
+    <para></para>
+    <para>
+	To publish an item, just click the corresponding Publish button (much like how you save the item). To publish all the items being viewed, click the Publish All button.
+    </para>
+    <para></para>
+    <para></para>
+    <para>
 	What is the Graph Name used by Virtuoso for the Triples from PiggyBank? 
-
+    </para>
+    <para></para>
+    <para>
 	http://simile.org/piggybank/&lt;piggybank-generated-name&gt;
-
+    </para>
+    <para></para>
+    <para>
 	    The piggybank-generated-name is Virtuoso DAV user.
     </para>
 </sect2>
