@@ -52,4 +52,5 @@ clean-local:
 EXTRA_DIST = \
 	*.sql \
 	make_vad.sh \
+	vad_version \
 	xslt/*.xsl
