@@ -260,7 +260,7 @@
   <xsl:template match="vm:atom-link">
     <div>
       <?vsp
-        http (sprintf('<a href="%sAddressBook.atom" target="_blank" title="ATOM export" alt="ATOM export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> Atom</a>', AB.WA.dav_url(self.domain_id, self.account_id)));
+        http (sprintf('<a href="%sAddressBook.atom" target="_blank" title="ATOM export" alt="ATOM export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> Atom</a>', AB.WA.dav_url (self.domain_id)));
       ?>
     </div>
   </xsl:template>
@@ -269,7 +269,7 @@
   <xsl:template match="vm:rss-link">
     <div>
       <?vsp
-        http (sprintf('<a href="%sAddressBook.rss" target="_blank" title="RSS export" alt="RSS export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> RSS</a>', AB.WA.dav_url(self.domain_id, self.account_id)));
+        http (sprintf('<a href="%sAddressBook.rss" target="_blank" title="RSS export" alt="RSS export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> RSS</a>', AB.WA.dav_url (self.domain_id)));
       ?>
     </div>
   </xsl:template>
@@ -278,25 +278,7 @@
   <xsl:template match="vm:rdf-link">
     <div>
       <?vsp
-        http (sprintf('<a href="%sAddressBook.rdf" target="_blank" title="RDF export" alt="RDF export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> RDF</a>', AB.WA.dav_url(self.domain_id, self.account_id)));
-      ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:ocs-link">
-    <div>
-      <?vsp
-        http (sprintf('<a href="%sAddressBook.ocs" target="_blank" title="OCS export" alt="OCS export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OCS</a>', AB.WA.dav_url(self.domain_id, self.account_id)));
-      ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:opml-link">
-    <div>
-      <?vsp
-        http (sprintf('<a href="%sAddressBook.opml" target="_blank" title="OPML export" alt="OPML export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OPML</a>', AB.WA.dav_url(self.domain_id, self.account_id)));
+        http (sprintf('<a href="%sAddressBook.rdf" target="_blank" title="RDF export" alt="RDF export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> RDF</a>', AB.WA.dav_url (self.domain_id)));
       ?>
     </div>
   </xsl:template>
@@ -305,7 +287,7 @@
   <xsl:template name="vm:foaf-link">
     <div>
       <?vsp
-        http (sprintf('<a href="%sAddressBook.foaf" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.gif" border="0"/></a>', AB.WA.dav_url(self.domain_id, self.account_id)));
+        http (sprintf('<a href="%sAddressBook.foaf" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.gif" border="0"/></a>', AB.WA.dav_url(self.domain_id)));
       ?>
     </div>
   </xsl:template>
@@ -324,7 +306,7 @@
   	      suffix := '<xsl:value-of select="@format"/>';
         </xsl:processing-instruction>
       </xsl:if>
-  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/addressbook/%U/sioc.%s', AB.WA.host_url (), AB.WA.account(), AB.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
+  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/addressbook/%U/sioc.%s', AB.WA.host_url (), AB.WA.domain_owner_name (self.domain_id), AB.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
     	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
       </a>
       <?vsp

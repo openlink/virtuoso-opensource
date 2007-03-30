@@ -317,6 +317,11 @@ _end:
 --
 create procedure AB.WA.check_grants2(in role_name varchar, in page_name varchar)
 {
+  declare tree any;
+
+  tree := xml_tree_doc (AB.WA.menu_tree ());
+  if (isnull (xpath_eval (sprintf ('//node[(@url = "%s") and contains(@allowed, "%s")]', page_name, role_name), tree, 1)))
+    return 0;
   return 1;
 }
 ;
@@ -397,6 +402,27 @@ create procedure AB.WA.page_name ()
   aPath := http_path ();
   aPath := split_and_decode (aPath, 0, '\0\0/');
   return aPath [length (aPath) - 1];
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.menu_tree ()
+{
+  declare S varchar;
+
+  S :=
+'<?xml version="1.0" ?>
+<menu_tree>
+  <node name="home" url="home.vspx"            id="1"   allowed="public guest reader author owner admin">
+    <node name="11" url="home.vspx"            id="11"  allowed="public guest reader author owner admin"/>
+    <node name="12" url="search.vspx"          id="12"  allowed="public guest reader author owner admin"/>
+    <node name="13" url="error.vspx"           id="13"  allowed="public guest reader author owner admin"/>
+    <node name="14" url="settings.vspx"        id="14"  allowed="reader author owner admin"/>
+  </node>
+</menu_tree>';
+
+  return S;
 }
 ;
 
@@ -642,6 +668,15 @@ create procedure AB.WA.domain_owner_id (
   inout domain_id integer)
 {
   return (select A.WAM_USER from WA_MEMBER A, WA_INSTANCE B where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.domain_owner_name (
+  inout domain_id integer)
+{
+  return (select C.U_NAME from WA_MEMBER A, WA_INSTANCE B, SYS_USERS C where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id and C.U_ID = A.WAM_USER);
 }
 ;
 
@@ -996,14 +1031,11 @@ create procedure AB.WA.contact_url (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.dav_url (
-  in domain_id integer,
-  in account_id integer)
+  in domain_id integer)
 {
   declare home varchar;
 
-  if (account_id < 0)
-    account_id := AB.WA.domain_owner_id (domain_id);
-  home := AB.WA.dav_home(account_id);
+  home := AB.WA.dav_home (AB.WA.domain_owner_id (domain_id));
   if (isnull (home))
     return '';
   return concat(AB.WA.host_url(), home, 'AddressBook/', AB.WA.domain_gems_name(domain_id), '/');
