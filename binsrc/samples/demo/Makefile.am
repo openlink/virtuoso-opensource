@@ -111,4 +111,5 @@ EXTRA_DIST = \
 	mkdemo.bat \
 	mkdemo.ini \
 	mkdemo.sh \
-	mkdoc.sh
+	mkdoc.sh \
+	vad_version
