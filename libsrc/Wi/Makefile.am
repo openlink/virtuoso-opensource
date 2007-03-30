@@ -86,7 +86,6 @@ generated_code = \
 	sql_code_dbp.c \
 	sql_code_ddk.c \
 	sql_code_imsg.c \
-	sql_code_odbc.c \
 	sql_code_sparql.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
@@ -208,7 +207,6 @@ libwi_la_SOURCES = \
 	sql_code_cache.c \
 	sql_code_blog.c \
 	sql_code_vdb.c \
-	sql_code_odbc.c \
 	bif_uuencode.c \
 	map_schema.c \
 	uuencode.c \
@@ -311,7 +309,6 @@ libwi_odbc_la_SOURCES = \
 	sql_code_cache.c \
 	sql_code_blog.c \
 	sql_code_vdb.c \
-	sql_code_odbc.c \
 	bif_uuencode.c \
 	map_schema.c \
 	uuencode.c \
@@ -807,9 +804,6 @@ sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES) Makefile
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_SPARQL)
 
-sql_code_odbc.c: odbc_schema.sql $(AWK_FILES)
-	@${GEN} ${GAWK} -o sql_code_odbc.c -f sql_to_c.awk \
-		-v init_name=_odbc -v pl_stats=$(PLSTATS) odbc_schema.sql
 
 blog_pages.sql: FORCE
 	(cd $(top_srcdir)/binsrc/weblog ; gmake)
@@ -871,7 +865,6 @@ generated: \
 	sql_code_dbp.c \
 	sql_code_ddk.c \
 	sql_code_imsg.c \
-	sql_code_odbc.c \
 	sql_code_sparql.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
