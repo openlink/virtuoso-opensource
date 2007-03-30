@@ -886,16 +886,18 @@ EXTRA_DIST = \
 	*.sql \
 	*.xsl \
  	*.l \
-	*.y \	
-	jso_reformat.awk \
-	list_lex_props.sh \
-	mts_com.cpp \
-	mtx.cpp \
-	rdf_mapping.jso \
-	sqlwords.gperf \
-	sql_to_c.awk \
+	*.y \
+	2pc_client.c \
 	bif_kerberoscli.c \
 	bif_mts.c \
 	bif_purify.c \
+	iodbcinst.c \
+	jso_reformat.awk \
+	list_lex_props.sh \
 	mts_client.c \
-	sql_code_cache_impl.c
+	mts_com.cpp \
+	mtx.cpp \
+	rdf_mapping.jso \
+	sql_code_cache_impl.c \
+	sql_to_c.awk \
+	sqlwords.gperf
