@@ -362,8 +362,10 @@ then
     then
         (cd $BPEL; make)
         (cd $HOME/binsrc/samples/sparql_demo ; make)
+        (cd $HOME/binsrc/isparql ; make)
         (cd $HOME/binsrc/tutorial ; make)
         (cd $HOME/binsrc/yacutia ; make)
+        (cd $HOME/binsrc/rdf_mappers ; make)
 	(cd $HOME/binsrc/samples/image_magick ; make)
 	(cd $HOME/appsrc ; make)
     fi
@@ -768,14 +770,18 @@ BREAK
 
 $LN $BPEL/bpel_dav.vad .
 $LN $HOME/binsrc/samples/sparql_demo/sparql_demo_dav.vad .
+$LN $HOME/binsrc/isparql/isparql_dav.vad .
 $LN $HOME/binsrc/tutorial/tutorial_dav.vad .
 $LN $HOME/binsrc/yacutia/conductor_dav.vad .
+$LN $HOME/binsrc/rdf_mappers/rdf_mappers_dav.vad .
 
 DO_COMMAND "vad_install ('doc_dav.vad')" dba dba
 DO_COMMAND "vad_install ('bpel_dav.vad')" dba dba
 DO_COMMAND "vad_install ('sparql_demo_dav.vad')" dba dba
+DO_COMMAND "vad_install ('isparql_dav.vad')" dba dba
 DO_COMMAND "vad_install ('tutorial_dav.vad')" dba dba
 DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
+DO_COMMAND "vad_install ('rdf_mappers_dav.vad')" dba dba
 
 if [ $VOS -eq 1 ]
 then
