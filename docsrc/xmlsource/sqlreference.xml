@@ -2823,7 +2823,7 @@ into a temporary space. Processing continues from that point on as if the data c
 		<para>
 Queries involving procedure views or derived tables are subject to normal join order selection.
 For this purpose it is possible to associate a cost to a procedure used in a procedure view or derived table.  
-If the option (order) clause is given at the end of the slect, joins  are done left to right.  If a procedure is in the leftmost
+If the option (order) clause is given at the end of the select, joins are done left to right.  If a procedure is in the leftmost
 position in the from it will be called once for the query, if it is in the second position it will
 be called once for every row of the leftmost table that passes selection criteria applicable
 to it and so on.
