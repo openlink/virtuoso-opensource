@@ -585,6 +585,7 @@ rdf_box_compare (caddr_t a1, caddr_t a2)
 		return DVC_LESS;
         if (len1 > len2)
 		return DVC_GREATER;
+        return DVC_MATCH;
 	    }
     else if (cmp_headlen < RB_MAX_INLINED_CHARS)
 	    {
@@ -605,12 +606,31 @@ rdf_box_compare (caddr_t a1, caddr_t a2)
   return DVC_MATCH;
 }
 
+int32
+rdf_box_hash (caddr_t box)
+{
+  rdf_box_t *rb = (rdf_box_t *)box;
+  if (rb->rb_is_complete)
+    return rb->rb_lang * 17 + rb->rb_type * 13 + box_hash (rb->rb_box);
+  if (0 != rb->rb_ro_id)
+    return rb->rb_ro_id + (rb->rb_ro_id << 16);
+  return rb->rb_lang * 17 + rb->rb_type * 13 + rb->rb_is_complete * 9 + box_hash (rb->rb_box);
+}
+
+int
+rdf_box_hash_cmp (caddr_t a1, caddr_t a2)
+{
+  return (DVC_MATCH == rdf_box_compare (a1, a2)) ? 1 : 0;
+}
+
+
 void
 rdf_box_init ()
 {
   dk_mem_hooks (DV_RDF, (box_copy_f) rb_copy, (box_destr_f)rb_free, 0);
   PrpcSetWriter (DV_RDF, rb_serialize);
   get_readtable ()[DV_RDF] = (macro_char_func) rb_deserialize;
+  dk_dtp_register_hash (DV_RDF, rdf_box_hash, rdf_box_hash_cmp);
   bif_define ("rdf_box", bif_rdf_box);
   bif_define_typed ("is_rdf_box", bif_is_rdf_box, &bt_integer);
   bif_define_typed ("rdf_box_set_data", bif_rdf_box_set_data, &bt_any);
