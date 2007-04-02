@@ -50,8 +50,12 @@ struct mem_pool_s
   caddr_t *mp_allocs;
   size_t mp_bytes;
 #ifdef DEBUG
-  char *mp_alloc_file;
+  const char *mp_alloc_file;
   int mp_alloc_line;
+#endif
+#ifdef MALLOC_DEBUG
+  const char *mp_list_alloc_file;
+  int mp_list_alloc_line;
 #endif
 };
 #else
@@ -70,7 +74,7 @@ struct mem_pool_s
   int	mp_block_size;
   size_t mp_bytes;
 #ifdef DEBUG
-  char *mp_alloc_file;
+  const char *mp_alloc_file;
   int mp_alloc_line;
 #endif
 };
@@ -198,7 +202,6 @@ caddr_t * mp_list (mem_pool_t * mp, long n, ...);
 #define t_box_copy_tree(box)		mp_box_copy_tree (THR_TMP_POOL, (box))
 #define t_full_box_copy_tree(box)	mp_full_box_copy_tree (THR_TMP_POOL, (box))
 
-caddr_t * t_list (long n, ...);
 extern caddr_t *t_list_concat_tail (caddr_t list, long n, ...);
 extern caddr_t *t_list_concat (caddr_t list1, caddr_t list2);
 extern caddr_t *t_list_remove_nth (caddr_t list, int pos);
@@ -217,11 +220,16 @@ box_t dbg_t_box_float (const char *file, int line, float d);
 #define t_box_double(d) dbg_t_box_double (__FILE__, __LINE__, (d))
 #define t_box_float(d) dbg_t_box_float (__FILE__, __LINE__, (d))
 #define t_box_num_and_zero(box) dbg_t_box_num_and_zero (__FILE__, __LINE__, (box))
+extern caddr_t * t_list_impl (long n, ...);
+typedef caddr_t * (*t_list_impl_ptr_t)(long n, ...);
+extern t_list_impl_ptr_t t_list_cock (const char *file, int line);
+#define t_list (t_list_cock (__FILE__, __LINE__))
 #else
 caddr_t t_box_num (ptrlong box);
 caddr_t t_box_num_and_zero (ptrlong box);
 box_t t_box_double (double d);
 box_t t_box_float (float d);
+extern caddr_t * t_list (long n, ...);
 #endif
 
 #define t_alloc(sz) t_alloc_box ((sz), DV_CUSTOM)
