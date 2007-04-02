@@ -417,7 +417,40 @@ box_t DBG_NAME(t_box_float) (DBG_PARAMS float d)
 }
 
 
+#ifdef MALLOC_DEBUG
+caddr_t *
+t_list_impl (long n, ...)
+{
+  mem_pool_t *mp = THR_TMP_POOL;
+  caddr_t *box;
+  va_list ap;
+  int inx;
+  va_start (ap, n);
+  box = (caddr_t *) dbg_mp_alloc_box (
+    mp->mp_list_alloc_file, mp->mp_list_alloc_line, mp,
+    sizeof (caddr_t) * n, DV_ARRAY_OF_POINTER );
+  for (inx = 0; inx < n; inx++)
+    {
+      caddr_t child = va_arg (ap, caddr_t);
+      if (IS_BOX_POINTER (child))
+	mp_alloc_box_assert (THR_TMP_POOL, child);
+      box[inx] = child;
+    }
+  va_end (ap);
+  return ((caddr_t *) box);
+}
 
+t_list_impl_ptr_t
+t_list_cock (const char *file, int line)
+{
+  mem_pool_t *mp = THR_TMP_POOL;
+  mp->mp_list_alloc_file = file;
+  mp->mp_list_alloc_line = line;
+  return t_list_impl;
+}
+
+
+#else
 caddr_t *
 t_list (long n, ...)
 {
@@ -429,16 +462,12 @@ t_list (long n, ...)
   for (inx = 0; inx < n; inx++)
     {
       caddr_t child = va_arg (ap, caddr_t);
-#ifdef MALLOC_DEBUG
-      if (IS_BOX_POINTER (child))
-	mp_alloc_box_assert (THR_TMP_POOL, child);
-#endif
       box[inx] = child;
     }
   va_end (ap);
   return ((caddr_t *) box);
 }
-
+#endif
 
 caddr_t *
 t_list_concat_tail (caddr_t list, long n,...)
