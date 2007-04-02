@@ -58,12 +58,19 @@
 	   declare _sid varchar;
 	   _sid := get_keyword('sid', params, '');
 
-	   update VSPX_SESSION set VS_REALM = 'virtuoso_admin' where VS_SID = _sid;
-
 	   http_request_status ('HTTP/1.1 302 Found');
 
-	   http_header (sprintf('Location: ../conductor/msg_news_conf.vspx?sid=%s&amp;realm=virtuoso_admin&amp;edit=1\r\n', _sid));
+	   if(get_keyword('logout', params, '')='')
+	   {
+  	   update VSPX_SESSION set VS_REALM = 'virtuoso_admin' where VS_SID = _sid;
 
+	     http_header (sprintf('Location: ../conductor/msg_news_conf.vspx?sid=%s&amp;realm=virtuoso_admin&amp;edit=1\r\n', _sid));
+     }
+     else
+     {
+       delete from VSPX_SESSION where VS_REALM = self.realm and VS_SID = _sid;
+	     http_header ('Location: ../conductor/\r\n');
+     }
          </v:on-init>
       </vm:page>
         <script language="JavaScript">

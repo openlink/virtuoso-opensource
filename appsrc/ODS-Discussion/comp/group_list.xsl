@@ -250,9 +250,31 @@
     <v:variable name="force_list" type="integer" default="1"/>
     <v:variable name="dta" type="any"/>
     <v:variable name="mtd" type="any"/>
-
       <v:before-data-bind>
         <![CDATA[
+        declare _act varchar;
+        
+        _act:=get_keyword ('groups_unsubscribe', self.vc_event.ve_params,get_keyword ('groups_subscribe', self.vc_event.ve_params,''));
+        
+        declare i integer;
+        i:=2; --0 and 1 are allways vspx page identity 
+        while(i<length(self.vc_event.ve_params)-1)
+        {
+          
+          if(locate('nbcheckbox_',self.vc_event.ve_params[i]))
+          {
+             if(_act='Subscribe')
+             {
+                update  DB.DBA.NEWS_GROUPS set NG_STAT=1 where NG_GROUP=self.vc_event.ve_params[i+1];
+             }
+             else if(_act='Unsubscribe')
+             {
+                update  DB.DBA.NEWS_GROUPS set NG_STAT=-1 where NG_GROUP=self.vc_event.ve_params[i+1];
+             }
+          }
+          i:=i+2;
+        }
+        
         
          if (self.vc_authenticated)
            self.headdsid := 'sid';
@@ -273,6 +295,29 @@
 
         ]]>
       </v:before-data-bind>
+  <script type="text/javascript">
+    <![CDATA[
+      function selectAllCheckboxes (form, btn)
+      {
+        for (var i = 0; i < form.elements.length; i = i + 1) {
+          var contr = form.elements[i];
+          if (contr != null && contr.type == "checkbox") {
+            contr.focus();
+            if (btn.value == 'Select All')
+              contr.checked = true;
+            else
+              contr.checked = false;
+          }
+        }
+        if (btn.value == 'Select All')
+          btn.value = 'Unselect All';
+        else
+          btn.value = 'Select All';
+        btn.focus();
+      }
+    ]]>
+  </script>
+
 
       <table width="100%"
              class="nntp_groups_listing"
@@ -297,6 +342,7 @@
 
             <tr class="listing_header_row">
               <th >
+              <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this.form, this); "/>
               </th>
               <th>
                 <v:label value="'Name'" format="%s" width="80"/>
@@ -328,14 +374,13 @@
                          else '' end));
               ?>
                 <td align="left">
-<!--
-                  <v:check-box name="nntp_groups_state"
-                               value="1"
-                               initial-checked="--(case when (control.vc_parent as vspx_row_template).te_rowset[3]<0 then 1 else 0 end)"  />
--->
+                  <v:check-box name="ods_groups_state"
+                               group-name="--'nbcheckbox_'||cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                               value="--cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                               initial-checked="0"  />
                 </td>
                 <td>
-                  <v:url name="nntp_groups"
+                  <v:url name="ods_groups"
                          format="%s"
                          value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
                          url="--'nntpf_nthread_view.vspx?group=' ||
@@ -343,7 +388,7 @@
                          xhtml_class="nntp_group"/>
                 </td>
                 <td>
-                  <v:url name="nntp_groups1"
+                  <v:url name="ods_groups1"
                          format="%s"
                          value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
                          url="--'nntpf_nthread_view.vspx?group=' ||
@@ -351,13 +396,14 @@
                          xhtml_class="nntp_group"/>
                 </td>
                 <td>
-                  <v:button name="nntp_groups_enable"
+                  <v:button name="ods_groups_enable"
                           action="simple"
                           style="url"
                           value="--'&nbsp;subscribe'"
                           enabled="--(case when (control.vc_parent as vspx_row_template).te_rowset[3]<0 then 1 else 0 end)"
                   >
                    <v:on-post>
+                   
                    
                        update  DB.DBA.NEWS_GROUPS set NG_STAT=1 where NG_GROUP=(control.vc_parent as vspx_row_template).te_rowset[0];
                        self.vc_data_bind(e);
@@ -390,10 +436,9 @@
             <vm:ds-navigation-new data-set="ds_group_list"/>
           </td></tr>
           <tr><td colspan="4" align="left">
-<!--
-            <v:button name="groups_subscribe" action="simple" style='url' value="Subscribe" />
-            <v:button name="groups_unsubscribe" action="simple" style='url' value="Unsubscribe" />
--->
+            <v:button name="groups_subscribe" action="simple" style='submit' value="Subscribe"/>
+            <![CDATA[&nbsp;]]>
+            <v:button name="groups_unsubscribe" action="simple" style='submit' value="Unsubscribe"/>
           </td></tr>
           </v:template>
 
@@ -408,5 +453,113 @@
     </xsl:template>
 
 
+ <xsl:template match="vm:nntpgroup-list">
+    <v:variable name="dta1" type="any"/>
+    <v:variable name="mtd1" type="any"/>
+      <v:before-data-bind>
+        <![CDATA[
+          declare mtd, dta any;
+             
+          exec ('select NG_GROUP, NG_NAME, NG_DESC,NG_STAT from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1 and NG_TYPE=\'NNTP\'', null, null, vector (), 0, mtd, dta );
+
+          self.dta1:=dta;
+          self.mtd1:=mtd[0];
+        ]]>
+      </v:before-data-bind>
+
+      <table width="100%"
+             class="nntp_groups_listing"
+             cellspacing="0"
+             cellpadding="0"
+             border="0">
+
+        <v:data-set name="ds_nntpgroup_list"
+                    scrollable="1"
+                    data="--self.dta1"
+                    meta="--self.mtd1"
+                    nrows="10"
+                    width="80"
+                    enabled="--self.force_list"
+                   >
+                   
+          <v:template name="nntpgrouplist_t1" type="simple">
+            <tr class="listing_header_row">
+              <th colspan="4">
+                <v:url value="Available newsgroups from Conductor" format="%s"
+                          url="--case when self.u_name='dav' then 'nntpf_yacutia.vspx?logout=true' else 'nntpf_yacutia.vspx' end"
+                          enabled="--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)" />
+<!--
+
+                <v:template type="simple" enabled="--case when nntpf_check_is_dav_admin (self.u_name, self.u_full_name) and self.u_name='dav' then 1 else 0 end" >
+                      WebDAV has no right to manage available newsgroups from Conductor.
+                      <v:button name="dav_changelogin" action="simple" style="url" value="Change login?">
+                        <v:on-post>
+                          <![CDATA[
+                          
+                            delete from VSPX_SESSION where VS_REALM = self.realm and VS_SID = self.sid;
+                            self.sid := null;
+                            self.vc_redirect (self.odsbar_ods_gpath||'login.vspx?URL=/nntpf/nntpf_yacutia.vspx');
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                </v:template>
+-->
+
+              </th>
+            </tr>
+
+            <tr class="listing_header_row">
+              <th>
+                <v:label value="'Name'" format="%s" width="80"/>
+              </th>
+              <th >
+                <v:label value="'Description'" format="%s" width="80"/>
+              </th>
+            </tr>
+          </v:template>
+          <v:template name="nntpgrouplist_t2" type="repeat">
+            <v:template name="nntpgrouplist_t7" type="if-not-exists">
+              <tr>
+                <td align="center" colspan="5">
+                  No group defined on this server.
+                </td>
+              </tr>
+            </v:template>
+
+            <v:template name="nntpgrouplist_t4" type="browse">
+              <?vsp
+                self.r_count := self.r_count + 1;
+                 http (sprintf ('<tr class="%s">',
+                       case
+                         when mod (self.r_count, 2)
+                         then 'listing_row_odd'
+                         else '' end));
+              ?>
+                <td>
+                  <v:url name="nntp_groups"
+                         format="%s"
+                         value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                         url="--'nntpf_nthread_view.vspx?group=' ||
+                                cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                         xhtml_class="nntp_group"/>
+                </td>
+                <td>
+                  <v:url name="nntp_groups1"
+                         format="%s"
+                         value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
+                         url="--'nntpf_nthread_view.vspx?group=' ||
+                                cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                         xhtml_class="nntp_group"/>
+                </td>
+<?vsp
+        http('</tr>');
+?>
+            </v:template>
+          </v:template>
+
+        </v:data-set>
+      </table>
+  </xsl:template>
 
 </xsl:stylesheet>
+

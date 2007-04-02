@@ -75,15 +75,12 @@
 		  <vm:geo-link><img src="http://i.geourl.org/geourl.png" border="0"/></vm:geo-link>
                   <table border="0" cellspacing="0" cellpadding="2" width="98%">
                    <tr>
-                    <td>
+                    <td valign="top">
                       <vm:odsgroup-list/>
                     </td>
-                    <td>
+                    <td valign="top">
                   <v:template type="simple" condition="nntpf_conductor_installed_p()">
-                   <![CDATA[&nbsp;]]>
-                   <v:url value="Available newsgroups from Conductor" format="%s"
-                          url="--case when ( self.u_name ='dav' )then '#' else 'nntpf_yacutia.vspx' end"
-                       enabled='--nntpf_check_is_dav_admin (self.u_name, self.u_full_name)' />
+                      <vm:nntpgroup-list/>
                    <br/><br/>
                  </v:template>
                     </td>
