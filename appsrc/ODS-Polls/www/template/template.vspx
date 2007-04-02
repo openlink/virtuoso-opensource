@@ -57,11 +57,11 @@
     <?vsp http('</script>'); ?>
     <script type="text/javascript">
       <![CDATA[
-        var toolkitPath="js/oat";
+        var toolkitPath="/ods/oat";
         var featureList=["barchart", "piechart"];
       ]]>
     </script>
-    <script type="text/javascript" src="js/oat/loader.js" />
+    <script type="text/javascript" src="/ods/oat/loader.js" />
     <?vsp http('</script>'); ?>
     <title></title>
   </head>
