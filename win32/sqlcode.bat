@@ -12,7 +12,7 @@ gawk -f sql_to_c.awk -v init_name=_ddk -v pl_stats=PLDBG %SQL_FILES_DDK% > sql_c
 set SQL_FILES_ADM=../../binsrc/vsp/admin/admin.sql ../../binsrc/vspx/browser/admin_dav_browser.sql repl.sql
 gawk -f sql_to_c.awk -v init_name=_adm -v pl_stats=PLDBG %SQL_FILES_ADM% > sql_code_adm.c
 
-set SQL_FILES_DAV=../../binsrc/dav/dav.sql ../../binsrc/dav/dav_api.sql ../../binsrc/dav/dav_acct.sql ../../binsrc/dav/dav_meta.sql ../../binsrc/dav/dav_rdf_quad.sql ../../binsrc/vsp/admin/admin_dav/vfs.sql ../../binsrc/dav/davxml2rdfxml.xsl ../../binsrc/dav/davxml2n3xml.xsl ../../binsrc/dav/rdfxml2n3xml.xsl ../../binsrc/dav/n3xml2uriqahtml.xsl ../../binsrc/dav/uriqa.sql ../../binsrc/dav/DET_CatFilter.sql ../../binsrc/dav/DET_HostFs.sql ../../binsrc/dav/DET_ResFilter.sql ../../binsrc/dav/DET_PropFilter.sql ../../binsrc/dav/Versioning/DET_Versioning.sql ../../binsrc/dav/erdf2rdfxml.xsl ../../binsrc/dav/rdfa2rdfxml.xsl
+set SQL_FILES_DAV=../../binsrc/dav/dav.sql ../../binsrc/dav/dav_api.sql ../../binsrc/dav/dav_acct.sql ../../binsrc/dav/dav_meta.sql ../../binsrc/dav/dav_rdf_quad.sql ../../binsrc/vsp/admin/admin_dav/vfs.sql ../../binsrc/dav/davxml2rdfxml.xsl ../../binsrc/dav/davxml2n3xml.xsl ../../binsrc/dav/rdfxml2n3xml.xsl ../../binsrc/dav/n3xml2uriqahtml.xsl ../../binsrc/dav/uriqa.sql ../../binsrc/dav/DET_CatFilter.sql ../../binsrc/dav/DET_HostFs.sql ../../binsrc/dav/DET_ResFilter.sql ../../binsrc/dav/DET_PropFilter.sql ../../binsrc/dav/Versioning/DET_Versioning.sql 
 gawk -f sql_to_c.awk -v init_name=_dav -v pl_stats=PLDBG %SQL_FILES_DAV% > sql_code_dav.c
 
 set SQL_FILES_VAD=../../binsrc/vad/vad_root.sql ../../binsrc/vad/vad_misc.sql ../../binsrc/vad/oper_pars.sql ../../binsrc/vad/pars_init.sql ../../binsrc/vad/vad_make.sql
