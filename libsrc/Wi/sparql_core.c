@@ -957,6 +957,18 @@ spar_retvals_of_delete (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp)
 }
 
 SPART **
+spar_retvals_of_modify (sparp_t *sparp, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp)
+{
+  SPART **ctor_retval;
+  SPART **del_ctor_retval = spar_retvals_of_construct (sparp, del_ctor_gp);
+  SPART **ins_ctor_retval = spar_retvals_of_construct (sparp, ins_ctor_gp);
+  ctor_retval = (SPART **)t_list (1,
+    spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_BY_DICT_CONTENTS",
+      (SPART **)t_list (3, graph_to_patch, del_ctor_retval[0], ins_ctor_retval[0]) ) );
+  return ctor_retval;
+}
+
+SPART **
 spar_retvals_of_describe (sparp_t *sparp, SPART **retvals)
 {
   int retval_ctr;
@@ -1328,6 +1340,103 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
   if (NULL == args)
     args = (SPART **)t_list (0);
   return spartlist (sparp, 4, SPAR_FUNCALL, t_box_dv_short_string (funname), args, (ptrlong)aggregate_mode);
+}
+
+SPART *
+spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode)
+{
+  SPART **fake_sol;
+  SPART *top;
+  spar_selid_push (sparp);
+  fake_sol = spar_make_fake_action_solution (sparp);
+  top = spar_make_top (sparp, CLEAR_L,
+    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_CLEAR",
+        (SPART **)t_list (1, graph_precode) ) ),
+    spar_selid_pop (sparp),
+    fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
+  return top;
+}
+
+SPART *
+spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode)
+{
+  SPART **fake_sol;
+  SPART *top;
+  spar_selid_push (sparp);
+  fake_sol = spar_make_fake_action_solution (sparp);
+  top = spar_make_top (sparp, LOAD_L,
+    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_LOAD",
+        (SPART **)t_list (2, graph_precode, src_precode) ) ),
+    spar_selid_pop (sparp),
+    fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
+  return top;
+}
+
+SPART *
+spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
+{
+  caddr_t saved_format_name = sparp->sparp_env->spare_output_format_name;
+  caddr_t saved_valmode_name = sparp->sparp_env->spare_output_valmode_name;
+  SPART **fake_sol;
+  SPART *top;
+  SPART **action_sqls;
+  int action_ctr, action_count = BOX_ELEMENTS (actions);
+  if (1 == action_count)
+    return actions[0]; /* No need to make grouping around single action. */
+/* First of all, every tree for every action is compiled into string literal containing SQL text. */
+  action_sqls = (SPART **)t_alloc_box (action_count * sizeof (SPART *), DV_ARRAY_OF_POINTER);
+  sparp->sparp_env->spare_output_format_name = NULL;
+  sparp->sparp_env->spare_output_valmode_name = NULL;
+  if (0 != sparp->sparp_env->spare_equiv_count)
+    spar_internal_error (sparp, "spar_" "make_topmost_sparul_sql() is called after start of some tree rewrite");
+  DO_BOX_FAST (SPART *, action, action_ctr, actions)
+    {
+      spar_sqlgen_t ssg;
+      sql_comp_t sc;
+      caddr_t action_sql;
+      sparp->sparp_expr = action;
+      sparp_rewrite_all (sparp);
+  /*xt_check (sparp, sparp->sparp_expr);*/
+#ifndef NDEBUG
+      t_check_tree (sparp->sparp_expr);
+#endif
+      memset (&ssg, 0, sizeof (spar_sqlgen_t));
+      memset (&sc, 0, sizeof (sql_comp_t));
+      if (NULL != sparp->sparp_sparqre->sparqre_qi)
+        sc.sc_client = sparp->sparp_sparqre->sparqre_qi->qi_client;
+      ssg.ssg_out = strses_allocate ();
+      ssg.ssg_sc = &sc;
+      ssg.ssg_sparp = sparp;
+      ssg.ssg_tree = sparp->sparp_expr;
+      ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
+      ssg_make_sql_query_text (&ssg);
+      action_sql = strses_string (ssg.ssg_out);
+      strses_free (ssg.ssg_out);
+      action_sqls [action_ctr] = spartlist (sparp, 4, SPAR_LIT, action_sql, NULL, NULL);
+      sparp->sparp_expr = NULL;
+      sparp->sparp_env->spare_equiv_count = 0;
+    }
+  END_DO_BOX_FAST;
+  sparp->sparp_env->spare_output_format_name = saved_format_name;
+  sparp->sparp_env->spare_output_valmode_name = saved_valmode_name;
+  spar_selid_push (sparp);
+  fake_sol = spar_make_fake_action_solution (sparp);
+  top = spar_make_top (sparp, LOAD_L,
+    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_RUN", action_sqls)),
+    spar_selid_pop (sparp),
+    fake_sol[0], (SPART **)(fake_sol[1]), (caddr_t)(fake_sol[2]), (caddr_t)(fake_sol[3]) );
+  return top;
+}
+
+
+SPART **
+spar_make_fake_action_solution (sparp_t *sparp)
+{
+  SPART * fake_gp;
+  spar_gp_init (sparp, WHERE_L);
+  fake_gp = spar_gp_finalize (sparp);
+  return (SPART **)t_list (4,
+    fake_gp, NULL, t_box_num(1), t_box_num(0));
 }
 
 id_hashed_key_t
@@ -2240,7 +2349,6 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sparp_t * sparp;
   caddr_t str = bif_string_arg (qst, args, 0, "sparql_explain");
   dk_session_t *res;
-  caddr_t err = NULL;
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;

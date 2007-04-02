@@ -31,6 +31,7 @@
 #include "sqlnode.h"
 #include "sqlparext.h"
 #include "sparql.h"
+#include "sparql2sql.h"
 #include "xmltree.h"
 /*#include "langfunc.h"*/
 
@@ -128,6 +129,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token BOUND_L		/*:: PUNCT_SPAR_LAST("BOUND") ::*/
 %token BY_L		/*:: PUNCT("BY"), SPAR, LAST("BY"), LAST("IDENTIFIED BY") ::*/
 %token CLASS_L		/*:: PUNCT_SPAR_LAST("CLASS") ::*/
+%token CLEAR_L		/*:: PUNCT_SPAR_LAST("CLEAR") ::*/
 %token CREATE_L		/*:: PUNCT_SPAR_LAST("CREATE") ::*/
 %token CONSTRUCT_L	/*:: PUNCT_SPAR_LAST("CONSTRUCT") ::*/
 %token COUNT_LPAR		/*:: PUNCT("COUNT ("), SPAR, LAST1("COUNT ()"), LAST1("COUNT\r\n()"), LAST1("COUNT #qq\r\n()"), ERR("COUNT"), ERR("COUNT bad") ::*/
@@ -182,8 +184,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token REGEX_L		/*:: PUNCT_SPAR_LAST("REGEX") ::*/
 %token RETURNS_L	/*:: PUNCT_SPAR_LAST("RETURNS") ::*/
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
-%token STR_L		/*:: PUNCT_SPAR_LAST("STR") ::*/
+%token SILENT_L		/*:: PUNCT_SPAR_LAST("SILENT") ::*/
 %token STORAGE_L	/*:: PUNCT_SPAR_LAST("STORAGE") ::*/
+%token STR_L		/*:: PUNCT_SPAR_LAST("STR") ::*/
 %token SUBCLASS_L	/*:: PUNCT_SPAR_LAST("SUBCLASS") ::*/
 %token SUBJECT_L	/*:: PUNCT_SPAR_LAST("SUBJECT") ::*/
 %token SUM_L		/*:: PUNCT_SPAR_LAST("SUM") ::*/
@@ -241,8 +244,6 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <token_type> spar_select_query_mode
 %type <trees> spar_select_rset
 %type <tree> spar_construct_query
-%type <tree> spar_insert_query
-%type <tree> spar_delete_query
 %type <tree> spar_describe_query
 %type <trees> spar_describe_rset
 %type <tree> spar_ask_query
@@ -309,6 +310,23 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_iriref
 %type <tree> spar_qname
 %type <tree> spar_blank_node
+/* nonterminals from part 1a: */
+%type <backstack> spar_sparul_actions_opt
+%type <tree> spar_sparul_action
+%type <tree> spar_sparul_fake
+%type <tree> spar_sparul_insert
+%type <tree> spar_sparul_delete
+%type <tree> spar_sparul_modify
+%type <tree> spar_sparul_clear
+%type <tree> spar_sparul_load
+%type <tree> spar_sparul_drop
+%type <tree> spar_sparul_fake_create
+%type <trees> spar_action_solution
+%type <tree> spar_in_graph_precode_opt
+%type <tree> spar_from_graph_precode_opt
+%type <tree> spar_graph_precode_opt
+%type <nothing> spar_in_or_into
+%type <nothing> spar_silent_opt
 /* nonterminals from part 2: */
 %type <nothing> spar_qm_stmts
 %type <nothing> spar_qm_stmt
@@ -406,13 +424,13 @@ sparql	/* [1]*	Query		 ::=  Prolog ( QueryBody | ( QmStmt ('.' QmStmt)* '.'? ) )
 
 /* PART 1. Standard SPARQL as described by W3C, with Virtuoso extensions for expressions. */
 
-spar_query_body		/* [1]*	QueryBody	 ::=  SelectQuery | ConstructQuery | InsertQuery | DeleteQuery | DescribeQuery | AskQuery */
+spar_query_body		/* [1]*	QueryBody	 ::=  SelectQuery | ConstructQuery | DescribeQuery | AskQuery | SparulAction*	*/
         : spar_select_query
 	| spar_construct_query
-	| spar_insert_query
-	| spar_delete_query
 	| spar_describe_query
 	| spar_ask_query
+        | spar_sparul_actions_opt	{
+		$$ = spar_make_topmost_sparul_sql (sparp_arg, (SPART **)t_revlist_to_array ($1)); }
 	;
 
 spar_prolog		/* [2]*	Prolog		 ::=  Define* BaseDecl? PrefixDecl*	*/
@@ -458,11 +476,11 @@ spar_prefix_decl	/* [4]  	PrefixDecl	  ::=  	'PREFIX' QNAME_NS Q_IRI_REF	*/
 
 spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ','? Retcol )* ) | '*' ) DatasetClause* WhereClause SolutionModifier	*/
 	: spar_select_query_mode { spar_selid_push (sparp_arg); }
-	    spar_select_rset spar_dataset_clauses_opt { spar_gp_init (sparp_arg, WHERE_L); }
+	    spar_select_rset spar_dataset_clauses_opt
             spar_where_clause spar_solution_modifier {
 		$$ = spar_make_top (sparp_arg, $1, $3, spar_selid_pop (sparp_arg),
-		  $6, 
-		  (SPART **)($7[0]), (caddr_t)($7[1]), (caddr_t)($7[2]) ); }
+		  $5, 
+		  (SPART **)($6[0]), (caddr_t)($6[1]), (caddr_t)($6[2]) ); }
 	;
 
 spar_select_query_mode	/* ::=  'SELECT' 'DISTINCT'?	*/
@@ -479,43 +497,22 @@ spar_select_rset	/* ::=  ( ( Retcol ( ','? Retcol )* ) | '*' | 'COUNT' )	*/
 
 spar_construct_query	/* [6]  	ConstructQuery	  ::=  	'CONSTRUCT' ConstructTemplate DatasetClause* WhereClause SolutionModifier	*/
 	: CONSTRUCT_L { spar_selid_push (sparp_arg); }
-            spar_ctor_template spar_dataset_clauses_opt { spar_gp_init (sparp_arg, WHERE_L); }
+            spar_ctor_template spar_dataset_clauses_opt
 	    spar_where_clause spar_solution_modifier {
 		$$ = spar_make_top (sparp_arg, CONSTRUCT_L,
                   spar_retvals_of_construct (sparp_arg, $3),
                   spar_selid_pop (sparp_arg),
-		  $6, (SPART **)($7[0]), (caddr_t)($7[1]), (caddr_t)($7[2]) ); }
+		  $5, (SPART **)($6[0]), (caddr_t)($6[1]), (caddr_t)($6[2]) ); }
 	;
-
-spar_insert_query	/* [Virt]	InsertQuery	 ::=  'INSERT' 'IN' 'GRAPH' PrecodeExpn ConstructTemplate DatasetClause* WhereClause SolutionModifier	*/
-	: INSERT_L IN_L spar_graph_identified_by spar_precode_expn { spar_selid_push (sparp_arg); }
-            spar_ctor_template spar_dataset_clauses_opt { spar_gp_init (sparp_arg, WHERE_L); }
-	    spar_where_clause spar_solution_modifier {
-		$$ = spar_make_top (sparp_arg, INSERT_L,
-                  spar_retvals_of_insert (sparp_arg, $4, $6),
-                  spar_selid_pop (sparp_arg),
-		  $9, (SPART **)($10[0]), (caddr_t)($10[1]), (caddr_t)($10[2]) ); }
-	;
-
-spar_delete_query	/* [Virt]	DeleteQuery	 ::=  'DELETE' 'FROM' 'GRAPH' PrecodeExpn ConstructTemplate DatasetClause* WhereClause SolutionModifier	*/
-	: DELETE_L FROM_L spar_graph_identified_by spar_precode_expn { spar_selid_push (sparp_arg); }
-            spar_ctor_template spar_dataset_clauses_opt { spar_gp_init (sparp_arg, WHERE_L); }
-	    spar_where_clause spar_solution_modifier {
-		$$ = spar_make_top (sparp_arg, DELETE_L,
-                  spar_retvals_of_delete (sparp_arg, $4, $6),
-                  spar_selid_pop (sparp_arg),
-		  $9, (SPART **)($10[0]), (caddr_t)($10[1]), (caddr_t)($10[2]) ); }
-	;
-
 
 spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( VarOrIRIrefOrBackquoted+ | '*' ) DatasetClause* WhereClause? SolutionModifier	*/
 	: DESCRIBE_L { spar_selid_push (sparp_arg); }
-            spar_describe_rset spar_dataset_clauses_opt { spar_gp_init (sparp_arg, WHERE_L); }
+            spar_describe_rset spar_dataset_clauses_opt
 	    spar_where_clause_opt spar_solution_modifier {
 		$$ = spar_make_top (sparp_arg, DESCRIBE_L, 
                   $3,
                   spar_selid_pop (sparp_arg),
-		  $6, (SPART **)($7[0]), (caddr_t)($7[1]), (caddr_t)($7[2]) ); }
+		  $5, (SPART **)($6[0]), (caddr_t)($6[1]), (caddr_t)($6[2]) ); }
 	;
 
 spar_describe_rset	/* ::=  ( VarOrIRIrefOrBackquoted+ | '*' )	*/
@@ -525,10 +522,10 @@ spar_describe_rset	/* ::=  ( VarOrIRIrefOrBackquoted+ | '*' )	*/
 
 spar_ask_query		/* [8]  	AskQuery	  ::=  	'ASK' DatasetClause* WhereClause	*/
 	: ASK_L { spar_selid_push (sparp_arg); }
-            spar_dataset_clauses_opt { spar_gp_init (sparp_arg, WHERE_L); }
-	    spar_where_clause_opt {
+            spar_dataset_clauses_opt
+	    spar_where_clause {
 		$$ = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
-		  $5, NULL, t_box_num(1), t_box_num(0) ); }
+		  $4, NULL, t_box_num(1), t_box_num(0) ); }
 	;
 
 spar_dataset_clauses_opt
@@ -567,13 +564,13 @@ spar_precode_expn	/* [Virt]	PrecodeExpn	 ::=  Expn	(* Only global variables can 
 	;
 
 spar_where_clause_opt	/* ::=  WhereClause?	*/
-	: /* empty */		{ $$ = spar_gp_finalize (sparp_arg); }
+	: /* empty */		{ spar_gp_init (sparp_arg, WHERE_L);  $$ = spar_gp_finalize (sparp_arg); }
 	| spar_where_clause	{ $$ = $1; }
 	;
 
 spar_where_clause	/* [13]  	WhereClause	  ::=  	'WHERE'? GroupGraphPattern	*/
-	: WHERE_L _LBRA spar_group_gp	{ $$ = $3; }
-	| _LBRA spar_group_gp		{ $$ = $2; }
+	: WHERE_L _LBRA	{ spar_gp_init (sparp_arg, WHERE_L); } spar_group_gp	{ $$ = $4; }
+	| _LBRA { spar_gp_init (sparp_arg, WHERE_L); } spar_group_gp		{ $$ = $3; }
 	;
 
 spar_solution_modifier	/* [14]  	SolutionModifier	  ::=  	OrderClause? LimitClause? OffsetClause?	*/
@@ -1021,6 +1018,121 @@ spar_qname		/* [64]  	QName	  ::=  	QNAME | QNAME_NS	*/
 spar_blank_node		/* [65]*	BlankNode	 ::=  BLANK_NODE_LABEL | ( '[' ']' )	*/
 	: BLANK_NODE_LABEL	{ $$ = spar_make_blank_node (sparp_arg, $1, 0); }
 	| _LSQBRA _RSQBRA	{ $$ = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:anon"), 1); }
+	;
+
+/* PART 1a. SPARUL */
+
+spar_sparul_actions_opt
+	: /* empty */	{ $$ = NULL; }
+	| spar_sparul_actions_opt spar_sparul_action	{ $$ = $1; t_set_push (&($$), $2); }
+	| spar_sparul_actions_opt spar_sparul_fake	{ $$ = $1; }
+	;
+
+spar_sparul_action		/* [SPARUL]	SparulAction	 ::=  InsertAction | DeleteAction | ModifyAction | ClearAction | LoadAction | CreateAction	*/
+	: spar_sparul_insert
+	| spar_sparul_delete
+	| spar_sparul_modify
+	| spar_sparul_clear
+	| spar_sparul_load
+	;
+
+spar_sparul_fake
+	: spar_sparul_fake_create
+	;
+
+spar_sparul_fake_create	/* [SPARUL]*	CreateAction	 ::=  'CREATE' 'SILENT' ? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn	*/
+	: CREATE_L spar_silent_opt spar_graph_identified_by spar_precode_expn { }
+	;
+
+spar_sparul_insert	/* [SPARUL]*	InsertAction	 ::=  'INSERT' ( ( 'IN' | 'INTO ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
+	: INSERT_L spar_in_graph_precode_opt { spar_selid_push (sparp_arg); }
+            spar_ctor_template spar_action_solution {
+		$$ = spar_make_top (sparp_arg, INSERT_L,
+                  spar_retvals_of_insert (sparp_arg, $2, $4),
+                  spar_selid_pop (sparp_arg),
+                  $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) ); }
+	;
+
+spar_sparul_delete	/* [SPARUL]*	DeleteAction	 ::=  'DELETE' ( 'FROM' 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
+	: DELETE_L spar_from_graph_precode_opt { spar_selid_push (sparp_arg); }
+            spar_ctor_template spar_action_solution {
+		$$ = spar_make_top (sparp_arg, DELETE_L,
+                  spar_retvals_of_delete (sparp_arg, $2, $4),
+                  spar_selid_pop (sparp_arg),
+		  $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) ); }
+	;
+
+spar_sparul_modify	/* [SPARUL]*	ModifyAction	 ::=  'MODIFY' ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn ? 'DELETE' ConstructTemplate 'INSERT' ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
+	: MODIFY_L spar_graph_precode_opt { spar_selid_push (sparp_arg); }
+            DELETE_L spar_ctor_template INSERT_L spar_ctor_template
+	    spar_action_solution {
+		$$ = spar_make_top (sparp_arg, DELETE_L,
+                  spar_retvals_of_modify (sparp_arg, $2, $5, $7),
+                  spar_selid_pop (sparp_arg),
+		  $8[0], (SPART **)($8[1]), (caddr_t)($8[2]), (caddr_t)($8[3]) ); }
+	;
+
+spar_sparul_clear	/* [SPARUL]*	ClearAction	 ::=  'CLEAR' ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
+	: CLEAR_L spar_graph_precode_opt { $$ = spar_make_sparul_clear (sparp_arg, $2); }
+	;
+
+spar_sparul_load	/* [SPARUL]*	LoadAction	 ::=  'LOAD' PrecodeExpn ( ( 'IN' | 'INTO' ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
+	: LOAD_L spar_precode_expn spar_in_graph_precode_opt {
+		$$ = spar_make_sparul_load (sparp_arg, $3, $2 /* yes, $3 after $2 */); }
+	;
+
+spar_sparul_drop	/* [SPARUL]*	DropAction	 ::=  'DROP' 'SILENT'? ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
+	: DROP_L spar_silent_opt spar_graph_precode_opt { $$ = spar_make_sparul_clear (sparp_arg, $3); }
+	;
+
+spar_action_solution
+	: /* empty */ { $$ = spar_make_fake_action_solution (sparp_arg); }
+	| spar_dataset_clauses_opt spar_where_clause spar_solution_modifier {
+		$$ = (SPART **)t_list (4, 
+		  $2, (SPART **)($3[0]), (caddr_t)($3[1]), (caddr_t)($3[2]) ); }
+	;
+
+spar_in_graph_precode_opt
+	: /* empty */	{
+		dk_set_t dflt_graphs = sparp_env()->spare_default_graph_precodes;
+		if (NULL == dflt_graphs)
+		  spar_error (sparp_arg, "No 'INTO GRAPH expression' clause and no default graph specified in the preamble");
+		if (NULL != dflt_graphs->next)
+		  spar_error (sparp_arg, "No 'INTO GRAPH expression' clause and more than one default graph specified in the preamble");
+		$$ = sparp_tree_full_copy (sparp_arg, (SPART *)(dflt_graphs->data), NULL); }
+	| spar_in_or_into spar_graph_identified_by spar_precode_expn	{ $$ = $3; }
+	;
+
+spar_from_graph_precode_opt
+	: /* empty */	{
+		dk_set_t dflt_graphs = sparp_env()->spare_default_graph_precodes;
+		if (NULL == dflt_graphs)
+		  spar_error (sparp_arg, "No 'FROM GRAPH expression' clause and no default graph specified in the preamble");
+		if (NULL != dflt_graphs->next)
+		  spar_error (sparp_arg, "No 'FROM GRAPH expression' clause and more than one default graph specified in the preamble");
+		$$ = sparp_tree_full_copy (sparp_arg, (SPART *)(dflt_graphs->data), NULL); }
+	| FROM_L spar_graph_identified_by spar_precode_expn	{ $$ = $3; }
+	;
+
+spar_graph_precode_opt
+	: /* empty */	{
+		dk_set_t dflt_graphs = sparp_env()->spare_default_graph_precodes;
+		if (NULL == dflt_graphs)
+		  spar_error (sparp_arg, "No 'GRAPH expression' clause and no default graph specified in the preamble");
+		if (NULL != dflt_graphs->next)
+		  spar_error (sparp_arg, "No 'GRAPH expression' clause and more than one default graph specified in the preamble");
+		$$ = sparp_tree_full_copy (sparp_arg, (SPART *)(dflt_graphs->data), NULL); }
+	| spar_graph_identified_by spar_precode_expn	{ $$ = $2; }
+	;
+
+spar_in_or_into
+	: IN_L		{}
+	| INTO_L	{}
+	;
+
+spar_silent_opt
+	: /* empty */
+	| SILENT_L
 	;
 
 /* PART 2. Quad Map definition statements */

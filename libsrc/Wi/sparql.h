@@ -494,6 +494,7 @@ extern void spar_gp_add_filter_for_named_graph (sparp_t *sparp);
 extern SPART **spar_retvals_of_construct (sparp_t *sparp, SPART *ctor_gp);
 extern SPART **spar_retvals_of_insert (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp);
 extern SPART **spar_retvals_of_delete (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp);
+extern SPART **spar_retvals_of_modify (sparp_t *sparp, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp);
 extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **order, caddr_t limit, caddr_t offset);
@@ -503,6 +504,10 @@ extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options);
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
+extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode);
+extern SPART *spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode);
+extern SPART *spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions);
+extern SPART **spar_make_fake_action_solution (sparp_t *sparp);
 
 extern void spar_fill_lexem_bufs (sparp_t *sparp);
 extern void spar_copy_lexem_bufs (sparp_t *tgt_sparp, spar_lexbmk_t *begin, spar_lexbmk_t *end, int skip_last_n);

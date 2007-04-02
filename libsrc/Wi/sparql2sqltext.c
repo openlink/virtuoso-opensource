@@ -3875,6 +3875,32 @@ void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, s
             ssg_putchar (')');
             goto print_asname;
           }
+        if (!strcmp (tree->_.funcall.qname, "sql:SPARUL_RUN"))
+          { /* Very special case. Arguments are texts of queries. */
+            ssg_puts (" DB.DBA.SPARUL_RUN ( vector (");
+            ssg->ssg_indent += 2;
+            for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
+              {
+                SPART *arg = tree->_.funcall.argtrees[arg_ctr];
+                if (arg_ctr > 0)
+                  ssg_putchar (',');
+                ssg_newline (0);
+                /*ssg_puts (" coalesce ((");*/
+                ssg_puts (" (");
+                ssg->ssg_indent += 2;
+		if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (arg) && SPAR_LIT == arg->type &&
+		  DV_STRING == DV_TYPE_OF (arg->_.lit.val) )
+                  ssg_puts (arg->_.lit.val);
+                else
+                  ssg_print_retval_simple_expn (ssg, gp, arg, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                ssg_puts (")");
+                /*ssg_puts ("))");*/
+                ssg->ssg_indent -= 2;
+              }
+            ssg_puts ("))");
+            ssg->ssg_indent -= 2;
+            goto print_asname;
+          }
         bigtext =
           ((NULL != strstr (tree->_.funcall.qname, "bif:")) ||
            (NULL != strstr (tree->_.funcall.qname, "sql:")) ||
@@ -4645,6 +4671,9 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       /* No break here. INSERT_L and DELETE_L returns simple integers so no need to protect the client connection by formatting */
     case INSERT_L:
     case DELETE_L:
+    case MODIFY_L:
+    case CLEAR_L:
+    case LOAD_L:
       ssg_puts ("SELECT TOP 1");
       if (NULL != formatter)
         {
