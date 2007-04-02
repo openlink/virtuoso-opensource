@@ -291,14 +291,6 @@ box_hash (caddr_t box)
     case DV_UNAME:
       DV_UNAME_BOX_HASH (h, box);
       return h & ID_HASHED_KEY_MASK;
-    case DV_RDF:
-      {
-        rdf_box_t *rb = (rdf_box_t *)box;
-        id_hashed_key_t h;
-        if (rb->rb_ro_id)
-          return (rb->rb_ro_id + (rb->rb_ro_id << 16)) & ID_HASHED_KEY_MASK;
-        return (rb->rb_lang * 17 + rb->rb_type * 13 + rb->rb_is_complete * 9 + box_hash (rb->rb_box)) & ID_HASHED_KEY_MASK;
-      }
     default:
       {
         uint32 len = box_length_inline (box);
