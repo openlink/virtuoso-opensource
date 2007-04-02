@@ -1131,8 +1131,8 @@ spar_in_or_into
 	;
 
 spar_silent_opt
-	: /* empty */
-	| SILENT_L
+	: /* empty */   {}
+	| SILENT_L	{}
 	;
 
 /* PART 2. Quad Map definition statements */
