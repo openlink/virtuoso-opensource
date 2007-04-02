@@ -3113,6 +3113,7 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
     }
   if (dst)
     dst_fd_done (dst, fd);
+  log_info ("Database version %d", storage_ver);
 }
 
 
