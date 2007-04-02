@@ -1144,6 +1144,7 @@ ts_set_placeholder (table_source_t * ts, caddr_t * state,
 		old_pl->itc_position = itc->itc_position;
 		itc_register ((it_cursor_t *) old_pl, *buf_ret);
 	      }
+	    old_pl->itc_bp = itc->itc_bp;
 	  }
 	else
 	  {
