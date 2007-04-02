@@ -22,16 +22,16 @@
 --  
 use Demo;
 
-create view Demo.demo.OrdersPeriods as
+DB.DBA.exec_no_error('create view Demo.demo.OrdersPeriods as
         select distinct year(OrderDate) as year, month(OrderDate) as month,
-        sprintf ('%d-%d', year(OrderDate),month(OrderDate)) as yearmonth
-        from Demo.demo.Orders;
+        sprintf (\'%d-%d\', year(OrderDate),month(OrderDate)) as yearmonth
+        from Demo.demo.Orders');
 
-create view Demo.demo.OrderCategoryPeriod as
-        select sprintf ('%d-%d', year(o1.OrderDate), month(o1.OrderDate)) as yearmonth,
+DB.DBA.exec_no_error('create view Demo.demo.OrderCategoryPeriod as
+        select sprintf (\'%d-%d\', year(o1.OrderDate), month(o1.OrderDate)) as yearmonth,
         cat.CategoryName as CategoryName, sum (od.Quantity*od.UnitPrice*(1-od.Discount)) as volume
         from Demo.demo.Orders o1, Demo.demo.Order_Details od, Demo.demo.Products p, Demo.demo.Categories cat
-        where od.OrderID = o1.OrderID and od.ProductID = p.ProductID and p.CategoryID = cat.CategoryID group by 1,2;
+        where od.OrderID = o1.OrderID and od.ProductID = p.ProductID and p.CategoryID = cat.CategoryID group by 1,2');
 
 use DB;
 

@@ -232,6 +232,8 @@ grant execute on RpcEnc.echoVoid  to RpcEnc;
 
 use DB;
 
+DB.DBA.vhost_remove (lpath=>'/r3/EmptySA');
+
 DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/EmptySA',
     ppath=>'/SOAP/',
@@ -242,6 +244,8 @@ DB.DBA.VHOST_DEFINE (
       'ServiceName', 'EmptySA',
       'CR-escape', 'yes')
     );
+
+DB.DBA.vhost_remove (lpath=>'/r3/Import1');
 
 DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Import1',
@@ -254,6 +258,8 @@ DB.DBA.VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
+DB.DBA.vhost_remove (lpath=>'/r3/Import2');
+
 DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Import2',
     ppath=>'/SOAP/',
@@ -265,6 +271,8 @@ DB.DBA.VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
+DB.DBA.vhost_remove (lpath=>'/r3/Import3');
+
 DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Import3',
     ppath=>'/SOAP/',
@@ -275,6 +283,8 @@ DB.DBA.VHOST_DEFINE (
       'ServiceName', 'Import3',
       'CR-escape', 'yes')
     );
+
+DB.DBA.vhost_remove (lpath=>'/r3/Compound1');
 
 DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Compound1',
@@ -288,6 +298,8 @@ DB.DBA.VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
+DB.DBA.vhost_remove (lpath=>'/r3/Compound2');
+
 DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/Compound2',
     ppath=>'/SOAP/',
@@ -299,6 +311,8 @@ DB.DBA.VHOST_DEFINE (
       'elementFormDefault','qualified',
       'CR-escape', 'yes')
     );
+
+DB.DBA.vhost_remove (lpath=>'/r3/DocLit');
 
 DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/DocLit',
@@ -312,6 +326,8 @@ DB.DBA.VHOST_DEFINE (
       'CR-escape', 'yes')
     );
 
+DB.DBA.vhost_remove (lpath=>'/r3/DocPars');
+
 DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/DocPars',
     ppath=>'/SOAP/',
@@ -323,6 +339,8 @@ DB.DBA.VHOST_DEFINE (
       'elementFormDefault','unqualified',
       'CR-escape', 'yes')
     );
+
+DB.DBA.vhost_remove (lpath=>'/r3/RpcEnc');
 
 DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/RpcEnc',

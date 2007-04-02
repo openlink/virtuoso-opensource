@@ -210,6 +210,8 @@ grant execute on WS.SOAP.nestedStructTest  to SOAP;
 grant execute on WS.SOAP.simpleStructReturnTest  to SOAP;
 grant execute on WS.SOAP.whichToolkit  to SOAP;
 
+DB.DBA.exec_no_error('drop module WS.SOAP.SOAPValidator');
+
 create module WS.SOAP.SOAPValidator
 {
 

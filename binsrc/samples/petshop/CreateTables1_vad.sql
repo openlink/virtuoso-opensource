@@ -25,7 +25,7 @@
 DB.DBA.user_set_qualifier ('petshop', 'MSPetShop');
 set_user_id('petshop', 1, 'password');
 
-CREATE TABLE "Account" (
+DB.DBA.exec_no_error('CREATE TABLE "Account" (
         "UserId" varchar(20) PRIMARY KEY,
         "Email" varchar(80) NOT NULL,
         "FirstName" varchar(80) NOT NULL,
@@ -38,45 +38,45 @@ CREATE TABLE "Account" (
         "Zip" varchar(20) NOT NULL,
         "Country" varchar(20) NOT NULL,
         "Phone" varchar(20) NOT NULL
-);
+)');
 
-CREATE TABLE "BannerData" (
+DB.DBA.exec_no_error('CREATE TABLE "BannerData" (
         "FavCategory" varchar(80) PRIMARY KEY,
         "BannerData" varchar(255) NULL
-);
+)');
 
-CREATE TABLE "Category" (
+DB.DBA.exec_no_error('CREATE TABLE "Category" (
         "CatId" varchar(10) PRIMARY KEY,
         "Name" varchar(80) NULL,
         "Descn" varchar(255) NULL
-);
+)');
 
-CREATE TABLE "Inventory" (
+DB.DBA.exec_no_error('CREATE TABLE "Inventory" (
         "ItemId" varchar(10) PRIMARY KEY,
         "Qty" int NOT NULL
-);
+)');
 
-CREATE TABLE "Product" (
+DB.DBA.exec_no_error('CREATE TABLE "Product" (
         "ProductId" varchar(10) PRIMARY KEY,
         "Category" varchar(10) NOT NULL REFERENCES "Category"("CatId"),
         "Name" varchar(80) NULL,
         "Descn" varchar(255) NULL
-);
+)');
 
-CREATE TABLE "Profile" (
+DB.DBA.exec_no_error('CREATE TABLE "Profile" (
         "UserId" varchar(20) PRIMARY KEY,
         "LangPref" varchar(80) NOT NULL,
         "FavCategory" varchar(30) NULL,
         "MyListOpt" int NULL,
         "BannerOpt" int NULL
-);
+)');
 
-CREATE TABLE "SignOn" (
+DB.DBA.exec_no_error('CREATE TABLE "SignOn" (
         "UserName" varchar(20) PRIMARY KEY,
         "Password" varchar(20) NOT NULL
-);
+)');
 
-CREATE TABLE "Supplier" (
+DB.DBA.exec_no_error('CREATE TABLE "Supplier" (
         "SuppId" int PRIMARY KEY,
         "Name" varchar(80) NULL,
         "Status" varchar(2) NOT NULL,
@@ -86,9 +86,9 @@ CREATE TABLE "Supplier" (
         "State" varchar(80) NULL,
         "Zip" varchar(5) NULL,
         "Phone" varchar(40) NULL
-);
+)');
 
-CREATE TABLE "Item" (
+DB.DBA.exec_no_error('CREATE TABLE "Item" (
         "ItemId" varchar(10) PRIMARY KEY,
         "ProductId" varchar(10) NOT NULL REFERENCES "Product"("ProductId"),
         "ListPrice" decimal(10, 2) NULL,
@@ -100,10 +100,10 @@ CREATE TABLE "Item" (
         "Attr3" varchar(80) NULL,
         "Attr4" varchar(80) NULL,
         "Attr5" varchar(80) NULL
-);
+)');
 
-CREATE INDEX "IxItem" ON "Item"("ProductId", "ItemId", "ListPrice", "Attr1");
-CREATE INDEX "IxProduct1" ON "Product"("Name");
-CREATE INDEX "IxProduct2" ON "Product"("Category");
-CREATE INDEX "IxProduct3" ON "Product"("Category", "Name");
-CREATE INDEX "IxProduct4" ON "Product"("Category", "ProductId", "Name");
+DB.DBA.exec_no_error('CREATE INDEX "IxItem" ON "Item"("ProductId", "ItemId", "ListPrice", "Attr1")');
+DB.DBA.exec_no_error('CREATE INDEX "IxProduct1" ON "Product"("Name")');
+DB.DBA.exec_no_error('CREATE INDEX "IxProduct2" ON "Product"("Category")');
+DB.DBA.exec_no_error('CREATE INDEX "IxProduct3" ON "Product"("Category", "Name")');
+DB.DBA.exec_no_error('CREATE INDEX "IxProduct4" ON "Product"("Category", "ProductId", "Name")');

@@ -20,34 +20,40 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
+create procedure DB.DBA.exec_no_error (in expr varchar) {                                                     
+  declare state, message, meta, result any;                                                                   
+    exec(expr, state, message, vector(), 0, meta, result);                                                      
+    }                                                                                                             
+    ;
+
 DB.DBA.VHOST_REMOVE (lpath=>'/Interop/documents');
 
 DB.DBA.VHOST_DEFINE (lpath=>'/Interop/documents', ppath=>'/soapdemo/', vsp_user=>'dba', def_page=>'interop.html');
 
 --drop table SERVICES;
-create table SERVICES(
+DB.DBA.exec_no_error('create table SERVICES(
 S_ID varchar not null,
 S_NAME varchar,
 S_DESCRIPTION varchar,
 S_WSDL_URL varchar,
 S_WEB_URL varchar,
 PRIMARY KEY (S_ID)
-)
+)')
 ;
 
 --drop table SERVERS;
-create table SERVERS(
+DB.DBA.exec_no_error('create table SERVERS(
 SV_NAME varchar,
 SV_GROUP_NAME varchar,
 SV_WSDL_URL varchar,
 S_WEB_URL varchar,
 R_SERVER_ERROR varchar,
 PRIMARY KEY (SV_NAME, SV_GROUP_NAME)
-)
+)')
 ;
 
 --drop table RESULTS;
-create table RESULTS(
+DB.DBA.exec_no_error('create table RESULTS(
 R_END_POINT varchar,
 R_SERVER_NAME varchar,
 R_SERVER_VERSION varchar,
@@ -60,7 +66,7 @@ R_SERVICE_REQ long varchar,
 R_SERVICE_RESP long varchar,
 R_TIME timestamp,
 PRIMARY KEY (R_END_POINT, R_SERVICE_NAME)
-)
+)')
 ;
 
 registry_set ('interop_clien_clear_stat', 'X registry_set (''interop_client'', ''0'')');

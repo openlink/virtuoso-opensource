@@ -37,6 +37,8 @@ grant execute on TestList.echoLinkedList to TestList;
 
 use DB;
 
+DB.DBA.vhost_remove (lpath=>'/r3/List');
+
 DB.DBA.VHOST_DEFINE (
     lpath=>'/r3/List',
     ppath=>'/SOAP/',

@@ -411,12 +411,15 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/StoreDB_schema_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/StoreDB_data_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/StoreDB_proc_vad.sql', 1, 'report', 1);" >> $STICKER
+  echo "      VHOST_REMOVE (lpath=>'/PortalCSVS');" >> $STICKER
+  echo "      VHOST_REMOVE (lpath=>'/StoreCSVS');" >> $STICKER
   echo "      VHOST_DEFINE (lpath=>'/PortalCSVS', ppath=>'/IBuySpy/PortalCSVS/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
   echo "      VHOST_DEFINE (lpath=>'/StoreCSVS', ppath=>'/IBuySpy/StoreCSVS/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/CreateDBLogin1_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/CreateTables1_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/CreateTables2_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/LoadTables1_vad.sql', 1, 'report', 1);" >> $STICKER
+  echo "      VHOST_REMOVE (lpath=>'/PetShop');" >> $STICKER
   echo "      VHOST_DEFINE (lpath=>'/PetShop', ppath=>'/PetShop/Web/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/drop_petshop.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
