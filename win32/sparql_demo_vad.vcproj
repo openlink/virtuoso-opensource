@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="isparql_vad"
-	ProjectGUID="{6260E42E-239D-11DB-9594-FD7021681415}"
-	RootNamespace="isparql_vad"
+	Name="sparql_demo_vad"
+	ProjectGUID="{20D26EE8-E1BA-11DB-930B-CD6B662399AA}"
+	RootNamespace="sparql_demo_vad"
 	Keyword="MakeFileProj">
 	<Platforms>
 		<Platform
@@ -13,8 +13,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(ConfigurationName)\isparql_vad"
-			IntermediateDirectory="$(ConfigurationName)\isparql_vad"
+			OutputDirectory="$(ConfigurationName)\sparql_demo_vad"
+			IntermediateDirectory="$(ConfigurationName)\sparql_demo_vad"
 			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"/>
@@ -45,8 +45,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(ConfigurationName)\isparql_vad"
-			IntermediateDirectory="$(ConfigurationName)\isparql_vad"
+			OutputDirectory="$(ConfigurationName)\sparql_demo_vad"
+			IntermediateDirectory="$(ConfigurationName)\sparql_demo_vad"
 			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"/>
@@ -81,7 +81,7 @@
 	</References>
 	<Files>
 		<File
-			RelativePath="..\binsrc\isparql\make_vad.sh">
+			RelativePath="..\binsrc\samples\sparql_demo\make_vad.sh">
 			<FileConfiguration
 				Name="Debug|Win32">
 				<Tool
@@ -96,7 +96,7 @@ bash make_vad.sh
 cd $(ProjectDir)
 "
 					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe"
-					Outputs="$(InputDir)\isparql_dav.vad"/>
+					Outputs="$(InputDir)\sparql_demo_dav.vad"/>
 			</FileConfiguration>
 			<FileConfiguration
 				Name="Release|Win32">
@@ -112,7 +112,7 @@ bash make_vad.sh
 cd $(ProjectDir)
 "
 					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe"
-					Outputs="$(InputDir)\isparql_dav.vad"/>
+					Outputs="$(InputDir)\sparql_demo_dav.vad"/>
 			</FileConfiguration>
 		</File>
 	</Files>
