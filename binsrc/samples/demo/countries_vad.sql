@@ -245,7 +245,7 @@ INSERT soft Demo.demo.Countries(Name,LAT,LNG,Code,SmallFlagDAVResourceName,Large
 INSERT soft Demo.demo.Countries(Name,LAT,LNG,Code,SmallFlagDAVResourceName,LargeFlagDAVResourceName) VALUES('Northern Mariana Islands',15.19999980926514,145.75,'cq','cq-flag.gif','cq-lgflag.gif');
 INSERT soft Demo.demo.Countries(Name,LAT,LNG,Code,SmallFlagDAVResourceName,LargeFlagDAVResourceName) VALUES('Norway',62,10,'no','no-flag.gif','no-lgflag.gif');
 INSERT soft Demo.demo.Countries(Name,LAT,LNG,Code,SmallFlagDAVResourceName,LargeFlagDAVResourceName) VALUES('Oman',21,57,'mu','mu-flag.gif','mu-lgflag.gif');
-INSERT soft Demo.demo.Countries(Name,LAT,LNG,Code,SmallFlagDAVResourceName,LargeFlagDAVResourceName) VALUES('Other',NULL,NULL,NULL,null,null);
+INSERT soft Demo.demo.Countries(Name,LAT,LNG,Code,SmallFlagDAVResourceName,LargeFlagDAVResourceName) VALUES('Other',NULL,NULL,'ot',null,null);
 INSERT soft Demo.demo.Countries(Name,LAT,LNG,Code,SmallFlagDAVResourceName,LargeFlagDAVResourceName) VALUES('Pacific Ocean',0,-160,'zn','zn-flag.gif','zn-lgflag.gif');
 INSERT soft Demo.demo.Countries(Name,LAT,LNG,Code,SmallFlagDAVResourceName,LargeFlagDAVResourceName) VALUES('Pakistan',30,70,'pk','pk-flag.gif','pk-lgflag.gif');
 INSERT soft Demo.demo.Countries(Name,LAT,LNG,Code,SmallFlagDAVResourceName,LargeFlagDAVResourceName) VALUES('Palau',7.5,134.5,'ps','ps-flag.gif','ps-lgflag.gif');
