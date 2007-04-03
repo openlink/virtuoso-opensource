@@ -57,6 +57,10 @@ create trigger VSPX_SESSION_INSERT_AFTER after insert on DB.DBA.VSPX_SESSION {
   declare result, name, content, reg any;
   declare pwd any;
   declare _state varchar;
+
+  if (not is_http_ctx ())
+    return;
+
   if(registry_get('__block_http_history') = http_path()) {
     -- do nor record itself
     return;
@@ -6630,3 +6634,27 @@ insert soft DB.DBA.SYS_XPF_EXTENSIONS (XPE_NAME, XPE_PNAME) VALUES ('http://www.
 xpf_extension ('http://www.openlinksw.com/vspx/:one-control-up', 'DB.DBA.VSPX_ONE_CONTROL_UP', 0)
 ;
 
+create procedure VSPX_USER_LOGIN (in realm varchar, in uname varchar, in pass varchar, in auth_function varchar)
+{
+  declare rc int;
+  declare sid any;
+
+  sid := null;
+  rc := call (auth_function) (uname, pass);
+  if (rc)
+    {
+      sid := md5 (concat (datestring (now ()), client_attr ('client_ip')));
+      insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY) values (realm, sid, uname, null, now());
+    }
+  return sid;
+}
+;
+
+create procedure VSPX_SESSION_IS_VALID (in realm varchar, in sid varchar)
+{
+  update VSPX_SESSION set VS_EXPIRY = now () where VS_SID = sid and VS_REALM = realm;
+  if (row_count () = 0)
+    return 0;
+  return 1;
+}
+;
