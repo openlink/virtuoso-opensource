@@ -9406,6 +9406,7 @@ caddr_t bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case DV_STRING: return uname_xmlschema_ns_uri_hash_string;
     case DV_LONG_INT: return uname_xmlschema_ns_uri_hash_integer;
     case DV_NUMERIC: case DV_DOUBLE_FLOAT: return uname_xmlschema_ns_uri_hash_double;
+    case DV_SINGLE_FLOAT: return uname_xmlschema_ns_uri_hash_float;
     case DV_DB_NULL: return NEW_DB_NULL;
     default:
       if (1 == BOX_ELEMENTS (args))
