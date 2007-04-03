@@ -684,7 +684,6 @@ nntpf_search_result (in _search_txt varchar)
   declare _date_s_after,_date_s_before, _date datetime;
   declare _date_l, _from_l, _subj_l, _nm_id_l, _grp_list_l varchar;
 
-  if (_search_txt is NULL or _search_txt = '') goto nf;
 
   result_names (_date_l, _from_l, _subj_l, _nm_id_l, _grp_list_l);
 
@@ -724,6 +723,9 @@ nntpf_search_result (in _search_txt varchar)
       if (_search_txt is null and _date_s_after is not null and _date_s_before is not null
            and _date_s_after=_date_s_before)                                                _ctr := 5; -- All newsgroups for a day
     }
+
+  if (_ctr in(0,1,2,3) and (_search_txt is NULL or _search_txt = '')) goto nf;
+
 
   declare cr_def cursor for select FTHR_DATE, FTHR_SUBJ, deserialize (FTHR_MESS_DETAILS)[0], FTHR_MESS_ID
     from DB.DBA.NEWS_MSG_NNTP, DB.DBA.NNFE_THR where NM_ID = FTHR_MESS_ID and contains (NM_BODY, _search_txt);
@@ -815,11 +817,20 @@ create procedure nntpf_check_get_bad_date (in _all any)
 }
 ;
 
-create procedure nntpf_check_is_sch_tex_valid (in _all any)
+create procedure nntpf_check_is_sch_tex_valid (in _all any, in noenc integer := 0)
 {
+
   declare st, msg, res1, res2 any;
+
   st := '';
+  if (noenc)
+  {
+     exec ('select vt_parse (?)', st, msg, vector (_all), 1, res1, res2);
+      
+  }
+  else
   exec ('select vt_parse (?)', st, msg, vector (deserialize (decode_base64 (_all))[0]), 1, res1, res2);
+
   if (st = '') return 1;
 
   return 0;
@@ -2907,4 +2918,23 @@ create procedure nntpf_doPTSW (
     ODS.DBA.APP_PING (null, 'http://'||DB.DBA.WA_GET_HOST()||' ODS Discussions', sioc_url); --sioc need to be updated in order to use non ODS applications to ping
 }
 ;
+create procedure nntpf_implode ( in _str_vector varchar, in _str_separator varchar := null)
+{
 
+  if(not isarray(_str_vector)) return;
+
+  declare i integer;
+  declare _res varchar;
+  _res:='';
+  i:=0;
+  while(i<length(_str_vector))
+  {
+    _res := _res||_str_vector[i];
+    if((_str_separator is not null) and (i<length(_str_vector)-1))
+       _res:=_res||cast(_str_separator as varchar);
+    i:=i+1;
+  }
+
+  return _res;
+}
+;

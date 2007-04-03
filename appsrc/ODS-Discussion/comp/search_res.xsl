@@ -35,13 +35,16 @@
     <v:before-data-bind>
 	<![CDATA[
 
+
        self.search_trm := encode_base64 (serialize(vector(get_keyword ('search', params))));
+
+       declare full_search_exp any;
 
 	     if (get_keyword ('go_adv_search', params, '') <> '')
 	       {
 
            declare searchtxt_arr any;
-           searchtxt_arr:=split_and_decode(get_keyword ('s_text', params),0,'\0\0 ');
+           searchtxt_arr:=split_and_decode(get_keyword ('s_text', params,''),0,'\0\0 ');
            
            declare searchwords_option int;
            searchwords_option:=get_keyword ('searchwords_option', params,'0');
@@ -49,18 +52,21 @@
            declare searchtxt varchar;
            searchtxt:='';
            
+           
            declare idx integer;
            idx:=0;
            while(idx<length(searchtxt_arr)){
            
-              if(searchtxt_arr[idx] not in ('or','OR','Or','and','AND','And'))
+              if((searchtxt_arr[idx] not in ('or','OR','Or','and','AND','And')) AND nntpf_check_is_sch_tex_valid(searchtxt_arr[idx],1) )
               {
                 --search options - 0-at least one;1-all;2-phrase;3-non;
                 
-                if(searchwords_option in ('0','3'))
+                if(searchwords_option='0')
                    searchtxt:=searchtxt||' OR '||searchtxt_arr[idx];
                 else if(searchwords_option='1')
                    searchtxt:=searchtxt||' AND '||searchtxt_arr[idx];
+                else if(searchwords_option='3')
+                   searchtxt:=searchtxt||' AND NOT '||searchtxt_arr[idx];
                 else
                    searchtxt:=searchtxt||' '||searchtxt_arr[idx];
               }
@@ -68,11 +74,11 @@
            }
            
            
-           declare full_search_exp any;
            if(length(searchtxt))
            {
-           searchtxt := (case when searchwords_option in ('0','3') then subseq(searchtxt,4)
+             searchtxt := (case when searchwords_option='0' then subseq(searchtxt,4)
                               when searchwords_option='1' then subseq(searchtxt,5)
+                                when searchwords_option='3' then subseq(searchtxt,8)
                               else subseq(searchtxt,1)
                               end);
 
@@ -80,12 +86,19 @@
                    searchtxt:='"'||searchtxt||'"';
 
            if(searchwords_option='3')
-                   searchtxt:='Newsgroups and not('||searchtxt||')';
+                     searchtxt:='Re AND NOT '||searchtxt;
 
              full_search_exp := vector (searchtxt);
           }
-          else
+          else if(nntpf_check_is_sch_tex_valid(get_keyword ('s_text', params),1))
+          {
 		  full_search_exp := vector (get_keyword ('s_text', params));
+          }
+          else 
+             full_search_exp :=vector('');
+           
+
+          
              
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_d_after', params)));
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_m_after', params)));
@@ -94,7 +107,6 @@
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_m_before', params)));
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_y_before', params)));
 		  full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('group_m_label', params)));
-          
           
           
            declare _valid_date_before,_valid_date_after integer;
@@ -125,8 +137,21 @@
 
 	       }
 
-       if(self._valid_date and length(get_keyword ('search', params,''))=0){
+
+       if(self._valid_date and length(get_keyword ('go_adv_search', params, '')) > 0){
+
+              if(length(nntpf_implode(full_search_exp))>0)
          self._valid_sch_text := 1;
+              else
+              {
+              
+                self._valid_sch_text := 0;
+
+                
+
+                self.search_trm := encode_base64 (serialize (vector(get_keyword ('s_text', params,''))));
+              }
+                
        }else
        {
 	      self._valid_sch_text := nntpf_check_is_sch_tex_valid (self.search_trm);
