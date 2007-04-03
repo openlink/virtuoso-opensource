@@ -168,7 +168,7 @@ service_write (dk_session_t * ses, char *buffer, int bytes)
 int
 session_flush_1 (dk_session_t * ses)
 {
-  if (ses->dks_session->ses_class == SESCLASS_STRING && !ses->dks_session->ses_file->ses_file_descriptor)
+  if (!ses->dks_session || (ses->dks_session->ses_class == SESCLASS_STRING && !ses->dks_session->ses_file->ses_file_descriptor))
     return (SER_SUCC);
   if (ses->dks_out_fill)
     {
