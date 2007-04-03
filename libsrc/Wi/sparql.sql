@@ -287,10 +287,15 @@ retnull:
 
 create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID
 {
-  if (246 = __tag (qname))
-    qname := rdf_box_data (qname, 1);
+  if (isiri_id (qname))
+    return qname;
   if (not isstring (qname))
-    qname := DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (qname);
+    {
+      if (246 = __tag (qname) and rdf_box_is_complete (qname))
+        qname := rdf_box_data (qname, 1);
+      else
+        qname := DB.DBA.RDF_STRSQLVAL_OF_LONG (qname);
+    }
   whenever sqlstate '*' goto retnull;
   return iri_to_id (qname, 1);
 retnull:
@@ -455,6 +460,11 @@ create function DB.DBA.RQ_BOOL_OF_O (in o_col any) returns any
     {
   declare twobyte integer;
   declare dtqname any;
+      if (182 <> rdf_box_data_tag (o_col))
+        {
+          whenever sqlstate '*' goto retnull;
+          return neq (rdf_box_data (o_col), 0.0);
+        }
       twobyte := rdf_box_type (o_col);
   if (257 = twobyte)
     goto type_ok;
@@ -471,7 +481,10 @@ badtype:
     }
   if (o_col is null)
     return null;
+  whenever sqlstate '*' goto retnull;
   return neq (o_col, 0.0);
+retnull:
+  return null;
 }
 ;
 
@@ -510,7 +523,10 @@ create function DB.DBA.RDF_MAKE_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
     {
       dt_twobyte := rdf_box_type (v);
       lang_twobyte := rdf_box_lang (v);
+      if (rdf_box_is_complete (v))
       v := rdf_box_data (v);
+      else
+        v := DB.DBA.RDF_SQLVAL_OF_OBJ (v);
     }
   if (isstring (v) and (dt_twobyte = 257) and (lang_twobyte = 257) and (length (v) <= 20))
     {
@@ -1712,7 +1728,12 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
         {
           http ('"', ses);
       if (182 = rdf_box_data_tag (obj))
+        {
+          if (rdf_box_is_complete (obj))
       http_escape (rdf_box_data (obj), 11, ses, 1, 1);
+          else
+            http_escape (DB.DBA.RDF_BOX_SQLVAL_OF_LONG (obj), 11, ses, 1, 1);
+        }
       else if (211 = rdf_box_data_tag (obj))
         {
           declare vc varchar;
@@ -1725,7 +1746,7 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
             {
           res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
           if (res is null)
-            signal ('OBLOM', sprintf ('Bad rdf box type (%d), box "%s"', rdf_box_type (obj), cast (rdf_box_data (obj) as varchar)));
+            signal ('RDFXX', sprintf ('Bad rdf box type (%d), box "%s"', rdf_box_type (obj), cast (rdf_box_data (obj) as varchar)));
               http ('"^^<', ses);
               http_escape (res, 12, ses, 1, 1);
 	      http ('> ', ses);
@@ -1909,7 +1930,10 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
               res := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
               http (' xml:lang="', ses); http_value (res, 0, ses); http ('"', ses);
             }
+          if (rdf_box_is_complete (obj))
           dat := rdf_box_data (obj);
+          else
+            dat := DB.DBA.RDF_SQLVAL_OF_LONG (obj);
           if (230 = __tag (dat))
             {
               http (' rdf:parseType="Literal">', ses);
@@ -5031,7 +5055,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       http_url (uri, 0, req_body);
     }
   req_body := string_output_string (req_body);
-  local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, application/rdf+xml, application/xml';
+  local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, text/rdf+ttl, application/turtle, application/x-turtle, application/rdf+xml, application/xml';
   if (length (req_body) + length (service) >= 1900)
     {
       req_method := 'POST';
@@ -5058,7 +5082,10 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   if (ret_content_type is null or
     (strstr (ret_content_type, 'application/sparql-results+xml') is null and
       strstr (ret_content_type, 'application/rdf+xml') is null and
-      strstr (ret_content_type, 'text/rdf+n3') is null ) )
+      strstr (ret_content_type, 'text/rdf+n3') is null and
+      strstr (ret_content_type, 'text/rdf+ttl') is null and
+      strstr (ret_content_type, 'application/turtle' ) is null and
+      strstr (ret_content_type, 'application/x-turtle' ) is null ) )
     {
       declare ret_begin, ret_html any;
       ret_begin := "LEFT" (ret_body, 1024);
@@ -5236,7 +5263,10 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       else if (1 = res_mode)
         return vector (vector (res_dict));
     }
-  if (strstr (ret_content_type, 'text/rdf+n3') is not null or strstr (ret_content_type, 'text/rdf+ttl') is not null)
+  if (strstr (ret_content_type, 'text/rdf+n3') is not null or
+    strstr (ret_content_type, 'text/rdf+ttl') is not null or
+    strstr (ret_content_type, 'application/turtle') is not null or
+    strstr (ret_content_type, 'application/x-turtle') is not null )
     {
       declare res_dict any;
       res_dict := DB.DBA.RDF_TTL2HASH (ret_body, '');
@@ -5769,7 +5799,10 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
             {
               declare res varchar;
               declare dat, typ any;
+              if (rdf_box_is_complete (val))
               dat := rdf_box_data (val);
+              else
+		dat := DB.DBA.RDF_SQLVAL_OF_LONG (val);
               typ := rdf_box_type (val);
               if (not isstring (dat))
                 {
@@ -5870,8 +5903,22 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     {
       declare triples any;
       triples := dict_list_keys (rset[0][0], 1);
-      if (strstr (accept, 'text/rdf+n3') is not null or (accept = 'auto'))
+      if (
+        strstr (accept, 'text/rdf+n3') is not null or
+        strstr (accept, 'text/rdf+ttl') is not null or
+        strstr (accept, 'application/turtle') is not null or
+        strstr (accept, 'application/x-turtle') is not null or
+        (accept = 'auto') )
         {
+          if (strstr (accept, 'text/rdf+n3') is not null)
+            ret_mime := 'text/rdf+n3';
+          else if (strstr (accept, 'text/rdf+ttl') is not null)
+            ret_mime := 'text/rdf+ttl';
+          else if (strstr (accept, 'application/turtle') is not null)
+            ret_mime := 'application/turtle';
+          else if (strstr (accept, 'application/x-turtle') is not null)
+            ret_mime := 'application/x-turtle';
+          else
           ret_mime := 'text/rdf+n3';
           DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
 	}
@@ -5935,9 +5982,21 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if (strstr (accept, 'application/sparql-results+xml') is null)
     {
-      if (strstr (accept, 'text/rdf+n3') is not null)
+      if (
+        strstr (accept, 'text/rdf+n3') is not null or
+        strstr (accept, 'text/rdf+ttl') is not null or
+        strstr (accept, 'application/turtle') is not null or
+        strstr (accept, 'application/x-turtle') is not null or
+        (accept = 'auto') )
         {
+          if (strstr (accept, 'text/rdf+n3') is not null)
           ret_mime := 'text/rdf+n3';
+          else if (strstr (accept, 'text/rdf+ttl') is not null)
+            ret_mime := 'text/rdf+ttl';
+          else if (strstr (accept, 'application/turtle') is not null)
+            ret_mime := 'application/turtle';
+          else if (strstr (accept, 'application/x-turtle') is not null)
+            ret_mime := 'application/x-turtle';
           SPARQL_RESULTS_TTL_WRITE_NS (ses);
           SPARQL_RESULTS_TTL_WRITE_HEAD (ses, metas);
           if (length (rset) > 0)
@@ -6789,7 +6848,7 @@ perform_actual_load:
       -- then it may return rdf instead of html
       req_hdr := req_hdr || case when length (req_hdr) > 0 then '\r\n' else '' end
         || 'User-Agent: OpenLink Virtuoso RDF crawler\r\n'
-	|| 'Accept: application/rdf+xml, text/rdf+n3, application/rdf+turtle, application/xml, */*';
+	|| 'Accept: application/rdf+xml, text/rdf+n3, application/rdf+turtle, application/x-turtle, application/turtle, application/xml, */*';
       -- dbg_obj_princ ('Calling http_get (', new_origin_uri, ',..., ', get_method, req_hdr, NULL, get_proxy, ')');
       --ret_body := http_get (new_origin_uri, ret_hdr, get_method, req_hdr, NULL, get_proxy);
       ret_body := DB.DBA.RDF_HTTP_URL_GET (new_origin_uri, '', ret_hdr, get_method, req_hdr, NULL, get_proxy, 0);
@@ -6912,7 +6971,10 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
         return 'application/sparql-results+xml';
       if (strstr (ret_content_type, 'application/rdf+xml') is not null)
         return 'application/rdf+xml';
-      if (strstr (ret_content_type, 'text/rdf+n3') is not null)
+      if (
+        strstr (ret_content_type, 'text/rdf+n3') is not null or
+        strstr (ret_content_type, 'application/x-turtle') is not null or
+        strstr (ret_content_type, 'application/turtle') is not null )
         return 'text/rdf+n3';
     }
   declare ret_begin, ret_html any;
@@ -7060,6 +7122,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
     {
       if (dest is null)
       delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+      -- delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (dest);
       DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, coalesce (dest, graph_iri));
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
@@ -7067,13 +7130,13 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
     }
   if (
        strstr (ret_content_type, 'text/rdf+n3') is not null or strstr (ret_content_type, 'text/rdf+ttl') is not null or
-       strstr (ret_content_type, 'application/rdf+n3') is not null or strstr (ret_content_type, 'application/rdf+turtle') is not null
+       strstr (ret_content_type, 'application/rdf+n3') is not null or strstr (ret_content_type, 'application/rdf+turtle') is not null or
+       strstr (ret_content_type, 'application/turtle') is not null or strstr (ret_content_type, 'application/x-turtle') is not null
      )
     {
-      -- XXX: this is strange, the bellow line is same as the if-d
       if (dest is null)
         delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
-      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+      -- delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (dest);
       DB.DBA.TTLP (ret_body, new_origin_uri, coalesce (dest, graph_iri));
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
@@ -7109,6 +7172,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
     {
       if (dest is null)
 	delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+      -- delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (dest);
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
       return 1;
     }
@@ -7512,7 +7576,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
 }
 ;
 
-create procedure DB.DBA.RDF_QUAD_FT_AUDIT ()
+create procedure DB.DBA.RDF_QUAD_AUDIT ()
 {
   declare stat, msg varchar;
   declare err_dict any;
@@ -7555,9 +7619,9 @@ create procedure DB.DBA.RDF_QUAD_FT_AUDIT ()
               o_long := jso_parse_digest (o_old);
               o_strval := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = o_long[3]);
               if (o_strval is null)
-                { result ('ERRol', sprintf ('Non-existing RO_ID %d in literal |%U| (escaped like URL)', o_long, o_old)); dict_put (err_dict, o_old, 1); }
+                { result ('ERRol', sprintf ('Non-existing RO_ID %d in literal |%U| (escaped like URL)', o_long[3], o_old)); dict_put (err_dict, o_old, 1); }
               else if ("LEFT" (o_strval, 20) <> o_long[1])
-                { result ('ERRol', sprintf ('Full value of RO_ID %d starts with |%U|, does not match to literal |%U| (escaped like URL)', o_long, "LEFT" (o_strval, 20), o_old)); dict_put (err_dict, o_old, 1); }
+                { result ('ERRol', sprintf ('Full value of RO_ID %d starts with |%U|, does not match to literal |%U| (escaped like URL)', o_long[3], "LEFT" (o_strval, 20), o_old)); dict_put (err_dict, o_old, 1); }
               o_dt := o_long[0];
               o_lang := o_long[2];
             }
