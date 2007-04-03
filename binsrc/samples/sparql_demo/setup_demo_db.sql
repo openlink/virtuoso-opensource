@@ -120,7 +120,7 @@ create procedure SPARQL_DAWG_COMPILE (in rquri varchar, in in_result integer := 
         TEST_URI, TEST_STATUS, TEST_STATE, TEST_MESSAGE)
       values (
         rquri, 'ERROR/lex', __SQL_STATE, lexems[lcount][2]);
-      SPARQL_REPORT ('ERROR/lex: ' || lexems[lcount][2]);
+      SPARQL_REPORT ('ERROR/lex: ' || cast (lexems[lcount][2] as varchar));
 --!      dump_large_text_impl (replace (rqtext, '\r\n', '\n'));
       return;
     }

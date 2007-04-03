@@ -227,7 +227,7 @@ grant execute on DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE to SPARQL_SELECT
 ;
 
 DB.DBA.SPARQL_QM_RUN ('
-drop graph iri("http://^{URIQADefaultHost}^/sys") .
+drop quad map graph iri("http://^{URIQADefaultHost}^/sys") .
 create quad storage virtrdf:sys
   {
   } .
@@ -241,7 +241,7 @@ DB.DBA.RDF_QM_END_ALTER_QUAD_STORAGE ( UNAME'http://www.openlinksw.com/schemas/v
 DB.DBA.SPARQL_QM_RUN ('
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
-drop graph iri("http://^{URIQADefaultHost}^/sys") .
+drop quad map graph iri("http://^{URIQADefaultHost}^/sys") .
 create iri class oplsioc:user_iri  "http://^{URIQADefaultHost}^/sys/user?id=%d" (in uid integer not null) .
 create iri class oplsioc:group_iri "http://^{URIQADefaultHost}^/sys/group?id=%d" (in gid integer not null) .
 create iri class oplsioc:membership_iri "http://^{URIQADefaultHost}^/sys/membersip?super=%d&sub=%d" (in super integer not null, in sub integer not null) .
