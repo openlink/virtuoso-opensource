@@ -28,6 +28,7 @@ create procedure ODS_SPARQL_QM_RUN (in txt varchar, in sig int := 1, in fl int :
   declare metas, rowset any;
   if (fl)
    result_names (REPORT);
+  -- string_to_file ('ods_sparql_qm_run.sql', '\nSPARQL ' || txt || '\n;\n', -1);
   sqltext := string_output_string (sparql_to_sql_text (txt));
   --dump_large_text_impl (sqltext);
   stat := '00000';
@@ -170,7 +171,7 @@ create procedure ODS_RDF_VIEW_INIT_1 (in fl int := 0)
 
     sioc..ods_sioc_result ('Dropping old graph.');
 ODS_SPARQL_QM_RUN ('
-    drop graph iri("http://^{URIQADefaultHost}^/dataspace_v") .
+    drop quad map graph iri("http://^{URIQADefaultHost}^/dataspace_v") .
 ', 0, 0);
 
     sioc..ods_sioc_result ('Old graph dropped.');
