@@ -31,6 +31,7 @@
     <v:variable name="_invdatestr" type="varchar" />
     <v:variable name="_valid_date" type="integer" default="1" />
     <v:variable name="_valid_sch_text" type="integer" default="1" />
+    <v:variable name="skip_search" type="integer" default="0" />
     <v:variable persist="temp" name="r_count" type="integer" default="0"/>
     <v:before-data-bind>
 	<![CDATA[
@@ -40,7 +41,7 @@
 
        declare full_search_exp any;
 
-	     if (get_keyword ('go_adv_search', params, '') <> '')
+       if (get_keyword ('go_adv_search', params, '') <> '' or get_keyword ('go_adv_search_nav', params, '') <> '')
 	       {
 
            declare searchtxt_arr any;
@@ -98,8 +99,6 @@
              full_search_exp :=vector('');
            
 
-          
-             
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_d_after', params)));
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_m_after', params)));
           full_search_exp := vector_concat (full_search_exp, vector (get_keyword ('date_y_after', params)));
@@ -140,29 +139,37 @@
 
        if(self._valid_date and length(get_keyword ('go_adv_search', params, '')) > 0){
 
-              if(length(nntpf_implode(full_search_exp))>0)
-         self._valid_sch_text := 1;
-              else
+              if(length(nntpf_implode(full_search_exp))=0 or
+                 (length(full_search_exp[0])=0 and length(full_search_exp[7])>0)
+                 )
               {
-              
                 self._valid_sch_text := 0;
 
-                
-
                 self.search_trm := encode_base64 (serialize (vector(get_keyword ('s_text', params,''))));
+              }
+              else
+              {
+                 self._valid_sch_text := 1;
               }
                 
        }else
        {
 	      self._valid_sch_text := nntpf_check_is_sch_tex_valid (self.search_trm);
        }
+
+
+        if(length(params) < 7)
+           self.skip_search:=1;
+        else       
+           self.skip_search:=0;
+
 	]]>
     </v:before-data-bind>
 	<xsl:call-template name="vm:valid_search" />
     </xsl:template>
 
     <xsl:template name="vm:valid_search">
-      <vm:template enabled="--either ((self._valid_date + self._valid_sch_text - 2), 0, 1)">
+      <vm:template enabled="--case when self.skip_search then 0 when (self._valid_date + self._valid_sch_text - 2)=0 then 1 else 0 end;">
 <!--
       <vm:template enabled="--(case when self.ds.ds_rows_total>0 then 1 else 0 end)">
 
@@ -251,6 +258,7 @@
 -->
     <br/>
         <v:text name="search" type="hidden" value="--get_keyword ('search', self.vc_page.vc_event.ve_params, '')" />
+<!--
         <v:text name="s_text" type="hidden" value="--get_keyword ('s_text', self.vc_page.vc_event.ve_params, '')" />
         <v:text name="searchwords_option" type="hidden" value="--get_keyword ('searchwords_option', self.vc_page.vc_event.ve_params,'0')" />
 
@@ -261,7 +269,9 @@
         <v:text name="date_m_before" type="hidden" value="--get_keyword ('date_m_before', self.vc_page.vc_event.ve_params, '')" />
         <v:text name="date_y_before" type="hidden" value="--get_keyword ('date_y_before', self.vc_page.vc_event.ve_params, '')" />
         <v:text name="group_m_label" type="hidden" value="--get_keyword ('group_m_label', self.vc_page.vc_event.ve_params, '')" />
-        <v:text name="go_adv_search" type="hidden" value="--get_keyword ('go_adv_search', self.vc_page.vc_event.ve_params, '')" />
+-->
+        <v:text name="go_adv_search_nav" type="hidden" value="--get_keyword ('go_adv_search', self.vc_page.vc_event.ve_params, get_keyword ('go_adv_search_nav', self.vc_page.vc_event.ve_params, ''))" />
+
 
 
      <vm:ds-navigation data-set="ds"/>
@@ -295,7 +305,7 @@
     ?>
 	 </vm:template>
 
-  <vm:template enabled="--( 1- abs (self._valid_sch_text))">
+  <vm:template enabled="--case when self.skip_search=1 then 0 when self._valid_sch_text=0 then 1 else 0 end">
 		<p>The search expression:
       "<?vsp http(coalesce(deserialize (decode_base64 (self.search_trm))[0],'')); ?>" is not valid.
 		</p>

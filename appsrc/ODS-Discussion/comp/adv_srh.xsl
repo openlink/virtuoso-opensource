@@ -40,12 +40,50 @@
 		self.date_d := cast (dayofmonth (srart_date) as varchar);
 		self.date_m := cast (month (srart_date) as varchar);
 		self.date_y := cast (year (srart_date) as varchar);
+
+
+    for (select NG_NAME, NG_POST, NG_GROUP from NEWS_GROUPS
+         where ns_rest (NG_GROUP, 1) = 1 and NG_STAT<>-1) do
+    {
+      self.grp_list := vector_concat (self.grp_list, vector (NG_NAME));
+    }
+    
 	]]>
     </v:before-data-bind>
    <xsl:call-template name="vm:search_fills" />
   </xsl:template>
 
 <xsl:template name="vm:search_fills">
+  
+<script type="text/javascript">
+<![CDATA[
+
+function addNewsgroups()
+{
+   if(OAT.Dom.style('newsgoups_div', 'display')== 'none')
+   {
+      OAT.Dom.hide('submit_btns');
+      OAT.Dom.show('newsgoups_div');
+      $('add_btn').innerHTML=' add selected newsgroup(s)';
+      
+   }
+   else
+   {
+      OAT.Dom.hide('newsgoups_div');
+      $('add_btn').innerHTML=' add newsgroup(s)';
+      dd($('groups_list'));
+        var selectedGrps = '';
+        for (var i = 0; i < $('groups_list').options.length; i++)
+            if ($('groups_list').options[ i ].selected)
+               selectedGrps=selectedGrps+" "+$('groups_list').options[ i ].value;
+      selectedGrps=selectedGrps.substr(1);
+      $('selectedGroupsText').value=selectedGrps;
+     OAT.Dom.show('submit_btns');
+
+   }
+}
+]]>
+</script>
   <table width="100%" id="content" cellspacing="0" cellpadding="0">
     <vm:template >
       <tr>
@@ -82,9 +120,9 @@
           </span>
         </td>
         <td>
-          <v:text name="date_d_after" xhtml_size="--2" value="" /> -
-          <v:text name="date_m_after" xhtml_size="--2" value="" /> -
-          <v:text name="date_y_after" xhtml_size="--4" value="" /> (DD-MM-YYYY)
+          <v:text name="date_d_after" xhtml_size="--2" value="--get_keyword ('date_d_after', params, '')" /> -
+          <v:text name="date_m_after" xhtml_size="--2" value="--get_keyword ('date_m_after', params, '')" /> -
+          <v:text name="date_y_after" xhtml_size="--4" value="--get_keyword ('date_y_after', params, '')" /> (DD-MM-YYYY)
         </td>
       </tr>
       <tr>
@@ -94,28 +132,48 @@
           </span>
         </td>
         <td>
-          <v:text name="date_d_before" xhtml_size="--2" value="" /> -
-          <v:text name="date_m_before" xhtml_size="--2" value="" /> -
-          <v:text name="date_y_before" xhtml_size="--4" value="" /> (DD-MM-YYYY)
+          <v:text name="date_d_before" xhtml_size="--2" value="--get_keyword ('date_d_before', params, '')" /> -
+          <v:text name="date_m_before" xhtml_size="--2" value="--get_keyword ('date_m_before', params, '')" /> -
+          <v:text name="date_y_before" xhtml_size="--4" value="--get_keyword ('date_y_before', params, '')" /> (DD-MM-YYYY)
         </td>
       </tr>
 
       <tr>
-        <td>
+        <td  valign="top">
           <span class="header">
 	    <v:label value="--'Newsgroup match'" format="%s"/>
           </span>
         </td>
         <td>
-          <v:text name="group_m_label" value="--self.group_mach" />
-          <a href="#"> add newsgroup(s)</a>
+          <v:text name="group_m_label" value="--self.group_mach" xhtml_id="selectedGroupsText" />
+          <a href="javascript:void(0)" onClick="addNewsgroups();" id="add_btn"> add newsgroup(s)</a>
+          <br/>
+          <div id="newsgoups_div" style="display:none">
+          <v:select-list name="availble_groups"
+                         xhtml_size="10"
+                         xhtml_id="groups_list"
+                         multiple="1"
+                         value="">
+            <v:before-data-bind>
+              <v:script><![CDATA[
+                      control.vsl_items := self.grp_list;
+                      if (self.grp_list is not NULL)
+                        control.vsl_item_values := self.grp_list;
+                      else
+                        signal ('NNTPP', 'There no available group(s)');
+           ]]></v:script></v:before-data-bind>
+          </v:select-list>
+
+          </div>
         </td>
       </tr>
       <tr>
         <td>&nbsp;</td>
         <td>
+        <div id="submit_btns">
           <v:button name="go_adv_search" action="submit" value="Search"/>
-          <input type="reset" name="reset" value="Clear" />
+          <input type="button" value="Clear" onclick="document.location='nntpf_adv_search.vspx?sid=<?Vcoalesce(self.sid,'')?>&realm=<?Vcoalesce(self.realm,'')?>';"/>
+        </div>
         </td>
       </tr>
   </vm:template>

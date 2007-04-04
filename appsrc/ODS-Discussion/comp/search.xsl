@@ -55,7 +55,7 @@
          <v:on-post>
            <![CDATA[
              http_request_status ('HTTP/1.1 302 Found');
-             http_header (sprintf ('Location: nntpf_adv_search.vspx?sid=%s&realm=%s&search=%V\r\n',
+             http_header (sprintf ('Location: nntpf_addtorss.vspx?sid=%s&realm=%s&search=%V\r\n',
                           self.sid, 
                           self.realm, 
                           get_keyword ('searchkeywords', 

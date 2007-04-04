@@ -696,8 +696,13 @@ nntpf_search_result (in _search_txt varchar)
   _date_s_after := null;
   _date_s_before := null;
 
+   declare newsgroups_arr any;
+   newsgroups_arr:=vector();
+
+
   if (length (_filter) > 1)
     {
+
       declare st, msg, res1, res2 any;
 
 
@@ -709,11 +714,17 @@ nntpf_search_result (in _search_txt varchar)
       exec ('select cast (? as date)', st, msg, vector ( concat (_filter[6], ' ', _filter[5], ' ', _filter[4]) ), 1, res1, res2);
       if (st = '') _date_s_before := aref (aref (res2, 0), 0);
 
-      if (_filter[7] <> '')
-        _news_group := '%' || _filter[7] || '%';
+
 
       if (trim (_filter[7]) = '*' or trim (_filter[7]) = '%')
+      {
         _news_group := '%';
+      }else if(_filter[7] <> '')
+      {
+              newsgroups_arr := split_and_decode (_filter[7], 0, '\0\0 ');
+--              _news_group := '%' || _filter[7] || '%';
+      }
+        
 
      
       if (_date_s_after is not null)                                                        _ctr := 1; -- Newer than with search text
@@ -766,14 +777,37 @@ nntpf_search_result (in _search_txt varchar)
 
        _grp_list := '';
 
+     if(length(newsgroups_arr)>0)
+     {
+       declare i integer;
+       for(i:=0;i<length(newsgroups_arr);i:=i+1)
+       {
        for (select NG_NAME from DB.DBA.NEWS_MULTI_MSG, DB.DBA.NEWS_GROUPS
-		where NM_GROUP = NG_GROUP and NM_KEY_ID = _nm_id and NG_NAME like _news_group) do
+	           where NM_GROUP = NG_GROUP and NM_KEY_ID = _nm_id and NG_NAME=newsgroups_arr[i]) do
+	       {
+           
+	          if (_grp_list = '')
+	            _grp_list := NG_NAME;
+	          else
+	          {
+	           if(not locate(_grp_list,NG_NAME))
+	             _grp_list := _grp_list || '\n' || NG_NAME;
+	          }
+	       }
+	       
+       }
+     }else
+     {
+         for (select NG_NAME from DB.DBA.NEWS_MULTI_MSG, DB.DBA.NEWS_GROUPS
+	           where NM_GROUP = NG_GROUP and NM_KEY_ID = _nm_id) do
 	  {
 	     if (_grp_list = '')
 	       _grp_list := NG_NAME;
 	     else
 	       _grp_list := _grp_list || '\n' || NG_NAME;
 	  }
+
+     } 
 
   	if (_grp_list <> '') result (nntpf_print_date_in_thread (_date),
 		cast (_from as varchar), cast (_subj as varchar), cast (_nm_id as varchar), _grp_list);
