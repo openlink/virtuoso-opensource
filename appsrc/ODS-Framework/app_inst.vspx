@@ -197,7 +197,7 @@
             else if (self.app_type = 'AddressBook')
               {
             ?>
-            <vm:dash-addressbooks-summary/>
+            <vm:dash-addressbook-summary/>
             <?vsp
               }
          ?>
