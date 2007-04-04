@@ -25,8 +25,10 @@
 --
 
 -- install the handlers for supported metadata, keep in sync with xslt/html2rdf.xsl rules
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)' and RM_TYPE = 'MIME';
+
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)',
+    values ('(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)|(application/rdf.xml)',
             'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML and feeds');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -246,6 +248,79 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
 }
 ;
 
+create procedure RDF_MAPPER_CACHE_CHECK (in url varchar, in top_url varchar, out old_etag varchar, out old_last_modified any)
+{
+  declare old_exp_is_true, old_expiration, old_read_count any;
+  whenever not found goto no_record;
+  select HS_EXP_IS_TRUE, HS_EXPIRATION, HS_LAST_MODIFIED, HS_LAST_ETAG, HS_READ_COUNT
+      into old_exp_is_true, old_expiration, old_last_modified, old_etag, old_read_count
+      from DB.DBA.SYS_HTTP_SPONGE where HS_FROM_IRI = url and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE';
+  -- as we are at point we load everything we always do re-load
+no_record:
+  return 0;
+}
+;
+
+create procedure
+RDF_MAPPER_CACHE_REGISTER (in url varchar, in top_url varchar, inout hdr any,
+    			   in old_last_modified any, in download_size int, in load_msec int)
+{
+  declare explicit_refresh, new_expiration, ret_content_type, ret_etag, ret_date, ret_expires, ret_last_modif,
+	  ret_dt_date, ret_dt_expires, ret_dt_last_modified any;
+
+  if (not isarray (hdr))
+    return;
+
+  url := WS.WS.EXPAND_URL (top_url, url);
+  explicit_refresh := null;
+  DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS (explicit_refresh, old_last_modified,
+      hdr, new_expiration, ret_content_type, ret_etag, ret_date, ret_expires, ret_last_modif,
+       ret_dt_date, ret_dt_expires, ret_dt_last_modified);
+
+  --dbg_obj_print (old_last_modified, new_expiration, ret_content_type, ret_etag, ret_date, ret_expires, ret_last_modif,
+  --     ret_dt_date, ret_dt_expires, ret_dt_last_modified);
+
+  insert replacing DB.DBA.SYS_HTTP_SPONGE (
+      HS_LAST_LOAD,
+      HS_LAST_ETAG,
+      HS_LAST_READ,
+      HS_EXP_IS_TRUE,
+      HS_EXPIRATION,
+      HS_LAST_MODIFIED,
+      HS_DOWNLOAD_SIZE,
+      HS_DOWNLOAD_MSEC_TIME,
+      HS_READ_COUNT,
+      HS_SQL_STATE,
+      HS_SQL_MESSAGE,
+      HS_LOCAL_IRI,
+      HS_PARSER,
+      HS_ORIGIN_URI,
+      HS_ORIGIN_LOGIN,
+      HS_FROM_IRI)
+      values
+      (
+       now (),
+       ret_etag,
+       now(),
+       case (isnull (ret_dt_expires)) when 1 then 0 else 1 end,
+       coalesce (ret_dt_expires, new_expiration, now()),
+       ret_dt_last_modified,
+       download_size,
+       load_msec,
+       1,
+       NULL,
+       NULL,
+       url,
+       'DB.DBA.RDF_LOAD_HTTP_RESPONSE',
+       url,
+       NULL,
+       top_url
+       );
+
+  return;
+}
+;
+
 --
 -- GRDDL filters, if signature changed web robot needs to be updated too
 --
@@ -253,13 +328,14 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
     inout ret_body any, inout aq any, inout ps any, inout _key any)
 {
   -- check to microformats
-  declare xt_sav, xt, xd, profile, mdta, xslt_style, profs, profs_done any;
-  declare xmlnss, i, l, nss, rdf_url_arr, content, hdr, rdf_in_html any;
-  declare ret_flag, is_grddl int;
+  declare xt_sav, xt, xd, profile, mdta, xslt_style, profs, profs_done, feed_url any;
+  declare xmlnss, i, l, nss, rdf_url_arr, content, hdr, rdf_in_html, old_etag, old_last_modified any;
+  declare ret_flag, is_grddl, download_size, load_msec int;
 
   set_user_id ('dba');
   mdta := 0;
   ret_flag := 1;
+  hdr := null;
   declare exit handler for sqlstate '*'
     {
       goto no_microformats;
@@ -280,8 +356,15 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	{
 	  declare exit handler for sqlstate '*' { goto try_next_link; };
 	  rdf_url := cast (rdf_url as varchar);
+	  if (RDF_MAPPER_CACHE_CHECK (rdf_url, new_origin_uri, old_etag, old_last_modified))
+	    goto try_next_link;
+	  load_msec := msec_time ();
+	  hdr := null;
 	  content := RDF_HTTP_URL_GET (rdf_url, new_origin_uri, hdr);
+	  load_msec := msec_time () - load_msec;
+	  download_size := length (content);
 	  DB.DBA.RDF_LOAD_RDFXML (content, new_origin_uri, coalesce (dest, graph_iri));
+	  RDF_MAPPER_CACHE_REGISTER (rdf_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
 	  rdf_url_inx := rdf_url_inx + 1;
 	  ret_flag := -1;
 	  try_next_link:;
@@ -311,12 +394,22 @@ try_grddl:
   profile := cast (xpath_eval ('/html/head/@profile', xt) as varchar);
   is_grddl := 0;
   if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
-    is_grddl := 1;
+    {
+      if (xpath_eval ('/rdf', xt) is not null)
+	{
+	  declare exit handler for sqlstate '*' { goto not_rdf; };
+          xd :=  xslt (registry_get ('_rdf_mappers_path_') || 'xslt/rdf_wo_grddl.xsl', xtree_doc (ret_body));
+	  xd := serialize_to_UTF8_xml (xd);
+	  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	  mdta := mdta + 1;
+	}
+      not_rdf:;
+      is_grddl := 1;
+    }
   profs := null;
   profs_done := vector ();
   if (profile is not null)
     profs := split_and_decode (profile, 0, '\0\0 ');
-
 
   -- GRDDL - plan A, eRDF going here
   if (profs is not null)
@@ -339,7 +432,7 @@ try_grddl:
     }
   if (strstr (profile, 'http://www.w3.org/2003/g/data-view') is not null or is_grddl)
     {
-      declare xsl_arr any;
+      declare xsl_arr, media any;
       -- GRDDL - plan B, the xslt is specified in the document
       declare exit handler for sqlstate '*' { goto try_rdfa; };
       xsl_arr := xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] '||
@@ -357,8 +450,15 @@ try_grddl:
 	      {
 	        mdta := mdta + 1;
               }
+	    media := xml_tree_doc_media_type (xd);
 	    xd := serialize_to_UTF8_xml (xd);
-	    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	    if (media = 'text/rdf+n3')
+	      {
+	        DB.DBA.TTLP (xd, new_origin_uri, coalesce (dest, graph_iri));
+	        mdta := mdta + 1;
+	      }
+	    else
+	      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	    goto try_next;
 	  }
           try_w3c:
@@ -394,7 +494,7 @@ try_grddl:
 	  try_next1:;
 	}
     }
-
+    -- /* feed formats */
     {
       -- try looking for feed
       declare rss, atom any;
@@ -402,11 +502,20 @@ try_grddl:
       rss  := cast (xpath_eval('//head/link[ @rel="alternate" and @type="application/rss+xml" ]/@href', xt) as varchar);
       atom := cast (xpath_eval('//head/link[ @rel="alternate" and @type="application/atom+xml" ]/@href', xt) as varchar);
 
+      declare exit handler for sqlstate '*' { goto no_feed; };
+
       xt := null;
+      hdr := null;
       if (atom is not null)
         {
 	  declare exit handler for sqlstate '*' { goto try_rss; };
+	  feed_url := atom;
+	  if (RDF_MAPPER_CACHE_CHECK (atom, new_origin_uri, old_etag, old_last_modified))
+	    goto no_feed;
+	  load_msec := msec_time ();
 	  content := DB.DBA.RDF_HTTP_URL_GET (atom, new_origin_uri, hdr);
+	  load_msec := msec_time () - load_msec;
+	  download_size := length (content);
 	  xt := xtree_doc (content);
 	  goto do_detect;
         }
@@ -414,10 +523,21 @@ try_rss:;
       if (rss is not null)
         {
 	  declare exit handler for sqlstate '*' { goto no_microformats; };
+	  feed_url := rss;
+	  if (RDF_MAPPER_CACHE_CHECK (rss, new_origin_uri, old_etag, old_last_modified))
+	    goto no_feed;
+	  load_msec := msec_time ();
 	  content := DB.DBA.RDF_HTTP_URL_GET (rss, new_origin_uri, hdr);
+	  load_msec := msec_time () - load_msec;
+	  download_size := length (content);
 	  xt := xtree_doc (content);
         }
 do_detect:;
+
+	-- the document itself is a feed
+	if (xt is null and xpath_eval ('/rdf|/rss|/feed', xt_sav) is not null)
+	  xt := xtree_doc (ret_body);
+
 	if (xt is null)
 	  goto no_feed;
 	else if (xpath_eval ('/RDF', xt) is not null and content is not null)
@@ -443,6 +563,7 @@ do_detect:;
 	xd := serialize_to_UTF8_xml (xd);
 ins_rdf:
 	DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	RDF_MAPPER_CACHE_REGISTER (feed_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
 	ret_flag := -1;
 no_feed:;
     }

@@ -36,6 +36,7 @@
   xmlns:atom10="http://www.w3.org/2005/Atom"
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
+  xmlns:georss="http://www.georss.org/georss"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -126,7 +127,13 @@
   <dc:creator><xsl:value-of select="." /></dc:creator>
 </xsl:template>
 
-<xsl:template match="geo:point">
+<xsl:template match="geo:Point">
+    <xsl:copy-of select="geo:lat|geo:long"/>
+</xsl:template>
+
+<xsl:template match="georss:point[../geo:Point]"/>
+
+<xsl:template match="georss:point[not(../geo:Point)]">
     <geo:lat><xsl:value-of select="substring-before (., ' ')"/></geo:lat>
     <geo:long><xsl:value-of select="substring-after (., ' ')" /></geo:long>
 </xsl:template>
