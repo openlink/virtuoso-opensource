@@ -1856,8 +1856,6 @@ setp_order_row (setp_node_t * setp, caddr_t * qst)
 	{
 	  row_set_col_temp (row, &ha->ha_key_cols[inx], QST_GET (qst, ssl), &v_fill, ROW_MAX_DATA,
 		       ha->ha_key, &err, ins_itc, NULL, qst);
-	  if (err)
-	    sqlr_resignal (err);
 	}
       else
 	{
@@ -1866,6 +1864,10 @@ setp_order_row (setp_node_t * setp, caddr_t * qst)
 	  upd_col_copy (ha->ha_key, &ha->ha_key_cols[inx], row, &v_fill, ROW_MAX_DATA,
 			&ha->ha_cols[inx], itc->itc_row_data, off, len);
 	}
+      if (err)
+	sqlr_resignal (err);
+      if (inx < key->key_n_significant && v_fill - key->key_row_var_start + key->key_key_var_start > MAX_RULING_PART_BYTES)
+	sqlr_new_error ("22026", "SR...", "Sorting key too long in order by key, exceeds 1900 bytes.");
     }
   ITC_FAIL (ins_itc)
     {
