@@ -40,19 +40,22 @@ create procedure addressbook_contact_iri (in domain_id varchar, in contact_id in
 --
 create procedure fill_ods_addressbook_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
-  declare polls_id integer;
-  declare iri, c_iri, creator_iri, t_iri varchar;
-  declare tags any;
+  declare c_iri, creator_iri varchar;
 
-  for (select p.*
+  for (select WAI_ID, WAI_NAME, WAM_USER
          from DB.DBA.WA_INSTANCE i,
-              AB.WA.PERSONS p,
               DB.DBA.WA_MEMBER m
-        where p.P_DOMAIN_ID = i.WAI_ID
-          and m.WAM_INST = i.WAI_NAME
+        where m.WAM_INST = i.WAI_NAME
           and ((m.WAM_IS_PUBLIC = 1 and _wai_name is null) or i.WAI_NAME = _wai_name)) do
   {
-    contact_insert (P_ID,
+    c_iri := polls_iri (WAI_NAME);
+    creator_iri := user_iri (WAM_USER);
+
+    for (select * from AB.WA.PERSONS where P_DOMAIN_ID = WAI_ID) do
+      contact_insert (graph_iri,
+                      c_iri,
+                      creator_iri,
+                      P_ID,
                     P_DOMAIN_ID,
                     P_NAME,
                     P_FIRST_NAME,
@@ -85,6 +88,9 @@ create procedure fill_ods_addressbook_sioc (in graph_iri varchar, in site_iri va
 -------------------------------------------------------------------------------
 --
 create procedure contact_insert (
+  in graph_iri varchar,
+  in c_iri varchar,
+  in creator_iri varchar,
   inout contact_id integer,
   inout domain_id integer,
   inout name varchar,
@@ -112,14 +118,14 @@ create procedure contact_insert (
   inout updated datetime,
   inout tags varchar)
 {
-  declare graph_iri, iri, event_iri, geo_iri, address_iri, c_iri, role_iri, creator_iri varchar;
-  declare linksTo any;
+  declare iri, event_iri, geo_iri, address_iri varchar;
 
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
+  if (isnull (graph_iri))
   for (select WAM_USER, WAI_NAME
          from DB.DBA.WA_INSTANCE,
               DB.DBA.WA_MEMBER
@@ -129,16 +135,19 @@ create procedure contact_insert (
   {
     graph_iri := get_graph ();
     c_iri := addressbook_iri (WAI_NAME);
-    role_iri := role_iri (domain_id, WAM_USER, 'contact');
     creator_iri := user_iri (WAM_USER);
+    }
+
+  if (not isnull (graph_iri)) {
     iri := addressbook_contact_iri (domain_id, contact_id);
     event_iri := iri || '#event';
     geo_iri := iri || '#based_near';
     address_iri := iri || '#addr';
 
+    ods_sioc_post (graph_iri, iri, c_iri, creator_iri, name, created, updated, AB.WA.contact_url (domain_id, contact_id));
+    ods_sioc_tags (graph_iri, iri, tags);
+
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
-	  DB.DBA.RDF_QUAD_URI   (graph_iri, iri, sioc_iri ('has_container'), c_iri);
-	  DB.DBA.RDF_QUAD_URI   (graph_iri, c_iri, sioc_iri ('container_of'), iri);
     DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, foaf_iri ('knows'), iri);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('nick'), name);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), firstName);
@@ -187,7 +196,6 @@ create procedure contact_insert (
       if (not DB.DBA.is_empty_or_null (hCountry))
         DB.DBA.RDF_QUAD_URI_L (graph_iri, address_iri, vcard_iri ('Country'), hCountry);
     }
-    ods_sioc_tags (graph_iri, iri, tags);
   }
   return;
 }
@@ -216,7 +224,10 @@ create procedure contact_delete (
 --
 create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
 {
-  contact_insert (N.P_ID,
+  contact_insert (null,
+                  null,
+                  null,
+                  N.P_ID,
                   N.P_DOMAIN_ID,
                   N.P_NAME,
                   N.P_FIRST_NAME,
@@ -251,7 +262,10 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
 {
   contact_delete (O.P_ID,
                   O.P_DOMAIN_ID);
-  contact_insert (N.P_ID,
+  contact_insert (null,
+                  null,
+                  null,
+                  N.P_ID,
                   N.P_DOMAIN_ID,
                   N.P_NAME,
                   N.P_FIRST_NAME,

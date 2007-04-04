@@ -2287,7 +2287,7 @@
               	                     value="--self.i_lName"
               	                     key-column="LS_NAME"
               	                     value-column="LS_NAME"
-              		                   sql="select '' as LS_NAME from SYS_USERS where U_ID = 0 union all select LS_NAME from AB.WA.LDAP_SERVERS where LS_DOMAIN_ID = self.domain_id"
+                                     sql="select '' as LS_NAME from SYS_USERS where U_ID = 0 union all select LS_NAME from LDAP..LDAP_SERVERS where LS_USER_ID = self.account_id"
               		                   auto-submit="1">
                    		    <v:after-data-bind>
       		                  <![CDATA[
@@ -2307,9 +2307,9 @@
                       		               self.i_lBind_dn,
                       		               self.i_lPassword,
                       		               self.i_lMaps
-                      		          from AB.WA.LDAP_SERVERS
+                                    from LDAP..LDAP_SERVERS
                       		         where LS_NAME = self.i_lName
-                      		           and LS_DOMAIN_ID = self.domain_id;
+                                     and LS_USER_ID = self.account_id;
                       		      }
                           		}
       		                    control.vs_set_selected ();

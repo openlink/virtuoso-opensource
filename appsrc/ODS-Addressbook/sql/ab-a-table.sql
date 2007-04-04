@@ -284,26 +284,6 @@ AB.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
-AB.WA.exec_no_error('
-  create table AB.WA.LDAP_SERVERS (
-    LS_DOMAIN_ID integer not null,
-    LS_NAME varchar not null,
-    LS_HOST varchar not null,
-    LS_PORT varchar not null,
-    LS_BASE_DN varchar not null,
-    LS_BIND_DN varchar,
-    LS_PASSWORD varchar,
-    LS_SSL integer default 0,
-    LS_VERSION integer default 2,
-    LS_DEFAULT integer default 0,
-    LS_MAPS varchar,
-
-    primary key (LS_DOMAIN_ID, LS_NAME)
-  )
-');
-
--------------------------------------------------------------------------------
---
 create procedure AB.WA.tags_procedure (
   in tags any)
 {
@@ -324,3 +304,7 @@ AB.WA.exec_no_error ('
 -------------------------------------------------------------------------------
 --
 registry_set ('ab_index_version', '0');
+
+-------------------------------------------------------------------------------
+--
+AB.WA.exec_no_error('DROP TABLE AB.WA.LDAP_SERVERS');
