@@ -26,6 +26,7 @@ use LDAP;
 
 DB.DBA.wa_exec_no_error_log ('
   create table LDAP_SERVERS (
+    LS_USER_ID integer not null,
     LS_NAME varchar not null,
     LS_HOST varchar not null,
     LS_PORT varchar not null,
@@ -37,30 +38,52 @@ DB.DBA.wa_exec_no_error_log ('
     LS_DEFAULT integer default 0,
     LS_MAPS varchar,
 
-    primary key (LS_NAME)
+    primary key (LS_USER_ID, LS_NAME)
   )
 ');
 
+DB.DBA.wa_add_col ('LDAP.DBA.LDAP_SERVERS', 'LS_USER_ID', 'integer');
+
+create procedure migrate_ldap ()
+{
+  if (exists (select 1 from DB.DBA.SYS_COLS where upper("TABLE") = 'LDAP.DBA.LDAP_SERVERS' and upper("COLUMN") = 'LS_USER_ID' and COL_NULLABLE = 1))
+    return;
+  update LDAP.DBA.LDAP_SERVERS set LS_USER_ID = http_dav_uid () where LS_USER_ID is null;
+  DB.DBA.wa_exec_no_error ('alter table LDAP.DBA.LDAP_SERVERS modify primary key (LS_USER_ID, LS_NAME)');
+  update DB.DBA.SYS_COLS
+     set COL_NULLABLE = 1
+  where upper("TABLE") = 'LDAP.DBA.LDAP_SERVERS'
+    and upper("COLUMN") = 'LS_USER_ID';
+  __ddl_changed ('LDAP.DBA.LDAP_SERVERS');
+}
+;
+
+migrate_ldap ();
+drop procedure migrate_ldap;
+
 -------------------------------------------------------------------------------
 --
-create procedure LDAP..ldap_default ()
+create procedure LDAP..ldap_default (
+  in ldapUser integer)
 {
-  return (select TOP 1 LS_NAME from LDAP..LDAP_SERVERS where LS_DEFAULT = 1);
+  return (select TOP 1 LS_NAME from LDAP..LDAP_SERVERS where LS_USER_ID = ldapUser and LS_DEFAULT = 1);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure LDAP..ldap_maps (
+  in ldapUser integer,
   in ldapName varchar)
 {
-  return (select deserialize (LS_MAPS) from LDAP..LDAP_SERVERS where LS_NAME = ldapName);
+  return (select deserialize (LS_MAPS) from LDAP..LDAP_SERVERS where LS_USER_ID = ldapUser and LS_NAME = ldapName);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure LDAP..ldap_search (
+  in ldapUser integer,
   in ldapName varchar,
   in ldapSearch varchar)
 {
@@ -69,7 +92,8 @@ create procedure LDAP..ldap_search (
   retValue := vector ();
   for (select LS_HOST, LS_PORT, LS_BASE_DN, LS_BIND_DN, LS_PASSWORD
          from LDAP..LDAP_SERVERS
-        where LS_NAME = ldapName) do {
+        where LS_USER_ID = ldapUser
+          and LS_NAME = ldapName) do {
   	declare exit handler for sqlstate '*'
   	{
   	  goto _end;

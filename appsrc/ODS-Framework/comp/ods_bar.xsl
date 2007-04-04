@@ -128,8 +128,10 @@
 	 lh := http_map_get ('lhost');
 	 hf := http_request_header (self.vc_event.ve_lines, 'Host');
 
-        if(strchr (hf, ':') is null)
-           hf:=hf||':'|| server_http_port ();
+	-- The bellow is wrong, the request can be to default http port 80 ,
+	-- therefore mixing the default http & server port is bad idea
+        -- if(strchr (hf, ':') is null)
+        --   hf:=hf||':'|| server_http_port ();
            
 	 if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
 	   self.odsbar_ods_gpath := 'http://' || hf || '/ods/';
