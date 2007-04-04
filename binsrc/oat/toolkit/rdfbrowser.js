@@ -231,11 +231,11 @@ OAT.RDFBrowser = function(div,optObj) {
 			url.value = self.options.defaultURL;
 			self.store.url = url;
 			
-			var btn1 = OAT.Dom.button("Data Source URI");
-			var btn2 = OAT.Dom.button("WebDav Open");
+			var btn1 = OAT.Dom.button("Query");
+			var btn2 = OAT.Dom.button("Load via Local WebDAV");
 			
 			var h = OAT.Dom.create("h3");
-			h.innerHTML = "Storage";
+			h.innerHTML = "Data Source URI";
 			OAT.Dom.append([self.cacheDiv,h,url,btn1,btn2,self.store.div]);
 			OAT.Dom.attach(btn1,"click",self.store.loadFromInput);
 			OAT.Dom.attach(btn2,"click",function() {

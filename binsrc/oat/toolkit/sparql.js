@@ -482,7 +482,8 @@ OAT.SparqlQuery = function() {
     {
       for(var i = 0;i < self.prefixes.length; i++)
       {
-        if (tmp[1].substring(0,self.prefixes[i].uri.length) == self.prefixes[i].uri)
+        if (tmp[1].substring(0,self.prefixes[i].uri.length) == self.prefixes[i].uri && 
+            !tmp[1].substring(self.prefixes[i].uri.length,tmp[1].length).match(/\//))
         {
           return self.prefixes[i].label + ':' + tmp[1].substring(self.prefixes[i].uri.length);
         }

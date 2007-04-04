@@ -377,7 +377,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	var self = this;
 	
 	this.options = {
-		provider:OAT.MapData.TYPE_G
+		provider:OAT.MapData.TYPE_G,
+		fix:OAT.MapData.FIX_ROUND1
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -459,7 +460,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	}
 	
 	this.redraw = function() {
-		self.map = new OAT.Map(self.elm,self.options.provider);
+		self.map = new OAT.Map(self.elm,self.options.provider,{fix:self.options.fix});
 		self.map.centerAndZoom(0,0,0);
 		self.map.addTypeControl();
 		self.map.addMapControl();

@@ -47,9 +47,7 @@ OAT.Map = function(something, provider, optionsObject) {
 		fixDistance:20,
 		fixEpsilon:0.5
 	}
-	
 	for (var p in optionsObject) { self.options[p] = optionsObject[p]; }
-	
 	this.id = 0; /* ms map pins need id */
 	this.provider = provider;
 	this.obj = false;
@@ -157,7 +155,7 @@ OAT.Map = function(something, provider, optionsObject) {
 		var marker = markerGroup[index];
 		var dx = 0; /* pixel change */
 		var dy = 0;
-		var dist = self.options.fixDistance;;
+		var dist = self.options.fixDistance;
 		switch (self.options.fix) {
 			case OAT.MapData.FIX_ROUND1:
 				if (index) {
@@ -253,7 +251,6 @@ OAT.Map = function(something, provider, optionsObject) {
 				groups.push([m]);
 			}
 		}
-		
 		/* create better positions */
 		for (var i=0;i<groups.length;i++) {
 			var g = groups[i];
@@ -323,7 +320,7 @@ OAT.Map = function(something, provider, optionsObject) {
 			case OAT.MapData.TYPE_G: self.obj.setZoom(zoom); break;
 			case OAT.MapData.TYPE_Y: self.obj.setZoomLevel(17-zoom); break;
 			case OAT.MapData.TYPE_MS: self.obj.SetZoomLevel(zoom+1); break;
-			case OAT.MapData.TYPE_OL: self.obj.zoomTo(5); break;
+			case OAT.MapData.TYPE_OL: self.obj.zoomTo(zoom); break;
 		}	
 	}
 	
@@ -338,7 +335,6 @@ OAT.Map = function(something, provider, optionsObject) {
 	}
 	
 	this.addMarker = function(group,lat,lon,file,w,h,clickCallback) {
-//		if (lat != 38 || lon != -97) { return; }
 		switch (self.provider) {
 			case OAT.MapData.TYPE_G: 
 				var icon = new GIcon(G_DEFAULT_ICON,file);

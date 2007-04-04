@@ -940,7 +940,7 @@ OAT.Dependencies = {
 	graph:"canvas",
 	dav:["grid","tree","toolbar","ajax2","xml"],
 	dialog:["window","dimmer"],
-	datasource:["jsobj","json","xml","connection","dstransport"],
+	datasource:["jsobj","json","xml","connection","dstransport","ajax2"],
 	gmaps:["gapi","map"],
 	ymaps:["map"],
 	simplefx:"animation",

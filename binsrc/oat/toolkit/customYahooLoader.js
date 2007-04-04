@@ -40,7 +40,7 @@ _ywjs('http://us.js2.yimg.com/us.js.yimg.com/lib/common/utils/2/dragdrop_2.0.1-b
 _ywjs('http://us.js2.yimg.com/us.js.yimg.com/lib/common/utils/2/animation_2.0.1-b2.js');
 //		_ywjs('http://us.js2.yimg.com/us.js.yimg.com/lib/map/js/api/ymapapi_3_0_3_17.js');
 function last_include() {
-	if (window.YAHOO.util.Event) {
+	if (window.YAHOO.util.Event && window.YAHOO.util.Anim && window.YAHOO.util.Dom && window.YAHOO.util.DragDrop) {
 		/* include main library only after event is loaded */
 		OAT.Loader.include("ymapapi.js");
 	} else {
