@@ -451,6 +451,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{L}{I}{T}{E}{R}{A}{L}		{ return LITERAL_L	; }
 <SPARQL>{L}{O}{A}{D}			{ return LOAD_L		; }
 <SPARQL>{M}{A}{K}{E}			{ return MAKE_L	; }
+<SPARQL>{M}{A}{P}			{ return MAP_L		; }
 <SPARQL>{M}{A}{X}			{ return MAX_L		; }
 <SPARQL>{M}{I}{N}			{ return MIN_L		; }
 <SPARQL>{M}{O}{D}{I}{F}{Y}		{ return MODIFY_L	; }

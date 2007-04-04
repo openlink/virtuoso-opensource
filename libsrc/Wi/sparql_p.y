@@ -165,6 +165,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token LITERAL_L	/*:: PUNCT_SPAR_LAST("LITERAL") ::*/
 %token LOAD_L		/*:: PUNCT_SPAR_LAST("LOAD") ::*/
 %token MAKE_L		/*:: PUNCT_SPAR_LAST("MAKE") ::*/
+%token MAP_L		/*:: PUNCT_SPAR_LAST("MAP") ::*/
 %token MAX_L		/*:: PUNCT_SPAR_LAST("MAX") ::*/
 %token MIN_L		/*:: PUNCT_SPAR_LAST("MIN") ::*/
 %token MODIFY_L		/*:: PUNCT_SPAR_LAST("MODIFY") ::*/
@@ -311,9 +312,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_qname
 %type <tree> spar_blank_node
 /* nonterminals from part 1a: */
-%type <backstack> spar_sparul_actions_opt
+%type <backstack> spar_sparul_actions
 %type <tree> spar_sparul_action
-%type <tree> spar_sparul_fake
 %type <tree> spar_sparul_insert
 %type <tree> spar_sparul_delete
 %type <tree> spar_sparul_modify
@@ -346,6 +346,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_qm_create_quad_storage
 %type <nothing> spar_qm_alter_quad_storage
 %type <tree> spar_qm_drop_quad_storage
+%type <tree> spar_qm_drop_quad_map_mapping
 %type <tree> spar_qm_drop_mapping
 %type <nothing> spar_qm_from_where_list_opt
 %type <nothing> spar_qm_map_top_group
@@ -413,24 +414,27 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %%
 
 /* TOP-LEVEL begin */
-sparql	/* [1]*	Query		 ::=  Prolog ( QueryBody | ( QmStmt ('.' QmStmt)* '.'? ) )	*/
+sparql	/* [1]*	Query		 ::=  Prolog ( QueryBody | SparulAction* | ( QmStmt ('.' QmStmt)* '.'? ) )	*/
 	: START_OF_SPARQL_TEXT spar_prolog spar_query_body END_OF_SPARQL_TEXT { sparp_arg->sparp_expr = $$ = $3; }
+	| START_OF_SPARQL_TEXT spar_prolog spar_sparul_actions END_OF_SPARQL_TEXT {
+		sparp_arg->sparp_expr = $$ = spar_make_topmost_sparul_sql (sparp_arg,
+		  (SPART **)t_revlist_to_array ($3) ); }
+	| START_OF_SPARQL_TEXT END_OF_SPARQL_TEXT {
+		sparp_arg->sparp_expr = $$ = spar_make_topmost_sparul_sql (sparp_arg,
+		  (SPART **)t_list (0) ); }
 	| START_OF_SPARQL_TEXT spar_prolog spar_qm_stmts spar_opt_dot_and_end { 
 		$$ = spar_make_topmost_qm_sql (sparp_arg);
 		sparp_arg->sparp_expr = $$; }
-	| START_OF_SPARQL_TEXT END_OF_SPARQL_TEXT	{ yyerror ("The SPARQL expression is totally empty"); }
 	| error { sparyyerror ("(internal SPARQL processing error) SPARQL mark expected"); }
 	;
 
 /* PART 1. Standard SPARQL as described by W3C, with Virtuoso extensions for expressions. */
 
-spar_query_body		/* [1]*	QueryBody	 ::=  SelectQuery | ConstructQuery | DescribeQuery | AskQuery | SparulAction*	*/
+spar_query_body		/* [1]	QueryBody	 ::=  SelectQuery | ConstructQuery | DescribeQuery | AskQuery	*/
         : spar_select_query
 	| spar_construct_query
 	| spar_describe_query
 	| spar_ask_query
-        | spar_sparul_actions_opt	{
-		$$ = spar_make_topmost_sparul_sql (sparp_arg, (SPART **)t_revlist_to_array ($1)); }
 	;
 
 spar_prolog		/* [2]*	Prolog		 ::=  Define* BaseDecl? PrefixDecl*	*/
@@ -474,7 +478,8 @@ spar_prefix_decl	/* [4]  	PrefixDecl	  ::=  	'PREFIX' QNAME_NS Q_IRI_REF	*/
 	| PREFIX_L error { sparyyerror ("Missing namespace prefix after PREFIX keyword"); }
 	;
 
-spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ','? Retcol )* ) | '*' ) DatasetClause* WhereClause SolutionModifier	*/
+spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ','? Retcol )* ) | '*' )	*/
+			/*... DatasetClause* WhereClause SolutionModifier	*/
 	: spar_select_query_mode { spar_selid_push (sparp_arg); }
 	    spar_select_rset spar_dataset_clauses_opt
             spar_where_clause spar_solution_modifier {
@@ -917,7 +922,9 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
 	| _PLUS	spar_expn	%prec UPLUS	{ SPAR_BIN_OP ($$, BOP_PLUS, box_num_nonull (0), $2); }
 	| _MINUS spar_expn	%prec UMINUS	{ SPAR_BIN_OP ($$, BOP_MINUS, box_num_nonull (0), $2); }
-        | _LPAR spar_expn _RPAR	{ $$ = $2; }	/* [58]	PrimaryExpn	 ::=  BracketedExpn | BuiltInCall | IRIrefOrFunction | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/
+        | _LPAR spar_expn _RPAR	{ $$ = $2; }	/* [58]	PrimaryExpn	 ::=  */
+			/*... BracketedExpn | BuiltInCall | IRIrefOrFunction	*/
+			/*... | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/
 	| spar_built_in_call
 	| spar_iriref spar_arg_list_opt {	/* [55]  	IRIrefOrFunction	  ::=  	IRIref ArgList? */
                   if (NULL == $2)
@@ -1022,29 +1029,31 @@ spar_blank_node		/* [65]*	BlankNode	 ::=  BLANK_NODE_LABEL | ( '[' ']' )	*/
 
 /* PART 1a. SPARUL */
 
-spar_sparul_actions_opt
-	: /* empty */	{ $$ = NULL; }
-	| spar_sparul_actions_opt spar_sparul_action	{ $$ = $1; t_set_push (&($$), $2); }
-	| spar_sparul_actions_opt spar_sparul_fake	{ $$ = $1; }
+spar_sparul_actions
+	: spar_sparul_action	{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_sparul_fake_create	{ $$ = NULL; }
+	| spar_sparul_actions spar_sparul_action	{ $$ = $1; t_set_push (&($$), $2); }
+	| spar_sparul_actions spar_sparul_fake_create	{ $$ = $1; }
 	;
 
-spar_sparul_action		/* [SPARUL]	SparulAction	 ::=  InsertAction | DeleteAction | ModifyAction | ClearAction | LoadAction | CreateAction	*/
+spar_sparul_action		/* [SPARUL]	SparulAction	 ::=  */
+			/*... CreateAction | DropAction | LoadAction	*/
+			/*... | InsertAction | DeleteAction | ModifyAction | ClearAction	*/
 	: spar_sparul_insert
 	| spar_sparul_delete
 	| spar_sparul_modify
 	| spar_sparul_clear
 	| spar_sparul_load
-	;
-
-spar_sparul_fake
-	: spar_sparul_fake_create
+	| spar_sparul_drop
 	;
 
 spar_sparul_fake_create	/* [SPARUL]*	CreateAction	 ::=  'CREATE' 'SILENT' ? 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn	*/
 	: CREATE_L spar_silent_opt spar_graph_identified_by spar_precode_expn { }
 	;
 
-spar_sparul_insert	/* [SPARUL]*	InsertAction	 ::=  'INSERT' ( ( 'IN' | 'INTO ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
+spar_sparul_insert	/* [SPARUL]*	InsertAction	 ::=  */
+			/*... 'INSERT' ( ( 'IN' | 'INTO ) 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn	*/
+			/*... ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: INSERT_L spar_in_graph_precode_opt { spar_selid_push (sparp_arg); }
             spar_ctor_template spar_action_solution {
 		$$ = spar_make_top (sparp_arg, INSERT_L,
@@ -1053,7 +1062,9 @@ spar_sparul_insert	/* [SPARUL]*	InsertAction	 ::=  'INSERT' ( ( 'IN' | 'INTO ) '
                   $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) ); }
 	;
 
-spar_sparul_delete	/* [SPARUL]*	DeleteAction	 ::=  'DELETE' ( 'FROM' 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
+spar_sparul_delete	/* [SPARUL]*	DeleteAction	 ::=  */
+			/*... 'DELETE' ( 'FROM' 'GRAPH' ( 'IDENTIFIED' 'BY' )? )? PrecodeExpn	*/
+			/*... ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: DELETE_L spar_from_graph_precode_opt { spar_selid_push (sparp_arg); }
             spar_ctor_template spar_action_solution {
 		$$ = spar_make_top (sparp_arg, DELETE_L,
@@ -1062,7 +1073,10 @@ spar_sparul_delete	/* [SPARUL]*	DeleteAction	 ::=  'DELETE' ( 'FROM' 'GRAPH' ( '
 		  $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) ); }
 	;
 
-spar_sparul_modify	/* [SPARUL]*	ModifyAction	 ::=  'MODIFY' ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn ? 'DELETE' ConstructTemplate 'INSERT' ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
+spar_sparul_modify	/* [SPARUL]*	ModifyAction	 ::=  */
+			/*... 'MODIFY' ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn?	*/
+			/*... 'DELETE' ConstructTemplate 'INSERT' ConstructTemplate	*/
+			/*... ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: MODIFY_L spar_graph_precode_opt { spar_selid_push (sparp_arg); }
             DELETE_L spar_ctor_template INSERT_L spar_ctor_template
 	    spar_action_solution {
@@ -1150,17 +1164,21 @@ spar_qm_stmt		/* [Virt]	QmStmt		 ::=  QmSimpleStmt | QmCreateStorage | QmAlterSt
 	| spar_qm_alter_quad_storage
 	;
 
-spar_qm_simple_stmt	/* [Virt]	QmSimpleStmt	 ::=  QmCreateIRIClass | QmCreateLiteralClass | QmDropIRIClass | QmDropLiteralClass | QmCreateIRISubclass | QmDropQuadStorage | QmDropMap */
+spar_qm_simple_stmt	/* [Virt]	QmSimpleStmt	 ::=  */
+			/*... QmCreateIRIClass | QmCreateLiteralClass | QmDropIRIClass | QmDropLiteralClass	*/
+			/*... | QmCreateIRISubclass | QmDropQuadStorage | QmDropMap */
 	: spar_qm_create_iri_class
 	| spar_qm_create_literal_class
 	| spar_qm_drop_iri_class
 	| spar_qm_drop_literal_class
 	| spar_qm_create_iri_subclass
 	| spar_qm_drop_quad_storage
-	| spar_qm_drop_mapping
+	| spar_qm_drop_quad_map_mapping
 	;
 
-spar_qm_create_iri_class	/* [Virt]	QmCreateIRIClass	 ::=  'CREATE' 'IRI' 'CLASS' QmIRIrefConst ( ( String QmSqlfuncArglist ) | ( 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader ) )	*/
+spar_qm_create_iri_class	/* [Virt]	QmCreateIRIClass	 ::=  'CREATE' 'IRI' 'CLASS' QmIRIrefConst	*/
+			/*... ( ( String QmSqlfuncArglist )	*/
+			/*...| ( 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader ) )	*/
 	: CREATE_L IRI_L CLASS_L spar_qm_iriref_const_expn SPARQL_STRING spar_qm_sqlfunc_arglist spar_qm_iri_class_optionlist_opt {
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT",
 		  (SPART **)t_list (3, $4, $5, $6), $7 );
@@ -1171,7 +1189,8 @@ spar_qm_create_iri_class	/* [Virt]	QmCreateIRIClass	 ::=  'CREATE' 'IRI' 'CLASS'
                 sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
 	;
 
-spar_qm_create_literal_class	/* [Virt]	QmCreateLiteralClass	 ::=  'CREATE' 'LITERAL' 'CLASS' QmIRIrefConst 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader QmLiteralClassOptions?	*/
+spar_qm_create_literal_class	/* [Virt]	QmCreateLiteralClass	 ::=  'CREATE' 'LITERAL' 'CLASS' QmIRIrefConst	*/
+			/*... 'USING' QmSqlfuncHeader ',' QmSqlfuncHeader QmLiteralClassOptions?	*/
 	: CREATE_L LITERAL_L CLASS_L spar_qm_iriref_const_expn USING_L spar_qm_sqlfunc_header_commalist spar_qm_literal_class_optionlist_opt {
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FUNCTIONS",
 		  (SPART **)t_list (2, $4, spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($6))), $7 );
@@ -1314,6 +1333,21 @@ spar_qm_drop_quad_storage	/* [Virt]	QmDropStorage	 ::=  'DROP' 'QUAD' 'STORAGE' 
                 sparp_jso_push_affected (sparp_arg, $4); }
         ;
 
+spar_qm_drop_quad_map_mapping		/* [Virt]	QmDropMap	 ::=  'DROP' 'GRAPH'? QmIRIrefConst	*/
+	: DROP_L QUAD_L MAP_L spar_qm_iriref_const_expn	{
+		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
+                  (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
+                  (SPART **)t_list (2, t_box_dv_uname_string ("ID"), $4) );
+		if (NULL == sparp_env()->spare_storage_name)
+                  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+	| DROP_L QUAD_L MAP_L spar_graph_identified_by spar_qm_iriref_const_expn	{
+		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
+                    (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
+                    (SPART **)t_list (2, t_box_dv_uname_string ("GRAPH"), $5) );
+		if (NULL == sparp_env()->spare_storage_name)
+                  sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
+        ;
+
 spar_qm_drop_mapping		/* [Virt]	QmDropMap	 ::=  'DROP' 'GRAPH'? QmIRIrefConst	*/
 	: DROP_L spar_qm_iriref_const_expn	{
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
@@ -1405,6 +1439,8 @@ spar_qm_map_top_dotlist	/* ::=  QmMapTopOp ( '.' QmMapTopOp )*	*/
 spar_qm_map_top_op		/* [Virt]	QmMapTopOp	 ::=  QmMapOp | QmDropMap	*/
 	: spar_qm_map_op
 	| spar_qm_drop_mapping {
+		t_set_push (&(sparp_env()->spare_acc_qm_sqls), $1); }
+	| spar_qm_drop_quad_map_mapping {
 		t_set_push (&(sparp_env()->spare_acc_qm_sqls), $1); }
 	;
 
