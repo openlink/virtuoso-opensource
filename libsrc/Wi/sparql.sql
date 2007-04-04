@@ -6108,8 +6108,8 @@ create procedure DB.DBA.SPARQL_WSDL (in lines any)
 
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
 {
-  declare query, dflt_graph, full_query, format, should_sponge, def_qry varchar;
-  declare named_graphs any;
+  declare query, full_query, format, should_sponge, def_qry varchar;
+  declare dflt_graphs, named_graphs any;
   declare paramctr, paramcount, maxrows, can_sponge integer;
   declare ses, content any;
   declare def_max, add_http_headers, timeout int;
@@ -6118,10 +6118,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   set http_charset='utf-8';
   ses := 0;
   query := null;
-  dflt_graph := null;
   format := '';
   should_sponge := '';
   add_http_headers := 1;
+  dflt_graphs := vector ();
   named_graphs := vector ();
   maxrows := 1024*1024; -- More than enough for web-interface.
   http_meth := http_request_get ('REQUEST_METHOD');
@@ -6297,10 +6297,13 @@ http('</html>\n');
       if ('query' = pname)
         query := pvalue;
       else if ('default-graph-uri' = pname and length (pvalue))
-        dflt_graph := pvalue;
-      else if ('named-graph-uri' = pname)
         {
-	  if (position (pvalue, named_graphs) < 0)
+	  if (position (pvalue, dflt_graphs) <= 0)
+	    dflt_graphs := vector_concat (dflt_graphs, vector (pvalue));
+	}
+      else if ('named-graph-uri' = pname and length (pvalue))
+        {
+	  if (position (pvalue, named_graphs) <= 0)
 	    named_graphs := vector_concat (named_graphs, vector (pvalue));
 	}
       else if ('maxrows' = pname)
@@ -6381,26 +6384,32 @@ http('</html>\n');
   if (def_max > 0 and def_max < maxrows)
     maxrows := def_max;
 
-  --if (dflt_graph is null and length (ini_dflt_graph))
-  --  dflt_graph := ini_dflt_graph;
+  --if (0 = length (dflt_graphs) and length (ini_dflt_graph))
+  --  dflt_graphs := vector (ini_dflt_graph);
 
 
   -- SOAP 1.2 operation begins
   if (http_meth = 'POST' and content_type = 'application/soap+xml')
     {
-       declare xt, ng any;
+       declare xt, dgs, ngs any;
        content := http_body_read ();
 --       dbg_obj_print (string_output_string (content));
        xt := xtree_doc (content);
        query := charset_recode (xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] string (/soap:Envelope/soap:Body/sp:query-request/sp:query)', xt), '_WIDE_', 'UTF-8');
-       dflt_graph := charset_recode (xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] string (/soap:Envelope/soap:Body/sp:query-request/sp:default-graph-uri)', xt), '_WIDE_', 'UTF-8');
-       ng := xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] /soap:Envelope/soap:Body/sp:query-request/sp:named-graph-uri', xt, 0);
-
-       foreach (any frag in ng) do
+       dgs := xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] /soap:Envelope/soap:Body/sp:query-request/sp:default-graph-uri', xt, 0);
+       ngs := xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] /soap:Envelope/soap:Body/sp:query-request/sp:named-graph-uri', xt, 0);
+       foreach (any frag in dgs) do
 	 {
 	   declare pvalue varchar;
 	   pvalue := charset_recode (xpath_eval ('string(.)', frag), '_WIDE_', 'UTF-8');
-	   if (position (pvalue, named_graphs) < 0)
+	   if (position (pvalue, dflt_graphs) <= 0)
+	     dflt_graphs := vector_concat (dflt_graphs, vector (pvalue));
+	 }
+       foreach (any frag in ngs) do
+	 {
+	   declare pvalue varchar;
+	   pvalue := charset_recode (xpath_eval ('string(.)', frag), '_WIDE_', 'UTF-8');
+	   if (position (pvalue, named_graphs) <= 0)
 	     named_graphs := vector_concat (named_graphs, vector (pvalue));
 	 }
        format := 'application/soap+xml';
@@ -6421,11 +6430,8 @@ http('</html>\n');
       return;
     }
 
-  if (dflt_graph is null)
-    dflt_graph := '';
-
   full_query := query;
-
+  -- dbg_obj_princ ('dflt_graphs = ', dflt_graphs, ', named_graphs = ', named_graphs);
       declare req_hosts varchar;
       declare req_hosts_split any;
       declare hctr integer;
@@ -6437,8 +6443,8 @@ http('</html>\n');
       for (select top 1 SH_GRAPH_URI, SH_DEFINES from DB.DBA.SYS_SPARQL_HOST
       where req_hosts_split [hctr] like SH_HOST) do
         {
-          if (dflt_graph = '')
-            dflt_graph := SH_GRAPH_URI;
+          if (length (dflt_graphs) = 0 and length (SH_GRAPH_URI))
+            dflt_graphs := vector (SH_GRAPH_URI);
           if (SH_DEFINES is not null)
             full_query := concat (SH_DEFINES, ' ', full_query);
           goto host_found;
@@ -6446,9 +6452,16 @@ http('</html>\n');
     }
 host_found:
 
-  if (dflt_graph is not null and dflt_graph <> '')
-    full_query := concat ('define input:default-graph-uri <', dflt_graph, '> ', full_query);
-
+  foreach (varchar dg in dflt_graphs) do
+    {
+      full_query := concat ('define input:default-graph-uri <', dg, '> ', full_query);
+      http_header (sprintf ('X-SPARQL-default-graph: %U\r\n', dg));
+    }
+  foreach (varchar ng in named_graphs) do
+    {
+      full_query := concat ('define input:named-graph-uri <', ng, '> ', full_query);
+      http_header (sprintf ('X-SPARQL-named-graph: %U\r\n', ng));
+    }
   if ((should_sponge = 'soft') or (should_sponge = 'replacing'))
     full_query := concat (sprintf('define get:soft "%s" ',should_sponge), full_query);
   else if (should_sponge = 'grab-all')
@@ -6489,17 +6502,6 @@ host_found:
   state := '00000';
   metas := null;
   rset := null;
-  foreach (varchar g in named_graphs) do
-    {
-      query := concat ('define input:named-graph-uri <', g, '> ', query);
-      http_header (sprintf ('X-SPARQL-named-graph: %U\r\n', g));
-    }
-  if (dflt_graph is not null and dflt_graph <> '')
-  {
-  query := concat ('sparql define input:default-graph-uri <', dflt_graph, '> ', query);
-  http_header (sprintf ('X-SPARQL-default-graph: %U\r\n', dflt_graph));
-  }
---  http (sprintf ('<!-- X-SPARQL-default-graph: %U\r\n -->\n', dflt_graph));
 --  http ('<!-- Query:\n' || query || '\n-->\n', 0);
   set_user_id ('SPARQL');
   -- dbg_obj_princ ('full_query = ', full_query);
@@ -6732,10 +6734,133 @@ create table DB.DBA.SYS_HTTP_SPONGE (
   HS_READ_COUNT integer,
   HS_SQL_STATE varchar,
   HS_SQL_MESSAGE varchar,
+  HS_FROM_IRI varchar,
   HS_QUALITY double precision,
   primary key (HS_LOCAL_IRI, HS_PARSER)
 )
 create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc)
+create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER)
+;
+
+--!AFTER
+alter table DB.DBA.SYS_HTTP_SPONGE add HS_FROM_IRI varchar
+;
+
+create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
+   (
+    in explicit_refresh any,
+    in old_last_modified any,
+    inout ret_hdr any,
+    inout new_expiration any,
+    out ret_content_type any,
+    out ret_etag any,
+    out ret_date any,
+    out ret_expires any,
+    out ret_last_modif any,
+    out ret_dt_date any,
+    out ret_dt_expires any,
+    out ret_dt_last_modified any
+   )
+{
+  declare ret_304_not_modified int;
+
+  ret_304_not_modified := 0;
+  if (ret_hdr[0] like 'HTTP%304%')
+    {
+      ret_304_not_modified := 1;
+    }
+
+  ret_content_type := http_request_header (ret_hdr, 'Content-Type', null, null);
+  ret_etag := http_request_header (ret_hdr, 'ETag', null, null);
+  ret_date := http_request_header (ret_hdr, 'Date', null, null);
+  ret_expires := http_request_header (ret_hdr, 'Expires', null, null);
+  ret_last_modif := http_request_header (ret_hdr, 'Last-Modified', null, null);
+  ret_dt_date := http_string_date (ret_date, NULL, NULL);
+  ret_dt_expires := http_string_date (ret_expires, NULL, now());
+  ret_dt_last_modified := http_string_date (ret_last_modif, NULL, now());
+  if (http_request_header (ret_hdr, 'Pragma', null, null) = 'no-cache' or
+    http_request_header (ret_hdr, 'Cache-Control', null, null) like 'no-cache%' )
+    ret_dt_expires := now ();
+  if (ret_304_not_modified and ret_dt_last_modified is null)
+    ret_dt_last_modified := old_last_modified;
+  if (ret_dt_date is not null)
+    {
+      if (ret_dt_expires is not null)
+        ret_dt_expires := dateadd ('second', datediff ('second', ret_dt_date, now()), ret_dt_expires);
+      if (ret_dt_last_modified is not null)
+        ret_dt_last_modified := dateadd ('second', datediff ('second', ret_dt_date, now()), ret_dt_last_modified);
+    }
+  if (ret_dt_expires is not null and
+    (ret_dt_expires < coalesce (ret_dt_date, ret_dt_last_modified, now ())) )
+    ret_dt_expires := NULL;
+  if (ret_dt_expires is not null)
+    new_expiration := ret_dt_expires;
+  else
+    {
+      if (ret_dt_date is not null and ret_dt_last_modified is not null and (ret_dt_date >= ret_dt_last_modified))
+        new_expiration := dateadd ('second',
+		__min (
+		   3600 * 24 * 7,
+		   0.7 * datediff ('second', ret_dt_last_modified, ret_dt_date)
+		 ),
+		now());
+    }
+  if (ret_304_not_modified)
+    {
+      if (new_expiration is null and explicit_refresh is not null)
+        new_expiration := dateadd ('second', 0.7 * explicit_refresh, now());
+
+      if (ret_dt_expires is null and new_expiration is not null and explicit_refresh is not null)
+        new_expiration := __min (new_expiration, dateadd ('second', explicit_refresh, now()));
+    }
+}
+;
+
+
+--!AFTER_AND_BEFORE DB.DBA.SYS_HTTP_SPONGE HS_FROM_IRI !
+create procedure DB.DBA.SYS_HTTP_SPONGE_DEP_URL_NOT_CHNAGED (in local_iri varchar, in parser varchar, in explicit_refresh int)
+{
+
+ for select
+       HS_LOCAL_IRI as old_local_iri,
+       HS_LAST_LOAD as old_last_load,
+       HS_READ_COUNT as old_read_count,
+       HS_EXP_IS_TRUE as old_exp_is_true,
+       HS_EXPIRATION as old_expiration,
+       HS_LAST_MODIFIED as old_last_modified
+  from DB.DBA.SYS_HTTP_SPONGE where HS_FROM_IRI = local_iri and HS_PARSER = parser
+  do
+    {
+      -- dbg_obj_princ (' old_expiration=', old_expiration, ' old_exp_is_true=', old_exp_is_true, ' old_last_load=', old_last_load);
+      -- dbg_obj_princ ('now()=', now(), ' explicit_refresh=', explicit_refresh);
+      if (old_expiration is not null)
+	{
+	  if ((old_expiration >= now()) and (
+		explicit_refresh is null or
+		old_exp_is_true or
+		(dateadd ('second', explicit_refresh, old_last_load) >= now()) ) )
+	    {
+	      -- dbg_obj_princ ('not expired, return');
+	      update DB.DBA.SYS_HTTP_SPONGE
+		  set HS_LAST_READ = now(), HS_READ_COUNT = old_read_count + 1
+		  where HS_LOCAL_IRI = old_local_iri and HS_LAST_READ < now();
+	    }
+	  else
+	    {
+	      return 0;
+	    }
+	}
+      else -- either other loading is in progress or an recorded error
+	{
+	  if (old_last_load >= now() and old_expiration is null)
+	    {
+	      -- dbg_obj_princ ('collision in the air, return');
+	      return 0; -- Nobody promised to resolve collisions in the air.
+	    }
+	}
+    }
+  return 1;
+}
 ;
 
 create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varchar, in parser varchar, in eraser varchar, in options any)
@@ -6793,7 +6918,12 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
           update DB.DBA.SYS_HTTP_SPONGE
           set HS_LAST_READ = now(), HS_READ_COUNT = old_read_count + 1
           where HS_LOCAL_IRI = local_iri and HS_LAST_READ < now();
+	  -- check here for dependant URLs
+	  -- if some is expired or is dynamic, then treat the top page and rest as they changed
+	  if (DB.DBA.SYS_HTTP_SPONGE_DEP_URL_NOT_CHNAGED (local_iri, parser, explicit_refresh))
           return local_iri;
+	  else
+	    old_last_etag := null;
         }
     }
   else -- either other loading is in progress or an recorded error
@@ -6869,42 +6999,13 @@ perform_actual_load:
          new_origin_uri, get_method ) );
 
 resp_received:
-  ret_content_type := http_request_header (ret_hdr, 'Content-Type', null, null);
-  ret_etag := http_request_header (ret_hdr, 'ETag', null, null);
-  ret_date := http_request_header (ret_hdr, 'Date', null, null);
-  ret_expires := http_request_header (ret_hdr, 'Expires', null, null);
-  ret_last_modif := http_request_header (ret_hdr, 'Last-Modified', null, null);
-  ret_dt_date := http_string_date (ret_date, NULL, NULL);
-  ret_dt_expires := http_string_date (ret_expires, NULL, now());
-  ret_dt_last_modified := http_string_date (ret_last_modif, NULL, now());
-  if (http_request_header (ret_hdr, 'Pragma', null, null) = 'no-cache' or
-    http_request_header (ret_hdr, 'Cache-Control', null, null) like 'no-cache%' )
-    ret_dt_expires := now ();
-  if (ret_304_not_modified and ret_dt_last_modified is null)
-    ret_dt_last_modified := old_last_modified;
-  if (ret_dt_date is not null)
-    {
-      if (ret_dt_expires is not null)
-        ret_dt_expires := dateadd ('second', datediff ('second', ret_dt_date, now()), ret_dt_expires);
-      if (ret_dt_last_modified is not null)
-        ret_dt_last_modified := dateadd ('second', datediff ('second', ret_dt_date, now()), ret_dt_last_modified);
-    }
-  if (ret_dt_expires is not null and
-    (ret_dt_expires < coalesce (ret_dt_date, ret_dt_last_modified, now ())) )
-    ret_dt_expires := NULL;
-  if (ret_dt_expires is not null)
-    new_expiration := ret_dt_expires;
-  else
-    {
-      if (ret_dt_date is not null and ret_dt_last_modified is not null and (ret_dt_date >= ret_dt_last_modified))
-        new_expiration := dateadd ('second', __min (3600 * 24 * 7, 0.7 * datediff ('second', ret_dt_last_modified, ret_dt_date)), now());
-    }
+--- resolve the caching params
+   DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS (explicit_refresh, old_last_modified, ret_hdr, new_expiration,
+       ret_content_type, ret_etag, ret_date, ret_expires, ret_last_modif,
+       ret_dt_date, ret_dt_expires, ret_dt_last_modified);
+
   if (ret_304_not_modified)
     {
-      if (new_expiration is null and explicit_refresh is not null)
-        new_expiration := dateadd ('second', 0.7 * explicit_refresh, now());
-      if (ret_dt_expires is null and new_expiration is not null and explicit_refresh is not null)
-        new_expiration := __min (new_expiration, dateadd ('second', explicit_refresh, now()));
       update DB.DBA.SYS_HTTP_SPONGE
       set HS_LAST_LOAD = now(), HS_LAST_ETAG = old_last_etag, HS_LAST_READ = now(),
         HS_EXP_IS_TRUE = case (isnull (ret_dt_expires)) when 1 then 0 else 1 end,
@@ -7104,7 +7205,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   declare dest varchar;
   declare rc any;
   declare aq, ps any;
-  declare xd any;
+  declare xd, xt any;
 
   aq := null;
   ps := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'PingService');
@@ -7123,12 +7224,18 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       if (dest is null)
       delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
       -- delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (dest);
+      xt := xtree_doc (ret_body);
+      -- we test for GRDDL inside RDF/XML, if so do it inside mappers, else it will fail because of dv:transformation attr
+      if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
+	goto load_grddl;
       DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, coalesce (dest, graph_iri));
+
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
+
       return 1;
     }
-  if (
+  else if (
        strstr (ret_content_type, 'text/rdf+n3') is not null or strstr (ret_content_type, 'text/rdf+ttl') is not null or
        strstr (ret_content_type, 'application/rdf+n3') is not null or strstr (ret_content_type, 'application/rdf+turtle') is not null or
        strstr (ret_content_type, 'application/turtle') is not null or strstr (ret_content_type, 'application/x-turtle') is not null
@@ -7143,6 +7250,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       return 1;
     }
 
+load_grddl:;
   for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY from DB.DBA.SYS_RDF_MAPPERS order by RM_TYPE do
     {
       declare val_match any;
