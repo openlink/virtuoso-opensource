@@ -81,15 +81,9 @@ EXTRA_DIST =  \
 	make_vad.sh \
 	retry.sh \
 	setup.isql \
-	Skins/Clean/*.css \
-	Skins/Clean/*.xslt \
 	Skins/default/*.css \
 	Skins/default/*.png \
 	Skins/default/*.xslt \
-	Skins/OpenLink/*.css \
-	Skins/OpenLink/*.xslt \
-	Skins/white/*.css \
-	Skins/white/*.xslt \
 	Template/*.txt \
 	version.base \
 	version.curr
