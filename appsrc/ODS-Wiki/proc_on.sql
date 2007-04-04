@@ -4333,8 +4333,11 @@ create procedure ADD_HIST_ENTRY (in _cluster varchar,
          delete from HIST where H_ID = _id;
     }
   }
+  if (_cluster is not null and _topic is not null)
+    {
   insert into HIST (H_CLUSTER, H_TOPIC, H_OP, H_VER, H_DT, H_WHO, H_IS_PUBLIC) 
   	values (_cluster, _topic, _op, _ver, now(), coalesce(connection_get('WikiUser'), '{system bot}'), (select WAI_IS_PUBLIC from DB.DBA.WA_INSTANCE where WAI_NAME = _cluster));
+}
 }
 ;
 
