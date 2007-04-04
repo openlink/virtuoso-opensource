@@ -2025,7 +2025,7 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
     }
   if (nlp_sum - olp_sum >= ROW_ALIGN (parent->bd_content_map->pm_bytes_free))
     {
-      fprintf (stderr, "nlp_sum - olp_sum > pm_bytes_free\n", nlp_sum, olp_sum, ROW_ALIGN (parent->bd_content_map->pm_bytes_free));
+      /*fprintf (stderr, "nlp_sum - olp_sum > pm_bytes_free\n", nlp_sum, olp_sum, ROW_ALIGN (parent->bd_content_map->pm_bytes_free)); */
       return CP_REENTER; /* the new leaf pointers would not fit on parent.  Do nothing */
     }
 
