@@ -256,9 +256,9 @@ create procedure briefcase_sioc_insert_ex (
                                        '   FROM <%s> ' ||
                                        '  WHERE {?x rdf:type foaf:Person} ', w_iri));
       if (length (persons)) {
-        ldapServer := LDAP..ldap_default ();
+        ldapServer := LDAP..ldap_default (r_owner);
         if (not isnull (ldapServer))
-          ldapMaps := LDAP..ldap_maps (ldapServer);
+          ldapMaps := LDAP..ldap_maps (r_owner, ldapServer);
         DB.DBA.RDF_LOAD_RDFXML (r_content, '', g_iri);
         r_iri := role_iri (sn_id, r_owner, 'contact');
         foreach (any pers_iri in persons) do {
@@ -275,7 +275,7 @@ create procedure briefcase_sioc_insert_ex (
                                                      '  WHERE {<%s> foaf:name ?x.} ', w_iri, pers_iri[0]));
             if (length (personName)) {
               personName := personName [0][0];
-              ldapData := LDAP..ldap_search (ldapServer, sprintf ('(cn=%s)', personName));
+              ldapData := LDAP..ldap_search (r_owner, ldapServer, sprintf ('(cn=%s)', personName));
               for (N := 0; N < length (ldapData); N := N + 2) {
             	  if (ldapData[N] = 'entry') {
             	    data := ldapData [N+1];
@@ -323,9 +323,9 @@ create procedure briefcase_sioc_insert_ex (
     ODRIVE.WA.DAV_PROP_SET (r_full_path, 'virt:graphIri', also_iri);
 
     -- ldap data
-    ldapServer := LDAP..ldap_default ();
+    ldapServer := LDAP..ldap_default (r_owner);
     if (not isnull (ldapServer))
-      ldapMaps := LDAP..ldap_maps (ldapServer);
+      ldapMaps := LDAP..ldap_maps (r_owner, ldapServer);
 
     -- using DAV parser
     if (not isstring (r_content)) {
@@ -376,7 +376,7 @@ create procedure briefcase_sioc_insert_ex (
                 DB.DBA.RDF_QUAD_URI (g_iri, creator_iri, foaf_iri ('knows'), p_iri);
                 DB.DBA.RDF_QUAD_URI (g_iri, p_iri, foaf_iri ('knows'), creator_iri);
                 if (not isnull (ldapServer)) {
-                  ldapData := LDAP..ldap_search (ldapServer, sprintf ('(cn=%s)', T));
+                  ldapData := LDAP..ldap_search (r_owner, ldapServer, sprintf ('(cn=%s)', T));
                   for (N := 0; N < length (ldapData); N := N + 2) {
                 	  if (ldapData[N] = 'entry') {
                 	    data := ldapData [N+1];
