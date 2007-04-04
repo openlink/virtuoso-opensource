@@ -258,6 +258,12 @@ window.iSPARQL = {
 
   QueryExec:function(paramsObj)
   {
+    // We use this to fix IE visualization problems with pre content
+    var putTextInPre = function(elm,txt){
+      if (OAT.Dom.isIE()) 
+        txt = txt.replace(/\r\n/g,'\r').replace(/\n/g,'\r');
+      OAT.Dom.append([elm,OAT.Dom.text(txt)]);
+    }
 
   	var params = {
   		service:goptions.service,
@@ -415,16 +421,16 @@ window.iSPARQL = {
           request.className = "request";
           var request_content = OAT.Dom.create("pre");
           OAT.Dom.append([request,request_content]);
-          request_content.innerHTML += 'POST ' + endpoint + ' HTTP 1.1\r\n';
-          request_content.innerHTML += 'Host: ' + window.location.host + '\r\n';
+          putTextInPre(request_content,'POST ' + endpoint + ' HTTP 1.1\r\n');
+          putTextInPre(request_content,'Host: ' + window.location.host + '\r\n');
           if (ReqHeaders) {
       		  for (var p in ReqHeaders) {
-      		    request_content.innerHTML += p + ': ' + ReqHeaders[p] + '\r\n';
+      		    putTextInPre(request_content,p + ': ' + ReqHeaders[p] + '\r\n');
       		  }
       		}
-          request_content.innerHTML += 'Content-Length: ' + body_str.length + '\r\n';
-          request_content.innerHTML += '\r\n';
-          request_content.innerHTML += body_str.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+          putTextInPre(request_content,'Content-Length: ' + body_str.length + '\r\n');
+          putTextInPre(request_content,'\r\n');
+          putTextInPre(request_content,body_str.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
   
           OAT.Dom.append([params.res_div,request]);
         }
@@ -436,9 +442,9 @@ window.iSPARQL = {
           var responce_content = OAT.Dom.create("pre");
           OAT.Dom.append([response,responce_content]);
         
-          responce_content.innerHTML += headers;
-          responce_content.innerHTML += '\r\n';
-          responce_content.innerHTML += data.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+          putTextInPre(responce_content,headers);
+          putTextInPre(responce_content,'\r\n');
+          putTextInPre(responce_content,data.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
           OAT.Dom.append([params.res_div,response]);
         }
 
@@ -449,7 +455,8 @@ window.iSPARQL = {
           var query_div_content = OAT.Dom.create("pre");
           OAT.Dom.append([query_div,query_div_content]);
         
-          query_div_content.innerHTML = params.query.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+          //query_div_content.innerHTML = params.query.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+          putTextInPre(query_div_content,params.query.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
           OAT.Dom.append([params.res_div,query_div]);
         }
         

@@ -68,7 +68,7 @@
           format = 'application/isparql+rdf-graph';
         var params = {
           service:goptions.service,
-          query:OAT.Dom.fromSafeXML($('query').innerHTML),
+          query:query,
           default_graph_uri:graph,
           maxrows:0,
           format:format,
@@ -133,9 +133,9 @@
 	</head>
 	<body>
 		<div id="res_area"></div>
-		<div id="query" style="display:none;">
+		<pre id="query" style="display:none;">
 		  <xsl:value-of select="i:query"/>
-		</div>
+		</pre>
 	</body>
 	</html>
 	

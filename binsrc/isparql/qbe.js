@@ -379,8 +379,8 @@ iSPARQL.QBE = function ()
 	this.getSaveData = function(save_type){
 		var data = "";
 		
-//		data += '#should-sponge:' + $v('qbe_sponge') + '\n';
-//		data += '#service:' + self.service.input.value + '\n';
+		data += '#should-sponge:' + $v('qbe_sponge') + '\n';
+		data += '#service:' + self.service.input.value + '\n';
 		
 		switch (save_type) {
 			case "rq":
@@ -405,7 +405,8 @@ iSPARQL.QBE = function ()
   			//xml += '<service>'+goptions.service+'</service>\n';
   			//xml += '<should_sponge>'+goptions.should_sponge+'</should_sponge>\n';
   			xml += '<proxy>'+goptions.proxy+'</proxy>\n';
-  			xml += '<query><![CDATA['+data+']]></query>\n';
+  			//xml += '<query><![CDATA['+data+']]></query>\n';
+  			xml += '<query>'+OAT.Dom.toSafeXML(data)+'</query>\n';
   			for (var i=0;i < self.UpdatedSchemas.length;i++)
   			  xml += '<schema uri="'+ self.UpdatedSchemas[i] +'"/>\n';
   			xml += '</ISparqlDynamicPage>\n';
@@ -454,7 +455,8 @@ iSPARQL.QBE = function ()
     {
       for(var i = 0;i < self.prefixes.length; i++)
       {
-        if (tmp[1].substring(0,self.prefixes[i].uri.length) == self.prefixes[i].uri)
+        if (tmp[1].substring(0,self.prefixes[i].uri.length) == self.prefixes[i].uri && 
+            !tmp[1].substring(self.prefixes[i].uri.length,tmp[1].length).match(/\//))
         {
           return self.prefixes[i].label + ':' + tmp[1].substring(self.prefixes[i].uri.length);
         }
