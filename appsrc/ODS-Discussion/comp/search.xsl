@@ -37,10 +37,11 @@
 
       if (keycode == 13)
         {
+           alert('realm'+'<?Vself.realm?>');
 
           if(document.getElementById('searchkeywords').value.trim()!='')
     {
-            document.location.href='<?V sprintf ('nntpf_addtorss.vspx?sid=%s&realm=%s', self.sid, self.realm) ?>&search='+document.getElementById('searchkeywords').value;
+            document.location.href='nntpf_addtorss.vspx?sid=<?Vself.sid?>&realm=<?Vself.realm?>&search='+document.getElementById('searchkeywords').value;
           }
           return false;
         }
