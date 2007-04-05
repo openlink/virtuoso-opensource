@@ -169,19 +169,22 @@ int
 scn3_sprint_curr_line_loc (char *buf, size_t max_buf)
 {
   int res = 0;
-  int depthctr = scn3_pragmaline_depth;
+  int depthctr;
   int printed_loc_count = 0;
   res += snprintf (buf, max_buf, "Line %d", scn3_lineno);
-  while ((depthctr >= 0) && (scn3_line_locs[depthctr].sll_pragma_lineno > 0))
+  for (depthctr = scn3_pragmaline_depth;
+    (depthctr >= 0) && (scn3_line_locs[depthctr].sll_pragma_lineno > 0);
+    depthctr-- )
     {
       scn3_line_loc_t *sll = scn3_line_locs + depthctr;
-      res += snprintf (buf+res, max_buf - res, "%si.e. line %d",
-	(printed_loc_count ? ", " : " ("),
-	sll->sll_pragma_lineno + (scn3_lineno - sll->sll_start_lineno) );
+      int l = sll->sll_pragma_lineno + (scn3_lineno - sll->sll_start_lineno);
+      if (!printed_loc_count && (l == scn3_lineno) && (NULL == sll->sll_pragma_file))
+        continue; /* To avoid garbage like 'Line 8 (line 8)' */
+      res += snprintf (buf+res, max_buf - res, "%sline %d",
+	(printed_loc_count ? ", " : " ("), l );
       if (NULL != sll->sll_pragma_file)
 	res += snprintf (buf+res, max_buf - res, " of \"%s\"", sll->sll_pragma_file);
       printed_loc_count++;
-      depthctr--;
     }
   if (printed_loc_count)
     res += snprintf (buf+res, max_buf - res, ")");

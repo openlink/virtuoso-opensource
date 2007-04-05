@@ -2165,7 +2165,15 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
               rdf_box_t *rb = (rdf_box_t *)object;
 	      fprintf (out, "rdf_box(");
               dbg_print_box_aux (rb->rb_box, out, known);
-	      fprintf (out, ",%ld,%ld,%ld,%ld)", (long)(rb->rb_type), (long)(rb->rb_lang), (long)(rb->rb_ro_id), (long)(rb->rb_is_complete));
+	      fprintf (out, ",%ld,%ld,%ld,%ld", (long)(rb->rb_type), (long)(rb->rb_lang), (long)(rb->rb_ro_id), (long)(rb->rb_is_complete));
+              if (rb->rb_chksum_tail)
+                {
+                  rdf_bigbox_t *rbb = (rdf_bigbox_t *)rb;
+	          fprintf (out, ",");
+                  dbg_print_box_aux (rbb->rbb_chksum, out, known);
+	          fprintf (out, ",%ld", (long)(rbb->rbb_box_dtp));
+                }
+	      fprintf (out, ")");
               break;
             }
 	default:

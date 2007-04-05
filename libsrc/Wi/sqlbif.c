@@ -278,7 +278,7 @@ bif_string_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
     return bs;
   }
 #endif
-  if (dtp != DV_SHORT_STRING && dtp != DV_LONG_STRING)
+  if (dtp != DV_STRING)
     sqlr_new_error ("22023", "SR014",
   "Function %s needs a string as argument %d, not an arg of type %s (%d)",
   func, nth + 1, dv_type_title (dtp), dtp);

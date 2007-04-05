@@ -9348,8 +9348,11 @@ caddr_t bif_xml_serialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot_t
 
 caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t strg = bif_string_arg (qst, args, 0, "__xml_deserialize_packed");
   caddr_t *res;
+  caddr_t strg = bif_arg (qst, args, 0, "__xml_deserialize_packed");
+  dtp_t strg_dtp = DV_TYPE_OF (strg);
+  if (DV_STRING == strg_dtp)
+    {
   scheduler_io_data_t iod;
   dk_session_t ses;
   memset (&ses, 0, sizeof (ses));
@@ -9358,6 +9361,22 @@ caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot
   ses.dks_in_fill = box_length (strg) - 1;
   SESSION_SCH_DATA ((&ses)) = &iod;
   xte_deserialize_packed (&ses, &res, NULL);
+    }
+  else
+    {
+      blob_handle_t *bh;
+      dk_session_t *tmp_ses;
+      if (!IS_BLOB_HANDLE_DTP(strg_dtp))
+        sqlr_new_error ("22023", "SR560",
+	  "__xml_deserialize_packed() requires a blob or string argument");
+      bh = (blob_handle_t *) strg;
+      if (bh->bh_ask_from_client)
+        sqlr_new_error ("22023", "SR561",
+	  "Blob argument to __xml_deserialize_packed() must be a non-interactive blob");
+      tmp_ses = blob_to_string_output (((query_instance_t *)qst)->qi_trx, bh);
+      xte_deserialize_packed (tmp_ses, &res, NULL);
+      dk_free_box (tmp_ses);
+    }
   if (NULL == res)
     return NEW_DB_NULL;
   return (caddr_t)res;
@@ -9388,6 +9407,149 @@ caddr_t bif_xml_follow_logical_path (caddr_t * qst, caddr_t * err_ret, state_slo
   tgt = src->_->xe_copy (src);
   tgt->_->xe_follow_path (tgt, (ptrlong *)path, BOX_ELEMENTS (path));
   return (caddr_t)tgt;
+}
+
+#if 0
+static void
+xtree_tridgell32_iter (caddr_t *tree, unsigned *lo_ptr, unsigned *hi_ptr)
+{
+  unsigned lo = lo_ptr[0], hi = hi_ptr[0], loxor, hixor, lon, hin;
+  unsigned char *data;
+  size_t len;
+  unsigned char *tail;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree))
+    {
+      int attrctr, head_len, cctr, ccount = BOX_ELEMENTS_INT (tree);
+      caddr_t * head = XTE_HEAD (tree);
+      data = (unsigned char *)(XTE_HEAD_NAME (head));
+      head_len = BOX_ELEMENTS_INT (head);
+      len = box_length_inline (data) - 1;
+      for (tail = data + len - 1; tail >= data; tail--)
+        { lo += tail[0]; hi += lo; }
+      loxor = hixor = 0;
+      for (attrctr = 2; attrctr < head_len; attrctr += 2)
+        {
+          lon = hin = 0;
+          data = (unsigned char *)(head[attrctr-1]);
+          len = box_length_inline (data) - 1;
+          for (tail = data + len - 1; tail >= data; tail--)
+            { lon += tail[0]; hin += lon; }
+          data = (unsigned char *)(head[attrctr]);
+          len = box_length_inline (data) - 1;
+          for (tail = data + len - 1; tail >= data; tail--)
+            { lon += tail[0]; hin += lon; }
+          loxor ^= lon;
+          hixor ^= hin;
+        }
+      lo += loxor; hi += lo;
+      for (cctr = 1; cctr < ccount; cctr++)
+        xtree_tridgell32_iter ((caddr_t *)(tree[cctr]), &lo, &hi);
+    }
+  else
+    {
+      data = (unsigned char *)(tree);
+      len = box_length_inline (data) - 1;
+      for (tail = data + len - 1; tail >= data; tail--)
+        { lo += tail[0]; hi += lo; }
+    }
+  lo_ptr[0] = lo;
+  hi_ptr[0] = hi;
+}
+
+
+caddr_t bif_xtree_tridgell32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  xml_tree_ent_t * src = bif_tree_ent_arg (qst, args, 0, "xtree_tridgell32");
+  long make_num = ((1 < BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "xtree_tridgell32") : 0);
+  unsigned lo = 0, hi = 0, res;
+  caddr_t *curr = src->xte_current;
+  xtree_tridgell32_iter (curr, &lo, &hi);
+  res = (hi << 16) | (lo & 0xFFFF);
+  if (!make_num)
+    {
+      unsigned char *buf = (unsigned char *)dk_alloc_box (7, DV_STRING);
+      buf[6] = '\0';
+      buf[5] = 64 + (res & 0x3F);
+      buf[4] = 64 + ((res >> 2) & 0x3F);
+      buf[3] = 64 + ((res >> 8) & 0x3F);
+      buf[2] = 64 + ((res >> 14) & 0x3F);
+      buf[1] = 64 + ((res >> 20) & 0x3F);
+      buf[0] = 64 + ((res >> 26) & 0x3F);
+      return (void *)buf;
+    }
+  return box_num (res);
+}
+#endif
+
+#define SUM64(data,lo,med,hi) \
+      end = data + box_length_inline (data) - 1; \
+      for (tail = data; tail < end; tail++) \
+        { lo += tail[0]; med += lo; hi += med; }
+
+static void
+xte_sum64_iter (caddr_t *tree, unsigned *lo_ptr, unsigned *med_ptr, unsigned *hi_ptr)
+{
+  unsigned lo = lo_ptr[0], med = med_ptr[0], hi = hi_ptr[0], loxor, medxor, hixor, lon, medn, hin;
+  unsigned char *data;
+  unsigned char *tail, *end;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree))
+    {
+      int attrctr, head_len, cctr, ccount = BOX_ELEMENTS_INT (tree);
+      caddr_t * head = XTE_HEAD (tree);
+      data = (unsigned char *)(XTE_HEAD_NAME (head));
+      head_len = BOX_ELEMENTS_INT (head);
+      SUM64(data,lo,med,hi)
+      loxor = medxor = hixor = 0;
+      for (attrctr = 2; attrctr < head_len; attrctr += 2)
+        {
+          lon = medn = hin = 0;
+          data = (unsigned char *)(head[attrctr-1]);
+          SUM64(data,lon,medn,hin)
+          data = (unsigned char *)(head[attrctr]);
+          loxor ^= lon; medxor ^= medn; hixor ^= hin;
+        }
+      lo += loxor; med += lo; hi += med;
+      for (cctr = 1; cctr < ccount; cctr++)
+        xte_sum64_iter ((caddr_t *)(tree[cctr]), &lo, &med, &hi);
+    }
+  else
+    {
+      data = (unsigned char *)(tree);
+      SUM64(data,lo,med,hi)
+    }
+  lo_ptr[0] = lo; med_ptr[0] = med; hi_ptr[0] = hi;
+}
+
+#undef SUM64
+
+caddr_t xte_sum64 (caddr_t *curr)
+{
+  unsigned lo = 0, med = 0, hi = 0, aux;
+  unsigned char *buf;
+  xte_sum64_iter (curr, &lo, &med, &hi);
+  buf = (unsigned char *)dk_alloc_box (13, DV_STRING);
+  buf[12] = '\0';
+  aux = (med << 16) | (lo & 0xFFFF);
+  buf[11] = 64 + (aux & 0x3F);
+  buf[10] = 64 + ((aux >> 2) & 0x3F);
+  buf[9] = 64 + ((aux >> 8) & 0x3F);
+  buf[8] = 64 + ((aux >> 14) & 0x3F);
+  buf[7] = 64 + ((aux >> 20) & 0x3F);
+  buf[6] = 64 + ((aux >> 26) & 0x3F);
+  aux = (hi << 6) | ((med >> 16) & 0x3F);
+  buf[5] = 64 + (aux & 0x3F);
+  buf[4] = 64 + ((aux >> 2) & 0x3F);
+  buf[3] = 64 + ((aux >> 8) & 0x3F);
+  buf[2] = 64 + ((aux >> 14) & 0x3F);
+  buf[1] = 64 + ((aux >> 20) & 0x3F);
+  buf[0] = 64 + ((aux >> 26) & 0x3F);
+  return (void *)buf;
+}
+
+caddr_t bif_xtree_sum64 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  xml_tree_ent_t * src = bif_tree_ent_arg (qst, args, 0, "xtree_sum64");
+  return xte_sum64 (src->xte_current);
 }
 
 caddr_t bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -9770,6 +9932,10 @@ xml_tree_init (void)
   bif_define ("__xml_deserialize_packed", bif_xml_deserialize_packed);
   bif_define ("xml_get_logical_path", bif_xml_get_logical_path);
   bif_define ("xml_follow_logical_path", bif_xml_follow_logical_path);
+#if 0
+  bif_define ("xtree_tridgell32", bif_xtree_tridgell32);
+#endif
+  bif_define ("xtree_sum64", bif_xtree_sum64);
   bif_define ("__xsd_type", bif_xsd_type);
   dk_mem_hooks (DV_XML_ENTITY, xe_make_copy, xe_destroy, 0);
   dk_mem_hooks (DV_XQI, box_non_copiable, xqi_destroy, 0);

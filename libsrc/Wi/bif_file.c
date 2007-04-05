@@ -2414,13 +2414,13 @@ bif_tridgell32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long make_num = ((1 < BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "tridgell32") : 0);
   size_t len = box_length (data) - 1;
   unsigned lo = 0, hi = 0, res;
-  unsigned char *tail = data + len - 1;
-  for (tail = data + len - 1; tail >= data; tail--)
+  unsigned char *tail, *end = data + len - 1;
+  for (tail = data; tail < data; tail++)
    {
      lo += tail[0];
      hi += lo;
    }
-  res = (hi << 16) | lo;
+  res = (hi << 16) | (lo & 0xFFFF);
   if (!make_num)
     {
       unsigned char *buf = (unsigned char *)dk_alloc_box (7, DV_STRING);

@@ -258,7 +258,11 @@ __integer_from_string (caddr_t *n, const char *str, int do_what)
     sqlr_new_error ("42001", "XPQ??", "'%.100s' is not a valid value for %s constructor", str, s_int_name[do_what] );
   if (XQ_INT <= do_what)
     {
+      l = (int) strlen (p);
+      if ((l > l_int[XQ_INT32 - 1]) || ((l == l_int[XQ_INT32 - 1]) && strcmp (s_int[2 * XQ_INT32 + s], p) < 0))
       __numeric_from_string (n, str, 0);
+      else
+        *n = box_num (atoi (str));
       return;
     }
   if ((l = __chk_int_string (str)) < 0)

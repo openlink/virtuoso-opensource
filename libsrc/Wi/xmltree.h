@@ -1024,6 +1024,7 @@ extern int dtd_get_buffer_length (dtd_t * dtd);
 extern void dtd_save_to_buffer (dtd_t *dtd, unsigned char *buf, size_t buf_len);
 extern void dtd_load_from_buffer (dtd_t *res, caddr_t dtd_string);
 extern void xe_insert_external_dtd (xml_entity_t *xe);
+extern caddr_t xte_sum64 (caddr_t *curr);
 
 caddr_t xml_make_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
     const char *enc, lang_handler_t *lh, struct dtd_s **ret_dtd);
