@@ -131,6 +131,7 @@ Date.prototype.toHumanString = function() {
 	OAT.Dom.decodeImage(data)
 	OAT.Dom.toSafeXML(str)
 	OAT.Dom.fromSafeXML(str)
+	OAT.Dom.uriParams()
 */
 
 function $(something) {
@@ -688,6 +689,37 @@ OAT.Dom = {
 	
 	fromSafeXML:function(str) {
 		return str.replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<");
+	},
+	
+	uriParams:function() {
+		var result = {};
+		var s = location.search;
+		if (s.length > 1) { s = s.substring(1); }
+		if (!s) { return result; }
+		var parts = s.split("&");
+		for (var i=0; i < parts.length; i++) {
+			var part = parts[i];
+			if (!part) { continue; }
+			var index = part.indexOf("=");
+			if (index == -1) { result[part] = ""; continue; } /* not a pair */
+			
+			var key = part.substring(0,index);
+			var val = part.substring(index+1);
+			val = decodeURIComponent(val);
+			
+			var r = false;
+			if ((r = key.match(/(.*)\[\]$/))) {
+				key = r[1];
+				if (key in result) { 
+					result[key].push(val);
+				} else {
+					result[key] = [val];
+				}
+			} else {
+				result[key] = val;
+			}
+		}
+		return result;
 	}
 }
 OAT.Files = { /* only those whose names differ */

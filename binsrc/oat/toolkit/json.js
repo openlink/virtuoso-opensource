@@ -17,7 +17,11 @@ OAT.JSON = {
 		'\r':'\\r',	'"' :'\\"',	'\\':'\\\\' },
 
 	parse:function(jsonString) {
-		return eval('('+jsonString+')');
+		/* filter out while statement */
+		var js = jsonString;
+		if (js.substr(0,9) == "while(1);") { js = js.substr(9); }
+		if (js.substr(0,2) == "/*") { js = js.substr(2,js.length-4); }
+		return eval('('+js+')');
 	},
 	stringify:function(something, mD, c) {
 		var maxDepth = 2;

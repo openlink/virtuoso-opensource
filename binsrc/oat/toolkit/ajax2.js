@@ -52,9 +52,13 @@ OAT.AJAX = {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
 		var url_ = url;
-		if (data) {
-			url_ += (/\?/.test(url_) ? "&"+data : "?"+data);
-		}
+		/* create security cookie */
+		var secure = OAT.AJAX.createCookie(); /* array of name & value */
+
+		url_ += (url.match(/\?/) ? "&" : "?");
+		if (data) { url_ += data+"&"; }
+		url_ += secure[0]+"="+secure[1];
+		
 		xhr.open("GET",url_,options.async);
 		OAT.AJAX.send(xhr,null);
 	},
@@ -203,6 +207,16 @@ OAT.AJAX = {
 		if (OAT.Loader.loadedLibs.find("dialog") != -1 && OAT.AJAX.dialog) {
 			OAT.AJAX.dialog.hide();
 		}
+	},
+
+	createCookie:function() {
+		var code = Math.random().toString().split(".").pop();
+		var date = new Date();
+		var name = "oatSecurityCookie";
+		date.setTime(date.getTime()+(60*1000)); /* 1 minute validity */
+		var expires = "; expires="+date.toGMTString();
+		document.cookie = name+"="+code+expires+"; path=/";		
+		return [name,code];
 	},
 
 	XMLHTTP:function(options,callback) {

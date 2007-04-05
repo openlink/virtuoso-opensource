@@ -20,6 +20,8 @@
 	
 	rb.toXML();
 	rb.fromXML();
+	rb.getTitle(item);
+	rb.getContent(value);
 	
 	.rdf_filter .rdf_categories
 	
@@ -70,7 +72,8 @@ OAT.RDFBrowser = function(div,optObj) {
 			query = query.replace(/{uri}/g,uri).replace(/{graph}/g,self.uri);
 			var u = self.options.endpoint+encodeURIComponent(query);
 			var o = {
-				uri:u,
+//				uri:u,
+				uri:uri,
 				label:label
 			}
 			self.bookmarks.items.push(o);
@@ -101,6 +104,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				r.innerHTML = "Remove";
 				removeRef(r,i);
 				OAT.Dom.append([d,a,OAT.Dom.text(" - "),r,OAT.Dom.create("br")]);
+				self.createAnchor(a,item.uri,"bookmark");
 			}
 			OAT.Dom.append([self.bookmarkDiv,h,d]);
 		}
@@ -115,6 +119,11 @@ OAT.RDFBrowser = function(div,optObj) {
 			var removeRef = function(a,index) {
 				OAT.Dom.attach(a,"click",function(){self.store.remove(index);});
 			}
+			
+			var tperm = OAT.Dom.create("a");
+			tperm.innerHTML = "permalink";
+			var base = window.location.toString().match(/^[^?#]+/)[0];
+			tperm.href = base+"?";
 			
 			for (var i=0;i<self.store.items.length;i++) {
 				var d = OAT.Dom.create("div");
@@ -133,8 +142,8 @@ OAT.RDFBrowser = function(div,optObj) {
 				
 				var perm = OAT.Dom.create("a");
 				perm.innerHTML = "permalink";
-				var part = window.location.toString().match(/^[^?#]+/);
-				perm.href = part[0]+"#"+encodeURIComponent(item.href);
+				perm.href = base+"?uri="+encodeURIComponent(item.href);
+				tperm.href += "uri[]="+encodeURIComponent(item.href)+"&";
 				
 				OAT.Dom.append([d,remove,OAT.Dom.text(" - "),perm]);
 				self.store.div.appendChild(d);
@@ -143,6 +152,9 @@ OAT.RDFBrowser = function(div,optObj) {
 			var d = OAT.Dom.create("div");
 			d.innerHTML = "TOTAL: "+total+" triples";
 			self.store.div.appendChild(d);
+			if (self.store.items.length) {
+				OAT.Dom.append([d,OAT.Dom.text(" - "),tperm]);
+			}
 		},
 		
 		addURL:function(u,l) {
@@ -253,9 +265,15 @@ OAT.RDFBrowser = function(div,optObj) {
 			});
 			
 			/* querystring url */
-			var r = false;
-			if ((r = window.location.toString().match(/#(.+)$/))) {
-				url.value = decodeURIComponent(r[1]);
+			var obj = OAT.Dom.uriParams();
+			if (!("uri" in obj)) { return; }
+			if (typeof(obj.uri) == "object") { /* array of uris */
+				for (var i=0;i<obj.uri.length;i++) {
+					url.value = obj.uri[i];
+					self.store.loadFromInput();
+				}
+			} else {
+				url.value = obj.uri;
 				self.store.loadFromInput();
 			}
 		}
@@ -272,9 +290,9 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.tab.go(0);
 	}
 
-	this.createAnchor = function(element,uri) {
+	this.createAnchor = function(element,uri,forbid) {
 		var genRef = function() {
-			var list = self.generateURIActions(uri);
+			var list = self.generateURIActions(uri,forbid);
 			var ul = OAT.Dom.create("ul",{paddingLeft:"20px",marginLeft:"0px"});
 			for (var i=0;i<list.length;i++) {
 				if (list[i]) {
@@ -300,7 +318,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		OAT.Anchor.assign(element,obj);
 	}
 	
-	this.generateURIActions = function(uri) {
+	this.generateURIActions = function(uri,forbid) {
 		var list = [];
 		var a = OAT.Dom.create("a");
 		a.innerHTML = "Get Data Set (Dereference)";
@@ -312,6 +330,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		});
 		list.push(a);
 
+		if (forbid != "replace") {
 		var a = OAT.Dom.create("a");
 		a.innerHTML = "Get Data Set (Dereference) - replace storage";
 		a.href = "javascript:void(0)";
@@ -322,6 +341,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			self.store.addURL(uri);
 		});
 		list.push(a);
+		}
 		
 		var a = OAT.Dom.create("a");
 		a.innerHTML = "Get Data Set (Dereference) - permalink";
@@ -340,8 +360,9 @@ OAT.RDFBrowser = function(div,optObj) {
 		});
 		list.push(a);
 
+		if (forbid != "bookmark") {
 		var aa = OAT.Dom.create("a");
-		aa.innerHTML = "Explore - Bookmark";
+			aa.innerHTML = "Bookmark";
 		aa.href = "javascript:void(0)";
 		OAT.Dom.attach(aa,"click",function(){
 			var label = prompt("Please name your bookmark:",uri);
@@ -349,6 +370,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			OAT.AnchorData.window.close();
 		});
 		list.push(aa);
+		}
 		list.push(false);
 
 		var a = OAT.Dom.create("a");
@@ -643,9 +665,33 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.applyFilters(OAT.RDFBrowserData.FILTER_ALL);
 	}
 	
+	this.getContent = function(data,forbid) {
+		var content = false;
+		if (data.match(/^http.*(jpe?g|png|gif)$/i)) { /* image */
+			content = OAT.Dom.create("img");
+			content.title = data;
+			content.src = data;
+			self.createAnchor(content,data,forbid);
+		} else if (data.match(/^http/i)) { /* link */
+			content = OAT.Dom.create("a");
+			content.innerHTML = data;
+			content.href = data;
+			self.createAnchor(content,data,forbid);
+		} else if (data.match(/^[^@]+@[^@]+$/i)) { /* mail address */
+			content = OAT.Dom.create("a");
+			var r = data.match(/^(mailto:)?(.*)/);
+			content.innerHTML = r[2];
+			content.href = 'mailto:'+r[2];
+		} else { /* default - text */
+			content = OAT.Dom.create("span");
+			content.innerHTML = data;
+		}
+		return content;
+	}
+	
 	this.getTitle = function(item) {
 		var result = item[0];
-		var props = ["label","title"];
+		var props = ["name","label","title"];
 		var preds = item[1];
 		for (var i=0;i<preds.length;i++) {
 			var p = preds[i][0];
@@ -681,7 +727,7 @@ OAT.RDFBrowser = function(div,optObj) {
 	this.toXML = function(xslStr) {
 		var xml = '<?xml version="1.0" ?>\n';
 		if (xslStr) { xml += xslStr+'\n'; }
-		xml += '<rdfbrowser>\n';
+		xml += '<rdfbrowser tab="'+self.tabsUL.childNodes[self.tab.selectedIndex].innerHTML+'">\n';
 		for (var i=0;i<self.store.items.length;i++) {
 			var item = self.store.items[i];
 			xml += '\t<uri label="'+item.label+'">'+OAT.Dom.toSafeXML(item.href)+'</uri>\n';
@@ -701,6 +747,15 @@ OAT.RDFBrowser = function(div,optObj) {
 			var href = OAT.Xml.textValue(item);
 			self.store.addURL(OAT.Dom.fromSafeXML(href),label);
 		}
+		var b = xmlDoc.getElementsByTagName("rdfbrowser")[0];
+		var label = b.getAttribute("tab");
+		var index = -1;
+		for (var i=0;i<self.tabsUL.childNodes.length;i++) {
+			var l = self.tabsUL.childNodes[i].innerHTML;
+			if (l == label) { index = i; }
+		}
+		if (index != -1) { self.tab.go(index); }
+		
 	}
 	
 	this.init();

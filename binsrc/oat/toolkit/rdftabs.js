@@ -100,26 +100,8 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 			
 			/* decide output format */
 			var data = preds[i][1];
-			var r = false;
-			if (data.match(/^http.*(jpe?g|png|gif)$/i)) { /* image */
-				content = OAT.Dom.create("img");
-				content.title = data;
-				content.src = data;
-				self.parent.createAnchor(content,data);
-			} else if (data.match(/^http/i)) { /* link */
-				content = OAT.Dom.create("a");
-				content.innerHTML = data;
-				content.href = data;
-				self.parent.createAnchor(content,data);
-			} else if (data.match(/^[^@]+@[^@]+$/i)) { /* mail address */
-				content = OAT.Dom.create("a");
-				var r = data.match(/^(mailto:)?(.*)/);
-				content.innerHTML = r[2];
-				content.href = 'mailto:'+r[2];
-			} else { /* default - text */
-				content = OAT.Dom.create("span");
-				content.innerHTML = data;
-			}
+			var content = self.parent.getContent(data);
+
 			/* create dereference a++ lookups for all anchors */
 			var nodes = [];
 			var anchors = content.getElementsByTagName("a");
@@ -388,10 +370,11 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	this.elm.style.width = "100%";
 	this.elm.style.height = "100%";
 	
-	this.keyProperties = ["based_near","geo"];
-	this.locProperties = ["location"];
+	this.keyProperties = ["based_near","geo"]; /* containing coordinates */
+	this.locProperties = ["location"]; /* containing location */
 	this.latProperties = ["lat","latitude"];
 	this.lonProperties = ["lon","long","longitude"];
+	this.lookupProperties = ["name","location"]; /* interesting to be put into lookup pin */
 
 	this.geoCode = function(address,item) {
 		self.pointListLock++;
@@ -438,25 +421,32 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		} /* for all resources */
 	} /* tryItem */
 	
-	this.attachMarker = function(data,item) {
+	this.attachMarker = function(coords,item) {
 		var m = false;
 		var callback = function() {
-			var div = OAT.Dom.create("div");
+			var div = OAT.Dom.create("div",{overflow:"auto",width:"450px",height:"250px"});
 			var s = OAT.Dom.create("div",{fontWeight:"bold"});
-			s.innerHTML = self.parent.getTitle(item);
+			var title = self.parent.getTitle(item);
+			s.innerHTML = title;
+			if (title.match(/^http/i)) { 
+				self.parent.createAnchor(s,title); 
+				h.style.cursor = "pointer";
+			}
 			div.appendChild(s);
 			var preds = item[1];
 			for (var i=0;i<preds.length;i++) {
 				var p = preds[i][0];
 				var o = preds[i][1];
-				if (self.keyProperties.find(p) != -1) { continue; }
+				if (o.match(/^http/i) || self.lookupProperties.find(p) != -1) {
 				var s = OAT.Dom.create("div");
-				s.innerHTML = p+": "+o;
-				div.appendChild(s);
-			}
+					s.innerHTML = p+": ";
+					var content = self.parent.getContent(o,"replace");
+					OAT.Dom.append([s,content],[div,s]);
+				} /* only interesting data */
+			} /* for all predicates */
 			self.map.openWindow(m,div);
 		}
-		m = self.map.addMarker(1,data[0],data[1],false,false,false,callback);
+		m = self.map.addMarker(1,coords[0],coords[1],false,false,false,callback);
 	}
 	
 	this.redraw = function() {

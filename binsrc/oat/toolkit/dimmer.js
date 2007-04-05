@@ -42,7 +42,7 @@ OAT.Dimmer = {
 		elm.oldZindex = elm.style.zIndex;
 		elm.style.zIndex = 1000;
 		OAT.Dimmer.root = OAT.Dom.create("div",{position:"fixed",left:"0px",top:"0px",width:"100%",height:"100%",zIndex:999});
-		if (OAT.Dom.isIE6()) { 
+		if (OAT.Dom.isIE()) { 
 			OAT.Dimmer.root.style.position = "absolute"; 
 			OAT.Dimmer.update();
 		} 
