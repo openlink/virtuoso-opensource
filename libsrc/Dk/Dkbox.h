@@ -550,9 +550,17 @@ typedef struct rdf_box_s
   short		rb_lang;
   unsigned	rb_is_complete:1;
   unsigned	rb_is_outlined:1;
+  unsigned	rb_chksum_tail:1;
   int32		rb_ro_id;
   caddr_t	rb_box;
 } rdf_box_t;
+
+typedef struct rdf_bigbox_s
+{
+  rdf_box_t	rbb_base;
+  caddr_t	rbb_chksum;
+  dtp_t		rbb_box_dtp;
+} rdf_bigbox_t;
 /* see blobio.h for the rest of rdf_box things. */
 
 EXE_EXPORT (box_t, dk_alloc_box, (size_t bytes, dtp_t tag));
