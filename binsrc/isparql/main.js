@@ -24,11 +24,11 @@
 var dialogs = {};
 
 var goptions = {};
-goptions.username = '';
-goptions.password = '';
+goptions.username = 'demo';
+goptions.password = 'demo';
 goptions.login_put_type = 'dav';
 goptions.service = '/sparql';
-goptions.proxy = false;
+goptions.proxy = true;
 goptions.should_sponge = 'soft';
 var isVirtuoso = false;
 
@@ -204,8 +204,9 @@ function init()
 	OAT.Dom.attach("browse_btn","click",fileRef);
 
 	/* options */
-	dialogs.goptions = new OAT.Dialog("Options","goptions",{width:450,modal:1,resize:0,zIndex:1001,onshow:function(){OAT.Keyboard.enable('goptions');},onhide:function(){OAT.Keyboard.disable('goptions');}});
-	dialogs.goptions.cancel = function(){
+	var dialogs_goptions_onshow = function(){
+	  OAT.Keyboard.enable('goptions');
+	  //
     $('username').value = goptions.username;
     $('password').value = goptions.password;
     $('login_put_type').value = goptions.login_put_type;
@@ -218,6 +219,9 @@ function init()
 			case "soft"    : $('should-sponge-soft').checked = true; break;
 			default: $('should-sponge-none').checked = true; break;
 		}
+	}
+	dialogs.goptions = new OAT.Dialog("Options","goptions",{width:450,modal:1,resize:0,zIndex:1001,onshow:dialogs_goptions_onshow,onhide:function(){OAT.Keyboard.disable('goptions');}});
+	dialogs.goptions.cancel = function(){
 	  dialogs.goptions.hide();
 	}
 	dialogs.goptions.ok = function(){
@@ -250,14 +254,22 @@ function init()
   if (page_params['query']) default_qry = page_params['query'];
   if (page_params['should-sponge']) default_spng = page_params['should-sponge'];
   
-  if (!default_dgu) default_dgu = '';
-    $('default-graph-uri').value = default_dgu
+  if (default_dgu == undefined) default_dgu = '';
+  $('default-graph-uri').value = default_dgu;
 
-  if (!default_qry) default_qry = 'SELECT * WHERE {?s ?p ?o}';
+  if (default_qry == undefined) default_qry = 'SELECT * WHERE {?s ?p ?o}';
   $('query').value = default_qry;
-  //if (!default_spng) default_spng = 'soft';
+  if (!fixed_sponge) fixed_sponge = '';
+  else {
+    if (fixed_sponge == 'local')
+      default_spng = '';
+    else
+      default_spng = fixed_sponge;
+  }
+  if (default_spng == undefined) default_spng = 'soft';
   $('qbe_sponge').value = default_spng;
   $('adv_sponge').value = default_spng;
+  goptions.should_sponge = default_spng;
 
   qbe = new iSPARQL.QBE();
   adv = new iSPARQL.Advanced();
@@ -291,11 +303,23 @@ function init()
     else 
       OAT.Dom.hide("return_btn");
 
-    dialogs.goptions.cancel();
     if (window.__inherited.run)
       qbe.func_run();  
   } else {
     OAT.Dom.hide("return_btn");
+
+    var page_params = OAT.Dom.uriParams();
+  	for (var p in goptions) { if(page_params['goptions.'+p] != undefined) goptions[p] = page_params['goptions.'+p];}
+    
+  	if (fixed_sponge)
+  	{
+  	  goptions.should_sponge = fixed_sponge;
+  	  var inputs = document.getElementsByName('should-sponge');
+      for(var i = 0; i < inputs.length; i++)
+        inputs[i].disabled = true;
+      $('qbe_sponge').disabled = true;
+      $('adv_sponge').disabled = true;
+  	}
     dialogs.goptions.show();
   }
 

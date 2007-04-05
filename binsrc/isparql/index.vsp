@@ -40,10 +40,15 @@
   def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
   if (def_qry is null)
     def_qry := 'SELECT * WHERE {?s ?p ?o}';
+
+  declare fixed_sponge varchar;
+  fixed_sponge := cfg_item_value (virtuoso_ini_path(), 'SPARQL', 'EndpointFixedSponge');
+  if (fixed_sponge is null) fixed_sponge := '';
 ?>
 <script type="text/javascript">
   var default_dgu = '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>';
   var default_qry = '<?vsp http(replace(def_qry,'\'','\\\'')); ?>';
+  var fixed_sponge = '<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>';
   var default_spng = 'soft';
 	var toolkitImagesPath = "toolkit/images";
 </script>
