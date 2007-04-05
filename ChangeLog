@@ -1,3 +1,380 @@
+2007-04-05 17:53  source
+
+	* Updated version to 5.0.0-14
+
+2007-04-05 17:53  source
+
+	* Added automatically generating RDF/A
+
+2007-04-05 17:33  source
+
+	* Added skos tags
+
+2007-04-05 17:30  source
+
+	* Fixed sponging options
+	* Use new OAT feature for params parsing
+	* Updated comments
+
+2007-04-05 17:28  source
+
+	* Merged from upstream project
+
+2007-04-05 17:27  source
+
+	* Added support for XML tree entities as RDF literals
+
+2007-04-05 17:26  source
+
+	* Added RecoveryMode parameter in [SPARQL] section of virtuoso.ini
+	* Added support for XML tree entities as RDF literals
+	* Fixed overkill parsing of small xsd:integer values as DV_NUMBER
+	* Added xtree_sum64 checksum
+	* Fixed number of conversions in __xml_deserialize_packed
+	* Fixed cosmetics (DV_LONG_STRING is now equal to DV_SHORT_STRING)
+	* Fixed tridgell32 function
+	* Fixed line numbers in error messages
+
+2007-04-05 16:14  source
+
+	* Fixed loop join 1st to be item
+
+2007-04-05 16:13  source
+
+	* Added new session variable for every app
+
+2007-04-05 16:12  source
+
+	* Added FOAF auto-discovery feature
+	* Fixed reply to message with attachement
+
+2007-04-05 09:59  source
+
+	* Updated release to 5.0
+
+2007-04-05 09:04  source
+
+	* Changed version to 5.0.0-13
+
+2007-04-05 09:03  source
+
+	* Added expiration headers
+
+2007-04-05 08:35  source
+
+	* Fixed SQL error pressing Cancel button
+	* Fixed logout link
+
+2007-04-05 08:34  source
+
+	* Fixed sharing contacts
+	* Fixed upgrade package problem
+
+2007-04-05 08:32  source
+
+	* Reverted syntax back to "drop quad map graph"
+	* Fixed noparms param
+	* Fixed LDAP issue
+
+2007-04-05 08:23  source
+
+	* Updated version
+
+2007-04-05 08:04  source
+
+	* Fixed IE support
+
+2007-04-05 08:02  source
+
+	* Added support for unsing unzip plugin for OO docs
+
+2007-04-05 08:01  source
+
+	* Added better ns handling
+
+2007-04-04 12:13  source
+
+	* Fixed syntax of "sparql drop quad map graph <xxx>"
+
+2007-04-04 11:52  source
+
+	* Updated version to 5.0.0-rc12
+
+2007-04-04 11:16  source
+
+	* Removed deprecated files
+
+2007-04-04 11:10  source
+
+	* Fixed not null constraint
+
+2007-04-04 11:10  source
+
+	* Fixed typo
+
+2007-04-04 11:09  source
+
+	* Fixed LDAP support
+
+2007-04-04 09:37  source
+
+	* Fixed LDAP permission issue
+	* Fixed mixing http port with default ws port
+	* Fixed syntax for drop quad map graph
+
+2007-04-04 09:36  source
+
+	* Fixed CSS for ODS Bar
+
+2007-04-04 09:36  source
+
+	* Fixed logout link in search
+	* Fixed search form shown with search results
+
+2007-04-04 09:35  source
+
+	* Fixed LDAP permission issue
+
+2007-04-04 09:34  source
+
+	* Updated version info
+
+2007-04-04 09:33  source
+
+	* Fixed ODS Framework dependency check
+
+2007-04-04 09:21  source
+
+	* Removed debug code
+
+2007-04-04 07:38  source
+
+	* Fixed search form
+	* Fixed link to add newsgroups in search form
+
+2007-04-04 07:29  source
+
+	* Reverted back IE fix changes
+	* Fixed making full IRI shorter with prefixes
+	* Fixed preserving white-space in IE
+
+2007-04-04 07:25  source
+
+	* Updated version
+
+2007-04-04 07:22  source
+
+	* Added GRDDL in RDF
+	* Added expiration date check
+	* Fixed media type
+	* Fixed GEORSS NS feed processing
+
+2007-04-04 07:17  source
+
+	* Merged from upstream project
+
+2007-04-04 07:16  source
+
+	* Added support for multiple default graphs in web service endpoint
+	* Check the expiration of pages coming from rdf mappers
+	* Fixed GRDDL attrs in RDF using rdf mappers
+
+2007-04-04 07:13  source
+
+	* Added check for over long key parts in ORDER BY temp
+
+2007-04-03 10:12  source
+
+	* Updated version to 5.0.0-rc11
+
+2007-04-03 10:10  source
+
+	* Fix for building on win32
+
+2007-04-03 10:09  source
+
+	* Added missing project files for win32 build
+
+2007-04-03 10:01  source
+
+	* Fixed login functions
+
+2007-04-03 10:00  source
+
+	* Changed QM syntax for drop quap map graph
+
+2007-04-03 09:58  source
+
+	* Fixed column content
+
+2007-04-03 09:56  source
+
+	* Added support for xsd:float in BIF __xsd_type()
+
+2007-04-03 09:55  source
+
+	* Added support for application/turtle and application/x-turtle
+	* Added better selection of returned Content-Type by requested Accept
+	* Fixed data truncation in JSON
+	* Minor bugfixes in the audit
+
+2007-04-03 09:43  source
+
+	* Fixed GPF when serializing xml
+
+2007-04-03 09:39  source
+
+	* Changed QM syntax to drop quad map graph
+
+2007-04-03 09:38  source
+
+	* Added new search options
+
+2007-04-02 13:03  source
+
+	* Added new page setting for subscript and unsubscribe
+	* Added checkbox for each newsgroup
+
+2007-04-02 10:54  source
+
+	* Updated version to 5.0.0-rc10
+
+2007-04-02 10:52  source
+
+	* Fixed missing file during win32 build
+
+2007-04-02 10:25  source
+
+	* Use OAT toolkit installed by ODS Framework
+
+2007-04-02 10:18  source
+
+	* Fix parse in 'soft' mode comments
+
+2007-04-02 10:18  source
+
+	* Fixed reused placeholder itc_bp when unq match of bm inx
+
+2007-04-02 10:15  source
+
+	* Fixed non-terminal w/o return
+
+2007-04-02 10:15  source
+
+	* Added db version in log file
+
+2007-04-02 07:38  source
+
+	* Merged from upstream project
+
+2007-04-02 07:35  source
+
+	* Updated version to 5.0.0-rc9
+
+2007-04-02 07:29  source
+
+	* Fixed problems reloading demo_dav.vad package
+
+2007-04-02 07:28  source
+
+	* Added support for SPASQL
+	* Fixed RDFs unknown
+
+2007-04-02 07:26  source
+
+	* Added dtp_register_hash support
+
+2007-04-02 07:25  source
+
+	* Added new dk_dtp_register_hash (DV_RDF, rdf_box_hash, rdf_box_hash_cmp)
+
+2007-04-02 07:24  source
+
+	* Added special MALLOC_DEBUG version of t_list()
+
+2007-03-30 23:18  source
+
+	* Fixed public access to Polls preferences
+	* Fixed public access to Gems
+
+2007-03-30 23:17  source
+
+	* Fixed public access to Bookmark preferences
+	* Fixed public access to Gems
+
+2007-03-30 21:48  source
+
+	* Removed file
+
+2007-03-30 14:17  source
+
+	* Added missing files for distribution
+
+2007-03-30 14:11  source
+
+	* More files to distribute
+
+2007-03-30 14:02  source
+
+	* Updated version to 5.0.0-rc8
+
+2007-03-30 14:01  source
+
+	* Fixed problem with Gems
+
+2007-03-30 14:00  source
+
+	* Fixed XML error on Atom and RDF Gems
+
+2007-03-30 13:49  source
+
+	* Updated version of DB engine to prevent opening a new database with an
+	  old server
+
+2007-03-30 13:48  source
+
+	* Added WS handler for .rq (sparql query) files
+
+2007-03-30 13:41  source
+
+	* Added exemption for use of unmodified client libraries
+	  (ODBC, JDBC, OLEDB and ADO.NET)
+
+2007-03-30 13:30  source
+
+	* Fixed typo in distibution list
+
+2007-03-30 13:29  source
+
+	* Added more tables to system table list
+
+2007-03-30 12:52  source
+
+	* Added missing files to distribution
+
+2007-03-30 10:05  source
+
+	* Merged from upstream project
+
+2007-03-30 10:00  source
+
+	* Fixed public permission on gems
+
+2007-03-30 09:58  source
+
+	* Fixed public permission on addressbook prefs
+	* Changed search checkbox to default
+	* Changed contact results with links
+	* Fixed public permission on gems
+
+2007-03-30 09:49  source
+
+	* Added rdf_mappers and isparql VAD packages to demo database
+
+2007-03-30 09:49  source
+
+	* Fixed make clean
+
 2007-03-29 21:47  source
 
 	* Updated version to 5.0.0-rc7
