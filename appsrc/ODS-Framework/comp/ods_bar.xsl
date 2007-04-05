@@ -46,6 +46,7 @@
     <v:variable name="odsbar_ods_gpath" type="varchar" default="''" />
 
     <v:variable name="odsbar_inout_arr" type="any" default="''" />
+    <v:variable name="odsbar_return_url" type="varchar" persist="session" default="null" param-name="RETURL" />
       <xsl:processing-instruction name="vsp">
 
           self.odsbar_show_signin:='<xsl:value-of select="@show_signin"/>';
@@ -76,8 +77,8 @@
                      connection_set ('vspx_user','');
 
                      declare redirect_url varchar;
-      if (length (self.return_url))
-        redirect_url := self.return_url;
+      if (length (self.odsbar_return_url))
+        redirect_url := self.odsbar_return_url;
       else
                      redirect_url:=self.odsbar_ods_gpath||'sfront.vspx';
                      http_rewrite ();
