@@ -215,6 +215,7 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
     for select EFI_FEED_ID, EFI_ID, EFI_TITLE, EFI_DESCRIPTION, EFI_LINK, EFI_AUTHOR, EFI_PUBLISH_DATE, EFI_DATA
           from ENEWS.WA.FEED_ITEM, ENEWS.WA.FEED
          where EFI_FEED_ID = EF_ID and EFI_ID > _id
+	 order by 2 option (order, loop)
     do
   {
       f_iri := feed_iri (EFI_FEED_ID);
