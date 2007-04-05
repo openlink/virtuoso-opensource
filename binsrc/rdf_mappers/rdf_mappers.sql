@@ -43,6 +43,8 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('(http://cgi.sandbox.ebay.com/.*&item=[A-Z0-9]*&.*)|(http://cgi.ebay.com/.*QQitemZ[A-Z0-9]*QQ.*)',
             'URL', 'DB.DBA.RDF_LOAD_EBAY_ARTICLE', null, 'eBay articles');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('.+\.odt\$', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT', null, 'OO Documents');
 
 -- the GRDDL filters
 EXEC_STMT(
@@ -114,6 +116,27 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:regexp-match', 'DB.DBA.
 --;
 
 --RDF_LOAD_AMAZON_ARTICLE_INIT ();
+create procedure DB.DBA.RDF_LOAD_OO_DOCUMENT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any)
+{
+  declare meta, tmp varchar;
+  declare xt, xd any;
+
+  if (__proc_exists ('UNZIP_UnzipFileFromArchive', 2) is null)
+    return 0;
+  tmp := tmp_file_name ('rdfm', 'odt');
+  string_to_file (tmp, _ret_body, -2);
+  meta := UNZIP_UnzipFileFromArchive (tmp, 'meta.xml');
+  file_delete (tmp, 1);
+  if (meta is null)
+    return 0;
+  xt := xtree_doc (meta);
+  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/oo2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
 
 create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any)
