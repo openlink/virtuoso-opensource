@@ -473,7 +473,7 @@ window.iSPARQL = {
 
         if (params.browseStart.click)
           OAT.Dom.detach(params.browseStart,"click",params.browseStart.click);
-        var tabres_start = tabres_li_start;
+        var tabres_start = tabres_li_start_img;
         if (params.nav_index == 0)
         {
           tabres_start.style.opacity = 0.3;
@@ -506,7 +506,7 @@ window.iSPARQL = {
 
         if (params.browseBack.click)
           OAT.Dom.detach(params.browseBack,"click",params.browseBack.click);
-        var tabres_back = tabres_li_back;
+        var tabres_back = tabres_li_back_img;
         if (params.nav_index == 0)
         {
           tabres_back.style.opacity = 0.3;
@@ -539,7 +539,7 @@ window.iSPARQL = {
         
         if (params.browseForward.click)
           OAT.Dom.detach(params.browseForward,"click",params.browseForward.click);
-        var tabres_forward = tabres_li_forward;
+        var tabres_forward = tabres_li_forward_img;
         if (params.nav_index == params.nav_stack.length - 1)
         {
           tabres_forward.style.opacity = 0.3;

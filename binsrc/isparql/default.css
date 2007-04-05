@@ -44,7 +44,8 @@ ul, li {
 }
 
 #right {
-  margin-top: 23px; 
+	position: absolute;
+  top: 23px; 
   width: 100%;
 }
 

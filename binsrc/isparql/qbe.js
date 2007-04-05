@@ -102,8 +102,11 @@ iSPARQL.QBE = function ()
 	this.group_color_seq = new iSPARQL.GroupColorSeq();
 
 	this.clear = function(){
+    if (self.svgsparql)
+    {
 	  self.svgsparql.clear();
     self.svgsparql.ghostdrag.addTarget(self.props_win.content);
+    }
 	  for (var i = self.orderby_grid.header.cells.length;i > 1; i--)
 	  {
       self.orderby_grid.header.removeColumn(i - 1);
@@ -299,6 +302,7 @@ iSPARQL.QBE = function ()
 	    self.removeOrderBy(group);
     }
 	};
+	if (!OAT.Dom.isIE())
 	this.svgsparql = new OAT.SVGSparql("qbe_parent",options);
 	var restrictionFunction = function(new_width,new_height)  { return new_width < 600; }
 
@@ -973,6 +977,8 @@ iSPARQL.QBE = function ()
   schema_cl.input.name = "schema";
   schema_cl.input.id = "schema";
   schema_cl.img.src = "images/cl.gif";
+  schema_cl.img.width = "16";
+  schema_cl.img.height = "16";
   $("schema_div").appendChild(schema_cl.div);
 
   for(var i = 0;i < self.prefixes.length; i++)
@@ -1125,6 +1131,7 @@ iSPARQL.QBE = function ()
 		if (!state) { return; }
 		icon_add.toggleState(0);
 		icon_draw.toggleState(0);
+    if (self.svgsparql)
 		self.svgsparql.mode = OAT.SVGSparqlData.MODE_DRAG;
 	});
 	icon_add = t.addIcon(1,"images/qbe_add.gif","Add mode",function(state) {
@@ -1143,6 +1150,7 @@ iSPARQL.QBE = function ()
       node = target.addNode(x,y,"",0);
     }; 
   }
+  if (self.svgsparql)
   self.svgsparql.ghostdrag.addSource(icon_add,process,drop);
   OAT.Dom.unlink(icon_add.firstChild);
   icon_add.style.backgroundImage = "url(images/qbe_add.gif)";
@@ -1167,6 +1175,7 @@ iSPARQL.QBE = function ()
       qbe.svgsparql.startDrawing(target,x,y,'?');
     }
   }
+  if (self.svgsparql)
   self.svgsparql.ghostdrag.addSource(icon_draw,process,drop);
   OAT.Dom.unlink(icon_draw.firstChild);
   icon_draw.style.backgroundImage = "url(images/qbe_draw.gif)";
@@ -1606,6 +1615,8 @@ iSPARQL.QBE = function ()
 	
   this.service = new OAT.Combolist(iSPARQL.defaultEndpoints,"/sparql");
   self.service.img.src = "images/cl.gif";
+  self.service.img.width = "16";
+  self.service.img.height = "16";
   $("qbe_service_div").appendChild(self.service.div);
 	
 	this.RunQuery = function()
@@ -2362,6 +2373,7 @@ iSPARQL.QBE = function ()
       OAT.Dom.hide("qbe_return_btn");
     
 	} else {
+    if (self.svgsparql)
 	  self.loadFromString(default_qry);
     $('qbe_graph').value = default_dgu;
     //var node1 = self.svgsparql.addNode(0,0,"?s",1);

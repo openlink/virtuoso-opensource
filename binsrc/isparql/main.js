@@ -84,6 +84,7 @@ function init()
   
   tab.goCallback = function(oldIndex,newIndex)
   {
+    
     if (oldIndex == newIndex)
     {
 	    if (m.root.items[newIndex].state) m.root.items[newIndex].close();
@@ -105,6 +106,8 @@ function init()
       
     if (menu_on) 
     {
+      if (OAT.Dom.isIE())
+        menu_on.style.filter = '';
       for (var i = 0; i < menu_on.childNodes.length;i++)
       {
         if (menu_on.childNodes[i].tagName && menu_on.childNodes[i].tagName.toLowerCase() == "li")
@@ -118,6 +121,8 @@ function init()
     
     if (menu_off) 
     {
+      if (OAT.Dom.isIE())
+        menu_off.style.filter = 'alpha(opacity=50)';
       for (var i = 0; i < menu_off.childNodes.length;i++)
       {
         if (menu_off.childNodes[i].tagName && menu_off.childNodes[i].tagName.toLowerCase() == "li")
@@ -129,6 +134,11 @@ function init()
       }
     }
     
+    if (OAT.Dom.isIE() && dialogs.qbe_unsupp && newIndex == 0)
+    {
+      dialogs.qbe_unsupp.show();
+      return;
+    }
   }
   tab.goCallback(null,0);
   
@@ -149,6 +159,8 @@ function init()
   sr_cl.input.id = "service";
   sr_cl.list.style.zIndex = "1200";
   sr_cl.img.src = "images/cl.gif";
+  sr_cl.img.width = "16";
+  sr_cl.img.height = "16";
   $("sr_cl_div").appendChild(sr_cl.div);
 
 	OAT.WebDav.init({imagePath:toolkitImagesPath + "/",imageExt:"png"});
@@ -160,6 +172,14 @@ function init()
 		dialogs.save.hide();
 	}
 	dialogs.save.cancel = dialogs.save.hide;
+
+	/* qbe_unsupp */
+	dialogs.qbe_unsupp = new OAT.Dialog("Unsupported","qbe_unsupported_div",{width:400,modal:1});
+	dialogs.qbe_unsupp.ok = function() {
+		tab.go(1);
+		dialogs.qbe_unsupp.hide();
+	}
+	dialogs.qbe_unsupp.cancel = dialogs.qbe_unsupp.ok;
 
 	/* about */
 	dialogs.about = new OAT.Dialog("About","about_div",{width:400,modal:0});
@@ -247,6 +267,7 @@ function init()
 
   OAT.Dom.hide("page_loading");
   OAT.Dom.show("page_content");
+  if (qbe.svgsparql)
   qbe.svgsparql.reposition();
 	if (window.__inherited) {
 		if (window.__inherited.username)       goptions.username = window.__inherited.username;
@@ -281,6 +302,10 @@ function init()
     dialogs.goptions.show();
   }
 
+  if (OAT.Dom.isIE())
+  {
+    tab.go (1); /* is 0-based index... */
+  }
 }
 
 iSPARQL.Advanced = function ()
@@ -485,6 +510,8 @@ iSPARQL.Advanced = function ()
 	}
 	
 	this.func_load_to_qbe = function() {
+	  if (OAT.Dom.isIE()) return;
+	  
 	  if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
 	  tab.go(0);
 	  qbe.loadFromString($('query').value);
@@ -494,6 +521,8 @@ iSPARQL.Advanced = function ()
 	}
 	
 	this.func_get_from_qbe = function() {
+	  if (OAT.Dom.isIE()) return;
+
 	  if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
     $('adv_sponge').value = $v('qbe_sponge');
     $('query').value = qbe.QueryGenerate();
@@ -603,6 +632,14 @@ iSPARQL.Advanced = function ()
 	icon_get_from_qbe = t.addIcon(0,"images/compfile.png","Get from QBE",self.func_get_from_qbe); 
 	OAT.Dom.attach("menu_get_from_qbe","click",self.func_get_from_qbe);
 
+	if (OAT.Dom.isIE())
+	{
+	  icon_load_to_qbe.style.filter = 'alpha(opacity=30)';
+	  icon_load_to_qbe.style.cursor = 'default';
+	  icon_get_from_qbe.style.filter = 'alpha(opacity=30)';
+	  icon_get_from_qbe.style.cursor = 'default';
+	}
+
 	this.results_win = new OAT.Window({title:"Query Results", close:1, min:0, max:0, width:page_w - 40, height:500, x:20,y:560});
 	$("page_query").appendChild(self.results_win.div);
 	self.results_win.content.appendChild($("res_area"));
@@ -611,6 +648,8 @@ iSPARQL.Advanced = function ()
 
   this.service = new OAT.Combolist(iSPARQL.defaultEndpoints,"/sparql");
   self.service.img.src = "images/cl.gif";
+  self.service.img.width = "16";
+  self.service.img.height = "16";
   $("adv_service_div").appendChild(self.service.div);
 	
 }
