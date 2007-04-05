@@ -171,7 +171,7 @@ create procedure ODS_RDF_VIEW_INIT_1 (in fl int := 0)
 
     sioc..ods_sioc_result ('Dropping old graph.');
 ODS_SPARQL_QM_RUN ('
-    drop graph iri("http://^{URIQADefaultHost}^/dataspace_v") .
+    drop quad map graph iri("http://^{URIQADefaultHost}^/dataspace_v") .
 ', 0, 0);
 
     sioc..ods_sioc_result ('Old graph dropped.');

@@ -76,6 +76,9 @@
                      connection_set ('vspx_user','');
 
                      declare redirect_url varchar;
+      if (length (self.return_url))
+        redirect_url := self.return_url;
+      else
                      redirect_url:=self.odsbar_ods_gpath||'sfront.vspx';
                      http_rewrite ();
                      http_request_status ('HTTP/1.1 302 Found');

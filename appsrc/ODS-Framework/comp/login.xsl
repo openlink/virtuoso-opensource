@@ -31,6 +31,7 @@
   <v:variable name="login_blocked" type="varchar" default="null" persist="0"/>
   <v:variable name="login_attempts" type="integer" default="0" persist="0" />
   <v:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
+  <v:variable name="is_cookie_session" type="int" default="0" persist="0" param-name="noparams"/>
   <!-- OpenID signin -->
   <v:variable name="_return_to" type="varchar" default="null" persist="0" param-name="return_to" />
   <v:variable name="_identity" type="varchar" default="null" persist="0" param-name="identity" />
@@ -160,7 +161,10 @@
 
                 declare url, pars varchar;
 
+    if (not self.is_cookie_session)
                 pars := sprintf ('sid=%s&realm=%s', self.sid, self.realm);
+    else
+      pars := '';
  
                 --self.url := 'inst.vspx';
 
