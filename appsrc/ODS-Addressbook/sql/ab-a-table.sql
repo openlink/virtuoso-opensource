@@ -117,6 +117,7 @@ AB.WA.exec_no_error ('
 AB.WA.exec_no_error ('
   create trigger PERSONS_AD after delete on AB.WA.PERSONS referencing old as O {
     AB.WA.tags_update (O.P_DOMAIN_ID, O.P_TAGS, \'\');
+    delete from AB.WA.GRANTS where G_PERSON_ID = O.P_ID;
   }
 ');
 
@@ -281,6 +282,17 @@ AB.WA.exec_no_error('
 AB.WA.exec_no_error('
   create index SK_GRANTS_02 on AB.WA.GRANTS (G_GRANTEE_ID, G_PERSON_ID)
 ');
+
+create procedure AB.WA.grants_update ()
+{
+  if (registry_get ('ab_grants_update') <> '1') {
+    delete from AB.WA.GRANTS where not exists (select 1 from AB.WA.PERSONS where P_ID = G_PERSON_ID);
+  }
+}
+;
+
+AB.WA.grants_update ();
+registry_set ('ab_grants_update', '1');
 
 -------------------------------------------------------------------------------
 --
