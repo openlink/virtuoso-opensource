@@ -762,6 +762,17 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 	  ses := string_output (1000000);
 	  commit work;
 	  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
+
+	  for select HS_EXPIRATION, HS_LAST_MODIFIED, HS_LAST_ETAG
+	    from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = url and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE' do
+	  {
+	    if (HS_LAST_MODIFIED is not null)
+	      http_header (http_header_get () || sprintf ('Last-Modified: %s\r\n', date_rfc1123 (HS_LAST_MODIFIED)));
+	    if (HS_LAST_ETAG is not null)
+	      http_header (http_header_get () || sprintf ('ETag: %s\r\n', HS_LAST_ETAG));
+	    if (HS_EXPIRATION is not null)
+	      http_header (http_header_get () || sprintf ('Expires: %s\r\n', date_rfc1123 (HS_EXPIRATION)));
+	  }
 	  http (ses);
           return '';
 	}
@@ -772,6 +783,13 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
   ct := http_request_header (hdr, 'Content-Type');
   if (ct is not null)
     http_header (sprintf ('Content-Type: %s\r\n', ct));
+
+  foreach (any hd in hdr) do
+    {
+      if (regexp_match ('(etag:)|(expires:)|(last-modified:)|(pragma:)|(cache-control:)', lower (hd)) is not null)
+	http_header (http_header_get () || hd);
+    }
+
   return content;
 }
 ;
