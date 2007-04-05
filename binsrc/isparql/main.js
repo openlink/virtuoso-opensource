@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2007 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -212,7 +212,8 @@ function init()
     $('service').value = goptions.service;
     $('proxy').checked = goptions.proxy;
 		switch (goptions.should_sponge) {
-			case "grab-all-seealso": $('should-sponge-grab-all-seealso').checked = true; break;
+			case "grab-everything": $('should-sponge-grab-seealso').checked = true; break;
+			case "grab-seealso": $('should-sponge-grab-seealso').checked = true; break;
 			case "grab-all": $('should-sponge-grab-all').checked = true; break;
 			case "soft"    : $('should-sponge-soft').checked = true; break;
 			default: $('should-sponge-none').checked = true; break;
@@ -225,10 +226,17 @@ function init()
     goptions.login_put_type = $v('login_put_type');
     goptions.service = $v('service');
     goptions.proxy = $('proxy').checked;
-    if  ($('should-sponge-grab-all-seealso').checked) goptions.should_sponge = 'grab-all-seealso';
-    else if  ($('should-sponge-grab-all').checked) goptions.should_sponge = 'grab-all';
-    else if ($('should-sponge-soft').checked) goptions.should_sponge = 'soft';
-    else  goptions.should_sponge = '';
+    var sel_sponge = '';
+    if  ($('should-sponge-grab-everything').checked) sel_sponge = 'grab-everything';
+    else if  ($('should-sponge-grab-seealso').checked) sel_sponge = 'grab-seealso';
+    else if  ($('should-sponge-grab-all').checked) sel_sponge = 'grab-all';
+    else if ($('should-sponge-soft').checked) sel_sponge = 'soft';
+    if (sel_sponge != goptions.should_sponge)
+    {
+      $('qbe_sponge').value = sel_sponge;
+      $('adv_sponge').value = sel_sponge;
+    }
+    goptions.should_sponge = sel_sponge;
 	  dialogs.goptions.hide();
 	}
   OAT.Keyboard.add('esc',function(){dialogs.goptions.cancel();},null,'goptions');
@@ -236,18 +244,7 @@ function init()
 
 	page_w = OAT.Dom.getWH('page')[0] - 20;
 
-  var page_params = {};
-  var page_search = location.search;
-  if(page_search.length > 1) page_search = page_search.substring(1);
-
-  if(page_search) {
-    var tmp = page_search.split("&");
-    for(var i=0; i < tmp.length; i++) {
-      var key = tmp[i].substring(0,tmp[i].indexOf('='));
-      var val = tmp[i].substring(tmp[i].indexOf('=') + 1);
-      page_params[key] = decodeURIComponent(val);
-    }
-  }
+  var page_params = OAT.Dom.uriParams();
   
   if (page_params['default-graph-uri']) default_dgu = page_params['default-graph-uri'];
   if (page_params['query']) default_qry = page_params['query'];

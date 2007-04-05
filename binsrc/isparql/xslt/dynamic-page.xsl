@@ -6,7 +6,7 @@
   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
   project.
   
-  Copyright (C) 1998-2006 OpenLink Software
+  Copyright (C) 1998-2007 OpenLink Software
   
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -79,18 +79,7 @@
           hideResponce:true
         }
 
-        var page_params = {};
-        var page_search = location.search;
-        if(page_search.length > 1) page_search = page_search.substring(1);
-      
-        if(page_search) {
-          var tmp = page_search.split("&");
-          for(var i=0; i < tmp.length; i++) {
-            var key = tmp[i].substring(0,tmp[i].indexOf('='));
-            var val = tmp[i].substring(tmp[i].indexOf('=') + 1);
-            page_params[key] = decodeURIComponent(val);
-          }
-        }
+        var page_params = OAT.Dom.uriParams();
 
         if (page_params['dereference-uri'])
         {

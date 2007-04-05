@@ -7,8 +7,8 @@
 
   This file is part of the OpenLink Ajax Toolkit (OAT) project
 
-  Copyright (C) 2006 Ondrej Zara
-  Copyright (C) 2006 OpenLink Software
+  Copyright (C) 2007 Ondrej Zara
+  Copyright (C) 2007 OpenLink Software
 
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -130,10 +130,11 @@
                 <input type="checkbox" value="on" id="qbe_distinct"/>
                 <label for="qbe_distinct">Distinct</label>
                 <select id="qbe_sponge">
-                  <option value="grab-all-seealso">Get all Remote & Related Data</option>
-                  <option value="grab-all">Get all Remote Data</option>
-                  <option value="soft" selected="selected">Get Remote Data when Missing Locally</option>
                   <option value="">Get Local Data Only</option>
+                  <option value="soft" selected="selected">Get Remote Data when Missing Locally</option>
+                  <option value="grab-all">Get all Remote Data</option>
+                  <option value="grab-seealso">Get all Remote & Related Data</option>
+                  <option value="grab-everything">Get everything (may by slow)</option>
                 </select>
                 <label for="qbe_query_type">Type</label>
                 <select id="qbe_query_type">
@@ -336,10 +337,11 @@ WHERE
                   </select>
                   -->
                   <select id="adv_sponge">
-                    <option value="grab-all-seealso">Get all Remote & Related Data</option>
-                    <option value="grab-all">Get all Remote Data</option>
-                    <option value="soft" selected="selected">Get Remote Data when Missing Locally</option>
                     <option value="">Get Local Data Only</option>
+                    <option value="soft" selected="selected">Get Remote Data when Missing Locally</option>
+                    <option value="grab-all">Get all Remote Data</option>
+                    <option value="grab-seealso">Get all Remote & Related Data</option>
+                    <option value="grab-everything">Get everything (may by slow)</option>
                   </select>
                   <input type="button" value="Use Query & Close" id="return_btn">
                 </div>
@@ -352,7 +354,7 @@ WHERE
             <div id="res_area"></div>
           </div> <!-- page_query -->
         </div></div></div></div> <!-- r_hack -->
-        <div id="foot">Copyright &copy; 2006 OpenLink Software, Inc</div>
+        <div id="foot">Copyright &copy; 2007 OpenLink Software, Inc</div>
       </div> <!-- #right -->
       </div><!-- #page_content -->
     </div><!-- #page -->
@@ -377,17 +379,20 @@ WHERE
           <hr/>
           Virtuoso Specific:
           <br/>
-  			  <input id="should-sponge-grab-all-seealso" type="radio" value="grab-all-seealso" name="should-sponge"/>
-  			  <label for="should-sponge-grab-all-seealso">Retrieve all missing remote RDF data that might be useful,<br/> including seeAlso references</label>
+          <input id="should-sponge-none" type="radio" value="" name="should-sponge"/>
+          <label for="should-sponge-none">Use only local data (including data retrieved before),<br/> but do not retrieve more</label>
+          <br/>
+          <input id="should-sponge-soft" type="radio" value="soft" name="should-sponge" checked="checked"/>
+          <label for="should-sponge-soft">Retrieve remote RDF data for all missing source graphs</label>
   			  <br/>
           <input id="should-sponge-grab-all" type="radio" value="grab-all" name="should-sponge"/>
           <label for="should-sponge-grab-all">Retrieve all missing remote RDF data that might be useful</label>
           <br/>
-          <input id="should-sponge-soft" type="radio" value="soft" name="should-sponge" checked="checked"/>
-          <label for="should-sponge-soft">Retrieve remote RDF data for all missing source graphs</label>
+  			  <input id="should-sponge-grab-seealso" type="radio" value="grab-seealso" name="should-sponge"/>
+  			  <label for="should-sponge-grab-seealso">Retrieve all missing remote RDF data that might be useful,<br/> including seeAlso references</label>
           <br/>
-          <input id="should-sponge-none" type="radio" value="" name="should-sponge"/>
-          <label for="should-sponge-none">Use only local data (including data retrieved before),<br/> do not retrieve more</label>
+  			  <input id="should-sponge-grab-everything" type="radio" value="grab-everything" name="should-sponge"/>
+  			  <label for="should-sponge-grab-everything">Try to download all referenced resources<br/> (this may be very slow and ineffecient)</label>
           <br/>
           <br/>
           <input type="checkbox" value="1" name="proxy" id="proxy" checked="checked"/>
