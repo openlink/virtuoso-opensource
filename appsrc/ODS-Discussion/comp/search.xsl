@@ -37,8 +37,6 @@
 
       if (keycode == 13)
         {
-           alert('realm'+'<?Vself.realm?>');
-
           if(document.getElementById('searchkeywords').value.trim()!='')
     {
             document.location.href='nntpf_addtorss.vspx?sid=<?Vself.sid?>&realm=<?Vself.realm?>&search='+document.getElementById('searchkeywords').value;

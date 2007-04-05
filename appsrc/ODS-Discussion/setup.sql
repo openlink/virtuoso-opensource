@@ -250,7 +250,10 @@ nntpf_get_mess_attachments (inout _data any, in get_uuparts integer)
 create procedure
 nntpf_show_cancel_link (in _id varchar)
 {
-   if (exists (select 1 from NNFE_THR where FTHR_UID is not NULL and FTHR_MESS_ID = _id))
+
+   if (exists (select 1 from NEWS_MSG where NM_TYPE='NNTP' and NM_ID= _id)
+       and
+       exists (select 1 from NNFE_THR where FTHR_UID is not NULL and FTHR_MESS_ID = _id))
      return 1;
 
    return 0;
@@ -479,7 +482,11 @@ nntpf_post_message (in params any)
 
 -- BODY
 
+
   new_mess := new_mess || new_body || new_attachments || '\r\n.\r\n';
+
+
+--connection_set ('nntp_uid', 'imeto_e_tuka');
 
   ns_post (new_mess);
   http_rewrite ();
