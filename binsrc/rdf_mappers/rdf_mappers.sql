@@ -103,9 +103,34 @@ create procedure DB.DBA.XSLT_REGEXP_MATCH (in pattern varchar, in val varchar)
 }
 ;
 
+create procedure DB.DBA.XSLT_SPLIT_AND_DECODE (in val varchar, in md int, in pattern varchar)
+{
+  declare x, ses any;
+
+  declare exit handler for sqlstate '*'
+    {
+      return xtree_doc ('<results/>');
+    };
+
+  x := split_and_decode (val, md, '\0\0'||pattern);
+--  dbg_obj_print (val, md, pattern, x);
+  ses := string_output ();
+  http ('<results>', ses);
+  foreach (any elm in x) do
+    {
+      if (length (elm))
+        http (sprintf ('<result><![CDATA[%s]]></result>', elm), ses);
+    }
+  http ('</results>', ses);
+  return xtree_doc (string_output_string (ses));
+}
+;
+
 grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
+grant execute on DB.DBA.XSLT_SPLIT_AND_DECODE to public;
 
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:regexp-match', 'DB.DBA.XSLT_REGEXP_MATCH');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:split-and-decode', 'DB.DBA.XSLT_SPLIT_AND_DECODE');
 
 --create procedure RDF_LOAD_AMAZON_ARTICLE_INIT ()
 --{

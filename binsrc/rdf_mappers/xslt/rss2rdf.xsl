@@ -37,6 +37,7 @@
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
   xmlns:georss="http://www.georss.org/georss"
+  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -138,6 +139,12 @@
     <geo:long><xsl:value-of select="substring-after (., ' ')" /></geo:long>
 </xsl:template>
 
+<xsl:template match="channel/category|item/category">
+    <skos:Concept rdf:parseType="Resource">
+	<skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
+    </skos:Concept>
+</xsl:template>
+
 <!-- elements from 0.94 not converted:
 	webMaster
 	category
@@ -218,9 +225,7 @@
 <xsl:template match="channel/generator" />
 <xsl:template match="channel/webMaster" />
 <xsl:template match="channel/cloud" />
-<xsl:template match="channel/category" />
 <xsl:template match="item/comments" />
-<xsl:template match="item/category" />
 
 <xsl:template match="item/enclosure">
     <enc:enclosure>

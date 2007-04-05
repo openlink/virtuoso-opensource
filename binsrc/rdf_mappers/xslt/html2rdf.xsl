@@ -26,6 +26,7 @@
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
   xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   xmlns:foaf="http://xmlns.com/foaf/0.1/"
   xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
@@ -77,6 +78,12 @@
       <dc:subject>
 	  <xsl:value-of select="@content"/>
       </dc:subject>
+      <xsl:variable name="res" select="vi:split-and-decode (@content, 0, ', ')"/>
+      <xsl:for-each select="$res/results/result">
+	  <skos:Concept rdf:parseType="Resource">
+	      <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
+	  </skos:Concept>
+      </xsl:for-each>
   </xsl:template>
   <!-- content specific rules -->
   <xsl:template match="img[@src like 'http://farm%.static.flickr.com/%/%\\_%.%']">
