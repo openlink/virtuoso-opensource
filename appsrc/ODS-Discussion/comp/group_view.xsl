@@ -279,14 +279,17 @@
       http (sprintf ('<tr class="article_listing_current">'));
     }
           ?>
-          <td>
+          <td><span class="dc-date">
             <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" width="80"/>
+              </span>
           </td>
-          <td>
+          <td><span class="dc-subject">
             <v:label value="--sprintf('%V', (control.vc_parent as vspx_row_template).te_rowset[2])" format="%s" width="80"/>
+              </span>
           </td>
-          <td>
+          <td><span class="dc-creator">
             <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
+              </span>
           </td>
           <td>
             <a href="nntpf_disp_article.vspx?id=<?=sprintf ('%U', encode_base64 (control.te_rowset[3]))?>"

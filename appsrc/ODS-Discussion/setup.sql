@@ -292,24 +292,24 @@ nntpf_print_message_href (in _subj varchar,
 --   dbg_obj_print ('_subj=', _subj);
 
    ret := ret ||
-          ' <a class=&#34;thr_list_subj&#34;' ||
+          '<span class=&#34;dc-subject&#34;><a class=&#34;thr_list_subj&#34;' ||
               ' href=&#34;#&#34;' ||
               ' onclick=&#34;javascript: doPostValueN (''nnv'', ''disp_artic'', ''' ||
           encode_base64 (_id) ||
           '''); return false&#34;>' ||
           replace (_subj, '"', '&#34;', 1000) ||
-          '</a>';
+          '</a></span>';
    ret := ret ||
-          ' (<a class=&#34;thr_list_date&#34; href=&#34;#&#34; ' ||
+          ' (<span class=&#34;dc-date&#34;><a class=&#34;thr_list_date&#34; href=&#34;#&#34; ' ||
                ' onclick=&#34;javascript: doPostValueN (''nnv'', ''disp_artic'', ''' ||
           encode_base64 (_id) ||
           '''); return false&#34;>' ||
           nntpf_print_date_in_thread (_date) ||
-          '</a>)';
+          '</a></span>)';
    ret := ret ||
-          ' by <span class=&#34;thr_list_from&#34;>' ||
+          ' by <span class=&#34;thr_list_from&#34;><span class=&#34;dc-creator&#34;>' ||
           replace (_from, '"', '&#34;') ||
-          '</span>';
+          '</span></span>';
 
    if (nntpf_show_cancel_link (_id))
       ret := ret || cancel_text || '</span>';
@@ -1112,10 +1112,10 @@ nntpf_display_article (in id varchar,
    _from := nntpf_replace_at (_from);
 
    http ('<div class="artheaders">');
-   http (sprintf ('<span class="header">From:</span>%V<br/>', _from));
-   http (sprintf ('<span class="header">Subject:</span>%s<br/>', _subj));
+   http (sprintf ('<span class="header">From:</span><span class="dc-creator">%V</span><br/>', _from));
+   http (sprintf ('<span class="header">Subject:</span><span class="dc-subject">%s</span><br/>', _subj));
    http (sprintf ('<span class="header">Newsgroups:</span>%s<br/>', _grps));
-   http (sprintf ('<span class="header">Date:</span>%s<br/>', _date));
+   http (sprintf ('<span class="header">Date:</span><span class="dc-date">%s</span><br/>', _date));
    http ('</div><br/>');
 
 
