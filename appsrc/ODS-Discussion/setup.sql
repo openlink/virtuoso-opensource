@@ -477,7 +477,7 @@ nntpf_post_message (in params any)
   if (get_keyword ('f_path2', params, '') <> '' or get_keyword ('f_path2_fs', params, '') <> '')
     new_attachments := new_attachments || nntpf_uudecode_file (2, params);
 
-  if (get_keyword ('f_path3', params, '') <> '' or get_keyword ('f_path3_ds', params, '') <> '')
+  if (get_keyword ('f_path3', params, '') <> '' or get_keyword ('f_path3_fs', params, '') <> '')
     new_attachments := new_attachments || nntpf_uudecode_file (3, params);
 
 -- BODY
@@ -2242,6 +2242,19 @@ nntpf_post_get_message_parts (in _id any)
 
    if (length (body) > 3)
      body := subseq (body, 0, (length (body) - 3));
+
+   while(locate('\nbegin 666 ',body))
+   {
+
+    declare att_start,att_end integer;
+    
+    att_start:=locate('\nbegin 666 ',body);
+    att_end  :=locate('\nend\n',body)+4;
+    
+    if(att_start>0 and att_end>0)
+     body:=subseq(body,0,att_start)||subseq(body,att_end);
+   
+   }
 
    body := replace (body, '\n', '\n> ');
    body := '\n\n\n> ' || body || '\n\n';

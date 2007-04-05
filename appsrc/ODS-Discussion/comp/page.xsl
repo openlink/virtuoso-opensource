@@ -103,6 +103,8 @@ function dd(txt){
 	<meta name="geo.position" content="<?V sprintf ('%.06f', self.e_lat) ?>;<?V sprintf ('%.06f', self.e_lng) ?>" />
 	<meta name="ICBM" content="<?V sprintf ('%.06f', self.e_lat) ?>, <?V sprintf ('%.06f', self.e_lng) ?>" />
       <?vsp } ?>
+      
+      
 	<xsl:apply-templates />
       </header>
     </xsl:template>
@@ -159,7 +161,7 @@ function dd(txt){
     </xsl:template>
 
     <xsl:template match="head[not (link[@rel='schema.dc'])]">
-	<head>
+	<head  profile="http://internetalchemy.org/2003/02/profile">
 	    <xsl:apply-templates />
 	    <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />
 	    <xsl:text>&#10;</xsl:text>
@@ -174,7 +176,19 @@ function dd(txt){
 	    <xsl:text>&#10;</xsl:text>
 	    <meta name="ICBM" content="<?V sprintf ('%.06f', self.e_lat) ?>, <?V sprintf ('%.06f', self.e_lng) ?>" />
 	    <xsl:text>&#10;</xsl:text>
+	    <?vsp }
+
+	    if ( 1=0 and self.u_name is not null and self.u_name<>'') {
+
+	    ?>
+      <link rel="foaf" type="application/rdf+xml" title="FOAF"  
+      href="<?V replace (sprintf ('http://%s/dataspace/%U/about.rdf', DB.DBA.WA_GET_HOST(), 'dba'), '+', '%2B')?>" />
+      
+
 	    <?vsp } ?>
+      <link rel="meta" type="application/rdf+xml" title="SIOC" 
+      href="<?V replace (sprintf ('%s/dataspace/discussion/sioc.rdf', 'http://'||DB.DBA.WA_GET_HOST()), '+', '%2B') ?>"/>
+	    
 	</head>
     </xsl:template>
 
