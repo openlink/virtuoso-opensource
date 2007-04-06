@@ -7477,8 +7477,8 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
   insert into DB.DBA.RDF_OBJ_FT_RULES (ROFR_G, ROFR_P, ROFR_REASON) values (rule_g, rule_p, reason);
   commit work;
   __rdf_obj_ft_rule_add (rule_g_iid, rule_p_iid, reason);
-  if (need_scan)
-    {
+  if (not need_scan)
+    return 1;
       commit work;
       exec ('checkpoint');
       __atomic (1);
@@ -7500,7 +7500,7 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
                   commit work;
                 }
             }
-          return 1;
+      goto update_complete;
         }
       if (rule_g <> '')
         {
@@ -7520,7 +7520,7 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
                   commit work;
                 }
             }
-          return 1;
+      goto update_complete;
         }
       if (rule_p <> '')
         {
@@ -7540,18 +7540,18 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
                   commit work;
                 }
             }
-          return 1;
+      goto update_complete;
         }
       update DB.DBA.RDF_OBJ set RO_DIGEST = rdf_box (coalesce (blob_to_string (RO_LONG), RO_VAL), 257, 257, RO_ID, 1) where RO_DIGEST is null;
       commit work;
-      for (select O as obj from DB.DBA.RDF_QUAD where P=rule_p_iid and isstring (O)) do
+  for (select O as obj from DB.DBA.RDF_QUAD where isstring (O)) do
         {
           DB.DBA.RDF_MAKE_RO_DIGEST (257, obj, 257, 1);
           commit work;
         }
+update_complete:
       __atomic (0);
       exec ('checkpoint');
-    }
   return 1;
 }
 ;
@@ -7575,6 +7575,38 @@ create function DB.DBA.RDF_OBJ_FT_RULE_DEL (in rule_g varchar, in rule_p varchar
   commit work;
   __rdf_obj_ft_rule_del (rule_g_iid, rule_p_iid, reason);  
   return 1;
+}
+;
+
+create procedure DB.DBA.RDF_OBJ_FT_RECOVER ()
+{
+  declare stat, msg, STRG varchar;
+  declare metas, rset any;
+  result_names (STRG);
+  exec ('
+    select ROFR_G, ROFR_P, MAX (ROFR_REASON), COUNT (1), MIN (ROFR_REASON)
+    from DB.DBA.RDF_OBJ_FT_RULES
+    group by ROFR_G, ROFR_P
+    order by (1024 * length (ROFR_G) + 1024 * length (ROFR_P))',
+    stat, msg, vector (), 100000, metas, rset);
+  foreach (any ftrule in rset) do
+    {
+      result (sprintf ('Temporary drop of rule "%s" for graph <%s> predicate <%s>...', ftrule[2], ftrule[0], ftrule[1]));
+      { whenever sqlstate '*' goto add_back;
+        DB.DBA.RDF_OBJ_FT_RULE_DEL (ftrule[0], ftrule[1], ftrule[2]);
+        result ('... done'); }
+add_back:        
+      result (sprintf ('Restoring rule "%s" for graph <%s> predicate <%s>...', ftrule[2], ftrule[0], ftrule[1]));
+      { whenever sqlstate '*' goto restored;
+        DB.DBA.RDF_OBJ_FT_RULE_ADD (ftrule[0], ftrule[1], ftrule[2]);
+        result ('... done'); }
+restored:
+      if (ftrule[3] > 1)
+        result (sprintf ('No need to re-apply additional %d rules for this graph and predicate, e.g., rule "%s"', ftrule[4]));
+    }
+  result ('Now starting incremental update of free-text index...');
+  VT_INC_INDEX_DB_DBA_RDF_OBJ();
+  result ('... done');
 }
 ;
 
