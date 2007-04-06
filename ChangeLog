@@ -1,3 +1,64 @@
+2007-04-06 15:16  source
+
+	* Clean up tar file after use
+
+2007-04-06 14:53  source
+
+	* Renamed ODBC driver
+
+2007-04-06 14:48  source
+
+	* Updated version to 5.0.0-rc15
+
+2007-04-06 13:59  source
+
+	* Fixed reply to wiki post shows vspx page to be saved in
+
+2007-04-06 13:52  source
+
+	* Added new error page for discussion application
+
+2007-04-06 13:14  source
+
+	* Fixed build dependencies
+
+2007-04-06 10:45  source
+
+	* Added support for DB.DBA.RDF_OBJ_FT_RECOVER
+
+2007-04-06 10:45  source
+
+	* If root page is dead then GPF and say to recover, not wait
+
+2007-04-06 10:43  source
+
+	* Fixed default visibility of mail signature
+
+2007-04-06 10:21  source
+
+	* Fix for creating redundant graph variable in a query with special predicate
+
+2007-04-06 10:13  source
+
+	* Updated versions
+
+2007-04-06 10:02  source
+
+	* Fixed calling http function outside of http context
+
+2007-04-06 09:58  source
+
+	* Fixed syntax for rebuilding RDF view
+
+2007-04-06 09:57  source
+
+	* Added more code for sharing contacts
+
+2007-04-05 21:49  source
+
+	* Implemented override of initial setings via params
+	* Implemented EndpointFixedSponge INI setting
+
 2007-04-05 17:53  source
 
 	* Updated version to 5.0.0-14

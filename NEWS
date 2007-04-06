@@ -1,4 +1,27 @@
-March 29, 2007, V5.0.0:
+April 06, 2007, V5.0.0:
+  * Significant rewrite of database engine resulting in 50%-100%
+    improvement on single CPU and in some cases up to 300% on
+    multiprocessor CPUs by decreasing resource contention between threads
+    and other optimizations.
+  * Radical expansion of RDF support including
+	- Full Text Indexing of Selected Triples
+	- Subclass and Subproperty Support
+	- Aggregate Functions
+	- Improved Support of XML Schema Type System
+	- New SPARQL to Relational Mapping
+	- Bug fixes
+  * Significant update of all ODS applications
+	- Added compliance to latest SIOC vocabulary
+	- Added addressbook
+	- Enhancements to existing applications
+	- Bug fixes
+  * New interactive SPARQL tool which can import microformats and
+    heuristically load resources that are linked to the queried data.
+
+NOTE: Databases created with earlier versions of Virtuoso will be
+      automatically upgraded to Virtuoso 5.0 but after upgrade will not
+      be readable with older Virtuoso versions.
+
 
 December 5, 2006, V4.5.7:
   * Added SPAR_CODEGEN type of SPARQL trees
