@@ -24,7 +24,7 @@
 -->
 <html>
 <body>
-<v:page name="digest_login" xmlns:v="http://www.openlinksw.com/vspx/"  on-error-redirect="nntpf_error.vsp" on-deadlock-retry="3">
+<v:page name="digest_login" xmlns:v="http://www.openlinksw.com/vspx/"  on-error-redirect="nntpf_error.vspx" on-deadlock-retry="3">
 <v:variable name="you_never" persist="1" type="int" default="0" />
 <v:variable name="you_ever" type="int" default="0" />
 <H4>VSPX login control demo</H4>

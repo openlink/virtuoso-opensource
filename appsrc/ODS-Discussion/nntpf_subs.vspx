@@ -26,7 +26,7 @@
   	xmlns:v="http://www.openlinksw.com/vspx/"
 	name="nntpf_thread_view"
 	style="main.xsl"
-	on-error-redirect="nntpf_error.vsp"
+	on-error-redirect="nntpf_error.vspx"
 	on-deadlock-retry="3"
 	doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
 	doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">

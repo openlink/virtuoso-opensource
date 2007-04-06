@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        name="nntp-error-page"
+        style="main.xsl"
+        on-error-redirect="nntp_main.vspx"
+        on-deadlock-retry="3"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <html>
+    <head>
+      <v:include url="virtuoso_app_links.xhtml"/>
+      <link rel="stylesheet" type="text/css" href="nntpf.css"/>
+      <link rel="stylesheet" type="text/css" href="webdav.css"/>
+      <title>ODS Discussion Error</title>
+    </head>
+    <body>
+      <vm:page>
+        <v:variable name="page_name" type="varchar" default="''" param-name="__PAGE" persist="0"/>
+        <v:variable name="code" type="varchar" default="''" param-name="__SQL_STATE" persist="0"/>
+        <v:variable name="mesg" type="varchar" default="''" param-name="__SQL_MESSAGE" persist="0"/>
+        <v:form name="nntpf_error" type="simple" xhtml_enctype="multipart/form-data">
+        <v:before-data-bind>
+           if (strstr (self.page_name, 'nntpf_post.vspx'))
+           {
+           
+            if (strstr (self.mesg, '440') or strstr (self.mesg, '441') or strstr (self.mesg, '435'))
+            {
+              if (strstr (self.mesg, 'Internet syntax'))
+                 self.mesg:='<b>Posting not allowed because the user has no valid email address.</b>';
+              else
+                 self.mesg:='<b>' || self.mesg || '</b>';
+            }
+            else if (self.code = 'NNTPP')
+            {
+                 self.mesg:='<b>' || self.mesg || '</b>';
+            }
+            else
+             self.mesg:='<b>Incomplete article not posted</b>';
+           
+           }        
+        </v:before-data-bind>
+
+          <vm:nntpf-title/>
+          <div class="menu">
+            <vm:menu-bar/>
+          </div>
+
+          <div style=" margin: 10px; border: 1px solid #444;">
+            <h1 style="color: #275533">
+              <img class="dialog_icon"
+                     src="images/messagebox_warning.png"
+                     alt="warning icon"
+                     title="unexpected error"
+                     style="padding: 0px 10px 0px 6px;vertical-align: middle;"/>
+               Error
+            </h1>
+            <div style="margin: 6px">
+              <p>The action could not be performed because of an unexpected error.<br/>
+                 Please try again. The problem has been logged and the system
+                 administrators notified.</p><br/>
+              <table style="font-size: 7pt;color: #777; border-top: 1px solid #444; margin: 5px;">
+                <caption>Technical data</caption>
+                <tr><th align="left">Page</th><td><?V self.page_name ?></td></tr>
+                <tr><th align="left">SQL State</th><td><?V self.code ?></td></tr>
+                <tr><th align="left">SQL Message</th><td><?V self.mesg ?></td></tr>
+              </table>
+            </div>
+          <?vsp
+                declare msg any;
+                msg := regexp_match ('[^\r\n]*', self.mesg);
+                log_message (sprintf ('ODS [%s] %s', self.code, msg));
+          ?>
+            <br/>
+            <div style="margin: 5px;">
+              <v:button action="simple"
+                        name="cancel"
+                        value="Go back"
+                        xhtml_onclick="javascript:history.back();return false;"/>
+            </div>
+          </div>
+        </v:form>
+      </vm:page>
+    </body>
+  </html>
+</v:page>
