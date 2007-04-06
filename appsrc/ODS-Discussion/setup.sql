@@ -1122,7 +1122,7 @@ nntpf_display_article (in id varchar,
    if (parsed_message[2] <> 0)
      return nntpf_display_article_multi_part (parsed_message, _body, id, sid);
 
-   nntpf_display_message_reply (sid, id);
+   nntpf_display_message_reply (sid, id, _grps);
 
     _print_body := subseq (_body, parsed_message[1][0], parsed_message[1][1]);
     if (length (_print_body) > 3)
@@ -1161,17 +1161,30 @@ nntpf_display_article (in id varchar,
 
 	idx := idx + 1;
      }
-   nntpf_display_message_reply (sid, id);
+   nntpf_display_message_reply (sid, id, _grps);
 }
 ;
 
 
 create procedure
-nntpf_display_message_reply (in sid varchar, in id varchar)
+nntpf_display_message_reply (in sid varchar, in id varchar, in group_name varchar := null)
+{
+	 declare show_replylink integer;
+	 show_replylink:=1;
+	 if(group_name is not null)
+	 { 
+	  
+	   if(not exists (select 1 from NEWS_GROUPS,NEWS_MSG
+		                  where NG_POST = 1 and ns_rest (NG_GROUP, 1) = 1 and NG_STAT<>-1 and NG_NAME=group_name))
+		    show_replylink:=0;
+   }
+
+   if(show_replylink)
 {
    http ('<br/>');
    http (sprintf ('<a href="nntpf_post.vspx?sid=%s&amp;realm=wa&amp;article=%V"> Reply to this article </a>', sid, id));
    http ('<br/>');
+}
 }
 ;
 

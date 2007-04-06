@@ -210,7 +210,7 @@ sticker_init() {
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
-  echo "  <version package=\"1.02\">" >> $STICKER
+  echo "  <version package=\"1.03\">" >> $STICKER
   echo "    <prop name=\"Release Date\" value=\""`date +"%Y-%m-%d %H:%M"`"\"/>" >> $STICKER
   echo "    <prop name=\"Build\" value=\"Release, optimized\"/>" >> $STICKER
   echo "  </version>" >> $STICKER

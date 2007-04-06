@@ -134,6 +134,15 @@
 		  self.post_body := mess_parts[1];
 		  self.post_old_hdr := mess_parts[2];
 		  self.grp_list_enabled := 0;
+	       
+
+	       if(not exists (select 1 from NEWS_GROUPS
+		                  where NG_POST = 1 and ns_rest (NG_GROUP, 1) = 1 and NG_STAT<>-1 and NG_GROUP=self.grp_sel_thr))
+		        {
+		          signal ('NNTPP', 'Selected group(s) is not available for posting.');
+		        
+		        }
+	       
 	       }
 
 	     if (self.u_name is not NULL)
