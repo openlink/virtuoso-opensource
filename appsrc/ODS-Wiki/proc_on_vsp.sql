@@ -2401,22 +2401,22 @@ create function WV.WIKI.RESOURCEHREF (in href varchar, in _base_adjust varchar)
 {
   declare _resources varchar;
   _resources := registry_get('WIKI RESOURCES');
-  if (isinteger(_resources) or not is_http_ctx())
+  if (isinteger(_resources) and is_http_ctx())
     {
       declare vh, lh, hf, lines any;
       lines := http_request_header ();
       vh := http_map_get ('vhost');
       lh := http_map_get ('lhost');
       hf := http_request_header (lines, 'Host');
-      if(strchr (hf, ':') is null)
-        hf:=hf||':'|| server_http_port ();
       if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/wiki/resources'))
         return 'http://' || hf || '/wiki/resources/' || href;
       else
     return sprintf ('http://%s/wiki/resources/%s', sioc..get_cname(), href);
     }
-  else
+  else if (isstring (_resources))
     return _resources || href;
+  else
+    return DB.DBA.WA_LINK (1, href);
 }
 ;
 create function WV.WIKI.RESOURCEHREF2 (in resource varchar, 
