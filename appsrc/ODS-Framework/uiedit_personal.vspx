@@ -59,7 +59,7 @@
     <v:variable name="sav6" type="varchar" default="'1'" />
     <v:variable name="sav7" type="varchar" default="'1'" />
     <v:variable name="sav8" type="varchar" default="'1'" />
-    <v:variable name="sav9" type="varchar" default="'1'" />
+    <v:variable name="sav9" type="varchar" default="'3'" />
     <v:variable name="sav33" type="varchar" default="'1'" />
     <v:variable name="sav37" type="varchar" default="'1'" />
 
@@ -115,7 +115,7 @@
 	  self.sav6 := tmp[6];
 	  self.sav7 := tmp[7];
 	  self.sav8 := tmp[8];
---	  self.sav9 := tmp[9]; --this is public/friends/private for mail signature
+--	  self.sav9 := 3; -- tmp[9] --this is public/friends/private for mail signature
 	  self.sav33 := tmp[33];
 	  self.sav37 := tmp[37];
 
@@ -371,6 +371,7 @@
 			  message="Mail Signature cannot be longer then 255 chars"
 			  empty-allowed="1"/>
 		  </v:textarea>
+      <v:text type="hidden" name="sel_9" value="3"/>
 <!--
 		  <vm:u-prop-select name="sel_9" value="self.sav9" />
 -->
