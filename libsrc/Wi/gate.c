@@ -1200,6 +1200,8 @@ itc_reset (it_cursor_t * it)
 	}
       TC (tc_root_cache_miss);
       page_wait_access (it, dp, NULL, &buf, it->itc_dive_mode, RWG_WAIT_KEY);
+      if (buf == PF_OF_DELETED)
+	GPF_T1 ("The root page of an index is free do a crash dump for recovery.");
       if (it->itc_to_reset > RWG_WAIT_KEY)
 	continue;
       tree->it_root_buf = buf;
