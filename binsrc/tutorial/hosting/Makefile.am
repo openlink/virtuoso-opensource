@@ -125,6 +125,7 @@ EXTRA_DIST = \
 	ho_s_3/redcoalsms.cs \
 	ho_s_3/redcoalsms.dll \
 	ho_s_3/redcoalsmsref.cs \
+	ho_s_30/.sanep.php \
 	ho_s_30/*.php \
 	ho_s_30/*.sql \
 	ho_s_30/*.xml \

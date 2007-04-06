@@ -1,3 +1,11 @@
+2007-04-06 17:03  source
+
+	* Updated version to 5.0.0 for final release
+
+2007-04-06 17:02  source
+
+	* Added check argument type
+
 2007-04-06 15:16  source
 
 	* Clean up tar file after use
