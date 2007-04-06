@@ -2693,6 +2693,29 @@ create procedure AB.WA.contact_update2 (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.contact_update3 (
+  in id integer,
+  in domain_id integer,
+  in pFields any,
+  in pValues any)
+{
+  declare N varchar;
+  declare S varchar;
+  declare st, msg, meta, rows any;
+
+  S := '';
+  for (N := 0; N < length (pFields); N := N + 1)
+    S := S || ', ' || pFields[N] || ' = ?';
+  S := trim (S, ',');
+  if (S <> '') {
+    S := 'update AB.WA.PERSONS set ' || S || ' where P_ID = ' || cast (id as varchar);
+    exec (S, st, msg, pValues, 0, meta, rows);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.contact_field (
   in id integer,
   in domain_id integer,

@@ -228,7 +228,7 @@
       grants := replace(grants, ',,', ',');
       grants := trim(grants, ',', '');
       grants := grants || ',';
-      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id) do {
+      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_PERSON_ID = person_id and G_GRANTEE_ID = U_ID) do {
         name := U_NAME;
         id := U_ID;
         pos := strstr(grants, name || ',');
@@ -246,6 +246,17 @@
           insert into AB.WA.GRANTS (G_GRANTER_ID, G_GRANTEE_ID, G_PERSON_ID)
             values(self.account_id, id, person_id);
       }
+    ]]>
+  </v:method>
+
+  <v:method name="shareSelect" arglist="in person_id integer">
+    <![CDATA[
+      declare grants any;
+
+      grants := '';
+      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = U_ID and G_PERSON_ID = person_id) do
+        grants := grants || cast (U_NAME as varchar) || ',';
+      return trim (grants, ',');
     ]]>
   </v:method>
 
@@ -424,6 +435,7 @@
                     self.v_bIndustry := '';
                     self.v_bOrganization := '';
                     self.v_bJob := '';
+                    self.v_grants := '';
                   }
 
                   if (cmd = 'tag') {
@@ -1129,6 +1141,7 @@
                          self.v_tags
                     from AB.WA.PERSONS
                    where P_ID = self.v_id;
+                  self.v_grants := self.shareSelect (self.v_id);
                 }
               ]]>
             </v:before-data-bind>
@@ -1328,6 +1341,18 @@
                         <?vsp self.viewField (self.v_foaf); ?>
                       </td>
                     </tr>
+                    <vm:if test="self.abAction <> 'view'">
+                      <tr>
+                        <th>
+                          <v:label for="ab_grants" value="Share to user(s)" />
+                        </th>
+                        <td>
+                          <v:text name="ab_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
+                          <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=ab_grants:s1;',520)" class="button" />
+                          <input type="button" value="Clear" onClick="javascript: document.F1.elements['ab_grants'].value = ''" class="button" />
+                        </td>
+                      </tr>
+                    </vm:if>
                     <tr>
                       <script type="text/javascript">
                         function suggestTags ()
@@ -2000,7 +2025,7 @@
                     self.v_bMail         := trim (self.ab_bMail.ufl_value);
                     self.v_bWeb          := trim (self.ab_bWeb.ufl_value);
 
-                    AB.WA.contact_update (
+                    self.v_id := AB.WA.contact_update (
                       self.v_id,
                       self.domain_id,
                       self.v_name,
@@ -2049,6 +2074,8 @@
                       self.v_bWeb,
                       self.v_tags
                     );
+                    self.v_grants := trim (self.ab_grants.ufl_value);
+                    self.shareNode (self.v_id, self.v_grants, 1);
 
                     self.abAction := 'browse';
                     self.vc_data_bind(e);
@@ -2672,8 +2699,9 @@
 	              <v:button action="simple" value="Import" xhtml_class="form-button">
 			            <v:on-post>
 			              <![CDATA[
-			                declare N, M, id integer;
+                      declare N, M, nLength, mLength, id integer;
 			                declare tmp, t_iri, S, name, fullName any;
+                      declare data, maps, pFields, pValues any;
 
 			                -- vCard
 			                if (self.i_type = 0) {
@@ -2749,6 +2777,7 @@
                                                            '   FROM <%s> ' ||
                                                            '  WHERE {?x rdf:type foaf:Person} ', t_iri));
                         Meta := vector ('P_NAME', 'P_FULL_NAME', 'P_FIRST_NAME', 'P_LAST_NAME', 'P_MAIL', 'P_WEB', 'P_ICQ', 'P_MSN', 'P_AIM', 'P_YAHOO');
+                        mLength := length (Meta);
                         for (N := 0; N < length (Items); N := N + 1) {
                           S := ' SPARQL ' ||
                                ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
@@ -2772,8 +2801,8 @@
                                '       }';
 
                           Item := AB.WA.ab_sparql (sprintf (S, t_iri, Items [N][0]));
-                          id := -1;
                           if (length (Item)) {
+                            id := -1;
                             fullName := null;
                             if (not isnull (Item[0][1])) {
                               fullName := Item[0][1];
@@ -2782,11 +2811,23 @@
                                 fullName := trim (Item[0][2] || ' ' || Item[0][3]);
                             }
                             id := AB.WA.contact_update2 (id, self.domain_id, 'P_NAME', coalesce (Item[0][0], fullName));
-                            if (not isnull (fullName))
-                              AB.WA.contact_update2 (id, self.domain_id, 'P_FULL_NAME', fullName);
-                            for (M := 2; N < length (Meta); M := M + 1)
-                              if (not isnull (Item[0][M]))
-                                AB.WA.contact_update2 (id, self.domain_id, Meta[M], Item[0][M]);
+                            pFields := vector ();
+                            pValues := vector ();
+                            for (M := 1; M < mLength; M := M + 1) {
+                              if (Meta[M] = 'P_FULL_NAME') {
+                                if (not isnull (fullName)) {
+                                  pFields := vector_concat (pFields, vector (Meta[M]));
+                                  pValues := vector_concat (pValues, vector (fullName));
+                                }
+                              } else {
+                                if (not isnull (Item[0][M])) {
+                                  pFields := vector_concat (pFields, vector (Meta[M]));
+                                  pValues := vector_concat (pValues, vector (Item[0][M]));
+                                }
+                              }
+                            }
+                            if (length (pFields))
+                              AB.WA.contact_update3 ( id, self.domain_id, pFields, pValues);
                           }
   			                }
   			              _delete:;
@@ -2795,25 +2836,25 @@
 
 			                -- CSV
 			                if (self.i_type = 2) {
-                        declare N, M, nameIdx, firstNameIdx, lastNameIdx, fullNameIdx integer;
-                        declare data any;
+                        declare nameIdx, firstNameIdx, lastNameIdx, fullNameIdx integer;
 
+                        maps := self.i_lMaps;
                         nameIdx := -1;
                         firstNameIdx := -1;
                         lastNameIdx := -1;
                         fullNameIdx := -1;
-                        for (N := 0; N < length (self.i_lMaps); N := N + 2) {
-                          if (self.i_lMaps[N+1] = 'P_NAME')
-                    		    nameIdx := cast (self.i_lMaps[N] as integer);
-                          if (self.i_lMaps[N+1] = 'P_FIRST_NAME')
-                    		    firstNameIdx := cast (self.i_lMaps[N] as integer);
-                          if (self.i_lMaps[N+1] = 'P_LAST_NAME')
-                    		    lastNameIdx := cast (self.i_lMaps[N] as integer);
-                          if (self.i_lMaps[N+1] = 'P_FULL_NAME')
-                    		    fullNameIdx := cast (self.i_lMaps[N] as integer);
+                        for (N := 0; N < length (maps); N := N + 2) {
+                          if (maps[N+1] = 'P_NAME')
+                            nameIdx := cast (maps[N] as integer);
+                          if (maps[N+1] = 'P_FIRST_NAME')
+                            firstNameIdx := cast (maps[N] as integer);
+                          if (maps[N+1] = 'P_LAST_NAME')
+                            lastNameIdx := cast (maps[N] as integer);
+                          if (maps[N+1] = 'P_FULL_NAME')
+                            fullNameIdx := cast (maps[N] as integer);
                     		}
-
-                          for (N := 1; N < length (self.i_data); N := N + 1) {
+                        nLength := length (self.i_data);
+                        for (N := 1; N < nLength; N := N + 1) {
                             data := split_and_decode (self.i_data [N], 0, '\0\0,');
                 	        name := '';
                 	        fullName := '';
@@ -2831,39 +2872,54 @@
                 	        if (name = '')
                 	          name := fullName;
                   	        id := -1;
-                      		if (name <> '')
+                          if (name <> '') {
                   		      id := AB.WA.contact_update2 (id, self.domain_id, 'P_NAME', name);
-                  	          for (M := 0; M < length (data); M := M + 1) {
+                            pFields := vector ();
+                            pValues := vector ();
+                            mLength := length (data);
+                            for (M := 0; M < mLength; M := M + 1) {
                 	          if (M <> nameIdx) {
                 	            if (M = fullNameIdx) {
-                	              if (fullName <> '')
-                       		        AB.WA.contact_update2 ( id, self.domain_id, 'P_FUL_NAME', fullName);
+                                  if (fullName <> '') {
+                                     pFields := vector_concat (pFields, vector ('P_FUL_NAME'));
+                                     pValues := vector_concat (pValues, vector (fullName));
+                                   }
                    	          } else {
-                     	          if (get_keyword (cast (M as varchar), self.i_lMaps, '') <> '')
-                         		      AB.WA.contact_update2 ( id, self.domain_id, get_keyword (cast (M as varchar), self.i_lMaps), trim (data[M], '"'));
+                                   if (get_keyword (cast (M as varchar), maps, '') <> '') {
+                                     pFields := vector_concat (pFields, vector (get_keyword (cast (M as varchar), maps)));
+                                     pValues := vector_concat (pValues, vector (trim (data[M], '"')));
                               }
                             }
         			            }
         			          }
+                            if (length (pFields))
+                              AB.WA.contact_update3 ( id, self.domain_id, pFields, pValues);
+                          }
+                        }
 			                }
 
 			                -- LDAP
 			                if (self.i_type = 3) {
-                        declare N, M integer;
-                        declare data any;
-
                         for (N := 0; N < length (self.i_data); N := N + 2) {
                   	      if (self.i_data [N] = 'entry') {
                   	        data := self.i_data [N+1];
+                            mLength := length (data);
                   	        id := -1;
-                	          for (M := 0; M < length (data); M := M + 2) {
+                            for (M := 0; M < mLength; M := M + 2) {
                   	          if (get_keyword (data[M], self.i_lMaps) = 'P_NAME')
                       		      id := AB.WA.contact_update2 (id, self.domain_id, 'P_NAME', case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end);
                     	      }
-                	          for (M := 0; M < length (data); M := M + 2) {
+                            if (id <> -1) {
+                              pFields := vector ();
+                              pValues := vector ();
+                              for (M := 0; M < mLength; M := M + 2) {
                   	          if (get_keyword (data[M], self.i_lMaps, '') <> '') {
-                      		      AB.WA.contact_update2 ( id, self.domain_id, get_keyword (data[M], self.i_lMaps), case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end);
+                                  pFields := vector_concat (pFields, vector (get_keyword (data[M], self.i_lMaps)));
+                                  pValues := vector_concat (pValues, vector (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end));
+                                }
                       		    }
+                              if (length (pFields))
+                                AB.WA.contact_update3 ( id, self.domain_id, pFields, pValues);
                     	      }
                           }
       			            }
