@@ -180,10 +180,10 @@ ODS_SPARQL_QM_RUN ('
 
     for select DB.DBA.wa_type_to_app (WAT_NAME) as suffix from DB.DBA.WA_TYPES do
       {
-	ODS_SPARQL_QM_RUN ('drop virtrdf:ODSDataspace-'||suffix||' .', 0, 0);
+	ODS_SPARQL_QM_RUN ('drop quad map virtrdf:ODSDataspace-'||suffix||' .', 0, 0);
       }
-    ODS_SPARQL_QM_RUN ('drop virtrdf:ODSDataspace-discussion .', 0, 0);
-    ODS_SPARQL_QM_RUN ('drop virtrdf:ODSDataspace .', 0, 0);
+    ODS_SPARQL_QM_RUN ('drop quad map virtrdf:ODSDataspace-discussion .', 0, 0);
+    ODS_SPARQL_QM_RUN ('drop quad map virtrdf:ODSDataspace .', 0, 0);
 
     sioc..ods_sioc_result ('virtrdf:ODSDataspace storage dropped.');
 
