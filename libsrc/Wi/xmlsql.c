@@ -4784,7 +4784,10 @@ xs_idnval (id_hash_t * idn, id_hash_t * var, caddr_t val)
 {
   long * place;
   caddr_t * parm = NULL;
-  place = (long *) id_hash_get (idn, (caddr_t) &val);
+  if (DV_STRINGP(val))
+    place = (long *) id_hash_get (idn, (caddr_t) &val);
+  else
+    place = NULL;
   if (!place)
     {
       caddr_t res;
