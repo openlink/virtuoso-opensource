@@ -22,12 +22,12 @@
 #
 #  Driver version and description
 #
-DRIVER_VERS	= 04.50.2911
+DRIVER_VERS	= 05.00.3009
 DRIVER_DESC	= OpenLink Virtuoso ODBC Driver
 
 
 noinst_LTLIBRARIES = libvirtodbc.la libvirtodbc_u.la
-lib_LTLIBRARIES = virtodbc32.la virtodbc32_r.la virtodbc32u.la virtodbc32u_r.la
+lib_LTLIBRARIES = virtodbc.la virtodbc_r.la virtodbcu.la virtodbcu_r.la
 
 
 base_cflags  = @VIRT_AM_CFLAGS@ 
@@ -93,9 +93,9 @@ libvirtodbc_u_la_SOURCES = \
 #
 #  Ansi/Fiber based client
 #
-virtodbc32_la_SOURCES = virt_vers.c
-virtodbc32_la_LDFLAGS = -module $(VIRTODBC_LDFLAGS) -export-symbols virt.exp
-virtodbc32_la_LIBADD = \
+virtodbc_la_SOURCES = virt_vers.c
+virtodbc_la_LDFLAGS = -module $(VIRTODBC_LDFLAGS) -export-symbols virt.exp
+virtodbc_la_LIBADD = \
 	libvirtodbc.la \
 	$(VIRTODBC_FIBER_LIBS)
 
@@ -103,9 +103,9 @@ virtodbc32_la_LIBADD = \
 #
 #  Ansi/Pthread based client
 #
-virtodbc32_r_la_SOURCES = virt_vers_r.c
-virtodbc32_r_la_LDFLAGS = $(virtodbc32_la_LDFLAGS)
-virtodbc32_r_la_LIBADD = \
+virtodbc_r_la_SOURCES = virt_vers_r.c
+virtodbc_r_la_LDFLAGS = $(virtodbc_la_LDFLAGS)
+virtodbc_r_la_LIBADD = \
 	libvirtodbc.la \
 	$(VIRTODBC_PTHREAD_LIBS)
 
@@ -113,9 +113,9 @@ virtodbc32_r_la_LIBADD = \
 #
 #  Unicode/Fiber based client
 #
-virtodbc32u_la_SOURCES =  virt_vers_u.c
-virtodbc32u_la_LDFLAGS = -module $(VIRTODBC_LDFLAGS) -export-symbols virt_u.exp
-virtodbc32u_la_LIBADD = \
+virtodbcu_la_SOURCES =  virt_vers_u.c
+virtodbcu_la_LDFLAGS = -module $(VIRTODBC_LDFLAGS) -export-symbols virt_u.exp
+virtodbcu_la_LIBADD = \
 	libvirtodbc.la \
 	libvirtodbc_u.la \
 	$(VIRTODBC_FIBER_LIBS)
@@ -124,9 +124,9 @@ virtodbc32u_la_LIBADD = \
 #
 #  Unicode/Pthread based client
 #
-virtodbc32u_r_la_SOURCES = virt_vers_ru.c
-virtodbc32u_r_la_LDFLAGS = $(virtodbc32u_la_LDFLAGS)
-virtodbc32u_r_la_LIBADD = \
+virtodbcu_r_la_SOURCES = virt_vers_ru.c
+virtodbcu_r_la_LDFLAGS = $(virtodbcu_la_LDFLAGS)
+virtodbcu_r_la_LIBADD = \
 	libvirtodbc.la \
 	libvirtodbc_u.la \
 	$(VIRTODBC_PTHREAD_LIBS)
