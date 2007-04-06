@@ -48,6 +48,7 @@ OAT.RDFBrowser = function(div,optObj) {
 
 	this.options = {
 		maxLength:30,
+		maxURILength:60,
 		maxDistinctValues:100,
 		imagePath:OAT.Preferences.imagePath,
 		indicator:false,
@@ -123,7 +124,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			var tperm = OAT.Dom.create("a");
 			tperm.innerHTML = "permalink";
 			var base = window.location.toString().match(/^[^?#]+/)[0];
-			tperm.href = base+"?";
+			var th = base+"?";
 			
 			for (var i=0;i<self.store.items.length;i++) {
 				var d = OAT.Dom.create("div");
@@ -132,7 +133,9 @@ OAT.RDFBrowser = function(div,optObj) {
 				
 				var a = OAT.Dom.create("a");
 				a.href = item.href;
-				a.innerHTML = item.label;
+				var label = (item.label.length > self.options.maxURILength ? item.label.substring(0,self.options.maxURILength) + "..." : item.label);
+				a.innerHTML = label;
+
 				d.appendChild(a);
 				d.innerHTML += " - "+item.triples.length+" triples - ";
 				var remove = OAT.Dom.create("a");
@@ -143,12 +146,13 @@ OAT.RDFBrowser = function(div,optObj) {
 				var perm = OAT.Dom.create("a");
 				perm.innerHTML = "permalink";
 				perm.href = base+"?uri="+encodeURIComponent(item.href);
-				tperm.href += "uri[]="+encodeURIComponent(item.href)+"&";
+				th += "uri[]="+encodeURIComponent(item.href)+"&";
 				
 				OAT.Dom.append([d,remove,OAT.Dom.text(" - "),perm]);
 				self.store.div.appendChild(d);
 			}
 			
+			tperm.href = th;
 			var d = OAT.Dom.create("div");
 			d.innerHTML = "TOTAL: "+total+" triples";
 			self.store.div.appendChild(d);
@@ -173,6 +177,11 @@ OAT.RDFBrowser = function(div,optObj) {
 				self.store.addTriples(triples,label,url);
 			}
 			OAT.Dereference.go(url,cback,{type:OAT.AJAX.TYPE_XML});
+		},
+		
+		addSPARQL:function(q) {
+			var url = "/sparql?query="+encodeURIComponent(q)+"&format=rdf";
+			self.store.addURL(url);
 		},
 		
 		addTriples:function(triples,label,href) {
@@ -473,10 +482,12 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.tree = new OAT.Tree({imagePath:self.options.imagePath,poorMode:(bigTotal > 1000),onClick:"toggle",onDblClick:"toggle"});
 		self.tree.assign(ul,true);
 		
-		for (var i=0;i<self.tree.tree.children.length;i++) { /* expand 'type' node */
+/*
+		for (var i=0;i<self.tree.tree.children.length;i++) { // expand 'type' node 
 			var li = self.tree.tree.children[i];
 			if (li.getLabel().match(/type/)) { li.expand(); }
 		}	
+*/
 	}
 	
 	this.drawFilters = function() { /* list of applied filters */
@@ -756,6 +767,21 @@ OAT.RDFBrowser = function(div,optObj) {
 		}
 		if (index != -1) { self.tab.go(index); }
 		
+	}
+	
+	this.fromRQ = function(data) {
+		self.store.clear();
+		self.removeAllFilters();
+		var q = "";
+		var d = data.replace(/\r/g,"\n");
+		var parts = d.split("\n");
+		for (var i=0;i<parts.length;i++) {
+			var part = parts[i].replace(/\n/g,"");
+			var r = part.match(/^[^#]*/);
+			q += r[0];
+		}
+		self.store.addSPARQL(q);
+		self.tab.go(0);
 	}
 	
 	this.init();

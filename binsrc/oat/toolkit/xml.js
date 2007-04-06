@@ -77,6 +77,37 @@ OAT.Xml = {
 		return false;
 	},
 	
+	newXmlDoc:function() {
+		if (document.implementation && document.implementation.createDocument) {				
+			var xml = document.implementation.createDocument("","",null);
+			return xml;
+		} else if (window.ActiveXObject) {
+			var xml = new ActiveXObject("Microsoft.XMLDOM")
+			return xml;
+		} else {
+			alert("Ooops - no XML parser available");
+			return false;
+		}
+		return false;
+	},
+	
+	serializeXmlDoc:function(xmlDoc) {
+		if (document.implementation && document.implementation.createDocument) {				
+			var ser = new XMLSerializer();
+			var s = ser.serializeToString(xmlDoc);
+			s = '<?xml version="1.0" ?>\n'+s;
+			return s;
+		} else if (window.ActiveXObject) {
+			var s = xmlDoc.xml;
+			s = '<?xml version="1.0" ?>\n'+s;
+			return s;
+		} else {
+			alert("Ooops - no XML parser available");
+			return false;
+		}
+		return false;
+	},
+	
 	transformXSLT:function(xmlDoc,xslDoc) {
 		if (document.implementation && document.implementation.createDocument) {				
 			var xslProc = new XSLTProcessor();

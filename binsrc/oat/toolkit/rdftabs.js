@@ -329,10 +329,10 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 
 	this.parent = parent;
 	this.elm.style.position = "relative";
+	this.elm.style.height = "600px";
 	this.elm.style.top = "24px";
 	
 	this.redraw = function() {
-		if (OAT.Dom.isIE()) { return; }
 		var triples = [];
 		/* create raw triples */
 		for (var i=0;i<self.parent.data.length;i++) {
@@ -368,7 +368,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	this.parent = parent;
 	this.elm.style.position = "relative";
 	this.elm.style.width = "100%";
-	this.elm.style.height = "100%";
+	this.elm.style.height = "600px";
 	
 	this.keyProperties = ["based_near","geo"]; /* containing coordinates */
 	this.locProperties = ["location"]; /* containing location */
@@ -424,13 +424,14 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	this.attachMarker = function(coords,item) {
 		var m = false;
 		var callback = function() {
+			if (OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
 			var div = OAT.Dom.create("div",{overflow:"auto",width:"450px",height:"250px"});
 			var s = OAT.Dom.create("div",{fontWeight:"bold"});
 			var title = self.parent.getTitle(item);
 			s.innerHTML = title;
 			if (title.match(/^http/i)) { 
 				self.parent.createAnchor(s,title); 
-				h.style.cursor = "pointer";
+				s.style.cursor = "pointer";
 			}
 			div.appendChild(s);
 			var preds = item[1];
@@ -460,6 +461,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			var item = self.parent.data[i];
 			var data = self.tryItem(item);
 		}
+		
 		OAT.Resize.createDefault(self.elm);
 
 		function tryList() {
@@ -471,7 +473,6 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			}
 		}
 		tryList();
-		
 	}
 }
 OAT.RDFTabs.map.prototype = new OAT.RDFTabs.parent();
