@@ -3765,8 +3765,7 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL == touched_equivs_ptr) ? NULL : &touched_equivs_set);
 #ifdef DEBUG
-  SPART **old_members = parent_gp->_.gp.members;
-  int old_len = BOX_ELEMENTS (old_members);
+  int old_len = BOX_ELEMENTS (old_filters);
   if ((0 > filter_idx) || (old_len <= filter_idx))
     spar_internal_error (sparp, "sparp_" "gp_detach_filter(): bad filter_idx");
 #endif

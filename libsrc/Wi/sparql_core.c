@@ -1064,6 +1064,26 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
 {
   sparp_env_t *env = sparp->sparp_env;
   SPART *triple;
+  if (NULL == subject)
+    subject = (SPART *)t_box_copy_tree (env->spare_context_subjects->data);
+  if (NULL == predicate)
+    predicate = (SPART *)t_box_copy_tree (env->spare_context_predicates->data);
+  if (NULL == object)
+    object = (SPART *)t_box_copy_tree (env->spare_context_objects->data);
+  if (SPAR_QNAME == SPART_TYPE (predicate))
+    {
+      caddr_t *spec_pred_names = jso_triple_get_objs (
+        (caddr_t *)(sparp->sparp_sparqre->sparqre_qi),
+        predicate->_.lit.val,
+        uname_virtrdf_ns_uri_isSpecialPredicate );
+      if (0 != BOX_ELEMENTS (spec_pred_names))
+        {
+          spar_gp_add_filter (sparp,
+            spar_make_funcall (sparp, 0, spec_pred_names[0],
+              (SPART **)t_list (2, subject, object) ) );
+          return;
+        }
+    }
   for (;;)
     {
       dk_set_t dflts;
@@ -1098,26 +1118,6 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
     }
   if (SPAR_IS_BLANK_OR_VAR (graph))
     graph->_.var.selid = env->spare_selids->data;
-  if (NULL == subject)
-    subject = (SPART *)t_box_copy_tree (env->spare_context_subjects->data);
-  if (NULL == predicate)
-    predicate = (SPART *)t_box_copy_tree (env->spare_context_predicates->data);
-  if (NULL == object)
-    object = (SPART *)t_box_copy_tree (env->spare_context_objects->data);
-  if (SPAR_QNAME == SPART_TYPE (predicate))
-    {
-      caddr_t *spec_pred_names = jso_triple_get_objs (
-        (caddr_t *)(sparp->sparp_sparqre->sparqre_qi),
-        predicate->_.lit.val,
-        uname_virtrdf_ns_uri_isSpecialPredicate );
-      if (0 != BOX_ELEMENTS (spec_pred_names))
-        {
-          spar_gp_add_filter (sparp,
-            spar_make_funcall (sparp, 0, spec_pred_names[0],
-              (SPART **)t_list (2, subject, object) ) );
-          return;
-        }
-    }
   triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, options);
   spar_gp_add_member (sparp, triple);
 }
