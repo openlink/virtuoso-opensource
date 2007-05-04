@@ -60,11 +60,6 @@
   <!--Tim: ignore the header altogether -->
   <xsl:template match="//xhtml:head/*" />
 
-  <!--Tim: scrap the outermost table in the body -->
-  <xsl:template match="xhtml:body/table/tr/td">
-    <xsl:apply-templates />
-  </xsl:template>
-
   <!--Tim: convert p to para -->
   <xsl:template match="xhtml:p">
     <para>
