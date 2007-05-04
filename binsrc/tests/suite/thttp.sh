@@ -767,14 +767,16 @@ case $1 in
        if [ "x$HOST_OS" = "x" ]
        then
 	   LOG "Create ODS VAD Package"
-	   (cd ../../../samples/wa/; ./make_vad.sh)
+	   (cd ../../../samples/wa/; make)
 	   cp ../../../samples/wa/ods_framework_dav.vad ./
 	   LOG "Create BLOG VAD Package"
-	   (cd ../../../weblog2/; ./make_vad.sh)
+	   (cd ../../../weblog2/; make)
 	   cp ../../../weblog2/ods_blog_dav.vad ./
 	   LOG "Create SyncML VAD Package"
 	   (cd ../../../sync/; make)
 	   cp ../../../sync/syncml_dav.vad ./
+	   (cd ../../../rdf_mappers; make)
+	   cp ../../../rdf_mappers/rdf_mappers_dav.vad ./
        elif [ "x$SRC" != "x" ]
        then
 	   LOG "Create ODS VAD Package"
@@ -783,12 +785,15 @@ case $1 in
 	   LOG "Create BLOG VAD Package"
 	   (cd "$SRC/binsrc/weblog2/" ; ./make_vad.sh)
 	   cp "$SRC/binsrc/weblog2/ods_blog_dav.vad" .
+	   (cd "$SRC/binsrc/rdf_mappers"; make)
+	   cp "$SRC/binsrc/rdf_mappers/rdf_mappers_dav.vad" .
        elif [ ! -f ../../../../autogen.sh ]
        then
 	   LOG "***ABORTED: Cannot build ODS & Blog2 VAD packages"
 	   exit 1
        fi
    fi
+   gzip -c -d ../grddl-tests.tar.gz | tar xf -
    if [ ! -f ods_framework_dav.vad -o ! -f ods_blog_dav.vad ]
    then
      BLOG_TEST=0  
@@ -800,12 +805,12 @@ case $1 in
    then
        DoCommand $DSN "registry_set ('__blog_api_tests__', '1');" 
        DoCommand $DSN "checkpoint;" 
-       DoCommand $DSN "VAD_INSTALL ('ods_framework_dav.vad', 0, 1);" 
-       DoCommand $DSN "VAD_INSTALL ('ods_blog_dav.vad', 0, 1);" 
+       DoCommand $DSN "VAD_INSTALL ('ods_framework_dav.vad', 0);" 
+       DoCommand $DSN "VAD_INSTALL ('ods_blog_dav.vad', 0);" 
    fi
    if [ -f $PLUGINDIR/wbxml2.so ]
    then
-       DoCommand $DSN "VAD_INSTALL ('syncml_dav.vad', 0, 1);"
+       DoCommand $DSN "VAD_INSTALL ('syncml_dav.vad', 0);"
    fi
    cd ..
 
@@ -1015,6 +1020,14 @@ fi
       LOG "***ABORTED: url_rewrite_test.sql"
       exit 1
    fi
+
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsponge.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: tsponge.sql"
+      exit 1
+   fi
+
 
    SHUTDOWN_SERVER
 

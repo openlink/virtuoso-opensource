@@ -244,7 +244,7 @@ ECHO BOTH ": Last word in length order='" $LAST[1] "'\n";
 --
 -- Test IN-predicate again.
 --
-select * from nwords where word in ('mano',12345,'cabeza','pie','nariz','klyyvari');
+select * from nwords where word in ('mano',12345,'cabeza','pie','nariz','klyyvari') order by word;
 ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 

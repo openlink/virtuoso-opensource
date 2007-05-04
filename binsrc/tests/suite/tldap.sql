@@ -29,18 +29,18 @@ SET ARGV[1] 0;
 
 connection_set ('LDAP_VERSION', 2);
 
-select  (ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=George*)', 'uid=gkodinov, ou=Accounts, o=OpenLink Software, c=US', 'gkodinov')[3][3]);
+select  (ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Kingsley*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[3][3]);
 ECHO BOTH $IF $EQU $LAST[1] Success "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Ldap Search (cn=George*) : $LAST[1]=" $LAST[1] " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH ": Ldap Search (cn=K*) : $LAST[1]=" $LAST[1] " MESSAGE=" $MESSAGE "\n";
 
-select  (ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=George*)', 'uid=gkodinov, ou=Accounts, o=OpenLink Software, c=US', 'gkodinov')[1][5][0]);
-ECHO BOTH $IF $EQU $LAST[1] gkodinov "PASSED" "***FAILED";
+select  (ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Orri*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[1][1]);
+ECHO BOTH $IF $EQU $LAST[1] "uid=oerling,ou=Accounts,o=OpenLink Software,c=US" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Ldap Search (cn=George*) : uid = " $LAST[1] " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH ": Ldap Search (cn=Orri*) : uid = " $LAST[1] " MESSAGE=" $MESSAGE "\n";
 
-select  (ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Kingsley*)', 'uid=gkodinov, ou=Accounts, o=OpenLink Software, c=US', 'gkodinov')[1][5][0]);
-ECHO BOTH $IF $EQU $LAST[1] kidehen "PASSED" "***FAILED";
+select  (ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Kingsley*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[1][1]);
+ECHO BOTH $IF $EQU $LAST[1] "uid=kidehen,ou=Accounts,o=OpenLink Software,c=US" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Ldap Search (cn=Kingsley*) : uid = " $LAST[1] " MESSAGE=" $MESSAGE "\n";
 

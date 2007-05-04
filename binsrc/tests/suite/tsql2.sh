@@ -181,6 +181,16 @@ then
     exit 1
 fi
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tinlist.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: in list predicate -- tinlist.sql"
+    exit 1
+fi
+
+
+
+
 #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < txml.sql
 #if test $STATUS -ne 0
 #then

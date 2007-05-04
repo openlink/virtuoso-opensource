@@ -478,13 +478,13 @@ sqlo_outputs=tsqlo.output
 #
 #  Check if the tests logged any failures
 #
-RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output # tupgrade_recov.output 
+RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output # tupgrade_recov.output 
 if test $STATUS -eq 0
 then
     ECHO ""
     LINE
     ECHO "=  WARNING: Some tests failed. See *.output in this directory" `pwd`
-    egrep '\*\*\*.*FAILED|\*\*\*.*ABORTED' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output trecov_schema.output msdtc.output ttutorial.output #bpel.output # tupgrade_recov.output XXX: these produce ERRORS !!! 
+    egrep '\*\*\*.*FAILED|\*\*\*.*ABORTED' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output # tupgrade_recov.output 
     LINE
     rm -f audit.txt
  
