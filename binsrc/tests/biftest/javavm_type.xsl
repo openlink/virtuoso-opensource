@@ -76,7 +76,7 @@
     <xsl:template match="method">
       <xsl:variable name="cur_method_name"><xsl:value-of select="@name"/></xsl:variable>
       <xsl:variable name="cur_method_pos"><xsl:value-of select="position()"/></xsl:variable>
-        <xsl:if test="@static='1'">STATIC</xsl:if><xsl:if test="@overriding='1'">OVERRIDING</xsl:if>
+        <xsl:if test="@static='1'"> STATIC</xsl:if><xsl:if test="@overriding='1'"> OVERRIDING</xsl:if>
 	  METHOD
 	    "<xsl:value-of select="@name" />"
 	      (
