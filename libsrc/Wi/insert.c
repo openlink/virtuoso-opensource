@@ -141,6 +141,11 @@ row_reserved_length (db_buf_t row, dbe_key_t * key)
   return len;
 }
 
+#define dbg_page_map_to_file(buf) { \
+  FILE * dmp = fopen ("bufdump.txt", "w"); \
+  dbg_page_map_f (buf, dmp); \
+  fclose (dmp); \
+} 
 
 int
 pg_make_map (buffer_desc_t * buf)
@@ -184,7 +189,13 @@ pg_make_map (buffer_desc_t * buf)
       len = row_reserved_length (page + pos, pg_key);
       len = ROW_ALIGN (len);
       if (len < 0)
+	{
+	  log_error ("Structure inconsistent on key=%s, dp=%ld, physical dp=%ld",
+	      (pg_key && pg_key->key_name ? pg_key->key_name : "TEMP KEY"),
+	      buf->bd_page, buf->bd_physical_page);
+	  dbg_page_map_to_file (buf);
 	STRUCTURE_FAULT;
+	}
       free -= len;
       if (inx >= map->pm_size)
 	{
@@ -195,13 +206,31 @@ pg_make_map (buffer_desc_t * buf)
       if (pos + len > fill)
 	fill = pos + len;
       if (fill > PAGE_SZ)
+	{
+	  log_error ("Structure inconsistent on key=%s, dp=%ld, physical dp=%ld",
+	      (pg_key && pg_key->key_name ? pg_key->key_name : "TEMP KEY"),
+	      buf->bd_page, buf->bd_physical_page);
+	  dbg_page_map_to_file (buf);
 	STRUCTURE_FAULT;
+	}
       pos = IE_NEXT (page + pos);
       if (inx >= PM_MAX_ENTRIES)
+	{
+	  log_error ("Structure inconsistent on key=%s, dp=%ld, physical dp=%ld",
+	      (pg_key && pg_key->key_name ? pg_key->key_name : "TEMP KEY"),
+	      buf->bd_page, buf->bd_physical_page);
+	  dbg_page_map_to_file (buf);
 	STRUCTURE_FAULT;
     }
+    }
   if (free < 0)
+    {
+      log_error ("Structure inconsistent on key=%s, dp=%ld, physical dp=%ld",
+	  (pg_key && pg_key->key_name ? pg_key->key_name : "TEMP KEY"),
+	  buf->bd_page, buf->bd_physical_page);
+      dbg_page_map_to_file (buf);
     STRUCTURE_FAULT;
+    }
   map->pm_bytes_free = free;
   map->pm_count = inx;
   map->pm_filled_to = fill;

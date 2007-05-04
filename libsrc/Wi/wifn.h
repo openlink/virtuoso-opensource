@@ -324,6 +324,7 @@ void row_write_reserved (dtp_t * end, int n_bytes);
 int  row_length (db_buf_t row, dbe_key_t * key);
 int  row_reserved_length (db_buf_t row, dbe_key_t * key);
 void dbg_page_map (buffer_desc_t * buf);
+void dbg_page_map_f (buffer_desc_t * buf, FILE * out);
 void pg_map_clear (buffer_desc_t * buf);
 int pg_make_map (buffer_desc_t *);
 #if defined (MTX_DEBUG) | defined (PAGE_TRACE)
