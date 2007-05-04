@@ -174,7 +174,7 @@ hosting_python_version = {
       HOSTING_TITLE,			/*!< Title of unit, filled by unit */
       DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR,/*!< Version number, filled by unit */
       "OpenLink Software",			/*!< Plugin's developer, filled by unit */
-      "Python hosting plugin",			/*!< Any additional info, filled by unit */
+      "Python " PY_VERSION " hosting plugin",			/*!< Any additional info, filled by unit */
       NULL,					/*!< Error message, filled by unit loader */
       NULL,					/*!< Name of file with unit's code, filled by unit loader */
       hosting_python_connect,		/*!< Pointer to connection function, cannot be NULL */
