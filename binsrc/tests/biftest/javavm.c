@@ -3270,7 +3270,9 @@ javavm_ddl_hook (client_connection_t *cli)
     sqls_define_xslt (cli);
 }
 
-#if defined (JDK1_4)
+#if defined (JDK1_5)
+#define JAVAVM_VERSION "1.5"
+#elif defined (JDK1_4)
 #define JAVAVM_VERSION "1.4"
 #elif defined (JDK1_3)
 #define JAVAVM_VERSION "1.3"
