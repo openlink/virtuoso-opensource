@@ -2267,6 +2267,8 @@ window.onload = function (e)
     <v:url name="edit1" value="Edit" url="--concat('index.vspx?page=edit_post&editid=', t_post_id)" render-only="1" />
     <xsl:text> </xsl:text>
     <v:url name="delete1" value="Delete" url="--concat('index.vspx?delete_post=', t_post_id)" render-only="1" />
+    <xsl:text> </xsl:text>
+    <v:url name="show_log1" value="Log" url="--concat('index.vspx?page=routing_queue&post_id=', t_post_id)" render-only="1" />
     <?vsp
        }
     ?>
@@ -8226,6 +8228,8 @@ window.onload = function (e)
     <v:variable name="upstr_ebid" type="varchar" default="''" persist="session"/>
     <v:variable name="upstr_jobid" type="int" default="null" persist="1"/>
     <v:variable name="upstr_editmode" type="int" default="0" persist="pagestate"/>
+    <v:variable name="item_retr" type="int" default="5" />
+    <v:variable name="max_retr" type="int" default="-1" />
     <input type="hidden" name="page" value="bridge"/>
     <h3>Upstreaming</h3>
     <table width="100%" border="0">
@@ -8366,6 +8370,22 @@ window.onload = function (e)
                   </td>
                 </tr>
                 <tr>
+		  <th nowrap="nowrap">
+ 		     Maximum errors before to suspend job (-1 means never)
+		  </th>
+                  <td>
+		      <v:text xhtml_class="textbox" error-glyph="*" name="max_retr1" value="--self.max_retr">
+			  <v:validator test="regexp" regexp="^(-)?[0-9]+$" message="Number is expected" runat='client'/>
+		      </v:text>
+                  </td>
+                  <th>Default max post retransmitions</th>
+                  <td>
+		      <v:text xhtml_class="textbox" name="item_retr1" value="--self.item_retr">
+			  <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat='client'/>
+		      </v:text>
+                  </td>
+                </tr>
+                <tr>
                   <td colspan="2"> </td><td>
                     <v:button xhtml_class="real_button" name="upstr_test1"
                       value="--case when self.upstr_editmode = 0 then 'Add' else 'Update' end" action="simple" xhtml_title="--case when self.upstr_editmode = 0 then 'Add' else 'Update' end" xhtml_alt="--case when self.upstr_editmode = 0 then 'Add' else 'Update' end">
@@ -8424,6 +8444,24 @@ window.onload = function (e)
                             self.vc_is_valid := 0;
                             return;
                           }
+
+			  self.max_retr := atoi (trim (self.max_retr1.ufl_value));
+		          self.item_retr := atoi (trim (self.item_retr1.ufl_value));
+
+			  if (self.max_retr = 0 and self.max_retr1.ufl_value <> '0')
+			    {
+			      self.vc_error_message := 'Invalid nuber supplied';
+                              self.vc_is_valid := 0;
+			      return;
+			    }
+
+			  if (self.item_retr = 0 and self.item_retr1.ufl_value <> '0')
+                            {
+			      self.vc_error_message := 'Invalid nuber supplied';
+                              self.vc_is_valid := 0;
+			      return;
+			    }
+
 
                           declare exit handler for sqlstate '*'
                           {
@@ -8485,7 +8523,9 @@ window.onload = function (e)
                             R_FREQUENCY = upstr_bfr1,
                             R_EXCEPTION_ID = eexcl,
           R_INCLUSION_ID = iincl,
-          R_KEEP_REMOTE = keep_remote
+			    R_KEEP_REMOTE = keep_remote,
+			    R_MAX_ERRORS = self.max_retr,
+			    R_ITEM_MAX_RETRANSMITS = self.item_retr
                             where R_JOB_ID = self.upstr_jobid;
                             jid := self.upstr_jobid;
                           }
@@ -8505,7 +8545,10 @@ window.onload = function (e)
                               R_FREQUENCY,
                               R_EXCEPTION_ID,
             R_INCLUSION_ID,
-            R_KEEP_REMOTE)
+			      R_KEEP_REMOTE,
+			      R_MAX_ERRORS,
+			      R_ITEM_MAX_RETRANSMITS
+			      )
                             values (
                               jid,
                               target,
@@ -8518,7 +8561,10 @@ window.onload = function (e)
                               self.upstr_bfr1.ufl_value,
                               eexcl,
             iincl,
-            keep_remote);
+			      keep_remote,
+			      self.max_retr,
+			      self.item_retr
+			      );
                           }
                           if (self.upstr_initall.ufl_selected and control.vc_focus and self.vc_is_valid)
                           {
@@ -8547,6 +8593,8 @@ window.onload = function (e)
         self.upstr_freq := 60;
         self.upstr_editmode := 0;
                           self.upstr_initall.ufl_selected := 0;
+			  self.item_retr := 5;
+			  self.max_retr := -1;
                           self.upstr_editform.vc_data_bind (e);
                           self.upstr_ds.vc_data_bind (e);
                         ]]>
@@ -8568,7 +8616,25 @@ window.onload = function (e)
           </v:template>
           <br />
           <table class="listing">
-            <v:data-set name="upstr_ds" sql="select R_DESTINATION_ID, R_DESTINATION, RP_NAME, R_AUTH_USER, R_AUTH_PWD, R_JOB_ID, R_ITEM_ID, R_FREQUENCY, R_EXCEPTION_ID, R_INCLUSION_ID, RP_ID, R_KEEP_REMOTE, R_LAST_ROUND from BLOG.DBA.SYS_ROUTING, BLOG.DBA.SYS_ROUTING_PROTOCOL where R_ITEM_ID = :thisblogid and RP_ID = R_PROTOCOL_ID and R_TYPE_ID = 1 order by R_JOB_ID" nrows="10" scrollable="1" cursor-type="keyset" edit="1" width="80">
+	      <v:data-set name="upstr_ds" sql="select
+		  R_DESTINATION_ID,
+		  R_DESTINATION,
+		  RP_NAME,
+		  R_AUTH_USER,
+		  R_AUTH_PWD,
+		  R_JOB_ID,
+		  R_ITEM_ID,
+		  R_FREQUENCY,
+		  R_EXCEPTION_ID,
+		  R_INCLUSION_ID,
+		  RP_ID,
+		  R_KEEP_REMOTE,
+		  R_LAST_ROUND,
+		  R_MAX_ERRORS,
+		  R_ITEM_MAX_RETRANSMITS
+		  from BLOG.DBA.SYS_ROUTING, BLOG.DBA.SYS_ROUTING_PROTOCOL
+		  where R_ITEM_ID = :thisblogid and RP_ID = R_PROTOCOL_ID and R_TYPE_ID = 1 order by R_JOB_ID"
+		  nrows="10" scrollable="1" cursor-type="keyset" edit="1" width="80">
               <v:param name="thisblogid" value="--self.blogid"/>
               <v:template name="upstr_template1" type="simple">
                 <tr class="listing_header_row">
@@ -8577,6 +8643,7 @@ window.onload = function (e)
                   <th>BlogID</th>
                   <th>Frequency (minutes)</th>
                   <th>Last sync</th>
+                  <th>Status</th>
                   <th>Except</th>
                   <th>Include</th>
                   <th>Action</th>
@@ -8602,6 +8669,16 @@ window.onload = function (e)
                   </td>
                   <td class="listing_col_num" nowrap="1">
                     <?vsp if (control.te_rowset[12] is not null) http (BLOG..blog_date_fmt (control.te_rowset[12])); ?>
+                  </td>
+                  <td class="listing_col_num" nowrap="1">
+		      <?vsp
+		        if (control.te_rowset[13] = -1)
+			  http ('enabled');
+			else if (control.te_rowset[13] = 0)
+                          http ('on hold');
+			else
+			  http (sprintf ('hold after %d error(s)', control.te_rowset[13]));
+		      ?>
                   </td>
                   <td class="listing_col" nowrap="1">
                     <v:label name="upstr_label711" value="" format="%s">
@@ -8660,6 +8737,8 @@ window.onload = function (e)
                           self.upstr_del := equ (rows[11], 0);
                           self.upstr_freq := rows[7];
                           self.upstr_jobid := rows[5];
+			  self.max_retr := rows[13];
+			  self.item_retr := rows[14];
                           self.upstr_incl := split_and_decode (rows[9], 0, '\0\0;');
                           self.upstr_excl := split_and_decode (rows[8], 0, '\0\0;');
                           self.upstr_editmode := 1;
@@ -8683,7 +8762,7 @@ window.onload = function (e)
                 </v:template>
                 <v:template name="upstr_template7" type="if-not-exists">
                   <tr class="listing_count">
-                    <td class="listing_count" colspan="7">
+                    <td class="listing_count" colspan="8">
                       No routes defined
                     </td>
                   </tr>
@@ -8691,7 +8770,7 @@ window.onload = function (e)
               </v:template>
               <v:template name="upstr_template3" type="simple">
                 <tr class="browse_button_row">
-                  <td colspan="7" align="center">
+                  <td colspan="8" align="center">
                     <vm:ds-navigation data-set="upstr_ds"/>
                   </td>
                 </tr>
@@ -10502,6 +10581,7 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:bridge-queue">
+      <v:variable name="post_id_filt" type="varchar" default="null" param-name="post_id" />
       <h3>Upstreaming log</h3>
       <div>
 	  <label for="log_filt">Show </label>
@@ -10512,6 +10592,10 @@ window.onload = function (e)
 	      <v:item name="skipped" value="skipped"/>
 	      <v:item name="error" value="error"/>
 	  </v:select-list>
+	  <![CDATA[&nbsp;]]>
+	  <label for="post_id_filt1">Post ID</label>
+	  <v:text name="post_id_filt1" value="--coalesce(self.post_id_filt, '')"  xhtml_class="textbox" />
+          <v:button action="simple" name="filt_bt" value="Apply" xhtml_class="real_button"/>
       </div>
       <div class="scroll_area">
       <table class="listing">
@@ -10526,12 +10610,16 @@ window.onload = function (e)
     </tr>
     <?vsp
     {
-     declare params, j, p, c any;
+     declare params, j, p, c, pfilt any;
      params := self.vc_event.ve_params;
 
      j := atoi (get_keyword ('j', params, '0'));
      p := get_keyword ('p', params, '0');
      c := atoi (get_keyword ('c', params, '0'));
+
+     pfilt := get_keyword ('post_id_filt1', params);
+     if (pfilt is not null)
+       self.post_id_filt := case when length (pfilt) then pfilt else null end;
 
      if ({?'reset'} is not null)
        {
@@ -10563,7 +10651,7 @@ window.onload = function (e)
      for select RL_JOB_ID, RL_F_POST_ID, RL_POST_ID, RL_TYPE, RL_COMMENT_ID, RL_PROCESSED, RL_ERROR, RT_NAME, RL_TS
          from BLOG..SYS_BLOGS_ROUTING_LOG, BLOG..SYS_ROUTING, BLOG..SYS_ROUTING_TYPE
          where R_JOB_ID = RL_JOB_ID and RT_ID = R_TYPE_ID and
-	 R_ITEM_ID = self.blogid
+	 R_ITEM_ID = self.blogid and (self.post_id_filt is null or RL_POST_ID = self.post_id_filt)
 	 do
       {
     declare err, url, _b_title any;

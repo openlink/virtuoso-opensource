@@ -289,6 +289,9 @@
     <v:variable name="n_post_id" type="varchar" default="null"/>
     <v:variable name="post_state" type="int" default="1"/>
     <v:variable name="post_date" type="datetime" default="null"/>
+    <script type="text/javascript">
+	def_btn = 'submit2';
+    </script>
     <v:form name="edit_form" method="POST" action="index.vspx?page=edit_post" type="simple">
       <v:template name="result_templ"
                   type="simple"
@@ -534,6 +537,10 @@
                    '&tpurl1='+ escape (document.page_form['tpurl1'].value),
                    'tags_suggest_window', 'scrollbars=yes, resize=yes, menubar=no, height=200, width=600');
                  }
+                 function updateRTEsafe ()
+		 {
+		   updateRTE ('text2');
+		 }
 		 ]]>
               </script>
             </td>

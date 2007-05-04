@@ -40,7 +40,8 @@
       <vm:page-title title="Post edit"/>
       <vm:style url="/weblog/public/css/default.css"/>
     </vm:header>
-    <vm:body onload="if (document.page_form.mtit1 != null) document.page_form.mtit1.focus();">
+    <vm:body onload="if (document.page_form.mtit1 != null) document.page_form.mtit1.focus();"
+	     onunload="checkPageLeaveExt (document.forms['page_form'], updateRTEsafe)">
       <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
         <tr>
           <td colspan="3">

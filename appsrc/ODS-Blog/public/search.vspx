@@ -870,7 +870,9 @@
                               if (self.sid is not null and self.realm is not null)
                               {
                             ?>
-			    <v:url name="l7" value="--'[Edit]'" url="--concat(self.home, 'index.vspx?page=edit_post&',  'editid=', (control.vc_parent as vspx_row_template).te_rowset[7])" render-only="0">
+			    <v:url name="l7" value="[Edit]" url="--concat(self.home, 'index.vspx?page=edit_post&',  'editid=', (control.vc_parent as vspx_row_template).te_rowset[7])" render-only="0">
+			    </v:url>
+			    <v:url name="l8" value="[Log]" url="--concat(self.home, 'index.vspx?page=routing_queue&',  'post_id=', (control.vc_parent as vspx_row_template).te_rowset[7])" render-only="0">
 			    </v:url>
                             <?vsp
                               }
@@ -1004,7 +1006,9 @@
                               if (self.sid is not null and self.realm is not null)
                               {
                             ?>
-			    <v:url name="l27" value="--'[Edit]'" url="--concat(self.home, 'index.vspx?page=edit_post&',  'editid=', (control.vc_parent as vspx_row_template).te_rowset[7])" render-only="0">
+			    <v:url name="l27" value="[Edit]" url="--concat(self.home, 'index.vspx?page=edit_post&',  'editid=', (control.vc_parent as vspx_row_template).te_rowset[7])" render-only="0">
+			    </v:url>
+			    <v:url name="l28" value="[Log]" url="--concat(self.home, 'index.vspx?page=routing_queue&',  'post_id=', (control.vc_parent as vspx_row_template).te_rowset[7])" render-only="0">
 			    </v:url>
                             <?vsp
                               }

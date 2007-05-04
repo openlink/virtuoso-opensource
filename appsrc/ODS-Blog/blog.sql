@@ -799,14 +799,22 @@ blog2_exec_no_error ('create table SYS_ROUTING
    R_EXCEPTION_TAG varchar,
    R_EXCEPTION_ID varchar,
    R_INCLUSION_ID varchar,
-   R_KEEP_REMOTE int default 0
+   R_KEEP_REMOTE int default 0,
+   R_MAX_ERRORS int default -1,
+   R_ITEM_MAX_RETRANSMITS int default 1
 )')
 ;
 
 blog2_add_col('BLOG.DBA.SYS_ROUTING', 'R_KEEP_REMOTE', 'int default 0')
 ;
+blog2_add_col('BLOG.DBA.SYS_ROUTING', 'R_MAX_ERRORS', 'int default -1')
+;
+blog2_add_col('BLOG.DBA.SYS_ROUTING', 'R_ITEM_MAX_RETRANSMITS', 'int default 1')
+;
 
 update SYS_ROUTING set R_KEEP_REMOTE = 0 where R_KEEP_REMOTE is null
+;
+update SYS_ROUTING set R_MAX_ERRORS = -1, R_ITEM_MAX_RETRANSMITS = 1 where R_MAX_ERRORS is null
 ;
 
 blog2_exec_no_error ('create index SYS_ROUTING_ITEM on SYS_ROUTING (R_ITEM_ID, R_DESTINATION_ID, R_TYPE_ID)');
@@ -821,15 +829,23 @@ blog2_exec_no_error ('create table SYS_BLOGS_ROUTING_LOG
   RL_COMMENT_ID integer default -1,
   RL_ERROR long varchar,
   RL_TS timestamp,
+  RL_RETRANSMITS int default 1,
   primary key (RL_JOB_ID, RL_POST_ID, RL_COMMENT_ID)
 )')
 ;
 
 blog2_add_col('BLOG.DBA.SYS_BLOGS_ROUTING_LOG', 'RL_TS', 'timestamp')
 ;
+blog2_add_col('BLOG.DBA.SYS_BLOGS_ROUTING_LOG', 'RL_RETRANSMITS', 'int default 1')
+;
 
 UPDATE SYS_BLOGS_ROUTING_LOG set RL_COMMENT_ID = -1 where RL_COMMENT_ID is NULL
 ;
+UPDATE SYS_BLOGS_ROUTING_LOG set RL_RETRANSMITS = 1 where RL_RETRANSMITS is null and RL_PROCESSED <> 2
+;
+UPDATE SYS_BLOGS_ROUTING_LOG set RL_RETRANSMITS = 0 where RL_RETRANSMITS is null and RL_PROCESSED = 2
+;
+
 
 --   Routing Type Table Structure:
 blog2_exec_no_error ('create table SYS_ROUTING_TYPE
@@ -1789,29 +1805,29 @@ create trigger SYS_BLOGS_U_Q after update on SYS_BLOGS order 1 referencing old a
 
 create trigger SYS_BLOGS_I_L after insert on SYS_BLOGS order 10
 {
-  for select R_JOB_ID, R_TYPE_ID as tid, R_DESTINATION_ID from SYS_ROUTING
+  for select R_JOB_ID, R_TYPE_ID as tid, R_DESTINATION_ID, R_ITEM_MAX_RETRANSMITS from SYS_ROUTING
     where R_ITEM_ID = B_BLOG_ID and R_TYPE_ID in (1, 2, 3) do
       {
 	-- insert a record in log
-	insert soft SYS_BLOGS_ROUTING_LOG (RL_JOB_ID, RL_POST_ID, RL_TYPE)
-	  values (R_JOB_ID, B_POST_ID, 'I');
+    insert soft SYS_BLOGS_ROUTING_LOG (RL_JOB_ID, RL_POST_ID, RL_TYPE, RL_RETRANSMITS)
+    values (R_JOB_ID, B_POST_ID, 'I', R_ITEM_MAX_RETRANSMITS);
       }
 }
 ;
 
 create trigger SYS_BLOGS_U_L after update on SYS_BLOGS order 10 referencing old as O, new as N
 {
-  for select R_JOB_ID, R_TYPE_ID as tid, R_DESTINATION_ID from SYS_ROUTING
+  for select R_JOB_ID, R_TYPE_ID as tid, R_DESTINATION_ID, R_ITEM_MAX_RETRANSMITS from SYS_ROUTING
     where R_ITEM_ID = N.B_BLOG_ID and R_TYPE_ID in (1, 3) do
       {
 	-- mark for update if it's already sent to target
-	update SYS_BLOGS_ROUTING_LOG set RL_TYPE = 'U', RL_PROCESSED = 0
+    update SYS_BLOGS_ROUTING_LOG set RL_TYPE = 'U', RL_PROCESSED = 0, RL_RETRANSMITS = R_ITEM_MAX_RETRANSMITS
 	where RL_JOB_ID = R_JOB_ID and RL_POST_ID = N.B_POST_ID and RL_TYPE in ('I', 'U')
 	and RL_F_POST_ID is not null and RL_COMMENT_ID = -1;
 	  if (row_count () = 0)
 	    {
-	      insert soft SYS_BLOGS_ROUTING_LOG (RL_JOB_ID, RL_POST_ID, RL_TYPE)
-		  values (R_JOB_ID, N.B_POST_ID, 'I');
+	  insert soft SYS_BLOGS_ROUTING_LOG (RL_JOB_ID, RL_POST_ID, RL_TYPE, RL_RETRANSMITS)
+	      values (R_JOB_ID, N.B_POST_ID, 'I', R_ITEM_MAX_RETRANSMITS);
 	    }
       }
 }
@@ -1819,10 +1835,10 @@ create trigger SYS_BLOGS_U_L after update on SYS_BLOGS order 10 referencing old 
 
 create trigger SYS_BLOGS_D_L after delete on SYS_BLOGS order 10
 {
-  for select R_JOB_ID from SYS_ROUTING where R_ITEM_ID = B_BLOG_ID and R_TYPE_ID in (1, 3) do
+  for select R_JOB_ID, R_ITEM_MAX_RETRANSMITS from SYS_ROUTING where R_ITEM_ID = B_BLOG_ID and R_TYPE_ID in (1, 3) do
   {
     -- mark for delete if alredy sent to target
-    update SYS_BLOGS_ROUTING_LOG set RL_TYPE = 'D', RL_PROCESSED = 0
+    update SYS_BLOGS_ROUTING_LOG set RL_TYPE = 'D', RL_PROCESSED = 0, RL_RETRANSMITS = R_ITEM_MAX_RETRANSMITS
     where RL_JOB_ID = R_JOB_ID and RL_POST_ID = B_POST_ID and RL_F_POST_ID is not null
     and RL_COMMENT_ID = -1;
     -- delete if it's not alredy sent
@@ -5088,17 +5104,17 @@ create procedure ROUTING_PROCESS_JOBS()
 {
   declare bm any;
   declare rc, err int;
-  declare job_id, type_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete any;
+  declare job_id, type_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete, max_err any;
   declare n datetime;
   declare cr static cursor for select R_JOB_ID, R_TYPE_ID, R_PROTOCOL_ID,
     R_DESTINATION, R_DESTINATION_ID, R_AUTH_USER, R_AUTH_PWD, R_ITEM_ID, R_EXCEPTION_TAG, R_EXCEPTION_ID,
-    R_INCLUSION_ID, R_KEEP_REMOTE
+    R_INCLUSION_ID, R_KEEP_REMOTE, R_MAX_ERRORS
     from SYS_ROUTING where R_LAST_ROUND is null or dateadd ('minute', R_FREQUENCY, R_LAST_ROUND) < n;
   n := now ();
   bm := null; err := 0;
   whenever not found goto enf;
   open cr (exclusive, prefetch 1);
-  fetch cr first into job_id, type_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete;
+  fetch cr first into job_id, type_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete, max_err;
   while (1)
   {
     bm := bookmark (cr);
@@ -5125,16 +5141,22 @@ create procedure ROUTING_PROCESS_JOBS()
           else
             dst := (select max(WS_SMTP) from DB.DBA.WA_SETTINGS);
         }
-        ROUTING_PROCESS_BLOGS (job_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete);
+	-- do the work only if max error is not reached or it's ulimited
+	if (max_err > 0 or max_err = -1)
+	  {
+            rc := ROUTING_PROCESS_BLOGS (job_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete);
+	    if (rc <> 0 and max_err > 0)
+	      max_err := max_err - 1;
+	  }
       }
     }
-    update SYS_ROUTING set R_LAST_ROUND = now () where R_JOB_ID = job_id;
+    update SYS_ROUTING set R_LAST_ROUND = now (), R_MAX_ERRORS = max_err where R_JOB_ID = job_id;
     commit work;
     next:
     open cr (exclusive, prefetch 1);
-    fetch cr bookmark bm into job_id, type_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete;
+    fetch cr bookmark bm into job_id, type_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete, max_err;
     if (err)
-      fetch cr next into job_id, type_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete;
+      fetch cr next into job_id, type_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete, max_err;
   }
   enf:
   close cr;
@@ -7232,16 +7254,17 @@ ROUTING_PROCESS_BLOGS (in job_id int, in proto_id int, in dst varchar, in dst_id
 		       in  tag varchar, in eid varchar, in iid varchar, in send_delete int)
 {
   declare eids, post_stat, post_err, iids any;
-  declare _RL_POST_ID, _RL_F_POST_ID, _RL_TYPE, _RL_COMMENT_ID any;
+  declare _RL_POST_ID, _RL_F_POST_ID, _RL_TYPE, _RL_COMMENT_ID, _RL_RETRANSMITS any;
   declare tags any;
+  declare rc int;
 
   while (1) {
   post_stat := 1;
   post_err := null;
       {
   whenever not found goto enf;
-        select top 1 RL_POST_ID, RL_F_POST_ID, RL_TYPE, RL_COMMENT_ID
-          into _RL_POST_ID, _RL_F_POST_ID, _RL_TYPE, _RL_COMMENT_ID
+        select top 1 RL_POST_ID, RL_F_POST_ID, RL_TYPE, RL_COMMENT_ID, RL_RETRANSMITS
+          into _RL_POST_ID, _RL_F_POST_ID, _RL_TYPE, _RL_COMMENT_ID, _RL_RETRANSMITS
   from SYS_BLOGS_ROUTING_LOG where RL_JOB_ID = job_id and RL_PROCESSED = 0;
       }
 
@@ -7295,6 +7318,7 @@ ROUTING_PROCESS_BLOGS (in job_id int, in proto_id int, in dst varchar, in dst_id
 
      {
 	    declare exit handler for sqlstate '*' {
+	      _RL_RETRANSMITS := _RL_RETRANSMITS - 1;
 	      post_stat := 2;
 	      if (1) log_message (__SQL_STATE || ':' || __SQL_MESSAGE );
 	      post_err := __SQL_MESSAGE;
@@ -7481,12 +7505,16 @@ ROUTING_PROCESS_BLOGS (in job_id int, in proto_id int, in dst varchar, in dst_id
       }
     }
           next_rec:;
-            update SYS_BLOGS_ROUTING_LOG set RL_F_POST_ID = fpostid, RL_PROCESSED = post_stat, RL_ERROR = post_err
+            update SYS_BLOGS_ROUTING_LOG set RL_F_POST_ID = fpostid, RL_PROCESSED = post_stat, RL_ERROR = post_err,
+		   RL_RETRANSMITS = _RL_RETRANSMITS
     where RL_JOB_ID = job_id and RL_POST_ID = post_id and RL_COMMENT_ID = _RL_COMMENT_ID;
           next:;
        }
 enf:
    delete from SYS_BLOGS_ROUTING_LOG where RL_PROCESSED = 1 and RL_TYPE = 'D';
+   update SYS_BLOGS_ROUTING_LOG set RL_PROCESSED = 0 where RL_JOB_ID = job_id and RL_RETRANSMITS > 0 and RL_PROCESSED = 2;
+   rc := row_count ();
+   return rc;
 }
 ;
 

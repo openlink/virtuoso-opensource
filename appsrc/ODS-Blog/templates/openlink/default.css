@@ -243,6 +243,10 @@ div.box h2 {
   border-bottom: 1px solid #bbbbbb;
 }
 
+ul.last-messages {
+  padding: 2px;
+  list-style-type: none}
+
 #texttd h2 {
   border-bottom: 1px solid #bbbbbb;
   padding-bottom: 0.5em;
@@ -851,6 +855,17 @@ div#arch_gems
 {
     vertical-align: middle;
 }
+
+ul.cmds-menu {
+  list-style-type: none;
+  padding: 0}
+
+ul.cmds-menu li {
+  padding: 0}
+
+ul.cmds-menu li a {
+  display: block;
+  border: 1px #333 outset;}
 
 div.summary_post
 {

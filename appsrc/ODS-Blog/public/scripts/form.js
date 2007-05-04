@@ -23,6 +23,19 @@
 
 var sflag = false;
 var def_btn = null;
+
+function checkPageLeaveExt (form, func)
+{
+  try
+  {
+    func ();
+  }
+  catch (e) 
+  {
+  }
+  return checkPageLeave (form);
+}
+
 function checkPageLeave (form)
 {
   var dirty = false;
