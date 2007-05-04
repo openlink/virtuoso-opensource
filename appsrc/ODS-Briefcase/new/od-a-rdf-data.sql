@@ -69,7 +69,9 @@ ODRIVE.WA.rdf_upload('XBRL.rdf');
 ODRIVE.WA.rdf_upload('DOAP.rdf');
 ODRIVE.WA.rdf_upload('opl-lic.rdf');
 ODRIVE.WA.rdf_upload('google-kinds.rdf');
+ODRIVE.WA.rdf_upload('google-base.rdf');
 ODRIVE.WA.rdf_upload('archive.rdf');
+ODRIVE.WA.rdf_upload('OpenDocument.rdf');
 
 -- register schemas
 --
@@ -97,6 +99,9 @@ DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/xbrl#',null,'http://l
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/doap#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/DOAP.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/OplLic#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/opl-lic.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/google-kinds#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/google-kinds.rdf','replacing');
+DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/google-base#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/google-base.rdf','replacing');
+DAV_REGISTER_RDF_SCHEMA('urn:oasis:names:tc:opendocument:xmlns:meta:1.0',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/OpenDocument.rdf','replacing');
+DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/opendocument#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/OpenDocument.rdf','replacing');
 
 -- register mime types
 --
@@ -104,11 +109,22 @@ DAV_REGISTER_MIME_TYPE ('application/bpel+xml', 'BPEL business process', 'bpel',
 DAV_REGISTER_MIME_TYPE ('application/foaf+xml', 'FOAF data', 'foaf', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/mods+xml', 'MODS data', 'mods', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/msexcel', 'MS Excel spreadsheet', 'xls', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/msaccess', 'MS Access database', 'mdb', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/msexcel', 'MS Excel Comma Separated Values File', 'csv', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/vnd.oasis.opendocument.text', 'OpenDocument Text', 'odt', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/vnd.oasis.opendocument.database', 'OpenDocument Database', 'odb', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/vnd.oasis.opendocument.graphics', 'OpenDocument Drawing', 'odg', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/vnd.oasis.opendocument.presentation', 'OpenDocument Presentation', 'odp', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/vnd.oasis.opendocument.spreadsheet', 'OpenDocument Spreadsheet', 'ods', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/vnd.oasis.opendocument.chart', 'OpenDocument Chart', 'odc', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/vnd.oasis.opendocument.formula', 'OpenDocument Formula', 'odf', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/vnd.oasis.opendocument.image', 'OpenDocument Image', 'odi', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/mspowerpoint', 'MS PowerPoint presentation', 'ppt', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/msproject', 'MS Project document', 'mpp', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/msword', 'MS Word document', 'doc', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/msword+xml', 'MS Word document (XML)', 'xml', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/opml+xml', 'OPML outlines', 'opml', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/ocs+xml', 'OCS outlines', 'ocs', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/pdf', 'PDF (Acrobat document)', 'pdf', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/rss+xml', 'RSS Syndication', 'rss', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/wsdl+xml', 'WSDL web service description', 'wsdl', null, 'replacing');
@@ -123,7 +139,8 @@ DAV_REGISTER_MIME_TYPE ('application/x-openlinksw-vad', 'OpenLink Virtuoso VAD p
 DAV_REGISTER_MIME_TYPE ('application/x-openlinksw-vsp', 'VSP Virtuoso Server Page', 'vsp', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/x-openlinksw-vspx+xml', 'VSP Virtuoso Server Page', 'vspx', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('text/directory', 'Directory data (VCARD etc)', 'vcard', null, 'replacing');
-DAV_REGISTER_MIME_TYPE ('text/directory', 'Calendar data (iCal etc)', 'ics', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('text/x-vCard', 'vCard (Business Cards)', 'vcf', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('text/calendar', 'Calendar data (iCal etc)', 'ics', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('text/html', 'Web pages (HTML etc)', 'html', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('text/eml', 'Email files', 'eml', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('text/wiki', 'Wiki files', 'txt', null, 'replacing');
@@ -133,6 +150,8 @@ DAV_REGISTER_MIME_TYPE ('text/rdf+n3', 'RDF Data (RDF-XML, N3, Turtle)', 'n3', n
 DAV_REGISTER_MIME_TYPE ('application/doap+rdf', 'DOAP Projects', 'doap', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/license', 'OpenLink License', 'lic', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/google-kinds+xml', 'Google Kinds documents', 'xml', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/google-base+xml', 'Google Base documents', 'xml', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('image/png', 'PNG Image', 'png', null, 'replacing');
 
 -- register relations - RDF <-> MIME
 --
@@ -140,11 +159,21 @@ DAV_REGISTER_MIME_RDF('application/bpel+xml', 'http://www.openlinksw.com/schemas
 DAV_REGISTER_MIME_RDF('application/foaf+xml', 'http://xmlns.com/foaf/0.1/');
 DAV_REGISTER_MIME_RDF('application/mods+xml', 'http://www.openlinksw.com/schemas/MODS#');
 DAV_REGISTER_MIME_RDF('application/msexcel', 'http://www.openlinksw.com/schemas/Office#');
+DAV_REGISTER_MIME_RDF('application/msaccess', 'http://www.openlinksw.com/schemas/Office#');
 DAV_REGISTER_MIME_RDF('application/mspowerpoint', 'http://www.openlinksw.com/schemas/Office#');
 DAV_REGISTER_MIME_RDF('application/msproject', 'http://www.openlinksw.com/schemas/Office#');
 DAV_REGISTER_MIME_RDF('application/msword', 'http://www.openlinksw.com/schemas/Office#');
 DAV_REGISTER_MIME_RDF('application/msword+xml', 'http://www.openlinksw.com/schemas/Office#');
 DAV_REGISTER_MIME_RDF('application/opml+xml', 'http://www.openlinksw.com/schemas/OPML#');
+DAV_REGISTER_MIME_RDF('application/ocs+xml', 'http://www.openlinksw.com/schemas/OPML#');
+DAV_REGISTER_MIME_RDF('application/vnd.oasis.opendocument.text', 'urn:oasis:names:tc:opendocument:xmlns:meta:1.0');
+DAV_REGISTER_MIME_RDF('application/vnd.oasis.opendocument.database', 'urn:oasis:names:tc:opendocument:xmlns:meta:1.0');
+DAV_REGISTER_MIME_RDF('application/vnd.oasis.opendocument.graphics', 'urn:oasis:names:tc:opendocument:xmlns:meta:1.0');
+DAV_REGISTER_MIME_RDF('application/vnd.oasis.opendocument.presentation', 'urn:oasis:names:tc:opendocument:xmlns:meta:1.0');
+DAV_REGISTER_MIME_RDF('application/vnd.oasis.opendocument.spreadsheet', 'urn:oasis:names:tc:opendocument:xmlns:meta:1.0');
+DAV_REGISTER_MIME_RDF('application/vnd.oasis.opendocument.chart', 'urn:oasis:names:tc:opendocument:xmlns:meta:1.0');
+DAV_REGISTER_MIME_RDF('application/vnd.oasis.opendocument.formula', 'urn:oasis:names:tc:opendocument:xmlns:meta:1.0');
+DAV_REGISTER_MIME_RDF('application/vnd.oasis.opendocument.image', 'urn:oasis:names:tc:opendocument:xmlns:meta:1.0');
 DAV_REGISTER_MIME_RDF('application/pdf', 'http://www.openlinksw.com/schemas/Office#');
 DAV_REGISTER_MIME_RDF('application/rss+xml', 'http://purl.org/rss/1.0/');
 DAV_REGISTER_MIME_RDF('application/wsdl+xml', 'http://www.openlinksw.com/schemas/WSDL#');
@@ -161,14 +190,15 @@ DAV_REGISTER_MIME_RDF('application/x-openlinksw-vsp', 'http://www.openlinksw.com
 DAV_REGISTER_MIME_RDF('application/x-openlinksw-vspx+xml', 'http://www.openlinksw.com/schemas/VSPX#');
 DAV_REGISTER_MIME_RDF('text/rdf+ttl', 'http://www.openlinksw.com/schemas/RDF#');
 DAV_REGISTER_MIME_RDF('text/rdf+n3', 'http://www.openlinksw.com/schemas/RDF#');
-DAV_REGISTER_MIME_RDF('text/directory', 'http://www.w3.org/2001/vcard-rdf/3.0#');
-DAV_REGISTER_MIME_RDF('text/directory', 'http://www.openlinksw.com/schemas/ICS#');
+DAV_REGISTER_MIME_RDF('text/x-vCard', 'http://www.w3.org/2001/vcard-rdf/3.0#');
+DAV_REGISTER_MIME_RDF('text/calendar', 'http://www.openlinksw.com/schemas/ICS#');
 DAV_REGISTER_MIME_RDF('text/html', 'http://www.openlinksw.com/schemas/XHTML#');
 DAV_REGISTER_MIME_RDF('text/wiki', 'http://www.openlinksw.com/schemas/Wiki#');
 DAV_REGISTER_MIME_RDF('application/xbrl+xml', 'http://www.openlinksw.com/schemas/xbrl#');
 DAV_REGISTER_MIME_RDF('application/doap+rdf', 'http://www.openlinksw.com/schemas/doap#');
 DAV_REGISTER_MIME_RDF('application/license', 'http://www.openlinksw.com/schemas/OplLic#');
 DAV_REGISTER_MIME_RDF('application/google-kinds+xml', 'http://www.openlinksw.com/schemas/google-kinds#');
+DAV_REGISTER_MIME_RDF('application/google-base+xml', 'http://www.openlinksw.com/schemas/google-base#');
 DAV_REGISTER_MIME_RDF('image/bmp', 'http://www.openlinksw.com/schemas/Photo#');
 DAV_REGISTER_MIME_RDF('image/gif', 'http://www.openlinksw.com/schemas/Photo#');
 DAV_REGISTER_MIME_RDF('image/ief', 'http://www.openlinksw.com/schemas/Photo#');

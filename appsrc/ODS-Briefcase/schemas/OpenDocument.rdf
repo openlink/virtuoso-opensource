@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:dctype="http://purl.org/dc/dcmitype/"
+    xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"
+    xml:base="http://www.openlinksw.com/schemas/opendocument#">
+  <owl:Ontology rdf:about="urn:oasis:names:tc:opendocument:xmlns:meta:1.0">
+    <rdfs:label>OpenDocument Document</rdfs:label>
+    <rdfs:comment>Items that conform to OpenDocuemnt's Metadata Classification Scheme</rdfs:comment>
+    <virtrdf:catName>OpenDocument Document</virtrdf:catName>
+    <virtrdf:version>2.00</virtrdf:version>
+  </owl:Ontology>
+  <rdf:Description rdf:about="http://www.openlinksw.com/schemas/opendocument#">
+    <dc:title>OpenDocument Document</dc:title>
+    <dc:publisher>The Dublin Core Metadata InitiativeOpenLink Software</dc:publisher>
+    <dc:description>Items that conform to OpenDocuemnt's Metadata Classification Scheme</dc:description>
+    <dc:language>English</dc:language>
+    <dcterms:requires rdf:resource="http://www.dublincore.org/documents/2000/07/11/dcmes-qualifiers/"/>
+    <dc:source rdf:resource="http://www.dublincore.org/documents/2000/07/11/dcmes-qualifiers/"/>
+  </rdf:Description>
+  <rdf:Property rdf:about="http://purl.org/dc/elements/1.1/date">
+    <rdfs:label>Date</rdfs:label>
+    <virtrdf:label>Date</virtrdf:label>
+    <rdfs:comment>Date of document</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://purl.org/dc/terms/"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://purl.org/dc/elements/1.1/language">
+    <rdfs:label>Language</rdfs:label>
+    <virtrdf:label>Language</virtrdf:label>
+    <rdfs:comment>Language</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://purl.org/dc/terms/"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://purl.org/dc/elements/1.1/creator">
+    <rdfs:label>Creator</rdfs:label>
+    <virtrdf:label>Creator</virtrdf:label>
+    <rdfs:comment>Creator</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://purl.org/dc/terms/"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://purl.org/dc/elements/1.1/description">
+    <rdfs:label>Description</rdfs:label>
+    <virtrdf:label>Description</virtrdf:label>
+    <rdfs:comment>Description</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://purl.org/dc/terms/"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://purl.org/dc/elements/1.1/subject">
+    <rdfs:label>Subject</rdfs:label>
+    <virtrdf:label>Subject</virtrdf:label>
+    <rdfs:comment>Subject</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://purl.org/dc/terms/"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://purl.org/dc/elements/1.1/title">
+    <rdfs:label>Title</rdfs:label>
+    <virtrdf:label>Title</virtrdf:label>
+    <rdfs:comment>Title</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://purl.org/dc/terms/"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="urn:oasis:names:tc:opendocument:xmlns:meta:1.0:creation-date">
+    <rdfs:label>Creation date</rdfs:label>
+    <virtrdf:label>Creation date</virtrdf:label>
+    <rdfs:comment>Creation date</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opendocument#"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="urn:oasis:names:tc:opendocument:xmlns:meta:1.0:editing-cycles">
+    <rdfs:label>Editing cycles</rdfs:label>
+    <virtrdf:label>Editing cycles</virtrdf:label>
+    <rdfs:comment>Editing cycles</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opendocument#"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="urn:oasis:names:tc:opendocument:xmlns:meta:1.0:editing-duration">
+    <rdfs:label>Editing duration</rdfs:label>
+    <virtrdf:label>Editing duration</virtrdf:label>
+    <rdfs:comment>Editing duration</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opendocument#"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="urn:oasis:names:tc:opendocument:xmlns:meta:1.0:generator">
+    <rdfs:label>Generator</rdfs:label>
+    <virtrdf:label>Generator</virtrdf:label>
+    <rdfs:comment>Generator</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opendocument#"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="urn:oasis:names:tc:opendocument:xmlns:meta:1.0:initial-creator">
+    <rdfs:label>Initial creator</rdfs:label>
+    <virtrdf:label>Initial creator</virtrdf:label>
+    <rdfs:comment>Initial creator</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opendocument#"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="urn:oasis:names:tc:opendocument:xmlns:meta:1.0:keyword">
+    <rdfs:label>Keyword</rdfs:label>
+    <virtrdf:label>Keyword</virtrdf:label>
+    <rdfs:comment>Keyword</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opendocument#"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="urn:oasis:names:tc:opendocument:xmlns:meta:1.0:print-date">
+    <rdfs:label>Print date</rdfs:label>
+    <virtrdf:label>Print date</virtrdf:label>
+    <rdfs:comment>Print date</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opendocument#"/>
+  </rdf:Property>
+  <rdf:Property rdf:about="urn:oasis:names:tc:opendocument:xmlns:meta:1.0:printed-by">
+    <rdfs:label>Printed by</rdfs:label>
+    <virtrdf:label>Printed by</virtrdf:label>
+    <rdfs:comment>Printed by</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/opendocument#"/>
+  </rdf:Property>
+</rdf:RDF>

@@ -116,6 +116,17 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
         linksTo := briefcase_links_to (RES_CONTENT);
       ods_sioc_post (graph_iri, iri, c_iri, creator_iri, RES_NAME, RES_CR_TIME, RES_MOD_TIME, link, content, null, linksTo);
 
+	declare meta any;
+	meta := ODRIVE.WA.dav_rdf_get_metadata (RES_FULL_PATH);
+	if (meta is not null)
+	  {
+	    declare xt any;
+	    xt := xslt ('http://local.virt/davxml2rdfxml', meta);
+	    xt := serialize_to_UTF8_xml (xt);
+	    xt := replace (xt, 'http://local.virt/this', iri);
+	    DB.DBA.RDF_LOAD_RDFXML (xt, iri, graph_iri);
+	  }
+
       -- tags
       tags := DB.DBA.DAV_PROP_GET_INT (RES_ID, 'R', ':virtpublictags', 0);
       if (ODRIVE.WA.DAV_ERROR (tags))
@@ -418,7 +429,7 @@ create procedure briefcase_sioc_insert_ex (
 ;
 
 -------------------------------------------------------------------------------
---
+-- /* resource removal  */
 create procedure briefcase_sioc_delete (
   inout r_id integer,
   inout r_full_path varchar)
@@ -432,7 +443,7 @@ create procedure briefcase_sioc_delete (
   graph_iri := get_graph ();
   path := split_and_decode (r_full_path, 0, '\0\0/');
 
-  if (length (path) > 5 and path [5] = 'Public')
+  if (length (path) > 5 and path [4] = 'Public')
     {
       declare forum_iri any;
       for (select WAI_NAME
@@ -500,6 +511,151 @@ create trigger SYS_DAV_RES_BRIEFCASE_SIOC_U after update on WS.WS.SYS_DAV_RES re
 create trigger SYS_DAV_RES_BRIEFCASE_SIOC_D before delete on WS.WS.SYS_DAV_RES referencing old as O
 {
   briefcase_sioc_delete (O.RES_ID, O.RES_FULL_PATH);
+}
+;
+
+-- /* merge DAV meta */
+
+create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_I after insert on WS.WS.SYS_DAV_PROP referencing new as N
+{
+  declare meta, c_iri, iri, xt, graph_iri, path any;
+  declare full_path, _wai_name varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  declare exit handler for not found
+    {
+      return;
+    };
+
+  if (N.PROP_NAME <> 'http://local.virt/DAV-RDF' or N.PROP_TYPE <> 'R')
+    return;
+
+  select RES_FULL_PATH into full_path from WS.WS.SYS_DAV_RES where RES_ID = N.PROP_PARENT_ID;
+  path := split_and_decode (full_path, 0, '\0\0/');
+  if (length (path) < 6 or path [4] <> 'Public')
+    return;
+
+  graph_iri := get_graph ();
+  select WAI_NAME into _wai_name from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
+      where WAI_TYPE_NAME = 'oDrive' and WAM_INST = WAI_NAME and WAM_USER = U_ID and WAM_IS_PUBLIC = 1 and U_NAME = path[3]
+      and U_ACCOUNT_DISABLED = 0 and U_DAV_ENABLE = 1;
+  c_iri := briefcase_iri (_wai_name);
+  iri := post_iri_ex (c_iri, N.PROP_PARENT_ID);
+
+  meta := deserialize (blob_to_string (N.PROP_VALUE));
+  if (meta is not null)
+    {
+      meta := xml_tree_doc (meta);
+      xt := xslt ('http://local.virt/davxml2rdfxml', meta);
+      xt := serialize_to_UTF8_xml (xt);
+      xt := replace (xt, 'http://local.virt/this', iri);
+      DB.DBA.RDF_LOAD_RDFXML (xt, iri, graph_iri);
+    }
+}
+;
+
+create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_U after update on WS.WS.SYS_DAV_PROP referencing old as O, new as N
+{
+  declare meta, c_iri, iri, xt, graph_iri, path, ins_dict, del_dict any;
+  declare full_path, _wai_name varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  declare exit handler for not found
+    {
+      return;
+    };
+
+  if (N.PROP_NAME <> 'http://local.virt/DAV-RDF' or N.PROP_TYPE <> 'R')
+    return;
+
+  select RES_FULL_PATH into full_path from WS.WS.SYS_DAV_RES where RES_ID = N.PROP_PARENT_ID;
+  path := split_and_decode (full_path, 0, '\0\0/');
+  if (length (path) < 6 or path [4] <> 'Public')
+    return;
+
+  graph_iri := get_graph ();
+  select WAI_NAME into _wai_name from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
+      where WAI_TYPE_NAME = 'oDrive' and WAM_INST = WAI_NAME and WAM_USER = U_ID and WAM_IS_PUBLIC = 1 and U_NAME = path[3]
+      and U_ACCOUNT_DISABLED = 0 and U_DAV_ENABLE = 1;
+  c_iri := briefcase_iri (_wai_name);
+  iri := post_iri_ex (c_iri, N.PROP_PARENT_ID);
+
+  meta := deserialize (blob_to_string (N.PROP_VALUE));
+  ins_dict := null;
+  if (meta is not null)
+    {
+      meta := xml_tree_doc (meta);
+      xt := xslt ('http://local.virt/davxml2rdfxml', meta);
+      xt := serialize_to_UTF8_xml (xt);
+      xt := replace (xt, 'http://local.virt/this', iri);
+      ins_dict := DB.DBA.RDF_RDFXML_TO_DICT (xt, iri, graph_iri);
+    }
+  meta := deserialize (blob_to_string (O.PROP_VALUE));
+  del_dict := null;
+  if (meta is not null)
+    {
+      meta := xml_tree_doc (meta);
+      xt := xslt ('http://local.virt/davxml2rdfxml', meta);
+      xt := serialize_to_UTF8_xml (xt);
+      xt := replace (xt, 'http://local.virt/this', iri);
+      del_dict := DB.DBA.RDF_RDFXML_TO_DICT (xt, iri, graph_iri);
+    }
+  DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (graph_iri, del_dict, ins_dict);
+  return;
+}
+;
+
+create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_D before delete on WS.WS.SYS_DAV_PROP referencing old as O
+{
+  declare meta, c_iri, iri, xt, graph_iri, path, ins_dict, del_dict any;
+  declare full_path, _wai_name varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  declare exit handler for not found
+    {
+      return;
+    };
+
+  if (O.PROP_NAME <> 'http://local.virt/DAV-RDF' or O.PROP_TYPE <> 'R')
+    return;
+
+  select RES_FULL_PATH into full_path from WS.WS.SYS_DAV_RES where RES_ID = O.PROP_PARENT_ID;
+  path := split_and_decode (full_path, 0, '\0\0/');
+  if (length (path) < 6 or path [4] <> 'Public')
+    return;
+
+  graph_iri := get_graph ();
+  select WAI_NAME into _wai_name from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
+      where WAI_TYPE_NAME = 'oDrive' and WAM_INST = WAI_NAME and WAM_USER = U_ID and WAM_IS_PUBLIC = 1 and U_NAME = path[3]
+      and U_ACCOUNT_DISABLED = 0 and U_DAV_ENABLE = 1;
+  c_iri := briefcase_iri (_wai_name);
+  iri := post_iri_ex (c_iri, O.PROP_PARENT_ID);
+
+  ins_dict := null;
+  meta := deserialize (blob_to_string (O.PROP_VALUE));
+  del_dict := null;
+  if (meta is not null)
+    {
+      meta := xml_tree_doc (meta);
+      xt := xslt ('http://local.virt/davxml2rdfxml', meta);
+      xt := serialize_to_UTF8_xml (xt);
+      xt := replace (xt, 'http://local.virt/this', iri);
+      del_dict := DB.DBA.RDF_RDFXML_TO_DICT (xt, iri, graph_iri);
+    }
+  DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (graph_iri, del_dict, ins_dict);
+  return;
 }
 ;
 

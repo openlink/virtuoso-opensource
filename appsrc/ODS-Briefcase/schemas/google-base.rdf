@@ -1,0 +1,800 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF 
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+    xml:base="http://www.openlinksw.com/schemas/google-base#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/google-base#">
+	<rdfs:label>Google Data</rdfs:label>
+	<rdfs:comment>Items that conform to Google's Metadata Classification Scheme (Googlebase, Co-op, and others)</rdfs:comment>
+	<virtrdf:catName>Google Data</virtrdf:catName>
+	<virtrdf:version>2.00</virtrdf:version>
+    </owl:Ontology>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#actor">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>actor</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#adult">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+	<virtrdf:label>adult</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#age">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>age</virtrdf:label>
+	<!--people profiles, personals-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#age_range">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>age_range</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#agent">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>agent</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#album">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>album</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#apparel_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>apparel_type</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#area">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>area</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#artist">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>artist</virtrdf:label>
+	<!--products, ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#aspect_ratio">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>aspect_ratio</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#author">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>author</virtrdf:label>
+	<!--news and articles, products, reference articles, reviews-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#bathrooms">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>bathrooms</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#battery_life">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>battery_life</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#bedrooms">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>bedrooms</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#binding">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>binding</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#brand">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>brand</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#broker">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>broker</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#calories">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>calories</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#capacity">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>capacity</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#category">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>category</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#cholesterol">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>cholesterol</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#color">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>color</virtrdf:label>
+	<!--products, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#color_output">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+	<virtrdf:label>color_output</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#condition">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>condition</virtrdf:label>
+	<!--products, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#cooking_time">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>cooking_time</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#countries">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>countries</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#course">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>course</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#cuisine">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>cuisine</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#delivery">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+	<virtrdf:label>delivery</virtrdf:label>
+	<!--business locations, products, services-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#delivery_notes">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>delivery_notes</virtrdf:label>
+	<!--business locations, services-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#delivery_radius">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#floatUnit"/>
+	<virtrdf:label>delivery_radius</virtrdf:label>
+	<!--business locations, products, services-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#department">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>department</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#devices">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>devices</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#director">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>director</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#display_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>display_type</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#edition">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>edition</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#education">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>education</virtrdf:label>
+	<!--jobs, people profiles, personals-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#employer">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>employer</virtrdf:label>
+	<!--jobs, people profiles, personals-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#ethnicity">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>ethnicity</virtrdf:label>
+	<!--personals-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#event_date_range">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTimeRange"/>
+	<virtrdf:label>event_date_range</virtrdf:label>
+	<!--events and activities-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#event_parking">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>event_parking</virtrdf:label>
+	<!--events and activities-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#event_performer">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>event_performer</virtrdf:label>
+	<!--events and activities-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#event_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>event_type</virtrdf:label>
+	<!--events and activities-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#expiration_date">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+	<virtrdf:label>expiration_date</virtrdf:label>
+	<!--events and activities, housing, jobs, people profiles, personals, personals-temp, products, ring tone, services, travel packages, vehicles, wanted ads-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#expiration_date">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTimeRange"/>
+	<virtrdf:label>expiration_date</virtrdf:label>
+	<!--reference articles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#feature">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>feature</virtrdf:label>
+	<!--housing, products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#fiber">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>fiber</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#file_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>file_type</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#film_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>film_type</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#focus_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>focus_type</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#format">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>format</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#from_location">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#location"/>
+	<virtrdf:label>from_location</virtrdf:label>
+	<!--travel packages-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#functions">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>functions</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#gender">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>gender</virtrdf:label>
+	<!--people profiles, personals-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#genre">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>genre</virtrdf:label>
+	<!--products, ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#heel_height">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>heel_height</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#height">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>height</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#hoa_dues">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>hoa_dues</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#immigration_status">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>immigration_status</virtrdf:label>
+	<!--jobs-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#installation">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>installation</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#interested_in">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>interested_in</virtrdf:label>
+	<!--people profiles, personals-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#isbn">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>isbn</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#job_function">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>job_function</virtrdf:label>
+	<!--jobs-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#job_industry">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>job_industry</virtrdf:label>
+	<!--jobs-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#job_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>job_type</virtrdf:label>
+	<!--jobs-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#languages">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>languages</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#length">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>length</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#listing_status">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>listing_status</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#listing_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>listing_type</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#load_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>load_type</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#location">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#location"/>
+	<virtrdf:label>location</virtrdf:label>
+	<!--business locations, events and activities, housing, jobs, news and articles, people profiles, personals, personals-temp, products, reference articles, services, travel packages, vehicles, wanted ads-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#lot_size">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>lot_size</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#made_in">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>made_in</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#main_ingredient">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>main_ingredient</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#make">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>make</virtrdf:label>
+	<!--vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#marital_status">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>marital_status</virtrdf:label>
+	<!--people profiles, personals-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#material">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>material</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#meal_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>meal_type</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#megapixels">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>megapixels</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#memory_card_slot">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>memory_card_slot</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#mileage">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>mileage</virtrdf:label>
+	<!--vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#mls_listing_id">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>mls_listing_id</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#mls_name">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>mls_name</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#mobile_url">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#url"/>
+	<virtrdf:label>mobile_url</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#model">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>model</virtrdf:label>
+	<!--housing, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#model_number">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>model_number</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#name_of_item_reviewed">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>name_of_item_reviewed</virtrdf:label>
+	<!--reviews-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#news_source">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>news_source</virtrdf:label>
+	<!--news and articles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#occasion">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>occasion</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#occupation">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>occupation</virtrdf:label>
+	<!--people profiles, personals-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#open_house_date_range">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTimeRange"/>
+	<virtrdf:label>open_house_date_range</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#operating_system">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>operating_system</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#optical_drive">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>optical_drive</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#pages">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>pages</virtrdf:label>
+	<!--news and articles, products, reference articles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#payment">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>payment</virtrdf:label>
+	<!--business locations, events and activities, products, services, travel packages, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#payment_notes">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>payment_notes</virtrdf:label>
+	<!--business locations, events and activities, services, travel packages, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#pickup">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+	<virtrdf:label>pickup</virtrdf:label>
+	<!--business locations, products, services-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#platform">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>platform</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#preparation_method">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>preparation_method</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#preparation_time">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>preparation_time</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#price">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#floatUnit"/>
+	<virtrdf:label>price</virtrdf:label>
+	<!--business locations, events and activities, housing, products, ring tone, services, travel packages, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#price_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>price_type</virtrdf:label>
+	<!--business locations, events and activities, housing, ring tone, services, travel packages, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#price_units">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>price_units</virtrdf:label>
+	<!--business locations, events and activities, housing, products, ring tone, services, travel packages, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#processor_speed">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>processor_speed</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#product_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>product_type</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#property_taxes">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>property_taxes</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#property_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>property_type</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#protein">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>protein</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#provider_class">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>provider_class</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#provider_rank">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>provider_rank</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#publication_name">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>publication_name</virtrdf:label>
+	<!--reference articles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#publication_volume">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>publication_volume</virtrdf:label>
+	<!--reference articles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#publish_date">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTimeRange"/>
+	<virtrdf:label>publish_date</virtrdf:label>
+	<!--jobs, news and articles, reference articles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#publish_date">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>publish_date</virtrdf:label>
+	<!--reviews-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#publish_year">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>publish_year</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#publisher">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>publisher</virtrdf:label>
+	<!--products, ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#publisher_url">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#url"/>
+	<virtrdf:label>publisher_url</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#quantity">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+	<virtrdf:label>quantity</virtrdf:label>
+	<!--business locations, products, travel packages, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#rating">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>rating</virtrdf:label>
+	<!--products, reviews-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#recommended_usage">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>recommended_usage</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#resolution">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>resolution</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#review_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>review_type</virtrdf:label>
+	<!--reviews-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#reviewer_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>reviewer_type</virtrdf:label>
+	<!--reviews-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#salary">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>salary</virtrdf:label>
+	<!--jobs-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#salary_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>salary_type</virtrdf:label>
+	<!--jobs-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#saturated_fat">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>saturated_fat</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#school">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>school</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#school_district">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>school_district</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#screen_size">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>screen_size</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#season_or_occasion">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>season_or_occasion</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#service_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>service_type</virtrdf:label>
+	<!--services-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#servings">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>servings</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#sexual_orientation">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>sexual_orientation</virtrdf:label>
+	<!--people profiles, personals-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#shipping">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#shipping"/>
+	<virtrdf:label>shipping</virtrdf:label>
+	<!--business locations, products, travel packages, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#shoe_width">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>shoe_width</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#size">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>size</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#sodium">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>sodium</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#style">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>style</virtrdf:label>
+	<!--housing, products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#tax_percent">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+	<virtrdf:label>tax_percent</virtrdf:label>
+	<!--business locations, products, services, travel packages, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#tax_region">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>tax_region</virtrdf:label>
+	<!--business locations, services, travel packages, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#tech_spec_link">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>tech_spec_link</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#to_location">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#location"/>
+	<virtrdf:label>to_location</virtrdf:label>
+	<!--travel packages-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#tone_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>tone_type</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#total_carbs">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>total_carbs</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#total_fat">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>total_fat</virtrdf:label>
+	<!--recipes-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#travel_date_range">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTimeRange"/>
+	<virtrdf:label>travel_date_range</virtrdf:label>
+	<!--travel packages-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#upc">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>upc</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#url_of_item_reviewed">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#url"/>
+	<virtrdf:label>url_of_item_reviewed</virtrdf:label>
+	<!--reviews-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#vehicle_type">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>vehicle_type</virtrdf:label>
+	<!--vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#vin">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>vin</virtrdf:label>
+	<!--vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#web_url">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#url"/>
+	<virtrdf:label>web_url</virtrdf:label>
+	<!--ring tone-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#weight">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>weight</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#width">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#numberUnit"/>
+	<virtrdf:label>width</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#wireless_interface">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>wireless_interface</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#year">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#number"/>
+	<virtrdf:label>year</virtrdf:label>
+	<!--housing, products, vehicles-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#zoning">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>zoning</virtrdf:label>
+	<!--housing-->
+    </rdf:Property>
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/google-base#zoom">
+	<rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#text"/>
+	<virtrdf:label>zoom</virtrdf:label>
+	<!--products-->
+    </rdf:Property>
+</rdf:RDF>
