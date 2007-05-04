@@ -29,8 +29,20 @@
 void
 rb_complete (rdf_box_t * rb, lock_trx_t * lt)
 {
+  static query_t * rdf_complete_qr = NULL;
+  caddr_t err = NULL;
+  caddr_t * pars;
+  if (rb->rb_is_complete)
+    return; /* redundand call */
+  pars = (caddr_t *) dk_alloc_box (1 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  if (NULL == rdf_complete_qr)
+    rdf_complete_qr = sql_compile ("DB.DBA.RDF_BOX_COMPLETE (?)", bootstrap_cli, &err, SQLC_DEFAULT);
+  pars[0] = rb_copy (rb);
+  err = qr_exec (lt->lt_client, rdf_complete_qr, CALLER_LOCAL, NULL, NULL, NULL, pars, NULL, 0);
+  dk_free_box ((box_t) pars);
+  if (err)
+    dk_free_tree (err);
 }
-
 
 rdf_box_t *
 rb_allocate (void)

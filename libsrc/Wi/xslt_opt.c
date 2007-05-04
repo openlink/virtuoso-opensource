@@ -354,7 +354,7 @@ xn_xslt_attributes (xp_node_t * xn)
 	  xn->xn_attrs = head = head2;
 	}
       colon = strrchr (head[0], ':');
-      if (!strcmp (colon + 1, "stylesheet"))
+      if (!strcmp (colon + 1, "stylesheet") || !strcmp (colon + 1, "transform"))
 	xn->xn_xp->xp_xslt_start = (caddr_t) xn;
       for (inx = 1; inx < headlen; inx += 2)
 	{
@@ -872,8 +872,11 @@ After processing 'text1<!--comment-->text2' two string children text1 and text2 
             {
 	    if (!(XSLT_ELGRP_RESELS & childgroups))
                 {
-                  if (!strcmp (child_name, "http://www.w3.org/1999/xhtml:div") &&
-                    !strcmp (name, "http://www.w3.org/1999/XSL/Transform:stylesheet") )
+                  if (
+		      !strncmp (child_name, "http://www.w3.org/1999/xhtml:", 29) &&
+                      !(strcmp (name, "http://www.w3.org/1999/XSL/Transform:stylesheet") &&
+                        strcmp (name, "http://www.w3.org/1999/XSL/Transform:transform")) 
+		    )
                     { /* Relax syntax for weird comments inside the stylesheet. */
 	              tree[child_idx] = NULL;
 		      dk_free_tree ((box_t) child);

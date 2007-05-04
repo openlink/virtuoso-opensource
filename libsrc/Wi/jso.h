@@ -36,8 +36,8 @@
 #define JSO_OPTIONAL	11	/*!< The property is fully optional */
 #define JSO_INHERITABLE	12	/*!< The property is required but it can be inherited */
 #define JSO_REQUIRED	13	/*!< The property is required, it should be specified directly even if can be inherited */
-#define JSO_PRIVATE	14	/*!< The property is deprecated and should not be specified at all */
-#define JSO_DEPRECATED	15	/*!< The property is never loaded. It's used only in C code */
+#define JSO_PRIVATE	14	/*!< The property is never loaded. It's used only in C code */
+#define JSO_DEPRECATED	15	/*!< The property is deprecated and should not be specified at all */
 
 #define JSO_ANY		"http://www.w3.org/2001/XMLSchema#any"			/*!< Arbitrary boxed SQL value */
 #define JSO_ANY_array	"http://www.openlinksw.com/schemas/virtrdf#array-of-any"	/*!< A vector of abitrary boxed SQL values */
@@ -46,6 +46,7 @@
 #define JSO_BITMASK	"http://www.openlinksw.com/schemas/virtrdf#bitmask"	/*!< Bitmask as ptrlong, can be loaded as OR of a list of values */
 #define JSO_DOUBLE	"http://www.w3.org/2001/XMLSchema#double"		/*!< Double float as unboxed double */
 #define JSO_INTEGER	"http://www.w3.org/2001/XMLSchema#integer"		/*!< Integer as ptrlong */
+#define JSO_INTEGER_array	"http://www.openlinksw.com/schemas/virtrdf#array-of-integer"	/*!< Either a vector of DV_LONG_INTs or DV_ARRAY_OF_LONG */
 #define JSO_STRING	"http://www.w3.org/2001/XMLSchema#string"		/*!< String, boxed DV_STRING */
 #define JSO_STRING_array	"http://www.openlinksw.com/schemas/virtrdf#array-of-string"	/*!< A vector of DV_STRING-s */
 

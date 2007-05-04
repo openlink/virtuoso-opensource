@@ -214,11 +214,36 @@ bif_jso_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long quiet = bif_long_arg (qst, args, 2, "jso_delete");
   jso_class_descr_t *cd;
   jso_rtti_t *inst_rtti;
+  caddr_t *inst;
+  int fld_ctr;
   jclass = box_cast_to_UTF8_uname (qst, jclass);
   jinstance = box_cast_to_UTF8_uname (qst, jinstance);
   jso_get_cd_and_rtti (jclass, jinstance, &cd, &inst_rtti, quiet);
   if (NULL == inst_rtti)
     return jinstance;
+  inst = inst_rtti->jrtti_self;
+  if (JSO_CAT_STRUCT != cd->jsocd_cat)
+    goto end_delete_private_members; /* see below */
+  switch (inst_rtti->jrtti_status)
+    {
+    case JSO_STATUS_FAILED: break;
+    case JSO_STATUS_LOADED: break;
+    case JSO_STATUS_NEW: break;
+    default: goto end_delete_private_members; /* see below */
+    }
+  for (fld_ctr = cd->_.sd.jsosd_field_count; fld_ctr--; /*no step*/)
+    {
+      jso_field_descr_t *fldd = cd->_.sd.jsosd_field_list + fld_ctr;
+      jso_class_descr_t *fld_type_cd = gethash (fldd->jsofd_type, jso_classes);
+      jso_rtti_t *sub = (jso_rtti_t *)(JSO_FIELD_PTR (inst, fldd)[0]);
+      if ((JSO_PRIVATE == fldd->jsofd_required) && (NULL != sub))
+        {
+          if ((NULL == fld_type_cd) && (DV_CUSTOM != DV_TYPE_OF (sub)))
+            dk_free_tree (sub);
+          JSO_FIELD_PTR (inst, fldd)[0] = NULL;
+        }
+    }
+end_delete_private_members:
   if ((NULL != cd) && (JSO_CAT_STRUCT == cd->jsocd_cat))
     memset (inst_rtti->jrtti_self, 0, cd->_.sd.jsosd_sizeof);
   else

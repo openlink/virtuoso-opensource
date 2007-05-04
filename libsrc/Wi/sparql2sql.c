@@ -32,6 +32,15 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "xmlparser.h"
+#include "xmlparser_impl.h"
+#ifdef __cplusplus
+}
+#endif
+#include "xml_ecm.h"
 
 /* PART 1. EXPRESSION TERM REWRITING */
 
@@ -116,16 +125,24 @@ scan_for_children:
       }
     case BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
-    /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
+    /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! BTW, 'IN' is also BOP */
     case BOP_SAME: case BOP_NSAME:
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
-    case BOP_AND: case BOP_OR: case BOP_NOT:
+    case BOP_AND: case BOP_OR:
       {
         tree_cat = 1;
         sub_expns = fields;
 	sub_expn_count = 2;
         fields[0] = tree->_.bin_exp.left;
         fields[1] = tree->_.bin_exp.right;
+        break;
+      }
+    case BOP_NOT:
+      {
+        tree_cat = 1;
+        sub_expns = fields;
+	sub_expn_count = 1;
+        fields[0] = tree->_.bin_exp.left;
         break;
       }
     default:
@@ -266,7 +283,6 @@ sparp_expand_top_retvals (sparp_t *sparp)
   SPART **old_retvals = sparp->sparp_expr->_.req_top.retvals;
   if (IS_BOX_POINTER (old_retvals))
     {
-      dk_set_t gbys = NULL;
       int ctr;
       DO_BOX_FAST (SPART *, retexpn, ctr, old_retvals)
         {
@@ -448,6 +464,19 @@ sparp_count_usages (sparp_t *sparp)
   END_DO_BOX_FAST;
 }
 
+int
+sparp_tree_returns_ref (sparp_t *sparp, SPART *tree)
+{
+  switch (SPART_TYPE (tree))
+    {
+    case SPAR_QNAME: return 1;
+    case SPAR_BUILT_IN_CALL:
+      if (IRI_L == tree->_.builtin.btype)
+        return 1;
+      break;
+    }
+  return 0;
+}
 
 static int
 sparp_expn_rside_rank (SPART *tree)
@@ -535,9 +564,9 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
 	        ret = sparp_equiv_merge (sparp, eq_l, eq_r);
                   break;
 	      }
-              case SPAR_LIT:
+              case SPAR_LIT: case SPAR_QNAME:
 	      {
-	        ret = sparp_equiv_restrict_by_literal (sparp, eq_l, NULL, r);
+                  ret = sparp_equiv_restrict_by_constant (sparp, eq_l, NULL, r);
                   break;
           }
               case SPAR_BUILT_IN_CALL:
@@ -585,10 +614,10 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
 #ifdef DEBUG
           case IRI_L:
           case STR_L:
-          case LANG_L:
-          case LANGMATCHES_L:
-          case DATATYPE_L:
+          case LANG_L: case LANGMATCHES_L: case DATATYPE_L:
           case REGEX_L:
+          case LIKE_L:
+          case IN_L:
             break;
           default: spar_internal_error (sparp, "sparp_" "filter_to_equiv(): unsupported built-in");
 #else
@@ -1259,6 +1288,21 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
             spar_internal_error (sparp, "sparp_" "equiv_audit_all(): no reference to chk_eq in gp");
           if (strcmp (var->_.var.selid, gp->_.gp.selid))
             spar_internal_error (sparp, "sparp_" "equiv_audit_all(): selid of var of eq differs from selid of gp of eq");
+          if (NULL != var->_.var.tabid)
+            {
+              int var_tr_idx = var->_.var.tr_idx;
+              int triple_idx;
+              for (triple_idx = BOX_ELEMENTS (gp->_.gp.members); triple_idx--; /* no step */)
+                {
+                  SPART *var_triple = gp->_.gp.members[triple_idx];
+                  if (SPAR_TRIPLE != var_triple->type)
+                    continue;
+                  if (var_triple->_.triple.tr_fields[var_tr_idx] == var)
+                    break;
+                }
+              if (0 > triple_idx)
+                spar_internal_error (sparp, "sparp_" "equiv_audit_all(): var is in equiv but not in any triple of the group");
+            }
         }
       recv_ctr = BOX_ELEMENTS_0 (eq->e_receiver_idxs);
       if (0 != recv_ctr)
@@ -1763,7 +1807,7 @@ sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SPART *cloned_gp)
 }
 
 int
-sparp_equiv_restrict_by_literal (sparp_t *sparp, sparp_equiv_t *pri, ccaddr_t datatype, SPART *value)
+sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *pri, ccaddr_t datatype, SPART *value)
 {
   rdf_val_range_t tmp;
   memset (&tmp, 0, sizeof (rdf_val_range_t));
@@ -1774,8 +1818,29 @@ sparp_equiv_restrict_by_literal (sparp_t *sparp, sparp_equiv_t *pri, ccaddr_t da
     }
       if (NULL != value)
     {
+      if (SPAR_QNAME == SPART_TYPE (value))
+        {
+#ifdef DEBUG
+          if (DV_UNAME != DV_TYPE_OF (value->_.lit.val))
+            GPF_T1 ("sparp_" "equiv_restrict_by_literal(): bad QNAME");
+#endif
+          tmp.rvrFixedValue = value->_.lit.val;
+          tmp.rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED);
+        }
+      else if (DV_UNAME == DV_TYPE_OF (value))
+        {
+          tmp.rvrFixedValue = value;
+          tmp.rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED);
+        }
+      else
+        {
+#ifdef DEBUG
+              if (SPAR_LIT != SPART_TYPE (value))
+                GPF_T1("sparp_" "equiv_restrict_by_literal(): value is neither QNAME nor a literal");
+#endif
       tmp.rvrFixedValue = (ccaddr_t)value;
-      tmp.rvrRestrictions |= SPART_VARR_FIXED;
+          tmp.rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_FIXED);
+        }
     }
   sparp_rvr_tighten (sparp, &tmp, &(pri->e_rvr), ~0);
   if (tmp.rvrRestrictions & SPART_VARR_CONFLICT)
@@ -1851,7 +1916,7 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
 #endif
   if ((pri->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED) && (sec->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED))
     return SPARP_EQUIV_MERGE_ROLLBACK;
-  ret = sparp_equiv_restrict_by_literal (sparp, pri, sec->e_rvr.rvrDatatype, (SPART *)(sec->e_rvr.rvrFixedValue));
+  ret = sparp_equiv_restrict_by_constant (sparp, pri, sec->e_rvr.rvrDatatype, (SPART *)(sec->e_rvr.rvrFixedValue));
   if (SPARP_EQUIV_MERGE_ROLLBACK == ret)
     return ret;
   pri->e_varnames = t_list_concat ((caddr_t)(pri->e_varnames), (caddr_t)(sec->e_varnames));
@@ -2336,7 +2401,13 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
             goto conflict; /* see below */
         }
       else
+        {
+#ifdef DEBUG
+              if (SPAR_LIT != SPART_TYPE ((SPART *)(addon->rvrFixedValue)))
+                GPF_T1("sparp_" "rvr_tighten(): addon->rvrFixedValue is not a literal");
+#endif
         dest->rvrFixedValue = addon->rvrFixedValue;
+    }
     }
   if (new_restr & SPART_VARR_FIXED)
     {
@@ -2772,11 +2843,20 @@ int
 sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
   quad_map_t *qm, qm_value_t *qmv, rdf_val_range_t *rvr)
 {
-  if (SPAR_IS_BLANK_OR_VAR(field))
+  rdf_val_range_t *qmv_or_fmt_rvr = NULL;
+  ptrlong field_type = SPART_TYPE (field);
+  if (NULL != qmv)
     {
-      int ctr;
-      int checked_sources_count = 0;
-      int source_found = 0;
+      if ((SPART_VARR_SPRINTFF | SPART_VARR_FIXED) & qmv->qmvRange.rvrRestrictions)
+        qmv_or_fmt_rvr = &(qmv->qmvRange);
+      else if (NULL != qmv->qmvFormat)
+        {
+          if ((SPART_VARR_SPRINTFF | SPART_VARR_FIXED) & qmv->qmvFormat->qmfValRange.rvrRestrictions)
+            qmv_or_fmt_rvr = &(qmv->qmvFormat->qmfValRange);
+        }
+    }
+  if ((SPAR_BLANK_NODE_LABEL == field_type) || (SPAR_VARIABLE == field_type))
+    {
       if ((NULL != rvr->rvrFixedValue) && (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions))
         {
           sparp_equiv_t *eq_g = sparp->sparp_env->spare_equivs[field->_.var.equiv_idx];
@@ -2788,12 +2868,16 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
               return SSG_QM_NO_MATCH;
 #endif
             }
+          /* Check if a fixed value of a field variable is equal to the constant field of the mapping */
           if (!sparp_fixedvalues_equal (sparp, (SPART *)(eq_g->e_rvr.rvrFixedValue), (SPART *)(rvr->rvrFixedValue)))
             return SSG_QM_NO_MATCH;
           return SSG_QM_FULL_MATCH;
         }
       if (NULL != rvr->rvrFixedValue)
         {
+          int ctr;
+          int checked_sources_count = 0;
+          int source_found = 0;
       DO_BOX_FAST (SPART *, source, ctr, tcc->tcc_sources)
         {
           if (tcc->tcc_required_source_type != SPART_TYPE(source))
@@ -2815,53 +2899,6 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
             return SSG_QM_NO_MATCH;
           return SSG_QM_PARTIAL_MATCH;
         }
-        }
-      if (NULL == rvr->rvrFixedValue)
-        return SSG_QM_FULL_MATCH; /* This is not quite true, but this is the matching rule for EXCLUSIVE */
-      return SSG_QM_PARTIAL_MATCH;
-    }
-  if (SPAR_IS_LIT_OR_QNAME (field))
-    {
-      caddr_t eff_val = SPAR_LIT_OR_QNAME_VAL (field);
-      if (DV_UNAME != DV_TYPE_OF (eff_val))
-        { /* This would be very-very strange failure */
-#ifdef DEBUG
-          GPF_T1 ("sparp_check_field_mapping_g(): non-UNAME constant used as graph of a triple, legal but strange");
-#else
-          return SSG_QM_NO_MATCH;
-#endif
-        }
-      if ((NULL != rvr->rvrFixedValue) &&
-        !sparp_fixedvalues_equal (sparp, field, (SPART *)(rvr->rvrFixedValue)))
-        return SSG_QM_NO_MATCH;
-      return SSG_QM_FULL_MATCH;
-    }
-  GPF_T1("ssg_check_field_mapping_g(): field is neither variable nor literal?");
-  return SSG_QM_NO_MATCH;
-}
-
-int
-sparp_check_field_mapping_spo (sparp_t *sparp, tc_context_t *tcc, SPART *field,
-  quad_map_t *qm, qm_value_t *qmv, rdf_val_range_t *rvr)
-{
-  if (SPAR_IS_BLANK_OR_VAR(field))
-    {
-      rdf_val_range_t *qmv_or_fmt_rvr = 0;
-      if ((NULL != rvr->rvrFixedValue) && (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions))
-        { /* Check if a fixed value of a field variable is equal to the constant field of the mapping */
-          if (!sparp_fixedvalues_equal (sparp, (SPART *)(field->_.var.rvr.rvrFixedValue), (SPART *)(rvr->rvrFixedValue)))
-            return SSG_QM_NO_MATCH;
-          return SSG_QM_FULL_MATCH;
-        }
-      if (NULL != qmv)
-        {
-          if (SPART_VARR_SPRINTFF & qmv->qmvRange.rvrRestrictions)
-            qmv_or_fmt_rvr = &(qmv->qmvRange);
-          else if (NULL != qmv->qmvFormat)
-            {
-              if (SPART_VARR_SPRINTFF & qmv->qmvFormat->qmfValRange.rvrRestrictions)
-                qmv_or_fmt_rvr = &(qmv->qmvFormat->qmfValRange);
-            }
         }
       if (NULL != qmv_or_fmt_rvr)
         {
@@ -2904,11 +2941,124 @@ field_sff_isects_qmv_sff: ;
         return SSG_QM_FULL_MATCH; /* This is not quite true, but this is the matching rule for EXCLUSIVE */
       return SSG_QM_PARTIAL_MATCH;
     }
-  if (SPAR_IS_LIT_OR_QNAME (field))
+  else if ((SPAR_LIT == field_type) || (SPAR_QNAME == field_type))
     {
-      if ((NULL != rvr->rvrFixedValue) &&
-        !sparp_fixedvalues_equal (sparp, field, (SPART *)(rvr->rvrFixedValue)) )
+      caddr_t eff_val = SPAR_LIT_OR_QNAME_VAL (field);
+      if (DV_UNAME != DV_TYPE_OF (eff_val))
+        { /* This would be very-very strange failure */
+#ifdef DEBUG
+          GPF_T1 ("sparp_check_field_mapping_g(): non-UNAME constant used as graph of a triple, legal but strange");
+#else
+          return SSG_QM_NO_MATCH;
+#endif
+        }
+      if (NULL != rvr->rvrFixedValue)
+        {
+          if (!sparp_fixedvalues_equal (sparp, field, (SPART *)(rvr->rvrFixedValue)))
         return SSG_QM_NO_MATCH;
+      return SSG_QM_FULL_MATCH;
+    }
+      if (NULL != qmv_or_fmt_rvr)
+        {
+          caddr_t fv = SPAR_LIT_OR_QNAME_VAL (field);
+          if ((NULL != fv) && IS_STRING_DTP (DV_TYPE_OF (fv)))
+            {
+              int ctr;
+              for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
+                if (sprintff_like (fv, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
+                  return SSG_QM_FULL_MATCH;
+              return SSG_QM_NO_MATCH; /* reached if no match found */
+            }
+        }
+      return SSG_QM_FULL_MATCH;
+    }
+  GPF_T1("ssg_check_field_mapping_g(): field is neither variable nor literal?");
+  return SSG_QM_NO_MATCH;
+}
+
+sparp_check_field_mapping_spo (sparp_t *sparp, tc_context_t *tcc, SPART *field,
+  quad_map_t *qm, qm_value_t *qmv, rdf_val_range_t *rvr)
+{
+  rdf_val_range_t *qmv_or_fmt_rvr = NULL;
+  ptrlong field_type = SPART_TYPE (field);
+      if (NULL != qmv)
+        {
+      if ((SPART_VARR_SPRINTFF | SPART_VARR_FIXED) & qmv->qmvRange.rvrRestrictions)
+            qmv_or_fmt_rvr = &(qmv->qmvRange);
+          else if (NULL != qmv->qmvFormat)
+            {
+          if ((SPART_VARR_SPRINTFF | SPART_VARR_FIXED) & qmv->qmvFormat->qmfValRange.rvrRestrictions)
+                qmv_or_fmt_rvr = &(qmv->qmvFormat->qmfValRange);
+            }
+        }
+  if ((SPAR_BLANK_NODE_LABEL == field_type) || (SPAR_VARIABLE == field_type))
+    {
+      if ((NULL != rvr->rvrFixedValue) && (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions))
+        { /* Check if a fixed value of a field variable is equal to the constant field of the mapping */
+          if (!sparp_fixedvalues_equal (sparp, (SPART *)(field->_.var.rvr.rvrFixedValue), (SPART *)(rvr->rvrFixedValue)))
+            return SSG_QM_NO_MATCH;
+          return SSG_QM_FULL_MATCH;
+        }
+      if (NULL != qmv_or_fmt_rvr)
+        {
+          if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
+            { /* Check if a fixed value of a field variable matches to one of sffs of the mapping value */
+              caddr_t fv = rvr_string_fixedvalue (&(field->_.var.rvr));
+              if (NULL != fv)
+                {
+                  int ctr;
+                  for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
+                    if (sprintff_like (fv, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
+                      goto fixed_field_matches_qmv_sff; /* see below */
+                  return SSG_QM_NO_MATCH; /* reached if no match found */
+fixed_field_matches_qmv_sff: ;
+                }
+            }
+          if (SPART_VARR_SPRINTFF & field->_.var.rvr.rvrRestrictions)
+            { /* Check if either of formats of a field variable matches to one of sffs of the mapping value */
+              int fld_ctr, qmv_ctr;
+/* First pass is optimistic and tries to find an exact equality */
+              for (fld_ctr = field->_.var.rvr.rvrSprintffCount; fld_ctr--; /* no step */)
+                for (qmv_ctr = qmv_or_fmt_rvr->rvrSprintffCount; qmv_ctr--; /* no step */)
+                   if (!strcmp (
+                          field->_.var.rvr.rvrSprintffs [fld_ctr],
+                          qmv_or_fmt_rvr->rvrSprintffs [qmv_ctr] ) )
+                     goto field_sff_isects_qmv_sff;
+/* Second pass checks everything, slowly */
+              for (fld_ctr = field->_.var.rvr.rvrSprintffCount; fld_ctr--; /* no step */)
+                for (qmv_ctr = qmv_or_fmt_rvr->rvrSprintffCount; qmv_ctr--; /* no step */)
+                   if (NULL != sprintff_intersect (
+                          field->_.var.rvr.rvrSprintffs [fld_ctr],
+                          qmv_or_fmt_rvr->rvrSprintffs [qmv_ctr], 1 ) )
+                     goto field_sff_isects_qmv_sff;
+              return SSG_QM_NO_MATCH; /* reached if no match found */
+field_sff_isects_qmv_sff: ;
+            }
+        }
+      if (NULL == rvr->rvrFixedValue)
+        return SSG_QM_FULL_MATCH; /* This is not quite true, but this is the matching rule for EXCLUSIVE */
+      return SSG_QM_PARTIAL_MATCH;
+    }
+  else if ((SPAR_LIT == field_type) || (SPAR_QNAME == field_type))
+    {
+      if (NULL != rvr->rvrFixedValue)
+    {
+          if (!sparp_fixedvalues_equal (sparp, field, (SPART *)(rvr->rvrFixedValue)))
+        return SSG_QM_NO_MATCH;
+      return SSG_QM_FULL_MATCH;
+    }
+      if (NULL != qmv_or_fmt_rvr)
+        {
+          caddr_t fv = SPAR_LIT_OR_QNAME_VAL (field);
+          if ((NULL != fv) && IS_STRING_DTP (DV_TYPE_OF (fv)))
+            {
+              int ctr;
+              for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
+                if (sprintff_like (fv, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
+                  return SSG_QM_FULL_MATCH;
+              return SSG_QM_NO_MATCH; /* reached if no match found */
+            }
+        }
       return SSG_QM_FULL_MATCH;
     }
   GPF_T1("ssg_check_field_mapping_spo(): field is neither variable nor literal?");
@@ -3207,6 +3357,10 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
                 spar_internal_error (sparp, "Invalid quad map storage metadata: quad map has set both quad map value and a constant for same field.");
               memset (&qmv_rvr, 0, sizeof (rdf_val_range_t));
               qmv_rvr.rvrRestrictions |= SPART_VARR_FIXED;
+#ifdef DEBUG
+              if ((SPART_TRIPLE_GRAPH_IDX == field_ctr) && (DV_UNAME != DV_TYPE_OF (fld_const)))
+                GPF_T1("sparp_" "refresh_triple_cases(): const GRAPH field of qm is not a UNAME");
+#endif
               qmv_rvr.rvrFixedValue = fld_const;
             }
           else
@@ -3348,6 +3502,9 @@ sparp_clone_id (sparp_t *sparp, caddr_t orig_name)
   return t_box_dv_short_string (buf);
 }
 
+static SPART **
+sparp_treelist_full_clone_int (sparp_t *sparp, SPART **origs, SPART *parent_gp);
+
 SPART *
 sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
 {
@@ -3485,11 +3642,11 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       return tgt;
     case SPAR_BUILT_IN_CALL:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
-      tgt->_.builtin.args = sparp_treelist_full_copy (sparp, orig->_.builtin.args, parent_gp);
+      tgt->_.builtin.args = sparp_treelist_full_clone_int (sparp, orig->_.builtin.args, parent_gp);
       return tgt;
     case SPAR_FUNCALL:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
-      tgt->_.funcall.argtrees = sparp_treelist_full_copy (sparp, orig->_.funcall.argtrees, parent_gp);
+      tgt->_.funcall.argtrees = sparp_treelist_full_clone_int (sparp, orig->_.funcall.argtrees, parent_gp);
       return tgt;
     case SPAR_REQ_TOP:
       spar_error (sparp, "Internal SPARQL compiler error: can not clone TOP of request");
@@ -3525,6 +3682,20 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
   spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): unsupported type of expression");
   return NULL; /* to keep C compiler happy */
 }
+
+SPART **
+sparp_treelist_full_clone_int (sparp_t *sparp, SPART **origs, SPART *parent_gp)
+{
+  SPART **tgts = (SPART **)t_box_copy ((caddr_t) origs);
+  int ctr;
+  DO_BOX_FAST_REV (SPART *, org, ctr, origs)
+    {
+      tgts [ctr] = sparp_tree_full_clone_int (sparp, org, parent_gp);
+    }
+  END_DO_BOX_FAST_REV;
+  return tgts;
+}
+
 
 SPART *
 sparp_gp_full_clone (sparp_t *sparp, SPART *gp)
@@ -3562,6 +3733,10 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       return tgt;
     case FROM_L: case NAMED_L: case SPAR_LIT: case SPAR_QNAME: /* case SPAR_QNAME_NS: */
       return (SPART *)t_full_box_copy_tree ((caddr_t)orig);
+    case ORDER_L:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.oby.expn = sparp_tree_full_copy (sparp, orig->_.oby.expn, parent_gp);
+      return tgt;
     case SPAR_TRIPLE:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /*no step*/)
@@ -4005,6 +4180,77 @@ sparp_set_retval_and_order_selid (sparp_t *sparp)
   END_DO_BOX_FAST;
 }
 
+
+int
+sparp_expns_are_equal (sparp_t *sparp, SPART *one, SPART *two)
+{
+  ptrlong one_type = SPART_TYPE (one);
+  if (one == two)
+    return 1;
+  if (SPART_TYPE (two) != one_type)
+    return 0;
+  switch (one_type)
+    {
+    case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
+      return !strcmp (one->_.var.vname, two->_.var.vname);
+    case SPAR_QNAME: /* case SPAR_QNAME_NS: */
+      return sparp_expns_are_equal (sparp, (SPART *)(one->_.lit.val), (SPART *)(two->_.lit.val));
+    case SPAR_LIT:
+      if (DV_TYPE_OF (one) != DV_TYPE_OF (two))
+        return 0;
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (one))
+        return (DVC_MATCH == cmp_boxes ((caddr_t)one, (caddr_t)two, NULL, NULL));
+      else
+        return (
+          sparp_expns_are_equal (sparp, (SPART *)(one->_.lit.val), (SPART *)(two->_.lit.val)) &&
+          sparp_expns_are_equal (sparp, (SPART *)(one->_.lit.datatype), (SPART *)(two->_.lit.datatype)) &&
+          sparp_expns_are_equal (sparp, (SPART *)(one->_.lit.language), (SPART *)(two->_.lit.language)) );
+    case SPAR_BUILT_IN_CALL:
+      return (
+        (one->_.builtin.btype == two->_.builtin.btype) &&
+        sparp_expn_lists_are_equal (sparp, one->_.builtin.args, two->_.builtin.args) );
+    case SPAR_FUNCALL:
+      return (
+        (one->_.funcall.agg_mode == two->_.funcall.agg_mode) &&
+        !strcmp (one->_.funcall.qname, two->_.funcall.qname) &&
+        sparp_expn_lists_are_equal (sparp, one->_.funcall.argtrees, two->_.funcall.argtrees) );
+    case BOP_EQ: case BOP_NEQ:
+    case BOP_AND: case BOP_OR:
+    case BOP_SAME: case BOP_NSAME:
+      return (
+        ( sparp_expns_are_equal (sparp, one->_.bin_exp.left, two->_.bin_exp.left) &&
+          sparp_expns_are_equal (sparp, one->_.bin_exp.right, two->_.bin_exp.right) ) ||
+        ( sparp_expns_are_equal (sparp, one->_.bin_exp.left, two->_.bin_exp.right) &&
+          sparp_expns_are_equal (sparp, one->_.bin_exp.right, two->_.bin_exp.left) ) );
+    case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
+    /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
+    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
+      return (
+        sparp_expns_are_equal (sparp, one->_.bin_exp.left, two->_.bin_exp.left) &&
+        sparp_expns_are_equal (sparp, one->_.bin_exp.right, two->_.bin_exp.right) );
+    case BOP_NOT:
+      return sparp_expns_are_equal (sparp, one->_.bin_exp.left, two->_.bin_exp.left);
+/* Add more cases right above this line when introducing more SPAR_nnn constants that may appear inside expression */
+    default: spar_internal_error (sparp, "sparp_" "expns_are_equal () get expression of unsupported type");
+    }
+  GPF_T;
+  return 0;
+}
+
+int
+sparp_expn_lists_are_equal (sparp_t *sparp, SPART **one, SPART **two)
+{
+  int ctr, one_len = BOX_ELEMENTS_0 (one);
+  if (BOX_ELEMENTS_0 (two) != one_len)
+    return 0;
+  for (ctr = 0; ctr < one_len; ctr++)
+    {
+      if (!sparp_expns_are_equal (sparp, one[ctr], two[ctr]))
+        return 0;
+    }
+  return 1;
+}
+
 int
 sparp_set_special_order_selid_cbk (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
 {
@@ -4082,7 +4328,7 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple)
               sparp_rvr_copy (sparp, &(new_fld_expn->_.var.rvr), &(fld_expn->_.var.rvr)); 
               eq = sparp_equiv_get (sparp, qm_case_gp, new_fld_expn, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GPSO_USE);
               if (NULL == fld_qmv)
-                sparp_equiv_restrict_by_literal (sparp, eq, NULL, (SPART *)fld_const);
+                sparp_equiv_restrict_by_constant (sparp, eq, NULL, (SPART *)fld_const);
               else
                 {
                   sparp_equiv_tighten (sparp, eq, &(fld_qmv->qmvRange), ~SPART_VARR_IRI_CALC);
@@ -4500,6 +4746,24 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, void **trav_env_t
   return 0;
 }
 
+void
+sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
+{
+  SPART *base = (SPART *)(curr->_.gp.members[base_idx]);
+  quad_map_t *base_qm = base->_.triple.tc_list[0]->tc_qm;
+  int key_field_idx;
+
+return ;
+
+/*
+  DO_BOX_FAST (SPART *, base, base_idx, curr->_.gp.members)
+    {
+    }
+*/
+}
+
+
+
 static int
 sparp_qmv_forms_reusable_key_of_qm (sparp_t *sparp, qm_value_t *key_qmv, quad_map_t *qm)
 {
@@ -4537,26 +4801,16 @@ sparp_qmv_forms_reusable_key_of_qm (sparp_t *sparp, qm_value_t *key_qmv, quad_ma
         }
       END_DO_BOX_FAST;
     }
-  return 0;
+  return 1;
 }
 
-int
-sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+
+void
+sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
 {
-  if (SPAR_GP != curr->type)
-    return 0;
-  if ((0 == curr->_.gp.subtype) || (WHERE_L == curr->_.gp.subtype))
-    {
-      int base_idx;
-      DO_BOX_FAST (SPART *, base, base_idx, curr->_.gp.members)
-        {
+  SPART *base = (SPART *)(curr->_.gp.members[base_idx]);
+  quad_map_t *base_qm = base->_.triple.tc_list[0]->tc_qm;
           int key_field_idx;
-          quad_map_t *base_qm;
-          if (SPAR_TRIPLE != base->type) /* Only triples have tabids to merge */
-            continue;
-          if (1 != BOX_ELEMENTS (base->_.triple.tc_list)) /* Only triples with one allowed quad map can be reused, unions can not */
-            continue;
-          base_qm = base->_.triple.tc_list[0]->tc_qm;
           for (key_field_idx = 0; key_field_idx < SPART_TRIPLE_FIELDS_COUNT; key_field_idx++)
             {
               SPART *key_field = base->_.triple.tr_fields[key_field_idx];
@@ -4594,34 +4848,70 @@ sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, void **trav_env_this, v
                         break;
                     }
                   if (0 > dep_triple_idx)
+            {
+              sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
                     spar_internal_error (sparp, "sparp_" "gp_trav_reuse_tabids(): dep_field not found in members");
+            }
                   if (dep_triple_idx < base_idx) /* Merge is symmetrical, so this pair of key and dep is checked from other end. In that time current dep was base and the current base was dep */
                     continue;
                   if (1 != BOX_ELEMENTS (dep_triple->_.triple.tc_list)) /* Only triples with one allowed quad mapping can be reused, unions can not */
                     continue;
                   dep_qm = dep_triple->_.triple.tc_list[0]->tc_qm;
-#if 0 /* There's no need to check this because if QMVs match then tables are the same, otherwise names does not matter anyway */
+          #if 0 /* There's no need to check this because if QMVs match then tables are the same, otherwise names does not matter anyway */
                   if (strcmp (dep_qm->qmTableName, base_qm->qmTableName)) /* Can not reuse tabid for different tables */
                     continue;
-#endif
+          #endif
                   dep_qmv = SPARP_FIELD_QMV_OF_QM (dep_qm, dep_field_tr_idx);
                   if (key_qmv != dep_qmv) /* The key mapping differs in set of source columns or in the IRI serialization (or literal cast) */
                     continue;
                   if (!sparp_qmv_forms_reusable_key_of_qm (sparp, dep_qmv, dep_qm))
                     continue;
                   /* Glory, glory, hallelujah; we can reuse the tabid so the final SQL query will have one join less. */
+          sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
                   sparp_set_triple_selid_and_tabid (sparp, dep_triple, curr->_.gp.selid, base->_.triple.tabid);
                   if (dep_triple_idx > (base_idx + 1)) /* Adjustment to keep reused tabids together. The old join order of dep is of zero importance because there's no more dep as a separate subtable */
                     {
                       int swap_ctr;
-                      for (swap_ctr = base_idx + 1; swap_ctr < dep_triple_idx; swap_ctr++)
-                        curr->_.gp.members[swap_ctr + 1] = curr->_.gp.members[swap_ctr];
+              for (swap_ctr = dep_triple_idx; swap_ctr > base_idx; swap_ctr--)
+                curr->_.gp.members[swap_ctr] = curr->_.gp.members[swap_ctr-1];
                       curr->_.gp.members[base_idx + 1] = dep_triple;
                     }
+          sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
                 }
             }
+}
+
+
+int
+sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+{
+  int base_idx;
+  if (SPAR_GP != curr->type)
+    return 0;
+  switch (curr->_.gp.subtype)
+    {
+    case UNION_L:
+      DO_BOX_FAST (SPART *, base, base_idx, curr->_.gp.members)
+        {
+          if (SPAR_TRIPLE != base->type) /* Only triples have tabids to merge */
+            continue;
+          if (1 != BOX_ELEMENTS (base->_.triple.tc_list)) /* Only triples with one allowed quad map can be reused, unions can not */
+            continue;
+          sparp_try_reuse_tabid_in_union (sparp, curr, base_idx);
         }
       END_DO_BOX_FAST;
+      break;
+    case 0: case WHERE_L:
+      DO_BOX_FAST (SPART *, base, base_idx, curr->_.gp.members)
+        {
+          if (SPAR_TRIPLE != base->type) /* Only triples have tabids to merge */
+            continue;
+          if (1 != BOX_ELEMENTS (base->_.triple.tc_list)) /* Only triples with one allowed quad map can be reused, unions can not */
+            continue;
+          sparp_try_reuse_tabid_in_join (sparp, curr, base_idx);
+        }
+      END_DO_BOX_FAST;
+      break;
     }
   return 0;
 }

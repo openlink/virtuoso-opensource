@@ -828,6 +828,7 @@ void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t p
             (SPAR_VARIABLE == SPART_TYPE (graph_expn)) ?
             spar_make_variable (sparp, varname) :
             spar_make_blank_node (sparp, varname, 0) );
+#if 0
   filter = spar_make_funcall (sparp, 0, "LONG::bif:position",
     (SPART **)t_list (2,
               graph_expn_copy,
@@ -835,6 +836,17 @@ void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t p
         (SPART **)t_list (1,
           spar_make_funcall (sparp, 0, "SQLVAL::bif:vector",
             (SPART **)t_list_to_array (precodes) ) ) ) ) );
+#else
+  if (1 == dk_set_length (precodes))
+    filter = spartlist (sparp, 3,
+      BOP_EQ, graph_expn_copy, precodes->data);
+  else
+    {
+      t_set_push (&precodes, graph_expn_copy);
+      filter = spartlist (sparp, 3, SPAR_BUILT_IN_CALL, IN_L, 
+        (SPART **)t_list_to_array (precodes) );
+    }
+#endif
           spar_gp_add_filter (sparp, filter);
 }
 
@@ -1100,12 +1112,18 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
           SPART *single_dflt = (SPART *)(dflts->data);
           if (SPAR_FUNCALL == SPART_TYPE (single_dflt))	 /* FROM iriref OPTION (...) case */
         {
+              SPART *iri_arg = single_dflt->_.funcall.argtrees[0];
               SPART *eq;
               graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_:graph"), 1);
               eq = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, single_dflt, NULL));
               spar_gp_add_filter (sparp, eq);
+              if (SPAR_QNAME == SPART_TYPE (iri_arg))
+                {
 	      graph->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
-              graph->_.var.rvr.rvrFixedValue = (caddr_t)sparp_tree_full_copy (sparp, single_dflt->_.funcall.argtrees[0], NULL);
+                  graph->_.var.rvr.rvrFixedValue = t_box_copy (iri_arg->_.lit.val);
+                }
+              else
+                graph->_.var.rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
               break;
             }
 	/* Single FROM iriref without sponge options */

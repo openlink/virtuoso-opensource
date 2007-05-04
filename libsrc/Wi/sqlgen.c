@@ -223,11 +223,75 @@ dfe_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key)
 }
 
 
+void
+sqlg_in_list (sqlo_t * so, key_source_t * ks, dbe_column_t * col, df_elt_t ** in_list)
+{
+  sql_comp_t * sc = so->so_sc;
+  dk_set_t code = NULL;
+  dbe_col_loc_t * cl;
+  search_spec_t * spec = (search_spec_t *) dk_alloc (sizeof (search_spec_t));
+  int inx;
+  SQL_NODE_INIT (in_iter_node_t, ii, in_iter_input, in_iter_free);
+  memset (spec, 0, sizeof (search_spec_t));
+  spec->sp_col = col;
+  spec->sp_collation = spec->sp_col->col_sqt.sqt_collation;
+  spec->sp_max_op = CMP_NONE;
+  spec->sp_min_op = CMP_EQ;
+  spec->sp_min_ssl = ssl_new_inst_variable (so->so_sc->sc_cc, "in_iter", col->col_sqt.sqt_dtp);
+  cl = key_find_cl (ks->ks_key, spec->sp_col->col_id);
+  memcpy (&(spec->sp_cl), cl, sizeof (dbe_col_loc_t));
+  ii->ii_output = spec->sp_min_ssl;
+  ks_spec_add (&ks->ks_spec.ksp_spec_array, spec);
+  ii->ii_values_array = ssl_new_inst_variable (so->so_sc->sc_cc, "values_list", DV_ARRAY_OF_POINTER);
+  ii->ii_values = (state_slot_t **) dk_alloc_box_zero (sizeof (caddr_t) * (BOX_ELEMENTS (in_list) - 1), DV_BIN);
+  for (inx = 1; inx < BOX_ELEMENTS (in_list); inx++)
+    {
+      ii->ii_values[inx - 1] = scalar_exp_generate (so->so_sc, in_list[inx]->dfe_tree, &code);
+    }
+  ii->ii_nth_value = cc_new_instance_slot (so->so_sc->sc_cc);
+  ii->src_gen.src_pre_code = code_to_cv (so->so_sc, code);
+  t_set_push (&so->so_in_list_nodes, (void*) ii);
+}
+
+
+void
+sqlg_in_iter_nodes (sqlo_t * so, data_source_t * ts, data_source_t ** head)
+{
+  DO_SET (data_source_t *, in, &so->so_in_list_nodes)
+    {
+      qn_ins_before (so->so_sc, head, (data_source_t *) ts, (data_source_t *)in);
+    }
+  END_DO_SET ();
+  so->so_in_list_nodes = NULL;
+}
+
+
+void
+sqlg_non_index_ins (df_elt_t * tb_dfe)
+{
+  /* put the in preds that are not indexed in the after test */
+  DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
+    {
+      if (DFE_GEN != cp->dfe_is_placed
+	  && sqlo_in_list (cp, NULL, NULL))
+	{
+	  cp->dfe_is_placed = DFE_GEN;
+	  if (tb_dfe->_.table.join_test)
+	    tb_dfe->_.table.join_test = (df_elt_t **) list (3, BOP_AND, sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp), tb_dfe->_.table.join_test);
+	  else 
+	    tb_dfe->_.table.join_test = sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp);
+	}
+    }
+  END_DO_SET();
+}
+
+
 key_source_t *
 sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
 {
   search_spec_t *spec;
   int part_no = 0;
+  df_elt_t ** in_list;
   NEW_VARZ (key_source_t, ks);
   ks->ks_key = key;
 
@@ -253,6 +317,11 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
 	      cl = key_find_cl (key, spec->sp_col->col_id);
 	      memcpy (&(spec->sp_cl), cl, sizeof (dbe_col_loc_t));
 	    }
+	  else if ((in_list = sqlo_in_list (cp, NULL, NULL)))
+	    {
+	      sqlg_in_list (so, ks, col, in_list);
+	      goto next_part;
+	    }
 	  else
 	    {
 	      if (dfe_is_lower (cp))
@@ -267,6 +336,7 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
 	  /* Only 0-n equalities plus 0-1 ordinal relations allowed here.  Rest go to row specs. */
 	  if (spec->sp_min_op != CMP_EQ)
 	    break;
+    next_part:
 	  part_no++;
 	  if (part_no >= key->key_n_significant)
 	    break;
@@ -279,8 +349,8 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
     if (DFE_GEN != cp->dfe_is_placed
 	&& (
 	  (cp->dfe_type == DFE_TEXT_PRED &&
-	   dk_set_member (ks->ks_key->key_parts, (void *) cp->_.text.col)) ||
-	   dk_set_member (ks->ks_key->key_parts, (void *) cp->_.bin.left->_.col.col)))
+	   dk_set_member (ks->ks_key->key_parts, (void *) cp->_.text.col)) 
+	  || (!sqlo_in_list (cp, NULL, NULL) && dk_set_member (ks->ks_key->key_parts, (void *) cp->_.bin.left->_.col.col))))
       {
 	cp->dfe_is_placed = DFE_GEN;
 	if (cp->dfe_type == DFE_TEXT_PRED)
@@ -300,6 +370,11 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
 	else
 	  spec = dfe_to_spec (cp, NULL, key);
 	ks_spec_add (&ks->ks_row_spec, spec);
+      }
+    if (DFE_GEN != cp->dfe_is_placed
+	&& (in_list  = sqlo_in_list (cp, NULL, NULL)))
+      {
+	t_set_pushnew (&tb_dfe->_.table.out_cols, in_list[0]);
       }
   }
   END_DO_SET ();
@@ -747,7 +822,7 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
   dbe_key_t *main_key;
 
   SQL_NODE_INIT (table_source_t, ts, table_source_input, ts_free);
-
+  so->so_in_list_nodes = NULL;
   main_key = table->tb_primary_key;
   DO_SET (op_virt_col_t *, vc, &ot->ot_virtual_cols)
     {
@@ -821,6 +896,7 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
   if (tb_dfe->_.table.xpath_node)
     sql_node_append ((data_source_t**) &ts, tb_dfe->_.table.xpath_node);
 #endif
+  sqlg_non_index_ins (tb_dfe);
   ts->src_gen.src_after_test = sqlg_pred_body (so, tb_dfe->_.table.join_test);
   ts->ts_after_join_test = sqlg_pred_body (so, tb_dfe->_.table.after_join_test);
   if (tb_dfe->_.table.is_unique && !ts->ts_main_ks)
@@ -3166,6 +3242,8 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	      qn->src_pre_code = code_to_cv (so->so_sc, pre_code);
 	      pre_code = NULL;
 	      sql_node_append (&head, qn);
+	      if (DFE_TABLE== dfe->dfe_type && so->so_in_list_nodes)
+		sqlg_in_iter_nodes (so, qn, &head);
 	      if (DFE_TABLE== dfe->dfe_type
 		  && HR_FILL != dfe->_.table.hash_role)
 		sqlg_rdf_inf (dfe, qn, &head);

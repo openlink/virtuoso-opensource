@@ -7601,6 +7601,9 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
   dk_session_t *ses = NULL;
   caddr_t * qst = (caddr_t *) qi;
   caddr_t val = qst_get (qst, xn->xn_text_col);
+#ifdef DEBUG
+  caddr_t orig_val = val;
+#endif
   xp_query_t *xqr = (xp_query_t *) qst_get (qst, xn->xn_compiled_xqr);
   xml_entity_t *res = NULL;
   dtp_t dtp = DV_TYPE_OF (val);
@@ -7709,6 +7712,21 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
 	      charset = NULL;
 	    }
 	}
+      else if (DV_RDF == dtp)
+        {
+          rdf_bigbox_t *rbb = (rdf_bigbox_t *)val;
+          if (!rbb->rbb_base.rb_chksum_tail)
+            return NULL;
+          if (DV_XML_ENTITY != rbb->rbb_box_dtp)
+            return NULL;
+          if (! rbb->rbb_base.rb_is_complete)
+            rb_complete (&(rbb->rbb_base), qi->qi_trx);
+          if (DV_XML_ENTITY == DV_TYPE_OF (rbb->rbb_base.rb_box))
+            return box_copy_tree (rbb->rbb_base.rb_box);
+          val = rbb->rbb_base.rb_box;
+          dtp = DV_TYPE_OF (val);
+          goto val_is_xpack_serialization; /* see below */
+        }
       else
 	sqlr_new_error ("HT002", "XI022", "Can't make XML tree from datum of type %d", (int) dtp);
       if (xqr->xqr_xml_parser_cfg)
@@ -7743,6 +7761,7 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
       }
       break;
     case XE_XPACK_SERIALIZATION:
+val_is_xpack_serialization:
       if (DV_STRINGP (val))
         {
 	  ses = strses_allocate();

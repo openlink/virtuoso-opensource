@@ -5001,12 +5001,17 @@ xp_query_enable_wr (xp_query_t * xqr, XT *tree, int target_is_wr)
   XT *step_node, *l_exp, *exp_r;
 
   /*return;*/
-
+#ifdef DEBUG
   switch((ptrlong)tree)
     {
+    case XP_TEXT: case XP_PI: case XP_COMMENT:
     case XP_NODE: case XP_ELT: case XP_ELT_OR_ROOT:
       return;
     }
+#else
+  if (!IS_BOX_POINTER (tree))
+    return;
+#endif
   switch(tree->type)
     {
     case XP_STEP:

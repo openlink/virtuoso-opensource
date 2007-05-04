@@ -118,9 +118,12 @@ extern sparp_equiv_t *sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SP
 #define SPARP_EQUIV_MERGE_CONFLICT	1003 /*!< Restrict or merge is done but it is proven that restrictions contradict */
 #define SPARP_EQUIV_MERGE_DUPE		1004 /*!< Merge gets \c primary equal to \c secondary */
 
+/*! Returns 1 if tree always returns a reference or NULL but never returns literal */
+extern int sparp_tree_returns_ref (sparp_t *sparp, SPART *tree);
+
 /*! Tries to restrict \c primary by \c datatype and/or value.
 If neither datatype nor value is provided, SPARP_EQUIV_MERGE_OK is returned. */
-extern int sparp_equiv_restrict_by_literal (sparp_t *sparp, sparp_equiv_t *primary, ccaddr_t datatype, SPART *value);
+extern int sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *primary, ccaddr_t datatype, SPART *value);
 
 /*! Removes unused \c garbage from the list of equivs of its gp.
 The debug version GPFs if the \c garbage is somehow used. */
@@ -264,6 +267,9 @@ extern triple_case_t **sparp_find_triple_cases (sparp_t *sparp, SPART *triple, S
 /*! This calls sparp_find_triple_cases() and fills in tc_list and native_formats of triple->_.triple */
 extern void sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple);
 
+extern int sparp_expns_are_equal (sparp_t *sparp, SPART *one, SPART *two);
+extern int sparp_expn_lists_are_equal (sparp_t *sparp, SPART **one, SPART **two);
+
 /*! This replaces selid and tabid in a triple (assuming that ids in field variables match ids of a triple) */
 extern void sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_selid, caddr_t new_tabid);
 
@@ -350,6 +356,10 @@ extern void sparp_gp_deprecate (sparp_t *sparp, SPART *parent_gp);
 Equivalences are touched, of course, but who cares?
 !!!TBD: support of filters in the union GP, this is GPF now. */
 extern void sparp_flatten_union (sparp_t *sparp, SPART *parent_gp);
+
+/*! If a gp is group of exactly one single non-optional triple with exactly one possible quad map tne the function returns the tabid of the triple.
+Otherwise it returns NULL. This is for breakup code generation. */
+extern caddr_t sparp_gp_may_reuse_tabid_in_union (sparp_t *sparp, SPART *gp);
 
 /*! This produces a list of single-triple GPs such that every GP implements only one quad mapping from
 qm_list of the original \c triple.

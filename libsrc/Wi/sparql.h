@@ -256,7 +256,7 @@ extern void sparyyerror_impl (sparp_t *xpp, char *raw_text, const char *strg);
 extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg);
 
 #define SPART_HEAD 2 /* number of elements before \c _ union in spar_tree_t */
-#define SPART_TYPE(st) ((DV_ARRAY_OF_POINTER == DV_TYPE_OF(st)) ? st->type : SPAR_LIT)
+#define SPART_TYPE(st) ((DV_ARRAY_OF_POINTER == DV_TYPE_OF(st)) ? (st)->type : SPAR_LIT)
 
 #define SPART_TRIPLE_GRAPH_IDX		0
 #define SPART_TRIPLE_SUBJECT_IDX	1
@@ -295,6 +295,14 @@ typedef struct qm_format_s *ssg_valmode_t;
 typedef void ssg_codegen_callback_t (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
 /*! Callback to generate the top of an SPARQL query with 'graph-grab' feature */
 void ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
+
+/*! A possible use of quad map as data source for a given triple */
+typedef struct qm_atable_use_s
+{
+  char *qmatu_alias;
+  qm_atable_t *qmatu_ata;
+  void *qmatu_more;
+} qm_atable_use_t;
 
 /*! A possible use of quad map as data source for a given triple */
 typedef struct triple_case_s
