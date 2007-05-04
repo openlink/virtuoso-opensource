@@ -326,12 +326,12 @@ OAT.SparqlQuery = function() {
 	        // if find a space time to break
           var tmp = str.substring(bgn,i + 1).trim();
           ret.unshift(tmp);
-          i = i + str.substring(i).match(/^\s*/)[0].length;
+          i = i + str.substring(i).match(/^ */)[0].length - 1;
           bgn = i;
 	      }
 	    }
       // We care for quots
-	    else if (str[i] == '"' && ((i > 1 && str[i - 1] != "\\") || i == 0))
+	    else if (str.charAt(i) == '"' && ((i > 1 && str.charAt(i - 1) != "\\") || i == 0 || i == bgn))
 	    {
 	      if (!inquot)
 	      {
@@ -359,9 +359,9 @@ OAT.SparqlQuery = function() {
 	  var isUnion = false;
 	  for(var i = 0;i<str.length;i++)
 	  {
-	    if (str[i] == '{')
+	    if (str.charAt(i) == '{')
 	      cnt++;
-	    else if (str[i] == '}')
+	    else if (str.charAt(i) == '}')
 	    {
 	      cnt--;
 	      // If cnt is 0 then this is one part 
@@ -384,7 +384,7 @@ OAT.SparqlQuery = function() {
 	      }
 	    }
       // We care for quots
-	    else if (str[i] == '"' && ((i > 1 && str[i - 1] != "\\") || i == 0))
+	    else if (str.charAt(i) == '"' && ((i > 1 && str.charAt(i - 1) != "\\") || i == 0))
 	    {
 	      if (!inquot)
 	      {
@@ -417,13 +417,13 @@ OAT.SparqlQuery = function() {
 	  var inquot = false;
 	  for(var i = 0;i<str.length;i++)
 	  {
-      if (str[i] == '<')
+      if (str.charAt(i) == '<')
 	      cnt++;
-	    else if (str[i] == '>')
+	    else if (str.charAt(i) == '>')
 	      cnt--;
-	    else if (str[i] == '{' || str[i] == '(')
+	    else if (str.charAt(i) == '{' || str.charAt(i) == '(')
 	      cnt++;
-	    else if (str[i] == '}' || str[i] == ')')
+	    else if (str.charAt(i) == '}' || str.charAt(i) == ')')
 	    {
 	      cnt--;
 	      // If cnt is 0 then this is one part 
@@ -443,7 +443,7 @@ OAT.SparqlQuery = function() {
 	      }
 	    }
       // We care for quots
-	    else if (str[i] == '"' && i > 1 && str[i - 1] != "\\")
+	    else if (str.charAt(i) == '"' && i > 1 && str.charAt(i - 1) != "\\")
 	    {
 	      if (!inquot)
 	      {
@@ -455,12 +455,12 @@ OAT.SparqlQuery = function() {
 	      }
 	    }
       // a part can also be . or ; there can also be GRAPH or OPTIONAL there
-	    else if (cnt == 0 && (str[i] == '.' || str[i] == ';' || str[i] == ',' || 
-	             (str.substring(i + 1).match(/^graph/i) && str[i] != '?')||
-	             (str.substring(i + 1).match(/^optional/i) && str[i] != '?')))
+	    else if (cnt == 0 && (str.charAt(i) == '.' || str.charAt(i) == ';' || str.charAt(i) == ',' || 
+	             (str.substring(i + 1).match(/^graph/i) && str.charAt(i) != '?')||
+	             (str.substring(i + 1).match(/^optional/i) && str.charAt(i) != '?')))
       {
         //if . then we must check that this is not some number
-        if (!(str[i] == '.' && str.substring(i + 1).match(/^[0-9]/)))
+        if (!(str.charAt(i) == '.' && str.substring(i + 1).match(/^[0-9]/)))
         {
           var tmp = str.substring(i + 1).match(/^([\s\.;,]*)/i);
           i = i + tmp[1].length;

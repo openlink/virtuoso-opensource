@@ -18,7 +18,7 @@ OAT.AnchorData = {
 
 OAT.Anchor = {
 	imagePath:'/DAV/JS/images/',
-	zIndex:1,
+	zIndex:2,
 	
 	appendContent:function(options) {
 		if (options.content) {
@@ -125,7 +125,7 @@ OAT.Anchor = {
 			result_control:"grid",
 			activation:"hover",
 			width:300,
-			height:0
+			height:200
 		};
 		for (var p in paramsObj) { options[p] = paramsObj[p]; }
 		options.elm = elm;
@@ -154,7 +154,7 @@ OAT.Anchor = {
 
 		options.status = 0; /* not initialized */
 		if (!options.href && 'href' in elm) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
-		if (elm.tagName.toString().toLowerCase() == "a") { elm.href = options.newHref; }
+		if (elm.tagName.toString().toLowerCase() == "a") { OAT.Dom.changeHref(elm,options.newHref); }
 		
 		options.displayRef = function(event) {
 			var win = OAT.AnchorData.window;

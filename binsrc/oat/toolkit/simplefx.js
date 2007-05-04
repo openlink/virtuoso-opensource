@@ -22,8 +22,7 @@ OAT.SimpleFX = {
 			edges:[1,1,1,1], /* CW from T */
 			cornerFiles:["lt.gif","rt.gif","rb.gif","lb.gif"],
 			edgeFiles:["t.gif","r.gif","b.gif","l.gif"],
-			thickness:[16,16,16,16], /* CW from T */
-			ieElm:false /* ie height fix */
+			thickness:[16,16,16,16] /* CW from T */
 		}
 		for (var p in optObj) { options[p] = optObj[p]; }
 		var elm = $(something);
@@ -51,13 +50,7 @@ OAT.SimpleFX = {
 				var edge = OAT.Dom.create("div",{position:"absolute",fontSize:"1px"});
 				edge.style.backgroundImage = "url("+options.edgeFiles[i]+")";
 				edge.style.width = (i % 2 ? options.thickness[i]+"px" : "100%");
-				/* ie hack */
 				edge.style.height = (i % 2 ? "100%" : options.thickness[i]+"px");
-				if (OAT.Dom.isIE() && (i % 2) && options.ieElm) {
-					edge.style.height = "";
-					edge.ieHeight = options.ieElm;
-					edge.className += " ie_height_fix";
-				}
 				edge.style[i % 2 ? "top" : "left"] = "0px";
 				edge.style[dirArr[i]] = (-options.thickness[i])+"px";
 				edgeElms.push(edge);
@@ -121,6 +114,8 @@ OAT.SimpleFX = {
 			if (r) { margins.unshift(r); }
 		}
 		options.size = margins.length;
+		var top = false;
+		var bottom = false;
 
 		/* let's go */
 		if (options.corners[0] || options.corners[1]) {
@@ -194,7 +189,7 @@ OAT.SimpleFX = {
 			elm.style.borderWidth = "0px 1px";
 			elm.style.borderStyle = "solid";
 		}
-		
+		return [top,bottom]
 	},
 
 	shadow:function(something, optObj) {
@@ -206,8 +201,7 @@ OAT.SimpleFX = {
 			rightSize:8,
 			bottomImage:"shadow_bottom.png",
 			rightImage:"shadow_right.png",
-			cornerImage:"shadow_corner.png",
-			ieElm:false
+			cornerImage:"shadow_corner.png"
 		}
 		for (var p in optObj) { options[p] = optObj[p]; }
 		var elm = $(something);
@@ -227,12 +221,10 @@ OAT.SimpleFX = {
 		r.style.bottom = (-options.offsetY)+"px";
 		r.style.width = options.rightSize+"px";
 		r.style.right = (-options.rightSize-options.offsetX)+"px";
-		if (OAT.Dom.isIE() && options.ieElm) {
+		r.style.height = "100%";
+		if (OAT.Dom.isIE()) {
 			r.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+options.imagePath+options.rightImage+"', sizingMethod='crop')";
-			r.ieHeight = options.ieElm;
-			r.className += " ie_height_fix";
 		} else {
-			r.style.height="100%";
 			r.style.backgroundImage="url("+options.imagePath+options.rightImage+")";
 		}
 		

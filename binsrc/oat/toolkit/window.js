@@ -19,32 +19,57 @@ OAT.WindowData = {
 	TYPE_AUTO:5
 }
 
-OAT.Window = function(optObj,type) {
-	var self = this;
-
-	/* get window type */
-	var t;
-	var autotype = (OAT.Dom.isMac() ? 2 : 1); /* automatic */
-
+OAT.WindowType = function(type) {
+	var t = false;
+	var autotype = (OAT.Dom.isMac() ? OAT.WindowData.TYPE_MAC : OAT.WindowData.TYPE_WIN); /* automatic */
 	if (type && type != OAT.WindowData.TYPE_AUTO) { t = type; } else { t = autotype; } /* if specified, get specified */
 	if (OAT.Preferences.windowTypeOverride) { t = OAT.Preferences.windowTypeOverride; } /* if override, get overriding type */
 	if (t == OAT.WindowData.TYPE_AUTO) { t = autotype; }
+	return t;
+}
+
+OAT.Window = function(optObj,type) {
+	var options = {
+		close:1,
+		resize:1,
+		move:1,
+		x:10,
+		y:10,
+		width:160,
+		height:50,
+		title:"",
+		magnetsH:[],
+		magnetsV:[],
+		statusHeight:16,
+		moveHeight:16,
+		imagePath:OAT.Preferences.imagePath
+	}
+	for (var p in optObj) { options[p] = optObj[p]; }
+	
+	if (options.height == 0) { options.height = 200; }
+	
+	var self = this;
+	/* get window type */
+	var t = OAT.WindowType(type);
 	var obj = false;
 	switch (t) {
 		case OAT.WindowData.TYPE_WIN:
-			var obj = new OAT.MsWin(optObj);
+			var obj = new OAT.MsWin(options);
 		break;
 		case OAT.WindowData.TYPE_MAC:
-			var obj = new OAT.MacWin(optObj);
+			var obj = new OAT.MacWin(options);
 		break;
 		case OAT.WindowData.TYPE_ROUND:
-			var obj = new OAT.RoundWin(optObj);
+			var obj = new OAT.RoundWin(options);
 		break;
 		case OAT.WindowData.TYPE_RECT:
-			var obj = new OAT.RectWin(optObj);
+			var obj = new OAT.RectWin(options);
 		break;
 	}
 	if (!obj) { return; }
+
+	obj.resizeTo(options.width,options.height);
+	obj.moveTo(options.x,obj.options.y);
 
 	/* inherit properties */
 	this.div = obj.div;
@@ -57,6 +82,8 @@ OAT.Window = function(optObj,type) {
 	this.resize = obj.resize;
 	this.resizeTo = obj.resizeTo;
 	this.anchorTo = obj.anchorTo;
+	this.moveTo = obj.moveTo;
+	this.accomodate = obj.accomodate;
 	/* methods */
 	this.onclose = function(){};
 	this.onmax = function(){};
@@ -73,21 +100,8 @@ OAT.Window = function(optObj,type) {
 //	OAT.Dom.attach(obj.div,"click",upRef);
 }
 
-OAT.WindowParent = function(obj,optObj) { /* abstract parent for all window implementations */
-	obj.options = {
-		close:1,
-		resize:1,
-		move:1,
-		x:10,
-		y:10,
-		width:160,
-		height:50,
-		title:"",
-		imagePath:OAT.Preferences.imagePath
-	}
-
-	for (var p in optObj) {	obj.options[p] = optObj[p]; }
-	
+OAT.WindowParent = function(obj,options) { /* abstract parent for all window implementations */
+	obj.options = options;
 	obj.div = false;
 	obj.content = false;
 	obj.move = false;
@@ -97,41 +111,41 @@ OAT.WindowParent = function(obj,optObj) { /* abstract parent for all window impl
 	obj.maxBtn = false;
 	
 	obj.div = OAT.Dom.create("div",{position:"absolute"});
-	if (obj.options.x >= 0) { obj.div.style.left = obj.options.x + "px"; }
-	if (obj.options.x < 0) {obj.div.style.right = (-obj.options.x) + "px"; }
-	if (obj.options.y >= 0) { obj.div.style.top = obj.options.y + "px"; }
-	if (obj.options.y < 0) { obj.div.style.bottom = (-obj.options.y) + "px"; }
-
-	obj.content = OAT.Dom.create("div",{overflow:"auto"}); 
+	obj.content = OAT.Dom.create("div",{overflow:"auto",position:"relative"}); 
 	obj.move = OAT.Dom.create("div");
-	if (obj.options.move) { OAT.Drag.create(obj.move,obj.div);	}
 	
-	OAT.Dom.append([obj.div,obj.content,obj.move]);
+	if (options.move) { 
+		OAT.Drag.create(obj.move,obj.div,{magnetsH:options.magnetsH,magnetsV:options.magnetsV});	
+	}
+	
+	OAT.Dom.append([obj.div,obj.move,obj.content]);
 
-	if (obj.options.close) {
+	if (options.close) {
 		obj.closeBtn = OAT.Dom.create("div");
 		obj.move.appendChild(obj.closeBtn);
 	}
 
-	if (obj.options.max) {
+	if (options.max) {
 		obj.maxBtn = OAT.Dom.create("div");
 		obj.move.appendChild(obj.maxBtn);
 	}
 
-	if (obj.options.min) {
+	if (options.min) {
 		obj.minBtn = OAT.Dom.create("div");
 		obj.move.appendChild(obj.minBtn);
 	}
 
-	if (obj.options.resize) {
+	if (options.resize) {
 		obj.resize = OAT.Dom.create("div");
  		obj.div.appendChild(obj.resize);
+ 		OAT.Resize.create(obj.resize,obj.div,OAT.Resize.TYPE_XY);
  		OAT.Resize.create(obj.resize,obj.content,OAT.Resize.TYPE_XY);
+ 		OAT.Resize.create(obj.resize,obj.move,OAT.Resize.TYPE_X);
 	}
 
 	
 	obj.caption = OAT.Dom.create("div");
-	obj.caption.innerHTML = "&nbsp;"+obj.options.title;
+	obj.caption.innerHTML = "&nbsp;"+options.title;
 	obj.move.appendChild(obj.caption);
 	obj.anchorTo = function(x_,y_) { /* where should we put the window? */
 		var fs = OAT.Dom.getFreeSpace(x_,y_); /* [left,top] */
@@ -146,14 +160,45 @@ OAT.WindowParent = function(obj,optObj) { /* abstract parent for all window impl
 		var x = Math.round(x_ - dims[0]/2);
 		if (x < 0) { x = 10; }
 		
-		obj.div.style.left = x+"px";
-		obj.div.style.top = y+"px";
+		obj.moveTo(x,y);
 	}
 
 	obj.resizeTo = function(w,h) {
-		if (w) obj.content.style.width = w + "px";
-		if (h) obj.content.style.height = h + "px";
+		var movew = w;
+		if (OAT.Dom.isIE() && document.compatMode == "BackCompat") { movew += 2; } /* wtf omg lol :/ */
+		if (w) {
+			obj.move.style.width = movew + "px";
+			obj.div.style.width = w + "px";
+			obj.content.style.width = w + "px";
+		}
+		if (h) {
+			obj.div.style.height = (h - options.moveHeight) + "px";
+			obj.content.style.height = (h - options.statusHeight - options.moveHeight + 3) + "px";
+		}
 	}
-	obj.resizeTo(obj.options.width,obj.options.height);
+	
+	obj.moveTo = function(x,y) {
+		if (x >= 0) { obj.div.style.left = x + "px"; }
+		if (x < 0) { obj.div.style.right = (-x) + "px"; }
+		if (y >= 0) { obj.div.style.top = (y + options.moveHeight) + "px"; }
+		if (y < 0) { obj.div.style.bottom = (-y) + "px"; }
+	}
+	
+	obj.accomodate = function() {
+		var x = 0;
+		var y = 0;
+		for (var i=0;i<obj.content.childNodes.length;i++) {
+			var node = obj.content.childNodes[i];
+			var dims = OAT.Dom.getWH(node);
+			var mt = parseInt(OAT.Dom.style(node,"marginTop"));
+			var mb = parseInt(OAT.Dom.style(node,"marginBottom"));
+			var ml = parseInt(OAT.Dom.style(node,"marginLeft"));
+			var mr = parseInt(OAT.Dom.style(node,"marginRight"));
+			x = Math.max(x,dims[0]+ml+mr);
+			y += dims[1]+mt+mb;
+		}
+		// obj.resizeTo(x + 4,y + 6 + obj.options.moveHeight + obj.options.statusHeight);
+		obj.resizeTo(false,y + 6 + obj.options.moveHeight + obj.options.statusHeight);
+	}
 }
 OAT.Loader.featureLoaded("window");

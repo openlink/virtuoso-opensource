@@ -13,7 +13,7 @@
 
 OAT.Dereference = {
 	go:function(url,callback,optObj) {
-		if (url.match(/http/i)) {
+		if (url.match(/^http/i)) {
 			var encoded = encodeURIComponent(url);
 			/* Virtuoso proxy: */
 			encoded = "/proxy?url="+encoded+"&force=rdf";

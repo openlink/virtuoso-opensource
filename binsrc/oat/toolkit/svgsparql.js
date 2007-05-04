@@ -749,9 +749,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 	this.ghostdrag = new OAT.GhostDrag();
 	
 	self.parent = $(parentElm);
-	if (OAT.Dom.style(self.parent,"position") != "absolute") {
-		self.parent.style.position = "relative";
-	}
+	OAT.Dom.makePosition(self.parent);
 	var dims = OAT.Dom.getWH(self.parent);
 	self.svgcanvas = OAT.SVG.canvas("100%","100%");
 	self.svg = OAT.SVG.element("g");

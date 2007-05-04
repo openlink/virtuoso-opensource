@@ -65,6 +65,17 @@ String.prototype.leadingZero = function(length) {
 	return tmp.toString();
 }
 
+Number.prototype.toSize = function() {
+	var post = ["B","kB","MB","GB","TB"];
+	var result = this;
+	for (var i=0;i<post.length;i++) {
+		if (result >= 1024 && i+1 < post.length) {
+			result = result / 1024;
+		} else { return Math.round(result) + " " + post[i]; }
+	}
+	return this;
+}
+
 Date.prototype.format = function(formatStr) {
 	var result = formatStr;
 	result = result.replace(/d/,this.getDate().toString().leadingZero(2));
@@ -132,6 +143,9 @@ Date.prototype.toHumanString = function() {
 	OAT.Dom.toSafeXML(str)
 	OAT.Dom.fromSafeXML(str)
 	OAT.Dom.uriParams()
+	OAT.Dom.changeHref(elm,newHref)
+	OAT.Dom.makePosition(elm)
+	OAT.Dom.prevent(event)
 */
 
 function $(something) {
@@ -296,7 +310,7 @@ OAT.Dom = {
 		var elm = $(element);
 		var p = elm.offsetParent;
 		if (reference) { p = reference; }
-		var par_dims = OAT.Dom.getWH(p);
+		var par_dims = (p == document.body || p.tagName.toLowerCase() == "html" ? OAT.Dom.getViewport() : OAT.Dom.getWH(p));
 		var dims = OAT.Dom.getWH(elm);
 		var new_x = Math.round(par_dims[0]/2 - dims[0]/2);
 		var new_y = Math.round(par_dims[1]/2 - dims[1]/2);
@@ -319,6 +333,10 @@ OAT.Dom = {
 			node = node.parentNode;
 		} while (node != document.body && node != document);
 		return false;
+	},
+	
+	isKonqueror:function() {
+		return (navigator.userAgent.match(/konqueror/i));
 	},
 	
 	isIE:function() {
@@ -477,9 +495,10 @@ OAT.Dom = {
 	},
 	
 	getViewport:function() {
-		if (OAT.Dom.isOpera() || OAT.Dom.isIE6()) {
-			return [document.body.clientWidth,document.body.clientHeight];
-		} else if (document.compatMode == "BackCompat") {
+		if (OAT.Dom.isWebKit()) {
+			return [window.innerWidth,window.innerHeight];
+		} 
+		if (OAT.Dom.isOpera() || document.compatMode == "BackCompat") {
 			return [document.body.clientWidth,document.body.clientHeight];
 		} else {
 			return [document.documentElement.clientWidth,document.documentElement.clientHeight];
@@ -554,26 +573,19 @@ OAT.Dom = {
 		*/
 		var curr_w, curr_h;
 		var elm = $(something);
-		if (elm.style.width && !elm.style.width.match(/%/)) { 
+		if (elm.style.width && !elm.style.width.match(/%/) && elm.style.width != "auto") { 
 			curr_w = parseInt(elm.style.width); 
 		} else {
-			if (OAT.Dom.isGecko() && !OAT.Dom.isOpera()) { 
-				var temp_w = OAT.Dom.style(elm,"width"); 
-				curr_w = (temp_w == "auto" ? elm.offsetWidth : parseInt(temp_w));
-				if (elm.tagName.toLowerCase() == "input") { curr_w = curr_w + 5; }
-			} else { curr_w = elm.offsetWidth; }
+			curr_w = elm.offsetWidth;
+			if (elm.tagName.toLowerCase() == "input") { curr_w += 5; }
 		}
 		
-		if (elm.style.height && !elm.style.height.match(/%/)) {	
+		if (elm.style.height && !elm.style.height.match(/%/) && elm.style.height != "auto") {	
 			curr_h = parseInt(elm.style.height); 
 		} else {
-			if (OAT.Dom.isGecko() && !OAT.Dom.isOpera()) { 
-				var temp_h = OAT.Dom.style(elm,"height"); 
-				curr_h = (temp_h == "auto" ? elm.offsetHeight : parseInt(temp_h));
-				if (elm.tagName.toLowerCase() == "input") { curr_h = curr_h + 5; }
-			} else { curr_h = elm.offsetHeight; }
+			curr_h = elm.offsetHeight;
+			if (elm.tagName.toLowerCase() == "input") { curr_h += 5; }
 		}
-		
 		/* one more bonus - if we are getting height of document.body, take window size */
 		if (elm == document.body) { 
 			curr_h = (OAT.Dom.isIE() ? document.body.clientHeight : window.innerHeight); 
@@ -614,12 +626,12 @@ OAT.Dom = {
 			If the element is not anchored to left top corner, strange things will happen during resizing;
 			therefore, we need to make sure it is anchored properly.
 		*/
-		if (OAT.Dom.style(elm,"position") == "absolute") { 
+		if (OAT.Dom.style(elm,"position") == "absolute" && dx) { 
 			if (!elm.style.left) {
 				elm.style.left = elm.offsetLeft + "px";
 				elm.style.right = "";
 			}
-			if (!elm.style.top) {
+			if (!elm.style.top && dy) {
 				elm.style.top = elm.offsetTop + "px";
 				elm.style.bottom = "";
 			}
@@ -629,8 +641,8 @@ OAT.Dom = {
 		curr_h = tmp[1];
 		var w = curr_w + dx;
 		var h = curr_h + dy;
-		elm.style.width = w + "px";
-		elm.style.height = h + "px"; 
+		if (dx) { elm.style.width = w + "px"; }
+		if (dy) { elm.style.height = h + "px"; }
 	},
 	
 	decodeImage:function(data) {
@@ -659,7 +671,7 @@ OAT.Dom = {
 	},
 	
 	getScroll:function() {
-		if (OAT.Dom.isWebKit() || OAT.Dom.isIE()) {
+		if (OAT.Dom.isWebKit() || (OAT.Dom.isIE() && document.compatMode == "BackCompat")) {
 			var l = document.body.scrollLeft;
 			var t = document.body.scrollTop;
 		} else {
@@ -720,6 +732,38 @@ OAT.Dom = {
 			}
 		}
 		return result;
+	},
+	
+	changeHref:function(elm,newHref) {
+		/* opera cannot do this with elements not being part of the page :/ */
+		var ok = false;
+		var e = $(elm);
+		var node = e;
+		while (node.parentNode) {
+			node = node.parentNode;
+			if (node == document.body) { ok = true; }
+		}
+		if (ok) {
+			e.href = newHref;
+		} else {
+			var oldParent = e.parentNode;
+			document.body.appendChild(e);
+			e.href = newHref;
+			OAT.Dom.unlink(e);
+			if (oldParent) { oldParent.appendChild(e); }
+		}
+	},
+	
+	makePosition:function(elm) {
+		var e = $(elm);
+		if (OAT.Dom.style(e,"position") != "absolute") {
+			e.style.position = "relative";
+		}
+	},
+	
+	prevent:function(event) {
+		if (event.preventDefault) { event.preventDefault(); }
+		event.returnValue = false;
 	}
 }
 OAT.Files = { /* only those whose names differ */
@@ -748,7 +792,7 @@ OAT.Loader = {
 			var index = OAT.Loader.loadedLibs.find(name); /* detect whether lib was already included */
 			if (index == -1) { loadList.push(name);	}
 		}
-		if (loadList.length && OAT.Dimmer && !OAT.Loader.dimmer) {
+		if (loadList.length && OAT.Dimmer && !OAT.Loader.dimmer && document.body) {
 			OAT.Loader.dimmer = 1;
 			document.body.appendChild(OAT.Loader.dimmerElm);
 			OAT.Dimmer.show(OAT.Loader.dimmerElm);
@@ -812,10 +856,18 @@ OAT.Loader = {
 				if (OAT.Declarative) { OAT.Declarative.execute(); } /* declarative markup */
 				OAT.MSG.send(OAT,OAT.MSG.OAT_LOAD,{});
 				if (typeof(window.init) == "function" && typeof(document.body.getAttribute("onload")) == "object") { window.init(); } /* pass control to userspace */
-				
 			} else { setTimeout(ref,200); }
 		}
-		setTimeout(ref,100);
+		if (OAT.Loader.loadedLibs.find("window") != -1) { /* include default window */
+			var obj = {
+				1:"mswin",
+				2:"macwin",
+				3:"roundwin",
+				4:"rectwin"
+			}
+			var name = obj[OAT.WindowType()];
+			OAT.Loader.loadFeatures(name,ref);
+		} else { ref(); } /* no window needed, let's wait for onload */
 	},
 
 	include:function(file) {
@@ -942,15 +994,14 @@ OAT.Debug = {
 		OAT.Debug.data.push([sender,name,event]);
 	}
 }
-OAT.Debug.attach("*","*");
-//OAT.Debug.attach("*",OAT.MSG.OAT_DEBUG);
+//OAT.Debug.attach("*","*");
+OAT.Debug.attach("*",OAT.MSG.OAT_DEBUG);
 
 /* dependency tree */
 OAT.Dependencies = {
 	ajax:"crypto",
-	ajax2:"crypto",
+	ajax2:"xml",
 	soap:"ajax2",
-	window:["mswin","macwin","roundwin","rectwin"],
 	xmla:["soap","xml","connection"],
 	roundwin:["drag","resize","simplefx"],
 	rectwin:["drag","resize"],
@@ -970,11 +1021,11 @@ OAT.Dependencies = {
 	dock:["animation","ghostdrag"],
 	calendar:"drag",
 	graph:"canvas",
-	dav:["grid","tree","toolbar","ajax2","xml"],
+	dav:["grid","tree","toolbar","ajax2","xml","window"],
 	dialog:["window","dimmer"],
 	datasource:["jsobj","json","xml","connection","dstransport","ajax2"],
 	gmaps:["gapi","map"],
-	ymaps:["map"],
+	ymaps:"map",
 	simplefx:"animation",
 	msapi:["map","layers"],
 	ws:["xml","soap","ajax2","schema","connection"],
@@ -983,7 +1034,8 @@ OAT.Dependencies = {
 	piechart:"svg",
 	graphsvg:["svg","graphsidebar","rdf","dereference"],
 	rdf:"xml",
-	anchor:["window"],
+	anchor:["window","rectwin"],
+	map:["window","rectwin"],
 	openlayers:["map","layers","roundwin"],
 	svgsparql:["svg","ghostdrag","geometry"],
 	linechart:"svg",

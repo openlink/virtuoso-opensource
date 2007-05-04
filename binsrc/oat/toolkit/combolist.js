@@ -13,7 +13,7 @@
 	appendChild(cl.div)
 	
 	cl.clearOpts()
-	cl.addOption(text)
+	cl.addOption(name, value)
 	
 	CSS: combo_list, combo_list_input, combo_list_option, combo_list_list
 */
@@ -22,15 +22,14 @@ OAT.Combolist = function(optList,value,optObj) {
 	var self = this;
 	
 	this.options = {
-		name:"combo_list",
+		name:"combo_list", /* name of input element */
 		imagePath:OAT.Preferences.imagePath
 	}
 	
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
 	this.value = value;
-	this.div = OAT.Dom.create("div");
-	this.div.className = "combo_list";
+	this.div = OAT.Dom.create("div",{},"combo_list");
 	this.onchange = function() {};
 	
 	this.img = OAT.Dom.create("img");
@@ -45,18 +44,15 @@ OAT.Combolist = function(optList,value,optObj) {
 	OAT.Instant.assign(this.list);
 	
 	this.clearOpts = function() {
-		OAT.Dom.clear(this.list);
+		OAT.Dom.clear(self.list);
 	}
 	
-	this.addOption = function(option) {
-		var t = option;
-		var v = option;
-		if (typeof(option) == "object") { 
-			t = option[0];
-			v = option[1];
-		}
+	this.addOption = function(name, value) {
+		var n = name;
+		var v = name;
+		if (value) { v = value; }
 		var opt = OAT.Dom.create("div",{},"combo_list_option");
-		opt.innerHTML = t;
+		opt.innerHTML = n;
 		opt.value = v;
 		attach(opt);
 		self.list.appendChild(opt);
@@ -65,7 +61,7 @@ OAT.Combolist = function(optList,value,optObj) {
 	var attach = function(option) {
 		var ref = function(event) {
 			self.value = option.value;
-			self.input.value = option.innerHTML;
+			self.input.value = option.value;
 			self.onchange(self.value);
 			self.list._Instant_hide();
 		}
@@ -80,8 +76,9 @@ OAT.Combolist = function(optList,value,optObj) {
 	
 	var showRef = function(event) {
 		var coords = OAT.Dom.position(self.input);
+		var dims = OAT.Dom.getWH(self.input);
 		self.list.style.left = coords[0] +"px";
-		self.list.style.top = (coords[1]+self.input.offsetHeight)+"px";
+		self.list.style.top = (coords[1]+dims[1])+"px";
 		self.list._Instant_show();
 	}
 	OAT.Dom.attach(this.img,"click",showRef);

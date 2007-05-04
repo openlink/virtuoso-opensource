@@ -2164,8 +2164,8 @@ OAT.FormObject = {
 				t.innerHTML = OAT.Dom.toSafeXML(label);
 				div.appendChild(ball);
 				div.appendChild(t);
-				var elm = self.timeline.addEvent(band,time,false,div,"#abf");
-				OAT.Dom.attach(elm,"click",self.clickRef(dsIndex,index));
+				var e = self.timeline.addEvent(band,time,false,div,"#abf");
+				OAT.Dom.attach(e.elm,"click",self.clickRef(dsIndex,index));
 			}
 			self.timeline.draw();
 			self.timeline.slider.slideTo(0,1);
@@ -2174,15 +2174,9 @@ OAT.FormObject = {
 		self.getValue = function() { return false; }
 		
 		self.init = function() {
-			self.tlElm = OAT.Dom.create("div",{position:"absolute",width:"100%",left:"0px",top:"0px"});
-			self.sliderElm = OAT.Dom.create("div",{position:"absolute",width:"100%",left:"0px",bottom:"0px",height:"20px"});
-			var h = OAT.Dom.getWH(self.elm)[1];
-			self.tlElm.style.height = (h - 22)+"px"; 
-			self.elm.appendChild(self.tlElm);
-			self.elm.appendChild(self.sliderElm);
-			var opts = {formatter:1};
+			var opts = {formatter:1,autoHeight:false};
 			if (self.properties[2].value == 0) { opts.formatter = 0; }
-			self.timeline = new OAT.Timeline(self.tlElm,self.sliderElm,opts);
+			self.timeline = new OAT.Timeline(self.elm,opts);
 			
 			self.form = false;
 			if (self.properties[0].value) { self.form = self.properties[0].value; }

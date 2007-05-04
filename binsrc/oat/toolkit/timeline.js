@@ -9,13 +9,15 @@
  */
  
 /*
-	tl = new OAT.Timeline(portDiv, sliderDiv, paramsObj)
+	tl = new OAT.Timeline(contentDiv, paramsObj)
 	paramsObj = {
-		portWidth:800,
 		lineHeight:16,
 		bandHeight:20,
-		bandColor:"#fff",
-		margins:200
+		margins:200,
+		sliderHeight:20,
+		resize:true,
+		formatter:true,
+		autoHeight:true,
 	}
 	tl.addBand(name,color,label)
 	tl.addEvent(bandName,startTime,endTime,content,color)
@@ -43,26 +45,30 @@ OAT.TimelineData = {
 	}
 }
 
-OAT.TimelineEvent = function(bandIndex,startTime,endTime,content,color) {
+OAT.TimelineEvent = function(bandIndex,startTime,endTime,content,color,options) {
 	var self = this;
 	this.bandIndex = bandIndex;
 	this.line = 0;
 	this.elm = OAT.Dom.create("div",{position:"absolute",cursor:"pointer",zIndex:3});
 	this.startTime = startTime;
 	this.endTime = endTime;
-	this.elm.title = startTime.toHumanString();
+	var t = (options.timeTitleOverride ? options.timeTitleOverride(startTime) : startTime.toHumanString());
+	this.elm.title = t;
 	content.style.position = "relative";
 	this.interval = !(this.startTime.getTime() == this.endTime.getTime());
 	if (this.interval) {
+		if (!options.noIntervals) {
 		this.intervalElm = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",height:"100%",backgroundColor:color,opacity:"0.5"});
 		this.intervalElm.style.filter = "alpha(opacity=50)";
 		this.elm.appendChild(this.intervalElm);
-		this.elm.title += " - "+endTime.toHumanString();
+		}
+		var t = (options.timeTitleOverride ? options.timeTitleOverride(endTime) : endTime.toHumanString());
+		this.elm.title += " - "+t;
 	} 
 	this.elm.appendChild(content);
 }
 
-OAT.Timeline = function(portElm,sliderElm,paramsObj) {
+OAT.Timeline = function(contentElm,paramsObj) {
 	var self = this;
 	this.events = [];
 	this.bands = {};
@@ -70,38 +76,41 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	this.width = 0;
 	this.position = 0;
 	this.options = {
-		portWidth:800, /* size of viewport */
 		lineHeight:16, /* size of one line */
 		bandHeight:20,
-		bandColor:"#fff",
 		margins:200, /* left & right color margins */
+		sliderHeight:20,
 		resize:true,
-		formatter:true
+		formatter:true,
+		autoHeight:true,
+		noIntervals:false,
+		timeStepOverride:false,
+		timeTitleOverride:false,
+		timeLabelOverride:false
 	}
 
 	for (var p in paramsObj) { self.options[p] = paramsObj[p]; }
 	
 	this.formatSelect = OAT.Dom.create("select",{font:"menu"});
 	
-	this.elm = OAT.Dom.create("div",{position:"absolute",top:"0px",left:"0px",height:"100%"}); /* main axis */
-	this.elm.style.backgroundColor = self.options.bandColor;
+	this.elm = OAT.Dom.create("div",{position:"absolute",top:"0px",left:"0px"},"timeline"); /* main axis */
 	this.elm.style.zIndex = 3;
-	this.port = $(portElm);
-	this.port.style.cursor = "w-resize";
+	this.content = $(contentElm);
+	OAT.Dom.makePosition(self.content);
+	
+	this.port = OAT.Dom.create("div",{cursor:"w-resize",width:"100%",position:"relative"},"timeline_port");
 	this.port.style.overflow = "hidden"; /* opera sux */
 	this.port.style.overflowX = "hidden";
 	this.port.style.overflowY = "auto";
-	this.options.portWidth = OAT.Dom.getWH(this.port)[0];
-	this.sliderElm = $(sliderElm);
-	this.sliderBtn = OAT.Dom.create("div");
-	this.port.appendChild(this.elm);
+	this.sliderElm = OAT.Dom.create("div",{position:"absolute",height:self.options.sliderHeight+"px",left:"0px",bottom:"0px",width:"100%"});
+	this.sliderBtn = OAT.Dom.create("div",{},"timeline_slider");
+	
+	OAT.Dom.append([self.content,self.port,self.sliderElm]);
+
 	this.sliderElm.appendChild(OAT.Dom.create("hr",{width:"100%",position:"relative",top:"4px"}));
 	this.sliderElm.appendChild(this.sliderBtn);
 	
 	this.slider = new OAT.Slider(this.sliderBtn,{});
-	OAT.Dom.addClass(this.port,"timeline_port");
-	this.elm.className = "timeline";
-	OAT.Dom.addClass(this.sliderBtn,"timeline_slider");
 	
 	/* dragging */
 	OAT.Dom.attach(this.port,"mousedown",function(event){ self.mouse_x = event.clientX; OAT.TimelineData.obj = self; });
@@ -117,10 +126,11 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 		self.events = [];
 		self.bands = {};
 		self.dateLabels = [];
-		OAT.Dom.clear(this.elm);
+		OAT.Dom.clear(self.elm);
 	}
 	
 	this.fixDate = function(str) {
+		if (str instanceof Date) { return str; }
 		var r=false;
 		if ((r = str.match(/(....)-(..)-(..) (..):(..):(..)/))) {
 			var d = new Date();
@@ -166,6 +176,28 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 			d.setMilliseconds(0);
 			return d;
 		}
+		if ((r = str.match(/(.{4})-(.{2})-(.{2})/))) {
+			var d = new Date();
+			d.setFullYear(r[1]);
+			d.setMonth(parseInt(r[2])-1);
+			d.setDate(r[3]);
+			d.setHours(0);
+			d.setMinutes(0);
+			d.setSeconds(0);
+			d.setMilliseconds(0);
+			return d;
+		}
+		if ((r = str.match(/^(.{4}):(.{2}):(.{2})$/))) {
+			var d = new Date();
+			d.setFullYear(r[1]);
+			d.setMonth(parseFloat(r[2])-1);
+			d.setDate(r[3]);
+			d.setHours(0);
+			d.setMinutes(0);
+			d.setSeconds(0);
+			d.setMilliseconds(0);
+			return d;
+		}
 		var def = new Date(str);
 		if (isNaN(def)) { return false; }
 		return def;
@@ -189,28 +221,27 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 		} else {
 			var et = self.fixDate(startTime);
 		}
-		var e = new OAT.TimelineEvent(bandIndex,st,et,content,color);
+		var e = new OAT.TimelineEvent(bandIndex,st,et,content,color,self.options);
 		self.events.push(e);
-		return e.elm;
+		return e;
 	}
 	
 	this.drawResizer = function() {
 		if (!self.options.resize) { return; }
-		var parent = self.port.parentNode;
 		var bg = "url(" + OAT.Preferences.imagePath + "resize.gif)";
 		self.resize = OAT.Dom.create("div",{position:"absolute",width:"10px",height:"10px",right:"0px",fontSize:"1px",bottom:"0px",backgroundImage:bg});
 		self.resize.style.zIndex = 6;
-		parent.appendChild(self.resize);
-		OAT.Resize.create(self.resize,parent,OAT.Resize.TYPE_XY);
-		OAT.Resize.create(self.resize,self.port,OAT.Resize.TYPE_XY,function(){self.sync();});
+		self.content.appendChild(self.resize);
+		OAT.Resize.create(self.resize,self.port,OAT.Resize.TYPE_Y);
+		OAT.Resize.create(self.resize,self.content,OAT.Resize.TYPE_XY,function(){self.sync();});
 	}
 	this.drawFormatSelect = function() {
 		if (!self.options.formatter) { return; }
-		var parent = self.port.parentNode;
 		var div = OAT.Dom.create("div",{position:"absolute",top:"-20px",right:"1px",zIndex:5,font:"menu"});
-		parent.appendChild(div);
+		self.content.appendChild(div);
 		div.appendChild(OAT.Dom.text("Date format: "));
 		div.appendChild(self.formatSelect);
+		OAT.Dom.clear(self.formatSelect);
 		OAT.Dom.option("[automatic]","",self.formatSelect);
 		OAT.Dom.option("[none]"," ",self.formatSelect);
 		OAT.Dom.option("Year","Y",self.formatSelect);
@@ -220,47 +251,38 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 		OAT.Dom.option("Date & Time","j.n.Y H:i:s",self.formatSelect);
 	}
 	
-	
 	this.drawDateLabels = function() {
 		var val = $v(self.formatSelect);
 		for (var i=0;i<self.dateLabels.length;i++) {
 			var elm = self.dateLabels[i];
 			var f = (val == "" ? elm._format : val);
-			elm.txt.innerHTML = elm._date.format(f);
-			elm.txt.title = elm._date.toHumanString();
+			var value = (self.options.timeLabelOverride ? 
+							self.options.timeLabelOverride(elm._date) : 
+							elm._date.format(f));
+			elm.txt.innerHTML = value;
+			var value = (self.options.timeTitleOverride ? 
+							self.options.timeTitleOverride(elm._date) : 
+							elm._date.toHumanString());
+			elm.txt.title = value;
 		}
 	}
 	OAT.Dom.attach(self.formatSelect,"change",self.drawDateLabels);
 	
-	this.draw = function() {
-		if (!self.events.length) { 
-			self.drawFormatSelect();
-			self.drawResizer();
-			return;
-		} /* nothing to do */
-		/* preparation */
-		OAT.Dom.clear(self.elm);
-		OAT.Dom.clear(self.port);
-		self.port.appendChild(self.elm);
-		self.reorderEvents();
-		self.width = self.options.margins;
+	this.positionEvents = function() { /* main thing */
 		var lastPlottedIndex = -1;
 		var candidateIndex = 0;
-		for (var p in self.bands) {
-			self.bands[p].lines = [];
-		}
 		var pendingEnds = [];
-		
 		/* find appropriate starting time and scale */
 		var first = self.events[0];
 		var index = 1;
 		while (index < self.events.length-1 && self.events[index].startTime.getTime() == first.startTime.getTime()) { index++; }
 		if (index == self.events.length) { index--; } /* if all events at the same time */
-		var scale = OAT.TlScale.findScale(first.startTime,self.events[index].startTime);
+		var scale = OAT.TlScale.findScale(first.startTime,self.events[index].startTime,self.options.timeStepOverride);
 		var line = scale.initBefore(self.events[0].startTime);
 		self.dateLabels.push(line);
 		line.style.left = self.width + "px";
 		self.elm.appendChild(line);
+		var dims = OAT.Dom.getWH(self.port);
 		/* main loop */
 		do {
 			/* create lineset */
@@ -299,11 +321,11 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 						var delta = e.endTime.getTime() - startTime.getTime();
 						var left = delta * resolution;
 						e.x2 = self.width + left;
-						e.intervalElm.style.width = (e.x2 - e.x1) + "px";
+						if (!self.options.noIntervals) { e.intervalElm.style.width = (e.x2 - e.x1) + "px"; }
 						done = 1;
 					}
 				}
-				if (done) for (var j=pendingEnds.length-1;j>=0;j--) {
+				if (done) for (var j=pendingEnds.length-1;j>=0;j--) { /* remove intervals whose pending ends were drawn */
 					var e = pendingEnds[j];
 					if (e.x2 != -1) { pendingEnds.splice(j,1); }
 				}
@@ -316,17 +338,36 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 			var newscale = scale;
 			
 			if (lastPlottedIndex != self.events.length-1 && lastPlottedIndex != -1) { /* there are remaining events */
-				newscale = OAT.TlScale.findScale(endTime,self.events[lastPlottedIndex+1].startTime,scale.currentTime);
+				newscale = OAT.TlScale.findScale(endTime,self.events[lastPlottedIndex+1].startTime,scale.currentTime,self.options.timeStepOverride);
 			}
 			
 			/* if no events need plotting, but there are outstanding ending events, we need to change scale as well */
 			if (lastPlottedIndex == self.events.length-1 && pendingEnds.length) {
-				newscale = OAT.TlScale.findScale(endTime,pendingEnds[0].endTime,scale.currentTime);
+				newscale = OAT.TlScale.findScale(endTime,pendingEnds[0].endTime,scale.currentTime,self.options.timeStepOverride);
 			}
 			
 			scale = newscale;
+		/*               there are remaining evens                     timeline is to narrow           there are pending ends    */
+		} while (lastPlottedIndex < self.events.length-1 || self.width + self.options.margins < dims[0] || pendingEnds.length);
+	} /* OAT.Timeline::positionEvents() */
 			
-		} while (lastPlottedIndex < self.events.length-1 || self.width + self.options.margins < self.options.portWidth || pendingEnds.length);
+	this.draw = function() {
+		if (!self.events.length) { 
+			self.drawFormatSelect();
+			self.drawResizer();
+			self.port.style.height = (2*self.options.sliderHeight) + "px";
+			return;
+		} /* nothing to do */
+		/* preparation */
+		OAT.Dom.clear(self.elm);
+		OAT.Dom.clear(self.port);
+		self.port.appendChild(self.elm);
+		self.reorderEvents();
+		self.width = self.options.margins;
+		for (var p in self.bands) {
+			self.bands[p].lines = [];
+		}
+		self.positionEvents();
 		self.width += self.options.margins;
 		self.elm.style.width = self.width + "px";
 		
@@ -338,36 +379,44 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 		
 		/* adjust heights */
 		var startingHeights = {};
+		var headerHeights = {};
 		var total = 0;
 		for (var p in self.bands) {
 			startingHeights[p] = total;
 			var bh = self.bands[p].lines.length * self.options.lineHeight;
 			/* band heading */
-			var elm = OAT.Dom.create("div",{zIndex:4,position:"absolute",width:"100%",left:"0px",top:(total-1)+"px",textAlign:"center",fontWeight:"bold"});
+			headerHeights[p] = (self.bands[p].label ? self.options.bandHeight : 0);
+			var elm = OAT.Dom.create("div",{zIndex:4,position:"absolute",width:"100%",left:"0px",top:(total-1)+"px",textAlign:"center",fontWeight:"bold"},"timeline_band_header");
 			elm.style.borderTop = "1px solid #000";
-			elm.style.backgroundColor = self.bands[p].color;
+			if (self.bands[p].color) { elm.style.backgroundColor = self.bands[p].color; }
 			elm.style.height = (self.options.bandHeight+1) + "px";
 			elm.innerHTML = self.bands[p].label;
-			self.port.appendChild(elm);
+			if (self.bands[p].label) { self.port.appendChild(elm); }
 			/* band */
-			var elm = OAT.Dom.create("div",{zIndex:1,position:"absolute",left:"0px",width:"100%"});
-			elm.style.opacity = "0.7";
-			elm.style.filter = "alpha(opacity=70)";
-			elm.style.backgroundColor = self.bands[p].color;
+			var elm = OAT.Dom.create("div",{zIndex:1,position:"absolute",left:"0px",width:"100%"},"timeline_band");
+			if (self.bands[p].color) { elm.style.backgroundColor = self.bands[p].color; }
 			elm.style.borderBottom = "1px solid #000";
-			elm.style.top = (total + self.options.bandHeight) + "px";
+			elm.style.top = (total + headerHeights[p]) + "px";
 			elm.style.height = bh + "px";
 			if (OAT.Dom.isGecko()) { elm.style.height = (bh-1) + "px"; }
 			self.elm.appendChild(elm);
-			total += bh + self.options.bandHeight;
+			total += bh + headerHeights[p];
 		}
 		for (var i=0;i<self.events.length;i++) {
 			var e = self.events[i];
-			var top = startingHeights[e.bandIndex] + e.line * self.options.lineHeight + self.options.bandHeight;
+			var top = startingHeights[e.bandIndex] + e.line * self.options.lineHeight + headerHeights[e.bandIndex];
 			e.elm.style.top = top + "px";
 		}
 		total += 2 * self.options.lineHeight;
+		if (self.options.autoHeight) {
+			self.port.style.height = total + "px";
+			self.elm.style.height = "100%";
+			self.content.style.height = (total+self.options.sliderHeight)+"px";
+		} else {
 		self.elm.style.height = total + "px";
+			var dims = OAT.Dom.getWH(self.content);
+			self.port.style.height = (dims[1]-self.options.sliderHeight)+"px";
+		}
 		
 		/* sync slider */
 		self.slider.options.minValue = 0;
@@ -403,9 +452,10 @@ OAT.Timeline = function(portElm,sliderElm,paramsObj) {
 	}
 	
 	this.sync = function() {
-		self.options.portWidth = OAT.Dom.getWH(self.port)[0];
-		self.slider.options.maxValue = self.width - self.options.portWidth;
-		self.slider.options.maxPos = self.options.portWidth - 9;
+		var dims = OAT.Dom.getWH(self.port);
+		var sdims = OAT.Dom.getWH(self.sliderBtn);
+		self.slider.options.maxValue = self.width - dims[0];
+		self.slider.options.maxPos = dims[0] - sdims[0];
 		if (self.slider.valueToPosition(self.slider.value) > self.slider.options.maxPos) { self.slider.slideTo(self.slider.options.maxValue,true); }
 		var pos = parseInt(self.slider.elm.style[self.slider.options.cssProperty]);
 		if (pos > self.slider.options.maxPos) { self.slider.slideTo(self.slider.options.maxValue,true); }

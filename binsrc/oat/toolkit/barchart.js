@@ -45,9 +45,7 @@ OAT.BarChart = function(div,optObj) {
 	this.textY = [];
 	this.div = $(div);
 	
-	if (OAT.Dom.style(self.div,"position") != "absolute") {
-		self.div.style.position = "relative";
-	}
+	OAT.Dom.makePosition(self.div);
 
 	this.getFreeH = function() {
 		var tmp = OAT.Dom.getWH(self.div);

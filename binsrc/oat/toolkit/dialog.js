@@ -22,12 +22,13 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 		zIndex:1000,
 		buttons:1,
 		resize:1,
+		close:1,
 		autoEnter:1,
 		imagePath:OAT.Preferences.imagePath
 	}
 	if (optObj) for (var p in optObj) { options[p] = optObj[p]; }
-	var win = new OAT.Window({close:1, max:0, min:0, width:options.width, height:options.height, x:0, y:0, title:title,resize:options.resize,imagePath:options.imagePath});
- 	$(contentDiv).style.margin = "1em";
+	var win = new OAT.Window({close:options.close, max:0, min:0, width:options.width, height:options.height, x:0, y:0, title:title,resize:options.resize,imagePath:options.imagePath});
+ 	$(contentDiv).style.margin = "10px";
  	var nav = OAT.Dom.create("table",{marginTop:"1em",width:"90%",textAlign:"center"});
  	var tbody = OAT.Dom.create("tbody");
  	var row = OAT.Dom.create("tr");
@@ -49,15 +50,16 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 	win.content.appendChild($(contentDiv)); 
 	win.div.style.zIndex = options.zIndex;
 	if (options.modal) {
-		this.show = function() { OAT.Dimmer.show(win.div,{}); OAT.Dom.center(win.div,1,1); options.onshow(); }
+		this.show = function() { OAT.Dimmer.show(win.div,{}); win.accomodate(); OAT.Dom.center(win.div,1,1); options.onshow(); }
 		this.hide = function() { OAT.Dimmer.hide(); options.onhide(); }
 	} else {
-		this.show = function() { OAT.Dom.show(win.div); OAT.Dom.center(win.div,1,1); options.onshow(); }
+		this.show = function() { OAT.Dom.show(win.div); win.accomodate(); OAT.Dom.center(win.div,1,1); options.onshow(); }
 		this.hide = function() { OAT.Dom.hide(win.div); options.onhide(); }
 	}
 	OAT.Dom.hide(win.div); 
 	
 	win.onclose = this.hide;
+	this.accomodate = win.accomodate;
 	this.ok = function(){};
 	this.cancel = function(){};
 	this.okBtn = ok;

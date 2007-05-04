@@ -130,14 +130,26 @@ OAT.AJAX = {
 	},
 	
 	send:function(xhr,data) {
-		if (xhr.options.auth == OAT.AJAX.AUTH_BASIC) {
-			xhr.setRequestHeader('Authorization','Basic '+OAT.Crypto.base64e(xhr.options.user+":"+xhr.options.password)); 
+		function go() {
+		xhr.send(data);
+		try{
+				if (OAT.Dom.isGecko() && !xhr.options.async && xhr.obj.onreadystatechange == null) {
+  		  OAT.AJAX.response(xhr);
 		}
+		}catch (e){}
+		}
+		for (var p in xhr.options.headers) { xhr.setRequestHeader(p,xhr.options.headers[p]); }
+
 		if (xhr.options.auth == OAT.AJAX.AUTH_DIGEST) {
 			alert("Digest auth not supported yet!");
 		}
-		for (var p in xhr.options.headers) { xhr.setRequestHeader(p,xhr.options.headers[p]); }
-		xhr.send(data);
+		if (xhr.options.auth == OAT.AJAX.AUTH_BASIC) {
+			var cb = function() {
+				xhr.setRequestHeader('Authorization','Basic '+OAT.Crypto.base64e(xhr.options.user+":"+xhr.options.password)); 
+				go();
+			}
+			OAT.Loader.loadFeatures("crypto",cb);
+		} /* if auth needed */ else go();
 	},
 	
 	response:function(xhr) {
@@ -158,6 +170,7 @@ OAT.AJAX = {
 						var xmlDoc = OAT.Xml.createXmlDoc(xmlStr);
 					} else { 
 						var xmlDoc = xhr.getResponseXML(); 
+						if (!xmlDoc) { xmlDoc = OAT.Xml.createXmlDoc(xhr.getResponseText()); }
 					}
 					xhr.callback(xmlDoc,headers);
 				}
@@ -186,11 +199,11 @@ OAT.AJAX = {
 				var div = OAT.Dom.create("div");
 				div.innerHTML = "Ajax call in progress...";
 				var dimg = OAT.Dom.create("div");
-				var img = OAT.Dom.create("img");
+				var img = OAT.Dom.create("img",{width:"246px",height:"16px"});
 				img.setAttribute("src",OAT.AJAX.imagePath+"/progress.gif");
 				dimg.appendChild(img);
 				div.appendChild(dimg);
-				OAT.AJAX.dialog = new OAT.Dialog("Please wait",div,{width:280,modal:0,zIndex:1001,resize:0,imagePath:OAT.AJAX.imagePath + "/"});
+				OAT.AJAX.dialog = new OAT.Dialog("Please wait",div,{width:280,height:0,modal:0,zIndex:1001,resize:0,imagePath:OAT.AJAX.imagePath + "/"});
 				OAT.AJAX.dialog.ok = OAT.AJAX.dialog.hide;
 				OAT.AJAX.dialog.cancel = function() {
 					OAT.AJAX.dialog.hide();

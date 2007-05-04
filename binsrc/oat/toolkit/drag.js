@@ -48,9 +48,40 @@ OAT.Drag = {
 			if (options.restrictionFunction(pos[0]+dx,pos[1]+dy)) { checkOK = false; }
 		}
 
+		/* check magnets */
+		var magnetOK = true;
+		var mlimit = 10;
+		function check(a,b) { return Math.abs(a-b) <= mlimit; }
+		for (var i=0;i<movers.length;i++) {
+			var element = movers[i][0];
+			var options = movers[i][1];
+			var ndims = OAT.Dom.getWH(element);
+			var npos = OAT.Dom.position(element);
+			var nx = npos[0]+dx;
+			var ny = npos[1]+dy;
+			for (var j=0;j<options.magnetsH.length;j++) {
+				var m = $(options.magnetsH[j]);
+				var mpos = OAT.Dom.position(m);
+				var mdims = OAT.Dom.getWH(m);
+				if (check(nx,mpos[0])) { element.style.left = mpos[0]+"px"; magnetOK = false; break; }
+				if (check(nx+ndims[0],mpos[0])) { element.style.left = (mpos[0]-ndims[0])+"px"; magnetOK = false; break; }
+				if (check(nx,mpos[0]+mdims[0])) { element.style.left = (mpos[0]+mdims[0])+"px"; magnetOK = false; break; }
+				if (check(nx+ndims[0],mpos[0]+mdims[0])) { element.style.left = (mpos[0]+mdims[0]-ndims[0])+"px"; magnetOK = false; break; }
+			}
+			for (var j=0;j<options.magnetsV.length;j++) {
+				var m = $(options.magnetsV[j]);
+				var mpos = OAT.Dom.position(m);
+				var mdims = OAT.Dom.getWH(m);
+				if (check(ny,mpos[1])) { element.style.top = mpos[1]+"px"; magnetOK = false; break; }
+				if (check(ny+ndims[1],mpos[1])) { element.style.top = (mpos[1]-ndims[1])+"px"; magnetOK = false; break; }
+				if (check(ny,mpos[1]+mdims[1])) { element.style.top = (mpos[1]+mdims[1])+"px"; magnetOK = false; break; }
+				if (check(ny+ndims[1],mpos[1]+mdims[1])) { element.style.top = (mpos[1]+mdims[1]-ndims[1])+"px"; magnetOK = false; break; }
+			}
+		}
 
 		/* perform dragging */
-		if (checkOK) for (var i=0;i<movers.length;i++) {
+		if (checkOK && magnetOK) {
+			for (var i=0;i<movers.length;i++) {
 			var element = movers[i][0];
 			var options = movers[i][1];
 			if (options.moveFunction) { options.moveFunction(dx,dy); } else {
@@ -60,6 +91,7 @@ OAT.Drag = {
 					case OAT.Drag.TYPE_XY: OAT.Dom.moveBy(element,dx,dy); break;
 				} /* switch */
 			} /* if not custom move function */
+			} /* for all movers */
 			OAT.Drag.mouse_x = event.clientX;
 			OAT.Drag.mouse_y = event.clientY;
 		}
@@ -82,6 +114,8 @@ OAT.Drag = {
 			restrictionFunction:function(){return false;},
 			endFunction:function(){},
 			moveFunction:false,
+			magnetsH:[],
+			magnetsV:[],
 			cursor:true
 		}
 		if (optObj) for (p in optObj) { options[p] = optObj[p]; }

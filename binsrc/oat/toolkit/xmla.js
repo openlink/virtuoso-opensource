@@ -64,7 +64,7 @@ OAT.Xmla = {
 		return [header,body];
 	},
 	
-	execute:function(callback,cursorOptions) {
+	execute:function(callback,cursorOptions,ajaxOptions) {
 		var options = {
 			offset:0,
 			limit:0
@@ -91,6 +91,7 @@ OAT.Xmla = {
 		data += '</PropertyList></Properties></Execute>';
 		
 		var o = {headers:OAT.Xmla.executeHeader,type:OAT.AJAX.TYPE_XML}
+		if (ajaxOptions) for (var p in ajaxOptions) { o[p] = ajaxOptions[p]; }
 		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 	
@@ -258,7 +259,10 @@ OAT.Xmla = {
 			if (catalog != "") {
 				data += '<PK_TABLE_CATALOG>'+catalog+'</PK_TABLE_CATALOG>';
 			}
-			data += '<TABLE_NAME>'+table+'</TABLE_NAME>';
+			if (schema != "") {
+				data += '<PK_TABLE_SCHEMA>'+schema+'</PK_TABLE_SCHEMA>';
+			}
+			data += '<PK_TABLE_NAME>'+table+'</PK_TABLE_NAME>';
 			data += '</RestrictionList></Restrictions>'+ 
 			'<Properties><PropertyList>'+
 			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+

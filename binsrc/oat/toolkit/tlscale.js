@@ -10,7 +10,7 @@
 
 OAT.TlScale = {	
 	defWidth:80,
-	findScale:function(t1,t2,oldTime) {
+	findScale:function(t1,t2,oldTime,override) {
 		var name = "_years";
 		var d = (t2.getTime() - t1.getTime()) / 60000; /* in minutes */
 		if (d <= 30) { name = "_fiveminutes"; } else
@@ -19,14 +19,15 @@ OAT.TlScale = {
 		if (d <= 3*24*60) { name = "_days"; } else
 		if (d <= 20*24*60) { name = "_weeks"; } else
 		if (d <= 150*24*60) { name = "_months"; }
+		if (override) { name = override; }
 		var s = new OAT.TlScale[name]();
 		if (oldTime) { s.currentTime = oldTime; }
 		return s;
 	},
 	
 	genericElement:function() {
-		var l = OAT.Dom.create("div",{position:"absolute",height:"100%",borderLeft:"1px solid #bce",top:"0px",zIndex:2})
-		l.txt = OAT.Dom.create("div",{position:"absolute",left:"3px",bottom:"2px",color:"#888"});
+		var l = OAT.Dom.create("div",{position:"absolute",height:"100%",top:"0px",zIndex:2},"timeline_bar")
+		l.txt = OAT.Dom.create("div",{position:"absolute",left:"3px",bottom:"2px"},"timeline_date");
 		l.appendChild(l.txt);
 		return l;
 	},
@@ -45,7 +46,7 @@ OAT.TlScale = {
 			self.currentTime.setSeconds(0);
 			self.currentTime.setMilliseconds(0);
 			var l = OAT.TlScale.genericElement();
-			l._date = self.currentTime;
+			l._date = new Date(self.currentTime.getTime());
 			l._format = self.format;
 			// l.txt.innerHTML = self.currentTime.getFullYear();
 			return l;
@@ -61,7 +62,7 @@ OAT.TlScale = {
 			return true;
 		}
 		this.generateSet = function() {
-			/* set == one hour */
+			/* set == one year */
 			var l = {};
 			l.elm = OAT.TlScale.genericElement();
 			l.width = OAT.TlScale.defWidth;
@@ -95,7 +96,7 @@ OAT.TlScale = {
 			self.currentTime.setSeconds(0);
 			self.currentTime.setMilliseconds(0);
 			var l = OAT.TlScale.genericElement();
-			l._date = self.currentTime;
+			l._date = new Date(self.currentTime.getTime());
 			l._format = self.format;
 			return l;
 		}
@@ -109,7 +110,7 @@ OAT.TlScale = {
 			return true;
 		}
 		this.generateSet = function() {
-			/* set == one hour */
+			/* set == one month */
 			var l = {};
 			l.elm = OAT.TlScale.genericElement();
 			l.width = OAT.TlScale.defWidth;
@@ -143,7 +144,7 @@ OAT.TlScale = {
 			self.currentTime.setSeconds(0);
 			self.currentTime.setMilliseconds(0);
 			var l = OAT.TlScale.genericElement();
-			l._date = self.currentTime;
+			l._date = new Date(self.currentTime.getTime());
 			l._format = self.format;
 			return l;
 		}
@@ -156,7 +157,7 @@ OAT.TlScale = {
 			return true;
 		}
 		this.generateSet = function() {
-			/* set == one hour */
+			/* set == one week */
 			var l = {};
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
@@ -185,7 +186,7 @@ OAT.TlScale = {
 			self.currentTime.setSeconds(0);
 			self.currentTime.setMilliseconds(0);
 			var l = OAT.TlScale.genericElement();
-			l._date = self.currentTime;
+			l._date = new Date(self.currentTime.getTime());
 			l._format = self.format;
 			return l;
 		}
@@ -198,7 +199,7 @@ OAT.TlScale = {
 			return true;
 		}
 		this.generateSet = function() {
-			/* set == one hour */
+			/* set == one day */
 			var l = {};
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
@@ -226,7 +227,7 @@ OAT.TlScale = {
 			self.currentTime.setSeconds(0);
 			self.currentTime.setMilliseconds(0);
 			var l = OAT.TlScale.genericElement();
-			l._date = self.currentTime;
+			l._date = new Date(self.currentTime.getTime());
 			l._format = self.format;
 			return l;
 		}
@@ -238,7 +239,7 @@ OAT.TlScale = {
 			return true;
 		}
 		this.generateSet = function() {
-			/* set == one hour */
+			/* set == 4 hours */
 			var l = {};
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
@@ -266,7 +267,7 @@ OAT.TlScale = {
 			self.currentTime.setSeconds(0);
 			self.currentTime.setMilliseconds(0);
 			var l = OAT.TlScale.genericElement();
-			l._date = self.currentTime;
+			l._date = new Date(self.currentTime.getTime());
 			l._format = self.format;
 			return l;
 		}
@@ -305,7 +306,7 @@ OAT.TlScale = {
 			self.currentTime.setSeconds(0);
 			self.currentTime.setMilliseconds(0);
 			var l = OAT.TlScale.genericElement();
-			l._date = self.currentTime;
+			l._date = new Date(self.currentTime.getTime());
 			l._format = self.format;
 			return l;
 		}
@@ -316,7 +317,7 @@ OAT.TlScale = {
 			return true;
 		}
 		this.generateSet = function() {
-			/* set == one minute */
+			/* set == 5 minutes */
 			var l = {};
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());

@@ -60,6 +60,7 @@ OAT.GhostDragData = {
 
 	move:function(event) {
 		if (!OAT.GhostDragData.lock) return;
+		OAT.Dom.prevent(event);
 		var elm = OAT.GhostDragData.lock;
 		var obj = elm.object;
 		if (obj.pending) {
@@ -112,8 +113,9 @@ OAT.GhostDrag = function() {
 		self.sources.push(elm);
 		self.processes.push(process);
 		self.callbacks.push(callback);
+		var cica = true;
 		var ref = function(event) {
-			/* mouse pressed on element */
+			OAT.Dom.prevent(event);
 			var index = self.sources.find(elm);
 			if (index == -1) return;
 			var x = event.clientX;

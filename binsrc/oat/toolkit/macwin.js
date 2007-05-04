@@ -20,6 +20,8 @@ OAT.MacWin = function(optObj) {
 	var self = this;
 
 	OAT.WindowParent(this,optObj);
+	this.options.statusHeight = 16;
+	this.options.moveHeight = 23;
 	
 	OAT.Dom.applyStyle(this.div,{font:"menu",backgroundColor:"#c5c5c5"});
 	
@@ -30,19 +32,39 @@ OAT.MacWin = function(optObj) {
 		edgeFiles:[self.options.imagePath+"MacWin_top.gif",self.options.imagePath+"MacWin_left.gif","",self.options.imagePath+"MacWin_right.gif"],
 		thickness:[23,8,0,8] /* CW from T */
 	}
-	OAT.Dom.applyStyle(this.content,{padding:"2px",position:"relative"}); 
+	OAT.Dom.applyStyle(this.content,{position:"relative"}); 
 	
-	opt.ieElm = this.content;
 	OAT.SimpleFX.roundImg(this.div,opt);
-	OAT.SimpleFX.shadow(this.div,{offsetX:8,ieElm:this.content,imagePath:self.options.imagePath});
+	OAT.SimpleFX.shadow(this.div,{offsetX:8,imagePath:self.options.imagePath});
 
+	OAT.Resize.remove(this.resize,this.move);
 	OAT.Dom.unlink(this.move);
 	this.move = this.div.edgeElms[0];
 	OAT.Drag.create(this.move,this.div);
 	OAT.Drag.create(this.div.cornerElms[0],this.div);
 	OAT.Drag.create(this.div.cornerElms[1],this.div);
+	if (self.options.resize) { OAT.Resize.create(this.resize,this.move,OAT.Resize.TYPE_X); }
 	this.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
-		return l < 5 || t < 20;
+		return l < 5 || t < self.options.statusHeight;
+	}
+
+	this.resizeTo = function(w,h) {
+		if (w) {
+			self.move.style.width = (w-16) + "px";
+			self.div.style.width = (w-16) + "px";
+			self.content.style.width = (w-16) + "px";
+		}
+		if (h) { 
+			self.div.style.height = (h - self.options.moveHeight) + "px";
+			self.content.style.height = (h - self.options.statusHeight - self.options.moveHeight) + "px";
+		}
+	}
+	
+	this.moveTo = function(x,y) {
+		if (x >= 0) { self.div.style.left = (x+8) + "px"; }
+		if (x < 0) { self.div.style.right = (-x) + "px"; }
+		if (y >= 0) { self.div.style.top = (y+self.options.moveHeight) + "px"; }
+		if (y < 0) { self.div.style.bottom = (-y) + "px"; }
 	}
 
 	this.closeBtn = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left",fontSize:"1px",marginTop:"5px",marginRight:"1px",width:"13px",height:"13px",backgroundImage:"url("+self.options.imagePath+"MacWin_blank.gif)"});

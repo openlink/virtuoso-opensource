@@ -17,14 +17,17 @@ OAT.MsWin = function(optObj) {
 	var self = this;
 	
 	OAT.WindowParent(this,optObj);
+	this.options.statusHeight = 16;
+	this.options.moveHeight = 16;
 	
 	OAT.Dom.applyStyle(this.div,{border:"1px solid #000",font:"menu",backgroundColor:"#fff"});
-	OAT.Dom.applyStyle(this.content,{overflow:"auto",marginTop:"16px",paddingLeft:"2px",paddingRight:"2px",marginBottom:"10px",position:"relative"}); 
-
-	OAT.Dom.applyStyle(this.move,{position:"absolute",left:"0px",top:"0px",width:"100%",height:"16px",backgroundColor:"#0000a0",fontWeight:"bold",color:"#fff"}); 
+	OAT.Dom.applyStyle(this.content,{backgroundColor:"#fff",position:"relative"}); 
+	OAT.Dom.applyStyle(this.move,{position:"absolute",height:self.options.moveHeight+"px",backgroundColor:"#0000a0",fontWeight:"bold",color:"#fff",border:"1px solid #000"})
+	this.move.style.top = (-this.options.moveHeight-2) + "px";
+	this.move.style.left = "-1px";
 
 	this.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
-		return l < 0 || t < 14;
+		return l < 0 || t < self.options.moveHeight;
 	}
 	
 	if (this.closeBtn) {

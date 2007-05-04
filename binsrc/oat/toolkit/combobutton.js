@@ -17,65 +17,65 @@
 */
 
 OAT.ComboButton = function() {
-	var obj = this;
+	var self = this;
 	this.div = OAT.Dom.create("div"); /* THE element */
 	this.options = [];
-	this.optList = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px"}); /* list of other options; hidden most of the time */
-	this.image = OAT.Dom.create("img"); /* dropdown clicker */
-	this.image.className = "combo_button_image";
-	this.image.setAttribute("src","images/Combobutton_select.gif");
+	this.optList = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px"},"combo_button"); /* list of other options; hidden most of the time */
+	this.image = OAT.Dom.create("img",{},"combo_button_image"); /* dropdown clicker */
+	this.image.src = OAT.Preferences.imagePath+"Combobutton_select.gif";
 	this.selected = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left"}); /* currently selected option */
 	
 	OAT.Instant.assign(this.optList);
-	this.div.className = "combo_button";
-	this.div.appendChild(this.selected);
-	this.div.appendChild(this.image);
-	document.body.appendChild(obj.optList);
+	OAT.Dom.append([this.div,this.selected,this.image],[document.body,self.optList]);
 	
 	this.select = function(index,do_callback) { /* select one option, call for action */
-		if (this.selected.firstChild) { this.optList.appendChild(this.selected.firstChild); } /* remove old option, if any */
-		this.selected.appendChild(this.options[index][0]); /* append one from listbox */
-		if (this.optList.parentNode) { this.optList._Instant_hide(); } /* hide listbox */
-		if (do_callback) { this.options[index][1](); } /* if not selected automatically, action */
+		if (self.selected.firstChild) { self.optList.appendChild(self.selected.firstChild); } /* remove old option, if any */
+		self.selected.appendChild(self.options[index][0]); /* append one from listbox */
+		if (self.optList.parentNode) { self.optList._Instant_hide(); } /* hide listbox */
+		if (do_callback) { self.options[index][1](); } /* if not selected automatically, action */
 	}
 	
 	this.open = function() { /* open listbox */
-		var coords = OAT.Dom.position(obj.div); /* calculate the place */
-		obj.optList.style.left = coords[0]+"px";
-		obj.optList.style.top = (coords[1]+obj.div.offsetHeight)+"px";
-		obj.optList._Instant_show(); /* show listbox */
+		var coords = OAT.Dom.position(self.div); /* calculate the place */
+		var dims = OAT.Dom.getWH(self.div); /* calculate the place */
+		self.optList.style.left = coords[0]+"px";
+		self.optList.style.top = (coords[1]+dims[1])+"px";
+		self.optList._Instant_show(); /* show listbox */
 	}
 	
-	this.addOption = function(imagepath,textvalue,callback) {
-		var opt = OAT.Dom.create("div");
-		opt.className = "combo_button_option";
-		OAT.Dom.attach(opt,"mousedown",function(){opt.className += " combo_button_option_down";});
-		OAT.Dom.attach(opt,"mouseup",function(){opt.className = "combo_button_option";});
-		if (imagepath != "") { /* if image specified, add it to option */
+	this.addOption = function(imagePath,textValue,callback) {
+		var opt = OAT.Dom.create("div",{},"combo_button_option");
+		OAT.Dom.attach(opt,"mousedown",function(){
+			OAT.Dom.addClass(opt,"combo_button_option_down");
+		});
+		OAT.Dom.attach(opt,"mouseup",function(){
+			OAT.Dom.removeClass(opt,"combo_button_option_down");
+		});
+		if (imagePath) { /* if image specified, add it to option */
 			var img = OAT.Dom.create("img",{cssFloat:"left",styleFloat:"left"});
-			img.setAttribute("src",imagepath);
+			img.src = imagePath;
 			opt.appendChild(img);
 		}
 		var text = OAT.Dom.create("div"); /* text */
 		text.className = "combo_button_text";
-		text.innerHTML = textvalue;
+		text.innerHTML = textValue;
 		opt.appendChild(text);
-		this.options.push([opt,callback]); /* put to global registry */
-		this.optList.appendChild(opt);
-		var index = this.options.length - 1;
-		var clickRef = function() {	obj.select(index,true); }
+		self.options.push([opt,callback]); /* put to global registry */
+		self.optList.appendChild(opt);
+		var index = self.options.length - 1;
+		var clickRef = function() {	self.select(index,true); }
 		OAT.Dom.attach(opt,"click",clickRef); /* what to do after clicking */
-		if (this.options.length == 1) { this.select(0,false); } /* first option is automatically selected */
+		if (self.options.length == 1) { this.select(0,false); } /* first option is automatically selected */
 	}
 	
 	this.removeOption = function(index) {
-		if (index > this.options.length-1) { return; }
+		if (index > self.options.length-1) { return; }
 		var was_active = false;
-		if (this.options[index][0] == this.selected.firstChild) { was_active = true; } /* what if we removed the active option? */
-		OAT.Dom.unlink(this.options[index][0]);
-		this.options.splice(index,1);
-		if (was_active && this.options.length) { this.select(0,false); } /* then select the first available */
+		if (self.options[index][0] == self.selected.firstChild) { was_active = true; } /* what if we removed the active option? */
+		OAT.Dom.unlink(self.options[index][0]);
+		self.options.splice(index,1);
+		if (was_active && self.options.length) { self.select(0,false); } /* then select the first available */
 	}
-	OAT.Dom.attach(this.image,"click",obj.open);
+	OAT.Dom.attach(this.image,"click",self.open);
 }
 OAT.Loader.featureLoaded("combobutton");

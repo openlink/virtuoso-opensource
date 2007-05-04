@@ -351,6 +351,13 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 		}
 		var x = OAT.GraphSVGData.fromTriples(triples);
 		self.graphsvg = new OAT.GraphSVG(self.elm,x[0],x[1],{vertexSize:[4,8]});
+		
+		for (var i=0;i<self.graphsvg.data.length;i++) {
+			var node = self.graphsvg.data[i];
+			if (node.name.match(/^http/i)) {
+				self.parent.createAnchor(node.svg,node.name);
+			}
+		}
 	}
 }
 OAT.RDFTabs.svg.prototype = new OAT.RDFTabs.parent();
@@ -447,10 +454,25 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			} /* for all predicates */
 			self.map.openWindow(m,div);
 		}
-		m = self.map.addMarker(1,coords[0],coords[1],false,false,false,callback);
+		var uri = item[2];
+		if (!(uri in self.markerMapping)) {
+			self.markerMapping[uri] = self.markerFiles[self.markerIndex % self.markerFiles.length];
+			self.markerIndex++;
+		}
+		var file = self.markerMapping[uri];
+		m = self.map.addMarker(1,coords[0],coords[1],file,18,41,callback);
 	}
 	
 	this.redraw = function() {
+		var markerPath = OAT.Preferences.imagePath+"markers/";
+		self.markerFiles = []; 
+		for (var i=1;i<=12;i++) {
+			var name = markerPath + (i<10?"0":"") + i +".png";
+			self.markerFiles.push(name);
+		}
+		self.markerIndex = 0;
+		self.markerMapping = {};
+
 		self.map = new OAT.Map(self.elm,self.options.provider,{fix:self.options.fix});
 		self.map.centerAndZoom(0,0,0);
 		self.map.addTypeControl();
@@ -489,44 +511,60 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 	this.parent = parent;
 	this.elm.style.position = "relative";
 	this.elm.style.width = "100%";
-	this.elm.style.height = "200px";
+	this.elm.style.margin = "1em";
 	this.elm.style.top = "20px";
 	
-	this.port = OAT.Dom.create("div",{},"rdf_tl_port");
-	this.slider = OAT.Dom.create("div",{},"rdf_tl_slider");
-	OAT.Dom.append([self.elm,self.port,self.slider]);
-
 	this.tryItem = function(item) {
 		var preds = item[1];
-		var pointResource = false;
+		var start = false;
+		var end = false;
 		for (var i=0;i<preds.length;i++) {
 			var p = preds[i];
-			if (p[0] == "date") { return p[1]; }
+			if (p[0] == "date") { 
+				start = p[1];
+				end = p[1];
+			}
+			if (p[0] == "dtstart") { start = p[1]; }
+			if (p[0] == "dtend") { end = p[1]; }
 		}
-		return false;
+		if (!start || !end) { return false; }
+		return [start,end];
 	}
 	
 	this.redraw = function() {
 		if (!self.initialized) {
-			self.tl = new OAT.Timeline(self.port,self.slider,self.options);
+			self.tl = new OAT.Timeline(self.elm,self.options);
 			self.initialized = true;
 		}	
+		var uris = [];
 		self.tl.clear();
-		self.tl.addBand("Timeline","#8FaFcE");
+		var colors = ["#cf6","#887fff","#66ffe6","#fb9","#7fff66","#ff997f","#96f"]; /* pastel */
 		
 		for (var i=0;i<self.parent.data.length;i++) {
 			var item = self.parent.data[i];
 			var date = self.tryItem(item);
 			if (!date) { continue; }
+			var ouri = item[2];
+			if (uris.find(ouri) == -1) {
+				self.tl.addBand(ouri,colors[uris.length % colors.length]);
+				uris.push(ouri);
+			}
+			var start = date[0];
+			var end = date[1];
 			/* add event */
 			var content = OAT.Dom.create("div",{left:"-7px"});
 			var ball = OAT.Dom.create("div",{width:"16px",height:"16px",cssFloat:"left",styleFloat:"left"});
 			ball.style.backgroundImage = "url("+self.options.imagePath+"Timeline_circle.png)";
+			var uri = self.parent.getURI(item);
+			if (uri) {
 			var t = OAT.Dom.create("a");
+				self.parent.createAnchor(t,uri);
+			} else {
+				var t = OAT.Dom.create("span");
+			}
 			t.innerHTML = self.parent.getTitle(item);
 			OAT.Dom.append([content,ball,t]);
-			self.parent.createAnchor(t,item[0]);
-			self.tl.addEvent("Timeline",date,date,content,"#ddd");
+			self.tl.addEvent(ouri,start,end,content,"#ddd");
 		}
 		self.tl.draw();
 		self.tl.slider.slideTo(0,1);
