@@ -476,6 +476,63 @@ create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
 }
 ;
 
+create procedure VHOST_MAP_RELOAD (in vhost varchar := '*ini*', in lhost varchar := '*ini*', in lpath varchar)
+{
+  declare ssl_port, varr varchar;
+  declare ret int;
+
+  if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (lhost))
+    return NULL;
+  http_map_del (lpath, vhost, lhost);
+  ret := 0;
+  for select
+	  HP_LPATH,
+	  HP_PPATH,
+	  HP_HOST,
+	  HP_LISTEN_HOST,
+	  HP_STORE_AS_DAV,
+	  HP_DIR_BROWSEABLE,
+	  HP_DEFAULT,
+	  HP_SECURITY,
+	  HP_REALM,
+	  HP_AUTH_FUNC,
+	  HP_POSTPROCESS_FUNC,
+	  HP_RUN_VSP_AS,
+	  HP_RUN_SOAP_AS,
+	  HP_PERSIST_SES_VARS,
+	  HP_SOAP_OPTIONS,
+	  HP_AUTH_OPTIONS,
+	  HP_OPTIONS,
+	  HP_IS_DEFAULT_HOST
+    from DB.DBA.HTTP_PATH where
+    HP_LPATH = lpath and HP_HOST = vhost and HP_LISTEN_HOST = lhost
+    do
+      {
+        http_map_table (
+	  HP_LPATH,
+	  HP_PPATH,
+	  HP_HOST,
+	  HP_LISTEN_HOST,
+	  HP_STORE_AS_DAV,
+	  HP_DIR_BROWSEABLE,
+	  HP_DEFAULT,
+	  HP_SECURITY,
+	  HP_REALM,
+	  HP_AUTH_FUNC,
+	  HP_POSTPROCESS_FUNC,
+	  HP_RUN_VSP_AS,
+	  HP_RUN_SOAP_AS,
+	  HP_PERSIST_SES_VARS,
+	  deserialize (HP_SOAP_OPTIONS),
+	  deserialize (HP_AUTH_OPTIONS),
+	  deserialize (HP_OPTIONS),
+	  HP_IS_DEFAULT_HOST);
+	ret := ret + 1;
+      }
+  return ret;
+}
+;
+
 -- Remove entry from virtual hosts / directories
 create procedure VHOST_REMOVE (in vhost varchar := '*ini*',
              in lhost varchar := '*ini*',
