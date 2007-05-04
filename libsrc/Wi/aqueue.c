@@ -39,7 +39,6 @@ void
 aq_thread_func (aq_thread_t * aqt)
 {
   du_thread_t * self = THREAD_CURRENT_THREAD;
-  int rc;
   aqt->aqt_thread = self;
   semaphore_enter (aqt->aqt_thread->thr_sem);
   SET_THR_ATTR (self, TA_IMMEDIATE_CLIENT, aqt->aqt_cli);
@@ -60,8 +59,8 @@ aq_thread_func (aq_thread_t * aqt)
       /* set the state inside the aq_mtx because it is tested with an or of queued and running and if this falls in the middle of this test, other thread can think it is neither queued nor running */
       mutex_leave (aq->aq_mtx);
       /* with privs of te owner of the aq being served */
-      aqt->aqt_cli->cli_user = aq->aq_cli->cli_user;
-      CLI_SET_QUAL (aqt->aqt_cli, aq->aq_cli->cli_qualifier);
+      aqt->aqt_cli->cli_user = aq->aq_user;
+      CLI_SET_QUAL (aqt->aqt_cli, aq->aq_qualifier);
       aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
       assert (aqt->aqt_thread->thr_sem->sem_entry_count == 0);
       aqr->aqr_args = NULL;
@@ -255,6 +254,7 @@ async_queue_t *
 aq_allocate (int n_threads)
 {
   async_queue_t * aq = (async_queue_t *) dk_alloc_box_zero (sizeof (async_queue_t), DV_ASYNC_QUEUE);
+  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   aq->aq_ref_count = 1;
   aq->aq_requests = hash_table_allocate (101);
   aq->aq_mtx = mutex_allocate ();
@@ -263,7 +263,8 @@ aq_allocate (int n_threads)
 #endif
   aq->aq_max_threads = n_threads;
   mutex_option (aq->aq_mtx, "AQ", NULL, NULL);
-  aq->aq_cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+  aq->aq_user = cli->cli_user;
+  aq->aq_qualifier = box_string (cli->cli_qualifier);
   return aq;
 }
 
@@ -307,6 +308,7 @@ aq_free (async_queue_t * aq)
   aq->aq_requests->ht_required_mtx = NULL;
 #endif
   hash_table_free (aq->aq_requests);
+  dk_free_tree (aq->aq_qualifier);
   mutex_free (aq->aq_mtx);
   return 0;
 }
@@ -459,7 +461,7 @@ void
 bif_aq_init ()
 {
   dk_mem_hooks (DV_ASYNC_QUEUE, (box_copy_f) aq_copy, (box_destr_f)aq_free, 0);
-  PrpcSetWriter (DV_ASYNC_QUEUE, aq_serialize);
+  PrpcSetWriter (DV_ASYNC_QUEUE, (ses_write_func) aq_serialize);
   bif_define ("async_queue", bif_async_queue);
   bif_define ("aq_request", bif_aq_request);
   bif_define ("aq_wait", bif_aq_wait);

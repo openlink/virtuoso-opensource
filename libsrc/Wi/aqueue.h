@@ -33,7 +33,8 @@ typedef struct async_queue_s
   int		aq_req_no;
   dk_hash_t *	aq_requests;
   int		aq_deleted;
-  client_connection_t *	aq_cli;
+  user_t * 	aq_user;
+  caddr_t 	aq_qualifier;
 } async_queue_t;
 
 
