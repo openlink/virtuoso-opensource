@@ -30,8 +30,8 @@ TD {font-family: Verdana,Arial,Helvetica,Helv,sans-serif;}
 TH {font-family: Verdana,Arial,Helvetica,Helv,sans-serif;}
 
 
-TABLE.tableentry { background-color: #FFDF52 }
-TABLE.tableresult { background-color: #d0ffd0 }
+TABLE.tableentry, DIV.tableentry { background-color: #FFDF52 }
+TABLE.tableresult, DIV.tableresult { background-color: #d0ffd0 }
 
 A { TEXT-DECORATION: none }
 

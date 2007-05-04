@@ -374,6 +374,13 @@
 	      </group>
         <group Title="PHP hosted">
 					<example id="RQ-S-2" fspath="rdf/rq_s_2"></example>
+					<example id="RQ-S-3" fspath="rdf/rq_s_3"></example>
+        </group>
+        <group Title="RDF Import">
+					<example id="RI-S-1" fspath="rdf/ri_s_1"></example>
+        </group>
+        <group Title="RDF Mappers">
+					<example id="RD-S-1" fspath="rdf/rd_s_1"></example>
         </group>
       </group>
     </subsection>

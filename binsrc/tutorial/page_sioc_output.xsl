@@ -21,11 +21,14 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -  
+ -
 -->
 <xsl:stylesheet 
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:dt="http://purl.org/dc/terms/"
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:sioc="http://rdfs.org/sioc/ns#"
   version="1.0">
@@ -47,22 +50,24 @@
     ?>
 		<rdf:RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 		  <xsl:attribute name="rdf" namespace="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
-<!--		  <xsl:attribute name="dc" namespace="http://purl.org/dc/elements/1.1/"/>
-		  <xsl:attribute name="content" namespace="http://purl.org/rss/1.0/modules/content/"/>-->
+		  <xsl:attribute name="dc" namespace="http://purl.org/dc/elements/1.1/"/>
+                  <xsl:attribute name="dt" namespace="http://purl.org/dc/terms/"/>
+		  <xsl:attribute name="content" namespace="http://purl.org/rss/1.0/modules/content/"/>
+                  <xsl:attribute name="foaf" namespace="http://xmlns.com/foaf/0.1/"/>
 		  <xsl:attribute name="sioc" namespace="http://rdfs.org/sioc/ns#"/>
 
       <xsl:text disable-output-escaping="yes"><![CDATA[
-<sioc:Site rdf:about="<?V _path ?>">]]></xsl:text>
+<sioc:Space rdf:about="<?V _path ?>">]]></xsl:text>
       	<sioc:name>OpenLink Virtuoso Features Demonstrations and Tutorials</sioc:name>
       	<sioc:description>OpenLink Virtuoso Features Demonstrations and Tutorials</sioc:description>
         <xsl:for-each select="//subsection[not(@ref)]">
       	  <xsl:text disable-output-escaping="yes"><![CDATA[
-<sioc:host_of rdf:resource="<?V _path ?>]]></xsl:text>
+<sioc:space_of rdf:resource="<?V _path ?>]]></xsl:text>
  <xsl:value-of select="@wwwpath"/>
  <xsl:text disable-output-escaping="yes"><![CDATA["/>]]></xsl:text>
         </xsl:for-each>
       <xsl:text disable-output-escaping="yes"><![CDATA[
-</sioc:Site>]]></xsl:text>
+</sioc:Space>]]></xsl:text>
 
 	  	<xsl:apply-templates select="//subsection[not(@ref)]"/>
 
@@ -73,38 +78,38 @@
 
 	<xsl:template match="subsection">
       <xsl:text disable-output-escaping="yes"><![CDATA[
-<sioc:Forum rdf:about="<?V _path ?>]]></xsl:text>
+<sioc:Container rdf:about="<?V _path ?>]]></xsl:text>
  <xsl:value-of select="@wwwpath"/>
  <xsl:text disable-output-escaping="yes"><![CDATA[">]]></xsl:text>
-    	<sioc:name>
+    	<sioc:description>
     	  <xsl:value-of select="parent::section/@Title" disable-output-escaping="yes"/>
 	      <xsl:text> - </xsl:text>
 	      <xsl:value-of select="@Title" disable-output-escaping="yes"/>
-    	</sioc:name>
-    	<sioc:type>Tutorial</sioc:type>
+    	</sioc:description>
+    	<rdf:type>Tutorial</rdf:type>
       	<xsl:text disable-output-escaping="yes"><![CDATA[
-<sioc:has_host rdf:resource="<?V _path ?>"/>]]></xsl:text>
+<sioc:has_space rdf:resource="<?V _path ?>"/>]]></xsl:text>
         <xsl:for-each select=".//example">
       	  <xsl:text disable-output-escaping="yes"><![CDATA[
 <sioc:container_of rdf:resource="<?V _path ?>]]></xsl:text>
- <xsl:value-of select="@wwwpath"/>
+<xsl:value-of select="@wwwpath"/>
  <xsl:text disable-output-escaping="yes"><![CDATA["/>]]></xsl:text>
         </xsl:for-each>
       <xsl:text disable-output-escaping="yes"><![CDATA[
-</sioc:Forum>]]></xsl:text>
+</sioc:Container>]]></xsl:text>
 	</xsl:template>
 	
 	<xsl:template match="example">
       <xsl:text disable-output-escaping="yes"><![CDATA[
- <sioc:Post rdf:about="<?V _path ?>]]></xsl:text>
+ <foaf:Document rdf:about="<?V _path ?>]]></xsl:text>
  <xsl:value-of select="@wwwpath"/>
  <xsl:text disable-output-escaping="yes"><![CDATA[">]]></xsl:text>
       <xsl:text disable-output-escaping="yes"><![CDATA[
 <sioc:has_container rdf:resource="<?V _path ?>]]></xsl:text>
  <xsl:value-of select="ancestor::subsection/@wwwpath"/>
  <xsl:text disable-output-escaping="yes"><![CDATA["/>]]></xsl:text>
-	    <sioc:title><xsl:value-of select="refentry/refnamediv/refname"/></sioc:title>
-	    <sioc:created_at><xsl:value-of select="@date"/></sioc:created_at>
+	    <dc:title><xsl:value-of select="refentry/refnamediv/refname"/></dc:title>
+	    <dt:created_at><xsl:value-of select="@date"/></dt:created_at>
 	    <sioc:description><xsl:value-of select="refentry/refnamediv/refpurpose"/></sioc:description>
       <sioc:content>
         <xsl:for-each select="refentry/refsect1">
@@ -119,7 +124,7 @@
         <xsl:text disable-output-escaping="yes">]]></xsl:text>
       </content:encoded>
       <xsl:text disable-output-escaping="yes"><![CDATA[
-</sioc:Post>]]></xsl:text>
+</foaf:Document>]]></xsl:text>
 
 	</xsl:template>
 

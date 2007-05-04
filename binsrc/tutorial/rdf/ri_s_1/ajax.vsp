@@ -1,0 +1,40 @@
+<?vsp
+declare PID any;
+declare action any;
+
+PID := {?'id'};
+action := {?'sa'};
+if (action = 'init')
+  {
+    declare aq any;
+    declare url any;
+    declare mt any;
+
+    url := {?'url'};
+    mt := {?'mt'};
+    http_flush ();
+    DB.DBA.ri_s_1_worker (PID, url, mt);
+  } 
+else if (action = 'state')
+  {
+    declare rc, msg int;
+    commit work;
+    set isolation='uncommitted';
+    for select rerr, rstate from ri_s_1_log where rid = PID do
+      {
+        if (rstate <> 0)
+          {
+            if (rstate > 0)
+              http (rerr);
+            else
+             {
+               http ('<font style="color:red">');   
+               http (rerr);
+               http ('</font>');   
+             }
+          }
+        else
+          http ('importing'); 
+      }
+  }
+?>

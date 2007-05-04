@@ -78,9 +78,22 @@ EXTRA_DIST= \
 	intprot/sm_s_7/*.xml \
 	make_vad.sh \
 	rdf/*.xml \
+	rdf/rd_s_1/*.sql \
+	rdf/rd_s_1/*.xml \
+	rdf/ri_s_1/*.gif \
+	rdf/ri_s_1/*.js \
+	rdf/ri_s_1/*.sql \
+	rdf/ri_s_1/*.vsp \
+	rdf/ri_s_1/*.vspx \
+	rdf/ri_s_1/*.xml \
+	rdf/rq_s_2/*.php \
 	rdf/rq_s_2/*.sql \
 	rdf/rq_s_2/*.xml \
-	rdf/rq_s_2/sparql_query.php \
+	rdf/rq_s_3/*.gif \
+	rdf/rq_s_3/*.js \
+	rdf/rq_s_3/*.php \
+	rdf/rq_s_3/*.sql \
+	rdf/rq_s_3/*.xml \
 	repl/*.css \
 	repl/*.xml \
 	repl/re_ds_1/*.sql \

@@ -1,0 +1,52 @@
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="RQ-S-3">
+  <refmeta>
+    <refentrytitle>SPARQL Import</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>RDF data import on PHP ODBC Hosting Demo</refname>
+    <refpurpose>Demonstrates the use of a PHP script hosted in Virtuoso to import
+    RDF data using SPARQL sponger. Note, this demo leverages
+    PHP's ODBC based data access layer and Virtuoso's ability to execute SPARQL
+    via its SQL query processor.</refpurpose>
+  </refnamediv>
+  <refsect1 id="RQ-S-3a">
+    <title>PHP page invoking the SPARQL sponger</title>
+    <para>
+      This demo demonstrates the use of PHP script hosted in Virtuoso to import
+      RDF data using SPARQL sponger. Note, this demo leverages
+      PHP's ODBC based data access layer and Virtuoso's ability to execute SPARQL
+      via its SQL query processor.
+    </para>
+    <para>
+        This demo presents a PHP form to the user to enter a URL.
+        The form action (buton click) will perform import of RDF data.
+        Note: this tutorial is limitied to no more than 10 MB files to be imported.
+	Also note that pinging the service is not needed if [SPARQL] INI section has
+	PingService = http://rpc.pingthesemanticweb.com/ setting.
+    </para>
+  </refsect1>
+</refentry>

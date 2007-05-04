@@ -791,6 +791,14 @@
         {
           hosting_fail := 1;
           hosting_name := 'Java Runtime Hosting Enabled';
+--        JSP hosting
+
+	  tut_generate_tomcat_url ('', lines);
+          if (connection_get ('TomcatStatus') = 'BAD')
+             dependa := concat (dependa, '<p style="color: red">
+		 <small>In order to run this example you need start tomcat.</small></p>');
+
+--      end JSP hosting
         }
         else if (lower(item) = 'php' and isnull(__proc_exists ('__http_handler_php', 2)))
         {
@@ -816,13 +824,6 @@
         if (hosting_fail)
           dependa := concat (dependa, sprintf ('<p style="color: red"><small>In order to run this example you need %s.</small></p>', hosting_name));
 
---      JSP hosting
-
-	tut_generate_tomcat_url ('', lines);
-        if (connection_get ('TomcatStatus') = 'BAD')
-          dependa := concat (dependa, '<p style="color: red"><small>In order to run this example you need start tomcat.</small></p>');
-
---      end JSP hosting
       }
       cn := cn + 1;
     }

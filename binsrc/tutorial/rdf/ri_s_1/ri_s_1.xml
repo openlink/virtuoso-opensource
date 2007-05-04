@@ -21,27 +21,25 @@
  -  
 -->
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<refentry id="RQ-S-2">
+<refentry id="RI-S-1">
   <refmeta>
-    <refentrytitle>SPARQL query on PHP-script Hosting</refentrytitle>
+    <refentrytitle>SPARQL Import</refentrytitle>
     <refmiscinfo>tutorial</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>SPARQL Query on PHP ODBC Hosting Demo</refname>
-    <refpurpose>Demonstrates the use of a PHP script hosted in Virtuoso to execute
-SPARQL queries against Virtuoso's RDF Triplestore. Note, this demo leverages
-PHP's ODBC based data access layer and Virtuoso's ability to execute SPARQL
-via its SQL query processor.</refpurpose>
+    <refname>Importing RDF data using SPARQL query</refname>
+    <refpurpose>RDF data import using SPARQL sponger.</refpurpose>
   </refnamediv>
-  <refsect1 id="HO-S-30">
-    <title>PHP script calling ODBC</title>
+  <refsect1 id="RI-S-1a">
+    <title>VSPX page invoking the SPARQL sponger</title>
     <para>
-      This demo shows simple ODBC functions being used in a PHP script:
-      odbc_connect(), odbc_exec(), odbc_result_all() and odbc_tables().
+	This demo present a VSPX form to the user to enter a URL. 
+	The form action (buton click) will perform SPARQL query with sponge parameters and on success will ping the 
+	pingthesemanticweb.com. 
     </para>
     <para>
-      The demo makes sparql queries on Virtuoso's RDF database using "sparql select" syntax.
-      The data is loaded on tutorial vad installation time by the sparql_demo. 
+	Note that pinging the service is not needed if [SPARQL] INI section have 
+	PingService = http://rpc.pingthesemanticweb.com/ setting. 
     </para>
   </refsect1>
 </refentry>

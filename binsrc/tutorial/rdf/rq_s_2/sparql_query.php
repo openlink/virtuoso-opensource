@@ -61,8 +61,8 @@
       $query="sparql select distinct ?p where { graph ?g { ?s ?p ?o } }";
 
       $_dsn="Local Virtuoso Tutorial RQ-S-2";
-      $_user="RQ";
-      $_pass="RQ";
+      $_user="demo";
+      $_pass="demo";
 ?>
 	<body>
 		<h3>Virtuoso RDF Store - Demo</h3>

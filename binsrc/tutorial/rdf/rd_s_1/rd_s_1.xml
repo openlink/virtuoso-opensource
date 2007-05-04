@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="RD-S-1">
+  <refmeta>
+    <refentrytitle>RDF Mappers</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>RDF Mappers</refname>
+    <refpurpose>This article explains how to develop a custom RDF mapper and test.</refpurpose>
+  </refnamediv>
+  <refsect1 id="RD-S-1a">
+    <title>Concept</title>
+    <para>
+      The RDF mappers provide a way to extract metadata from non-RDF documents such as HTML pages,
+      images Office documents etc. and pass to the SPARQL sponger (crawler which retrieve missing
+      source graphs). For brevity, further in this page the "RDF mapper" we simply will call "mapper".
+    </para>
+    <para>
+      The mappers consist of PL procedure (hook) and extractor, where extractor itself can be built
+      using PL, C or any external language supported by Virtuoso server. Once the mapper is developed,
+      it must be plugged into the SPARQL engine by adding a record in the table DB.DBA.SYS_RDF_MAPPERS.
+    </para>
+    <para>
+      The way it works is as follows:
+    </para>
+    <para>
+      If a SPARQL query instructs the SPARQL processor to retrieve target graph into local storage,
+      then the sparql sponger will be invoked. If the target graph IRI represents a deferencable
+      URL, then content will be retrieved using content negotiation. The next step is the content type
+      to be detected and if it is RDF and no further transformation such as GRDDL is needed, then the
+      process would stop. But if content such as 'text/plain' is not known to have metadata, the SPARQL
+      sponger will look in the DB.DBA.SYS_RDF_MAPPERS table by order of RM_ID and for every matching
+      URL or MIME type pattern (depends on column RM_TYPE) will call the mapper hook. If hook returns
+      zero the next mapper will be tried, if result is negative the process would stop instructing the
+      SPARQL nothing was retrieved, if result is positive the process would stop instructing the SPARQL
+      that metadata was retrieved.
+    </para>
+  </refsect1>
+  <refsect1 id="RD-S-1b">
+    <title>PL hook requirements</title>
+    <para>
+      Every PL function used to plug a mapper into SPARQL engine must have following parameters in
+      the same order:
+    </para>
+    <itemizedlist mark="bullet">
+      <listitem>
+        in graph_iri varchar: the graph IRI which is currently retrieved
+      </listitem>
+      <listitem>
+	in new_origin_uri varchar: the URL of the document retrieved
+      </listitem>
+      <listitem>
+        in destination varchar: the destination graph IRI
+      </listitem>
+      <listitem>
+        inout content any: the content of the document retrieved by SPARQL sponger
+      </listitem>
+      <listitem>
+        inout async_queue any: an asynchronous queue, can be used to push something to execute on background if needed.
+      </listitem>
+      <listitem>
+        inout ping_service any: the value of [SPARQL] - PingService INI parameter, could be used to configure a service notification such as pingthesemanticweb.com
+      </listitem>
+      <listitem>
+        inout api_key any: a plain text id single key value or serialized vector of key structure, basically the value of RM_KEY column of the DB.DBA.SYS_RDF_MAPPERS table.
+      </listitem>
+    </itemizedlist>
+    <para>
+      Note that the names of the parameters are not important, but their order and presence are!
+    </para>
+  </refsect1>
+  <refsect1 id="RD-S-1b">
+    <title>Implementation</title>
+    <para>
+      In the example script we implement a basic mapper which maps a text/plain mime type to an
+      imaginary ontology, which extends the class Document from FOAF with properties 'txt:UniqueWords'
+      and 'txt:Chars', where the prefix 'txt:' we specify as 'urn:txt:v0.0:'.
+    </para>
+    <para>
+      To test the mapper we just use /sparql endpoint with option 'Retrieve remote RDF data for all
+      missing source graphs' to execute:
+    </para>
+    <programlisting><![CDATA[
+      select * from <URL-of-a-txt-file> where { ?s ?p ?o }
+    ]]></programlisting>
+    <para>
+      It is important that the SPARQL_UPDATE role to be granted to "SPARQL" account in order to
+      allow local repository update via sponge feature.
+    </para>
+    <para>
+      If the above is set correctly then you can just hit <ulink url="/sparql?default-graph-uri=http%3A%2F%2Flocalhost%3A<?U server_http_port() ?>%2Ftutorial%2Fhosting%2Fho_s_30%2FWebCalendar%2Ftools%2Fsummary.txt&should-sponge=soft&query=select+*+where+%7B+%3Fs+%3Fp+%3Fo+.+%7D&format=text%2Fhtml">this link</ulink>.
+    </para>
+    <para>
+      More complex examples can be found in the rdf_mappers package implementation.
+    </para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,55 @@
+<?xml version="1.0" ?>
+<v:page name="rdf_demo" xmlns:v="http://www.openlinksw.com/vspx/">
+    <html>
+	<head>
+	    <link href="../../web/demo.css" type="text/css" rel="stylesheet"/>
+	    <script type="text/javascript" src="ajax.js"><![CDATA[ ]]></script>
+	</head>
+	<body>
+	    <h1> RDF Import &amp; PTSW Demo</h1>
+	    <div id="msg"><![CDATA[&nbsp;]]></div>
+	    <div class="tableentry">
+		<v:form name="form1" type="simple" method="POST">
+		    <v:text name="PID" xhtml_id="PID" value="--uuid()" type="hidden"/>
+		    <fieldset>
+			<field>
+			    <label for="url">RDF source URL</label>
+			    <br />
+			    <v:text xhtml_id="url" name="url" default_value="http://www.w3.org/People/Berners-Lee/card"
+				xhtml_size="100" error-glyph="*">
+				<v:validator test="regexp" regexp="^http://.+$" message="Please supply valid URL" runat="client"/>
+			    </v:text>
+			</field>
+			<br />
+			<field>
+			    <label for="name1">Full Name</label>
+			    <br />
+			    <v:text xhtml_id="name1" name="name1" xhtml_size="100">
+			    </v:text>
+			</field>
+			<br />
+			<field>
+			    <label for="mail1">e-mail</label>
+			    <br />
+			    <v:text xhtml_id="mail1" name="mail1" xhtml_size="100">
+			    </v:text>
+			</field>
+			<br />
+			<field>
+			    <v:check-box xhtml_id="cclic1" name="cclic1"/>
+			    <label for="cclic1">Protected by CC license</label>
+			</field>
+			<br />
+			<field>
+			    <v:check-box xhtml_id="mt1" name="mt1" value="1"/>
+			    <label for="mt1">Use multi-threaded functions to import RDF</label>
+			</field>
+			<br />
+
+			<input type="button" name="submit2" value="Import" onclick="javascript: initState ();" />
+		    </fieldset>
+		</v:form>
+	    </div>
+	</body>
+    </html>
+</v:page>
