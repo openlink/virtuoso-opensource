@@ -33,6 +33,22 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
   orig_res_ext_upper := upper (orig_res_ext);
   if (position (orig_res_ext_upper, vector ('.EML')))
     return 'text/eml';
+  if (position (orig_res_ext_upper, vector ('.ODT')))
+    return 'application/vnd.oasis.opendocument.text';
+  if (position (orig_res_ext_upper, vector ('.ODB')))
+    return 'application/vnd.oasis.opendocument.database';
+  if (position (orig_res_ext_upper, vector ('.ODG')))
+    return 'application/vnd.oasis.opendocument.graphics';
+  if (position (orig_res_ext_upper, vector ('.ODP')))
+    return 'application/vnd.oasis.opendocument.presentation';
+  if (position (orig_res_ext_upper, vector ('.ODS')))
+    return 'application/vnd.oasis.opendocument.spreadsheet';
+  if (position (orig_res_ext_upper, vector ('.ODC')))
+    return 'application/vnd.oasis.opendocument.chart';
+  if (position (orig_res_ext_upper, vector ('.ODF')))
+    return 'application/vnd.oasis.opendocument.formula';
+  if (position (orig_res_ext_upper, vector ('.ODI')))
+    return 'application/vnd.oasis.opendocument.image';
   if (position (orig_res_ext_upper, vector ('.HTM', '.HTML', '.XHTML')))
     return 'text/html';
   if (position (orig_res_ext_upper, vector ('.XSL', '.XSLT', '.XSD')))
@@ -55,10 +71,10 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
       return 'text/wiki';
   if (position (orig_res_ext_upper,
     vector ('.BMP', '.DIB', '.RLE', '.CR2', '.CRW', '.EMF', '.EPS', '.IFF', '.LBM', '.JP2', '.JPX', '.JPK', '.J2K',
-     '.JPC', '.J2C', '.JPE', '.JIF', '.JFIF', '.JPG', '.JPEG', '.GIF') ) )
+     '.JPC', '.J2C', '.JPE', '.JIF', '.JFIF', '.JPG', '.JPEG', '.GIF', '.PNG') ) )
     return 'application/x-openlink-image';
   if (position (orig_res_ext_upper,
-    vector ('.XML', '.RDF', '.RDFS', '.RSS', '.RSS2', '.XBEL', '.FOAF', '.OPML', '.WSDL', '.BPEL', '.VSPX', '.VSCX', '.XDDL') ) )
+    vector ('.XML', '.RDF', '.RDFS', '.RSS', '.RSS2', '.XBEL', '.FOAF', '.OPML', '.WSDL', '.BPEL', '.VSPX', '.VSCX', '.XDDL', '.OCS') ) )
     return 'text/xml';
   if (position (orig_res_ext_upper,
     vector ('.TAR') ) )
@@ -136,6 +152,7 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
     {
       declare exit handler for sqlstate '*'
         {
+          --dbg_obj_princ('Exit handler: ', __SQL_STATE, __SQL_MESSAGE);
           return dflt_ret;
         };
       if (content is null)
@@ -176,7 +193,7 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
           return 'application/msproject+xml';
       if (xpath_eval ('[xmlns="http://schemas.microsoft.com/visio/2003/core"] exists (/VisioDocument)', html_start))
           return 'application/msvisio+xml';
-      if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:foaf="http://xmlns.com/foaf/0.1/"]exists (/rdf:rdf/foaf:*)', html_start))
+      if (xpath_eval ('[xmlns:n0="rdf" xmlns:n2="foaf"] exists (//n2:person)', html_start) or xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:foaf="http://xmlns.com/foaf/0.1/"]exists (/rdf:rdf/foaf:*)', html_start))
         return 'application/foaf+xml';
       if (xpath_eval ('exists (/xbel)', html_start))
         return 'application/xbel+xml';
@@ -187,6 +204,11 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
         return 'application/mods+xml';
       if (xpath_eval ('exists (/opml[@version])', html_start))
         return 'application/opml+xml';
+      if (xpath_eval ('[xmlns:rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:ocs = "http://InternetAlchemy.org/ocs/directory#" xmlns:dc = "http://purl.org/metadata/dublin_core#"] exists (/rdf:rdf/rdf:description/dc:title)', html_start))
+        return 'application/ocs+xml';
+      if (xpath_eval ('[xmlns:rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc  = "http://purl.org/metadata/dublin_core#" xmlns = "http://purl.org/ocs/directory/0.5/#"] exists (/rdf:rdf/directory)', html_start))
+        return 'application/ocs+xml';
+
       -- rdf:rdf is lowercase, instead of proper rdf:RDF because dirty HTML mode converts names.
       if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rss="http://purl.org/rss/1.0/"]exists (/rdf:rdf/rss:channel)', html_start))
         return 'application/rss+xml';
@@ -277,6 +299,88 @@ create function "DAV_EXTRACT_RDF_application/x-openlink-license" (in orig_res_na
   return xml_tree_doc (res);
 errexit:
   return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
+create function "DAV_EXTRACT_RDF_opendocument" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  declare doc, metas, extras, res any;
+  whenever sqlstate '*' goto errexit;
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_opendocument (', orig_res_name, ',... )');
+  declare meta, tmp varchar;
+  declare xt, xd any;
+  if (__proc_exists ('UNZIP_UnzipFileFromArchive', 2) is null)
+    goto errexit;
+  tmp := tmp_file_name ('rdfm', 'odt');
+  string_to_file (tmp, content1, -2);
+  meta := UNZIP_UnzipFileFromArchive (tmp, 'meta.xml');
+  file_delete (tmp, 1);
+  meta := replace(meta, '\n', '');
+  xt := xtree_doc (meta, 0);
+  metas := vector (
+          'http://purl.org/dc/elements/1.1/date', 'declare namespace dc="http://purl.org/dc/elements/1.1/"; //dc:date', NULL,
+          'http://purl.org/dc/elements/1.1/language', 'declare namespace dc="http://purl.org/dc/elements/1.1/"; //dc:language', NULL,
+          'http://purl.org/dc/elements/1.1/creator', 'declare namespace dc="http://purl.org/dc/elements/1.1/"; //dc:creator', NULL,
+          'http://purl.org/dc/elements/1.1/description', 'declare namespace dc="http://purl.org/dc/elements/1.1/"; //dc:description', NULL,
+          'http://purl.org/dc/elements/1.1/subject', 'declare namespace dc="http://purl.org/dc/elements/1.1/"; //dc:subject', NULL,
+          'http://purl.org/dc/elements/1.1/title', 'declare namespace dc="http://purl.org/dc/elements/1.1/"; //dc:title', NULL,
+          'urn:oasis:names:tc:opendocument:xmlns:meta:1.0:creation-date', 'declare namespace meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"; //meta:creation-date', NULL,
+          'urn:oasis:names:tc:opendocument:xmlns:meta:1.0:editing-cycles', 'declare namespace meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"; //meta:editing-cycles', NULL,
+          'urn:oasis:names:tc:opendocument:xmlns:meta:1.0:editing-duration', 'declare namespace meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"; //meta:editing-duration', NULL,
+          'urn:oasis:names:tc:opendocument:xmlns:meta:1.0:generator', 'declare namespace meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"; //meta:generator', NULL,
+          'urn:oasis:names:tc:opendocument:xmlns:meta:1.0:initial-creator', 'declare namespace meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"; //meta:initial-creator', NULL,
+          'urn:oasis:names:tc:opendocument:xmlns:meta:1.0:keyword', 'declare namespace meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"; //meta:keyword', NULL,
+          'urn:oasis:names:tc:opendocument:xmlns:meta:1.0:print-date', 'declare namespace meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"; //meta:print-date', NULL,
+          'urn:oasis:names:tc:opendocument:xmlns:meta:1.0:printed-by', 'declare namespace meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"; //meta:printed-by', NULL
+          );
+  extras := null;
+  return "DAV_EXTRACT_RDF_BY_METAS" (xt, metas, extras);
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.text" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.database" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.graphics" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.presentation" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+}
+;
+create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.spreadsheet" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+}
+;
+create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.chart" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+}
+;
+create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.formula" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+}
+;
+create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.image" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
 }
 ;
 
@@ -394,6 +498,16 @@ create function "DAV_EXTRACT_RDF_application/msexcel" (in orig_res_name varchar,
 }
 ;
 
+create function "DAV_EXTRACT_RDF_application/msaccess" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas, extras any;
+  doc := null;
+  metas := null;
+  extras := vector (
+        'http://www.openlinksw.com/schemas/Office#TypeDescr'    ,  'MS Access database' );
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
+}
+;
 
 create function "DAV_EXTRACT_RDF_application/msproject" (in orig_res_name varchar, inout content any, inout html_start any)
 {
@@ -467,7 +581,6 @@ create function "DAV_EXTRACT_RDF_application/doap+rdf" (in orig_res_name varchar
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/doap+rdf (', orig_res_name, ',... )');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
-	  -- dbg_obj_princ (doc);
   metas := vector (
         'http://www.openlinksw.com/schemas/doap#title', 'declare namespace xmlns="http://usefulinc.com/ns/doap#"; /xmlns:Project/xmlns:name', '',
         'http://www.openlinksw.com/schemas/doap#description', 'declare namespace xmlns="http://usefulinc.com/ns/doap#"; /xmlns:Project/xmlns:shortdesc', '',
@@ -512,8 +625,6 @@ create function "DAV_EXTRACT_RDF_application/archive" (in type_descr varchar, in
   metas := vector (
         'http://www.openlinksw.com/schemas/Archive#type', type_descr, type_descr);
   extras := null; 
-  --vector (
-  --      'http://www.openlinksw.com/virtdav#dynRdfExtractor', 'application/archive');
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
 errexit:
   return xml_tree_doc (xte_node (xte_head (UNAME' root')));
@@ -647,27 +758,22 @@ create function "DAV_EXTRACT_RDF_application/rss+xml" (in orig_res_name varchar,
 {
   declare doc, res any;
   xte_nodebld_init (res);
-   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/rss+xml (', orig_res_name, content, html_start, ')');
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_application/rss+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto final;
   doc := xtree_doc (content, 0);
-  -- dbg_obj_princ ('doc is ', doc);
   if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rss="http://purl.org/rss/1.0/"]exists (/rdf:RDF/rss:channel)', doc))
     {
       declare tmp_n3, channel_props any;
       declare about varchar;
-      -- dbg_obj_princ ('RDF RSS, ', doc);
       tmp_n3 := xslt ('http://local.virt/rdfxml2n3xml', doc);
-      -- dbg_obj_princ ('tmp_n3 is ', tmp_n3);
       about := xpath_eval ('/N3[@N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type"][@N3O="http://purl.org/rss/1.0/channel"]/@N3S', tmp_n3);
       if (about is null)
         {
-          -- dbg_obj_princ ('final?');
           goto final;
         }
       channel_props := xpath_eval ('/N3[@N3S=\044about][not (exists (@N3O))]', tmp_n3, 0, vector (UNAME'about', about));
       foreach (any prop in channel_props) do
         {
-          -- dbg_obj_princ ('prop ', prop);
           xte_nodebld_acc (res,
             xte_node (
               xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', xpath_eval ('@N3P', prop)),
@@ -708,8 +814,6 @@ create function "DAV_EXTRACT_RDF_application/atom+xml" (in orig_res_name varchar
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/atom+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
-  -- dbg_obj_princ ('doc is ', doc);
-
   version := xpath_eval ('[xmlns:atom="http://purl.org/atom/ns#"] number (/atom:feed/@version)', doc);
   if (version < 0.1)
     goto errexit;
@@ -773,10 +877,6 @@ create function "DAV_EXTRACT_RDF_application/xbel+xml" (in orig_res_name varchar
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/xbel+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
-  -- dbg_obj_princ ('doc is ', doc);
-  --version := xpath_eval ('number (/xbel/@version)', doc);
-  --if (version < 0.1)
-  --  goto final;
   metas := vector (
         'http://www.openlinksw.com/virtdav#dynRdfExtractor', '"application/xbel+xml"', NULL,
         'http://www.openlinksw.com/virtdav#dynArchiver', '"XBEL"', NULL,
@@ -844,12 +944,10 @@ create function "DAV_EXTRACT_RDF_application/foaf+xml" (in orig_res_name varchar
   declare tmp_n3, obj1_props any;
   declare about varchar;
   xte_nodebld_init (res);
-  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/foaf+xml (', orig_res_name, content, html_start, ')');
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_application/foaf+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto final;
   doc := xtree_doc (content, 0);
-  -- dbg_obj_princ ('doc is ', doc);
   tmp_n3 := xslt ('http://local.virt/rdfxml2n3xml', doc);
-  -- dbg_obj_princ ('tmp_n3 is ', tmp_n3);
   about := xpath_eval ('/N3[@N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type"]/@N3S', tmp_n3);
   if (about is null or
     xpath_eval (
@@ -858,19 +956,15 @@ create function "DAV_EXTRACT_RDF_application/foaf+xml" (in orig_res_name varchar
     about := xpath_eval ('/N3[@N3P="http://xmlns.com/foaf/0.1/name"]/@N3S', tmp_n3);
   if (about is null)
     {
-       -- dbg_obj_princ ('final?');
        goto final;
     }
-  -- dbg_obj_princ ('about=', about);
   obj1_props := xpath_eval ('/N3[@N3S=\044about][starts-with (@N3P, "http://xmlns.com/foaf/0.1/")]', tmp_n3, 0, vector (UNAME'about', about));
   foreach (any prop in obj1_props) do
     {
       declare obj any;
-      -- dbg_obj_princ ('prop ', prop);
       obj := cast (xpath_eval ('@N3O', prop) as varchar);
       if (obj is null)
         {
-          -- dbg_obj_princ ('obj is null: ', prop);
           xte_nodebld_acc (res,
            xte_node (
              xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', xpath_eval ('@N3P', prop)),
@@ -879,9 +973,7 @@ create function "DAV_EXTRACT_RDF_application/foaf+xml" (in orig_res_name varchar
       else if ((obj like 'node%') or (obj like '#%'))
         {
           declare obj_names any;
-          -- dbg_obj_princ ('obj is local: ', prop);
           obj_names := xpath_eval ('/N3[@N3S = \044obj][@N3P="http://xmlns.com/foaf/0.1/name"]', tmp_n3, 0, vector (UNAME'obj', obj));
-          -- dbg_obj_princ ('obj_names are: ', obj_names);
           foreach (any oname in obj_names) do
             {
 	      xte_nodebld_acc (res,
@@ -892,7 +984,6 @@ create function "DAV_EXTRACT_RDF_application/foaf+xml" (in orig_res_name varchar
         }
       else if ((obj like 'http://%') or (obj like 'https://%') or (obj like 'tel:%') or (obj like 'mailto:%') or (obj like 'urn:%') or (obj like '/%'))
         {
-          -- dbg_obj_princ ('obj is global: ', prop);
           xte_nodebld_acc (res,
            xte_node (
              xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', xpath_eval ('@N3P', prop) || N'-uri'),
@@ -900,7 +991,6 @@ create function "DAV_EXTRACT_RDF_application/foaf+xml" (in orig_res_name varchar
         }
       else
         {
-          -- dbg_obj_princ ('obj is weird: ', prop);
         ;
         }
     }
@@ -917,7 +1007,6 @@ create function "DAV_EXTRACT_RDF_application/mods+xml" (in orig_res_name varchar
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/mods+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
-  -- dbg_obj_princ ('doc is ', doc);
   if (xpath_eval ('exists (/modsCollection)', doc))
     doc := xpath_eval ('/modsCollection', doc);
   if (xpath_eval ('count (mods)', doc) <> 1)
@@ -946,13 +1035,9 @@ errexit:
 create function "DAV_EXTRACT_RDF_application/opml+xml" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   declare doc, metas, extras any;
-  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/opml+xml (', orig_res_name, content, html_start, ')');
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_application/opml+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
-  -- dbg_obj_princ ('doc is ', doc);
-  --version := xpath_eval ('number (/xbel/@version)', doc);
-  --if (version < 0.1)
-  --  goto final;
   metas := vector (
         'http://www.openlinksw.com/schemas/OPML#title', '/opml/head/title', 'Untitled OPML',
         'http://www.openlinksw.com/schemas/OPML#dateCreated', 'declare namespace virtbpel="http://www.openlinksw.com/virtuoso/bpel"; for \044d in /opml/head/dateCreated return virtbpel:unix-datetime-parser (\044d)', NULL,
@@ -969,6 +1054,26 @@ errexit:
 }
 ;
 
+create function "DAV_EXTRACT_RDF_application/ocs+xml" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas, extras any;
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_application/ocs+xml (', orig_res_name, content, html_start, ')');
+  whenever sqlstate '*' goto errexit;
+  doc := xtree_doc (content, 0);
+  metas := vector (
+        'http://www.openlinksw.com/schemas/OPML#title', '//*:directory/*:title|//*:description/*:title', 'Untitled OCS',
+        'http://www.openlinksw.com/schemas/OPML#dateCreated', '//*:directory/*:date|//*:description/*:date', NULL,
+        'http://www.openlinksw.com/schemas/OPML#dateModified', '//*:directory/*:date|//*:description/*:date', NULL,
+        'http://www.openlinksw.com/schemas/OPML#ownerName', '//*:directory/*:publisher|//*:description/*:creator', 'Unknown OPML owner',
+        'http://www.openlinksw.com/schemas/OPML#ownerEmail', '//*:directory/*:creator|//*:description/*:creator', NULL
+        );
+  extras := vector (
+        'http://www.openlinksw.com/virtdav#dynRdfExtractor', 'application/ocs+xml' );
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
 
 create function "DAV_EXTRACT_RDF_text/html" (in orig_res_name varchar, inout content any, inout html_start any)
 {
@@ -980,7 +1085,6 @@ create function "DAV_EXTRACT_RDF_text/html" (in orig_res_name varchar, inout con
   if (html_start is null)
     goto errexit;
   whenever sqlstate '*' goto errexit;
-  -- dbg_obj_princ ('head is ', html_start);
   metas := vector (
         'http://www.openlinksw.com/schemas/XHTML#title', '/*/head/title|/*/*:head/*:title', 'Untitled',
         'http://www.openlinksw.com/schemas/XHTML#description', '(/*/head/meta[@name="description" or @name="Description"]/@content) | (/*/*:head/*:meta[@name="description" or @name="Description"]/@content)', NULL,
@@ -1008,7 +1112,6 @@ create function "DAV_EXTRACT_RDF_application/x-openlinksw-vsp" (in orig_res_name
   if (html_start is null)
     goto errexit;
   whenever sqlstate '*' goto errexit;
-  -- dbg_obj_princ ('head is ', xpath_eval('/*/*', html_start));
   metas := vector (
         'http://www.openlinksw.com/schemas/VSPX#title', '/*/head/title|/*/*:head/*:title', 'Untitled',
         'http://www.openlinksw.com/schemas/VSPX#description', '(/*/head/meta[@name="description" or @name="Description"]/@content) | (/*/*:head/*:meta[@name="description" or @name="Description"]/@content)', NULL,
@@ -1031,10 +1134,6 @@ create function "DAV_EXTRACT_RDF_application/x-openlinksw-vspx+xml" (in orig_res
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlinksw-vspx+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
-  -- dbg_obj_princ ('doc is ', doc);
-  --version := xpath_eval ('number (/xbel/@version)', doc);
-  --if (version < 0.1)
-  --  goto final;
   metas := vector (
         'http://www.openlinksw.com/schemas/VSPX#pageId', 'declare namespace v="http://www.openlinksw.com/vspx/"; //v:page/@name', 'Unidentified',
         'http://www.openlinksw.com/schemas/VSPX#title', '/*/head/title|/*/*:head/*:title', 'Untitled',
@@ -1057,10 +1156,6 @@ create function "DAV_EXTRACT_RDF_application/bpel+xml" (in orig_res_name varchar
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/bpel+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
-  -- dbg_obj_princ ('doc is ', doc);
-  --version := xpath_eval ('number (/xbel/@version)', doc);
-  --if (version < 0.1)
-  --  goto final;
   metas := vector (
         'http://www.openlinksw.com/schemas/WSDL#processName', 'declare namespace bpel="http://schemas.xmlsoap.org/ws/2003/03/business-process/"; /bpel:process/@name', 'Unidentified',
         'http://www.openlinksw.com/schemas/WSDL#targetNamespace', 'declare namespace bpel="http://schemas.xmlsoap.org/ws/2003/03/business-process/"; /bpel:process/@targetNamespace', NULL
@@ -1080,10 +1175,6 @@ create function "DAV_EXTRACT_RDF_application/google-kinds+xml" (in orig_res_name
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/google-kinds+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
-  -- dbg_obj_princ ('doc is ', doc);
-  --version := xpath_eval ('number (/xbel/@version)', doc);
-  --if (version < 0.1)
-  --  goto final;
   metas := vector (
         'http://www.openlinksw.com/schemas/google-kinds#title', '/entry/title', 'Untitled OPML',
         'http://www.openlinksw.com/schemas/google-kinds#published', '/entry/published', NULL,
@@ -1103,10 +1194,6 @@ create function "DAV_EXTRACT_RDF_application/wsdl+xml" (in orig_res_name varchar
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/wsdl+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
-  -- dbg_obj_princ ('doc is ', doc);
-  --version := xpath_eval ('number (/xbel/@version)', doc);
-  --if (version < 0.1)
-  --  goto final;
   metas := vector (
         'http://www.openlinksw.com/schemas/WSDL#processName', 'declare namespace wsdl="http://schemas.xmlsoap.org/wsdl/"; /wsdl:definitions/@name', 'Unidentified',
         'http://www.openlinksw.com/schemas/WSDL#targetNamespace', 'declare namespace wsdl="http://schemas.xmlsoap.org/wsdl/"; /wsdl:definitions/@targetNamespace', NULL
@@ -1140,18 +1227,7 @@ create function "DAV_EXTRACT_RDF_application/x-openlinksw-vad" (in orig_res_name
   cont := subseq(content, 99, 99 + len1);
   tree := xml_tree (cont);
   doc := xml_tree_doc (tree);
-  --doc := xtree_doc (cont, 0);
   declare items any;
---  items := xpath_eval ('/sticker/caption/version/@package', doc, 0);
---  if (length (items) = 0)
---    goto errexit;
---  items := xpath_eval ('/sticker/caption/name/prop[@name=\'Title\']', doc, 0);
---  if (length (items) = 0)
---    goto errexit;
---  items := xpath_eval ('/sticker/caption/version/@package', doc, 0);
---  if (length (items) = 0)
---    goto errexit;
-  --  goto final;
   metas := vector (
         'http://www.openlinksw.com/schemas/VAD#packageName', '/sticker/caption/name/@package', NULL,
         'http://www.openlinksw.com/schemas/VAD#packageTitle', '/sticker/caption/name/prop[@name="Title"]/@value[1]', NULL,
@@ -1241,7 +1317,6 @@ create function IMC_TO_XML (in _src varchar)
   declare line, head, head_name, data, name, params varchar;
   declare colon_pos, param_count, param_idx integer;
   declare delims, head_parts, data_parts, line_acc any;
-  -- dbg_obj_princ ('IMC_TO_XML (', _src);
   if (length (_src) > 2)
     {
       if ((_src[0] = 254) and (_src[1] = 255))
@@ -1258,13 +1333,10 @@ create function IMC_TO_XML (in _src varchar)
   _src := replace (_src, '\012 ', '');
   lines := split_and_decode (_src, 0, '\0\0\n');
   lines_count := length (lines);
-  -- dbg_obj_princ (lines);
-  -- dbg_obj_princ ('total ', lines_count, ' lines');
   line_idx := 0;
   while (line_idx < lines_count)
     {
       line := lines [line_idx];
-      -- dbg_obj_princ ('lines[', line_idx, ']=', line);
       if (line = '')
         goto next_line;
       if (regexp_match ('^([A-Za-z0-9-]+[.])?((BEGIN)|(begin)):([A-Z]+)\044', line) is not null)
@@ -1299,7 +1371,6 @@ create function IMC_TO_XML (in _src varchar)
 '^([A-Za-z0-9-]+[.])?([A-Za-z0-9-]+)(([;][A-Za-z0-9-]+(=(([^\001-\037\200-\377";:,]*)|("[^\001-\037\200-\377"]*"))(,(([^\001-\037\200-\377";:,]*)|("[^\001-\037\200-\377"]*")))*)?)*)([:])([\040-\377]*)\044',
 --(group        [.])?name           ((param-name      (=(plain-param-value           |quoted_param_value         )(,(plain-param-value           |quoted_param_value         ))*)?)*) [:]  value
             line, 0 );
-	  -- dbg_obj_princ (delims);
 	  if (delims is null)
 	    {
 	      head := 'X-ERROR';
@@ -1415,7 +1486,7 @@ create function "DAV_EXTRACT_RDF_text/directory" (in orig_res_name varchar, inou
 {
   declare doc, diritems, res, metas, extras any;
   xte_nodebld_init (res);
-  -- dbg_obj_princ ('DAV_EXTRACT_RDF_text/directory (', orig_res_name, content, html_start, ')');
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_text/directory (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto final;
   if (not isstring (content))
     doc := IMC_TO_XML (cast (content as varchar));
@@ -1430,69 +1501,85 @@ create function "DAV_EXTRACT_RDF_text/directory" (in orig_res_name varchar, inou
       declare ctr, len integer;
       itemname := xpath_eval ('name(.)', diritm);
       if (itemname = 'IMC-VCARD')
+      {
         metas := vector (
-          'http://www.openlinksw.com/virtdav#dynRdfExtractor', '"text/directory"',
+          'http://www.openlinksw.com/virtdav#dynRdfExtractor', '"text/directory"', null,
 -- basic props
-          'http://www.w3.org/2001/vcard-rdf/3.0#FN', 'FN/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#NICKNAME', 'NICKNAME/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#BDAY', 'declare namespace virtbpel="http://www.openlinksw.com/virtuoso/bpel"; for \044v in BDAY/val return virtbpel:unix-datetime-parser (\044v)',
-          'http://www.w3.org/2001/vcard-rdf/3.0#MAILER', 'MAILER/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#GEO', 'GEO/val', -- If proper latitude/longitude pair of <fld> is specified then do not display
-          'http://www.w3.org/2001/vcard-rdf/3.0#TITLE', 'TITLE/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#ROLE', 'ROLE/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#CATEGORIES', 'CATEGORIES/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#N', 'if (N/val) then concat (N/val, ";;;;") else concat (N/fld[1], ";", N/fld[2], ";", N/fld[3], ";", N/fld[4], ";", N/fld[5])',
-          'http://www.w3.org/2001/vcard-rdf/3.0#SOURCE', 'SOURCE/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#NOTE', 'NOTE/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#PRODID', 'PRODID/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#REV', 'REV/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#SORT-STRING', 'SORT-STRING/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#CLASS', 'CLASS/val',
+          'http://www.w3.org/2001/vcard-rdf/3.0#FN', 'FN/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#NICKNAME', 'NICKNAME/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#BDAY', 'declare namespace virtbpel="http://www.openlinksw.com/virtuoso/bpel"; for \044v in BDAY/val return virtbpel:unix-datetime-parser (\044v)', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#MAILER', 'MAILER/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#GEO', 'GEO/val', null, -- If proper latitude/longitude pair of <fld> is specified then do not display
+          'http://www.w3.org/2001/vcard-rdf/3.0#TITLE', 'TITLE/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#ROLE', 'ROLE/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#CATEGORIES', 'CATEGORIES/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#N', 'if (N/val) then concat (N/val, ";;;;") else concat (N/fld[1], ";", N/fld[2], ";", N/fld[3], ";", N/fld[4], ";", N/fld[5])', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#SOURCE', 'SOURCE/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#NOTE', 'NOTE/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#PRODID', 'PRODID/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#REV', 'REV/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#SORT-STRING', 'SORT-STRING/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#CLASS', 'CLASS/val', null,
 -- attributed, but attr is turned into substring
-          'http://www.w3.org/2001/vcard-rdf/3.0#TEL', 'for \044v in TEL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" (", \044t, ")"))',
-          'http://www.w3.org/2001/vcard-rdf/3.0#EMAIL', 'for \044v in EMAIL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" (", \044t, ")"))',
-          'http://www.w3.org/2001/vcard-rdf/3.0#ADR', 'for \044v in ADR return concat (if (\044v/val) then concat (\044v/val, ";;;;;;") else concat (\044v/fld[1], ";", \044v/fld[2], ";", \044v/fld[3], ";", \044v/fld[4], ";", \044v/fld[5], ";", \044v/fld[6], ";", \044v/fld[7]), for \044t in \044v/TYPE return concat (" (", \044t, ")"))',
-          'http://www.w3.org/2001/vcard-rdf/3.0#LABEL', 'for \044v in LABEL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" (", \044t, ")"))',
+          'http://www.w3.org/2001/vcard-rdf/3.0#TEL', 'for \044v in TEL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" (", \044t, ")"))', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#EMAIL', 'for \044v in EMAIL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" (", \044t, ")"))', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#ADR', 'for \044v in ADR return concat (if (\044v/val) then concat (\044v/val, ";;;;;;") else concat (\044v/fld[1], ";", \044v/fld[2], ";", \044v/fld[3], ";", \044v/fld[4], ";", \044v/fld[5], ";", \044v/fld[6], ";", \044v/fld[7]), for \044t in \044v/TYPE return concat (" (", \044t, ")"))', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#LABEL', 'for \044v in LABEL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" (", \044t, ")"))', null,
 -- attributed, but attr is ignored
-          'http://www.w3.org/2001/vcard-rdf/3.0#UID', 'CLASS/val',
+          'http://www.w3.org/2001/vcard-rdf/3.0#UID', 'CLASS/val', null,
 -- structured
-          'http://www.w3.org/2001/vcard-rdf/3.0#Name-Family', 'N/fld[1]|N/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Name-Given', 'N/fld[2]',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Name-Other', 'N/fld[3]',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Name-Prefix', 'N/fld[4]',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Name-Suffix', 'N/fld[5]',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Pobox', 'ADR/fld[1]|ADR/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Extadd', 'ADR/fld[2]',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Street', 'ADR/fld[3]',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Locality', 'ADR/fld[4]',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Region', 'ADR/fld[5]',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Pcode', 'ADR/fld[6]',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'ADR/fld[7]',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Org-Orgname', 'ORG/fld[1]|ORG/val',
-          'http://www.w3.org/2001/vcard-rdf/3.0#Org-Orgunit', 'ORG/fld[position() > 1]'
+          'http://www.w3.org/2001/vcard-rdf/3.0#Name-Family', 'N/fld[1]|N/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Name-Given', 'N/fld[2]', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Name-Other', 'N/fld[3]', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Name-Prefix', 'N/fld[4]', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Name-Suffix', 'N/fld[5]', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Pobox', 'ADR/fld[1]|ADR/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Extadd', 'ADR/fld[2]', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Street', 'ADR/fld[3]', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Locality', 'ADR/fld[4]', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Region', 'ADR/fld[5]', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Pcode', 'ADR/fld[6]', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'ADR/fld[7]', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Org-Orgname', 'ORG/fld[1]|ORG/val', null,
+          'http://www.w3.org/2001/vcard-rdf/3.0#Org-Orgunit', 'ORG/fld[position() > 1]', null
           );
+      }
       else if (itemname = 'IMC-VCALENDAR')
         {
-          if ((length (diritems) = 1) and (xpath_eval('count (IMC-VEVENT)', diritm) = 1))
+          --dbg_obj_princ('diritems: ', length(diritems), itemname, xpath_eval('count (IMC-VEVENT)', diritm));
+          if ((length (diritems) = 1) and (xpath_eval('count (IMC-VEVENT)', diritm) > 0))
+          {
             metas := vector (
-              'http://www.openlinksw.com/schemas/ICS#SUMMARY', 'IMC-VEVENT/SUMMARY/val',
-              'http://www.openlinksw.com/schemas/ICS#LOCATION', 'IMC-VEVENT/LOCATION/val',
-              'http://www.openlinksw.com/schemas/ICS#CATEGORIES', 'IMC-VEVENT/CATEGORIES/val',
-              'http://www.openlinksw.com/schemas/ICS#ATTENDEE', 'IMC-VEVENT/ATTENDEE/val',
-              'http://www.openlinksw.com/schemas/ICS#ORGANIZER', 'IMC-VEVENT/ORGANIZER/val' );
+              'http://www.openlinksw.com/schemas/ICS#SUMMARY', 'IMC-VEVENT/SUMMARY/val', null,
+              'http://www.openlinksw.com/schemas/ICS#LOCATION', 'IMC-VEVENT/LOCATION/val', null,
+              'http://www.openlinksw.com/schemas/ICS#CATEGORIES', 'IMC-VEVENT/CATEGORIES/val', null,
+              'http://www.openlinksw.com/schemas/ICS#ATTENDEE', 'IMC-VEVENT/ATTENDEE/val', null,
+              'http://www.openlinksw.com/schemas/ICS#ORGANIZER', 'IMC-VEVENT/ORGANIZER/val', null );
+          }
           else
+          {
+--            metas := vector (
+--              'http://www.openlinksw.com/schemas/ICS#ORGANIZER', 'IMC-VEVENT/ORGANIZER/val', null );
             metas := vector (
-              'http://www.openlinksw.com/schemas/ICS#ORGANIZER', 'IMC-VEVENT/ORGANIZER/val' );
+              'http://www.openlinksw.com/schemas/ICS#SUMMARY', 'IMC-VEVENT/SUMMARY/val', null );
+
+          }
         }
       else
         metas := vector ();
 
+      extras := vector ();
+
+      return "DAV_EXTRACT_RDF_BY_METAS" (diritm, metas, extras);
+
       len := length (metas);
+
       for (ctr := 0; ctr < len; ctr := ctr + 2)
         {
           declare vals varchar;
-          -- dbg_obj_princ ('Prop ', ctr/2, ' of ', len/2, ': ', metas [ctr + 1]);
           vals := xquery_eval (metas [ctr + 1], diritm, 0);
+          --dbg_obj_princ ('Prop ', ctr/2, ' of ', len/2, ': ', metas [ctr + 1], vals);
+
           if (vals is not null)
             {
           foreach (any val in vals) do
@@ -1506,16 +1593,17 @@ create function "DAV_EXTRACT_RDF_text/directory" (in orig_res_name varchar, inou
 
 final:
   xte_nodebld_final (res, xte_head (UNAME' root'));
+  dbg_obj_princ('Result: ', xml_tree_doc (res));
   return xml_tree_doc (res);
 }
 ;
 
-
+-- /* meta data extractor */
 create function "DAV_EXTRACT_RDF_BY_METAS" (inout doc any, inout metas any, inout extras any)
 {
   declare res any;
   declare ctr, len integer;
-  -- dbg_obj_princ ('DAV_EXTRACT_RDF_BY_METAS" (', doc, metas, extras, ')');
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_BY_METAS" (', doc, metas, extras, ')');
   xte_nodebld_init (res);
   whenever sqlstate '*' goto final;
   len := length (metas);
@@ -1523,7 +1611,7 @@ create function "DAV_EXTRACT_RDF_BY_METAS" (inout doc any, inout metas any, inou
     {
       declare vals varchar;
       vals := xquery_eval (metas [ctr + 1], doc, 0);
-      -- dbg_obj_princ ('DAV_EXTRACT_RDF_BY_METAS: values for ', metas [ctr + 1], ' are ', vals);
+      --dbg_obj_princ ('DAV_EXTRACT_RDF_BY_METAS: values for ', metas [ctr + 1], ' are ', vals);
       if (length (vals) = 0)
         {
           vals := metas [ctr + 2];

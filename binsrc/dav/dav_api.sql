@@ -3177,8 +3177,13 @@ DAV_PROP_SET_RAW (
 	  	    }
 	    }
     }
+  update WS.WS.SYS_DAV_PROP set PROP_VALUE = propvalue where PROP_NAME = propname
+      and PROP_PARENT_ID = id and PROP_TYPE = st;
+  if (row_count() = 0)
+    {
   insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
       values (pid, propname, propvalue, id, st);
+    }
   return pid;
 }
 ;

@@ -267,6 +267,7 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (in lpath varchar,
   declare name, mime_type, prop, prop1, dt_ms, mis_prop varchar;
   declare st char(1);
   declare diritm, prop_raw_val, prop_val, href any;
+  declare perms, uid, gid any;
   -- dbg_obj_princ ('WS.WS.PROPFIND_RESPONSE_FORMAT (', lpath, dirlist, append_name_to_href, ms_date, propnames, all_prop, add_not_found, u_id, ')');
 
   if (ms_date)
@@ -302,6 +303,9 @@ next_response:
   crt := diritm[8];
   mime_type := diritm[9];
   name := diritm[10];
+  perms := diritm[5];
+  uid := diritm[7];
+  gid := diritm[6];
 
   found_sprop := 0;
   mis_prop := '';
@@ -411,6 +415,40 @@ next_response:
 	{
 	  http ('<D:supportedlock>\n<D:lockentry>\n<D:lockscope><D:exclusive/></D:lockscope>\n<D:locktype><D:write/></D:locktype>\n</D:lockentry>\n<D:lockentry>\n<D:lockscope><D:shared/></D:lockscope>\n<D:locktype><D:write/></D:locktype>\n</D:lockentry>\n</D:supportedlock>\n');
           found_sprop := 1;
+	}
+      else if (prop = ':virtpermissions')
+	{
+	  perms := trim (perms, '\r\n ');
+	  http (concat('<V:virtpermissions>', perms, '</V:virtpermissions>\n'));
+          found_sprop := 1;
+	}
+      else if (prop = ':virtowneruid')
+	{
+	  declare tmp varchar;
+	  tmp := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+	  if (tmp is not null)
+	    {
+	      http (sprintf ('<V:virtowneruid>%U</V:virtowneruid>\n', tmp));
+	      found_sprop := 1;
+	    }
+	  else
+	    {
+	      mis_prop := concat (mis_prop, '<V:virtowneruid />\n');
+	    }
+	}
+      else if (prop = ':virtownergid')
+	{
+	  declare tmp varchar;
+	  tmp := (select U_NAME from DB.DBA.SYS_USERS where U_ID = gid);
+	  if (tmp is not null)
+	    {
+	      http (sprintf ('<V:virtownergid>%U</V:virtownergid>\n', tmp));
+	      found_sprop := 1;
+	    }
+	  else
+	    {
+	      mis_prop := concat (mis_prop, '<V:virtownergid />\n');
+	    }
 	}
       else if (all_prop = 0)
 	{
@@ -634,7 +672,7 @@ nf:
   http ('</D:multistatus>\n');
 }
 ;
-
+-- /* PROPPATCH method */
 create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in lines varchar)
 {
   declare _u_id, _g_id, _slen, _len, _ix, id, _pid, _ix1 integer;
@@ -703,10 +741,11 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
       i := 0;
       while (i < l)
 	{
-	   declare pa, pn, pns, pv, ps any;
+	   declare pa, pn, pns, pv, ps, _prop_name any;
            pa := prop_set[i];
            -- dbg_obj_princ ('set prop_set [', i, '] = ', pa);
            pn := cast (xpath_eval ('local-name(.)', pa) as varchar);
+	   _prop_name := pn;
            pns := cast(xpath_eval ('namespace-uri(.)', pa) as varchar);
 
            ps := string_output ();
@@ -718,7 +757,46 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
 
            xte_nodebld_acc (acc, xte_node (xte_head (pn)));
 
-	   if (not exists (select 1 from WS.WS.SYS_DAV_PROP
+	   if (pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/'
+	       and _prop_name in ('virtpermissions', 'virtowneruid', 'virtownergid'))
+	     {
+	       declare tmp, tmp_id any;
+	       tmp := cast (xpath_eval ('string()', pa) as varchar);
+	       if (_prop_name = 'virtpermissions')
+		 {
+		   -- execute perms can set only and only dav
+		   if ((tmp like '__1%' or tmp like '_____1%' or tmp like '________1%') and _u_id <> http_dav_uid ())
+		     goto skip_perm_update;
+
+		   -- bad permission string
+		   if (regexp_match (DB.DBA.DAV_REGEXP_PATTERN_FOR_PERM (), tmp) is null)
+		     goto skip_perm_update;
+
+		   if (st = 'R')
+		     update WS.WS.SYS_DAV_RES set RES_PERMS = tmp where RES_ID = id;
+		   else
+		     update WS.WS.SYS_DAV_COL set COL_PERMS = tmp where COL_ID = id;
+
+		   skip_perm_update:;
+		 }
+	       else if (_prop_name = 'virtowneruid')
+		 {
+                   tmp_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
+		   if (st = 'R')
+		     update WS.WS.SYS_DAV_RES set RES_OWNER = tmp_id where RES_ID = id;
+		   else
+		     update WS.WS.SYS_DAV_COL set COL_GROUP = tmp_id where COL_ID = id;
+		 }
+	       else if (_prop_name = 'virtownergid')
+		 {
+                   tmp_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
+		   if (st = 'R')
+		     update WS.WS.SYS_DAV_RES set RES_GROUP = tmp_id where RES_ID = id;
+		   else
+		     update WS.WS.SYS_DAV_COL set COL_GROUP = tmp_id where COL_ID = id;
+		 }
+	     }
+	   else if (not exists (select 1 from WS.WS.SYS_DAV_PROP
 		where PROP_NAME = pn and PROP_TYPE = st and PROP_PARENT_ID = id))
 	    {
               _pid := WS.WS.GETID ('P');
@@ -3562,7 +3640,7 @@ WS.WS.DAV_VSP_INCLUDES_CHANGED (in full_path varchar, in own varchar)
 }
 ;
 
-
+-- /* Expands the included VSP code */
 create procedure WS.WS.EXPAND_INCLUDES (in path varchar, inout stream varchar, in level integer,
     in ct integer, in content varchar, inout st any := null)
 {
@@ -3598,6 +3676,10 @@ create procedure WS.WS.EXPAND_INCLUDES (in path varchar, inout stream varchar, i
     {
       if (ct = 0)
 	{
+	  declare exit handler for not found
+	    {
+	      signal ('22023', sprintf ('The included resource "%s" does not exists', path), 'DA009');
+	    };
 	  select blob_to_string (RES_CONTENT), RES_OWNER, RES_GROUP, RES_PERMS, RES_MOD_TIME
 	      into curr_file, _u_id, _grp, _perms, modt from WS.WS.SYS_DAV_RES
 	      where RES_NAME = name and RES_COL = col;
